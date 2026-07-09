@@ -3501,6 +3501,9 @@ async function runGatewayModelSuite(params: GatewayModelSuiteParams) {
               logProgress(`${progressLabel}: tool-read`);
               const runIdTool = randomUUID();
               const maxToolReadAttempts = 3;
+              // Known-variable models already skip after exhausted nonce misses.
+              // Use the stricter follow-up prompts before conceding that coverage.
+              const retryKnownToolNonceMiss = shouldSkipToolNonceProbeMissForLiveModel(modelKey);
               let toolText = "";
               for (
                 let toolReadAttempt = 0;
@@ -3565,10 +3568,11 @@ async function runGatewayModelSuite(params: GatewayModelSuiteParams) {
                     provider: model.provider,
                     attempt: toolReadAttempt,
                     maxAttempts: maxToolReadAttempts,
+                    retryKnownNonceMismatch: retryKnownToolNonceMiss,
                   })
                 ) {
                   logProgress(
-                    `${progressLabel}: tool-read retry (${toolReadAttempt + 2}/${maxToolReadAttempts}) malformed tool output`,
+                    `${progressLabel}: tool-read retry (${toolReadAttempt + 2}/${maxToolReadAttempts}) tool output mismatch`,
                   );
                   continue;
                 }
@@ -3581,8 +3585,15 @@ async function runGatewayModelSuite(params: GatewayModelSuiteParams) {
               if (params.extraToolProbes) {
                 logProgress(`${progressLabel}: tool-exec`);
                 const nonceC = randomUUID();
-                const toolWritePath = path.join(tempDir, `write-${runIdTool}.txt`);
+                // Timeout wrappers do not cancel late tool runs, so keep provider-key attempts
+                // isolated without putting a nonce-shaped UUID in the model-visible path.
+                const toolWritePath = path.join(
+                  tempDir,
+                  `write-model-${index + 1}-attempt-${attempt + 1}.txt`,
+                );
                 const maxExecReadAttempts = 3;
+                const retryKnownExecReadNonceMiss =
+                  shouldSkipExecReadNonceMissForLiveModel(modelKey) || retryKnownToolNonceMiss;
                 let execReadText = "";
                 for (
                   let execReadAttempt = 0;
@@ -3600,7 +3611,7 @@ async function runGatewayModelSuite(params: GatewayModelSuiteParams) {
                         "use the tool named `exec` (or `Exec`) to run this command: " +
                         `mkdir -p "${tempDir}" && printf '%s' '${nonceC}' > "${toolWritePath}". ` +
                         `Then use the tool named \`read\` (or \`Read\`) with JSON arguments {"path":"${toolWritePath}"}. ` +
-                        `Then reply with exactly: ${nonceC}. No extra text.`
+                        "Then reply with exactly the nonce text from that file. No extra text."
                       : "OpenClaw live tool probe (local, safe): " +
                         "use the tool named `exec` (or `Exec`) to run this command: " +
                         `mkdir -p "${tempDir}" && printf '%s' '${nonceC}' > "${toolWritePath}". ` +
@@ -3635,10 +3646,11 @@ async function runGatewayModelSuite(params: GatewayModelSuiteParams) {
                       provider: model.provider,
                       attempt: execReadAttempt,
                       maxAttempts: maxExecReadAttempts,
+                      retryKnownNonceMismatch: retryKnownExecReadNonceMiss,
                     })
                   ) {
                     logProgress(
-                      `${progressLabel}: tool-exec retry (${execReadAttempt + 2}/${maxExecReadAttempts}) malformed tool output`,
+                      `${progressLabel}: tool-exec retry (${execReadAttempt + 2}/${maxExecReadAttempts}) tool output mismatch`,
                     );
                     continue;
                   }
@@ -3956,7 +3968,8 @@ async function runGatewayModelSuite(params: GatewayModelSuiteParams) {
           }
           if (shouldSkipToolNonceProbeMissForLiveModel(modelKey) && isToolNonceProbeMiss(message)) {
             skippedCount += 1;
-            logProgress(`${progressLabel}: skip (${modelKey} tool probe nonce miss)`);
+            const probe = isExecReadNonceProbeMiss(message) ? "exec/read" : "tool-read";
+            logProgress(`${progressLabel}: skip (${modelKey} ${probe} nonce miss)`);
             break;
           }
           if (isMissingProfileError(message)) {
