@@ -186,6 +186,7 @@ describe("navigationIconForRoute", () => {
       Object.fromEntries(ALL_ROUTES.map((routeId) => [routeId, navigationIconForRoute(routeId)])),
     ).toEqual({
       chat: "messageSquare",
+      claws: "bot",
       custodian: "lobster",
       activity: "activity",
       apps: "layoutGrid",
@@ -306,6 +307,7 @@ describe("titleForRoute", () => {
       Object.fromEntries(ALL_ROUTES.map((routeId) => [routeId, titleForRoute(routeId)])),
     ).toEqual({
       chat: "Chat",
+      claws: "Claws",
       custodian: "OpenClaw",
       activity: "Activity",
       apps: "Apps",
@@ -354,6 +356,7 @@ describe("subtitleForRoute", () => {
       Object.fromEntries(ALL_ROUTES.map((routeId) => [routeId, subtitleForRoute(routeId)])),
     ).toEqual({
       chat: "Gateway chat for quick interventions.",
+      claws: "Portable agent setups and lifecycle health.",
       custodian: "System setup and care.",
       activity: "Browser-local tool activity summaries.",
       apps: "Companion apps for phone, watch, desktop, and browser.",

@@ -137,6 +137,10 @@ const loadDoctorHandlers = lazyHandlerModule(
   () => import("./server-methods/doctor.js"),
   (module) => module.doctorHandlers,
 );
+const loadClawsHandlers = lazyHandlerModule(
+  () => import("./server-methods/claws.js"),
+  (module) => module.clawsHandlers,
+);
 const loadEnvironmentsHandlers = lazyHandlerModule(
   () => import("./server-methods/environments.js"),
   (module) => module.environmentsHandlers,
@@ -519,6 +523,10 @@ export const coreGatewayHandlers: GatewayRequestHandlers = {
       "doctor.memory.remHarness",
     ],
     loadHandlers: loadDoctorHandlers,
+  }),
+  ...createLazyCoreHandlers({
+    methods: ["claws.status", "claws.doctor"],
+    loadHandlers: loadClawsHandlers,
   }),
   ...createLazyCoreHandlers({
     methods: [
