@@ -197,7 +197,7 @@ describe("setInputFilesViaPlaywright", () => {
     expect(setInputFiles).not.toHaveBeenCalled();
   });
 
-  it("keeps assignment-triggered navigation inside the browser policy guard", async () => {
+  it("converts guarded loopback uploads to payloads inside the browser policy guard", async () => {
     const { setInputFiles } = seedSingleLocatorPage();
 
     await setInputFilesViaPlaywright({
@@ -208,6 +208,15 @@ describe("setInputFilesViaPlaywright", () => {
       ssrfPolicy: { dangerouslyAllowPrivateNetwork: true },
     });
 
+    expect(stat).toHaveBeenCalledWith("/private/tmp/openclaw/uploads/ok.txt");
+    expect(readFile).toHaveBeenCalledWith("/private/tmp/openclaw/uploads/ok.txt");
+    expect(setInputFiles).toHaveBeenCalledWith([
+      {
+        name: "ok.txt",
+        mimeType: "text/plain",
+        buffer: Buffer.from("upload contents"),
+      },
+    ]);
     expect(withPageNavigationRequestGuard).toHaveBeenCalledTimes(1);
     expect(setInputFiles).toHaveBeenCalledTimes(1);
     expect(assertPageNavigationCompletedSafely).toHaveBeenCalledTimes(1);

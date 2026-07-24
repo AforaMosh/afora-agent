@@ -1,4 +1,5 @@
 // Browser tests cover cdp.helpers.internal plugin behavior.
+import http from "node:http";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { WebSocketServer } from "ws";
 import { toErrorObject } from "../infra/errors.js";
@@ -211,6 +212,46 @@ describe("cdp.helpers internal", () => {
   });
 
   describe("createCdpSender (via withCdpSocket)", () => {
+    it("uses a per-connection agent for pinned WebSocket handshakes", async () => {
+      const server = await startWsServer();
+      wss = server.wss;
+      const lookup = vi.fn((hostname: string, options: unknown, callback?: unknown) => {
+        const cb = typeof options === "function" ? options : callback;
+        if (typeof cb === "function") {
+          if (typeof options === "object" && options !== null && "all" in options) {
+            cb(null, [{ address: "127.0.0.1", family: 4 }]);
+            return undefined as never;
+          }
+          cb(null, "127.0.0.1", 4);
+        }
+        return undefined as never;
+      });
+      const globalCreateConnection = vi
+        .spyOn(http.globalAgent, "createConnection")
+        .mockImplementation(() => {
+          throw new Error("global agent must not be used for pinned CDP sockets");
+        });
+      server.wss.on("connection", (socket) => {
+        socket.close();
+      });
+
+      try {
+        const ws = openCdpWebSocket(`ws://cdp-pinned.test:${server.port}/devtools/browser/TEST`, {
+          lookup: lookup as never,
+        });
+        await new Promise<void>((resolve, reject) => {
+          ws.once("open", () => resolve());
+          ws.once("error", reject);
+        });
+
+        expect(lookup).toHaveBeenCalled();
+        expect(globalCreateConnection).not.toHaveBeenCalled();
+        ws.close();
+      } finally {
+        globalCreateConnection.mockRestore();
+      }
+    });
+
     it("ignores messages with a non-numeric id", async () => {
       const server = await startWsServer();
       wss = server.wss;

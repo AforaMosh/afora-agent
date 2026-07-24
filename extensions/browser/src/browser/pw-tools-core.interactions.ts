@@ -19,7 +19,6 @@ import {
   resolveActInteractionTimeoutMs,
   resolveActWaitTimeoutMs,
 } from "./act-policy.js";
-import { isLoopbackHost } from "./cdp.helpers.js";
 import type { BrowserActRequest, BrowserFormField } from "./client-actions.types.js";
 import type { BrowserDownloadResult } from "./download-types.js";
 import { normalizeBrowserEvaluateFunctionSource } from "./evaluate-source.js";
@@ -114,14 +113,7 @@ function shouldUsePlaywrightFilePayloads(opts: {
   cdpUrl: string;
   ssrfPolicy?: BrowserNavigationPolicyOptions["ssrfPolicy"];
 }): boolean {
-  if (!opts.ssrfPolicy) {
-    return false;
-  }
-  try {
-    return !isLoopbackHost(new URL(opts.cdpUrl).hostname);
-  } catch {
-    return false;
-  }
+  return Boolean(opts.ssrfPolicy);
 }
 
 type NavigationObservablePage = Pick<Page, "url"> & {
