@@ -128,7 +128,9 @@ describe("runCodexAppServerAttempt steering", () => {
     handle?.abort();
     expect(handle?.isAborted?.()).toBe(true);
     expect(activeRunRegistrationMocks.clearActiveEmbeddedRun).not.toHaveBeenCalled();
-    await expect(run).resolves.toMatchObject({ aborted: true });
+    await expect(run).resolves.toMatchObject({
+      terminal: { kind: "aborted", source: "runtime" },
+    });
     expect(activeRunRegistrationMocks.clearActiveEmbeddedRun).toHaveBeenCalledWith(
       params.sessionId,
       handle,
