@@ -6,7 +6,7 @@ import { normalizeRouteBindingChannelId } from "../../../routing/binding-scope.j
 import { normalizeAgentId } from "../../../routing/session-key.js";
 import { isRecord } from "../../../utils.js";
 
-export type DefaultAgentRoleMaterialization = {
+type DefaultAgentRoleMaterialization = {
   config: OpenClawConfig;
   changes: string[];
 };
