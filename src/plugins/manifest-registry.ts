@@ -1193,7 +1193,6 @@ export function loadPluginManifestRegistry(
         if (PLUGIN_ORIGIN_RANK[candidate.origin] < PLUGIN_ORIGIN_RANK[existing.candidate.origin]) {
           records[existing.recordIndex] = record;
           seenIds.set(manifest.id, { candidate, recordIndex: existing.recordIndex });
-          pushManifestCompatibilityDiagnostics({ record, diagnostics, normalized });
         }
         continue;
       }
@@ -1218,7 +1217,6 @@ export function loadPluginManifestRegistry(
       if (candidateWins) {
         records[existing.recordIndex] = record;
         seenIds.set(manifest.id, { candidate, recordIndex: existing.recordIndex });
-        pushManifestCompatibilityDiagnostics({ record, diagnostics, normalized });
       }
       if (
         isIntentionalInstalledBundledDuplicate({
@@ -1249,10 +1247,14 @@ export function loadPluginManifestRegistry(
 
     seenIds.set(manifest.id, { candidate, recordIndex: records.length });
     records.push(record);
-    pushManifestCompatibilityDiagnostics({ record, diagnostics, normalized });
   }
 
   const plugins = rejectCaseFoldedIdCollisions(records, diagnostics);
+  // Compatibility belongs to the final owner; discarded duplicates must not
+  // leave channel warnings behind after a valid candidate replaces them.
+  for (const record of plugins) {
+    pushManifestCompatibilityDiagnostics({ record, diagnostics, normalized });
+  }
   const registry = { plugins, diagnostics: dedupePluginDiagnostics(diagnostics) };
   return registry;
 }

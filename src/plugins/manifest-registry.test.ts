@@ -648,6 +648,40 @@ describe("loadPluginManifestRegistry", () => {
     );
   });
 
+  it("does not retain channel diagnostics from a global candidate replaced by a bundled plugin", () => {
+    const globalDir = makeTempDir();
+    const bundledDir = makeTempDir();
+    const pluginId = "external-chat";
+    const manifest = {
+      id: pluginId,
+      channels: [pluginId],
+      configSchema: { type: "object" },
+    };
+    writeManifest(globalDir, manifest);
+    writeManifest(bundledDir, {
+      ...manifest,
+      channelConfigs: {
+        [pluginId]: { schema: { type: "object" } },
+      },
+    });
+
+    const registry = loadPluginManifestRegistry({
+      installRecords: {},
+      diagnostics: [{ level: "warn", message: "discovery safety warning" }],
+      candidates: [
+        createPluginCandidate({ idHint: pluginId, rootDir: globalDir, origin: "global" }),
+        createPluginCandidate({ idHint: pluginId, rootDir: bundledDir, origin: "bundled" }),
+      ],
+    });
+
+    expect(registry.plugins).toHaveLength(1);
+    expect(registry.plugins[0]?.origin).toBe("bundled");
+    expect(registry.plugins[0]?.channelConfigs?.[pluginId]?.schema).toEqual({ type: "object" });
+    expect(countDuplicateWarnings(registry)).toBe(1);
+    expectRegistryDiagnosticContains(registry, "discovery safety warning");
+    expectNoRegistryDiagnosticContains(registry, "without channelConfigs metadata");
+  });
+
   it("rejects plugins whose declared ids collide after case folding", () => {
     const upperDir = makeTempDir();
     const lowerDir = makeTempDir();
@@ -731,6 +765,7 @@ describe("loadPluginManifestRegistry", () => {
       diagnostic.message.includes("without channelConfigs metadata"),
     );
     expect(channelConfigWarnings).toHaveLength(1);
+    expect(channelConfigWarnings[0]?.source).toBe(path.join(configDir, "openclaw.plugin.json"));
   });
 
   it("suppresses missing channel config diagnostics for inactive external channel plugins", () => {
