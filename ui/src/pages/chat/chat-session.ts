@@ -15,6 +15,7 @@ import {
 } from "../../lib/sessions/index.ts";
 import {
   areUiSessionKeysEquivalent,
+  findUiSessionRow,
   isUiGlobalSessionKey,
   resolveUiGlobalAliasAgentId,
 } from "../../lib/sessions/session-key.ts";
@@ -268,10 +269,14 @@ function patchSessionRow(
   if (!current) {
     return;
   }
+  const activeRow = findUiSessionRow(current.sessions, sessionKey);
+  if (!activeRow) {
+    return;
+  }
   host.sessionsResult = {
     ...current,
     sessions: current.sessions.map((row) =>
-      row.key === sessionKey ? Object.assign({}, row, patch) : row,
+      row === activeRow ? Object.assign({}, row, patch) : row,
     ),
   };
 }
@@ -284,7 +289,7 @@ export function switchChatFastMode(
   if (!host.client || !host.connected) {
     return Promise.resolve(false);
   }
-  const activeRow = host.sessionsResult?.sessions?.find((row) => row.key === targetSessionKey);
+  const activeRow = findUiSessionRow(host.sessionsResult?.sessions, targetSessionKey);
   const previousFastMode = activeRow?.fastMode;
   const previousEffectiveFastMode = activeRow?.effectiveFastMode;
   const next: FastMode | undefined =
@@ -343,9 +348,7 @@ export async function switchChatModel(
   if (!host.client || !host.connected) {
     return false;
   }
-  const activeRow = host.sessionsResult?.sessions.find((row) =>
-    areUiSessionKeysEquivalent(row.key, targetSessionKey),
-  );
+  const activeRow = findUiSessionRow(host.sessionsResult?.sessions, targetSessionKey);
   if (activeRow?.modelSelectionLocked === true) {
     return false;
   }
@@ -414,7 +417,7 @@ export function switchChatThinkingLevel(
   if (!host.client || !host.connected) {
     return Promise.resolve(false);
   }
-  const activeRow = host.sessionsResult?.sessions?.find((row) => row.key === targetSessionKey);
+  const activeRow = findUiSessionRow(host.sessionsResult?.sessions, targetSessionKey);
   const previousThinkingLevel = activeRow?.thinkingLevel;
   const normalizedNext =
     (normalizeThinkLevel(nextThinkingLevel) ?? nextThinkingLevel.trim()) || undefined;
