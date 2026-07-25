@@ -6,7 +6,6 @@ Docs: https://docs.openclaw.ai
 
 ### Changes
 
-- **Explicit ambient agent targets:** add behavior-neutral channel, heartbeat, Custodian, and Talk ownership seams, with an idempotent Doctor migration that materializes existing multi-agent default routing before the stored default marker is retired.
 - **Control UI cloud workspace conflicts:** surface staged-ref guidance, bounded conflicted paths, structured transcript events, and sidebar attention for cloud worker results that kept local versions.
 - **Control UI update recovery:** the "A new version is available" Reload button now waits out the gateway restart that stranded the chunk and reloads as soon as it answers, instead of silently doing nothing and leaving a manual hard reload as the only way out.
 - **Control UI sender identity polish:** attributed user messages show the author's real avatar in an always-visible gutter on identity-resolving gateways, sender labels drop the opaque profile-UUID suffix (new and historical transcripts), and profile-id senders resolve avatars through the canonical gateway route.
