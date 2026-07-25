@@ -230,6 +230,58 @@ describe("shouldStartProxyForCli", () => {
     expect(shouldStartProxyForCli(["node", "openclaw", "--profile", "p", "--update"])).toBe(true);
   });
 
+  it.each([
+    [
+      "plain skill reference",
+      ["node", "openclaw", "skills", "install", "calendar", "--version", "1.2.3"],
+    ],
+    [
+      "owner-qualified skill reference",
+      ["node", "openclaw", "skills", "install", "@demo-owner/calendar", "--version", "1.2.3"],
+    ],
+    [
+      "inline version option",
+      ["node", "openclaw", "skills", "install", "calendar", "--version=1.2.3"],
+    ],
+    [
+      "version option before skill reference",
+      ["node", "openclaw", "skills", "install", "--version", "1.2.3", "calendar"],
+    ],
+    [
+      "root profile option",
+      [
+        "node",
+        "openclaw",
+        "--profile",
+        "work",
+        "skills",
+        "install",
+        "calendar",
+        "--version",
+        "1.2.3",
+      ],
+    ],
+  ])("starts managed proxy routing for versioned skill installs: %s", (_name, argv) => {
+    expect(shouldStartProxyForCli(argv)).toBe(true);
+  });
+
+  it("keeps global version and skill install help proxy-free", () => {
+    expect(shouldStartProxyForCli(["node", "openclaw", "--version"])).toBe(false);
+    expect(shouldStartProxyForCli(["node", "openclaw", "-V"])).toBe(false);
+    expect(
+      shouldStartProxyForCli([
+        "node",
+        "openclaw",
+        "skills",
+        "install",
+        "calendar",
+        "--version",
+        "1.2.3",
+        "--help",
+      ]),
+    ).toBe(false);
+  });
+
   it("skips managed proxy routing for bare parent default help", () => {
     expect(shouldStartProxyForCli(["node", "openclaw", "qa", "suite"])).toBe(false);
     expect(shouldStartProxyForCli(["node", "openclaw", "plugins"])).toBe(false);

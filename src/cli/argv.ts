@@ -46,7 +46,19 @@ export function isHelpOrVersionInvocation(argv: string[]): boolean {
       i += rootConsumed - 1;
       continue;
     }
-    if (HELP_FLAGS.has(arg) || VERSION_FLAGS.has(arg)) {
+    if (HELP_FLAGS.has(arg)) {
+      return true;
+    }
+    if (VERSION_FLAGS.has(arg)) {
+      const isVersionedSkillCommand =
+        positionals[0] === "skills" &&
+        (positionals[1] === "install" || positionals[1] === "verify");
+      if (arg === "--version" && isVersionedSkillCommand && isValueToken(args[i + 1])) {
+        // Only skill commands declaring --version own its following value.
+        sawCommandOption = true;
+        i += 1;
+        continue;
+      }
       return true;
     }
     if (arg.startsWith("-")) {

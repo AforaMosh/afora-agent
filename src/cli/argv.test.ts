@@ -274,6 +274,46 @@ describe("argv helpers", () => {
       expected: true,
     },
     {
+      name: "root version flag",
+      argv: ["node", "openclaw", "--version"],
+      expected: true,
+    },
+    {
+      name: "root short version flag",
+      argv: ["node", "openclaw", "-V"],
+      expected: true,
+    },
+    {
+      name: "valueless subcommand version flag",
+      argv: ["node", "openclaw", "status", "--version"],
+      expected: true,
+    },
+    {
+      name: "unrelated subcommand does not own a version value",
+      argv: ["node", "openclaw", "status", "--version", "1.2.3"],
+      expected: true,
+    },
+    {
+      name: "skill parent does not own a version value",
+      argv: ["node", "openclaw", "skills", "--version", "1.2.3"],
+      expected: true,
+    },
+    {
+      name: "skill install version option",
+      argv: ["node", "openclaw", "skills", "install", "calendar", "--version", "1.2.3"],
+      expected: false,
+    },
+    {
+      name: "skill verification version option",
+      argv: ["node", "openclaw", "skills", "verify", "calendar", "--version", "1.2.3"],
+      expected: false,
+    },
+    {
+      name: "help flag after a skill version option",
+      argv: ["node", "openclaw", "skills", "install", "calendar", "--version", "1.2.3", "--help"],
+      expected: true,
+    },
+    {
       name: "help as option value",
       argv: ["node", "openclaw", "agent", "--message", "help"],
       expected: false,
