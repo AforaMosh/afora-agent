@@ -36,6 +36,18 @@ export function respondInvalidParams(params: {
   );
 }
 
+/** Rejects work that outlived the pairing generation under which it started. */
+export function respondNodePairingChanged(respond: RespondFn) {
+  respond(
+    false,
+    undefined,
+    errorShape(ErrorCodes.UNAVAILABLE, "node pairing changed while invocation was active", {
+      retryable: true,
+      details: { code: "PAIRING_CHANGED" },
+    }),
+  );
+}
+
 /** Converts thrown node-handler failures into `UNAVAILABLE` protocol errors. */
 export async function respondUnavailableOnThrow(respond: RespondFn, fn: () => Promise<void>) {
   try {

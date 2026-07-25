@@ -75,6 +75,7 @@ vi.mock("../../infra/node-pairing-state.js", () => ({
 
 vi.mock("../node-command-policy.js", () => ({
   DEFAULT_DANGEROUS_NODE_COMMANDS: ["sms.send", "sms.search"],
+  TALK_PTT_COMMANDS: ["talk.ptt.start", "talk.ptt.stop", "talk.ptt.cancel", "talk.ptt.once"],
   resolveNodeCommandAllowlist: mocks.resolveNodeCommandAllowlist,
   isNodeCommandAllowed: mocks.isNodeCommandAllowed,
   isForegroundRestrictedPluginNodeCommand: mocks.isForegroundRestrictedPluginNodeCommand,
