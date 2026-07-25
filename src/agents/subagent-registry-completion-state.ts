@@ -147,7 +147,7 @@ export function createSubagentRegistryCompletionState(
       params.clearPendingLifecycleError(completeParams.runId);
       entry = params.runs.get(completeParams.runId);
       if (!entry) {
-        return;
+        return undefined;
       }
       const currentEntry = entry;
       entrySnapshot = structuredClone(entry);
@@ -165,7 +165,7 @@ export function createSubagentRegistryCompletionState(
       if (!recoveryRequested && entry.terminalOwner === "interrupted-recovery") {
         // Restart recovery already persisted the terminal winner for this exact
         // run. Late provider/lifecycle callbacks cannot reopen that decision.
-        return;
+        return undefined;
       }
       if (recoveryRequested) {
         const ownsInterruptedRecovery = entry.terminalOwner === "interrupted-recovery";
@@ -208,7 +208,7 @@ export function createSubagentRegistryCompletionState(
             typeof entry.cleanupCompletedAt === "number" ||
             (hasTerminalEvidence && !matchesRequestedInterruptedTerminal))
         ) {
-          return;
+          return undefined;
         }
         if (!ownsInterruptedRecovery) {
           const endedAt =
@@ -259,7 +259,7 @@ export function createSubagentRegistryCompletionState(
       ) {
         // Any finalized provider outcome is canonical. A delayed abort listener
         // must not replace success, failure, or timeout with a killed marker.
-        return;
+        return undefined;
       }
       let requestedEndedAt =
         typeof completeParams.endedAt === "number" ? completeParams.endedAt : Date.now();
@@ -268,7 +268,7 @@ export function createSubagentRegistryCompletionState(
           entry,
         })
       ) {
-        return;
+        return undefined;
       }
       const shouldDrainExistingTerminal =
         recoveryRequested ||
@@ -331,7 +331,7 @@ export function createSubagentRegistryCompletionState(
       ) {
         // Only current-version provisional kills carry reconciliation state.
         // Legacy or already-stabilized killed rows are terminal cancellation.
-        return;
+        return undefined;
       }
       const isSteerRestartKill =
         completeParams.reason === SUBAGENT_ENDED_REASON_KILLED &&
@@ -362,7 +362,7 @@ export function createSubagentRegistryCompletionState(
         if (stableTaskCancellation && !completionPredatesCancellation) {
           // tasks.cancel promotes the provisional marker to durable operator
           // intent. Only an already-durable earlier completion may reopen it.
-          return;
+          return undefined;
         }
         provisionalKillSnapshot = structuredClone(currentEntry);
         // The sweeper uses marker identity to reject a concurrently replaced
@@ -504,7 +504,7 @@ export function createSubagentRegistryCompletionState(
         if (stableTaskCancellation && !completionPredatesCancellation) {
           // Cancellation can become durable while completion capture yields.
           // The provider transition is staged, so the live tombstone is intact.
-          return;
+          return undefined;
         }
       }
       if (refreshPendingFinalDeliveryPayload(entry)) {
@@ -529,7 +529,7 @@ export function createSubagentRegistryCompletionState(
           if (opaqueTaskArbitration) {
             // The optional lookup cannot prove cancellation. Let the legacy
             // runtime's own finalizer decide whether provider completion won.
-            return;
+            return undefined;
           }
           const latestTaskResolution = params.resolveSubagentTask(provisionalKillSnapshot);
           const latestTask = latestTaskResolution.task;
@@ -539,7 +539,7 @@ export function createSubagentRegistryCompletionState(
           const completionPredatesCancellation =
             typeof cancellationEndedAt === "number" && endedAt < cancellationEndedAt;
           if (stableTaskCancellation && !completionPredatesCancellation) {
-            return;
+            return undefined;
           }
           throw new Error("subagent task projection did not finalize");
         }
@@ -585,7 +585,7 @@ export function createSubagentRegistryCompletionState(
     }
 
     if (!entry) {
-      return;
+      return undefined;
     }
     return {
       entry,
