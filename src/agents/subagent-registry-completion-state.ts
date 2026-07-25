@@ -25,7 +25,7 @@ import {
 import { updateSwarmCollectorCompletion } from "./swarm-collector.js";
 import { peekSwarmStructuredOutput } from "./tools/structured-output-tool.js";
 
-export type PreparedSubagentRunCompletion = {
+type PreparedSubagentRunCompletion = {
   entry: SubagentRunRecord;
   terminalGeneration: number;
   mutated: boolean;

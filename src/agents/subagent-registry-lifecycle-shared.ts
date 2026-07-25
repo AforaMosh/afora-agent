@@ -30,11 +30,11 @@ import { capFrozenResultText } from "./subagent-registry-helpers.js";
 import type { PendingFinalDeliveryPayload, SubagentRunRecord } from "./subagent-registry.types.js";
 import { compareSubagentRunGeneration } from "./subagent-run-generation.js";
 
-export type CaptureSubagentCompletionReply =
+type CaptureSubagentCompletionReply =
   (typeof import("./subagent-announce.js"))["captureSubagentCompletionReply"];
 export type RunSubagentAnnounceFlow =
   (typeof import("./subagent-announce.js"))["runSubagentAnnounceFlow"];
-export type MaybeWakeRequesterAfterAllChildrenSettled =
+type MaybeWakeRequesterAfterAllChildrenSettled =
   (typeof import("./subagent-announce.requester-settle-wake.js"))["maybeWakeRequesterAfterAllChildrenSettled"];
 
 export type SubagentRegistryLifecycleParams = {
