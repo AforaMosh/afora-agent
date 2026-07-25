@@ -95,6 +95,8 @@ export function materializeDefaultAgentRoles(cfg: OpenClawConfig): DefaultAgentR
   const defaultsConfig = isRecord(rawDefaults) ? rawDefaults : undefined;
   const canMaterializeDefaults = rawDefaults === undefined || defaultsConfig !== undefined;
   const hasPerAgentHeartbeat = listAgentEntries(cfg).some((entry) => Boolean(entry.heartbeat));
+  // A shared defaults heartbeat already fans out to every agent. Pinning it here
+  // would silently narrow existing multi-agent enrollment to the legacy default.
   if (canMaterializeDefaults && !hasPerAgentHeartbeat && defaultsConfig?.heartbeat === undefined) {
     next = {
       ...next,

@@ -1677,6 +1677,31 @@ describe("doctor config flow", () => {
     expect(result.cfg.talk).toMatchObject({ provider: "test", agentId: "ops" });
   });
 
+  it("preserves shared all-agent heartbeat enrollment during materialization", async () => {
+    const config = {
+      agents: {
+        defaults: { heartbeat: { every: "1h" } },
+        entries: {
+          ops: { default: true },
+          research: {},
+        },
+      },
+      channels: { telegram: { enabled: true } },
+      talk: { provider: "test" },
+    };
+    const result = await runDoctorConfigWithInput({
+      config,
+      parsedConfig: config,
+      repair: true,
+      run: loadAndMaybeMigrateDoctorConfig,
+    });
+
+    expect(result.shouldWriteConfig).toBe(true);
+    expect(result.cfg.agents?.defaults?.heartbeat).toEqual({ every: "1h" });
+    expect(result.cfg.agents?.defaults?.heartbeat).not.toHaveProperty("agentId");
+    expect(result.cfg.agents?.defaults?.systemAgent).toEqual({ agentId: "ops" });
+  });
+
   it("does not rematerialize explicit roles or touch single-agent configs", async () => {
     const materialized = {
       agents: {
