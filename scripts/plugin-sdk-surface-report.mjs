@@ -93,7 +93,9 @@ function readPluginSdkEntrypointBudgetEnv(name, fallback, env = process.env) {
 }
 
 const defaultPublicDeprecatedExportsByEntrypointBudget = Object.freeze({
-  core: 2,
+  core: 3,
+  "channel-contract": 1,
+  "status-helpers": 1,
   routing: 1,
   health: 0,
   "channel-streaming": 54,
@@ -178,7 +180,8 @@ export function readPluginSdkSurfaceBudgets(env = process.env) {
       // +1: typed owner-required error for session store path resolution.
       // +1: native approval messaging target resolver.
       // +1: shared plugin SecretRef setup plan helper.
-      4723,
+      // +6: typed public channel-status output/input contracts and helpers.
+      4729,
       env,
     ),
     publicFunctionExports: readPluginSdkSurfaceBudgetEnv(
@@ -210,7 +213,8 @@ export function readPluginSdkSurfaceBudgets(env = process.env) {
       // +3: canonical incognito classifier projected through deprecated compatibility barrels.
       // +2: shipped Slack and Discord setup compatibility helpers.
       // +10: named media legacy projection deprecations across public compatibility barrels.
-      1698,
+      // +3: deprecated ChannelAccountSnapshot aliases retained during the status migration window.
+      1701,
       env,
     ),
     publicWildcardReexports: readPluginSdkSurfaceBudgetEnv(
