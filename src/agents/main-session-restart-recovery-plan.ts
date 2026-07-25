@@ -526,7 +526,7 @@ function isApprovalPendingToolResult(message: unknown): boolean {
   return (details as { status?: unknown }).status === "approval-pending";
 }
 
-export type MainSessionResumePolicy =
+type MainSessionResumePolicy =
   | {
       action: "complete";
       reason: "delivered-terminal" | "delivered-terminal-receipt";
