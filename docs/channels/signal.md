@@ -40,7 +40,7 @@ Bare plugin specs try ClawHub first, then npm fallback. Force a source with `ope
     Signal uses a real Signal account/device, not a bot token. The wizard asks whether OpenClaw should manage a local `signal-cli` or connect to an existing Signal server.
 
     - **Local `signal-cli`:** the wizard can install or reuse `signal-cli` and accepts an optional custom config directory. It discovers linked accounts automatically. If none exist, choose **Link a Signal account now**, then scan the QR code shown in the wizard from Signal **Settings > Linked devices**. The wizard adopts the linked phone number, starts a temporary daemon, validates it, stops it, and only then saves the transport.
-    - **Existing server:** enter the server URL. The wizard detects the native or container protocol, asks for a Signal phone number when the server requires one, and probes the concrete transport before saving it. An external native server may remain accountless only when the probe confirms the server is unambiguous.
+    - **Existing server:** enter the server URL and the Signal phone number that OpenClaw should use. The wizard detects the native or container protocol and probes that concrete transport before saving it.
 
     If detection or validation fails, the wizard can retry, change the account or URL, or stop without persisting the candidate transport.
 

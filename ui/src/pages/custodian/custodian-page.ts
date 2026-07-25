@@ -1,7 +1,6 @@
 import { consume } from "@lit/context";
 import type {
   SystemAgentChatParams,
-  SystemAgentChatResult,
   SystemChangeEntry,
   SystemChangesListResult,
 } from "@openclaw/gateway-protocol";
@@ -21,6 +20,7 @@ import "../../styles/chat/layout.css";
 import "../../styles/chat/text.css";
 import "../../styles/custodian.css";
 import { renderChatAvatar } from "../chat/chat-avatar.ts";
+import { requestCustodianChat } from "./chat-request.ts";
 import { renderCustodianChangeHistory } from "./custodian-history.ts";
 import * as eventNudgeState from "./event-nudge.ts";
 import {
@@ -29,7 +29,7 @@ import {
   type CustodianSessionVariant,
   welcomeVariant,
 } from "./session-lifecycle.ts";
-import { parseCustodianQuestion, type CustodianStructuredQuestion } from "./structured-question.ts";
+import { parseCustodianQuestion } from "./structured-question.ts";
 import {
   createCustodianSessionId,
   createCustodianTranscriptMessages,
@@ -41,7 +41,6 @@ import {
   type CustodianMessage,
 } from "./transcript.ts";
 
-const SYSTEM_AGENT_CHAT_TIMEOUT_MS = 190_000;
 const SYSTEM_CHANGE_PAGE_SIZE = 50;
 const SILENT_REPLY_PATTERN = /^\s*NO_REPLY\s*$/;
 
@@ -151,7 +150,11 @@ export class CustodianPage extends OpenClawLightDomElement {
     this.sessionStarted = true;
     void this.initializeSession(
       client,
-      { sessionId: this.sessionId, ...welcomeVariant(variant) },
+      {
+        sessionId: this.sessionId,
+        capabilities: { qrCodePng: true },
+        ...welcomeVariant(variant),
+      },
       loadTranscript,
     );
   }
@@ -392,15 +395,16 @@ export class CustodianPage extends OpenClawLightDomElement {
     }
   }
 
-  private appendAssistant(reply: string, question: CustodianStructuredQuestion | null): void {
+  private appendReply(text: string, question: CustodianMessage["question"], qr?: string): void {
     this.messages = [
       ...this.messages,
       {
         id: this.nextMessageId++,
         role: "assistant",
-        text: reply,
+        text,
         at: Date.now(),
         question,
+        qrCodePngBase64: qr,
       },
     ];
   }
@@ -415,8 +419,9 @@ export class CustodianPage extends OpenClawLightDomElement {
     this.error = null;
     this.retryParams = params;
     try {
-      const result = await client.request<SystemAgentChatResult>("openclaw.chat", params, {
-        timeoutMs: SYSTEM_AGENT_CHAT_TIMEOUT_MS,
+      const result = await requestCustodianChat({
+        client,
+        request: params,
         onSent: () => (delivery = "sent"),
       });
       delivery = "received";
@@ -431,7 +436,7 @@ export class CustodianPage extends OpenClawLightDomElement {
       // Match regular chat: NO_REPLY is a delivery sentinel, not transcript content.
       const silentReply = SILENT_REPLY_PATTERN.test(result.reply);
       if (!silentReply || question) {
-        this.appendAssistant(silentReply ? "" : result.reply, question);
+        this.appendReply(silentReply ? "" : result.reply, question, result.qrCodePngBase64);
       }
       if (result.action === "open-agent") {
         let sessionKey = this.context.gateway.snapshot.sessionKey?.trim();

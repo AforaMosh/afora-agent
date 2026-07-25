@@ -30,6 +30,7 @@ export type ChannelSetupWizardRunner = (
     channel?: string;
     onConfigured?: (accounts: Array<{ channel: string; accountId: string }>) => void;
     beforePersistentEffect?: () => Promise<void>;
+    abortSignal?: AbortSignal;
   },
   runtime: RuntimeEnv,
   prompter: WizardPrompter,
@@ -87,11 +88,12 @@ export const wizardHandlers: GatewayRequestHandlers = {
     const flow = params.flow ?? "setup";
     const session =
       flow === "channels"
-        ? new WizardSession((prompter, _signal, wizardSession) =>
+        ? new WizardSession((prompter, signal, wizardSession) =>
             context.channelWizardRunner(
               {
                 channel: readStringValue(params.channel),
                 onConfigured: (accounts) => wizardSession.setConfiguredAccounts(accounts),
+                abortSignal: signal,
                 // Durable effects (plugin installs, config commit) must finish
                 // even if the client cancels mid-write.
                 beforePersistentEffect: async () => wizardSession.lockCancellation(),

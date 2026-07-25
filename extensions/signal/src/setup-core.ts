@@ -4,7 +4,6 @@ import { parseAllowFromEntries } from "openclaw/plugin-sdk/allow-from";
 import { createChannelDmPolicy } from "openclaw/plugin-sdk/channel-dm-policy";
 import { defineChannelSetupContract } from "openclaw/plugin-sdk/channel-setup";
 import {
-  createCliPathTextInput,
   createDelegatedSetupWizardProxy,
   createPatchedAccountSetupAdapter,
   createSetupInputPresenceValidator,
@@ -48,6 +47,8 @@ export const signalSetupStateKeys = {
   cliConfigPath: "signalCliConfigPath",
   installRequested: "signalInstallRequested",
   serverUrl: "signalServerUrl",
+  originalAccount: "signalOriginalAccount",
+  linkDeferred: "signalLinkDeferred",
 } as const;
 
 const signalSetupFields = {
@@ -266,35 +267,6 @@ export const signalDmPolicy = createChannelDmPolicy({
   promptAllowFrom: promptSignalAllowFrom,
 });
 
-function resolveSignalCliPath(params: {
-  cfg: OpenClawConfig;
-  accountId: string;
-  credentialValues: Record<string, unknown>;
-}) {
-  const transport = resolveSignalAccount({
-    cfg: params.cfg,
-    accountId: params.accountId,
-  }).transport;
-  if (transport.kind !== "managed-native") {
-    return undefined;
-  }
-  return typeof params.credentialValues.cliPath === "string"
-    ? params.credentialValues.cliPath
-    : transport.cliPath;
-}
-
-export function createSignalCliPathTextInput(
-  shouldPrompt: NonNullable<ChannelSetupWizardTextInput["shouldPrompt"]>,
-): ChannelSetupWizardTextInput {
-  return createCliPathTextInput({
-    inputKey: "cliPath",
-    message: "signal-cli path",
-    resolvePath: ({ cfg, accountId, credentialValues }) =>
-      resolveSignalCliPath({ cfg, accountId, credentialValues }),
-    shouldPrompt,
-  });
-}
-
 export const signalNumberTextInput: ChannelSetupWizardTextInput = {
   inputKey: "signalNumber",
   message: t("wizard.signal.botNumberPrompt"),
@@ -311,30 +283,30 @@ export const signalNumberTextInputs: ChannelSetupWizardTextInput[] = [
   {
     ...signalNumberTextInput,
     shouldPrompt: ({ credentialValues }) =>
-      credentialValues[signalSetupStateKeys.transportKind] === "container",
-  },
-  {
-    ...signalNumberTextInput,
-    message: "Signal phone number (optional)",
-    required: false,
-    shouldPrompt: ({ credentialValues }) =>
+      credentialValues[signalSetupStateKeys.transportKind] === "container" ||
       credentialValues[signalSetupStateKeys.transportKind] === "external-native",
-    validate: ({ value }) =>
-      normalizeOptionalString(value) && !normalizeSignalAccountInput(value)
-        ? INVALID_SIGNAL_ACCOUNT_ERROR
-        : undefined,
   },
 ];
+
+export const signalIntroNote = {
+  title: "Signal",
+  lines: [
+    "Signal uses a real Signal account/device, not a bot token.",
+    "A dedicated Signal number is recommended for bot-like operation.",
+  ],
+};
 
 export const signalCompletionNote = {
   title: t("wizard.signal.nextStepsTitle"),
   lines: [
-    "Signal setup is validated.",
-    "OpenClaw will use this Signal connection when the gateway runs.",
+    "Signal setup validation passed.",
+    "OpenClaw will save this connection when channel setup finishes.",
     `Check it later: ${formatCliCommand("openclaw channels status --probe")}`,
     `Docs: ${formatDocsLink("/signal", "signal")}`,
   ],
-};
+  shouldShow: ({ credentialValues }) =>
+    credentialValues[signalSetupStateKeys.linkDeferred] !== "true",
+} satisfies NonNullable<ChannelSetupWizard["completionNote"]>;
 
 const signalSetupAdapterBase = createPatchedAccountSetupAdapter<SignalSetupInput>({
   channelKey: channel,
@@ -365,7 +337,7 @@ const signalSetupAdapterBase = createPatchedAccountSetupAdapter<SignalSetupInput
         !normalizeSignalAccountInput(input.signalNumber) &&
         !normalizeSignalAccountInput(resolveSignalSetupAccount({ cfg, accountId }))
       ) {
-        return "Signal container transport requires --signal-number or an existing account.";
+        return "Signal server transport requires --signal-number or an existing account.";
       }
       if (
         !input.signalNumber &&
@@ -406,6 +378,20 @@ function restorePromotedSignalDefaultAccount(cfg: OpenClawConfig): OpenClawConfi
       },
     },
   };
+}
+
+export function patchSignalSetupAccount(params: {
+  cfg: OpenClawConfig;
+  accountId: string;
+  patch: Record<string, unknown>;
+}): OpenClawConfig {
+  return patchChannelConfigForAccount({
+    cfg: restorePromotedSignalDefaultAccount(params.cfg),
+    channel,
+    accountId: params.accountId,
+    patch: params.patch,
+    setupSurface: signalSetupAdapter,
+  });
 }
 
 export const signalSetupAdapter: ChannelSetupAdapter<SignalSetupInput> = {
@@ -460,23 +446,26 @@ export const signalSetupContract = defineChannelSetupContract({
 });
 
 export function createSignalSetupWizardProxy(loadWizard: () => Promise<ChannelSetupWizard>) {
-  return createDelegatedSetupWizardProxy({
-    channel,
-    loadWizard,
-    status: {
-      configuredLabel: t("wizard.channels.statusConfigured"),
-      unconfiguredLabel: t("wizard.channels.statusNeedsSetup"),
-      configuredHint: t("wizard.channels.statusSignalCliFound"),
-      unconfiguredHint: t("wizard.channels.statusSignalCliMissing"),
-      configuredScore: 1,
-      unconfiguredScore: 0,
-    },
-    delegatePrepare: true,
-    delegateFinalize: true,
-    credentials: [],
-    textInputs: signalNumberTextInputs,
-    completionNote: signalCompletionNote,
-    dmPolicy: signalDmPolicy,
-    disable: (cfg: OpenClawConfig) => setSetupChannelEnabled(cfg, channel, false),
-  });
+  return {
+    ...createDelegatedSetupWizardProxy({
+      channel,
+      loadWizard,
+      status: {
+        configuredLabel: t("wizard.channels.statusConfigured"),
+        unconfiguredLabel: t("wizard.channels.statusNeedsSetup"),
+        configuredHint: t("wizard.channels.statusSignalCliFound"),
+        unconfiguredHint: t("wizard.channels.statusSignalCliMissing"),
+        configuredScore: 1,
+        unconfiguredScore: 0,
+      },
+      delegatePrepare: true,
+      delegateFinalize: true,
+      credentials: [],
+      textInputs: signalNumberTextInputs,
+      completionNote: signalCompletionNote,
+      dmPolicy: signalDmPolicy,
+      disable: (cfg: OpenClawConfig) => setSetupChannelEnabled(cfg, channel, false),
+    }),
+    introNote: signalIntroNote,
+  };
 }

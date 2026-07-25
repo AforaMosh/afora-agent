@@ -57,12 +57,22 @@ type WizardDeviceCodeParams = {
   message?: string;
 };
 
+export type WizardQrCodeParams = {
+  title: string;
+  message: string;
+  pngBase64: string;
+  /** Retire the acknowledgement prompt when the external QR operation completes. */
+  dismissWhen?: Promise<unknown>;
+};
+
 export type WizardPrompter = {
   intro: (title: string) => Promise<void>;
   outro: (message: string) => Promise<void>;
   note: (message: string, title?: string) => Promise<void>;
   /** Present a browser device code as structured UI when the client supports it. */
   deviceCode?: (params: WizardDeviceCodeParams) => Promise<void>;
+  /** Present a PNG QR code and wait for the user to confirm that it was scanned. */
+  qrCode?: (params: WizardQrCodeParams) => Promise<boolean>;
   plain?: (message: string) => Promise<void>;
   select: <T>(params: WizardSelectParams<T>) => Promise<T>;
   multiselect: <T>(params: WizardMultiSelectParams<T>) => Promise<T[]>;

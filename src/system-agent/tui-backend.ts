@@ -123,7 +123,7 @@ class SystemAgentTuiBackend implements TuiBackend {
 
   private seq = 0;
   private engine: SystemAgentChatEngine;
-  private engineDisposal: Promise<void> | null = null;
+  private engineDisposal: Promise<boolean> | null = null;
   private inferenceFailure: SystemAgentInferenceUnavailableError | null = null;
   private handoff: SystemAgentOperation | null = null;
   private requestExit: (() => void) | null = null;
@@ -249,8 +249,11 @@ class SystemAgentTuiBackend implements TuiBackend {
     if (this.inferenceFailure) {
       throw this.inferenceFailure;
     }
-    // Reset drops in-flight approvals/wizards along with the transcript.
-    await this.disposeEngine();
+    if (!(await this.disposeEngine())) {
+      throw new Error(
+        "Channel setup is already applying and cannot be reset yet. Continue the current setup first.",
+      );
+    }
     this.engine = createChatEngine(this.opts);
     this.engineDisposal = null;
     const overview = await loadOverviewForTui(this.opts);
@@ -280,20 +283,25 @@ class SystemAgentTuiBackend implements TuiBackend {
     return [];
   }
 
-  async dispose(): Promise<void> {
+  async dispose(): Promise<boolean> {
     try {
-      await this.disposeEngine();
+      return await this.disposeEngine();
     } catch (error) {
       if (!this.inferenceFailure) {
         throw error;
       }
       // Inference failure remains authoritative; retirement cleanup is best-effort.
+      return true;
     }
   }
 
-  private disposeEngine(): Promise<void> {
-    this.engineDisposal ??= this.engine.dispose();
-    return this.engineDisposal;
+  private async disposeEngine(): Promise<boolean> {
+    const disposal = (this.engineDisposal ??= this.engine.dispose());
+    const disposed = await disposal;
+    if (!disposed && this.engineDisposal === disposal) {
+      this.engineDisposal = null;
+    }
+    return disposed;
   }
 
   private nextSeq(): number {
@@ -356,18 +364,22 @@ class SystemAgentTuiBackend implements TuiBackend {
       this.emitFinal(runId, sessionKey, reply.text);
     } catch (error) {
       if (isSystemAgentInferenceUnavailableError(error)) {
-        // Match the Gateway session boundary: the failed conversation is dead.
-        // Clear handoffs and dispose before exit so no queued exact command can
-        // bypass the inference-first gate through this backend instance.
-        this.inferenceFailure = error;
         this.handoff = null;
+        let disposed = false;
         try {
-          await this.disposeEngine();
+          disposed = await this.disposeEngine();
         } catch {
           // The inference error is authoritative; cleanup stays best-effort.
         }
+        // A locked wizard still owns an irreversible setup. Keep this backend
+        // available for recovery instead of abandoning it on inference loss.
+        if (disposed) {
+          this.inferenceFailure = error;
+        }
         this.emitError(runId, sessionKey, error);
-        queueMicrotask(() => this.requestExit?.());
+        if (disposed) {
+          queueMicrotask(() => this.requestExit?.());
+        }
         return;
       }
       this.emitError(runId, sessionKey, error);
@@ -454,18 +466,23 @@ export async function runSystemAgentTui(
     welcomeVariant = undefined;
     const backend = new SystemAgentTuiBackend(boundOpts, welcome, engine, route);
     const runTui = boundOpts.runTui ?? defaultRunTui;
-    try {
-      await runTui({
-        local: true,
-        session: SYSTEM_AGENT_SESSION_KEY,
-        historyLimit: 200,
-        backend,
-        config: {},
-        title: "openclaw setup",
-        ...(initialMessage ? { message: initialMessage } : {}),
-      });
-    } finally {
-      await backend.dispose();
+    let disposed = false;
+    let shellInitialMessage = initialMessage;
+    while (!disposed) {
+      try {
+        await runTui({
+          local: true,
+          session: SYSTEM_AGENT_SESSION_KEY,
+          historyLimit: 200,
+          backend,
+          config: {},
+          title: "openclaw setup",
+          ...(shellInitialMessage ? { message: shellInitialMessage } : {}),
+        });
+        shellInitialMessage = undefined;
+      } finally {
+        disposed = await backend.dispose();
+      }
     }
 
     const handoff = backend.consumeHandoff();

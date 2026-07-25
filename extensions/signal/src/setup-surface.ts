@@ -7,7 +7,12 @@ import {
 } from "openclaw/plugin-sdk/setup";
 import { detectBinary } from "openclaw/plugin-sdk/setup-tools";
 import { listSignalAccountIds, resolveSignalAccount } from "./accounts.js";
-import { signalCompletionNote, signalDmPolicy, signalNumberTextInputs } from "./setup-core.js";
+import {
+  signalCompletionNote,
+  signalDmPolicy,
+  signalIntroNote,
+  signalNumberTextInputs,
+} from "./setup-core.js";
 import {
   finalizeSignalInteractiveSetup,
   prepareSignalInteractiveSetup,
@@ -64,13 +69,7 @@ export const signalSetupWizard: ChannelSetupWizard = {
       return params.configured ? 1 : 0;
     },
   },
-  introNote: {
-    title: "Signal",
-    lines: [
-      "Signal uses a real Signal account/device, not a bot token.",
-      "A dedicated Signal number is recommended for bot-like operation.",
-    ],
-  },
+  introNote: signalIntroNote,
   prepare: prepareSignalInteractiveSetup,
   credentials: [],
   textInputs: signalNumberTextInputs,

@@ -1,10 +1,12 @@
 import { spawn } from "node:child_process";
 import { createInterface } from "node:readline";
-import { resolveUserPath } from "openclaw/plugin-sdk/text-utility-runtime";
+import { resolveSignalCliConfigPath } from "./signal-cli-config-path.js";
 
 export type SignalCliLinkResult =
   | { ok: true; associatedAccount?: string }
   | { ok: false; error: string };
+
+export type SignalCliLinkCompletion = Promise<{ ok: boolean }>;
 
 const SIGNAL_LINK_URI_PREFIX = "sgnl://linkdevice?";
 const SIGNAL_LINK_ERROR_OUTPUT_LIMIT = 8_000;
@@ -29,10 +31,13 @@ function spawnSignalCliLink(cliPath: string, args: string[]) {
 export async function linkSignalCliAccount(params: {
   cliPath: string;
   configPath?: string;
-  onLinkUri: (uri: string) => Promise<void>;
+  abortSignal?: AbortSignal;
+  onLinkUri: (uri: string, completion: SignalCliLinkCompletion) => Promise<void>;
 }): Promise<SignalCliLinkResult> {
   const args = [
-    ...(params.configPath?.trim() ? ["--config", resolveUserPath(params.configPath.trim())] : []),
+    ...(params.configPath?.trim()
+      ? ["--config", resolveSignalCliConfigPath(params.configPath)]
+      : []),
     "link",
     "-n",
     "OpenClaw",
@@ -53,13 +58,25 @@ export async function linkSignalCliAccount(params: {
     let linkUriSeen = false;
     let stderr = "";
     let settled = false;
+    let resolveCompletion!: (result: { ok: boolean }) => void;
+    const completion = new Promise<{ ok: boolean }>((complete) => {
+      resolveCompletion = complete;
+    });
     const stdoutLines = createInterface({ input: child.stdout });
+    const abortLink = () => {
+      if (!child.killed) {
+        child.kill("SIGTERM");
+      }
+    };
 
     stdoutLines.on("line", (line) => {
       const trimmed = line.trim();
       if (!linkUriSeen && trimmed.startsWith(SIGNAL_LINK_URI_PREFIX)) {
+        if (params.abortSignal?.aborted) {
+          return;
+        }
         linkUriSeen = true;
-        displayPromise = params.onLinkUri(trimmed).catch((error: unknown) => {
+        displayPromise = params.onLinkUri(trimmed, completion).catch((error: unknown) => {
           displayError = `Could not display the Signal linking QR code: ${errorMessage(error)}`;
           if (!child.killed) {
             child.kill("SIGTERM");
@@ -81,14 +98,25 @@ export async function linkSignalCliAccount(params: {
         return;
       }
       settled = true;
+      params.abortSignal?.removeEventListener("abort", abortLink);
       stdoutLines.close();
       resolve(result);
     };
 
+    if (params.abortSignal?.aborted) {
+      abortLink();
+    } else {
+      params.abortSignal?.addEventListener("abort", abortLink, { once: true });
+    }
+
     child.once("error", (error) => {
+      resolveCompletion({ ok: false });
       settle({ ok: false, error: `Could not start signal-cli: ${errorMessage(error)}` });
     });
     child.once("close", (code, signal) => {
+      // Signal approval is authoritative. Release a still-open QR prompt before
+      // waiting for its callback so successful linking cannot deadlock config commit.
+      resolveCompletion({ ok: code === 0 });
       void displayPromise.then(() => {
         if (displayError) {
           settle({ ok: false, error: displayError });
