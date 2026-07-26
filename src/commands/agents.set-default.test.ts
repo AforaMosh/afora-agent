@@ -1,11 +1,17 @@
 // Agents set-default tests cover atomic config reassignment and no-op/error paths.
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { AgentsSchema } from "../config/zod-schema.agents.js";
 import { baseConfigSnapshot, createTestRuntime } from "./test-runtime-config-helpers.js";
 
+type ReplaceConfigParams = {
+  nextConfig: OpenClawConfig;
+  baseHash?: string;
+};
+
 const configMocks = vi.hoisted(() => ({
   readConfigFileSnapshot: vi.fn(),
-  replaceConfigFile: vi.fn(async () => {}),
+  replaceConfigFile: vi.fn(async (_params: ReplaceConfigParams) => {}),
 }));
 
 vi.mock("../config/config.js", async () => ({
