@@ -6,9 +6,9 @@
 // local mirror; an unchanged server value never reverts local edits, so a
 // failed push degrades to device-local behavior instead of flip-flopping.
 import { asNullableRecord as asRecord } from "@openclaw/normalization-core/record-coerce";
-import type { GatewayBrowserClient } from "../api/gateway.ts";
 import { normalizeSidebarEntries } from "../app-navigation.ts";
 import { isSupportedLocale } from "../i18n/index.ts";
+import { hasCurrentConfigSnapshot, type RuntimeConfigCapability } from "../lib/config/index.ts";
 import {
   loadSettings,
   normalizeChatFollowUpModeOverride,
@@ -188,11 +188,10 @@ const LAST_SEEN_STORAGE_KEY = "openclaw.control.serverPrefs.v1";
 
 let lastSeenScope = "";
 let lastSeenServerPrefsKey: string | null = null;
-// Config hashes our patches replaced. A snapshot still carrying one of these
-// hashes was fetched before the patch landed; applying it would revert the
-// pushed value as if the server had changed it back. CAS guarantees the
-// replaced config had exactly the base hash, so this check is precise.
-const staleConfigHashes = new Set<string>();
+// Only revisions proven to be either the exact replaced CAS base or the
+// gateway-acknowledged, superseded local commit may be suppressed. External
+// snapshots must continue to reconcile normally.
+const staleConfigHashes = new Map<string, "replaced" | "committed">();
 const STALE_CONFIG_HASH_LIMIT = 8;
 let applyingServerPrefs = false;
 
@@ -225,9 +224,13 @@ export function resetServerUiPrefsSync() {
   lastSeenServerPrefsKey = null;
   staleConfigHashes.clear();
   applyingServerPrefs = false;
-  queuedClient = null;
+  queuedRuntimeConfig = null;
+  queuedConnectionEpoch = null;
   queuedPrefs = null;
+  queuedPrefsRequireCurrentSnapshot = false;
+  activePrefsCommit = null;
   pushDraining = false;
+  prefsSyncGeneration += 1;
 }
 
 export function applyServerUiPrefs(
@@ -235,20 +238,102 @@ export function applyServerUiPrefs(
   hooks: {
     scope?: string;
     snapshotHash?: string;
+    runtimeConfig?: RuntimeConfigCapability;
     onApplied: (patch: Partial<UiSettings>) => void;
   },
 ): boolean {
+  if (hooks.runtimeConfig) {
+    const runtimeConfig = hooks.runtimeConfig;
+    adoptPrefsOwner(runtimeConfig);
+    const runtimeSnapshot = runtimeConfig.state.configSnapshot;
+    if (
+      queuedPrefsRequireCurrentSnapshot &&
+      runtimeSnapshot?.hash &&
+      hooks.snapshotHash === runtimeSnapshot.hash &&
+      hasCurrentConfigSnapshot(runtimeConfig) &&
+      isCurrentPrefsOwner(runtimeConfig, prefsSyncGeneration, runtimeConfig.connectionEpoch) &&
+      (configObject === runtimeSnapshot.config || configObject === runtimeSnapshot.sourceConfig)
+    ) {
+      queuedPrefsRequireCurrentSnapshot = false;
+    }
+  }
+  const scope = hooks.scope ?? "";
+  const prefs = extractServerUiPrefs(configObject);
   if (hooks.snapshotHash) {
-    if (staleConfigHashes.has(hooks.snapshotHash)) {
+    const runtimeConfig = hooks.runtimeConfig;
+    const runtimeSnapshot = runtimeConfig?.state.configSnapshot;
+    const pendingCommit = activePrefsCommit;
+    const isAuthoritativeCommitSnapshot = Boolean(
+      pendingCommit &&
+      runtimeConfig &&
+      runtimeSnapshot &&
+      runtimeConfig === pendingCommit.runtimeConfig &&
+      isCurrentPrefsOwner(runtimeConfig, pendingCommit.generation, pendingCommit.connectionEpoch) &&
+      runtimeSnapshot !== pendingCommit.snapshot &&
+      !runtimeConfig.state.configLoading &&
+      hooks.snapshotHash === runtimeSnapshot.hash &&
+      (configObject === runtimeSnapshot.config || configObject === runtimeSnapshot.sourceConfig),
+    );
+    const staleKind = staleConfigHashes.get(hooks.snapshotHash);
+    if (staleKind === "replaced" && !isAuthoritativeCommitSnapshot) {
       return false;
+    }
+    if (staleKind === "committed") {
+      const commit = activePrefsCommit;
+      if (
+        !commit ||
+        (isCurrentPrefsOwner(commit.runtimeConfig, commit.generation, commit.connectionEpoch) &&
+          commit.hash === hooks.snapshotHash &&
+          Object.keys(commit.prefs).every((key) => {
+            const prefKey = key as SyncedPrefKey;
+            const committedValue = commit.prefs[prefKey];
+            return committedValue === null
+              ? !(prefKey in prefs)
+              : prefValuesEqual(prefs[prefKey], committedValue);
+          }))
+      ) {
+        // Observe our real committed server values without applying them over
+        // newer device-local intent. Later foreign revisions must delta from
+        // this acknowledged snapshot, not replay its superseded preferences.
+        storeLastSeenKey(scope, JSON.stringify(prefs));
+        if (commit?.hash === hooks.snapshotHash) {
+          activePrefsCommit = null;
+          // Content hashes can recur when another writer restores the old
+          // bytes. The observed commit is the only safe point to retire its
+          // replaced predecessor before that genuine restoration arrives.
+          staleConfigHashes.clear();
+        } else {
+          staleConfigHashes.delete(hooks.snapshotHash);
+        }
+        return false;
+      }
+    }
+    const commit = activePrefsCommit;
+    if (
+      commit &&
+      isCurrentPrefsOwner(commit.runtimeConfig, commit.generation, commit.connectionEpoch) &&
+      (hooks.snapshotHash !== commit.baseHash || isAuthoritativeCommitSnapshot)
+    ) {
+      // A newer snapshot can arrive before the physically acknowledged
+      // commit. Seed every owned field from that real commit first so a
+      // foreign restoration or removal remains a genuine server delta.
+      const baseline = parseLastSeenPrefs(loadLastSeenKey(scope));
+      for (const prefKey of Object.keys(commit.prefs) as SyncedPrefKey[]) {
+        const committedValue = commit.prefs[prefKey];
+        if (committedValue === null) {
+          delete baseline[prefKey];
+        } else {
+          (baseline as Record<string, unknown>)[prefKey] = committedValue;
+        }
+      }
+      storeLastSeenKey(scope, JSON.stringify(baseline));
+      activePrefsCommit = null;
     }
     // Post-patch state observed: retire the stale marks. Hashes identify
     // content, not age — if the pre-patch hash reappears later, another
     // writer genuinely restored that config and it is authoritative again.
     staleConfigHashes.clear();
   }
-  const scope = hooks.scope ?? "";
-  const prefs = extractServerUiPrefs(configObject);
   const key = JSON.stringify(prefs);
   const lastSeenRaw = loadLastSeenKey(scope);
   if (key === lastSeenRaw) {
@@ -257,12 +342,7 @@ export function applyServerUiPrefs(
   // Apply per field: only keys whose *server* value changed since last seen.
   // Reapplying unchanged fields would revert unpushable local edits on other
   // keys whenever any one server field moves.
-  let lastSeen: ServerUiPrefs;
-  try {
-    lastSeen = lastSeenRaw ? (JSON.parse(lastSeenRaw) as ServerUiPrefs) : {};
-  } catch {
-    lastSeen = {};
-  }
+  const lastSeen = parseLastSeenPrefs(lastSeenRaw);
   const changed: ServerUiPrefs = {};
   for (const prefKey of Object.keys(prefs) as Array<keyof ServerUiPrefs>) {
     if (lastSeenRaw === null || !prefValuesEqual(prefs[prefKey], lastSeen[prefKey])) {
@@ -296,51 +376,134 @@ export function isApplyingServerUiPrefs(): boolean {
   return applyingServerPrefs;
 }
 
-// Pending deltas coalesce into one object and drain serially, so rapid
-// changes cannot race each other's CAS hash and silently drop an update. The
-// queue is bound to one gateway client; switching gateways drops undelivered
-// deltas for the old one (they stay device-local, per the sync contract).
-let queuedClient: GatewayBrowserClient | null = null;
-let queuedPrefs: ServerUiPrefs | null = null;
-let pushDraining = false;
+function parseLastSeenPrefs(value: string | null): ServerUiPrefs {
+  try {
+    return value ? (JSON.parse(value) as ServerUiPrefs) : {};
+  } catch {
+    return {};
+  }
+}
 
-async function drainPrefsQueue(client: GatewayBrowserClient): Promise<void> {
+// Coalesce UI intent only; the runtime capability exclusively owns physical
+// writes, CAS refresh, updater suspension, and connection-epoch fencing.
+let queuedRuntimeConfig: RuntimeConfigCapability | null = null;
+let queuedConnectionEpoch: number | null = null;
+let queuedPrefs: ServerUiPrefs | null = null;
+let queuedPrefsRequireCurrentSnapshot = false;
+let activePrefsCommit: {
+  runtimeConfig: RuntimeConfigCapability;
+  generation: number;
+  connectionEpoch: number;
+  snapshot: RuntimeConfigCapability["state"]["configSnapshot"];
+  baseHash: string;
+  hash: string | null;
+  prefs: ServerUiPrefs;
+} | null = null;
+let pushDraining = false;
+let prefsSyncGeneration = 0;
+
+function rememberStaleConfigHash(hash: string, kind: "replaced" | "committed") {
+  if (kind === "committed" || !staleConfigHashes.has(hash)) {
+    staleConfigHashes.set(hash, kind);
+  }
+  if (staleConfigHashes.size > STALE_CONFIG_HASH_LIMIT) {
+    const oldest = staleConfigHashes.keys().next().value;
+    if (oldest !== undefined) {
+      staleConfigHashes.delete(oldest);
+    }
+  }
+}
+
+function adoptPrefsOwner(runtimeConfig: RuntimeConfigCapability) {
+  const connectionEpoch = runtimeConfig.connectionEpoch;
+  if (queuedRuntimeConfig === runtimeConfig && queuedConnectionEpoch === connectionEpoch) {
+    return;
+  }
+  const previousConnectionSnapshot = queuedRuntimeConfig === runtimeConfig;
+  // Snapshot hashes identify bytes, not a gateway or physical connection.
+  // Retire the old owner's marks before the first new snapshot can collide.
+  staleConfigHashes.clear();
+  queuedRuntimeConfig = runtimeConfig;
+  queuedConnectionEpoch = connectionEpoch;
+  queuedPrefs = null;
+  queuedPrefsRequireCurrentSnapshot = previousConnectionSnapshot;
+  activePrefsCommit = null;
+  pushDraining = false;
+  prefsSyncGeneration += 1;
+}
+
+function isCurrentPrefsOwner(
+  runtimeConfig: RuntimeConfigCapability,
+  generation: number,
+  connectionEpoch: number,
+): boolean {
+  return (
+    queuedRuntimeConfig === runtimeConfig &&
+    queuedConnectionEpoch === connectionEpoch &&
+    prefsSyncGeneration === generation &&
+    runtimeConfig.connectionEpoch === connectionEpoch
+  );
+}
+
+async function drainPrefsQueue(
+  runtimeConfig: RuntimeConfigCapability,
+  generation: number,
+  connectionEpoch: number,
+): Promise<void> {
   while (queuedPrefs) {
-    // The awaits below can outlive a gateway switch; a superseded drain stops
-    // instead of writing one gateway's prefs to another.
-    if (queuedClient !== client) {
+    if (!isCurrentPrefsOwner(runtimeConfig, generation, connectionEpoch)) {
       return;
+    }
+    if (queuedPrefsRequireCurrentSnapshot || !runtimeConfig.state.configSnapshot?.hash) {
+      const previousSnapshot = runtimeConfig.state.configSnapshot;
+      const requireCurrentSnapshot = queuedPrefsRequireCurrentSnapshot;
+      // Reconnects retain their old snapshot. The config owner must first
+      // publish a snapshot from this physical epoch before it supplies a CAS base.
+      await runtimeConfig.ensureLoaded();
+      if (
+        !isCurrentPrefsOwner(runtimeConfig, generation, connectionEpoch) ||
+        !runtimeConfig.state.configSnapshot?.hash ||
+        (requireCurrentSnapshot && runtimeConfig.state.configSnapshot === previousSnapshot)
+      ) {
+        return;
+      }
+      queuedPrefsRequireCurrentSnapshot = false;
     }
     const prefs = queuedPrefs;
     queuedPrefs = null;
-    for (let attempt = 0; attempt < 2; attempt += 1) {
-      const snapshot = (await client.request("config.get", {})) as { hash?: string } | null;
-      const baseHash = snapshot?.hash;
-      if (!baseHash || queuedClient !== client) {
-        return;
-      }
-      try {
-        const replacePaths = prefs.sidebarEntries !== undefined ? ["ui.prefs.sidebarEntries"] : [];
-        await client.request("config.patch", {
+    let physicallyCommitted = false;
+    const didCommit = await runtimeConfig.patch({
+      raw: { ui: { prefs } },
+      ...(prefs.sidebarEntries !== undefined ? { replacePaths: ["ui.prefs.sidebarEntries"] } : {}),
+      note: "control-ui prefs sync",
+      onCommitted: ({ hash, baseHash }) => {
+        if (!isCurrentPrefsOwner(runtimeConfig, generation, connectionEpoch)) {
+          return;
+        }
+        physicallyCommitted = true;
+        rememberStaleConfigHash(baseHash, "replaced");
+        // The ack precedes authoritative config.get publication. Keep its
+        // physical hash and preference baseline until an owned snapshot is
+        // observed, even when the first authoritative reload fails.
+        activePrefsCommit = {
+          runtimeConfig,
+          generation,
+          connectionEpoch,
+          snapshot: runtimeConfig.state.configSnapshot,
           baseHash,
-          raw: JSON.stringify({ ui: { prefs } }),
-          ...(replacePaths.length > 0 ? { replacePaths } : {}),
-          note: "control-ui prefs sync",
-        });
-        staleConfigHashes.add(baseHash);
-        if (staleConfigHashes.size > STALE_CONFIG_HASH_LIMIT) {
-          const oldest = staleConfigHashes.values().next().value;
-          if (oldest !== undefined) {
-            staleConfigHashes.delete(oldest);
-          }
+          hash,
+          prefs,
+        };
+        if (hash) {
+          rememberStaleConfigHash(hash, "committed");
         }
-        break;
-      } catch (error) {
-        if (attempt === 0 && String(error).toLowerCase().includes("hash")) {
-          continue;
-        }
-        return;
-      }
+      },
+    });
+    if (!isCurrentPrefsOwner(runtimeConfig, generation, connectionEpoch)) {
+      return;
+    }
+    if (!didCommit && !physicallyCommitted) {
+      return;
     }
   }
 }
@@ -350,23 +513,30 @@ async function drainPrefsQueue(client: GatewayBrowserClient): Promise<void> {
  * Silent on failure by design: clients without operator.admin (or offline)
  * keep the change device-local.
  */
-export function pushServerUiPrefs(client: GatewayBrowserClient, prefs: ServerUiPrefs): void {
-  if (queuedClient !== client) {
-    // New gateway: abandon the old queue (its drain loop sees the client
-    // change and stops) instead of writing one gateway's prefs to another.
-    queuedClient = client;
-    queuedPrefs = null;
-    pushDraining = false;
+export function pushServerUiPrefs(
+  runtimeConfig: RuntimeConfigCapability,
+  prefs: ServerUiPrefs,
+): void {
+  adoptPrefsOwner(runtimeConfig);
+  const connectionEpoch = runtimeConfig.connectionEpoch;
+  if (
+    activePrefsCommit?.runtimeConfig === runtimeConfig &&
+    activePrefsCommit.generation === prefsSyncGeneration &&
+    activePrefsCommit.connectionEpoch === connectionEpoch &&
+    activePrefsCommit.hash
+  ) {
+    rememberStaleConfigHash(activePrefsCommit.hash, "committed");
   }
   queuedPrefs = { ...queuedPrefs, ...prefs };
   if (pushDraining) {
     return;
   }
   pushDraining = true;
-  void drainPrefsQueue(client)
+  const generation = prefsSyncGeneration;
+  void drainPrefsQueue(runtimeConfig, generation, connectionEpoch)
     .catch(() => undefined)
     .finally(() => {
-      if (queuedClient === client) {
+      if (isCurrentPrefsOwner(runtimeConfig, generation, connectionEpoch)) {
         pushDraining = false;
       }
     });

@@ -4,7 +4,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { GatewayBrowserClient } from "../../api/gateway.ts";
 import type { ConfigSchemaResponse, ConfigSnapshot } from "../../api/types.ts";
 import type { ApplicationGatewayPhase } from "../../app/gateway.ts";
+import { setSelfLearningEnabled } from "../../pages/skill-workshop/self-learning.ts";
 import { createRuntimeConfigCapability, findAgentConfigEntryIndex } from "./index.ts";
+import { buildAddMcpServerPatch, patchMcpServers } from "./mcp-servers.ts";
 
 const CONFIG_FORM_AUTO_SAVE_DEBOUNCE_MS = 800;
 
@@ -128,6 +130,34 @@ function createDeferredSetServerMock(options: { legacyAck?: boolean } = {}) {
 }
 
 describe("createRuntimeConfigCapability", () => {
+  it("reloads the authoritative snapshot when the same gateway client reconnects", async () => {
+    let snapshotCount = 0;
+    const request = vi.fn(async (method: string) => {
+      if (method !== "config.get") {
+        return {};
+      }
+      snapshotCount += 1;
+      return { config: { revision: snapshotCount }, hash: `hash-${snapshotCount}` };
+    });
+    const client = { request } as unknown as GatewayBrowserClient;
+    const { gateway, publish } = createGatewayHarness(client);
+    const runtimeConfig = createRuntimeConfigCapability(gateway);
+
+    expect(runtimeConfig.connectionEpoch).toBe(0);
+    await runtimeConfig.ensureLoaded();
+    expect(runtimeConfig.state.configSnapshot?.hash).toBe("hash-1");
+    publish(false);
+    expect(runtimeConfig.connectionEpoch).toBe(1);
+    publish(true);
+    expect(runtimeConfig.connectionEpoch).toBe(2);
+    expect(runtimeConfig.state.configSnapshot?.hash).toBe("hash-1");
+    await runtimeConfig.ensureLoaded();
+    expect(runtimeConfig.state.configSnapshot?.hash).toBe("hash-2");
+    expect(snapshotCount).toBe(2);
+
+    runtimeConfig.dispose();
+  });
+
   it("preserves a dirty draft and its original base hash across refreshes", async () => {
     let getCount = 0;
     const request = vi.fn(async (method: string) => {
@@ -1509,6 +1539,736 @@ describe("config form auto-save", () => {
     runtimeConfig.dispose();
   });
 
+  it("serializes ten overlapping preference patches against authoritative config hashes", async () => {
+    vi.useFakeTimers();
+    let revision = 1;
+    let persistedConfig = {
+      agents: {
+        list: [
+          { id: "main", default: true },
+          { id: "worker", workspace: "/srv/worker" },
+        ],
+      },
+      ui: { prefs: { themeMode: "light" } },
+      env: { vars: { OPENCLAW_SYNTHETIC_TEST_ONLY: "synthetic-source-value" } },
+    };
+    const attemptedBaseHashes: string[] = [];
+    const request = vi.fn(async (method: string, params?: unknown) => {
+      if (method === "config.get") {
+        const config = structuredClone(persistedConfig);
+        return {
+          config,
+          sourceConfig: structuredClone(config),
+          raw: JSON.stringify(config),
+          hash: `hash-${revision}`,
+          configRevisionHash: `hash-${revision}`,
+          appliedConfigHash: "hash-1",
+          valid: true,
+          issues: [],
+        };
+      }
+      if (method !== "config.patch") {
+        return {};
+      }
+      const submission = params as { baseHash: string; raw: string };
+      attemptedBaseHashes.push(submission.baseHash);
+      if (submission.baseHash !== `hash-${revision}`) {
+        throw new Error("config changed since last load; re-run config.get and retry");
+      }
+      const patch = JSON.parse(submission.raw) as {
+        ui?: { prefs?: { themeMode?: string } };
+      };
+      const themeMode = patch.ui?.prefs?.themeMode;
+      if (themeMode !== "dark" && themeMode !== "light") {
+        throw new Error("missing supported test preference patch");
+      }
+      persistedConfig = {
+        ...persistedConfig,
+        ui: {
+          ...persistedConfig.ui,
+          prefs: { ...persistedConfig.ui.prefs, themeMode },
+        },
+      };
+      revision += 1;
+      return {
+        hash: `hash-${revision}`,
+        config: {
+          ...structuredClone(persistedConfig),
+          env: { vars: { OPENCLAW_SYNTHETIC_TEST_ONLY: "__OPENCLAW_REDACTED__" } },
+        },
+      };
+    });
+    const { runtimeConfig } = createHarness(request as GatewayBrowserClient["request"]);
+    await runtimeConfig.ensureLoaded();
+
+    const writes = Array.from({ length: 10 }, (_, index) =>
+      runtimeConfig.patch({
+        raw: { ui: { prefs: { themeMode: index % 2 === 0 ? "dark" : "light" } } },
+        note: "control-ui prefs sync",
+      }),
+    );
+    await expect(Promise.all(writes)).resolves.toEqual(Array.from({ length: 10 }, () => true));
+    expect(attemptedBaseHashes).toEqual(
+      Array.from({ length: 10 }, (_, index) => `hash-${index + 1}`),
+    );
+    expect(persistedConfig.agents.list).toEqual([
+      { id: "main", default: true },
+      { id: "worker", workspace: "/srv/worker" },
+    ]);
+    expect(persistedConfig.ui.prefs.themeMode).toBe("light");
+    expect(persistedConfig.env.vars.OPENCLAW_SYNTHETIC_TEST_ONLY).toBe("synthetic-source-value");
+    expect(runtimeConfig.state.configSnapshot?.sourceConfig).toEqual(persistedConfig);
+    runtimeConfig.dispose();
+  });
+
+  it("rebases a conflicted patch once without overwriting a foreign config owner", async () => {
+    let revision = 1;
+    let persistedConfig = {
+      agents: { list: [{ id: "main", default: true }, { id: "worker" }] },
+      ui: { prefs: { themeMode: "light", locale: "en" } },
+      env: { vars: { OPENCLAW_SYNTHETIC_TEST_ONLY: "synthetic-source-value" } },
+    };
+    const baseHashes: string[] = [];
+    const commits: Array<{ hash: string | null; baseHash: string }> = [];
+    const request = vi.fn(async (method: string, params?: unknown) => {
+      if (method === "config.get") {
+        const config = structuredClone(persistedConfig);
+        return {
+          config,
+          sourceConfig: structuredClone(config),
+          raw: JSON.stringify(config),
+          hash: `hash-${revision}`,
+          valid: true,
+          issues: [],
+        };
+      }
+      if (method !== "config.patch") {
+        return {};
+      }
+      const submission = params as { baseHash: string; raw: string };
+      baseHashes.push(submission.baseHash);
+      if (baseHashes.length === 1) {
+        persistedConfig = {
+          ...persistedConfig,
+          agents: { list: [...persistedConfig.agents.list, { id: "foreign" }] },
+          ui: { prefs: { ...persistedConfig.ui.prefs, locale: "fr" } },
+        };
+        revision += 1;
+      }
+      if (submission.baseHash !== `hash-${revision}`) {
+        throw new Error("config changed since last load; re-run config.get and retry");
+      }
+      const fragment = JSON.parse(submission.raw) as { ui: { prefs: { themeMode: string } } };
+      persistedConfig = {
+        ...persistedConfig,
+        ui: { prefs: { ...persistedConfig.ui.prefs, ...fragment.ui.prefs } },
+      };
+      revision += 1;
+      return { hash: `hash-${revision}`, config: { env: "__OPENCLAW_REDACTED__" } };
+    });
+    const { runtimeConfig } = createHarness(request as GatewayBrowserClient["request"]);
+    await runtimeConfig.ensureLoaded();
+
+    await expect(
+      runtimeConfig.patch({
+        raw: { ui: { prefs: { themeMode: "dark" } } },
+        note: "recover a foreign configuration CAS conflict",
+        onCommitted: (commit) => commits.push(commit),
+      }),
+    ).resolves.toBe(true);
+
+    expect(baseHashes).toEqual(["hash-1", "hash-2"]);
+    expect(commits).toEqual([{ hash: "hash-3", baseHash: "hash-2" }]);
+    expect(persistedConfig.ui.prefs).toEqual({ themeMode: "dark", locale: "fr" });
+    expect(persistedConfig.agents.list).toContainEqual({ id: "foreign" });
+    expect(runtimeConfig.state.configSnapshot?.sourceConfig).toEqual(persistedConfig);
+    expect(persistedConfig.env.vars.OPENCLAW_SYNTHETIC_TEST_ONLY).toBe("synthetic-source-value");
+    runtimeConfig.dispose();
+  });
+
+  it("rebuilds an MCP snapshot mutation against the foreign owner after a CAS conflict", async () => {
+    let revision = 1;
+    let persistedConfig = {
+      agents: { list: [{ id: "main", default: true }, { id: "worker" }] },
+      mcp: { servers: {} as Record<string, { url: string }> },
+      env: { vars: { OPENCLAW_SYNTHETIC_TEST_ONLY: "synthetic-source-value" } },
+    };
+    const baseHashes: string[] = [];
+    const observedServerNames: string[][] = [];
+    const request = vi.fn(async (method: string, params?: unknown) => {
+      if (method === "config.get") {
+        const config = structuredClone(persistedConfig);
+        return {
+          config,
+          sourceConfig: structuredClone(config),
+          raw: JSON.stringify(config),
+          hash: `hash-${revision}`,
+          valid: true,
+          issues: [],
+        };
+      }
+      if (method !== "config.patch") {
+        return {};
+      }
+      const submission = params as { baseHash: string };
+      baseHashes.push(submission.baseHash);
+      persistedConfig = {
+        ...persistedConfig,
+        mcp: { servers: { alpha: { url: "https://foreign-owner.example/alpha" } } },
+      };
+      revision += 1;
+      throw new Error("config changed since last load; re-run config.get and retry");
+    });
+    const { runtimeConfig } = createHarness(request as GatewayBrowserClient["request"]);
+    await runtimeConfig.ensureLoaded();
+
+    const result = await patchMcpServers(runtimeConfig, {
+      buildPatch: (servers) => {
+        observedServerNames.push(Object.keys(servers));
+        return buildAddMcpServerPatch(servers, "alpha", {
+          url: "https://local-owner.example/alpha",
+        });
+      },
+      note: "preserve the concurrently installed MCP owner",
+    });
+
+    expect(result).toMatchObject({ ok: false });
+    if (!result.ok) {
+      expect(result.error).toContain("alpha");
+    }
+    expect(observedServerNames).toEqual([[], ["alpha"]]);
+    expect(baseHashes).toEqual(["hash-1"]);
+    expect(runtimeConfig.state.configSnapshot?.sourceConfig).toEqual(persistedConfig);
+    expect(persistedConfig.mcp.servers.alpha?.url).toBe("https://foreign-owner.example/alpha");
+    expect(persistedConfig.env.vars.OPENCLAW_SYNTHETIC_TEST_ONLY).toBe("synthetic-source-value");
+    runtimeConfig.dispose();
+  });
+
+  it.each([
+    {
+      failure: "repeated CAS conflict",
+      error: "config changed since last load; re-run config.get and retry",
+      attempts: 2,
+    },
+    { failure: "permission failure", error: "config.patch forbidden", attempts: 1 },
+  ])("bounds $failure retries to actual physical CAS attempts", async ({ error, attempts }) => {
+    let revision = 1;
+    const baseHashes: string[] = [];
+    const request = vi.fn(async (method: string, params?: unknown) => {
+      if (method === "config.get") {
+        const config = { agents: { list: [{ id: "main", default: true }] } };
+        return {
+          config,
+          sourceConfig: structuredClone(config),
+          raw: JSON.stringify(config),
+          hash: `hash-${revision}`,
+          valid: true,
+          issues: [],
+        };
+      }
+      if (method === "config.patch") {
+        baseHashes.push((params as { baseHash: string }).baseHash);
+        revision += 1;
+        throw new Error(error);
+      }
+      return {};
+    });
+    const onCommitted = vi.fn();
+    const { runtimeConfig } = createHarness(request as GatewayBrowserClient["request"]);
+    await runtimeConfig.ensureLoaded();
+
+    await expect(
+      runtimeConfig.patch({ raw: { count: 1 }, note: "bounded conflict recovery", onCommitted }),
+    ).resolves.toBe(false);
+
+    expect(baseHashes).toEqual(Array.from({ length: attempts }, (_, index) => `hash-${index + 1}`));
+    expect(runtimeConfig.state.lastError).toMatch(
+      attempts === 2 ? /configuration changed again/i : /config\.patch forbidden/i,
+    );
+    expect(onCommitted).not.toHaveBeenCalled();
+    runtimeConfig.dispose();
+  });
+
+  it("never stacks a self-learning fallback onto the canonical one-conflict retry", async () => {
+    let revision = 1;
+    const baseHashes: string[] = [];
+    const request = vi.fn(async (method: string, params?: unknown) => {
+      if (method === "config.get") {
+        const config = {
+          agents: { list: [{ id: "main", default: true }] },
+          skills: { workshop: { autonomous: { enabled: false } } },
+        };
+        return {
+          config,
+          sourceConfig: structuredClone(config),
+          raw: JSON.stringify(config),
+          hash: `hash-${revision}`,
+          valid: true,
+          issues: [],
+        };
+      }
+      if (method === "config.patch") {
+        baseHashes.push((params as { baseHash: string }).baseHash);
+        revision += 1;
+        throw new Error("config changed since last load; re-run config.get and retry");
+      }
+      return {};
+    });
+    const { runtimeConfig } = createHarness(request as GatewayBrowserClient["request"]);
+    await runtimeConfig.ensureLoaded();
+
+    await expect(setSelfLearningEnabled(runtimeConfig, true)).resolves.toMatch(
+      /configuration changed again/i,
+    );
+
+    expect(baseHashes).toEqual(["hash-1", "hash-2"]);
+    runtimeConfig.dispose();
+  });
+
+  it("never retries a conflicted patch after its authoritative refresh fails", async () => {
+    let getCalls = 0;
+    let patchCalls = 0;
+    const request = vi.fn(async (method: string) => {
+      if (method === "config.get") {
+        getCalls += 1;
+        if (getCalls > 1) {
+          throw new Error("authoritative config unavailable");
+        }
+        return {
+          config: { count: 1 },
+          sourceConfig: { count: 1 },
+          raw: '{"count":1}',
+          hash: "hash-1",
+          valid: true,
+          issues: [],
+        };
+      }
+      if (method === "config.patch") {
+        patchCalls += 1;
+        throw new Error("config changed since last load; re-run config.get and retry");
+      }
+      return {};
+    });
+    const { runtimeConfig } = createHarness(request as GatewayBrowserClient["request"]);
+    await runtimeConfig.ensureLoaded();
+
+    await expect(
+      runtimeConfig.patch({ raw: { count: 2 }, note: "fail-closed refresh" }),
+    ).resolves.toBe(false);
+
+    expect(patchCalls).toBe(1);
+    expect(getCalls).toBe(2);
+    expect(runtimeConfig.state.lastError).toContain("authoritative config unavailable");
+    runtimeConfig.dispose();
+  });
+
+  it("never replays a CAS conflict into a reconnected gateway epoch", async () => {
+    let getCalls = 0;
+    let patchCalls = 0;
+    const recoverySnapshot = deferred<Record<string, unknown>>();
+    const request = vi.fn(async (method: string) => {
+      if (method === "config.get") {
+        getCalls += 1;
+        if (getCalls === 2) {
+          return recoverySnapshot.promise;
+        }
+        return {
+          config: { count: 1 },
+          sourceConfig: { count: 1 },
+          raw: '{"count":1}',
+          hash: `hash-${getCalls}`,
+          valid: true,
+          issues: [],
+        };
+      }
+      if (method === "config.patch") {
+        patchCalls += 1;
+        throw new Error("config changed since last load; re-run config.get and retry");
+      }
+      return {};
+    });
+    const { runtimeConfig, publish } = createHarness(request as GatewayBrowserClient["request"]);
+    await runtimeConfig.ensureLoaded();
+    const patch = runtimeConfig.patch({
+      raw: { count: 2 },
+      note: "reject stale gateway ownership",
+    });
+    await vi.waitFor(() => expect(getCalls).toBe(2));
+    publish(false);
+    publish(true);
+    recoverySnapshot.resolve({
+      config: { count: 9 },
+      sourceConfig: { count: 9 },
+      raw: '{"count":9}',
+      hash: "hash-2",
+      valid: true,
+      issues: [],
+    });
+
+    await expect(patch).resolves.toBe(false);
+    expect(patchCalls).toBe(1);
+    runtimeConfig.dispose();
+  });
+
+  it("never retries a CAS conflict when updates are suspended during its refresh", async () => {
+    let getCalls = 0;
+    let patchCalls = 0;
+    const recoverySnapshot = deferred<Record<string, unknown>>();
+    const request = vi.fn(async (method: string) => {
+      if (method === "config.get") {
+        getCalls += 1;
+        if (getCalls === 2) {
+          return recoverySnapshot.promise;
+        }
+        return {
+          config: { count: 1 },
+          sourceConfig: { count: 1 },
+          raw: '{"count":1}',
+          hash: "hash-1",
+          valid: true,
+          issues: [],
+        };
+      }
+      if (method === "config.patch") {
+        patchCalls += 1;
+        throw new Error("config changed since last load; re-run config.get and retry");
+      }
+      return {};
+    });
+    const { runtimeConfig } = createHarness(request as GatewayBrowserClient["request"]);
+    await runtimeConfig.ensureLoaded();
+    const patch = runtimeConfig.patch({ raw: { count: 2 }, note: "honor update suspension" });
+    await vi.waitFor(() => expect(getCalls).toBe(2));
+    runtimeConfig.setWritesSuspended(true);
+    recoverySnapshot.resolve({
+      config: { count: 9 },
+      sourceConfig: { count: 9 },
+      raw: '{"count":9}',
+      hash: "hash-2",
+      valid: true,
+      issues: [],
+    });
+
+    await expect(patch).resolves.toBe(false);
+    expect(patchCalls).toBe(1);
+    runtimeConfig.dispose();
+  });
+
+  it("reports a physically committed config patch when its acknowledgement omits the hash", async () => {
+    let revision = 1;
+    let count = 1;
+    const committed: Array<{ hash: string | null; baseHash: string }> = [];
+    const request = vi.fn(async (method: string, params?: unknown) => {
+      if (method === "config.get") {
+        const config = {
+          count,
+          agents: { list: [{ id: "main", default: true }, { id: "worker" }] },
+        };
+        return {
+          config,
+          sourceConfig: structuredClone(config),
+          raw: JSON.stringify(config),
+          hash: `hash-${revision}`,
+          valid: true,
+          issues: [],
+        };
+      }
+      if (method !== "config.patch") {
+        return {};
+      }
+      const submission = params as { raw: string; baseHash: string };
+      if (submission.baseHash !== `hash-${revision}`) {
+        throw new Error("config changed since last load; re-run config.get and retry");
+      }
+      count = (JSON.parse(submission.raw) as { count: number }).count;
+      revision += 1;
+      return { config: { agents: "__OPENCLAW_REDACTED__" } };
+    });
+    const { runtimeConfig } = createHarness(request as GatewayBrowserClient["request"]);
+    await runtimeConfig.ensureLoaded();
+
+    await expect(
+      runtimeConfig.patch({
+        raw: { count: 2 },
+        note: "physically committed hashless patch",
+        onCommitted: (commit) => committed.push(commit),
+      }),
+    ).resolves.toBe(true);
+
+    expect(committed).toEqual([{ hash: null, baseHash: "hash-1" }]);
+    expect(runtimeConfig.state.configSnapshot?.sourceConfig).toEqual({
+      count: 2,
+      agents: { list: [{ id: "main", default: true }, { id: "worker" }] },
+    });
+    runtimeConfig.dispose();
+  });
+
+  it("does not report a no-op config patch as a physical commit", async () => {
+    let getCalls = 0;
+    const onCommitted = vi.fn();
+    const request = vi.fn(async (method: string) => {
+      if (method === "config.get") {
+        getCalls += 1;
+        return { config: { count: 1 }, hash: "hash-1", valid: true, issues: [] };
+      }
+      return { noop: true, config: { count: 1 } };
+    });
+    const { runtimeConfig } = createHarness(request as GatewayBrowserClient["request"]);
+    await runtimeConfig.ensureLoaded();
+
+    await expect(
+      runtimeConfig.patch({ raw: { count: 1 }, note: "unchanged patch", onCommitted }),
+    ).resolves.toBe(true);
+
+    expect(onCommitted).not.toHaveBeenCalled();
+    expect(getCalls).toBe(1);
+    expect(runtimeConfig.state.configNeedsApply).toBe(false);
+    expect(runtimeConfig.state.configSnapshot?.hash).toBe("hash-1");
+    runtimeConfig.dispose();
+  });
+
+  it("reports the physical CAS base after an earlier queued config write", async () => {
+    let revision = 1;
+    let count = 1;
+    const firstPatch = deferred<void>();
+    const submittedBaseHashes: string[] = [];
+    const committed: Array<{ hash: string | null; baseHash: string }> = [];
+    const request = vi.fn(async (method: string, params?: unknown) => {
+      if (method === "config.get") {
+        const config = { count };
+        return {
+          config,
+          sourceConfig: structuredClone(config),
+          raw: JSON.stringify(config),
+          hash: `hash-${revision}`,
+          valid: true,
+          issues: [],
+        };
+      }
+      if (method !== "config.patch") {
+        return {};
+      }
+      const submission = params as { baseHash: string; raw: string };
+      submittedBaseHashes.push(submission.baseHash);
+      if (submission.baseHash !== `hash-${revision}`) {
+        throw new Error("config changed since last load; re-run config.get and retry");
+      }
+      if (submittedBaseHashes.length === 1) {
+        await firstPatch.promise;
+      }
+      count = (JSON.parse(submission.raw) as { count: number }).count;
+      revision += 1;
+      return { hash: `hash-${revision}` };
+    });
+    const { runtimeConfig } = createHarness(request as GatewayBrowserClient["request"]);
+    await runtimeConfig.ensureLoaded();
+
+    const firstWrite = runtimeConfig.patch({ raw: { count: 2 }, note: "first queued write" });
+    const secondWrite = runtimeConfig.patch({
+      raw: { count: 3 },
+      note: "second queued write",
+      onCommitted: (commit) => committed.push(commit),
+    });
+    expect(submittedBaseHashes).toEqual(["hash-1"]);
+    firstPatch.resolve();
+    await expect(Promise.all([firstWrite, secondWrite])).resolves.toEqual([true, true]);
+    expect(submittedBaseHashes).toEqual(["hash-1", "hash-2"]);
+    expect(committed).toEqual([{ hash: "hash-3", baseHash: "hash-2" }]);
+    runtimeConfig.dispose();
+  });
+
+  it("refreshes a committed revision before releasing later queued CAS writes", async () => {
+    let revision = 1;
+    let count = 1;
+    let getCalls = 0;
+    const submittedBaseHashes: string[] = [];
+    const request = vi.fn(async (method: string, params?: unknown) => {
+      if (method === "config.get") {
+        getCalls += 1;
+        if (getCalls === 2) {
+          throw new Error("authoritative snapshot temporarily unavailable");
+        }
+        const config = {
+          count,
+          agents: { list: [{ id: "main", default: true }, { id: "worker" }] },
+        };
+        return {
+          config,
+          sourceConfig: structuredClone(config),
+          raw: JSON.stringify(config),
+          hash: `hash-${revision}`,
+          valid: true,
+          issues: [],
+        };
+      }
+      if (method !== "config.patch") {
+        return {};
+      }
+      const submission = params as { baseHash: string; raw: string };
+      submittedBaseHashes.push(submission.baseHash);
+      if (submission.baseHash !== `hash-${revision}`) {
+        throw new Error("config changed since last load; re-run config.get and retry");
+      }
+      count = (JSON.parse(submission.raw) as { count: number }).count;
+      revision += 1;
+      return { hash: `hash-${revision}`, config: { count, agents: "__OPENCLAW_REDACTED__" } };
+    });
+    const { runtimeConfig } = createHarness(request as GatewayBrowserClient["request"]);
+    await runtimeConfig.ensureLoaded();
+
+    const firstWrite = runtimeConfig.patch({ raw: { count: 2 }, note: "first physical write" });
+    const secondWrite = runtimeConfig.patch({ raw: { count: 3 }, note: "second physical write" });
+
+    await expect(Promise.all([firstWrite, secondWrite])).resolves.toEqual([true, true]);
+    expect(submittedBaseHashes).toEqual(["hash-1", "hash-2"]);
+    expect(getCalls).toBe(4);
+    expect(runtimeConfig.state.configSnapshot?.sourceConfig).toEqual({
+      count: 3,
+      agents: { list: [{ id: "main", default: true }, { id: "worker" }] },
+    });
+    runtimeConfig.dispose();
+  });
+
+  it("builds a queued MCP mutation only after refreshing its committed predecessor", async () => {
+    let revision = 1;
+    let getCalls = 0;
+    const firstPatch = deferred<void>();
+    const submittedBaseHashes: string[] = [];
+    const observedServerNames: string[][] = [];
+    let persistedConfig = {
+      agents: { list: [{ id: "main", default: true }, { id: "worker" }] },
+      mcp: { servers: {} as Record<string, { url: string }> },
+      env: { vars: { OPENCLAW_SYNTHETIC_TEST_ONLY: "synthetic-source-value" } },
+    };
+    const request = vi.fn(async (method: string, params?: unknown) => {
+      if (method === "config.get") {
+        getCalls += 1;
+        if (getCalls === 2) {
+          throw new Error("authoritative MCP snapshot temporarily unavailable");
+        }
+        const config = structuredClone(persistedConfig);
+        return {
+          config,
+          sourceConfig: structuredClone(config),
+          raw: JSON.stringify(config),
+          hash: `hash-${revision}`,
+          valid: true,
+          issues: [],
+        };
+      }
+      if (method !== "config.patch") {
+        return {};
+      }
+      const submission = params as { baseHash: string; raw: string };
+      submittedBaseHashes.push(submission.baseHash);
+      if (submission.baseHash !== `hash-${revision}`) {
+        throw new Error("config changed since last load; re-run config.get and retry");
+      }
+      if (submittedBaseHashes.length === 1) {
+        await firstPatch.promise;
+      }
+      const fragment = JSON.parse(submission.raw) as {
+        mcp: { servers: Record<string, { url: string }> };
+      };
+      persistedConfig = {
+        ...persistedConfig,
+        mcp: {
+          servers: { ...persistedConfig.mcp.servers, ...fragment.mcp.servers },
+        },
+      };
+      revision += 1;
+      return {
+        hash: `hash-${revision}`,
+        config: { mcp: "__OPENCLAW_REDACTED__" },
+      };
+    });
+    const { runtimeConfig } = createHarness(request as GatewayBrowserClient["request"]);
+    await runtimeConfig.ensureLoaded();
+
+    const firstWrite = runtimeConfig.patch({
+      raw: { mcp: { servers: { alpha: { url: "https://owner.example/alpha" } } } },
+      note: "install the authoritative MCP owner",
+    });
+    expect(submittedBaseHashes).toEqual(["hash-1"]);
+    const duplicateAdd = patchMcpServers(runtimeConfig, {
+      buildPatch: (servers) => {
+        observedServerNames.push(Object.keys(servers));
+        return buildAddMcpServerPatch(servers, "alpha", {
+          url: "https://other-owner.example/alpha",
+        });
+      },
+      note: "reject an already installed MCP owner",
+    });
+    await Promise.resolve();
+    firstPatch.resolve();
+
+    const [firstResult, duplicateResult] = await Promise.all([firstWrite, duplicateAdd]);
+    expect(firstResult).toBe(true);
+    expect(duplicateResult).toMatchObject({ ok: false });
+    if (!duplicateResult.ok) {
+      expect(duplicateResult.error).toContain("alpha");
+    }
+    expect(observedServerNames).toEqual([["alpha"]]);
+    expect(submittedBaseHashes).toEqual(["hash-1"]);
+    expect(runtimeConfig.state.configSnapshot?.sourceConfig).toEqual(persistedConfig);
+    expect(persistedConfig.mcp.servers.alpha?.url).toBe("https://owner.example/alpha");
+    expect(persistedConfig.agents.list).toEqual([{ id: "main", default: true }, { id: "worker" }]);
+    expect(persistedConfig.env.vars.OPENCLAW_SYNTHETIC_TEST_ONLY).toBe("synthetic-source-value");
+    runtimeConfig.dispose();
+  });
+
+  it("reports a committed self-learning toggle as successful when its first reload fails", async () => {
+    let revision = 1;
+    let getCalls = 0;
+    let patchCalls = 0;
+    let persistedConfig = {
+      agents: { list: [{ id: "main", default: true }, { id: "worker" }] },
+      skills: { workshop: { autonomous: { enabled: false } } },
+    };
+    const request = vi.fn(async (method: string, params?: unknown) => {
+      if (method === "config.get") {
+        getCalls += 1;
+        if (getCalls === 2) {
+          throw new Error("authoritative self-learning snapshot temporarily unavailable");
+        }
+        const config = structuredClone(persistedConfig);
+        return {
+          config,
+          sourceConfig: structuredClone(config),
+          raw: JSON.stringify(config),
+          hash: `hash-${revision}`,
+          valid: true,
+          issues: [],
+        };
+      }
+      if (method !== "config.patch") {
+        return {};
+      }
+      patchCalls += 1;
+      const submission = params as { raw: string; baseHash: string };
+      if (submission.baseHash !== `hash-${revision}`) {
+        throw new Error("config changed since last load; re-run config.get and retry");
+      }
+      const fragment = JSON.parse(submission.raw) as {
+        skills: { workshop: { autonomous: { enabled: boolean } } };
+      };
+      persistedConfig = { ...persistedConfig, skills: fragment.skills };
+      revision += 1;
+      return { hash: `hash-${revision}`, config: { agents: "__OPENCLAW_REDACTED__" } };
+    });
+    const { runtimeConfig } = createHarness(request as GatewayBrowserClient["request"]);
+    await runtimeConfig.ensureLoaded();
+
+    await expect(setSelfLearningEnabled(runtimeConfig, true)).resolves.toBeNull();
+
+    expect(patchCalls).toBe(1);
+    expect(getCalls).toBe(3);
+    expect(runtimeConfig.state.configSnapshot?.sourceConfig).toEqual(persistedConfig);
+    expect(persistedConfig.agents.list).toEqual([{ id: "main", default: true }, { id: "worker" }]);
+    expect(persistedConfig.skills.workshop.autonomous.enabled).toBe(true);
+    runtimeConfig.dispose();
+  });
+
   it("refreshes applied revision truth after config.patch", async () => {
     vi.useFakeTimers();
     let getCount = 0;
@@ -1534,7 +2294,8 @@ describe("config form auto-save", () => {
     await expect(runtimeConfig.patch({ raw: { count: 2 }, note: "test patch" })).resolves.toBe(
       true,
     );
-    expect(runtimeConfig.state.configNeedsApply).toBe(true);
+    expect(runtimeConfig.state.configNeedsApply).toBe(false);
+    expect(runtimeConfig.state.configSnapshot?.configRevisionHash).toBe("revision-2");
 
     await vi.advanceTimersByTimeAsync(250);
     expect(runtimeConfig.state.configNeedsApply).toBe(false);

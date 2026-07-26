@@ -74,6 +74,8 @@ type ConfigState = {
 const autoAllowlistedPluginIdsByState = new WeakMap<ConfigState, Set<string>>();
 const requestVersionsByState = new WeakMap<ConfigState, { config: number; schema: number }>();
 const connectionEpochsByState = new WeakMap<object, number>();
+const loadedConfigConnectionEpochsByState = new WeakMap<ConfigState, number>();
+const committedConfigRefreshRequiredByState = new WeakSet<ConfigState>();
 
 type RuntimeConfigGatewaySnapshot = {
   client: GatewayBrowserClient | null;
@@ -88,6 +90,8 @@ type RuntimeConfigGateway = {
 
 export type RuntimeConfigCapability = {
   readonly state: ConfigState;
+  /** Monotonic physical Gateway owner, including same-client reconnects. */
+  readonly connectionEpoch: number;
   ensureLoaded: () => Promise<void>;
   ensureSchemaLoaded: () => Promise<void>;
   refresh: (options?: LoadConfigOptions) => Promise<void>;
@@ -114,6 +118,17 @@ export type RuntimeConfigCapability = {
   dispose: () => void;
 };
 
+/** A retained snapshot is authoritative only in the epoch that loaded it. */
+export function hasCurrentConfigSnapshot(runtimeConfig: RuntimeConfigCapability): boolean {
+  const state = runtimeConfig.state;
+  return (
+    state.connected &&
+    !state.configLoading &&
+    state.configSnapshot !== null &&
+    loadedConfigConnectionEpochsByState.get(state) === runtimeConfig.connectionEpoch
+  );
+}
+
 type LoadConfigOptions = {
   discardPendingChanges?: boolean;
 };
@@ -123,6 +138,8 @@ type ConfigPatchOptions = {
   note: string;
   /** Array paths the caller intentionally shrinks; required by the gateway's destructive-array guard. */
   replacePaths?: string[];
+  /** Observe each real write; a persisted Gateway hash is additive, not required. */
+  onCommitted?: (commit: { hash: string | null; baseHash: string }) => void;
 };
 
 type ConfigPatchBuildResult = { options: ConfigPatchOptions } | { error: string };
@@ -135,18 +152,6 @@ type ConfigGatewayClient = {
 type ConfigConnectionState = {
   client: ConfigGatewayClient | null;
   connected: boolean;
-};
-
-type ConfigGatewayState = Pick<
-  ConfigState,
-  | "connected"
-  | "applySessionKey"
-  | "configNeedsApply"
-  | "configSnapshot"
-  | "lastError"
-  | "chatError"
-> & {
-  client: ConfigGatewayClient | null;
 };
 
 function createInitialConfigState(snapshot?: Partial<RuntimeConfigGatewaySnapshot>): ConfigState {
@@ -243,6 +248,7 @@ async function loadConfig(
       return false;
     }
     applyConfigSnapshot(state, res, options);
+    committedConfigRefreshRequiredByState.delete(state);
     return true;
   } catch (err) {
     if (isCurrentRequest(state, "config", version, client, connectionEpoch)) {
@@ -331,6 +337,7 @@ function applyConfigSnapshot(
   }
   const draftBaseHash = state.configDraftBaseHash ?? state.configSnapshot?.hash ?? null;
   state.configSnapshot = snapshot;
+  loadedConfigConnectionEpochsByState.set(state, currentConfigConnectionEpoch(state));
   const editableConfig = resolveEditableSnapshotConfig(snapshot);
   const rawAvailable =
     typeof snapshot.raw === "string" || Boolean(editableConfig) || Boolean(state.configForm);
@@ -565,6 +572,7 @@ function adoptConfigSetAck(state: ConfigState, submittedRaw: string, ackHash: st
     issues: [],
     ...(parsed ? { config: parsed, sourceConfig: parsed } : {}),
   };
+  loadedConfigConnectionEpochsByState.set(state, currentConfigConnectionEpoch(state));
   state.configValid = true;
   state.configIssues = [];
   setConfigRawOriginal(state, submittedRaw);
@@ -841,10 +849,7 @@ async function applyConfig(state: ConfigState): Promise<boolean> {
   });
 }
 
-async function patchConfig(
-  state: ConfigGatewayState,
-  options: ConfigPatchOptions,
-): Promise<boolean> {
+async function patchConfig(state: ConfigState, options: ConfigPatchOptions): Promise<boolean> {
   const client = state.client;
   if (!client || !state.connected) {
     return false;
@@ -858,7 +863,7 @@ async function patchConfig(
   state.lastError = null;
   state.chatError = null;
   try {
-    const ack = await client.request<{ noop?: boolean }>("config.patch", {
+    const ack = await client.request<{ hash?: string; noop?: boolean }>("config.patch", {
       baseHash,
       raw: typeof options.raw === "string" ? options.raw : JSON.stringify(options.raw),
       sessionKey: state.applySessionKey,
@@ -868,10 +873,16 @@ async function patchConfig(
     if (!isCurrentConfigConnection(state, client, connectionEpoch)) {
       return false;
     }
-    if (ack.noop !== true) {
-      state.configNeedsApply = true;
+    if (ack.noop === true) {
+      return true;
     }
-    return true;
+    state.configNeedsApply = true;
+    committedConfigRefreshRequiredByState.add(state);
+    options.onCommitted?.({ hash: readAckHash(ack), baseHash });
+    // The physical write already succeeded. Reload full source opportunistically;
+    // on failure the retained barrier refreshes before the next FIFO builder.
+    await loadConfig(state);
+    return isCurrentConfigConnection(state, client, connectionEpoch);
   } catch (err) {
     if (isCurrentConfigConnection(state, client, connectionEpoch)) {
       state.lastError = String(err);
@@ -1415,11 +1426,21 @@ export function createRuntimeConfigCapability(
     if (writesSuspended) {
       return Promise.resolve(false);
     }
+    const queuedClient = state.client;
+    const queuedConnectionEpoch = currentConfigConnectionEpoch(state);
+    if (!queuedClient || !isCurrentConfigConnection(state, queuedClient, queuedConnectionEpoch)) {
+      return Promise.resolve(false);
+    }
     cancelScheduledAutoSave();
     // Start synchronously when no explicit op is queued so the submit binds
     // to the CURRENT connection epoch; only genuine queuing pays the hop.
     const start = () =>
       run(async () => {
+        // Capture the owner at enqueue, not dispatch: one capability and even
+        // one client object can survive a reconnect to another gateway epoch.
+        if (!isCurrentConfigConnection(state, queuedClient, queuedConnectionEpoch)) {
+          return false;
+        }
         // Drain before the explicit op — otherwise an apply could race a
         // pending config.set on the same base hash into a CAS failure.
         if (autoSaveInFlight ?? manualSubmitInFlight) {
@@ -1427,7 +1448,11 @@ export function createRuntimeConfigCapability(
         }
         // The updater may have started while we drained; suspension must be a
         // real barrier or an apply could restart the gateway mid-update.
-        if (writesSuspended || disposed) {
+        if (
+          writesSuspended ||
+          disposed ||
+          !isCurrentConfigConnection(state, queuedClient, queuedConnectionEpoch)
+        ) {
           return false;
         }
         manualFlightInfo = null;
@@ -1463,7 +1488,10 @@ export function createRuntimeConfigCapability(
     return queued;
   };
   const ensureLoaded = async () => {
-    if (!state.configSnapshot) {
+    if (
+      !state.configSnapshot ||
+      loadedConfigConnectionEpochsByState.get(state) !== currentConfigConnectionEpoch(state)
+    ) {
       await loadOnce("config", () => loadConfig(state));
     }
     reconcileAppliedRefresh();
@@ -1480,6 +1508,9 @@ export function createRuntimeConfigCapability(
     if (clientChanged || connectionChanged) {
       configLoad = null;
       schemaLoad = null;
+      // Explicit writes belong to their physical connection. A dead prior
+      // flight must not keep the reconnected owner's FIFO waiting forever.
+      explicitOpQueue = null;
       // A reconnect may reuse the client object. Keep generations monotonic so work
       // from the previous connection cannot commit into the new connection epoch.
       invalidateConfigConnection(state);
@@ -1598,12 +1629,68 @@ export function createRuntimeConfigCapability(
       // A drained autosave can start its own refresh while this patch waits.
       cancelAppliedRefresh();
       try {
-        const resolved = resolveOptions();
-        if ("error" in resolved) {
-          state.lastError = resolved.error;
+        if (committedConfigRefreshRequiredByState.has(state)) {
+          const client = state.client;
+          const connectionEpoch = currentConfigConnectionEpoch(state);
+          // Snapshot builders make existence/ownership decisions. Recover
+          // complete authoritative config before building their CAS payload.
+          if (
+            !client ||
+            !(await loadConfig(state)) ||
+            !isCurrentConfigConnection(state, client, connectionEpoch)
+          ) {
+            return false;
+          }
+        }
+        const client = state.client;
+        const connectionEpoch = currentConfigConnectionEpoch(state);
+        if (
+          !client ||
+          writesSuspended ||
+          disposed ||
+          !isCurrentConfigConnection(state, client, connectionEpoch)
+        ) {
           return false;
         }
-        return await patchConfig(state, resolved.options);
+
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+          const resolved = resolveOptions();
+          if ("error" in resolved) {
+            state.lastError = resolved.error;
+            return false;
+          }
+
+          const patched = await patchConfig(state, resolved.options);
+          if (patched) {
+            return true;
+          }
+          if (
+            writesSuspended ||
+            disposed ||
+            !isCurrentConfigConnection(state, client, connectionEpoch) ||
+            !isConfigBaseHashConflictError(state.lastError)
+          ) {
+            return false;
+          }
+          if (attempt > 0) {
+            // Mark exhausted recovery distinctly so older scalar-owner
+            // fallbacks cannot start a second independent retry chain.
+            state.lastError = "Configuration changed again during recovery; refresh and retry.";
+            return false;
+          }
+
+          // A foreign write invalidates both the CAS hash and any snapshot
+          // builder. Rebuild once from the full current owner's source.
+          if (
+            !(await loadConfig(state)) ||
+            writesSuspended ||
+            disposed ||
+            !isCurrentConfigConnection(state, client, connectionEpoch)
+          ) {
+            return false;
+          }
+        }
+        return false;
       } finally {
         reconcileAppliedRefresh();
       }
@@ -1615,6 +1702,9 @@ export function createRuntimeConfigCapability(
   return {
     get state() {
       return state;
+    },
+    get connectionEpoch() {
+      return currentConfigConnectionEpoch(state);
     },
     ensureLoaded,
     ensureSchemaLoaded,

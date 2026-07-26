@@ -54,6 +54,7 @@ import { i18n, isSupportedLocale, t } from "../i18n/index.ts";
 import { normalizeAgentLabel } from "../lib/agents/display.ts";
 import type { BoardFace } from "../lib/board/settings.ts";
 import { copyToClipboard } from "../lib/clipboard.ts";
+import { hasCurrentConfigSnapshot } from "../lib/config/index.ts";
 import { isGatewayMethodAdvertised } from "../lib/gateway-methods.ts";
 import { createIdleImport } from "../lib/idle-import.ts";
 import { isWorkboardEnabledInConfigSnapshot } from "../lib/plugin-activation.ts";
@@ -523,6 +524,7 @@ class OpenClawShell extends OpenClawLightDomElement {
   private sessionKeyClient: GatewayBrowserClient | null = null;
   private runtimeConfigClient: GatewayBrowserClient | null = null;
   private runtimeConfigSource: ApplicationContext["runtimeConfig"] | null = null;
+  private runtimeConfigConnectionEpoch: number | null = null;
   private sidebarWorkboardSnapshot = EMPTY_SIDEBAR_WORKBOARD_SNAPSHOT;
   private sidebarWorkboardRuntime: SidebarWorkboardRuntime | null = null;
   private sidebarWorkboardHost: ApplicationContext["workboard"] | null = null;
@@ -655,18 +657,21 @@ class OpenClawShell extends OpenClawLightDomElement {
       )
       .watch(
         () => this.context?.runtimeConfig,
-        (runtimeConfig, notify) =>
-          runtimeConfig.subscribe(() => {
-            this.reconcileServerUiPrefs(runtimeConfig);
-            this.syncSidebarWorkboard();
-            notify();
-          }),
+        (runtimeConfig, notify) => runtimeConfig.subscribe(notify),
         (runtimeConfig) => {
-          const snapshot = this.context?.gateway.snapshot;
+          const context = this.context;
+          if (context?.runtimeConfig !== runtimeConfig) {
+            return;
+          }
+          const snapshot = context.gateway.snapshot;
           if (snapshot) {
             this.ensureRuntimeConfig(snapshot, runtimeConfig);
           }
-          this.reconcileServerUiPrefs(runtimeConfig);
+          this.reconcileServerUiPrefs(
+            runtimeConfig,
+            runtimeConfig.state.configSnapshot,
+            runtimeConfig.connectionEpoch,
+          );
           this.syncSidebarWorkboard();
         },
       );
@@ -677,15 +682,26 @@ class OpenClawShell extends OpenClawLightDomElement {
    * apply server-side deltas to the browser mirror whenever a config snapshot
    * lands (connect, settings pages, reloads).
    */
-  private reconcileServerUiPrefs(runtimeConfig: ApplicationContext["runtimeConfig"]) {
-    const snapshot = runtimeConfig.state.configSnapshot;
+  private reconcileServerUiPrefs(
+    runtimeConfig: ApplicationContext["runtimeConfig"],
+    snapshot = runtimeConfig.state.configSnapshot,
+    connectionEpoch = runtimeConfig.connectionEpoch,
+  ) {
     const context = this.context;
-    if (!snapshot?.config || !context) {
+    if (
+      !snapshot?.config ||
+      !context ||
+      (context.runtimeConfig &&
+        (context.runtimeConfig !== runtimeConfig || !hasCurrentConfigSnapshot(runtimeConfig))) ||
+      runtimeConfig.connectionEpoch !== connectionEpoch ||
+      runtimeConfig.state.configSnapshot !== snapshot
+    ) {
       return;
     }
     applyServerUiPrefs(snapshot.config, {
       scope: context.gateway.connection.gatewayUrl,
       snapshotHash: snapshot.hash ?? undefined,
+      runtimeConfig,
       onApplied: (patch) => {
         if (patch.sidebarEntries !== undefined) {
           context.navigation.update({ sidebarEntries: patch.sidebarEntries });
@@ -730,8 +746,8 @@ class OpenClawShell extends OpenClawLightDomElement {
       }
       const prefs = changedServerUiPrefs(previous, next);
       const snapshot = this.context?.gateway.snapshot;
-      if (prefs && snapshot?.phase === "connected" && snapshot.client) {
-        pushServerUiPrefs(snapshot.client, prefs);
+      if (prefs && snapshot?.phase === "connected" && snapshot.client && this.context) {
+        pushServerUiPrefs(this.context.runtimeConfig, prefs);
       }
     });
   }
@@ -784,6 +800,7 @@ class OpenClawShell extends OpenClawLightDomElement {
     this.sessionKeyClient = null;
     this.runtimeConfigClient = null;
     this.runtimeConfigSource = null;
+    this.runtimeConfigConnectionEpoch = null;
     this.disposeSidebarWorkboard();
     if (this.agentRosterRefreshTimer !== null) {
       globalThis.clearTimeout(this.agentRosterRefreshTimer);
@@ -1524,16 +1541,19 @@ class OpenClawShell extends OpenClawLightDomElement {
     // load eagerly instead of waiting for a page that happens to fetch it.
     if (snapshot.phase !== "connected" || !snapshot.client || !runtimeConfig) {
       this.runtimeConfigClient = null;
+      this.runtimeConfigConnectionEpoch = null;
       return;
     }
     if (
       this.runtimeConfigClient === snapshot.client &&
-      this.runtimeConfigSource === runtimeConfig
+      this.runtimeConfigSource === runtimeConfig &&
+      this.runtimeConfigConnectionEpoch === runtimeConfig.connectionEpoch
     ) {
       return;
     }
     this.runtimeConfigClient = snapshot.client;
     this.runtimeConfigSource = runtimeConfig;
+    this.runtimeConfigConnectionEpoch = runtimeConfig.connectionEpoch;
     void runtimeConfig.ensureLoaded();
   }
 
