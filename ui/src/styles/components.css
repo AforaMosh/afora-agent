@@ -1431,6 +1431,19 @@ openclaw-session-owner-chip {
   color: var(--ok);
 }
 
+/* Lazy route/panel pending — a centered panel state like .lazy-view-error.
+   Without an explicit box it inherits the host content axis; `.content--chat`
+   makes the outlet a row flex box, which collapsed this card to a full-height
+   text-width strip sitting under the fixed .shell-chrome-controls buttons. */
+.lazy-view-state {
+  margin: auto;
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  width: min(440px, 100%);
+  padding: 48px 24px;
+}
+
 /* Lazy route load failure — a centered panel state, not a stretched callout. */
 .lazy-view-error {
   margin: auto;
