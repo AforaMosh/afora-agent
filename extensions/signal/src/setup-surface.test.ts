@@ -20,6 +20,9 @@ import type { SignalTransportProbeResult } from "./setup-transport.js";
 import type { SignalCliLinkResult } from "./signal-cli-link.js";
 
 type SpawnSignalDaemonParams = Parameters<typeof import("./daemon.js").spawnSignalDaemon>[0];
+type ProbeSignalTransportParams = Parameters<
+  typeof import("./setup-transport.js").probeSignalTransport
+>[0];
 
 const mocks = vi.hoisted(() => ({
   detectBinary: vi.fn(async (_cliPath: string) => false),
@@ -75,7 +78,10 @@ const mocks = vi.hoisted(() => ({
     }),
   ),
   probeSignalTransport: vi.fn(
-    async (): Promise<SignalTransportProbeResult> => ({ ok: true, status: 200 }),
+    async (_params: ProbeSignalTransportParams): Promise<SignalTransportProbeResult> => ({
+      ok: true,
+      status: 200,
+    }),
   ),
 }));
 
@@ -771,7 +777,7 @@ describe("signalSetupWizard", () => {
     mocks.spawnSignalDaemon.mockReturnValueOnce({
       pid: 1234,
       stop,
-      exited: Promise.resolve({ code: 1, signal: null }),
+      exited: Promise.resolve({ source: "process", code: 1, signal: null }),
       isExited: vi.fn().mockReturnValueOnce(false).mockReturnValue(true),
     });
     mocks.probeSignalTransport.mockImplementation(async ({ transport }) => ({
