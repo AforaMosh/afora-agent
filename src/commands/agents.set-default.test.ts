@@ -63,13 +63,17 @@ describe("agents set-default command", () => {
       throw new Error("expected config write");
     }
     const [{ nextConfig, baseHash }] = writeCall;
+    const nextAgents = nextConfig.agents;
+    if (!nextAgents) {
+      throw new Error("expected agents config");
+    }
     expect(baseHash).toBe("base-hash");
-    expect(nextConfig.agents.entries).toEqual({
+    expect(nextAgents.entries).toEqual({
       main: { name: "Main" },
       work: { name: "Work", default: true },
       ops: { name: "Ops" },
     });
-    expect(AgentsSchema.safeParse(nextConfig.agents).success).toBe(true);
+    expect(AgentsSchema.safeParse(nextAgents).success).toBe(true);
     expect(readJsonLog()).toEqual({ agentId: "work", changed: true });
   });
 
