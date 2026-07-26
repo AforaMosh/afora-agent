@@ -9,6 +9,11 @@
 import { createHash, randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { resolveIntegerOption } from "@openclaw/normalization-core/number-coercion";
+import {
+  buildAgentRunTerminalOutcome,
+  mergeAgentRunTerminalOutcome,
+  type AgentRunTerminalOutcome,
+} from "../agents/agent-run-terminal-outcome.js";
 import { isClientToolNameConflictError } from "../agents/agent-tool-definition-adapter.js";
 import type { ImageContent } from "../agents/command/types.js";
 import type { ClientToolDefinition } from "../agents/embedded-agent-runner/run/params.js";
@@ -926,20 +931,45 @@ export async function handleOpenResponsesHttpRequest(
   let unsubscribe = () => {};
   let stopWatchingDisconnect = () => {};
   let finalUsage: Usage | undefined;
-  let finalizeStatus: ResponseResource["status"] | null = null;
-  let finalizeRequested: { status: ResponseResource["status"]; text: string } | null = null;
+  type StreamFinalization =
+    | { status: "completed"; text: string; outcome?: AgentRunTerminalOutcome }
+    | { status: "failed"; outcome: AgentRunTerminalOutcome };
+  let finalizeRequested: StreamFinalization | null = null;
+  const readFinalization = (): StreamFinalization | null => finalizeRequested;
 
-  const maybeFinalize = () => {
+  const finalizeFailedResponse = (response: ResponseResource) => {
     if (closed) {
       return;
     }
-    if (!finalizeRequested) {
-      return;
-    }
-    if (!finalUsage) {
+    closed = true;
+    stopWatchingDisconnect();
+    unsubscribe();
+    writeSseEvent(res, { type: "response.failed", response });
+    writeDone(res);
+    res.end();
+  };
+
+  const maybeFinalize = () => {
+    if (closed || !finalizeRequested || !finalUsage) {
       return;
     }
     const usage = finalUsage;
+
+    // The agent can preserve and resolve an errored result; its lifecycle,
+    // rather than the resolved Promise, owns the terminal SSE event.
+    if (finalizeRequested.status === "failed") {
+      const failedResponse = createResponseResource({
+        id: responseId,
+        model,
+        status: "failed",
+        output: [],
+        error: { code: "api_error", message: "internal error" },
+        usage,
+      });
+      rememberResponseSession();
+      finalizeFailedResponse(failedResponse);
+      return;
+    }
 
     closed = true;
     stopWatchingDisconnect();
@@ -964,7 +994,7 @@ export async function handleOpenResponsesHttpRequest(
     const completedItem = createAssistantOutputItem({
       id: outputItemId,
       text: finalizeRequested.text,
-      phase: finalizeRequested.status === "completed" ? "final_answer" : "commentary",
+      phase: "final_answer",
       status: "completed",
     });
 
@@ -977,7 +1007,7 @@ export async function handleOpenResponsesHttpRequest(
     const finalResponse = createResponseResource({
       id: responseId,
       model,
-      status: finalizeRequested.status,
+      status: "completed",
       output: [completedItem],
       usage,
     });
@@ -988,26 +1018,15 @@ export async function handleOpenResponsesHttpRequest(
     res.end();
   };
 
-  const requestFinalize = (status: ResponseResource["status"], text: string) => {
-    if (finalizeRequested) {
-      return;
-    }
-    finalizeStatus = status;
-    finalizeRequested = { status, text };
+  const requestFinalize = (
+    terminal:
+      | { status: "completed"; text: string; outcome?: AgentRunTerminalOutcome }
+      | { status: "failed"; outcome: AgentRunTerminalOutcome },
+  ) => {
+    // Keep attempt errors provisional until the run settles so a successful
+    // fallback lifecycle end can replace them without leaking provider errors.
+    finalizeRequested = terminal;
     maybeFinalize();
-  };
-
-  const finalizeFailedResponse = (response: ResponseResource) => {
-    if (closed) {
-      return;
-    }
-    // Failure is terminal even when an earlier lifecycle event is waiting for usage.
-    closed = true;
-    stopWatchingDisconnect();
-    unsubscribe();
-    writeSseEvent(res, { type: "response.failed", response });
-    writeDone(res);
-    res.end();
   };
 
   // Send initial events
@@ -1114,10 +1133,29 @@ export async function handleOpenResponsesHttpRequest(
     if (evt.stream === "lifecycle") {
       const phase = evt.data?.phase;
       if (phase === "end" || phase === "error") {
-        const finalText =
-          accumulatedText || bufferedReplaceableAssistantContent || "No response from OpenClaw.";
-        const finalStatus = phase === "error" ? "failed" : "completed";
-        requestFinalize(finalStatus, finalText);
+        const incomingOutcome = buildAgentRunTerminalOutcome({
+          status: phase === "error" ? "error" : evt.data?.aborted === true ? "timeout" : "ok",
+          error: evt.data?.error,
+          stopReason: evt.data?.stopReason,
+          livenessState: evt.data?.livenessState,
+          timeoutPhase: evt.data?.timeoutPhase,
+          providerStarted: evt.data?.providerStarted,
+          startedAt: evt.data?.startedAt,
+          endedAt: evt.data?.endedAt,
+        });
+        const outcome = mergeAgentRunTerminalOutcome(finalizeRequested?.outcome, incomingOutcome);
+        if (outcome.reason !== "completed") {
+          requestFinalize({ status: "failed", outcome });
+        } else {
+          requestFinalize({
+            status: "completed",
+            text:
+              accumulatedText ||
+              bufferedReplaceableAssistantContent ||
+              "No response from OpenClaw.",
+            outcome,
+          });
+        }
       }
     }
   });
@@ -1150,16 +1188,59 @@ export async function handleOpenResponsesHttpRequest(
 
       finalUsage = extractUsageFromResult(result);
 
+      const resultAny = result as
+        | {
+            payloads?: Array<{ isError?: boolean; text?: string }>;
+            meta?: {
+              aborted?: boolean;
+              error?: unknown;
+              fallbackExhaustedFailure?: boolean;
+              replayInvalid?: boolean;
+              stopReason?: unknown;
+              livenessState?: unknown;
+              timeoutPhase?: unknown;
+              providerStarted?: unknown;
+              startedAt?: unknown;
+              endedAt?: unknown;
+            };
+          }
+        | null
+        | undefined;
+      const meta = resultAny?.meta;
+      const resultFailed =
+        meta?.error != null ||
+        meta?.fallbackExhaustedFailure === true ||
+        meta?.replayInvalid === true ||
+        resultAny?.payloads?.some((resultPayload) => resultPayload.isError === true) === true;
+      // Result metadata remains authoritative after missing error events or
+      // an ordinary lifecycle end that followed a preserved failed attempt.
+      // Finalize failure before preserved error text leaks into output deltas.
+      const outcome = mergeAgentRunTerminalOutcome(
+        readFinalization()?.outcome,
+        buildAgentRunTerminalOutcome({
+          status: meta?.aborted === true ? "timeout" : resultFailed ? "error" : "ok",
+          error: meta?.error,
+          stopReason: meta?.stopReason,
+          livenessState: meta?.livenessState,
+          timeoutPhase: meta?.timeoutPhase,
+          providerStarted: meta?.providerStarted,
+          startedAt: meta?.startedAt,
+          endedAt: meta?.endedAt,
+        }),
+      );
+      if (outcome.reason !== "completed") {
+        requestFinalize({ status: "failed", outcome });
+        return;
+      }
+
       // Check for pending client tool calls BEFORE maybeFinalize() because the
       // lifecycle:end event may already have requested finalization.
-      const resultAny = result as { payloads?: Array<{ text?: string }>; meta?: unknown };
-      const resultPayloadText = Array.isArray(resultAny.payloads)
+      const resultPayloadText = Array.isArray(resultAny?.payloads)
         ? resultAny.payloads
             .map((p) => (typeof p.text === "string" ? p.text : ""))
             .filter(Boolean)
             .join("\n\n")
         : "";
-      const meta = resultAny.meta;
       const { stopReason, pendingToolCalls } = resolveStopReasonAndPendingToolCalls(meta);
 
       // Reject an unsatisfied `required`/pinned `tool_choice` before any
@@ -1181,13 +1262,8 @@ export async function handleOpenResponsesHttpRequest(
           },
           usage: finalUsage ?? createEmptyUsage(),
         });
-        closed = true;
-        stopWatchingDisconnect();
-        unsubscribe();
         rememberResponseSession();
-        writeSseEvent(res, { type: "response.failed", response: failed });
-        writeDone(res);
-        res.end();
+        finalizeFailedResponse(failed);
         return;
       }
 
@@ -1300,8 +1376,9 @@ export async function handleOpenResponsesHttpRequest(
 
         accumulatedText = content;
         sawAssistantDelta = true;
-        if (finalizeStatus !== null) {
-          finalizeRequested = { status: finalizeStatus, text: content };
+        const finalization = readFinalization();
+        if (finalization?.status === "completed") {
+          finalizeRequested = { ...finalization, text: content };
         }
 
         writeSseEvent(res, {
