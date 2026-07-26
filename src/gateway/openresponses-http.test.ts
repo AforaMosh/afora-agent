@@ -242,6 +242,36 @@ const STREAM_FAILURE_CASES = [
   },
 ] as const;
 
+const PRESERVED_STREAM_FAILURE_CASES = [
+  {
+    name: "an exhausted fallback result",
+    text: "Terminal tool summary",
+    lifecycle: { fallbackExhaustedFailure: true },
+    error: {
+      kind: "incomplete_turn",
+      message: "raw exhausted provider detail should stay private",
+      fallbackSafe: true,
+      terminalPresentation: true,
+    },
+  },
+  {
+    name: "a non-replayable error result",
+    text: "Command may have changed state",
+    lifecycle: { replayInvalid: true },
+    error: {
+      kind: "incomplete_turn",
+      message: "raw non-replayable provider detail should stay private",
+      fallbackSafe: false,
+    },
+  },
+] as const;
+
+const PRESERVED_STREAM_LIFECYCLE_CASES = [
+  { label: "after an error lifecycle", emitError: true, emitEnd: false },
+  { label: "without an error lifecycle", emitError: false, emitEnd: false },
+  { label: "after a superseded error lifecycle", emitError: true, emitEnd: true },
+] as const;
+
 function buildUrlInputMessage(params: {
   kind: "input_file" | "input_image";
   url: string;
@@ -1132,6 +1162,118 @@ describe("OpenResponses HTTP API (e2e)", () => {
       await vi.waitFor(() => expect(getActiveGatewayRootWorkCount()).toBe(idleRootCount));
     },
   );
+
+  it.each(
+    PRESERVED_STREAM_FAILURE_CASES.flatMap((failure) =>
+      PRESERVED_STREAM_LIFECYCLE_CASES.map((lifecycleCase) => ({
+        name: failure.name,
+        text: failure.text,
+        lifecycle: failure.lifecycle,
+        error: failure.error,
+        lifecycleLabel: lifecycleCase.label,
+        emitError: lifecycleCase.emitError,
+        emitEnd: lifecycleCase.emitEnd,
+      })),
+    ),
+  )(
+    "fails the response stream when $name resolves $lifecycleLabel",
+    async ({ text, lifecycle, error, emitError, emitEnd }) => {
+      const idleRootCount = getActiveGatewayRootWorkCount();
+      agentCommand.mockClear();
+      agentCommand.mockImplementationOnce((async (opts: unknown) => {
+        const runId = (opts as { runId?: string }).runId;
+        if (!runId) {
+          throw new Error("expected a streaming response run ID");
+        }
+        if (emitError) {
+          emitAgentEvent({
+            runId,
+            stream: "lifecycle",
+            data: { phase: "error", error: text, ...lifecycle },
+          });
+        }
+        if (emitEnd) {
+          // A later successful lifecycle event cannot sanitize an error result.
+          emitAgentEvent({ runId, stream: "lifecycle", data: { phase: "end" } });
+        }
+        return {
+          payloads: [{ text, isError: true }],
+          meta: {
+            stopReason: "end_turn",
+            ...lifecycle,
+            error,
+            agentMeta: { usage: { input: 7, output: 3, total: 10 } },
+          },
+        };
+      }) as never);
+
+      const res = await postResponses(
+        enabledPort,
+        { stream: true, model: "openclaw", input: "hi" },
+        undefined,
+        AbortSignal.timeout(5_000),
+      );
+      expect(res.status).toBe(200);
+
+      const body = await res.text();
+      const events = parseSseEvents(body);
+      expect(events.filter((event) => event.event === "response.failed")).toHaveLength(1);
+      expect(events.filter((event) => event.event === "response.completed")).toHaveLength(0);
+      expect(events.filter((event) => event.data === "[DONE]")).toHaveLength(1);
+      expect(events.at(-1)?.data).toBe("[DONE]");
+
+      const failedResponse = (
+        parseSseData(findSseEvent(events, "response.failed")) as {
+          response?: {
+            status?: string;
+            error?: { code?: string; message?: string };
+            usage?: { input_tokens: number; output_tokens: number; total_tokens: number };
+          };
+        }
+      ).response;
+      expect(failedResponse?.status).toBe("failed");
+      expect(failedResponse?.error).toEqual({ code: "api_error", message: "internal error" });
+      expect(failedResponse?.usage).toEqual({
+        input_tokens: 7,
+        output_tokens: 3,
+        total_tokens: 10,
+      });
+      expect(body).not.toContain(error.message);
+      expect(body).not.toContain(text);
+      expect(agentCommand).toHaveBeenCalledTimes(1);
+      await vi.waitFor(() => expect(getActiveGatewayRootWorkCount()).toBe(idleRootCount));
+    },
+  );
+
+  it("completes a response when a failed attempt recovers through model fallback", async () => {
+    agentCommand.mockClear();
+    agentCommand.mockImplementationOnce((async (opts: unknown) => {
+      const runId = (opts as { runId?: string }).runId;
+      if (!runId) {
+        throw new Error("expected a streaming response run ID");
+      }
+      emitAgentEvent({
+        runId,
+        stream: "lifecycle",
+        data: { phase: "error", error: "raw primary provider failure" },
+      });
+      emitAgentEvent({ runId, stream: "lifecycle", data: { phase: "end" } });
+      return { payloads: [{ text: "fallback recovered" }] };
+    }) as never);
+
+    const res = await postResponses(enabledPort, {
+      stream: true,
+      model: "openclaw",
+      input: "hi",
+    });
+    const body = await res.text();
+    const events = parseSseEvents(body);
+    expect(events.filter((event) => event.event === "response.completed")).toHaveLength(1);
+    expect(events.filter((event) => event.event === "response.failed")).toHaveLength(0);
+    expect(events.at(-1)?.data).toBe("[DONE]");
+    expect(body).toContain("fallback recovered");
+    expect(body).not.toContain("raw primary provider failure");
+  });
 
   it("preserves declared owner identity for streaming and non-streaming private callers", async () => {
     const port = enabledPort;
