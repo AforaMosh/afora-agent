@@ -58,7 +58,11 @@ describe("agents set-default command", () => {
     await agentsSetDefaultCommand({ id: "work", json: true }, runtime);
 
     expect(configMocks.replaceConfigFile).toHaveBeenCalledOnce();
-    const [{ nextConfig, baseHash }] = configMocks.replaceConfigFile.mock.calls[0] ?? [];
+    const writeCall = configMocks.replaceConfigFile.mock.calls[0];
+    if (!writeCall) {
+      throw new Error("expected config write");
+    }
+    const [{ nextConfig, baseHash }] = writeCall;
     expect(baseHash).toBe("base-hash");
     expect(nextConfig.agents.entries).toEqual({
       main: { name: "Main" },
