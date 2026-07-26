@@ -184,4 +184,4 @@ Full setup, configuration, access controls, and troubleshooting:
 
 - Plugin id: `buzz`
 - Package: `@openclaw/buzz`
-- Minimum OpenClaw host: `2026.7.2`
+- Minimum OpenClaw host: `2026.7.2-beta.3`
