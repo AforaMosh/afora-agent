@@ -22,7 +22,7 @@ describe("onboarding authored config persistence", () => {
     resetConfigRuntimeState();
   });
 
-  it("retains env references and includes through the real snapshot writer", async () => {
+  it("rejects onboarding writes through a root include without exposing resolved refs", async () => {
     await withTempHome(async (home) => {
       const configDir = path.join(home, ".openclaw");
       const configPath = path.join(configDir, "openclaw.json");
@@ -30,13 +30,11 @@ describe("onboarding authored config persistence", () => {
       const includeRaw = JSON.stringify({ channels: { telegram: { enabled: true } } });
       await fs.mkdir(configDir, { recursive: true });
       await fs.writeFile(includePath, includeRaw);
-      await fs.writeFile(
-        configPath,
-        `{
+      const rootRaw = `{
           $include: "./channels.json",
           gateway: { auth: { mode: "token", token: "\${OPENCLAW_TOKEN}" } }
-        }`,
-      );
+        }`;
+      await fs.writeFile(configPath, rootRaw);
       setTestEnvValue("OPENCLAW_TOKEN", "plaintext-secret");
       resetConfigRuntimeState();
 
@@ -50,9 +48,12 @@ describe("onboarding authored config persistence", () => {
         workspace: path.join(home, "workspace"),
         baseConfig: snapshot.config,
       });
-      await replaceConfigFile({ nextConfig: result.config, afterWrite: { mode: "auto" } });
+      await expect(
+        replaceConfigFile({ nextConfig: result.config, afterWrite: { mode: "auto" } }),
+      ).rejects.toThrow(`Config write cannot update $include-owned config at <root>`);
 
       const persistedRaw = await fs.readFile(configPath, "utf8");
+      expect(persistedRaw).toBe(rootRaw);
       expect(persistedRaw).toContain("${OPENCLAW_TOKEN}");
       expect(persistedRaw).not.toContain("plaintext-secret");
       expect(persistedRaw).toContain("./channels.json");

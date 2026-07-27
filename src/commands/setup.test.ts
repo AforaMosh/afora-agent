@@ -5,7 +5,7 @@ import { withTempHome } from "openclaw/plugin-sdk/test-env";
 import { describe, expect, it, vi } from "vitest";
 import { resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
 import { createConfigIO } from "../config/io.js";
-import { replaceConfigFile } from "../config/mutate.js";
+import { replaceConfigFileWithIntent } from "../config/mutate.js";
 import type { OpenClawConfig } from "../config/types.js";
 import { setupCommand } from "./setup.js";
 
@@ -36,10 +36,12 @@ function createSetupDeps(home: string) {
     ),
     mkdir: vi.fn(async () => {}),
     resolveSessionTranscriptsDir: vi.fn(() => path.join(home, ".openclaw", "sessions")),
-    replaceConfigFile: vi.fn(async ({ nextConfig }: Parameters<typeof replaceConfigFile>[0]) => {
-      await fs.mkdir(path.dirname(configPath), { recursive: true });
-      await fs.writeFile(configPath, JSON.stringify(nextConfig, null, 2));
-    }),
+    replaceConfigFile: vi.fn(
+      async ({ nextConfig }: Parameters<typeof replaceConfigFileWithIntent>[0]) => {
+        await fs.mkdir(path.dirname(configPath), { recursive: true });
+        await fs.writeFile(configPath, JSON.stringify(nextConfig, null, 2));
+      },
+    ),
   };
 }
 
@@ -427,7 +429,7 @@ describe("setupCommand", () => {
       );
       deps.replaceConfigFile.mockImplementationOnce(async (params) => {
         await fs.writeFile(configPath, externalRaw, "utf-8");
-        await replaceConfigFile(params);
+        await replaceConfigFileWithIntent(params);
       });
 
       await expect(setupCommand(undefined, runtime, deps)).rejects.toThrow(

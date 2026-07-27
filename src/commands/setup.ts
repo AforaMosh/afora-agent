@@ -12,11 +12,9 @@ import {
   toAgentEntriesRecord,
 } from "../agents/agent-scope-config.js";
 import { formatCliCommand } from "../cli/command-format.js";
-import {
-  configIncludeOwnsAgentRoster,
-  hasResolvedRosterBeforeMigrations,
-} from "../config/agent-roster-provenance.js";
 import type { ConfigWriteOptions, ReadConfigFileSnapshotForWriteResult } from "../config/io.js";
+import { configIncludeOwnsAgentRoster } from "../config/io.write-includes.js";
+import type { ConfigWriteIntent } from "../config/io.write-plan.js";
 import { migratePersistedImplicitMainRoster } from "../config/legacy.js";
 import type { OptionalBootstrapFileName } from "../config/types.agent-defaults.js";
 import type { ConfigFileSnapshot, OpenClawConfig } from "../config/types.js";
@@ -32,6 +30,7 @@ type ConfigIO = {
 
 type ReplaceConfigFile = (params: {
   nextConfig: OpenClawConfig;
+  intent: ConfigWriteIntent;
   snapshot: ConfigFileSnapshot;
   afterWrite: { mode: "auto" };
   writeOptions: ConfigWriteOptions;
@@ -110,8 +109,8 @@ async function ensureDefaultAgentWorkspace(
 }
 
 async function writeDefaultConfigFile(params: Parameters<ReplaceConfigFile>[0]): Promise<void> {
-  const { replaceConfigFile } = await loadConfigIOModule();
-  await replaceConfigFile(params);
+  const { replaceConfigFileWithIntent } = await loadConfigIOModule();
+  await replaceConfigFileWithIntent(params);
 }
 
 async function formatDefaultConfigPath(configPath: string): Promise<string> {
@@ -157,9 +156,11 @@ export async function setupCommand(
   }
 
   const resolvedConfig = snapshot.config;
+  const includeOwnsRoster = configIncludeOwnsAgentRoster(snapshot);
   const shouldPersistRoster =
     !snapshot.exists ||
-    (!hasResolvedRosterBeforeMigrations(snapshot) && !configIncludeOwnsAgentRoster(snapshot));
+    (listAgentEntries(snapshot.sourceConfigBeforeMigrations ?? {}).length === 0 &&
+      !includeOwnsRoster);
   const cfg = shouldPersistRoster
     ? (migratePersistedImplicitMainRoster(snapshot.sourceConfig).config as OpenClawConfig)
     : snapshot.sourceConfig;
@@ -176,14 +177,9 @@ export async function setupCommand(
   const shouldWriteWorkspace =
     !snapshot.exists || (desiredWorkspace !== undefined && configuredWorkspace !== workspace);
   const shouldWriteGatewayMode = resolvedConfig.gateway?.mode === undefined;
-  const writeInheritedWorkspaceOverride =
-    snapshot.exists &&
-    shouldWriteWorkspace &&
-    !defaultEntryWorkspace &&
-    configIncludeOwnsAgentRoster(snapshot);
 
-  // Keep the candidate runtime-shaped. replaceConfigFile persists only its
-  // diff against snapshot.parsed, never resolved include/env values wholesale.
+  // Setup computes a full candidate for validation, then persists only the
+  // source operations this command owns.
   let next: OpenClawConfig = snapshot.exists ? resolvedConfig : cfg;
   if (shouldPersistRoster) {
     const { list: _legacyList, ...agents } = next.agents ?? {};
@@ -229,25 +225,32 @@ export async function setupCommand(
     // Preserve all existing config fields and touch only workspace/gateway mode
     // defaults that this command owns.
     const replaceConfig = deps.replaceConfigFile ?? writeDefaultConfigFile;
+    const operations = [
+      ...(snapshot.exists && shouldPersistRoster
+        ? [{ kind: "set" as const, path: ["agents", "entries"], value: next.agents?.entries }]
+        : []),
+      ...(shouldWriteWorkspace
+        ? [
+            {
+              kind: "set" as const,
+              path: ["agents", "defaults", "workspace"],
+              value: workspace,
+            },
+          ]
+        : []),
+      ...(shouldWriteGatewayMode
+        ? [{ kind: "set" as const, path: ["gateway", "mode"], value: "local" }]
+        : []),
+    ];
     await replaceConfig({
       nextConfig: next,
+      intent: snapshot.exists
+        ? { kind: "mutate", operations }
+        : { kind: "replace", config: next, allowAgentRosterRemovals: true },
       snapshot,
       afterWrite: { mode: "auto" },
       writeOptions: {
         ...prepared.writeOptions,
-        ...(snapshot.exists && shouldPersistRoster
-          ? {
-              explicitSetPaths: [["agents", "entries"]],
-              explicitSetValueSource: cfg,
-            }
-          : {}),
-        ...(writeInheritedWorkspaceOverride
-          ? {
-              allowIncludeAncestorExplicitSetPaths: true,
-              explicitSetPaths: [["agents", "defaults", "workspace"]],
-              explicitSetValueSource: { agents: { defaults: { workspace } } },
-            }
-          : {}),
       },
     });
     if (!snapshot.exists) {

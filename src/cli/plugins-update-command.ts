@@ -2,6 +2,10 @@
 import { isDeepStrictEqual } from "node:util";
 import { theme } from "../../packages/terminal-core/src/theme.js";
 import {
+  applyConfigOperations,
+  createConfigMutationOperations,
+} from "../config/config-path-mutation.js";
+import {
   assertConfigWriteAllowedInCurrentMode,
   getRuntimeConfig,
   readConfigFileSnapshotForWrite,
@@ -12,8 +16,6 @@ import {
   formatInvalidConfigDetails,
 } from "../config/io.invalid-config.js";
 import type { ConfigWriteOptions } from "../config/io.js";
-import { createMergePatch } from "../config/merge-patch.js";
-import { applyMergePatch } from "../config/merge-patch.js";
 import { ConfigMutationConflictError } from "../config/mutate.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
@@ -109,8 +111,10 @@ function projectUpdaterResultOntoSourceConfig(params: {
   sourceBase: OpenClawConfig;
   updatedConfig: OpenClawConfig;
 }): OpenClawConfig {
-  const updatePatch = createMergePatch(params.runtimeBase, params.updatedConfig);
-  return applyMergePatch(params.sourceBase, updatePatch) as OpenClawConfig;
+  return applyConfigOperations(
+    params.sourceBase,
+    createConfigMutationOperations(params.runtimeBase, params.updatedConfig),
+  );
 }
 
 function assertWriteOptionRecordFresh(params: {

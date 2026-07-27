@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { writeConfigReplacementForTest } from "../../test/helpers/config-write.js";
 import { runPluginPayloadSmokeCheck } from "../cli/update-cli/plugin-payload-validation.js";
 import {
   buildDegradedPluginsFromVerificationFailures,
@@ -111,8 +112,7 @@ describe("Gateway startup plugin quarantine", () => {
     expect((globalThis as Record<string, unknown>).brokenPluginImported).toBeUndefined();
 
     setTestPluginRegistry(registry);
-    const { writeConfigFile } = await import("../config/config.js");
-    await writeConfigFile({
+    await writeConfigReplacementForTest({
       gateway: { mode: "local", bind: "loopback", auth: { mode: "none" } },
       plugins: pluginConfig,
     });

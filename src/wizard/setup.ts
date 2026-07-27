@@ -1,12 +1,14 @@
 import { isDeepStrictEqual } from "node:util";
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { listAgentEntries } from "../agents/agent-scope-config.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import { resolveOnboardingAgentTarget } from "../commands/onboard-agent-target.js";
 import type { GatewayAuthChoice, OnboardMode, OnboardOptions } from "../commands/onboard-types.js";
-import { hasResolvedRosterBeforeMigrations } from "../config/agent-roster-provenance.js";
+import {
+  applyConfigOperations,
+  createConfigMutationOperations,
+} from "../config/config-path-mutation.js";
 import { ConfigMutationConflictError, resolveGatewayPort } from "../config/config.js";
-import { createMergePatch } from "../config/merge-patch.js";
-import { applyMergePatch } from "../config/merge-patch.js";
 import { resolveAgentModelPrimaryValue } from "../config/model-input.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { normalizeSecretInputString } from "../config/types.secrets.js";
@@ -85,25 +87,29 @@ async function runSetupWizardOnce(
 
   const snapshot = await readSetupConfigFileSnapshot();
   let currentSetupSnapshot = snapshot;
-  let baseConfig: OpenClawConfig = snapshot.valid
-    ? (snapshot.runtimeConfig ?? snapshot.config)
-    : {};
+  const snapshotSourceConfig = (snapshot as { sourceConfig?: OpenClawConfig }).sourceConfig;
+  let baseConfig: OpenClawConfig = snapshot.valid ? (snapshotSourceConfig ?? snapshot.config) : {};
   baseConfig = await requireRiskAcknowledgement({ opts, prompter, config: baseConfig });
   // Ordinary onboard reruns must preserve existing agents.list / bindings. Only
   // explicit reset or import flows are allowed to shrink the config — see issue
   // openclaw#84692.
   let pendingPluginInstallMigrationBaseConfig: OpenClawConfig | undefined = baseConfig;
+  let writeBaseConfig = snapshotSourceConfig ?? baseConfig;
   const writeSetupConfigFile = async (
     config: OpenClawConfig,
     optsLocal: { allowConfigSizeDrop?: boolean } = {},
-  ) =>
-    await writeWizardConfigFile(config, {
+  ) => {
+    const persisted = await writeWizardConfigFile(config, {
       ...optsLocal,
+      baseConfig: writeBaseConfig,
       migrationBaseConfig: pendingPluginInstallMigrationBaseConfig,
       onPendingPluginInstallMigration: () => {
         pendingPluginInstallMigrationBaseConfig = undefined;
       },
     });
+    writeBaseConfig = persisted;
+    return persisted;
+  };
 
   if (snapshot.exists && !snapshot.valid) {
     await prompter.note(
@@ -262,6 +268,7 @@ async function runSetupWizardOnce(
         }
         return await writeWizardConfigFile(cfg, {
           allowConfigSizeDrop: true,
+          baseConfig: latest.sourceConfig,
           baseSnapshot: latest,
           ...(latest.hash !== undefined ? { baseHash: latest.hash } : {}),
         });
@@ -506,7 +513,8 @@ async function runSetupWizardOnce(
 
   const { applyLocalSetupWorkspaceConfig, applySkipBootstrapConfig } =
     await loadOnboardConfigModule();
-  const hasAuthoredRoster = hasResolvedRosterBeforeMigrations(currentSetupSnapshot);
+  const hasAuthoredRoster =
+    listAgentEntries(currentSetupSnapshot.sourceConfigBeforeMigrations ?? {}).length > 0;
   const { workspaceDir, allowWorkspaceChange } = await resolveSetupWorkspaceSelection({
     baseConfig,
     requestedWorkspaceDir,
@@ -582,10 +590,10 @@ async function runSetupWizardOnce(
     if (!verification.verified && verification.attempted && stagedModelAuth) {
       // Gateway/roster decisions may be persisted after an optional failed probe, but the
       // unverified model/auth delta must be removed atomically before that first write.
-      nextConfig = applyMergePatch(
+      nextConfig = applyConfigOperations(
         nextConfig,
-        createMergePatch(stagedModelAuth.config, preModelAuthConfig),
-      ) as OpenClawConfig;
+        createConfigMutationOperations(stagedModelAuth.config, preModelAuthConfig),
+      );
     } else if (!verification.verified && stagedModelAuth) {
       // Declining an optional probe is not a failed verification; keep the
       // provider/model choice the user just made and persist it once here.

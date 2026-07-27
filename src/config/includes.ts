@@ -83,6 +83,8 @@ export type IncludeResolver = {
 
 export type ConfigIncludeOwnership = {
   path: readonly string[];
+  /** Leaf/container paths actually contributed by this include. */
+  contributedPaths?: readonly (readonly string[])[];
   kind: "single" | "multiple";
   hasSiblingOverrides: boolean;
   targetPath?: string;

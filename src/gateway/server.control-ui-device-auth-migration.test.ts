@@ -5,6 +5,7 @@ import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import type { WebSocket } from "ws";
 import { ConnectErrorDetailCodes } from "../../packages/gateway-protocol/src/connect-error-details.js";
+import { writeConfigReplacementForTest } from "../../test/helpers/config-write.js";
 import {
   loadOrCreateDeviceIdentity,
   publicKeyRawBase64UrlFromPem,
@@ -90,8 +91,7 @@ describe("Control UI device-auth upgrade migration", () => {
   });
 
   it("keeps a device-less legacy browser online with secure-context remediation", async () => {
-    const { writeConfigFile } = await import("../config/config.js");
-    await writeConfigFile({
+    await writeConfigReplacementForTest({
       meta: { lastTouchedVersion: "2026.7.1" },
       gateway: {
         trustedProxies: ["127.0.0.1"],
@@ -152,8 +152,7 @@ describe("Control UI device-auth upgrade migration", () => {
   });
 
   it("preserves trusted-proxy migration access", async () => {
-    const { writeConfigFile } = await import("../config/config.js");
-    await writeConfigFile({
+    await writeConfigReplacementForTest({
       meta: { lastTouchedVersion: "2026.7.1" },
       gateway: {
         auth: {
@@ -202,8 +201,7 @@ describe("Control UI device-auth upgrade migration", () => {
   });
 
   it("preserves trusted-proxy scope caps during migration", async () => {
-    const { writeConfigFile } = await import("../config/config.js");
-    await writeConfigFile({
+    await writeConfigReplacementForTest({
       meta: { lastTouchedVersion: "2026.7.1" },
       gateway: {
         auth: {
@@ -253,8 +251,7 @@ describe("Control UI device-auth upgrade migration", () => {
   });
 
   it("completes imported migration state when an effective operator already exists", async () => {
-    const { writeConfigFile } = await import("../config/config.js");
-    await writeConfigFile({
+    await writeConfigReplacementForTest({
       meta: { lastTouchedVersion: "2026.7.1" },
       gateway: {
         controlUi: {
@@ -291,8 +288,7 @@ describe("Control UI device-auth upgrade migration", () => {
   });
 
   it("keeps migration pending when existing operators cannot manage pairings", async () => {
-    const { writeConfigFile } = await import("../config/config.js");
-    await writeConfigFile({
+    await writeConfigReplacementForTest({
       meta: { lastTouchedVersion: "2026.7.1" },
       gateway: {
         controlUi: {
@@ -330,8 +326,7 @@ describe("Control UI device-auth upgrade migration", () => {
   });
 
   it("rejects an in-flight migration handshake completed before registration", async () => {
-    const { writeConfigFile } = await import("../config/config.js");
-    await writeConfigFile({
+    await writeConfigReplacementForTest({
       meta: { lastTouchedVersion: "2026.7.1" },
       gateway: {
         trustedProxies: ["127.0.0.1"],
@@ -404,8 +399,7 @@ describe("Control UI device-auth upgrade migration", () => {
   });
 
   it("keeps only the signed legacy browser online until it explicitly pairs", async () => {
-    const { writeConfigFile } = await import("../config/config.js");
-    await writeConfigFile({
+    await writeConfigReplacementForTest({
       meta: { lastTouchedVersion: "2026.7.1" },
       gateway: {
         trustedProxies: ["127.0.0.1"],
@@ -544,8 +538,7 @@ describe("Control UI device-auth upgrade migration", () => {
   });
 
   it("does not silently auto-approve a local signed migration browser", async () => {
-    const { writeConfigFile } = await import("../config/config.js");
-    await writeConfigFile({
+    await writeConfigReplacementForTest({
       meta: { lastTouchedVersion: "2026.7.1" },
       gateway: {
         controlUi: {
@@ -592,8 +585,7 @@ describe("Control UI device-auth upgrade migration", () => {
   });
 
   it("adds pairing capability when a migrating browser requested read-only access", async () => {
-    const { writeConfigFile } = await import("../config/config.js");
-    await writeConfigFile({
+    await writeConfigReplacementForTest({
       meta: { lastTouchedVersion: "2026.7.1" },
       gateway: {
         controlUi: {
@@ -658,8 +650,7 @@ describe("Control UI device-auth upgrade migration", () => {
   });
 
   it("rejects a device-less migration handshake when an operator is already paired", async () => {
-    const { writeConfigFile } = await import("../config/config.js");
-    await writeConfigFile({
+    await writeConfigReplacementForTest({
       meta: { lastTouchedVersion: "2026.7.1" },
       gateway: {
         trustedProxies: ["127.0.0.1"],
@@ -709,8 +700,7 @@ describe("Control UI device-auth upgrade migration", () => {
   });
 
   it("closes competing migration sessions and keeps the winner self-only until reconnect", async () => {
-    const { writeConfigFile } = await import("../config/config.js");
-    await writeConfigFile({
+    await writeConfigReplacementForTest({
       meta: { lastTouchedVersion: "2026.7.1" },
       gateway: {
         trustedProxies: ["127.0.0.1"],
@@ -808,8 +798,7 @@ describe("Control UI device-auth upgrade migration", () => {
   });
 
   it("denies a stale migration session after another operator is paired", async () => {
-    const { writeConfigFile } = await import("../config/config.js");
-    await writeConfigFile({
+    await writeConfigReplacementForTest({
       meta: { lastTouchedVersion: "2026.7.1" },
       gateway: {
         trustedProxies: ["127.0.0.1"],

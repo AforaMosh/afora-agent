@@ -20,13 +20,17 @@ import {
 } from "../../../packages/gateway-protocol/src/index.js";
 import { readAgentRosterProperty } from "../../agents/agent-scope-config.js";
 import {
+  applyConfigOperations,
+  collectConfigDeletionPaths,
+  createConfigMutationOperations,
+} from "../../config/config-path-mutation.js";
+import {
   createConfigIO,
   parseConfigJson5,
   readConfigFileSnapshot,
   readConfigFileSnapshotForWrite,
   resolveConfigSnapshotHash,
 } from "../../config/io.js";
-import { projectSourceOntoRuntimeShape } from "../../config/io.write-prepare.js";
 import { formatConfigIssueLines } from "../../config/issue-format.js";
 import {
   applyMergePatch,
@@ -37,6 +41,10 @@ import { ConfigMutationConflictError } from "../../config/mutation-conflict.js";
 import { normalizeConfigPatchReplacePaths } from "../../config/patch-replace-paths.js";
 import { redactConfigObject, restoreRedactedValues } from "../../config/redact-snapshot.js";
 import { loadGatewayRuntimeConfigSchema } from "../../config/runtime-schema.js";
+import {
+  projectRuntimeConfigOntoSourceSnapshot,
+  projectSourceOntoRuntimeShape,
+} from "../../config/runtime-source-projection.js";
 import { lookupConfigSchema, type ConfigSchemaResponse } from "../../config/schema.js";
 import type { ConfigValidationIssue, OpenClawConfig } from "../../config/types.openclaw.js";
 import {
@@ -146,6 +154,52 @@ function requireConfigBaseHash(
 
 function formatConfigPatchPath(parentPath: string, key: string): string {
   return parentPath ? `${parentPath}.${key}` : key;
+}
+
+function hasConfigPath(root: unknown, path: readonly string[]): boolean {
+  let current = root;
+  for (const segment of path) {
+    if (Array.isArray(current)) {
+      if (!/^\d+$/u.test(segment)) {
+        return false;
+      }
+      const index = Number(segment);
+      if (!Number.isSafeInteger(index) || index >= current.length) {
+        return false;
+      }
+      current = current[index];
+    } else if (isRecord(current) && Object.hasOwn(current, segment)) {
+      current = current[segment];
+    } else {
+      return false;
+    }
+  }
+  return true;
+}
+
+function collectExplicitAgentRosterRemovals(
+  patch: unknown,
+  currentConfig: OpenClawConfig,
+): string[] {
+  if (!isRecord(patch) || !Object.hasOwn(patch, "agents")) {
+    return [];
+  }
+  const currentIds = Object.keys(currentConfig.agents?.entries ?? {});
+  if (patch.agents === null) {
+    return currentIds;
+  }
+  if (!isRecord(patch.agents) || !Object.hasOwn(patch.agents, "entries")) {
+    return [];
+  }
+  if (patch.agents.entries === null) {
+    return currentIds;
+  }
+  if (!isRecord(patch.agents.entries)) {
+    return [];
+  }
+  return Object.entries(patch.agents.entries).flatMap(([agentId, value]) =>
+    value === null ? [agentId] : [],
+  );
 }
 
 function readConfigPatchReplacePaths(params: unknown): Set<string> {
@@ -446,9 +500,9 @@ function parseValidateConfigFromRawOrRespond(
   }
   // Validate against runtime shape, but write the source-shaped config the operator submitted.
   const projectedValidationCandidate = snapshot.valid
-    ? applyMergePatch(
+    ? applyConfigOperations(
         projectSourceOntoRuntimeShape(snapshot.resolved, snapshot.config),
-        createMergePatch(snapshot.config, restored.result),
+        createConfigMutationOperations(snapshot.config, restored.result),
       )
     : restored.result;
   const validationCandidate = stripBundledProviderRuntimeDefaults({
@@ -851,6 +905,11 @@ export const configHandlers: GatewayRequestHandlers = {
       snapshot,
       writeOptions,
       nextConfig: parsed.writeConfig,
+      intent: {
+        kind: "replace",
+        config: parsed.writeConfig,
+        allowAgentRosterRemovals: true,
+      },
       context,
       respond,
     });
@@ -1056,10 +1115,52 @@ export const configHandlers: GatewayRequestHandlers = {
       nextConfig: validated.config,
       preparedSecretsSnapshot,
     });
+    const projectedWrite = projectRuntimeConfigOntoSourceSnapshot({
+      sourceSnapshot: snapshot.parsed as OpenClawConfig,
+      runtimeSnapshot: snapshot.sourceConfig,
+      candidate: writeConfig,
+    });
+    if (!projectedWrite.ok) {
+      respond(
+        false,
+        undefined,
+        errorShape(
+          ErrorCodes.INVALID_REQUEST,
+          `config.patch cannot safely preserve authored config at ${projectedWrite.error.key} (${projectedWrite.error.code})`,
+        ),
+      );
+      return;
+    }
+    const intentOperations = createConfigMutationOperations(snapshot.parsed, projectedWrite.value, {
+      strictDeletions: false,
+    });
+    const allowedAgentRosterRemovals = collectExplicitAgentRosterRemovals(
+      parsedRes.parsed,
+      snapshot.config,
+    );
+    for (const path of collectConfigDeletionPaths(snapshot.sourceConfig, writeConfig)) {
+      if (!hasConfigPath(snapshot.parsed, path)) {
+        intentOperations.push({ kind: "unset", path, strictIncludeOwnership: true });
+      }
+    }
+    for (const agentId of allowedAgentRosterRemovals) {
+      const path = ["agents", "entries", agentId] as const;
+      if (
+        !hasConfigPath(snapshot.sourceConfig, path) &&
+        hasConfigPath(snapshot.runtimeConfig, path)
+      ) {
+        intentOperations.push({ kind: "unset", path });
+      }
+    }
     const writeResult = await commitGatewayConfigWriteOrRespond({
       snapshot,
       writeOptions,
       nextConfig: writeConfig,
+      intent: {
+        kind: "mutate",
+        operations: intentOperations,
+        ...(allowedAgentRosterRemovals.length > 0 ? { allowAgentRosterRemovals } : {}),
+      },
       context,
       disconnectSharedAuthClients,
       respond,
@@ -1116,6 +1217,11 @@ export const configHandlers: GatewayRequestHandlers = {
       snapshot,
       writeOptions,
       nextConfig: parsed.writeConfig,
+      intent: {
+        kind: "replace",
+        config: parsed.writeConfig,
+        allowAgentRosterRemovals: true,
+      },
       context,
       disconnectSharedAuthClients,
       respond,

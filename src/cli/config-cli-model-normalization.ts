@@ -159,14 +159,78 @@ export function normalizeConfigMutationModelRefs(cfg: OpenClawConfig): OpenClawC
   };
 }
 
-export function normalizeConfigMutationExplicitSetPath(path: PathSegment[]): PathSegment[] {
+function resolveAgentModelMapPath(path: PathSegment[]): {
+  mapPath: PathSegment[];
+  modelIdIndex: number;
+} | null {
   if (path.length >= 4 && path[0] === "agents" && path[1] === "defaults" && path[2] === "models") {
+    return { mapPath: path.slice(0, 3), modelIdIndex: 3 };
+  }
+  if (
+    path.length >= 5 &&
+    path[0] === "agents" &&
+    (path[1] === "entries" || path[1] === "list") &&
+    path[3] === "models"
+  ) {
+    return { mapPath: path.slice(0, 4), modelIdIndex: 4 };
+  }
+  return null;
+}
+
+export function normalizeConfigMutationExplicitSetPath(path: PathSegment[]): PathSegment[] {
+  const modelMap = resolveAgentModelMapPath(path);
+  if (modelMap) {
     const normalizedModelId = normalizeAgentModelRefForConfig(
-      expectDefined(path[3], "path entry at 3"),
+      expectDefined(path[modelMap.modelIdIndex], "model-map path entry"),
     );
-    return normalizedModelId === path[3]
+    return normalizedModelId === path[modelMap.modelIdIndex]
       ? path
-      : [...path.slice(0, 3), normalizedModelId, ...path.slice(4)];
+      : [
+          ...path.slice(0, modelMap.modelIdIndex),
+          normalizedModelId,
+          ...path.slice(modelMap.modelIdIndex + 1),
+        ];
   }
   return path;
+}
+
+export function collectAuthoredModelAliasPaths(
+  authored: unknown,
+  canonicalPath: PathSegment[],
+): PathSegment[][] {
+  const modelMap = resolveAgentModelMapPath(canonicalPath);
+  if (!modelMap || !isPlainRecord(authored)) {
+    return [];
+  }
+  let current: unknown = authored;
+  for (const segment of modelMap.mapPath) {
+    if (Array.isArray(current) && /^\d+$/u.test(segment)) {
+      current = current[Number(segment)];
+      continue;
+    }
+    if (!isPlainRecord(current) || !Object.hasOwn(current, segment)) {
+      return [];
+    }
+    current = current[segment];
+  }
+  const models = isPlainRecord(current) ? current : undefined;
+  if (!models) {
+    return [];
+  }
+  const canonicalModelId = expectDefined(
+    canonicalPath[modelMap.modelIdIndex],
+    "canonical model path entry",
+  );
+  return Object.keys(models).flatMap((authoredModelId) =>
+    authoredModelId !== canonicalModelId &&
+    normalizeAgentModelRefForConfig(authoredModelId) === canonicalModelId
+      ? [
+          [
+            ...canonicalPath.slice(0, modelMap.modelIdIndex),
+            authoredModelId,
+            ...canonicalPath.slice(modelMap.modelIdIndex + 1),
+          ],
+        ]
+      : [],
+  );
 }

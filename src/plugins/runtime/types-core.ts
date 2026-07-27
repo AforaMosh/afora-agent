@@ -25,7 +25,6 @@ type RuntimeRequestHeartbeatNowOptions = Omit<RuntimeRequestHeartbeatOptions, "s
 type RuntimeWriteConfigOptions = {
   envSnapshotForRestore?: Record<string, string | undefined>;
   expectedConfigPath?: string;
-  unsetPaths?: string[][];
 };
 
 type DeepReadonly<T> = T extends (...args: never[]) => unknown

@@ -4,12 +4,12 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { writeConfigReplacementForTest as writeConfigFile } from "../../test/helpers/config-write.js";
 import {
   clearConfigCache,
   clearRuntimeConfigSnapshot,
   getRuntimeConfig,
   getRuntimeConfigSnapshotMetadata,
-  writeConfigFile,
 } from "../config/config.js";
 import { resetConfigOverrides, setConfigOverride } from "../config/runtime-overrides.js";
 import { clearSessionStoreCacheForTest } from "../config/sessions/store-writer-state.js";
@@ -277,7 +277,11 @@ describe("gateway e2e", () => {
         const configPath = await createGatewayConfigPath(tempHome);
         setTestEnvValue("OPENCLAW_CONFIG_PATH", configPath);
         const configIO = createConfigIO({ configPath });
-        await configIO.writeConfigFile(initialConfig);
+        await configIO.writeConfigFile({
+          kind: "replace",
+          config: initialConfig,
+          allowAgentRosterRemovals: true,
+        });
         if (authSource === "secret-ref-override") {
           setTestEnvValue("OPENCLAW_TEST_GATEWAY_OVERRIDE_TOKEN", overrideToken);
         }
@@ -439,8 +443,12 @@ describe("gateway e2e", () => {
         const oldToken = nextGatewayId("startup-auth-ref-old");
         const newToken = nextGatewayId("startup-auth-ref-new");
         await configIO.writeConfigFile({
-          gateway: { auth: { mode: "token", token: fileToken } },
-          logging: { level: "info" },
+          kind: "replace",
+          config: {
+            gateway: { auth: { mode: "token", token: fileToken } },
+            logging: { level: "info" },
+          },
+          allowAgentRosterRemovals: true,
         });
         setTestEnvValue("OPENCLAW_TEST_GATEWAY_OVERRIDE_TOKEN", oldToken);
         const port = await getFreeGatewayPort();
@@ -509,7 +517,11 @@ describe("gateway e2e", () => {
       gateway: { auth: { mode: "token", token } },
       logging: { level: "info" },
     };
-    await configIO.writeConfigFile(initialConfig);
+    await configIO.writeConfigFile({
+      kind: "replace",
+      config: initialConfig,
+      allowAgentRosterRemovals: true,
+    });
     const port = await getFreeGatewayPort();
     const server = await startGatewayServer(port, {
       bind: "lan",
@@ -745,7 +757,9 @@ module.exports = {
           await prompter.note("write token");
           const token = await prompter.text({ message: "token" });
           await createConfigIO({ configPath }).writeConfigFile({
-            gateway: { auth: { mode: "token", token } },
+            kind: "replace",
+            config: { gateway: { auth: { mode: "token", token } } },
+            allowAgentRosterRemovals: true,
           });
           await prompter.outro("ok");
         },

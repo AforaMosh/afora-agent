@@ -13,13 +13,16 @@ import {
 
 const mocks = vi.hoisted(() => ({
   loadInstalledPluginIndexInstallRecords: vi.fn(),
+  readConfigFileSnapshotForWrite: vi.fn(),
   replaceConfigFile: vi.fn(),
   transformConfigFileWithRetry: vi.fn(),
   writePersistedInstalledPluginIndexInstallRecords: vi.fn(),
 }));
 
 vi.mock("../config/config.js", () => ({
+  readConfigFileSnapshotForWrite: mocks.readConfigFileSnapshotForWrite,
   replaceConfigFile: mocks.replaceConfigFile,
+  replaceConfigFileWithIntent: mocks.replaceConfigFile,
   resolveConfigWriteAfterWrite: (value?: unknown) => value ?? { mode: "auto" },
   transformConfigFileWithRetry: mocks.transformConfigFileWithRetry,
 }));
@@ -47,6 +50,23 @@ describe("commitConfigWithPendingPluginInstalls", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.loadInstalledPluginIndexInstallRecords.mockResolvedValue({});
+    mocks.readConfigFileSnapshotForWrite.mockResolvedValue({
+      snapshot: {
+        path: "/tmp/openclaw.json",
+        exists: true,
+        raw: "{}",
+        parsed: {},
+        sourceConfig: {},
+        resolved: {},
+        valid: true,
+        runtimeConfig: {},
+        config: {},
+        issues: [],
+        warnings: [],
+        legacyIssues: [],
+      },
+      writeOptions: {},
+    });
     mocks.replaceConfigFile.mockImplementation(async (params: { nextConfig: OpenClawConfig }) => ({
       path: "/tmp/openclaw.json",
       previousHash: null,
@@ -91,20 +111,36 @@ describe("commitConfigWithPendingPluginInstalls", () => {
       ...existingRecords,
       ...pendingRecords,
     });
-    expect(mocks.replaceConfigFile).toHaveBeenCalledWith({
-      nextConfig: {
-        plugins: {
-          entries: {
-            demo: { enabled: true },
+    expect(mocks.replaceConfigFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nextConfig: {
+          plugins: {
+            entries: {
+              demo: { enabled: true },
+            },
           },
         },
-      },
-      baseHash: "config-1",
-      writeOptions: {
-        afterWrite: { mode: "restart", reason: "plugin source changed" },
-        unsetPaths: [["plugins", "installs"]],
-      },
-    });
+        intent: {
+          kind: "mutate",
+          operations: [
+            {
+              kind: "merge",
+              patch: {
+                plugins: {
+                  entries: {
+                    demo: { enabled: true },
+                  },
+                },
+              },
+            },
+          ],
+        },
+        baseHash: "config-1",
+        writeOptions: {
+          afterWrite: { mode: "restart", reason: "plugin source changed" },
+        },
+      }),
+    );
     expect(result).toEqual({
       config: {
         plugins: {
@@ -164,7 +200,6 @@ describe("commitConfigWithPendingPluginInstalls", () => {
       {},
       {
         afterWrite: { mode: "restart", reason: "plugin source changed" },
-        unsetPaths: [["plugins", "installs"]],
       },
     );
     expect(result.installRecords).toStrictEqual({
@@ -269,13 +304,14 @@ describe("commitConfigWithPendingPluginInstalls", () => {
       baseHash: "config-1",
     });
 
-    expect(mocks.replaceConfigFile).toHaveBeenCalledWith({
-      nextConfig: {},
-      baseHash: "config-1",
-      writeOptions: {
-        unsetPaths: [["plugins", "installs"]],
-      },
-    });
+    expect(mocks.replaceConfigFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nextConfig: {},
+        intent: { kind: "mutate", operations: [] },
+        baseHash: "config-1",
+        writeOptions: {},
+      }),
+    );
   });
 
   it("marks replaced managed npm generations when install records are committed", async () => {
@@ -705,15 +741,73 @@ describe("commitConfigWithPendingPluginInstalls", () => {
 
     expect(mocks.loadInstalledPluginIndexInstallRecords).not.toHaveBeenCalled();
     expect(mocks.writePersistedInstalledPluginIndexInstallRecords).not.toHaveBeenCalled();
-    expect(mocks.replaceConfigFile).toHaveBeenCalledWith({
-      nextConfig,
-    });
+    expect(mocks.replaceConfigFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nextConfig,
+        intent: { kind: "mutate", operations: [{ kind: "merge", patch: nextConfig }] },
+      }),
+    );
     expect(result).toEqual({
       config: nextConfig,
       installRecords: {},
       movedInstallRecords: false,
       persistedHash: "test-config-hash",
     });
+  });
+
+  it("projects runtime-derived config onto authored refs without a supplied source", async () => {
+    const authored: OpenClawConfig = {
+      models: {
+        providers: {
+          custom: {
+            apiKey: "${API_KEY}",
+            baseUrl: "https://example.invalid",
+            models: [],
+          },
+        },
+      },
+    };
+    const resolved: OpenClawConfig = {
+      models: {
+        providers: {
+          custom: {
+            apiKey: "test-token",
+            baseUrl: "https://example.invalid",
+            models: [],
+          },
+        },
+      },
+    };
+    mocks.readConfigFileSnapshotForWrite.mockResolvedValueOnce({
+      snapshot: {
+        path: "/tmp/openclaw.json",
+        exists: true,
+        raw: JSON.stringify(authored),
+        parsed: authored,
+        sourceConfig: resolved,
+        resolved,
+        valid: true,
+        runtimeConfig: resolved,
+        config: resolved,
+        issues: [],
+        warnings: [],
+        legacyIssues: [],
+      },
+      writeOptions: {},
+    });
+
+    await commitConfigWithPendingPluginInstalls({
+      nextConfig: { ...resolved, gateway: { mode: "local" } },
+    });
+
+    expect(mocks.replaceConfigFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        intent: {
+          kind: "mutate",
+          operations: [{ kind: "merge", patch: { gateway: { mode: "local" } } }],
+        },
+      }),
+    );
   });
 
   it("supports non-replace config writers without adding an undefined write options argument", async () => {

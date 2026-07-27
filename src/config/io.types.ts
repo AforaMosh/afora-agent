@@ -39,15 +39,15 @@ export type ConfigWriteOptions = {
   ownedConfigPathForWrite?: string;
   /** Rechecks that the config path captured at mutation start is still active. */
   assertConfigPathForWrite?: () => void;
-  /** Paths that must be removed from the persisted payload. */
+  /** @deprecated Compatibility input for plugin-sdk/config-runtime writeConfigFile(). */
   unsetPaths?: string[][];
-  /** Caller-authored paths that stay persisted even when equal to defaults. */
+  /** @deprecated Compatibility input for plugin-sdk/config-runtime writeConfigFile(). */
   explicitSetPaths?: readonly (readonly string[])[];
-  /** Source-shaped values paired with explicitSetPaths. */
+  /** @deprecated Compatibility input paired with explicitSetPaths. */
   explicitSetValueSource?: OpenClawConfig;
-  /** Agent ids that this write intentionally removes from the canonical roster. */
+  /** @deprecated Compatibility input translated to explicit roster unsets. */
   allowedAgentRosterRemovals?: readonly string[];
-  /** Permit explicit local overrides below an ancestor $include without flattening it. */
+  /** @deprecated Accepted as a no-op; canonical descendant sets preserve ancestor includes. */
   allowIncludeAncestorExplicitSetPaths?: boolean;
   /** Fresh snapshot fast path for an immediate write. */
   baseSnapshot?: ConfigFileSnapshot;

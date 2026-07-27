@@ -280,8 +280,6 @@ export type ConfigFileSnapshot = {
   includedPaths?: string[];
   /** Exact authored ownership for every successfully resolved $include directive. */
   includeProvenance?: readonly ConfigIncludeOwnership[];
-  /** Temporary roster-only projection retained until write preparation uses generic ownership. */
-  agentRosterIncludeOwned?: boolean;
   /** Whether the config file exists on disk. */
   exists: boolean;
   /** Raw file contents before parsing; null when missing. */

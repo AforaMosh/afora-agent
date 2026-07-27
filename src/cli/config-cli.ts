@@ -2,12 +2,13 @@
 import type { Command } from "commander";
 import { formatDocsLink } from "../../packages/terminal-core/src/links.js";
 import { theme } from "../../packages/terminal-core/src/theme.js";
-import { readConfigFileSnapshot, replaceConfigFile } from "../config/config.js";
+import { readConfigFileSnapshot, replaceConfigFileWithIntent } from "../config/config.js";
 import { formatConfigIssueLines, normalizeConfigIssues } from "../config/issue-format.js";
 import { attachConfigIssueDiagnostics } from "../config/issue-location.js";
 import { CONFIG_PATH, resolveConfigPath } from "../config/paths.js";
 import { redactConfigObject } from "../config/redact-snapshot.js";
 import { readBestEffortRuntimeConfigSchema } from "../config/runtime-schema.js";
+import { projectRuntimeConfigOntoSourceSnapshot } from "../config/runtime-source-projection.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { danger, info, success, warn } from "../globals.js";
 import {
@@ -29,7 +30,11 @@ import {
   type ConfigPatchOptions,
   type ConfigUnsetOptions,
 } from "./config-cli-input.js";
-import { normalizeConfigMutationModelRefs } from "./config-cli-model-normalization.js";
+import {
+  collectAuthoredModelAliasPaths,
+  normalizeConfigMutationExplicitSetPath,
+  normalizeConfigMutationModelRefs,
+} from "./config-cli-model-normalization.js";
 import {
   formatConfigUnsetMissingPathMessage,
   getAtPath,
@@ -38,6 +43,7 @@ import {
 } from "./config-cli-path.js";
 import {
   assertConfigPathIsNotAutoManaged,
+  collectExplicitAgentRosterRemovalIds,
   configApplyHintForOperations,
   handleConfigMutationError,
   runConfigOperations,
@@ -254,6 +260,13 @@ export async function runConfigUnset(opts: {
       return;
     }
     const nextConfig = normalizeConfigMutationModelRefs(structuredClone(next) as OpenClawConfig);
+    const canonicalPath = normalizeConfigMutationExplicitSetPath(parsedPath);
+    const authoredAliasPaths = [snapshot.parsed, snapshot.sourceConfigBeforeMigrations]
+      .flatMap((source) => collectAuthoredModelAliasPaths(source, canonicalPath))
+      .filter(
+        (path, index, paths) =>
+          paths.findIndex((candidate) => candidate.join("\0") === path.join("\0")) === index,
+      );
     const modelRefCheck = await checkTouchedTextModelRefs({
       config: nextConfig,
       previousConfig: currentConfig,
@@ -263,13 +276,56 @@ export async function runConfigUnset(opts: {
     if (modelRefCheck.errors[0]) {
       throw new Error(modelRefCheck.errors[0]);
     }
-    await replaceConfigFile({
+    const unsetOperations =
+      authoredAliasPaths.length > 0
+        ? (() => {
+            const projectedNext = projectRuntimeConfigOntoSourceSnapshot({
+              sourceSnapshot: snapshot.parsed as OpenClawConfig,
+              runtimeSnapshot: currentConfig,
+              candidate: nextConfig,
+            });
+            if (!projectedNext.ok) {
+              throw new Error(
+                `Config unset cannot safely preserve authored config at ${projectedNext.error.key} (${projectedNext.error.code}).`,
+              );
+            }
+            const modelIdIndex = canonicalPath[1] === "defaults" ? 3 : 4;
+            const canonicalEntryPath = canonicalPath.slice(0, modelIdIndex + 1);
+            const aliasEntryPaths = authoredAliasPaths
+              .map((path) => path.slice(0, modelIdIndex + 1))
+              .filter(
+                (path, index, paths) =>
+                  paths.findIndex((candidate) => candidate.join("\0") === path.join("\0")) ===
+                  index,
+              );
+            const canonicalEntry = getAtPath(projectedNext.value, canonicalEntryPath);
+            return [
+              ...aliasEntryPaths.map((path) => ({ kind: "unset" as const, path })),
+              canonicalEntry.found
+                ? {
+                    kind: "set" as const,
+                    path: canonicalEntryPath,
+                    value: structuredClone(canonicalEntry.value),
+                  }
+                : { kind: "unset" as const, path: canonicalEntryPath },
+            ];
+          })()
+        : [{ kind: "unset" as const, path: canonicalPath }];
+    const allowedAgentRosterRemovals = collectExplicitAgentRosterRemovalIds(
+      canonicalPath,
+      currentConfig,
+    );
+    await replaceConfigFileWithIntent({
       nextConfig,
+      intent: {
+        kind: "mutate",
+        operations: unsetOperations,
+        ...(allowedAgentRosterRemovals.length > 0
+          ? { allowAgentRosterRemovals: allowedAgentRosterRemovals }
+          : {}),
+      },
       ...(snapshot.hash !== undefined ? { baseHash: snapshot.hash } : {}),
-      writeOptions:
-        unsetResult.leafContainer === "array"
-          ? { auditOrigin: "cli" }
-          : { auditOrigin: "cli", unsetPaths: [parsedPath] },
+      writeOptions: { auditOrigin: "cli" },
     });
     const hint = configApplyHintForOperations([operation], currentConfig, nextConfig);
     runtime.log(info(`Removed ${opts.path}. ${hint}`));

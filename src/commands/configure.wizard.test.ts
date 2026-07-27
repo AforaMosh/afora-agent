@@ -87,6 +87,7 @@ vi.mock("../config/config.js", () => ({
   }),
   writeConfigFile: mocks.writeConfigFile,
   replaceConfigFile: mocks.replaceConfigFile,
+  replaceConfigFileWithIntent: mocks.replaceConfigFile,
   resolveGatewayPort: mocks.resolveGatewayPort,
 }));
 

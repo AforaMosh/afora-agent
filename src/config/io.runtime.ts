@@ -1,12 +1,23 @@
 import fs from "node:fs";
+import { normalizeAgentId } from "@openclaw/normalization-core/agent-id";
 import { formatErrorMessage } from "../infra/errors.js";
+import { isBlockedObjectKey } from "../infra/prototype-keys.js";
+import { parseConfigPathArrayIndex } from "../shared/path-array-index.js";
+import { isRecord } from "../utils.js";
 import { cloneEnvWithPlatformSemantics, createConfigRuntimeEnvBase } from "./config-env-vars.js";
-import { resolveManagedUnsetPathsForWrite } from "./config-path-mutation.js";
+import {
+  applyConfigOperations,
+  collectArrayContainerDepths,
+  collectConfigDeletionPaths,
+  createConfigMutationOperations,
+  resolveManagedUnsetPathsForWrite,
+  type ConfigMutationOperation,
+  type ConfigPath,
+} from "./config-path-mutation.js";
 import { resolveWriteEnvSnapshotForPath } from "./env-preserve.js";
 import { GATEWAY_CONFIG_SELECTION_ENV_KEYS } from "./gateway-env-selection.js";
 import { createConfigIO } from "./io.factory.js";
 import {
-  coerceConfig,
   createManagedRuntimeEnvBase,
   replaceEnvSnapshot,
   resolveManagedRuntimeEnvBaseline,
@@ -23,8 +34,9 @@ import type {
   ReadConfigFileSnapshotWithPluginMetadataResult,
 } from "./io.types.js";
 import { ConfigRuntimeRefreshError, configWritePostCommitRollback } from "./io.types.js";
+import { formatConfigWriteRejection } from "./io.write-errors.js";
+import { prepareConfigWrite, type ConfigWriteIntent } from "./io.write-plan.js";
 import { rollbackConfigFileWriteIfUnchanged } from "./io.write-safety.js";
-import { applyMergePatch, createMergePatch } from "./merge-patch.js";
 import { ConfigMutationConflictError } from "./mutation-conflict.js";
 import { assertConfigWriteAllowedInCurrentMode } from "./nix-mode-write-guard.js";
 import {
@@ -43,6 +55,7 @@ import {
   type RuntimeConfigSnapshotRefreshOptions,
   type RuntimeConfigWritePreparedCandidate,
 } from "./runtime-snapshot.js";
+import { projectRuntimeConfigOntoSourceSnapshot } from "./runtime-source-projection.js";
 import type { ConfigFileSnapshot, OpenClawConfig } from "./types.js";
 
 export function clearConfigCache(): void {
@@ -235,8 +248,243 @@ export async function readSourceConfigSnapshotForWrite(): Promise<ReadConfigFile
   return await readConfigFileSnapshotForWrite();
 }
 
-export async function writeConfigFile(
+function readCompatPathValue(root: unknown, path: ConfigPath): { found: boolean; value?: unknown } {
+  let current = root;
+  for (const segment of path) {
+    if (isBlockedObjectKey(segment)) {
+      return { found: false };
+    }
+    if (Array.isArray(current)) {
+      const index = parseConfigPathArrayIndex(segment);
+      if (index === undefined || index >= current.length) {
+        return { found: false };
+      }
+      current = current[index];
+      continue;
+    }
+    if (!isRecord(current) || !Object.hasOwn(current, segment)) {
+      return { found: false };
+    }
+    current = current[segment];
+  }
+  return { found: true, value: current };
+}
+
+function mergeCompatExplicitValue(
+  authored: unknown,
+  explicit: unknown,
+  replaceScalar = true,
+): unknown {
+  if (Array.isArray(authored) && Array.isArray(explicit)) {
+    const merged = structuredClone(authored);
+    for (const [index, explicitValue] of explicit.entries()) {
+      if (index >= merged.length) {
+        merged[index] = structuredClone(explicitValue);
+      } else if (
+        (isRecord(merged[index]) && isRecord(explicitValue)) ||
+        (Array.isArray(merged[index]) && Array.isArray(explicitValue))
+      ) {
+        merged[index] = mergeCompatExplicitValue(merged[index], explicitValue, false);
+      }
+    }
+    return merged;
+  }
+  if (!isRecord(authored) || !isRecord(explicit)) {
+    return structuredClone(replaceScalar ? explicit : authored);
+  }
+  const merged = structuredClone(authored);
+  for (const [key, explicitValue] of Object.entries(explicit)) {
+    if (isBlockedObjectKey(key)) {
+      continue;
+    }
+    if (!Object.hasOwn(merged, key)) {
+      merged[key] = structuredClone(explicitValue);
+    } else if (isRecord(merged[key]) && isRecord(explicitValue)) {
+      merged[key] = mergeCompatExplicitValue(merged[key], explicitValue, false);
+    }
+  }
+  return merged;
+}
+
+function assertCompatRosterRemovalsAllowed(params: {
+  snapshot: ConfigFileSnapshot;
+  candidate: OpenClawConfig;
+  allowedAgentRosterRemovals?: readonly string[];
+}): void {
+  const currentEntries = params.snapshot.runtimeConfig.agents?.entries ?? {};
+  const candidateEntries = params.candidate.agents?.entries ?? {};
+  const candidateIds = new Set(
+    Object.keys(candidateEntries).map((agentId) => normalizeAgentId(agentId)),
+  );
+  const missingById = new Map<string, string[]>();
+  for (const agentId of Object.keys(currentEntries)) {
+    const normalizedId = normalizeAgentId(agentId);
+    if (!candidateIds.has(normalizedId)) {
+      missingById.set(normalizedId, [...(missingById.get(normalizedId) ?? []), agentId]);
+    }
+  }
+  const allowed = new Set(
+    (params.allowedAgentRosterRemovals ?? []).map((agentId) => normalizeAgentId(agentId)),
+  );
+  const unauthorized = [...missingById]
+    .flatMap(([normalizedId, agentIds]) =>
+      allowed.has(normalizedId) && agentIds.length === 1 ? [] : agentIds,
+    )
+    .toSorted();
+  if (unauthorized.length > 0) {
+    throw new Error(
+      `Config write would drop agent roster entries without an explicit deletion: ${unauthorized.join(", ")}.`,
+    );
+  }
+}
+
+function buildCompatWriteOperations(params: {
+  authoredSource: OpenClawConfig;
+  cfg: OpenClawConfig;
+  projected: OpenClawConfig;
+  snapshot: ConfigFileSnapshot;
+  options: ConfigWriteOptions;
+}): ConfigMutationOperation[] {
+  const operations: ConfigMutationOperation[] = [];
+  const explicitUnsetPaths = params.options.unsetPaths ?? [];
+  operations.push(
+    ...createConfigMutationOperations(params.authoredSource, params.projected).filter(
+      (operation) =>
+        !(
+          operation.kind === "unset" &&
+          operation.strictIncludeOwnership === true &&
+          explicitUnsetPaths.some(
+            (explicitPath) =>
+              explicitPath.length > 0 &&
+              explicitPath.every((segment, index) => operation.path[index] === segment),
+          )
+        ),
+    ),
+  );
+  for (const path of collectConfigDeletionPaths(params.snapshot.runtimeConfig, params.cfg)) {
+    const authorizedRuntimeOnlyAgentRemoval =
+      path.length === 3 &&
+      path[0] === "agents" &&
+      path[1] === "entries" &&
+      (params.options.allowedAgentRosterRemovals ?? []).some(
+        (agentId) => normalizeAgentId(agentId) === normalizeAgentId(path[2]!),
+      );
+    if (
+      !readCompatPathValue(params.authoredSource, path).found &&
+      (readCompatPathValue(params.snapshot.sourceConfig, path).found ||
+        authorizedRuntimeOnlyAgentRemoval)
+    ) {
+      operations.push({ kind: "unset", path: [...path] });
+    }
+  }
+  const explicitValueSource = params.options.explicitSetValueSource ?? params.cfg;
+  for (const path of params.options.explicitSetPaths ?? []) {
+    if (path.length === 0) {
+      continue;
+    }
+    const explicitValue = readCompatPathValue(explicitValueSource, path);
+    if (!explicitValue.found) {
+      continue;
+    }
+    const currentDocument = applyConfigOperations(params.authoredSource, operations);
+    const projectedValue = readCompatPathValue(currentDocument, path);
+    const mergedValue = projectedValue.found
+      ? mergeCompatExplicitValue(projectedValue.value, explicitValue.value)
+      : explicitValue.value;
+    const explicitTarget = applyConfigOperations(currentDocument, [
+      {
+        kind: "set",
+        path: [...path],
+        value: mergedValue,
+        arrayContainerDepths: collectArrayContainerDepths(explicitValueSource, path),
+      },
+    ]);
+    operations.push(...createConfigMutationOperations(currentDocument, explicitTarget));
+  }
+  const beforeExplicitUnsets = applyConfigOperations(params.authoredSource, operations);
+  for (const path of explicitUnsetPaths) {
+    if (
+      path.length > 0 &&
+      (!readCompatPathValue(params.authoredSource, path).found ||
+        readCompatPathValue(beforeExplicitUnsets, path).found)
+    ) {
+      operations.push({ kind: "unset", path: [...path] });
+    }
+  }
+  return operations;
+}
+
+/**
+ * @deprecated Use mutateConfigFile() for source mutations or replaceConfigFile()
+ * for an explicit full replacement. Candidates that cannot be projected
+ * unambiguously from the current runtime snapshot are rejected. This adapter
+ * is scheduled for the next approved Plugin SDK break window, no earlier than
+ * 2026-10-01.
+ */
+export async function writeConfigFileCompat(
   cfg: OpenClawConfig,
+  options: ConfigWriteOptions = {},
+): Promise<ConfigWriteResult> {
+  const snapshotRead = options.baseSnapshot
+    ? { snapshot: options.baseSnapshot, writeOptions: {} }
+    : await readConfigFileSnapshotForWrite({
+        skipPluginValidation: options.skipPluginValidation,
+      });
+  const snapshot = snapshotRead.snapshot;
+  const authoredSource = isRecord(snapshot.parsed)
+    ? (snapshot.parsed as OpenClawConfig)
+    : snapshot.sourceConfig;
+  assertCompatRosterRemovalsAllowed({
+    snapshot,
+    candidate: cfg,
+    allowedAgentRosterRemovals: options.allowedAgentRosterRemovals,
+  });
+  const projection = projectRuntimeConfigOntoSourceSnapshot({
+    sourceSnapshot: authoredSource,
+    runtimeSnapshot: snapshot.runtimeConfig,
+    candidate: cfg,
+  });
+  if (!projection.ok) {
+    const detail =
+      projection.error.code === "ambiguous-runtime-array"
+        ? `ambiguous authored-reference array at ${projection.error.key}`
+        : projection.error.code === "ambiguous-runtime-map"
+          ? `ambiguous authored-reference map change at ${projection.error.key}`
+          : `incompatible top-level field: ${projection.error.key}`;
+    throw new Error(
+      `Deprecated writeConfigFile(config, options) requires an unambiguous config derived from the current runtime snapshot; ${detail}. Use mutateConfigFile() for source mutations or replaceConfigFile() for an explicit replacement.`,
+    );
+  }
+  const intent = {
+    kind: "mutate",
+    operations: buildCompatWriteOperations({
+      authoredSource,
+      cfg,
+      projected: projection.value,
+      snapshot,
+      options,
+    }),
+    ...(options.allowedAgentRosterRemovals
+      ? { allowAgentRosterRemovals: options.allowedAgentRosterRemovals }
+      : {}),
+  } satisfies ConfigWriteIntent;
+  const prepared = prepareConfigWrite({
+    snapshot,
+    intent,
+    mandatoryUnsets: resolveManagedUnsetPathsForWrite(undefined),
+  });
+  if (!prepared.ok) {
+    throw new Error(formatConfigWriteRejection(prepared.error));
+  }
+  return await writeConfigFile(intent, {
+    ...snapshotRead.writeOptions,
+    ...options,
+    baseSnapshot: snapshot,
+  });
+}
+
+export async function writeConfigFile(
+  intent: ConfigWriteIntent,
   options: ConfigWriteOptions = {},
 ): Promise<ConfigWriteResult> {
   options.assertConfigPathForWrite?.();
@@ -253,15 +501,10 @@ export async function writeConfigFile(
     ? createConfigIO({ ...ioOptions, env: createManagedRuntimeEnvBase() })
     : processIo;
   assertConfigWriteAllowedInCurrentMode({ configPath: io.configPath });
-  let nextCfg = cfg;
   const runtimeConfigSnapshot = getRuntimeConfigSnapshot();
   const runtimeConfigSourceSnapshot = getRuntimeConfigSourceSnapshot();
   const hadRuntimeSnapshot = Boolean(runtimeConfigSnapshot);
   const hadBothSnapshots = Boolean(runtimeConfigSnapshot && runtimeConfigSourceSnapshot);
-  if (hadBothSnapshots) {
-    const runtimePatch = createMergePatch(runtimeConfigSnapshot!, cfg);
-    nextCfg = coerceConfig(applyMergePatch(runtimeConfigSourceSnapshot!, runtimePatch));
-  }
   const baseSnapshotRead = options.baseSnapshot
     ? {
         snapshot: options.baseSnapshot,
@@ -274,7 +517,7 @@ export async function writeConfigFile(
   }
   let runtimePreflightResult: unknown;
   let managedPreparedCandidates = new Map<symbol, RuntimeConfigWritePreparedCandidate>();
-  const writeResult = await io.writeConfigFile(nextCfg, {
+  const writeResult = await io.writeConfigFile(intent, {
     baseSnapshot,
     basePluginMetadataSnapshot: baseSnapshotRead.pluginMetadataSnapshot,
     assertConfigPathForWrite: options.assertConfigPathForWrite,
@@ -283,13 +526,6 @@ export async function writeConfigFile(
       expectedConfigPath: options.expectedConfigPath,
       envSnapshotForRestore: options.envSnapshotForRestore,
     }),
-    unsetPaths: resolveManagedUnsetPathsForWrite(options.unsetPaths),
-    explicitSetPaths: options.explicitSetPaths,
-    explicitSetValueSource: options.explicitSetPaths
-      ? (options.explicitSetValueSource ?? cfg)
-      : undefined,
-    allowedAgentRosterRemovals: options.allowedAgentRosterRemovals,
-    allowIncludeAncestorExplicitSetPaths: options.allowIncludeAncestorExplicitSetPaths,
     afterWrite: options.afterWrite,
     allowDestructiveWrite: options.allowDestructiveWrite,
     allowConfigSizeDrop: options.allowConfigSizeDrop,
@@ -333,7 +569,6 @@ export async function writeConfigFile(
   return await finalizeCommittedConfigWrite({
     io,
     options,
-    nextCfg,
     writeResult,
     baseSnapshot,
     hadRuntimeSnapshot,
@@ -347,7 +582,6 @@ export async function writeConfigFile(
 async function finalizeCommittedConfigWrite(params: {
   io: ReturnType<typeof createConfigIO>;
   options: ConfigWriteOptions;
-  nextCfg: OpenClawConfig;
   writeResult: Awaited<ReturnType<ReturnType<typeof createConfigIO>["writeConfigFile"]>>;
   baseSnapshot: ConfigFileSnapshot;
   hadRuntimeSnapshot: boolean;
@@ -364,8 +598,8 @@ async function finalizeCommittedConfigWrite(params: {
     deferRuntimeActivation,
     managedPreparedCandidates,
   } = params;
-  let canonicalSourceConfig = params.nextCfg;
-  let canonicalRuntimeConfig = params.nextCfg;
+  let canonicalSourceConfig = writeResult.persistedConfig;
+  let canonicalRuntimeConfig: OpenClawConfig | null = null;
   let envBeforeCanonicalRead = snapshotEnv(io.env);
   let envAfterCanonicalRead: Record<string, string | undefined>;
   let canonicalReadFailure: ConfigRuntimeRefreshError | null = null;
@@ -386,6 +620,11 @@ async function finalizeCommittedConfigWrite(params: {
       if (freshSnapshot.exists && freshSnapshot.valid) {
         canonicalSourceConfig = freshSnapshot.sourceConfig;
         canonicalRuntimeConfig = freshSnapshot.config;
+      } else {
+        canonicalReadFailure = new ConfigRuntimeRefreshError(
+          `Config was written to ${io.configPath}, but the canonical reread was invalid or missing`,
+        );
+        break;
       }
       if (
         !deferRuntimeActivation ||
@@ -410,9 +649,13 @@ async function finalizeCommittedConfigWrite(params: {
   }
 
   const notifyCommittedWrite = () => {
+    const rereadRuntimeConfig = canonicalRuntimeConfig;
+    if (!rereadRuntimeConfig) {
+      return;
+    }
     const currentRuntimeConfig = getRuntimeConfigSnapshot();
     const notificationRuntimeConfig = deferRuntimeActivation
-      ? canonicalRuntimeConfig
+      ? rereadRuntimeConfig
       : currentRuntimeConfig;
     if (!notificationRuntimeConfig) {
       return;
@@ -423,7 +666,7 @@ async function finalizeCommittedConfigWrite(params: {
         {
           ...candidate,
           runtimeConfig:
-            candidate.reapplyRuntimeOverlays?.(canonicalRuntimeConfig) ?? candidate.runtimeConfig,
+            candidate.reapplyRuntimeOverlays?.(rereadRuntimeConfig) ?? candidate.runtimeConfig,
           compareConfig:
             candidate.reapplyCompareOverlays?.(canonicalSourceConfig) ?? candidate.compareConfig,
         },

@@ -1,7 +1,7 @@
 // SSH-verified node pairing e2e: real gateway server on the LAN self-connect
 // harness, with the SSH probe runtime mocked at the module boundary.
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { writeConfigFile } from "../config/config.js";
+import { writeConfigReplacementForTest as writeConfigFile } from "../../test/helpers/config-write.js";
 import {
   getPairedDevice,
   listDevicePairing,

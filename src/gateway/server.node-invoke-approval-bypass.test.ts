@@ -3,7 +3,7 @@
 import crypto from "node:crypto";
 import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
 import { WebSocket } from "ws";
-import { writeConfigFile } from "../config/config.js";
+import { writeConfigReplacementForTest as writeConfigFile } from "../../test/helpers/config-write.js";
 import {
   deriveDeviceIdFromPublicKey,
   type DeviceIdentity,

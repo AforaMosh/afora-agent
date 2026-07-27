@@ -513,6 +513,7 @@ export async function runConfigureWizard(
     const metadataMode: OnboardMode =
       shouldPromptGatewayRunMode || baseConfig.gateway?.mode !== "remote" ? mode : "remote";
     const shouldSkipGatewaySummary = !shouldPromptGatewayRunMode;
+    let mergeBaseConfig = structuredClone(baseConfig);
 
     if (shouldPromptGatewayRunMode && mode === "remote") {
       let remoteConfig = await promptRemoteGatewayConfig(baseConfig, prompter);
@@ -522,6 +523,7 @@ export async function runConfigureWizard(
       });
       const committed = await commitConfigWithPendingPluginInstalls({
         nextConfig: remoteConfig,
+        sourceConfig: mergeBaseConfig,
         ...(currentBaseHash !== undefined ? { baseHash: currentBaseHash } : {}),
         writeOptions: configWriteOwnership,
       });
@@ -533,7 +535,6 @@ export async function runConfigureWizard(
     }
 
     let nextConfig = { ...baseConfig };
-    let mergeBaseConfig = structuredClone(baseConfig);
     let didSetGatewayMode = false;
     if (shouldPromptGatewayRunMode && nextConfig.gateway?.mode !== "local") {
       nextConfig = {
@@ -561,6 +562,7 @@ export async function runConfigureWizard(
         try {
           const committed = await commitConfigWithPendingPluginInstalls({
             nextConfig,
+            sourceConfig: mergeBaseConfig,
             ...(currentBaseHash !== undefined ? { baseHash: currentBaseHash } : {}),
             writeOptions: configWriteOwnership,
           });

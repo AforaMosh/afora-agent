@@ -7,6 +7,7 @@ import { createSuiteTempRootTracker } from "../test-helpers/temp-dir.js";
 import { initializePublishedConfigRuntimeEnv, prepareConfigRuntimeEnv } from "./config-env-vars.js";
 import { hashConfigIncludeRaw } from "./includes.js";
 import type { ConfigWriteOptions } from "./io.js";
+import type { ConfigWriteIntent } from "./io.write-plan.js";
 import {
   ConfigMutationConflictError,
   mutateConfigFile,
@@ -119,6 +120,15 @@ async function resolveIncludeTarget(filePath: string): Promise<string> {
 }
 
 const allowConfigPathWrite = () => {};
+const replaceIntent = (config: OpenClawConfig) => ({
+  kind: "replace" as const,
+  config,
+  allowAgentRosterRemovals: true as const,
+});
+const mergeIntent = (patch: unknown) => ({
+  kind: "mutate" as const,
+  operations: [{ kind: "merge" as const, patch }],
+});
 
 async function expectPluginIncludeMutationConflict(
   snapshot: ConfigFileSnapshot,
@@ -201,13 +211,176 @@ describe("config mutate helpers", () => {
     expect(result.afterWrite).toEqual({ mode: "auto" });
     expect(result.followUp).toEqual({ mode: "auto", requiresRestart: false });
     expect(ioMocks.writeConfigFile).toHaveBeenCalledWith(
-      {
-        gateway: {
-          port: 18789,
-          auth: { mode: "token" },
-        },
-      },
+      mergeIntent({ gateway: { auth: { mode: "token" } } }),
       { baseSnapshot: snapshot, expectedConfigPath: snapshot.path, afterWrite: { mode: "auto" } },
+    );
+  });
+
+  it("preserves an explicit null produced by a complete-config transform", async () => {
+    const snapshot = createSnapshot({
+      hash: "source-hash",
+      sourceConfig: {
+        plugins: { entries: { demo: { config: { mode: "auto" } } } },
+      },
+    });
+    ioMocks.readConfigFileSnapshotForWrite.mockResolvedValue({
+      snapshot,
+      writeOptions: { expectedConfigPath: snapshot.path },
+    });
+
+    await transformConfigFileWithRetry({
+      transform(config) {
+        return {
+          nextConfig: {
+            ...config,
+            plugins: { entries: { demo: { config: { mode: null } } } },
+          },
+        };
+      },
+    });
+
+    expect(ioMocks.writeConfigFile).toHaveBeenCalledWith(
+      {
+        kind: "mutate",
+        operations: [
+          {
+            kind: "set",
+            path: ["plugins", "entries", "demo", "config", "mode"],
+            value: null,
+            arrayContainerDepths: [],
+          },
+        ],
+      },
+      expect.objectContaining({ baseSnapshot: snapshot }),
+    );
+  });
+
+  it("projects runtime array edits onto authored environment references", async () => {
+    const snapshot = createSnapshot({
+      hash: "source-hash",
+      parsed: { plugins: { allow: ["${TOKEN}", "old"] } },
+      sourceConfig: { plugins: { allow: ["resolved-token", "old"] } },
+    });
+    ioMocks.readConfigFileSnapshotForWrite.mockResolvedValue({
+      snapshot,
+      writeOptions: { expectedConfigPath: snapshot.path },
+    });
+
+    await transformConfigFileWithRetry({
+      transform(config) {
+        return { nextConfig: { ...config, plugins: { allow: ["resolved-token", "new"] } } };
+      },
+    });
+
+    expect(ioMocks.writeConfigFile).toHaveBeenCalledWith(
+      {
+        kind: "mutate",
+        operations: [{ kind: "merge", patch: { plugins: { allow: ["${TOKEN}", "new"] } } }],
+      },
+      expect.objectContaining({ baseSnapshot: snapshot }),
+    );
+  });
+
+  it("carries include-resolved deletions as strict source intent", async () => {
+    const snapshot = createSnapshot({
+      hash: "source-hash",
+      parsed: { $include: "./base.json" },
+      sourceConfig: { plugins: { entries: { demo: { config: { mode: "auto" } } } } },
+    });
+    ioMocks.readConfigFileSnapshotForWrite.mockResolvedValue({
+      snapshot,
+      writeOptions: { expectedConfigPath: snapshot.path },
+    });
+
+    await transformConfigFileWithRetry({
+      transform(config) {
+        const nextConfig = structuredClone(config);
+        delete (nextConfig.plugins?.entries?.demo?.config as Record<string, unknown>).mode;
+        return { nextConfig };
+      },
+    });
+
+    expect(ioMocks.writeConfigFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "mutate",
+        operations: expect.arrayContaining([
+          {
+            kind: "unset",
+            path: ["plugins", "entries", "demo", "config", "mode"],
+            strictIncludeOwnership: true,
+          },
+        ]),
+      }),
+      expect.objectContaining({ baseSnapshot: snapshot }),
+    );
+  });
+
+  it("carries include-resolved array-item deletions as strict source intent", async () => {
+    const snapshot = createSnapshot({
+      hash: "source-hash",
+      parsed: { plugins: { load: { entries: [{ $include: "./entry.json" }] } } },
+      sourceConfig: { plugins: { load: { entries: [{ id: "a", enabled: true }] } } },
+    });
+    ioMocks.readConfigFileSnapshotForWrite.mockResolvedValue({
+      snapshot,
+      writeOptions: { expectedConfigPath: snapshot.path },
+    });
+
+    await transformConfigFileWithRetry({
+      transform(config) {
+        const nextConfig = structuredClone(config);
+        const entry = (nextConfig.plugins?.load as { entries?: Array<Record<string, unknown>> })
+          ?.entries?.[0];
+        if (!entry) {
+          throw new Error("expected plugin load entry");
+        }
+        delete entry.enabled;
+        return { nextConfig };
+      },
+    });
+
+    expect(ioMocks.writeConfigFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "mutate",
+        operations: expect.arrayContaining([
+          {
+            kind: "unset",
+            path: ["plugins", "load", "entries", "0", "enabled"],
+            strictIncludeOwnership: true,
+          },
+        ]),
+      }),
+      expect.objectContaining({ baseSnapshot: snapshot }),
+    );
+  });
+
+  it("preserves roster-removal authorization while adding candidate hints", async () => {
+    const snapshot = createSnapshot({
+      hash: "source-hash",
+      sourceConfig: {
+        agents: { entries: { main: { default: true }, ops: {} } },
+      },
+    });
+    ioMocks.readConfigFileSnapshotForWrite.mockResolvedValue({
+      snapshot,
+      writeOptions: { expectedConfigPath: snapshot.path },
+    });
+
+    await transformConfigFileWithRetry({
+      allowAgentRosterRemovals: ["ops"],
+      transform(config) {
+        const nextConfig = structuredClone(config);
+        delete nextConfig.agents?.entries?.ops;
+        return { nextConfig };
+      },
+    });
+
+    expect(ioMocks.writeConfigFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "mutate",
+        allowAgentRosterRemovals: ["ops"],
+      }),
+      expect.objectContaining({ baseSnapshot: snapshot }),
     );
   });
 
@@ -259,11 +432,7 @@ describe("config mutate helpers", () => {
     expect(ioMocks.writeConfigFile).toHaveBeenCalledTimes(2);
     expect(ioMocks.writeConfigFile).toHaveBeenNthCalledWith(
       2,
-      {
-        agents: {
-          list: [{ id: "other-agent" }, { id: "work" }],
-        },
-      },
+      mergeIntent({ agents: { list: [{ id: "other-agent" }, { id: "work" }] } }),
       {
         baseSnapshot: fresh,
         expectedConfigPath: fresh.path,
@@ -450,11 +619,7 @@ describe("config mutate helpers", () => {
     await Promise.all([first, second]);
     expect(ioMocks.writeConfigFile).toHaveBeenNthCalledWith(
       2,
-      {
-        agents: {
-          list: [{ id: "first" }, { id: "second" }],
-        },
-      },
+      mergeIntent({ agents: { list: [{ id: "first" }, { id: "second" }] } }),
       { baseSnapshot: fresh, expectedConfigPath: fresh.path, afterWrite: { mode: "auto" } },
     );
   });
@@ -585,7 +750,7 @@ describe("config mutate helpers", () => {
 
     expect(ioMocks.readConfigFileSnapshotForWrite).not.toHaveBeenCalled();
     expect(ioMocks.writeConfigFile).toHaveBeenCalledWith(
-      { gateway: { auth: { mode: "token", token: "minted" } } },
+      replaceIntent({ gateway: { auth: { mode: "token", token: "minted" } } }),
       {
         baseSnapshot: snapshot,
         expectedConfigPath: snapshot.path,
@@ -623,7 +788,7 @@ describe("config mutate helpers", () => {
       writeOptions: { expectedConfigPath: snapshot.path },
     });
 
-    expect(ioMocks.writeConfigFile).toHaveBeenCalledWith(nextConfig, {
+    expect(ioMocks.writeConfigFile).toHaveBeenCalledWith(replaceIntent(nextConfig), {
       baseSnapshot: snapshot,
       expectedConfigPath: snapshot.path,
       afterWrite: { mode: "auto" },
@@ -649,7 +814,7 @@ describe("config mutate helpers", () => {
       skipPluginValidation: true,
     });
     expect(ioMocks.writeConfigFile).toHaveBeenCalledWith(
-      { plugins: { entries: { "strict-plugin": { enabled: false } } } },
+      replaceIntent({ plugins: { entries: { "strict-plugin": { enabled: false } } } }),
       {
         baseSnapshot: snapshot,
         expectedConfigPath: snapshot.path,
@@ -680,7 +845,7 @@ describe("config mutate helpers", () => {
       requiresRestart: true,
     });
     expect(ioMocks.writeConfigFile).toHaveBeenCalledWith(
-      { gateway: { auth: { mode: "token", token: "minted" } } },
+      replaceIntent({ gateway: { auth: { mode: "token", token: "minted" } } }),
       {
         baseSnapshot: snapshot,
         expectedConfigPath: snapshot.path,
@@ -793,7 +958,6 @@ describe("config mutate helpers", () => {
         afterWrite: { mode: "restart", reason: "test include refresh" },
         writeOptions: {
           expectedConfigPath: snapshot.path,
-          unsetPaths: [["plugins", "installs"]],
         },
         nextConfig: {
           plugins: {
@@ -2377,10 +2541,10 @@ describe("config mutate helpers", () => {
     });
 
     expect(ioMocks.writeConfigFile).toHaveBeenCalledWith(
-      {
+      replaceIntent({
         gateway: { mode: "local", port: 18789 },
         plugins: { entries: { demo: { enabled: true } } },
-      },
+      }),
       {
         baseSnapshot: snapshot,
         expectedConfigPath: snapshot.path,
@@ -2410,7 +2574,11 @@ describe("config mutate helpers", () => {
         },
       },
     } as OpenClawConfig;
-    const injectedWrite = vi.fn(async (config: OpenClawConfig, options?: ConfigWriteOptions) => {
+    const injectedWrite = vi.fn(async (intent: ConfigWriteIntent, options?: ConfigWriteOptions) => {
+      if (intent.kind !== "replace") {
+        throw new Error("expected replacement intent");
+      }
+      const config = intent.config;
       await options?.preCommitRuntimePreflight?.(config);
       await fs.writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`, "utf-8");
       return { persistedHash: "hash-written", persistedConfig: config };

@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { writeConfigReplacementForTest } from "../../test/helpers/config-write.js";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import { resolveDefaultAgentDir } from "../agents/agent-scope-config.js";
 import { getRuntimeAuthProfileStoreSnapshot } from "../agents/auth-profiles/runtime-snapshots.js";
@@ -81,8 +82,7 @@ installGatewayTestHooks({ scope: "suite" });
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 async function writeConfig(config: OpenClawConfig): Promise<void> {
-  const { writeConfigFile } = await import("../config/config.js");
-  await writeConfigFile(config);
+  await writeConfigReplacementForTest(config);
 }
 
 function baseConfig(): OpenClawConfig {

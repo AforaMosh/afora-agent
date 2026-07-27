@@ -54,6 +54,19 @@ export function asRuntimeConfig(config: OpenClawConfig): RuntimeConfig {
   return config as RuntimeConfig;
 }
 
+function materializeImplicitMainAgent(config: OpenClawConfig): OpenClawConfig {
+  if (config.agents?.entries !== undefined) {
+    return config;
+  }
+  return {
+    ...config,
+    agents: {
+      ...config.agents,
+      entries: { main: { default: true } },
+    },
+  };
+}
+
 export function materializeRuntimeConfig(
   config: OpenClawConfig,
   mode: ConfigMaterializationMode,
@@ -63,7 +76,7 @@ export function materializeRuntimeConfig(
   } = {},
 ): RuntimeConfig {
   const profile = MATERIALIZATION_PROFILES[mode];
-  let next = applyMessageDefaults(config);
+  let next = applyMessageDefaults(materializeImplicitMainAgent(config));
   if (profile.includeLoggingDefaults) {
     next = applyLoggingDefaults(next);
   }

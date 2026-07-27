@@ -14,8 +14,10 @@ import {
   prepareWorkspaceStateDeletion,
 } from "../agents/workspace-state-store.js";
 import { formatCliCommand } from "../cli/command-format.js";
-import { replaceConfigFile } from "../config/config.js";
+import { createConfigMutationOperations } from "../config/config-path-mutation.js";
+import { replaceConfigFileWithIntent } from "../config/config.js";
 import { logConfigUpdated } from "../config/logging.js";
+import { projectRuntimeConfigOntoSourceSnapshot } from "../config/runtime-source-projection.js";
 import {
   purgeAgentSessionStoreEntries,
   resolveSessionTranscriptsDirForAgent,
@@ -173,13 +175,32 @@ export async function agentsDeleteCommand(
     return;
   }
 
-  await replaceConfigFile({
+  const projection = projectRuntimeConfigOntoSourceSnapshot({
+    sourceSnapshot: configSnapshot.parsed as typeof cfg,
+    runtimeSnapshot: cfg,
+    candidate: result.config,
+  });
+  if (!projection.ok) {
+    throw new Error(
+      `Agent deletion cannot safely preserve authored config at ${projection.error.key} (${projection.error.code}).`,
+    );
+  }
+  await replaceConfigFileWithIntent({
     nextConfig: result.config,
-    ...(baseHash !== undefined ? { baseHash } : {}),
-    writeOptions: {
-      allowedAgentRosterRemovals: [agentId],
-      ...(opts.json ? { skipOutputLogs: true } : {}),
+    intent: {
+      kind: "mutate",
+      allowAgentRosterRemovals: [agentId],
+      operations: [
+        ...createConfigMutationOperations(configSnapshot.parsed, projection.value),
+        {
+          kind: "unset",
+          path: ["agents", "entries", agentId],
+          strictIncludeOwnership: true,
+        },
+      ],
     },
+    ...(baseHash !== undefined ? { baseHash } : {}),
+    writeOptions: opts.json ? { skipOutputLogs: true } : {},
   });
   if (!opts.json) {
     logConfigUpdated(runtime);

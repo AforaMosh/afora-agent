@@ -414,6 +414,7 @@ vi.mock("../config/config.js", () => ({
   readConfigFileSnapshot,
   resolveGatewayPort,
   replaceConfigFile,
+  replaceConfigFileWithIntent: replaceConfigFile,
 }));
 vi.mock("../commands/onboard-agent.js", async () => {
   const { resolveDefaultAgentId } = await import("../agents/agent-scope-config.js");
@@ -1514,12 +1515,12 @@ describe("runSetupWizard", () => {
     expect(
       requireRecord(migrationParams.nextConfig, "migration next config").plugins,
     ).toBeUndefined();
-    const migrationWriteOptions = expectRecordFields(
+    expectRecordFields(
       migrationParams.writeOptions,
       { allowConfigSizeDrop: true },
       "migration config replacement write options",
     );
-    expect(migrationWriteOptions.unsetPaths).toContainEqual(["plugins", "installs"]);
+    expectRecordFields(migrationParams.intent, { kind: "mutate" }, "migration write intent");
 
     const replaceParams = requireRecord(
       getMockCallArg(replaceConfigFile, 3, 0, "config replacement"),

@@ -1554,6 +1554,7 @@ Split config into multiple files:
 - Limits: paths must not contain null bytes and must be strictly shorter than 4096 characters before and after resolution; each included file is capped at 2 MB.
 - OpenClaw-owned writes that change only one top-level section backed by a single-file include write through to that included file. For example, `plugins install` updates `plugins: { $include: "./plugins.json5" }` in `plugins.json5` and leaves `openclaw.json` intact.
 - Root includes, include arrays, and includes with sibling overrides are read-only for OpenClaw-owned writes; those writes fail closed instead of flattening the config.
+- A rejected write names the owning file. Edit that include file directly or remove the `$include`; if the config also uses a retired shape such as `agents.list`, run [`openclaw doctor --fix`](/cli/doctor) before retrying.
 - Errors: clear messages for missing files, parse errors, circular includes, invalid path format, and excessive length.
 
 ---

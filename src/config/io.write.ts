@@ -13,10 +13,7 @@ import {
   restoreConfigSnapshotAuditRecord,
   upsertConfigSnapshotAuditRecord,
 } from "./config-journal-snapshot.js";
-import {
-  applyUnsetPathsForWrite,
-  resolveManagedUnsetPathsForWrite,
-} from "./config-path-mutation.js";
+import { resolveManagedUnsetPathsForWrite } from "./config-path-mutation.js";
 import {
   EnvRefArrayMutationError,
   restoreEnvRefsFromMap,
@@ -33,7 +30,6 @@ import {
   type ConfigWriteAuditResult,
 } from "./io.audit.js";
 import type { ConfigIoContext } from "./io.context.js";
-import { resolveModelIdNormalizationPolicies } from "./io.context.js";
 import { recordConfigWriteMetadata } from "./io.meta.js";
 import {
   collectEnvRefPaths,
@@ -53,11 +49,8 @@ import type {
 } from "./io.types.js";
 import { ConfigRuntimeRefreshError, configWritePostCommitRollback } from "./io.types.js";
 import { logConfigWarningsOnce } from "./io.warnings.js";
-import { formatConfigValidationFailure } from "./io.write-errors.js";
-import {
-  preserveIncludeOwnedConfigForWrite,
-  resolvePersistCandidateForWrite,
-} from "./io.write-prepare.js";
+import { formatConfigValidationFailure, formatConfigWriteRejection } from "./io.write-errors.js";
+import { prepareConfigWrite, type ConfigWriteIntent } from "./io.write-plan.js";
 import {
   assertBaseSnapshotStillCurrent,
   formatConfigArtifactTimestamp,
@@ -100,15 +93,13 @@ function hasIncludedGatewayModeOwner(value: unknown): boolean {
 
 export async function writeConfigFileFromContext(
   context: ConfigIoContext,
-  cfg: OpenClawConfig,
+  intent: ConfigWriteIntent,
   options: ConfigWriteOptions,
   readSnapshot: () => Promise<ReadConfigFileSnapshotInternalResult>,
 ): Promise<InternalConfigWriteResult> {
   const { deps, configPath } = context;
   options.assertConfigPathForWrite?.();
   assertConfigWriteAllowedInCurrentMode({ configPath, env: deps.env });
-  const unsetPaths = resolveManagedUnsetPathsForWrite(options.unsetPaths);
-  let persistCandidate: unknown = cfg;
   const snapshotRead = options.baseSnapshot
     ? {
         snapshot: options.baseSnapshot,
@@ -119,47 +110,25 @@ export async function writeConfigFileFromContext(
   if (options.baseSnapshot) {
     assertBaseSnapshotStillCurrent(snapshot, configPath, deps.fs);
   }
+  if (!snapshot.valid && intent.kind === "mutate") {
+    throw new Error(
+      `Config is invalid; run \`openclaw doctor --fix\` before applying source mutations to ${configPath}.`,
+    );
+  }
+  const prepared = prepareConfigWrite({
+    snapshot,
+    intent,
+    mandatoryUnsets: resolveManagedUnsetPathsForWrite(undefined),
+  });
+  if (!prepared.ok) {
+    throw new Error(formatConfigWriteRejection(prepared.error));
+  }
+  const cfg = prepared.value.authoredDocument;
+  const persistCandidate: unknown = cfg;
   let envRefMap: Map<string, string> | null = null;
-  const changedPaths = new Set<string>();
-  collectChangedPaths(snapshot.config, cfg, "", changedPaths);
-  for (const changedPath of [...(options.explicitSetPaths ?? []), ...(options.unsetPaths ?? [])]) {
-    const normalizedPath = changedPath.filter((segment) => segment.length > 0).join(".");
-    if (normalizedPath) {
-      changedPaths.add(normalizedPath);
-    }
-  }
+  const changedPaths = new Set(prepared.value.changedPaths);
   const identityRestoredPaths = new Set<string>();
-  const hasAuthoredIncludes = containsConfigIncludeDirective(snapshot.parsed);
-  const hasResolvedAuthoredIncludes =
-    hasAuthoredIncludes && !containsConfigIncludeDirective(snapshot.sourceConfig);
-  // Missing snapshots still need runtime-to-authored projection. Callers authoring an
-  // exact bootstrap roster mark that intent through explicitSetPaths.
-  if (snapshot.valid) {
-    persistCandidate = resolvePersistCandidateForWrite({
-      runtimeConfig: snapshot.config,
-      sourceConfig: snapshot.resolved,
-      sourceConfigBeforeMigrations: snapshot.sourceConfigBeforeMigrations,
-      nextConfig: cfg,
-      rootAuthoredConfig: snapshot.parsed,
-      agentRosterIncludeOwned: snapshot.agentRosterIncludeOwned,
-      unsetPaths,
-      explicitSetPaths: options.explicitSetPaths,
-      explicitSetValueSource: options.explicitSetValueSource,
-      allowedAgentRosterRemovals: options.allowedAgentRosterRemovals,
-      allowIncludeAncestorExplicitSetPaths: options.allowIncludeAncestorExplicitSetPaths,
-      modelIdNormalizationPolicies: resolveModelIdNormalizationPolicies(
-        snapshotRead.pluginMetadataSnapshot,
-      ),
-    });
-  } else if (snapshot.exists && hasAuthoredIncludes) {
-    persistCandidate = preserveIncludeOwnedConfigForWrite({
-      runtimeConfig: snapshot.config,
-      sourceConfig: snapshot.resolved,
-      nextConfig: cfg,
-      rootAuthoredConfig: snapshot.parsed,
-    });
-  }
-  if (snapshot.exists && (snapshot.valid || hasResolvedAuthoredIncludes)) {
+  if (snapshot.exists && snapshot.valid) {
     try {
       const resolvedIncludes = resolveConfigIncludes(
         snapshot.parsed,
@@ -187,7 +156,6 @@ export async function writeConfigFileFromContext(
     }
   }
 
-  persistCandidate = applyUnsetPathsForWrite(persistCandidate as OpenClawConfig, unsetPaths);
   const envForRestore = options.envSnapshotForRestore ?? deps.env;
   const validationSourceCandidate = containsConfigIncludeDirective(persistCandidate)
     ? restoreEnvVarRefs(persistCandidate, snapshot.parsed, envForRestore)
@@ -253,9 +221,8 @@ export async function writeConfigFileFromContext(
     undefined,
     deps.homedir(),
   ) as OpenClawConfig;
-  const outputConfig = applyUnsetPathsForWrite(tildeRestoredOutputConfig, unsetPaths);
   const stampedOutputConfig = stampConfigVersion(
-    outputConfig,
+    tildeRestoredOutputConfig,
     options.lastTouchedVersionOverride,
     snapshot.exists ? snapshot.parsed : null,
   );
@@ -277,25 +244,10 @@ export async function writeConfigFileFromContext(
   const hasMetaBefore = hasConfigMeta(snapshot.parsed);
   const hasMetaAfter = hasConfigMeta(stampedOutputConfig);
   const gatewayModeBefore = resolveGatewayMode(snapshot.resolved);
-  const authoredGateway = (snapshot.parsed as { gateway?: unknown }).gateway;
-  const authoredGatewayMode =
-    authoredGateway !== null &&
-    typeof authoredGateway === "object" &&
-    !Array.isArray(authoredGateway)
-      ? (authoredGateway as Record<string, unknown>).mode
-      : undefined;
-  const gatewayModeAuthoredLocally =
-    authoredGateway !== null &&
-    typeof authoredGateway === "object" &&
-    !Array.isArray(authoredGateway) &&
-    Object.hasOwn(authoredGateway, "mode") &&
-    !hasOwnIncludeDirective(authoredGatewayMode);
+  // This is destructive-write detection, not reload policy. A surviving include
+  // still supplies mode when a local gateway sibling changes; preflight/reload owns activation.
   const preservesIncludedGatewayMode =
-    options.allowIncludeAncestorExplicitSetPaths === true &&
-    gatewayModeBefore != null &&
-    !gatewayModeAuthoredLocally &&
-    hasIncludedGatewayModeOwner(stampedOutputConfig) &&
-    !options.explicitSetPaths?.some((explicitPath) => explicitPath[0] === "gateway");
+    gatewayModeBefore != null && hasIncludedGatewayModeOwner(stampedOutputConfig);
   const gatewayModeAfter =
     resolveGatewayMode(stampedOutputConfig) ??
     (preservesIncludedGatewayMode ? gatewayModeBefore : null) ??

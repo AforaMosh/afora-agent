@@ -501,6 +501,7 @@ async function runGuidedOnboardingFlow(
       );
       await writeWizardConfigFile(mergedConfig, {
         allowConfigSizeDrop: false,
+        baseConfig: latestConfig,
         ...(latestSnapshot.hash ? { baseHash: latestSnapshot.hash } : {}),
         migrationBaseConfig: latestConfig,
       });

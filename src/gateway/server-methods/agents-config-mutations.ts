@@ -68,10 +68,9 @@ export async function deleteAgentConfigEntry(params: {
 }> {
   const committed = await mutateConfigFileWithRetry<AgentDeleteMutationResult | undefined>({
     afterWrite: { mode: "auto" },
-    writeOptions: {
-      allowedAgentRosterRemovals: [params.agentId],
-      ...(params.allowConfigSizeDrop ? { allowConfigSizeDrop: true } : {}),
-    },
+    ...(params.allowConfigSizeDrop
+      ? { writeOptions: { allowConfigSizeDrop: true } }
+      : {}),
     mutate: (draft) => {
       params.validateConfig?.(draft);
       const configured = isConfiguredAgent(draft, params.agentId);

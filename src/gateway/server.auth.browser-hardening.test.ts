@@ -6,6 +6,7 @@ import path from "node:path";
 import { describe, expect, test } from "vitest";
 import { WebSocket } from "ws";
 import { ConnectErrorDetailCodes } from "../../packages/gateway-protocol/src/connect-error-details.js";
+import { writeConfigReplacementForTest } from "../../test/helpers/config-write.js";
 import {
   loadOrCreateDeviceIdentity,
   publicKeyRawBase64UrlFromPem,
@@ -90,8 +91,7 @@ async function createSignedDevice(params: {
 }
 
 async function writeTrustedProxyBrowserAuthConfig() {
-  const { writeConfigFile } = await import("../config/config.js");
-  await writeConfigFile({
+  await writeConfigReplacementForTest({
     gateway: {
       auth: {
         mode: "trusted-proxy",
@@ -278,9 +278,8 @@ describe("gateway auth browser hardening", () => {
       ok: true,
     },
   ])("keeps non-proxy browser-origin behavior unchanged: $name", async ({ origin, ok }) => {
-    const { writeConfigFile } = await import("../config/config.js");
     testState.gatewayAuth = { mode: "token", token: "secret" };
-    await writeConfigFile({
+    await writeConfigReplacementForTest({
       gateway: {
         controlUi: {
           allowedOrigins: [ALLOWED_BROWSER_ORIGIN],
@@ -309,10 +308,11 @@ describe("gateway auth browser hardening", () => {
   });
 
   test("accepts an exactly allowlisted Tauri origin", async () => {
-    const { writeConfigFile } = await import("../config/config.js");
     const origin = "tauri://localhost";
     testState.gatewayAuth = { mode: "token", token: "secret" };
-    await writeConfigFile({ gateway: { controlUi: { allowedOrigins: [origin] } } });
+    await writeConfigReplacementForTest({
+      gateway: { controlUi: { allowedOrigins: [origin] } },
+    });
 
     await withGatewayServer(async ({ port }) => {
       const ws = await openWs(port, { origin });
@@ -355,9 +355,8 @@ describe("gateway auth browser hardening", () => {
   });
 
   test("rate-limits non-browser remote auth failures by default", async () => {
-    const { writeConfigFile } = await import("../config/config.js");
     testState.gatewayAuth = { mode: "token", token: "secret" };
-    await writeConfigFile({
+    await writeConfigReplacementForTest({
       gateway: {
         trustedProxies: ["127.0.0.1"],
       },
@@ -480,8 +479,7 @@ describe("gateway auth browser hardening", () => {
   });
 
   test("rejects forged loopback origin for control-ui when proxy headers make client non-local", async () => {
-    const { writeConfigFile } = await import("../config/config.js");
-    await writeConfigFile({
+    await writeConfigReplacementForTest({
       gateway: {
         trustedProxies: ["127.0.0.1"],
         controlUi: {

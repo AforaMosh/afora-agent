@@ -52,8 +52,8 @@ export function createConfigIO(options: ConfigIoFactoryOptions = {}) {
     recoverConfigFromJsonRootSuffix: (snapshot: ConfigFileSnapshot) =>
       recoverConfigFromJsonRootSuffixWithContext(context, snapshot),
     writeConfigFile: (
-      config: Parameters<typeof writeConfigFileFromContext>[1],
+      intent: Parameters<typeof writeConfigFileFromContext>[1],
       writeOptions: Parameters<typeof writeConfigFileFromContext>[2] = {},
-    ) => writeConfigFileFromContext(context, config, writeOptions, readInternal),
+    ) => writeConfigFileFromContext(context, intent, writeOptions, readInternal),
   };
 }

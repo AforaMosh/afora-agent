@@ -4,7 +4,7 @@ import path from "node:path";
 import { describe, expect, test, vi } from "vitest";
 import { WebSocket } from "ws";
 import { PROTOCOL_VERSION } from "../../packages/gateway-protocol/src/index.js";
-import { writeConfigFile } from "../config/config.js";
+import { writeConfigReplacementForTest as writeConfigFile } from "../../test/helpers/config-write.js";
 import {
   loadOrCreateDeviceIdentity,
   publicKeyRawBase64UrlFromPem,

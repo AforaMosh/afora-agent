@@ -21,8 +21,6 @@ import {
 } from "../shared/gateway-tailscale-auth-policy.js";
 import { isRecord } from "../utils.js";
 import { findDuplicateAgentDirs, formatDuplicateAgentDirError } from "./agent-dirs.js";
-import { attachAgentListProjection } from "./agent-list-projection.js";
-import { migratePersistedImplicitMainRoster } from "./legacy.roster.js";
 import { materializeRuntimeConfig } from "./materialize.js";
 import {
   isModelPolicyCompatSelector,
@@ -262,6 +260,8 @@ export function validateConfigObjectRaw(
     opts?.preservedLegacyRootKeys,
   );
   const policyIssues = collectUnsupportedSecretRefPolicyIssues(normalizedRaw);
+  // Runtime accepts only the current keyed roster shape. Persisted agents.list
+  // is intentionally invalid here; doctor --fix is its sole migration owner.
   const validated = OpenClawSchema.safeParse(normalizedRaw);
   if (!validated.success) {
     const schemaIssues = validated.error.issues.map(mapZodIssueToConfigIssue);
@@ -270,9 +270,7 @@ export function validateConfigObjectRaw(
       issues: mergeUnsupportedMutableSecretRefIssues(policyIssues, schemaIssues),
     };
   }
-  const validatedConfig = attachAgentListProjection(
-    materializeBundledModelProviderOverlays(validated.data as OpenClawConfig),
-  );
+  const validatedConfig = materializeBundledModelProviderOverlays(validated.data as OpenClawConfig);
   const channelIssues =
     policyIssues.length > 0 || opts?.validateBundledChannels
       ? collectRawBundledChannelConfigIssues(validatedConfig)
@@ -319,16 +317,14 @@ export function validateConfigObject(
     sourceRaw?: unknown;
   },
 ): { ok: true; config: OpenClawConfig } | { ok: false; issues: ConfigValidationIssue[] } {
-  const result = validateConfigObjectRaw(migratePersistedImplicitMainRoster(raw).config, opts);
+  const result = validateConfigObjectRaw(raw, opts);
   if (!result.ok) {
     return result;
   }
   return {
     ok: true,
-    config: attachAgentListProjection(
-      materializeRuntimeConfig(result.config, "snapshot", {
-        manifestRegistry: opts?.manifestRegistry,
-      }),
-    ),
+    config: materializeRuntimeConfig(result.config, "snapshot", {
+      manifestRegistry: opts?.manifestRegistry,
+    }),
   };
 }

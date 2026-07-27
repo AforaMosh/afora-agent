@@ -1,7 +1,17 @@
 // Shared setup-wizard steps used by the classic wizard and the bootstrap onboarding flow.
 import { isDeepStrictEqual } from "node:util";
 import type { GatewayAuthChoice, OnboardOptions } from "../commands/onboard-types.js";
-import { createConfigIO, replaceConfigFile, resolveGatewayPort } from "../config/config.js";
+import {
+  collectConfigDeletionPaths,
+  configPathExists,
+  createConfigMutationOperations,
+} from "../config/config-path-mutation.js";
+import {
+  createConfigIO,
+  replaceConfigFileWithIntent,
+  resolveGatewayPort,
+} from "../config/config.js";
+import { projectRuntimeConfigOntoSourceSnapshot } from "../config/runtime-source-projection.js";
 import type { ConfigFileSnapshot, OpenClawConfig } from "../config/types.openclaw.js";
 import {
   commitConfigWriteWithPendingPluginInstalls,
@@ -88,6 +98,8 @@ export async function writeWizardConfigFile(
     baseHash?: string;
     /** Preserve an absent-file precondition that cannot be represented by baseHash. */
     baseSnapshot?: ConfigFileSnapshot;
+    /** Source baseline used to express wizard-owned changes as a merge intent. */
+    baseConfig?: OpenClawConfig;
     migrationBaseConfig?: OpenClawConfig;
     onPendingPluginInstallMigration?: () => void;
   } = {},
@@ -95,6 +107,30 @@ export async function writeWizardConfigFile(
   let config = configInput;
   let baseHash = opts.baseHash;
   let baseSnapshot = opts.baseSnapshot;
+  let sourceBaseConfig =
+    opts.baseConfig ?? opts.baseSnapshot?.sourceConfig ?? opts.migrationBaseConfig ?? {};
+  const createWriteOperations = (nextConfig: OpenClawConfig) => {
+    if (!baseSnapshot) {
+      return createConfigMutationOperations(sourceBaseConfig, nextConfig);
+    }
+    const projection = projectRuntimeConfigOntoSourceSnapshot({
+      sourceSnapshot: baseSnapshot.parsed as OpenClawConfig,
+      runtimeSnapshot: sourceBaseConfig,
+      candidate: nextConfig,
+    });
+    if (!projection.ok) {
+      throw new Error(
+        `Wizard config write cannot safely preserve authored config at ${projection.error.key} (${projection.error.code}).`,
+      );
+    }
+    const operations = createConfigMutationOperations(baseSnapshot.parsed, projection.value);
+    for (const path of collectConfigDeletionPaths(sourceBaseConfig, nextConfig)) {
+      if (!configPathExists(baseSnapshot.parsed, path)) {
+        operations.push({ kind: "unset", path, strictIncludeOwnership: true });
+      }
+    }
+    return operations;
+  };
   const allowConfigSizeDrop = opts.allowConfigSizeDrop === true;
   if (!allowConfigSizeDrop && hasPendingPluginInstallRecords(config)) {
     // Explicit undefined means this writer already migrated its baseline; an omitted
@@ -111,8 +147,12 @@ export async function writeWizardConfigFile(
         sourceConfig: migrationBaseConfig,
         writeOptions: { allowConfigSizeDrop: true },
         commit: async (nextConfig, writeOptions) => {
-          return await replaceConfigFile({
+          return await replaceConfigFileWithIntent({
             nextConfig,
+            intent: {
+              kind: "mutate",
+              operations: createWriteOperations(nextConfig),
+            },
             ...(baseSnapshot ? { snapshot: baseSnapshot } : {}),
             ...(baseHash !== undefined ? { baseHash } : {}),
             ...(writeOptions ? { writeOptions } : {}),
@@ -122,6 +162,7 @@ export async function writeWizardConfigFile(
       });
       baseHash = migration.persistedHash ?? undefined;
       baseSnapshot = undefined;
+      sourceBaseConfig = migration.config;
       config = stripPendingPluginInstallRecords(
         config,
         unchangedPendingPluginInstallRecordIds(config, migrationBaseConfig),
@@ -133,8 +174,12 @@ export async function writeWizardConfigFile(
     nextConfig: config,
     writeOptions: { allowConfigSizeDrop },
     commit: async (nextConfig, writeOptions) => {
-      return await replaceConfigFile({
+      return await replaceConfigFileWithIntent({
         nextConfig,
+        intent: {
+          kind: "mutate",
+          operations: createWriteOperations(nextConfig),
+        },
         ...(baseSnapshot ? { snapshot: baseSnapshot } : {}),
         ...(baseHash !== undefined ? { baseHash } : {}),
         ...(writeOptions ? { writeOptions } : {}),

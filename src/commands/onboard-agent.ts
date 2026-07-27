@@ -5,9 +5,11 @@ import {
   resolveDefaultAgentId,
   toAgentEntriesRecord,
 } from "../agents/agent-scope-config.js";
+import {
+  applyConfigOperations,
+  createConfigMutationOperations,
+} from "../config/config-path-mutation.js";
 import { readConfigFileSnapshot } from "../config/config.js";
-import { createMergePatch } from "../config/merge-patch.js";
-import { applyMergePatch } from "../config/merge-patch.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 
 function isInjectedMainRoster(config: OpenClawConfig): boolean {
@@ -26,10 +28,12 @@ function mergeOnboardingCandidate(params: {
   candidate: OpenClawConfig;
   currentRuntime: OpenClawConfig;
 }): OpenClawConfig {
-  const proposalPatch = createMergePatch(params.base, params.candidate);
-  // Keep this runtime-shaped. The canonical config writer projects only this
-  // patch onto snapshot.parsed, preserving include ownership and env refs.
-  const merged = applyMergePatch(params.currentRuntime, proposalPatch) as OpenClawConfig;
+  // Keep this runtime-shaped. The canonical config writer later projects only
+  // these candidate changes onto snapshot.parsed, preserving authored syntax.
+  const merged = applyConfigOperations(
+    params.currentRuntime,
+    createConfigMutationOperations(params.base, params.candidate),
+  );
   const { list: _legacyList, ...agents } = merged.agents ?? {};
   return {
     ...merged,

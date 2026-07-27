@@ -26,8 +26,12 @@ from a single entry point:
   events, heartbeat state, delivery queues, fetch/proxy helpers, file helpers,
   approval types, and unrelated utilities.
 - **`openclaw/plugin-sdk/config-runtime`** - a broad config barrel retained
-  only for its later compatibility window; direct runtime load/write helpers
-  have been removed.
+  only for its later compatibility window. Its deprecated
+  `writeConfigFile(config, options)` adapter remains for published plugins and
+  projects runtime-derived changes onto the current authored source. Migrate
+  writes to `mutateConfigFile(...)` or `replaceConfigFile(...)`; the adapter is
+  scheduled for the next approved Plugin SDK break window, no earlier than
+  2026-10-01.
 - **`openclaw/extension-api`** - a removed bridge that gave plugins direct
   access to host-side helpers like the embedded agent runner.
 - **`api.registerEmbeddedExtensionFactory(...)`** - a removed embedded-runner-only

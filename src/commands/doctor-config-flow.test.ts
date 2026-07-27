@@ -1383,7 +1383,7 @@ vi.mock("./doctor-config-preflight.js", async () => {
             exists,
             path: configPath,
             parsed,
-            agentRosterIncludeOwned: injected?.agentRosterIncludeOwned === true,
+            includeProvenance: injected?.includeProvenance,
             sourceConfigBeforeMigrations,
             config: injectedEffectiveConfig,
             sourceConfig: injectedEffectiveConfig,
@@ -1407,7 +1407,7 @@ vi.mock("./doctor-config-preflight.js", async () => {
             exists,
             path: configPath,
             parsed,
-            agentRosterIncludeOwned: injected?.agentRosterIncludeOwned === true,
+            includeProvenance: injected?.includeProvenance,
             sourceConfigBeforeMigrations,
             config: injectedEffectiveConfig,
             sourceConfig: injectedEffectiveConfig,
@@ -1432,7 +1432,7 @@ vi.mock("./doctor-config-preflight.js", async () => {
           exists,
           path: configPath,
           parsed,
-          agentRosterIncludeOwned: injected?.agentRosterIncludeOwned === true,
+          includeProvenance: injected?.includeProvenance,
           sourceConfigBeforeMigrations,
           config: effectiveConfig,
           sourceConfig: effectiveConfig,
@@ -1754,24 +1754,171 @@ describe("doctor config flow", () => {
 
   it("detects a legacy roster after environment resolution", async () => {
     const result = await runDoctorConfigWithInput({
-      config: { agents: { entries: { ops: { default: true } } } },
-      parsedConfig: { agents: { list: [{ id: "${AGENT_ID}", default: true }] } },
+      config: {
+        agents: { entries: { ops: { default: true } } },
+        gateway: { auth: { token: "resolved-token" } },
+      },
+      parsedConfig: {
+        agents: { list: [{ id: "${AGENT_ID}", default: "${IS_DEFAULT}" as never }] },
+        gateway: { auth: { token: "${GATEWAY_TOKEN}" } },
+      },
       sourceConfigBeforeMigrations: {
         agents: { list: [{ id: "ops", default: true }] },
+        gateway: { auth: { token: "resolved-token" } },
       },
       repair: true,
       run: loadAndMaybeMigrateDoctorConfig,
     });
 
     expect(result.shouldWriteConfig).toBe(true);
-    expect(result.cfg.agents).toEqual({ entries: { ops: { default: true } } });
+    expect(result.cfg.agents).toEqual({
+      entries: { ops: { default: "${IS_DEFAULT}" as never } },
+    });
+    expect(result.cfg.gateway?.auth?.token).toBe("${GATEWAY_TOKEN}");
   });
 
   it("preserves a roster supplied by an included config during repair", async () => {
     const result = await runDoctorConfigWithInput({
       config: { agents: { entries: { ops: { default: true } } } },
       parsedConfig: { $include: "./agents.json" },
-      agentRosterIncludeOwned: true,
+      includeProvenance: [
+        {
+          path: [],
+          contributedPaths: [["agents", "entries"]],
+          kind: "single",
+          hasSiblingOverrides: false,
+          targetPath: "/virtual/.openclaw/agents.json",
+        },
+      ],
+      repair: true,
+      run: loadAndMaybeMigrateDoctorConfig,
+    });
+
+    expect(result.shouldWriteConfig).toBe(false);
+    expect(result.cfg.agents?.entries).toEqual({ ops: { default: true } });
+  });
+
+  it("preserves an included legacy list roster during repair", async () => {
+    const result = await runDoctorConfigWithInput({
+      config: { agents: { entries: { ops: { default: true } } } },
+      parsedConfig: { agents: { $include: "./agents.json" } },
+      sourceConfigBeforeMigrations: {
+        agents: { list: [{ id: "ops", default: true }] },
+      },
+      includeProvenance: [
+        {
+          path: ["agents", "list"],
+          kind: "single",
+          hasSiblingOverrides: false,
+          targetPath: "/virtual/.openclaw/agents.json",
+        },
+      ],
+      repair: true,
+      run: loadAndMaybeMigrateDoctorConfig,
+    });
+
+    expect(result.shouldWriteConfig).toBe(false);
+    expect(result.cfg.agents?.entries).toEqual({ ops: { default: true } });
+  });
+
+  it("migrates a legacy list while preserving an entry-internal include", async () => {
+    const result = await runDoctorConfigWithInput({
+      config: {
+        agents: {
+          entries: { ops: { default: true, identity: { name: "Ops" } } },
+        },
+      },
+      parsedConfig: {
+        agents: {
+          list: [
+            {
+              id: "ops",
+              default: true,
+              identity: { $include: "./identity.json" },
+            },
+          ],
+        },
+      },
+      sourceConfigBeforeMigrations: {
+        agents: {
+          list: [{ id: "ops", default: true, identity: { name: "Ops" } }],
+        },
+      },
+      includeProvenance: [
+        {
+          path: ["agents", "list", "0", "identity"],
+          contributedPaths: [["agents", "list", "0", "identity", "name"]],
+          kind: "single",
+          hasSiblingOverrides: false,
+          targetPath: "/virtual/.openclaw/identity.json",
+        },
+      ],
+      repair: true,
+      run: loadAndMaybeMigrateDoctorConfig,
+    });
+
+    expect(result.shouldWriteConfig).toBe(true);
+    expect(result.cfg.agents?.entries).toEqual({
+      ops: { default: true, identity: { $include: "./identity.json" } },
+    });
+  });
+
+  it("repairs keyed default markers without resolving authored entry syntax", async () => {
+    const result = await runDoctorConfigWithInput({
+      config: {
+        agents: {
+          entries: {
+            ops: { default: true, token: "resolved-token", identity: { name: "Ops" } },
+            research: { default: true },
+          },
+        },
+      },
+      parsedConfig: {
+        agents: {
+          entries: {
+            ops: {
+              default: true,
+              token: "${OPS_TOKEN}",
+              identity: { $include: "./identity.json" },
+            },
+            research: { default: true },
+          },
+        },
+      },
+      repair: true,
+      run: loadAndMaybeMigrateDoctorConfig,
+    });
+
+    expect(result.shouldWriteConfig).toBe(true);
+    expect(result.cfg.agents?.entries).toEqual({
+      ops: {
+        default: true,
+        token: "${OPS_TOKEN}",
+        identity: { $include: "./identity.json" },
+      },
+      research: {},
+    });
+  });
+
+  it("preserves a byte-identical ancestor roster contribution", async () => {
+    const legacyRoster = { agents: { list: [{ id: "ops", default: true }] } };
+    const result = await runDoctorConfigWithInput({
+      config: { agents: { entries: { ops: { default: true } } } },
+      parsedConfig: { $include: "./base.json", ...legacyRoster },
+      sourceConfigBeforeMigrations: legacyRoster,
+      includeProvenance: [
+        {
+          path: [],
+          contributedPaths: [
+            ["agents", "list"],
+            ["agents", "list", "0", "id"],
+            ["agents", "list", "0", "default"],
+          ],
+          kind: "single",
+          hasSiblingOverrides: true,
+          targetPath: "/virtual/.openclaw/base.json",
+        },
+      ],
       repair: true,
       run: loadAndMaybeMigrateDoctorConfig,
     });
@@ -1785,7 +1932,15 @@ describe("doctor config flow", () => {
       config: { agents: { entries: { main: { default: true } } } },
       parsedConfig: { $include: "./agents.json" },
       sourceConfigBeforeMigrations: { agents: { entries: {} } },
-      agentRosterIncludeOwned: true,
+      includeProvenance: [
+        {
+          path: [],
+          contributedPaths: [["agents", "entries"]],
+          kind: "single",
+          hasSiblingOverrides: false,
+          targetPath: "/virtual/.openclaw/agents.json",
+        },
+      ],
       repair: true,
       run: loadAndMaybeMigrateDoctorConfig,
     });
@@ -1801,6 +1956,15 @@ describe("doctor config flow", () => {
         channels: { telegram: { enabled: true } },
       },
       parsedConfig: { $include: "./channels.json" },
+      includeProvenance: [
+        {
+          path: [],
+          contributedPaths: [["channels", "telegram", "enabled"]],
+          kind: "single",
+          hasSiblingOverrides: false,
+          targetPath: "/virtual/.openclaw/channels.json",
+        },
+      ],
       sourceConfigBeforeMigrations: { channels: { telegram: { enabled: true } } },
       repair: true,
       run: loadAndMaybeMigrateDoctorConfig,
@@ -1819,6 +1983,15 @@ describe("doctor config flow", () => {
         },
       },
       parsedConfig: { $include: "./channels.json", agents: { entries: {} } },
+      includeProvenance: [
+        {
+          path: [],
+          contributedPaths: [["channels", "telegram", "enabled"]],
+          kind: "single",
+          hasSiblingOverrides: true,
+          targetPath: "/virtual/.openclaw/channels.json",
+        },
+      ],
       sourceConfigBeforeMigrations: {
         channels: { telegram: { enabled: true } },
         agents: { entries: {} },

@@ -2,7 +2,6 @@
 import { isDeepStrictEqual } from "node:util";
 import { listAgentEntries, toAgentEntriesRecord } from "../agents/agent-scope-config.js";
 import { resolveOnboardingAgentTarget } from "../commands/onboard-agent-target.js";
-import { hasResolvedRosterBeforeMigrations } from "../config/agent-roster-provenance.js";
 import {
   readConfigFileSnapshot,
   readConfigFileSnapshotWithPluginMetadata,
@@ -480,7 +479,7 @@ export async function applySystemAgentSetup(
           // stale settings from the losing attempt into service setup or probes.
           const setupCandidate = await buildSetupCandidate(
             currentConfig,
-            hasResolvedRosterBeforeMigrations(context.snapshot),
+            listAgentEntries(context.snapshot.sourceConfigBeforeMigrations ?? {}).length > 0,
           );
           const finalizedConfig = finalizeConfig
             ? finalizeConfig(setupCandidate.nextConfig, currentSnapshot.sourceConfig)

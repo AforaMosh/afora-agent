@@ -1,5 +1,3 @@
-import { includeContributionOwnsAgentRoster } from "./agent-roster-provenance.js";
-import { resolveManagedUnsetPathsForWrite } from "./config-path-mutation.js";
 import { ConfigIncludeError } from "./includes.js";
 import type { ConfigIoContext } from "./io.context.js";
 import { maybeRecoverSuspiciousConfigRead } from "./io.observe-recovery.js";
@@ -28,7 +26,6 @@ import type {
   ReadConfigFileSnapshotWithPluginMetadataResult,
 } from "./io.types.js";
 import { warnIfConfigFromFuture } from "./io.warnings.js";
-import { migratePersistedImplicitMainRoster } from "./legacy.js";
 import { materializeRuntimeConfig } from "./materialize.js";
 import { ConfigMutationConflictError } from "./mutation-conflict.js";
 import type { ConfigFileSnapshot, LegacyConfigIssue, OpenClawConfig } from "./types.js";
@@ -47,6 +44,35 @@ function listResolvedIncludePaths(includeFilePathsForWatch: ReadonlySet<string>)
   return [...includeFilePathsForWatch].toSorted();
 }
 
+function collectIncludeContributionPaths(value: unknown, path: readonly string[]): string[][] {
+  if (Array.isArray(value)) {
+    return value.length === 0
+      ? path.length > 0
+        ? [[...path]]
+        : []
+      : [
+          ...(path.length > 0 ? [[...path]] : []),
+          ...value.flatMap((child, index) =>
+            collectIncludeContributionPaths(child, [...path, String(index)]),
+          ),
+        ];
+  }
+  if (value !== null && typeof value === "object") {
+    const entries = Object.entries(value);
+    return entries.length === 0
+      ? path.length > 0
+        ? [[...path]]
+        : []
+      : [
+          ...(path.length > 0 ? [[...path]] : []),
+          ...entries.flatMap(([key, child]) =>
+            collectIncludeContributionPaths(child, [...path, key]),
+          ),
+        ];
+  }
+  return [[...path]];
+}
+
 export async function readConfigFileSnapshotInternal(
   context: ConfigIoContext,
   options: InternalReadOptions = {},
@@ -55,8 +81,7 @@ export async function readConfigFileSnapshotInternal(
   maybeLoadDotEnvForConfig(deps.env);
   const envBeforeRead = snapshotEnv(deps.env);
   if (!deps.fs.existsSync(configPath)) {
-    const migrated = migratePersistedImplicitMainRoster({});
-    const config = coerceConfig(migrated.config);
+    const config: OpenClawConfig = {};
     const legacyIssues: LegacyConfigIssue[] = [];
     return await finalizeReadConfigSnapshotInternalResult(deps, {
       snapshot: createConfigFileSnapshot({
@@ -66,7 +91,7 @@ export async function readConfigFileSnapshotInternal(
         parsed: {},
         sourceConfig: config,
         valid: true,
-        runtimeConfig: config,
+        runtimeConfig: materializeRuntimeConfig(config, "snapshot"),
         hash: hashConfigRaw(null),
         issues: [],
         warnings: [],
@@ -84,7 +109,6 @@ export async function readConfigFileSnapshotInternal(
   const includeFileTargetsForWrite: Record<string, string> = {};
   const includeFilePathsForWatch = new Set<string>();
   const includeProvenance: NonNullable<ConfigFileSnapshot["includeProvenance"]>[number][] = [];
-  let agentRosterIncludeOwned = false;
 
   try {
     const raw = await deps.measure("config.snapshot.read.file", () =>
@@ -129,9 +153,11 @@ export async function readConfigFileSnapshotInternal(
           includeFileTargetsForWrite,
           includeFilePathsForWatch,
           (event) => {
-            const { value: _value, ...ownership } = event;
-            includeProvenance.push(ownership);
-            agentRosterIncludeOwned ||= includeContributionOwnsAgentRoster(event);
+            const { value, ...ownership } = event;
+            includeProvenance.push({
+              ...ownership,
+              contributedPaths: collectIncludeContributionPaths(value, event.path),
+            });
           },
         ),
       );
@@ -168,11 +194,7 @@ export async function readConfigFileSnapshotInternal(
       path: warning.configPath,
       message: `Missing env var "${warning.varName}" - feature using this value will be unavailable`,
     }));
-    const rosterMigration = migratePersistedImplicitMainRoster(readResolution.resolvedConfigRaw);
-    envVarWarnings.push(
-      ...rosterMigration.diagnostics.map((message) => ({ path: "agents.entries", message })),
-    );
-    const effectiveConfigRaw = rosterMigration.config;
+    const effectiveConfigRaw = readResolution.resolvedConfigRaw;
     const validationConfigRaw = effectiveConfigRaw;
     const snapshotRaw = raw;
     const snapshotParsed = effectiveParsed;
@@ -209,7 +231,6 @@ export async function readConfigFileSnapshotInternal(
           raw: snapshotRaw,
           parsed: snapshotParsed,
           includeProvenance,
-          agentRosterIncludeOwned,
           sourceConfigBeforeMigrations: coerceConfig(readResolution.resolvedConfigRaw),
           sourceConfig: coerceConfig(effectiveConfigRaw),
           valid: false,
@@ -287,7 +308,6 @@ export async function readConfigFileSnapshotInternal(
             raw: snapshotRaw,
             parsed: snapshotParsed,
             includeProvenance,
-            agentRosterIncludeOwned,
             sourceConfigBeforeMigrations: coerceConfig(readResolution.resolvedConfigRaw),
             sourceConfig: coerceConfig(effectiveConfigRaw),
             valid: true,
@@ -398,7 +418,6 @@ export async function readConfigFileSnapshotForWriteFromContext(
       ownedConfigPathForWrite: context.configPath,
       includeFileHashesForWrite: result.includeFileHashesForWrite,
       includeFileTargetsForWrite: result.includeFileTargetsForWrite,
-      unsetPaths: resolveManagedUnsetPathsForWrite(undefined),
     },
   };
 }

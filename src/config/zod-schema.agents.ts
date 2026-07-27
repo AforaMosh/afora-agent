@@ -37,7 +37,10 @@ export const AgentsSchema = z
   })
   .strict()
   .superRefine((value, ctx) => {
-    const agents = Object.values(value.entries ?? {});
+    if (value.entries === undefined) {
+      return;
+    }
+    const agents = Object.values(value.entries);
     const defaultCount = agents.filter((agent) => agent.default === true).length;
     if (defaultCount !== 1) {
       ctx.addIssue({

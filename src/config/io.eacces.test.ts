@@ -155,7 +155,12 @@ describe("config write guard after unreadable config", () => {
       expect(snapshot.readError).toEqual({ code: "EACCES" });
 
       const skeletal: OpenClawConfig = { channels: { telegram: { enabled: true } } };
-      await expect(io.writeConfigFile(skeletal, writeOptions)).rejects.toMatchObject({
+      await expect(
+        io.writeConfigFile(
+          { kind: "replace", config: skeletal, allowAgentRosterRemovals: true },
+          writeOptions,
+        ),
+      ).rejects.toMatchObject({
         code: "CONFIG_WRITE_REJECTED",
         reasons: expect.arrayContaining(["unreadable-config-before-write"]),
       });
@@ -190,7 +195,11 @@ describe("config write guard after unreadable config", () => {
           { OPENCLAW_CONFIG_PATH: configPath, OPENCLAW_TEST_FAST: "1" },
           async () => {
             await expect(
-              writeConfigFile({ channels: { telegram: { enabled: true } } }),
+              writeConfigFile({
+                kind: "replace",
+                config: { channels: { telegram: { enabled: true } } },
+                allowAgentRosterRemovals: true,
+              }),
             ).rejects.toMatchObject({
               code: "CONFIG_WRITE_REJECTED",
               reasons: expect.arrayContaining(["unreadable-config-before-write"]),

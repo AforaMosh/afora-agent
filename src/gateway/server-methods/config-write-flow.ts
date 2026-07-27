@@ -4,9 +4,10 @@ import { isDeepStrictEqual } from "node:util";
 import {
   createConfigIO,
   readConfigFileSnapshotForWrite,
-  replaceConfigFile,
+  replaceConfigFileWithIntent,
   resolveConfigSnapshotHash,
 } from "../../config/config.js";
+import type { ConfigWriteIntent } from "../../config/io.write-plan.js";
 import { extractDeliveryInfo } from "../../config/sessions.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import {
@@ -219,6 +220,7 @@ export async function commitGatewayConfigWrite(params: {
   snapshot: ConfigWriteSnapshot;
   writeOptions: ConfigWriteOptions;
   nextConfig: OpenClawConfig;
+  intent: ConfigWriteIntent;
   context?: GatewayRequestContext;
   disconnectSharedAuthClients?: boolean;
 }): Promise<{
@@ -227,8 +229,9 @@ export async function commitGatewayConfigWrite(params: {
   hash: string | null;
   queueFollowUp: () => void;
 }> {
-  const result = await replaceConfigFile({
+  const result = await replaceConfigFileWithIntent({
     nextConfig: params.nextConfig,
+    intent: params.intent,
     // The early RPC hash check is only advisory until this lock-time CAS. Without
     // it, concurrent writers can both succeed and overwrite each other's config.
     baseHash: resolveConfigSnapshotHash(params.snapshot) ?? undefined,

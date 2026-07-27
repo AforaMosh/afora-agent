@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { validateTalkConfigResult } from "../../packages/gateway-protocol/src/index.js";
+import { writeConfigReplacementForTest } from "../../test/helpers/config-write.js";
 import { normalizeResolvedSecretInputString } from "../config/types.secrets.js";
 import {
   loadOrCreateDeviceIdentity,
@@ -106,9 +107,8 @@ async function writeTalkConfig(config: {
   voiceId?: string;
   silenceTimeoutMs?: number;
 }) {
-  const { writeConfigFile } = await import("../config/config.js");
   const providerId = config.provider ?? GENERIC_TALK_PROVIDER_ID;
-  await writeConfigFile({
+  await writeConfigReplacementForTest({
     talk: {
       provider: providerId,
       silenceTimeoutMs: config.silenceTimeoutMs,
@@ -239,8 +239,7 @@ function expectTalkConfig(
 
 describe("gateway talk.config", () => {
   it("returns redacted talk config for read scope", async () => {
-    const { writeConfigFile } = await import("../config/config.js");
-    await writeConfigFile({
+    await writeConfigReplacementForTest({
       talk: {
         provider: GENERIC_TALK_PROVIDER_ID,
         providers: {
@@ -431,8 +430,7 @@ describe("gateway talk.config", () => {
     // a plain `{}` would let `cleaned['__proto__'] = {...}` mutate
     // Object.prototype. The helper uses `Object.create(null)` to make that
     // assignment a normal property write on the local map instead.
-    const { writeConfigFile } = await import("../config/config.js");
-    await writeConfigFile({
+    await writeConfigReplacementForTest({
       talk: {
         provider: GENERIC_TALK_PROVIDER_ID,
         providers: {

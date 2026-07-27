@@ -3,7 +3,14 @@ import fs from "node:fs";
 import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import {
+  collectConfigDeletionPaths,
+  configPathExists,
+  createConfigMutationOperations,
+} from "../config/config-path-mutation.js";
+import {
+  readConfigFileSnapshotForWrite,
   replaceConfigFile,
+  replaceConfigFileWithIntent,
   resolveConfigWriteAfterWrite,
   transformConfigFileWithRetry,
   type ConfigMutationCommit,
@@ -12,12 +19,12 @@ import {
   type TransformConfigFileWithRetryParams,
 } from "../config/config.js";
 import type { ConfigWriteOptions } from "../config/io.js";
+import { projectRuntimeConfigOntoSourceSnapshot } from "../config/runtime-source-projection.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
 import { isPathInside } from "../infra/path-guards.js";
 import {
   loadInstalledPluginIndexInstallRecords,
-  PLUGIN_INSTALLS_CONFIG_PATH,
   withoutPluginInstallRecords,
   writePersistedInstalledPluginIndexInstallRecords,
 } from "./installed-plugin-index-records.js";
@@ -28,14 +35,6 @@ import {
   resolveRetainedManagedNpmInstallMarkerPath,
 } from "./managed-npm-retention.js";
 import { planPluginUninstall } from "./uninstall.js";
-
-function mergeUnsetPaths(
-  left?: ConfigWriteOptions["unsetPaths"],
-  right?: ConfigWriteOptions["unsetPaths"],
-): ConfigWriteOptions["unsetPaths"] | undefined {
-  const merged = [...(left ?? []), ...(right ?? [])];
-  return merged.length > 0 ? merged : undefined;
-}
 
 /** Return whether config still contains legacy/transient plugin install records. */
 export function hasPendingPluginInstallRecords(config: OpenClawConfig): boolean {
@@ -303,9 +302,6 @@ async function commitPluginInstallRecordsWithWriter(params: {
         ...(installRecordsChanged && params.writeOptions?.afterWrite === undefined
           ? { afterWrite: { mode: "restart", reason: PLUGIN_SOURCE_CHANGED_RESTART_REASON } }
           : {}),
-        unsetPaths: mergeUnsetPaths(params.writeOptions?.unsetPaths, [
-          Array.from(PLUGIN_INSTALLS_CONFIG_PATH),
-        ]),
       });
     } catch (error) {
       try {
@@ -426,6 +422,7 @@ export async function commitConfigWriteWithPendingPluginInstalls(params: {
 /** Replace the config file after moving pending plugin install records into the install index. */
 export async function commitConfigWithPendingPluginInstalls(params: {
   nextConfig: OpenClawConfig;
+  sourceConfig?: OpenClawConfig;
   baseHash?: string;
   writeOptions?: ConfigWriteOptions;
 }): Promise<{
@@ -434,14 +431,49 @@ export async function commitConfigWithPendingPluginInstalls(params: {
   movedInstallRecords: boolean;
   persistedHash: string | null;
 }> {
+  let prepared: Awaited<ReturnType<typeof readConfigFileSnapshotForWrite>> | undefined;
   return await commitConfigWriteWithPendingPluginInstalls({
     nextConfig: params.nextConfig,
+    ...(params.sourceConfig ? { sourceConfig: params.sourceConfig } : {}),
     ...(params.writeOptions ? { writeOptions: params.writeOptions } : {}),
     commit: async (nextConfig, writeOptions) => {
-      return await replaceConfigFile({
+      if (!params.sourceConfig && !prepared) {
+        prepared = await readConfigFileSnapshotForWrite({
+          skipPluginValidation: writeOptions?.skipPluginValidation,
+        });
+      }
+      const sourceConfig = params.sourceConfig ?? prepared!.snapshot.sourceConfig;
+      const runtimeConfig = params.sourceConfig ?? prepared!.snapshot.runtimeConfig;
+      const sourceDocument = prepared?.snapshot.parsed ?? sourceConfig;
+      const projection = projectRuntimeConfigOntoSourceSnapshot({
+        sourceSnapshot: sourceDocument as OpenClawConfig,
+        runtimeSnapshot: runtimeConfig,
+        candidate: nextConfig,
+      });
+      if (!projection.ok) {
+        throw new Error(
+          `Plugin config write cannot safely preserve authored config at ${projection.error.key} (${projection.error.code}).`,
+        );
+      }
+      const operations = createConfigMutationOperations(sourceDocument, projection.value);
+      if (prepared) {
+        for (const path of collectConfigDeletionPaths(sourceConfig, nextConfig)) {
+          if (!configPathExists(sourceDocument, path)) {
+            operations.push({ kind: "unset", path, strictIncludeOwnership: true });
+          }
+        }
+      }
+      return await replaceConfigFileWithIntent({
         nextConfig,
+        intent: {
+          kind: "mutate",
+          operations,
+        },
+        ...(prepared ? { snapshot: prepared.snapshot } : {}),
         ...(params.baseHash !== undefined ? { baseHash: params.baseHash } : {}),
-        ...(writeOptions ? { writeOptions } : {}),
+        ...(prepared || writeOptions
+          ? { writeOptions: { ...prepared?.writeOptions, ...writeOptions } }
+          : {}),
       });
     },
   });
@@ -451,15 +483,22 @@ export async function commitConfigWithPendingPluginInstalls(params: {
 export async function transformConfigWithPendingPluginInstalls<T = void>(
   params: Omit<TransformConfigFileWithRetryParams<T>, "commit">,
 ): Promise<ConfigMutationResult<T>> {
-  const commit: ConfigMutationCommit = async ({ nextConfig, snapshot, baseHash, writeOptions }) => {
+  const commit: ConfigMutationCommit = async ({
+    nextConfig,
+    intent,
+    snapshot,
+    baseHash,
+    writeOptions,
+  }) => {
     const requestedAfterWrite = params.afterWrite ?? params.writeOptions?.afterWrite;
     const committed = await commitConfigWriteWithPendingPluginInstalls({
       nextConfig,
       sourceConfig: snapshot.sourceConfig,
       ...(writeOptions ? { writeOptions: mergeAfterWrite(writeOptions, params.afterWrite) } : {}),
       commit: async (config, commitWriteOptions) => {
-        return await replaceConfigFile({
+        return await replaceConfigFileWithIntent({
           nextConfig: config,
+          intent,
           snapshot,
           writeOptions: commitWriteOptions ?? {},
           ...(baseHash !== undefined ? { baseHash } : {}),

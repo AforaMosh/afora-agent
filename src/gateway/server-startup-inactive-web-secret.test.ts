@@ -1,5 +1,6 @@
 /** Gateway startup coverage for active and inactive web-provider SecretRefs. */
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { writeConfigReplacementForTest } from "../../test/helpers/config-write.js";
 import type { OpenClawConfig } from "../config/config.js";
 import { setActiveDegradedSecretOwners } from "../secrets/runtime-degraded-state.js";
 import { getActiveSecretsRuntimeSnapshot } from "../secrets/runtime.js";
@@ -120,8 +121,7 @@ function buildConfig(params: { enabled: boolean; envVar: string }): OpenClawConf
 }
 
 async function writeConfig(config: OpenClawConfig): Promise<void> {
-  const { writeConfigFile } = await import("../config/config.js");
-  await writeConfigFile(config);
+  await writeConfigReplacementForTest(config);
 }
 
 describe("gateway startup web-provider SecretRefs", () => {

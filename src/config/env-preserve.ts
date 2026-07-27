@@ -462,6 +462,16 @@ function matchAuthoredTemplateArrayItems(params: {
   };
   for (const parsedIndex of templateIndexes) {
     const parsedItem = params.parsed[parsedIndex];
+    const exactAuthoredIndex = params.incoming.findIndex(
+      (item, incomingIndex) =>
+        !usedIncomingIndexes.has(incomingIndex) && isDeepStrictEqual(item, parsedItem),
+    );
+    if (exactAuthoredIndex >= 0) {
+      // An already-authored reference can move safely: no resolved value is
+      // being attached to a different element, and duplicate refs are equal.
+      addMatch(parsedIndex, exactAuthoredIndex);
+      continue;
+    }
     const stableIdentity = resolveStableArrayIdentityMatch({
       incoming: params.incoming,
       parsed: params.parsed,

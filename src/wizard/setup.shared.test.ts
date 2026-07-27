@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("../config/config.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../config/config.js")>()),
   replaceConfigFile: mocks.replaceConfigFile,
+  replaceConfigFileWithIntent: mocks.replaceConfigFile,
 }));
 
 vi.mock("../plugins/install-record-commit.js", async (importOriginal) => ({

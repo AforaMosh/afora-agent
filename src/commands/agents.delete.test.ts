@@ -42,6 +42,7 @@ vi.mock("../config/config.js", async () => ({
   ...(await vi.importActual<typeof import("../config/config.js")>("../config/config.js")),
   readConfigFileSnapshot: configMocks.readConfigFileSnapshot,
   replaceConfigFile: configMocks.replaceConfigFile,
+  replaceConfigFileWithIntent: configMocks.replaceConfigFile,
 }));
 
 vi.mock("../gateway/call.js", () => ({

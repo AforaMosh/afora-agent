@@ -56,6 +56,7 @@ export {
   mutateConfigFile,
   mutateConfigFileWithRetry,
   replaceConfigFile,
+  replaceConfigFileWithIntent,
   transformConfigFile,
   transformConfigFileWithRetry,
   withConfigMutationExclusive,

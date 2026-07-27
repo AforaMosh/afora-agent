@@ -34,14 +34,14 @@ export {
   loadConfig,
   readConfigFileSnapshotForWrite,
   setRuntimeConfigSnapshot,
-  /**
-   * @deprecated Use mutateConfigFile() or replaceConfigFile() with an explicit
-   * afterWrite intent so restart behavior stays under host control. Bundled
-   * plugins and repo code are blocked from using this by the
-   * deprecated-internal-config-api architecture guard.
-   */
-  writeConfigFile,
 } from "../config/io.js";
+/**
+ * @deprecated Use mutateConfigFile() for source mutations or replaceConfigFile()
+ * for explicit replacement. Candidates that cannot be projected unambiguously
+ * from the current runtime snapshot are rejected. Removal is scheduled for the
+ * next approved Plugin SDK break window, no earlier than 2026-10-01.
+ */
+export { writeConfigFileCompat as writeConfigFile } from "../config/io.runtime.js";
 export { mutateConfigFile, replaceConfigFile } from "../config/mutate.js";
 export type { ConfigWriteAfterWrite } from "../config/runtime-snapshot.js";
 export { logConfigUpdated } from "../config/logging.js";

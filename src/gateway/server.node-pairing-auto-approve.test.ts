@@ -1,7 +1,7 @@
 // Node pairing auto-approve tests cover LAN self-connect detection, token auth,
 // node identity persistence, and auto-approved pairing state.
 import { describe, expect, test } from "vitest";
-import { writeConfigFile } from "../config/config.js";
+import { writeConfigReplacementForTest as writeConfigFile } from "../../test/helpers/config-write.js";
 import { getPairedDevice, listDevicePairing } from "../infra/device-pairing.js";
 import { installGatewayTestHooks } from "./test-helpers.js";
 import { withLanNodePairingAttempt } from "./test-helpers.lan-pairing.js";

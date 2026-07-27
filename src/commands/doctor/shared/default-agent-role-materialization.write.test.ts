@@ -55,7 +55,10 @@ describe("default role materialization authored writes", () => {
     const snapshot = await io.readConfigFileSnapshot();
     const materialized = materializeDefaultAgentRoles(snapshot.config);
     expect(materialized.changes.length).toBeGreaterThan(0);
-    await io.writeConfigFile(materialized.config, { baseSnapshot: snapshot });
+    await io.writeConfigFile(
+      { kind: "replace", config: materialized.config, allowAgentRosterRemovals: true },
+      { baseSnapshot: snapshot },
+    );
 
     const persisted = JSON.parse(await fs.readFile(configPath, "utf-8")) as {
       agents?: {

@@ -2,6 +2,7 @@
  * Gateway server channel RPC tests.
  */
 import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
+import { writeConfigReplacementForTest } from "../../test/helpers/config-write.js";
 import type { ChannelPlugin } from "../channels/plugins/types.public.js";
 import { createChannelTestPluginBase } from "../test-utils/channel-plugins.js";
 import { setRegistry } from "./server.agent.gateway-server-agent.mocks.js";
@@ -14,7 +15,7 @@ import {
 } from "./test-helpers.js";
 
 let readConfigFileSnapshot: typeof import("../config/config.js").readConfigFileSnapshot;
-let writeConfigFile: typeof import("../config/config.js").writeConfigFile;
+const writeConfigFile = writeConfigReplacementForTest;
 
 installGatewayTestHooks({ scope: "suite" });
 
@@ -92,7 +93,7 @@ let server: Awaited<ReturnType<typeof startServerWithClient>>["server"];
 let ws: Awaited<ReturnType<typeof startServerWithClient>>["ws"];
 
 beforeAll(async () => {
-  ({ readConfigFileSnapshot, writeConfigFile } = await import("../config/config.js"));
+  ({ readConfigFileSnapshot } = await import("../config/config.js"));
   setRegistry(defaultRegistry);
   const started = await startServerWithClient();
   server = started.server;

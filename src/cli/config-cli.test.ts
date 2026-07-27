@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { Command } from "commander";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ConfigWriteIntent } from "../config/io.write-plan.js";
 import type { ConfigFileSnapshot, OpenClawConfig } from "../config/types.js";
 import type { PluginManifestRecord, PluginManifestRegistry } from "../plugins/manifest-registry.js";
 import type { PluginMetadataSnapshot } from "../plugins/plugin-metadata-snapshot.js";
@@ -24,9 +25,8 @@ const mockWriteConfigFile = vi.fn<
     cfg: OpenClawConfig,
     options?: {
       auditOrigin?: "cli";
-      unsetPaths?: string[][];
-      explicitSetPaths?: string[][];
     },
+    intent?: ConfigWriteIntent,
   ) => Promise<void>
 >(async () => {});
 const mockResolveSecretRefValue = vi.fn();
@@ -43,18 +43,22 @@ vi.mock("../config/config.js", () => ({
     cfg: OpenClawConfig,
     options?: {
       auditOrigin?: "cli";
-      unsetPaths?: string[][];
-      explicitSetPaths?: string[][];
     },
   ) => mockWriteConfigFile(cfg, options),
   replaceConfigFile: (params: {
     nextConfig: OpenClawConfig;
     writeOptions?: {
       auditOrigin?: "cli";
-      unsetPaths?: string[][];
-      explicitSetPaths?: string[][];
     };
-  }) => mockWriteConfigFile(params.nextConfig, params.writeOptions),
+    intent?: ConfigWriteIntent;
+  }) => mockWriteConfigFile(params.nextConfig, params.writeOptions, params.intent),
+  replaceConfigFileWithIntent: (params: {
+    nextConfig: OpenClawConfig;
+    writeOptions?: {
+      auditOrigin?: "cli";
+    };
+    intent: ConfigWriteIntent;
+  }) => mockWriteConfigFile(params.nextConfig, params.writeOptions, params.intent),
 }));
 
 vi.mock("../secrets/resolve.js", () => ({
@@ -407,22 +411,26 @@ function firstWrittenConfig(): OpenClawConfig {
   return written as OpenClawConfig;
 }
 
-function firstWriteConfigOptions():
-  | { auditOrigin?: "cli"; unsetPaths?: string[][]; explicitSetPaths?: string[][] }
-  | undefined {
+function firstWriteConfigOptions(): { auditOrigin?: "cli" } | undefined {
   return mockWriteConfigFile.mock.calls[0]?.[1];
 }
 
 function requireWriteOptions(): {
   auditOrigin?: "cli";
-  unsetPaths?: string[][];
-  explicitSetPaths?: string[][];
 } {
   const options = firstWriteConfigOptions();
   if (!options) {
     throw new Error("expected write options");
   }
   return options;
+}
+
+function requireWriteIntent(): ConfigWriteIntent {
+  const intent = mockWriteConfigFile.mock.calls[0]?.[2];
+  if (!intent) {
+    throw new Error("expected write intent");
+  }
+  return intent;
 }
 
 function expectLogIncludes(text: string) {
@@ -454,6 +462,7 @@ function requireResolveSecretRefCall(index: number): [unknown, unknown] {
 
 let registerConfigCli: typeof import("./config-cli.js").registerConfigCli;
 let parseConfigSetPath: typeof import("./config-cli.js").parseConfigSetPath;
+let runConfigOperations: typeof import("./config-cli-runner.js").runConfigOperations;
 let sharedProgram: Command;
 
 async function runConfigCommand(args: string[]) {
@@ -465,6 +474,7 @@ let ExitError: new (code: number, message?: string) => Error;
 describe("config cli", () => {
   beforeAll(async () => {
     ({ parseConfigSetPath, registerConfigCli } = await import("./config-cli.js"));
+    ({ runConfigOperations } = await import("./config-cli-runner.js"));
     const { resolveConfigSecretTargetByPath } = await import("../secrets/target-registry.js");
     resolveConfigSecretTargetByPath(["channels", "googlechat", "serviceAccount"]);
     sharedProgram = new Command();
@@ -568,9 +578,27 @@ describe("config cli", () => {
       await runConfigCommand(["config", "set", "channels.telegram.dmPolicy", "pairing"]);
 
       expect(mockWriteConfigFile).toHaveBeenCalledTimes(1);
-      expect(requireWriteOptions().explicitSetPaths).toEqual([
-        ["channels", "telegram", "dmPolicy"],
-      ]);
+      expect(requireWriteIntent()).toEqual({
+        kind: "mutate",
+        operations: [{ kind: "set", path: ["channels", "telegram", "dmPolicy"], value: "pairing" }],
+      });
+    });
+
+    it("persists an explicit literal that equals the resolved authored reference", async () => {
+      const authored: OpenClawConfig = {
+        gateway: { auth: { mode: "token", token: "${TOKEN}" } },
+      };
+      const resolved: OpenClawConfig = {
+        gateway: { auth: { mode: "token", token: "resolved-token" } },
+      };
+      setSnapshotOnce({ ...buildSnapshot({ resolved, config: resolved }), parsed: authored });
+
+      await runConfigCommand(["config", "set", "gateway.auth.token", "resolved-token"]);
+
+      expect(requireWriteIntent()).toEqual({
+        kind: "mutate",
+        operations: [{ kind: "set", path: ["gateway", "auth", "token"], value: "resolved-token" }],
+      });
     });
 
     it("marks object set paths explicit so nested default-equal writes persist", async () => {
@@ -601,7 +629,20 @@ describe("config cli", () => {
       ]);
 
       expect(mockWriteConfigFile).toHaveBeenCalledTimes(1);
-      expect(requireWriteOptions().explicitSetPaths).toEqual([["channels", "telegram"]]);
+      expect(requireWriteIntent()).toEqual({
+        kind: "mutate",
+        operations: [
+          {
+            kind: "unset",
+            path: ["agents", "defaults", "models", "google/gemini-3-pro-preview", "alias"],
+          },
+          {
+            kind: "set",
+            path: ["channels", "telegram"],
+            value: { botToken: "tok-abc", dmPolicy: "pairing" },
+          },
+        ],
+      });
     });
 
     it("does not inject runtime defaults into the written config", async () => {
@@ -827,16 +868,27 @@ describe("config cli", () => {
     });
 
     it("normalizes explicit model-map paths before writing config mutations", async () => {
-      const resolved: OpenClawConfig = {
+      const authored: OpenClawConfig = {
         agents: {
           defaults: {
             models: {
-              "google/gemini-3-pro-preview": {},
+              "google/gemini-3-pro-preview": { params: { endpoint: "${ENDPOINT}" } },
             },
           },
         },
       };
-      setSnapshot(resolved, resolved);
+      const resolved: OpenClawConfig = {
+        agents: {
+          defaults: {
+            models: {
+              "google/gemini-3-pro-preview": {
+                params: { endpoint: "https://example.invalid" },
+              },
+            },
+          },
+        },
+      };
+      setSnapshotOnce({ ...buildSnapshot({ resolved, config: resolved }), parsed: authored });
 
       await runConfigCommand([
         "config",
@@ -848,11 +900,60 @@ describe("config cli", () => {
       expect(mockWriteConfigFile).toHaveBeenCalledTimes(1);
       const written = firstWrittenConfig();
       expect(written.agents?.defaults?.models).toEqual({
-        "google/gemini-3.1-pro-preview": { alias: "gemini" },
+        "google/gemini-3.1-pro-preview": {
+          alias: "gemini",
+          params: { endpoint: "https://example.invalid" },
+        },
       });
-      expect(requireWriteOptions().explicitSetPaths).toEqual([
-        ["agents", "defaults", "models", "google/gemini-3.1-pro-preview", "alias"],
+      expect(requireWriteIntent()).toEqual({
+        kind: "mutate",
+        operations: [
+          {
+            kind: "unset",
+            path: ["agents", "defaults", "models", "google/gemini-3-pro-preview"],
+          },
+          {
+            kind: "set",
+            path: ["agents", "defaults", "models", "google/gemini-3.1-pro-preview"],
+            value: { alias: "gemini", params: { endpoint: "${ENDPOINT}" } },
+          },
+        ],
+      });
+    });
+
+    it("normalizes per-agent model-map paths and removes the authored alias", async () => {
+      const resolved: OpenClawConfig = {
+        agents: {
+          entries: {
+            ops: {
+              models: { "google/gemini-3-pro-preview": {} },
+            },
+          },
+        },
+      };
+      setSnapshot(resolved, resolved);
+
+      await runConfigCommand([
+        "config",
+        "set",
+        "agents.entries.ops.models.google/gemini-3-pro-preview.alias",
+        "gemini",
       ]);
+
+      expect(requireWriteIntent()).toEqual({
+        kind: "mutate",
+        operations: [
+          {
+            kind: "unset",
+            path: ["agents", "entries", "ops", "models", "google/gemini-3-pro-preview"],
+          },
+          {
+            kind: "set",
+            path: ["agents", "entries", "ops", "models", "google/gemini-3.1-pro-preview"],
+            value: { alias: "gemini" },
+          },
+        ],
+      });
     });
 
     it("normalizes agent-list model refs before writing config mutations", async () => {
@@ -1067,6 +1168,59 @@ describe("config cli", () => {
       expect(written.agents?.defaults?.models).toEqual({
         "openai/gpt-5.4": { alias: "GPT" },
         "anthropic/claude-sonnet-4-6": { alias: "Sonnet" },
+      });
+    });
+
+    it("preserves authored refs in unchanged siblings of object merges", async () => {
+      const authored: OpenClawConfig = {
+        gateway: { auth: { mode: "token", token: "${TOKEN}" } },
+      };
+      const resolved: OpenClawConfig = {
+        gateway: { auth: { mode: "token", token: "resolved-token" } },
+      };
+      setSnapshotOnce({ ...buildSnapshot({ resolved, config: resolved }), parsed: authored });
+
+      await runConfigCommand([
+        "config",
+        "set",
+        "gateway.auth",
+        '{"mode":"none"}',
+        "--strict-json",
+        "--merge",
+      ]);
+
+      expect(requireWriteIntent()).toEqual({
+        kind: "mutate",
+        operations: [
+          {
+            kind: "merge",
+            patch: { gateway: { auth: { mode: "none" } } },
+          },
+        ],
+      });
+    });
+
+    it("emits descendant merge intent below an ancestor include", async () => {
+      const resolved: OpenClawConfig = {
+        gateway: { auth: { mode: "token", token: "test-token" } },
+      };
+      setSnapshotOnce({
+        ...buildSnapshot({ resolved, config: resolved }),
+        parsed: { $include: "./base.json" },
+      });
+
+      await runConfigCommand([
+        "config",
+        "set",
+        "gateway.auth",
+        '{"mode":"none"}',
+        "--strict-json",
+        "--merge",
+      ]);
+
+      expect(requireWriteIntent()).toEqual({
+        kind: "mutate",
+        operations: [{ kind: "merge", patch: { gateway: { auth: { mode: "none" } } } }],
       });
     });
 
@@ -1620,6 +1774,42 @@ describe("config cli", () => {
       expect(mockWriteConfigFile).toHaveBeenCalledTimes(1);
       const written = firstWrittenConfig();
       expect(written.gateway?.auth).toEqual({ mode: "token" });
+    });
+
+    it("replays array sets with their value before a later indexed delete", async () => {
+      const resolved: OpenClawConfig = { plugins: { allow: ["a", "b", "c"] } };
+      setSnapshot(resolved, resolved);
+
+      await runConfigOperations({
+        runtime: defaultRuntime,
+        operations: [
+          {
+            inputMode: "json",
+            requestedPath: ["plugins", "allow", "1"],
+            setPath: ["plugins", "allow", "1"],
+            value: "x",
+            mutation: "set",
+          },
+          {
+            inputMode: "json",
+            requestedPath: ["plugins", "allow", "0"],
+            setPath: ["plugins", "allow", "0"],
+            value: undefined,
+            mutation: "delete",
+          },
+        ],
+        options: {},
+        successMode: "patch",
+      });
+
+      expect(requireWriteIntent()).toEqual({
+        kind: "mutate",
+        operations: [
+          { kind: "set", path: ["plugins", "allow", "1"], value: "x" },
+          { kind: "unset", path: ["plugins", "allow", "0"] },
+        ],
+      });
+      expect(firstWrittenConfig().plugins?.allow).toEqual(["x", "c"]);
     });
 
     it("shows --strict-json and keeps --json as a legacy alias in help", () => {
@@ -2907,7 +3097,12 @@ describe("config cli", () => {
           .channels as Record<string, unknown>,
       ).toEqual({ maintainers: { enabled: true, requireMention: true } });
       expect((written.channels as Record<string, unknown>).slack).not.toHaveProperty("appToken");
-      expect(requireWriteOptions().unsetPaths).toEqual([["channels", "slack", "appToken"]]);
+      const intent = requireWriteIntent();
+      expect(intent).toMatchObject({ kind: "mutate" });
+      expect(intent.kind === "mutate" ? intent.operations : []).toContainEqual({
+        kind: "unset",
+        path: ["channels", "slack", "appToken"],
+      });
     });
 
     it("rejects unused config patch replace paths", async () => {
@@ -3377,9 +3572,118 @@ describe("config cli", () => {
   });
 
   describe("config unset - issue #6070", () => {
+    it("authorizes every affected agent for an explicit roster-parent unset", async () => {
+      const resolved: OpenClawConfig = {
+        agents: { entries: { main: { default: true }, ops: {} } },
+      };
+      setSnapshot(resolved, resolved);
+
+      await runConfigCommand(["config", "unset", "agents.entries"]);
+
+      expect(requireWriteIntent()).toMatchObject({
+        kind: "mutate",
+        allowAgentRosterRemovals: ["main", "ops"],
+      });
+    });
+
+    it("removes an authored retired model-map key through its canonical path", async () => {
+      const authored = {
+        agents: {
+          defaults: {
+            models: {
+              "google/gemini-3-pro-preview": {
+                alias: "gemini",
+                params: { endpoint: "${ENDPOINT}" },
+              },
+            },
+          },
+        },
+      } satisfies OpenClawConfig;
+      const canonical = {
+        agents: {
+          defaults: {
+            models: {
+              "google/gemini-3.1-pro-preview": {
+                alias: "gemini",
+                params: { endpoint: "https://example.invalid" },
+              },
+            },
+          },
+        },
+      } satisfies OpenClawConfig;
+      setSnapshotOnce({
+        ...buildSnapshot({ resolved: canonical, config: canonical }),
+        parsed: authored,
+      });
+
+      await runConfigCommand([
+        "config",
+        "unset",
+        'agents.defaults.models["google/gemini-3.1-pro-preview"].alias',
+      ]);
+
+      expect(requireWriteIntent()).toEqual({
+        kind: "mutate",
+        operations: [
+          {
+            kind: "unset",
+            path: ["agents", "defaults", "models", "google/gemini-3-pro-preview"],
+          },
+          {
+            kind: "set",
+            path: ["agents", "defaults", "models", "google/gemini-3.1-pro-preview"],
+            value: { params: { endpoint: "${ENDPOINT}" } },
+          },
+        ],
+      });
+    });
+
+    it("discovers an included retired model-map key before canonical unset", async () => {
+      const retiredSource = {
+        agents: {
+          defaults: {
+            models: { "google/gemini-3-pro-preview": { alias: "gemini" } },
+          },
+        },
+      } satisfies OpenClawConfig;
+      const canonical = {
+        agents: {
+          defaults: {
+            models: { "google/gemini-3.1-pro-preview": { alias: "gemini" } },
+          },
+        },
+      } satisfies OpenClawConfig;
+      setSnapshotOnce({
+        ...buildSnapshot({ resolved: canonical, config: canonical }),
+        parsed: { $include: "./agents.json" },
+        sourceConfigBeforeMigrations: retiredSource,
+      });
+
+      await runConfigCommand([
+        "config",
+        "unset",
+        'agents.defaults.models["google/gemini-3.1-pro-preview"].alias',
+      ]);
+
+      expect(requireWriteIntent()).toEqual({
+        kind: "mutate",
+        operations: [
+          {
+            kind: "unset",
+            path: ["agents", "defaults", "models", "google/gemini-3-pro-preview"],
+          },
+          {
+            kind: "set",
+            path: ["agents", "defaults", "models", "google/gemini-3.1-pro-preview"],
+            value: {},
+          },
+        ],
+      });
+    });
+
     it("preserves existing config keys when unsetting a value", async () => {
       const resolved: OpenClawConfig = {
-        agents: { entries: { main: {} } },
+        agents: { entries: { main: { default: true } } },
         gateway: { port: 18789 },
         tools: {
           profile: "coding",
@@ -3402,9 +3706,10 @@ describe("config cli", () => {
       expect(written.gateway).toEqual(resolved.gateway);
       expect(written.tools?.profile).toBe("coding");
       expect(written.logging).toEqual(resolved.logging);
-      expect(firstWriteConfigOptions()).toEqual({
-        auditOrigin: "cli",
-        unsetPaths: [["tools", "alsoAllow"]],
+      expect(firstWriteConfigOptions()).toEqual({ auditOrigin: "cli" });
+      expect(requireWriteIntent()).toEqual({
+        kind: "mutate",
+        operations: [{ kind: "unset", path: ["tools", "alsoAllow"] }],
       });
     });
 
@@ -3449,15 +3754,16 @@ describe("config cli", () => {
       expect(written.channels?.discord?.guilds).toEqual({
         "456": { channels: ["alerts"] },
       });
-      expect(firstWriteConfigOptions()).toEqual({
-        auditOrigin: "cli",
-        unsetPaths: [["channels", "discord", "guilds", "123"]],
+      expect(firstWriteConfigOptions()).toEqual({ auditOrigin: "cli" });
+      expect(requireWriteIntent()).toEqual({
+        kind: "mutate",
+        operations: [{ kind: "unset", path: ["channels", "discord", "guilds", "123"] }],
       });
     });
 
     it("dry-runs an unset without writing the config file", async () => {
       const resolved: OpenClawConfig = {
-        agents: { entries: { main: {} } },
+        agents: { entries: { main: { default: true } } },
         gateway: { port: 18789 },
         tools: {
           profile: "coding",
@@ -3557,7 +3863,7 @@ describe("config cli", () => {
 
     it("prints JSON for config unset dry-run", async () => {
       const resolved: OpenClawConfig = {
-        agents: { entries: { main: {} } },
+        agents: { entries: { main: { default: true } } },
         gateway: { port: 18789 },
         tools: {
           profile: "coding",

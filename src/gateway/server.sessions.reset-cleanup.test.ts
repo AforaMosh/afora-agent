@@ -2,6 +2,7 @@
 // hook emission, thread bindings, and browser/MCP cleanup side effects.
 import path from "node:path";
 import { afterEach, expect, test, vi } from "vitest";
+import { writeConfigReplacementForTest } from "../../test/helpers/config-write.js";
 import {
   readAcpSessionMeta,
   writeAcpSessionMetaForMigration,
@@ -13,6 +14,7 @@ import {
 } from "../agents/harness/registry.js";
 import { loadSessionEntry } from "../config/sessions/session-accessor.js";
 import type { SessionAcpMeta } from "../config/sessions/types.js";
+import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { enqueueSystemEvent, peekSystemEvents } from "../infra/system-events.js";
 import {
   beginSessionWorkAdmission,
@@ -59,7 +61,7 @@ type ResetAcpState = {
   cwd?: string;
   state?: string;
 };
-type ConfigFilePatch = Parameters<(typeof import("../config/config.js"))["writeConfigFile"]>[0];
+type ConfigFilePatch = OpenClawConfig;
 
 afterEach(() => {
   closeOpenClawStateDatabaseForTest();
@@ -136,8 +138,7 @@ function resolvedAcpMeta(params: {
 }
 
 async function expectResetWithConfigSkipsBrowserCleanup(config: ConfigFilePatch) {
-  const { writeConfigFile } = await import("../config/config.js");
-  await writeConfigFile(config);
+  await writeConfigReplacementForTest(config);
   try {
     await seedWaitingActiveMainSession();
     const reset = await resetMainSession();
@@ -145,7 +146,7 @@ async function expectResetWithConfigSkipsBrowserCleanup(config: ConfigFilePatch)
     expect(reset.ok).toBe(true);
     expect(browserSessionTabMocks.closeTrackedBrowserTabsForSessions).not.toHaveBeenCalled();
   } finally {
-    await writeConfigFile({});
+    await writeConfigReplacementForTest({});
   }
 }
 
