@@ -55,6 +55,17 @@ function requireQmdConfig(
   return resolved.qmd;
 }
 
+function resolveTestQmdConfig(
+  qmd: Record<string, unknown>,
+  workspace = "/tmp/memory-test",
+): NonNullable<ResolvedMemoryBackendConfig["qmd"]> {
+  const cfg = {
+    agents: { defaults: { workspace } },
+    memory: { backend: "qmd", qmd },
+  } as OpenClawConfig;
+  return requireQmdConfig(resolveMemoryBackendConfig({ cfg, agentId: "main" }));
+}
+
 function requireQmdCollection(
   resolved: ResolvedMemoryBackendConfig,
   name: string,
@@ -237,68 +248,27 @@ describe("resolveMemoryBackendConfig", () => {
     });
   });
 
-  it("parses quoted qmd command paths", () => {
-    const cfg = {
-      agents: { defaults: { workspace: "/tmp/memory-test" } },
-      memory: {
-        backend: "qmd",
-        qmd: {
-          command: '"/Applications/QMD Tools/qmd" --flag',
-        },
-      },
-    } as OpenClawConfig;
-    const resolved = resolveMemoryBackendConfig({ cfg, agentId: "main" });
-    expect(requireQmdConfig(resolved).command).toBe("/Applications/QMD Tools/qmd");
-  });
-
-  it("preserves unquoted Windows absolute qmd command paths", () => {
-    const command = String.raw`C:\Users\penny\AppData\Roaming\npm\node_modules\@tobilu\qmd\dist\cli\qmd.js`;
-    const cfg = {
-      agents: { defaults: { workspace: String.raw`C:\Users\penny\.openclaw\workspace` } },
-      memory: {
-        backend: "qmd",
-        qmd: {
-          command,
-        },
-      },
-    } as OpenClawConfig;
-
-    const resolved = resolveMemoryBackendConfig({ cfg, agentId: "main" });
-
-    expect(requireQmdConfig(resolved).command).toBe(command);
-  });
-
-  it("preserves Windows wrapper command paths before extra args", () => {
-    const cfg = {
-      agents: { defaults: { workspace: String.raw`C:\Users\penny\.openclaw\workspace` } },
-      memory: {
-        backend: "qmd",
-        qmd: {
-          command: String.raw`C:\Program Files\qmd\qmd.cmd --json`,
-        },
-      },
-    } as OpenClawConfig;
-
-    const resolved = resolveMemoryBackendConfig({ cfg, agentId: "main" });
-
-    expect(requireQmdConfig(resolved).command).toBe(String.raw`C:\Program Files\qmd\qmd.cmd`);
-  });
-
-  it("preserves unquoted UNC qmd command paths", () => {
-    const command = String.raw`\\fileserver\tools\qmd\dist\cli\qmd.js`;
-    const cfg = {
-      agents: { defaults: { workspace: String.raw`C:\Users\penny\.openclaw\workspace` } },
-      memory: {
-        backend: "qmd",
-        qmd: {
-          command,
-        },
-      },
-    } as OpenClawConfig;
-
-    const resolved = resolveMemoryBackendConfig({ cfg, agentId: "main" });
-
-    expect(requireQmdConfig(resolved).command).toBe(command);
+  it.each([
+    {
+      name: "parses quoted qmd command paths",
+      command: '"/Applications/QMD Tools/qmd" --flag',
+      expected: "/Applications/QMD Tools/qmd",
+    },
+    {
+      name: "preserves unquoted Windows absolute qmd command paths",
+      command: String.raw`C:\Users\penny\AppData\Roaming\npm\node_modules\@tobilu\qmd\dist\cli\qmd.js`,
+    },
+    {
+      name: "preserves Windows wrapper command paths before extra args",
+      command: String.raw`C:\Program Files\qmd\qmd.cmd --json`,
+      expected: String.raw`C:\Program Files\qmd\qmd.cmd`,
+    },
+    {
+      name: "preserves unquoted UNC qmd command paths",
+      command: String.raw`\\fileserver\tools\qmd\dist\cli\qmd.js`,
+    },
+  ])("$name", ({ command, expected }) => {
+    expect(resolveTestQmdConfig({ command }).command).toBe(expected ?? command);
   });
 
   it("resolves custom paths relative to workspace", () => {
@@ -509,22 +479,14 @@ describe("resolveMemoryBackendConfig", () => {
   });
 
   it("uses fixed qmd update timeouts", () => {
-    const cfg = {
-      agents: { defaults: { workspace: "/tmp/memory-test" } },
-      memory: {
-        backend: "qmd",
-        qmd: {
-          update: {
-            waitForBootSync: true,
-            commandTimeoutMs: 12_000,
-            updateTimeoutMs: 480_000,
-            embedTimeoutMs: 360_000,
-          },
-        },
+    const update = resolveTestQmdConfig({
+      update: {
+        waitForBootSync: true,
+        commandTimeoutMs: 12_000,
+        updateTimeoutMs: 480_000,
+        embedTimeoutMs: 360_000,
       },
-    } as OpenClawConfig;
-    const resolved = resolveMemoryBackendConfig({ cfg, agentId: "main" });
-    const update = requireQmdConfig(resolved).update;
+    }).update;
     expect(update.waitForBootSync).toBe(false);
     expect(update.commandTimeoutMs).toBe(30_000);
     expect(update.updateTimeoutMs).toBe(120_000);
@@ -532,32 +494,11 @@ describe("resolveMemoryBackendConfig", () => {
   });
 
   it("keeps supported sub-unit qmd numeric overrides while update timeouts stay fixed", () => {
-    const cfg = {
-      agents: { defaults: { workspace: "/tmp/memory-test" } },
-      memory: {
-        backend: "qmd",
-        qmd: {
-          sessions: {
-            enabled: true,
-            retentionDays: 0.5,
-          },
-          update: {
-            commandTimeoutMs: 0.5,
-            updateTimeoutMs: 0.5,
-            embedTimeoutMs: 0.5,
-          },
-          limits: {
-            maxResults: 0.5,
-            maxSnippetChars: 0.5,
-            maxInjectedChars: 0.5,
-            timeoutMs: 0.5,
-          },
-        },
-      },
-    } as OpenClawConfig;
-
-    const resolved = resolveMemoryBackendConfig({ cfg, agentId: "main" });
-    const qmd = requireQmdConfig(resolved);
+    const qmd = resolveTestQmdConfig({
+      sessions: { enabled: true, retentionDays: 0.5 },
+      update: { commandTimeoutMs: 0.5, updateTimeoutMs: 0.5, embedTimeoutMs: 0.5 },
+      limits: { maxResults: 0.5, maxSnippetChars: 0.5, maxInjectedChars: 0.5, timeoutMs: 0.5 },
+    });
 
     expect(qmd.sessions.retentionDays).toBe(1);
     expect(qmd.update.commandTimeoutMs).toBe(30_000);
@@ -572,32 +513,20 @@ describe("resolveMemoryBackendConfig", () => {
   });
 
   it("falls back for non-finite qmd numeric overrides", () => {
-    const cfg = {
-      agents: { defaults: { workspace: "/tmp/memory-test" } },
-      memory: {
-        backend: "qmd",
-        qmd: {
-          sessions: {
-            enabled: true,
-            retentionDays: Number.NaN,
-          },
-          update: {
-            commandTimeoutMs: Number.POSITIVE_INFINITY,
-            updateTimeoutMs: Number.NaN,
-            embedTimeoutMs: Number.NEGATIVE_INFINITY,
-          },
-          limits: {
-            maxResults: Number.NaN,
-            maxSnippetChars: Number.POSITIVE_INFINITY,
-            maxInjectedChars: Number.NEGATIVE_INFINITY,
-            timeoutMs: Number.NaN,
-          },
-        },
+    const qmd = resolveTestQmdConfig({
+      sessions: { enabled: true, retentionDays: Number.NaN },
+      update: {
+        commandTimeoutMs: Number.POSITIVE_INFINITY,
+        updateTimeoutMs: Number.NaN,
+        embedTimeoutMs: Number.NEGATIVE_INFINITY,
       },
-    } as OpenClawConfig;
-
-    const resolved = resolveMemoryBackendConfig({ cfg, agentId: "main" });
-    const qmd = requireQmdConfig(resolved);
+      limits: {
+        maxResults: Number.NaN,
+        maxSnippetChars: Number.POSITIVE_INFINITY,
+        maxInjectedChars: Number.NEGATIVE_INFINITY,
+        timeoutMs: Number.NaN,
+      },
+    });
 
     expect(qmd.sessions.retentionDays).toBeUndefined();
     expect(qmd.update.commandTimeoutMs).toBe(30_000);
@@ -612,271 +541,133 @@ describe("resolveMemoryBackendConfig", () => {
   });
 
   it("uses the fixed lazy qmd startup policy", () => {
-    const cfg = {
-      agents: { defaults: { workspace: "/tmp/memory-test" } },
-      memory: {
-        backend: "qmd",
-        qmd: {
-          update: {
-            startup: "idle",
-            startupDelayMs: 45_000,
-          },
-        },
-      },
-    } as OpenClawConfig;
-    const resolved = resolveMemoryBackendConfig({ cfg, agentId: "main" });
-    const update = requireQmdConfig(resolved).update;
+    const update = resolveTestQmdConfig({
+      update: { startup: "idle", startupDelayMs: 45_000 },
+    }).update;
     expect(update.startup).toBe("off");
     expect(update.startupDelayMs).toBe(120_000);
     expect(update.onBoot).toBe(true);
   });
 
-  it("resolves qmd search mode override", () => {
-    const cfg = {
-      agents: { defaults: { workspace: "/tmp/memory-test" } },
-      memory: {
-        backend: "qmd",
-        qmd: {
-          searchMode: "vsearch",
-        },
-      },
-    } as OpenClawConfig;
-    const resolved = resolveMemoryBackendConfig({ cfg, agentId: "main" });
-    expect(requireQmdConfig(resolved).searchMode).toBe("vsearch");
-  });
-
-  it("resolves qmd rerank override", () => {
-    const cfg = {
-      agents: { defaults: { workspace: "/tmp/memory-test" } },
-      memory: {
-        backend: "qmd",
-        qmd: {
-          searchMode: "query",
-          rerank: false,
-        },
-      },
-    } as OpenClawConfig;
-    const resolved = resolveMemoryBackendConfig({ cfg, agentId: "main" });
-    const qmd = requireQmdConfig(resolved);
-    expect(qmd.searchMode).toBe("query");
-    expect(qmd.rerank).toBe(false);
-  });
-
-  it("resolves qmd mcporter search tool override", () => {
-    const cfg = {
-      agents: { defaults: { workspace: "/tmp/memory-test" } },
-      memory: {
-        backend: "qmd",
-        qmd: {
-          searchMode: "query",
-          searchTool: " hybrid_search ",
-        },
-      },
-    } as OpenClawConfig;
-    const resolved = resolveMemoryBackendConfig({ cfg, agentId: "main" });
-    const qmd = requireQmdConfig(resolved);
-    expect(qmd.searchMode).toBe("query");
-    expect(qmd.searchTool).toBe("hybrid_search");
+  it.each([
+    {
+      name: "resolves qmd search mode override",
+      input: { searchMode: "vsearch" },
+      expected: { searchMode: "vsearch" },
+    },
+    {
+      name: "resolves qmd rerank override",
+      input: { searchMode: "query", rerank: false },
+      expected: { searchMode: "query", rerank: false },
+    },
+    {
+      name: "resolves qmd mcporter search tool override",
+      input: { searchMode: "query", searchTool: " hybrid_search " },
+      expected: { searchMode: "query", searchTool: "hybrid_search" },
+    },
+  ])("$name", ({ input, expected }) => {
+    expect(resolveTestQmdConfig(input)).toMatchObject(expected);
   });
 });
 
 describe("memorySearch.extraPaths integration", () => {
-  it("maps memory.search.extraPaths to QMD collections", () => {
+  function resolveExtraPaths(options: {
+    defaults?: string[];
+    agentId?: string;
+    configuredAgentId?: string;
+    agentPaths?: string[];
+    qmdPaths?: Array<{ path: string; pattern: string; name: string }>;
+  }) {
+    const agentId = options.agentId ?? "my-agent";
     const cfg = {
       memory: {
         backend: "qmd",
-        search: {
-          extraPaths: ["/home/user/docs", "/home/user/vault"],
-        },
+        search: { extraPaths: options.defaults ?? [] },
+        ...(options.qmdPaths ? { qmd: { paths: options.qmdPaths } } : {}),
       },
-
       agents: {
-        defaults: {
-          workspace: "/workspace/root",
-        },
+        defaults: { workspace: "/workspace/root" },
+        ...(options.agentPaths
+          ? {
+              list: [
+                {
+                  id: options.configuredAgentId ?? agentId,
+                  memory: { search: { extraPaths: options.agentPaths } },
+                },
+              ],
+            }
+          : {}),
       },
     } as OpenClawConfig;
-    const result = resolveMemoryBackendConfig({ cfg, agentId: "test-agent" });
+    return resolveMemoryBackendConfig({ cfg, agentId });
+  }
+
+  it.each([
+    {
+      name: "maps memory.search.extraPaths to QMD collections",
+      options: {
+        agentId: "test-agent",
+        defaults: ["/home/user/docs", "/home/user/vault"],
+      },
+      expected: ["/home/user/docs", "/home/user/vault"],
+    },
+    {
+      name: "merges default and per-agent memorySearch.extraPaths for QMD collections",
+      options: { defaults: ["/default/path"], agentPaths: ["/agent/specific/path"] },
+      expected: ["/agent/specific/path", "/default/path"],
+    },
+    {
+      name: "falls back to defaults when agent has no overrides",
+      options: {
+        defaults: ["/default/path"],
+        configuredAgentId: "other-agent",
+        agentPaths: ["/other/path"],
+      },
+      expected: ["/default/path"],
+    },
+    {
+      name: "deduplicates merged memorySearch.extraPaths for QMD collections",
+      options: {
+        defaults: ["/shared/path", " /shared/path "],
+        agentPaths: ["/shared/path", "/agent-only"],
+      },
+      expected: ["/agent-only", "/shared/path"],
+    },
+  ])("$name", ({ options, expected }) => {
+    const result = resolveExtraPaths(options);
     expect(result.backend).toBe("qmd");
-    const paths = customCollectionPaths(result);
-    expect(paths).toStrictEqual([
-      resolveComparablePath("/home/user/docs"),
-      resolveComparablePath("/home/user/vault"),
-    ]);
-  });
-
-  it("merges default and per-agent memorySearch.extraPaths for QMD collections", () => {
-    const cfg = {
-      memory: {
-        backend: "qmd",
-        search: {
-          extraPaths: ["/default/path"],
-        },
-      },
-
-      agents: {
-        defaults: {
-          workspace: "/workspace/root",
-        },
-        list: [
-          {
-            id: "my-agent",
-            memory: {
-              search: {
-                extraPaths: ["/agent/specific/path"],
-              },
-            },
-          },
-        ],
-      },
-    } as OpenClawConfig;
-    const result = resolveMemoryBackendConfig({ cfg, agentId: "my-agent" });
-    expect(result.backend).toBe("qmd");
-    const paths = customCollectionPaths(result);
-    expect(paths).toStrictEqual([
-      resolveComparablePath("/agent/specific/path"),
-      resolveComparablePath("/default/path"),
-    ]);
-  });
-
-  it("falls back to defaults when agent has no overrides", () => {
-    const cfg = {
-      memory: {
-        backend: "qmd",
-        search: {
-          extraPaths: ["/default/path"],
-        },
-      },
-
-      agents: {
-        defaults: {
-          workspace: "/workspace/root",
-        },
-        list: [
-          {
-            id: "other-agent",
-            memory: {
-              search: {
-                extraPaths: ["/other/path"],
-              },
-            },
-          },
-        ],
-      },
-    } as OpenClawConfig;
-    const result = resolveMemoryBackendConfig({ cfg, agentId: "my-agent" });
-    expect(result.backend).toBe("qmd");
-    const paths = customCollectionPaths(result);
-    expect(paths).toStrictEqual([resolveComparablePath("/default/path")]);
-  });
-
-  it("deduplicates merged memorySearch.extraPaths for QMD collections", () => {
-    const cfg = {
-      memory: {
-        backend: "qmd",
-        search: {
-          extraPaths: ["/shared/path", " /shared/path "],
-        },
-      },
-
-      agents: {
-        defaults: {
-          workspace: "/workspace/root",
-        },
-        list: [
-          {
-            id: "my-agent",
-            memory: {
-              search: {
-                extraPaths: ["/shared/path", "/agent-only"],
-              },
-            },
-          },
-        ],
-      },
-    } as OpenClawConfig;
-
-    const result = resolveMemoryBackendConfig({ cfg, agentId: "my-agent" });
-    const paths = customCollectionPaths(result);
-
-    expect(paths).toStrictEqual([
-      resolveComparablePath("/agent-only"),
-      resolveComparablePath("/shared/path"),
-    ]);
+    expect(customCollectionPaths(result)).toStrictEqual(
+      expected.map((value) => resolveComparablePath(value)),
+    );
   });
 
   it("keeps unnamed extra paths agent-scoped even when they resolve outside the workspace", () => {
-    const cfg = {
-      memory: {
-        backend: "qmd",
-        search: {
-          extraPaths: ["/shared/path"],
-        },
-      },
-
-      agents: {
-        defaults: {
-          workspace: "/workspace/root",
-        },
-      },
-    } as OpenClawConfig;
-    const result = resolveMemoryBackendConfig({ cfg, agentId: "my-agent" });
+    const result = resolveExtraPaths({ defaults: ["/shared/path"] });
     expect(customQmdCollections(result).map((collection) => collection.name)).toStrictEqual([
       "custom-1-my-agent",
     ]);
   });
 
   it("matches per-agent memorySearch.extraPaths using normalized agent ids", () => {
-    const cfg = {
-      memory: { backend: "qmd" },
-      agents: {
-        defaults: {
-          workspace: "/workspace/root",
-        },
-        list: [
-          {
-            id: "My-Agent",
-            memory: {
-              search: {
-                extraPaths: ["/agent/mixed-case"],
-              },
-            },
-          },
-        ],
-      },
-    } as OpenClawConfig;
-
-    const result = resolveMemoryBackendConfig({ cfg, agentId: "my-agent" });
-
+    const result = resolveExtraPaths({
+      configuredAgentId: "My-Agent",
+      agentPaths: ["/agent/mixed-case"],
+    });
     expect(customCollectionPaths(result)).toStrictEqual([
       resolveComparablePath("/agent/mixed-case"),
     ]);
   });
 
   it("deduplicates identical roots shared by memory.qmd.paths and memorySearch.extraPaths", () => {
-    const cfg = {
-      memory: {
-        backend: "qmd",
-        search: {
-          extraPaths: ["./docs"],
-        },
-        qmd: {
-          paths: [{ path: "docs", pattern: "**/*.md", name: "workspace-docs" }],
-        },
-      },
-      agents: {
-        defaults: {
-          workspace: "/workspace/root",
-        },
-      },
-    } as OpenClawConfig;
-
-    const result = resolveMemoryBackendConfig({ cfg, agentId: "main" });
-    const docsCollections = customQmdCollections(result).filter(
+    const result = resolveExtraPaths({
+      agentId: "main",
+      defaults: ["./docs"],
+      qmdPaths: [{ path: "docs", pattern: "**/*.md", name: "workspace-docs" }],
+    });
+    const docs = customQmdCollections(result).filter(
       (collection) =>
         collection.path === resolveComparablePath("./docs") && collection.pattern === "**/*.md",
     );
-
-    expect(docsCollections).toHaveLength(1);
+    expect(docs).toHaveLength(1);
   });
 });
