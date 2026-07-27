@@ -74,22 +74,59 @@ describe("talk realtime gateway relay", () => {
     embeddedRunTesting.resetActiveEmbeddedRuns();
   });
 
-  function createIdleRelayProvider(): RealtimeVoiceProviderPlugin {
+  function createRelayBridge<T extends Partial<RealtimeVoiceBridge> = Record<never, never>>(
+    overrides: T = {} as T,
+  ) {
     return {
-      id: "relay-test",
-      label: "Relay Test",
-      isConfigured: () => true,
-      createBridge: () => ({
-        connect: vi.fn(async () => undefined),
-        sendAudio: vi.fn(),
-        setMediaTimestamp: vi.fn(),
-        handleBargeIn: vi.fn(),
-        submitToolResult: vi.fn(),
-        acknowledgeMark: vi.fn(),
-        close: vi.fn(),
-        isConnected: vi.fn(() => true),
-      }),
+      connect: vi.fn(async () => undefined),
+      sendAudio: vi.fn(),
+      setMediaTimestamp: vi.fn(),
+      handleBargeIn: vi.fn(),
+      submitToolResult: vi.fn<RealtimeVoiceBridge["submitToolResult"]>(),
+      acknowledgeMark: vi.fn(),
+      close: vi.fn(),
+      isConnected: vi.fn(() => true),
+      ...overrides,
     };
+  }
+
+  function createIdleRelayProvider(
+    options: {
+      bridge?: RealtimeVoiceBridge;
+      captureRequest?: (request: RealtimeVoiceBridgeCreateRequest) => void;
+      id?: string;
+      label?: string;
+    } = {},
+  ): RealtimeVoiceProviderPlugin {
+    return {
+      id: options.id ?? "relay-test",
+      label: options.label ?? "Relay Test",
+      isConfigured: () => true,
+      createBridge: (request) => {
+        options.captureRequest?.(request);
+        return options.bridge ?? createRelayBridge();
+      },
+    };
+  }
+
+  function createRelayEventContext() {
+    const events: Array<{
+      event: string;
+      payload: unknown;
+      connIds: string[];
+      opts?: { dropIfSlow?: boolean };
+    }> = [];
+    const context = {
+      broadcastToConnIds: (
+        event: string,
+        payload: unknown,
+        connIds: ReadonlySet<string>,
+        opts?: { dropIfSlow?: boolean },
+      ) => {
+        events.push({ event, payload, connIds: [...connIds], ...(opts ? { opts } : {}) });
+      },
+    } as never;
+    return { events, context };
   }
 
   it("appends finalized relay transcripts to the canonical agent session", async () => {
@@ -104,11 +141,11 @@ describe("talk realtime gateway relay", () => {
         { agentId: "main", sessionKey: "agent:main:main" },
         { sessionId: "relay-voice-session", updatedAt: Date.now() },
       );
-      const provider = createIdleRelayProvider();
-      provider.createBridge = (request) => {
-        bridgeRequest = request;
-        return createIdleRelayProvider().createBridge?.(request) as RealtimeVoiceBridge;
-      };
+      const provider = createIdleRelayProvider({
+        captureRequest: (request) => {
+          bridgeRequest = request;
+        },
+      });
       const session = createTalkRealtimeRelaySession({
         context: {
           broadcastToConnIds: vi.fn(),
@@ -331,11 +368,11 @@ describe("talk realtime gateway relay", () => {
     const warn = vi.fn();
     try {
       vi.useFakeTimers();
-      const provider = createIdleRelayProvider();
-      provider.createBridge = (request) => {
-        bridgeRequest = request;
-        return createIdleRelayProvider().createBridge?.(request) as RealtimeVoiceBridge;
-      };
+      const provider = createIdleRelayProvider({
+        captureRequest: (request) => {
+          bridgeRequest = request;
+        },
+      });
       const session = createTalkRealtimeRelaySession({
         context: {
           broadcastToConnIds: vi.fn(),
@@ -405,28 +442,18 @@ describe("talk realtime gateway relay", () => {
       submitToolResult.mockReturnValueOnce(options.firstSubmission);
     }
     const sendUserMessage = vi.fn();
-    const bridge = {
+    const bridge = createRelayBridge({
       supportsToolResultContinuation: options.supportsToolResultContinuation ?? false,
       supportsToolResultSuppression: false,
-      connect: vi.fn(async () => undefined),
-      sendAudio: vi.fn(),
-      setMediaTimestamp: vi.fn(),
       sendUserMessage,
-      handleBargeIn: vi.fn(),
       submitToolResult,
-      acknowledgeMark: vi.fn(),
-      close: vi.fn(),
-      isConnected: vi.fn(() => true),
-    };
-    const provider: RealtimeVoiceProviderPlugin = {
-      id: "relay-test",
-      label: "Relay Test",
-      isConfigured: () => true,
-      createBridge: (request) => {
+    });
+    const provider = createIdleRelayProvider({
+      bridge,
+      captureRequest: (request) => {
         bridgeRequest = request;
-        return bridge;
       },
-    };
+    });
     const events: Array<{ event: string; payload: unknown; connIds: string[] }> = [];
     const session = createTalkRealtimeRelaySession({
       context: {
@@ -608,7 +635,7 @@ describe("talk realtime gateway relay", () => {
 
   it("bridges browser audio, transcripts, and tool results through a backend provider", async () => {
     let bridgeRequest: RealtimeVoiceBridgeCreateRequest | undefined;
-    const bridge = {
+    const bridge = createRelayBridge({
       supportsToolResultContinuation: true,
       connect: vi.fn(async () => {
         bridgeRequest?.onReady?.();
@@ -623,41 +650,16 @@ describe("talk realtime gateway relay", () => {
           args: { question: "hello" },
         });
       }),
-      sendAudio: vi.fn(),
-      setMediaTimestamp: vi.fn(),
       sendUserMessage: vi.fn(),
       triggerGreeting: vi.fn(),
-      handleBargeIn: vi.fn(),
-      submitToolResult: vi.fn(),
-      acknowledgeMark: vi.fn(),
-      close: vi.fn(),
-      isConnected: vi.fn(() => true),
-    };
-    const provider: RealtimeVoiceProviderPlugin = {
-      id: "relay-test",
-      label: "Relay Test",
-      isConfigured: () => true,
-      createBridge: (req) => {
-        bridgeRequest = req;
-        return bridge;
+    });
+    const provider = createIdleRelayProvider({
+      bridge,
+      captureRequest: (request) => {
+        bridgeRequest = request;
       },
-    };
-    const events: Array<{
-      event: string;
-      payload: unknown;
-      connIds: string[];
-      opts?: { dropIfSlow?: boolean };
-    }> = [];
-    const context = {
-      broadcastToConnIds: (
-        event: string,
-        payload: unknown,
-        connIds: ReadonlySet<string>,
-        opts?: { dropIfSlow?: boolean },
-      ) => {
-        events.push({ event, payload, connIds: [...connIds], opts });
-      },
-    } as never;
+    });
+    const { events, context } = createRelayEventContext();
 
     const session = createTalkRealtimeRelaySession({
       context,
@@ -917,29 +919,17 @@ describe("talk realtime gateway relay", () => {
   });
 
   it("emits generic issue details when relay connect fails", async () => {
-    const provider: RealtimeVoiceProviderPlugin = {
+    const provider = createIdleRelayProvider({
       id: "openai",
       label: "OpenAI Realtime",
-      isConfigured: () => true,
-      createBridge: () => ({
+      bridge: createRelayBridge({
         connect: vi.fn(async () => {
           throw new Error("OpenAI API key rejected with 401");
         }),
-        sendAudio: vi.fn(),
-        setMediaTimestamp: vi.fn(),
-        handleBargeIn: vi.fn(),
-        submitToolResult: vi.fn(),
-        acknowledgeMark: vi.fn(),
-        close: vi.fn(),
         isConnected: vi.fn(() => false),
       }),
-    };
-    const events: Array<{ event: string; payload: unknown; connIds: string[] }> = [];
-    const context = {
-      broadcastToConnIds: (event: string, payload: unknown, connIds: ReadonlySet<string>) => {
-        events.push({ event, payload, connIds: [...connIds] });
-      },
-    } as never;
+    });
+    const { events, context } = createRelayEventContext();
 
     const session = createTalkRealtimeRelaySession({
       context,
@@ -978,30 +968,14 @@ describe("talk realtime gateway relay", () => {
 
   it("emits an issue when the provider closes before ready", () => {
     let bridgeRequest: RealtimeVoiceBridgeCreateRequest | undefined;
-    const provider: RealtimeVoiceProviderPlugin = {
+    const provider = createIdleRelayProvider({
       id: "openai",
       label: "OpenAI Realtime",
-      isConfigured: () => true,
-      createBridge: (req) => {
-        bridgeRequest = req;
-        return {
-          connect: vi.fn(async () => undefined),
-          sendAudio: vi.fn(),
-          setMediaTimestamp: vi.fn(),
-          handleBargeIn: vi.fn(),
-          submitToolResult: vi.fn(),
-          acknowledgeMark: vi.fn(),
-          close: vi.fn(),
-          isConnected: vi.fn(() => true),
-        };
+      captureRequest: (request) => {
+        bridgeRequest = request;
       },
-    };
-    const events: Array<{ event: string; payload: unknown; connIds: string[] }> = [];
-    const context = {
-      broadcastToConnIds: (event: string, payload: unknown, connIds: ReadonlySet<string>) => {
-        events.push({ event, payload, connIds: [...connIds] });
-      },
-    } as never;
+    });
+    const { events, context } = createRelayEventContext();
     const session = createTalkRealtimeRelaySession({
       context,
       connId: "conn-1",
@@ -1034,30 +1008,14 @@ describe("talk realtime gateway relay", () => {
 
   it("does not replace provider errors with pre-ready close issues", () => {
     let bridgeRequest: RealtimeVoiceBridgeCreateRequest | undefined;
-    const provider: RealtimeVoiceProviderPlugin = {
+    const provider = createIdleRelayProvider({
       id: "openai",
       label: "OpenAI Realtime",
-      isConfigured: () => true,
-      createBridge: (req) => {
-        bridgeRequest = req;
-        return {
-          connect: vi.fn(async () => undefined),
-          sendAudio: vi.fn(),
-          setMediaTimestamp: vi.fn(),
-          handleBargeIn: vi.fn(),
-          submitToolResult: vi.fn(),
-          acknowledgeMark: vi.fn(),
-          close: vi.fn(),
-          isConnected: vi.fn(() => true),
-        };
+      captureRequest: (request) => {
+        bridgeRequest = request;
       },
-    };
-    const events: Array<{ event: string; payload: unknown; connIds: string[] }> = [];
-    const context = {
-      broadcastToConnIds: (event: string, payload: unknown, connIds: ReadonlySet<string>) => {
-        events.push({ event, payload, connIds: [...connIds] });
-      },
-    } as never;
+    });
+    const { events, context } = createRelayEventContext();
     createTalkRealtimeRelaySession({
       context,
       connId: "conn-1",
@@ -1092,32 +1050,16 @@ describe("talk realtime gateway relay", () => {
 
   it("does not route assistant echo transcripts back into the realtime model", async () => {
     let bridgeRequest: RealtimeVoiceBridgeCreateRequest | undefined;
-    const bridge = {
-      connect: vi.fn(async () => undefined),
-      sendAudio: vi.fn(),
-      setMediaTimestamp: vi.fn(),
+    const bridge = createRelayBridge({
       sendUserMessage: vi.fn(),
-      handleBargeIn: vi.fn(),
-      submitToolResult: vi.fn(),
-      acknowledgeMark: vi.fn(),
-      close: vi.fn(),
-      isConnected: vi.fn(() => true),
-    };
-    const provider: RealtimeVoiceProviderPlugin = {
-      id: "relay-test",
-      label: "Relay Test",
-      isConfigured: () => true,
-      createBridge: (req) => {
-        bridgeRequest = req;
-        return bridge;
+    });
+    const provider = createIdleRelayProvider({
+      bridge,
+      captureRequest: (request) => {
+        bridgeRequest = request;
       },
-    };
-    const events: Array<{ event: string; payload: unknown; connIds: string[] }> = [];
-    const context = {
-      broadcastToConnIds: (event: string, payload: unknown, connIds: ReadonlySet<string>) => {
-        events.push({ event, payload, connIds: [...connIds] });
-      },
-    } as never;
+    });
+    const { events, context } = createRelayEventContext();
 
     createTalkRealtimeRelaySession({
       context,
@@ -1152,34 +1094,18 @@ describe("talk realtime gateway relay", () => {
     vi.useFakeTimers();
 
     let bridgeRequest: RealtimeVoiceBridgeCreateRequest | undefined;
-    const bridge = {
+    const bridge = createRelayBridge({
       supportsToolResultContinuation: true,
-      connect: vi.fn(async () => undefined),
-      sendAudio: vi.fn(),
-      setMediaTimestamp: vi.fn(),
       sendUserMessage: vi.fn(),
       triggerGreeting: vi.fn(),
-      handleBargeIn: vi.fn(),
-      submitToolResult: vi.fn(),
-      acknowledgeMark: vi.fn(),
-      close: vi.fn(),
-      isConnected: vi.fn(() => true),
-    };
-    const provider: RealtimeVoiceProviderPlugin = {
-      id: "relay-test",
-      label: "Relay Test",
-      isConfigured: () => true,
-      createBridge: (req) => {
-        bridgeRequest = req;
-        return bridge;
+    });
+    const provider = createIdleRelayProvider({
+      bridge,
+      captureRequest: (request) => {
+        bridgeRequest = request;
       },
-    };
-    const events: Array<{ event: string; payload: unknown; connIds: string[] }> = [];
-    const context = {
-      broadcastToConnIds: (event: string, payload: unknown, connIds: ReadonlySet<string>) => {
-        events.push({ event, payload, connIds: [...connIds] });
-      },
-    } as never;
+    });
+    const { events, context } = createRelayEventContext();
 
     const session = createTalkRealtimeRelaySession({
       context,
@@ -1212,34 +1138,18 @@ describe("talk realtime gateway relay", () => {
     vi.useFakeTimers();
 
     let bridgeRequest: RealtimeVoiceBridgeCreateRequest | undefined;
-    const bridge = {
+    const bridge = createRelayBridge({
       supportsToolResultContinuation: true,
-      connect: vi.fn(async () => undefined),
-      sendAudio: vi.fn(),
-      setMediaTimestamp: vi.fn(),
       sendUserMessage: vi.fn(),
       triggerGreeting: vi.fn(),
-      handleBargeIn: vi.fn(),
-      submitToolResult: vi.fn(),
-      acknowledgeMark: vi.fn(),
-      close: vi.fn(),
-      isConnected: vi.fn(() => true),
-    };
-    const provider: RealtimeVoiceProviderPlugin = {
-      id: "relay-test",
-      label: "Relay Test",
-      isConfigured: () => true,
-      createBridge: (req) => {
-        bridgeRequest = req;
-        return bridge;
+    });
+    const provider = createIdleRelayProvider({
+      bridge,
+      captureRequest: (request) => {
+        bridgeRequest = request;
       },
-    };
-    const events: Array<{ event: string; payload: unknown; connIds: string[] }> = [];
-    const context = {
-      broadcastToConnIds: (event: string, payload: unknown, connIds: ReadonlySet<string>) => {
-        events.push({ event, payload, connIds: [...connIds] });
-      },
-    } as never;
+    });
+    const { events, context } = createRelayEventContext();
 
     const session = createTalkRealtimeRelaySession({
       context,
@@ -1619,16 +1529,11 @@ describe("talk realtime gateway relay", () => {
   it("rejects direct suppressed results when the provider does not support them", () => {
     const submitToolResult = vi.fn();
     const provider = createIdleRelayProvider();
-    provider.createBridge = () => ({
-      connect: vi.fn(async () => undefined),
-      sendAudio: vi.fn(),
-      setMediaTimestamp: vi.fn(),
-      submitToolResult,
-      supportsToolResultSuppression: false,
-      acknowledgeMark: vi.fn(),
-      close: vi.fn(),
-      isConnected: vi.fn(() => true),
-    });
+    provider.createBridge = () =>
+      createRelayBridge({
+        submitToolResult,
+        supportsToolResultSuppression: false,
+      });
     const session = createTalkRealtimeRelaySession({
       context: { broadcastToConnIds: vi.fn() } as never,
       connId: "conn-1",
@@ -1654,34 +1559,18 @@ describe("talk realtime gateway relay", () => {
     vi.useFakeTimers();
 
     let bridgeRequest: RealtimeVoiceBridgeCreateRequest | undefined;
-    const bridge = {
+    const bridge = createRelayBridge({
       supportsToolResultContinuation: true,
-      connect: vi.fn(async () => undefined),
-      sendAudio: vi.fn(),
-      setMediaTimestamp: vi.fn(),
       sendUserMessage: vi.fn(),
       triggerGreeting: vi.fn(),
-      handleBargeIn: vi.fn(),
-      submitToolResult: vi.fn(),
-      acknowledgeMark: vi.fn(),
-      close: vi.fn(),
-      isConnected: vi.fn(() => true),
-    };
-    const provider: RealtimeVoiceProviderPlugin = {
-      id: "relay-test",
-      label: "Relay Test",
-      isConfigured: () => true,
-      createBridge: (req) => {
-        bridgeRequest = req;
-        return bridge;
+    });
+    const provider = createIdleRelayProvider({
+      bridge,
+      captureRequest: (request) => {
+        bridgeRequest = request;
       },
-    };
-    const events: Array<{ event: string; payload: unknown; connIds: string[] }> = [];
-    const context = {
-      broadcastToConnIds: (event: string, payload: unknown, connIds: ReadonlySet<string>) => {
-        events.push({ event, payload, connIds: [...connIds] });
-      },
-    } as never;
+    });
+    const { events, context } = createRelayEventContext();
 
     const nativeSession = createTalkRealtimeRelaySession({
       context,
@@ -1787,21 +1676,7 @@ describe("talk realtime gateway relay", () => {
   });
 
   it("rejects relay control from a different connection", () => {
-    const provider: RealtimeVoiceProviderPlugin = {
-      id: "relay-test",
-      label: "Relay Test",
-      isConfigured: () => true,
-      createBridge: () => ({
-        connect: vi.fn(async () => undefined),
-        sendAudio: vi.fn(),
-        setMediaTimestamp: vi.fn(),
-        handleBargeIn: vi.fn(),
-        submitToolResult: vi.fn(),
-        acknowledgeMark: vi.fn(),
-        close: vi.fn(),
-        isConnected: vi.fn(() => true),
-      }),
-    };
+    const provider = createIdleRelayProvider();
     const session = createTalkRealtimeRelaySession({
       context: { broadcastToConnIds: vi.fn() } as never,
       connId: "conn-1",
@@ -1822,24 +1697,11 @@ describe("talk realtime gateway relay", () => {
 
   it("correlates output audio with the active relay turn", () => {
     let bridgeRequest: RealtimeVoiceBridgeCreateRequest | undefined;
-    const provider: RealtimeVoiceProviderPlugin = {
-      id: "relay-test",
-      label: "Relay Test",
-      isConfigured: () => true,
-      createBridge: (req) => {
-        bridgeRequest = req;
-        return {
-          connect: vi.fn(async () => undefined),
-          sendAudio: vi.fn(),
-          setMediaTimestamp: vi.fn(),
-          handleBargeIn: vi.fn(),
-          submitToolResult: vi.fn(),
-          acknowledgeMark: vi.fn(),
-          close: vi.fn(),
-          isConnected: vi.fn(() => true),
-        };
+    const provider = createIdleRelayProvider({
+      captureRequest: (request) => {
+        bridgeRequest = request;
       },
-    };
+    });
     const events: Array<{
       event: string;
       payload: { talkEvent?: { type?: string; turnId?: string } };
@@ -1895,17 +1757,7 @@ describe("talk realtime gateway relay", () => {
 
   it("terminally satisfies a late normal result after turn cancellation without a new turn", async () => {
     const submitToolResult = vi.fn<RealtimeVoiceBridge["submitToolResult"]>();
-    const provider = createIdleRelayProvider();
-    provider.createBridge = () => ({
-      connect: vi.fn(async () => undefined),
-      sendAudio: vi.fn(),
-      setMediaTimestamp: vi.fn(),
-      handleBargeIn: vi.fn(),
-      submitToolResult,
-      acknowledgeMark: vi.fn(),
-      close: vi.fn(),
-      isConnected: vi.fn(() => true),
-    });
+    const provider = createIdleRelayProvider({ bridge: createRelayBridge({ submitToolResult }) });
     const { broadcastToConnIds, session } = createAbortableRelayRunFixture(provider);
     cancelTalkRealtimeRelayTurn({
       relaySessionId: session.relaySessionId,
@@ -1973,25 +1825,15 @@ describe("talk realtime gateway relay", () => {
       .fn<RealtimeVoiceBridge["submitToolResult"]>()
       .mockReturnValueOnce(working.promise)
       .mockReturnValueOnce(undefined);
-    const provider: RealtimeVoiceProviderPlugin = {
-      id: "relay-test",
-      label: "Relay Test",
-      isConfigured: () => true,
-      createBridge: (request) => {
+    const provider = createIdleRelayProvider({
+      bridge: createRelayBridge({
+        supportsToolResultContinuation: true,
+        submitToolResult,
+      }),
+      captureRequest: (request) => {
         bridgeRequest = request;
-        return {
-          supportsToolResultContinuation: true,
-          connect: vi.fn(async () => undefined),
-          sendAudio: vi.fn(),
-          setMediaTimestamp: vi.fn(),
-          handleBargeIn: vi.fn(),
-          submitToolResult,
-          acknowledgeMark: vi.fn(),
-          close: vi.fn(),
-          isConnected: vi.fn(() => true),
-        };
       },
-    };
+    });
     const events: Array<{ payload: Record<string, unknown> }> = [];
     const session = createTalkRealtimeRelaySession({
       context: {
@@ -2047,17 +1889,7 @@ describe("talk realtime gateway relay", () => {
       .mockReturnValueOnce(firstAccepted.promise)
       .mockReturnValueOnce(secondAccepted.promise)
       .mockReturnValueOnce(undefined);
-    const provider = createIdleRelayProvider();
-    provider.createBridge = () => ({
-      connect: vi.fn(async () => undefined),
-      sendAudio: vi.fn(),
-      setMediaTimestamp: vi.fn(),
-      handleBargeIn: vi.fn(),
-      submitToolResult,
-      acknowledgeMark: vi.fn(),
-      close: vi.fn(),
-      isConnected: vi.fn(() => true),
-    });
+    const provider = createIdleRelayProvider({ bridge: createRelayBridge({ submitToolResult }) });
     const session = createTalkRealtimeRelaySession({
       context: { broadcastToConnIds: vi.fn() } as never,
       connId: "conn-1",
@@ -2111,17 +1943,7 @@ describe("talk realtime gateway relay", () => {
       .fn<RealtimeVoiceBridge["submitToolResult"]>()
       .mockReturnValueOnce(rejectedInterim)
       .mockReturnValueOnce(undefined);
-    const provider = createIdleRelayProvider();
-    provider.createBridge = () => ({
-      connect: vi.fn(async () => undefined),
-      sendAudio: vi.fn(),
-      setMediaTimestamp: vi.fn(),
-      handleBargeIn: vi.fn(),
-      submitToolResult,
-      acknowledgeMark: vi.fn(),
-      close: vi.fn(),
-      isConnected: vi.fn(() => true),
-    });
+    const provider = createIdleRelayProvider({ bridge: createRelayBridge({ submitToolResult }) });
     const session = createTalkRealtimeRelaySession({
       context: { broadcastToConnIds: vi.fn() } as never,
       connId: "conn-1",
@@ -2159,17 +1981,7 @@ describe("talk realtime gateway relay", () => {
       .fn<RealtimeVoiceBridge["submitToolResult"]>()
       .mockReturnValueOnce(interimAccepted.promise)
       .mockReturnValueOnce(undefined);
-    const provider = createIdleRelayProvider();
-    provider.createBridge = () => ({
-      connect: vi.fn(async () => undefined),
-      sendAudio: vi.fn(),
-      setMediaTimestamp: vi.fn(),
-      handleBargeIn: vi.fn(),
-      submitToolResult,
-      acknowledgeMark: vi.fn(),
-      close: vi.fn(),
-      isConnected: vi.fn(() => true),
-    });
+    const provider = createIdleRelayProvider({ bridge: createRelayBridge({ submitToolResult }) });
     const { broadcastToConnIds, session } = createAbortableRelayRunFixture(provider);
     const firstInterim = submitTalkRealtimeRelayToolResult({
       relaySessionId: session.relaySessionId,
@@ -2229,17 +2041,11 @@ describe("talk realtime gateway relay", () => {
       .mockReturnValueOnce(workingAccepted.promise)
       .mockReturnValueOnce(undefined);
     const provider = createIdleRelayProvider();
-    provider.createBridge = () => ({
-      connect: vi.fn(async () => undefined),
-      sendAudio: vi.fn(),
-      setMediaTimestamp: vi.fn(),
-      handleBargeIn: vi.fn(),
-      submitToolResult,
-      supportsToolResultSuppression: false,
-      acknowledgeMark: vi.fn(),
-      close: vi.fn(),
-      isConnected: vi.fn(() => true),
-    });
+    provider.createBridge = () =>
+      createRelayBridge({
+        submitToolResult,
+        supportsToolResultSuppression: false,
+      });
     const { broadcastToConnIds, session } = createAbortableRelayRunFixture(provider);
     const working = submitTalkRealtimeRelayToolResult({
       relaySessionId: session.relaySessionId,
@@ -2297,17 +2103,7 @@ describe("talk realtime gateway relay", () => {
       .fn<RealtimeVoiceBridge["submitToolResult"]>()
       .mockReturnValueOnce(rejectedFinal)
       .mockReturnValueOnce(undefined);
-    const provider = createIdleRelayProvider();
-    provider.createBridge = () => ({
-      connect: vi.fn(async () => undefined),
-      sendAudio: vi.fn(),
-      setMediaTimestamp: vi.fn(),
-      handleBargeIn: vi.fn(),
-      submitToolResult,
-      acknowledgeMark: vi.fn(),
-      close: vi.fn(),
-      isConnected: vi.fn(() => true),
-    });
+    const provider = createIdleRelayProvider({ bridge: createRelayBridge({ submitToolResult }) });
     const { session } = createAbortableRelayRunFixture(provider);
     const staleFinal = submitTalkRealtimeRelayToolResult({
       relaySessionId: session.relaySessionId,
@@ -2341,22 +2137,12 @@ describe("talk realtime gateway relay", () => {
 
   it("waits for provider acceptance before broadcasting and clearing a final tool result", async () => {
     const deferred = createDeferredVoid();
-    const bridge = {
-      connect: vi.fn(async () => undefined),
-      sendAudio: vi.fn(),
-      setMediaTimestamp: vi.fn(),
-      handleBargeIn: vi.fn(),
+    const bridge = createRelayBridge({
       submitToolResult: vi.fn(() => deferred.promise),
-      acknowledgeMark: vi.fn(),
-      close: vi.fn(),
-      isConnected: vi.fn(() => true),
-    };
-    const provider: RealtimeVoiceProviderPlugin = {
-      id: "relay-test",
-      label: "Relay Test",
-      isConfigured: () => true,
-      createBridge: () => bridge,
-    };
+    });
+    const provider = createIdleRelayProvider({
+      bridge,
+    });
     const { abortController, broadcast, broadcastToConnIds, session } =
       createAbortableRelayRunFixture(provider);
 
@@ -2424,22 +2210,12 @@ describe("talk realtime gateway relay", () => {
   });
 
   it("keeps linked run state and omits success events when provider submission rejects", async () => {
-    const bridge = {
-      connect: vi.fn(async () => undefined),
-      sendAudio: vi.fn(),
-      setMediaTimestamp: vi.fn(),
-      handleBargeIn: vi.fn(),
+    const bridge = createRelayBridge({
       submitToolResult: vi.fn(() => Promise.reject(new Error("provider rejected tool result"))),
-      acknowledgeMark: vi.fn(),
-      close: vi.fn(),
-      isConnected: vi.fn(() => true),
-    };
-    const provider: RealtimeVoiceProviderPlugin = {
-      id: "relay-test",
-      label: "Relay Test",
-      isConfigured: () => true,
-      createBridge: () => bridge,
-    };
+    });
+    const provider = createIdleRelayProvider({
+      bridge,
+    });
     const { abortController, broadcastToConnIds, session } =
       createAbortableRelayRunFixture(provider);
 
@@ -2469,25 +2245,15 @@ describe("talk realtime gateway relay", () => {
 
   it("allows a final tool result to retry after provider rejection", async () => {
     let attempt = 0;
-    const bridge = {
-      connect: vi.fn(async () => undefined),
-      sendAudio: vi.fn(),
-      setMediaTimestamp: vi.fn(),
-      handleBargeIn: vi.fn(),
+    const bridge = createRelayBridge({
       submitToolResult: vi.fn(() => {
         attempt += 1;
         return attempt === 1 ? Promise.reject(new Error("temporary rejection")) : undefined;
       }),
-      acknowledgeMark: vi.fn(),
-      close: vi.fn(),
-      isConnected: vi.fn(() => true),
-    };
-    const provider: RealtimeVoiceProviderPlugin = {
-      id: "relay-test",
-      label: "Relay Test",
-      isConfigured: () => true,
-      createBridge: () => bridge,
-    };
+    });
+    const provider = createIdleRelayProvider({
+      bridge,
+    });
     const { broadcastToConnIds, session } = createAbortableRelayRunFixture(provider);
 
     const rejected = submitTalkRealtimeRelayToolResult({
@@ -2516,12 +2282,7 @@ describe("talk realtime gateway relay", () => {
 
   it("returns structured relay steering status and emits Talk progress", async () => {
     const provider = createIdleRelayProvider();
-    const events: Array<{ event: string; payload: unknown; connIds: string[] }> = [];
-    const context = {
-      broadcastToConnIds: (event: string, payload: unknown, connIds: ReadonlySet<string>) => {
-        events.push({ event, payload, connIds: [...connIds] });
-      },
-    } as never;
+    const { events, context } = createRelayEventContext();
     const session = createTalkRealtimeRelaySession({
       context,
       connId: "conn-1",
@@ -2588,23 +2349,12 @@ describe("talk realtime gateway relay", () => {
         },
         "main",
       );
-      const bridge = {
+      const bridge = createRelayBridge({
         supportsToolResultSuppression: supportsSuppression,
-        connect: vi.fn(async () => undefined),
-        sendAudio: vi.fn(),
-        setMediaTimestamp: vi.fn(),
-        handleBargeIn: vi.fn(),
-        submitToolResult: vi.fn(),
-        acknowledgeMark: vi.fn(),
-        close: vi.fn(),
-        isConnected: vi.fn(() => true),
-      };
-      const provider: RealtimeVoiceProviderPlugin = {
-        id: "relay-test",
-        label: "Relay Test",
-        isConfigured: () => true,
-        createBridge: () => bridge,
-      };
+      });
+      const provider = createIdleRelayProvider({
+        bridge,
+      });
       const { abortController, broadcast, session } = createAbortableRelayRunFixture(provider);
 
       const result = await steerTalkRealtimeRelayAgentRun({
@@ -2669,17 +2419,7 @@ describe("talk realtime gateway relay", () => {
       .fn<RealtimeVoiceBridge["submitToolResult"]>()
       .mockResolvedValueOnce(undefined)
       .mockRejectedValueOnce(new Error("second cancel rejected"));
-    const provider = createIdleRelayProvider();
-    provider.createBridge = () => ({
-      connect: vi.fn(async () => undefined),
-      sendAudio: vi.fn(),
-      setMediaTimestamp: vi.fn(),
-      handleBargeIn: vi.fn(),
-      submitToolResult,
-      acknowledgeMark: vi.fn(),
-      close: vi.fn(),
-      isConnected: vi.fn(() => true),
-    });
+    const provider = createIdleRelayProvider({ bridge: createRelayBridge({ submitToolResult }) });
     const { broadcastToConnIds, session } = createAbortableRelayRunFixture(provider);
     registerTalkRealtimeRelayAgentRun({
       relaySessionId: session.relaySessionId,
@@ -2741,17 +2481,7 @@ describe("talk realtime gateway relay", () => {
     );
     const accepted = createDeferredVoid();
     const submitToolResult = vi.fn(() => accepted.promise);
-    const provider = createIdleRelayProvider();
-    provider.createBridge = () => ({
-      connect: vi.fn(async () => undefined),
-      sendAudio: vi.fn(),
-      setMediaTimestamp: vi.fn(),
-      handleBargeIn: vi.fn(),
-      submitToolResult,
-      acknowledgeMark: vi.fn(),
-      close: vi.fn(),
-      isConnected: vi.fn(() => true),
-    });
+    const provider = createIdleRelayProvider({ bridge: createRelayBridge({ submitToolResult }) });
     const { broadcastToConnIds, session } = createAbortableRelayRunFixture(provider);
 
     const steering = steerTalkRealtimeRelayAgentRun({
@@ -2791,34 +2521,18 @@ describe("talk realtime gateway relay", () => {
     );
 
     let bridgeRequest: RealtimeVoiceBridgeCreateRequest | undefined;
-    const bridge = {
+    const bridge = createRelayBridge({
       supportsToolResultContinuation: true,
-      connect: vi.fn(async () => undefined),
-      sendAudio: vi.fn(),
-      setMediaTimestamp: vi.fn(),
       sendUserMessage: vi.fn(),
       triggerGreeting: vi.fn(),
-      handleBargeIn: vi.fn(),
-      submitToolResult: vi.fn(),
-      acknowledgeMark: vi.fn(),
-      close: vi.fn(),
-      isConnected: vi.fn(() => true),
-    };
-    const provider: RealtimeVoiceProviderPlugin = {
-      id: "relay-test",
-      label: "Relay Test",
-      isConfigured: () => true,
-      createBridge: (req) => {
-        bridgeRequest = req;
-        return bridge;
+    });
+    const provider = createIdleRelayProvider({
+      bridge,
+      captureRequest: (request) => {
+        bridgeRequest = request;
       },
-    };
-    const events: Array<{ event: string; payload: unknown; connIds: string[] }> = [];
-    const context = {
-      broadcastToConnIds: (event: string, payload: unknown, connIds: ReadonlySet<string>) => {
-        events.push({ event, payload, connIds: [...connIds] });
-      },
-    } as never;
+    });
+    const { events, context } = createRelayEventContext();
 
     const session = createTalkRealtimeRelaySession({
       context,
@@ -3028,14 +2742,10 @@ describe("talk realtime gateway relay", () => {
 
     let bridgeRequest: RealtimeVoiceBridgeCreateRequest | undefined;
     let rejectNextSubmission = false;
-    const bridge = {
+    const bridge = createRelayBridge({
       supportsToolResultContinuation: true,
-      connect: vi.fn(async () => undefined),
-      sendAudio: vi.fn(),
-      setMediaTimestamp: vi.fn(),
       sendUserMessage: vi.fn(),
       triggerGreeting: vi.fn(),
-      handleBargeIn: vi.fn(),
       submitToolResult: vi.fn(() => {
         if (!rejectNextSubmission) {
           return undefined;
@@ -3043,19 +2753,13 @@ describe("talk realtime gateway relay", () => {
         rejectNextSubmission = false;
         return Promise.reject(new Error("provider cancellation rejected"));
       }),
-      acknowledgeMark: vi.fn(),
-      close: vi.fn(),
-      isConnected: vi.fn(() => true),
-    };
-    const provider: RealtimeVoiceProviderPlugin = {
-      id: "relay-test",
-      label: "Relay Test",
-      isConfigured: () => true,
-      createBridge: (request) => {
+    });
+    const provider = createIdleRelayProvider({
+      bridge,
+      captureRequest: (request) => {
         bridgeRequest = request;
-        return bridge;
       },
-    };
+    });
     const events: Array<{ event: string; payload: unknown; connIds: string[] }> = [];
     const session = createTalkRealtimeRelaySession({
       context: {
@@ -3124,26 +2828,15 @@ describe("talk realtime gateway relay", () => {
 
   it("does not duplicate control-like transcripts when the linked relay run is already gone", async () => {
     let bridgeRequest: RealtimeVoiceBridgeCreateRequest | undefined;
-    const bridge = {
-      connect: vi.fn(async () => undefined),
-      sendAudio: vi.fn(),
-      setMediaTimestamp: vi.fn(),
+    const bridge = createRelayBridge({
       sendUserMessage: vi.fn(),
-      handleBargeIn: vi.fn(),
-      submitToolResult: vi.fn(),
-      acknowledgeMark: vi.fn(),
-      close: vi.fn(),
-      isConnected: vi.fn(() => true),
-    };
-    const provider: RealtimeVoiceProviderPlugin = {
-      id: "relay-test",
-      label: "Relay Test",
-      isConfigured: () => true,
-      createBridge: (req) => {
-        bridgeRequest = req;
-        return bridge;
+    });
+    const provider = createIdleRelayProvider({
+      bridge,
+      captureRequest: (request) => {
+        bridgeRequest = request;
       },
-    };
+    });
     const context = {
       broadcastToConnIds: vi.fn(),
       chatAbortControllers: new Map(),
@@ -3205,24 +2898,11 @@ describe("talk realtime gateway relay", () => {
         },
       },
     });
-    const provider: RealtimeVoiceProviderPlugin = {
-      id: "relay-test",
-      label: "Relay Test",
-      isConfigured: () => true,
-      createBridge: (req) => {
-        bridgeRequest = req;
-        return {
-          connect: vi.fn(async () => undefined),
-          sendAudio: vi.fn(),
-          setMediaTimestamp: vi.fn(),
-          handleBargeIn: vi.fn(),
-          submitToolResult: vi.fn(),
-          acknowledgeMark: vi.fn(),
-          close: vi.fn(),
-          isConnected: vi.fn(() => true),
-        };
+    const provider = createIdleRelayProvider({
+      captureRequest: (request) => {
+        bridgeRequest = request;
       },
-    };
+    });
     const context = {
       broadcastToConnIds: vi.fn(),
       broadcast,
@@ -3267,21 +2947,7 @@ describe("talk realtime gateway relay", () => {
   });
 
   it("caps active relay sessions per browser connection", () => {
-    const provider: RealtimeVoiceProviderPlugin = {
-      id: "relay-test",
-      label: "Relay Test",
-      isConfigured: () => true,
-      createBridge: () => ({
-        connect: vi.fn(async () => undefined),
-        sendAudio: vi.fn(),
-        setMediaTimestamp: vi.fn(),
-        handleBargeIn: vi.fn(),
-        submitToolResult: vi.fn(),
-        acknowledgeMark: vi.fn(),
-        close: vi.fn(),
-        isConnected: vi.fn(() => true),
-      }),
-    };
+    const provider = createIdleRelayProvider();
     const createSession = (connId: string) =>
       createTalkRealtimeRelaySession({
         context: { broadcastToConnIds: vi.fn() } as never,
