@@ -415,6 +415,38 @@ describe("chat pane board shell", () => {
     expect(pane.state.sidebarFocusPanelId).toBe(chatPanel.id);
   });
 
+  it.each(["bottom", "hidden"] as const)(
+    "does not rewrite the chat sidebar for a %s board dock",
+    (dock) => {
+      const pane = createTestPane();
+      const layout = openSlot({ columns: [] }, "chat", "left");
+      pane.state.sidebarLayout = layout;
+
+      expect(pane.syncChatSidebarForDock(dock)).toBe(true);
+      expect(pane.state.sidebarLayout).toBe(layout);
+      expect(pane.state.sidebarFocusVersion).toBe(0);
+    },
+  );
+
+  it("does not move a chat dock owned by a read-only board tab", () => {
+    const pane = createTestPane();
+    pane.boardProvider = mockBoardProvider("agent:main:current");
+    const original = openSlot({ columns: [] }, "chat", "left");
+    pane.state.sidebarLayout = original;
+    const chatPanel = original.columns[0]!.panels[0]!;
+    const moved = detachPanelToColumn(original, chatPanel.id, "right", 0);
+    const board = {
+      ...pane.resolveBoardView(),
+      dock: "left" as const,
+      activeTabReadOnly: true,
+    };
+
+    pane.commitSidebarPanelMove(moved, chatPanel.id, "right", board);
+
+    expect(pane.state.sidebarLayout).toBe(original);
+    expect(pane.state.sidebarFocusVersion).toBe(0);
+  });
+
   it("restores one board view across equivalent main session keys", () => {
     const pane = createTestPane();
     pane.context = {
@@ -574,6 +606,12 @@ describe("chat pane board shell", () => {
       profile: "read-only",
       scopes: ["operator.read"],
       canMutate: false,
+      canGrant: false,
+    },
+    {
+      profile: "writer without approvals",
+      scopes: ["operator.read", "operator.write"],
+      canMutate: true,
       canGrant: false,
     },
     {

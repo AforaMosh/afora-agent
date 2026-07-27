@@ -72,6 +72,45 @@ describe("isSwarmEnabledInConfig", () => {
       ),
     ).toBe(true);
   });
+
+  it.each([
+    { label: "a missing configuration", config: null, agentId: "worker", enabled: false },
+    {
+      label: "an unknown agent with a global default",
+      config: { tools: { swarm: true }, agents: { entries: {} } },
+      agentId: "missing",
+      enabled: true,
+    },
+    {
+      label: "a malformed per-agent override",
+      config: {
+        tools: { swarm: false },
+        agents: { entries: { worker: { tools: { swarm: { enabled: "true" } } } } },
+      },
+      agentId: "worker",
+      enabled: false,
+    },
+    {
+      label: "an agent stored in the entries list",
+      config: {
+        tools: { swarm: false },
+        agents: { entries: [{ id: "worker", tools: { swarm: { enabled: true } } }] },
+      },
+      agentId: "worker",
+      enabled: true,
+    },
+    {
+      label: "an unmatched listed agent",
+      config: {
+        tools: { swarm: false },
+        agents: { list: [{ id: "other", tools: { swarm: true } }] },
+      },
+      agentId: "worker",
+      enabled: false,
+    },
+  ])("uses the correct fallback for $label", ({ config, agentId, enabled }) => {
+    expect(isSwarmEnabledInConfig(config, agentId)).toBe(enabled);
+  });
 });
 
 describe("SwarmRosterHydrator", () => {

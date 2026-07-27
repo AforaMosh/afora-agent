@@ -56,6 +56,31 @@ describe("openclaw-modal-dialog", () => {
     expect(dialog.getRootNode()).toBe(webAwesomeDialog.shadowRoot);
   });
 
+  it("removes stale accessibility labels when the modal has no label or description", async () => {
+    const { modal, webAwesomeDialog, dialog } = await renderModal();
+    expect(dialog.getAttribute("aria-label")).toBe("Confirm action");
+    expect(dialog.getAttribute("aria-description")).toBe("Review the operation before continuing.");
+
+    modal.setAttribute("label", "");
+    modal.setAttribute("description", "");
+    await modal.updateComplete;
+    await webAwesomeDialog.updateComplete;
+    await nextFrame();
+
+    expect(dialog.hasAttribute("aria-label")).toBe(false);
+    expect(dialog.hasAttribute("aria-description")).toBe(false);
+  });
+
+  it("keeps the modal open when its cancel event is prevented", async () => {
+    const { modal, webAwesomeDialog, dialog } = await renderModal();
+    modal.addEventListener("modal-cancel", (event) => event.preventDefault());
+    const hide = new CustomEvent("wa-hide", { bubbles: true, cancelable: true });
+
+    expect(webAwesomeDialog.dispatchEvent(hide)).toBe(false);
+    expect(hide.defaultPrevented).toBe(true);
+    expect(dialog.open).toBe(true);
+  });
+
   it("focuses the dialog container first", async () => {
     const focus = vi.spyOn(HTMLDialogElement.prototype, "focus");
     const { dialog } = await renderModal();

@@ -1,6 +1,6 @@
 /* @vitest-environment jsdom */
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   consumeDropdownKeyboardDismissal,
   syncDropdownItemRadio,
@@ -68,6 +68,37 @@ describe("Web Awesome adapters", () => {
     expect(restoreFocus).toBe(true);
   });
 
+  it("consumes a keyboard dismissal exactly once", async () => {
+    const { dropdown } = await createDropdown();
+    dropdown.addEventListener("keydown", trackDropdownKeyboardDismissal);
+    const restorations: boolean[] = [];
+    dropdown.addEventListener("wa-after-hide", (event) => {
+      restorations.push(consumeDropdownKeyboardDismissal(event));
+    });
+
+    dropdown.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    dropdown.dispatchEvent(new CustomEvent("wa-after-hide"));
+    dropdown.dispatchEvent(new CustomEvent("wa-after-hide"));
+
+    expect(restorations).toEqual([true, false]);
+  });
+
+  it("does not restore a durable trigger for ordinary keyboard navigation", async () => {
+    const { dropdown } = await createDropdown();
+    dropdown.addEventListener("keydown", trackDropdownKeyboardDismissal);
+    const restoreFocus = vi.fn();
+    dropdown.addEventListener("wa-after-hide", (event) => {
+      if (consumeDropdownKeyboardDismissal(event)) {
+        restoreFocus();
+      }
+    });
+
+    dropdown.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
+    dropdown.dispatchEvent(new CustomEvent("wa-after-hide"));
+
+    expect(restoreFocus).not.toHaveBeenCalled();
+  });
+
   it("restores the durable trigger before native Tab navigation", async () => {
     const durableTrigger = document.createElement("button");
     document.body.append(durableTrigger);
@@ -92,5 +123,20 @@ describe("Web Awesome adapters", () => {
 
     expect(item.getAttribute("role")).toBe("menuitemradio");
     expect(item.getAttribute("aria-checked")).toBe("true");
+  });
+
+  it("does not apply radio semantics to unrelated or disconnected elements", async () => {
+    const unrelated = document.createElement("button");
+    syncDropdownItemRadio(unrelated, true);
+
+    const disconnected = document.createElement("wa-dropdown-item") as DropdownElement;
+    document.body.append(disconnected);
+    syncDropdownItemRadio(disconnected, true);
+    disconnected.remove();
+    await disconnected.updateComplete;
+    await Promise.resolve();
+
+    expect(unrelated.hasAttribute("aria-checked")).toBe(false);
+    expect(disconnected.getAttribute("role")).not.toBe("menuitemradio");
   });
 });
