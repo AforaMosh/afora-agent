@@ -34,12 +34,20 @@ export function isRunnableJob(params: {
     return false;
   }
   const lastRunStatus = resolveJobLastRunStatus(job);
-  if (params.skipAtIfAlreadyRan && job.schedule.kind === "at" && lastRunStatus) {
+  if ((params.skipAtIfAlreadyRan ?? true) && job.schedule.kind === "at" && lastRunStatus) {
     // One-shot with terminal status: skip unless it has an explicit retry
-    // scheduled after the failed/skipped run (#24355, #91775).
+    // or a newer scheduled occurrence after the completed run.
     const lastRun = job.state.lastRunAtMs;
     const nextRun = job.state.nextRunAtMs;
-    if (isScheduledTerminalOneShotRetry(job, lastRunStatus, lastRun, nextRun)) {
+    const hasPreservedFutureOccurrence =
+      typeof lastRun === "number" &&
+      typeof nextRun === "number" &&
+      nextRun > lastRun &&
+      (lastRunStatus === "ok" || job.state.forcePreservedNextRunAtMs === nextRun);
+    if (
+      hasPreservedFutureOccurrence ||
+      isScheduledTerminalOneShotRetry(job, lastRunStatus, lastRun, nextRun)
+    ) {
       return typeof nextRun === "number" && nowMs >= nextRun;
     }
     return false;
