@@ -132,6 +132,44 @@ describe("runPostCoreFinalizeAfterGatewayUpdate", () => {
     expect(env.OPENCLAW_GATEWAY_SERVICE_PID).toBeUndefined();
   });
 
+  it("does not inherit a stale source-config handoff without a fresh payload", async () => {
+    const spawnFinalize = vi.fn<PostCoreFinalizeSpawner>(async () => ({ code: 0 }));
+    await runPostCoreFinalizeAfterGatewayUpdate({
+      result: gitOkResult(),
+      resolveEntrypoint: resolveEntrypointOk,
+      spawnFinalize,
+      env: {
+        PATH: "/usr/bin",
+        OPENCLAW_UPDATE_POST_CORE_SOURCE_CONFIG_PATH: "/tmp/stale-source-config.json",
+      },
+    });
+
+    const { env } = expectDefined(
+      spawnFinalize.mock.calls[0],
+      "spawnFinalize.mock.calls[0] test invariant",
+    )[0];
+    expect(env.OPENCLAW_UPDATE_POST_CORE_SOURCE_CONFIG_PATH).toBeUndefined();
+  });
+
+  it("does not inherit a stale host version without a fresh update version", async () => {
+    const spawnFinalize = vi.fn<PostCoreFinalizeSpawner>(async () => ({ code: 0 }));
+    await runPostCoreFinalizeAfterGatewayUpdate({
+      result: gitOkResult({ after: undefined }),
+      resolveEntrypoint: resolveEntrypointOk,
+      spawnFinalize,
+      env: {
+        PATH: "/usr/bin",
+        OPENCLAW_COMPATIBILITY_HOST_VERSION: "2026.1.1",
+      },
+    });
+
+    const { env } = expectDefined(
+      spawnFinalize.mock.calls[0],
+      "spawnFinalize.mock.calls[0] test invariant",
+    )[0];
+    expect(env.OPENCLAW_COMPATIBILITY_HOST_VERSION).toBeUndefined();
+  });
+
   it("carries the external service-repair policy into the finalizer", async () => {
     const spawnFinalize = vi.fn<PostCoreFinalizeSpawner>(async () => ({ code: 0 }));
     await runPostCoreFinalizeAfterGatewayUpdate({
