@@ -449,9 +449,11 @@ describe("normalizeInitialApplicationLocation", () => {
     };
     const originalSubscribe = gateway.subscribe.bind(gateway);
     const activeSubscriptions = new Set<GatewayListener>();
+    const readinessSubscription = deferred<void>();
     gateway.subscribe = (listener) => {
       activeSubscriptions.add(listener);
       const unsubscribe = originalSubscribe(listener);
+      readinessSubscription.resolve();
       return () => {
         activeSubscriptions.delete(listener);
         unsubscribe();
@@ -462,7 +464,8 @@ describe("normalizeInitialApplicationLocation", () => {
 
     try {
       const start = runtime.start();
-      await vi.waitFor(() => expect(activeSubscriptions.size).toBe(1));
+      await readinessSubscription.promise;
+      expect(activeSubscriptions.size).toBe(1);
       runtime.stop();
       await start;
 
