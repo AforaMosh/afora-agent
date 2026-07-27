@@ -78,6 +78,102 @@ describe("local model lean onboarding defaults", () => {
     expect(lifted.config.wizard?.localModelLeanAutoModel).toBeUndefined();
   });
 
+  it("uses prior model ownership after a provider has already selected a hosted model", () => {
+    const previousModelRef = "ollama/qwen3:8b";
+    const selectedModel = { primary: "openai/gpt-test" };
+    const config = {
+      wizard: { localModelLeanAutoModel: previousModelRef },
+      agents: {
+        defaults: {
+          model: selectedModel,
+          experimental: { localModelLean: true },
+        },
+      },
+    };
+
+    const result = applyAutoLocalModelLean({
+      config,
+      providerId: "openai",
+      modelRef: selectedModel.primary,
+      previouslyOwnedModelRef: previousModelRef,
+    });
+
+    expect(result.config.agents?.defaults?.model).toBe(selectedModel);
+    expect(result.config.agents?.defaults?.experimental?.localModelLean).toBeUndefined();
+    expect(result.config.wizard?.localModelLeanAutoModel).toBeUndefined();
+  });
+
+  it("moves verified lean ownership without replacing the selected local model", () => {
+    const previousModelRef = "ollama/qwen3:8b";
+    const selectedModel = { primary: "lmstudio/qwen/qwen3-1.7b" };
+    const config = {
+      wizard: { localModelLeanAutoModel: previousModelRef },
+      agents: {
+        defaults: {
+          model: selectedModel,
+          experimental: { localModelLean: true },
+        },
+      },
+    };
+
+    const result = applyAutoLocalModelLean({
+      config,
+      providerId: "lmstudio",
+      modelRef: selectedModel.primary,
+      previouslyOwnedModelRef: previousModelRef,
+    });
+
+    expect(result.config.agents?.defaults?.model).toBe(selectedModel);
+    expect(result.config.agents?.defaults?.experimental?.localModelLean).toBe(true);
+    expect(result.config.wizard?.localModelLeanAutoModel).toBe(selectedModel.primary);
+  });
+
+  it("does not claim lean ownership when the prior model does not match its marker", () => {
+    const config = {
+      wizard: { localModelLeanAutoModel: "ollama/qwen3:8b" },
+      agents: {
+        defaults: {
+          model: { primary: "openai/gpt-test" },
+          experimental: { localModelLean: true },
+        },
+      },
+    };
+
+    const result = applyAutoLocalModelLean({
+      config,
+      providerId: "openai",
+      modelRef: "openai/gpt-test",
+      previouslyOwnedModelRef: "ollama/manually-selected:8b",
+    });
+
+    expect(result.config.agents?.defaults?.experimental?.localModelLean).toBe(true);
+    expect(result.config.wizard?.localModelLeanAutoModel).toBeUndefined();
+  });
+
+  it("does not let an installed marker claim an explicitly enabled lean setting", () => {
+    const selectedModel = { primary: "openai/gpt-test" };
+    const config = {
+      wizard: { localModelLeanAutoModel: selectedModel.primary },
+      agents: {
+        defaults: {
+          model: selectedModel,
+          experimental: { localModelLean: true },
+        },
+      },
+    };
+
+    const result = applyAutoLocalModelLean({
+      config,
+      providerId: "openai",
+      modelRef: selectedModel.primary,
+      previouslyOwnedModelRef: null,
+    });
+
+    expect(result.config.agents?.defaults?.model).toBe(selectedModel);
+    expect(result.config.agents?.defaults?.experimental?.localModelLean).toBe(true);
+    expect(result.config.wizard?.localModelLeanAutoModel).toBeUndefined();
+  });
+
   it.each(["ollama/kimi-k2.5:cloud", "ollama/gpt-oss:120b-cloud"])(
     "lifts only an onboarding-owned lean setting for the hosted Ollama model %s",
     (modelRef) => {

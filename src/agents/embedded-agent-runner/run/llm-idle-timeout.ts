@@ -1,4 +1,5 @@
 import { onLlmRequestActivity } from "@openclaw/ai/internal/runtime";
+import { isCloudModelSource } from "@openclaw/model-catalog-core/provider-model-id-normalize";
 /**
  * Wraps LLM streams with idle-timeout detection and diagnostics.
  */
@@ -197,7 +198,7 @@ function isOllamaCloudModel(model: { id?: string; provider?: string } | undefine
   const modelId = rawModelId.trim().toLowerCase();
   const slashIndex = modelId.indexOf("/");
   const bareModelId = slashIndex >= 0 ? modelId.slice(slashIndex + 1) : modelId;
-  return bareModelId.endsWith(":cloud");
+  return isCloudModelSource(bareModelId);
 }
 
 type RuntimeModelLocality = {
@@ -208,7 +209,7 @@ type RuntimeModelLocality = {
 
 /**
  * Classifies the model endpoint locality shared by the idle and first-event
- * watchdogs. Ollama `*:cloud` models stay "cloud" even behind a local proxy.
+ * watchdogs. Hosted Ollama models stay "cloud" even behind a local proxy.
  */
 function resolveRuntimeModelLocality(params?: {
   cfg?: OpenClawConfig;
@@ -343,7 +344,7 @@ export function resolveLlmIdleTimeoutMs(params?: {
   // valid local runs. Honor it only when the user has not opted out via the
   // baseUrl pointing at loopback / private-network / `.local`. Ollama cloud
   // models are still hosted remotely even when proxied through local Ollama, so
-  // keep the cloud watchdog for `*:cloud` model ids.
+  // keep the cloud watchdog for both `*:cloud` and `*-cloud` source tags.
   if (isLocalRuntimeModel) {
     return 0;
   }

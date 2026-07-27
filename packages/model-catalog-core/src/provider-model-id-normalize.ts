@@ -2,6 +2,33 @@
 const ANTIGRAVITY_BARE_PRO_IDS = new Set(["gemini-3-pro", "gemini-3.1-pro", "gemini-3-1-pro"]);
 const GOOGLE_PROVIDER_PREFIX = "google/";
 
+function parseModelSourceSuffix(
+  modelId: string,
+): { base: string; source: "cloud" | "local" } | undefined {
+  const sourceSeparator = modelId.lastIndexOf(":");
+  if (sourceSeparator < 0) {
+    return undefined;
+  }
+  const source = modelId.slice(sourceSeparator + 1);
+  if (source === "cloud" || source === "local") {
+    return { base: modelId.slice(0, sourceSeparator), source };
+  }
+  if (!source.includes("/") && source.endsWith("-cloud")) {
+    return { base: modelId.slice(0, -"-cloud".length), source: "cloud" };
+  }
+  return undefined;
+}
+
+/** Recognizes hosted model source tags without treating nested tags as cloud. */
+export function isCloudModelSource(modelId: string | undefined): boolean {
+  const normalized = modelId?.trim().toLowerCase();
+  if (!normalized) {
+    return false;
+  }
+  const parsed = parseModelSourceSuffix(normalized);
+  return parsed?.source === "cloud" && parseModelSourceSuffix(parsed.base) === undefined;
+}
+
 export function normalizeGooglePreviewModelId(id: string): string {
   if (id.startsWith(GOOGLE_PROVIDER_PREFIX)) {
     const modelId = id.slice(GOOGLE_PROVIDER_PREFIX.length);

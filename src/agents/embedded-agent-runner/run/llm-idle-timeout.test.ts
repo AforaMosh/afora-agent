@@ -225,6 +225,19 @@ describe("resolveLlmIdleTimeoutMs", () => {
     ).toBe(CRON_LLM_IDLE_TIMEOUT_MS);
   });
 
+  it.each(["gpt-oss:120b-cloud", "ollama/gpt-oss:120b-cloud", " GLM-5.2:CLOUD "])(
+    "keeps the cron stall cap for hosted Ollama model %s behind a local daemon",
+    (id) => {
+      expect(
+        resolveLlmIdleTimeoutMs({
+          trigger: "cron",
+          runTimeoutMs: 600_000,
+          model: { provider: "ollama", id, baseUrl: "http://127.0.0.1:11434" },
+        }),
+      ).toBe(CRON_LLM_IDLE_TIMEOUT_MS);
+    },
+  );
+
   it("honors an explicit models.providers.<id>.timeoutSeconds for cloud providers (#77744, #78361)", () => {
     // models.providers.<id>.timeoutSeconds is documented as the user-facing
     // knob to extend slow model responses. The idle watchdog must respect it
@@ -402,25 +415,33 @@ describe("resolveLlmIdleTimeoutMs", () => {
     expect(resolveLlmIdleTimeoutMs({ model: { baseUrl } })).toBe(0);
   });
 
-  it("keeps the default idle watchdog for Ollama cloud models routed through local Ollama", () => {
+  it.each([
+    ["ollama", "glm-5.1:cloud", "http://127.0.0.1:11434"],
+    ["ollama2", "ollama2/kimi-k2.5:cloud", "http://localhost:11434"],
+    ["ollama", "gpt-oss:120b-cloud", "http://127.0.0.1:11434"],
+    ["ollama", "ollama/gpt-oss:120b-cloud", "http://localhost:11434"],
+    ["ollama", " GLM-5.2:CLOUD ", "http://127.0.0.1:11434"],
+  ])(
+    "keeps the default idle watchdog for hosted Ollama model %s/%s routed through %s",
+    (provider, id, baseUrl) => {
+      expect(resolveLlmIdleTimeoutMs({ model: { provider, id, baseUrl } })).toBe(
+        DEFAULT_LLM_IDLE_TIMEOUT_MS,
+      );
+    },
+  );
+
+  it.each([
+    "local-cloud",
+    "invalid:cloud-cloud",
+    "invalid:local:cloud",
+    "invalid:local-cloud",
+    "invalid:cloud:local",
+  ])("keeps ambiguous Ollama source %s on the local idle path", (id) => {
     expect(
       resolveLlmIdleTimeoutMs({
-        model: {
-          provider: "ollama",
-          id: "glm-5.1:cloud",
-          baseUrl: "http://127.0.0.1:11434",
-        },
+        model: { provider: "ollama", id, baseUrl: "http://127.0.0.1:11434" },
       }),
-    ).toBe(DEFAULT_LLM_IDLE_TIMEOUT_MS);
-    expect(
-      resolveLlmIdleTimeoutMs({
-        model: {
-          provider: "ollama2",
-          id: "ollama2/kimi-k2.5:cloud",
-          baseUrl: "http://localhost:11434",
-        },
-      }),
-    ).toBe(DEFAULT_LLM_IDLE_TIMEOUT_MS);
+    ).toBe(0);
   });
 
   it.each([
@@ -582,12 +603,31 @@ describe("resolveLlmFirstEventTimeoutMs", () => {
     ).toBe(LOCAL_LLM_FIRST_EVENT_TIMEOUT_MS);
   });
 
-  it("keeps Ollama cloud models on the cloud first-event timeout", () => {
+  it.each([
+    "ollama/kimi-k2.6:cloud",
+    "gpt-oss:120b-cloud",
+    "ollama/gpt-oss:120b-cloud",
+    " GLM-5.2:CLOUD ",
+  ])("keeps hosted Ollama model %s on the cloud first-event timeout", (id) => {
     expect(
       resolveLlmFirstEventTimeoutMs({
-        model: { provider: "ollama", id: "ollama/kimi-k2.6:cloud", baseUrl: "http://127.0.0.1" },
+        model: { provider: "ollama", id, baseUrl: "http://127.0.0.1" },
       }),
     ).toBe(CLOUD_LLM_FIRST_EVENT_TIMEOUT_MS);
+  });
+
+  it.each([
+    "local-cloud",
+    "invalid:cloud-cloud",
+    "invalid:local:cloud",
+    "invalid:local-cloud",
+    "invalid:cloud:local",
+  ])("keeps ambiguous Ollama source %s on the local first-event path", (id) => {
+    expect(
+      resolveLlmFirstEventTimeoutMs({
+        model: { provider: "ollama", id, baseUrl: "http://127.0.0.1" },
+      }),
+    ).toBe(LOCAL_LLM_FIRST_EVENT_TIMEOUT_MS);
   });
 
   it("honors explicit provider request timeouts", () => {

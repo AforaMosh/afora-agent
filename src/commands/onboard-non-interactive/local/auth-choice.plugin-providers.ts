@@ -281,43 +281,19 @@ export async function applyNonInteractivePluginProviderChoice(params: {
     runtime: params.runtime,
     workspaceDir,
   });
-  const previousModel = enableResult.config.agents?.defaults?.model;
-  const previousAutoModel = enableResult.config.wizard?.localModelLeanAutoModel;
-  const restoreAutoModelOwnership =
-    previousAutoModel !== undefined &&
-    previousAutoModel === resolveAgentModelPrimaryValue(previousModel) &&
-    previousAutoModel === copilotInstall.cfg.wizard?.localModelLeanAutoModel;
-
-  // Provider setup already replaced the default model. Restore its old value
-  // only while checking whether onboarding still owns the lean setting.
-  const leanConfig = applyAutoLocalModelLean({
-    config: restoreAutoModelOwnership
-      ? {
-          ...copilotInstall.cfg,
-          agents: {
-            ...copilotInstall.cfg.agents,
-            defaults: {
-              ...copilotInstall.cfg.agents?.defaults,
-              model: previousModel,
-            },
-          },
-        }
-      : copilotInstall.cfg,
+  const previousModelRef = resolveAgentModelPrimaryValue(
+    enableResult.config.agents?.defaults?.model,
+  );
+  const previousAutoModelRef = enableResult.config.wizard?.localModelLeanAutoModel;
+  // Only a marker that existed before runtime installation can establish ownership.
+  const previouslyOwnedModelRef =
+    previousAutoModelRef !== undefined && previousAutoModelRef === previousModelRef
+      ? previousAutoModelRef
+      : null;
+  return applyAutoLocalModelLean({
+    config: copilotInstall.cfg,
     providerId: providerChoice.provider.id,
     modelRef: selectedModel,
+    previouslyOwnedModelRef,
   }).config;
-
-  if (!restoreAutoModelOwnership) {
-    return leanConfig;
-  }
-  return {
-    ...leanConfig,
-    agents: {
-      ...leanConfig.agents,
-      defaults: {
-        ...leanConfig.agents?.defaults,
-        model: copilotInstall.cfg.agents?.defaults?.model,
-      },
-    },
-  };
 }

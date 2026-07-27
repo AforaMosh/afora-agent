@@ -51,6 +51,9 @@ describe("ollama provider models", () => {
   it.each([
     ["glm-5.2:cloud", true],
     ["gpt-oss:120b-cloud", true],
+    ["ollama/gpt-oss:120b-cloud", true],
+    [" GLM-5.2:CLOUD ", true],
+    ["qwen3:local", false],
     ["local-cloud", false],
     ["invalid:cloud-cloud", false],
     ["invalid:local:cloud", false],

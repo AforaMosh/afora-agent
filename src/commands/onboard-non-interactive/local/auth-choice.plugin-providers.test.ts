@@ -249,6 +249,41 @@ describe("applyNonInteractivePluginProviderChoice", () => {
     expect(result?.wizard?.localModelLeanAutoModel).toBeUndefined();
   });
 
+  it.each([
+    ["prior model", "ollama/qwen3:8b"],
+    ["selected model", "openai/gpt-5.6-luna"],
+  ])(
+    "does not let runtime installation claim an explicitly enabled lean setting for the %s",
+    async (_label, installedAutoModel) => {
+      const previousModelRef = "ollama/qwen3:8b";
+      ensureCopilotRuntimePluginForModelSelection.mockImplementation(async ({ cfg }) => ({
+        cfg: {
+          ...cfg,
+          wizard: { ...cfg.wizard, localModelLeanAutoModel: installedAutoModel },
+        },
+        required: false,
+        installed: false,
+      }));
+
+      const result = await applyProviderModelChoice({
+        providerId: "openai",
+        modelRef: "openai/gpt-5.6-luna",
+        nextConfig: {
+          agents: {
+            defaults: {
+              model: { primary: previousModelRef },
+              experimental: { localModelLean: true },
+            },
+          },
+        },
+      });
+
+      expect(result?.agents?.defaults?.model).toEqual({ primary: "openai/gpt-5.6-luna" });
+      expect(result?.agents?.defaults?.experimental?.localModelLean).toBe(true);
+      expect(result?.wizard?.localModelLeanAutoModel).toBeUndefined();
+    },
+  );
+
   it("loads plugin providers for provider-plugin auth choices", async () => {
     const runtime = createRuntime();
     const runNonInteractive = vi.fn(async () => ({ plugins: { allow: ["vllm"] } }));
