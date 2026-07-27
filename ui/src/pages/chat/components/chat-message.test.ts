@@ -80,6 +80,21 @@ beforeEach(() => {
 
 type RenderMessageGroupOptions = Parameters<typeof renderMessageGroup>[1];
 
+function createTranscriptMessage(
+  role: "assistant" | "user",
+  content: unknown,
+  timestamp: number,
+  options: { id?: string; metadata?: Record<string, unknown> } = {},
+) {
+  return {
+    ...(options.id === undefined ? {} : { id: options.id }),
+    role,
+    content,
+    timestamp,
+    ...(options.metadata === undefined ? {} : { __openclaw: options.metadata }),
+  };
+}
+
 function expectElement<T extends Element>(
   container: Element,
   selector: string,
@@ -435,11 +450,7 @@ function renderDeleteConfirmFixture() {
     container,
     [
       createMessageGroup(
-        {
-          role: "assistant",
-          content: "hello from assistant",
-          timestamp: 1000,
-        },
+        createTranscriptMessage("assistant", "hello from assistant", 1000),
         "assistant",
       ),
     ],
@@ -603,11 +614,7 @@ describe("grouped chat rendering", () => {
     renderAssistantMessageEntries(container, [
       {
         key: "assistant-heartbeat",
-        message: {
-          role: "assistant",
-          content: [{ type: "text", text: "HEARTBEAT_OK" }],
-          timestamp: 1,
-        },
+        message: createTranscriptMessage("assistant", [{ type: "text", text: "HEARTBEAT_OK" }], 1),
         duplicateCount: 4,
       },
     ]);
@@ -619,11 +626,10 @@ describe("grouped chat rendering", () => {
 
   it("does not render the stale assistant read-aloud footer action", () => {
     const container = document.createElement("div");
-    renderAssistantMessage(container, {
-      role: "assistant",
-      content: "hello from assistant",
-      timestamp: 1000,
-    });
+    renderAssistantMessage(
+      container,
+      createTranscriptMessage("assistant", "hello from assistant", 1000),
+    );
 
     expect(container.querySelector(".chat-tts-btn")).toBeNull();
     expect(container.querySelector('[aria-label="Read aloud"]')).toBeNull();
@@ -631,11 +637,7 @@ describe("grouped chat rendering", () => {
 
   it("renders assistant message actions in the footer row", () => {
     const container = document.createElement("div");
-    renderAssistantMessage(container, {
-      role: "assistant",
-      content: "Short reply",
-      timestamp: 1000,
-    });
+    renderAssistantMessage(container, createTranscriptMessage("assistant", "Short reply", 1000));
 
     const assistantGroup = expectElement(container, ".chat-group.assistant", HTMLElement);
     expect(assistantGroup.querySelector(".chat-bubble-actions")).toBeNull();
@@ -643,15 +645,7 @@ describe("grouped chat rendering", () => {
       assistantGroup.querySelector(".chat-group-footer-actions .chat-copy-btn"),
     ).toBeInstanceOf(HTMLElement);
 
-    renderGroupedMessage(
-      container,
-      {
-        role: "user",
-        content: "Short reply",
-        timestamp: 1001,
-      },
-      "user",
-    );
+    renderGroupedMessage(container, createTranscriptMessage("user", "Short reply", 1001), "user");
 
     const userBubble = expectElement(container, ".chat-group.user .chat-bubble", HTMLElement);
     expect(userBubble.classList.contains("has-copy")).toBe(false);
@@ -664,12 +658,9 @@ describe("grouped chat rendering", () => {
     const onOpenSidebar = vi.fn();
     renderAssistantMessage(
       container,
-      {
-        role: "assistant",
-        content: "Reply with this context.",
-        timestamp: 1000,
-        __openclaw: { id: "assistant-entry-1" },
-      },
+      createTranscriptMessage("assistant", "Reply with this context.", 1000, {
+        metadata: { id: "assistant-entry-1" },
+      }),
       { onDelete: vi.fn(), onOpenSidebar, onReply },
     );
 
@@ -695,12 +686,9 @@ describe("grouped chat rendering", () => {
     const userContainer = document.createElement("div");
     renderGroupedMessage(
       userContainer,
-      {
-        role: "user",
-        content: "User reply context.",
-        timestamp: 1001,
-        __openclaw: { id: "user-entry-1" },
-      },
+      createTranscriptMessage("user", "User reply context.", 1001, {
+        metadata: { id: "user-entry-1" },
+      }),
       "user",
       { onReply, userName: "Jason" },
     );
@@ -718,11 +706,7 @@ describe("grouped chat rendering", () => {
     const container = document.createElement("div");
     renderGroupedMessage(
       container,
-      {
-        role: "user",
-        content: "User footer order.",
-        timestamp: Date.now(),
-      },
+      createTranscriptMessage("user", "User footer order.", Date.now()),
       "user",
       {
         onDelete: vi.fn(),
@@ -753,11 +737,11 @@ describe("grouped chat rendering", () => {
     const onReply = vi.fn();
     renderAssistantMessage(
       container,
-      {
-        role: "assistant",
-        content: "<thinking>private reasoning</thinking>Visible answer.",
-        timestamp: 1000,
-      },
+      createTranscriptMessage(
+        "assistant",
+        "<thinking>private reasoning</thinking>Visible answer.",
+        1000,
+      ),
       { onReply },
     );
 
@@ -766,11 +750,7 @@ describe("grouped chat rendering", () => {
 
     renderAssistantMessage(
       container,
-      {
-        role: "assistant",
-        content: "<thinking>private reasoning only</thinking>",
-        timestamp: 1001,
-      },
+      createTranscriptMessage("assistant", "<thinking>private reasoning only</thinking>", 1001),
       { onReply },
     );
     expect(container.querySelector('[aria-label="Reply to message"]')).toBeNull();
@@ -778,11 +758,10 @@ describe("grouped chat rendering", () => {
 
   it("does not replay an arrival animation when a message row mounts", () => {
     const container = document.createElement("div");
-    renderAssistantMessage(container, {
-      role: "assistant",
-      content: "Stable transcript row",
-      timestamp: 1000,
-    });
+    renderAssistantMessage(
+      container,
+      createTranscriptMessage("assistant", "Stable transcript row", 1000),
+    );
 
     const bubble = expectElement(container, ".chat-bubble", HTMLElement);
     expect(bubble.classList.contains("fade-in")).toBe(false);
@@ -794,11 +773,11 @@ describe("grouped chat rendering", () => {
     const onOpenSidebar = vi.fn();
     renderAssistantMessage(
       container,
-      {
-        role: "assistant",
-        content: "<think>internal reasoning</think>\nVisible answer",
-        timestamp: 1000,
-      },
+      createTranscriptMessage(
+        "assistant",
+        "<think>internal reasoning</think>\nVisible answer",
+        1000,
+      ),
       {
         onOpenSidebar,
         showReasoning: false,
@@ -817,15 +796,7 @@ describe("grouped chat rendering", () => {
     const container = document.createElement("div");
     const markdownContent = "```bash\npython3 - <<'PY'\nprint('ok')\nPY\n```";
 
-    renderGroupedMessage(
-      container,
-      {
-        role: "user",
-        content: markdownContent,
-        timestamp: 1001,
-      },
-      "user",
-    );
+    renderGroupedMessage(container, createTranscriptMessage("user", markdownContent, 1001), "user");
 
     expect(markdownRenderMock).toHaveBeenCalledWith(markdownContent, {
       assistantTranscriptRoleHeaders: false,
@@ -844,11 +815,7 @@ describe("grouped chat rendering", () => {
 
     renderGroupedMessage(
       container,
-      {
-        role: "user",
-        content: markdownContent,
-        timestamp: 1001,
-      },
+      createTranscriptMessage("user", markdownContent, 1001),
       "user",
       {
         isUserMessageExpanded: () => false,
@@ -875,11 +842,7 @@ describe("grouped chat rendering", () => {
 
     renderGroupedMessage(
       container,
-      {
-        role: "user",
-        content: markdownContent,
-        timestamp: 1001,
-      },
+      createTranscriptMessage("user", markdownContent, 1001),
       "user",
       {
         isUserMessageExpanded: () => true,
@@ -934,11 +897,7 @@ describe("grouped chat rendering", () => {
 
     renderAssistantMessage(
       container,
-      {
-        role: "assistant",
-        content: "Long reply ".repeat(100),
-        timestamp: 1002,
-      },
+      createTranscriptMessage("assistant", "Long reply ".repeat(100), 1002),
       { onToggleUserMessageExpanded },
     );
     expect(container.querySelector(".chat-user-message-disclosure")).toBeNull();
@@ -948,11 +907,7 @@ describe("grouped chat rendering", () => {
     const container = document.createElement("div");
     const markdownContent = "```bash\necho ok\n```";
 
-    renderAssistantMessage(container, {
-      role: "assistant",
-      content: markdownContent,
-      timestamp: 1000,
-    });
+    renderAssistantMessage(container, createTranscriptMessage("assistant", markdownContent, 1000));
 
     expect(markdownRenderMock).toHaveBeenCalledWith(markdownContent, {
       assistantTranscriptRoleHeaders: true,
@@ -968,20 +923,9 @@ describe("grouped chat rendering", () => {
     renderMessageGroups(
       container,
       [
+        createMessageGroup(createTranscriptMessage("user", "hello from user", 1000), "user"),
         createMessageGroup(
-          {
-            role: "user",
-            content: "hello from user",
-            timestamp: 1000,
-          },
-          "user",
-        ),
-        createMessageGroup(
-          {
-            role: "assistant",
-            content: "hello from assistant",
-            timestamp: 1001,
-          },
+          createTranscriptMessage("assistant", "hello from assistant", 1001),
           "assistant",
         ),
       ],
@@ -1492,11 +1436,10 @@ describe("grouped chat rendering", () => {
     ({ preference, expected }) => {
       setUiTimeFormatPreference(preference);
       const container = document.createElement("div");
-      renderAssistantMessage(container, {
-        role: "assistant",
-        content: "Done",
-        timestamp: Date.UTC(2026, 0, 15, 19, 30),
-      });
+      renderAssistantMessage(
+        container,
+        createTranscriptMessage("assistant", "Done", Date.UTC(2026, 0, 15, 19, 30)),
+      );
 
       expect(container.querySelector("openclaw-tooltip")?.getAttribute("content")).toMatch(
         expected,
@@ -1582,11 +1525,7 @@ describe("grouped chat rendering", () => {
 
   it("morphs one assistant turn from working status to its terminal recap", () => {
     const container = document.createElement("div");
-    const message = {
-      role: "assistant",
-      content: "First result is ready.",
-      timestamp: 1_000,
-    };
+    const message = createTranscriptMessage("assistant", "First result is ready.", 1_000);
 
     renderAssistantMessage(container, message, {
       activeContinuation: {
@@ -1768,16 +1707,7 @@ describe("grouped chat rendering", () => {
   it("renders configured local user names", () => {
     const renderUser = (opts: Partial<RenderMessageGroupOptions>) => {
       const container = document.createElement("div");
-      renderGroupedMessage(
-        container,
-        {
-          role: "user",
-          content: "hello",
-          timestamp: 1000,
-        },
-        "user",
-        opts,
-      );
+      renderGroupedMessage(container, createTranscriptMessage("user", "hello", 1000), "user", opts);
       return container;
     };
 
@@ -2209,9 +2139,9 @@ describe("grouped chat rendering", () => {
       messages: [
         {
           key: "parallel-tool-message",
-          message: {
-            role: "assistant",
-            content: [
+          message: createTranscriptMessage(
+            "assistant",
+            [
               {
                 type: "toolCall",
                 id: "call-a",
@@ -2237,8 +2167,8 @@ describe("grouped chat rendering", () => {
                 text: "File B",
               },
             ],
-            timestamp: 1000,
-          },
+            1000,
+          ),
         },
       ],
       timestamp: 1000,
@@ -2599,10 +2529,9 @@ describe("grouped chat rendering", () => {
 
   it("renders assistant tool content as a flat concise tool row without a top-level call id", () => {
     const container = document.createElement("div");
-    const message = {
-      id: "assistant-tool-content",
-      role: "assistant",
-      content: [
+    const message = createTranscriptMessage(
+      "assistant",
+      [
         {
           type: "tool_use",
           id: "call-content-only",
@@ -2610,8 +2539,9 @@ describe("grouped chat rendering", () => {
           input: { command: "bash" },
         },
       ],
-      timestamp: Date.now(),
-    };
+      Date.now(),
+      { id: "assistant-tool-content" },
+    );
 
     renderAssistantMessage(container, message, {
       isToolMessageExpanded: () => false,
@@ -3001,13 +2931,12 @@ describe("grouped chat rendering", () => {
     const onOpenImage = vi.fn();
     renderAssistantMessage(
       container,
-      {
-        id: "assistant-media-inline",
-        role: "assistant",
-        content:
-          "[[reply_to_current]]Here is the image.\nMEDIA:https://example.com/photo.png\nMEDIA:https://example.com/voice.ogg\n[[audio_as_voice]]",
-        timestamp: Date.now(),
-      },
+      createTranscriptMessage(
+        "assistant",
+        "[[reply_to_current]]Here is the image.\nMEDIA:https://example.com/photo.png\nMEDIA:https://example.com/voice.ogg\n[[audio_as_voice]]",
+        Date.now(),
+        { id: "assistant-media-inline" },
+      ),
       { showToolCalls: false, onOpenImage },
     );
 
@@ -3037,13 +2966,12 @@ describe("grouped chat rendering", () => {
 
     renderAssistantMessage(
       container,
-      {
-        id: "assistant-media-layout",
-        role: "assistant",
-        content:
-          "Audio and video\nMEDIA:https://example.com/voice.ogg\nMEDIA:https://example.com/clip.mp4",
-        timestamp: Date.now(),
-      },
+      createTranscriptMessage(
+        "assistant",
+        "Audio and video\nMEDIA:https://example.com/voice.ogg\nMEDIA:https://example.com/clip.mp4",
+        Date.now(),
+        { id: "assistant-media-layout" },
+      ),
       { showToolCalls: false, onAssistantAttachmentLoaded },
     );
 
@@ -3072,12 +3000,9 @@ describe("grouped chat rendering", () => {
     const renderMessage = () =>
       renderAssistantMessage(
         container,
-        {
+        createTranscriptMessage("assistant", `Local image\nMEDIA:${source}`, Date.now(), {
           id: "assistant-local-media-inline",
-          role: "assistant",
-          content: `Local image\nMEDIA:${source}`,
-          timestamp: Date.now(),
-        },
+        }),
         {
           showToolCalls: false,
           basePath: "/openclaw",
@@ -3125,12 +3050,9 @@ describe("grouped chat rendering", () => {
     const rerender = () =>
       renderAssistantMessage(
         container,
-        {
+        createTranscriptMessage("assistant", `Local document\nMEDIA:${source}`, Date.now(), {
           id: "assistant-local-media-stalled-metadata",
-          role: "assistant",
-          content: `Local document\nMEDIA:${source}`,
-          timestamp: Date.now(),
-        },
+        }),
         {
           showToolCalls: false,
           basePath: "/openclaw",
@@ -3177,12 +3099,9 @@ describe("grouped chat rendering", () => {
     const rerender = () =>
       renderAssistantMessage(
         container,
-        {
+        createTranscriptMessage("assistant", `Local image\nMEDIA:${source}`, Date.now(), {
           id: "assistant-local-media-ticket-refresh",
-          role: "assistant",
-          content: `Local image\nMEDIA:${source}`,
-          timestamp: Date.now(),
-        },
+        }),
         {
           showToolCalls: false,
           basePath: "/openclaw",
@@ -3228,12 +3147,9 @@ describe("grouped chat rendering", () => {
     const renderWithToken = (token: string | null) =>
       renderAssistantMessage(
         container,
-        {
+        createTranscriptMessage("assistant", `Local image\nMEDIA:${source}`, Date.now(), {
           id: "assistant-local-media-auth-refresh",
-          role: "assistant",
-          content: `Local image\nMEDIA:${source}`,
-          timestamp: Date.now(),
-        },
+        }),
         {
           showToolCalls: false,
           basePath: "/openclaw",
@@ -3272,12 +3188,9 @@ describe("grouped chat rendering", () => {
     const rerender = () =>
       renderAssistantMessage(
         container,
-        {
+        createTranscriptMessage("assistant", `Local image\nMEDIA:${source}`, Date.now(), {
           id: "assistant-local-media-retry-after-unavailable",
-          role: "assistant",
-          content: `Local image\nMEDIA:${source}`,
-          timestamp: Date.now(),
-        },
+        }),
         {
           showToolCalls: false,
           basePath: "/openclaw",
@@ -3306,13 +3219,12 @@ describe("grouped chat rendering", () => {
     const container = document.createElement("div");
     renderAssistantMessage(
       container,
-      {
-        id: "assistant-same-origin-media-inline",
-        role: "assistant",
-        content:
-          "Inline\nMEDIA:/media/inbound/test-image.png\nMEDIA:/__openclaw__/media/test-doc.pdf",
-        timestamp: Date.now(),
-      },
+      createTranscriptMessage(
+        "assistant",
+        "Inline\nMEDIA:/media/inbound/test-image.png\nMEDIA:/__openclaw__/media/test-doc.pdf",
+        Date.now(),
+        { id: "assistant-same-origin-media-inline" },
+      ),
       {
         showToolCalls: false,
         basePath: "/openclaw",
@@ -3335,12 +3247,12 @@ describe("grouped chat rendering", () => {
     const container = document.createElement("div");
     renderAssistantMessage(
       container,
-      {
-        id: "assistant-blocked-local-media",
-        role: "assistant",
-        content: "Blocked\nMEDIA:/Users/test/Documents/private.pdf\nDone",
-        timestamp: Date.now(),
-      },
+      createTranscriptMessage(
+        "assistant",
+        "Blocked\nMEDIA:/Users/test/Documents/private.pdf\nDone",
+        Date.now(),
+        { id: "assistant-blocked-local-media" },
+      ),
       {
         showToolCalls: false,
         basePath: "/openclaw",
@@ -3440,11 +3352,14 @@ describe("grouped chat rendering", () => {
       expect.stringContaining(`source=${encodeURIComponent(secondSource)}`),
     ]);
 
-    renderAssistantMessage(container, {
-      role: "assistant",
-      content: [{ type: "input_image", image_url: "data:image/png;base64,cG5n" }],
-      timestamp: Date.now(),
-    });
+    renderAssistantMessage(
+      container,
+      createTranscriptMessage(
+        "assistant",
+        [{ type: "input_image", image_url: "data:image/png;base64,cG5n" }],
+        Date.now(),
+      ),
+    );
     expect(
       container.querySelector<HTMLImageElement>(".chat-message-image")?.getAttribute("src"),
     ).toBe("data:image/png;base64,cG5n");
@@ -3500,9 +3415,9 @@ describe("grouped chat rendering", () => {
 
     renderAssistantMessage(
       container,
-      {
-        role: "assistant",
-        content: [
+      createTranscriptMessage(
+        "assistant",
+        [
           {
             type: "openclaw_pairing_qr",
             image_url: "data:image/png;base64,cXJwbmc=",
@@ -3510,8 +3425,8 @@ describe("grouped chat rendering", () => {
             expiresAtMs: Date.now() + 1_000,
           },
         ],
-        timestamp: Date.now(),
-      },
+        Date.now(),
+      ),
       { showToolCalls: false, onRequestUpdate },
     );
 
@@ -3523,18 +3438,21 @@ describe("grouped chat rendering", () => {
     await vi.advanceTimersByTimeAsync(1);
     expect(onRequestUpdate).toHaveBeenCalledTimes(1);
 
-    renderAssistantMessage(container, {
-      role: "assistant",
-      content: [
-        {
-          type: "openclaw_pairing_qr",
-          image_url: "data:image/png;base64,ZXhwaXJlZA==",
-          alt: "OpenClaw pairing QR code",
-          expiresAtMs: Date.now() - 1,
-        },
-      ],
-      timestamp: Date.now(),
-    });
+    renderAssistantMessage(
+      container,
+      createTranscriptMessage(
+        "assistant",
+        [
+          {
+            type: "openclaw_pairing_qr",
+            image_url: "data:image/png;base64,ZXhwaXJlZA==",
+            alt: "OpenClaw pairing QR code",
+            expiresAtMs: Date.now() - 1,
+          },
+        ],
+        Date.now(),
+      ),
+    );
     expect(container.querySelector(".chat-message-image")).toBeNull();
     expect(container.textContent).toContain("Pairing QR expired");
   });
@@ -3598,9 +3516,9 @@ describe("grouped chat rendering", () => {
     const onOpenImage = vi.fn();
     renderAssistantMessage(
       container,
-      {
-        role: "assistant",
-        content: [
+      createTranscriptMessage(
+        "assistant",
+        [
           {
             type: "image",
             url: managedChatImageUrl,
@@ -3609,8 +3527,8 @@ describe("grouped chat rendering", () => {
             height: 1,
           },
         ],
-        timestamp: Date.now(),
-      },
+        Date.now(),
+      ),
       {
         showToolCalls: false,
         assistantAttachmentAuthToken: "test-auth-token",
@@ -3652,9 +3570,9 @@ describe("grouped chat rendering", () => {
     const container = document.createElement("div");
     renderAssistantMessage(
       container,
-      {
-        role: "assistant",
-        content: [
+      createTranscriptMessage(
+        "assistant",
+        [
           {
             type: "image",
             url: managedChatImageUrl,
@@ -3663,8 +3581,8 @@ describe("grouped chat rendering", () => {
             height: 1,
           },
         ],
-        timestamp: Date.now(),
-      },
+        Date.now(),
+      ),
       {
         showToolCalls: false,
         assistantAttachmentAuthToken: "test-auth-token",
@@ -3706,19 +3624,22 @@ describe("grouped chat rendering", () => {
     vi.stubGlobal("fetch", fetchMock as unknown as typeof fetch);
 
     const container = document.createElement("div");
-    renderAssistantMessage(container, {
-      role: "assistant",
-      content: [
-        {
-          type: "image",
-          url: managedChatImageUrl,
-          alt: "Generated image body stall",
-          width: 1,
-          height: 1,
-        },
-      ],
-      timestamp: Date.now(),
-    });
+    renderAssistantMessage(
+      container,
+      createTranscriptMessage(
+        "assistant",
+        [
+          {
+            type: "image",
+            url: managedChatImageUrl,
+            alt: "Generated image body stall",
+            width: 1,
+            height: 1,
+          },
+        ],
+        Date.now(),
+      ),
+    );
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [, fetchInit] = requireFetchCallForUrl(fetchMock, managedChatImageUrl);
@@ -3741,17 +3662,20 @@ describe("grouped chat rendering", () => {
     vi.stubGlobal("fetch", fetchMock as unknown as typeof fetch);
 
     const container = document.createElement("div");
-    renderAssistantMessage(container, {
-      role: "assistant",
-      content: [
-        {
-          type: "image",
-          url: managedChatImageUrl,
-          alt: "Unavailable generated image",
-        },
-      ],
-      timestamp: Date.now(),
-    });
+    renderAssistantMessage(
+      container,
+      createTranscriptMessage(
+        "assistant",
+        [
+          {
+            type: "image",
+            url: managedChatImageUrl,
+            alt: "Unavailable generated image",
+          },
+        ],
+        Date.now(),
+      ),
+    );
 
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     await flushAssistantAttachmentAvailabilityChecks();
@@ -3802,34 +3726,40 @@ describe("grouped chat rendering", () => {
     });
     renderAssistantMessage(
       container,
-      {
-        role: "assistant",
-        content: imageUrls.slice(0, 64).map((url, index) => ({
+      createTranscriptMessage(
+        "assistant",
+        imageUrls.slice(0, 64).map((url, index) => ({
           type: "image",
           url,
           alt: `Generated image ${index + 1}`,
         })),
-        timestamp: Date.now(),
-      },
+        Date.now(),
+      ),
       { onOpenImage, onRequestOpenImage },
     );
     await vi.waitFor(() => expect(createObjectURL).toHaveBeenCalledTimes(64));
 
     const recentContainer = document.createElement("div");
-    renderAssistantMessage(recentContainer, {
-      role: "assistant",
-      content: [{ type: "image", url: imageUrls[0], alt: "Recently viewed image" }],
-      timestamp: Date.now(),
-    });
+    renderAssistantMessage(
+      recentContainer,
+      createTranscriptMessage(
+        "assistant",
+        [{ type: "image", url: imageUrls[0], alt: "Recently viewed image" }],
+        Date.now(),
+      ),
+    );
     expect(createObjectURL).toHaveBeenCalledTimes(64);
 
     const createsBeforeOverflow = createObjectURL.mock.calls.length;
     const overflowContainer = document.createElement("div");
-    renderAssistantMessage(overflowContainer, {
-      role: "assistant",
-      content: [{ type: "image", url: imageUrls[64], alt: "Newest image" }],
-      timestamp: Date.now(),
-    });
+    renderAssistantMessage(
+      overflowContainer,
+      createTranscriptMessage(
+        "assistant",
+        [{ type: "image", url: imageUrls[64], alt: "Newest image" }],
+        Date.now(),
+      ),
+    );
     await vi.waitFor(() =>
       expect(createObjectURL.mock.calls.length).toBeGreaterThan(createsBeforeOverflow),
     );
@@ -3867,24 +3797,30 @@ describe("grouped chat rendering", () => {
     vi.stubGlobal("fetch", fetchMock as unknown as typeof fetch);
     const container = document.createElement("div");
 
-    renderAssistantMessage(container, {
-      role: "assistant",
-      content: imageUrls.map((url, index) => ({
-        type: "image",
-        url,
-        alt: `Missing image ${index + 1}`,
-      })),
-      timestamp: Date.now(),
-    });
+    renderAssistantMessage(
+      container,
+      createTranscriptMessage(
+        "assistant",
+        imageUrls.map((url, index) => ({
+          type: "image",
+          url,
+          alt: `Missing image ${index + 1}`,
+        })),
+        Date.now(),
+      ),
+    );
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(imageUrls.length));
     await flushAssistantAttachmentAvailabilityChecks();
 
     const retryContainer = document.createElement("div");
-    renderAssistantMessage(retryContainer, {
-      role: "assistant",
-      content: [{ type: "image", url: imageUrls[0], alt: "Oldest missing image" }],
-      timestamp: Date.now(),
-    });
+    renderAssistantMessage(
+      retryContainer,
+      createTranscriptMessage(
+        "assistant",
+        [{ type: "image", url: imageUrls[0], alt: "Oldest missing image" }],
+        Date.now(),
+      ),
+    );
 
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(imageUrls.length + 1));
   });
@@ -3898,17 +3834,17 @@ describe("grouped chat rendering", () => {
     const container = document.createElement("div");
     renderAssistantMessage(
       container,
-      {
-        role: "assistant",
-        content: [
+      createTranscriptMessage(
+        "assistant",
+        [
           {
             type: "image",
             url: "https://evil.example/api/chat/media/outgoing/agent%3Amain%3Amain/00000000-0000-4000-8000-000000000000/full",
             alt: "Untrusted image",
           },
         ],
-        timestamp: Date.now(),
-      },
+        Date.now(),
+      ),
       {
         showToolCalls: false,
         assistantAttachmentAuthToken: "session-token",
@@ -3926,17 +3862,17 @@ describe("grouped chat rendering", () => {
     const container = document.createElement("div");
     renderAssistantMessage(
       container,
-      {
-        role: "assistant",
-        content: [
+      createTranscriptMessage(
+        "assistant",
+        [
           {
             type: "image",
             data: "cG5n",
             mimeType: "image/png",
           },
         ],
-        timestamp: Date.now(),
-      },
+        Date.now(),
+      ),
       { showToolCalls: false },
     );
     expect(
@@ -3948,16 +3884,16 @@ describe("grouped chat rendering", () => {
     const container = document.createElement("div");
     renderAssistantMessage(
       container,
-      {
-        role: "assistant",
-        content: [
+      createTranscriptMessage(
+        "assistant",
+        [
           {
             type: "image",
             data: "data:image/png;base64,cG5n",
           },
         ],
-        timestamp: Date.now(),
-      },
+        Date.now(),
+      ),
       { showToolCalls: false },
     );
     expect(
@@ -3969,17 +3905,17 @@ describe("grouped chat rendering", () => {
     const container = document.createElement("div");
     renderAssistantMessage(
       container,
-      {
-        id: "assistant-canvas-only",
-        role: "assistant",
-        content: [
+      createTranscriptMessage(
+        "assistant",
+        [
           {
             type: "text",
             text: '[embed ref="cv_tictactoe" title="Tic-Tac-Toe" /]',
           },
         ],
-        timestamp: Date.now(),
-      },
+        Date.now(),
+        { id: "assistant-canvas-only" },
+      ),
       { showToolCalls: false },
     );
 
@@ -3997,11 +3933,11 @@ describe("grouped chat rendering", () => {
     const renderAssistantImage = (url: string) =>
       renderAssistantMessage(
         container,
-        {
-          role: "assistant",
-          content: [{ type: "image_url", image_url: { url } }],
-          timestamp: Date.now(),
-        },
+        createTranscriptMessage(
+          "assistant",
+          [{ type: "image_url", image_url: { url } }],
+          Date.now(),
+        ),
         { onOpenImage },
       );
 
@@ -4032,10 +3968,9 @@ describe("grouped chat rendering", () => {
     const container = document.createElement("div");
     renderAssistantMessage(
       container,
-      {
-        id: "assistant-scoped-canvas",
-        role: "assistant",
-        content: [
+      createTranscriptMessage(
+        "assistant",
+        [
           { type: "text", text: "Rendered inline." },
           {
             type: "canvas",
@@ -4050,8 +3985,9 @@ describe("grouped chat rendering", () => {
             },
           },
         ],
-        timestamp: Date.now(),
-      },
+        Date.now(),
+        { id: "assistant-scoped-canvas" },
+      ),
       {
         canvasPluginSurfaceUrl: "http://127.0.0.1:19003/__openclaw__/cap/cap_123",
       },
@@ -4067,10 +4003,9 @@ describe("grouped chat rendering", () => {
     const container = document.createElement("div");
     renderAssistantMessage(
       container,
-      {
-        id: "assistant-final-live-shape",
-        role: "assistant",
-        content: [
+      createTranscriptMessage(
+        "assistant",
+        [
           { type: "thinking", thinking: "", thinkingSignature: "sig-2" },
           { type: "text", text: "This item is ready." },
           {
@@ -4097,8 +4032,9 @@ describe("grouped chat rendering", () => {
             }),
           },
         ],
-        timestamp: Date.now() + 2,
-      },
+        Date.now() + 2,
+        { id: "assistant-final-live-shape" },
+      ),
       { showToolCalls: true },
     );
 
@@ -4147,12 +4083,12 @@ describe("grouped chat rendering", () => {
 
   it("keeps assistant message actions outside the bubble", () => {
     const container = document.createElement("div");
-    renderAssistantMessage(container, {
-      id: "assistant-action-space",
-      role: "assistant",
-      content: "Copyable assistant text.",
-      timestamp: Date.now(),
-    });
+    renderAssistantMessage(
+      container,
+      createTranscriptMessage("assistant", "Copyable assistant text.", Date.now(), {
+        id: "assistant-action-space",
+      }),
+    );
 
     const bubble = container.querySelector(".chat-group.assistant .chat-bubble");
     expect(bubble?.classList.contains("chat-bubble--has-actions")).toBe(false);
@@ -4169,15 +4105,15 @@ describe("grouped chat rendering", () => {
         container,
         [
           createMessageGroup(
-            {
-              id: `assistant-canvas-inline-${params.suffix}`,
-              role: "assistant",
-              content: [
+            createTranscriptMessage(
+              "assistant",
+              [
                 { type: "text", text: "Inline canvas result." },
                 createAssistantCanvasBlock({ suffix: params.suffix }),
               ],
-              timestamp: Date.now(),
-            },
+              Date.now(),
+              { id: `assistant-canvas-inline-${params.suffix}` },
+            ),
             "assistant",
           ),
         ],
@@ -4215,15 +4151,15 @@ describe("grouped chat rendering", () => {
         container,
         [
           createMessageGroup(
-            {
-              id: "assistant-canvas-inline-sandbox-change",
-              role: "assistant",
-              content: [
+            createTranscriptMessage(
+              "assistant",
+              [
                 { type: "text", text: "Inline canvas result." },
                 createAssistantCanvasBlock({ suffix: "sandbox-change" }),
               ],
-              timestamp: Date.now(),
-            },
+              Date.now(),
+              { id: "assistant-canvas-inline-sandbox-change" },
+            ),
             "assistant",
           ),
         ],
@@ -4254,15 +4190,15 @@ describe("grouped chat rendering", () => {
       container,
       [
         createMessageGroup(
-          {
-            id: "assistant-canvas-inline-visible",
-            role: "assistant",
-            content: [
+          createTranscriptMessage(
+            "assistant",
+            [
               { type: "text", text: "Inline canvas result." },
               createAssistantCanvasBlock({ suffix: "visible" }),
             ],
-            timestamp: Date.now(),
-          },
+            Date.now(),
+            { id: "assistant-canvas-inline-visible" },
+          ),
           "assistant",
         ),
         createMessageGroup(
@@ -4320,12 +4256,12 @@ describe("grouped chat rendering", () => {
       container,
       [
         createMessageGroup(
-          {
-            id: "assistant-canvas-sidebar",
-            role: "assistant",
-            content: [{ type: "text", text: "Sidebar canvas result." }],
-            timestamp: Date.now(),
-          },
+          createTranscriptMessage(
+            "assistant",
+            [{ type: "text", text: "Sidebar canvas result." }],
+            Date.now(),
+            { id: "assistant-canvas-sidebar" },
+          ),
           "assistant",
         ),
         createMessageGroup(

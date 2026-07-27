@@ -81,6 +81,41 @@ function createProps(overrides: Partial<CachedChatItemsProps> = {}): CachedChatI
   };
 }
 
+type TranscriptMessage = {
+  role: "assistant" | "user";
+  content: unknown;
+  timestamp: number;
+};
+
+function createTranscriptMessage(
+  role: "assistant" | "user",
+  content: unknown,
+  timestamp: number,
+): TranscriptMessage;
+function createTranscriptMessage<TMetadata extends Record<string, unknown>>(
+  role: "assistant" | "user",
+  content: unknown,
+  timestamp: number,
+  metadata: TMetadata,
+): TranscriptMessage & { __openclaw: TMetadata };
+function createTranscriptMessage(
+  role: "assistant" | "user",
+  content: unknown,
+  timestamp: number,
+  metadata?: Record<string, unknown>,
+) {
+  return {
+    role,
+    content,
+    timestamp,
+    ...(metadata === undefined ? {} : { __openclaw: metadata }),
+  };
+}
+
+function transcriptMessages(messages: unknown[]): Pick<CachedChatItemsProps, "messages"> {
+  return { messages };
+}
+
 function messageGroups(props: Partial<CachedChatItemsProps>): MessageGroup[] {
   return buildCachedChatItems(createProps(props)).filter((item) => item.kind === "group");
 }
@@ -121,12 +156,12 @@ describe("assistant commentary grouping", () => {
     // giving the assistant reply an earlier timestamp than the user prompt.
     // Stable transcript rows must stay in insertion order; only tool/stream
     // items get reordered by timestamp.
-    const groups = messageGroups({
-      messages: [
+    const groups = messageGroups(
+      transcriptMessages([
         { role: "user", content: "User prompt", timestamp: 2_000 },
         { role: "assistant", content: "Server reply.", timestamp: 1_000 },
-      ],
-    });
+      ]),
+    );
 
     expect(groups.map((group) => group.role)).toEqual(["user", "assistant"]);
   });
@@ -157,12 +192,9 @@ describe("assistant commentary grouping", () => {
 
   it("keeps current live work above a future queued user turn when it becomes stable", () => {
     const paneId = "clock-skew-future-queue-transition";
-    const activeUser = {
-      role: "user",
-      content: "Active prompt",
-      timestamp: 2_000,
-      __openclaw: { idempotencyKey: "run-active:user" },
-    };
+    const activeUser = createTranscriptMessage("user", "Active prompt", 2_000, {
+      idempotencyKey: "run-active:user",
+    });
     const liveTool = {
       role: "toolResult",
       runId: "run-active",
@@ -207,12 +239,9 @@ describe("assistant commentary grouping", () => {
 
   it("keeps an active stream above a future queued user turn when it becomes stable", () => {
     const paneId = "clock-skew-stream-queue-transition";
-    const activeUser = {
-      role: "user",
-      content: "Active prompt",
-      timestamp: 2_000,
-      __openclaw: { idempotencyKey: "run-active:user" },
-    };
+    const activeUser = createTranscriptMessage("user", "Active prompt", 2_000, {
+      idempotencyKey: "run-active:user",
+    });
     const activeSend = {
       id: "active-send",
       text: "Active prompt",
@@ -275,19 +304,13 @@ describe("assistant commentary grouping", () => {
       createProps({
         runId: "run-current",
         messages: [
-          {
-            role: "user",
-            content: "Earlier prompt",
-            timestamp: 1_000,
-            __openclaw: { idempotencyKey: "run-earlier:user" },
-          },
+          createTranscriptMessage("user", "Earlier prompt", 1_000, {
+            idempotencyKey: "run-earlier:user",
+          }),
           { role: "assistant", content: "Earlier reply", timestamp: 1_300 },
-          {
-            role: "user",
-            content: "Current prompt",
-            timestamp: 2_000,
-            __openclaw: { idempotencyKey: "run-current:user" },
-          },
+          createTranscriptMessage("user", "Current prompt", 2_000, {
+            idempotencyKey: "run-current:user",
+          }),
         ],
         streamSegments: [
           { text: "Earlier commentary", ts: 500, runId: "run-earlier", itemId: "earlier" },
@@ -434,12 +457,9 @@ describe("assistant commentary grouping", () => {
       createProps({
         paneId,
         messages: [
-          {
-            role: "user",
-            content: "Current prompt",
-            timestamp: 2_000,
-            __openclaw: { idempotencyKey: "run-active:user" },
-          },
+          createTranscriptMessage("user", "Current prompt", 2_000, {
+            idempotencyKey: "run-active:user",
+          }),
           terminal,
         ],
       }),
@@ -453,8 +473,8 @@ describe("assistant commentary grouping", () => {
   });
 
   it("keeps keyed commentary separate from the terminal assistant reply", () => {
-    const groups = messageGroups({
-      messages: [
+    const groups = messageGroups(
+      transcriptMessages([
         { role: "user", content: "do it", timestamp: 1_000 },
         {
           role: "assistant",
@@ -477,8 +497,8 @@ describe("assistant commentary grouping", () => {
           },
         },
         { role: "assistant", content: "All done.", timestamp: 4_000 },
-      ],
-    });
+      ]),
+    );
 
     expect(groups.map((group) => group.role)).toEqual(["user", "assistant", "assistant"]);
     expect(groupAt(groups, 1).messages).toHaveLength(2);
@@ -539,14 +559,14 @@ describe("collapseCompletedTurnWork", () => {
   });
 
   it("collapses a completed turn's work behind one worked-for rollup", () => {
-    const items = collapsedItems({
-      messages: [
+    const items = collapsedItems(
+      transcriptMessages([
         { role: "user", content: "do it", timestamp: 1_000 },
         { role: "assistant", content: "Checking…", timestamp: 2_000 },
         toolResult("call-1", 3_000),
         { role: "assistant", content: "All done.", timestamp: 10_000 },
-      ],
-    });
+      ]),
+    );
 
     expect(items.map((item) => item.kind)).toEqual(["group", "work-group", "group"]);
     const work = requireWorkGroup(items[1]);
@@ -614,46 +634,46 @@ describe("collapseCompletedTurnWork", () => {
   });
 
   it("keeps failed work visible in turns that never replied", () => {
-    const items = collapsedItems({
-      messages: [
+    const items = collapsedItems(
+      transcriptMessages([
         { role: "user", content: "go", timestamp: 1_000 },
         toolResult("call-1", 2_000, true),
-      ],
-    });
+      ]),
+    );
 
     expect(items.map((item) => item.kind)).toEqual(["group", "group"]);
     expect(requireGroup(items[1]).role).toBe("tool");
   });
 
   it("does not flag errors once the turn recovered with a reply", () => {
-    const items = collapsedItems({
-      messages: [
+    const items = collapsedItems(
+      transcriptMessages([
         { role: "user", content: "go", timestamp: 1_000 },
         toolResult("call-1", 2_000, true),
         { role: "assistant", content: "Recovered via another route.", timestamp: 3_000 },
-      ],
-    });
+      ]),
+    );
 
     expect(requireWorkGroup(items[1]).hasError).toBe(false);
   });
 
   it("keeps work after the final reply visible", () => {
-    const items = collapsedItems({
-      messages: [
+    const items = collapsedItems(
+      transcriptMessages([
         { role: "user", content: "go", timestamp: 1_000 },
         toolResult("call-1", 2_000),
         { role: "assistant", content: "Done.", timestamp: 3_000 },
         toolResult("call-2", 4_000),
-      ],
-    });
+      ]),
+    );
 
     expect(items.map((item) => item.kind)).toEqual(["group", "work-group", "group", "group"]);
     expect(requireGroup(items[3]).role).toBe("tool");
   });
 
   it("does not collapse across dividers", () => {
-    const items = collapsedItems({
-      messages: [
+    const items = collapsedItems(
+      transcriptMessages([
         { role: "user", content: "go", timestamp: 1_000 },
         toolResult("call-1", 2_000),
         {
@@ -663,31 +683,31 @@ describe("collapseCompletedTurnWork", () => {
           __openclaw: { kind: "compaction", id: "c1" },
         },
         { role: "assistant", content: "Done.", timestamp: 4_000 },
-      ],
-    });
+      ]),
+    );
 
     expect(items.some((item) => item.kind === "work-group")).toBe(false);
     expect(items.some((item) => item.kind === "divider")).toBe(true);
   });
 
   it("keeps attachment-only final replies outside the work rollup", () => {
-    const items = collapsedItems({
-      messages: [
+    const items = collapsedItems(
+      transcriptMessages([
         { role: "user", content: "render it", timestamp: 1_000 },
         toolResult("call-1", 2_000),
-        {
-          role: "assistant",
-          content: [
+        createTranscriptMessage(
+          "assistant",
+          [
             {
               type: "image",
               url: "/media/screenshot.png",
               source: { type: "url", url: "/media/screenshot.png" },
             },
           ],
-          timestamp: 3_000,
-        },
-      ],
-    });
+          3_000,
+        ),
+      ]),
+    );
 
     expect(items.map((item) => item.kind)).toEqual(["group", "work-group", "group"]);
     expect(requireGroup(items[2]).role).toBe("assistant");
@@ -719,16 +739,16 @@ describe("collapseCompletedTurnWork", () => {
   });
 
   it("collapses each completed turn independently", () => {
-    const items = collapsedItems({
-      messages: [
+    const items = collapsedItems(
+      transcriptMessages([
         { role: "user", content: "first", timestamp: 1_000 },
         toolResult("call-1", 2_000),
         { role: "assistant", content: "First done.", timestamp: 3_000 },
         { role: "user", content: "second", timestamp: 4_000 },
         toolResult("call-2", 5_000),
         { role: "assistant", content: "Second done.", timestamp: 6_000 },
-      ],
-    });
+      ]),
+    );
 
     const workGroups = items.filter((item) => item.kind === "work-group");
     expect(workGroups).toHaveLength(2);
@@ -736,30 +756,20 @@ describe("collapseCompletedTurnWork", () => {
   });
 
   it("collapses hidden-input runs independently without changing duration arithmetic", () => {
-    const items = collapsedItems({
-      messages: [
+    const items = collapsedItems(
+      transcriptMessages([
         {
           ...toolResult("call-1", 1_000),
           __openclaw: { id: "work-1", seq: 1, turnBoundary: true },
         },
-        {
-          role: "assistant",
-          content: "First run done.",
-          timestamp: 3_000,
-          __openclaw: { id: "reply-1", seq: 2 },
-        },
+        createTranscriptMessage("assistant", "First run done.", 3_000, { id: "reply-1", seq: 2 }),
         {
           ...toolResult("call-2", 4_000),
           __openclaw: { id: "work-2", seq: 3, turnBoundary: true },
         },
-        {
-          role: "assistant",
-          content: "Second run done.",
-          timestamp: 9_000,
-          __openclaw: { id: "reply-2", seq: 4 },
-        },
-      ],
-    });
+        createTranscriptMessage("assistant", "Second run done.", 9_000, { id: "reply-2", seq: 4 }),
+      ]),
+    );
 
     expect(items.map((item) => item.kind)).toEqual(["work-group", "group", "work-group", "group"]);
     expect(requireWorkGroup(items[0]).durationMs).toBe(2_000);
@@ -768,29 +778,23 @@ describe("collapseCompletedTurnWork", () => {
 
   it("keeps a completed-work row keyed to its final reply as older work is prepended", () => {
     resetChatThreadState();
-    const finalReply = {
-      __openclaw: { id: "final-reply", seq: 3 },
-      role: "assistant",
-      content: "Done.",
-      timestamp: 3_000,
-    };
-    const initial = collapsedItems({
-      messages: [toolResult("call-1", 2_000), finalReply],
+    const finalReply = createTranscriptMessage("assistant", "Done.", 3_000, {
+      id: "final-reply",
+      seq: 3,
     });
+    const initial = collapsedItems(transcriptMessages([toolResult("call-1", 2_000), finalReply]));
     const initialWork = requireWorkGroup(initial[0]);
 
-    const prepended = collapsedItems({
-      messages: [
-        {
-          __openclaw: { id: "older-commentary", seq: 1 },
-          role: "assistant",
-          content: "Checking.",
-          timestamp: 1_000,
-        },
+    const prepended = collapsedItems(
+      transcriptMessages([
+        createTranscriptMessage("assistant", "Checking.", 1_000, {
+          id: "older-commentary",
+          seq: 1,
+        }),
         toolResult("call-1", 2_000),
         finalReply,
-      ],
-    });
+      ]),
+    );
     const prependedWork = requireWorkGroup(prepended[0]);
 
     expect(prependedWork.key).toBe(initialWork.key);
@@ -802,33 +806,26 @@ describe("buildCachedChatItems row identity", () => {
   it("keeps an accepted initial send key across local-to-history replacement", () => {
     resetChatThreadState();
     const initial = groupAt(
-      messageGroups({
-        messages: [
-          {
-            __openclaw: { idempotencyKey: "initial-send:user", seq: 1 },
-            role: "user",
-            content: "Initial image prompt",
-            timestamp: 1,
-          },
-        ],
-      }),
+      messageGroups(
+        transcriptMessages([
+          createTranscriptMessage("user", "Initial image prompt", 1, {
+            idempotencyKey: "initial-send:user",
+            seq: 1,
+          }),
+        ]),
+      ),
       0,
     );
     const reconciled = groupAt(
-      messageGroups({
-        messages: [
-          {
-            __openclaw: {
-              id: "persisted-user-message",
-              idempotencyKey: "initial-send:user",
-              seq: 1,
-            },
-            role: "user",
-            content: "Initial image prompt",
-            timestamp: 2,
-          },
-        ],
-      }),
+      messageGroups(
+        transcriptMessages([
+          createTranscriptMessage("user", "Initial image prompt", 2, {
+            id: "persisted-user-message",
+            idempotencyKey: "initial-send:user",
+            seq: 1,
+          }),
+        ]),
+      ),
       0,
     );
 
@@ -838,29 +835,22 @@ describe("buildCachedChatItems row identity", () => {
   it("keeps a persistent message key across live-to-authoritative replacement", () => {
     resetChatThreadState();
     const initial = groupAt(
-      messageGroups({
-        messages: [
-          {
-            __openclaw: { id: "terminal-message" },
-            role: "assistant",
-            content: "Draft reply",
-            timestamp: 1,
-          },
-        ],
-      }),
+      messageGroups(
+        transcriptMessages([
+          createTranscriptMessage("assistant", "Draft reply", 1, { id: "terminal-message" }),
+        ]),
+      ),
       0,
     );
     const reconciled = groupAt(
-      messageGroups({
-        messages: [
-          {
-            __openclaw: { id: "terminal-message", seq: 42 },
-            role: "assistant",
-            content: "Final reply",
-            timestamp: 2,
-          },
-        ],
-      }),
+      messageGroups(
+        transcriptMessages([
+          createTranscriptMessage("assistant", "Final reply", 2, {
+            id: "terminal-message",
+            seq: 42,
+          }),
+        ]),
+      ),
       0,
     );
 
@@ -870,8 +860,8 @@ describe("buildCachedChatItems row identity", () => {
   it("keeps a persistent tool message key when its projected content changes", () => {
     resetChatThreadState();
     const initial = groupAt(
-      messageGroups({
-        messages: [
+      messageGroups(
+        transcriptMessages([
           {
             __openclaw: { id: "tool-message" },
             role: "assistant",
@@ -879,13 +869,13 @@ describe("buildCachedChatItems row identity", () => {
             content: "Running",
             timestamp: 1,
           },
-        ],
-      }),
+        ]),
+      ),
       0,
     );
     const reconciled = groupAt(
-      messageGroups({
-        messages: [
+      messageGroups(
+        transcriptMessages([
           {
             __openclaw: { id: "tool-message", seq: 43 },
             role: "assistant",
@@ -893,8 +883,8 @@ describe("buildCachedChatItems row identity", () => {
             content: "Finished",
             timestamp: 2,
           },
-        ],
-      }),
+        ]),
+      ),
       0,
     );
 
@@ -903,46 +893,26 @@ describe("buildCachedChatItems row identity", () => {
 
   it("preserves a same-role group key as messages are prepended and appended", () => {
     resetChatThreadState();
-    const first = {
-      __openclaw: { id: "assistant-1", seq: 2 },
-      role: "assistant",
-      content: "First",
-      timestamp: 2,
-    };
-    const second = {
-      __openclaw: { id: "assistant-2", seq: 3 },
-      role: "assistant",
-      content: "Second",
-      timestamp: 3,
-    };
+    const first = createTranscriptMessage("assistant", "First", 2, { id: "assistant-1", seq: 2 });
+    const second = createTranscriptMessage("assistant", "Second", 3, { id: "assistant-2", seq: 3 });
     const initial = groupAt(messageGroups({ messages: [first, second] }), 0);
     const prepended = groupAt(
-      messageGroups({
-        messages: [
-          {
-            __openclaw: { id: "assistant-0", seq: 1 },
-            role: "assistant",
-            content: "Earlier",
-            timestamp: 1,
-          },
+      messageGroups(
+        transcriptMessages([
+          createTranscriptMessage("assistant", "Earlier", 1, { id: "assistant-0", seq: 1 }),
           first,
           second,
-        ],
-      }),
+        ]),
+      ),
       0,
     );
     const appended = groupAt(
-      messageGroups({
-        messages: [
+      messageGroups(
+        transcriptMessages([
           ...prepended.messages.map((entry) => entry.message),
-          {
-            __openclaw: { id: "assistant-3", seq: 4 },
-            role: "assistant",
-            content: "Later",
-            timestamp: 4,
-          },
-        ],
-      }),
+          createTranscriptMessage("assistant", "Later", 4, { id: "assistant-3", seq: 4 }),
+        ]),
+      ),
       0,
     );
 
@@ -951,22 +921,16 @@ describe("buildCachedChatItems row identity", () => {
   });
 
   it("splits otherwise mergeable same-role messages at a projected turn boundary", () => {
-    const groups = messageGroups({
-      messages: [
-        {
-          __openclaw: { id: "assistant-1", seq: 1 },
-          role: "assistant",
-          content: "First run",
-          timestamp: 1,
-        },
-        {
-          __openclaw: { id: "assistant-2", seq: 2, turnBoundary: true },
-          role: "assistant",
-          content: "Second run",
-          timestamp: 2,
-        },
-      ],
-    });
+    const groups = messageGroups(
+      transcriptMessages([
+        createTranscriptMessage("assistant", "First run", 1, { id: "assistant-1", seq: 1 }),
+        createTranscriptMessage("assistant", "Second run", 2, {
+          id: "assistant-2",
+          seq: 2,
+          turnBoundary: true,
+        }),
+      ]),
+    );
 
     expect(groups).toHaveLength(2);
     expect(groupAt(groups, 0).messages).toHaveLength(1);
@@ -1002,43 +966,25 @@ describe("buildCachedChatItems row identity", () => {
   it("keeps a projected-sibling group stable after an unrelated prepend", () => {
     resetChatThreadState();
     const siblings = [
-      {
-        __openclaw: { seq: 2 },
-        role: "assistant",
-        content: "First projection",
-        timestamp: 2,
-      },
-      {
-        __openclaw: { seq: 2 },
-        role: "assistant",
-        content: "Second projection",
-        timestamp: 2,
-      },
+      createTranscriptMessage("assistant", "First projection", 2, { seq: 2 }),
+      createTranscriptMessage("assistant", "Second projection", 2, { seq: 2 }),
     ];
     const initial = groupAt(messageGroups({ messages: siblings }), 0);
     const prepended = groupAt(
-      messageGroups({
-        messages: [
-          {
-            __openclaw: { id: "older-user", seq: 1 },
-            role: "user",
-            content: "Earlier",
-            timestamp: 1,
-          },
-          {
-            __openclaw: { seq: 2 },
-            role: "assistant",
-            content: "Earlier projection from the same record",
-            timestamp: 2,
-          },
+      messageGroups(
+        transcriptMessages([
+          createTranscriptMessage("user", "Earlier", 1, { id: "older-user", seq: 1 }),
+          createTranscriptMessage("assistant", "Earlier projection from the same record", 2, {
+            seq: 2,
+          }),
           ...siblings.map((message) => ({
             __openclaw: { seq: message["__openclaw"].seq },
             role: message.role,
             content: message.content,
             timestamp: message.timestamp,
           })),
-        ],
-      }),
+        ]),
+      ),
       1,
     );
 
@@ -1334,8 +1280,8 @@ describe("buildCachedChatItems working spark", () => {
 
 describe("buildCachedChatItems", () => {
   it("keeps consecutive user messages from different senders in separate groups", () => {
-    const groups = messageGroups({
-      messages: [
+    const groups = messageGroups(
+      transcriptMessages([
         {
           role: "user",
           content: "first",
@@ -1350,8 +1296,8 @@ describe("buildCachedChatItems", () => {
           __openclaw: { senderId: "joaquin", senderName: "Joaquin De Rojas" },
           timestamp: 1001,
         },
-      ],
-    });
+      ]),
+    );
 
     expect(groups).toHaveLength(2);
     expect(groups.map((group) => group.senderLabel)).toEqual(["Iris", "Joaquin De Rojas"]);
@@ -1360,12 +1306,12 @@ describe("buildCachedChatItems", () => {
 
   it("renders non-compaction system messages as notices and skips empty output", () => {
     const items = buildCachedChatItems(
-      createProps({
-        messages: [
+      createProps(
+        transcriptMessages([
           { role: "system", content: "Command output\n  indented", timestamp: 1000 },
           { role: "system", content: "  \n", timestamp: 1001 },
-        ],
-      }),
+        ]),
+      ),
     );
 
     expect(items).toEqual([
@@ -1379,25 +1325,18 @@ describe("buildCachedChatItems", () => {
   });
 
   it("attributes assistant groups to the latest user in multi-sender threads", () => {
-    const groups = messageGroups({
-      messages: [
-        {
-          role: "user",
-          content: "Alice asks",
-          __openclaw: { senderId: "alice", senderName: "Alice" },
-          timestamp: 1000,
-        },
+    const groups = messageGroups(
+      transcriptMessages([
+        createTranscriptMessage("user", "Alice asks", 1000, {
+          senderId: "alice",
+          senderName: "Alice",
+        }),
         { role: "assistant", content: "For Alice", timestamp: 1001 },
-        {
-          role: "user",
-          content: "Bob asks",
-          __openclaw: { senderId: "bob", senderName: "Bob" },
-          timestamp: 1002,
-        },
+        createTranscriptMessage("user", "Bob asks", 1002, { senderId: "bob", senderName: "Bob" }),
         { role: "user", content: "Local follow-up", timestamp: 1003 },
         { role: "assistant", content: "For Bob", timestamp: 1004 },
-      ],
-    });
+      ]),
+    );
 
     const assistantGroups = groups.filter((group) => group.role === "assistant");
     expect(assistantGroups.map((group) => group.replyToSender)).toEqual([
@@ -1407,36 +1346,30 @@ describe("buildCachedChatItems", () => {
   });
 
   it("does not add reply attribution in a single-sender thread", () => {
-    const groups = messageGroups({
-      messages: [
-        {
-          role: "user",
-          content: "Alice asks",
-          __openclaw: { senderId: "alice", senderName: "Alice" },
-          timestamp: 1000,
-        },
+    const groups = messageGroups(
+      transcriptMessages([
+        createTranscriptMessage("user", "Alice asks", 1000, {
+          senderId: "alice",
+          senderName: "Alice",
+        }),
         { role: "assistant", content: "For Alice", timestamp: 1001 },
-      ],
-    });
+      ]),
+    );
 
     expect(groups.find((group) => group.role === "assistant")?.replyToSender).toBeUndefined();
   });
 
   it("keeps differently cased user roles in one group", () => {
-    const groups = messageGroups({
-      messages: [
-        {
-          role: "user",
-          content: "first",
-          timestamp: 1000,
-        },
+    const groups = messageGroups(
+      transcriptMessages([
+        createTranscriptMessage("user", "first", 1000),
         {
           role: "User",
           content: "second",
           timestamp: 1001,
         },
-      ],
-    });
+      ]),
+    );
 
     expect(groups).toHaveLength(1);
     expect(groupAt(groups, 0).role).toBe("user");
@@ -1461,29 +1394,25 @@ describe("buildCachedChatItems", () => {
   });
 
   it("keeps forwarded assistant display messages separate from local assistant replies", () => {
-    const groups = messageGroups({
-      messages: [
-        {
-          role: "assistant",
-          content: "local reply",
-          timestamp: 1000,
-        },
+    const groups = messageGroups(
+      transcriptMessages([
+        createTranscriptMessage("assistant", "local reply", 1000),
         {
           role: "assistant",
           content: "forwarded report",
           senderLabel: "Forwarded from main",
           timestamp: 1001,
         },
-      ],
-    });
+      ]),
+    );
 
     expect(groups).toHaveLength(2);
     expect(groups.map((group) => group.senderLabel)).toEqual([null, "Forwarded from main"]);
   });
 
   it("marks earlier tool groups as succeeded when the same turn has an assistant reply", () => {
-    const groups = messageGroups({
-      messages: [
+    const groups = messageGroups(
+      transcriptMessages([
         { role: "user", content: "search", timestamp: 1000 },
         {
           role: "toolResult",
@@ -1503,19 +1432,19 @@ describe("buildCachedChatItems", () => {
           content: JSON.stringify({ error: "No matches" }),
           timestamp: 1004,
         },
-      ],
-    });
+      ]),
+    );
 
     const toolGroups = groups.filter((group) => group.role === "tool");
     expect(toolGroups.map((group) => group.turnSucceeded)).toEqual([true, false]);
   });
 
   it("coalesces adjacent tool calls and results into one activity item", () => {
-    const groups = messageGroups({
-      messages: [
-        {
-          role: "assistant",
-          content: [
+    const groups = messageGroups(
+      transcriptMessages([
+        createTranscriptMessage(
+          "assistant",
+          [
             {
               type: "tool_use",
               id: "call-shell",
@@ -1523,8 +1452,8 @@ describe("buildCachedChatItems", () => {
               input: { command: "run openclaw doctor" },
             },
           ],
-          timestamp: 1000,
-        },
+          1000,
+        ),
         {
           role: "toolResult",
           toolCallId: "call-shell",
@@ -1536,8 +1465,8 @@ describe("buildCachedChatItems", () => {
           isError: false,
           timestamp: 1001,
         },
-      ],
-    });
+      ]),
+    );
 
     expect(groups).toHaveLength(1);
     expect(groupAt(groups, 0).role).toBe("tool");
@@ -1557,18 +1486,18 @@ describe("buildCachedChatItems", () => {
   });
 
   it("coalesces interleaved parallel call/result pairs by call id", () => {
-    const groups = messageGroups({
-      messages: [
-        {
-          role: "assistant",
-          content: [{ type: "tool_use", id: "call-a", name: "read", input: { path: "a.ts" } }],
-          timestamp: 1000,
-        },
-        {
-          role: "assistant",
-          content: [{ type: "tool_use", id: "call-b", name: "read", input: { path: "b.ts" } }],
-          timestamp: 1001,
-        },
+    const groups = messageGroups(
+      transcriptMessages([
+        createTranscriptMessage(
+          "assistant",
+          [{ type: "tool_use", id: "call-a", name: "read", input: { path: "a.ts" } }],
+          1000,
+        ),
+        createTranscriptMessage(
+          "assistant",
+          [{ type: "tool_use", id: "call-b", name: "read", input: { path: "b.ts" } }],
+          1001,
+        ),
         {
           role: "toolResult",
           toolCallId: "call-a",
@@ -1583,8 +1512,8 @@ describe("buildCachedChatItems", () => {
           content: [{ type: "toolResult", text: "contents of b" }],
           timestamp: 1003,
         },
-      ],
-    });
+      ]),
+    );
 
     expect(groups).toHaveLength(1);
     expect(groupAt(groups, 0).role).toBe("tool");
@@ -1598,18 +1527,18 @@ describe("buildCachedChatItems", () => {
   });
 
   it("replaces a repeated unresolved single-call snapshot", () => {
-    const groups = messageGroups({
-      messages: [
-        {
-          role: "assistant",
-          content: [{ type: "tool_use", id: "call-x", name: "read", input: { path: "old.ts" } }],
-          timestamp: 1000,
-        },
-        {
-          role: "assistant",
-          content: [{ type: "tool_use", id: "call-x", name: "read", input: { path: "new.ts" } }],
-          timestamp: 1001,
-        },
+    const groups = messageGroups(
+      transcriptMessages([
+        createTranscriptMessage(
+          "assistant",
+          [{ type: "tool_use", id: "call-x", name: "read", input: { path: "old.ts" } }],
+          1000,
+        ),
+        createTranscriptMessage(
+          "assistant",
+          [{ type: "tool_use", id: "call-x", name: "read", input: { path: "new.ts" } }],
+          1001,
+        ),
         {
           role: "toolResult",
           toolCallId: "call-x",
@@ -1617,8 +1546,8 @@ describe("buildCachedChatItems", () => {
           content: [{ type: "text", text: "new contents" }],
           timestamp: 1002,
         },
-      ],
-    });
+      ]),
+    );
 
     expect(groups).toHaveLength(1);
     expect(groupAt(groups, 0).messages).toHaveLength(1);
@@ -1632,20 +1561,22 @@ describe("buildCachedChatItems", () => {
   });
 
   it("keeps more than sixteen parallel calls open by call id", () => {
-    const groups = messageGroups({
-      messages: [
-        ...Array.from({ length: 17 }, (_, index) => ({
-          role: "assistant",
-          content: [
-            {
-              type: "tool_use",
-              id: `call-${index}`,
-              name: "read",
-              input: { path: `${index}.ts` },
-            },
-          ],
-          timestamp: 1000 + index,
-        })),
+    const groups = messageGroups(
+      transcriptMessages([
+        ...Array.from({ length: 17 }, (_, index) =>
+          createTranscriptMessage(
+            "assistant",
+            [
+              {
+                type: "tool_use",
+                id: `call-${index}`,
+                name: "read",
+                input: { path: `${index}.ts` },
+              },
+            ],
+            1000 + index,
+          ),
+        ),
         {
           role: "toolResult",
           toolCallId: "call-0",
@@ -1653,8 +1584,8 @@ describe("buildCachedChatItems", () => {
           content: [{ type: "text", text: "first contents" }],
           timestamp: 1017,
         },
-      ],
-    });
+      ]),
+    );
 
     expect(groups).toHaveLength(1);
     expect(groupAt(groups, 0).messages).toHaveLength(17);
@@ -1668,28 +1599,28 @@ describe("buildCachedChatItems", () => {
   });
 
   it("distributes one typed multi-result message across separate open calls", () => {
-    const groups = messageGroups({
-      messages: [
-        {
-          role: "assistant",
-          content: [{ type: "tool_use", id: "call-a", name: "read", input: { path: "a.ts" } }],
-          timestamp: 1000,
-        },
-        {
-          role: "assistant",
-          content: [{ type: "tool_use", id: "call-b", name: "read", input: { path: "b.ts" } }],
-          timestamp: 1001,
-        },
-        {
-          role: "user",
-          content: [
+    const groups = messageGroups(
+      transcriptMessages([
+        createTranscriptMessage(
+          "assistant",
+          [{ type: "tool_use", id: "call-a", name: "read", input: { path: "a.ts" } }],
+          1000,
+        ),
+        createTranscriptMessage(
+          "assistant",
+          [{ type: "tool_use", id: "call-b", name: "read", input: { path: "b.ts" } }],
+          1001,
+        ),
+        createTranscriptMessage(
+          "user",
+          [
             { type: "tool_result", tool_use_id: "call-a", content: "contents of a" },
             { type: "tool_result", tool_use_id: "call-b", content: "contents of b" },
           ],
-          timestamp: 1002,
-        },
-      ],
-    });
+          1002,
+        ),
+      ]),
+    );
 
     expect(groups).toHaveLength(1);
     expect(groupAt(groups, 0).messages).toHaveLength(2);
@@ -1703,16 +1634,16 @@ describe("buildCachedChatItems", () => {
   });
 
   it("coalesces a canonical multi-call assistant message with standalone results", () => {
-    const groups = messageGroups({
-      messages: [
-        {
-          role: "assistant",
-          content: [
+    const groups = messageGroups(
+      transcriptMessages([
+        createTranscriptMessage(
+          "assistant",
+          [
             { type: "toolCall", id: "call-a", name: "read", arguments: { path: "a.ts" } },
             { type: "toolCall", id: "call-b", name: "read", arguments: { path: "b.ts" } },
           ],
-          timestamp: 1000,
-        },
+          1000,
+        ),
         {
           role: "toolResult",
           toolCallId: "call-a",
@@ -1727,8 +1658,8 @@ describe("buildCachedChatItems", () => {
           content: [{ type: "text", text: "contents of b" }],
           timestamp: 1002,
         },
-      ],
-    });
+      ]),
+    );
 
     expect(groups).toHaveLength(1);
     expect(groupAt(groups, 0).role).toBe("tool");
@@ -1748,26 +1679,26 @@ describe("buildCachedChatItems", () => {
   });
 
   it("coalesces canonical multi-call results delivered in one provider message", () => {
-    const groups = messageGroups({
-      messages: [
-        {
-          role: "assistant",
-          content: [
+    const groups = messageGroups(
+      transcriptMessages([
+        createTranscriptMessage(
+          "assistant",
+          [
             { type: "tool_use", id: "call-a", name: "read", input: { path: "a.ts" } },
             { type: "tool_use", id: "call-b", name: "read", input: { path: "b.ts" } },
           ],
-          timestamp: 1000,
-        },
-        {
-          role: "user",
-          content: [
+          1000,
+        ),
+        createTranscriptMessage(
+          "user",
+          [
             { type: "tool_result", tool_use_id: "call-a", content: "contents of a" },
             { type: "tool_result", tool_use_id: "call-b", content: "contents of b" },
           ],
-          timestamp: 1001,
-        },
-      ],
-    });
+          1001,
+        ),
+      ]),
+    );
 
     expect(groups).toHaveLength(1);
     expect(groupAt(groups, 0).role).toBe("tool");
@@ -1780,13 +1711,13 @@ describe("buildCachedChatItems", () => {
   });
 
   it("does not pair results across a user message boundary", () => {
-    const groups = messageGroups({
-      messages: [
-        {
-          role: "assistant",
-          content: [{ type: "tool_use", id: "call-x", name: "read", input: { path: "x.ts" } }],
-          timestamp: 1000,
-        },
+    const groups = messageGroups(
+      transcriptMessages([
+        createTranscriptMessage(
+          "assistant",
+          [{ type: "tool_use", id: "call-x", name: "read", input: { path: "x.ts" } }],
+          1000,
+        ),
         { role: "user", content: "never mind", timestamp: 1001 },
         {
           role: "toolResult",
@@ -1795,8 +1726,8 @@ describe("buildCachedChatItems", () => {
           content: [{ type: "toolResult", text: "late result" }],
           timestamp: 1002,
         },
-      ],
-    });
+      ]),
+    );
 
     // Call and late result stay separate items around the user turn.
     expect(groups).toHaveLength(3);
@@ -1804,11 +1735,11 @@ describe("buildCachedChatItems", () => {
   });
 
   it("coalesces provider-shaped result blocks by canonical tool-use id", () => {
-    const groups = messageGroups({
-      messages: [
-        {
-          role: "assistant",
-          content: [
+    const groups = messageGroups(
+      transcriptMessages([
+        createTranscriptMessage(
+          "assistant",
+          [
             {
               type: "tool_use",
               toolUseId: "provider-call",
@@ -1816,21 +1747,21 @@ describe("buildCachedChatItems", () => {
               input: { command: "provider command" },
             },
           ],
-          timestamp: 1000,
-        },
-        {
-          role: "assistant",
-          content: [
+          1000,
+        ),
+        createTranscriptMessage(
+          "assistant",
+          [
             {
               type: "tool_result",
               tool_use_id: "provider-call",
               text: "Provider result",
             },
           ],
-          timestamp: 1001,
-        },
-      ],
-    });
+          1001,
+        ),
+      ]),
+    );
 
     expect(groups).toHaveLength(1);
     expect(groupAt(groups, 0).messages).toHaveLength(1);
@@ -1844,13 +1775,13 @@ describe("buildCachedChatItems", () => {
   });
 
   it("keeps adjacent tool messages separate when their call ids differ", () => {
-    const groups = messageGroups({
-      messages: [
-        {
-          role: "assistant",
-          content: [{ type: "tool_use", id: "call-a", name: "bash", input: { command: "one" } }],
-          timestamp: 1000,
-        },
+    const groups = messageGroups(
+      transcriptMessages([
+        createTranscriptMessage(
+          "assistant",
+          [{ type: "tool_use", id: "call-a", name: "bash", input: { command: "one" } }],
+          1000,
+        ),
         {
           role: "toolResult",
           toolCallId: "call-b",
@@ -1858,24 +1789,24 @@ describe("buildCachedChatItems", () => {
           content: "Different call",
           timestamp: 1001,
         },
-      ],
-    });
+      ]),
+    );
 
     expect(groups).toHaveLength(1);
     expect(groupAt(groups, 0).messages).toHaveLength(2);
   });
 
   it("keeps empty forwarded assistant display groups", () => {
-    const groups = messageGroups({
-      messages: [
+    const groups = messageGroups(
+      transcriptMessages([
         {
           role: "assistant",
           content: [{ type: "text", text: "" }],
           senderLabel: "Forwarded from main",
           timestamp: 1000,
         },
-      ],
-    });
+      ]),
+    );
 
     expect(groups).toHaveLength(1);
     expect(groupAt(groups, 0).role).toBe("assistant");
@@ -1884,13 +1815,13 @@ describe("buildCachedChatItems", () => {
   });
 
   it("collapses consecutive duplicate text messages into one rendered item with a count", () => {
-    const groups = messageGroups({
-      messages: [
+    const groups = messageGroups(
+      transcriptMessages([
         { role: "assistant", content: [{ type: "text", text: "Same update" }], timestamp: 1 },
         { role: "assistant", content: [{ type: "text", text: "Same update" }], timestamp: 2 },
         { role: "assistant", content: [{ type: "text", text: "Same update" }], timestamp: 3 },
-      ],
-    });
+      ]),
+    );
 
     expect(groups).toHaveLength(1);
     expect(groupAt(groups, 0).messages).toHaveLength(1);
@@ -1898,8 +1829,8 @@ describe("buildCachedChatItems", () => {
   });
 
   it("deduplicates relay-labeled assistant copies by source message id", () => {
-    const groups = messageGroups({
-      messages: [
+    const groups = messageGroups(
+      transcriptMessages([
         {
           id: "reply-1",
           role: "assistant",
@@ -1913,8 +1844,8 @@ describe("buildCachedChatItems", () => {
           content: [{ type: "text", text: "There it is." }],
           timestamp: 2,
         },
-      ],
-    });
+      ]),
+    );
 
     expect(groups).toHaveLength(1);
     expect(groupAt(groups, 0).senderLabel).toBeNull();
@@ -1925,8 +1856,8 @@ describe("buildCachedChatItems", () => {
   });
 
   it("deduplicates relay-labeled assistant copies by event messageId", () => {
-    const groups = messageGroups({
-      messages: [
+    const groups = messageGroups(
+      transcriptMessages([
         {
           messageId: "reply-2",
           role: "assistant",
@@ -1940,8 +1871,8 @@ describe("buildCachedChatItems", () => {
           content: [{ type: "text", text: "Found it." }],
           timestamp: 2,
         },
-      ],
-    });
+      ]),
+    );
 
     expect(groups).toHaveLength(1);
     expect(groupAt(groups, 0).senderLabel).toBeNull();
@@ -1952,8 +1883,8 @@ describe("buildCachedChatItems", () => {
   });
 
   it("deduplicates relay-labeled assistant copies by OpenClaw transcript metadata id", () => {
-    const groups = messageGroups({
-      messages: [
+    const groups = messageGroups(
+      transcriptMessages([
         {
           __openclaw: { id: "reply-3" },
           role: "assistant",
@@ -1961,14 +1892,11 @@ describe("buildCachedChatItems", () => {
           senderLabel: "Parzival",
           timestamp: 1,
         },
-        {
-          __openclaw: { id: "reply-3" },
-          role: "assistant",
-          content: [{ type: "text", text: "On it." }],
-          timestamp: 2,
-        },
-      ],
-    });
+        createTranscriptMessage("assistant", [{ type: "text", text: "On it." }], 2, {
+          id: "reply-3",
+        }),
+      ]),
+    );
 
     expect(groups).toHaveLength(1);
     expect(groupAt(groups, 0).senderLabel).toBeNull();
@@ -1979,8 +1907,8 @@ describe("buildCachedChatItems", () => {
   });
 
   it("deduplicates relay-labeled assistant copies by OpenClaw metadata before surface ids", () => {
-    const groups = messageGroups({
-      messages: [
+    const groups = messageGroups(
+      transcriptMessages([
         {
           id: "relay-surface-copy",
           __openclaw: { id: "reply-4" },
@@ -1996,8 +1924,8 @@ describe("buildCachedChatItems", () => {
           content: [{ type: "text", text: "Ship it." }],
           timestamp: 2,
         },
-      ],
-    });
+      ]),
+    );
 
     expect(groups).toHaveLength(1);
     expect(groupAt(groups, 0).senderLabel).toBeNull();
@@ -2008,22 +1936,16 @@ describe("buildCachedChatItems", () => {
   });
 
   it("keeps native assistant updates separate when source message id repeats with new text", () => {
-    const groups = messageGroups({
-      messages: [
-        {
-          __openclaw: { id: "reply-5" },
-          role: "assistant",
-          content: [{ type: "text", text: "Draft one" }],
-          timestamp: 1,
-        },
-        {
-          __openclaw: { id: "reply-5" },
-          role: "assistant",
-          content: [{ type: "text", text: "Draft two" }],
-          timestamp: 2,
-        },
-      ],
-    });
+    const groups = messageGroups(
+      transcriptMessages([
+        createTranscriptMessage("assistant", [{ type: "text", text: "Draft one" }], 1, {
+          id: "reply-5",
+        }),
+        createTranscriptMessage("assistant", [{ type: "text", text: "Draft two" }], 2, {
+          id: "reply-5",
+        }),
+      ]),
+    );
 
     expect(groups).toHaveLength(1);
     expect(groupAt(groups, 0).messages).toHaveLength(2);
@@ -2036,8 +1958,8 @@ describe("buildCachedChatItems", () => {
   });
 
   it("keeps formatting-only assistant updates separate for the same source message", () => {
-    const groups = messageGroups({
-      messages: [
+    const groups = messageGroups(
+      transcriptMessages([
         {
           __openclaw: { id: "reply-formatted" },
           role: "assistant",
@@ -2045,14 +1967,11 @@ describe("buildCachedChatItems", () => {
           senderLabel: "Parzival",
           timestamp: 1,
         },
-        {
-          __openclaw: { id: "reply-formatted" },
-          role: "assistant",
-          content: [{ type: "text", text: "first second" }],
-          timestamp: 2,
-        },
-      ],
-    });
+        createTranscriptMessage("assistant", [{ type: "text", text: "first second" }], 2, {
+          id: "reply-formatted",
+        }),
+      ]),
+    );
 
     expect(groups).toHaveLength(2);
     expect(messageRecord(groupAt(groups, 0)).content).toStrictEqual([
@@ -2064,8 +1983,8 @@ describe("buildCachedChatItems", () => {
   });
 
   it("keeps differently cased sender text separate for the same source message", () => {
-    const groups = messageGroups({
-      messages: [
+    const groups = messageGroups(
+      transcriptMessages([
         {
           __openclaw: { id: "reply-case-change" },
           role: "assistant",
@@ -2073,14 +1992,11 @@ describe("buildCachedChatItems", () => {
           senderLabel: "Parzival",
           timestamp: 1,
         },
-        {
-          __openclaw: { id: "reply-case-change" },
-          role: "assistant",
-          content: [{ type: "text", text: "answer" }],
-          timestamp: 2,
-        },
-      ],
-    });
+        createTranscriptMessage("assistant", [{ type: "text", text: "answer" }], 2, {
+          id: "reply-case-change",
+        }),
+      ]),
+    );
 
     expect(groups).toHaveLength(2);
     expect(messageRecord(groupAt(groups, 0)).content).toStrictEqual([
@@ -2092,8 +2008,8 @@ describe("buildCachedChatItems", () => {
   });
 
   it("keeps relay-labeled assistant updates separate when source message id repeats with new text", () => {
-    const groups = messageGroups({
-      messages: [
+    const groups = messageGroups(
+      transcriptMessages([
         {
           __openclaw: { id: "reply-6" },
           role: "assistant",
@@ -2108,8 +2024,8 @@ describe("buildCachedChatItems", () => {
           senderLabel: "Parzival",
           timestamp: 2,
         },
-      ],
-    });
+      ]),
+    );
 
     expect(groups).toHaveLength(1);
     expect(groupAt(groups, 0).senderLabel).toBe("Parzival");
@@ -2123,8 +2039,8 @@ describe("buildCachedChatItems", () => {
   });
 
   it("keeps identical assistant text separate when source message ids differ", () => {
-    const groups = messageGroups({
-      messages: [
+    const groups = messageGroups(
+      transcriptMessages([
         {
           id: "reply-7",
           role: "assistant",
@@ -2139,8 +2055,8 @@ describe("buildCachedChatItems", () => {
           senderLabel: "Parzival",
           timestamp: 2,
         },
-      ],
-    });
+      ]),
+    );
 
     expect(groups).toHaveLength(1);
     expect(groupAt(groups, 0).messages).toHaveLength(2);
@@ -2149,8 +2065,8 @@ describe("buildCachedChatItems", () => {
   });
 
   it("keeps same-id user relay copies separate so sender identity is preserved", () => {
-    const groups = messageGroups({
-      messages: [
+    const groups = messageGroups(
+      transcriptMessages([
         {
           __openclaw: { id: "user-1" },
           role: "user",
@@ -2158,14 +2074,9 @@ describe("buildCachedChatItems", () => {
           senderLabel: "Alice",
           timestamp: 1,
         },
-        {
-          __openclaw: { id: "user-1" },
-          role: "user",
-          content: [{ type: "text", text: "hello" }],
-          timestamp: 2,
-        },
-      ],
-    });
+        createTranscriptMessage("user", [{ type: "text", text: "hello" }], 2, { id: "user-1" }),
+      ]),
+    );
 
     expect(groups).toHaveLength(2);
     expect(groups.map((group) => group.senderLabel)).toEqual(["Alice", null]);
@@ -2174,14 +2085,14 @@ describe("buildCachedChatItems", () => {
   });
 
   it("suppresses assistant HEARTBEAT_OK acknowledgements before rendering history", () => {
-    const groups = messageGroups({
-      messages: [
+    const groups = messageGroups(
+      transcriptMessages([
         { role: "assistant", content: [{ type: "text", text: "HEARTBEAT_OK" }], timestamp: 1 },
         { role: "assistant", content: "HEARTBEAT_OK", timestamp: 2 },
         { role: "user", content: [{ type: "text", text: "HEARTBEAT_OK" }], timestamp: 3 },
         { role: "assistant", content: [{ type: "text", text: "Visible reply" }], timestamp: 4 },
-      ],
-    });
+      ]),
+    );
 
     expect(groups).toHaveLength(2);
     expect(groupAt(groups, 0).role).toBe("user");
@@ -2192,11 +2103,11 @@ describe("buildCachedChatItems", () => {
   });
 
   it("suppresses assistant HEARTBEAT_OK acknowledgements that carry hidden thinking blocks", () => {
-    const groups = messageGroups({
-      messages: [
-        {
-          role: "assistant",
-          content: [
+    const groups = messageGroups(
+      transcriptMessages([
+        createTranscriptMessage(
+          "assistant",
+          [
             { type: "thinking", thinking: "Checking scheduled work." },
             {
               type: "text",
@@ -2204,26 +2115,26 @@ describe("buildCachedChatItems", () => {
               textSignature: JSON.stringify({ v: 1, phase: "final_answer" }),
             },
           ],
-          timestamp: 1,
-        },
-        {
-          role: "assistant",
-          content: [
+          1,
+        ),
+        createTranscriptMessage(
+          "assistant",
+          [
             { id: "rs_1", type: "reasoning" },
             { type: "text", text: "HEARTBEAT_OK" },
           ],
-          timestamp: 2,
-        },
-        {
-          role: "assistant",
-          content: [
+          2,
+        ),
+        createTranscriptMessage(
+          "assistant",
+          [
             { type: "thinking", thinking: "Useful hidden reasoning." },
             { type: "text", text: "Visible reply" },
           ],
-          timestamp: 3,
-        },
-      ],
-    });
+          3,
+        ),
+      ]),
+    );
 
     expect(groups).toHaveLength(1);
     expect(groupAt(groups, 0).messages).toHaveLength(1);
@@ -2235,15 +2146,15 @@ describe("buildCachedChatItems", () => {
 
   it("keeps HEARTBEAT_OK turns that carry visible non-text content", () => {
     const canvasBlock = createAssistantCanvasBlock({ suffix: "heartbeat_visible_content" });
-    const groups = messageGroups({
-      messages: [
-        {
-          role: "assistant",
-          content: [{ type: "text", text: "HEARTBEAT_OK" }, canvasBlock],
-          timestamp: 1,
-        },
-      ],
-    });
+    const groups = messageGroups(
+      transcriptMessages([
+        createTranscriptMessage(
+          "assistant",
+          [{ type: "text", text: "HEARTBEAT_OK" }, canvasBlock],
+          1,
+        ),
+      ]),
+    );
 
     expect(groups).toHaveLength(1);
     expect(groupAt(groups, 0).messages).toHaveLength(1);
@@ -2466,29 +2377,31 @@ describe("buildCachedChatItems", () => {
   });
 
   it("suppresses metadata-only history messages before grouping", () => {
-    const groups = messageGroups({
-      messages: [
+    const groups = messageGroups(
+      transcriptMessages([
         {
           role: "user",
           content: SENDER_METADATA_BLOCK,
           senderLabel: "openclaw-control-ui",
           timestamp: 1,
         },
-      ],
-    });
+      ]),
+    );
 
     expect(groups).toStrictEqual([]);
   });
 
   it("renders all loaded history through one keyed row sequence", () => {
     const items = buildCachedChatItems(
-      createProps({
-        messages: Array.from({ length: 105 }, (_, index) => ({
-          role: index % 2 === 0 ? "user" : "assistant",
-          content: `message ${index}`,
-          timestamp: index,
-        })),
-      }),
+      createProps(
+        transcriptMessages(
+          Array.from({ length: 105 }, (_, index) => ({
+            role: index % 2 === 0 ? "user" : "assistant",
+            content: `message ${index}`,
+            timestamp: index,
+          })),
+        ),
+      ),
     );
 
     const groups = items.filter((item) => item.kind === "group");
@@ -2501,19 +2414,23 @@ describe("buildCachedChatItems", () => {
   it("does not truncate loaded history by raw content size", () => {
     const largeOutput = "x".repeat(100_000);
     const items = buildCachedChatItems(
-      createProps({
-        messages: Array.from({ length: 6 }, (_, index) => ({
-          role: "assistant",
-          content: [
-            {
-              type: "tool_result",
-              tool_use_id: `tool-${index}`,
-              content: largeOutput,
-            },
-          ],
-          timestamp: index,
-        })),
-      }),
+      createProps(
+        transcriptMessages(
+          Array.from({ length: 6 }, (_, index) =>
+            createTranscriptMessage(
+              "assistant",
+              [
+                {
+                  type: "tool_result",
+                  tool_use_id: `tool-${index}`,
+                  content: largeOutput,
+                },
+              ],
+              index,
+            ),
+          ),
+        ),
+      ),
     );
     const groups = items.filter((item) => item.kind === "group");
 
@@ -2525,17 +2442,13 @@ describe("buildCachedChatItems", () => {
 
   it("does not crash when history contains malformed entries", () => {
     const items = buildCachedChatItems(
-      createProps({
-        messages: [
+      createProps(
+        transcriptMessages([
           null,
           undefined,
-          {
-            role: "assistant",
-            content: "still visible",
-            timestamp: 1,
-          },
-        ],
-      }),
+          createTranscriptMessage("assistant", "still visible", 1),
+        ]),
+      ),
     );
 
     const groups = items.filter((item) => item.kind === "group");
@@ -2549,11 +2462,11 @@ describe("buildCachedChatItems", () => {
         toolMessages: [
           null,
           undefined,
-          {
-            role: "assistant",
-            content: [{ type: "toolcall", name: "heartbeat_respond", arguments: {} }],
-            timestamp: 1,
-          },
+          createTranscriptMessage(
+            "assistant",
+            [{ type: "toolcall", name: "heartbeat_respond", arguments: {} }],
+            1,
+          ),
         ],
       }),
     );
@@ -2564,13 +2477,13 @@ describe("buildCachedChatItems", () => {
   });
 
   it("does not collapse duplicate text messages separated by another message", () => {
-    const groups = messageGroups({
-      messages: [
+    const groups = messageGroups(
+      transcriptMessages([
         { role: "assistant", content: [{ type: "text", text: "same" }], timestamp: 1 },
         { role: "user", content: [{ type: "text", text: "break" }], timestamp: 2 },
         { role: "assistant", content: [{ type: "text", text: "same" }], timestamp: 3 },
-      ],
-    });
+      ]),
+    );
 
     expect(groups).toHaveLength(3);
     expect(messageAt(groupAt(groups, 0), 0).duplicateCount).toBeUndefined();
@@ -2579,20 +2492,12 @@ describe("buildCachedChatItems", () => {
 
   it("does not collapse messages that carry canvas previews", () => {
     const canvasBlock = createAssistantCanvasBlock({ suffix: "duplicate_guard" });
-    const groups = messageGroups({
-      messages: [
-        {
-          role: "assistant",
-          content: [{ type: "text", text: "preview" }, canvasBlock],
-          timestamp: 1,
-        },
-        {
-          role: "assistant",
-          content: [{ type: "text", text: "preview" }, canvasBlock],
-          timestamp: 2,
-        },
-      ],
-    });
+    const groups = messageGroups(
+      transcriptMessages([
+        createTranscriptMessage("assistant", [{ type: "text", text: "preview" }, canvasBlock], 1),
+        createTranscriptMessage("assistant", [{ type: "text", text: "preview" }, canvasBlock], 2),
+      ]),
+    );
 
     expect(groups).toHaveLength(1);
     expect(groupAt(groups, 0).messages).toHaveLength(2);
@@ -2602,11 +2507,11 @@ describe("buildCachedChatItems", () => {
   it("orders live tool messages before newer history messages", () => {
     const groups = messageGroups({
       messages: [
-        {
-          role: "assistant",
-          content: [{ type: "text", text: "Newer history reply." }],
-          timestamp: 2_000,
-        },
+        createTranscriptMessage(
+          "assistant",
+          [{ type: "text", text: "Newer history reply." }],
+          2_000,
+        ),
       ],
       toolMessages: [
         {
@@ -2631,11 +2536,11 @@ describe("buildCachedChatItems", () => {
     const items = buildCachedChatItems(
       createProps({
         messages: [
-          {
-            role: "assistant",
-            content: [{ type: "text", text: "Newer history reply." }],
-            timestamp: 2_000,
-          },
+          createTranscriptMessage(
+            "assistant",
+            [{ type: "text", text: "Newer history reply." }],
+            2_000,
+          ),
         ],
         streamSegments: [{ text: "Older streamed output.", ts: 1_000 }],
       }),
@@ -2673,11 +2578,7 @@ describe("buildCachedChatItems", () => {
     const items = buildCachedChatItems(
       createProps({
         messages: [
-          {
-            role: "user",
-            content: [{ type: "text", text: "Persisted prompt." }],
-            timestamp: 2_000,
-          },
+          createTranscriptMessage("user", [{ type: "text", text: "Persisted prompt." }], 2_000),
         ],
         stream: "Visible partial answer.",
         streamStartedAt: 1_000,
@@ -2813,12 +2714,10 @@ describe("buildCachedChatItems", () => {
   it("hides a pending send after history accepts its idempotency key", () => {
     const groups = messageGroups({
       messages: [
-        {
-          role: "user",
-          content: "accepted prompt",
-          timestamp: 1,
-          __openclaw: { idempotencyKey: "accepted-run:user", seq: 1 },
-        },
+        createTranscriptMessage("user", "accepted prompt", 1, {
+          idempotencyKey: "accepted-run:user",
+          seq: 1,
+        }),
       ],
       queue: [
         {
@@ -3255,8 +3154,8 @@ describe("buildCachedChatItems", () => {
 
   it("explains compaction boundaries and exposes the checkpoint action", () => {
     const items = buildCachedChatItems(
-      createProps({
-        messages: [
+      createProps(
+        transcriptMessages([
           {
             role: "system",
             timestamp: 2_000,
@@ -3265,8 +3164,8 @@ describe("buildCachedChatItems", () => {
               id: "checkpoint-1",
             },
           },
-        ],
-      }),
+        ]),
+      ),
     );
 
     expect(items).toHaveLength(1);
@@ -3283,8 +3182,8 @@ describe("buildCachedChatItems", () => {
 
   it("shows the token savings recorded on a compaction boundary", () => {
     const items = buildCachedChatItems(
-      createProps({
-        messages: [
+      createProps(
+        transcriptMessages([
           {
             role: "system",
             timestamp: 2_000,
@@ -3295,8 +3194,8 @@ describe("buildCachedChatItems", () => {
               tokensAfter: 24_700,
             },
           },
-        ],
-      }),
+        ]),
+      ),
     );
 
     expect(items[0]).toMatchObject({
@@ -3673,11 +3572,11 @@ describe("tool turn outcome annotation (#89683)", () => {
     const tools = toolGroups([
       userMsg("make a preview", 1),
       failedTool(2),
-      {
-        role: "assistant",
-        content: [createAssistantCanvasBlock({ suffix: "tool_turn_outcome" })],
-        timestamp: 3,
-      },
+      createTranscriptMessage(
+        "assistant",
+        [createAssistantCanvasBlock({ suffix: "tool_turn_outcome" })],
+        3,
+      ),
       failedTool(4),
       assistantReply("Done.", 5),
     ]);

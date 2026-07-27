@@ -23,6 +23,10 @@ function setTestLocation(params: { protocol: string; host: string; pathname: str
   } as Location);
 }
 
+function setGatewayExampleLocation(pathname = "/") {
+  setTestLocation({ protocol: "https:", host: "gateway.example:8443", pathname });
+}
+
 function setControlUiBasePath(value: string | undefined) {
   type TestWindow = Window & typeof globalThis & { [key: string]: unknown };
   if (typeof window === "undefined") {
@@ -163,11 +167,7 @@ describe("loadSettings default gateway URL derivation", () => {
   });
 
   it("defaults the chat send shortcut to enter", () => {
-    setTestLocation({
-      protocol: "https:",
-      host: "gateway.example:8443",
-      pathname: "/",
-    });
+    setGatewayExampleLocation();
 
     expect(loadSettings().chatSendShortcut).toBe("enter");
   });
@@ -186,11 +186,7 @@ describe("loadSettings default gateway URL derivation", () => {
     vi.unstubAllGlobals();
     vi.stubGlobal("localStorage", createStorageMock());
     vi.stubGlobal("navigator", { language: "en-US" } as Navigator);
-    setTestLocation({
-      protocol: "https:",
-      host: "gateway.example:8443",
-      pathname: "/",
-    });
+    setGatewayExampleLocation();
     setControlUiBasePath(undefined);
     const warningSpy = vi.spyOn(process, "emitWarning").mockImplementation(() => undefined);
 
@@ -205,11 +201,7 @@ describe("loadSettings default gateway URL derivation", () => {
   });
 
   it("ignores and scrubs legacy persisted tokens", () => {
-    setTestLocation({
-      protocol: "https:",
-      host: "gateway.example:8443",
-      pathname: "/",
-    });
+    setGatewayExampleLocation();
     sessionStorage.setItem("openclaw.control.token.v1", "legacy-session-token");
     const gatewayUrl = "wss://gateway.example:8443/openclaw";
     const scopedKey = `openclaw.control.settings.v1:${gatewayUrl}`;
@@ -245,11 +237,7 @@ describe("loadSettings default gateway URL derivation", () => {
   });
 
   it("loads the current-tab token from sessionStorage", () => {
-    setTestLocation({
-      protocol: "https:",
-      host: "gateway.example:8443",
-      pathname: "/",
-    });
+    setGatewayExampleLocation();
 
     const gwUrl = expectedGatewayUrl("");
     saveSettings({
@@ -273,11 +261,7 @@ describe("loadSettings default gateway URL derivation", () => {
   });
 
   it("does not reuse a session token for a different gatewayUrl", () => {
-    setTestLocation({
-      protocol: "https:",
-      host: "gateway.example:8443",
-      pathname: "/",
-    });
+    setGatewayExampleLocation();
 
     const gwUrl = expectedGatewayUrl("");
     const otherUrl = "wss://other-gateway.example:8443";
@@ -315,11 +299,7 @@ describe("loadSettings default gateway URL derivation", () => {
   });
 
   it("does not persist gateway tokens when saving settings", () => {
-    setTestLocation({
-      protocol: "https:",
-      host: "gateway.example:8443",
-      pathname: "/",
-    });
+    setGatewayExampleLocation();
 
     const gwUrl = expectedGatewayUrl("");
     saveSettings({
@@ -362,11 +342,7 @@ describe("loadSettings default gateway URL derivation", () => {
   });
 
   it("persists pinned agents and drops malformed or duplicate entries", () => {
-    setTestLocation({
-      protocol: "https:",
-      host: "gateway.example:8443",
-      pathname: "/",
-    });
+    setGatewayExampleLocation();
 
     const gwUrl = expectedGatewayUrl("");
     saveSettings({
@@ -396,11 +372,7 @@ describe("loadSettings default gateway URL derivation", () => {
   });
 
   it("normalizes persisted text scale to the nearest supported stop", () => {
-    setTestLocation({
-      protocol: "https:",
-      host: "gateway.example:8443",
-      pathname: "/",
-    });
+    setGatewayExampleLocation();
 
     const gwUrl = expectedGatewayUrl("");
     localStorage.setItem(
@@ -415,11 +387,7 @@ describe("loadSettings default gateway URL derivation", () => {
   });
 
   it("keeps the last written settings in memory when persistence fails", () => {
-    setTestLocation({
-      protocol: "https:",
-      host: "gateway.example:8443",
-      pathname: "/",
-    });
+    setGatewayExampleLocation();
 
     const setItem = vi.spyOn(localStorage, "setItem").mockImplementation(() => {
       throw new DOMException("blocked", "SecurityError");
@@ -446,11 +414,7 @@ describe("loadSettings default gateway URL derivation", () => {
   });
 
   it("persists only the non-default chat send shortcut", () => {
-    setTestLocation({
-      protocol: "https:",
-      host: "gateway.example:8443",
-      pathname: "/",
-    });
+    setGatewayExampleLocation();
 
     const gwUrl = expectedGatewayUrl("");
     const scopedKey = `openclaw.control.settings.v1:${gwUrl}`;
@@ -473,11 +437,7 @@ describe("loadSettings default gateway URL derivation", () => {
   });
 
   it("persists only explicit chat follow-up overrides", () => {
-    setTestLocation({
-      protocol: "https:",
-      host: "gateway.example:8443",
-      pathname: "/",
-    });
+    setGatewayExampleLocation();
 
     const gwUrl = expectedGatewayUrl("");
     const scopedKey = `openclaw.control.settings.v1:${gwUrl}`;
@@ -502,11 +462,7 @@ describe("loadSettings default gateway URL derivation", () => {
   });
 
   it("persists only the non-default catalog open target", () => {
-    setTestLocation({
-      protocol: "https:",
-      host: "gateway.example:8443",
-      pathname: "/",
-    });
+    setGatewayExampleLocation();
 
     const gwUrl = expectedGatewayUrl("");
     const scopedKey = `openclaw.control.settings.v1:${gwUrl}`;
@@ -527,11 +483,7 @@ describe("loadSettings default gateway URL derivation", () => {
   });
 
   it("defaults live sidebar activity on and persists only an explicit opt-out", () => {
-    setTestLocation({
-      protocol: "https:",
-      host: "gateway.example:8443",
-      pathname: "/",
-    });
+    setGatewayExampleLocation();
 
     const gwUrl = expectedGatewayUrl("");
     const scopedKey = `openclaw.control.settings.v1:${gwUrl}`;
@@ -584,11 +536,7 @@ describe("loadSettings default gateway URL derivation", () => {
   });
 
   it("persists only a normalized realtime Talk microphone id", () => {
-    setTestLocation({
-      protocol: "https:",
-      host: "gateway.example:8443",
-      pathname: "/",
-    });
+    setGatewayExampleLocation();
 
     const gwUrl = expectedGatewayUrl("");
     const scopedKey = `openclaw.control.settings.v1:${gwUrl}`;
@@ -605,11 +553,7 @@ describe("loadSettings default gateway URL derivation", () => {
   });
 
   it("persists only a normalized realtime Talk camera id", () => {
-    setTestLocation({
-      protocol: "https:",
-      host: "gateway.example:8443",
-      pathname: "/",
-    });
+    setGatewayExampleLocation();
 
     const gwUrl = expectedGatewayUrl("");
     const scopedKey = `openclaw.control.settings.v1:${gwUrl}`;
@@ -626,11 +570,7 @@ describe("loadSettings default gateway URL derivation", () => {
   });
 
   it("defaults composer hold-to-record on and persists only the opt-out", () => {
-    setTestLocation({
-      protocol: "https:",
-      host: "gateway.example:8443",
-      pathname: "/",
-    });
+    setGatewayExampleLocation();
 
     const gwUrl = expectedGatewayUrl("");
     const scopedKey = `openclaw.control.settings.v1:${gwUrl}`;
@@ -648,11 +588,7 @@ describe("loadSettings default gateway URL derivation", () => {
   });
 
   it("normalizes and persists the device-local talk camera preference", () => {
-    setTestLocation({
-      protocol: "https:",
-      host: "gateway.example:8443",
-      pathname: "/",
-    });
+    setGatewayExampleLocation();
 
     const gwUrl = expectedGatewayUrl("");
     const scopedKey = `openclaw.control.settings.v1:${gwUrl}`;
@@ -674,11 +610,7 @@ describe("loadSettings default gateway URL derivation", () => {
   });
 
   it("clears the current-tab token when saving an empty token", () => {
-    setTestLocation({
-      protocol: "https:",
-      host: "gateway.example:8443",
-      pathname: "/",
-    });
+    setGatewayExampleLocation();
 
     const gwUrl = expectedGatewayUrl("");
     saveSettings({
@@ -713,11 +645,7 @@ describe("loadSettings default gateway URL derivation", () => {
   });
 
   it("persists themeMode and navWidth alongside the selected theme", () => {
-    setTestLocation({
-      protocol: "https:",
-      host: "gateway.example:8443",
-      pathname: "/",
-    });
+    setGatewayExampleLocation();
 
     const gwUrl = expectedGatewayUrl("");
     saveSettings({
@@ -745,11 +673,7 @@ describe("loadSettings default gateway URL derivation", () => {
   });
 
   it("persists and parses a chat split layout", () => {
-    setTestLocation({
-      protocol: "https:",
-      host: "gateway.example:8443",
-      pathname: "/",
-    });
+    setGatewayExampleLocation();
     const settings = loadSettings();
     const chatSplitLayout = {
       columns: [
@@ -766,11 +690,7 @@ describe("loadSettings default gateway URL derivation", () => {
   });
 
   it("persists dashboard tab and dock state per session", () => {
-    setTestLocation({
-      protocol: "https:",
-      host: "gateway.example:8443",
-      pathname: "/",
-    });
+    setGatewayExampleLocation();
     const settings = loadSettings();
     const boardSessionViews = {
       "agent:main:main": {
@@ -785,11 +705,7 @@ describe("loadSettings default gateway URL derivation", () => {
   });
 
   it("silently drops legacy local face while preserving per-device tab state", () => {
-    setTestLocation({
-      protocol: "https:",
-      host: "gateway.example:8443",
-      pathname: "/",
-    });
+    setGatewayExampleLocation();
     const gwUrl = expectedGatewayUrl("");
     localStorage.setItem(
       `openclaw.control.settings.v1:${gwUrl}`,
@@ -835,11 +751,7 @@ describe("loadSettings default gateway URL derivation", () => {
   });
 
   it("omits an invalid stored chat split layout", () => {
-    setTestLocation({
-      protocol: "https:",
-      host: "gateway.example:8443",
-      pathname: "/",
-    });
+    setGatewayExampleLocation();
     const gwUrl = expectedGatewayUrl("");
     localStorage.setItem(
       `openclaw.control.settings.v1:${gwUrl}`,
@@ -850,11 +762,7 @@ describe("loadSettings default gateway URL derivation", () => {
   });
 
   it("persists the browser-local custom theme payload when present", () => {
-    setTestLocation({
-      protocol: "https:",
-      host: "gateway.example:8443",
-      pathname: "/",
-    });
+    setGatewayExampleLocation();
 
     const gwUrl = expectedGatewayUrl("");
     const customTheme = createImportedCustomThemeFixture();
@@ -880,11 +788,7 @@ describe("loadSettings default gateway URL derivation", () => {
   });
 
   it("falls back to claw when persisted custom theme data is invalid", () => {
-    setTestLocation({
-      protocol: "https:",
-      host: "gateway.example:8443",
-      pathname: "/",
-    });
+    setGatewayExampleLocation();
 
     const gwUrl = expectedGatewayUrl("");
     localStorage.setItem(
@@ -949,11 +853,7 @@ describe("loadSettings default gateway URL derivation", () => {
   });
 
   it("caps persisted session scopes to the most recent gateways", () => {
-    setTestLocation({
-      protocol: "https:",
-      host: "gateway.example:8443",
-      pathname: "/",
-    });
+    setGatewayExampleLocation();
 
     const gwUrl = expectedGatewayUrl("");
     const scopedKey = `openclaw.control.settings.v1:wss://gateway.example:8443`;
@@ -1044,11 +944,7 @@ describe("loadSettings default gateway URL derivation", () => {
   });
 
   it("loads local user identity separately from gateway settings", () => {
-    setTestLocation({
-      protocol: "https:",
-      host: "gateway.example:8443",
-      pathname: "/",
-    });
+    setGatewayExampleLocation();
     localStorage.setItem(
       "openclaw.control.user.v1",
       JSON.stringify({ name: "Buns", avatar: "🦞" }),

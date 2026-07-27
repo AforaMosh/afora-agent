@@ -23,6 +23,13 @@ type SkillsState = Parameters<typeof loadSkills>[0];
 
 type TestRequest = (method: string, payload?: unknown) => Promise<unknown>;
 
+function createSkillsReport(
+  skills: NonNullable<SkillsState["skillsReport"]>["skills"],
+  workspaceDir = "/tmp/workspace",
+): NonNullable<SkillsState["skillsReport"]> {
+  return { workspaceDir, managedSkillsDir: "/tmp/skills", skills };
+}
+
 function createDeferred<T>() {
   let resolve!: (value: T) => void;
   const promise = new Promise<T>((resolvePromise) => {
@@ -104,11 +111,9 @@ function mockSkillMutationRequests(
 describe("loadSkills", () => {
   it("does not request ClawHub verdicts when no installed skills are linked", async () => {
     const { state, request } = createState();
-    request.mockResolvedValueOnce({
-      workspaceDir: "/tmp/workspace",
-      managedSkillsDir: "/tmp/skills",
-      skills: [{ name: "Local", skillKey: "local", source: "workspace" }],
-    });
+    request.mockResolvedValueOnce(
+      createSkillsReport([{ name: "Local", skillKey: "local", source: "workspace" }]),
+    );
 
     await loadSkills(state);
 
@@ -122,26 +127,22 @@ describe("loadSkills", () => {
     const { state, request } = createState();
     request.mockImplementation(async (method: string) => {
       if (method === "skills.status") {
-        return {
-          workspaceDir: "/tmp/workspace",
-          managedSkillsDir: "/tmp/skills",
-          skills: [
-            {
-              name: "AgentReceipt",
-              skillKey: "agentreceipt",
-              source: "workspace",
-              clawhub: {
-                status: "linked",
-                valid: true,
-                registry: "https://clawhub.ai",
-                slug: "agentreceipt",
-                installedVersion: "1.2.3",
-                installedAt: 123,
-              },
+        return createSkillsReport([
+          {
+            name: "AgentReceipt",
+            skillKey: "agentreceipt",
+            source: "workspace",
+            clawhub: {
+              status: "linked",
+              valid: true,
+              registry: "https://clawhub.ai",
+              slug: "agentreceipt",
+              installedVersion: "1.2.3",
+              installedAt: 123,
             },
-            { name: "Local", skillKey: "local", source: "workspace" },
-          ],
-        };
+          },
+          { name: "Local", skillKey: "local", source: "workspace" },
+        ]);
       }
       if (method === "skills.securityVerdicts") {
         return {
@@ -187,10 +188,8 @@ describe("loadSkills", () => {
     state.skillsAgentId = "research";
     request.mockImplementation(async (method: string) => {
       if (method === "skills.status") {
-        return {
-          workspaceDir: "/tmp/research",
-          managedSkillsDir: "/tmp/skills",
-          skills: [
+        return createSkillsReport(
+          [
             {
               name: "AgentReceipt",
               skillKey: "agentreceipt",
@@ -205,7 +204,8 @@ describe("loadSkills", () => {
               },
             },
           ],
-        };
+          "/tmp/research",
+        );
       }
       if (method === "skills.securityVerdicts") {
         return {
@@ -254,18 +254,14 @@ describe("loadSkills", () => {
       ["skills.status", { agentId: "beta" }],
     ]);
 
-    expectDefined(pendingRequests[1], "beta skills request").resolve({
-      workspaceDir: "/tmp/beta",
-      managedSkillsDir: "/tmp/skills",
-      skills: [{ name: "Beta", skillKey: "beta", source: "workspace" }],
-    });
+    expectDefined(pendingRequests[1], "beta skills request").resolve(
+      createSkillsReport([{ name: "Beta", skillKey: "beta", source: "workspace" }], "/tmp/beta"),
+    );
     await secondLoad;
 
-    expectDefined(pendingRequests[0], "alpha skills request").resolve({
-      workspaceDir: "/tmp/alpha",
-      managedSkillsDir: "/tmp/skills",
-      skills: [{ name: "Alpha", skillKey: "alpha", source: "workspace" }],
-    });
+    expectDefined(pendingRequests[0], "alpha skills request").resolve(
+      createSkillsReport([{ name: "Alpha", skillKey: "alpha", source: "workspace" }], "/tmp/alpha"),
+    );
     await firstLoad;
 
     expect(state.skillsAgentId).toBe("beta");
@@ -286,21 +282,23 @@ describe("loadSkills", () => {
     const secondLoad = loadSkills(state);
     await Promise.resolve();
 
-    queue.resolveNext({
-      workspaceDir: "/tmp/stale-alpha",
-      managedSkillsDir: "/tmp/skills",
-      skills: [{ name: "Stale Alpha", skillKey: "stale-alpha", source: "workspace" }],
-    });
+    queue.resolveNext(
+      createSkillsReport(
+        [{ name: "Stale Alpha", skillKey: "stale-alpha", source: "workspace" }],
+        "/tmp/stale-alpha",
+      ),
+    );
     await firstLoad;
 
     expect(state.skillsReport).toBeNull();
     expect(state.skillsLoading).toBe(true);
 
-    queue.resolveNext({
-      workspaceDir: "/tmp/current-alpha",
-      managedSkillsDir: "/tmp/skills",
-      skills: [{ name: "Current Alpha", skillKey: "current-alpha", source: "workspace" }],
-    });
+    queue.resolveNext(
+      createSkillsReport(
+        [{ name: "Current Alpha", skillKey: "current-alpha", source: "workspace" }],
+        "/tmp/current-alpha",
+      ),
+    );
     await secondLoad;
 
     expect(state.skillsReport?.workspaceDir).toBe("/tmp/current-alpha");
@@ -337,10 +335,8 @@ describe("loadSkills", () => {
     };
     request.mockImplementation((method: string) => {
       if (method === "skills.status") {
-        return Promise.resolve({
-          workspaceDir: "/tmp/workspace",
-          managedSkillsDir: "/tmp/skills",
-          skills: [
+        return Promise.resolve(
+          createSkillsReport([
             {
               name: "AgentReceipt",
               skillKey: "agentreceipt",
@@ -354,8 +350,8 @@ describe("loadSkills", () => {
                 installedAt: 123,
               },
             },
-          ],
-        });
+          ]),
+        );
       }
       if (method === "skills.securityVerdicts") {
         return new Promise((resolve) => {
@@ -383,10 +379,8 @@ describe("loadSkills", () => {
     state.skillCardContentKeys = {
       agentreceipt: "/tmp/workspace/skills/agentreceipt/skill-card.md\u000034\u00001.2.3",
     };
-    request.mockResolvedValueOnce({
-      workspaceDir: "/tmp/workspace",
-      managedSkillsDir: "/tmp/skills",
-      skills: [
+    request.mockResolvedValueOnce(
+      createSkillsReport([
         {
           name: "AgentReceipt",
           description: "Trust card fixture",
@@ -406,8 +400,8 @@ describe("loadSkills", () => {
             sizeBytes: 34,
           },
         },
-      ],
-    });
+      ]),
+    );
 
     await loadSkills(state);
 
@@ -427,33 +421,29 @@ describe("loadSkillCard", () => {
       sizeBytes: 34,
       content: "# AgentReceipt\n\nLocal trust card.\n",
     });
-    state.skillsReport = {
-      workspaceDir: "/tmp/workspace",
-      managedSkillsDir: "/tmp/skills",
-      skills: [
-        {
-          name: "AgentReceipt",
-          description: "Trust card fixture",
-          skillKey: "agentreceipt",
-          source: "workspace",
-          filePath: "/tmp/workspace/skills/agentreceipt/SKILL.md",
-          baseDir: "/tmp/workspace/skills/agentreceipt",
-          always: false,
-          disabled: false,
-          blockedByAllowlist: false,
-          eligible: true,
-          requirements: { anyBins: [], bins: [], env: [], config: [], os: [] },
-          missing: { anyBins: [], bins: [], env: [], config: [], os: [] },
-          configChecks: [],
-          install: [],
-          skillCard: {
-            present: true,
-            path: "/tmp/workspace/skills/agentreceipt/skill-card.md",
-            sizeBytes: 34,
-          },
+    state.skillsReport = createSkillsReport([
+      {
+        name: "AgentReceipt",
+        description: "Trust card fixture",
+        skillKey: "agentreceipt",
+        source: "workspace",
+        filePath: "/tmp/workspace/skills/agentreceipt/SKILL.md",
+        baseDir: "/tmp/workspace/skills/agentreceipt",
+        always: false,
+        disabled: false,
+        blockedByAllowlist: false,
+        eligible: true,
+        requirements: { anyBins: [], bins: [], env: [], config: [], os: [] },
+        missing: { anyBins: [], bins: [], env: [], config: [], os: [] },
+        configChecks: [],
+        install: [],
+        skillCard: {
+          present: true,
+          path: "/tmp/workspace/skills/agentreceipt/skill-card.md",
+          sizeBytes: 34,
         },
-      ],
-    };
+      },
+    ]);
 
     await loadSkillCard(state, "agentreceipt");
 
@@ -480,41 +470,37 @@ describe("loadSkillCard", () => {
           resolveCard = resolve;
         }),
     );
-    state.skillsReport = {
-      workspaceDir: "/tmp/workspace",
-      managedSkillsDir: "/tmp/skills",
-      skills: [
-        {
-          name: "AgentReceipt",
-          description: "Trust card fixture",
-          skillKey: "agentreceipt",
-          source: "workspace",
-          filePath: "/tmp/workspace/skills/agentreceipt/SKILL.md",
-          baseDir: "/tmp/workspace/skills/agentreceipt",
-          always: false,
-          disabled: false,
-          blockedByAllowlist: false,
-          eligible: true,
-          requirements: { anyBins: [], bins: [], env: [], config: [], os: [] },
-          missing: { anyBins: [], bins: [], env: [], config: [], os: [] },
-          configChecks: [],
-          install: [],
-          clawhub: {
-            status: "linked",
-            valid: true,
-            registry: "https://clawhub.ai",
-            slug: "agentreceipt",
-            installedVersion: "1.2.3",
-            installedAt: 123,
-          },
-          skillCard: {
-            present: true,
-            path: "/tmp/workspace/skills/agentreceipt/skill-card.md",
-            sizeBytes: 34,
-          },
+    state.skillsReport = createSkillsReport([
+      {
+        name: "AgentReceipt",
+        description: "Trust card fixture",
+        skillKey: "agentreceipt",
+        source: "workspace",
+        filePath: "/tmp/workspace/skills/agentreceipt/SKILL.md",
+        baseDir: "/tmp/workspace/skills/agentreceipt",
+        always: false,
+        disabled: false,
+        blockedByAllowlist: false,
+        eligible: true,
+        requirements: { anyBins: [], bins: [], env: [], config: [], os: [] },
+        missing: { anyBins: [], bins: [], env: [], config: [], os: [] },
+        configChecks: [],
+        install: [],
+        clawhub: {
+          status: "linked",
+          valid: true,
+          registry: "https://clawhub.ai",
+          slug: "agentreceipt",
+          installedVersion: "1.2.3",
+          installedAt: 123,
         },
-      ],
-    };
+        skillCard: {
+          present: true,
+          path: "/tmp/workspace/skills/agentreceipt/skill-card.md",
+          sizeBytes: 34,
+        },
+      },
+    ]);
 
     const pending = loadSkillCard(state, "agentreceipt");
     state.skillsReport = {
@@ -687,11 +673,7 @@ describe("loadClawHubDetail", () => {
 describe("skill mutations", () => {
   it("reserves the shared operation while agent refresh is pending", async () => {
     const { state, request } = createState();
-    request.mockResolvedValue({
-      workspaceDir: "/tmp/workspace",
-      managedSkillsDir: "/tmp/skills",
-      skills: [],
-    });
+    request.mockResolvedValue(createSkillsReport([]));
     let releaseAgents: (() => void) | undefined;
     const loadAgents = vi.fn(
       () =>
@@ -731,23 +713,9 @@ describe("skill mutations", () => {
     const refresh = refreshSkills(state, async () => undefined);
     await waitForFast(() => expect(request).toHaveBeenCalledOnce());
     setSkillsAgentId(state, "beta");
-    expectDefined(
-      pending[0],
-      "alpha status request",
-    )({
-      workspaceDir: "/tmp/alpha",
-      managedSkillsDir: "/tmp/skills",
-      skills: [],
-    });
+    expectDefined(pending[0], "alpha status request")(createSkillsReport([], "/tmp/alpha"));
     await waitForFast(() => expect(request).toHaveBeenCalledTimes(2));
-    expectDefined(
-      pending[1],
-      "beta status request",
-    )({
-      workspaceDir: "/tmp/beta",
-      managedSkillsDir: "/tmp/skills",
-      skills: [],
-    });
+    expectDefined(pending[1], "beta status request")(createSkillsReport([], "/tmp/beta"));
     await refresh;
 
     expect(request.mock.calls).toEqual([
@@ -827,11 +795,7 @@ describe("skill mutations", () => {
         });
       }
       if (method === "skills.status") {
-        return Promise.resolve({
-          workspaceDir: "/tmp/workspace",
-          managedSkillsDir: "/tmp/skills",
-          skills: [],
-        });
+        return Promise.resolve(createSkillsReport([]));
       }
       return Promise.resolve({});
     });
@@ -883,11 +847,7 @@ describe("skill mutations", () => {
     const currentRequest = vi.fn<TestRequest>((method) =>
       method === "skills.update"
         ? currentMutationResult.promise
-        : Promise.resolve({
-            workspaceDir: "/tmp/current",
-            managedSkillsDir: "/tmp/skills",
-            skills: [],
-          }),
+        : Promise.resolve(createSkillsReport([], "/tmp/current")),
     );
     state.client = { request: currentRequest } as unknown as SkillsState["client"];
     state.skillsAgentRevision += 1;
@@ -952,11 +912,9 @@ describe("skill mutations", () => {
     await waitForFast(() => {
       expect(pendingRequests).toHaveLength(2);
     });
-    expectDefined(pendingRequests[1], "beta skills request after update").resolve({
-      workspaceDir: "/tmp/beta-after-update",
-      managedSkillsDir: "/tmp/skills",
-      skills: [],
-    });
+    expectDefined(pendingRequests[1], "beta skills request after update").resolve(
+      createSkillsReport([], "/tmp/beta-after-update"),
+    );
     await mutation;
 
     expect(pendingRequests.map(({ method, payload }) => [method, payload])).toEqual([
@@ -976,11 +934,7 @@ describe("skill mutations", () => {
           rejectUpdate = reject;
         });
       }
-      return Promise.resolve({
-        workspaceDir: "/tmp/beta-after-error",
-        managedSkillsDir: "/tmp/skills",
-        skills: [],
-      });
+      return Promise.resolve(createSkillsReport([], "/tmp/beta-after-error"));
     });
     state.skillsAgentId = "alpha";
 
@@ -1093,11 +1047,7 @@ describe("skill mutations", () => {
       if (method === "skills.install") {
         return { message: "Installed github@1.2.3" };
       }
-      return {
-        workspaceDir: "/tmp/workspace",
-        managedSkillsDir: "/tmp/skills",
-        skills: [],
-      };
+      return createSkillsReport([]);
     });
 
     await installFromClawHub(state, "github");
@@ -1164,11 +1114,7 @@ describe("skill mutations", () => {
       setSkillsAgentId(state, "beta");
       queue.resolveNext({ message: "Installed" });
       await waitForFast(() => expect(request).toHaveBeenCalledTimes(2));
-      queue.resolveNext({
-        workspaceDir: "/tmp/beta-after-install",
-        managedSkillsDir: "/tmp/skills",
-        skills: [],
-      });
+      queue.resolveNext(createSkillsReport([], "/tmp/beta-after-install"));
       await pending;
 
       expect(request).toHaveBeenCalledTimes(2);
@@ -1187,11 +1133,7 @@ describe("reconcileSkillsAgentId", () => {
   it("resets a deleted selected agent without releasing its active operation", () => {
     const { state } = createState();
     state.skillsAgentId = "deleted";
-    state.skillsReport = {
-      workspaceDir: "/tmp/deleted",
-      managedSkillsDir: "/tmp/skills",
-      skills: [],
-    };
+    state.skillsReport = createSkillsReport([], "/tmp/deleted");
     state.skillOperation = { kind: "clawhub", slug: "calendar" };
 
     reconcileSkillsAgentId(state, {

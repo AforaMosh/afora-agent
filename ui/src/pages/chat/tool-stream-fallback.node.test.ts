@@ -66,21 +66,17 @@ describe("app-tool-stream fallback lifecycle handling", () => {
     useToolStreamFakeTimers();
     const host = createHost();
 
-    handleAgentEvent(host, {
-      runId: "run-1",
-      seq: 1,
-      stream: "lifecycle",
-      ts: Date.now(),
-      sessionKey: "main",
-      data: {
+    handleAgentEvent(
+      host,
+      agentEvent("run-1", 1, "lifecycle", {
         phase: "fallback",
         selectedProvider: "fireworks",
         selectedModel: "fireworks/accounts/fireworks/routers/kimi-k2p5-turbo",
         activeProvider: "deepinfra",
         activeModel: "moonshotai/Kimi-K2.5",
         reasonSummary: "rate limit",
-      },
-    });
+      }),
+    );
 
     const fallbackStatus = requireFallbackStatus(host);
     expect(fallbackStatus.selected).toBe("fireworks/accounts/fireworks/routers/kimi-k2p5-turbo");
@@ -93,20 +89,22 @@ describe("app-tool-stream fallback lifecycle handling", () => {
     useToolStreamFakeTimers();
     const host = createHost();
 
-    handleAgentEvent(host, {
-      runId: "run-1",
-      seq: 1,
-      stream: "lifecycle",
-      ts: Date.now(),
-      sessionKey: "agent:other:main",
-      data: {
-        phase: "fallback",
-        selectedProvider: "fireworks",
-        selectedModel: "fireworks/accounts/fireworks/routers/kimi-k2p5-turbo",
-        activeProvider: "deepinfra",
-        activeModel: "moonshotai/Kimi-K2.5",
-      },
-    });
+    handleAgentEvent(
+      host,
+      agentEvent(
+        "run-1",
+        1,
+        "lifecycle",
+        {
+          phase: "fallback",
+          selectedProvider: "fireworks",
+          selectedModel: "fireworks/accounts/fireworks/routers/kimi-k2p5-turbo",
+          activeProvider: "deepinfra",
+          activeModel: "moonshotai/Kimi-K2.5",
+        },
+        "agent:other:main",
+      ),
+    );
 
     expect(host.fallbackStatus).toBeNull();
     vi.useRealTimers();
@@ -116,20 +114,16 @@ describe("app-tool-stream fallback lifecycle handling", () => {
     useToolStreamFakeTimers();
     const host = createHost();
 
-    handleAgentEvent(host, {
-      runId: "run-1",
-      seq: 1,
-      stream: "lifecycle",
-      ts: Date.now(),
-      sessionKey: "main",
-      data: {
+    handleAgentEvent(
+      host,
+      agentEvent("run-1", 1, "lifecycle", {
         phase: "fallback",
         selectedProvider: "fireworks",
         selectedModel: "fireworks/accounts/fireworks/routers/kimi-k2p5-turbo",
         activeProvider: "deepinfra",
         activeModel: "moonshotai/Kimi-K2.5",
-      },
-    });
+      }),
+    );
 
     let fallbackStatus = requireFallbackStatus(host);
     expect(fallbackStatus.phase).toBe("active");
@@ -149,13 +143,9 @@ describe("app-tool-stream fallback lifecycle handling", () => {
     useToolStreamFakeTimers();
     const host = createHost();
 
-    handleAgentEvent(host, {
-      runId: "run-1",
-      seq: 1,
-      stream: "lifecycle",
-      ts: Date.now(),
-      sessionKey: "main",
-      data: {
+    handleAgentEvent(
+      host,
+      agentEvent("run-1", 1, "lifecycle", {
         phase: "fallback_cleared",
         selectedProvider: "fireworks",
         selectedModel: "fireworks/accounts/fireworks/routers/kimi-k2p5-turbo",
@@ -163,8 +153,8 @@ describe("app-tool-stream fallback lifecycle handling", () => {
         activeModel: "fireworks/accounts/fireworks/routers/kimi-k2p5-turbo",
         previousActiveProvider: "deepinfra",
         previousActiveModel: "moonshotai/Kimi-K2.5",
-      },
-    });
+      }),
+    );
 
     const fallbackStatus = requireFallbackStatus(host);
     expect(fallbackStatus.phase).toBe("cleared");
@@ -175,13 +165,9 @@ describe("app-tool-stream fallback lifecycle handling", () => {
   it("updates the chat model cache from session_status model changes", () => {
     const host = createHost();
 
-    handleAgentEvent(host, {
-      runId: "run-1",
-      seq: 1,
-      stream: "tool",
-      ts: Date.now(),
-      sessionKey: "main",
-      data: {
+    handleAgentEvent(
+      host,
+      agentEvent("run-1", 1, "tool", {
         phase: "result",
         name: "session_status",
         toolCallId: "status-1",
@@ -195,8 +181,8 @@ describe("app-tool-stream fallback lifecycle handling", () => {
             modelOverride: "anthropic/claude-sonnet-4-6",
           },
         },
-      },
-    });
+      }),
+    );
 
     expect(host.sessions.state.modelOverrides.main).toBe("anthropic/claude-sonnet-4-6");
   });
@@ -205,13 +191,9 @@ describe("app-tool-stream fallback lifecycle handling", () => {
     const host = createHost();
     host.sessions.setModelOverride("main", "anthropic/claude-sonnet-4-6");
 
-    handleAgentEvent(host, {
-      runId: "run-1",
-      seq: 1,
-      stream: "tool",
-      ts: Date.now(),
-      sessionKey: "main",
-      data: {
+    handleAgentEvent(
+      host,
+      agentEvent("run-1", 1, "tool", {
         phase: "result",
         name: "session_status",
         toolCallId: "status-1",
@@ -225,8 +207,8 @@ describe("app-tool-stream fallback lifecycle handling", () => {
             modelOverride: null,
           },
         },
-      },
-    });
+      }),
+    );
 
     expect(host.sessions.state.modelOverrides.main).toBeNull();
   });
@@ -239,18 +221,14 @@ describe("app-tool-stream fallback lifecycle handling", () => {
       chatStreamStartedAt: TOOL_STREAM_TEST_NOW - 10,
     });
 
-    handleAgentEvent(host, {
-      runId: "run-1",
-      seq: 1,
-      stream: "tool",
-      ts: Date.now(),
-      sessionKey: "main",
-      data: {
+    handleAgentEvent(
+      host,
+      agentEvent("run-1", 1, "tool", {
         phase: "start",
         name: "exec",
         toolCallId: "call_1",
-      },
-    });
+      }),
+    );
 
     expect(host.chatStreamSegments).toEqual([
       {
@@ -268,30 +246,22 @@ describe("app-tool-stream fallback lifecycle handling", () => {
     useToolStreamFakeTimers();
     const host = createHost({ chatRunId: "run-1" });
 
-    handleAgentEvent(host, {
-      runId: "run-1",
-      seq: 1,
-      stream: "item",
-      ts: Date.now(),
-      sessionKey: "main",
-      data: {
+    handleAgentEvent(
+      host,
+      agentEvent("run-1", 1, "item", {
         kind: "preamble",
         itemId: "msg-preamble-1",
         progressText: "Checking",
-      },
-    });
-    handleAgentEvent(host, {
-      runId: "run-1",
-      seq: 2,
-      stream: "item",
-      ts: Date.now(),
-      sessionKey: "main",
-      data: {
+      }),
+    );
+    handleAgentEvent(
+      host,
+      agentEvent("run-1", 2, "item", {
         kind: "preamble",
         itemId: "msg-preamble-1",
         progressText: "Checking the app-server stream",
-      },
-    });
+      }),
+    );
 
     expect(host.chatStreamSegments).toEqual([
       {
@@ -309,30 +279,22 @@ describe("app-tool-stream fallback lifecycle handling", () => {
     useToolStreamFakeTimers();
     const host = createHost({ chatRunId: "run-1" });
 
-    handleAgentEvent(host, {
-      runId: "run-1",
-      seq: 1,
-      stream: "item",
-      ts: Date.now(),
-      sessionKey: "main",
-      data: {
+    handleAgentEvent(
+      host,
+      agentEvent("run-1", 1, "item", {
         kind: "preamble",
         itemId: "msg-preamble-1",
         progressText: "Checking",
-      },
-    });
-    handleAgentEvent(host, {
-      runId: "run-1",
-      seq: 2,
-      stream: "item",
-      ts: Date.now(),
-      sessionKey: "main",
-      data: {
+      }),
+    );
+    handleAgentEvent(
+      host,
+      agentEvent("run-1", 2, "item", {
         kind: "preamble",
         itemId: "msg-preamble-1",
         progressText: "",
-      },
-    });
+      }),
+    );
 
     expect(host.chatStreamSegments).toEqual([]);
     vi.useRealTimers();
@@ -342,42 +304,30 @@ describe("app-tool-stream fallback lifecycle handling", () => {
     useToolStreamFakeTimers();
     const host = createHost({ chatRunId: "run-1" });
 
-    handleAgentEvent(host, {
-      runId: "run-1",
-      seq: 1,
-      stream: "item",
-      ts: Date.now(),
-      sessionKey: "main",
-      data: {
+    handleAgentEvent(
+      host,
+      agentEvent("run-1", 1, "item", {
         kind: "preamble",
         itemId: "msg-preamble-1",
         progressText: "Checking [[reply_to_current]]",
-      },
-    });
-    handleAgentEvent(host, {
-      runId: "run-1",
-      seq: 2,
-      stream: "item",
-      ts: Date.now(),
-      sessionKey: "main",
-      data: {
+      }),
+    );
+    handleAgentEvent(
+      host,
+      agentEvent("run-1", 2, "item", {
         kind: "preamble",
         itemId: "msg-preamble-2",
         progressText: "[[reply_to_current]]",
-      },
-    });
-    handleAgentEvent(host, {
-      runId: "run-1",
-      seq: 3,
-      stream: "item",
-      ts: Date.now(),
-      sessionKey: "main",
-      data: {
+      }),
+    );
+    handleAgentEvent(
+      host,
+      agentEvent("run-1", 3, "item", {
         kind: "preamble",
         itemId: "msg-preamble-1",
         progressText: "**NO_REPLY",
-      },
-    });
+      }),
+    );
 
     expect(host.chatStreamSegments).toEqual([]);
     vi.useRealTimers();

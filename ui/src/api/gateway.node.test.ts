@@ -136,6 +136,14 @@ class MockWebSocket {
   }
 }
 
+function emitGatewayResponse(
+  socket: MockWebSocket,
+  id: string | undefined,
+  result: { ok: true; payload: unknown } | { ok: false; error: unknown },
+) {
+  socket.emitMessage({ type: "res", id, ...result });
+}
+
 const { GatewayBrowserClient, GatewayRequestError, resolveGatewayErrorDetailCode } =
   await import("./gateway.ts");
 
@@ -327,9 +335,7 @@ async function startConnect(client: InstanceType<typeof GatewayBrowserClient>, n
 }
 
 function emitRetryableTokenMismatch(ws: MockWebSocket, connectId: string | undefined) {
-  ws.emitMessage({
-    type: "res",
-    id: connectId,
+  emitGatewayResponse(ws, connectId, {
     ok: false,
     error: {
       code: "INVALID_REQUEST",
@@ -577,9 +583,7 @@ describe("GatewayBrowserClient", () => {
     });
 
     const { ws, connectFrame } = await startConnect(client);
-    ws.emitMessage({
-      type: "res",
-      id: connectFrame.id,
+    emitGatewayResponse(ws, connectFrame.id, {
       ok: true,
       payload: {
         type: "hello-ok",
@@ -593,12 +597,7 @@ describe("GatewayBrowserClient", () => {
     const frame = JSON.parse(ws.sent.at(-1) ?? "{}") as { id?: string; method?: string };
     expect(frame.method).toBe("sessions.list");
 
-    ws.emitMessage({
-      type: "res",
-      id: frame.id,
-      ok: true,
-      payload: { sessions: [] },
-    });
+    emitGatewayResponse(ws, frame.id, { ok: true, payload: { sessions: [] } });
 
     await expect(request).resolves.toEqual({ sessions: [] });
     expectLatestRequestTiming(onRequestTiming, {
@@ -617,9 +616,7 @@ describe("GatewayBrowserClient", () => {
 
     try {
       const { ws: firstWs, connectFrame: firstConnect } = await startConnect(client);
-      firstWs.emitMessage({
-        type: "res",
-        id: firstConnect.id,
+      emitGatewayResponse(firstWs, firstConnect.id, {
         ok: true,
         payload: {
           type: "hello-ok",
@@ -638,9 +635,7 @@ describe("GatewayBrowserClient", () => {
         method?: string;
       };
       expect(firstRequest.method).toBe("controlUi.sessionPullRequests");
-      firstWs.emitMessage({
-        type: "res",
-        id: firstRequest.id,
+      emitGatewayResponse(firstWs, firstRequest.id, {
         ok: false,
         error: {
           code: "UNAVAILABLE",
@@ -664,9 +659,7 @@ describe("GatewayBrowserClient", () => {
       const secondWs = getLatestWebSocket();
       expect(secondWs).not.toBe(firstWs);
       const { connectFrame: secondConnect } = await continueConnect(secondWs, "nonce-2");
-      secondWs.emitMessage({
-        type: "res",
-        id: secondConnect.id,
+      emitGatewayResponse(secondWs, secondConnect.id, {
         ok: true,
         payload: {
           type: "hello-ok",
@@ -685,9 +678,7 @@ describe("GatewayBrowserClient", () => {
         method?: string;
       };
       expect(reconnectedRequest.method).toBe("controlUi.sessionPullRequests");
-      secondWs.emitMessage({
-        type: "res",
-        id: reconnectedRequest.id,
+      emitGatewayResponse(secondWs, reconnectedRequest.id, {
         ok: true,
         payload: { pullRequests: [], rateLimited: false },
       });
@@ -710,9 +701,7 @@ describe("GatewayBrowserClient", () => {
 
     try {
       const { ws, connectFrame } = await startConnect(client);
-      ws.emitMessage({
-        type: "res",
-        id: connectFrame.id,
+      emitGatewayResponse(ws, connectFrame.id, {
         ok: true,
         payload: {
           type: "hello-ok",
@@ -772,9 +761,7 @@ describe("GatewayBrowserClient", () => {
         method?: string;
       };
       expect(retriedRequest.method).toBe("controlUi.sessionPullRequests");
-      ws.emitMessage({
-        type: "res",
-        id: retriedRequest.id,
+      emitGatewayResponse(ws, retriedRequest.id, {
         ok: true,
         payload: { pullRequests: [], rateLimited: false },
       });
@@ -799,9 +786,7 @@ describe("GatewayBrowserClient", () => {
 
       try {
         const { ws, connectFrame } = await startConnect(client);
-        ws.emitMessage({
-          type: "res",
-          id: connectFrame.id,
+        emitGatewayResponse(ws, connectFrame.id, {
           ok: true,
           payload: {
             type: "hello-ok",
@@ -821,9 +806,7 @@ describe("GatewayBrowserClient", () => {
         });
         const failedRequest = JSON.parse(ws.sent.at(-1) ?? "{}") as { id?: string };
         const succeed = async () => {
-          ws.emitMessage({
-            type: "res",
-            id: successfulRequest.id,
+          emitGatewayResponse(ws, successfulRequest.id, {
             ok: true,
             payload: { pullRequests: [], rateLimited: false },
           });
@@ -833,9 +816,7 @@ describe("GatewayBrowserClient", () => {
           });
         };
         const fail = async () => {
-          ws.emitMessage({
-            type: "res",
-            id: failedRequest.id,
+          emitGatewayResponse(ws, failedRequest.id, {
             ok: false,
             error: {
               code: "UNAVAILABLE",
@@ -871,9 +852,7 @@ describe("GatewayBrowserClient", () => {
       token: "token-oversized",
     });
     const { ws, connectFrame } = await startConnect(client);
-    ws.emitMessage({
-      type: "res",
-      id: connectFrame.id,
+    emitGatewayResponse(ws, connectFrame.id, {
       ok: true,
       payload: {
         type: "hello-ok",
@@ -899,9 +878,7 @@ describe("GatewayBrowserClient", () => {
     });
 
     const { ws, connectFrame } = await startConnect(client);
-    ws.emitMessage({
-      type: "res",
-      id: connectFrame.id,
+    emitGatewayResponse(ws, connectFrame.id, {
       ok: true,
       payload: {
         type: "hello-ok",
@@ -915,9 +892,7 @@ describe("GatewayBrowserClient", () => {
     const frame = JSON.parse(ws.sent.at(-1) ?? "{}") as { id?: string; method?: string };
     expect(frame.method).toBe("config.get");
 
-    ws.emitMessage({
-      type: "res",
-      id: frame.id,
+    emitGatewayResponse(ws, frame.id, {
       ok: false,
       error: { code: "CONFIG_ERROR", message: "config failed" },
     });
@@ -970,9 +945,7 @@ describe("GatewayBrowserClient", () => {
       expect(JSON.stringify(payload)).not.toContain("nonce-secret");
     }
 
-    ws.emitMessage({
-      type: "res",
-      id: connectFrame.id,
+    emitGatewayResponse(ws, connectFrame.id, {
       ok: true,
       payload: {
         type: "hello-ok",
@@ -1059,9 +1032,7 @@ describe("GatewayBrowserClient", () => {
 
     try {
       const { ws, connectFrame } = await startConnect(client);
-      ws.emitMessage({
-        type: "res",
-        id: connectFrame.id,
+      emitGatewayResponse(ws, connectFrame.id, {
         ok: true,
         payload: {
           type: "hello-ok",
@@ -1092,9 +1063,7 @@ describe("GatewayBrowserClient", () => {
     });
 
     const { ws, connectFrame } = await startConnect(client);
-    ws.emitMessage({
-      type: "res",
-      id: connectFrame.id,
+    emitGatewayResponse(ws, connectFrame.id, {
       ok: true,
       payload: {
         type: "hello-ok",
@@ -1445,9 +1414,7 @@ describe("GatewayBrowserClient", () => {
       token: "shared-auth-token",
     });
 
-    secondWs.emitMessage({
-      type: "res",
-      id: secondConnect.id,
+    emitGatewayResponse(secondWs, secondConnect.id, {
       ok: false,
       error: {
         code: "INVALID_REQUEST",
@@ -1518,9 +1485,7 @@ describe("GatewayBrowserClient", () => {
     try {
       const { ws, connectFrame } = await startConnect(client);
 
-      ws.emitMessage({
-        type: "res",
-        id: connectFrame.id,
+      emitGatewayResponse(ws, connectFrame.id, {
         ok: false,
         error: {
           code: "UNAVAILABLE",
@@ -1559,9 +1524,7 @@ describe("GatewayBrowserClient", () => {
       const { ws, connectFrame } = await startConnect(client);
       const pendingRequest = client.request("cron.list", { quiet: true });
 
-      ws.emitMessage({
-        type: "res",
-        id: connectFrame.id,
+      emitGatewayResponse(ws, connectFrame.id, {
         ok: false,
         error: {
           code: "INVALID_REQUEST",
@@ -1607,9 +1570,7 @@ describe("GatewayBrowserClient", () => {
 
     const { ws: ws1, connectFrame: firstConnect } = await startConnect(client);
 
-    ws1.emitMessage({
-      type: "res",
-      id: firstConnect.id,
+    emitGatewayResponse(ws1, firstConnect.id, {
       ok: false,
       error: {
         code: "INVALID_REQUEST",
@@ -1743,9 +1704,7 @@ describe("GatewayBrowserClient", () => {
 
     const { ws: ws1, connectFrame: connect } = await startConnect(client);
 
-    ws1.emitMessage({
-      type: "res",
-      id: connect.id,
+    emitGatewayResponse(ws1, connect.id, {
       ok: false,
       error: {
         code: "INVALID_REQUEST",
@@ -1772,9 +1731,7 @@ describe("GatewayBrowserClient", () => {
 
     const { ws: ws1, connectFrame: connect } = await startConnect(client);
 
-    ws1.emitMessage({
-      type: "res",
-      id: connect.id,
+    emitGatewayResponse(ws1, connect.id, {
       ok: false,
       error: {
         code: "INVALID_REQUEST",
@@ -1802,9 +1759,7 @@ describe("GatewayBrowserClient", () => {
 
     const { ws: ws1, connectFrame: connect } = await startConnect(client);
 
-    ws1.emitMessage({
-      type: "res",
-      id: connect.id,
+    emitGatewayResponse(ws1, connect.id, {
       ok: false,
       error: {
         code: "INVALID_REQUEST",
@@ -1839,9 +1794,7 @@ describe("GatewayBrowserClient", () => {
     const { ws, connectFrame } = await startConnect(client);
     expect(connectFrame.params?.auth?.token).toBe("stored-device-token");
 
-    ws.emitMessage({
-      type: "res",
-      id: connectFrame.id,
+    emitGatewayResponse(ws, connectFrame.id, {
       ok: false,
       error: {
         code: "INVALID_REQUEST",
@@ -1874,9 +1827,7 @@ describe("GatewayBrowserClient", () => {
     const { ws, connectFrame } = await startConnect(client);
     expect(connectFrame.params?.auth?.token).toBe("stored-device-token");
 
-    ws.emitMessage({
-      type: "res",
-      id: connectFrame.id,
+    emitGatewayResponse(ws, connectFrame.id, {
       ok: false,
       error: {
         code: "INVALID_REQUEST",
@@ -1912,9 +1863,7 @@ describe("GatewayBrowserClient", () => {
     });
 
     const { ws, connectFrame } = await startConnect(client);
-    ws.emitMessage({
-      type: "res",
-      id: connectFrame.id,
+    emitGatewayResponse(ws, connectFrame.id, {
       ok: false,
       error: {
         code: "INVALID_REQUEST",

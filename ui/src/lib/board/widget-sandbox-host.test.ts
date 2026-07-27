@@ -19,6 +19,19 @@ function widget(): BoardWidget {
   };
 }
 
+function signalSandboxReady(host: BoardWidgetSandboxHost, frame: HTMLIFrameElement) {
+  host.handleMessage(
+    new MessageEvent("message", {
+      source: frame.contentWindow,
+      origin: "https://sandbox.example",
+      data: {
+        method: "ui/notifications/sandbox-proxy-ready",
+        params: { sandboxUrl: SANDBOX_URL },
+      },
+    }),
+  );
+}
+
 async function offerBridgePort(
   host: BoardWidgetSandboxHost,
   frame: HTMLIFrameElement,
@@ -104,16 +117,7 @@ describe("BoardWidgetSandboxHost", () => {
       onError: vi.fn(),
     });
 
-    host.handleMessage(
-      new MessageEvent("message", {
-        source: frame.contentWindow,
-        origin: "https://sandbox.example",
-        data: {
-          method: "ui/notifications/sandbox-proxy-ready",
-          params: { sandboxUrl: SANDBOX_URL },
-        },
-      }),
-    );
+    signalSandboxReady(host, frame);
 
     await vi.waitFor(() => expect(onLoaded).toHaveBeenCalledOnce());
     expect(fetchMock).toHaveBeenCalledWith(
@@ -155,16 +159,7 @@ describe("BoardWidgetSandboxHost", () => {
       onError,
     });
 
-    host.handleMessage(
-      new MessageEvent("message", {
-        source: frame.contentWindow,
-        origin: "https://sandbox.example",
-        data: {
-          method: "ui/notifications/sandbox-proxy-ready",
-          params: { sandboxUrl: SANDBOX_URL },
-        },
-      }),
-    );
+    signalSandboxReady(host, frame);
 
     await vi.waitFor(() => expect(onLoadFailed).toHaveBeenCalledWith(widget()));
     expect(onError).not.toHaveBeenCalled();
@@ -194,16 +189,7 @@ describe("BoardWidgetSandboxHost", () => {
       onError: vi.fn(),
     });
 
-    host.handleMessage(
-      new MessageEvent("message", {
-        source: frame.contentWindow,
-        origin: "https://sandbox.example",
-        data: {
-          method: "ui/notifications/sandbox-proxy-ready",
-          params: { sandboxUrl: SANDBOX_URL },
-        },
-      }),
-    );
+    signalSandboxReady(host, frame);
     await vi.waitFor(() => expect(onLoaded).toHaveBeenCalledOnce());
     const hostMessage = vi.fn();
     await offerBridgePort(host, frame, hostMessage);
@@ -257,16 +243,7 @@ describe("BoardWidgetSandboxHost", () => {
       onError: vi.fn(),
     };
     const host = new BoardWidgetSandboxHost(baseOptions);
-    host.handleMessage(
-      new MessageEvent("message", {
-        source: frame.contentWindow,
-        origin: "https://sandbox.example",
-        data: {
-          method: "ui/notifications/sandbox-proxy-ready",
-          params: { sandboxUrl: SANDBOX_URL },
-        },
-      }),
-    );
+    signalSandboxReady(host, frame);
     await vi.waitFor(() => expect(baseOptions.onLoaded).toHaveBeenCalledOnce());
     const bridgePort = await offerBridgePort(host, frame);
     const bridgeResponse = vi.fn();
@@ -327,16 +304,7 @@ describe("BoardWidgetSandboxHost", () => {
       onLoaded: vi.fn(),
       onError: vi.fn(),
     });
-    host.handleMessage(
-      new MessageEvent("message", {
-        source: frame.contentWindow,
-        origin: "https://sandbox.example",
-        data: {
-          method: "ui/notifications/sandbox-proxy-ready",
-          params: { sandboxUrl: SANDBOX_URL },
-        },
-      }),
-    );
+    signalSandboxReady(host, frame);
     await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce());
     const promptRequest = {
       type: "openclaw:widget-bridge-request",
@@ -401,16 +369,7 @@ describe("BoardWidgetSandboxHost", () => {
         onLoaded: loaded,
         onError: vi.fn(),
       });
-      host.handleMessage(
-        new MessageEvent("message", {
-          source: frame.contentWindow,
-          origin: "https://sandbox.example",
-          data: {
-            method: "ui/notifications/sandbox-proxy-ready",
-            params: { sandboxUrl: SANDBOX_URL },
-          },
-        }),
-      );
+      signalSandboxReady(host, frame);
       await vi.waitFor(() => expect(loaded).toHaveBeenCalledOnce());
       return { frame, port: await offerBridgePort(host, frame) };
     };
@@ -489,16 +448,7 @@ describe("BoardWidgetSandboxHost", () => {
       onError: vi.fn(),
     };
     const host = new BoardWidgetSandboxHost(baseOptions);
-    host.handleMessage(
-      new MessageEvent("message", {
-        source: frame.contentWindow,
-        origin: "https://sandbox.example",
-        data: {
-          method: "ui/notifications/sandbox-proxy-ready",
-          params: { sandboxUrl: SANDBOX_URL },
-        },
-      }),
-    );
+    signalSandboxReady(host, frame);
     await vi.waitFor(() => expect(baseOptions.onLoaded).toHaveBeenCalledOnce());
     const bridgePort = await offerBridgePort(host, frame);
     const responses: unknown[] = [];
@@ -606,16 +556,7 @@ describe("BoardWidgetSandboxHost", () => {
       onError: vi.fn(),
     };
     const host = new BoardWidgetSandboxHost(baseOptions);
-    host.handleMessage(
-      new MessageEvent("message", {
-        source: frame.contentWindow,
-        origin: "https://sandbox.example",
-        data: {
-          method: "ui/notifications/sandbox-proxy-ready",
-          params: { sandboxUrl: SANDBOX_URL },
-        },
-      }),
-    );
+    signalSandboxReady(host, frame);
     await vi.waitFor(() => expect(baseOptions.onLoaded).toHaveBeenCalledOnce());
     const bridgePort = await offerBridgePort(host, frame);
     const responses: unknown[] = [];
@@ -689,16 +630,7 @@ describe("BoardWidgetSandboxHost", () => {
       onError: vi.fn(),
     };
     const host = new BoardWidgetSandboxHost(baseOptions);
-    host.handleMessage(
-      new MessageEvent("message", {
-        source: frame.contentWindow,
-        origin: "https://sandbox.example",
-        data: {
-          method: "ui/notifications/sandbox-proxy-ready",
-          params: { sandboxUrl: SANDBOX_URL },
-        },
-      }),
-    );
+    signalSandboxReady(host, frame);
     await vi.waitFor(() => expect(onLoaded).toHaveBeenCalledOnce());
     postMessage.mockClear();
 
@@ -794,16 +726,7 @@ describe("BoardWidgetSandboxHost", () => {
       onError: vi.fn(),
     };
     const host = new BoardWidgetSandboxHost(baseOptions);
-    host.handleMessage(
-      new MessageEvent("message", {
-        source: frame.contentWindow,
-        origin: "https://sandbox.example",
-        data: {
-          method: "ui/notifications/sandbox-proxy-ready",
-          params: { sandboxUrl: SANDBOX_URL },
-        },
-      }),
-    );
+    signalSandboxReady(host, frame);
     await vi.waitFor(() => expect(onLoaded).toHaveBeenCalledOnce());
 
     host.update({
