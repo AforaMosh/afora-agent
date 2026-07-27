@@ -188,12 +188,15 @@ describe("stripSessionsYieldArtifacts", () => {
 
     stripSessionsYieldArtifacts(session);
 
-    const branch = sessionManager.getBranch();
+    // removeTrailingEntries preserves trailing metadata in the transcript
+    // entries while deliberately parking the leaf below it, so the next
+    // append replaces the stripped suffix. Assert on entries, not the branch.
+    const entries = sessionManager.getEntries();
     expect(
-      branch.some((entry) => entry.type === "custom" && entry.customType === "plugin-state"),
+      entries.some((entry) => entry.type === "custom" && entry.customType === "plugin-state"),
     ).toBe(true);
     expect(
-      branch.some(
+      entries.some(
         (entry) =>
           (entry.type === "message" && entry.message.role === "assistant") ||
           (entry.type === "custom_message" &&
