@@ -7,6 +7,24 @@ import { createBoundedMistralFetcher } from "./mistral.js";
 const MAX = 16 * 1024 * 1024;
 const TOTAL = 18 * 1024 * 1024;
 
+async function withLoopbackServer(
+  handler: http.RequestListener,
+  run: (url: string) => Promise<void>,
+) {
+  const server = http.createServer(handler);
+  await new Promise<void>((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", resolve);
+  });
+  try {
+    await run(`http://127.0.0.1:${(server.address() as AddressInfo).port}/`);
+  } finally {
+    await new Promise<void>((resolve) => {
+      server.close(() => resolve());
+    });
+  }
+}
+
 async function readAllChunks(body: ReadableStream<Uint8Array> | null): Promise<{ total: number }> {
   if (!body) {
     return { total: 0 };
@@ -29,96 +47,66 @@ describe("Mistral bounded-stream-read real wire proof (loopback http.createServe
   it("caps an oversized body streamed chunked over real wire", async () => {
     const fetcher = createBoundedMistralFetcher(MAX);
     const CHUNK = 1024 * 1024;
-    const server = http.createServer((req, res) => {
-      res.writeHead(200, { "content-type": "application/octet-stream" });
-      let sent = 0;
-      const tick = setInterval(() => {
-        if (sent < 18) {
-          res.write(Buffer.alloc(CHUNK));
-          sent++;
-        } else {
-          clearInterval(tick);
-          res.end();
+    await withLoopbackServer(
+      (_req, res) => {
+        res.writeHead(200, { "content-type": "application/octet-stream" });
+        let sent = 0;
+        const tick = setInterval(() => {
+          if (sent < 18) {
+            res.write(Buffer.alloc(CHUNK));
+            sent++;
+          } else {
+            clearInterval(tick);
+            res.end();
+          }
+        }, 1);
+      },
+      async (url) => {
+        const response = await fetcher(url);
+        // Wire framing merges TCP packets, so the reported size at throw time
+        // is between MAX (cap) and TOTAL (cap + last merged packet). Both
+        // bounds prove (a) cap fired (got > MAX) and (b) we did not buffer
+        // beyond the server's full 18 MiB (got < TOTAL).
+        let captured: Error | undefined;
+        try {
+          await readAllChunks(response.body);
+        } catch (err) {
+          captured = err as Error;
         }
-      }, 1);
-    });
-    await new Promise<void>((resolve, reject) => {
-      server.once("error", reject);
-      server.listen(0, "127.0.0.1", () => {
-        resolve();
-      });
-    });
-    const port = (server.address() as AddressInfo).port;
-
-    let captured: Error | undefined;
-    let totalGot = 0;
-    try {
-      const response = await fetcher(`http://127.0.0.1:${port}/`);
-      // Wire framing merges TCP packets, so the reported size at throw time
-      // is between MAX (cap) and TOTAL (cap + last merged packet). Both
-      // bounds prove (a) cap fired (got > MAX) and (b) we did not buffer
-      // beyond the server's full 18 MiB (got < TOTAL).
-      try {
-        const result = await readAllChunks(response.body);
-        totalGot = result.total;
-      } catch (err) {
-        captured = err as Error;
-      }
-      expect(captured).toBeInstanceOf(Error);
-      const match = (captured as Error).message.match(
-        /mistral: stream body exceeds \d+ bytes \(got (\d+)\)/,
-      );
-      expect(match).not.toBeNull();
-      const got = Number(match?.[1]);
-      expect(got).toBeGreaterThan(MAX);
-      expect(got).toBeLessThan(TOTAL);
-      // Print to vitest stdout for PR-body real behavior proof capture.
-      console.log(
-        `[mistral bounded-stream proof] oversized path: cap=${MAX} reported=${got} server_total=${TOTAL}`,
-      );
-    } finally {
-      await new Promise<void>((resolve) => {
-        server.close(() => {
-          resolve();
-        });
-      });
-      if (totalGot > 0) {
-        // Use the value to satisfy strict unused rules without affecting asserts.
-        expect(totalGot).toBeGreaterThan(0);
-      }
-    }
+        expect(captured).toBeInstanceOf(Error);
+        const match = (captured as Error).message.match(
+          /mistral: stream body exceeds \d+ bytes \(got (\d+)\)/,
+        );
+        expect(match).not.toBeNull();
+        const got = Number(match?.[1]);
+        expect(got).toBeGreaterThan(MAX);
+        expect(got).toBeLessThan(TOTAL);
+        // Print to vitest stdout for PR-body real behavior proof capture.
+        console.log(
+          `[mistral bounded-stream proof] oversized path: cap=${MAX} reported=${got} server_total=${TOTAL}`,
+        );
+      },
+    );
   });
 
   it("returns a Response with exact bytes for normal-size responses on real wire", async () => {
     const fetcher = createBoundedMistralFetcher(MAX);
     const bodyText = 'data: {"choices":[{"delta":{"content":"hello"}}]}\n\ndata: [DONE]\n\n';
-    const server = http.createServer((req, res) => {
-      res.writeHead(200, { "content-type": "text/event-stream" });
-      res.end(bodyText);
-    });
-    await new Promise<void>((resolve, reject) => {
-      server.once("error", reject);
-      server.listen(0, "127.0.0.1", () => {
-        resolve();
-      });
-    });
-    const port = (server.address() as AddressInfo).port;
-
-    try {
-      const response = await fetcher(`http://127.0.0.1:${port}/`);
-      expect(response.status).toBe(200);
-      const { total } = await readAllChunks(response.body);
-      expect(total).toBe(Buffer.byteLength(bodyText, "utf8"));
-      console.log(
-        `[mistral bounded-stream proof] normal path: cap=${MAX} returned=${total} body=${JSON.stringify(bodyText)}`,
-      );
-    } finally {
-      await new Promise<void>((resolve) => {
-        server.close(() => {
-          resolve();
-        });
-      });
-    }
+    await withLoopbackServer(
+      (_req, res) => {
+        res.writeHead(200, { "content-type": "text/event-stream" });
+        res.end(bodyText);
+      },
+      async (url) => {
+        const response = await fetcher(url);
+        expect(response.status).toBe(200);
+        const { total } = await readAllChunks(response.body);
+        expect(total).toBe(Buffer.byteLength(bodyText, "utf8"));
+        console.log(
+          `[mistral bounded-stream proof] normal path: cap=${MAX} returned=${total} body=${JSON.stringify(bodyText)}`,
+        );
+      },
+    );
   });
 });
 

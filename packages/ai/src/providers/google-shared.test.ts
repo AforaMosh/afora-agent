@@ -91,52 +91,59 @@ async function* chunks(items: GenerateContentResponse[]) {
   yield* items;
 }
 
+async function consumeGoogleTestChunks(items: GenerateContentResponse[]) {
+  const output = createOutput();
+  const stream = new AssistantMessageEventStream();
+  const events: Array<{ type: string; reason?: string }> = [];
+  const collect = (async () => {
+    for await (const event of stream) {
+      events.push({
+        type: event.type,
+        ...(event.type === "done" ? { reason: event.reason } : {}),
+      });
+    }
+  })();
+  await consumeGoogleGenerateContentStream({
+    chunks: chunks(items),
+    model,
+    output,
+    stream,
+    nextToolCallId: (name) => `generated-${name}`,
+  });
+  await collect;
+  return { output, events };
+}
+
 describe("consumeGoogleGenerateContentStream", () => {
   it("projects text, thinking, tool calls, response id, and usage into one stream", async () => {
-    const output = createOutput();
-    const stream = new AssistantMessageEventStream();
-    const events: string[] = [];
-    const collect = (async () => {
-      for await (const event of stream) {
-        events.push(event.type);
-      }
-    })();
-
-    await consumeGoogleGenerateContentStream({
-      chunks: chunks([
-        {
-          responseId: "response-1",
-          candidates: [
-            {
-              content: {
-                parts: [
-                  { text: "thinking", thought: true, thoughtSignature: "dGhpbms=" },
-                  { text: "hello" },
-                  { functionCall: { name: "lookup", args: { query: "cats" } } },
-                ],
-              },
+    const { output, events } = await consumeGoogleTestChunks([
+      {
+        responseId: "response-1",
+        candidates: [
+          {
+            content: {
+              parts: [
+                { text: "thinking", thought: true, thoughtSignature: "dGhpbms=" },
+                { text: "hello" },
+                { functionCall: { name: "lookup", args: { query: "cats" } } },
+              ],
             },
-          ],
-        } as GenerateContentResponse,
-        {
-          candidates: [{ finishReason: FinishReason.STOP }],
-          usageMetadata: {
-            promptTokenCount: 10,
-            cachedContentTokenCount: 2,
-            candidatesTokenCount: 3,
-            thoughtsTokenCount: 4,
-            totalTokenCount: 17,
           },
-        } as GenerateContentResponse,
-      ]),
-      model,
-      output,
-      stream,
-      nextToolCallId: (name) => `generated-${name}`,
-    });
-    await collect;
+        ],
+      } as GenerateContentResponse,
+      {
+        candidates: [{ finishReason: FinishReason.STOP }],
+        usageMetadata: {
+          promptTokenCount: 10,
+          cachedContentTokenCount: 2,
+          candidatesTokenCount: 3,
+          thoughtsTokenCount: 4,
+          totalTokenCount: 17,
+        },
+      } as GenerateContentResponse,
+    ]);
 
-    expect(events).toEqual([
+    expect(events.map((event) => event.type)).toEqual([
       "start",
       "thinking_start",
       "thinking_delta",
@@ -171,81 +178,48 @@ describe("consumeGoogleGenerateContentStream", () => {
   });
 
   it("preserves MAX_TOKENS when the partial response contains a function call", async () => {
-    const output = createOutput();
-    const stream = new AssistantMessageEventStream();
-    const terminalReason = (async () => {
-      for await (const event of stream) {
-        if (event.type === "done") {
-          return event.reason;
-        }
-      }
-      return undefined;
-    })();
-
-    await consumeGoogleGenerateContentStream({
-      chunks: chunks([
-        {
-          candidates: [
-            {
-              content: {
-                parts: [{ functionCall: { name: "lookup", args: { query: "cats" } } }],
-              },
-              finishReason: FinishReason.MAX_TOKENS,
+    const { output, events } = await consumeGoogleTestChunks([
+      {
+        candidates: [
+          {
+            content: {
+              parts: [{ functionCall: { name: "lookup", args: { query: "cats" } } }],
             },
-          ],
-        } as unknown as GenerateContentResponse,
-      ]),
-      model,
-      output,
-      stream,
-      nextToolCallId: (name) => `generated-${name}`,
-    });
+            finishReason: FinishReason.MAX_TOKENS,
+          },
+        ],
+      } as unknown as GenerateContentResponse,
+    ]);
 
-    expect(await terminalReason).toBe("length");
+    expect(events.find((event) => event.type === "done")?.reason).toBe("length");
     expect(output.stopReason).toBe("length");
     expect(output.content).toEqual([expect.objectContaining({ type: "toolCall", name: "lookup" })]);
   });
 
   it("generates a new id when Google repeats a streamed tool-call id", async () => {
-    const output = createOutput();
-    const stream = new AssistantMessageEventStream();
-    const events: string[] = [];
-    const collect = (async () => {
-      for await (const event of stream) {
-        events.push(event.type);
-      }
-    })();
-
-    await consumeGoogleGenerateContentStream({
-      chunks: chunks([
-        {
-          candidates: [
-            {
-              content: {
-                parts: [{ functionCall: { id: "call_1", name: "lookup", args: {} } }],
-              },
+    const { output, events } = await consumeGoogleTestChunks([
+      {
+        candidates: [
+          {
+            content: {
+              parts: [{ functionCall: { id: "call_1", name: "lookup", args: {} } }],
             },
-          ],
-        } as GenerateContentResponse,
-        {
-          candidates: [
-            {
-              content: {
-                parts: [{ functionCall: { id: "call_1", name: "lookup", args: {} } }],
-              },
-              finishReason: FinishReason.STOP,
+          },
+        ],
+      } as GenerateContentResponse,
+      {
+        candidates: [
+          {
+            content: {
+              parts: [{ functionCall: { id: "call_1", name: "lookup", args: {} } }],
             },
-          ],
-        } as GenerateContentResponse,
-      ]),
-      model,
-      output,
-      stream,
-      nextToolCallId: (name) => `generated-${name}`,
-    });
-    await collect;
+            finishReason: FinishReason.STOP,
+          },
+        ],
+      } as GenerateContentResponse,
+    ]);
 
-    expect(events.at(-1)).toBe("done");
+    expect(events.at(-1)?.type).toBe("done");
     expect(output.content).toEqual([
       {
         type: "toolCall",
