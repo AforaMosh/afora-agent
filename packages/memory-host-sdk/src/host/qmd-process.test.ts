@@ -117,6 +117,28 @@ afterEach(() => {
   tempDir = "";
 });
 
+function probeTestQmdBinary(
+  overrides: Partial<Parameters<typeof checkQmdBinaryAvailability>[0]> = {},
+) {
+  return checkQmdBinaryAvailability({
+    command: "qmd",
+    env: process.env,
+    cwd: tempDir,
+    ...overrides,
+  });
+}
+
+function runTestCliCommand(overrides: Partial<Parameters<typeof runCliCommand>[0]> = {}) {
+  return runCliCommand({
+    commandSummary: "qmd query test",
+    spawnInvocation: { command: "qmd", argv: ["query", "test", "--json"] },
+    env: process.env,
+    cwd: tempDir,
+    maxOutputChars: 10_000,
+    ...overrides,
+  });
+}
+
 describe("resolveCliSpawnInvocation", () => {
   it("unwraps npm cmd shims to a direct node entrypoint", async () => {
     const binDir = path.join(tempDir, "node_modules", ".bin");
@@ -200,9 +222,7 @@ describe("checkQmdBinaryAvailability", () => {
       return child;
     });
 
-    await expect(
-      checkQmdBinaryAvailability({ command: "qmd", env: process.env, cwd: tempDir }),
-    ).resolves.toEqual({ available: true });
+    await expect(probeTestQmdBinary()).resolves.toEqual({ available: true });
     expect(spawnMock).toHaveBeenNthCalledWith(2, taskkillPath, ["/PID", String(child.pid), "/T"], {
       stdio: "ignore",
       windowsHide: true,
@@ -218,9 +238,7 @@ describe("checkQmdBinaryAvailability", () => {
     });
     spawnMock.mockImplementationOnce(() => createClosingTaskkillChild(1));
 
-    await expect(
-      checkQmdBinaryAvailability({ command: "qmd", env: process.env, cwd: tempDir }),
-    ).resolves.toEqual({ available: true });
+    await expect(probeTestQmdBinary()).resolves.toEqual({ available: true });
     await vi.waitFor(() => expect(spawnMock).toHaveBeenCalledTimes(3));
 
     expect(spawnMock).toHaveBeenNthCalledWith(2, taskkillPath, ["/PID", "12345", "/T"], {
@@ -244,9 +262,7 @@ describe("checkQmdBinaryAvailability", () => {
     });
     spawnMock.mockReturnValueOnce(taskkill);
 
-    await expect(
-      checkQmdBinaryAvailability({ command: "qmd", env: process.env, cwd: tempDir }),
-    ).resolves.toEqual({ available: true });
+    await expect(probeTestQmdBinary()).resolves.toEqual({ available: true });
 
     const heartbeat = vi.fn();
     setTimeout(heartbeat, 1);
@@ -280,9 +296,7 @@ describe("checkQmdBinaryAvailability", () => {
     });
     spawnMock.mockReturnValueOnce(taskkill);
 
-    await expect(
-      checkQmdBinaryAvailability({ command: "qmd", env: process.env, cwd: tempDir }),
-    ).resolves.toEqual({ available: true });
+    await expect(probeTestQmdBinary()).resolves.toEqual({ available: true });
 
     await vi.advanceTimersByTimeAsync(5_000);
     expect(spawnMock).toHaveBeenCalledTimes(2);
@@ -299,9 +313,7 @@ describe("checkQmdBinaryAvailability", () => {
     });
     spawnMock.mockReturnValueOnce(taskkill);
 
-    await expect(
-      checkQmdBinaryAvailability({ command: "qmd", env: process.env, cwd: tempDir }),
-    ).resolves.toEqual({ available: true });
+    await expect(probeTestQmdBinary()).resolves.toEqual({ available: true });
 
     child.closeWith(0);
     taskkill.closeWith(1);
@@ -321,9 +333,11 @@ describe("checkQmdBinaryAvailability", () => {
       return child;
     });
 
-    await expect(
-      checkQmdBinaryAvailability({ command: "qmd", env: process.env, cwd: tempDir }),
-    ).resolves.toEqual({ available: false, reason: "binary", error: "spawn qmd ENOENT" });
+    await expect(probeTestQmdBinary()).resolves.toEqual({
+      available: false,
+      reason: "binary",
+      error: "spawn qmd ENOENT",
+    });
   });
 
   it("returns an explicit workspace error when cwd is missing", async () => {
@@ -348,9 +362,11 @@ describe("checkQmdBinaryAvailability", () => {
       return child;
     });
 
-    await expect(
-      checkQmdBinaryAvailability({ command: "qmd", env: process.env, cwd: tempDir }),
-    ).resolves.toEqual({ available: false, reason: "binary", error: "spawn qmd ENOENT" });
+    await expect(probeTestQmdBinary()).resolves.toEqual({
+      available: false,
+      reason: "binary",
+      error: "spawn qmd ENOENT",
+    });
   });
 
   it("caps oversized availability probe timeouts before scheduling", async () => {
@@ -410,13 +426,7 @@ describe("runCliCommand", () => {
     });
 
     try {
-      await runCliCommand({
-        commandSummary: "qmd query test",
-        spawnInvocation: { command: "qmd", argv: ["query", "test", "--json"] },
-        env: process.env,
-        cwd: tempDir,
-        maxOutputChars: 10_000,
-      });
+      await runTestCliCommand();
       throw new Error("expected runCliCommand to reject");
     } catch (err) {
       expect(err).toBeInstanceOf(Error);
@@ -446,15 +456,7 @@ describe("runCliCommand", () => {
       return child;
     });
 
-    await expect(
-      runCliCommand({
-        commandSummary: "qmd query test",
-        spawnInvocation: { command: "qmd", argv: ["query", "test", "--json"] },
-        env: process.env,
-        cwd: tempDir,
-        maxOutputChars: 10_000,
-      }),
-    ).rejects.toMatchObject({
+    await expect(runTestCliCommand()).rejects.toMatchObject({
       code: null,
       signal: "SIGABRT",
       stdout: "[]",
@@ -471,15 +473,9 @@ describe("runCliCommand", () => {
       return child;
     });
 
-    await expect(
-      runCliCommand({
-        commandSummary: "qmd query test",
-        spawnInvocation: { command: "qmd", argv: ["query", "test", "--json"] },
-        env: process.env,
-        cwd: tempDir,
-        maxOutputChars: 4,
-      }),
-    ).rejects.toThrow(/produced too much output/);
+    await expect(runTestCliCommand({ maxOutputChars: 4 })).rejects.toThrow(
+      /produced too much output/,
+    );
   });
 
   it("counts surrogate pairs as one character when capping failed command output", async () => {
@@ -492,15 +488,7 @@ describe("runCliCommand", () => {
       return child;
     });
 
-    await expect(
-      runCliCommand({
-        commandSummary: "qmd query test",
-        spawnInvocation: { command: "qmd", argv: ["query", "test", "--json"] },
-        env: process.env,
-        cwd: tempDir,
-        maxOutputChars: 2,
-      }),
-    ).rejects.toThrow(/🙂/);
+    await expect(runTestCliCommand({ maxOutputChars: 2 })).rejects.toThrow(/🙂/);
   });
 
   it("caps oversized command timeouts before scheduling", async () => {
@@ -656,13 +644,7 @@ describe("runCliCommand", () => {
       spawnMock.mockReturnValueOnce(child);
       const streamError = new Error(`${streamName} EPIPE`);
 
-      const pending = runCliCommand({
-        commandSummary: "qmd query test",
-        spawnInvocation: { command: "qmd", argv: ["query", "test", "--json"] },
-        env: process.env,
-        cwd: tempDir,
-        maxOutputChars: 10_000,
-      });
+      const pending = runTestCliCommand();
 
       child[streamName].emit("error", streamError);
 
@@ -679,13 +661,7 @@ describe("runCliCommand", () => {
     const child = createMockChild();
     spawnMock.mockReturnValueOnce(child);
 
-    const pending = runCliCommand({
-      commandSummary: "qmd query test",
-      spawnInvocation: { command: "qmd", argv: ["query", "test", "--json"] },
-      env: process.env,
-      cwd: tempDir,
-      maxOutputChars: 10_000,
-    });
+    const pending = runTestCliCommand();
 
     child.stdout.emit("error", new Error("stdout EPIPE"));
 

@@ -8,9 +8,8 @@ import { ensureMemoryIndexSchema } from "./memory-schema.js";
 
 describe("memory index schema", () => {
   it("migrates shipped generic tables into canonical memory tables", () => {
-    const db = new DatabaseSync(":memory:");
-    try {
-      db.exec(`
+    using db = new DatabaseSync(":memory:");
+    db.exec(`
         CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
         CREATE TABLE files (
           path TEXT PRIMARY KEY,
@@ -59,59 +58,55 @@ describe("memory index schema", () => {
         );
       `);
 
-      const result = ensureMemoryIndexSchema({
-        db,
-        cacheEnabled: true,
-        ftsEnabled: true,
-      });
+    const result = ensureMemoryIndexSchema({
+      db,
+      cacheEnabled: true,
+      ftsEnabled: true,
+    });
 
-      expect(result.ftsAvailable).toBe(true);
-      expect(db.prepare("SELECT * FROM memory_index_sources").all()).toEqual([
-        {
-          id: 1,
-          path: "MEMORY.md",
-          source: "memory",
-          hash: "",
-          mtime: 10.75,
-          size: 20,
-        },
-      ]);
-      expect(db.prepare("SELECT id, text FROM memory_index_chunks").all()).toEqual([
-        { id: "chunk-1", text: "remember this" },
-      ]);
-      expect(db.prepare("SELECT id, text FROM memory_index_chunks_fts").all()).toEqual([
-        { id: "chunk-1", text: "remember this" },
-      ]);
-      expect(db.prepare("SELECT provider, hash FROM memory_embedding_cache").all()).toEqual([
-        { provider: "openai", hash: "chunk-hash" },
-      ]);
-      expect(
-        db
-          .prepare(
-            `SELECT name FROM pragma_table_list
+    expect(result.ftsAvailable).toBe(true);
+    expect(db.prepare("SELECT * FROM memory_index_sources").all()).toEqual([
+      {
+        id: 1,
+        path: "MEMORY.md",
+        source: "memory",
+        hash: "",
+        mtime: 10.75,
+        size: 20,
+      },
+    ]);
+    expect(db.prepare("SELECT id, text FROM memory_index_chunks").all()).toEqual([
+      { id: "chunk-1", text: "remember this" },
+    ]);
+    expect(db.prepare("SELECT id, text FROM memory_index_chunks_fts").all()).toEqual([
+      { id: "chunk-1", text: "remember this" },
+    ]);
+    expect(db.prepare("SELECT provider, hash FROM memory_embedding_cache").all()).toEqual([
+      { provider: "openai", hash: "chunk-hash" },
+    ]);
+    expect(
+      db
+        .prepare(
+          `SELECT name FROM pragma_table_list
              WHERE schema = 'main'
                AND type = 'table'
                AND name LIKE 'memory_%'
                AND strict <> 1`,
-          )
-          .all(),
-      ).toEqual([]);
-      expect(
-        db
-          .prepare(
-            "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('meta', 'files', 'chunks', 'embedding_cache', 'chunks_fts')",
-          )
-          .all(),
-      ).toEqual([]);
-    } finally {
-      db.close();
-    }
+        )
+        .all(),
+    ).toEqual([]);
+    expect(
+      db
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('meta', 'files', 'chunks', 'embedding_cache', 'chunks_fts')",
+        )
+        .all(),
+    ).toEqual([]);
   });
 
   it("upgrades already-canonical memory tables to STRICT and preserves precise mtimes", () => {
-    const db = new DatabaseSync(":memory:");
-    try {
-      db.exec(`
+    using db = new DatabaseSync(":memory:");
+    db.exec(`
         CREATE TABLE memory_index_meta (
           key TEXT PRIMARY KEY,
           value TEXT NOT NULL
@@ -151,70 +146,60 @@ describe("memory index schema", () => {
         INSERT INTO memory_index_state VALUES (1, 3);
       `);
 
-      ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: false });
+    ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: false });
 
-      expect(
-        db
-          .prepare(
-            `SELECT name FROM pragma_table_list
+    expect(
+      db
+        .prepare(
+          `SELECT name FROM pragma_table_list
              WHERE schema = 'main'
                AND type = 'table'
                AND name LIKE 'memory_index_%'
                AND strict <> 1`,
-          )
-          .all(),
-      ).toEqual([]);
-      expect(
-        db.prepare("SELECT mtime, typeof(mtime) AS storage_type FROM memory_index_sources").get(),
-      ).toEqual({ mtime: 10.75, storage_type: "real" });
-      expect(
-        db
-          .prepare(
-            "SELECT type FROM pragma_table_info('memory_index_sources') WHERE name = 'mtime'",
-          )
-          .get(),
-      ).toEqual({ type: "REAL" });
-      expect(db.prepare("SELECT id, text FROM memory_index_chunks").get()).toEqual({
-        id: "chunk-1",
-        text: "body",
-      });
-    } finally {
-      db.close();
-    }
+        )
+        .all(),
+    ).toEqual([]);
+    expect(
+      db.prepare("SELECT mtime, typeof(mtime) AS storage_type FROM memory_index_sources").get(),
+    ).toEqual({ mtime: 10.75, storage_type: "real" });
+    expect(
+      db
+        .prepare("SELECT type FROM pragma_table_info('memory_index_sources') WHERE name = 'mtime'")
+        .get(),
+    ).toEqual({ type: "REAL" });
+    expect(db.prepare("SELECT id, text FROM memory_index_chunks").get()).toEqual({
+      id: "chunk-1",
+      text: "body",
+    });
   });
 
   it("stores source records with the same path in separate sources", () => {
-    const db = new DatabaseSync(":memory:");
-    try {
-      ensureMemoryIndexSchema({
-        db,
-        cacheEnabled: false,
-        ftsEnabled: false,
-      });
+    using db = new DatabaseSync(":memory:");
+    ensureMemoryIndexSchema({
+      db,
+      cacheEnabled: false,
+      ftsEnabled: false,
+    });
 
-      db.prepare(
-        "INSERT INTO memory_index_sources (path, source, hash, mtime, size) VALUES (?, ?, ?, ?, ?)",
-      ).run("shared.md", "memory", "memory-hash", 10, 20);
-      db.prepare(
-        "INSERT INTO memory_index_sources (path, source, hash, mtime, size) VALUES (?, ?, ?, ?, ?)",
-      ).run("shared.md", "sessions", "session-hash", 30, 40);
+    db.prepare(
+      "INSERT INTO memory_index_sources (path, source, hash, mtime, size) VALUES (?, ?, ?, ?, ?)",
+    ).run("shared.md", "memory", "memory-hash", 10, 20);
+    db.prepare(
+      "INSERT INTO memory_index_sources (path, source, hash, mtime, size) VALUES (?, ?, ?, ?, ?)",
+    ).run("shared.md", "sessions", "session-hash", 30, 40);
 
-      expect(
-        db.prepare("SELECT path, source, hash FROM memory_index_sources ORDER BY source").all(),
-      ).toEqual([
-        { path: "shared.md", source: "memory", hash: "memory-hash" },
-        { path: "shared.md", source: "sessions", hash: "session-hash" },
-      ]);
-    } finally {
-      db.close();
-    }
+    expect(
+      db.prepare("SELECT path, source, hash FROM memory_index_sources ORDER BY source").all(),
+    ).toEqual([
+      { path: "shared.md", source: "memory", hash: "memory-hash" },
+      { path: "shared.md", source: "sessions", hash: "session-hash" },
+    ]);
   });
 
   it("rebuilds body FTS after indexing while hybrid search is disabled", () => {
-    const db = new DatabaseSync(":memory:");
-    try {
-      ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: true });
-      db.exec(`
+    using db = new DatabaseSync(":memory:");
+    ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: true });
+    db.exec(`
         INSERT INTO memory_index_chunks VALUES (
           'chunk-before', 'before.md', 'memory', 1, 1, 'before-hash', 'fts-only',
           'before body', '[]', 1
@@ -224,38 +209,34 @@ describe("memory index schema", () => {
         VALUES ('before body', 'chunk-before', 'before.md', 'memory', 'fts-only', 1, 1);
       `);
 
-      ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: false });
-      expect(
-        db
-          .prepare(
-            "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'memory_index_chunks_fts'",
-          )
-          .get(),
-      ).toBeUndefined();
-      db.exec(`
+    ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: false });
+    expect(
+      db
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'memory_index_chunks_fts'",
+        )
+        .get(),
+    ).toBeUndefined();
+    db.exec(`
         INSERT INTO memory_index_chunks VALUES (
           'chunk-disabled', 'disabled.md', 'memory', 1, 1, 'disabled-hash', 'fts-only',
           'disabled body', '[]', 2
         );
       `);
 
-      expect(
-        ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: true }).ftsAvailable,
-      ).toBe(true);
-      expect(db.prepare("SELECT id, text FROM memory_index_chunks_fts ORDER BY id").all()).toEqual([
-        { id: "chunk-before", text: "before body" },
-        { id: "chunk-disabled", text: "disabled body" },
-      ]);
-    } finally {
-      db.close();
-    }
+    expect(
+      ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: true }).ftsAvailable,
+    ).toBe(true);
+    expect(db.prepare("SELECT id, text FROM memory_index_chunks_fts ORDER BY id").all()).toEqual([
+      { id: "chunk-before", text: "before body" },
+      { id: "chunk-disabled", text: "disabled body" },
+    ]);
   });
 
   it("backfills and maintains one path FTS row per source without changing body FTS", () => {
-    const db = new DatabaseSync(":memory:");
-    try {
-      ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: false });
-      db.exec(`
+    using db = new DatabaseSync(":memory:");
+    ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: false });
+    db.exec(`
         INSERT INTO memory_index_sources
           (path, source, hash, mtime, size)
         VALUES ('shared-notes.md', 'memory', 'source-hash', 1, 2);
@@ -266,78 +247,75 @@ describe("memory index schema", () => {
           ('chunk-b', 'shared-notes.md', 'memory', 2, 2, 'b', 'model', 'beta body', '[]', 1);
       `);
 
-      const result = ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: true });
+    const result = ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: true });
 
-      expect(result.ftsAvailable).toBe(true);
-      expect(db.prepare("SELECT id, text FROM memory_index_chunks_fts ORDER BY id").all()).toEqual([
-        { id: "chunk-a", text: "alpha body" },
-        { id: "chunk-b", text: "beta body" },
-      ]);
-      expect(
-        db.prepare("SELECT path, source FROM memory_index_paths_fts ORDER BY source, path").all(),
-      ).toEqual([{ path: "shared-notes.md", source: "memory" }]);
-      expect(
-        db
-          .prepare(
-            "SELECT sql FROM sqlite_master WHERE type = 'trigger' AND name = 'memory_index_paths_fts_after_delete'",
-          )
-          .get(),
-      ).toMatchObject({
-        sql: expect.stringContaining("WHERE rowid = OLD.id"),
-      });
-      expect(
-        db
-          .prepare("EXPLAIN QUERY PLAN DELETE FROM memory_index_paths_fts WHERE rowid = ?")
-          .all(1)
-          .map((row) => (row as { detail: string }).detail)
-          .join("\n"),
-      ).toMatch(/VIRTUAL TABLE INDEX 0:=/);
-      ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: true });
-      expect(db.prepare("SELECT COUNT(*) AS count FROM memory_index_paths_fts").get()).toEqual({
-        count: 1,
-      });
-      expect(
-        db
-          .prepare("SELECT path FROM memory_index_paths_fts WHERE memory_index_paths_fts MATCH ?")
-          .all('"shared"'),
-      ).toEqual([{ path: "shared-notes.md" }]);
+    expect(result.ftsAvailable).toBe(true);
+    expect(db.prepare("SELECT id, text FROM memory_index_chunks_fts ORDER BY id").all()).toEqual([
+      { id: "chunk-a", text: "alpha body" },
+      { id: "chunk-b", text: "beta body" },
+    ]);
+    expect(
+      db.prepare("SELECT path, source FROM memory_index_paths_fts ORDER BY source, path").all(),
+    ).toEqual([{ path: "shared-notes.md", source: "memory" }]);
+    expect(
+      db
+        .prepare(
+          "SELECT sql FROM sqlite_master WHERE type = 'trigger' AND name = 'memory_index_paths_fts_after_delete'",
+        )
+        .get(),
+    ).toMatchObject({
+      sql: expect.stringContaining("WHERE rowid = OLD.id"),
+    });
+    expect(
+      db
+        .prepare("EXPLAIN QUERY PLAN DELETE FROM memory_index_paths_fts WHERE rowid = ?")
+        .all(1)
+        .map((row) => (row as { detail: string }).detail)
+        .join("\n"),
+    ).toMatch(/VIRTUAL TABLE INDEX 0:=/);
+    ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: true });
+    expect(db.prepare("SELECT COUNT(*) AS count FROM memory_index_paths_fts").get()).toEqual({
+      count: 1,
+    });
+    expect(
+      db
+        .prepare("SELECT path FROM memory_index_paths_fts WHERE memory_index_paths_fts MATCH ?")
+        .all('"shared"'),
+    ).toEqual([{ path: "shared-notes.md" }]);
 
-      db.prepare(
-        "INSERT INTO memory_index_sources (path, source, hash, mtime, size) VALUES (?, ?, ?, ?, ?)",
-      ).run("shared-notes.md", "sessions", "session-hash", 3, 4);
-      expect(
-        db.prepare("SELECT path, source FROM memory_index_paths_fts ORDER BY source").all(),
-      ).toEqual([
-        { path: "shared-notes.md", source: "memory" },
-        { path: "shared-notes.md", source: "sessions" },
-      ]);
+    db.prepare(
+      "INSERT INTO memory_index_sources (path, source, hash, mtime, size) VALUES (?, ?, ?, ?, ?)",
+    ).run("shared-notes.md", "sessions", "session-hash", 3, 4);
+    expect(
+      db.prepare("SELECT path, source FROM memory_index_paths_fts ORDER BY source").all(),
+    ).toEqual([
+      { path: "shared-notes.md", source: "memory" },
+      { path: "shared-notes.md", source: "sessions" },
+    ]);
 
-      db.prepare(
-        "UPDATE memory_index_sources SET id = id + 100, path = ?, source = ? WHERE path = ? AND source = ?",
-      ).run("renamed-notes.md", "memory", "shared-notes.md", "sessions");
-      expect(
-        db.prepare("SELECT path, source FROM memory_index_paths_fts ORDER BY path").all(),
-      ).toEqual([
-        { path: "renamed-notes.md", source: "memory" },
-        { path: "shared-notes.md", source: "memory" },
-      ]);
-      expect(
-        db.prepare("SELECT rowid, path FROM memory_index_paths_fts ORDER BY path").all(),
-      ).toEqual([
-        { rowid: 102, path: "renamed-notes.md" },
-        { rowid: 1, path: "shared-notes.md" },
-      ]);
+    db.prepare(
+      "UPDATE memory_index_sources SET id = id + 100, path = ?, source = ? WHERE path = ? AND source = ?",
+    ).run("renamed-notes.md", "memory", "shared-notes.md", "sessions");
+    expect(
+      db.prepare("SELECT path, source FROM memory_index_paths_fts ORDER BY path").all(),
+    ).toEqual([
+      { path: "renamed-notes.md", source: "memory" },
+      { path: "shared-notes.md", source: "memory" },
+    ]);
+    expect(
+      db.prepare("SELECT rowid, path FROM memory_index_paths_fts ORDER BY path").all(),
+    ).toEqual([
+      { rowid: 102, path: "renamed-notes.md" },
+      { rowid: 1, path: "shared-notes.md" },
+    ]);
 
-      db.prepare("DELETE FROM memory_index_sources WHERE path = ? AND source = ?").run(
-        "renamed-notes.md",
-        "memory",
-      );
-      expect(db.prepare("SELECT path, source FROM memory_index_paths_fts").all()).toEqual([
-        { path: "shared-notes.md", source: "memory" },
-      ]);
-    } finally {
-      db.close();
-    }
+    db.prepare("DELETE FROM memory_index_sources WHERE path = ? AND source = ?").run(
+      "renamed-notes.md",
+      "memory",
+    );
+    expect(db.prepare("SELECT path, source FROM memory_index_paths_fts").all()).toEqual([
+      { path: "shared-notes.md", source: "memory" },
+    ]);
   });
 
   it("keeps source and path FTS identities stable across VACUUM", () => {
@@ -386,80 +364,71 @@ describe("memory index schema", () => {
   });
 
   it("keeps a large stale-source delete batch aligned with path FTS", () => {
-    const db = new DatabaseSync(":memory:");
-    try {
-      const result = ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: true });
-      if (!result.ftsAvailable) {
-        return;
-      }
-      const insert = db.prepare(
-        "INSERT INTO memory_index_sources (path, source, hash, mtime, size) VALUES (?, 'memory', ?, 0, 0)",
-      );
-      db.exec("BEGIN IMMEDIATE");
-      for (let index = 0; index < 10_000; index += 1) {
-        const key = index.toString().padStart(5, "0");
-        insert.run(`memory/${key}.md`, key);
-      }
-      db.exec("COMMIT");
+    using db = new DatabaseSync(":memory:");
+    const result = ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: true });
+    if (!result.ftsAvailable) {
+      return;
+    }
+    const insert = db.prepare(
+      "INSERT INTO memory_index_sources (path, source, hash, mtime, size) VALUES (?, 'memory', ?, 0, 0)",
+    );
+    db.exec("BEGIN IMMEDIATE");
+    for (let index = 0; index < 10_000; index += 1) {
+      const key = index.toString().padStart(5, "0");
+      insert.run(`memory/${key}.md`, key);
+    }
+    db.exec("COMMIT");
 
-      const deleteSource = db.prepare(
-        "DELETE FROM memory_index_sources WHERE path = ? AND source = 'memory'",
-      );
-      db.exec("BEGIN IMMEDIATE");
-      for (let index = 0; index < 1_000; index += 1) {
-        deleteSource.run(`memory/${index.toString().padStart(5, "0")}.md`);
-      }
-      db.exec("COMMIT");
+    const deleteSource = db.prepare(
+      "DELETE FROM memory_index_sources WHERE path = ? AND source = 'memory'",
+    );
+    db.exec("BEGIN IMMEDIATE");
+    for (let index = 0; index < 1_000; index += 1) {
+      deleteSource.run(`memory/${index.toString().padStart(5, "0")}.md`);
+    }
+    db.exec("COMMIT");
 
-      expect(db.prepare("SELECT COUNT(*) AS count FROM memory_index_sources").get()).toEqual({
-        count: 9_000,
-      });
-      expect(db.prepare("SELECT COUNT(*) AS count FROM memory_index_paths_fts").get()).toEqual({
-        count: 9_000,
-      });
-      expect(
-        db
-          .prepare(
-            `SELECT COUNT(*) AS count
+    expect(db.prepare("SELECT COUNT(*) AS count FROM memory_index_sources").get()).toEqual({
+      count: 9_000,
+    });
+    expect(db.prepare("SELECT COUNT(*) AS count FROM memory_index_paths_fts").get()).toEqual({
+      count: 9_000,
+    });
+    expect(
+      db
+        .prepare(
+          `SELECT COUNT(*) AS count
              FROM memory_index_sources AS sources
              LEFT JOIN memory_index_paths_fts AS paths ON paths.rowid = sources.id
              WHERE paths.rowid IS NULL OR paths.path != sources.path OR paths.source != sources.source`,
-          )
-          .get(),
-      ).toEqual({ count: 0 });
-    } finally {
-      db.close();
-    }
+        )
+        .get(),
+    ).toEqual({ count: 0 });
   });
 
   it("honors shipped custom cache and FTS table names", () => {
-    const db = new DatabaseSync(":memory:");
-    try {
-      const result = ensureMemoryIndexSchema({
-        db,
-        embeddingCacheTable: "embedding_cache",
-        cacheEnabled: true,
-        ftsTable: "chunks_fts",
-        ftsEnabled: true,
-      });
+    using db = new DatabaseSync(":memory:");
+    const result = ensureMemoryIndexSchema({
+      db,
+      embeddingCacheTable: "embedding_cache",
+      cacheEnabled: true,
+      ftsTable: "chunks_fts",
+      ftsEnabled: true,
+    });
 
-      expect(result.ftsAvailable).toBe(true);
-      expect(
-        db
-          .prepare(
-            "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('embedding_cache', 'chunks_fts', 'memory_embedding_cache', 'memory_index_chunks_fts') ORDER BY name",
-          )
-          .all(),
-      ).toEqual([{ name: "chunks_fts" }, { name: "embedding_cache" }]);
-    } finally {
-      db.close();
-    }
+    expect(result.ftsAvailable).toBe(true);
+    expect(
+      db
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('embedding_cache', 'chunks_fts', 'memory_embedding_cache', 'memory_index_chunks_fts') ORDER BY name",
+        )
+        .all(),
+    ).toEqual([{ name: "chunks_fts" }, { name: "embedding_cache" }]);
   });
 
   it("upgrades path-keyed source tables to stable identities", () => {
-    const db = new DatabaseSync(":memory:");
-    try {
-      db.exec(`
+    using db = new DatabaseSync(":memory:");
+    db.exec(`
         CREATE TABLE memory_index_sources (
           path TEXT PRIMARY KEY,
           source TEXT NOT NULL DEFAULT 'memory',
@@ -470,38 +439,34 @@ describe("memory index schema", () => {
         INSERT INTO memory_index_sources VALUES ('shared.md', 'memory', 'memory-hash', 10.75, 20);
       `);
 
-      ensureMemoryIndexSchema({
-        db,
-        cacheEnabled: false,
-        ftsEnabled: false,
-      });
+    ensureMemoryIndexSchema({
+      db,
+      cacheEnabled: false,
+      ftsEnabled: false,
+    });
 
-      db.prepare(
-        "INSERT INTO memory_index_sources (path, source, hash, mtime, size) VALUES (?, ?, ?, ?, ?)",
-      ).run("shared.md", "sessions", "session-hash", 30, 40);
+    db.prepare(
+      "INSERT INTO memory_index_sources (path, source, hash, mtime, size) VALUES (?, ?, ?, ?, ?)",
+    ).run("shared.md", "sessions", "session-hash", 30, 40);
 
-      expect(
-        db
-          .prepare("SELECT id, path, source, hash, mtime FROM memory_index_sources ORDER BY source")
-          .all(),
-      ).toEqual([
-        { id: 1, path: "shared.md", source: "memory", hash: "memory-hash", mtime: 10.75 },
-        { id: 2, path: "shared.md", source: "sessions", hash: "session-hash", mtime: 30 },
-      ]);
-      ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: false });
-      expect(db.prepare("SELECT id FROM memory_index_sources ORDER BY id").all()).toEqual([
-        { id: 1 },
-        { id: 2 },
-      ]);
-    } finally {
-      db.close();
-    }
+    expect(
+      db
+        .prepare("SELECT id, path, source, hash, mtime FROM memory_index_sources ORDER BY source")
+        .all(),
+    ).toEqual([
+      { id: 1, path: "shared.md", source: "memory", hash: "memory-hash", mtime: 10.75 },
+      { id: 2, path: "shared.md", source: "sessions", hash: "session-hash", mtime: 30 },
+    ]);
+    ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: false });
+    expect(db.prepare("SELECT id FROM memory_index_sources ORDER BY id").all()).toEqual([
+      { id: 1 },
+      { id: 2 },
+    ]);
   });
 
   it("migrates composite source keys and rebuilds path FTS rowids", () => {
-    const db = new DatabaseSync(":memory:");
-    try {
-      db.exec(`
+    using db = new DatabaseSync(":memory:");
+    db.exec(`
         CREATE TABLE memory_index_sources (
           path TEXT NOT NULL,
           source TEXT NOT NULL DEFAULT 'memory',
@@ -525,39 +490,36 @@ describe("memory index schema", () => {
         END;
       `);
 
-      const result = ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: true });
-      if (!result.ftsAvailable) {
-        throw new Error(result.ftsError ?? "FTS unavailable");
-      }
-
-      expect(
-        db.prepare("SELECT id, path, source FROM memory_index_sources ORDER BY id").all(),
-      ).toEqual([
-        { id: 41, path: "shared.md", source: "memory" },
-        { id: 84, path: "shared.md", source: "sessions" },
-      ]);
-      expect(
-        db.prepare("SELECT rowid, path, source FROM memory_index_paths_fts ORDER BY rowid").all(),
-      ).toEqual([
-        { rowid: 41, path: "shared.md", source: "memory" },
-        { rowid: 84, path: "shared.md", source: "sessions" },
-      ]);
-      expect(() =>
-        db
-          .prepare(
-            "INSERT INTO memory_index_sources (path, source, hash, mtime, size) VALUES (?, ?, ?, ?, ?)",
-          )
-          .run("shared.md", "memory", "duplicate", 1, 1),
-      ).toThrow();
-
-      ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: true });
-      expect(db.prepare("SELECT id FROM memory_index_sources ORDER BY id").all()).toEqual([
-        { id: 41 },
-        { id: 84 },
-      ]);
-    } finally {
-      db.close();
+    const result = ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: true });
+    if (!result.ftsAvailable) {
+      throw new Error(result.ftsError ?? "FTS unavailable");
     }
+
+    expect(
+      db.prepare("SELECT id, path, source FROM memory_index_sources ORDER BY id").all(),
+    ).toEqual([
+      { id: 41, path: "shared.md", source: "memory" },
+      { id: 84, path: "shared.md", source: "sessions" },
+    ]);
+    expect(
+      db.prepare("SELECT rowid, path, source FROM memory_index_paths_fts ORDER BY rowid").all(),
+    ).toEqual([
+      { rowid: 41, path: "shared.md", source: "memory" },
+      { rowid: 84, path: "shared.md", source: "sessions" },
+    ]);
+    expect(() =>
+      db
+        .prepare(
+          "INSERT INTO memory_index_sources (path, source, hash, mtime, size) VALUES (?, ?, ?, ?, ?)",
+        )
+        .run("shared.md", "memory", "duplicate", 1, 1),
+    ).toThrow();
+
+    ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: true });
+    expect(db.prepare("SELECT id FROM memory_index_sources ORDER BY id").all()).toEqual([
+      { id: 41 },
+      { id: 84 },
+    ]);
   });
 
   it.each([
@@ -695,25 +657,20 @@ describe("memory index schema", () => {
       INSERT INTO memory_index_sources VALUES (7, 'kept.md', 'memory', 'hash', 1, 2);`,
     ],
   ])("rejects %s instead of claiming canonical source identity", (_name, schemaSql) => {
-    const db = new DatabaseSync(":memory:");
-    try {
-      db.exec(schemaSql);
+    using db = new DatabaseSync(":memory:");
+    db.exec(schemaSql);
 
-      expect(() => ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: false })).toThrow(
-        "canonical memory source identity schema is invalid",
-      );
-      expect(db.prepare("SELECT path, hash FROM memory_index_sources").all()).toEqual([
-        { path: "kept.md", hash: "hash" },
-      ]);
-    } finally {
-      db.close();
-    }
+    expect(() => ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: false })).toThrow(
+      "canonical memory source identity schema is invalid",
+    );
+    expect(db.prepare("SELECT path, hash FROM memory_index_sources").all()).toEqual([
+      { path: "kept.md", hash: "hash" },
+    ]);
   });
 
   it("rolls back a failed source-identity migration", () => {
-    const db = new DatabaseSync(":memory:");
-    try {
-      db.exec(`
+    using db = new DatabaseSync(":memory:");
+    db.exec(`
         CREATE TABLE memory_index_sources (
           path TEXT NOT NULL,
           source TEXT NOT NULL DEFAULT 'memory',
@@ -758,49 +715,44 @@ describe("memory index schema", () => {
         AFTER DELETE ON memory_index_sources BEGIN SELECT 1; END;
       `);
 
-      expect(() =>
-        ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: false }),
-      ).toThrow();
-      expect(db.prepare("SELECT path, source, hash FROM memory_index_sources").all()).toEqual([
-        { path: "kept.md", source: "memory", hash: "hash" },
-      ]);
-      expect(db.prepare("SELECT wrong_column FROM memory_index_paths_fts").all()).toEqual([
-        { wrong_column: "keep-derived-row" },
-      ]);
-      expect(db.prepare("SELECT id, text FROM memory_index_chunks").all()).toEqual([
-        { id: "sentinel", text: "body" },
-      ]);
-      expect(
-        db
-          .prepare(
-            "SELECT name FROM sqlite_master WHERE type = 'trigger' AND name LIKE 'memory_index_sources_revision_after_%' ORDER BY name",
-          )
-          .all(),
-      ).toEqual([
-        { name: "memory_index_sources_revision_after_delete" },
-        { name: "memory_index_sources_revision_after_insert" },
-        { name: "memory_index_sources_revision_after_update" },
-      ]);
-      db.prepare(
-        "INSERT INTO memory_index_sources (path, source, hash, mtime, size) VALUES (?, ?, ?, ?, ?)",
-      ).run("temporary.md", "memory", "temporary", 1, 1);
-      db.prepare("UPDATE memory_index_sources SET hash = ? WHERE path = ?").run(
-        "updated",
-        "temporary.md",
-      );
-      db.prepare("DELETE FROM memory_index_sources WHERE path = ?").run("temporary.md");
-      expect(db.prepare("SELECT revision FROM memory_index_state WHERE id = 1").get()).toEqual({
-        revision: 10,
-      });
-      expect(
-        db
-          .prepare(
-            "SELECT name FROM sqlite_master WHERE type = 'trigger' AND name = 'memory_index_paths_fts_after_delete'",
-          )
-          .get(),
-      ).toEqual({ name: "memory_index_paths_fts_after_delete" });
-    } finally {
-      db.close();
-    }
+    expect(() => ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: false })).toThrow();
+    expect(db.prepare("SELECT path, source, hash FROM memory_index_sources").all()).toEqual([
+      { path: "kept.md", source: "memory", hash: "hash" },
+    ]);
+    expect(db.prepare("SELECT wrong_column FROM memory_index_paths_fts").all()).toEqual([
+      { wrong_column: "keep-derived-row" },
+    ]);
+    expect(db.prepare("SELECT id, text FROM memory_index_chunks").all()).toEqual([
+      { id: "sentinel", text: "body" },
+    ]);
+    expect(
+      db
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type = 'trigger' AND name LIKE 'memory_index_sources_revision_after_%' ORDER BY name",
+        )
+        .all(),
+    ).toEqual([
+      { name: "memory_index_sources_revision_after_delete" },
+      { name: "memory_index_sources_revision_after_insert" },
+      { name: "memory_index_sources_revision_after_update" },
+    ]);
+    db.prepare(
+      "INSERT INTO memory_index_sources (path, source, hash, mtime, size) VALUES (?, ?, ?, ?, ?)",
+    ).run("temporary.md", "memory", "temporary", 1, 1);
+    db.prepare("UPDATE memory_index_sources SET hash = ? WHERE path = ?").run(
+      "updated",
+      "temporary.md",
+    );
+    db.prepare("DELETE FROM memory_index_sources WHERE path = ?").run("temporary.md");
+    expect(db.prepare("SELECT revision FROM memory_index_state WHERE id = 1").get()).toEqual({
+      revision: 10,
+    });
+    expect(
+      db
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type = 'trigger' AND name = 'memory_index_paths_fts_after_delete'",
+        )
+        .get(),
+    ).toEqual({ name: "memory_index_paths_fts_after_delete" });
   });
 });

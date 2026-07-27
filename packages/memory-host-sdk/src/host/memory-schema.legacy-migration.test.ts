@@ -8,9 +8,8 @@ import { ensureMemoryIndexSchema } from "./memory-schema.js";
 
 describe("memory index same-file legacy migration", () => {
   it("leaves unrelated generic tables untouched", () => {
-    const db = new DatabaseSync(":memory:");
-    try {
-      db.exec(`
+    using db = new DatabaseSync(":memory:");
+    db.exec(`
         CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL, owner TEXT);
         CREATE TABLE files (
           path TEXT PRIMARY KEY,
@@ -33,22 +32,19 @@ describe("memory index same-file legacy migration", () => {
         );
       `);
 
-      ensureMemoryIndexSchema({
-        db,
-        cacheEnabled: false,
-        ftsEnabled: false,
-      });
+    ensureMemoryIndexSchema({
+      db,
+      cacheEnabled: false,
+      ftsEnabled: false,
+    });
 
-      expect(
-        db
-          .prepare(
-            "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('meta', 'files', 'chunks') ORDER BY name",
-          )
-          .all(),
-      ).toEqual([{ name: "chunks" }, { name: "files" }, { name: "meta" }]);
-    } finally {
-      db.close();
-    }
+    expect(
+      db
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('meta', 'files', 'chunks') ORDER BY name",
+        )
+        .all(),
+    ).toEqual([{ name: "chunks" }, { name: "files" }, { name: "meta" }]);
   });
 
   it("recovers a partially migrated WAL index idempotently when legacy rows diverge", () => {
@@ -197,10 +193,9 @@ describe("memory index same-file legacy migration", () => {
   });
 
   it("rebuilds canonical FTS, rejects legacy orphans, and adopts canonical orphans", () => {
-    const db = new DatabaseSync(":memory:");
-    try {
-      ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: true });
-      db.exec(`
+    using db = new DatabaseSync(":memory:");
+    ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: true });
+    db.exec(`
         INSERT INTO memory_index_sources (path, source, hash, mtime, size)
           VALUES ('canonical.md', 'memory', 'canonical-hash', 200, 20);
         INSERT INTO memory_index_chunks VALUES (
@@ -250,62 +245,58 @@ describe("memory index same-file legacy migration", () => {
         );
       `);
 
-      ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: true });
+    ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: true });
 
-      expect(db.prepare("SELECT id FROM memory_index_chunks ORDER BY id").all()).toEqual([
-        { id: "chunk-canonical" },
-        { id: "chunk-canonical-ownerless" },
-        { id: "chunk-legacy" },
-      ]);
-      expect(db.prepare("SELECT id FROM memory_index_chunks_fts ORDER BY id").all()).toEqual([
-        { id: "chunk-canonical" },
-        { id: "chunk-canonical-ownerless" },
-        { id: "chunk-legacy" },
-      ]);
-      expect(
-        db
-          .prepare(
-            "SELECT id FROM memory_index_chunks_fts WHERE memory_index_chunks_fts MATCH 'saffronquasar'",
-          )
-          .all(),
-      ).toEqual([{ id: "chunk-legacy" }]);
-      expect(
-        db
-          .prepare(
-            "SELECT id FROM memory_index_chunks_fts WHERE memory_index_chunks_fts MATCH 'starlight'",
-          )
-          .all(),
-      ).toEqual([{ id: "chunk-canonical-ownerless" }]);
-      expect(
-        db
-          .prepare(
-            "SELECT id FROM memory_index_chunks_fts WHERE memory_index_chunks_fts MATCH 'ambercomet'",
-          )
-          .all(),
-      ).toEqual([]);
-      // Schema migration cannot write the runtime-owned sqlite-vec table. The
-      // dirty source guarantees normal sync republishes every derived index.
-      expect(
-        db.prepare("SELECT hash FROM memory_index_sources WHERE path = 'legacy.md'").get(),
-      ).toEqual({ hash: "" });
-      expect(
-        db.prepare("SELECT hash FROM memory_index_sources WHERE path = 'deleted.md'").get(),
-      ).toEqual({ hash: "" });
+    expect(db.prepare("SELECT id FROM memory_index_chunks ORDER BY id").all()).toEqual([
+      { id: "chunk-canonical" },
+      { id: "chunk-canonical-ownerless" },
+      { id: "chunk-legacy" },
+    ]);
+    expect(db.prepare("SELECT id FROM memory_index_chunks_fts ORDER BY id").all()).toEqual([
+      { id: "chunk-canonical" },
+      { id: "chunk-canonical-ownerless" },
+      { id: "chunk-legacy" },
+    ]);
+    expect(
+      db
+        .prepare(
+          "SELECT id FROM memory_index_chunks_fts WHERE memory_index_chunks_fts MATCH 'saffronquasar'",
+        )
+        .all(),
+    ).toEqual([{ id: "chunk-legacy" }]);
+    expect(
+      db
+        .prepare(
+          "SELECT id FROM memory_index_chunks_fts WHERE memory_index_chunks_fts MATCH 'starlight'",
+        )
+        .all(),
+    ).toEqual([{ id: "chunk-canonical-ownerless" }]);
+    expect(
+      db
+        .prepare(
+          "SELECT id FROM memory_index_chunks_fts WHERE memory_index_chunks_fts MATCH 'ambercomet'",
+        )
+        .all(),
+    ).toEqual([]);
+    // Schema migration cannot write the runtime-owned sqlite-vec table. The
+    // dirty source guarantees normal sync republishes every derived index.
+    expect(
+      db.prepare("SELECT hash FROM memory_index_sources WHERE path = 'legacy.md'").get(),
+    ).toEqual({ hash: "" });
+    expect(
+      db.prepare("SELECT hash FROM memory_index_sources WHERE path = 'deleted.md'").get(),
+    ).toEqual({ hash: "" });
 
-      ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: true });
-      expect(db.prepare("SELECT COUNT(*) AS count FROM memory_index_chunks_fts").get()).toEqual({
-        count: 3,
-      });
-    } finally {
-      db.close();
-    }
+    ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: true });
+    expect(db.prepare("SELECT COUNT(*) AS count FROM memory_index_chunks_fts").get()).toEqual({
+      count: 3,
+    });
   });
 
   it("keeps canonical chunk sets coherent and invalidates ambiguous partial sources", () => {
-    const db = new DatabaseSync(":memory:");
-    try {
-      ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: false });
-      db.exec(`
+    using db = new DatabaseSync(":memory:");
+    ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: false });
+    db.exec(`
         -- doc.md is already chunk-owned: its stale legacy chunk must not ride along.
         INSERT INTO memory_index_sources (path, source, hash, mtime, size)
           VALUES ('doc.md', 'memory', 'doc-hash', 200.0, 42);
@@ -331,7 +322,7 @@ describe("memory index same-file legacy migration", () => {
         INSERT INTO memory_index_sources (path, source, hash, mtime, size)
           VALUES ('diverged.md', 'memory', 'current-hash', 250.0, 30);
       `);
-      db.exec(`
+    db.exec(`
         CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
         CREATE TABLE files (
           path TEXT PRIMARY KEY,
@@ -378,51 +369,47 @@ describe("memory index same-file legacy migration", () => {
         );
       `);
 
-      ensureMemoryIndexSchema({
-        db,
-        cacheEnabled: false,
-        ftsEnabled: false,
-      });
+    ensureMemoryIndexSchema({
+      db,
+      cacheEnabled: false,
+      ftsEnabled: false,
+    });
 
-      // doc.md keeps only its canonical chunk (stale legacy chunk excluded);
-      // pending.md, whose canonical source had no chunks, imports its legacy
-      // chunk so the file is not left silently unsearchable.
-      expect(db.prepare("SELECT id, text FROM memory_index_chunks ORDER BY id").all()).toEqual([
-        { id: "chunk-doc-canonical", text: "canonical body" },
-        { id: "chunk-partial-1", text: "canonical first half" },
-        { id: "chunk-pending-legacy", text: "only searchable content for pending" },
-      ]);
-      // An impossible hash prevents hash-based sync from skipping these rows,
-      // while retaining the identities needed for deleted-file cleanup.
-      expect(
-        db.prepare("SELECT hash FROM memory_index_sources WHERE path = 'doc.md'").get(),
-      ).toEqual({ hash: "" });
-      expect(
-        db.prepare("SELECT hash FROM memory_index_sources WHERE path = 'partial.md'").get(),
-      ).toEqual({ hash: "" });
-      expect(
-        db.prepare("SELECT hash FROM memory_index_sources WHERE path = 'diverged.md'").get(),
-      ).toEqual({ hash: "" });
-      expect(
-        db.prepare("SELECT hash FROM memory_index_sources WHERE path = 'pending.md'").get(),
-      ).toEqual({ hash: "" });
-      expect(
-        db
-          .prepare(
-            "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('meta', 'files', 'chunks')",
-          )
-          .all(),
-      ).toEqual([]);
-    } finally {
-      db.close();
-    }
+    // doc.md keeps only its canonical chunk (stale legacy chunk excluded);
+    // pending.md, whose canonical source had no chunks, imports its legacy
+    // chunk so the file is not left silently unsearchable.
+    expect(db.prepare("SELECT id, text FROM memory_index_chunks ORDER BY id").all()).toEqual([
+      { id: "chunk-doc-canonical", text: "canonical body" },
+      { id: "chunk-partial-1", text: "canonical first half" },
+      { id: "chunk-pending-legacy", text: "only searchable content for pending" },
+    ]);
+    // An impossible hash prevents hash-based sync from skipping these rows,
+    // while retaining the identities needed for deleted-file cleanup.
+    expect(db.prepare("SELECT hash FROM memory_index_sources WHERE path = 'doc.md'").get()).toEqual(
+      { hash: "" },
+    );
+    expect(
+      db.prepare("SELECT hash FROM memory_index_sources WHERE path = 'partial.md'").get(),
+    ).toEqual({ hash: "" });
+    expect(
+      db.prepare("SELECT hash FROM memory_index_sources WHERE path = 'diverged.md'").get(),
+    ).toEqual({ hash: "" });
+    expect(
+      db.prepare("SELECT hash FROM memory_index_sources WHERE path = 'pending.md'").get(),
+    ).toEqual({ hash: "" });
+    expect(
+      db
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('meta', 'files', 'chunks')",
+        )
+        .all(),
+    ).toEqual([]);
   });
 
   it("keeps legacy tables when a chunk id belongs to a different canonical source", () => {
-    const db = new DatabaseSync(":memory:");
-    try {
-      ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: false });
-      db.exec(`
+    using db = new DatabaseSync(":memory:");
+    ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: false });
+    db.exec(`
         INSERT INTO memory_index_sources (path, source, hash, mtime, size)
           VALUES ('canonical.md', 'memory', 'canonical-hash', 200, 20);
         INSERT INTO memory_index_chunks VALUES (
@@ -456,28 +443,24 @@ describe("memory index same-file legacy migration", () => {
         );
       `);
 
-      expect(() => ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: false })).toThrow(
-        "legacy memory chunks rows could not be copied",
-      );
-      expect(db.prepare("SELECT path, text FROM memory_index_chunks").all()).toEqual([
-        { path: "canonical.md", text: "canonical body" },
-      ]);
-      expect(
-        db
-          .prepare(
-            "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('meta', 'files', 'chunks') ORDER BY name",
-          )
-          .all(),
-      ).toEqual([{ name: "chunks" }, { name: "files" }, { name: "meta" }]);
-    } finally {
-      db.close();
-    }
+    expect(() => ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: false })).toThrow(
+      "legacy memory chunks rows could not be copied",
+    );
+    expect(db.prepare("SELECT path, text FROM memory_index_chunks").all()).toEqual([
+      { path: "canonical.md", text: "canonical body" },
+    ]);
+    expect(
+      db
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('meta', 'files', 'chunks') ORDER BY name",
+        )
+        .all(),
+    ).toEqual([{ name: "chunks" }, { name: "files" }, { name: "meta" }]);
   });
 
   it("keeps legacy tables when legacy rows cannot be copied", () => {
-    const db = new DatabaseSync(":memory:");
-    try {
-      db.exec(`
+    using db = new DatabaseSync(":memory:");
+    db.exec(`
         CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
         CREATE TABLE files (
           path TEXT PRIMARY KEY,
@@ -505,36 +488,32 @@ describe("memory index same-file legacy migration", () => {
         );
       `);
 
-      expect(() =>
-        ensureMemoryIndexSchema({
-          db,
-          cacheEnabled: false,
-          ftsEnabled: false,
-        }),
-      ).toThrow("legacy memory files rows could not be copied");
-      expect(db.prepare("SELECT path FROM files").get()).toEqual({ path: "doc.md" });
-      expect(db.prepare("SELECT COUNT(*) AS count FROM memory_index_sources").get()).toEqual({
-        count: 0,
-      });
-      expect(db.prepare("SELECT COUNT(*) AS count FROM memory_index_chunks").get()).toEqual({
-        count: 0,
-      });
-      expect(
-        db
-          .prepare(
-            "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('meta', 'files', 'chunks') ORDER BY name",
-          )
-          .all(),
-      ).toEqual([{ name: "chunks" }, { name: "files" }, { name: "meta" }]);
-    } finally {
-      db.close();
-    }
+    expect(() =>
+      ensureMemoryIndexSchema({
+        db,
+        cacheEnabled: false,
+        ftsEnabled: false,
+      }),
+    ).toThrow("legacy memory files rows could not be copied");
+    expect(db.prepare("SELECT path FROM files").get()).toEqual({ path: "doc.md" });
+    expect(db.prepare("SELECT COUNT(*) AS count FROM memory_index_sources").get()).toEqual({
+      count: 0,
+    });
+    expect(db.prepare("SELECT COUNT(*) AS count FROM memory_index_chunks").get()).toEqual({
+      count: 0,
+    });
+    expect(
+      db
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('meta', 'files', 'chunks') ORDER BY name",
+        )
+        .all(),
+    ).toEqual([{ name: "chunks" }, { name: "files" }, { name: "meta" }]);
   });
 
   it("keeps legacy tables when legacy meta rows cannot be copied", () => {
-    const db = new DatabaseSync(":memory:");
-    try {
-      db.exec(`
+    using db = new DatabaseSync(":memory:");
+    db.exec(`
         CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT);
         CREATE TABLE files (
           path TEXT PRIMARY KEY,
@@ -558,34 +537,28 @@ describe("memory index same-file legacy migration", () => {
         INSERT INTO meta VALUES ('broken-key', NULL);
       `);
 
-      expect(() =>
-        ensureMemoryIndexSchema({
-          db,
-          cacheEnabled: false,
-          ftsEnabled: false,
-        }),
-      ).toThrow("legacy memory meta rows could not be copied");
-      expect(
-        db
-          .prepare("SELECT COUNT(*) AS count FROM memory_index_meta WHERE key = 'broken-key'")
-          .get(),
-      ).toEqual({ count: 0 });
-      expect(
-        db
-          .prepare(
-            "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('meta', 'files', 'chunks') ORDER BY name",
-          )
-          .all(),
-      ).toEqual([{ name: "chunks" }, { name: "files" }, { name: "meta" }]);
-    } finally {
-      db.close();
-    }
+    expect(() =>
+      ensureMemoryIndexSchema({
+        db,
+        cacheEnabled: false,
+        ftsEnabled: false,
+      }),
+    ).toThrow("legacy memory meta rows could not be copied");
+    expect(
+      db.prepare("SELECT COUNT(*) AS count FROM memory_index_meta WHERE key = 'broken-key'").get(),
+    ).toEqual({ count: 0 });
+    expect(
+      db
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('meta', 'files', 'chunks') ORDER BY name",
+        )
+        .all(),
+    ).toEqual([{ name: "chunks" }, { name: "files" }, { name: "meta" }]);
   });
 
   it("keeps legacy tables when legacy chunk rows cannot be copied", () => {
-    const db = new DatabaseSync(":memory:");
-    try {
-      db.exec(`
+    using db = new DatabaseSync(":memory:");
+    db.exec(`
         CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
         CREATE TABLE files (
           path TEXT PRIMARY KEY,
@@ -616,25 +589,22 @@ describe("memory index same-file legacy migration", () => {
         );
       `);
 
-      expect(() =>
-        ensureMemoryIndexSchema({
-          db,
-          cacheEnabled: false,
-          ftsEnabled: false,
-        }),
-      ).toThrow("legacy memory chunks rows could not be copied");
-      expect(db.prepare("SELECT COUNT(*) AS count FROM memory_index_chunks").get()).toEqual({
-        count: 0,
-      });
-      expect(
-        db
-          .prepare(
-            "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('meta', 'files', 'chunks') ORDER BY name",
-          )
-          .all(),
-      ).toEqual([{ name: "chunks" }, { name: "files" }, { name: "meta" }]);
-    } finally {
-      db.close();
-    }
+    expect(() =>
+      ensureMemoryIndexSchema({
+        db,
+        cacheEnabled: false,
+        ftsEnabled: false,
+      }),
+    ).toThrow("legacy memory chunks rows could not be copied");
+    expect(db.prepare("SELECT COUNT(*) AS count FROM memory_index_chunks").get()).toEqual({
+      count: 0,
+    });
+    expect(
+      db
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('meta', 'files', 'chunks') ORDER BY name",
+        )
+        .all(),
+    ).toEqual([{ name: "chunks" }, { name: "files" }, { name: "meta" }]);
   });
 });
