@@ -20,6 +20,36 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
+function successfulRouteState(
+  state: ReturnType<ReturnType<typeof bootstrapApplication>["router"]["getState"]>,
+  routeId: RouteId,
+  location: RouteLocation,
+): typeof state {
+  return {
+    ...state,
+    status: "success",
+    location,
+    resolvedLocation: location,
+    matches: [
+      {
+        id: `${routeId}\u0000${location.pathname}${location.search}`,
+        routeId,
+        location,
+        deps: location.search,
+        status: "success",
+        isFetching: false,
+        updatedAt: 0,
+        fetchCount: 0,
+        abortController: new AbortController(),
+        cause: "navigation",
+        preload: false,
+        invalid: false,
+      },
+    ],
+    pendingMatches: [],
+  };
+}
+
 describe("normalizeInitialApplicationLocation", () => {
   it("routes an opaque persisted key without aborting bootstrap", () => {
     expect(
@@ -503,6 +533,333 @@ describe("normalizeInitialApplicationLocation", () => {
       runtime.stop();
       saveSettings(previousSettings);
       window.history.replaceState({}, "", previousUrl);
+    }
+  });
+});
+
+describe("explicit application route navigation", () => {
+  it("lets a newer replacement return to the previous route while a push is pending", async () => {
+    const runtime = bootstrapApplication({ sessionPathBuilderReady: Promise.resolve() });
+    let state = successfulRouteState(runtime.router.getState(), "chat", {
+      pathname: "/chat",
+      search: "",
+      hash: "",
+    });
+    const releaseNavigation = deferred<void>();
+    vi.spyOn(runtime.router, "getState").mockImplementation(() => state);
+    const navigate = vi
+      .spyOn(runtime.router, "navigate")
+      .mockImplementation(async (routeId, _context, _options, location) => {
+        if (!location) {
+          throw new Error("expected an explicit route location");
+        }
+        if (routeId === "new-session") {
+          await releaseNavigation.promise;
+          return;
+        }
+        state = successfulRouteState(state, routeId, location);
+      });
+
+    try {
+      runtime.context.navigate("new-session", { search: "?agent=main" });
+      runtime.context.replace("chat", { pathname: "/chat/main" });
+
+      expect(navigate).toHaveBeenNthCalledWith(
+        1,
+        "new-session",
+        runtime.context,
+        { history: "push" },
+        { pathname: "/new", search: "?agent=main", hash: "" },
+      );
+      expect(navigate).toHaveBeenNthCalledWith(
+        2,
+        "chat",
+        runtime.context,
+        { history: "replace" },
+        { pathname: "/chat/main", search: "", hash: "" },
+      );
+
+      releaseNavigation.resolve();
+      await Promise.resolve();
+      await vi.waitFor(() => {
+        expect(runtime.router.getState().matches[0]?.routeId).toBe("chat");
+      });
+      expect(navigate).toHaveBeenCalledTimes(2);
+    } finally {
+      releaseNavigation.resolve();
+      runtime.stop();
+    }
+  });
+
+  it("lets a replacement return after a cached route has already committed", async () => {
+    const runtime = bootstrapApplication({ sessionPathBuilderReady: Promise.resolve() });
+    let state = successfulRouteState(runtime.router.getState(), "chat", {
+      pathname: "/chat",
+      search: "",
+      hash: "",
+    });
+    vi.spyOn(runtime.router, "getState").mockImplementation(() => state);
+    const navigate = vi
+      .spyOn(runtime.router, "navigate")
+      .mockImplementation(async (routeId, _context, _options, location) => {
+        if (!location) {
+          throw new Error("expected an explicit route location");
+        }
+        state = successfulRouteState(state, routeId, location);
+      });
+
+    try {
+      runtime.context.navigate("new-session");
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(runtime.router.getState().matches[0]?.routeId).toBe("new-session");
+      runtime.context.replace("chat", { pathname: "/chat/main" });
+
+      expect(navigate).toHaveBeenCalledTimes(2);
+      expect(runtime.router.getState().matches[0]?.routeId).toBe("chat");
+    } finally {
+      runtime.stop();
+    }
+  });
+
+  it("retries a silently superseded explicit route once without another history push", async () => {
+    const runtime = bootstrapApplication({ sessionPathBuilderReady: Promise.resolve() });
+    const previousUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    let state = runtime.router.getState();
+    const releaseNavigation = deferred<void>();
+    vi.spyOn(runtime.router, "getState").mockImplementation(() => state);
+    const navigate = vi
+      .spyOn(runtime.router, "navigate")
+      .mockImplementation(async (routeId, _context, _options, location) => {
+        if (!location) {
+          throw new Error("expected an explicit route location");
+        }
+        if (navigate.mock.calls.length === 1) {
+          await releaseNavigation.promise;
+          return;
+        }
+        state = successfulRouteState(state, routeId, location);
+      });
+
+    try {
+      runtime.context.navigate("new-session", { search: "?agent=research" });
+      window.history.replaceState({}, "", "/new?agent=research");
+      state = successfulRouteState(state, "chat", {
+        pathname: "/chat/main",
+        search: "",
+        hash: "",
+      });
+      releaseNavigation.resolve();
+
+      await vi.waitFor(() => expect(navigate).toHaveBeenCalledTimes(2));
+      expect(navigate).toHaveBeenNthCalledWith(
+        2,
+        "new-session",
+        runtime.context,
+        { history: "replace" },
+        { pathname: "/new", search: "?agent=research", hash: "" },
+      );
+      expect(runtime.router.getState().matches[0]?.routeId).toBe("new-session");
+    } finally {
+      releaseNavigation.resolve();
+      runtime.stop();
+      window.history.replaceState({}, "", previousUrl);
+    }
+  });
+
+  it("does not treat a cached match as committed while a newer match is pending", async () => {
+    const runtime = bootstrapApplication({ sessionPathBuilderReady: Promise.resolve() });
+    const previousUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    let state = successfulRouteState(runtime.router.getState(), "chat", {
+      pathname: "/chat",
+      search: "",
+      hash: "",
+    });
+    const releaseNavigation = deferred<void>();
+    vi.spyOn(runtime.router, "getState").mockImplementation(() => state);
+    const navigate = vi
+      .spyOn(runtime.router, "navigate")
+      .mockImplementation(async (routeId, _context, _options, location) => {
+        if (!location) {
+          throw new Error("expected an explicit route location");
+        }
+        if (navigate.mock.calls.length === 1) {
+          await releaseNavigation.promise;
+          return;
+        }
+        state = successfulRouteState(state, routeId, location);
+      });
+
+    try {
+      runtime.context.navigate("new-session");
+      window.history.replaceState({}, "", "/new");
+      const location = { pathname: "/new", search: "", hash: "" };
+      const pendingUsage = successfulRouteState(state, "usage", {
+        pathname: "/usage",
+        search: "",
+        hash: "",
+      }).matches[0];
+      if (!pendingUsage) {
+        throw new Error("expected a pending usage match");
+      }
+      state = {
+        ...successfulRouteState(state, "new-session", location),
+        pendingMatches: [pendingUsage],
+      };
+      releaseNavigation.resolve();
+
+      await vi.waitFor(() => expect(navigate).toHaveBeenCalledTimes(2));
+      expect(navigate).toHaveBeenNthCalledWith(
+        2,
+        "new-session",
+        runtime.context,
+        { history: "replace" },
+        location,
+      );
+      expect(runtime.router.getState().pendingMatches).toEqual([]);
+    } finally {
+      releaseNavigation.resolve();
+      runtime.stop();
+      window.history.replaceState({}, "", previousUrl);
+    }
+  });
+
+  it("does not reclaim a browser Back or Forward navigation", async () => {
+    const runtime = bootstrapApplication({ sessionPathBuilderReady: Promise.resolve() });
+    const previousUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    let state = successfulRouteState(runtime.router.getState(), "chat", {
+      pathname: "/chat",
+      search: "",
+      hash: "",
+    });
+    const releaseNavigation = deferred<void>();
+    vi.spyOn(runtime.router, "getState").mockImplementation(() => state);
+    const navigate = vi
+      .spyOn(runtime.router, "navigate")
+      .mockImplementation(async (_routeId, _context, _options, location) => {
+        if (!location) {
+          throw new Error("expected an explicit route location");
+        }
+        await releaseNavigation.promise;
+      });
+
+    try {
+      runtime.context.navigate("new-session");
+      window.history.replaceState({}, "", "/usage");
+      state = successfulRouteState(state, "usage", {
+        pathname: "/usage",
+        search: "",
+        hash: "",
+      });
+      releaseNavigation.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(navigate).toHaveBeenCalledOnce();
+      expect(runtime.router.getState().matches[0]?.routeId).toBe("usage");
+      expect(window.location.pathname).toBe("/usage");
+    } finally {
+      releaseNavigation.resolve();
+      runtime.stop();
+      window.history.replaceState({}, "", previousUrl);
+    }
+  });
+
+  it("lets the latest explicit destination supersede an older route", async () => {
+    const runtime = bootstrapApplication({ sessionPathBuilderReady: Promise.resolve() });
+    let state = runtime.router.getState();
+    const releaseNavigation = deferred<void>();
+    vi.spyOn(runtime.router, "getState").mockImplementation(() => state);
+    const navigate = vi
+      .spyOn(runtime.router, "navigate")
+      .mockImplementation(async (routeId, _context, _options, location) => {
+        if (!location) {
+          throw new Error("expected an explicit route location");
+        }
+        if (routeId === "new-session") {
+          await releaseNavigation.promise;
+          return;
+        }
+        state = successfulRouteState(state, routeId, location);
+      });
+
+    try {
+      runtime.context.navigate("new-session");
+      runtime.context.navigate("usage");
+      releaseNavigation.resolve();
+
+      await vi.waitFor(() => {
+        expect(runtime.router.getState().matches[0]?.routeId).toBe("usage");
+      });
+      await Promise.resolve();
+      expect(navigate).toHaveBeenCalledTimes(2);
+    } finally {
+      releaseNavigation.resolve();
+      runtime.stop();
+    }
+  });
+
+  it("lets a newer cross-route replacement supersede a pending explicit navigation", async () => {
+    const runtime = bootstrapApplication({ sessionPathBuilderReady: Promise.resolve() });
+    let state = successfulRouteState(runtime.router.getState(), "chat", {
+      pathname: "/chat",
+      search: "",
+      hash: "",
+    });
+    const releaseNavigation = deferred<void>();
+    vi.spyOn(runtime.router, "getState").mockImplementation(() => state);
+    const navigate = vi
+      .spyOn(runtime.router, "navigate")
+      .mockImplementation(async (routeId, _context, _options, location) => {
+        if (!location) {
+          throw new Error("expected an explicit route location");
+        }
+        if (routeId === "new-session") {
+          await releaseNavigation.promise;
+          return;
+        }
+        state = successfulRouteState(state, routeId, location);
+      });
+
+    try {
+      runtime.context.navigate("new-session");
+      runtime.context.replace("usage");
+      releaseNavigation.resolve();
+
+      await vi.waitFor(() => {
+        expect(runtime.router.getState().matches[0]?.routeId).toBe("usage");
+      });
+      expect(navigate).toHaveBeenNthCalledWith(
+        2,
+        "usage",
+        runtime.context,
+        { history: "replace" },
+        { pathname: "/usage", search: "", hash: "" },
+      );
+      expect(navigate).toHaveBeenCalledTimes(2);
+    } finally {
+      releaseNavigation.resolve();
+      runtime.stop();
+    }
+  });
+
+  it("reports a genuine route-loader failure without retrying it", async () => {
+    const runtime = bootstrapApplication({ sessionPathBuilderReady: Promise.resolve() });
+    const failure = new Error("new-session loader failed");
+    const navigate = vi.spyOn(runtime.router, "navigate").mockRejectedValue(failure);
+    const logError = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    try {
+      runtime.context.navigate("new-session");
+
+      await vi.waitFor(() => {
+        expect(logError).toHaveBeenCalledWith("[openclaw] route navigation failed", failure);
+      });
+      expect(navigate).toHaveBeenCalledOnce();
+    } finally {
+      logError.mockRestore();
+      runtime.stop();
     }
   });
 });

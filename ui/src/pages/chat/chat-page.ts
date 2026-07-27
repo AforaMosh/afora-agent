@@ -21,7 +21,8 @@ import { SubscriptionsController } from "../../lit/subscriptions-controller.ts";
 import { persistSessionBoardFace } from "./chat-board-face-persistence.ts";
 import "../../styles/chat.css";
 import "./chat-pane.ts";
-import { locationWithoutDraft, type SessionChatRouteData } from "./route-loader.ts";
+import { updateOwnedChatRoute } from "./chat-route-owner.ts";
+import type { SessionChatRouteData } from "./route-loader.ts";
 import type { ChatMessageCache } from "./session-message-cache.ts";
 import {
   resolveSplitDropZone,
@@ -115,39 +116,23 @@ export class ChatPage extends OpenClawLightDomElement {
   }
 
   override updated(changedProperties: Map<PropertyKey, unknown>) {
-    const data = this.data;
-    const activePane = this.layout ? findPane(this.layout, this.layout.activePaneId)?.pane : null;
-    const routeDraftWasRendered =
-      Boolean(data?.draft) &&
-      this.consumedDraftData !== data &&
-      (!this.layout || activePane?.sessionKey === data.sessionKey);
-    if (changedProperties.has("data")) {
-      if (data?.canonicalLocation) {
-        this.context.replace(data.face ?? "chat", data.canonicalLocation);
-        return;
-      }
-      void data?.canonicalLocationReady?.then((location) => {
-        if (location && this.isConnected && this.data === data) {
-          this.context.replace(
-            data.face ?? "chat",
-            this.consumedDraftData === data ? locationWithoutDraft(location) : location,
-          );
-        }
-      });
-      this.syncRouteAgent();
-      this.syncRouteToActivePane();
-    }
-    if (data && routeDraftWasRendered) {
-      // Process the route draft once so later focus changes cannot hand it to another pane.
-      queueMicrotask(() => {
-        if (this.isConnected && this.data === data && this.consumedDraftData !== data) {
+    updateOwnedChatRoute(
+      {
+        context: this.context,
+        data: this.data,
+        layout: this.layout,
+        isCurrentData: (data) => this.isConnected && this.data === data,
+        wasDraftConsumed: (data) => this.consumedDraftData === data,
+        consumeDraft: (data) => {
           this.consumedDraftData = data;
-          // Remove the one-shot draft from history once the matching pane owns it.
           this.updateRoute(data.sessionKey, true, data.face ?? "chat");
           this.requestUpdate();
-        }
-      });
-    }
+        },
+        syncRouteAgent: () => this.syncRouteAgent(),
+        syncRouteToActivePane: () => this.syncRouteToActivePane(),
+      },
+      changedProperties,
+    );
   }
 
   private readonly handleViewportChange = (event: MediaQueryListEvent) => {

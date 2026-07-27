@@ -153,6 +153,7 @@ class NewSessionPage extends OpenClawLightDomElement {
   private gatewayRecoveryScopeReady = false;
   private gatewayConnected = false;
   private gatewayConnectionEpoch = 0;
+  private pendingCatalogRouteKey: string | null = null;
   private catalogRetryScope = "";
   private catalogRetryAttempt = 0;
   private catalogRetryTimer: ReturnType<typeof globalThis.setTimeout> | undefined;
@@ -384,9 +385,23 @@ class NewSessionPage extends OpenClawLightDomElement {
     );
     const openKey = catalog.routeKey(this.data);
     if (this.openedFor !== openKey) {
+      // An offline catalog route cannot validate its requested agent. Keep the
+      // user's draft when reconnect resolves that same catalog's agent; only a
+      // genuinely different destination should start a fresh draft.
+      const resolvingPendingCatalog =
+        agentsReady &&
+        this.data !== undefined &&
+        catalog.isTarget(this.data) &&
+        this.pendingCatalogRouteKey === catalog.routeKey({ ...this.data, agentId: "" });
       this.openedFor = openKey;
       this.agentsHydrated = agentsReady;
-      this.resetDraft();
+      this.pendingCatalogRouteKey =
+        !agentsReady && catalog.isTarget(this.data) && !this.data?.agentId ? openKey : null;
+      if (resolvingPendingCatalog) {
+        this.adoptAgentDefaults({ preserveSelectedFolder: true });
+      } else {
+        this.resetDraft();
+      }
       return;
     }
     // A hard reload can land here before agents.list resolves. Once the list

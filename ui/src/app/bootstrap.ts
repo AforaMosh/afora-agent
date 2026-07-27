@@ -395,6 +395,73 @@ export function bootstrapApplication(
     }
     return location;
   };
+  type RouteIntent = {
+    routeId: RouteId;
+    location: ReturnType<typeof routeLocation>;
+    history: "push" | "replace";
+  };
+  let activeRouteIntent: RouteIntent | null = null;
+  const navigateRoute = (
+    routeId: RouteId,
+    options: ApplicationNavigationOptions | undefined,
+    historyMode: RouteIntent["history"],
+  ) => {
+    const intent: RouteIntent = {
+      routeId,
+      location: routeLocation(routeId, options),
+      history: historyMode,
+    };
+    activeRouteIntent = intent;
+    const completeNavigation = async () => {
+      await router.navigate(routeId, context, { history: historyMode }, intent.location);
+      if (activeRouteIntent !== intent) {
+        return;
+      }
+
+      const state = router.getState();
+      const committed = state.matches[0];
+      const committedLocation = state.resolvedLocation;
+      if (
+        state.status === "success" &&
+        state.pendingMatches.length === 0 &&
+        committed?.routeId === routeId &&
+        committedLocation?.pathname === intent.location.pathname &&
+        committedLocation.search === intent.location.search &&
+        committedLocation.hash === intent.location.hash
+      ) {
+        return;
+      }
+
+      const currentLocation = history.location();
+      if (
+        currentLocation.pathname !== intent.location.pathname ||
+        currentLocation.search !== intent.location.search ||
+        currentLocation.hash !== intent.location.hash
+      ) {
+        // Back/Forward owns the new browser location even though the aborted
+        // router run resolves successfully; never replace that history entry.
+        return;
+      }
+
+      // Superseded router runs resolve successfully. Retry the latest intent
+      // once without adding a duplicate browser-history entry.
+      await router.navigate(routeId, context, { history: "replace" }, intent.location);
+    };
+    void completeNavigation()
+      .catch((error: unknown) => {
+        console.error(
+          historyMode === "push"
+            ? "[openclaw] route navigation failed"
+            : "[openclaw] route replacement failed",
+          error,
+        );
+      })
+      .finally(() => {
+        if (activeRouteIntent === intent) {
+          activeRouteIntent = null;
+        }
+      });
+  };
   const confirmPendingGatewayConnection = () => {
     const pending = pendingGatewayConnection;
     if (!pending) {
@@ -429,20 +496,8 @@ export function bootstrapApplication(
     webPush,
     skillWorkshopRevision,
     initialUserMessage,
-    navigate: (routeId, options) => {
-      void router
-        .navigate(routeId, context, { history: "push" }, routeLocation(routeId, options))
-        .catch((error: unknown) => {
-          console.error("[openclaw] route navigation failed", error);
-        });
-    },
-    replace: (routeId, options) => {
-      void router
-        .navigate(routeId, context, { history: "replace" }, routeLocation(routeId, options))
-        .catch((error: unknown) => {
-          console.error("[openclaw] route replacement failed", error);
-        });
-    },
+    navigate: (routeId, options) => navigateRoute(routeId, options, "push"),
+    replace: (routeId, options) => navigateRoute(routeId, options, "replace"),
     revalidate: (routeId) => router.revalidate(context, routeId),
     preload: (routeId) => router.preloadRoute(routeId, context),
   };

@@ -168,6 +168,7 @@ function stubMatchMedia(matches: boolean) {
 describe("chat page split layout host", () => {
   beforeEach(() => {
     nativeGateways.current = null;
+    window.history.replaceState({}, "", "/chat");
     vi.stubGlobal("localStorage", createStorageMock());
     vi.stubGlobal("sessionStorage", createStorageMock());
     localStorage.clear();
@@ -176,6 +177,7 @@ describe("chat page split layout host", () => {
 
   afterEach(() => {
     document.body.replaceChildren();
+    window.history.replaceState({}, "", "/");
     localStorage.clear();
     vi.unstubAllGlobals();
   });
@@ -406,6 +408,27 @@ describe("chat page split layout host", () => {
         hash: "",
       }),
     );
+  });
+
+  it("does not let a retiring chat page canonicalize over a newer route", async () => {
+    const page = new ChatPage();
+    const navigation = setNavigationContext(page);
+    const canonicalLocation = deferred<RouteLocation | null>();
+    page.data = {
+      sessionKey: "agent:research:workspace",
+      face: "chat",
+      canonicalLocationReady: canonicalLocation.promise,
+    };
+    document.body.append(page);
+    await page.updateComplete;
+
+    window.history.replaceState({}, "", "/new");
+    canonicalLocation.resolve({ pathname: "/chat/research", search: "", hash: "" });
+    await canonicalLocation.promise;
+    await Promise.resolve();
+
+    expect(navigation.replace).not.toHaveBeenCalled();
+    expect(window.location.pathname).toBe("/new");
   });
 
   it("keeps catalog identity when consuming a route draft", async () => {

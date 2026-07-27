@@ -11,14 +11,21 @@ import type {
 import { GatewayRequestError, type GatewayBrowserClient } from "../../api/gateway.ts";
 import type { GatewaySessionRow } from "../../api/types.ts";
 import type { ApplicationContext } from "../../app/context.ts";
+import { createInitialUserMessageHandoff } from "../../app/initial-user-message-handoff.ts";
+import type { ChatQueueItem } from "../../lib/chat/chat-types.ts";
 import type { SessionCapability } from "../../lib/sessions/index.ts";
-import { createTestChatPane } from "./chat-pane.test-support.ts";
+import { createTestChatPane, type TestChatPane } from "./chat-pane.test-support.ts";
+import { isVolatileQueuedMessage } from "./chat-queue.ts";
 import type { ChatPageHost } from "./chat-state.ts";
 import {
   dismissConfirmedActionPopovers,
   openChatRewindConfirmation,
 } from "./components/chat-message.ts";
 import * as chatThread from "./components/chat-thread.ts";
+import {
+  prepareInitialTurnHandoff,
+  prepareInitialUserMessageHandoff,
+} from "./initial-turn-handoff.ts";
 
 const SKIP_REWIND_CONFIRM_PREFERENCE = "openclaw:skip-rewind-confirm";
 const confirmationOwners = new Set<HTMLElement>();
@@ -32,6 +39,125 @@ function createDeferred<T>() {
   });
   return { promise, reject, resolve };
 }
+
+function createInitializationContext(): ApplicationContext {
+  return {
+    basePath: "",
+    gateway: { snapshot: { hello: null } },
+    config: {
+      current: {
+        assistantIdentity: {
+          agentId: null,
+          name: "Assistant",
+          avatar: null,
+          avatarSource: null,
+          avatarStatus: null,
+          avatarReason: null,
+        },
+        serverVersion: null,
+        localMediaPreviewRoots: [],
+        embedSandboxMode: "strict",
+        allowExternalEmbedUrls: false,
+        terminalEnabled: false,
+      },
+    },
+    agentSelection: { state: { selectedId: "main" } },
+    agents: { state: { agentsList: null } },
+    initialUserMessage: createInitialUserMessageHandoff(),
+    sessions: {},
+  } as unknown as ApplicationContext;
+}
+
+describe("chat pane initial-turn lifecycle", () => {
+  it("adopts an accepted first prompt before attaching its new session pane", () => {
+    const pane = document.createElement("openclaw-chat-pane") as unknown as TestChatPane;
+    const sessionKey = "agent:main:accepted-initial-turn";
+    const client = {
+      addEventListener: () => () => {},
+      request: vi.fn(async () => ({ sessionKey, revision: 0, tabs: [], widgets: [] })),
+    } as unknown as GatewayBrowserClient;
+    const baseContext = createInitializationContext();
+    const context: ApplicationContext = {
+      ...baseContext,
+      gateway: {
+        ...baseContext.gateway,
+        snapshot: { ...baseContext.gateway.snapshot, client },
+      },
+    };
+    prepareInitialUserMessageHandoff(
+      context.initialUserMessage,
+      sessionKey,
+      { text: "keep the accepted first prompt visible", createdAt: 123 },
+      client,
+    );
+    pane.sessionKey = sessionKey;
+    pane.context = context;
+    const stopAfterAttach = new Error("stop after attach");
+    let attachedState: ChatPageHost | undefined;
+    vi.spyOn(pane.chatState, "attach").mockImplementation((state) => {
+      attachedState = state;
+      throw stopAfterAttach;
+    });
+
+    try {
+      expect(() => pane.connectedCallback()).toThrow(stopAfterAttach);
+      expect(attachedState?.client).toBe(client);
+      expect(attachedState?.chatMessages).toEqual([
+        {
+          role: "user",
+          content: [{ type: "text", text: "keep the accepted first prompt visible" }],
+          timestamp: 123,
+        },
+      ]);
+    } finally {
+      pane.disconnectedCallback();
+    }
+  });
+
+  it("adopts a rejected volatile first turn before attaching its new session pane", () => {
+    const pane = document.createElement("openclaw-chat-pane") as unknown as TestChatPane;
+    const sessionKey = "agent:main:rejected-initial-turn";
+    const rejectedTurn = {
+      id: "rejected-initial-turn",
+      text: "keep the rejected first prompt retryable",
+      attachments: [
+        {
+          id: "rejected-initial-image",
+          mimeType: "image/png",
+          fileName: "initial.png",
+        },
+      ],
+      createdAt: 123,
+      kind: "queued",
+      sendAttempts: 1,
+      sendError: "initial send rejected",
+      sendRunId: "rejected-initial-run",
+      sendState: "failed",
+      sessionKey,
+      agentId: "main",
+    } satisfies ChatQueueItem;
+    prepareInitialTurnHandoff(sessionKey, rejectedTurn);
+    pane.sessionKey = sessionKey;
+    pane.context = createInitializationContext();
+    const stopAfterAttach = new Error("stop after attach");
+    let attachedState: ChatPageHost | undefined;
+    vi.spyOn(pane.chatState, "attach").mockImplementation((state) => {
+      attachedState = state;
+      throw stopAfterAttach;
+    });
+
+    try {
+      expect(() => pane.connectedCallback()).toThrow(stopAfterAttach);
+      expect(attachedState?.chatQueue).toEqual([rejectedTurn]);
+      if (!attachedState) {
+        throw new Error("expected the initial session state to be attached");
+      }
+      expect(isVolatileQueuedMessage(attachedState, rejectedTurn.id)).toBe(true);
+    } finally {
+      pane.disconnectedCallback();
+    }
+  });
+});
 
 describe("chat pane session suggestion lifecycle", () => {
   it("does not let a stale add completion clear a newer session operation", async () => {

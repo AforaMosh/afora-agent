@@ -36,6 +36,7 @@ import {
   CHAT_TEXT_ENTRY_SELECTOR,
   keyboardEventPathMatches,
 } from "./chat-pane-shared.ts";
+import { admitInitialTurnHandoff } from "./initial-turn-handoff.ts";
 
 export abstract class ChatPaneLifecycle extends ChatPaneReset {
   protected syncActiveBindings() {
@@ -251,6 +252,9 @@ export abstract class ChatPaneLifecycle extends ChatPaneReset {
     if (this.sessionKey) {
       const initialSessionKey = this.setPaneSessionKey(this.sessionKey);
       if (initialSessionKey && !parseCatalogSessionKey(initialSessionKey)) {
+        // First-turn handoffs belong to the submitting Gateway client and must
+        // reach the fresh pane before its outbox and transcript subscriptions.
+        pageState.client = this.context.gateway.snapshot.client ?? null;
         const snapshot = readChatSessionSnapshot(pageState.chatMessagesBySession, pageState, {
           sessionKey: initialSessionKey,
         });
@@ -260,6 +264,7 @@ export abstract class ChatPaneLifecycle extends ChatPaneReset {
           pageState.currentSessionId = snapshot.sessionId;
           pageState.chatDisplayedLeafEntryId = snapshot.displayedLeafEntryId;
         }
+        admitInitialTurnHandoff(pageState, initialSessionKey);
         admitInitialUserMessageHandoff(pageState.initialUserMessage, pageState, initialSessionKey);
       }
     }
