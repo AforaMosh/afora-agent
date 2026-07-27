@@ -20,14 +20,37 @@ import {
 } from "./index.ts";
 
 type SkillsState = Parameters<typeof loadSkills>[0];
+type SkillsReport = NonNullable<SkillsState["skillsReport"]>;
+type SkillReportEntry = SkillsReport["skills"][number];
 
 type TestRequest = (method: string, payload?: unknown) => Promise<unknown>;
 
 function createSkillsReport(
-  skills: NonNullable<SkillsState["skillsReport"]>["skills"],
+  skills: ReadonlyArray<
+    Pick<SkillReportEntry, "name" | "skillKey" | "source"> & Partial<SkillReportEntry>
+  >,
   workspaceDir = "/tmp/workspace",
-): NonNullable<SkillsState["skillsReport"]> {
-  return { workspaceDir, managedSkillsDir: "/tmp/skills", skills };
+): SkillsReport {
+  return {
+    workspaceDir,
+    managedSkillsDir: "/tmp/skills",
+    skills: skills.map(
+      (skill): SkillReportEntry => ({
+        description: "",
+        filePath: `${workspaceDir}/skills/${skill.skillKey}/SKILL.md`,
+        baseDir: `${workspaceDir}/skills/${skill.skillKey}`,
+        always: false,
+        disabled: false,
+        blockedByAllowlist: false,
+        eligible: true,
+        requirements: { anyBins: [], bins: [], env: [], config: [], os: [] },
+        missing: { anyBins: [], bins: [], env: [], config: [], os: [] },
+        configChecks: [],
+        install: [],
+        ...skill,
+      }),
+    ),
+  };
 }
 
 function createDeferred<T>() {
