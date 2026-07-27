@@ -133,6 +133,16 @@ function createRunEntry(overrides: Partial<SubagentRunRecord> = {}): SubagentRun
   };
 }
 
+function createKilledRunEntry(overrides: Partial<SubagentRunRecord> = {}): SubagentRunRecord {
+  return createRunEntry({
+    endedAt: 4_000,
+    endedReason: SUBAGENT_ENDED_REASON_KILLED,
+    outcome: { status: "error", error: "agent run aborted" },
+    suppressAnnounceReason: "killed",
+    ...overrides,
+  });
+}
+
 function expectFields(value: unknown, expected: Record<string, unknown>): void {
   if (!value || typeof value !== "object") {
     throw new Error("expected fields object");
@@ -289,18 +299,18 @@ async function runNoReplyMirrorScenario(params: {
     ],
   });
 
-  await createLifecycleController({
+  await completeRun(
+    createLifecycleController({
+      entry,
+      captureSubagentCompletionReply: vi.fn(async () => text),
+      persist: vi.fn(),
+      runSubagentAnnounceFlow,
+    }),
     entry,
-    captureSubagentCompletionReply: vi.fn(async () => text),
-    persist: vi.fn(),
-    runSubagentAnnounceFlow,
-  }).completeSubagentRun({
-    runId: entry.runId,
-    endedAt: 4_000,
-    outcome: { status: "ok" },
-    reason: SUBAGENT_ENDED_REASON_COMPLETE,
-    triggerCleanup: true,
-  });
+    {
+      triggerCleanup: true,
+    },
+  );
   return entry;
 }
 
@@ -508,12 +518,10 @@ describe("subagent registry lifecycle hardening", () => {
     });
     const providerCompletion = completeRun(controller, entry);
     await waitForLifecycleState(() => expect(finishCapture).toBeTypeOf("function"));
-    const interruptedRecovery = controller.completeSubagentRun({
-      runId: entry.runId,
+    const interruptedRecovery = completeRun(controller, entry, {
       endedAt: 4_001,
       outcome: { status: "error", error: "restart interrupted run" },
       reason: SUBAGENT_ENDED_REASON_ERROR,
-      triggerCleanup: false,
       recoverInterrupted: true,
     });
 
@@ -530,12 +538,9 @@ describe("subagent registry lifecycle hardening", () => {
     const entry = createRunEntry();
     const persistOrThrow = vi.fn();
     const controller = createLifecycleController({ entry, persistOrThrow });
-    await controller.completeSubagentRun({
-      runId: entry.runId,
-      endedAt: 4_000,
+    await completeRun(controller, entry, {
       outcome: { status: "error", error: "restart interrupted run" },
       reason: SUBAGENT_ENDED_REASON_ERROR,
-      triggerCleanup: false,
       recoverInterrupted: true,
     });
     const recovered = structuredClone(entry);
@@ -568,12 +573,9 @@ describe("subagent registry lifecycle hardening", () => {
     });
 
     await expect(
-      controller.completeSubagentRun({
-        runId: entry.runId,
-        endedAt: 4_000,
+      completeRun(controller, entry, {
         outcome: { status: "error", error: "restart interrupted run" },
         reason: SUBAGENT_ENDED_REASON_ERROR,
-        triggerCleanup: false,
         recoverInterrupted: true,
       }),
     ).rejects.toThrow("registry store boom");
@@ -586,21 +588,15 @@ describe("subagent registry lifecycle hardening", () => {
     ["provisional", { killReconciliation: { killedAt: 4_000 } }],
     ["stable", {}],
   ])("keeps %s killed state unchanged during interrupted recovery", async (_name, extra) => {
-    const entry = createRunEntry({
-      endedAt: 4_000,
-      endedReason: SUBAGENT_ENDED_REASON_KILLED,
-      outcome: { status: "error", error: "agent run aborted" },
-      suppressAnnounceReason: "killed",
+    const entry = createKilledRunEntry({
       ...extra,
     });
     const original = structuredClone(entry);
     const persistOrThrow = vi.fn();
-    await createLifecycleController({ entry, persistOrThrow }).completeSubagentRun({
-      runId: entry.runId,
+    await completeRun(createLifecycleController({ entry, persistOrThrow }), entry, {
       endedAt: 4_001,
       outcome: { status: "error", error: "restart interrupted run" },
       reason: SUBAGENT_ENDED_REASON_ERROR,
-      triggerCleanup: false,
       recoverInterrupted: true,
     });
 
@@ -626,12 +622,10 @@ describe("subagent registry lifecycle hardening", () => {
       const entry = createRunEntry(evidence);
       const original = structuredClone(entry);
       const persistOrThrow = vi.fn();
-      await createLifecycleController({ entry, persistOrThrow }).completeSubagentRun({
-        runId: entry.runId,
+      await completeRun(createLifecycleController({ entry, persistOrThrow }), entry, {
         endedAt: 4_001,
         outcome: { status: "error", error: "restart interrupted run" },
         reason: SUBAGENT_ENDED_REASON_ERROR,
-        triggerCleanup: false,
         recoverInterrupted: true,
       });
 
@@ -662,12 +656,9 @@ describe("subagent registry lifecycle hardening", () => {
       },
     });
     const persistOrThrow = vi.fn();
-    await createLifecycleController({ entry, persistOrThrow }).completeSubagentRun({
-      runId: entry.runId,
-      endedAt: 4_000,
+    await completeRun(createLifecycleController({ entry, persistOrThrow }), entry, {
       outcome: { status: "error", error: "restart interrupted run" },
       reason: SUBAGENT_ENDED_REASON_ERROR,
-      triggerCleanup: false,
       recoverInterrupted: true,
     });
 
@@ -702,12 +693,9 @@ describe("subagent registry lifecycle hardening", () => {
     });
     const original = structuredClone(entry);
     const persistOrThrow = vi.fn();
-    await createLifecycleController({ entry, persistOrThrow }).completeSubagentRun({
-      runId: entry.runId,
-      endedAt: 4_000,
+    await completeRun(createLifecycleController({ entry, persistOrThrow }), entry, {
       outcome: { status: "error", error: "restart interrupted run" },
       reason: SUBAGENT_ENDED_REASON_ERROR,
-      triggerCleanup: false,
       recoverInterrupted: true,
     });
 
@@ -718,11 +706,7 @@ describe("subagent registry lifecycle hardening", () => {
   });
 
   it("restores a provisional kill when canonical task projection fails", async () => {
-    const entry = createRunEntry({
-      endedAt: 4_000,
-      endedReason: SUBAGENT_ENDED_REASON_KILLED,
-      outcome: { status: "error", error: "agent run aborted" },
-      suppressAnnounceReason: "killed",
+    const entry = createKilledRunEntry({
       killReconciliation: { killedAt: 4_000 },
       cleanupHandled: true,
       cleanupCompletedAt: 4_000,
@@ -756,11 +740,7 @@ describe("subagent registry lifecycle hardening", () => {
 
   it("commits a reconciled task before its canonical registry outcome", async () => {
     taskExecutorMocks.completeTaskRunByRunId.mockReturnValueOnce([{}]);
-    const entry = createRunEntry({
-      endedAt: 4_000,
-      endedReason: SUBAGENT_ENDED_REASON_KILLED,
-      outcome: { status: "error", error: "agent run aborted" },
-      suppressAnnounceReason: "killed",
+    const entry = createKilledRunEntry({
       killReconciliation: { killedAt: 4_000 },
       cleanupHandled: true,
       cleanupCompletedAt: 4_000,
@@ -792,12 +772,9 @@ describe("subagent registry lifecycle hardening", () => {
     const entry = createRunEntry({ suppressAnnounceReason: "steer-restart" });
     const controller = createLifecycleController({ entry });
 
-    await controller.completeSubagentRun({
-      runId: entry.runId,
-      endedAt: 4_000,
+    await completeRun(controller, entry, {
       outcome: { status: "error", error: "agent run aborted" },
       reason: SUBAGENT_ENDED_REASON_KILLED,
-      triggerCleanup: false,
     });
 
     expect(entry).toMatchObject({
@@ -812,12 +789,9 @@ describe("subagent registry lifecycle hardening", () => {
     const entry = createRunEntry();
     const controller = createLifecycleController({ entry });
 
-    await controller.completeSubagentRun({
-      runId: entry.runId,
-      endedAt: 4_000,
+    await completeRun(controller, entry, {
       outcome: { status: "error", error: "agent run aborted" },
       reason: SUBAGENT_ENDED_REASON_KILLED,
-      triggerCleanup: false,
     });
 
     expectFields(firstCallArg(taskExecutorMocks.failTaskRunByRunId), {
@@ -833,13 +807,11 @@ describe("subagent registry lifecycle hardening", () => {
     const entry = createRunEntry({ runTimeoutSeconds: 3 });
     const controller = createLifecycleController({ entry });
 
-    await controller.completeSubagentRun({
-      runId: entry.runId,
+    await completeRun(controller, entry, {
       startedAt: 2_000,
       endedAt: 6_000,
       outcome: { status: "error", error: "agent run aborted" },
       reason: SUBAGENT_ENDED_REASON_KILLED,
-      triggerCleanup: false,
     });
 
     expect(entry).toMatchObject({
@@ -861,13 +833,11 @@ describe("subagent registry lifecycle hardening", () => {
     });
     const controller = createLifecycleController({ entry });
 
-    await controller.completeSubagentRun({
-      runId: entry.runId,
+    await completeRun(controller, entry, {
       startedAt: 2_000,
       endedAt: 6_000,
       outcome: { status: "error", error: "agent run aborted" },
       reason: SUBAGENT_ENDED_REASON_KILLED,
-      triggerCleanup: false,
     });
 
     expect(entry).toMatchObject({
@@ -893,9 +863,7 @@ describe("subagent registry lifecycle hardening", () => {
         runSubagentAnnounceFlow,
       });
 
-      await controller.completeSubagentRun({
-        runId: entry.runId,
-        endedAt: 4_000,
+      await completeRun(controller, entry, {
         outcome: { status: "error", error: "agent run aborted" },
         reason: SUBAGENT_ENDED_REASON_KILLED,
         triggerCleanup: true,
@@ -926,12 +894,9 @@ describe("subagent registry lifecycle hardening", () => {
       captureSubagentCompletionReply,
     });
 
-    await controller.completeSubagentRun({
-      runId: entry.runId,
-      endedAt: 4_000,
+    await completeRun(controller, entry, {
       outcome: { status: "error", error: "agent run aborted" },
       reason: SUBAGENT_ENDED_REASON_KILLED,
-      triggerCleanup: false,
     });
     expect(entry.completion).toMatchObject({ resultText: null });
 
@@ -961,12 +926,9 @@ describe("subagent registry lifecycle hardening", () => {
       captureSubagentCompletionReply,
     });
 
-    await controller.completeSubagentRun({
-      runId: entry.runId,
-      endedAt: 4_000,
+    await completeRun(controller, entry, {
       outcome: { status: "error", error: "agent run aborted" },
       reason: SUBAGENT_ENDED_REASON_KILLED,
-      triggerCleanup: false,
     });
     expect(entry.completion).toMatchObject({ resultText: null });
 
@@ -981,13 +943,9 @@ describe("subagent registry lifecycle hardening", () => {
   });
 
   it("preserves a captured reply when success supersedes a delayed killed lifecycle", async () => {
-    const entry = createRunEntry({
-      endedAt: 4_000,
+    const entry = createKilledRunEntry({
       archiveAtMs: 5_000,
-      endedReason: SUBAGENT_ENDED_REASON_KILLED,
-      outcome: { status: "error", error: "agent run aborted" },
       expectsCompletionMessage: true,
-      suppressAnnounceReason: "killed",
       killReconciliation: { killedAt: 4_000 },
       cleanupHandled: true,
       completion: {
@@ -1033,12 +991,10 @@ describe("subagent registry lifecycle hardening", () => {
     await waitForLifecycleState(() =>
       expect(captureSubagentCompletionReply).toHaveBeenCalledOnce(),
     );
-    const killed = controller.completeSubagentRun({
-      runId: entry.runId,
+    const killed = completeRun(controller, entry, {
       endedAt: 4_001,
       outcome: { status: "error", error: "agent run aborted" },
       reason: SUBAGENT_ENDED_REASON_KILLED,
-      triggerCleanup: false,
     });
     releaseCapture?.("Canonical final reply.");
     await Promise.all([success, killed]);
@@ -1199,9 +1155,7 @@ describe("subagent registry lifecycle hardening", () => {
       captureSubagentCompletionReply: vi.fn(async () => "Canonical success."),
     });
 
-    const killed = controller.completeSubagentRun({
-      runId: entry.runId,
-      endedAt: 4_000,
+    const killed = completeRun(controller, entry, {
       outcome: { status: "error", error: "agent run aborted" },
       reason: SUBAGENT_ENDED_REASON_KILLED,
       triggerCleanup: true,
@@ -1229,12 +1183,8 @@ describe("subagent registry lifecycle hardening", () => {
   });
 
   it("keeps requester stop delivery suppressed when provider completion wins", async () => {
-    const entry = createRunEntry({
-      endedAt: 4_000,
-      endedReason: SUBAGENT_ENDED_REASON_KILLED,
-      outcome: { status: "error", error: "agent run aborted" },
+    const entry = createKilledRunEntry({
       expectsCompletionMessage: true,
-      suppressAnnounceReason: "killed",
       killReconciliation: {
         killedAt: 4_000,
         suppressTaskDelivery: true,
@@ -1286,19 +1236,14 @@ describe("subagent registry lifecycle hardening", () => {
       const entry = createRunEntry();
       const controller = createLifecycleController({ entry });
 
-      await controller.completeSubagentRun({
-        runId: entry.runId,
-        endedAt: 4_000,
+      await completeRun(controller, entry, {
         outcome,
         reason,
-        triggerCleanup: false,
       });
-      await controller.completeSubagentRun({
-        runId: entry.runId,
+      await completeRun(controller, entry, {
         endedAt: 4_001,
         outcome: { status: "error", error: "agent run aborted" },
         reason: SUBAGENT_ENDED_REASON_KILLED,
-        triggerCleanup: false,
       });
 
       expect(entry.outcome?.status).toBe(outcome.status);
@@ -1321,12 +1266,8 @@ describe("subagent registry lifecycle hardening", () => {
   ])(
     "restarts cleanup when canonical $name supersedes a killed run",
     async ({ reason, outcome }) => {
-      const entry = createRunEntry({
-        endedAt: 4_000,
-        endedReason: SUBAGENT_ENDED_REASON_KILLED,
-        outcome: { status: "error", error: "agent run aborted" },
+      const entry = createKilledRunEntry({
         expectsCompletionMessage: true,
-        suppressAnnounceReason: "killed",
         killReconciliation: { killedAt: 4_000 },
         cleanupHandled: true,
         cleanupCompletedAt: 4_000,
@@ -1338,12 +1279,10 @@ describe("subagent registry lifecycle hardening", () => {
       });
       const controller = createLifecycleController({ entry });
 
-      await controller.completeSubagentRun({
-        runId: entry.runId,
+      await completeRun(controller, entry, {
         endedAt: 4_001,
         outcome,
         reason,
-        triggerCleanup: false,
       });
 
       expect(entry).toMatchObject({
@@ -1361,11 +1300,7 @@ describe("subagent registry lifecycle hardening", () => {
   );
 
   it("keeps accepted task cancellation canonical over a late provider result", async () => {
-    const entry = createRunEntry({
-      endedAt: 4_000,
-      endedReason: SUBAGENT_ENDED_REASON_KILLED,
-      outcome: { status: "error", error: "agent run aborted" },
-      suppressAnnounceReason: "killed",
+    const entry = createKilledRunEntry({
       killReconciliation: { killedAt: 4_000 },
       cleanupHandled: true,
       cleanupCompletedAt: 4_000,
@@ -1395,11 +1330,8 @@ describe("subagent registry lifecycle hardening", () => {
   });
 
   it("does not reinterpret a legacy killed row as a provisional cancellation", async () => {
-    const entry = createRunEntry({
-      endedAt: 4_000,
-      endedReason: SUBAGENT_ENDED_REASON_KILLED,
+    const entry = createKilledRunEntry({
       outcome: { status: "error", error: "legacy cancellation" },
-      suppressAnnounceReason: "killed",
       cleanupHandled: true,
       cleanupCompletedAt: 4_000,
     });
@@ -1413,11 +1345,7 @@ describe("subagent registry lifecycle hardening", () => {
   });
 
   it("keeps cancellation canonical when a custom runtime cannot resolve its task", async () => {
-    const entry = createRunEntry({
-      endedAt: 4_000,
-      endedReason: SUBAGENT_ENDED_REASON_KILLED,
-      outcome: { status: "error", error: "agent run aborted" },
-      suppressAnnounceReason: "killed",
+    const entry = createKilledRunEntry({
       killReconciliation: { killedAt: 4_000 },
       cleanupHandled: true,
       cleanupCompletedAt: 4_000,
@@ -1440,11 +1368,7 @@ describe("subagent registry lifecycle hardening", () => {
 
   it("accepts provider completion when an opaque custom runtime finalizes it", async () => {
     taskExecutorMocks.completeTaskRunByRunId.mockReturnValueOnce([{}]);
-    const entry = createRunEntry({
-      endedAt: 4_000,
-      endedReason: SUBAGENT_ENDED_REASON_KILLED,
-      outcome: { status: "error", error: "agent run aborted" },
-      suppressAnnounceReason: "killed",
+    const entry = createKilledRunEntry({
       killReconciliation: { killedAt: 4_000 },
       cleanupHandled: true,
       cleanupCompletedAt: 4_000,
@@ -1467,11 +1391,7 @@ describe("subagent registry lifecycle hardening", () => {
 
   it("restores an opaque provisional kill when completion persistence fails", async () => {
     taskExecutorMocks.completeTaskRunByRunId.mockReturnValueOnce([{}]);
-    const entry = createRunEntry({
-      endedAt: 4_000,
-      endedReason: SUBAGENT_ENDED_REASON_KILLED,
-      outcome: { status: "error", error: "agent run aborted" },
-      suppressAnnounceReason: "killed",
+    const entry = createKilledRunEntry({
       killReconciliation: { killedAt: 4_000 },
       cleanupHandled: true,
       cleanupCompletedAt: 4_000,
@@ -1494,11 +1414,7 @@ describe("subagent registry lifecycle hardening", () => {
   });
 
   it("keeps cancellation that becomes durable during completion capture", async () => {
-    const entry = createRunEntry({
-      endedAt: 4_000,
-      endedReason: SUBAGENT_ENDED_REASON_KILLED,
-      outcome: { status: "error", error: "agent run aborted" },
-      suppressAnnounceReason: "killed",
+    const entry = createKilledRunEntry({
       killReconciliation: { killedAt: 4_000 },
       cleanupHandled: true,
       cleanupCompletedAt: 4_000,
@@ -1575,9 +1491,7 @@ describe("subagent registry lifecycle hardening", () => {
       }),
     });
 
-    const killed = controller.completeSubagentRun({
-      runId: entry.runId,
-      endedAt: 4_000,
+    const killed = completeRun(controller, entry, {
       outcome: { status: "error", error: "agent run aborted" },
       reason: SUBAGENT_ENDED_REASON_KILLED,
       triggerCleanup: true,
@@ -1599,11 +1513,7 @@ describe("subagent registry lifecycle hardening", () => {
 
   it("accepts a provider result that predates task cancellation", async () => {
     taskExecutorMocks.completeTaskRunByRunId.mockReturnValueOnce([{}]);
-    const entry = createRunEntry({
-      endedAt: 4_000,
-      endedReason: SUBAGENT_ENDED_REASON_KILLED,
-      outcome: { status: "error", error: "agent run aborted" },
-      suppressAnnounceReason: "killed",
+    const entry = createKilledRunEntry({
       killReconciliation: { killedAt: 4_000 },
       cleanupHandled: true,
       cleanupCompletedAt: 4_000,
@@ -1635,12 +1545,9 @@ describe("subagent registry lifecycle hardening", () => {
 
   it("lets an explicit timeout deadline predate accepted task cancellation", async () => {
     taskExecutorMocks.failTaskRunByRunId.mockReturnValueOnce([{}]);
-    const entry = createRunEntry({
+    const entry = createKilledRunEntry({
       runTimeoutSeconds: 3,
       endedAt: 5_500,
-      endedReason: SUBAGENT_ENDED_REASON_KILLED,
-      outcome: { status: "error", error: "agent run aborted" },
-      suppressAnnounceReason: "killed",
       killReconciliation: { killedAt: 5_500 },
       cleanupHandled: true,
       cleanupCompletedAt: 5_500,
@@ -1658,13 +1565,9 @@ describe("subagent registry lifecycle hardening", () => {
       }),
     });
 
-    await controller.completeSubagentRun({
-      runId: entry.runId,
+    await completeRun(controller, entry, {
       startedAt: 2_000,
       endedAt: 6_000,
-      outcome: { status: "ok" },
-      reason: SUBAGENT_ENDED_REASON_COMPLETE,
-      triggerCleanup: false,
     });
 
     expect(entry).toMatchObject({
@@ -1683,11 +1586,7 @@ describe("subagent registry lifecycle hardening", () => {
 
   it("retires an old live completion without touching a newer session generation", async () => {
     taskExecutorMocks.completeTaskRunByRunId.mockReturnValueOnce([{}]);
-    const entry = createRunEntry({
-      endedAt: 4_000,
-      endedReason: SUBAGENT_ENDED_REASON_KILLED,
-      outcome: { status: "error", error: "agent run aborted" },
-      suppressAnnounceReason: "killed",
+    const entry = createKilledRunEntry({
       killReconciliation: { killedAt: 4_000 },
       cleanupHandled: true,
       cleanupCompletedAt: 4_000,
@@ -1749,12 +1648,8 @@ describe("subagent registry lifecycle hardening", () => {
   it("keeps the superseded generation boundary through task finalization", async () => {
     taskExecutorMocks.completeTaskRunByRunId.mockReturnValueOnce([{}]);
     const marker = { killedAt: 4_000, supersededAt: 5_000 };
-    const entry = createRunEntry({
+    const entry = createKilledRunEntry({
       runId: "run-after-replacement",
-      endedAt: 4_000,
-      endedReason: SUBAGENT_ENDED_REASON_KILLED,
-      outcome: { status: "error", error: "agent run aborted" },
-      suppressAnnounceReason: "killed",
       killReconciliation: marker,
       cleanupHandled: true,
       cleanupCompletedAt: 4_000,
@@ -1975,16 +1870,13 @@ describe("subagent registry lifecycle hardening", () => {
     },
   ])("$name", async ({ reply, terminalOutcome, terminalSummary }) => {
     const entry = createRunEntry({ expectsCompletionMessage: true });
-    await createLifecycleController({
+    await completeRun(
+      createLifecycleController({
+        entry,
+        captureSubagentCompletionReply: vi.fn(async () => reply),
+      }),
       entry,
-      captureSubagentCompletionReply: vi.fn(async () => reply),
-    }).completeSubagentRun({
-      runId: entry.runId,
-      endedAt: 4_000,
-      outcome: { status: "ok" },
-      reason: SUBAGENT_ENDED_REASON_COMPLETE,
-      triggerCleanup: false,
-    });
+    );
 
     const finalArg = firstCallArg(taskExecutorMocks.completeTaskRunByRunId);
     expectFields(finalArg, {
@@ -2263,9 +2155,7 @@ describe("subagent registry lifecycle hardening", () => {
       captureSubagentCompletionReply: vi.fn(async () => ""),
     });
 
-    await controller.completeSubagentRun({
-      runId: entry.runId,
-      endedAt: 4_000,
+    await completeRun(controller, entry, {
       outcome: { status: "error", error: "completed" },
       reason: SUBAGENT_ENDED_REASON_ERROR,
       triggerCleanup: true,
@@ -2291,9 +2181,7 @@ describe("subagent registry lifecycle hardening", () => {
     });
     const controller = createLifecycleController({ entry });
 
-    await controller.completeSubagentRun({
-      runId: entry.runId,
-      endedAt: 4_000,
+    await completeRun(controller, entry, {
       outcome: { status: "error", error: "provider failed after tool output" },
       reason: SUBAGENT_ENDED_REASON_ERROR,
       triggerCleanup: true,
@@ -2391,12 +2279,8 @@ describe("subagent registry lifecycle hardening", () => {
   });
 
   it("keeps provisional killed sessions across resumed cleanup", async () => {
-    const entry = createRunEntry({
+    const entry = createKilledRunEntry({
       cleanup: "delete",
-      endedAt: 4_000,
-      endedReason: SUBAGENT_ENDED_REASON_KILLED,
-      outcome: { status: "error", error: "agent run aborted" },
-      suppressAnnounceReason: "killed",
       killReconciliation: { killedAt: 4_000 },
       archiveAtMs: 304_000,
       expectsCompletionMessage: false,
@@ -2545,12 +2429,8 @@ describe("subagent registry lifecycle hardening", () => {
     });
 
     await expect(
-      controller.completeSubagentRun({
-        runId: entry.runId,
-        endedAt: 4_000,
+      completeRun(controller, entry, {
         outcome: { status: "error", error: "All models failed (2): timeout" },
-        reason: SUBAGENT_ENDED_REASON_COMPLETE,
-        triggerCleanup: false,
       }),
     ).resolves.toBeUndefined();
 

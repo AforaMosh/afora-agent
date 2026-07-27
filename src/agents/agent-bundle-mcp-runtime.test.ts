@@ -42,6 +42,31 @@ type RuntimeFactoryOptions = NonNullable<
   Parameters<typeof testing.createSessionMcpRuntimeManager>[0]
 >;
 type RuntimeFactory = NonNullable<RuntimeFactoryOptions["createRuntime"]>;
+type RuntimeManager = ReturnType<typeof testing.createSessionMcpRuntimeManager>;
+type McpTestServers = NonNullable<
+  NonNullable<
+    NonNullable<Parameters<typeof getOrCreateSessionMcpRuntime>[0]["cfg"]>["mcp"]
+  >["servers"]
+>;
+
+function createTestMcpConfig(servers: McpTestServers) {
+  return { mcp: { servers } };
+}
+
+function getManagedTestRuntime(
+  manager: RuntimeManager,
+  sessionId: string,
+  params: Omit<Parameters<RuntimeManager["getOrCreate"]>[0], "sessionId" | "workspaceDir">,
+) {
+  return manager.getOrCreate({ sessionId, workspaceDir: "/workspace", ...params });
+}
+
+function getGlobalTestRuntime(
+  sessionId: string,
+  params: Omit<Parameters<typeof getOrCreateSessionMcpRuntime>[0], "sessionId" | "workspaceDir">,
+) {
+  return getOrCreateSessionMcpRuntime({ sessionId, workspaceDir: "/workspace", ...params });
+}
 const LIST_TOOLS_SERVER_LOG_TIMEOUT_MS = 2_000;
 const LIST_TOOLS_TEST_DEADLINE_MS = 4_000;
 const SHA256_HEX_PATTERN = /^[0-9a-f]{64}$/;
@@ -910,21 +935,15 @@ describe("session MCP runtime", () => {
       delayMs: 100,
     });
 
-    const runtime = await getOrCreateSessionMcpRuntime({
-      sessionId: "session-slow-listtools-server-timeout",
+    const runtime = await getGlobalTestRuntime("session-slow-listtools-server-timeout", {
       sessionKey: "agent:test:session-slow-listtools-server-timeout",
-      workspaceDir: "/workspace",
-      cfg: {
-        mcp: {
-          servers: {
-            slowListTools: {
-              command: process.execPath,
-              args: [serverPath],
-              connectionTimeoutMs: 1_000,
-            },
-          },
+      cfg: createTestMcpConfig({
+        slowListTools: {
+          command: process.execPath,
+          args: [serverPath],
+          connectionTimeoutMs: 1_000,
         },
-      },
+      }),
     });
 
     try {
@@ -949,20 +968,14 @@ describe("session MCP runtime", () => {
     testing.setBundleMcpCatalogListTimeoutMsForTest(50);
     await writeListToolsMcpServer({ filePath: serverPath, logPath, hang: true });
 
-    const runtime = await getOrCreateSessionMcpRuntime({
-      sessionId: "session-listtools-server-timeout",
+    const runtime = await getGlobalTestRuntime("session-listtools-server-timeout", {
       sessionKey: "agent:test:session-listtools-server-timeout",
-      workspaceDir: "/workspace",
-      cfg: {
-        mcp: {
-          servers: {
-            hangingListTools: {
-              command: process.execPath,
-              args: [serverPath],
-            },
-          },
+      cfg: createTestMcpConfig({
+        hangingListTools: {
+          command: process.execPath,
+          args: [serverPath],
         },
-      },
+      }),
     });
     const catalogResult = runtime.getCatalog().then(
       (catalog) => ({ status: "resolved" as const, catalog }),
@@ -1003,20 +1016,14 @@ describe("session MCP runtime", () => {
       inputSchema: { type: "array", items: { type: "number" } },
     });
 
-    const runtime = await getOrCreateSessionMcpRuntime({
-      sessionId: "session-invalid-schema",
+    const runtime = await getGlobalTestRuntime("session-invalid-schema", {
       sessionKey: "agent:test:session-invalid-schema",
-      workspaceDir: "/workspace",
-      cfg: {
-        mcp: {
-          servers: {
-            fuzzplugin: {
-              command: process.execPath,
-              args: [serverPath],
-            },
-          },
+      cfg: createTestMcpConfig({
+        fuzzplugin: {
+          command: process.execPath,
+          args: [serverPath],
         },
-      },
+      }),
     });
 
     try {
@@ -1044,20 +1051,14 @@ describe("session MCP runtime", () => {
       listToolsJsonRpcErrorMessage: `Authorization: Bearer ${secret}`,
     });
 
-    const runtime = await getOrCreateSessionMcpRuntime({
-      sessionId: "session-diagnostic-redaction",
+    const runtime = await getGlobalTestRuntime("session-diagnostic-redaction", {
       sessionKey: "agent:test:session-diagnostic-redaction",
-      workspaceDir: "/workspace",
-      cfg: {
-        mcp: {
-          servers: {
-            diagnostic: {
-              command: process.execPath,
-              args: [serverPath],
-            },
-          },
+      cfg: createTestMcpConfig({
+        diagnostic: {
+          command: process.execPath,
+          args: [serverPath],
         },
-      },
+      }),
     });
 
     try {
@@ -1099,26 +1100,20 @@ describe("session MCP runtime", () => {
       }),
     ]);
 
-    const staticRuntime = await getOrCreateSessionMcpRuntime({
-      sessionId: "session-catalog-retry",
+    const staticRuntime = await getGlobalTestRuntime("session-catalog-retry", {
       sessionKey: "agent:test:session-catalog-retry",
-      workspaceDir: "/workspace",
-      cfg: {
-        mcp: {
-          servers: {
-            healthyServer: {
-              command: process.execPath,
-              args: [healthyServerPath],
-              connectionTimeoutMs: 2_000,
-            },
-            retryServer: {
-              command: process.execPath,
-              args: [retryServerPath],
-              connectionTimeoutMs: 2_000,
-            },
-          },
+      cfg: createTestMcpConfig({
+        healthyServer: {
+          command: process.execPath,
+          args: [healthyServerPath],
+          connectionTimeoutMs: 2_000,
         },
-      },
+        retryServer: {
+          command: process.execPath,
+          args: [retryServerPath],
+          connectionTimeoutMs: 2_000,
+        },
+      }),
     });
     const scopedRuntime = makeRuntime(
       [{ toolName: "scoped_tool", description: "Requester-scoped tool" }],
@@ -1200,24 +1195,18 @@ describe("session MCP runtime", () => {
       ],
     });
 
-    const runtime = await getOrCreateSessionMcpRuntime({
-      sessionId: "session-tool-filter",
+    const runtime = await getGlobalTestRuntime("session-tool-filter", {
       sessionKey: "agent:test:session-tool-filter",
-      workspaceDir: "/workspace",
-      cfg: {
-        mcp: {
-          servers: {
-            docs: {
-              command: process.execPath,
-              args: [serverPath],
-              toolFilter: {
-                include: ["*_docs", "admin_*"],
-                exclude: ["admin_*"],
-              },
-            },
+      cfg: createTestMcpConfig({
+        docs: {
+          command: process.execPath,
+          args: [serverPath],
+          toolFilter: {
+            include: ["*_docs", "admin_*"],
+            exclude: ["admin_*"],
           },
         },
-      },
+      }),
     });
 
     try {
@@ -1252,20 +1241,14 @@ describe("session MCP runtime", () => {
       ],
     });
 
-    const runtime = await getOrCreateSessionMcpRuntime({
-      sessionId: "session-utf16-metadata",
+    const runtime = await getGlobalTestRuntime("session-utf16-metadata", {
       sessionKey: "agent:test:session-utf16-metadata",
-      workspaceDir: "/workspace",
-      cfg: {
-        mcp: {
-          servers: {
-            metadata: {
-              command: process.execPath,
-              args: [serverPath],
-            },
-          },
+      cfg: createTestMcpConfig({
+        metadata: {
+          command: process.execPath,
+          args: [serverPath],
         },
-      },
+      }),
     });
 
     try {
@@ -1294,21 +1277,15 @@ describe("session MCP runtime", () => {
       ],
     });
 
-    const runtime = await getOrCreateSessionMcpRuntime({
-      sessionId: "session-linear-tool-filter",
+    const runtime = await getGlobalTestRuntime("session-linear-tool-filter", {
       sessionKey: "agent:test:session-linear-tool-filter",
-      workspaceDir: "/workspace",
-      cfg: {
-        mcp: {
-          servers: {
-            docs: {
-              command: process.execPath,
-              args: [serverPath],
-              toolFilter: { include: [`${"*a".repeat(24)}*b`] },
-            },
-          },
+      cfg: createTestMcpConfig({
+        docs: {
+          command: process.execPath,
+          args: [serverPath],
+          toolFilter: { include: [`${"*a".repeat(24)}*b`] },
         },
-      },
+      }),
     });
 
     try {
@@ -1330,20 +1307,14 @@ describe("session MCP runtime", () => {
       tools: [{ name: "legacy_tool", inputSchema: { type: "object", properties: {} } }],
     });
 
-    const runtime = await getOrCreateSessionMcpRuntime({
-      sessionId: "session-unadvertised-tools",
+    const runtime = await getGlobalTestRuntime("session-unadvertised-tools", {
       sessionKey: "agent:test:session-unadvertised-tools",
-      workspaceDir: "/workspace",
-      cfg: {
-        mcp: {
-          servers: {
-            legacy: {
-              command: process.execPath,
-              args: [serverPath],
-            },
-          },
+      cfg: createTestMcpConfig({
+        legacy: {
+          command: process.execPath,
+          args: [serverPath],
         },
-      },
+      }),
     });
 
     try {
@@ -1452,20 +1423,14 @@ process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);`,
     );
 
-    const runtime = await getOrCreateSessionMcpRuntime({
-      sessionId: "session-refresh-diagnostic",
+    const runtime = await getGlobalTestRuntime("session-refresh-diagnostic", {
       sessionKey: "agent:test:session-refresh-diagnostic",
-      workspaceDir: "/workspace",
-      cfg: {
-        mcp: {
-          servers: {
-            volatile: {
-              command: process.execPath,
-              args: [serverPath],
-            },
-          },
+      cfg: createTestMcpConfig({
+        volatile: {
+          command: process.execPath,
+          args: [serverPath],
         },
-      },
+      }),
     });
 
     try {
@@ -1506,18 +1471,12 @@ process.on("SIGINT", shutdown);`,
     });
     await writeListToolsMcpServer({ filePath: healthyServerPath, logPath: healthyLogPath });
 
-    const runtime = await getOrCreateSessionMcpRuntime({
-      sessionId: "session-child-exit",
+    const runtime = await getGlobalTestRuntime("session-child-exit", {
       sessionKey: "agent:test:session-child-exit",
-      workspaceDir: "/workspace",
-      cfg: {
-        mcp: {
-          servers: {
-            child: { command: process.execPath, args: [serverPath] },
-            healthy: { command: process.execPath, args: [healthyServerPath] },
-          },
-        },
-      },
+      cfg: createTestMcpConfig({
+        child: { command: process.execPath, args: [serverPath] },
+        healthy: { command: process.execPath, args: [healthyServerPath] },
+      }),
     });
 
     try {
@@ -1579,17 +1538,11 @@ process.on("SIGINT", shutdown);`,
       exitOnListCall: 2,
     });
 
-    const runtime = await getOrCreateSessionMcpRuntime({
-      sessionId: "session-refresh-exit",
+    const runtime = await getGlobalTestRuntime("session-refresh-exit", {
       sessionKey: "agent:test:session-refresh-exit",
-      workspaceDir: "/workspace",
-      cfg: {
-        mcp: {
-          servers: {
-            child: { command: process.execPath, args: [serverPath] },
-          },
-        },
-      },
+      cfg: createTestMcpConfig({
+        child: { command: process.execPath, args: [serverPath] },
+      }),
     });
 
     try {
@@ -1697,20 +1650,14 @@ process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);`,
     );
 
-    const runtime = await getOrCreateSessionMcpRuntime({
-      sessionId: "session-inflight-invalidated",
+    const runtime = await getGlobalTestRuntime("session-inflight-invalidated", {
       sessionKey: "agent:test:session-inflight-invalidated",
-      workspaceDir: "/workspace",
-      cfg: {
-        mcp: {
-          servers: {
-            changing: {
-              command: process.execPath,
-              args: [serverPath],
-            },
-          },
+      cfg: createTestMcpConfig({
+        changing: {
+          command: process.execPath,
+          args: [serverPath],
         },
-      },
+      }),
     });
 
     try {
@@ -1739,20 +1686,14 @@ process.on("SIGINT", shutdown);`,
       listToolsMethodNotFound: true,
     });
 
-    const runtime = await getOrCreateSessionMcpRuntime({
-      sessionId: "session-resource-only",
+    const runtime = await getGlobalTestRuntime("session-resource-only", {
       sessionKey: "agent:test:session-resource-only",
-      workspaceDir: "/workspace",
-      cfg: {
-        mcp: {
-          servers: {
-            notes: {
-              command: process.execPath,
-              args: [serverPath],
-            },
-          },
+      cfg: createTestMcpConfig({
+        notes: {
+          command: process.execPath,
+          args: [serverPath],
         },
-      },
+      }),
     });
 
     try {
@@ -1781,20 +1722,14 @@ process.on("SIGINT", shutdown);`,
       callToolIsError: true,
     });
 
-    const runtime = await getOrCreateSessionMcpRuntime({
-      sessionId: "session-error-backoff",
+    const runtime = await getGlobalTestRuntime("session-error-backoff", {
       sessionKey: "agent:test:session-error-backoff",
-      workspaceDir: "/workspace",
-      cfg: {
-        mcp: {
-          servers: {
-            failing: {
-              command: process.execPath,
-              args: [serverPath],
-            },
-          },
+      cfg: createTestMcpConfig({
+        failing: {
+          command: process.execPath,
+          args: [serverPath],
         },
-      },
+      }),
     });
 
     try {
@@ -1826,20 +1761,14 @@ process.on("SIGINT", shutdown);`,
       callToolJsonRpcError: true,
     });
 
-    const runtime = await getOrCreateSessionMcpRuntime({
-      sessionId: "session-request-failure-backoff",
+    const runtime = await getGlobalTestRuntime("session-request-failure-backoff", {
       sessionKey: "agent:test:session-request-failure-backoff",
-      workspaceDir: "/workspace",
-      cfg: {
-        mcp: {
-          servers: {
-            failing: {
-              command: process.execPath,
-              args: [serverPath],
-            },
-          },
+      cfg: createTestMcpConfig({
+        failing: {
+          command: process.execPath,
+          args: [serverPath],
         },
-      },
+      }),
     });
 
     try {
@@ -1874,17 +1803,11 @@ process.on("SIGINT", shutdown);`,
       callToolJsonRpcErrorCode: -32001,
     });
 
-    const runtime = await getOrCreateSessionMcpRuntime({
-      sessionId: "session-remote-timeout-code",
+    const runtime = await getGlobalTestRuntime("session-remote-timeout-code", {
       sessionKey: "agent:test:session-remote-timeout-code",
-      workspaceDir: "/workspace",
-      cfg: {
-        mcp: {
-          servers: {
-            responsive: { command: process.execPath, args: [serverPath] },
-          },
-        },
-      },
+      cfg: createTestMcpConfig({
+        responsive: { command: process.execPath, args: [serverPath] },
+      }),
     });
 
     try {
@@ -1919,21 +1842,15 @@ process.on("SIGINT", shutdown);`,
       hangToolCallsUntilRestartMarkerPath: markerPath,
     });
 
-    const runtime = await getOrCreateSessionMcpRuntime({
-      sessionId: "session-timeout-recycle",
+    const runtime = await getGlobalTestRuntime("session-timeout-recycle", {
       sessionKey: "agent:test:session-timeout-recycle",
-      workspaceDir: "/workspace",
-      cfg: {
-        mcp: {
-          servers: {
-            hanging: {
-              command: process.execPath,
-              args: [serverPath],
-              requestTimeoutMs: 25,
-            },
-          },
+      cfg: createTestMcpConfig({
+        hanging: {
+          command: process.execPath,
+          args: [serverPath],
+          requestTimeoutMs: 25,
         },
-      },
+      }),
     });
 
     try {
@@ -1982,21 +1899,15 @@ process.on("SIGINT", shutdown);`,
       resourcePageCount: 2,
     });
 
-    const runtime = await getOrCreateSessionMcpRuntime({
-      sessionId: "session-resource-pages",
+    const runtime = await getGlobalTestRuntime("session-resource-pages", {
       sessionKey: "agent:test:session-resource-pages",
-      workspaceDir: "/workspace",
-      cfg: {
-        mcp: {
-          servers: {
-            paged: {
-              command: process.execPath,
-              args: [serverPath],
-              requestTimeoutMs: 150,
-            },
-          },
+      cfg: createTestMcpConfig({
+        paged: {
+          command: process.execPath,
+          args: [serverPath],
+          requestTimeoutMs: 150,
         },
-      },
+      }),
     });
 
     try {
@@ -2022,20 +1933,14 @@ process.on("SIGINT", shutdown);`,
       resourceListJsonRpcError: true,
     });
 
-    const runtime = await getOrCreateSessionMcpRuntime({
-      sessionId: "session-utility-failure-backoff",
+    const runtime = await getGlobalTestRuntime("session-utility-failure-backoff", {
       sessionKey: "agent:test:session-utility-failure-backoff",
-      workspaceDir: "/workspace",
-      cfg: {
-        mcp: {
-          servers: {
-            failing: {
-              command: process.execPath,
-              args: [serverPath],
-            },
-          },
+      cfg: createTestMcpConfig({
+        failing: {
+          command: process.execPath,
+          args: [serverPath],
         },
-      },
+      }),
     });
 
     try {
@@ -2065,17 +1970,11 @@ process.on("SIGINT", shutdown);`,
       resourceReadJsonRpcError: true,
     });
 
-    const runtime = await getOrCreateSessionMcpRuntime({
-      sessionId: "session-preview-failure",
+    const runtime = await getGlobalTestRuntime("session-preview-failure", {
       sessionKey: "agent:test:session-preview-failure",
-      workspaceDir: "/workspace",
-      cfg: {
-        mcp: {
-          servers: {
-            failing: { command: process.execPath, args: [serverPath] },
-          },
-        },
-      },
+      cfg: createTestMcpConfig({
+        failing: { command: process.execPath, args: [serverPath] },
+      }),
     });
 
     try {
@@ -2118,16 +2017,12 @@ process.on("SIGINT", shutdown);`,
     const manager = testing.createSessionMcpRuntimeManager({ createRuntime });
     const manifestRegistry = { plugins: [] };
 
-    const runtimeA = await manager.getOrCreate({
-      sessionId: "session-a",
+    const runtimeA = await getManagedTestRuntime(manager, "session-a", {
       sessionKey: "agent:test:session-a",
-      workspaceDir: "/workspace",
       manifestRegistry,
     });
-    const runtimeB = await manager.getOrCreate({
-      sessionId: "session-a",
+    const runtimeB = await getManagedTestRuntime(manager, "session-a", {
       sessionKey: "agent:test:session-a",
-      workspaceDir: "/workspace",
       manifestRegistry,
     });
 
@@ -2147,10 +2042,8 @@ process.on("SIGINT", shutdown);`,
     await manager.disposeSession("session-a");
     expect(disposed).toEqual(["session-a"]);
 
-    const runtimeC = await manager.getOrCreate({
-      sessionId: "session-a",
+    const runtimeC = await getManagedTestRuntime(manager, "session-a", {
       sessionKey: "agent:test:session-a",
-      workspaceDir: "/workspace",
       manifestRegistry,
     });
     await materializeBundleMcpToolsForRun({ runtime: runtimeC });
@@ -2193,22 +2086,16 @@ process.on("SIGINT", shutdown);`,
     };
     const manager = testing.createSessionMcpRuntimeManager({ createRuntime });
 
-    const runtimeA = await manager.getOrCreate({
-      sessionId: "session-agent-dir",
+    const runtimeA = await getManagedTestRuntime(manager, "session-agent-dir", {
       sessionKey: "agent:test:session-agent-dir",
-      workspaceDir: "/workspace",
       agentDir: "/agents/one",
     });
-    const runtimeB = await manager.getOrCreate({
-      sessionId: "session-agent-dir",
+    const runtimeB = await getManagedTestRuntime(manager, "session-agent-dir", {
       sessionKey: "agent:test:session-agent-dir",
-      workspaceDir: "/workspace",
       agentDir: "/agents/one",
     });
-    const runtimeC = await manager.getOrCreate({
-      sessionId: "session-agent-dir",
+    const runtimeC = await getManagedTestRuntime(manager, "session-agent-dir", {
       sessionKey: "agent:test:session-agent-dir",
-      workspaceDir: "/workspace",
       agentDir: "/agents/two",
     });
 
@@ -2247,10 +2134,8 @@ process.on("SIGINT", shutdown);`,
 
     expect(manager.peekSession({ sessionId: "session-peek" })).toBeUndefined();
 
-    const runtime = await manager.getOrCreate({
-      sessionId: "session-peek",
+    const runtime = await getManagedTestRuntime(manager, "session-peek", {
       sessionKey: "agent:test:session-peek",
-      workspaceDir: "/workspace",
     });
     expect(manager.peekSession({ sessionId: "session-peek" })).toBe(runtime);
     expect(manager.peekSession({ sessionKey: "agent:test:session-peek" })).toBe(runtime);
@@ -2282,23 +2167,17 @@ process.on("SIGINT", shutdown);`,
     };
     const manager = testing.createSessionMcpRuntimeManager({ createRuntime });
 
-    const runtimeA = await manager.getOrCreate({
-      sessionId: "session-c",
+    const runtimeA = await getManagedTestRuntime(manager, "session-c", {
       sessionKey: "agent:test:session-c",
-      workspaceDir: "/workspace",
-      cfg: {
-        mcp: {
-          servers: {
-            configuredProbe: {
-              command: "node",
-              args: ["server-a.mjs"],
-              env: {
-                BUNDLE_PROBE_TEXT: "FROM-CONFIG-A",
-              },
-            },
+      cfg: createTestMcpConfig({
+        configuredProbe: {
+          command: "node",
+          args: ["server-a.mjs"],
+          env: {
+            BUNDLE_PROBE_TEXT: "FROM-CONFIG-A",
           },
         },
-      },
+      }),
     });
     const toolsA = await materializeBundleMcpToolsForRun({ runtime: runtimeA });
     const resultA = await expectDefined(toolsA.tools[0], "toolsA.tools[0] test invariant").execute(
@@ -2308,23 +2187,17 @@ process.on("SIGINT", shutdown);`,
       undefined,
     );
 
-    const runtimeB = await manager.getOrCreate({
-      sessionId: "session-c",
+    const runtimeB = await getManagedTestRuntime(manager, "session-c", {
       sessionKey: "agent:test:session-c",
-      workspaceDir: "/workspace",
-      cfg: {
-        mcp: {
-          servers: {
-            configuredProbe: {
-              command: "node",
-              args: ["server-b.mjs"],
-              env: {
-                BUNDLE_PROBE_TEXT: "FROM-CONFIG-B",
-              },
-            },
+      cfg: createTestMcpConfig({
+        configuredProbe: {
+          command: "node",
+          args: ["server-b.mjs"],
+          env: {
+            BUNDLE_PROBE_TEXT: "FROM-CONFIG-B",
           },
         },
-      },
+      }),
     });
     const toolsB = await materializeBundleMcpToolsForRun({ runtime: runtimeB });
     const resultB = await expectDefined(toolsB.tools[0], "toolsB.tools[0] test invariant").execute(
@@ -2373,10 +2246,8 @@ process.on("SIGINT", shutdown);`,
       },
     });
     const manager = testing.createSessionMcpRuntimeManager({ createRuntime });
-    const runtime = await manager.getOrCreate({
-      sessionId: "session-d",
+    const runtime = await getManagedTestRuntime(manager, "session-d", {
       sessionKey: "agent:test:session-d",
-      workspaceDir: "/workspace",
     });
 
     const materializeResult = materializeBundleMcpToolsForRun({ runtime }).then(
@@ -2396,10 +2267,8 @@ process.on("SIGINT", shutdown);`,
   });
 
   it("retires global session runtimes and ignores missing ids", async () => {
-    await getOrCreateSessionMcpRuntime({
-      sessionId: "session-retire",
+    await getGlobalTestRuntime("session-retire", {
       sessionKey: "agent:test:session-retire",
-      workspaceDir: "/workspace",
     });
     expect(testing.getCachedSessionIds()).toContain("session-retire");
 
@@ -2412,10 +2281,8 @@ process.on("SIGINT", shutdown);`,
   });
 
   it("preserves a runtime while a bounded app view lease is active", async () => {
-    const runtime = await getOrCreateSessionMcpRuntime({
-      sessionId: "session-view-lease",
+    const runtime = await getGlobalTestRuntime("session-view-lease", {
       sessionKey: "agent:test:session-view-lease",
-      workspaceDir: "/workspace",
       cfg: { mcp: {} },
     });
     const release = runtime.acquireLease?.();
@@ -2452,10 +2319,8 @@ process.on("SIGINT", shutdown);`,
   });
 
   it("revokes App context across reset while a view lease defers retirement", async () => {
-    const runtime = await getOrCreateSessionMcpRuntime({
-      sessionId: "session-view-reset",
+    const runtime = await getGlobalTestRuntime("session-view-reset", {
       sessionKey: "agent:test:session-view-reset",
-      workspaceDir: "/workspace",
       cfg: { mcp: {} },
     });
     const release = runtime.acquireLease?.();
@@ -2486,10 +2351,8 @@ process.on("SIGINT", shutdown);`,
         },
       ),
     ).toThrow("unavailable for this session");
-    const reused = await getOrCreateSessionMcpRuntime({
-      sessionId: "session-view-reset",
+    const reused = await getGlobalTestRuntime("session-view-reset", {
       sessionKey: "agent:test:session-view-reset",
-      workspaceDir: "/workspace",
       cfg: { mcp: {} },
     });
     expect(reused).toBe(runtime);
@@ -2501,10 +2364,8 @@ process.on("SIGINT", shutdown);`,
   });
 
   it("completes deferred retirement when a materialized run releases its lease", async () => {
-    const runtime = await getOrCreateSessionMcpRuntime({
-      sessionId: "session-run-lease",
+    const runtime = await getGlobalTestRuntime("session-run-lease", {
       sessionKey: "agent:test:session-run-lease",
-      workspaceDir: "/workspace",
       cfg: { mcp: {} },
     });
     const materialized = await materializeBundleMcpToolsForRun({ runtime });
@@ -2533,17 +2394,11 @@ process.on("SIGINT", shutdown);`,
     let lockProbe: DatabaseSync | undefined;
 
     try {
-      const runtime = await getOrCreateSessionMcpRuntime({
-        sessionId: "session-run-child",
+      const runtime = await getGlobalTestRuntime("session-run-child", {
         sessionKey: "agent:test:session-run-child",
-        workspaceDir: "/workspace",
-        cfg: {
-          mcp: {
-            servers: {
-              child: { command: process.execPath, args: [serverPath] },
-            },
-          },
-        },
+        cfg: createTestMcpConfig({
+          child: { command: process.execPath, args: [serverPath] },
+        }),
       });
       materialized = await materializeBundleMcpToolsForRun({ runtime });
       await waitForFileText(pidPath, "", LIST_TOOLS_SERVER_LOG_TIMEOUT_MS);
@@ -2589,10 +2444,8 @@ process.on("SIGINT", shutdown);`,
   it("keeps a run-mode subagent runtime alive for an approved follow-up turn", async () => {
     const sessionId = "session-subagent-followup";
     const sessionKey = "agent:test:session-subagent-followup";
-    const runtime = await getOrCreateSessionMcpRuntime({
-      sessionId,
+    const runtime = await getGlobalTestRuntime(sessionId, {
       sessionKey,
-      workspaceDir: "/workspace",
       cfg: { mcp: {} },
     });
     const materialized = await materializeBundleMcpToolsForRun({ runtime });
@@ -2679,10 +2532,8 @@ process.on("SIGINT", shutdown);`,
   });
 
   it("retires global session runtimes by session key", async () => {
-    await getOrCreateSessionMcpRuntime({
-      sessionId: "session-retire-key",
+    await getGlobalTestRuntime("session-retire-key", {
       sessionKey: "agent:test:session-retire-key",
-      workspaceDir: "/workspace",
     });
     expect(testing.getCachedSessionIds()).toContain("session-retire-key");
 
@@ -2759,37 +2610,27 @@ describe("requester-scoped MCP connection resolution", () => {
       };
     };
     const manager = testing.createSessionMcpRuntimeManager({ createRuntime });
-    const cfg = {
-      mcp: {
-        servers: {
-          shared: { command: "true" },
-          "user-mail": { transport: "streamable-http" },
-        },
-      },
-    };
+    const cfg = createTestMcpConfig({
+      shared: { command: "true" },
+      "user-mail": { transport: "streamable-http" },
+    });
 
-    await manager.getOrCreate({
-      sessionId: "session-shared",
+    await getManagedTestRuntime(manager, "session-shared", {
       sessionKey: "agent:test:session-shared",
-      workspaceDir: "/workspace",
       cfg: cfg as never,
       requesterSenderId: "sender-a",
       messageChannel: "telegram",
       agentAccountId: "bot-1",
     });
-    await manager.getOrCreate({
-      sessionId: "session-shared",
+    await getManagedTestRuntime(manager, "session-shared", {
       sessionKey: "agent:test:session-shared",
-      workspaceDir: "/workspace",
       cfg: cfg as never,
       requesterSenderId: "sender-a",
       messageChannel: "telegram",
       agentAccountId: "bot-1",
     });
-    await manager.getOrCreate({
-      sessionId: "session-shared",
+    await getManagedTestRuntime(manager, "session-shared", {
       sessionKey: "agent:test:session-shared",
-      workspaceDir: "/workspace",
       cfg: cfg as never,
       requesterSenderId: "sender-b",
       messageChannel: "telegram",
@@ -2835,19 +2676,13 @@ describe("requester-scoped MCP connection resolution", () => {
     const { testing: resolverTesting } = await import("./mcp-connection-resolver.js");
     const { resolveSessionMcpConfigSummary } = await import("./agent-bundle-mcp-tools.js");
     const manager = testing.createSessionMcpRuntimeManager();
-    const cfg = {
-      mcp: {
-        servers: {
-          shared: { command: "true" },
-          "user-mail": { transport: "streamable-http", url: "https://static.example.test" },
-        },
-      },
-    };
+    const cfg = createTestMcpConfig({
+      shared: { command: "true" },
+      "user-mail": { transport: "streamable-http", url: "https://static.example.test" },
+    });
 
     // Static-only config: the summary must match the bare runtime byte-for-byte.
-    const staticRuntime = await manager.getOrCreate({
-      sessionId: "session-parity-static",
-      workspaceDir: "/workspace",
+    const staticRuntime = await getManagedTestRuntime(manager, "session-parity-static", {
       cfg: cfg as never,
     });
     expect(
@@ -2859,9 +2694,7 @@ describe("requester-scoped MCP connection resolution", () => {
     resolverTesting.setMcpServerConnectionResolversForTest([
       { serverName: "user-mail", resolve: async () => null },
     ]);
-    await manager.getOrCreate({
-      sessionId: "session-parity-scoped",
-      workspaceDir: "/workspace",
+    await getManagedTestRuntime(manager, "session-parity-scoped", {
       cfg: cfg as never,
       requesterSenderId: "sender-a",
     });
@@ -2898,24 +2731,16 @@ describe("requester-scoped MCP connection resolution", () => {
       requesterScope: params.requesterScope,
     });
     const manager = testing.createSessionMcpRuntimeManager({ createRuntime });
-    const cfg = {
-      mcp: {
-        servers: {
-          "user-mail": { transport: "streamable-http" },
-        },
-      },
-    };
+    const cfg = createTestMcpConfig({
+      "user-mail": { transport: "streamable-http" },
+    });
 
-    await manager.getOrCreate({
-      sessionId: "session-resolve-once",
-      workspaceDir: "/workspace",
+    await getManagedTestRuntime(manager, "session-resolve-once", {
       cfg: cfg as never,
       requesterSenderId: "sender-a",
       messageChannel: "telegram",
     });
-    await manager.getOrCreate({
-      sessionId: "session-resolve-once",
-      workspaceDir: "/workspace",
+    await getManagedTestRuntime(manager, "session-resolve-once", {
       cfg: cfg as never,
       requesterSenderId: "sender-a",
       messageChannel: "telegram",
@@ -2951,19 +2776,13 @@ describe("requester-scoped MCP connection resolution", () => {
       };
     };
     const manager = testing.createSessionMcpRuntimeManager({ createRuntime });
-    const cfg = {
-      mcp: {
-        servers: {
-          shared: { command: "true" },
-          "user-mail": { transport: "streamable-http" },
-        },
-      },
-    };
+    const cfg = createTestMcpConfig({
+      shared: { command: "true" },
+      "user-mail": { transport: "streamable-http" },
+    });
 
     await expect(
-      manager.getOrCreate({
-        sessionId: "session-throw",
-        workspaceDir: "/workspace",
+      getManagedTestRuntime(manager, "session-throw", {
         cfg: cfg as never,
         requesterSenderId: "sender-a",
         messageChannel: "telegram",
@@ -3000,30 +2819,20 @@ describe("requester-scoped MCP connection resolution", () => {
       };
     };
     const manager = testing.createSessionMcpRuntimeManager({ createRuntime });
-    const cfg = {
-      mcp: {
-        servers: {
-          shared: { command: "true" },
-          "user-mail": { transport: "streamable-http" },
-        },
-      },
-    };
+    const cfg = createTestMcpConfig({
+      shared: { command: "true" },
+      "user-mail": { transport: "streamable-http" },
+    });
 
-    await manager.getOrCreate({
-      sessionId: "session-fail-closed",
-      workspaceDir: "/workspace",
+    await getManagedTestRuntime(manager, "session-fail-closed", {
       cfg: cfg as never,
     });
-    await manager.getOrCreate({
-      sessionId: "session-fail-closed",
-      workspaceDir: "/workspace",
+    await getManagedTestRuntime(manager, "session-fail-closed", {
       cfg: cfg as never,
       requesterSenderId: "denied",
       messageChannel: "slack",
     });
-    await manager.getOrCreate({
-      sessionId: "session-fail-closed",
-      workspaceDir: "/workspace",
+    await getManagedTestRuntime(manager, "session-fail-closed", {
       cfg: cfg as never,
       requesterSenderId: "allowed",
       messageChannel: "slack",
@@ -3062,34 +2871,24 @@ describe("requester-scoped MCP connection resolution", () => {
       };
     };
     const manager = testing.createSessionMcpRuntimeManager({ createRuntime });
-    const cfg = {
-      mcp: {
-        servers: {
-          "user-mail": {
-            transport: "streamable-http",
-            toolFilter: { include: ["send*"] },
-          },
-        },
+    const cfg = createTestMcpConfig({
+      "user-mail": {
+        transport: "streamable-http",
+        toolFilter: { include: ["send*"] },
       },
-    };
+    });
 
-    await manager.getOrCreate({
-      sessionId: "session-fingerprint",
-      workspaceDir: "/workspace",
+    await getManagedTestRuntime(manager, "session-fingerprint", {
       cfg: cfg as never,
       requesterSenderId: "alice",
       messageChannel: "telegram",
     });
-    await manager.getOrCreate({
-      sessionId: "session-fingerprint",
-      workspaceDir: "/workspace",
+    await getManagedTestRuntime(manager, "session-fingerprint", {
       cfg: cfg as never,
       requesterSenderId: "bob",
       messageChannel: "telegram",
     });
-    await manager.getOrCreate({
-      sessionId: "session-fingerprint",
-      workspaceDir: "/workspace",
+    await getManagedTestRuntime(manager, "session-fingerprint", {
       cfg: cfg as never,
       requesterSenderId: "alice",
       messageChannel: "telegram",
@@ -3131,19 +2930,13 @@ describe("requester-scoped MCP connection resolution", () => {
       };
     };
     const manager = testing.createSessionMcpRuntimeManager({ createRuntime });
-    const cfg = {
-      mcp: {
-        servers: {
-          shared: { command: "true" },
-          "user-mail": { transport: "streamable-http" },
-        },
-      },
-    };
+    const cfg = createTestMcpConfig({
+      shared: { command: "true" },
+      "user-mail": { transport: "streamable-http" },
+    });
 
     vi.useFakeTimers();
-    const pending = manager.getOrCreate({
-      sessionId: "session-timeout",
-      workspaceDir: "/workspace",
+    const pending = getManagedTestRuntime(manager, "session-timeout", {
       cfg: cfg as never,
       requesterSenderId: "sender-a",
       messageChannel: "telegram",
@@ -3185,28 +2978,20 @@ describe("requester-scoped MCP connection resolution", () => {
       };
     };
     const manager = testing.createSessionMcpRuntimeManager({ createRuntime });
-    const cfg = {
-      mcp: {
-        servers: {
-          shared: { command: "true" },
-          "mail-a": { transport: "streamable-http" },
-          "mail-b": { transport: "streamable-http" },
-        },
-      },
-    };
+    const cfg = createTestMcpConfig({
+      shared: { command: "true" },
+      "mail-a": { transport: "streamable-http" },
+      "mail-b": { transport: "streamable-http" },
+    });
 
-    await manager.getOrCreate({
-      sessionId: "session-partial",
-      workspaceDir: "/workspace",
+    await getManagedTestRuntime(manager, "session-partial", {
       cfg: cfg as never,
       requesterSenderId: "sender-a",
       messageChannel: "telegram",
     });
     expect(createdIncludes).toEqual([["mail-a"]]);
 
-    await manager.getOrCreate({
-      sessionId: "session-partial",
-      workspaceDir: "/workspace",
+    await getManagedTestRuntime(manager, "session-partial", {
       cfg: cfg as never,
       requesterSenderId: "sender-a",
       messageChannel: "telegram",
@@ -3271,17 +3056,11 @@ describe("requester-scoped MCP connection resolution", () => {
       };
     };
     const manager = testing.createSessionMcpRuntimeManager({ createRuntime });
-    const runtime = await manager.getOrCreate({
-      sessionId: "session-combined-call",
-      workspaceDir: "/workspace",
-      cfg: {
-        mcp: {
-          servers: {
-            shared: { command: "true" },
-            "user-mail": { transport: "streamable-http" },
-          },
-        },
-      } as never,
+    const runtime = await getManagedTestRuntime(manager, "session-combined-call", {
+      cfg: createTestMcpConfig({
+        shared: { command: "true" },
+        "user-mail": { transport: "streamable-http" },
+      }) as never,
       requesterSenderId: "sender-a",
       messageChannel: "telegram",
     });
@@ -3336,14 +3115,10 @@ describe("requester-scoped MCP connection resolution", () => {
       now: () => 150_000,
       maxIdleRequesterRuntimesPerSession: 2,
     });
-    const cfg = {
-      mcp: { servers: { "user-mail": { transport: "streamable-http" } } },
-    };
+    const cfg = createTestMcpConfig({ "user-mail": { transport: "streamable-http" } });
 
     for (const sender of ["sender-a", "sender-b", "sender-c"]) {
-      await manager.getOrCreate({
-        sessionId: "session-cap",
-        workspaceDir: "/workspace",
+      await getManagedTestRuntime(manager, "session-cap", {
         cfg: cfg as never,
         requesterSenderId: sender,
         messageChannel: "telegram",
@@ -3402,17 +3177,11 @@ describe("requester-scoped MCP connection resolution", () => {
       };
     };
     const manager = testing.createSessionMcpRuntimeManager({ createRuntime });
-    const runtime = await manager.getOrCreate({
-      sessionId: "session-combined-refresh",
-      workspaceDir: "/workspace",
-      cfg: {
-        mcp: {
-          servers: {
-            shared: { command: "true" },
-            "user-mail": { transport: "streamable-http" },
-          },
-        },
-      } as never,
+    const runtime = await getManagedTestRuntime(manager, "session-combined-refresh", {
+      cfg: createTestMcpConfig({
+        shared: { command: "true" },
+        "user-mail": { transport: "streamable-http" },
+      }) as never,
       requesterSenderId: "sender-a",
       messageChannel: "telegram",
     });
@@ -3472,18 +3241,12 @@ describe("requester-scoped MCP connection resolution", () => {
       now: () => nowMs,
       enableIdleSweepTimer: false,
     });
-    const cfg = {
-      mcp: {
-        servers: {
-          shared: { command: "true" },
-          "user-mail": { transport: "streamable-http" },
-        },
-      },
-    };
+    const cfg = createTestMcpConfig({
+      shared: { command: "true" },
+      "user-mail": { transport: "streamable-http" },
+    });
 
-    await manager.getOrCreate({
-      sessionId: "session-revoke",
-      workspaceDir: "/workspace",
+    await getManagedTestRuntime(manager, "session-revoke", {
       cfg: cfg as never,
       requesterSenderId: "sender-a",
       messageChannel: "telegram",
@@ -3492,9 +3255,7 @@ describe("requester-scoped MCP connection resolution", () => {
 
     allow = false;
     nowMs += 2_000;
-    const after = await manager.getOrCreate({
-      sessionId: "session-revoke",
-      workspaceDir: "/workspace",
+    const after = await getManagedTestRuntime(manager, "session-revoke", {
       cfg: cfg as never,
       requesterSenderId: "sender-a",
       messageChannel: "telegram",
@@ -3534,17 +3295,11 @@ describe("requester-scoped MCP connection resolution", () => {
       requesterScope: params.requesterScope,
     });
     const manager = testing.createSessionMcpRuntimeManager({ createRuntime });
-    const pending = manager.getOrCreate({
-      sessionId: "session-race-dispose",
-      workspaceDir: "/workspace",
-      cfg: {
-        mcp: {
-          servers: {
-            shared: { command: "true" },
-            "user-mail": { transport: "streamable-http" },
-          },
-        },
-      } as never,
+    const pending = getManagedTestRuntime(manager, "session-race-dispose", {
+      cfg: createTestMcpConfig({
+        shared: { command: "true" },
+        "user-mail": { transport: "streamable-http" },
+      }) as never,
       requesterSenderId: "sender-a",
       messageChannel: "telegram",
     });
@@ -3613,17 +3368,11 @@ describe("requester-scoped MCP connection resolution", () => {
       },
       enableIdleSweepTimer: false,
     });
-    const cfg = {
-      mcp: {
-        servers: {
-          "user-mail": { transport: "streamable-http" },
-        },
-      },
-    };
+    const cfg = createTestMcpConfig({
+      "user-mail": { transport: "streamable-http" },
+    });
 
-    const first = manager.getOrCreate({
-      sessionId: "session-serialize",
-      workspaceDir: "/workspace",
+    const first = getManagedTestRuntime(manager, "session-serialize", {
       cfg: cfg as never,
       requesterSenderId: "sender-a",
       messageChannel: "telegram",
@@ -3632,9 +3381,7 @@ describe("requester-scoped MCP connection resolution", () => {
       setTimeout(resolve, 20);
     });
 
-    const second = manager.getOrCreate({
-      sessionId: "session-serialize",
-      workspaceDir: "/workspace",
+    const second = getManagedTestRuntime(manager, "session-serialize", {
       cfg: cfg as never,
       requesterSenderId: "sender-a",
       messageChannel: "telegram",
@@ -3674,12 +3421,8 @@ describe("requester-scoped MCP connection resolution", () => {
         requesterScope: params.requesterScope,
       }),
     });
-    await manager.getOrCreate({
-      sessionId: "session-bookkeeping",
-      workspaceDir: "/workspace",
-      cfg: {
-        mcp: { servers: { "user-mail": { transport: "streamable-http" } } },
-      } as never,
+    await getManagedTestRuntime(manager, "session-bookkeeping", {
+      cfg: createTestMcpConfig({ "user-mail": { transport: "streamable-http" } }) as never,
       requesterSenderId: "sender-a",
       messageChannel: "telegram",
     });
@@ -3732,17 +3475,11 @@ describe("requester-scoped MCP connection resolution", () => {
       now: () => nowMs,
       enableIdleSweepTimer: false,
     });
-    const cfg = {
-      mcp: {
-        servers: {
-          "user-mail": { transport: "streamable-http" },
-        },
-      },
-    };
+    const cfg = createTestMcpConfig({
+      "user-mail": { transport: "streamable-http" },
+    });
 
-    await manager.getOrCreate({
-      sessionId: "session-revalidate",
-      workspaceDir: "/workspace",
+    await getManagedTestRuntime(manager, "session-revalidate", {
       cfg: cfg as never,
       requesterSenderId: "sender-a",
       messageChannel: "telegram",
@@ -3752,9 +3489,7 @@ describe("requester-scoped MCP connection resolution", () => {
 
     // Within revalidation window: no resolver call.
     nowMs += 500;
-    await manager.getOrCreate({
-      sessionId: "session-revalidate",
-      workspaceDir: "/workspace",
+    await getManagedTestRuntime(manager, "session-revalidate", {
       cfg: cfg as never,
       requesterSenderId: "sender-a",
       messageChannel: "telegram",
@@ -3764,9 +3499,7 @@ describe("requester-scoped MCP connection resolution", () => {
 
     // Past window, unchanged credentials: resolve once, no rebuild.
     nowMs += 1_000;
-    await manager.getOrCreate({
-      sessionId: "session-revalidate",
-      workspaceDir: "/workspace",
+    await getManagedTestRuntime(manager, "session-revalidate", {
       cfg: cfg as never,
       requesterSenderId: "sender-a",
       messageChannel: "telegram",
@@ -3777,9 +3510,7 @@ describe("requester-scoped MCP connection resolution", () => {
     // Past window with rotated header: rebuild requester runtime.
     token = "secret-token";
     nowMs += 1_000;
-    await manager.getOrCreate({
-      sessionId: "session-revalidate",
-      workspaceDir: "/workspace",
+    await getManagedTestRuntime(manager, "session-revalidate", {
       cfg: cfg as never,
       requesterSenderId: "sender-a",
       messageChannel: "telegram",
@@ -3844,26 +3575,18 @@ describe("requester-scoped MCP connection resolution", () => {
       };
     };
     const manager = testing.createSessionMcpRuntimeManager({ createRuntime });
-    const cfg = {
-      mcp: {
-        servers: {
-          "mail.prod": { command: "true" },
-          "mail-prod": { transport: "streamable-http" },
-        },
-      },
-    };
+    const cfg = createTestMcpConfig({
+      "mail.prod": { command: "true" },
+      "mail-prod": { transport: "streamable-http" },
+    });
 
-    const runtimeA = await manager.getOrCreate({
-      sessionId: "session-safe-names",
-      workspaceDir: "/workspace",
+    const runtimeA = await getManagedTestRuntime(manager, "session-safe-names", {
       cfg: cfg as never,
       requesterSenderId: "sender-a",
       messageChannel: "telegram",
     });
     resolveBoth = false;
-    const runtimeB = await manager.getOrCreate({
-      sessionId: "session-safe-names",
-      workspaceDir: "/workspace",
+    const runtimeB = await getManagedTestRuntime(manager, "session-safe-names", {
       cfg: cfg as never,
       requesterSenderId: "sender-b",
       messageChannel: "telegram",
@@ -3912,16 +3635,10 @@ describe("requester-scoped MCP connection resolution", () => {
     const manager = testing.createSessionMcpRuntimeManager({ createRuntime });
 
     // No resolver yet: bare session runtime owns the only server.
-    await manager.getOrCreate({
-      sessionId: "session-stale-bare",
-      workspaceDir: "/workspace",
-      cfg: {
-        mcp: {
-          servers: {
-            "user-mail": { command: "true" },
-          },
-        },
-      } as never,
+    await getManagedTestRuntime(manager, "session-stale-bare", {
+      cfg: createTestMcpConfig({
+        "user-mail": { command: "true" },
+      }) as never,
     });
     expect(manager.listRuntimeKeys()).toEqual(["session-stale-bare"]);
     expect(manager.peekSession({ sessionId: "session-stale-bare" })).toBeDefined();
@@ -3934,16 +3651,10 @@ describe("requester-scoped MCP connection resolution", () => {
       },
     ]);
 
-    await manager.getOrCreate({
-      sessionId: "session-stale-bare",
-      workspaceDir: "/workspace",
-      cfg: {
-        mcp: {
-          servers: {
-            "user-mail": { transport: "streamable-http" },
-          },
-        },
-      } as never,
+    await getManagedTestRuntime(manager, "session-stale-bare", {
+      cfg: createTestMcpConfig({
+        "user-mail": { transport: "streamable-http" },
+      }) as never,
       requesterSenderId: "sender-a",
       messageChannel: "telegram",
     });
@@ -3963,16 +3674,12 @@ describe("requester-scoped MCP connection resolution", () => {
     const runtime = createSessionMcpRuntime({
       sessionId: "session-no-url-desc",
       workspaceDir: "/workspace",
-      cfg: {
-        mcp: {
-          servers: {
-            "user-mail": {
-              transport: "streamable-http",
-              url: "https://placeholder.example",
-            },
-          },
+      cfg: createTestMcpConfig({
+        "user-mail": {
+          transport: "streamable-http",
+          url: "https://placeholder.example",
         },
-      },
+      }),
       connectionOverrides: new Map([
         ["user-mail", { url: secretUrl, headers: { Authorization: "Bearer test-auth-token" } }],
       ]),
@@ -4005,17 +3712,11 @@ describe("requester-scoped MCP connection resolution", () => {
       },
     ]);
 
-    const runtime = await getOrCreateSessionMcpRuntime({
-      sessionId: "session-lease-scoped",
+    const runtime = await getGlobalTestRuntime("session-lease-scoped", {
       sessionKey: "agent:test:session-lease-scoped",
-      workspaceDir: "/workspace",
-      cfg: {
-        mcp: {
-          servers: {
-            "user-mail": { transport: "streamable-http" },
-          },
-        },
-      },
+      cfg: createTestMcpConfig({
+        "user-mail": { transport: "streamable-http" },
+      }),
       requesterSenderId: "sender-a",
       messageChannel: "telegram",
     });
@@ -4060,36 +3761,24 @@ describe("requester-scoped MCP connection resolution", () => {
       },
     ]);
 
-    await manager.getOrCreate({
-      sessionId: "session-fp-safe",
-      workspaceDir: "/workspace",
-      cfg: {
-        mcp: {
-          servers: {
-            "mail.prod": { command: "true" },
-            "mail-prod": { transport: "streamable-http" },
-          },
-        },
-      } as never,
+    await getManagedTestRuntime(manager, "session-fp-safe", {
+      cfg: createTestMcpConfig({
+        "mail.prod": { command: "true" },
+        "mail-prod": { transport: "streamable-http" },
+      }) as never,
       requesterSenderId: "sender-a",
       messageChannel: "telegram",
     });
     const afterFirst = fingerprints.length;
     expect(afterFirst).toBeGreaterThanOrEqual(2);
 
-    await manager.getOrCreate({
-      sessionId: "session-fp-safe",
-      workspaceDir: "/workspace",
-      cfg: {
-        mcp: {
-          servers: {
-            "mail.prod": { command: "true" },
-            "mail-prod": { transport: "streamable-http" },
-            // New colliding base changes full-set safe-name assignments.
-            mail_prod: { command: "true" },
-          },
-        },
-      } as never,
+    await getManagedTestRuntime(manager, "session-fp-safe", {
+      cfg: createTestMcpConfig({
+        "mail.prod": { command: "true" },
+        "mail-prod": { transport: "streamable-http" },
+        // New colliding base changes full-set safe-name assignments.
+        mail_prod: { command: "true" },
+      }) as never,
       requesterSenderId: "sender-a",
       messageChannel: "telegram",
     });
@@ -4132,14 +3821,10 @@ describe("requester-scoped MCP connection resolution", () => {
       };
     };
     const manager = testing.createSessionMcpRuntimeManager({ createRuntime });
-    const cfg = {
-      mcp: {
-        servers: {
-          shared: { command: "true" },
-          "user-mail": { transport: "streamable-http" },
-        },
-      },
-    };
+    const cfg = createTestMcpConfig({
+      shared: { command: "true" },
+      "user-mail": { transport: "streamable-http" },
+    });
 
     await expect(
       manager.getOrCreateRequesterScoped({
@@ -4194,13 +3879,9 @@ describe("requester-scoped MCP connection resolution", () => {
       requesterScope: params.requesterScope,
     });
     const manager = testing.createSessionMcpRuntimeManager({ createRuntime });
-    const cfg = {
-      mcp: {
-        servers: {
-          "user-mail": { transport: "streamable-http" },
-        },
-      },
-    };
+    const cfg = createTestMcpConfig({
+      "user-mail": { transport: "streamable-http" },
+    });
 
     const first = await manager.getOrCreateRequesterScoped({
       sessionId: "session-reuse",
@@ -4243,13 +3924,9 @@ describe("requester-scoped MCP connection resolution", () => {
       };
     };
     const manager = testing.createSessionMcpRuntimeManager({ createRuntime });
-    const cfg = {
-      mcp: {
-        servers: {
-          "user-mail": { transport: "streamable-http" },
-        },
-      },
-    };
+    const cfg = createTestMcpConfig({
+      "user-mail": { transport: "streamable-http" },
+    });
 
     expect(manager.getAdvertisedScopedCatalog("session-adv")).toBeNull();
 
@@ -4352,20 +4029,14 @@ process.stdin.on("end", () => {
 });`,
       );
 
-      const runtime = await getOrCreateSessionMcpRuntime({
-        sessionId: "session-force-close-timeout",
+      const runtime = await getGlobalTestRuntime("session-force-close-timeout", {
         sessionKey: "agent:test:session-force-close-timeout",
-        workspaceDir: "/workspace",
-        cfg: {
-          mcp: {
-            servers: {
-              hangingTerminate: {
-                command: process.execPath,
-                args: [serverPath],
-              },
-            },
+        cfg: createTestMcpConfig({
+          hangingTerminate: {
+            command: process.execPath,
+            args: [serverPath],
           },
-        },
+        }),
       });
 
       const catalog = await runtime.getCatalog();
@@ -4449,20 +4120,14 @@ process.stdin.on("end", () => {
 });`,
       );
 
-      const runtime = await getOrCreateSessionMcpRuntime({
-        sessionId: "session-dispose-timeout",
+      const runtime = await getGlobalTestRuntime("session-dispose-timeout", {
         sessionKey: "agent:test:session-dispose-timeout",
-        workspaceDir: "/workspace",
-        cfg: {
-          mcp: {
-            servers: {
-              hangingClose: {
-                command: process.execPath,
-                args: [serverPath],
-              },
-            },
+        cfg: createTestMcpConfig({
+          hangingClose: {
+            command: process.execPath,
+            args: [serverPath],
           },
-        },
+        }),
       });
 
       const catalog = await runtime.getCatalog();
@@ -4541,20 +4206,14 @@ process.stdin.on("end", () => {
       const addr = server.address() as { port: number };
 
       try {
-        const runtime = await getOrCreateSessionMcpRuntime({
-          sessionId: "session-streamable-http-dispose",
+        const runtime = await getGlobalTestRuntime("session-streamable-http-dispose", {
           sessionKey: "agent:test:session-streamable-http-dispose",
-          workspaceDir: "/workspace",
-          cfg: {
-            mcp: {
-              servers: {
-                hangingDelete: {
-                  url: `http://127.0.0.1:${addr.port}/mcp`,
-                  transport: "streamable-http",
-                },
-              },
+          cfg: createTestMcpConfig({
+            hangingDelete: {
+              url: `http://127.0.0.1:${addr.port}/mcp`,
+              transport: "streamable-http",
             },
-          },
+          }),
         });
 
         const catalog = await runtime.getCatalog();
@@ -4591,10 +4250,8 @@ process.stdin.on("end", () => {
 
       testing.setBundleMcpCatalogListTimeoutMsForTest(4_000);
 
-      const runtime = await getOrCreateSessionMcpRuntime({
-        sessionId: "session-parallel-catalog-test",
+      const runtime = await getGlobalTestRuntime("session-parallel-catalog-test", {
         sessionKey: "agent:test:session-parallel-catalog-test",
-        workspaceDir: "/workspace",
         cfg: {
           mcp: {
             servers: Object.fromEntries(
@@ -4670,10 +4327,8 @@ process.stdin.on("end", () => {
 
       testing.setBundleMcpCatalogListTimeoutMsForTest(4_000);
 
-      const runtime = await getOrCreateSessionMcpRuntime({
-        sessionId: "session-inflight-connect-test",
+      const runtime = await getGlobalTestRuntime("session-inflight-connect-test", {
         sessionKey: "agent:test:session-inflight-connect-test",
-        workspaceDir: "/workspace",
         cfg: {
           mcp: {
             servers: Object.fromEntries(
@@ -4880,26 +4535,20 @@ process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);`,
       );
 
-      const runtime = await getOrCreateSessionMcpRuntime({
-        sessionId: "session-timeout-retire-test",
+      const runtime = await getGlobalTestRuntime("session-timeout-retire-test", {
         sessionKey: "agent:test:session-timeout-retire-test",
-        workspaceDir: "/workspace",
-        cfg: {
-          mcp: {
-            servers: {
-              trigger: {
-                command: process.execPath,
-                args: [triggerServerPath],
-                connectionTimeoutMs: 2_000,
-              },
-              slow: {
-                command: process.execPath,
-                args: [slowServerPath],
-                connectionTimeoutMs: 150,
-              },
-            },
+        cfg: createTestMcpConfig({
+          trigger: {
+            command: process.execPath,
+            args: [triggerServerPath],
+            connectionTimeoutMs: 2_000,
           },
-        },
+          slow: {
+            command: process.execPath,
+            args: [slowServerPath],
+            connectionTimeoutMs: 150,
+          },
+        }),
       });
 
       try {
@@ -5073,20 +4722,14 @@ process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);`,
       );
 
-      const runtime = await getOrCreateSessionMcpRuntime({
-        sessionId: "session-overlap-generation-test",
+      const runtime = await getGlobalTestRuntime("session-overlap-generation-test", {
         sessionKey: "agent:test:session-overlap-generation-test",
-        workspaceDir: "/workspace",
-        cfg: {
-          mcp: {
-            servers: {
-              overlap: {
-                command: process.execPath,
-                args: [serverPath],
-              },
-            },
+        cfg: createTestMcpConfig({
+          overlap: {
+            command: process.execPath,
+            args: [serverPath],
           },
-        },
+        }),
       });
 
       try {

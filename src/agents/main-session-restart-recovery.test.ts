@@ -250,6 +250,18 @@ async function writeMainSession({
   await writeStore(sessionsDir, mainSessionStore(entry, sessionKey));
 }
 
+async function createSessionStoreDir(store: Record<string, SessionEntryFixture>): Promise<string> {
+  const sessionsDir = await makeSessionsDir();
+  await writeStore(sessionsDir, store);
+  return sessionsDir;
+}
+
+async function createMainSessionDir(overrides: SessionEntryFixture = {}): Promise<string> {
+  const sessionsDir = await makeSessionsDir();
+  await writeMainSession({ sessionsDir, ...overrides });
+  return sessionsDir;
+}
+
 function readStore(storePath: string): Record<string, SessionEntry> {
   return Object.fromEntries(
     listSessionEntries({ storePath }).map(({ sessionKey, entry }) => [sessionKey, entry]),
@@ -368,8 +380,7 @@ describe("main-session-restart-recovery", () => {
   it("marks only matching running main sessions by active session key", async () => {
     // Only top-level running main sessions are restart-recoverable. Completed,
     // child, cron, and non-active sessions must not be marked.
-    const sessionsDir = await makeSessionsDir();
-    await writeStore(sessionsDir, {
+    const sessionsDir = await createSessionStoreDir({
       "agent:main:main": {
         ...runningSessionEntry("main-session"),
       },
@@ -451,10 +462,7 @@ describe("main-session-restart-recovery", () => {
   });
 
   it("persists abort-registry runs after their event context was cleared", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeMainSession({
-      sessionsDir,
-    });
+    const sessionsDir = await createMainSessionDir();
 
     const result = await markRestartAbortedMainSessions({
       stateDir: tmpDir,
@@ -481,8 +489,7 @@ describe("main-session-restart-recovery", () => {
   });
 
   it("marks queued abort-registry runs before lifecycle start changes session status", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeStore(sessionsDir, {
+    const sessionsDir = await createSessionStoreDir({
       "agent:main:main": {
         sessionId: "main-session",
         updatedAt: Date.now() - 10_000,
@@ -527,8 +534,7 @@ describe("main-session-restart-recovery", () => {
   });
 
   it("marks queued registered runs before lifecycle start without explicit candidates", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeStore(sessionsDir, {
+    const sessionsDir = await createSessionStoreDir({
       "agent:main:main": {
         sessionId: "main-session",
         updatedAt: Date.now() - 10_000,
@@ -596,8 +602,7 @@ describe("main-session-restart-recovery", () => {
       currentGeneration: true,
     },
   ])("$name", async ({ updatedAt, runId, observedAt, isActive, currentGeneration }) => {
-    const sessionsDir = await makeSessionsDir();
-    await writeStore(sessionsDir, {
+    const sessionsDir = await createSessionStoreDir({
       "agent:main:main": createSessionEntry({
         sessionId: "main-session",
         updatedAt: updatedAt ?? Date.now() - 10_000,
@@ -670,9 +675,7 @@ describe("main-session-restart-recovery", () => {
   });
 
   it("replaces an older marker when the same run id is active after another restart", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeMainSession({
-      sessionsDir,
+    const sessionsDir = await createMainSessionDir({
       restartRecoveryRuns: [
         {
           runId: "shared-run",
@@ -755,8 +758,7 @@ describe("main-session-restart-recovery", () => {
   });
 
   it("marks only main running sessions whose transcript lock was cleaned", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeStore(sessionsDir, {
+    const sessionsDir = await createSessionStoreDir({
       "agent:main:main": {
         ...runningSessionEntry("main-session"),
       },
@@ -826,8 +828,7 @@ describe("main-session-restart-recovery", () => {
       marked: 1,
     },
   ])("$name", async ({ sessionKey, sessionId, sessionFile, lockKind, marked }) => {
-    const sessionsDir = await makeSessionsDir();
-    await writeStore(sessionsDir, {
+    const sessionsDir = await createSessionStoreDir({
       [sessionKey]: runningSessionEntry(sessionId, { sessionFile }),
     });
     const lockFile =
@@ -855,8 +856,7 @@ describe("main-session-restart-recovery", () => {
   });
 
   it("resumes marked sessions with a tool-result transcript tail", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeStore(sessionsDir, mainSessionStore());
+    const sessionsDir = await createSessionStoreDir(mainSessionStore());
     await writeCompletedToolTranscript(sessionsDir);
 
     await expectRecovery({ recovered: 1, failed: 0, skipped: 0 });
@@ -1007,8 +1007,7 @@ describe("main-session-restart-recovery", () => {
   });
 
   it("delivers resumed marked sessions through the current run recovery context", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeStore(sessionsDir, {
+    const sessionsDir = await createSessionStoreDir({
       "agent:main:discord:direct:123": {
         ...runningSessionEntry("main-session"),
         abortedLastRun: true,
@@ -1513,8 +1512,7 @@ describe("main-session-restart-recovery", () => {
   });
 
   it("does not deliver restart recovery when session send policy denies sends", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeStore(sessionsDir, {
+    const sessionsDir = await createSessionStoreDir({
       "agent:main:discord:direct:123": {
         ...runningSessionEntry("main-session"),
         abortedLastRun: true,
@@ -1537,8 +1535,7 @@ describe("main-session-restart-recovery", () => {
   });
 
   it("fails marked sessions with stale approval-pending exec tool results", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeStore(sessionsDir, mainSessionStore());
+    const sessionsDir = await createSessionStoreDir(mainSessionStore());
     await writeTranscript(sessionsDir, "main-session", [
       { role: "user", content: "run a command that needs approval" },
       { role: "assistant", content: [{ type: "toolCall", id: "call-1", name: "exec" }] },
@@ -1651,9 +1648,7 @@ describe("main-session-restart-recovery", () => {
   });
 
   it("retains restart safety when the first restart follows pending final persistence", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeMainSession({
-      sessionsDir,
+    const sessionsDir = await createMainSessionDir({
       pendingFinalDelivery: true,
       pendingFinalDeliveryText: "Safe work finished.",
       pendingFinalDeliveryCreatedAt: Date.now() - 5_000,
@@ -1714,8 +1709,7 @@ describe("main-session-restart-recovery", () => {
   });
 
   it("resumes an unguarded pending final delivery without a transcript", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeStore(sessionsDir, {
+    const sessionsDir = await createSessionStoreDir({
       "agent:main:main": {
         ...runningSessionEntry("missing-transcript-session"),
         abortedLastRun: true,
@@ -1731,9 +1725,7 @@ describe("main-session-restart-recovery", () => {
   });
 
   it("resumes pending final delivery even when the transcript tail is assistant output", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeMainSession({
-      sessionsDir,
+    const sessionsDir = await createMainSessionDir({
       pendingFinalDelivery: true,
       pendingFinalDeliveryText: "assistant final was already captured",
       pendingFinalDeliveryCreatedAt: Date.now() - 5_000,
@@ -1755,8 +1747,7 @@ describe("main-session-restart-recovery", () => {
   });
 
   it("does not scan ordinary running sessions without the restart-aborted marker", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeStore(sessionsDir, {
+    const sessionsDir = await createSessionStoreDir({
       "agent:main:main": {
         ...runningSessionEntry("main-session"),
       },
@@ -1771,8 +1762,7 @@ describe("main-session-restart-recovery", () => {
   });
 
   it("skips restart-aborted sessions that a current process owns", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeStore(sessionsDir, {
+    const sessionsDir = await createSessionStoreDir({
       "agent:main:active-key": {
         ...runningSessionEntry("active-key-session"),
         abortedLastRun: true,
@@ -1814,8 +1804,7 @@ describe("main-session-restart-recovery", () => {
   });
 
   it("recovers duplicate-key restart-aborted rows when the active run owns a different session id", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeStore(sessionsDir, {
+    const sessionsDir = await createSessionStoreDir({
       "agent:main:main": {
         ...runningSessionEntry("stale-session"),
         abortedLastRun: true,
@@ -2154,9 +2143,7 @@ describe("main-session-restart-recovery", () => {
   });
 
   it("admits each scheduled recovery attempt as independent root work", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeMainSession({
-      sessionsDir,
+    const sessionsDir = await createMainSessionDir({
       pendingFinalDelivery: true,
       pendingFinalDeliveryText: "interrupted response",
     });
@@ -2861,8 +2848,7 @@ describe("main-session-restart-recovery", () => {
   });
 
   it("does not dispatch an archived durable recovery claim", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeStore(sessionsDir, {
+    const sessionsDir = await createSessionStoreDir({
       "agent:main:main": {
         sessionId: "archived-session",
         updatedAt: Date.now() - 10_000,
@@ -2882,8 +2868,7 @@ describe("main-session-restart-recovery", () => {
   });
 
   it("fails marked sessions without a meaningful transcript tail", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeStore(sessionsDir, mainSessionStore());
+    const sessionsDir = await createSessionStoreDir(mainSessionStore());
     await writeTranscript(sessionsDir, "main-session", [
       { role: "system", content: "session metadata only" },
     ]);
@@ -3910,8 +3895,7 @@ describe("main-session-restart-recovery", () => {
       },
     ],
   ])("does not resume %s at the transcript tail", async (_label, assistantMessage) => {
-    const sessionsDir = await makeSessionsDir();
-    await writeStore(sessionsDir, mainSessionStore());
+    const sessionsDir = await createSessionStoreDir(mainSessionStore());
     await writeTranscript(sessionsDir, "main-session", [
       { role: "user", content: "do the thing" },
       assistantMessage,
@@ -3930,8 +3914,7 @@ describe("main-session-restart-recovery", () => {
     async (errorMessage) => {
       // The process that wrote this tail predates errorCode propagation, and it
       // can be the very process replaced by the upgrade running recovery now.
-      const sessionsDir = await makeSessionsDir();
-      await writeStore(sessionsDir, mainSessionStore());
+      const sessionsDir = await createSessionStoreDir(mainSessionStore());
       await writeTranscript(sessionsDir, "main-session", [
         { role: "user", content: "do the thing" },
         { role: "assistant", content: [], stopReason: "error", errorMessage },
@@ -3975,8 +3958,7 @@ describe("main-session-restart-recovery", () => {
   ])(
     "resumes an aborted tail persisted with %s",
     async (_label, assistantMessage, forceRestartSafeTools) => {
-      const sessionsDir = await makeSessionsDir();
-      await writeStore(sessionsDir, mainSessionStore());
+      const sessionsDir = await createSessionStoreDir(mainSessionStore());
       await writeTranscript(sessionsDir, "main-session", [
         { role: "user", content: "do the thing" },
         assistantMessage,
@@ -4194,8 +4176,7 @@ describe("main-session-restart-recovery", () => {
   });
 
   it("sends a visible notice through the canonical route when no resumable transcript survives", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeStore(sessionsDir, {
+    const sessionsDir = await createSessionStoreDir({
       "agent:main:demo-channel:room-1": {
         ...runningSessionEntry("main-session"),
         abortedLastRun: true,
@@ -4245,8 +4226,7 @@ describe("main-session-restart-recovery", () => {
   });
 
   it("resumes a restart interrupted at the Code Mode wait control", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeStore(sessionsDir, {
+    const sessionsDir = await createSessionStoreDir({
       "agent:main:demo-channel:room-1": {
         ...runningSessionEntry("main-session"),
         abortedLastRun: true,
@@ -4315,8 +4295,7 @@ describe("main-session-restart-recovery", () => {
   });
 
   it("reads a provider-native Code Mode wait input", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeStore(sessionsDir, mainSessionStore());
+    const sessionsDir = await createSessionStoreDir(mainSessionStore());
     await writeTranscript(sessionsDir, "main-session", [
       { role: "user", content: "do the thing" },
       codeModeCheckpointMessage("exec"),
@@ -4348,8 +4327,7 @@ describe("main-session-restart-recovery", () => {
   ])(
     "classifies a direct waiting checkpoint with replaySafe=$replaySafe",
     async ({ replaySafe, expected, gatewayCalls }) => {
-      const sessionsDir = await makeSessionsDir();
-      await writeStore(sessionsDir, {
+      const sessionsDir = await createSessionStoreDir({
         "agent:main:main": {
           ...runningSessionEntry("main-session"),
           abortedLastRun: true,
@@ -4384,8 +4362,7 @@ describe("main-session-restart-recovery", () => {
   it.each(["completed", "failed"] as const)(
     "keeps restart safety after a terminal Code Mode %s result",
     async (status) => {
-      const sessionsDir = await makeSessionsDir();
-      await writeStore(sessionsDir, {
+      const sessionsDir = await createSessionStoreDir({
         "agent:main:main": {
           ...runningSessionEntry("main-session"),
           abortedLastRun: true,
@@ -4415,9 +4392,7 @@ describe("main-session-restart-recovery", () => {
   );
 
   it("keeps restart safety across a second restart of the recovery turn", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeMainSession({
-      sessionsDir,
+    const sessionsDir = await createMainSessionDir({
       restartRecoveryForceSafeTools: true,
     });
     await writeTranscript(sessionsDir, "main-session", [
@@ -4447,9 +4422,7 @@ describe("main-session-restart-recovery", () => {
   });
 
   it("keeps restart safety after the recovery prompt leaves the recent transcript window", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeMainSession({
-      sessionsDir,
+    const sessionsDir = await createMainSessionDir({
       restartRecoveryForceSafeTools: true,
     });
     await writeTranscript(sessionsDir, "main-session", [
@@ -4466,9 +4439,7 @@ describe("main-session-restart-recovery", () => {
   });
 
   it("resumes an in-flight safe tool call across a repeated restart", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeMainSession({
-      sessionsDir,
+    const sessionsDir = await createMainSessionDir({
       restartRecoveryForceSafeTools: true,
     });
     await writeTranscript(sessionsDir, "main-session", [
@@ -4484,9 +4455,7 @@ describe("main-session-restart-recovery", () => {
   });
 
   it("does not resume completed assistant output just because the restart-safe guard remains", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeMainSession({
-      sessionsDir,
+    const sessionsDir = await createMainSessionDir({
       restartRecoveryForceSafeTools: true,
     });
     await writeTranscript(sessionsDir, "main-session", [
@@ -4499,8 +4468,7 @@ describe("main-session-restart-recovery", () => {
   });
 
   it("does not treat a historical recovery prompt as current recovery state", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeStore(sessionsDir, mainSessionStore());
+    const sessionsDir = await createSessionStoreDir(mainSessionStore());
     await writeTranscript(sessionsDir, "main-session", [
       {
         role: "user",
@@ -4517,8 +4485,7 @@ describe("main-session-restart-recovery", () => {
   });
 
   it("does not replay visible assistant text beside a Code Mode wait", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeStore(sessionsDir, mainSessionStore());
+    const sessionsDir = await createSessionStoreDir(mainSessionStore());
     await writeTranscript(sessionsDir, "main-session", [
       { role: "user", content: "do the thing" },
       codeModeCheckpointMessage("exec"),
@@ -4553,8 +4520,7 @@ describe("main-session-restart-recovery", () => {
   ])(
     "handles $label without discarding assistant output",
     async ({ content, expected, gatewayCalls }) => {
-      const sessionsDir = await makeSessionsDir();
-      await writeStore(sessionsDir, {
+      const sessionsDir = await createSessionStoreDir({
         "agent:main:main": {
           ...runningSessionEntry("main-session"),
           abortedLastRun: true,
@@ -4580,8 +4546,7 @@ describe("main-session-restart-recovery", () => {
   );
 
   it("resumes a partial streamed answer interrupted by a restart", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeStore(sessionsDir, mainSessionStore());
+    const sessionsDir = await createSessionStoreDir(mainSessionStore());
     await writeTranscript(sessionsDir, "main-session", [
       { role: "user", content: "do the thing" },
       {
@@ -4598,8 +4563,7 @@ describe("main-session-restart-recovery", () => {
   });
 
   it("resumes an abort artifact persisted with the gateway restart reason", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeStore(sessionsDir, mainSessionStore());
+    const sessionsDir = await createSessionStoreDir(mainSessionStore());
     await writeTranscript(sessionsDir, "main-session", [
       { role: "user", content: "do the thing" },
       {
@@ -4615,8 +4579,7 @@ describe("main-session-restart-recovery", () => {
   });
 
   it("resumes a side-effecting tool call restricted to restart-safe tools", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeStore(sessionsDir, mainSessionStore());
+    const sessionsDir = await createSessionStoreDir(mainSessionStore());
     await writeTranscript(sessionsDir, "main-session", [
       { role: "user", content: "do the thing" },
       createAssistantToolCallMessage([
@@ -4631,8 +4594,7 @@ describe("main-session-restart-recovery", () => {
   });
 
   it("keeps a dangling side-effecting call in an aborted tail restricted", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeStore(sessionsDir, mainSessionStore());
+    const sessionsDir = await createSessionStoreDir(mainSessionStore());
     await writeTranscript(sessionsDir, "main-session", [
       { role: "user", content: "do the thing" },
       {
@@ -4652,8 +4614,7 @@ describe("main-session-restart-recovery", () => {
   });
 
   it("resumes an interrupted replay-safe tool call without restricting tools", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeStore(sessionsDir, mainSessionStore());
+    const sessionsDir = await createSessionStoreDir(mainSessionStore());
     await writeTranscript(sessionsDir, "main-session", [
       { role: "user", content: "do the thing" },
       createAssistantToolCallMessage([
@@ -4668,8 +4629,7 @@ describe("main-session-restart-recovery", () => {
   });
 
   it("resumes through the shutdown error persisted for an interrupted Code Mode wait", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeStore(sessionsDir, mainSessionStore());
+    const sessionsDir = await createSessionStoreDir(mainSessionStore());
     await writeTranscript(sessionsDir, "main-session", [
       { role: "user", content: "do the thing" },
       codeModeCheckpointMessage(),
@@ -4699,8 +4659,7 @@ describe("main-session-restart-recovery", () => {
   });
 
   it("keeps an unmatched failed wait restricted when its checkpoint is replay-safe", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeStore(sessionsDir, mainSessionStore());
+    const sessionsDir = await createSessionStoreDir(mainSessionStore());
     await writeTranscript(sessionsDir, "main-session", [
       { role: "user", content: "do the thing" },
       codeModeCheckpointMessage(),
@@ -4743,8 +4702,7 @@ describe("main-session-restart-recovery", () => {
       },
     },
   ])("does not resume a Code Mode wait after a $label", async ({ checkpoint }) => {
-    const sessionsDir = await makeSessionsDir();
-    await writeStore(sessionsDir, mainSessionStore());
+    const sessionsDir = await createSessionStoreDir(mainSessionStore());
     await writeTranscript(sessionsDir, "main-session", [
       { role: "user", content: "do the thing" },
       codeModeCheckpointMessage("wait", checkpoint),
@@ -4756,8 +4714,7 @@ describe("main-session-restart-recovery", () => {
   });
 
   it("does not resume a mixed Code Mode wait and side-effecting tool tail", async () => {
-    const sessionsDir = await makeSessionsDir();
-    await writeStore(sessionsDir, mainSessionStore());
+    const sessionsDir = await createSessionStoreDir(mainSessionStore());
     await writeTranscript(sessionsDir, "main-session", [
       { role: "user", content: "do the thing" },
       codeModeCheckpointMessage("exec"),
