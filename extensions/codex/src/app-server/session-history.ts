@@ -3,7 +3,10 @@
  * image payloads before replaying messages into the app-server projector.
  */
 import fs from "node:fs/promises";
-import type { AgentMessage } from "openclaw/plugin-sdk/agent-harness-runtime";
+import type {
+  AgentMessage,
+  EmbeddedRunAttemptParams,
+} from "openclaw/plugin-sdk/agent-harness-runtime";
 import type { SessionEntry } from "openclaw/plugin-sdk/agent-sessions";
 import {
   buildSessionContext,
@@ -27,12 +30,16 @@ type CodexMirroredSessionHistoryTarget = {
   sessionFile: string;
   sessionId: string;
   sessionKey?: string;
+  onExecutionPhase?: EmbeddedRunAttemptParams["onExecutionPhase"];
 };
 
 /** Returns sanitized session-context messages for a Codex mirrored session file. */
 export async function readCodexMirroredSessionHistoryMessages(
   target: CodexMirroredSessionHistoryTarget,
 ): Promise<AgentMessage[] | undefined> {
+  const backend = parseSqliteSessionFileMarker(target.sessionFile) ? "sqlite" : "jsonl";
+  target.onExecutionPhase?.({ phase: "session_materialization_started", backend });
+  const materializationStartedAt = performance.now();
   try {
     const entries = await readCodexMirroredSessionEntries(target);
     if (entries.length === 0) {
@@ -71,6 +78,12 @@ export async function readCodexMirroredSessionHistoryMessages(
       return [];
     }
     return undefined;
+  } finally {
+    target.onExecutionPhase?.({
+      phase: "session_materialized",
+      backend,
+      durationMs: performance.now() - materializationStartedAt,
+    });
   }
 }
 

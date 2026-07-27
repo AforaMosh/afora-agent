@@ -152,6 +152,32 @@ describe("readCodexMirroredSessionHistoryMessages", () => {
     ]);
   });
 
+  it("reports SQLite history materialization phases without transcript payloads", async () => {
+    const { marker, sessionKey } = await writeSqliteSession();
+    const phases: Array<Record<string, unknown>> = [];
+    const target = {
+      agentId: "main",
+      sessionFile: marker,
+      sessionId: "codex-sqlite-session",
+      sessionKey,
+      onExecutionPhase: (phase: Record<string, unknown>) => phases.push(phase),
+    };
+
+    await readCodexMirroredSessionHistoryMessages(target);
+
+    expect(phases).toEqual([
+      {
+        phase: "session_materialization_started",
+        backend: "sqlite",
+      },
+      {
+        phase: "session_materialized",
+        backend: "sqlite",
+        durationMs: expect.any(Number),
+      },
+    ]);
+  });
+
   it("resolves SQLite marker history when the caller has no session key", async () => {
     const { marker } = await writeSqliteSession();
 
