@@ -663,6 +663,27 @@ function mcpToolCallBody(name: string, args: Record<string, unknown> = {}, id = 
   });
 }
 
+type McpLoopbackCacheParams = Parameters<McpLoopbackToolCache["resolve"]>[0];
+
+function makeLoopbackCacheParams(
+  overrides: Partial<McpLoopbackCacheParams> = {},
+): McpLoopbackCacheParams {
+  return {
+    accountId: undefined,
+    cfg: {} as never,
+    currentChannelId: undefined,
+    currentInboundAudio: undefined,
+    currentMessageId: undefined,
+    currentThreadTs: undefined,
+    inboundEventKind: undefined,
+    messageProvider: undefined,
+    senderIsOwner: true,
+    sessionKey: "agent:main:direct:test",
+    sourceReplyDeliveryMode: undefined,
+    ...overrides,
+  };
+}
+
 function buildMockMcpToolSchema(tools: MockGatewayTool[]) {
   return buildMcpToolSchema(tools as unknown as Parameters<typeof buildMcpToolSchema>[0]);
 }
@@ -1675,18 +1696,17 @@ describe("mcp loopback server", () => {
 
   it("keeps explicit non-owner and unknown-owner loopback cache entries separate", () => {
     const cache = new McpLoopbackToolCache();
-    const baseParams = {
-      accountId: undefined,
+    const baseParams = makeLoopbackCacheParams({
       cfg: { session: { mainKey: "main" } } as never,
       currentChannelId: "telegram:chat123",
-      currentInboundAudio: undefined,
       currentMessageId: "message-1",
       currentThreadTs: "thread-1",
       inboundEventKind: "room_event",
       messageProvider: "telegram",
+      senderIsOwner: undefined,
       sessionKey: "agent:main:telegram:group:chat123",
       sourceReplyDeliveryMode: "message_tool_only",
-    } satisfies Omit<Parameters<McpLoopbackToolCache["resolve"]>[0], "senderIsOwner">;
+    });
     resolveGatewayScopedToolsMock.mockImplementation((input: unknown) => {
       const params = input as { senderIsOwner?: boolean };
       return {
@@ -1714,19 +1734,7 @@ describe("mcp loopback server", () => {
 
   it("keeps CLI node-exec capability and session defaults cache-bound", () => {
     const cache = new McpLoopbackToolCache();
-    const baseParams = {
-      cfg: {} as never,
-      sessionKey: "agent:main:direct:test",
-      messageProvider: undefined,
-      currentChannelId: undefined,
-      currentThreadTs: undefined,
-      currentMessageId: undefined,
-      currentInboundAudio: undefined,
-      accountId: undefined,
-      inboundEventKind: undefined,
-      sourceReplyDeliveryMode: undefined,
-      senderIsOwner: true,
-    } satisfies Parameters<McpLoopbackToolCache["resolve"]>[0];
+    const baseParams = makeLoopbackCacheParams();
     resolveGatewayScopedToolsMock.mockImplementation((input: unknown) => {
       const params = input as ScopedToolsCall;
       return {
@@ -1756,20 +1764,7 @@ describe("mcp loopback server", () => {
 
   it("keeps model policy identity cache-bound", () => {
     const cache = new McpLoopbackToolCache();
-    const baseParams = {
-      cfg: {} as never,
-      sessionKey: "agent:main:direct:test",
-      messageProvider: undefined,
-      currentChannelId: undefined,
-      currentThreadTs: undefined,
-      currentMessageId: undefined,
-      currentInboundAudio: undefined,
-      accountId: undefined,
-      inboundEventKind: undefined,
-      sourceReplyDeliveryMode: undefined,
-      senderIsOwner: true,
-      nodeExecAllowed: true,
-    } satisfies Parameters<McpLoopbackToolCache["resolve"]>[0];
+    const baseParams = makeLoopbackCacheParams({ nodeExecAllowed: true });
     resolveGatewayScopedToolsMock.mockImplementation((input: unknown) => {
       const params = input as ScopedToolsCall;
       const blocked = params.modelProvider === "anthropic" && params.modelId === "claude-opus-4-7";
@@ -1804,20 +1799,11 @@ describe("mcp loopback server", () => {
 
   it("keeps exec overrides and sender identities cache-bound", () => {
     const cache = new McpLoopbackToolCache();
-    const baseParams = {
-      cfg: {} as never,
-      sessionKey: "agent:main:direct:test",
+    const baseParams = makeLoopbackCacheParams({
       messageProvider: "discord",
-      currentChannelId: undefined,
-      currentThreadTs: undefined,
-      currentMessageId: undefined,
-      currentInboundAudio: undefined,
-      accountId: undefined,
-      inboundEventKind: undefined,
-      sourceReplyDeliveryMode: undefined,
       senderIsOwner: false,
       nodeExecAllowed: true,
-    } satisfies Parameters<McpLoopbackToolCache["resolve"]>[0];
+    });
 
     cache.resolve(baseParams);
     cache.resolve({ ...baseParams, execOverrides: { host: "gateway" } });
@@ -1840,20 +1826,10 @@ describe("mcp loopback server", () => {
 
   it("keeps every elevated-exec authority field cache-bound", () => {
     const cache = new McpLoopbackToolCache();
-    const baseParams = {
-      cfg: {} as never,
-      sessionKey: "agent:main:direct:test",
+    const baseParams = makeLoopbackCacheParams({
       messageProvider: "discord",
-      currentChannelId: undefined,
-      currentThreadTs: undefined,
-      currentMessageId: undefined,
-      currentInboundAudio: undefined,
-      accountId: undefined,
-      inboundEventKind: undefined,
-      sourceReplyDeliveryMode: undefined,
-      senderIsOwner: true,
       nodeExecAllowed: true,
-    } satisfies Parameters<McpLoopbackToolCache["resolve"]>[0];
+    });
 
     cache.resolve(baseParams);
     cache.resolve({
@@ -1890,19 +1866,15 @@ describe("mcp loopback server", () => {
 
   it("caps loopback tool cache cardinality by evicting oldest contexts", () => {
     const cache = new McpLoopbackToolCache();
-    const baseParams = {
-      accountId: undefined,
+    const baseParams = makeLoopbackCacheParams({
       cfg: { session: { mainKey: "main" } } as never,
       currentChannelId: "telegram:chat123",
-      currentInboundAudio: undefined,
-      currentMessageId: undefined,
       currentThreadTs: "thread-1",
       inboundEventKind: "room_event",
       messageProvider: "telegram",
-      senderIsOwner: true,
       sessionKey: "agent:main:telegram:group:chat123",
       sourceReplyDeliveryMode: "message_tool_only",
-    } satisfies Parameters<McpLoopbackToolCache["resolve"]>[0];
+    });
 
     for (let index = 0; index < 257; index += 1) {
       cache.resolve({
