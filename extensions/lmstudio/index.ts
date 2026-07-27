@@ -30,7 +30,7 @@ import { shouldUseLmstudioSyntheticAuth } from "./src/provider-auth.js";
 import { wrapLmstudioInferencePreload } from "./src/stream.js";
 
 const PROVIDER_ID = "lmstudio";
-// Intentional: dynamic models are cached per LM Studio endpoint (`baseUrl`) only.
+// Equivalent LM Studio endpoint forms must share one dynamic model cache entry.
 const cachedDynamicModels = new Map<string, ProviderRuntimeModel[]>();
 
 type LmstudioNonInteractiveValidationContext = Parameters<
@@ -206,13 +206,13 @@ export default definePluginEntry({
       prepareDynamicModel: async (ctx) => {
         const providerSetup = await loadProviderSetup();
         cachedDynamicModels.set(
-          ctx.providerConfig?.baseUrl ?? "",
+          resolveLmstudioInferenceBase(ctx.providerConfig?.baseUrl),
           await providerSetup.prepareLmstudioDynamicModels(ctx),
         );
       },
       resolveDynamicModel: (ctx) =>
         cachedDynamicModels
-          .get(ctx.providerConfig?.baseUrl ?? "")
+          .get(resolveLmstudioInferenceBase(ctx.providerConfig?.baseUrl))
           ?.find((model) => model.id === ctx.modelId),
       augmentModelCatalog: (ctx) => resolveLmstudioAugmentedCatalogEntries(ctx.config),
       wrapStreamFn: wrapLmstudioInferencePreload,

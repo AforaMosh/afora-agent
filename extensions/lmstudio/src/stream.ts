@@ -74,11 +74,8 @@ function recordPreloadFailure(
 
 function isPreloadCoolingDown(preloadKey: string, now: number): PreloadCooldownEntry | undefined {
   const entry = preloadCooldown.get(preloadKey);
-  if (!entry) {
-    return undefined;
-  }
-  if (entry.untilMs <= now) {
-    preloadCooldown.delete(preloadKey);
+  if (!entry || entry.untilMs <= now) {
+    // Expiry permits a retry; only a successful preload clears failure history.
     return undefined;
   }
   return entry;

@@ -1,9 +1,13 @@
 // Lmstudio tests cover index plugin behavior.
-import type { OpenClawConfig, ProviderAuthMethod } from "openclaw/plugin-sdk/plugin-entry";
+import type {
+  OpenClawConfig,
+  ProviderAuthMethod,
+  ProviderRuntimeModel,
+} from "openclaw/plugin-sdk/plugin-entry";
 import { capturePluginRegistration } from "openclaw/plugin-sdk/plugin-test-runtime";
 import { CUSTOM_LOCAL_AUTH_MARKER } from "openclaw/plugin-sdk/provider-auth";
 import type { ModelProviderConfig } from "openclaw/plugin-sdk/provider-model-shared";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import plugin from "./index.js";
 import { LMSTUDIO_LOCAL_API_KEY_PLACEHOLDER } from "./src/defaults.js";
 
@@ -76,6 +80,10 @@ function createRemoteProviderConfig(overrides?: Partial<ModelProviderConfig>): M
 describe("lmstudio plugin", () => {
   beforeEach(() => {
     fetchLmstudioModelsMock.mockReset();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it("preflights the requested LM Studio model before destructive non-interactive reset", async () => {
@@ -235,6 +243,81 @@ describe("lmstudio plugin", () => {
       request: { allowPrivateNetwork: true },
     });
   });
+
+  it.each([
+    {
+      label: "server root and inference path",
+      preparedBaseUrl: "http://localhost:1234",
+      resolvedBaseUrl: "http://localhost:1234/v1",
+    },
+    {
+      label: "inference path and server root",
+      preparedBaseUrl: "http://localhost:1234/v1",
+      resolvedBaseUrl: "http://localhost:1234",
+    },
+    {
+      label: "native API path and trailing inference slash",
+      preparedBaseUrl: "http://localhost:1234/api/v1",
+      resolvedBaseUrl: "http://localhost:1234/v1/",
+    },
+    {
+      label: "native API and server-root trailing slashes",
+      preparedBaseUrl: "http://localhost:1234/api/v1/",
+      resolvedBaseUrl: "http://localhost:1234/",
+    },
+    {
+      label: "implicit default and explicit native API path",
+      preparedBaseUrl: undefined,
+      resolvedBaseUrl: "http://localhost:1234/api/v1/",
+    },
+    {
+      label: "remote server root and native API path",
+      preparedBaseUrl: "http://lmstudio.internal:1234",
+      resolvedBaseUrl: "http://lmstudio.internal:1234/api/v1/",
+    },
+  ])(
+    "resolves prepared dynamic models across the equivalent $label",
+    async ({ preparedBaseUrl, resolvedBaseUrl }) => {
+      const dynamicModel = {
+        provider: "lmstudio",
+        api: "openai-completions",
+        id: "qwen/qwen3.5-9b",
+        name: "Qwen 3.5 9B",
+        baseUrl: "http://localhost:1234/v1",
+        reasoning: false,
+        input: ["text"],
+        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+        contextWindow: 131072,
+        maxTokens: 8192,
+      } satisfies ProviderRuntimeModel;
+      const providerSetup = await import("./api.js");
+      const prepareDynamicModels = vi
+        .spyOn(providerSetup, "prepareLmstudioDynamicModels")
+        .mockResolvedValue([dynamicModel]);
+      const provider = registerProvider();
+      const context = {
+        config: {},
+        provider: "lmstudio",
+        modelId: dynamicModel.id,
+        modelRegistry: { find: vi.fn(() => null) },
+        providerConfig: {
+          api: "openai-completions" as const,
+          baseUrl: preparedBaseUrl,
+          models: [],
+        },
+      };
+
+      await provider.prepareDynamicModel?.(context as never);
+
+      expect(
+        provider.resolveDynamicModel?.({
+          ...context,
+          providerConfig: { ...context.providerConfig, baseUrl: resolvedBaseUrl },
+        } as never),
+      ).toEqual(dynamicModel);
+      expect(prepareDynamicModels).toHaveBeenCalledWith(context);
+    },
+  );
 
   it("synthesizes placeholder auth for configured lmstudio models without API key auth", () => {
     const provider = registerProvider();

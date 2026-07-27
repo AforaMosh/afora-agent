@@ -597,6 +597,93 @@ describe("lmstudio stream wrapper", () => {
     nowSpy.mockRestore();
   });
 
+  it("increases consecutive preload failure backoff up to the maximum", async () => {
+    ensureLmstudioModelLoadedMock.mockRejectedValue(new Error("out of memory"));
+    const baseStream = buildDoneStreamFn();
+    const wrapped = createWrappedLmstudioStream(baseStream);
+    const baseTime = 1_000_000;
+    const nowSpy = vi.spyOn(Date, "now");
+    let elapsedMs = 0;
+
+    for (const [attempt, backoffMs] of [
+      5_000, 10_000, 20_000, 40_000, 80_000, 160_000, 300_000, 300_000,
+    ].entries()) {
+      nowSpy.mockReturnValue(baseTime + elapsedMs);
+      expectSingleDoneEvent(await collectEvents(runWrappedLmstudioStream(wrapped, {})));
+      expect(ensureLmstudioModelLoadedMock).toHaveBeenCalledTimes(attempt + 1);
+
+      nowSpy.mockReturnValue(baseTime + elapsedMs + backoffMs - 1);
+      expectSingleDoneEvent(await collectEvents(runWrappedLmstudioStream(wrapped, {})));
+      expect(ensureLmstudioModelLoadedMock).toHaveBeenCalledTimes(attempt + 1);
+
+      elapsedMs += backoffMs;
+    }
+  });
+
+  it("resets preload failure backoff only after a successful preload", async () => {
+    ensureLmstudioModelLoadedMock
+      .mockRejectedValueOnce(new Error("out of memory"))
+      .mockRejectedValueOnce(new Error("still out of memory"))
+      .mockResolvedValueOnce("qwen3-8b-instruct")
+      .mockRejectedValueOnce(new Error("out of memory again"))
+      .mockResolvedValueOnce("qwen3-8b-instruct");
+    const wrapped = createWrappedLmstudioStream(buildDoneStreamFn());
+    const baseTime = 1_000_000;
+    const nowSpy = vi.spyOn(Date, "now");
+
+    for (const { elapsedMs, expectedAttempts } of [
+      { elapsedMs: 0, expectedAttempts: 1 },
+      { elapsedMs: 5_000, expectedAttempts: 2 },
+      { elapsedMs: 14_999, expectedAttempts: 2 },
+      { elapsedMs: 15_000, expectedAttempts: 3 },
+      { elapsedMs: 15_000, expectedAttempts: 4 },
+      { elapsedMs: 19_999, expectedAttempts: 4 },
+      { elapsedMs: 20_000, expectedAttempts: 5 },
+    ]) {
+      nowSpy.mockReturnValue(baseTime + elapsedMs);
+      expectSingleDoneEvent(await collectEvents(runWrappedLmstudioStream(wrapped, {})));
+      expect(ensureLmstudioModelLoadedMock).toHaveBeenCalledTimes(expectedAttempts);
+    }
+  });
+
+  it("dedupes concurrent preload retries after a failure cooldown expires", async () => {
+    let resolvePreload: ((value: string) => void) | undefined;
+    ensureLmstudioModelLoadedMock
+      .mockRejectedValueOnce(new Error("out of memory"))
+      .mockImplementationOnce(
+        () =>
+          new Promise<string>((resolve) => {
+            resolvePreload = resolve;
+          }),
+      );
+    const baseStream = buildDoneStreamFn();
+    const wrapped = createWrappedLmstudioStream(baseStream);
+    const baseTime = 1_000_000;
+    const nowSpy = vi.spyOn(Date, "now").mockReturnValue(baseTime);
+
+    expectSingleDoneEvent(await collectEvents(runWrappedLmstudioStream(wrapped, {})));
+    expect(ensureLmstudioModelLoadedMock).toHaveBeenCalledTimes(1);
+
+    nowSpy.mockReturnValue(baseTime + 5_000);
+    const firstRetry = collectEvents(runWrappedLmstudioStream(wrapped, {}));
+    const secondRetry = collectEvents(runWrappedLmstudioStream(wrapped, {}));
+
+    await vi.waitFor(() => {
+      expect(ensureLmstudioModelLoadedMock).toHaveBeenCalledTimes(2);
+      expect(resolvePreload).toBeTypeOf("function");
+    });
+    if (!resolvePreload) {
+      throw new Error("LM Studio preload retry resolver not initialized");
+    }
+    resolvePreload("qwen3-8b-instruct");
+
+    const [firstEvents, secondEvents] = await Promise.all([firstRetry, secondRetry]);
+    expectSingleDoneEvent(firstEvents);
+    expectSingleDoneEvent(secondEvents);
+    expect(ensureLmstudioModelLoadedMock).toHaveBeenCalledTimes(2);
+    expect(baseStream).toHaveBeenCalledTimes(3);
+  });
+
   it("forces supportsUsageInStreaming compat before calling the underlying stream", async () => {
     const baseStream = buildDoneStreamFn();
     const wrapped = wrapLmstudioInferencePreload({
