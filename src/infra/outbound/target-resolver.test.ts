@@ -61,6 +61,33 @@ beforeEach(() => {
   resetDirectoryCache();
 });
 
+function createTelegramDirectoryPlugin(
+  overrides: Partial<NonNullable<ChannelPlugin["messaging"]>> = {},
+) {
+  return {
+    ...createChannelTestPluginBase({
+      id: "telegram",
+      label: "Telegram",
+      capabilities: { chatTypes: ["direct", "group", "channel"] },
+    }),
+    directory: {
+      listPeers: mocks.listPeers,
+      listPeersLive: mocks.listPeersLive,
+      listGroups: mocks.listGroups,
+      listGroupsLive: mocks.listGroupsLive,
+    },
+    messaging: {
+      ...overrides,
+      targetResolver: {
+        reservedLiterals: ["current", "self", "this", "me"],
+        hint: "<chatId>",
+        resolveTarget: mocks.resolveTarget,
+        ...overrides.targetResolver,
+      },
+    },
+  };
+}
+
 async function expectOkResolution(
   params: Parameters<typeof resolveMessagingTarget>[0],
 ): Promise<Extract<Awaited<ReturnType<typeof resolveMessagingTarget>>, { ok: true }>> {
@@ -210,26 +237,7 @@ describe("resolveMessagingTarget (directory fallback)", () => {
   });
 
   it("preserves configured directory entries before rejecting reserved literal targets", async () => {
-    mocks.getChannelPlugin.mockReturnValue({
-      ...createChannelTestPluginBase({
-        id: "telegram",
-        label: "Telegram",
-        capabilities: { chatTypes: ["direct", "group", "channel"] },
-      }),
-      directory: {
-        listPeers: mocks.listPeers,
-        listPeersLive: mocks.listPeersLive,
-        listGroups: mocks.listGroups,
-        listGroupsLive: mocks.listGroupsLive,
-      },
-      messaging: {
-        targetResolver: {
-          reservedLiterals: ["current", "self", "this", "me"],
-          hint: "<chatId>",
-          resolveTarget: mocks.resolveTarget,
-        },
-      },
-    });
+    mocks.getChannelPlugin.mockReturnValue(createTelegramDirectoryPlugin());
     mocks.listGroups.mockResolvedValue([
       {
         kind: "group",
@@ -255,29 +263,15 @@ describe("resolveMessagingTarget (directory fallback)", () => {
   });
 
   it("keeps reserved literals on the directory path before id-like plugin normalization", async () => {
-    mocks.getChannelPlugin.mockReturnValue({
-      ...createChannelTestPluginBase({
-        id: "telegram",
-        label: "Telegram",
-        capabilities: { chatTypes: ["direct", "group", "channel"] },
-      }),
-      directory: {
-        listPeers: mocks.listPeers,
-        listPeersLive: mocks.listPeersLive,
-        listGroups: mocks.listGroups,
-        listGroupsLive: mocks.listGroupsLive,
-      },
-      messaging: {
+    mocks.getChannelPlugin.mockReturnValue(
+      createTelegramDirectoryPlugin({
         normalizeTarget: (raw: string) =>
           raw === "current" || raw === "telegram:current" ? "telegram:@current" : raw,
         targetResolver: {
           looksLikeId: (raw: string) => raw === "current" || raw === "telegram:current",
-          reservedLiterals: ["current", "self", "this", "me"],
-          hint: "<chatId>",
-          resolveTarget: mocks.resolveTarget,
         },
-      },
-    });
+      }),
+    );
     mocks.listGroups.mockResolvedValueOnce([
       { kind: "group", id: "room-1", name: "current" } satisfies ChannelDirectoryEntry,
     ]);
@@ -331,26 +325,7 @@ describe("resolveMessagingTarget (directory fallback)", () => {
   });
 
   it("rejects reserved literal targets after directory miss", async () => {
-    mocks.getChannelPlugin.mockReturnValue({
-      ...createChannelTestPluginBase({
-        id: "telegram",
-        label: "Telegram",
-        capabilities: { chatTypes: ["direct", "group", "channel"] },
-      }),
-      directory: {
-        listPeers: mocks.listPeers,
-        listPeersLive: mocks.listPeersLive,
-        listGroups: mocks.listGroups,
-        listGroupsLive: mocks.listGroupsLive,
-      },
-      messaging: {
-        targetResolver: {
-          reservedLiterals: ["current", "self", "this", "me"],
-          hint: "<chatId>",
-          resolveTarget: mocks.resolveTarget,
-        },
-      },
-    });
+    mocks.getChannelPlugin.mockReturnValue(createTelegramDirectoryPlugin());
     mocks.listGroups.mockResolvedValue([]);
     mocks.listGroupsLive.mockResolvedValue([]);
 
@@ -370,26 +345,7 @@ describe("resolveMessagingTarget (directory fallback)", () => {
   });
 
   it("requires exact directory matches before preserving reserved literal targets", async () => {
-    mocks.getChannelPlugin.mockReturnValue({
-      ...createChannelTestPluginBase({
-        id: "telegram",
-        label: "Telegram",
-        capabilities: { chatTypes: ["direct", "group", "channel"] },
-      }),
-      directory: {
-        listPeers: mocks.listPeers,
-        listPeersLive: mocks.listPeersLive,
-        listGroups: mocks.listGroups,
-        listGroupsLive: mocks.listGroupsLive,
-      },
-      messaging: {
-        targetResolver: {
-          reservedLiterals: ["current", "self", "this", "me"],
-          hint: "<chatId>",
-          resolveTarget: mocks.resolveTarget,
-        },
-      },
-    });
+    mocks.getChannelPlugin.mockReturnValue(createTelegramDirectoryPlugin());
     mocks.listGroups.mockResolvedValue([
       { kind: "group", id: "memes-room", name: "memes" } satisfies ChannelDirectoryEntry,
     ]);

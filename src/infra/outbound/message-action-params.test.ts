@@ -29,6 +29,20 @@ const cfg = {} as OpenClawConfig;
 const maybeIt = process.platform === "win32" ? it.skip : it;
 const matrixMediaSourceParamKeys = ["avatarPath", "avatarUrl"] as const;
 
+type SandboxMediaArgs = Parameters<typeof normalizeSandboxMediaParams>[0];
+
+function normalizeSandboxArgs(
+  args: SandboxMediaArgs["args"],
+  sandboxRoot: string,
+  extraParamKeys?: SandboxMediaArgs["extraParamKeys"],
+) {
+  return normalizeSandboxMediaParams({
+    args,
+    mediaPolicy: { mode: "sandbox", sandboxRoot },
+    ...(extraParamKeys ? { extraParamKeys } : {}),
+  });
+}
+
 async function withTempOpenClawStateDir<T>(test: (stateDir: string) => Promise<T>): Promise<T> {
   return await withOpenClawTestState(
     { layout: "state-only", prefix: "msg-params-state-" },
@@ -206,14 +220,7 @@ describe("message action media helpers", () => {
         avatarUrl: "file:///workspace/avatars/remote-avatar.jpg",
       };
 
-      await normalizeSandboxMediaParams({
-        args,
-        mediaPolicy: {
-          mode: "sandbox",
-          sandboxRoot,
-        },
-        extraParamKeys: matrixMediaSourceParamKeys,
-      });
+      await normalizeSandboxArgs(args, sandboxRoot, matrixMediaSourceParamKeys);
 
       expect(args.avatarPath).toBe(path.join(sandboxRoot, "avatars", "profile.png"));
       expect(args.avatarUrl).toBe(path.join(sandboxRoot, "avatars", "remote-avatar.jpg"));
@@ -346,14 +353,7 @@ describe("message action media helpers", () => {
         avatar_url: "file:///workspace/avatars/remote-avatar.jpg",
       };
 
-      await normalizeSandboxMediaParams({
-        args,
-        mediaPolicy: {
-          mode: "sandbox",
-          sandboxRoot,
-        },
-        extraParamKeys: matrixMediaSourceParamKeys,
-      });
+      await normalizeSandboxArgs(args, sandboxRoot, matrixMediaSourceParamKeys);
 
       expect(args.avatar_path).toBe(path.join(sandboxRoot, "avatars", "profile.png"));
       expect(args.avatar_url).toBe(path.join(sandboxRoot, "avatars", "remote-avatar.jpg"));
@@ -372,14 +372,7 @@ describe("message action media helpers", () => {
         avatar_path: "data:text/plain;base64,QQ==",
       };
 
-      await normalizeSandboxMediaParams({
-        args,
-        mediaPolicy: {
-          mode: "sandbox",
-          sandboxRoot,
-        },
-        extraParamKeys: matrixMediaSourceParamKeys,
-      });
+      await normalizeSandboxArgs(args, sandboxRoot, matrixMediaSourceParamKeys);
 
       expect(args.avatarUrl).toBe("https://example.com/avatars/profile.png");
       expect(args.avatarPath).toBe(path.join(sandboxRoot, "avatars", "profile.png"));
@@ -398,14 +391,7 @@ describe("message action media helpers", () => {
         avatarPath: "/workspace/avatars/local.png",
       };
 
-      await normalizeSandboxMediaParams({
-        args,
-        mediaPolicy: {
-          mode: "sandbox",
-          sandboxRoot,
-        },
-        extraParamKeys: matrixMediaSourceParamKeys,
-      });
+      await normalizeSandboxArgs(args, sandboxRoot, matrixMediaSourceParamKeys);
 
       expect(args.avatarUrl).toBe("https://example.com/avatars/profile.png");
       expect(args.avatarPath).toBe(path.join(sandboxRoot, "avatars", "local.png"));
@@ -422,14 +408,7 @@ describe("message action media helpers", () => {
         avatarPath: "/workspace/avatars/local.png",
       };
 
-      await normalizeSandboxMediaParams({
-        args,
-        mediaPolicy: {
-          mode: "sandbox",
-          sandboxRoot,
-        },
-        extraParamKeys: matrixMediaSourceParamKeys,
-      });
+      await normalizeSandboxArgs(args, sandboxRoot, matrixMediaSourceParamKeys);
 
       expect(args.avatarUrl).toBe("mxc://matrix.org/abc123def456");
       expect(args.avatarPath).toBe(path.join(sandboxRoot, "avatars", "local.png"));
@@ -448,13 +427,7 @@ describe("message action media helpers", () => {
           fileUrl: "https://example.com/docs/report.pdf?sig=2",
         };
 
-        await normalizeSandboxMediaParams({
-          args,
-          mediaPolicy: {
-            mode: "sandbox",
-            sandboxRoot,
-          },
-        });
+        await normalizeSandboxArgs(args, sandboxRoot);
 
         expect(args.mediaUrl).toBe("https://example.com/assets/photo.png?sig=1");
         expect(args.fileUrl).toBe("https://example.com/docs/report.pdf?sig=2");

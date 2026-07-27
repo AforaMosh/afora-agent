@@ -112,6 +112,7 @@ import type { OpenClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions/types.js";
 import type { DeliveryContext } from "../../utils/delivery-context.types.js";
 import { normalizeLegacySessionEntryDelivery } from "../state-migrations.legacy-session-store.js";
+import type { OutboundSessionRoute } from "./outbound-session.js";
 let resolveAgentDeliveryPlanWithSessionRoute: typeof import("./agent-delivery.js").resolveAgentDeliveryPlanWithSessionRoute;
 let resolveAgentExplicitRecipientSession: typeof import("./agent-delivery.js").resolveAgentExplicitRecipientSession;
 let resolveAgentOutboundTarget: typeof import("./agent-delivery.js").resolveAgentOutboundTarget;
@@ -157,6 +158,24 @@ async function buildDeliveryPlan(
     sessionEntry: params.sessionEntry
       ? normalizeLegacySessionEntryDelivery(params.sessionEntry)
       : undefined,
+  });
+}
+
+function mockOutboundSessionRoute(
+  params: Omit<OutboundSessionRoute, "baseSessionKey" | "chatType"> &
+    Partial<Pick<OutboundSessionRoute, "baseSessionKey" | "chatType">>,
+) {
+  mocks.resolveOutboundSessionRoute.mockResolvedValueOnce({
+    baseSessionKey: params.sessionKey,
+    chatType: params.peer.kind,
+    ...params,
+  });
+}
+
+function mockRecipientPlugin() {
+  mocks.resolveOutboundChannelPlugin.mockReturnValue({
+    config: { listAccountIds: () => [] },
+    messaging: { resolveOutboundSessionRoute: vi.fn() },
   });
 }
 
@@ -304,11 +323,9 @@ describe("agent delivery helpers", () => {
       ok: true,
       to: "channel:C123",
     });
-    mocks.resolveOutboundSessionRoute.mockResolvedValueOnce({
+    mockOutboundSessionRoute({
       sessionKey: "agent:workspace:channel:C123",
-      baseSessionKey: "agent:workspace:channel:C123",
       peer: { kind: "channel", id: "C123" },
-      chatType: "channel",
       from: "workspace:channel:C123",
       to: "channel:C123",
       threadId: "1700000000.000100",
@@ -351,12 +368,10 @@ describe("agent delivery helpers", () => {
       ok: true,
       to: "120363040000000000@g.us",
     });
-    mocks.resolveOutboundSessionRoute.mockResolvedValueOnce({
+    mockOutboundSessionRoute({
       sessionKey: "agent:ops:whatsapp:group:120363040000000000@g.us",
-      baseSessionKey: "agent:ops:whatsapp:group:120363040000000000@g.us",
       recipientSessionExact: true,
       peer: { kind: "group", id: "120363040000000000@g.us" },
-      chatType: "group",
       from: "120363040000000000@g.us",
       to: "120363040000000000@g.us",
       threadId: "topic-42",
@@ -391,16 +406,12 @@ describe("agent delivery helpers", () => {
   });
 
   it("applies binding-level DM isolation to exact provider recipients", async () => {
-    mocks.resolveOutboundChannelPlugin.mockReturnValue({
-      config: { listAccountIds: () => [] },
-      messaging: { resolveOutboundSessionRoute: vi.fn() },
-    });
-    mocks.resolveOutboundSessionRoute.mockResolvedValueOnce({
+    mockRecipientPlugin();
+    mockOutboundSessionRoute({
       sessionKey: "agent:ops:main:thread:topic-1",
       baseSessionKey: "agent:ops:main",
       recipientSessionExact: true,
       peer: { kind: "direct", id: "+15551234567" },
-      chatType: "direct",
       from: "signal:+15551234567",
       to: "+15551234567",
       threadId: "topic-1",
@@ -433,16 +444,11 @@ describe("agent delivery helpers", () => {
   });
 
   it("rejects best-effort plugin routes for explicit recipient sessions", async () => {
-    mocks.resolveOutboundChannelPlugin.mockReturnValue({
-      config: { listAccountIds: () => [] },
-      messaging: { resolveOutboundSessionRoute: vi.fn() },
-    });
-    mocks.resolveOutboundSessionRoute.mockResolvedValueOnce({
+    mockRecipientPlugin();
+    mockOutboundSessionRoute({
       sessionKey: "agent:main:main",
-      baseSessionKey: "agent:main:main",
       recipientSessionExact: false,
       peer: { kind: "direct", id: "@ambiguous" },
-      chatType: "direct",
       from: "provider:@ambiguous",
       to: "@ambiguous",
     });
@@ -459,16 +465,11 @@ describe("agent delivery helpers", () => {
   });
 
   it("accepts best-effort direct aliases that collapse to the selected agent main session", async () => {
-    mocks.resolveOutboundChannelPlugin.mockReturnValue({
-      config: { listAccountIds: () => [] },
-      messaging: { resolveOutboundSessionRoute: vi.fn() },
-    });
-    mocks.resolveOutboundSessionRoute.mockResolvedValueOnce({
+    mockRecipientPlugin();
+    mockOutboundSessionRoute({
       sessionKey: "agent:ops:main",
-      baseSessionKey: "agent:ops:main",
       recipientSessionExact: "direct-alias",
       peer: { kind: "direct", id: "username:alice.01" },
-      chatType: "direct",
       from: "signal:username:alice.01",
       to: "username:alice.01",
     });
@@ -489,16 +490,11 @@ describe("agent delivery helpers", () => {
   });
 
   it("rejects main-session aliases when a channel binding can isolate direct peers", async () => {
-    mocks.resolveOutboundChannelPlugin.mockReturnValue({
-      config: { listAccountIds: () => [] },
-      messaging: { resolveOutboundSessionRoute: vi.fn() },
-    });
-    mocks.resolveOutboundSessionRoute.mockResolvedValueOnce({
+    mockRecipientPlugin();
+    mockOutboundSessionRoute({
       sessionKey: "agent:ops:main",
-      baseSessionKey: "agent:ops:main",
       recipientSessionExact: "direct-alias",
       peer: { kind: "direct", id: "username:alice.01" },
-      chatType: "direct",
       from: "signal:username:alice.01",
       to: "username:alice.01",
     });
@@ -524,16 +520,11 @@ describe("agent delivery helpers", () => {
   });
 
   it("rejects best-effort aliases that do not use the configured main session key", async () => {
-    mocks.resolveOutboundChannelPlugin.mockReturnValue({
-      config: { listAccountIds: () => [] },
-      messaging: { resolveOutboundSessionRoute: vi.fn() },
-    });
-    mocks.resolveOutboundSessionRoute.mockResolvedValueOnce({
+    mockRecipientPlugin();
+    mockOutboundSessionRoute({
       sessionKey: "agent:ops:main",
-      baseSessionKey: "agent:ops:main",
       recipientSessionExact: "direct-alias",
       peer: { kind: "direct", id: "username:alice.01" },
-      chatType: "direct",
       from: "signal:username:alice.01",
       to: "username:alice.01",
     });
@@ -550,15 +541,10 @@ describe("agent delivery helpers", () => {
   });
 
   it("preserves authoritative routes from legacy plugin hooks", async () => {
-    mocks.resolveOutboundChannelPlugin.mockReturnValue({
-      config: { listAccountIds: () => [] },
-      messaging: { resolveOutboundSessionRoute: vi.fn() },
-    });
-    mocks.resolveOutboundSessionRoute.mockResolvedValueOnce({
+    mockRecipientPlugin();
+    mockOutboundSessionRoute({
       sessionKey: "agent:main:provider:direct:user-1",
-      baseSessionKey: "agent:main:provider:direct:user-1",
       peer: { kind: "direct", id: "user-1" },
-      chatType: "direct",
       from: "provider:user-1",
       to: "user-1",
     });
@@ -583,12 +569,10 @@ describe("agent delivery helpers", () => {
     };
     mocks.resolveOutboundChannelPlugin.mockReturnValue(plugin);
     mocks.resolveOutboundTarget.mockReturnValueOnce({ ok: true, to: "42" });
-    mocks.resolveOutboundSessionRoute.mockResolvedValueOnce({
+    mockOutboundSessionRoute({
       sessionKey: "agent:ops:synology-chat:default:direct:chat-api-42",
-      baseSessionKey: "agent:ops:synology-chat:default:direct:chat-api-42",
       recipientSessionExact: "delivery-identity",
       peer: { kind: "direct", id: "chat-api-42" },
-      chatType: "direct",
       from: "synology-chat:chat-api:42",
       to: "42",
     });
@@ -620,17 +604,12 @@ describe("agent delivery helpers", () => {
   });
 
   it("rejects outbound-only identities that collapse to the agent main session", async () => {
-    mocks.resolveOutboundChannelPlugin.mockReturnValue({
-      config: { listAccountIds: () => [] },
-      messaging: { resolveOutboundSessionRoute: vi.fn() },
-    });
+    mockRecipientPlugin();
     mocks.resolveOutboundTarget.mockReturnValueOnce({ ok: true, to: "42" });
-    mocks.resolveOutboundSessionRoute.mockResolvedValueOnce({
+    mockOutboundSessionRoute({
       sessionKey: "agent:ops:main",
-      baseSessionKey: "agent:ops:main",
       recipientSessionExact: "delivery-identity",
       peer: { kind: "direct", id: "chat-api-42" },
-      chatType: "direct",
       from: "synology-chat:chat-api:42",
       to: "42",
     });
@@ -649,17 +628,12 @@ describe("agent delivery helpers", () => {
   });
 
   it("rejects outbound-only identities outside the real provider namespace", async () => {
-    mocks.resolveOutboundChannelPlugin.mockReturnValue({
-      config: { listAccountIds: () => [] },
-      messaging: { resolveOutboundSessionRoute: vi.fn() },
-    });
+    mockRecipientPlugin();
     mocks.resolveOutboundTarget.mockReturnValueOnce({ ok: true, to: "42" });
-    mocks.resolveOutboundSessionRoute.mockResolvedValueOnce({
+    mockOutboundSessionRoute({
       sessionKey: "agent:ops:synthetic:direct:42",
-      baseSessionKey: "agent:ops:synthetic:direct:42",
       recipientSessionExact: "delivery-identity",
       peer: { kind: "direct", id: "42" },
-      chatType: "direct",
       from: "synthetic:42",
       to: "42",
     });
@@ -704,12 +678,10 @@ describe("agent delivery helpers", () => {
       messaging: { resolveOutboundSessionRoute: vi.fn() },
     };
     mocks.resolveOutboundChannelPlugin.mockReturnValue(plugin);
-    mocks.resolveOutboundSessionRoute.mockResolvedValueOnce({
+    mockOutboundSessionRoute({
       sessionKey: "agent:ops:whatsapp:work:direct:+15551234567",
-      baseSessionKey: "agent:ops:whatsapp:work:direct:+15551234567",
       recipientSessionExact: true,
       peer: { kind: "direct", id: "+15551234567" },
-      chatType: "direct",
       from: "+15551234567",
       to: "+15551234567",
     });
@@ -757,11 +729,9 @@ describe("agent delivery helpers", () => {
         resolutionSource: "directory",
       },
     });
-    mocks.resolveOutboundSessionRoute.mockResolvedValueOnce({
+    mockOutboundSessionRoute({
       sessionKey: "agent:telegram:group:-1002458651455",
-      baseSessionKey: "agent:telegram:group:-1002458651455",
       peer: { kind: "group", id: "-1002458651455" },
-      chatType: "group",
       from: "telegram:group:-1002458651455",
       to: "telegram:-1002458651455",
     });
@@ -973,11 +943,9 @@ describe("agent delivery helpers", () => {
       ok: true,
       to: "channel:C123",
     });
-    mocks.resolveOutboundSessionRoute.mockResolvedValueOnce({
+    mockOutboundSessionRoute({
       sessionKey: "agent:workspace:channel:C123",
-      baseSessionKey: "agent:workspace:channel:C123",
       peer: { kind: "channel", id: "C123" },
-      chatType: "channel",
       from: "workspace:channel:C123",
       to: "channel:C123",
     });

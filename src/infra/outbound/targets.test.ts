@@ -41,6 +41,19 @@ type LegacyDeliveryFixture = SessionEntry & {
   lastThreadId?: string | number;
 };
 
+function createLegacyDeliveryEntry(
+  sessionId: string,
+  overrides: Omit<Partial<LegacyDeliveryFixture>, "sessionId" | "updatedAt"> = {},
+): LegacyDeliveryFixture {
+  return {
+    sessionId,
+    updatedAt: 1,
+    lastChannel: "alpha",
+    lastTo: "room-one",
+    ...overrides,
+  };
+}
+
 function resolveSessionDeliveryTarget(
   params: Omit<Parameters<typeof resolveCanonicalSessionDeliveryTarget>[0], "entry"> & {
     entry?: LegacyDeliveryFixture;
@@ -236,13 +249,11 @@ describe("resolveSessionDeliveryTarget", () => {
 
   it("derives implicit delivery from the last route", () => {
     const resolved = resolveSessionDeliveryTarget({
-      entry: {
-        sessionId: "sess-1",
-        updatedAt: 1,
+      entry: createLegacyDeliveryEntry("sess-1", {
         lastChannel: " alpha ",
         lastTo: " Room One ",
         lastAccountId: " acct-1 ",
-      },
+      }),
       requestedChannel: "last",
     });
 
@@ -261,12 +272,7 @@ describe("resolveSessionDeliveryTarget", () => {
 
   it("prefers explicit targets without reusing lastTo", () => {
     const resolved = resolveSessionDeliveryTarget({
-      entry: {
-        sessionId: "sess-2",
-        updatedAt: 1,
-        lastChannel: "alpha",
-        lastTo: "room-one",
-      },
+      entry: createLegacyDeliveryEntry("sess-2"),
       requestedChannel: "beta",
     });
 
@@ -322,12 +328,9 @@ describe("resolveSessionDeliveryTarget", () => {
     );
 
     const resolved = resolveSessionDeliveryTarget({
-      entry: {
-        sessionId: "sess-parser",
-        updatedAt: 1,
-        lastChannel: "alpha",
+      entry: createLegacyDeliveryEntry("sess-parser", {
         lastTo: "alpha:room-a:topic:77",
-      },
+      }),
       requestedChannel: "last",
     });
 
@@ -337,12 +340,7 @@ describe("resolveSessionDeliveryTarget", () => {
 
   it("uses an explicit provider-prefixed target before last-session channel fallback", () => {
     const resolved = resolveSessionDeliveryTarget({
-      entry: {
-        sessionId: "sess-prefixed",
-        updatedAt: 1,
-        lastChannel: "alpha",
-        lastTo: "room-one",
-      },
+      entry: createLegacyDeliveryEntry("sess-prefixed"),
       requestedChannel: "last",
       explicitTo: "beta:room-two",
     });
@@ -354,12 +352,7 @@ describe("resolveSessionDeliveryTarget", () => {
 
   it("keeps target-kind prefixes on the selected last-session channel", () => {
     const resolved = resolveSessionDeliveryTarget({
-      entry: {
-        sessionId: "sess-target-kind",
-        updatedAt: 1,
-        lastChannel: "alpha",
-        lastTo: "room-one",
-      },
+      entry: createLegacyDeliveryEntry("sess-target-kind"),
       requestedChannel: "last",
       explicitTo: "channel:room-two",
     });
@@ -370,12 +363,7 @@ describe("resolveSessionDeliveryTarget", () => {
 
   it("allows mismatched lastTo when configured", () => {
     const resolved = resolveSessionDeliveryTarget({
-      entry: {
-        sessionId: "sess-3",
-        updatedAt: 1,
-        lastChannel: "alpha",
-        lastTo: "room-one",
-      },
+      entry: createLegacyDeliveryEntry("sess-3"),
       requestedChannel: "beta",
       allowMismatchedLastTo: true,
     });
@@ -390,13 +378,11 @@ describe("resolveSessionDeliveryTarget", () => {
 
   it("passes through explicitThreadId when provided", () => {
     const resolved = resolveSessionDeliveryTarget({
-      entry: {
-        sessionId: "sess-thread",
-        updatedAt: 1,
+      entry: createLegacyDeliveryEntry("sess-thread", {
         lastChannel: "forum",
         lastTo: "room:ops",
         lastThreadId: 999,
-      },
+      }),
       requestedChannel: "last",
       explicitThreadId: 42,
     });
@@ -408,13 +394,11 @@ describe("resolveSessionDeliveryTarget", () => {
 
   it("uses session lastThreadId when no explicitThreadId", () => {
     const resolved = resolveSessionDeliveryTarget({
-      entry: {
-        sessionId: "sess-thread-2",
-        updatedAt: 1,
+      entry: createLegacyDeliveryEntry("sess-thread-2", {
         lastChannel: "forum",
         lastTo: "room:ops",
         lastThreadId: 999,
-      },
+      }),
       requestedChannel: "last",
     });
 
@@ -423,13 +407,9 @@ describe("resolveSessionDeliveryTarget", () => {
 
   it("does not inherit lastThreadId in heartbeat mode", () => {
     const resolved = resolveSessionDeliveryTarget({
-      entry: {
-        sessionId: "sess-heartbeat-thread",
-        updatedAt: 1,
-        lastChannel: "alpha",
-        lastTo: "room-one",
+      entry: createLegacyDeliveryEntry("sess-heartbeat-thread", {
         lastThreadId: "thread-1",
-      },
+      }),
       requestedChannel: "last",
       mode: "heartbeat",
     });
@@ -439,12 +419,7 @@ describe("resolveSessionDeliveryTarget", () => {
 
   it("falls back to a provided channel when requested is unsupported", () => {
     const resolved = resolveSessionDeliveryTarget({
-      entry: {
-        sessionId: "sess-4",
-        updatedAt: 1,
-        lastChannel: "alpha",
-        lastTo: "room-one",
-      },
+      entry: createLegacyDeliveryEntry("sess-4"),
       requestedChannel: "webchat",
       fallbackChannel: "beta",
     });
@@ -458,12 +433,12 @@ describe("resolveSessionDeliveryTarget", () => {
   });
 
   it("keeps plugin-owned explicit targets raw for route resolution", () => {
-    expectTopicTargetKeptRaw({
-      sessionId: "sess-topic",
-      updatedAt: 1,
-      lastChannel: "forum",
-      lastTo: "room:ops",
-    });
+    expectTopicTargetKeptRaw(
+      createLegacyDeliveryEntry("sess-topic", {
+        lastChannel: "forum",
+        lastTo: "room:ops",
+      }),
+    );
   });
 
   it("keeps plugin-owned explicit targets raw when lastTo is absent", () => {
@@ -476,12 +451,7 @@ describe("resolveSessionDeliveryTarget", () => {
 
   it("skips plugin-owned target parsing for other channels", () => {
     const resolved = resolveSessionDeliveryTarget({
-      entry: {
-        sessionId: "sess-alpha",
-        updatedAt: 1,
-        lastChannel: "alpha",
-        lastTo: "room-one",
-      },
+      entry: createLegacyDeliveryEntry("sess-alpha"),
       requestedChannel: "last",
       explicitTo: "room-one:topic:999",
     });
@@ -492,12 +462,10 @@ describe("resolveSessionDeliveryTarget", () => {
 
   it("skips plugin-owned target parsing when the requested channel differs from lastChannel", () => {
     const resolved = resolveSessionDeliveryTarget({
-      entry: {
-        sessionId: "sess-cross",
-        updatedAt: 1,
+      entry: createLegacyDeliveryEntry("sess-cross", {
         lastChannel: "forum",
         lastTo: "room:ops",
-      },
+      }),
       requestedChannel: "alpha",
       explicitTo: "room-one:topic:999",
     });
@@ -510,12 +478,10 @@ describe("resolveSessionDeliveryTarget", () => {
     setActivePluginRegistry(createTargetsTestRegistry([]));
 
     const resolved = resolveSessionDeliveryTarget({
-      entry: {
-        sessionId: "sess-no-registry",
-        updatedAt: 1,
+      entry: createLegacyDeliveryEntry("sess-no-registry", {
         lastChannel: "forum",
         lastTo: "room:ops",
-      },
+      }),
       requestedChannel: "last",
       explicitTo: "room:ops:topic:1008013",
     });
@@ -526,12 +492,10 @@ describe("resolveSessionDeliveryTarget", () => {
 
   it("explicitThreadId takes priority over :topic: parsed value", () => {
     const resolved = resolveSessionDeliveryTarget({
-      entry: {
-        sessionId: "sess-priority",
-        updatedAt: 1,
+      entry: createLegacyDeliveryEntry("sess-priority", {
         lastChannel: "forum",
         lastTo: "room:ops",
-      },
+      }),
       requestedChannel: "last",
       explicitTo: "room:ops:topic:1008013",
       explicitThreadId: 42,
@@ -547,12 +511,9 @@ describe("resolveSessionDeliveryTarget", () => {
     // the deployment never configured agents.defaults.heartbeat.
     const resolved = resolveHeartbeatDeliveryTarget({
       cfg: {},
-      entry: {
-        sessionId: "sess-origin-no-config",
-        updatedAt: 1,
-        lastChannel: "alpha",
+      entry: createLegacyDeliveryEntry("sess-origin-no-config", {
         lastTo: "chat:one",
-      },
+      }),
       turnSource: { channel: "alpha", to: "chat:one", threadId: "77" },
     });
     expect(resolved.channel).toBe("alpha");
@@ -563,12 +524,9 @@ describe("resolveSessionDeliveryTarget", () => {
   it("keeps an explicit target:none suppressing origin-carrying events", () => {
     const resolved = resolveHeartbeatDeliveryTarget({
       cfg: {},
-      entry: {
-        sessionId: "sess-origin-target-none",
-        updatedAt: 1,
-        lastChannel: "alpha",
+      entry: createLegacyDeliveryEntry("sess-origin-target-none", {
         lastTo: "chat:one",
-      },
+      }),
       heartbeat: { target: "none" },
       turnSource: { channel: "alpha", to: "chat:one" },
     });
@@ -579,12 +537,9 @@ describe("resolveSessionDeliveryTarget", () => {
   it("stays suppressed with unset heartbeat config and no origin turn source", () => {
     const resolved = resolveHeartbeatDeliveryTarget({
       cfg: {},
-      entry: {
-        sessionId: "sess-no-config-no-origin",
-        updatedAt: 1,
-        lastChannel: "alpha",
+      entry: createLegacyDeliveryEntry("sess-no-config-no-origin", {
         lastTo: "chat:one",
-      },
+      }),
     });
     expect(resolved.channel).toBe("none");
     expect(resolved.reason).toBe("target-none");
@@ -619,107 +574,84 @@ describe("resolveSessionDeliveryTarget", () => {
   it.each([
     {
       name: "allows heartbeat delivery to direct targets by default and drops inherited thread ids",
-      entry: {
-        sessionId: "sess-heartbeat-alpha-direct",
-        updatedAt: 1,
-        lastChannel: "alpha",
+      entry: createLegacyDeliveryEntry("sess-heartbeat-alpha-direct", {
         lastTo: "user:one",
         lastThreadId: "thread-1",
-      },
+      }),
       expectedChannel: "alpha",
       expectedTo: "user:one",
     },
     {
       name: "blocks heartbeat delivery to direct targets when directPolicy is block",
-      entry: {
-        sessionId: "sess-heartbeat-alpha-direct-blocked",
-        updatedAt: 1,
-        lastChannel: "alpha",
+      entry: createLegacyDeliveryEntry("sess-heartbeat-alpha-direct-blocked", {
         lastTo: "user:one",
         lastThreadId: "thread-1",
-      },
+      }),
       directPolicy: "block" as const,
       expectedChannel: "none",
       expectedReason: "dm-blocked",
     },
     {
       name: "allows heartbeat delivery to plugin-classified direct chats by default",
-      entry: {
-        sessionId: "sess-heartbeat-forum-direct",
-        updatedAt: 1,
+      entry: createLegacyDeliveryEntry("sess-heartbeat-forum-direct", {
         lastChannel: "forum",
         lastTo: "dm:one",
-      },
+      }),
       expectedChannel: "forum",
       expectedTo: "dm:one",
     },
     {
       name: "blocks heartbeat delivery to plugin-classified direct chats when directPolicy is block",
-      entry: {
-        sessionId: "sess-heartbeat-forum-direct-blocked",
-        updatedAt: 1,
+      entry: createLegacyDeliveryEntry("sess-heartbeat-forum-direct-blocked", {
         lastChannel: "forum",
         lastTo: "dm:one",
-      },
+      }),
       directPolicy: "block" as const,
       expectedChannel: "none",
       expectedReason: "dm-blocked",
     },
     {
       name: "keeps heartbeat delivery to plugin-classified groups",
-      entry: {
-        sessionId: "sess-heartbeat-forum-group",
-        updatedAt: 1,
+      entry: createLegacyDeliveryEntry("sess-heartbeat-forum-group", {
         lastChannel: "forum",
         lastTo: "room:ops",
-      },
+      }),
       expectedChannel: "forum",
       expectedTo: "room:ops",
     },
     {
       name: "allows heartbeat delivery to unknown-shape targets when session chatType is direct",
-      entry: {
-        sessionId: "sess-heartbeat-beta-direct",
-        updatedAt: 1,
+      entry: createLegacyDeliveryEntry("sess-heartbeat-beta-direct", {
         lastChannel: "beta",
         lastTo: "unknown-shape",
         chatType: "direct",
-      },
+      }),
       expectedChannel: "beta",
       expectedTo: "unknown-shape",
     },
     {
       name: "keeps heartbeat delivery to generic group targets",
-      entry: {
-        sessionId: "sess-heartbeat-alpha-group",
-        updatedAt: 1,
-        lastChannel: "alpha",
+      entry: createLegacyDeliveryEntry("sess-heartbeat-alpha-group", {
         lastTo: "group:ops",
-      },
+      }),
       expectedChannel: "alpha",
       expectedTo: "group:ops",
     },
     {
       name: "uses session chatType hints when target parsing cannot classify a direct chat",
-      entry: {
-        sessionId: "sess-heartbeat-alpha-unknown-direct",
-        updatedAt: 1,
-        lastChannel: "alpha",
+      entry: createLegacyDeliveryEntry("sess-heartbeat-alpha-unknown-direct", {
         lastTo: "chat-guid-unknown-shape",
         chatType: "direct",
-      },
+      }),
       expectedChannel: "alpha",
       expectedTo: "chat-guid-unknown-shape",
     },
     {
       name: "blocks session chatType direct hints when directPolicy is block",
-      entry: {
-        sessionId: "sess-heartbeat-alpha-unknown-direct-blocked",
-        updatedAt: 1,
-        lastChannel: "alpha",
+      entry: createLegacyDeliveryEntry("sess-heartbeat-alpha-unknown-direct-blocked", {
         lastTo: "chat-guid-unknown-shape",
         chatType: "direct",
-      },
+      }),
       directPolicy: "block" as const,
       expectedChannel: "none",
       expectedReason: "dm-blocked",
@@ -746,12 +678,9 @@ describe("resolveSessionDeliveryTarget", () => {
     const cfg: OpenClawConfig = {};
     const resolved = resolveHeartbeatDeliveryTarget({
       cfg,
-      entry: {
-        sessionId: "sess-heartbeat-core-direct-prefix",
-        updatedAt: 1,
-        lastChannel: "alpha",
+      entry: createLegacyDeliveryEntry("sess-heartbeat-core-direct-prefix", {
         lastTo: "user:12345",
-      },
+      }),
       heartbeat: {
         target: "last",
       },
@@ -765,12 +694,9 @@ describe("resolveSessionDeliveryTarget", () => {
     const cfg: OpenClawConfig = {};
     const resolved = resolveHeartbeatDeliveryTarget({
       cfg,
-      entry: {
-        sessionId: "sess-heartbeat-core-channel-prefix",
-        updatedAt: 1,
-        lastChannel: "alpha",
+      entry: createLegacyDeliveryEntry("sess-heartbeat-core-channel-prefix", {
         lastTo: "channel:999",
-      },
+      }),
       heartbeat: {
         target: "last",
       },
@@ -782,13 +708,11 @@ describe("resolveSessionDeliveryTarget", () => {
 
   it("keeps explicit threadId in heartbeat mode", () => {
     const resolved = resolveSessionDeliveryTarget({
-      entry: {
-        sessionId: "sess-heartbeat-explicit-thread",
-        updatedAt: 1,
+      entry: createLegacyDeliveryEntry("sess-heartbeat-explicit-thread", {
         lastChannel: "forum",
         lastTo: "room:ops",
         lastThreadId: 999,
-      },
+      }),
       requestedChannel: "last",
       mode: "heartbeat",
       explicitThreadId: 42,
@@ -824,12 +748,10 @@ describe("resolveSessionDeliveryTarget", () => {
 
     const resolved = resolveHeartbeatDeliveryTarget({
       cfg: {},
-      entry: {
-        sessionId: "sess-heartbeat-no-registry",
-        updatedAt: 1,
+      entry: createLegacyDeliveryEntry("sess-heartbeat-no-registry", {
         lastChannel: "forum",
         lastTo: "room:ops",
-      },
+      }),
       heartbeat: {
         target: "last",
       },
@@ -859,12 +781,10 @@ describe("resolveSessionDeliveryTarget", () => {
 
     const resolved = resolveHeartbeatDeliveryTarget({
       cfg: {},
-      entry: {
-        sessionId: "sess-heartbeat-no-registry-invalid-target",
-        updatedAt: 1,
+      entry: createLegacyDeliveryEntry("sess-heartbeat-no-registry-invalid-target", {
         lastChannel: "forum",
         lastTo: "invalid",
-      },
+      }),
       heartbeat: {
         target: "last",
       },
@@ -896,12 +816,10 @@ describe("resolveSessionDeliveryTarget", () => {
 
     const resolved = resolveHeartbeatDeliveryTarget({
       cfg: {},
-      entry: {
-        sessionId: "sess-heartbeat-no-registry-invalid-account",
-        updatedAt: 1,
+      entry: createLegacyDeliveryEntry("sess-heartbeat-no-registry-invalid-account", {
         lastChannel: "forum",
         lastTo: "room:ops",
-      },
+      }),
       heartbeat: {
         target: "last",
         accountId: "missing-account",
@@ -966,13 +884,11 @@ describe("resolveSessionDeliveryTarget", () => {
 
     const resolved = resolveHeartbeatDeliveryTarget({
       cfg: {},
-      entry: {
-        sessionId: "sess-external-account",
-        updatedAt: 1,
+      entry: createLegacyDeliveryEntry("sess-external-account", {
         lastChannel: "external-channel",
         lastTo: "room:previous",
         lastAccountId: "account-2",
-      },
+      }),
       heartbeat: {
         target: "external-channel",
         to: "room:ops",
@@ -1023,12 +939,9 @@ describe("resolveSessionDeliveryTarget", () => {
     const resolved = await resolveHeartbeatDeliveryTargetWithSessionRoute({
       cfg: {},
       agentId: "main",
-      entry: {
-        sessionId: "sess-heartbeat-routed-direct",
-        updatedAt: 1,
-        lastChannel: "alpha",
+      entry: createLegacyDeliveryEntry("sess-heartbeat-routed-direct", {
         lastTo: "channel:D123",
-      },
+      }),
       heartbeat: {
         target: "last",
         directPolicy: "block",
@@ -1421,12 +1334,9 @@ describe("resolveSessionDeliveryTarget", () => {
     const resolved = await resolveHeartbeatDeliveryTargetWithSessionRoute({
       cfg: {},
       agentId: "main",
-      entry: {
-        sessionId: "sess-heartbeat-route-failure",
-        updatedAt: 1,
-        lastChannel: "alpha",
+      entry: createLegacyDeliveryEntry("sess-heartbeat-route-failure", {
         lastTo: "group:ops",
-      },
+      }),
       heartbeat: {
         target: "last",
       },
@@ -1470,12 +1380,9 @@ describe("resolveSessionDeliveryTarget", () => {
         },
       } as OpenClawConfig,
       agentId: "main",
-      entry: {
-        sessionId: "sess-heartbeat-default-routed-direct",
-        updatedAt: 1,
-        lastChannel: "alpha",
+      entry: createLegacyDeliveryEntry("sess-heartbeat-default-routed-direct", {
         lastTo: "channel:D123",
-      },
+      }),
     });
 
     expect(resolved.channel).toBe("none");
@@ -1486,14 +1393,12 @@ describe("resolveSessionDeliveryTarget", () => {
     const cfg: OpenClawConfig = {};
     const resolved = resolveHeartbeatDeliveryTarget({
       cfg,
-      entry: {
-        sessionId: "sess-heartbeat-forum-topic",
-        updatedAt: 1,
+      entry: createLegacyDeliveryEntry("sess-heartbeat-forum-topic", {
         lastChannel: "forum",
         lastTo: "room:ops",
         lastThreadId: 1122,
         chatType: "group",
-      },
+      }),
       heartbeat: {
         target: "last",
       },
@@ -1532,14 +1437,12 @@ describe("resolveSessionDeliveryTarget", () => {
     const cfg: OpenClawConfig = {};
     const resolved = resolveHeartbeatDeliveryTarget({
       cfg,
-      entry: {
-        sessionId: "sess-heartbeat-forum-direct-stale-thread",
-        updatedAt: 1,
+      entry: createLegacyDeliveryEntry("sess-heartbeat-forum-direct-stale-thread", {
         lastChannel: "forum",
         lastTo: "dm:one",
         lastThreadId: 1122,
         chatType: "direct",
-      },
+      }),
       heartbeat: {
         target: "last",
       },
@@ -1553,12 +1456,9 @@ describe("resolveSessionDeliveryTarget", () => {
   it("prefers turn-scoped routing over mutable session routing for target=last", () => {
     const resolved = resolveHeartbeatDeliveryTarget({
       cfg: {},
-      entry: {
-        sessionId: "sess-heartbeat-turn-source",
-        updatedAt: 1,
-        lastChannel: "alpha",
+      entry: createLegacyDeliveryEntry("sess-heartbeat-turn-source", {
         lastTo: "wrong-room",
-      },
+      }),
       heartbeat: {
         target: "last",
       },
@@ -1577,12 +1477,10 @@ describe("resolveSessionDeliveryTarget", () => {
   it("merges partial turn-scoped metadata with the stored session route for target=last", () => {
     const resolved = resolveHeartbeatDeliveryTarget({
       cfg: {},
-      entry: {
-        sessionId: "sess-heartbeat-turn-source-partial",
-        updatedAt: 1,
+      entry: createLegacyDeliveryEntry("sess-heartbeat-turn-source-partial", {
         lastChannel: "forum",
         lastTo: "room:ops",
-      },
+      }),
       heartbeat: {
         target: "last",
       },
@@ -1602,12 +1500,10 @@ describe("resolveSessionDeliveryTarget — cross-channel reply guard (#24152)", 
     // Simulate: one channel originated the turn, but another channel
     // concurrently updated the shared session route.
     const resolved = resolveSessionDeliveryTarget({
-      entry: {
-        sessionId: "sess-shared",
-        updatedAt: 1,
+      entry: createLegacyDeliveryEntry("sess-shared", {
         lastChannel: "beta",
         lastTo: "wrong-room",
-      },
+      }),
       requestedChannel: "last",
       turnSourceChannel: "alpha",
       turnSourceTo: "room-one",
@@ -1619,12 +1515,7 @@ describe("resolveSessionDeliveryTarget — cross-channel reply guard (#24152)", 
 
   it("falls back to session lastChannel when turnSourceChannel is not set", () => {
     const resolved = resolveSessionDeliveryTarget({
-      entry: {
-        sessionId: "sess-normal",
-        updatedAt: 1,
-        lastChannel: "alpha",
-        lastTo: "room-one",
-      },
+      entry: createLegacyDeliveryEntry("sess-normal"),
       requestedChannel: "last",
     });
 
@@ -1634,12 +1525,10 @@ describe("resolveSessionDeliveryTarget — cross-channel reply guard (#24152)", 
 
   it("respects explicit requestedChannel over turnSourceChannel", () => {
     const resolved = resolveSessionDeliveryTarget({
-      entry: {
-        sessionId: "sess-explicit",
-        updatedAt: 1,
+      entry: createLegacyDeliveryEntry("sess-explicit", {
         lastChannel: "beta",
         lastTo: "wrong-room",
-      },
+      }),
       requestedChannel: "forum",
       explicitTo: "room:ops",
       turnSourceChannel: "alpha",
@@ -1652,13 +1541,11 @@ describe("resolveSessionDeliveryTarget — cross-channel reply guard (#24152)", 
 
   it("preserves turnSourceAccountId and turnSourceThreadId", () => {
     const resolved = resolveSessionDeliveryTarget({
-      entry: {
-        sessionId: "sess-meta",
-        updatedAt: 1,
+      entry: createLegacyDeliveryEntry("sess-meta", {
         lastChannel: "beta",
         lastTo: "wrong-room",
         lastAccountId: "wrong-account",
-      },
+      }),
       requestedChannel: "last",
       turnSourceChannel: "forum",
       turnSourceTo: "room:ops",
@@ -1674,14 +1561,12 @@ describe("resolveSessionDeliveryTarget — cross-channel reply guard (#24152)", 
 
   it("does not fall back to session target metadata when turnSourceChannel is set", () => {
     const resolved = resolveSessionDeliveryTarget({
-      entry: {
-        sessionId: "sess-no-fallback",
-        updatedAt: 1,
+      entry: createLegacyDeliveryEntry("sess-no-fallback", {
         lastChannel: "beta",
         lastTo: "wrong-room",
         lastAccountId: "wrong-account",
         lastThreadId: "thread-1",
-      },
+      }),
       requestedChannel: "last",
       turnSourceChannel: "alpha",
     });
@@ -1699,13 +1584,11 @@ describe("resolveSessionDeliveryTarget — cross-channel reply guard (#24152)", 
     // Regression: topic replies were landing in the root chat instead of the topic
     // because turnSourceThreadId was undefined even though the session had it.
     const resolved = resolveSessionDeliveryTarget({
-      entry: {
-        sessionId: "sess-forum-topic",
-        updatedAt: 1,
+      entry: createLegacyDeliveryEntry("sess-forum-topic", {
         lastChannel: "forum",
         lastTo: "room:ops",
         lastThreadId: 1122,
-      },
+      }),
       requestedChannel: "last",
       turnSourceChannel: "forum",
       turnSourceTo: "room:ops",
@@ -1718,13 +1601,11 @@ describe("resolveSessionDeliveryTarget — cross-channel reply guard (#24152)", 
 
   it("keeps topic thread routing when turnSourceTo uses the plugin-owned topic target", () => {
     const resolved = resolveSessionDeliveryTarget({
-      entry: {
-        sessionId: "sess-forum-topic-scoped",
-        updatedAt: 1,
+      entry: createLegacyDeliveryEntry("sess-forum-topic-scoped", {
         lastChannel: "forum",
         lastTo: "forum:room:ops:topic:1122",
         lastThreadId: 1122,
-      },
+      }),
       requestedChannel: "last",
       turnSourceChannel: "forum",
       turnSourceTo: "forum:room:ops:topic:1122",
@@ -1737,13 +1618,11 @@ describe("resolveSessionDeliveryTarget — cross-channel reply guard (#24152)", 
 
   it("does not use plugin grammar to match bare stored routes against topic-scoped turn routes", () => {
     const resolved = resolveSessionDeliveryTarget({
-      entry: {
-        sessionId: "sess-forum-topic-mixed-shape",
-        updatedAt: 1,
+      entry: createLegacyDeliveryEntry("sess-forum-topic-mixed-shape", {
         lastChannel: "forum",
         lastTo: "room:ops",
         lastThreadId: 1122,
-      },
+      }),
       requestedChannel: "last",
       turnSourceChannel: "forum",
       turnSourceTo: "forum:room:ops:topic:1122",
@@ -1756,13 +1635,9 @@ describe("resolveSessionDeliveryTarget — cross-channel reply guard (#24152)", 
 
   it("does not fall back to session lastThreadId when turnSourceChannel differs from session channel", () => {
     const resolved = resolveSessionDeliveryTarget({
-      entry: {
-        sessionId: "sess-cross-channel-no-thread",
-        updatedAt: 1,
-        lastChannel: "alpha",
-        lastTo: "room-one",
+      entry: createLegacyDeliveryEntry("sess-cross-channel-no-thread", {
         lastThreadId: "thread-1",
-      },
+      }),
       requestedChannel: "last",
       turnSourceChannel: "forum",
       turnSourceTo: "room:ops",
@@ -1774,13 +1649,11 @@ describe("resolveSessionDeliveryTarget — cross-channel reply guard (#24152)", 
 
   it("prefers explicit turnSourceThreadId over session lastThreadId on same channel", () => {
     const resolved = resolveSessionDeliveryTarget({
-      entry: {
-        sessionId: "sess-explicit-thread-override",
-        updatedAt: 1,
+      entry: createLegacyDeliveryEntry("sess-explicit-thread-override", {
         lastChannel: "forum",
         lastTo: "room:ops",
         lastThreadId: 1122,
-      },
+      }),
       requestedChannel: "last",
       turnSourceChannel: "forum",
       turnSourceTo: "room:ops",
@@ -1794,13 +1667,11 @@ describe("resolveSessionDeliveryTarget — cross-channel reply guard (#24152)", 
 
   it("drops session threadId when turnSourceTo differs from session to (shared-session race)", () => {
     const resolved = resolveSessionDeliveryTarget({
-      entry: {
-        sessionId: "sess-shared-race",
-        updatedAt: 1,
+      entry: createLegacyDeliveryEntry("sess-shared-race", {
         lastChannel: "forum",
         lastTo: "room:ops",
         lastThreadId: 1122,
-      },
+      }),
       requestedChannel: "last",
       turnSourceChannel: "forum",
       turnSourceTo: "room:other",
@@ -1813,12 +1684,10 @@ describe("resolveSessionDeliveryTarget — cross-channel reply guard (#24152)", 
 
   it("uses explicitTo even when turnSourceTo is omitted", () => {
     const resolved = resolveSessionDeliveryTarget({
-      entry: {
-        sessionId: "sess-explicit-to",
-        updatedAt: 1,
+      entry: createLegacyDeliveryEntry("sess-explicit-to", {
         lastChannel: "beta",
         lastTo: "wrong-room",
-      },
+      }),
       requestedChannel: "last",
       explicitTo: "room-one",
       turnSourceChannel: "alpha",
@@ -1830,12 +1699,9 @@ describe("resolveSessionDeliveryTarget — cross-channel reply guard (#24152)", 
 
   it("still allows mismatched lastTo only from turn-scoped metadata", () => {
     const resolved = resolveSessionDeliveryTarget({
-      entry: {
-        sessionId: "sess-mismatch-turn",
-        updatedAt: 1,
-        lastChannel: "alpha",
+      entry: createLegacyDeliveryEntry("sess-mismatch-turn", {
         lastTo: "wrong-room",
-      },
+      }),
       requestedChannel: "beta",
       allowMismatchedLastTo: true,
       turnSourceChannel: "alpha",

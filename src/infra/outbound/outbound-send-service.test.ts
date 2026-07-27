@@ -155,6 +155,27 @@ function expectSingleCallFields(
 }
 
 describe("executeSendAction", () => {
+  function executeDefaultSend(
+    ctx: ExecuteSendContext,
+    overrides: Partial<Omit<ExecuteSendInput, "ctx" | "to" | "message">> = {},
+  ) {
+    return executeSendAction({
+      ctx,
+      to: "channel:123",
+      message: "hello",
+      ...overrides,
+    });
+  }
+
+  function mockDirectSend(channel = "demo-outbound") {
+    mocks.sendMessage.mockResolvedValue({
+      channel,
+      to: "channel:123",
+      via: "direct",
+      mediaUrl: null,
+    });
+  }
+
   function pluginActionResult(messageId: string) {
     return {
       ok: true,
@@ -192,8 +213,8 @@ describe("executeSendAction", () => {
   }) {
     mocks.dispatchChannelMessageAction.mockResolvedValue(pluginActionResult("msg-plugin"));
 
-    await executeSendAction({
-      ctx: {
+    await executeDefaultSend(
+      {
         cfg: {},
         channel: "demo-outbound",
         params: { to: "channel:123", message: "hello" },
@@ -203,10 +224,10 @@ describe("executeSendAction", () => {
           ...params.mirror,
         },
       },
-      to: "channel:123",
-      message: "hello",
-      mediaUrls: params.mediaUrls,
-    });
+      {
+        mediaUrls: params.mediaUrls,
+      },
+    );
   }
 
   function createPluginMediaSendContext(
@@ -225,11 +246,7 @@ describe("executeSendAction", () => {
   async function executePluginMediaSend(ctx: Partial<ExecuteSendContext>) {
     mocks.dispatchChannelMessageAction.mockResolvedValue(pluginActionResult("msg-plugin"));
 
-    await executeSendAction({
-      ctx: createPluginMediaSendContext(ctx),
-      to: "channel:123",
-      message: "hello",
-    });
+    await executeDefaultSend(createPluginMediaSendContext(ctx));
   }
 
   beforeAll(async () => {
@@ -250,23 +267,14 @@ describe("executeSendAction", () => {
 
   it("forwards ctx.agentId to sendMessage on core outbound path", async () => {
     mocks.dispatchChannelMessageAction.mockResolvedValue(null);
-    mocks.sendMessage.mockResolvedValue({
-      channel: "demo-outbound",
-      to: "channel:123",
-      via: "direct",
-      mediaUrl: null,
-    });
+    mockDirectSend();
 
-    await executeSendAction({
-      ctx: {
-        cfg: {},
-        channel: "demo-outbound",
-        params: {},
-        agentId: "work",
-        dryRun: false,
-      },
-      to: "channel:123",
-      message: "hello",
+    await executeDefaultSend({
+      cfg: {},
+      channel: "demo-outbound",
+      params: {},
+      agentId: "work",
+      dryRun: false,
     });
 
     expectSingleCallFields(mocks.sendMessage, {
@@ -296,15 +304,11 @@ describe("executeSendAction", () => {
       };
     });
 
-    const result = await executeSendAction({
-      ctx: {
-        cfg: {},
-        channel: "demo-outbound",
-        params: { to: "channel:123", message: "hello" },
-        dryRun: false,
-      },
-      to: "channel:123",
-      message: "hello",
+    const result = await executeDefaultSend({
+      cfg: {},
+      channel: "demo-outbound",
+      params: { to: "channel:123", message: "hello" },
+      dryRun: false,
     });
 
     expect(result.deliveredText).toBe("[Peer] hello");
@@ -322,18 +326,14 @@ describe("executeSendAction", () => {
       deliveryStatus: "sent",
     });
 
-    await executeSendAction({
-      ctx: {
-        cfg: {},
-        channel: "demo-outbound",
-        params: { to: "channel:123", message: "hello" },
-        dryRun: false,
-        requireQueuePersistence: true,
-        onDeliveryIntent,
-        onDeliveryResult,
-      },
-      to: "channel:123",
-      message: "hello",
+    await executeDefaultSend({
+      cfg: {},
+      channel: "demo-outbound",
+      params: { to: "channel:123", message: "hello" },
+      dryRun: false,
+      requireQueuePersistence: true,
+      onDeliveryIntent,
+      onDeliveryResult,
     });
 
     expect(mocks.dispatchChannelMessageAction).not.toHaveBeenCalled();
@@ -347,24 +347,15 @@ describe("executeSendAction", () => {
 
   it("forwards requesterSenderId to sendMessage on core outbound path", async () => {
     mocks.dispatchChannelMessageAction.mockResolvedValue(null);
-    mocks.sendMessage.mockResolvedValue({
-      channel: "demo-outbound",
-      to: "channel:123",
-      via: "direct",
-      mediaUrl: null,
-    });
+    mockDirectSend();
 
-    await executeSendAction({
-      ctx: {
-        cfg: {},
-        channel: "demo-outbound",
-        params: {},
-        sessionKey: "agent:main:directchat:group:ops",
-        requesterSenderId: "attacker",
-        dryRun: false,
-      },
-      to: "channel:123",
-      message: "hello",
+    await executeDefaultSend({
+      cfg: {},
+      channel: "demo-outbound",
+      params: {},
+      sessionKey: "agent:main:directchat:group:ops",
+      requesterSenderId: "attacker",
+      dryRun: false,
     });
 
     expectSingleCallFields(mocks.sendMessage, {
@@ -374,26 +365,17 @@ describe("executeSendAction", () => {
 
   it("forwards non-id requester sender fields to sendMessage on core outbound path", async () => {
     mocks.dispatchChannelMessageAction.mockResolvedValue(null);
-    mocks.sendMessage.mockResolvedValue({
-      channel: "demo-outbound",
-      to: "channel:123",
-      via: "direct",
-      mediaUrl: null,
-    });
+    mockDirectSend();
 
-    await executeSendAction({
-      ctx: {
-        cfg: {},
-        channel: "demo-outbound",
-        params: {},
-        sessionKey: "agent:main:directchat:group:ops",
-        requesterSenderName: "Alice",
-        requesterSenderUsername: "alice_u",
-        requesterSenderE164: "+15551234567",
-        dryRun: false,
-      },
-      to: "channel:123",
-      message: "hello",
+    await executeDefaultSend({
+      cfg: {},
+      channel: "demo-outbound",
+      params: {},
+      sessionKey: "agent:main:directchat:group:ops",
+      requesterSenderName: "Alice",
+      requesterSenderUsername: "alice_u",
+      requesterSenderE164: "+15551234567",
+      dryRun: false,
     });
 
     expectSingleCallFields(mocks.sendMessage, {
@@ -405,27 +387,18 @@ describe("executeSendAction", () => {
 
   it("forwards requester session context to sendMessage on core outbound path", async () => {
     mocks.dispatchChannelMessageAction.mockResolvedValue(null);
-    mocks.sendMessage.mockResolvedValue({
-      channel: "demo-outbound",
-      to: "channel:123",
-      via: "direct",
-      mediaUrl: null,
-    });
+    mockDirectSend();
 
-    await executeSendAction({
-      ctx: {
-        cfg: {},
-        channel: "demo-outbound",
-        params: {},
-        sessionKey: "agent:main:directchat:group:ops",
-        conversationType: "channel",
-        requesterAccountId: "source-account",
-        requesterSenderId: "attacker",
-        accountId: "destination-account",
-        dryRun: false,
-      },
-      to: "channel:123",
-      message: "hello",
+    await executeDefaultSend({
+      cfg: {},
+      channel: "demo-outbound",
+      params: {},
+      sessionKey: "agent:main:directchat:group:ops",
+      conversationType: "channel",
+      requesterAccountId: "source-account",
+      requesterSenderId: "attacker",
+      accountId: "destination-account",
+      dryRun: false,
     });
 
     expectSingleCallFields(mocks.sendMessage, {
@@ -499,25 +472,16 @@ describe("executeSendAction", () => {
 
   it("falls back to destination account when forwarding requester context to sendMessage", async () => {
     mocks.dispatchChannelMessageAction.mockResolvedValue(null);
-    mocks.sendMessage.mockResolvedValue({
-      channel: "demo-outbound",
-      to: "channel:123",
-      via: "direct",
-      mediaUrl: null,
-    });
+    mockDirectSend();
 
-    await executeSendAction({
-      ctx: {
-        cfg: {},
-        channel: "demo-outbound",
-        params: {},
-        sessionKey: "agent:main:directchat:group:ops",
-        requesterSenderId: "attacker",
-        accountId: "destination-account",
-        dryRun: false,
-      },
-      to: "channel:123",
-      message: "hello",
+    await executeDefaultSend({
+      cfg: {},
+      channel: "demo-outbound",
+      params: {},
+      sessionKey: "agent:main:directchat:group:ops",
+      requesterSenderId: "attacker",
+      accountId: "destination-account",
+      dryRun: false,
     });
 
     expectSingleCallFields(mocks.sendMessage, {
@@ -539,12 +503,7 @@ describe("executeSendAction", () => {
     };
     setActivePluginRegistry(createTestRegistry([{ pluginId: "discord", plugin, source: "test" }]));
     mocks.dispatchChannelMessageAction.mockResolvedValue(pluginActionResult("msg-plugin"));
-    mocks.sendMessage.mockResolvedValue({
-      channel: "discord",
-      to: "channel:123",
-      via: "direct",
-      mediaUrl: null,
-    });
+    mockDirectSend("discord");
 
     const result = await executeSendAction({
       ctx: {
@@ -595,12 +554,7 @@ describe("executeSendAction", () => {
     };
     setActivePluginRegistry(createTestRegistry([{ pluginId: "discord", plugin, source: "test" }]));
     mocks.dispatchChannelMessageAction.mockResolvedValue(pluginActionResult("msg-plugin"));
-    mocks.sendMessage.mockResolvedValue({
-      channel: "discord",
-      to: "channel:123",
-      via: "direct",
-      mediaUrl: null,
-    });
+    mockDirectSend("discord");
 
     await executeSendAction({
       ctx: {
@@ -774,17 +728,17 @@ describe("executeSendAction", () => {
   it("keeps non-presentation sends on the plugin action path", async () => {
     mocks.dispatchChannelMessageAction.mockResolvedValue(pluginActionResult("msg-plugin"));
 
-    const result = await executeSendAction({
-      ctx: {
+    const result = await executeDefaultSend(
+      {
         cfg: {},
         channel: "demo-outbound",
         params: { to: "channel:123", message: "hello" },
         dryRun: false,
       },
-      to: "channel:123",
-      message: "hello",
-      payload: { text: "hello" },
-    });
+      {
+        payload: { text: "hello" },
+      },
+    );
 
     expect(result.handledBy).toBe("plugin");
     expect(result.deliveredText).toBeUndefined();
@@ -843,16 +797,12 @@ describe("executeSendAction", () => {
   it("passes agent-scoped media local roots to plugin dispatch", async () => {
     mocks.dispatchChannelMessageAction.mockResolvedValue(pluginActionResult("msg-plugin"));
 
-    await executeSendAction({
-      ctx: {
-        cfg: {},
-        channel: "demo-outbound",
-        params: { to: "channel:123", message: "hello" },
-        agentId: "agent-1",
-        dryRun: false,
-      },
-      to: "channel:123",
-      message: "hello",
+    await executeDefaultSend({
+      cfg: {},
+      channel: "demo-outbound",
+      params: { to: "channel:123", message: "hello" },
+      agentId: "agent-1",
+      dryRun: false,
     });
 
     expect(mocks.getAgentScopedMediaLocalRootsForSources).toHaveBeenCalledWith({
@@ -869,8 +819,8 @@ describe("executeSendAction", () => {
   it("passes concrete media sources when widening plugin dispatch roots", async () => {
     mocks.dispatchChannelMessageAction.mockResolvedValue(pluginActionResult("msg-plugin"));
 
-    await executeSendAction({
-      ctx: {
+    await executeDefaultSend(
+      {
         cfg: {},
         channel: "demo-outbound",
         params: {
@@ -881,10 +831,10 @@ describe("executeSendAction", () => {
         agentId: "agent-1",
         dryRun: false,
       },
-      to: "channel:123",
-      message: "hello",
-      mediaUrl: "/Users/peter/Pictures/photo.png",
-    });
+      {
+        mediaUrl: "/Users/peter/Pictures/photo.png",
+      },
+    );
 
     expect(mocks.getAgentScopedMediaLocalRootsForSources).toHaveBeenCalledWith({
       cfg: {},
@@ -896,8 +846,8 @@ describe("executeSendAction", () => {
   it("passes mediaUrls and structured attachment sources when widening send roots", async () => {
     mocks.dispatchChannelMessageAction.mockResolvedValue(pluginActionResult("msg-plugin"));
 
-    await executeSendAction({
-      ctx: {
+    await executeDefaultSend(
+      {
         cfg: {},
         channel: "demo-outbound",
         params: {
@@ -909,10 +859,10 @@ describe("executeSendAction", () => {
         agentId: "agent-1",
         dryRun: false,
       },
-      to: "channel:123",
-      message: "hello",
-      mediaUrls: ["/workspace/Pictures/chart.png"],
-    });
+      {
+        mediaUrls: ["/workspace/Pictures/chart.png"],
+      },
+    );
 
     expect(mocks.getAgentScopedMediaLocalRootsForSources).toHaveBeenCalledWith({
       cfg: {},
@@ -925,8 +875,8 @@ describe("executeSendAction", () => {
     const explicitReadFile = vi.fn(async () => Buffer.from("explicit capability"));
     mocks.dispatchChannelMessageAction.mockResolvedValue(pluginActionResult("msg-plugin"));
 
-    await executeSendAction({
-      ctx: {
+    await executeDefaultSend(
+      {
         cfg: {},
         channel: "demo-outbound",
         params: {
@@ -941,10 +891,10 @@ describe("executeSendAction", () => {
         agentId: "agent-1",
         dryRun: false,
       },
-      to: "channel:123",
-      message: "hello",
-      mediaUrls: ["/workspace/Pictures/chart.png"],
-    });
+      {
+        mediaUrls: ["/workspace/Pictures/chart.png"],
+      },
+    );
 
     const resolveArg = expectSingleCallFirstArg(
       mocks.resolveAgentScopedOutboundMediaAccess,
@@ -999,23 +949,19 @@ describe("executeSendAction", () => {
       mediaUrl: null,
     });
 
-    await executeSendAction({
-      ctx: {
-        cfg: {},
-        channel: "demo-outbound",
-        params: { to: "channel:123", message: "hello" },
-        dryRun: true,
-        silent: true,
-        gateway: {
-          url: "http://127.0.0.1:18789",
-          token: "tok",
-          timeoutMs: 5000,
-          clientName: GATEWAY_CLIENT_NAMES.GATEWAY_CLIENT,
-          mode: GATEWAY_CLIENT_MODES.BACKEND,
-        },
+    await executeDefaultSend({
+      cfg: {},
+      channel: "demo-outbound",
+      params: { to: "channel:123", message: "hello" },
+      dryRun: true,
+      silent: true,
+      gateway: {
+        url: "http://127.0.0.1:18789",
+        token: "tok",
+        timeoutMs: 5000,
+        clientName: GATEWAY_CLIENT_NAMES.GATEWAY_CLIENT,
+        mode: GATEWAY_CLIENT_MODES.BACKEND,
       },
-      to: "channel:123",
-      message: "hello",
     });
 
     expect(mocks.dispatchChannelMessageAction).not.toHaveBeenCalled();
@@ -1050,15 +996,10 @@ describe("executeSendAction", () => {
       outbound: { deliveryMode: "direct" },
     };
     setActivePluginRegistry(createTestRegistry([{ pluginId: "discord", plugin, source: "test" }]));
-    mocks.sendMessage.mockResolvedValue({
-      channel: "discord",
-      to: "channel:123",
-      via: "direct",
-      mediaUrl: null,
-    });
+    mockDirectSend("discord");
 
-    await executeSendAction({
-      ctx: {
+    await executeDefaultSend(
+      {
         cfg: {},
         channel: "discord",
         params: { to: "channel:123", message: "hello" },
@@ -1067,13 +1008,13 @@ describe("executeSendAction", () => {
         inboundEventKind: "room_event",
         conversationReadOrigin: "delegated",
       },
-      to: "channel:123",
-      message: "hello",
-      payload: { text: "hello", presentation },
-      replyToId: "reply-1",
-      replyToIdSource: "explicit",
-      threadId: "thread-1",
-    });
+      {
+        payload: { text: "hello", presentation },
+        replyToId: "reply-1",
+        replyToIdSource: "explicit",
+        threadId: "thread-1",
+      },
+    );
 
     expect(prepareSendPayload).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -1114,24 +1055,19 @@ describe("executeSendAction", () => {
       outbound: { deliveryMode: "direct" },
     };
     setActivePluginRegistry(createTestRegistry([{ pluginId: "discord", plugin, source: "test" }]));
-    mocks.sendMessage.mockResolvedValue({
-      channel: "discord",
-      to: "channel:123",
-      via: "direct",
-      mediaUrl: null,
-    });
+    mockDirectSend("discord");
 
-    await executeSendAction({
-      ctx: {
+    await executeDefaultSend(
+      {
         cfg: {},
         channel: "discord",
         params: { to: "channel:123", message: "hello" },
         dryRun: false,
       },
-      to: "channel:123",
-      message: "hello",
-      bestEffort: false,
-    });
+      {
+        bestEffort: false,
+      },
+    );
 
     expectSingleCallFields(mocks.sendMessage, {
       channel: "discord",

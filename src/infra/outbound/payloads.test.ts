@@ -16,6 +16,24 @@ import {
   summarizeOutboundPayloadForTransport,
 } from "./payloads.js";
 
+type NormalizedReplyPayload = ReturnType<typeof normalizeReplyPayloadsForDelivery>[number];
+
+function normalizedReply(
+  text: string,
+  overrides: Partial<Omit<NormalizedReplyPayload, "text">> = {},
+): NormalizedReplyPayload {
+  return {
+    text,
+    mediaUrls: undefined,
+    mediaUrl: undefined,
+    replyToId: undefined,
+    replyToCurrent: undefined,
+    replyToTag: false,
+    audioAsVoice: false,
+    ...overrides,
+  };
+}
+
 function resolveMirrorProjection(payloads: readonly ReplyPayload[]) {
   const normalized = normalizeReplyPayloadsForDelivery(payloads);
   return {
@@ -41,15 +59,12 @@ describe("normalizeReplyPayloadsForDelivery", () => {
         },
       ]),
     ).toEqual([
-      {
-        text: "Hello",
-        mediaUrl: undefined,
+      normalizedReply("Hello", {
         mediaUrls: ["https://x.test/a.png", "https://x.test/b.png"],
         replyToId: "123",
         replyToTag: true,
-        replyToCurrent: undefined,
         audioAsVoice: true,
-      },
+      }),
     ]);
   });
 
@@ -85,17 +100,7 @@ describe("normalizeReplyPayloadsForDelivery", () => {
         { text: "Reasoning:\n_step_", isReasoning: true },
         { text: "final answer" },
       ]),
-    ).toEqual([
-      {
-        text: "final answer",
-        mediaUrls: undefined,
-        mediaUrl: undefined,
-        replyToId: undefined,
-        replyToCurrent: undefined,
-        replyToTag: false,
-        audioAsVoice: false,
-      },
-    ]);
+    ).toEqual([normalizedReply("final answer")]);
   });
 
   it("suppresses relay status placeholder payloads", () => {
@@ -119,17 +124,7 @@ describe("normalizeReplyPayloadsForDelivery", () => {
       normalizeReplyPayloadsForDelivery([
         { text: "Please update wiki/tools.md after this ships." },
       ]),
-    ).toEqual([
-      {
-        text: "Please update wiki/tools.md after this ships.",
-        mediaUrls: undefined,
-        mediaUrl: undefined,
-        replyToId: undefined,
-        replyToCurrent: undefined,
-        replyToTag: false,
-        audioAsVoice: false,
-      },
-    ]);
+    ).toEqual([normalizedReply("Please update wiki/tools.md after this ships.")]);
   });
 
   it("drops JSON NO_REPLY action payloads without media", () => {
@@ -144,17 +139,7 @@ describe("normalizeReplyPayloadsForDelivery", () => {
   it("keeps JSON NO_REPLY objects that include extra fields", () => {
     expect(
       normalizeReplyPayloadsForDelivery([{ text: '{"action":"NO_REPLY","note":"example"}' }]),
-    ).toEqual([
-      {
-        text: '{"action":"NO_REPLY","note":"example"}',
-        mediaUrls: undefined,
-        mediaUrl: undefined,
-        replyToId: undefined,
-        replyToCurrent: undefined,
-        replyToTag: false,
-        audioAsVoice: false,
-      },
-    ]);
+    ).toEqual([normalizedReply('{"action":"NO_REPLY","note":"example"}')]);
   });
 
   it("keeps mixed NO_REPLY text literal and only suppresses exact sentinel payloads", () => {
@@ -166,24 +151,8 @@ describe("normalizeReplyPayloadsForDelivery", () => {
         { text: "thanks NO_REPLY" },
       ]),
     ).toEqual([
-      {
-        text: "NO_REPLY thanks for the update",
-        mediaUrls: undefined,
-        mediaUrl: undefined,
-        replyToId: undefined,
-        replyToCurrent: undefined,
-        replyToTag: false,
-        audioAsVoice: false,
-      },
-      {
-        text: "thanks NO_REPLY",
-        mediaUrls: undefined,
-        mediaUrl: undefined,
-        replyToId: undefined,
-        replyToCurrent: undefined,
-        replyToTag: false,
-        audioAsVoice: false,
-      },
+      normalizedReply("NO_REPLY thanks for the update"),
+      normalizedReply("thanks NO_REPLY"),
     ]);
   });
 
@@ -194,24 +163,13 @@ describe("normalizeReplyPayloadsForDelivery", () => {
         { text: '{"action":"NO_REPLY"}', mediaUrls: ["https://x.test/two.png"] },
       ]),
     ).toEqual([
-      {
-        text: "",
+      normalizedReply("", {
         mediaUrls: ["https://x.test/one.png"],
         mediaUrl: "https://x.test/one.png",
-        replyToId: undefined,
-        replyToCurrent: undefined,
-        replyToTag: false,
-        audioAsVoice: false,
-      },
-      {
-        text: "",
+      }),
+      normalizedReply("", {
         mediaUrls: ["https://x.test/two.png"],
-        mediaUrl: undefined,
-        replyToId: undefined,
-        replyToCurrent: undefined,
-        replyToTag: false,
-        audioAsVoice: false,
-      },
+      }),
     ]);
   });
 
@@ -276,21 +234,15 @@ describe("normalizeReplyPayloadsForDelivery", () => {
         },
       ]),
     ).toEqual([
-      {
-        text: "Thanks",
-        mediaUrls: undefined,
-        mediaUrl: undefined,
-        replyToId: undefined,
+      normalizedReply("Thanks", {
         replyToCurrent: true,
-        replyToTag: false,
-        audioAsVoice: false,
         channelData: {
           telegram: {
             quoteText: "quoted",
             reaction: { emoji: "🔥", replyToCurrent: true },
           },
         },
-      },
+      }),
     ]);
   });
 
@@ -659,17 +611,7 @@ describe("OutboundPayloadPlan projections", () => {
 
     expect(
       projectOutboundPayloadPlanForDelivery(createOutboundPayloadPlan([{ text: input }])),
-    ).toEqual([
-      {
-        text: input,
-        mediaUrl: undefined,
-        mediaUrls: undefined,
-        replyToId: undefined,
-        replyToCurrent: undefined,
-        replyToTag: false,
-        audioAsVoice: false,
-      },
-    ]);
+    ).toEqual([normalizedReply(input)]);
   });
 
   it("extracts markdown images when the outbound channel opts in", () => {
@@ -680,15 +622,10 @@ describe("OutboundPayloadPlan projections", () => {
         createOutboundPayloadPlan([{ text: input }], { extractMarkdownImages: true }),
       ),
     ).toEqual([
-      {
-        text: "Chart now",
+      normalizedReply("Chart now", {
         mediaUrl: "https://example.com/chart.png",
         mediaUrls: ["https://example.com/chart.png"],
-        replyToId: undefined,
-        replyToCurrent: undefined,
-        replyToTag: false,
-        audioAsVoice: false,
-      },
+      }),
     ]);
   });
 });

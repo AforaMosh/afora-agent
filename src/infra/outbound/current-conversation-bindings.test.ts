@@ -141,6 +141,16 @@ async function withReadOnlyStateDatabase<T>(run: () => T | Promise<T>): Promise<
   }
 }
 
+function createConversation(
+  channel: SessionBindingRecord["conversation"]["channel"],
+  conversationId: string,
+  overrides: Partial<
+    Omit<SessionBindingRecord["conversation"], "channel" | "accountId" | "conversationId">
+  > = {},
+): SessionBindingRecord["conversation"] {
+  return { channel, accountId: "default", conversationId, ...overrides };
+}
+
 function workspaceConversation(conversationId: string) {
   return {
     channel: "workspace",
@@ -241,28 +251,16 @@ describe("generic current-conversation bindings", () => {
     const bound = await bindGenericCurrentConversation({
       targetSessionKey: "agent:main:adopted",
       targetKind: "session",
-      conversation: {
-        channel: "webchat",
-        accountId: "default",
-        conversationId: "agent:main:adopted",
-      },
+      conversation: createConversation("webchat", "agent:main:adopted"),
       metadata: { pluginBindingOwner: "plugin", pluginId: "codex", pluginRoot: "/codex" },
     });
 
     expectBindingFields(bound, {
       targetSessionKey: "agent:main:adopted",
-      conversation: {
-        channel: "webchat",
-        accountId: "default",
-        conversationId: "agent:main:adopted",
-      },
+      conversation: createConversation("webchat", "agent:main:adopted"),
     });
     expectBindingFields(
-      resolveGenericCurrentConversationBinding({
-        channel: "webchat",
-        accountId: "default",
-        conversationId: "agent:main:adopted",
-      }),
+      resolveGenericCurrentConversationBinding(createConversation("webchat", "agent:main:adopted")),
       { targetSessionKey: "agent:main:adopted" },
     );
   });
@@ -271,11 +269,7 @@ describe("generic current-conversation bindings", () => {
     const bound = await bindGenericCurrentConversation({
       targetSessionKey: "agent:codex:acp:workspace-dm",
       targetKind: "session",
-      conversation: {
-        channel: "workspace",
-        accountId: "default",
-        conversationId: "user:U123",
-      },
+      conversation: createConversation("workspace", "user:U123"),
       metadata: {
         label: "workspace-dm",
       },
@@ -288,11 +282,9 @@ describe("generic current-conversation bindings", () => {
 
     testing.resetCurrentConversationBindingsForTests();
 
-    const resolved = resolveGenericCurrentConversationBinding({
-      channel: "workspace",
-      accountId: "default",
-      conversationId: "user:U123",
-    });
+    const resolved = resolveGenericCurrentConversationBinding(
+      createConversation("workspace", "user:U123"),
+    );
     expectBindingFields(resolved, {
       bindingId: "generic:workspace\u241fdefault\u241f\u241fuser:U123",
       targetSessionKey: "agent:codex:acp:workspace-dm",
@@ -305,11 +297,7 @@ describe("generic current-conversation bindings", () => {
       bindingId: "generic:workspace\u241fdefault\u241f\u241fuser:U123",
       targetSessionKey: " agent:codex:acp:workspace-dm ",
       targetKind: "session",
-      conversation: {
-        channel: "workspace",
-        accountId: "default",
-        conversationId: "user:U123",
-      },
+      conversation: createConversation("workspace", "user:U123"),
       status: "active",
       boundAt: 1234,
       metadata: {
@@ -317,11 +305,9 @@ describe("generic current-conversation bindings", () => {
       },
     });
 
-    const resolved = resolveGenericCurrentConversationBinding({
-      channel: "workspace",
-      accountId: "default",
-      conversationId: "user:U123",
-    });
+    const resolved = resolveGenericCurrentConversationBinding(
+      createConversation("workspace", "user:U123"),
+    );
 
     expectBindingFields(resolved, {
       bindingId: "generic:workspace\u241fdefault\u241f\u241fuser:U123",
@@ -342,29 +328,18 @@ describe("generic current-conversation bindings", () => {
     const bound = await bindGenericCurrentConversation({
       targetSessionKey: "agent:codex:acp:forum-dm",
       targetKind: "session",
-      conversation: {
-        channel: "forum",
-        accountId: "default",
-        conversationId: "6098642967",
+      conversation: createConversation("forum", "6098642967", {
         parentConversationId: "6098642967",
-      },
+      }),
     });
 
     const boundRecord = expectBindingFields(bound, {
       bindingId: "generic:forum\u241fdefault\u241f\u241f6098642967",
     });
-    expect(boundRecord.conversation).toEqual({
-      channel: "forum",
-      accountId: "default",
-      conversationId: "6098642967",
-    });
+    expect(boundRecord.conversation).toEqual(createConversation("forum", "6098642967"));
     expect(bound?.conversation.parentConversationId).toBeUndefined();
     expectBindingFields(
-      resolveGenericCurrentConversationBinding({
-        channel: "forum",
-        accountId: "default",
-        conversationId: "6098642967",
-      }),
+      resolveGenericCurrentConversationBinding(createConversation("forum", "6098642967")),
       {
         bindingId: "generic:forum\u241fdefault\u241f\u241f6098642967",
         targetSessionKey: "agent:codex:acp:forum-dm",
@@ -377,12 +352,9 @@ describe("generic current-conversation bindings", () => {
       bindingId: "generic:forum\u241fdefault\u241f6098642967\u241f6098642967",
       targetSessionKey: "agent:codex:acp:forum-dm",
       targetKind: "session",
-      conversation: {
-        channel: "forum",
-        accountId: "default",
-        conversationId: "6098642967",
+      conversation: createConversation("forum", "6098642967", {
         parentConversationId: "6098642967",
-      },
+      }),
       status: "active",
       boundAt: 1234,
       metadata: {
@@ -390,21 +362,15 @@ describe("generic current-conversation bindings", () => {
       },
     });
 
-    const resolved = resolveGenericCurrentConversationBinding({
-      channel: "forum",
-      accountId: "default",
-      conversationId: "6098642967",
-    });
+    const resolved = resolveGenericCurrentConversationBinding(
+      createConversation("forum", "6098642967"),
+    );
 
     const resolvedRecord = expectBindingFields(resolved, {
       bindingId: "generic:forum\u241fdefault\u241f\u241f6098642967",
       targetSessionKey: "agent:codex:acp:forum-dm",
     });
-    expect(resolvedRecord.conversation).toEqual({
-      channel: "forum",
-      accountId: "default",
-      conversationId: "6098642967",
-    });
+    expect(resolvedRecord.conversation).toEqual(createConversation("forum", "6098642967"));
     expect(resolved?.conversation.parentConversationId).toBeUndefined();
 
     const unbound = await unbindGenericCurrentConversationBindings({
@@ -418,11 +384,7 @@ describe("generic current-conversation bindings", () => {
 
     testing.resetCurrentConversationBindingsForTests();
     expect(
-      resolveGenericCurrentConversationBinding({
-        channel: "forum",
-        accountId: "default",
-        conversationId: "6098642967",
-      }),
+      resolveGenericCurrentConversationBinding(createConversation("forum", "6098642967")),
     ).toBeNull();
   });
 
@@ -430,11 +392,7 @@ describe("generic current-conversation bindings", () => {
     await bindGenericCurrentConversation({
       targetSessionKey: "agent:codex:acp:googlechat-room",
       targetKind: "session",
-      conversation: {
-        channel: "googlechat",
-        accountId: "default",
-        conversationId: "spaces/AAAAAAA",
-      },
+      conversation: createConversation("googlechat", "spaces/AAAAAAA"),
     });
 
     await unbindGenericCurrentConversationBindings({
@@ -445,11 +403,7 @@ describe("generic current-conversation bindings", () => {
     testing.resetCurrentConversationBindingsForTests();
 
     expect(
-      resolveGenericCurrentConversationBinding({
-        channel: "googlechat",
-        accountId: "default",
-        conversationId: "spaces/AAAAAAA",
-      }),
+      resolveGenericCurrentConversationBinding(createConversation("googlechat", "spaces/AAAAAAA")),
     ).toBeNull();
   });
 
@@ -458,22 +412,14 @@ describe("generic current-conversation bindings", () => {
       bindingId: "generic:workspace\u241fdefault\u241f\u241fuser:U123",
       targetSessionKey: "agent:codex:acp:workspace-dm",
       targetKind: "session",
-      conversation: {
-        channel: "workspace",
-        accountId: "default",
-        conversationId: "user:U123",
-      },
+      conversation: createConversation("workspace", "user:U123"),
       status: "active",
       boundAt: 1234,
       expiresAt: 8_640_000_000_000_001,
     });
 
     expect(
-      resolveGenericCurrentConversationBinding({
-        channel: "workspace",
-        accountId: "default",
-        conversationId: "user:U123",
-      }),
+      resolveGenericCurrentConversationBinding(createConversation("workspace", "user:U123")),
     ).toBeNull();
   });
 
@@ -484,20 +430,12 @@ describe("generic current-conversation bindings", () => {
       bindGenericCurrentConversation({
         targetSessionKey: "agent:codex:acp:workspace-dm",
         targetKind: "session",
-        conversation: {
-          channel: "workspace",
-          accountId: "default",
-          conversationId: "user:U123",
-        },
+        conversation: createConversation("workspace", "user:U123"),
         ttlMs: 1,
       }),
     ).resolves.toBeNull();
     expect(
-      resolveGenericCurrentConversationBinding({
-        channel: "workspace",
-        accountId: "default",
-        conversationId: "user:U123",
-      }),
+      resolveGenericCurrentConversationBinding(createConversation("workspace", "user:U123")),
     ).toBeNull();
   });
 
@@ -505,11 +443,7 @@ describe("generic current-conversation bindings", () => {
     const bound = await bindGenericCurrentConversation({
       targetSessionKey: "agent:codex:acp:workspace-dm",
       targetKind: "session",
-      conversation: {
-        channel: "workspace",
-        accountId: "default",
-        conversationId: "user:U123",
-      },
+      conversation: createConversation("workspace", "user:U123"),
       metadata: {
         label: "workspace-dm",
       },
@@ -525,11 +459,7 @@ describe("generic current-conversation bindings", () => {
     testing.resetCurrentConversationBindingsForTests();
 
     expectBindingMetadata(
-      resolveGenericCurrentConversationBinding({
-        channel: "workspace",
-        accountId: "default",
-        conversationId: "user:U123",
-      }),
+      resolveGenericCurrentConversationBinding(createConversation("workspace", "user:U123")),
       {
         label: "workspace-dm",
         lastActivityAt: 1_234_567_890,
