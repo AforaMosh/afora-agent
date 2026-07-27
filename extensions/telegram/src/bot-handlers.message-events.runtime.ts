@@ -42,7 +42,7 @@ export function registerTelegramMessageHandlers(
   const getChat: TelegramGetChat = bot.api.getChat.bind(bot.api);
   // Replayed updates may omit grammY's per-update identity. Keep all message,
   // edit, and channel-post paths on the bot's authenticated startup identity.
-  const resolveBotUserId = (ctx: TelegramContext) =>
+  const resolveBotUserId = (ctx: { me?: { id: number } }) =>
     ctx.me?.id ?? opts.botInfo?.id ?? bot.botInfo.id;
   type InboundTelegramEvent = {
     ctxForDedupe: TelegramUpdateKeyContext;
