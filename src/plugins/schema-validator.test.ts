@@ -4,6 +4,32 @@ import { describe, expect, it } from "vitest";
 import { validateJsonSchemaValue } from "./schema-validator.js";
 
 const jsonSchemaThenKeyword = ["the", "n"].join("");
+const automaticModeSchema = { type: "string", default: "auto" } as const;
+const manualModeSchema = { type: "string", default: "manual" } as const;
+const apiKindSchema = { const: "api" } as const;
+const numberedVersions = Array.from({ length: 13 }, (_, index) => `v${index + 1}`);
+const automaticModeObjectSchema = {
+  type: "object",
+  properties: { mode: automaticModeSchema },
+} as const;
+const enabledBooleanSchema = { type: "boolean", default: true } as const;
+const defaultApiEndpointSchema = {
+  type: "string",
+  default: "https://example.com",
+} as const;
+const apiKindCondition = {
+  properties: { kind: apiKindSchema },
+  required: ["kind"],
+} as const;
+const requiredApiEndpointBranch = {
+  properties: { endpoint: defaultApiEndpointSchema },
+  required: ["endpoint"],
+} as const;
+const requiredUriSchema = {
+  type: "object",
+  properties: { apiRoot: { type: "string", format: "uri" } },
+  required: ["apiRoot"],
+} as const;
 
 function expectValidationFailure(
   params: Parameters<typeof validateJsonSchemaValue>[0],
@@ -49,6 +75,29 @@ function expectSuccessfulValidationValue(params: {
   }
 }
 
+function expectStringSchemaValidation(
+  cacheKey: string,
+  schema: Parameters<typeof validateJsonSchemaValue>[0]["schema"],
+) {
+  expectSuccessfulValidationValue({
+    input: { cacheKey, schema, value: "ok" },
+    expectedValue: "ok",
+  });
+}
+
+function expectDefaultedValidationValue(params: {
+  cacheKey: string;
+  schema: Parameters<typeof validateJsonSchemaValue>[0]["schema"];
+  value?: unknown;
+  expectedValue?: unknown;
+}) {
+  const { cacheKey, schema, value = {}, expectedValue = { mode: "auto" } } = params;
+  expectSuccessfulValidationValue({
+    input: { cacheKey, schema, value, applyDefaults: true },
+    expectedValue,
+  });
+}
+
 function expectValidationSuccess(params: Parameters<typeof validateJsonSchemaValue>[0]) {
   const result = validateJsonSchemaValue(params);
   expect(result.ok).toBe(true);
@@ -76,13 +125,7 @@ describe("schema validator", () => {
     const result = validateJsonSchemaValue({
       cacheKey: "schema-validator.test.defaults.clone",
       schema: {
-        type: "object",
-        properties: {
-          mode: {
-            type: "string",
-            default: "auto",
-          },
-        },
+        ...automaticModeObjectSchema,
         additionalProperties: false,
       },
       value,
@@ -95,58 +138,38 @@ describe("schema validator", () => {
     }
     expect(value).toStrictEqual({});
 
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.defaults",
-        schema: {
-          type: "object",
-          properties: {
-            mode: {
-              type: "string",
-              default: "auto",
-            },
-          },
-          additionalProperties: false,
-        },
-        value: {},
-        applyDefaults: true,
+    expectDefaultedValidationValue({
+      cacheKey: "schema-validator.test.defaults",
+      schema: {
+        ...automaticModeObjectSchema,
+        additionalProperties: false,
       },
-      expectedValue: { mode: "auto" },
     });
   });
 
   it("applies JSON Schema defaults through local refs and map entries", () => {
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.defaults.refs",
-        schema: {
-          type: "object",
-          properties: {
-            settings: {
-              $ref: "#/definitions/Settings",
-            },
-          },
-          additionalProperties: {
+    expectDefaultedValidationValue({
+      cacheKey: "schema-validator.test.defaults.refs",
+      schema: {
+        type: "object",
+        properties: {
+          settings: {
             $ref: "#/definitions/Settings",
           },
-          definitions: {
-            Settings: {
-              type: "object",
-              properties: {
-                mode: {
-                  type: "string",
-                  default: "auto",
-                },
-              },
-              additionalProperties: false,
-            },
+        },
+        additionalProperties: {
+          $ref: "#/definitions/Settings",
+        },
+        definitions: {
+          Settings: {
+            ...automaticModeObjectSchema,
+            additionalProperties: false,
           },
         },
-        value: {
-          settings: {},
-          accountA: {},
-        },
-        applyDefaults: true,
+      },
+      value: {
+        settings: {},
+        accountA: {},
       },
       expectedValue: {
         settings: { mode: "auto" },
@@ -156,34 +179,31 @@ describe("schema validator", () => {
   });
 
   it("does not apply defaults from non-matching union branches", () => {
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.defaults.union",
-        schema: {
-          oneOf: [
-            {
-              type: "object",
-              properties: {
-                type: { const: "a" },
-                aDefault: { type: "string", default: "a" },
-              },
-              required: ["type"],
-              additionalProperties: false,
+    expectDefaultedValidationValue({
+      cacheKey: "schema-validator.test.defaults.union",
+      schema: {
+        oneOf: [
+          {
+            type: "object",
+            properties: {
+              type: { const: "a" },
+              aDefault: { type: "string", default: "a" },
             },
-            {
-              type: "object",
-              properties: {
-                type: { const: "b" },
-                bDefault: { type: "string", default: "b" },
-              },
-              required: ["type"],
-              additionalProperties: false,
+            required: ["type"],
+            additionalProperties: false,
+          },
+          {
+            type: "object",
+            properties: {
+              type: { const: "b" },
+              bDefault: { type: "string", default: "b" },
             },
-          ],
-        },
-        value: { type: "a" },
-        applyDefaults: true,
+            required: ["type"],
+            additionalProperties: false,
+          },
+        ],
       },
+      value: { type: "a" },
       expectedValue: { type: "a" },
     });
   });
@@ -242,151 +262,38 @@ describe("schema validator", () => {
   });
 
   it("rejects invalid JSON Schema constraint keyword values", () => {
-    for (const [cacheKey, schema] of [
-      [
-        "schema-validator.test.invalid-required",
-        {
-          type: "object",
-          properties: { url: { type: "string" } },
-          required: "url",
-        },
-      ],
-      [
-        "schema-validator.test.invalid-min-length",
-        {
-          type: "string",
-          minLength: "1",
-        },
-      ],
-      [
-        "schema-validator.test.invalid-additional-properties",
-        {
-          type: "object",
-          additionalProperties: [],
-        },
-      ],
-      [
-        "schema-validator.test.invalid-empty-allof",
-        {
-          allOf: [],
-        },
-      ],
-      [
-        "schema-validator.test.invalid-empty-anyof",
-        {
-          anyOf: [],
-        },
-      ],
-      [
-        "schema-validator.test.invalid-empty-oneof",
-        {
-          oneOf: [],
-        },
-      ],
-      [
-        "schema-validator.test.invalid-empty-enum",
-        {
-          enum: [],
-        },
-      ],
-      [
-        "schema-validator.test.invalid-duplicate-enum",
-        {
-          enum: ["api", "api"],
-        },
-      ],
-      [
-        "schema-validator.test.invalid-duplicate-required",
-        {
-          type: "object",
-          required: ["mode", "mode"],
-        },
-      ],
-      [
-        "schema-validator.test.invalid-duplicate-type-array",
-        {
-          type: ["string", "string"],
-        },
-      ],
-      [
-        "schema-validator.test.invalid-ref",
-        {
-          $ref: "#/$defs/Missing",
-        },
-      ],
-      [
-        "schema-validator.test.invalid-array-ref-leading-zero",
-        {
-          anyOf: [{ type: "number" }, { type: "string" }],
-          $ref: "#/anyOf/01",
-        },
-      ],
-      [
-        "schema-validator.test.invalid-dynamic-ref-type",
-        {
-          $dynamicRef: 123,
-        },
-      ],
-      [
-        "schema-validator.test.invalid-dynamic-ref",
-        {
-          $dynamicRef: "#/$defs/Missing",
-        },
-      ],
-      [
-        "schema-validator.test.invalid-nullable-type",
-        {
-          type: "string",
-          nullable: "yes",
-        },
-      ],
-      [
-        "schema-validator.test.invalid-nullable-without-type",
-        {
-          nullable: true,
-        },
-      ],
-      [
-        "schema-validator.test.invalid-anchor-ref",
-        {
-          $defs: {
-            Other: {
-              $id: "other",
-              $anchor: "value",
-              type: "string",
-            },
-          },
-          $ref: "#value",
-        },
-      ],
-      [
-        "schema-validator.test.invalid-external-ref",
-        {
-          $ref: "https://example.com/missing",
-        },
-      ],
-      [
-        "schema-validator.test.invalid-dependencies-value",
-        {
-          type: "object",
-          dependencies: {
-            mode: 123,
-          },
-        },
-      ],
-      [
-        "schema-validator.test.invalid-dependencies-array",
-        {
-          type: "object",
-          dependencies: {
-            mode: [1],
-          },
-        },
-      ],
-    ] as const) {
+    const invalidSchemas = {
+      required: { type: "object", properties: { url: { type: "string" } }, required: "url" },
+      "min-length": { type: "string", minLength: "1" },
+      "additional-properties": { type: "object", additionalProperties: [] },
+      "empty-allof": { allOf: [] },
+      "empty-anyof": { anyOf: [] },
+      "empty-oneof": { oneOf: [] },
+      "empty-enum": { enum: [] },
+      "duplicate-enum": { enum: ["api", "api"] },
+      "duplicate-required": { type: "object", required: ["mode", "mode"] },
+      "duplicate-type-array": { type: ["string", "string"] },
+      ref: { $ref: "#/$defs/Missing" },
+      "array-ref-leading-zero": {
+        anyOf: [{ type: "number" }, { type: "string" }],
+        $ref: "#/anyOf/01",
+      },
+      "dynamic-ref-type": { $dynamicRef: 123 },
+      "dynamic-ref": { $dynamicRef: "#/$defs/Missing" },
+      "nullable-type": { type: "string", nullable: "yes" },
+      "nullable-without-type": { nullable: true },
+      "anchor-ref": {
+        $defs: { Other: { $id: "other", $anchor: "value", type: "string" } },
+        $ref: "#value",
+      },
+      "external-ref": { $ref: "https://example.com/missing" },
+      "dependencies-value": { type: "object", dependencies: { mode: 123 } },
+      "dependencies-array": { type: "object", dependencies: { mode: [1] } },
+    };
+    for (const [suffix, schema] of Object.entries(invalidSchemas)) {
       expect(() =>
         validateJsonSchemaValue({
-          cacheKey,
+          cacheKey: `schema-validator.test.invalid-${suffix}`,
           schema,
           value: "anything",
         }),
@@ -407,10 +314,20 @@ describe("schema validator", () => {
     });
     expectValidationIssue(denied, "<root>");
 
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.anchor-ref",
-        schema: {
+    expectStringSchemaValidation("schema-validator.test.anchor-ref", {
+      $defs: {
+        Value: {
+          $anchor: "value",
+          type: "string",
+        },
+      },
+      $ref: "#value",
+    });
+
+    expectStringSchemaValidation("schema-validator.test.nested-resource-anchor-ref", {
+      $defs: {
+        Other: {
+          $id: "other",
           $defs: {
             Value: {
               $anchor: "value",
@@ -419,135 +336,69 @@ describe("schema validator", () => {
           },
           $ref: "#value",
         },
-        value: "ok",
       },
-      expectedValue: "ok",
+      $ref: "#/$defs/Other",
     });
 
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.nested-resource-anchor-ref",
-        schema: {
-          $defs: {
-            Other: {
-              $id: "other",
-              $defs: {
-                Value: {
-                  $anchor: "value",
-                  type: "string",
-                },
-              },
-              $ref: "#value",
-            },
-          },
-          $ref: "#/$defs/Other",
+    expectStringSchemaValidation("schema-validator.test.absolute-same-document-ref", {
+      $id: "https://example.com/schema",
+      $defs: {
+        Value: {
+          type: "string",
         },
-        value: "ok",
       },
-      expectedValue: "ok",
+      $ref: "https://example.com/schema#/$defs/Value",
     });
 
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.absolute-same-document-ref",
-        schema: {
-          $id: "https://example.com/schema",
-          $defs: {
-            Value: {
-              type: "string",
-            },
-          },
-          $ref: "https://example.com/schema#/$defs/Value",
+    expectStringSchemaValidation("schema-validator.test.embedded-absolute-id-ref", {
+      $defs: {
+        Value: {
+          $id: "https://example.com/value",
+          type: "string",
         },
-        value: "ok",
       },
-      expectedValue: "ok",
+      $ref: "https://example.com/value",
     });
 
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.embedded-absolute-id-ref",
-        schema: {
-          $defs: {
-            Value: {
-              $id: "https://example.com/value",
-              type: "string",
-            },
-          },
-          $ref: "https://example.com/value",
+    expectStringSchemaValidation("schema-validator.test.embedded-relative-id-ref", {
+      $defs: {
+        Value: {
+          $id: "value",
+          type: "string",
         },
-        value: "ok",
       },
-      expectedValue: "ok",
+      $ref: "value",
     });
 
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.embedded-relative-id-ref",
-        schema: {
-          $defs: {
-            Value: {
-              $id: "value",
-              type: "string",
-            },
-          },
-          $ref: "value",
+    expectStringSchemaValidation("schema-validator.test.resolved-relative-id-ref", {
+      $id: "https://example.com/root/",
+      $defs: {
+        Value: {
+          $id: "value",
+          type: "string",
         },
-        value: "ok",
       },
-      expectedValue: "ok",
+      $ref: "https://example.com/root/value",
     });
 
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.resolved-relative-id-ref",
-        schema: {
-          $id: "https://example.com/root/",
-          $defs: {
-            Value: {
-              $id: "value",
-              type: "string",
-            },
-          },
-          $ref: "https://example.com/root/value",
+    expectStringSchemaValidation("schema-validator.test.empty-id-local-ref", {
+      $id: "",
+      $defs: {
+        Value: {
+          type: "string",
         },
-        value: "ok",
       },
-      expectedValue: "ok",
+      $ref: "#/$defs/Value",
     });
 
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.empty-id-local-ref",
-        schema: {
-          $id: "",
-          $defs: {
-            Value: {
-              type: "string",
-            },
-          },
-          $ref: "#/$defs/Value",
+    expectStringSchemaValidation("schema-validator.test.dynamic-ref", {
+      $defs: {
+        Value: {
+          $dynamicAnchor: "value",
+          type: "string",
         },
-        value: "ok",
       },
-      expectedValue: "ok",
-    });
-
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.dynamic-ref",
-        schema: {
-          $defs: {
-            Value: {
-              $dynamicAnchor: "value",
-              type: "string",
-            },
-          },
-          $dynamicRef: "#value",
-        },
-        value: "ok",
-      },
-      expectedValue: "ok",
+      $dynamicRef: "#value",
     });
 
     expectValidationFailure({
@@ -566,45 +417,24 @@ describe("schema validator", () => {
   });
 
   it("accepts local refs into schema arrays", () => {
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.array-ref",
-        schema: {
-          anyOf: [{ type: "string" }],
-          $ref: "#/anyOf/0",
-        },
-        value: "ok",
-      },
-      expectedValue: "ok",
+    expectStringSchemaValidation("schema-validator.test.array-ref", {
+      anyOf: [{ type: "string" }],
+      $ref: "#/anyOf/0",
     });
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.tuple-ref",
-        schema: {
-          items: [{ type: "string" }],
-          $ref: "#/items/0",
-        },
-        value: "ok",
-      },
-      expectedValue: "ok",
+    expectStringSchemaValidation("schema-validator.test.tuple-ref", {
+      items: [{ type: "string" }],
+      $ref: "#/items/0",
     });
   });
 
   it("accepts percent-encoded local ref pointer segments", () => {
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.percent-encoded-ref",
-        schema: {
-          $defs: {
-            "foo bar": {
-              type: "string",
-            },
-          },
-          $ref: "#/$defs/foo%20bar",
+    expectStringSchemaValidation("schema-validator.test.percent-encoded-ref", {
+      $defs: {
+        "foo bar": {
+          type: "string",
         },
-        value: "ok",
       },
-      expectedValue: "ok",
+      $ref: "#/$defs/foo%20bar",
     });
   });
 
@@ -655,71 +485,57 @@ describe("schema validator", () => {
   });
 
   it("applies defaults through refs that target embedded schema resources", () => {
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.embedded-resource-default-ref",
-        schema: {
-          $defs: {
-            Other: {
-              $id: "other",
-              $defs: {
-                Defaulted: {
-                  type: "object",
-                  properties: {
-                    mode: {
-                      type: "string",
-                      default: "auto",
-                    },
-                  },
-                },
+    expectDefaultedValidationValue({
+      cacheKey: "schema-validator.test.embedded-resource-default-ref",
+      schema: {
+        $defs: {
+          Other: {
+            $id: "other",
+            $defs: {
+              Defaulted: {
+                ...automaticModeObjectSchema,
               },
-              properties: {
-                settings: {
-                  $ref: "#/$defs/Defaulted",
-                },
+            },
+            properties: {
+              settings: {
+                $ref: "#/$defs/Defaulted",
               },
             },
           },
-          $ref: "#/$defs/Other/properties/settings",
         },
-        value: {},
-        applyDefaults: true,
+        $ref: "#/$defs/Other/properties/settings",
       },
-      expectedValue: { mode: "auto" },
     });
 
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.same-ref-text-nested-resource-default",
-        schema: {
-          $defs: {
-            Settings: {
-              $id: "settings",
-              type: "object",
-              $defs: {
-                Settings: {
-                  type: "object",
-                  properties: {
-                    mode: {
-                      type: "string",
-                      default: "nested",
-                    },
+    expectDefaultedValidationValue({
+      cacheKey: "schema-validator.test.same-ref-text-nested-resource-default",
+      schema: {
+        $defs: {
+          Settings: {
+            $id: "settings",
+            type: "object",
+            $defs: {
+              Settings: {
+                type: "object",
+                properties: {
+                  mode: {
+                    type: "string",
+                    default: "nested",
                   },
                 },
               },
-              properties: {
-                child: {
-                  $ref: "#/$defs/Settings",
-                },
+            },
+            properties: {
+              child: {
+                $ref: "#/$defs/Settings",
               },
             },
           },
-          $ref: "#/$defs/Settings",
         },
-        value: {
-          child: {},
-        },
-        applyDefaults: true,
+        $ref: "#/$defs/Settings",
+      },
+      value: {
+        child: {},
       },
       expectedValue: {
         child: {
@@ -728,111 +544,53 @@ describe("schema validator", () => {
       },
     });
 
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.absolute-id-default-ref",
-        schema: {
-          $defs: {
-            Settings: {
-              $id: "https://example.com/settings",
-              type: "object",
-              properties: {
-                mode: {
-                  type: "string",
-                  default: "auto",
-                },
-              },
-            },
-          },
-          $ref: "https://example.com/settings",
-        },
-        value: {},
-        applyDefaults: true,
+    for (const { cacheKey, resourceId, ref, rootId } of [
+      {
+        cacheKey: "absolute-id-default-ref",
+        resourceId: "https://example.com/settings",
+        ref: "https://example.com/settings",
       },
-      expectedValue: { mode: "auto" },
-    });
-
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.relative-id-default-ref",
-        schema: {
-          $defs: {
-            Settings: {
-              $id: "settings",
-              type: "object",
-              properties: {
-                mode: {
-                  type: "string",
-                  default: "auto",
-                },
-              },
-            },
-          },
-          $ref: "settings",
-        },
-        value: {},
-        applyDefaults: true,
+      { cacheKey: "relative-id-default-ref", resourceId: "settings", ref: "settings" },
+      {
+        cacheKey: "resolved-relative-id-default-ref",
+        resourceId: "settings",
+        ref: "https://example.com/root/settings",
+        rootId: "https://example.com/root/",
       },
-      expectedValue: { mode: "auto" },
-    });
-
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.resolved-relative-id-default-ref",
+    ]) {
+      expectDefaultedValidationValue({
+        cacheKey: `schema-validator.test.${cacheKey}`,
         schema: {
-          $id: "https://example.com/root/",
-          $defs: {
-            Settings: {
-              $id: "settings",
-              type: "object",
-              properties: {
-                mode: {
-                  type: "string",
-                  default: "auto",
-                },
-              },
-            },
-          },
-          $ref: "https://example.com/root/settings",
+          ...(rootId ? { $id: rootId } : {}),
+          $defs: { Settings: { $id: resourceId, ...automaticModeObjectSchema } },
+          $ref: ref,
         },
-        value: {},
-        applyDefaults: true,
+      });
+    }
+
+    expectDefaultedValidationValue({
+      cacheKey: "schema-validator.test.relative-resource-ref",
+      schema: {
+        $id: "https://example.com/root/",
+        type: "object",
+        properties: {
+          settings: {
+            $ref: "./settings",
+          },
+        },
+        required: ["settings"],
+        additionalProperties: false,
+        $defs: {
+          Settings: {
+            $id: "settings",
+            ...automaticModeObjectSchema,
+            required: ["mode"],
+            additionalProperties: false,
+          },
+        },
       },
-      expectedValue: { mode: "auto" },
-    });
-
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.relative-resource-ref",
-        schema: {
-          $id: "https://example.com/root/",
-          type: "object",
-          properties: {
-            settings: {
-              $ref: "./settings",
-            },
-          },
-          required: ["settings"],
-          additionalProperties: false,
-          $defs: {
-            Settings: {
-              $id: "settings",
-              type: "object",
-              properties: {
-                mode: {
-                  type: "string",
-                  default: "auto",
-                },
-              },
-              required: ["mode"],
-              additionalProperties: false,
-            },
-          },
-        },
-        value: {
-          settings: {},
-        },
-        applyDefaults: true,
+      value: {
+        settings: {},
       },
       expectedValue: {
         settings: {
@@ -856,551 +614,373 @@ describe("schema validator", () => {
       expectedValue: ["mode", 1],
     });
 
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.defaults.tuple-items",
-        schema: {
-          type: "array",
-          items: [
-            { type: "string", default: "mode" },
-            { type: "number", default: 1 },
-          ],
-          minItems: 2,
-          additionalItems: false,
-        },
-        value: [],
-        applyDefaults: true,
+    expectDefaultedValidationValue({
+      cacheKey: "schema-validator.test.defaults.tuple-items",
+      schema: {
+        type: "array",
+        items: [
+          { type: "string", default: "mode" },
+          { type: "number", default: 1 },
+        ],
+        minItems: 2,
+        additionalItems: false,
       },
+      value: [],
       expectedValue: ["mode", 1],
     });
 
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.defaults.prefix-items",
-        schema: {
-          type: "array",
-          prefixItems: [
-            { type: "string", default: "mode" },
-            { type: "number", default: 1 },
-          ],
-          minItems: 2,
-        },
-        value: [],
-        applyDefaults: true,
+    expectDefaultedValidationValue({
+      cacheKey: "schema-validator.test.defaults.prefix-items",
+      schema: {
+        type: "array",
+        prefixItems: [
+          { type: "string", default: "mode" },
+          { type: "number", default: 1 },
+        ],
+        minItems: 2,
       },
+      value: [],
       expectedValue: ["mode", 1],
     });
 
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.defaults.tuple-item-nested-default",
-        schema: {
-          type: "array",
-          items: [
-            {
-              type: "object",
-              default: {},
-              properties: {
-                mode: {
-                  type: "string",
-                  default: "auto",
-                },
-              },
-              required: ["mode"],
+    expectDefaultedValidationValue({
+      cacheKey: "schema-validator.test.defaults.tuple-item-nested-default",
+      schema: {
+        type: "array",
+        items: [
+          {
+            type: "object",
+            default: {},
+            properties: {
+              mode: automaticModeSchema,
             },
-          ],
-          minItems: 1,
-        },
-        value: [],
-        applyDefaults: true,
+            required: ["mode"],
+          },
+        ],
+        minItems: 1,
       },
+      value: [],
       expectedValue: [{ mode: "auto" }],
     });
   });
 
   it("applies defaults for untyped object schemas", () => {
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.defaults.untyped-object",
-        schema: {
-          properties: {
-            mode: {
-              type: "string",
-              default: "auto",
-            },
-          },
-          additionalProperties: false,
+    expectDefaultedValidationValue({
+      cacheKey: "schema-validator.test.defaults.untyped-object",
+      schema: {
+        properties: {
+          mode: automaticModeSchema,
         },
-        value: {},
-        applyDefaults: true,
+        additionalProperties: false,
       },
-      expectedValue: { mode: "auto" },
     });
 
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.defaults.untyped-pattern-properties",
-        schema: {
-          patternProperties: {
-            "^x": {
-              type: "object",
-              properties: {
-                mode: {
-                  type: "string",
-                  default: "auto",
-                },
-              },
-            },
+    expectDefaultedValidationValue({
+      cacheKey: "schema-validator.test.defaults.untyped-pattern-properties",
+      schema: {
+        patternProperties: {
+          "^x": {
+            ...automaticModeObjectSchema,
           },
         },
-        value: { x1: {} },
-        applyDefaults: true,
       },
+      value: { x1: {} },
       expectedValue: { x1: { mode: "auto" } },
     });
 
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.defaults.untyped-additional-properties",
-        schema: {
-          additionalProperties: {
-            type: "object",
-            properties: {
-              mode: {
-                type: "string",
-                default: "manual",
-              },
-            },
+    expectDefaultedValidationValue({
+      cacheKey: "schema-validator.test.defaults.untyped-additional-properties",
+      schema: {
+        additionalProperties: {
+          type: "object",
+          properties: {
+            mode: manualModeSchema,
           },
         },
-        value: { other: {} },
-        applyDefaults: true,
       },
+      value: { other: {} },
       expectedValue: { other: { mode: "manual" } },
     });
   });
 
   it("applies defaults through active dependency and conditional schemas", () => {
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.defaults.dependencies",
-        schema: {
-          type: "object",
-          properties: {
-            flag: {
-              type: "boolean",
-            },
-          },
-          dependencies: {
-            flag: {
-              properties: {
-                mode: {
-                  type: "string",
-                  default: "auto",
-                },
-              },
-              required: ["mode"],
-            },
+    expectDefaultedValidationValue({
+      cacheKey: "schema-validator.test.defaults.dependencies",
+      schema: {
+        type: "object",
+        properties: {
+          flag: {
+            type: "boolean",
           },
         },
-        value: { flag: true },
-        applyDefaults: true,
-      },
-      expectedValue: { flag: true, mode: "auto" },
-    });
-
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.defaults.conditional",
-        schema: {
-          type: "object",
-          properties: {
-            kind: {
-              const: "api",
-            },
-          },
-          if: {
+        dependencies: {
+          flag: {
             properties: {
-              kind: {
-                const: "api",
-              },
-            },
-            required: ["kind"],
-          },
-          [jsonSchemaThenKeyword]: {
-            properties: {
-              endpoint: {
-                type: "string",
-                default: "https://example.com",
-              },
-            },
-            required: ["endpoint"],
-          },
-        },
-        value: { kind: "api" },
-        applyDefaults: true,
-      },
-      expectedValue: { kind: "api", endpoint: "https://example.com" },
-    });
-
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.defaults.conditional-ref",
-        schema: {
-          type: "object",
-          $defs: {
-            ApiKind: {
-              properties: {
-                kind: {
-                  const: "api",
-                },
-              },
-              required: ["kind"],
-            },
-          },
-          if: {
-            $ref: "#/$defs/ApiKind",
-          },
-          [jsonSchemaThenKeyword]: {
-            properties: {
-              endpoint: {
-                type: "string",
-                default: "https://example.com",
-              },
-            },
-            required: ["endpoint"],
-          },
-        },
-        value: { kind: "api" },
-        applyDefaults: true,
-      },
-      expectedValue: { kind: "api", endpoint: "https://example.com" },
-    });
-
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.defaults.conditional-format-annotation",
-        schema: {
-          type: "object",
-          properties: {
-            contact: {
-              type: "string",
-            },
-          },
-          if: {
-            properties: {
-              contact: {
-                type: "string",
-                format: "email",
-              },
-            },
-            required: ["contact"],
-          },
-          [jsonSchemaThenKeyword]: {
-            properties: {
-              mode: {
-                type: "string",
-                default: "auto",
-              },
+              mode: automaticModeSchema,
             },
             required: ["mode"],
           },
         },
-        value: { contact: "not an email" },
-        applyDefaults: true,
       },
-      expectedValue: { contact: "not an email", mode: "auto" },
+      value: { flag: true },
+      expectedValue: { flag: true, mode: "auto" },
     });
 
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.defaults.conditional-ref-resource-property-object",
-        schema: {
-          type: "object",
-          properties: {
-            kind: {
-              properties: {
-                value: {
-                  const: "api",
-                },
-              },
-              required: ["value"],
-            },
-          },
-          if: {
-            $ref: "#/properties/kind",
-          },
-          [jsonSchemaThenKeyword]: {
-            properties: {
-              endpoint: {
-                type: "string",
-                default: "https://example.com",
-              },
-            },
-            required: ["endpoint"],
-          },
+    expectDefaultedValidationValue({
+      cacheKey: "schema-validator.test.defaults.conditional",
+      schema: {
+        type: "object",
+        properties: {
+          kind: apiKindSchema,
         },
-        value: { value: "api" },
-        applyDefaults: true,
+        if: apiKindCondition,
+        [jsonSchemaThenKeyword]: requiredApiEndpointBranch,
       },
-      expectedValue: { value: "api", endpoint: "https://example.com" },
-    });
-
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.defaults.conditional-nested-ref-resource-property",
-        schema: {
-          type: "object",
-          properties: {
-            kind: {
-              properties: {
-                value: {
-                  const: "api",
-                },
-              },
-              required: ["value"],
-            },
-          },
-          if: {
-            properties: {
-              kind: {
-                $ref: "#/properties/kind",
-              },
-            },
-            required: ["kind"],
-          },
-          [jsonSchemaThenKeyword]: {
-            properties: {
-              endpoint: {
-                type: "string",
-                default: "https://example.com",
-              },
-            },
-            required: ["endpoint"],
-          },
-        },
-        value: { kind: { value: "api" } },
-        applyDefaults: true,
-      },
-      expectedValue: { kind: { value: "api" }, endpoint: "https://example.com" },
-    });
-
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.defaults.conditional-ref-with-local-defs",
-        schema: {
-          type: "object",
-          $defs: {
-            ApiKind: {
-              properties: {
-                kind: {
-                  const: "api",
-                },
-              },
-              required: ["kind"],
-            },
-          },
-          if: {
-            $defs: {
-              Local: {
-                type: "string",
-              },
-            },
-            $ref: "#/$defs/ApiKind",
-          },
-          [jsonSchemaThenKeyword]: {
-            properties: {
-              endpoint: {
-                type: "string",
-                default: "https://example.com",
-              },
-            },
-            required: ["endpoint"],
-          },
-        },
-        value: { kind: "api" },
-        applyDefaults: true,
-      },
+      value: { kind: "api" },
       expectedValue: { kind: "api", endpoint: "https://example.com" },
     });
 
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.defaults.conditional-ref-root-defs-win",
-        schema: {
-          type: "object",
+    expectDefaultedValidationValue({
+      cacheKey: "schema-validator.test.defaults.conditional-ref",
+      schema: {
+        type: "object",
+        $defs: {
+          ApiKind: {
+            properties: {
+              kind: apiKindSchema,
+            },
+            required: ["kind"],
+          },
+        },
+        if: {
+          $ref: "#/$defs/ApiKind",
+        },
+        [jsonSchemaThenKeyword]: requiredApiEndpointBranch,
+      },
+      value: { kind: "api" },
+      expectedValue: { kind: "api", endpoint: "https://example.com" },
+    });
+
+    expectDefaultedValidationValue({
+      cacheKey: "schema-validator.test.defaults.conditional-format-annotation",
+      schema: {
+        type: "object",
+        properties: {
+          contact: {
+            type: "string",
+          },
+        },
+        if: {
+          properties: {
+            contact: {
+              type: "string",
+              format: "email",
+            },
+          },
+          required: ["contact"],
+        },
+        [jsonSchemaThenKeyword]: {
+          properties: {
+            mode: automaticModeSchema,
+          },
+          required: ["mode"],
+        },
+      },
+      value: { contact: "not an email" },
+      expectedValue: { contact: "not an email", mode: "auto" },
+    });
+
+    expectDefaultedValidationValue({
+      cacheKey: "schema-validator.test.defaults.conditional-ref-resource-property-object",
+      schema: {
+        type: "object",
+        properties: {
+          kind: {
+            properties: {
+              value: apiKindSchema,
+            },
+            required: ["value"],
+          },
+        },
+        if: {
+          $ref: "#/properties/kind",
+        },
+        [jsonSchemaThenKeyword]: requiredApiEndpointBranch,
+      },
+      value: { value: "api" },
+      expectedValue: { value: "api", endpoint: "https://example.com" },
+    });
+
+    expectDefaultedValidationValue({
+      cacheKey: "schema-validator.test.defaults.conditional-nested-ref-resource-property",
+      schema: {
+        type: "object",
+        properties: {
+          kind: {
+            properties: {
+              value: apiKindSchema,
+            },
+            required: ["value"],
+          },
+        },
+        if: {
+          properties: {
+            kind: {
+              $ref: "#/properties/kind",
+            },
+          },
+          required: ["kind"],
+        },
+        [jsonSchemaThenKeyword]: requiredApiEndpointBranch,
+      },
+      value: { kind: { value: "api" } },
+      expectedValue: { kind: { value: "api" }, endpoint: "https://example.com" },
+    });
+
+    expectDefaultedValidationValue({
+      cacheKey: "schema-validator.test.defaults.conditional-ref-with-local-defs",
+      schema: {
+        type: "object",
+        $defs: {
+          ApiKind: {
+            properties: {
+              kind: apiKindSchema,
+            },
+            required: ["kind"],
+          },
+        },
+        if: {
+          $defs: {
+            Local: {
+              type: "string",
+            },
+          },
+          $ref: "#/$defs/ApiKind",
+        },
+        [jsonSchemaThenKeyword]: requiredApiEndpointBranch,
+      },
+      value: { kind: "api" },
+      expectedValue: { kind: "api", endpoint: "https://example.com" },
+    });
+
+    expectDefaultedValidationValue({
+      cacheKey: "schema-validator.test.defaults.conditional-ref-root-defs-win",
+      schema: {
+        type: "object",
+        $defs: {
+          MatchKind: {
+            properties: {
+              kind: apiKindSchema,
+            },
+            required: ["kind"],
+          },
+        },
+        if: {
           $defs: {
             MatchKind: {
               properties: {
                 kind: {
-                  const: "api",
+                  const: "other",
                 },
               },
               required: ["kind"],
             },
           },
-          if: {
-            $defs: {
-              MatchKind: {
-                properties: {
-                  kind: {
-                    const: "other",
-                  },
-                },
-                required: ["kind"],
-              },
-            },
-            $ref: "#/$defs/MatchKind",
-          },
-          [jsonSchemaThenKeyword]: {
-            properties: {
-              endpoint: {
-                type: "string",
-                default: "https://example.com",
-              },
-            },
+          $ref: "#/$defs/MatchKind",
+        },
+        [jsonSchemaThenKeyword]: {
+          properties: {
+            endpoint: defaultApiEndpointSchema,
           },
         },
-        value: { kind: "api" },
-        applyDefaults: true,
+      },
+      value: { kind: "api" },
+      expectedValue: { kind: "api", endpoint: "https://example.com" },
+    });
+
+    expectDefaultedValidationValue({
+      cacheKey: "schema-validator.test.defaults.conditional-activated-by-default",
+      schema: {
+        type: "object",
+        properties: {
+          kind: {
+            const: "api",
+            default: "api",
+          },
+        },
+        if: apiKindCondition,
+        [jsonSchemaThenKeyword]: requiredApiEndpointBranch,
       },
       expectedValue: { kind: "api", endpoint: "https://example.com" },
     });
 
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.defaults.conditional-activated-by-default",
-        schema: {
-          type: "object",
-          properties: {
-            kind: {
-              const: "api",
-              default: "api",
-            },
-          },
-          if: {
-            properties: {
-              kind: {
-                const: "api",
-              },
-            },
-            required: ["kind"],
-          },
-          [jsonSchemaThenKeyword]: {
-            properties: {
-              endpoint: {
-                type: "string",
-                default: "https://example.com",
-              },
-            },
-            required: ["endpoint"],
+    expectDefaultedValidationValue({
+      cacheKey: "schema-validator.test.defaults.conditional-default-selects-one-branch",
+      schema: {
+        type: "object",
+        properties: {
+          kind: {
+            const: "api",
+            default: "api",
           },
         },
-        value: {},
-        applyDefaults: true,
+        if: apiKindCondition,
+        [jsonSchemaThenKeyword]: {
+          properties: {
+            endpoint: defaultApiEndpointSchema,
+          },
+        },
+        else: {
+          properties: {
+            path: {
+              type: "string",
+              default: "/tmp",
+            },
+          },
+        },
       },
       expectedValue: { kind: "api", endpoint: "https://example.com" },
     });
 
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.defaults.conditional-default-selects-one-branch",
-        schema: {
-          type: "object",
-          properties: {
-            kind: {
-              const: "api",
-              default: "api",
-            },
-          },
-          if: {
-            properties: {
-              kind: {
-                const: "api",
-              },
-            },
-            required: ["kind"],
-          },
-          [jsonSchemaThenKeyword]: {
-            properties: {
-              endpoint: {
-                type: "string",
-                default: "https://example.com",
-              },
-            },
-          },
-          else: {
-            properties: {
-              path: {
-                type: "string",
-                default: "/tmp",
-              },
-            },
+    expectDefaultedValidationValue({
+      cacheKey: "schema-validator.test.defaults.conditional-default-branch-flip",
+      schema: {
+        type: "object",
+        if: {
+          not: {
+            required: ["mode"],
           },
         },
-        value: {},
-        applyDefaults: true,
+        [jsonSchemaThenKeyword]: {
+          properties: {
+            mode: automaticModeSchema,
+          },
+        },
+        else: {
+          properties: {
+            explicit: enabledBooleanSchema,
+          },
+          required: ["explicit"],
+        },
       },
-      expectedValue: { kind: "api", endpoint: "https://example.com" },
     });
 
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.defaults.conditional-default-branch-flip",
-        schema: {
-          type: "object",
-          if: {
-            not: {
-              required: ["mode"],
-            },
-          },
-          [jsonSchemaThenKeyword]: {
-            properties: {
-              mode: {
-                type: "string",
-                default: "auto",
-              },
-            },
-          },
-          else: {
-            properties: {
-              explicit: {
-                type: "boolean",
-                default: true,
-              },
-            },
-            required: ["explicit"],
-          },
+    expectDefaultedValidationValue({
+      cacheKey: "schema-validator.test.defaults.conditional-defaulted-condition-remains-valid",
+      schema: {
+        type: "object",
+        properties: {
+          flag: enabledBooleanSchema,
         },
-        value: {},
-        applyDefaults: true,
-      },
-      expectedValue: { mode: "auto" },
-    });
-
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.defaults.conditional-defaulted-condition-remains-valid",
-        schema: {
-          type: "object",
+        if: {
           properties: {
-            flag: {
-              type: "boolean",
-              default: true,
-            },
+            flag: { const: true },
           },
-          if: {
-            properties: {
-              flag: { const: true },
-            },
-            required: ["flag"],
-          },
-          [jsonSchemaThenKeyword]: {
-            required: ["secret"],
-          },
+          required: ["flag"],
         },
-        value: {},
-        applyDefaults: true,
+        [jsonSchemaThenKeyword]: {
+          required: ["secret"],
+        },
       },
       expectedValue: { flag: true },
     });
@@ -1410,10 +990,7 @@ describe("schema validator", () => {
       schema: {
         type: "object",
         properties: {
-          flag: {
-            type: "boolean",
-            default: true,
-          },
+          flag: enabledBooleanSchema,
         },
         if: {
           properties: {
@@ -1470,10 +1047,7 @@ describe("schema validator", () => {
       schema: {
         type: "object",
         properties: {
-          flag: {
-            type: "boolean",
-            default: true,
-          },
+          flag: enabledBooleanSchema,
         },
         if: {
           properties: {
@@ -1494,279 +1068,154 @@ describe("schema validator", () => {
       applyDefaults: true,
     });
 
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.defaults.conditional-hydrates-parent-property",
-        schema: {
-          type: "object",
-          properties: {
-            kind: {
-              const: "api",
-            },
-            settings: {
-              type: "object",
-              properties: {
-                mode: {
-                  type: "string",
-                  default: "auto",
-                },
-              },
-              required: ["mode"],
-            },
-          },
-          if: {
-            properties: {
-              kind: {
-                const: "api",
-              },
-            },
-            required: ["kind"],
-          },
-          [jsonSchemaThenKeyword]: {
-            properties: {
-              settings: {
-                type: "object",
-                default: {},
-              },
-            },
-            required: ["settings"],
+    expectDefaultedValidationValue({
+      cacheKey: "schema-validator.test.defaults.conditional-hydrates-parent-property",
+      schema: {
+        type: "object",
+        properties: {
+          kind: apiKindSchema,
+          settings: {
+            ...automaticModeObjectSchema,
+            required: ["mode"],
           },
         },
-        value: { kind: "api" },
-        applyDefaults: true,
+        if: apiKindCondition,
+        [jsonSchemaThenKeyword]: {
+          properties: {
+            settings: {
+              type: "object",
+              default: {},
+            },
+          },
+          required: ["settings"],
+        },
       },
+      value: { kind: "api" },
       expectedValue: { kind: "api", settings: { mode: "auto" } },
     });
 
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.defaults.dependency-activated-by-default",
-        schema: {
-          type: "object",
-          properties: {
-            flag: {
-              type: "boolean",
-              default: true,
+    expectDefaultedValidationValue({
+      cacheKey: "schema-validator.test.defaults.dependency-activated-by-default",
+      schema: {
+        type: "object",
+        properties: {
+          flag: enabledBooleanSchema,
+        },
+        dependencies: {
+          flag: {
+            properties: {
+              mode: automaticModeSchema,
             },
-          },
-          dependencies: {
-            flag: {
-              properties: {
-                mode: {
-                  type: "string",
-                  default: "auto",
-                },
-              },
-              required: ["mode"],
-            },
+            required: ["mode"],
           },
         },
-        value: {},
-        applyDefaults: true,
       },
       expectedValue: { flag: true, mode: "auto" },
     });
 
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.defaults.conditional-activates-dependency",
-        schema: {
-          type: "object",
-          properties: {
-            kind: {
-              const: "api",
-            },
-          },
-          dependencies: {
-            flag: {
-              properties: {
-                mode: {
-                  type: "string",
-                  default: "auto",
-                },
-              },
-              required: ["mode"],
-            },
-          },
-          if: {
+    expectDefaultedValidationValue({
+      cacheKey: "schema-validator.test.defaults.conditional-activates-dependency",
+      schema: {
+        type: "object",
+        properties: {
+          kind: apiKindSchema,
+        },
+        dependencies: {
+          flag: {
             properties: {
-              kind: {
-                const: "api",
-              },
+              mode: automaticModeSchema,
             },
-            required: ["kind"],
-          },
-          [jsonSchemaThenKeyword]: {
-            properties: {
-              flag: {
-                type: "boolean",
-                default: true,
-              },
-            },
-            required: ["flag"],
+            required: ["mode"],
           },
         },
-        value: { kind: "api" },
-        applyDefaults: true,
+        if: apiKindCondition,
+        [jsonSchemaThenKeyword]: {
+          properties: {
+            flag: enabledBooleanSchema,
+          },
+          required: ["flag"],
+        },
       },
+      value: { kind: "api" },
       expectedValue: { kind: "api", flag: true, mode: "auto" },
     });
 
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.defaults.reverse-dependency-chain",
-        schema: {
-          type: "object",
-          properties: {
-            a: {
-              type: "boolean",
-              default: true,
-            },
-          },
-          dependencies: {
-            e: {
-              properties: {
-                f: {
-                  type: "boolean",
-                  default: true,
-                },
-              },
-              required: ["f"],
-            },
-            d: {
-              properties: {
-                e: {
-                  type: "boolean",
-                  default: true,
-                },
-              },
-              required: ["e"],
-            },
-            c: {
-              properties: {
-                d: {
-                  type: "boolean",
-                  default: true,
-                },
-              },
-              required: ["d"],
-            },
-            b: {
-              properties: {
-                c: {
-                  type: "boolean",
-                  default: true,
-                },
-              },
-              required: ["c"],
-            },
-            a: {
-              properties: {
-                b: {
-                  type: "boolean",
-                  default: true,
-                },
-              },
-              required: ["b"],
-            },
-          },
+    expectDefaultedValidationValue({
+      cacheKey: "schema-validator.test.defaults.reverse-dependency-chain",
+      schema: {
+        type: "object",
+        properties: {
+          a: enabledBooleanSchema,
         },
-        value: {},
-        applyDefaults: true,
+        dependencies: Object.fromEntries(
+          [
+            ["e", "f"],
+            ["d", "e"],
+            ["c", "d"],
+            ["b", "c"],
+            ["a", "b"],
+          ].map(([property, dependency]) => [
+            property,
+            { properties: { [dependency]: enabledBooleanSchema }, required: [dependency] },
+          ]),
+        ),
       },
       expectedValue: { a: true, b: true, c: true, d: true, e: true, f: true },
     });
 
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.defaults.dependency-activates-conditional",
-        schema: {
-          type: "object",
-          properties: {
-            a: {
-              type: "boolean",
-              default: true,
-            },
-          },
-          dependencies: {
-            b: {
-              properties: {
-                kind: {
-                  const: "api",
-                  default: "api",
-                },
-              },
-              required: ["kind"],
-            },
-            a: {
-              properties: {
-                b: {
-                  type: "boolean",
-                  default: true,
-                },
-              },
-              required: ["b"],
-            },
-          },
-          if: {
+    expectDefaultedValidationValue({
+      cacheKey: "schema-validator.test.defaults.dependency-activates-conditional",
+      schema: {
+        type: "object",
+        properties: {
+          a: enabledBooleanSchema,
+        },
+        dependencies: {
+          b: {
             properties: {
               kind: {
                 const: "api",
+                default: "api",
               },
             },
             required: ["kind"],
           },
-          [jsonSchemaThenKeyword]: {
+          a: {
             properties: {
-              endpoint: {
-                type: "string",
-                default: "https://example.com",
-              },
+              b: enabledBooleanSchema,
             },
-            required: ["endpoint"],
+            required: ["b"],
           },
         },
-        value: {},
-        applyDefaults: true,
+        if: apiKindCondition,
+        [jsonSchemaThenKeyword]: requiredApiEndpointBranch,
       },
       expectedValue: { a: true, b: true, kind: "api", endpoint: "https://example.com" },
     });
   });
 
   it("applies defaults through patternProperties before additionalProperties", () => {
-    expectSuccessfulValidationValue({
-      input: {
-        cacheKey: "schema-validator.test.defaults.pattern-properties",
-        schema: {
-          type: "object",
-          patternProperties: {
-            "^x": {
-              type: "object",
-              properties: {
-                mode: {
-                  type: "string",
-                  default: "auto",
-                },
-              },
-              additionalProperties: false,
-            },
-          },
-          additionalProperties: {
-            type: "object",
-            properties: {
-              mode: {
-                type: "string",
-                default: "manual",
-              },
-            },
+    expectDefaultedValidationValue({
+      cacheKey: "schema-validator.test.defaults.pattern-properties",
+      schema: {
+        type: "object",
+        patternProperties: {
+          "^x": {
+            ...automaticModeObjectSchema,
             additionalProperties: false,
           },
         },
-        value: {
-          other: {},
-          x1: {},
+        additionalProperties: {
+          type: "object",
+          properties: {
+            mode: manualModeSchema,
+          },
+          additionalProperties: false,
         },
-        applyDefaults: true,
+      },
+      value: {
+        other: {},
+        x1: {},
       },
       expectedValue: {
         other: { mode: "manual" },
@@ -1894,21 +1343,7 @@ describe("schema validator", () => {
           properties: {
             mode: {
               type: "string",
-              enum: [
-                "v1",
-                "v2",
-                "v3",
-                "v4",
-                "v5",
-                "v6",
-                "v7",
-                "v8",
-                "v9",
-                "v10",
-                "v11",
-                "v12",
-                "v13",
-              ],
+              enum: numberedVersions,
             },
           },
           required: ["mode"],
@@ -1917,7 +1352,7 @@ describe("schema validator", () => {
       },
       path: "mode",
       messageIncludes: ["(allowed:", "... (+1 more)"],
-      allowedValues: ["v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8", "v9", "v10", "v11", "v12"],
+      allowedValues: numberedVersions.slice(0, 12),
       hiddenCount: 1,
     },
     {
@@ -2026,67 +1461,31 @@ describe("schema validator", () => {
   it.each([
     {
       title: "accepts uri-formatted string schemas for valid urls",
-      params: {
-        cacheKey: "schema-validator.test.uri.valid",
-        schema: {
-          type: "object",
-          properties: {
-            apiRoot: {
-              type: "string",
-              format: "uri",
-            },
-          },
-          required: ["apiRoot"],
-        },
-        value: { apiRoot: "https://api.telegram.org" },
-      },
+      cacheKey: "schema-validator.test.uri.valid",
+      apiRoot: "https://api.telegram.org",
       ok: true,
     },
     {
       title: "rejects uri-formatted string schemas for invalid urls",
-      params: {
-        cacheKey: "schema-validator.test.uri.invalid",
-        schema: {
-          type: "object",
-          properties: {
-            apiRoot: {
-              type: "string",
-              format: "uri",
-            },
-          },
-          required: ["apiRoot"],
-        },
-        value: { apiRoot: "not a uri" },
-      },
+      cacheKey: "schema-validator.test.uri.invalid",
+      apiRoot: "not a uri",
       ok: false,
       expectedPath: "apiRoot",
       expectedMessage: "must match format",
     },
     {
       title: "rejects uri-formatted string schemas for invalid absolute urls",
-      params: {
-        cacheKey: "schema-validator.test.uri.invalid-absolute",
-        schema: {
-          type: "object",
-          properties: {
-            apiRoot: {
-              type: "string",
-              format: "uri",
-            },
-          },
-          required: ["apiRoot"],
-        },
-        value: { apiRoot: "https://" },
-      },
+      cacheKey: "schema-validator.test.uri.invalid-absolute",
+      apiRoot: "https://",
       ok: false,
       expectedPath: "apiRoot",
       expectedMessage: "must match format",
     },
   ])(
     "supports uri-formatted string schemas: $title",
-    ({ params, ok, expectedPath, expectedMessage }) => {
+    ({ cacheKey, apiRoot, ok, expectedPath, expectedMessage }) => {
       expectUriValidationCase({
-        input: params,
+        input: { cacheKey, schema: requiredUriSchema, value: { apiRoot } },
         ok,
         expectedPath,
         expectedMessage,

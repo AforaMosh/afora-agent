@@ -79,6 +79,36 @@ async function createInstalledNpmPluginFixture(params: {
 
 type UninstallResult = Awaited<ReturnType<typeof uninstallPlugin>>;
 
+function expectedUninstallActions(
+  changes: Partial<
+    Record<
+      | "entry"
+      | "install"
+      | "allowlist"
+      | "denylist"
+      | "loadPath"
+      | "memorySlot"
+      | "contextEngineSlot"
+      | "channelConfig"
+      | "directory",
+      boolean
+    >
+  >,
+) {
+  return {
+    entry: false,
+    install: false,
+    allowlist: false,
+    denylist: false,
+    loadPath: false,
+    memorySlot: false,
+    contextEngineSlot: false,
+    channelConfig: false,
+    directory: false,
+    ...changes,
+  };
+}
+
 async function runDeleteInstalledNpmPluginFixture(baseDir: string): Promise<{
   pluginDir: string;
   result: UninstallResult;
@@ -193,6 +223,17 @@ function createPluginConfig(params: {
     ...(Object.keys(plugins).length > 0 ? { plugins } : {}),
     ...(params.channels ? { channels: params.channels } : {}),
   };
+}
+
+function createInstalledPluginConfig(
+  pluginId: string,
+  params: Omit<Parameters<typeof createPluginConfig>[0], "entries" | "installs"> = {},
+) {
+  return createPluginConfig({
+    ...params,
+    entries: createSinglePluginEntries(pluginId),
+    installs: { [pluginId]: createNpmInstallRecord(pluginId) },
+  });
 }
 
 function expectRemainingChannels(
@@ -531,13 +572,7 @@ describe("removePluginFromConfig", () => {
   it.each([
     {
       name: "removes channel config for installed extension plugin",
-      config: createPluginConfig({
-        entries: {
-          timbot: { enabled: true },
-        },
-        installs: {
-          timbot: createNpmInstallRecord("timbot"),
-        },
+      config: createInstalledPluginConfig("timbot", {
         channels: {
           timbot: { sdkAppId: "123", secretKey: "abc" },
           telegram: { enabled: true },
@@ -569,13 +604,7 @@ describe("removePluginFromConfig", () => {
     },
     {
       name: "cleans up channels object when removing the only channel config",
-      config: createPluginConfig({
-        entries: {
-          timbot: { enabled: true },
-        },
-        installs: {
-          timbot: createNpmInstallRecord("timbot"),
-        },
+      config: createInstalledPluginConfig("timbot", {
         channels: {
           timbot: { sdkAppId: "123" },
         },
@@ -586,12 +615,7 @@ describe("removePluginFromConfig", () => {
     },
     {
       name: "does not set channelConfig action when no channel config exists",
-      config: createPluginConfig({
-        entries: createSinglePluginEntries(),
-        installs: {
-          "my-plugin": createNpmInstallRecord(),
-        },
-      }),
+      config: createInstalledPluginConfig("my-plugin"),
       pluginId: "my-plugin",
       expectedChannels: undefined,
       expectedChanged: false,
@@ -617,13 +641,7 @@ describe("removePluginFromConfig", () => {
     },
     {
       name: "removes channel config using explicit channelIds when pluginId differs",
-      config: createPluginConfig({
-        entries: {
-          "timbot-plugin": { enabled: true },
-        },
-        installs: {
-          "timbot-plugin": createNpmInstallRecord("timbot-plugin"),
-        },
+      config: createInstalledPluginConfig("timbot-plugin", {
         channels: {
           timbot: { sdkAppId: "123" },
           "timbot-v2": { sdkAppId: "456" },
@@ -641,13 +659,7 @@ describe("removePluginFromConfig", () => {
     },
     {
       name: "preserves shared channel keys (defaults, modelByChannel)",
-      config: createPluginConfig({
-        entries: {
-          timbot: { enabled: true },
-        },
-        installs: {
-          timbot: createNpmInstallRecord("timbot"),
-        },
+      config: createInstalledPluginConfig("timbot", {
         channels: {
           defaults: { groupPolicy: "opt-in" },
           modelByChannel: { timbot: "gpt-3.5" } as Record<string, string>,
@@ -663,13 +675,7 @@ describe("removePluginFromConfig", () => {
     },
     {
       name: "does not remove shared keys even when passed as channelIds",
-      config: createPluginConfig({
-        entries: {
-          "bad-plugin": { enabled: true },
-        },
-        installs: {
-          "bad-plugin": createNpmInstallRecord("bad-plugin"),
-        },
+      config: createInstalledPluginConfig("bad-plugin", {
         channels: {
           defaults: { groupPolicy: "opt-in" },
         } as unknown as OpenClawConfig["channels"],
@@ -685,13 +691,7 @@ describe("removePluginFromConfig", () => {
     },
     {
       name: "skips channel cleanup when channelIds is empty array (non-channel plugin)",
-      config: createPluginConfig({
-        entries: {
-          telegram: { enabled: true },
-        },
-        installs: {
-          telegram: createNpmInstallRecord("telegram"),
-        },
+      config: createInstalledPluginConfig("telegram", {
         channels: {
           telegram: { enabled: true },
         },
@@ -799,17 +799,9 @@ describe("uninstallPlugin", () => {
     });
 
     const successfulResult = expectSuccessfulUninstall(result);
-    expect(successfulResult.actions).toEqual({
-      entry: false,
-      install: false,
-      allowlist: true,
-      denylist: true,
-      loadPath: false,
-      memorySlot: true,
-      contextEngineSlot: false,
-      channelConfig: false,
-      directory: false,
-    });
+    expect(successfulResult.actions).toEqual(
+      expectedUninstallActions({ allowlist: true, denylist: true, memorySlot: true }),
+    );
     expect(successfulResult.config.plugins?.allow).toEqual(["other-plugin"]);
     expect(successfulResult.config.plugins?.deny).toBeUndefined();
     expect(successfulResult.config.plugins?.slots?.memory).toBe("memory-core");
@@ -825,17 +817,7 @@ describe("uninstallPlugin", () => {
           "missing-entry-plugin": { enabled: true },
         },
       }),
-      expectedActions: {
-        entry: true,
-        install: false,
-        allowlist: false,
-        denylist: false,
-        loadPath: false,
-        memorySlot: false,
-        contextEngineSlot: false,
-        channelConfig: false,
-        directory: false,
-      },
+      expectedActions: expectedUninstallActions({ entry: true }),
       expectedConfig: {},
     },
     {
@@ -850,17 +832,7 @@ describe("uninstallPlugin", () => {
           discord: { enabled: true },
         },
       }),
-      expectedActions: {
-        entry: false,
-        install: true,
-        allowlist: false,
-        denylist: false,
-        loadPath: false,
-        memorySlot: false,
-        contextEngineSlot: false,
-        channelConfig: true,
-        directory: false,
-      },
+      expectedActions: expectedUninstallActions({ install: true, channelConfig: true }),
       expectedConfig: {
         channels: {
           discord: { enabled: true },
@@ -879,17 +851,7 @@ describe("uninstallPlugin", () => {
         },
         loadPaths: ["/missing/openclaw/plugin", "/keep/this/plugin"],
       }),
-      expectedActions: {
-        entry: false,
-        install: true,
-        allowlist: false,
-        denylist: false,
-        loadPath: true,
-        memorySlot: false,
-        contextEngineSlot: false,
-        channelConfig: false,
-        directory: false,
-      },
+      expectedActions: expectedUninstallActions({ install: true, loadPath: true }),
       expectedConfig: {
         plugins: {
           load: {
@@ -909,17 +871,12 @@ describe("uninstallPlugin", () => {
           contextEngine: "missing-policy-plugin",
         },
       }),
-      expectedActions: {
-        entry: false,
-        install: false,
+      expectedActions: expectedUninstallActions({
         allowlist: true,
         denylist: true,
-        loadPath: false,
         memorySlot: true,
         contextEngineSlot: true,
-        channelConfig: false,
-        directory: false,
-      },
+      }),
       expectedConfig: {
         plugins: {
           allow: ["other-plugin"],
@@ -1007,75 +964,23 @@ describe("uninstallPlugin", () => {
     await expectPathAccessState(pluginDir, "missing");
   });
 
-  it("uninstalls npm-managed packages through npm before deleting the package directory", async () => {
-    const stateDir = path.join(tempDir, "state");
-    const extensionsDir = path.join(stateDir, "extensions");
-    const npmRoot = path.join(stateDir, "npm");
-    const pluginDir = path.join(npmRoot, "node_modules", "@openclaw", "kitchen-sink");
-    const hoistedDir = path.join(npmRoot, "node_modules", "is-number");
-    await fs.mkdir(pluginDir, { recursive: true });
-    await fs.mkdir(hoistedDir, { recursive: true });
-    await fs.writeFile(
-      path.join(npmRoot, "package.json"),
-      `${JSON.stringify(
-        {
-          private: true,
-          dependencies: {
-            "@openclaw/kitchen-sink": "1.0.0",
-            "is-number": "7.0.0",
-          },
-        },
-        null,
-        2,
-      )}\n`,
-    );
-    await fs.writeFile(path.join(pluginDir, "package.json"), "{}");
-    await fs.writeFile(path.join(hoistedDir, "package.json"), "{}");
-
-    const plan = planPluginUninstall({
-      config: createPluginConfig({
-        entries: createSinglePluginEntries("openclaw-kitchen-sink-fixture"),
-        installs: {
-          "openclaw-kitchen-sink-fixture": {
-            source: "npm",
-            spec: "@openclaw/kitchen-sink@1.0.0",
-            installPath: pluginDir,
-          },
-        },
-      }),
-      pluginId: "openclaw-kitchen-sink-fixture",
-      deleteFiles: true,
-      extensionsDir,
-    });
-
-    expect(plan.ok).toBe(true);
-    if (!plan.ok) {
-      throw new Error(plan.error);
-    }
-    expect(plan.directoryRemoval).toEqual({
-      target: pluginDir,
-      cleanup: {
-        kind: "npm",
-        npmRoot,
-        packageName: "@openclaw/kitchen-sink",
-      },
-    });
-
-    const applied = await applyPluginUninstallDirectoryRemoval(plan.directoryRemoval);
-
-    expect(applied).toEqual({ directoryRemoved: true, warnings: [] });
-    expectNpmUninstallCommand({ packageName: "@openclaw/kitchen-sink", npmRoot });
-    await expectPathAccessState(pluginDir, "missing");
-  });
-
-  it("uninstalls per-plugin npm project packages through their project root", async () => {
+  it.each([
+    {
+      name: "uninstalls npm-managed packages through npm before deleting the package directory",
+      perPluginProject: false,
+    },
+    {
+      name: "uninstalls per-plugin npm project packages through their project root",
+      perPluginProject: true,
+    },
+  ])("$name", async ({ perPluginProject }) => {
     const stateDir = path.join(tempDir, "state");
     const extensionsDir = path.join(stateDir, "extensions");
     const npmBaseDir = path.join(stateDir, "npm");
-    const npmRoot = resolvePluginNpmProjectDir({
-      npmDir: npmBaseDir,
-      packageName: "@openclaw/kitchen-sink",
-    });
+    const packageName = "@openclaw/kitchen-sink";
+    const npmRoot = perPluginProject
+      ? resolvePluginNpmProjectDir({ npmDir: npmBaseDir, packageName })
+      : npmBaseDir;
     const pluginDir = path.join(npmRoot, "node_modules", "@openclaw", "kitchen-sink");
     const hoistedDir = path.join(npmRoot, "node_modules", "is-number");
     await fs.mkdir(pluginDir, { recursive: true });
@@ -1129,7 +1034,7 @@ describe("uninstallPlugin", () => {
     const applied = await applyPluginUninstallDirectoryRemoval(plan.directoryRemoval);
 
     expect(applied).toEqual({ directoryRemoved: true, warnings: [] });
-    expectNpmUninstallCommand({ packageName: "@openclaw/kitchen-sink", npmRoot });
+    expectNpmUninstallCommand({ packageName, npmRoot });
     await expectPathAccessState(pluginDir, "missing");
   });
 
@@ -1655,13 +1560,25 @@ describe("uninstallPlugin", () => {
     await expectPathAccessState(installPath, "missing");
   });
 
-  it("deletes managed git install repos outside the extensions directory", async () => {
+  it.each([
+    {
+      name: "deletes managed git install repos outside the extensions directory",
+      preserveParent: false,
+    },
+    {
+      name: "keeps non-empty managed git install parents after deleting the repo",
+      preserveParent: true,
+    },
+  ])("$name", async ({ preserveParent }) => {
     const stateDir = path.join(tempDir, "state");
     const extensionsDir = path.join(stateDir, "extensions");
     const installParent = path.join(stateDir, "git", "git-abc123");
     const installPath = path.join(installParent, "repo");
     await fs.mkdir(installPath, { recursive: true });
     await fs.writeFile(path.join(installPath, "index.js"), "// git plugin");
+    if (preserveParent) {
+      await fs.writeFile(path.join(installParent, "keep.txt"), "keep");
+    }
 
     const result = await uninstallPlugin({
       config: createPluginConfig({
@@ -1679,35 +1596,11 @@ describe("uninstallPlugin", () => {
       directory: true,
     });
     await expectPathAccessState(installPath, "missing");
-    await expectPathAccessState(installParent, "missing");
-  });
-
-  it("keeps non-empty managed git install parents after deleting the repo", async () => {
-    const stateDir = path.join(tempDir, "state");
-    const extensionsDir = path.join(stateDir, "extensions");
-    const installParent = path.join(stateDir, "git", "git-abc123");
-    const installPath = path.join(installParent, "repo");
-    await fs.mkdir(installPath, { recursive: true });
-    await fs.writeFile(path.join(installPath, "index.js"), "// git plugin");
-    await fs.writeFile(path.join(installParent, "keep.txt"), "keep");
-
-    const result = await uninstallPlugin({
-      config: createPluginConfig({
-        entries: createSinglePluginEntries(),
-        installs: {
-          "my-plugin": createGitInstallRecord("my-plugin", installPath),
-        },
-      }),
-      pluginId: "my-plugin",
-      deleteFiles: true,
-      extensionsDir,
-    });
-
-    expectSuccessfulUninstallActions(result, {
-      directory: true,
-    });
-    await expectPathAccessState(installPath, "missing");
-    await expect(fs.access(path.join(installParent, "keep.txt"))).resolves.toBeUndefined();
+    if (preserveParent) {
+      await expect(fs.access(path.join(installParent, "keep.txt"))).resolves.toBeUndefined();
+    } else {
+      await expectPathAccessState(installParent, "missing");
+    }
   });
 
   it("does not delete symlinked git install targets that resolve outside the managed git root", async () => {
