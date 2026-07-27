@@ -1042,6 +1042,7 @@ describe("ollama plugin", () => {
       expect(resolved?.baseUrl).toBe("https://ollama.example.com/v1");
       expect(buildOllamaProviderMock).toHaveBeenCalledWith("https://ollama.example.com/v1", {
         quiet: true,
+        apiKey: "ollama-live",
       });
     } finally {
       if (previous === undefined) {
@@ -1049,6 +1050,528 @@ describe("ollama plugin", () => {
       } else {
         process.env.OLLAMA_API_KEY = previous;
       }
+    }
+  });
+
+  it("forwards configured remote auth to dynamic model discovery and show", async () => {
+    const provider = registerProvider();
+    const baseUrl = "https://secured-ollama.example.test/v1";
+    const apiKey = "dynamic-ollama-fixture";
+    const config = {
+      models: {
+        providers: {
+          ollama: {
+            baseUrl,
+            api: "openai-completions",
+            apiKey,
+            models: [],
+          },
+        },
+      },
+    };
+    buildOllamaProviderMock.mockResolvedValueOnce({
+      baseUrl: "https://secured-ollama.example.test",
+      api: "ollama",
+      models: [],
+    });
+    queryOllamaModelShowInfoMock.mockResolvedValueOnce({
+      contextWindow: 32_768,
+      capabilities: ["completion", "tools"],
+    });
+
+    await provider.prepareDynamicModel?.({
+      config,
+      provider: "ollama",
+      modelId: "authenticated-private:latest",
+      modelRegistry: { find: vi.fn(() => null) },
+    } as never);
+
+    expect(buildOllamaProviderMock).toHaveBeenCalledWith(baseUrl, {
+      quiet: true,
+      apiKey,
+    });
+    expect(queryOllamaModelShowInfoMock).toHaveBeenCalledWith(
+      baseUrl,
+      "authenticated-private:latest",
+      { apiKey },
+    );
+    expect(
+      provider.resolveDynamicModel?.({
+        config,
+        provider: "ollama",
+        modelId: "authenticated-private:latest",
+        modelRegistry: { find: vi.fn(() => null) },
+      } as never),
+    ).toMatchObject({
+      id: "authenticated-private:latest",
+      api: "openai-completions",
+      baseUrl,
+    });
+  });
+
+  it("isolates dynamic models when credentials change on the same Ollama endpoint", async () => {
+    const provider = registerProvider();
+    const baseUrl = "https://isolated-ollama.example.test/v1";
+    const modelId = "credential-scoped-private:latest";
+    buildOllamaProviderMock.mockImplementation(
+      async (_baseUrl: string, opts?: { quiet?: boolean; apiKey?: string }) => ({
+        baseUrl: "https://isolated-ollama.example.test",
+        api: "ollama",
+        models: [
+          {
+            id: modelId,
+            name: modelId,
+            reasoning: false,
+            input: ["text"],
+            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+            contextWindow: opts?.apiKey === "first-dynamic-fixture" ? 16_384 : 65_536,
+            maxTokens: 4096,
+          },
+        ],
+      }),
+    );
+
+    const configWithKey = (apiKey: string) => ({
+      models: {
+        providers: {
+          ollama: {
+            baseUrl,
+            api: "openai-completions",
+            apiKey,
+            models: [],
+          },
+        },
+      },
+    });
+    const firstConfig = configWithKey("first-dynamic-fixture");
+    const secondConfig = configWithKey("second-dynamic-fixture");
+    const dynamicContext = (config: ReturnType<typeof configWithKey>) =>
+      ({
+        config,
+        provider: "ollama",
+        modelId,
+        modelRegistry: { find: vi.fn(() => null) },
+      }) as never;
+
+    await provider.prepareDynamicModel?.(dynamicContext(firstConfig));
+    await provider.prepareDynamicModel?.(dynamicContext(secondConfig));
+
+    expect(provider.resolveDynamicModel?.(dynamicContext(firstConfig))?.contextWindow).toBe(16_384);
+    expect(provider.resolveDynamicModel?.(dynamicContext(secondConfig))?.contextWindow).toBe(
+      65_536,
+    );
+    expect(buildOllamaProviderMock).toHaveBeenNthCalledWith(1, baseUrl, {
+      quiet: true,
+      apiKey: "first-dynamic-fixture",
+    });
+    expect(buildOllamaProviderMock).toHaveBeenNthCalledWith(2, baseUrl, {
+      quiet: true,
+      apiKey: "second-dynamic-fixture",
+    });
+  });
+
+  it.each([
+    {
+      name: "a structured environment SecretRef",
+      apiKey: {
+        source: "env",
+        provider: "default",
+        id: "OPENCLAW_MISSING_OLLAMA_DYNAMIC_FIXTURE",
+      },
+    },
+    {
+      name: "a dollar environment SecretRef",
+      apiKey: "$OPENCLAW_MISSING_OLLAMA_DYNAMIC_FIXTURE",
+    },
+    {
+      name: "a braced environment SecretRef",
+      apiKey: "${OPENCLAW_MISSING_OLLAMA_DYNAMIC_FIXTURE}",
+    },
+  ])("does not probe dynamic models with $name", async ({ apiKey }) => {
+    const provider = registerProvider();
+    const config = {
+      models: {
+        providers: {
+          ollama: {
+            baseUrl: "https://secured-ollama.example.test",
+            api: "ollama",
+            apiKey,
+            models: [],
+          },
+        },
+      },
+    };
+
+    await provider.prepareDynamicModel?.({
+      config,
+      provider: "ollama",
+      modelId: "unresolved-private:latest",
+      modelRegistry: { find: vi.fn(() => null) },
+    } as never);
+
+    expect(buildOllamaProviderMock).not.toHaveBeenCalled();
+    expect(queryOllamaModelShowInfoMock).not.toHaveBeenCalled();
+    expect(
+      provider.resolveDynamicModel?.({
+        config,
+        provider: "ollama",
+        modelId: "unresolved-private:latest",
+        modelRegistry: { find: vi.fn(() => null) },
+      } as never),
+    ).toBeUndefined();
+  });
+
+  it("does not probe remote dynamic models with an unresolved legacy environment marker", async () => {
+    const provider = registerProvider();
+    vi.stubEnv("OLLAMA_API_KEY", "");
+    const config = {
+      models: {
+        providers: {
+          ollama: {
+            baseUrl: "https://legacy-marker-ollama.example.test",
+            api: "ollama",
+            apiKey: "OLLAMA_API_KEY",
+            models: [],
+          },
+        },
+      },
+    };
+    const context = {
+      config,
+      provider: "ollama",
+      modelId: "legacy-marker-private:latest",
+      modelRegistry: { find: vi.fn(() => null) },
+    } as never;
+
+    try {
+      await provider.prepareDynamicModel?.(context);
+
+      expect(buildOllamaProviderMock).not.toHaveBeenCalled();
+      expect(queryOllamaModelShowInfoMock).not.toHaveBeenCalled();
+      expect(provider.resolveDynamicModel?.(context)).toBeUndefined();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("does not probe remote dynamic models with a synthetic local auth marker", async () => {
+    const provider = registerProvider();
+    const config = {
+      models: {
+        providers: {
+          ollama: {
+            baseUrl: "https://remote-local-marker-ollama.example.test",
+            api: "ollama",
+            apiKey: "ollama-local",
+            models: [],
+          },
+        },
+      },
+    };
+    const context = {
+      config,
+      provider: "ollama",
+      modelId: "remote-local-marker-private:latest",
+      modelRegistry: { find: vi.fn(() => null) },
+    } as never;
+
+    await provider.prepareDynamicModel?.(context);
+
+    expect(buildOllamaProviderMock).not.toHaveBeenCalled();
+    expect(queryOllamaModelShowInfoMock).not.toHaveBeenCalled();
+    expect(provider.resolveDynamicModel?.(context)).toBeUndefined();
+  });
+
+  it("does not let an obsolete dynamic preparation restore a revoked SecretRef", async () => {
+    const provider = registerProvider();
+    const refId = "OPENCLAW_OLLAMA_SUPERSEDED_DYNAMIC_FIXTURE";
+    const modelId = "superseded-private:latest";
+    vi.stubEnv(refId, "superseded-dynamic-fixture");
+    const config = {
+      models: {
+        providers: {
+          ollama: {
+            baseUrl: "https://superseded-ollama.example.test",
+            api: "ollama",
+            apiKey: { source: "env", provider: "default", id: refId },
+            models: [],
+          },
+        },
+      },
+    };
+    const context = {
+      config,
+      provider: "ollama",
+      modelId,
+      modelRegistry: { find: vi.fn(() => null) },
+    } as never;
+    const staleDiscovery = Promise.withResolvers<{
+      baseUrl: string;
+      api: "ollama";
+      models: ReturnType<typeof buildOllamaModelDefinitionMock>[];
+    }>();
+    buildOllamaProviderMock.mockReturnValueOnce(staleDiscovery.promise);
+
+    try {
+      const obsoletePreparation = provider.prepareDynamicModel?.(context);
+      await vi.waitFor(() => expect(buildOllamaProviderMock).toHaveBeenCalledOnce());
+
+      vi.stubEnv(refId, "");
+      await provider.prepareDynamicModel?.(context);
+      staleDiscovery.resolve({
+        baseUrl: "https://superseded-ollama.example.test",
+        api: "ollama",
+        models: [buildOllamaModelDefinitionMock(modelId, 16_384)],
+      });
+      await obsoletePreparation;
+
+      vi.stubEnv(refId, "superseded-dynamic-fixture");
+      expect(provider.resolveDynamicModel?.(context)).toBeUndefined();
+      expect(buildOllamaProviderMock).toHaveBeenCalledOnce();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("publishes only the newest overlapping dynamic SecretRef preparation", async () => {
+    const provider = registerProvider();
+    const refId = "OPENCLAW_OLLAMA_RACING_DYNAMIC_FIXTURE";
+    const modelId = "racing-private:latest";
+    vi.stubEnv(refId, "first-racing-dynamic-fixture");
+    const config = {
+      models: {
+        providers: {
+          ollama: {
+            baseUrl: "https://racing-ollama.example.test",
+            api: "ollama",
+            apiKey: { source: "env", provider: "default", id: refId },
+            models: [],
+          },
+        },
+      },
+    };
+    const context = {
+      config,
+      provider: "ollama",
+      modelId,
+      modelRegistry: { find: vi.fn(() => null) },
+    } as never;
+    const staleDiscovery = Promise.withResolvers<{
+      baseUrl: string;
+      api: "ollama";
+      models: ReturnType<typeof buildOllamaModelDefinitionMock>[];
+    }>();
+    buildOllamaProviderMock.mockReturnValueOnce(staleDiscovery.promise);
+    buildOllamaProviderMock.mockResolvedValueOnce({
+      baseUrl: "https://racing-ollama.example.test",
+      api: "ollama",
+      models: [buildOllamaModelDefinitionMock(modelId, 65_536)],
+    });
+
+    try {
+      const obsoletePreparation = provider.prepareDynamicModel?.(context);
+      await vi.waitFor(() => expect(buildOllamaProviderMock).toHaveBeenCalledOnce());
+
+      vi.stubEnv(refId, "second-racing-dynamic-fixture");
+      await provider.prepareDynamicModel?.(context);
+      expect(provider.resolveDynamicModel?.(context)?.contextWindow).toBe(65_536);
+
+      staleDiscovery.resolve({
+        baseUrl: "https://racing-ollama.example.test",
+        api: "ollama",
+        models: [buildOllamaModelDefinitionMock(modelId, 16_384)],
+      });
+      await obsoletePreparation;
+
+      expect(provider.resolveDynamicModel?.(context)?.contextWindow).toBe(65_536);
+      expect(buildOllamaProviderMock).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("invalidates prepared dynamic models before a failed credential refresh", async () => {
+    const provider = registerProvider();
+    const refId = "OPENCLAW_OLLAMA_FAILED_REFRESH_DYNAMIC_FIXTURE";
+    const modelId = "failed-refresh-private:latest";
+    vi.stubEnv(refId, "failed-refresh-dynamic-fixture");
+    const config = {
+      models: {
+        providers: {
+          ollama: {
+            baseUrl: "https://failed-refresh-ollama.example.test",
+            api: "ollama",
+            apiKey: { source: "env", provider: "default", id: refId },
+            models: [],
+          },
+        },
+      },
+    };
+    const context = {
+      config,
+      provider: "ollama",
+      modelId,
+      modelRegistry: { find: vi.fn(() => null) },
+    } as never;
+    buildOllamaProviderMock.mockResolvedValueOnce({
+      baseUrl: "https://failed-refresh-ollama.example.test",
+      api: "ollama",
+      models: [buildOllamaModelDefinitionMock(modelId, 32_768)],
+    });
+    buildOllamaProviderMock.mockRejectedValueOnce(new Error("dynamic discovery unavailable"));
+
+    try {
+      await provider.prepareDynamicModel?.(context);
+      expect(provider.resolveDynamicModel?.(context)?.id).toBe(modelId);
+
+      await expect(provider.prepareDynamicModel?.(context)).rejects.toThrow(
+        "dynamic discovery unavailable",
+      );
+
+      expect(provider.resolveDynamicModel?.(context)).toBeUndefined();
+      expect(buildOllamaProviderMock).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("does not reuse warmed dynamic models when an Ollama SecretRef stops resolving", async () => {
+    const provider = registerProvider();
+    const refId = "OPENCLAW_OLLAMA_ROTATING_DYNAMIC_FIXTURE";
+    vi.stubEnv(refId, "first-rotating-dynamic-fixture");
+    const config = {
+      models: {
+        providers: {
+          ollama: {
+            baseUrl: "https://rotating-ollama.example.test",
+            api: "ollama",
+            apiKey: { source: "env", provider: "default", id: refId },
+            models: [],
+          },
+        },
+      },
+    };
+    const modelId = "rotating-private:latest";
+    const context = {
+      config,
+      provider: "ollama",
+      modelId,
+      modelRegistry: { find: vi.fn(() => null) },
+    } as never;
+    buildOllamaProviderMock.mockResolvedValueOnce({
+      baseUrl: "https://rotating-ollama.example.test",
+      api: "ollama",
+      models: [
+        {
+          id: modelId,
+          name: modelId,
+          reasoning: false,
+          input: ["text"],
+          cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+          contextWindow: 32_768,
+          maxTokens: 4096,
+        },
+      ],
+    });
+
+    try {
+      await provider.prepareDynamicModel?.(context);
+      expect(provider.resolveDynamicModel?.(context)?.id).toBe(modelId);
+
+      vi.stubEnv(refId, "");
+      await provider.prepareDynamicModel?.(context);
+
+      expect(buildOllamaProviderMock).toHaveBeenCalledTimes(1);
+      expect(provider.resolveDynamicModel?.(context)).toBeUndefined();
+
+      vi.stubEnv(refId, "first-rotating-dynamic-fixture");
+      expect(provider.resolveDynamicModel?.(context)).toBeUndefined();
+      expect(buildOllamaProviderMock).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("does not forward ambient cloud auth to anonymous local dynamic discovery", async () => {
+    const provider = registerProvider();
+    vi.stubEnv("OLLAMA_API_KEY", "ambient-cloud-fixture");
+    buildOllamaProviderMock.mockResolvedValueOnce({
+      baseUrl: "http://127.0.0.1:11434",
+      api: "ollama",
+      models: [],
+    });
+    queryOllamaModelShowInfoMock.mockResolvedValueOnce({
+      contextWindow: 32_768,
+      capabilities: ["completion", "tools"],
+    });
+
+    try {
+      await provider.prepareDynamicModel?.({
+        config: {},
+        provider: "ollama",
+        modelId: "anonymous-local-private:latest",
+        modelRegistry: { find: vi.fn(() => null) },
+      } as never);
+
+      expect(buildOllamaProviderMock).toHaveBeenCalledWith(undefined, { quiet: true });
+      expect(queryOllamaModelShowInfoMock).toHaveBeenCalledWith(
+        "http://127.0.0.1:11434",
+        "anonymous-local-private:latest",
+      );
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("resolves local SecretRef auth without forwarding ambient cloud credentials", async () => {
+    const provider = registerProvider();
+    vi.stubEnv("OPENCLAW_OLLAMA_LOCAL_DYNAMIC_FIXTURE", "resolved-local-fixture");
+    vi.stubEnv("OLLAMA_API_KEY", "ambient-cloud-fixture");
+    const config = {
+      models: {
+        providers: {
+          ollama: {
+            baseUrl: "http://127.0.0.1:11434",
+            api: "ollama",
+            apiKey: {
+              source: "env",
+              provider: "default",
+              id: "OPENCLAW_OLLAMA_LOCAL_DYNAMIC_FIXTURE",
+            },
+            models: [],
+          },
+        },
+      },
+    };
+    buildOllamaProviderMock.mockResolvedValueOnce({
+      baseUrl: "http://127.0.0.1:11434",
+      api: "ollama",
+      models: [],
+    });
+    queryOllamaModelShowInfoMock.mockResolvedValueOnce({
+      contextWindow: 32_768,
+      capabilities: ["completion", "tools"],
+    });
+
+    try {
+      await provider.prepareDynamicModel?.({
+        config,
+        provider: "ollama",
+        modelId: "secured-local-private:latest",
+        modelRegistry: { find: vi.fn(() => null) },
+      } as never);
+
+      expect(buildOllamaProviderMock).toHaveBeenCalledWith("http://127.0.0.1:11434", {
+        quiet: true,
+        apiKey: "resolved-local-fixture",
+      });
+      expect(queryOllamaModelShowInfoMock).toHaveBeenCalledWith(
+        "http://127.0.0.1:11434",
+        "secured-local-private:latest",
+        { apiKey: "resolved-local-fixture" },
+      );
+    } finally {
+      vi.unstubAllEnvs();
     }
   });
 

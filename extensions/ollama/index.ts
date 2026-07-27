@@ -54,6 +54,7 @@ import {
 import {
   OLLAMA_DEFAULT_API_KEY,
   OLLAMA_PROVIDER_ID,
+  buildOllamaCredentialCacheScope,
   isLocalOllamaBaseUrl,
   resolveOllamaDiscoveryResult,
   resolveOllamaRuntimeBaseUrl,
@@ -108,6 +109,9 @@ function classifyOllamaFailoverReason(errorMessage: string): "server_error" | un
 }
 
 const dynamicModelCache = new Map<string, ProviderRuntimeModel[]>();
+const dynamicModelCredentialScopes = new Map<string, string>();
+const dynamicModelPreparationGenerations = new Map<string, symbol>();
+const OLLAMA_DYNAMIC_MODEL_CACHE_MAX_ENTRIES = 100;
 const OLLAMA_CLOUD_DEFAULT_MODEL_REF = `${OLLAMA_CLOUD_PROVIDER_ID}/${OLLAMA_CLOUD_DEFAULT_MODELS[0].id}`;
 const OLLAMA_CONFIGURED_SHOW_CONCURRENCY = 4;
 const OLLAMA_CONFIGURED_SHOW_MAX_MODELS = 8;
@@ -290,8 +294,86 @@ async function discoverAppGuidedOllamaModel(ctx: ProviderAppGuidedSetupContext) 
   };
 }
 
-function buildDynamicCacheKey(provider: string, baseUrl: string | undefined): string {
-  return `${provider}\0${baseUrl ?? ""}`;
+function readDynamicOllamaWireApiKey(
+  providerConfig: ModelProviderConfig | undefined,
+  env: NodeJS.ProcessEnv,
+): string | undefined {
+  const input = providerConfig?.apiKey;
+  const explicitApiKey = readEnvBackedOllamaApiKey(input, env) ?? readConcreteOllamaApiKey(input);
+  if (explicitApiKey) {
+    return explicitApiKey;
+  }
+  if (readConfiguredOllamaApiKey(input) === "OLLAMA_API_KEY") {
+    return readConcreteOllamaApiKey(env.OLLAMA_API_KEY);
+  }
+  if (input === undefined && !isLocalOllamaBaseUrl(readProviderBaseUrl(providerConfig))) {
+    return readConcreteOllamaApiKey(env.OLLAMA_API_KEY);
+  }
+  return undefined;
+}
+
+function buildDynamicOwnerCacheKey(params: {
+  provider: string;
+  baseUrl: string | undefined;
+  providerConfig: ModelProviderConfig | undefined;
+  agentDir?: string;
+  authProfileId?: string;
+}): string {
+  const configuredApiKey = readConfiguredOllamaApiKey(params.providerConfig?.apiKey);
+  const reference =
+    coerceSecretRef(params.providerConfig?.apiKey) ??
+    (configuredApiKey === "OLLAMA_API_KEY"
+      ? { source: "env" as const, provider: "default", id: "OLLAMA_API_KEY" }
+      : undefined);
+  const wireApiKey = readDynamicOllamaWireApiKey(params.providerConfig, process.env);
+  const ownerScope = buildOllamaCredentialCacheScope(
+    JSON.stringify({
+      reference: reference
+        ? { source: reference.source, provider: reference.provider, id: reference.id }
+        : undefined,
+      configured: params.providerConfig?.apiKey !== undefined,
+      // Reference ownership must remain stable across token rotation so a
+      // failed refresh can invalidate the previously prepared credential.
+      credential: reference ? undefined : buildOllamaCredentialCacheScope(wireApiKey),
+      agentDir: params.agentDir,
+      authProfileId: params.authProfileId,
+    }),
+  );
+  return `${params.provider}\0${resolveOllamaApiBase(params.baseUrl)}\0${ownerScope}`;
+}
+
+function buildDynamicCacheKey(ownerKey: string, credentialScope: string): string {
+  return `${ownerKey}\0${credentialScope}`;
+}
+
+function clearDynamicOllamaModels(ownerKey: string): void {
+  const credentialScope = dynamicModelCredentialScopes.get(ownerKey);
+  if (credentialScope !== undefined) {
+    dynamicModelCache.delete(buildDynamicCacheKey(ownerKey, credentialScope));
+    dynamicModelCredentialScopes.delete(ownerKey);
+  }
+}
+
+function cacheDynamicOllamaModels(
+  ownerKey: string,
+  credentialScope: string,
+  models: ProviderRuntimeModel[],
+): void {
+  const previousScope = dynamicModelCredentialScopes.get(ownerKey);
+  if (previousScope !== undefined && previousScope !== credentialScope) {
+    clearDynamicOllamaModels(ownerKey);
+  }
+  if (
+    !dynamicModelCredentialScopes.has(ownerKey) &&
+    dynamicModelCredentialScopes.size >= OLLAMA_DYNAMIC_MODEL_CACHE_MAX_ENTRIES
+  ) {
+    const oldestOwner = dynamicModelCredentialScopes.keys().next();
+    if (!oldestOwner.done) {
+      clearDynamicOllamaModels(oldestOwner.value);
+    }
+  }
+  dynamicModelCache.set(buildDynamicCacheKey(ownerKey, credentialScope), models);
+  dynamicModelCredentialScopes.set(ownerKey, credentialScope);
 }
 
 function hasOllamaDiscoverySignal(providerConfig: ModelProviderConfig | undefined): boolean {
@@ -390,7 +472,7 @@ function readConcreteOllamaApiKey(value: unknown): string | undefined {
 }
 
 async function resolveAppGuidedOllamaApiKey(
-  ctx: ProviderAppGuidedSetupContext,
+  ctx: Pick<ProviderAppGuidedSetupContext, "config" | "env">,
   provider: ModelProviderConfig | undefined,
 ): Promise<string | undefined> {
   const input = provider?.apiKey;
@@ -1000,44 +1082,112 @@ export default definePluginEntry({
           return;
         }
         const baseUrl = readProviderBaseUrl(providerConfig);
-        const provider = await buildLocalOllamaProvider(baseUrl, { quiet: true });
-        const dynamicApi = providerConfig?.api ?? provider.api;
-        const dynamicProvider = {
-          ...provider,
-          baseUrl: resolveOllamaRuntimeBaseUrl({
-            api: dynamicApi,
-            configuredBaseUrl: baseUrl,
-            discoveredBaseUrl: provider.baseUrl,
-          }),
-          api: dynamicApi,
-        };
-        const dynamicModels = (dynamicProvider.models ?? []).map((model) =>
-          toDynamicOllamaModel({
-            provider: ctx.provider,
-            providerConfig: dynamicProvider,
-            model,
-          }),
-        );
-        if (!dynamicModels.some((model) => model.id === ctx.modelId)) {
-          const requestedModel = await resolveRequestedDynamicOllamaModel({
-            provider: ctx.provider,
-            providerConfig: dynamicProvider,
-            modelId: ctx.modelId,
-            capContextTokens: true,
+        const ownerKey = buildDynamicOwnerCacheKey({
+          provider: ctx.provider,
+          baseUrl,
+          providerConfig,
+          agentDir: ctx.agentDir,
+          authProfileId: ctx.authProfileId,
+        });
+        // Revoke before the first await so failed or superseded refreshes cannot
+        // leave an older SecretRef model visible or publish it after rotation.
+        const preparationGeneration = Symbol("ollama-dynamic-model-preparation");
+        dynamicModelPreparationGenerations.set(ownerKey, preparationGeneration);
+        clearDynamicOllamaModels(ownerKey);
+        try {
+          const wireApiKey = await resolveAppGuidedOllamaApiKey(
+            { config: ctx.config ?? {}, env: process.env },
+            providerConfig,
+          );
+          if (dynamicModelPreparationGenerations.get(ownerKey) !== preparationGeneration) {
+            return;
+          }
+          const configuredApiKey = readConfiguredOllamaApiKey(providerConfig?.apiKey);
+          if (
+            !wireApiKey &&
+            (coerceSecretRef(providerConfig?.apiKey) ||
+              (configuredApiKey !== undefined &&
+                (configuredApiKey !== OLLAMA_DEFAULT_API_KEY || !isLocalOllamaBaseUrl(baseUrl)) &&
+                isNonSecretApiKeyMarker(configuredApiKey)))
+          ) {
+            return;
+          }
+          const credentialScope = buildOllamaCredentialCacheScope(wireApiKey);
+          const provider = await buildLocalOllamaProvider(baseUrl, {
+            quiet: true,
+            ...(wireApiKey ? { apiKey: wireApiKey } : {}),
           });
-          if (requestedModel) {
-            dynamicModels.push(requestedModel);
+          if (dynamicModelPreparationGenerations.get(ownerKey) !== preparationGeneration) {
+            return;
+          }
+          const dynamicApi = providerConfig?.api ?? provider.api;
+          const dynamicProvider = {
+            ...provider,
+            baseUrl: resolveOllamaRuntimeBaseUrl({
+              api: dynamicApi,
+              configuredBaseUrl: baseUrl,
+              discoveredBaseUrl: provider.baseUrl,
+            }),
+            api: dynamicApi,
+          };
+          const dynamicModels = (dynamicProvider.models ?? []).map((model) =>
+            toDynamicOllamaModel({
+              provider: ctx.provider,
+              providerConfig: dynamicProvider,
+              model,
+            }),
+          );
+          if (!dynamicModels.some((model) => model.id === ctx.modelId)) {
+            const requestedModel = await resolveRequestedDynamicOllamaModel({
+              provider: ctx.provider,
+              providerConfig: dynamicProvider,
+              modelId: ctx.modelId,
+              ...(wireApiKey ? { showApiKey: wireApiKey } : {}),
+              capContextTokens: true,
+            });
+            if (dynamicModelPreparationGenerations.get(ownerKey) !== preparationGeneration) {
+              return;
+            }
+            if (requestedModel) {
+              dynamicModels.push(requestedModel);
+            }
+          }
+          cacheDynamicOllamaModels(ownerKey, credentialScope, dynamicModels);
+        } finally {
+          if (dynamicModelPreparationGenerations.get(ownerKey) === preparationGeneration) {
+            dynamicModelPreparationGenerations.delete(ownerKey);
           }
         }
-        dynamicModelCache.set(buildDynamicCacheKey(ctx.provider, baseUrl), dynamicModels);
       },
       resolveDynamicModel: (ctx) => {
         const providerConfig = resolveConfiguredOllamaProviderConfig({
           config: ctx.config,
           providerId: ctx.provider,
         });
+        const ownerKey = buildDynamicOwnerCacheKey({
+          provider: ctx.provider,
+          baseUrl: readProviderBaseUrl(providerConfig),
+          providerConfig,
+          agentDir: ctx.agentDir,
+          authProfileId: ctx.authProfileId,
+        });
+        const credentialScope = dynamicModelCredentialScopes.get(ownerKey);
+        if (!credentialScope) {
+          return undefined;
+        }
+        const reference = coerceSecretRef(providerConfig?.apiKey);
+        if (
+          reference?.source !== "file" &&
+          reference?.source !== "exec" &&
+          credentialScope !==
+            buildOllamaCredentialCacheScope(
+              readDynamicOllamaWireApiKey(providerConfig, process.env),
+            )
+        ) {
+          return undefined;
+        }
         return dynamicModelCache
-          .get(buildDynamicCacheKey(ctx.provider, readProviderBaseUrl(providerConfig)))
+          .get(buildDynamicCacheKey(ownerKey, credentialScope))
           ?.find((model) => model.id === ctx.modelId);
       },
       buildUnknownModelHint: () =>

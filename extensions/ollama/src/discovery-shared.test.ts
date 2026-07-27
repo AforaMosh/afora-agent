@@ -1,12 +1,15 @@
 // Ollama tests cover discovery shared plugin behavior.
 import { expectDefined } from "@openclaw/normalization-core";
+import { clearLiveCatalogCacheForTests } from "openclaw/plugin-sdk/provider-catalog-shared";
 import type { ModelProviderConfig } from "openclaw/plugin-sdk/provider-model-shared";
-import { describe, expect, it } from "vitest";
+import { withFetchPreconnect } from "openclaw/plugin-sdk/test-env";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   isLocalOllamaBaseUrl,
   resolveOllamaDiscoveryResult,
   shouldUseSyntheticOllamaAuth,
 } from "./discovery-shared.js";
+import { buildOllamaProvider } from "./provider-models.js";
 
 describe("isLocalOllamaBaseUrl", () => {
   it.each([
@@ -44,6 +47,249 @@ describe("isLocalOllamaBaseUrl", () => {
     "not a url",
   ])("classifies %s as remote", (baseUrl) => {
     expect(isLocalOllamaBaseUrl(baseUrl)).toBe(false);
+  });
+});
+
+describe("resolveOllamaDiscoveryResult authenticated discovery", () => {
+  afterEach(() => {
+    clearLiveCatalogCacheForTests();
+    vi.unstubAllGlobals();
+  });
+
+  it.each([
+    {
+      name: "an unresolved legacy environment marker",
+      configuredApiKey: "OLLAMA_API_KEY",
+      resolvedAuth: { apiKey: "OLLAMA_API_KEY" },
+    },
+    {
+      name: "an explicitly configured managed marker",
+      configuredApiKey: "secretref-managed",
+      resolvedAuth: { apiKey: "secretref-managed" },
+    },
+    {
+      name: "an unresolved provider-managed marker",
+      configuredApiKey: undefined,
+      resolvedAuth: { apiKey: "secretref-managed" },
+    },
+    {
+      name: "a synthetic local marker at a remote endpoint",
+      configuredApiKey: "ollama-local",
+      resolvedAuth: { apiKey: "ollama-local" },
+    },
+  ])("does not discover a remote model catalog with $name", async (testCase) => {
+    const baseUrl = "https://marker-guarded-ollama.example.test";
+    const buildProvider = vi.fn(async () => ({
+      baseUrl,
+      api: "ollama" as const,
+      models: [],
+    }));
+
+    const result = await resolveOllamaDiscoveryResult({
+      ctx: {
+        config: {
+          models: {
+            providers: {
+              ollama: {
+                baseUrl,
+                api: "ollama",
+                ...(testCase.configuredApiKey ? { apiKey: testCase.configuredApiKey } : {}),
+              },
+            },
+          },
+        },
+        env: {},
+        resolveProviderApiKey: () => testCase.resolvedAuth,
+      },
+      pluginConfig: {},
+      buildProvider,
+    });
+
+    expect(result).toBeNull();
+    expect(buildProvider).not.toHaveBeenCalled();
+  });
+
+  it.each(["https://secured-ollama.example.test", "http://127.0.0.1:11434"])(
+    "forwards resolved SecretRef authorization to tags and show at %s",
+    async (baseUrl) => {
+      const expectedApiKey = "resolved-ollama-fixture";
+      const fetchMock = vi.fn(async (input: unknown, init?: RequestInit) => {
+        expect(new Headers(init?.headers).get("Authorization")).toBe(`Bearer ${expectedApiKey}`);
+        const url = String(input);
+        if (url.endsWith("/api/tags")) {
+          return new Response(JSON.stringify({ models: [{ name: "private-model:latest" }] }), {
+            headers: { "content-type": "application/json" },
+          });
+        }
+        if (url.endsWith("/api/show")) {
+          return new Response(
+            JSON.stringify({
+              model_info: { "llama.context_length": 32_768 },
+              capabilities: ["tools"],
+            }),
+            { headers: { "content-type": "application/json" } },
+          );
+        }
+        throw new Error(`Unexpected Ollama discovery request: ${url}`);
+      });
+      vi.stubGlobal("fetch", withFetchPreconnect(fetchMock));
+
+      const result = await resolveOllamaDiscoveryResult({
+        ctx: {
+          config: {
+            models: {
+              providers: {
+                ollama: {
+                  baseUrl,
+                  api: "ollama",
+                  apiKey: { source: "env", provider: "default", id: "OLLAMA_PRIVATE_TOKEN" },
+                },
+              },
+            },
+          },
+          env: { OLLAMA_PRIVATE_TOKEN: expectedApiKey },
+          resolveProviderApiKey: () => ({
+            apiKey: "OLLAMA_PRIVATE_TOKEN",
+            discoveryApiKey: expectedApiKey,
+          }),
+        },
+        pluginConfig: {},
+        buildProvider: buildOllamaProvider,
+      });
+
+      expect(result?.provider.apiKey).toBe(expectedApiKey);
+      expect(result?.provider.models.map((model) => model.id)).toEqual(["private-model:latest"]);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    },
+  );
+
+  it("isolates live model catalogs when the resolved SecretRef credential changes", async () => {
+    const baseUrl = "https://secured-ollama.example.test";
+    const buildProvider = vi.fn(
+      async (_baseUrl?: string, opts?: { quiet?: boolean; apiKey?: string }) => ({
+        baseUrl,
+        api: "ollama" as const,
+        models: [
+          {
+            id: opts?.apiKey === "first-ollama-fixture" ? "first-private" : "second-private",
+            name: "Private model",
+            reasoning: false,
+            input: ["text"] as Array<"text" | "image">,
+            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+            contextWindow: 8192,
+            maxTokens: 4096,
+          },
+        ],
+      }),
+    );
+
+    const discover = (discoveryApiKey: string) =>
+      resolveOllamaDiscoveryResult({
+        ctx: {
+          config: {
+            models: {
+              providers: {
+                ollama: {
+                  baseUrl,
+                  api: "ollama",
+                  apiKey: { source: "env", provider: "default", id: "OLLAMA_PRIVATE_TOKEN" },
+                },
+              },
+            },
+          },
+          env: { OLLAMA_PRIVATE_TOKEN: discoveryApiKey },
+          resolveProviderApiKey: () => ({ apiKey: "OLLAMA_PRIVATE_TOKEN", discoveryApiKey }),
+        },
+        pluginConfig: {},
+        buildProvider,
+      });
+
+    const first = await discover("first-ollama-fixture");
+    const second = await discover("second-ollama-fixture");
+
+    expect(first?.provider.models.map((model) => model.id)).toEqual(["first-private"]);
+    expect(second?.provider.models.map((model) => model.id)).toEqual(["second-private"]);
+    expect(buildProvider).toHaveBeenCalledTimes(2);
+  });
+
+  it("reuses a normalized discovery endpoint only for the same resolved credential", async () => {
+    const buildProvider = vi.fn(
+      async (_baseUrl?: string, _opts?: { quiet?: boolean; apiKey?: string }) => ({
+        baseUrl: "https://normalized-ollama.example.test",
+        api: "ollama" as const,
+        models: [
+          {
+            id: "normalized-private:latest",
+            name: "Normalized private model",
+            reasoning: false,
+            input: ["text"] as Array<"text" | "image">,
+            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+            contextWindow: 8192,
+            maxTokens: 4096,
+          },
+        ],
+      }),
+    );
+    const discover = (baseUrl: string) =>
+      resolveOllamaDiscoveryResult({
+        ctx: {
+          config: {
+            models: {
+              providers: {
+                ollama: {
+                  baseUrl,
+                  api: "ollama",
+                  apiKey: { source: "env", provider: "default", id: "OLLAMA_PRIVATE_TOKEN" },
+                },
+              },
+            },
+          },
+          env: { OLLAMA_PRIVATE_TOKEN: "normalized-ollama-fixture" },
+          resolveProviderApiKey: () => ({
+            apiKey: "OLLAMA_PRIVATE_TOKEN",
+            discoveryApiKey: "normalized-ollama-fixture",
+          }),
+        },
+        pluginConfig: {},
+        buildProvider,
+      });
+
+    const first = await discover("https://normalized-ollama.example.test/v1");
+    const second = await discover("https://normalized-ollama.example.test/");
+
+    expect(first?.provider.models.map((model) => model.id)).toEqual(["normalized-private:latest"]);
+    expect(second?.provider.models.map((model) => model.id)).toEqual(["normalized-private:latest"]);
+    expect(buildProvider).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not forward ambient cloud authorization to anonymous local discovery", async () => {
+    const buildProvider = vi.fn(async () => ({
+      baseUrl: "http://127.0.0.1:11434",
+      api: "ollama" as const,
+      models: [],
+    }));
+
+    const result = await resolveOllamaDiscoveryResult({
+      ctx: {
+        config: {
+          models: {
+            providers: {
+              ollama: { baseUrl: "http://127.0.0.1:11434", api: "ollama" },
+            },
+          },
+        },
+        env: { OLLAMA_API_KEY: "ambient-cloud-fixture" },
+        resolveProviderApiKey: () => ({
+          apiKey: "OLLAMA_API_KEY",
+          discoveryApiKey: "ambient-cloud-fixture",
+        }),
+      },
+      pluginConfig: {},
+      buildProvider,
+    });
+
+    expect(buildProvider).toHaveBeenCalledWith("http://127.0.0.1:11434", { quiet: false });
+    expect(result?.provider.apiKey).toBe("ollama-local");
   });
 });
 
