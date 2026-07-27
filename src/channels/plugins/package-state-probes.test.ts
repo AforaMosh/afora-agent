@@ -7,6 +7,7 @@ import type { PluginChannelCatalogEntry } from "../../plugins/channel-catalog-re
 import {
   hasBundledChannelPackageState,
   listBundledChannelIdsForPackageState,
+  listBundledChannelIdsForModulePackageState,
 } from "./package-state-probes.js";
 
 const listChannelCatalogEntriesMock = vi.hoisted(() => vi.fn());
@@ -132,6 +133,26 @@ describe("channel package-state probes", () => {
         env: { ENV_CHAT_TOKEN: " " },
       }),
     ).toBe(false);
+  });
+
+  it("distinguishes module-backed package state from env metadata", () => {
+    listChannelCatalogEntriesMock.mockReturnValue([
+      makeBundledChannelCatalogEntry({ pluginId: "env-chat", channelId: "env-chat" }),
+      {
+        pluginId: "module-chat",
+        origin: "bundled",
+        rootDir: "/tmp/openclaw-channel-plugin",
+        channel: {
+          id: "module-chat",
+          configuredState: {
+            specifier: "./configured-state",
+            exportName: "hasConfiguredModuleChatState",
+          },
+        },
+      } satisfies PluginChannelCatalogEntry,
+    ]);
+
+    expect(listBundledChannelIdsForModulePackageState("configuredState")).toEqual(["module-chat"]);
   });
 
   it("prefers built bundled package-state probes when the catalog root is source", () => {

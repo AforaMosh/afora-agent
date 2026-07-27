@@ -8,6 +8,7 @@ import type { PluginDiscoveryResult } from "../../plugins/discovery.js";
 import {
   hasBundledChannelPackageState,
   listBundledChannelIdsForPackageState,
+  listBundledChannelIdsForModulePackageState,
 } from "./package-state-probes.js";
 
 /**
@@ -17,6 +18,13 @@ export function listBundledChannelIdsWithConfiguredState(
   discovery?: PluginDiscoveryResult,
 ): string[] {
   return listBundledChannelIdsForPackageState("configuredState", discovery);
+}
+
+/** Lists bundled channels whose configured-state decision reads canonical config. */
+export function listBundledChannelIdsWithModuleConfiguredState(
+  discovery?: PluginDiscoveryResult,
+): string[] {
+  return listBundledChannelIdsForModulePackageState("configuredState", discovery);
 }
 
 /**

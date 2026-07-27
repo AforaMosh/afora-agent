@@ -365,6 +365,29 @@ describe("applyPluginAutoEnable core", () => {
     expect(result.changes).toStrictEqual([]);
   });
 
+  it("does not auto-enable Teams when explicit blank credentials override ambient values", () => {
+    const result = applyPluginAutoEnable({
+      config: {
+        channels: {
+          msteams: {
+            appId: "",
+            tenantId: "",
+            appPassword: "",
+          },
+        },
+      },
+      env: makeIsolatedEnv({
+        MSTEAMS_APP_ID: "ambient-app",
+        MSTEAMS_TENANT_ID: "ambient-tenant",
+        MSTEAMS_APP_PASSWORD: "ambient-secret",
+      }),
+    });
+
+    expect(result.config.channels?.msteams?.enabled).toBeUndefined();
+    expect(result.config.plugins?.entries?.msteams).toBeUndefined();
+    expect(result.changes).toStrictEqual([]);
+  });
+
   it("stores auto-enable reasons in a null-prototype dictionary", () => {
     const result = applyPluginAutoEnable({
       config: {

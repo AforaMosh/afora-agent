@@ -18,6 +18,7 @@ import {
 import {
   hasBundledChannelConfiguredState,
   listBundledChannelIdsWithConfiguredState,
+  listBundledChannelIdsWithModuleConfiguredState,
 } from "../channels/plugins/configured-state.js";
 import { findChatChannelMeta, normalizeChatChannelId } from "../channels/registry.js";
 import { isBlockedObjectKey } from "../infra/prototype-keys.js";
@@ -299,15 +300,29 @@ function collectConfiguredChannelIds(
   ambientEnvTriggers: AmbientEnvTriggerPolicy = "allow",
 ): string[] {
   const configuredStateChannelIds = new Set(listBundledChannelIdsWithConfiguredState(discovery));
-  return listPotentialConfiguredChannelPresenceSignals(cfg, env, {
+  const moduleConfiguredStateChannelIds = new Set(
+    listBundledChannelIdsWithModuleConfiguredState(discovery),
+  );
+  const signals = listPotentialConfiguredChannelPresenceSignals(cfg, env, {
     includePersistedAuthState: false,
     discovery,
     ambientEnvTriggers,
-  })
-    .map((signal) => ({
-      source: signal.source,
-      channelId: normalizeChatChannelId(signal.channelId) ?? signal.channelId,
-    }))
+  }).map((signal) => ({
+    source: signal.source,
+    channelId: normalizeChatChannelId(signal.channelId) ?? signal.channelId,
+  }));
+  const rejectedModuleConfiguredStateChannelIds = new Set(
+    signals
+      .filter(
+        ({ channelId, source }) =>
+          source === "env" &&
+          moduleConfiguredStateChannelIds.has(channelId) &&
+          !hasBundledChannelConfiguredState({ channelId, cfg, env, discovery }),
+      )
+      .map(({ channelId }) => channelId),
+  );
+  return signals
+    .filter(({ channelId }) => !rejectedModuleConfiguredStateChannelIds.has(channelId))
     .filter(({ channelId, source }) =>
       isAutoEnableConfiguredChannelSignal({
         cfg,

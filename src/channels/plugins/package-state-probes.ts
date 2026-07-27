@@ -259,6 +259,21 @@ export function listBundledChannelIdsForPackageState(
     .toSorted((left, right) => left.localeCompare(right));
 }
 
+/** Lists channel ids whose package state is computed by a manifest-owned module. */
+export function listBundledChannelIdsForModulePackageState(
+  metadataKey: ChannelPackageStateMetadataKey,
+  discovery?: PluginDiscoveryResult,
+): string[] {
+  return listChannelPackageStateCatalog(metadataKey, discovery)
+    .filter((entry) => {
+      const metadata = resolveChannelPackageStateMetadata(entry, metadataKey);
+      return Boolean(metadata?.specifier && metadata.exportName && !metadata.env);
+    })
+    .map((entry) => resolvePackageStateChannelId(entry))
+    .filter((channelId): channelId is string => Boolean(channelId))
+    .toSorted((left, right) => left.localeCompare(right));
+}
+
 /**
  * Returns whether a bundled channel reports configured/auth package state.
  */
