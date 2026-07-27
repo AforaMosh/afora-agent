@@ -85,6 +85,9 @@ function resolveRunStartupPhase(
     case "auth":
     case "context_engine":
     case "attempt_dispatch":
+    case "session_materialization_started":
+    case "session_materialized":
+    case "session_prepared":
     case "context_assembled":
       return "preparing_context";
     case "turn_accepted":

@@ -60,6 +60,13 @@ describe("withExecutionPhaseDiagnostics", () => {
         sessionKey: "agent:main:mattermost:channel:town-square",
         phase: "model_call_started",
         firstModelCallStarted: true,
+        memory: {
+          rssBytes: expect.any(Number),
+          heapUsedBytes: expect.any(Number),
+          heapTotalBytes: expect.any(Number),
+          externalBytes: expect.any(Number),
+          arrayBuffersBytes: expect.any(Number),
+        },
       },
     ]);
   });

@@ -387,6 +387,8 @@ type DiagnosticRunExecutionPhaseEvent = DiagnosticBaseEvent & {
   toolCallId?: string;
   itemId?: string;
   firstModelCallStarted?: boolean;
+  durationMs?: number;
+  memory?: DiagnosticMemoryUsage;
 };
 
 export type DiagnosticHeartbeatEvent = DiagnosticBaseEvent & {

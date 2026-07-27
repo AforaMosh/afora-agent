@@ -4,6 +4,7 @@
 import {
   areDiagnosticsEnabledForProcess,
   emitDiagnosticEvent,
+  type DiagnosticMemoryUsage,
 } from "../../../infra/diagnostic-events.js";
 import type { RunEmbeddedAgentParams } from "./params.js";
 
@@ -14,6 +15,22 @@ type ExecutionPhaseParams = Pick<
   RunEmbeddedAgentParams,
   "onExecutionPhase" | "onSessionIdChanged" | "runId" | "sessionId" | "sessionKey"
 >;
+
+// A phase snapshot must never make diagnostics a new failure mode for a run.
+function processMemoryUsageSnapshot(): DiagnosticMemoryUsage | undefined {
+  try {
+    const memory = process.memoryUsage();
+    return {
+      rssBytes: memory.rss,
+      heapTotalBytes: memory.heapTotal,
+      heapUsedBytes: memory.heapUsed,
+      externalBytes: memory.external,
+      arrayBuffersBytes: memory.arrayBuffers,
+    };
+  } catch {
+    return undefined;
+  }
+}
 
 /**
  * Wraps params.onExecutionPhase so every phase transition also emits a
@@ -42,6 +59,7 @@ export function withExecutionPhaseDiagnostics<T extends ExecutionPhaseParams>(
         sessionId: currentSessionId,
         sessionKey: params.sessionKey,
         ...info,
+        memory: processMemoryUsageSnapshot(),
       });
     }
     forwardPhase?.(info);

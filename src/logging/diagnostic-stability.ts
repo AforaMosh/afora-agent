@@ -4,6 +4,7 @@ import {
   type DiagnosticEventPayload,
   type DiagnosticMemoryUsage,
 } from "../infra/diagnostic-events.js";
+import { redactIdentifier } from "./redact-identifier.js";
 
 // Ring-buffer recorder for stability diagnostics and support-bundle snapshots.
 const DEFAULT_DIAGNOSTIC_STABILITY_CAPACITY = 1000;
@@ -40,6 +41,7 @@ export type DiagnosticStabilityEventRecord = {
   pairedToolName?: string;
   provider?: string;
   model?: string;
+  runIdHash?: string;
   durationMs?: number;
   requestBytes?: number;
   responseBytes?: number;
@@ -343,10 +345,14 @@ function sanitizeDiagnosticEvent(event: DiagnosticEventPayload): DiagnosticStabi
       assignReasonCode(record, event.reason);
       break;
     case "run.execution_phase":
+      record.runIdHash = redactIdentifier(event.runId);
       record.phase = event.phase;
       record.provider = event.provider;
       record.model = event.model;
       record.toolName = event.tool;
+      record.source = event.backend;
+      record.durationMs = event.durationMs;
+      record.memory = event.memory ? copyMemory(event.memory) : undefined;
       break;
     case "context.assembled":
       record.channel = event.channel;

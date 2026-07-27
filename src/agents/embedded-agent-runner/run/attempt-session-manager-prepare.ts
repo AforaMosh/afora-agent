@@ -107,6 +107,12 @@ export async function prepareEmbeddedAttemptSessionManager(input: {
   let latestRuntimeUserMessage: AgentMessage | undefined;
   let latestUserTurnTranscriptRecorder = attempt.userTurnTranscriptRecorder;
   const userTranscriptContextRegistry = createUserTranscriptContextRegistry();
+  const transcriptBackend = parseSqliteSessionFileMarker(attempt.sessionFile) ? "sqlite" : "jsonl";
+  attempt.onExecutionPhase?.({
+    phase: "session_materialization_started",
+    backend: transcriptBackend,
+  });
+  const sessionMaterializationStartedAt = performance.now();
   const sessionManager = guardSessionManager(SessionManager.open(attempt.sessionFile), {
     agentId: input.sessionAgentId,
     sessionKey: attempt.sessionKey,
@@ -157,6 +163,12 @@ export async function prepareEmbeddedAttemptSessionManager(input: {
       attempt.onAssistantErrorMessagePersisted?.(message);
     },
   });
+  attempt.onExecutionPhase?.({
+    phase: "session_materialized",
+    backend: transcriptBackend,
+    durationMs: performance.now() - sessionMaterializationStartedAt,
+  });
+  const sessionPreparationStartedAt = performance.now();
   attempt.promptCacheKey = resolveSessionBoundaryPromptCacheKey({
     api: attempt.model.api,
     boundaryCount: sessionManager.getBoundaryCount(),
@@ -216,6 +228,11 @@ export async function prepareEmbeddedAttemptSessionManager(input: {
       sessionId: attempt.sessionId,
       cwd: input.effectiveCwd,
     });
+  });
+  attempt.onExecutionPhase?.({
+    phase: "session_prepared",
+    backend: transcriptBackend,
+    durationMs: performance.now() - sessionPreparationStartedAt,
   });
   // Bootstrap may repair or migrate transcript rows. Only user writes after
   // preparation can be the active prompt source at the provider boundary.

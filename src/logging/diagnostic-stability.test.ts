@@ -295,8 +295,17 @@ describe("diagnostic stability recorder", () => {
       phase: "model_call_started",
       provider: "anthropic",
       model: "claude",
+      backend: "sqlite",
       tool: "read",
       firstModelCallStarted: true,
+      durationMs: 42,
+      memory: {
+        rssBytes: 100,
+        heapUsedBytes: 80,
+        heapTotalBytes: 90,
+        externalBytes: 10,
+        arrayBuffersBytes: 5,
+      },
     });
     await waitForDiagnosticEventsDrained();
 
@@ -304,12 +313,25 @@ describe("diagnostic stability recorder", () => {
 
     expectFields(snapshot.events[0], {
       type: "run.execution_phase",
+      runIdHash: "sha256:4e65d3fbe8ad",
       phase: "model_call_started",
       provider: "anthropic",
       model: "claude",
+      source: "sqlite",
       toolName: "read",
+      durationMs: 42,
+      memory: {
+        rssBytes: 100,
+        heapUsedBytes: 80,
+        heapTotalBytes: 90,
+        externalBytes: 10,
+        arrayBuffersBytes: 5,
+      },
     });
     expect(snapshot.events[0]).not.toHaveProperty("reason");
+    expect(snapshot.events[0]).not.toHaveProperty("runId");
+    expect(snapshot.events[0]).not.toHaveProperty("sessionId");
+    expect(snapshot.events[0]).not.toHaveProperty("sessionKey");
   });
 
   it("sanitizes tool and model diagnostic error categories", async () => {
