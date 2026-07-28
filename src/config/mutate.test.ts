@@ -2306,19 +2306,16 @@ describe("config mutate helpers", () => {
   it("preserves unresolved optional env refs during include write-through", async () => {
     const home = await suiteRootTracker.make("include-unresolved-env");
     const { configPath, pluginsPath } = await createPluginIncludeFixture(home);
-    await fs.writeFile(
-      pluginsPath,
-      `${JSON.stringify(
-        {
-          entries: {
-            old: { enabled: true, config: { token: "${OPTIONAL_TOKEN}" } },
-          },
+    const initialIncludeRaw = `${JSON.stringify(
+      {
+        entries: {
+          old: { enabled: true, config: { token: "${OPTIONAL_TOKEN}" } },
         },
-        null,
-        2,
-      )}\n`,
-      "utf-8",
-    );
+      },
+      null,
+      2,
+    )}\n`;
+    await fs.writeFile(pluginsPath, initialIncludeRaw, "utf-8");
     const oldEntry = { enabled: true, config: { token: "${OPTIONAL_TOKEN}" } };
     const snapshot = createSnapshot({
       hash: "hash-include-unresolved-env",
@@ -2327,13 +2324,14 @@ describe("config mutate helpers", () => {
       sourceConfig: { plugins: { entries: { old: oldEntry } } },
     });
 
-    await replaceConfigFile({
+    const result = await replaceConfigFile({
       baseHash: snapshot.hash,
       snapshot,
       writeOptions: {
         expectedConfigPath: snapshot.path,
         envSnapshotForRestore: {},
         assertConfigPathForWrite: allowConfigPathWrite,
+        includeFileHashesForWrite: { [pluginsPath]: hashConfigIncludeRaw(initialIncludeRaw) },
         includeFileTargetsForWrite: { [pluginsPath]: await resolveIncludeTarget(pluginsPath) },
         skipRuntimeSnapshotRefresh: true,
       },
@@ -2357,6 +2355,16 @@ describe("config mutate helpers", () => {
     };
     expect(persisted.entries?.old?.config?.token).toBe("${OPTIONAL_TOKEN}");
     expect(persisted.entries?.demo).toEqual({ enabled: true });
+    const persistedRaw = await fs.readFile(pluginsPath, "utf-8");
+    expect(result.committedIncludeFileHashes?.[pluginsPath]).toBe(
+      hashConfigIncludeRaw(persistedRaw),
+    );
+    expect(result.committedIncludeFileHashes?.[pluginsPath]).not.toBe(
+      hashConfigIncludeRaw(initialIncludeRaw),
+    );
+    expect(result.committedIncludeFileTargets?.[pluginsPath]).toBe(
+      await resolveIncludeTarget(pluginsPath),
+    );
   });
 
   it("rolls back single-file top-level include writes when runtime refresh fails", async () => {

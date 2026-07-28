@@ -829,6 +829,14 @@ async function tryWriteSingleTopLevelIncludeMutation(params: {
   }
   const committedIncludeRaw = formatJsonFileValue(includedValueToWrite);
   const committedIncludeHash = hashConfigIncludeRaw(committedIncludeRaw);
+  const committedIncludeFileHashes = {
+    ...params.writeOptions?.includeFileHashesForWrite,
+    [includePath]: committedIncludeHash,
+  };
+  const committedIncludeFileTargets = {
+    ...params.writeOptions?.includeFileTargetsForWrite,
+    [includePath]: expectedIncludeTarget,
+  };
   const callerPreCommit = params.writeOptions?.preCommitRuntimePreflight;
   assertConfigPathForWrite();
   await assertRootConfigStillMatchesSnapshot(params.snapshot);
@@ -869,8 +877,8 @@ async function tryWriteSingleTopLevelIncludeMutation(params: {
       return {
         persistedHash: null,
         persistedConfig: runtimeConfigToWrite,
-        committedIncludeFileHashes: params.writeOptions?.includeFileHashesForWrite,
-        committedIncludeFileTargets: params.writeOptions?.includeFileTargetsForWrite,
+        committedIncludeFileHashes,
+        committedIncludeFileTargets,
       };
     }
 
