@@ -500,6 +500,7 @@ private fun VoiceHomeMode(
   onOpenThread: () -> Unit,
 ) {
   val colors = OpenClawWearTheme.colors
+  val talkContentDescription = stringResource(R.string.talk)
   val realtimeActive = realtimeTalk.active || realtimeCapturing
   val ttsOnly = speaking && !realtimeActive
   val state =
@@ -603,6 +604,7 @@ private fun VoiceHomeMode(
             Modifier
               .align(Alignment.Center)
               .size(92.dp)
+              .semantics { contentDescription = talkContentDescription }
               .combinedClickable(
                 enabled = !dictatePreview,
                 role = Role.Button,
@@ -710,6 +712,7 @@ private fun ThreadVoiceMode(
   onRealtimeTalk: () -> Unit,
 ) {
   val colors = OpenClawWearTheme.colors
+  val talkContentDescription = stringResource(R.string.talk)
   val listState = rememberTransformingLazyColumnState()
   val coroutineScope = rememberCoroutineScope()
   val visibleConversation = conversation.takeLast(VISIBLE_REALTIME_ENTRY_COUNT)
@@ -855,7 +858,9 @@ private fun ThreadVoiceMode(
               width = 1.dp,
               color = colors.voiceAccent,
               shape = CircleShape,
-            ).clickable(
+            ).semantics {
+              contentDescription = talkContentDescription
+            }.clickable(
               enabled = realtimeActive || (inputEnabled && !actionBusy),
               role = Role.Button,
               onClick = onRealtimeTalk,
