@@ -125,12 +125,8 @@ describe("commitConfigWithPendingPluginInstalls", () => {
           operations: [
             {
               kind: "set",
-              path: ["plugins"],
-              value: {
-                entries: {
-                  demo: { enabled: true },
-                },
-              },
+              path: ["plugins", "entries", "demo", "enabled"],
+              value: true,
             },
           ],
         },
@@ -745,7 +741,7 @@ describe("commitConfigWithPendingPluginInstalls", () => {
         nextConfig,
         intent: {
           kind: "mutate",
-          operations: [{ kind: "set", path: ["gateway"], value: { mode: "local" } }],
+          operations: [{ kind: "set", path: ["gateway", "mode"], value: "local" }],
         },
       }),
     );
@@ -806,7 +802,7 @@ describe("commitConfigWithPendingPluginInstalls", () => {
       expect.objectContaining({
         intent: {
           kind: "mutate",
-          operations: [{ kind: "set", path: ["gateway"], value: { mode: "local" } }],
+          operations: [{ kind: "set", path: ["gateway", "mode"], value: "local" }],
         },
       }),
     );
