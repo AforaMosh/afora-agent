@@ -239,6 +239,36 @@ describe("pw-tools-core", () => {
     });
   });
 
+  it("preserves missing-file errors from the download producer", async () => {
+    await withTempDir(async (tempDir) => {
+      const harness = createDownloadEventHarness();
+      const targetPath = path.join(tempDir, "file.bin");
+      const producerError = Object.assign(new Error("download source disappeared"), {
+        code: "ENOENT",
+      });
+      const saveAs = vi.fn(async () => {
+        throw producerError;
+      });
+
+      const pending = mod.waitForDownloadViaPlaywright({
+        cdpUrl: "http://127.0.0.1:18792",
+        targetId: "T1",
+        path: targetPath,
+        timeoutMs: 1000,
+      });
+
+      await Promise.resolve();
+      harness.trigger({
+        url: () => "https://example.com/file.bin",
+        suggestedFilename: () => "file.bin",
+        saveAs,
+      });
+
+      await expect(pending).rejects.toBe(producerError);
+      await expectPathMissing(targetPath);
+    });
+  });
+
   it.runIf(process.platform !== "win32")(
     "does not write outside the output root when a download parent is swapped after save",
     async () => {
@@ -523,7 +553,7 @@ describe("pw-tools-core", () => {
   });
 
   it.runIf(process.platform !== "win32")(
-    "does not overwrite outside files when explicit output path is a hardlink alias",
+    "replaces an in-root hardlink name without overwriting the outside file",
     async () => {
       await withTempDir(async (tempDir) => {
         const outsidePath = path.join(tempDir, "outside.txt");
@@ -550,9 +580,10 @@ describe("pw-tools-core", () => {
           saveAs,
         });
 
-        await expect(p).rejects.toThrow(/alias escape blocked|Hardlinked path is not allowed/i);
-        expect(await fs.readFile(linkedPath, "utf8")).toBe("outside-before");
+        await expect(p).resolves.toMatchObject({ path: linkedPath });
+        expect(await fs.readFile(linkedPath, "utf8")).toBe("download-content");
         expect(await fs.readFile(outsidePath, "utf8")).toBe("outside-before");
+        expect((await fs.stat(linkedPath)).ino).not.toBe((await fs.stat(outsidePath)).ino);
       });
     },
   );
@@ -568,7 +599,7 @@ describe("pw-tools-core", () => {
       path.join(path.sep, "tmp", "openclaw-preferred", "downloads"),
     );
     const expectedDownloadsTail = `${path.join("tmp", "openclaw-preferred", "downloads")}${path.sep}`;
-    expect(path.dirname(outPath)).not.toBe(expectedRootedDownloadsDir);
+    expect(path.dirname(outPath)).toBe(await fs.realpath(expectedRootedDownloadsDir));
     expect(path.basename(outPath)).toContain(path.basename(res.path));
     expect(path.basename(outPath)).toMatch(/\.part$/);
     await expect(fs.readFile(res.path, "utf8")).resolves.toBe("download-content");
@@ -583,8 +614,10 @@ describe("pw-tools-core", () => {
       suggestedFilename: "../../../../etc/passwd",
     });
     expect(typeof outPath).toBe("string");
-    expect(path.dirname(outPath)).not.toBe(
-      path.resolve(path.join(path.sep, "tmp", "openclaw-preferred", "downloads")),
+    expect(path.dirname(outPath)).toBe(
+      await fs.realpath(
+        path.resolve(path.join(path.sep, "tmp", "openclaw-preferred", "downloads")),
+      ),
     );
     expect(path.basename(outPath)).toContain(path.basename(res.path));
     expect(path.basename(outPath)).toMatch(/\.part$/);
