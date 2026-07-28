@@ -326,6 +326,7 @@ export async function runConfigOperations(params: {
   const writeOperations: ConfigMutationOperation[] = [];
   const removedAuthoredPaths: PathSegment[][] = [];
   for (const operation of operations) {
+    const resolvedBeforeOperation = structuredClone(next);
     const operationPath = normalizeConfigMutationExplicitSetPath(operation.setPath);
     const authoredAliasPaths = [snapshot.parsed, snapshot.sourceConfigBeforeMigrations]
       .flatMap((source) => collectAuthoredModelAliasPaths(source, operationPath))
@@ -385,8 +386,8 @@ export async function runConfigOperations(params: {
         ? projectSubmittedProviderModelIdsToAuthored({
             path: operationPath,
             value: operation.value,
-            authoredRoot: snapshot.parsed,
-            resolvedRoot: snapshot.resolved,
+            authoredRoot: intentSourceConfig,
+            resolvedRoot: resolvedBeforeOperation,
           })
         : operation.value;
     if (authoredAliasPaths.length > 0) {

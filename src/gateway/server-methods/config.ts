@@ -290,20 +290,22 @@ function mapConfigPatchIdsToSource(params: {
       ? undefined
       : Object.fromEntries(mappedEntries);
   }
-  if (Array.isArray(patch) && params.replaceArrayPaths.has(path) && Array.isArray(sourceInput)) {
-    const source = sourceInput;
-    const resolvedSource = Array.isArray(resolvedSourceInput) ? resolvedSourceInput : [];
-    const runtime = Array.isArray(runtimeInput) ? runtimeInput : [];
+  if (Array.isArray(patch)) {
     const submittedIds = new Set<string>();
     for (const entry of patch) {
       if (!isConfigPatchObjectWithStringId(entry)) {
         continue;
       }
       if (submittedIds.has(entry.id)) {
-        throw new Error(`Ambiguous duplicate ID ${entry.id} in replacement array at ${path}.`);
+        throw new Error(`Ambiguous duplicate ID ${entry.id} in array at ${path || "<root>"}.`);
       }
       submittedIds.add(entry.id);
     }
+  }
+  if (Array.isArray(patch) && params.replaceArrayPaths.has(path) && Array.isArray(sourceInput)) {
+    const source = sourceInput;
+    const resolvedSource = Array.isArray(resolvedSourceInput) ? resolvedSourceInput : [];
+    const runtime = Array.isArray(runtimeInput) ? runtimeInput : [];
     return patch.map((entry) => {
       const resolvedMatches = isConfigPatchObjectWithStringId(entry)
         ? resolvedSource.flatMap((candidate, index) =>
@@ -365,13 +367,6 @@ function mapConfigPatchIdsToSource(params: {
       throw new Error(
         `Cannot safely restore redacted values for array at ${path || "<root>"} without stable IDs.`,
       );
-    }
-    const submittedIds = new Set<string>();
-    for (const entry of patch) {
-      if (submittedIds.has(entry.id)) {
-        throw new Error(`Ambiguous duplicate ID ${entry.id} in ID-merged array at ${path}.`);
-      }
-      submittedIds.add(entry.id);
     }
   }
   if (

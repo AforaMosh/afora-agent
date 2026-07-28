@@ -437,6 +437,42 @@ describe("config.patch strict input and include ownership", () => {
     expect(configWriteMocks.commitGatewayConfigWrite).not.toHaveBeenCalled();
   });
 
+  it("rejects duplicate IDs in an ordinary ID-merged array patch", async () => {
+    storedConfig = {
+      models: {
+        providers: {
+          custom: {
+            baseUrl: "https://example.invalid",
+            models: [{ id: "one", name: "One" }],
+          },
+        },
+      },
+    } as unknown as OpenClawConfig;
+
+    const { respond } = await invokeConfigPatch({
+      raw: {
+        models: {
+          providers: {
+            custom: {
+              models: [
+                { id: "one", name: "First" },
+                { id: "one", name: "Second" },
+              ],
+            },
+          },
+        },
+      },
+      baseHash: "base-hash",
+    });
+
+    expect(respond).toHaveBeenCalledWith(
+      false,
+      undefined,
+      expect.objectContaining({ message: expect.stringContaining("Ambiguous duplicate ID one") }),
+    );
+    expect(configWriteMocks.commitGatewayConfigWrite).not.toHaveBeenCalled();
+  });
+
   it("ignores an empty include-owned branch beside a writable sibling patch", async () => {
     const runtimeConfig: OpenClawConfig = {
       gateway: { mode: "local", tls: { enabled: true } },

@@ -52,18 +52,9 @@ describe("commitConfigWithPendingPluginInstalls", () => {
     mocks.loadInstalledPluginIndexInstallRecords.mockResolvedValue({});
     mocks.readConfigFileSnapshotForWrite.mockResolvedValue({
       snapshot: {
-        path: "/tmp/openclaw.json",
-        exists: true,
-        raw: "{}",
         parsed: {},
         sourceConfig: {},
-        resolved: {},
-        valid: true,
         runtimeConfig: {},
-        config: {},
-        issues: [],
-        warnings: [],
-        legacyIssues: [],
       },
       writeOptions: {},
     });
@@ -886,10 +877,7 @@ describe("commitConfigWithPendingPluginInstalls", () => {
     };
     mocks.readConfigFileSnapshotForWrite.mockResolvedValueOnce({
       snapshot: {
-        path: "/tmp/openclaw.json",
-        exists: true,
-        sourceConfig: baseline,
-        valid: true,
+        parsed: baseline,
         runtimeConfig: baseline,
       },
       writeOptions: {},
@@ -955,11 +943,7 @@ describe("commitConfigWithPendingPluginInstalls", () => {
     (candidateConfig as Record<string, unknown>).mode = "new";
     mocks.readConfigFileSnapshotForWrite.mockResolvedValueOnce({
       snapshot: {
-        path: "/tmp/openclaw.json",
-        exists: true,
         parsed: authored,
-        sourceConfig: resolved,
-        valid: true,
         runtimeConfig: resolved,
       },
       writeOptions: {},
@@ -986,6 +970,30 @@ describe("commitConfigWithPendingPluginInstalls", () => {
         }),
       }),
     );
+  });
+
+  it("rejects a supplied resolved source array that would persist authored refs", async () => {
+    const authored: OpenClawConfig = { plugins: { allow: ["${TOKEN}", "old"] } };
+    const resolved: OpenClawConfig = { plugins: { allow: ["resolved-token", "old"] } };
+    mocks.readConfigFileSnapshotForWrite.mockResolvedValueOnce({
+      snapshot: {
+        path: "/tmp/openclaw.json",
+        exists: true,
+        parsed: authored,
+        sourceConfig: resolved,
+        valid: true,
+        runtimeConfig: resolved,
+      },
+      writeOptions: {},
+    });
+
+    await expect(
+      commitConfigWithPendingPluginInstalls({
+        nextConfig: { plugins: { allow: ["old", "resolved-token"] } },
+        sourceConfig: resolved,
+      }),
+    ).rejects.toThrow("cannot safely persist a runtime-derived value");
+    expect(mocks.replaceConfigFile).not.toHaveBeenCalled();
   });
 
   it("projects runtime-derived config onto authored refs without a supplied source", async () => {

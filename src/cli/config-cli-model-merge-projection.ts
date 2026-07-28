@@ -59,7 +59,10 @@ export function projectSubmittedProviderModelIdsToAuthored(params: {
     const matches = resolvedEntries.flatMap((candidate, index) =>
       isRecord(candidate) && candidate.id === entry.id ? [index] : [],
     );
-    if (matches.length !== 1) {
+    if (matches.length > 1) {
+      throw new Error(`Ambiguous provider model ID ${entry.id} at ${params.path.join(".")}.`);
+    }
+    if (matches.length === 0) {
       return entry;
     }
     const authoredEntry = authoredEntries[matches[0]!];

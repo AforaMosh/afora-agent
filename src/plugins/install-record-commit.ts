@@ -542,27 +542,21 @@ export async function commitConfigWithPendingPluginInstalls(params: {
     ...(params.sourceConfig ? { sourceConfig: params.sourceConfig } : {}),
     ...(params.writeOptions ? { writeOptions: params.writeOptions } : {}),
     commit: async (nextConfig, writeOptions) => {
-      const needsLegacyExplicitProjection = writeOptions?.explicitSetPaths?.some(
-        (configPath) => configPath.length > 0,
-      );
-      if ((!params.sourceConfig || needsLegacyExplicitProjection) && !prepared) {
+      if (!prepared) {
         prepared = await readConfigFileSnapshotForWrite({
           skipPluginValidation: writeOptions?.skipPluginValidation,
         });
       }
-      const sourceConfig = params.sourceConfig ?? prepared!.snapshot.sourceConfig;
-      const operations = params.sourceConfig
-        ? createConfigMutationOperations(sourceConfig, nextConfig)
-        : createRuntimeConfigMutationOperations({
-            source: prepared!.snapshot.parsed,
-            runtime: prepared!.snapshot.runtimeConfig,
-            candidate: nextConfig,
-          });
+      const operations = createRuntimeConfigMutationOperations({
+        source: prepared.snapshot.parsed,
+        runtime: params.sourceConfig ?? prepared.snapshot.runtimeConfig,
+        candidate: nextConfig,
+      });
       const optionOperations = withLegacyConfigWriteOptionOperations({
         operations,
         candidate: nextConfig,
-        authoredSource: prepared?.snapshot.parsed ?? params.sourceConfig,
-        runtimeConfig: prepared?.snapshot.runtimeConfig ?? params.sourceConfig,
+        authoredSource: prepared.snapshot.parsed,
+        runtimeConfig: prepared.snapshot.runtimeConfig,
         options: writeOptions,
       });
       const writeOperations = hasPendingPluginInstallRecords(params.nextConfig)
@@ -574,11 +568,9 @@ export async function commitConfigWithPendingPluginInstalls(params: {
           kind: "mutate",
           operations: writeOperations,
         },
-        ...(prepared ? { snapshot: prepared.snapshot } : {}),
+        snapshot: prepared.snapshot,
         ...(params.baseHash !== undefined ? { baseHash: params.baseHash } : {}),
-        ...(prepared || writeOptions
-          ? { writeOptions: { ...prepared?.writeOptions, ...writeOptions } }
-          : {}),
+        writeOptions: { ...prepared.writeOptions, ...writeOptions },
       });
     },
   });

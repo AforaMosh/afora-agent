@@ -1538,6 +1538,98 @@ describe("config cli", () => {
       });
     });
 
+    it("uses the current batch state when projecting provider model IDs", async () => {
+      const authored = {
+        models: {
+          providers: {
+            ollama: { models: [{ id: "${MODEL_ID}", name: "Original" }] },
+          },
+        },
+      } as unknown as OpenClawConfig;
+      const resolved = {
+        models: {
+          providers: {
+            ollama: { models: [{ id: "llama3.2", name: "Original" }] },
+          },
+        },
+      } as unknown as OpenClawConfig;
+      setSnapshotOnce({
+        ...buildSnapshot({ resolved, config: resolved }),
+        parsed: authored,
+      });
+
+      await runConfigOperations({
+        runtime: defaultRuntime,
+        operations: [
+          {
+            inputMode: "json",
+            requestedPath: ["models", "providers", "ollama", "models"],
+            setPath: ["models", "providers", "ollama", "models"],
+            value: [{ id: "llama3.2", name: "Literal" }],
+            mutation: "set",
+          },
+          {
+            inputMode: "json",
+            requestedPath: ["models", "providers", "ollama"],
+            setPath: ["models", "providers", "ollama"],
+            value: { models: [{ id: "llama3.2", name: "Updated" }] },
+            mutation: "merge",
+          },
+        ],
+        options: {},
+        successMode: "set",
+      });
+
+      expect(requireWriteIntent()).toEqual({
+        kind: "mutate",
+        operations: [
+          {
+            kind: "set",
+            path: ["models", "providers", "ollama", "models"],
+            value: [{ id: "llama3.2", name: "Literal" }],
+          },
+          {
+            kind: "set",
+            path: ["models", "providers", "ollama", "models", "0", "name"],
+            value: "Updated",
+          },
+        ],
+      });
+    });
+
+    it("rejects ambiguous resolved provider model IDs", async () => {
+      const authored = {
+        models: {
+          providers: {
+            ollama: { models: [{ id: "${MODEL_A}" }, { id: "${MODEL_B}" }] },
+          },
+        },
+      } as unknown as OpenClawConfig;
+      const resolved = {
+        models: {
+          providers: {
+            ollama: { models: [{ id: "same" }, { id: "same" }] },
+          },
+        },
+      } as unknown as OpenClawConfig;
+      setSnapshotOnce({
+        ...buildSnapshot({ resolved, config: resolved }),
+        parsed: authored,
+      });
+
+      await expect(
+        runConfigCommand([
+          "config",
+          "set",
+          "models.providers.ollama",
+          '{"models":[{"id":"same","name":"Updated"}]}',
+          "--strict-json",
+          "--merge",
+        ]),
+      ).rejects.toThrow("Ambiguous provider model ID same");
+      expect(mockWriteConfigFile).not.toHaveBeenCalled();
+    });
+
     it("drops gateway.auth.password when switching mode to token", async () => {
       const resolved: OpenClawConfig = {
         gateway: {
