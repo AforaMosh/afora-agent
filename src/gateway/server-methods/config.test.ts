@@ -578,7 +578,7 @@ describe("config.patch strict input and include ownership", () => {
         providers: {
           custom: {
             baseUrl: "https://example.invalid",
-            models: [{ id: "model-a", $include: "./model-a.json5" }],
+            models: [{ $include: "./model-a.json5" }],
           },
         },
       },

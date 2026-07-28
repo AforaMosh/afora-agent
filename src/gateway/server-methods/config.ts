@@ -403,7 +403,7 @@ function mapConfigPatchIdsToSource(params: {
   const source = sourceInput;
   const resolvedSource = resolvedSourceInput;
   const runtime = runtimeInput;
-  return patch.map((entry, patchIndex) => {
+  const mappedEntries = patch.flatMap((entry, patchIndex) => {
     const authoredMatches = source.flatMap((candidate, index) => {
       if (!isConfigPatchObjectWithStringId(candidate)) {
         return [];
@@ -457,9 +457,22 @@ function mapConfigPatchIdsToSource(params: {
     }) as Record<string, unknown>;
     if (typeof sourceEntry.id === "string") {
       mapped.id = sourceEntry.id;
+    } else if (
+      isRecord(runtimeEntry) &&
+      isDeepStrictEqual(
+        applyMergePatch(runtimeEntry, mapped, {
+          mergeObjectArraysById: true,
+          replaceArrayPaths: params.replaceArrayPaths,
+          path: `${path}[]`,
+        }),
+        runtimeEntry,
+      )
+    ) {
+      return [];
     }
-    return mapped;
+    return [mapped];
   });
+  return patch.length > 0 && mappedEntries.length === 0 ? undefined : mappedEntries;
 }
 
 function containsRedactedPatchSentinel(value: unknown): boolean {

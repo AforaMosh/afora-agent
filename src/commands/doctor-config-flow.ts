@@ -1,11 +1,13 @@
 /** Main doctor config flow: preflight, migrations, previews, repairs, and final write decision. */
 import path from "node:path";
+import { isDeepStrictEqual } from "node:util";
 import { note } from "../../packages/terminal-core/src/note.js";
 import { readAgentRosterProperty } from "../agents/agent-scope-config.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import {
   applyConfigOperations,
   createConfigMutationOperations,
+  type ConfigMutationOperation,
 } from "../config/config-path-mutation.js";
 import { configIncludeOwnsAgentRoster } from "../config/io.write-includes.js";
 import { migratePersistedImplicitMainRoster } from "../config/legacy.roster.js";
@@ -40,6 +42,46 @@ function hasLegacyInternalHookHandlers(raw: unknown): boolean {
   const handlers = (raw as { hooks?: { internal?: { handlers?: unknown } } })?.hooks?.internal
     ?.handlers;
   return Array.isArray(handlers) && handlers.length > 0;
+}
+
+function readConfigPath(root: unknown, segments: readonly string[]): unknown {
+  let current = root;
+  for (const segment of segments) {
+    if (Array.isArray(current)) {
+      const index = Number(segment);
+      current = Number.isInteger(index) ? current[index] : undefined;
+    } else if (current && typeof current === "object") {
+      current = (current as Record<string, unknown>)[segment];
+    } else {
+      return undefined;
+    }
+  }
+  return current;
+}
+
+function assertDoctorOperationsPreserveResolvedArrays(params: {
+  authored: unknown;
+  resolved: unknown;
+  operations: readonly ConfigMutationOperation[];
+}): void {
+  for (const operation of params.operations) {
+    if (operation.kind === "merge") {
+      continue;
+    }
+    for (let depth = 1; depth <= operation.path.length; depth += 1) {
+      const operationPath = operation.path.slice(0, depth);
+      const authored = readConfigPath(params.authored, operationPath);
+      const resolved = readConfigPath(params.resolved, operationPath);
+      if (
+        (Array.isArray(authored) || Array.isArray(resolved)) &&
+        !isDeepStrictEqual(authored, resolved)
+      ) {
+        throw new Error(
+          `Doctor cannot safely repair runtime-resolved array at ${operationPath.join(".")}; edit the authored source first.`,
+        );
+      }
+    }
+  }
 }
 
 function isRosterRecord(value: unknown): value is Record<string, unknown> {
@@ -377,11 +419,14 @@ export async function loadAndMaybeMigrateDoctorConfig(params: {
           ? resolvedValueMigration.config
           : migratePersistedImplicitMainRoster(state.candidate).config
     ) as OpenClawConfig;
+    const rosterRepairOperations = createConfigMutationOperations(baseCfg, state.candidate);
+    assertDoctorOperationsPreserveResolvedArrays({
+      authored: migrated,
+      resolved: baseCfg,
+      operations: rosterRepairOperations,
+    });
     const rosterRepair = {
-      config: applyConfigOperations(
-        migrated,
-        createConfigMutationOperations(baseCfg, state.candidate),
-      ),
+      config: applyConfigOperations(migrated, rosterRepairOperations),
       changes: ["Persisted agents.entries with exactly one explicit default agent."],
     };
     applyConfigMutation(rosterRepair, {
