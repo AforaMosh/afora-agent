@@ -18,7 +18,7 @@ import { resetAgentEventsForTest } from "../infra/agent-events.js";
 import { loadDeviceAuthToken } from "../infra/device-auth-store.js";
 import { loadOrCreateDeviceIdentity } from "../infra/device-identity.js";
 import { getPairedDevice } from "../infra/device-pairing.js";
-import { writeConfigFile } from "../plugin-sdk/config-runtime.js";
+import { writeConfigFile as writeConfigCompat } from "../plugin-sdk/config-runtime.js";
 import { clearGatewaySubagentRuntime } from "../plugins/runtime/gateway-bindings.test-fixtures.js";
 import { captureEnv, deleteTestEnvValue, setTestEnvValue } from "../test-utils/env.js";
 import { callGateway } from "./call.js";
@@ -361,7 +361,7 @@ describe("gateway e2e", () => {
           callerAuthOverride.rateLimit!.maxAttempts = 99;
           callerTailscaleOverride.serviceName = "svc:mutated";
         }
-        await writeConfigFile({
+        await writeConfigCompat({
           ...initialConfig,
           logging: { level: "debug" },
         });
@@ -379,7 +379,7 @@ describe("gateway e2e", () => {
 
           const sourceBeforePolicyEdit = (await configIO.readConfigFileSnapshot()).sourceConfig;
           const revisionBeforePolicyEdit = getRuntimeConfigSnapshotMetadata()?.revision ?? -1;
-          await writeConfigFile({
+          await writeConfigCompat({
             ...sourceBeforePolicyEdit,
             channels: {
               ...sourceBeforePolicyEdit.channels,
@@ -403,7 +403,7 @@ describe("gateway e2e", () => {
 
           const sourceBeforeUnrelatedWrite = (await configIO.readConfigFileSnapshot()).sourceConfig;
           const revisionBeforeUnrelatedWrite = getRuntimeConfigSnapshotMetadata()?.revision ?? -1;
-          await writeConfigFile({
+          await writeConfigCompat({
             ...sourceBeforeUnrelatedWrite,
             ui: { assistant: { name: "unrelated-managed-write" } },
           });
@@ -495,7 +495,7 @@ describe("gateway e2e", () => {
         });
         await disconnectGatewayClient(newClient);
 
-        await writeConfigFile({
+        await writeConfigCompat({
           gateway: { auth: { mode: "token", token: fileToken } },
           logging: { level: "debug" },
         });
@@ -542,7 +542,7 @@ describe("gateway e2e", () => {
       const seededOrigins = getRuntimeConfig().gateway?.controlUi?.allowedOrigins;
       expect(seededOrigins?.length).toBeGreaterThan(0);
 
-      await writeConfigFile({
+      await writeConfigCompat({
         ...initialConfig,
         logging: { level: "debug" },
       });
@@ -552,7 +552,7 @@ describe("gateway e2e", () => {
       expect(getRuntimeConfig().gateway?.controlUi?.allowedOrigins).toEqual(seededOrigins);
 
       expect(setConfigOverride("logging.level", "warn").ok).toBe(true);
-      await writeConfigFile({
+      await writeConfigCompat({
         ...initialConfig,
         ui: { assistant: { name: "override-active" } },
         logging: { level: "debug" },
@@ -562,7 +562,7 @@ describe("gateway e2e", () => {
         .toBe("warn");
 
       resetConfigOverrides();
-      await writeConfigFile({
+      await writeConfigCompat({
         ...initialConfig,
         ui: { assistant: { name: "override-reset" } },
         logging: { level: "debug" },
