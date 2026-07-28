@@ -145,7 +145,7 @@ export function createManagedReloadSecretHandlers(options: {
         };
         const canonicalActiveConfig = restoreCanonicalSecretRefs(
           sourceOnlySnapshot.config,
-          sourceConfig,
+          nextSecretsSourceConfig,
         );
         if (!isDeepStrictEqual(canonicalActiveConfig, nextConfig)) {
           throw new GatewayConfigReloadSupersededError();
