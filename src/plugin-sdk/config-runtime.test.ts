@@ -201,7 +201,7 @@ describe("deprecated config-runtime writeConfigFile", () => {
       });
 
       const persisted = JSON.parse(await fs.readFile(configPath, "utf8")) as OpenClawConfig;
-      expect((persisted.plugins?.entries?.demo?.config as Record<string, unknown>).mode).toBeNull();
+      expect(persisted.plugins?.entries?.demo?.config).toMatchObject({ mode: null });
     });
   });
 
