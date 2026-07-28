@@ -351,6 +351,11 @@ function sanitizeDiagnosticEvent(event: DiagnosticEventPayload): DiagnosticStabi
       record.model = event.model;
       record.toolName = event.tool;
       record.source = event.backend;
+      record.target = copyReasonCode(event.purpose);
+      record.action = copyReasonCode(event.stage);
+      record.outcome = copyReasonCode(event.outcome);
+      record.resultCount = event.entryCount;
+      record.count = event.messageCount;
       record.durationMs = event.durationMs;
       record.memory = event.memory ? copyMemory(event.memory) : undefined;
       break;

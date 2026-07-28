@@ -299,6 +299,11 @@ describe("diagnostic stability recorder", () => {
       tool: "read",
       firstModelCallStarted: true,
       durationMs: 42,
+      purpose: "attempt_initial",
+      stage: "context_built",
+      outcome: "materialized",
+      entryCount: 300,
+      messageCount: 200,
       memory: {
         rssBytes: 100,
         heapUsedBytes: 80,
@@ -318,6 +323,11 @@ describe("diagnostic stability recorder", () => {
       provider: "anthropic",
       model: "claude",
       source: "sqlite",
+      target: "attempt_initial",
+      action: "context_built",
+      outcome: "materialized",
+      resultCount: 300,
+      count: 200,
       toolName: "read",
       durationMs: 42,
       memory: {
