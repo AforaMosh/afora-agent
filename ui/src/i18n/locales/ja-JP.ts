@@ -246,11 +246,6 @@ export const ja_JP: TranslationMap = {
       channelSchemaUnavailable: "チャンネル設定スキーマを利用できません。",
       loadingSchema: "設定スキーマを読み込んでいます…",
     },
-    health: {
-      title: "チャネルの状態",
-      subtitle: "Gateway からのチャネル状態スナップショット。",
-      noSnapshotYet: "まだスナップショットがありません。",
-    },
     generic: {
       subtitle: "チャネルの状態と設定。",
     },

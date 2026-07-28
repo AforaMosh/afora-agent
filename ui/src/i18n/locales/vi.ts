@@ -245,11 +245,6 @@ export const vi: TranslationMap = {
       channelSchemaUnavailable: "Schema cấu hình kênh không khả dụng.",
       loadingSchema: "Đang tải schema cấu hình…",
     },
-    health: {
-      title: "Tình trạng kênh",
-      subtitle: "Ảnh chụp trạng thái kênh từ gateway.",
-      noSnapshotYet: "Chưa có ảnh chụp.",
-    },
     generic: {
       subtitle: "Trạng thái và cấu hình kênh.",
     },

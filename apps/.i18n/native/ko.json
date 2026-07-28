@@ -8809,11 +8809,6 @@
       "translated": "말하는 중…"
     },
     {
-      "id": "native.android.0faf9df3e5f708df",
-      "source": "Listening (PTT)",
-      "translated": "듣는 중(PTT)"
-    },
-    {
       "id": "native.android.d1a7db2c16fd6d09",
       "source": "Microphone permission required",
       "translated": "마이크 권한이 필요합니다"
@@ -8839,6 +8834,16 @@
       "translated": "네트워크 시간 초과"
     },
     {
+      "id": "native.android.7b4dacae0686d138",
+      "source": "Listening",
+      "translated": "듣는 중"
+    },
+    {
+      "id": "native.android.0faf9df3e5f708df",
+      "source": "Listening (PTT)",
+      "translated": "듣는 중(PTT)"
+    },
+    {
       "id": "native.android.a445b7696f9b431c",
       "source": "Recognizer busy",
       "translated": "음성 인식기가 사용 중입니다"
@@ -8847,11 +8852,6 @@
       "id": "native.android.297438db6f5fe8d7",
       "source": "Server error",
       "translated": "서버 오류"
-    },
-    {
-      "id": "native.android.7b4dacae0686d138",
-      "source": "Listening",
-      "translated": "듣는 중"
     },
     {
       "id": "native.android.ea5d9621ef0f0482",

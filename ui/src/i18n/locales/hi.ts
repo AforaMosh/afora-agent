@@ -241,11 +241,6 @@ export const hi: TranslationMap = {
       channelSchemaUnavailable: "चैनल कॉन्फ़िग स्कीमा अनुपलब्ध।",
       loadingSchema: "कॉन्फ़िग स्कीमा लोड हो रहा है…",
     },
-    health: {
-      title: "चैनल स्वास्थ्य",
-      subtitle: "गेटवे से चैनल स्थिति के स्नैपशॉट।",
-      noSnapshotYet: "अभी तक कोई स्नैपशॉट नहीं।",
-    },
     generic: {
       subtitle: "चैनल स्थिति और कॉन्फ़िगरेशन।",
     },

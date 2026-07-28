@@ -243,11 +243,6 @@ export const ko: TranslationMap = {
       channelSchemaUnavailable: "채널 구성 스키마를 사용할 수 없습니다.",
       loadingSchema: "구성 스키마를 불러오는 중…",
     },
-    health: {
-      title: "채널 상태",
-      subtitle: "Gateway의 채널 상태 스냅샷입니다.",
-      noSnapshotYet: "아직 스냅샷이 없습니다.",
-    },
     generic: {
       subtitle: "채널 상태 및 구성.",
     },

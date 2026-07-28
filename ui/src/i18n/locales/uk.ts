@@ -247,11 +247,6 @@ export const uk: TranslationMap = {
       channelSchemaUnavailable: "Схема конфігурації каналу недоступна.",
       loadingSchema: "Завантаження схеми конфігурації…",
     },
-    health: {
-      title: "Стан каналу",
-      subtitle: "Знімки стану каналу з Gateway.",
-      noSnapshotYet: "Ще немає знімка.",
-    },
     generic: {
       subtitle: "Стан каналу та конфігурація.",
     },

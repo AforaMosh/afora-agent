@@ -243,11 +243,6 @@ export const id: TranslationMap = {
       channelSchemaUnavailable: "Skema konfigurasi channel tidak tersedia.",
       loadingSchema: "Memuat skema konfigurasi…",
     },
-    health: {
-      title: "Kesehatan saluran",
-      subtitle: "Snapshot status saluran dari gateway.",
-      noSnapshotYet: "Belum ada snapshot.",
-    },
     generic: {
       subtitle: "Status dan konfigurasi saluran.",
     },

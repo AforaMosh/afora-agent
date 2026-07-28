@@ -249,11 +249,6 @@ export const fr: TranslationMap = {
       channelSchemaUnavailable: "Schéma de configuration du canal indisponible.",
       loadingSchema: "Chargement du schéma de configuration…",
     },
-    health: {
-      title: "Santé du canal",
-      subtitle: "Instantanés de l’état du canal depuis le gateway.",
-      noSnapshotYet: "Aucun instantané pour le moment.",
-    },
     generic: {
       subtitle: "État et configuration du canal.",
     },

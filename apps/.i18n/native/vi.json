@@ -8809,11 +8809,6 @@
       "translated": "Đang nói…"
     },
     {
-      "id": "native.android.0faf9df3e5f708df",
-      "source": "Listening (PTT)",
-      "translated": "Đang nghe (PTT)"
-    },
-    {
       "id": "native.android.d1a7db2c16fd6d09",
       "source": "Microphone permission required",
       "translated": "Cần có quyền truy cập micrô"
@@ -8839,6 +8834,16 @@
       "translated": "Mạng đã hết thời gian chờ"
     },
     {
+      "id": "native.android.7b4dacae0686d138",
+      "source": "Listening",
+      "translated": "Đang nghe"
+    },
+    {
+      "id": "native.android.0faf9df3e5f708df",
+      "source": "Listening (PTT)",
+      "translated": "Đang nghe (PTT)"
+    },
+    {
       "id": "native.android.a445b7696f9b431c",
       "source": "Recognizer busy",
       "translated": "Trình nhận dạng đang bận"
@@ -8847,11 +8852,6 @@
       "id": "native.android.297438db6f5fe8d7",
       "source": "Server error",
       "translated": "Lỗi máy chủ"
-    },
-    {
-      "id": "native.android.7b4dacae0686d138",
-      "source": "Listening",
-      "translated": "Đang nghe"
     },
     {
       "id": "native.android.ea5d9621ef0f0482",

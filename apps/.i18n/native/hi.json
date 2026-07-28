@@ -8809,11 +8809,6 @@
       "translated": "बोल रहा है…"
     },
     {
-      "id": "native.android.0faf9df3e5f708df",
-      "source": "Listening (PTT)",
-      "translated": "सुन रहा है (PTT)"
-    },
-    {
       "id": "native.android.d1a7db2c16fd6d09",
       "source": "Microphone permission required",
       "translated": "माइक्रोफ़ोन की अनुमति आवश्यक है"
@@ -8839,6 +8834,16 @@
       "translated": "नेटवर्क समय-सीमा समाप्त"
     },
     {
+      "id": "native.android.7b4dacae0686d138",
+      "source": "Listening",
+      "translated": "सुन रहा है"
+    },
+    {
+      "id": "native.android.0faf9df3e5f708df",
+      "source": "Listening (PTT)",
+      "translated": "सुन रहा है (PTT)"
+    },
+    {
       "id": "native.android.a445b7696f9b431c",
       "source": "Recognizer busy",
       "translated": "पहचानकर्ता व्यस्त है"
@@ -8847,11 +8852,6 @@
       "id": "native.android.297438db6f5fe8d7",
       "source": "Server error",
       "translated": "सर्वर त्रुटि"
-    },
-    {
-      "id": "native.android.7b4dacae0686d138",
-      "source": "Listening",
-      "translated": "सुन रहा है"
     },
     {
       "id": "native.android.ea5d9621ef0f0482",

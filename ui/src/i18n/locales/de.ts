@@ -247,11 +247,6 @@ export const de: TranslationMap = {
       channelSchemaUnavailable: "Kanal-Konfigurationsschema nicht verfügbar.",
       loadingSchema: "Konfigurationsschema wird geladen…",
     },
-    health: {
-      title: "Channel-Zustand",
-      subtitle: "Statusaufnahmen der Channels vom Gateway.",
-      noSnapshotYet: "Noch keine Aufnahme.",
-    },
     generic: {
       subtitle: "Channel-Status und -Konfiguration.",
     },

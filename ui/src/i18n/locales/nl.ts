@@ -246,11 +246,6 @@ export const nl: TranslationMap = {
       channelSchemaUnavailable: "Schema voor kanaalconfiguratie niet beschikbaar.",
       loadingSchema: "Configuratieschema laden…",
     },
-    health: {
-      title: "Kanaalstatus",
-      subtitle: "Momentopnamen van kanaalstatus vanuit de Gateway.",
-      noSnapshotYet: "Nog geen momentopname.",
-    },
     generic: {
       subtitle: "Kanaalstatus en -configuratie.",
     },

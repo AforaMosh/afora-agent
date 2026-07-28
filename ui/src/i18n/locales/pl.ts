@@ -249,11 +249,6 @@ export const pl: TranslationMap = {
       channelSchemaUnavailable: "Schemat konfiguracji kanału niedostępny.",
       loadingSchema: "Ładowanie schematu konfiguracji…",
     },
-    health: {
-      title: "Stan kanału",
-      subtitle: "Migawki stanu kanału z Gateway.",
-      noSnapshotYet: "Brak migawki.",
-    },
     generic: {
       subtitle: "Stan kanału i konfiguracja.",
     },

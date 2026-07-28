@@ -230,11 +230,6 @@ export const zh_TW: TranslationMap = {
       channelSchemaUnavailable: "頻道設定結構描述無法使用。",
       loadingSchema: "正在載入設定結構描述…",
     },
-    health: {
-      title: "頻道健康狀態",
-      subtitle: "來自 Gateway 的頻道狀態快照。",
-      noSnapshotYet: "尚無快照。",
-    },
     generic: {
       subtitle: "頻道狀態與設定。",
     },

@@ -8809,11 +8809,6 @@
       "translated": "Riproduzione vocale…"
     },
     {
-      "id": "native.android.0faf9df3e5f708df",
-      "source": "Listening (PTT)",
-      "translated": "In ascolto (PTT)"
-    },
-    {
       "id": "native.android.d1a7db2c16fd6d09",
       "source": "Microphone permission required",
       "translated": "Autorizzazione per il microfono necessaria"
@@ -8839,6 +8834,16 @@
       "translated": "Timeout della rete"
     },
     {
+      "id": "native.android.7b4dacae0686d138",
+      "source": "Listening",
+      "translated": "In ascolto"
+    },
+    {
+      "id": "native.android.0faf9df3e5f708df",
+      "source": "Listening (PTT)",
+      "translated": "In ascolto (PTT)"
+    },
+    {
       "id": "native.android.a445b7696f9b431c",
       "source": "Recognizer busy",
       "translated": "Riconoscitore occupato"
@@ -8847,11 +8852,6 @@
       "id": "native.android.297438db6f5fe8d7",
       "source": "Server error",
       "translated": "Errore del server"
-    },
-    {
-      "id": "native.android.7b4dacae0686d138",
-      "source": "Listening",
-      "translated": "In ascolto"
     },
     {
       "id": "native.android.ea5d9621ef0f0482",

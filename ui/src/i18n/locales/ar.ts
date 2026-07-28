@@ -240,11 +240,6 @@ export const ar: TranslationMap = {
       channelSchemaUnavailable: "مخطط إعدادات القناة غير متاح.",
       loadingSchema: "جارٍ تحميل مخطط الإعدادات…",
     },
-    health: {
-      title: "صحة القنوات",
-      subtitle: "لقطات حالة القنوات من Gateway.",
-      noSnapshotYet: "لا توجد لقطة بعد.",
-    },
     generic: {
       subtitle: "حالة القناة وإعداداتها.",
     },

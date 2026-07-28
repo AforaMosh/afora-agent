@@ -8809,11 +8809,6 @@
       "translated": "กำลังพูด…"
     },
     {
-      "id": "native.android.0faf9df3e5f708df",
-      "source": "Listening (PTT)",
-      "translated": "กำลังฟัง (PTT)"
-    },
-    {
       "id": "native.android.d1a7db2c16fd6d09",
       "source": "Microphone permission required",
       "translated": "ต้องได้รับสิทธิ์เข้าถึงไมโครโฟน"
@@ -8839,6 +8834,16 @@
       "translated": "หมดเวลาการเชื่อมต่อเครือข่าย"
     },
     {
+      "id": "native.android.7b4dacae0686d138",
+      "source": "Listening",
+      "translated": "กำลังฟัง"
+    },
+    {
+      "id": "native.android.0faf9df3e5f708df",
+      "source": "Listening (PTT)",
+      "translated": "กำลังฟัง (PTT)"
+    },
+    {
       "id": "native.android.a445b7696f9b431c",
       "source": "Recognizer busy",
       "translated": "ตัวรู้จำไม่ว่าง"
@@ -8847,11 +8852,6 @@
       "id": "native.android.297438db6f5fe8d7",
       "source": "Server error",
       "translated": "ข้อผิดพลาดของเซิร์ฟเวอร์"
-    },
-    {
-      "id": "native.android.7b4dacae0686d138",
-      "source": "Listening",
-      "translated": "กำลังฟัง"
     },
     {
       "id": "native.android.ea5d9621ef0f0482",

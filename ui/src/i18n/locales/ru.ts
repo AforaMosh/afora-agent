@@ -244,11 +244,6 @@ export const ru: TranslationMap = {
       channelSchemaUnavailable: "Схема конфигурации канала недоступна.",
       loadingSchema: "Загрузка схемы конфигурации…",
     },
-    health: {
-      title: "Состояние канала",
-      subtitle: "Снимки состояния канала из шлюза.",
-      noSnapshotYet: "Снимков пока нет.",
-    },
     generic: {
       subtitle: "Состояние и конфигурация канала.",
     },

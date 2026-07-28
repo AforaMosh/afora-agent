@@ -228,11 +228,6 @@ export const zh_CN: TranslationMap = {
       channelSchemaUnavailable: "频道配置架构不可用。",
       loadingSchema: "正在加载配置架构…",
     },
-    health: {
-      title: "频道健康状态",
-      subtitle: "来自 Gateway 的频道状态快照。",
-      noSnapshotYet: "尚无快照。",
-    },
     generic: {
       subtitle: "频道状态和配置。",
     },

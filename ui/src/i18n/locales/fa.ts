@@ -243,11 +243,6 @@ export const fa: TranslationMap = {
       channelSchemaUnavailable: "شِمای پیکربندی کانال در دسترس نیست.",
       loadingSchema: "در حال بارگذاری شِمای پیکربندی…",
     },
-    health: {
-      title: "سلامت کانال",
-      subtitle: "نماهای لحظه‌ای وضعیت کانال از Gateway.",
-      noSnapshotYet: "هنوز نمای لحظه‌ای وجود ندارد.",
-    },
     generic: {
       subtitle: "وضعیت و پیکربندی کانال.",
     },

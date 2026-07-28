@@ -243,11 +243,6 @@ export const tr: TranslationMap = {
       channelSchemaUnavailable: "Kanal yapılandırma şeması kullanılamıyor.",
       loadingSchema: "Yapılandırma şeması yükleniyor…",
     },
-    health: {
-      title: "Kanal durumu",
-      subtitle: "Gateway'den alınan kanal durumu anlık görüntüleri.",
-      noSnapshotYet: "Henüz anlık görüntü yok.",
-    },
     generic: {
       subtitle: "Kanal durumu ve yapılandırması.",
     },

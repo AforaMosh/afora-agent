@@ -236,11 +236,6 @@ export const th: TranslationMap = {
       channelSchemaUnavailable: "ไม่มีสคีมาการตั้งค่าช่อง",
       loadingSchema: "กำลังโหลดสคีมาการตั้งค่า…",
     },
-    health: {
-      title: "สถานะช่องทาง",
-      subtitle: "ภาพรวมสถานะของช่องทางจากเกตเวย์",
-      noSnapshotYet: "ยังไม่มีภาพรวมสถานะ",
-    },
     generic: {
       subtitle: "สถานะและการกำหนดค่าของช่องทาง",
     },
