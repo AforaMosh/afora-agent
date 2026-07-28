@@ -275,6 +275,20 @@ describe("applyConfigOperations", () => {
     ).toThrow("cannot safely remove runtime-derived value at plugins.enabled");
   });
 
+  it("carries an include-owned removal into the canonical ownership check", () => {
+    expect(
+      createRuntimeConfigMutationOperations({
+        source: { plugins: { $include: "./plugins.json" } },
+        runtime: { plugins: { enabled: true } },
+        candidate: { plugins: {} },
+      }),
+    ).toContainEqual({
+      kind: "unset",
+      path: ["plugins", "enabled"],
+      strictIncludeOwnership: true,
+    });
+  });
+
   it("rejects copying an include-resolved sensitive value into a new path", () => {
     expect(() =>
       createRuntimeConfigMutationOperations({

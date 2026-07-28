@@ -40,6 +40,27 @@ export function configPathExists(root: unknown, path: ConfigPath): boolean {
   return true;
 }
 
+function configPathHasIncludeOwner(root: unknown, path: ConfigPath): boolean {
+  let current = root;
+  for (const segment of path) {
+    if (isWritePlainObject(current) && Object.hasOwn(current, "$include")) {
+      return true;
+    }
+    if (Array.isArray(current)) {
+      const index = parseConfigPathArrayIndex(segment);
+      if (index === undefined || index >= current.length) {
+        return false;
+      }
+      current = current[index];
+    } else if (isWritePlainObject(current) && Object.hasOwn(current, segment)) {
+      current = current[segment];
+    } else {
+      return false;
+    }
+  }
+  return isWritePlainObject(current) && Object.hasOwn(current, "$include");
+}
+
 function readConfigPath(root: unknown, path: ConfigPath): unknown {
   let current = root;
   for (const segment of path) {
@@ -229,7 +250,11 @@ export function createRuntimeConfigMutationOperations(params: {
   collectResolvedPaths(params.source, params.runtime);
   const operations = createConfigMutationOperations(params.runtime, params.candidate);
   for (const operation of operations) {
-    if (operation.kind === "unset" && !configPathExists(params.source, operation.path)) {
+    if (
+      operation.kind === "unset" &&
+      !configPathExists(params.source, operation.path) &&
+      !configPathHasIncludeOwner(params.source, operation.path)
+    ) {
       throw new Error(
         `Config mutation cannot safely remove runtime-derived value at ${operation.path.join(".") || "<root>"}; mutate the authored source instead.`,
       );
