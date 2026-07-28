@@ -207,7 +207,9 @@ describe("config mutate helpers", () => {
     expect(ioMocks.writeConfigFile).toHaveBeenCalledWith(
       {
         kind: "mutate",
-        operations: [{ kind: "set", path: ["gateway", "auth"], value: { mode: "token" } }],
+        operations: [
+          { kind: "set", path: ["gateway", "auth", "mode"], value: "token" },
+        ],
       },
       { baseSnapshot: snapshot, expectedConfigPath: snapshot.path, afterWrite: { mode: "auto" } },
     );
