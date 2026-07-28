@@ -232,6 +232,24 @@ describe("commitGatewayConfigWrite", () => {
     ).toBe(false);
   });
 
+  it("falls back when active secret values belong to a stale authored source", () => {
+    secretsMocks.activeSnapshot = {
+      sourceConfig: { gateway: { auth: { mode: "token", token: "token-a" } } },
+      config: { gateway: { auth: { mode: "token", token: "token-a" } } },
+    };
+    const current: OpenClawConfig = {
+      gateway: { auth: { mode: "token", token: "token-b" } },
+    };
+
+    expect(
+      didActiveSharedGatewayAuthChange({
+        fallbackPrev: current,
+        fallbackSource: current,
+        next: { gateway: { auth: { mode: "token", token: "token-a" } } },
+      }),
+    ).toBe(true);
+  });
+
   it("falls back when stale secrets state lacks an authored shared-auth value", () => {
     const fallbackPrev: OpenClawConfig = {
       gateway: {

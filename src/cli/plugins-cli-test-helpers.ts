@@ -247,6 +247,16 @@ vi.mock("../config/config.js", () => ({
       [Parameters<(typeof import("../config/config.js"))["replaceConfigFile"]>[0]],
       ReturnType<(typeof import("../config/config.js"))["replaceConfigFile"]>
     >(replaceConfigFile, params)) as (typeof import("../config/config.js"))["replaceConfigFile"],
+  replaceConfigFileWithIntent: ((
+    params: Parameters<(typeof import("../config/config.js"))["replaceConfigFileWithIntent"]>[0],
+  ) =>
+    invokeMock<
+      [Parameters<(typeof import("../config/config.js"))["replaceConfigFileWithIntent"]>[0]],
+      ReturnType<(typeof import("../config/config.js"))["replaceConfigFileWithIntent"]>
+    >(
+      replaceConfigFile,
+      params,
+    )) as (typeof import("../config/config.js"))["replaceConfigFileWithIntent"],
 }));
 
 vi.mock("../config/paths.js", () => ({

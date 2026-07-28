@@ -10,7 +10,7 @@ import {
   assertConfigWriteAllowedInCurrentMode,
   getRuntimeConfig,
   readConfigFileSnapshotForWrite,
-  replaceConfigFile,
+  replaceConfigFileWithIntent,
 } from "../config/config.js";
 import {
   createInvalidConfigError,
@@ -472,8 +472,12 @@ async function runPluginUpdateCommandUnlocked(params: RunPluginUpdateCommandPara
         });
       }
     } else {
-      await replaceConfigFile({
+      await replaceConfigFileWithIntent({
         nextConfig,
+        intent: {
+          kind: "mutate",
+          operations: createConfigMutationOperations(authoredConfigBeforeUpdate, nextConfig),
+        },
         baseHash: sourceSnapshot?.snapshot.hash,
         writeOptions: sourceSnapshot?.writeOptions,
       });

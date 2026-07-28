@@ -99,6 +99,7 @@ export function didSharedGatewayAuthChange(prev: OpenClawConfig, next: OpenClawC
 
 function projectAuthoredValuesOntoRuntimeOverlay(params: {
   source: unknown;
+  activeSource: unknown;
   active: unknown;
   fallback: unknown;
 }): unknown {
@@ -107,9 +108,12 @@ function projectAuthoredValuesOntoRuntimeOverlay(params: {
     return structuredClone(params.fallback);
   }
   if (!isRecord(source) || !isRecord(active)) {
-    return structuredClone(active);
+    return structuredClone(
+      isDeepStrictEqual(source, params.activeSource) ? active : params.fallback,
+    );
   }
   const fallback = isRecord(params.fallback) ? params.fallback : {};
+  const activeSource = isRecord(params.activeSource) ? params.activeSource : {};
   const sourceKeys = new Set(Object.keys(source));
   return Object.fromEntries([
     ...Object.entries(fallback).filter(([key]) => !sourceKeys.has(key)),
@@ -117,6 +121,7 @@ function projectAuthoredValuesOntoRuntimeOverlay(params: {
       key,
       projectAuthoredValuesOntoRuntimeOverlay({
         source: source[key],
+        activeSource: activeSource[key],
         active: active[key],
         fallback: fallback[key],
       }),
@@ -134,15 +139,17 @@ export function didActiveSharedGatewayAuthChange(params: {
   if (!active) {
     return didSharedGatewayAuthChange(params.fallbackPrev, params.next);
   }
-  const activeSourceGateway = (params.fallbackSource ?? active.sourceConfig).gateway;
+  const currentSourceGateway = (params.fallbackSource ?? active.sourceConfig).gateway;
+  const activeSourceGateway = active.sourceConfig.gateway;
   const activeGateway = active.config.gateway;
   const fallbackGateway = params.fallbackPrev.gateway;
   const selectOwnedGatewayValue = <Key extends "auth" | "tailscale" | "trustedProxies">(
     key: Key,
   ): NonNullable<OpenClawConfig["gateway"]>[Key] =>
-    activeSourceGateway && Object.hasOwn(activeSourceGateway, key)
+    currentSourceGateway && Object.hasOwn(currentSourceGateway, key)
       ? (projectAuthoredValuesOntoRuntimeOverlay({
-          source: activeSourceGateway[key],
+          source: currentSourceGateway[key],
+          activeSource: activeSourceGateway?.[key],
           active: activeGateway?.[key],
           fallback: fallbackGateway?.[key],
         }) as NonNullable<OpenClawConfig["gateway"]>[Key])

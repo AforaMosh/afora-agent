@@ -232,10 +232,57 @@ describe("plugins cli update", () => {
     expect(hookUpdateParams.hookIds).toEqual(["demo-hooks"]);
     expect(writeConfigFile).toHaveBeenCalledWith(nextConfig);
     expect(replaceConfigFile).toHaveBeenCalledWith(
-      expect.objectContaining({ nextConfig, baseHash: "update-config" }),
+      expect.objectContaining({
+        nextConfig,
+        baseHash: "update-config",
+        intent: { kind: "mutate", operations: [] },
+      }),
     );
     expect(refreshPluginRegistry).not.toHaveBeenCalled();
     expectRestartNoticeLogged();
+  });
+
+  it("persists hook config mutations beside an unrelated include", async () => {
+    const cfg = {
+      channels: { telegram: { enabled: true } },
+    } as OpenClawConfig;
+    const nextRuntimeConfig = {
+      ...cfg,
+      gateway: { mode: "local" as const },
+    };
+    primeUpdateConfigSnapshot({
+      config: cfg,
+      parsed: { channels: { $include: "./channels.json5" } },
+    });
+    setHookInstallRecords({
+      "demo-hooks": {
+        source: "npm",
+        spec: "@acme/demo-hooks@1.0.0",
+        installPath: "/tmp/hooks/demo-hooks",
+        resolvedName: "@acme/demo-hooks",
+      },
+    });
+    updateNpmInstalledPlugins.mockResolvedValue({ config: cfg, changed: false, outcomes: [] });
+    updateNpmInstalledHookPacks.mockResolvedValue({
+      config: nextRuntimeConfig,
+      changed: true,
+      outcomes: [{ hookId: "demo-hooks", status: "updated", message: "Updated demo-hooks." }],
+    });
+
+    await runPluginsCommand(["plugins", "update", "demo-hooks"]);
+
+    expect(replaceConfigFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nextConfig: {
+          channels: { $include: "./channels.json5" },
+          gateway: { mode: "local" },
+        },
+        intent: {
+          kind: "mutate",
+          operations: [{ kind: "set", path: ["gateway", "mode"], value: "local" }],
+        },
+      }),
+    );
   });
 
   it("uses the mutation-start snapshot for updater input and hook selection", async () => {

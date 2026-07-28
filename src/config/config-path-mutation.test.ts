@@ -262,6 +262,16 @@ describe("applyConfigOperations", () => {
     ).toThrow("cannot safely persist a runtime-derived value at plugins.entries.demo");
   });
 
+  it("rejects an environment-resolved value copied into an object key", () => {
+    expect(() =>
+      createRuntimeConfigMutationOperations({
+        source: { token: "${TOKEN}", lookup: {} },
+        runtime: { token: "credential", lookup: {} },
+        candidate: { token: "credential", lookup: { credential: true } },
+      }),
+    ).toThrow("cannot safely persist a runtime-derived value in an object key");
+  });
+
   it("does not treat unrelated runtime defaults as authored references", () => {
     expect(
       createRuntimeConfigMutationOperations({

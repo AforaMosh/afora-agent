@@ -378,7 +378,13 @@ export function createRuntimeConfigMutationOperations(params: {
     if (Array.isArray(value)) {
       return value.some(containsSensitiveResolvedValue);
     }
-    return isWritePlainObject(value) && Object.values(value).some(containsSensitiveResolvedValue);
+    return (
+      isWritePlainObject(value) &&
+      Object.entries(value).some(
+        ([key, child]) =>
+          containsSensitiveResolvedValue(key) || containsSensitiveResolvedValue(child),
+      )
+    );
   };
   collectResolvedPaths(params.source, params.runtime);
   const operations = createConfigMutationOperations(params.runtime, params.candidate).filter(
@@ -390,6 +396,11 @@ export function createRuntimeConfigMutationOperations(params: {
       ),
   );
   for (const operation of operations) {
+    if (operation.path.some((segment) => containsSensitiveResolvedValue(segment))) {
+      throw new Error(
+        "Config mutation cannot safely persist a runtime-derived value in an object key; mutate the authored source instead.",
+      );
+    }
     if (
       operation.kind === "unset" &&
       !configPathExists(params.source, operation.path) &&
