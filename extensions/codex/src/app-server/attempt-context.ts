@@ -8,7 +8,6 @@ import {
   buildBootstrapContextForFiles,
   embeddedAgentLog,
   resolveBootstrapFilesForRun,
-  type AgentMessage,
   type ContextEngineProjection,
   type EmbeddedContextFile,
   type EmbeddedRunAttemptParams,
@@ -26,7 +25,6 @@ import { isJsonObject } from "./protocol.js";
 import type { CodexAppServerThreadBinding } from "./session-binding.js";
 import {
   hasCodexMirroredSessionHistory,
-  readCodexMirroredSessionHistoryMessages,
   readCodexMirroredSessionHistorySnapshot,
   type CodexMirroredSessionHistorySnapshot,
 } from "./session-history.js";
@@ -75,22 +73,6 @@ type CodexWorkspaceBootstrapContext = CodexBootstrapContext & {
   turnScopedDeveloperInstructions?: string;
   memoryCollaborationInstructions?: string;
 };
-
-/** Reads mirrored Codex session history for harness hooks. */
-export async function readMirroredSessionHistoryMessages(params: {
-  agentId?: string;
-  sessionFile: string;
-  sessionId: string;
-  sessionKey?: string;
-}): Promise<AgentMessage[] | undefined> {
-  const messages = await readCodexMirroredSessionHistoryMessages(params);
-  if (!messages) {
-    embeddedAgentLog.warn("failed to read mirrored session history for codex harness hooks", {
-      sessionFile: params.sessionFile,
-    });
-  }
-  return messages;
-}
 
 /** Reads one prepared mirrored-history snapshot for a complete Codex attempt. */
 export async function readMirroredSessionHistorySnapshot(params: {
