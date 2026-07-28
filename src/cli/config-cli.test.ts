@@ -1473,8 +1473,55 @@ describe("config cli", () => {
       await runConfigCommand([
         "config",
         "set",
-        "models.providers.ollama.models",
-        '[{"id":"llama3.2","name":"Llama 3.2 latest"}]',
+        "models.providers.ollama",
+        '{"models":[{"id":"llama3.2","name":"Llama 3.2 latest"}]}',
+        "--strict-json",
+        "--merge",
+      ]);
+
+      expect(requireWriteIntent()).toEqual({
+        kind: "mutate",
+        operations: [
+          {
+            kind: "set",
+            path: ["models", "providers", "ollama", "models", "0", "name"],
+            value: "Llama 3.2 latest",
+          },
+        ],
+      });
+    });
+
+    it("maps a resolved provider model ID back to its authored env reference during merge", async () => {
+      const authored = {
+        models: {
+          providers: {
+            ollama: {
+              api: "ollama",
+              models: [{ id: "${MODEL_ID}", name: "Llama 3.2" }],
+            },
+          },
+        },
+      } as unknown as OpenClawConfig;
+      const resolved = {
+        models: {
+          providers: {
+            ollama: {
+              api: "ollama",
+              models: [{ id: "llama3.2", name: "Llama 3.2" }],
+            },
+          },
+        },
+      } as unknown as OpenClawConfig;
+      setSnapshotOnce({
+        ...buildSnapshot({ resolved, config: resolved }),
+        parsed: authored,
+      });
+
+      await runConfigCommand([
+        "config",
+        "set",
+        "models.providers.ollama",
+        '{"models":[{"id":"llama3.2","name":"Llama 3.2 latest"}]}',
         "--strict-json",
         "--merge",
       ]);

@@ -23,6 +23,7 @@ import {
   type ConfigMutationOptions,
   type ConfigSetOperation,
 } from "./config-cli-input.js";
+import { projectSubmittedProviderModelIdsToAuthored } from "./config-cli-model-merge-projection.js";
 import {
   collectAuthoredModelAliasPaths,
   normalizeConfigMutationExplicitSetPath,
@@ -379,6 +380,15 @@ export async function runConfigOperations(params: {
     }
     const intentSourceConfig = applyConfigOperations(snapshot.parsed, writeOperations);
     let intentIntermediate = structuredClone(intentSourceConfig);
+    const intentOperationValue =
+      operation.mutation === "merge" || (options.merge && operation.mutation !== "replace")
+        ? projectSubmittedProviderModelIdsToAuthored({
+            path: operationPath,
+            value: operation.value,
+            authoredRoot: snapshot.parsed,
+            resolvedRoot: snapshot.resolved,
+          })
+        : operation.value;
     if (authoredAliasPaths.length > 0) {
       intentIntermediate = normalizeConfigMutationModelRefs(intentIntermediate);
     }
@@ -388,10 +398,15 @@ export async function runConfigOperations(params: {
       operation.mutation === "merge" ||
       (options.merge && operation.mutation !== "replace")
     ) {
-      mergeAtPath(intentIntermediate as Record<string, unknown>, operationPath, operation.value, {
-        numericObjectKeys: params.successMode === "patch",
-        schema: mutationSchema,
-      });
+      mergeAtPath(
+        intentIntermediate as Record<string, unknown>,
+        operationPath,
+        intentOperationValue,
+        {
+          numericObjectKeys: params.successMode === "patch",
+          schema: mutationSchema,
+        },
+      );
     } else {
       setAtPath(intentIntermediate as Record<string, unknown>, operationPath, operation.value, {
         numericObjectKeys: params.successMode === "patch",

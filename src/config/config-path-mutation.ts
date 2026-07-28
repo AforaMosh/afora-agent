@@ -23,6 +23,46 @@ export type ConfigMutationOperation =
   | { kind: "unset"; path: ConfigPath; strictIncludeOwnership?: boolean }
   | { kind: "merge"; patch: unknown };
 
+export function projectExplicitRuntimeValueOntoAuthored(params: {
+  authored: unknown;
+  explicit: unknown;
+  runtime: unknown;
+  preserveResolvedLeaves: boolean;
+}): unknown {
+  const { authored, explicit, runtime } = params;
+  if (
+    params.preserveResolvedLeaves &&
+    !isDeepStrictEqual(authored, runtime) &&
+    isDeepStrictEqual(explicit, runtime)
+  ) {
+    return structuredClone(authored);
+  }
+  if (Array.isArray(authored) && Array.isArray(explicit)) {
+    if (!params.preserveResolvedLeaves || isDeepStrictEqual(authored, runtime)) {
+      return structuredClone(explicit);
+    }
+    throw new Error(
+      "Config write cannot safely project a changed runtime-derived array; use a source-shaped explicit value.",
+    );
+  }
+  if (!isWritePlainObject(authored) || !isWritePlainObject(explicit)) {
+    return structuredClone(explicit);
+  }
+  const runtimeRecord = isWritePlainObject(runtime) ? runtime : {};
+  const merged = structuredClone(authored);
+  for (const [key, value] of Object.entries(explicit)) {
+    merged[key] = Object.hasOwn(merged, key)
+      ? projectExplicitRuntimeValueOntoAuthored({
+          authored: merged[key],
+          explicit: value,
+          runtime: runtimeRecord[key],
+          preserveResolvedLeaves: params.preserveResolvedLeaves,
+        })
+      : structuredClone(value);
+  }
+  return merged;
+}
+
 export function configPathExists(root: unknown, path: ConfigPath): boolean {
   let current = root;
   for (const segment of path) {

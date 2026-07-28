@@ -3,9 +3,32 @@ import {
   applyConfigOperations,
   createConfigMutationOperations,
   createRuntimeConfigMutationOperations,
+  projectExplicitRuntimeValueOntoAuthored,
 } from "./config-path-mutation.js";
 
 describe("applyConfigOperations", () => {
+  it("rejects a runtime-shaped array edit when authored refs were resolved", () => {
+    expect(() =>
+      projectExplicitRuntimeValueOntoAuthored({
+        authored: [{ token: "${A}" }, { token: "${B}" }],
+        runtime: [{ token: "resolved-a" }, { token: "resolved-b" }],
+        explicit: [{ token: "resolved-b" }],
+        preserveResolvedLeaves: true,
+      }),
+    ).toThrow("cannot safely project a changed runtime-derived array");
+  });
+
+  it("replaces explicit source-shaped arrays atomically", () => {
+    expect(
+      projectExplicitRuntimeValueOntoAuthored({
+        authored: [{ a: 1, b: 2 }],
+        runtime: [{ a: 1, b: 2 }],
+        explicit: [{ a: 3 }],
+        preserveResolvedLeaves: false,
+      }),
+    ).toEqual([{ a: 3 }]);
+  });
+
   it("preserves explicit null values when deriving operations from a complete candidate", () => {
     const base = { plugins: { entries: { demo: { config: { mode: "auto" } } } } };
     const target = {

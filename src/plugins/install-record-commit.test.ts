@@ -278,6 +278,81 @@ describe("commitConfigWithPendingPluginInstalls", () => {
     );
   });
 
+  it("preserves a replace intent when reconciliation does not change its candidate", async () => {
+    const intentConfig: OpenClawConfig = {
+      plugins: { entries: { demo: { config: { token: "${TOKEN}" } } } },
+    };
+    const nextConfig: OpenClawConfig = {
+      plugins: { entries: { demo: { config: { token: "resolved-token" } } } },
+    };
+    const snapshot = {
+      sourceConfig: intentConfig,
+      parsed: intentConfig,
+      runtimeConfig: nextConfig,
+    };
+    mocks.transformConfigFileWithRetry.mockImplementationOnce(async (params: unknown) => {
+      const transformParams = params as {
+        transform: (
+          config: OpenClawConfig,
+          context: { snapshot: typeof snapshot },
+        ) => { nextConfig: OpenClawConfig };
+        commit: (input: unknown) => Promise<unknown>;
+      };
+      const transformed = transformParams.transform({}, { snapshot });
+      await transformParams.commit({
+        nextConfig: transformed.nextConfig,
+        intent: { kind: "replace", config: intentConfig },
+        snapshot,
+      });
+      return {};
+    });
+
+    await transformConfigWithPendingPluginInstalls({ transform: () => ({ nextConfig }) });
+
+    expect(mocks.replaceConfigFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nextConfig: intentConfig,
+        intent: { kind: "replace", config: intentConfig },
+      }),
+    );
+  });
+
+  it("strips pending installs from the authoritative replace payload", async () => {
+    const pending: OpenClawConfig = {
+      plugins: { installs: { demo: { source: "npm", spec: "demo@1.0.0" } } },
+    };
+    const snapshot = { sourceConfig: pending, parsed: pending, runtimeConfig: pending };
+    mocks.transformConfigFileWithRetry.mockImplementationOnce(async (params: unknown) => {
+      const transformParams = params as {
+        transform: (
+          config: OpenClawConfig,
+          context: { snapshot: typeof snapshot },
+        ) => { nextConfig: OpenClawConfig };
+        commit: (input: unknown) => Promise<unknown>;
+      };
+      const transformed = transformParams.transform(pending, { snapshot });
+      await transformParams.commit({
+        nextConfig: transformed.nextConfig,
+        intent: { kind: "replace", config: transformed.nextConfig },
+        snapshot,
+      });
+      return {};
+    });
+
+    await transformConfigWithPendingPluginInstalls({ transform: () => ({ nextConfig: pending }) });
+
+    const writeCall = mocks.replaceConfigFile.mock.calls[0];
+    if (!writeCall) {
+      throw new Error("expected config write");
+    }
+    const write = writeCall[0] as {
+      nextConfig: OpenClawConfig;
+      intent: { kind: string; config: OpenClawConfig };
+    };
+    expect(write.nextConfig).toEqual({});
+    expect(write.intent).toEqual({ kind: "replace", config: {} });
+  });
+
   it("strips only selected pending plugin install records", () => {
     const config: OpenClawConfig = {
       plugins: {
@@ -798,6 +873,113 @@ describe("commitConfigWithPendingPluginInstalls", () => {
       movedInstallRecords: false,
       persistedHash: "test-config-hash",
     });
+  });
+
+  it("translates legacy explicit set and unset options into mutation intent", async () => {
+    const baseline: OpenClawConfig = {
+      gateway: { mode: "local", auth: { mode: "none" } },
+    };
+    mocks.readConfigFileSnapshotForWrite.mockResolvedValueOnce({
+      snapshot: {
+        path: "/tmp/openclaw.json",
+        exists: true,
+        raw: JSON.stringify(baseline),
+        parsed: baseline,
+        sourceConfig: baseline,
+        resolved: baseline,
+        valid: true,
+        runtimeConfig: baseline,
+        config: baseline,
+        issues: [],
+        warnings: [],
+        legacyIssues: [],
+      },
+      writeOptions: {},
+    });
+
+    await commitConfigWithPendingPluginInstalls({
+      nextConfig: baseline,
+      writeOptions: {
+        explicitSetPaths: [["gateway", "mode"]],
+        explicitSetValueSource: { gateway: { mode: "local" } },
+        unsetPaths: [["gateway", "auth"]],
+      },
+    });
+
+    expect(mocks.replaceConfigFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        intent: {
+          kind: "mutate",
+          operations: [
+            {
+              kind: "set",
+              path: ["gateway", "mode"],
+              value: "local",
+              arrayContainerDepths: [],
+            },
+            {
+              kind: "unset",
+              path: ["gateway", "auth"],
+              strictIncludeOwnership: true,
+            },
+          ],
+        },
+      }),
+    );
+  });
+
+  it("uses the live authored/runtime snapshot for supplied-source explicit projection", async () => {
+    const authored: OpenClawConfig = {
+      plugins: { entries: { demo: { config: { token: "${TOKEN}", mode: "old" } } } },
+    };
+    const resolved: OpenClawConfig = {
+      plugins: { entries: { demo: { config: { token: "resolved-token", mode: "old" } } } },
+    };
+    const candidate = structuredClone(resolved);
+    const candidateConfig = candidate.plugins?.entries?.demo?.config;
+    if (!candidateConfig || typeof candidateConfig !== "object" || Array.isArray(candidateConfig)) {
+      throw new Error("expected demo plugin config");
+    }
+    (candidateConfig as Record<string, unknown>).mode = "new";
+    mocks.readConfigFileSnapshotForWrite.mockResolvedValueOnce({
+      snapshot: {
+        path: "/tmp/openclaw.json",
+        exists: true,
+        raw: JSON.stringify(authored),
+        parsed: authored,
+        sourceConfig: resolved,
+        resolved,
+        valid: true,
+        runtimeConfig: resolved,
+        config: resolved,
+        issues: [],
+        warnings: [],
+        legacyIssues: [],
+      },
+      writeOptions: {},
+    });
+
+    await commitConfigWithPendingPluginInstalls({
+      nextConfig: candidate,
+      sourceConfig: resolved,
+      writeOptions: {
+        explicitSetPaths: [["plugins", "entries", "demo", "config"]],
+      },
+    });
+
+    expect(mocks.replaceConfigFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        intent: expect.objectContaining({
+          operations: expect.arrayContaining([
+            expect.objectContaining({
+              kind: "set",
+              path: ["plugins", "entries", "demo", "config"],
+              value: { token: "${TOKEN}", mode: "new" },
+            }),
+          ]),
+        }),
+      }),
+    );
   });
 
   it("projects runtime-derived config onto authored refs without a supplied source", async () => {

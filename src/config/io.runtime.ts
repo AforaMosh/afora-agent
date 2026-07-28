@@ -7,6 +7,7 @@ import { cloneEnvWithPlatformSemantics, createConfigRuntimeEnvBase } from "./con
 import {
   collectArrayContainerDepths,
   createConfigMutationOperations,
+  projectExplicitRuntimeValueOntoAuthored,
   resolveManagedUnsetPathsForWrite,
   type ConfigMutationOperation,
   type ConfigPath,
@@ -268,19 +269,6 @@ function readCompatPathValue(root: unknown, path: ConfigPath): { found: boolean;
   return { found: true, value: current };
 }
 
-function mergeExplicitCompatValue(authored: unknown, explicit: unknown): unknown {
-  if (!isRecord(authored) || !isRecord(explicit)) {
-    return structuredClone(explicit);
-  }
-  const merged = structuredClone(authored);
-  for (const [key, value] of Object.entries(explicit)) {
-    merged[key] = Object.hasOwn(merged, key)
-      ? mergeExplicitCompatValue(merged[key], value)
-      : structuredClone(value);
-  }
-  return merged;
-}
-
 function buildCompatWriteOperations(params: {
   authoredSource: OpenClawConfig;
   cfg: OpenClawConfig;
@@ -297,6 +285,7 @@ function buildCompatWriteOperations(params: {
     ),
   );
   const explicitValueSource = params.options.explicitSetValueSource ?? params.cfg;
+  const preserveResolvedLeaves = params.options.explicitSetValueSource === undefined;
   for (const path of params.options.explicitSetPaths ?? []) {
     if (path.length === 0) {
       continue;
@@ -306,8 +295,14 @@ function buildCompatWriteOperations(params: {
       continue;
     }
     const projectedValue = readCompatPathValue(params.projected, path);
+    const runtimeValue = readCompatPathValue(params.snapshot.runtimeConfig, path);
     const value = projectedValue.found
-      ? mergeExplicitCompatValue(projectedValue.value, explicitValue.value)
+      ? projectExplicitRuntimeValueOntoAuthored({
+          authored: projectedValue.value,
+          explicit: explicitValue.value,
+          runtime: runtimeValue.value,
+          preserveResolvedLeaves,
+        })
       : explicitValue.value;
     createConfigMutationOperations({}, value);
     operations.push({

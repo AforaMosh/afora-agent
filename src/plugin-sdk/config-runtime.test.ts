@@ -205,6 +205,44 @@ describe("deprecated config-runtime writeConfigFile", () => {
     });
   });
 
+  it("preserves unchanged authored refs beneath a runtime-shaped explicit parent set", async () => {
+    await withTempHome(async (home) => {
+      await withEnvAsync({ PLUGIN_TOKEN: "resolved-token" }, async () => {
+        const stateDir = path.join(home, ".openclaw");
+        const configPath = path.join(stateDir, "openclaw.json");
+        await fs.mkdir(stateDir, { recursive: true });
+        await fs.writeFile(
+          configPath,
+          JSON.stringify({
+            plugins: {
+              entries: {
+                demo: { config: { token: "${PLUGIN_TOKEN}", mode: "old" } },
+              },
+            },
+          }),
+          "utf8",
+        );
+        const { readConfigFileSnapshotForWrite } = await import("../config/io.js");
+        const { snapshot } = await readConfigFileSnapshotForWrite({ skipPluginValidation: true });
+        const candidate = structuredClone(snapshot.runtimeConfig);
+        const config = candidate.plugins?.entries?.demo?.config as Record<string, unknown>;
+        config.mode = "new";
+
+        await writeConfigFile(candidate, {
+          explicitSetPaths: [["plugins", "entries", "demo", "config"]],
+          skipPluginValidation: true,
+          skipRuntimeSnapshotRefresh: true,
+        });
+
+        const persisted = JSON.parse(await fs.readFile(configPath, "utf8")) as OpenClawConfig;
+        expect(persisted.plugins?.entries?.demo?.config).toEqual({
+          token: "${PLUGIN_TOKEN}",
+          mode: "new",
+        });
+      });
+    });
+  });
+
   it("rejects changed arrays whose authored references were runtime-resolved", async () => {
     await withTempHome(async (home) => {
       await withEnvAsync({ TOKEN: "resolved-token" }, async () => {

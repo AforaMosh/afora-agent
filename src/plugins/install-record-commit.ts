@@ -3,8 +3,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import {
+  collectArrayContainerDepths,
   createConfigMutationOperations,
   createRuntimeConfigMutationOperations,
+  projectExplicitRuntimeValueOntoAuthored,
   type ConfigMutationOperation,
 } from "../config/config-path-mutation.js";
 import {
@@ -22,6 +24,7 @@ import type { ConfigWriteOptions } from "../config/io.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
 import { isPathInside } from "../infra/path-guards.js";
+import { parseConfigPathArrayIndex } from "../shared/path-array-index.js";
 import {
   PLUGIN_INSTALLS_CONFIG_PATH,
   loadInstalledPluginIndexInstallRecords,
@@ -103,6 +106,70 @@ function withFinalPendingInstallUnset(
       strictIncludeOwnership: true,
     },
   ];
+}
+
+function readConfigOptionPath(
+  root: unknown,
+  configPath: readonly string[],
+): { found: boolean; value?: unknown } {
+  let current = root;
+  for (const segment of configPath) {
+    if (Array.isArray(current)) {
+      const index = parseConfigPathArrayIndex(segment);
+      if (index === undefined || index >= current.length) {
+        return { found: false };
+      }
+      current = current[index];
+      continue;
+    }
+    if (!current || typeof current !== "object" || !Object.hasOwn(current, segment)) {
+      return { found: false };
+    }
+    current = (current as Record<string, unknown>)[segment];
+  }
+  return { found: true, value: current };
+}
+
+function withLegacyConfigWriteOptionOperations(params: {
+  operations: readonly ConfigMutationOperation[];
+  candidate: OpenClawConfig;
+  authoredSource: unknown;
+  runtimeConfig: unknown;
+  options?: ConfigWriteOptions;
+}): ConfigMutationOperation[] {
+  const operations = [...params.operations];
+  const valueSource = params.options?.explicitSetValueSource ?? params.candidate;
+  for (const explicitPath of params.options?.explicitSetPaths ?? []) {
+    if (explicitPath.length === 0) {
+      continue;
+    }
+    const explicit = readConfigOptionPath(valueSource, explicitPath);
+    if (!explicit.found) {
+      continue;
+    }
+    const authored = readConfigOptionPath(params.authoredSource, explicitPath);
+    const runtime = readConfigOptionPath(params.runtimeConfig, explicitPath);
+    const value = authored.found
+      ? projectExplicitRuntimeValueOntoAuthored({
+          authored: authored.value,
+          explicit: explicit.value,
+          runtime: runtime.value,
+          preserveResolvedLeaves: params.options?.explicitSetValueSource === undefined,
+        })
+      : explicit.value;
+    operations.push({
+      kind: "set",
+      path: [...explicitPath],
+      value: structuredClone(value),
+      arrayContainerDepths: collectArrayContainerDepths(valueSource, explicitPath),
+    });
+  }
+  for (const unsetPath of params.options?.unsetPaths ?? []) {
+    if (unsetPath.length > 0) {
+      operations.push({ kind: "unset", path: [...unsetPath], strictIncludeOwnership: true });
+    }
+  }
+  return operations;
 }
 
 function mergeAfterWrite(
@@ -457,7 +524,10 @@ export async function commitConfigWithPendingPluginInstalls(params: {
     ...(params.sourceConfig ? { sourceConfig: params.sourceConfig } : {}),
     ...(params.writeOptions ? { writeOptions: params.writeOptions } : {}),
     commit: async (nextConfig, writeOptions) => {
-      if (!params.sourceConfig && !prepared) {
+      const needsLegacyExplicitProjection = writeOptions?.explicitSetPaths?.some(
+        (configPath) => configPath.length > 0,
+      );
+      if ((!params.sourceConfig || needsLegacyExplicitProjection) && !prepared) {
         prepared = await readConfigFileSnapshotForWrite({
           skipPluginValidation: writeOptions?.skipPluginValidation,
         });
@@ -470,9 +540,16 @@ export async function commitConfigWithPendingPluginInstalls(params: {
             runtime: prepared!.snapshot.runtimeConfig,
             candidate: nextConfig,
           });
+      const optionOperations = withLegacyConfigWriteOptionOperations({
+        operations,
+        candidate: nextConfig,
+        authoredSource: prepared?.snapshot.parsed ?? params.sourceConfig,
+        runtimeConfig: prepared?.snapshot.runtimeConfig ?? params.sourceConfig,
+        options: writeOptions,
+      });
       const writeOperations = hasPendingPluginInstallRecords(params.nextConfig)
-        ? withFinalPendingInstallUnset(operations)
-        : operations;
+        ? withFinalPendingInstallUnset(optionOperations)
+        : optionOperations;
       return await replaceConfigFileWithIntent({
         nextConfig,
         intent: {
@@ -509,18 +586,39 @@ export async function transformConfigWithPendingPluginInstalls<T = void>(
         const needsPendingInstallCleanup =
           hasPendingPluginInstallRecords(nextConfig) ||
           hasPendingPluginInstallRecords(snapshot.sourceConfig);
-        const reconciledIntent = needsPendingInstallCleanup
-          ? {
-              kind: "mutate" as const,
-              operations: withFinalPendingInstallUnset(
-                intent.kind === "mutate"
-                  ? intent.operations
-                  : createConfigMutationOperations(snapshot.parsed, config),
-              ),
-            }
-          : intent;
+        const authoritativeConfig =
+          intent.kind === "replace"
+            ? needsPendingInstallCleanup
+              ? withoutPluginInstallRecords(intent.config)
+              : intent.config
+            : config;
+        const optionOperations = withLegacyConfigWriteOptionOperations({
+          operations:
+            intent.kind === "mutate"
+              ? intent.operations
+              : createConfigMutationOperations(snapshot.parsed, authoritativeConfig),
+          candidate: authoritativeConfig,
+          authoredSource: snapshot.parsed,
+          runtimeConfig: snapshot.runtimeConfig,
+          options: commitWriteOptions,
+        });
+        const hasLegacyOptionOperations = Boolean(
+          commitWriteOptions?.explicitSetPaths?.some((configPath) => configPath.length > 0) ||
+          commitWriteOptions?.unsetPaths?.some((configPath) => configPath.length > 0),
+        );
+        const reconciledIntent =
+          intent.kind === "replace" && !hasLegacyOptionOperations
+            ? needsPendingInstallCleanup
+              ? { kind: "replace" as const, config: authoritativeConfig }
+              : intent
+            : {
+                kind: "mutate" as const,
+                operations: needsPendingInstallCleanup
+                  ? withFinalPendingInstallUnset(optionOperations)
+                  : optionOperations,
+              };
         return await replaceConfigFileWithIntent({
-          nextConfig: config,
+          nextConfig: authoritativeConfig,
           intent: reconciledIntent,
           snapshot,
           writeOptions: commitWriteOptions ?? {},
