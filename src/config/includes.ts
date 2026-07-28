@@ -155,6 +155,21 @@ function deepMerge(target: unknown, source: unknown): unknown {
   return mergeDeepValues(target, source, { arrays: "concat", undefinedValues: "replace" });
 }
 
+/** Removes authored include markers from an already resolved config value. */
+export function stripConfigIncludeDirectives(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(stripConfigIncludeDirectives);
+  }
+  if (!isPlainObject(value)) {
+    return structuredClone(value);
+  }
+  return Object.fromEntries(
+    Object.entries(value).flatMap(([key, child]) =>
+      key === INCLUDE_KEY ? [] : [[key, stripConfigIncludeDirectives(child)]],
+    ),
+  );
+}
+
 // ============================================================================
 // Include Resolver Class
 // ============================================================================

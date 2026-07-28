@@ -26,7 +26,7 @@ import {
   type ConfigMutationOperation,
 } from "../../config/config-path-mutation.js";
 import { resolveConfigEnvVars } from "../../config/env-substitution.js";
-import { INCLUDE_KEY } from "../../config/includes.js";
+import { stripConfigIncludeDirectives } from "../../config/includes.js";
 import {
   createConfigIO,
   parseConfigJson5,
@@ -248,20 +248,6 @@ function stripRedactedPatchSentinels(value: unknown): unknown {
   return entries.length > 0 && strippedEntries.length === 0
     ? undefined
     : Object.fromEntries(strippedEntries);
-}
-
-function stripAuthoredIncludeDirectives(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map(stripAuthoredIncludeDirectives);
-  }
-  if (!isRecord(value)) {
-    return structuredClone(value);
-  }
-  return Object.fromEntries(
-    Object.entries(value).flatMap(([key, child]) =>
-      key === INCLUDE_KEY ? [] : [[key, stripAuthoredIncludeDirectives(child)]],
-    ),
-  );
 }
 
 function mapConfigPatchIdsToSource(params: {
@@ -908,7 +894,11 @@ function parseValidateConfigFromRawOrRespond(
   requestName: string,
   snapshot: Awaited<ReturnType<typeof readConfigFileSnapshot>>,
   respond: RespondFn,
-): { config: OpenClawConfig; writeConfig: OpenClawConfig; schema: ConfigSchemaResponse } | null {
+): {
+  config: OpenClawConfig;
+  writeConfig: OpenClawConfig;
+  schema: ConfigSchemaResponse;
+} | null {
   const rawValue = parseRawConfigOrRespond(params, requestName, respond);
   if (!rawValue) {
     return null;
@@ -1436,7 +1426,7 @@ export const configHandlers: GatewayRequestHandlers = {
       );
       return;
     }
-    const runtimeConfig = stripAuthoredIncludeDirectives(snapshot.config) as OpenClawConfig;
+    const runtimeConfig = stripConfigIncludeDirectives(snapshot.config) as OpenClawConfig;
     const rawValue = (params as { raw?: unknown }).raw;
     if (typeof rawValue !== "string") {
       respond(

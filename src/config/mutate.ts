@@ -91,6 +91,8 @@ export type ConfigReplaceResult = {
   previousHash: string | null;
   snapshot: ConfigFileSnapshot;
   nextConfig: OpenClawConfig;
+  committedIncludeFileHashes?: Record<string, string>;
+  committedIncludeFileTargets?: Record<string, string>;
   persistedHash: string | null;
   afterWrite: ConfigWriteAfterWrite;
   followUp: ConfigWriteFollowUp;
@@ -659,7 +661,12 @@ async function tryWriteSingleTopLevelIncludeMutation(params: {
   afterWrite?: ConfigWriteOptions["afterWrite"];
   writeOptions?: ConfigWriteOptions;
   io?: ConfigMutationIO;
-}): Promise<{ persistedHash: string | null; persistedConfig: OpenClawConfig } | null> {
+}): Promise<{
+  persistedHash: string | null;
+  persistedConfig: OpenClawConfig;
+  committedIncludeFileHashes?: Record<string, string>;
+  committedIncludeFileTargets?: Record<string, string>;
+} | null> {
   const nextConfig = applyUnsetPathsForWrite(
     params.nextConfig,
     resolveManagedUnsetPathsForWrite(undefined),
@@ -859,7 +866,12 @@ async function tryWriteSingleTopLevelIncludeMutation(params: {
       !hadRuntimeSnapshot &&
       !getRuntimeConfigSnapshotRefreshHandler()
     ) {
-      return { persistedHash: null, persistedConfig: runtimeConfigToWrite };
+      return {
+        persistedHash: null,
+        persistedConfig: runtimeConfigToWrite,
+        committedIncludeFileHashes: params.writeOptions?.includeFileHashesForWrite,
+        committedIncludeFileTargets: params.writeOptions?.includeFileTargetsForWrite,
+      };
     }
 
     let refreshed: Awaited<ReturnType<typeof readConfigFileSnapshotForWrite>>;
@@ -940,7 +952,12 @@ async function tryWriteSingleTopLevelIncludeMutation(params: {
           { cause },
         ),
     });
-    return { persistedHash, persistedConfig: refreshedSnapshot.sourceConfig };
+    return {
+      persistedHash,
+      persistedConfig: refreshedSnapshot.sourceConfig,
+      committedIncludeFileHashes: refreshed.writeOptions.includeFileHashesForWrite,
+      committedIncludeFileTargets: refreshed.writeOptions.includeFileTargetsForWrite,
+    };
   } catch (error) {
     try {
       const rolledBack = await rollbackJsonFileWriteIfUnchanged({
@@ -968,14 +985,24 @@ async function tryWriteSingleTopLevelIncludeMutation(params: {
 function resolveConfigWriteResult(
   result: ConfigWriteResult | void,
   fallbackConfig: OpenClawConfig,
-): { persistedHash: string | null; persistedConfig: OpenClawConfig } {
+): {
+  persistedHash: string | null;
+  persistedConfig: OpenClawConfig;
+  committedIncludeFileHashes?: Record<string, string>;
+  committedIncludeFileTargets?: Record<string, string>;
+} {
   if (result) {
     return {
       persistedHash: result.persistedHash,
       persistedConfig: result.persistedConfig,
+      committedIncludeFileHashes: result.committedIncludeFileHashes,
+      committedIncludeFileTargets: result.committedIncludeFileTargets,
     };
   }
-  return { persistedHash: null, persistedConfig: fallbackConfig };
+  return {
+    persistedHash: null,
+    persistedConfig: fallbackConfig,
+  };
 }
 
 function addCandidateContainerHints(
@@ -1117,6 +1144,8 @@ async function replaceConfigFileUnlocked(params: {
     previousHash,
     snapshot,
     nextConfig: writeResult.persistedConfig,
+    committedIncludeFileHashes: writeResult.committedIncludeFileHashes,
+    committedIncludeFileTargets: writeResult.committedIncludeFileTargets,
     persistedHash: writeResult.persistedHash,
     afterWrite,
     followUp: resolveConfigWriteFollowUp(afterWrite),

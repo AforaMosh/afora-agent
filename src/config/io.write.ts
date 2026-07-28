@@ -1,5 +1,6 @@
 import type fs from "node:fs";
 import path from "node:path";
+import { isDeepStrictEqual } from "node:util";
 import { isVerbose } from "../global-state.js";
 import { isVitestRuntimeEnv } from "../infra/env.js";
 import { formatErrorMessage } from "../infra/errors.js";
@@ -29,6 +30,7 @@ import { recordConfigWriteMetadata } from "./io.meta.js";
 import {
   hashConfigRaw,
   hasConfigMeta,
+  resolveConfigIncludesForRead,
   resolveConfigSnapshotHash,
   resolveGatewayMode,
   restoreAuthoredTildePathsForWrite,
@@ -56,6 +58,7 @@ import {
 } from "./io.write-safety.js";
 import { formatConfigIssueLines } from "./issue-format.js";
 import { warnIfJSON5CommentsWillBeStripped } from "./json5-comments.js";
+import { ConfigMutationConflictError } from "./mutation-conflict.js";
 import { assertConfigWriteAllowedInCurrentMode } from "./nix-mode-write-guard.js";
 import { preflightRuntimeSnapshotWrite } from "./runtime-snapshot.js";
 import type { OpenClawConfig } from "./types.js";
@@ -301,6 +304,13 @@ export async function writeConfigFileFromContext(
       });
     });
   const sourceConfigForPreflight = context.resolveRuntimePreflightSourceConfig(stampedOutputConfig);
+  const captureIncludeGraph = () => {
+    const hashes: Record<string, string> = {};
+    const targets: Record<string, string> = {};
+    resolveConfigIncludesForRead(stampedOutputConfig, configPath, deps, hashes, targets);
+    return { hashes, targets };
+  };
+  const committedIncludeGraph = captureIncludeGraph();
   await preCommitRuntimePreflight(sourceConfigForPreflight);
 
   try {
@@ -324,6 +334,12 @@ export async function writeConfigFileFromContext(
           assertBaseSnapshotStillCurrent(snapshot, configPath, deps.fs);
         }
         options.assertConfigPathForWrite?.();
+        const finalIncludeGraph = captureIncludeGraph();
+        if (!isDeepStrictEqual(finalIncludeGraph, committedIncludeGraph)) {
+          throw new ConfigMutationConflictError("included config changed while preparing write", {
+            currentHash: null,
+          });
+        }
         // Warn only after final guards pass, with no later await before rename.
         warnIfJSON5CommentsWillBeStripped({
           raw: snapshot.raw,
@@ -415,6 +431,8 @@ export async function writeConfigFileFromContext(
     return {
       persistedHash: nextHash,
       persistedConfig: stampedOutputConfig,
+      committedIncludeFileHashes: committedIncludeGraph.hashes,
+      committedIncludeFileTargets: committedIncludeGraph.targets,
       [configWritePostCommitRollback]: () => {
         restoreConfigSnapshotAuditRecord({
           env: deps.env,

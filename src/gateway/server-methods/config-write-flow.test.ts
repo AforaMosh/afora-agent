@@ -135,27 +135,33 @@ describe("commitGatewayConfigWrite", () => {
 
   it("does not return a later include write with the same root hash", async () => {
     configMocks.resolveConfigSnapshotHash.mockReturnValue("shared-root-hash");
-    const committedConfig: OpenClawConfig = { gateway: { mode: "local" } };
+    const authoredConfig = { gateway: { $include: "./gateway.json5" } } as OpenClawConfig;
     configMocks.replaceConfigFileWithIntent.mockResolvedValueOnce({
-      nextConfig: committedConfig,
+      nextConfig: authoredConfig,
       persistedHash: "shared-root-hash",
+      committedIncludeFileHashes: { "/tmp/gateway.json5": "committed" },
+      committedIncludeFileTargets: { "/tmp/gateway.json5": "/tmp/gateway.json5" },
     });
     configMocks.readConfigFileSnapshotForWrite.mockResolvedValueOnce({
       snapshot: {
         config: { gateway: { mode: "remote" } },
+        parsed: authoredConfig,
         sourceConfig: { gateway: { mode: "remote" } },
       },
-      writeOptions: {},
+      writeOptions: {
+        includeFileHashesForWrite: { "/tmp/gateway.json5": "later" },
+        includeFileTargetsForWrite: { "/tmp/gateway.json5": "/tmp/gateway.json5" },
+      },
     });
 
     const result = await commitGatewayConfigWrite({
       snapshot: { path: "/tmp/openclaw.json" } as never,
       writeOptions: {},
-      nextConfig: committedConfig,
-      intent: { kind: "replace", config: committedConfig },
+      nextConfig: authoredConfig,
+      intent: { kind: "replace", config: authoredConfig },
     });
 
-    expect(result.config).toBe(committedConfig);
+    expect(result.config).toBe(authoredConfig);
     expect(result.hash).toBe("shared-root-hash");
   });
 
@@ -168,6 +174,8 @@ describe("commitGatewayConfigWrite", () => {
     configMocks.replaceConfigFileWithIntent.mockResolvedValueOnce({
       nextConfig: authoredConfig,
       persistedHash: "shared-root-hash",
+      committedIncludeFileHashes: { "/tmp/gateway.json5": "same" },
+      committedIncludeFileTargets: { "/tmp/gateway.json5": "/tmp/gateway.json5" },
     });
     configMocks.readConfigFileSnapshotForWrite.mockResolvedValueOnce({
       snapshot: {
@@ -175,7 +183,10 @@ describe("commitGatewayConfigWrite", () => {
         parsed: authoredConfig,
         sourceConfig: { gateway: { mode: "local" } },
       },
-      writeOptions: {},
+      writeOptions: {
+        includeFileHashesForWrite: { "/tmp/gateway.json5": "same" },
+        includeFileTargetsForWrite: { "/tmp/gateway.json5": "/tmp/gateway.json5" },
+      },
     });
 
     const result = await commitGatewayConfigWrite({

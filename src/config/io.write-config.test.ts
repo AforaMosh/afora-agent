@@ -1224,6 +1224,63 @@ describe("config io write", () => {
     );
   });
 
+  itWithHome("returns the include graph captured at the root write commit edge", async (home) => {
+    const configPath = configPathForHome(home);
+    const includePath = path.join(home, ".openclaw", "channels.json5");
+    const includeRaw = `${JSON.stringify({ telegram: { enabled: true } }, null, 2)}\n`;
+    await fs.mkdir(path.dirname(configPath), { recursive: true });
+    await fs.writeFile(includePath, includeRaw, "utf-8");
+    await writeConfigJson(configPath, {
+      gateway: { mode: "local" },
+      channels: { $include: "./channels.json5" },
+    });
+    const io = createFastConfigIO(home);
+    const prepared = await io.readConfigFileSnapshotForWrite();
+
+    const result = await io.writeConfigFile(
+      {
+        kind: "mutate",
+        operations: [{ kind: "set", path: ["gateway", "port"], value: 19001 }],
+      },
+      { ...prepared.writeOptions, baseSnapshot: prepared.snapshot },
+    );
+
+    expect(result.committedIncludeFileHashes?.[includePath]).toBe(hashConfigIncludeRaw(includeRaw));
+    expect(result.committedIncludeFileTargets?.[includePath]).toBe(await fs.realpath(includePath));
+  });
+
+  itWithHome("rejects a newly added include that changes after preflight", async (home) => {
+    const configPath = configPathForHome(home);
+    const includePath = path.join(home, ".openclaw", "channels.json5");
+    await fs.mkdir(path.dirname(configPath), { recursive: true });
+    await writeConfigJson(configPath, { gateway: { mode: "local" } });
+    await fs.writeFile(includePath, '{ "telegram": { "enabled": true } }\n', "utf-8");
+    const io = createFastConfigIO(home);
+
+    await expect(
+      io.writeConfigFile(
+        {
+          kind: "mutate",
+          operations: [
+            {
+              kind: "set",
+              path: ["channels"],
+              value: { $include: "./channels.json5" },
+            },
+          ],
+        },
+        {
+          preCommitRuntimePreflight: async () => {
+            await fs.writeFile(includePath, '{ "telegram": { "enabled": false } }\n', "utf-8");
+          },
+        },
+      ),
+    ).rejects.toThrow("included config changed while preparing write");
+    await expect(readPersistedConfig(configPath)).resolves.toEqual({
+      gateway: { mode: "local" },
+    });
+  });
+
   itWithHome("rejects explicit sibling writes beside a root include", async (home) => {
     const configPath = configPathForHome(home);
     const includePath = path.join(home, ".openclaw", "extra.json5");

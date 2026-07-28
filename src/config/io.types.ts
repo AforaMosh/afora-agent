@@ -13,6 +13,8 @@ export type ParseConfigJson5Result = { ok: true; parsed: unknown } | { ok: false
 export type ConfigWriteResult = {
   persistedHash: string;
   persistedConfig: OpenClawConfig;
+  committedIncludeFileHashes?: Record<string, string>;
+  committedIncludeFileTargets?: Record<string, string>;
 };
 
 export const configWritePostCommitRollback = Symbol("configWritePostCommitRollback");
