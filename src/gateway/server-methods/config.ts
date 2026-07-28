@@ -26,6 +26,7 @@ import {
   type ConfigMutationOperation,
 } from "../../config/config-path-mutation.js";
 import { resolveConfigEnvVars } from "../../config/env-substitution.js";
+import { INCLUDE_KEY } from "../../config/includes.js";
 import {
   createConfigIO,
   parseConfigJson5,
@@ -249,6 +250,20 @@ function stripRedactedPatchSentinels(value: unknown): unknown {
     : Object.fromEntries(strippedEntries);
 }
 
+function stripAuthoredIncludeDirectives(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(stripAuthoredIncludeDirectives);
+  }
+  if (!isRecord(value)) {
+    return structuredClone(value);
+  }
+  return Object.fromEntries(
+    Object.entries(value).flatMap(([key, child]) =>
+      key === INCLUDE_KEY ? [] : [[key, stripAuthoredIncludeDirectives(child)]],
+    ),
+  );
+}
+
 function mapConfigPatchIdsToSource(params: {
   patch: unknown;
   source: unknown;
@@ -272,20 +287,22 @@ function mapConfigPatchIdsToSource(params: {
     const runtime = isRecord(runtimeInput) ? runtimeInput : {};
     const mappedEntries: Array<[string, unknown]> = [];
     for (const [key, value] of Object.entries(patch)) {
-      mappedEntries.push([
-        key,
-        mapConfigPatchIdsToSource({
-          patch: value,
-          source: source[key],
-          resolvedSource: resolvedSource[key],
-          runtime: runtime[key],
-          env: params.env,
-          replaceArrayPaths: params.replaceArrayPaths,
-          path: formatConfigPatchPath(path, key),
-        }),
-      ]);
+      const mapped = mapConfigPatchIdsToSource({
+        patch: value,
+        source: source[key],
+        resolvedSource: resolvedSource[key],
+        runtime: runtime[key],
+        env: params.env,
+        replaceArrayPaths: params.replaceArrayPaths,
+        path: formatConfigPatchPath(path, key),
+      });
+      if (mapped !== undefined) {
+        mappedEntries.push([key, mapped]);
+      }
     }
-    return Object.fromEntries(mappedEntries);
+    return Object.keys(patch).length > 0 && mappedEntries.length === 0
+      ? undefined
+      : Object.fromEntries(mappedEntries);
   }
   if (Array.isArray(patch) && params.replaceArrayPaths.has(path) && Array.isArray(sourceInput)) {
     const source = sourceInput;
@@ -1419,6 +1436,7 @@ export const configHandlers: GatewayRequestHandlers = {
       );
       return;
     }
+    const runtimeConfig = stripAuthoredIncludeDirectives(snapshot.config) as OpenClawConfig;
     const rawValue = (params as { raw?: unknown }).raw;
     if (typeof rawValue !== "string") {
       respond(
@@ -1461,7 +1479,7 @@ export const configHandlers: GatewayRequestHandlers = {
     }
     const replacePaths = readConfigPatchReplacePaths(params);
     const ownershipPatch = stripRedactedPatchSentinels(parsedRes.parsed) ?? {};
-    const patchIsEmptyMerge = isEmptyMergePatchAgainst(ownershipPatch, snapshot.config);
+    const patchIsEmptyMerge = isEmptyMergePatchAgainst(ownershipPatch, runtimeConfig);
     const patchedIncludeOwner = patchIsEmptyMerge
       ? null
       : findPatchedIncludeOwner(ownershipPatch, snapshot.parsed);
@@ -1518,9 +1536,9 @@ export const configHandlers: GatewayRequestHandlers = {
     try {
       runtimePatchInput = mapConfigPatchIdsToSource({
         patch: parsedRes.parsed,
-        source: snapshot.config,
-        resolvedSource: snapshot.config,
-        runtime: snapshot.config,
+        source: runtimeConfig,
+        resolvedSource: runtimeConfig,
+        runtime: runtimeConfig,
         env: writeOptions.envSnapshotForRestore ?? process.env,
         replaceArrayPaths: replacePaths,
       });
@@ -1529,12 +1547,12 @@ export const configHandlers: GatewayRequestHandlers = {
       return;
     }
     const effectivePatch = stripRedactedPatchSentinels(runtimePatchInput) ?? {};
-    const merged = applyMergePatch(snapshot.config, effectivePatch, {
+    const merged = applyMergePatch(runtimeConfig, effectivePatch, {
       // Arrays with stable ids behave like maps for partial control-plane edits.
       mergeObjectArraysById: true,
       replaceArrayPaths: replacePaths,
     });
-    const restoredMerge = restoreRedactedValues(merged, snapshot.config, schemaPatch.uiHints);
+    const restoredMerge = restoreRedactedValues(merged, runtimeConfig, schemaPatch.uiHints);
     if (!restoredMerge.ok) {
       respond(
         false,
@@ -1548,7 +1566,7 @@ export const configHandlers: GatewayRequestHandlers = {
     }
     if (
       rejectDestructiveArrayPatchWithoutIntent({
-        currentConfig: snapshot.config,
+        currentConfig: runtimeConfig,
         mergedConfig: restoredMerge.result,
         patch: effectivePatch,
         replacePaths,
@@ -1557,7 +1575,7 @@ export const configHandlers: GatewayRequestHandlers = {
     ) {
       return;
     }
-    const restoredChangedPaths = diffConfigLeafPaths(snapshot.config, restoredMerge.result);
+    const restoredChangedPaths = diffConfigLeafPaths(runtimeConfig, restoredMerge.result);
     if (hashlessPatch && !restoredChangedPaths.every(isHashlessPatchLwwPath)) {
       respond(
         false,
@@ -1573,7 +1591,7 @@ export const configHandlers: GatewayRequestHandlers = {
     if (restoredChangedPaths.length === 0) {
       respondConfigPatchNoop({
         snapshot,
-        config: snapshot.config,
+        config: runtimeConfig,
         uiHints: schemaPatch.uiHints,
         actor,
         context,
@@ -1619,7 +1637,7 @@ export const configHandlers: GatewayRequestHandlers = {
     if (!preparedSecretsSnapshot) {
       return;
     }
-    const changedPaths = diffConfigPaths(snapshot.config, validated.config);
+    const changedPaths = diffConfigPaths(runtimeConfig, validated.config);
 
     // No-op: if the validated config is identical to the current config,
     // skip the file write and SIGUSR1 restart entirely. This avoids a full
@@ -1643,7 +1661,7 @@ export const configHandlers: GatewayRequestHandlers = {
     // Compare before the write so we invalidate clients authenticated against the
     // previous shared secret immediately after the config update succeeds.
     const disconnectSharedAuthClients = shouldDisconnectSharedAuthClientsForConfigWrite({
-      prevConfig: snapshot.config,
+      prevConfig: runtimeConfig,
       prevSourceConfig: resolveSharedAuthAuthoredSource(snapshot),
       nextConfig: validated.config,
       preparedSecretsSnapshot,
@@ -1654,7 +1672,7 @@ export const configHandlers: GatewayRequestHandlers = {
         patch: parsedRes.parsed,
         source: snapshot.parsed,
         resolvedSource: snapshot.resolved,
-        runtime: snapshot.runtimeConfig,
+        runtime: runtimeConfig,
         env: writeOptions.envSnapshotForRestore ?? process.env,
         replaceArrayPaths: replacePaths,
       });
@@ -1691,7 +1709,7 @@ export const configHandlers: GatewayRequestHandlers = {
       ...collectRuntimeOnlyAgentUnsets({
         patch: parsedRes.parsed,
         parsed: snapshot.parsed,
-        runtime: snapshot.runtimeConfig,
+        runtime: runtimeConfig,
       }),
     );
     const writeResult = await commitGatewayConfigWriteOrRespond({

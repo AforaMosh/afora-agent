@@ -283,12 +283,13 @@ export async function commitGatewayConfigWrite(params: {
   hash: string | null;
   queueFollowUp: () => void;
 }> {
+  const previousHash = resolveConfigSnapshotHash(params.snapshot);
   const result = await replaceConfigFileWithIntent({
     nextConfig: params.nextConfig,
     intent: params.intent,
     // The early RPC hash check is only advisory until this lock-time CAS. Without
     // it, concurrent writers can both succeed and overwrite each other's config.
-    baseHash: resolveConfigSnapshotHash(params.snapshot) ?? undefined,
+    baseHash: previousHash ?? undefined,
     writeOptions: {
       ...params.writeOptions,
       auditOrigin: "config-rpc",
@@ -301,10 +302,21 @@ export async function commitGatewayConfigWrite(params: {
   });
   const persistedSnapshot = await readConfigFileSnapshotForWrite();
   const canonicalHash = resolveConfigSnapshotHash(persistedSnapshot.snapshot);
-  const rereadMatchesCommittedWrite =
-    canonicalHash !== null &&
-    canonicalHash === result.persistedHash &&
+  // Match JSON persistence semantics: unlike structuredClone, this drops undefined leaves.
+  // oxlint-disable-next-line unicorn/prefer-structured-clone
+  const normalizedResultConfig = JSON.parse(JSON.stringify(result.nextConfig)) as OpenClawConfig;
+  const authoredRereadMatches = isDeepStrictEqual(
+    persistedSnapshot.snapshot.parsed,
+    normalizedResultConfig,
+  );
+  // Direct include writes keep the root hash stable and return resolved source.
+  // An unchanged root write can also keep that hash, so accept either exact owner.
+  const includeRereadMatches =
+    result.persistedHash === previousHash &&
     isDeepStrictEqual(persistedSnapshot.snapshot.sourceConfig, result.nextConfig);
+  const semanticRereadMatches = authoredRereadMatches || includeRereadMatches;
+  const rereadMatchesCommittedWrite =
+    canonicalHash !== null && canonicalHash === result.persistedHash && semanticRereadMatches;
   return {
     path: resolveGatewayConfigPath(params.snapshot),
     // Another writer can commit after our lock releases. Only publish the

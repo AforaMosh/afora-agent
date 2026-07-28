@@ -85,6 +85,7 @@ describe("commitGatewayConfigWrite", () => {
     configMocks.readConfigFileSnapshotForWrite.mockResolvedValueOnce({
       snapshot: {
         config: canonicalConfig,
+        parsed: { gateway: { mode: "local" } },
         sourceConfig: { gateway: { mode: "local" } },
       },
       writeOptions: {},
@@ -155,6 +156,36 @@ describe("commitGatewayConfigWrite", () => {
     });
 
     expect(result.config).toBe(committedConfig);
+    expect(result.hash).toBe("shared-root-hash");
+  });
+
+  it("accepts an unchanged authored root reread with the same hash", async () => {
+    configMocks.resolveConfigSnapshotHash.mockReturnValue("shared-root-hash");
+    const authoredConfig = { gateway: { $include: "./gateway.json5" } } as OpenClawConfig;
+    const canonicalConfig: OpenClawConfig = {
+      gateway: { mode: "local", auth: { mode: "token", token: "runtime-token" } },
+    };
+    configMocks.replaceConfigFileWithIntent.mockResolvedValueOnce({
+      nextConfig: authoredConfig,
+      persistedHash: "shared-root-hash",
+    });
+    configMocks.readConfigFileSnapshotForWrite.mockResolvedValueOnce({
+      snapshot: {
+        config: canonicalConfig,
+        parsed: authoredConfig,
+        sourceConfig: { gateway: { mode: "local" } },
+      },
+      writeOptions: {},
+    });
+
+    const result = await commitGatewayConfigWrite({
+      snapshot: { path: "/tmp/openclaw.json" } as never,
+      writeOptions: {},
+      nextConfig: authoredConfig,
+      intent: { kind: "replace", config: authoredConfig },
+    });
+
+    expect(result.config).toBe(canonicalConfig);
     expect(result.hash).toBe("shared-root-hash");
   });
 
