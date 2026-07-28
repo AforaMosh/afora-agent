@@ -2,6 +2,7 @@
 import { isDeepStrictEqual } from "node:util";
 import { expectDefined } from "@openclaw/normalization-core";
 import { isBlockedObjectKey } from "../infra/prototype-keys.js";
+import { LEGACY_IMPLICIT_AGENT_ID } from "../routing/session-key.js";
 import { parseConfigPathArrayIndex } from "../shared/path-array-index.js";
 import { containsEnvVarReference } from "./env-substitution.js";
 import { applyMergePatch } from "./merge-patch.js";
@@ -59,6 +60,33 @@ function configPathHasIncludeOwner(root: unknown, path: ConfigPath): boolean {
     }
   }
   return isWritePlainObject(current) && Object.hasOwn(current, "$include");
+}
+
+function isFirstAuthoredRosterImplicitMainUnset(params: {
+  source: unknown;
+  runtime: unknown;
+  candidate: unknown;
+  path: ConfigPath;
+}): boolean {
+  const implicitMainPath = ["agents", "entries", LEGACY_IMPLICIT_AGENT_ID];
+  if (
+    params.path.length !== implicitMainPath.length ||
+    !params.path.every((segment, index) => segment === implicitMainPath[index]) ||
+    configPathExists(params.source, ["agents", "entries"])
+  ) {
+    return false;
+  }
+  const runtimeEntries = readConfigPath(params.runtime, ["agents", "entries"]);
+  const runtimeMain = readConfigPath(params.runtime, implicitMainPath);
+  const candidateEntries = readConfigPath(params.candidate, ["agents", "entries"]);
+  return (
+    isWritePlainObject(runtimeEntries) &&
+    Object.keys(runtimeEntries).length === 1 &&
+    isWritePlainObject(runtimeMain) &&
+    runtimeMain.default === true &&
+    isWritePlainObject(candidateEntries) &&
+    Object.keys(candidateEntries).some((agentId) => agentId !== LEGACY_IMPLICIT_AGENT_ID)
+  );
 }
 
 function readConfigPath(root: unknown, path: ConfigPath): unknown {
@@ -253,7 +281,8 @@ export function createRuntimeConfigMutationOperations(params: {
     if (
       operation.kind === "unset" &&
       !configPathExists(params.source, operation.path) &&
-      !configPathHasIncludeOwner(params.source, operation.path)
+      !configPathHasIncludeOwner(params.source, operation.path) &&
+      !isFirstAuthoredRosterImplicitMainUnset({ ...params, path: operation.path })
     ) {
       throw new Error(
         `Config mutation cannot safely remove runtime-derived value at ${operation.path.join(".") || "<root>"}; mutate the authored source instead.`,

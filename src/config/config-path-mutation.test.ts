@@ -289,6 +289,20 @@ describe("applyConfigOperations", () => {
     });
   });
 
+  it("allows runtime implicit main projection when the roster is first authored", () => {
+    expect(
+      createRuntimeConfigMutationOperations({
+        source: {},
+        runtime: { agents: { entries: { main: { default: true } } } },
+        candidate: { agents: { entries: { ops: { default: true } } } },
+      }),
+    ).toContainEqual({
+      kind: "unset",
+      path: ["agents", "entries", "main"],
+      strictIncludeOwnership: true,
+    });
+  });
+
   it("rejects copying an include-resolved sensitive value into a new path", () => {
     expect(() =>
       createRuntimeConfigMutationOperations({
