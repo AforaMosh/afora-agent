@@ -46,11 +46,13 @@ function materializeImplicitMain(params: {
   operations: readonly ConfigMutationOperation[];
 }): OpenClawConfig {
   const authoredEntries = readAuthoredAgentEntries(params.authoredDocument);
+  const sourceEntries = readAuthoredAgentEntries(params.snapshot.parsed);
   const runtimeEntries = readAuthoredAgentEntries(params.snapshot.runtimeConfig);
   if (
     !authoredEntries ||
-    readAuthoredAgentEntries(params.snapshot.parsed) ||
-    Object.hasOwn(authoredEntries, LEGACY_IMPLICIT_AGENT_ID) ||
+    // An existing authored roster owns its default markers. This helper only
+    // carries forward runtime-only implicit main when a mutation creates the roster.
+    sourceEntries ||
     params.operations.some((operation) =>
       operationExplicitlyRemovesAgent(operation, LEGACY_IMPLICIT_AGENT_ID),
     ) ||
@@ -63,13 +65,27 @@ function materializeImplicitMain(params: {
   const hasExplicitDefault = Object.values(authoredEntries).some(
     (entry) => isRecord(entry) && entry.default === true,
   );
+  const authoredMain = authoredEntries[LEGACY_IMPLICIT_AGENT_ID];
+  if (
+    authoredMain !== undefined &&
+    (!isRecord(authoredMain) || Object.hasOwn(authoredMain, "default"))
+  ) {
+    return params.authoredDocument;
+  }
+  const materializedMain = isRecord(authoredMain)
+    ? hasExplicitDefault
+      ? authoredMain
+      : { default: true, ...authoredMain }
+    : hasExplicitDefault
+      ? {}
+      : { default: true };
   return applyConfigOperations(params.authoredDocument, [
     {
       kind: "set",
       path: ["agents", "entries"],
       value: {
-        [LEGACY_IMPLICIT_AGENT_ID]: hasExplicitDefault ? {} : { default: true },
         ...authoredEntries,
+        [LEGACY_IMPLICIT_AGENT_ID]: materializedMain,
       },
     },
   ]);

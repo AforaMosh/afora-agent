@@ -103,6 +103,56 @@ describe("prepareConfigWrite", () => {
     });
   });
 
+  it("keeps implicit main default when a mutation first edits that entry", () => {
+    const result = prepareConfigWrite({
+      snapshot: snapshot({
+        parsed: { gateway: { mode: "local" } },
+        runtimeConfig: {
+          gateway: { mode: "local" },
+          agents: { entries: { main: { default: true } } },
+        },
+      }),
+      intent: {
+        kind: "mutate",
+        operations: [
+          {
+            kind: "set",
+            path: ["agents", "entries", "main", "workspace"],
+            value: "/srv/main",
+          },
+        ],
+      },
+    });
+
+    expect(result.ok && result.value.authoredDocument.agents?.entries).toEqual({
+      main: { default: true, workspace: "/srv/main" },
+    });
+  });
+
+  it("does not add a default marker to a pre-existing authored main entry", () => {
+    const result = prepareConfigWrite({
+      snapshot: snapshot({
+        parsed: {
+          agents: {
+            entries: {
+              main: { workspace: "/srv/main" },
+              ops: { default: true },
+            },
+          },
+        },
+      }),
+      intent: {
+        kind: "mutate",
+        operations: [{ kind: "set", path: ["gateway", "mode"], value: "local" }],
+      },
+    });
+
+    expect(result.ok && result.value.authoredDocument.agents?.entries).toEqual({
+      main: { workspace: "/srv/main" },
+      ops: { default: true },
+    });
+  });
+
   it("honors an explicit removal of runtime-only implicit main", () => {
     const result = prepareConfigWrite({
       snapshot: snapshot({
