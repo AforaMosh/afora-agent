@@ -15,8 +15,10 @@ import { digestClawMcpServer, readClawMcpServerRefsByName } from "./mcp.js";
 import type { PackageRemovalDeps } from "./package-remove.js";
 import { digestClawPackageRef } from "./package-update-provenance.js";
 import { readClawPackageRefs } from "./provenance.js";
+import { clawSetupUpdateMutationUnavailableDiagnostic } from "./setup-mutation-guard.js";
 import {
   CLAW_OUTPUT_STABILITY,
+  CLAW_SETUP_SCHEMA_VERSION,
   type ClawDiagnostic,
   type ClawManifest,
   type ClawOpenClawProfile,
@@ -231,6 +233,9 @@ export async function buildClawUpdatePlan(params: {
         entry.code !== "agent_id_collision" &&
         !entry.path.startsWith("$.packages"),
     );
+    if (params.targetManifest.schemaVersion === CLAW_SETUP_SCHEMA_VERSION) {
+      blockers.push(clawSetupUpdateMutationUnavailableDiagnostic());
+    }
     const actions: ClawUpdateAction[] = [];
     const capabilityChanges: ClawUpdateCapabilityChange[] = [];
 
