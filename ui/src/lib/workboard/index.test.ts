@@ -47,8 +47,14 @@ function requestPatch(client: ReturnType<typeof createClient>, index: number) {
 const sampleCard = createWorkboardCard();
 const sampleSession = createGatewaySession();
 
+// Unscoped shape persisted by cards started before worker keys carried an agent
+// scope. Task discovery still has to match those against scoped ledger keys.
 const sampleTaskSessionKey = "subagent:workboard-default-card-1";
+// Shape an autonomous start builds now: an unassigned card adopts the gateway
+// default agent so the key resolves to that agent's session store.
+const sampleStartedSessionKey = `agent:main:${sampleTaskSessionKey}`;
 const sampleTask = createWorkboardTask();
+const sampleStartedTask = createWorkboardTask({ childSessionKey: sampleStartedSessionKey });
 
 let host: object;
 let state: ReturnType<typeof getWorkboardState>;
@@ -3342,13 +3348,13 @@ describe("workboard controller", () => {
     const running = {
       ...sampleCard,
       status: "running",
-      sessionKey: sampleTaskSessionKey,
+      sessionKey: sampleStartedSessionKey,
       runId: "run-1",
       taskId: "task-1",
     };
     const client = createClient({
-      agent: { sessionKey: sampleTaskSessionKey, runId: "run-1" },
-      "tasks.list": { tasks: [sampleTask] },
+      agent: { sessionKey: sampleStartedSessionKey, runId: "run-1" },
+      "tasks.list": { tasks: [sampleStartedTask] },
       "workboard.cards.update": { card: running },
     });
 
@@ -3356,9 +3362,10 @@ describe("workboard controller", () => {
       host,
       client: client as never,
       card: sampleCard,
+      defaultAgentId: "main",
     });
 
-    expect(sessionKey).toBe(sampleTaskSessionKey);
+    expect(sessionKey).toBe(sampleStartedSessionKey);
     expect(client.request).toHaveBeenNthCalledWith(
       1,
       "workboard.cards.update",
@@ -3371,7 +3378,7 @@ describe("workboard controller", () => {
       2,
       "agent",
       expect.objectContaining({
-        sessionKey: sampleTaskSessionKey,
+        sessionKey: sampleStartedSessionKey,
         label: "Build board (card-1)",
         message: expect.stringContaining("Work on this OpenClaw Workboard card: Build board"),
         idempotencyKey: "workboard:default:card-1:1",
@@ -3397,8 +3404,8 @@ describe("workboard controller", () => {
   it("keeps bounded task session labels on a UTF-16 boundary", async () => {
     const title = `${"a".repeat(499)}🚀tail`;
     const client = createClient({
-      agent: { sessionKey: sampleTaskSessionKey, runId: "run-1" },
-      "tasks.list": { tasks: [sampleTask] },
+      agent: { sessionKey: sampleStartedSessionKey, runId: "run-1" },
+      "tasks.list": { tasks: [sampleStartedTask] },
       "workboard.cards.update": { card: { ...sampleCard, title, status: "running" } },
     });
 
@@ -3406,6 +3413,7 @@ describe("workboard controller", () => {
       host,
       client: client as never,
       card: { ...sampleCard, title },
+      defaultAgentId: "main",
     });
 
     expect(client.request).toHaveBeenNthCalledWith(
@@ -3456,23 +3464,85 @@ describe("workboard controller", () => {
     );
   });
 
+  // Sessions live in per-agent SQLite stores. A bare `subagent:` key has no store
+  // to resolve, so the gateway rejects the run with "Cannot resolve SQLite session
+  // scope without an agent id" and the card never starts.
+  it("scopes an unassigned card's worker session to the default agent", async () => {
+    const running = {
+      ...sampleCard,
+      status: "running",
+      sessionKey: "agent:ops:subagent:workboard-default-card-1",
+      runId: "run-1",
+    } satisfies WorkboardCard;
+    const client = createClient({
+      agent: { runId: "run-1" },
+      "tasks.list": { tasks: [] },
+      "workboard.cards.update": { card: running },
+    });
+
+    const sessionKey = await startWorkboardCard({
+      host,
+      client: client as never,
+      // Card is unassigned; the gateway default agent owns it, matching the
+      // owner the Workboard dispatcher resolves for the same card.
+      card: sampleCard,
+      defaultAgentId: "OPS",
+    });
+
+    expect(sessionKey).toBe("agent:ops:subagent:workboard-default-card-1");
+    expect(client.request).toHaveBeenNthCalledWith(
+      2,
+      "agent",
+      expect.objectContaining({ sessionKey: "agent:ops:subagent:workboard-default-card-1" }),
+    );
+    expect(client.request.mock.calls[1]?.[1]).not.toHaveProperty("agentId");
+  });
+
+  it("fails an unassigned card closed when no default agent is known", async () => {
+    let updateCalls = 0;
+    const client = createClient((method) => {
+      if (method === "workboard.cards.update") {
+        updateCalls += 1;
+        return { card: updateCalls === 1 ? { ...sampleCard, status: "running" } : sampleCard };
+      }
+      return {};
+    });
+
+    const sessionKey = await startWorkboardCard({
+      host,
+      client: client as never,
+      card: sampleCard,
+    });
+
+    expect(sessionKey).toBeNull();
+    expect(client.request).not.toHaveBeenCalledWith("agent", expect.anything());
+    expect(client.request).toHaveBeenNthCalledWith(
+      2,
+      "workboard.cards.update",
+      expect.objectContaining({ patch: expect.objectContaining({ status: "todo" }) }),
+    );
+    expect(getWorkboardState(host).error).toBe(
+      "Cannot start an unassigned card until the default agent is known.",
+    );
+  });
+
   it("waits briefly for task ledger registration after a started run", async () => {
     vi.useFakeTimers();
     const running = {
       ...sampleCard,
       status: "running",
-      sessionKey: sampleTaskSessionKey,
+      sessionKey: sampleStartedSessionKey,
       runId: "run-1",
       taskId: "task-1",
     };
     let taskLists = 0;
     const client = createClient((method) => {
       if (method === "agent") {
-        return { sessionKey: sampleTaskSessionKey, runId: "run-1" };
+        return { sessionKey: sampleStartedSessionKey, runId: "run-1" };
       }
       if (method === "tasks.list") {
         taskLists += 1;
-        return { tasks: taskLists >= 3 ? [sampleTask] : [] };
+        return { tasks: taskLists >= 3 ? [sampleStartedTask] : [] };
       }
       return { card: running };
     });
@@ -3481,11 +3551,12 @@ describe("workboard controller", () => {
       host,
       client: client as never,
       card: sampleCard,
+      defaultAgentId: "main",
     });
     await vi.advanceTimersByTimeAsync(350);
     const sessionKey = await started;
 
-    expect(sessionKey).toBe(sampleTaskSessionKey);
+    expect(sessionKey).toBe(sampleStartedSessionKey);
     expect(taskLists).toBe(3);
     expect(client.request).toHaveBeenLastCalledWith(
       "workboard.cards.update",
@@ -3500,12 +3571,12 @@ describe("workboard controller", () => {
     const running = {
       ...sampleCard,
       status: "running",
-      sessionKey: sampleTaskSessionKey,
+      sessionKey: sampleStartedSessionKey,
       runId: "run-1",
     } satisfies WorkboardCard;
     const client = createClient((method) => {
       if (method === "agent") {
-        return { sessionKey: sampleTaskSessionKey, runId: "run-1" };
+        return { sessionKey: sampleStartedSessionKey, runId: "run-1" };
       }
       if (method === "tasks.list") {
         throw new Error("task ledger unavailable");
@@ -3517,17 +3588,18 @@ describe("workboard controller", () => {
       host,
       client: client as never,
       card: sampleCard,
+      defaultAgentId: "main",
     });
     await vi.advanceTimersByTimeAsync(1000);
     const sessionKey = await started;
 
-    expect(sessionKey).toBe(sampleTaskSessionKey);
+    expect(sessionKey).toBe(sampleStartedSessionKey);
     expect(client.request).not.toHaveBeenCalledWith("chat.abort", expect.anything());
     expect(client.request).toHaveBeenLastCalledWith(
       "workboard.cards.update",
       expect.objectContaining({
         patch: expect.objectContaining({
-          sessionKey: sampleTaskSessionKey,
+          sessionKey: sampleStartedSessionKey,
           runId: "run-1",
           taskId: null,
         }),
@@ -3549,7 +3621,7 @@ describe("workboard controller", () => {
     const running = {
       ...child,
       status: "running",
-      sessionKey: "subagent:workboard-default-child-1",
+      sessionKey: "agent:main:subagent:workboard-default-child-1",
       runId: "run-1",
     } satisfies WorkboardCard;
     const client = createClient((method) => {
@@ -3557,7 +3629,7 @@ describe("workboard controller", () => {
         return { cards: [parent, child], statuses: ["todo", "running", "done"] };
       }
       if (method === "agent") {
-        return { sessionKey: "subagent:workboard-default-child-1", runId: "run-1" };
+        return { sessionKey: "agent:main:subagent:workboard-default-child-1", runId: "run-1" };
       }
       if (method === "tasks.list") {
         return { tasks: [] };
@@ -3571,9 +3643,10 @@ describe("workboard controller", () => {
       host,
       client: client as never,
       card: child,
+      defaultAgentId: "main",
     });
 
-    expect(sessionKey).toBe("subagent:workboard-default-child-1");
+    expect(sessionKey).toBe("agent:main:subagent:workboard-default-child-1");
     expect(client.request).toHaveBeenNthCalledWith(
       1,
       "workboard.cards.update",
@@ -3582,7 +3655,7 @@ describe("workboard controller", () => {
     expect(client.request).toHaveBeenNthCalledWith(
       2,
       "agent",
-      expect.objectContaining({ sessionKey: "subagent:workboard-default-child-1" }),
+      expect.objectContaining({ sessionKey: "agent:main:subagent:workboard-default-child-1" }),
     );
   });
 
@@ -3629,6 +3702,7 @@ describe("workboard controller", () => {
       host,
       client: client as never,
       card: sampleCard,
+      defaultAgentId: "main",
     });
 
     expect(sessionKey).toBeNull();
@@ -3667,10 +3741,10 @@ describe("workboard controller", () => {
         return { card: sampleCard };
       }
       if (method === "agent") {
-        return { sessionKey: sampleTaskSessionKey, runId: "run-1" };
+        return { sessionKey: sampleStartedSessionKey, runId: "run-1" };
       }
       if (method === "tasks.list") {
-        return { tasks: [sampleTask] };
+        return { tasks: [sampleStartedTask] };
       }
       if (method === "chat.abort") {
         return { aborted: true, runIds: ["run-1"] };
@@ -3682,11 +3756,12 @@ describe("workboard controller", () => {
       host,
       client: client as never,
       card: sampleCard,
+      defaultAgentId: "main",
     });
 
     expect(sessionKey).toBeNull();
     expect(client.request).toHaveBeenNthCalledWith(5, "chat.abort", {
-      sessionKey: sampleTaskSessionKey,
+      sessionKey: sampleStartedSessionKey,
       runId: "run-1",
     });
     expect(client.request).toHaveBeenNthCalledWith(
@@ -3807,7 +3882,7 @@ describe("workboard controller", () => {
     const dueRunning = {
       ...dueScheduled,
       status: "running",
-      sessionKey: "subagent:workboard-default-scheduled-3",
+      sessionKey: "agent:main:subagent:workboard-default-scheduled-3",
       runId: "run-due",
       taskId: "task-due",
     } satisfies WorkboardCard;
@@ -3817,7 +3892,7 @@ describe("workboard controller", () => {
       }
       if (method === "agent") {
         return {
-          sessionKey: "subagent:workboard-default-scheduled-3",
+          sessionKey: "agent:main:subagent:workboard-default-scheduled-3",
           runId: "run-due",
         };
       }
@@ -3828,7 +3903,7 @@ describe("workboard controller", () => {
               ...sampleTask,
               id: "task-due",
               taskId: "task-due",
-              childSessionKey: "subagent:workboard-default-scheduled-3",
+              childSessionKey: "agent:main:subagent:workboard-default-scheduled-3",
               runId: "run-due",
             },
           ],
@@ -3846,9 +3921,10 @@ describe("workboard controller", () => {
       host,
       client: dueClient as never,
       card: dueScheduled,
+      defaultAgentId: "main",
     });
 
-    expect(dueSessionKey).toBe("subagent:workboard-default-scheduled-3");
+    expect(dueSessionKey).toBe("agent:main:subagent:workboard-default-scheduled-3");
     expect(dueClient.request).toHaveBeenCalledWith(
       "agent",
       expect.objectContaining({
@@ -3860,12 +3936,12 @@ describe("workboard controller", () => {
   it("starts a Codex execution with an explicit model override", async () => {
     const running = createWorkboardCard({
       status: "running",
-      sessionKey: sampleTaskSessionKey,
+      sessionKey: sampleStartedSessionKey,
       taskId: "task-1",
       execution: createWorkboardExecution({
         id: "card-1:codex",
         model: "openai/gpt-5.6-sol",
-        sessionKey: sampleTaskSessionKey,
+        sessionKey: sampleStartedSessionKey,
         runId: "run-1",
         startedAt: 10,
         updatedAt: 10,
@@ -3878,10 +3954,10 @@ describe("workboard controller", () => {
         return { card: updateCalls === 1 ? { ...sampleCard, status: "running" } : running };
       }
       if (method === "agent") {
-        return { sessionKey: sampleTaskSessionKey, runId: "run-1" };
+        return { sessionKey: sampleStartedSessionKey, runId: "run-1" };
       }
       if (method === "tasks.list") {
-        return { tasks: [sampleTask] };
+        return { tasks: [sampleStartedTask] };
       }
       return {};
     });
@@ -3891,6 +3967,7 @@ describe("workboard controller", () => {
       client: client as never,
       card: sampleCard,
       engine: "codex",
+      defaultAgentId: "main",
     });
 
     expect(client.request).toHaveBeenNthCalledWith(
@@ -3904,7 +3981,7 @@ describe("workboard controller", () => {
       2,
       "agent",
       expect.objectContaining({
-        sessionKey: sampleTaskSessionKey,
+        sessionKey: sampleStartedSessionKey,
         model: "openai/gpt-5.6-sol",
         message: expect.stringContaining("Work on this OpenClaw Workboard card: Build board"),
       }),
@@ -3968,6 +4045,7 @@ describe("workboard controller", () => {
         client: client as never,
         card: previous,
         engine: "codex",
+        defaultAgentId: "main",
       });
 
       expect(client.request).toHaveBeenNthCalledWith(
@@ -4102,7 +4180,7 @@ describe("workboard controller", () => {
     const client = createClient((method) => {
       if (method === "agent") {
         return {
-          sessionKey: sampleTaskSessionKey,
+          sessionKey: sampleStartedSessionKey,
           runStarted: false,
           runError: { message: "provider unavailable" },
         };
@@ -4118,6 +4196,7 @@ describe("workboard controller", () => {
       host,
       client: client as never,
       card: sampleCard,
+      defaultAgentId: "main",
     });
 
     expect(sessionKey).toBeNull();
@@ -4544,6 +4623,7 @@ describe("workboard controller", () => {
       host,
       client: client as never,
       card: remaining,
+      defaultAgentId: "main",
     });
 
     expect(client.request).toHaveBeenNthCalledWith(

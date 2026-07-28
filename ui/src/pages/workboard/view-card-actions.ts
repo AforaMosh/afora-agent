@@ -324,6 +324,7 @@ export function renderStartExecutionButton(
           host: props.host,
           client: props.client,
           card,
+          defaultAgentId: props.agentsList?.defaultId ?? props.defaultAgentId,
           ...(engine ? { engine } : {}),
           mode,
           requestUpdate: props.onRequestUpdate,

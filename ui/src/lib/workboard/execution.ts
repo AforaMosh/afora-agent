@@ -1,6 +1,7 @@
 import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
 import type { GatewayBrowserClient } from "../../api/gateway.ts";
 import { requestSessionCreate } from "../sessions/index.ts";
+import { normalizeAgentId } from "../sessions/session-key.ts";
 import {
   normalizeString,
   replaceCard,
@@ -90,15 +91,23 @@ function sanitizeSessionSegment(value: string | undefined, fallback: string): st
   return (sanitized || fallback).slice(0, 96);
 }
 
-function buildCardTaskSessionKey(card: WorkboardCard): string {
+// Sessions live in per-agent SQLite stores, so an unscoped key has no store to
+// resolve and the run fails. Unassigned cards adopt the gateway's default agent,
+// the same owner the Workboard dispatcher resolves them to, so both surfaces
+// address one session per card. Returns null when no owner is known yet.
+function buildCardTaskSessionKey(
+  card: WorkboardCard,
+  defaultAgentId: string | null | undefined,
+): string | null {
+  // Only a non-empty id is normalized: normalizeAgentId maps blank to "main",
+  // which would silently retarget the card away from the configured default.
+  const owner = card.agentId?.trim() || defaultAgentId?.trim();
+  if (!owner) {
+    return null;
+  }
   const boardId = sanitizeSessionSegment(card.metadata?.automation?.boardId, "default");
   const cardId = sanitizeSessionSegment(card.id, "card");
-  const suffix = `subagent:workboard-${boardId}-${cardId}`;
-  const sessionKey = card.agentId
-    ? `agent:${sanitizeSessionSegment(card.agentId, "agent")}:${suffix}`
-    : suffix;
-  const existing = workboardCardSessionKey(card)?.trim();
-  return existing === sessionKey ? existing : sessionKey;
+  return `agent:${normalizeAgentId(owner)}:subagent:workboard-${boardId}-${cardId}`;
 }
 
 function buildCardRunIdempotencyKey(card: WorkboardCard): string {
@@ -222,6 +231,8 @@ export async function startWorkboardCard(params: {
   host: WorkboardHost;
   client: GatewayBrowserClient | null;
   card: WorkboardCard;
+  /** Gateway default agent, adopted by cards with no explicit assignment. */
+  defaultAgentId?: string | null;
   engine?: WorkboardExecutionEngine;
   mode?: WorkboardExecutionMode;
   requestUpdate?: () => void;
@@ -269,31 +280,36 @@ export async function startWorkboardCard(params: {
         card = preflightCard;
       }
     }
-    const created =
-      mode === "autonomous"
-        ? await params.client.request("agent", {
-            sessionKey: buildCardTaskSessionKey(card),
-            ...(card.agentId ? { agentId: card.agentId } : {}),
-            label: buildCardSessionLabel(card),
-            ...(model ? { model } : {}),
-            message: buildCardPrompt(card),
-            deliver: false,
-            bootstrapContextMode: "lightweight",
-            idempotencyKey: buildCardRunIdempotencyKey(card),
-          })
-        : await requestSessionCreate(params.client, {
-            ...(card.agentId ? { agentId: card.agentId } : {}),
-            label: buildCardSessionLabel(card),
-            ...(model ? { model } : {}),
-          });
+    // Built from the preflight response so the key names the card's current
+    // assignment. Non-null exactly when this is an autonomous start, which is
+    // why the request below branches on the key instead of on `mode`.
+    const autonomousSessionKey =
+      mode === "autonomous" ? buildCardTaskSessionKey(card, params.defaultAgentId) : null;
+    if (mode === "autonomous" && !autonomousSessionKey) {
+      throw new Error("Cannot start an unassigned card until the default agent is known.");
+    }
+    const created = autonomousSessionKey
+      ? await params.client.request("agent", {
+          sessionKey: autonomousSessionKey,
+          ...(card.agentId ? { agentId: card.agentId } : {}),
+          label: buildCardSessionLabel(card),
+          ...(model ? { model } : {}),
+          message: buildCardPrompt(card),
+          deliver: false,
+          bootstrapContextMode: "lightweight",
+          idempotencyKey: buildCardRunIdempotencyKey(card),
+        })
+      : await requestSessionCreate(params.client, {
+          ...(card.agentId ? { agentId: card.agentId } : {}),
+          label: buildCardSessionLabel(card),
+          ...(model ? { model } : {}),
+        });
     const sessionKey =
       isRecord(created) && typeof created.sessionKey === "string" && created.sessionKey.trim()
         ? created.sessionKey.trim()
         : isRecord(created) && typeof created.key === "string" && created.key.trim()
           ? created.key.trim()
-          : mode === "autonomous"
-            ? buildCardTaskSessionKey(card)
-            : null;
+          : autonomousSessionKey;
     const runId =
       isRecord(created) && typeof created.runId === "string" && created.runId.trim()
         ? created.runId.trim()
