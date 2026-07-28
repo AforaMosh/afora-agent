@@ -116,6 +116,7 @@ async function arrangeAgentsDeleteTest(params: {
 
   configMocks.readConfigFileSnapshot.mockResolvedValue({
     ...baseConfigSnapshot,
+    parsed: cfg,
     config: cfg,
     runtimeConfig: cfg,
     sourceConfig: cfg,
