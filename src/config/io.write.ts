@@ -14,12 +14,7 @@ import {
   upsertConfigSnapshotAuditRecord,
 } from "./config-journal-snapshot.js";
 import { resolveManagedUnsetPathsForWrite } from "./config-path-mutation.js";
-import {
-  EnvRefArrayMutationError,
-  restoreEnvRefsFromMap,
-  restoreEnvVarRefs,
-} from "./env-preserve.js";
-import { INCLUDE_KEY, readConfigIncludeFileWithGuards, resolveConfigIncludes } from "./includes.js";
+import { INCLUDE_KEY } from "./includes.js";
 import {
   appendConfigAuditRecord,
   capConfigAuditIssues,
@@ -32,11 +27,9 @@ import {
 import type { ConfigIoContext } from "./io.context.js";
 import { recordConfigWriteMetadata } from "./io.meta.js";
 import {
-  collectEnvRefPaths,
   containsConfigIncludeDirective,
   hashConfigRaw,
   hasConfigMeta,
-  parseConfigJson5,
   resolveConfigSnapshotHash,
   resolveGatewayMode,
   restoreAuthoredTildePathsForWrite,
@@ -65,7 +58,6 @@ import {
 import { formatConfigIssueLines } from "./issue-format.js";
 import { warnIfJSON5CommentsWillBeStripped } from "./json5-comments.js";
 import { assertConfigWriteAllowedInCurrentMode } from "./nix-mode-write-guard.js";
-import { resolveIncludeRoots } from "./paths.js";
 import { preflightRuntimeSnapshotWrite } from "./runtime-snapshot.js";
 import type { OpenClawConfig } from "./types.js";
 import { validateConfigObjectRawWithPlugins } from "./validation.js";
@@ -125,44 +117,10 @@ export async function writeConfigFileFromContext(
   }
   const cfg = prepared.value.authoredDocument;
   const persistCandidate: unknown = cfg;
-  let envRefMap: Map<string, string> | null = null;
   const changedPaths = new Set(prepared.value.changedPaths);
-  const identityRestoredPaths = new Set<string>();
-  if (snapshot.exists && snapshot.valid) {
-    try {
-      const resolvedIncludes = resolveConfigIncludes(
-        snapshot.parsed,
-        configPath,
-        {
-          readFile: (candidate) => deps.fs.readFileSync(candidate, "utf-8"),
-          readFileWithGuards: ({ includePath, resolvedPath, rootRealDir }) =>
-            readConfigIncludeFileWithGuards({
-              includePath,
-              resolvedPath,
-              rootRealDir,
-              ioFs: deps.fs,
-            }),
-          parseJson: (raw) => deps.json5.parse(raw),
-        },
-        { allowedRoots: resolveIncludeRoots(deps.env, deps.homedir) },
-      );
-      const collected = new Map<string, string>();
-      collectEnvRefPaths(resolvedIncludes, "", collected);
-      if (collected.size > 0) {
-        envRefMap = collected;
-      }
-    } catch {
-      envRefMap = null;
-    }
-  }
-
-  const envForRestore = options.envSnapshotForRestore ?? deps.env;
-  const validationSourceCandidate = containsConfigIncludeDirective(persistCandidate)
-    ? restoreEnvVarRefs(persistCandidate, snapshot.parsed, envForRestore)
+  const validationCandidate = containsConfigIncludeDirective(persistCandidate)
+    ? context.resolveRuntimePreflightSourceConfig(persistCandidate as OpenClawConfig)
     : persistCandidate;
-  const validationCandidate = containsConfigIncludeDirective(validationSourceCandidate)
-    ? context.resolveRuntimePreflightSourceConfig(validationSourceCandidate as OpenClawConfig)
-    : validationSourceCandidate;
   const validated = validateConfigObjectRawWithPlugins(validationCandidate, {
     env: deps.env,
     pluginValidation: options.skipPluginValidation ? "skip" : "full",
@@ -181,23 +139,7 @@ export async function writeConfigFileFromContext(
     homedir: deps.homedir,
   });
 
-  let cfgToWrite = persistCandidate as OpenClawConfig;
-  try {
-    if (deps.fs.existsSync(configPath)) {
-      const currentRaw = await deps.fs.promises.readFile(configPath, "utf-8");
-      const parsed = parseConfigJson5(currentRaw, deps.json5);
-      if (parsed.ok) {
-        const beforeIdentityRestore = cfgToWrite;
-        cfgToWrite = restoreEnvVarRefs(cfgToWrite, parsed.parsed, envForRestore) as OpenClawConfig;
-        collectChangedPaths(beforeIdentityRestore, cfgToWrite, "", identityRestoredPaths);
-      }
-    }
-  } catch (error) {
-    if (error instanceof EnvRefArrayMutationError) {
-      throw error;
-    }
-    // A failed current-file reread leaves the already validated candidate unchanged.
-  }
+  const cfgToWrite = persistCandidate as OpenClawConfig;
 
   await deps.fs.promises.mkdir(path.dirname(configPath), { recursive: true, mode: 0o700 });
   await tightenStateDirPermissionsIfNeeded({
@@ -206,17 +148,8 @@ export async function writeConfigFileFromContext(
     homedir: deps.homedir,
     fsModule: deps.fs,
   });
-  const outputConfigBase = envRefMap
-    ? (restoreEnvRefsFromMap(
-        cfgToWrite,
-        "",
-        envRefMap,
-        changedPaths,
-        identityRestoredPaths,
-      ) as OpenClawConfig)
-    : cfgToWrite;
   const tildeRestoredOutputConfig = restoreAuthoredTildePathsForWrite(
-    outputConfigBase,
+    cfgToWrite,
     snapshot.parsed,
     undefined,
     deps.homedir(),

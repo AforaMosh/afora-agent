@@ -1777,6 +1777,121 @@ describe("doctor config flow", () => {
     expect(result.cfg.gateway?.auth?.token).toBe("${GATEWAY_TOKEN}");
   });
 
+  it("keeps a repaired legacy default literal when an authored reference resolves false", async () => {
+    const result = await runDoctorConfigWithInput({
+      config: { agents: { entries: { ops: { default: true } } } },
+      parsedConfig: {
+        agents: { list: [{ id: "ops", default: "${IS_DEFAULT}" as never }] },
+      },
+      sourceConfigBeforeMigrations: {
+        agents: { list: [{ id: "ops", default: false }] },
+      },
+      repair: true,
+      run: loadAndMaybeMigrateDoctorConfig,
+    });
+
+    expect(result.shouldWriteConfig).toBe(true);
+    expect(result.cfg.agents).toEqual({ entries: { ops: { default: true } } });
+  });
+
+  it("repairs keyed roster defaults resolved from authored environment references", async () => {
+    const duplicateDefaults = await runDoctorConfigWithInput({
+      config: { agents: { entries: { ops: { default: true }, research: {} } } },
+      parsedConfig: {
+        agents: {
+          entries: {
+            ops: { default: "${OPS_DEFAULT}" as never },
+            research: { default: "${RESEARCH_DEFAULT}" as never },
+          },
+        },
+      },
+      sourceConfigBeforeMigrations: {
+        agents: { entries: { ops: { default: true }, research: { default: true } } },
+      },
+      repair: true,
+      run: loadAndMaybeMigrateDoctorConfig,
+    });
+    const missingDefault = await runDoctorConfigWithInput({
+      config: { agents: { entries: { ops: { default: true }, research: {} } } },
+      parsedConfig: {
+        agents: {
+          entries: {
+            ops: { default: "${OPS_DEFAULT}" as never },
+            research: {},
+          },
+        },
+      },
+      sourceConfigBeforeMigrations: {
+        agents: { entries: { ops: { default: false }, research: {} } },
+      },
+      repair: true,
+      run: loadAndMaybeMigrateDoctorConfig,
+    });
+
+    expect(duplicateDefaults.shouldWriteConfig).toBe(true);
+    expect(duplicateDefaults.cfg.agents?.entries).toEqual({
+      ops: { default: "${OPS_DEFAULT}" as never },
+      research: {},
+    });
+    expect(missingDefault.shouldWriteConfig).toBe(true);
+    expect(missingDefault.cfg.agents?.entries).toEqual({
+      ops: { default: true },
+      research: {},
+    });
+  });
+
+  it("rejects repair of an include-contributed duplicate keyed default", async () => {
+    await expect(
+      runDoctorConfigWithInput({
+        config: { agents: { entries: { research: { default: true }, ops: {} } } },
+        parsedConfig: {
+          agents: {
+            entries: {
+              research: { default: true },
+              ops: { $include: "./ops.json" },
+            },
+          },
+        },
+        sourceConfigBeforeMigrations: {
+          agents: {
+            entries: {
+              research: { default: true },
+              ops: { default: true },
+            },
+          },
+        },
+        repair: true,
+        run: loadAndMaybeMigrateDoctorConfig,
+      }),
+    ).rejects.toThrow("Doctor cannot safely migrate the authored agent roster");
+  });
+
+  it("rejects repair that would mask an included default", async () => {
+    await expect(
+      runDoctorConfigWithInput({
+        config: { agents: { entries: { research: { default: true }, ops: {} } } },
+        parsedConfig: {
+          agents: {
+            entries: {
+              research: { default: true },
+              ops: { $include: "./ops.json", default: "${OPS_DEFAULT}" as never },
+            },
+          },
+        },
+        sourceConfigBeforeMigrations: {
+          agents: {
+            entries: {
+              research: { default: true },
+              ops: { default: true },
+            },
+          },
+        },
+        repair: true,
+        run: loadAndMaybeMigrateDoctorConfig,
+      }),
+    ).rejects.toThrow("Doctor cannot safely migrate the authored agent roster");
+  });
+
   it("preserves a roster supplied by an included config during repair", async () => {
     const result = await runDoctorConfigWithInput({
       config: { agents: { entries: { ops: { default: true } } } },
@@ -1982,7 +2097,10 @@ describe("doctor config flow", () => {
           entries: { main: { default: true } },
         },
       },
-      parsedConfig: { $include: "./channels.json", agents: { entries: {} } },
+      parsedConfig: {
+        $include: "./channels.json",
+        agents: { defaults: { workspace: "/tmp/ops" }, entries: {} },
+      },
       includeProvenance: [
         {
           path: [],

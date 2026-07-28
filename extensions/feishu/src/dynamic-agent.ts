@@ -127,7 +127,7 @@ export async function maybeCreateDynamicAgent(params: {
   let skippedCfg: OpenClawConfig | undefined;
   const committed = await runtime.config
     .mutateConfigFile<DynamicAgentMutationResult>({
-      base: "runtime",
+      base: "source",
       afterWrite: { mode: "auto" },
       mutate: async (draft) => {
         if (!hasDefaultDirectRoute(draft, accountId, senderOpenId)) {

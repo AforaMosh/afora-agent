@@ -123,13 +123,7 @@ const allowConfigPathWrite = () => {};
 const replaceIntent = (config: OpenClawConfig) => ({
   kind: "replace" as const,
   config,
-  allowAgentRosterRemovals: true as const,
 });
-const mergeIntent = (patch: unknown) => ({
-  kind: "mutate" as const,
-  operations: [{ kind: "merge" as const, patch }],
-});
-
 async function expectPluginIncludeMutationConflict(
   snapshot: ConfigFileSnapshot,
   pluginsPath: string,
@@ -211,7 +205,10 @@ describe("config mutate helpers", () => {
     expect(result.afterWrite).toEqual({ mode: "auto" });
     expect(result.followUp).toEqual({ mode: "auto", requiresRestart: false });
     expect(ioMocks.writeConfigFile).toHaveBeenCalledWith(
-      mergeIntent({ gateway: { auth: { mode: "token" } } }),
+      {
+        kind: "mutate",
+        operations: [{ kind: "set", path: ["gateway", "auth"], value: { mode: "token" } }],
+      },
       { baseSnapshot: snapshot, expectedConfigPath: snapshot.path, afterWrite: { mode: "auto" } },
     );
   });
@@ -247,7 +244,6 @@ describe("config mutate helpers", () => {
             kind: "set",
             path: ["plugins", "entries", "demo", "config", "mode"],
             value: null,
-            arrayContainerDepths: [],
           },
         ],
       },
@@ -255,7 +251,7 @@ describe("config mutate helpers", () => {
     );
   });
 
-  it("projects runtime array edits onto authored environment references", async () => {
+  it("carries source array edits without replacing authored references", async () => {
     const snapshot = createSnapshot({
       hash: "source-hash",
       parsed: { plugins: { allow: ["${TOKEN}", "old"] } },
@@ -275,7 +271,14 @@ describe("config mutate helpers", () => {
     expect(ioMocks.writeConfigFile).toHaveBeenCalledWith(
       {
         kind: "mutate",
-        operations: [{ kind: "merge", patch: { plugins: { allow: ["${TOKEN}", "new"] } } }],
+        operations: [
+          {
+            kind: "set",
+            path: ["plugins", "allow", "1"],
+            value: "new",
+            arrayContainerDepths: [2],
+          },
+        ],
       },
       expect.objectContaining({ baseSnapshot: snapshot }),
     );
@@ -354,7 +357,7 @@ describe("config mutate helpers", () => {
     );
   });
 
-  it("preserves roster-removal authorization while adding candidate hints", async () => {
+  it("turns a keyed roster deletion into an explicit unset intent", async () => {
     const snapshot = createSnapshot({
       hash: "source-hash",
       sourceConfig: {
@@ -367,7 +370,6 @@ describe("config mutate helpers", () => {
     });
 
     await transformConfigFileWithRetry({
-      allowAgentRosterRemovals: ["ops"],
       transform(config) {
         const nextConfig = structuredClone(config);
         delete nextConfig.agents?.entries?.ops;
@@ -378,7 +380,9 @@ describe("config mutate helpers", () => {
     expect(ioMocks.writeConfigFile).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: "mutate",
-        allowAgentRosterRemovals: ["ops"],
+        operations: expect.arrayContaining([
+          expect.objectContaining({ kind: "unset", path: ["agents", "entries", "ops"] }),
+        ]),
       }),
       expect.objectContaining({ baseSnapshot: snapshot }),
     );
@@ -432,7 +436,16 @@ describe("config mutate helpers", () => {
     expect(ioMocks.writeConfigFile).toHaveBeenCalledTimes(2);
     expect(ioMocks.writeConfigFile).toHaveBeenNthCalledWith(
       2,
-      mergeIntent({ agents: { list: [{ id: "other-agent" }, { id: "work" }] } }),
+      {
+        kind: "mutate",
+        operations: [
+          {
+            kind: "set",
+            path: ["agents", "list"],
+            value: [{ id: "other-agent" }, { id: "work" }],
+          },
+        ],
+      },
       {
         baseSnapshot: fresh,
         expectedConfigPath: fresh.path,
@@ -619,7 +632,16 @@ describe("config mutate helpers", () => {
     await Promise.all([first, second]);
     expect(ioMocks.writeConfigFile).toHaveBeenNthCalledWith(
       2,
-      mergeIntent({ agents: { list: [{ id: "first" }, { id: "second" }] } }),
+      {
+        kind: "mutate",
+        operations: [
+          {
+            kind: "set",
+            path: ["agents", "list"],
+            value: [{ id: "first" }, { id: "second" }],
+          },
+        ],
+      },
       { baseSnapshot: fresh, expectedConfigPath: fresh.path, afterWrite: { mode: "auto" } },
     );
   });

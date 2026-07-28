@@ -5,13 +5,14 @@ import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveDefaultAgentDir } from "../agents/agent-scope.js";
+import { REDACTED_SENTINEL } from "../config/redact-snapshot.js";
 import { loadSessionEntry } from "../config/sessions/session-accessor.js";
 import {
   activateSecretsRuntimeSnapshot,
   getActiveSecretsRuntimeSnapshot,
   prepareSecretsRuntimeSnapshot,
 } from "../secrets/runtime.js";
-import { deleteTestEnvValue } from "../test-utils/env.js";
+import { deleteTestEnvValue, withEnvAsync } from "../test-utils/env.js";
 import {
   connectOk,
   installGatewayTestHooks,
@@ -504,6 +505,449 @@ describe("gateway config methods", () => {
       expect(persisted).toContain('"port": 19003');
       expect(persisted).not.toContain('"baseUrl"');
       expect(persisted).not.toContain('"models": []');
+    } finally {
+      await fs.rm(configPath, { force: true });
+      resetConfigRuntimeState();
+    }
+  });
+
+  it("does not persist runtime-only defaults during an unrelated config.patch", async () => {
+    const { createConfigIO, resetConfigRuntimeState } = await import("../config/config.js");
+    const configPath = createConfigIO().configPath;
+    try {
+      await writeJsonFile(configPath, { gateway: { mode: "local" } });
+      resetConfigRuntimeState();
+
+      const current = await getCurrentConfigObject();
+      expect(current.config.agents).toMatchObject({ entries: { main: { default: true } } });
+
+      const res = await rpcReq<{ ok?: boolean; error?: { message?: string } }>(
+        requireWs(),
+        "config.patch",
+        {
+          raw: JSON.stringify({ gateway: { port: 19004 } }),
+          baseHash: current.hash,
+        },
+      );
+
+      expect(res.error).toBeUndefined();
+      expect(res.ok).toBe(true);
+      const persisted = JSON.parse(await fs.readFile(configPath, "utf-8")) as {
+        agents?: unknown;
+        gateway?: { mode?: string; port?: number };
+      };
+      expect(persisted.gateway).toEqual({ mode: "local", port: 19004 });
+      expect(persisted.agents).toBeUndefined();
+    } finally {
+      await fs.rm(configPath, { force: true });
+      resetConfigRuntimeState();
+    }
+  });
+
+  it("persists an explicit literal equal to the currently resolved authored reference", async () => {
+    const { createConfigIO, resetConfigRuntimeState } = await import("../config/config.js");
+    const configPath = createConfigIO().configPath;
+    try {
+      await withEnvAsync({ OPENCLAW_PATCH_EQUAL_REF: "https://resolved.example/v1" }, async () => {
+        await writeJsonFile(configPath, {
+          models: {
+            providers: {
+              custom: {
+                baseUrl: "${OPENCLAW_PATCH_EQUAL_REF}",
+                models: [],
+              },
+            },
+          },
+        });
+        resetConfigRuntimeState();
+        const current = await getCurrentConfigObject();
+
+        const res = await rpcReq<{ ok?: boolean; error?: { message?: string } }>(
+          requireWs(),
+          "config.patch",
+          {
+            raw: JSON.stringify({
+              models: {
+                providers: { custom: { baseUrl: "https://resolved.example/v1" } },
+              },
+            }),
+            baseHash: current.hash,
+          },
+        );
+
+        expect(res.error).toBeUndefined();
+        expect(res.ok).toBe(true);
+        const persisted = JSON.parse(await fs.readFile(configPath, "utf-8")) as {
+          models?: { providers?: { custom?: { baseUrl?: string } } };
+        };
+        expect(persisted.models?.providers?.custom?.baseUrl).toBe("https://resolved.example/v1");
+      });
+    } finally {
+      await fs.rm(configPath, { force: true });
+      resetConfigRuntimeState();
+    }
+  });
+
+  it("persists runtime-equivalent literals beside changed fields in an ID-merged array", async () => {
+    const { createConfigIO, resetConfigRuntimeState } = await import("../config/config.js");
+    const configPath = createConfigIO().configPath;
+    try {
+      await withEnvAsync({ OPENCLAW_PATCH_MODEL_NAME: "Resolved Model" }, async () => {
+        await writeJsonFile(configPath, {
+          models: {
+            providers: {
+              custom: {
+                baseUrl: "https://example.invalid/v1",
+                models: [
+                  {
+                    id: "test-model",
+                    name: "${OPENCLAW_PATCH_MODEL_NAME}",
+                    contextWindow: 1000,
+                  },
+                ],
+              },
+            },
+          },
+        });
+        resetConfigRuntimeState();
+        const current = await getCurrentConfigObject();
+
+        const res = await rpcReq<{ ok?: boolean; error?: { message?: string } }>(
+          requireWs(),
+          "config.patch",
+          {
+            raw: JSON.stringify({
+              models: {
+                providers: {
+                  custom: {
+                    models: [{ id: "test-model", name: "Resolved Model", contextWindow: 2000 }],
+                  },
+                },
+              },
+            }),
+            baseHash: current.hash,
+          },
+        );
+
+        expect(res.error).toBeUndefined();
+        expect(res.ok).toBe(true);
+        const persisted = JSON.parse(await fs.readFile(configPath, "utf-8")) as {
+          models?: {
+            providers?: {
+              custom?: { models?: Array<{ name?: string; contextWindow?: number }> };
+            };
+          };
+        };
+        expect(persisted.models?.providers?.custom?.models?.[0]).toMatchObject({
+          name: "Resolved Model",
+          contextWindow: 2000,
+        });
+      });
+    } finally {
+      await fs.rm(configPath, { force: true });
+      resetConfigRuntimeState();
+    }
+  });
+
+  it("targets an ID-merged element whose authored ID is an environment reference", async () => {
+    const { createConfigIO, resetConfigRuntimeState } = await import("../config/config.js");
+    const configPath = createConfigIO().configPath;
+    try {
+      await withEnvAsync(
+        {
+          OPENCLAW_PATCH_MODEL_ID: "test-model",
+          OPENCLAW_PATCH_MODEL_NAME: "Resolved Model",
+        },
+        async () => {
+          await writeJsonFile(configPath, {
+            models: {
+              providers: {
+                custom: {
+                  baseUrl: "https://example.invalid/v1",
+                  models: [
+                    {
+                      id: "${OPENCLAW_PATCH_MODEL_ID}",
+                      name: "${OPENCLAW_PATCH_MODEL_NAME}",
+                    },
+                  ],
+                },
+              },
+            },
+          });
+          resetConfigRuntimeState();
+          const current = await getCurrentConfigObject();
+
+          const res = await rpcReq<{ ok?: boolean; error?: { message?: string } }>(
+            requireWs(),
+            "config.patch",
+            {
+              raw: JSON.stringify({
+                models: {
+                  providers: {
+                    custom: {
+                      models: [{ id: "test-model", name: "Literal Model" }],
+                    },
+                  },
+                },
+              }),
+              baseHash: current.hash,
+            },
+          );
+
+          expect(res.error).toBeUndefined();
+          expect(res.ok).toBe(true);
+          const persisted = JSON.parse(await fs.readFile(configPath, "utf-8")) as {
+            models?: {
+              providers?: { custom?: { models?: Array<{ id?: string; name?: string }> } };
+            };
+          };
+          expect(persisted.models?.providers?.custom?.models).toEqual([
+            { id: "${OPENCLAW_PATCH_MODEL_ID}", name: "Literal Model" },
+          ]);
+        },
+      );
+    } finally {
+      await fs.rm(configPath, { force: true });
+      resetConfigRuntimeState();
+    }
+  });
+
+  it("keeps literals on a new ID-merged entry when they equal an existing resolved reference", async () => {
+    const { createConfigIO, resetConfigRuntimeState } = await import("../config/config.js");
+    const configPath = createConfigIO().configPath;
+    try {
+      await withEnvAsync({ OPENCLAW_PATCH_EXISTING_MODEL: "Resolved Model" }, async () => {
+        await writeJsonFile(configPath, {
+          models: {
+            providers: {
+              custom: {
+                baseUrl: "https://example.invalid/v1",
+                models: [{ id: "existing", name: "${OPENCLAW_PATCH_EXISTING_MODEL}" }],
+              },
+            },
+          },
+        });
+        resetConfigRuntimeState();
+        const current = await getCurrentConfigObject();
+
+        const res = await rpcReq<{ ok?: boolean; error?: { message?: string } }>(
+          requireWs(),
+          "config.patch",
+          {
+            raw: JSON.stringify({
+              models: {
+                providers: {
+                  custom: { models: [{ id: "new", name: "Resolved Model" }] },
+                },
+              },
+            }),
+            baseHash: current.hash,
+          },
+        );
+
+        expect(res.error).toBeUndefined();
+        expect(res.ok).toBe(true);
+        const persisted = JSON.parse(await fs.readFile(configPath, "utf-8")) as {
+          models?: {
+            providers?: { custom?: { models?: Array<{ id?: string; name?: string }> } };
+          };
+        };
+        expect(persisted.models?.providers?.custom?.models).toEqual([
+          { id: "existing", name: "${OPENCLAW_PATCH_EXISTING_MODEL}" },
+          { id: "new", name: "Resolved Model" },
+        ]);
+      });
+    } finally {
+      await fs.rm(configPath, { force: true });
+      resetConfigRuntimeState();
+    }
+  });
+
+  it("rejects replacement of an include-owned ID-array element", async () => {
+    const { createConfigIO, resetConfigRuntimeState } = await import("../config/config.js");
+    const configPath = createConfigIO().configPath;
+    const includePath = path.join(path.dirname(configPath), "model.json");
+    try {
+      await writeJsonFile(includePath, {
+        id: "test-model",
+        name: "Included Model",
+        headers: { Authorization: "included-secret" },
+      });
+      await writeJsonFile(configPath, {
+        models: {
+          providers: {
+            custom: {
+              baseUrl: "https://example.invalid/v1",
+              models: [{ $include: "./model.json" }],
+            },
+          },
+        },
+      });
+      resetConfigRuntimeState();
+      const current = await getCurrentConfigObject();
+
+      const res = await rpcReq<{ ok?: boolean; error?: { message?: string } }>(
+        requireWs(),
+        "config.patch",
+        {
+          raw: JSON.stringify({
+            models: {
+              providers: {
+                custom: {
+                  models: [
+                    {
+                      id: "test-model",
+                      name: "Literal Model",
+                      headers: { Authorization: REDACTED_SENTINEL },
+                    },
+                  ],
+                },
+              },
+            },
+          }),
+          baseHash: current.hash,
+          replacePaths: ["models.providers.custom.models"],
+        },
+      );
+
+      expect(res.ok).toBe(false);
+      expect(res.error?.message).toContain("$include-owned config");
+      const persisted = JSON.parse(await fs.readFile(configPath, "utf-8")) as {
+        models?: {
+          providers?: { custom?: { models?: Array<Record<string, unknown>> } };
+        };
+      };
+      expect(persisted.models?.providers?.custom?.models).toEqual([{ $include: "./model.json" }]);
+      await expect(fs.readFile(includePath, "utf-8")).resolves.toContain('"id": "test-model"');
+      await expect(fs.readFile(includePath, "utf-8")).resolves.toContain("included-secret");
+    } finally {
+      await fs.rm(configPath, { force: true });
+      await fs.rm(includePath, { force: true });
+      resetConfigRuntimeState();
+    }
+  });
+
+  it("preserves redacted secrets during an explicit ID-array replacement", async () => {
+    const { createConfigIO, resetConfigRuntimeState } = await import("../config/config.js");
+    const configPath = createConfigIO().configPath;
+    try {
+      await writeJsonFile(configPath, {
+        models: {
+          providers: {
+            custom: {
+              baseUrl: "https://example.invalid/v1",
+              models: [
+                {
+                  id: "model-a",
+                  name: "Original A",
+                  headers: { Authorization: "secret-a" },
+                },
+                {
+                  id: "model-b",
+                  name: "Original B",
+                  headers: { Authorization: "secret-b" },
+                },
+              ],
+            },
+          },
+        },
+      });
+      resetConfigRuntimeState();
+      const current = await getCurrentConfigObject();
+
+      const res = await rpcReq<{ ok?: boolean; error?: { message?: string } }>(
+        requireWs(),
+        "config.patch",
+        {
+          raw: JSON.stringify({
+            models: {
+              providers: {
+                custom: {
+                  models: [
+                    {
+                      id: "model-b",
+                      name: "Replacement B",
+                      headers: { Authorization: REDACTED_SENTINEL },
+                    },
+                    {
+                      id: "model-a",
+                      name: "Replacement A",
+                      headers: { Authorization: REDACTED_SENTINEL },
+                    },
+                  ],
+                },
+              },
+            },
+          }),
+          baseHash: current.hash,
+          replacePaths: ["models.providers.custom.models"],
+        },
+      );
+
+      expect(res.error).toBeUndefined();
+      expect(res.ok).toBe(true);
+      const persisted = JSON.parse(await fs.readFile(configPath, "utf-8")) as {
+        models?: { providers?: { custom?: { models?: unknown[] } } };
+      };
+      expect(persisted.models?.providers?.custom?.models).toEqual([
+        {
+          id: "model-b",
+          name: "Replacement B",
+          headers: { Authorization: "secret-b" },
+        },
+        {
+          id: "model-a",
+          name: "Replacement A",
+          headers: { Authorization: "secret-a" },
+        },
+      ]);
+    } finally {
+      await fs.rm(configPath, { force: true });
+      resetConfigRuntimeState();
+    }
+  });
+
+  it("keeps an explicit literal when it equals another map entry's resolved reference", async () => {
+    const { createConfigIO, resetConfigRuntimeState } = await import("../config/config.js");
+    const configPath = createConfigIO().configPath;
+    try {
+      await withEnvAsync(
+        {
+          OPENCLAW_PATCH_BROWSER_A: "ws://127.0.0.1:9222",
+          OPENCLAW_PATCH_BROWSER_B: "ws://127.0.0.1:9333",
+        },
+        async () => {
+          await writeJsonFile(configPath, {
+            browser: {
+              profiles: {
+                a: { cdpUrl: "${OPENCLAW_PATCH_BROWSER_A}" },
+                b: { cdpUrl: "${OPENCLAW_PATCH_BROWSER_B}" },
+              },
+            },
+          });
+          resetConfigRuntimeState();
+          const current = await getCurrentConfigObject();
+
+          const res = await rpcReq<{ ok?: boolean; error?: { message?: string } }>(
+            requireWs(),
+            "config.patch",
+            {
+              raw: JSON.stringify({
+                browser: { profiles: { a: { cdpUrl: "ws://127.0.0.1:9333" } } },
+              }),
+              baseHash: current.hash,
+            },
+          );
+
+          expect(res.error).toBeUndefined();
+          expect(res.ok).toBe(true);
+          const persisted = JSON.parse(await fs.readFile(configPath, "utf-8")) as {
+            browser?: { profiles?: Record<string, { cdpUrl?: string }> };
+          };
+          expect(persisted.browser?.profiles?.a?.cdpUrl).toBe("ws://127.0.0.1:9333");
+          expect(persisted.browser?.profiles?.b?.cdpUrl).toBe("${OPENCLAW_PATCH_BROWSER_B}");
+        },
+      );
     } finally {
       await fs.rm(configPath, { force: true });
       resetConfigRuntimeState();

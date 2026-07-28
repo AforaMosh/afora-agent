@@ -124,12 +124,11 @@ describe("commitConfigWithPendingPluginInstalls", () => {
           kind: "mutate",
           operations: [
             {
-              kind: "merge",
-              patch: {
-                plugins: {
-                  entries: {
-                    demo: { enabled: true },
-                  },
+              kind: "set",
+              path: ["plugins"],
+              value: {
+                entries: {
+                  demo: { enabled: true },
                 },
               },
             },
@@ -744,7 +743,10 @@ describe("commitConfigWithPendingPluginInstalls", () => {
     expect(mocks.replaceConfigFile).toHaveBeenCalledWith(
       expect.objectContaining({
         nextConfig,
-        intent: { kind: "mutate", operations: [{ kind: "merge", patch: nextConfig }] },
+        intent: {
+          kind: "mutate",
+          operations: [{ kind: "set", path: ["gateway"], value: { mode: "local" } }],
+        },
       }),
     );
     expect(result).toEqual({
@@ -804,7 +806,7 @@ describe("commitConfigWithPendingPluginInstalls", () => {
       expect.objectContaining({
         intent: {
           kind: "mutate",
-          operations: [{ kind: "merge", patch: { gateway: { mode: "local" } } }],
+          operations: [{ kind: "set", path: ["gateway"], value: { mode: "local" } }],
         },
       }),
     );

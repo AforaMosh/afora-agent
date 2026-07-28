@@ -38,10 +38,7 @@ async function writeConfigReplacement(
   config: OpenClawConfig,
   options: Parameters<ReturnType<typeof createConfigIO>["writeConfigFile"]>[1] = {},
 ) {
-  return await io.writeConfigFile(
-    { kind: "replace", config, allowAgentRosterRemovals: true },
-    options,
-  );
+  return await io.writeConfigFile({ kind: "replace", config }, options);
 }
 
 async function writeConfigMutation(
@@ -58,10 +55,7 @@ async function writeGlobalReplacement(
   config: OpenClawConfig,
   options: Parameters<typeof writeConfigIntent>[1] = {},
 ) {
-  return await writeConfigIntent(
-    { kind: "replace", config, allowAgentRosterRemovals: true },
-    options,
-  );
+  return await writeConfigIntent({ kind: "replace", config }, options);
 }
 
 async function writeGlobalMutation(
@@ -1205,7 +1199,7 @@ describe("config io write", () => {
     );
   });
 
-  itWithHome("preserves a root include during explicit sibling writes", async (home) => {
+  itWithHome("rejects explicit sibling writes beside a root include", async (home) => {
     const configPath = configPathForHome(home);
     const includePath = path.join(home, ".openclaw", "extra.json5");
     await fs.mkdir(path.dirname(configPath), { recursive: true });
@@ -1217,12 +1211,12 @@ describe("config io write", () => {
       `{\n  "$include": "./extra.json5",\n  "gateway": { "mode": "local" }\n}\n`,
       "utf-8",
     );
-    const persisted = await writeGatewayPortAndReadConfig(home, configPath);
-
-    expect(persisted.gateway).toEqual({ mode: "local", port: 18789 });
+    await expect(writeGatewayPortAndReadConfig(home, configPath)).rejects.toThrow(
+      "Config write cannot update $include-owned config at <root>",
+    );
     expect(JSON.parse(await fs.readFile(configPath, "utf-8"))).toMatchObject({
       $include: "./extra.json5",
-      gateway: { mode: "local", port: 18789 },
+      gateway: { mode: "local" },
     });
     await expect(fs.readFile(includePath, "utf-8")).resolves.toContain(
       '"$schema": "https://openclaw.ai/config-from-include.json"',
@@ -1451,7 +1445,6 @@ describe("config io write", () => {
           {
             kind: "mutate",
             operations: [{ kind: "unset", path: ["agents", "entries", "ops"] }],
-            allowAgentRosterRemovals: ["ops"],
           },
           { skipRuntimeSnapshotRefresh: true },
         );
@@ -1628,32 +1621,30 @@ describe("config io write", () => {
     },
   );
 
-  itWithHome(
-    "keeps include-owned gateway mode while writing a local gateway sibling",
-    async (home) => {
-      const configPath = path.join(home, ".openclaw", "openclaw.json");
-      const includePath = path.join(home, ".openclaw", "base.json5");
-      await fs.mkdir(path.dirname(configPath), { recursive: true });
-      await fs.writeFile(includePath, `${JSON.stringify({ gateway: { mode: "local" } })}\n`);
-      await fs.writeFile(configPath, `${JSON.stringify({ $include: "./base.json5" })}\n`);
-      const io = createConfigIO({
-        env: { OPENCLAW_TEST_FAST: "1" } as NodeJS.ProcessEnv,
-        homedir: () => home,
-        logger: silentLogger,
-      });
+  itWithHome("rejects a local gateway sibling write beside a root include", async (home) => {
+    const configPath = path.join(home, ".openclaw", "openclaw.json");
+    const includePath = path.join(home, ".openclaw", "base.json5");
+    await fs.mkdir(path.dirname(configPath), { recursive: true });
+    await fs.writeFile(includePath, `${JSON.stringify({ gateway: { mode: "local" } })}\n`);
+    await fs.writeFile(configPath, `${JSON.stringify({ $include: "./base.json5" })}\n`);
+    const io = createConfigIO({
+      env: { OPENCLAW_TEST_FAST: "1" } as NodeJS.ProcessEnv,
+      homedir: () => home,
+      logger: silentLogger,
+    });
 
-      await writeConfigMutation(io, {
+    await expect(
+      writeConfigMutation(io, {
         kind: "mutate",
         operations: [{ kind: "set", path: ["gateway", "port"], value: 19001 }],
-      });
+      }),
+    ).rejects.toThrow("Config write cannot update $include-owned config at <root>");
 
-      expect(JSON.parse(await fs.readFile(configPath, "utf-8"))).toMatchObject({
-        $include: "./base.json5",
-        gateway: { port: 19001 },
-      });
-      await expect(fs.readFile(includePath, "utf-8")).resolves.toContain('"mode":"local"');
-    },
-  );
+    expect(JSON.parse(await fs.readFile(configPath, "utf-8"))).toEqual({
+      $include: "./base.json5",
+    });
+    await expect(fs.readFile(includePath, "utf-8")).resolves.toContain('"mode":"local"');
+  });
 
   itWithHome(
     "rejects direct low-level replacement across multiple include owners",
@@ -2389,9 +2380,9 @@ describe("config io write", () => {
   );
 
   itWithHome(
-    "rejects ambiguous removals from arrays containing environment references",
+    "lets explicit replacement control arrays containing environment references",
     async (home) => {
-      const { configPath, raw: originalRaw } = await writeConfigFixture(home, {
+      const { configPath } = await writeConfigFixture(home, {
         plugins: { allow: ["${PLUGIN_A}", "${PLUGIN_B}"] },
       });
       const io = createHomeConfigIO(home, {
@@ -2402,15 +2393,14 @@ describe("config io write", () => {
         } as NodeJS.ProcessEnv,
       });
 
-      await expect(
-        writeConfigReplacement(io, { plugins: { allow: ["same-plugin"] } }),
-      ).rejects.toThrow("Config write would reorder or modify an array");
-
-      await expect(fs.readFile(configPath, "utf-8")).resolves.toBe(originalRaw);
+      await writeConfigReplacement(io, { plugins: { allow: ["same-plugin"] } });
+      expect(JSON.parse(await fs.readFile(configPath, "utf-8"))).toMatchObject({
+        plugins: { allow: ["same-plugin"] },
+      });
     },
   );
 
-  itWithHome("preserves escaped literals when config writes reorder arrays", async (home) => {
+  itWithHome("lets explicit replacement control escaped literals in arrays", async (home) => {
     const { configPath } = await writeConfigFixture(home, {
       plugins: { allow: ["$${PLUGIN_ID}", "literal-plugin"] },
     });
@@ -2421,7 +2411,7 @@ describe("config io write", () => {
     const persisted = JSON.parse(await fs.readFile(configPath, "utf-8")) as {
       plugins?: { allow?: string[] };
     };
-    expect(persisted.plugins?.allow).toEqual(["literal-plugin", "$${PLUGIN_ID}"]);
+    expect(persisted.plugins?.allow).toEqual(["literal-plugin", "${PLUGIN_ID}"]);
   });
 
   it("notifies in-process reloaders with canonical post-write source config", async () => {

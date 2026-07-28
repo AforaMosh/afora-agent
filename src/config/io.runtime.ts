@@ -1,14 +1,11 @@
 import fs from "node:fs";
-import { normalizeAgentId } from "@openclaw/normalization-core/agent-id";
 import { formatErrorMessage } from "../infra/errors.js";
 import { isBlockedObjectKey } from "../infra/prototype-keys.js";
 import { parseConfigPathArrayIndex } from "../shared/path-array-index.js";
 import { isRecord } from "../utils.js";
 import { cloneEnvWithPlatformSemantics, createConfigRuntimeEnvBase } from "./config-env-vars.js";
 import {
-  applyConfigOperations,
   collectArrayContainerDepths,
-  collectConfigDeletionPaths,
   createConfigMutationOperations,
   resolveManagedUnsetPathsForWrite,
   type ConfigMutationOperation,
@@ -37,6 +34,7 @@ import { ConfigRuntimeRefreshError, configWritePostCommitRollback } from "./io.t
 import { formatConfigWriteRejection } from "./io.write-errors.js";
 import { prepareConfigWrite, type ConfigWriteIntent } from "./io.write-plan.js";
 import { rollbackConfigFileWriteIfUnchanged } from "./io.write-safety.js";
+import { createMergePatch } from "./merge-patch.js";
 import { ConfigMutationConflictError } from "./mutation-conflict.js";
 import { assertConfigWriteAllowedInCurrentMode } from "./nix-mode-write-guard.js";
 import {
@@ -270,72 +268,17 @@ function readCompatPathValue(root: unknown, path: ConfigPath): { found: boolean;
   return { found: true, value: current };
 }
 
-function mergeCompatExplicitValue(
-  authored: unknown,
-  explicit: unknown,
-  replaceScalar = true,
-): unknown {
-  if (Array.isArray(authored) && Array.isArray(explicit)) {
-    const merged = structuredClone(authored);
-    for (const [index, explicitValue] of explicit.entries()) {
-      if (index >= merged.length) {
-        merged[index] = structuredClone(explicitValue);
-      } else if (
-        (isRecord(merged[index]) && isRecord(explicitValue)) ||
-        (Array.isArray(merged[index]) && Array.isArray(explicitValue))
-      ) {
-        merged[index] = mergeCompatExplicitValue(merged[index], explicitValue, false);
-      }
-    }
-    return merged;
-  }
+function mergeExplicitCompatValue(authored: unknown, explicit: unknown): unknown {
   if (!isRecord(authored) || !isRecord(explicit)) {
-    return structuredClone(replaceScalar ? explicit : authored);
+    return structuredClone(explicit);
   }
   const merged = structuredClone(authored);
-  for (const [key, explicitValue] of Object.entries(explicit)) {
-    if (isBlockedObjectKey(key)) {
-      continue;
-    }
-    if (!Object.hasOwn(merged, key)) {
-      merged[key] = structuredClone(explicitValue);
-    } else if (isRecord(merged[key]) && isRecord(explicitValue)) {
-      merged[key] = mergeCompatExplicitValue(merged[key], explicitValue, false);
-    }
+  for (const [key, value] of Object.entries(explicit)) {
+    merged[key] = Object.hasOwn(merged, key)
+      ? mergeExplicitCompatValue(merged[key], value)
+      : structuredClone(value);
   }
   return merged;
-}
-
-function assertCompatRosterRemovalsAllowed(params: {
-  snapshot: ConfigFileSnapshot;
-  candidate: OpenClawConfig;
-  allowedAgentRosterRemovals?: readonly string[];
-}): void {
-  const currentEntries = params.snapshot.runtimeConfig.agents?.entries ?? {};
-  const candidateEntries = params.candidate.agents?.entries ?? {};
-  const candidateIds = new Set(
-    Object.keys(candidateEntries).map((agentId) => normalizeAgentId(agentId)),
-  );
-  const missingById = new Map<string, string[]>();
-  for (const agentId of Object.keys(currentEntries)) {
-    const normalizedId = normalizeAgentId(agentId);
-    if (!candidateIds.has(normalizedId)) {
-      missingById.set(normalizedId, [...(missingById.get(normalizedId) ?? []), agentId]);
-    }
-  }
-  const allowed = new Set(
-    (params.allowedAgentRosterRemovals ?? []).map((agentId) => normalizeAgentId(agentId)),
-  );
-  const unauthorized = [...missingById]
-    .flatMap(([normalizedId, agentIds]) =>
-      allowed.has(normalizedId) && agentIds.length === 1 ? [] : agentIds,
-    )
-    .toSorted();
-  if (unauthorized.length > 0) {
-    throw new Error(
-      `Config write would drop agent roster entries without an explicit deletion: ${unauthorized.join(", ")}.`,
-    );
-  }
 }
 
 function buildCompatWriteOperations(params: {
@@ -345,38 +288,14 @@ function buildCompatWriteOperations(params: {
   snapshot: ConfigFileSnapshot;
   options: ConfigWriteOptions;
 }): ConfigMutationOperation[] {
-  const operations: ConfigMutationOperation[] = [];
-  const explicitUnsetPaths = params.options.unsetPaths ?? [];
+  const patch = createMergePatch(params.authoredSource, params.projected);
+  const operations: ConfigMutationOperation[] =
+    isRecord(patch) && Object.keys(patch).length === 0 ? [] : [{ kind: "merge", patch }];
   operations.push(
     ...createConfigMutationOperations(params.authoredSource, params.projected).filter(
-      (operation) =>
-        !(
-          operation.kind === "unset" &&
-          operation.strictIncludeOwnership === true &&
-          explicitUnsetPaths.some(
-            (explicitPath) =>
-              explicitPath.length > 0 &&
-              explicitPath.every((segment, index) => operation.path[index] === segment),
-          )
-        ),
+      (operation) => operation.kind === "set" && operation.value === null,
     ),
   );
-  for (const path of collectConfigDeletionPaths(params.snapshot.runtimeConfig, params.cfg)) {
-    const authorizedRuntimeOnlyAgentRemoval =
-      path.length === 3 &&
-      path[0] === "agents" &&
-      path[1] === "entries" &&
-      (params.options.allowedAgentRosterRemovals ?? []).some(
-        (agentId) => normalizeAgentId(agentId) === normalizeAgentId(path[2]!),
-      );
-    if (
-      !readCompatPathValue(params.authoredSource, path).found &&
-      (readCompatPathValue(params.snapshot.sourceConfig, path).found ||
-        authorizedRuntimeOnlyAgentRemoval)
-    ) {
-      operations.push({ kind: "unset", path: [...path] });
-    }
-  }
   const explicitValueSource = params.options.explicitSetValueSource ?? params.cfg;
   for (const path of params.options.explicitSetPaths ?? []) {
     if (path.length === 0) {
@@ -386,28 +305,20 @@ function buildCompatWriteOperations(params: {
     if (!explicitValue.found) {
       continue;
     }
-    const currentDocument = applyConfigOperations(params.authoredSource, operations);
-    const projectedValue = readCompatPathValue(currentDocument, path);
-    const mergedValue = projectedValue.found
-      ? mergeCompatExplicitValue(projectedValue.value, explicitValue.value)
+    const projectedValue = readCompatPathValue(params.projected, path);
+    const value = projectedValue.found
+      ? mergeExplicitCompatValue(projectedValue.value, explicitValue.value)
       : explicitValue.value;
-    const explicitTarget = applyConfigOperations(currentDocument, [
-      {
-        kind: "set",
-        path: [...path],
-        value: mergedValue,
-        arrayContainerDepths: collectArrayContainerDepths(explicitValueSource, path),
-      },
-    ]);
-    operations.push(...createConfigMutationOperations(currentDocument, explicitTarget));
+    createConfigMutationOperations({}, value);
+    operations.push({
+      kind: "set",
+      path: [...path],
+      value: structuredClone(value),
+      arrayContainerDepths: collectArrayContainerDepths(explicitValueSource, path),
+    });
   }
-  const beforeExplicitUnsets = applyConfigOperations(params.authoredSource, operations);
-  for (const path of explicitUnsetPaths) {
-    if (
-      path.length > 0 &&
-      (!readCompatPathValue(params.authoredSource, path).found ||
-        readCompatPathValue(beforeExplicitUnsets, path).found)
-    ) {
+  for (const path of params.options.unsetPaths ?? []) {
+    if (path.length > 0) {
       operations.push({ kind: "unset", path: [...path] });
     }
   }
@@ -416,10 +327,8 @@ function buildCompatWriteOperations(params: {
 
 /**
  * @deprecated Use mutateConfigFile() for source mutations or replaceConfigFile()
- * for an explicit full replacement. Candidates that cannot be projected
- * unambiguously from the current runtime snapshot are rejected. This adapter
- * is scheduled for the next approved Plugin SDK break window, no earlier than
- * 2026-10-01.
+ * for an explicit full replacement. This adapter is scheduled for removal in
+ * the next approved Plugin SDK break window.
  */
 export async function writeConfigFileCompat(
   cfg: OpenClawConfig,
@@ -434,39 +343,20 @@ export async function writeConfigFileCompat(
   const authoredSource = isRecord(snapshot.parsed)
     ? (snapshot.parsed as OpenClawConfig)
     : snapshot.sourceConfig;
-  assertCompatRosterRemovalsAllowed({
-    snapshot,
-    candidate: cfg,
-    allowedAgentRosterRemovals: options.allowedAgentRosterRemovals,
-  });
-  const projection = projectRuntimeConfigOntoSourceSnapshot({
+  const projected = projectRuntimeConfigOntoSourceSnapshot({
     sourceSnapshot: authoredSource,
     runtimeSnapshot: snapshot.runtimeConfig,
     candidate: cfg,
   });
-  if (!projection.ok) {
-    const detail =
-      projection.error.code === "ambiguous-runtime-array"
-        ? `ambiguous authored-reference array at ${projection.error.key}`
-        : projection.error.code === "ambiguous-runtime-map"
-          ? `ambiguous authored-reference map change at ${projection.error.key}`
-          : `incompatible top-level field: ${projection.error.key}`;
-    throw new Error(
-      `Deprecated writeConfigFile(config, options) requires an unambiguous config derived from the current runtime snapshot; ${detail}. Use mutateConfigFile() for source mutations or replaceConfigFile() for an explicit replacement.`,
-    );
-  }
   const intent = {
     kind: "mutate",
     operations: buildCompatWriteOperations({
       authoredSource,
       cfg,
-      projected: projection.value,
+      projected,
       snapshot,
       options,
     }),
-    ...(options.allowedAgentRosterRemovals
-      ? { allowAgentRosterRemovals: options.allowedAgentRosterRemovals }
-      : {}),
   } satisfies ConfigWriteIntent;
   const prepared = prepareConfigWrite({
     snapshot,

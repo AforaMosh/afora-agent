@@ -3,8 +3,10 @@ import { isDeepStrictEqual } from "node:util";
 import { expectDefined } from "@openclaw/normalization-core";
 import { isBlockedObjectKey } from "../infra/prototype-keys.js";
 import { parseConfigPathArrayIndex } from "../shared/path-array-index.js";
-import { applyMergePatch, createMergePatch } from "./merge-patch.js";
+import { containsEnvVarReference } from "./env-substitution.js";
+import { applyMergePatch } from "./merge-patch.js";
 import type { OpenClawConfig } from "./types.js";
+import { isSecretRef } from "./types.secrets.js";
 
 export type ConfigPath = readonly string[];
 
@@ -37,105 +39,186 @@ export function configPathExists(root: unknown, path: ConfigPath): boolean {
   return true;
 }
 
-function collectExplicitNullSets(
-  base: unknown,
-  target: unknown,
-  path: ConfigPath = [],
-): ConfigMutationOperation[] {
-  if (!isWritePlainObject(target)) {
-    return [];
-  }
-  const baseRecord = isWritePlainObject(base) ? base : {};
-  return Object.entries(target).flatMap(([key, value]) => {
-    const childPath = [...path, key];
-    if (value === null) {
-      return baseRecord[key] === null ? [] : [{ kind: "set", path: childPath, value: null }];
+function readConfigPath(root: unknown, path: ConfigPath): unknown {
+  let current = root;
+  for (const segment of path) {
+    if (Array.isArray(current)) {
+      const index = parseConfigPathArrayIndex(segment);
+      current = index === undefined ? undefined : current[index];
+    } else if (isWritePlainObject(current)) {
+      current = current[segment];
+    } else {
+      return undefined;
     }
-    return collectExplicitNullSets(baseRecord[key], value, childPath);
-  });
+  }
+  return current;
 }
 
-export function collectConfigDeletionPaths(
-  base: unknown,
-  target: unknown,
-  path: ConfigPath = [],
-): ConfigPath[] {
-  if (Array.isArray(base) && Array.isArray(target)) {
-    if (base.length !== target.length) {
-      return [];
-    }
-    return base.flatMap((value, index) =>
-      collectConfigDeletionPaths(value, target[index], [...path, String(index)]),
-    );
-  }
-  if (!isWritePlainObject(base) || !isWritePlainObject(target)) {
-    return [];
-  }
-  return Object.entries(base).flatMap(([key, value]) => {
-    const childPath = [...path, key];
-    if (!Object.hasOwn(target, key)) {
-      return [childPath];
-    }
-    return collectConfigDeletionPaths(value, target[key], childPath);
-  });
-}
-
-function stripExplicitNullsFromMergePatch(
-  patch: unknown,
-  target: unknown,
-): { patch: unknown; stripped: boolean } {
-  if (!isWritePlainObject(patch) || !isWritePlainObject(target)) {
-    return { patch, stripped: false };
-  }
-  const next = { ...patch };
-  let stripped = false;
-  for (const [key, targetValue] of Object.entries(target)) {
-    if (targetValue === null) {
-      delete next[key];
-      stripped = true;
-      continue;
-    }
-    if (Object.hasOwn(next, key)) {
-      const child = stripExplicitNullsFromMergePatch(next[key], targetValue);
-      if (
-        child.stripped &&
-        isWritePlainObject(child.patch) &&
-        Object.keys(child.patch).length === 0
-      ) {
-        delete next[key];
-      } else {
-        next[key] = child.patch;
-      }
-      stripped = stripped || child.stripped;
-    }
-  }
-  return { patch: next, stripped };
-}
-
-/** Converts a complete candidate diff into intent without losing explicit null values. */
+/** Converts a complete candidate diff into explicit source operations. */
 export function createConfigMutationOperations(
   base: unknown,
   target: unknown,
-  options: { strictDeletions?: boolean } = {},
+  path: ConfigPath = [],
 ): ConfigMutationOperation[] {
-  const { patch } = stripExplicitNullsFromMergePatch(createMergePatch(base, target), target);
-  const mergeOperations =
-    isWritePlainObject(patch) && Object.keys(patch).length === 0
-      ? []
-      : [{ kind: "merge", patch } satisfies ConfigMutationOperation];
+  const assertNoBlockedKeys = (value: unknown, valuePath: ConfigPath): void => {
+    if (Array.isArray(value)) {
+      value.forEach((child, index) => assertNoBlockedKeys(child, [...valuePath, String(index)]));
+      return;
+    }
+    if (!isWritePlainObject(value)) {
+      return;
+    }
+    for (const [key, child] of Object.entries(value)) {
+      if (isBlockedObjectKey(key)) {
+        throw new Error(`Blocked config key at ${[...valuePath, key].join(".")}.`);
+      }
+      assertNoBlockedKeys(child, [...valuePath, key]);
+    }
+  };
+  assertNoBlockedKeys(target, path);
+  if (isDeepStrictEqual(base, target)) {
+    return [];
+  }
+  if (Array.isArray(base) && Array.isArray(target) && base.length === target.length) {
+    return target.flatMap((value, index) =>
+      createConfigMutationOperations(base[index], value, [...path, String(index)]),
+    );
+  }
+  if (!isWritePlainObject(target)) {
+    return [{ kind: "set", path, value: structuredClone(target) }];
+  }
+  const baseRecord = isWritePlainObject(base) ? base : {};
+  const targetEntries = Object.entries(target);
+  if (targetEntries.length === 0 && !isWritePlainObject(base)) {
+    return [{ kind: "set", path, value: {} }];
+  }
   return [
-    ...mergeOperations,
-    ...collectExplicitNullSets(base, target),
-    ...(options.strictDeletions === false
-      ? []
-      : collectConfigDeletionPaths(base, target).map(
-          (path): ConfigMutationOperation => ({
-            kind: "unset",
-            path,
-            strictIncludeOwnership: true,
-          }),
-        )),
+    ...Object.keys(baseRecord)
+      .filter((key) => !Object.hasOwn(target, key))
+      .map(
+        (key): ConfigMutationOperation => ({
+          kind: "unset",
+          path: [...path, key],
+          strictIncludeOwnership: true,
+        }),
+      ),
+    ...targetEntries.flatMap(([key, value]) =>
+      createConfigMutationOperations(baseRecord[key], value, [...path, key]),
+    ),
   ];
+}
+
+/** Converts runtime-derived changes to source intent, rejecting lossy container replacement. */
+export function createRuntimeConfigMutationOperations(params: {
+  source: unknown;
+  runtime: unknown;
+  candidate: unknown;
+}): ConfigMutationOperation[] {
+  const assertArraysSafe = (
+    source: unknown,
+    runtime: unknown,
+    candidate: unknown,
+    path: ConfigPath = [],
+  ): void => {
+    if (Array.isArray(runtime) && Array.isArray(candidate)) {
+      if (
+        !isDeepStrictEqual(runtime, candidate) &&
+        (!Array.isArray(source) ||
+          source.length !== runtime.length ||
+          runtime.length !== candidate.length) &&
+        !isDeepStrictEqual(source, runtime)
+      ) {
+        throw new Error(
+          `Config mutation cannot safely replace runtime-derived container at ${path.join(".") || "<root>"}; mutate the authored source instead.`,
+        );
+      }
+      return;
+    }
+    if (!isWritePlainObject(runtime) || !isWritePlainObject(candidate)) {
+      return;
+    }
+    const sourceRecord = isWritePlainObject(source) ? source : {};
+    for (const key of new Set([...Object.keys(runtime), ...Object.keys(candidate)])) {
+      assertArraysSafe(sourceRecord[key], runtime[key], candidate[key], [...path, key]);
+    }
+  };
+  assertArraysSafe(params.source, params.runtime, params.candidate);
+  const resolvedValues: unknown[] = [];
+  const collectRuntimeLeaves = (value: unknown): void => {
+    if (Array.isArray(value)) {
+      value.forEach(collectRuntimeLeaves);
+    } else if (isWritePlainObject(value)) {
+      Object.values(value).forEach(collectRuntimeLeaves);
+    } else if (value !== undefined) {
+      resolvedValues.push(value);
+    }
+  };
+  const collectResolvedValues = (source: unknown, runtime: unknown): void => {
+    if (isDeepStrictEqual(source, runtime)) {
+      return;
+    }
+    if ((typeof source === "string" && containsEnvVarReference(source)) || isSecretRef(source)) {
+      if (runtime !== undefined) {
+        resolvedValues.push(runtime);
+      }
+      return;
+    }
+    if (isWritePlainObject(source) && Object.hasOwn(source, "$include")) {
+      collectRuntimeLeaves(runtime);
+      return;
+    }
+    if (Array.isArray(source) && Array.isArray(runtime)) {
+      const length = Math.max(source.length, runtime.length);
+      for (let index = 0; index < length; index += 1) {
+        collectResolvedValues(source[index], runtime[index]);
+      }
+      return;
+    }
+    if (isWritePlainObject(source) && isWritePlainObject(runtime)) {
+      for (const key of new Set([...Object.keys(source), ...Object.keys(runtime)])) {
+        collectResolvedValues(source[key], runtime[key]);
+      }
+      return;
+    }
+  };
+  const containsResolvedValue = (value: unknown): boolean => {
+    if (resolvedValues.some((resolved) => isDeepStrictEqual(value, resolved))) {
+      return true;
+    }
+    if (Array.isArray(value)) {
+      return value.some(containsResolvedValue);
+    }
+    return isWritePlainObject(value) && Object.values(value).some(containsResolvedValue);
+  };
+  collectResolvedValues(params.source, params.runtime);
+  const operations = createConfigMutationOperations(params.runtime, params.candidate);
+  for (const operation of operations) {
+    if (operation.kind === "set" && containsResolvedValue(operation.value)) {
+      throw new Error(
+        `Config mutation cannot safely persist a runtime-derived value at ${operation.path.join(".") || "<root>"}; mutate the authored source instead.`,
+      );
+    }
+    if (
+      operation.kind === "set" &&
+      operation.value !== null &&
+      typeof operation.value === "object" &&
+      !isDeepStrictEqual(
+        readConfigPath(params.source, operation.path),
+        readConfigPath(params.runtime, operation.path),
+      )
+    ) {
+      throw new Error(
+        `Config mutation cannot safely replace runtime-derived container at ${operation.path.join(".") || "<root>"}; mutate the authored source instead.`,
+      );
+    }
+  }
+  return operations.map((operation) => {
+    if (operation.kind !== "set") {
+      return operation;
+    }
+    const arrayContainerDepths = collectArrayContainerDepths(params.candidate, operation.path);
+    return arrayContainerDepths.length > 0 ? { ...operation, arrayContainerDepths } : operation;
+  });
 }
 
 const MANAGED_CONFIG_UNSET_PATHS = [["plugins", "installs"]] as const;

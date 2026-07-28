@@ -21,9 +21,11 @@ import {
 import { readAgentRosterProperty } from "../../agents/agent-scope-config.js";
 import {
   applyConfigOperations,
-  collectConfigDeletionPaths,
+  configPathExists,
   createConfigMutationOperations,
+  type ConfigMutationOperation,
 } from "../../config/config-path-mutation.js";
+import { resolveConfigEnvVars } from "../../config/env-substitution.js";
 import {
   createConfigIO,
   parseConfigJson5,
@@ -31,6 +33,8 @@ import {
   readConfigFileSnapshotForWrite,
   resolveConfigSnapshotHash,
 } from "../../config/io.js";
+import { formatConfigWriteRejection } from "../../config/io.write-errors.js";
+import { checkConfigIncludeOwnership } from "../../config/io.write-includes.js";
 import { formatConfigIssueLines } from "../../config/issue-format.js";
 import {
   applyMergePatch,
@@ -39,12 +43,13 @@ import {
 } from "../../config/merge-patch.js";
 import { ConfigMutationConflictError } from "../../config/mutation-conflict.js";
 import { normalizeConfigPatchReplacePaths } from "../../config/patch-replace-paths.js";
-import { redactConfigObject, restoreRedactedValues } from "../../config/redact-snapshot.js";
-import { loadGatewayRuntimeConfigSchema } from "../../config/runtime-schema.js";
 import {
-  projectRuntimeConfigOntoSourceSnapshot,
-  projectSourceOntoRuntimeShape,
-} from "../../config/runtime-source-projection.js";
+  REDACTED_SENTINEL,
+  redactConfigObject,
+  restoreRedactedValues,
+} from "../../config/redact-snapshot.js";
+import { loadGatewayRuntimeConfigSchema } from "../../config/runtime-schema.js";
+import { projectSourceOntoRuntimeShape } from "../../config/runtime-source-projection.js";
 import { lookupConfigSchema, type ConfigSchemaResponse } from "../../config/schema.js";
 import type { ConfigValidationIssue, OpenClawConfig } from "../../config/types.openclaw.js";
 import {
@@ -156,55 +161,237 @@ function formatConfigPatchPath(parentPath: string, key: string): string {
   return parentPath ? `${parentPath}.${key}` : key;
 }
 
-function hasConfigPath(root: unknown, path: readonly string[]): boolean {
-  let current = root;
-  for (const segment of path) {
-    if (Array.isArray(current)) {
-      if (!/^\d+$/u.test(segment)) {
-        return false;
-      }
-      const index = Number(segment);
-      if (!Number.isSafeInteger(index) || index >= current.length) {
-        return false;
-      }
-      current = current[index];
-    } else if (isRecord(current) && Object.hasOwn(current, segment)) {
-      current = current[segment];
-    } else {
-      return false;
-    }
-  }
-  return true;
-}
-
-function collectExplicitAgentRosterRemovals(
-  patch: unknown,
-  currentConfig: OpenClawConfig,
-): string[] {
-  if (!isRecord(patch) || !Object.hasOwn(patch, "agents")) {
-    return [];
-  }
-  const currentIds = Object.keys(currentConfig.agents?.entries ?? {});
-  if (patch.agents === null) {
-    return currentIds;
-  }
-  if (!isRecord(patch.agents) || !Object.hasOwn(patch.agents, "entries")) {
-    return [];
-  }
-  if (patch.agents.entries === null) {
-    return currentIds;
-  }
-  if (!isRecord(patch.agents.entries)) {
-    return [];
-  }
-  return Object.entries(patch.agents.entries).flatMap(([agentId, value]) =>
-    value === null ? [agentId] : [],
-  );
-}
-
 function readConfigPatchReplacePaths(params: unknown): Set<string> {
   const rawPaths = (params as { replacePaths?: unknown }).replacePaths;
   return normalizeConfigPatchReplacePaths(Array.isArray(rawPaths) ? rawPaths : undefined);
+}
+
+function mapConfigPatchIdsToSource(params: {
+  patch: unknown;
+  source: unknown;
+  resolvedSource: unknown;
+  runtime: unknown;
+  env: NodeJS.ProcessEnv;
+  replaceArrayPaths: ReadonlySet<string>;
+  path?: string;
+}): unknown {
+  const path = params.path ?? "";
+  if (params.patch === REDACTED_SENTINEL) {
+    return structuredClone(params.source);
+  }
+  if (isRecord(params.patch)) {
+    const source = isRecord(params.source) ? params.source : {};
+    const resolvedSource = isRecord(params.resolvedSource) ? params.resolvedSource : {};
+    const runtime = isRecord(params.runtime) ? params.runtime : {};
+    const mappedEntries: Array<[string, unknown]> = [];
+    for (const [key, value] of Object.entries(params.patch)) {
+      mappedEntries.push([
+        key,
+        mapConfigPatchIdsToSource({
+          patch: value,
+          source: source[key],
+          resolvedSource: resolvedSource[key],
+          runtime: runtime[key],
+          env: params.env,
+          replaceArrayPaths: params.replaceArrayPaths,
+          path: formatConfigPatchPath(path, key),
+        }),
+      ]);
+    }
+    return Object.fromEntries(mappedEntries);
+  }
+  if (
+    Array.isArray(params.patch) &&
+    params.replaceArrayPaths.has(path) &&
+    Array.isArray(params.source)
+  ) {
+    const resolvedSource = Array.isArray(params.resolvedSource) ? params.resolvedSource : [];
+    const runtime = Array.isArray(params.runtime) ? params.runtime : [];
+    return params.patch.map((entry) => {
+      const resolvedMatches = isConfigPatchObjectWithStringId(entry)
+        ? resolvedSource.flatMap((candidate, index) =>
+            isConfigPatchObjectWithStringId(candidate) && candidate.id === entry.id ? [index] : [],
+          )
+        : [];
+      const authoredMatches = isConfigPatchObjectWithStringId(entry)
+        ? params.source.flatMap((candidate, index) =>
+            isConfigPatchObjectWithStringId(candidate) && candidate.id === entry.id ? [index] : [],
+          )
+        : [];
+      if (resolvedMatches.length > 1 || authoredMatches.length > 1) {
+        throw new Error(`Ambiguous duplicate ID ${entry.id} in replacement array at ${path}.`);
+      }
+      const resolvedIndex = resolvedMatches[0] ?? -1;
+      const sourceIndex =
+        resolvedIndex >= 0
+          ? resolvedIndex
+          : isConfigPatchObjectWithStringId(entry)
+            ? (authoredMatches[0] ?? -1)
+            : -1;
+      if (containsRedactedPatchSentinel(entry) && sourceIndex < 0) {
+        throw new Error(`Cannot restore redacted values for replacement array at ${path}.`);
+      }
+      if (sourceIndex < 0) {
+        return structuredClone(entry);
+      }
+      return mapConfigPatchIdsToSource({
+        patch: entry,
+        source: params.source[sourceIndex],
+        resolvedSource: resolvedSource[sourceIndex],
+        runtime: runtime[sourceIndex],
+        env: params.env,
+        replaceArrayPaths: params.replaceArrayPaths,
+        path: `${path}[]`,
+      });
+    });
+  }
+  if (
+    !Array.isArray(params.patch) ||
+    !Array.isArray(params.source) ||
+    !Array.isArray(params.resolvedSource) ||
+    !Array.isArray(params.runtime) ||
+    !params.patch.every(isConfigPatchObjectWithStringId)
+  ) {
+    return structuredClone(params.patch);
+  }
+  return params.patch.map((entry, patchIndex) => {
+    const authoredMatches = params.source.flatMap((candidate, index) => {
+      if (!isConfigPatchObjectWithStringId(candidate)) {
+        return [];
+      }
+      try {
+        return resolveConfigEnvVars(candidate.id, params.env) === entry.id ? [index] : [];
+      } catch {
+        return [];
+      }
+    });
+    const resolvedMatches = params.resolvedSource.flatMap((candidate, index) =>
+      isConfigPatchObjectWithStringId(candidate) && candidate.id === entry.id ? [index] : [],
+    );
+    const runtimeMatches = params.runtime.flatMap((candidate, index) =>
+      isConfigPatchObjectWithStringId(candidate) && candidate.id === entry.id ? [index] : [],
+    );
+    if (authoredMatches.length > 1 || resolvedMatches.length > 1 || runtimeMatches.length > 1) {
+      throw new Error(`Ambiguous duplicate ID ${entry.id} in ID-merged array at ${path}.`);
+    }
+    const authoredIndex = authoredMatches[0] ?? -1;
+    const resolvedIndex = resolvedMatches[0] ?? -1;
+    const runtimeIndex = runtimeMatches[0] ?? -1;
+    const sourceIndex =
+      authoredIndex >= 0
+        ? authoredIndex
+        : resolvedIndex >= 0
+          ? resolvedIndex
+          : params.patch.length === params.source.length &&
+              isConfigPatchObjectWithStringId(params.runtime[patchIndex]) &&
+              params.runtime[patchIndex].id === entry.id
+            ? patchIndex
+            : -1;
+    const sourceEntry = params.source[sourceIndex];
+    const runtimeEntry = params.runtime[runtimeIndex];
+    if (sourceIndex < 0 || !isRecord(sourceEntry)) {
+      if (containsRedactedPatchSentinel(entry)) {
+        throw new Error(`Cannot restore redacted values for unmatched ID ${entry.id} at ${path}.`);
+      }
+      return structuredClone(entry);
+    }
+    const mapped = mapConfigPatchIdsToSource({
+      patch: entry,
+      source: sourceEntry,
+      resolvedSource: params.resolvedSource[sourceIndex],
+      runtime: isRecord(runtimeEntry) ? runtimeEntry : {},
+      env: params.env,
+      replaceArrayPaths: params.replaceArrayPaths,
+      path: `${path}[]`,
+    }) as Record<string, unknown>;
+    return typeof sourceEntry.id === "string" ? { ...mapped, id: sourceEntry.id } : mapped;
+  });
+}
+
+function containsRedactedPatchSentinel(value: unknown): boolean {
+  if (value === REDACTED_SENTINEL) {
+    return true;
+  }
+  if (Array.isArray(value)) {
+    return value.some(containsRedactedPatchSentinel);
+  }
+  return isRecord(value) && Object.values(value).some(containsRedactedPatchSentinel);
+}
+
+function stripRedactedPatchSentinels(value: unknown): unknown {
+  if (value === REDACTED_SENTINEL) {
+    return undefined;
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => {
+      const stripped = stripRedactedPatchSentinels(item);
+      return stripped === undefined ? [] : [stripped];
+    });
+  }
+  if (!isRecord(value)) {
+    return structuredClone(value);
+  }
+  const entries = Object.entries(value);
+  const strippedEntries = entries.flatMap(([key, child]) => {
+    const stripped = stripRedactedPatchSentinels(child);
+    return stripped === undefined ? [] : [[key, stripped]];
+  });
+  return entries.length > 0 && strippedEntries.length === 0
+    ? undefined
+    : Object.fromEntries(strippedEntries);
+}
+
+function collectRuntimeOnlyAgentUnsets(params: {
+  patch: unknown;
+  parsed: unknown;
+  runtime: OpenClawConfig;
+}): Array<{ kind: "unset"; path: readonly string[] }> {
+  if (!isRecord(params.patch) || !Object.hasOwn(params.patch, "agents")) {
+    return [];
+  }
+  const agentsPatch = params.patch.agents;
+  const runtimeIds = Object.keys(params.runtime.agents?.entries ?? {});
+  const removedIds =
+    agentsPatch === null
+      ? runtimeIds
+      : isRecord(agentsPatch) && Object.hasOwn(agentsPatch, "entries")
+        ? agentsPatch.entries === null
+          ? runtimeIds
+          : isRecord(agentsPatch.entries)
+            ? Object.entries(agentsPatch.entries).flatMap(([id, value]) =>
+                value === null ? [id] : [],
+              )
+            : []
+        : [];
+  return removedIds.flatMap((agentId) => {
+    const path = ["agents", "entries", agentId] as const;
+    return configPathExists(params.parsed, path) ? [] : [{ kind: "unset" as const, path }];
+  });
+}
+
+function findPatchedIncludeOwner(
+  patch: unknown,
+  authored: unknown,
+  path: readonly string[] = [],
+): readonly string[] | undefined {
+  if (isRecord(authored) && Object.hasOwn(authored, "$include")) {
+    return path;
+  }
+  if (Array.isArray(patch) && Array.isArray(authored)) {
+    return authored.some((entry) => isRecord(entry) && Object.hasOwn(entry, "$include"))
+      ? path
+      : undefined;
+  }
+  if (!isRecord(patch) || !isRecord(authored)) {
+    return undefined;
+  }
+  for (const [key, value] of Object.entries(patch)) {
+    const owner = findPatchedIncludeOwner(value, authored[key], [...path, key]);
+    if (owner) {
+      return owner;
+    }
+  }
+  return undefined;
 }
 
 function collectDestructiveArrayPatchPaths(params: {
@@ -908,7 +1095,6 @@ export const configHandlers: GatewayRequestHandlers = {
       intent: {
         kind: "replace",
         config: parsed.writeConfig,
-        allowAgentRosterRemovals: true,
       },
       context,
       respond,
@@ -996,7 +1182,39 @@ export const configHandlers: GatewayRequestHandlers = {
       return;
     }
     const replacePaths = readConfigPatchReplacePaths(params);
-    const merged = applyMergePatch(snapshot.config, parsedRes.parsed, {
+    const patchedIncludeOwner = findPatchedIncludeOwner(parsedRes.parsed, snapshot.parsed);
+    if (patchedIncludeOwner) {
+      const provenance = snapshot.includeProvenance?.find((entry) =>
+        patchedIncludeOwner.every((segment, index) => entry.path[index] === segment),
+      );
+      respond(
+        false,
+        undefined,
+        errorShape(
+          ErrorCodes.INVALID_REQUEST,
+          formatConfigWriteRejection({
+            code: "include-owned",
+            path: patchedIncludeOwner,
+            filePath: provenance?.targetPath ?? snapshot.path,
+          }),
+        ),
+      );
+      return;
+    }
+    const includeCheck = checkConfigIncludeOwnership({
+      snapshot,
+      operations: [{ kind: "merge", patch: parsedRes.parsed }],
+    });
+    if (!includeCheck.ok) {
+      respond(
+        false,
+        undefined,
+        errorShape(ErrorCodes.INVALID_REQUEST, formatConfigWriteRejection(includeCheck.error)),
+      );
+      return;
+    }
+    const effectivePatch = stripRedactedPatchSentinels(parsedRes.parsed) ?? {};
+    const merged = applyMergePatch(snapshot.config, effectivePatch, {
       // Arrays with stable ids behave like maps for partial control-plane edits.
       mergeObjectArraysById: true,
       replaceArrayPaths: replacePaths,
@@ -1018,7 +1236,7 @@ export const configHandlers: GatewayRequestHandlers = {
       rejectDestructiveArrayPatchWithoutIntent({
         currentConfig: snapshot.config,
         mergedConfig: restoredMerge.result,
-        patch: parsedRes.parsed,
+        patch: effectivePatch,
         replacePaths,
         respond,
       })
@@ -1115,51 +1333,59 @@ export const configHandlers: GatewayRequestHandlers = {
       nextConfig: validated.config,
       preparedSecretsSnapshot,
     });
-    const projectedWrite = projectRuntimeConfigOntoSourceSnapshot({
-      sourceSnapshot: snapshot.parsed as OpenClawConfig,
-      runtimeSnapshot: snapshot.sourceConfig,
-      candidate: writeConfig,
-    });
-    if (!projectedWrite.ok) {
+    let sourcePatchInput: unknown;
+    try {
+      sourcePatchInput = mapConfigPatchIdsToSource({
+        patch: parsedRes.parsed,
+        source: snapshot.parsed,
+        resolvedSource: snapshot.sourceConfig,
+        runtime: snapshot.runtimeConfig,
+        env: writeOptions.envSnapshotForRestore ?? process.env,
+        replaceArrayPaths: replacePaths,
+      });
+    } catch (error) {
+      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, formatErrorMessage(error)));
+      return;
+    }
+    const restoredSourcePatch = restoreRedactedValues(
+      sourcePatchInput,
+      snapshot.parsed,
+      schemaPatch.uiHints,
+    );
+    if (!restoredSourcePatch.ok) {
       respond(
         false,
         undefined,
         errorShape(
           ErrorCodes.INVALID_REQUEST,
-          `config.patch cannot safely preserve authored config at ${projectedWrite.error.key} (${projectedWrite.error.code})`,
+          restoredSourcePatch.humanReadableMessage ?? "invalid config",
         ),
       );
       return;
     }
-    const intentOperations = createConfigMutationOperations(snapshot.parsed, projectedWrite.value, {
-      strictDeletions: false,
+    const authoredCandidate = applyMergePatch(snapshot.parsed, restoredSourcePatch.result, {
+      mergeObjectArraysById: true,
+      replaceArrayPaths: replacePaths,
     });
-    const allowedAgentRosterRemovals = collectExplicitAgentRosterRemovals(
-      parsedRes.parsed,
-      snapshot.config,
+    const sourcePatch = createMergePatch(snapshot.parsed, authoredCandidate);
+    const sourceOperations: ConfigMutationOperation[] =
+      isRecord(sourcePatch) && Object.keys(sourcePatch).length === 0
+        ? []
+        : [{ kind: "merge" as const, patch: sourcePatch }];
+    sourceOperations.push(
+      ...collectRuntimeOnlyAgentUnsets({
+        patch: parsedRes.parsed,
+        parsed: snapshot.parsed,
+        runtime: snapshot.runtimeConfig,
+      }),
     );
-    for (const path of collectConfigDeletionPaths(snapshot.sourceConfig, writeConfig)) {
-      if (!hasConfigPath(snapshot.parsed, path)) {
-        intentOperations.push({ kind: "unset", path, strictIncludeOwnership: true });
-      }
-    }
-    for (const agentId of allowedAgentRosterRemovals) {
-      const path = ["agents", "entries", agentId] as const;
-      if (
-        !hasConfigPath(snapshot.sourceConfig, path) &&
-        hasConfigPath(snapshot.runtimeConfig, path)
-      ) {
-        intentOperations.push({ kind: "unset", path });
-      }
-    }
     const writeResult = await commitGatewayConfigWriteOrRespond({
       snapshot,
       writeOptions,
       nextConfig: writeConfig,
       intent: {
         kind: "mutate",
-        operations: intentOperations,
-        ...(allowedAgentRosterRemovals.length > 0 ? { allowAgentRosterRemovals } : {}),
+        operations: sourceOperations,
       },
       context,
       disconnectSharedAuthClients,
@@ -1220,7 +1446,6 @@ export const configHandlers: GatewayRequestHandlers = {
       intent: {
         kind: "replace",
         config: parsed.writeConfig,
-        allowAgentRosterRemovals: true,
       },
       context,
       disconnectSharedAuthClients,

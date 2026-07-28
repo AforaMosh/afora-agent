@@ -45,9 +45,9 @@ export type ConfigWriteOptions = {
   explicitSetPaths?: readonly (readonly string[])[];
   /** @deprecated Compatibility input paired with explicitSetPaths. */
   explicitSetValueSource?: OpenClawConfig;
-  /** @deprecated Compatibility input translated to explicit roster unsets. */
+  /** @deprecated Accepted by the SDK adapter as a no-op; candidate diffs carry removal intent. */
   allowedAgentRosterRemovals?: readonly string[];
-  /** @deprecated Accepted as a no-op; canonical descendant sets preserve ancestor includes. */
+  /** @deprecated Accepted as a no-op; it never bypasses read-only include ownership. */
   allowIncludeAncestorExplicitSetPaths?: boolean;
   /** Fresh snapshot fast path for an immediate write. */
   baseSnapshot?: ConfigFileSnapshot;

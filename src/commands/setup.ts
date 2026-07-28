@@ -244,9 +244,7 @@ export async function setupCommand(
     ];
     await replaceConfig({
       nextConfig: next,
-      intent: snapshot.exists
-        ? { kind: "mutate", operations }
-        : { kind: "replace", config: next, allowAgentRosterRemovals: true },
+      intent: snapshot.exists ? { kind: "mutate", operations } : { kind: "replace", config: next },
       snapshot,
       afterWrite: { mode: "auto" },
       writeOptions: {

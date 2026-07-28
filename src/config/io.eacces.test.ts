@@ -156,10 +156,7 @@ describe("config write guard after unreadable config", () => {
 
       const skeletal: OpenClawConfig = { channels: { telegram: { enabled: true } } };
       await expect(
-        io.writeConfigFile(
-          { kind: "replace", config: skeletal, allowAgentRosterRemovals: true },
-          writeOptions,
-        ),
+        io.writeConfigFile({ kind: "replace", config: skeletal }, writeOptions),
       ).rejects.toMatchObject({
         code: "CONFIG_WRITE_REJECTED",
         reasons: expect.arrayContaining(["unreadable-config-before-write"]),
@@ -198,7 +195,6 @@ describe("config write guard after unreadable config", () => {
               writeConfigFile({
                 kind: "replace",
                 config: { channels: { telegram: { enabled: true } } },
-                allowAgentRosterRemovals: true,
               }),
             ).rejects.toMatchObject({
               code: "CONFIG_WRITE_REJECTED",

@@ -7,8 +7,5 @@ export async function writeConfigReplacementForTest(
   options: ConfigWriteOptions = {},
 ): Promise<ConfigWriteResult> {
   const { writeConfigFile } = await import("../../src/config/io.js");
-  return await writeConfigFile(
-    { kind: "replace", config, allowAgentRosterRemovals: true },
-    options,
-  );
+  return await writeConfigFile({ kind: "replace", config }, options);
 }

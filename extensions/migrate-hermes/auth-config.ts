@@ -72,7 +72,7 @@ export async function applyAuthProfileConfigWithConflictCheck(params: {
   }
   try {
     await configApi.mutateConfigFile({
-      base: "runtime",
+      base: "source",
       afterWrite: { mode: "auto" },
       mutate(draft) {
         let next = draft;

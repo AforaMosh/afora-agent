@@ -633,10 +633,6 @@ describe("config cli", () => {
         kind: "mutate",
         operations: [
           {
-            kind: "unset",
-            path: ["agents", "defaults", "models", "google/gemini-3-pro-preview", "alias"],
-          },
-          {
             kind: "set",
             path: ["channels", "telegram"],
             value: { botToken: "tok-abc", dmPolicy: "pairing" },
@@ -1193,8 +1189,9 @@ describe("config cli", () => {
         kind: "mutate",
         operations: [
           {
-            kind: "merge",
-            patch: { gateway: { auth: { mode: "none" } } },
+            kind: "set",
+            path: ["gateway", "auth", "mode"],
+            value: "none",
           },
         ],
       });
@@ -1220,7 +1217,7 @@ describe("config cli", () => {
 
       expect(requireWriteIntent()).toEqual({
         kind: "mutate",
-        operations: [{ kind: "merge", patch: { gateway: { auth: { mode: "none" } } } }],
+        operations: [{ kind: "set", path: ["gateway"], value: { auth: { mode: "none" } } }],
       });
     });
 
@@ -1810,6 +1807,133 @@ describe("config cli", () => {
         ],
       });
       expect(firstWrittenConfig().plugins?.allow).toEqual(["x", "c"]);
+    });
+
+    it("rejects batch deletion of a runtime-only config path", async () => {
+      setSnapshot({}, { agents: { entries: { main: { default: true } } } });
+
+      await expect(
+        runConfigOperations({
+          runtime: defaultRuntime,
+          operations: [
+            {
+              inputMode: "json",
+              requestedPath: ["agents", "entries", "main"],
+              setPath: ["agents", "entries", "main"],
+              value: undefined,
+              mutation: "delete",
+            },
+          ],
+          options: {},
+          successMode: "set",
+        }),
+      ).rejects.toThrow("It only exists after runtime defaults are applied");
+
+      expect(mockWriteConfigFile).not.toHaveBeenCalled();
+    });
+
+    it("allows a redundant delete after an earlier batch operation removed the authored path", async () => {
+      const resolved: OpenClawConfig = { tools: { alsoAllow: ["agents_list"] } };
+      setSnapshot(resolved, resolved);
+
+      await runConfigOperations({
+        runtime: defaultRuntime,
+        operations: [
+          {
+            inputMode: "json",
+            requestedPath: ["tools", "alsoAllow"],
+            setPath: ["tools", "alsoAllow"],
+            value: undefined,
+            mutation: "delete",
+          },
+          {
+            inputMode: "json",
+            requestedPath: ["tools", "alsoAllow"],
+            setPath: ["tools", "alsoAllow"],
+            value: undefined,
+            mutation: "delete",
+          },
+        ],
+        options: {},
+        successMode: "set",
+      });
+
+      expect(mockWriteConfigFile).toHaveBeenCalledTimes(1);
+      expect(firstWrittenConfig().tools?.alsoAllow).toBeUndefined();
+    });
+
+    it("allows deleting a runtime-only descendant after an earlier authored ancestor delete", async () => {
+      const resolved: OpenClawConfig = { agents: { entries: { main: {} } } };
+      const runtime: OpenClawConfig = {
+        agents: { entries: { main: { default: true } } },
+      };
+      setSnapshot(resolved, runtime);
+
+      await runConfigOperations({
+        runtime: defaultRuntime,
+        operations: [
+          {
+            inputMode: "json",
+            requestedPath: ["agents", "entries", "main"],
+            setPath: ["agents", "entries", "main"],
+            value: undefined,
+            mutation: "delete",
+          },
+          {
+            inputMode: "json",
+            requestedPath: ["agents", "entries", "main", "default"],
+            setPath: ["agents", "entries", "main", "default"],
+            value: undefined,
+            mutation: "delete",
+          },
+        ],
+        options: {},
+        successMode: "set",
+      });
+
+      expect(mockWriteConfigFile).toHaveBeenCalledTimes(1);
+      expect(firstWrittenConfig().agents?.entries?.main).toBeUndefined();
+    });
+
+    it("rejects a runtime-only descendant delete after recreating its authored ancestor", async () => {
+      const resolved: OpenClawConfig = { agents: { entries: { main: {} } } };
+      const runtime: OpenClawConfig = {
+        agents: { entries: { main: { default: true } } },
+      };
+      setSnapshot(resolved, runtime);
+
+      await expect(
+        runConfigOperations({
+          runtime: defaultRuntime,
+          operations: [
+            {
+              inputMode: "json",
+              requestedPath: ["agents", "entries", "main"],
+              setPath: ["agents", "entries", "main"],
+              value: undefined,
+              mutation: "delete",
+            },
+            {
+              inputMode: "json",
+              requestedPath: ["agents", "entries", "main"],
+              setPath: ["agents", "entries", "main"],
+              value: {},
+              mutation: "set",
+            },
+            {
+              inputMode: "json",
+              requestedPath: ["agents", "entries", "main", "default"],
+              setPath: ["agents", "entries", "main", "default"],
+              value: undefined,
+              mutation: "delete",
+            },
+          ],
+          options: {},
+          successMode: "set",
+        }),
+      ).rejects.toThrow("It only exists after runtime defaults are applied");
+
+      expect(mockWriteConfigFile).not.toHaveBeenCalled();
     });
 
     it("shows --strict-json and keeps --json as a legacy alias in help", () => {
@@ -3580,10 +3704,7 @@ describe("config cli", () => {
 
       await runConfigCommand(["config", "unset", "agents.entries"]);
 
-      expect(requireWriteIntent()).toMatchObject({
-        kind: "mutate",
-        allowAgentRosterRemovals: ["main", "ops"],
-      });
+      expect(requireWriteIntent()).toMatchObject({ kind: "mutate" });
     });
 
     it("removes an authored retired model-map key through its canonical path", async () => {

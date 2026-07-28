@@ -311,7 +311,7 @@ export async function applyMigrationConfigPatchItem(
       return markMigrationItemConflict(item, MIGRATION_REASON_TARGET_EXISTS);
     }
     await configApi.mutateConfigFile({
-      base: "runtime",
+      base: "source",
       afterWrite: { mode: "auto" },
       mutate(draft) {
         if (!ctx.overwrite && hasMigrationConfigPatchConflict(draft, details.path, details.value)) {

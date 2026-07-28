@@ -3,9 +3,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import {
-  collectConfigDeletionPaths,
-  configPathExists,
   createConfigMutationOperations,
+  createRuntimeConfigMutationOperations,
 } from "../config/config-path-mutation.js";
 import {
   readConfigFileSnapshotForWrite,
@@ -19,7 +18,6 @@ import {
   type TransformConfigFileWithRetryParams,
 } from "../config/config.js";
 import type { ConfigWriteOptions } from "../config/io.js";
-import { projectRuntimeConfigOntoSourceSnapshot } from "../config/runtime-source-projection.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
 import { isPathInside } from "../infra/path-guards.js";
@@ -443,26 +441,13 @@ export async function commitConfigWithPendingPluginInstalls(params: {
         });
       }
       const sourceConfig = params.sourceConfig ?? prepared!.snapshot.sourceConfig;
-      const runtimeConfig = params.sourceConfig ?? prepared!.snapshot.runtimeConfig;
-      const sourceDocument = prepared?.snapshot.parsed ?? sourceConfig;
-      const projection = projectRuntimeConfigOntoSourceSnapshot({
-        sourceSnapshot: sourceDocument as OpenClawConfig,
-        runtimeSnapshot: runtimeConfig,
-        candidate: nextConfig,
-      });
-      if (!projection.ok) {
-        throw new Error(
-          `Plugin config write cannot safely preserve authored config at ${projection.error.key} (${projection.error.code}).`,
-        );
-      }
-      const operations = createConfigMutationOperations(sourceDocument, projection.value);
-      if (prepared) {
-        for (const path of collectConfigDeletionPaths(sourceConfig, nextConfig)) {
-          if (!configPathExists(sourceDocument, path)) {
-            operations.push({ kind: "unset", path, strictIncludeOwnership: true });
-          }
-        }
-      }
+      const operations = params.sourceConfig
+        ? createConfigMutationOperations(sourceConfig, nextConfig)
+        : createRuntimeConfigMutationOperations({
+            source: prepared!.snapshot.parsed,
+            runtime: prepared!.snapshot.runtimeConfig,
+            candidate: nextConfig,
+          });
       return await replaceConfigFileWithIntent({
         nextConfig,
         intent: {

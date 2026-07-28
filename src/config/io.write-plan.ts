@@ -1,4 +1,3 @@
-import { normalizeAgentId } from "@openclaw/normalization-core/agent-id";
 // Prepares an authored config document from explicit source-level write intent.
 import { err, ok, type Result } from "@openclaw/normalization-core/result";
 import { LEGACY_IMPLICIT_AGENT_ID } from "../routing/session-key.js";
@@ -6,6 +5,7 @@ import { isRecord } from "../utils.js";
 import { collectChangedPaths } from "./config-change-paths.js";
 import {
   applyConfigOperations,
+  configPathExists,
   type ConfigMutationOperation,
   type ConfigPath,
 } from "./config-path-mutation.js";
@@ -20,9 +20,8 @@ export type ConfigWriteIntent =
   | {
       kind: "mutate";
       operations: readonly ConfigMutationOperation[];
-      allowAgentRosterRemovals?: readonly string[];
     }
-  | { kind: "replace"; config: OpenClawConfig; allowAgentRosterRemovals: true };
+  | { kind: "replace"; config: OpenClawConfig };
 
 export type ConfigWriteRejection =
   | IncludeOwnedWriteRejection
@@ -41,97 +40,81 @@ function readAuthoredAgentEntries(value: unknown): Record<string, unknown> | und
   return value.agents.entries;
 }
 
-function preserveImplicitMainWhenMaterializingRoster(params: {
-  snapshot: Pick<ConfigFileSnapshot, "parsed" | "sourceConfig" | "runtimeConfig">;
+function materializeImplicitMain(params: {
+  snapshot: Pick<ConfigFileSnapshot, "parsed" | "runtimeConfig">;
   authoredDocument: OpenClawConfig;
-  intent: Extract<ConfigWriteIntent, { kind: "mutate" }>;
+  operations: readonly ConfigMutationOperation[];
 }): OpenClawConfig {
   const authoredEntries = readAuthoredAgentEntries(params.authoredDocument);
-  const parsedEntries = readAuthoredAgentEntries(params.snapshot.parsed);
-  const sourceEntries = readAuthoredAgentEntries(params.snapshot.sourceConfig);
-  if (!authoredEntries || parsedEntries || sourceEntries) {
-    return params.authoredDocument;
-  }
   const runtimeEntries = readAuthoredAgentEntries(params.snapshot.runtimeConfig);
-  const implicitMain = runtimeEntries?.[LEGACY_IMPLICIT_AGENT_ID];
-  const removalAuthorized = (params.intent.allowAgentRosterRemovals ?? []).some(
-    (agentId) => normalizeAgentId(agentId) === LEGACY_IMPLICIT_AGENT_ID,
-  );
-  const target = ["agents", "entries", LEGACY_IMPLICIT_AGENT_ID];
-  const explicitlyRemovesMain = params.intent.operations.some((operation) => {
-    if (operation.kind === "unset") {
-      return (
-        operation.path.length > 0 &&
-        operation.path.every((segment, index) => segment === target[index])
-      );
-    }
-    if (operation.kind !== "merge" || !isRecord(operation.patch)) {
-      return false;
-    }
-    const agents = operation.patch.agents;
-    if (agents === null) {
-      return true;
-    }
-    if (!isRecord(agents)) {
-      return false;
-    }
-    const entries = agents.entries;
-    return entries === null || (isRecord(entries) && entries[LEGACY_IMPLICIT_AGENT_ID] === null);
-  });
   if (
-    removalAuthorized &&
-    explicitlyRemovesMain &&
-    !Object.hasOwn(authoredEntries, LEGACY_IMPLICIT_AGENT_ID)
+    !authoredEntries ||
+    readAuthoredAgentEntries(params.snapshot.parsed) ||
+    Object.hasOwn(authoredEntries, LEGACY_IMPLICIT_AGENT_ID) ||
+    params.operations.some((operation) =>
+      operationExplicitlyRemovesAgent(operation, LEGACY_IMPLICIT_AGENT_ID),
+    ) ||
+    Object.keys(runtimeEntries ?? {}).length !== 1 ||
+    !isRecord(runtimeEntries?.[LEGACY_IMPLICIT_AGENT_ID]) ||
+    runtimeEntries[LEGACY_IMPLICIT_AGENT_ID].default !== true
   ) {
     return params.authoredDocument;
   }
-  if (
-    !isRecord(implicitMain) ||
-    implicitMain.default !== true ||
-    Object.keys(runtimeEntries ?? {}).length !== 1
-  ) {
-    return params.authoredDocument;
-  }
-  // Once a mutation materializes the roster, the runtime-only main agent must
-  // become authored too; otherwise adding the first named agent silently deletes it.
-  const authoredDefaultExists = Object.values(authoredEntries).some(
+  const hasExplicitDefault = Object.values(authoredEntries).some(
     (entry) => isRecord(entry) && entry.default === true,
   );
-  const authoredMain = isRecord(authoredEntries[LEGACY_IMPLICIT_AGENT_ID])
-    ? authoredEntries[LEGACY_IMPLICIT_AGENT_ID]
-    : {};
   return applyConfigOperations(params.authoredDocument, [
     {
       kind: "set",
       path: ["agents", "entries"],
       value: {
+        [LEGACY_IMPLICIT_AGENT_ID]: hasExplicitDefault ? {} : { default: true },
         ...authoredEntries,
-        [LEGACY_IMPLICIT_AGENT_ID]: authoredDefaultExists
-          ? structuredClone(authoredMain)
-          : { ...structuredClone(authoredMain), default: true },
       },
     },
   ]);
 }
 
+function operationExplicitlyRemovesAgent(
+  operation: ConfigMutationOperation,
+  agentId: string,
+): boolean {
+  const target = ["agents", "entries", agentId];
+  if (operation.kind === "unset") {
+    return (
+      operation.path.length > 0 &&
+      operation.path.every((segment, index) => segment === target[index])
+    );
+  }
+  if (operation.kind !== "merge" || !isRecord(operation.patch)) {
+    return false;
+  }
+  const agents = operation.patch.agents;
+  if (agents === null) {
+    return true;
+  }
+  if (!isRecord(agents)) {
+    return false;
+  }
+  const entries = agents.entries;
+  return entries === null || (isRecord(entries) && entries[agentId] === null);
+}
+
 function findImplicitAgentRemovals(params: {
   before: unknown;
   after: unknown;
-  allowedAgentIds?: readonly string[];
+  operations: readonly ConfigMutationOperation[];
 }): string[] {
   const beforeEntries = readAuthoredAgentEntries(params.before);
   if (!beforeEntries) {
     return [];
   }
   const afterEntries = readAuthoredAgentEntries(params.after) ?? {};
-  const afterIds = new Set(Object.keys(afterEntries).map((agentId) => normalizeAgentId(agentId)));
-  const allowed = new Set(
-    (params.allowedAgentIds ?? []).map((agentId) => normalizeAgentId(agentId)),
-  );
   return Object.keys(beforeEntries)
     .filter(
       (agentId) =>
-        !afterIds.has(normalizeAgentId(agentId)) && !allowed.has(normalizeAgentId(agentId)),
+        !Object.hasOwn(afterEntries, agentId) &&
+        !params.operations.some((operation) => operationExplicitlyRemovesAgent(operation, agentId)),
     )
     .toSorted();
 }
@@ -184,9 +167,20 @@ export function prepareConfigWrite(params: {
     params.intent.kind === "mutate"
       ? params.intent.operations
       : [{ kind: "set", path: [], value: params.intent.config } satisfies ConfigMutationOperation];
-  const mandatoryUnsetOperations = (params.mandatoryUnsets ?? []).map(
-    (path): ConfigMutationOperation => ({ kind: "unset", path, strictIncludeOwnership: true }),
-  );
+  const intentDocument =
+    params.intent.kind === "replace"
+      ? structuredClone(params.intent.config)
+      : applyConfigOperations(params.snapshot.parsed, params.intent.operations);
+  const mandatoryUnsetOperations = (params.mandatoryUnsets ?? [])
+    .filter(
+      (path) =>
+        configPathExists(params.snapshot.parsed, path) ||
+        configPathExists(params.snapshot.sourceConfig, path) ||
+        configPathExists(intentDocument, path),
+    )
+    .map(
+      (path): ConfigMutationOperation => ({ kind: "unset", path, strictIncludeOwnership: true }),
+    );
   for (const operation of operations) {
     const blocked =
       operation.kind === "merge"
@@ -209,20 +203,17 @@ export function prepareConfigWrite(params: {
     }
   }
 
-  let authoredDocument =
-    params.intent.kind === "replace"
-      ? structuredClone(params.intent.config)
-      : applyConfigOperations(params.snapshot.parsed, params.intent.operations);
+  let authoredDocument = intentDocument;
   if (params.intent.kind === "mutate") {
-    authoredDocument = preserveImplicitMainWhenMaterializingRoster({
+    authoredDocument = materializeImplicitMain({
       snapshot: params.snapshot,
       authoredDocument,
-      intent: params.intent,
+      operations: params.intent.operations,
     });
     const droppedIds = findImplicitAgentRemovals({
       before: params.snapshot.parsed,
       after: authoredDocument,
-      allowedAgentIds: params.intent.allowAgentRosterRemovals,
+      operations: params.intent.operations,
     });
     if (droppedIds.length > 0) {
       return err({ code: "implicit-agent-removal", agentIds: droppedIds });

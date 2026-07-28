@@ -5,6 +5,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { withTempHome } from "openclaw/plugin-sdk/test-env";
 import { describe, expect, it } from "vitest";
+import { withEnvAsync } from "../test-utils/env.js";
 import {
   getSessionEntry,
   listSessionEntries,
@@ -73,43 +74,10 @@ describe("deprecated config-runtime writeConfigFile", () => {
         ...candidate.messages,
         queue: { ...candidate.messages?.queue, mode: "followup" },
       };
-      const demoConfig = candidate.plugins?.entries?.demo?.config as
-        | { args?: string[] }
-        | undefined;
-      if (!demoConfig?.args) {
-        throw new Error("expected demo plugin args");
-      }
-      demoConfig.args.splice(
-        0,
-        demoConfig.args.length,
-        demoConfig.args[1]!,
-        "literal",
-        "--verbose",
-      );
-      delete candidate.agents?.entries?.ops;
-
-      await expect(
-        writeConfigFile(candidate, {
-          skipPluginValidation: true,
-          skipRuntimeSnapshotRefresh: true,
-        }),
-      ).rejects.toThrow("drop agent roster entries without an explicit deletion: ops");
       await writeConfigFile(candidate, {
-        // Authorization is not a deletion request: retained ids stay present.
-        allowedAgentRosterRemovals: ["OPS", "MAIN"],
-        explicitSetPaths: [
-          ["messages"],
-          ["plugins", "entries", "demo", "config"],
-          ["plugins", "entries", "demo", "config", "items"],
-          ["models", "providers", "custom", "apiKey"],
-        ],
+        explicitSetPaths: [["messages"], ["models", "providers", "custom", "apiKey"]],
         explicitSetValueSource: {
           messages: { ackReaction: "eyes" },
-          plugins: {
-            entries: {
-              demo: { config: { added: true, items: [{ id: "one", contextWindow: 123 }] } },
-            },
-          },
           models: { providers: { custom: { apiKey: "explicit-value" } } },
         },
         unsetPaths: [["logging", "level"]],
@@ -123,7 +91,7 @@ describe("deprecated config-runtime writeConfigFile", () => {
       >;
       expect(persisted).toMatchObject({
         $schema: "https://openclaw.ai/config.schema.json",
-        agents: { entries: { main: { default: true } } },
+        agents: { entries: { main: { default: true }, ops: {} } },
         channels: { $include: "./channels.json" },
         gateway: { mode: "local", port: 19001 },
         messages: { ackReaction: "eyes", queue: { mode: "followup" } },
@@ -140,11 +108,7 @@ describe("deprecated config-runtime writeConfigFile", () => {
           entries: {
             demo: {
               enabled: true,
-              config: {
-                added: true,
-                args: ["${HOME}", "literal", "--verbose"],
-                items: [{ id: "one", contextWindow: 123 }],
-              },
+              config: { args: ["literal", "${HOME}"], items: [{ id: "one" }] },
             },
           },
         },
@@ -184,7 +148,7 @@ describe("deprecated config-runtime writeConfigFile", () => {
     });
   });
 
-  it("removes runtime-only implicit main when explicitly authorized", async () => {
+  it("preserves implicit main when a compatibility candidate first authors the roster", async () => {
     await withTempHome(async (home) => {
       const stateDir = path.join(home, ".openclaw");
       const configPath = path.join(stateDir, "openclaw.json");
@@ -196,17 +160,70 @@ describe("deprecated config-runtime writeConfigFile", () => {
       candidate.agents = { ...candidate.agents, entries: { ops: { default: true } } };
 
       await writeConfigFile(candidate, {
-        allowedAgentRosterRemovals: ["main"],
         skipPluginValidation: true,
         skipRuntimeSnapshotRefresh: true,
       });
 
       const persisted = JSON.parse(await fs.readFile(configPath, "utf8")) as OpenClawConfig;
-      expect(persisted.agents?.entries).toEqual({ ops: { default: true } });
+      expect(persisted.agents?.entries).toEqual({ main: {}, ops: { default: true } });
     });
   });
 
-  it("rejects deleting a value supplied only by an ancestor include", async () => {
+  it("persists explicit null values from a complete compatibility candidate", async () => {
+    await withTempHome(async (home) => {
+      const stateDir = path.join(home, ".openclaw");
+      const configPath = path.join(stateDir, "openclaw.json");
+      await fs.mkdir(stateDir, { recursive: true });
+      await fs.writeFile(
+        configPath,
+        JSON.stringify({ plugins: { entries: { demo: { config: { mode: "auto" } } } } }),
+        "utf8",
+      );
+      const { readConfigFileSnapshotForWrite } = await import("../config/io.js");
+      const { snapshot } = await readConfigFileSnapshotForWrite({ skipPluginValidation: true });
+      const candidate = structuredClone(snapshot.runtimeConfig);
+
+      await writeConfigFile(candidate, {
+        explicitSetPaths: [["plugins", "entries", "demo", "config"]],
+        explicitSetValueSource: {
+          plugins: { entries: { demo: { config: { mode: null } } } },
+        },
+        skipPluginValidation: true,
+        skipRuntimeSnapshotRefresh: true,
+      });
+
+      const persisted = JSON.parse(await fs.readFile(configPath, "utf8")) as OpenClawConfig;
+      expect((persisted.plugins?.entries?.demo?.config as Record<string, unknown>).mode).toBeNull();
+    });
+  });
+
+  it("rejects changed arrays whose authored references were runtime-resolved", async () => {
+    await withTempHome(async (home) => {
+      await withEnvAsync({ TOKEN: "resolved-token" }, async () => {
+        const stateDir = path.join(home, ".openclaw");
+        const configPath = path.join(stateDir, "openclaw.json");
+        await fs.mkdir(stateDir, { recursive: true });
+        await fs.writeFile(
+          configPath,
+          JSON.stringify({ plugins: { allow: ["${TOKEN}", "old"] } }),
+          "utf8",
+        );
+        const { readConfigFileSnapshotForWrite } = await import("../config/io.js");
+        const { snapshot } = await readConfigFileSnapshotForWrite({ skipPluginValidation: true });
+        const candidate = structuredClone(snapshot.runtimeConfig);
+        candidate.plugins = { ...candidate.plugins, allow: ["resolved-token", "new"] };
+
+        await expect(
+          writeConfigFile(candidate, {
+            skipPluginValidation: true,
+            skipRuntimeSnapshotRefresh: true,
+          }),
+        ).rejects.toThrow("cannot safely replace runtime-resolved array at plugins.allow");
+      });
+    });
+  });
+
+  it("does not infer deletion of a value supplied only by an ancestor include", async () => {
     await withTempHome(async (home) => {
       const stateDir = path.join(home, ".openclaw");
       const configPath = path.join(stateDir, "openclaw.json");
@@ -231,12 +248,14 @@ describe("deprecated config-runtime writeConfigFile", () => {
       const candidate = structuredClone(snapshot.runtimeConfig);
       delete candidate.gateway?.auth;
 
-      await expect(
-        writeConfigFile(candidate, {
-          skipPluginValidation: true,
-          skipRuntimeSnapshotRefresh: true,
-        }),
-      ).rejects.toThrow("Config write cannot update $include-owned config at <root>");
+      await writeConfigFile(candidate, {
+        skipPluginValidation: true,
+        skipRuntimeSnapshotRefresh: true,
+      });
+      expect(JSON.parse(await fs.readFile(configPath, "utf8"))).toMatchObject({
+        $include: "./base.json",
+        gateway: { mode: "local" },
+      });
     });
   });
 
@@ -268,7 +287,7 @@ describe("deprecated config-runtime writeConfigFile", () => {
     });
   });
 
-  it("does not let an empty unset path downgrade include-owned deletions", async () => {
+  it("treats an empty unset path as a no-op", async () => {
     await withTempHome(async (home) => {
       const stateDir = path.join(home, ".openclaw");
       const configPath = path.join(stateDir, "openclaw.json");
@@ -288,17 +307,19 @@ describe("deprecated config-runtime writeConfigFile", () => {
       const candidate = structuredClone(snapshot.runtimeConfig);
       delete candidate.gateway?.auth;
 
-      await expect(
-        writeConfigFile(candidate, {
-          unsetPaths: [[]],
-          skipPluginValidation: true,
-          skipRuntimeSnapshotRefresh: true,
-        }),
-      ).rejects.toThrow("Config write cannot update $include-owned config at <root>");
+      await writeConfigFile(candidate, {
+        unsetPaths: [[]],
+        skipPluginValidation: true,
+        skipRuntimeSnapshotRefresh: true,
+      });
+      expect(JSON.parse(await fs.readFile(configPath, "utf8"))).toMatchObject({
+        $include: "./base.json",
+        gateway: { mode: "local" },
+      });
     });
   });
 
-  it("allows an explicit unset to reveal an included fallback", async () => {
+  it("rejects an explicit unset beside a root include", async () => {
     await withTempHome(async (home) => {
       const stateDir = path.join(home, ".openclaw");
       const configPath = path.join(stateDir, "openclaw.json");
@@ -321,25 +342,17 @@ describe("deprecated config-runtime writeConfigFile", () => {
       const candidate = structuredClone(snapshot.runtimeConfig);
       delete candidate.gateway?.auth;
 
-      await writeConfigFile(candidate, {
-        unsetPaths: [["gateway", "auth"]],
-        skipPluginValidation: true,
-        skipRuntimeSnapshotRefresh: true,
-      });
-
-      const persisted = JSON.parse(await fs.readFile(configPath, "utf8")) as Record<
-        string,
-        unknown
-      >;
-      expect(persisted).toMatchObject({
-        $include: "./base.json",
-        gateway: { mode: "local" },
-      });
-      expect(persisted).not.toHaveProperty("gateway.auth");
+      await expect(
+        writeConfigFile(candidate, {
+          unsetPaths: [["gateway", "auth"]],
+          skipPluginValidation: true,
+          skipRuntimeSnapshotRefresh: true,
+        }),
+      ).rejects.toThrow("Config write cannot update $include-owned config at <root>");
     });
   });
 
-  it("expands an explicit object set below an ancestor include", async () => {
+  it("rejects an explicit object set below a root include", async () => {
     await withTempHome(async (home) => {
       const stateDir = path.join(home, ".openclaw");
       const configPath = path.join(stateDir, "openclaw.json");
@@ -362,21 +375,18 @@ describe("deprecated config-runtime writeConfigFile", () => {
         auth: { ...candidate.gateway?.auth, mode: "none" },
       };
 
-      await writeConfigFile(candidate, {
-        explicitSetPaths: [["gateway", "auth"]],
-        explicitSetValueSource: { gateway: { auth: { mode: "none" } } },
-        skipPluginValidation: true,
-        skipRuntimeSnapshotRefresh: true,
-      });
-
-      expect(JSON.parse(await fs.readFile(configPath, "utf8"))).toMatchObject({
-        $include: "./base.json",
-        gateway: { mode: "local", auth: { mode: "none" } },
-      });
+      await expect(
+        writeConfigFile(candidate, {
+          explicitSetPaths: [["gateway", "auth"]],
+          explicitSetValueSource: { gateway: { auth: { mode: "none" } } },
+          skipPluginValidation: true,
+          skipRuntimeSnapshotRefresh: true,
+        }),
+      ).rejects.toThrow("Config write cannot update $include-owned config at <root>");
     });
   });
 
-  it("persists an explicit null override below an ancestor include", async () => {
+  it("rejects an explicit null override below a root include", async () => {
     await withTempHome(async (home) => {
       const stateDir = path.join(home, ".openclaw");
       const configPath = path.join(stateDir, "openclaw.json");
@@ -398,16 +408,12 @@ describe("deprecated config-runtime writeConfigFile", () => {
       }
       demoConfig.mode = null;
 
-      await writeConfigFile(candidate, {
-        skipPluginValidation: true,
-        skipRuntimeSnapshotRefresh: true,
-      });
-
-      expect(JSON.parse(await fs.readFile(configPath, "utf8"))).toEqual({
-        $include: "./base.json",
-        plugins: { entries: { demo: { config: { mode: null } } } },
-        meta: expect.any(Object),
-      });
+      await expect(
+        writeConfigFile(candidate, {
+          skipPluginValidation: true,
+          skipRuntimeSnapshotRefresh: true,
+        }),
+      ).rejects.toThrow("Config write cannot update $include-owned config at <root>");
     });
   });
 });

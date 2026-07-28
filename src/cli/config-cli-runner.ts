@@ -8,7 +8,6 @@ import { replaceConfigFileWithIntent } from "../config/config.js";
 import { AUTO_MANAGED_CONFIG_META_PATHS } from "../config/io.meta.js";
 import { formatConfigIssueLines } from "../config/issue-format.js";
 import { readBestEffortRuntimeConfigSchema } from "../config/runtime-schema.js";
-import { projectRuntimeConfigOntoSourceSnapshot } from "../config/runtime-source-projection.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { collectUnsupportedSecretRefPolicyIssues } from "../config/validation.js";
 import { diffConfigPaths } from "../gateway/config-diff.js";
@@ -31,6 +30,7 @@ import {
 } from "./config-cli-model-normalization.js";
 import {
   assertNonDestructiveReplacement,
+  formatConfigUnsetMissingPathMessage,
   getAtPath,
   mergeAtPath,
   setAtPath,
@@ -146,23 +146,6 @@ export function assertConfigPathIsNotAutoManaged(path: PathSegment[]): void {
   if (targets.length > 0) {
     throw new Error(formatAutoManagedMetaError(targets));
   }
-}
-
-export function collectExplicitAgentRosterRemovalIds(
-  path: readonly PathSegment[],
-  config: OpenClawConfig,
-): string[] {
-  if (path[0] !== "agents") {
-    return [];
-  }
-  const ids = Object.keys(config.agents?.entries ?? {});
-  if (path.length === 1 || (path[1] === "entries" && path.length === 2)) {
-    return ids;
-  }
-  if (path[1] === "entries" && path.length === 3) {
-    return ids.filter((agentId) => agentId === path[2]);
-  }
-  return [];
 }
 
 function pruneInactiveGatewayAuthCredentials(params: {
@@ -321,7 +304,7 @@ export async function runConfigOperations(params: {
   );
   const mutationSchema = await loadMutationSchema();
   const writeOperations: ConfigMutationOperation[] = [];
-  let intentRuntimeConfig = currentConfig;
+  const removedAuthoredPaths: PathSegment[][] = [];
   for (const operation of operations) {
     const operationPath = normalizeConfigMutationExplicitSetPath(operation.setPath);
     const authoredAliasPaths = [snapshot.parsed, snapshot.sourceConfigBeforeMigrations]
@@ -332,7 +315,29 @@ export async function runConfigOperations(params: {
       );
     const deletesValue = operation.mutation === "delete";
     if (deletesValue) {
-      unsetAtPath(next, operation.setPath);
+      const unsetResult = unsetAtPath(next, operation.setPath);
+      if (unsetResult.removed) {
+        removedAuthoredPaths.push([...operation.setPath]);
+      }
+      const removedByEarlierOperation = removedAuthoredPaths.some(
+        (path) =>
+          path.length < operation.setPath.length &&
+          pathStartsWith(operation.setPath, path) &&
+          !getAtPath(next, path).found,
+      );
+      if (
+        !unsetResult.removed &&
+        !removedByEarlierOperation &&
+        !getAtPath(snapshot.resolved, operation.setPath).found &&
+        getAtPath(snapshot.runtimeConfig, operation.setPath).found
+      ) {
+        throw new Error(
+          formatConfigUnsetMissingPathMessage({
+            path: toDotPath(operation.requestedPath),
+            runtimeOnly: true,
+          }),
+        );
+      }
     } else if (
       operation.mutation === "merge" ||
       (options.merge && operation.mutation !== "replace")
@@ -357,19 +362,7 @@ export async function runConfigOperations(params: {
       structuredClone(next) as OpenClawConfig,
     );
     const intentSourceConfig = applyConfigOperations(snapshot.parsed, writeOperations);
-    const intermediateProjection = projectRuntimeConfigOntoSourceSnapshot({
-      sourceSnapshot: intentSourceConfig,
-      runtimeSnapshot: intentRuntimeConfig,
-      candidate: intermediateConfig,
-    });
-    if (!intermediateProjection.ok && (deletesValue || authoredAliasPaths.length > 0)) {
-      throw new Error(
-        `Config mutation cannot safely preserve authored config at ${intermediateProjection.error.key} (${intermediateProjection.error.code}).`,
-      );
-    }
-    let intentIntermediate = intermediateProjection.ok
-      ? intermediateProjection.value
-      : intentSourceConfig;
+    let intentIntermediate = intentSourceConfig;
     if (!deletesValue) {
       intentIntermediate = structuredClone(intentIntermediate);
       if (operation.mutation === "merge" || (options.merge && operation.mutation !== "replace")) {
@@ -428,7 +421,6 @@ export async function runConfigOperations(params: {
             },
       );
     }
-    intentRuntimeConfig = intermediateConfig;
   }
   const removedGatewayAuthPaths = pruneInactiveGatewayAuthCredentials({ root: next, operations });
   const nextConfig = normalizeConfigMutationModelRefs(next as OpenClawConfig);
@@ -568,18 +560,11 @@ export async function runConfigOperations(params: {
       (removedPath): ConfigMutationOperation => ({ kind: "unset", path: removedPath.split(".") }),
     ),
   );
-  const allowedAgentRosterRemovals = operations.flatMap((operation) =>
-    operation.mutation === "delete"
-      ? collectExplicitAgentRosterRemovalIds(operation.setPath, currentConfig)
-      : [],
-  );
-
   await replaceConfigFileWithIntent({
     nextConfig,
     intent: {
       kind: "mutate",
       operations: writeOperations,
-      ...(allowedAgentRosterRemovals.length > 0 ? { allowAgentRosterRemovals } : {}),
     },
     ...(snapshot.hash !== undefined ? { baseHash: snapshot.hash } : {}),
     writeOptions: {

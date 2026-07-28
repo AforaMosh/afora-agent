@@ -4,6 +4,7 @@ import { theme } from "../../packages/terminal-core/src/theme.js";
 import {
   applyConfigOperations,
   createConfigMutationOperations,
+  createRuntimeConfigMutationOperations,
 } from "../config/config-path-mutation.js";
 import {
   assertConfigWriteAllowedInCurrentMode,
@@ -108,12 +109,16 @@ function shouldPreserveEmptyPlugins(params: {
 
 function projectUpdaterResultOntoSourceConfig(params: {
   runtimeBase: OpenClawConfig;
-  sourceBase: OpenClawConfig;
+  authoredBase: OpenClawConfig;
   updatedConfig: OpenClawConfig;
 }): OpenClawConfig {
   return applyConfigOperations(
-    params.sourceBase,
-    createConfigMutationOperations(params.runtimeBase, params.updatedConfig),
+    params.authoredBase,
+    createRuntimeConfigMutationOperations({
+      source: params.authoredBase,
+      runtime: params.runtimeBase,
+      candidate: params.updatedConfig,
+    }),
   );
 }
 
@@ -411,9 +416,19 @@ async function runPluginUpdateCommandUnlocked(params: RunPluginUpdateCommandPara
     const nextPluginInstallRecords = pluginResult.config.plugins?.installs ?? {};
     const shouldPersistPluginInstallIndex =
       pluginResult.changed || Object.keys(pluginInstallRecords).length > 0;
+    const parsedSource =
+      sourceSnapshot?.snapshot.parsed &&
+      typeof sourceSnapshot.snapshot.parsed === "object" &&
+      !Array.isArray(sourceSnapshot.snapshot.parsed)
+        ? (sourceSnapshot.snapshot.parsed as OpenClawConfig)
+        : sourceCfg;
+    const authoredBase = applyConfigOperations(
+      parsedSource,
+      createConfigMutationOperations(sourceCfg, sourceCfgWithPluginInstallRecords),
+    );
     const sourceShapedUpdateConfig = projectUpdaterResultOntoSourceConfig({
       runtimeBase: cfgWithPluginInstallRecords,
-      sourceBase: sourceCfgWithPluginInstallRecords,
+      authoredBase,
       updatedConfig: hookResult.config,
     });
     // Plugin install records live in the persisted index. Preserve an authored

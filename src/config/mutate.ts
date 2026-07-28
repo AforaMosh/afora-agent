@@ -4,7 +4,6 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import { expectDefined } from "@openclaw/normalization-core";
-import { normalizeAgentId } from "@openclaw/normalization-core/agent-id";
 import { formatErrorMessage } from "../infra/errors.js";
 import { withFileLock } from "../infra/file-lock.js";
 import { root as createFsRoot, type Root as FsSafeRoot } from "../infra/fs-safe.js";
@@ -23,8 +22,7 @@ import {
 import {
   applyUnsetPathsForWrite,
   collectArrayContainerDepths,
-  collectConfigDeletionPaths,
-  createConfigMutationOperations,
+  createRuntimeConfigMutationOperations,
   resolveManagedUnsetPathsForWrite,
 } from "./config-path-mutation.js";
 import { restoreEnvVarRefs } from "./env-preserve.js";
@@ -69,7 +67,6 @@ import {
   type ConfigWriteFollowUp,
   type RuntimeConfigWritePreparedCandidate,
 } from "./runtime-snapshot.js";
-import { projectRuntimeConfigOntoSourceSnapshot } from "./runtime-source-projection.js";
 import type { ConfigFileSnapshot, OpenClawConfig } from "./types.js";
 import { validateConfigObjectWithPlugins } from "./validation.js";
 
@@ -147,7 +144,6 @@ export type TransformConfigFileParams<T> = {
   writeOptions?: ConfigWriteOptions;
   io?: ConfigMutationIO;
   commit?: ConfigMutationCommit;
-  allowAgentRosterRemovals?: readonly string[];
   transform: (
     currentConfig: OpenClawConfig,
     context: ConfigMutationContext,
@@ -994,10 +990,12 @@ function addCandidateContainerHints(
     ...intent,
     operations: intent.operations.map((operation) =>
       operation.kind === "set"
-        ? {
-            ...operation,
-            arrayContainerDepths: collectArrayContainerDepths(candidate, operation.path),
-          }
+        ? (() => {
+            const arrayContainerDepths = collectArrayContainerDepths(candidate, operation.path);
+            return arrayContainerDepths.length > 0
+              ? { ...operation, arrayContainerDepths }
+              : operation;
+          })()
         : operation,
     ),
   };
@@ -1016,7 +1014,6 @@ export async function replaceConfigFile(params: {
     intent: {
       kind: "replace",
       config: params.nextConfig,
-      allowAgentRosterRemovals: true,
     },
   });
 }
@@ -1196,57 +1193,17 @@ async function transformConfigFileAttempt<T>(
     params.afterWrite ?? params.writeOptions?.afterWrite,
   );
   const transformed = await params.transform(baseConfig, { snapshot, previousHash, attempt });
-  const projected = projectRuntimeConfigOntoSourceSnapshot({
-    sourceSnapshot: snapshot.parsed as OpenClawConfig,
-    runtimeSnapshot: baseConfig,
-    candidate: transformed.nextConfig,
+  const writeCandidate = transformed.nextConfig;
+  const intentOperations = createRuntimeConfigMutationOperations({
+    source: snapshot.parsed,
+    runtime: baseConfig,
+    candidate: writeCandidate,
   });
-  if (!projected.ok) {
-    throw new Error(
-      `Config mutation cannot safely project runtime changes onto authored source at ${projected.error.key} (${projected.error.code}).`,
-    );
-  }
-  const hasPath = (root: unknown, path: readonly string[]): boolean => {
-    let current = root;
-    for (const segment of path) {
-      if (Array.isArray(current)) {
-        const index = parseConfigPathArrayIndex(segment);
-        if (index === undefined || index >= current.length) {
-          return false;
-        }
-        current = current[index];
-      } else if (isRecord(current) && Object.hasOwn(current, segment)) {
-        current = current[segment];
-      } else {
-        return false;
-      }
-    }
-    return true;
-  };
-  const intentOperations = createConfigMutationOperations(snapshot.parsed, projected.value);
-  const allowedAgentIds = new Set(
-    (params.allowAgentRosterRemovals ?? []).map((agentId) => normalizeAgentId(agentId)),
-  );
-  for (const path of collectConfigDeletionPaths(baseConfig, transformed.nextConfig)) {
-    if (!hasPath(snapshot.parsed, path) && hasPath(snapshot.sourceConfig, path)) {
-      intentOperations.push({ kind: "unset", path, strictIncludeOwnership: true });
-    } else if (
-      path.length === 3 &&
-      path[0] === "agents" &&
-      path[1] === "entries" &&
-      allowedAgentIds.has(normalizeAgentId(path[2]!))
-    ) {
-      intentOperations.push({ kind: "unset", path });
-    }
-  }
   const committed = await (params.commit ?? commitPreparedConfigMutation)({
-    nextConfig: transformed.nextConfig,
+    nextConfig: writeCandidate,
     intent: {
       kind: "mutate",
       operations: intentOperations,
-      ...(params.allowAgentRosterRemovals
-        ? { allowAgentRosterRemovals: params.allowAgentRosterRemovals }
-        : {}),
     },
     snapshot,
     ...(previousHash !== null ? { baseHash: previousHash } : {}),
@@ -1341,7 +1298,6 @@ export async function mutateConfigFile<T = void>(params: {
   afterWrite?: ConfigWriteOptions["afterWrite"];
   writeOptions?: ConfigWriteOptions;
   io?: ConfigMutationIO;
-  allowAgentRosterRemovals?: readonly string[];
   mutate: (draft: OpenClawConfig, context: ConfigMutationContext) => Promise<T | void> | T | void;
 }): Promise<ConfigMutationResult<T>> {
   return await transformConfigFile<T>({
@@ -1350,7 +1306,6 @@ export async function mutateConfigFile<T = void>(params: {
     afterWrite: params.afterWrite,
     writeOptions: params.writeOptions,
     io: params.io,
-    allowAgentRosterRemovals: params.allowAgentRosterRemovals,
     transform: async (currentConfig, context) => {
       const draft = structuredClone(currentConfig);
       const result = (await params.mutate(draft, context)) as T | undefined;
@@ -1366,7 +1321,6 @@ export async function mutateConfigFileWithRetry<T = void>(params: {
   afterWrite?: ConfigWriteOptions["afterWrite"];
   writeOptions?: ConfigWriteOptions;
   io?: ConfigMutationIO;
-  allowAgentRosterRemovals?: readonly string[];
   mutate: (draft: OpenClawConfig, context: ConfigMutationContext) => Promise<T | void> | T | void;
 }): Promise<ConfigMutationResult<T>> {
   return await transformConfigFileWithRetry<T>({
@@ -1376,7 +1330,6 @@ export async function mutateConfigFileWithRetry<T = void>(params: {
     afterWrite: params.afterWrite,
     writeOptions: params.writeOptions,
     io: params.io,
-    allowAgentRosterRemovals: params.allowAgentRosterRemovals,
     transform: async (currentConfig, context) => {
       const draft = structuredClone(currentConfig);
       const result = (await params.mutate(draft, context)) as T | undefined;

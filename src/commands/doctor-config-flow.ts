@@ -42,12 +42,93 @@ function hasLegacyInternalHookHandlers(raw: unknown): boolean {
   return Array.isArray(handlers) && handlers.length > 0;
 }
 
-function migrateParsedRosterWithResolvedIds(params: {
+function isRosterRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function migrateParsedRosterWithResolvedValues(params: {
   parsed: unknown;
   resolved: unknown;
 }): ReturnType<typeof migratePersistedImplicitMainRoster> | null {
   const parsedRoster = readAgentRosterProperty(params.parsed);
   const resolvedRoster = readAgentRosterProperty(params.resolved);
+  if (
+    parsedRoster?.kind === "entries" &&
+    resolvedRoster?.kind === "entries" &&
+    isRosterRecord(parsedRoster.value) &&
+    isRosterRecord(resolvedRoster.value)
+  ) {
+    const migration = migratePersistedImplicitMainRoster(params.resolved);
+    const migratedRoster = readAgentRosterProperty(migration.config);
+    if (
+      !migration.changed ||
+      migratedRoster?.kind !== "entries" ||
+      !isRosterRecord(migratedRoster.value)
+    ) {
+      return null;
+    }
+    const authoredEntries = parsedRoster.value;
+    const resolvedEntries = resolvedRoster.value;
+    const migratedEntries = migratedRoster.value;
+    if (
+      Object.keys(authoredEntries).some(
+        (agentId) =>
+          !Object.hasOwn(resolvedEntries, agentId) || !Object.hasOwn(migratedEntries, agentId),
+      )
+    ) {
+      return null;
+    }
+    let projectionFailed = false;
+    const projectedEntries = Object.fromEntries(
+      Object.entries(migratedEntries).map(([agentId, migratedEntry]) => {
+        const hasAuthoredEntry = Object.hasOwn(authoredEntries, agentId);
+        const authoredEntry = authoredEntries[agentId];
+        const resolvedEntry = resolvedEntries[agentId];
+        if (!hasAuthoredEntry) {
+          return [agentId, structuredClone(migratedEntry)];
+        }
+        if (
+          !isRosterRecord(authoredEntry) ||
+          !isRosterRecord(resolvedEntry) ||
+          !isRosterRecord(migratedEntry)
+        ) {
+          if (Object.is(resolvedEntry, migratedEntry)) {
+            return [agentId, structuredClone(authoredEntry)];
+          }
+          projectionFailed = true;
+          return [agentId, structuredClone(migratedEntry)];
+        }
+        const projectedEntry = structuredClone(authoredEntry);
+        const resolvedHasDefault = Object.hasOwn(resolvedEntry, "default");
+        const migratedHasDefault = Object.hasOwn(migratedEntry, "default");
+        if (
+          resolvedHasDefault === migratedHasDefault &&
+          Object.is(resolvedEntry.default, migratedEntry.default)
+        ) {
+          return [agentId, projectedEntry];
+        }
+        if (migratedHasDefault) {
+          projectedEntry.default = structuredClone(migratedEntry.default);
+        } else if (resolvedHasDefault && Object.hasOwn(projectedEntry, "$include")) {
+          projectionFailed = true;
+        } else if (resolvedHasDefault && !Object.hasOwn(projectedEntry, "default")) {
+          projectedEntry.default = false;
+        } else {
+          delete projectedEntry.default;
+        }
+        return [agentId, projectedEntry];
+      }),
+    );
+    if (projectionFailed) {
+      return null;
+    }
+    return {
+      ...migration,
+      config: applyConfigOperations(params.parsed, [
+        { kind: "set", path: ["agents", "entries"], value: projectedEntries },
+      ]),
+    };
+  }
   if (
     parsedRoster?.kind !== "list" ||
     resolvedRoster?.kind !== "list" ||
@@ -86,7 +167,9 @@ function migrateParsedRosterWithResolvedIds(params: {
   const migratedRoster = readAgentRosterProperty(migration.config);
   if (migration.changed && migratedRoster?.kind === "entries") {
     for (const [index, authoredEntry] of parsedRoster.value.entries()) {
-      const resolvedEntry = resolvedRoster.value[index] as { id?: unknown } | undefined;
+      const resolvedEntry = resolvedRoster.value[index] as
+        | { id?: unknown; default?: unknown }
+        | undefined;
       if (
         !authoredEntry ||
         typeof authoredEntry !== "object" ||
@@ -102,6 +185,7 @@ function migrateParsedRosterWithResolvedIds(params: {
         typeof migratedEntry === "object" &&
         !Array.isArray(migratedEntry) &&
         Object.hasOwn(migratedEntry, "default") &&
+        resolvedEntry.default === (migratedEntry as { default?: unknown }).default &&
         typeof authoredDefault !== "boolean" &&
         authoredDefault !== undefined
       ) {
@@ -277,20 +361,20 @@ export async function loadAndMaybeMigrateDoctorConfig(params: {
     // Runtime roster normalization is read-only; doctor --fix owns persistence.
     const parsedMigration = migratePersistedImplicitMainRoster(snapshot.parsed);
     const parsedRoster = readAgentRosterProperty(snapshot.parsed);
-    const resolvedIdMigration = parsedRoster
-      ? migrateParsedRosterWithResolvedIds({
+    const resolvedValueMigration = parsedRoster
+      ? migrateParsedRosterWithResolvedValues({
           parsed: snapshot.parsed,
           resolved: snapshot.sourceConfigBeforeMigrations,
         })
       : null;
-    if (parsedRoster && !parsedMigration.changed && !resolvedIdMigration?.changed) {
+    if (parsedRoster && !parsedMigration.changed && !resolvedValueMigration?.changed) {
       throw new Error("Doctor cannot safely migrate the authored agent roster to keyed entries.");
     }
     const migrated = (
       parsedMigration.changed && parsedRoster
         ? parsedMigration.config
-        : resolvedIdMigration?.changed
-          ? resolvedIdMigration.config
+        : resolvedValueMigration?.changed
+          ? resolvedValueMigration.config
           : migratePersistedImplicitMainRoster(state.candidate).config
     ) as OpenClawConfig;
     const rosterRepair = {

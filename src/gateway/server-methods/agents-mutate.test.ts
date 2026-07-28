@@ -2748,9 +2748,18 @@ describe("agents.delete", () => {
       ]),
     );
     expect(mocks.writeConfigFile).toHaveBeenCalled();
-    expect(mocks.writeConfigFile).toHaveBeenCalledWith(expect.anything(), {
-      allowedAgentRosterRemovals: ["test-agent"],
-    });
+    expect(mocks.writeConfigFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "mutate",
+        operations: expect.arrayContaining([
+          expect.objectContaining({
+            kind: "unset",
+            path: ["agents", "entries", "test-agent"],
+          }),
+        ]),
+      }),
+      expect.anything(),
+    );
     expect(mocks.movePathToTrash).toHaveBeenCalled();
   });
 

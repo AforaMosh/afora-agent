@@ -360,7 +360,7 @@ async function applyCodexAuthProfileConfig(
   }
   try {
     await configApi.mutateConfigFile({
-      base: "runtime",
+      base: "source",
       afterWrite: { mode: "auto" },
       mutate(draft) {
         const current = draft;

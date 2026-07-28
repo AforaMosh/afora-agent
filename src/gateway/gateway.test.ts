@@ -280,7 +280,6 @@ describe("gateway e2e", () => {
         await configIO.writeConfigFile({
           kind: "replace",
           config: initialConfig,
-          allowAgentRosterRemovals: true,
         });
         if (authSource === "secret-ref-override") {
           setTestEnvValue("OPENCLAW_TEST_GATEWAY_OVERRIDE_TOKEN", overrideToken);
@@ -448,7 +447,6 @@ describe("gateway e2e", () => {
             gateway: { auth: { mode: "token", token: fileToken } },
             logging: { level: "info" },
           },
-          allowAgentRosterRemovals: true,
         });
         setTestEnvValue("OPENCLAW_TEST_GATEWAY_OVERRIDE_TOKEN", oldToken);
         const port = await getFreeGatewayPort();
@@ -520,7 +518,6 @@ describe("gateway e2e", () => {
     await configIO.writeConfigFile({
       kind: "replace",
       config: initialConfig,
-      allowAgentRosterRemovals: true,
     });
     const port = await getFreeGatewayPort();
     const server = await startGatewayServer(port, {
@@ -759,7 +756,6 @@ module.exports = {
           await createConfigIO({ configPath }).writeConfigFile({
             kind: "replace",
             config: { gateway: { auth: { mode: "token", token } } },
-            allowAgentRosterRemovals: true,
           });
           await prompter.outro("ok");
         },

@@ -2,16 +2,14 @@
 import { isDeepStrictEqual } from "node:util";
 import type { GatewayAuthChoice, OnboardOptions } from "../commands/onboard-types.js";
 import {
-  collectConfigDeletionPaths,
-  configPathExists,
   createConfigMutationOperations,
+  createRuntimeConfigMutationOperations,
 } from "../config/config-path-mutation.js";
 import {
   createConfigIO,
   replaceConfigFileWithIntent,
   resolveGatewayPort,
 } from "../config/config.js";
-import { projectRuntimeConfigOntoSourceSnapshot } from "../config/runtime-source-projection.js";
 import type { ConfigFileSnapshot, OpenClawConfig } from "../config/types.openclaw.js";
 import {
   commitConfigWriteWithPendingPluginInstalls,
@@ -109,28 +107,14 @@ export async function writeWizardConfigFile(
   let baseSnapshot = opts.baseSnapshot;
   let sourceBaseConfig =
     opts.baseConfig ?? opts.baseSnapshot?.sourceConfig ?? opts.migrationBaseConfig ?? {};
-  const createWriteOperations = (nextConfig: OpenClawConfig) => {
-    if (!baseSnapshot) {
-      return createConfigMutationOperations(sourceBaseConfig, nextConfig);
-    }
-    const projection = projectRuntimeConfigOntoSourceSnapshot({
-      sourceSnapshot: baseSnapshot.parsed as OpenClawConfig,
-      runtimeSnapshot: sourceBaseConfig,
-      candidate: nextConfig,
-    });
-    if (!projection.ok) {
-      throw new Error(
-        `Wizard config write cannot safely preserve authored config at ${projection.error.key} (${projection.error.code}).`,
-      );
-    }
-    const operations = createConfigMutationOperations(baseSnapshot.parsed, projection.value);
-    for (const path of collectConfigDeletionPaths(sourceBaseConfig, nextConfig)) {
-      if (!configPathExists(baseSnapshot.parsed, path)) {
-        operations.push({ kind: "unset", path, strictIncludeOwnership: true });
-      }
-    }
-    return operations;
-  };
+  const createWriteOperations = (nextConfig: OpenClawConfig) =>
+    baseSnapshot
+      ? createRuntimeConfigMutationOperations({
+          source: baseSnapshot.parsed,
+          runtime: sourceBaseConfig,
+          candidate: nextConfig,
+        })
+      : createConfigMutationOperations(sourceBaseConfig, nextConfig);
   const allowConfigSizeDrop = opts.allowConfigSizeDrop === true;
   if (!allowConfigSizeDrop && hasPendingPluginInstallRecords(config)) {
     // Explicit undefined means this writer already migrated its baseline; an omitted

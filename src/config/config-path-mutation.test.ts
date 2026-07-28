@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { applyConfigOperations, createConfigMutationOperations } from "./config-path-mutation.js";
+import {
+  applyConfigOperations,
+  createConfigMutationOperations,
+  createRuntimeConfigMutationOperations,
+} from "./config-path-mutation.js";
 
 describe("applyConfigOperations", () => {
   it("preserves explicit null values when deriving operations from a complete candidate", () => {
@@ -10,6 +14,17 @@ describe("applyConfigOperations", () => {
 
     expect(applyConfigOperations(base, createConfigMutationOperations(base, target))).toEqual(
       target,
+    );
+  });
+
+  it("rejects prototype-sensitive keys while deriving operations", () => {
+    const target = JSON.parse('{"plugins":{"entries":{"demo":{"config":{"__proto__":{}}}}}}');
+    expect(() => createConfigMutationOperations({}, target)).toThrow(
+      "Blocked config key at plugins.entries.demo.config.__proto__",
+    );
+    const arrayTarget = JSON.parse('{"plugins":{"allow":[{"constructor":{}}]}}');
+    expect(() => createConfigMutationOperations({}, arrayTarget)).toThrow(
+      "Blocked config key at plugins.allow.0.constructor",
     );
   });
 
@@ -98,5 +113,105 @@ describe("applyConfigOperations", () => {
         },
       ]),
     ).toEqual({ plugins: { allow: ["demo"] } });
+  });
+
+  it("rejects lossy runtime-derived container replacement", () => {
+    expect(() =>
+      createRuntimeConfigMutationOperations({
+        source: { plugins: { allow: ["${TOKEN}"] } },
+        runtime: { plugins: { allow: ["resolved-token"] } },
+        candidate: { plugins: { allow: ["resolved-token", "new"] } },
+      }),
+    ).toThrow("cannot safely replace runtime-derived container at plugins.allow");
+  });
+
+  it("rejects a runtime-derived map move into a new path", () => {
+    expect(() =>
+      createRuntimeConfigMutationOperations({
+        source: { plugins: { entries: { old: { token: "${TOKEN}" } } } },
+        runtime: { plugins: { entries: { old: { token: "resolved-token" } } } },
+        candidate: { plugins: { entries: { next: { token: "resolved-token" } } } },
+      }),
+    ).toThrow("cannot safely persist a runtime-derived value at plugins.entries.next");
+  });
+
+  it("rejects a same-length runtime-derived array reorder", () => {
+    expect(() =>
+      createRuntimeConfigMutationOperations({
+        source: { plugins: { allow: ["${TOKEN}", "literal"] } },
+        runtime: { plugins: { allow: ["resolved-token", "literal"] } },
+        candidate: { plugins: { allow: ["literal", "resolved-token"] } },
+      }),
+    ).toThrow("cannot safely persist a runtime-derived value at plugins.allow.1");
+  });
+
+  it("rejects copying a resolved array value into a new path", () => {
+    expect(() =>
+      createRuntimeConfigMutationOperations({
+        source: { plugins: { allow: ["${TOKEN}"] } },
+        runtime: { plugins: { allow: ["resolved-token"] } },
+        candidate: {
+          plugins: {
+            allow: ["resolved-token"],
+            entries: { demo: { config: { token: "resolved-token" } } },
+          },
+        },
+      }),
+    ).toThrow("cannot safely persist a runtime-derived value");
+  });
+
+  it("does not treat unrelated runtime defaults as authored references", () => {
+    expect(
+      createRuntimeConfigMutationOperations({
+        source: {},
+        runtime: { agents: { entries: { main: { default: true } } } },
+        candidate: {
+          agents: { entries: { main: { default: true } } },
+          browser: { enabled: true },
+        },
+      }),
+    ).toContainEqual({ kind: "set", path: ["browser", "enabled"], value: true });
+  });
+
+  it("carries candidate array-container depths on runtime-derived indexed sets", () => {
+    expect(
+      createRuntimeConfigMutationOperations({
+        source: { plugins: { allow: ["old"] } },
+        runtime: { plugins: { allow: ["old"] } },
+        candidate: { plugins: { allow: ["new"] } },
+      }),
+    ).toContainEqual({
+      kind: "set",
+      path: ["plugins", "allow", "0"],
+      value: "new",
+      arrayContainerDepths: [2],
+    });
+  });
+
+  it("rejects indexed edits when runtime resolution changed array length", () => {
+    expect(() =>
+      createRuntimeConfigMutationOperations({
+        source: { plugins: { allow: ["authored"] } },
+        runtime: { plugins: { allow: ["default", "authored"] } },
+        candidate: { plugins: { allow: ["updated", "authored"] } },
+      }),
+    ).toThrow("cannot safely replace runtime-derived container at plugins.allow");
+  });
+
+  it("rejects copying an include-resolved value into a new path", () => {
+    expect(() =>
+      createRuntimeConfigMutationOperations({
+        source: { plugins: { entries: { old: { $include: "./secret.json" } } } },
+        runtime: { plugins: { entries: { old: { token: "resolved-token" } } } },
+        candidate: {
+          plugins: {
+            entries: {
+              old: { token: "resolved-token" },
+              next: { copiedToken: "resolved-token" },
+            },
+          },
+        },
+      }),
+    ).toThrow("cannot safely persist a runtime-derived value at plugins.entries.next");
   });
 });

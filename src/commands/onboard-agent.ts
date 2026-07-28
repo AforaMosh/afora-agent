@@ -28,8 +28,8 @@ function mergeOnboardingCandidate(params: {
   candidate: OpenClawConfig;
   currentRuntime: OpenClawConfig;
 }): OpenClawConfig {
-  // Keep this runtime-shaped. The canonical config writer later projects only
-  // these candidate changes onto snapshot.parsed, preserving authored syntax.
+  // Carry only onboarding-owned changes onto the latest runtime candidate;
+  // persistence later derives explicit operations from its source baseline.
   const merged = applyConfigOperations(
     params.currentRuntime,
     createConfigMutationOperations(params.base, params.candidate),

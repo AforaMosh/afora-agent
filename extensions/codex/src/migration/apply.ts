@@ -462,7 +462,7 @@ async function applyCodexPluginConfigItem(
   }
   try {
     await configApi.mutateConfigFile({
-      base: "runtime",
+      base: "source",
       afterWrite: { mode: "auto" },
       mutate(draft) {
         if (!ctx.overwrite && hasCodexPluginConfigConflict(draft, value)) {

@@ -383,7 +383,7 @@ export async function applyModelItem(
       return hermesItemConflict(item, HERMES_REASON_DEFAULT_MODEL_CONFIGURED);
     }
     await configApi.mutateConfigFile({
-      base: "runtime",
+      base: "source",
       afterWrite: { mode: "auto" },
       mutate(draft) {
         const mutationState = resolveDefaultAgentModelState(draft);

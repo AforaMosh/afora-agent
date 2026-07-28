@@ -37,9 +37,9 @@ export {
 } from "../config/io.js";
 /**
  * @deprecated Use mutateConfigFile() for source mutations or replaceConfigFile()
- * for explicit replacement. Candidates that cannot be projected unambiguously
- * from the current runtime snapshot are rejected. Removal is scheduled for the
- * next approved Plugin SDK break window, no earlier than 2026-10-01.
+ * for explicit replacement. The adapter projects a runtime-shaped candidate
+ * without roster, model, include, map-rename, or array-identity inference.
+ * Removal is scheduled for the next approved Plugin SDK break window.
  */
 export { writeConfigFileCompat as writeConfigFile } from "../config/io.runtime.js";
 export { mutateConfigFile, replaceConfigFile } from "../config/mutate.js";
