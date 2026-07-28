@@ -500,6 +500,63 @@ export retains it as an explicit sidecar so the package remains importable. It
 is a portable Claw package, not a whole-instance backup: unrelated agents,
 credentials, sessions, and unowned local state are excluded.
 
+To turn explicitly selected user-owned workspace content into schema version 2
+personalization templates, pass a local authoring document:
+
+```bash
+openclaw claws export incident-triage \
+  --out ./incident-triage-export \
+  --author-setup ./author-setup.json \
+  --json
+```
+
+```json
+{
+  "schemaVersion": 1,
+  "inputs": [
+    {
+      "definition": {
+        "id": "owner_name",
+        "label": "Your name",
+        "type": "string",
+        "required": true,
+        "maxLength": 200
+      },
+      "valuePolicy": "private",
+      "sample": "Sample Operator"
+    }
+  ],
+  "files": [
+    {
+      "source": "USER.md",
+      "destination": "USER.md",
+      "replacements": [
+        {
+          "literal": "Author's local name",
+          "occurrence": 1,
+          "input": "owner_name"
+        }
+      ]
+    }
+  ]
+}
+```
+
+Occurrences are one-based and select exact literal spans. `private` inputs must
+not declare defaults; their selected literals must be absent from every
+generated package file. `reusable-default` inputs must declare an explicitly
+reviewed package default. Samples validate and render the clean-state add
+preview but are not written to the package. The local authoring document and
+original user-owned files are also excluded.
+
+Guided export rejects managed sources, root `BOOTSTRAP.md`, owner configuration,
+credential paths, invalid or overlapping replacements, invalid samples, and any
+package that cannot pass the ordinary schema reader and clean-state add planner.
+Its JSON result provides value-free input classifications, template and sample
+renderings and digests, and the clean add-plan integrity for review. Sample
+answers and renderings are explicit local command output but remain outside the
+exported artifact.
+
 ## Command reference
 
 | Command                             | Purpose                                             |
@@ -510,7 +567,7 @@ credentials, sessions, and unowned local state are excluded.
 | `claws configure <claw-or-agent>`   | Preview or apply explicit personalization effects.  |
 | `claws update <claw-or-agent>`      | Preview or apply changes from the selected source.  |
 | `claws remove <claw-or-agent>`      | Preview or remove the agent and eligible resources. |
-| `claws export <agent> --out <path>` | Create a portable package from an installed agent.  |
+| `claws export <agent> --out <path>` | Create or author a portable package from an agent.  |
 
 Use `--json` for experimental machine-readable output.
 

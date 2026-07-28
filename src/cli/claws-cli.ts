@@ -43,7 +43,7 @@ export type ClawsRemoveOptions = {
   forceReferenced?: boolean;
   json?: boolean;
 };
-export type ClawsExportOptions = { out: string; json?: boolean };
+export type ClawsExportOptions = { out: string; authorSetup?: string; json?: boolean };
 
 function collectOption(value: string, previous: string[]): string[] {
   return [...previous, value];
@@ -160,6 +160,10 @@ export function registerClawsCli(program: Command) {
     .description("Export portable state for one installed Claw agent")
     .argument("<agent>", "Final id of the installed Claw agent")
     .requiredOption("--out <path>", "New package directory to create")
+    .option(
+      "--author-setup <path>",
+      "Generate schema v2 setup from an explicit local authoring document",
+    )
     .option("--json", "Print JSON", false)
     .action(async (agent: string, opts: ClawsExportOptions) => {
       const { runClawsExportCommand } = await import("./claws-cli.runtime.js");

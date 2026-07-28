@@ -619,6 +619,7 @@ export async function runClawsExportCommand(
     const result = await exportClawAgent(agentId, opts.out, {
       config: getRuntimeConfig(),
       sourceMcpServers: listedMcpServers.mcpServers,
+      ...(opts.authorSetup ? { authorSetupPath: opts.authorSetup } : {}),
     });
     if (opts.json) {
       writeRuntimeJson(runtime, result);
@@ -631,6 +632,16 @@ export async function runClawsExportCommand(
       `Workspace files: ${result.manifest.workspace.files.length + Object.keys(result.manifest.workspace.bootstrapFiles).length}`,
     );
     runtime.log(`Packages: ${result.manifest.packages.length}`);
+    if (result.authoring) {
+      runtime.log(`Setup inputs: ${result.authoring.inputs.length}`);
+      runtime.log(`Personalization seeds: ${result.authoring.seeds.length}`);
+      runtime.log(`Private values checked: ${result.authoring.privateValuesChecked}`);
+      runtime.log(`Clean add preview: ${result.authoring.cleanAddPlanIntegrity}`);
+      for (const seed of result.authoring.seeds) {
+        runtime.log(`Template ${seed.destination}:\n${seed.template}`);
+        runtime.log(`Sample ${seed.destination}:\n${seed.sample}`);
+      }
+    }
   } catch (error) {
     const code = error instanceof ClawExportError ? error.code : "export_failed";
     const message = error instanceof Error ? error.message : String(error);

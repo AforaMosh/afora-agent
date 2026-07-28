@@ -351,6 +351,197 @@ describe("exportClawAgent", () => {
     });
   });
 
+  it("authors a standard schema v2 package from explicitly selected user-owned content", async () => {
+    const fixture = await installedFixture({ withPackage: true });
+    const authorSource = join(fixture.plan.agent.workspace, "USER.md");
+    const authoringPath = join(fixture.root, "author-setup.json");
+    const out = join(fixture.root, "exported-guided");
+    await writeFile(
+      authorSource,
+      "# User\n\nName: Gio Private\nTimezone: America/Los_Angeles\n",
+      "utf8",
+    );
+    await writeFile(
+      authoringPath,
+      JSON.stringify({
+        schemaVersion: 1,
+        inputs: [
+          {
+            definition: {
+              id: "owner_name",
+              label: "Your name",
+              type: "string",
+              required: true,
+              maxLength: 200,
+            },
+            valuePolicy: "private",
+            sample: "Sample Operator",
+          },
+          {
+            definition: {
+              id: "timezone",
+              label: "Timezone",
+              type: "string",
+              format: "timezone",
+              required: true,
+              default: "America/Los_Angeles",
+            },
+            valuePolicy: "reusable-default",
+            sample: "America/Los_Angeles",
+          },
+        ],
+        files: [
+          {
+            source: "USER.md",
+            destination: "USER.md",
+            replacements: [
+              { literal: "Gio Private", occurrence: 1, input: "owner_name" },
+              { literal: "America/Los_Angeles", occurrence: 1, input: "timezone" },
+            ],
+          },
+        ],
+      }),
+      "utf8",
+    );
+
+    const result = await exportClawAgent("worker", out, {
+      env: fixture.env,
+      config: fixture.config,
+      packageDeps: fixture.packageDeps,
+      sourceMcpServers: fixture.sourceMcpServers,
+      authorSetupPath: authoringPath,
+    });
+
+    expect(result.manifest).toMatchObject({
+      schemaVersion: 2,
+      setup: {
+        inputs: [
+          { id: "owner_name", type: "string" },
+          { id: "timezone", default: "America/Los_Angeles" },
+        ],
+      },
+      personalization: {
+        seeds: [{ source: "setup/seed-001.tmpl", destination: "USER.md" }],
+      },
+    });
+    expect(result.authoring).toMatchObject({
+      inputs: [
+        { id: "owner_name", valuePolicy: "private" },
+        { id: "timezone", valuePolicy: "reusable-default" },
+      ],
+      privateValuesChecked: 1,
+      seeds: [
+        {
+          destination: "USER.md",
+          template: "# User\n\nName: {{ input.owner_name }}\nTimezone: {{ input.timezone }}\n",
+          sample: "# User\n\nName: Sample Operator\nTimezone: America/Los\\_Angeles\n",
+        },
+      ],
+    });
+    expect(result.authoring?.cleanAddPlanIntegrity).toMatch(/^sha256:[0-9a-f]{64}$/);
+    const template = await readFile(join(out, "setup", "seed-001.tmpl"), "utf8");
+    expect(template).toContain("{{ input.owner_name }}");
+    expect(template).toContain("{{ input.timezone }}");
+    expect(template).not.toContain("Gio Private");
+    await expect(readFile(join(out, "CLAW.md"), "utf8")).resolves.not.toContain("Sample Operator");
+    await expect(readFile(join(out, "workspace", "USER.md"), "utf8")).rejects.toThrow();
+
+    const exported = await readClawManifestFile(out);
+    expect(exported.ok).toBe(true);
+    if (!exported.ok) {
+      throw new Error(JSON.stringify(exported.diagnostics));
+    }
+    const plan = await buildClawAddPlan({
+      manifest: exported.manifest,
+      source: exported.source,
+      answers: { owner_name: "Recipient", timezone: "America/New_York" },
+      context: { workspace: join(fixture.root, "clean-recipient-workspace") },
+    });
+    expect(plan.setup).toMatchObject({ valid: true, providedInputIds: ["owner_name", "timezone"] });
+  });
+
+  it("blocks guided export when an unselected private occurrence would leak", async () => {
+    const fixture = await installedFixture();
+    const authoringPath = join(fixture.root, "author-setup-leak.json");
+    const out = join(fixture.root, "exported-leak");
+    await writeFile(
+      join(fixture.plan.agent.workspace, "USER.md"),
+      "Gio Private appears twice: Gio Private\n",
+      "utf8",
+    );
+    await writeFile(
+      authoringPath,
+      JSON.stringify({
+        schemaVersion: 1,
+        inputs: [
+          {
+            definition: {
+              id: "owner_name",
+              label: "Your name",
+              type: "string",
+              required: true,
+            },
+            valuePolicy: "private",
+            sample: "Sample Operator",
+          },
+        ],
+        files: [
+          {
+            source: "USER.md",
+            destination: "USER.md",
+            replacements: [{ literal: "Gio Private", occurrence: 1, input: "owner_name" }],
+          },
+        ],
+      }),
+      "utf8",
+    );
+
+    await expect(
+      exportClawAgent("worker", out, {
+        env: fixture.env,
+        config: fixture.config,
+        sourceMcpServers: fixture.sourceMcpServers,
+        authorSetupPath: authoringPath,
+      }),
+    ).rejects.toMatchObject({ code: "author_setup_private_value_leaked" });
+    await expect(readFile(join(out, "CLAW.md"), "utf8")).rejects.toThrow();
+  });
+
+  it("keeps managed workspace files out of guided personalization authoring", async () => {
+    const fixture = await installedFixture();
+    const authoringPath = join(fixture.root, "author-setup-managed.json");
+    await writeFile(
+      authoringPath,
+      JSON.stringify({
+        schemaVersion: 1,
+        inputs: [
+          {
+            definition: { id: "policy", label: "Policy", type: "string" },
+            valuePolicy: "private",
+            sample: "sample",
+          },
+        ],
+        files: [
+          {
+            source: "reference/policy.md",
+            destination: "POLICY.md",
+            replacements: [{ literal: "managed", occurrence: 1, input: "policy" }],
+          },
+        ],
+      }),
+      "utf8",
+    );
+
+    await expect(
+      exportClawAgent("worker", join(fixture.root, "exported-managed-authoring"), {
+        env: fixture.env,
+        config: fixture.config,
+        sourceMcpServers: fixture.sourceMcpServers,
+        authorSetupPath: authoringPath,
+      }),
+    ).rejects.toMatchObject({ code: "author_setup_source_managed" });
+  });
+
   it("rejects modified managed content instead of silently creating a snapshot", async () => {
     const fixture = await installedFixture();
     await writeFile(join(fixture.plan.agent.workspace, "SOUL.md"), "operator revision\n", "utf8");

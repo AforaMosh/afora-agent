@@ -12,10 +12,22 @@ import { root as fsSafeRoot } from "../infra/fs-safe.js";
 import { AVATAR_MAX_BYTES, isAvatarDataUrl, isAvatarHttpUrl } from "../shared/avatar-policy.js";
 import type { OpenClawStateDatabaseOptions } from "../state/openclaw-state-db.js";
 import { resolveUserPath } from "../utils.js";
+import {
+  assertPrivateAuthorValuesAbsent,
+  buildClawExportAuthoring,
+  buildGuidedManifestSetup,
+  ClawExportAuthoringError,
+  digestAuthoringContent,
+  readClawExportAuthoringDocument,
+  type ClawExportAuthoringResult,
+} from "./export-authoring.js";
 import { readClawStatus } from "./lifecycle-state.js";
+import { buildClawAddPlan } from "./lifecycle.js";
 import type { PackageRemovalDeps } from "./package-remove.js";
-import { isPortableClawAvatar } from "./schema-portability.js";
+import { readClawManifestFile } from "./reader.js";
+import { isPortableClawAvatar, portableClawPathKey } from "./schema-portability.js";
 import { parseClawManifest, parseClawOpenClawProfile } from "./schema.js";
+import { buildClawSetupPlan } from "./setup.js";
 import { MAX_CLAW_MANIFEST_BYTES, MAX_MANAGED_WORKSPACE_BYTES } from "./source-limits.js";
 import {
   CLAW_BOOTSTRAP_FILE_NAMES,
@@ -51,6 +63,21 @@ type ClawExportResult = {
   manifest: ClawManifest;
   openClawProfile?: ClawOpenClawProfile;
   filesWritten: string[];
+  authoring?: {
+    inputs: Array<{ id: string; valuePolicy: "private" | "reusable-default" }>;
+    seeds: Array<{
+      source: string;
+      destination: string;
+      inputIds: string[];
+      template: string;
+      templateDigest: string;
+      sample: string;
+      sampleDigest: string;
+      sampleByteLength: number;
+    }>;
+    privateValuesChecked: number;
+    cleanAddPlanIntegrity: string;
+  };
 };
 
 export class ClawExportError extends Error {
@@ -270,6 +297,7 @@ export async function exportClawAgent(
     packageDeps?: PackageRemovalDeps;
     packagePreflight?: ClawPackagePreflight;
     sourceMcpServers?: Record<string, Record<string, unknown>>;
+    authorSetupPath?: string;
   },
 ): Promise<ClawExportResult> {
   const status = await readClawStatus(agentId, options);
@@ -359,6 +387,26 @@ export async function exportClawAgent(
       content: await workspace.readBytes(file.path, { maxBytes: MAX_EXPORT_FILE_BYTES }),
     })),
   );
+  let authoring: ClawExportAuthoringResult | undefined;
+  if (options.authorSetupPath) {
+    try {
+      const document = await readClawExportAuthoringDocument(
+        resolve(resolveUserPath(options.authorSetupPath)),
+      );
+      authoring = await buildClawExportAuthoring({
+        document,
+        workspace: record.install.workspace,
+        managedWorkspacePaths: new Set(
+          record.workspaceFiles.map((file) => portableClawPathKey(file.path)),
+        ),
+      });
+    } catch (error) {
+      if (error instanceof ClawExportAuthoringError) {
+        throw new ClawExportError(error.code, error.message);
+      }
+      throw error;
+    }
+  }
   const soul = allContents.find((file) => file.path === "SOUL.md");
   const decodedSoul = soul ? decodeUtf8(soul.content) : undefined;
   let clawMarkdownBody =
@@ -416,15 +464,15 @@ export async function exportClawAgent(
       const rightIdentity = `${right.kind}:${right.ref}:${right.version}`;
       return comparePortableText(leftIdentity, rightIdentity);
     });
-  const usesManifestV2 = extensions.length > 0 || files.some((file) => file.role !== undefined);
+  const usesManifestV2 =
+    authoring !== undefined || extensions.length > 0 || files.some((file) => file.role !== undefined);
   if (usesManifestV2 && portablePackages.some((pkg) => pkg.kind === "plugin")) {
     throw new ClawExportError(
       "legacy_plugin_not_relocated",
       "Schema version 2 export requires plugin dependencies to have extension provenance.",
     );
   }
-  const manifest = {
-    schemaVersion: usesManifestV2 ? CLAW_SETUP_SCHEMA_VERSION : CLAW_SCHEMA_VERSION,
+  const manifestCommon = {
     agent: portableAgent(agent, avatar.source),
     ...(openClawProfile ? { metadata: { "openclaw.config": openClawProfilePath } } : {}),
     workspace: { bootstrapFiles, files },
@@ -438,8 +486,21 @@ export async function exportClawAgent(
     cronJobs: record.cronJobs
       .map((cron) => cron.job)
       .toSorted((left, right) => left.id.localeCompare(right.id)),
-    ...(usesManifestV2 ? { setup: { inputs: [] }, personalization: { seeds: [] } } : {}),
-  } as ClawManifest;
+  };
+  const manifest: ClawManifest = authoring
+    ? {
+        schemaVersion: CLAW_SETUP_SCHEMA_VERSION,
+        ...manifestCommon,
+        ...buildGuidedManifestSetup(authoring),
+      }
+    : usesManifestV2
+      ? {
+          schemaVersion: CLAW_SETUP_SCHEMA_VERSION,
+          ...manifestCommon,
+          setup: { inputs: [] },
+          personalization: { seeds: [] },
+        }
+      : { schemaVersion: CLAW_SCHEMA_VERSION, ...manifestCommon };
   const serializeClawMarkdown = (body: Buffer | undefined) =>
     Buffer.concat([Buffer.from(`---\n${stringifyYaml(manifest)}---\n`), ...(body ? [body] : [])]);
   let clawMarkdownRaw = serializeClawMarkdown(clawMarkdownBody);
@@ -480,6 +541,11 @@ export async function exportClawAgent(
       );
     }
   }
+  const authoringContents: ExportContent[] =
+    authoring?.templates.map((template) => ({
+      path: template.source,
+      content: template.content,
+    })) ?? [];
   const target = resolve(resolveUserPath(outputDirectory));
   await mkdir(dirname(target), { recursive: true });
   try {
@@ -509,17 +575,44 @@ export async function exportClawAgent(
       });
       filesWritten.push(openClawProfilePath);
     }
+    for (const file of authoringContents) {
+      await output.write(file.path, file.content, { mkdir: true, overwrite: false });
+      filesWritten.push(file.path);
+    }
     const packageJson = {
       name: `openclaw-claw-${record.install.agentId}`,
       version: derivativePackageVersion(manifest, [
         ...contents,
+        ...authoringContents,
         ...(clawMarkdownBody ? [{ path: "CLAW.md#body", content: clawMarkdownBody }] : []),
         ...(openClawProfileRaw ? [{ path: openClawProfilePath, content: openClawProfileRaw }] : []),
       ]),
       type: "module",
       openclaw: { claw: "CLAW.md" },
     };
-    await output.write("package.json", Buffer.from(`${JSON.stringify(packageJson, null, 2)}\n`), {
+    const packageJsonRaw = Buffer.from(`${JSON.stringify(packageJson, null, 2)}\n`);
+    if (authoring) {
+      try {
+        assertPrivateAuthorValuesAbsent({
+          privateLiterals: authoring.privateLiterals,
+          files: [
+            ...contents.map((file) => ({ path: `workspace/${file.path}`, content: file.content })),
+            ...authoringContents,
+            ...(openClawProfileRaw
+              ? [{ path: openClawProfilePath, content: openClawProfileRaw }]
+              : []),
+            { path: "CLAW.md", content: clawMarkdownRaw },
+            { path: "package.json", content: packageJsonRaw },
+          ],
+        });
+      } catch (error) {
+        if (error instanceof ClawExportAuthoringError) {
+          throw new ClawExportError(error.code, error.message);
+        }
+        throw error;
+      }
+    }
+    await output.write("package.json", packageJsonRaw, {
       overwrite: false,
     });
     filesWritten.push("package.json");
@@ -527,10 +620,108 @@ export async function exportClawAgent(
     filesWritten.push("CLAW.md");
   } catch (error) {
     await rm(target, { recursive: true, force: true }).catch(() => undefined);
+    if (error instanceof ClawExportError) {
+      throw error;
+    }
     throw new ClawExportError(
       "export_write_failed",
       error instanceof Error ? error.message : String(error),
     );
+  }
+  let authoringReview: ClawExportResult["authoring"];
+  if (authoring) {
+    try {
+      const read = await readClawManifestFile(target);
+      if (!read.ok) {
+        throw new ClawExportError(
+          "author_setup_package_invalid",
+          read.diagnostics.map((diagnostic) => diagnostic.message).join("; "),
+        );
+      }
+      const plan = await buildClawAddPlan({
+        manifest: read.manifest,
+        ...(read.clawMarkdownBody ? { clawMarkdownBody: read.clawMarkdownBody } : {}),
+        ...(read.openClawProfile ? { openClawProfile: read.openClawProfile } : {}),
+        source: read.source,
+        answers: authoring.samples,
+        context: {
+          workspace: resolve(target, ".openclaw-clean-preview"),
+          packagePreflight: async (pkg) => {
+            const installed = record.packages.find(
+              (candidate) =>
+                candidate.kind === pkg.kind &&
+                candidate.source === pkg.source &&
+                candidate.ref === pkg.ref &&
+                candidate.version === pkg.version,
+            );
+            return installed
+              ? { ok: true, action: "install", integrity: installed.integrity }
+              : {
+                  ok: false,
+                  code: "author_setup_package_unavailable",
+                  message: `Exported package ${pkg.kind}:${pkg.ref}@${pkg.version} is unavailable for clean preview.`,
+                };
+          },
+        },
+      });
+      if (plan.blockers.length > 0 || !plan.setup?.valid) {
+        throw new ClawExportError(
+          "author_setup_preview_blocked",
+          [...plan.blockers, ...(plan.setup?.diagnostics ?? [])]
+            .map((diagnostic) => diagnostic.message)
+            .join("; "),
+        );
+      }
+      if (read.manifest.schemaVersion !== CLAW_SETUP_SCHEMA_VERSION) {
+        throw new ClawExportError(
+          "author_setup_package_invalid",
+          "Guided export did not produce a schema version 2 package.",
+        );
+      }
+      const setupMaterialization = await buildClawSetupPlan({
+        manifest: read.manifest,
+        packageRoot: read.source.packageRoot,
+        answers: authoring.samples,
+      });
+      if (!setupMaterialization.materialization) {
+        throw new ClawExportError(
+          "author_setup_preview_incomplete",
+          "Clean-state preview did not produce canonical sample renderings.",
+        );
+      }
+      authoringReview = {
+        inputs: authoring.inputReview,
+        seeds: authoring.templates.map((template) => {
+          const seed = plan.setup!.seeds.find(
+            (candidate) => candidate.destination === template.destination,
+          );
+          const rendered = setupMaterialization.materialization!.seeds.find(
+            (candidate) => candidate.destination === template.destination,
+          );
+          if (!seed?.digest || seed.renderedByteLength === undefined || !rendered) {
+            throw new ClawExportError(
+              "author_setup_preview_incomplete",
+              `Clean-state preview did not render ${JSON.stringify(template.destination)}.`,
+            );
+          }
+          return {
+            source: template.source,
+            destination: template.destination,
+            inputIds: template.inputIds,
+            template: template.content.toString("utf8"),
+            templateDigest: digestAuthoringContent(template.content),
+            sample: rendered.content.toString("utf8"),
+            sampleDigest: seed.digest,
+            sampleByteLength: seed.renderedByteLength,
+          };
+        }),
+        privateValuesChecked: authoring.privateLiterals.length,
+        cleanAddPlanIntegrity: plan.planIntegrity,
+      };
+    } catch (error) {
+      await rm(target, { recursive: true, force: true }).catch(() => undefined);
+      throw error;
+    }
   }
   return {
     schemaVersion: CLAW_EXPORT_RESULT_SCHEMA_VERSION,
@@ -540,5 +731,6 @@ export async function exportClawAgent(
     manifest,
     ...(openClawProfile ? { openClawProfile } : {}),
     filesWritten,
+    ...(authoringReview ? { authoring: authoringReview } : {}),
   };
 }
