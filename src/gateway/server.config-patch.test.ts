@@ -486,6 +486,72 @@ describe("gateway config methods", () => {
     });
   });
 
+  it("restores redacted config.set array secrets by resolved stable ID after reordering", async () => {
+    const { createConfigIO, resetConfigRuntimeState } = await import("../config/config.js");
+    const configPath = createConfigIO().configPath;
+    const original = await getCurrentConfigObject();
+    await withEnvAsync({ OPENCLAW_CONFIG_SET_MODEL_ID: "model-a" }, async () => {
+      try {
+        await writeJsonFile(configPath, {
+          models: {
+            providers: {
+              custom: {
+                baseUrl: "https://example.invalid/v1",
+                models: [
+                  {
+                    id: "${OPENCLAW_CONFIG_SET_MODEL_ID}",
+                    name: "Original A",
+                    headers: { Authorization: "secret-a" },
+                  },
+                  {
+                    id: "model-b",
+                    name: "Original B",
+                    headers: { Authorization: "secret-b" },
+                  },
+                ],
+              },
+            },
+          },
+        });
+        resetConfigRuntimeState();
+        const current = await getCurrentConfigObject();
+        const nextConfig = structuredClone(current.config);
+        const providers = requireConfigObject(
+          requireConfigObject(nextConfig.models, "models config").providers,
+          "model providers",
+        );
+        const custom = requireConfigObject(providers.custom, "custom provider");
+        const models = custom.models as Array<Record<string, unknown>>;
+        custom.models = [
+          { ...models[1], name: "Replacement B" },
+          { ...models[0], name: "Replacement A" },
+        ];
+
+        const res = await sendConfigSet(configRawPayload(nextConfig, current.hash));
+
+        expect(res.error).toBeUndefined();
+        expect(res.ok).toBe(true);
+        const persisted = JSON.parse(await fs.readFile(configPath, "utf-8")) as {
+          models?: { providers?: { custom?: { models?: unknown[] } } };
+        };
+        expect(persisted.models?.providers?.custom?.models).toEqual([
+          {
+            id: "model-b",
+            name: "Replacement B",
+            headers: { Authorization: "secret-b" },
+          },
+          {
+            id: "${OPENCLAW_CONFIG_SET_MODEL_ID}",
+            name: "Replacement A",
+            headers: { Authorization: "secret-a" },
+          },
+        ]);
+      } finally {
+        await restoreConfigFileForTest(original);
+      }
+    });
+  });
+
   it("rejects a redaction sentinel submitted at a non-sensitive replacement path", async () => {
     const current = await getCurrentConfigObject();
     const nextConfig = structuredClone(current.config);

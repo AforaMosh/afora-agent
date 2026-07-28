@@ -357,7 +357,9 @@ const OMIT_REDACTED_REPLACEMENT_VALUE = Symbol("omit-redacted-replacement-value"
 function restoreRedactedReplacementSource(
   value: unknown,
   source: unknown,
+  resolvedSource: unknown,
   validated: unknown,
+  path = "",
 ): unknown {
   if (value === REDACTED_SENTINEL) {
     if (validated === REDACTED_SENTINEL) {
@@ -367,12 +369,66 @@ function restoreRedactedReplacementSource(
   }
   if (Array.isArray(value)) {
     const sourceArray = Array.isArray(source) ? source : [];
+    const resolvedSourceArray = Array.isArray(resolvedSource) ? resolvedSource : [];
     const validatedArray = Array.isArray(validated) ? validated : [];
+    if (value.some(containsRedactedPatchSentinel)) {
+      if (!value.every(isConfigPatchObjectWithStringId)) {
+        throw new Error(
+          `Cannot safely restore redacted values for replacement array at ${path || "<root>"} without stable IDs.`,
+        );
+      }
+      const submittedIds = new Set<string>();
+      for (const entry of value) {
+        if (submittedIds.has(entry.id)) {
+          throw new Error(
+            `Ambiguous duplicate ID ${entry.id} in replacement array at ${path || "<root>"}.`,
+          );
+        }
+        submittedIds.add(entry.id);
+      }
+      return value.map((entry, index) => {
+        const sourceMatches = sourceArray.flatMap((candidate, sourceIndex) =>
+          isConfigPatchObjectWithStringId(candidate) && candidate.id === entry.id
+            ? [sourceIndex]
+            : [],
+        );
+        const resolvedSourceMatches = resolvedSourceArray.flatMap((candidate, sourceIndex) =>
+          isConfigPatchObjectWithStringId(candidate) && candidate.id === entry.id
+            ? [sourceIndex]
+            : [],
+        );
+        if (sourceMatches.length > 1 || resolvedSourceMatches.length > 1) {
+          throw new Error(
+            `Ambiguous duplicate ID ${entry.id} in replacement array at ${path || "<root>"}.`,
+          );
+        }
+        const resolvedSourceIndex = resolvedSourceMatches[0] ?? -1;
+        const sourceIndex =
+          sourceMatches[0] ??
+          (resolvedSourceIndex >= 0 && sourceArray.length === resolvedSourceArray.length
+            ? resolvedSourceIndex
+            : -1);
+        if (containsRedactedPatchSentinel(entry) && sourceIndex < 0) {
+          throw new Error(
+            `Cannot restore redacted values for unmatched ID ${entry.id} at ${path || "<root>"}.`,
+          );
+        }
+        return restoreRedactedReplacementSource(
+          entry,
+          sourceArray[sourceIndex],
+          resolvedSourceArray[resolvedSourceIndex],
+          validatedArray[index],
+          `${path}[]`,
+        );
+      });
+    }
     return value.flatMap((entry, index) => {
       const restored = restoreRedactedReplacementSource(
         entry,
         sourceArray[index],
+        resolvedSourceArray[index],
         validatedArray[index],
+        `${path}[]`,
       );
       return restored === OMIT_REDACTED_REPLACEMENT_VALUE ? [] : [restored];
     });
@@ -381,13 +437,16 @@ function restoreRedactedReplacementSource(
     return structuredClone(value);
   }
   const sourceRecord = isRecord(source) ? source : {};
+  const resolvedSourceRecord = isRecord(resolvedSource) ? resolvedSource : {};
   const validatedRecord = isRecord(validated) ? validated : {};
   return Object.fromEntries(
     Object.entries(value).flatMap(([key, entry]) => {
       const restored = restoreRedactedReplacementSource(
         entry,
         sourceRecord[key],
+        resolvedSourceRecord[key],
         validatedRecord[key],
+        formatConfigPatchPath(path, key),
       );
       return restored === OMIT_REDACTED_REPLACEMENT_VALUE ? [] : [[key, restored]];
     }),
@@ -738,11 +797,18 @@ function parseValidateConfigFromRawOrRespond(
     );
     return null;
   }
-  const restoredSource = restoreRedactedReplacementSource(
-    parsedRes.parsed,
-    snapshot.parsed,
-    restored.result,
-  );
+  let restoredSource: unknown;
+  try {
+    restoredSource = restoreRedactedReplacementSource(
+      parsedRes.parsed,
+      snapshot.parsed,
+      snapshot.resolved,
+      restored.result,
+    );
+  } catch (error) {
+    respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, formatErrorMessage(error)));
+    return null;
+  }
   if (restoredSource === OMIT_REDACTED_REPLACEMENT_VALUE) {
     respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "invalid config"));
     return null;
