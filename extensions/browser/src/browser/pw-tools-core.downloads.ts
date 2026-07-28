@@ -57,7 +57,7 @@ function createExplicitDownloadCapture(
 ) {
   params.state.armIdDownload = bumpDownloadArmId();
   const armId = params.state.armIdDownload;
-  return createDownloadCaptureForPage(params.page, params.state, params.timeoutMs, {
+  const capture = createDownloadCaptureForPage(params.page, params.state, params.timeoutMs, {
     mode: "explicit",
     outputPath: params.outPath,
     outputRoot: params.rootDir,
@@ -81,6 +81,15 @@ function createExplicitDownloadCapture(
       }
     },
   });
+  return {
+    ...capture,
+    cancel: () => {
+      if (params.state.armIdDownload === armId) {
+        params.state.armIdDownload = bumpDownloadArmId();
+      }
+      capture.cancel();
+    },
+  };
 }
 
 function resolveImplicitDownloadRoot(): string {
@@ -444,6 +453,7 @@ export async function downloadViaPlaywright(
     return await capture.promise;
   } catch (err) {
     capture.cancel();
+    void capture.promise.catch(() => {});
     throw err;
   }
 }

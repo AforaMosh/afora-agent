@@ -552,6 +552,50 @@ describe("pw-tools-core", () => {
     });
   });
 
+  it("does not save after a click failure cancels pending URL validation", async () => {
+    await withTempDir(async (tempDir) => {
+      const harness = createDownloadEventHarness();
+      const navigationGuard = getPwToolsCoreNavigationGuardMocks();
+      let releaseValidation!: () => void;
+      const validationPending = new Promise<void>((resolve) => {
+        releaseValidation = resolve;
+      });
+      navigationGuard.assertBrowserNavigationResultAllowed.mockImplementationOnce(
+        async () => await validationPending,
+      );
+
+      const targetPath = path.join(tempDir, "cancelled.bin");
+      const saveAs = vi.fn(async (outPath: string) => {
+        await fs.writeFile(outPath, "late-content", "utf8");
+      });
+      const click = vi.fn(async () => {
+        harness.trigger({
+          url: () => "https://example.com/cancelled.bin",
+          suggestedFilename: () => "cancelled.bin",
+          saveAs,
+        });
+        await Promise.resolve();
+        throw new Error("click failed");
+      });
+      setPwToolsCoreCurrentRefLocator({ click });
+
+      const pending = mod.downloadViaPlaywright({
+        cdpUrl: "http://127.0.0.1:18792",
+        targetId: "T1",
+        ref: "e12",
+        path: targetPath,
+        timeoutMs: 1000,
+      });
+
+      await expect(pending).rejects.toThrow("click failed");
+      expect(navigationGuard.assertBrowserNavigationResultAllowed).toHaveBeenCalledOnce();
+      releaseValidation();
+      await Promise.resolve();
+      expect(saveAs).not.toHaveBeenCalled();
+      await expectPathMissing(targetPath);
+    });
+  });
+
   it.runIf(process.platform !== "win32")(
     "replaces an in-root hardlink name without overwriting the outside file",
     async () => {
