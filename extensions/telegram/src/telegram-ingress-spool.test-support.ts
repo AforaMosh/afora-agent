@@ -10,8 +10,8 @@ import {
   type ChannelIngressQueueRecord,
 } from "openclaw/plugin-sdk/channel-outbound";
 import type { TelegramBotInfo } from "./bot-info.js";
-import { openTelegramIngressQueue, resolveTelegramUpdateId } from "./telegram-ingress-spool.js";
 import { getTelegramSequentialKey } from "./sequential-key.js";
+import { openTelegramIngressQueue, resolveTelegramUpdateId } from "./telegram-ingress-spool.js";
 import {
   TELEGRAM_SPOOLED_UPDATE_PAYLOAD_VERSION,
   type TelegramSpooledUpdatePayload,
