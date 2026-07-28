@@ -2,10 +2,8 @@ import { isDeepStrictEqual } from "node:util";
 import { isRecord } from "../utils.js";
 import {
   applyConfigOperations,
-  createConfigMutationOperations,
   createRuntimeConfigMutationOperations,
 } from "./config-path-mutation.js";
-import { applyMergePatch, createMergePatch } from "./merge-patch.js";
 import { getRuntimeConfigSnapshot, getRuntimeConfigSourceSnapshot } from "./runtime-snapshot.js";
 import type { OpenClawConfig } from "./types.js";
 
@@ -59,24 +57,12 @@ export function projectRuntimeConfigOntoSourceSnapshot(params: {
     params.runtimeSnapshot,
     params.candidate,
   );
-  createRuntimeConfigMutationOperations({
+  const operations = createRuntimeConfigMutationOperations({
     source: params.sourceSnapshot,
     runtime: params.runtimeSnapshot,
     candidate: params.candidate,
   });
-  const sourceInRuntimeShape = projectSourceOntoRuntimeShape(
-    params.sourceSnapshot,
-    params.runtimeSnapshot,
-  );
-  const projected = applyMergePatch(
-    sourceInRuntimeShape,
-    createMergePatch(params.runtimeSnapshot, params.candidate),
-  ) as OpenClawConfig;
-  const explicitNulls = createConfigMutationOperations(
-    params.runtimeSnapshot,
-    params.candidate,
-  ).filter((operation) => operation.kind === "set" && operation.value === null);
-  return applyConfigOperations(projected, explicitNulls);
+  return applyConfigOperations(params.sourceSnapshot, operations);
 }
 
 function hasCompatibleTopLevelShape(runtime: OpenClawConfig, candidate: OpenClawConfig): boolean {

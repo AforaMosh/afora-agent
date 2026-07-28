@@ -124,13 +124,14 @@ function projectAuthoredValuesOntoRuntimeOverlay(params: {
 /** Compares against the active secrets-expanded config when one is available. */
 export function didActiveSharedGatewayAuthChange(params: {
   fallbackPrev: OpenClawConfig;
+  fallbackSource?: OpenClawConfig;
   next: OpenClawConfig;
 }): boolean {
   const active = getActiveSecretsRuntimeSnapshot();
   if (!active) {
     return didSharedGatewayAuthChange(params.fallbackPrev, params.next);
   }
-  const activeSourceGateway = active.sourceConfig.gateway;
+  const activeSourceGateway = (params.fallbackSource ?? active.sourceConfig).gateway;
   const activeGateway = active.config.gateway;
   const fallbackGateway = params.fallbackPrev.gateway;
   const selectOwnedGatewayValue = <Key extends "auth" | "tailscale" | "trustedProxies">(
@@ -295,12 +296,14 @@ export async function commitGatewayConfigWrite(params: {
     },
     afterWrite: { mode: "auto" },
   });
+  const persistedSnapshot = await readConfigFileSnapshotForWrite();
+  const canonicalHash = resolveConfigSnapshotHash(persistedSnapshot.snapshot);
   return {
     path: resolveGatewayConfigPath(params.snapshot),
-    config: result.nextConfig,
+    config: persistedSnapshot.snapshot.config,
     // Persisted hash of the re-read file (resolveConfigSnapshotHash), i.e.
     // exactly what a follow-up config.get reports — writers ack against it.
-    hash: result.persistedHash,
+    hash: canonicalHash,
     queueFollowUp: () => {
       // Defer generation refresh/disconnect until after the RPC response so
       // the writer receives the success payload before its connection is closed.

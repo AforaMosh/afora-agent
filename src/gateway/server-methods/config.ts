@@ -51,7 +51,11 @@ import {
 import { loadGatewayRuntimeConfigSchema } from "../../config/runtime-schema.js";
 import { projectSourceOntoRuntimeShape } from "../../config/runtime-source-projection.js";
 import { lookupConfigSchema, type ConfigSchemaResponse } from "../../config/schema.js";
-import type { ConfigValidationIssue, OpenClawConfig } from "../../config/types.openclaw.js";
+import type {
+  ConfigFileSnapshot,
+  ConfigValidationIssue,
+  OpenClawConfig,
+} from "../../config/types.openclaw.js";
 import {
   validateConfigObjectRawWithPlugins,
   validateConfigObjectWithPlugins,
@@ -346,6 +350,48 @@ function stripRedactedPatchSentinels(value: unknown): unknown {
   return entries.length > 0 && strippedEntries.length === 0
     ? undefined
     : Object.fromEntries(strippedEntries);
+}
+
+const OMIT_REDACTED_REPLACEMENT_VALUE = Symbol("omit-redacted-replacement-value");
+
+function restoreRedactedReplacementSource(
+  value: unknown,
+  source: unknown,
+  validated: unknown,
+): unknown {
+  if (value === REDACTED_SENTINEL) {
+    if (validated === REDACTED_SENTINEL) {
+      throw new Error("unvalidated redaction sentinel in replacement config");
+    }
+    return source === undefined ? OMIT_REDACTED_REPLACEMENT_VALUE : structuredClone(source);
+  }
+  if (Array.isArray(value)) {
+    const sourceArray = Array.isArray(source) ? source : [];
+    const validatedArray = Array.isArray(validated) ? validated : [];
+    return value.flatMap((entry, index) => {
+      const restored = restoreRedactedReplacementSource(
+        entry,
+        sourceArray[index],
+        validatedArray[index],
+      );
+      return restored === OMIT_REDACTED_REPLACEMENT_VALUE ? [] : [restored];
+    });
+  }
+  if (!isRecord(value)) {
+    return structuredClone(value);
+  }
+  const sourceRecord = isRecord(source) ? source : {};
+  const validatedRecord = isRecord(validated) ? validated : {};
+  return Object.fromEntries(
+    Object.entries(value).flatMap(([key, entry]) => {
+      const restored = restoreRedactedReplacementSource(
+        entry,
+        sourceRecord[key],
+        validatedRecord[key],
+      );
+      return restored === OMIT_REDACTED_REPLACEMENT_VALUE ? [] : [[key, restored]];
+    }),
+  );
 }
 
 function collectRuntimeOnlyAgentUnsets(params: {
@@ -692,6 +738,15 @@ function parseValidateConfigFromRawOrRespond(
     );
     return null;
   }
+  const restoredSource = restoreRedactedReplacementSource(
+    parsedRes.parsed,
+    snapshot.parsed,
+    restored.result,
+  );
+  if (restoredSource === OMIT_REDACTED_REPLACEMENT_VALUE) {
+    respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "invalid config"));
+    return null;
+  }
   // Validate against runtime shape, but write the source-shaped config the operator submitted.
   const projectedValidationCandidate = snapshot.valid
     ? applyConfigOperations(
@@ -703,6 +758,7 @@ function parseValidateConfigFromRawOrRespond(
     candidate: projectedValidationCandidate,
     sourceConfig: snapshot.sourceConfig,
   });
+  const writeCandidate = restoredSource as OpenClawConfig;
   const sourceValidated = validateConfigObjectRawWithPlugins(validationCandidate);
   if (!sourceValidated.ok) {
     respond(
@@ -731,7 +787,7 @@ function parseValidateConfigFromRawOrRespond(
   }
   return {
     config: validated.config,
-    writeConfig: validationCandidate as OpenClawConfig,
+    writeConfig: writeCandidate,
     schema,
   };
 }
@@ -893,6 +949,7 @@ async function respondWithConfigRestartWrite(params: {
 
 function shouldDisconnectSharedAuthClientsForConfigWrite(params: {
   prevConfig: OpenClawConfig;
+  prevSourceConfig: OpenClawConfig;
   nextConfig: OpenClawConfig;
   preparedSecretsSnapshot: PreparedSecretsRuntimeSnapshot;
 }): boolean {
@@ -900,9 +957,43 @@ function shouldDisconnectSharedAuthClientsForConfigWrite(params: {
     didSharedGatewayAuthChange(params.prevConfig, params.nextConfig) ||
     didActiveSharedGatewayAuthChange({
       fallbackPrev: params.prevConfig,
+      fallbackSource: params.prevSourceConfig,
       next: params.preparedSecretsSnapshot.config,
     })
   );
+}
+
+function resolveSharedAuthAuthoredSource(
+  snapshot: Pick<ConfigFileSnapshot, "parsed" | "sourceConfig" | "includeProvenance">,
+): OpenClawConfig {
+  const includeOwnsPath = (target: readonly string[]) =>
+    Boolean(
+      snapshot.includeProvenance?.some((entry) =>
+        (entry.contributedPaths ?? [entry.path]).some(
+          (owned) =>
+            owned.every((segment, index) => target[index] === segment) ||
+            target.every((segment, index) => owned[index] === segment),
+        ),
+      ),
+    );
+  const parsedGateway =
+    isRecord(snapshot.parsed) && isRecord(snapshot.parsed.gateway) ? snapshot.parsed.gateway : {};
+  const sourceGateway = snapshot.sourceConfig.gateway;
+  const gateway: NonNullable<OpenClawConfig["gateway"]> = {};
+  for (const key of ["auth", "tailscale", "trustedProxies"] as const) {
+    if (Object.hasOwn(parsedGateway, key)) {
+      Object.assign(gateway, {
+        [key]: projectSourceOntoRuntimeShape(parsedGateway[key], sourceGateway?.[key]),
+      });
+    } else if (
+      includeOwnsPath(["gateway", key]) &&
+      sourceGateway &&
+      Object.hasOwn(sourceGateway, key)
+    ) {
+      Object.assign(gateway, { [key]: sourceGateway[key] });
+    }
+  }
+  return Object.keys(gateway).length > 0 ? { gateway } : {};
 }
 
 function respondConfigPatchNoop(params: {
@@ -1191,8 +1282,10 @@ export const configHandlers: GatewayRequestHandlers = {
     const replacePaths = readConfigPatchReplacePaths(params);
     const patchedIncludeOwner = findPatchedIncludeOwner(parsedRes.parsed, snapshot.parsed);
     if (patchedIncludeOwner) {
-      const provenance = snapshot.includeProvenance?.find((entry) =>
-        patchedIncludeOwner.every((segment, index) => entry.path[index] === segment),
+      const provenance = snapshot.includeProvenance?.find(
+        (entry) =>
+          entry.path.length === patchedIncludeOwner.length &&
+          patchedIncludeOwner.every((segment, index) => entry.path[index] === segment),
       );
       respond(
         false,
@@ -1337,6 +1430,7 @@ export const configHandlers: GatewayRequestHandlers = {
     // previous shared secret immediately after the config update succeeds.
     const disconnectSharedAuthClients = shouldDisconnectSharedAuthClientsForConfigWrite({
       prevConfig: snapshot.config,
+      prevSourceConfig: resolveSharedAuthAuthoredSource(snapshot),
       nextConfig: validated.config,
       preparedSecretsSnapshot,
     });
@@ -1443,6 +1537,7 @@ export const configHandlers: GatewayRequestHandlers = {
     // previous shared secret immediately after the config update succeeds.
     const disconnectSharedAuthClients = shouldDisconnectSharedAuthClientsForConfigWrite({
       prevConfig: snapshot.config,
+      prevSourceConfig: resolveSharedAuthAuthoredSource(snapshot),
       nextConfig: parsed.config,
       preparedSecretsSnapshot,
     });

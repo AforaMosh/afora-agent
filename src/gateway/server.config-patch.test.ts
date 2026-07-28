@@ -117,18 +117,30 @@ async function getCurrentConfigObject() {
   expect(current.ok).toBe(true);
   expect(typeof current.payload?.hash).toBe("string");
   expect(typeof current.payload?.path).toBe("string");
+  const sourceConfig = JSON.parse(
+    await fs.readFile(String(current.payload?.path), "utf-8"),
+  ) as Record<string, unknown>;
   return {
     hash: String(current.payload?.hash),
     path: String(current.payload?.path),
     raw: current.payload?.raw,
     config: requireConfigObject(current.payload?.config, "current config"),
+    sourceConfig,
   };
 }
 
 async function restoreConfigFileForTest(
   original: Awaited<ReturnType<typeof getCurrentConfigObject>>,
 ) {
-  await writeJsonFile(original.path, original.config);
+  await writeJsonFile(original.path, original.sourceConfig);
+  const { resetConfigRuntimeState } = await import("../config/config.js");
+  resetConfigRuntimeState();
+  activateSecretsRuntimeSnapshot(
+    await prepareSecretsRuntimeSnapshot({
+      config: original.config,
+      includeAuthStoreRefs: false,
+    }),
+  );
 }
 
 function makeRouteBinding(index: number) {
@@ -435,7 +447,56 @@ describe("gateway config methods", () => {
     requireConfigObject(res.payload?.config, "response config");
   });
 
-  it("accepts runtime-shaped config.set when bundled provider baseUrl was only defaulted", async () => {
+  it("persists an explicit literal equal to a resolved source ref through config.set", async () => {
+    const { createConfigIO, resetConfigRuntimeState } = await import("../config/config.js");
+    const configPath = createConfigIO().configPath;
+    await withEnvAsync({ OPENCLAW_CONFIG_SET_LITERAL: "resolved-token" }, async () => {
+      const original = await getCurrentConfigObject();
+      try {
+        await writeJsonFile(configPath, {
+          models: {
+            providers: {
+              custom: {
+                apiKey: "${OPENCLAW_CONFIG_SET_LITERAL}",
+                baseUrl: "https://example.invalid/v1",
+                models: [],
+              },
+            },
+          },
+        });
+        resetConfigRuntimeState();
+
+        const current = await getCurrentConfigObject();
+        const nextConfig = structuredClone(current.config);
+        const providers = requireConfigObject(
+          requireConfigObject(nextConfig.models, "models config").providers,
+          "model providers",
+        );
+        const custom = requireConfigObject(providers.custom, "custom provider");
+        custom.apiKey = "resolved-token";
+
+        const res = await sendConfigSet(configRawPayload(nextConfig, current.hash));
+        expect(res.ok).toBe(true);
+        const persisted = await fs.readFile(configPath, "utf-8");
+        expect(persisted).toContain('"apiKey": "resolved-token"');
+        expect(persisted).not.toContain("${OPENCLAW_CONFIG_SET_LITERAL}");
+      } finally {
+        await restoreConfigFileForTest(original);
+      }
+    });
+  });
+
+  it("rejects a redaction sentinel submitted at a non-sensitive replacement path", async () => {
+    const current = await getCurrentConfigObject();
+    const nextConfig = structuredClone(current.config);
+    nextConfig.ui = { assistant: { name: REDACTED_SENTINEL } };
+
+    const res = await sendConfigSet(configRawPayload(nextConfig, current.hash));
+    expect(res.ok).toBe(false);
+    expect(res.error?.message ?? "").toContain("Reserved redaction sentinel");
+  });
+
+  it("persists explicitly submitted bundled provider defaults through config.set", async () => {
     const { createConfigIO, resetConfigRuntimeState } = await import("../config/config.js");
     const configPath = createConfigIO().configPath;
     try {
@@ -474,7 +535,8 @@ describe("gateway config methods", () => {
       expect(res.ok).toBe(true);
       const persisted = await fs.readFile(configPath, "utf-8");
       expect(persisted).toContain('"port": 19002');
-      expect(persisted).not.toContain('"baseUrl"');
+      expect(persisted).toContain('"baseUrl": ""');
+      expect(persisted).toContain('"models": []');
     } finally {
       await fs.rm(configPath, { force: true });
       resetConfigRuntimeState();
@@ -1262,6 +1324,7 @@ describe("gateway config methods", () => {
   it("accepts messages.groupChat.historyLimit: 0 through config.patch", async () => {
     const { createConfigIO, resetConfigRuntimeState } = await import("../config/config.js");
     const configPath = createConfigIO().configPath;
+    const original = await getCurrentConfigObject();
     let previousConfig: string | null = null;
     try {
       try {
@@ -1300,6 +1363,12 @@ describe("gateway config methods", () => {
         await fs.writeFile(configPath, previousConfig, "utf-8");
       }
       resetConfigRuntimeState();
+      activateSecretsRuntimeSnapshot(
+        await prepareSecretsRuntimeSnapshot({
+          config: original.config,
+          includeAuthStoreRefs: false,
+        }),
+      );
     }
   });
 

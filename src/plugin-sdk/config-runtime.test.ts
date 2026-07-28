@@ -267,6 +267,36 @@ describe("deprecated config-runtime writeConfigFile", () => {
     });
   });
 
+  it("does not create an empty source container when deleting below a root include", async () => {
+    await withTempHome(async (home) => {
+      const stateDir = path.join(home, ".openclaw");
+      const configPath = path.join(stateDir, "openclaw.json");
+      await fs.mkdir(stateDir, { recursive: true });
+      await fs.writeFile(
+        path.join(stateDir, "base.json"),
+        JSON.stringify({ gateway: { auth: { mode: "none" } } }),
+        "utf8",
+      );
+      await fs.writeFile(configPath, JSON.stringify({ $include: "./base.json" }), "utf8");
+      const { readConfigFileSnapshotForWrite } = await import("../config/io.js");
+      const { snapshot } = await readConfigFileSnapshotForWrite({ skipPluginValidation: true });
+      const candidate = structuredClone(snapshot.runtimeConfig);
+      delete candidate.gateway?.auth;
+
+      await writeConfigFile(candidate, {
+        skipPluginValidation: true,
+        skipRuntimeSnapshotRefresh: true,
+      });
+
+      const persisted = JSON.parse(await fs.readFile(configPath, "utf8")) as Record<
+        string,
+        unknown
+      >;
+      expect(persisted).toMatchObject({ $include: "./base.json" });
+      expect(persisted).not.toHaveProperty("gateway");
+    });
+  });
+
   it("rejects an explicit unset of an include-only value", async () => {
     await withTempHome(async (home) => {
       const stateDir = path.join(home, ".openclaw");

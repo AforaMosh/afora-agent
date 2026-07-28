@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 
 const configMocks = vi.hoisted(() => ({
+  readConfigFileSnapshotForWrite: vi.fn(),
   replaceConfigFileWithIntent: vi.fn(),
   resolveConfigSnapshotHash: vi.fn(),
 }));
@@ -16,6 +17,7 @@ vi.mock("../../config/config.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../config/config.js")>();
   return {
     ...actual,
+    readConfigFileSnapshotForWrite: configMocks.readConfigFileSnapshotForWrite,
     replaceConfigFileWithIntent: configMocks.replaceConfigFileWithIntent,
     resolveConfigSnapshotHash: configMocks.resolveConfigSnapshotHash,
   };
@@ -35,6 +37,10 @@ describe("commitGatewayConfigWrite", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     configMocks.resolveConfigSnapshotHash.mockReturnValue("missing-config-revision");
+    configMocks.readConfigFileSnapshotForWrite.mockResolvedValue({
+      snapshot: { config: {} },
+      writeOptions: {},
+    });
     secretsMocks.activeSnapshot = null;
     configMocks.replaceConfigFileWithIntent.mockResolvedValue({
       nextConfig: {},
@@ -65,6 +71,36 @@ describe("commitGatewayConfigWrite", () => {
     );
   });
 
+  it("returns the canonical runtime config and hash from the persisted reread", async () => {
+    configMocks.resolveConfigSnapshotHash
+      .mockReturnValueOnce("base-hash")
+      .mockReturnValueOnce("canonical-hash");
+    configMocks.replaceConfigFileWithIntent.mockResolvedValueOnce({
+      nextConfig: { gateway: { mode: "local" } },
+      persistedHash: "persisted-hash",
+    });
+    const canonicalConfig: OpenClawConfig = {
+      gateway: { mode: "local", auth: { mode: "token", token: "runtime-token" } },
+    };
+    configMocks.readConfigFileSnapshotForWrite.mockResolvedValueOnce({
+      snapshot: { config: canonicalConfig },
+      writeOptions: {},
+    });
+
+    const result = await commitGatewayConfigWrite({
+      snapshot: { path: "/tmp/openclaw.json" } as never,
+      writeOptions: {},
+      nextConfig: { gateway: { mode: "local" } },
+      intent: { kind: "replace", config: { gateway: { mode: "local" } } },
+    });
+
+    expect(result.config).toBe(canonicalConfig);
+    expect(result.hash).toBe("canonical-hash");
+    expect(configMocks.resolveConfigSnapshotHash).toHaveBeenLastCalledWith(
+      expect.objectContaining({ config: canonicalConfig }),
+    );
+  });
+
   it("preserves runtime-only shared auth fields absent from the secrets source", () => {
     const runtimeOverlay = {
       gateway: { auth: { mode: "token" as const, token: "runtime-token" } },
@@ -76,6 +112,24 @@ describe("commitGatewayConfigWrite", () => {
 
     expect(
       didActiveSharedGatewayAuthChange({ fallbackPrev: runtimeOverlay, next: runtimeOverlay }),
+    ).toBe(false);
+  });
+
+  it("uses authored ownership instead of stale overlay ownership from secrets state", () => {
+    const runtimeOverlay: OpenClawConfig = {
+      gateway: { auth: { mode: "token", token: "runtime-token" } },
+    };
+    secretsMocks.activeSnapshot = {
+      sourceConfig: { gateway: { auth: { mode: "token", token: "stale-token" } } },
+      config: { gateway: { auth: { mode: "token", token: "stale-token" } } },
+    };
+
+    expect(
+      didActiveSharedGatewayAuthChange({
+        fallbackPrev: runtimeOverlay,
+        fallbackSource: {},
+        next: runtimeOverlay,
+      }),
     ).toBe(false);
   });
 
