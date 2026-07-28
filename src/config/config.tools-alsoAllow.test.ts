@@ -55,6 +55,7 @@ describe("config: tools.alsoAllow", () => {
       agents: {
         entries: {
           sandbox: {
+            default: true,
             tools: {
               message: {
                 crossContext: {
@@ -76,6 +77,7 @@ describe("config: tools.alsoAllow", () => {
       agents: {
         entries: {
           sandbox: {
+            default: true,
             tools: {
               message: {
                 actions: {

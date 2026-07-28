@@ -31,23 +31,26 @@ const restartSentinelMocks = vi.hoisted(() => ({
 vi.mock("../../config/config.js", async () => {
   const actual =
     await vi.importActual<typeof import("../../config/config.js")>("../../config/config.js");
+  const replaceConfig = async (params: { nextConfig: OpenClawConfig; writeOptions?: unknown }) => {
+    await writeConfigFileMock(params.nextConfig, params.writeOptions);
+    const persistedConfig = persistedConfigResultMock(params.nextConfig);
+    return {
+      path: "/tmp/openclaw.json",
+      previousHash: "base-hash",
+      snapshot: createConfigWriteSnapshot(params.nextConfig),
+      nextConfig: persistedConfig,
+      persistedHash: "next-hash",
+      afterWrite: { mode: "auto" as const },
+      followUp: { mode: "auto" as const, requiresRestart: false },
+    };
+  };
   return {
     ...actual,
     createConfigIO: () => ({ configPath: "/tmp/openclaw.json" }),
+    readConfigFileSnapshotForWrite: readConfigFileSnapshotForWriteMock,
     writeConfigFile: writeConfigFileMock,
-    replaceConfigFile: async (params: { nextConfig: OpenClawConfig; writeOptions?: unknown }) => {
-      await writeConfigFileMock(params.nextConfig, params.writeOptions);
-      const persistedConfig = persistedConfigResultMock(params.nextConfig);
-      return {
-        path: "/tmp/openclaw.json",
-        previousHash: "base-hash",
-        snapshot: createConfigWriteSnapshot(params.nextConfig),
-        nextConfig: persistedConfig,
-        persistedHash: "next-hash",
-        afterWrite: { mode: "auto" },
-        followUp: { mode: "auto", requiresRestart: false },
-      };
-    },
+    replaceConfigFile: replaceConfig,
+    replaceConfigFileWithIntent: replaceConfig,
   };
 });
 

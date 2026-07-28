@@ -38,6 +38,39 @@ export function restoreCanonicalSecretRefs(
   return projectCanonicalSecretRefsOntoRuntime(sourceConfig, runtimeConfig) as OpenClawConfig;
 }
 
+function projectCanonicalSecretRefsWithinRuntime(
+  runtimeValue: unknown,
+  sourceValue: unknown,
+): unknown {
+  if (isSecretRef(sourceValue)) {
+    return sourceValue;
+  }
+  if (Array.isArray(runtimeValue)) {
+    const sourceArray = Array.isArray(sourceValue) ? sourceValue : [];
+    return runtimeValue.map((entry, index) =>
+      projectCanonicalSecretRefsWithinRuntime(entry, sourceArray[index]),
+    );
+  }
+  if (isRecord(runtimeValue)) {
+    const sourceRecord = isRecord(sourceValue) ? sourceValue : {};
+    return Object.fromEntries(
+      Object.entries(runtimeValue).map(([key, entry]) => [
+        key,
+        projectCanonicalSecretRefsWithinRuntime(entry, sourceRecord[key]),
+      ]),
+    );
+  }
+  return runtimeValue;
+}
+
+/** Restores authored SecretRefs without adding source-only fields to the runtime shape. */
+export function restoreCanonicalSecretRefsWithinRuntime(
+  runtimeConfig: OpenClawConfig,
+  sourceConfig: OpenClawConfig,
+): OpenClawConfig {
+  return projectCanonicalSecretRefsWithinRuntime(runtimeConfig, sourceConfig) as OpenClawConfig;
+}
+
 export function resetPreparedModelRuntimeStateForHotReload(): void {
   clearCurrentProviderAuthState();
 }

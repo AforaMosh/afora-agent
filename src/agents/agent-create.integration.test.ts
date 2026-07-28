@@ -71,25 +71,34 @@ describe("agent roster persistence", () => {
     ).toHaveLength(1);
   });
 
-  it("replaces a legacy list with the complete keyed roster", async () => {
-    const persisted = await addWorkerToConfig({
+  it("requires Doctor to migrate a legacy list before creating an agent", async () => {
+    const state = await createOpenClawTestState({
+      layout: "state-only",
+      scenario: "empty",
+      label: "legacy-agent-roster-write",
+    });
+    const config = {
       agents: {
         list: [
           { id: "main", default: true },
           { id: "ops", workspace: "/srv/ops" },
         ],
       },
-    });
+    };
+    try {
+      await state.writeConfig(config);
 
-    expect(persisted.agents).not.toHaveProperty("list");
-    expect(persisted.agents?.entries).toMatchObject({
-      main: { default: true },
-      ops: { workspace: "/srv/ops" },
-      worker: { workspace: expect.any(String) },
-    });
+      await expect(
+        createAgent({ name: "Worker", workspace: state.path("worker") }),
+      ).rejects.toThrow("openclaw doctor --fix");
+      await expect(fs.readFile(state.configPath, "utf8")).resolves.toContain('"list"');
+    } finally {
+      closeOpenClawStateDatabaseForTest();
+      await state.cleanup();
+    }
   });
 
-  it("preserves a legacy list byte-for-byte during a non-roster mutation", async () => {
+  it("rejects non-roster mutations until Doctor migrates a legacy list", async () => {
     const state = await createOpenClawTestState({
       layout: "state-only",
       scenario: "empty",
@@ -101,16 +110,18 @@ describe("agent roster persistence", () => {
     ];
     try {
       await state.writeConfig({ agents: { list }, gateway: { port: 18789 } });
-      await mutateConfigFileWithRetry({
-        mutate: (config) => {
-          config.gateway = { ...config.gateway, port: 19001 };
-        },
-      });
+      await expect(
+        mutateConfigFileWithRetry({
+          mutate: (config) => {
+            config.gateway = { ...config.gateway, port: 19001 };
+          },
+        }),
+      ).rejects.toThrow("openclaw doctor --fix");
 
       const persisted = JSON.parse(await fs.readFile(state.configPath, "utf8")) as OpenClawConfig;
       expect(JSON.stringify(persisted.agents?.list)).toBe(JSON.stringify(list));
       expect(persisted.agents).not.toHaveProperty("entries");
-      expect(persisted.gateway?.port).toBe(19001);
+      expect(persisted.gateway?.port).toBe(18789);
     } finally {
       closeOpenClawStateDatabaseForTest();
       await state.cleanup();

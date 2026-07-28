@@ -11,6 +11,7 @@ const runtimeState = await vi.hoisted(async () => {
 const mocks = vi.hoisted(() => ({
   loadConfig: vi.fn(),
   readConfigFileSnapshot: vi.fn(),
+  readConfigFileSnapshotForWrite: vi.fn(),
   applyPluginAutoEnable: vi.fn(),
   replaceConfigFile: vi.fn(),
   resolveInstallableChannelPlugin: vi.fn(),
@@ -23,7 +24,9 @@ vi.mock("../config/config.js", () => ({
   getRuntimeConfig: mocks.loadConfig,
   loadConfig: mocks.loadConfig,
   readConfigFileSnapshot: mocks.readConfigFileSnapshot,
+  readConfigFileSnapshotForWrite: mocks.readConfigFileSnapshotForWrite,
   replaceConfigFile: mocks.replaceConfigFile,
+  replaceConfigFileWithIntent: mocks.replaceConfigFile,
 }));
 
 vi.mock("../config/plugin-auto-enable.js", () => ({
@@ -82,6 +85,23 @@ describe("registerDirectoryCli", () => {
     runtimeState.runtimeErrors.length = 0;
     mocks.loadConfig.mockReturnValue({ channels: {} });
     mocks.readConfigFileSnapshot.mockResolvedValue({ hash: "config-1" });
+    mocks.readConfigFileSnapshotForWrite.mockResolvedValue({
+      snapshot: {
+        path: "/tmp/openclaw.json",
+        exists: true,
+        raw: "{}",
+        parsed: {},
+        sourceConfig: { channels: {} },
+        runtimeConfig: { channels: {} },
+        config: { channels: {} },
+        valid: true,
+        hash: "config-1",
+        issues: [],
+        warnings: [],
+        legacyIssues: [],
+      },
+      writeOptions: {},
+    });
     mocks.applyPluginAutoEnable.mockImplementation(({ config }) => ({ config, changes: [] }));
     mocks.replaceConfigFile.mockResolvedValue(undefined);
     mocks.resolveChannelDefaultAccountId.mockReturnValue("default");

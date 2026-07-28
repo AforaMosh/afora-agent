@@ -3243,6 +3243,7 @@ describe("gateway Gmail hot reload handlers", () => {
     const ttsContractDigest = "tts-source-only-contract";
     const initialSourceConfig = sourceConfig(firstRef);
     const nextSourceConfig = sourceConfig(secondRef);
+    setRuntimeConfigSnapshot(runtimeConfig, initialSourceConfig);
     const activeWarning = {
       code: "SECRETS_OWNER_UNAVAILABLE" as const,
       path: "tts.providers.elevenlabs.apiKey",

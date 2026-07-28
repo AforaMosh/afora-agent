@@ -19,6 +19,7 @@ export const OpenClawSchema = z.strictObject(OpenClawSchemaShape).superRefine((c
   const agentIds = new Set(agents.map((agent) => agent.id));
   const effectiveAgentIds = new Set(agents.map((agent) => normalizeAgentId(agent.id)));
   if (agents.length === 0) {
+    agentIds.add("main");
     effectiveAgentIds.add("main");
   }
 
@@ -44,10 +45,6 @@ export const OpenClawSchema = z.strictObject(OpenClawSchemaShape).superRefine((c
         message: `Unknown agent id "${target.agentId}" (not in agents.entries).`,
       });
     }
-  }
-
-  if (agents.length === 0) {
-    return;
   }
 
   // Bindings referencing a missing agent id silently misroute at gateway

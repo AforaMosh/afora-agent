@@ -38,6 +38,7 @@ describe("legacy config detection", () => {
       agents: {
         entries: {
           work: {
+            default: true,
             workspace: "~/openclaw-work",
             tools: {
               elevated: {

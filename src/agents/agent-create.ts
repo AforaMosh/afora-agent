@@ -173,6 +173,7 @@ export async function createAgent(params: CreateAgentParams): Promise<CreateAgen
         tombstoneClaimed = true;
       }
       const committed = await transformConfig<CreateAgentResult>({
+        base: "runtime",
         afterWrite: { mode: "auto" },
         maxAttempts: 1,
         transform: async (currentConfig, context) => {

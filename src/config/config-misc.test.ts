@@ -892,6 +892,7 @@ describe("config identity/materialization regressions", () => {
       agents: {
         entries: {
           main: {
+            default: true,
             identity: {
               name: "Samantha Sloth",
               theme: "space lobster",
@@ -909,7 +910,7 @@ describe("config identity/materialization regressions", () => {
     expect(res.ok).toBe(true);
     if (res.ok) {
       expect(res.config.channels?.whatsapp?.responsePrefix).toBe("✅");
-      expect(res.config.agents?.list?.[0]?.groupChat?.mentionPatterns).toEqual(["@openclaw"]);
+      expect(res.config.agents?.entries?.main?.groupChat?.mentionPatterns).toEqual(["@openclaw"]);
     }
   });
 
@@ -918,6 +919,7 @@ describe("config identity/materialization regressions", () => {
       agents: {
         entries: {
           main: {
+            default: true,
             identity: {
               name: "Samantha",
               theme: "helpful sloth",
@@ -997,7 +999,7 @@ describe("broadcast", () => {
   it("accepts a broadcast peer map with strategy", () => {
     const res = validateConfigObject({
       agents: {
-        entries: { alfred: {}, baerbel: {} },
+        entries: { alfred: { default: true }, baerbel: {} },
       },
       broadcast: {
         strategy: "parallel",
@@ -1092,11 +1094,12 @@ describe("config strict validation", () => {
     expect(res.ok).toBe(false);
   });
 
-  it("accepts documented agents.list[].params overrides", () => {
+  it("accepts documented agents.entries.*.params overrides", () => {
     const res = validateConfigObject({
       agents: {
         entries: {
           main: {
+            default: true,
             model: "anthropic/claude-opus-4-6",
             params: {
               cacheRetention: "none",
@@ -1110,7 +1113,7 @@ describe("config strict validation", () => {
 
     expect(res.ok).toBe(true);
     if (res.ok) {
-      expect(res.config.agents?.list?.[0]?.params).toEqual({
+      expect(res.config.agents?.entries?.main?.params).toEqual({
         cacheRetention: "none",
         temperature: 0.4,
         maxTokens: 8192,
@@ -1270,7 +1273,7 @@ describe("config strict validation", () => {
 
       expect(snap.valid).toBe(false);
       expect(issuePaths(snap.issues)).toContain("agents.defaults.sandbox");
-      expect(issuePaths(snap.issues)).toContain("agents.entries.openclaw.sandbox");
+      expect(issuePaths(snap.issues)).toContain("agents");
       expect(issuePaths(snap.legacyIssues)).toContain("agents.defaults.sandbox");
       expect(snap.sourceConfigBeforeMigrations?.agents?.defaults?.sandbox).toEqual({
         perSession: true,
@@ -1278,9 +1281,10 @@ describe("config strict validation", () => {
       expect(snap.sourceConfigBeforeMigrations?.agents?.list?.[0]?.sandbox).toEqual({
         perSession: false,
       });
-      expect(snap.sourceConfig.agents?.entries?.openclaw?.sandbox).toEqual({
+      expect(snap.sourceConfig.agents?.list?.[0]?.sandbox).toEqual({
         perSession: false,
       });
+      expect(snap.sourceConfig.agents).not.toHaveProperty("entries");
     });
   });
 

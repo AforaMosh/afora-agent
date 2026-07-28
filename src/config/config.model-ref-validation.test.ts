@@ -196,14 +196,14 @@ describe("config model reference validation", () => {
       "per-agent policy",
       {
         agents: {
-          list: [
-            {
-              id: "worker",
+          entries: {
+            worker: {
+              default: true,
               modelPolicy: {
                 allow: [" openai / gpt-5.5 ", " openai / * ", " openai / ns / * "],
               },
             },
-          ],
+          },
         },
       },
     ],

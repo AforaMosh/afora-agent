@@ -153,7 +153,7 @@ describe("config plugin validation", () => {
     if (!Array.isArray(mutableAgents.list)) {
       return next;
     }
-    mutableAgents.entries = Object.fromEntries(
+    const entries: Record<string, Record<string, unknown>> = Object.fromEntries(
       mutableAgents.list.flatMap((value) => {
         if (!value || typeof value !== "object" || Array.isArray(value)) {
           return [];
@@ -162,6 +162,20 @@ describe("config plugin validation", () => {
         return typeof id === "string" && id.trim() ? [[id, entry]] : [];
       }),
     );
+    // This suite isolates plugin diagnostics from roster validation. Legacy
+    // list fixtures are projected to an explicitly valid keyed roster here;
+    // roster migration behavior is covered by legacy.roster.test.ts.
+    if (
+      !Object.values(entries).some(
+        (entry) => entry && typeof entry === "object" && (entry as { default?: unknown }).default,
+      )
+    ) {
+      const first = Object.keys(entries)[0];
+      if (first) {
+        entries[first] = { ...entries[first], default: true };
+      }
+    }
+    mutableAgents.entries = entries;
     delete mutableAgents.list;
     return next;
   };

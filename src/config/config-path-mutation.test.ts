@@ -456,8 +456,8 @@ describe("applyConfigOperations", () => {
       }),
     ).toContainEqual({
       kind: "set",
-      path: ["plugins", "entries", "next"],
-      value: { config: { enabled: false } },
+      path: ["plugins", "entries", "next", "config", "enabled"],
+      value: false,
     });
   });
 

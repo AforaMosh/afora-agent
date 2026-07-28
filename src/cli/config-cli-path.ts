@@ -439,9 +439,13 @@ function mergeConfigValue(existing: unknown, patch: unknown, path: PathSegment[]
   if (isPlainRecord(existing) && isPlainRecord(patch)) {
     const next: Record<string, unknown> = { ...existing };
     for (const [key, value] of Object.entries(patch)) {
+      const childPath = [...path, key];
+      const canMergeChild =
+        (isPlainRecord(next[key]) && isPlainRecord(value)) ||
+        (isProviderModelListPath(childPath) && Array.isArray(next[key]) && Array.isArray(value));
       next[key] =
-        hasOwnPathKey(next, key) && isPlainRecord(next[key]) && isPlainRecord(value)
-          ? mergeConfigValue(next[key], value, [...path, key])
+        hasOwnPathKey(next, key) && canMergeChild
+          ? mergeConfigValue(next[key], value, childPath)
           : value;
     }
     return next;

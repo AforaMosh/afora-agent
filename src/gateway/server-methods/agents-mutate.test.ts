@@ -7,6 +7,7 @@ import { expectDefined } from "@openclaw/normalization-core";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { AgentDeletionAuthorityRollbackError } from "../../agents/agent-lifecycle-registry.js";
 import { WORKSPACE_BOOTSTRAP_FILENAMES } from "../../agents/workspace.js";
+import { createConfigMutationOperations } from "../../config/config-path-mutation.js";
 import { FsSafeError } from "../../infra/fs-safe.js";
 /* ------------------------------------------------------------------ */
 /* Mocks                                                              */
@@ -122,7 +123,13 @@ vi.mock("../../config/config.js", async () => {
         previousHash: "test-hash",
         attempt: 0,
       });
-      await mocks.writeConfigFile(draft, params.writeOptions);
+      await mocks.writeConfigFile(
+        {
+          kind: "mutate",
+          operations: createConfigMutationOperations(mocks.loadConfigReturn, draft),
+        },
+        params.writeOptions,
+      );
       return {
         path: "/tmp/openclaw/config.json",
         previousHash: "test-hash",
@@ -146,7 +153,10 @@ vi.mock("../../config/config.js", async () => {
         previousHash: "test-hash",
         attempt: 0,
       });
-      await mocks.writeConfigFile(transformed.nextConfig);
+      await mocks.writeConfigFile({
+        kind: "mutate",
+        operations: createConfigMutationOperations(mocks.loadConfigReturn, transformed.nextConfig),
+      });
       mocks.loadConfigReturn = transformed.nextConfig;
       return {
         path: "/tmp/openclaw/config.json",
@@ -552,13 +562,13 @@ type MockAgentEntry = {
 
 type MockConfig = {
   agents?: {
-    list?: MockAgentEntry[];
+    entries?: Record<string, Omit<MockAgentEntry, "id">>;
   };
 };
 
 function getAgentList(cfg: unknown): MockAgentEntry[] {
-  return ((cfg as MockConfig | undefined)?.agents?.list ?? []).map((entry) =>
-    Object.assign({}, entry),
+  return Object.entries((cfg as MockConfig | undefined)?.agents?.entries ?? {}).map(([id, entry]) =>
+    Object.assign({ id }, entry),
   );
 }
 
@@ -596,7 +606,7 @@ function mergeAgentConfig(cfg: unknown, opts: unknown): MockConfig {
     ...config,
     agents: {
       ...config.agents,
-      list,
+      entries: Object.fromEntries(list.map(({ id, ...entry }) => [id, entry])),
     },
   };
 }
@@ -693,7 +703,7 @@ describe("agents.create", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.loadConfigReturn = {
-      agents: { list: [{ id: "main", default: true }] },
+      agents: { entries: { main: { default: true } } },
     };
   });
 
@@ -874,9 +884,9 @@ describe("agents.update", () => {
     vi.clearAllMocks();
     mocks.loadConfigReturn = {
       agents: {
-        list: [
-          {
-            id: "test-agent",
+        entries: {
+          "test-agent": {
+            default: true,
             workspace: "/workspace/test-agent",
             identity: {
               name: "Current Agent",
@@ -884,7 +894,7 @@ describe("agents.update", () => {
               emoji: "🐢",
             },
           },
-        ],
+        },
       },
     };
   });
@@ -931,13 +941,13 @@ describe("agents.update", () => {
     mocks.loadConfigReturn = {
       agents: {
         defaults: { model: { primary: "openai/gpt-5.6-luna" } },
-        list: [
-          {
-            id: "test-agent",
+        entries: {
+          "test-agent": {
+            default: true,
             workspace: "/workspace/test-agent",
             model: "anthropic/claude-sonnet-4-6",
           },
-        ],
+        },
       },
     };
 
@@ -949,10 +959,19 @@ describe("agents.update", () => {
 
     expectRespondOk(respond, { ok: true, agentId: "test-agent" });
     expectRecordFields(mockCallArg(mocks.applyAgentConfig, 0, 1), { model: null });
-    const persisted = expectRecordFields(mockCallArg(mocks.writeConfigFile), {});
-    const agents = expectRecordFields(persisted.agents, {});
-    const [agent] = agents.list as MockAgentEntry[];
-    expect(agent).not.toHaveProperty("model");
+    expect(mocks.writeConfigFile).toHaveBeenCalledWith(
+      {
+        kind: "mutate",
+        operations: [
+          {
+            kind: "unset",
+            path: ["agents", "entries", "test-agent", "model"],
+            strictIncludeOwnership: true,
+          },
+        ],
+      },
+      undefined,
+    );
   });
 
   it("ensures workspace when workspace changes", async () => {
@@ -1267,15 +1286,15 @@ describe("agents.delete", () => {
     mocks.fsRealpath.mockImplementation(async (pathname: string) => pathname);
     mocks.loadConfigReturn = {
       agents: {
-        list: [
-          { id: "test-agent", workspace: "/workspace/test-agent" },
-          { id: "main", default: true },
-        ],
+        entries: {
+          "test-agent": { workspace: "/workspace/test-agent" },
+          main: { default: true },
+        },
       },
     };
     mocks.findAgentEntryIndex.mockReturnValue(0);
     mocks.pruneAgentConfig.mockReturnValue({
-      config: { agents: { list: [{ id: "main", default: true }] } },
+      config: { agents: { entries: { main: { default: true } } } },
       removedBindings: 2,
     });
     mocks.movePathToTrash.mockReset().mockResolvedValue("/trashed");
@@ -2411,7 +2430,7 @@ describe("agents.delete", () => {
 
   it("protects every journaled path claimed as a surviving agent workspace", async () => {
     mocks.loadConfigReturn = {
-      agents: { list: [{ id: "other-agent", workspace: "/journal", default: true }] },
+      agents: { entries: { "other-agent": { workspace: "/journal", default: true } } },
     };
     mocks.findAgentEntryIndex.mockReturnValue(-1);
     mocks.readAgentDeletionJournal.mockReturnValue({
@@ -2758,7 +2777,7 @@ describe("agents.delete", () => {
           }),
         ]),
       }),
-      expect.anything(),
+      undefined,
     );
     expect(mocks.movePathToTrash).toHaveBeenCalled();
   });
@@ -2793,7 +2812,9 @@ describe("agents.delete", () => {
 
   it("keeps workspace state when another agent still owns the workspace", async () => {
     mocks.pruneAgentConfig.mockReturnValue({
-      config: { agents: { list: [{ id: "other", workspace: "/workspace/test-agent" }] } },
+      config: {
+        agents: { entries: { other: { workspace: "/workspace/test-agent", default: true } } },
+      },
       removedBindings: 2,
     });
 
@@ -2901,7 +2922,7 @@ describe("agents.delete", () => {
 
   it("rejects deleting the main agent", async () => {
     mocks.loadConfigReturn = {
-      agents: { list: [{ id: "main" }, { id: "ops", default: true }] },
+      agents: { entries: { main: {}, ops: { default: true } } },
     };
     const { respond, promise } = makeCall("agents.delete", {
       agentId: "main",
@@ -3158,7 +3179,7 @@ describe("agents.files.get/set symlink safety", () => {
     vi.clearAllMocks();
     mocks.loadConfigReturn = {
       agents: {
-        list: [{ id: "main", workspace: "/workspace/test-agent" }],
+        entries: { main: { default: true, workspace: "/workspace/test-agent" } },
       },
     };
     mocks.fsMkdir.mockResolvedValue(undefined);

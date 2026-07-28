@@ -194,10 +194,8 @@ describe("readBestEffortConfig", () => {
       const snapshot = await readConfigFileSnapshot();
 
       expect(snapshot.sourceConfigBeforeMigrations).toEqual({ update: { channel: "beta" } });
-      expect(snapshot.sourceConfig).toEqual({
-        update: { channel: "beta" },
-        agents: { entries: { main: { default: true } } },
-      });
+      expect(snapshot.sourceConfig).toEqual({ update: { channel: "beta" } });
+      expect(snapshot.config.agents?.entries).toEqual({ main: { default: true } });
       expect(await fs.readFile(configPath, "utf-8")).toBe(directEditRaw);
       const entries = await fs.readdir(`${home}/.openclaw`);
       expect(entries.some((entry) => entry.startsWith("openclaw.json.clobbered."))).toBe(false);

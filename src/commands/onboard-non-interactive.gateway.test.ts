@@ -2,6 +2,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import type { ConfigWriteIntent } from "../config/io.write-plan.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { makeTempWorkspace } from "../test-helpers/workspace.js";
@@ -85,19 +86,29 @@ vi.mock("../config/io.js", () => ({
 const capturedReplaceConfigFileCalls: Array<{
   nextConfig: OpenClawConfig;
   writeOptions?: { allowConfigSizeDrop?: boolean; unsetPaths?: string[][] };
+  intent?: ConfigWriteIntent;
 }> = [];
 
-vi.mock("../config/config.js", () => ({
-  replaceConfigFile: async ({
+const replaceConfigFileMock = async ({
+  nextConfig,
+  writeOptions,
+  intent,
+}: {
+  nextConfig: OpenClawConfig;
+  writeOptions?: { allowConfigSizeDrop?: boolean; unsetPaths?: string[][] };
+  intent?: ConfigWriteIntent;
+}) => {
+  capturedReplaceConfigFileCalls.push({
     nextConfig,
-    writeOptions,
-  }: {
-    nextConfig: OpenClawConfig;
-    writeOptions?: { allowConfigSizeDrop?: boolean; unsetPaths?: string[][] };
-  }) => {
-    capturedReplaceConfigFileCalls.push({ nextConfig, ...(writeOptions ? { writeOptions } : {}) });
-    testConfigStore.set(resolveTestConfigPath(), nextConfig);
-  },
+    ...(writeOptions ? { writeOptions } : {}),
+    ...(intent ? { intent } : {}),
+  });
+  testConfigStore.set(resolveTestConfigPath(), nextConfig);
+};
+
+vi.mock("../config/config.js", () => ({
+  replaceConfigFile: replaceConfigFileMock,
+  replaceConfigFileWithIntent: replaceConfigFileMock,
   resolveGatewayPort: (cfg: OpenClawConfig) => cfg.gateway?.port ?? 18789,
 }));
 
@@ -458,7 +469,10 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
 
       const migrationWrite = capturedReplaceConfigFileCalls.at(-2);
       expect(migrationWrite?.nextConfig.plugins?.installs).toBeUndefined();
-      expect(migrationWrite?.writeOptions?.unsetPaths).toEqual([["plugins", "installs"]]);
+      expect(migrationWrite?.intent).toEqual({
+        kind: "mutate",
+        operations: [{ kind: "unset", path: ["plugins"], strictIncludeOwnership: true }],
+      });
       expect(migrationWrite?.writeOptions?.allowConfigSizeDrop).toBe(true);
 
       const onboardWrite = capturedReplaceConfigFileCalls.at(-1);
@@ -721,7 +735,10 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
 
       const migrationWrite = capturedReplaceConfigFileCalls.at(-2);
       expect(migrationWrite?.nextConfig.plugins?.installs).toBeUndefined();
-      expect(migrationWrite?.writeOptions?.unsetPaths).toEqual([["plugins", "installs"]]);
+      expect(migrationWrite?.intent).toEqual({
+        kind: "mutate",
+        operations: [{ kind: "unset", path: ["plugins"], strictIncludeOwnership: true }],
+      });
       expect(migrationWrite?.writeOptions?.allowConfigSizeDrop).toBe(true);
 
       const remoteWrite = capturedReplaceConfigFileCalls.at(-1);

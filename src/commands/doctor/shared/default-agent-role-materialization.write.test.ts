@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { createRuntimeConfigMutationOperations } from "../../../config/config-path-mutation.js";
 import { createConfigIO, resetConfigRuntimeState } from "../../../config/io.js";
 import { materializeDefaultAgentRoles } from "./default-agent-role-materialization.js";
 
@@ -56,7 +57,14 @@ describe("default role materialization authored writes", () => {
     const materialized = materializeDefaultAgentRoles(snapshot.config);
     expect(materialized.changes.length).toBeGreaterThan(0);
     await io.writeConfigFile(
-      { kind: "replace", config: materialized.config },
+      {
+        kind: "mutate",
+        operations: createRuntimeConfigMutationOperations({
+          source: snapshot.parsed,
+          runtime: snapshot.config,
+          candidate: materialized.config,
+        }),
+      },
       { baseSnapshot: snapshot },
     );
 

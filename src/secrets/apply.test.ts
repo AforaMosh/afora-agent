@@ -639,7 +639,7 @@ describe("secrets apply", () => {
     const coderStorePath = resolveAuthProfileDatabasePath(coderAgentDir);
     await writeJsonFile(fixture.configPath, {
       agents: {
-        entries: { coder: { agentDir: coderAgentDir } },
+        entries: { coder: { default: true, agentDir: coderAgentDir } },
       },
     });
     const plan: SecretsApplyPlan = {
@@ -682,7 +682,7 @@ describe("secrets apply", () => {
     await writeJsonFile(fixture.configPath, {
       agents: {
         entries: {
-          first: { agentDir: firstAgentDir },
+          first: { default: true, agentDir: firstAgentDir },
           second: { agentDir: secondAgentDir },
         },
       },
@@ -756,7 +756,7 @@ describe("secrets apply", () => {
       await writeJsonFile(fixture.configPath, {
         agents: {
           entries: {
-            first: { agentDir: firstAgentDir },
+            first: { default: true, agentDir: firstAgentDir },
             second: { agentDir: secondAgentDir },
           },
         },
@@ -1204,6 +1204,7 @@ describe("secrets apply", () => {
           agents: {
             entries: {
               main: {
+                default: true,
                 memory: {
                   search: {
                     remote: {

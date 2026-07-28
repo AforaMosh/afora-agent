@@ -439,9 +439,15 @@ async function runPluginUpdateCommandUnlocked(params: RunPluginUpdateCommandPara
         sourceConfig: sourceSnapshot?.snapshot.sourceConfig ?? {},
       }),
     });
+    const authoredConfigBeforeUpdate = withoutPluginInstallRecords(parsedSource, {
+      preserveEmptyPlugins: shouldPreserveEmptyPlugins({
+        parsed: sourceSnapshot?.snapshot.parsed,
+        sourceConfig: sourceSnapshot?.snapshot.sourceConfig ?? {},
+      }),
+    });
     let recordsOnlyPluginUpdate = false;
     if (shouldPersistPluginInstallIndex) {
-      if (isDeepStrictEqual(nextConfig, sourceSnapshot?.snapshot.sourceConfig ?? sourceCfg)) {
+      if (isDeepStrictEqual(nextConfig, authoredConfigBeforeUpdate)) {
         await commitPluginInstallRecordsOnly({
           previousInstallRecords: persistedPluginInstallRecords,
           nextInstallRecords: nextPluginInstallRecords,

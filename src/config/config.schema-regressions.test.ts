@@ -28,6 +28,7 @@ describe("config schema regressions", () => {
         agents: {
           entries: {
             main: {
+              default: true,
               tools: {
                 exec: {
                   approvalRunningNoticeMs,
@@ -218,6 +219,7 @@ describe("config schema regressions", () => {
       agents: {
         entries: {
           main: {
+            default: true,
             memory: {
               search: {
                 qmd: {
@@ -280,6 +282,7 @@ describe("config schema regressions", () => {
         },
         entries: {
           writer: {
+            default: true,
             skillsLimits: {
               maxSkillsPromptChars: 30_000,
             },
@@ -299,6 +302,7 @@ describe("config schema regressions", () => {
       agents: {
         entries: {
           gemma: {
+            default: true,
             experimental: {
               localModelLean: true,
             },
@@ -479,7 +483,7 @@ describe("config schema regressions", () => {
   it("rejects bindings referencing an agentId missing from agents.entries (openclaw#84692)", () => {
     const res = validateConfigObject({
       agents: {
-        entries: { alpha: { model: "anthropic/claude-3-5-sonnet" } },
+        entries: { alpha: { default: true, model: "anthropic/claude-3-5-sonnet" } },
       },
       bindings: [
         {
@@ -499,7 +503,7 @@ describe("config schema regressions", () => {
   it("accepts bindings whose agentId is present in agents.entries", () => {
     const res = validateConfigObject({
       agents: {
-        entries: { alpha: { model: "anthropic/claude-3-5-sonnet" } },
+        entries: { alpha: { default: true, model: "anthropic/claude-3-5-sonnet" } },
       },
       bindings: [
         {

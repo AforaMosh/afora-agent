@@ -1266,7 +1266,7 @@ describe("plugins cli update", () => {
     expect(updateParams.onClawHubRisk).toBeUndefined();
   });
 
-  it("writes updated config when updater reports changes", async () => {
+  it("keeps config untouched when an updater change only affects install records", async () => {
     const cfg = {
       plugins: {
         installs: {
@@ -1326,21 +1326,14 @@ describe("plugins cli update", () => {
       nextConfig.plugins?.installs,
     );
     expect(updateNpmInstalledHookPacks).not.toHaveBeenCalled();
-    expect(writeConfigFile).toHaveBeenCalledWith({});
-    expect(replaceConfigFile).toHaveBeenCalledWith({
-      nextConfig: {},
-      baseHash: "update-config",
-      writeOptions: expect.objectContaining({
-        includeFileHashesForWrite: {
-          "/tmp/plugins.json5": "plugins-start-hash",
-        },
-      }),
-    });
+    expect(writeConfigFile).not.toHaveBeenCalled();
+    expect(replaceConfigFile).not.toHaveBeenCalled();
     expect(refreshPluginRegistry).toHaveBeenCalledWith({
       config: {},
       installRecords: nextConfig.plugins?.installs,
       reason: "source-changed",
     });
+    expect(notifyGatewayPluginMetadataChanged).toHaveBeenCalledOnce();
     expectRestartNoticeLogged();
   });
 

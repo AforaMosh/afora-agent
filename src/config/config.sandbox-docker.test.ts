@@ -40,6 +40,7 @@ describe("sandbox docker config", () => {
         },
         entries: {
           main: {
+            default: true,
             sandbox: {
               docker: {
                 image: "custom-sandbox:latest",
