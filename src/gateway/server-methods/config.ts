@@ -308,7 +308,10 @@ function mapConfigPatchIdsToSource(params: {
       replaceArrayPaths: params.replaceArrayPaths,
       path: `${path}[]`,
     }) as Record<string, unknown>;
-    return typeof sourceEntry.id === "string" ? { ...mapped, id: sourceEntry.id } : mapped;
+    if (typeof sourceEntry.id === "string") {
+      mapped.id = sourceEntry.id;
+    }
+    return mapped;
   });
 }
 

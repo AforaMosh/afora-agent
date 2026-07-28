@@ -147,7 +147,9 @@ async function readCounterAfterObservation(filePath: string): Promise<number> {
   await readCounterWithRetry(filePath);
   // The fixture counter is monotonic. Observe the full interval so a delayed
   // startup or request-triggered registration cannot hide behind an early poll.
-  await new Promise<void>((resolve) => setTimeout(resolve, 1_000));
+  await new Promise<void>((resolve) => {
+    setTimeout(resolve, 1_000);
+  });
   return await readCounterWithRetry(filePath);
 }
 
