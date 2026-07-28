@@ -298,7 +298,11 @@ describe("config mutate helpers", () => {
     await transformConfigFileWithRetry({
       transform(config) {
         const nextConfig = structuredClone(config);
-        delete (nextConfig.plugins?.entries?.demo?.config as Record<string, unknown>).mode;
+        const demoConfig = nextConfig.plugins?.entries?.demo?.config;
+        if (!demoConfig || typeof demoConfig !== "object" || Array.isArray(demoConfig)) {
+          throw new Error("expected demo plugin config");
+        }
+        delete (demoConfig as Record<string, unknown>).mode;
         return { nextConfig };
       },
     });

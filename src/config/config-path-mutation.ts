@@ -178,7 +178,6 @@ export function createRuntimeConfigMutationOperations(params: {
       for (const key of new Set([...Object.keys(source), ...Object.keys(runtime)])) {
         collectResolvedValues(source[key], runtime[key]);
       }
-      return;
     }
   };
   const containsResolvedValue = (value: unknown): boolean => {
@@ -212,13 +211,16 @@ export function createRuntimeConfigMutationOperations(params: {
       );
     }
   }
-  return operations.map((operation) => {
+  for (const operation of operations) {
     if (operation.kind !== "set") {
-      return operation;
+      continue;
     }
     const arrayContainerDepths = collectArrayContainerDepths(params.candidate, operation.path);
-    return arrayContainerDepths.length > 0 ? { ...operation, arrayContainerDepths } : operation;
-  });
+    if (arrayContainerDepths.length > 0) {
+      operation.arrayContainerDepths = arrayContainerDepths;
+    }
+  }
+  return operations;
 }
 
 const MANAGED_CONFIG_UNSET_PATHS = [["plugins", "installs"]] as const;
