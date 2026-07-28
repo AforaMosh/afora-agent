@@ -880,7 +880,7 @@ describe("runDoctorConfigPreflight state migration", () => {
 
       agents: {
         defaults: {},
-        entries: { main: {} },
+        entries: { main: { default: true } },
       },
     };
     readConfigFileSnapshot.mockResolvedValueOnce({
