@@ -103,6 +103,11 @@ function configPathHasIncludeOwner(root: unknown, path: ConfigPath): boolean {
   return isWritePlainObject(current) && Object.hasOwn(current, "$include");
 }
 
+function configPathIsIncludeOwner(root: unknown, path: ConfigPath): boolean {
+  const value = readConfigPath(root, path);
+  return isWritePlainObject(value) && Object.hasOwn(value, "$include");
+}
+
 function isFirstAuthoredRosterImplicitMainUnset(params: {
   source: unknown;
   runtime: unknown;
@@ -245,10 +250,11 @@ export function createRuntimeConfigMutationOperations(params: {
     path: ConfigPath = [],
   ): void => {
     if (Array.isArray(runtime) && Array.isArray(candidate)) {
+      const sourceArray = Array.isArray(source) ? source : [];
       if (
         !isDeepStrictEqual(runtime, candidate) &&
         (!Array.isArray(source) ||
-          source.length !== runtime.length ||
+          sourceArray.length !== runtime.length ||
           runtime.length !== candidate.length) &&
         !isDeepStrictEqual(source, runtime)
       ) {
@@ -256,8 +262,25 @@ export function createRuntimeConfigMutationOperations(params: {
           `Config mutation cannot safely replace runtime-derived container at ${path.join(".") || "<root>"}; mutate the authored source instead.`,
         );
       }
+      if (!isDeepStrictEqual(runtime, candidate)) {
+        const resolvedIndexes = runtime.flatMap((value, index) =>
+          isDeepStrictEqual(sourceArray[index], value) ? [] : [index],
+        );
+        const movesResolvedValue = candidate.some(
+          (value, index) =>
+            !isDeepStrictEqual(value, runtime[index]) &&
+            resolvedIndexes.some(
+              (resolvedIndex) =>
+                resolvedIndex !== index && isDeepStrictEqual(value, runtime[resolvedIndex]),
+            ),
+        );
+        if (movesResolvedValue) {
+          throw new Error(
+            `Config mutation cannot safely reorder runtime-derived array at ${path.join(".") || "<root>"}; mutate the authored source instead.`,
+          );
+        }
+      }
       if (runtime.length === candidate.length) {
-        const sourceArray = Array.isArray(source) ? source : [];
         for (let index = 0; index < candidate.length; index += 1) {
           assertArraysSafe(sourceArray[index], runtime[index], candidate[index], [
             ...path,
@@ -358,7 +381,14 @@ export function createRuntimeConfigMutationOperations(params: {
     return isWritePlainObject(value) && Object.values(value).some(containsSensitiveResolvedValue);
   };
   collectResolvedPaths(params.source, params.runtime);
-  const operations = createConfigMutationOperations(params.runtime, params.candidate);
+  const operations = createConfigMutationOperations(params.runtime, params.candidate).filter(
+    (operation) =>
+      !(
+        params.runtimeOnlyUnsetPolicy === "ignore" &&
+        operation.kind === "unset" &&
+        configPathIsIncludeOwner(params.source, operation.path)
+      ),
+  );
   for (const operation of operations) {
     if (
       operation.kind === "unset" &&

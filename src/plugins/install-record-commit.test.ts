@@ -992,7 +992,7 @@ describe("commitConfigWithPendingPluginInstalls", () => {
         nextConfig: { plugins: { allow: ["old", "resolved-token"] } },
         sourceConfig: resolved,
       }),
-    ).rejects.toThrow("cannot safely persist a runtime-derived value");
+    ).rejects.toThrow("cannot safely reorder runtime-derived array at plugins.allow");
     expect(mocks.replaceConfigFile).not.toHaveBeenCalled();
   });
 

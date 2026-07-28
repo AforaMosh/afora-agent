@@ -145,6 +145,8 @@ export async function writeWizardConfigFile(
         },
       });
       baseHash = migration.persistedHash ?? undefined;
+      // The migration write just persisted the initial authored delta. The final write must
+      // now diff from that committed config instead of replaying the original snapshot.
       baseSnapshot = undefined;
       sourceBaseConfig = migration.config;
       config = stripPendingPluginInstallRecords(

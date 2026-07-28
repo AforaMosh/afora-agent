@@ -219,7 +219,32 @@ describe("applyConfigOperations", () => {
         runtime: { plugins: { allow: ["resolved-token", "literal"] } },
         candidate: { plugins: { allow: ["literal", "resolved-token"] } },
       }),
-    ).toThrow("cannot safely persist a runtime-derived value at plugins.allow.1");
+    ).toThrow("cannot safely reorder runtime-derived array at plugins.allow");
+  });
+
+  it("rejects moving non-string resolved values across array indexes", () => {
+    expect(() =>
+      createRuntimeConfigMutationOperations({
+        source: { values: ["${A}", "${B}"] },
+        runtime: { values: [false, true] },
+        candidate: { values: [true, false] },
+      }),
+    ).toThrow("cannot safely reorder runtime-derived array at values");
+  });
+
+  it("allows unrelated edits beside unchanged duplicate resolved values", () => {
+    expect(
+      createRuntimeConfigMutationOperations({
+        source: { values: ["${A}", "${B}", "old"] },
+        runtime: { values: [false, false, "old"] },
+        candidate: { values: [false, false, "new"] },
+      }),
+    ).toContainEqual({
+      kind: "set",
+      path: ["values", "2"],
+      value: "new",
+      arrayContainerDepths: [1],
+    });
   });
 
   it("rejects an environment-resolved value copied to another path", () => {
@@ -336,6 +361,17 @@ describe("applyConfigOperations", () => {
       path: ["plugins", "enabled"],
       strictIncludeOwnership: true,
     });
+  });
+
+  it("ignores compatibility removal of an include-owned container", () => {
+    expect(
+      createRuntimeConfigMutationOperations({
+        source: { plugins: { $include: "./plugins.json" } },
+        runtime: { plugins: { enabled: true } },
+        candidate: {},
+        runtimeOnlyUnsetPolicy: "ignore",
+      }),
+    ).toEqual([]);
   });
 
   it("allows runtime implicit main projection when the roster is first authored", () => {
