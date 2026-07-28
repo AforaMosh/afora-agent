@@ -176,15 +176,19 @@ function mapConfigPatchIdsToSource(params: {
   path?: string;
 }): unknown {
   const path = params.path ?? "";
-  if (params.patch === REDACTED_SENTINEL) {
-    return structuredClone(params.source);
+  const patch = params.patch;
+  const sourceInput = params.source;
+  const resolvedSourceInput = params.resolvedSource;
+  const runtimeInput = params.runtime;
+  if (patch === REDACTED_SENTINEL) {
+    return structuredClone(sourceInput);
   }
-  if (isRecord(params.patch)) {
-    const source = isRecord(params.source) ? params.source : {};
-    const resolvedSource = isRecord(params.resolvedSource) ? params.resolvedSource : {};
-    const runtime = isRecord(params.runtime) ? params.runtime : {};
+  if (isRecord(patch)) {
+    const source = isRecord(sourceInput) ? sourceInput : {};
+    const resolvedSource = isRecord(resolvedSourceInput) ? resolvedSourceInput : {};
+    const runtime = isRecord(runtimeInput) ? runtimeInput : {};
     const mappedEntries: Array<[string, unknown]> = [];
-    for (const [key, value] of Object.entries(params.patch)) {
+    for (const [key, value] of Object.entries(patch)) {
       mappedEntries.push([
         key,
         mapConfigPatchIdsToSource({
@@ -200,21 +204,18 @@ function mapConfigPatchIdsToSource(params: {
     }
     return Object.fromEntries(mappedEntries);
   }
-  if (
-    Array.isArray(params.patch) &&
-    params.replaceArrayPaths.has(path) &&
-    Array.isArray(params.source)
-  ) {
-    const resolvedSource = Array.isArray(params.resolvedSource) ? params.resolvedSource : [];
-    const runtime = Array.isArray(params.runtime) ? params.runtime : [];
-    return params.patch.map((entry) => {
+  if (Array.isArray(patch) && params.replaceArrayPaths.has(path) && Array.isArray(sourceInput)) {
+    const source = sourceInput;
+    const resolvedSource = Array.isArray(resolvedSourceInput) ? resolvedSourceInput : [];
+    const runtime = Array.isArray(runtimeInput) ? runtimeInput : [];
+    return patch.map((entry) => {
       const resolvedMatches = isConfigPatchObjectWithStringId(entry)
         ? resolvedSource.flatMap((candidate, index) =>
             isConfigPatchObjectWithStringId(candidate) && candidate.id === entry.id ? [index] : [],
           )
         : [];
       const authoredMatches = isConfigPatchObjectWithStringId(entry)
-        ? params.source.flatMap((candidate, index) =>
+        ? source.flatMap((candidate, index) =>
             isConfigPatchObjectWithStringId(candidate) && candidate.id === entry.id ? [index] : [],
           )
         : [];
@@ -236,7 +237,7 @@ function mapConfigPatchIdsToSource(params: {
       }
       return mapConfigPatchIdsToSource({
         patch: entry,
-        source: params.source[sourceIndex],
+        source: source[sourceIndex],
         resolvedSource: resolvedSource[sourceIndex],
         runtime: runtime[sourceIndex],
         env: params.env,
@@ -246,16 +247,19 @@ function mapConfigPatchIdsToSource(params: {
     });
   }
   if (
-    !Array.isArray(params.patch) ||
-    !Array.isArray(params.source) ||
-    !Array.isArray(params.resolvedSource) ||
-    !Array.isArray(params.runtime) ||
-    !params.patch.every(isConfigPatchObjectWithStringId)
+    !Array.isArray(patch) ||
+    !Array.isArray(sourceInput) ||
+    !Array.isArray(resolvedSourceInput) ||
+    !Array.isArray(runtimeInput) ||
+    !patch.every(isConfigPatchObjectWithStringId)
   ) {
-    return structuredClone(params.patch);
+    return structuredClone(patch);
   }
-  return params.patch.map((entry, patchIndex) => {
-    const authoredMatches = params.source.flatMap((candidate, index) => {
+  const source = sourceInput;
+  const resolvedSource = resolvedSourceInput;
+  const runtime = runtimeInput;
+  return patch.map((entry, patchIndex) => {
+    const authoredMatches = source.flatMap((candidate, index) => {
       if (!isConfigPatchObjectWithStringId(candidate)) {
         return [];
       }
@@ -265,10 +269,10 @@ function mapConfigPatchIdsToSource(params: {
         return [];
       }
     });
-    const resolvedMatches = params.resolvedSource.flatMap((candidate, index) =>
+    const resolvedMatches = resolvedSource.flatMap((candidate, index) =>
       isConfigPatchObjectWithStringId(candidate) && candidate.id === entry.id ? [index] : [],
     );
-    const runtimeMatches = params.runtime.flatMap((candidate, index) =>
+    const runtimeMatches = runtime.flatMap((candidate, index) =>
       isConfigPatchObjectWithStringId(candidate) && candidate.id === entry.id ? [index] : [],
     );
     if (authoredMatches.length > 1 || resolvedMatches.length > 1 || runtimeMatches.length > 1) {
@@ -282,13 +286,13 @@ function mapConfigPatchIdsToSource(params: {
         ? authoredIndex
         : resolvedIndex >= 0
           ? resolvedIndex
-          : params.patch.length === params.source.length &&
-              isConfigPatchObjectWithStringId(params.runtime[patchIndex]) &&
-              params.runtime[patchIndex].id === entry.id
+          : patch.length === source.length &&
+              isConfigPatchObjectWithStringId(runtime[patchIndex]) &&
+              runtime[patchIndex].id === entry.id
             ? patchIndex
             : -1;
-    const sourceEntry = params.source[sourceIndex];
-    const runtimeEntry = params.runtime[runtimeIndex];
+    const sourceEntry = source[sourceIndex];
+    const runtimeEntry = runtime[runtimeIndex];
     if (sourceIndex < 0 || !isRecord(sourceEntry)) {
       if (containsRedactedPatchSentinel(entry)) {
         throw new Error(`Cannot restore redacted values for unmatched ID ${entry.id} at ${path}.`);
@@ -298,7 +302,7 @@ function mapConfigPatchIdsToSource(params: {
     const mapped = mapConfigPatchIdsToSource({
       patch: entry,
       source: sourceEntry,
-      resolvedSource: params.resolvedSource[sourceIndex],
+      resolvedSource: resolvedSource[sourceIndex],
       runtime: isRecord(runtimeEntry) ? runtimeEntry : {},
       env: params.env,
       replaceArrayPaths: params.replaceArrayPaths,

@@ -358,9 +358,6 @@ export async function runConfigOperations(params: {
         schema: mutationSchema,
       });
     }
-    const intermediateConfig = normalizeConfigMutationModelRefs(
-      structuredClone(next) as OpenClawConfig,
-    );
     const intentSourceConfig = applyConfigOperations(snapshot.parsed, writeOperations);
     let intentIntermediate = intentSourceConfig;
     if (!deletesValue) {

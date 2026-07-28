@@ -267,7 +267,7 @@ describe("setupCommand", () => {
     });
   });
 
-  it("updates only inherited workspace defaults beside an include-owned roster", async () => {
+  it("rejects inherited workspace overrides beside a root include", async () => {
     await withTempHome(async (home) => {
       const runtime = { log: vi.fn(), error: vi.fn(), exit: vi.fn() };
       const configDir = path.join(home, ".openclaw");
@@ -283,7 +283,8 @@ describe("setupCommand", () => {
         gateway: { mode: "local" },
       };
       await fs.mkdir(configDir, { recursive: true });
-      await fs.writeFile(configPath, JSON.stringify({ $include: "./agents.json" }));
+      const root = { $include: "./agents.json" };
+      await fs.writeFile(configPath, JSON.stringify(root));
       await fs.writeFile(includePath, JSON.stringify(included));
       const deps = {
         ensureAgentWorkspace: vi.fn(async () => ({ dir: nextWorkspace })),
@@ -292,19 +293,16 @@ describe("setupCommand", () => {
         resolveSessionTranscriptsDir: vi.fn(() => path.join(home, "ops-sessions")),
       };
 
-      await setupCommand({ workspace: nextWorkspace }, runtime, deps);
+      await expect(setupCommand({ workspace: nextWorkspace }, runtime, deps)).rejects.toThrow(
+        "Config write cannot update $include-owned config at <root>",
+      );
 
-      const root = JSON.parse(await fs.readFile(configPath, "utf8")) as OpenClawConfig & {
-        $include?: string;
-      };
-      expect(root.$include).toBe("./agents.json");
-      expect(root.agents?.defaults?.workspace).toBe(nextWorkspace);
-      expect(root.agents?.entries).toBeUndefined();
+      expect(JSON.parse(await fs.readFile(configPath, "utf8"))).toEqual(root);
       expect(JSON.parse(await fs.readFile(includePath, "utf8"))).toEqual(included);
     });
   });
 
-  it("updates inherited workspace defaults below a nested roster include", async () => {
+  it("rejects inherited workspace overrides below a nested roster include", async () => {
     await withTempHome(async (home) => {
       const runtime = { log: vi.fn(), error: vi.fn(), exit: vi.fn() };
       const configDir = path.join(home, ".openclaw");
@@ -317,31 +315,20 @@ describe("setupCommand", () => {
         entries: { ops: { default: true } },
       };
       await fs.mkdir(configDir, { recursive: true });
-      await fs.writeFile(
-        configPath,
-        JSON.stringify({ agents: { $include: "./agents.json" }, gateway: { mode: "local" } }),
-      );
+      const root = { agents: { $include: "./agents.json" }, gateway: { mode: "local" } };
+      await fs.writeFile(configPath, JSON.stringify(root));
       await fs.writeFile(includePath, JSON.stringify(includedAgents));
 
-      await setupCommand({ workspace: nextWorkspace }, runtime, {
-        ensureAgentWorkspace: vi.fn(async () => ({ dir: nextWorkspace })),
-        formatConfigPath: (value: string) => value,
-        mkdir: vi.fn(async () => {}),
-        resolveSessionTranscriptsDir: vi.fn(() => path.join(home, "ops-sessions")),
-      });
+      await expect(
+        setupCommand({ workspace: nextWorkspace }, runtime, {
+          ensureAgentWorkspace: vi.fn(async () => ({ dir: nextWorkspace })),
+          formatConfigPath: (value: string) => value,
+          mkdir: vi.fn(async () => {}),
+          resolveSessionTranscriptsDir: vi.fn(() => path.join(home, "ops-sessions")),
+        }),
+      ).rejects.toThrow("Config write cannot update $include-owned config at agents");
 
-      const root = JSON.parse(await fs.readFile(configPath, "utf8")) as {
-        agents?: {
-          $include?: string;
-          defaults?: { workspace?: string };
-          entries?: unknown;
-        };
-      };
-      expect(root.agents).toMatchObject({
-        $include: "./agents.json",
-        defaults: { workspace: nextWorkspace },
-      });
-      expect(root.agents?.entries).toBeUndefined();
+      expect(JSON.parse(await fs.readFile(configPath, "utf8"))).toEqual(root);
       expect(JSON.parse(await fs.readFile(includePath, "utf8"))).toEqual(includedAgents);
     });
   });

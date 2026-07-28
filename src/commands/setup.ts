@@ -177,6 +177,8 @@ export async function setupCommand(
   const shouldWriteWorkspace =
     !snapshot.exists || (desiredWorkspace !== undefined && configuredWorkspace !== workspace);
   const shouldWriteGatewayMode = resolvedConfig.gateway?.mode === undefined;
+  const writeInheritedWorkspaceOverride =
+    snapshot.exists && shouldWriteWorkspace && !defaultEntryWorkspace && includeOwnsRoster;
 
   // Setup computes a full candidate for validation, then persists only the
   // source operations this command owns.

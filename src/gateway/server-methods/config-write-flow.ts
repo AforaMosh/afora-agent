@@ -102,18 +102,19 @@ function projectAuthoredValuesOntoRuntimeOverlay(params: {
   active: unknown;
   fallback: unknown;
 }): unknown {
-  if (!isRecord(params.source) || !isRecord(params.active)) {
-    return structuredClone(params.active);
+  const { source, active } = params;
+  if (!isRecord(source) || !isRecord(active)) {
+    return structuredClone(active);
   }
   const fallback = isRecord(params.fallback) ? params.fallback : {};
-  const sourceKeys = new Set(Object.keys(params.source));
+  const sourceKeys = new Set(Object.keys(source));
   return Object.fromEntries([
     ...Object.entries(fallback).filter(([key]) => !sourceKeys.has(key)),
-    ...Object.keys(params.source).map((key) => [
+    ...Object.keys(source).map((key) => [
       key,
       projectAuthoredValuesOntoRuntimeOverlay({
-        source: params.source[key],
-        active: params.active[key],
+        source: source[key],
+        active: active[key],
         fallback: fallback[key],
       }),
     ]),
