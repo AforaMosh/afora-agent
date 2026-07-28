@@ -323,6 +323,31 @@ describe("config io write", () => {
   });
 
   itWithHome(
+    "validates mutations against resolved env values without rewriting refs",
+    async (home) => {
+      const { configPath } = await writeConfigFixture(home, {
+        gateway: { mode: "${GATEWAY_MODE}" },
+      });
+      const io = createHomeConfigIO(home, {
+        configPath,
+        env: {
+          GATEWAY_MODE: "local",
+          OPENCLAW_TEST_FAST: "1",
+        } as NodeJS.ProcessEnv,
+      });
+
+      await writeConfigMutation(io, {
+        kind: "mutate",
+        operations: [{ kind: "set", path: ["logging", "level"], value: "debug" }],
+      });
+
+      const persisted = await readPersistedConfig(configPath);
+      expect(persisted.gateway?.mode).toBe("${GATEWAY_MODE}");
+      expect(persisted.logging?.level).toBe("debug");
+    },
+  );
+
+  itWithHome(
     "dedupes validation warnings across writes and reloads until config becomes clean",
     async (home) => {
       const warn = vi.fn();

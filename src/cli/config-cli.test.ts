@@ -1197,6 +1197,205 @@ describe("config cli", () => {
       });
     });
 
+    it("does not normalize unrelated retired model refs during object merges", async () => {
+      const authored: OpenClawConfig = {
+        agents: {
+          defaults: {
+            models: { "google/gemini-3-pro-preview": { alias: "gemini" } },
+          },
+        },
+        gateway: { auth: { mode: "token" } },
+      };
+      const resolved: OpenClawConfig = {
+        agents: {
+          defaults: {
+            models: { "google/gemini-3.1-pro-preview": { alias: "gemini" } },
+          },
+        },
+        gateway: { auth: { mode: "token" } },
+      };
+      setSnapshotOnce({ ...buildSnapshot({ resolved, config: resolved }), parsed: authored });
+
+      await runConfigCommand([
+        "config",
+        "set",
+        "gateway.auth",
+        '{"mode":"none"}',
+        "--strict-json",
+        "--merge",
+      ]);
+
+      expect(requireWriteIntent()).toEqual({
+        kind: "mutate",
+        operations: [{ kind: "set", path: ["gateway", "auth", "mode"], value: "none" }],
+      });
+    });
+
+    it("persists an explicitly normalized model ref submitted through merge", async () => {
+      const authored: OpenClawConfig = {
+        agents: {
+          defaults: { model: { primary: "google/gemini-3-pro-preview" } },
+        },
+      };
+      const resolved: OpenClawConfig = {
+        agents: {
+          defaults: { model: { primary: "google/gemini-3.1-pro-preview" } },
+        },
+      };
+      setSnapshotOnce({ ...buildSnapshot({ resolved, config: resolved }), parsed: authored });
+
+      await runConfigCommand([
+        "config",
+        "set",
+        "agents.defaults.model",
+        '{"primary":"google/gemini-3.1-pro-preview"}',
+        "--strict-json",
+        "--merge",
+      ]);
+
+      expect(requireWriteIntent()).toEqual({
+        kind: "mutate",
+        operations: [
+          {
+            kind: "set",
+            path: ["agents", "defaults", "model", "primary"],
+            value: "google/gemini-3.1-pro-preview",
+          },
+        ],
+      });
+    });
+
+    it("normalizes an equal-valued retired model ref explicitly submitted through merge", async () => {
+      const authored: OpenClawConfig = {
+        agents: {
+          defaults: { model: { primary: "google/gemini-3-pro-preview" } },
+        },
+      };
+      const resolved: OpenClawConfig = {
+        agents: {
+          defaults: { model: { primary: "google/gemini-3.1-pro-preview" } },
+        },
+      };
+      setSnapshotOnce({ ...buildSnapshot({ resolved, config: resolved }), parsed: authored });
+
+      await runConfigCommand([
+        "config",
+        "set",
+        "agents.defaults.model",
+        '{"primary":"google/gemini-3-pro-preview"}',
+        "--strict-json",
+        "--merge",
+      ]);
+
+      expect(requireWriteIntent()).toEqual({
+        kind: "mutate",
+        operations: [
+          {
+            kind: "set",
+            path: ["agents", "defaults", "model", "primary"],
+            value: "google/gemini-3.1-pro-preview",
+          },
+        ],
+      });
+    });
+
+    it("persists an empty object leaf explicitly submitted through merge", async () => {
+      setSnapshot({}, {});
+
+      await runConfigCommand([
+        "config",
+        "set",
+        "plugins.entries.demo.config",
+        "{}",
+        "--strict-json",
+        "--merge",
+      ]);
+
+      expect(requireWriteIntent()).toEqual({
+        kind: "mutate",
+        operations: [
+          {
+            kind: "set",
+            path: ["plugins", "entries", "demo", "config"],
+            value: {},
+          },
+        ],
+      });
+    });
+
+    it("does not normalize retired descendants beneath an empty merge leaf", async () => {
+      const authored: OpenClawConfig = {
+        agents: {
+          defaults: { model: { primary: "google/gemini-3-pro-preview" } },
+        },
+      };
+      const resolved: OpenClawConfig = {
+        agents: {
+          defaults: { model: { primary: "google/gemini-3.1-pro-preview" } },
+        },
+      };
+      setSnapshotOnce({ ...buildSnapshot({ resolved, config: resolved }), parsed: authored });
+
+      await runConfigCommand([
+        "config",
+        "set",
+        "agents.defaults.model",
+        "{}",
+        "--strict-json",
+        "--merge",
+      ]);
+
+      expect(requireWriteIntent()).toEqual({ kind: "mutate", operations: [] });
+    });
+
+    it("keeps alias-targeted merges from normalizing unrelated model refs", async () => {
+      const authored: OpenClawConfig = {
+        agents: {
+          defaults: {
+            model: { primary: "google/gemini-3-pro-preview" },
+            models: {
+              "google/gemini-3-pro-preview": { alias: "gemini" },
+            },
+          },
+        },
+      };
+      const resolved: OpenClawConfig = {
+        agents: {
+          defaults: {
+            model: { primary: "google/gemini-3.1-pro-preview" },
+            models: {
+              "google/gemini-3.1-pro-preview": { alias: "gemini" },
+            },
+          },
+        },
+      };
+      setSnapshotOnce({ ...buildSnapshot({ resolved, config: resolved }), parsed: authored });
+
+      await runConfigCommand([
+        "config",
+        "set",
+        'agents.defaults.models["google/gemini-3.1-pro-preview"]',
+        '{"params":{"temperature":0.5}}',
+        "--strict-json",
+        "--merge",
+      ]);
+
+      expect(requireWriteIntent()).toEqual({
+        kind: "mutate",
+        operations: [
+          {
+            kind: "unset",
+            path: ["agents", "defaults", "models", "google/gemini-3-pro-preview"],
+          },
+          {
+            kind: "set",
+            path: ["agents", "defaults", "models", "google/gemini-3.1-pro-preview"],
+            value: { alias: "gemini", params: { temperature: 0.5 } },
+          },
+        ],
+      });
+    });
+
     it("emits descendant merge intent below an ancestor include", async () => {
       const resolved: OpenClawConfig = {
         gateway: { auth: { mode: "token", token: "test-token" } },
@@ -3746,6 +3945,81 @@ describe("config cli", () => {
       expect(requireWriteIntent()).toEqual({
         kind: "mutate",
         operations: [
+          {
+            kind: "unset",
+            path: ["agents", "defaults", "models", "google/gemini-3-pro-preview"],
+          },
+          {
+            kind: "set",
+            path: ["agents", "defaults", "models", "google/gemini-3.1-pro-preview"],
+            value: { params: { endpoint: "${ENDPOINT}" } },
+          },
+        ],
+      });
+    });
+
+    it("preserves retired model-map siblings when a batch deletes the canonical alias", async () => {
+      const authored = {
+        agents: {
+          defaults: {
+            models: {
+              "google/gemini-3-pro-preview": {
+                alias: "gemini",
+                params: { endpoint: "${ENDPOINT}" },
+              },
+            },
+          },
+        },
+      } satisfies OpenClawConfig;
+      const canonical = {
+        agents: {
+          defaults: {
+            models: {
+              "google/gemini-3.1-pro-preview": {
+                alias: "gemini",
+                params: { endpoint: "https://example.invalid" },
+              },
+            },
+          },
+        },
+      } satisfies OpenClawConfig;
+      setSnapshotOnce({
+        ...buildSnapshot({ resolved: canonical, config: canonical }),
+        parsed: authored,
+      });
+
+      await runConfigOperations({
+        runtime: defaultRuntime,
+        operations: [
+          {
+            inputMode: "json",
+            requestedPath: ["ui", "assistant", "name"],
+            setPath: ["ui", "assistant", "name"],
+            value: "Molty",
+            mutation: "set",
+          },
+          {
+            inputMode: "json",
+            requestedPath: [
+              "agents",
+              "defaults",
+              "models",
+              "google/gemini-3.1-pro-preview",
+              "alias",
+            ],
+            setPath: ["agents", "defaults", "models", "google/gemini-3.1-pro-preview", "alias"],
+            value: undefined,
+            mutation: "delete",
+          },
+        ],
+        options: {},
+        successMode: "set",
+      });
+
+      expect(requireWriteIntent()).toEqual({
+        kind: "mutate",
+        operations: [
+          { kind: "set", path: ["ui", "assistant", "name"], value: "Molty" },
           {
             kind: "unset",
             path: ["agents", "defaults", "models", "google/gemini-3-pro-preview"],

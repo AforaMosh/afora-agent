@@ -27,7 +27,6 @@ import {
 import type { ConfigIoContext } from "./io.context.js";
 import { recordConfigWriteMetadata } from "./io.meta.js";
 import {
-  containsConfigIncludeDirective,
   hashConfigRaw,
   hasConfigMeta,
   resolveConfigSnapshotHash,
@@ -118,9 +117,9 @@ export async function writeConfigFileFromContext(
   const cfg = prepared.value.authoredDocument;
   const persistCandidate: unknown = cfg;
   const changedPaths = new Set(prepared.value.changedPaths);
-  const validationCandidate = containsConfigIncludeDirective(persistCandidate)
-    ? context.resolveRuntimePreflightSourceConfig(persistCandidate as OpenClawConfig)
-    : persistCandidate;
+  const validationCandidate = context.resolveRuntimePreflightSourceConfig(
+    persistCandidate as OpenClawConfig,
+  );
   const validated = validateConfigObjectRawWithPlugins(validationCandidate, {
     env: deps.env,
     pluginValidation: options.skipPluginValidation ? "skip" : "full",

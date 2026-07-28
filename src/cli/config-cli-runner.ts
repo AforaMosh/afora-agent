@@ -16,7 +16,7 @@ import { resolveGatewayReloadSettings } from "../gateway/config-reload-settings.
 import { danger, info } from "../globals.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { writeRuntimeJson } from "../runtime.js";
-import { shortenHomePath } from "../utils.js";
+import { isRecord, shortenHomePath } from "../utils.js";
 import {
   ConfigSetDryRunValidationError,
   formatPluginInstallConfigSetError,
@@ -65,6 +65,17 @@ function pathEquals(path: readonly PathSegment[], expected: readonly PathSegment
   return (
     path.length === expected.length && path.every((segment, index) => segment === expected[index])
   );
+}
+
+function collectSubmittedMergePaths(value: unknown, path: PathSegment[]): PathSegment[][] {
+  if (!isRecord(value) || Array.isArray(value)) {
+    return [path];
+  }
+  const entries = Object.entries(value);
+  if (entries.length === 0) {
+    return [path];
+  }
+  return entries.flatMap(([key, child]) => collectSubmittedMergePaths(child, [...path, key]));
 }
 
 function valueHasAutoManagedChild(value: unknown, childPath: readonly PathSegment[]): boolean {
@@ -359,9 +370,13 @@ export async function runConfigOperations(params: {
       });
     }
     const intentSourceConfig = applyConfigOperations(snapshot.parsed, writeOperations);
-    let intentIntermediate = intentSourceConfig;
-    if (!deletesValue) {
-      intentIntermediate = structuredClone(intentIntermediate);
+    let intentIntermediate = structuredClone(intentSourceConfig);
+    if (authoredAliasPaths.length > 0) {
+      intentIntermediate = normalizeConfigMutationModelRefs(intentIntermediate);
+    }
+    if (deletesValue) {
+      unsetAtPath(intentIntermediate, operationPath);
+    } else {
       if (operation.mutation === "merge" || (options.merge && operation.mutation !== "replace")) {
         mergeAtPath(intentIntermediate as Record<string, unknown>, operationPath, operation.value, {
           numericObjectKeys: params.successMode === "patch",
@@ -373,8 +388,17 @@ export async function runConfigOperations(params: {
           schema: mutationSchema,
         });
       }
-      intentIntermediate = normalizeConfigMutationModelRefs(intentIntermediate);
     }
+    const submittedMergePaths =
+      operation.mutation === "merge" || (options.merge && operation.mutation !== "replace")
+        ? collectSubmittedMergePaths(operation.value, operationPath).flatMap((submittedPath) => {
+            const normalizedPath = normalizeConfigMutationExplicitSetPath([...submittedPath]);
+            return pathEquals(normalizedPath, submittedPath)
+              ? [submittedPath]
+              : [submittedPath, normalizedPath];
+          })
+        : [];
+    intentIntermediate = normalizeConfigMutationModelRefs(intentIntermediate);
     const intermediateValue = getAtPath(intentIntermediate, operationPath);
     if (authoredAliasPaths.length > 0) {
       const modelIdIndex = operationPath[1] === "defaults" ? 3 : 4;
@@ -403,7 +427,13 @@ export async function runConfigOperations(params: {
       (options.merge && operation.mutation !== "replace")
     ) {
       writeOperations.push(
-        ...createConfigMutationOperations(intentSourceConfig, intentIntermediate),
+        ...createConfigMutationOperations(intentSourceConfig, intentIntermediate).filter(
+          (candidate) =>
+            candidate.kind !== "merge" &&
+            submittedMergePaths.some((submittedPath) =>
+              pathStartsWith(submittedPath, candidate.path),
+            ),
+        ),
       );
     } else {
       writeOperations.push(
