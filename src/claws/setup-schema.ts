@@ -236,7 +236,7 @@ const setupMultiChoiceInputSchema = z
     }
   });
 
-const setupInputSchema = z.union([
+export const clawSetupInputSchema = z.union([
   setupStringInputSchema,
   setupMultilineInputSchema,
   setupIntegerInputSchema,
@@ -246,7 +246,7 @@ const setupInputSchema = z.union([
 ]);
 
 export const clawSetupSchema = z
-  .object({ inputs: z.array(setupInputSchema).optional().default([]) })
+  .object({ inputs: z.array(clawSetupInputSchema).optional().default([]) })
   .strict()
   .default({ inputs: [] });
 
