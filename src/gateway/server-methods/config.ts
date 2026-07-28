@@ -1259,16 +1259,12 @@ function resolveSharedAuthAuthoredSource(
   const sourceGateway = snapshot.sourceConfig.gateway;
   const gateway: NonNullable<OpenClawConfig["gateway"]> = {};
   for (const key of ["auth", "tailscale", "trustedProxies"] as const) {
-    if (Object.hasOwn(parsedGateway, key)) {
+    if (includeOwnsPath(["gateway", key]) && sourceGateway && Object.hasOwn(sourceGateway, key)) {
+      Object.assign(gateway, { [key]: sourceGateway[key] });
+    } else if (Object.hasOwn(parsedGateway, key)) {
       Object.assign(gateway, {
         [key]: projectSourceOntoRuntimeShape(parsedGateway[key], sourceGateway?.[key]),
       });
-    } else if (
-      includeOwnsPath(["gateway", key]) &&
-      sourceGateway &&
-      Object.hasOwn(sourceGateway, key)
-    ) {
-      Object.assign(gateway, { [key]: sourceGateway[key] });
     }
   }
   return Object.keys(gateway).length > 0 ? { gateway } : {};

@@ -2323,6 +2323,32 @@ describe("config mutate helpers", () => {
       parsed: { plugins: { $include: "./config/plugins.json5" } },
       sourceConfig: { plugins: { entries: { old: oldEntry } } },
     });
+    const nestedPath = path.join(path.dirname(pluginsPath), "nested.json5");
+    const refreshedPluginsHash = hashConfigIncludeRaw(
+      `${JSON.stringify({ entries: { old: oldEntry, demo: { enabled: true } } }, null, 2)}\n`,
+    );
+    const refreshedSnapshot = createSnapshot({
+      hash: snapshot.hash,
+      path: configPath,
+      parsed: snapshot.parsed,
+      sourceConfig: {
+        plugins: { entries: { old: oldEntry, demo: { enabled: true } } },
+      },
+    });
+    ioMocks.readConfigFileSnapshotForWrite.mockResolvedValue({
+      snapshot: refreshedSnapshot,
+      writeOptions: {
+        expectedConfigPath: configPath,
+        includeFileHashesForWrite: {
+          [pluginsPath]: refreshedPluginsHash,
+          [nestedPath]: "refreshed-nested-hash",
+        },
+        includeFileTargetsForWrite: {
+          [pluginsPath]: await resolveIncludeTarget(pluginsPath),
+          [nestedPath]: await resolveIncludeTarget(nestedPath),
+        },
+      },
+    });
 
     const result = await replaceConfigFile({
       baseHash: snapshot.hash,
@@ -2364,6 +2390,10 @@ describe("config mutate helpers", () => {
     );
     expect(result.committedIncludeFileTargets?.[pluginsPath]).toBe(
       await resolveIncludeTarget(pluginsPath),
+    );
+    expect(result.committedIncludeFileHashes?.[nestedPath]).toBe("refreshed-nested-hash");
+    expect(result.committedIncludeFileTargets?.[nestedPath]).toBe(
+      await resolveIncludeTarget(nestedPath),
     );
   });
 

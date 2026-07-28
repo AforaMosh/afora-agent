@@ -536,17 +536,14 @@ export async function commitConfigWithPendingPluginInstalls(params: {
   movedInstallRecords: boolean;
   persistedHash: string | null;
 }> {
-  let prepared: Awaited<ReturnType<typeof readConfigFileSnapshotForWrite>> | undefined;
   return await commitConfigWriteWithPendingPluginInstalls({
     nextConfig: params.nextConfig,
     ...(params.sourceConfig ? { sourceConfig: params.sourceConfig } : {}),
     ...(params.writeOptions ? { writeOptions: params.writeOptions } : {}),
     commit: async (nextConfig, writeOptions) => {
-      if (!prepared) {
-        prepared = await readConfigFileSnapshotForWrite({
-          skipPluginValidation: writeOptions?.skipPluginValidation,
-        });
-      }
+      const prepared = await readConfigFileSnapshotForWrite({
+        skipPluginValidation: writeOptions?.skipPluginValidation,
+      });
       const operations = createRuntimeConfigMutationOperations({
         source: prepared.snapshot.parsed,
         runtime: params.sourceConfig ?? prepared.snapshot.runtimeConfig,

@@ -396,7 +396,10 @@ export function createRuntimeConfigMutationOperations(params: {
       ),
   );
   for (const operation of operations) {
-    if (operation.path.some((segment) => containsSensitiveResolvedValue(segment))) {
+    if (
+      operation.kind !== "merge" &&
+      operation.path.some((segment) => containsSensitiveResolvedValue(segment))
+    ) {
       throw new Error(
         "Config mutation cannot safely persist a runtime-derived value in an object key; mutate the authored source instead.",
       );

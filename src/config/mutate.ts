@@ -829,14 +829,6 @@ async function tryWriteSingleTopLevelIncludeMutation(params: {
   }
   const committedIncludeRaw = formatJsonFileValue(includedValueToWrite);
   const committedIncludeHash = hashConfigIncludeRaw(committedIncludeRaw);
-  const committedIncludeFileHashes = {
-    ...params.writeOptions?.includeFileHashesForWrite,
-    [includePath]: committedIncludeHash,
-  };
-  const committedIncludeFileTargets = {
-    ...params.writeOptions?.includeFileTargetsForWrite,
-    [includePath]: expectedIncludeTarget,
-  };
   const callerPreCommit = params.writeOptions?.preCommitRuntimePreflight;
   assertConfigPathForWrite();
   await assertRootConfigStillMatchesSnapshot(params.snapshot);
@@ -869,19 +861,6 @@ async function tryWriteSingleTopLevelIncludeMutation(params: {
   const envBeforePostWriteRead = { ...writeEnv };
   let envAfterPostWriteRead = envBeforePostWriteRead;
   try {
-    if (
-      params.writeOptions?.skipRuntimeSnapshotRefresh &&
-      !hadRuntimeSnapshot &&
-      !getRuntimeConfigSnapshotRefreshHandler()
-    ) {
-      return {
-        persistedHash: null,
-        persistedConfig: runtimeConfigToWrite,
-        committedIncludeFileHashes,
-        committedIncludeFileTargets,
-      };
-    }
-
     let refreshed: Awaited<ReturnType<typeof readConfigFileSnapshotForWrite>>;
     try {
       refreshed = await readConfigSnapshotForMutation({
@@ -906,6 +885,18 @@ async function tryWriteSingleTopLevelIncludeMutation(params: {
       throw new Error(
         `Config was written to ${params.snapshot.path}, but no persisted hash was available.`,
       );
+    }
+    if (
+      params.writeOptions?.skipRuntimeSnapshotRefresh &&
+      !hadRuntimeSnapshot &&
+      !getRuntimeConfigSnapshotRefreshHandler()
+    ) {
+      return {
+        persistedHash,
+        persistedConfig: refreshedSnapshot.sourceConfig,
+        committedIncludeFileHashes: refreshed.writeOptions.includeFileHashesForWrite,
+        committedIncludeFileTargets: refreshed.writeOptions.includeFileTargetsForWrite,
+      };
     }
 
     const notifyCommittedWrite = () => {
