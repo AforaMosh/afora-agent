@@ -31,6 +31,7 @@ type CodexMirroredSessionHistoryTarget = {
   sessionId: string;
   sessionKey?: string;
   onExecutionPhase?: EmbeddedRunAttemptParams["onExecutionPhase"];
+  purpose?: string;
 };
 
 /** Returns sanitized session-context messages for a Codex mirrored session file. */
@@ -38,11 +39,27 @@ export async function readCodexMirroredSessionHistoryMessages(
   target: CodexMirroredSessionHistoryTarget,
 ): Promise<AgentMessage[] | undefined> {
   const backend = parseSqliteSessionFileMarker(target.sessionFile) ? "sqlite" : "jsonl";
-  target.onExecutionPhase?.({ phase: "session_materialization_started", backend });
+  const phaseContext = {
+    backend,
+    ...(target.purpose ? { purpose: target.purpose } : {}),
+  };
+  target.onExecutionPhase?.({ phase: "session_materialization_started", ...phaseContext });
   const materializationStartedAt = performance.now();
+  let entryCount: number | undefined;
+  let messageCount: number | undefined;
+  let outcome = "failed";
   try {
     const entries = await readCodexMirroredSessionEntries(target);
+    entryCount = entries.length;
+    target.onExecutionPhase?.({
+      phase: "session_materialization_checkpoint",
+      ...phaseContext,
+      stage: "entries_loaded",
+      entryCount,
+      durationMs: performance.now() - materializationStartedAt,
+    });
     if (entries.length === 0) {
+      outcome = "empty";
       return [];
     }
     const firstEntry = entries[0] as { type?: unknown; id?: unknown } | undefined;
@@ -52,11 +69,13 @@ export async function readCodexMirroredSessionHistoryMessages(
       // this hook) — an empty mirror, not a read failure, so callers must not
       // warn. `undefined` stays reserved for genuine failures: read/parse errors
       // (caught below) and malformed `session` headers (next check).
+      outcome = "foreign_transcript";
       return [];
     }
     if (typeof firstEntry.id !== "string") {
       // A `session` header without a string id is a corrupted Codex transcript,
       // not a foreign one — keep it on the warn path.
+      outcome = "malformed_header";
       return undefined;
     }
     migrateSessionEntries(entries);
@@ -68,21 +87,42 @@ export async function readCodexMirroredSessionHistoryMessages(
         (entry as { type?: unknown }).type !== "session"
       );
     });
-    return sanitizeCodexHistoryImagePayloads(
-      buildSessionContext(sessionEntries).messages,
-      "codex mirrored history",
-    );
+    const messages = buildSessionContext(sessionEntries).messages;
+    messageCount = messages.length;
+    target.onExecutionPhase?.({
+      phase: "session_materialization_checkpoint",
+      ...phaseContext,
+      stage: "context_built",
+      entryCount,
+      messageCount,
+      durationMs: performance.now() - materializationStartedAt,
+    });
+    const sanitizedMessages = sanitizeCodexHistoryImagePayloads(messages, "codex mirrored history");
+    target.onExecutionPhase?.({
+      phase: "session_materialization_checkpoint",
+      ...phaseContext,
+      stage: "history_sanitized",
+      entryCount,
+      messageCount,
+      durationMs: performance.now() - materializationStartedAt,
+    });
+    outcome = "materialized";
+    return sanitizedMessages;
   } catch (error) {
     // A new Codex session can be read before its transcript exists; other failures still warn.
     if (isMissingFileError(error)) {
+      outcome = "missing_file";
       return [];
     }
     return undefined;
   } finally {
     target.onExecutionPhase?.({
       phase: "session_materialized",
-      backend,
+      ...phaseContext,
       durationMs: performance.now() - materializationStartedAt,
+      outcome,
+      entryCount,
+      messageCount,
     });
   }
 }

@@ -5,6 +5,7 @@ import {
   formatErrorMessage,
   resolveAgentHarnessBeforePromptBuildResult,
 } from "openclaw/plugin-sdk/agent-harness-runtime";
+import { parseSqliteSessionFileMarker } from "openclaw/plugin-sdk/session-store-runtime";
 import {
   buildCodexSystemPromptReport,
   prependCodexOpenClawPromptContext,
@@ -45,6 +46,7 @@ export async function prepareCodexAttemptPrompt(context: CodexAttemptContext) {
     skillsCollaborationInstructions,
     promptState,
     codexContextProjectionMaxChars,
+    activeTranscriptTarget,
   } = context;
   const {
     connection,
@@ -174,14 +176,37 @@ export async function prepareCodexAttemptPrompt(context: CodexAttemptContext) {
     }
   }
   const codexModelInputHistoryMessages: typeof historyState.messages = [];
-  const buildPromptFromCurrentInputs = () =>
-    resolveAgentHarnessBeforePromptBuildResult({
+  const transcriptBackend = parseSqliteSessionFileMarker(activeTranscriptTarget.sessionFile)
+    ? "sqlite"
+    : "jsonl";
+  const buildPromptFromCurrentInputs = () => {
+    const cloneStartedAt = performance.now();
+    params.onExecutionPhase?.({
+      phase: "session_materialization_checkpoint",
+      backend: transcriptBackend,
+      purpose: "before_prompt_hook",
+      stage: "prompt_history_clone",
+      outcome: "started",
+      messageCount: historyState.messages.length,
+    });
+    const messages = structuredClone(historyState.messages);
+    params.onExecutionPhase?.({
+      phase: "session_materialization_checkpoint",
+      backend: transcriptBackend,
+      purpose: "before_prompt_hook",
+      stage: "prompt_history_clone",
+      outcome: "completed",
+      messageCount: messages.length,
+      durationMs: performance.now() - cloneStartedAt,
+    });
+    return resolveAgentHarnessBeforePromptBuildResult({
       prompt: prependCurrentInboundContext(promptState.promptText, params.currentInboundContext),
       developerInstructions: promptState.developerInstructions,
-      messages: structuredClone(historyState.messages),
+      messages,
       ctx: hookContext,
       bootstrapContextRunKind: params.bootstrapContextRunKind,
     });
+  };
   const resolveShiftedPromptInputRange = (
     prompt: string,
     promptInputRange: { start: number; end: number } | undefined,

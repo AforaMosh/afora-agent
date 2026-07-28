@@ -388,6 +388,11 @@ type DiagnosticRunExecutionPhaseEvent = DiagnosticBaseEvent & {
   itemId?: string;
   firstModelCallStarted?: boolean;
   durationMs?: number;
+  purpose?: string;
+  stage?: string;
+  outcome?: string;
+  entryCount?: number;
+  messageCount?: number;
   memory?: DiagnosticMemoryUsage;
 };
 

@@ -147,6 +147,35 @@ describe("captureCodexSettledTurnFinalizationContext", () => {
     ).resolves.toBeUndefined();
   });
 
+  it("reports duplicate persisted identities after the purpose-tagged history read", async () => {
+    const phases: Array<Record<string, unknown>> = [];
+    const settledMessages = settledTurn();
+    mocks.readHistory.mockResolvedValue([...settledMessages, settledMessages[2]!]);
+
+    await expect(
+      captureCodexSettledTurnFinalizationContext({
+        sessionFile: "/tmp/session.jsonl",
+        sessionId: "session-1",
+        mirroredMessages: settledMessages,
+        settledMessages,
+        turnId: "turn-2",
+        onExecutionPhase: (phase: Record<string, unknown>) => phases.push(phase),
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(mocks.readHistory).toHaveBeenCalledWith(
+      expect.objectContaining({ purpose: "settled_turn_finalization" }),
+    );
+    expect(phases).toContainEqual(
+      expect.objectContaining({
+        phase: "session_materialization_checkpoint",
+        purpose: "settled_turn_finalization",
+        stage: "context_validation",
+        outcome: "duplicate_history_identity",
+      }),
+    );
+  });
+
   it("contains transcript read failures after tools have settled", async () => {
     mocks.readHistory.mockRejectedValue(new Error("read failed"));
 

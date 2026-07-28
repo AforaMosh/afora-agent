@@ -77,6 +77,8 @@ export async function readMirroredSessionHistoryMessages(params: {
   sessionFile: string;
   sessionId: string;
   sessionKey?: string;
+  onExecutionPhase?: EmbeddedRunAttemptParams["onExecutionPhase"];
+  purpose?: string;
 }): Promise<AgentMessage[] | undefined> {
   const messages = await readCodexMirroredSessionHistoryMessages(params);
   if (!messages) {

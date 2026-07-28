@@ -361,8 +361,10 @@ export async function finalizeCodexAttempt(
       params.bootstrapContextRunKind === "heartbeat" ||
       params.bootstrapContextRunKind === "commitment-only";
     const finalMessages =
-      (await readMirroredSessionHistoryMessages(activeTranscriptTarget)) ??
-      historyState.messages.concat(result.messagesSnapshot);
+      (await readMirroredSessionHistoryMessages({
+        ...activeTranscriptTarget,
+        purpose: "context_engine_finalize",
+      })) ?? historyState.messages.concat(result.messagesSnapshot);
     await finalizeHarnessContextEngineTurn({
       contextEngine: activeContextEngine,
       promptError: Boolean(finalPromptError),

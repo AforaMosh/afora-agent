@@ -160,6 +160,7 @@ describe("readCodexMirroredSessionHistoryMessages", () => {
       sessionFile: marker,
       sessionId: "codex-sqlite-session",
       sessionKey,
+      purpose: "test_read",
       onExecutionPhase: (phase: Record<string, unknown>) => phases.push(phase),
     };
 
@@ -169,11 +170,42 @@ describe("readCodexMirroredSessionHistoryMessages", () => {
       {
         phase: "session_materialization_started",
         backend: "sqlite",
+        purpose: "test_read",
+      },
+      {
+        phase: "session_materialization_checkpoint",
+        backend: "sqlite",
+        purpose: "test_read",
+        stage: "entries_loaded",
+        entryCount: 3,
+        durationMs: expect.any(Number),
+      },
+      {
+        phase: "session_materialization_checkpoint",
+        backend: "sqlite",
+        purpose: "test_read",
+        stage: "context_built",
+        entryCount: 3,
+        messageCount: 2,
+        durationMs: expect.any(Number),
+      },
+      {
+        phase: "session_materialization_checkpoint",
+        backend: "sqlite",
+        purpose: "test_read",
+        stage: "history_sanitized",
+        entryCount: 3,
+        messageCount: 2,
+        durationMs: expect.any(Number),
       },
       {
         phase: "session_materialized",
         backend: "sqlite",
+        purpose: "test_read",
         durationMs: expect.any(Number),
+        outcome: "materialized",
+        entryCount: 3,
+        messageCount: 2,
       },
     ]);
   });

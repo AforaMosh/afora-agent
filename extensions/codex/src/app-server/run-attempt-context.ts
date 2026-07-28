@@ -69,7 +69,10 @@ export async function prepareCodexAttemptContext(
     messages:
       !activeContextEngine && initialStartupBindingHadInactiveThreadBootstrap
         ? []
-        : ((await readMirroredSessionHistoryMessages(activeTranscriptTarget)) ?? []),
+        : ((await readMirroredSessionHistoryMessages({
+            ...activeTranscriptTarget,
+            purpose: "attempt_initial",
+          })) ?? []),
   };
   const hadSessionTranscriptState = historyState.messages.length > 0;
   const hookContextWindowFields = {
@@ -130,7 +133,10 @@ export async function prepareCodexAttemptContext(
       warn: (message) => embeddedAgentLog.warn(message),
     });
     historyState.messages =
-      (await readMirroredSessionHistoryMessages(activeTranscriptTarget)) ?? historyState.messages;
+      (await readMirroredSessionHistoryMessages({
+        ...activeTranscriptTarget,
+        purpose: "post_context_engine_bootstrap",
+      })) ?? historyState.messages;
   }
   const memoryToolNames = getCodexWorkspaceMemoryToolNames(toolBridge.availableSpecs);
   const workspaceBootstrapContext = await buildCodexWorkspaceBootstrapContext({
