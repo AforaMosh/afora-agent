@@ -143,6 +143,14 @@ async function readCounterWithRetry(filePath: string): Promise<number> {
   return counter;
 }
 
+async function readCounterAfterObservation(filePath: string): Promise<number> {
+  await readCounterWithRetry(filePath);
+  // The fixture counter is monotonic. Observe the full interval so a delayed
+  // startup or request-triggered registration cannot hide behind an early poll.
+  await new Promise<void>((resolve) => setTimeout(resolve, 1_000));
+  return await readCounterWithRetry(filePath);
+}
+
 async function setupGatewayTempHome(params: { prefix: string; minimalGateway?: boolean }) {
   const envSnapshot = captureEnv([
     ...GATEWAY_TEST_ENV_KEYS,
@@ -700,7 +708,7 @@ module.exports = {
       const { port, server } = await startLoopbackTokenGateway(token);
 
       try {
-        const beforeCount = await readCounterWithRetry(registerCountPath);
+        const beforeCount = await readCounterAfterObservation(registerCountPath);
         expect(beforeCount).toBeGreaterThan(0);
 
         const res = await fetch(`http://127.0.0.1:${port}/tools/invoke`, {
@@ -722,7 +730,7 @@ module.exports = {
         const body = await res.json();
         expect(body.ok).toBe(true);
 
-        const afterCount = await readCounterWithRetry(registerCountPath);
+        const afterCount = await readCounterAfterObservation(registerCountPath);
         expect(afterCount).toBe(beforeCount);
       } finally {
         await server.close({ reason: "http tools workspace test complete" });
