@@ -128,6 +128,11 @@ describe("commitConfigWithPendingPluginInstalls", () => {
               path: ["plugins", "entries", "demo", "enabled"],
               value: true,
             },
+            {
+              kind: "unset",
+              path: ["plugins", "installs"],
+              strictIncludeOwnership: true,
+            },
           ],
         },
         baseHash: "config-1",
@@ -302,7 +307,16 @@ describe("commitConfigWithPendingPluginInstalls", () => {
     expect(mocks.replaceConfigFile).toHaveBeenCalledWith(
       expect.objectContaining({
         nextConfig: {},
-        intent: { kind: "mutate", operations: [] },
+        intent: {
+          kind: "mutate",
+          operations: [
+            {
+              kind: "unset",
+              path: ["plugins", "installs"],
+              strictIncludeOwnership: true,
+            },
+          ],
+        },
         baseHash: "config-1",
         writeOptions: {},
       }),

@@ -22,6 +22,7 @@ import type { OpenClawConfig } from "../config/types.openclaw.js";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
 import { isPathInside } from "../infra/path-guards.js";
 import {
+  PLUGIN_INSTALLS_CONFIG_PATH,
   loadInstalledPluginIndexInstallRecords,
   withoutPluginInstallRecords,
   writePersistedInstalledPluginIndexInstallRecords,
@@ -448,6 +449,25 @@ export async function commitConfigWithPendingPluginInstalls(params: {
             runtime: prepared!.snapshot.runtimeConfig,
             candidate: nextConfig,
           });
+      if (hasPendingPluginInstallRecords(params.nextConfig)) {
+        for (let index = operations.length - 1; index >= 0; index -= 1) {
+          const operation = operations[index];
+          if (
+            operation?.kind === "unset" &&
+            operation.path.length === PLUGIN_INSTALLS_CONFIG_PATH.length &&
+            operation.path.every(
+              (segment, pathIndex) => segment === PLUGIN_INSTALLS_CONFIG_PATH[pathIndex],
+            )
+          ) {
+            operations.splice(index, 1);
+          }
+        }
+        operations.push({
+          kind: "unset",
+          path: PLUGIN_INSTALLS_CONFIG_PATH,
+          strictIncludeOwnership: true,
+        });
+      }
       return await replaceConfigFileWithIntent({
         nextConfig,
         intent: {
