@@ -5,6 +5,7 @@ import { isDeepStrictEqual } from "node:util";
 import {
   collectArrayContainerDepths,
   createConfigMutationOperations,
+  createExplicitConfigMutationOperations,
   createRuntimeConfigMutationOperations,
   projectExplicitRuntimeValueOntoAuthored,
   type ConfigMutationOperation,
@@ -25,6 +26,7 @@ import type { OpenClawConfig } from "../config/types.openclaw.js";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
 import { isPathInside } from "../infra/path-guards.js";
 import { parseConfigPathArrayIndex } from "../shared/path-array-index.js";
+import { isRecord } from "../utils.js";
 import {
   PLUGIN_INSTALLS_CONFIG_PATH,
   loadInstalledPluginIndexInstallRecords,
@@ -147,22 +149,38 @@ function withLegacyConfigWriteOptionOperations(params: {
     if (!explicit.found) {
       continue;
     }
-    const authored = readConfigOptionPath(params.authoredSource, explicitPath);
-    const runtime = readConfigOptionPath(params.runtimeConfig, explicitPath);
-    const value = authored.found
-      ? projectExplicitRuntimeValueOntoAuthored({
-          authored: authored.value,
-          explicit: explicit.value,
-          runtime: runtime.value,
-          preserveResolvedLeaves: params.options?.explicitSetValueSource === undefined,
-        })
-      : explicit.value;
-    operations.push({
-      kind: "set",
-      path: [...explicitPath],
-      value: structuredClone(value),
-      arrayContainerDepths: collectArrayContainerDepths(valueSource, explicitPath),
-    });
+    const shouldProjectRuntimeParent =
+      params.options?.explicitSetValueSource === undefined &&
+      isRecord(explicit.value) &&
+      Object.keys(explicit.value).length > 0;
+    if (shouldProjectRuntimeParent) {
+      const authored = readConfigOptionPath(params.authoredSource, explicitPath);
+      const runtime = readConfigOptionPath(params.runtimeConfig, explicitPath);
+      const value = authored.found
+        ? projectExplicitRuntimeValueOntoAuthored({
+            authored: authored.value,
+            explicit: explicit.value,
+            runtime: runtime.value,
+            preserveResolvedLeaves: true,
+          })
+        : explicit.value;
+      operations.push({
+        kind: "set",
+        path: [...explicitPath],
+        value: structuredClone(value),
+        arrayContainerDepths: collectArrayContainerDepths(valueSource, explicitPath),
+      });
+      continue;
+    }
+    operations.push(
+      ...createExplicitConfigMutationOperations(explicit.value, explicitPath).map((operation) =>
+        operation.kind === "set"
+          ? Object.assign({}, operation, {
+              arrayContainerDepths: collectArrayContainerDepths(valueSource, operation.path),
+            })
+          : operation,
+      ),
+    );
   }
   for (const unsetPath of params.options?.unsetPaths ?? []) {
     if (unsetPath.length > 0) {

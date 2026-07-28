@@ -109,9 +109,15 @@ function isFirstAuthoredRosterImplicitMainUnset(params: {
   path: ConfigPath;
 }): boolean {
   const implicitMainPath = ["agents", "entries", LEGACY_IMPLICIT_AGENT_ID];
+  const implicitMainDefaultPath = [...implicitMainPath, "default"];
+  const unsetsMainEntry =
+    params.path.length === implicitMainPath.length &&
+    params.path.every((segment, index) => segment === implicitMainPath[index]);
+  const unsetsMainDefault =
+    params.path.length === implicitMainDefaultPath.length &&
+    params.path.every((segment, index) => segment === implicitMainDefaultPath[index]);
   if (
-    params.path.length !== implicitMainPath.length ||
-    !params.path.every((segment, index) => segment === implicitMainPath[index]) ||
+    (!unsetsMainEntry && !unsetsMainDefault) ||
     configPathExists(params.source, ["agents", "entries"])
   ) {
     return false;
@@ -119,13 +125,26 @@ function isFirstAuthoredRosterImplicitMainUnset(params: {
   const runtimeEntries = readConfigPath(params.runtime, ["agents", "entries"]);
   const runtimeMain = readConfigPath(params.runtime, implicitMainPath);
   const candidateEntries = readConfigPath(params.candidate, ["agents", "entries"]);
-  return (
+  const isSyntheticMain =
     isWritePlainObject(runtimeEntries) &&
     Object.keys(runtimeEntries).length === 1 &&
     isWritePlainObject(runtimeMain) &&
     runtimeMain.default === true &&
-    isWritePlainObject(candidateEntries) &&
-    Object.keys(candidateEntries).some((agentId) => agentId !== LEGACY_IMPLICIT_AGENT_ID)
+    isWritePlainObject(candidateEntries);
+  if (!isSyntheticMain) {
+    return false;
+  }
+  if (unsetsMainEntry) {
+    return Object.keys(candidateEntries).some((agentId) => agentId !== LEGACY_IMPLICIT_AGENT_ID);
+  }
+  const candidateMain = candidateEntries[LEGACY_IMPLICIT_AGENT_ID];
+  return (
+    isWritePlainObject(candidateMain) &&
+    candidateMain.default !== true &&
+    Object.entries(candidateEntries).some(
+      ([agentId, entry]) =>
+        agentId !== LEGACY_IMPLICIT_AGENT_ID && isWritePlainObject(entry) && entry.default === true,
+    )
   );
 }
 
@@ -199,6 +218,16 @@ export function createConfigMutationOperations(
       createConfigMutationOperations(baseRecord[key], value, [...path, key]),
     ),
   ];
+}
+
+/** Converts an explicit value into source operations, preserving authored empty containers. */
+export function createExplicitConfigMutationOperations(
+  value: unknown,
+  path: ConfigPath,
+): ConfigMutationOperation[] {
+  return isWritePlainObject(value) && Object.keys(value).length === 0
+    ? [{ kind: "set", path, value: {} }]
+    : createConfigMutationOperations({}, value, path);
 }
 
 /** Converts runtime-derived changes to source intent, rejecting lossy container replacement. */

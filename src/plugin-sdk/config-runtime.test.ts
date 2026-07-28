@@ -75,7 +75,11 @@ describe("deprecated config-runtime writeConfigFile", () => {
         queue: { ...candidate.messages?.queue, mode: "followup" },
       };
       await writeConfigFile(candidate, {
-        explicitSetPaths: [["messages"], ["models", "providers", "custom", "apiKey"]],
+        explicitSetPaths: [
+          ["messages"],
+          ["models", "providers", "custom", "apiKey"],
+          ["plugins", "entries", "demo", "config", "empty"],
+        ],
         explicitSetValueSource: {
           messages: { ackReaction: "eyes" },
           models: {
@@ -87,6 +91,7 @@ describe("deprecated config-runtime writeConfigFile", () => {
               },
             },
           },
+          plugins: { entries: { demo: { config: { empty: {} } } } },
         },
         unsetPaths: [["logging", "level"]],
         skipPluginValidation: true,
@@ -116,12 +121,40 @@ describe("deprecated config-runtime writeConfigFile", () => {
           entries: {
             demo: {
               enabled: true,
-              config: { args: ["literal", "${HOME}"], items: [{ id: "one" }] },
+              config: { args: ["literal", "${HOME}"], empty: {}, items: [{ id: "one" }] },
             },
           },
         },
       });
       expect(persisted).not.toHaveProperty("logging");
+    });
+  });
+
+  it("persists a legacy explicit-set literal equal to the resolved authored value", async () => {
+    await withTempHome(async (home) => {
+      await withEnvAsync({ OPENCLAW_EXPLICIT_PREFIX: "resolved-prefix" }, async () => {
+        const stateDir = path.join(home, ".openclaw");
+        const configPath = path.join(stateDir, "openclaw.json");
+        await fs.mkdir(stateDir, { recursive: true });
+        await fs.writeFile(
+          configPath,
+          JSON.stringify({ messages: { responsePrefix: "${OPENCLAW_EXPLICIT_PREFIX}" } }),
+          "utf8",
+        );
+        const { readConfigFileSnapshotForWrite } = await import("../config/io.js");
+        const { snapshot } = await readConfigFileSnapshotForWrite({
+          skipPluginValidation: true,
+        });
+
+        await writeConfigFile(snapshot.runtimeConfig, {
+          explicitSetPaths: [["messages", "responsePrefix"]],
+          skipPluginValidation: true,
+          skipRuntimeSnapshotRefresh: true,
+        });
+
+        const persisted = JSON.parse(await fs.readFile(configPath, "utf8")) as OpenClawConfig;
+        expect(persisted.messages?.responsePrefix).toBe("resolved-prefix");
+      });
     });
   });
 

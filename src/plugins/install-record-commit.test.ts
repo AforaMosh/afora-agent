@@ -877,31 +877,32 @@ describe("commitConfigWithPendingPluginInstalls", () => {
 
   it("translates legacy explicit set and unset options into mutation intent", async () => {
     const baseline: OpenClawConfig = {
-      gateway: { mode: "local", auth: { mode: "none" } },
+      gateway: { auth: { mode: "none" } },
+      messages: { ackReaction: "old", queue: { mode: "collect" } },
+    };
+    const candidate: OpenClawConfig = {
+      gateway: { auth: { mode: "none" } },
+      messages: { ackReaction: "old", queue: { mode: "followup" } },
     };
     mocks.readConfigFileSnapshotForWrite.mockResolvedValueOnce({
       snapshot: {
         path: "/tmp/openclaw.json",
         exists: true,
-        raw: JSON.stringify(baseline),
-        parsed: baseline,
         sourceConfig: baseline,
-        resolved: baseline,
         valid: true,
         runtimeConfig: baseline,
-        config: baseline,
-        issues: [],
-        warnings: [],
-        legacyIssues: [],
       },
       writeOptions: {},
     });
 
     await commitConfigWithPendingPluginInstalls({
-      nextConfig: baseline,
+      nextConfig: candidate,
       writeOptions: {
-        explicitSetPaths: [["gateway", "mode"]],
-        explicitSetValueSource: { gateway: { mode: "local" } },
+        explicitSetPaths: [["messages"], ["plugins", "entries", "demo", "config"]],
+        explicitSetValueSource: {
+          messages: { ackReaction: "eyes" },
+          plugins: { entries: { demo: { config: {} } } },
+        },
         unsetPaths: [["gateway", "auth"]],
       },
     });
@@ -913,8 +914,19 @@ describe("commitConfigWithPendingPluginInstalls", () => {
           operations: [
             {
               kind: "set",
-              path: ["gateway", "mode"],
-              value: "local",
+              path: ["messages", "queue", "mode"],
+              value: "followup",
+            },
+            {
+              kind: "set",
+              path: ["messages", "ackReaction"],
+              value: "eyes",
+              arrayContainerDepths: [],
+            },
+            {
+              kind: "set",
+              path: ["plugins", "entries", "demo", "config"],
+              value: {},
               arrayContainerDepths: [],
             },
             {
@@ -945,16 +957,10 @@ describe("commitConfigWithPendingPluginInstalls", () => {
       snapshot: {
         path: "/tmp/openclaw.json",
         exists: true,
-        raw: JSON.stringify(authored),
         parsed: authored,
         sourceConfig: resolved,
-        resolved,
         valid: true,
         runtimeConfig: resolved,
-        config: resolved,
-        issues: [],
-        warnings: [],
-        legacyIssues: [],
       },
       writeOptions: {},
     });
@@ -1009,16 +1015,10 @@ describe("commitConfigWithPendingPluginInstalls", () => {
       snapshot: {
         path: "/tmp/openclaw.json",
         exists: true,
-        raw: JSON.stringify(authored),
         parsed: authored,
         sourceConfig: resolved,
-        resolved,
         valid: true,
         runtimeConfig: resolved,
-        config: resolved,
-        issues: [],
-        warnings: [],
-        legacyIssues: [],
       },
       writeOptions: {},
     });

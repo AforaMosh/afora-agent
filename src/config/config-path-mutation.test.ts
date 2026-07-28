@@ -341,6 +341,22 @@ describe("applyConfigOperations", () => {
     });
   });
 
+  it("allows moving the synthetic main default onto the first authored agent", () => {
+    expect(
+      createRuntimeConfigMutationOperations({
+        source: {},
+        runtime: { agents: { entries: { main: { default: true } } } },
+        candidate: {
+          agents: { entries: { main: {}, ops: { default: true } } },
+        },
+      }),
+    ).toContainEqual({
+      kind: "unset",
+      path: ["agents", "entries", "main", "default"],
+      strictIncludeOwnership: true,
+    });
+  });
+
   it("rejects copying an include-resolved sensitive value into a new path", () => {
     expect(() =>
       createRuntimeConfigMutationOperations({

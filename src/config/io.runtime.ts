@@ -7,6 +7,7 @@ import { cloneEnvWithPlatformSemantics, createConfigRuntimeEnvBase } from "./con
 import {
   collectArrayContainerDepths,
   createConfigMutationOperations,
+  createExplicitConfigMutationOperations,
   projectExplicitRuntimeValueOntoAuthored,
   resolveManagedUnsetPathsForWrite,
   type ConfigMutationOperation,
@@ -273,7 +274,6 @@ function buildCompatWriteOperations(params: {
   authoredSource: OpenClawConfig;
   cfg: OpenClawConfig;
   projected: OpenClawConfig;
-  snapshot: ConfigFileSnapshot;
   options: ConfigWriteOptions;
 }): ConfigMutationOperation[] {
   const patch = createMergePatch(params.authoredSource, params.projected);
@@ -285,7 +285,6 @@ function buildCompatWriteOperations(params: {
     ),
   );
   const explicitValueSource = params.options.explicitSetValueSource ?? params.cfg;
-  const preserveResolvedLeaves = params.options.explicitSetValueSource === undefined;
   for (const path of params.options.explicitSetPaths ?? []) {
     if (path.length === 0) {
       continue;
@@ -294,23 +293,41 @@ function buildCompatWriteOperations(params: {
     if (!explicitValue.found) {
       continue;
     }
-    const projectedValue = readCompatPathValue(params.projected, path);
-    const runtimeValue = readCompatPathValue(params.snapshot.runtimeConfig, path);
-    const value = projectedValue.found
-      ? projectExplicitRuntimeValueOntoAuthored({
-          authored: projectedValue.value,
-          explicit: explicitValue.value,
-          runtime: runtimeValue.value,
-          preserveResolvedLeaves,
-        })
-      : explicitValue.value;
-    createConfigMutationOperations({}, value);
-    operations.push({
-      kind: "set",
-      path: [...path],
-      value: structuredClone(value),
-      arrayContainerDepths: collectArrayContainerDepths(explicitValueSource, path),
-    });
+    const shouldProjectRuntimeParent =
+      params.options.explicitSetValueSource === undefined &&
+      isRecord(explicitValue.value) &&
+      Object.keys(explicitValue.value).length > 0;
+    if (shouldProjectRuntimeParent) {
+      const projectedValue = readCompatPathValue(params.projected, path);
+      const runtimeValue = readCompatPathValue(params.cfg, path);
+      const value = projectedValue.found
+        ? projectExplicitRuntimeValueOntoAuthored({
+            authored: projectedValue.value,
+            explicit: explicitValue.value,
+            runtime: runtimeValue.value,
+            preserveResolvedLeaves: true,
+          })
+        : explicitValue.value;
+      operations.push({
+        kind: "set",
+        path: [...path],
+        value: structuredClone(value),
+        arrayContainerDepths: collectArrayContainerDepths(explicitValueSource, path),
+      });
+      continue;
+    }
+    operations.push(
+      ...createExplicitConfigMutationOperations(explicitValue.value, path).map((operation) =>
+        operation.kind === "set"
+          ? Object.assign({}, operation, {
+              arrayContainerDepths: collectArrayContainerDepths(
+                explicitValueSource,
+                operation.path,
+              ),
+            })
+          : operation,
+      ),
+    );
   }
   for (const path of params.options.unsetPaths ?? []) {
     if (path.length > 0) {
@@ -349,7 +366,6 @@ export async function writeConfigFileCompat(
       authoredSource,
       cfg,
       projected,
-      snapshot,
       options,
     }),
   } satisfies ConfigWriteIntent;
