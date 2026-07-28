@@ -48,7 +48,9 @@ function collectMergePatchPaths(value: unknown, path: ConfigPath = []): ConfigPa
   }
   const entries = Object.entries(value);
   return entries.length === 0
-    ? [path]
+    ? path.length === 0
+      ? []
+      : [path]
     : entries.flatMap(([key, child]) => collectMergePatchPaths(child, [...path, key]));
 }
 

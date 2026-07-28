@@ -54,6 +54,21 @@ describe("applyConfigOperations", () => {
     });
   });
 
+  it("replaces an array container when the target becomes an object", () => {
+    const base = { plugins: { entries: [{ id: "legacy" }] } };
+    const target = { plugins: { entries: { demo: { enabled: true } } } };
+    const operations = createConfigMutationOperations(base, target);
+
+    expect(operations).toEqual([
+      {
+        kind: "set",
+        path: ["plugins", "entries"],
+        value: { demo: { enabled: true } },
+      },
+    ]);
+    expect(applyConfigOperations(base, operations)).toEqual(target);
+  });
+
   it("applies explicit sets, indexed unsets, and merge patches immutably", () => {
     const source = {
       agents: { entries: { main: { skills: ["one", "two"] } } },

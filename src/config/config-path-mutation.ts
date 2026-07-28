@@ -85,6 +85,9 @@ export function createConfigMutationOperations(
       createConfigMutationOperations(base[index], value, [...path, String(index)]),
     );
   }
+  if (Array.isArray(base) && isWritePlainObject(target)) {
+    return [{ kind: "set", path, value: structuredClone(target) }];
+  }
   if (!isWritePlainObject(target)) {
     return [{ kind: "set", path, value: structuredClone(target) }];
   }

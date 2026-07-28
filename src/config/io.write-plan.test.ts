@@ -318,6 +318,29 @@ describe("prepareConfigWrite", () => {
     });
   });
 
+  it("allows an empty root merge patch when the config contains an include", () => {
+    const result = prepareConfigWrite({
+      snapshot: snapshot({
+        parsed: { gateway: { $include: "./gateway.json5" } },
+        sourceConfig: { gateway: { mode: "local" } },
+        includeProvenance: [
+          {
+            path: ["gateway"],
+            contributedPaths: [["gateway", "mode"]],
+            kind: "single",
+            hasSiblingOverrides: false,
+            targetPath: "/tmp/gateway.json5",
+          },
+        ],
+      }),
+      intent: { kind: "mutate", operations: [{ kind: "merge", patch: {} }] },
+    });
+
+    expect(result.ok && result.value.authoredDocument).toEqual({
+      gateway: { $include: "./gateway.json5" },
+    });
+  });
+
   it("rejects structural edits to an array that contains an include", () => {
     const result = prepareConfigWrite({
       snapshot: snapshot({
