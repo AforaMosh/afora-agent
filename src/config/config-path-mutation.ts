@@ -136,6 +136,15 @@ export function createRuntimeConfigMutationOperations(params: {
           `Config mutation cannot safely replace runtime-derived container at ${path.join(".") || "<root>"}; mutate the authored source instead.`,
         );
       }
+      if (runtime.length === candidate.length) {
+        const sourceArray = Array.isArray(source) ? source : [];
+        for (let index = 0; index < candidate.length; index += 1) {
+          assertArraysSafe(sourceArray[index], runtime[index], candidate[index], [
+            ...path,
+            String(index),
+          ]);
+        }
+      }
       return;
     }
     if (!isWritePlainObject(runtime) || !isWritePlainObject(candidate)) {
@@ -220,6 +229,11 @@ export function createRuntimeConfigMutationOperations(params: {
   collectResolvedPaths(params.source, params.runtime);
   const operations = createConfigMutationOperations(params.runtime, params.candidate);
   for (const operation of operations) {
+    if (operation.kind === "unset" && !configPathExists(params.source, operation.path)) {
+      throw new Error(
+        `Config mutation cannot safely remove runtime-derived value at ${operation.path.join(".") || "<root>"}; mutate the authored source instead.`,
+      );
+    }
     if (operation.kind === "set" && containsSensitiveResolvedValue(operation.value)) {
       throw new Error(
         `Config mutation cannot safely persist a runtime-derived value at ${operation.path.join(".") || "<root>"}; mutate the authored source instead.`,

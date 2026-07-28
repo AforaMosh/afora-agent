@@ -1454,6 +1454,43 @@ describe("config cli", () => {
       ]);
     });
 
+    it("retains descendant intent when merging an existing provider model by id", async () => {
+      const resolved = {
+        models: {
+          providers: {
+            ollama: {
+              api: "ollama",
+              models: [
+                { id: "llama3.2", name: "Llama 3.2", contextWindow: 131072 },
+                { id: "qwen3", name: "Qwen 3" },
+              ],
+            },
+          },
+        },
+      } as unknown as OpenClawConfig;
+      setSnapshot(resolved, resolved);
+
+      await runConfigCommand([
+        "config",
+        "set",
+        "models.providers.ollama.models",
+        '[{"id":"llama3.2","name":"Llama 3.2 latest"}]',
+        "--strict-json",
+        "--merge",
+      ]);
+
+      expect(requireWriteIntent()).toEqual({
+        kind: "mutate",
+        operations: [
+          {
+            kind: "set",
+            path: ["models", "providers", "ollama", "models", "0", "name"],
+            value: "Llama 3.2 latest",
+          },
+        ],
+      });
+    });
+
     it("drops gateway.auth.password when switching mode to token", async () => {
       const resolved: OpenClawConfig = {
         gateway: {

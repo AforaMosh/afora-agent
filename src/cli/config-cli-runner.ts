@@ -67,13 +67,21 @@ function pathEquals(path: readonly PathSegment[], expected: readonly PathSegment
   );
 }
 
-function collectSubmittedMergePaths(value: unknown, path: PathSegment[]): PathSegment[][] {
-  if (!isRecord(value) || Array.isArray(value)) {
-    return [path];
+type SubmittedMergePath = {
+  path: PathSegment[];
+  retainDescendants: boolean;
+};
+
+function collectSubmittedMergePaths(value: unknown, path: PathSegment[]): SubmittedMergePath[] {
+  if (Array.isArray(value)) {
+    return [{ path, retainDescendants: true }];
+  }
+  if (!isRecord(value)) {
+    return [{ path, retainDescendants: false }];
   }
   const entries = Object.entries(value);
   if (entries.length === 0) {
-    return [path];
+    return [{ path, retainDescendants: false }];
   }
   return entries.flatMap(([key, child]) => collectSubmittedMergePaths(child, [...path, key]));
 }
@@ -392,11 +400,11 @@ export async function runConfigOperations(params: {
     }
     const submittedMergePaths =
       operation.mutation === "merge" || (options.merge && operation.mutation !== "replace")
-        ? collectSubmittedMergePaths(operation.value, operationPath).flatMap((submittedPath) => {
-            const normalizedPath = normalizeConfigMutationExplicitSetPath([...submittedPath]);
-            return pathEquals(normalizedPath, submittedPath)
-              ? [submittedPath]
-              : [submittedPath, normalizedPath];
+        ? collectSubmittedMergePaths(operation.value, operationPath).flatMap((submitted) => {
+            const normalizedPath = normalizeConfigMutationExplicitSetPath([...submitted.path]);
+            return pathEquals(normalizedPath, submitted.path)
+              ? [submitted]
+              : [submitted, { ...submitted, path: normalizedPath }];
           })
         : [];
     intentIntermediate = normalizeConfigMutationModelRefs(intentIntermediate);
@@ -431,8 +439,10 @@ export async function runConfigOperations(params: {
         ...createConfigMutationOperations(intentSourceConfig, intentIntermediate).filter(
           (candidate) =>
             candidate.kind !== "merge" &&
-            submittedMergePaths.some((submittedPath) =>
-              pathStartsWith(submittedPath, candidate.path),
+            submittedMergePaths.some(
+              (submitted) =>
+                pathStartsWith(submitted.path, candidate.path) ||
+                (submitted.retainDescendants && pathStartsWith(candidate.path, submitted.path)),
             ),
         ),
       );

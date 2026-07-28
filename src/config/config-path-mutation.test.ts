@@ -241,6 +241,40 @@ describe("applyConfigOperations", () => {
     ).toThrow("cannot safely replace runtime-derived container at plugins.allow");
   });
 
+  it("rejects nested indexed edits when runtime resolution changed an inner array length", () => {
+    expect(() =>
+      createRuntimeConfigMutationOperations({
+        source: { plugins: { entries: [{ args: ["authored"] }] } },
+        runtime: { plugins: { entries: [{ args: ["default", "authored"] }] } },
+        candidate: { plugins: { entries: [{ args: ["updated", "authored"] }] } },
+      }),
+    ).toThrow("cannot safely replace runtime-derived container at plugins.entries.0.args");
+  });
+
+  it("rejects a parent resize combined with a nested runtime-derived array edit", () => {
+    expect(() =>
+      createRuntimeConfigMutationOperations({
+        source: { plugins: { entries: [{ args: ["authored"] }] } },
+        runtime: { plugins: { entries: [{ args: ["default", "authored"] }] } },
+        candidate: {
+          plugins: {
+            entries: [{ args: ["updated", "authored"] }, { args: ["new"] }],
+          },
+        },
+      }),
+    ).toThrow("cannot safely replace runtime-derived container at plugins.entries");
+  });
+
+  it("rejects removing a path that exists only after runtime defaults", () => {
+    expect(() =>
+      createRuntimeConfigMutationOperations({
+        source: { plugins: {} },
+        runtime: { plugins: { enabled: true } },
+        candidate: { plugins: {} },
+      }),
+    ).toThrow("cannot safely remove runtime-derived value at plugins.enabled");
+  });
+
   it("rejects copying an include-resolved sensitive value into a new path", () => {
     expect(() =>
       createRuntimeConfigMutationOperations({
