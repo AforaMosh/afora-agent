@@ -17,7 +17,9 @@ import { asOpenClawConfig } from "./tools.test-helpers.js";
 type TestSessionEntry = {
   sessionId: string;
   updatedAt: number;
-  sessionFile: string;
+  // Retired locator field: persisted entries no longer carry it, so visibility
+  // fixtures that model current stores omit it.
+  sessionFile?: string;
   chatType?: "direct" | "group" | "channel";
   origin?: { chatType?: "direct" | "group" | "channel" };
 };
@@ -245,26 +247,23 @@ describe("filterMemorySearchHitsBySessionVisibility for QMD", () => {
     expect(filtered).toEqual([copiedHit]);
   });
 
-  it("denies mapped QMD hits whose transcript file also has a shared group alias", async () => {
+  it("denies mapped QMD hits whose transcript also has a shared group alias", async () => {
     combinedSessionStore = {
       "agent:main:telegram:direct:owner": {
         sessionId: "current",
         updatedAt: 2,
-        sessionFile: "/tmp/sessions/current.jsonl",
         chatType: "direct",
       },
       "agent:main:explicit:laptop": {
         sessionId: "actual-session-id",
         updatedAt: 1,
-        sessionFile: "/tmp/sessions/shared-transcript.jsonl",
         chatType: "direct",
       },
-      // Same transcript file exposed under a group alias with a different
-      // sessionId: session-id alias resolution alone would miss this.
+      // Same transcript identity exposed under a group alias: the artifact maps
+      // to one private key, so recall must still judge every alias of it.
       "agent:main:telegram:group:team": {
-        sessionId: "group-alias-id",
+        sessionId: "actual-session-id",
         updatedAt: 1,
-        sessionFile: "/tmp/sessions/shared-transcript.jsonl",
         chatType: "group",
       },
     };
