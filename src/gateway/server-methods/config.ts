@@ -170,7 +170,7 @@ function readConfigPatchReplacePaths(params: unknown): Set<string> {
   return normalizeConfigPatchReplacePaths(Array.isArray(rawPaths) ? rawPaths : undefined);
 }
 
-const REDACTION_SENTINEL_VALIDATION_PROBE = "__OPENCLAW_REDACTION_PATH_PROBE__";
+const REDACTION_SENTINEL_VALIDATION_PROBE = "__CONFIG_REDACTION_PATH_PROBE__";
 
 function replaceRedactionSentinelsWithProbe(value: unknown): unknown {
   if (value === REDACTED_SENTINEL) {
