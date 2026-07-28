@@ -17,6 +17,7 @@ import {
 } from "../../infra/restart-sentinel.js";
 import { scheduleGatewaySigusr1Restart } from "../../infra/restart.js";
 import { getActiveSecretsRuntimeSnapshot } from "../../secrets/runtime-state.js";
+import { isRecord } from "../../utils.js";
 import { resolveEffectiveSharedGatewayAuth, resolveGatewayAuth } from "../auth.js";
 import { buildGatewayReloadPlan, isNoopGatewayReloadPlan } from "../config-reload-plan.js";
 import { resolveGatewayReloadSettings } from "../config-reload-settings.js";
@@ -96,15 +97,63 @@ export function didSharedGatewayAuthChange(prev: OpenClawConfig, next: OpenClawC
   return prevAuth.mode !== nextAuth.mode || !isDeepStrictEqual(prevAuth.secret, nextAuth.secret);
 }
 
+function projectAuthoredValuesOntoRuntimeOverlay(params: {
+  source: unknown;
+  active: unknown;
+  fallback: unknown;
+}): unknown {
+  if (!isRecord(params.source) || !isRecord(params.active)) {
+    return structuredClone(params.active);
+  }
+  const fallback = isRecord(params.fallback) ? params.fallback : {};
+  const sourceKeys = new Set(Object.keys(params.source));
+  return Object.fromEntries([
+    ...Object.entries(fallback).filter(([key]) => !sourceKeys.has(key)),
+    ...Object.keys(params.source).map((key) => [
+      key,
+      projectAuthoredValuesOntoRuntimeOverlay({
+        source: params.source[key],
+        active: params.active[key],
+        fallback: fallback[key],
+      }),
+    ]),
+  ]);
+}
+
 /** Compares against the active secrets-expanded config when one is available. */
 export function didActiveSharedGatewayAuthChange(params: {
   fallbackPrev: OpenClawConfig;
   next: OpenClawConfig;
 }): boolean {
-  return didSharedGatewayAuthChange(
-    getActiveSecretsRuntimeSnapshot()?.config ?? params.fallbackPrev,
-    params.next,
-  );
+  const active = getActiveSecretsRuntimeSnapshot();
+  if (!active) {
+    return didSharedGatewayAuthChange(params.fallbackPrev, params.next);
+  }
+  const activeSourceGateway = active.sourceConfig.gateway;
+  const activeGateway = active.config.gateway;
+  const fallbackGateway = params.fallbackPrev.gateway;
+  const selectOwnedGatewayValue = <Key extends "auth" | "tailscale" | "trustedProxies">(
+    key: Key,
+  ): NonNullable<OpenClawConfig["gateway"]>[Key] =>
+    activeSourceGateway && Object.hasOwn(activeSourceGateway, key)
+      ? (projectAuthoredValuesOntoRuntimeOverlay({
+          source: activeSourceGateway[key],
+          active: activeGateway?.[key],
+          fallback: fallbackGateway?.[key],
+        }) as NonNullable<OpenClawConfig["gateway"]>[Key])
+      : fallbackGateway?.[key];
+  const activeSharedAuthConfig: OpenClawConfig = {
+    ...params.fallbackPrev,
+    gateway: {
+      ...fallbackGateway,
+      // Secrets snapshots intentionally contain authored config only. Project
+      // resolved authored leaves without dropping fixed runtime-only siblings.
+      auth: selectOwnedGatewayValue("auth"),
+      tailscale: selectOwnedGatewayValue("tailscale"),
+      trustedProxies: selectOwnedGatewayValue("trustedProxies"),
+    },
+  };
+  return didSharedGatewayAuthChange(activeSharedAuthConfig, params.next);
 }
 
 function queueSharedGatewayAuthDisconnect(

@@ -264,6 +264,13 @@ describe("gateway config methods", () => {
         ref("/changed"),
       );
       expect(coldSnapshot?.config.models?.providers?.["reload-second"]?.apiKey).toBe("second-new");
+      const afterCold = await rpcReq(
+        requireWs(),
+        "config.get",
+        {},
+        CONFIG_SECRETREF_RPC_TIMEOUT_MS,
+      );
+      expect(afterCold.ok).toBe(true);
     } finally {
       await restoreConfigFileForTest(original);
       activateSecretsRuntimeSnapshot(

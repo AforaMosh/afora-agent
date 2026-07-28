@@ -9,6 +9,8 @@ import type {
   ReadConfigFileSnapshotForWriteResult,
   ReadConfigFileSnapshotWithPluginMetadataResult,
 } from "../config/io.js";
+import { formatConfigWriteRejection } from "../config/io.write-errors.js";
+import { prepareConfigWrite, type ConfigWriteIntent } from "../config/io.write-plan.js";
 import { migratePersistedImplicitMainRoster } from "../config/legacy.roster.js";
 import { applyPluginAutoEnable } from "../config/plugin-auto-enable.js";
 import type { AgentBinding } from "../config/types.agents.js";
@@ -212,7 +214,13 @@ export function createGatewayConfigModuleMock(actual: GatewayConfigModule): Gate
     }
   };
 
-  const writeConfigFile = vi.fn(async (cfg: Record<string, unknown>) => {
+  const writeConfigFile = vi.fn(async (intent: ConfigWriteIntent) => {
+    const snapshot = await readConfigFileSnapshot();
+    const prepared = prepareConfigWrite({ snapshot, intent });
+    if (!prepared.ok) {
+      throw new Error(formatConfigWriteRejection(prepared.error));
+    }
+    const cfg = prepared.value.authoredDocument;
     const configPath = resolveConfigPath();
     await fs.mkdir(path.dirname(configPath), { recursive: true });
     const raw = JSON.stringify(cfg, null, 2).trimEnd().concat("\n");
@@ -220,7 +228,7 @@ export function createGatewayConfigModuleMock(actual: GatewayConfigModule): Gate
     actual.resetConfigRuntimeState();
     return {
       persistedHash: "test-config-hash",
-      persistedConfig: composeTestConfig(cfg),
+      persistedConfig: cfg,
     };
   });
 
