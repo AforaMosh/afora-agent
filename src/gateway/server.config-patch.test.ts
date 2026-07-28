@@ -981,81 +981,83 @@ describe("gateway config methods", () => {
   it("preserves redacted secrets during an explicit ID-array replacement", async () => {
     const { createConfigIO, resetConfigRuntimeState } = await import("../config/config.js");
     const configPath = createConfigIO().configPath;
-    try {
-      await writeJsonFile(configPath, {
-        models: {
-          providers: {
-            custom: {
-              baseUrl: "https://example.invalid/v1",
-              models: [
-                {
-                  id: "model-a",
-                  name: "Original A",
-                  headers: { Authorization: "secret-a" },
-                },
-                {
-                  id: "model-b",
-                  name: "Original B",
-                  headers: { Authorization: "secret-b" },
-                },
-              ],
-            },
-          },
-        },
-      });
-      resetConfigRuntimeState();
-      const current = await getCurrentConfigObject();
-
-      const res = await rpcReq<{ ok?: boolean; error?: { message?: string } }>(
-        requireWs(),
-        "config.patch",
-        {
-          raw: JSON.stringify({
-            models: {
-              providers: {
-                custom: {
-                  models: [
-                    {
-                      id: "model-b",
-                      name: "Replacement B",
-                      headers: { Authorization: REDACTED_SENTINEL },
-                    },
-                    {
-                      id: "model-a",
-                      name: "Replacement A",
-                      headers: { Authorization: REDACTED_SENTINEL },
-                    },
-                  ],
-                },
+    await withEnvAsync({ OPENCLAW_CONFIG_PATCH_MODEL_ID: "model-a" }, async () => {
+      try {
+        await writeJsonFile(configPath, {
+          models: {
+            providers: {
+              custom: {
+                baseUrl: "https://example.invalid/v1",
+                models: [
+                  {
+                    id: "${OPENCLAW_CONFIG_PATCH_MODEL_ID}",
+                    name: "Original A",
+                    headers: { Authorization: "secret-a" },
+                  },
+                  {
+                    id: "model-b",
+                    name: "Original B",
+                    headers: { Authorization: "secret-b" },
+                  },
+                ],
               },
             },
-          }),
-          baseHash: current.hash,
-          replacePaths: ["models.providers.custom.models"],
-        },
-      );
+          },
+        });
+        resetConfigRuntimeState();
+        const current = await getCurrentConfigObject();
 
-      expect(res.error).toBeUndefined();
-      expect(res.ok).toBe(true);
-      const persisted = JSON.parse(await fs.readFile(configPath, "utf-8")) as {
-        models?: { providers?: { custom?: { models?: unknown[] } } };
-      };
-      expect(persisted.models?.providers?.custom?.models).toEqual([
-        {
-          id: "model-b",
-          name: "Replacement B",
-          headers: { Authorization: "secret-b" },
-        },
-        {
-          id: "model-a",
-          name: "Replacement A",
-          headers: { Authorization: "secret-a" },
-        },
-      ]);
-    } finally {
-      await fs.rm(configPath, { force: true });
-      resetConfigRuntimeState();
-    }
+        const res = await rpcReq<{ ok?: boolean; error?: { message?: string } }>(
+          requireWs(),
+          "config.patch",
+          {
+            raw: JSON.stringify({
+              models: {
+                providers: {
+                  custom: {
+                    models: [
+                      {
+                        id: "model-b",
+                        name: "Replacement B",
+                        headers: { Authorization: REDACTED_SENTINEL },
+                      },
+                      {
+                        id: "model-a",
+                        name: "Replacement A",
+                        headers: { Authorization: REDACTED_SENTINEL },
+                      },
+                    ],
+                  },
+                },
+              },
+            }),
+            baseHash: current.hash,
+            replacePaths: ["models.providers.custom.models"],
+          },
+        );
+
+        expect(res.error).toBeUndefined();
+        expect(res.ok).toBe(true);
+        const persisted = JSON.parse(await fs.readFile(configPath, "utf-8")) as {
+          models?: { providers?: { custom?: { models?: unknown[] } } };
+        };
+        expect(persisted.models?.providers?.custom?.models).toEqual([
+          {
+            id: "model-b",
+            name: "Replacement B",
+            headers: { Authorization: "secret-b" },
+          },
+          {
+            id: "${OPENCLAW_CONFIG_PATCH_MODEL_ID}",
+            name: "Replacement A",
+            headers: { Authorization: "secret-a" },
+          },
+        ]);
+      } finally {
+        await fs.rm(configPath, { force: true });
+        resetConfigRuntimeState();
+      }
+    });
   });
 
   it("keeps an explicit literal when it equals another map entry's resolved reference", async () => {

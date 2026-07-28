@@ -298,35 +298,53 @@ function mapConfigPatchIdsToSource(params: {
           )
         : [];
       const authoredMatches = isConfigPatchObjectWithStringId(entry)
-        ? source.flatMap((candidate, index) =>
+        ? source.flatMap((candidate, index) => {
+            if (!isConfigPatchObjectWithStringId(candidate)) {
+              return [];
+            }
+            try {
+              return candidate.id === entry.id ||
+                resolveConfigEnvVars(candidate.id, params.env) === entry.id
+                ? [index]
+                : [];
+            } catch {
+              return [];
+            }
+          })
+        : [];
+      const runtimeMatches = isConfigPatchObjectWithStringId(entry)
+        ? runtime.flatMap((candidate, index) =>
             isConfigPatchObjectWithStringId(candidate) && candidate.id === entry.id ? [index] : [],
           )
         : [];
-      if (resolvedMatches.length > 1 || authoredMatches.length > 1) {
+      if (resolvedMatches.length > 1 || authoredMatches.length > 1 || runtimeMatches.length > 1) {
         throw new Error(`Ambiguous duplicate ID ${entry.id} in replacement array at ${path}.`);
       }
       const resolvedIndex = resolvedMatches[0] ?? -1;
-      const sourceIndex =
-        resolvedIndex >= 0
-          ? resolvedIndex
-          : isConfigPatchObjectWithStringId(entry)
-            ? (authoredMatches[0] ?? -1)
-            : -1;
+      const runtimeIndex = runtimeMatches[0] ?? -1;
+      // Runtime-only IDs may select a runtime sibling, but they never own an
+      // authored source slot. Unmatched authored IDs remain new entries.
+      const sourceIndex = authoredMatches[0] ?? resolvedIndex;
       if (containsRedactedPatchSentinel(entry) && sourceIndex < 0) {
         throw new Error(`Cannot restore redacted values for replacement array at ${path}.`);
       }
       if (sourceIndex < 0) {
         return structuredClone(entry);
       }
-      return mapConfigPatchIdsToSource({
+      const sourceEntry = source[sourceIndex];
+      const mapped = mapConfigPatchIdsToSource({
         patch: entry,
-        source: source[sourceIndex],
+        source: sourceEntry,
         resolvedSource: resolvedSource[sourceIndex],
-        runtime: runtime[sourceIndex],
+        runtime: runtime[runtimeIndex >= 0 ? runtimeIndex : sourceIndex],
         env: params.env,
         replaceArrayPaths: params.replaceArrayPaths,
         path: `${path}[]`,
-      });
+      }) as Record<string, unknown>;
+      if (isConfigPatchObjectWithStringId(sourceEntry)) {
+        mapped.id = sourceEntry.id;
+      }
+      return mapped;
     });
   }
   if (
@@ -469,13 +487,18 @@ function restoreRedactedReplacementSource(
             `Cannot restore redacted values for unmatched ID ${entry.id} at ${path || "<root>"}.`,
           );
         }
-        return restoreRedactedReplacementSource(
+        const sourceEntry = sourceArray[sourceIndex];
+        const restored = restoreRedactedReplacementSource(
           entry,
-          sourceArray[sourceIndex],
+          sourceEntry,
           resolvedSourceArray[resolvedSourceIndex],
           validatedArray[index],
           `${path}[]`,
-        );
+        ) as Record<string, unknown>;
+        if (isConfigPatchObjectWithStringId(sourceEntry)) {
+          restored.id = sourceEntry.id;
+        }
+        return restored;
       });
     }
     return value.flatMap((entry, index) => {
@@ -1577,7 +1600,7 @@ export const configHandlers: GatewayRequestHandlers = {
       sourcePatchInput = mapConfigPatchIdsToSource({
         patch: parsedRes.parsed,
         source: snapshot.parsed,
-        resolvedSource: snapshot.sourceConfig,
+        resolvedSource: snapshot.resolved,
         runtime: snapshot.runtimeConfig,
         env: writeOptions.envSnapshotForRestore ?? process.env,
         replaceArrayPaths: replacePaths,
