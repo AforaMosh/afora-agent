@@ -36,12 +36,8 @@ import { withTelegramApiErrorLogging } from "./api-logging.js";
 import { createTelegramBot } from "./bot.js";
 import { resolveTelegramTransport } from "./fetch.js";
 import { isRetryableTelegramApiError } from "./network-errors.js";
-import { getTelegramSequentialKey } from "./sequential-key.js";
 import { createTelegramTransportIngressMonitor } from "./telegram-ingress-drain-factory.js";
-import {
-  resolveTelegramIngressSpoolDir,
-  writeTelegramSpooledUpdate,
-} from "./telegram-ingress-spool.js";
+import { resolveTelegramIngressSpoolDir } from "./telegram-ingress-spool.js";
 import { createTelegramWebhookStatusPublisher } from "./webhook-status.js";
 
 const TELEGRAM_WEBHOOK_MAX_BODY_BYTES = 1024 * 1024;
@@ -295,12 +291,6 @@ function resolveTelegramWebhookRateLimitKey(
   return `${path}:${resolveTelegramWebhookClientIp(req, config)}`;
 }
 
-function resolveWebhookSpooledUpdateLaneKey(update: unknown): string {
-  return getTelegramSequentialKey({
-    update: update as Parameters<typeof getTelegramSequentialKey>[0]["update"],
-  });
-}
-
 export async function startTelegramWebhook(opts: {
   token: string;
   accountId?: string;
@@ -387,7 +377,6 @@ export async function startTelegramWebhook(opts: {
 
   const log = (line: string) => runtime.log?.(line);
   let webhookIngressMonitor: ReturnType<typeof createTelegramTransportIngressMonitor> | undefined;
-  const requestWebhookSpoolDrain = () => webhookIngressMonitor?.requestDrain();
   const startWebhookSpoolDrain = () => {
     if (webhookIngressMonitor) {
       return;
@@ -480,17 +469,15 @@ export async function startTelegramWebhook(opts: {
 
       // Telegram sees 200 only after the update is durable. If SQLite rejects
       // the enqueue, this path returns non-200 so Telegram redelivers.
-      await writeTelegramSpooledUpdate({
-        spoolDir,
-        update: body.value,
-        laneKey: resolveWebhookSpooledUpdateLaneKey(body.value),
-      });
+      const admitted = await webhookIngressMonitor?.admit(body.value);
+      if (!admitted || admitted.kind !== "durable") {
+        throw new Error("Telegram webhook update was not durably admitted.");
+      }
       // Enqueue duplicate detection makes Telegram webhook retries idempotent:
       // re-posted update_ids map to the same spool row and still ack fast.
       res.setHeader(TELEGRAM_WEBHOOK_ACCEPTED_HEADER, TELEGRAM_WEBHOOK_ACCEPTED_VALUE);
       respondText(200);
       status.noteWebhookUpdateReceived();
-      requestWebhookSpoolDrain();
       if (diagnosticsEnabled) {
         logWebhookProcessed({
           channel: "telegram",

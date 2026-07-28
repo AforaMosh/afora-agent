@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { setImmediate as nextMacrotask } from "node:timers/promises";
 import { expectDefined } from "@openclaw/normalization-core";
 import type { ChannelAccountSnapshot } from "openclaw/plugin-sdk/channel-contract";
 import { DEFAULT_INGRESS_RETRY_MAX_ATTEMPTS as TELEGRAM_SPOOLED_RETRY_MAX_ATTEMPTS } from "openclaw/plugin-sdk/channel-outbound";
@@ -116,7 +117,7 @@ let claimNextTelegramSpooledUpdate: typeof import("./telegram-ingress-spool.test
 let listTelegramSpooledUpdateClaims: typeof import("./telegram-ingress-spool.test-support.js").listTelegramSpooledUpdateClaims;
 let listTelegramSpooledUpdates: typeof import("./telegram-ingress-spool.test-support.js").listTelegramSpooledUpdates;
 let recoverStaleTelegramSpooledUpdateClaims: typeof import("./telegram-ingress-spool.test-support.js").recoverStaleTelegramSpooledUpdateClaims;
-let writeTelegramSpooledUpdate: typeof import("./telegram-ingress-spool.js").writeTelegramSpooledUpdate;
+let writeTelegramSpooledUpdate: typeof import("./telegram-ingress-spool.test-support.js").writeTelegramSpooledUpdate;
 let createTelegramSpooledReplayDeferredParticipant: typeof import("./bot-processing-outcome.js").createTelegramSpooledReplayDeferredParticipant;
 type TelegramMessageProcessingResult =
   import("./bot-processing-outcome.js").TelegramMessageProcessingResult;
@@ -833,7 +834,7 @@ function startIsolatedIngressSession(params: {
 describe("TelegramPollingSession", () => {
   beforeAll(async () => {
     ({ TelegramPollingSession } = await import("./polling-session.js"));
-    ({ writeTelegramSpooledUpdate } = await import("./telegram-ingress-spool.js"));
+    ({ writeTelegramSpooledUpdate } = await import("./telegram-ingress-spool.test-support.js"));
     ({
       claimNextTelegramSpooledUpdate,
       listTelegramSpooledUpdateClaims,
@@ -1230,7 +1231,7 @@ describe("TelegramPollingSession", () => {
         await waitForTelegramTestState(() =>
           expect(worker.ackSpooledUpdate).toHaveBeenCalledWith("spool-failure", {
             ok: false,
-            message: "Telegram update missing numeric update_id.",
+            message: "Telegram spooled update is missing numeric update_id.",
           }),
         );
         expect(persistUpdateId).not.toHaveBeenCalled();
@@ -1267,7 +1268,6 @@ describe("TelegramPollingSession", () => {
             updateId: 42,
           }),
         );
-        worker.emit({ type: "spooled", updateId: 42, queued: 1 });
         await waitForTelegramTestState(() =>
           expect(handleUpdate).toHaveBeenCalledWith({ update_id: 42, message: { text: "hello" } }),
         );
@@ -1281,7 +1281,7 @@ describe("TelegramPollingSession", () => {
     });
   });
 
-  it("drains worker-spooled updates that arrive during an active drain", async () => {
+  it("serializes worker admission behind an active drain, then drains the update", async () => {
     await withTempSpool(async (tempDir) => {
       const abort = new AbortController();
       let releaseFirstClaim: (() => void) | undefined;
@@ -1339,15 +1339,18 @@ describe("TelegramPollingSession", () => {
           update: { update_id: 2, message: { text: "during-drain" } },
           queued: 1,
         });
+        // Durable admission shares the monitor's claim lock. The transport must
+        // not ACK a row until the active claim scan releases that ownership.
+        await nextMacrotask();
+        expect(worker.ackSpooledUpdate).not.toHaveBeenCalledWith("write-2", expect.anything());
+        releaseFirstClaim?.();
+        releaseFirstClaim = undefined;
         await waitForTelegramTestState(() =>
           expect(worker.ackSpooledUpdate).toHaveBeenCalledWith("write-2", {
             ok: true,
             updateId: 2,
           }),
         );
-        worker.emit({ type: "spooled", updateId: 2, queued: 1 });
-        releaseFirstClaim?.();
-        releaseFirstClaim = undefined;
 
         await waitForTelegramTestState(() =>
           expect(handleUpdate).toHaveBeenCalledWith({

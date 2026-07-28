@@ -6,7 +6,7 @@ import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
 import { createChannelIngressQueueForTests } from "openclaw/plugin-sdk/plugin-state-test-runtime";
 import { describe, expect, it } from "vitest";
 import { createTelegramIngressMonitor } from "./telegram-ingress-drain.js";
-import { telegramSpooledUpdateLaneKey } from "./telegram-ingress-spool.js";
+import { telegramSpooledUpdateLaneKey } from "./telegram-ingress-spool.test-support.js";
 import type { TelegramSpooledUpdatePayload } from "./telegram-ingress-spool.payload.js";
 
 async function withTempState<T>(fn: (stateDir: string) => Promise<T>): Promise<T> {

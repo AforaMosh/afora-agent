@@ -24,8 +24,6 @@ import { resolveTelegramAdoptionStallTimeoutMs } from "./telegram-ingress-drain.
 import {
   resolveTelegramIngressSpoolDir,
   resolveTelegramUpdateId,
-  telegramSpooledUpdateLaneKey,
-  writeTelegramSpooledUpdate,
 } from "./telegram-ingress-spool.js";
 import {
   createTelegramIngressWorker,
@@ -521,11 +519,14 @@ export class TelegramPollingSession {
         void (async () => {
           let updateId: number;
           try {
-            updateId = await writeTelegramSpooledUpdate({
-              spoolDir,
-              update: message.update,
-              laneKey: telegramSpooledUpdateLaneKey(message.update, this.opts.botInfo),
-            });
+            const admitted = await ingressMonitor.admit(message.update);
+            if (admitted.kind !== "durable") {
+              throw new Error(`Telegram polling update ${updateIdHint} was not durably admitted.`);
+            }
+            if (typeof updateIdHint !== "number") {
+              throw new Error(`Telegram polling update ${updateIdHint} has an invalid durable id.`);
+            }
+            updateId = updateIdHint;
             this.opts.log(`[telegram][diag] isolated polling update spooled updateId=${updateId}`);
           } catch (err: unknown) {
             this.opts.log(
@@ -549,7 +550,6 @@ export class TelegramPollingSession {
             );
           }
           ackSpooledUpdate(message.requestId, { ok: true, updateId });
-          requestImmediateDrain();
         })();
         return;
       }

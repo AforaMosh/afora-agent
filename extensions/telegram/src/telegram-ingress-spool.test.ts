@@ -12,12 +12,12 @@ import { clearTelegramRuntimeForTest } from "./runtime.test-support.js";
 import {
   openTelegramIngressQueue,
   resolveTelegramIngressSpoolDir,
-  telegramSpooledUpdateLaneKey,
-  writeTelegramSpooledUpdate,
 } from "./telegram-ingress-spool.js";
 import {
   listTelegramSpooledUpdates,
   telegramQueueEventId,
+  telegramSpooledUpdateLaneKey,
+  writeTelegramSpooledUpdate,
 } from "./telegram-ingress-spool.test-support.js";
 
 async function withTempState<T>(
