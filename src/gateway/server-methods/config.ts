@@ -388,6 +388,8 @@ function mapConfigPatchIdsToSource(params: {
         : resolvedIndex >= 0
           ? resolvedIndex
           : patch.length === source.length &&
+              resolvedSource.length === source.length &&
+              runtime.length === source.length &&
               isConfigPatchObjectWithStringId(runtime[patchIndex]) &&
               runtime[patchIndex].id === entry.id
             ? patchIndex
