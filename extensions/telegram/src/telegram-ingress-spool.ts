@@ -6,10 +6,7 @@ import { computeBackoff, type BackoffPolicy } from "openclaw/plugin-sdk/runtime-
 import { resolveStateDir } from "openclaw/plugin-sdk/state-paths";
 import { getTelegramRuntime } from "./runtime.js";
 import { normalizeTelegramStateAccountId } from "./state-account-id.js";
-import {
-  TELEGRAM_SPOOLED_UPDATE_PAYLOAD_VERSION,
-  type TelegramSpooledUpdatePayload,
-} from "./telegram-ingress-spool.payload.js";
+import type { TelegramSpooledUpdatePayload } from "./telegram-ingress-spool.payload.js";
 const TELEGRAM_INGRESS_SPOOL_PREFIX = "ingress-spool-";
 export const TELEGRAM_SPOOLED_UPDATE_FAILED_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 export const TELEGRAM_SPOOLED_UPDATE_FAILED_MAX_ENTRIES = 1000;
