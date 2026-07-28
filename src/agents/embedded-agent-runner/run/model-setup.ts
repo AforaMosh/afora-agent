@@ -1,3 +1,4 @@
+import { withDiagnosticPhase, withDiagnosticPhaseSync } from "../../../logging/diagnostic-phase.js";
 import { resolveDefaultAgentDir } from "../../agent-scope.js";
 import { FailoverError } from "../../failover-error.js";
 import { ensureSelectedAgentHarnessPlugin } from "../../harness/runtime-plugin.js";
@@ -30,15 +31,17 @@ export async function resolveEmbeddedRunModelSetup(params: {
   preparedModelRuntime?: PreparedModelRuntimeSnapshot;
 }) {
   const runParams = params.runParams;
-  const hookSelection = await resolveHookModelSelection({
-    prompt: runParams.prompt,
-    attachments: buildBeforeModelResolveAttachments(runParams.images),
-    provider: params.provider,
-    modelId: params.modelId,
-    modelSelectionLocked: runParams.modelSelectionLocked,
-    hookRunner: params.hookRunner,
-    hookContext: params.hookContext,
-  });
+  const hookSelection = await withDiagnosticPhase("agent-run.model-hook-resolution", async () =>
+    resolveHookModelSelection({
+      prompt: runParams.prompt,
+      attachments: buildBeforeModelResolveAttachments(runParams.images),
+      provider: params.provider,
+      modelId: params.modelId,
+      modelSelectionLocked: runParams.modelSelectionLocked,
+      hookRunner: params.hookRunner,
+      hookContext: params.hookContext,
+    }),
+  );
   const modelSelectionChangedByHook =
     hookSelection.provider !== params.provider || hookSelection.modelId !== params.modelId;
   let provider = hookSelection.provider;
@@ -49,33 +52,37 @@ export async function resolveEmbeddedRunModelSetup(params: {
   );
   params.onHooksResolved();
 
-  await ensureSelectedAgentHarnessPlugin({
-    provider,
-    modelId,
-    config: runParams.config,
-    agentId: runParams.agentId,
-    sessionKey: runParams.sessionKey,
-    agentHarnessId: runParams.agentHarnessId,
-    agentHarnessRuntimeOverride: runParams.agentHarnessRuntimeOverride,
-    requestTransportOverrides: requestStreamTransportOverrides,
-    workspaceDir: params.workspaceDir,
-  });
-  const agentHarness = selectAgentHarness({
-    provider,
-    modelId,
-    ...(requestStreamTransportOverrides
-      ? {
-          modelProvider: {
-            requestTransportOverrides: requestStreamTransportOverrides,
-          },
-        }
-      : {}),
-    config: runParams.config,
-    agentId: runParams.agentId,
-    sessionKey: runParams.sessionKey,
-    agentHarnessId: runParams.agentHarnessId,
-    agentHarnessRuntimeOverride: runParams.agentHarnessRuntimeOverride,
-  });
+  await withDiagnosticPhase("agent-run.harness-plugin", async () =>
+    ensureSelectedAgentHarnessPlugin({
+      provider,
+      modelId,
+      config: runParams.config,
+      agentId: runParams.agentId,
+      sessionKey: runParams.sessionKey,
+      agentHarnessId: runParams.agentHarnessId,
+      agentHarnessRuntimeOverride: runParams.agentHarnessRuntimeOverride,
+      requestTransportOverrides: requestStreamTransportOverrides,
+      workspaceDir: params.workspaceDir,
+    }),
+  );
+  const agentHarness = withDiagnosticPhaseSync("agent-run.harness-selection", () =>
+    selectAgentHarness({
+      provider,
+      modelId,
+      ...(requestStreamTransportOverrides
+        ? {
+            modelProvider: {
+              requestTransportOverrides: requestStreamTransportOverrides,
+            },
+          }
+        : {}),
+      config: runParams.config,
+      agentId: runParams.agentId,
+      sessionKey: runParams.sessionKey,
+      agentHarnessId: runParams.agentHarnessId,
+      agentHarnessRuntimeOverride: runParams.agentHarnessRuntimeOverride,
+    }),
+  );
   const pluginHarnessOwnsTransport = agentHarness.id !== "openclaw";
   const expectedHarnessArtifact = runParams.expectedAgentHarnessRuntimeArtifact;
   if (expectedHarnessArtifact && expectedHarnessArtifact.harnessId !== agentHarness.id) {

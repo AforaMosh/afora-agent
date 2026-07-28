@@ -55,6 +55,7 @@ export type DiagnosticStabilityEventRecord = {
   limitBytes?: number;
   thresholdBytes?: number;
   rssGrowthBytes?: number;
+  heapUsedDeltaBytes?: number;
   windowMs?: number;
   eventLoopDelayP99Ms?: number;
   eventLoopDelayMaxMs?: number;
@@ -387,6 +388,9 @@ function sanitizeDiagnosticEvent(event: DiagnosticEventPayload): DiagnosticStabi
       record.phase = event.name;
       record.durationMs = event.durationMs;
       record.cpuCoreRatio = event.cpuCoreRatio;
+      record.memory = event.memoryEnded ? copyMemory(event.memoryEnded) : undefined;
+      record.rssGrowthBytes = event.rssDeltaBytes;
+      record.heapUsedDeltaBytes = event.heapUsedDeltaBytes;
       break;
     case "tool.loop":
       record.toolName = event.toolName;

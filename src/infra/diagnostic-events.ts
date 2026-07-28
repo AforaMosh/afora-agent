@@ -415,6 +415,10 @@ export type DiagnosticPhaseSnapshot = {
   cpuTotalMs?: number;
   cpuCoreRatio?: number;
   details?: DiagnosticPhaseDetails;
+  memoryStarted?: DiagnosticMemoryUsage;
+  memoryEnded?: DiagnosticMemoryUsage;
+  rssDeltaBytes?: number;
+  heapUsedDeltaBytes?: number;
 };
 
 export type DiagnosticLivenessWarningEvent = DiagnosticBaseEvent & {

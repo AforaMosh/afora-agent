@@ -3,6 +3,7 @@ import { performance } from "node:perf_hooks";
 import {
   areDiagnosticsEnabledForProcess,
   emitDiagnosticEvent,
+  type DiagnosticMemoryUsage,
   type DiagnosticPhaseDetails,
   type DiagnosticPhaseSnapshot,
 } from "../infra/diagnostic-events.js";
@@ -15,6 +16,7 @@ type ActiveDiagnosticPhase = {
   startedAt: number;
   startedWallMs: number;
   cpuStarted: NodeJS.CpuUsage;
+  memoryStarted: DiagnosticMemoryUsage;
   details?: DiagnosticPhaseDetails;
 };
 
@@ -34,6 +36,59 @@ function pushRecentPhase(snapshot: DiagnosticPhaseSnapshot): void {
   if (recentPhases.length > RECENT_PHASE_CAPACITY) {
     recentPhases = recentPhases.slice(-RECENT_PHASE_CAPACITY);
   }
+}
+
+function readDiagnosticMemoryUsage(): DiagnosticMemoryUsage {
+  const memory = process.memoryUsage();
+  return {
+    rssBytes: memory.rss,
+    heapTotalBytes: memory.heapTotal,
+    heapUsedBytes: memory.heapUsed,
+    externalBytes: memory.external,
+    arrayBuffersBytes: memory.arrayBuffers,
+  };
+}
+
+function startDiagnosticPhase(
+  name: string,
+  details?: DiagnosticPhaseDetails,
+): ActiveDiagnosticPhase {
+  const active: ActiveDiagnosticPhase = {
+    name,
+    startedAt: Date.now(),
+    startedWallMs: performance.now(),
+    cpuStarted: process.cpuUsage(),
+    memoryStarted: readDiagnosticMemoryUsage(),
+    details,
+  };
+  activePhaseStack.push(active);
+  return active;
+}
+
+function finishDiagnosticPhase(active: ActiveDiagnosticPhase): void {
+  const endedAt = Date.now();
+  const durationMs = roundMetric(performance.now() - active.startedWallMs, 1);
+  const cpu = process.cpuUsage(active.cpuStarted);
+  const cpuUserMs = roundMetric(cpu.user / 1_000, 1);
+  const cpuSystemMs = roundMetric(cpu.system / 1_000, 1);
+  const cpuTotalMs = roundMetric(cpuUserMs + cpuSystemMs, 1);
+  const memoryEnded = readDiagnosticMemoryUsage();
+  activePhaseStack = activePhaseStack.filter((entry) => entry !== active);
+  recordDiagnosticPhase({
+    name: active.name,
+    startedAt: active.startedAt,
+    endedAt,
+    durationMs,
+    cpuUserMs,
+    cpuSystemMs,
+    cpuTotalMs,
+    cpuCoreRatio: roundMetric(cpuTotalMs / Math.max(1, durationMs), 3),
+    details: active.details,
+    memoryStarted: active.memoryStarted,
+    memoryEnded,
+    rssDeltaBytes: memoryEnded.rssBytes - active.memoryStarted.rssBytes,
+    heapUsedDeltaBytes: memoryEnded.heapUsedBytes - active.memoryStarted.heapUsedBytes,
+  });
 }
 
 export function getCurrentDiagnosticPhase(): string | undefined {
@@ -73,36 +128,26 @@ export async function withDiagnosticPhase<T>(
   run: () => Promise<T> | T,
   details?: DiagnosticPhaseDetails,
 ): Promise<T> {
-  const active: ActiveDiagnosticPhase = {
-    name,
-    startedAt: Date.now(),
-    startedWallMs: performance.now(),
-    cpuStarted: process.cpuUsage(),
-    details,
-  };
-  activePhaseStack.push(active);
+  const active = startDiagnosticPhase(name, details);
   try {
     return await run();
   } finally {
     // Remove by identity so nested or overlapping phases do not corrupt the active stack.
-    const endedAt = Date.now();
-    const durationMs = roundMetric(performance.now() - active.startedWallMs, 1);
-    const cpu = process.cpuUsage(active.cpuStarted);
-    const cpuUserMs = roundMetric(cpu.user / 1_000, 1);
-    const cpuSystemMs = roundMetric(cpu.system / 1_000, 1);
-    const cpuTotalMs = roundMetric(cpuUserMs + cpuSystemMs, 1);
-    activePhaseStack = activePhaseStack.filter((entry) => entry !== active);
-    recordDiagnosticPhase({
-      name,
-      startedAt: active.startedAt,
-      endedAt,
-      durationMs,
-      cpuUserMs,
-      cpuSystemMs,
-      cpuTotalMs,
-      cpuCoreRatio: roundMetric(cpuTotalMs / Math.max(1, durationMs), 3),
-      details: active.details,
-    });
+    finishDiagnosticPhase(active);
+  }
+}
+
+/** Runs synchronous work inside a measured diagnostic phase without changing its return type. */
+export function withDiagnosticPhaseSync<T>(
+  name: string,
+  run: () => T,
+  details?: DiagnosticPhaseDetails,
+): T {
+  const active = startDiagnosticPhase(name, details);
+  try {
+    return run();
+  } finally {
+    finishDiagnosticPhase(active);
   }
 }
 

@@ -4,6 +4,7 @@ import {
   getRecentDiagnosticPhases,
   resetDiagnosticPhasesForTest,
   withDiagnosticPhase,
+  withDiagnosticPhaseSync,
 } from "./diagnostic-phase.js";
 
 describe("getRecentDiagnosticPhases", () => {
@@ -26,5 +27,46 @@ describe("getRecentDiagnosticPhases", () => {
     const recent = getRecentDiagnosticPhases(1);
     expect(recent).toHaveLength(1);
     expect(recent[0]?.name).toBe("phase-b");
+  });
+
+  it("records memory bounds for asynchronous phases", async () => {
+    resetDiagnosticPhasesForTest();
+
+    await withDiagnosticPhase("phase-memory", () => undefined);
+
+    const phase = getRecentDiagnosticPhases(1)[0];
+    expect(phase?.memoryStarted).toEqual({
+      rssBytes: expect.any(Number),
+      heapTotalBytes: expect.any(Number),
+      heapUsedBytes: expect.any(Number),
+      externalBytes: expect.any(Number),
+      arrayBuffersBytes: expect.any(Number),
+    });
+    expect(phase?.memoryEnded).toEqual({
+      rssBytes: expect.any(Number),
+      heapTotalBytes: expect.any(Number),
+      heapUsedBytes: expect.any(Number),
+      externalBytes: expect.any(Number),
+      arrayBuffersBytes: expect.any(Number),
+    });
+    expect(phase?.rssDeltaBytes).toEqual(expect.any(Number));
+    expect(phase?.heapUsedDeltaBytes).toEqual(expect.any(Number));
+  });
+
+  it("records synchronous phases without changing their return contract", () => {
+    resetDiagnosticPhasesForTest();
+
+    const result = withDiagnosticPhaseSync("phase-sync", () => "result");
+
+    expect(result).toBe("result");
+    expect(getRecentDiagnosticPhases(1)[0]).toMatchObject({
+      name: "phase-sync",
+      memoryStarted: {
+        heapUsedBytes: expect.any(Number),
+      },
+      memoryEnded: {
+        heapUsedBytes: expect.any(Number),
+      },
+    });
   });
 });

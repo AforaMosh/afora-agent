@@ -11,6 +11,7 @@ import {
   getAgentEventLifecycleGeneration,
   withAgentRunLifecycleGeneration,
 } from "../../infra/agent-events.js";
+import { withDiagnosticPhase, withDiagnosticPhaseSync } from "../../logging/diagnostic-phase.js";
 import {
   buildHandledBeforeAgentReplyPayloads,
   runBeforeAgentReplyForTurn,
@@ -185,56 +186,73 @@ async function runEmbeddedAgentInternal(
       // Subscription-scoped claude-cli auth executes via the CLI backend;
       // resolved post-admission so dispatched runs obey the same lifecycle,
       // placement, and concurrency gates as native embedded runs.
-      const cliDispatched = await runEmbeddedAgentViaCliBackendIfEligible(params);
+      const cliDispatched = await withDiagnosticPhase("agent-run.cli-backend", async () =>
+        runEmbeddedAgentViaCliBackendIfEligible(params),
+      );
       if (cliDispatched) {
         return cliDispatched;
       }
       const started = Date.now();
       const startupStages = createEmbeddedRunStageTracker();
-      const requestedWorkspaceResolution = resolveRunWorkspaceDir({
-        workspaceDir: params.workspaceDir,
-        sessionKey: params.sessionKey,
-        agentId: params.agentId,
-        config: params.config,
-      });
-      const config = params.config ?? EMPTY_EMBEDDED_AGENT_CONFIG;
-      const requestedAgentDir =
-        params.agentDir ?? resolveAgentDir(config, requestedWorkspaceResolution.agentId);
-      const retainIdleRunOwner = params.config === undefined;
-      const preparedInput = {
-        config,
-        agentId: requestedWorkspaceResolution.agentId,
-        agentDir: requestedAgentDir,
-        inheritedAuthDir: resolveDefaultAgentDir(config),
-        workspaceDir: requestedWorkspaceResolution.workspaceDir,
-        preserveWorkspaceDirOnRefresh: !requestedWorkspaceResolution.isCanonicalWorkspace,
-      };
+      const { preparedInput, requestedWorkspaceResolution, retainIdleRunOwner } =
+        withDiagnosticPhaseSync("agent-run.workspace-resolution", () => {
+          const resolvedWorkspaceRequest = resolveRunWorkspaceDir({
+            workspaceDir: params.workspaceDir,
+            sessionKey: params.sessionKey,
+            agentId: params.agentId,
+            config: params.config,
+          });
+          const config = params.config ?? EMPTY_EMBEDDED_AGENT_CONFIG;
+          const requestedAgentDir =
+            params.agentDir ?? resolveAgentDir(config, resolvedWorkspaceRequest.agentId);
+          return {
+            requestedWorkspaceResolution: resolvedWorkspaceRequest,
+            retainIdleRunOwner: params.config === undefined,
+            preparedInput: {
+              config,
+              agentId: resolvedWorkspaceRequest.agentId,
+              agentDir: requestedAgentDir,
+              inheritedAuthDir: resolveDefaultAgentDir(config),
+              workspaceDir: resolvedWorkspaceRequest.workspaceDir,
+              preserveWorkspaceDirOnRefresh: !resolvedWorkspaceRequest.isCanonicalWorkspace,
+            },
+          };
+        });
       // Configless direct hosts reuse one bounded idle generation. Gateway and explicitly
       // configured runs release dynamic workspaces so one-off paths cannot accumulate owners.
-      const preparedModelRuntimeLease =
-        params.preparedModelRuntimeMode === "isolated-read-only"
-          ? await acquireReadOnlyPreparedModelRuntime(preparedInput)
-          : await acquireAgentRunPreparedModelRuntime(preparedInput, { retainIdleRunOwner });
+      const preparedModelRuntimeLease = await withDiagnosticPhase(
+        "agent-run.prepared-runtime-acquire",
+        async () =>
+          params.preparedModelRuntimeMode === "isolated-read-only"
+            ? await acquireReadOnlyPreparedModelRuntime(preparedInput)
+            : await acquireAgentRunPreparedModelRuntime(preparedInput, { retainIdleRunOwner }),
+      );
       const preparedModelRuntimeOwnerSnapshot = preparedModelRuntimeLease.snapshot;
       try {
         // A reload may complete while admission waits. The committed generation owns config,
         // directories, model selection, hooks, fallbacks, and every later run projection.
-        const rebound = bindRunToPreparedModelRuntime({
-          runParams: params,
-          requestedWorkspaceResolution,
-          preparedModelRuntime: preparedModelRuntimeOwnerSnapshot,
-        });
+        const rebound = withDiagnosticPhaseSync("agent-run.prepared-runtime-bind", () =>
+          bindRunToPreparedModelRuntime({
+            runParams: params,
+            requestedWorkspaceResolution,
+            preparedModelRuntime: preparedModelRuntimeOwnerSnapshot,
+          }),
+        );
         params = rebound.runParams;
         const workspaceResolution = rebound.workspaceResolution;
-        const preparedModelRuntime = Object.freeze({
-          ...preparedModelRuntimeOwnerSnapshot,
-          repoRoot:
-            resolveSystemPromptRepoRoot({
-              config: rebound.runParams.config,
-              workspaceDir: workspaceResolution.workspaceDir,
-              cwd: rebound.runParams.cwd,
-            }) ?? null,
-        });
+        const preparedModelRuntime = withDiagnosticPhaseSync(
+          "agent-run.prepared-runtime-finalize",
+          () =>
+            Object.freeze({
+              ...preparedModelRuntimeOwnerSnapshot,
+              repoRoot:
+                resolveSystemPromptRepoRoot({
+                  config: rebound.runParams.config,
+                  workspaceDir: workspaceResolution.workspaceDir,
+                  cwd: rebound.runParams.cwd,
+                }) ?? null,
+            }),
+        );
         const preparedAgentId = workspaceResolution.agentId;
         const resolvedWorkspace = workspaceResolution.workspaceDir;
         const agentDir = preparedModelRuntime.agentDir;
@@ -267,22 +285,28 @@ async function runEmbeddedAgentInternal(
         }
         startupStages.mark("workspace");
         notifyExecutionPhase("workspace");
-        ensureRuntimePluginsLoaded({
-          config: preparedModelRuntime.config,
-          workspaceDir: resolvedWorkspace,
-          ...(params.allowGatewaySubagentBinding !== undefined
-            ? { allowGatewaySubagentBinding: params.allowGatewaySubagentBinding }
-            : {}),
-        });
+        withDiagnosticPhaseSync("agent-run.runtime-plugins", () =>
+          ensureRuntimePluginsLoaded({
+            config: preparedModelRuntime.config,
+            workspaceDir: resolvedWorkspace,
+            ...(params.allowGatewaySubagentBinding !== undefined
+              ? { allowGatewaySubagentBinding: params.allowGatewaySubagentBinding }
+              : {}),
+          }),
+        );
         startupStages.mark("runtime-plugins");
         notifyExecutionPhase("runtime_plugins");
 
-        const { provider, modelId } = resolveInitialEmbeddedRunModel({
-          config: params.config,
-          agentId: workspaceResolution.agentId,
-          provider: params.provider,
-          model: params.model,
-        });
+        const { provider, modelId } = withDiagnosticPhaseSync(
+          "agent-run.initial-model-resolution",
+          () =>
+            resolveInitialEmbeddedRunModel({
+              config: params.config,
+              agentId: workspaceResolution.agentId,
+              provider: params.provider,
+              model: params.model,
+            }),
+        );
         const normalizedSessionKey = params.sessionKey?.trim();
         const fallbackConfigured = hasEmbeddedRunConfiguredModelFallbacks({
           cfg: params.config,
@@ -311,15 +335,17 @@ async function runEmbeddedAgentInternal(
             channelContext: params.channelContext,
           }),
         };
-        const hookResult = await runBeforeAgentReplyForTurn({
-          runId: params.runId,
-          trigger: params.trigger,
-          event: { cleanedBody: params.prompt },
-          context: hookCtx,
-          onDispatch: () =>
-            notifyExecutionPhase("before_agent_reply", { provider, model: modelId }),
-          onDeclined: () => notifyExecutionPhase("runtime_plugins", { provider, model: modelId }),
-        });
+        const hookResult = await withDiagnosticPhase("agent-run.before-agent-reply", async () =>
+          runBeforeAgentReplyForTurn({
+            runId: params.runId,
+            trigger: params.trigger,
+            event: { cleanedBody: params.prompt },
+            context: hookCtx,
+            onDispatch: () =>
+              notifyExecutionPhase("before_agent_reply", { provider, model: modelId }),
+            onDeclined: () => notifyExecutionPhase("runtime_plugins", { provider, model: modelId }),
+          }),
+        );
         if (hookResult?.handled) {
           return {
             payloads: buildHandledBeforeAgentReplyPayloads(hookResult.reply),
