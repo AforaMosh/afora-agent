@@ -166,6 +166,7 @@ export function createRuntimeConfigMutationOperations(params: {
   source: unknown;
   runtime: unknown;
   candidate: unknown;
+  runtimeOnlyUnsetPolicy?: "reject" | "ignore";
 }): ConfigMutationOperation[] {
   const assertArraysSafe = (
     source: unknown,
@@ -282,7 +283,8 @@ export function createRuntimeConfigMutationOperations(params: {
       operation.kind === "unset" &&
       !configPathExists(params.source, operation.path) &&
       !configPathHasIncludeOwner(params.source, operation.path) &&
-      !isFirstAuthoredRosterImplicitMainUnset({ ...params, path: operation.path })
+      !isFirstAuthoredRosterImplicitMainUnset({ ...params, path: operation.path }) &&
+      params.runtimeOnlyUnsetPolicy !== "ignore"
     ) {
       throw new Error(
         `Config mutation cannot safely remove runtime-derived value at ${operation.path.join(".") || "<root>"}; mutate the authored source instead.`,

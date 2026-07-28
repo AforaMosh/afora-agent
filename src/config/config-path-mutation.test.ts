@@ -275,6 +275,21 @@ describe("applyConfigOperations", () => {
     ).toThrow("cannot safely remove runtime-derived value at plugins.enabled");
   });
 
+  it("allows compatibility projection to ignore an unrepresentable runtime-only removal", () => {
+    expect(
+      createRuntimeConfigMutationOperations({
+        source: { plugins: {} },
+        runtime: { plugins: { enabled: true } },
+        candidate: { plugins: {} },
+        runtimeOnlyUnsetPolicy: "ignore",
+      }),
+    ).toContainEqual({
+      kind: "unset",
+      path: ["plugins", "enabled"],
+      strictIncludeOwnership: true,
+    });
+  });
+
   it("carries an include-owned removal into the canonical ownership check", () => {
     expect(
       createRuntimeConfigMutationOperations({

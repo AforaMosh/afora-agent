@@ -61,6 +61,9 @@ export function projectRuntimeConfigOntoSourceSnapshot(params: {
     source: params.sourceSnapshot,
     runtime: params.runtimeSnapshot,
     candidate: params.candidate,
+    // Compatibility candidates cannot remove defaults that have no authored
+    // source path; applying those unsets to the source is intentionally a no-op.
+    runtimeOnlyUnsetPolicy: "ignore",
   });
   return applyConfigOperations(params.sourceSnapshot, operations);
 }
