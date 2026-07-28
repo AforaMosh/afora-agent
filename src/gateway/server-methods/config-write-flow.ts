@@ -103,6 +103,9 @@ function projectAuthoredValuesOntoRuntimeOverlay(params: {
   fallback: unknown;
 }): unknown {
   const { source, active } = params;
+  if (active === undefined) {
+    return structuredClone(params.fallback);
+  }
   if (!isRecord(source) || !isRecord(active)) {
     return structuredClone(active);
   }
@@ -298,12 +301,16 @@ export async function commitGatewayConfigWrite(params: {
   });
   const persistedSnapshot = await readConfigFileSnapshotForWrite();
   const canonicalHash = resolveConfigSnapshotHash(persistedSnapshot.snapshot);
+  const rereadMatchesCommittedWrite =
+    canonicalHash !== null &&
+    canonicalHash === result.persistedHash &&
+    isDeepStrictEqual(persistedSnapshot.snapshot.sourceConfig, result.nextConfig);
   return {
     path: resolveGatewayConfigPath(params.snapshot),
-    config: persistedSnapshot.snapshot.config,
-    // Persisted hash of the re-read file (resolveConfigSnapshotHash), i.e.
-    // exactly what a follow-up config.get reports — writers ack against it.
-    hash: canonicalHash,
+    // Another writer can commit after our lock releases. Only publish the
+    // canonical reread when it still identifies this write.
+    config: rereadMatchesCommittedWrite ? persistedSnapshot.snapshot.config : result.nextConfig,
+    hash: rereadMatchesCommittedWrite ? canonicalHash : result.persistedHash,
     queueFollowUp: () => {
       // Defer generation refresh/disconnect until after the RPC response so
       // the writer receives the success payload before its connection is closed.

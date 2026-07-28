@@ -38,7 +38,7 @@ describe("commitGatewayConfigWrite", () => {
     vi.clearAllMocks();
     configMocks.resolveConfigSnapshotHash.mockReturnValue("missing-config-revision");
     configMocks.readConfigFileSnapshotForWrite.mockResolvedValue({
-      snapshot: { config: {} },
+      snapshot: { config: {}, sourceConfig: {} },
       writeOptions: {},
     });
     secretsMocks.activeSnapshot = null;
@@ -77,13 +77,16 @@ describe("commitGatewayConfigWrite", () => {
       .mockReturnValueOnce("canonical-hash");
     configMocks.replaceConfigFileWithIntent.mockResolvedValueOnce({
       nextConfig: { gateway: { mode: "local" } },
-      persistedHash: "persisted-hash",
+      persistedHash: "canonical-hash",
     });
     const canonicalConfig: OpenClawConfig = {
       gateway: { mode: "local", auth: { mode: "token", token: "runtime-token" } },
     };
     configMocks.readConfigFileSnapshotForWrite.mockResolvedValueOnce({
-      snapshot: { config: canonicalConfig },
+      snapshot: {
+        config: canonicalConfig,
+        sourceConfig: { gateway: { mode: "local" } },
+      },
       writeOptions: {},
     });
 
@@ -99,6 +102,60 @@ describe("commitGatewayConfigWrite", () => {
     expect(configMocks.resolveConfigSnapshotHash).toHaveBeenLastCalledWith(
       expect.objectContaining({ config: canonicalConfig }),
     );
+  });
+
+  it("does not return a later writer's canonical reread", async () => {
+    configMocks.resolveConfigSnapshotHash
+      .mockReturnValueOnce("base-hash")
+      .mockReturnValueOnce("later-hash");
+    const committedConfig: OpenClawConfig = { gateway: { mode: "local" } };
+    configMocks.replaceConfigFileWithIntent.mockResolvedValueOnce({
+      nextConfig: committedConfig,
+      persistedHash: "committed-hash",
+    });
+    configMocks.readConfigFileSnapshotForWrite.mockResolvedValueOnce({
+      snapshot: {
+        config: { gateway: { mode: "remote" } },
+        sourceConfig: { gateway: { mode: "remote" } },
+      },
+      writeOptions: {},
+    });
+
+    const result = await commitGatewayConfigWrite({
+      snapshot: { path: "/tmp/openclaw.json" } as never,
+      writeOptions: {},
+      nextConfig: committedConfig,
+      intent: { kind: "replace", config: committedConfig },
+    });
+
+    expect(result.config).toBe(committedConfig);
+    expect(result.hash).toBe("committed-hash");
+  });
+
+  it("does not return a later include write with the same root hash", async () => {
+    configMocks.resolveConfigSnapshotHash.mockReturnValue("shared-root-hash");
+    const committedConfig: OpenClawConfig = { gateway: { mode: "local" } };
+    configMocks.replaceConfigFileWithIntent.mockResolvedValueOnce({
+      nextConfig: committedConfig,
+      persistedHash: "shared-root-hash",
+    });
+    configMocks.readConfigFileSnapshotForWrite.mockResolvedValueOnce({
+      snapshot: {
+        config: { gateway: { mode: "remote" } },
+        sourceConfig: { gateway: { mode: "remote" } },
+      },
+      writeOptions: {},
+    });
+
+    const result = await commitGatewayConfigWrite({
+      snapshot: { path: "/tmp/openclaw.json" } as never,
+      writeOptions: {},
+      nextConfig: committedConfig,
+      intent: { kind: "replace", config: committedConfig },
+    });
+
+    expect(result.config).toBe(committedConfig);
+    expect(result.hash).toBe("shared-root-hash");
   });
 
   it("preserves runtime-only shared auth fields absent from the secrets source", () => {
@@ -131,6 +188,31 @@ describe("commitGatewayConfigWrite", () => {
         next: runtimeOverlay,
       }),
     ).toBe(false);
+  });
+
+  it("falls back when stale secrets state lacks an authored shared-auth value", () => {
+    const fallbackPrev: OpenClawConfig = {
+      gateway: {
+        auth: { mode: "trusted-proxy", trustedProxy: { userHeader: "x-user" } },
+        trustedProxies: ["127.0.0.1"],
+      },
+    };
+    secretsMocks.activeSnapshot = {
+      sourceConfig: {},
+      config: {},
+    };
+
+    expect(
+      didActiveSharedGatewayAuthChange({
+        fallbackPrev,
+        fallbackSource: { gateway: { trustedProxies: ["127.0.0.1"] } },
+        next: {
+          gateway: {
+            auth: { mode: "trusted-proxy", trustedProxy: { userHeader: "x-user" } },
+          },
+        },
+      }),
+    ).toBe(true);
   });
 
   it("preserves runtime-only siblings beside authored shared auth fields", () => {
