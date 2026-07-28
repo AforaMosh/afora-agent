@@ -29,6 +29,7 @@ import {
   type RuntimeSecretsPreflightParams,
 } from "./server-reload-contracts.js";
 import type { createGatewayReloadHandlers } from "./server-reload-hot.js";
+import { restoreCanonicalSecretRefs } from "./server-reload-utils.js";
 import {
   captureSharedGatewaySessionGenerationOwnership,
   claimSharedGatewaySessionGenerationIfOwned,
@@ -142,7 +143,11 @@ export function createManagedReloadSecretHandlers(options: {
           ...previousSecretsSnapshot,
           sourceConfig: nextSecretsSourceConfig,
         };
-        if (!isDeepStrictEqual(sourceOnlySnapshot.config, nextConfig)) {
+        const canonicalActiveConfig = restoreCanonicalSecretRefs(
+          sourceOnlySnapshot.config,
+          nextSecretsSourceConfig,
+        );
+        if (!isDeepStrictEqual(canonicalActiveConfig, nextConfig)) {
           throw new GatewayConfigReloadSupersededError();
         }
         if (!transactionOwnership.isCurrent()) {

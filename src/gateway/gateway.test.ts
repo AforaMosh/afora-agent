@@ -4,7 +4,6 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { writeConfigReplacementForTest as writeConfigFile } from "../../test/helpers/config-write.js";
 import {
   clearConfigCache,
   clearRuntimeConfigSnapshot,
@@ -19,6 +18,7 @@ import { resetAgentEventsForTest } from "../infra/agent-events.js";
 import { loadDeviceAuthToken } from "../infra/device-auth-store.js";
 import { loadOrCreateDeviceIdentity } from "../infra/device-identity.js";
 import { getPairedDevice } from "../infra/device-pairing.js";
+import { writeConfigFile } from "../plugin-sdk/config-runtime.js";
 import { clearGatewaySubagentRuntime } from "../plugins/runtime/gateway-bindings.test-fixtures.js";
 import { captureEnv, deleteTestEnvValue, setTestEnvValue } from "../test-utils/env.js";
 import { callGateway } from "./call.js";
@@ -203,7 +203,10 @@ describe("gateway e2e", () => {
         gateway: { mode: "local", bind: "loopback" },
         logging: { level: "info" },
       };
-      await createConfigIO({ configPath }).writeConfigFile(initialConfig);
+      await createConfigIO({ configPath }).writeConfigFile({
+        kind: "replace",
+        config: initialConfig,
+      });
       const port = await getFreeGatewayPort();
       server = await startGatewayServer(port, {
         bind: "loopback",
@@ -597,7 +600,7 @@ describe("gateway e2e", () => {
           },
           // The request below runs sessionKey "agent:dev:mock-openai"; the
           // gateway rejects session keys whose agent id is not declared.
-          list: [{ id: "dev", default: true }],
+          entries: { dev: { default: true } },
         },
         models: {
           mode: "replace",
@@ -683,8 +686,9 @@ module.exports = {
       const cfg = {
         agents: {
           defaults: { workspace: workspaceDir },
-          list: [{ id: "main", default: true, tools: { allow: ["agents_list"] } }],
+          entries: { main: { default: true } },
         },
+        tools: { alsoAllow: ["agents_list"] },
         plugins: {
           allow: ["http-probe"],
         },

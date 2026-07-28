@@ -322,7 +322,9 @@ describe("config mutate helpers", () => {
     const snapshot = createSnapshot({
       hash: "source-hash",
       parsed: { plugins: { load: { entries: [{ $include: "./entry.json" }] } } },
-      sourceConfig: { plugins: { load: { entries: [{ id: "a", enabled: true }] } } },
+      sourceConfig: {
+        plugins: { load: { entries: [{ id: "a", enabled: true }] } },
+      } as unknown as OpenClawConfig,
     });
     ioMocks.readConfigFileSnapshotForWrite.mockResolvedValue({
       snapshot,

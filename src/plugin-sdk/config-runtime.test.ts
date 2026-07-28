@@ -78,7 +78,15 @@ describe("deprecated config-runtime writeConfigFile", () => {
         explicitSetPaths: [["messages"], ["models", "providers", "custom", "apiKey"]],
         explicitSetValueSource: {
           messages: { ackReaction: "eyes" },
-          models: { providers: { custom: { apiKey: "explicit-value" } } },
+          models: {
+            providers: {
+              custom: {
+                apiKey: "explicit-value",
+                baseUrl: "https://example.invalid/v1",
+                models: [],
+              },
+            },
+          },
         },
         unsetPaths: [["logging", "level"]],
         skipPluginValidation: true,
