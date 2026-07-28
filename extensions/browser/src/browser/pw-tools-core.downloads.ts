@@ -61,15 +61,16 @@ function createExplicitDownloadCapture(
     mode: "explicit",
     outputPath: params.outPath,
     outputRoot: params.rootDir,
-    beforeSave: async (download) => {
+    beforeSave: async (candidate) => {
       if (params.state.armIdDownload !== armId) {
         throw new Error("Download was superseded by another waiter");
       }
-      if (!download.url) {
+      const url = candidate.url;
+      if (!url) {
         throw new Error("Download URL is unavailable");
       }
       await assertBrowserNavigationResultAllowed({
-        url: download.url,
+        url,
         ssrfPolicy: params.ssrfPolicy,
         browserProxyMode: params.browserProxyMode,
       });
