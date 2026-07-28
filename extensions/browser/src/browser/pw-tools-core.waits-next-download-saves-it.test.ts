@@ -385,6 +385,43 @@ describe("pw-tools-core", () => {
     });
   });
 
+  it("blocks wait/download navigation before a download event is emitted", async () => {
+    const harness = createDownloadEventHarness();
+    const blocked = new Error("Navigation blocked: private IP address");
+    blocked.name = "SsrFBlockedError";
+    sessionMocks.withPageNavigationRequestGuard.mockImplementationOnce(
+      async ({
+        action,
+        onPolicyDenied,
+        page,
+      }: {
+        action: (url: string) => Promise<unknown>;
+        onPolicyDenied?: (event: { state: "detected"; error: unknown }) => void;
+        page: { url: () => string };
+      }) => {
+        const pending = action(page.url());
+        onPolicyDenied?.({ state: "detected", error: blocked });
+        return await pending;
+      },
+    );
+
+    const pending = mod.waitForDownloadViaPlaywright({
+      cdpUrl: "http://127.0.0.1:18792",
+      targetId: "T1",
+      timeoutMs: 1000,
+      ssrfPolicy: { allowPrivateNetwork: false },
+    });
+
+    await expect(pending).rejects.toBe(blocked);
+    expect(sessionMocks.withPageNavigationRequestGuard).toHaveBeenCalledWith(
+      expect.objectContaining({
+        page: expect.anything(),
+        ssrfPolicy: { allowPrivateNetwork: false },
+      }),
+    );
+    expect(harness.activeHandlerCount()).toBe(0);
+  });
+
   it("lets only the latest overlapping explicit waiter save the download", async () => {
     const harness = createDownloadEventHarness();
     const state = sessionMocks.ensurePageState();
@@ -550,6 +587,69 @@ describe("pw-tools-core", () => {
       expect(saveAs).not.toHaveBeenCalled();
       await expectPathMissing(targetPath);
     });
+  });
+
+  it("guards the explicit download click before dispatch", async () => {
+    const harness = createDownloadEventHarness();
+    const blocked = new Error("Navigation blocked: private IP address");
+    blocked.name = "SsrFBlockedError";
+    const click = vi.fn(async () => {});
+    setPwToolsCoreCurrentRefLocator({ click });
+    sessionMocks.withPageNavigationRequestGuard.mockRejectedValueOnce(blocked);
+
+    const pending = mod.downloadViaPlaywright({
+      cdpUrl: "http://127.0.0.1:18792",
+      targetId: "T1",
+      ref: "e12",
+      path: "/tmp/blocked.pdf",
+      timeoutMs: 1000,
+      ssrfPolicy: { allowPrivateNetwork: false },
+    });
+
+    await expect(pending).rejects.toThrow(/blocked|private|ssrf/i);
+    expect(sessionMocks.withPageNavigationRequestGuard).toHaveBeenCalledOnce();
+    expect(click).not.toHaveBeenCalled();
+    expect(harness.activeHandlerCount()).toBe(0);
+  });
+
+  it("keeps the explicit request guard active after the click window", async () => {
+    const harness = createDownloadEventHarness();
+    const blocked = new Error("Navigation blocked: private IP address");
+    blocked.name = "SsrFBlockedError";
+    const click = vi.fn(async () => {});
+    setPwToolsCoreCurrentRefLocator({ click });
+    sessionMocks.withPageNavigationRequestGuard.mockImplementationOnce(
+      async ({
+        action,
+        onPolicyDenied,
+        page,
+      }: {
+        action: (url: string) => Promise<unknown>;
+        onPolicyDenied?: (event: { state: "detected"; error: unknown }) => void;
+        page: { url: () => string };
+      }) => {
+        const pending = action(page.url());
+        await vi.waitFor(() => expect(click).toHaveBeenCalledOnce());
+        await new Promise<void>((resolve) => {
+          setTimeout(resolve, 300);
+        });
+        onPolicyDenied?.({ state: "detected", error: blocked });
+        return await pending;
+      },
+    );
+
+    const pending = mod.downloadViaPlaywright({
+      cdpUrl: "http://127.0.0.1:18792",
+      targetId: "T1",
+      ref: "e12",
+      path: "/tmp/blocked-delayed.pdf",
+      timeoutMs: 1000,
+      ssrfPolicy: { allowPrivateNetwork: false },
+    });
+
+    await expect(pending).rejects.toBe(blocked);
+    expect(sessionMocks.withPageNavigationRequestGuard).toHaveBeenCalledTimes(2);
+    expect(harness.activeHandlerCount()).toBe(0);
   });
 
   it("does not save after a click failure cancels pending URL validation", async () => {

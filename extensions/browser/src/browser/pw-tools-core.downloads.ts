@@ -21,11 +21,13 @@ import {
   refLocator,
   respondToObservedDialogOnPage,
   restoreRoleRefsForTarget,
+  withPageNavigationRequestGuard,
 } from "./pw-session.js";
 import {
   clickViaPlaywright,
   setFileChooserFilesViaPlaywright,
 } from "./pw-tools-core.interactions.js";
+import { awaitNavigationGuardedInteraction } from "./pw-tools-core.interactions.navigation.js";
 import {
   bumpDownloadArmId,
   bumpUploadArmId,
@@ -94,6 +96,35 @@ function createExplicitDownloadCapture(
 
 function resolveImplicitDownloadRoot(): string {
   return path.join(resolvePreferredOpenClawTmpDir(), "downloads");
+}
+
+async function waitForGuardedDownload(
+  params: {
+    capture: ReturnType<typeof createExplicitDownloadCapture>;
+    page: Page;
+    start?: () => Promise<void>;
+  } & BrowserNavigationPolicyOptions,
+): Promise<BrowserDownloadResult> {
+  let rejectPolicyDenied!: (reason: unknown) => void;
+  const policyDenied = new Promise<never>((_resolve, reject) => {
+    rejectPolicyDenied = reject;
+  });
+  void policyDenied.catch(() => {});
+
+  return await withPageNavigationRequestGuard({
+    page: params.page,
+    ssrfPolicy: params.ssrfPolicy,
+    browserProxyMode: params.browserProxyMode,
+    onPolicyDenied: (event) => {
+      if (event.state === "detected") {
+        rejectPolicyDenied(event.error);
+      }
+    },
+    action: async () => {
+      await params.start?.();
+      return await Promise.race([params.capture.promise, policyDenied]);
+    },
+  });
 }
 
 /** Arms the next page file chooser and fills it with strict existing paths. */
@@ -405,7 +436,12 @@ export async function waitForDownloadViaPlaywright(
     browserProxyMode: opts.browserProxyMode,
   });
   try {
-    return await capture.promise;
+    return await waitForGuardedDownload({
+      page,
+      capture,
+      ssrfPolicy: opts.ssrfPolicy,
+      browserProxyMode: opts.browserProxyMode,
+    });
   } catch (err) {
     capture.cancel();
     throw err;
@@ -443,14 +479,31 @@ export async function downloadViaPlaywright(
     ssrfPolicy: opts.ssrfPolicy,
     browserProxyMode: opts.browserProxyMode,
   });
+  // The request guard keeps a short post-click window. Observe capture failure
+  // immediately so a denied download cannot reject before the guarded click settles.
+  void capture.promise.catch(() => {});
   try {
     const locator = refLocator(page, ref);
-    try {
-      await locator.click({ timeout });
-    } catch (err) {
-      throw toAIFriendlyError(err, ref);
-    }
-    return await capture.promise;
+    return await waitForGuardedDownload({
+      page,
+      capture,
+      ssrfPolicy: opts.ssrfPolicy,
+      browserProxyMode: opts.browserProxyMode,
+      start: async () => {
+        try {
+          await awaitNavigationGuardedInteraction({
+            action: async () => await locator.click({ timeout }),
+            cdpUrl: opts.cdpUrl,
+            page,
+            targetId: opts.targetId,
+            ssrfPolicy: opts.ssrfPolicy,
+            browserProxyMode: opts.browserProxyMode,
+          });
+        } catch (err) {
+          throw toAIFriendlyError(err, ref);
+        }
+      },
+    });
   } catch (err) {
     capture.cancel();
     void capture.promise.catch(() => {});
