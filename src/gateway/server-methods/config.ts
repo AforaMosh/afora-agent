@@ -250,6 +250,28 @@ function stripRedactedPatchSentinels(value: unknown): unknown {
     : Object.fromEntries(strippedEntries);
 }
 
+function assertNoDuplicateConfigPatchIds(value: unknown, path = ""): void {
+  if (Array.isArray(value)) {
+    const ids = new Set<string>();
+    for (const entry of value) {
+      if (isConfigPatchObjectWithStringId(entry)) {
+        if (ids.has(entry.id)) {
+          throw new Error(`Ambiguous duplicate ID ${entry.id} in array at ${path || "<root>"}.`);
+        }
+        ids.add(entry.id);
+      }
+      assertNoDuplicateConfigPatchIds(entry, `${path}[]`);
+    }
+    return;
+  }
+  if (!isRecord(value)) {
+    return;
+  }
+  for (const [key, child] of Object.entries(value)) {
+    assertNoDuplicateConfigPatchIds(child, formatConfigPatchPath(path, key));
+  }
+}
+
 function mapConfigPatchIdsToSource(params: {
   patch: unknown;
   source: unknown;
@@ -645,6 +667,51 @@ function pruneEmptyMergePatchBranches(patch: unknown, current: unknown): unknown
       return [[key, prunedValue]];
     }),
   );
+}
+
+const OMIT_OWNERSHIP_PATCH = Symbol("omit-ownership-patch");
+
+function pruneNoopOwnershipPatch(
+  patch: unknown,
+  current: unknown,
+  replaceArrayPaths: ReadonlySet<string>,
+  path = "",
+): unknown | typeof OMIT_OWNERSHIP_PATCH {
+  if (Array.isArray(patch) && Array.isArray(current)) {
+    if (replaceArrayPaths.has(path) || !patch.every(isConfigPatchObjectWithStringId)) {
+      return isDeepStrictEqual(patch, current) ? OMIT_OWNERSHIP_PATCH : patch;
+    }
+    const entries = patch.filter((entry) => {
+      const matches = current.filter(
+        (candidate) => isConfigPatchObjectWithStringId(candidate) && candidate.id === entry.id,
+      );
+      if (matches.length !== 1) {
+        return true;
+      }
+      const merged = applyMergePatch(matches[0], entry, {
+        mergeObjectArraysById: true,
+        replaceArrayPaths,
+        path: `${path}[]`,
+      });
+      return !isDeepStrictEqual(merged, matches[0]);
+    });
+    return entries.length === 0 ? OMIT_OWNERSHIP_PATCH : entries;
+  }
+  if (!isRecord(patch) || !isRecord(current)) {
+    return patch;
+  }
+  const entries = Object.entries(patch).flatMap(([key, value]) => {
+    const childPath = formatConfigPatchPath(path, key);
+    const pruned = pruneNoopOwnershipPatch(value, current[key], replaceArrayPaths, childPath);
+    if (
+      pruned === OMIT_OWNERSHIP_PATCH ||
+      (Object.hasOwn(current, key) && isEmptyMergePatchAgainst(pruned, current[key]))
+    ) {
+      return [];
+    }
+    return [[key, pruned]];
+  });
+  return entries.length === 0 ? OMIT_OWNERSHIP_PATCH : Object.fromEntries(entries);
 }
 
 function collectDestructiveArrayPatchPaths(params: {
@@ -1493,10 +1560,20 @@ export const configHandlers: GatewayRequestHandlers = {
     }
     const replacePaths = readConfigPatchReplacePaths(params);
     const inputPatch = pruneEmptyMergePatchBranches(parsedRes.parsed, runtimeConfig);
-    const ownershipPatch = pruneEmptyMergePatchBranches(
-      stripRedactedPatchSentinels(inputPatch) ?? {},
+    try {
+      assertNoDuplicateConfigPatchIds(inputPatch);
+    } catch (error) {
+      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, formatErrorMessage(error)));
+      return;
+    }
+    const strippedOwnershipPatch = stripRedactedPatchSentinels(inputPatch) ?? {};
+    const prunedOwnershipPatch = pruneNoopOwnershipPatch(
+      strippedOwnershipPatch,
       runtimeConfig,
+      replacePaths,
     );
+    const ownershipPatch =
+      prunedOwnershipPatch === OMIT_OWNERSHIP_PATCH ? {} : prunedOwnershipPatch;
     const patchIsEmptyMerge = isEmptyMergePatchAgainst(ownershipPatch, runtimeConfig);
     const patchedIncludeOwner = patchIsEmptyMerge
       ? null

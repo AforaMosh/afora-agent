@@ -45,7 +45,7 @@ const { execOpenPathMock, loadGatewayRuntimeConfigSchemaMock } = vi.hoisted(() =
   execOpenPathMock: vi.fn(),
   loadGatewayRuntimeConfigSchemaMock: vi.fn(() => ({
     schema: { type: "object" },
-    uiHints: undefined as Record<string, { advanced?: boolean }> | undefined,
+    uiHints: undefined as Record<string, { advanced?: boolean; sensitive?: boolean }> | undefined,
     version: "test-schema",
   })),
 }));
@@ -473,6 +473,55 @@ describe("config.patch strict input and include ownership", () => {
     expect(configWriteMocks.commitGatewayConfigWrite).not.toHaveBeenCalled();
   });
 
+  it("keeps nested ID-array replacements in sparse ownership patches", async () => {
+    storedConfig = {
+      plugins: {
+        entries: {
+          demo: {
+            enabled: true,
+            config: {
+              items: [
+                { id: "primary", children: [{ id: "a" }, { id: "b" }] },
+                { id: "secondary", children: [{ id: "c" }] },
+              ],
+            },
+          },
+        },
+      },
+      messages: { responsePrefix: "old" },
+    } as unknown as OpenClawConfig;
+
+    const { respond } = await invokeConfigPatch({
+      raw: {
+        plugins: {
+          entries: {
+            demo: {
+              config: { items: [{ id: "primary", children: [{ id: "a" }] }] },
+            },
+          },
+        },
+        messages: { responsePrefix: "new" },
+      },
+      replacePaths: ["plugins.entries.demo.config.items[].children"],
+      baseHash: "base-hash",
+    });
+
+    expect(respond).toHaveBeenCalledWith(
+      true,
+      expect.objectContaining({ ok: true, hash: "next-hash-1" }),
+      undefined,
+    );
+    const items = (
+      storedConfig.plugins?.entries?.demo?.config as
+        | { items?: Array<{ id: string; children: Array<{ id: string }> }> }
+        | undefined
+    )?.items;
+    expect(items).toEqual([
+      { id: "primary", children: [{ id: "a" }] },
+      { id: "secondary", children: [{ id: "c" }] },
+    ]);
+  });
+
   it("ignores an empty include-owned branch beside a writable sibling patch", async () => {
     const runtimeConfig: OpenClawConfig = {
       gateway: { mode: "local", tls: { enabled: true } },
@@ -498,6 +547,76 @@ describe("config.patch strict input and include ownership", () => {
     );
     expect(storedConfig).toEqual({
       gateway: { mode: "local", tls: { enabled: true } },
+      messages: { responsePrefix: "new" },
+    });
+    expect(configWriteMocks.commitGatewayConfigWrite).toHaveBeenCalledWith(
+      expect.objectContaining({
+        intent: {
+          kind: "mutate",
+          operations: [{ kind: "merge", patch: { messages: { responsePrefix: "new" } } }],
+        },
+      }),
+    );
+  });
+
+  it("ignores a redacted keep-only ID-array entry beside a writable sibling patch", async () => {
+    const runtimeConfig = {
+      models: {
+        providers: {
+          custom: {
+            baseUrl: "https://example.invalid",
+            models: [{ id: "model-a", name: "Model A", headers: { Authorization: "test-token" } }],
+          },
+        },
+      },
+      messages: { responsePrefix: "old" },
+    } as unknown as OpenClawConfig;
+    storedConfig = runtimeConfig;
+    const snapshotRead = createConfigWriteSnapshot(runtimeConfig);
+    snapshotRead.snapshot.parsed = {
+      models: {
+        providers: {
+          custom: {
+            baseUrl: "https://example.invalid",
+            models: [{ id: "model-a", $include: "./model-a.json5" }],
+          },
+        },
+      },
+      messages: { responsePrefix: "old" },
+    } as unknown as OpenClawConfig;
+    configWriteMocks.readConfigFileSnapshotForWrite.mockResolvedValueOnce(snapshotRead);
+    loadGatewayRuntimeConfigSchemaMock.mockReturnValueOnce({
+      schema: { type: "object" },
+      uiHints: { "models.providers.*.models[].headers.*": { sensitive: true } },
+      version: "test-schema",
+    });
+
+    const { respond } = await invokeConfigPatch({
+      raw: {
+        models: {
+          providers: {
+            custom: {
+              models: [
+                {
+                  id: "model-a",
+                  headers: { Authorization: "__OPENCLAW_REDACTED__" },
+                },
+              ],
+            },
+          },
+        },
+        messages: { responsePrefix: "new" },
+      },
+      baseHash: "base-hash",
+    });
+
+    expect(respond).toHaveBeenCalledWith(
+      true,
+      expect.objectContaining({ ok: true, hash: "next-hash-1" }),
+      undefined,
+    );
+    expect(storedConfig).toEqual({
+      ...runtimeConfig,
       messages: { responsePrefix: "new" },
     });
     expect(configWriteMocks.commitGatewayConfigWrite).toHaveBeenCalledWith(
