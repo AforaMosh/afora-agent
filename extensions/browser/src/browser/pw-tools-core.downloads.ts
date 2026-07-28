@@ -7,7 +7,10 @@ import type { FileChooser, Page } from "playwright-core";
 import { resolvePreferredOpenClawTmpDir } from "../infra/tmp-openclaw-dir.js";
 import { DEFAULT_BROWSER_DOWNLOAD_TIMEOUT_MS } from "./constants.js";
 import type { BrowserDownloadResult } from "./download-types.js";
-import type { BrowserNavigationPolicyOptions } from "./navigation-guard.js";
+import {
+  assertBrowserNavigationResultAllowed,
+  type BrowserNavigationPolicyOptions,
+} from "./navigation-guard.js";
 import { resolveStrictExistingUploadPaths } from "./paths.js";
 import { createDownloadCaptureForPage } from "./pw-download-capture.js";
 import {
@@ -43,20 +46,35 @@ type ActiveAtomicUpload = {
 const activeAtomicUploads = new Map<string, ActiveAtomicUpload>();
 const pendingUploadClaims = new Map<string, number>();
 
-function createExplicitDownloadCapture(params: {
-  page: Page;
-  state: ReturnType<typeof ensurePageState>;
-  timeoutMs: number;
-  outPath?: string;
-  rootDir?: string;
-}) {
+function createExplicitDownloadCapture(
+  params: {
+    page: Page;
+    state: ReturnType<typeof ensurePageState>;
+    timeoutMs: number;
+    outPath?: string;
+    rootDir?: string;
+  } & BrowserNavigationPolicyOptions,
+) {
   params.state.armIdDownload = bumpDownloadArmId();
   const armId = params.state.armIdDownload;
   return createDownloadCaptureForPage(params.page, params.state, params.timeoutMs, {
     mode: "explicit",
     outputPath: params.outPath,
     outputRoot: params.rootDir,
-    beforeSave: () => {
+    beforeSave: async (download) => {
+      if (params.state.armIdDownload !== armId) {
+        throw new Error("Download was superseded by another waiter");
+      }
+      if (!download.url) {
+        throw new Error("Download URL is unavailable");
+      }
+      await assertBrowserNavigationResultAllowed({
+        url: download.url,
+        ssrfPolicy: params.ssrfPolicy,
+        browserProxyMode: params.browserProxyMode,
+      });
+      // URL validation is asynchronous; a newer waiter may take ownership while
+      // it runs. Recheck before save so the superseded download cannot persist.
       if (params.state.armIdDownload !== armId) {
         throw new Error("Download was superseded by another waiter");
       }
@@ -354,13 +372,15 @@ export async function armDialogViaPlaywright(opts: {
 }
 
 /** Waits for the next page download and writes it under the configured output root. */
-export async function waitForDownloadViaPlaywright(opts: {
-  cdpUrl: string;
-  targetId?: string;
-  path?: string;
-  rootDir?: string;
-  timeoutMs?: number;
-}): Promise<BrowserDownloadResult> {
+export async function waitForDownloadViaPlaywright(
+  opts: {
+    cdpUrl: string;
+    targetId?: string;
+    path?: string;
+    rootDir?: string;
+    timeoutMs?: number;
+  } & BrowserNavigationPolicyOptions,
+): Promise<BrowserDownloadResult> {
   const page = await getPageForTargetId(opts);
   const state = ensurePageState(page);
   const timeout = normalizeTimeoutMs(opts.timeoutMs, 120_000);
@@ -371,6 +391,8 @@ export async function waitForDownloadViaPlaywright(opts: {
     timeoutMs: timeout,
     outPath: opts.path,
     rootDir: opts.path?.trim() ? opts.rootDir : (opts.rootDir ?? resolveImplicitDownloadRoot()),
+    ssrfPolicy: opts.ssrfPolicy,
+    browserProxyMode: opts.browserProxyMode,
   });
   try {
     return await capture.promise;
@@ -381,14 +403,16 @@ export async function waitForDownloadViaPlaywright(opts: {
 }
 
 /** Clicks an element ref and saves the download triggered by that click. */
-export async function downloadViaPlaywright(opts: {
-  cdpUrl: string;
-  targetId?: string;
-  ref: string;
-  path: string;
-  rootDir?: string;
-  timeoutMs?: number;
-}): Promise<BrowserDownloadResult> {
+export async function downloadViaPlaywright(
+  opts: {
+    cdpUrl: string;
+    targetId?: string;
+    ref: string;
+    path: string;
+    rootDir?: string;
+    timeoutMs?: number;
+  } & BrowserNavigationPolicyOptions,
+): Promise<BrowserDownloadResult> {
   const page = await getPageForTargetId(opts);
   const state = ensurePageState(page);
   restoreRoleRefsForTarget({ cdpUrl: opts.cdpUrl, targetId: opts.targetId, page });
@@ -406,6 +430,8 @@ export async function downloadViaPlaywright(opts: {
     timeoutMs: timeout,
     outPath,
     rootDir: opts.rootDir,
+    ssrfPolicy: opts.ssrfPolicy,
+    browserProxyMode: opts.browserProxyMode,
   });
   try {
     const locator = refLocator(page, ref);

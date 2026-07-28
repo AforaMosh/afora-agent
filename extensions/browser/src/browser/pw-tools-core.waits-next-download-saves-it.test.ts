@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  getPwToolsCoreNavigationGuardMocks,
   getPwToolsCoreSessionMocks,
   installPwToolsCoreTestHooks,
   setPwToolsCoreCurrentPage,
@@ -316,6 +317,44 @@ describe("pw-tools-core", () => {
     expect(harness.activeHandlerCount()).toBe(0);
   });
 
+  it("rejects blocked wait/download sources before writing the file", async () => {
+    await withTempDir(async (tempDir) => {
+      const harness = createDownloadEventHarness();
+      const navigationGuard = getPwToolsCoreNavigationGuardMocks();
+      const targetPath = path.join(tempDir, "blocked.bin");
+      const saveAs = vi.fn(async (outPath: string) => {
+        await fs.writeFile(outPath, "private-content", "utf8");
+      });
+      navigationGuard.assertBrowserNavigationResultAllowed.mockRejectedValueOnce(
+        new Error("Navigation blocked: private IP address"),
+      );
+      const pending = mod.waitForDownloadViaPlaywright({
+        cdpUrl: "http://127.0.0.1:18792",
+        targetId: "T1",
+        path: targetPath,
+        timeoutMs: 1000,
+        ssrfPolicy: { allowPrivateNetwork: false },
+      });
+
+      await Promise.resolve();
+      harness.expectArmed();
+      harness.trigger({
+        url: () => "http://127.0.0.1/private.bin",
+        suggestedFilename: () => "private.bin",
+        saveAs,
+      });
+
+      await expect(pending).rejects.toThrow(/blocked|private|ssrf/i);
+      expect(navigationGuard.assertBrowserNavigationResultAllowed).toHaveBeenCalledWith({
+        url: "http://127.0.0.1/private.bin",
+        ssrfPolicy: { allowPrivateNetwork: false },
+        browserProxyMode: undefined,
+      });
+      expect(saveAs).not.toHaveBeenCalled();
+      await expectPathMissing(targetPath);
+    });
+  });
+
   it("lets only the latest overlapping explicit waiter save the download", async () => {
     const harness = createDownloadEventHarness();
     const state = sessionMocks.ensurePageState();
@@ -348,6 +387,61 @@ describe("pw-tools-core", () => {
     expect(saveAs).toHaveBeenCalledOnce();
     expect(state.downloadWaiterDepth).toBe(0);
     expect(harness.activeHandlerCount()).toBe(0);
+  });
+
+  it("rechecks waiter ownership after asynchronous download URL validation", async () => {
+    await withTempDir(async (tempDir) => {
+      const harness = createDownloadEventHarness();
+      const navigationGuard = getPwToolsCoreNavigationGuardMocks();
+      let releaseValidation!: () => void;
+      const validationPending = new Promise<void>((resolve) => {
+        releaseValidation = resolve;
+      });
+      navigationGuard.assertBrowserNavigationResultAllowed.mockImplementationOnce(
+        async () => await validationPending,
+      );
+
+      const firstSaveAs = vi.fn(async (outPath: string) => {
+        await fs.writeFile(outPath, "stale-content", "utf8");
+      });
+      const first = mod.waitForDownloadViaPlaywright({
+        cdpUrl: "http://127.0.0.1:18792",
+        targetId: "T1",
+        path: path.join(tempDir, "stale.bin"),
+        timeoutMs: 1000,
+      });
+      await Promise.resolve();
+      harness.trigger({
+        url: () => "https://example.com/stale.bin",
+        suggestedFilename: () => "stale.bin",
+        saveAs: firstSaveAs,
+      });
+      await vi.waitFor(() =>
+        expect(navigationGuard.assertBrowserNavigationResultAllowed).toHaveBeenCalledOnce(),
+      );
+
+      const latestSaveAs = vi.fn(async (outPath: string) => {
+        await fs.writeFile(outPath, "latest-content", "utf8");
+      });
+      const latest = mod.waitForDownloadViaPlaywright({
+        cdpUrl: "http://127.0.0.1:18792",
+        targetId: "T1",
+        path: path.join(tempDir, "latest.bin"),
+        timeoutMs: 1000,
+      });
+
+      releaseValidation();
+      await expect(first).rejects.toThrow("superseded by another waiter");
+      expect(firstSaveAs).not.toHaveBeenCalled();
+
+      harness.trigger({
+        url: () => "https://example.com/latest.bin",
+        suggestedFilename: () => "latest.bin",
+        saveAs: latestSaveAs,
+      });
+      await expect(latest).resolves.toMatchObject({ suggestedFilename: "latest.bin" });
+      expect(latestSaveAs).toHaveBeenCalledOnce();
+    });
   });
 
   it("clicks a ref and atomically finalizes explicit download paths", async () => {
@@ -384,6 +478,47 @@ describe("pw-tools-core", () => {
       const res = await p;
       await expectAtomicDownloadSave({ saveAs, targetPath, content: "report-content" });
       await expect(fs.realpath(res.path)).resolves.toBe(await fs.realpath(targetPath));
+    });
+  });
+
+  it("rejects blocked click download sources before writing the file", async () => {
+    await withTempDir(async (tempDir) => {
+      const harness = createDownloadEventHarness();
+      const navigationGuard = getPwToolsCoreNavigationGuardMocks();
+      const click = vi.fn(async () => {});
+      setPwToolsCoreCurrentRefLocator({ click });
+      const targetPath = path.join(tempDir, "blocked.pdf");
+      const saveAs = vi.fn(async (outPath: string) => {
+        await fs.writeFile(outPath, "private-content", "utf8");
+      });
+      navigationGuard.assertBrowserNavigationResultAllowed.mockRejectedValueOnce(
+        new Error("Navigation blocked: private IP address"),
+      );
+      const pending = mod.downloadViaPlaywright({
+        cdpUrl: "http://127.0.0.1:18792",
+        targetId: "T1",
+        ref: "e12",
+        path: targetPath,
+        timeoutMs: 1000,
+        ssrfPolicy: { allowPrivateNetwork: false },
+      });
+
+      await Promise.resolve();
+      harness.expectArmed();
+      harness.trigger({
+        url: () => "http://127.0.0.1/private.pdf",
+        suggestedFilename: () => "private.pdf",
+        saveAs,
+      });
+
+      await expect(pending).rejects.toThrow(/blocked|private|ssrf/i);
+      expect(navigationGuard.assertBrowserNavigationResultAllowed).toHaveBeenCalledWith({
+        url: "http://127.0.0.1/private.pdf",
+        ssrfPolicy: { allowPrivateNetwork: false },
+        browserProxyMode: undefined,
+      });
+      expect(saveAs).not.toHaveBeenCalled();
+      await expectPathMissing(targetPath);
     });
   });
 
