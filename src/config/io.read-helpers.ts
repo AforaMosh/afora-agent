@@ -14,11 +14,7 @@ import {
   createConfigRuntimeEnvBase,
   getPublishedConfigRuntimeEnvState,
 } from "./config-env-vars.js";
-import {
-  type EnvSubstitutionWarning,
-  containsEnvVarReference,
-  resolveConfigEnvVars,
-} from "./env-substitution.js";
+import { type EnvSubstitutionWarning, resolveConfigEnvVars } from "./env-substitution.js";
 import { GATEWAY_CONFIG_SELECTION_ENV_KEYS } from "./gateway-env-selection.js";
 import {
   type ConfigIncludeResolutionEvent,
@@ -82,30 +78,6 @@ export function resolveGatewayMode(value: unknown): string | null {
   }
   const trimmed = gateway.mode.trim();
   return trimmed.length > 0 ? trimmed : null;
-}
-
-export function collectEnvRefPaths(
-  value: unknown,
-  pathLocal: string,
-  output: Map<string, string>,
-): void {
-  if (typeof value === "string") {
-    if (containsEnvVarReference(value)) {
-      output.set(pathLocal, value);
-    }
-    return;
-  }
-  if (Array.isArray(value)) {
-    value.forEach((item, index) => {
-      collectEnvRefPaths(item, `${pathLocal}[${index}]`, output);
-    });
-    return;
-  }
-  if (isRecord(value)) {
-    for (const [key, child] of Object.entries(value)) {
-      collectEnvRefPaths(child, pathLocal ? `${pathLocal}.${key}` : key, output);
-    }
-  }
 }
 
 export function containsConfigIncludeDirective(value: unknown): boolean {

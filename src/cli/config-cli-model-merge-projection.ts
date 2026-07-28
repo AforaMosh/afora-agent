@@ -50,17 +50,19 @@ export function projectSubmittedProviderModelIdsToAuthored(params: {
   ) {
     return params.value;
   }
+  const authoredEntries = authored.value;
+  const resolvedEntries = resolved.value;
   return params.value.map((entry) => {
     if (!isRecord(entry) || typeof entry.id !== "string") {
       return entry;
     }
-    const matches = resolved.value.flatMap((candidate, index) =>
+    const matches = resolvedEntries.flatMap((candidate, index) =>
       isRecord(candidate) && candidate.id === entry.id ? [index] : [],
     );
     if (matches.length !== 1) {
       return entry;
     }
-    const authoredEntry = authored.value[matches[0]!];
+    const authoredEntry = authoredEntries[matches[0]!];
     return isRecord(authoredEntry) && typeof authoredEntry.id === "string"
       ? { ...entry, id: authoredEntry.id }
       : entry;

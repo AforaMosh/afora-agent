@@ -28,7 +28,7 @@ export type ConfigWriteRejection =
   | { code: "implicit-agent-removal"; agentIds: readonly string[] }
   | { code: "blocked-key"; path: ConfigPath };
 
-export type PreparedConfigWrite = {
+type PreparedConfigWrite = {
   authoredDocument: OpenClawConfig;
   changedPaths: readonly string[];
 };
