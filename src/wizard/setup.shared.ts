@@ -2,6 +2,7 @@
 import { isDeepStrictEqual } from "node:util";
 import type { GatewayAuthChoice, OnboardOptions } from "../commands/onboard-types.js";
 import {
+  collectSensitiveIncludeSourcePaths,
   createConfigMutationOperations,
   createRuntimeConfigMutationOperations,
 } from "../config/config-path-mutation.js";
@@ -113,6 +114,7 @@ export async function writeWizardConfigFile(
           source: baseSnapshot.parsed,
           runtime: sourceBaseConfig,
           candidate: nextConfig,
+          sensitiveSourcePaths: collectSensitiveIncludeSourcePaths(baseSnapshot),
         })
       : createConfigMutationOperations(sourceBaseConfig, nextConfig);
   const allowConfigSizeDrop = opts.allowConfigSizeDrop === true;

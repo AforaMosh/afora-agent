@@ -1,12 +1,75 @@
 import { describe, expect, it } from "vitest";
 import {
   applyConfigOperations,
+  collectSensitiveIncludeSourcePaths,
   createConfigMutationOperations,
   createRuntimeConfigMutationOperations,
   projectExplicitRuntimeValueOntoAuthored,
 } from "./config-path-mutation.js";
 
 describe("applyConfigOperations", () => {
+  it("keeps sensitivity only from the winning include contribution", () => {
+    expect(
+      collectSensitiveIncludeSourcePaths({
+        includeProvenance: [
+          {
+            path: ["plugins"],
+            kind: "single",
+            hasSiblingOverrides: false,
+            terminalContributedPaths: [["plugins", "mode"]],
+            sensitiveContributedPaths: [["plugins", "mode"]],
+          },
+          {
+            path: ["plugins"],
+            kind: "single",
+            hasSiblingOverrides: true,
+            terminalContributedPaths: [["plugins", "mode"]],
+            sensitiveContributedPaths: [],
+          },
+        ],
+      }),
+    ).toEqual([]);
+  });
+
+  it("keeps sensitive descendants inside included arrays", () => {
+    expect(
+      collectSensitiveIncludeSourcePaths({
+        includeProvenance: [
+          {
+            path: ["accounts"],
+            kind: "single",
+            hasSiblingOverrides: false,
+            terminalContributedPaths: [["accounts"]],
+            sensitiveContributedPaths: [["accounts", "0", "token"]],
+          },
+        ],
+      }),
+    ).toEqual([["accounts", "0", "token"]]);
+  });
+
+  it("does not clear sensitivity for a later empty-object merge", () => {
+    expect(
+      collectSensitiveIncludeSourcePaths({
+        includeProvenance: [
+          {
+            path: ["plugins"],
+            kind: "single",
+            hasSiblingOverrides: false,
+            terminalContributedPaths: [["plugins", "token"]],
+            sensitiveContributedPaths: [["plugins", "token"]],
+          },
+          {
+            path: ["plugins"],
+            kind: "single",
+            hasSiblingOverrides: true,
+            terminalContributedPaths: [],
+            sensitiveContributedPaths: [],
+          },
+        ],
+      }),
+    ).toEqual([["plugins", "token"]]);
+  });
+
   it("rejects a runtime-shaped array edit when authored refs were resolved", () => {
     expect(() =>
       projectExplicitRuntimeValueOntoAuthored({
@@ -427,6 +490,24 @@ describe("applyConfigOperations", () => {
             },
           },
         },
+      }),
+    ).toThrow("cannot safely persist a runtime-derived value at plugins.entries.next");
+  });
+
+  it("rejects copying an env-backed include value from a non-sensitive path", () => {
+    expect(() =>
+      createRuntimeConfigMutationOperations({
+        source: { plugins: { entries: { old: { $include: "./mode.json" } } } },
+        runtime: { plugins: { entries: { old: { mode: "credential" } } } },
+        candidate: {
+          plugins: {
+            entries: {
+              old: { mode: "credential" },
+              next: { config: { mode: "credential" } },
+            },
+          },
+        },
+        sensitiveSourcePaths: [["plugins", "entries", "old", "mode"]],
       }),
     ).toThrow("cannot safely persist a runtime-derived value at plugins.entries.next");
   });

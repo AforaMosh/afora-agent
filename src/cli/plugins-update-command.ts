@@ -3,6 +3,7 @@ import { isDeepStrictEqual } from "node:util";
 import { theme } from "../../packages/terminal-core/src/theme.js";
 import {
   applyConfigOperations,
+  collectSensitiveIncludeSourcePaths,
   createConfigMutationOperations,
   createRuntimeConfigMutationOperations,
 } from "../config/config-path-mutation.js";
@@ -111,6 +112,7 @@ function projectUpdaterResultOntoSourceConfig(params: {
   runtimeBase: OpenClawConfig;
   authoredBase: OpenClawConfig;
   updatedConfig: OpenClawConfig;
+  sensitiveSourcePaths?: readonly (readonly string[])[];
 }): OpenClawConfig {
   return applyConfigOperations(
     params.authoredBase,
@@ -118,6 +120,7 @@ function projectUpdaterResultOntoSourceConfig(params: {
       source: params.authoredBase,
       runtime: params.runtimeBase,
       candidate: params.updatedConfig,
+      sensitiveSourcePaths: params.sensitiveSourcePaths,
     }),
   );
 }
@@ -430,6 +433,9 @@ async function runPluginUpdateCommandUnlocked(params: RunPluginUpdateCommandPara
       runtimeBase: cfgWithPluginInstallRecords,
       authoredBase,
       updatedConfig: hookResult.config,
+      sensitiveSourcePaths: sourceSnapshot
+        ? collectSensitiveIncludeSourcePaths(sourceSnapshot.snapshot)
+        : undefined,
     });
     // Plugin install records live in the persisted index. Preserve an authored
     // empty plugins section so include ownership does not become a false mutation.

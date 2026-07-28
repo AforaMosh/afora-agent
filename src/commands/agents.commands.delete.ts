@@ -14,7 +14,10 @@ import {
   prepareWorkspaceStateDeletion,
 } from "../agents/workspace-state-store.js";
 import { formatCliCommand } from "../cli/command-format.js";
-import { createRuntimeConfigMutationOperations } from "../config/config-path-mutation.js";
+import {
+  collectSensitiveIncludeSourcePaths,
+  createRuntimeConfigMutationOperations,
+} from "../config/config-path-mutation.js";
 import { replaceConfigFileWithIntent } from "../config/config.js";
 import { logConfigUpdated } from "../config/logging.js";
 import {
@@ -182,6 +185,7 @@ export async function agentsDeleteCommand(
         source: configSnapshot.parsed,
         runtime: cfg,
         candidate: result.config,
+        sensitiveSourcePaths: collectSensitiveIncludeSourcePaths(configSnapshot),
       }),
     },
     ...(baseHash !== undefined ? { baseHash } : {}),

@@ -458,6 +458,7 @@ function mapConfigPatchIdsToSource(params: {
     if (typeof sourceEntry.id === "string") {
       mapped.id = sourceEntry.id;
     } else if (
+      containsRedactedPatchSentinel(entry) &&
       isRecord(runtimeEntry) &&
       isDeepStrictEqual(
         applyMergePatch(runtimeEntry, mapped, {
@@ -689,12 +690,20 @@ function pruneNoopOwnershipPatch(
   current: unknown,
   replaceArrayPaths: ReadonlySet<string>,
   path = "",
+  originalPatch: unknown = patch,
 ): unknown | typeof OMIT_OWNERSHIP_PATCH {
   if (Array.isArray(patch) && Array.isArray(current)) {
     if (replaceArrayPaths.has(path) || !patch.every(isConfigPatchObjectWithStringId)) {
       return isDeepStrictEqual(patch, current) ? OMIT_OWNERSHIP_PATCH : patch;
     }
+    const originalEntries = Array.isArray(originalPatch) ? originalPatch : [];
     const entries = patch.filter((entry) => {
+      const originalEntry = originalEntries.find(
+        (candidate) => isConfigPatchObjectWithStringId(candidate) && candidate.id === entry.id,
+      );
+      if (!containsRedactedPatchSentinel(originalEntry)) {
+        return true;
+      }
       const matches = current.filter(
         (candidate) => isConfigPatchObjectWithStringId(candidate) && candidate.id === entry.id,
       );
@@ -715,7 +724,13 @@ function pruneNoopOwnershipPatch(
   }
   const entries = Object.entries(patch).flatMap(([key, value]) => {
     const childPath = formatConfigPatchPath(path, key);
-    const pruned = pruneNoopOwnershipPatch(value, current[key], replaceArrayPaths, childPath);
+    const pruned = pruneNoopOwnershipPatch(
+      value,
+      current[key],
+      replaceArrayPaths,
+      childPath,
+      isRecord(originalPatch) ? originalPatch[key] : undefined,
+    );
     if (
       pruned === OMIT_OWNERSHIP_PATCH ||
       (Object.hasOwn(current, key) && isEmptyMergePatchAgainst(pruned, current[key]))
@@ -1580,6 +1595,8 @@ export const configHandlers: GatewayRequestHandlers = {
       strippedOwnershipPatch,
       runtimeConfig,
       replacePaths,
+      "",
+      inputPatch,
     );
     const ownershipPatch =
       prunedOwnershipPatch === OMIT_OWNERSHIP_PATCH ? {} : prunedOwnershipPatch;

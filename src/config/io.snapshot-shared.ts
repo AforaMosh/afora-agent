@@ -33,6 +33,18 @@ export function createConfigFileSnapshot(params: {
             ...(entry.contributedPaths
               ? { contributedPaths: entry.contributedPaths.map((path) => [...path]) }
               : {}),
+            ...(entry.terminalContributedPaths
+              ? {
+                  terminalContributedPaths: entry.terminalContributedPaths.map((path) => [...path]),
+                }
+              : {}),
+            ...(entry.sensitiveContributedPaths
+              ? {
+                  sensitiveContributedPaths: entry.sensitiveContributedPaths.map((path) => [
+                    ...path,
+                  ]),
+                }
+              : {}),
           })),
         }
       : {}),

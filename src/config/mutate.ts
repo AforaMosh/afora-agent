@@ -21,6 +21,7 @@ import {
 import {
   applyUnsetPathsForWrite,
   collectArrayContainerDepths,
+  collectSensitiveIncludeSourcePaths,
   createRuntimeConfigMutationOperations,
   resolveManagedUnsetPathsForWrite,
 } from "./config-path-mutation.js";
@@ -1225,6 +1226,7 @@ async function transformConfigFileAttempt<T>(
     source: snapshot.parsed,
     runtime: baseConfig,
     candidate: writeCandidate,
+    sensitiveSourcePaths: collectSensitiveIncludeSourcePaths(snapshot),
   });
   const committed = await (params.commit ?? commitPreparedConfigMutation)({
     nextConfig: writeCandidate,

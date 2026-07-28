@@ -1,3 +1,4 @@
+import { containsEnvVarReference } from "./env-substitution.js";
 import { ConfigIncludeError } from "./includes.js";
 import type { ConfigIoContext } from "./io.context.js";
 import { maybeRecoverSuspiciousConfigRead } from "./io.observe-recovery.js";
@@ -29,6 +30,7 @@ import { warnIfConfigFromFuture } from "./io.warnings.js";
 import { materializeRuntimeConfig } from "./materialize.js";
 import { ConfigMutationConflictError } from "./mutation-conflict.js";
 import type { ConfigFileSnapshot, LegacyConfigIssue, OpenClawConfig } from "./types.js";
+import { isSecretRef } from "./types.secrets.js";
 import { validateConfigObjectWithPlugins } from "./validation.js";
 
 type InternalReadOptions = {
@@ -71,6 +73,40 @@ function collectIncludeContributionPaths(value: unknown, path: readonly string[]
         ];
   }
   return [[...path]];
+}
+
+function collectIncludeTerminalPaths(value: unknown, path: readonly string[]): string[][] {
+  if (Array.isArray(value)) {
+    return [[...path]];
+  }
+  if (value !== null && typeof value === "object" && !isSecretRef(value)) {
+    const entries = Object.entries(value);
+    return entries.flatMap(([key, child]) => collectIncludeTerminalPaths(child, [...path, key]));
+  }
+  return [[...path]];
+}
+
+function collectSensitiveIncludeContributionPaths(
+  value: unknown,
+  path: readonly string[],
+): string[][] {
+  if (typeof value === "string") {
+    return containsEnvVarReference(value) ? [[...path]] : [];
+  }
+  if (isSecretRef(value)) {
+    return [[...path]];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap((child, index) =>
+      collectSensitiveIncludeContributionPaths(child, [...path, String(index)]),
+    );
+  }
+  if (value !== null && typeof value === "object") {
+    return Object.entries(value).flatMap(([key, child]) =>
+      collectSensitiveIncludeContributionPaths(child, [...path, key]),
+    );
+  }
+  return [];
 }
 
 export async function readConfigFileSnapshotInternal(
@@ -157,6 +193,11 @@ export async function readConfigFileSnapshotInternal(
             includeProvenance.push({
               ...ownership,
               contributedPaths: collectIncludeContributionPaths(value, event.path),
+              terminalContributedPaths: collectIncludeTerminalPaths(value, event.path),
+              sensitiveContributedPaths: collectSensitiveIncludeContributionPaths(
+                value,
+                event.path,
+              ),
             });
           },
         ),

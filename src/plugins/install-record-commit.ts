@@ -4,6 +4,7 @@ import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import {
   collectArrayContainerDepths,
+  collectSensitiveIncludeSourcePaths,
   createConfigMutationOperations,
   createExplicitConfigMutationOperations,
   createRuntimeConfigMutationOperations,
@@ -548,6 +549,7 @@ export async function commitConfigWithPendingPluginInstalls(params: {
         source: prepared.snapshot.parsed,
         runtime: params.sourceConfig ?? prepared.snapshot.runtimeConfig,
         candidate: nextConfig,
+        sensitiveSourcePaths: collectSensitiveIncludeSourcePaths(prepared.snapshot),
       });
       const optionOperations = withLegacyConfigWriteOptionOperations({
         operations,

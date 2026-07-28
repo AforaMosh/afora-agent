@@ -6,6 +6,7 @@ import { isRecord } from "../utils.js";
 import { cloneEnvWithPlatformSemantics, createConfigRuntimeEnvBase } from "./config-env-vars.js";
 import {
   collectArrayContainerDepths,
+  collectSensitiveIncludeSourcePaths,
   createConfigMutationOperations,
   createExplicitConfigMutationOperations,
   projectExplicitRuntimeValueOntoAuthored,
@@ -359,6 +360,7 @@ export async function writeConfigFileCompat(
     sourceSnapshot: authoredSource,
     runtimeSnapshot: snapshot.runtimeConfig,
     candidate: cfg,
+    sensitiveSourcePaths: collectSensitiveIncludeSourcePaths(snapshot),
   });
   const intent = {
     kind: "mutate",

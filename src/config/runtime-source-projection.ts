@@ -26,6 +26,7 @@ export function projectRuntimeConfigOntoSourceSnapshot(params: {
   sourceSnapshot: OpenClawConfig;
   runtimeSnapshot: OpenClawConfig;
   candidate: OpenClawConfig;
+  sensitiveSourcePaths?: readonly (readonly string[])[];
 }): OpenClawConfig {
   const assertArraysProjectWithoutResolution = (
     source: unknown,
@@ -64,6 +65,7 @@ export function projectRuntimeConfigOntoSourceSnapshot(params: {
     // Compatibility candidates cannot remove defaults that have no authored
     // source path; applying those unsets to the source is intentionally a no-op.
     runtimeOnlyUnsetPolicy: "ignore",
+    sensitiveSourcePaths: params.sensitiveSourcePaths,
   });
   return applyConfigOperations(params.sourceSnapshot, operations);
 }

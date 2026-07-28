@@ -7,7 +7,7 @@ import { parseConfigPathArrayIndex } from "../shared/path-array-index.js";
 import { containsEnvVarReference } from "./env-substitution.js";
 import { applyMergePatch } from "./merge-patch.js";
 import { isSensitiveConfigPath } from "./sensitive-paths.js";
-import type { OpenClawConfig } from "./types.js";
+import type { ConfigFileSnapshot, OpenClawConfig } from "./types.js";
 import { isSecretRef } from "./types.secrets.js";
 
 export type ConfigPath = readonly string[];
@@ -22,6 +22,30 @@ export type ConfigMutationOperation =
     }
   | { kind: "unset"; path: ConfigPath; strictIncludeOwnership?: boolean }
   | { kind: "merge"; patch: unknown };
+
+export function collectSensitiveIncludeSourcePaths(
+  snapshot: Pick<ConfigFileSnapshot, "includeProvenance">,
+): ConfigPath[] {
+  const sensitivePaths = new Map<string, ConfigPath>();
+  for (const entry of snapshot.includeProvenance ?? []) {
+    for (const terminalPath of entry.terminalContributedPaths ??
+      entry.sensitiveContributedPaths ??
+      []) {
+      for (const [key, sensitivePath] of sensitivePaths) {
+        if (
+          terminalPath.length <= sensitivePath.length &&
+          terminalPath.every((segment, index) => sensitivePath[index] === segment)
+        ) {
+          sensitivePaths.delete(key);
+        }
+      }
+    }
+    for (const sensitivePath of entry.sensitiveContributedPaths ?? []) {
+      sensitivePaths.set(JSON.stringify(sensitivePath), sensitivePath.slice());
+    }
+  }
+  return [...sensitivePaths.values()];
+}
 
 export function projectExplicitRuntimeValueOntoAuthored(params: {
   authored: unknown;
@@ -242,6 +266,7 @@ export function createRuntimeConfigMutationOperations(params: {
   runtime: unknown;
   candidate: unknown;
   runtimeOnlyUnsetPolicy?: "reject" | "ignore";
+  sensitiveSourcePaths?: readonly ConfigPath[];
 }): ConfigMutationOperation[] {
   const assertArraysSafe = (
     source: unknown,
@@ -315,7 +340,15 @@ export function createRuntimeConfigMutationOperations(params: {
         collectRuntimeLeafPaths(child, [...path, key]),
       );
     } else if (value !== undefined) {
-      recordResolvedLeaf(value, path);
+      recordResolvedLeaf(
+        value,
+        path,
+        params.sensitiveSourcePaths?.some(
+          (sensitivePath) =>
+            sensitivePath.length === path.length &&
+            sensitivePath.every((segment, index) => segment === path[index]),
+        ) === true,
+      );
     }
   };
   const collectResolvedPaths = (source: unknown, runtime: unknown, path: ConfigPath = []): void => {

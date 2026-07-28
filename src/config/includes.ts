@@ -85,6 +85,10 @@ export type ConfigIncludeOwnership = {
   path: readonly string[];
   /** Leaf/container paths actually contributed by this include. */
   contributedPaths?: readonly (readonly string[])[];
+  /** Terminal value paths used to resolve later include shadowing. */
+  terminalContributedPaths?: readonly (readonly string[])[];
+  /** Contributed leaves whose authored values contain env or SecretRef indirection. */
+  sensitiveContributedPaths?: readonly (readonly string[])[];
   kind: "single" | "multiple";
   hasSiblingOverrides: boolean;
   targetPath?: string;
