@@ -5,6 +5,7 @@ import { isBlockedObjectKey } from "../infra/prototype-keys.js";
 import { parseConfigPathArrayIndex } from "../shared/path-array-index.js";
 import { containsEnvVarReference } from "./env-substitution.js";
 import { applyMergePatch } from "./merge-patch.js";
+import { isSensitiveConfigPath } from "./sensitive-paths.js";
 import type { OpenClawConfig } from "./types.js";
 import { isSecretRef } from "./types.secrets.js";
 
@@ -143,56 +144,88 @@ export function createRuntimeConfigMutationOperations(params: {
     }
   };
   assertArraysSafe(params.source, params.runtime, params.candidate);
-  const resolvedValues: unknown[] = [];
-  const collectRuntimeLeaves = (value: unknown): void => {
-    if (Array.isArray(value)) {
-      value.forEach(collectRuntimeLeaves);
-    } else if (isWritePlainObject(value)) {
-      Object.values(value).forEach(collectRuntimeLeaves);
-    } else if (value !== undefined) {
-      resolvedValues.push(value);
+  const resolvedPaths: ConfigPath[] = [];
+  const sensitiveResolvedValues: unknown[] = [];
+  const recordResolvedLeaf = (value: unknown, path: ConfigPath, forceSensitive = false): void => {
+    resolvedPaths.push(path);
+    if (forceSensitive || isSensitiveConfigPath(path.join("."))) {
+      sensitiveResolvedValues.push(value);
     }
   };
-  const collectResolvedValues = (source: unknown, runtime: unknown): void => {
+  const collectRuntimeLeafPaths = (value: unknown, path: ConfigPath): void => {
+    if (Array.isArray(value)) {
+      value.forEach((child, index) => collectRuntimeLeafPaths(child, [...path, String(index)]));
+    } else if (isWritePlainObject(value)) {
+      Object.entries(value).forEach(([key, child]) =>
+        collectRuntimeLeafPaths(child, [...path, key]),
+      );
+    } else if (value !== undefined) {
+      recordResolvedLeaf(value, path);
+    }
+  };
+  const collectResolvedPaths = (source: unknown, runtime: unknown, path: ConfigPath = []): void => {
     if (isDeepStrictEqual(source, runtime)) {
       return;
     }
     if ((typeof source === "string" && containsEnvVarReference(source)) || isSecretRef(source)) {
       if (runtime !== undefined) {
-        resolvedValues.push(runtime);
+        recordResolvedLeaf(runtime, path, true);
       }
       return;
     }
     if (isWritePlainObject(source) && Object.hasOwn(source, "$include")) {
-      collectRuntimeLeaves(runtime);
+      collectRuntimeLeafPaths(runtime, path);
       return;
     }
     if (Array.isArray(source) && Array.isArray(runtime)) {
       const length = Math.max(source.length, runtime.length);
       for (let index = 0; index < length; index += 1) {
-        collectResolvedValues(source[index], runtime[index]);
+        collectResolvedPaths(source[index], runtime[index], [...path, String(index)]);
       }
       return;
     }
     if (isWritePlainObject(source) && isWritePlainObject(runtime)) {
       for (const key of new Set([...Object.keys(source), ...Object.keys(runtime)])) {
-        collectResolvedValues(source[key], runtime[key]);
+        collectResolvedPaths(source[key], runtime[key], [...path, key]);
       }
     }
   };
-  const containsResolvedValue = (value: unknown): boolean => {
-    if (resolvedValues.some((resolved) => isDeepStrictEqual(value, resolved))) {
+  const pathStartsWith = (path: ConfigPath, prefix: ConfigPath): boolean => {
+    return prefix.every((segment, index) => path[index] === segment);
+  };
+  const setPersistsResolvedPath = (
+    operation: Extract<ConfigMutationOperation, { kind: "set" }>,
+    resolvedPath: ConfigPath,
+  ): boolean => {
+    if (pathStartsWith(resolvedPath, operation.path)) {
+      const relativePath = resolvedPath.slice(operation.path.length);
+      const candidateValue =
+        relativePath.length === 0 ? operation.value : readConfigPath(operation.value, relativePath);
+      return isDeepStrictEqual(candidateValue, readConfigPath(params.runtime, resolvedPath));
+    }
+    return pathStartsWith(operation.path, resolvedPath);
+  };
+  const containsSensitiveResolvedValue = (value: unknown): boolean => {
+    if (sensitiveResolvedValues.some((resolved) => isDeepStrictEqual(value, resolved))) {
       return true;
     }
     if (Array.isArray(value)) {
-      return value.some(containsResolvedValue);
+      return value.some(containsSensitiveResolvedValue);
     }
-    return isWritePlainObject(value) && Object.values(value).some(containsResolvedValue);
+    return isWritePlainObject(value) && Object.values(value).some(containsSensitiveResolvedValue);
   };
-  collectResolvedValues(params.source, params.runtime);
+  collectResolvedPaths(params.source, params.runtime);
   const operations = createConfigMutationOperations(params.runtime, params.candidate);
   for (const operation of operations) {
-    if (operation.kind === "set" && containsResolvedValue(operation.value)) {
+    if (operation.kind === "set" && containsSensitiveResolvedValue(operation.value)) {
+      throw new Error(
+        `Config mutation cannot safely persist a runtime-derived value at ${operation.path.join(".") || "<root>"}; mutate the authored source instead.`,
+      );
+    }
+    if (
+      operation.kind === "set" &&
+      resolvedPaths.some((resolvedPath) => setPersistsResolvedPath(operation, resolvedPath))
+    ) {
       throw new Error(
         `Config mutation cannot safely persist a runtime-derived value at ${operation.path.join(".") || "<root>"}; mutate the authored source instead.`,
       );

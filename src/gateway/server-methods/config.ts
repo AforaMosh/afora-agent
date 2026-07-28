@@ -170,6 +170,85 @@ function readConfigPatchReplacePaths(params: unknown): Set<string> {
   return normalizeConfigPatchReplacePaths(Array.isArray(rawPaths) ? rawPaths : undefined);
 }
 
+const REDACTION_SENTINEL_VALIDATION_PROBE = "__OPENCLAW_REDACTION_PATH_PROBE__";
+
+function replaceRedactionSentinelsWithProbe(value: unknown): unknown {
+  if (value === REDACTED_SENTINEL) {
+    return REDACTION_SENTINEL_VALIDATION_PROBE;
+  }
+  if (Array.isArray(value)) {
+    return value.map(replaceRedactionSentinelsWithProbe);
+  }
+  if (!isRecord(value)) {
+    return structuredClone(value);
+  }
+  return Object.fromEntries(
+    Object.entries(value).map(([key, child]) => [key, replaceRedactionSentinelsWithProbe(child)]),
+  );
+}
+
+function findInvalidRedactionSentinelPath(
+  value: unknown,
+  redactedProbe: unknown,
+  path = "",
+): string | null {
+  if (value === REDACTED_SENTINEL) {
+    return redactedProbe === REDACTED_SENTINEL ? null : path || "<root>";
+  }
+  if (Array.isArray(value)) {
+    const redactedArray = Array.isArray(redactedProbe) ? redactedProbe : [];
+    for (let index = 0; index < value.length; index += 1) {
+      const invalidPath = findInvalidRedactionSentinelPath(
+        value[index],
+        redactedArray[index],
+        `${path}[${index}]`,
+      );
+      if (invalidPath) {
+        return invalidPath;
+      }
+    }
+    return null;
+  }
+  if (!isRecord(value)) {
+    return null;
+  }
+  const redactedRecord = isRecord(redactedProbe) ? redactedProbe : {};
+  for (const [key, child] of Object.entries(value)) {
+    const invalidPath = findInvalidRedactionSentinelPath(
+      child,
+      redactedRecord[key],
+      formatConfigPatchPath(path, key),
+    );
+    if (invalidPath) {
+      return invalidPath;
+    }
+  }
+  return null;
+}
+
+function stripRedactedPatchSentinels(value: unknown): unknown {
+  if (value === REDACTED_SENTINEL) {
+    return undefined;
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => {
+      const stripped = stripRedactedPatchSentinels(item);
+      return stripped === undefined ? [] : [stripped];
+    });
+  }
+  if (!isRecord(value)) {
+    return structuredClone(value);
+  }
+  const entries = Object.entries(value);
+  const strippedEntries = entries.flatMap(([key, child]) => {
+    const stripped = stripRedactedPatchSentinels(child);
+    return stripped === undefined ? [] : [[key, stripped]];
+  });
+  return entries.length > 0 && strippedEntries.length === 0
+    ? undefined
+    : Object.fromEntries(strippedEntries);
+}
+
 function mapConfigPatchIdsToSource(params: {
   patch: unknown;
   source: unknown;
@@ -327,29 +406,6 @@ function containsRedactedPatchSentinel(value: unknown): boolean {
     return value.some(containsRedactedPatchSentinel);
   }
   return isRecord(value) && Object.values(value).some(containsRedactedPatchSentinel);
-}
-
-function stripRedactedPatchSentinels(value: unknown): unknown {
-  if (value === REDACTED_SENTINEL) {
-    return undefined;
-  }
-  if (Array.isArray(value)) {
-    return value.flatMap((item) => {
-      const stripped = stripRedactedPatchSentinels(item);
-      return stripped === undefined ? [] : [stripped];
-    });
-  }
-  if (!isRecord(value)) {
-    return structuredClone(value);
-  }
-  const entries = Object.entries(value);
-  const strippedEntries = entries.flatMap(([key, child]) => {
-    const stripped = stripRedactedPatchSentinels(child);
-    return stripped === undefined ? [] : [[key, stripped]];
-  });
-  return entries.length > 0 && strippedEntries.length === 0
-    ? undefined
-    : Object.fromEntries(strippedEntries);
 }
 
 const OMIT_REDACTED_REPLACEMENT_VALUE = Symbol("omit-redacted-replacement-value");
@@ -1379,13 +1435,29 @@ export const configHandlers: GatewayRequestHandlers = {
       );
       return;
     }
+    const schemaPatch = loadSchemaWithPlugins();
+    const redactionProbe = redactConfigObject(
+      replaceRedactionSentinelsWithProbe(parsedRes.parsed),
+      schemaPatch.uiHints,
+    );
+    const invalidSentinelPath = findInvalidRedactionSentinelPath(parsedRes.parsed, redactionProbe);
+    if (invalidSentinelPath) {
+      respond(
+        false,
+        undefined,
+        errorShape(
+          ErrorCodes.INVALID_REQUEST,
+          `Reserved redaction sentinel "${REDACTED_SENTINEL}" is not valid config data (${invalidSentinelPath}).`,
+        ),
+      );
+      return;
+    }
     const effectivePatch = stripRedactedPatchSentinels(parsedRes.parsed) ?? {};
     const merged = applyMergePatch(snapshot.config, effectivePatch, {
       // Arrays with stable ids behave like maps for partial control-plane edits.
       mergeObjectArraysById: true,
       replaceArrayPaths: replacePaths,
     });
-    const schemaPatch = loadSchemaWithPlugins();
     const restoredMerge = restoreRedactedValues(merged, snapshot.config, schemaPatch.uiHints);
     if (!restoredMerge.ok) {
       respond(

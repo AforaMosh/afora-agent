@@ -135,6 +135,34 @@ describe("applyConfigOperations", () => {
     ).toThrow("cannot safely persist a runtime-derived value at plugins.entries.next");
   });
 
+  it("allows removal of an authored runtime-resolved reference", () => {
+    expect(
+      createRuntimeConfigMutationOperations({
+        source: { plugins: { entries: { old: { token: "${TOKEN}" } } } },
+        runtime: { plugins: { entries: { old: { token: "resolved-token" } } } },
+        candidate: { plugins: { entries: {} } },
+      }),
+    ).toContainEqual({
+      kind: "unset",
+      path: ["plugins", "entries", "old"],
+      strictIncludeOwnership: true,
+    });
+  });
+
+  it("allows an explicit replacement of a runtime-resolved leaf", () => {
+    expect(
+      createRuntimeConfigMutationOperations({
+        source: { plugins: { entries: { old: { token: "${OLD_TOKEN}" } } } },
+        runtime: { plugins: { entries: { old: { token: "old-token" } } } },
+        candidate: { plugins: { entries: { old: { token: "new-token" } } } },
+      }),
+    ).toContainEqual({
+      kind: "set",
+      path: ["plugins", "entries", "old", "token"],
+      value: "new-token",
+    });
+  });
+
   it("rejects a same-length runtime-derived array reorder", () => {
     expect(() =>
       createRuntimeConfigMutationOperations({
@@ -145,7 +173,7 @@ describe("applyConfigOperations", () => {
     ).toThrow("cannot safely persist a runtime-derived value at plugins.allow.1");
   });
 
-  it("rejects copying a resolved array value into a new path", () => {
+  it("rejects an environment-resolved value copied to another path", () => {
     expect(() =>
       createRuntimeConfigMutationOperations({
         source: { plugins: { allow: ["${TOKEN}"] } },
@@ -157,7 +185,7 @@ describe("applyConfigOperations", () => {
           },
         },
       }),
-    ).toThrow("cannot safely persist a runtime-derived value");
+    ).toThrow("cannot safely persist a runtime-derived value at plugins.entries.demo");
   });
 
   it("does not treat unrelated runtime defaults as authored references", () => {
@@ -198,7 +226,7 @@ describe("applyConfigOperations", () => {
     ).toThrow("cannot safely replace runtime-derived container at plugins.allow");
   });
 
-  it("rejects copying an include-resolved value into a new path", () => {
+  it("rejects copying an include-resolved sensitive value into a new path", () => {
     expect(() =>
       createRuntimeConfigMutationOperations({
         source: { plugins: { entries: { old: { $include: "./secret.json" } } } },
@@ -208,6 +236,88 @@ describe("applyConfigOperations", () => {
             entries: {
               old: { token: "resolved-token" },
               next: { copiedToken: "resolved-token" },
+            },
+          },
+        },
+      }),
+    ).toThrow("cannot safely persist a runtime-derived value at plugins.entries.next");
+  });
+
+  it("does not confuse unrelated scalar equality with include provenance", () => {
+    expect(
+      createRuntimeConfigMutationOperations({
+        source: { plugins: { entries: { old: { $include: "./flags.json" } } } },
+        runtime: { plugins: { entries: { old: { enabled: true } } } },
+        candidate: {
+          plugins: { entries: { old: { enabled: true } } },
+          browser: { enabled: true },
+        },
+      }),
+    ).toContainEqual({ kind: "set", path: ["browser", "enabled"], value: true });
+  });
+
+  it("allows an explicit string equal to a non-sensitive included value", () => {
+    expect(
+      createRuntimeConfigMutationOperations({
+        source: { plugins: { entries: { old: { $include: "./mode.json" } } } },
+        runtime: { plugins: { entries: { old: { mode: "auto" } } } },
+        candidate: {
+          plugins: { entries: { old: { mode: "auto" } } },
+          browser: { profiles: { demo: { mode: "auto" } } },
+        },
+      }),
+    ).toContainEqual({
+      kind: "set",
+      path: ["browser", "profiles", "demo", "mode"],
+      value: "auto",
+    });
+  });
+
+  it("rejects copying a SecretRef-resolved value from an arbitrary plugin key", () => {
+    expect(() =>
+      createRuntimeConfigMutationOperations({
+        source: {
+          plugins: {
+            entries: {
+              demo: {
+                config: {
+                  credential: { source: "env", provider: "default", id: "PLUGIN_CREDENTIAL" },
+                },
+              },
+            },
+          },
+        },
+        runtime: {
+          plugins: { entries: { demo: { config: { credential: "resolved-credential" } } } },
+        },
+        candidate: {
+          plugins: {
+            entries: {
+              demo: { config: { credential: "resolved-credential" } },
+              next: { config: { copied: "resolved-credential" } },
+            },
+          },
+        },
+      }),
+    ).toThrow("cannot safely persist a runtime-derived value at plugins.entries.next");
+  });
+
+  it("rejects copying an environment-resolved value from an arbitrary plugin key", () => {
+    expect(() =>
+      createRuntimeConfigMutationOperations({
+        source: {
+          plugins: {
+            entries: { demo: { config: { value: "${PLUGIN_CREDENTIAL}" } } },
+          },
+        },
+        runtime: {
+          plugins: { entries: { demo: { config: { value: "resolved-credential" } } } },
+        },
+        candidate: {
+          plugins: {
+            entries: {
+              demo: { config: { value: "resolved-credential" } },
+              next: { config: { copied: "resolved-credential" } },
             },
           },
         },

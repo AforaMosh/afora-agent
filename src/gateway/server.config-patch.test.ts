@@ -562,6 +562,22 @@ describe("gateway config methods", () => {
     expect(res.error?.message ?? "").toContain("Reserved redaction sentinel");
   });
 
+  it("rejects a redaction sentinel submitted at a non-sensitive patch path", async () => {
+    const current = await getCurrentConfigObject();
+
+    const res = await rpcReq<{ ok?: boolean; error?: { message?: string } }>(
+      requireWs(),
+      "config.patch",
+      {
+        raw: JSON.stringify({ ui: { assistant: { name: REDACTED_SENTINEL } } }),
+        baseHash: current.hash,
+      },
+    );
+
+    expect(res.ok).toBe(false);
+    expect(res.error?.message ?? "").toContain("Reserved redaction sentinel");
+  });
+
   it("persists explicitly submitted bundled provider defaults through config.set", async () => {
     const { createConfigIO, resetConfigRuntimeState } = await import("../config/config.js");
     const configPath = createConfigIO().configPath;

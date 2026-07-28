@@ -376,18 +376,19 @@ export async function runConfigOperations(params: {
     }
     if (deletesValue) {
       unsetAtPath(intentIntermediate, operationPath);
+    } else if (
+      operation.mutation === "merge" ||
+      (options.merge && operation.mutation !== "replace")
+    ) {
+      mergeAtPath(intentIntermediate as Record<string, unknown>, operationPath, operation.value, {
+        numericObjectKeys: params.successMode === "patch",
+        schema: mutationSchema,
+      });
     } else {
-      if (operation.mutation === "merge" || (options.merge && operation.mutation !== "replace")) {
-        mergeAtPath(intentIntermediate as Record<string, unknown>, operationPath, operation.value, {
-          numericObjectKeys: params.successMode === "patch",
-          schema: mutationSchema,
-        });
-      } else {
-        setAtPath(intentIntermediate as Record<string, unknown>, operationPath, operation.value, {
-          numericObjectKeys: params.successMode === "patch",
-          schema: mutationSchema,
-        });
-      }
+      setAtPath(intentIntermediate as Record<string, unknown>, operationPath, operation.value, {
+        numericObjectKeys: params.successMode === "patch",
+        schema: mutationSchema,
+      });
     }
     const submittedMergePaths =
       operation.mutation === "merge" || (options.merge && operation.mutation !== "replace")

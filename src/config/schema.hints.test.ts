@@ -44,6 +44,9 @@ describe("isSensitiveConfigPath", () => {
     expect(isSensitiveConfigPath("models.providers.openai.apiKey")).toBe(true);
     expect(isSensitiveConfigPath("channels.irc.nickserv.password")).toBe(true);
     expect(isSensitiveConfigPath("channels.feishu.encryptKey")).toBe(true);
+    expect(isSensitiveConfigPath("models.providers.custom.models.0.headers.Authorization")).toBe(
+      true,
+    );
     expect(isSensitiveConfigPath("models.providers.local.localService.env.HF_HOME")).toBe(true);
     expect(isSensitiveConfigPath("models.providers.local.localService.env.MAX_TOKENS")).toBe(true);
   });

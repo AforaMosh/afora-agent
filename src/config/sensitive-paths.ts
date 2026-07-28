@@ -31,6 +31,7 @@ const SENSITIVE_PATTERNS = [
   /encrypt.?key/i,
   /private.?key/i,
   /serviceaccount(?:ref)?$/i,
+  /authorization$/i,
 ];
 
 function isWhitelistedSensitivePath(path: string): boolean {
