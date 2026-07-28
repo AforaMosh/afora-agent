@@ -1425,7 +1425,10 @@ export const configHandlers: GatewayRequestHandlers = {
       return;
     }
     const replacePaths = readConfigPatchReplacePaths(params);
-    const patchedIncludeOwner = findPatchedIncludeOwner(parsedRes.parsed, snapshot.parsed);
+    const patchIsEmpty = isRecord(parsedRes.parsed) && Object.keys(parsedRes.parsed).length === 0;
+    const patchedIncludeOwner = patchIsEmpty
+      ? null
+      : findPatchedIncludeOwner(parsedRes.parsed, snapshot.parsed);
     if (patchedIncludeOwner) {
       const provenance = snapshot.includeProvenance?.find(
         (entry) =>
@@ -1475,7 +1478,21 @@ export const configHandlers: GatewayRequestHandlers = {
       );
       return;
     }
-    const effectivePatch = stripRedactedPatchSentinels(parsedRes.parsed) ?? {};
+    let runtimePatchInput: unknown;
+    try {
+      runtimePatchInput = mapConfigPatchIdsToSource({
+        patch: parsedRes.parsed,
+        source: snapshot.config,
+        resolvedSource: snapshot.config,
+        runtime: snapshot.config,
+        env: writeOptions.envSnapshotForRestore ?? process.env,
+        replaceArrayPaths: replacePaths,
+      });
+    } catch (error) {
+      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, formatErrorMessage(error)));
+      return;
+    }
+    const effectivePatch = stripRedactedPatchSentinels(runtimePatchInput) ?? {};
     const merged = applyMergePatch(snapshot.config, effectivePatch, {
       // Arrays with stable ids behave like maps for partial control-plane edits.
       mergeObjectArraysById: true,

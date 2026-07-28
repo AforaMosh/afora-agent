@@ -978,6 +978,34 @@ describe("gateway config methods", () => {
     }
   });
 
+  it("accepts an empty config.patch against a root include", async () => {
+    const { createConfigIO, resetConfigRuntimeState } = await import("../config/config.js");
+    const configPath = createConfigIO().configPath;
+    const includePath = path.join(path.dirname(configPath), "root-include.json");
+    const original = await getCurrentConfigObject();
+    try {
+      await writeJsonFile(includePath, { gateway: { mode: "local" } });
+      await writeJsonFile(configPath, { $include: "./root-include.json" });
+      resetConfigRuntimeState();
+      const current = await getCurrentConfigObject();
+      const before = await fs.readFile(configPath, "utf-8");
+
+      const res = await rpcReq<{ ok?: boolean; noop?: boolean; error?: { message?: string } }>(
+        requireWs(),
+        "config.patch",
+        { raw: "{}", baseHash: current.hash },
+      );
+
+      expect(res.error).toBeUndefined();
+      expect(res.ok).toBe(true);
+      expect(res.payload?.noop).toBe(true);
+      await expect(fs.readFile(configPath, "utf-8")).resolves.toBe(before);
+    } finally {
+      await restoreConfigFileForTest(original);
+      await fs.rm(includePath, { force: true });
+    }
+  });
+
   it("preserves redacted secrets during an explicit ID-array replacement", async () => {
     const { createConfigIO, resetConfigRuntimeState } = await import("../config/config.js");
     const configPath = createConfigIO().configPath;
