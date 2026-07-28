@@ -118,6 +118,7 @@ describe("ACP binding cutover schema", () => {
 
   it("rejects ACP bindings without a peer conversation target", () => {
     const parsed = OpenClawSchema.safeParse({
+      agents: { entries: { codex: { default: true } } },
       bindings: [
         {
           type: "acp",
@@ -132,6 +133,7 @@ describe("ACP binding cutover schema", () => {
 
   it("accepts ACP bindings for arbitrary channel ids when the peer target is explicit", () => {
     const parsed = OpenClawSchema.safeParse({
+      agents: { entries: { codex: { default: true } } },
       bindings: [
         {
           type: "acp",
@@ -150,6 +152,7 @@ describe("ACP binding cutover schema", () => {
 
   it("accepts ACP bindings for generic direct and group peer kinds", () => {
     const parsed = OpenClawSchema.safeParse({
+      agents: { entries: { codex: { default: true } } },
       bindings: [
         {
           type: "acp",
@@ -177,6 +180,7 @@ describe("ACP binding cutover schema", () => {
 
   it("accepts the canonical direct peer kind", () => {
     const parsed = OpenClawSchema.safeParse({
+      agents: { entries: { codex: { default: true } } },
       bindings: [
         {
           type: "acp",
