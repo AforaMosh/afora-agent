@@ -616,8 +616,7 @@ function isEmptyMergePatchAgainst(patch: unknown, current: unknown): boolean {
     return false;
   }
   return Object.entries(patch).every(
-    ([key, value]) =>
-      Object.hasOwn(current, key) && isEmptyMergePatchAgainst(value, current[key]),
+    ([key, value]) => Object.hasOwn(current, key) && isEmptyMergePatchAgainst(value, current[key]),
   );
 }
 
