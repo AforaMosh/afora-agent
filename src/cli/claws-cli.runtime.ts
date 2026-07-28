@@ -29,6 +29,8 @@ import { buildClawAddPlan } from "../claws/lifecycle.js";
 import { preflightClawPackage } from "../claws/packages.js";
 import { readClawInstallRecord } from "../claws/provenance.js";
 import { readClawManifestFile } from "../claws/reader.js";
+import { isResumableClawSetupAdd } from "../claws/setup-state.js";
+import { buildClawSetupPlan } from "../claws/setup.js";
 import {
   CLAW_INSPECT_RESULT_SCHEMA_VERSION,
   CLAW_ADD_PLAN_SCHEMA_VERSION,
@@ -327,13 +329,17 @@ export async function runClawsAddCommand(
   });
   const resumeRecord = matchingResumeRecord(plan, opts);
   if (resumeRecord && plan.blockers.length > 0) {
+    const canResumeSetup = resumeRecord.status === "partial" && isResumableClawSetupAdd(plan);
     const canResumeWorkspace =
-      resumeRecord.status === "workspace_ready" || resumeRecord.status === "config_committed";
+      resumeRecord.status === "workspace_ready" ||
+      resumeRecord.status === "config_committed" ||
+      canResumeSetup;
     const committedAgent = listAgentEntries(config).find(
       (agent) => stableStringify(agent) === stableStringify(plan.agent.config),
     );
     const canResumeAgent =
       resumeRecord.status === "config_committed" ||
+      canResumeSetup ||
       (resumeRecord.status === "workspace_ready" && committedAgent !== undefined);
     plan = await buildClawAddPlan({
       manifest: result.manifest,
@@ -357,11 +363,7 @@ export async function runClawsAddCommand(
     });
   }
 
-  const setupPreviewOnly =
-    opts.dryRun &&
-    plan.blockers.length > 0 &&
-    plan.blockers.every((blocker) => blocker.code === "setup_mutation_unavailable");
-  if (plan.blockers.length > 0 && !setupPreviewOnly) {
+  if (plan.blockers.length > 0) {
     if (opts.json) {
       writeRuntimeJson(runtime, plan);
     } else {
@@ -380,9 +382,6 @@ export async function runClawsAddCommand(
       logExperimentalWarning(runtime);
       runtime.log(`Claw add plan: ${plan.claw.name}@${plan.claw.version}`);
       logClawAddPlanSummary(plan, runtime);
-      if (setupPreviewOnly) {
-        runtime.log(formatDiagnostics(plan.blockers));
-      }
     }
     return;
   }
@@ -406,8 +405,19 @@ export async function runClawsAddCommand(
 
   let addResult;
   try {
+    const setupResult =
+      result.manifest.schemaVersion === CLAW_SETUP_SCHEMA_VERSION
+        ? await buildClawSetupPlan({
+            manifest: result.manifest,
+            packageRoot: result.source.packageRoot,
+            answers,
+          })
+        : undefined;
     addResult = await applyClawAddPlan(plan, {
       consentPlanIntegrity: opts.planIntegrity,
+      ...(setupResult?.materialization
+        ? { setupMaterialization: setupResult.materialization }
+        : {}),
       runtime: opts.json ? { ...runtime, log: () => undefined } : runtime,
       cronGateway: {
         add: async (input) => await callGatewayFromCli("cron.add", {}, input),

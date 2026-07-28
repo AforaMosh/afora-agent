@@ -10,7 +10,6 @@ import { FsSafeError, root as fsSafeRoot, type Root } from "../infra/fs-safe.js"
 import { resolveUserPath } from "../utils.js";
 import { digestClawMcpServer } from "./mcp.js";
 import { clawManifestWorkspaceConflictsWithPath } from "./schema.js";
-import { clawSetupAddMutationUnavailableDiagnostic } from "./setup-mutation-guard.js";
 import { buildClawSetupPlan } from "./setup.js";
 import { MAX_MANAGED_FILE_BYTES, MAX_MANAGED_WORKSPACE_BYTES } from "./source-limits.js";
 import {
@@ -216,10 +215,6 @@ export async function buildClawAddPlan(params: {
   const actions: ClawAddPlanAction[] = [];
   const capabilityChanges: ClawAddCapabilityChange[] = [];
   const readinessRequirements: ClawLocalPrerequisite[] = [];
-
-  if (params.manifest.schemaVersion === CLAW_SETUP_SCHEMA_VERSION) {
-    blockers.push(clawSetupAddMutationUnavailableDiagnostic());
-  }
 
   if (!AGENT_ID_PATTERN.test(finalId)) {
     blockers.push(
