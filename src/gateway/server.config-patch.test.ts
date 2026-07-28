@@ -448,6 +448,38 @@ describe("gateway config methods", () => {
     requireConfigObject(res.payload?.config, "response config");
   });
 
+  it("rejects config.set redaction sentinels owned by an include", async () => {
+    const { createConfigIO, resetConfigRuntimeState } = await import("../config/config.js");
+    const configPath = createConfigIO().configPath;
+    const includePath = path.join(path.dirname(configPath), "gateway-set-include.json");
+    const original = await getCurrentConfigObject();
+    try {
+      await writeJsonFile(includePath, {
+        auth: { mode: "token", token: "included-secret" },
+      });
+      await writeJsonFile(configPath, {
+        gateway: { $include: "./gateway-set-include.json" },
+        messages: { responsePrefix: "old" },
+      });
+      resetConfigRuntimeState();
+      const current = await getCurrentConfigObject();
+      const submitted = structuredClone(current.config);
+      submitted.messages = { ...submitted.messages, responsePrefix: "new" };
+      const rootBefore = await fs.readFile(configPath, "utf-8");
+      const includeBefore = await fs.readFile(includePath, "utf-8");
+
+      const res = await sendConfigSet(configRawPayload(submitted, current.hash));
+
+      expect(res.ok).toBe(false);
+      expect(res.error?.message).toContain("redacted include-owned value");
+      await expect(fs.readFile(configPath, "utf-8")).resolves.toBe(rootBefore);
+      await expect(fs.readFile(includePath, "utf-8")).resolves.toBe(includeBefore);
+    } finally {
+      await restoreConfigFileForTest(original);
+      await fs.rm(includePath, { force: true });
+    }
+  });
+
   it("persists an explicit literal equal to a resolved source ref through config.set", async () => {
     const { createConfigIO, resetConfigRuntimeState } = await import("../config/config.js");
     const configPath = createConfigIO().configPath;

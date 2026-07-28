@@ -26,7 +26,7 @@ import {
   type ConfigMutationOperation,
 } from "../../config/config-path-mutation.js";
 import { resolveConfigEnvVars } from "../../config/env-substitution.js";
-import { stripConfigIncludeDirectives } from "../../config/includes.js";
+import { INCLUDE_KEY, stripConfigIncludeDirectives } from "../../config/includes.js";
 import {
   createConfigIO,
   parseConfigJson5,
@@ -463,12 +463,23 @@ function restoreRedactedReplacementSource(
   resolvedSource: unknown,
   validated: unknown,
   path = "",
+  includeOwned = false,
 ): unknown {
+  const currentIncludeOwned =
+    includeOwned || (isRecord(source) && Object.hasOwn(source, INCLUDE_KEY));
   if (value === REDACTED_SENTINEL) {
     if (validated === REDACTED_SENTINEL) {
       throw new Error("unvalidated redaction sentinel in replacement config");
     }
-    return source === undefined ? OMIT_REDACTED_REPLACEMENT_VALUE : structuredClone(source);
+    if (source === undefined) {
+      if (currentIncludeOwned) {
+        throw new Error(
+          `Cannot restore redacted include-owned value at ${path || "<root>"}; use config.patch for unrelated source edits.`,
+        );
+      }
+      return OMIT_REDACTED_REPLACEMENT_VALUE;
+    }
+    return structuredClone(source);
   }
   if (Array.isArray(value)) {
     const sourceArray = Array.isArray(source) ? source : [];
@@ -523,6 +534,7 @@ function restoreRedactedReplacementSource(
           resolvedSourceArray[resolvedSourceIndex],
           validatedArray[index],
           `${path}[]`,
+          currentIncludeOwned,
         ) as Record<string, unknown>;
         if (isConfigPatchObjectWithStringId(sourceEntry)) {
           restored.id = sourceEntry.id;
@@ -537,6 +549,7 @@ function restoreRedactedReplacementSource(
         resolvedSourceArray[index],
         validatedArray[index],
         `${path}[]`,
+        currentIncludeOwned,
       );
       return restored === OMIT_REDACTED_REPLACEMENT_VALUE ? [] : [restored];
     });
@@ -555,6 +568,7 @@ function restoreRedactedReplacementSource(
         resolvedSourceRecord[key],
         validatedRecord[key],
         formatConfigPatchPath(path, key),
+        currentIncludeOwned,
       );
       return restored === OMIT_REDACTED_REPLACEMENT_VALUE ? [] : [[key, restored]];
     }),
