@@ -1217,9 +1217,7 @@ describe("config cli", () => {
 
       expect(requireWriteIntent()).toEqual({
         kind: "mutate",
-        operations: [
-          { kind: "set", path: ["gateway", "auth", "mode"], value: "none" },
-        ],
+        operations: [{ kind: "set", path: ["gateway", "auth", "mode"], value: "none" }],
       });
     });
 
