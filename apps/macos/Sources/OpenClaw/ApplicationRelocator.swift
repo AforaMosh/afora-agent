@@ -59,6 +59,12 @@ enum ApplicationRelocator {
         case relaunch
     }
 
+    enum ReplacementHandoffOutcome: Equatable, Sendable {
+        case ready
+        case rejected
+        case unresponsive
+    }
+
     enum RelaunchStrategy: Equatable, Sendable {
         case openAfterTermination
         case externalSupervisor
@@ -105,6 +111,7 @@ enum ApplicationRelocator {
     private static var bundleReplacementRecoveryTask: Task<Void, Never>?
     private static var bundleReplacementCheckPending = false
     private static var bundleReplacementHandoffInProgress = false
+    private static var replacementHandoffRetry = ReplacementHandoffRetryPolicy()
     private static var inheritedReplacementSupervisor: KeepAliveSupervisor?
     private static var supervisorRestorationWatcher: Process?
     private static var authenticatedReplacementSourceBundleURL: URL?
@@ -543,6 +550,9 @@ extension ApplicationRelocator {
         self.bundleReplacementSnapshot = nil
         self.bundleReplacementCheckPending = false
         self.bundleReplacementHandoffInProgress = false
+        // Rearming monitoring rebuilds the snapshot this policy bounds, so a stale
+        // give-up must not survive into the new watch.
+        self.replacementHandoffRetry = ReplacementHandoffRetryPolicy()
 
         let bundleURL = monitoredBundleURL.standardizedFileURL
         guard bundleURL.pathExtension == "app",
@@ -634,6 +644,13 @@ extension ApplicationRelocator {
                         try? await Task.sleep(for: .milliseconds(250))
                         continue
                     }
+                    guard self.replacementHandoffRetry.allowsAttempt(for: launchCodeDirectoryHash) else {
+                        // Terminal for this replacement. Drop the pending flag too, or the
+                        // defer below rearms and revalidates the whole bundle on every
+                        // later directory event.
+                        self.bundleReplacementCheckPending = false
+                        return
+                    }
                     self.bundleReplacementCheckPending = false
                     self.logger.notice("Installed app changed; relaunching trusted replacement")
                     self.bundleReplacementHandoffInProgress = true
@@ -642,9 +659,12 @@ extension ApplicationRelocator {
                         launchReference: launchReference,
                         codeDirectoryHash: launchCodeDirectoryHash)
                     if !scheduled {
-                        self.bundleReplacementHandoffInProgress = false
-                        try? await Task.sleep(for: .seconds(1))
-                        continue
+                        // A spawn failure is a failed attempt too, so it spends the same
+                        // budget. Its rearm rides this task's defer, because the retry's
+                        // own bundleDirectoryDidChange call no-ops while we still own
+                        // bundleReplacementRecoveryTask.
+                        await self.recordFailedReplacementHandoff(codeDirectoryHash: launchCodeDirectoryHash)
+                        return
                     }
                     return
                 }
@@ -1005,20 +1025,20 @@ extension ApplicationRelocator {
         }
 
         Task { @MainActor in
-            let handoffStatus = await Task.detached(priority: .utility) {
-                self.awaitReplacementHandoff(on: spawned.readyDescriptor)
+            let handoffOutcome = await Task.detached(priority: .utility) {
+                self.awaitReplacementHandoff(
+                    on: spawned.readyDescriptor,
+                    childProcessIdentifier: spawned.processIdentifier)
             }.value
             Darwin.close(spawned.readyDescriptor)
-            guard handoffStatus == "READY" else {
+            guard handoffOutcome == .ready else {
                 Darwin.kill(spawned.processIdentifier, SIGKILL)
                 await Task.detached(priority: .utility) {
                     self.reapProcess(spawned.processIdentifier)
                 }.value
-                self.logger.error("Trusted replacement did not complete its authenticated handoff")
-                self.bundleReplacementHandoffInProgress = false
-                self.bundleReplacementCheckPending = true
-                try? await Task.sleep(for: .seconds(1))
-                self.bundleDirectoryDidChange()
+                self.logger.error(
+                    "Trusted replacement handoff failed: \(String(describing: handoffOutcome), privacy: .public)")
+                await self.recordFailedReplacementHandoff(codeDirectoryHash: codeDirectoryHash)
                 return
             }
             self.cancelSupervisorRestorationWatcher()
@@ -1026,6 +1046,25 @@ extension ApplicationRelocator {
             NSApp.terminate(nil)
         }
         return true
+    }
+
+    private static func recordFailedReplacementHandoff(codeDirectoryHash: Data) async {
+        switch self.replacementHandoffRetry.recordFailure(for: codeDirectoryHash) {
+        case let .retry(delay):
+            // Hold the in-progress flag across the cooldown. Releasing it before the
+            // sleep lets a burst of directory events start the next attempt at once,
+            // skipping every backoff and burning the budget a transient failure needs.
+            try? await Task.sleep(for: delay)
+            self.bundleReplacementHandoffInProgress = false
+            self.bundleReplacementCheckPending = true
+            self.bundleDirectoryDidChange()
+        case .giveUp:
+            // Terminal: keep the current process running and stop rearming, so the
+            // user is never left without an app.
+            self.bundleReplacementHandoffInProgress = false
+            self.bundleReplacementCheckPending = false
+            self.logger.error("Abandoning replacement after repeated handoff failures")
+        }
     }
 
     private static func spawnReplacement(
@@ -1137,15 +1176,41 @@ extension ApplicationRelocator {
         return (processIdentifier, readDescriptor)
     }
 
-    private nonisolated static func awaitReplacementHandoff(on descriptor: Int32) -> String? {
-        var event = pollfd(fd: descriptor, events: Int16(POLLIN | POLLHUP), revents: 0)
-        guard poll(&event, 1, 10000) > 0 else { return nil }
-        var bytes = [UInt8](repeating: 0, count: 16)
-        let count = bytes.withUnsafeMutableBytes { buffer in
-            Darwin.read(descriptor, buffer.baseAddress, buffer.count)
+    nonisolated static func awaitReplacementHandoff(
+        on descriptor: Int32,
+        childProcessIdentifier: pid_t,
+        hangCeiling: Duration = .seconds(120)) -> ReplacementHandoffOutcome
+    {
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: hangCeiling)
+        while clock.now < deadline {
+            var event = pollfd(fd: descriptor, events: Int16(POLLIN), revents: 0)
+            let pollResult = poll(&event, 1, 250)
+            if pollResult < 0 {
+                if errno == EINTR {
+                    continue
+                }
+                return .rejected
+            }
+            if pollResult > 0 {
+                var bytes = [UInt8](repeating: 0, count: 16)
+                let count = bytes.withUnsafeMutableBytes { buffer in
+                    Darwin.read(descriptor, buffer.baseAddress, buffer.count)
+                }
+                guard count > 0 else { return .rejected }
+                return String(bytes: bytes.prefix(count), encoding: .utf8) == "READY" ? .ready : .rejected
+            }
+
+            // The ceiling detects a wedged live child, not slow startup. A dead child
+            // is rejected promptly, while a healthy child retains the full ceiling.
+            if Darwin.kill(childProcessIdentifier, 0) < 0, errno == ESRCH {
+                return .rejected
+            }
         }
-        guard count > 0 else { return nil }
-        return String(bytes: bytes.prefix(count), encoding: .utf8)
+        if Darwin.kill(childProcessIdentifier, 0) < 0, errno == ESRCH {
+            return .rejected
+        }
+        return .unresponsive
     }
 
     private nonisolated static func reapProcess(_ processIdentifier: pid_t) {

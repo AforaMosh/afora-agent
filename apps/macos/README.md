@@ -61,6 +61,20 @@ DISABLE_LIBRARY_VALIDATION=1 scripts/package-mac-app.sh
 This adds `com.apple.security.cs.disable-library-validation` to app entitlements.
 Use for local dev only; keep off for release builds.
 
+## Swift tests fail to load Sparkle (dev only)
+
+`swift test` can build fine and then die in `dlopen` with
+`Library not loaded: @rpath/Sparkle.framework/Versions/B/Sparkle`. Setting
+`DYLD_FRAMEWORK_PATH` does **not** fix it: SwiftPM runs the bundle through
+`swiftpm-xctest-helper` inside Xcode, which is SIP-signed, so dyld strips every
+`DYLD_*` variable from its environment. Put the framework on a path dyld already
+searches instead:
+
+```bash
+ln -sfn ../Sparkle.framework \
+  apps/macos/.build/out/Products/Debug/PackageFrameworks/Sparkle.framework
+```
+
 ## Useful env flags
 
 - `SIGN_IDENTITY="Apple Development: Your Name (TEAMID)"`

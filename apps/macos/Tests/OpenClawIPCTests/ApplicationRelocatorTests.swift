@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 @testable import OpenClaw
 import Testing
@@ -219,6 +220,137 @@ struct ApplicationRelocatorTests {
         )
 
         #expect(action == .relaunch)
+    }
+
+    @Test
+    func `repeated handoff failures exhaust the retry budget`() {
+        let replacement = Data([20])
+        var policy = ReplacementHandoffRetryPolicy()
+        let decisions = (0..<ReplacementHandoffRetryPolicy.maximumAttempts).map { _ in
+            policy.recordFailure(for: replacement)
+        }
+        let retryCount = decisions.count { decision in
+            if case .retry = decision { true } else { false }
+        }
+
+        #expect(retryCount == ReplacementHandoffRetryPolicy.maximumAttempts - 1)
+        #expect(decisions.last == .giveUp)
+    }
+
+    @Test
+    func `exhausted handoff budget is terminal and idempotent`() {
+        let replacement = Data([21])
+        var policy = ReplacementHandoffRetryPolicy()
+        for _ in 0..<ReplacementHandoffRetryPolicy.maximumAttempts {
+            _ = policy.recordFailure(for: replacement)
+        }
+
+        #expect(!policy.allowsAttempt(for: replacement))
+        #expect(policy.recordFailure(for: replacement) == .giveUp)
+    }
+
+    @Test
+    func `handoff retry backoff increases without exceeding its cap`() {
+        let replacement = Data([22])
+        var policy = ReplacementHandoffRetryPolicy()
+        let delays = (0..<ReplacementHandoffRetryPolicy.maximumAttempts).compactMap { _ -> Duration? in
+            if case let .retry(after: delay) = policy.recordFailure(for: replacement) {
+                return delay
+            }
+            return nil
+        }
+
+        #expect(delays.first == ReplacementHandoffRetryPolicy.initialRetryDelay)
+        #expect(delays.allSatisfy { $0 <= ReplacementHandoffRetryPolicy.maximumRetryDelay })
+        for (earlier, later) in zip(delays, delays.dropFirst()) {
+            #expect(earlier < later)
+        }
+    }
+
+    @Test
+    func `different replacement hash resets the handoff retry budget`() {
+        let failingReplacement = Data([23])
+        let fixedReplacement = Data([24])
+        var policy = ReplacementHandoffRetryPolicy()
+        for _ in 0..<ReplacementHandoffRetryPolicy.maximumAttempts {
+            _ = policy.recordFailure(for: failingReplacement)
+        }
+
+        #expect(policy.allowsAttempt(for: fixedReplacement))
+        #expect(policy.recordFailure(for: fixedReplacement) == .retry(
+            after: ReplacementHandoffRetryPolicy.initialRetryDelay
+        ))
+    }
+
+    @Test
+    func `replacement handoff accepts ready child`() throws {
+        var descriptors = try self.makePipe()
+        let child = try self.launchSleepProcess()
+        defer {
+            self.closePipe(&descriptors)
+            self.terminateAndWait(child)
+        }
+        try self.write("READY", to: descriptors.write)
+
+        #expect(ApplicationRelocator.awaitReplacementHandoff(
+            on: descriptors.read,
+            childProcessIdentifier: child.processIdentifier
+        ) == .ready)
+    }
+
+    @Test
+    func `replacement handoff rejects failure response`() throws {
+        var descriptors = try self.makePipe()
+        let child = try self.launchSleepProcess()
+        defer {
+            self.closePipe(&descriptors)
+            self.terminateAndWait(child)
+        }
+        try self.write("FAIL", to: descriptors.write)
+
+        #expect(ApplicationRelocator.awaitReplacementHandoff(
+            on: descriptors.read,
+            childProcessIdentifier: child.processIdentifier
+        ) == .rejected)
+    }
+
+    @Test
+    func `replacement handoff promptly rejects closed pipe from dead child`() throws {
+        var descriptors = try self.makePipe()
+        let child = Process()
+        child.executableURL = URL(fileURLWithPath: "/usr/bin/true")
+        try child.run()
+        Darwin.close(descriptors.write)
+        descriptors.write = -1
+        child.waitUntilExit()
+        defer { self.closePipe(&descriptors) }
+
+        let startedAt = ContinuousClock.now
+        let outcome = ApplicationRelocator.awaitReplacementHandoff(
+            on: descriptors.read,
+            childProcessIdentifier: child.processIdentifier,
+            hangCeiling: .seconds(120)
+        )
+
+        #expect(outcome == .rejected)
+        #expect(ContinuousClock.now - startedAt < .seconds(5))
+    }
+
+    @Test
+    func `replacement handoff reports live silent child as unresponsive`() throws {
+        var descriptors = try self.makePipe()
+        let child = try self.launchSleepProcess()
+        defer {
+            self.closePipe(&descriptors)
+            self.terminateAndWait(child)
+        }
+
+        #expect(ApplicationRelocator.awaitReplacementHandoff(
+            on: descriptors.read,
+            childProcessIdentifier: child.processIdentifier,
+            hangCeiling: .milliseconds(750)
+        ) == .unresponsive)
+        #expect(Darwin.kill(child.processIdentifier, 0) == 0)
     }
 
     @Test
@@ -486,5 +618,43 @@ struct ApplicationRelocatorTests {
             options: 0
         )
         try data.write(to: url, options: .atomic)
+    }
+
+    private func makePipe() throws -> (read: Int32, write: Int32) {
+        var descriptors = [Int32](repeating: -1, count: 2)
+        try #require(Darwin.pipe(&descriptors) == 0)
+        return (descriptors[0], descriptors[1])
+    }
+
+    private func closePipe(_ descriptors: inout (read: Int32, write: Int32)) {
+        if descriptors.read >= 0 {
+            Darwin.close(descriptors.read)
+            descriptors.read = -1
+        }
+        if descriptors.write >= 0 {
+            Darwin.close(descriptors.write)
+            descriptors.write = -1
+        }
+    }
+
+    private func launchSleepProcess() throws -> Process {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/sleep")
+        process.arguments = ["5"]
+        try process.run()
+        return process
+    }
+
+    private func terminateAndWait(_ process: Process) {
+        Darwin.kill(process.processIdentifier, SIGKILL)
+        process.waitUntilExit()
+    }
+
+    private func write(_ value: String, to descriptor: Int32) throws {
+        let data = Data(value.utf8)
+        let count = data.withUnsafeBytes { buffer in
+            Darwin.write(descriptor, buffer.baseAddress, buffer.count)
+        }
+        try #require(count == data.count)
     }
 }
