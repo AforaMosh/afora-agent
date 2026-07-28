@@ -713,6 +713,35 @@ describe("gateway config methods", () => {
         resetConfigRuntimeState();
         const current = await getCurrentConfigObject();
 
+        const duplicateRes = await rpcReq<{ ok?: boolean; error?: { message?: string } }>(
+          requireWs(),
+          "config.patch",
+          {
+            raw: JSON.stringify({
+              models: {
+                providers: {
+                  custom: {
+                    models: [
+                      {
+                        id: "model-a",
+                        headers: { Authorization: REDACTED_SENTINEL },
+                      },
+                      {
+                        id: "model-a",
+                        headers: { Authorization: REDACTED_SENTINEL },
+                      },
+                    ],
+                  },
+                },
+              },
+            }),
+            baseHash: current.hash,
+            replacePaths: ["models.providers.custom.models"],
+          },
+        );
+        expect(duplicateRes.ok).toBe(false);
+        expect(duplicateRes.error?.message).toContain("Ambiguous duplicate ID model-a");
+
         const res = await rpcReq<{ ok?: boolean; error?: { message?: string } }>(
           requireWs(),
           "config.patch",

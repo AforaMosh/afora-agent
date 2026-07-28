@@ -291,6 +291,16 @@ function mapConfigPatchIdsToSource(params: {
     const source = sourceInput;
     const resolvedSource = Array.isArray(resolvedSourceInput) ? resolvedSourceInput : [];
     const runtime = Array.isArray(runtimeInput) ? runtimeInput : [];
+    const submittedIds = new Set<string>();
+    for (const entry of patch) {
+      if (!isConfigPatchObjectWithStringId(entry)) {
+        continue;
+      }
+      if (submittedIds.has(entry.id)) {
+        throw new Error(`Ambiguous duplicate ID ${entry.id} in replacement array at ${path}.`);
+      }
+      submittedIds.add(entry.id);
+    }
     return patch.map((entry) => {
       const resolvedMatches = isConfigPatchObjectWithStringId(entry)
         ? resolvedSource.flatMap((candidate, index) =>
