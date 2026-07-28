@@ -32,6 +32,7 @@ export function projectExplicitRuntimeValueOntoAuthored(params: {
   const { authored, explicit, runtime } = params;
   if (
     params.preserveResolvedLeaves &&
+    !(isWritePlainObject(authored) && isWritePlainObject(explicit)) &&
     !isDeepStrictEqual(authored, runtime) &&
     isDeepStrictEqual(explicit, runtime)
   ) {

@@ -29,6 +29,17 @@ describe("applyConfigOperations", () => {
     ).toEqual([{ a: 3 }]);
   });
 
+  it("authors runtime-default children beneath an explicit object path", () => {
+    expect(
+      projectExplicitRuntimeValueOntoAuthored({
+        authored: { token: "${TOKEN}" },
+        runtime: { token: "resolved-token", policy: "default" },
+        explicit: { token: "resolved-token", policy: "default" },
+        preserveResolvedLeaves: true,
+      }),
+    ).toEqual({ token: "${TOKEN}", policy: "default" });
+  });
+
   it("preserves explicit null values when deriving operations from a complete candidate", () => {
     const base = { plugins: { entries: { demo: { config: { mode: "auto" } } } } };
     const target = {
