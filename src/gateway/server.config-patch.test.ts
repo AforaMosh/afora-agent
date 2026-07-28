@@ -464,7 +464,7 @@ describe("gateway config methods", () => {
       resetConfigRuntimeState();
       const current = await getCurrentConfigObject();
       const submitted = structuredClone(current.config);
-      submitted.messages = { ...submitted.messages, responsePrefix: "new" };
+      submitted.messages = { responsePrefix: "new" };
       const rootBefore = await fs.readFile(configPath, "utf-8");
       const includeBefore = await fs.readFile(includePath, "utf-8");
 
