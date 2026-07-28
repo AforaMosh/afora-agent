@@ -362,6 +362,8 @@ async function mirrorBestEffort(params: {
       // what lets a re-emitted prior-turn entry collide with its existing key.
       idempotencyScope: `codex-app-server:${params.threadId}`,
       config: params.params.config,
+      diagnosticPurpose: "transcript_mirror_turn_final",
+      onExecutionPhase: params.params.onExecutionPhase,
     });
     for (const message of mirrorResult.userMessagesPresent) {
       try {
@@ -491,6 +493,8 @@ export async function mirrorPromptAtTurnStartBestEffort(params: {
         messages: [userPromptMessage],
         idempotencyScope: `codex-app-server:${params.threadId}`,
         config: params.params.config,
+        diagnosticPurpose: "transcript_mirror_prompt_start",
+        onExecutionPhase: params.params.onExecutionPhase,
       });
       for (const message of mirrorResult.userMessagesPresent) {
         params.notifyUserMessagePersisted(message);
@@ -532,12 +536,20 @@ async function mirror(params: {
   idempotencyScope?: string;
   config?: SessionTranscriptWriteLockParams["config"];
   skipBeforeMessageWriteHooks?: boolean;
+  diagnosticPurpose?: string;
+  onExecutionPhase?: EmbeddedRunAttemptParams["onExecutionPhase"];
 }): Promise<CodexAppServerTranscriptMirrorResult> {
   const messages = params.messages.filter(isMirroredAgentMessage);
   if (messages.length === 0) {
     return { assistantMirrorIdentitiesOwned: [], messagesPresent: [], userMessagesPresent: [] };
   }
 
+  const materializationStartedAt = performance.now();
+  const phaseContext = {
+    backend: "session_accessor",
+    purpose: params.diagnosticPurpose ?? "transcript_mirror",
+  };
+  params.onExecutionPhase?.({ phase: "session_materialization_started", ...phaseContext });
   const transcriptTarget = resolveCodexMirrorTranscriptTarget(params);
   const mirrorBatch = await withSessionTranscriptWriteLock(
     { ...transcriptTarget, config: params.config },
@@ -550,7 +562,23 @@ async function mirror(params: {
       const nextAssistantMirrorIdentitiesOwned = new Set<string>();
       const nextMessagesPresent: MirroredAgentMessage[] = [];
       const nextUserMessagesPresent: MirroredUserMessage[] = [];
-      const mirrorState = readTranscriptMirrorState(await transcript.readEvents());
+      const events = await transcript.readEvents();
+      params.onExecutionPhase?.({
+        phase: "session_materialization_checkpoint",
+        ...phaseContext,
+        stage: "entries_loaded",
+        entryCount: events.length,
+        durationMs: performance.now() - materializationStartedAt,
+      });
+      const mirrorState = readTranscriptMirrorState(events);
+      params.onExecutionPhase?.({
+        phase: "session_materialization_checkpoint",
+        ...phaseContext,
+        stage: "mirror_state_built",
+        entryCount: events.length,
+        messageCount: mirrorState.messageCount,
+        durationMs: performance.now() - materializationStartedAt,
+      });
       let nextMessageSeq = mirrorState.messageCount;
       for (const message of messages) {
         const dedupeIdentity = buildMirrorDedupeIdentity(message);
@@ -666,6 +694,13 @@ async function mirror(params: {
   );
   const { appendedUpdates, assistantMirrorIdentitiesOwned, messagesPresent, userMessagesPresent } =
     mirrorBatch;
+  params.onExecutionPhase?.({
+    phase: "session_materialization_checkpoint",
+    ...phaseContext,
+    stage: "mirror_batch_completed",
+    messageCount: messages.length,
+    durationMs: performance.now() - materializationStartedAt,
+  });
 
   for (const update of appendedUpdates) {
     try {
@@ -688,6 +723,13 @@ async function mirror(params: {
     }
   }
 
+  params.onExecutionPhase?.({
+    phase: "session_materialized",
+    ...phaseContext,
+    outcome: "materialized",
+    messageCount: messages.length,
+    durationMs: performance.now() - materializationStartedAt,
+  });
   return { assistantMirrorIdentitiesOwned, messagesPresent, userMessagesPresent };
 }
 
