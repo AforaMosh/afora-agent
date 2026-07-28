@@ -792,6 +792,34 @@ describe("gateway config methods", () => {
         resetConfigRuntimeState();
         const current = await getCurrentConfigObject();
 
+        const duplicateRes = await rpcReq<{ ok?: boolean; error?: { message?: string } }>(
+          requireWs(),
+          "config.patch",
+          {
+            raw: JSON.stringify({
+              models: {
+                providers: {
+                  custom: {
+                    models: [
+                      {
+                        id: "model-a",
+                        headers: { Authorization: REDACTED_SENTINEL },
+                      },
+                      {
+                        id: "model-a",
+                        headers: { Authorization: REDACTED_SENTINEL },
+                      },
+                    ],
+                  },
+                },
+              },
+            }),
+            baseHash: current.hash,
+          },
+        );
+        expect(duplicateRes.ok).toBe(false);
+        expect(duplicateRes.error?.message).toContain("Ambiguous duplicate ID model-a");
+
         const res = await rpcReq<{ ok?: boolean; error?: { message?: string } }>(
           requireWs(),
           "config.patch",
@@ -1022,13 +1050,32 @@ describe("gateway config methods", () => {
       const res = await rpcReq<{ ok?: boolean; noop?: boolean; error?: { message?: string } }>(
         requireWs(),
         "config.patch",
-        { raw: "{}", baseHash: current.hash },
+        { raw: JSON.stringify({ gateway: {} }), baseHash: current.hash },
       );
 
       expect(res.error).toBeUndefined();
       expect(res.ok).toBe(true);
       expect(res.payload?.noop).toBe(true);
       await expect(fs.readFile(configPath, "utf-8")).resolves.toBe(before);
+
+      const sameValueRes = await rpcReq<{ ok?: boolean; error?: { message?: string } }>(
+        requireWs(),
+        "config.patch",
+        {
+          raw: JSON.stringify({ gateway: { mode: "local" } }),
+          baseHash: current.hash,
+        },
+      );
+      expect(sameValueRes.ok).toBe(false);
+      expect(sameValueRes.error?.message).toContain("$include-owned config");
+
+      const inheritedKeyRes = await rpcReq<{ ok?: boolean; error?: { message?: string } }>(
+        requireWs(),
+        "config.patch",
+        { raw: '{"__proto__":{}}', baseHash: current.hash },
+      );
+      expect(inheritedKeyRes.ok).toBe(false);
+      expect(inheritedKeyRes.error?.message).toContain("$include-owned config");
     } finally {
       await restoreConfigFileForTest(original);
       await fs.rm(includePath, { force: true });

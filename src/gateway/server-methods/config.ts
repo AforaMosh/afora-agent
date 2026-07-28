@@ -357,6 +357,20 @@ function mapConfigPatchIdsToSource(params: {
       return mapped;
     });
   }
+  if (Array.isArray(patch) && containsRedactedPatchSentinel(patch)) {
+    if (!patch.every(isConfigPatchObjectWithStringId)) {
+      throw new Error(
+        `Cannot safely restore redacted values for array at ${path || "<root>"} without stable IDs.`,
+      );
+    }
+    const submittedIds = new Set<string>();
+    for (const entry of patch) {
+      if (submittedIds.has(entry.id)) {
+        throw new Error(`Ambiguous duplicate ID ${entry.id} in ID-merged array at ${path}.`);
+      }
+      submittedIds.add(entry.id);
+    }
+  }
   if (
     !Array.isArray(patch) ||
     !Array.isArray(sourceInput) ||
@@ -595,6 +609,16 @@ function findPatchedIncludeOwner(
     }
   }
   return undefined;
+}
+
+function isEmptyMergePatchAgainst(patch: unknown, current: unknown): boolean {
+  if (!isRecord(patch) || !isRecord(current)) {
+    return false;
+  }
+  return Object.entries(patch).every(
+    ([key, value]) =>
+      Object.hasOwn(current, key) && isEmptyMergePatchAgainst(value, current[key]),
+  );
 }
 
 function collectDestructiveArrayPatchPaths(params: {
@@ -1437,8 +1461,8 @@ export const configHandlers: GatewayRequestHandlers = {
       return;
     }
     const replacePaths = readConfigPatchReplacePaths(params);
-    const patchIsEmpty = isRecord(parsedRes.parsed) && Object.keys(parsedRes.parsed).length === 0;
-    const patchedIncludeOwner = patchIsEmpty
+    const patchIsEmptyMerge = isEmptyMergePatchAgainst(parsedRes.parsed, snapshot.config);
+    const patchedIncludeOwner = patchIsEmptyMerge
       ? null
       : findPatchedIncludeOwner(parsedRes.parsed, snapshot.parsed);
     if (patchedIncludeOwner) {
