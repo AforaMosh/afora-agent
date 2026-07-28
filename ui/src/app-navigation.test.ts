@@ -129,6 +129,7 @@ const ALL_ROUTES: RouteId[] = Array.from(
     ...SIDEBAR_NAV_ROUTES,
     "skills",
     "skill-workshop",
+    "claws",
     // Hub tabs and settings subpages route without their own nav entry.
     "worktrees",
     "memory-import",
@@ -160,7 +161,6 @@ const SETTINGS_ROUTE_PATHS = [
   { routeId: "worktrees", path: "/worktrees", alias: "/settings/worktrees" },
   { routeId: "sessions", path: "/sessions", alias: "/settings/sessions" },
   { routeId: "nodes", path: "/settings/devices", alias: "/nodes" },
-  { routeId: "cron", path: "/automations", alias: "/cron" },
   { routeId: "agents", path: "/settings/agents", alias: "/agents" },
   {
     routeId: "memory-import",
@@ -369,7 +369,7 @@ describe("subtitleForRoute", () => {
       sessions: "Active threads and defaults.",
       usage: "API usage and costs.",
       cron: "Scheduled tasks and recurring agent runs.",
-      tasks: "Background tasks: subagents, automation runs, CLI.",
+      tasks: "Background tasks: subagents, cron runs, CLI.",
       agents: "Workspaces, tools, identities.",
       skills: "Skills and API keys.",
       plugins: "Install and manage optional capabilities.",
@@ -379,7 +379,7 @@ describe("subtitleForRoute", () => {
       communications: "Messages and text-to-speech settings.",
       appearance: "Theme, UI, and setup wizard settings.",
       lobsterdex: "Every lobster palette that has visited this browser.",
-      automation: "Commands, hooks, automations, and plugins.",
+      automation: "Commands, hooks, cron, and plugins.",
       mcp: "MCP servers, auth, tools, and diagnostics.",
       memory: "Memory engine, backend, search, and dreaming.",
       talk: "Realtime voice: provider, model, and speaker voice.",
@@ -772,9 +772,11 @@ describe("SIDEBAR_NAV_ROUTES", () => {
   it("collapses the plugins hub to a single sidebar entry", () => {
     expect(SIDEBAR_NAV_ROUTES).not.toContain("skills");
     expect(SIDEBAR_NAV_ROUTES).not.toContain("skill-workshop");
+    expect(SIDEBAR_NAV_ROUTES).not.toContain("claws");
     expect(isPluginsHubRoute("plugins")).toBe(true);
     expect(isPluginsHubRoute("skills")).toBe(true);
     expect(isPluginsHubRoute("skill-workshop")).toBe(true);
+    expect(isPluginsHubRoute("claws")).toBe(true);
     expect(isPluginsHubRoute("sessions")).toBe(false);
   });
 
