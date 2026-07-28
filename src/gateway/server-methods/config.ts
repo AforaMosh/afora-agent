@@ -1460,10 +1460,11 @@ export const configHandlers: GatewayRequestHandlers = {
       return;
     }
     const replacePaths = readConfigPatchReplacePaths(params);
-    const patchIsEmptyMerge = isEmptyMergePatchAgainst(parsedRes.parsed, snapshot.config);
+    const ownershipPatch = stripRedactedPatchSentinels(parsedRes.parsed) ?? {};
+    const patchIsEmptyMerge = isEmptyMergePatchAgainst(ownershipPatch, snapshot.config);
     const patchedIncludeOwner = patchIsEmptyMerge
       ? null
-      : findPatchedIncludeOwner(parsedRes.parsed, snapshot.parsed);
+      : findPatchedIncludeOwner(ownershipPatch, snapshot.parsed);
     if (patchedIncludeOwner) {
       const provenance = snapshot.includeProvenance?.find(
         (entry) =>
@@ -1486,7 +1487,7 @@ export const configHandlers: GatewayRequestHandlers = {
     }
     const includeCheck = checkConfigIncludeOwnership({
       snapshot,
-      operations: [{ kind: "merge", patch: parsedRes.parsed }],
+      operations: [{ kind: "merge", patch: ownershipPatch }],
     });
     if (!includeCheck.ok) {
       respond(

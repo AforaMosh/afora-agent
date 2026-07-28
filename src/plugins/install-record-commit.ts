@@ -5,6 +5,7 @@ import { isDeepStrictEqual } from "node:util";
 import {
   createConfigMutationOperations,
   createRuntimeConfigMutationOperations,
+  type ConfigMutationOperation,
 } from "../config/config-path-mutation.js";
 import {
   readConfigFileSnapshotForWrite,
@@ -83,6 +84,26 @@ type ConfigCommit = (
   writeOptions?: ConfigWriteOptions,
 ) => Promise<ConfigReplaceResult | void>;
 const PLUGIN_SOURCE_CHANGED_RESTART_REASON = "plugin source changed";
+
+function withFinalPendingInstallUnset(
+  operations: readonly ConfigMutationOperation[],
+): ConfigMutationOperation[] {
+  return [
+    ...operations.filter(
+      (operation) =>
+        operation.kind !== "unset" ||
+        operation.path.length !== PLUGIN_INSTALLS_CONFIG_PATH.length ||
+        !operation.path.every(
+          (segment, pathIndex) => segment === PLUGIN_INSTALLS_CONFIG_PATH[pathIndex],
+        ),
+    ),
+    {
+      kind: "unset",
+      path: PLUGIN_INSTALLS_CONFIG_PATH,
+      strictIncludeOwnership: true,
+    },
+  ];
+}
 
 function mergeAfterWrite(
   writeOptions: ConfigWriteOptions | undefined,
@@ -449,30 +470,14 @@ export async function commitConfigWithPendingPluginInstalls(params: {
             runtime: prepared!.snapshot.runtimeConfig,
             candidate: nextConfig,
           });
-      if (hasPendingPluginInstallRecords(params.nextConfig)) {
-        for (let index = operations.length - 1; index >= 0; index -= 1) {
-          const operation = operations[index];
-          if (
-            operation?.kind === "unset" &&
-            operation.path.length === PLUGIN_INSTALLS_CONFIG_PATH.length &&
-            operation.path.every(
-              (segment, pathIndex) => segment === PLUGIN_INSTALLS_CONFIG_PATH[pathIndex],
-            )
-          ) {
-            operations.splice(index, 1);
-          }
-        }
-        operations.push({
-          kind: "unset",
-          path: PLUGIN_INSTALLS_CONFIG_PATH,
-          strictIncludeOwnership: true,
-        });
-      }
+      const writeOperations = hasPendingPluginInstallRecords(params.nextConfig)
+        ? withFinalPendingInstallUnset(operations)
+        : operations;
       return await replaceConfigFileWithIntent({
         nextConfig,
         intent: {
           kind: "mutate",
-          operations,
+          operations: writeOperations,
         },
         ...(prepared ? { snapshot: prepared.snapshot } : {}),
         ...(params.baseHash !== undefined ? { baseHash: params.baseHash } : {}),
@@ -501,9 +506,22 @@ export async function transformConfigWithPendingPluginInstalls<T = void>(
       sourceConfig: snapshot.sourceConfig,
       ...(writeOptions ? { writeOptions: mergeAfterWrite(writeOptions, params.afterWrite) } : {}),
       commit: async (config, commitWriteOptions) => {
+        const needsPendingInstallCleanup =
+          hasPendingPluginInstallRecords(nextConfig) ||
+          hasPendingPluginInstallRecords(snapshot.sourceConfig);
+        const reconciledIntent = needsPendingInstallCleanup
+          ? {
+              kind: "mutate" as const,
+              operations: withFinalPendingInstallUnset(
+                intent.kind === "mutate"
+                  ? intent.operations
+                  : createConfigMutationOperations(snapshot.parsed, config),
+              ),
+            }
+          : intent;
         return await replaceConfigFileWithIntent({
           nextConfig: config,
-          intent,
+          intent: reconciledIntent,
           snapshot,
           writeOptions: commitWriteOptions ?? {},
           ...(baseHash !== undefined ? { baseHash } : {}),

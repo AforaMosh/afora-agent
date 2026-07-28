@@ -416,4 +416,38 @@ describe("applyConfigOperations", () => {
       }),
     ).toThrow("cannot safely persist a runtime-derived value at plugins.entries.next");
   });
+
+  it("allows unrelated values that merely equal a non-sensitive environment default", () => {
+    expect(
+      createRuntimeConfigMutationOperations({
+        source: { plugins: { entries: { demo: { config: { enabled: "${OPS_DEFAULT}" } } } } },
+        runtime: { plugins: { entries: { demo: { config: { enabled: false } } } } },
+        candidate: {
+          plugins: {
+            entries: {
+              demo: { config: { enabled: false } },
+              next: { config: { enabled: false } },
+            },
+          },
+        },
+      }),
+    ).toContainEqual({
+      kind: "set",
+      path: ["plugins", "entries", "next"],
+      value: { config: { enabled: false } },
+    });
+  });
+
+  it("rejects copying a runtime-only sensitive overlay into authored config", () => {
+    expect(() =>
+      createRuntimeConfigMutationOperations({
+        source: { gateway: { auth: { mode: "token" } } },
+        runtime: { gateway: { auth: { mode: "token", token: "runtime-token" } } },
+        candidate: {
+          gateway: { auth: { mode: "token", token: "runtime-token" } },
+          plugins: { entries: { demo: { config: { copied: "runtime-token" } } } },
+        },
+      }),
+    ).toThrow("cannot safely persist a runtime-derived value at plugins.entries.demo");
+  });
 });

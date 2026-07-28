@@ -1082,6 +1082,46 @@ describe("gateway config methods", () => {
     }
   });
 
+  it("ignores keep-value redaction markers when checking include ownership", async () => {
+    const { createConfigIO, resetConfigRuntimeState } = await import("../config/config.js");
+    const configPath = createConfigIO().configPath;
+    const includePath = path.join(path.dirname(configPath), "gateway-include.json");
+    const original = await getCurrentConfigObject();
+    try {
+      await writeJsonFile(includePath, {
+        auth: { mode: "token", token: "included-secret" },
+      });
+      await writeJsonFile(configPath, {
+        gateway: { $include: "./gateway-include.json" },
+        messages: { responsePrefix: "old" },
+      });
+      resetConfigRuntimeState();
+      const current = await getCurrentConfigObject();
+
+      const res = await rpcReq<{ ok?: boolean; error?: { message?: string } }>(
+        requireWs(),
+        "config.patch",
+        {
+          raw: JSON.stringify({
+            gateway: { auth: { token: REDACTED_SENTINEL } },
+            messages: { responsePrefix: "new" },
+          }),
+          baseHash: current.hash,
+        },
+      );
+
+      expect(res.error).toBeUndefined();
+      expect(res.ok).toBe(true);
+      const persisted = JSON.parse(await fs.readFile(configPath, "utf-8")) as OpenClawConfig;
+      expect(persisted.gateway).toEqual({ $include: "./gateway-include.json" });
+      expect(persisted.messages?.responsePrefix).toBe("new");
+      await expect(fs.readFile(includePath, "utf-8")).resolves.toContain("included-secret");
+    } finally {
+      await restoreConfigFileForTest(original);
+      await fs.rm(includePath, { force: true });
+    }
+  });
+
   it("preserves redacted secrets during an explicit ID-array replacement", async () => {
     const { createConfigIO, resetConfigRuntimeState } = await import("../config/config.js");
     const configPath = createConfigIO().configPath;

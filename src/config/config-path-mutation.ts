@@ -229,13 +229,24 @@ export function createRuntimeConfigMutationOperations(params: {
     if (isDeepStrictEqual(source, runtime)) {
       return;
     }
-    if ((typeof source === "string" && containsEnvVarReference(source)) || isSecretRef(source)) {
+    const sourceIsEnvReference = typeof source === "string" && containsEnvVarReference(source);
+    if (sourceIsEnvReference || isSecretRef(source)) {
       if (runtime !== undefined) {
-        recordResolvedLeaf(runtime, path, true);
+        // Environment names do not prove whether a string is a credential.
+        // Typed non-string defaults cannot carry the original env bytes.
+        recordResolvedLeaf(
+          runtime,
+          path,
+          isSecretRef(source) || (sourceIsEnvReference && typeof runtime === "string"),
+        );
       }
       return;
     }
     if (isWritePlainObject(source) && Object.hasOwn(source, "$include")) {
+      collectRuntimeLeafPaths(runtime, path);
+      return;
+    }
+    if (source === undefined && runtime !== undefined) {
       collectRuntimeLeafPaths(runtime, path);
       return;
     }

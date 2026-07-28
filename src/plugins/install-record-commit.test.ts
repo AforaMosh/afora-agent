@@ -229,7 +229,20 @@ describe("commitConfigWithPendingPluginInstalls", () => {
         commit: (input: unknown) => Promise<unknown>;
       };
       const transformed = transformParams.transform(sourceConfig, { snapshot });
-      await transformParams.commit({ nextConfig: transformed.nextConfig, snapshot });
+      await transformParams.commit({
+        nextConfig: transformed.nextConfig,
+        intent: {
+          kind: "mutate",
+          operations: [
+            {
+              kind: "set",
+              path: ["plugins", "installs", "codex"],
+              value: codexRecord,
+            },
+          ],
+        },
+        snapshot,
+      });
       return {};
     });
 
@@ -243,6 +256,26 @@ describe("commitConfigWithPendingPluginInstalls", () => {
       other: sourceConfig.plugins?.installs?.other,
       codex: codexRecord,
     });
+    expect(mocks.replaceConfigFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nextConfig: {},
+        intent: {
+          kind: "mutate",
+          operations: [
+            {
+              kind: "set",
+              path: ["plugins", "installs", "codex"],
+              value: codexRecord,
+            },
+            {
+              kind: "unset",
+              path: ["plugins", "installs"],
+              strictIncludeOwnership: true,
+            },
+          ],
+        },
+      }),
+    );
   });
 
   it("strips only selected pending plugin install records", () => {
