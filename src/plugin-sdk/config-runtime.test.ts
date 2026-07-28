@@ -276,7 +276,7 @@ describe("deprecated config-runtime writeConfigFile", () => {
     });
   });
 
-  it("rejects changed arrays whose authored references were runtime-resolved", async () => {
+  it("rejects changed resolved arrays even with a source-shaped explicit value", async () => {
     await withTempHome(async (home) => {
       await withEnvAsync({ TOKEN: "resolved-token" }, async () => {
         const stateDir = path.join(home, ".openclaw");
@@ -294,6 +294,8 @@ describe("deprecated config-runtime writeConfigFile", () => {
 
         await expect(
           writeConfigFile(candidate, {
+            explicitSetPaths: [["plugins", "allow"]],
+            explicitSetValueSource: { plugins: { allow: ["${TOKEN}", "new"] } },
             skipPluginValidation: true,
             skipRuntimeSnapshotRefresh: true,
           }),

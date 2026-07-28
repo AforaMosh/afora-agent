@@ -424,3 +424,53 @@ describe("config.patch hash-free ui.prefs LWW", () => {
     expect(storedConfig.ui?.prefs).toEqual({ locale: "de" });
   });
 });
+
+describe("config.patch strict input and include ownership", () => {
+  it("rejects a root null patch before merge application", async () => {
+    const { respond } = await invokeConfigPatch({ raw: null, baseHash: "base-hash" });
+
+    expect(respond).toHaveBeenCalledWith(
+      false,
+      undefined,
+      expect.objectContaining({ message: "config.patch raw must be an object" }),
+    );
+    expect(configWriteMocks.commitGatewayConfigWrite).not.toHaveBeenCalled();
+  });
+
+  it("ignores an empty include-owned branch beside a writable sibling patch", async () => {
+    const runtimeConfig: OpenClawConfig = {
+      gateway: { mode: "local", tls: { enabled: true } },
+      messages: { responsePrefix: "old" },
+    };
+    storedConfig = runtimeConfig;
+    const snapshotRead = createConfigWriteSnapshot(runtimeConfig);
+    snapshotRead.snapshot.parsed = {
+      gateway: { $include: "./gateway.json5" },
+      messages: { responsePrefix: "old" },
+    } as unknown as OpenClawConfig;
+    configWriteMocks.readConfigFileSnapshotForWrite.mockResolvedValueOnce(snapshotRead);
+
+    const { respond } = await invokeConfigPatch({
+      raw: { gateway: { tls: {} }, messages: { responsePrefix: "new" } },
+      baseHash: "base-hash",
+    });
+
+    expect(respond).toHaveBeenCalledWith(
+      true,
+      expect.objectContaining({ ok: true, hash: "next-hash-1" }),
+      undefined,
+    );
+    expect(storedConfig).toEqual({
+      gateway: { mode: "local", tls: { enabled: true } },
+      messages: { responsePrefix: "new" },
+    });
+    expect(configWriteMocks.commitGatewayConfigWrite).toHaveBeenCalledWith(
+      expect.objectContaining({
+        intent: {
+          kind: "mutate",
+          operations: [{ kind: "merge", patch: { messages: { responsePrefix: "new" } } }],
+        },
+      }),
+    );
+  });
+});

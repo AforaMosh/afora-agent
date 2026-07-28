@@ -637,6 +637,21 @@ function isEmptyMergePatchAgainst(patch: unknown, current: unknown): boolean {
   );
 }
 
+function pruneEmptyMergePatchBranches(patch: unknown, current: unknown): unknown {
+  if (!isRecord(patch) || !isRecord(current)) {
+    return patch;
+  }
+  return Object.fromEntries(
+    Object.entries(patch).flatMap(([key, value]) => {
+      const prunedValue = pruneEmptyMergePatchBranches(value, current[key]);
+      if (Object.hasOwn(current, key) && isEmptyMergePatchAgainst(prunedValue, current[key])) {
+        return [];
+      }
+      return [[key, prunedValue]];
+    }),
+  );
+}
+
 function collectDestructiveArrayPatchPaths(params: {
   base: unknown;
   patch: unknown;
@@ -1482,7 +1497,11 @@ export const configHandlers: GatewayRequestHandlers = {
       return;
     }
     const replacePaths = readConfigPatchReplacePaths(params);
-    const ownershipPatch = stripRedactedPatchSentinels(parsedRes.parsed) ?? {};
+    const inputPatch = pruneEmptyMergePatchBranches(parsedRes.parsed, runtimeConfig);
+    const ownershipPatch = pruneEmptyMergePatchBranches(
+      stripRedactedPatchSentinels(inputPatch) ?? {},
+      runtimeConfig,
+    );
     const patchIsEmptyMerge = isEmptyMergePatchAgainst(ownershipPatch, runtimeConfig);
     const patchedIncludeOwner = patchIsEmptyMerge
       ? null
@@ -1539,7 +1558,7 @@ export const configHandlers: GatewayRequestHandlers = {
     let runtimePatchInput: unknown;
     try {
       runtimePatchInput = mapConfigPatchIdsToSource({
-        patch: parsedRes.parsed,
+        patch: inputPatch,
         source: runtimeConfig,
         resolvedSource: runtimeConfig,
         runtime: runtimeConfig,
@@ -1673,7 +1692,7 @@ export const configHandlers: GatewayRequestHandlers = {
     let sourcePatchInput: unknown;
     try {
       sourcePatchInput = mapConfigPatchIdsToSource({
-        patch: parsedRes.parsed,
+        patch: inputPatch,
         source: snapshot.parsed,
         resolvedSource: snapshot.resolved,
         runtime: runtimeConfig,
@@ -1711,7 +1730,7 @@ export const configHandlers: GatewayRequestHandlers = {
         : [{ kind: "merge" as const, patch: sourcePatch }];
     sourceOperations.push(
       ...collectRuntimeOnlyAgentUnsets({
-        patch: parsedRes.parsed,
+        patch: inputPatch,
         parsed: snapshot.parsed,
         runtime: runtimeConfig,
       }),

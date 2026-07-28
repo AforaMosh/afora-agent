@@ -79,4 +79,13 @@ describe("explicit ambient agent targets", () => {
     expect(OpenClawSchema.safeParse({ talk: { agentId: "main" } }).success).toBe(true);
     expect(OpenClawSchema.safeParse({ talk: { agentId: "missing" } }).success).toBe(false);
   });
+
+  it("does not synthesize main once an explicit roster exists", () => {
+    expect(
+      OpenClawSchema.safeParse({
+        agents: { entries: { ops: { default: true } } },
+        talk: { agentId: "main" },
+      }).success,
+    ).toBe(false);
+  });
 });
