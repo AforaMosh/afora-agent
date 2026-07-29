@@ -226,8 +226,8 @@ export async function writeConfigFileFromContext(
         !Array.isArray(candidate.agents)
           ? (candidate.agents as Record<string, unknown>)
           : {};
-      // Whole-entry includes own the legacy id in another file. Keep that authored list until
-      // Doctor gains a coordinated root/include migration instead of flattening or deadlocking it.
+      // Doctor cannot yet migrate include-owned rosters; multi-file migration is a tracked
+      // follow-up — remove this branch when it lands.
       persistCandidate = {
         ...candidate,
         agents: { ...candidateAgents, list: structuredClone(authoredRoster.value) },

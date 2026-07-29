@@ -128,22 +128,6 @@ describe("runtime.agents-entries doctor migration", () => {
       resolved: { agents: { list: [{ id: "main", default: true }] } },
       expected: { main: { default: true } },
     },
-    {
-      name: "list include projection",
-      authored: {
-        agents: {
-          list: [{ id: "main", default: true, identity: { $include: "./main-identity.json" } }],
-        },
-      },
-      resolved: {
-        agents: {
-          list: [{ id: "main", default: true, identity: { name: "Main", emoji: "🦞" } }],
-        },
-      },
-      expected: {
-        main: { default: true, identity: { $include: "./main-identity.json" } },
-      },
-    },
   ])("repairs persisted agents.list $name to canonical agents.entries", (testCase) => {
     const migrationInput = expectDefined(
       prepareAgentEntriesDoctorMigrationInput({

@@ -306,6 +306,7 @@ function preserveSourceValueAtPath(params: {
   return setPathValueCreatingParents(params.persistedCandidate, params.path, sourceValue);
 }
 
+// Protects canonical provider params; shipped fix 579334f9f8a0.
 function preserveAuthoredAgentParams(params: {
   persistedCandidate: unknown;
   sourceConfig: unknown;
