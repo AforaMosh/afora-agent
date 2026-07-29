@@ -17,6 +17,7 @@ import { MAX_MANAGED_FILE_BYTES, MAX_MANAGED_WORKSPACE_BYTES } from "./source-li
 import {
   CLAW_ADD_PLAN_SCHEMA_VERSION,
   CLAW_BOOTSTRAP_FILE_NAMES,
+  CLAW_OPENCLAW_PROFILE_EXTENSIONS_SCHEMA_VERSION,
   CLAW_OUTPUT_STABILITY,
   CLAW_SETUP_SCHEMA_VERSION,
   type ClawAddPlan,
@@ -554,13 +555,16 @@ export async function buildClawAddPlan(params: {
   }
 
   const declaredExtensions =
-    params.openClawProfile?.schemaVersion === 2 ? params.openClawProfile.extensions : [];
+    params.openClawProfile?.schemaVersion === CLAW_OPENCLAW_PROFILE_EXTENSIONS_SCHEMA_VERSION
+      ? params.openClawProfile.extensions
+      : [];
   const extensionPlan = await planClawExtensions({
     extensions: declaredExtensions,
     workspace,
     packagePreflight: context.packagePreflight,
   });
   const extensions = extensionPlan.extensions;
+  readinessRequirements.push(...extensionPlan.requirements);
   actions.push(...extensionPlan.actions);
   capabilityChanges.push(...extensionPlan.capabilityChanges);
   blockers.push(...extensionPlan.blockers);

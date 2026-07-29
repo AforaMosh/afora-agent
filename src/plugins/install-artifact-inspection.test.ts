@@ -27,8 +27,8 @@ describe("plugin install artifact inspection", () => {
       }),
     ).toEqual({
       format: "claude",
-      mapped: ["mcpServers", "skills"],
-      unavailable: ["agents", "outputStyles"],
+      mapped: ["agents", "mcpServers", "outputStyles", "skills"],
+      unavailable: [],
     });
   });
 
@@ -54,8 +54,8 @@ describe("plugin install artifact inspection", () => {
       ok: true,
       artifactInspection: {
         format: "claude",
-        mapped: ["skills"],
-        unavailable: ["agents"],
+        mapped: ["agents", "skills"],
+        unavailable: [],
       },
     });
   });

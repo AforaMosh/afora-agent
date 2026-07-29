@@ -208,6 +208,7 @@ describe("Claw application planning", () => {
           mapped: ["commands", "skills"],
           unavailable: ["agents"],
           adapterIdentity: "openclaw/test",
+          requirements: [{ kind: "environment", name: "GITHUB_TOKEN" }],
         }),
       },
     });
@@ -222,8 +223,19 @@ describe("Claw application planning", () => {
       }),
     ]);
     expect(plan.actions).toContainEqual(
-      expect.objectContaining({ kind: "package", id: "extension:github", blocked: false }),
+      expect.objectContaining({
+        kind: "package",
+        id: "extension:github",
+        blocked: false,
+        details: expect.objectContaining({
+          prerequisites: [{ kind: "environment", name: "GITHUB_TOKEN" }],
+        }),
+      }),
     );
+    expect(plan.readiness).toEqual({
+      ready: false,
+      requirements: [{ kind: "environment", name: "GITHUB_TOKEN" }],
+    });
     expect(plan.actions).toContainEqual(
       expect.objectContaining({
         kind: "workspaceFile",
@@ -262,6 +274,25 @@ describe("Claw application planning", () => {
     expect(plan.extensions[0]?.blocked).toBe(true);
     expect(plan.blockers).toContainEqual(
       expect.objectContaining({ code: "extension_format_mismatch" }),
+    );
+  });
+
+  it("fails closed when canonical extension artifact inspection is unavailable", async () => {
+    const { source, workspace } = await createPlanSource();
+    const manifest = requireManifest({ schemaVersion: 2, agent: { id: "github-triage" } });
+    const plan = await buildClawAddPlan({
+      manifest,
+      openClawProfile: { schemaVersion: 2, agent: {}, extensions: [extension] },
+      source,
+      context: {
+        workspace,
+        packagePreflight: async () => ({ ok: true, action: "install" }),
+      },
+    });
+
+    expect(plan.extensions[0]?.blocked).toBe(true);
+    expect(plan.blockers).toContainEqual(
+      expect.objectContaining({ code: "extension_artifact_inspection_unavailable" }),
     );
   });
 });

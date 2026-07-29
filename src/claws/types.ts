@@ -4,6 +4,7 @@ import type { AgentConfig } from "../config/types.agents.js";
 
 export const CLAW_SCHEMA_VERSION = 1 as const;
 export const CLAW_SETUP_SCHEMA_VERSION = 2 as const;
+export const CLAW_OPENCLAW_PROFILE_EXTENSIONS_SCHEMA_VERSION = 2 as const;
 export const CLAW_ADD_PLAN_SCHEMA_VERSION = "openclaw.clawAddPlan.v1" as const;
 export const CLAW_INSPECT_RESULT_SCHEMA_VERSION = "openclaw.clawInspect.v1" as const;
 export const CLAW_OUTPUT_STABILITY = "experimental" as const;
@@ -90,7 +91,7 @@ export type ClawOpenClawProfile =
       agent: ClawOpenClawAgentProfile;
     }
   | {
-      schemaVersion: 2;
+      schemaVersion: typeof CLAW_OPENCLAW_PROFILE_EXTENSIONS_SCHEMA_VERSION;
       agent: ClawOpenClawAgentProfile;
       extensions: ClawOpenClawExtension[];
     };

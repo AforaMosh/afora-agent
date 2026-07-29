@@ -18,6 +18,7 @@ import {
 import { clawPersonalizationSchema, clawSetupSchema } from "./setup-schema.js";
 import {
   CLAW_BOOTSTRAP_FILE_NAMES,
+  CLAW_OPENCLAW_PROFILE_EXTENSIONS_SCHEMA_VERSION,
   CLAW_SCHEMA_VERSION,
   CLAW_SETUP_SCHEMA_VERSION,
   type ClawDiagnostic,
@@ -221,7 +222,7 @@ const openClawProfileSchema = z.discriminatedUnion("schemaVersion", [
   z.object({ schemaVersion: z.literal(1), agent: openClawAgentProfileSchema }).strict(),
   z
     .object({
-      schemaVersion: z.literal(2),
+      schemaVersion: z.literal(CLAW_OPENCLAW_PROFILE_EXTENSIONS_SCHEMA_VERSION),
       agent: openClawAgentProfileSchema,
       extensions: z.array(openClawExtensionSchema).optional().default([]),
     })

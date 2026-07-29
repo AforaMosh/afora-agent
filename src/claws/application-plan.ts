@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { stableStringify } from "../agents/stable-stringify.js";
+import { CLAW_OPENCLAW_PROFILE_EXTENSIONS_SCHEMA_VERSION } from "./types.js";
 import type {
   ClawAddCapabilityChange,
   ClawAddPlanAction,
@@ -7,6 +8,7 @@ import type {
   ClawExtensionPlan,
   ClawOpenClawExtension,
   ClawOpenClawProfile,
+  ClawLocalPrerequisite,
   ClawPackage,
   ClawPackagePreflight,
   ClawPackagePreflightResult,
@@ -15,7 +17,7 @@ import type {
 export function clawProfileExtensionPackages(
   profile: ClawOpenClawProfile | undefined,
 ): ClawPackage[] {
-  if (profile?.schemaVersion !== 2) {
+  if (profile?.schemaVersion !== CLAW_OPENCLAW_PROFILE_EXTENSIONS_SCHEMA_VERSION) {
     return [];
   }
   return profile.extensions.map((extension) => ({
@@ -72,11 +74,13 @@ export async function planClawExtensions(params: {
   extensions: ClawExtensionPlan[];
   actions: ClawAddPlanAction[];
   capabilityChanges: ClawAddCapabilityChange[];
+  requirements: ClawLocalPrerequisite[];
   blockers: ClawDiagnostic[];
 }> {
   const extensions: ClawExtensionPlan[] = [];
   const actions: ClawAddPlanAction[] = [];
   const capabilityChanges: ClawAddCapabilityChange[] = [];
+  const requirements: ClawLocalPrerequisite[] = [];
   const blockers: ClawDiagnostic[] = [];
 
   for (const [index, extension] of params.extensions.entries()) {
@@ -95,8 +99,16 @@ export async function planClawExtensions(params: {
           code: "package_install_unavailable",
           message: "Extension preflight is unavailable.",
         };
+    const inspectionUnavailable =
+      preflight.ok && !preflight.detectedFormat
+        ? blocker(
+            "extension_artifact_inspection_unavailable",
+            `$.metadata.openclaw.config.extensions[${index}]`,
+            `Extension ${JSON.stringify(extension.id)} could not be checked by the canonical plugin detector.`,
+          )
+        : undefined;
     const formatMismatch =
-      preflight.ok && preflight.detectedFormat !== extension.format
+      preflight.ok && preflight.detectedFormat && preflight.detectedFormat !== extension.format
         ? blocker(
             "extension_format_mismatch",
             `$.metadata.openclaw.config.extensions[${index}].format`,
@@ -109,9 +121,12 @@ export async function planClawExtensions(params: {
           `$.metadata.openclaw.config.extensions[${index}]`,
           preflight.message ?? "Extension preflight failed.",
         )
-      : formatMismatch;
+      : (inspectionUnavailable ?? formatMismatch);
     if (diagnostic) {
       blockers.push(diagnostic);
+    }
+    if (preflight.ok && preflight.requirements) {
+      requirements.push(...preflight.requirements);
     }
     const extensionPlan: ClawExtensionPlan = {
       ...extension,
@@ -122,7 +137,7 @@ export async function planClawExtensions(params: {
       mapped: preflight.mapped ?? [],
       unavailable: preflight.unavailable ?? [],
       ...(preflight.adapterIdentity ? { adapterIdentity: preflight.adapterIdentity } : {}),
-      blocked: !preflight.ok || Boolean(formatMismatch),
+      blocked: !preflight.ok || Boolean(inspectionUnavailable) || Boolean(formatMismatch),
     };
     extensions.push(extensionPlan);
     actions.push({
@@ -139,6 +154,7 @@ export async function planClawExtensions(params: {
             ? "present-exact"
             : "absent",
         ...(preflight.warning ? { riskWarning: preflight.warning } : {}),
+        ...(preflight.requirements ? { prerequisites: preflight.requirements } : {}),
       },
       blocked: extensionPlan.blocked,
       ...(diagnostic ? { reason: diagnostic.message } : {}),
@@ -146,5 +162,5 @@ export async function planClawExtensions(params: {
     capabilityChanges.push(extensionCapabilityChange({ extension, preflight }));
   }
 
-  return { extensions, actions, capabilityChanges, blockers };
+  return { extensions, actions, capabilityChanges, requirements, blockers };
 }

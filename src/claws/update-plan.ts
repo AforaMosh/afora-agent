@@ -19,6 +19,7 @@ import { readClawPackageRefs } from "./provenance.js";
 import { clawSetupUpdateMutationUnavailableDiagnostic } from "./setup-mutation-guard.js";
 import {
   CLAW_OUTPUT_STABILITY,
+  CLAW_OPENCLAW_PROFILE_EXTENSIONS_SCHEMA_VERSION,
   CLAW_SETUP_SCHEMA_VERSION,
   type ClawDiagnostic,
   type ClawManifest,
@@ -470,7 +471,8 @@ export async function buildClawUpdatePlan(params: {
           (pkg) => packageKey(pkg) === key,
         );
         const extensionIndex =
-          params.targetOpenClawProfile?.schemaVersion === 2
+          params.targetOpenClawProfile?.schemaVersion ===
+          CLAW_OPENCLAW_PROFILE_EXTENSIONS_SCHEMA_VERSION
             ? params.targetOpenClawProfile.extensions.findIndex(
                 (extension) => packageKey(extension) === key,
               )
@@ -478,7 +480,9 @@ export async function buildClawUpdatePlan(params: {
         const path =
           packageIndex >= 0
             ? `$.packages[${packageIndex}]`
-            : `$.metadata.openclaw.config.extensions[${extensionIndex}]`;
+            : extensionIndex >= 0
+              ? `$.metadata.openclaw.config.extensions[${extensionIndex}]`
+              : "$.packages";
         const code = preflight?.code ?? "package_install_unavailable";
         if (!blockers.some((entry) => entry.code === code && entry.path === path)) {
           blockers.push(diagnostic(code, path, preflight?.message ?? "Package preflight failed."));
