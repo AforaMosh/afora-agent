@@ -39,6 +39,29 @@ const writeCases: WriteCase[] = [
     expected: { gateway: { port: 18789, auth: { mode: "token" } } },
   },
   {
+    name: "rejects narrowed canonical writes that silently drop an agent",
+    current: { agents: { entries: { main: { default: true }, worker: {} } } },
+    next: { agents: { entries: { worker: { default: true } } } },
+    error: "Config write would drop agent roster entries without an explicit deletion: main.",
+  },
+  {
+    name: "allows explicitly authorized canonical agent removal",
+    current: { agents: { entries: { main: { default: true }, worker: {} } } },
+    next: { agents: { entries: { worker: { default: true } } } },
+    options: { allowedAgentRosterRemovals: ["main"] },
+    expected: { agents: { entries: { worker: { default: true } } } },
+  },
+  {
+    name: "rejects roster unsets that remove an unauthorized entry",
+    current: { agents: { entries: { main: { default: true }, worker: {} } } },
+    next: { agents: { entries: { main: { default: true }, worker: {} } } },
+    options: {
+      unsetPaths: [["agents", "entries"]],
+      allowedAgentRosterRemovals: ["main"],
+    },
+    error: "Config write would drop agent roster entries without an explicit deletion: worker.",
+  },
+  {
     name: "preserves untouched include-owned subtrees during unrelated writes",
     current: { agents: { defaults: { model: "openai/gpt-5.4" } }, gateway: { mode: "local" } },
     authored: { agents: { $include: "./config/agents.json" }, gateway: { mode: "local" } },

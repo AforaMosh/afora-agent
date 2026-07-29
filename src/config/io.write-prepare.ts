@@ -2,11 +2,19 @@
 import { isDeepStrictEqual } from "node:util";
 import { normalizeConfiguredProviderCatalogModelId } from "@openclaw/model-catalog-core/provider-model-id-normalization";
 import { expectDefined } from "@openclaw/normalization-core";
+import {
+  listAgentEntries,
+  readAgentRosterProperty,
+  toAgentEntriesRecord,
+} from "../agents/agent-scope-config.js";
 import { isBlockedObjectKey } from "../infra/prototype-keys.js";
+import { normalizeAgentId } from "../routing/session-key.js";
 import { parseConfigPathArrayIndex } from "../shared/path-array-index.js";
 import { isRecord } from "../utils.js";
+import { applyUnsetPathsForWrite } from "./config-path-mutation.js";
 import { applyMergePatch, createMergePatch } from "./merge-patch.js";
 import { normalizeAgentModelMapForConfig, normalizeAgentModelRefForConfig } from "./model-input.js";
+import type { OpenClawConfig } from "./types.js";
 
 type ManifestModelIdNormalizationProvider = {
   aliases?: Record<string, string>;
@@ -647,6 +655,7 @@ function preserveUntouchedIncludes(params: {
   runtimeConfig: unknown;
   sourceConfig: unknown;
   nextConfig: unknown;
+  rootAuthoredConfig?: unknown;
   rootAuthoredConfig: unknown;
   persistedCandidate: unknown;
 }): unknown {
@@ -862,6 +871,75 @@ function injectExplicitlySetPaths(params: {
   return next;
 }
 
+function pathTouchesCanonicalAgentRoster(path: readonly string[]): boolean {
+  return path[0] === "agents" && (path.length === 1 || path[1] === "entries");
+}
+
+function shouldCheckCanonicalAgentRosterRetention(params: {
+  runtimeConfig: unknown;
+  sourceConfig: unknown;
+  nextConfig: unknown;
+  explicitSetPaths?: readonly (readonly string[])[];
+  unsetPaths?: readonly (readonly string[])[];
+}): boolean {
+  const touchesCanonicalRoster = Boolean(
+    params.explicitSetPaths?.some(pathTouchesCanonicalAgentRoster) ||
+    params.unsetPaths?.some(pathTouchesCanonicalAgentRoster),
+  );
+  const nextRosterProperty = readAgentRosterProperty(params.nextConfig);
+  if (!nextRosterProperty) {
+    return touchesCanonicalRoster;
+  }
+  if (
+    nextRosterProperty.kind !== "entries" ||
+    !isRecord(nextRosterProperty.value) ||
+    !Object.values(nextRosterProperty.value).every(isRecord)
+  ) {
+    return false;
+  }
+  if (touchesCanonicalRoster) {
+    return true;
+  }
+  const runtimeRoster = toAgentEntriesRecord(
+    listAgentEntries(params.runtimeConfig as OpenClawConfig),
+  );
+  const sourceRoster = toAgentEntriesRecord(
+    listAgentEntries(params.sourceConfig as OpenClawConfig),
+  );
+  const nextRoster = toAgentEntriesRecord(listAgentEntries(params.nextConfig as OpenClawConfig));
+  return (
+    !isDeepStrictEqual(runtimeRoster, nextRoster) && !isDeepStrictEqual(sourceRoster, nextRoster)
+  );
+}
+
+function assertCanonicalAgentRosterRetainsEntries(params: {
+  currentConfig: unknown;
+  canonicalConfig: unknown;
+  allowedRemovals?: readonly string[];
+}): void {
+  const allowedRemovals = new Set(
+    (params.allowedRemovals ?? []).map((agentId) => normalizeAgentId(agentId)),
+  );
+  const canonicalIds = new Set(
+    listAgentEntries(params.canonicalConfig as OpenClawConfig).map((entry) =>
+      normalizeAgentId(entry.id),
+    ),
+  );
+  const droppedIds = listAgentEntries(params.currentConfig as OpenClawConfig)
+    .filter((entry) => {
+      const agentId = normalizeAgentId(entry.id);
+      return !canonicalIds.has(agentId) && !allowedRemovals.has(agentId);
+    })
+    .map((entry) => entry.id)
+    .toSorted();
+  if (droppedIds.length === 0) {
+    return;
+  }
+  throw new Error(
+    `Config write would drop agent roster entries without an explicit deletion: ${droppedIds.join(", ")}.`,
+  );
+}
+
 function omitImplicitDefaultAgentEntries(params: {
   runtimeConfig: unknown;
   nextConfig: unknown;
@@ -899,6 +977,7 @@ export function resolvePersistCandidateForWrite(params: {
   unsetPaths?: readonly string[][];
   explicitSetPaths?: readonly (readonly string[])[];
   explicitSetValueSource?: unknown;
+  allowedAgentRosterRemovals?: readonly string[];
   allowIncludeAncestorExplicitSetPaths?: boolean;
   modelIdNormalizationPolicies?: ReadonlyMap<string, ManifestModelIdNormalizationProvider>;
 }): unknown {
@@ -938,6 +1017,18 @@ export function resolvePersistCandidateForWrite(params: {
     persistedCandidate: withSchema,
     unsetPaths: params.unsetPaths,
   });
+  if (shouldCheckCanonicalAgentRosterRetention(params)) {
+    // A roster rewrite must never drop entries the mutation did not explicitly delete.
+    // A 2026-07-25 production incident lost agents.entries.main twice through silent rewrites.
+    assertCanonicalAgentRosterRetainsEntries({
+      currentConfig: params.sourceConfig,
+      canonicalConfig: applyUnsetPathsForWrite(
+        withAuthoredParams as OpenClawConfig,
+        params.unsetPaths,
+      ),
+      allowedRemovals: params.allowedAgentRosterRemovals,
+    });
+  }
   return normalizeModelRefsForWrite(withAuthoredParams, params.modelIdNormalizationPolicies);
 }
 
