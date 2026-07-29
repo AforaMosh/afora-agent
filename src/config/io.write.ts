@@ -227,11 +227,14 @@ export async function writeConfigFileFromContext(
         !Array.isArray(candidate.agents)
           ? (candidate.agents as Record<string, unknown>)
           : {};
+      const candidateAgentSiblings = { ...candidateAgents };
+      delete candidateAgentSiblings.entries;
+      delete candidateAgentSiblings.list;
       // Doctor cannot yet migrate include-owned rosters; multi-file migration is a tracked
       // follow-up — remove this branch when it lands.
       persistCandidate = {
         ...candidate,
-        agents: { ...candidateAgents, list: structuredClone(authoredRoster.value) },
+        agents: { ...candidateAgentSiblings, list: structuredClone(authoredRoster.value) },
       };
     }
   } else if (snapshot.exists && hasAuthoredIncludes) {

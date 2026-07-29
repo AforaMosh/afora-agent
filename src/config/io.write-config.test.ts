@@ -1444,10 +1444,12 @@ describe("config io write", () => {
       { baseSnapshot: snapshot },
     );
 
-    expect(await readPersistedConfig(configPath)).toMatchObject({
+    const persistedAfterUnrelatedWrite = await readPersistedConfig(configPath);
+    expect(persistedAfterUnrelatedWrite).toMatchObject({
       agents: { list: [{ $include: "./main-agent.json" }] },
       gateway: { mode: "local", port: 19001 },
     });
+    expect(persistedAfterUnrelatedWrite.agents?.entries).toBeUndefined();
     await expect(fs.readFile(includePath, "utf-8")).resolves.toBe(includeRaw);
 
     const afterUnrelatedWrite = await io.readConfigFileSnapshot();
