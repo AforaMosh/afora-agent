@@ -7,6 +7,7 @@ import { buildClawAddPlan } from "./lifecycle.js";
 import { readClawManifestFile } from "./reader.js";
 import { parseClawManifest } from "./schema.js";
 import { buildClawSetupPlan } from "./setup.js";
+import { MAX_CLAW_SETUP_SEEDS } from "./source-limits.js";
 import type { ClawManifestV2, ClawSourceIdentity } from "./types.js";
 
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
@@ -105,6 +106,20 @@ describe("Claw setup schema version 2", () => {
         personalization: { seeds: [] },
       },
     });
+  });
+
+  it("bounds personalization seed count", () => {
+    const parsed = parseClawManifest({
+      schemaVersion: 2,
+      agent: { id: "bounded-seeds" },
+      personalization: {
+        seeds: Array.from({ length: MAX_CLAW_SETUP_SEEDS + 1 }, (_, index) => ({
+          source: `setup/seed-${index}.tmpl`,
+          destination: `USER-${index}.md`,
+        })),
+      },
+    });
+    expect(parsed).toMatchObject({ ok: false });
   });
 
   it("rejects root BOOTSTRAP.md and cross-owned destination collisions", () => {

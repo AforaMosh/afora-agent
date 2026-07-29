@@ -6,7 +6,12 @@ import { readFileDescriptorBounded } from "../infra/boundary-file-read.js";
 import { root as fsSafeRoot } from "../infra/fs-safe.js";
 import { portableClawPathKey, isSafeClawRelativePath } from "./schema-portability.js";
 import { clawSetupInputSchema } from "./setup-schema.js";
-import { MAX_CLAW_EXPORT_AUTHORING_BYTES, MAX_CLAW_SETUP_TEMPLATE_BYTES } from "./source-limits.js";
+import {
+  MAX_CLAW_EXPORT_AUTHORING_BYTES,
+  MAX_CLAW_SETUP_RENDERED_BYTES,
+  MAX_CLAW_SETUP_SEEDS,
+  MAX_CLAW_SETUP_TEMPLATE_BYTES,
+} from "./source-limits.js";
 import type { ClawManifestV2, ClawSetupInput } from "./types.js";
 
 const nonEmptyString = z.string().min(1);
@@ -60,7 +65,7 @@ const authoringDocumentSchema = z
   .object({
     schemaVersion: z.literal(1),
     inputs: z.array(authoringInputSchema).min(1),
-    files: z.array(authoringFileSchema).min(1),
+    files: z.array(authoringFileSchema).min(1).max(MAX_CLAW_SETUP_SEEDS),
   })
   .strict();
 
@@ -203,6 +208,7 @@ export async function buildClawExportAuthoring(params: {
     symlinks: "reject",
   });
   const templates: ClawExportAuthoringResult["templates"] = [];
+  let templateBytes = 0;
   for (const [fileIndex, file] of params.document.files.entries()) {
     const sourceKey = portableClawPathKey(file.source);
     const destinationKey = portableClawPathKey(file.destination);
@@ -290,10 +296,18 @@ export async function buildClawExportAuthoring(params: {
       cursor = span.end;
     }
     rendered += content.slice(cursor);
+    const templateContent = Buffer.from(rendered, "utf8");
+    templateBytes += templateContent.byteLength;
+    if (templateBytes > MAX_CLAW_SETUP_RENDERED_BYTES) {
+      throw new ClawExportAuthoringError(
+        "author_setup_templates_too_large",
+        `Generated setup templates exceed ${MAX_CLAW_SETUP_RENDERED_BYTES} aggregate bytes.`,
+      );
+    }
     templates.push({
       source: templatePath(fileIndex),
       destination: file.destination,
-      content: Buffer.from(rendered, "utf8"),
+      content: templateContent,
       inputIds: [...new Set(spans.map((span) => span.inputId))],
     });
   }

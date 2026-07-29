@@ -433,11 +433,13 @@ describe("exportClawAgent", () => {
       seeds: [
         {
           destination: "USER.md",
-          template: "# User\n\nName: {{ input.owner_name }}\nTimezone: {{ input.timezone }}\n",
-          sample: "# User\n\nName: Sample Operator\nTimezone: America/Los\\_Angeles\n",
+          templateDigest: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
+          sampleDigest: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
+          sampleByteLength: expect.any(Number),
         },
       ],
     });
+    expect(JSON.stringify(result.authoring)).not.toContain("Sample Operator");
     expect(result.authoring?.cleanAddPlanIntegrity).toMatch(/^sha256:[0-9a-f]{64}$/);
     const template = await readFile(join(out, "setup", "seed-001.tmpl"), "utf8");
     expect(template).toContain("{{ input.owner_name }}");

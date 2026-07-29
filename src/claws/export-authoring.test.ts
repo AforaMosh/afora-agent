@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import { buildClawExportAuthoring, readClawExportAuthoringDocument } from "./export-authoring.js";
+import { MAX_CLAW_SETUP_SEEDS, MAX_CLAW_SETUP_TEMPLATE_BYTES } from "./source-limits.js";
 
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
@@ -155,5 +156,39 @@ describe("Claw guided export authoring", () => {
         managedWorkspacePaths: new Set(),
       }),
     ).rejects.toMatchObject({ code: "author_setup_replacements_overlap" });
+  });
+
+  it("bounds generated template count and aggregate bytes", async () => {
+    const root = tempDirs.make("openclaw-claw-export-authoring-limits-");
+    const workspace = join(root, "workspace");
+    await mkdir(workspace);
+    const input = stringInput({ id: "label", valuePolicy: "private", sample: "sample" });
+    const file = (index: number) => ({
+      source: "USER.md",
+      destination: `USER-${index}.md`,
+      replacements: [{ literal: "value", occurrence: 1, input: "label" }],
+    });
+
+    await expect(
+      readDocument(root, {
+        schemaVersion: 1,
+        inputs: [input],
+        files: Array.from({ length: MAX_CLAW_SETUP_SEEDS + 1 }, (_, index) => file(index)),
+      }),
+    ).rejects.toMatchObject({ code: "author_setup_invalid" });
+
+    await writeFile(
+      join(workspace, "USER.md"),
+      `${"x".repeat(MAX_CLAW_SETUP_TEMPLATE_BYTES - 5)}value`,
+      "utf8",
+    );
+    const document = await readDocument(root, {
+      schemaVersion: 1,
+      inputs: [input],
+      files: Array.from({ length: 5 }, (_, index) => file(index)),
+    });
+    await expect(
+      buildClawExportAuthoring({ document, workspace, managedWorkspacePaths: new Set() }),
+    ).rejects.toMatchObject({ code: "author_setup_templates_too_large" });
   });
 });

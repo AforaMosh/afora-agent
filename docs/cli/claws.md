@@ -546,16 +546,16 @@ Occurrences are one-based and select exact literal spans. `private` inputs must
 not declare defaults; their selected literals must be absent from every
 generated package file. `reusable-default` inputs must declare an explicitly
 reviewed package default. Samples validate and render the clean-state add
-preview but are not written to the package. The local authoring document and
-original user-owned files are also excluded.
+preview but are not written to the package or returned in command output. The
+local authoring document and original user-owned files are also excluded.
 
 Guided export rejects managed sources, root `BOOTSTRAP.md`, owner configuration,
 credential paths, invalid or overlapping replacements, invalid samples, and any
 package that cannot pass the ordinary schema reader and clean-state add planner.
 Its JSON result provides value-free input classifications, template and sample
-renderings and digests, and the clean add-plan integrity for review. Sample
-answers and renderings are explicit local command output but remain outside the
-exported artifact.
+digests and byte counts, and the clean add-plan integrity for review. Inspect
+the generated template files in the output directory when reviewing their
+content; sample answers and renderings are never echoed to command output.
 
 ## Command reference
 

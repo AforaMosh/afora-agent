@@ -10,6 +10,7 @@ import {
   MAX_CLAW_SETUP_LABEL_LENGTH,
   MAX_CLAW_SETUP_OPTIONS,
   MAX_CLAW_SETUP_OPTION_VALUE_LENGTH,
+  MAX_CLAW_SETUP_SEEDS,
   MAX_CLAW_SETUP_STRING_LENGTH,
 } from "./source-limits.js";
 
@@ -255,6 +256,8 @@ const personalizationSeedSchema = z
   .strict();
 
 export const clawPersonalizationSchema = z
-  .object({ seeds: z.array(personalizationSeedSchema).optional().default([]) })
+  .object({
+    seeds: z.array(personalizationSeedSchema).max(MAX_CLAW_SETUP_SEEDS).optional().default([]),
+  })
   .strict()
   .default({ seeds: [] });

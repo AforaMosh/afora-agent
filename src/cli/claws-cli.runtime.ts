@@ -632,14 +632,18 @@ export async function runClawsExportCommand(
       `Workspace files: ${result.manifest.workspace.files.length + Object.keys(result.manifest.workspace.bootstrapFiles).length}`,
     );
     runtime.log(`Packages: ${result.manifest.packages.length}`);
+    if (result.openClawProfile?.schemaVersion === 2) {
+      runtime.log(`Extensions: ${result.openClawProfile.extensions.length}`);
+    }
     if (result.authoring) {
       runtime.log(`Setup inputs: ${result.authoring.inputs.length}`);
       runtime.log(`Personalization seeds: ${result.authoring.seeds.length}`);
       runtime.log(`Private values checked: ${result.authoring.privateValuesChecked}`);
       runtime.log(`Clean add preview: ${result.authoring.cleanAddPlanIntegrity}`);
       for (const seed of result.authoring.seeds) {
-        runtime.log(`Template ${seed.destination}:\n${seed.template}`);
-        runtime.log(`Sample ${seed.destination}:\n${seed.sample}`);
+        runtime.log(
+          `Seed ${seed.destination}: template ${seed.templateDigest}, sample ${seed.sampleDigest} (${seed.sampleByteLength} bytes)`,
+        );
       }
     }
   } catch (error) {
