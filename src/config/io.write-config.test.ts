@@ -1339,6 +1339,42 @@ describe("config io write", () => {
     });
   });
 
+  itWithHome("forwards explicitly authorized agent roster removals", async (home) => {
+    const { configPath } = await writeConfigFixture(home, {
+      agents: {
+        entries: {
+          main: { default: true, workspace: "/srv/shared" },
+          ops: { workspace: "/srv/shared" },
+        },
+      },
+    });
+
+    await withEnvAsync(
+      {
+        OPENCLAW_CONFIG_PATH: configPath,
+        OPENCLAW_TEST_FAST: "1",
+      },
+      async () => {
+        await writeConfigFile(
+          {
+            agents: {
+              entries: { main: { default: true, workspace: "/srv/shared" } },
+            },
+          },
+          {
+            allowedAgentRosterRemovals: ["ops"],
+            skipRuntimeSnapshotRefresh: true,
+          },
+        );
+      },
+    );
+
+    const persisted = await readPersistedConfig(configPath);
+    expect(persisted.agents?.entries).toEqual({
+      main: { default: true, workspace: "/srv/shared" },
+    });
+  });
+
   itWithHome("lets Doctor migrate a list entry with an internal include", async (home) => {
     const configPath = configPathForHome(home);
     const includePath = path.join(path.dirname(configPath), "main-identity.json");

@@ -205,6 +205,7 @@ export async function writeConfigFileFromContext(
       unsetPaths,
       explicitSetPaths,
       explicitSetValueSource: options.explicitSetValueSource,
+      allowedAgentRosterRemovals: options.allowedAgentRosterRemovals,
       allowIncludeAncestorExplicitSetPaths: options.allowIncludeAncestorExplicitSetPaths,
       modelIdNormalizationPolicies: resolveModelIdNormalizationPolicies(
         snapshotRead.pluginMetadataSnapshot,
