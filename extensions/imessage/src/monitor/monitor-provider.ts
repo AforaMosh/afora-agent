@@ -1241,6 +1241,7 @@ export async function monitorIMessageProvider(opts: MonitorIMessageOpts = {}): P
             sessionKey: decision.route.sessionKey,
           },
           ctxPayload,
+          memorySubjectCapability: decision.memorySubjectCapability,
           record: {
             updateLastRoute:
               !decision.isGroup && updateTarget

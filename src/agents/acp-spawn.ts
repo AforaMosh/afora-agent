@@ -39,6 +39,7 @@ import {
   toGatewayImageAttachments,
   type AcpSpawnBootstrapDeliveryPlan,
 } from "./acp-spawn-bootstrap-delivery.js";
+import { resolveAcpSpawnMemorySubjectSeed } from "./acp-spawn-memory-subject.js";
 import {
   type AcpSpawnParentRelayHandle,
   startAcpSpawnParentStreamRelay,
@@ -478,6 +479,20 @@ export async function spawnAcpDirect(
     agentSessionKey: ctx.agentSessionKey,
     completionOwnerKey: ctx.completionOwnerKey,
   });
+  let memorySubjectSeed: ReturnType<typeof resolveAcpSpawnMemorySubjectSeed>;
+  try {
+    memorySubjectSeed = resolveAcpSpawnMemorySubjectSeed({
+      cfg,
+      requesterInternalKey,
+      requesterAgentId,
+    });
+  } catch (error) {
+    return createAcpSpawnFailure({
+      status: "error",
+      errorCode: "spawn_failed",
+      error: `Failed to resolve requester memory subject: ${formatErrorMessage(error)}`,
+    });
+  }
   const requesterOrigin = requesterState.origin;
   const progressOrigin = {
     channel: requesterOrigin?.channel,
@@ -525,6 +540,7 @@ export async function spawnAcpDirect(
             ...inheritedToolDenyPatch(ctx.inheritedToolDenylist),
             ...(params.label ? { label: params.label } : {}),
           },
+          { memorySubjectSeed },
         )) ?? undefined;
       sessionCreated = true;
       const initializedSession = await initializeAcpSpawnRuntime({

@@ -1,3 +1,4 @@
+import type { TrustedSessionMemorySubjectSeed } from "../../config/sessions/session-accessor.js";
 import type { SessionToolOverrides } from "../../config/sessions/types.js";
 // Shared get-reply type contracts for command, directive, and runtime layers.
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
@@ -22,6 +23,8 @@ type InternalReplySessionOptions = {
   pinExpectedExistingSession?: boolean;
   requestedSessionId?: string;
   resumeRequestedSession?: boolean;
+  /** Host-trusted subject used only if this turn creates the logical session. */
+  memorySubjectSeed?: TrustedSessionMemorySubjectSeed;
   sessionPromptSourceReplyDeliveryMode?: GetReplyOptions["sourceReplyDeliveryMode"];
   /** Marks when this reply is waiting to own its session's reply lane. */
   onReplyAdmissionWaitChange?: (waiting: boolean) => void;

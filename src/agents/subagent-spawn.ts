@@ -174,6 +174,7 @@ export async function spawnSubagentDirect(
       childSessionKey,
       incognito,
       requesterInternalKey,
+      requesterAgentId,
       completionOwnerSessionKey: ownership.completionRequesterSessionKey,
       spawnedWorkspaceDir,
       spawnedCwd,

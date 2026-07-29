@@ -1709,6 +1709,7 @@ export async function prepareSlackMessage(params: {
   const updateLastRouteSessionKey = resolveInboundLastRouteSessionKey({ route, sessionKey });
 
   return {
+    memorySubjectCapability: messageIngress.memorySubjectCapability,
     ctx,
     account,
     message,

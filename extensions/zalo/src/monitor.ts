@@ -6,7 +6,10 @@ import {
   resolveChannelInboundRouteEnvelope,
   type ChannelInboundMediaInput,
 } from "openclaw/plugin-sdk/channel-inbound";
-import { resolveStableChannelMessageIngress } from "openclaw/plugin-sdk/channel-ingress-runtime";
+import {
+  resolveStableChannelMessageIngress,
+  type ResolvedChannelMessageIngress,
+} from "openclaw/plugin-sdk/channel-ingress-runtime";
 import { createChannelPairingController } from "openclaw/plugin-sdk/channel-pairing";
 import type { MarkdownTableMode, OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
 import {
@@ -53,6 +56,10 @@ import {
 import { resolveZaloProxyFetch } from "./proxy.js";
 import { getZaloRuntime } from "./runtime.js";
 import type { ZaloWebhookIngressLifecycle } from "./webhook-spool.js";
+
+type ChannelIngressMemorySubjectCapability = NonNullable<
+  ResolvedChannelMessageIngress["memorySubjectCapability"]
+>;
 
 /** Default idle timeout for Zalo inbound photo downloads (30 seconds). */
 const ZALO_MEDIA_READ_IDLE_TIMEOUT_MS = 30_000;
@@ -193,6 +200,7 @@ type ZaloMessageAuthorizationResult = {
   rawBody: string;
   senderId: string;
   senderName: string | undefined;
+  memorySubjectCapability?: ChannelIngressMemorySubjectCapability;
 };
 
 function formatZaloError(error: unknown): string {
@@ -542,6 +550,7 @@ async function authorizeZaloMessage(
     rawBody,
     senderId,
     senderName,
+    memorySubjectCapability: access.memorySubjectCapability,
   };
 }
 
@@ -572,7 +581,15 @@ async function processMessageWithPipeline(params: ZaloMessagePipelineParams): Pr
   if (!authorization) {
     return;
   }
-  const { isGroup, chatId, senderId, senderName, rawBody, commandAuthorized } = authorization;
+  const {
+    isGroup,
+    chatId,
+    senderId,
+    senderName,
+    rawBody,
+    commandAuthorized,
+    memorySubjectCapability,
+  } = authorization;
   const agentBody = agentBodyOverride ?? rawBody;
 
   const { route, buildEnvelope } = resolveChannelInboundRouteEnvelope({
@@ -686,6 +703,7 @@ async function processMessageWithPipeline(params: ZaloMessagePipelineParams): Pr
     accountId: account.accountId,
     route: { agentId: route.agentId, dmScope: route.dmScope, sessionKey: route.sessionKey },
     ctxPayload,
+    memorySubjectCapability,
     delivery: {
       preparePayload: (payload) =>
         prepareZaloDurableReplyPayload({

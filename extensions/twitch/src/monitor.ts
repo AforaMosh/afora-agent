@@ -6,6 +6,7 @@
  */
 
 import { createChannelInboundEnvelopeBuilder } from "openclaw/plugin-sdk/channel-inbound";
+import type { ResolvedChannelMessageIngress } from "openclaw/plugin-sdk/channel-ingress-runtime";
 import type { MarkdownTableMode, OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
 import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
 import type { ReplyPayload } from "openclaw/plugin-sdk/reply-runtime";
@@ -16,6 +17,10 @@ import { getTwitchRuntime } from "./runtime.js";
 import { createTwitchIngress } from "./twitch-ingress.js";
 import type { TwitchAccountConfig, TwitchChatMessage } from "./types.js";
 import { stripMarkdownForTwitch } from "./utils/markdown.js";
+
+type ChannelIngressMemorySubjectCapability = NonNullable<
+  ResolvedChannelMessageIngress["memorySubjectCapability"]
+>;
 
 type TwitchRuntimeEnv = {
   log?: (message: string) => void;
@@ -48,6 +53,7 @@ async function processTwitchMessage(params: {
   config: unknown;
   runtime: TwitchRuntimeEnv;
   core: TwitchCoreRuntime;
+  memorySubjectCapability?: ChannelIngressMemorySubjectCapability;
   turnAdoptionLifecycle: TwitchIngressLifecycle;
   statusSink?: (patch: { lastInboundAt?: number; lastOutboundAt?: number }) => void;
 }): Promise<void> {
@@ -130,6 +136,7 @@ async function processTwitchMessage(params: {
           accountId,
           route: { agentId: route.agentId, dmScope: route.dmScope, sessionKey: route.sessionKey },
           ctxPayload,
+          memorySubjectCapability: params.memorySubjectCapability,
           delivery: {
             durable: () => ({
               to: `twitch:channel:${message.channel}`,
@@ -267,6 +274,7 @@ export async function monitorTwitchProvider(
       const access = await checkTwitchAccessControl({
         message,
         account,
+        accountId,
         botUsername,
       });
 
@@ -283,6 +291,7 @@ export async function monitorTwitchProvider(
         config,
         runtime,
         core,
+        memorySubjectCapability: access.memorySubjectCapability,
         turnAdoptionLifecycle,
         statusSink,
       });

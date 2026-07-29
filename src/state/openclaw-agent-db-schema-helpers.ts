@@ -45,6 +45,8 @@ const AGENT_SCHEMA_COMPATIBILITY = {
   allowedMissingTables: [
     MEMORY_INDEX_CHUNK_PROVENANCE_TABLE,
     MEMORY_INDEX_CHUNK_RECALL_METADATA_TABLE,
+    "session_memory_subject_snapshots",
+    "session_memory_subjects",
     STANDING_INTENTS_TABLE,
     STANDING_INTENTS_FTS_TABLE,
     ...STANDING_INTENTS_FTS_SHADOW_TABLES,

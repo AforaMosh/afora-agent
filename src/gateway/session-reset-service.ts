@@ -39,6 +39,7 @@ import {
 import { rebindCliSessionReseedReceiptsForReset } from "../config/sessions/cli-session-binding.js";
 import { formatSqliteSessionFileMarker } from "../config/sessions/legacy-sqlite-marker.js";
 import { resolveResetPreservedSelection } from "../config/sessions/reset-preserved-selection.js";
+import type { TrustedSessionMemorySubjectSeed } from "../config/sessions/session-accessor.js";
 import { sessionEntryForkedFromParent } from "../config/sessions/session-entry-lineage.js";
 import {
   buildSessionCreationStamp,
@@ -966,6 +967,8 @@ export async function performGatewaySessionReset(params: {
   commandSource: string;
   /** Trusted provenance for a reset that materializes a previously missing row. */
   creation?: { via: SessionCreatedVia; actor?: SessionCreatedActor };
+  /** Authenticated host subject used only if reset materializes a missing logical session. */
+  memorySubjectSeed?: TrustedSessionMemorySubjectSeed;
   /** Exact plugin namespace authorized by the scoped plugin runtime. */
   authorizedPluginId?: string;
   assertCurrent?: () => void;
@@ -1351,6 +1354,7 @@ export async function performGatewaySessionReset(params: {
         agentId: target.agentId,
         resetBoundaryReason: boundaryEntry ? params.reason : undefined,
         storePath,
+        ...(params.memorySubjectSeed ? { memorySubjectSeed: params.memorySubjectSeed } : {}),
         target: {
           canonicalKey: target.canonicalKey,
           storeKeys: [

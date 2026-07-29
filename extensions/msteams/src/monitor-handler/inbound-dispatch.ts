@@ -268,6 +268,7 @@ export async function dispatchMSTeamsInboundTurn(params: {
           accountId: route.accountId,
           route: { agentId: route.agentId, sessionKey: route.sessionKey },
           ctxPayload,
+          memorySubjectCapability: admission.memorySubjectCapability,
           record: {
             onRecordError: (err) => {
               logVerboseMessage(

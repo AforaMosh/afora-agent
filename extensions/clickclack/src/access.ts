@@ -4,11 +4,16 @@
  */
 import {
   resolveStableChannelMessageIngress,
+  type ResolvedChannelMessageIngress,
   type StableChannelIngressIdentityParams,
 } from "openclaw/plugin-sdk/channel-ingress-runtime";
 import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
 import { getClickClackRuntime } from "./runtime.js";
 import type { ClickClackMessage, CoreConfig, ResolvedClickClackAccount } from "./types.js";
+
+type ChannelIngressMemorySubjectCapability = NonNullable<
+  ResolvedChannelMessageIngress["memorySubjectCapability"]
+>;
 
 const CHANNEL_ID = "clickclack" as const;
 
@@ -37,6 +42,7 @@ const clickClackIngressIdentity = {
 export type ClickClackInboundAccess = {
   shouldDispatch: boolean;
   commandAuthorized: boolean;
+  memorySubjectCapability?: ChannelIngressMemorySubjectCapability;
 };
 
 /**
@@ -83,5 +89,6 @@ export async function resolveClickClackInboundAccess(params: {
     commandAuthorized: resolved.commandAccess.requested
       ? resolved.commandAccess.authorized
       : resolved.senderAccess.allowed,
+    memorySubjectCapability: resolved.memorySubjectCapability,
   };
 }

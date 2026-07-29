@@ -35,6 +35,7 @@ import {
   createSessionEntryWithTranscript,
   listSessionEntriesReadOnly,
   resolveSessionEntryAccessTarget,
+  type TrustedSessionMemorySubjectSeed,
 } from "../config/sessions/session-accessor.js";
 import {
   buildSessionCreationStamp,
@@ -317,6 +318,8 @@ export async function createGatewaySession(params: {
   requestingOperatorScopes?: readonly string[];
   /** Trusted in-process creation provenance; never populated from public Gateway params. */
   creation?: { via: SessionCreatedVia; actor?: SessionCreatedActor };
+  /** Authenticated host subject; ignored when the target already has persisted lineage. */
+  memorySubjectSeed?: TrustedSessionMemorySubjectSeed;
   /** Exact harness namespace authorized by the scoped plugin runtime. */
   authorizedAgentHarnessId?: string;
   /** Exact plugin namespace authorized by the scoped plugin runtime. */
@@ -676,6 +679,7 @@ export async function createGatewaySession(params: {
         reason: "new",
         commandSource: params.commandSource,
         ...(params.creation ? { creation: params.creation } : {}),
+        ...(params.memorySubjectSeed ? { memorySubjectSeed: params.memorySubjectSeed } : {}),
         ...(spawnedCwd ? { spawnedCwd } : {}),
         ...(params.worktree ? { worktree: params.worktree } : {}),
         ...(params.execNode ? { execNode: params.execNode } : {}),
@@ -1102,12 +1106,18 @@ export async function createGatewaySession(params: {
             },
             existingEntry,
           ),
+          memorySubjectSeed: fork.memorySubjectSeed,
         };
       },
-      params.initialEntry
+      params.initialEntry || params.memorySubjectSeed
         ? {
-            activeSessionKey: target.canonicalKey,
-            requireWriteSuccess: true,
+            ...(params.initialEntry
+              ? {
+                  activeSessionKey: target.canonicalKey,
+                  requireWriteSuccess: true,
+                }
+              : {}),
+            ...(params.memorySubjectSeed ? { memorySubjectSeed: params.memorySubjectSeed } : {}),
           }
         : undefined,
     );

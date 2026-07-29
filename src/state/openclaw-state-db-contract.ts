@@ -8,6 +8,8 @@ export const OPENCLAW_STATE_STRICT_SCHEMA_VERSION = 3;
 // Added after v6 shipped. These tables stay optional until their feature-local
 // lazy ensures run; fold them into the next natural schema-version bump.
 export const LAZY_ADDITIVE_STATE_TABLES = [
+  "memory_identity_bindings",
+  "memory_principals",
   "model_catalog_remote",
   "sidebar_sections",
   "skill_workshop_proposal_events",

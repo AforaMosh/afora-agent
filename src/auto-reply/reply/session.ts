@@ -34,6 +34,7 @@ import {
   commitReplySessionInitialization,
   loadReplySessionInitializationSnapshot,
 } from "../../config/sessions/session-accessor.js";
+import type { TrustedSessionMemorySubjectSeed } from "../../config/sessions/session-accessor.js";
 import { sessionEntryForkedFromParent } from "../../config/sessions/session-entry-lineage.js";
 import { buildSessionCreationStamp } from "../../config/sessions/session-entry-provenance.js";
 import { resolveSessionKey } from "../../config/sessions/session-key.js";
@@ -204,6 +205,7 @@ type InitSessionStateParams = {
   pinExpectedExistingSession?: boolean;
   requestedSessionId?: string;
   resumeRequestedSession?: boolean;
+  memorySubjectSeed?: TrustedSessionMemorySubjectSeed;
   signal?: AbortSignal;
 };
 
@@ -1117,6 +1119,7 @@ async function initSessionStateAttemptLocked(
     sessionKey,
     snapshotEntry: initializationSnapshot.currentEntry,
     storePath,
+    ...(params.memorySubjectSeed ? { memorySubjectSeed: params.memorySubjectSeed } : {}),
   });
   if (!committed.ok) {
     if (!staleSnapshotRetried) {

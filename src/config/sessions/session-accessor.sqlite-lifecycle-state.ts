@@ -370,6 +370,7 @@ export async function projectSqliteSessionEntryLifecycleMutation(
       expectedEntry,
       sessionKey,
       entry: cloned,
+      ...(upsert.memorySubjectSeed ? { memorySubjectSeed: upsert.memorySubjectSeed } : {}),
       ...(resetBoundaryPlan ? { resetBoundaryPlan } : {}),
     });
   }

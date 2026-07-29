@@ -26,6 +26,7 @@ import {
   appendTranscriptEventsInTransaction,
   readTranscriptIdentityByEventId,
 } from "./session-accessor.sqlite-transcript-store.js";
+import { prepareCurrentSessionMemorySubjectLineageSeedInTransaction } from "./session-memory-subject.js";
 import { createSessionTranscriptHeader } from "./transcript-header.js";
 import type { SessionCompactionCheckpoint, SessionEntry } from "./types.js";
 
@@ -168,16 +169,24 @@ function branchSqliteCompactionCheckpointSessionInTransaction(
     targetKey: string;
   },
 ): SqliteCompactionCheckpointSessionMutationResult {
-  const currentEntry = readSessionEntryRow(database, params.sourceKey)?.entry;
-  if (!currentEntry?.sessionId) {
+  const currentRow = readSessionEntryRow(database, params.sourceKey);
+  if (!currentRow?.entry.sessionId) {
     return { status: "missing-session" };
   }
+  const currentEntry = currentRow.entry;
   if (currentEntry.modelSelectionLocked === true) {
     return { status: "model-selection-locked" };
   }
   const checkpoint = readSessionCompactionCheckpoint(currentEntry, params.checkpointId);
   if (!checkpoint) {
     return { status: "missing-checkpoint" };
+  }
+  const memorySubjectSeed = prepareCurrentSessionMemorySubjectLineageSeedInTransaction(
+    database,
+    currentRow.row.session_key,
+  );
+  if (!memorySubjectSeed) {
+    return { status: "failed" };
   }
   const forked = forkSqliteCheckpointTranscriptInTransaction(database, params.resolved, {
     checkpoint,
@@ -198,7 +207,7 @@ function branchSqliteCompactionCheckpointSessionInTransaction(
     parentSessionKey: params.parentSessionKey,
     totalTokens: forked.totalTokens,
   });
-  writeSessionEntry(database, params.targetKey, nextEntry);
+  writeSessionEntry(database, params.targetKey, nextEntry, { memorySubjectSeed });
   return {
     status: "created",
     key: params.targetKey,
@@ -217,16 +226,24 @@ function restoreSqliteCompactionCheckpointSessionInTransaction(
     targetKey: string;
   },
 ): SqliteCompactionCheckpointSessionMutationResult {
-  const currentEntry = readSessionEntryRow(database, params.sourceKey)?.entry;
-  if (!currentEntry?.sessionId) {
+  const currentRow = readSessionEntryRow(database, params.sourceKey);
+  if (!currentRow?.entry.sessionId) {
     return { status: "missing-session" };
   }
+  const currentEntry = currentRow.entry;
   if (currentEntry.modelSelectionLocked === true) {
     return { status: "model-selection-locked" };
   }
   const checkpoint = readSessionCompactionCheckpoint(currentEntry, params.checkpointId);
   if (!checkpoint) {
     return { status: "missing-checkpoint" };
+  }
+  const memorySubjectSeed = prepareCurrentSessionMemorySubjectLineageSeedInTransaction(
+    database,
+    currentRow.row.session_key,
+  );
+  if (!memorySubjectSeed) {
+    return { status: "failed" };
   }
   const restored = forkSqliteCheckpointTranscriptInTransaction(database, params.resolved, {
     checkpoint,
@@ -243,7 +260,7 @@ function restoreSqliteCompactionCheckpointSessionInTransaction(
     preserveCompactionCheckpoints: true,
     totalTokens: restored.totalTokens,
   });
-  writeSessionEntry(database, params.targetKey, nextEntry);
+  writeSessionEntry(database, params.targetKey, nextEntry, { memorySubjectSeed });
   return {
     status: "created",
     key: params.targetKey,

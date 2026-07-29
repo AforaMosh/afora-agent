@@ -98,6 +98,7 @@ async function processDiscordMessageInner(
     route,
     abortSignal,
     turnAdoptionLifecycle,
+    memorySubjectCapability,
     preparedMedia: mediaList,
   } = ctx;
   if (isProcessAborted(abortSignal)) {
@@ -616,6 +617,7 @@ async function processDiscordMessageInner(
       outboundEchoSourceId: resolveDiscordWebhookId(message) ?? undefined,
       route: { agentId: route.agentId, sessionKey: persistedSessionKey },
       ctxPayload,
+      memorySubjectCapability,
       afterRecord: reactions.queueInitialAckReactionAfterRecord,
       sessionInitRetry: {
         delaysMs: [250, 1_000, 2_500],

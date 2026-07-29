@@ -207,6 +207,30 @@ export interface SessionMembers {
   session_key: string;
 }
 
+export interface SessionMemorySubjectSnapshots {
+  created_at: number;
+  session_id: string;
+  session_identity_revision: string;
+  session_key: string;
+  subject_revision: string;
+}
+
+export interface SessionMemorySubjects {
+  account_id: string | null;
+  ambiguous_reason: string | null;
+  canonical_conversation_ref: string | null;
+  channel: string | null;
+  conversation_principal_id: string | null;
+  created_at: number;
+  creation_binding_id: string | null;
+  creation_evidence_kind: string | null;
+  creation_evidence_revision: string | null;
+  principal_id: string | null;
+  session_key: string;
+  subject_kind: string;
+  subject_revision: string;
+}
+
 export interface SessionNodes {
   archived_at: number | null;
   category: string | null;
@@ -436,6 +460,8 @@ export interface DB {
   schema_meta: SchemaMeta;
   session_conversations: SessionConversations;
   session_members: SessionMembers;
+  session_memory_subject_snapshots: SessionMemorySubjectSnapshots;
+  session_memory_subjects: SessionMemorySubjects;
   session_nodes: SessionNodes;
   session_suggestions: SessionSuggestions;
   session_transcript_active_events: SessionTranscriptActiveEvents;

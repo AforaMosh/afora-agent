@@ -15,6 +15,7 @@ import type {
   SessionLifecycleArtifactCleanupResult,
   SessionLifecycleStoreTarget,
 } from "./session-accessor.lifecycle-types.js";
+import type { TrustedSessionMemorySubjectSeed } from "./session-memory-subject.js";
 import type {
   SessionTranscriptTurnExpectedState,
   SessionTranscriptTurnLifecyclePatch,
@@ -486,6 +487,12 @@ export type ReplySessionInitializationCommitContext = {
   sessionEntry: SessionEntry;
 };
 
+export type ReplySessionInitializationPreparedEntry = {
+  sessionEntry: SessionEntry;
+  /** Exact parent lineage overrides the new-session fallback seed. */
+  memorySubjectSeed?: TrustedSessionMemorySubjectSeed;
+};
+
 export type ReplySessionInitializationCommitResult =
   | {
       ok: true;
@@ -515,6 +522,8 @@ export type SessionEntryPatchOptions = {
   skipMaintenance?: boolean;
   /** Let the writer cache retain the updated object without cloning. */
   takeCacheOwnership?: boolean;
+  /** Host-trusted subject used only when the patch creates a logical session. */
+  memorySubjectSeed?: TrustedSessionMemorySubjectSeed;
 };
 
 export type SessionEntryPatchContext = {
@@ -590,6 +599,8 @@ export type SessionParentForkDecision =
 export type ParentForkedSessionTranscript = {
   sessionFile: string;
   sessionId: string;
+  /** Exact persisted parent subject lineage for the later child-entry commit. */
+  memorySubjectSeed: TrustedSessionMemorySubjectSeed;
 };
 
 export type ForkSessionFromParentTranscriptResult =
@@ -806,7 +817,12 @@ export type SessionEntryCreateWithTranscriptResult<TError = string> =
   | { ok: false; error: string; phase: "transcript" };
 
 export type SessionEntryCreateWithTranscriptPrepareResult<TError = string> =
-  | { ok: true; entry: SessionEntry }
+  | {
+      ok: true;
+      entry: SessionEntry;
+      /** Exact trusted lineage takes precedence over the create-call fallback seed. */
+      memorySubjectSeed?: TrustedSessionMemorySubjectSeed;
+    }
   | { ok: false; error: TError };
 
 export type SessionEntryCreateWithTranscriptOptions = {
@@ -816,6 +832,8 @@ export type SessionEntryCreateWithTranscriptOptions = {
   cwd?: string;
   /** SQLite commits are authoritative; retained for the shared caller contract. */
   requireWriteSuccess?: boolean;
+  /** Host-trusted subject used only when the create owns a new logical session. */
+  memorySubjectSeed?: TrustedSessionMemorySubjectSeed;
 };
 
 export type SessionPatchProjectionSnapshot = {

@@ -129,7 +129,14 @@ export async function canonicalizeSessionEntryAliases(params: {
     removals: targetKeys
       .filter((key) => key !== params.target.canonicalKey)
       .map((sessionKey) => ({ sessionKey })),
-    upserts: entry ? [{ sessionKey: params.target.canonicalKey, entry }] : undefined,
+    upserts: entry
+      ? [
+          {
+            sessionKey: params.target.canonicalKey,
+            entry,
+          },
+        ]
+      : undefined,
     skipMaintenance: true,
   });
   return {
@@ -185,11 +192,18 @@ export async function createSessionEntryWithTranscript<TError = string>(
   }
 
   const entry = created.entry;
+  const memorySubjectSeed = created.memorySubjectSeed ?? options.memorySubjectSeed;
   await applySessionEntryLifecycleMutation({
     agentId,
     storePath,
     removals: resolved.legacyKeys.map((sessionKey) => ({ sessionKey })),
-    upserts: [{ sessionKey: resolved.normalizedKey, entry }],
+    upserts: [
+      {
+        sessionKey: resolved.normalizedKey,
+        entry,
+        ...(memorySubjectSeed ? { memorySubjectSeed } : {}),
+      },
+    ],
     skipMaintenance: true,
   });
   return { ok: true, entry, sessionFile: resolved.normalizedKey };

@@ -32,6 +32,12 @@ import {
 import { parseSqliteSessionEntryJson as parseSessionEntryRow } from "./session-accessor.sqlite-status.js";
 import { readTranscriptMutationStateInTransaction } from "./session-accessor.sqlite-transcript-state.js";
 import {
+  persistSessionMemorySubjectInTransaction,
+  rehomeSessionMemorySubjectAliases,
+  tryRehomeSessionMemorySubjectSnapshot,
+  type TrustedSessionMemorySubjectSeed,
+} from "./session-memory-subject.js";
+import {
   foldedSessionKeyAliasCandidates,
   normalizeStoreSessionKey,
   resolveSessionEntryCandidates,
@@ -326,7 +332,15 @@ export function deleteSqliteSessionEntryRows(
         ? collectSqliteSessionStateIdsForEntry(entry).includes(window.session_id)
         : false;
     });
-    if (survivingNode) {
+    if (
+      survivingNode &&
+      tryRehomeSessionMemorySubjectSnapshot({
+        database,
+        sessionId: window.session_id,
+        sourceSessionKey: sessionKey,
+        targetSessionKey: survivingNode.session_key,
+      })
+    ) {
       executeSqliteQuerySync(
         database.db,
         db
@@ -471,6 +485,9 @@ export function deleteLegacySessionEntryRows(
   if (legacyKeys.length === 0) {
     return;
   }
+  // Subject snapshots reference the logical key independently from session windows.
+  // Rehome them before alias-node deletion can cascade immutable provenance away.
+  rehomeSessionMemorySubjectAliases(database, sessionKey, legacyKeys);
   const db = getSessionKysely(database.db);
   for (const legacyKey of legacyKeys) {
     if (legacyKey === sessionKey) {
@@ -512,7 +529,11 @@ export function writeSessionEntry(
   database: OpenClawAgentDatabase,
   sessionKey: string,
   entry: SessionEntry,
-  options: { previousEntry?: SessionEntry | null } = {},
+  options: {
+    previousEntry?: SessionEntry | null;
+    memorySubjectSeed?: TrustedSessionMemorySubjectSeed;
+    memorySubjectAliasSourceKeys?: Iterable<string>;
+  } = {},
 ): void {
   const db = getSessionKysely(database.db);
   const normalizedEntry = normalizeSqliteSessionEntryTimestamp(entry);
@@ -638,6 +659,17 @@ export function writeSessionEntry(
       updatedAt,
     });
   }
+  persistSessionMemorySubjectInTransaction({
+    database,
+    sessionKey,
+    sessionId: sessionRow.session_id,
+    sessionScope: boundSessionRoot.session_scope,
+    ...(options.memorySubjectSeed ? { seed: options.memorySubjectSeed } : {}),
+    ...(options.memorySubjectAliasSourceKeys
+      ? { aliasSourceSessionKeys: options.memorySubjectAliasSourceKeys }
+      : {}),
+    now: updatedAt,
+  });
   publishSqliteSessionEntryCacheInvalidation(database);
 }
 

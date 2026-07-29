@@ -14,6 +14,7 @@ import type {
   SessionLifecycleArtifactCleanupResult,
   SessionLifecycleStoreTarget,
 } from "./session-accessor.lifecycle-types.js";
+import type { TrustedSessionMemorySubjectSeed } from "./session-memory-subject.js";
 import type { ResolvedSessionMaintenanceConfig } from "./store-maintenance.js";
 import type { SessionEntry } from "./types.js";
 
@@ -153,6 +154,8 @@ export type SessionEntryPatchOptions = {
   replaceEntry?: boolean;
   skipMaintenance?: boolean;
   takeCacheOwnership?: boolean;
+  /** Host-trusted subject used only when the patch creates a logical session. */
+  memorySubjectSeed?: TrustedSessionMemorySubjectSeed;
 };
 
 export type SessionEntryPatchContext = {

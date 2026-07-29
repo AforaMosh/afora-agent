@@ -1,5 +1,6 @@
 // Shared sessions_spawn test harness for gateway, registry, and lifecycle mocks.
 import { vi, type Mock } from "vitest";
+import { prepareAmbiguousSessionMemorySubjectSeed } from "../config/sessions/session-accessor.js";
 import type { SubagentLifecycleHookRunner } from "../plugins/hooks.js";
 import { resolveRequesterStoreKey } from "./subagent-requester-store-key.js";
 
@@ -214,6 +215,7 @@ export async function getSessionsSpawnTool(opts: CreateOpenClawToolsOpts) {
       fork: {
         sessionId: "forked-session-id",
         sessionFile: "/tmp/forked-session.jsonl",
+        memorySubjectSeed: prepareAmbiguousSessionMemorySubjectSeed("unbound"),
       },
       parentEntry: {
         sessionId: "parent-session-id",

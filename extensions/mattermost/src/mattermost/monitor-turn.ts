@@ -1,6 +1,7 @@
 // Mattermost plugin module owns one accepted message's reply turn and delivery.
 import { resolveHumanDelayConfig } from "openclaw/plugin-sdk/agent-runtime";
 import type { ChannelInboundTurnPlan } from "openclaw/plugin-sdk/channel-inbound";
+import type { ResolvedChannelMessageIngress } from "openclaw/plugin-sdk/channel-ingress-runtime";
 import {
   bindIngressLifecycleToReplyOptions,
   buildChannelProgressDraftLineForEntry,
@@ -34,7 +35,12 @@ import { createChannelMessageReplyPipeline } from "./runtime-api.js";
 import { sendMessageMattermost } from "./send.js";
 import { recordMattermostThreadParticipation } from "./thread-participation.js";
 
+type ChannelIngressMemorySubjectCapability = NonNullable<
+  ResolvedChannelMessageIngress["memorySubjectCapability"]
+>;
+
 type MattermostInboundTurnParams = {
+  memorySubjectCapability?: ChannelIngressMemorySubjectCapability;
   post: MattermostPost;
   rawText: string;
   ctxPayload: ReturnType<typeof finalizeInboundContext>;
@@ -363,6 +369,7 @@ export async function dispatchMattermostInboundTurn(
             sessionKey: route.sessionKey,
           },
           ctxPayload,
+          memorySubjectCapability: params.memorySubjectCapability,
           record: {
             updateLastRoute:
               kind === "direct"
