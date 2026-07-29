@@ -15,15 +15,18 @@ jobs:
     steps:
       - name: Check out proof branch
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          fetch-depth: 0
 
       - name: Verify runtime source is exact PR head
         env:
           OPENCLAW_SOURCE_SHA: 781a87404b4edd854fdcde432395cf42735868ca
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = "${OPENCLAW_SOURCE_SHA}"
-          test "$(git diff --name-only "${OPENCLAW_SOURCE_SHA}" HEAD)" = \
-            ".github/workflows/exact-head-runtime-proof.yml"
+          git merge-base --is-ancestor "${OPENCLAW_SOURCE_SHA}" HEAD
+          git diff --quiet "${OPENCLAW_SOURCE_SHA}" HEAD -- \
+            . \
+            ':(exclude).github/workflows/exact-head-runtime-proof.yml'
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
