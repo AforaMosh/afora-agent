@@ -58,7 +58,10 @@ export async function createClawUpdatePersonalizationSeeds(
     );
   }
 
-  beginClawSetupUpdate(plan.agentId, targetState, options);
+  const initialPending = beginClawSetupUpdate(plan.agentId, targetState, options);
+  if (materialization.seeds.length === 0) {
+    return initialPending;
+  }
   const completedDestinations: string[] = [];
   try {
     const workspaceRoot = await realpath(resolve(workspacePath));

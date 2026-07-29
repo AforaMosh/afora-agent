@@ -232,14 +232,47 @@ describe("Claw personalization update reconciliation", () => {
       expect.objectContaining({ kind: "personalizationSeed", id: "USER.md", action: "add" }),
     );
 
+    await expect(
+      applyClawUpdatePlan(
+        updatePlan,
+        { targetManifest: v2, targetSource: v2Source, answers: { name: "Avery" } },
+        {
+          env,
+          config,
+          sourceMcpServers: {},
+          consentPlanIntegrity: updatePlan.planIntegrity,
+          commitConfig: async (transform) => {
+            config = transform(config);
+          },
+          finalizeSetup: () => {
+            throw new Error("simulated setup publication interruption");
+          },
+        },
+      ),
+    ).rejects.toMatchObject({ code: "update_partial" });
+    expect(readClawSetupState("personalized", { env })).toBeUndefined();
+    expect(readClawSetupPending("personalized", { env })).toMatchObject({
+      clawVersion: "2.0.0",
+      status: "pending",
+    });
+
+    const retry = await buildClawUpdatePlan({
+      agentId: "personalized",
+      targetManifest: v2,
+      targetSource: v2Source,
+      config,
+      sourceMcpServers: {},
+      stateOptions: { env },
+    });
+    expect(retry.blockers).toEqual([]);
     const result = await applyClawUpdatePlan(
-      updatePlan,
-      { targetManifest: v2, targetSource: v2Source, answers: { name: "Avery" } },
+      retry,
+      { targetManifest: v2, targetSource: v2Source },
       {
         env,
         config,
         sourceMcpServers: {},
-        consentPlanIntegrity: updatePlan.planIntegrity,
+        consentPlanIntegrity: retry.planIntegrity,
         commitConfig: async (transform) => {
           config = transform(config);
         },
@@ -251,6 +284,53 @@ describe("Claw personalization update reconciliation", () => {
       clawVersion: "2.0.0",
       status: "complete",
     });
+    expect(readClawSetupPending("personalized", { env })).toBeUndefined();
+  });
+
+  it("publishes a zero-seed setup update without accessing the workspace", async () => {
+    const current = await fixture();
+    let config: OpenClawConfig = {};
+    await applyClawAddPlan(current.plan, {
+      env: current.env,
+      consentPlanIntegrity: current.plan.planIntegrity,
+      setupMaterialization: current.setup.materialization,
+      commitConfig: async (transform) => {
+        config = transform(config);
+      },
+    });
+    const setupState = readClawSetupState("personalized", { env: current.env });
+    const targetSource = source(current.root, "2.0.0");
+    const updatePlan = await buildClawUpdatePlan({
+      agentId: "personalized",
+      targetManifest: current.claw,
+      targetSource,
+      config,
+      sourceMcpServers: {},
+      stateOptions: { env: current.env },
+    });
+    const reconciliation = await buildClawSetupReconciliation({
+      currentManifestSchemaVersion: 2,
+      currentSetup: setupState,
+      targetManifest: current.claw,
+      targetSource,
+      workspace: current.plan.agent.workspace,
+      workspaceFiles: [],
+    });
+    if (!reconciliation.materialization || !reconciliation.targetState) {
+      throw new Error("Zero-seed update fixture did not materialize setup state.");
+    }
+    expect(reconciliation.materialization.seeds).toEqual([]);
+
+    const missingWorkspace = join(current.root, "missing-workspace");
+    await expect(
+      createClawUpdatePersonalizationSeeds(
+        updatePlan,
+        missingWorkspace,
+        reconciliation.materialization,
+        reconciliation.targetState,
+        { env: current.env },
+      ),
+    ).resolves.toMatchObject({ clawVersion: "2.0.0", status: "pending" });
   });
 
   it("resumes a partial update from exact seed bytes and pending answers", async () => {

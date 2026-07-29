@@ -96,7 +96,7 @@ export async function buildClawSetupReconciliation(params: {
       blockers: [],
     };
   }
-  if (currentIsV2 && !params.currentSetup) {
+  if (currentIsV2 && !params.currentSetup && !params.currentPending) {
     return {
       createdSeeds: [],
       regeneratedSeeds: [],
