@@ -225,10 +225,15 @@ describe("Claw application planning", () => {
     expect(plan.actions).toContainEqual(
       expect.objectContaining({
         kind: "package",
-        id: "extension:github",
+        id: "plugin:@acme/github",
         blocked: false,
         details: expect.objectContaining({
           prerequisites: [{ kind: "environment", name: "GITHUB_TOKEN" }],
+          extension: expect.objectContaining({
+            id: "github",
+            detectedFormat: "claude",
+            mapped: ["commands", "skills"],
+          }),
         }),
       }),
     );
@@ -277,7 +282,7 @@ describe("Claw application planning", () => {
     );
   });
 
-  it("fails closed when canonical extension artifact inspection is unavailable", async () => {
+  it("blocks successful extension preflight without complete adapter provenance", async () => {
     const { source, workspace } = await createPlanSource();
     const manifest = requireManifest({ schemaVersion: 2, agent: { id: "github-triage" } });
     const plan = await buildClawAddPlan({
@@ -286,13 +291,21 @@ describe("Claw application planning", () => {
       source,
       context: {
         workspace,
-        packagePreflight: async () => ({ ok: true, action: "install" }),
+        packagePreflight: async () => ({
+          ok: true,
+          action: "install",
+          integrity: `sha256:${"b".repeat(64)}`,
+          installId: "github",
+          detectedFormat: "claude",
+          mapped: ["skills"],
+          unavailable: [],
+        }),
       },
     });
 
-    expect(plan.extensions[0]?.blocked).toBe(true);
     expect(plan.blockers).toContainEqual(
-      expect.objectContaining({ code: "extension_artifact_inspection_unavailable" }),
+      expect.objectContaining({ code: "extension_provenance_incomplete" }),
     );
+    expect(plan.extensions[0]?.blocked).toBe(true);
   });
 });

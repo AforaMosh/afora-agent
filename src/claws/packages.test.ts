@@ -368,6 +368,14 @@ describe("installClawPackages", () => {
   });
 
   it("records a dependency ref without reinstalling an exact reused plugin", async () => {
+    const extension = {
+      id: "audit-tools",
+      format: "claude" as const,
+      detectedFormat: "claude" as const,
+      mapped: ["skills"],
+      unavailable: ["agents"],
+      adapterIdentity: "openclaw/test",
+    };
     const installPlugin = vi.fn();
     const persistPackageRef = vi.fn().mockReturnValue({ kind: "plugin" });
     const preflightPlugin = vi.fn().mockResolvedValue({
@@ -377,7 +385,7 @@ describe("installClawPackages", () => {
       installedIntegrity: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     });
 
-    await installClawPackages(plan([pluginPackage], "reuse"), {
+    await installClawPackages(plan([{ ...pluginPackage, extension }], "reuse"), {
       deps: {
         installPlugin,
         probePlugin,
@@ -394,6 +402,7 @@ describe("installClawPackages", () => {
       expect.anything(),
       expect.objectContaining({
         integrity: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        extension,
       }),
       expect.objectContaining({
         status: "complete",

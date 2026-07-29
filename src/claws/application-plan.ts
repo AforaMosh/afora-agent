@@ -99,16 +99,21 @@ export async function planClawExtensions(params: {
           code: "package_install_unavailable",
           message: "Extension preflight is unavailable.",
         };
-    const inspectionUnavailable =
-      preflight.ok && !preflight.detectedFormat
+    const incompleteProvenance =
+      preflight.ok &&
+      (!preflight.integrity ||
+        !preflight.installId ||
+        !preflight.action ||
+        !preflight.detectedFormat ||
+        !preflight.adapterIdentity)
         ? blocker(
-            "extension_artifact_inspection_unavailable",
+            "extension_provenance_incomplete",
             `$.metadata.openclaw.config.extensions[${index}]`,
-            `Extension ${JSON.stringify(extension.id)} could not be checked by the canonical plugin detector.`,
+            `Extension ${JSON.stringify(extension.id)} did not resolve complete canonical identity and adapter provenance.`,
           )
         : undefined;
     const formatMismatch =
-      preflight.ok && preflight.detectedFormat && preflight.detectedFormat !== extension.format
+      preflight.ok && !incompleteProvenance && preflight.detectedFormat !== extension.format
         ? blocker(
             "extension_format_mismatch",
             `$.metadata.openclaw.config.extensions[${index}].format`,
@@ -121,7 +126,7 @@ export async function planClawExtensions(params: {
           `$.metadata.openclaw.config.extensions[${index}]`,
           preflight.message ?? "Extension preflight failed.",
         )
-      : (inspectionUnavailable ?? formatMismatch);
+      : (incompleteProvenance ?? formatMismatch);
     if (diagnostic) {
       blockers.push(diagnostic);
     }
@@ -137,17 +142,31 @@ export async function planClawExtensions(params: {
       mapped: preflight.mapped ?? [],
       unavailable: preflight.unavailable ?? [],
       ...(preflight.adapterIdentity ? { adapterIdentity: preflight.adapterIdentity } : {}),
-      blocked: !preflight.ok || Boolean(inspectionUnavailable) || Boolean(formatMismatch),
+      blocked: Boolean(diagnostic),
     };
     extensions.push(extensionPlan);
     actions.push({
       kind: "package",
-      id: `extension:${extension.id}`,
+      id: `plugin:${extension.ref}`,
       action: "install",
       target: `${extension.source}:${extension.ref}@${extension.version}`,
       ...(preflight.integrity ? { digest: preflight.integrity } : {}),
       details: {
-        ...extensionPlan,
+        kind: "plugin",
+        source: extension.source,
+        ref: extension.ref,
+        version: extension.version,
+        ...(preflight.integrity ? { integrity: preflight.integrity } : {}),
+        ...(preflight.installId ? { installId: preflight.installId } : {}),
+        ...(preflight.action ? { ownerAction: preflight.action } : {}),
+        extension: {
+          id: extension.id,
+          format: extension.format,
+          ...(preflight.detectedFormat ? { detectedFormat: preflight.detectedFormat } : {}),
+          mapped: preflight.mapped ?? [],
+          unavailable: preflight.unavailable ?? [],
+          ...(preflight.adapterIdentity ? { adapterIdentity: preflight.adapterIdentity } : {}),
+        },
         expectedState: !preflight.ok
           ? "unresolved"
           : preflight.action === "reuse"
