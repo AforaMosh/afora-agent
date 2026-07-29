@@ -488,6 +488,11 @@ export function wrapToolWithBeforeToolCallHook(
           ...executionArgs,
         );
         const durationMs = Date.now() - startedAt;
+        const recordedTerminalPresentation = resolveToolTerminalPresentation({
+          tool,
+          toolParams: executeParams,
+          result,
+        });
         const postExecutionBlock = await recordLoopOutcome({
           ctx,
           toolName: normalizedToolName,
@@ -496,6 +501,7 @@ export function wrapToolWithBeforeToolCallHook(
           result,
           resultContentSource: tool.resultContentSource,
           toolCallOrdinal,
+          terminalPresentation: recordedTerminalPresentation,
         });
         const finalResult = postExecutionBlock
           ? {
