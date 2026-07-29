@@ -6,7 +6,7 @@ import {
   patchLiveQaGatewayConfig,
   readLiveQaGatewayConfig,
 } from "../shared/live-gateway-config.runtime.js";
-import { buildSlackQaConfig } from "./slack-live.config.js";
+import { buildSlackQaConfig, resolveSlackQaReplacePaths } from "./slack-live.config.js";
 import type {
   SlackAuthIdentity,
   SlackObservedMessage,
@@ -75,7 +75,7 @@ export function createSlackQaScenarioEnvironment(params: {
     await patchLiveQaGatewayConfig({
       gateway: input.gateway,
       patch: cfg as Record<string, unknown>,
-      replacePaths: ["agents", "approvals", "channels.slack", "messages", "plugins", "tools"],
+      replacePaths: resolveSlackQaReplacePaths(params.accountId, params.channelId),
       timeoutMs: input.timeoutMs,
       waitForConfigRestartSettle: input.waitForConfigRestartSettle,
     });
