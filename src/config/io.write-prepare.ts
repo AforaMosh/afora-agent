@@ -657,6 +657,7 @@ function preserveUntouchedIncludes(params: {
   nextConfig: unknown;
   rootAuthoredConfig: unknown;
   persistedCandidate: unknown;
+  explicitSetPaths?: readonly (readonly string[])[];
 }): unknown {
   let next = params.persistedCandidate;
   for (const includePath of collectIncludeOwnedPaths(params.rootAuthoredConfig)) {
@@ -710,6 +711,19 @@ function preserveUntouchedIncludes(params: {
     for (const siblingPath of mutableSiblingPaths) {
       const relativeSiblingPath = siblingPath.slice(includePath.length);
       const nextPresent = hasPathValue(params.nextConfig, siblingPath);
+      const explicitlySetsSibling = params.explicitSetPaths?.some(
+        (path) => pathStartsWith(path, siblingPath) || pathStartsWith(siblingPath, path),
+      );
+      if (explicitlySetsSibling) {
+        authoredIncludeValue = nextPresent
+          ? setPathValue(
+              authoredIncludeValue,
+              relativeSiblingPath,
+              getPathValue(params.persistedCandidate, siblingPath),
+            )
+          : deletePathValue(authoredIncludeValue, relativeSiblingPath);
+        continue;
+      }
       const projectAgainst = (baselineConfig: unknown) =>
         projectRootAuthoredIncludeSibling({
           authored: getPathValue(params.rootAuthoredConfig, siblingPath),
@@ -939,6 +953,276 @@ function assertCanonicalAgentRosterRetainsEntries(params: {
   );
 }
 
+type ProjectedRosterValue = { present: false } | { present: true; value: unknown };
+
+function projectAuthoredRosterValue(params: {
+  authored: unknown;
+  authoredPresent: boolean;
+  explicit: unknown;
+  explicitPresent: boolean;
+  explicitPaths: readonly (readonly string[])[];
+  path: readonly string[];
+  runtime: unknown;
+  runtimePresent: boolean;
+  source: unknown;
+  sourcePresent: boolean;
+  next: unknown;
+  nextPresent: boolean;
+}): ProjectedRosterValue {
+  if (!params.nextPresent) {
+    return { present: false };
+  }
+  const explicitlySet = params.explicitPaths.some((path) => pathStartsWith(params.path, path));
+  const explicitlyTouches =
+    explicitlySet || params.explicitPaths.some((path) => pathStartsWith(path, params.path));
+  const explicitValueApplies = explicitlyTouches && params.explicitPresent;
+  const unchangedFromRuntime =
+    params.runtimePresent && isDeepStrictEqual(params.runtime, params.next);
+  const unchangedFromSource = params.sourcePresent && isDeepStrictEqual(params.source, params.next);
+  if (
+    !params.authoredPresent &&
+    !explicitValueApplies &&
+    (unchangedFromRuntime || unchangedFromSource)
+  ) {
+    return { present: false };
+  }
+  if (isRecord(params.next)) {
+    const authored = isRecord(params.authored) ? params.authored : {};
+    const explicit = isRecord(params.explicit) ? params.explicit : {};
+    const runtime = isRecord(params.runtime) ? params.runtime : {};
+    const source = isRecord(params.source) ? params.source : {};
+    const value: Record<string, unknown> = {};
+    for (const [key, nextValue] of Object.entries(params.next)) {
+      if (isBlockedObjectKey(key)) {
+        continue;
+      }
+      const projected = projectAuthoredRosterValue({
+        authored: authored[key],
+        authoredPresent: Object.hasOwn(authored, key),
+        explicit: explicit[key],
+        explicitPresent: Object.hasOwn(explicit, key),
+        explicitPaths: params.explicitPaths,
+        path: [...params.path, key],
+        runtime: runtime[key],
+        runtimePresent: Object.hasOwn(runtime, key),
+        source: source[key],
+        sourcePresent: Object.hasOwn(source, key),
+        next: nextValue,
+        nextPresent: true,
+      });
+      if (projected.present) {
+        value[key] = projected.value;
+      }
+    }
+    return { present: true, value };
+  }
+  if (Array.isArray(params.next)) {
+    if (explicitlySet && params.explicitPresent && Array.isArray(params.explicit)) {
+      return { present: true, value: cloneUnknown(params.explicit) };
+    }
+    const authored = Array.isArray(params.authored) ? params.authored : [];
+    const explicit = Array.isArray(params.explicit) ? params.explicit : [];
+    const runtime = Array.isArray(params.runtime) ? params.runtime : [];
+    const source = Array.isArray(params.source) ? params.source : [];
+    const usedRuntimeIndexes = new Set<number>();
+    const usedSourceIndexes = new Set<number>();
+    const usedAuthoredIndexes = new Set<number>();
+    const reservedRuntimeIndexes = new Set(
+      params.next.flatMap((nextValue, index) =>
+        index < runtime.length && isDeepStrictEqual(runtime[index], nextValue) ? [index] : [],
+      ),
+    );
+    const reservedSourceIndexes = new Set(
+      params.next.flatMap((nextValue, index) =>
+        index < source.length && isDeepStrictEqual(source[index], nextValue) ? [index] : [],
+      ),
+    );
+    const findMatchingIndex = (
+      values: unknown[],
+      used: Set<number>,
+      reserved: ReadonlySet<number>,
+      nextValue: unknown,
+      preferredIndex: number,
+    ): number | undefined => {
+      if (
+        preferredIndex < values.length &&
+        !used.has(preferredIndex) &&
+        isDeepStrictEqual(values[preferredIndex], nextValue)
+      ) {
+        return preferredIndex;
+      }
+      const index = values.findIndex(
+        (value, candidate) =>
+          !used.has(candidate) && !reserved.has(candidate) && isDeepStrictEqual(value, nextValue),
+      );
+      return index >= 0 ? index : undefined;
+    };
+    return {
+      present: true,
+      value: params.next.flatMap((nextValue, index) => {
+        const runtimeIndex = findMatchingIndex(
+          runtime,
+          usedRuntimeIndexes,
+          reservedRuntimeIndexes,
+          nextValue,
+          index,
+        );
+        if (runtimeIndex !== undefined) {
+          usedRuntimeIndexes.add(runtimeIndex);
+        }
+        const sourceIndex = findMatchingIndex(
+          source,
+          usedSourceIndexes,
+          reservedSourceIndexes,
+          nextValue,
+          index,
+        );
+        if (sourceIndex !== undefined) {
+          usedSourceIndexes.add(sourceIndex);
+        }
+        const exactAuthoredCandidates = [sourceIndex, runtimeIndex].filter(
+          (candidate): candidate is number =>
+            candidate !== undefined && candidate < authored.length,
+        );
+        const exactMatchExists = runtimeIndex !== undefined || sourceIndex !== undefined;
+        const exactOwner = exactAuthoredCandidates.find(
+          (candidate) => !usedAuthoredIndexes.has(candidate),
+        );
+        const fallbackOwner =
+          !exactMatchExists && index < authored.length && !usedAuthoredIndexes.has(index)
+            ? index
+            : undefined;
+        const authoredIndex = exactOwner ?? fallbackOwner;
+        if (authoredIndex !== undefined) {
+          usedAuthoredIndexes.add(authoredIndex);
+        }
+        const consumedExactOwner =
+          authoredIndex === undefined && exactAuthoredCandidates.length > 0;
+        const sameIndexFallback = !exactMatchExists;
+        const projected = projectAuthoredRosterValue({
+          authored: authoredIndex === undefined ? undefined : authored[authoredIndex],
+          authoredPresent: authoredIndex !== undefined && authoredIndex < authored.length,
+          explicit: explicit[index],
+          explicitPresent: index < explicit.length,
+          explicitPaths: params.explicitPaths,
+          path: [...params.path, String(index)],
+          runtime: consumedExactOwner
+            ? undefined
+            : runtimeIndex === undefined
+              ? sameIndexFallback
+                ? runtime[index]
+                : undefined
+              : runtime[runtimeIndex],
+          runtimePresent:
+            !consumedExactOwner &&
+            (runtimeIndex !== undefined || (sameIndexFallback && index < runtime.length)),
+          source: consumedExactOwner
+            ? undefined
+            : sourceIndex === undefined
+              ? sameIndexFallback
+                ? source[index]
+                : undefined
+              : source[sourceIndex],
+          sourcePresent:
+            !consumedExactOwner &&
+            (sourceIndex !== undefined || (sameIndexFallback && index < source.length)),
+          next: nextValue,
+          nextPresent: true,
+        });
+        return projected.present ? [projected.value] : [];
+      }),
+    };
+  }
+  if (explicitlySet && params.explicitPresent) {
+    return { present: true, value: cloneUnknown(params.explicit) };
+  }
+  return {
+    present: true,
+    value:
+      params.authoredPresent && (unchangedFromRuntime || unchangedFromSource)
+        ? cloneUnknown(params.authored)
+        : cloneUnknown(params.next),
+  };
+}
+
+function projectAuthoredCanonicalAgentRoster(params: {
+  valueSource: unknown;
+  rootAuthoredConfig: unknown;
+  runtimeConfig: unknown;
+  sourceConfig: unknown;
+  nextConfig: unknown;
+  explicitSetPaths?: readonly (readonly string[])[];
+  persistedCandidate: unknown;
+}): unknown {
+  const authoredConfigForProjection = normalizeAgentListModelRefsForWrite(
+    params.rootAuthoredConfig,
+  );
+  const authoredRoster = readAgentRosterProperty(authoredConfigForProjection);
+  const nextRoster = readAgentRosterProperty(params.nextConfig);
+  if (
+    authoredRoster?.kind !== "entries" ||
+    !isRecord(authoredRoster.value) ||
+    nextRoster?.kind !== "entries" ||
+    !isRecord(nextRoster.value)
+  ) {
+    return params.persistedCandidate;
+  }
+  const runtimeEntries = toAgentEntriesRecord(
+    listAgentEntries(params.runtimeConfig as OpenClawConfig),
+  ) as Record<string, unknown>;
+  const sourceEntries = toAgentEntriesRecord(
+    listAgentEntries(params.sourceConfig as OpenClawConfig),
+  ) as Record<string, unknown>;
+  const explicitRoster = readAgentRosterProperty(params.valueSource);
+  const explicitEntries =
+    explicitRoster?.kind === "entries" && isRecord(explicitRoster.value)
+      ? explicitRoster.value
+      : {};
+  const explicitPaths = (params.explicitSetPaths ?? []).flatMap((path) => {
+    if (path[0] !== "agents") {
+      return [];
+    }
+    if (path.length === 1) {
+      return [[]];
+    }
+    return path[1] === "entries" ? [path.slice(2)] : [];
+  });
+  const entries = Object.fromEntries(
+    Object.entries(nextRoster.value).map(([id, nextEntry]) => {
+      const projected = projectAuthoredRosterValue({
+        authored: authoredRoster.value[id],
+        authoredPresent: Object.hasOwn(authoredRoster.value, id),
+        explicit: explicitEntries[id],
+        explicitPresent: Object.hasOwn(explicitEntries, id),
+        explicitPaths,
+        path: [id],
+        runtime: runtimeEntries[id],
+        runtimePresent: Object.hasOwn(runtimeEntries, id),
+        source: sourceEntries[id],
+        sourcePresent: Object.hasOwn(sourceEntries, id),
+        next: nextEntry,
+        nextPresent: true,
+      });
+      return [id, projected.present ? projected.value : {}];
+    }),
+  );
+  const projectedCandidate = setPathValueCreatingParents(
+    params.persistedCandidate,
+    ["agents", "entries"],
+    entries,
+  );
+  return preserveUntouchedIncludes({
+    runtimeConfig: params.runtimeConfig,
+    sourceConfig: params.sourceConfig,
+    nextConfig: params.nextConfig,
+    rootAuthoredConfig: {
+      agents: { entries: cloneUnknown(authoredRoster.value) },
+    },
+    persistedCandidate: projectedCandidate,
+    explicitSetPaths: params.explicitSetPaths,
+  });
+}
+
 function omitImplicitDefaultAgentEntries(params: {
   runtimeConfig: unknown;
   nextConfig: unknown;
@@ -997,12 +1281,21 @@ export function resolvePersistCandidateForWrite(params: {
     rootAuthoredConfig,
     allowIncludeAncestorExplicitSetPaths: params.allowIncludeAncestorExplicitSetPaths,
   });
+  const withAuthoredRoster = projectAuthoredCanonicalAgentRoster({
+    valueSource: params.explicitSetValueSource ?? params.nextConfig,
+    rootAuthoredConfig,
+    runtimeConfig: params.runtimeConfig,
+    sourceConfig: params.sourceConfig,
+    nextConfig: params.nextConfig,
+    explicitSetPaths: params.explicitSetPaths,
+    persistedCandidate: persisted,
+  });
   const withoutImplicitAgentEntries = omitImplicitDefaultAgentEntries({
     runtimeConfig: params.runtimeConfig,
     nextConfig: params.nextConfig,
     rootAuthoredConfig,
     explicitSetPaths: params.explicitSetPaths,
-    persistedCandidate: persisted,
+    persistedCandidate: withAuthoredRoster,
   });
   const withSchema = preserveRootSchemaUri({
     rootAuthoredConfig,

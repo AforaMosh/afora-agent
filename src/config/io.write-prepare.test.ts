@@ -24,6 +24,15 @@ type WriteCase = {
 };
 
 const main = { default: true };
+const identityRef = { source: "env", provider: "default", id: "SSH_IDENTITY" };
+const runtimeSecretEntry = {
+  default: true,
+  sandbox: { ssh: { identityData: "resolved-private-key" } },
+};
+const authoredSecretEntry = {
+  default: true,
+  sandbox: { ssh: { identityData: identityRef } },
+};
 
 const writeCases: WriteCase[] = [
   {
@@ -50,6 +59,274 @@ const writeCases: WriteCase[] = [
     next: { agents: { entries: { worker: { default: true } } } },
     options: { allowedAgentRosterRemovals: ["main"] },
     expected: { agents: { entries: { worker: { default: true } } } },
+  },
+  {
+    name: "preserves authored secret references in unchanged canonical roster fields",
+    current: { agents: { entries: { main: runtimeSecretEntry } } },
+    source: { agents: { entries: { main: authoredSecretEntry } } },
+    authored: { agents: { entries: { main: authoredSecretEntry } } },
+    next: { agents: { entries: { main: runtimeSecretEntry, worker: {} } } },
+    expected: { agents: { entries: { main: authoredSecretEntry, worker: {} } } },
+  },
+  {
+    name: "does not persist unchanged runtime-only canonical roster fields",
+    current: {
+      agents: { entries: { main: { ...main, workspace: "/runtime/default" } } },
+    },
+    authored: { agents: { entries: { main } } },
+    next: {
+      agents: {
+        entries: { main: { ...main, workspace: "/runtime/default" }, worker: {} },
+      },
+    },
+    expected: { agents: { entries: { main, worker: {} } } },
+  },
+  {
+    name: "does not persist unchanged runtime-only canonical roster composites",
+    current: {
+      agents: {
+        entries: { main: { ...main, tools: { allow: ["runtime-default"] } } },
+      },
+    },
+    authored: { agents: { entries: { main } } },
+    next: {
+      agents: {
+        entries: {
+          main: { ...main, tools: { allow: ["runtime-default"] } },
+          worker: {},
+        },
+      },
+    },
+    expected: { agents: { entries: { main, worker: {} } } },
+  },
+  {
+    name: "keeps runtime-only roster keys without serializing their resolved fields",
+    current: {
+      agents: {
+        entries: {
+          main,
+          runtime: { sandbox: { ssh: { identityData: "resolved-private-key" } } },
+        },
+      },
+    },
+    authored: { agents: { entries: { main } } },
+    next: {
+      agents: {
+        entries: {
+          main,
+          runtime: { sandbox: { ssh: { identityData: "resolved-private-key" } } },
+          worker: {},
+        },
+      },
+    },
+    expected: { agents: { entries: { main, runtime: {}, worker: {} } } },
+  },
+  {
+    name: "does not let a partial explicit entry serialize runtime-only secrets",
+    current: {
+      agents: {
+        entries: {
+          main: { ...main, sandbox: { ssh: { identityData: "resolved-private-key" } } },
+        },
+      },
+    },
+    authored: { agents: { entries: { main } } },
+    next: {
+      agents: {
+        entries: {
+          main: { ...main, sandbox: { ssh: { identityData: "resolved-private-key" } } },
+        },
+      },
+    },
+    options: {
+      explicitSetPaths: [["agents", "entries", "main"]],
+      explicitSetValueSource: { agents: { entries: { main } } },
+    },
+    expected: { agents: { entries: { main } } },
+  },
+  {
+    name: "keeps explicit same-value siblings beside a canonical roster include",
+    current: {
+      agents: { entries: { main: { ...main, identity: { name: "Main", emoji: "🦞" } } } },
+    },
+    authored: {
+      agents: {
+        entries: {
+          main: {
+            ...main,
+            identity: { $include: "./identity.json", name: "${AGENT_NAME}" },
+          },
+        },
+      },
+    },
+    next: {
+      agents: { entries: { main: { ...main, identity: { name: "Main", emoji: "🦞" } } } },
+    },
+    options: {
+      explicitSetPaths: [["agents", "entries", "main", "identity", "name"]],
+      explicitSetValueSource: {
+        agents: { entries: { main: { identity: { name: "Main" } } } },
+      },
+    },
+    expected: {
+      agents: {
+        entries: {
+          main: { ...main, identity: { $include: "./identity.json", name: "Main" } },
+        },
+      },
+    },
+  },
+  {
+    name: "preserves unchanged authored array elements during canonical roster changes",
+    current: {
+      agents: { entries: { main: { ...main, tools: { allow: ["read", "old"] } } } },
+    },
+    authored: {
+      agents: {
+        entries: { main: { ...main, tools: { allow: ["${PRIMARY_TOOL}", "old"] } } },
+      },
+    },
+    next: {
+      agents: { entries: { main: { ...main, tools: { allow: ["read", "new"] } } } },
+    },
+    expected: {
+      agents: {
+        entries: { main: { ...main, tools: { allow: ["${PRIMARY_TOOL}", "new"] } } },
+      },
+    },
+  },
+  {
+    name: "reserves unchanged array positions before matching a new duplicate value",
+    current: {
+      agents: { entries: { main: { ...main, tools: { allow: ["old", "read"] } } } },
+    },
+    authored: {
+      agents: {
+        entries: { main: { ...main, tools: { allow: ["old", "${PRIMARY_TOOL}"] } } },
+      },
+    },
+    next: {
+      agents: { entries: { main: { ...main, tools: { allow: ["read", "read"] } } } },
+    },
+    expected: {
+      agents: {
+        entries: { main: { ...main, tools: { allow: ["read", "${PRIMARY_TOOL}"] } } },
+      },
+    },
+  },
+  {
+    name: "projects an authored object-array slot onto only one canonical element",
+    current: {
+      agents: {
+        entries: {
+          main: { ...main, params: { routes: [{ name: "main", enabled: true }] } },
+        },
+      },
+    },
+    authored: {
+      agents: {
+        entries: {
+          main: { ...main, params: { routes: [{ name: "${NAME}", enabled: true }] } },
+        },
+      },
+    },
+    next: {
+      agents: {
+        entries: {
+          main: {
+            ...main,
+            params: {
+              routes: [
+                { name: "main", enabled: false },
+                { name: "main", enabled: true },
+              ],
+            },
+          },
+        },
+      },
+    },
+    expected: {
+      agents: {
+        entries: {
+          main: {
+            ...main,
+            params: {
+              routes: [
+                { name: "${NAME}", enabled: false },
+                { name: "main", enabled: true },
+              ],
+            },
+          },
+        },
+      },
+    },
+  },
+  {
+    name: "does not fall back after an exact array owner was already consumed",
+    current: {
+      agents: { entries: { main: { ...main, tools: { allow: ["read", "old"] } } } },
+    },
+    authored: {
+      agents: {
+        entries: { main: { ...main, tools: { allow: ["${PRIMARY_TOOL}", "old"] } } },
+      },
+    },
+    next: {
+      agents: { entries: { main: { ...main, tools: { allow: ["new", "read", "old"] } } } },
+    },
+    expected: {
+      agents: { entries: { main: { ...main, tools: { allow: ["new", "read", "old"] } } } },
+    },
+  },
+  {
+    name: "prefers a valid source array owner over a runtime-only index",
+    current: {
+      agents: {
+        entries: { main: { ...main, tools: { allow: ["runtime-default", "read"] } } },
+      },
+    },
+    source: {
+      agents: { entries: { main: { ...main, tools: { allow: ["read"] } } } },
+    },
+    authored: {
+      agents: {
+        entries: { main: { ...main, tools: { allow: ["${PRIMARY_TOOL}"] } } },
+      },
+    },
+    next: {
+      agents: { entries: { main: { ...main, tools: { allow: ["read"] } } } },
+    },
+    expected: {
+      agents: {
+        entries: { main: { ...main, tools: { allow: ["${PRIMARY_TOOL}"] } } },
+      },
+    },
+  },
+  {
+    name: "omits unchanged runtime-only canonical roster array elements",
+    current: {
+      agents: {
+        entries: { main: { ...main, tools: { allow: ["read", "runtime-default"] } } },
+      },
+    },
+    source: {
+      agents: { entries: { main: { ...main, tools: { allow: ["read"] } } } },
+    },
+    authored: {
+      agents: {
+        entries: { main: { ...main, tools: { allow: ["${PRIMARY_TOOL}"] } } },
+      },
+    },
+    next: {
+      agents: {
+        entries: { main: { ...main, tools: { allow: ["read", "runtime-default"] } } },
+      },
+    },
+    expected: {
+      agents: {
+        entries: { main: { ...main, tools: { allow: ["${PRIMARY_TOOL}"] } } },
+      },
+    },
   },
   {
     name: "rejects roster unsets that remove an unauthorized entry",
