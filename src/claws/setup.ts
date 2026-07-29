@@ -430,7 +430,7 @@ export async function buildClawSetupPlan(params: {
   const renderedSeeds: Array<{ destination: string; content: Buffer; source: string }> = [];
   const seedPlans: ClawSetupPlan["seeds"] = [];
   let aggregateRenderedBytes = 0;
-  for (const template of read.templates) {
+  for (const [index, template] of read.templates.entries()) {
     const rendered = template.content.replace(INPUT_TOKEN, (_token, inputId: string) =>
       renderAnswer(resolved.get(inputId) ?? { value: undefined, source: "absent" }),
     );
@@ -443,7 +443,7 @@ export async function buildClawSetupPlan(params: {
         diagnostic(
           "setup_seed_render_too_large",
           "plan",
-          `$.personalization.seeds.${template.destination}`,
+          `$.personalization.seeds[${index}].source`,
           `Rendered personalization seed exceeds ${MAX_CLAW_SETUP_RENDERED_SEED_BYTES} bytes.`,
         ),
       );
