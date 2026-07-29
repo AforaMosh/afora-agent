@@ -7,6 +7,7 @@ import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js
 import { applyClawAddPlan } from "./add.js";
 import { applyClawConfigurePlan, buildClawConfigurePlan } from "./configure.js";
 import { applyClawRemovePlan, buildClawRemovePlan } from "./lifecycle-state.js";
+import { readClawStatus } from "./lifecycle-status.js";
 import { buildClawAddPlan } from "./lifecycle.js";
 import {
   ClawPersonalizationError,
@@ -102,6 +103,14 @@ describe("Claw personalization state", () => {
       answers: [{ id: "name", value: "Avery", source: "explicit" }],
       seeds: [{ destination: "USER.md", status: "complete" }],
     });
+    const status = await readClawStatus("personalized", {
+      env: current.env,
+      config,
+      sourceMcpServers: {},
+    });
+    expect(status.records[0]?.setup).not.toHaveProperty("answers");
+    expect(status.records[0]?.setup).not.toHaveProperty("answerDigest");
+    expect(JSON.stringify(status)).not.toContain("Avery");
 
     const removePlan = await buildClawRemovePlan("personalized", {
       env: current.env,

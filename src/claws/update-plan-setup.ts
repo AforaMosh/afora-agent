@@ -1,5 +1,7 @@
+import type { OpenClawStateDatabaseOptions } from "../state/openclaw-state-db.js";
 import type { readClawStatus } from "./lifecycle-status.js";
 import { buildClawSetupReconciliation } from "./setup-reconcile.js";
+import { readClawSetupPending, readClawSetupState } from "./setup-state.js";
 import { CLAW_SETUP_SCHEMA_VERSION, type ClawManifest, type ClawSourceIdentity } from "./types.js";
 import type { ClawUpdateAction, ClawUpdatePlan } from "./update-plan-types.js";
 
@@ -12,15 +14,18 @@ export async function buildClawUpdateSetupPlan(
     targetSource: ClawSourceIdentity;
     answers?: unknown;
   },
+  stateOptions: OpenClawStateDatabaseOptions = {},
 ): Promise<{
   actions: ClawUpdateAction[];
   blockers: ClawUpdatePlan["blockers"];
   plan: ClawUpdatePlan["setup"];
 }> {
+  const currentSetup = readClawSetupState(record.install.agentId, stateOptions);
+  const currentPending = readClawSetupPending(record.install.agentId, stateOptions);
   const reconciliation = await buildClawSetupReconciliation({
     currentManifestSchemaVersion: record.install.manifestSchemaVersion,
-    currentSetup: record.setup,
-    currentPending: record.setupUpdate,
+    currentSetup,
+    currentPending,
     targetManifest: params.targetManifest,
     targetSource: params.targetSource,
     workspace: record.install.workspace,
@@ -28,7 +33,7 @@ export async function buildClawUpdateSetupPlan(
     answers: params.answers,
   });
   const plan =
-    params.targetManifest.schemaVersion === CLAW_SETUP_SCHEMA_VERSION || record.setup
+    params.targetManifest.schemaVersion === CLAW_SETUP_SCHEMA_VERSION || currentSetup
       ? {
           currentSchemaDigest: reconciliation.currentSchemaDigest,
           targetSchemaDigest: reconciliation.targetSchemaDigest,

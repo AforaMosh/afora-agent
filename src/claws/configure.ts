@@ -5,7 +5,11 @@ import type { OpenClawStateDatabaseOptions } from "../state/openclaw-state-db.js
 import { readClawStatus } from "./lifecycle-status.js";
 import { createClawUpdatePersonalizationSeeds } from "./personalization.js";
 import { buildClawSetupReconciliation } from "./setup-reconcile.js";
-import { finalizeClawSetupUpdate } from "./setup-state.js";
+import {
+  finalizeClawSetupUpdate,
+  readClawSetupPending,
+  readClawSetupState,
+} from "./setup-state.js";
 import {
   CLAW_OUTPUT_STABILITY,
   CLAW_SETUP_SCHEMA_VERSION,
@@ -91,8 +95,8 @@ export async function buildClawConfigurePlan(params: {
   const reconciliation = record
     ? await buildClawSetupReconciliation({
         currentManifestSchemaVersion: record.install.manifestSchemaVersion,
-        currentSetup: record.setup,
-        currentPending: record.setupUpdate,
+        currentSetup: readClawSetupState(record.install.agentId, params.stateOptions),
+        currentPending: readClawSetupPending(record.install.agentId, params.stateOptions),
         targetManifest: params.manifest,
         targetSource: params.source,
         workspace: record.install.workspace,
@@ -203,8 +207,8 @@ export async function applyClawConfigurePlan(
   }
   const reconciliation = await buildClawSetupReconciliation({
     currentManifestSchemaVersion: record.install.manifestSchemaVersion,
-    currentSetup: record.setup,
-    currentPending: record.setupUpdate,
+    currentSetup: readClawSetupState(record.install.agentId, options),
+    currentPending: readClawSetupPending(record.install.agentId, options),
     targetManifest: params.manifest,
     targetSource: params.source,
     workspace: record.install.workspace,

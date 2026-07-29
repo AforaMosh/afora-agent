@@ -348,7 +348,7 @@ export async function buildClawUpdatePlan(params: {
       });
     }
 
-    const setup = await buildClawUpdateSetupPlan(record, params);
+    const setup = await buildClawUpdateSetupPlan(record, params, readOnlyStateOptions);
     actions.push(...setup.actions);
     blockers.push(...setup.blockers);
 

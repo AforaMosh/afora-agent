@@ -47,6 +47,31 @@ import { readClawWorkspaceFiles } from "./workspace.js";
 
 const CLAW_STATUS_SCHEMA_VERSION = "openclaw.clawStatus.v1" as const;
 
+type ClawSetupStatus = Pick<
+  PersistedClawSetupState,
+  | "schemaVersion"
+  | "agentId"
+  | "clawName"
+  | "clawVersion"
+  | "setupSchemaDigest"
+  | "seeds"
+  | "status"
+  | "appliedAtMs"
+  | "updatedAtMs"
+>;
+
+type ClawSetupPendingStatus = Pick<
+  PersistedClawSetupPending,
+  | "schemaVersion"
+  | "agentId"
+  | "clawName"
+  | "clawVersion"
+  | "setupSchemaDigest"
+  | "seeds"
+  | "status"
+  | "updatedAtMs"
+>;
+
 type ClawMcpServerStatus = PersistedClawMcpServerRef & {
   state: "present" | "modified" | "missing" | "pending" | "failed";
 };
@@ -116,9 +141,36 @@ export type ClawStatusRecord = {
   packages: ClawPackageStatus[];
   mcpServers: ClawMcpServerStatus[];
   cronJobs: PersistedClawCronRef[];
-  setup?: PersistedClawSetupState;
-  setupUpdate?: PersistedClawSetupPending;
+  setup?: ClawSetupStatus;
+  setupUpdate?: ClawSetupPendingStatus;
 };
+
+function projectSetupStatus(state: PersistedClawSetupState): ClawSetupStatus {
+  return {
+    schemaVersion: state.schemaVersion,
+    agentId: state.agentId,
+    clawName: state.clawName,
+    clawVersion: state.clawVersion,
+    setupSchemaDigest: state.setupSchemaDigest,
+    seeds: state.seeds,
+    status: state.status,
+    ...(state.appliedAtMs === undefined ? {} : { appliedAtMs: state.appliedAtMs }),
+    updatedAtMs: state.updatedAtMs,
+  };
+}
+
+function projectSetupPendingStatus(state: PersistedClawSetupPending): ClawSetupPendingStatus {
+  return {
+    schemaVersion: state.schemaVersion,
+    agentId: state.agentId,
+    clawName: state.clawName,
+    clawVersion: state.clawVersion,
+    setupSchemaDigest: state.setupSchemaDigest,
+    seeds: state.seeds,
+    status: state.status,
+    updatedAtMs: state.updatedAtMs,
+  };
+}
 
 type ClawStatusResult = {
   schemaVersion: typeof CLAW_STATUS_SCHEMA_VERSION;
@@ -252,8 +304,8 @@ export async function readClawStatus(
         : reconcileClawMcpServerRefs(install.agentId, configuredMcpServers, options)
       ).map((ref) => inspectMcpServer(ref, configuredMcpServers)),
       cronJobs: readClawCronRefs(install.agentId, options),
-      ...(setup ? { setup } : {}),
-      ...(setupUpdate ? { setupUpdate } : {}),
+      ...(setup ? { setup: projectSetupStatus(setup) } : {}),
+      ...(setupUpdate ? { setupUpdate: projectSetupPendingStatus(setupUpdate) } : {}),
     });
   }
   return {
