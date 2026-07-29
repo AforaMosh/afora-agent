@@ -683,7 +683,6 @@ export function detectPostExecutionToolCallLoop(
     detector: "file_mutation_no_progress",
     count: noProgress.count,
     message: `CRITICAL: ${record.toolName} repeated an identical no-op file mutation. Stop retrying unchanged content; inspect or repair the input, choose a different action, or finish without rewriting the file.`,
-    warningKey: `file-mutation:${record.toolName}:${record.argsHash}:${noProgress.latestResultHash ?? "none"}`,
   };
 }
 
