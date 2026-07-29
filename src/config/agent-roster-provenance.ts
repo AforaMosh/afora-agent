@@ -78,7 +78,7 @@ export function hasResolvedRosterBeforeMigrations(snapshot: ConfigFileSnapshot):
 }
 
 /** Whether an include, rather than the authored root, owns agents.entries. */
-export function configIncludeOwnsAgentRosterValues(params: {
+function configIncludeOwnsAgentRosterValues(params: {
   parsed: unknown;
   sourceConfigBeforeMigrations: unknown;
   includeContributesRoster?: boolean;

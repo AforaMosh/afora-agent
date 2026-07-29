@@ -7,6 +7,10 @@ import type { OpenClawConfig } from "../../../config/types.js";
 import { legacyCodexProviderIdentityKey } from "./codex-route-model-ref.js";
 import { pruneBindingsForMissingAgents } from "./legacy-config-binding-repair.js";
 import { LEGACY_CONFIG_MIGRATIONS } from "./legacy-config-migrations.js";
+import {
+  LEGACY_CONFIG_MIGRATIONS_RUNTIME_ENTRIES,
+  prepareAgentEntriesDoctorMigrationInput,
+} from "./legacy-config-migrations.runtime.entries.js";
 import { collectBlockedLegacyOpenAICodexProviderPlan } from "./legacy-config-migrations.runtime.models.js";
 
 function repairBindingsForTest(config: OpenClawConfig) {
@@ -49,6 +53,117 @@ function expectMigrationChangesToIncludeFragments(changes: string[], fragments: 
   );
   expect(unmatchedFragments).toStrictEqual([]);
 }
+
+describe("runtime.agents-entries doctor migration", () => {
+  it("leaves whole-entry includes on the existing include-owned write fallback", () => {
+    expect(
+      prepareAgentEntriesDoctorMigrationInput({
+        authored: { agents: { list: [{ $include: "./main-agent.json" }] } },
+        resolvedBeforeMigrations: {
+          agents: { list: [{ id: "main", default: true, workspace: "/srv/main" }] },
+        },
+      }),
+    ).toBeUndefined();
+  });
+
+  it.each([
+    {
+      name: "list index paths",
+      authored: {
+        agents: {
+          list: [
+            { id: "ops", default: true, workspace: "/srv/ops" },
+            { id: "worker", workspace: "/srv/worker" },
+          ],
+        },
+      },
+      resolved: {
+        agents: {
+          list: [
+            { id: "ops", default: true, workspace: "/srv/ops" },
+            { id: "worker", workspace: "/srv/worker" },
+          ],
+        },
+      },
+      expected: {
+        ops: { default: true, workspace: "/srv/ops" },
+        worker: { workspace: "/srv/worker" },
+      },
+    },
+    {
+      name: "environment-backed ids",
+      authored: { agents: { list: [{ id: "${AGENT_ID}", default: true }] } },
+      resolved: { agents: { list: [{ id: "ops", default: true }] } },
+      expected: { ops: { default: true } },
+    },
+    {
+      name: "renamed ids",
+      authored: { agents: { list: [{ id: "primary", default: true }] } },
+      resolved: { agents: { list: [{ id: "primary", default: true }] } },
+      expected: { primary: { default: true } },
+    },
+    {
+      name: "duplicate normalized ids",
+      authored: {
+        agents: {
+          list: [
+            { id: "Ops", default: true },
+            { id: " ops ", workspace: "/srv/2" },
+          ],
+        },
+      },
+      resolved: {
+        agents: {
+          list: [
+            { id: "Ops", default: true },
+            { id: " ops ", workspace: "/srv/2" },
+          ],
+        },
+      },
+      expected: { ops: { default: true }, "ops-2": { workspace: "/srv/2" } },
+    },
+    {
+      name: "list unsets",
+      authored: { agents: { list: [{ id: "main", default: true }] } },
+      resolved: { agents: { list: [{ id: "main", default: true }] } },
+      expected: { main: { default: true } },
+    },
+    {
+      name: "list include projection",
+      authored: {
+        agents: {
+          list: [{ id: "main", default: true, identity: { $include: "./main-identity.json" } }],
+        },
+      },
+      resolved: {
+        agents: {
+          list: [{ id: "main", default: true, identity: { name: "Main", emoji: "🦞" } }],
+        },
+      },
+      expected: {
+        main: { default: true, identity: { $include: "./main-identity.json" } },
+      },
+    },
+  ])("repairs persisted agents.list $name to canonical agents.entries", (testCase) => {
+    const migrationInput = expectDefined(
+      prepareAgentEntriesDoctorMigrationInput({
+        authored: testCase.authored,
+        resolvedBeforeMigrations: testCase.resolved,
+      }),
+      "agent entries migration input",
+    ) as Record<string, unknown>;
+    const changes: string[] = [];
+    expectDefined(LEGACY_CONFIG_MIGRATIONS_RUNTIME_ENTRIES[0], "agent entries migration").apply(
+      migrationInput,
+      changes,
+    );
+
+    const agents = migrationInput.agents as Record<string, unknown>;
+    expect(agents.entries).toEqual(testCase.expected);
+    expect(agents).not.toHaveProperty("list");
+    expect(changes).toContain("Moved agents.list → keyed agents.entries.");
+  });
+});
 
 describe("legacy session typing config migrate", () => {
   it("moves session typingMode to agent defaults", () => {

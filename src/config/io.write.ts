@@ -1,5 +1,11 @@
 import type fs from "node:fs";
 import path from "node:path";
+import { isDeepStrictEqual } from "node:util";
+import {
+  listAgentEntries,
+  readAgentRosterProperty,
+  toAgentEntriesRecord,
+} from "../agents/agent-scope-config.js";
 import { isVerbose } from "../global-state.js";
 import { isVitestRuntimeEnv } from "../infra/env.js";
 import { formatErrorMessage } from "../infra/errors.js";
@@ -71,6 +77,10 @@ import {
 } from "./io.write-safety.js";
 import { formatConfigIssueLines } from "./issue-format.js";
 import { warnIfJSON5CommentsWillBeStripped } from "./json5-comments.js";
+import {
+  LEGACY_AGENT_LIST_MIGRATION_MESSAGE,
+  LEGACY_INCLUDED_AGENT_LIST_MIGRATION_MESSAGE,
+} from "./legacy.roster.js";
 import { assertConfigWriteAllowedInCurrentMode } from "./nix-mode-write-guard.js";
 import { resolveIncludeRoots } from "./paths.js";
 import { preflightRuntimeSnapshotWrite } from "./runtime-snapshot.js";
@@ -107,7 +117,7 @@ export async function writeConfigFileFromContext(
   const { deps, configPath } = context;
   options.assertConfigPathForWrite?.();
   assertConfigWriteAllowedInCurrentMode({ configPath, env: deps.env });
-  const unsetPaths = resolveManagedUnsetPathsForWrite(options.unsetPaths);
+  let unsetPaths = resolveManagedUnsetPathsForWrite(options.unsetPaths);
   let persistCandidate: unknown = cfg;
   const snapshotRead = options.baseSnapshot
     ? {
@@ -119,10 +129,62 @@ export async function writeConfigFileFromContext(
   if (options.baseSnapshot) {
     assertBaseSnapshotStillCurrent(snapshot, configPath, deps.fs);
   }
+  const submittedLegacyRoster = readAgentRosterProperty(cfg)?.kind === "list";
+  const submittedRoster = readAgentRosterProperty(cfg);
+  const explicitLegacyRoster =
+    readAgentRosterProperty(options.explicitSetValueSource)?.kind === "list" ||
+    options.explicitSetPaths?.some(
+      (pathLocal) => pathLocal[0] === "agents" && pathLocal[1] === "list",
+    ) === true;
+  const persistedLegacyRoster = snapshot.legacyIssues.some((issue) => issue.path === "agents.list");
+  const doctorMigratesLocalLegacyRoster =
+    persistedLegacyRoster &&
+    snapshot.agentRosterIncludeOwned !== true &&
+    options.auditOrigin === "doctor";
+  const mutatesIncludeOwnedLegacyRoster =
+    persistedLegacyRoster &&
+    snapshot.agentRosterIncludeOwned === true &&
+    (submittedLegacyRoster ||
+      explicitLegacyRoster ||
+      (submittedRoster?.kind === "entries" &&
+        !isDeepStrictEqual(
+          toAgentEntriesRecord(listAgentEntries(snapshot.config)),
+          toAgentEntriesRecord(listAgentEntries(cfg)),
+        )) ||
+      options.explicitSetPaths?.some(
+        (pathLocal) => pathLocal[0] === "agents" && pathLocal[1] === "entries",
+      ) === true ||
+      options.unsetPaths?.some(
+        (pathLocal) =>
+          pathLocal[0] === "agents" &&
+          (pathLocal.length === 1 || pathLocal[1] === "entries" || pathLocal[1] === "list"),
+      ) === true);
+  if (mutatesIncludeOwnedLegacyRoster) {
+    throw new Error(
+      formatConfigValidationFailure("agents.list", LEGACY_INCLUDED_AGENT_LIST_MIGRATION_MESSAGE),
+    );
+  }
+  if (
+    submittedLegacyRoster ||
+    explicitLegacyRoster ||
+    (persistedLegacyRoster &&
+      snapshot.agentRosterIncludeOwned !== true &&
+      options.auditOrigin !== "doctor")
+  ) {
+    throw new Error(
+      formatConfigValidationFailure("agents.list", LEGACY_AGENT_LIST_MIGRATION_MESSAGE),
+    );
+  }
+  const explicitSetPaths = doctorMigratesLocalLegacyRoster
+    ? [...(options.explicitSetPaths ?? []), ["agents", "entries"]]
+    : options.explicitSetPaths;
+  if (doctorMigratesLocalLegacyRoster) {
+    unsetPaths = [...unsetPaths, ["agents", "list"]];
+  }
   let envRefMap: Map<string, string> | null = null;
   const changedPaths = new Set<string>();
   collectChangedPaths(snapshot.config, cfg, "", changedPaths);
-  for (const changedPath of [...(options.explicitSetPaths ?? []), ...(options.unsetPaths ?? [])]) {
+  for (const changedPath of [...(explicitSetPaths ?? []), ...(options.unsetPaths ?? [])]) {
     const normalizedPath = changedPath.filter((segment) => segment.length > 0).join(".");
     if (normalizedPath) {
       changedPaths.add(normalizedPath);
@@ -138,19 +200,39 @@ export async function writeConfigFileFromContext(
     persistCandidate = resolvePersistCandidateForWrite({
       runtimeConfig: snapshot.config,
       sourceConfig: snapshot.resolved,
-      sourceConfigBeforeMigrations: snapshot.sourceConfigBeforeMigrations,
       nextConfig: cfg,
       rootAuthoredConfig: snapshot.parsed,
-      agentRosterIncludeOwned: snapshot.agentRosterIncludeOwned,
       unsetPaths,
-      explicitSetPaths: options.explicitSetPaths,
+      explicitSetPaths,
       explicitSetValueSource: options.explicitSetValueSource,
-      allowedAgentRosterRemovals: options.allowedAgentRosterRemovals,
       allowIncludeAncestorExplicitSetPaths: options.allowIncludeAncestorExplicitSetPaths,
       modelIdNormalizationPolicies: resolveModelIdNormalizationPolicies(
         snapshotRead.pluginMetadataSnapshot,
       ),
     });
+    const authoredRoster = readAgentRosterProperty(snapshot.parsed);
+    if (
+      persistedLegacyRoster &&
+      snapshot.agentRosterIncludeOwned === true &&
+      authoredRoster?.kind === "list" &&
+      persistCandidate !== null &&
+      typeof persistCandidate === "object" &&
+      !Array.isArray(persistCandidate)
+    ) {
+      const candidate = persistCandidate as Record<string, unknown>;
+      const candidateAgents =
+        candidate.agents !== null &&
+        typeof candidate.agents === "object" &&
+        !Array.isArray(candidate.agents)
+          ? (candidate.agents as Record<string, unknown>)
+          : {};
+      // Whole-entry includes own the legacy id in another file. Keep that authored list until
+      // Doctor gains a coordinated root/include migration instead of flattening or deadlocking it.
+      persistCandidate = {
+        ...candidate,
+        agents: { ...candidateAgents, list: structuredClone(authoredRoster.value) },
+      };
+    }
   } else if (snapshot.exists && hasAuthoredIncludes) {
     persistCandidate = preserveIncludeOwnedConfigForWrite({
       runtimeConfig: snapshot.config,

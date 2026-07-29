@@ -1,6 +1,11 @@
 import { normalizeAgentId } from "@openclaw/normalization-core/agent-id";
 import { readAgentRosterProperty } from "../agents/agent-scope-config.js";
 
+export const LEGACY_AGENT_LIST_MIGRATION_MESSAGE =
+  'agents.list moved to keyed agents.entries. Run "openclaw doctor --fix".';
+export const LEGACY_INCLUDED_AGENT_LIST_MIGRATION_MESSAGE =
+  "include-owned agents.list cannot be migrated automatically; migrate the owning include file to agents.entries, then retry";
+
 /** Every missing or empty roster is the shipped implicit-main shape. */
 export function migratePersistedImplicitMainRoster(raw: unknown): {
   config: unknown;

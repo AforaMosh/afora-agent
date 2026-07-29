@@ -176,10 +176,7 @@ export async function agentsDeleteCommand(
   await replaceConfigFile({
     nextConfig: result.config,
     ...(baseHash !== undefined ? { baseHash } : {}),
-    writeOptions: {
-      allowedAgentRosterRemovals: [agentId],
-      ...(opts.json ? { skipOutputLogs: true } : {}),
-    },
+    writeOptions: opts.json ? { skipOutputLogs: true } : {},
   });
   if (!opts.json) {
     logConfigUpdated(runtime);

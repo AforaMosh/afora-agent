@@ -1,3 +1,4 @@
+import { readAgentRosterProperty } from "../agents/agent-scope-config.js";
 import { includeContributionOwnsAgentRoster } from "./agent-roster-provenance.js";
 import { resolveManagedUnsetPathsForWrite } from "./config-path-mutation.js";
 import { ConfigIncludeError } from "./includes.js";
@@ -28,7 +29,11 @@ import type {
   ReadConfigFileSnapshotWithPluginMetadataResult,
 } from "./io.types.js";
 import { warnIfConfigFromFuture } from "./io.warnings.js";
-import { migratePersistedImplicitMainRoster } from "./legacy.js";
+import {
+  LEGACY_AGENT_LIST_MIGRATION_MESSAGE,
+  LEGACY_INCLUDED_AGENT_LIST_MIGRATION_MESSAGE,
+  migratePersistedImplicitMainRoster,
+} from "./legacy.roster.js";
 import { materializeRuntimeConfig } from "./materialize.js";
 import { ConfigMutationConflictError } from "./mutation-conflict.js";
 import type { ConfigFileSnapshot, LegacyConfigIssue, OpenClawConfig } from "./types.js";
@@ -169,6 +174,17 @@ export async function readConfigFileSnapshotInternal(
       message: `Missing env var "${warning.varName}" - feature using this value will be unavailable`,
     }));
     const rosterMigration = migratePersistedImplicitMainRoster(readResolution.resolvedConfigRaw);
+    const legacyRosterIssues: LegacyConfigIssue[] =
+      readAgentRosterProperty(readResolution.resolvedConfigRaw)?.kind === "list"
+        ? [
+            {
+              path: "agents.list",
+              message: agentRosterIncludeOwned
+                ? LEGACY_INCLUDED_AGENT_LIST_MIGRATION_MESSAGE
+                : LEGACY_AGENT_LIST_MIGRATION_MESSAGE,
+            },
+          ]
+        : [];
     envVarWarnings.push(
       ...rosterMigration.diagnostics.map((message) => ({ path: "agents.entries", message })),
     );
@@ -295,7 +311,7 @@ export async function readConfigFileSnapshotInternal(
             hash: snapshotHash,
             issues: [],
             warnings: [...validated.warnings, ...envVarWarnings],
-            legacyIssues: [],
+            legacyIssues: legacyRosterIssues,
           }),
           envSnapshotForRestore: readResolution.envSnapshotForRestore,
           includeFileHashesForWrite,

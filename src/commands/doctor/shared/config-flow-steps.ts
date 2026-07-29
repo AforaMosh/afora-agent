@@ -6,6 +6,7 @@ import type { DoctorConfigPreflightResult } from "../../doctor-config-preflight.
 import type { DoctorConfigMutationState } from "./config-mutation-state.js";
 import { containsAuthoredInclude } from "./include-migration-ownership.js";
 import { migrateLegacyConfig } from "./legacy-config-migrate.js";
+import { prepareAgentEntriesDoctorMigrationInput } from "./legacy-config-migrations.runtime.entries.js";
 
 /** Apply legacy config migrations and update preview/fix state for doctor config flow. */
 export function applyLegacyCompatibilityStep(params: {
@@ -29,9 +30,13 @@ export function applyLegacyCompatibilityStep(params: {
 
   const issueLines = formatConfigIssueLines(params.snapshot.legacyIssues, "-");
   const hasAuthoredIncludes = containsAuthoredInclude(params.snapshot.parsed);
-  const migrationInput = hasAuthoredIncludes
-    ? params.snapshot.sourceConfig
-    : params.snapshot.parsed;
+  const agentEntriesMigrationInput = prepareAgentEntriesDoctorMigrationInput({
+    authored: params.snapshot.parsed,
+    resolvedBeforeMigrations: params.snapshot.sourceConfigBeforeMigrations,
+  });
+  const migrationInput =
+    agentEntriesMigrationInput ??
+    (hasAuthoredIncludes ? params.snapshot.sourceConfig : params.snapshot.parsed);
   const {
     config: migrated,
     sourceConfig: migratedSource,

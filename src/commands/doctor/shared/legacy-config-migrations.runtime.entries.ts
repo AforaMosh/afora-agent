@@ -1,8 +1,40 @@
+import { normalizeAgentId } from "@openclaw/normalization-core/agent-id";
+import { LEGACY_AGENT_LIST_MIGRATION_MESSAGE } from "../../../config/legacy.roster.js";
 import {
   defineLegacyConfigMigration,
   getRecord,
   type LegacyConfigMigrationSpec,
 } from "../../../config/legacy.shared.js";
+
+/** Resolve final list-slot ids before Doctor converts the authored array to keyed entries. */
+export function prepareAgentEntriesDoctorMigrationInput(params: {
+  authored: unknown;
+  resolvedBeforeMigrations: unknown;
+}): Record<string, unknown> | undefined {
+  const authoredRoot = getRecord(params.authored);
+  const authoredAgents = getRecord(authoredRoot?.agents);
+  if (!authoredRoot || !authoredAgents || !Array.isArray(authoredAgents.list)) {
+    return undefined;
+  }
+  if (authoredAgents.list.some((value) => getRecord(value)?.$include !== undefined)) {
+    // A whole-entry include owns both the legacy id and its file. Migrating it requires a
+    // coordinated root/include rewrite, so retain the existing write fallback for that shape.
+    return undefined;
+  }
+  const resolvedRoot = getRecord(params.resolvedBeforeMigrations);
+  const resolvedAgents = getRecord(resolvedRoot?.agents);
+  const resolvedList = Array.isArray(resolvedAgents?.list) ? resolvedAgents.list : [];
+  const list = authoredAgents.list.map((value, index) => {
+    const entry = getRecord(value);
+    const resolvedEntry = getRecord(resolvedList[index]);
+    const resolvedId = resolvedEntry?.id;
+    if (!entry || typeof resolvedId !== "string" || !resolvedId.trim()) {
+      return value;
+    }
+    return { ...entry, id: resolvedId };
+  });
+  return { ...authoredRoot, agents: { ...authoredAgents, list } };
+}
 
 function migrateAgentEntries(raw: Record<string, unknown>, changes: string[]): void {
   const agents = getRecord(raw.agents);
@@ -55,10 +87,9 @@ export const LEGACY_CONFIG_MIGRATIONS_RUNTIME_ENTRIES: LegacyConfigMigrationSpec
     legacyRules: [
       {
         path: ["agents", "list"],
-        message: 'agents.list moved to keyed agents.entries. Run "openclaw doctor --fix".',
+        message: LEGACY_AGENT_LIST_MIGRATION_MESSAGE,
       },
     ],
     apply: migrateAgentEntries,
   }),
 ];
-import { normalizeAgentId } from "@openclaw/normalization-core/agent-id";

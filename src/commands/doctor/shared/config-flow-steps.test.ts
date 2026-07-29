@@ -108,6 +108,55 @@ describe("doctor config flow steps", () => {
     expect(result.state.candidate.commands).toBeUndefined();
   });
 
+  it("resolves authored list entry ids before migrating internal agent includes", () => {
+    const migrated = {
+      agents: {
+        entries: {
+          main: { default: true, identity: { $include: "./main-identity.json" } },
+        },
+      },
+    } as unknown as OpenClawConfig;
+    migrateLegacyConfigMock.mockReturnValueOnce({
+      config: migrated,
+      changes: ["Moved agents.list → keyed agents.entries."],
+    });
+
+    const resolvedAgent = {
+      id: "main",
+      default: true,
+      identity: { name: "Main", emoji: "🦞" },
+    };
+    const resolvedEntries = {
+      main: { default: true, identity: { name: "Main", emoji: "🦞" } },
+    };
+    const result = createLegacyStepResult({
+      exists: true,
+      parsed: {
+        agents: {
+          list: [{ id: "main", default: true, identity: { $include: "./main-identity.json" } }],
+        },
+      },
+      sourceConfigBeforeMigrations: { agents: { list: [resolvedAgent] } },
+      legacyIssues: [{ path: "agents.list", message: "use agents.entries" }],
+      path: "/tmp/config.json",
+      valid: true,
+      issues: [],
+      raw: "{}",
+      resolved: { agents: { entries: resolvedEntries } },
+      sourceConfig: { agents: { entries: resolvedEntries } },
+      config: { agents: { entries: resolvedEntries } },
+      runtimeConfig: { agents: { entries: resolvedEntries } },
+      warnings: [],
+    } satisfies DoctorConfigPreflightResult["snapshot"]);
+
+    expect(migrateLegacyConfigMock).toHaveBeenCalledWith({
+      agents: {
+        list: [{ id: "main", default: true, identity: { $include: "./main-identity.json" } }],
+      },
+    });
+    expect(result.state.candidate).toEqual(migrated);
+  });
+
   it("keeps pending repair state for legacy issues even when the snapshot is already normalized", () => {
     const result = createLegacyStepResult({
       exists: true,

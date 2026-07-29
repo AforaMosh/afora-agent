@@ -129,7 +129,8 @@ function collectDoctorLegacyIssues(
   if (!snapshot.exists) {
     return [];
   }
-  const resolvedRaw = snapshot.sourceConfig ?? snapshot.config ?? {};
+  const resolvedRaw =
+    snapshot.sourceConfigBeforeMigrations ?? snapshot.sourceConfig ?? snapshot.config ?? {};
   const sourceRaw = snapshot.parsed ?? resolvedRaw;
   return findDoctorLegacyConfigIssues(resolvedRaw, sourceRaw);
 }

@@ -871,85 +871,6 @@ describe("config io write", () => {
     },
   );
 
-  itWithHome(
-    "keeps authored agent provider params during narrowed internal agent writes",
-    async (home) => {
-      const configPath = configPathForHome(home);
-      await fs.mkdir(path.dirname(configPath), { recursive: true });
-      const original = {
-        gateway: { mode: "local" },
-        agents: {
-          defaults: {
-            params: { transport: "sse", openaiWsWarmup: false },
-            models: {
-              "openai/gpt-5.4": {
-                alias: "GPT",
-                params: { transport: "sse", openaiWsWarmup: false },
-              },
-            },
-          },
-          entries: { main: {} },
-        },
-      } satisfies ConfigFileSnapshot["sourceConfig"];
-      const originalRaw = formatConfig(original);
-      await fs.writeFile(configPath, originalRaw, "utf-8");
-      const io = createHomeConfigIO(home, {
-        env: { VITEST: "true" } as NodeJS.ProcessEnv,
-      });
-      const baseSnapshot = {
-        path: configPath,
-        exists: true,
-        raw: originalRaw,
-        parsed: original,
-        sourceConfig: original,
-        resolved: original,
-        valid: true,
-        runtimeConfig: {
-          ...original,
-          agents: {
-            ...original.agents,
-            defaults: {
-              ...original.agents.defaults,
-              maxConcurrent: 4,
-            },
-          },
-        },
-        config: {
-          ...original,
-          agents: {
-            ...original.agents,
-            defaults: {
-              ...original.agents.defaults,
-              maxConcurrent: 4,
-            },
-          },
-        },
-        issues: [],
-        warnings: [],
-        legacyIssues: [],
-      } satisfies ConfigFileSnapshot;
-
-      await io.writeConfigFile(
-        {
-          gateway: { mode: "local" },
-          agents: { entries: { main: {}, ops: {} } },
-        },
-        { baseSnapshot },
-      );
-
-      const persisted = await readPersistedConfig(configPath);
-      expect(persisted.agents?.defaults?.params).toEqual({
-        transport: "sse",
-        openaiWsWarmup: false,
-      });
-      expect(persisted.agents?.defaults?.models?.["openai/gpt-5.4"]).toEqual({
-        alias: "GPT",
-        params: { transport: "sse", openaiWsWarmup: false },
-      });
-      expect(persisted.agents?.entries).toEqual({ main: {}, ops: {} });
-    },
-  );
-
   itWithHome("preserves parsed source config when snapshot validation fails", async (home) => {
     const configPath = configPathForHome(home);
     await fs.mkdir(path.dirname(configPath), { recursive: true });
@@ -1355,39 +1276,210 @@ describe("config io write", () => {
     expect(persisted.agents?.list).toBeUndefined();
   });
 
-  itWithHome("forwards explicitly authorized agent roster removals", async (home) => {
+  itWithHome("rejects unrelated writes while agents.list awaits Doctor migration", async (home) => {
     const { configPath } = await writeConfigFixture(home, {
+      agents: { list: [{ id: "main", default: true }] },
+      gateway: { mode: "local" },
+    } as unknown as OpenClawConfig);
+    const io = createFastConfigIO(home, { configPath });
+    const snapshot = await io.readConfigFileSnapshot();
+
+    expect(snapshot.valid).toBe(true);
+    expect(snapshot.legacyIssues).toContainEqual(expect.objectContaining({ path: "agents.list" }));
+    await expect(
+      io.writeConfigFile(
+        { ...snapshot.config, gateway: { mode: "local", port: 19001 } },
+        { baseSnapshot: snapshot },
+      ),
+    ).rejects.toThrow(
+      'Config validation failed: agents.list: agents.list moved to keyed agents.entries. Run "openclaw doctor --fix".',
+    );
+    expect(await readPersistedConfig(configPath)).toMatchObject({
+      agents: { list: [{ id: "main", default: true }] },
+      gateway: { mode: "local" },
+    });
+  });
+
+  itWithHome("rejects an explicit agents.list value against a canonical snapshot", async (home) => {
+    const { configPath } = await writeConfigFixture(home, {
+      agents: { entries: { main: { default: true } } },
+    });
+    const io = createFastConfigIO(home, { configPath });
+    const snapshot = await io.readConfigFileSnapshot();
+
+    await expect(
+      io.writeConfigFile(snapshot.config, {
+        baseSnapshot: snapshot,
+        explicitSetPaths: [["agents", "list"]],
+        explicitSetValueSource: {
+          agents: { list: [{ id: "main", default: true }] },
+        } as unknown as OpenClawConfig,
+      }),
+    ).rejects.toThrow('Run "openclaw doctor --fix".');
+    expect(await readPersistedConfig(configPath)).toMatchObject({
+      agents: { entries: { main: { default: true } } },
+    });
+  });
+
+  itWithHome("allows Doctor to replace agents.list with canonical entries", async (home) => {
+    const { configPath } = await writeConfigFixture(home, {
+      agents: { list: [{ id: "main", default: true }] },
+    } as unknown as OpenClawConfig);
+    const io = createFastConfigIO(home, { configPath });
+    const snapshot = await io.readConfigFileSnapshot();
+
+    await io.writeConfigFile(
+      { agents: { entries: { main: { default: true } } } },
+      { auditOrigin: "doctor", baseSnapshot: snapshot },
+    );
+
+    expect(await readPersistedConfig(configPath)).toEqual({
+      agents: { entries: { main: { default: true } } },
+      meta: expect.any(Object),
+    });
+  });
+
+  itWithHome("lets Doctor migrate a list entry with an internal include", async (home) => {
+    const configPath = configPathForHome(home);
+    const includePath = path.join(path.dirname(configPath), "main-identity.json");
+    await fs.mkdir(path.dirname(configPath), { recursive: true });
+    await writeConfigJson(includePath, { name: "Main", emoji: "🦞" });
+    await writeConfigJson(configPath, {
+      agents: {
+        list: [{ id: "main", default: true, identity: { $include: "./main-identity.json" } }],
+      },
+    });
+    const io = createFastConfigIO(home, { configPath });
+    const snapshot = await io.readConfigFileSnapshot();
+    const includeRaw = await fs.readFile(includePath, "utf-8");
+
+    expect(snapshot.legacyIssues).toContainEqual(expect.objectContaining({ path: "agents.list" }));
+    await io.writeConfigFile(
+      {
+        agents: {
+          entries: {
+            main: { default: true, identity: { $include: "./main-identity.json" } },
+          },
+        },
+      } as unknown as OpenClawConfig,
+      { auditOrigin: "doctor", baseSnapshot: snapshot },
+    );
+
+    expect(await readPersistedConfig(configPath)).toMatchObject({
       agents: {
         entries: {
-          main: { default: true, workspace: "/srv/shared" },
-          ops: { workspace: "/srv/shared" },
+          main: { default: true, identity: { $include: "./main-identity.json" } },
         },
       },
     });
+    await expect(fs.readFile(includePath, "utf-8")).resolves.toBe(includeRaw);
+    const repaired = await io.readConfigFileSnapshot();
+    expect(repaired.valid).toBe(true);
+    expect(repaired.sourceConfig.agents?.entries?.main).toMatchObject({
+      default: true,
+      identity: { name: "Main", emoji: "🦞" },
+    });
+  });
 
-    await withEnvAsync(
-      {
-        OPENCLAW_CONFIG_PATH: configPath,
-        OPENCLAW_TEST_FAST: "1",
-      },
-      async () => {
-        await writeConfigFile(
-          {
-            agents: {
-              entries: { main: { default: true, workspace: "/srv/shared" } },
-            },
-          },
-          {
-            allowedAgentRosterRemovals: ["ops"],
-            skipRuntimeSnapshotRefresh: true,
-          },
-        );
-      },
+  itWithHome("preserves an include-owned legacy roster during unrelated writes", async (home) => {
+    const configPath = configPathForHome(home);
+    const includePath = path.join(path.dirname(configPath), "main-agent.json");
+    await fs.mkdir(path.dirname(configPath), { recursive: true });
+    await writeConfigJson(includePath, {
+      id: "main",
+      default: true,
+      workspace: "/srv/main",
+    });
+    await writeConfigJson(configPath, {
+      agents: { list: [{ $include: "./main-agent.json" }] },
+      gateway: { mode: "local" },
+    });
+    const io = createFastConfigIO(home, { configPath });
+    const snapshot = await io.readConfigFileSnapshot();
+    const includeRaw = await fs.readFile(includePath, "utf-8");
+
+    expect(snapshot.agentRosterIncludeOwned).toBe(true);
+    expect(snapshot.legacyIssues).toContainEqual({
+      path: "agents.list",
+      message: expect.stringContaining("migrate the owning include file"),
+    });
+    await io.writeConfigFile(
+      { ...snapshot.config, gateway: { mode: "local", port: 19001 } },
+      { baseSnapshot: snapshot },
     );
 
-    const persisted = await readPersistedConfig(configPath);
-    expect(persisted.agents?.entries).toEqual({
-      main: { default: true, workspace: "/srv/shared" },
+    expect(await readPersistedConfig(configPath)).toMatchObject({
+      agents: { list: [{ $include: "./main-agent.json" }] },
+      gateway: { mode: "local", port: 19001 },
+    });
+    await expect(fs.readFile(includePath, "utf-8")).resolves.toBe(includeRaw);
+
+    const afterUnrelatedWrite = await io.readConfigFileSnapshot();
+    const rootRaw = await fs.readFile(configPath, "utf-8");
+    await expect(
+      io.writeConfigFile(
+        {
+          ...afterUnrelatedWrite.config,
+          agents: {
+            ...afterUnrelatedWrite.config.agents,
+            entries: {
+              ...afterUnrelatedWrite.config.agents?.entries,
+              worker: { workspace: "/srv/worker" },
+            },
+          },
+        },
+        { baseSnapshot: afterUnrelatedWrite },
+      ),
+    ).rejects.toThrow("migrate the owning include file to agents.entries");
+    await expect(
+      io.writeConfigFile(afterUnrelatedWrite.config, {
+        baseSnapshot: afterUnrelatedWrite,
+        unsetPaths: [["agents", "list"]],
+      }),
+    ).rejects.toThrow("migrate the owning include file to agents.entries");
+    await expect(
+      io.writeConfigFile(afterUnrelatedWrite.config, {
+        baseSnapshot: afterUnrelatedWrite,
+        explicitSetPaths: [["agents", "list"]],
+        explicitSetValueSource: {
+          agents: { list: [{ id: "main", default: true }] },
+        } as unknown as OpenClawConfig,
+      }),
+    ).rejects.toThrow("migrate the owning include file to agents.entries");
+    await expect(fs.readFile(configPath, "utf-8")).resolves.toBe(rootRaw);
+  });
+
+  itWithHome("preserves current agent params during a narrowed canonical write", async (home) => {
+    const params = { transport: "sse", openaiWsWarmup: false };
+    const { configPath } = await writeConfigFixture(home, {
+      gateway: { mode: "local" },
+      agents: {
+        defaults: {
+          params,
+          models: { "openai/gpt-5.4": { alias: "GPT", params } },
+        },
+        entries: { main: { default: true } },
+      },
+    });
+    const io = createFastConfigIO(home, { configPath });
+    const snapshot = await io.readConfigFileSnapshot();
+
+    await io.writeConfigFile(
+      {
+        gateway: { mode: "local" },
+        agents: { entries: { main: { default: true }, ops: {} } },
+      },
+      { baseSnapshot: snapshot },
+    );
+
+    expect(await readPersistedConfig(configPath)).toMatchObject({
+      agents: {
+        defaults: {
+          params,
+          models: { "openai/gpt-5.4": { alias: "GPT", params } },
+        },
+        entries: { main: { default: true }, ops: {} },
+      },
     });
   });
 
