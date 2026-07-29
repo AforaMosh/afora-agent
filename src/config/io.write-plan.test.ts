@@ -515,6 +515,45 @@ describe("prepareConfigWrite", () => {
     });
   });
 
+  it("enumerates nested and enclosing include owners at the same path", () => {
+    const result = prepareConfigWrite({
+      snapshot: snapshot({
+        parsed: { plugins: { $include: "./wrapper.json5" } },
+        sourceConfig: { plugins: { mode: "strict" } },
+        includeProvenance: [
+          {
+            path: ["plugins"],
+            contributedPaths: [["plugins", "mode"]],
+            kind: "single",
+            hasSiblingOverrides: false,
+            targetPath: "/tmp/nested.json5",
+          },
+          {
+            path: ["plugins"],
+            contributedPaths: [["plugins", "mode"]],
+            kind: "single",
+            hasSiblingOverrides: false,
+            targetPath: "/tmp/wrapper.json5",
+          },
+        ],
+      }),
+      intent: {
+        kind: "mutate",
+        operations: [{ kind: "set", path: ["plugins", "mode"], value: "loose" }],
+      },
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        code: "include-owned",
+        path: ["plugins"],
+        filePath: "/tmp/wrapper.json5",
+        filePaths: ["/tmp/nested.json5", "/tmp/wrapper.json5"],
+      },
+    });
+  });
+
   it("allows mutations outside a nested include boundary", () => {
     const result = prepareConfigWrite({
       snapshot: snapshot({

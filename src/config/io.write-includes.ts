@@ -224,7 +224,7 @@ export function checkConfigIncludeOwnership(params: {
             .filter((path) => !Array.isArray(readAuthoredPath(params.snapshot.parsed, path)))
         : [];
     for (const operationPath of [...collectOperationPaths(operation), ...coercedArrayPaths]) {
-      const owner = params.snapshot.includeProvenance?.find((entry) =>
+      const owners = params.snapshot.includeProvenance?.filter((entry) =>
         [entry.path, ...(entry.contributedPaths ?? [])].some(
           (ownedPath) =>
             pathsOverlap(operationPath, ownedPath) ||
@@ -233,11 +233,15 @@ export function checkConfigIncludeOwnership(params: {
               parseConfigPathArrayIndex(ownedPath[arrayPath.length] ?? "") !== undefined),
         ),
       );
-      if (owner) {
-        const ownerTargetPaths = resolveIncludeOwnerTargetPaths(owner, operationPath);
+      if (owners?.length) {
+        const ownerTargetPaths = [
+          ...new Set(
+            owners.flatMap((owner) => resolveIncludeOwnerTargetPaths(owner, operationPath)),
+          ),
+        ];
         return err({
           code: "include-owned",
-          path: [...owner.path],
+          path: [...owners[0]!.path],
           filePath: ownerTargetPaths.at(-1) ?? params.snapshot.path,
           ...(ownerTargetPaths.length > 1 ? { filePaths: ownerTargetPaths } : {}),
         });
