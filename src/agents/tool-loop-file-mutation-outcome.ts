@@ -33,3 +33,21 @@ export function isImmediateFileMutationNoProgressRetry(
   }
   return false;
 }
+
+export function isRepeatedFileMutationNoProgressOutcome(
+  history: readonly ToolCallRecord[],
+  current: ToolCallRecord,
+): boolean {
+  if (current.outcomeKind !== "file-mutation-no-progress") {
+    return false;
+  }
+  const currentIndex = history.lastIndexOf(current);
+  if (currentIndex <= 0) {
+    return false;
+  }
+  return isImmediateFileMutationNoProgressRetry(
+    history.slice(0, currentIndex),
+    current.toolName,
+    current.argsHash,
+  );
+}

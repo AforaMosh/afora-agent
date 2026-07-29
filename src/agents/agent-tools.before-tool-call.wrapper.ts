@@ -488,12 +488,7 @@ export function wrapToolWithBeforeToolCallHook(
           ...executionArgs,
         );
         const durationMs = Date.now() - startedAt;
-        const terminalPresentation = resolveToolTerminalPresentation({
-          tool,
-          toolParams: executeParams,
-          result,
-        });
-        await recordLoopOutcome({
+        const postExecutionBlock = await recordLoopOutcome({
           ctx,
           toolName: normalizedToolName,
           toolParams: executeParams,
@@ -501,7 +496,21 @@ export function wrapToolWithBeforeToolCallHook(
           result,
           resultContentSource: tool.resultContentSource,
           toolCallOrdinal,
-          terminalPresentation,
+        });
+        const finalResult = postExecutionBlock
+          ? {
+              content: [{ type: "text" as const, text: postExecutionBlock.reason }],
+              details: {
+                status: "blocked",
+                deniedReason: "tool-loop",
+                reason: postExecutionBlock.reason,
+              },
+            }
+          : result;
+        const terminalPresentation = resolveToolTerminalPresentation({
+          tool,
+          toolParams: executeParams,
+          result: finalResult,
         });
         rememberPendingTerminalPresentation({
           ctx,
@@ -524,7 +533,7 @@ export function wrapToolWithBeforeToolCallHook(
               toolCallId,
             });
           }
-          const terminalEvent = resolveToolResultTerminalDiagnostic(result, durationMs);
+          const terminalEvent = resolveToolResultTerminalDiagnostic(finalResult, durationMs);
           emitTrustedDiagnosticEventWithPrivateData(
             {
               ...eventBase,
@@ -532,12 +541,12 @@ export function wrapToolWithBeforeToolCallHook(
             },
             buildToolContentPrivateData(toolContentPolicy, {
               input: executeParams,
-              output: result,
+              output: finalResult,
               includeOutput: true,
             }),
           );
         }
-        return result;
+        return finalResult;
       } catch (err) {
         if (hookOptions.emitDiagnostics) {
           emitTrustedDiagnosticEventWithPrivateData(

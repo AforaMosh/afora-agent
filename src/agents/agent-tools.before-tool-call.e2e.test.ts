@@ -420,7 +420,7 @@ describe("before_tool_call loop detection behavior", () => {
     }
   });
 
-  it("allows one no-op file mutation and blocks the exact retry when unconfigured", async () => {
+  it("allows one no-op file mutation and escalates a repeated no-op when unconfigured", async () => {
     const execute = vi.fn().mockResolvedValue(createStableNoProgressWriteResult());
     const tool = createWrappedTool("write", execute, {
       agentId: "main",
@@ -432,7 +432,26 @@ describe("before_tool_call loop detection behavior", () => {
     const result = await tool.execute("write-noop-repeat", params, undefined, undefined);
 
     expectToolLoopBlockedResult(result, "identical no-op file mutation");
-    expect(execute).toHaveBeenCalledTimes(1);
+    expect(execute).toHaveBeenCalledTimes(2);
+  });
+
+  it("allows an identical mutation that becomes productive before the retry", async () => {
+    const execute = vi
+      .fn()
+      .mockResolvedValueOnce(createStableNoProgressWriteResult())
+      .mockResolvedValueOnce({
+        content: [{ type: "text", text: "Wrote file." }],
+        details: { changed: true },
+      });
+    const tool = createWrappedTool("write", execute, {
+      agentId: "main",
+      sessionKey: "main",
+    });
+    const params = { path: "/tmp/a.md", content: "same content" };
+
+    await expectUnblockedToolExecution(tool, "write-race-first", params);
+    await expectUnblockedToolExecution(tool, "write-race-repeat", params);
+    expect(execute).toHaveBeenCalledTimes(2);
   });
 
   it("allows an exact no-op retry when loop detection is explicitly disabled", async () => {

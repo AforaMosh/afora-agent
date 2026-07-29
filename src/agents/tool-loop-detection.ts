@@ -22,8 +22,7 @@ import {
 import { isKnownPollToolCall } from "./tool-loop-call-kind.js";
 import {
   isFileMutationNoProgressOutcome,
-  isFileMutationTool,
-  isImmediateFileMutationNoProgressRetry,
+  isRepeatedFileMutationNoProgressOutcome,
 } from "./tool-loop-file-mutation-outcome.js";
 import { getNoProgressStreak } from "./tool-loop-no-progress.js";
 import { TOOL_LOOP_WARNING_THRESHOLD } from "./tool-loop-thresholds.js";
@@ -503,8 +502,7 @@ export function detectToolCallLoop(
   scope?: ToolLoopDetectionScope,
 ): LoopDetectionResult {
   const resolvedConfig = resolveLoopDetectionConfig(config);
-  const fileMutationGuardEnabled = config?.enabled !== false && isFileMutationTool(toolName);
-  if (!resolvedConfig.enabled && !fileMutationGuardEnabled) {
+  if (!resolvedConfig.enabled) {
     return { stuck: false };
   }
   const history = selectHistoryForScope(state.toolCallHistory ?? [], scope);
@@ -513,26 +511,6 @@ export function detectToolCallLoop(
   const noProgress = getNoProgressStreak(history, toolName, currentHash);
   const noProgressStreak = noProgress.count;
 
-  // Exact retries after a confirmed no-op file mutation are objective dead ends.
-  // Keep the default-on guard narrow while preserving the explicit master opt-out.
-  if (
-    fileMutationGuardEnabled &&
-    isImmediateFileMutationNoProgressRetry(history, toolName, currentHash) &&
-    noProgressStreak >= 1
-  ) {
-    return {
-      stuck: true,
-      level: "critical",
-      detector: "file_mutation_no_progress",
-      count: noProgressStreak,
-      message: `CRITICAL: ${toolName} repeated an identical no-op file mutation. Stop retrying unchanged content; inspect or repair the input, choose a different action, or finish without rewriting the file.`,
-      warningKey: `file-mutation:${toolName}:${currentHash}:${noProgress.latestResultHash ?? "none"}`,
-    };
-  }
-
-  if (!resolvedConfig.enabled) {
-    return { stuck: false };
-  }
   const argumentChurn = getArgumentChurnNoProgressStreak(history, toolName, currentHash);
   const knownPollTool = isKnownPollToolCall(toolName, params);
   const pingPong = getPingPongStreak(history, currentHash);
@@ -681,6 +659,32 @@ export function detectToolCallLoop(
   }
 
   return { stuck: false };
+}
+
+export function detectPostExecutionToolCallLoop(
+  state: SessionState,
+  record: ToolCallRecord,
+  config?: ToolLoopDetectionConfig,
+): LoopDetectionResult {
+  if (config?.enabled === false) {
+    return { stuck: false };
+  }
+  const history = selectHistoryForScope(
+    state.toolCallHistory ?? [],
+    record.runId ? { runId: record.runId } : undefined,
+  );
+  if (!isRepeatedFileMutationNoProgressOutcome(history, record)) {
+    return { stuck: false };
+  }
+  const noProgress = getNoProgressStreak(history, record.toolName, record.argsHash);
+  return {
+    stuck: true,
+    level: "critical",
+    detector: "file_mutation_no_progress",
+    count: noProgress.count,
+    message: `CRITICAL: ${record.toolName} repeated an identical no-op file mutation. Stop retrying unchanged content; inspect or repair the input, choose a different action, or finish without rewriting the file.`,
+    warningKey: `file-mutation:${record.toolName}:${record.argsHash}:${noProgress.latestResultHash ?? "none"}`,
+  };
 }
 
 /**

@@ -16,6 +16,7 @@ vi.mock("./embedded-agent-messaging.js", () => ({
 import { reconcileToolCallExecutionParams } from "./tool-loop-call-reconciliation.js";
 import {
   UNKNOWN_TOOL_THRESHOLD,
+  detectPostExecutionToolCallLoop,
   detectToolCallLoop,
   recordToolCall,
   recordToolCallOutcome,
@@ -310,7 +311,7 @@ describe("tool-loop-detection", () => {
 
   describe("detectToolCallLoop", () => {
     it.each(["write", "edit", "apply_patch"])(
-      "blocks an exact %s retry after one confirmed no-op by default",
+      "escalates repeated %s no-op outcomes by default",
       (toolName) => {
         const state = createState();
         const params = { path: "/tmp/a.md", content: "same content" };
@@ -324,12 +325,24 @@ describe("tool-loop-detection", () => {
           },
           0,
         );
+        recordSuccessfulCall(
+          state,
+          toolName,
+          params,
+          {
+            content: [{ type: "text", text: "No changes made." }],
+            details: { changed: false },
+          },
+          1,
+        );
+        const current = state.toolCallHistory?.at(-1);
+        expect(current).toBeDefined();
 
-        expect(detectToolCallLoop(state, toolName, params)).toMatchObject({
+        expect(detectPostExecutionToolCallLoop(state, current!)).toMatchObject({
           stuck: true,
           level: "critical",
           detector: "file_mutation_no_progress",
-          count: 1,
+          count: 2,
         });
       },
     );
@@ -347,8 +360,20 @@ describe("tool-loop-detection", () => {
         },
         0,
       );
+      recordSuccessfulCall(
+        state,
+        "write",
+        params,
+        {
+          content: [{ type: "text", text: "No changes made." }],
+          details: { changed: false },
+        },
+        1,
+      );
+      const current = state.toolCallHistory?.at(-1);
+      expect(current).toBeDefined();
 
-      expect(detectToolCallLoop(state, "write", params, { enabled: false })).toEqual({
+      expect(detectPostExecutionToolCallLoop(state, current!, { enabled: false })).toEqual({
         stuck: false,
       });
     });
@@ -364,7 +389,9 @@ describe("tool-loop-detection", () => {
         error: new Error("disk is temporarily unavailable"),
       });
 
-      expect(detectToolCallLoop(state, "write", params)).toEqual({ stuck: false });
+      const current = state.toolCallHistory?.at(-1);
+      expect(current).toBeDefined();
+      expect(detectPostExecutionToolCallLoop(state, current!)).toEqual({ stuck: false });
     });
 
     it("allows an exact file mutation again after an intervening tool call", () => {
@@ -390,8 +417,20 @@ describe("tool-loop-detection", () => {
         },
         1,
       );
+      recordSuccessfulCall(
+        state,
+        "write",
+        params,
+        {
+          content: [{ type: "text", text: "No changes made." }],
+          details: { changed: false },
+        },
+        2,
+      );
+      const current = state.toolCallHistory?.at(-1);
+      expect(current).toBeDefined();
 
-      expect(detectToolCallLoop(state, "write", params)).toEqual({ stuck: false });
+      expect(detectPostExecutionToolCallLoop(state, current!)).toEqual({ stuck: false });
     });
 
     it("is disabled by default", () => {

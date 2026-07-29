@@ -15,8 +15,8 @@ all configured under `tools.loopDetection`:
    tool-call history for repeated patterns and unknown-tool retries.
 2. **No-op file mutation guard** - enabled unless `enabled` is explicitly
    `false`. Returns the first no-op `write`, `edit`, or `apply_patch` result to
-   the model, then blocks an exact retry so the model can recover without
-   ending the turn.
+   the model. If an exact retry is also a no-op after execution, reports the
+   repeated result as a loop so the model can recover without ending the turn.
 3. **Post-compaction guard** - enabled whenever
    `enabled` is not explicitly `false`. Arms after every compaction-retry and
    aborts the run if the agent repeats the same `(tool, args, result)` triple
@@ -99,7 +99,9 @@ The built-in `write`, `edit`, and `apply_patch` tools return a structured
 `changed: false` result when the requested mutation would not alter a file.
 OpenClaw returns that first no-op result to the model so it can inspect or
 repair its input. If the model immediately retries the exact same tool and
-arguments, OpenClaw blocks the retry before touching the filesystem again.
+arguments, OpenClaw executes it again so concurrent filesystem changes can
+still make progress. Only another `changed: false` result is escalated as a
+loop.
 
 This protection is active by default because an exact retry after a confirmed
 no-op cannot make progress. Set `enabled: false` to disable it together with
