@@ -28,10 +28,7 @@ export function buildUntrackedFileMutationNoProgressResult(
   }
   return {
     ...result,
-    details: {
-      ...result.details,
-      terminate: true,
-    },
+    terminate: true,
   };
 }
 

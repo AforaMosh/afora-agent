@@ -464,8 +464,8 @@ describe("before_tool_call loop detection behavior", () => {
     expect(result).toMatchObject({
       details: {
         changed: false,
-        terminate: true,
       },
+      terminate: true,
     });
     expect(execute).toHaveBeenCalledTimes(1);
   });
