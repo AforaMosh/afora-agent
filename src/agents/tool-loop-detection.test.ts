@@ -334,7 +334,7 @@ describe("tool-loop-detection", () => {
       },
     );
 
-    it("keeps no-op file mutation protection when rolling detection is disabled", () => {
+    it("disables no-op file mutation protection when loop detection is explicitly disabled", () => {
       const state = createState();
       const params = { path: "/tmp/a.md", content: "same content" };
       recordSuccessfulCall(
@@ -348,11 +348,8 @@ describe("tool-loop-detection", () => {
         0,
       );
 
-      expect(detectToolCallLoop(state, "write", params, { enabled: false })).toMatchObject({
-        stuck: true,
-        level: "critical",
-        detector: "file_mutation_no_progress",
-        count: 1,
+      expect(detectToolCallLoop(state, "write", params, { enabled: false })).toEqual({
+        stuck: false,
       });
     });
 

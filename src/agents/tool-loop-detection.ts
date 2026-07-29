@@ -503,7 +503,7 @@ export function detectToolCallLoop(
   scope?: ToolLoopDetectionScope,
 ): LoopDetectionResult {
   const resolvedConfig = resolveLoopDetectionConfig(config);
-  const fileMutationGuardEnabled = isFileMutationTool(toolName);
+  const fileMutationGuardEnabled = config?.enabled !== false && isFileMutationTool(toolName);
   if (!resolvedConfig.enabled && !fileMutationGuardEnabled) {
     return { stuck: false };
   }
@@ -514,7 +514,7 @@ export function detectToolCallLoop(
   const noProgressStreak = noProgress.count;
 
   // Exact retries after a confirmed no-op file mutation are objective dead ends.
-  // This safety boundary predates the configurable rolling-history detectors.
+  // Keep the default-on guard narrow while preserving the explicit master opt-out.
   if (
     fileMutationGuardEnabled &&
     isImmediateFileMutationNoProgressRetry(history, toolName, currentHash) &&
