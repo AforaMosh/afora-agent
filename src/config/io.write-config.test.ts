@@ -1455,6 +1455,13 @@ describe("config io write", () => {
     const afterUnrelatedWrite = await io.readConfigFileSnapshot();
     const rootRaw = await fs.readFile(configPath, "utf-8");
     await expect(
+      io.writeConfigFile(afterUnrelatedWrite.config, {
+        baseSnapshot: afterUnrelatedWrite,
+        explicitSetPaths: [["agents"]],
+        explicitSetValueSource: { agents: afterUnrelatedWrite.config.agents },
+      }),
+    ).rejects.toThrow("migrate the owning include file to agents.entries");
+    await expect(
       io.writeConfigFile(
         {
           ...afterUnrelatedWrite.config,

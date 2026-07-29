@@ -152,7 +152,8 @@ export async function writeConfigFileFromContext(
           toAgentEntriesRecord(listAgentEntries(cfg)),
         )) ||
       options.explicitSetPaths?.some(
-        (pathLocal) => pathLocal[0] === "agents" && pathLocal[1] === "entries",
+        (pathLocal) =>
+          pathLocal[0] === "agents" && (pathLocal.length === 1 || pathLocal[1] === "entries"),
       ) === true ||
       options.unsetPaths?.some(
         (pathLocal) =>
