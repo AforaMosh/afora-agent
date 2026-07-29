@@ -2632,15 +2632,6 @@ describe("package artifact reuse", () => {
     );
     expect(matrixJob["continue-on-error"]).toBeUndefined();
     expect(matrixJob.strategy?.matrix?.shard).toEqual([1, 2, 3, 4, 5]);
-    expect(
-      workflowStep(matrixJob, "Verify internal Matrix execution sharding support").run,
-    ).toContain('grep -Fq "OPENCLAW_QA_EXECUTION_SHARD"');
-    expect(
-      workflowStep(matrixJob, "Verify internal Matrix execution sharding support").run,
-    ).toContain("does not support internal post-selection QA sharding");
-    expect(workflowStep(matrixJob, "Run Matrix live lane").env).toMatchObject({
-      OPENCLAW_QA_EXECUTION_SHARD: "${{ format('{0}/5', matrix.shard) }}",
-    });
     expect(readWorkflow(QA_LIVE_TRANSPORTS_WORKFLOW).jobs?.run_live_matrix_sharded).toBeUndefined();
     expect(releaseTelegramWorkflow).toContain(
       'echo "Telegram live lane failed on attempt ${attempt}; retrying once..." >&2',
@@ -2648,23 +2639,17 @@ describe("package artifact reuse", () => {
     expect(workflowStep(matrixJob, "Run Matrix live lane").run).not.toContain("for attempt in");
     expect(qaWorkflow).not.toContain("Matrix live lane failed on attempt");
     expect(qaWorkflow).not.toContain("OPENCLAW_QA_MATRIX_CANARY_TIMEOUT_MS");
-    expect(qaWorkflow).not.toContain("legacy_profiles");
-    expect(qaWorkflow).not.toContain("matrix_selection");
     expect(qaWorkflow).not.toContain("--shard <index/total>");
     expect(qaWorkflow).not.toContain("--fail-fast");
   });
 
-  it("keeps Matrix sharding internal to post-selection execution", () => {
+  it("uses legacy Matrix profiles only when a selected target lacks execution sharding", () => {
     const matrixJob = workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, "run_live_matrix");
     const runStep = workflowStep(matrixJob, "Run Matrix live lane");
-    const run = runStep.run;
 
-    expect(runStep.env).toMatchObject({
-      OPENCLAW_QA_EXECUTION_SHARD: "${{ format('{0}/5', matrix.shard) }}",
-    });
-    expect(run).not.toContain("--shard");
-    expect(run).not.toContain("--profile");
-    expect(run).not.toContain("matrix_selection");
+    expect(runStep.run).toContain("OPENCLAW_QA_EXECUTION_SHARD");
+    expect(runStep.run).toContain("legacy_profiles");
+    expect(runStep.run).toContain("--profile");
     expect(matrixJob.strategy?.matrix?.shard).toEqual([1, 2, 3, 4, 5]);
   });
 
