@@ -985,6 +985,7 @@ function projectAuthoredRosterValue(params: {
     return { present: true, value };
   }
   if (Array.isArray(params.next)) {
+    const next = params.next;
     if (explicitlySet && params.explicitPresent && Array.isArray(params.explicit)) {
       return { present: true, value: cloneUnknown(params.explicit) };
     }
@@ -996,18 +997,18 @@ function projectAuthoredRosterValue(params: {
     const usedSourceIndexes = new Set<number>();
     const usedAuthoredIndexes = new Set<number>();
     const reservedRuntimeIndexes = new Set(
-      params.next.flatMap((nextValue, index) =>
+      next.flatMap((nextValue, index) =>
         index < runtime.length && isDeepStrictEqual(runtime[index], nextValue) ? [index] : [],
       ),
     );
     const reservedSourceIndexes = new Set(
-      params.next.flatMap((nextValue, index) =>
+      next.flatMap((nextValue, index) =>
         index < source.length && isDeepStrictEqual(source[index], nextValue) ? [index] : [],
       ),
     );
     const authoredIndexesWithExactFutureMatches = new Set(
       authored.flatMap((_authoredValue, authoredIndex) =>
-        params.next.some(
+        next.some(
           (nextValue) =>
             (authoredIndex < runtime.length &&
               isDeepStrictEqual(runtime[authoredIndex], nextValue)) ||
@@ -1039,7 +1040,7 @@ function projectAuthoredRosterValue(params: {
     };
     return {
       present: true,
-      value: params.next.flatMap((nextValue, index) => {
+      value: next.flatMap((nextValue, index) => {
         const runtimeIndex = findMatchingIndex(
           runtime,
           usedRuntimeIndexes,
@@ -1158,12 +1159,12 @@ function projectAuthoredCanonicalAgentRoster(params: {
   if (Object.hasOwn(authoredRoster.value, "$include")) {
     return params.persistedCandidate;
   }
-  const removedAuthoredIds = Object.keys(authoredRoster.value).filter(
-    (id) => !Object.hasOwn(nextRoster.value, id),
+  const authoredEntries = authoredRoster.value;
+  const nextEntries = nextRoster.value;
+  const removedAuthoredIds = Object.keys(authoredEntries).filter(
+    (id) => !Object.hasOwn(nextEntries, id),
   );
-  const addedIds = Object.keys(nextRoster.value).filter(
-    (id) => !Object.hasOwn(authoredRoster.value, id),
-  );
+  const addedIds = Object.keys(nextEntries).filter((id) => !Object.hasOwn(authoredEntries, id));
   if (removedAuthoredIds.length > 0 && addedIds.length > 0) {
     throw new Error(
       "Config write cannot safely match renamed canonical agent entries; delete and add agents in separate writes.",
@@ -1190,10 +1191,10 @@ function projectAuthoredCanonicalAgentRoster(params: {
     return path[1] === "entries" ? [path.slice(2)] : [];
   });
   const entries = Object.fromEntries(
-    Object.entries(nextRoster.value).map(([id, nextEntry]) => {
+    Object.entries(nextEntries).map(([id, nextEntry]) => {
       const projected = projectAuthoredRosterValue({
-        authored: authoredRoster.value[id],
-        authoredPresent: Object.hasOwn(authoredRoster.value, id),
+        authored: authoredEntries[id],
+        authoredPresent: Object.hasOwn(authoredEntries, id),
         explicit: explicitEntries[id],
         explicitPresent: Object.hasOwn(explicitEntries, id),
         explicitPaths,
@@ -1218,7 +1219,7 @@ function projectAuthoredCanonicalAgentRoster(params: {
     sourceConfig: params.sourceConfig,
     nextConfig: params.nextConfig,
     rootAuthoredConfig: {
-      agents: { entries: cloneUnknown(authoredRoster.value) },
+      agents: { entries: cloneUnknown(authoredEntries) },
     },
     persistedCandidate: projectedCandidate,
     explicitSetPaths: params.explicitSetPaths,

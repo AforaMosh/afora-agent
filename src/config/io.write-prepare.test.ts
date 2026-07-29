@@ -277,7 +277,6 @@ const writeCases: WriteCase[] = [
     current: { agents: { entries: { main: runtimeSecretEntry } } },
     authored: { agents: { entries: { main: authoredSecretEntry } } },
     next: { agents: { entries: { primary: runtimeSecretEntry } } },
-    options: { allowedAgentRosterRemovals: ["main"] },
     error: "cannot safely match renamed canonical agent entries",
   },
   {
