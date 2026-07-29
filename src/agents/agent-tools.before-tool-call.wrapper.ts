@@ -61,6 +61,10 @@ import {
   normalizeCodeModeExecBeforeHookParams,
   reconcileCodeModeExecBeforeHookParams,
 } from "./code-mode-control-tools.js";
+import {
+  buildFileMutationNoProgressMessage,
+  getFileMutationNoProgressSignature,
+} from "./tool-loop-file-mutation-outcome.js";
 import { buildToolMutationState } from "./tool-mutation.js";
 import { normalizeToolName } from "./tool-policy.js";
 import { formatToolExecutionErrorMessage } from "./tool-result-error.js";
@@ -280,6 +284,7 @@ export function wrapToolWithBeforeToolCallHook(
     emitDiagnostics: options.emitDiagnostics !== false,
   };
   const toolContentPolicy = resolveDiagnosticModelContentCapturePolicy(ctx?.config);
+  let untrackedFileMutationNoProgressSignature: string | undefined;
   const wrappedTool: AnyAgentTool = {
     ...tool,
     execute: async (toolCallId, params, signal, onUpdate, ...executionArgs: unknown[]) => {
@@ -503,13 +508,23 @@ export function wrapToolWithBeforeToolCallHook(
           toolCallOrdinal,
           terminalPresentation: recordedTerminalPresentation,
         });
-        const finalResult = postExecutionBlock
+        const untrackedSignature =
+          !ctx?.sessionKey && !ctx?.sessionId && ctx?.loopDetection?.enabled !== false
+            ? getFileMutationNoProgressSignature(normalizedToolName, executeParams, result)
+            : undefined;
+        const untrackedPostExecutionBlock =
+          untrackedSignature && untrackedSignature === untrackedFileMutationNoProgressSignature
+            ? { reason: buildFileMutationNoProgressMessage(normalizedToolName) }
+            : undefined;
+        untrackedFileMutationNoProgressSignature = untrackedSignature;
+        const effectivePostExecutionBlock = postExecutionBlock ?? untrackedPostExecutionBlock;
+        const finalResult = effectivePostExecutionBlock
           ? {
-              content: [{ type: "text" as const, text: postExecutionBlock.reason }],
+              content: [{ type: "text" as const, text: effectivePostExecutionBlock.reason }],
               details: {
                 status: "blocked",
                 deniedReason: "tool-loop",
-                reason: postExecutionBlock.reason,
+                reason: effectivePostExecutionBlock.reason,
               },
             }
           : result;

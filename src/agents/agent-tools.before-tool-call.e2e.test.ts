@@ -454,6 +454,18 @@ describe("before_tool_call loop detection behavior", () => {
     expect(execute).toHaveBeenCalledTimes(2);
   });
 
+  it("escalates repeated no-ops without session-backed diagnostics", async () => {
+    const execute = vi.fn().mockResolvedValue(createStableNoProgressWriteResult());
+    const tool = wrapToolWithBeforeToolCallHook(asAgentTool({ name: "write", execute }));
+    const params = { path: "/tmp/a.md", content: "same content" };
+
+    await expectUnblockedToolExecution(tool, "write-untracked-first", params);
+    const result = await tool.execute("write-untracked-repeat", params, undefined, undefined);
+
+    expectToolLoopBlockedResult(result, "identical no-op file mutation");
+    expect(execute).toHaveBeenCalledTimes(2);
+  });
+
   it("allows an exact no-op retry when loop detection is explicitly disabled", async () => {
     const execute = vi.fn().mockResolvedValue(createStableNoProgressWriteResult());
     const tool = createWrappedTool("write", execute, disabledLoopDetectionContext);

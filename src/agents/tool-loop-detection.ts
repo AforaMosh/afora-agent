@@ -21,6 +21,7 @@ import {
 } from "./tool-loop-argument-churn.js";
 import { isKnownPollToolCall } from "./tool-loop-call-kind.js";
 import {
+  buildFileMutationNoProgressMessage,
   isFileMutationNoProgressOutcome,
   isRepeatedFileMutationNoProgressOutcome,
 } from "./tool-loop-file-mutation-outcome.js";
@@ -682,7 +683,7 @@ export function detectPostExecutionToolCallLoop(
     level: "critical",
     detector: "file_mutation_no_progress",
     count: noProgress.count,
-    message: `CRITICAL: ${record.toolName} repeated an identical no-op file mutation. Stop retrying unchanged content; inspect or repair the input, choose a different action, or finish without rewriting the file.`,
+    message: buildFileMutationNoProgressMessage(record.toolName),
   };
 }
 

@@ -1,4 +1,6 @@
 import type { ToolCallRecord } from "../logging/diagnostic-session-state.js";
+import { isPlainObject } from "../utils.js";
+import { stableStringify } from "./stable-stringify.js";
 
 const FILE_MUTATION_TOOLS = new Set(["apply_patch", "edit", "write"]);
 
@@ -13,6 +15,23 @@ export function isFileMutationNoProgressOutcome(
   // Display text includes paths and formatting details; the structured flag is
   // the stable contract shared by built-in file mutation tools.
   return isFileMutationTool(toolName) && details.changed === false;
+}
+
+export function getFileMutationNoProgressSignature(
+  toolName: string,
+  params: unknown,
+  result: unknown,
+): string | undefined {
+  if (!isPlainObject(result) || !isPlainObject(result.details)) {
+    return undefined;
+  }
+  return isFileMutationNoProgressOutcome(toolName, result.details)
+    ? `${toolName}:${stableStringify(params)}`
+    : undefined;
+}
+
+export function buildFileMutationNoProgressMessage(toolName: string): string {
+  return `CRITICAL: ${toolName} repeated an identical no-op file mutation. Stop retrying unchanged content; inspect or repair the input, choose a different action, or finish without rewriting the file.`;
 }
 
 export function isImmediateFileMutationNoProgressRetry(
