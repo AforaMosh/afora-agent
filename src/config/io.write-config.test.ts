@@ -1355,6 +1355,18 @@ describe("config io write", () => {
         OPENCLAW_TEST_FAST: "1",
       },
       async () => {
+        await expect(
+          writeConfigFile(
+            {
+              agents: {
+                entries: { main: { default: true, workspace: "/srv/shared" } },
+              },
+            },
+            { skipRuntimeSnapshotRefresh: true },
+          ),
+        ).rejects.toThrow(
+          "Config write would drop agent roster entries without an explicit deletion: ops.",
+        );
         await writeConfigFile(
           {
             agents: {

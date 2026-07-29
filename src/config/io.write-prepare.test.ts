@@ -4,7 +4,10 @@ import { collectChangedPaths } from "./config-change-paths.js";
 import { applyUnsetPathsForWrite } from "./config-path-mutation.js";
 import { restoreEnvRefsFromMap, resolveWriteEnvSnapshotForPath } from "./env-preserve.js";
 import { formatConfigValidationFailure } from "./io.write-errors.js";
-import { resolvePersistCandidateForWrite } from "./io.write-prepare.js";
+import {
+  assertCanonicalAgentRosterRetainsEntries,
+  resolvePersistCandidateForWrite,
+} from "./io.write-prepare.js";
 import { createMergePatch } from "./merge-patch.js";
 import type { OpenClawConfig } from "./types.js";
 
@@ -46,19 +49,6 @@ const writeCases: WriteCase[] = [
     source: { gateway: { port: 18789 } },
     next: { gateway: { port: 18789, auth: { mode: "token" } } },
     expected: { gateway: { port: 18789, auth: { mode: "token" } } },
-  },
-  {
-    name: "rejects narrowed canonical writes that silently drop an agent",
-    current: { agents: { entries: { main: { default: true }, worker: {} } } },
-    next: { agents: { entries: { worker: { default: true } } } },
-    error: "Config write would drop agent roster entries without an explicit deletion: main.",
-  },
-  {
-    name: "allows explicitly authorized canonical agent removal",
-    current: { agents: { entries: { main: { default: true }, worker: {} } } },
-    next: { agents: { entries: { worker: { default: true } } } },
-    options: { allowedAgentRosterRemovals: ["main"] },
-    expected: { agents: { entries: { worker: { default: true } } } },
   },
   {
     name: "preserves authored secret references in unchanged canonical roster fields",
@@ -362,16 +352,6 @@ const writeCases: WriteCase[] = [
     },
   },
   {
-    name: "rejects roster unsets that remove an unauthorized entry",
-    current: { agents: { entries: { main: { default: true }, worker: {} } } },
-    next: { agents: { entries: { main: { default: true }, worker: {} } } },
-    options: {
-      unsetPaths: [["agents", "entries"]],
-      allowedAgentRosterRemovals: ["main"],
-    },
-    error: "Config write would drop agent roster entries without an explicit deletion: worker.",
-  },
-  {
     name: "preserves untouched include-owned subtrees during unrelated writes",
     current: { agents: { defaults: { model: "openai/gpt-5.4" } }, gateway: { mode: "local" } },
     authored: { agents: { $include: "./config/agents.json" }, gateway: { mode: "local" } },
@@ -555,6 +535,37 @@ describe("config io write prepare", () => {
     const persisted = resolveWriteCase(testCase);
     expect(persisted).toEqual(testCase.expected);
     testCase.verify?.(persisted);
+  });
+
+  it("rejects canonical roster removal without exact authorization", () => {
+    expect(() =>
+      assertCanonicalAgentRosterRetainsEntries({
+        currentConfig: { agents: { entries: { main: { default: true }, worker: {} } } },
+        canonicalConfig: { agents: { entries: { worker: { default: true } } } },
+      }),
+    ).toThrow("Config write would drop agent roster entries without an explicit deletion: main.");
+  });
+
+  it("allows only the explicitly authorized canonical roster removal", () => {
+    expect(() =>
+      assertCanonicalAgentRosterRetainsEntries({
+        currentConfig: { agents: { entries: { main: { default: true }, worker: {} } } },
+        canonicalConfig: { agents: { entries: { worker: { default: true } } } },
+        allowedRemovals: ["main"],
+      }),
+    ).not.toThrow();
+  });
+
+  it("checks the post-unset roster candidate", () => {
+    const current = { agents: { entries: { main: { default: true }, worker: {} } } };
+    const afterUnset = applyUnsetPathsForWrite(current, [["agents", "entries"]]);
+    expect(() =>
+      assertCanonicalAgentRosterRetainsEntries({
+        currentConfig: current,
+        canonicalConfig: afterUnset,
+        allowedRemovals: ["main"],
+      }),
+    ).toThrow("Config write would drop agent roster entries without an explicit deletion: worker.");
   });
 
   it("ignores prototype-chain keys when building merge patches", () => {

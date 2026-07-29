@@ -61,6 +61,7 @@ import { ConfigRuntimeRefreshError, configWritePostCommitRollback } from "./io.t
 import { logConfigWarningsOnce } from "./io.warnings.js";
 import { formatConfigValidationFailure } from "./io.write-errors.js";
 import {
+  assertCanonicalAgentRosterRetainsEntries,
   preserveIncludeOwnedConfigForWrite,
   resolvePersistCandidateForWrite,
 } from "./io.write-prepare.js";
@@ -206,7 +207,6 @@ export async function writeConfigFileFromContext(
       unsetPaths,
       explicitSetPaths,
       explicitSetValueSource: options.explicitSetValueSource,
-      allowedAgentRosterRemovals: options.allowedAgentRosterRemovals,
       allowIncludeAncestorExplicitSetPaths: options.allowIncludeAncestorExplicitSetPaths,
       modelIdNormalizationPolicies: resolveModelIdNormalizationPolicies(
         snapshotRead.pluginMetadataSnapshot,
@@ -487,6 +487,19 @@ export async function writeConfigFileFromContext(
     deps.logger.warn(message);
     await appendWriteAudit("rejected", error);
     throw error;
+  }
+
+  if (
+    readAgentRosterProperty(snapshot.parsed)?.kind === "entries" &&
+    snapshot.agentRosterIncludeOwned !== true
+  ) {
+    // A roster rewrite must never drop entries the mutation did not explicitly delete.
+    // A 2026-07-25 production incident lost agents.entries.main twice through silent rewrites.
+    assertCanonicalAgentRosterRetainsEntries({
+      currentConfig: snapshot.resolved,
+      canonicalConfig: stampedOutputConfig,
+      allowedRemovals: options.allowedAgentRosterRemovals,
+    });
   }
 
   const preCommitRuntimePreflight =
