@@ -13,16 +13,17 @@ all configured under `tools.loopDetection`:
 
 1. **Loop detection** (`enabled`) - disabled by default. Watches the rolling
    tool-call history for repeated patterns and unknown-tool retries.
-2. **No-op file mutation guard** - enabled whenever `enabled` is not explicitly
-   `false`. Returns the first no-op `write`, `edit`, or `apply_patch` result to
-   the model, then blocks an exact retry so the model can recover without
-   ending the turn.
+2. **No-op file mutation guard** - always enabled. Returns the first no-op
+   `write`, `edit`, or `apply_patch` result to the model, then blocks an exact
+   retry so the model can recover without ending the turn.
 3. **Post-compaction guard** - enabled whenever
    `enabled` is not explicitly `false`. Arms after every compaction-retry and
    aborts the run if the agent repeats the same `(tool, args, result)` triple
    within the window.
 
-Set `tools.loopDetection.enabled: false` to silence all three guardrails.
+Set `tools.loopDetection.enabled: false` to silence the rolling-history and
+post-compaction guardrails. The exact no-op file mutation retry guard remains
+active.
 
 ## Why this exists
 
@@ -72,9 +73,9 @@ You can also enable the global rolling-history detectors in **Settings -> Labs**
 
 ### Field behavior
 
-| Field     | Default | Effect                                                                                                                     |
-| --------- | ------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `enabled` | `false` | Master switch for the rolling-history detectors. `false` also disables the no-op file mutation and post-compaction guards. |
+| Field     | Default | Effect                                                                                                              |
+| --------- | ------- | ------------------------------------------------------------------------------------------------------------------- |
+| `enabled` | unset   | Rolling-history detection is off when unset. Explicit `false` also disables the otherwise-on post-compaction guard. |
 
 For `exec`, no-progress hashing compares stable command outcomes (status,
 exit code, timed-out flag, output) and ignores volatile runtime metadata such
@@ -87,11 +88,12 @@ from earlier runs.
 
 ## Recommended setup
 
-- For smaller models, set `enabled: true`. Flagship models rarely need rolling-history detection and can
-  leave the master switch `false` while still benefiting from the
-  no-op file mutation and post-compaction guards.
-- To disable everything, including both default-on guards, set
-  `tools.loopDetection.enabled: false` explicitly.
+- For smaller models, set `enabled: true`. Flagship models rarely need
+  rolling-history detection and can leave the setting unset while still
+  benefiting from the no-op file mutation and post-compaction guards.
+- To disable rolling-history and post-compaction detection, set
+  `tools.loopDetection.enabled: false` explicitly. The exact no-op retry guard
+  remains active.
 
 ## No-op file mutation guard
 
@@ -101,8 +103,10 @@ OpenClaw returns that first no-op result to the model so it can inspect or
 repair its input. If the model immediately retries the exact same tool and
 arguments, OpenClaw blocks the retry before touching the filesystem again.
 
-Like the post-compaction guard, this protection is active when `enabled` is
-unset or `true`, and disabled only when `enabled` is explicitly `false`.
+This protection is always active because an exact retry after a confirmed
+no-op cannot make progress. The `enabled` setting controls the broader
+rolling-history and post-compaction detectors, not this immediate safety
+boundary.
 
 ## Post-compaction guard
 

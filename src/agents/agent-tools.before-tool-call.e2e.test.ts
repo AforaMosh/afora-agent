@@ -435,15 +435,16 @@ describe("before_tool_call loop detection behavior", () => {
     expect(execute).toHaveBeenCalledTimes(1);
   });
 
-  it("allows repeated no-op file mutations when loop detection is explicitly disabled", async () => {
+  it("blocks an exact no-op retry when rolling detection is explicitly disabled", async () => {
     const execute = vi.fn().mockResolvedValue(createStableNoProgressWriteResult());
     const tool = createWrappedTool("write", execute, disabledLoopDetectionContext);
     const params = { path: "/tmp/a.md", content: "same content" };
 
     await expectUnblockedToolExecution(tool, "write-noop-disabled-first", params);
-    await expectUnblockedToolExecution(tool, "write-noop-disabled-repeat", params);
+    const result = await tool.execute("write-noop-disabled-repeat", params, undefined, undefined);
 
-    expect(execute).toHaveBeenCalledTimes(2);
+    expectToolLoopBlockedResult(result, "identical no-op file mutation");
+    expect(execute).toHaveBeenCalledTimes(1);
   });
 
   it("does not activate reconciled churn when loop detection is unconfigured", async () => {
