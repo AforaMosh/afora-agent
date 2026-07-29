@@ -1,0 +1,59 @@
+name: Exact-head clawdx runtime proof
+
+on:
+  push:
+    branches:
+      - dev/kevinlin/exact-head-runtime-proof
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out proof branch
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Verify runtime source is exact PR head
+        env:
+          OPENCLAW_SOURCE_SHA: 781a87404b4edd854fdcde432395cf42735868ca
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "${OPENCLAW_SOURCE_SHA}"
+          test "$(git diff --name-only "${OPENCLAW_SOURCE_SHA}" HEAD)" = \
+            ".github/workflows/exact-head-runtime-proof.yml"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
+
+      - name: Build exact-head plugin runtime
+        env:
+          OPENCLAW_SOURCE_SHA: 781a87404b4edd854fdcde432395cf42735868ca
+        run: |
+          set -euo pipefail
+          docker buildx build \
+            --load \
+            --build-arg GIT_COMMIT="${OPENCLAW_SOURCE_SHA}" \
+            --build-arg OPENCLAW_EXTENSIONS="diagnostics-otel,codex,slack" \
+            --tag openclaw-clawdx-proof:781a874 \
+            .
+          docker run --rm --entrypoint sh openclaw-clawdx-proof:781a874 -c \
+            'test -f /app/extensions/codex/openclaw.plugin.json &&
+             test -f /app/extensions/slack/openclaw.plugin.json &&
+             test -f /app/extensions/diagnostics-otel/openclaw.plugin.json'
+          docker save openclaw-clawdx-proof:781a874 |
+            zstd -T0 -3 -o openclaw-clawdx-proof-781a874.tar.zst
+          sha256sum openclaw-clawdx-proof-781a874.tar.zst \
+            > openclaw-clawdx-proof-781a874.tar.zst.sha256
+
+      - name: Upload exact-head runtime
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: openclaw-clawdx-proof-781a874
+          path: |
+            openclaw-clawdx-proof-781a874.tar.zst
+            openclaw-clawdx-proof-781a874.tar.zst.sha256
+          compression-level: 0
+          retention-days: 1
