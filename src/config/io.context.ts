@@ -47,7 +47,11 @@ export type ConfigIoContext = {
     effectiveConfigRaw: unknown;
     env: NodeJS.ProcessEnv;
   }) => ValidationPluginMetadataSnapshotLoader;
-  resolveRuntimePreflightSourceConfig: (candidate: OpenClawConfig) => OpenClawConfig;
+  resolveRuntimePreflightSourceConfig: (
+    candidate: OpenClawConfig,
+    includeFileHashes?: Record<string, string>,
+    includeFileTargets?: Record<string, string>,
+  ) => OpenClawConfig;
   resolveSuspiciousRecoveryBackupCandidate: (parsed: unknown) => OpenClawConfig | null;
 };
 
@@ -121,9 +125,19 @@ export function createConfigIoContext(options: ConfigIoFactoryOptions = {}): Con
     };
   }
 
-  function resolveRuntimePreflightSourceConfig(candidate: OpenClawConfig): OpenClawConfig {
+  function resolveRuntimePreflightSourceConfig(
+    candidate: OpenClawConfig,
+    includeFileHashes?: Record<string, string>,
+    includeFileTargets?: Record<string, string>,
+  ): OpenClawConfig {
     const env = { ...deps.env } as NodeJS.ProcessEnv;
-    const resolvedIncludes = resolveConfigIncludesForRead(candidate, configPath, { ...deps, env });
+    const resolvedIncludes = resolveConfigIncludesForRead(
+      candidate,
+      configPath,
+      { ...deps, env },
+      includeFileHashes,
+      includeFileTargets,
+    );
     const resolution = resolveConfigForRead(resolvedIncludes, env, deps.lowerPrecedenceEnv);
     return coerceConfig(migratePersistedImplicitMainRoster(resolution.resolvedConfigRaw).config);
   }

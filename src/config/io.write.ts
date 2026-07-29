@@ -120,9 +120,24 @@ export async function writeConfigFileFromContext(
   const cfg = prepared.value.authoredDocument;
   const persistCandidate: unknown = cfg;
   const changedPaths = new Set(prepared.value.changedPaths);
+  const validationIncludeHashes: Record<string, string> = {};
+  const validationIncludeTargets: Record<string, string> = {};
+  const captureIncludeGraph = (candidate: OpenClawConfig) => {
+    const hashes: Record<string, string> = {};
+    const targets: Record<string, string> = {};
+    resolveConfigIncludesForRead(candidate, configPath, deps, hashes, targets);
+    return { hashes, targets };
+  };
+  // Bind validation to the exact include revisions used by this resolution.
   const validationCandidate = context.resolveRuntimePreflightSourceConfig(
     persistCandidate as OpenClawConfig,
+    validationIncludeHashes,
+    validationIncludeTargets,
   );
+  const validationIncludeGraph = {
+    hashes: validationIncludeHashes,
+    targets: validationIncludeTargets,
+  };
   const validated = validateConfigObjectRawWithPlugins(validationCandidate, {
     env: deps.env,
     pluginValidation: options.skipPluginValidation ? "skip" : "full",
@@ -303,14 +318,22 @@ export async function writeConfigFileFromContext(
           ),
       });
     });
-  const sourceConfigForPreflight = context.resolveRuntimePreflightSourceConfig(stampedOutputConfig);
-  const captureIncludeGraph = () => {
-    const hashes: Record<string, string> = {};
-    const targets: Record<string, string> = {};
-    resolveConfigIncludesForRead(stampedOutputConfig, configPath, deps, hashes, targets);
-    return { hashes, targets };
+  const committedIncludeHashes: Record<string, string> = {};
+  const committedIncludeTargets: Record<string, string> = {};
+  const sourceConfigForPreflight = context.resolveRuntimePreflightSourceConfig(
+    stampedOutputConfig,
+    committedIncludeHashes,
+    committedIncludeTargets,
+  );
+  const committedIncludeGraph = {
+    hashes: committedIncludeHashes,
+    targets: committedIncludeTargets,
   };
-  const committedIncludeGraph = captureIncludeGraph();
+  if (!isDeepStrictEqual(committedIncludeGraph, validationIncludeGraph)) {
+    throw new ConfigMutationConflictError("included config changed while validating write", {
+      currentHash: null,
+    });
+  }
   await preCommitRuntimePreflight(sourceConfigForPreflight);
 
   try {
@@ -334,7 +357,7 @@ export async function writeConfigFileFromContext(
           assertBaseSnapshotStillCurrent(snapshot, configPath, deps.fs);
         }
         options.assertConfigPathForWrite?.();
-        const finalIncludeGraph = captureIncludeGraph();
+        const finalIncludeGraph = captureIncludeGraph(stampedOutputConfig);
         if (!isDeepStrictEqual(finalIncludeGraph, committedIncludeGraph)) {
           throw new ConfigMutationConflictError("included config changed while preparing write", {
             currentHash: null,
