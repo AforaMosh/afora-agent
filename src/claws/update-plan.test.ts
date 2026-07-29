@@ -189,7 +189,7 @@ describe("buildClawUpdatePlan", () => {
     );
   });
 
-  it("reports one update-specific blocker for a setup schema target", async () => {
+  it("plans setup personalization when upgrading to a setup schema target", async () => {
     const current = await fixture();
     await writeFile(join(current.root, "USER.md.tmpl"), "Seed once\n", "utf8");
     const parsed = parseClawManifest({
@@ -215,14 +215,16 @@ describe("buildClawUpdatePlan", () => {
       packagePreflight,
     });
 
-    const setupBlockers = plan.blockers.filter(
-      (entry) => entry.code === "setup_mutation_unavailable",
+    expect(plan.blockers).toEqual([]);
+    expect(plan.actions).toContainEqual(
+      expect.objectContaining({
+        kind: "personalizationSeed",
+        id: "USER.md",
+        action: "add",
+        blocked: false,
+      }),
     );
-    expect(setupBlockers).toHaveLength(1);
-    expect(setupBlockers[0]?.message).toContain("Claw updates are preview-only");
-    expect(plan.actions).not.toContainEqual(
-      expect.objectContaining({ kind: "workspaceFile", id: "USER.md" }),
-    );
+    expect(plan.setup?.createdSeeds).toEqual(["USER.md"]);
   });
 
   it("uses the profile extension path when update preflight fails", async () => {
