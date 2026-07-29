@@ -386,16 +386,6 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           install-bun: "true"
 
-      - name: Verify internal Matrix execution sharding support
-        shell: bash
-        run: |
-          set -euo pipefail
-          runtime_source="extensions/qa-lab/src/live-transports/shared/live-transport-suite.runtime.ts"
-          if [[ ! -f "${runtime_source}" ]] || ! grep -Fq "OPENCLAW_QA_EXECUTION_SHARD" "${runtime_source}"; then
-            echo "Selected target does not support internal post-selection QA sharding; use a target that includes the current QA execution protocol." >&2
-            exit 1
-          fi
-
       - name: Build private QA runtime
         env:
           NODE_OPTIONS: --max-old-space-size=12288
@@ -407,17 +397,26 @@ jobs:
         shell: bash
         env:
           OPENCLAW_QA_REDACT_PUBLIC_METADATA: "1"
-          OPENCLAW_QA_EXECUTION_SHARD: ${{ format('{0}/5', matrix.shard) }}
         run: |
           set -euo pipefail
 
           output_dir=".artifacts/qa-e2e/matrix-live-shard-${{ matrix.shard }}-of-5-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           mkdir -p "${output_dir}"
 
+          runtime_source="extensions/qa-lab/src/live-transports/shared/live-transport-suite.runtime.ts"
+          matrix_selection=()
+          if [[ -f "${runtime_source}" ]] && grep -Fq "OPENCLAW_QA_EXECUTION_SHARD" "${runtime_source}"; then
+            export OPENCLAW_QA_EXECUTION_SHARD="${{ matrix.shard }}/5"
+          else
+            legacy_profiles=(transport media e2ee-smoke e2ee-deep e2ee-cli)
+            matrix_selection=(--profile "${legacy_profiles[${{ matrix.shard }} - 1]}")
+          fi
+
           pnpm openclaw qa matrix \
             --repo-root . \
             --output-dir "${output_dir}" \
             --provider-mode mock-openai \
+            "${matrix_selection[@]}" \
             --fast
 
       - name: Upload Matrix QA artifacts
