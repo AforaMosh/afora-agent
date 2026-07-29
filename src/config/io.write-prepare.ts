@@ -655,7 +655,6 @@ function preserveUntouchedIncludes(params: {
   runtimeConfig: unknown;
   sourceConfig: unknown;
   nextConfig: unknown;
-  rootAuthoredConfig?: unknown;
   rootAuthoredConfig: unknown;
   persistedCandidate: unknown;
 }): unknown {
