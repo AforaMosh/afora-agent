@@ -8,6 +8,7 @@ import { getPluginRuntimeGatewayRequestScope } from "./runtime/gateway-request-s
 type AuthorizeSearchHits = NonNullable<MemoryPluginRuntime["authorizeSearchHits"]>;
 
 const mocks = vi.hoisted(() => ({
+  emitMemoryAuthorizationShadowSurfaceInspection: vi.fn(),
   getMemoryRuntime: vi.fn(),
   loadPluginRegistryHandle: vi.fn(),
   resolvePluginRegistryLoadCacheKey: vi.fn((options: unknown) => JSON.stringify(options)),
@@ -21,6 +22,11 @@ vi.mock("../agents/agent-scope.js", () => ({
 vi.mock("./loader.js", () => ({
   loadPluginRegistryHandle: mocks.loadPluginRegistryHandle,
   resolvePluginRegistryLoadCacheKey: mocks.resolvePluginRegistryLoadCacheKey,
+}));
+
+vi.mock("./memory-authorization-shadow.js", () => ({
+  emitMemoryAuthorizationShadowSurfaceInspection:
+    mocks.emitMemoryAuthorizationShadowSurfaceInspection,
 }));
 
 vi.mock("./memory-state.js", async (importOriginal) => {
@@ -70,6 +76,7 @@ const memoryConfig = {
 describe("memory runtime handles", () => {
   beforeEach(() => {
     resetStandaloneMemoryRegistrySlot();
+    mocks.emitMemoryAuthorizationShadowSurfaceInspection.mockReset();
     mocks.getMemoryRuntime.mockReset().mockReturnValue(undefined);
     mocks.loadPluginRegistryHandle.mockReset();
     mocks.resolvePluginRegistryLoadCacheKey.mockClear();
@@ -109,6 +116,16 @@ describe("memory runtime handles", () => {
     expect(resolveActiveMemoryBackendConfig({ cfg: memoryConfig, agentId: "main" })).toEqual({
       backend: "builtin",
     });
+  });
+
+  it("inspects a standalone runtime's authorization surface before use", async () => {
+    const { registry, runtime } = createRegistry();
+    mocks.loadPluginRegistryHandle.mockReturnValue(registry);
+
+    await getActiveMemorySearchManager({ cfg: memoryConfig, agentId: "main" });
+
+    expect(mocks.emitMemoryAuthorizationShadowSurfaceInspection).toHaveBeenCalledOnce();
+    expect(mocks.emitMemoryAuthorizationShadowSurfaceInspection).toHaveBeenCalledWith(runtime);
   });
 
   it("tracks standalone managers without activating config-only lookups and rearms reused handles", async () => {
@@ -225,6 +242,8 @@ describe("memory runtime handles", () => {
       backend: "builtin",
     });
     expect(mocks.loadPluginRegistryHandle).not.toHaveBeenCalled();
+    expect(mocks.emitMemoryAuthorizationShadowSurfaceInspection).toHaveBeenCalledOnce();
+    expect(mocks.emitMemoryAuthorizationShadowSurfaceInspection).toHaveBeenCalledWith(runtime);
   });
 
   it("authorizes raw hits inside the selected plugin runtime scope", async () => {

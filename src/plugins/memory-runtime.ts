@@ -3,6 +3,7 @@ import { resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { resolveUserPath } from "../utils.js";
 import { normalizePluginsConfig } from "./config-state.js";
+import { emitMemoryAuthorizationShadowSurfaceInspection } from "./memory-authorization-shadow.js";
 import { loadPluginRegistryHandle, resolvePluginRegistryLoadCacheKey } from "./loader.js";
 import {
   getMemoryRuntime,
@@ -78,13 +79,21 @@ function withMemoryRuntimeOwner<T>(
   return withPluginRuntimeRegistryScope(owner.registry, () => run(owner.runtime));
 }
 
+function toMemoryRuntimeOwner(
+  runtime: MemoryRuntime,
+  registry?: PluginRegistry,
+): MemoryRuntimeOwner {
+  emitMemoryAuthorizationShadowSurfaceInspection(runtime);
+  return registry ? { runtime, registry } : { runtime };
+}
+
 function ensureMemoryRuntime(params?: {
   cfg: OpenClawConfig;
   agentId: string;
 }): MemoryRuntimeOwner | undefined {
   const current = getMemoryRuntime();
   if (current || !params) {
-    return current ? { runtime: current } : undefined;
+    return current ? toMemoryRuntimeOwner(current) : undefined;
   }
   const onlyPluginIds = resolveMemoryRuntimePluginIds(params.cfg);
   if (onlyPluginIds.length === 0) {
@@ -100,7 +109,7 @@ function ensureMemoryRuntime(params?: {
   const key = resolvePluginRegistryLoadCacheKey(loadOptions);
   if (standaloneMemoryRegistrySlot?.key === key) {
     const runtime = resolveMemoryRuntimeFromRegistry(standaloneMemoryRegistrySlot.registry);
-    return runtime ? { runtime, registry: standaloneMemoryRegistrySlot.registry } : undefined;
+    return runtime ? toMemoryRuntimeOwner(runtime, standaloneMemoryRegistrySlot.registry) : undefined;
   }
   const registry = loadPluginRegistryHandle(loadOptions);
   if (!registry) {
@@ -116,7 +125,7 @@ function ensureMemoryRuntime(params?: {
     retiredRuntimes.set(previousRuntime, previousSlot.registry);
   }
   standaloneMemoryRegistrySlot = { key, registry, retiredRuntimes };
-  return runtime ? { runtime, registry } : undefined;
+  return runtime ? toMemoryRuntimeOwner(runtime, registry) : undefined;
 }
 
 /** Returns the active plugin-backed memory search manager for an agent. */
