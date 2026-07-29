@@ -713,6 +713,62 @@ describe("mattermostPlugin", () => {
       expect(discovery?.schema).toBeUndefined();
     });
 
+    it("prepares supported sends for core-owned durable delivery", async () => {
+      const prepareSendPayload = mattermostPlugin.actions?.prepareSendPayload;
+      if (!prepareSendPayload) {
+        throw new Error("mattermost actions.prepareSendPayload missing");
+      }
+
+      expect(
+        prepareSendPayload({
+          ctx: createMattermostActionContext({
+            params: {
+              to: "channel:CHAN1",
+              message: "report",
+              filePath: "/tmp/workspace/report.md",
+              attachmentText: "native attachment",
+            },
+          }),
+          to: "channel:CHAN1",
+          payload: { text: "report" },
+        }),
+      ).toEqual({
+        text: "report",
+        mediaUrl: "/tmp/workspace/report.md",
+        mediaUrls: ["/tmp/workspace/report.md"],
+        channelData: {
+          mattermost: {
+            attachmentText: "native attachment",
+          },
+        },
+      });
+    });
+
+    it.each([
+      ["buffer attachments", { buffer: "cmVwb3J0" }, "buffer/base64 payloads"],
+      [
+        "multiple attachments",
+        { mediaUrls: ["https://example.com/one.png", "https://example.com/two.png"] },
+        "supports one attachment per message",
+      ],
+    ])("rejects unsupported %s before provider dispatch", async (_label, extraParams, error) => {
+      const prepareSendPayload = mattermostPlugin.actions?.prepareSendPayload;
+      if (!prepareSendPayload) {
+        throw new Error("mattermost actions.prepareSendPayload missing");
+      }
+
+      expect(() =>
+        prepareSendPayload({
+          ctx: createMattermostActionContext({
+            params: { to: "channel:CHAN1", message: "report", ...extraParams },
+          }),
+          to: "channel:CHAN1",
+          payload: { text: "report" },
+        }),
+      ).toThrow(error);
+      expect(sendMessageMattermostMock).not.toHaveBeenCalled();
+    });
+
     it("keeps read opt in when reactions are disabled", () => {
       const cfg: OpenClawConfig = {
         channels: {
@@ -1544,6 +1600,25 @@ describe("mattermostPlugin", () => {
   });
 
   describe("outbound", () => {
+    it("carries provider attachment text through payload delivery", async () => {
+      await requireMattermostSendPayload()({
+        cfg: createMattermostTestConfig(),
+        to: "channel:CHAN1",
+        text: "report",
+        payload: {
+          text: "report",
+          channelData: {
+            mattermost: {
+              attachmentText: "native attachment",
+            },
+          },
+        },
+      });
+
+      const options = expectSingleMattermostSend("channel:CHAN1", "report");
+      expect(options.attachmentText).toBe("native attachment");
+    });
+
     it("renders presentation buttons for normal reply payload delivery", async () => {
       const renderPresentation = requireMattermostRenderPresentation();
       const sendPayload = requireMattermostSendPayload();

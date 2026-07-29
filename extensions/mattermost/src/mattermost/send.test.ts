@@ -319,7 +319,44 @@ describe("sendMessageMattermost", () => {
     expect(result.receipt.parts).toHaveLength(1);
     expect(result.receipt.parts[0]?.platformMessageId).toBe("post-1");
     expect(result.receipt.parts[0]?.kind).toBe("text");
+    expect(result.content).toBe("hello");
     expect(mockState.loadConfig).not.toHaveBeenCalled();
+  });
+
+  it("reports the provider receipt before post-send bookkeeping can fail", async () => {
+    const events: string[] = [];
+    const onDeliveryResult = vi.fn(() => {
+      events.push("delivery");
+    });
+    mockState.createMattermostPost.mockResolvedValueOnce({
+      id: "post-final",
+      message: "provider-final",
+    });
+    mockState.recordActivity.mockImplementationOnce(() => {
+      events.push("activity");
+      throw new Error("activity store unavailable");
+    });
+
+    await expect(
+      sendMessageMattermost("channel:town-square", "requested text", {
+        cfg: TEST_CFG,
+        onDeliveryResult,
+      }),
+    ).rejects.toThrow("activity store unavailable");
+
+    expect(mockState.createMattermostPost).toHaveBeenCalledTimes(1);
+    expect(onDeliveryResult).toHaveBeenCalledTimes(1);
+    expect(onDeliveryResult).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messageId: "post-final",
+        channelId: "town-square",
+        content: "provider-final",
+        receipt: expect.objectContaining({
+          primaryPlatformMessageId: "post-final",
+        }),
+      }),
+    );
+    expect(events).toStrictEqual(["delivery", "activity"]);
   });
 
   it("loads outbound media with trusted local roots before upload", async () => {

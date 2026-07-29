@@ -1,4 +1,5 @@
 // Mattermost plugin module owns native model-picker interactions.
+import { runDetachedWebhookWork } from "openclaw/plugin-sdk/webhook-request-guards";
 import type { MattermostPost } from "./client.js";
 import type { MattermostInteractionResponse } from "./interactions.js";
 import {
@@ -82,6 +83,7 @@ export function createMattermostModelPickerInteractionHandler(
       },
       ctxPayload,
       delivery: {
+        observeMessageSent: true,
         // Picker-triggered confirmations should stay immediate.
         deliver: async (payload: ReplyPayload) => {
           const trimmedPayload = {
@@ -248,37 +250,37 @@ export function createMattermostModelPickerInteractionHandler(
       return { ephemeral_text: `That model is no longer available: ${targetModelRef}` };
     }
 
-    void (async () => {
-      try {
-        await runModelPickerCommand({
-          commandText: `/model ${targetModelRef}`,
-          commandAuthorized: auth.commandAuthorized,
-          eventPlan,
-          senderName: params.userName,
-          messageSid: buildMattermostModelPickerSelectMessageSid({
-            postId: params.payload.post_id,
-            provider: pickerState.provider,
-            model: pickerState.model,
-          }),
-        });
-        const currentModel = resolveMattermostModelPickerCurrentModel({
-          cfg,
-          route: modelSessionRoute,
-          data,
-          readConsistency: "latest",
-        });
-        const view = renderMattermostModelsPickerView({
-          ownerUserId: pickerState.ownerUserId,
-          data,
+    // The HTTP response returns before the command finishes. Reserve a new root
+    // while the request is still admitted so session dispatch survives that ack.
+    void runDetachedWebhookWork(async () => {
+      await runModelPickerCommand({
+        commandText: `/model ${targetModelRef}`,
+        commandAuthorized: auth.commandAuthorized,
+        eventPlan,
+        senderName: params.userName,
+        messageSid: buildMattermostModelPickerSelectMessageSid({
+          postId: params.payload.post_id,
           provider: pickerState.provider,
-          page: pickerState.page,
-          currentModel,
-        });
-        await updatePickerPost(view.text, view.buttons);
-      } catch (err) {
-        runtime.error?.(`mattermost model picker select failed: ${String(err)}`);
-      }
-    })();
+          model: pickerState.model,
+        }),
+      });
+      const currentModel = resolveMattermostModelPickerCurrentModel({
+        cfg,
+        route: modelSessionRoute,
+        data,
+        readConsistency: "latest",
+      });
+      const view = renderMattermostModelsPickerView({
+        ownerUserId: pickerState.ownerUserId,
+        data,
+        provider: pickerState.provider,
+        page: pickerState.page,
+        currentModel,
+      });
+      await updatePickerPost(view.text, view.buttons);
+    }).catch((err: unknown) => {
+      runtime.error?.(`mattermost model picker select failed: ${String(err)}`);
+    });
 
     return {};
   };
