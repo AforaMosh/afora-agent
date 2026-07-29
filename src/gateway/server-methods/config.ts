@@ -260,6 +260,8 @@ function assertNoDuplicateConfigPatchIds(value: unknown, path = ""): void {
         }
         ids.add(entry.id);
       }
+    }
+    for (const entry of value) {
       assertNoDuplicateConfigPatchIds(entry, `${path}[]`);
     }
     return;

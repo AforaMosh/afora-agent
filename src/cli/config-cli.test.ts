@@ -2184,6 +2184,49 @@ describe("config cli", () => {
       expect(firstWrittenConfig().plugins?.allow).toEqual(["x", "c"]);
     });
 
+    it("carries array container intent when an indexed set creates an array", async () => {
+      setSnapshot({}, {});
+      mockReadBestEffortRuntimeConfigSchema.mockResolvedValueOnce({
+        schema: {
+          type: "object",
+          properties: {
+            plugins: {
+              type: "object",
+              properties: { allow: { type: "array", items: { type: "string" } } },
+            },
+          },
+        },
+      });
+
+      await runConfigOperations({
+        runtime: defaultRuntime,
+        operations: [
+          {
+            inputMode: "json",
+            requestedPath: ["plugins", "allow", "0"],
+            setPath: ["plugins", "allow", "0"],
+            value: "demo",
+            mutation: "set",
+          },
+        ],
+        options: {},
+        successMode: "set",
+      });
+
+      expect(requireWriteIntent()).toEqual({
+        kind: "mutate",
+        operations: [
+          {
+            kind: "set",
+            path: ["plugins", "allow", "0"],
+            value: "demo",
+            arrayContainerDepths: [2],
+          },
+        ],
+      });
+      expect(firstWrittenConfig().plugins?.allow).toEqual(["demo"]);
+    });
+
     it("rejects batch deletion of a runtime-only config path", async () => {
       setSnapshot({}, { agents: { entries: { main: { default: true } } } });
 

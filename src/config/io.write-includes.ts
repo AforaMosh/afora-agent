@@ -203,9 +203,12 @@ function resolveIncludeOwnerTargetPaths(
     });
   }
   if (!ownership) {
-    return [];
+    return [...(owner.targetPaths ?? owner.sourceContributions.map((source) => source.targetPath))];
   }
   const survivingTargets = collectIncludeOwnerTargets(ownership, operationPath);
+  if (survivingTargets.size === 0) {
+    return [...(owner.targetPaths ?? owner.sourceContributions.map((source) => source.targetPath))];
+  }
   return [...survivingTargets.entries()]
     .toSorted((left, right) => left[1] - right[1])
     .map(([targetPath]) => targetPath);

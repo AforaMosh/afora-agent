@@ -1,6 +1,7 @@
 import { uniqueValues } from "@openclaw/normalization-core/string-normalization";
 import {
   applyConfigOperations,
+  collectArrayContainerDepths,
   createConfigMutationOperations,
   type ConfigMutationOperation,
 } from "../config/config-path-mutation.js";
@@ -425,6 +426,9 @@ export async function runConfigOperations(params: {
         : [];
     intentIntermediate = normalizeConfigMutationModelRefs(intentIntermediate);
     const intermediateValue = getAtPath(intentIntermediate, operationPath);
+    const arrayContainerDepths = collectArrayContainerDepths(next, operationPath).filter(
+      (depth) => !Array.isArray(getAtPath(intentSourceConfig, operationPath.slice(0, depth)).value),
+    );
     if (authoredAliasPaths.length > 0) {
       const modelIdIndex = operationPath[1] === "defaults" ? 3 : 4;
       const canonicalEntryPath = operationPath.slice(0, modelIdIndex + 1);
@@ -472,6 +476,7 @@ export async function runConfigOperations(params: {
               value: structuredClone(
                 intermediateValue.found ? intermediateValue.value : operation.value,
               ),
+              ...(arrayContainerDepths.length > 0 ? { arrayContainerDepths } : {}),
             },
       );
     }
