@@ -71,17 +71,6 @@ function normalizeScriptProducerEvidence(params: {
   };
 }
 
-function assertScenarioOwnsEvidencePath(scenarioOutputDir: string, evidencePath: string): void {
-  const relativePath = path.relative(scenarioOutputDir, evidencePath);
-  if (
-    relativePath === ".." ||
-    relativePath.startsWith(`..${path.sep}`) ||
-    path.isAbsolute(relativePath)
-  ) {
-    throw new Error("producer evidence must remain inside its scenario output directory");
-  }
-}
-
 export async function readScriptProducerEvidence(params: {
   outputDir: string;
   requireCurrentRunEvidence?: boolean;
@@ -90,16 +79,30 @@ export async function readScriptProducerEvidence(params: {
 }): Promise<{ producerEvidence?: QaEvidenceSummaryJson }> {
   const scenarioOutputDir = path.join(params.outputDir, params.scenario.id);
   const latestRun = await readJsonFileIfExists(path.join(scenarioOutputDir, "latest-run.json"));
-  if (
-    params.requireCurrentRunEvidence === true &&
-    latestRun !== undefined &&
-    (latestRun === null ||
+  if (params.requireCurrentRunEvidence === true) {
+    if (latestRun === undefined) {
+      return {};
+    }
+    if (
+      latestRun === null ||
       typeof latestRun !== "object" ||
       !("qaEvidence" in latestRun) ||
-      typeof latestRun.qaEvidence !== "string" ||
-      latestRun.qaEvidence.trim().length === 0)
-  ) {
-    throw new Error("latest-run.json does not identify a producer evidence bundle");
+      latestRun.qaEvidence !== QA_EVIDENCE_FILENAME
+    ) {
+      throw new Error(`latest-run.json must reference ${QA_EVIDENCE_FILENAME}`);
+    }
+    const evidencePath = path.join(scenarioOutputDir, QA_EVIDENCE_FILENAME);
+    const rawEvidence = await readJsonFileIfExists(evidencePath);
+    if (rawEvidence === undefined) {
+      return {};
+    }
+    return {
+      producerEvidence: normalizeScriptProducerEvidence({
+        evidence: validateQaEvidenceSummaryJson(rawEvidence),
+        evidencePath,
+        repoRoot: params.repoRoot,
+      }),
+    };
   }
   const latestEvidencePath =
     latestRun !== null &&
@@ -117,22 +120,6 @@ export async function readScriptProducerEvidence(params: {
     const evidencePath = path.isAbsolute(candidate)
       ? candidate
       : path.join(scenarioOutputDir, candidate);
-    if (params.requireCurrentRunEvidence === true) {
-      assertScenarioOwnsEvidencePath(scenarioOutputDir, evidencePath);
-      const evidenceStat = await fs.stat(evidencePath).catch((error: unknown) => {
-        if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-          return undefined;
-        }
-        throw error;
-      });
-      if (!evidenceStat) {
-        continue;
-      }
-      assertScenarioOwnsEvidencePath(
-        await fs.realpath(scenarioOutputDir),
-        await fs.realpath(evidencePath),
-      );
-    }
     const rawEvidence = await readJsonFileIfExists(evidencePath);
     if (!rawEvidence) {
       continue;

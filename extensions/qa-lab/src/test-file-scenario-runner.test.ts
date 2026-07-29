@@ -145,10 +145,9 @@ async function writeScriptProducerEvidence(params: {
   failureReason?: string;
 }) {
   const scenarioArtifactBase = path.join(params.outputDir, params.scenarioId ?? "scenario-script");
-  const runRoot = path.join(scenarioArtifactBase, "run-1");
-  await fs.mkdir(runRoot, { recursive: true });
+  await fs.mkdir(scenarioArtifactBase, { recursive: true });
   await fs.writeFile(
-    path.join(runRoot, "qa-evidence.json"),
+    path.join(scenarioArtifactBase, "qa-evidence.json"),
     `${JSON.stringify(
       {
         kind: "openclaw.qa.evidence-summary",
@@ -191,7 +190,7 @@ async function writeScriptProducerEvidence(params: {
   );
   await fs.writeFile(
     path.join(scenarioArtifactBase, "latest-run.json"),
-    `${JSON.stringify({ qaEvidence: path.join(runRoot, "qa-evidence.json") }, null, 2)}\n`,
+    `${JSON.stringify({ qaEvidence: "qa-evidence.json" }, null, 2)}\n`,
     "utf8",
   );
 }
@@ -538,7 +537,7 @@ describe("qa test file scenario runner", () => {
     { evidence: "stale", expectedFailure: /without writing fresh producer QA evidence/u },
     { evidence: "empty", expectedFailure: /without reporting an executed producer check/u },
     { evidence: "malformed", expectedFailure: /invalid JSON/u },
-    { evidence: "outside", expectedFailure: /inside its scenario output directory/u },
+    { evidence: "alternate-pointer", expectedFailure: /must reference qa-evidence\.json/u },
   ] as const)(
     "fails a successful script with $evidence producer evidence",
     async ({ evidence, expectedFailure }) => {
@@ -550,13 +549,8 @@ describe("qa test file scenario runner", () => {
 
       if (evidence === "stale") {
         await writeScriptProducerEvidence({ outputDir, status: "pass" });
-        const staleEvidencePath = path.join(scenarioOutputDir, "run-1", "qa-evidence.json");
-        await fs.copyFile(staleEvidencePath, evidencePath);
         const staleTimestamp = new Date(Date.now() - 60_000);
-        await Promise.all([
-          fs.utimes(staleEvidencePath, staleTimestamp, staleTimestamp),
-          fs.utimes(evidencePath, staleTimestamp, staleTimestamp),
-        ]);
+        await fs.utimes(evidencePath, staleTimestamp, staleTimestamp);
       }
 
       const result = await runQaTestFileScenarios({
@@ -570,13 +564,6 @@ describe("qa test file scenario runner", () => {
           if (evidence === "stale") {
             await expect(fs.access(latestRunPath)).rejects.toMatchObject({ code: "ENOENT" });
             await expect(fs.access(evidencePath)).rejects.toMatchObject({ code: "ENOENT" });
-            await fs.writeFile(
-              latestRunPath,
-              JSON.stringify({
-                qaEvidence: path.join(scenarioOutputDir, "run-1", "qa-evidence.json"),
-              }),
-              "utf8",
-            );
           } else if (evidence === "empty") {
             await fs.writeFile(
               evidencePath,
@@ -591,22 +578,17 @@ describe("qa test file scenario runner", () => {
             );
           } else if (evidence === "malformed") {
             await fs.writeFile(evidencePath, "{not valid JSON", "utf8");
-          } else if (evidence === "outside") {
-            await writeScriptProducerEvidence({
-              outputDir,
-              scenarioId: "different-script-scenario",
-              status: "pass",
-            });
+          } else if (evidence === "alternate-pointer") {
             await fs.writeFile(
               latestRunPath,
-              JSON.stringify({
-                qaEvidence: path.join(
-                  outputDir,
-                  "different-script-scenario",
-                  "run-1",
-                  "qa-evidence.json",
-                ),
-              }),
+              JSON.stringify({ qaEvidence: "run-1/qa-evidence.json" }),
+              "utf8",
+            );
+          }
+          if (evidence === "empty" || evidence === "malformed") {
+            await fs.writeFile(
+              latestRunPath,
+              JSON.stringify({ qaEvidence: "qa-evidence.json" }),
               "utf8",
             );
           }
@@ -665,7 +647,7 @@ describe("qa test file scenario runner", () => {
         await fs.mkdir(path.join(runRoot, "surfaces", "web-ui"), { recursive: true });
         await fs.writeFile(path.join(runRoot, "surfaces", "web-ui", "screenshot.png"), "png");
         await fs.writeFile(
-          path.join(runRoot, "qa-evidence.json"),
+          path.join(scenarioArtifactBase, "qa-evidence.json"),
           `${JSON.stringify(
             {
               kind: "openclaw.qa.evidence-summary",
@@ -698,7 +680,7 @@ describe("qa test file scenario runner", () => {
                     artifacts: [
                       {
                         kind: "screenshot",
-                        path: "surfaces/web-ui/screenshot.png",
+                        path: "run-1/surfaces/web-ui/screenshot.png",
                         source: "script-producer:web-ui:smoke",
                       },
                     ],
@@ -714,7 +696,7 @@ describe("qa test file scenario runner", () => {
         );
         await fs.writeFile(
           path.join(scenarioArtifactBase, "latest-run.json"),
-          `${JSON.stringify({ qaEvidence: path.join(runRoot, "qa-evidence.json") }, null, 2)}\n`,
+          `${JSON.stringify({ qaEvidence: "qa-evidence.json" }, null, 2)}\n`,
           "utf8",
         );
         return {
@@ -1045,10 +1027,9 @@ describe("qa test file scenario runner", () => {
           "scenario-script-failed",
           "scenario-script",
         );
-        const runRoot = path.join(scenarioArtifactBase, "run-1");
-        await fs.mkdir(runRoot, { recursive: true });
+        await fs.mkdir(scenarioArtifactBase, { recursive: true });
         await fs.writeFile(
-          path.join(runRoot, "qa-evidence.json"),
+          path.join(scenarioArtifactBase, "qa-evidence.json"),
           `${JSON.stringify(
             {
               kind: "openclaw.qa.evidence-summary",
@@ -1097,7 +1078,7 @@ describe("qa test file scenario runner", () => {
         );
         await fs.writeFile(
           path.join(scenarioArtifactBase, "latest-run.json"),
-          `${JSON.stringify({ qaEvidence: path.join(runRoot, "qa-evidence.json") }, null, 2)}\n`,
+          `${JSON.stringify({ qaEvidence: "qa-evidence.json" }, null, 2)}\n`,
           "utf8",
         );
         return {
@@ -1180,10 +1161,9 @@ describe("qa test file scenario runner", () => {
           "scenario-script-producer-fail",
           "scenario-script",
         );
-        const runRoot = path.join(scenarioArtifactBase, "run-1");
-        await fs.mkdir(runRoot, { recursive: true });
+        await fs.mkdir(scenarioArtifactBase, { recursive: true });
         await fs.writeFile(
-          path.join(runRoot, "qa-evidence.json"),
+          path.join(scenarioArtifactBase, "qa-evidence.json"),
           `${JSON.stringify(
             {
               kind: "openclaw.qa.evidence-summary",
@@ -1232,7 +1212,7 @@ describe("qa test file scenario runner", () => {
         );
         await fs.writeFile(
           path.join(scenarioArtifactBase, "latest-run.json"),
-          `${JSON.stringify({ qaEvidence: path.join(runRoot, "qa-evidence.json") }, null, 2)}\n`,
+          `${JSON.stringify({ qaEvidence: "qa-evidence.json" }, null, 2)}\n`,
           "utf8",
         );
         return {
@@ -1394,6 +1374,11 @@ describe("qa test file scenario runner", () => {
           })}\n`,
           "utf8",
         );
+        await fs.writeFile(
+          path.join(scenarioOutputDir, "latest-run.json"),
+          '{"qaEvidence":"qa-evidence.json"}\n',
+          "utf8",
+        );
         return { exitCode: 0, stdout: "script pass\n", stderr: "" };
       },
       env: {
@@ -1464,6 +1449,11 @@ describe("qa test file scenario runner", () => {
               },
             ],
           })}\n`,
+          "utf8",
+        );
+        await fs.writeFile(
+          path.join(scenarioOutputDir, "latest-run.json"),
+          '{"qaEvidence":"qa-evidence.json"}\n',
           "utf8",
         );
         return { exitCode: 0, stdout: "script pass\n", stderr: "" };
