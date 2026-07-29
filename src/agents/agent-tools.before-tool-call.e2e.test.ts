@@ -454,38 +454,20 @@ describe("before_tool_call loop detection behavior", () => {
     expect(execute).toHaveBeenCalledTimes(2);
   });
 
-  it("escalates repeated no-ops without session-backed diagnostics", async () => {
+  it("preserves terminal no-op protection without session-backed diagnostics", async () => {
     const execute = vi.fn().mockResolvedValue(createStableNoProgressWriteResult());
     const tool = wrapToolWithBeforeToolCallHook(asAgentTool({ name: "write", execute }));
     const params = { path: "/tmp/a.md", content: "same content" };
 
-    await expectUnblockedToolExecution(tool, "write-untracked-first", params);
-    const result = await tool.execute("write-untracked-repeat", params, undefined, undefined);
+    const result = await tool.execute("write-untracked", params, undefined, undefined);
 
-    expectToolLoopBlockedResult(result, "identical no-op file mutation");
-    expect(execute).toHaveBeenCalledTimes(2);
-  });
-
-  it("does not escalate untracked no-ops separated by another tool", async () => {
-    const writeExecute = vi.fn().mockResolvedValue(createStableNoProgressWriteResult());
-    const readExecute = vi.fn().mockResolvedValue({
-      content: [{ type: "text", text: "same content" }],
-      details: { kind: "text", content: "same content" },
+    expect(result).toMatchObject({
+      details: {
+        changed: false,
+        terminate: true,
+      },
     });
-    const writeTool = wrapToolWithBeforeToolCallHook(
-      asAgentTool({ name: "write", execute: writeExecute }),
-    );
-    const readTool = wrapToolWithBeforeToolCallHook(
-      asAgentTool({ name: "read", execute: readExecute }),
-    );
-    const params = { path: "/tmp/a.md", content: "same content" };
-
-    await expectUnblockedToolExecution(writeTool, "write-untracked-first", params);
-    await expectUnblockedToolExecution(readTool, "read-untracked-between", {
-      path: "/tmp/a.md",
-    });
-    await expectUnblockedToolExecution(writeTool, "write-untracked-later", params);
-    expect(writeExecute).toHaveBeenCalledTimes(2);
+    expect(execute).toHaveBeenCalledTimes(1);
   });
 
   it("allows an exact no-op retry when loop detection is explicitly disabled", async () => {

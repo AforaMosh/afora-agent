@@ -61,10 +61,7 @@ import {
   normalizeCodeModeExecBeforeHookParams,
   reconcileCodeModeExecBeforeHookParams,
 } from "./code-mode-control-tools.js";
-import {
-  buildFileMutationNoProgressMessage,
-  getFileMutationNoProgressSignature,
-} from "./tool-loop-file-mutation-outcome.js";
+import { buildUntrackedFileMutationNoProgressResult } from "./tool-loop-file-mutation-outcome.js";
 import { buildToolMutationState } from "./tool-mutation.js";
 import { normalizeToolName } from "./tool-policy.js";
 import { formatToolExecutionErrorMessage } from "./tool-result-error.js";
@@ -75,7 +72,6 @@ type BeforeToolCallWrapperOptions = {
   approvalMode?: "request" | "report" | "deny";
   emitDiagnostics: boolean;
 };
-let untrackedToolExecutionOrdinal = 0;
 type ForwardedToolExecution = (...args: unknown[]) => ReturnType<AnyAgentTool["execute"]>;
 const MAX_TRACKED_ADJUSTED_PARAMS = 1024;
 
@@ -285,12 +281,6 @@ export function wrapToolWithBeforeToolCallHook(
     emitDiagnostics: options.emitDiagnostics !== false,
   };
   const toolContentPolicy = resolveDiagnosticModelContentCapturePolicy(ctx?.config);
-  let untrackedFileMutationNoProgress:
-    | {
-        signature: string;
-        executionOrdinal: number;
-      }
-    | undefined;
   const wrappedTool: AnyAgentTool = {
     ...tool,
     execute: async (toolCallId, params, signal, onUpdate, ...executionArgs: unknown[]) => {
@@ -490,8 +480,6 @@ export function wrapToolWithBeforeToolCallHook(
         });
       }
       const startedAt = Date.now();
-      const untrackedExecutionOrdinal =
-        !ctx?.sessionKey && !ctx?.sessionId ? ++untrackedToolExecutionOrdinal : undefined;
       try {
         const result = await (execute as ForwardedToolExecution)(
           toolCallId,
@@ -516,35 +504,20 @@ export function wrapToolWithBeforeToolCallHook(
           toolCallOrdinal,
           terminalPresentation: recordedTerminalPresentation,
         });
-        const untrackedSignature =
+        const untrackedTerminalResult =
           !ctx?.sessionKey && !ctx?.sessionId && ctx?.loopDetection?.enabled !== false
-            ? getFileMutationNoProgressSignature(normalizedToolName, executeParams, result)
+            ? buildUntrackedFileMutationNoProgressResult(normalizedToolName, result)
             : undefined;
-        const untrackedPostExecutionBlock =
-          untrackedSignature &&
-          untrackedExecutionOrdinal !== undefined &&
-          untrackedFileMutationNoProgress?.signature === untrackedSignature &&
-          untrackedFileMutationNoProgress.executionOrdinal + 1 === untrackedExecutionOrdinal
-            ? { reason: buildFileMutationNoProgressMessage(normalizedToolName) }
-            : undefined;
-        untrackedFileMutationNoProgress =
-          untrackedSignature && untrackedExecutionOrdinal !== undefined
-            ? {
-                signature: untrackedSignature,
-                executionOrdinal: untrackedExecutionOrdinal,
-              }
-            : undefined;
-        const effectivePostExecutionBlock = postExecutionBlock ?? untrackedPostExecutionBlock;
-        const finalResult = effectivePostExecutionBlock
+        const finalResult = postExecutionBlock
           ? {
-              content: [{ type: "text" as const, text: effectivePostExecutionBlock.reason }],
+              content: [{ type: "text" as const, text: postExecutionBlock.reason }],
               details: {
                 status: "blocked",
                 deniedReason: "tool-loop",
-                reason: effectivePostExecutionBlock.reason,
+                reason: postExecutionBlock.reason,
               },
             }
-          : result;
+          : (untrackedTerminalResult ?? result);
         rememberPendingTerminalPresentation({
           ctx,
           tool,

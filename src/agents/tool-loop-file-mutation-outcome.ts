@@ -1,6 +1,5 @@
 import type { ToolCallRecord } from "../logging/diagnostic-session-state.js";
 import { isPlainObject } from "../utils.js";
-import { stableStringify } from "./stable-stringify.js";
 
 const FILE_MUTATION_TOOLS = new Set(["apply_patch", "edit", "write"]);
 
@@ -17,17 +16,23 @@ export function isFileMutationNoProgressOutcome(
   return isFileMutationTool(toolName) && details.changed === false;
 }
 
-export function getFileMutationNoProgressSignature(
+export function buildUntrackedFileMutationNoProgressResult(
   toolName: string,
-  params: unknown,
   result: unknown,
-): string | undefined {
+): unknown | undefined {
   if (!isPlainObject(result) || !isPlainObject(result.details)) {
     return undefined;
   }
-  return isFileMutationNoProgressOutcome(toolName, result.details)
-    ? `${toolName}:${stableStringify(params)}`
-    : undefined;
+  if (!isFileMutationNoProgressOutcome(toolName, result.details)) {
+    return undefined;
+  }
+  return {
+    ...result,
+    details: {
+      ...result.details,
+      terminate: true,
+    },
+  };
 }
 
 export function buildFileMutationNoProgressMessage(toolName: string): string {
