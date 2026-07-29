@@ -9,6 +9,7 @@ import {
   normalizeOptionalString as normalizeRunId,
 } from "@openclaw/normalization-core/string-coerce";
 import type { ToolLoopDetectionConfig } from "../config/types.tools.js";
+import type { DiagnosticToolLoopEvent } from "../infra/diagnostic-events.js";
 import type { SessionState, ToolCallRecord } from "../logging/diagnostic-session-state.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { isPlainObject } from "../utils.js";
@@ -22,27 +23,19 @@ import { isKnownPollToolCall } from "./tool-loop-call-kind.js";
 import {
   isFileMutationNoProgressOutcome,
   isFileMutationTool,
+  isImmediateFileMutationNoProgressRetry,
 } from "./tool-loop-file-mutation-outcome.js";
 import { getNoProgressStreak } from "./tool-loop-no-progress.js";
 import { TOOL_LOOP_WARNING_THRESHOLD } from "./tool-loop-thresholds.js";
 
 const log = createSubsystemLogger("agents/loop-detection");
 
-type LoopDetectorKind =
-  | "file_mutation_no_progress"
-  | "generic_repeat"
-  | "argument_churn"
-  | "unknown_tool_repeat"
-  | "known_poll_no_progress"
-  | "global_circuit_breaker"
-  | "ping_pong";
-
 type LoopDetectionResult =
   | { stuck: false }
   | {
       stuck: true;
       level: "warning" | "critical";
-      detector: LoopDetectorKind;
+      detector: DiagnosticToolLoopEvent["detector"];
       count: number;
       message: string;
       pairedToolName?: string;
@@ -498,20 +491,6 @@ function canonicalPairKey(signatureA: string, signatureB: string): string {
   return [signatureA, signatureB].toSorted().join("|");
 }
 
-function latestConcreteOutcome(history: readonly ToolCallRecord[]): ToolCallRecord | undefined {
-  for (let i = history.length - 1; i >= 0; i -= 1) {
-    const record = history[i];
-    if (!record) {
-      continue;
-    }
-    if (record.outcomeKind === "tool-loop-veto") {
-      continue;
-    }
-    return record.resultHash !== undefined || record.outcomeKind !== undefined ? record : undefined;
-  }
-  return undefined;
-}
-
 /**
  * Detect if an agent is stuck in a repetitive tool call loop.
  * Checks if the same tool+params combination has been called excessively.
@@ -533,15 +512,12 @@ export function detectToolCallLoop(
   const unknownToolStreak = getUnknownToolRepeatStreak(history, toolName);
   const noProgress = getNoProgressStreak(history, toolName, currentHash);
   const noProgressStreak = noProgress.count;
-  const latestOutcome = latestConcreteOutcome(history);
 
   // Exact retries after a confirmed no-op file mutation are objective dead ends.
   // This safety boundary predates the configurable rolling-history detectors.
   if (
     fileMutationGuardEnabled &&
-    latestOutcome?.toolName === toolName &&
-    latestOutcome.argsHash === currentHash &&
-    latestOutcome.outcomeKind === "file-mutation-no-progress" &&
+    isImmediateFileMutationNoProgressRetry(history, toolName, currentHash) &&
     noProgressStreak >= 1
   ) {
     return {
