@@ -133,6 +133,7 @@ type ClawStatusResult = {
     packageRefs: number;
     missingPackages: number;
     driftedPackages: number;
+    unavailableExtensions: number;
     incompletePackages: number;
     mcpServerRefs: number;
     driftedMcpServers: number;
@@ -284,6 +285,9 @@ export async function readClawStatus(
             pkg.state === "ambiguous" ||
             pkg.extensionCompatibility?.state === "drifted",
         ).length,
+      unavailableExtensions: records
+        .flatMap((record) => record.packages)
+        .filter((pkg) => pkg.extensionCompatibility?.state === "unavailable").length,
       incompletePackages: records
         .flatMap((record) => record.packages)
         .filter((pkg) => pkg.state === "incomplete").length,
