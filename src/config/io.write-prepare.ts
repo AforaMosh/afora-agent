@@ -1187,6 +1187,9 @@ function projectAuthoredCanonicalAgentRoster(params: {
   ) {
     return params.persistedCandidate;
   }
+  if (Object.hasOwn(authoredRoster.value, "$include")) {
+    return params.persistedCandidate;
+  }
   const removedAuthoredIds = Object.keys(authoredRoster.value).filter(
     (id) => !Object.hasOwn(nextRoster.value, id),
   );

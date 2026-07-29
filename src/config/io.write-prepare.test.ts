@@ -385,6 +385,25 @@ const writeCases: WriteCase[] = [
     },
   },
   {
+    name: "delegates entries-map includes to include ownership during unrelated writes",
+    current: {
+      agents: { entries: { main: { default: true } } },
+      gateway: { mode: "local" },
+    },
+    authored: {
+      agents: { entries: { $include: "./entries.json" } },
+      gateway: { mode: "local" },
+    },
+    next: {
+      agents: { entries: { main: { default: true } } },
+      gateway: { mode: "local", port: 18789 },
+    },
+    expected: {
+      agents: { entries: { $include: "./entries.json" } },
+      gateway: { mode: "local", port: 18789 },
+    },
+  },
+  {
     name: "allows removing root-authored sibling keys beside an include",
     current: { gateway: { mode: "local", legacyKey: true } },
     authored: { gateway: { $include: "./config/gateway.json", legacyKey: true } },
