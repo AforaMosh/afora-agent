@@ -1,5 +1,6 @@
 /** Lifecycle-owned model catalog access. */
 import { getRuntimeConfig } from "../config/config.js";
+import { hashRuntimeConfigValue } from "../config/runtime-snapshot.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import {
   listAgentIds,
@@ -34,6 +35,53 @@ export type LoadPreparedModelCatalogParams = {
 };
 
 type PreparedModelCatalogConfigPolicy = "exact" | "published";
+
+function collectConfigDifferencePaths(
+  left: unknown,
+  right: unknown,
+  prefix = "",
+  differences: string[] = [],
+): string[] {
+  if (differences.length >= 20 || Object.is(left, right)) {
+    return differences;
+  }
+  if (
+    left === null ||
+    right === null ||
+    typeof left !== "object" ||
+    typeof right !== "object" ||
+    Array.isArray(left) ||
+    Array.isArray(right)
+  ) {
+    differences.push(prefix || "<root>");
+    return differences;
+  }
+  const leftRecord = left as Record<string, unknown>;
+  const rightRecord = right as Record<string, unknown>;
+  const keys = new Set([...Object.keys(leftRecord), ...Object.keys(rightRecord)]);
+  for (const key of [...keys].toSorted()) {
+    collectConfigDifferencePaths(
+      leftRecord[key],
+      rightRecord[key],
+      prefix ? `${prefix}.${key}` : key,
+      differences,
+    );
+    if (differences.length >= 20) {
+      break;
+    }
+  }
+  return differences;
+}
+
+function formatConfigOwnerMismatch(
+  requested: OpenClawConfig,
+  published: OpenClawConfig,
+): string {
+  const requestedFingerprint = hashRuntimeConfigValue(requested).slice(0, 12);
+  const publishedFingerprint = hashRuntimeConfigValue(published).slice(0, 12);
+  const differencePaths = collectConfigDifferencePaths(requested, published);
+  return `requested=${requestedFingerprint} published=${publishedFingerprint} differences=${differencePaths.join(",") || "<none>"}`;
+}
 
 function acceptsPreparedSnapshotConfig(
   snapshot: PreparedModelRuntimeSnapshot,
@@ -189,8 +237,9 @@ async function loadPreparedModelCatalogOwnerSnapshotWithPolicy(
     return activated;
   }
   if (activated) {
+    const mismatch = formatConfigOwnerMismatch(activationExact.config, activated.config);
     throw new PreparedModelRuntimeOwnerNotPublishedError(
-      `prepared model catalog owner was not published for the requested config (${activationExact.agentDir})`,
+      `prepared model catalog owner was not published for the requested config (${activationExact.agentDir}; ${mismatch})`,
     );
   }
   // Gateway pre-run selection can name a spawned workspace before embedded-run admission.
@@ -198,8 +247,9 @@ async function loadPreparedModelCatalogOwnerSnapshotWithPolicy(
   const lease = await acquireAgentRunPreparedModelRuntime(activationFull);
   try {
     if (!acceptsPreparedSnapshotConfig(lease.snapshot, activationFull, configPolicy)) {
+      const mismatch = formatConfigOwnerMismatch(activationFull.config, lease.snapshot.config);
       throw new PreparedModelRuntimeOwnerNotPublishedError(
-        `prepared model catalog owner was not published for the requested config (${activationFull.agentDir})`,
+        `prepared model catalog owner was not published for the requested config (${activationFull.agentDir}; ${mismatch})`,
       );
     }
     return lease.snapshot;
