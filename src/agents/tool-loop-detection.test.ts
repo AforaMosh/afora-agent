@@ -309,6 +309,91 @@ describe("tool-loop-detection", () => {
   });
 
   describe("detectToolCallLoop", () => {
+    it.each(["write", "edit", "apply_patch"])(
+      "blocks an exact %s retry after one confirmed no-op by default",
+      (toolName) => {
+        const state = createState();
+        const params = { path: "/tmp/a.md", content: "same content" };
+        recordSuccessfulCall(
+          state,
+          toolName,
+          params,
+          {
+            content: [{ type: "text", text: "No changes made." }],
+            details: { changed: false },
+          },
+          0,
+        );
+
+        expect(detectToolCallLoop(state, toolName, params)).toMatchObject({
+          stuck: true,
+          level: "critical",
+          detector: "file_mutation_no_progress",
+          count: 1,
+        });
+      },
+    );
+
+    it("honors the explicit loop detection opt-out for no-op file mutations", () => {
+      const state = createState();
+      const params = { path: "/tmp/a.md", content: "same content" };
+      recordSuccessfulCall(
+        state,
+        "write",
+        params,
+        {
+          content: [{ type: "text", text: "No changes made." }],
+          details: { changed: false },
+        },
+        0,
+      );
+
+      expect(detectToolCallLoop(state, "write", params, { enabled: false })).toEqual({
+        stuck: false,
+      });
+    });
+
+    it("does not treat an ordinary file-tool error as a confirmed no-op by default", () => {
+      const state = createState();
+      const params = { path: "/tmp/a.md", content: "same content" };
+      recordToolCall(state, "write", params, "write-error");
+      recordToolCallOutcome(state, {
+        toolName: "write",
+        toolParams: params,
+        toolCallId: "write-error",
+        error: new Error("disk is temporarily unavailable"),
+      });
+
+      expect(detectToolCallLoop(state, "write", params)).toEqual({ stuck: false });
+    });
+
+    it("allows an exact file mutation again after an intervening tool call", () => {
+      const state = createState();
+      const params = { path: "/tmp/a.md", content: "same content" };
+      recordSuccessfulCall(
+        state,
+        "write",
+        params,
+        {
+          content: [{ type: "text", text: "No changes made." }],
+          details: { changed: false },
+        },
+        0,
+      );
+      recordSuccessfulCall(
+        state,
+        "read",
+        { path: "/tmp/a.md" },
+        {
+          content: [{ type: "text", text: "different content" }],
+          details: { kind: "text", content: "different content" },
+        },
+        1,
+      );
+
+      expect(detectToolCallLoop(state, "write", params)).toEqual({ stuck: false });
+    });
+
     it("is disabled by default", () => {
       const state = createState();
 

@@ -420,6 +420,32 @@ describe("before_tool_call loop detection behavior", () => {
     }
   });
 
+  it("allows one no-op file mutation and blocks the exact retry when unconfigured", async () => {
+    const execute = vi.fn().mockResolvedValue(createStableNoProgressWriteResult());
+    const tool = createWrappedTool("write", execute, {
+      agentId: "main",
+      sessionKey: "main",
+    });
+    const params = { path: "/tmp/a.md", content: "same content" };
+
+    await expectUnblockedToolExecution(tool, "write-noop-first", params);
+    const result = await tool.execute("write-noop-repeat", params, undefined, undefined);
+
+    expectToolLoopBlockedResult(result, "identical no-op file mutation");
+    expect(execute).toHaveBeenCalledTimes(1);
+  });
+
+  it("allows repeated no-op file mutations when loop detection is explicitly disabled", async () => {
+    const execute = vi.fn().mockResolvedValue(createStableNoProgressWriteResult());
+    const tool = createWrappedTool("write", execute, disabledLoopDetectionContext);
+    const params = { path: "/tmp/a.md", content: "same content" };
+
+    await expectUnblockedToolExecution(tool, "write-noop-disabled-first", params);
+    await expectUnblockedToolExecution(tool, "write-noop-disabled-repeat", params);
+
+    expect(execute).toHaveBeenCalledTimes(2);
+  });
+
   it("does not activate reconciled churn when loop detection is unconfigured", async () => {
     const sessionId = "write-churn-unconfigured-session";
     const sessionKey = "main";
@@ -445,7 +471,7 @@ describe("before_tool_call loop detection behavior", () => {
       sessionKey,
       runId,
     });
-    const paths = ["/tmp/a.md", "/tmp/b.md", "/tmp/a.md", "/tmp/a.md", "/tmp/b.md"];
+    const paths = ["/tmp/a.md", "/tmp/b.md", "/tmp/c.md", "/tmp/a.md", "/tmp/b.md"];
 
     for (let index = 0; index < GLOBAL_CIRCUIT_BREAKER_THRESHOLD; index += 1) {
       await expectUnblockedToolExecution(tool, `write-churn-unconfigured-${index}`, {
@@ -514,36 +540,36 @@ describe("before_tool_call loop detection behavior", () => {
     };
     markDiagnosticEmbeddedRunStarted({ sessionId, sessionKey: "main", runId });
     const tool = createWrappedTool("write", execute, loopDetectionContext);
-    const paths = ["/tmp/a.md", "/tmp/b.md", "/tmp/a.md", "/tmp/a.md", "/tmp/b.md"];
-
-    for (let index = 0; index < GLOBAL_CIRCUIT_BREAKER_THRESHOLD; index += 1) {
-      const targetPath = paths[index % paths.length] ?? "/tmp/a.md";
-      await expectUnblockedToolExecution(tool, `write-churn-${index}`, {
-        path: targetPath,
-        content: "same content",
-      });
-    }
+    const paths = ["/tmp/a.md", "/tmp/b.md", "/tmp/c.md", "/tmp/a.md", "/tmp/b.md"];
 
     await withToolLoopEvents(async (emitted) => {
+      for (let index = 0; index < GLOBAL_CIRCUIT_BREAKER_THRESHOLD; index += 1) {
+        const targetPath = paths[index % paths.length] ?? "/tmp/a.md";
+        await expectUnblockedToolExecution(tool, `write-churn-${index}`, {
+          path: targetPath,
+          content: "same content",
+        });
+      }
       await expectUnblockedToolExecution(tool, "write-churn-warning", {
         path: "/tmp/a.md",
         content: "same content",
       });
-      expect(emitted.at(-1)).toMatchObject({
+      const churnWarning = emitted.find((event) => event.detector === "argument_churn");
+      expect(churnWarning).toMatchObject({
         type: "tool.loop",
         level: "warning",
         action: "warn",
         detector: "argument_churn",
         toolName: "write",
-        count: GLOBAL_CIRCUIT_BREAKER_THRESHOLD,
       });
+      expect(churnWarning?.count).toBeGreaterThanOrEqual(10);
     });
     expect(getDiagnosticSessionActivitySnapshot({ sessionKey: "main" }).lastProgressReason).toBe(
       "tool_loop:argument_churn",
     );
 
     await expectUnblockedToolExecution(tool, "write-churn-progress", {
-      path: "/tmp/a.md",
+      path: "/tmp/c.md",
       content: "same content",
     });
     expect(
@@ -551,7 +577,7 @@ describe("before_tool_call loop detection behavior", () => {
     ).not.toBe("tool_loop:argument_churn");
 
     await expectUnblockedToolExecution(tool, "write-churn-escape", {
-      path: "/tmp/c.md",
+      path: "/tmp/a.md",
       content: "same content",
     });
     expect(

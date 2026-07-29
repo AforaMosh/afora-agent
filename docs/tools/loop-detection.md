@@ -8,17 +8,21 @@ read_when:
   - You hit `compaction_loop_persisted` aborts after a context-overflow retry
 ---
 
-OpenClaw has two cooperating guardrails against repetitive tool-call patterns,
-both configured under `tools.loopDetection`:
+OpenClaw has three cooperating guardrails against repetitive tool-call patterns,
+all configured under `tools.loopDetection`:
 
 1. **Loop detection** (`enabled`) - disabled by default. Watches the rolling
    tool-call history for repeated patterns and unknown-tool retries.
-2. **Post-compaction guard** - enabled whenever
+2. **No-op file mutation guard** - enabled whenever `enabled` is not explicitly
+   `false`. Returns the first no-op `write`, `edit`, or `apply_patch` result to
+   the model, then blocks an exact retry so the model can recover without
+   ending the turn.
+3. **Post-compaction guard** - enabled whenever
    `enabled` is not explicitly `false`. Arms after every compaction-retry and
    aborts the run if the agent repeats the same `(tool, args, result)` triple
    within the window.
 
-Set `tools.loopDetection.enabled: false` to silence both guardrails.
+Set `tools.loopDetection.enabled: false` to silence all three guardrails.
 
 ## Why this exists
 
@@ -68,9 +72,9 @@ You can also enable the global rolling-history detectors in **Settings -> Labs**
 
 ### Field behavior
 
-| Field     | Default | Effect                                                                                            |
-| --------- | ------- | ------------------------------------------------------------------------------------------------- |
-| `enabled` | `false` | Master switch for the rolling-history detectors. `false` also disables the post-compaction guard. |
+| Field     | Default | Effect                                                                                                                     |
+| --------- | ------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `enabled` | `false` | Master switch for the rolling-history detectors. `false` also disables the no-op file mutation and post-compaction guards. |
 
 For `exec`, no-progress hashing compares stable command outcomes (status,
 exit code, timed-out flag, output) and ignores volatile runtime metadata such
@@ -85,9 +89,20 @@ from earlier runs.
 
 - For smaller models, set `enabled: true`. Flagship models rarely need rolling-history detection and can
   leave the master switch `false` while still benefiting from the
-  post-compaction guard.
-- To disable everything, including the post-compaction guard, set
+  no-op file mutation and post-compaction guards.
+- To disable everything, including both default-on guards, set
   `tools.loopDetection.enabled: false` explicitly.
+
+## No-op file mutation guard
+
+The built-in `write`, `edit`, and `apply_patch` tools return a structured
+`changed: false` result when the requested mutation would not alter a file.
+OpenClaw returns that first no-op result to the model so it can inspect or
+repair its input. If the model immediately retries the exact same tool and
+arguments, OpenClaw blocks the retry before touching the filesystem again.
+
+Like the post-compaction guard, this protection is active when `enabled` is
+unset or `true`, and disabled only when `enabled` is explicitly `false`.
 
 ## Post-compaction guard
 
@@ -132,6 +147,7 @@ spend and lockups while preserving normal tool access.
 - Blocking follows once a pattern persists past the warning threshold.
 - Critical thresholds block the next tool-cycle and surface a clear
   loop-detection reason in the run record.
+- An exact retry after a confirmed no-op file mutation is blocked immediately.
 - The post-compaction guard emits `compaction_loop_persisted` errors naming
   the offending tool and identical-call count.
 

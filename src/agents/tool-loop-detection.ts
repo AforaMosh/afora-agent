@@ -19,13 +19,17 @@ import {
   getArgumentChurnNoProgressStreak,
 } from "./tool-loop-argument-churn.js";
 import { isKnownPollToolCall } from "./tool-loop-call-kind.js";
+import {
+  isFileMutationNoProgressOutcome,
+  isFileMutationTool,
+} from "./tool-loop-file-mutation-outcome.js";
 import { getNoProgressStreak } from "./tool-loop-no-progress.js";
 import { TOOL_LOOP_WARNING_THRESHOLD } from "./tool-loop-thresholds.js";
-import { isWriteNoProgressOutcome } from "./tool-loop-write-outcome.js";
 
 const log = createSubsystemLogger("agents/loop-detection");
 
 type LoopDetectorKind =
+  | "file_mutation_no_progress"
   | "generic_repeat"
   | "argument_churn"
   | "unknown_tool_repeat"
@@ -313,8 +317,12 @@ function hashToolOutcome(
       return { resultHash: execHash };
     }
   }
-  if (toolName === "write" && isWriteNoProgressOutcome(details)) {
-    return { resultHash: digestStable({ status: "unchanged" }), noProgress: true };
+  if (isFileMutationNoProgressOutcome(toolName, details)) {
+    return {
+      outcomeKind: "file-mutation-no-progress",
+      resultHash: digestStable({ status: "unchanged" }),
+      noProgress: true,
+    };
   }
   if (isKnownPollToolCall(toolName, params) && toolName === "process" && isPlainObject(params)) {
     const action = params.action;
@@ -490,6 +498,20 @@ function canonicalPairKey(signatureA: string, signatureB: string): string {
   return [signatureA, signatureB].toSorted().join("|");
 }
 
+function latestConcreteOutcome(history: readonly ToolCallRecord[]): ToolCallRecord | undefined {
+  for (let i = history.length - 1; i >= 0; i -= 1) {
+    const record = history[i];
+    if (!record) {
+      continue;
+    }
+    if (record.outcomeKind === "tool-loop-veto") {
+      continue;
+    }
+    return record.resultHash !== undefined || record.outcomeKind !== undefined ? record : undefined;
+  }
+  return undefined;
+}
+
 /**
  * Detect if an agent is stuck in a repetitive tool call loop.
  * Checks if the same tool+params combination has been called excessively.
@@ -502,7 +524,9 @@ export function detectToolCallLoop(
   scope?: ToolLoopDetectionScope,
 ): LoopDetectionResult {
   const resolvedConfig = resolveLoopDetectionConfig(config);
-  if (!resolvedConfig.enabled) {
+  const fileMutationGuardEnabled =
+    config?.enabled !== false && isFileMutationTool(toolName);
+  if (!resolvedConfig.enabled && !fileMutationGuardEnabled) {
     return { stuck: false };
   }
   const history = selectHistoryForScope(state.toolCallHistory ?? [], scope);
@@ -510,6 +534,30 @@ export function detectToolCallLoop(
   const unknownToolStreak = getUnknownToolRepeatStreak(history, toolName);
   const noProgress = getNoProgressStreak(history, toolName, currentHash);
   const noProgressStreak = noProgress.count;
+  const latestOutcome = latestConcreteOutcome(history);
+
+  // Exact retries after a confirmed no-op file mutation are objective dead ends.
+  // Keep this guard on by default, while preserving the explicit full opt-out.
+  if (
+    fileMutationGuardEnabled &&
+    latestOutcome?.toolName === toolName &&
+    latestOutcome.argsHash === currentHash &&
+    latestOutcome.outcomeKind === "file-mutation-no-progress" &&
+    noProgressStreak >= 1
+  ) {
+    return {
+      stuck: true,
+      level: "critical",
+      detector: "file_mutation_no_progress",
+      count: noProgressStreak,
+      message: `CRITICAL: ${toolName} repeated an identical no-op file mutation. Stop retrying unchanged content; inspect or repair the input, choose a different action, or finish without rewriting the file.`,
+      warningKey: `file-mutation:${toolName}:${currentHash}:${noProgress.latestResultHash ?? "none"}`,
+    };
+  }
+
+  if (!resolvedConfig.enabled) {
+    return { stuck: false };
+  }
   const argumentChurn = getArgumentChurnNoProgressStreak(history, toolName, currentHash);
   const knownPollTool = isKnownPollToolCall(toolName, params);
   const pingPong = getPingPongStreak(history, currentHash);
