@@ -488,8 +488,8 @@ export async function prepareDispatchExecution(state: ChooseDispatchRouteReadySt
     ? withFullRuntimeReplyConfig(
         applyMergePatch(runtimeReplyConfig, params.configOverride) as OpenClawConfig,
       )
-    : publishedRuntimeReplyConfig
-      ? withPublishedRuntimeReplyConfig(publishedRuntimeReplyConfig)
+    : params.usePublishedModelRuntime || publishedRuntimeReplyConfig
+      ? withPublishedRuntimeReplyConfig(runtimeReplyConfig)
       : withFullRuntimeReplyConfig(cfg);
   recordAgentDispatchStarted();
   const nextState = extendPreparedDispatchState(
