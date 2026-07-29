@@ -223,11 +223,8 @@ function isIncludeOwnedPath(rootAuthoredConfig: unknown, path: string[]): boolea
   });
 }
 
-function findOverlappingIncludeOwnedPath(
-  rootAuthoredConfig: unknown,
-  path: string[],
-): string[] | undefined {
-  return collectIncludeOwnedPaths(rootAuthoredConfig).find((includePath) => {
+function findOverlappingIncludeOwnedPaths(rootAuthoredConfig: unknown, path: string[]): string[][] {
+  return collectIncludeOwnedPaths(rootAuthoredConfig).filter((includePath) => {
     const overlapsInclude = pathStartsWith(path, includePath) || pathStartsWith(includePath, path);
     if (!overlapsInclude) {
       return false;
@@ -841,6 +838,7 @@ function injectExplicitlySetPaths(params: {
   persistedCandidate: unknown;
   explicitSetPaths?: readonly (readonly string[])[];
   rootAuthoredConfig?: unknown;
+  preserveCanonicalRosterDescendantIncludes?: boolean;
   allowIncludeAncestorExplicitSetPaths?: boolean;
 }): unknown {
   if (!params.explicitSetPaths || params.explicitSetPaths.length === 0) {
@@ -852,18 +850,30 @@ function injectExplicitlySetPaths(params: {
     if (path.length === 0 || path.some(isBlockedObjectKey)) {
       continue;
     }
-    const includeOwnedPath = params.rootAuthoredConfig
-      ? findOverlappingIncludeOwnedPath(params.rootAuthoredConfig, [...path])
-      : undefined;
-    const allowIncludeAncestorOverride =
-      includeOwnedPath !== undefined &&
-      includeOwnedPath.length < path.length &&
-      pathStartsWith(path, includeOwnedPath) &&
-      params.allowIncludeAncestorExplicitSetPaths === true;
-    if (includeOwnedPath && !allowIncludeAncestorOverride) {
+    const includeOwnedPaths = params.rootAuthoredConfig
+      ? findOverlappingIncludeOwnedPaths(params.rootAuthoredConfig, [...path])
+      : [];
+    const blockingIncludeOwnedPath = includeOwnedPaths.find((includeOwnedPath) => {
+      const preserveDescendantInclude =
+        params.preserveCanonicalRosterDescendantIncludes === true &&
+        path[0] === "agents" &&
+        includeOwnedPath[0] === "agents" &&
+        includeOwnedPath[1] === "entries" &&
+        includeOwnedPath.length > 3 &&
+        includeOwnedPath[3] !== "default" &&
+        (path.length === 1 || path[1] === "entries") &&
+        includeOwnedPath.length > path.length &&
+        pathStartsWith(includeOwnedPath, path);
+      const allowIncludeAncestorOverride =
+        includeOwnedPath.length < path.length &&
+        pathStartsWith(path, includeOwnedPath) &&
+        params.allowIncludeAncestorExplicitSetPaths === true;
+      return !preserveDescendantInclude && !allowIncludeAncestorOverride;
+    });
+    if (blockingIncludeOwnedPath) {
       throw new Error(
         `Config write would flatten $include-owned config at ${formatConfigPath(
-          includeOwnedPath,
+          blockingIncludeOwnedPath,
         )}; edit that include file directly or remove the $include first.`,
       );
     }
@@ -1270,6 +1280,8 @@ export function resolvePersistCandidateForWrite(params: {
     persistedCandidate: persistedBase,
     explicitSetPaths: params.explicitSetPaths,
     rootAuthoredConfig,
+    preserveCanonicalRosterDescendantIncludes:
+      readAgentRosterProperty(rootAuthoredConfig)?.kind === "entries",
     allowIncludeAncestorExplicitSetPaths: params.allowIncludeAncestorExplicitSetPaths,
   });
   const withAuthoredRoster = projectAuthoredCanonicalAgentRoster({

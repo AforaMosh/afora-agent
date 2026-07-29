@@ -384,6 +384,127 @@ const writeCases: WriteCase[] = [
     },
   },
   {
+    name: "keeps an entries-map include blocking during an agents parent write",
+    current: {
+      agents: { entries: { main: { default: true } } },
+    },
+    authored: {
+      agents: { entries: { $include: "./entries.json" } },
+    },
+    next: {
+      agents: { entries: { main: { default: true }, worker: {} } },
+    },
+    options: {
+      explicitSetPaths: [["agents"]],
+      explicitSetValueSource: {
+        agents: { entries: { main: { default: true }, worker: {} } },
+      },
+    },
+    error: "flatten $include-owned config at agents.entries",
+  },
+  {
+    name: "preserves a descendant include during an explicit canonical roster write",
+    current: {
+      agents: {
+        entries: { main: { ...main, identity: { name: "Main", emoji: "🦞" } } },
+      },
+    },
+    authored: {
+      agents: {
+        entries: { main: { ...main, identity: { $include: "./identity.json" } } },
+      },
+    },
+    next: {
+      agents: {
+        entries: {
+          main: { ...main, identity: { name: "Main", emoji: "🦞" } },
+          worker: {},
+        },
+      },
+    },
+    options: {
+      explicitSetPaths: [["agents", "entries"]],
+      explicitSetValueSource: {
+        agents: {
+          entries: {
+            main: { ...main, identity: { name: "Main", emoji: "🦞" } },
+            worker: {},
+          },
+        },
+      },
+    },
+    expected: {
+      agents: {
+        entries: {
+          main: { ...main, identity: { $include: "./identity.json" } },
+          worker: {},
+        },
+      },
+    },
+  },
+  {
+    name: "does not defer includes outside canonical entries for an agents parent write",
+    current: {
+      agents: {
+        defaults: { workspace: "/srv/default" },
+        entries: { main },
+      },
+    },
+    authored: {
+      agents: {
+        defaults: { $include: "./defaults.json" },
+        entries: { main },
+      },
+    },
+    next: {
+      agents: {
+        defaults: { workspace: "/srv/default" },
+        entries: { main, worker: {} },
+      },
+    },
+    options: {
+      explicitSetPaths: [["agents"]],
+      explicitSetValueSource: {
+        agents: {
+          defaults: { workspace: "/srv/default" },
+          entries: { main, worker: {} },
+        },
+      },
+    },
+    error: "flatten $include-owned config at agents.defaults",
+  },
+  {
+    name: "does not let a canonical entries include mask a sibling agents include",
+    current: {
+      agents: {
+        entries: { main: { ...main, identity: { name: "Main" } } },
+        defaults: { workspace: "/srv/default" },
+      },
+    },
+    authored: {
+      agents: {
+        entries: { main: { ...main, identity: { $include: "./identity.json" } } },
+        defaults: { $include: "./defaults.json" },
+      },
+    },
+    next: {
+      agents: {
+        entries: { main: { ...main, identity: { name: "Main" } }, worker: {} },
+        defaults: { workspace: "/srv/default" },
+      },
+    },
+    options: {
+      explicitSetPaths: [["agents"]],
+      explicitSetValueSource: {
+        agents: {
+          entries: { main: { ...main, identity: { name: "Main" } }, worker: {} },
+          defaults: { workspace: "/srv/default" },
+        },
+      },
+    },
+    error: "flatten $include-owned config at agents.defaults",
+  },
+  {
     name: "allows removing root-authored sibling keys beside an include",
     current: { gateway: { mode: "local", legacyKey: true } },
     authored: { gateway: { $include: "./config/gateway.json", legacyKey: true } },

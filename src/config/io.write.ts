@@ -180,6 +180,15 @@ export async function writeConfigFileFromContext(
   const explicitSetPaths = doctorMigratesLocalLegacyRoster
     ? [...(options.explicitSetPaths ?? []), ["agents", "entries"]]
     : options.explicitSetPaths;
+  const explicitSetValueSource = doctorMigratesLocalLegacyRoster
+    ? {
+        ...(options.explicitSetValueSource ?? cfg),
+        agents: {
+          ...(options.explicitSetValueSource?.agents ?? cfg.agents ?? {}),
+          entries: structuredClone(cfg.agents?.entries ?? {}),
+        },
+      }
+    : options.explicitSetValueSource;
   if (doctorMigratesLocalLegacyRoster) {
     unsetPaths = [...unsetPaths, ["agents", "list"]];
   }
@@ -206,7 +215,7 @@ export async function writeConfigFileFromContext(
       rootAuthoredConfig: snapshot.parsed,
       unsetPaths,
       explicitSetPaths,
-      explicitSetValueSource: options.explicitSetValueSource,
+      explicitSetValueSource,
       allowIncludeAncestorExplicitSetPaths: options.allowIncludeAncestorExplicitSetPaths,
       modelIdNormalizationPolicies: resolveModelIdNormalizationPolicies(
         snapshotRead.pluginMetadataSnapshot,

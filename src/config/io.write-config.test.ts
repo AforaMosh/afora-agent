@@ -1324,18 +1324,54 @@ describe("config io write", () => {
   itWithHome("allows Doctor to replace agents.list with canonical entries", async (home) => {
     const { configPath } = await writeConfigFixture(home, {
       agents: { list: [{ id: "main", default: true }] },
+      gateway: { mode: "local" },
     } as unknown as OpenClawConfig);
     const io = createFastConfigIO(home, { configPath });
     const snapshot = await io.readConfigFileSnapshot();
 
     await io.writeConfigFile(
-      { agents: { entries: { main: { default: true } } } },
-      { auditOrigin: "doctor", baseSnapshot: snapshot },
+      {
+        agents: { entries: { main: { default: true } } },
+        gateway: { mode: "local", port: 19001 },
+      },
+      {
+        auditOrigin: "doctor",
+        baseSnapshot: snapshot,
+        explicitSetPaths: [["gateway", "port"]],
+        explicitSetValueSource: { gateway: { port: 19001 } },
+      },
     );
 
     expect(await readPersistedConfig(configPath)).toEqual({
       agents: { entries: { main: { default: true } } },
+      gateway: { mode: "local", port: 19001 },
       meta: expect.any(Object),
+    });
+  });
+
+  itWithHome("keeps Doctor explicit paths when the value source is omitted", async (home) => {
+    const { configPath } = await writeConfigFixture(home, {
+      agents: { list: [{ id: "main", default: true }] },
+      gateway: { mode: "local" },
+    } as unknown as OpenClawConfig);
+    const io = createFastConfigIO(home, { configPath });
+    const snapshot = await io.readConfigFileSnapshot();
+
+    await io.writeConfigFile(
+      {
+        agents: { entries: { main: { default: true } } },
+        gateway: { mode: "local", port: 19002 },
+      },
+      {
+        auditOrigin: "doctor",
+        baseSnapshot: snapshot,
+        explicitSetPaths: [["gateway", "port"]],
+      },
+    );
+
+    expect(await readPersistedConfig(configPath)).toMatchObject({
+      agents: { entries: { main: { default: true } } },
+      gateway: { mode: "local", port: 19002 },
     });
   });
 
@@ -1452,7 +1488,7 @@ describe("config io write", () => {
       message: expect.stringContaining("migrate the owning include file"),
     });
     await io.writeConfigFile(
-      { ...snapshot.config, gateway: { mode: "local", port: 19001 } },
+      { gateway: { mode: "local", port: 19001 } },
       { baseSnapshot: snapshot },
     );
 
