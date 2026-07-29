@@ -1,5 +1,6 @@
 import type { ToolCallRecord } from "../logging/diagnostic-session-state.js";
 import { isPlainObject } from "../utils.js";
+import type { AgentToolResult } from "./runtime/index.js";
 
 const FILE_MUTATION_TOOLS = new Set(["apply_patch", "edit", "write"]);
 
@@ -18,8 +19,8 @@ export function isFileMutationNoProgressOutcome(
 
 export function buildUntrackedFileMutationNoProgressResult(
   toolName: string,
-  result: unknown,
-): unknown | undefined {
+  result: AgentToolResult<unknown>,
+): AgentToolResult<unknown> | undefined {
   if (!isPlainObject(result) || !isPlainObject(result.details)) {
     return undefined;
   }
