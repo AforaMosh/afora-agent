@@ -528,11 +528,6 @@ export function wrapToolWithBeforeToolCallHook(
               },
             }
           : result;
-        const terminalPresentation = resolveToolTerminalPresentation({
-          tool,
-          toolParams: executeParams,
-          result: finalResult,
-        });
         rememberPendingTerminalPresentation({
           ctx,
           tool,

@@ -4,7 +4,7 @@ import { stableStringify } from "./stable-stringify.js";
 
 const FILE_MUTATION_TOOLS = new Set(["apply_patch", "edit", "write"]);
 
-export function isFileMutationTool(toolName: string): boolean {
+function isFileMutationTool(toolName: string): boolean {
   return FILE_MUTATION_TOOLS.has(toolName);
 }
 
@@ -34,7 +34,7 @@ export function buildFileMutationNoProgressMessage(toolName: string): string {
   return `CRITICAL: ${toolName} repeated an identical no-op file mutation. Stop retrying unchanged content; inspect or repair the input, choose a different action, or finish without rewriting the file.`;
 }
 
-export function isImmediateFileMutationNoProgressRetry(
+function isImmediateFileMutationNoProgressRetry(
   history: readonly ToolCallRecord[],
   toolName: string,
   argsHash: string,
