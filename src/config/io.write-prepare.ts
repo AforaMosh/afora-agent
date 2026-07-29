@@ -1037,6 +1037,18 @@ function projectAuthoredRosterValue(params: {
         index < source.length && isDeepStrictEqual(source[index], nextValue) ? [index] : [],
       ),
     );
+    const authoredIndexesWithExactFutureMatches = new Set(
+      authored.flatMap((_authoredValue, authoredIndex) =>
+        params.next.some(
+          (nextValue) =>
+            (authoredIndex < runtime.length &&
+              isDeepStrictEqual(runtime[authoredIndex], nextValue)) ||
+            (authoredIndex < source.length && isDeepStrictEqual(source[authoredIndex], nextValue)),
+        )
+          ? [authoredIndex]
+          : [],
+      ),
+    );
     const findMatchingIndex = (
       values: unknown[],
       used: Set<number>,
@@ -1089,7 +1101,10 @@ function projectAuthoredRosterValue(params: {
           (candidate) => !usedAuthoredIndexes.has(candidate),
         );
         const fallbackOwner =
-          !exactMatchExists && index < authored.length && !usedAuthoredIndexes.has(index)
+          !exactMatchExists &&
+          index < authored.length &&
+          !usedAuthoredIndexes.has(index) &&
+          !authoredIndexesWithExactFutureMatches.has(index)
             ? index
             : undefined;
         const authoredIndex = exactOwner ?? fallbackOwner;
@@ -1098,6 +1113,11 @@ function projectAuthoredRosterValue(params: {
         }
         const consumedExactOwner =
           authoredIndex === undefined && exactAuthoredCandidates.length > 0;
+        const reservedFallbackOwner =
+          !exactMatchExists &&
+          index < authored.length &&
+          authoredIndexesWithExactFutureMatches.has(index);
+        const forceLiteral = consumedExactOwner || reservedFallbackOwner;
         const sameIndexFallback = !exactMatchExists;
         const projected = projectAuthoredRosterValue({
           authored: authoredIndex === undefined ? undefined : authored[authoredIndex],
@@ -1106,7 +1126,7 @@ function projectAuthoredRosterValue(params: {
           explicitPresent: index < explicit.length,
           explicitPaths: params.explicitPaths,
           path: [...params.path, String(index)],
-          runtime: consumedExactOwner
+          runtime: forceLiteral
             ? undefined
             : runtimeIndex === undefined
               ? sameIndexFallback
@@ -1114,9 +1134,9 @@ function projectAuthoredRosterValue(params: {
                 : undefined
               : runtime[runtimeIndex],
           runtimePresent:
-            !consumedExactOwner &&
+            !forceLiteral &&
             (runtimeIndex !== undefined || (sameIndexFallback && index < runtime.length)),
-          source: consumedExactOwner
+          source: forceLiteral
             ? undefined
             : sourceIndex === undefined
               ? sameIndexFallback
@@ -1124,7 +1144,7 @@ function projectAuthoredRosterValue(params: {
                 : undefined
               : source[sourceIndex],
           sourcePresent:
-            !consumedExactOwner &&
+            !forceLiteral &&
             (sourceIndex !== undefined || (sameIndexFallback && index < source.length)),
           next: nextValue,
           nextPresent: true,
@@ -1166,6 +1186,17 @@ function projectAuthoredCanonicalAgentRoster(params: {
     !isRecord(nextRoster.value)
   ) {
     return params.persistedCandidate;
+  }
+  const removedAuthoredIds = Object.keys(authoredRoster.value).filter(
+    (id) => !Object.hasOwn(nextRoster.value, id),
+  );
+  const addedIds = Object.keys(nextRoster.value).filter(
+    (id) => !Object.hasOwn(authoredRoster.value, id),
+  );
+  if (removedAuthoredIds.length > 0 && addedIds.length > 0) {
+    throw new Error(
+      "Config write cannot safely match renamed canonical agent entries; delete and add agents in separate writes.",
+    );
   }
   const runtimeEntries = toAgentEntriesRecord(
     listAgentEntries(params.runtimeConfig as OpenClawConfig),

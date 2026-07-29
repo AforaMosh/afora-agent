@@ -252,14 +252,43 @@ const writeCases: WriteCase[] = [
             ...main,
             params: {
               routes: [
-                { name: "${NAME}", enabled: false },
-                { name: "main", enabled: true },
+                { name: "main", enabled: false },
+                { name: "${NAME}", enabled: true },
               ],
             },
           },
         },
       },
     },
+  },
+  {
+    name: "reserves a shifted exact array owner before positional fallback",
+    current: {
+      agents: { entries: { main: { ...main, tools: { allow: ["resolved-secret"] } } } },
+    },
+    authored: {
+      agents: {
+        entries: { main: { ...main, tools: { allow: ["${TOKEN}"] } } },
+      },
+    },
+    next: {
+      agents: {
+        entries: { main: { ...main, tools: { allow: ["new", "resolved-secret"] } } },
+      },
+    },
+    expected: {
+      agents: {
+        entries: { main: { ...main, tools: { allow: ["new", "${TOKEN}"] } } },
+      },
+    },
+  },
+  {
+    name: "rejects canonical remove-add replacements instead of inferring a rename",
+    current: { agents: { entries: { main: runtimeSecretEntry } } },
+    authored: { agents: { entries: { main: authoredSecretEntry } } },
+    next: { agents: { entries: { primary: runtimeSecretEntry } } },
+    options: { allowedAgentRosterRemovals: ["main"] },
+    error: "cannot safely match renamed canonical agent entries",
   },
   {
     name: "does not fall back after an exact array owner was already consumed",
@@ -275,7 +304,11 @@ const writeCases: WriteCase[] = [
       agents: { entries: { main: { ...main, tools: { allow: ["new", "read", "old"] } } } },
     },
     expected: {
-      agents: { entries: { main: { ...main, tools: { allow: ["new", "read", "old"] } } } },
+      agents: {
+        entries: {
+          main: { ...main, tools: { allow: ["new", "${PRIMARY_TOOL}", "old"] } },
+        },
+      },
     },
   },
   {
