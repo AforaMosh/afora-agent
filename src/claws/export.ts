@@ -565,7 +565,20 @@ export async function exportClawAgent(
                 candidate.version === pkg.version,
             );
             return installed
-              ? { ok: true, action: "install", integrity: installed.integrity }
+              ? {
+                  ok: true,
+                  action: "install",
+                  integrity: installed.integrity,
+                  ...(installed.extension
+                    ? {
+                        installId: installed.extension.id,
+                        detectedFormat: installed.extension.detectedFormat,
+                        mapped: installed.extension.mapped,
+                        unavailable: installed.extension.unavailable,
+                        adapterIdentity: installed.extension.adapterIdentity,
+                      }
+                    : {}),
+                }
               : {
                   ok: false,
                   code: "author_setup_package_unavailable",

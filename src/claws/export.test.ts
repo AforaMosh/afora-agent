@@ -353,6 +353,27 @@ describe("exportClawAgent", () => {
 
   it("authors a standard schema v2 package from explicitly selected user-owned content", async () => {
     const fixture = await installedFixture({ withPackage: true });
+    const extensionIntegrity = `sha256:${"b".repeat(64)}`;
+    const extension = {
+      id: "coding-tools",
+      format: "claude" as const,
+      detectedFormat: "claude" as const,
+      mapped: ["commands", "skills"],
+      unavailable: ["agents"],
+      adapterIdentity: "openclaw/test",
+    };
+    persistClawPackageRef(
+      fixture.plan,
+      {
+        kind: "plugin",
+        source: "clawhub",
+        ref: "@acme/coding-tools",
+        version: "1.2.3",
+        integrity: extensionIntegrity,
+        extension,
+      },
+      { env: fixture.env, relationship: "referenced" },
+    );
     const authorSource = join(fixture.plan.agent.workspace, "USER.md");
     const authoringPath = join(fixture.root, "author-setup.json");
     const out = join(fixture.root, "exported-guided");
@@ -407,7 +428,25 @@ describe("exportClawAgent", () => {
     const result = await exportClawAgent("worker", out, {
       env: fixture.env,
       config: fixture.config,
-      packageDeps: fixture.packageDeps,
+      packageDeps: {
+        ...fixture.packageDeps,
+        resolvePlugin: async () => ({
+          status: "found" as const,
+          pluginId: "coding-tools",
+          installedVersion: "1.2.3",
+          record: { integrity: extensionIntegrity },
+        }),
+      },
+      packagePreflight: async () => ({
+        ok: true,
+        action: "reuse",
+        integrity: extensionIntegrity,
+        installId: "coding-tools",
+        detectedFormat: "claude",
+        mapped: ["commands", "skills"],
+        unavailable: ["agents"],
+        adapterIdentity: "openclaw/test",
+      }),
       sourceMcpServers: fixture.sourceMcpServers,
       authorSetupPath: authoringPath,
     });
@@ -423,6 +462,10 @@ describe("exportClawAgent", () => {
       personalization: {
         seeds: [{ source: "setup/seed-001.tmpl", destination: "USER.md" }],
       },
+    });
+    expect(result.openClawProfile).toMatchObject({
+      schemaVersion: 2,
+      extensions: [expect.objectContaining({ id: "coding-tools", ref: "@acme/coding-tools" })],
     });
     expect(result.authoring).toMatchObject({
       inputs: [
