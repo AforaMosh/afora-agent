@@ -7,7 +7,7 @@ import { parseConfigPathArrayIndex } from "../shared/path-array-index.js";
 import { containsEnvVarReference } from "./env-substitution.js";
 import { applyMergePatch } from "./merge-patch.js";
 import { isSensitiveConfigPath } from "./sensitive-paths.js";
-import type { ConfigFileSnapshot, OpenClawConfig } from "./types.js";
+import type { OpenClawConfig } from "./types.js";
 import { isSecretRef } from "./types.secrets.js";
 
 export type ConfigPath = readonly string[];
@@ -22,30 +22,6 @@ export type ConfigMutationOperation =
     }
   | { kind: "unset"; path: ConfigPath; strictIncludeOwnership?: boolean }
   | { kind: "merge"; patch: unknown };
-
-export function collectSensitiveIncludeSourcePaths(
-  snapshot: Pick<ConfigFileSnapshot, "includeProvenance">,
-): ConfigPath[] {
-  const sensitivePaths = new Map<string, ConfigPath>();
-  for (const entry of snapshot.includeProvenance ?? []) {
-    for (const terminalPath of entry.terminalContributedPaths ??
-      entry.sensitiveContributedPaths ??
-      []) {
-      for (const [key, sensitivePath] of sensitivePaths) {
-        if (
-          terminalPath.length <= sensitivePath.length &&
-          terminalPath.every((segment, index) => sensitivePath[index] === segment)
-        ) {
-          sensitivePaths.delete(key);
-        }
-      }
-    }
-    for (const sensitivePath of entry.sensitiveContributedPaths ?? []) {
-      sensitivePaths.set(JSON.stringify(sensitivePath), sensitivePath.slice());
-    }
-  }
-  return [...sensitivePaths.values()];
-}
 
 export function projectExplicitRuntimeValueOntoAuthored(params: {
   authored: unknown;
@@ -130,6 +106,24 @@ function configPathHasIncludeOwner(root: unknown, path: ConfigPath): boolean {
 function configPathIsIncludeOwner(root: unknown, path: ConfigPath): boolean {
   const value = readConfigPath(root, path);
   return isWritePlainObject(value) && Object.hasOwn(value, "$include");
+}
+
+function alignIncludedSiblingRuntime(source: unknown, runtime: unknown): unknown {
+  if (Array.isArray(source) && Array.isArray(runtime)) {
+    const offset = Math.max(0, runtime.length - source.length);
+    return source.map((child, index) =>
+      alignIncludedSiblingRuntime(child, runtime[offset + index]),
+    );
+  }
+  if (isWritePlainObject(source) && isWritePlainObject(runtime)) {
+    return Object.fromEntries(
+      Object.entries(source).map(([key, child]) => [
+        key,
+        alignIncludedSiblingRuntime(child, runtime[key]),
+      ]),
+    );
+  }
+  return runtime;
 }
 
 function isFirstAuthoredRosterImplicitMainUnset(params: {
@@ -370,6 +364,15 @@ export function createRuntimeConfigMutationOperations(params: {
     }
     if (isWritePlainObject(source) && Object.hasOwn(source, "$include")) {
       collectRuntimeLeafPaths(runtime, path);
+      const runtimeRecord = isWritePlainObject(runtime) ? runtime : {};
+      for (const [key, child] of Object.entries(source)) {
+        if (key !== "$include") {
+          collectResolvedPaths(child, alignIncludedSiblingRuntime(child, runtimeRecord[key]), [
+            ...path,
+            key,
+          ]);
+        }
+      }
       return;
     }
     if (source === undefined && runtime !== undefined) {

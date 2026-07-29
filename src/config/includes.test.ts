@@ -215,6 +215,11 @@ describe("resolveConfigIncludes", () => {
         value: { enabled: true, mode: "strict" },
         kind: "multiple",
         hasSiblingOverrides: true,
+        targetPaths: [configPath("second.json"), configPath("third.json")],
+        sources: [
+          { targetPath: configPath("second.json"), value: { enabled: true } },
+          { targetPath: configPath("third.json"), value: { mode: "strict" } },
+        ],
       },
     ]);
   });

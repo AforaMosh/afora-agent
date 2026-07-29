@@ -21,7 +21,6 @@ import {
 import {
   applyUnsetPathsForWrite,
   collectArrayContainerDepths,
-  collectSensitiveIncludeSourcePaths,
   createRuntimeConfigMutationOperations,
   resolveManagedUnsetPathsForWrite,
 } from "./config-path-mutation.js";
@@ -29,6 +28,7 @@ import { restoreEnvVarRefs } from "./env-preserve.js";
 import { resolveWriteEnvSnapshotForPath } from "./env-preserve.js";
 import { resolveConfigEnvVars } from "./env-substitution.js";
 import { GATEWAY_CONFIG_SELECTION_ENV_KEYS } from "./gateway-env-selection.js";
+import { collectSensitiveIncludeSourcePaths } from "./include-sensitivity.js";
 import {
   ConfigIncludeError,
   hashConfigIncludeRaw,

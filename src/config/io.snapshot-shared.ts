@@ -45,6 +45,18 @@ export function createConfigFileSnapshot(params: {
                   ]),
                 }
               : {}),
+            ...(entry.targetPaths ? { targetPaths: [...entry.targetPaths] } : {}),
+            ...(entry.sourceContributions
+              ? {
+                  sourceContributions: entry.sourceContributions.map((source) => ({
+                    targetPath: source.targetPath,
+                    value: structuredClone(source.value),
+                    terminalContributedPaths: source.terminalContributedPaths.map((path) => [
+                      ...path,
+                    ]),
+                  })),
+                }
+              : {}),
           })),
         }
       : {}),

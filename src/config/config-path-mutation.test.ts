@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   applyConfigOperations,
-  collectSensitiveIncludeSourcePaths,
   createConfigMutationOperations,
   createRuntimeConfigMutationOperations,
   projectExplicitRuntimeValueOntoAuthored,
 } from "./config-path-mutation.js";
+import { collectSensitiveIncludeSourcePaths } from "./include-sensitivity.js";
 
 describe("applyConfigOperations", () => {
   it("keeps sensitivity only from the winning include contribution", () => {
@@ -47,6 +47,32 @@ describe("applyConfigOperations", () => {
     ).toEqual([["accounts", "0", "token"]]);
   });
 
+  it("keeps earlier array sensitivity when a later include appends nothing", () => {
+    expect(
+      collectSensitiveIncludeSourcePaths({
+        includeProvenance: [
+          {
+            path: ["accounts"],
+            kind: "multiple",
+            hasSiblingOverrides: false,
+            sourceContributions: [
+              {
+                targetPath: "/tmp/base.json5",
+                value: [{ token: "${TOKEN}" }],
+                terminalContributedPaths: [["accounts"]],
+              },
+              {
+                targetPath: "/tmp/override.json5",
+                value: [],
+                terminalContributedPaths: [["accounts"]],
+              },
+            ],
+          },
+        ],
+      }),
+    ).toEqual([["accounts", "0", "token"]]);
+  });
+
   it("does not clear sensitivity for a later empty-object merge", () => {
     expect(
       collectSensitiveIncludeSourcePaths({
@@ -68,6 +94,27 @@ describe("applyConfigOperations", () => {
         ],
       }),
     ).toEqual([["plugins", "token"]]);
+  });
+
+  it("tracks sensitive values below a parsed __proto__ key", () => {
+    expect(
+      collectSensitiveIncludeSourcePaths({
+        includeProvenance: [
+          {
+            path: ["plugins"],
+            kind: "multiple",
+            hasSiblingOverrides: false,
+            sourceContributions: [
+              {
+                targetPath: "/tmp/plugins.json5",
+                value: JSON.parse('{"__proto__":{"token":"${TOKEN}"}}'),
+                terminalContributedPaths: [["plugins", "__proto__", "token"]],
+              },
+            ],
+          },
+        ],
+      }),
+    ).toEqual([["plugins", "__proto__", "token"]]);
   });
 
   it("rejects a runtime-shaped array edit when authored refs were resolved", () => {
@@ -508,6 +555,61 @@ describe("applyConfigOperations", () => {
           },
         },
         sensitiveSourcePaths: [["plugins", "entries", "old", "mode"]],
+      }),
+    ).toThrow("cannot safely persist a runtime-derived value at plugins.entries.next");
+  });
+
+  it("rejects copying an env-backed sibling beside an include marker", () => {
+    expect(() =>
+      createRuntimeConfigMutationOperations({
+        source: {
+          plugins: {
+            entries: { old: { $include: "./defaults.json", mode: "${PLUGIN_CREDENTIAL}" } },
+          },
+        },
+        runtime: { plugins: { entries: { old: { mode: "credential" } } } },
+        candidate: {
+          plugins: {
+            entries: {
+              old: { mode: "credential" },
+              next: { config: { mode: "credential" } },
+            },
+          },
+        },
+      }),
+    ).toThrow("cannot safely persist a runtime-derived value at plugins.entries.next");
+  });
+
+  it("aligns env-backed sibling arrays after included array elements", () => {
+    expect(() =>
+      createRuntimeConfigMutationOperations({
+        source: {
+          plugins: {
+            entries: {
+              old: {
+                $include: "./defaults.json",
+                accounts: [{ token: "${PLUGIN_CREDENTIAL}" }],
+              },
+            },
+          },
+        },
+        runtime: {
+          plugins: {
+            entries: {
+              old: {
+                accounts: [{ name: "included" }, { token: "credential" }],
+              },
+            },
+          },
+        },
+        candidate: {
+          plugins: {
+            entries: {
+              old: { accounts: [{ name: "included" }, { token: "credential" }] },
+              next: { config: { token: "credential" } },
+            },
+          },
+        },
       }),
     ).toThrow("cannot safely persist a runtime-derived value at plugins.entries.next");
   });

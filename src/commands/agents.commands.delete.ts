@@ -14,11 +14,9 @@ import {
   prepareWorkspaceStateDeletion,
 } from "../agents/workspace-state-store.js";
 import { formatCliCommand } from "../cli/command-format.js";
-import {
-  collectSensitiveIncludeSourcePaths,
-  createRuntimeConfigMutationOperations,
-} from "../config/config-path-mutation.js";
+import { createRuntimeConfigMutationOperations } from "../config/config-path-mutation.js";
 import { replaceConfigFileWithIntent } from "../config/config.js";
+import { collectSensitiveIncludeSourcePaths } from "../config/include-sensitivity.js";
 import { logConfigUpdated } from "../config/logging.js";
 import {
   purgeAgentSessionStoreEntries,

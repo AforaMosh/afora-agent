@@ -3,7 +3,6 @@ import { isDeepStrictEqual } from "node:util";
 import { theme } from "../../packages/terminal-core/src/theme.js";
 import {
   applyConfigOperations,
-  collectSensitiveIncludeSourcePaths,
   createConfigMutationOperations,
   createRuntimeConfigMutationOperations,
 } from "../config/config-path-mutation.js";
@@ -13,6 +12,7 @@ import {
   readConfigFileSnapshotForWrite,
   replaceConfigFileWithIntent,
 } from "../config/config.js";
+import { collectSensitiveIncludeSourcePaths } from "../config/include-sensitivity.js";
 import {
   createInvalidConfigError,
   formatInvalidConfigDetails,

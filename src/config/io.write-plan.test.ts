@@ -291,6 +291,230 @@ describe("prepareConfigWrite", () => {
     });
   });
 
+  it("reports the surviving path contributor for multiple include ownership", () => {
+    const result = prepareConfigWrite({
+      snapshot: snapshot({
+        parsed: { gateway: { $include: ["./base.json5", "./override.json5"] } },
+        sourceConfig: { gateway: { mode: "local" } },
+        includeProvenance: [
+          {
+            path: ["gateway"],
+            contributedPaths: [["gateway", "mode"]],
+            kind: "multiple",
+            hasSiblingOverrides: false,
+            targetPaths: ["/tmp/base.json5", "/tmp/override.json5"],
+            sourceContributions: [
+              {
+                targetPath: "/tmp/base.json5",
+                value: { mode: "local" },
+                terminalContributedPaths: [["gateway", "mode"]],
+              },
+              {
+                targetPath: "/tmp/override.json5",
+                value: { port: 18789 },
+                terminalContributedPaths: [["gateway", "port"]],
+              },
+            ],
+          },
+        ],
+      }),
+      intent: {
+        kind: "mutate",
+        operations: [{ kind: "set", path: ["gateway", "mode"], value: "remote" }],
+      },
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        code: "include-owned",
+        path: ["gateway"],
+        filePath: "/tmp/base.json5",
+      },
+    });
+  });
+
+  it("drops a scalar contributor replaced by a later object contribution", () => {
+    const result = prepareConfigWrite({
+      snapshot: snapshot({
+        parsed: { plugins: { $include: ["./base.json5", "./override.json5"] } },
+        sourceConfig: { plugins: { mode: { strict: true } } },
+        includeProvenance: [
+          {
+            path: ["plugins"],
+            contributedPaths: [["plugins", "mode"]],
+            kind: "multiple",
+            hasSiblingOverrides: false,
+            sourceContributions: [
+              {
+                targetPath: "/tmp/base.json5",
+                value: { mode: "legacy" },
+                terminalContributedPaths: [["plugins", "mode"]],
+              },
+              {
+                targetPath: "/tmp/override.json5",
+                value: { mode: { strict: true } },
+                terminalContributedPaths: [["plugins", "mode", "strict"]],
+              },
+            ],
+          },
+        ],
+      }),
+      intent: {
+        kind: "mutate",
+        operations: [{ kind: "set", path: ["plugins", "mode", "strict"], value: false }],
+      },
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        code: "include-owned",
+        path: ["plugins"],
+        filePath: "/tmp/override.json5",
+      },
+    });
+  });
+
+  it("orders surviving parent contributors by include precedence", () => {
+    const result = prepareConfigWrite({
+      snapshot: snapshot({
+        parsed: { plugins: { $include: ["./base.json5", "./override.json5"] } },
+        sourceConfig: { plugins: { a: 2, b: 1 } },
+        includeProvenance: [
+          {
+            path: ["plugins"],
+            contributedPaths: [
+              ["plugins", "a"],
+              ["plugins", "b"],
+            ],
+            kind: "multiple",
+            hasSiblingOverrides: false,
+            sourceContributions: [
+              {
+                targetPath: "/tmp/base.json5",
+                value: { a: 1, b: 1 },
+                terminalContributedPaths: [
+                  ["plugins", "a"],
+                  ["plugins", "b"],
+                ],
+              },
+              {
+                targetPath: "/tmp/override.json5",
+                value: { a: 2 },
+                terminalContributedPaths: [["plugins", "a"]],
+              },
+            ],
+          },
+        ],
+      }),
+      intent: {
+        kind: "mutate",
+        operations: [{ kind: "set", path: ["plugins"], value: { a: 3, b: 2 } }],
+      },
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        code: "include-owned",
+        path: ["plugins"],
+        filePath: "/tmp/override.json5",
+        filePaths: ["/tmp/base.json5", "/tmp/override.json5"],
+      },
+    });
+  });
+
+  it("retains earlier ownership when a later included array is empty", () => {
+    const result = prepareConfigWrite({
+      snapshot: snapshot({
+        parsed: { plugins: { $include: ["./base.json5", "./override.json5"] } },
+        sourceConfig: { plugins: { items: ["base"] } },
+        includeProvenance: [
+          {
+            path: ["plugins"],
+            contributedPaths: [["plugins", "items"]],
+            kind: "multiple",
+            hasSiblingOverrides: false,
+            sourceContributions: [
+              {
+                targetPath: "/tmp/base.json5",
+                value: { items: ["base"] },
+                terminalContributedPaths: [["plugins", "items"]],
+              },
+              {
+                targetPath: "/tmp/override.json5",
+                value: { items: [] },
+                terminalContributedPaths: [["plugins", "items"]],
+              },
+            ],
+          },
+        ],
+      }),
+      intent: {
+        kind: "mutate",
+        operations: [{ kind: "set", path: ["plugins", "items", "0"], value: "next" }],
+      },
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        code: "include-owned",
+        path: ["plugins"],
+        filePath: "/tmp/base.json5",
+      },
+    });
+  });
+
+  it("does not reorder an earlier array owner for a repeated empty include", () => {
+    const result = prepareConfigWrite({
+      snapshot: snapshot({
+        parsed: { plugins: { $include: ["./a.json5", "./b.json5", "./a.json5"] } },
+        sourceConfig: { plugins: { items: ["a", "b"] } },
+        includeProvenance: [
+          {
+            path: ["plugins"],
+            contributedPaths: [["plugins", "items"]],
+            kind: "multiple",
+            hasSiblingOverrides: false,
+            sourceContributions: [
+              {
+                targetPath: "/tmp/a.json5",
+                value: { items: ["a"] },
+                terminalContributedPaths: [["plugins", "items"]],
+              },
+              {
+                targetPath: "/tmp/b.json5",
+                value: { items: ["b"] },
+                terminalContributedPaths: [["plugins", "items"]],
+              },
+              {
+                targetPath: "/tmp/a.json5",
+                value: { items: [] },
+                terminalContributedPaths: [["plugins", "items"]],
+              },
+            ],
+          },
+        ],
+      }),
+      intent: {
+        kind: "mutate",
+        operations: [{ kind: "set", path: ["plugins", "items", "0"], value: "next" }],
+      },
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        code: "include-owned",
+        path: ["plugins"],
+        filePath: "/tmp/b.json5",
+        filePaths: ["/tmp/a.json5", "/tmp/b.json5"],
+      },
+    });
+  });
+
   it("allows mutations outside a nested include boundary", () => {
     const result = prepareConfigWrite({
       snapshot: snapshot({

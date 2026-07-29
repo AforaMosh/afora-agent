@@ -4,7 +4,6 @@ import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import {
   collectArrayContainerDepths,
-  collectSensitiveIncludeSourcePaths,
   createConfigMutationOperations,
   createExplicitConfigMutationOperations,
   createRuntimeConfigMutationOperations,
@@ -22,6 +21,7 @@ import {
   type ConfigMutationResult,
   type TransformConfigFileWithRetryParams,
 } from "../config/config.js";
+import { collectSensitiveIncludeSourcePaths } from "../config/include-sensitivity.js";
 import type { ConfigWriteOptions } from "../config/io.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import type { PluginInstallRecord } from "../config/types.plugins.js";

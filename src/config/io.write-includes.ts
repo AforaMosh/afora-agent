@@ -9,6 +9,7 @@ export type IncludeOwnedWriteRejection = {
   code: "include-owned";
   path: ConfigPath;
   filePath: string;
+  filePaths?: readonly string[];
 };
 
 function pathStartsWith(path: ConfigPath, prefix: ConfigPath): boolean {
@@ -91,6 +92,125 @@ function structuralArrayPath(
   return Array.isArray(readAuthoredPath(parsed, parentPath)) ? parentPath : undefined;
 }
 
+type IncludeOwnerNode =
+  | { kind: "value"; owner: IncludeOwner }
+  | { kind: "array"; owners: IncludeOwner[] }
+  | { kind: "object"; owner?: IncludeOwner; children: Map<string, IncludeOwnerNode> };
+
+type IncludeOwner = { targetPath: string; sequence: number };
+
+function mergeIncludeOwnerNode(
+  current: IncludeOwnerNode | undefined,
+  value: unknown,
+  owner: IncludeOwner,
+): IncludeOwnerNode {
+  if (Array.isArray(value)) {
+    if (current?.kind === "array") {
+      return {
+        kind: "array",
+        owners: value.length > 0 ? [...current.owners, owner] : [...current.owners],
+      };
+    }
+    return { kind: "array", owners: [owner] };
+  }
+  if (!isRecord(value)) {
+    return { kind: "value", owner };
+  }
+  const entries = Object.entries(value);
+  if (entries.length === 0 && current?.kind === "object") {
+    return current;
+  }
+  const result: Extract<IncludeOwnerNode, { kind: "object" }> = {
+    kind: "object",
+    ...(entries.length === 0 ? { owner } : {}),
+    children: current?.kind === "object" ? new Map(current.children) : new Map(),
+  };
+  for (const [key, child] of entries) {
+    result.children.set(key, mergeIncludeOwnerNode(result.children.get(key), child, owner));
+  }
+  return result;
+}
+
+function mergeIncludeOwnerAtPath(
+  current: IncludeOwnerNode | undefined,
+  path: ConfigPath,
+  value: unknown,
+  owner: IncludeOwner,
+): IncludeOwnerNode {
+  if (path.length === 0) {
+    return mergeIncludeOwnerNode(current, value, owner);
+  }
+  const [head, ...tail] = path;
+  const result: Extract<IncludeOwnerNode, { kind: "object" }> = {
+    kind: "object",
+    children: current?.kind === "object" ? new Map(current.children) : new Map(),
+  };
+  result.children.set(
+    head!,
+    mergeIncludeOwnerAtPath(result.children.get(head!), tail, value, owner),
+  );
+  return result;
+}
+
+function collectIncludeOwnerTargets(
+  node: IncludeOwnerNode,
+  operationPath: ConfigPath,
+  nodePath: ConfigPath = [],
+  targets = new Map<string, number>(),
+): Map<string, number> {
+  if (!pathsOverlap(operationPath, nodePath)) {
+    return targets;
+  }
+  if (node.kind === "value") {
+    targets.set(
+      node.owner.targetPath,
+      Math.max(targets.get(node.owner.targetPath) ?? -1, node.owner.sequence),
+    );
+    return targets;
+  }
+  if (node.kind === "array") {
+    node.owners.forEach((owner) =>
+      targets.set(owner.targetPath, Math.max(targets.get(owner.targetPath) ?? -1, owner.sequence)),
+    );
+    return targets;
+  }
+  if (node.owner) {
+    targets.set(
+      node.owner.targetPath,
+      Math.max(targets.get(node.owner.targetPath) ?? -1, node.owner.sequence),
+    );
+  }
+  for (const [key, child] of node.children) {
+    collectIncludeOwnerTargets(child, operationPath, [...nodePath, key], targets);
+  }
+  return targets;
+}
+
+function resolveIncludeOwnerTargetPaths(
+  owner: NonNullable<ConfigFileSnapshot["includeProvenance"]>[number],
+  operationPath: ConfigPath,
+): string[] {
+  if (!owner.sourceContributions?.length) {
+    return [...(owner.targetPaths ?? (owner.targetPath ? [owner.targetPath] : []))];
+  }
+  // Sibling overrides remain read-only by contract, so they do not subtract
+  // include ownership even when they currently shadow a contributed value.
+  let ownership: IncludeOwnerNode | undefined;
+  for (const [sequence, source] of owner.sourceContributions.entries()) {
+    ownership = mergeIncludeOwnerAtPath(ownership, owner.path, source.value, {
+      targetPath: source.targetPath,
+      sequence,
+    });
+  }
+  if (!ownership) {
+    return [];
+  }
+  const survivingTargets = collectIncludeOwnerTargets(ownership, operationPath);
+  return [...survivingTargets.entries()]
+    .toSorted((left, right) => left[1] - right[1])
+    .map(([targetPath]) => targetPath);
+}
+
 export function checkConfigIncludeOwnership(params: {
   snapshot: Pick<ConfigFileSnapshot, "path" | "parsed" | "includeProvenance">;
   operations: readonly ConfigMutationOperation[];
@@ -114,10 +234,12 @@ export function checkConfigIncludeOwnership(params: {
         ),
       );
       if (owner) {
+        const ownerTargetPaths = resolveIncludeOwnerTargetPaths(owner, operationPath);
         return err({
           code: "include-owned",
           path: [...owner.path],
-          filePath: owner.targetPath ?? params.snapshot.path,
+          filePath: ownerTargetPaths.at(-1) ?? params.snapshot.path,
+          ...(ownerTargetPaths.length > 1 ? { filePaths: ownerTargetPaths } : {}),
         });
       }
     }

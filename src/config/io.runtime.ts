@@ -6,7 +6,6 @@ import { isRecord } from "../utils.js";
 import { cloneEnvWithPlatformSemantics, createConfigRuntimeEnvBase } from "./config-env-vars.js";
 import {
   collectArrayContainerDepths,
-  collectSensitiveIncludeSourcePaths,
   createConfigMutationOperations,
   createExplicitConfigMutationOperations,
   projectExplicitRuntimeValueOntoAuthored,
@@ -16,6 +15,7 @@ import {
 } from "./config-path-mutation.js";
 import { resolveWriteEnvSnapshotForPath } from "./env-preserve.js";
 import { GATEWAY_CONFIG_SELECTION_ENV_KEYS } from "./gateway-env-selection.js";
+import { collectSensitiveIncludeSourcePaths } from "./include-sensitivity.js";
 import { createConfigIO } from "./io.factory.js";
 import {
   createManagedRuntimeEnvBase,

@@ -189,7 +189,7 @@ export async function readConfigFileSnapshotInternal(
           includeFileTargetsForWrite,
           includeFilePathsForWatch,
           (event) => {
-            const { value, ...ownership } = event;
+            const { sources, value, ...ownership } = event;
             includeProvenance.push({
               ...ownership,
               contributedPaths: collectIncludeContributionPaths(value, event.path),
@@ -198,6 +198,18 @@ export async function readConfigFileSnapshotInternal(
                 value,
                 event.path,
               ),
+              ...(sources
+                ? {
+                    sourceContributions: sources.map((source) => ({
+                      targetPath: source.targetPath,
+                      value: structuredClone(source.value),
+                      terminalContributedPaths: collectIncludeTerminalPaths(
+                        source.value,
+                        event.path,
+                      ),
+                    })),
+                  }
+                : {}),
             });
           },
         ),

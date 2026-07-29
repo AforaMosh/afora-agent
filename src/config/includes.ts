@@ -92,9 +92,18 @@ export type ConfigIncludeOwnership = {
   kind: "single" | "multiple";
   hasSiblingOverrides: boolean;
   targetPath?: string;
+  targetPaths?: readonly string[];
+  sourceContributions?: readonly {
+    targetPath: string;
+    value: unknown;
+    terminalContributedPaths: readonly (readonly string[])[];
+  }[];
 };
 
-export type ConfigIncludeResolutionEvent = ConfigIncludeOwnership & { value: unknown };
+export type ConfigIncludeResolutionEvent = ConfigIncludeOwnership & {
+  value: unknown;
+  sources?: readonly { targetPath: string; value: unknown }[];
+};
 
 type IncludeFileReadParams = {
   includePath: string;
@@ -244,6 +253,8 @@ class IncludeProcessor {
       kind: Array.isArray(includeValue) ? "multiple" : "single",
       hasSiblingOverrides: otherKeys.length > 0,
       ...(resolved.targetPath ? { targetPath: resolved.targetPath } : {}),
+      ...(resolved.targetPaths ? { targetPaths: resolved.targetPaths } : {}),
+      ...(resolved.sources ? { sources: resolved.sources } : {}),
     });
 
     if (otherKeys.length === 0) {
@@ -268,12 +279,19 @@ class IncludeProcessor {
   private resolveInclude(
     value: unknown,
     logicalPath: readonly string[],
-  ): { value: unknown; targetPath?: string } {
+  ): {
+    value: unknown;
+    targetPath?: string;
+    targetPaths?: string[];
+    sources?: Array<{ targetPath: string; value: unknown }>;
+  } {
     if (typeof value === "string") {
       return this.loadFile(value, logicalPath);
     }
 
     if (Array.isArray(value)) {
+      const targetPaths: string[] = [];
+      const sources: Array<{ targetPath: string; value: unknown }> = [];
       const merged = value.reduce<unknown>((current, item) => {
         if (typeof item !== "string") {
           throw new ConfigIncludeError(
@@ -281,9 +299,12 @@ class IncludeProcessor {
             String(item),
           );
         }
-        return deepMerge(current, this.loadFile(item, logicalPath).value);
+        const loaded = this.loadFile(item, logicalPath);
+        targetPaths.push(loaded.targetPath);
+        sources.push(loaded);
+        return deepMerge(current, loaded.value);
       }, {});
-      return { value: merged };
+      return { value: merged, targetPaths, sources };
     }
 
     throw new ConfigIncludeError(

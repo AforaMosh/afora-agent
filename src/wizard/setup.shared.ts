@@ -2,7 +2,6 @@
 import { isDeepStrictEqual } from "node:util";
 import type { GatewayAuthChoice, OnboardOptions } from "../commands/onboard-types.js";
 import {
-  collectSensitiveIncludeSourcePaths,
   createConfigMutationOperations,
   createRuntimeConfigMutationOperations,
 } from "../config/config-path-mutation.js";
@@ -11,6 +10,7 @@ import {
   replaceConfigFileWithIntent,
   resolveGatewayPort,
 } from "../config/config.js";
+import { collectSensitiveIncludeSourcePaths } from "../config/include-sensitivity.js";
 import type { ConfigFileSnapshot, OpenClawConfig } from "../config/types.openclaw.js";
 import {
   commitConfigWriteWithPendingPluginInstalls,

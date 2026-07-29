@@ -32,6 +32,12 @@ export function formatConfigWriteRejection(rejection: ConfigWriteRejection): str
     return `Config write would drop agent roster entries without an explicit deletion: ${rejection.agentIds.join(", ")}.`;
   }
   const pathLabel = rejection.path.length > 0 ? rejection.path.join(".") : "<root>";
+  if (rejection.filePaths && rejection.filePaths.length > 1) {
+    return (
+      `Config write cannot update $include-owned config at ${pathLabel}; contributing include files: ${rejection.filePaths.join(", ")}. ` +
+      "Edit the winning include file or remove the $include, then run `openclaw doctor --fix` before retrying."
+    );
+  }
   return (
     `Config write cannot update $include-owned config at ${pathLabel} from ${rejection.filePath}; ` +
     "edit that include file directly or remove the $include, then run `openclaw doctor --fix` before retrying."
