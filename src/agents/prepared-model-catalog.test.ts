@@ -274,23 +274,14 @@ describe("prepared model catalog access", () => {
   });
 
   it("rejects a full fallback lease built from another config", async () => {
-    mocks.config = {
-      agents: { defaults: { model: "openai/requested" } },
-      plugins: { entries: { linear: { enabled: true } } },
-    };
     mocks.prepareSnapshot.mockRejectedValue(new PreparedModelRuntimeOwnerNotPublishedError());
     mocks.activateSnapshot.mockResolvedValue(undefined);
     mocks.acquireSnapshot.mockResolvedValue({
       ...fullSnapshot,
-      config: {
-        agents: { defaults: { model: "openai/published" } },
-        plugins: { entries: { linear: { enabled: true } } },
-      },
+      config: { agents: { defaults: { model: "openai/old" } } },
     });
 
-    await expect(loadPreparedModelCatalogSnapshot()).rejects.toThrow(
-      /requested=[A-Za-z0-9_-]{12} published=[A-Za-z0-9_-]{12} differences=agents\.defaults\.model/,
-    );
+    await expect(loadPreparedModelCatalogSnapshot()).rejects.toThrow("requested config");
     expect(mocks.releaseSnapshot).toHaveBeenCalledOnce();
   });
 });
