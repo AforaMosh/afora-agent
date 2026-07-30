@@ -34,6 +34,7 @@ import {
 import { parseSqliteSessionEntryJson as parseSessionEntryRow } from "./session-accessor.sqlite-status.js";
 import { readTranscriptMutationStateInTransaction } from "./session-accessor.sqlite-transcript-state.js";
 import {
+  assertCanonicalSessionEntryLineageWrite,
   assertCanonicalSqliteSessionKeysCurrent,
   assertCanonicalSessionKeyWriteMatchesDatabase,
   canonicalSqliteSessionKeyTokenIsCurrent,
@@ -46,7 +47,6 @@ import type { SessionEntry } from "./types.js";
 // Canonical owner for session_nodes row selection, alias snapshots, and writes.
 
 type OpenClawAgentDatabaseReader = Pick<OpenClawAgentDatabase, "agentId" | "db">;
-type SessionEntryReadOptions = { hydratePromotedColumns?: boolean };
 type SessionEntryRow = Selectable<OpenClawAgentKyselyDatabase["session_nodes"]>;
 export type ResolvedSessionEntryRow = {
   entry: SessionEntry;
@@ -71,9 +71,8 @@ class SqliteSessionMutationConflictError extends Error {
 
 function parseProjectedSessionEntryRow(
   row: Pick<SessionEntryRow, "current_session_id" | "display_name" | "entry_json" | "updated_at">,
-  hydratePromotedColumns = false,
 ): SessionEntry | null {
-  const entry = parseSessionEntryRow(row, hydratePromotedColumns);
+  const entry = parseSessionEntryRow(row);
   if (entry) {
     setSessionProjectedTitle(entry, row.display_name);
   }
@@ -103,11 +102,10 @@ export function createSqliteSessionIdentitySnapshot(
 export function readSessionEntryRow(
   database: OpenClawAgentDatabaseReader,
   sessionKey: string,
-  options: SessionEntryReadOptions = {},
 ): ResolvedSessionEntryRow | undefined {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const token = assertCanonicalSqliteSessionKeysCurrent(database);
-    const result = readSessionEntryRowUnchecked(database, sessionKey, options);
+    const result = readSessionEntryRowUnchecked(database, sessionKey);
     if (canonicalSqliteSessionKeyTokenIsCurrent(database, token)) {
       return result;
     }
@@ -118,7 +116,6 @@ export function readSessionEntryRow(
 function readSessionEntryRowUnchecked(
   database: OpenClawAgentDatabaseReader,
   sessionKey: string,
-  options: SessionEntryReadOptions,
 ): ResolvedSessionEntryRow | undefined {
   const db = getSessionKysely(database.db);
   const lookupKeys = collectSessionEntryLookupKeys(database, sessionKey);
@@ -135,7 +132,7 @@ function readSessionEntryRowUnchecked(
   ).rows;
   const entries = new Map<string, ResolvedSessionEntryRow>();
   for (const row of rows) {
-    const entry = parseProjectedSessionEntryRow(row, options.hydratePromotedColumns === true);
+    const entry = parseProjectedSessionEntryRow(row);
     if (!entry) {
       continue;
     }
@@ -205,7 +202,6 @@ export function collectSessionEntryLookupKeys(
 export function readExactSessionEntryRow(
   database: OpenClawAgentDatabaseReader,
   sessionKey: string,
-  options: SessionEntryReadOptions = {},
 ): ResolvedSessionEntryRow | undefined {
   const db = getSessionKysely(database.db);
   const row = executeSqliteQueryTakeFirstSync(
@@ -215,7 +211,7 @@ export function readExactSessionEntryRow(
   if (!row) {
     return undefined;
   }
-  const entry = parseProjectedSessionEntryRow(row, options.hydratePromotedColumns === true);
+  const entry = parseProjectedSessionEntryRow(row);
   return entry ? { entry, legacyKeys: [], row } : undefined;
 }
 
@@ -233,11 +229,10 @@ export function readExactSessionEntryJson(
 export function readExactSessionEntryRowValidated(
   database: OpenClawAgentDatabaseReader,
   sessionKey: string,
-  options: SessionEntryReadOptions = {},
 ): ResolvedSessionEntryRow | undefined {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const token = assertCanonicalSqliteSessionKeysCurrent(database);
-    const result = readExactSessionEntryRow(database, sessionKey, options);
+    const result = readExactSessionEntryRow(database, sessionKey);
     if (canonicalSqliteSessionKeyTokenIsCurrent(database, token)) {
       return result;
     }
@@ -581,6 +576,7 @@ export function writeSessionEntry(
   } = {},
 ): void {
   assertCanonicalSessionKeyWriteMatchesDatabase(database, sessionKey);
+  assertCanonicalSessionEntryLineageWrite(entry);
   const db = getSessionKysely(database.db);
   if (!options.allowStoredAliases) {
     assertCanonicalSqliteSessionKeysCurrent(database);

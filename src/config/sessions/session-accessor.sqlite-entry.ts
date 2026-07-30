@@ -139,9 +139,7 @@ export function resolveSqliteSessionEntry(
   const read = (
     database: Pick<OpenClawAgentDatabase, "agentId" | "db" | "path">,
   ): ResolvedSqliteSessionEntry => {
-    const selected = readSessionEntryRow(database, resolved.sessionKey, {
-      hydratePromotedColumns: true,
-    });
+    const selected = readSessionEntryRow(database, resolved.sessionKey);
     const existing = selected?.entry;
     return {
       existing: existing
@@ -184,9 +182,7 @@ export function loadExactSqliteSessionEntry(
   }
   const resolved = resolveSqliteScope(scope);
   const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
-  const entry = readExactSessionEntryRowValidated(database, sessionKey, {
-    hydratePromotedColumns: true,
-  })?.entry;
+  const entry = readExactSessionEntryRowValidated(database, sessionKey)?.entry;
   return entry
     ? { sessionKey, entry: scope.clone === false ? entry : cloneSessionEntry(entry) }
     : undefined;
@@ -213,10 +209,7 @@ export function loadExactSqliteSessionEntryReadOnly(
   }
   const resolved = resolveSqliteScope(scope);
   const result = withOpenClawAgentDatabaseReadOnly(
-    (database) =>
-      readExactSessionEntryRowValidated(database, sessionKey, {
-        hydratePromotedColumns: true,
-      })?.entry,
+    (database) => readExactSessionEntryRowValidated(database, sessionKey)?.entry,
     toDatabaseOptions(resolved),
   );
   return result.found && result.value
