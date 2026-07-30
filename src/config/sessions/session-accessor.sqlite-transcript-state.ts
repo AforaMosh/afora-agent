@@ -102,10 +102,26 @@ export function ensureTranscriptSessionRoot(
     ).rows;
     for (const candidate of candidates) {
       const entry = parseSqliteSessionEntryJson(candidate);
+      if (!entry) {
+        const retainedWindow =
+          candidate.entry_json === "{}"
+            ? executeSqliteQueryTakeFirstSync(
+                database.db,
+                db
+                  .selectFrom("session_windows")
+                  .select("session_id")
+                  .where("session_id", "=", candidate.current_session_id)
+                  .where("session_key", "=", candidate.session_key),
+              )
+            : undefined;
+        if (!retainedWindow) {
+          throw new SessionEntryValidityMigrationRequiredError();
+        }
+        continue;
+      }
       if (
-        entry &&
         resolveDeliveryProvenCanonicalSessionKey(candidate.session_key, entry) !==
-          candidate.session_key
+        candidate.session_key
       ) {
         throw nonCanonicalSessionKeyRowError(candidate.session_key);
       }

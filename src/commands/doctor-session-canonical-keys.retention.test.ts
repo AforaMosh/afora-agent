@@ -139,7 +139,22 @@ describe("doctor canonical session-key retention repair", () => {
         .run();
       staleDestinationDatabase.db
         .prepare(
+          "INSERT INTO conversations (conversation_id, channel, account_id, kind, peer_id, delivery_target, metadata_json, created_at, updated_at) VALUES ('conversation-1', 'webchat', 'default', 'direct', 'peer', 'peer', '{\"source\":\"destination\"}', 5, 5)",
+        )
+        .run();
+      staleDestinationDatabase.db
+        .prepare(
           "INSERT INTO session_conversations (session_id, conversation_id, role, first_seen_at, last_seen_at) VALUES ('winner', 'destination-conversation', 'related', 10, 10)",
+        )
+        .run();
+      staleDestinationDatabase.db
+        .prepare(
+          "INSERT INTO session_conversations (session_id, conversation_id, role, first_seen_at, last_seen_at) VALUES ('winner', 'conversation-1', 'primary', 5, 5)",
+        )
+        .run();
+      staleDestinationDatabase.db
+        .prepare(
+          "INSERT INTO conversation_deliveries (operation_id, operation_kind, conversation_id, source_session_key, message_hash, status, created_at, updated_at) VALUES ('operation-1', 'turn', 'conversation-1', 'agent:main:shared', 'stale-hash', 'queued', 5, 5)",
         )
         .run();
       staleDestinationDatabase.db
@@ -472,12 +487,14 @@ describe("doctor canonical session-key retention repair", () => {
       expect(
         mainDatabase.db
           .prepare(
-            "SELECT conversation_id, source_session_key FROM conversation_deliveries WHERE operation_id = 'operation-1'",
+            "SELECT conversation_id, message_hash, source_session_key, status FROM conversation_deliveries WHERE operation_id = 'operation-1'",
           )
           .get(),
       ).toEqual({
         conversation_id: "conversation-1",
+        message_hash: "hash",
         source_session_key: "agent:main:shared",
+        status: "sent",
       });
       expect(
         mainDatabase.db
@@ -492,12 +509,22 @@ describe("doctor canonical session-key retention repair", () => {
       expect(
         mainDatabase.db
           .prepare(
-            "SELECT conversation_id, role FROM session_conversations WHERE session_id = 'winner' ORDER BY conversation_id",
+            "SELECT conversation_id, first_seen_at, last_seen_at, role FROM session_conversations WHERE session_id = 'winner' ORDER BY conversation_id",
           )
           .all(),
       ).toEqual([
-        { conversation_id: "conversation-1", role: "primary" },
-        { conversation_id: "destination-conversation", role: "related" },
+        {
+          conversation_id: "conversation-1",
+          first_seen_at: 20,
+          last_seen_at: 20,
+          role: "primary",
+        },
+        {
+          conversation_id: "destination-conversation",
+          first_seen_at: 10,
+          last_seen_at: 10,
+          role: "related",
+        },
       ]);
       expect(
         mainDatabase.db

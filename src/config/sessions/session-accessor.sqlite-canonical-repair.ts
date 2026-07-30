@@ -338,6 +338,13 @@ function copySqliteSessionOwnedStateForRepair(params: {
     ),
   ]);
   const sourceKeyReferences = new Set(sourceKeys.flatMap((key) => [key, key.trim()]));
+  const authoritativeSourceKeyReferences = new Set(
+    params.preferredSessionKey
+      ? resolveSqliteCanonicalRepairLookupKeys(params.canonicalKey, [
+          params.preferredSessionKey,
+        ]).flatMap((key) => [key, key.trim()])
+      : [],
+  );
   const deliverySourceKeys = [...sourceKeyReferences].filter(Boolean);
   const deliveries = executeSqliteQuerySync(
     params.source.db,
@@ -353,6 +360,16 @@ function copySqliteSessionOwnedStateForRepair(params: {
           : eb("source_session_key", "in", deliverySourceKeys),
       ),
   ).rows;
+  if (params.preferSource) {
+    for (const delivery of deliveries) {
+      if (
+        delivery.source_session_key &&
+        authoritativeSourceKeyReferences.has(delivery.source_session_key)
+      ) {
+        authoritativeConversationIds.add(delivery.conversation_id);
+      }
+    }
+  }
   const conversationIds = uniqueStrings([
     ...linkedConversationIds,
     ...deliveries.map((delivery) => delivery.conversation_id),
@@ -472,7 +489,14 @@ function copySqliteSessionOwnedStateForRepair(params: {
       destinationDb
         .insertInto("session_conversations")
         .values(link)
-        .onConflict((conflict) => conflict.doNothing()),
+        .onConflict((conflict) =>
+          params.preferSource && authoritativeSourceSessionIds.has(link.session_id)
+            ? conflict.columns(["session_id", "conversation_id", "role"]).doUpdateSet({
+                first_seen_at: link.first_seen_at,
+                last_seen_at: link.last_seen_at,
+              })
+            : conflict.doNothing(),
+        ),
     );
   }
   for (const sessionId of sessionIds) {

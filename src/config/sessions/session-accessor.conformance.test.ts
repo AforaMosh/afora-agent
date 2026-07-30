@@ -1844,6 +1844,21 @@ describe("sqlite session normalization", () => {
         .prepare("SELECT current_session_id FROM session_nodes WHERE session_key = ?")
         .get(legacyKey),
     ).toEqual({ current_session_id: "legacy-alias-session" });
+    database.db
+      .prepare("UPDATE session_nodes SET entry_json = ?, entry_valid = -1 WHERE session_key = ?")
+      .run("{ malformed", legacyKey);
+    await expect(
+      appendSqliteTranscriptEvent(
+        {
+          agentId: "main",
+          env,
+          sessionId: "canonical-transcript-session-2",
+          sessionKey: canonicalKey,
+          storePath: paths.sqlitePath,
+        },
+        { id: "canonical-event-2", timestamp: new Date(21).toISOString(), type: "metadata" },
+      ),
+    ).rejects.toThrow("openclaw doctor --fix");
   });
 
   it("normalizes missing entry updatedAt before writing root and entry rows", async () => {
