@@ -16,7 +16,7 @@ import type { SessionEntry } from "./types.js";
 const SESSION_CANONICAL_KEY_REPAIR_COMMAND = "openclaw doctor --fix";
 type CanonicalSessionDatabase = Pick<
   OpenClawAgentKyselyDatabase,
-  "session_key_contract" | "session_key_revisions" | "session_nodes"
+  "session_key_contract" | "session_key_revisions" | "session_nodes" | "session_windows"
 >;
 type CanonicalSessionKeyToken = { revision: number };
 const validatedDatabases = new WeakMap<
@@ -157,9 +157,21 @@ export function assertCanonicalSqliteSessionKeysCurrent(
     database.db,
     db
       .selectFrom("session_nodes")
-      .select(["session_key", "entry_json", "entry_valid", "parent_session_key", "spawned_by"]),
+      .leftJoin("session_windows as retained_window", (join) =>
+        join
+          .onRef("retained_window.session_id", "=", "session_nodes.current_session_id")
+          .onRef("retained_window.session_key", "=", "session_nodes.session_key"),
+      )
+      .select([
+        "session_nodes.session_key",
+        "session_nodes.current_session_id",
+        "session_nodes.entry_json",
+        "session_nodes.parent_session_key",
+        "session_nodes.spawned_by",
+        "retained_window.session_id as retained_window_id",
+      ]),
   ).rows) {
-    if (row.entry_valid === -1 && row.entry_json === "{}") {
+    if (row.entry_json === "{}" && row.retained_window_id === row.current_session_id) {
       continue;
     }
     const trimmed = row.session_key.trim();

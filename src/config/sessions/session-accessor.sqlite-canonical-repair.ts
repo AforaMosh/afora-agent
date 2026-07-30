@@ -132,11 +132,21 @@ export function listSqliteSessionEntriesForCanonicalRepair(
     database.db,
     db
       .selectFrom("session_nodes")
-      .select(["session_key", "current_session_id", "entry_json", "entry_valid", "updated_at"]),
+      .leftJoin("session_windows as retained_window", (join) =>
+        join
+          .onRef("retained_window.session_id", "=", "session_nodes.current_session_id")
+          .onRef("retained_window.session_key", "=", "session_nodes.session_key"),
+      )
+      .select([
+        "session_nodes.session_key",
+        "session_nodes.current_session_id",
+        "session_nodes.entry_json",
+        "session_nodes.updated_at",
+        "retained_window.session_id as retained_window_id",
+      ]),
   ).rows.flatMap((row) => {
-    // Retained-window placeholders are not logical sessions. Doctor must preserve their
-    // history without rehydrating the deleted entry into the canonical inventory.
-    if (row.entry_valid === -1 && row.entry_json === "{}") {
+    // Exact {} plus an owned window is the durable retained-history tombstone.
+    if (row.entry_json === "{}" && row.retained_window_id === row.current_session_id) {
       return [];
     }
     const persistedEntry = parseSqliteSessionEntryJson(row);
@@ -196,9 +206,16 @@ function copySqliteSessionOwnedStateForRepair(params: {
             .where("session_id", "in", sessionIds),
         ).rows.map((row) => row.session_id),
   );
+  const preferredEntrySessionIds = new Set(
+    params.preferredEntry ? collectSqliteSessionStateIdsForEntry(params.preferredEntry) : [],
+  );
   const authoritativeSourceSessionIds = new Set([
-    ...windows.map((row) => row.session_id),
-    ...(params.preferredEntry?.sessionId ? [params.preferredEntry.sessionId] : []),
+    ...windows.flatMap((row) =>
+      row.session_key === params.preferredSessionKey || preferredEntrySessionIds.has(row.session_id)
+        ? [row.session_id]
+        : [],
+    ),
+    ...preferredEntrySessionIds,
   ]);
   const sessionLinks =
     sessionIds.length === 0
@@ -213,6 +230,16 @@ function copySqliteSessionOwnedStateForRepair(params: {
   const linkedConversationIds = uniqueStrings([
     ...windows.flatMap((row) => (row.primary_conversation_id ? [row.primary_conversation_id] : [])),
     ...sessionLinks.map((row) => row.conversation_id),
+  ]);
+  const authoritativeConversationIds = new Set([
+    ...windows.flatMap((row) =>
+      authoritativeSourceSessionIds.has(row.session_id) && row.primary_conversation_id
+        ? [row.primary_conversation_id]
+        : [],
+    ),
+    ...sessionLinks.flatMap((row) =>
+      authoritativeSourceSessionIds.has(row.session_id) ? [row.conversation_id] : [],
+    ),
   ]);
   const sourceKeyReferences = new Set(sourceKeys.flatMap((key) => [key, key.trim()]));
   const deliverySourceKeys = [...sourceKeyReferences].filter(Boolean);
@@ -251,7 +278,7 @@ function copySqliteSessionOwnedStateForRepair(params: {
           .values(conversation)
           // conversation_id hashes the same fields as the natural unique identity.
           .onConflict((conflict) =>
-            params.preferSource
+            params.preferSource && authoritativeConversationIds.has(conversation.conversation_id)
               ? conflict.column("conversation_id").doUpdateSet(replacement)
               : conflict.column("conversation_id").doNothing(),
           ),
@@ -272,7 +299,7 @@ function copySqliteSessionOwnedStateForRepair(params: {
           .insertInto("conversation_deliveries")
           .values(canonicalDelivery)
           .onConflict((conflict) =>
-            params.preferSource
+            params.preferSource && authoritativeConversationIds.has(delivery.conversation_id)
               ? conflict.column("operation_id").doUpdateSet(replacement)
               : conflict.column("operation_id").doNothing(),
           ),
@@ -301,7 +328,7 @@ function copySqliteSessionOwnedStateForRepair(params: {
         .insertInto("session_windows")
         .values(canonicalWindow)
         .onConflict((conflict) =>
-          params.preferSource
+          params.preferSource && authoritativeSourceSessionIds.has(window.session_id)
             ? conflict.column("session_id").doUpdateSet(replacement)
             : conflict.column("session_id").doNothing(),
         ),
@@ -337,7 +364,7 @@ function copySqliteSessionOwnedStateForRepair(params: {
           ...recoveryWindow,
         })
         .onConflict((conflict) =>
-          params.preferSource && entry?.sessionId === sessionId
+          params.preferSource && authoritativeSourceSessionIds.has(sessionId)
             ? conflict.column("session_id").doUpdateSet(recoveryWindow)
             : conflict.column("session_id").doNothing(),
         ),
