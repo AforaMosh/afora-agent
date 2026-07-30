@@ -4254,10 +4254,10 @@ describe("persistSessionUsageUpdate", () => {
   const sessionKey = "agent:main:main";
   async function seedSessionStore(
     storePath: string,
-    sessionKey: string,
+    targetSessionKey: string,
     entry: Record<string, unknown>,
   ) {
-    await writeSessionStoreFast(storePath, { [sessionKey]: entry });
+    await writeSessionStoreFast(storePath, { [targetSessionKey]: entry });
   }
 
   it("accounts exhausted-run usage without committing its model and persists CLI binding", async () => {
@@ -4788,8 +4788,8 @@ describe("persistSessionUsageUpdate", () => {
 
   it("preserves the displayed session model when an internal announce uses fallback", async () => {
     const storePath = await createStorePath("openclaw-usage-internal-announce-model-");
-    const sessionKey = "agent:main:telegram:group:-1003871627242:topic:6823";
-    await seedSessionStore(storePath, sessionKey, {
+    const topicSessionKey = "agent:main:telegram:group:-1003871627242:topic:6823";
+    await seedSessionStore(storePath, topicSessionKey, {
       sessionId: "s1",
       updatedAt: Date.now(),
       modelProvider: "openai",
@@ -4814,7 +4814,7 @@ describe("persistSessionUsageUpdate", () => {
 
     await persistSessionUsageUpdate({
       storePath,
-      sessionKey,
+      sessionKey: topicSessionKey,
       preserveUserFacingSessionModelState: true,
       usage: { input: 39_908, output: 122, cacheRead: 0, cacheWrite: 0 },
       lastCallUsage: { input: 39_908, output: 122, cacheRead: 0, cacheWrite: 0 },
@@ -4829,7 +4829,7 @@ describe("persistSessionUsageUpdate", () => {
     });
     await persistSessionUsageUpdate({
       storePath,
-      sessionKey,
+      sessionKey: topicSessionKey,
       preserveUserFacingSessionModelState: true,
       providerUsed: "claude-cli",
       modelUsed: "claude-sonnet-4-6",
@@ -4839,50 +4839,50 @@ describe("persistSessionUsageUpdate", () => {
 
     const stored = readSessionStoreFast(storePath);
     expect(
-      expectDefined(stored[sessionKey], "stored[sessionKey] test invariant").modelProvider,
+      expectDefined(stored[topicSessionKey], "stored[sessionKey] test invariant").modelProvider,
     ).toBe("openai");
-    expect(expectDefined(stored[sessionKey], "stored[sessionKey] test invariant").model).toBe(
+    expect(expectDefined(stored[topicSessionKey], "stored[sessionKey] test invariant").model).toBe(
       "gpt-5.5",
     );
     expect(
-      expectDefined(stored[sessionKey], "stored[sessionKey] test invariant").contextTokens,
+      expectDefined(stored[topicSessionKey], "stored[sessionKey] test invariant").contextTokens,
     ).toBe(200_000);
-    expect(expectDefined(stored[sessionKey], "stored[sessionKey] test invariant").inputTokens).toBe(
-      1_234,
-    );
     expect(
-      expectDefined(stored[sessionKey], "stored[sessionKey] test invariant").outputTokens,
+      expectDefined(stored[topicSessionKey], "stored[sessionKey] test invariant").inputTokens,
+    ).toBe(1_234);
+    expect(
+      expectDefined(stored[topicSessionKey], "stored[sessionKey] test invariant").outputTokens,
     ).toBe(56);
-    expect(expectDefined(stored[sessionKey], "stored[sessionKey] test invariant").cacheRead).toBe(
-      7,
-    );
-    expect(expectDefined(stored[sessionKey], "stored[sessionKey] test invariant").cacheWrite).toBe(
-      8,
-    );
-    expect(expectDefined(stored[sessionKey], "stored[sessionKey] test invariant").totalTokens).toBe(
-      1_305,
-    );
     expect(
-      expectDefined(stored[sessionKey], "stored[sessionKey] test invariant").totalTokensFresh,
+      expectDefined(stored[topicSessionKey], "stored[sessionKey] test invariant").cacheRead,
+    ).toBe(7);
+    expect(
+      expectDefined(stored[topicSessionKey], "stored[sessionKey] test invariant").cacheWrite,
+    ).toBe(8);
+    expect(
+      expectDefined(stored[topicSessionKey], "stored[sessionKey] test invariant").totalTokens,
+    ).toBe(1_305);
+    expect(
+      expectDefined(stored[topicSessionKey], "stored[sessionKey] test invariant").totalTokensFresh,
     ).toBe(true);
     expect(
-      expectDefined(stored[sessionKey], "stored[sessionKey] test invariant").estimatedCostUsd,
+      expectDefined(stored[topicSessionKey], "stored[sessionKey] test invariant").estimatedCostUsd,
     ).toBe(0.123);
     expect(
-      expectDefined(stored[sessionKey], "stored[sessionKey] test invariant").cliSessionIds?.[
+      expectDefined(stored[topicSessionKey], "stored[sessionKey] test invariant").cliSessionIds?.[
         "claude-cli"
       ],
     ).toBe("visible-cli-session");
     expect(
-      expectDefined(stored[sessionKey], "stored[sessionKey] test invariant").cliSessionBindings?.[
-        "claude-cli"
-      ],
+      expectDefined(stored[topicSessionKey], "stored[sessionKey] test invariant")
+        .cliSessionBindings?.["claude-cli"],
     ).toEqual({
       sessionId: "visible-cli-session",
       authProfileId: "anthropic:visible",
     });
     expect(
-      expectDefined(stored[sessionKey], "stored[sessionKey] test invariant").claudeCliSessionId,
+      expectDefined(stored[topicSessionKey], "stored[sessionKey] test invariant")
+        .claudeCliSessionId,
     ).toBe("visible-cli-session");
   });
 
