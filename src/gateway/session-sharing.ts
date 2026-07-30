@@ -14,6 +14,10 @@ import {
 import { listSessionEntries } from "../config/sessions/session-accessor.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { isIncognitoSessionKey } from "../routing/session-key.js";
+import type {
+  SessionStoreCache,
+  SessionStoreDiscoveryCache,
+} from "../sessions/session-store-target.js";
 import { verifyBoardViewTicket } from "./board-view-ticket.js";
 import { gatewayClientSessionCreator } from "./server-methods/gateway-client-identity.js";
 import type {
@@ -27,13 +31,9 @@ import {
   loadCachedSessionSharingSnapshot,
   type SessionSharingSnapshot,
 } from "./session-sharing-snapshot-cache.js";
-import type {
-  GatewaySessionStoreCache,
-  GatewaySessionStoreDiscoveryCache,
-} from "./session-utils-store-lookup.js";
 import {
   resolveFreshestSessionStoreMatchFromStoreKeys,
-  resolveGatewaySessionStoreTargetWithStore,
+  resolveSessionStoreTargetWithStore,
 } from "./session-utils.js";
 
 const ADMIN_SCOPE = "operator.admin";
@@ -105,10 +105,10 @@ export function resolveSessionSharingTarget(params: {
   sessionKey: string;
   agentId?: string;
   projection?: "full" | "list";
-  storeCache?: GatewaySessionStoreCache;
-  targetDiscoveryCache?: GatewaySessionStoreDiscoveryCache;
+  storeCache?: SessionStoreCache;
+  targetDiscoveryCache?: SessionStoreDiscoveryCache;
 }): SessionSharingTarget | null {
-  const target = resolveGatewaySessionStoreTargetWithStore({
+  const target = resolveSessionStoreTargetWithStore({
     cfg: params.cfg,
     key: params.sessionKey,
     agentId: params.agentId,
@@ -485,8 +485,8 @@ export function resolveSessionMutationAuthorization(params: {
   // Each cache pair defines one synchronous freshness epoch: initial authorization shares one,
   // while commit-time guards start fresh after handler work.
   const createLookupCaches = (): {
-    storeCache: GatewaySessionStoreCache;
-    targetDiscoveryCache: GatewaySessionStoreDiscoveryCache;
+    storeCache: SessionStoreCache;
+    targetDiscoveryCache: SessionStoreDiscoveryCache;
   } => ({ storeCache: new Map(), targetDiscoveryCache: new Map() });
   const lookupCaches = createLookupCaches();
   // Incognito direct reads and writes share this central participation choke point;

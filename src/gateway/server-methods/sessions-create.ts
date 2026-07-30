@@ -35,7 +35,7 @@ import {
   resolveRequestedSessionAgentId as resolveRequestedGlobalAgentId,
 } from "../session-create-service.js";
 import { readSessionMessageCountAsync } from "../session-transcript-readers.js";
-import { loadSessionEntryReadOnly, resolveGatewaySessionStoreTarget } from "../session-utils.js";
+import { loadSessionEntryReadOnly, resolveSessionStoreTarget } from "../session-utils.js";
 import { resolveSessionPatchModelSelection } from "../sessions-patch.js";
 import { chatHandlers } from "./chat.js";
 import { resolveSessionCatalogCreateTarget } from "./session-catalog.js";
@@ -264,7 +264,7 @@ export const sessionCreateHandlers: GatewayRequestHandlers = {
         }
       }
       targetKey ??= buildDashboardSessionKey(agentId);
-      const target = resolveGatewaySessionStoreTarget({ cfg, key: targetKey, agentId });
+      const target = resolveSessionStoreTarget({ cfg, key: targetKey, agentId });
       sessionKey = preservesUnspecifiedKey ? undefined : targetKey;
       sessionAgentId = target.agentId;
       const workspace = requestedCwd ?? resolveAgentWorkspaceDir(cfg, target.agentId);
@@ -542,7 +542,7 @@ export const sessionCreateHandlers: GatewayRequestHandlers = {
         key: created.key,
         agentId: created.agentId,
         entry: created.entry,
-        storePath: resolveGatewaySessionStoreTarget({
+        storePath: resolveSessionStoreTarget({
           cfg,
           key: created.key,
           agentId: created.agentId,

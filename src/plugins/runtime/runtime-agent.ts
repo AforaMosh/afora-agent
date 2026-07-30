@@ -172,7 +172,7 @@ async function createSessionEntry(
   // keeping that heavier runtime out of plugin discovery and cold startup.
   const [
     { createGatewaySession },
-    { resolveGatewaySessionStoreTarget },
+    { resolveSessionStoreTarget },
     { readAcpSessionMetaForEntry, upsertAcpSessionMeta },
   ] = await Promise.all([
     import("../../gateway/session-create-service.js"),
@@ -184,7 +184,7 @@ async function createSessionEntry(
   type CreatedContext = Parameters<
     NonNullable<Parameters<typeof createGatewaySession>[0]["afterCreate"]>
   >[0];
-  const target = resolveGatewaySessionStoreTarget({
+  const target = resolveSessionStoreTarget({
     cfg: params.cfg,
     key: params.key,
     ...(params.agentId !== undefined ? { agentId: params.agentId } : {}),

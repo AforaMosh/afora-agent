@@ -42,6 +42,10 @@ import {
   parseAgentSessionKey,
 } from "../../routing/session-key.js";
 import { resolveSessionKeyFromResolveParams } from "../../sessions/session-resolve.js";
+import type {
+  SessionStoreCache,
+  SessionStoreDiscoveryCache,
+} from "../../sessions/session-store-target.js";
 import { resolveRequestedSessionAgentId as resolveRequestedGlobalAgentId } from "../session-create-service.js";
 import {
   canAccessIncognitoSession,
@@ -55,17 +59,13 @@ import {
   readRecentSessionMessagesWithStatsAsync,
   readSessionPreviewItemsFromTranscript,
 } from "../session-transcript-readers.js";
-import type {
-  GatewaySessionStoreCache,
-  GatewaySessionStoreDiscoveryCache,
-} from "../session-utils-store-lookup.js";
 import {
   buildGatewaySessionRow,
   listSessionsFromStoreAsync,
   loadCombinedSessionStore,
   resolveFreshestSessionEntryFromStoreKeys,
-  resolveGatewaySessionStoreTarget,
-  resolveGatewaySessionStoreTargetWithStore,
+  resolveSessionStoreTarget,
+  resolveSessionStoreTargetWithStore,
   type SessionsPreviewEntry,
   type SessionsPreviewResult,
 } from "../session-utils.js";
@@ -335,8 +335,8 @@ export const sessionReadHandlers: GatewayRequestHandlers = {
             () => {
               // One cache for the whole listing: sharing resolution otherwise
               // materialized every entry of a candidate store once per row.
-              const sharingStoreCache: GatewaySessionStoreCache = new Map();
-              const targetDiscoveryCache: GatewaySessionStoreDiscoveryCache = new Map();
+              const sharingStoreCache: SessionStoreCache = new Map();
+              const targetDiscoveryCache: SessionStoreDiscoveryCache = new Map();
               const resolvedSharingTargets = result.sessions.map((session) =>
                 resolveSessionSharingTarget({
                   cfg,
@@ -581,7 +581,7 @@ export const sessionReadHandlers: GatewayRequestHandlers = {
 
     for (const key of keys) {
       try {
-        const cachedStoreTarget = resolveGatewaySessionStoreTargetWithStore({
+        const cachedStoreTarget = resolveSessionStoreTargetWithStore({
           cfg,
           key,
         });
@@ -590,7 +590,7 @@ export const sessionReadHandlers: GatewayRequestHandlers = {
         const storeCacheKey = `${cachedStoreTarget.agentId}\u0000${cachedStoreTarget.storePath}`;
         const store = storeCache.get(storeCacheKey) ?? cachedStoreTarget.store;
         storeCache.set(storeCacheKey, store);
-        const target = resolveGatewaySessionStoreTarget({
+        const target = resolveSessionStoreTarget({
           cfg,
           key,
           store,

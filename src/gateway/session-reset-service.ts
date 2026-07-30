@@ -98,7 +98,7 @@ import {
 import { readSessionMessagesAsync } from "./session-transcript-readers.js";
 import {
   loadSessionEntry,
-  resolveGatewaySessionStoreTarget,
+  resolveSessionStoreTarget,
   resolveSessionStoreKey,
 } from "./session-utils.js";
 
@@ -378,7 +378,7 @@ export async function emitSessionUnboundLifecycleEvent(params: {
 async function ensureSessionRuntimeCleanup(params: {
   cfg: OpenClawConfig;
   key: string;
-  target: ReturnType<typeof resolveGatewaySessionStoreTarget>;
+  target: ReturnType<typeof resolveSessionStoreTarget>;
   sessionId?: string;
   assertCurrent?: () => void;
 }) {
@@ -795,7 +795,7 @@ async function closeChildAcpRuntimesForParent(params: {
 export async function cleanupSessionBeforeMutation(params: {
   cfg: OpenClawConfig;
   key: string;
-  target: ReturnType<typeof resolveGatewaySessionStoreTarget>;
+  target: ReturnType<typeof resolveSessionStoreTarget>;
   entry: SessionEntry | undefined;
   legacyKey?: string;
   canonicalKey?: string;
@@ -869,7 +869,7 @@ export async function emitGatewayBeforeResetPluginHook(params: {
   cfg: OpenClawConfig;
   key: string;
   messages?: unknown[];
-  target: ReturnType<typeof resolveGatewaySessionStoreTarget>;
+  target: ReturnType<typeof resolveSessionStoreTarget>;
   storePath: string;
   entry?: SessionEntry;
   reason: "new" | "reset";
@@ -1016,7 +1016,7 @@ export async function performGatewaySessionReset(params: {
         error: errorShape(ErrorCodes.INVALID_REQUEST, "session key agent does not match agentId"),
       };
     }
-    const target = resolveGatewaySessionStoreTarget({
+    const target = resolveSessionStoreTarget({
       cfg,
       key: params.key,
       ...(requestedAgentId ? { agentId: requestedAgentId } : {}),

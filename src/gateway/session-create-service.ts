@@ -78,7 +78,7 @@ import { buildForkedGatewaySessionEntry } from "./session-create-fork-entry.js";
 import { shouldPreserveSessionAuthProfileOverride } from "./session-model-patch-origin.js";
 import { resolvePluginSessionOwnershipError } from "./session-plugin-ownership.js";
 import { isSessionVisibilityAllowed, resolveSessionVisibility } from "./session-sharing.js";
-import { loadSessionEntryReadOnly, resolveGatewaySessionStoreTarget } from "./session-utils.js";
+import { loadSessionEntryReadOnly, resolveSessionStoreTarget } from "./session-utils.js";
 import { applySessionsPatchToStore, resolveSessionPatchModelSelection } from "./sessions-patch.js";
 
 type TrustedCatalogSessionTarget = {
@@ -501,7 +501,7 @@ export async function createGatewaySession(params: {
   let canonicalParentSessionKey: string | undefined;
   let parentSessionEntry: SessionEntry | undefined;
   let parentSelectedAgentId: string | undefined;
-  let parentSessionTarget: ReturnType<typeof resolveGatewaySessionStoreTarget> | undefined;
+  let parentSessionTarget: ReturnType<typeof resolveSessionStoreTarget> | undefined;
   if (parentSessionKey) {
     const parentCanonicalKey = resolveSessionStoreKey({
       cfg: params.cfg,
@@ -548,7 +548,7 @@ export async function createGatewaySession(params: {
     }
     canonicalParentSessionKey = parent.canonicalKey;
     parentSessionEntry = parent.entry;
-    parentSessionTarget = resolveGatewaySessionStoreTarget({
+    parentSessionTarget = resolveSessionStoreTarget({
       cfg: params.cfg,
       key: parentSessionKey,
       ...(canonicalParentSessionKey === "global" && parentSelectedAgentId
@@ -591,8 +591,8 @@ export async function createGatewaySession(params: {
   if (
     canonicalParentSessionKey &&
     explicitTargetKey &&
-    resolveGatewaySessionStoreTarget({ cfg: params.cfg, key: explicitTargetKey, agentId })
-      .canonicalKey === canonicalParentSessionKey
+    resolveSessionStoreTarget({ cfg: params.cfg, key: explicitTargetKey, agentId }).canonicalKey ===
+      canonicalParentSessionKey
   ) {
     return {
       ok: false,
@@ -604,7 +604,7 @@ export async function createGatewaySession(params: {
   }
 
   const targetSessionKey = explicitTargetKey ?? buildDashboardSessionKey(agentId, { incognito });
-  const creationTarget = resolveGatewaySessionStoreTarget({
+  const creationTarget = resolveSessionStoreTarget({
     cfg: params.cfg,
     key: targetSessionKey,
     agentId,

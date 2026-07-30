@@ -23,8 +23,8 @@ export { resolveFreshestSessionStoreMatchFromStoreKeys } from "./session-utils-s
 export { resolveFreshestSessionEntryFromStoreKeys } from "./session-utils-store.js";
 export { migrateAndPruneGatewaySessionStoreKey } from "./session-utils-store.js";
 export { listAgentsForGateway } from "./session-utils-store.js";
-export { resolveGatewaySessionStoreTargetWithStore } from "./session-utils-store-lookup.js";
-export { resolveGatewaySessionStoreTarget } from "./session-utils-store-lookup.js";
+export { resolveSessionStoreTargetWithStore } from "../sessions/session-store-target.js";
+export { resolveSessionStoreTarget } from "../sessions/session-store-target.js";
 export { resolveGatewaySessionThinkingProjection } from "./session-utils-model.js";
 export { getSessionDefaults } from "./session-utils-model.js";
 export { resolveGatewayModelSupportsImages } from "./session-utils-model.js";

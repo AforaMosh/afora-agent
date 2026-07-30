@@ -8,7 +8,7 @@ import type { SessionEntry } from "../config/sessions/types.js";
 const hoisted = vi.hoisted(() => ({
   canonicalizeSessionEntryAliasesMock: vi.fn(),
   listSessionsFromStoreMock: vi.fn(),
-  resolveGatewaySessionStoreTargetWithStoreMock: vi.fn(),
+  resolveSessionStoreTargetWithStoreMock: vi.fn(),
   loadCombinedSessionStoreMock: vi.fn(),
   listAgentIdsMock: vi.fn(),
 }));
@@ -39,8 +39,7 @@ vi.mock("../gateway/session-utils.js", async () => {
   return {
     ...actual,
     listSessionsFromStore: hoisted.listSessionsFromStoreMock,
-    resolveGatewaySessionStoreTargetWithStore:
-      hoisted.resolveGatewaySessionStoreTargetWithStoreMock,
+    resolveSessionStoreTargetWithStore: hoisted.resolveSessionStoreTargetWithStoreMock,
     loadCombinedSessionStore: hoisted.loadCombinedSessionStoreMock,
   };
 });
@@ -71,13 +70,13 @@ describe("resolveSessionKeyFromResolveParams", () => {
   beforeEach(() => {
     hoisted.canonicalizeSessionEntryAliasesMock.mockReset();
     hoisted.listSessionsFromStoreMock.mockReset();
-    hoisted.resolveGatewaySessionStoreTargetWithStoreMock.mockReset();
+    hoisted.resolveSessionStoreTargetWithStoreMock.mockReset();
     hoisted.loadCombinedSessionStoreMock.mockReset();
     hoisted.listAgentIdsMock.mockReset();
     targetStore = {};
     // Default: all agents are known (main is always present).
     hoisted.listAgentIdsMock.mockReturnValue(["main"]);
-    hoisted.resolveGatewaySessionStoreTargetWithStoreMock.mockImplementation(() => ({
+    hoisted.resolveSessionStoreTargetWithStoreMock.mockImplementation(() => ({
       canonicalKey,
       storeKeys: [canonicalKey, legacyKey],
       storePath,
@@ -158,7 +157,7 @@ describe("resolveSessionKeyFromResolveParams", () => {
     targetStore = {
       [deletedAgentKey]: { sessionId: "sess-orphan", updatedAt: 1 },
     };
-    hoisted.resolveGatewaySessionStoreTargetWithStoreMock.mockReturnValue({
+    hoisted.resolveSessionStoreTargetWithStoreMock.mockReturnValue({
       canonicalKey: deletedAgentKey,
       storeKeys: [deletedAgentKey],
       storePath,
@@ -198,7 +197,7 @@ describe("resolveSessionKeyFromResolveParams", () => {
         },
       },
     };
-    hoisted.resolveGatewaySessionStoreTargetWithStoreMock.mockReturnValue({
+    hoisted.resolveSessionStoreTargetWithStoreMock.mockReturnValue({
       canonicalKey: acpKey,
       storeKeys: [acpKey],
       storePath,
@@ -222,7 +221,7 @@ describe("resolveSessionKeyFromResolveParams", () => {
     targetStore = {
       [staleMainKey]: { sessionId: "sess-stale-main", updatedAt: 1 },
     };
-    hoisted.resolveGatewaySessionStoreTargetWithStoreMock.mockReturnValue({
+    hoisted.resolveSessionStoreTargetWithStoreMock.mockReturnValue({
       canonicalKey: staleMainKey,
       storeKeys: [staleMainKey],
       storePath,

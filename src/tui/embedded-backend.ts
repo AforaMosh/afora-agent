@@ -79,7 +79,7 @@ import {
   loadSessionEntry,
   loadSessionEntryReadOnly,
   migrateAndPruneGatewaySessionStoreKey,
-  resolveGatewaySessionStoreTarget,
+  resolveSessionStoreTarget,
   resolveSessionModelRef,
 } from "../gateway/session-utils.js";
 import { projectSessionsPatchEntry } from "../gateway/sessions-patch.js";
@@ -718,7 +718,7 @@ export class EmbeddedTuiBackend implements TuiBackend {
   ): Promise<SessionsPatchResult> {
     await this.ready;
     const cfg = getRuntimeConfig();
-    const target = resolveGatewaySessionStoreTarget({
+    const target = resolveSessionStoreTarget({
       cfg,
       key: opts.key,
       agentId: opts.agentId,

@@ -32,12 +32,12 @@ import {
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { normalizeAgentId, parseAgentSessionKey } from "../routing/session-key.js";
 import { isAcpSessionKey } from "../sessions/session-key-utils.js";
+import {
+  resolveSessionStoreTarget,
+  resolveSessionStoreTargetWithStore,
+} from "../sessions/session-store-target.js";
 import { listGatewayAgentsBasic } from "./agent-list.js";
 import { resolveGatewaySessionThinkingDefault } from "./session-utils-model.js";
-import {
-  resolveGatewaySessionStoreTarget,
-  resolveGatewaySessionStoreTargetWithStore,
-} from "./session-utils-store-lookup.js";
 import type { GatewayAgentRow } from "./session-utils.types.js";
 
 /**
@@ -127,7 +127,7 @@ function loadSessionEntryWithMode(
 ) {
   const cfg = getRuntimeConfig();
   const key = normalizeOptionalString(sessionKey) ?? "";
-  const target = resolveGatewaySessionStoreTargetWithStore({
+  const target = resolveSessionStoreTargetWithStore({
     cfg,
     key,
     ...(opts?.clone === false ? { clone: false } : {}),
@@ -226,7 +226,7 @@ export function migrateAndPruneGatewaySessionStoreKey(params: {
   store: Record<string, SessionEntry>;
   agentId?: string;
 }) {
-  const target = resolveGatewaySessionStoreTarget({
+  const target = resolveSessionStoreTarget({
     cfg: params.cfg,
     key: params.key,
     store: params.store,

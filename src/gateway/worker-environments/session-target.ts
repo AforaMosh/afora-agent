@@ -4,7 +4,7 @@ import { resolveSessionIdMatchSelection } from "../../sessions/session-id-resolu
 import {
   loadCombinedSessionStore,
   resolveFreshestSessionEntryFromStoreKeys,
-  resolveGatewaySessionStoreTargetWithStore,
+  resolveSessionStoreTargetWithStore,
 } from "../session-utils.js";
 
 export type ResolvedWorkerSessionTarget = Omit<
@@ -31,7 +31,7 @@ export function resolveWorkerSessionTarget(
   if (selection.kind !== "selected") {
     return undefined;
   }
-  const target = resolveGatewaySessionStoreTargetWithStore({
+  const target = resolveSessionStoreTargetWithStore({
     cfg,
     key: selection.sessionKey,
     clone: false,

@@ -40,8 +40,8 @@ import {
   migrateAndPruneGatewaySessionStoreKey,
   resolveDeletedAgentIdFromSessionKey,
   resolveGatewayModelSupportsImages,
-  resolveGatewaySessionStoreTarget,
-  resolveGatewaySessionStoreTargetWithStore,
+  resolveSessionStoreTarget,
+  resolveSessionStoreTargetWithStore,
   resolveSessionDisplayModelIdentityRef,
   resolveSessionModelRef,
   resolveSessionStoreKey,
@@ -1740,12 +1740,12 @@ describe("gateway session utils", () => {
       agents: { list: [{ id: "ops", default: true }] },
     } as OpenClawConfig;
     expect(resolveSessionStoreKey({ cfg, sessionKey: "main" })).toBe("global");
-    const target = resolveGatewaySessionStoreTarget({ cfg, key: "main" });
+    const target = resolveSessionStoreTarget({ cfg, key: "main" });
     expect(target.canonicalKey).toBe("global");
     expect(target.agentId).toBe("ops");
   });
 
-  test("resolveGatewaySessionStoreTarget uses canonical key for main alias", () => {
+  test("resolveSessionStoreTarget uses canonical key for main alias", () => {
     const storeTemplate = path.join(
       os.tmpdir(),
       "openclaw-session-utils",
@@ -1756,14 +1756,14 @@ describe("gateway session utils", () => {
       session: { mainKey: "main", store: storeTemplate },
       agents: { list: [{ id: "ops", default: true }] },
     } as OpenClawConfig;
-    const target = resolveGatewaySessionStoreTarget({ cfg, key: "main" });
+    const target = resolveSessionStoreTarget({ cfg, key: "main" });
     expect(target.canonicalKey).toBe("agent:ops:main");
     expect(target.storeKeys).toContain("agent:ops:main");
     expect(target.storeKeys).toContain("main");
     expect(target.storePath).toBe(path.resolve(storeTemplate.replace("{agentId}", "ops")));
   });
 
-  test("resolveGatewaySessionStoreTarget resolves a customized main alias to its canonical key", () => {
+  test("resolveSessionStoreTarget resolves a customized main alias to its canonical key", () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "session-utils-alias-"));
     const storePath = path.join(dir, "sessions.json");
     fs.writeFileSync(
@@ -1775,12 +1775,12 @@ describe("gateway session utils", () => {
       session: { mainKey: "work", store: storePath },
       agents: { list: [{ id: "ops", default: true }] },
     } as OpenClawConfig;
-    const target = resolveGatewaySessionStoreTarget({ cfg, key: "agent:ops:main" });
+    const target = resolveSessionStoreTarget({ cfg, key: "agent:ops:main" });
     expect(target.canonicalKey).toBe("agent:ops:work");
     expect(target.storeKeys).toContain("agent:ops:main");
   });
 
-  test("resolveGatewaySessionStoreTarget keeps a fixed configured store authoritative", async () => {
+  test("resolveSessionStoreTarget keeps a fixed configured store authoritative", async () => {
     await withStateDirEnv("session-utils-fixed-store-", async ({ stateDir }) => {
       const fixedStorePath = path.join(stateDir, "configured", "sessions.json");
       const staleStorePath = path.join(stateDir, "agents", "ops", "sessions", "sessions.json");
@@ -1795,7 +1795,7 @@ describe("gateway session utils", () => {
         agents: { list: [{ id: "ops", default: true }] },
       } as OpenClawConfig;
 
-      const target = resolveGatewaySessionStoreTargetWithStore({
+      const target = resolveSessionStoreTargetWithStore({
         cfg,
         key: "agent:ops:main",
       });
@@ -1805,7 +1805,7 @@ describe("gateway session utils", () => {
     });
   });
 
-  test("resolveGatewaySessionStoreTarget preserves discovered store paths for non-round-tripping agent dirs", async () => {
+  test("resolveSessionStoreTarget preserves discovered store paths for non-round-tripping agent dirs", async () => {
     await withStateDirEnv("session-utils-discovered-store-", async ({ stateDir }) => {
       const retiredSessionsDir = path.join(stateDir, "agents", "Retired Agent", "sessions");
       fs.mkdirSync(retiredSessionsDir, { recursive: true });
@@ -1822,13 +1822,13 @@ describe("gateway session utils", () => {
         agents: { list: [{ id: "main", default: true }] },
       } as OpenClawConfig;
 
-      const target = resolveGatewaySessionStoreTarget({ cfg, key: "agent:retired-agent:main" });
+      const target = resolveSessionStoreTarget({ cfg, key: "agent:retired-agent:main" });
 
       expect(target.storePath).toBe(path.resolve(retiredStorePath));
     });
   });
 
-  test("resolveGatewaySessionStoreTarget keeps discovered contents paired with their path", async () => {
+  test("resolveSessionStoreTarget keeps discovered contents paired with their path", async () => {
     await withStateDirEnv("session-utils-discovered-contents-", async ({ stateDir }) => {
       const retiredSessionsDir = path.join(stateDir, "agents", "Retired Agent", "sessions");
       fs.mkdirSync(retiredSessionsDir, { recursive: true });
@@ -1847,7 +1847,7 @@ describe("gateway session utils", () => {
         "agent:retired-agent:main": { sessionId: "sess-fallback", updatedAt: 99 },
       };
 
-      const target = resolveGatewaySessionStoreTargetWithStore({
+      const target = resolveSessionStoreTargetWithStore({
         cfg,
         key: "agent:retired-agent:main",
         store: fallbackStore,
@@ -1859,7 +1859,7 @@ describe("gateway session utils", () => {
     });
   });
 
-  test("resolveGatewaySessionStoreTarget ignores a retired legacy store without provisioning SQLite", async () => {
+  test("resolveSessionStoreTarget ignores a retired legacy store without provisioning SQLite", async () => {
     await withStateDirEnv("session-utils-retired-legacy-", async ({ stateDir }) => {
       const retiredSessionsDir = path.join(stateDir, "agents", "retired", "sessions");
       const retiredStorePath = path.join(retiredSessionsDir, "sessions.json");
@@ -1879,7 +1879,7 @@ describe("gateway session utils", () => {
         agents: { list: [{ id: "main", default: true }] },
       } as OpenClawConfig;
 
-      const target = resolveGatewaySessionStoreTargetWithStore({
+      const target = resolveSessionStoreTargetWithStore({
         cfg,
         key: "agent:retired:main",
       });
@@ -2104,7 +2104,7 @@ describe("gateway session utils", () => {
     }
   });
 
-  test("resolveGatewaySessionStoreTargetWithStore returns the caller-provided store", async () => {
+  test("resolveSessionStoreTargetWithStore returns the caller-provided store", async () => {
     resetConfigRuntimeState();
     try {
       await withStateDirEnv("session-utils-target-store-", async ({ stateDir }) => {
@@ -2119,7 +2119,7 @@ describe("gateway session utils", () => {
           "agent:main:main": { sessionId: "sess-main", updatedAt: 7 },
         };
 
-        const target = resolveGatewaySessionStoreTargetWithStore({
+        const target = resolveSessionStoreTargetWithStore({
           cfg,
           key: "agent:main:main",
           store,
@@ -2162,7 +2162,7 @@ describe("gateway session utils", () => {
         } as OpenClawConfig;
         setRuntimeConfigSnapshot(cfg, cfg);
 
-        const target = resolveGatewaySessionStoreTarget({ cfg, key: "agent:main:main" });
+        const target = resolveSessionStoreTarget({ cfg, key: "agent:main:main" });
         const loaded = loadSessionEntry("agent:main:main");
 
         expect(target.canonicalKey).toBe("agent:main:main");

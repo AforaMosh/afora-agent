@@ -31,7 +31,7 @@ import { streamSessionTranscriptLines } from "../config/sessions/transcript-stre
 import { scanSessionTranscriptTree } from "../config/sessions/transcript-tree.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
-import { resolveGatewaySessionStoreTarget } from "./session-utils.js";
+import { resolveSessionStoreTarget } from "./session-utils.js";
 
 const log = createSubsystemLogger("gateway/session-compaction-checkpoints");
 const MAX_COMPACTION_CHECKPOINTS_PER_SESSION = 25;
@@ -710,7 +710,7 @@ async function persistSessionCompactionCheckpoint(
     return null;
   }
 
-  const target = resolveGatewaySessionStoreTarget({
+  const target = resolveSessionStoreTarget({
     cfg: params.cfg,
     key: params.sessionKey,
   });

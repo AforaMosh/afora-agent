@@ -15,7 +15,7 @@ import {
   listSessionsFromStore,
   loadCombinedSessionStore,
   resolveDeletedAgentIdFromSessionKey,
-  resolveGatewaySessionStoreTargetWithStore,
+  resolveSessionStoreTargetWithStore,
 } from "../gateway/session-utils.js";
 import { resolveSessionIdMatchSelection } from "./session-id-resolution.js";
 import { parseSessionLabel } from "./session-label.js";
@@ -130,7 +130,7 @@ export async function resolveSessionKeyFromResolveParams(params: {
   if (hasKey) {
     // Key lookups may hit legacy store aliases. Migrate/prune before returning
     // the canonical key so later calls operate on one store identity.
-    const target = resolveGatewaySessionStoreTargetWithStore({ cfg, key, clone: false });
+    const target = resolveSessionStoreTargetWithStore({ cfg, key, clone: false });
     const store = target.store;
     if (store[target.canonicalKey]) {
       if (
@@ -165,7 +165,7 @@ export async function resolveSessionKeyFromResolveParams(params: {
         storeKeys: target.storeKeys,
       },
     });
-    const refreshedTarget = resolveGatewaySessionStoreTargetWithStore({
+    const refreshedTarget = resolveSessionStoreTargetWithStore({
       cfg,
       key: target.canonicalKey,
       clone: false,

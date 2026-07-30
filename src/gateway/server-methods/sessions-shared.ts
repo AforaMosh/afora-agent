@@ -23,8 +23,8 @@ import {
 } from "../session-plugin-ownership.js";
 import {
   resolveFreshestSessionEntryFromStoreKeys,
-  resolveGatewaySessionStoreTarget,
-  resolveGatewaySessionStoreTargetWithStore,
+  resolveSessionStoreTarget,
+  resolveSessionStoreTargetWithStore,
 } from "../session-utils.js";
 import {
   isWorkerPlacementSessionRuntimeSupported,
@@ -193,7 +193,7 @@ export function resolveGatewaySessionTargetFromKey(
   cfg: OpenClawConfig,
   opts?: { agentId?: string },
 ) {
-  const target = resolveGatewaySessionStoreTarget({
+  const target = resolveSessionStoreTarget({
     cfg,
     key,
     ...(opts?.agentId ? { agentId: opts.agentId } : {}),
@@ -206,7 +206,7 @@ export function loadAccessorSessionEntryForGatewayTarget(params: {
   cfg: OpenClawConfig;
   agentId?: string;
 }) {
-  const target = resolveGatewaySessionStoreTargetWithStore({
+  const target = resolveSessionStoreTargetWithStore({
     cfg: params.cfg,
     key: params.key,
     clone: false,
@@ -249,7 +249,7 @@ export function loadSessionEntriesForTarget(params: {
   cfg: OpenClawConfig;
   agentId?: string;
 }) {
-  const target = resolveGatewaySessionStoreTargetWithStore({
+  const target = resolveSessionStoreTargetWithStore({
     cfg: params.cfg,
     key: params.key,
     clone: false,
