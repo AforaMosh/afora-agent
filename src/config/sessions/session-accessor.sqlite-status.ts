@@ -22,7 +22,7 @@ import {
 import { projectCanonicalSessionEntryShape } from "./store-entry-shape.js";
 import type { SessionEntry } from "./types.js";
 
-type SessionStatusDatabase = Pick<OpenClawAgentKyselyDatabase, "session_nodes">;
+type SessionStatusDatabase = Pick<OpenClawAgentKyselyDatabase, "session_nodes" | "session_windows">;
 type SessionListExpressionBuilder = ExpressionBuilder<SessionStatusDatabase, "session_nodes">;
 type SessionDatabaseReader = Pick<OpenClawAgentDatabase, "agentId" | "db"> & {
   writable?: boolean;
@@ -224,6 +224,31 @@ function hasPendingSessionEntryValidity(database: SessionDatabaseReader): boolea
   );
 }
 
+function hasRejectedSessionEntryValidity(database: SessionDatabaseReader): boolean {
+  const db = getNodeSqliteKysely<SessionStatusDatabase>(database.db);
+  return Boolean(
+    executeSqliteQueryTakeFirstSync(
+      database.db,
+      db
+        .selectFrom("session_nodes")
+        .leftJoin("session_windows as retained_window", (join) =>
+          join
+            .onRef("retained_window.session_id", "=", "session_nodes.current_session_id")
+            .onRef("retained_window.session_key", "=", "session_nodes.session_key"),
+        )
+        .select("session_nodes.session_key")
+        .where("session_nodes.entry_valid", "=", -1)
+        .where((eb) =>
+          eb.or([
+            eb("session_nodes.entry_json", "!=", "{}"),
+            eb("retained_window.session_id", "is", null),
+          ]),
+        )
+        .limit(1),
+    ),
+  );
+}
+
 function buildSessionListPredicate(
   eb: SessionListExpressionBuilder,
   query: SessionEntryListQuery,
@@ -368,6 +393,9 @@ export function querySqliteSessionEntries(
           // that committed after settlement is retried instead of disappearing from the page.
           if (hasPendingSessionEntryValidity(database)) {
             throw new PendingSessionEntryValidityRetry();
+          }
+          if (hasRejectedSessionEntryValidity(database)) {
+            throw new SessionEntryValidityMigrationRequiredError();
           }
           return querySqliteSessionEntriesInSnapshot(database, query, options, validationToken);
         },

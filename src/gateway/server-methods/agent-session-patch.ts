@@ -89,7 +89,10 @@ export function buildAgentSessionPatch(params: {
         groupSpace: parentEntry?.space,
       });
     } catch (error) {
-      if ((error as { code?: unknown })?.code === "SESSION_CANONICAL_KEY_MIGRATION_REQUIRED") {
+      if (
+        (error as { code?: unknown })?.code === "SESSION_CANONICAL_KEY_MIGRATION_REQUIRED" ||
+        (error as { code?: unknown })?.code === "SESSION_ENTRY_VALIDITY_MIGRATION_REQUIRED"
+      ) {
         throw error;
       }
       inheritedGroup = undefined;

@@ -43,8 +43,12 @@ import {
   canonicalSqliteSessionKeyTokenIsCurrent,
   duplicateCanonicalSessionKeyError,
   nonCanonicalSessionKeyRowError,
+  nonCanonicalSessionKeyWriteError,
 } from "./session-canonical-key.js";
-import { resolveSessionEntryCandidates } from "./store-entry.js";
+import {
+  resolveDeliveryProvenCanonicalSessionKey,
+  resolveSessionEntryCandidates,
+} from "./store-entry.js";
 import type { SessionEntry } from "./types.js";
 
 // Canonical owner for session_nodes row selection, alias snapshots, and writes.
@@ -658,6 +662,9 @@ export function writeSessionEntry(
     assertCanonicalSessionKeyWriteMatchesDatabase(database, sessionKey);
     assertCanonicalSessionEntryLineageWrite(database, entry);
     assertCanonicalSqliteSessionKeysCurrent(database);
+    if (resolveDeliveryProvenCanonicalSessionKey(sessionKey, entry) !== sessionKey) {
+      throw nonCanonicalSessionKeyWriteError(sessionKey);
+    }
   }
   const normalizedEntry = normalizeSqliteSessionEntryTimestamp(entry);
   const updatedAt = normalizedEntry.updatedAt;

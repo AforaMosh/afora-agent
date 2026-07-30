@@ -126,7 +126,7 @@ export function nonCanonicalSessionKeyRowError(
   return new SessionCanonicalKeyMigrationRequiredError(canonicalKey, "non-canonical-row");
 }
 
-function nonCanonicalSessionKeyWriteError(
+export function nonCanonicalSessionKeyWriteError(
   sessionKey: string,
 ): SessionCanonicalKeyMigrationRequiredError {
   return new SessionCanonicalKeyMigrationRequiredError(sessionKey, "non-canonical-write");

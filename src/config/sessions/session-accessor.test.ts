@@ -436,7 +436,7 @@ describe("session accessor seam", () => {
     ).toEqual([sessionKey]);
   });
 
-  it("does not let invalid blobs consume a bounded list page", () => {
+  it("fails loud before invalid blobs can consume a bounded list page", () => {
     replaceSqliteSessionEntrySync(
       { agentId: "main", sessionKey: "agent:main:valid", storePath },
       { sessionId: "valid-session", updatedAt: 10 },
@@ -461,19 +461,19 @@ describe("session accessor seam", () => {
       )
       .run("agent:main:placeholder", "placeholder", "{}", 15, null, null);
 
-    const result = querySqliteSessionEntriesReadOnly({
-      agentId: "main",
-      query: {
-        archived: false,
-        includeGlobal: true,
-        includeUnknown: true,
-        limit: 1,
-        sortBy: "updatedAt",
-      },
-      storePath,
-    });
-    expect(result.totalCount).toBe(1);
-    expect(result.entries.map(({ sessionKey }) => sessionKey)).toEqual(["agent:main:valid"]);
+    expect(() =>
+      querySqliteSessionEntriesReadOnly({
+        agentId: "main",
+        query: {
+          archived: false,
+          includeGlobal: true,
+          includeUnknown: true,
+          limit: 1,
+          sortBy: "updatedAt",
+        },
+        storePath,
+      }),
+    ).toThrow(expect.objectContaining({ code: "SESSION_ENTRY_VALIDITY_MIGRATION_REQUIRED" }));
   });
 
   it("keeps nested agent-shaped cron identities visible", () => {
@@ -540,13 +540,13 @@ describe("session accessor seam", () => {
         .prepare("SELECT entry_valid FROM session_nodes WHERE session_key = ?")
         .get("agent:main:pending"),
     ).toEqual({ entry_valid: 0 });
-    expect(
+    expect(() =>
       querySqliteSessionEntriesReadOnly({
         agentId: "main",
         query: { archived: false, includeGlobal: true, includeUnknown: true },
         storePath,
-      }).entries.map(({ sessionKey }) => sessionKey),
-    ).not.toContain("agent:main:pending");
+      }),
+    ).toThrow(expect.objectContaining({ code: "SESSION_ENTRY_VALIDITY_MIGRATION_REQUIRED" }));
     expect(
       database.db
         .prepare("SELECT entry_valid FROM session_nodes WHERE session_key = ?")

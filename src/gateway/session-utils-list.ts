@@ -11,7 +11,6 @@ import { buildSubagentRunReadIndex } from "../agents/subagent-registry-read.js";
 import { shouldKeepSubagentRunChildLink } from "../agents/subagent-run-liveness.js";
 import type { SessionEntry } from "../config/sessions.js";
 import type { SessionEntryListQuery } from "../config/sessions/session-accessor.types.js";
-import { normalizeStoreSessionKey } from "../config/sessions/store-entry.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { withPinnedActivePluginRegistryWorkspaceDir } from "../plugins/runtime-workspace-state.js";
 import { normalizeAgentId, parseAgentSessionKey } from "../routing/session-key.js";
@@ -101,11 +100,6 @@ type SessionListLineageSqlQuery = {
   lineageKeys?: string[];
 };
 
-function sessionKeyAliasCandidates(sessionKey: string): string[] {
-  const normalized = normalizeStoreSessionKey(sessionKey);
-  return [...new Set([sessionKey, normalized])];
-}
-
 /** Converts the current runtime lineage snapshot into exact SQL include/exclude keys. */
 export function resolveSessionListLineageSqlQuery(
   spawnedBy: string | undefined,
@@ -128,7 +122,7 @@ export function resolveSessionListLineageSqlQuery(
   const childKeys = new Set<string>();
   const include = new Set<string>();
   for (const childKey of canonicalChildKeys) {
-    const aliases = sessionKeyAliasCandidates(childKey);
+    const aliases = [childKey];
     for (const alias of aliases) {
       childKeys.add(alias);
     }
@@ -157,15 +151,13 @@ export function resolveSessionListLineageSqlQuery(
     normalizeOptionalString(mainKey)?.toLowerCase() === parsedParent.rest.toLowerCase()
       ? "main"
       : undefined;
+  const legacyBareMain = legacyMain ? parsedParent?.rest : undefined;
   const legacyScopedMain = legacyMain ? `agent:${parsedParent?.agentId}:main` : undefined;
   return {
     ...(childKeys.size > 0 ? { excludeLineageSessionKeys: [...childKeys] } : {}),
     ...(include.size > 0 ? { includeLineageSessionKeys: [...include] } : {}),
     lineageKeys: [
-      ...new Set([
-        ...sessionKeyAliasCandidates(parentKey),
-        ...[parsedParent?.rest, legacyMain, legacyScopedMain].filter(Boolean),
-      ]),
+      ...new Set([parentKey, ...[legacyBareMain, legacyMain, legacyScopedMain].filter(Boolean)]),
     ] as string[],
   };
 }
