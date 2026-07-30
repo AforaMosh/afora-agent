@@ -49,6 +49,7 @@ export function appendTranscriptEventInTransaction(
   scope: ResolvedTranscriptScope,
   event: TranscriptEvent,
   options: {
+    allowStoredAlias?: boolean;
     dedupeByMessageIdempotency?: boolean;
     onProjectionReconcileNeeded?: () => void;
     scheduleProjectionReconcile?: boolean;
@@ -58,7 +59,9 @@ export function appendTranscriptEventInTransaction(
   const persistedEvent = canonicalizeTranscriptEventMedia(event);
   const db = getSessionKysely(database.db);
   const createdAt = readEventTimestamp(persistedEvent) ?? Date.now();
-  ensureTranscriptSessionRoot(database, scope, createdAt);
+  ensureTranscriptSessionRoot(database, scope, createdAt, {
+    ...(options.allowStoredAlias ? { allowStoredAlias: true } : {}),
+  });
   ensureTranscriptGenerationInTransaction(database, scope.sessionId);
   const identity = readTranscriptEventIdentity(persistedEvent);
   if (identity && readTranscriptIdentityByEventId(database, scope.sessionId, identity.eventId)) {

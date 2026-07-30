@@ -69,8 +69,11 @@ export function ensureTranscriptSessionRoot(
   database: OpenClawAgentDatabase,
   scope: ResolvedTranscriptScope,
   updatedAt: number,
+  options: { allowStoredAlias?: boolean } = {},
 ): void {
-  assertCanonicalSessionKeyWriteMatchesDatabase(database, scope.sessionKey);
+  if (!options.allowStoredAlias) {
+    assertCanonicalSessionKeyWriteMatchesDatabase(database, scope.sessionKey);
+  }
   const db = getSessionKysely(database.db);
   const insertedNode = executeSqliteQuerySync(
     database.db,

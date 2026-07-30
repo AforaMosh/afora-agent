@@ -1,7 +1,10 @@
 import { runOpenClawAgentWriteTransaction } from "../../state/openclaw-agent-db.js";
 import type { TranscriptEvent } from "./session-accessor.sqlite-contract.js";
 import { publishSqliteSessionEntryCacheInvalidation } from "./session-accessor.sqlite-entry-cache.js";
-import { readSessionEntryRow, writeSessionEntry } from "./session-accessor.sqlite-entry-store.js";
+import {
+  readExactSessionEntryRow,
+  writeSessionEntry,
+} from "./session-accessor.sqlite-entry-store.js";
 import { readTranscriptEventJsonSetInTransaction } from "./session-accessor.sqlite-read.js";
 import {
   formatSqliteSessionReferenceForScope,
@@ -48,7 +51,9 @@ export async function importSqliteSessionRows(
   return await runExclusiveSqliteSessionWrite(resolved, async () => {
     let transcriptEvents = 0;
     runOpenClawAgentWriteTransaction((database) => {
-      const currentEntry = readSessionEntryRow(database, resolved.sessionKey)?.entry;
+      // Doctor may have staged another legacy alias in this database already. Inspect only this
+      // exact import target; runtime-wide canonical validation runs after the import phase.
+      const currentEntry = readExactSessionEntryRow(database, resolved.sessionKey)?.entry;
       const preservedHarnessId =
         params.entry.agentHarnessId === undefined &&
         currentEntry?.sessionId === params.entry.sessionId &&
@@ -83,6 +88,7 @@ export async function importSqliteSessionRows(
           }
           if (
             appendTranscriptEventInTransaction(database, transcriptScope, event, {
+              allowStoredAlias: true,
               scheduleProjectionReconcile: false,
               touchMutation: false,
             })
