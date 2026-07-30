@@ -324,6 +324,16 @@ describe("doctor canonical session-key repair", () => {
       );
       insertMember.run("agent:main:work", "canonical-member");
       insertMember.run("agent:main:main", "winner-member");
+      database.db
+        .prepare(
+          "INSERT INTO conversations (conversation_id, channel, account_id, kind, peer_id, delivery_target, metadata_json, created_at, updated_at) VALUES ('same-store-conversation', 'webchat', 'default', 'direct', 'peer', 'peer', '{}', 10, 10)",
+        )
+        .run();
+      database.db
+        .prepare(
+          "INSERT INTO conversation_deliveries (operation_id, operation_kind, conversation_id, source_session_key, message_hash, status, created_at, updated_at) VALUES ('same-store-operation', 'turn', 'same-store-conversation', 'agent:main:main', 'hash', 'sent', 10, 10)",
+        )
+        .run();
 
       expect(await repairCanonicalSessionKeys({ apply: true, cfg, env })).toMatchObject({
         foundGroups: 1,
@@ -332,6 +342,13 @@ describe("doctor canonical session-key repair", () => {
       expect(database.db.prepare("SELECT identity_id FROM session_members").all()).toEqual([
         { identity_id: "winner-member" },
       ]);
+      expect(
+        database.db
+          .prepare(
+            "SELECT source_session_key FROM conversation_deliveries WHERE operation_id = 'same-store-operation'",
+          )
+          .get(),
+      ).toEqual({ source_session_key: "agent:main:work" });
     });
   });
 

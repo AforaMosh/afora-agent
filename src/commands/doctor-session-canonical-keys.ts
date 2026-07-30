@@ -7,6 +7,7 @@ import {
   listSessionEntriesForCanonicalRepair,
   listSessionGenerationIdsForCanonicalRepair,
   loadTranscriptEvents,
+  rehomeSessionDeliveryReferencesForCanonicalRepair,
 } from "../config/sessions/session-accessor.js";
 import type { SessionEntryLifecycleRemoval } from "../config/sessions/session-accessor.lifecycle-types.js";
 import { writeSqliteTranscriptArchive } from "../config/sessions/session-accessor.sqlite-archive.js";
@@ -405,6 +406,11 @@ async function repairCanonicalSessionGroup(
         .map((candidate) => candidate.sessionKey)
         .filter((sessionKey) => sessionKey !== winner.canonicalKey);
       if (destinationAliasKeys.length > 0) {
+        rehomeSessionDeliveryReferencesForCanonicalRepair(
+          destinationDatabase,
+          winner.canonicalKey,
+          destinationAliasKeys,
+        );
         copySessionNodeArtifactsForRepair(
           destinationDatabase,
           destinationDatabase,

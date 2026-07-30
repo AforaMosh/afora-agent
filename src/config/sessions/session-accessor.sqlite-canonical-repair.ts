@@ -95,6 +95,26 @@ export function listSqliteSessionGenerationIdsForCanonicalRepair(params: {
   );
 }
 
+/** Doctor-only same-store rewrite for delivery attribution owned by removed aliases. */
+export function rehomeSqliteSessionDeliveryReferencesForCanonicalRepair(
+  database: OpenClawAgentDatabase,
+  canonicalKey: string,
+  previousKeys: readonly string[],
+): void {
+  const aliases = uniqueStrings(previousKeys).filter((key) => key && key !== canonicalKey);
+  if (aliases.length === 0) {
+    return;
+  }
+  const db = getSessionKysely(database.db);
+  executeSqliteQuerySync(
+    database.db,
+    db
+      .updateTable("conversation_deliveries")
+      .set({ source_session_key: canonicalKey })
+      .where("source_session_key", "in", aliases),
+  );
+}
+
 type CanonicalRepairRow = Selectable<OpenClawAgentKyselyDatabase["session_nodes"]> & {
   current_agent_harness_id: string | null;
   current_chat_type: "channel" | "direct" | "group" | null;

@@ -25,6 +25,7 @@ export {
   copySqliteSessionOwnedStateForCanonicalRepair,
   listSqliteSessionEntriesForCanonicalRepair,
   listSqliteSessionGenerationIdsForCanonicalRepair,
+  rehomeSqliteSessionDeliveryReferencesForCanonicalRepair,
 } from "./session-accessor.sqlite-canonical-repair.js";
 export {
   cleanupSqliteSessionLifecycleArtifacts,
