@@ -104,7 +104,7 @@ type SessionListLineageSqlQuery = {
 export function resolveSessionListLineageSqlQuery(
   spawnedBy: string | undefined,
   now = Date.now(),
-  mainKey?: string,
+  _mainKey?: string,
 ): SessionListLineageSqlQuery {
   const parentKey = normalizeOptionalString(spawnedBy);
   if (!parentKey) {
@@ -145,20 +145,10 @@ export function resolveSessionListLineageSqlQuery(
   }
   // Registry ownership overrides stale stored lineage after a child moves. These sets project
   // that authority into SQL; combined-store federation remains with the deferred goal-3 follow-up.
-  const parsedParent = parseAgentSessionKey(parentKey);
-  const legacyMain =
-    parsedParent &&
-    normalizeOptionalString(mainKey)?.toLowerCase() === parsedParent.rest.toLowerCase()
-      ? "main"
-      : undefined;
-  const legacyBareMain = legacyMain ? parsedParent?.rest : undefined;
-  const legacyScopedMain = legacyMain ? `agent:${parsedParent?.agentId}:main` : undefined;
   return {
     ...(childKeys.size > 0 ? { excludeLineageSessionKeys: [...childKeys] } : {}),
     ...(include.size > 0 ? { includeLineageSessionKeys: [...include] } : {}),
-    lineageKeys: [
-      ...new Set([parentKey, ...[legacyBareMain, legacyMain, legacyScopedMain].filter(Boolean)]),
-    ] as string[],
+    lineageKeys: [parentKey],
   };
 }
 

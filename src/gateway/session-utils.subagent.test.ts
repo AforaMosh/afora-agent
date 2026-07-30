@@ -88,9 +88,9 @@ describe("listSessionsFromStore subagent metadata", () => {
     expect(query.excludeLineageSessionKeys).not.toContain(childKey.toLowerCase());
     expect(query.includeLineageSessionKeys).toContain(childKey);
     expect(query.includeLineageSessionKeys).not.toContain(childKey.toLowerCase());
-    expect(resolveSessionListLineageSqlQuery("agent:main:work", now, "work").lineageKeys).toEqual(
-      expect.arrayContaining(["work", "main", "agent:main:main"]),
-    );
+    expect(resolveSessionListLineageSqlQuery("agent:main:work", now, "work").lineageKeys).toEqual([
+      "agent:main:work",
+    ]);
     for (let index = 0; index < 400; index += 1) {
       addSubagentRunForTests({
         runId: `run-large-lineage-${index}`,
