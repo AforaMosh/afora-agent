@@ -615,6 +615,7 @@ export async function readClawManifestFile(path: string): Promise<ClawReadResult
   }
   const profile = await readClawOpenClawProfile({
     packageRoot: sourceResult.source.packageRoot,
+    metadata: parsed.manifest.metadata,
   });
   if (!profile.ok) {
     return profile;

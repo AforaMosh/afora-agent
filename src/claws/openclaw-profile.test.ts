@@ -177,7 +177,7 @@ describe("OpenClaw profile reader", () => {
     });
   });
 
-  it("does not interpret metadata values as profile pointers", async () => {
+  it("fails closed for a retired metadata profile pointer", async () => {
     const root = tempDirs.make("openclaw-claw-profile-pointer-");
     const path = join(root, "openclaw.claw.json");
     await writeFile(
@@ -193,11 +193,15 @@ describe("OpenClaw profile reader", () => {
 
     const result = await readClawManifestFile(path);
 
-    expect(result).toMatchObject({ ok: true });
-    if (!result.ok) {
-      throw new Error("expected metadata to remain opaque");
-    }
-    expect(result.openClawProfile).toBeUndefined();
+    expect(result).toMatchObject({
+      ok: false,
+      diagnostics: [
+        expect.objectContaining({
+          code: "legacy_openclaw_profile_pointer",
+          path: "$.metadata.openclaw.config",
+        }),
+      ],
+    });
   });
 
   it("does not inspect profiles owned by other harnesses", async () => {
