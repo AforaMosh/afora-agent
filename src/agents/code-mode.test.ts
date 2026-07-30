@@ -218,6 +218,7 @@ describe("Code Mode catalog and model-visible surface", () => {
     expect(execTool.description).toContain("process them in the first exec");
     expect(execTool.description).toContain("do not spend another exec inspecting");
     expect(execTool.description).toContain("dependent reads, checks, and follow-up calls in order");
+    expect(execTool.description).toContain('pauses with `reason: "visual_observation"`');
     expect(execTool.description).toContain("normal tool policy and approvals");
     expect(execTool.description).toContain("`ALL_TOOLS` is the complete compact catalog");
     expect(execTool.description).toContain("`tools.search(query: string, options?)`");
@@ -270,6 +271,9 @@ describe("Code Mode catalog and model-visible surface", () => {
     );
     expect(parameters).toMatchObject({ required: ["code"] });
     expect(parameters.properties).not.toHaveProperty("command");
+    expect(expectDefined(tools[1], "wait tool test invariant").description).toContain(
+      "inspect the returned image first",
+    );
   });
 
   it("keeps code-mode exec guidance compact without advertising unavailable namespaces", () => {

@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import type { ImageContent, TextContent } from "../llm/types.js";
 import { codeModeReplayIdForToolCall } from "./code-mode-bridge.js";
 import { awaitCodeModeDeadline } from "./code-mode-deadline.js";
 import {
@@ -215,6 +217,142 @@ async function waitForPending(
   }
 }
 
+function projectVisualObservations(value: unknown): {
+  value: unknown;
+  modelContent: Array<ImageContent | TextContent>;
+  hasUnavailableVisual: boolean;
+} {
+  const modelContent: Array<ImageContent | TextContent> = [];
+  let hasUnavailableVisual = false;
+  const seen = new WeakMap<object, unknown>();
+  const visit = (entry: unknown): unknown => {
+    if (Array.isArray(entry)) {
+      const previous = seen.get(entry);
+      if (previous !== undefined) {
+        return previous;
+      }
+      const projected: unknown[] = [];
+      seen.set(entry, projected);
+      projected.push(...entry.map((item) => visit(item)));
+      return projected;
+    }
+    if (!isRecord(entry)) {
+      return entry;
+    }
+    const previous = seen.get(entry);
+    if (previous !== undefined) {
+      return previous;
+    }
+    const imageData =
+      entry.type === "image" && typeof entry.data === "string" && entry.data.trim().length > 0
+        ? entry.data
+        : undefined;
+    const imageMimeType =
+      entry.type === "image" &&
+      typeof entry.mimeType === "string" &&
+      entry.mimeType.toLowerCase().startsWith("image/")
+        ? entry.mimeType
+        : undefined;
+    const imageMediaRef =
+      entry.type === "image" &&
+      typeof entry.mediaRef === "string" &&
+      entry.mediaRef.trim().length > 0
+        ? entry.mediaRef
+        : undefined;
+    if (entry.type === "image" && (imageData || imageMimeType || imageMediaRef)) {
+      const placeholder: Record<string, unknown> = {
+        type: "text",
+        text: imageMimeType
+          ? `[${imageMimeType} image delivered to model]`
+          : "[image observation delivered to model]",
+      };
+      seen.set(entry, placeholder);
+      for (const [key, item] of Object.entries(entry)) {
+        if (key === "type" || key === "data") {
+          continue;
+        }
+        placeholder[key] = visit(item);
+      }
+      modelContent.push(
+        imageData && imageMimeType
+          ? { type: "image", data: imageData, mimeType: imageMimeType }
+          : {
+              type: "text",
+              text: imageMediaRef
+                ? `[image observation unavailable inline; reference=${JSON.stringify(imageMediaRef.slice(0, 512))}]`
+                : "[image observation unavailable as inline model content]",
+            },
+      );
+      hasUnavailableVisual ||= !imageData || !imageMimeType;
+      return placeholder;
+    }
+    const projected: Record<string, unknown> = {};
+    seen.set(entry, projected);
+    for (const [key, item] of Object.entries(entry)) {
+      projected[key] = visit(item);
+    }
+    return projected;
+  };
+  return { value: visit(value), modelContent, hasUnavailableVisual };
+}
+
+function visualObservationOrigin(entry: PendingBridgeState, ordinal: number): TextContent {
+  const target = typeof entry.args[0] === "string" ? entry.args[0] : entry.method;
+  return {
+    type: "text",
+    text: `[visual result ${ordinal} from ${entry.method} ${JSON.stringify(target)}]`,
+  };
+}
+
+function projectSettledVisualObservations(params: {
+  settledRequests: SettledBridgeRequest[];
+  pending: PendingBridgeState[];
+}): {
+  settledRequests: SettledBridgeRequest[];
+  pending: PendingBridgeState[];
+  modelContent: Array<ImageContent | TextContent>;
+  hasUnavailableVisual: boolean;
+} {
+  const modelContent: Array<ImageContent | TextContent> = [];
+  let hasUnavailableVisual = false;
+  const projectedById = new Map<
+    string,
+    {
+      settled: SettledBridgeRequest;
+      modelContent: Array<ImageContent | TextContent>;
+    }
+  >();
+  const settledRequests = params.settledRequests.map((request) => {
+    if (!request.ok) {
+      projectedById.set(request.id, { settled: request, modelContent: [] });
+      return request;
+    }
+    const projected = projectVisualObservations(request.value);
+    hasUnavailableVisual ||= projected.hasUnavailableVisual;
+    const next = { ...request, value: projected.value };
+    projectedById.set(request.id, { settled: next, modelContent: projected.modelContent });
+    return next;
+  });
+  let visualOrdinal = 0;
+  for (const entry of params.pending) {
+    const projected = projectedById.get(entry.id);
+    if (!projected || projected.modelContent.length === 0) {
+      continue;
+    }
+    visualOrdinal += 1;
+    modelContent.push(visualObservationOrigin(entry, visualOrdinal), ...projected.modelContent);
+  }
+  return {
+    settledRequests,
+    pending: params.pending.map((entry) => {
+      const projected = projectedById.get(entry.id);
+      return projected ? { ...entry, settled: projected.settled } : entry;
+    }),
+    modelContent,
+    hasUnavailableVisual,
+  };
+}
+
 async function settleCodeModeResult(params: {
   result: CodeModeWorkerResult;
   output: unknown[];
@@ -364,6 +502,44 @@ async function settleCodeModeResult(params: {
       // attached to their original bridge ids across the restored snapshot.
       const settledRequests: SettledBridgeRequest[] =
         settledBridgeRequestsInCompletionOrder(pending);
+      const visualProjection = projectSettledVisualObservations({ settledRequests, pending });
+      if (visualProjection.modelContent.length > 0) {
+        if (visualProjection.hasUnavailableVisual) {
+          cancelPendingBridgeStates(pending);
+          return {
+            status: "failed" as const,
+            error: "code mode visual result could not be delivered as an inline image.",
+            code: "internal_error" as const,
+            failurePhase: "bridge" as const,
+            bridgeDispatchStarted: true,
+            output: output.slice(deliveredOutputCount),
+            replaySafe: false,
+            telemetry: telemetry(params.runtime),
+            modelContent: visualProjection.modelContent,
+          };
+        }
+        // A screenshot changes the facts available to the model. Park before
+        // QuickJS can run dependent clicks or typing against an unseen state.
+        // Return the image to the model, but replay only a compact placeholder
+        // into QuickJS so large base64 payloads cannot exhaust guest output.
+        return storeSnapshotState({
+          runId: activeRunId,
+          replayId: params.codeModeReplayId,
+          pending: visualProjection.pending,
+          replaySafe: false,
+          settlementMode: result.settlementMode,
+          snapshotBytes: result.snapshotBytes,
+          parentToolCallId: params.parentToolCallId,
+          ctx: params.ctx,
+          config: params.config,
+          runtime: params.runtime,
+          namespaceRuntime: params.namespaceRuntime,
+          output,
+          deliveredOutputCount,
+          waitingReason: "visual_observation",
+          modelContent: visualProjection.modelContent,
+        });
+      }
       pending = pending.filter((entry) => !entry.settled);
       // The resumed guest inherits only the remaining shared budget as its
       // QuickJS interrupt deadline; the extra host margin is watchdog grace,

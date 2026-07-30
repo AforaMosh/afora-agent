@@ -3,6 +3,7 @@ import {
   isFutureDateTimestampMs,
   resolveExpiresAtMsFromDurationSeconds,
 } from "@openclaw/normalization-core/number-coercion";
+import type { ImageContent, TextContent } from "../llm/types.js";
 import { runBridgeRequest } from "./code-mode-bridge.js";
 import { CODE_MODE_EXEC_TOOL_NAME, CODE_MODE_WAIT_TOOL_NAME } from "./code-mode-control-tools.js";
 import type { CodeModeNamespaceRuntime } from "./code-mode-namespaces.js";
@@ -347,6 +348,8 @@ export function storeSnapshotState(params: {
   namespaceRuntime: CodeModeNamespaceRuntime;
   output: unknown[];
   deliveredOutputCount?: number;
+  waitingReason?: "pending_tools" | "visual_observation" | "yield";
+  modelContent?: Array<ImageContent | TextContent>;
 }) {
   const now = Date.now();
   const expiresAt = resolveCodeModeSnapshotExpiresAt(now, params.config.snapshotTtlSeconds);
@@ -383,11 +386,12 @@ export function storeSnapshotState(params: {
   return {
     status: "waiting" as const,
     runId: params.runId,
-    reason: codeModeWaitingReason(params.pending),
+    reason: params.waitingReason ?? codeModeWaitingReason(params.pending),
     pendingToolCalls: pendingToolCalls(params.pending),
     replaySafe: params.replaySafe,
     output: params.output.slice(params.deliveredOutputCount ?? 0),
     telemetry: telemetry(params.runtime),
+    ...(params.modelContent?.length ? { modelContent: params.modelContent } : {}),
   };
 }
 

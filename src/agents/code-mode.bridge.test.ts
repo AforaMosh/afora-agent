@@ -133,6 +133,185 @@ describe("Code Mode bridge settlement and cancellation", () => {
     expect(testing.activeRuns.size).toBe(0);
   });
 
+  it("pauses after visual tool results before dependent calls resume", async () => {
+    const { config, catalogRef, tools: codeModeTools } = createCodeModeHarness();
+    const imageData = "A".repeat(128 * 1024);
+    const screenshot = pluginToolWithExecute(
+      "fake_screenshot",
+      "Capture the current UI",
+      async () => ({
+        content: [{ type: "image", data: imageData, mimeType: "image/png" }],
+        details: { captured: true },
+      }),
+    );
+    const mutate = pluginTool("fake_mutate", "Mutate the current UI");
+    applyCodeModeCatalog({
+      tools: [...codeModeTools, screenshot, mutate],
+      config,
+      sessionId: "session-code-mode",
+      sessionKey: "agent:main:main",
+      runId: "run-code-mode",
+      catalogRef,
+    });
+
+    const firstResult = await expectDefined(codeModeTools[0], "exec tool test invariant").execute(
+      "code-call-visual-boundary",
+      {
+        code: `
+        const screenshot = await tools.call("fake_screenshot", {});
+        const content = screenshot.result.content[0];
+        if (content.type !== "text" || !content.text.includes("image delivered to model")) {
+          throw new Error("visual placeholder missing");
+        }
+        return await tools.callValue("fake_mutate", {});
+      `,
+      },
+    );
+    const first = resultDetails(firstResult);
+
+    expect(firstResult.content).toEqual([
+      { type: "text", text: expect.stringContaining('"reason": "visual_observation"') },
+      {
+        type: "text",
+        text: '[visual result 1 from call "fake_screenshot"]',
+      },
+      { type: "image", data: imageData, mimeType: "image/png" },
+    ]);
+    expect(JSON.stringify(first)).not.toContain(imageData);
+    expect(first).toMatchObject({
+      status: "waiting",
+      reason: "visual_observation",
+      pendingToolCalls: [],
+    });
+    expect(screenshot.execute).toHaveBeenCalledTimes(1);
+    expect(mutate.execute).not.toHaveBeenCalled();
+
+    const completed = resultDetails(
+      await expectDefined(codeModeTools[1], "wait tool test invariant").execute(
+        "code-wait-visual-boundary",
+        { runId: first.runId },
+      ),
+    );
+
+    expect(completed.status).toBe("completed");
+    expect(mutate.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it("labels concurrent visual results in source-call order", async () => {
+    const { config, catalogRef, tools: codeModeTools } = createCodeModeHarness();
+    const firstScreenshot = pluginToolWithExecute(
+      "fake_screenshot_first",
+      "Capture the first UI view",
+      async () => ({
+        content: [{ type: "image", data: "QQ==", mimeType: "image/png" }],
+        details: { captured: "first" },
+      }),
+    );
+    const secondScreenshot = pluginToolWithExecute(
+      "fake_screenshot_second",
+      "Capture the second UI view",
+      async () => ({
+        content: [{ type: "image", data: "Qg==", mimeType: "image/png" }],
+        details: { captured: "second" },
+      }),
+    );
+    const mutate = pluginTool("fake_concurrent_mutate", "Mutate the current UI");
+    applyCodeModeCatalog({
+      tools: [...codeModeTools, firstScreenshot, secondScreenshot, mutate],
+      config,
+      sessionId: "session-code-mode",
+      sessionKey: "agent:main:main",
+      runId: "run-code-mode",
+      catalogRef,
+    });
+
+    const firstResult = await expectDefined(codeModeTools[0], "exec tool test invariant").execute(
+      "code-call-concurrent-visual-boundary",
+      {
+        code: `
+        await Promise.all([
+          tools.call("fake_screenshot_first", { view: "first" }),
+          tools.call("fake_screenshot_second", { view: "second" }),
+        ]);
+        return await tools.callValue("fake_concurrent_mutate", {});
+      `,
+      },
+    );
+    const first = resultDetails(firstResult);
+
+    expect(firstResult.content).toEqual([
+      { type: "text", text: expect.stringContaining('"reason": "visual_observation"') },
+      {
+        type: "text",
+        text: '[visual result 1 from call "fake_screenshot_first"]',
+      },
+      { type: "image", data: "QQ==", mimeType: "image/png" },
+      {
+        type: "text",
+        text: '[visual result 2 from call "fake_screenshot_second"]',
+      },
+      { type: "image", data: "Qg==", mimeType: "image/png" },
+    ]);
+    expect(mutate.execute).not.toHaveBeenCalled();
+
+    const completed = resultDetails(
+      await expectDefined(codeModeTools[1], "wait tool test invariant").execute(
+        "code-wait-concurrent-visual-boundary",
+        { runId: first.runId },
+      ),
+    );
+
+    expect(completed.status).toBe("completed");
+    expect(mutate.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it("pauses safely when a visual result has no inline model image", async () => {
+    const { config, catalogRef, tools: codeModeTools } = createCodeModeHarness();
+    const screenshot = pluginToolWithExecute(
+      "fake_referenced_screenshot",
+      "Capture a referenced UI image",
+      async () => ({
+        content: [{ type: "image", mediaRef: "media://screenshots/latest" } as never],
+        details: { captured: true },
+      }),
+    );
+    const mutate = pluginTool("fake_referenced_mutate", "Mutate the current UI");
+    applyCodeModeCatalog({
+      tools: [...codeModeTools, screenshot, mutate],
+      config,
+      sessionId: "session-code-mode",
+      sessionKey: "agent:main:main",
+      runId: "run-code-mode",
+      catalogRef,
+    });
+
+    const firstResult = await expectDefined(codeModeTools[0], "exec tool test invariant").execute(
+      "code-call-referenced-visual-boundary",
+      {
+        code: `
+        const screenshot = await tools.call("fake_referenced_screenshot", {});
+        if (screenshot.result.content[0].mediaRef !== "media://screenshots/latest") {
+          throw new Error("visual reference missing");
+        }
+        return await tools.callValue("fake_referenced_mutate", {});
+      `,
+      },
+    );
+    const first = resultDetails(firstResult);
+
+    expect(firstResult.content).toContainEqual({
+      type: "text",
+      text: '[image observation unavailable inline; reference="media://screenshots/latest"]',
+    });
+    expect(first).toMatchObject({
+      status: "failed",
+      code: "internal_error",
+      failurePhase: "bridge",
+    });
+    expect(mutate.execute).not.toHaveBeenCalled();
+    expect(testing.activeRuns.size).toBe(0);
+  });
+
   it("keeps the actual winner when the later-started nested tool settles first", async () => {
     const { config, catalogRef, tools: codeModeTools } = createCodeModeHarness();
     let firstAborted = false;

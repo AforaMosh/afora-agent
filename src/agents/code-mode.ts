@@ -2,9 +2,11 @@
  * Host-side Code Mode controller for isolated QuickJS execution with bridged
  * tool search/call/yield support.
  */
+import { isRecord } from "@openclaw/normalization-core/record-coerce";
 import { Type } from "typebox";
 import { getAgentToolExecutionContext } from "../../packages/agent-core/src/tool-execution-context.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { ImageContent, TextContent } from "../llm/types.js";
 import type { HookContext } from "./agent-tools.before-tool-call.js";
 import {
   codeModeReplayIdForToolCall,
@@ -37,7 +39,7 @@ import {
   CodeModeHeadlessAbortError,
   CodeModeHeadlessTimeoutError,
 } from "./code-mode-worker.js";
-import type { AgentToolUpdateCallback } from "./runtime/index.js";
+import type { AgentToolResult, AgentToolUpdateCallback } from "./runtime/index.js";
 import { optionalStringEnum } from "./schema/typebox.js";
 import type { ToolDefinition } from "./sessions/index.js";
 import { resolveSwarmConfig } from "./swarm-config.js";
@@ -54,7 +56,7 @@ import {
   type ToolSearchCatalogRef,
   type ToolSearchToolContext,
 } from "./tool-search.js";
-import { jsonResult, type AnyAgentTool } from "./tools/common.js";
+import type { AnyAgentTool } from "./tools/common.js";
 
 export { CODE_MODE_EXEC_TOOL_NAME, CODE_MODE_WAIT_TOOL_NAME };
 export {
@@ -69,6 +71,29 @@ export type { CodeModeFailureCode, CodeModeHeadlessResult } from "./code-mode-ru
 type CodeModeToolContext = ToolSearchToolContext;
 
 const MAX_CODE_MODE_CATALOG_INDEX_CHARS = 8_000;
+
+function codeModeToolResult(details: unknown): AgentToolResult<unknown> {
+  let publicDetails = details;
+  let modelContent: Array<ImageContent | TextContent> = [];
+  if (isRecord(details) && Array.isArray(details.modelContent)) {
+    modelContent = details.modelContent.filter(
+      (entry): entry is ImageContent | TextContent =>
+        isRecord(entry) &&
+        ((entry.type === "text" && typeof entry.text === "string") ||
+          (entry.type === "image" &&
+            typeof entry.data === "string" &&
+            entry.data.length > 0 &&
+            typeof entry.mimeType === "string" &&
+            entry.mimeType.toLowerCase().startsWith("image/"))),
+    );
+    const { modelContent: _modelContent, ...rest } = details;
+    publicDetails = rest;
+  }
+  return {
+    content: [{ type: "text", text: JSON.stringify(publicDetails, null, 2) }, ...modelContent],
+    details: publicDetails,
+  };
+}
 
 const CODE_MODE_CATALOG_INDEX_HEADING = [
   "OpenClaw/plugin tool quick index (exact ids; descriptions are intentionally deferred):",
@@ -162,7 +187,7 @@ function createCodeModeExecDescription(
     : "";
   const catalogIndex = catalog ? formatCodeModeCatalogIndex(catalog) : "";
   return (
-    "Run JavaScript or TypeScript in OpenClaw code mode. Use `return` to pass the final value back; otherwise the result is `null`. Quick-index arrows show trusted declared output hints; `-> ?` means never guess result field names. For declared fields, process them in the first exec; do not spend another exec inspecting them. Perform dependent reads, checks, and follow-up calls in order; parallelize independent work only. For an unknown output, including a final dependent call after declared-output calls, return the raw tool value unchanged; do not wrap it in the requested answer shape or guess fields; filter or map it only in a later exec. Nested calls enforce normal tool policy and approvals. `ALL_TOOLS` is the complete compact catalog. Select exact ids directly or with `tools.search(query: string, options?)`; use `tools.describe(id: string)` only when needed. Never invent or transform a tool id. `tools.callValue(id: string, args?)` returns its JSON value directly; `tools.call(id: string, args?)` preserves `{ tool, result }`. Example: `const hit = ALL_TOOLS.find((entry) => entry.description.includes('weather')) ?? (await tools.search('weather'))[0]; return await tools.callValue(hit.id, {});`. Node.js modules and `require`/`import` are NOT available; use enabled catalog tools allowed by policy for shell, file, network, or external actions." +
+    "Run JavaScript or TypeScript in OpenClaw code mode. Use `return` to pass the final value back; otherwise the result is `null`. Quick-index arrows show trusted declared output hints; `-> ?` means never guess result field names. For declared fields, process them in the first exec; do not spend another exec inspecting them. Perform dependent reads, checks, and follow-up calls in order; parallelize independent work only. A nested call that returns an image pauses with `reason: \"visual_observation\"`; inspect the image before calling `wait` to resume dependent GUI actions. For an unknown output, including a final dependent call after declared-output calls, return the raw tool value unchanged; do not wrap it in the requested answer shape or guess fields; filter or map it only in a later exec. Nested calls enforce normal tool policy and approvals. `ALL_TOOLS` is the complete compact catalog. Select exact ids directly or with `tools.search(query: string, options?)`; use `tools.describe(id: string)` only when needed. Never invent or transform a tool id. `tools.callValue(id: string, args?)` returns its JSON value directly; `tools.call(id: string, args?)` preserves `{ tool, result }`. Example: `const hit = ALL_TOOLS.find((entry) => entry.description.includes('weather')) ?? (await tools.search('weather'))[0]; return await tools.callValue(hit.id, {});`. Node.js modules and `require`/`import` are NOT available; use enabled catalog tools allowed by policy for shell, file, network, or external actions." +
     apiGuidance +
     mcpGuidance +
     swarmGuidance +
@@ -207,7 +232,7 @@ export function createCodeModeTools(ctx: CodeModeToolContext): AnyAgentTool[] {
     ) => {
       const input = readCode(args);
       const executionContext = getAgentToolExecutionContext();
-      return jsonResult(
+      return codeModeToolResult(
         normalizeCodeModeTimeoutResult(
           await runExec({
             toolCallId,
@@ -229,7 +254,8 @@ export function createCodeModeTools(ctx: CodeModeToolContext): AnyAgentTool[] {
     name: CODE_MODE_WAIT_TOOL_NAME,
     label: "wait",
     hideFromChannelProgress: true,
-    description: "Resume a suspended OpenClaw code mode run returned by exec.",
+    description:
+      'Resume a suspended OpenClaw code mode run returned by exec. When the reason is "visual_observation", inspect the returned image first and resume only if it confirms the expected UI state.',
     parameters: Type.Object({
       runId: Type.String({ description: "Code mode run id returned by exec." }),
     }),
@@ -239,7 +265,7 @@ export function createCodeModeTools(ctx: CodeModeToolContext): AnyAgentTool[] {
       signal?: AbortSignal,
       onUpdate?: AgentToolUpdateCallback,
     ) =>
-      jsonResult(
+      codeModeToolResult(
         normalizeCodeModeTimeoutResult(
           await runWait({
             toolCallId,
