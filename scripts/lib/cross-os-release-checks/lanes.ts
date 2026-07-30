@@ -397,7 +397,7 @@ export async function runInstallerFreshSuite(
   const usesManagedGateway = shouldUseManagedGatewayService();
   const useManagedGatewayAfterInstall = shouldUseManagedGatewayForInstallerRuntime();
   const manualGateway: { current: GatewayHandle | null } = { current: null };
-  let managedHostLease: ManagedGatewayInstallerHostLease | null = null;
+  const managedHostLease: { current: ManagedGatewayInstallerHostLease | null } = { current: null };
   let managedHostOwned = false;
   let managedHostEnv: NodeJS.ProcessEnv | null = null;
   let managedHostCliPath = "";
@@ -453,7 +453,7 @@ export async function runInstallerFreshSuite(
       if (!accountHome) {
         throw new Error("Managed installer service checks require the host account home.");
       }
-      managedHostLease = acquireManagedGatewayInstallerHostLease(accountHome);
+      managedHostLease.current = acquireManagedGatewayInstallerHostLease(accountHome);
       assertManagedGatewayInstallerHostAvailable({
         accountHome,
         serviceInstalled: false,
@@ -615,12 +615,13 @@ export async function runInstallerFreshSuite(
   }
 
   let managedCleanupError: Error | undefined;
-  if (managedHostLease) {
+  const acquiredManagedHostLease = managedHostLease.current;
+  if (acquiredManagedHostLease) {
     let hostCleanupError: Error | undefined;
     try {
       if (managedHostOwned && managedHostEnv && managedHostCliPath) {
         await cleanupManagedGatewayInstallerHost({
-          accountHome: managedHostLease.accountHome,
+          accountHome: acquiredManagedHostLease.accountHome,
           cliPath: managedHostCliPath,
           env: managedHostEnv,
           lane,
@@ -633,7 +634,7 @@ export async function runInstallerFreshSuite(
     }
     let leaseReleaseError: Error | undefined;
     try {
-      managedHostLease.release();
+      acquiredManagedHostLease.release();
     } catch (error) {
       leaseReleaseError = error instanceof Error ? error : new Error(formatError(error));
     }

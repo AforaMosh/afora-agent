@@ -13,9 +13,9 @@ import {
 import { testing as updateCommandPluginsTesting } from "./update-command-plugins.test-support.js";
 import { resolvePostCoreUpdateChildStdio } from "./update-command-post-core.js";
 import { applyPostPluginConfigValidation } from "./update-command-post-plugin-validation.js";
+import { resolveUpdatedInstallCommandEnv } from "./update-command-service-env.js";
 import {
   resolvePostInstallDoctorEnv,
-  resolveUpdatedInstallCommandEnv,
   resolvePostUpdateServiceStateReadEnv,
   resolveUpdatedGatewayRestartPort,
   shouldPrepareUpdatedInstallRestart,

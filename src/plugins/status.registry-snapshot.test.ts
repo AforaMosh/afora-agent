@@ -275,6 +275,7 @@ describe("buildPluginRegistrySnapshotReport", () => {
       env,
     });
 
+    expect(report.registryDiagnostics).toEqual([]);
     expect(report.registrySource).toBe("persisted");
     expectFields(requirePlugin(report.plugins, "persisted-demo"), {
       id: "persisted-demo",

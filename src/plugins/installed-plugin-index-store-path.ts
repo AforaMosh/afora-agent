@@ -39,12 +39,9 @@ export function resolveInstalledPluginIndexStateDatabaseOptions(
       path: options.filePath,
     };
   }
-  if (options.stateDir) {
-    return {
-      env: resolveStoreEnv(options),
-    };
-  }
-  return options.env ? { env: options.env } : {};
+  return {
+    env: resolveStoreEnv(options),
+  };
 }
 
 /** Resolves the legacy JSON installed plugin index path for migration/doctor use. */
