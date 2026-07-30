@@ -429,7 +429,14 @@ describe("doctor canonical session-key repair", () => {
         path: resolveSqliteTargetFromSessionStorePath(storePath, { agentId: "main", env }).path,
       });
       database.db
-        .prepare("UPDATE session_nodes SET entry_json = 'not-json' WHERE session_key = ?")
+        .prepare(
+          `UPDATE session_nodes
+             SET entry_json = 'not-json', archived_at = 30, category = 'investigation',
+                 icon = 'archive', label = 'Recovered metadata', last_activity_at = 29,
+                 last_interaction_at = 28, last_read_at = 27, parent_session_key = 'agent:main:parent',
+                 pinned_at = 26, spawned_by = 'agent:main:controller', status = 'failed'
+           WHERE session_key = ?`,
+        )
         .run("agent:main:main");
 
       expect(await repairCanonicalSessionKeys({ apply: true, cfg, env })).toMatchObject({
@@ -450,14 +457,26 @@ describe("doctor canonical session-key repair", () => {
           .prepare("SELECT count(*) AS count FROM session_nodes WHERE session_key = ?")
           .get("agent:main:main"),
       ).toEqual({ count: 0 });
-      expect(
-        loadExactSessionEntryReadOnly({
-          agentId: "main",
-          env,
-          sessionKey: "agent:main:work",
-          storePath,
-        })?.entry.sessionId,
-      ).toBe("legacy");
+      const repaired = loadExactSessionEntryReadOnly({
+        agentId: "main",
+        env,
+        sessionKey: "agent:main:work",
+        storePath,
+      })?.entry;
+      expect(repaired).toMatchObject({
+        archivedAt: 30,
+        category: "investigation",
+        icon: "archive",
+        label: "Recovered metadata",
+        lastActivityAt: 29,
+        lastInteractionAt: 28,
+        lastReadAt: 27,
+        parentSessionKey: "agent:main:parent",
+        pinnedAt: 26,
+        sessionId: "legacy",
+        spawnedBy: "agent:main:controller",
+        status: "failed",
+      });
       expect(() =>
         replaceSessionEntrySync(
           { agentId: "main", env, sessionKey: "agent:main:main", storePath },

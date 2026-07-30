@@ -95,11 +95,9 @@ export function listSqliteSessionGenerationIdsForCanonicalRepair(params: {
 }
 
 /** Doctor inventory hydrates rejected legacy blobs from promoted identity/timestamp columns. */
-function hydrateCanonicalRepairEntry(row: {
-  current_session_id: string;
-  entry_json: string;
-  updated_at: number;
-}): SessionEntry {
+function hydrateCanonicalRepairEntry(
+  row: Selectable<OpenClawAgentKyselyDatabase["session_nodes"]>,
+): SessionEntry {
   let record: Record<string, unknown> = {};
   try {
     const parsed = JSON.parse(row.entry_json) as unknown;
@@ -109,8 +107,39 @@ function hydrateCanonicalRepairEntry(row: {
   } catch {
     // Doctor owns malformed legacy repair; promoted identity columns keep the row reachable.
   }
+  const createdActor = row.created_actor_type
+    ? {
+        type: row.created_actor_type,
+        ...(row.created_actor_id ? { id: row.created_actor_id } : {}),
+      }
+    : undefined;
+  const forkSource =
+    row.fork_source_session_key && row.fork_source_session_id
+      ? {
+          sessionKey: row.fork_source_session_key,
+          sessionId: row.fork_source_session_id,
+          ...(row.fork_source_entry_id ? { entryId: row.fork_source_entry_id } : {}),
+        }
+      : undefined;
   return projectCanonicalSessionEntryShape({
     ...record,
+    ...(row.status ? { status: row.status } : {}),
+    ...(row.created_at !== null ? { createdAt: row.created_at } : {}),
+    ...(row.created_via ? { createdVia: row.created_via } : {}),
+    ...(createdActor ? { createdActor } : {}),
+    ...(row.spawned_by ? { spawnedBy: row.spawned_by } : {}),
+    ...(row.parent_session_key && row.parent_session_key !== row.spawned_by
+      ? { parentSessionKey: row.parent_session_key }
+      : {}),
+    ...(forkSource ? { forkSource } : {}),
+    ...(row.label ? { label: row.label } : {}),
+    ...(row.category ? { category: row.category } : {}),
+    ...(row.icon ? { icon: row.icon } : {}),
+    ...(row.pinned_at !== null ? { pinnedAt: row.pinned_at } : {}),
+    ...(row.archived_at !== null ? { archivedAt: row.archived_at } : {}),
+    ...(row.last_read_at !== null ? { lastReadAt: row.last_read_at } : {}),
+    ...(row.last_interaction_at !== null ? { lastInteractionAt: row.last_interaction_at } : {}),
+    ...(row.last_activity_at !== null ? { lastActivityAt: row.last_activity_at } : {}),
     // The canonical parser rejected this blob, so duplicate or malformed identity fields are
     // untrusted. Promoted columns remain the durable transcript identity for doctor repair.
     sessionId: row.current_session_id,
@@ -134,13 +163,8 @@ export function listSqliteSessionEntriesForCanonicalRepair(
             .onRef("retained_window.session_id", "=", "session_nodes.current_session_id")
             .onRef("retained_window.session_key", "=", "session_nodes.session_key"),
         )
-        .select([
-          "session_nodes.session_key",
-          "session_nodes.current_session_id",
-          "session_nodes.entry_json",
-          "session_nodes.updated_at",
-          "retained_window.session_id as retained_window_id",
-        ]),
+        .selectAll("session_nodes")
+        .select("retained_window.session_id as retained_window_id"),
     ).rows.flatMap((row) => {
       // Exact {} plus an owned window is the durable retained-history tombstone.
       if (row.entry_json === "{}" && row.retained_window_id === row.current_session_id) {
