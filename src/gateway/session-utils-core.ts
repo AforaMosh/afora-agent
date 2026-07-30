@@ -9,10 +9,7 @@ import { shouldKeepSubagentRunChildLink } from "../agents/subagent-run-liveness.
 import { stripInboundMetadata } from "../auto-reply/reply/strip-inbound-meta.js";
 import type { SessionEntry } from "../config/sessions.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
-import {
-  isFinitePositiveTimestamp,
-  shouldKeepStoreOnlyChildLink,
-} from "../sessions/session-entry-visibility.js";
+import { shouldKeepStoreOnlyChildLink } from "../sessions/session-entry-visibility.js";
 import { resolveNonNegativeNumber } from "../shared/number-coercion.js";
 import { truncateUtf16Safe } from "../utils.js";
 import {

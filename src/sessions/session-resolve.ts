@@ -1,7 +1,6 @@
 // Canonical session selector resolution.
 // Resolves key/sessionId/label selectors into one canonical session key.
 import { expectDefined } from "@openclaw/normalization-core";
-import { err as resultError, ok } from "@openclaw/normalization-core/result";
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
 import { canonicalizeSessionEntryAliases, type SessionEntry } from "../config/sessions.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
@@ -29,12 +28,19 @@ function resolveSessionVisibilityFilterOptions(p: SessionSelector) {
 }
 
 function resolveError(kind: SessionResolveError["kind"], message: string): SessionResolveResult {
-  return resultError({ kind, message });
+  return { ok: false, error: { kind, message } };
 }
 
-function noSessionFoundResult(params: { p: SessionSelector; message: string }) {
+function resolveSuccess(key: string): SessionResolveResult {
+  return { ok: true, value: { key } };
+}
+
+function noSessionFoundResult(params: {
+  p: SessionSelector;
+  message: string;
+}): SessionResolveResult {
   if (params.p.allowMissing) {
-    return ok(null);
+    return { ok: true, value: null };
   }
   return resolveError("not-found", params.message);
 }
@@ -139,7 +145,7 @@ export async function resolveSessionSelector(
       if (agentCheck) {
         return agentCheck;
       }
-      return ok({ key: target.canonicalKey });
+      return resolveSuccess(target.canonicalKey);
     }
     const legacyKey = target.storeKeys.find((candidate) => store[candidate]);
     if (!legacyKey) {
@@ -175,7 +181,7 @@ export async function resolveSessionSelector(
     if (agentCheckLegacy) {
       return agentCheckLegacy;
     }
-    return ok({ key: refreshedTarget.canonicalKey });
+    return resolveSuccess(refreshedTarget.canonicalKey);
   }
 
   if (hasSessionId) {
@@ -207,7 +213,7 @@ export async function resolveSessionSelector(
     if (agentCheckSessionId) {
       return agentCheckSessionId;
     }
-    return ok({ key: selection.sessionKey });
+    return resolveSuccess(selection.sessionKey);
   }
 
   const parsedLabel = parseSessionLabel(p.label);
@@ -241,5 +247,5 @@ export async function resolveSessionSelector(
   if (agentCheckLabel) {
     return agentCheckLabel;
   }
-  return ok({ key: labelKey });
+  return resolveSuccess(labelKey);
 }

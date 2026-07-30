@@ -13,10 +13,10 @@ import {
 import {
   addSessionMember,
   listSessionMembers,
-  loadCombinedSessionStore,
   removeSessionMember,
 } from "../../config/sessions.js";
 import { patchSessionEntry } from "../../config/sessions/session-accessor.js";
+import { loadCombinedSessionStore } from "../../sessions/session-combined-store.js";
 import { runQueuedStoreWrite, type StoreWriterQueue } from "../../shared/store-writer-queue.js";
 import { listProfiles } from "../../state/user-profiles.js";
 import {
