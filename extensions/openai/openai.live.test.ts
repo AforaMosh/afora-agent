@@ -29,6 +29,8 @@ const describeLive = liveEnabled ? describe : describe.skip;
 const EMPTY_AUTH_STORE = { version: 1, profiles: {} } as const;
 const LIVE_TTS_TIMEOUT_MS = 60_000;
 const LIVE_STT_FIXTURE_TTS_TIMEOUT_MS = 120_000;
+// Source live lanes lazily compile the model runtime graph before the 45s provider deadline starts.
+const LIVE_VISION_TEST_TIMEOUT_MS = 600_000;
 const ModelRegistryCtor = ModelRegistry as unknown as {
   new (authStorage: AuthStorage, modelsJsonPath?: string): ModelRegistry;
 };
@@ -431,44 +433,48 @@ describeLive("openai plugin live", () => {
     }
   }, 300_000);
 
-  it("describes a deterministic image through the registered media provider", async () => {
-    const { mediaProviders } = await registerOpenAIPlugin();
-    const mediaProvider = requireRegisteredProvider(mediaProviders, "openai");
+  it(
+    "describes a deterministic image through the registered media provider",
+    async () => {
+      const { mediaProviders } = await registerOpenAIPlugin();
+      const mediaProvider = requireRegisteredProvider(mediaProviders, "openai");
 
-    const cfg = createLiveConfig();
-    const agentDir = await createTempAgentDir();
+      const cfg = createLiveConfig();
+      const agentDir = await createTempAgentDir();
 
-    try {
-      let description:
-        | Awaited<ReturnType<NonNullable<typeof mediaProvider.describeImage>>>
-        | undefined;
       try {
-        description = await mediaProvider.describeImage?.({
-          buffer: createReferencePng(),
-          fileName: "reference.png",
-          mime: "image/png",
-          prompt: "Reply with one lowercase word for the dominant center color.",
-          timeoutMs: 45_000,
-          agentDir,
-          cfg,
-          authStore: EMPTY_AUTH_STORE,
-          model: LIVE_VISION_MODEL,
-          provider: "openai",
-        });
-      } catch (err) {
-        const skipReason = resolveLiveOpenAISkipReason(err);
-        if (skipReason) {
-          console.warn(
-            `[live:openai] image description skipped: ${skipReason}: ${formatLiveOpenAIError(err)}`,
-          );
-          return;
+        let description:
+          | Awaited<ReturnType<NonNullable<typeof mediaProvider.describeImage>>>
+          | undefined;
+        try {
+          description = await mediaProvider.describeImage?.({
+            buffer: createReferencePng(),
+            fileName: "reference.png",
+            mime: "image/png",
+            prompt: "Reply with one lowercase word for the dominant center color.",
+            timeoutMs: 45_000,
+            agentDir,
+            cfg,
+            authStore: EMPTY_AUTH_STORE,
+            model: LIVE_VISION_MODEL,
+            provider: "openai",
+          });
+        } catch (err) {
+          const skipReason = resolveLiveOpenAISkipReason(err);
+          if (skipReason) {
+            console.warn(
+              `[live:openai] image description skipped: ${skipReason}: ${formatLiveOpenAIError(err)}`,
+            );
+            return;
+          }
+          throw err;
         }
-        throw err;
-      }
 
-      expect((description?.text ?? "").toLowerCase()).toContain("orange");
-    } finally {
-      await removeTempAgentDir(agentDir);
-    }
-  }, 240_000);
+        expect((description?.text ?? "").toLowerCase()).toContain("orange");
+      } finally {
+        await removeTempAgentDir(agentDir);
+      }
+    },
+    LIVE_VISION_TEST_TIMEOUT_MS,
+  );
 });
