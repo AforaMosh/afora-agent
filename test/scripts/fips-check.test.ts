@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  collectFipsEvidence,
   createFipsReport,
   evaluateFipsChecks,
   formatFipsReport,
@@ -56,6 +57,71 @@ describe("fips-check", () => {
     expect(report.ok).toBe(true);
     expect(report.summary.fail).toBe(0);
     expect(report.kind).toBe("openclaw-fips-runtime-report");
+  });
+
+  it.each([
+    {
+      label: "NODE_OPTIONS equals syntax",
+      env: { NODE_OPTIONS: "--openssl-config=/approved/node.cnf" },
+      execArgv: [],
+    },
+    {
+      label: "NODE_OPTIONS split syntax",
+      env: { NODE_OPTIONS: "--openssl-config /approved/node.cnf" },
+      execArgv: [],
+    },
+    {
+      label: "NODE_OPTIONS underscore syntax",
+      env: { NODE_OPTIONS: "--openssl_config=/approved/node.cnf" },
+      execArgv: [],
+    },
+    {
+      label: "execArgv equals syntax",
+      env: {},
+      execArgv: ["--openssl-config=/approved/node.cnf"],
+    },
+    {
+      label: "execArgv split syntax",
+      env: {},
+      execArgv: ["--openssl-config", "/approved/node.cnf"],
+    },
+    {
+      label: "execArgv underscore syntax",
+      env: {},
+      execArgv: ["--openssl_config=/approved/node.cnf"],
+    },
+  ])("records OpenSSL config supplied through $label", ({ env, execArgv }) => {
+    const collected = collectFipsEvidence({
+      env,
+      execArgv,
+      fsImpl: {
+        readFileSync() {
+          throw new Error("not available");
+        },
+      },
+      execFileSyncImpl: () => "OpenSSL 3.5.5",
+      hostname: "gateway",
+    });
+
+    expect(collected.activation.opensslConfig).toBe(true);
+  });
+
+  it("does not match an OpenSSL option inside another quoted NODE_OPTIONS value", () => {
+    const collected = collectFipsEvidence({
+      env: {
+        NODE_OPTIONS: '--title="gateway --openssl-config=/approved/node.cnf"',
+      },
+      execArgv: [],
+      fsImpl: {
+        readFileSync() {
+          throw new Error("not available");
+        },
+      },
+      execFileSyncImpl: () => "OpenSSL 3.5.5",
+      hostname: "gateway",
+    });
+
+    expect(collected.activation.opensslConfig).toBe(false);
   });
 
   it("fails closed when Node is not in FIPS mode", () => {

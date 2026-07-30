@@ -61,10 +61,69 @@ function isSupportedNodeVersion(version) {
   return major >= 26;
 }
 
-function hasNodeOption(nodeOptions, execArgv, option) {
-  const escaped = option.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
-  const nodeOptionsMatch = new RegExp(`(?:^|\\s)${escaped}(?:\\s|$)`, "u").test(nodeOptions ?? "");
-  return nodeOptionsMatch || execArgv.includes(option);
+function parseNodeOptions(nodeOptions) {
+  const argv = [];
+  let inString = false;
+  let startsNewArg = true;
+
+  // Match Node's ParseNodeOptionsEnvVar contract: spaces delimit arguments,
+  // double quotes group them, and backslashes escape only inside quotes.
+  for (let index = 0; index < nodeOptions.length; index += 1) {
+    let character = nodeOptions[index];
+    if (character === "\\" && inString) {
+      index += 1;
+      if (index === nodeOptions.length) {
+        return null;
+      }
+      character = nodeOptions[index];
+    } else if (character === " " && !inString) {
+      startsNewArg = true;
+      continue;
+    } else if (character === '"') {
+      inString = !inString;
+      continue;
+    }
+
+    if (startsNewArg) {
+      argv.push(character);
+      startsNewArg = false;
+    } else {
+      argv[argv.length - 1] += character;
+    }
+  }
+
+  return inString ? null : argv;
+}
+
+function normalizeNodeOptionName(arg) {
+  const valueSeparator = arg.indexOf("=");
+  const name = valueSeparator === -1 ? arg : arg.slice(0, valueSeparator);
+  const normalizedName = name.replaceAll("_", "-");
+  return valueSeparator === -1 ? normalizedName : normalizedName + arg.slice(valueSeparator);
+}
+
+function hasNodeOption(nodeOptionsArgv, execArgv, option) {
+  return (
+    Boolean(nodeOptionsArgv?.some((arg) => normalizeNodeOptionName(arg) === option)) ||
+    execArgv.some((arg) => normalizeNodeOptionName(arg) === option)
+  );
+}
+
+function hasValuedOption(argv, option) {
+  return argv.some((arg, index) => {
+    const normalizedArg = normalizeNodeOptionName(arg);
+    if (normalizedArg.startsWith(`${option}=`)) {
+      return normalizedArg.length > option.length + 1;
+    }
+    return normalizedArg === option && Boolean(argv[index + 1]?.trim());
+  });
+}
+
+function hasValuedNodeOption(nodeOptionsArgv, execArgv, option) {
+  return (
+    Boolean(nodeOptionsArgv && hasValuedOption(nodeOptionsArgv, option)) ||
+    hasValuedOption(execArgv, option)
+  );
 }
 
 export function evaluateFipsChecks(evidence) {
@@ -180,6 +239,7 @@ export function collectFipsEvidence(options = {}) {
   const tlsImpl = options.tlsImpl ?? tls;
   const env = options.env ?? process.env;
   const execArgv = options.execArgv ?? process.execArgv;
+  const nodeOptionsArgv = parseNodeOptions(env.NODE_OPTIONS ?? "");
   const primitiveProbes = [
     probe("sha256", () => cryptoImpl.createHash("sha256").update("openclaw").digest()),
     probe("sha384", () => cryptoImpl.createHash("sha384").update("openclaw").digest()),
@@ -243,9 +303,11 @@ export function collectFipsEvidence(options = {}) {
       fipsEnabled: cryptoImpl.getFips() === 1,
     },
     activation: {
-      enableFipsFlag: hasNodeOption(env.NODE_OPTIONS, execArgv, "--enable-fips"),
-      forceFipsFlag: hasNodeOption(env.NODE_OPTIONS, execArgv, "--force-fips"),
-      opensslConfig: Boolean(env.OPENSSL_CONF?.trim()),
+      enableFipsFlag: hasNodeOption(nodeOptionsArgv, execArgv, "--enable-fips"),
+      forceFipsFlag: hasNodeOption(nodeOptionsArgv, execArgv, "--force-fips"),
+      opensslConfig:
+        Boolean(env.OPENSSL_CONF?.trim()) ||
+        hasValuedNodeOption(nodeOptionsArgv, execArgv, "--openssl-config"),
       opensslModules: Boolean(env.OPENSSL_MODULES?.trim()),
     },
     kernelIndicator: readTextFile("/proc/sys/crypto/fips_enabled", fsImpl),

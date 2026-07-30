@@ -58,8 +58,8 @@ The operator owns:
 FIPS mode must be active before the Node.js process starts. Node supports
 provider configuration through an OpenSSL configuration file plus
 `--enable-fips` or `--force-fips`. Depending on the Node.js distribution, the
-startup environment commonly includes `OPENSSL_CONF`, `OPENSSL_MODULES`, and a
-FIPS flag in `NODE_OPTIONS`. See the
+startup environment commonly includes `OPENSSL_CONF` or `--openssl-config`,
+`OPENSSL_MODULES`, and a FIPS flag in `NODE_OPTIONS`. See the
 [Node.js FIPS guidance](https://nodejs.org/docs/latest-v24.x/api/crypto.html#fips-mode)
 for the upstream activation contract.
 
