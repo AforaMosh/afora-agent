@@ -650,6 +650,11 @@ describe("session accessor seam", () => {
     database.db
       .prepare("UPDATE session_nodes SET entry_valid = -1 WHERE session_key = ?")
       .run("agent:main:placeholder");
+    database.db
+      .prepare(
+        "INSERT INTO session_windows (session_id, session_key, reason, created_at, updated_at) VALUES (?, ?, 'recovery', ?, ?)",
+      )
+      .run("retained-session", "agent:main:placeholder", 8, 8);
     insert.run("agent:main:empty-corrupt", "empty-promoted-session", "{}", 7);
     const duplicateFields =
       '{"sessionId":"first","sessionId":"ambiguous","updatedAt":1,"updatedAt":2}';
