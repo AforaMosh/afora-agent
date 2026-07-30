@@ -24,12 +24,16 @@ describe("commentary reported twice", () => {
     });
     const receipt = createChannelProgressReceiptTracker({ now: () => 0 });
 
-    for (const note of ["First step.", "Second step."]) {
-      await compositor.pushCommentaryProgress(note, { itemId: `item-${note}` });
-      receipt.noteCommentary(`item-${note}`, note);
-      await compositor.pushCommentaryProgress(note);
-      receipt.noteCommentary(undefined, note);
-    }
+    // Both arrival orders: the id-bearing report can land first or last.
+    await compositor.pushCommentaryProgress("First step.", { itemId: "item-1" });
+    receipt.noteCommentary("item-1", "First step.");
+    await compositor.pushCommentaryProgress("First step.");
+    receipt.noteCommentary(undefined, "First step.");
+
+    await compositor.pushCommentaryProgress("Second step.");
+    receipt.noteCommentary(undefined, "Second step.");
+    await compositor.pushCommentaryProgress("Second step.", { itemId: "item-2" });
+    receipt.noteCommentary("item-2", "Second step.");
 
     const rendered = updates.at(-1) ?? "";
     expect(rendered.match(/First step\./gu) ?? []).toHaveLength(1);

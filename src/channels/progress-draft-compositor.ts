@@ -50,7 +50,7 @@ export function createChannelProgressReceiptTracker(params?: { now?: () => numbe
   let commentaryNotes = 0;
   let reasoningOpen = false;
   const seenCommentaryIds = new Set<string>();
-  let lastCommentaryText = "";
+  const seenCommentaryTexts = new Set<string>();
 
   const closeReasoning = () => {
     if (!reasoningOpen) {
@@ -67,7 +67,7 @@ export function createChannelProgressReceiptTracker(params?: { now?: () => numbe
     commentaryNotes = 0;
     reasoningOpen = false;
     seenCommentaryIds.clear();
-    lastCommentaryText = "";
+    seenCommentaryTexts.clear();
   };
 
   return {
@@ -86,18 +86,15 @@ export function createChannelProgressReceiptTracker(params?: { now?: () => numbe
       if (!trimmed) {
         return;
       }
+      // One note is reported twice, with and without its item id, in either
+      // order. Counting on first sight of either fact keeps the total honest.
+      const seen =
+        seenCommentaryTexts.has(trimmed) || (itemId ? seenCommentaryIds.has(itemId) : false);
+      seenCommentaryTexts.add(trimmed);
       if (itemId) {
-        if (!seenCommentaryIds.has(itemId)) {
-          seenCommentaryIds.add(itemId);
-          commentaryNotes += 1;
-        }
-        // The same note is reported again without its id; remembering the text
-        // keeps that repeat from counting as a second note.
-        lastCommentaryText = trimmed;
-        return;
+        seenCommentaryIds.add(itemId);
       }
-      if (trimmed !== lastCommentaryText) {
-        lastCommentaryText = trimmed;
+      if (!seen) {
         commentaryNotes += 1;
       }
     },
@@ -331,14 +328,17 @@ export function createChannelProgressDraftCompositor(params: {
     normalized: string;
     bareNormalized: string;
   }): string => {
-    if (commentary.itemId) {
-      return `commentary:${commentary.itemId}`;
-    }
+    // Text first, so the pair resolves to one line in either arrival order: the
+    // id-less report cannot know the item id, and the id-bearing one must not
+    // open a second line for a note already on the board.
     const knownLineId = commentary.bareNormalized
       ? commentaryLineIdByBareText.get(commentary.bareNormalized)
       : undefined;
     if (knownLineId) {
       return knownLineId;
+    }
+    if (commentary.itemId) {
+      return `commentary:${commentary.itemId}`;
     }
     if (!commentary.normalized) {
       // Sanitized to nothing (directive-only / NO_REPLY): no line to address, so
