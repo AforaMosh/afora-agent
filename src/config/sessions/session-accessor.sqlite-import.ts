@@ -91,6 +91,9 @@ export async function importSqliteSessionRows(
           }
           if (
             appendTranscriptEventInTransaction(database, transcriptScope, event, {
+              // A raw legacy import does not prove a source event companion.
+              // Do not rebuild authorization from its payload or session key.
+              forceMemoryPolicyPending: true,
               scheduleProjectionReconcile: false,
               touchMutation: false,
             })

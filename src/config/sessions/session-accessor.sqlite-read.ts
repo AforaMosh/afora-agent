@@ -411,7 +411,7 @@ export function findSqliteTranscriptEvent(
   return findVisibleSqliteTranscriptEventInDatabase(database, resolved.sessionId, match);
 }
 
-export function findSqliteTranscriptEventInDatabase(
+function findRawSqliteTranscriptEventInDatabase(
   database: OpenClawAgentDatabase,
   sessionId: string,
   match: (event: TranscriptEvent) => boolean,
@@ -445,7 +445,7 @@ function findVisibleSqliteTranscriptEventInDatabase(
 ): { event: TranscriptEvent } | undefined {
   const authorizedSeqs = readAuthorizedTranscriptEventSeqs(database.db, sessionId);
   if (!authorizedSeqs) {
-    return findSqliteTranscriptEventInDatabase(database, sessionId, match);
+    return findRawSqliteTranscriptEventInDatabase(database, sessionId, match);
   }
   if (authorizedSeqs.size === 0) {
     return undefined;
@@ -470,6 +470,15 @@ function findVisibleSqliteTranscriptEventInDatabase(
     }
   }
   return undefined;
+}
+
+/** Finds one replay-visible transcript event from an already-open database. */
+export function findSqliteTranscriptEventInDatabase(
+  database: OpenClawAgentDatabase,
+  sessionId: string,
+  match: (event: TranscriptEvent) => boolean,
+): { event: TranscriptEvent } | undefined {
+  return findVisibleSqliteTranscriptEventInDatabase(database, sessionId, match);
 }
 
 export function readTranscriptEventMessage(

@@ -169,6 +169,7 @@ export type MemoryPluginRuntime = {
   syncAuthorized?: AuthorizedMemoryRuntime["syncAuthorized"];
   exportAuthorized?: AuthorizedMemoryRuntime["exportAuthorized"];
   statusAuthorized?: AuthorizedMemoryRuntime["statusAuthorized"];
+  prepareTranscriptPolicy?: AuthorizedMemoryRuntime["prepareTranscriptPolicy"];
   getMemorySearchManager(params: {
     cfg: OpenClawConfig;
     agentId: string;
