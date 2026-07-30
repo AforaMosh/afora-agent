@@ -13,6 +13,7 @@ import {
   touchTranscriptMutationInTransaction,
 } from "./session-accessor.sqlite-transcript-state.js";
 import { appendTranscriptEventInTransaction } from "./session-accessor.sqlite-transcript-store.js";
+import type { TrustedSessionMemorySubjectSeed } from "./session-memory-subject.js";
 import { reconcileSessionTranscriptIndexInTransaction } from "./session-transcript-index.js";
 import type { SessionEntry } from "./types.js";
 
@@ -23,6 +24,8 @@ type SqliteSessionImportRowsParams = {
   storePath?: string;
   sessionKey: string;
   entry: SessionEntry;
+  /** Exact trusted provenance for an import whose source lineage was confirmed. */
+  confirmedMemorySubjectLineage?: TrustedSessionMemorySubjectSeed;
   readTranscriptEvents?: (append: (event: TranscriptEvent) => void) => void;
   transcriptMtimeMs?: number;
 };
@@ -64,7 +67,14 @@ export async function importSqliteSessionRows(
           sessionId: params.entry.sessionId,
         }),
       };
-      writeSessionEntry(database, resolved.sessionKey, importedEntry);
+      writeSessionEntry(
+        database,
+        resolved.sessionKey,
+        importedEntry,
+        params.confirmedMemorySubjectLineage
+          ? { memorySubjectSeed: params.confirmedMemorySubjectLineage }
+          : {},
+      );
       if (params.readTranscriptEvents) {
         const transcriptScope = {
           ...resolved,

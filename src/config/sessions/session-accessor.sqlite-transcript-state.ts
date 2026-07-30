@@ -7,7 +7,10 @@ import type { OpenClawAgentDatabase } from "../../state/openclaw-agent-db.js";
 import { publishSqliteSessionEntryCacheInvalidation } from "./session-accessor.sqlite-entry-cache.js";
 import { normalizeSqliteNumber } from "./session-accessor.sqlite-normalize.js";
 import { getSessionKysely, type ResolvedTranscriptScope } from "./session-accessor.sqlite-scope.js";
-import { persistSessionMemorySubjectInTransaction } from "./session-memory-subject.js";
+import {
+  persistSessionMemorySubjectInTransaction,
+  type TrustedSessionMemorySubjectSeed,
+} from "./session-memory-subject.js";
 import { deleteSessionTranscriptIndexInTransaction } from "./session-transcript-index.js";
 
 function createTranscriptGeneration(): string {
@@ -69,6 +72,7 @@ export function ensureTranscriptSessionRoot(
   database: OpenClawAgentDatabase,
   scope: ResolvedTranscriptScope,
   updatedAt: number,
+  memorySubjectSeed?: TrustedSessionMemorySubjectSeed,
 ): void {
   const db = getSessionKysely(database.db);
   const insertedNode = executeSqliteQuerySync(
@@ -111,6 +115,7 @@ export function ensureTranscriptSessionRoot(
     sessionKey: scope.sessionKey,
     sessionId: scope.sessionId,
     sessionScope: "conversation",
+    ...(memorySubjectSeed ? { seed: memorySubjectSeed } : {}),
     now: updatedAt,
   });
 }

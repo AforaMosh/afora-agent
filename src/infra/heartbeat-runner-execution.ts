@@ -30,6 +30,7 @@ import { resolveStorePath } from "../config/sessions/paths.js";
 import {
   applySessionEntryLifecycleMutation,
   loadExactSessionEntry,
+  prepareAutonomousAgentSessionMemorySubjectSeed,
   type SessionEntryLifecycleRemoval,
 } from "../config/sessions/session-accessor.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
@@ -492,6 +493,8 @@ export async function prepareHeartbeatRunStage(wake: ReadyHeartbeatWake) {
       sessionEntry: entry,
     });
     const isolatedStorePath = resolveStorePath(cfg.session?.store, { agentId });
+    // Shared-state identity must be ready before the isolated agent transaction.
+    const memorySubjectSeed = prepareAutonomousAgentSessionMemorySubjectSeed(agentId);
     const staleIsolatedSessionKey = resolveStaleHeartbeatIsolatedSessionKey({
       sessionKey,
       isolatedSessionKey,
@@ -533,6 +536,7 @@ export async function prepareHeartbeatRunStage(wake: ReadyHeartbeatWake) {
       upserts: [
         {
           sessionKey: isolatedSessionKey,
+          memorySubjectSeed,
           buildEntry: ({ store }) => {
             const cronSession = resolveCronSession({
               cfg,

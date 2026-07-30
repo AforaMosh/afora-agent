@@ -9,6 +9,7 @@ import { parseSqliteSessionFileMarker } from "./legacy-sqlite-marker.js";
 import {
   forkSessionFromParentTranscript,
   loadTranscriptEvents,
+  readCurrentSessionMemorySubject,
   replaceSessionEntry,
   replaceTranscriptEvents,
 } from "./session-accessor.js";
@@ -36,6 +37,14 @@ async function seedParentTranscript(params: {
       storePath: params.storePath,
     },
     params.events,
+  );
+  await replaceSessionEntry(
+    {
+      agentId: "main",
+      sessionKey: "agent:main:main",
+      storePath: params.storePath,
+    },
+    { sessionId: params.parentSessionId, updatedAt: Date.now() },
   );
 }
 
@@ -132,6 +141,14 @@ describe("forkSessionFromParentTranscript", () => {
       },
     ];
     await seedParentTranscript({ storePath, parentSessionId, events: lines });
+    const parentSubject = readCurrentSessionMemorySubject({
+      agentId: "main",
+      sessionKey: "agent:main:main",
+      storePath,
+    });
+    if (!parentSubject) {
+      throw new Error("expected parent memory subject");
+    }
 
     const forked = await forkSessionFromParentTranscript({
       parentEntry: {
@@ -150,6 +167,16 @@ describe("forkSessionFromParentTranscript", () => {
     const fork = forked.transcript;
     expect(fork.sessionFile).toBe("agent:main:child");
     expect(fork.sessionId).not.toBe(parentSessionId);
+    const childSubject = readCurrentSessionMemorySubject({
+      agentId: "main",
+      sessionKey: "agent:main:child",
+      storePath,
+    });
+    if (!childSubject) {
+      throw new Error("expected forked child memory subject");
+    }
+    expect(childSubject.subjectRevision).toBe(parentSubject.subjectRevision);
+    expect(childSubject.subject).toEqual(parentSubject.subject);
     const forkedEntries = (await loadTranscriptEvents({
       agentId: "main",
       sessionId: fork.sessionId,

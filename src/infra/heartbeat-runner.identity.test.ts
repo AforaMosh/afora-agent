@@ -1,6 +1,7 @@
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { resolveStorePath } from "../config/sessions.js";
+import { readCurrentSessionMemorySubject } from "../config/sessions/session-accessor.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { runHeartbeatOnce } from "./heartbeat-runner.js";
 import { installHeartbeatRunnerTestRuntime } from "./heartbeat-runner.test-harness.js";
@@ -72,6 +73,16 @@ describe("runHeartbeatOnce identity", () => {
         const historianStore = readSessionStoreForTest(historianStorePath);
         expect(historianStore.global).toBeDefined();
         expect(historianStore["global:heartbeat"] !== undefined).toBe(isolatedSession);
+        if (isolatedSession) {
+          const subject = readCurrentSessionMemorySubject({
+            sessionKey: expectedSessionKey,
+            storePath: historianStorePath,
+          });
+          if (!subject) {
+            throw new Error("expected isolated heartbeat memory subject");
+          }
+          expect(subject.subject).toMatchObject({ kind: "agent" });
+        }
       });
     },
   );
