@@ -1,5 +1,6 @@
 // Managed gateway service lifecycle before and after an update.
 import fs from "node:fs/promises";
+import path from "node:path";
 import { Writable } from "node:stream";
 import { confirm, isCancel } from "@clack/prompts";
 import { err as resultError, ok, type Result } from "@openclaw/normalization-core/result";
