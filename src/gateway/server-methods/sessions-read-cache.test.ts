@@ -2,7 +2,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { SessionsListParams } from "../../../packages/gateway-protocol/src/index.js";
 import { upsertSessionEntry } from "../../config/sessions/session-accessor.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import { resolveIncognitoOpenClawAgentSqlitePath } from "../../state/openclaw-agent-db.js";
 import { withOpenClawTestState } from "../../test-utils/openclaw-test-state.js";
+import { prepareGatewaySessionListQuery } from "./sessions-shared.js";
 import type { GatewayClient, GatewayRequestContext, RespondFn } from "./types.js";
 
 const loader = vi.hoisted(() => ({ calls: vi.fn(), failNext: false }));
@@ -121,6 +123,29 @@ afterEach(() => {
 });
 
 describe("sessions.list single-flight", () => {
+  it("keeps unrelated incognito agents out of the bounded query plan", async () => {
+    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+      const config = await seedSessions();
+      await upsertSessionEntry(
+        {
+          agentId: "work",
+          sessionKey: "agent:work:dashboard:incognito-unrelated",
+          storePath: resolveIncognitoOpenClawAgentSqlitePath({ agentId: "work" }),
+        },
+        { incognito: true, sessionId: "incognito-unrelated", updatedAt: 500 },
+      );
+
+      const prepared = prepareGatewaySessionListQuery({
+        client: null,
+        config,
+        configuredAgentsOnly: false,
+        list: { agentId: "main", limit: 1 },
+      });
+      expect(prepared.hasResidualFilters).toBe(false);
+      expect(prepared.query.limit).toBe(1);
+    });
+  });
+
   it.each([
     { agentId: "main", archived: false as const, limit: 10 },
     { agentId: "main", archived: true as const, limit: 1 },

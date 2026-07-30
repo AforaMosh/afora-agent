@@ -400,7 +400,11 @@ export function loadCombinedSessionStoreForGateway(
     ...(requestedAgentId ? { requestedAgentId } : {}),
   });
   const targets = resolved.targets;
-  const openIncognito = includeIncognito && listOpenIncognitoAgentDatabases().length > 0;
+  const openIncognito =
+    includeIncognito &&
+    listOpenIncognitoAgentDatabases().some(
+      ({ agentId }) => !allowedIncognitoAgentIds || allowedIncognitoAgentIds.has(agentId),
+    );
   let query =
     opts.query && (targets.length !== 1 || openIncognito)
       ? { ...opts.query, limit: undefined }

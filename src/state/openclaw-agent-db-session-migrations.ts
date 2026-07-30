@@ -323,19 +323,25 @@ export function ensureSessionEntryValidityProjection(db: DatabaseSync): void {
       UPDATE session_nodes SET entry_valid = 0 WHERE session_key = NEW.session_key;
     END;
   `);
-  const rows = db
-    .prepare(
-      "SELECT current_session_id, entry_json, session_key, updated_at FROM session_nodes WHERE entry_valid = 0",
-    )
-    .all() as Array<{
-    current_session_id: string;
-    entry_json: string;
-    session_key: string;
-    updated_at: number;
-  }>;
+  const selectPending = db.prepare(
+    "SELECT current_session_id, entry_json, session_key, updated_at FROM session_nodes WHERE entry_valid = 0 ORDER BY session_key LIMIT 256",
+  );
   const update = db.prepare("UPDATE session_nodes SET entry_valid = ? WHERE session_key = ?");
-  for (const row of rows) {
-    update.run(parseSqliteSessionEntryJson(row) ? 1 : -1, row.session_key);
+  while (true) {
+    // Exhaust the bounded SELECT before updating its source table; SQLite does not define
+    // stepping a cursor while the same connection mutates rows visible to that cursor.
+    const rows = selectPending.all() as Array<{
+      current_session_id: string;
+      entry_json: string;
+      session_key: string;
+      updated_at: number;
+    }>;
+    if (rows.length === 0) {
+      break;
+    }
+    for (const row of rows) {
+      update.run(parseSqliteSessionEntryJson(row) ? 1 : -1, row.session_key);
+    }
   }
 }
 

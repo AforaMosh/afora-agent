@@ -111,6 +111,31 @@ describe("listSessionsFromStore subagent metadata", () => {
     expect(residual.selectionResidual).toBe(true);
     expect(residual.limit).toBeUndefined();
     expect(residual.spawnedBy).toBeUndefined();
+
+    const residualResult = await listSqlSelectedSessions({
+      cfg,
+      storePath: "/tmp/sessions.json",
+      store: {
+        [childKey]: {
+          sessionId: "included-child",
+          spawnedBy: parentKey,
+          updatedAt: now,
+        },
+        "agent:main:unrelated": {
+          sessionId: "unrelated",
+          spawnedBy: "agent:main:other",
+          updatedAt: now - 1,
+        },
+      },
+      opts: { spawnedBy: parentKey, limit: 1 },
+      sqlSelection: {
+        lineage: resolveSessionListLineageSqlQuery(parentKey, now, "main"),
+        totalCount: 2,
+      },
+    });
+    expect(residualResult.totalCount).toBe(1);
+    expect(residualResult.hasMore).toBe(false);
+    expect(residualResult.nextOffset).toBeNull();
   });
 
   test("searches channel-derived display names before row enrichment", async () => {
@@ -1365,6 +1390,41 @@ describe("listSessionsFromStore subagent metadata", () => {
 });
 
 describe("loadCombinedSessionStoreForGateway includes disk-only agents (#32804)", () => {
+  test("keeps unrelated incognito agents out of bounded selection", async () => {
+    await withStateDirEnv("openclaw-session-list-incognito-scope-", async ({ stateDir }) => {
+      const storePath = path.join(stateDir, "agents", "main", "sessions", "sessions.json");
+      const cfg = {
+        agents: { list: [{ id: "main", default: true }, { id: "work" }] },
+      } as OpenClawConfig;
+      await seedSessionEntry(storePath, "agent:main:durable", {
+        sessionId: "durable",
+        updatedAt: 1,
+      });
+      await seedSessionEntry(
+        resolveIncognitoOpenClawAgentSqlitePath({ agentId: "work" }),
+        "agent:work:dashboard:incognito-unrelated",
+        { incognito: true, sessionId: "incognito-unrelated", updatedAt: 3 },
+        "work",
+      );
+
+      const loaded = loadCombinedSessionStoreForGateway(cfg, {
+        agentId: "main",
+        projection: "list",
+        query: {
+          archived: false,
+          includeGlobal: false,
+          includeUnknown: false,
+          limit: 1,
+          sortBy: "updatedAt",
+        },
+      });
+      expect(Object.keys(loaded.store)).toHaveLength(1);
+      expect(loaded.store).not.toHaveProperty("agent:work:dashboard:incognito-unrelated");
+      expect(loaded.selectionExact).toBe(true);
+      expect(loaded.totalCount).toBe(1);
+    });
+  });
+
   test("keeps off-page store children available to bounded row enrichment", async () => {
     await withStateDirEnv("openclaw-session-list-child-context-", async ({ stateDir }) => {
       const storePath = path.join(stateDir, "agents", "main", "sessions", "sessions.json");

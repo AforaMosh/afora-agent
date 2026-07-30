@@ -379,6 +379,7 @@ function selectSessionEntries(params: {
     params.entryFilter ||
     params.opts.boardFace ||
     normalizeOptionalString(params.opts.search) ||
+    (normalizeOptionalString(params.opts.spawnedBy) && params.sqlSelection.ordered !== true) ||
     params.opts.requireLastInteraction === true,
   );
   const totalCount = hasResidualCountFilter

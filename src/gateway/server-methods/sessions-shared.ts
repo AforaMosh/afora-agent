@@ -135,7 +135,15 @@ export function prepareGatewaySessionListQuery(params: {
   list: SessionsListParams;
 }) {
   const identity = gatewayClientSessionCreator(params.client);
-  const hasOpenIncognito = listOpenIncognitoAgentDatabases().length > 0;
+  const requestedAgentId = normalizeOptionalString(params.list.agentId);
+  const allowedIncognitoAgentIds = requestedAgentId
+    ? new Set([normalizeAgentId(requestedAgentId)])
+    : params.configuredAgentsOnly
+      ? new Set(listConfiguredSessionStoreAgentIds(params.config))
+      : undefined;
+  const hasOpenIncognito = listOpenIncognitoAgentDatabases().some(
+    ({ agentId }) => !allowedIncognitoAgentIds || allowedIncognitoAgentIds.has(agentId),
+  );
   const requiresClientVisibilityFilter = !isGatewayAdmin(params.client) && Boolean(identity);
   const hasFacetResidualFilters =
     Boolean(normalizeOptionalString(params.list.search)) ||

@@ -533,7 +533,7 @@ describe("session accessor seam", () => {
     const insertPending = database.db.prepare(
       "INSERT INTO session_nodes (session_key, current_session_id, entry_json, updated_at) VALUES (?, ?, ?, ?)",
     );
-    for (const index of [1, 2]) {
+    for (let index = 1; index <= 257; index += 1) {
       insertPending.run(
         `agent:main:pending-${index}`,
         `pending-session-${index}`,
@@ -559,14 +559,10 @@ describe("session accessor seam", () => {
     expect(
       openOpenClawAgentDatabase({ agentId: "main", path: databasePath })
         .db.prepare(
-          "SELECT session_key, entry_valid FROM session_nodes WHERE session_key LIKE 'agent:main:pending%' ORDER BY session_key",
+          "SELECT count(*) AS count FROM session_nodes WHERE session_key LIKE 'agent:main:pending%' AND entry_valid = 1",
         )
-        .all(),
-    ).toEqual([
-      { entry_valid: 1, session_key: "agent:main:pending" },
-      { entry_valid: 1, session_key: "agent:main:pending-1" },
-      { entry_valid: 1, session_key: "agent:main:pending-2" },
-    ]);
+        .get(),
+    ).toEqual({ count: 258 });
   });
 
   it("reports a typed repair diagnostic for a read-only pre-projection database", () => {
