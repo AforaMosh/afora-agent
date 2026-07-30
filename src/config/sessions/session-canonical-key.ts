@@ -77,10 +77,10 @@ export function assertCanonicalSessionEntryLineageWrite(entry: SessionEntry): vo
 }
 
 export function assertCanonicalSessionKeyWriteMatchesDatabase(
-  database: { db: DatabaseSync },
+  database: { agentId: string; db: DatabaseSync },
   sessionKey: string,
 ): void {
-  assertCanonicalSessionKeyWrite(sessionKey);
+  assertCanonicalSessionKeyWrite(sessionKey, database.agentId);
   const parsed = parseAgentSessionKey(sessionKey);
   if (!parsed || parsed.rest !== "main") {
     return;
@@ -155,14 +155,20 @@ export function assertCanonicalSqliteSessionKeysCurrent(
   const canonicalMainKey = normalizeMainKey(mainKey ?? storedMainKey);
   for (const row of executeSqliteQuerySync(
     database.db,
-    db.selectFrom("session_nodes").select(["session_key", "parent_session_key", "spawned_by"]),
+    db
+      .selectFrom("session_nodes")
+      .select(["session_key", "entry_json", "entry_valid", "parent_session_key", "spawned_by"]),
   ).rows) {
+    if (row.entry_valid === -1 && row.entry_json === "{}") {
+      continue;
+    }
     const trimmed = row.session_key.trim();
     const parsed = parseAgentSessionKey(trimmed);
     if (
       row.session_key !== trimmed ||
       normalizeStoreSessionKey(trimmed) !== trimmed ||
       (!parsed && trimmed !== "global" && trimmed !== "unknown") ||
+      (parsed && parsed.agentId !== normalizeAgentId(database.agentId)) ||
       (parsed && parsed.rest === "main" && canonicalMainKey !== "main")
     ) {
       throw nonCanonicalSessionKeyRowError(trimmed || row.session_key);

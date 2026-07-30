@@ -76,6 +76,7 @@ import {
   appendSqliteTranscriptEventSync,
   deleteSqliteSessionEntryLifecycle,
   importSqliteSessionRows,
+  listSqliteSessionEntriesForCanonicalRepair,
   loadExactSqliteSessionEntry,
   replaceSqliteSessionEntrySync,
   replaceSqliteTranscriptEvents,
@@ -295,9 +296,9 @@ describe("session accessor seam", () => {
       database.db,
       ["validations"],
       (sqlText) =>
-        sqlText.includes(
-          'select "session_key", "parent_session_key", "spawned_by" from "session_nodes"',
-        )
+        sqlText.includes('"parent_session_key"') &&
+        sqlText.includes('"spawned_by"') &&
+        sqlText.includes('from "session_nodes"')
           ? "validations"
           : null,
     );
@@ -635,6 +636,53 @@ describe("session accessor seam", () => {
       insert.run(sessionKey, sessionId, entryJson, 7);
       expect(loadSessionEntry({ sessionKey, storePath })).toBeUndefined();
     }
+  });
+
+  it("keeps retained placeholders out of doctor repair inventory", () => {
+    const database = openOpenClawAgentDatabase({
+      agentId: "main",
+      path: resolveSqliteTargetFromSessionStorePath(storePath, { agentId: "main" }).path,
+    });
+    const insert = database.db.prepare(
+      "INSERT INTO session_nodes (session_key, current_session_id, entry_json, updated_at) VALUES (?, ?, ?, ?)",
+    );
+    insert.run("agent:main:placeholder", "retained-session", "{}", 8);
+    database.db
+      .prepare("UPDATE session_nodes SET entry_valid = -1 WHERE session_key = ?")
+      .run("agent:main:placeholder");
+    insert.run("agent:main:empty-corrupt", "empty-promoted-session", "{}", 7);
+    const duplicateFields =
+      '{"sessionId":"first","sessionId":"ambiguous","updatedAt":1,"updatedAt":2}';
+    insert.run("agent:main:rejected", "promoted-session", duplicateFields, 9);
+
+    const inventory = listSqliteSessionEntriesForCanonicalRepair({ agentId: "main", storePath });
+    expect(inventory).toHaveLength(2);
+    expect(inventory).toEqual(
+      expect.arrayContaining([
+        {
+          entry: { sessionId: "empty-promoted-session", updatedAt: 7 },
+          rawEntryJson: "{}",
+          sessionKey: "agent:main:empty-corrupt",
+        },
+        {
+          entry: { sessionId: "promoted-session", updatedAt: 9 },
+          rawEntryJson: duplicateFields,
+          sessionKey: "agent:main:rejected",
+        },
+      ]),
+    );
+
+    const missingStorePath = path.join(tempDir, "missing", "sessions.json");
+    const missingDatabasePath = resolveSqliteTargetFromSessionStorePath(missingStorePath, {
+      agentId: "main",
+    }).path;
+    expect(
+      listSqliteSessionEntriesForCanonicalRepair({
+        agentId: "main",
+        storePath: missingStorePath,
+      }),
+    ).toEqual([]);
+    expect(fs.existsSync(missingDatabasePath)).toBe(false);
   });
 
   it("refreshes the projected title when the first visible user message is written", async () => {
@@ -1974,6 +2022,22 @@ describe("session accessor seam", () => {
     const insert = database.db.prepare(
       "INSERT INTO session_nodes (session_key, current_session_id, entry_json, updated_at) VALUES (?, ?, ?, ?)",
     );
+    insert.run(
+      "agent:main:wrong-database",
+      "wrong-database-session",
+      JSON.stringify({ sessionId: "wrong-database-session", updatedAt: 5 }),
+      5,
+    );
+    database.db
+      .prepare("UPDATE session_nodes SET entry_valid = 1 WHERE session_key = ?")
+      .run("agent:main:wrong-database");
+    expect(() =>
+      querySqliteSessionEntries({
+        agentId: "ops",
+        query: { archived: false, includeGlobal: true, includeUnknown: true },
+        storePath,
+      }),
+    ).toThrow(expect.objectContaining({ code: "SESSION_CANONICAL_KEY_MIGRATION_REQUIRED" }));
     for (const [storedKey, canonicalKey] of [
       ["agent:ops:padded ", "agent:ops:padded"],
       [" agent:ops:leading", "agent:ops:leading"],
