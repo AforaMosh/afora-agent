@@ -321,6 +321,7 @@ async function runEmbeddedAgentInternal(
               agentAccountId: params.agentAccountId,
               messageTo: params.messageTo,
               messageThreadId: params.messageThreadId,
+              trigger: params.trigger,
             });
           }
 
