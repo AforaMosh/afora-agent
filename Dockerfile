@@ -18,6 +18,7 @@ ARG OPENCLAW_NODE_BOOKWORM_SLIM_IMAGE="docker.io/library/node:24-bookworm-slim@s
 ARG OPENCLAW_NODE_BOOKWORM_SLIM_DIGEST="sha256:6f7b03f7c2c8e2e784dcf9295400527b9b1270fd37b7e9a7285cf83b6951452d"
 ARG OPENCLAW_FIPS_NODE_BUILD_IMAGE="docker.io/library/node:24-bookworm@sha256:5711a0d445a1af54af9589066c646df387d1831a608226f4cd694fc59e745059"
 ARG OPENCLAW_FIPS_NODE_RUNTIME_IMAGE="docker.io/library/node:24-bookworm-slim@sha256:6f7b03f7c2c8e2e784dcf9295400527b9b1270fd37b7e9a7285cf83b6951452d"
+ARG OPENCLAW_FIPS_RUNTIME_USER="node"
 # Keep in sync with .github/actions/setup-node-env/action.yml bun-version.
 # To update: docker buildx imagetools inspect docker.io/oven/bun:<version> and use the manifest-list digest.
 ARG OPENCLAW_BUN_IMAGE="docker.io/oven/bun:1.3.14@sha256:e10577f0db68676a7024391c6e5cb4b879ebd17188ab750cf10024a6d700e5c4"
@@ -255,10 +256,12 @@ RUN --mount=type=cache,id=openclaw-pnpm-store,target=/root/.local/share/pnpm/sto
 # Supply approved, digest-pinned build and runtime images:
 # docker build --target fips-runtime \
 #   --build-arg OPENCLAW_FIPS_NODE_BUILD_IMAGE=... \
-#   --build-arg OPENCLAW_FIPS_NODE_RUNTIME_IMAGE=... .
+#   --build-arg OPENCLAW_FIPS_NODE_RUNTIME_IMAGE=... \
+#   --build-arg OPENCLAW_FIPS_RUNTIME_USER=... .
 # The default OpenClaw image remains unchanged below.
 FROM ${OPENCLAW_FIPS_NODE_RUNTIME_IMAGE} AS fips-runtime
 ARG OPENCLAW_BUNDLED_PLUGIN_DIR
+ARG OPENCLAW_FIPS_RUNTIME_USER
 
 LABEL org.opencontainers.image.source="https://github.com/openclaw/openclaw" \
   org.opencontainers.image.url="https://openclaw.ai" \
@@ -284,6 +287,10 @@ COPY --from=runtime-assets /app/qa ./qa
 COPY --from=build /app/scripts/security/fips-check.mjs ./scripts/security/fips-check.mjs
 
 ENV NODE_ENV=production
+
+# Keep the Gateway's privilege boundary explicit. Custom runtime images must
+# provide the selected non-root account; the official Node image uses `node`.
+USER ${OPENCLAW_FIPS_RUNTIME_USER}
 
 STOPSIGNAL SIGTERM
 # The supplied runtime may be shell-free, and the final health endpoint may use

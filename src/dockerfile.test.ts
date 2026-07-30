@@ -99,6 +99,7 @@ describe("Dockerfile", () => {
     expect(dockerfile).toMatch(
       /ARG OPENCLAW_FIPS_NODE_RUNTIME_IMAGE="docker\.io\/library\/node:24-bookworm-slim@sha256:[a-f0-9]{64}"/u,
     );
+    expect(dockerfile).toContain('ARG OPENCLAW_FIPS_RUNTIME_USER="node"');
     expect(fipsRuntimeStart).toBeGreaterThan(-1);
     expect(defaultRuntimeStart).toBeGreaterThan(fipsRuntimeStart);
     expect(dockerfile).toContain("FROM ${OPENCLAW_FIPS_NODE_BUILD_IMAGE} AS fips-runtime-assets");
@@ -129,7 +130,13 @@ describe("Dockerfile", () => {
     expect(fipsRuntime).toContain(
       "COPY --from=runtime-assets /app/openclaw.mjs /usr/local/bin/openclaw",
     );
-    expect(fipsRuntime).not.toMatch(/^USER /mu);
+    expect(fipsRuntime).toContain(
+      "ARG OPENCLAW_BUNDLED_PLUGIN_DIR\nARG OPENCLAW_FIPS_RUNTIME_USER",
+    );
+    expect(fipsRuntime).toContain("USER ${OPENCLAW_FIPS_RUNTIME_USER}");
+    expect(fipsRuntime.indexOf("USER ${OPENCLAW_FIPS_RUNTIME_USER}")).toBeLessThan(
+      fipsRuntime.indexOf('CMD ["node", "openclaw.mjs", "gateway"]'),
+    );
     expect(fipsRuntime).toContain("HEALTHCHECK NONE");
     expect(fipsRuntime).not.toContain("CMD node -e");
     expect(fipsRuntime).toContain("ENTRYPOINT []");

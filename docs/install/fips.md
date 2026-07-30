@@ -74,13 +74,18 @@ docker build \
   --target fips-runtime \
   --build-arg OPENCLAW_FIPS_NODE_BUILD_IMAGE=registry.example/node-fips-build@sha256:<digest> \
   --build-arg OPENCLAW_FIPS_NODE_RUNTIME_IMAGE=registry.example/node-fips-runtime@sha256:<digest> \
+  --build-arg OPENCLAW_FIPS_RUNTIME_USER=node \
   -t openclaw:fips .
 ```
 
 The build image must provide Node.js, Corepack, and the compiler/toolchain
 needed by selected native dependencies, and its build-only stage must support
 UID 0. The runtime image must provide the same Node.js/OpenSSL ABI, trusted CA
-roots, configured provider module, and intended runtime user.
+roots, configured provider module, and the selected non-root runtime user. The
+target defaults to the `node` account supplied by the official Node.js images.
+Set `OPENCLAW_FIPS_RUNTIME_USER` to the name or numeric identity owned by a
+custom runtime image. Running the Gateway as UID 0 is outside this target's
+supported contract.
 
 The target reinstalls and prunes production dependencies in the supplied build
 image. It does not copy native addons from the default OpenClaw build runtime.
@@ -91,7 +96,7 @@ the supplied build image and pnpm's runtime detection.
 Use an init implementation supplied by the platform, such as
 `docker run --init` or Compose `init: true`. The FIPS target does not assume
 that a particular init binary or package manager exists in the runtime image.
-It preserves the runtime image's configured user and clears any inherited
+It switches to the selected non-root runtime user and clears any inherited
 entrypoint before starting OpenClaw directly with Node.js. The `openclaw`
 launcher remains available on `PATH`.
 
