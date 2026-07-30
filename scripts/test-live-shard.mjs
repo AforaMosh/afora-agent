@@ -21,6 +21,11 @@ const OPTIONAL_LIVE_SHARD_FILE_ENVS = new Map([
     "extensions/codex/src/native-thread-coexistence.live.test.ts",
     ["OPENCLAW_LIVE_CODEX_THREAD_COEXISTENCE"],
   ],
+  [
+    "extensions/openai/realtime-quicksilver-gateway-bridge.live.test.ts",
+    ["OPENCLAW_LIVE_GPT_LIVE"],
+  ],
+  ["extensions/openai/realtime-quicksilver.live.test.ts", ["OPENCLAW_LIVE_GPT_LIVE"]],
   ["src/agents/agent-mcp-style.cache.live.test.ts", ["OPENCLAW_LIVE_CACHE_TEST"]],
   ["src/agents/cli-runner/bundle-mcp.gemini.live.test.ts", ["OPENCLAW_LIVE_CLI_MCP_GEMINI"]],
   ["src/agents/embedded-agent-runner.cache.live.test.ts", ["OPENCLAW_LIVE_CACHE_TEST"]],
