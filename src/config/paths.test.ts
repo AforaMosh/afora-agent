@@ -106,42 +106,66 @@ describe("default install identity", () => {
     ).toBe(false);
   });
 
-  it("accepts the canonical paths a named profile projects", () => {
-    const home = "/home/test";
-    const profileStateDir = path.join(home, ".openclaw-work");
+  it("accepts the canonical paths a named profile projects", async () => {
+    await withTempDir({ prefix: "openclaw-profile-install-" }, async (home) => {
+      const defaultStateDir = path.join(home, ".openclaw");
+      const profileStateDir = path.join(home, ".openclaw-work");
+      await fs.mkdir(defaultStateDir, { recursive: true });
+      await fs.writeFile(path.join(defaultStateDir, "openclaw.json"), "{}");
 
-    expect(
-      isDefaultInstallIdentity(
-        {
-          HOME: home,
-          OPENCLAW_PROFILE: "work",
-          OPENCLAW_STATE_DIR: profileStateDir,
-          OPENCLAW_CONFIG_PATH: path.join(profileStateDir, "openclaw.json"),
-        },
-        () => home,
-      ),
-    ).toBe(true);
-    expect(
-      isDefaultInstallIdentity(
-        {
-          HOME: home,
-          OPENCLAW_PROFILE: "work",
-          OPENCLAW_STATE_DIR: path.join(home, ".openclaw-other"),
-        },
-        () => home,
-      ),
-    ).toBe(false);
-    expect(
-      isDefaultInstallIdentity(
-        {
-          HOME: home,
-          OPENCLAW_PROFILE: "default",
-          OPENCLAW_STATE_DIR: path.join(home, ".openclaw"),
-        },
-        () => home,
-      ),
-    ).toBe(true);
+      expect(
+        isDefaultInstallIdentity(
+          {
+            HOME: home,
+            OPENCLAW_PROFILE: "work",
+            OPENCLAW_STATE_DIR: profileStateDir,
+            OPENCLAW_CONFIG_PATH: path.join(profileStateDir, "openclaw.json"),
+          },
+          () => home,
+        ),
+      ).toBe(true);
+      expect(
+        isDefaultInstallIdentity(
+          {
+            HOME: home,
+            OPENCLAW_PROFILE: "work",
+            OPENCLAW_STATE_DIR: path.join(home, ".openclaw-other"),
+          },
+          () => home,
+        ),
+      ).toBe(false);
+      expect(
+        isDefaultInstallIdentity(
+          {
+            HOME: home,
+            OPENCLAW_PROFILE: "default",
+            OPENCLAW_STATE_DIR: defaultStateDir,
+          },
+          () => home,
+        ),
+      ).toBe(true);
+    });
   });
+
+  it.each(["../escape", "work/../../escape", "work\\..\\escape", "."])(
+    "rejects invalid profile %j even when its derived paths match",
+    (profile) => {
+      const home = "/home/test";
+      const profileStateDir = path.join(home, `.openclaw-${profile}`);
+
+      expect(
+        isDefaultInstallIdentity(
+          {
+            HOME: home,
+            OPENCLAW_PROFILE: profile,
+            OPENCLAW_STATE_DIR: profileStateDir,
+            OPENCLAW_CONFIG_PATH: path.join(profileStateDir, "openclaw.json"),
+          },
+          () => home,
+        ),
+      ).toBe(false);
+    },
+  );
 });
 
 describe("oauth paths", () => {
