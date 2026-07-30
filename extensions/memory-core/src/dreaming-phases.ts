@@ -12,6 +12,7 @@ import {
   sessionPathForFile,
   statSessionEntrySync,
 } from "openclaw/plugin-sdk/memory-core-host-engine-qmd";
+import { isMemoryIsolationCutoverAgent } from "openclaw/plugin-sdk/memory-core-host-runtime-core";
 import type { MemorySearchResult } from "openclaw/plugin-sdk/memory-core-host-runtime-files";
 import {
   formatMemoryDreamingDay,
@@ -2024,6 +2025,13 @@ export async function runDreamingSweepPhases(params: {
   detachNarratives?: boolean;
   nowMs?: number;
 }): Promise<DreamingSweepPhaseResult> {
+  if (params.agentId && isMemoryIsolationCutoverAgent(params.agentId)) {
+    // Scoped stores cannot map legacy workspace artifacts to one policy set.
+    // Keep cutover agents out of this direct path until authorized dreaming
+    // owns each source and output revision.
+    params.logger.info("memory-core: dreaming sweep skipped for scoped-memory agent.");
+    return { degradedPhases: 0, pendingNarratives: 0 };
+  }
   // Normalize nowMs once so all phase timestamps and narrative session keys are consistent.
   const sweepNowMs: number = Number.isFinite(params.nowMs) ? (params.nowMs as number) : Date.now();
   let degradedPhases = 0;
