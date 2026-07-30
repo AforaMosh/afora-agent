@@ -715,6 +715,9 @@ describe("session accessor seam", () => {
         .prepare("SELECT current_session_id FROM session_nodes WHERE session_key = ?")
         .get("agent:main:legacy"),
     ).toEqual({ current_session_id: "legacy-session" });
+    expect(() => listSessionEntries({ agentId: "main", storePath })).toThrow(
+      expect.objectContaining({ code: "SESSION_ENTRY_VALIDITY_MIGRATION_REQUIRED" }),
+    );
   });
 
   it("keeps retained placeholders out of doctor repair inventory", () => {

@@ -249,6 +249,13 @@ function hasRejectedSessionEntryValidity(database: SessionDatabaseReader): boole
   );
 }
 
+export function assertSqliteSessionEntryValidityCurrent(database: SessionDatabaseReader): void {
+  settlePendingSessionEntryValidity(database);
+  if (hasRejectedSessionEntryValidity(database)) {
+    throw new SessionEntryValidityMigrationRequiredError();
+  }
+}
+
 function buildSessionListPredicate(
   eb: SessionListExpressionBuilder,
   query: SessionEntryListQuery,

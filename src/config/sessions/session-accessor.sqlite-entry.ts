@@ -65,6 +65,7 @@ import {
 } from "./session-accessor.sqlite-scope.js";
 import { setSessionProjectedTitle } from "./session-accessor.sqlite-session-row.js";
 import {
+  assertSqliteSessionEntryValidityCurrent,
   querySqliteSessionEntries as querySqliteSessionEntriesFromDatabase,
   readSqliteSessionEntriesByStatus,
   type SqliteSessionEntryListQueryResult,
@@ -317,8 +318,10 @@ function listSqliteSessionEntriesFromDatabase(
   resolved: ResolvedSqliteScope,
   scope: SessionEntryListScope,
 ): SessionEntrySummary[] {
+  assertSqliteSessionEntryValidityCurrent(database);
   assertCanonicalSqliteSessionKeysCurrent(database);
   const snapshot = readSessionEntrySnapshot(database, resolved, scope.readConsistency);
+  assertSqliteSessionEntryValidityCurrent(database);
   const entries = scope.projection === "list" ? snapshot.listEntries : snapshot.entries;
   return snapshot.keys.flatMap((sessionKey) => {
     if (isInternalSessionEffectsKey(sessionKey)) {
