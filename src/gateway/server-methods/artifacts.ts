@@ -14,6 +14,11 @@ import {
   validateArtifactsListParams,
 } from "../../../packages/gateway-protocol/src/index.js";
 import { resolveDefaultAgentId } from "../../agents/agent-scope.js";
+import {
+  resolveSessionStoreAgentId,
+  resolveSessionStoreKey,
+  resolveStoredSessionKeyForAgentStore,
+} from "../../config/sessions/session-store-key.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import {
   normalizeAgentId,
@@ -28,11 +33,6 @@ import {
   resolveManagedOutgoingMediaUrlDownload,
 } from "../managed-image-attachments.js";
 import { resolveSessionKeyForRun } from "../server-session-key.js";
-import {
-  resolveSessionStoreAgentId,
-  resolveSessionStoreKey,
-  resolveStoredSessionKeyForAgentStore,
-} from "../session-store-key.js";
 import { visitSessionMessagesAsync } from "../session-transcript-readers.js";
 import { loadSessionEntryReadOnly } from "../session-utils.js";
 import type { GatewayRequestHandlers, RespondFn } from "./types.js";

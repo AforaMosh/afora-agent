@@ -15,6 +15,11 @@ import {
   loadExactSessionEntryReadOnly,
 } from "../config/sessions/session-accessor.js";
 import type { SessionEntryListScope } from "../config/sessions/session-accessor.types.js";
+import {
+  resolveSessionStoreAgentId,
+  resolveSessionStoreKey,
+  resolveStoredSessionKeyForAgentStore,
+} from "../config/sessions/session-store-key.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import {
   DEFAULT_AGENT_ID,
@@ -23,11 +28,6 @@ import {
   parseAgentSessionKey,
 } from "../routing/session-key.js";
 import { resolveIncognitoOpenClawAgentSqlitePath } from "../state/openclaw-agent-db.js";
-import {
-  resolveSessionStoreAgentId,
-  resolveSessionStoreKey,
-  resolveStoredSessionKeyForAgentStore,
-} from "./session-store-key.js";
 import type {
   GatewaySessionStoreTarget,
   GatewaySessionStoreTargetWithStore,

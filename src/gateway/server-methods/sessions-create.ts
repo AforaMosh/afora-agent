@@ -18,6 +18,7 @@ import { slugifyWorktreeTitle } from "../../agents/worktrees/name.js";
 import { managedWorktrees } from "../../agents/worktrees/service.js";
 import { resolveAgentMainSessionKey } from "../../config/sessions/main-session.js";
 import { sessionEntryForkedFromParent } from "../../config/sessions/session-entry-lineage.js";
+import { resolveSessionStoreAgentId } from "../../config/sessions/session-store-key.js";
 import type { SessionEntry } from "../../config/sessions/types.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import { formatErrorMessage } from "../../infra/errors.js";
@@ -33,7 +34,6 @@ import {
   createGatewaySession,
   resolveRequestedSessionAgentId as resolveRequestedGlobalAgentId,
 } from "../session-create-service.js";
-import { resolveSessionStoreAgentId } from "../session-store-key.js";
 import { readSessionMessageCountAsync } from "../session-transcript-readers.js";
 import { loadSessionEntryReadOnly, resolveGatewaySessionStoreTarget } from "../session-utils.js";
 import { resolveSessionPatchModelSelection } from "../sessions-patch.js";

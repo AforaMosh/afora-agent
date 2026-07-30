@@ -13,6 +13,10 @@ import {
   resolveSessionFilePath,
   resolveSessionFilePathOptions,
 } from "../../config/sessions/paths.js";
+import {
+  resolveSessionStoreAgentId,
+  resolveStoredSessionKeyForAgentStore,
+} from "../../config/sessions/session-store-key.js";
 import type { SessionEntry } from "../../config/sessions/types.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import {
@@ -61,10 +65,6 @@ import {
 } from "../../utils/delivery-context.shared.js";
 import { runTasksWithConcurrency } from "../../utils/run-with-concurrency.js";
 import { listGatewayAgentsBasic } from "../agent-list.js";
-import {
-  resolveSessionStoreAgentId,
-  resolveStoredSessionKeyForAgentStore,
-} from "../session-store-key.js";
 import { loadCombinedSessionStoreForGateway, loadSessionEntryReadOnly } from "../session-utils.js";
 import { loadUsageStatusStaleWhileRevalidate } from "./models-auth-status-usage-cache.js";
 import type { GatewayRequestHandlers, RespondFn } from "./types.js";

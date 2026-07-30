@@ -23,6 +23,11 @@ import {
   type SessionEntry,
 } from "../../config/sessions.js";
 import { listSessionEntriesReadOnly } from "../../config/sessions/session-accessor.js";
+import {
+  resolveSessionStoreAgentId,
+  resolveSessionStoreKey,
+  resolveStoredSessionKeyForAgentStore,
+} from "../../config/sessions/session-store-key.js";
 import { searchSessionTranscripts } from "../../config/sessions/session-transcript-search.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import { buildProjectedAgentRunIndex } from "../../infra/agent-events.js";
@@ -46,11 +51,6 @@ import {
   resolveSessionSharingTarget,
   resolveSessionVisibility,
 } from "../session-sharing.js";
-import {
-  resolveSessionStoreAgentId,
-  resolveSessionStoreKey,
-  resolveStoredSessionKeyForAgentStore,
-} from "../session-store-key.js";
 import {
   readRecentSessionMessagesWithStatsAsync,
   readSessionPreviewItemsFromTranscript,

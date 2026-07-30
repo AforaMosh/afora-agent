@@ -9,6 +9,10 @@ import {
 } from "../../../packages/gateway-protocol/src/index.js";
 import { listConfiguredSessionStoreAgentIds, type SessionEntry } from "../../config/sessions.js";
 import { resolveAgentMainSessionKey } from "../../config/sessions/main-session.js";
+import {
+  resolveSessionStoreAgentId,
+  resolveSessionStoreKey,
+} from "../../config/sessions/session-store-key.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { normalizeAgentId, parseAgentSessionKey } from "../../routing/session-key.js";
@@ -17,7 +21,6 @@ import {
   resolvePluginSessionOwnershipError,
   type PluginSessionOwnershipAction,
 } from "../session-plugin-ownership.js";
-import { resolveSessionStoreAgentId, resolveSessionStoreKey } from "../session-store-key.js";
 import {
   resolveFreshestSessionEntryFromStoreKeys,
   resolveGatewaySessionStoreTarget,

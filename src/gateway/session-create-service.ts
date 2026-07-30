@@ -42,6 +42,10 @@ import {
   type SessionCreatedVia,
 } from "../config/sessions/session-entry-provenance.js";
 import { inheritSessionSelection } from "../config/sessions/session-entry-selection.js";
+import {
+  resolveSessionStoreAgentId,
+  resolveSessionStoreKey,
+} from "../config/sessions/session-store-key.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import {
   createInternalHookEvent,
@@ -74,7 +78,6 @@ import { buildForkedGatewaySessionEntry } from "./session-create-fork-entry.js";
 import { shouldPreserveSessionAuthProfileOverride } from "./session-model-patch-origin.js";
 import { resolvePluginSessionOwnershipError } from "./session-plugin-ownership.js";
 import { isSessionVisibilityAllowed, resolveSessionVisibility } from "./session-sharing.js";
-import { resolveSessionStoreAgentId, resolveSessionStoreKey } from "./session-store-key.js";
 import { loadSessionEntryReadOnly, resolveGatewaySessionStoreTarget } from "./session-utils.js";
 import { applySessionsPatchToStore, resolveSessionPatchModelSelection } from "./sessions-patch.js";
 

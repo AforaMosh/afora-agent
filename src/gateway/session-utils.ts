@@ -2,7 +2,10 @@ export {
   resolveSessionHistoryTranscriptPathAsync,
   resolveSessionTranscriptCandidates,
 } from "./session-utils.fs.js";
-export { canonicalizeSpawnedByForAgent, resolveSessionStoreKey } from "./session-store-key.js";
+export {
+  canonicalizeSpawnedByForAgent,
+  resolveSessionStoreKey,
+} from "../config/sessions/session-store-key.js";
 export type {
   GatewaySessionRow,
   SessionsListResult,

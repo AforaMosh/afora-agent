@@ -4,10 +4,6 @@
 import { expectDefined } from "@openclaw/normalization-core";
 import { listAgentEntries, resolveDefaultAgentId } from "../../agents/agent-scope.js";
 import {
-  canonicalizeSpawnedByForAgent,
-  resolveStoredSessionKeyForAgentStore,
-} from "../../gateway/session-store-key.js";
-import {
   isIncognitoSessionKey,
   LEGACY_IMPLICIT_AGENT_ID,
   normalizeAgentId,
@@ -18,6 +14,10 @@ import type { OpenClawConfig } from "../types.openclaw.js";
 import { resolveStorePath } from "./paths.js";
 import { listSessionEntries, listSessionEntriesReadOnly } from "./session-accessor.js";
 import type { SessionEntryListScope } from "./session-accessor.types.js";
+import {
+  canonicalizeSpawnedByForAgent,
+  resolveStoredSessionKeyForAgentStore,
+} from "./session-store-key.js";
 import {
   dedupeSessionStoreTargetsBySqliteTarget,
   listConfiguredSessionStoreAgentIds,

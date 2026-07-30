@@ -10,7 +10,7 @@ export { searchSessionTranscripts } from "../../config/sessions/session-transcri
 export {
   resolveSessionStoreKey,
   resolveStoredSessionKeyForAgentStore,
-} from "../../gateway/session-store-key.js";
+} from "../../config/sessions/session-store-key.js";
 export {
   dropPreSessionStartAnnouncePairs,
   projectChatDisplayMessages,

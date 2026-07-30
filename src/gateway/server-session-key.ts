@@ -7,6 +7,10 @@ import {
 import { resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { getRuntimeConfig } from "../config/io.js";
 import type { SessionEntry } from "../config/sessions.js";
+import {
+  resolveSessionStoreAgentId,
+  resolveSessionStoreKey,
+} from "../config/sessions/session-store-key.js";
 import type { OpenClawConfig } from "../config/types.js";
 import { getAgentRunContext } from "../infra/agent-events.js";
 import {
@@ -15,7 +19,6 @@ import {
   toAgentRequestSessionKey,
 } from "../routing/session-key.js";
 import { resolvePreferredSessionKeyForSessionIdMatches } from "../sessions/session-id-resolution.js";
-import { resolveSessionStoreAgentId, resolveSessionStoreKey } from "./session-store-key.js";
 import { loadCombinedSessionStoreForGateway } from "./session-utils.js";
 
 const RUN_LOOKUP_CACHE_LIMIT = 256;
