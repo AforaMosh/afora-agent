@@ -284,6 +284,8 @@ function buildSessionListPredicate(
   }
   const agentRest = eb.fn<string>("substr", [agentTail, eb(agentDelimiter, "+", 1)]);
   if (!query.includeHidden) {
+    // Only the outer agent wrapper owns runtime policy. A nested agent-shaped rest is opaque
+    // session identity, matching isCronRunSessionKey and the routing parser contract.
     const isCronRun = (rest: Expression<string>) => {
       const cronTail = eb.fn<string>("substr", [rest, eb.val(6)]);
       const delimiter = eb.fn<number>("instr", [cronTail, eb.val(":")]);

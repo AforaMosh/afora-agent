@@ -455,6 +455,34 @@ describe("session accessor seam", () => {
     expect(result.entries.map(({ sessionKey }) => sessionKey)).toEqual(["agent:main:valid"]);
   });
 
+  it("keeps nested agent-shaped cron identities visible", () => {
+    replaceSqliteSessionEntrySync(
+      { agentId: "voice", sessionKey: "agent:voice:cron:job:run:hidden", storePath },
+      { sessionId: "hidden-run", updatedAt: 20 },
+    );
+    replaceSqliteSessionEntrySync(
+      {
+        agentId: "voice",
+        sessionKey: "agent:voice:agent:other:cron:job:run:opaque",
+        storePath,
+      },
+      { sessionId: "opaque-run", updatedAt: 10 },
+    );
+
+    expect(
+      querySqliteSessionEntriesReadOnly({
+        agentId: "voice",
+        query: {
+          archived: false,
+          includeGlobal: false,
+          includeUnknown: false,
+          ownerAgentId: "voice",
+        },
+        storePath,
+      }).entries.map(({ sessionKey }) => sessionKey),
+    ).toEqual(["agent:voice:agent:other:cron:job:run:opaque"]);
+  });
+
   it("settles rows left pending by an older same-version writer", () => {
     const databasePath = resolveSqliteTargetFromSessionStorePath(storePath, {
       agentId: "main",
