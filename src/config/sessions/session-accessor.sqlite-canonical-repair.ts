@@ -12,6 +12,7 @@ import {
   type OpenClawAgentDatabase,
 } from "../../state/openclaw-agent-db.js";
 import type { SessionEntrySummary } from "./session-accessor.sqlite-contract.js";
+import { publishSqliteSessionEntryCacheInvalidation } from "./session-accessor.sqlite-entry-cache.js";
 import { readSqliteSessionGenerationIdsForKeys } from "./session-accessor.sqlite-lifecycle-state.js";
 import {
   copySessionNodeArtifactsForRepair,
@@ -415,8 +416,9 @@ function copySqliteSessionOwnedStateForRepair(params: {
     if (copyTranscripts) {
       // Search and active-event tables are derived from transcript_events; force their canonical rebuild.
       deleteSessionTranscriptIndexInTransaction(params.destination.db, sessionId);
-      reconcileSessionTranscriptIndexInTransaction(params.destination.db, sessionId);
-      refreshSqliteSessionTitleProjection(params.destination.db, sessionId);
+      reconcileSessionTranscriptIndexInTransaction(params.destination.db, sessionId, () =>
+        publishSqliteSessionEntryCacheInvalidation(params.destination),
+      );
     }
   }
   if (params.preferSource) {
@@ -441,7 +443,11 @@ function copySqliteSessionOwnedStateForRepair(params: {
   }
   if (params.preferSource) {
     if (params.preferredEntry && params.preferredSessionKey) {
-      refreshSqliteSessionTitleProjection(params.destination.db, params.preferredEntry.sessionId);
+      refreshSqliteSessionTitleProjection(
+        params.destination.db,
+        params.preferredEntry.sessionId,
+        () => publishSqliteSessionEntryCacheInvalidation(params.destination),
+      );
     }
   }
 }

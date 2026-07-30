@@ -92,6 +92,9 @@ function isResolvedSessionKeyVisible(params: {
   ) {
     return false;
   }
+  if (isCronRunSessionKey(effectiveKey)) {
+    return false;
+  }
   const spawnedBy = normalizeOptionalString(params.p.spawnedBy);
   if (!spawnedBy) {
     return true;
@@ -99,7 +102,7 @@ function isResolvedSessionKeyVisible(params: {
   if (specialKey) {
     return false;
   }
-  if (entry.archivedAt !== undefined || isCronRunSessionKey(effectiveKey)) {
+  if (entry.archivedAt !== undefined) {
     return false;
   }
   const lineage = resolveSessionListLineageSqlQuery(

@@ -43,6 +43,28 @@ it("selects creator labels deterministically across actor types", async () => {
   expect(result.creators).toEqual([{ id: "shared-id", label: "Bob" }]);
 });
 
+it("keeps complete creator facets independent of paginated row snapshots", async () => {
+  const result = await listSessionsFromStoreAsync({
+    cfg: {} as OpenClawConfig,
+    opts: { archived: "all" },
+    sqlSelection: {
+      creatorActors: [{ type: "agent", id: "profile-ada" }],
+      ordered: true,
+      totalCount: 1,
+    },
+    store: {
+      "agent:main:ada": {
+        createdActor: { type: "human", id: "profile-ada" },
+        sessionId: "session-ada",
+        updatedAt: 1,
+      },
+    },
+    storePath: "/tmp/openclaw-session-creator-pagination",
+  });
+
+  expect(result.creators).toEqual([{ id: "profile-ada" }]);
+});
+
 it("returns the complete deterministic creator facet independently of pagination", async () => {
   const store: Record<string, SessionEntry> = {
     "agent:main:ada": {

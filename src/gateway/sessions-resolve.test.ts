@@ -165,6 +165,27 @@ describe("resolveSessionKeyFromResolveParams", () => {
     });
   });
 
+  it("does not resolve hidden cron-run keys without a lineage filter", async () => {
+    const cronKey = "agent:main:cron:job-1:run:attempt-1";
+    targetStore = { [cronKey]: { sessionId: "cron-session", updatedAt: 1 } };
+    hoisted.resolveGatewaySessionStoreTargetWithStoreMock.mockReturnValue({
+      canonicalKey: cronKey,
+      storeKeys: [cronKey],
+      storePath,
+      store: targetStore,
+    });
+
+    await expect(
+      resolveSessionKeyFromResolveParams({ cfg: {}, p: { key: cronKey } }),
+    ).resolves.toEqual({
+      ok: false,
+      error: {
+        code: ErrorCodes.INVALID_REQUEST,
+        message: `No session found: ${cronKey}`,
+      },
+    });
+  });
+
   it("resolves an explicitly included global key within an agent scope", async () => {
     targetStore = {
       global: { sessionId: "global-session", updatedAt: 1 },

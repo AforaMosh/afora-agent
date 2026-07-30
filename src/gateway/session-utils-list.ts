@@ -394,6 +394,7 @@ function listSessionCreatorIdentities(
   creatorActors?: readonly NonNullable<SessionEntry["createdActor"]>[],
 ): Array<{ id: string; label?: string; avatarUrl?: string }> {
   const creators = new Map<string, { id: string; label?: string; avatarUrl?: string }>();
+  const facetCreatorIds = new Set<string>();
   const addCreator = (creator: NonNullable<SessionEntry["createdActor"]>) => {
     const actor = projectSessionActor(creator, userProfileIdentityById);
     const id = normalizeOptionalString(actor?.id);
@@ -422,9 +423,16 @@ function listSessionCreatorIdentities(
   };
   for (const creator of creatorActors ?? []) {
     addCreator(creator);
+    const id = normalizeOptionalString(creator.id);
+    if (id) {
+      facetCreatorIds.add(id);
+    }
   }
   for (const [, entry] of entries) {
-    if (entry.createdActor) {
+    if (
+      entry.createdActor &&
+      !facetCreatorIds.has(normalizeOptionalString(entry.createdActor.id) ?? "")
+    ) {
       addCreator(entry.createdActor);
     }
   }
