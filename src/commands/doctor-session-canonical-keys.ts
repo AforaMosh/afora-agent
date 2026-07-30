@@ -475,6 +475,7 @@ async function repairCanonicalSessionGroup(
     }
     const result = await applySessionEntryLifecycleMutation({
       agentId: storeCandidate.agentId,
+      allowCanonicalRepair: true,
       removals: storeCandidates.map((candidate) =>
         createCanonicalRepairRemoval(candidate, {
           archiveRemovedTranscript: true,

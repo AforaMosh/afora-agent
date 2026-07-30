@@ -30,6 +30,7 @@ import {
   deleteSqliteSessionEntryRows,
   readExactSessionEntryJson,
   readExactSessionEntryRow,
+  readExactSessionEntryRowForImport,
   readSqliteSessionEntryCount,
   readSqliteSessionEntryStore,
   rehomeSqliteSessionWindows,
@@ -288,10 +289,17 @@ export async function applySqliteSessionStoreProjection<T>(params: {
 function readProjectedRemovalEntry(
   database: OpenClawAgentDatabase,
   projected: SqliteProjectedLifecycleMutation["removals"][number],
+  allowCanonicalRepair = false,
 ): SessionEntry | undefined {
   const expectedRawEntryJson = projected.removal.expectedRawEntryJson;
   if (expectedRawEntryJson === undefined) {
-    return readExactSessionEntryRow(database, projected.sessionKey)?.entry;
+    return (
+      allowCanonicalRepair
+        ? readExactSessionEntryRowForImport(database, projected.sessionKey, {
+            allowMalformedRowRepair: true,
+          })
+        : readExactSessionEntryRow(database, projected.sessionKey)
+    )?.entry;
   }
   if (readExactSessionEntryJson(database, projected.sessionKey) !== expectedRawEntryJson) {
     throw new Error(
@@ -353,7 +361,11 @@ export async function applySqliteSessionEntryLifecycleMutation(params: {
     }
     runOpenClawAgentWriteTransaction((transactionDb) => {
       const validatedRemovals = projected.removals.filter((removal) => {
-        const entry = readProjectedRemovalEntry(transactionDb, removal);
+        const entry = readProjectedRemovalEntry(
+          transactionDb,
+          removal,
+          params.allowCanonicalRepair,
+        );
         if (!sqliteSessionEntriesEqual(entry, removal.expectedEntry)) {
           const replacedInSameMutation = projected.upsertedEntries.some(
             (upsert) => upsert.sessionKey === removal.sessionKey,
@@ -395,8 +407,13 @@ export async function applySqliteSessionEntryLifecycleMutation(params: {
           (removal) => removal.sessionKey === sessionKey,
         );
         const currentEntry = sameKeyRemoval
-          ? readProjectedRemovalEntry(transactionDb, sameKeyRemoval)
-          : readExactSessionEntryRow(transactionDb, sessionKey)?.entry;
+          ? readProjectedRemovalEntry(transactionDb, sameKeyRemoval, params.allowCanonicalRepair)
+          : (params.allowCanonicalRepair
+              ? readExactSessionEntryRowForImport(transactionDb, sessionKey, {
+                  allowMalformedRowRepair: true,
+                })
+              : readExactSessionEntryRow(transactionDb, sessionKey)
+            )?.entry;
         const expectedCurrentEntry = expectedEntry ?? sameKeyRemoval?.expectedEntry;
         if (!sqliteSessionEntriesEqual(currentEntry, expectedCurrentEntry)) {
           if (sameKeyRemoval) {
@@ -451,7 +468,11 @@ export async function applySqliteSessionEntryLifecycleMutation(params: {
         if (upsertedKeys.has(removal.sessionKey)) {
           continue;
         }
-        const entry = readProjectedRemovalEntry(transactionDb, removal);
+        const entry = readProjectedRemovalEntry(
+          transactionDb,
+          removal,
+          params.allowCanonicalRepair,
+        );
         if (!sqliteSessionEntriesEqual(entry, removal.expectedEntry)) {
           throw new Error(
             `SQLite session entry changed before lifecycle removal for ${removal.sessionKey}`,
