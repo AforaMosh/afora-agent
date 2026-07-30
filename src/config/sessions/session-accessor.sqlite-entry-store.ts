@@ -583,10 +583,10 @@ export function writeSessionEntry(
     previousEntry?: SessionEntry | null;
   } = {},
 ): void {
-  assertCanonicalSessionKeyWriteMatchesDatabase(database, sessionKey);
-  assertCanonicalSessionEntryLineageWrite(entry);
   const db = getSessionKysely(database.db);
   if (!options.allowStoredAliases) {
+    assertCanonicalSessionKeyWriteMatchesDatabase(database, sessionKey);
+    assertCanonicalSessionEntryLineageWrite(entry);
     assertCanonicalSqliteSessionKeysCurrent(database);
   }
   const normalizedEntry = normalizeSqliteSessionEntryTimestamp(entry);

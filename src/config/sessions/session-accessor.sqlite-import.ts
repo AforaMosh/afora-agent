@@ -65,7 +65,8 @@ export async function importSqliteSessionRows(
           sessionId: params.entry.sessionId,
         }),
       };
-      writeSessionEntry(database, resolved.sessionKey, importedEntry);
+      // Doctor imports legacy aliases verbatim; canonical-key repair owns their normalization.
+      writeSessionEntry(database, resolved.sessionKey, importedEntry, { allowStoredAliases: true });
       if (params.readTranscriptEvents) {
         const transcriptScope = {
           ...resolved,
