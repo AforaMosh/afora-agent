@@ -124,16 +124,34 @@ export function isDefaultStateDir(
   );
 }
 
+/** Canonical state directory name for the selected profile, mirroring root `--profile`. */
+function profileStateDirName(env: NodeJS.ProcessEnv): string {
+  const profile = env.OPENCLAW_PROFILE?.trim();
+  if (!profile || profile.toLowerCase() === "default") {
+    return NEW_STATE_DIRNAME;
+  }
+  return `${NEW_STATE_DIRNAME}-${profile}`;
+}
+
 /** Whether host service management belongs to the active default install identity. */
 export function isDefaultInstallIdentity(
   env: NodeJS.ProcessEnv = process.env,
   homedir: () => string = resolveSystemAccountHomeDir,
 ): boolean {
   const accountHome = resolveRequiredHomeDir({}, homedir);
-  const accountHomedir = () => accountHome;
+  // OPENCLAW_HOME relocates every OpenClaw path default, and a named profile owns
+  // its own service label and canonical `.openclaw-<profile>` paths. Both are
+  // install identities that manage their own service. HOME is not: a copied home
+  // must not adopt the host service.
+  const installHome = resolveRequiredHomeDir(
+    { OPENCLAW_HOME: env.OPENCLAW_HOME },
+    () => accountHome,
+  );
+  const installHomedir = () => installHome;
+  const canonicalStateDir = path.join(installHome, profileStateDirName(env));
   if (
     normalizePathForComparison(resolveStateDir(env, envHomedir(env))) !==
-    normalizePathForComparison(newStateDir(accountHomedir))
+    normalizePathForComparison(canonicalStateDir)
   ) {
     return false;
   }
@@ -142,14 +160,14 @@ export function isDefaultInstallIdentity(
   }
   const defaultConfigEnv = {
     ...env,
-    HOME: accountHome,
+    HOME: installHome,
     OPENCLAW_HOME: undefined,
-    OPENCLAW_STATE_DIR: undefined,
+    OPENCLAW_STATE_DIR: canonicalStateDir,
     OPENCLAW_CONFIG_PATH: undefined,
   };
   return (
     normalizePathForComparison(resolveConfigPathCandidate(env, envHomedir(env))) ===
-    normalizePathForComparison(resolveConfigPathCandidate(defaultConfigEnv, accountHomedir))
+    normalizePathForComparison(resolveConfigPathCandidate(defaultConfigEnv, installHomedir))
   );
 }
 
