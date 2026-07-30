@@ -30,12 +30,12 @@ type SessionDatabaseReader = Pick<OpenClawAgentDatabase, "agentId" | "db"> & {
 const CANONICAL_ENTRY_FIELDS = new Set(["sessionId", "updatedAt"]);
 const SESSION_ENTRY_VALIDITY_REPAIR_COMMAND = "openclaw doctor --fix";
 
-class SessionEntryValidityMigrationRequiredError extends Error {
+export class SessionEntryValidityMigrationRequiredError extends Error {
   readonly code = "SESSION_ENTRY_VALIDITY_MIGRATION_REQUIRED";
 
   constructor() {
     super(
-      `pending session entry projections require repair; stop the Gateway and run ${SESSION_ENTRY_VALIDITY_REPAIR_COMMAND}`,
+      `session entry projections require repair; stop the Gateway and run ${SESSION_ENTRY_VALIDITY_REPAIR_COMMAND}`,
     );
     this.name = "SessionEntryValidityMigrationRequiredError";
   }

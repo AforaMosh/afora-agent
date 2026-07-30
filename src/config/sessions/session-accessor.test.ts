@@ -46,6 +46,7 @@ import {
   readSessionUpdatedAt,
   recordInboundSessionMeta,
   replaceSessionEntry,
+  replaceSessionEntrySync,
   resetSessionEntryLifecycle,
   SessionInitializationAgentScopeMismatchError,
   resolveSessionEntryAccessTarget,
@@ -643,8 +644,28 @@ describe("session accessor seam", () => {
     for (const [suffix, sessionId, entryJson] of corrupt) {
       const sessionKey = `agent:main:${suffix}`;
       insert.run(sessionKey, sessionId, entryJson, 7);
-      expect(loadSessionEntry({ sessionKey, storePath })).toBeUndefined();
+      let readError: unknown;
+      try {
+        loadSessionEntry({ sessionKey, storePath });
+      } catch (error) {
+        readError = error;
+      }
+      expect(readError).toMatchObject({
+        code: "SESSION_ENTRY_VALIDITY_MIGRATION_REQUIRED",
+        message: expect.stringContaining("openclaw doctor --fix"),
+      });
     }
+    expect(() =>
+      replaceSessionEntrySync(
+        { sessionKey: "agent:main:legacy", storePath },
+        { sessionId: "replacement", updatedAt: 100 },
+      ),
+    ).toThrow("openclaw doctor --fix");
+    expect(
+      database.db
+        .prepare("SELECT current_session_id FROM session_nodes WHERE session_key = ?")
+        .get("agent:main:legacy"),
+    ).toEqual({ current_session_id: "legacy-session" });
   });
 
   it("keeps retained placeholders out of doctor repair inventory", () => {

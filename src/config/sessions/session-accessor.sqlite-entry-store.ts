@@ -31,7 +31,10 @@ import {
   normalizeSqliteSessionEntryTimestamp,
   setSessionProjectedTitle,
 } from "./session-accessor.sqlite-session-row.js";
-import { parseSqliteSessionEntryJson as parseSessionEntryRow } from "./session-accessor.sqlite-status.js";
+import {
+  parseSqliteSessionEntryJson as parseSessionEntryRow,
+  SessionEntryValidityMigrationRequiredError,
+} from "./session-accessor.sqlite-status.js";
 import { readTranscriptMutationStateInTransaction } from "./session-accessor.sqlite-transcript-state.js";
 import {
   assertCanonicalSessionEntryLineageWrite,
@@ -48,6 +51,10 @@ import type { SessionEntry } from "./types.js";
 
 type OpenClawAgentDatabaseReader = Pick<OpenClawAgentDatabase, "agentId" | "db">;
 type SessionEntryRow = Selectable<OpenClawAgentKyselyDatabase["session_nodes"]>;
+type ReadableSessionEntryRow = Pick<
+  SessionEntryRow,
+  "current_session_id" | "display_name" | "entry_json" | "session_key" | "updated_at"
+>;
 export type ResolvedSessionEntryRow = {
   entry: SessionEntry;
   legacyKeys: string[];
@@ -77,6 +84,31 @@ function parseProjectedSessionEntryRow(
     setSessionProjectedTitle(entry, row.display_name);
   }
   return entry;
+}
+
+function parseReadableSessionEntryRow(
+  database: OpenClawAgentDatabaseReader,
+  row: ReadableSessionEntryRow,
+): SessionEntry | null {
+  const entry = parseProjectedSessionEntryRow(row);
+  if (entry) {
+    return entry;
+  }
+  if (row.entry_json === "{}") {
+    const db = getSessionKysely(database.db);
+    const retainedWindow = executeSqliteQueryTakeFirstSync(
+      database.db,
+      db
+        .selectFrom("session_windows")
+        .select("session_id")
+        .where("session_id", "=", row.current_session_id)
+        .where("session_key", "=", row.session_key),
+    );
+    if (retainedWindow) {
+      return null;
+    }
+  }
+  throw new SessionEntryValidityMigrationRequiredError();
 }
 
 export function readSqliteSessionIdentitySnapshot(
@@ -132,7 +164,7 @@ function readSessionEntryRowUnchecked(
   ).rows;
   const entries = new Map<string, ResolvedSessionEntryRow>();
   for (const row of rows) {
-    const entry = parseProjectedSessionEntryRow(row);
+    const entry = parseReadableSessionEntryRow(database, row);
     if (!entry) {
       continue;
     }
@@ -211,7 +243,7 @@ export function readExactSessionEntryRow(
   if (!row) {
     return undefined;
   }
-  const entry = parseProjectedSessionEntryRow(row);
+  const entry = parseReadableSessionEntryRow(database, row);
   return entry ? { entry, legacyKeys: [], row } : undefined;
 }
 
@@ -253,6 +285,8 @@ export function readSqliteSessionEntryStore(
   ).rows;
   const store: Record<string, SessionEntry> = {};
   for (const row of rows) {
+    // Doctor lifecycle projection supplies its separately hydrated expected entry for rejected
+    // raw rows; ordinary exact reads still fail loud before a write can replace one.
     const entry = parseProjectedSessionEntryRow(row);
     if (entry) {
       store[row.session_key] = entry;
@@ -591,7 +625,12 @@ export function writeSessionEntry(
   }
   const normalizedEntry = normalizeSqliteSessionEntryTimestamp(entry);
   const updatedAt = normalizedEntry.updatedAt;
-  const canonicalPreviousEntry = readExactSessionEntryRow(database, sessionKey)?.entry;
+  // Doctor validated the raw rejected row before entering the transaction and passes its
+  // hydrated snapshot explicitly; re-reading it through the runtime parser must stay fail-closed.
+  const canonicalPreviousEntry =
+    options.allowStoredAliases && options.previousEntry !== undefined
+      ? (options.previousEntry ?? undefined)
+      : readExactSessionEntryRow(database, sessionKey)?.entry;
   const previousEntry =
     options.previousEntry === undefined
       ? canonicalPreviousEntry
