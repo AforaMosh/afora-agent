@@ -191,7 +191,7 @@ export async function resolveSessionSelector(
     const matches = findVisibleSessionMatches({
       store,
       p,
-      matches: (key, entry) => entry.sessionId === sessionId || key === sessionId,
+      matches: (candidateKey, entry) => entry.sessionId === sessionId || candidateKey === sessionId,
     });
     const selection = resolveSessionIdMatchSelection(matches, sessionId);
     if (selection.kind === "none") {
@@ -235,7 +235,7 @@ export async function resolveSessionSelector(
     });
   }
   if (matches.length > 1) {
-    const keys = matches.map(([key]) => key).join(", ");
+    const keys = matches.map(([matchKey]) => matchKey).join(", ");
     return resolveError(
       "ambiguous",
       `Multiple sessions found with label: ${parsedLabel.label} (${keys})`,
