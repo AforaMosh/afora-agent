@@ -1,28 +1,25 @@
-import { expectDefined } from "@openclaw/normalization-core";
 // Canonical session selector resolution.
 // Resolves key/sessionId/label selectors into one canonical session key.
+import { expectDefined } from "@openclaw/normalization-core";
+import { err as resultError, ok } from "@openclaw/normalization-core/result";
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import {
-  ErrorCodes,
-  type ErrorShape,
-  errorShape,
-  type SessionsResolveParams,
-} from "../../packages/gateway-protocol/src/index.js";
 import { canonicalizeSessionEntryAliases, type SessionEntry } from "../config/sessions.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
-import { filterAndSortSessionEntries, listSessionsFromStore } from "../gateway/session-utils.js";
 import { loadCombinedSessionStore } from "./session-combined-store.js";
+import { sortAndLimitSessionEntries } from "./session-entry-order.js";
+import { isSessionEntryVisible } from "./session-entry-visibility.js";
 import { resolveSessionIdMatchSelection } from "./session-id-resolution.js";
 import { parseSessionLabel } from "./session-label.js";
 import { resolveDeletedAgentIdFromSessionKey } from "./session-owner-validation.js";
+import type {
+  SessionResolveError,
+  SessionResolveInput,
+  SessionResolveResult,
+  SessionSelector,
+} from "./session-service-contract.js";
 import { resolveSessionStoreTargetWithStore } from "./session-store-target.js";
 
-export type SessionsResolveResult =
-  | { ok: true; key: string }
-  | { ok: true; missing: true }
-  | { ok: false; error: ErrorShape };
-
-function resolveSessionVisibilityFilterOptions(p: SessionsResolveParams) {
+function resolveSessionVisibilityFilterOptions(p: SessionSelector) {
   return {
     includeGlobal: p.includeGlobal === true,
     includeUnknown: p.includeUnknown === true,
@@ -31,14 +28,15 @@ function resolveSessionVisibilityFilterOptions(p: SessionsResolveParams) {
   };
 }
 
-function noSessionFoundResult(params: { p: SessionsResolveParams; message: string }) {
+function resolveError(kind: SessionResolveError["kind"], message: string): SessionResolveResult {
+  return resultError({ kind, message });
+}
+
+function noSessionFoundResult(params: { p: SessionSelector; message: string }) {
   if (params.p.allowMissing) {
-    return { ok: true, missing: true } as const;
+    return ok(null);
   }
-  return {
-    ok: false,
-    error: errorShape(ErrorCodes.INVALID_REQUEST, params.message),
-  } as const;
+  return resolveError("not-found", params.message);
 }
 
 /** Rejects sessions whose owning agent no longer exists in config (#65524). */
@@ -47,60 +45,59 @@ function validateSessionAgentExists(
   key: string,
   entry?: SessionEntry | null,
   options?: { acpMetadataSessionKey?: string | null },
-): SessionsResolveResult | null {
+): SessionResolveResult | null {
   const deletedAgentId = resolveDeletedAgentIdFromSessionKey(cfg, key, entry, options);
   if (deletedAgentId === null) {
     return null;
   }
-  return {
-    ok: false,
-    error: errorShape(
-      ErrorCodes.INVALID_REQUEST,
-      `Agent "${deletedAgentId}" no longer exists in configuration`,
-    ),
-  };
+  return resolveError(
+    "agent-not-found",
+    `Agent "${deletedAgentId}" no longer exists in configuration`,
+  );
 }
 
 function isResolvedSessionKeyVisible(params: {
-  cfg: OpenClawConfig;
-  p: SessionsResolveParams;
+  p: SessionSelector;
   store: Record<string, SessionEntry>;
   key: string;
 }) {
   if (typeof params.p.spawnedBy !== "string" || params.p.spawnedBy.trim().length === 0) {
     return true;
   }
-  return filterAndSortSessionEntries({
-    cfg: params.cfg,
-    store: params.store,
-    now: Date.now(),
-    opts: resolveSessionVisibilityFilterOptions(params.p),
-  }).some(([key]) => key === params.key);
+  const entry = params.store[params.key];
+  return entry
+    ? isSessionEntryVisible({
+        key: params.key,
+        entry,
+        now: Date.now(),
+        options: resolveSessionVisibilityFilterOptions(params.p),
+      })
+    : false;
 }
 
-function findVisibleSessionIdMatches(params: {
-  cfg: OpenClawConfig;
+function findVisibleSessionMatches(params: {
   store: Record<string, SessionEntry>;
-  p: SessionsResolveParams;
-  sessionId: string;
+  p: SessionSelector;
+  limit?: number;
+  matches: (key: string, entry: SessionEntry) => boolean;
 }): Array<[string, SessionEntry]> {
   const now = Date.now();
-  const entries = filterAndSortSessionEntries({
-    cfg: params.cfg,
-    store: params.store,
-    now,
-    opts: resolveSessionVisibilityFilterOptions(params.p),
-  });
-  return entries.filter(
-    ([key, entry]) => entry?.sessionId === params.sessionId || key === params.sessionId,
+  const entries = Object.entries(params.store).filter(
+    ([key, entry]) =>
+      isSessionEntryVisible({
+        key,
+        entry,
+        now,
+        options: resolveSessionVisibilityFilterOptions(params.p),
+      }) && params.matches(key, entry),
   );
+  return sortAndLimitSessionEntries(entries, params.limit);
 }
 
-export async function resolveSessionKeyFromResolveParams(params: {
-  cfg: OpenClawConfig;
-  p: SessionsResolveParams;
-}): Promise<SessionsResolveResult> {
-  const { cfg, p } = params;
+export async function resolveSessionSelector(
+  input: SessionResolveInput,
+): Promise<SessionResolveResult> {
+  const { config: cfg, selector: p } = input;
 
   const key = normalizeOptionalString(p.key) ?? "";
   const hasKey = key.length > 0;
@@ -109,19 +106,13 @@ export async function resolveSessionKeyFromResolveParams(params: {
   const hasLabel = (normalizeOptionalString(p.label) ?? "").length > 0;
   const selectionCount = [hasKey, hasSessionId, hasLabel].filter(Boolean).length;
   if (selectionCount > 1) {
-    return {
-      ok: false,
-      error: errorShape(
-        ErrorCodes.INVALID_REQUEST,
-        "Provide either key, sessionId, or label (not multiple)",
-      ),
-    };
+    return resolveError(
+      "invalid-selector",
+      "Provide either key, sessionId, or label (not multiple)",
+    );
   }
   if (selectionCount === 0) {
-    return {
-      ok: false,
-      error: errorShape(ErrorCodes.INVALID_REQUEST, "Either key, sessionId, or label is required"),
-    };
+    return resolveError("invalid-selector", "Either key, sessionId, or label is required");
   }
 
   if (hasKey) {
@@ -132,7 +123,6 @@ export async function resolveSessionKeyFromResolveParams(params: {
     if (store[target.canonicalKey]) {
       if (
         !isResolvedSessionKeyVisible({
-          cfg,
           p,
           store,
           key: target.canonicalKey,
@@ -149,7 +139,7 @@ export async function resolveSessionKeyFromResolveParams(params: {
       if (agentCheck) {
         return agentCheck;
       }
-      return { ok: true, key: target.canonicalKey };
+      return ok({ key: target.canonicalKey });
     }
     const legacyKey = target.storeKeys.find((candidate) => store[candidate]);
     if (!legacyKey) {
@@ -169,7 +159,6 @@ export async function resolveSessionKeyFromResolveParams(params: {
     });
     if (
       !isResolvedSessionKeyVisible({
-        cfg,
         p,
         store: refreshedTarget.store,
         key: refreshedTarget.canonicalKey,
@@ -186,27 +175,28 @@ export async function resolveSessionKeyFromResolveParams(params: {
     if (agentCheckLegacy) {
       return agentCheckLegacy;
     }
-    return { ok: true, key: refreshedTarget.canonicalKey };
+    return ok({ key: refreshedTarget.canonicalKey });
   }
 
   if (hasSessionId) {
     // sessionId can collide across stores; delegate selection so exact key
     // matches and ambiguity rules stay shared with other session-id callers.
     const { store } = loadCombinedSessionStore(cfg, { agentId: p.agentId });
-    const matches = findVisibleSessionIdMatches({ cfg, store, p, sessionId });
+    const matches = findVisibleSessionMatches({
+      store,
+      p,
+      matches: (key, entry) => entry.sessionId === sessionId || key === sessionId,
+    });
     const selection = resolveSessionIdMatchSelection(matches, sessionId);
     if (selection.kind === "none") {
       return noSessionFoundResult({ p, message: `No session found: ${sessionId}` });
     }
     if (selection.kind === "ambiguous") {
       const keys = selection.sessionKeys.join(", ");
-      return {
-        ok: false,
-        error: errorShape(
-          ErrorCodes.INVALID_REQUEST,
-          `Multiple sessions found for sessionId: ${sessionId} (${keys})`,
-        ),
-      };
+      return resolveError(
+        "ambiguous",
+        `Multiple sessions found for sessionId: ${sessionId} (${keys})`,
+      );
     }
     const selectedEntry = matches.find(([matchKey]) => matchKey === selection.sessionKey)?.[1];
     const agentCheckSessionId = validateSessionAgentExists(
@@ -217,55 +207,39 @@ export async function resolveSessionKeyFromResolveParams(params: {
     if (agentCheckSessionId) {
       return agentCheckSessionId;
     }
-    return { ok: true, key: selection.sessionKey };
+    return ok({ key: selection.sessionKey });
   }
 
   const parsedLabel = parseSessionLabel(p.label);
   if (!parsedLabel.ok) {
-    return {
-      ok: false,
-      error: errorShape(ErrorCodes.INVALID_REQUEST, parsedLabel.error),
-    };
+    return resolveError("invalid-label", parsedLabel.error);
   }
 
-  const { storePath, store } = loadCombinedSessionStore(cfg, { agentId: p.agentId });
-  const list = listSessionsFromStore({
-    cfg,
-    storePath,
+  const { store } = loadCombinedSessionStore(cfg, { agentId: p.agentId });
+  const matches = findVisibleSessionMatches({
     store,
-    opts: {
-      includeGlobal: p.includeGlobal === true,
-      includeUnknown: p.includeUnknown === true,
-      label: parsedLabel.label,
-      agentId: p.agentId,
-      spawnedBy: p.spawnedBy,
-      limit: 2,
-    },
+    p,
+    limit: 2,
+    matches: (_key, entry) => entry.label === parsedLabel.label,
   });
-  if (list.sessions.length === 0) {
+  if (matches.length === 0) {
     return noSessionFoundResult({
       p,
       message: `No session found with label: ${parsedLabel.label}`,
     });
   }
-  if (list.sessions.length > 1) {
-    const keys = list.sessions.map((s) => s.key).join(", ");
-    return {
-      ok: false,
-      error: errorShape(
-        ErrorCodes.INVALID_REQUEST,
-        `Multiple sessions found with label: ${parsedLabel.label} (${keys})`,
-      ),
-    };
+  if (matches.length > 1) {
+    const keys = matches.map(([key]) => key).join(", ");
+    return resolveError(
+      "ambiguous",
+      `Multiple sessions found with label: ${parsedLabel.label} (${keys})`,
+    );
   }
 
-  const labelKey = expectDefined(list.sessions[0], "sessions entry at 0").key;
-  const agentCheckLabel = validateSessionAgentExists(cfg, labelKey, store[labelKey]);
+  const [labelKey, labelEntry] = expectDefined(matches[0], "label match");
+  const agentCheckLabel = validateSessionAgentExists(cfg, labelKey, labelEntry);
   if (agentCheckLabel) {
     return agentCheckLabel;
   }
-  return {
-    ok: true,
-    key: expectDefined(list.sessions[0], "sessions entry at 0").key,
-  };
+  return ok({ key: labelKey });
 }

@@ -1,13 +1,11 @@
 // Session resolve tests cover canonical/legacy key lookup, store migration,
-// agent scoping, listed-session selection, and protocol error mapping.
+// agent scoping, visibility, and domain error mapping.
 import { expectDefined } from "@openclaw/normalization-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ErrorCodes } from "../../packages/gateway-protocol/src/index.js";
 import type { SessionEntry } from "../config/sessions/types.js";
 
 const hoisted = vi.hoisted(() => ({
   canonicalizeSessionEntryAliasesMock: vi.fn(),
-  listSessionsFromStoreMock: vi.fn(),
   resolveSessionStoreTargetWithStoreMock: vi.fn(),
   loadCombinedSessionStoreMock: vi.fn(),
   listAgentIdsMock: vi.fn(),
@@ -32,16 +30,6 @@ vi.mock("../config/sessions.js", async () => {
   };
 });
 
-vi.mock("../gateway/session-utils.js", async () => {
-  const actual = await vi.importActual<typeof import("../gateway/session-utils.js")>(
-    "../gateway/session-utils.js",
-  );
-  return {
-    ...actual,
-    listSessionsFromStore: hoisted.listSessionsFromStoreMock,
-  };
-});
-
 vi.mock("./session-combined-store.js", () => ({
   loadCombinedSessionStore: hoisted.loadCombinedSessionStoreMock,
 }));
@@ -50,32 +38,30 @@ vi.mock("./session-store-target.js", () => ({
   resolveSessionStoreTargetWithStore: hoisted.resolveSessionStoreTargetWithStoreMock,
 }));
 
-const { resolveSessionKeyFromResolveParams } = await import("./session-resolve.js");
+const { resolveSessionSelector } = await import("./session-resolve.js");
 
-describe("resolveSessionKeyFromResolveParams", () => {
+describe("resolveSessionSelector", () => {
   const canonicalKey = "agent:main:canon";
   const legacyKey = "agent:main:legacy";
   const storePath = "/tmp/sessions.json";
   let targetStore: Record<string, SessionEntry>;
 
   const expectResolveToCanonicalKey = async (
-    p: Parameters<typeof resolveSessionKeyFromResolveParams>[0]["p"],
+    selector: Parameters<typeof resolveSessionSelector>[0]["selector"],
   ) => {
     await expect(
-      resolveSessionKeyFromResolveParams({
-        cfg: {},
-        p,
+      resolveSessionSelector({
+        config: {},
+        selector,
       }),
     ).resolves.toEqual({
       ok: true,
-      key: canonicalKey,
+      value: { key: canonicalKey },
     });
-    expect(hoisted.listSessionsFromStoreMock).not.toHaveBeenCalled();
   };
 
   beforeEach(() => {
     hoisted.canonicalizeSessionEntryAliasesMock.mockReset();
-    hoisted.listSessionsFromStoreMock.mockReset();
     hoisted.resolveSessionStoreTargetWithStoreMock.mockReset();
     hoisted.loadCombinedSessionStoreMock.mockReset();
     hoisted.listAgentIdsMock.mockReset();
@@ -103,17 +89,15 @@ describe("resolveSessionKeyFromResolveParams", () => {
     targetStore = {
       [canonicalKey]: { sessionId: "sess-1", updatedAt: 1 },
     };
-    hoisted.listSessionsFromStoreMock.mockReturnValue({ sessions: [] });
-
     await expect(
-      resolveSessionKeyFromResolveParams({
-        cfg: {},
-        p: { key: canonicalKey, spawnedBy: "controller-1" },
+      resolveSessionSelector({
+        config: {},
+        selector: { key: canonicalKey, spawnedBy: "controller-1" },
       }),
     ).resolves.toEqual({
       ok: false,
       error: {
-        code: ErrorCodes.INVALID_REQUEST,
+        kind: "not-found",
         message: `No session found: ${canonicalKey}`,
       },
     });
@@ -172,15 +156,15 @@ describe("resolveSessionKeyFromResolveParams", () => {
     // "deleted-agent" is not in the known agents list.
     hoisted.listAgentIdsMock.mockReturnValue(["main"]);
 
-    const result = await resolveSessionKeyFromResolveParams({
-      cfg: {},
-      p: { key: deletedAgentKey, allowMissing: true },
+    const result = await resolveSessionSelector({
+      config: {},
+      selector: { key: deletedAgentKey, allowMissing: true },
     });
 
     expect(result).toEqual({
       ok: false,
       error: {
-        code: ErrorCodes.INVALID_REQUEST,
+        kind: "agent-not-found",
         message: 'Agent "deleted-agent" no longer exists in configuration',
       },
     });
@@ -212,13 +196,13 @@ describe("resolveSessionKeyFromResolveParams", () => {
     hoisted.listAgentIdsMock.mockReturnValue(["main"]);
 
     await expect(
-      resolveSessionKeyFromResolveParams({
-        cfg: {},
-        p: { key: acpKey },
+      resolveSessionSelector({
+        config: {},
+        selector: { key: acpKey },
       }),
     ).resolves.toEqual({
       ok: true,
-      key: acpKey,
+      value: { key: acpKey },
     });
   });
 
@@ -235,15 +219,15 @@ describe("resolveSessionKeyFromResolveParams", () => {
     });
     hoisted.listAgentIdsMock.mockReturnValue(["ops"]);
 
-    const result = await resolveSessionKeyFromResolveParams({
-      cfg: { agents: { list: [{ id: "ops", default: true }] } },
-      p: { key: staleMainKey },
+    const result = await resolveSessionSelector({
+      config: { agents: { list: [{ id: "ops", default: true }] } },
+      selector: { key: staleMainKey },
     });
 
     expect(result).toEqual({
       ok: false,
       error: {
-        code: ErrorCodes.INVALID_REQUEST,
+        kind: "agent-not-found",
         message: 'Agent "main" no longer exists in configuration',
       },
     });
@@ -257,15 +241,15 @@ describe("resolveSessionKeyFromResolveParams", () => {
     });
     hoisted.listAgentIdsMock.mockReturnValue(["main"]);
 
-    const result = await resolveSessionKeyFromResolveParams({
-      cfg: {},
-      p: { sessionId: "sess-orphan" },
+    const result = await resolveSessionSelector({
+      config: {},
+      selector: { sessionId: "sess-orphan" },
     });
 
     expect(result).toEqual({
       ok: false,
       error: {
-        code: ErrorCodes.INVALID_REQUEST,
+        kind: "agent-not-found",
         message: 'Agent "deleted-agent" no longer exists in configuration',
       },
     });
@@ -279,21 +263,48 @@ describe("resolveSessionKeyFromResolveParams", () => {
         "agent:main:target": { sessionId: "sess-target", updatedAt: 1 },
       },
     });
-    hoisted.listSessionsFromStoreMock.mockImplementation(() => {
-      throw new Error("session rows should not be materialized for exact sessionId lookup");
-    });
-
     const cfg = {};
-    const result = await resolveSessionKeyFromResolveParams({
-      cfg,
-      p: { sessionId: "sess-target", agentId: "main" },
+    const result = await resolveSessionSelector({
+      config: cfg,
+      selector: { sessionId: "sess-target", agentId: "main" },
     });
 
-    expect(result).toEqual({ ok: true, key: "agent:main:target" });
+    expect(result).toEqual({ ok: true, value: { key: "agent:main:target" } });
     expect(hoisted.loadCombinedSessionStoreMock).toHaveBeenCalledWith(cfg, {
       agentId: "main",
     });
-    expect(hoisted.listSessionsFromStoreMock).not.toHaveBeenCalled();
+  });
+
+  it("excludes archived sessions from sessionId and label resolution", async () => {
+    hoisted.loadCombinedSessionStoreMock.mockReturnValue({
+      storePath,
+      store: {
+        "agent:main:archived": {
+          sessionId: "sess-shared",
+          label: "shared-label",
+          updatedAt: 2,
+          archivedAt: 2,
+        },
+        "agent:main:active": {
+          sessionId: "sess-shared",
+          label: "shared-label",
+          updatedAt: 1,
+        },
+      },
+    });
+
+    await expect(
+      resolveSessionSelector({
+        config: {},
+        selector: { sessionId: "sess-shared" },
+      }),
+    ).resolves.toEqual({ ok: true, value: { key: "agent:main:active" } });
+    await expect(
+      resolveSessionSelector({
+        config: {},
+        selector: { label: "shared-label" },
+      }),
+    ).resolves.toEqual({ ok: true, value: { key: "agent:main:active" } });
   });
 
   it("rejects sessions belonging to a deleted agent (label-based lookup)", async () => {
@@ -302,24 +313,21 @@ describe("resolveSessionKeyFromResolveParams", () => {
       storePath,
       store: { [deletedAgentKey]: { sessionId: "sess-orphan", updatedAt: 1, label: "my-label" } },
     });
-    hoisted.listSessionsFromStoreMock.mockReturnValue({
-      sessions: [{ key: deletedAgentKey, sessionId: "sess-orphan", label: "my-label" }],
-    });
     hoisted.listAgentIdsMock.mockReturnValue(["main"]);
 
     const cfg = {};
-    const result = await resolveSessionKeyFromResolveParams({
-      cfg,
-      p: { label: "my-label", agentId: "main" },
+    const result = await resolveSessionSelector({
+      config: cfg,
+      selector: { label: "my-label" },
     });
 
     expect(hoisted.loadCombinedSessionStoreMock).toHaveBeenCalledWith(cfg, {
-      agentId: "main",
+      agentId: undefined,
     });
     expect(result).toEqual({
       ok: false,
       error: {
-        code: ErrorCodes.INVALID_REQUEST,
+        kind: "agent-not-found",
         message: 'Agent "deleted-agent" no longer exists in configuration',
       },
     });

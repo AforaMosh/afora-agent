@@ -7,6 +7,7 @@ import {
   findEmbeddedAgentSessionTargetViolations,
   findMemoryHostSessionCorpusBoundaryViolations,
   findReadOnlySessionAccessorViolations,
+  findSessionRuntimeGatewayImportViolations,
   findSessionAccessorBoundaryViolations,
   findSessionCompactManualTrimBoundaryViolations,
   findSessionAccessorWriteBoundaryViolations,
@@ -82,7 +83,7 @@ describe("session accessor boundary guard", () => {
         "src/commands/status.agent-local.ts",
         "src/status/summary.ts",
         "src/commands/tasks.ts",
-        "src/config/sessions/combined-store-gateway.ts",
+        "src/sessions/session-combined-store.ts",
         "src/config/sessions/delivery-info.ts",
         "src/config/sessions/goals.ts",
         "src/cron/isolated-agent/delivery-target.ts",
@@ -123,6 +124,24 @@ describe("session accessor boundary guard", () => {
         "src/tui/embedded-backend.ts",
       ]),
     );
+  });
+
+  it("keeps runtime session services independent from Gateway transport modules", () => {
+    expect(
+      findSessionRuntimeGatewayImportViolations(`
+        import { errorShape } from "../gateway/session-utils.js";
+      `),
+    ).toEqual([
+      {
+        line: 2,
+        reason: 'imports Gateway transport module "../gateway/session-utils.js"',
+      },
+    ]);
+    expect(
+      findSessionRuntimeGatewayImportViolations(`
+        import { loadCombinedSessionStore } from "./session-combined-store.js";
+      `),
+    ).toEqual([]);
   });
 
   it("ratchets only the bundled plugin files migrated by this slice", () => {

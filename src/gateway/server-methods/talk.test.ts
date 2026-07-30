@@ -64,7 +64,7 @@ const mocks = vi.hoisted(() => ({
   chatSend: vi.fn(),
   controlRealtimeVoiceAgentRun: vi.fn(),
   steerTalkRealtimeRelayAgentRun: vi.fn(),
-  resolveSessionKeyFromResolveParams: vi.fn(),
+  resolveSession: vi.fn(),
   resolveRealtimeBootstrapContextInstructions: vi.fn(
     async (): Promise<string | undefined> => undefined,
   ),
@@ -184,8 +184,12 @@ vi.mock("./chat.js", () => ({
   },
 }));
 
-vi.mock("../../sessions/session-resolve.js", () => ({
-  resolveSessionKeyFromResolveParams: mocks.resolveSessionKeyFromResolveParams,
+vi.mock("../../agents/openclaw-runtime.js", () => ({
+  openClawRuntime: {
+    sessions: {
+      resolve: mocks.resolveSession,
+    },
+  },
 }));
 
 vi.mock("../talk-realtime-relay.js", async (importOriginal) => {
@@ -1575,11 +1579,11 @@ describe("talk.config handler", () => {
 describe("talk.session unified handlers", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.resolveSessionKeyFromResolveParams.mockImplementation(async ({ p }) => {
-      const key = (p as { key?: unknown }).key;
+    mocks.resolveSession.mockImplementation(async ({ selector }) => {
+      const key = (selector as { key?: unknown }).key;
       return {
         ok: true,
-        key: typeof key === "string" ? key : "session:main",
+        value: { key: typeof key === "string" ? key : "session:main" },
       };
     });
     mocks.steerTalkRealtimeRelayAgentRun.mockResolvedValue({
@@ -2204,9 +2208,9 @@ describe("talk.session unified handlers", () => {
     expect(createResult.handoffId).toBeTypeOf("string");
     expect(createResult.roomId).toMatch(/^talk_/);
     expect(createResult.token).toBeTypeOf("string");
-    expect(mocks.resolveSessionKeyFromResolveParams).toHaveBeenCalledWith({
-      cfg: {},
-      p: {
+    expect(mocks.resolveSession).toHaveBeenCalledWith({
+      config: {},
+      selector: {
         key: "session:main",
         includeGlobal: true,
         includeUnknown: true,
@@ -2345,9 +2349,9 @@ describe("talk.session unified handlers", () => {
       transport: "managed-room",
       brain: "agent-consult",
     });
-    expect(mocks.resolveSessionKeyFromResolveParams).toHaveBeenCalledWith({
-      cfg: {},
-      p: {
+    expect(mocks.resolveSession).toHaveBeenCalledWith({
+      config: {},
+      selector: {
         key: "agent:worker:subagent:child",
         spawnedBy: "agent:main:parent",
         includeGlobal: true,
@@ -2376,7 +2380,7 @@ describe("talk.session unified handlers", () => {
       message:
         "talk.session.create managed-room sessionKey requires spawnedBy or gateway scope: operator.admin",
     });
-    expect(mocks.resolveSessionKeyFromResolveParams).not.toHaveBeenCalled();
+    expect(mocks.resolveSession).not.toHaveBeenCalled();
   });
 
   it("requires managed-room ownership before turn control", async () => {
@@ -2503,7 +2507,7 @@ describe("talk.session unified handlers", () => {
       code: ErrorCodes.INVALID_REQUEST,
       message: 'talk.session.create brain="direct-tools" requires gateway scope: operator.admin',
     });
-    expect(mocks.resolveSessionKeyFromResolveParams).not.toHaveBeenCalled();
+    expect(mocks.resolveSession).not.toHaveBeenCalled();
 
     const createRespond = vi.fn();
     await callTalkHandler("talk.session.create", {

@@ -1,16 +1,14 @@
-// Bounded session-list ordering shared by synchronous and asynchronous projections.
-
-import type { SessionsListParams } from "../../packages/gateway-protocol/src/index.js";
 import type { SessionEntry } from "../config/sessions/types.js";
 
-const SESSIONS_LIST_TOP_N_LIMIT = 200;
+const SESSION_ENTRY_TOP_N_LIMIT = 200;
 
 export type SessionEntryPair = [string, SessionEntry];
+export type SessionEntrySortBy = "updatedAt" | "lastInteractionAt";
 
 function compareSessionEntryPairs(
   a: SessionEntryPair,
   b: SessionEntryPair,
-  sortBy: SessionsListParams["sortBy"] = "updatedAt",
+  sortBy: SessionEntrySortBy = "updatedAt",
 ): number {
   if (sortBy !== "lastInteractionAt") {
     const aPinnedAt = a[1]?.pinnedAt ?? 0;
@@ -25,14 +23,13 @@ function compareSessionEntryPairs(
   if (byTimestamp !== 0) {
     return byTimestamp;
   }
-  // Stable key ties keep offset paging deterministic across calls.
   return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0;
 }
 
 function selectNewestLimitedEntries(
   entries: SessionEntryPair[],
   limit: number,
-  sortBy: SessionsListParams["sortBy"],
+  sortBy: SessionEntrySortBy,
 ): SessionEntryPair[] {
   const selected: SessionEntryPair[] = [];
   for (const entry of entries) {
@@ -54,9 +51,9 @@ function selectNewestLimitedEntries(
 export function sortAndLimitSessionEntries(
   entries: SessionEntryPair[],
   limit: number | undefined,
-  sortBy: SessionsListParams["sortBy"],
+  sortBy: SessionEntrySortBy = "updatedAt",
 ): SessionEntryPair[] {
-  if (limit !== undefined && limit <= SESSIONS_LIST_TOP_N_LIMIT) {
+  if (limit !== undefined && limit <= SESSION_ENTRY_TOP_N_LIMIT) {
     return selectNewestLimitedEntries(entries, limit, sortBy);
   }
   const sorted = entries.toSorted((a, b) => compareSessionEntryPairs(a, b, sortBy));

@@ -5,6 +5,7 @@
  * behavior without importing the full Gateway server graph.
  */
 export { resolveDefaultAgentId, resolveSessionAgentId } from "../../agents/agent-scope.js";
+export { openClawRuntime } from "../../agents/openclaw-runtime.js";
 export { getRuntimeConfig } from "../../config/config.js";
 export { searchSessionTranscripts } from "../../config/sessions/session-transcript-search.js";
 export {
@@ -37,5 +38,4 @@ export {
   loadSessionEntryReadOnly as loadSessionEntry,
   resolveSessionModelRef,
 } from "../../gateway/session-utils.js";
-export { resolveSessionKeyFromResolveParams } from "../../sessions/session-resolve.js";
 export type { SessionsListResult } from "../../gateway/session-utils.types.js";

@@ -16,7 +16,7 @@ import type {
 } from "../../gateway/session-transcript-readers.js";
 import type { SessionsListResult } from "../../gateway/session-utils.types.js";
 import { parseAgentSessionKey } from "../../routing/session-key.js";
-import type { SessionsResolveResult } from "../../sessions/session-resolve.js";
+import type { SessionServiceContract } from "../../sessions/session-service-contract.js";
 import { readNonNegativeIntegerParam, readPositiveIntegerParam } from "./common.js";
 
 type EmbeddedCallGateway = <T = Record<string, unknown>>(opts: CallGatewayOptions) => Promise<T>;
@@ -86,10 +86,9 @@ interface EmbeddedGatewayRuntime {
     storePath: string;
     store: unknown;
   };
-  resolveSessionKeyFromResolveParams: (opts: {
-    cfg: OpenClawConfig;
-    p: SessionsResolveParams;
-  }) => Promise<SessionsResolveResult>;
+  openClawRuntime: {
+    sessions: Pick<SessionServiceContract, "resolve">;
+  };
   loadSessionEntry: (
     sessionKey: string,
     opts?: { agentId?: string },
@@ -212,18 +211,17 @@ async function handleSessionsList(params: Record<string, unknown>) {
 
 async function handleSessionsResolve(params: Record<string, unknown>) {
   const rt = await getRuntime();
-  const cfg = rt.getRuntimeConfig();
-  const resolved = await rt.resolveSessionKeyFromResolveParams({
-    cfg,
-    p: params as SessionsResolveParams,
+  const resolved = await rt.openClawRuntime.sessions.resolve({
+    config: rt.getRuntimeConfig(),
+    selector: params as SessionsResolveParams,
   });
   if (!resolved.ok) {
     throw new Error(resolved.error.message);
   }
-  if ("missing" in resolved) {
+  if (!resolved.value) {
     return { ok: false };
   }
-  return { ok: true, key: resolved.key };
+  return { ok: true, key: resolved.value.key };
 }
 
 async function handleSessionsSearch(params: Record<string, unknown>) {

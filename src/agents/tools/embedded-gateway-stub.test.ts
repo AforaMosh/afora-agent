@@ -4,6 +4,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createEmbeddedCallGateway } from "./embedded-gateway-stub.js";
 
 const runtime = vi.hoisted(() => ({
+  openClawRuntime: {
+    sessions: {
+      resolve: vi.fn(),
+    },
+  },
   getRuntimeConfig: vi.fn(() => ({ agents: { list: [{ id: "main", default: true }] } })),
   resolveDefaultAgentId: vi.fn(() => "main"),
   resolveSessionStoreKey: vi.fn(({ sessionKey }: { sessionKey: string }) =>
@@ -18,7 +23,6 @@ const runtime = vi.hoisted(() => ({
           : `agent:${agentId}:${sessionKey}`,
   ),
   searchSessionTranscripts: vi.fn(() => ({ hits: [], indexing: false, truncated: false })),
-  resolveSessionKeyFromResolveParams: vi.fn(),
   resolveSessionAgentId: vi.fn(() => "main"),
   loadSessionEntry: vi.fn(() => ({
     cfg: {},
@@ -62,7 +66,7 @@ vi.mock("./embedded-gateway-stub.runtime.js", () => runtime);
 describe("embedded gateway stub", () => {
   beforeEach(() => {
     runtime.getRuntimeConfig.mockClear();
-    runtime.resolveSessionKeyFromResolveParams.mockReset();
+    runtime.openClawRuntime.sessions.resolve.mockReset();
     runtime.augmentChatHistoryWithCliSessionImports.mockClear();
     runtime.projectChatDisplayMessages.mockClear();
     runtime.projectRecentChatDisplayMessages.mockClear();
@@ -99,9 +103,9 @@ describe("embedded gateway stub", () => {
   });
 
   it("resolves sessions through the gateway session resolver", async () => {
-    runtime.resolveSessionKeyFromResolveParams.mockResolvedValueOnce({
+    runtime.openClawRuntime.sessions.resolve.mockResolvedValueOnce({
       ok: true,
-      key: "agent:main:main",
+      value: { key: "agent:main:main" },
     });
 
     const callGateway = createEmbeddedCallGateway();
@@ -111,16 +115,16 @@ describe("embedded gateway stub", () => {
     });
 
     expect(result).toEqual({ ok: true, key: "agent:main:main" });
-    expect(runtime.resolveSessionKeyFromResolveParams).toHaveBeenCalledWith({
-      cfg: { agents: { list: [{ id: "main", default: true }] } },
-      p: { sessionId: "sess-main", includeGlobal: true },
+    expect(runtime.openClawRuntime.sessions.resolve).toHaveBeenCalledWith({
+      config: { agents: { list: [{ id: "main", default: true }] } },
+      selector: { sessionId: "sess-main", includeGlobal: true },
     });
   });
 
   it("throws resolver errors for unresolved sessions", async () => {
-    runtime.resolveSessionKeyFromResolveParams.mockResolvedValueOnce({
+    runtime.openClawRuntime.sessions.resolve.mockResolvedValueOnce({
       ok: false,
-      error: { message: "No session found: missing" },
+      error: { kind: "not-found", message: "No session found: missing" },
     });
 
     const callGateway = createEmbeddedCallGateway();

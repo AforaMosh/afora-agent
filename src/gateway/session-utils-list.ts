@@ -7,11 +7,6 @@ import type { SessionsListParams } from "../../packages/gateway-protocol/src/ind
 import { readAcpSessionMetaBatch } from "../acp/runtime/session-meta.js";
 import { resolveDefaultAgentId } from "../agents/agent-scope.js";
 import type { ModelCatalogEntry } from "../agents/model-catalog.js";
-import {
-  countActiveDescendantRuns,
-  getSessionDisplaySubagentRunByChildSessionKey,
-} from "../agents/subagent-registry-read.js";
-import { shouldKeepSubagentRunChildLink } from "../agents/subagent-run-liveness.js";
 import type { SessionEntry } from "../config/sessions.js";
 import { resolveStoredSessionKeyForAgentStore } from "../config/sessions/session-store-key.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
@@ -21,19 +16,21 @@ import {
   normalizeAgentId,
   parseAgentSessionKey,
 } from "../routing/session-key.js";
-import { isCronRunSessionKey } from "../sessions/session-key-utils.js";
-import { type SessionEntryPair, sortAndLimitSessionEntries } from "./session-list-order.js";
+import {
+  type SessionEntryPair,
+  sortAndLimitSessionEntries,
+} from "../sessions/session-entry-order.js";
+import {
+  isFinitePositiveTimestamp,
+  isSessionEntryVisible,
+} from "../sessions/session-entry-visibility.js";
 import { readSessionTitleFieldsFromTranscriptAsync as readScopedSessionTitleFieldsFromTranscriptAsync } from "./session-transcript-title-reader.js";
 import type {
   SessionActorProfileIdentity,
   SessionListRowContext,
   SessionListRowContextProvider,
 } from "./session-utils-contracts.js";
-import {
-  deriveSessionTitle,
-  isFinitePositiveTimestamp,
-  shouldKeepStoreOnlyChildLink,
-} from "./session-utils-core.js";
+import { deriveSessionTitle } from "./session-utils-core.js";
 import { getSessionDefaults } from "./session-utils-model.js";
 import {
   buildSessionListRowContext,
@@ -180,12 +177,9 @@ function filterSessionEntries(params: {
   entryFilter?: (key: string, entry: SessionEntry) => boolean;
 }): Pick<SessionEntrySelection, "creators" | "entries"> {
   const { cfg, store, opts, now } = params;
-  const includeGlobal = opts.includeGlobal === true;
-  const includeUnknown = opts.includeUnknown === true;
   const spawnedBy = typeof opts.spawnedBy === "string" ? opts.spawnedBy : "";
   const label = normalizeOptionalString(opts.label) ?? "";
   const boardFace = opts.boardFace;
-  const agentId = typeof opts.agentId === "string" ? normalizeAgentId(opts.agentId) : "";
   const search = normalizeLowercaseStringOrEmpty(opts.search);
   const activeMinutes =
     typeof opts.activeMinutes === "number" && Number.isFinite(opts.activeMinutes)
@@ -200,58 +194,17 @@ function filterSessionEntries(params: {
     if (params.entryFilter && !params.entryFilter(key, entry)) {
       continue;
     }
+    const filterRowContext = spawnedBy ? resolveSessionListRowContext(params) : undefined;
     if (
-      isCronRunSessionKey(key) ||
-      (!includeGlobal && key === "global") ||
-      (!includeUnknown && key === "unknown")
+      !isSessionEntryVisible({
+        key,
+        entry,
+        now,
+        options: opts,
+        subagentRuns: filterRowContext?.subagentRuns,
+      })
     ) {
       continue;
-    }
-    if (agentId) {
-      if (key === "global") {
-        if (!includeGlobal) {
-          continue;
-        }
-      } else if (key === "unknown") {
-        continue;
-      } else {
-        const parsed = parseAgentSessionKey(key);
-        if (!parsed || normalizeAgentId(parsed.agentId) !== agentId) {
-          continue;
-        }
-      }
-    }
-    if (isPhantomAgentStoreListEntry(key, entry)) {
-      continue;
-    }
-    if (spawnedBy) {
-      if (key === "unknown" || key === "global") {
-        continue;
-      }
-      const filterRowContext = resolveSessionListRowContext(params);
-      const latest = filterRowContext
-        ? filterRowContext.subagentRuns.getDisplaySubagentRun(key)
-        : getSessionDisplaySubagentRunByChildSessionKey(key);
-      const keepSpawned = latest
-        ? (normalizeOptionalString(latest.controllerSessionKey) ||
-            normalizeOptionalString(latest.requesterSessionKey)) === spawnedBy &&
-          shouldKeepSubagentRunChildLink(latest, {
-            activeDescendants: filterRowContext
-              ? filterRowContext.subagentRuns.countActiveDescendantRuns(key)
-              : countActiveDescendantRuns(key),
-            now,
-          })
-        : shouldKeepStoreOnlyChildLink(entry, now) &&
-          (entry.spawnedBy === spawnedBy || entry.parentSessionKey === spawnedBy);
-      if (!keepSpawned) {
-        continue;
-      }
-    }
-    if (opts.archived !== "all") {
-      const archived = entry.archivedAt !== undefined;
-      if (opts.archived === true ? !archived : archived) {
-        continue;
-      }
     }
     if (
       opts.requireLastInteraction === true &&
@@ -302,15 +255,6 @@ function filterSessionEntries(params: {
   }
 
   return { entries, creators: sortSessionCreatorIdentities(creators) };
-}
-
-function isPhantomAgentStoreListEntry(key: string, entry: SessionEntry | undefined): boolean {
-  const parsed = parseAgentSessionKey(key);
-  return (
-    parsed?.rest === "sessions" &&
-    !normalizeOptionalString(entry?.sessionId) &&
-    entry?.updatedAt == null
-  );
 }
 
 function selectSessionEntries(params: {

@@ -124,7 +124,7 @@ export const migratedSessionAccessorFiles = new Set([
   "src/commands/status.agent-local.ts",
   "src/status/summary.ts",
   "src/commands/tasks.ts",
-  "src/config/sessions/combined-store-gateway.ts",
+  "src/sessions/session-combined-store.ts",
   "src/config/sessions/delivery-info.ts",
   "src/config/sessions/goals.ts",
   "src/cron/isolated-agent/delivery-target.ts",
@@ -398,6 +398,24 @@ function findNamedBoundaryViolations(content, fileName, legacyNames, subject) {
   };
 
   visit(sourceFile);
+  return violations;
+}
+
+export function findSessionRuntimeGatewayImportViolations(content, fileName = "source.ts") {
+  const sourceFile = ts.createSourceFile(fileName, content, ts.ScriptTarget.Latest, true);
+  const violations = [];
+  for (const statement of sourceFile.statements) {
+    if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) {
+      continue;
+    }
+    const modulePath = statement.moduleSpecifier.text;
+    if (modulePath.includes("/gateway/") || modulePath.startsWith("../gateway")) {
+      violations.push({
+        line: toLine(sourceFile, statement.moduleSpecifier),
+        reason: `imports Gateway transport module "${modulePath}"`,
+      });
+    }
+  }
   return violations;
 }
 
@@ -969,6 +987,21 @@ export async function main() {
     ).map((violation) =>
       Object.assign({ path: "src/plugin-sdk/session-store-runtime.ts" }, violation),
     );
+  const sessionRuntimeGatewayImportViolations = await collectFileViolations({
+    repoRoot,
+    sourceRoots: resolveSourceRoots(repoRoot, ["src/sessions"]),
+    skipFile: (filePath) => {
+      const relativePath = normalizeRelativePath(path.relative(repoRoot, filePath));
+      return ![
+        "src/sessions/session-entry-order.ts",
+        "src/sessions/session-entry-visibility.ts",
+        "src/sessions/session-resolve.ts",
+        "src/sessions/session-service-contract.ts",
+        "src/sessions/session-service.ts",
+      ].includes(relativePath);
+    },
+    findViolations: findSessionRuntimeGatewayImportViolations,
+  });
   const violations = [
     ...readViolations,
     ...writeViolations,
@@ -980,6 +1013,7 @@ export async function main() {
     ...embeddedAgentSessionTargetViolations,
     ...readOnlyGatewaySessionAccessorViolations,
     ...sessionStoreRuntimeCompatViolations,
+    ...sessionRuntimeGatewayImportViolations,
   ];
 
   const baselineCounts = await readSessionAccessorDebtBaseline(repoRoot);

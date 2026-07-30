@@ -12,6 +12,7 @@ import {
   validateSessionsSearchParams,
 } from "../../../packages/gateway-protocol/src/index.js";
 import { resolveDefaultAgentId } from "../../agents/agent-scope.js";
+import { openClawRuntime } from "../../agents/openclaw-runtime.js";
 import {
   isConfiguredSessionStoreAgentId,
   isPerAgentSessionStoreConfig,
@@ -41,7 +42,6 @@ import {
   normalizeAgentId,
   parseAgentSessionKey,
 } from "../../routing/session-key.js";
-import { resolveSessionKeyFromResolveParams } from "../../sessions/session-resolve.js";
 import type {
   SessionStoreCache,
   SessionStoreDiscoveryCache,
@@ -662,19 +662,19 @@ export const sessionReadHandlers: GatewayRequestHandlers = {
     if (!assertValidParams(params, validateSessionsResolveParams, "sessions.resolve", respond)) {
       return;
     }
-    const p = params;
-    const cfg = context.getRuntimeConfig();
-
-    const resolved = await resolveSessionKeyFromResolveParams({ cfg, p });
+    const resolved = await openClawRuntime.sessions.resolve({
+      config: context.getRuntimeConfig(),
+      selector: params,
+    });
     if (!resolved.ok) {
-      respond(false, undefined, resolved.error);
+      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, resolved.error.message));
       return;
     }
-    if ("missing" in resolved) {
+    if (!resolved.value) {
       respond(true, { ok: false }, undefined);
       return;
     }
-    respond(true, { ok: true, key: resolved.key }, undefined);
+    respond(true, { ok: true, key: resolved.value.key }, undefined);
   },
   "sessions.get": async ({ params, respond, context }) => {
     const p = params as {

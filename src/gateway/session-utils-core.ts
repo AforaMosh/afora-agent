@@ -5,13 +5,14 @@ import {
   getSubagentSessionRuntimeMs,
   listSubagentRunsForController,
 } from "../agents/subagent-registry-read.js";
-import {
-  RECENT_ENDED_SUBAGENT_CHILD_SESSION_MS,
-  shouldKeepSubagentRunChildLink,
-} from "../agents/subagent-run-liveness.js";
+import { shouldKeepSubagentRunChildLink } from "../agents/subagent-run-liveness.js";
 import { stripInboundMetadata } from "../auto-reply/reply/strip-inbound-meta.js";
-import { isTerminalSessionStatus, type SessionEntry } from "../config/sessions.js";
+import type { SessionEntry } from "../config/sessions.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
+import {
+  isFinitePositiveTimestamp,
+  shouldKeepStoreOnlyChildLink,
+} from "../sessions/session-entry-visibility.js";
 import { resolveNonNegativeNumber } from "../shared/number-coercion.js";
 import { truncateUtf16Safe } from "../utils.js";
 import {
@@ -253,31 +254,7 @@ export function resolveEstimatedSessionCostUsd(params: {
   return resolveNonNegativeNumber(estimated);
 }
 
-const STALE_STORE_ONLY_CHILD_LINK_MS = 60 * 60 * 1_000;
-
 const SINGLE_ROW_CONTEXT_CACHE_MAX_ENTRIES = 64;
-
-export function isFinitePositiveTimestamp(value: unknown): value is number {
-  return typeof value === "number" && Number.isFinite(value) && value > 0;
-}
-
-export function shouldKeepStoreOnlyChildLink(entry: SessionEntry, now: number): boolean {
-  if (isTerminalSessionStatus(entry.status) || isFinitePositiveTimestamp(entry.endedAt)) {
-    const endedAt = isFinitePositiveTimestamp(entry.endedAt) ? entry.endedAt : entry.updatedAt;
-    return (
-      isFinitePositiveTimestamp(endedAt) && now - endedAt <= RECENT_ENDED_SUBAGENT_CHILD_SESSION_MS
-    );
-  }
-  if (entry.status === "running" || isFinitePositiveTimestamp(entry.startedAt)) {
-    return true;
-  }
-  // Store-only child links lack a live subagent registry entry. Keep recent
-  // unknown-state rows visible briefly so reloads do not hide fresh children.
-  return (
-    isFinitePositiveTimestamp(entry.updatedAt) &&
-    now - entry.updatedAt <= STALE_STORE_ONLY_CHILD_LINK_MS
-  );
-}
 
 type SingleRowChildSessionCandidateCacheEntry = {
   entriesByKey: Map<string, SessionEntry>;

@@ -3,7 +3,6 @@
  */
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { ErrorCodes } from "../../packages/gateway-protocol/src/index.js";
 import { writeAcpSessionMetaForMigration } from "../acp/runtime/session-meta.js";
 import { resolveStorePath, type SessionEntry } from "../config/sessions.js";
 import { replaceSessionEntry } from "../config/sessions/session-accessor.js";
@@ -11,9 +10,9 @@ import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { closeOpenClawAgentDatabasesForTest } from "../state/openclaw-agent-db.js";
 import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
 import { withStateDirEnv as withRawStateDirEnv } from "../test-helpers/state-dir-env.js";
-import { resolveSessionKeyFromResolveParams } from "./session-resolve.js";
+import { resolveSessionSelector } from "./session-resolve.js";
 
-describe("resolveSessionKeyFromResolveParams store canonicalization", () => {
+describe("resolveSessionSelector store canonicalization", () => {
   const freshUpdatedAt = () => Date.now();
 
   function closeSessionSqliteDatabasesForTest(): void {
@@ -63,18 +62,18 @@ describe("resolveSessionKeyFromResolveParams store canonicalization", () => {
       });
 
       await expect(
-        resolveSessionKeyFromResolveParams({
-          cfg,
-          p: { sessionId: "sess-default-alias" },
+        resolveSessionSelector({
+          config: cfg,
+          selector: { sessionId: "sess-default-alias" },
         }),
-      ).resolves.toEqual({ ok: true, key: "agent:ops:main" });
+      ).resolves.toEqual({ ok: true, value: { key: "agent:ops:main" } });
 
       await expect(
-        resolveSessionKeyFromResolveParams({
-          cfg,
-          p: { label: "default-alias" },
+        resolveSessionSelector({
+          config: cfg,
+          selector: { label: "default-alias" },
         }),
-      ).resolves.toEqual({ ok: true, key: "agent:ops:main" });
+      ).resolves.toEqual({ ok: true, value: { key: "agent:ops:main" } });
     });
   });
 
@@ -93,27 +92,27 @@ describe("resolveSessionKeyFromResolveParams store canonicalization", () => {
       });
 
       await expect(
-        resolveSessionKeyFromResolveParams({
-          cfg,
-          p: { sessionId: "sess-shared", agentId: "main" },
+        resolveSessionSelector({
+          config: cfg,
+          selector: { sessionId: "sess-shared", agentId: "main" },
         }),
       ).resolves.toEqual({
         ok: false,
         error: {
-          code: ErrorCodes.INVALID_REQUEST,
+          kind: "not-found",
           message: "No session found: sess-shared",
         },
       });
 
       await expect(
-        resolveSessionKeyFromResolveParams({
-          cfg,
-          p: { label: "shared-label", agentId: "main" },
+        resolveSessionSelector({
+          config: cfg,
+          selector: { label: "shared-label", agentId: "main" },
         }),
       ).resolves.toEqual({
         ok: false,
         error: {
-          code: ErrorCodes.INVALID_REQUEST,
+          kind: "not-found",
           message: "No session found with label: shared-label",
         },
       });
@@ -141,30 +140,30 @@ describe("resolveSessionKeyFromResolveParams store canonicalization", () => {
         },
       });
 
-      const sessionIdResult = await resolveSessionKeyFromResolveParams({
-        cfg,
-        p: { sessionId: "sess-shared" },
+      const sessionIdResult = await resolveSessionSelector({
+        config: cfg,
+        selector: { sessionId: "sess-shared" },
       });
       expect(sessionIdResult.ok).toBe(false);
       if (sessionIdResult.ok) {
         throw new Error("expected ambiguous sessionId result");
       }
-      expect(sessionIdResult.error.code).toBe(ErrorCodes.INVALID_REQUEST);
+      expect(sessionIdResult.error.kind).toBe("ambiguous");
       expect(sessionIdResult.error.message).toContain(
         "Multiple sessions found for sessionId: sess-shared",
       );
       expect(sessionIdResult.error.message).toContain("agent:main:main-target");
       expect(sessionIdResult.error.message).toContain("agent:work:work-target");
 
-      const labelResult = await resolveSessionKeyFromResolveParams({
-        cfg,
-        p: { label: "shared-label" },
+      const labelResult = await resolveSessionSelector({
+        config: cfg,
+        selector: { label: "shared-label" },
       });
       expect(labelResult.ok).toBe(false);
       if (labelResult.ok) {
         throw new Error("expected ambiguous label result");
       }
-      expect(labelResult.error.code).toBe(ErrorCodes.INVALID_REQUEST);
+      expect(labelResult.error.kind).toBe("ambiguous");
       expect(labelResult.error.message).toContain(
         "Multiple sessions found with label: shared-label",
       );
@@ -188,14 +187,14 @@ describe("resolveSessionKeyFromResolveParams store canonicalization", () => {
       });
 
       await expect(
-        resolveSessionKeyFromResolveParams({
-          cfg,
-          p: { sessionId: "sess-stale-main" },
+        resolveSessionSelector({
+          config: cfg,
+          selector: { sessionId: "sess-stale-main" },
         }),
       ).resolves.toEqual({
         ok: false,
         error: {
-          code: ErrorCodes.INVALID_REQUEST,
+          kind: "agent-not-found",
           message: 'Agent "main" no longer exists in configuration',
         },
       });
@@ -217,27 +216,27 @@ describe("resolveSessionKeyFromResolveParams store canonicalization", () => {
       });
 
       await expect(
-        resolveSessionKeyFromResolveParams({
-          cfg,
-          p: { sessionId: "sess-discovered-main" },
+        resolveSessionSelector({
+          config: cfg,
+          selector: { sessionId: "sess-discovered-main" },
         }),
       ).resolves.toEqual({
         ok: false,
         error: {
-          code: ErrorCodes.INVALID_REQUEST,
+          kind: "agent-not-found",
           message: 'Agent "main" no longer exists in configuration',
         },
       });
 
       await expect(
-        resolveSessionKeyFromResolveParams({
-          cfg,
-          p: { label: "discovered-main" },
+        resolveSessionSelector({
+          config: cfg,
+          selector: { label: "discovered-main" },
         }),
       ).resolves.toEqual({
         ok: false,
         error: {
-          code: ErrorCodes.INVALID_REQUEST,
+          kind: "agent-not-found",
           message: 'Agent "main" no longer exists in configuration',
         },
       });
@@ -272,25 +271,25 @@ describe("resolveSessionKeyFromResolveParams store canonicalization", () => {
       });
 
       await expect(
-        resolveSessionKeyFromResolveParams({
-          cfg,
-          p: { key: acpKey },
+        resolveSessionSelector({
+          config: cfg,
+          selector: { key: acpKey },
         }),
-      ).resolves.toEqual({ ok: true, key: acpKey });
+      ).resolves.toEqual({ ok: true, value: { key: acpKey } });
 
       await expect(
-        resolveSessionKeyFromResolveParams({
-          cfg,
-          p: { sessionId: "sess-acp-harness" },
+        resolveSessionSelector({
+          config: cfg,
+          selector: { sessionId: "sess-acp-harness" },
         }),
-      ).resolves.toEqual({ ok: true, key: acpKey });
+      ).resolves.toEqual({ ok: true, value: { key: acpKey } });
 
       await expect(
-        resolveSessionKeyFromResolveParams({
-          cfg,
-          p: { label: "claude-delegate" },
+        resolveSessionSelector({
+          config: cfg,
+          selector: { label: "claude-delegate" },
         }),
-      ).resolves.toEqual({ ok: true, key: acpKey });
+      ).resolves.toEqual({ ok: true, value: { key: acpKey } });
     });
   });
 
@@ -323,18 +322,18 @@ describe("resolveSessionKeyFromResolveParams store canonicalization", () => {
       });
 
       await expect(
-        resolveSessionKeyFromResolveParams({
-          cfg,
-          p: { key: acpKey },
+        resolveSessionSelector({
+          config: cfg,
+          selector: { key: acpKey },
         }),
-      ).resolves.toEqual({ ok: true, key: acpKey });
+      ).resolves.toEqual({ ok: true, value: { key: acpKey } });
 
       await expect(
-        resolveSessionKeyFromResolveParams({
-          cfg,
-          p: { key: acpKey },
+        resolveSessionSelector({
+          config: cfg,
+          selector: { key: acpKey },
         }),
-      ).resolves.toEqual({ ok: true, key: acpKey });
+      ).resolves.toEqual({ ok: true, value: { key: acpKey } });
     });
   });
 
@@ -355,29 +354,29 @@ describe("resolveSessionKeyFromResolveParams store canonicalization", () => {
       const expected = {
         ok: false,
         error: {
-          code: ErrorCodes.INVALID_REQUEST,
+          kind: "agent-not-found",
           message: 'Agent "deleted-agent" no longer exists in configuration',
         },
       };
 
       await expect(
-        resolveSessionKeyFromResolveParams({
-          cfg,
-          p: { key: acpBridgeKey },
+        resolveSessionSelector({
+          config: cfg,
+          selector: { key: acpBridgeKey },
         }),
       ).resolves.toEqual(expected);
 
       await expect(
-        resolveSessionKeyFromResolveParams({
-          cfg,
-          p: { sessionId: "sess-acp-bridge-deleted" },
+        resolveSessionSelector({
+          config: cfg,
+          selector: { sessionId: "sess-acp-bridge-deleted" },
         }),
       ).resolves.toEqual(expected);
 
       await expect(
-        resolveSessionKeyFromResolveParams({
-          cfg,
-          p: { label: "deleted-bridge" },
+        resolveSessionSelector({
+          config: cfg,
+          selector: { label: "deleted-bridge" },
         }),
       ).resolves.toEqual(expected);
     });
@@ -400,29 +399,29 @@ describe("resolveSessionKeyFromResolveParams store canonicalization", () => {
       const expected = {
         ok: false,
         error: {
-          code: ErrorCodes.INVALID_REQUEST,
+          kind: "agent-not-found",
           message: 'Agent "deleted-agent" no longer exists in configuration',
         },
       };
 
       await expect(
-        resolveSessionKeyFromResolveParams({
-          cfg,
-          p: { key: acpBindingKey },
+        resolveSessionSelector({
+          config: cfg,
+          selector: { key: acpBindingKey },
         }),
       ).resolves.toEqual(expected);
 
       await expect(
-        resolveSessionKeyFromResolveParams({
-          cfg,
-          p: { sessionId: "sess-acp-binding-deleted" },
+        resolveSessionSelector({
+          config: cfg,
+          selector: { sessionId: "sess-acp-binding-deleted" },
         }),
       ).resolves.toEqual(expected);
 
       await expect(
-        resolveSessionKeyFromResolveParams({
-          cfg,
-          p: { label: "deleted-binding" },
+        resolveSessionSelector({
+          config: cfg,
+          selector: { label: "deleted-binding" },
         }),
       ).resolves.toEqual(expected);
     });
@@ -449,14 +448,14 @@ describe("resolveSessionKeyFromResolveParams store canonicalization", () => {
       });
 
       await expect(
-        resolveSessionKeyFromResolveParams({
-          cfg,
-          p: { key: "agent:main:main" },
+        resolveSessionSelector({
+          config: cfg,
+          selector: { key: "agent:main:main" },
         }),
       ).resolves.toEqual({
         ok: false,
         error: {
-          code: ErrorCodes.INVALID_REQUEST,
+          kind: "agent-not-found",
           message: 'Agent "main" no longer exists in configuration',
         },
       });

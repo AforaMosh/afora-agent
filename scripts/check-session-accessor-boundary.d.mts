@@ -10,6 +10,13 @@ export function findSessionStoreRuntimeFileBackedCompatExportViolations(
   line: unknown;
   reason: string;
 }[];
+export function findSessionRuntimeGatewayImportViolations(
+  content: unknown,
+  fileName?: string,
+): {
+  line: unknown;
+  reason: string;
+}[];
 export function findSessionAccessorBoundaryViolations(
   content: unknown,
   fileName?: string,

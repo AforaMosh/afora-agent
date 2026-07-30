@@ -15,8 +15,8 @@ import {
   validateTalkSessionSubmitToolResultParams,
   validateTalkSessionTurnParams,
 } from "../../../packages/gateway-protocol/src/index.js";
+import { openClawRuntime } from "../../agents/openclaw-runtime.js";
 import { buildAgentMainSessionKey } from "../../routing/session-key.js";
-import { resolveSessionKeyFromResolveParams } from "../../sessions/session-resolve.js";
 import { REALTIME_VOICE_AGENT_CONSULT_TOOL } from "../../talk/agent-consult-tool.js";
 import { REALTIME_VOICE_AGENT_CONTROL_TOOL } from "../../talk/agent-run-control-shared.js";
 import { controlRealtimeVoiceAgentRun } from "../../talk/agent-run-control.js";
@@ -215,9 +215,9 @@ export const talkSessionHandlers: GatewayRequestHandlers = {
           );
           return;
         }
-        const resolvedSession = await resolveSessionKeyFromResolveParams({
-          cfg: context.getRuntimeConfig(),
-          p: {
+        const resolvedSession = await openClawRuntime.sessions.resolve({
+          config: context.getRuntimeConfig(),
+          selector: {
             key: params.sessionKey,
             ...(spawnedBy ? { spawnedBy } : {}),
             includeGlobal: true,
@@ -225,15 +225,19 @@ export const talkSessionHandlers: GatewayRequestHandlers = {
           },
         });
         if (!resolvedSession.ok) {
-          respond(false, undefined, resolvedSession.error);
+          respond(
+            false,
+            undefined,
+            errorShape(ErrorCodes.INVALID_REQUEST, resolvedSession.error.message),
+          );
           return;
         }
-        if ("missing" in resolvedSession) {
+        if (!resolvedSession.value) {
           respondInvalidRequest(respond, `No session found: ${params.sessionKey}`);
           return;
         }
         const handoff = createTalkHandoff({
-          sessionKey: resolvedSession.key,
+          sessionKey: resolvedSession.value.key,
           provider: normalizeOptionalString(params.provider),
           model: normalizeOptionalString(params.model),
           voice: normalizeOptionalString(params.voice),
