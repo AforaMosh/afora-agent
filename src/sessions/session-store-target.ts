@@ -29,14 +29,14 @@ import {
 } from "../routing/session-key.js";
 import { resolveIncognitoOpenClawAgentSqlitePath } from "../state/openclaw-agent-db.js";
 
-export type SessionStoreTarget = {
+type SessionStoreTarget = {
   agentId: string;
   storePath: string;
   canonicalKey: string;
   storeKeys: string[];
 };
 
-export type SessionStoreTargetWithStore = SessionStoreTarget & {
+type SessionStoreTargetWithStore = SessionStoreTarget & {
   store: Record<string, SessionEntry>;
 };
 

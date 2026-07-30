@@ -153,6 +153,44 @@ test("sessions.preview prefers the freshest duplicate row for a legacy main alia
   expect(entry?.items[0]?.text).toContain("fresh preview");
 });
 
+test("sessions.describe projects the freshest main alias under its canonical key", async () => {
+  const { dir } = await createSessionStoreDir();
+  const storePath = path.join(dir, "agents", "ops", "sessions", "sessions.json");
+  testState.sessionStorePath = storePath;
+  testState.agentsConfig = { list: [{ id: "ops", default: true }] };
+  testState.sessionConfig = { mainKey: "work" };
+  await writeSessionStore({ agentId: "ops", entries: {} });
+  await replaceSessionEntries(
+    storePath,
+    {
+      "agent:ops:work": {
+        sessionId: "session-canonical-stale",
+        updatedAt: 41,
+      },
+      "agent:ops:main": {
+        sessionId: "session-legacy-fresh",
+        updatedAt: 42,
+      },
+    },
+    "ops",
+  );
+
+  const { ws } = await openClient();
+  try {
+    const described = await rpcReq<{
+      session: { key: string; sessionId: string } | null;
+    }>(ws, "sessions.describe", { key: "agent:ops:work" });
+    expect(described).toMatchObject({
+      ok: true,
+      payload: {
+        session: { key: "agent:ops:work", sessionId: "session-legacy-fresh" },
+      },
+    });
+  } finally {
+    ws.close();
+  }
+});
+
 test("sessions.resolve and mutators clean legacy main-alias ghost keys", async () => {
   const { dir } = await createSessionStoreDir();
   const storePath = path.join(dir, "agents", "ops", "sessions", "sessions.json");

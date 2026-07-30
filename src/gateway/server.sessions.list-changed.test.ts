@@ -20,7 +20,7 @@ import {
   normalizeSessionDeliveryState,
   projectSessionDeliveryFields,
 } from "../utils/delivery-context.shared.js";
-import { buildGatewaySessionRow } from "./session-utils.js";
+import { buildGatewaySessionRow } from "./session-utils-row.js";
 import { embeddedRunMock, rpcReq, testState, writeSessionStore } from "./test-helpers.js";
 import {
   setupGatewaySessionsTestHarness,

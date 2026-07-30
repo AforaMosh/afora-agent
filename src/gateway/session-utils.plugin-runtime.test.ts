@@ -21,11 +21,13 @@ vi.mock("../plugins/current-plugin-metadata-snapshot.js", () => ({
 }));
 
 let sessionUtils: typeof import("./session-utils.js");
+let sessionRow: typeof import("./session-utils-row.js");
 
 describe("gateway session list plugin runtime normalization", () => {
   beforeAll(async () => {
     vi.resetModules();
     sessionUtils = await import("./session-utils.js");
+    sessionRow = await import("./session-utils-row.js");
   });
 
   beforeEach(() => {
@@ -76,7 +78,7 @@ describe("gateway session list plugin runtime normalization", () => {
       },
     } as OpenClawConfig;
 
-    const row = sessionUtils.buildGatewaySessionRow({
+    const row = sessionRow.buildGatewaySessionRow({
       cfg,
       storePath: "",
       store: {},

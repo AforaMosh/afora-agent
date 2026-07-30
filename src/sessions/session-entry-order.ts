@@ -3,7 +3,7 @@ import type { SessionEntry } from "../config/sessions/types.js";
 const SESSION_ENTRY_TOP_N_LIMIT = 200;
 
 export type SessionEntryPair = [string, SessionEntry];
-export type SessionEntrySortBy = "updatedAt" | "lastInteractionAt";
+type SessionEntrySortBy = "updatedAt" | "lastInteractionAt";
 
 function compareSessionEntryPairs(
   a: SessionEntryPair,

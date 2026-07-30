@@ -12,7 +12,7 @@ export type SessionSelector = {
   allowMissing?: boolean;
 };
 
-export type ResolvedSession = {
+type ResolvedSession = {
   key: string;
 };
 

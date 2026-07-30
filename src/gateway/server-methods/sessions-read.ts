@@ -1,4 +1,5 @@
 // Read-only session queries.
+import { expectDefined } from "@openclaw/normalization-core";
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
 import {
   ErrorCodes,
@@ -60,7 +61,7 @@ import {
   readSessionPreviewItemsFromTranscript,
 } from "../session-transcript-readers.js";
 import {
-  buildGatewaySessionRow,
+  listSessionsFromStore,
   listSessionsFromStoreAsync,
   loadCombinedSessionStore,
   resolveFreshestSessionEntryFromStoreKeys,
@@ -637,16 +638,21 @@ export const sessionReadHandlers: GatewayRequestHandlers = {
       respond(true, { session: null }, undefined);
       return;
     }
-    const row = buildGatewaySessionRow({
+    const projectionStore =
+      store[target.canonicalKey] === entry ? store : { ...store, [target.canonicalKey]: entry };
+    const listed = listSessionsFromStore({
       cfg,
       storePath,
-      store,
-      key: target.canonicalKey,
-      entry,
-      includeDerivedTitles: params.includeDerivedTitles,
-      includeLastMessage: params.includeLastMessage,
-      transcriptUsageMaxBytes: 64 * 1024,
+      store: projectionStore,
+      entryFilter: (candidateKey) => candidateKey === target.canonicalKey,
+      includeHidden: true,
+      opts: {
+        includeDerivedTitles: params.includeDerivedTitles,
+        includeLastMessage: params.includeLastMessage,
+        limit: 1,
+      },
     });
+    const row = expectDefined(listed.sessions[0], "described session");
     const placement = row.sessionId
       ? context.workerSessionPlacementService?.getMany([row.sessionId]).get(row.sessionId)
       : undefined;

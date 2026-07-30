@@ -63,6 +63,7 @@ type ListSessionsFromStoreParams = {
   cfg: OpenClawConfig;
   durableStorePath?: string;
   entryFilter?: (key: string, entry: SessionEntry) => boolean;
+  includeHidden?: boolean;
   storePath: string;
   store: Record<string, SessionEntry>;
   modelCatalog?: ModelCatalogEntry[];
@@ -175,6 +176,7 @@ function filterSessionEntries(params: {
   userProfileIdentityById?: Map<string, SessionActorProfileIdentity | undefined>;
   getRowContext?: SessionListRowContextProvider;
   entryFilter?: (key: string, entry: SessionEntry) => boolean;
+  includeHidden?: boolean;
 }): Pick<SessionEntrySelection, "creators" | "entries"> {
   const { cfg, store, opts, now } = params;
   const spawnedBy = typeof opts.spawnedBy === "string" ? opts.spawnedBy : "";
@@ -196,6 +198,7 @@ function filterSessionEntries(params: {
     }
     const filterRowContext = spawnedBy ? resolveSessionListRowContext(params) : undefined;
     if (
+      !params.includeHidden &&
       !isSessionEntryVisible({
         key,
         entry,
@@ -266,6 +269,7 @@ function selectSessionEntries(params: {
   defaultLimit?: number;
   userProfileIdentityById?: Map<string, SessionActorProfileIdentity | undefined>;
   entryFilter?: (key: string, entry: SessionEntry) => boolean;
+  includeHidden?: boolean;
 }): SessionEntrySelection {
   const { creators, entries: filtered } = filterSessionEntries(params);
   const limit = resolveSessionsListLimit(params.opts, params.defaultLimit);
@@ -313,6 +317,7 @@ function prepareSessionList(params: ListSessionsFromStoreParams) {
     opts,
     now,
     entryFilter,
+    includeHidden: params.includeHidden,
     getRowContext:
       hasSpawnedByFilter || Boolean(normalizeOptionalString(opts.search))
         ? getRowContext
@@ -380,15 +385,6 @@ function buildSessionsListResult(params: {
     }),
     sessions,
   };
-}
-
-export function filterAndSortSessionEntries(params: {
-  cfg: OpenClawConfig;
-  store: Record<string, SessionEntry>;
-  opts: SessionsListParams;
-  now: number;
-}): [string, SessionEntry][] {
-  return selectSessionEntries(params).entries;
 }
 
 export function listSessionsFromStore(params: ListSessionsFromStoreParams): SessionsListResult {

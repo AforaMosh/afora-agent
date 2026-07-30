@@ -28,9 +28,7 @@ export { resolveGatewaySessionThinkingProjection } from "./session-utils-model.j
 export { getSessionDefaults } from "./session-utils-model.js";
 export { resolveGatewayModelSupportsImages } from "./session-utils-model.js";
 export { resolveSessionDisplayModelIdentityRef } from "./session-utils-model.js";
-export { buildGatewaySessionRow } from "./session-utils-row.js";
 export { loadGatewaySessionRow } from "./session-utils-search.js";
 export { buildGatewaySessionInfo } from "./session-utils-search.js";
-export { filterAndSortSessionEntries } from "./session-utils-list.js";
 export { listSessionsFromStore } from "./session-utils-list.js";
 export { listSessionsFromStoreAsync } from "./session-utils-list.js";

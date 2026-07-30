@@ -14,7 +14,7 @@ import { isCronRunSessionKey } from "./session-key-utils.js";
 
 const STALE_STORE_ONLY_CHILD_LINK_MS = 60 * 60 * 1_000;
 
-export type SessionEntryVisibilityOptions = {
+type SessionEntryVisibilityOptions = {
   agentId?: string;
   archived?: boolean | "all";
   includeGlobal?: boolean;
