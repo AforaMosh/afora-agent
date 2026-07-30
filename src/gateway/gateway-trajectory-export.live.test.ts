@@ -199,7 +199,14 @@ function formatTextPreview(texts: string[], maxChars = 800): string {
   if (!combined) {
     return "<none>";
   }
-  return combined.length > maxChars ? `${combined.slice(0, maxChars)}...` : combined;
+  if (combined.length <= maxChars) {
+    return combined;
+  }
+  const omittedMarker = "\n...<omitted>...\n";
+  const visibleChars = maxChars - omittedMarker.length;
+  const headChars = Math.ceil(visibleChars / 2);
+  const tailChars = Math.floor(visibleChars / 2);
+  return `${combined.slice(0, headChars)}${omittedMarker}${combined.slice(-tailChars)}`;
 }
 
 function findTrajectoryExportInstructionText(

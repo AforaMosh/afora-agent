@@ -53,6 +53,7 @@ const runtime: RuntimeEnv = {
 
 describeLive("setup app recommendations live", () => {
   it("uses real ClawHub search and OpenAI while rejecting substring traps", async () => {
+    let completionFailure: { status?: string | number; error: string } | undefined;
     const result = await getSetupAppRecommendations({
       inventorySource: async () => [
         { label: "Notion", bundleId: "notion.id" },
@@ -74,13 +75,20 @@ describeLive("setup app recommendations live", () => {
             runtime,
             timeoutMs: 240_000,
           });
-          return completion.ok ? { ok: true, text: completion.text } : { ok: false };
+          if (!completion.ok) {
+            completionFailure = {
+              ...(completion.status === undefined ? {} : { status: completion.status }),
+              error: completion.error,
+            };
+            return { ok: false };
+          }
+          return { ok: true, text: completion.text };
         },
       },
     });
 
     const status = result.status === "ok" ? "ok" : `skipped:${result.reason}`;
-    expect(status).toBe("ok");
+    expect({ status, completionFailure }).toEqual({ status: "ok", completionFailure: undefined });
     if (result.status !== "ok") {
       return;
     }
