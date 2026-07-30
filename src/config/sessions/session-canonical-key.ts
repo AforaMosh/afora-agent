@@ -11,6 +11,7 @@ import {
 } from "../../routing/session-key.js";
 import type { DB as OpenClawAgentKyselyDatabase } from "../../state/openclaw-agent-db.generated.js";
 import { normalizeStoreSessionKey } from "./store-entry.js";
+import type { SessionEntry } from "./types.js";
 
 const SESSION_CANONICAL_KEY_REPAIR_COMMAND = "openclaw doctor --fix";
 type CanonicalSessionDatabase = Pick<
@@ -178,13 +179,14 @@ export function assertCanonicalSqliteSessionKeysCurrent(
       .select([
         "session_nodes.session_key",
         "session_nodes.current_session_id",
+        "session_nodes.entry_valid",
         "session_nodes.fork_source_session_key",
         "session_nodes.parent_session_key",
         "session_nodes.spawned_by",
         "retained_window.session_id as retained_window_id",
       ]),
   ).rows) {
-    if (row.entry_json === "{}" && row.retained_window_id === row.current_session_id) {
+    if (row.entry_valid === -1 && row.retained_window_id === row.current_session_id) {
       continue;
     }
     const trimmed = row.session_key.trim();
