@@ -243,7 +243,7 @@ async function main() {
         arguments: {
           session_key: "agent:main:main",
           after_cursor: 0,
-          timeout_ms: 10_000,
+          timeout_ms: 60_000,
         },
       }),
       gateway.request<{ runId?: string; status?: string }>("chat.send", {

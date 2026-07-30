@@ -130,7 +130,7 @@ async function runPackagedDoctor(stateDir: string): Promise<void> {
 
 async function verifyDoctorImportAndRuntimeIsolation() {
   await withStateDir("commitments-doctor", async (stateDir) => {
-    const nowMs = Date.parse("2026-04-29T17:00:00.000Z");
+    const nowMs = Date.now();
     const cfg = { commitments: { enabled: true } };
     const sourcePath = path.join(stateDir, "commitments", "commitments.json");
     await fs.mkdir(path.dirname(sourcePath), { recursive: true });

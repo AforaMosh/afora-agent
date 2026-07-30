@@ -51,9 +51,14 @@ function messageText(content: unknown): string {
 }
 
 async function verifyRuntimeContextTranscriptShape(root: string) {
-  const sessionFile = path.join(root, ".openclaw", "agents", "main", "sessions", "runtime.jsonl");
-  await fs.mkdir(path.dirname(sessionFile), { recursive: true });
-  const sessionManager = SessionManager.open(sessionFile);
+  const sessionManager = SessionManager.open(
+    {
+      agentId: "main",
+      sessionId: "runtime",
+      sessionKey: "agent:main:qa:docker-runtime-context-shape",
+    },
+    root,
+  );
   const effectivePrompt = [
     "visible ask",
     "",
