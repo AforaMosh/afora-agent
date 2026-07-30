@@ -482,12 +482,7 @@ export async function patchSqliteSessionEntryTarget(
     existingEntry: (snapshot) => snapshot.primary?.entry,
     legacyKeys: () => scope.target.storeKeys,
     options,
-    readSnapshot: (database) =>
-      readSqliteLifecycleTargetSnapshot(database, scope.target, {
-        allowCanonicalMove:
-          scope.target.storeKeys.length === 1 &&
-          scope.target.storeKeys[0] !== scope.target.canonicalKey,
-      }),
+    readSnapshot: (database) => readSqliteLifecycleTargetSnapshot(database, scope.target),
     rehomeWindows: true,
     resolved,
     sessionKey: scope.target.canonicalKey,

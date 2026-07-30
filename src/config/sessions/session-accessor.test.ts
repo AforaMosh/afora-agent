@@ -1465,6 +1465,18 @@ describe("session accessor seam", () => {
         () => ({ label: "patched" }),
       ),
     ).rejects.toThrow("openclaw doctor --fix");
+    await expect(
+      patchSessionEntryTarget(
+        {
+          storePath,
+          target: {
+            canonicalKey: "agent:main:work",
+            storeKeys: ["agent:main:main"],
+          },
+        },
+        () => ({ label: "patched alias" }),
+      ),
+    ).rejects.toThrow("openclaw doctor --fix");
     await deleteSessionEntryLifecycle({
       archiveTranscript: false,
       storePath,

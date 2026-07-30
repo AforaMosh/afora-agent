@@ -7,7 +7,11 @@ import type { OpenClawAgentDatabase } from "../../state/openclaw-agent-db.js";
 import { publishSqliteSessionEntryCacheInvalidation } from "./session-accessor.sqlite-entry-cache.js";
 import { normalizeSqliteNumber } from "./session-accessor.sqlite-normalize.js";
 import { getSessionKysely, type ResolvedTranscriptScope } from "./session-accessor.sqlite-scope.js";
-import { assertCanonicalSessionKeyWriteMatchesDatabase } from "./session-canonical-key.js";
+import { SessionEntryValidityMigrationRequiredError } from "./session-accessor.sqlite-status.js";
+import {
+  assertCanonicalSqliteSessionKeysCurrent,
+  assertCanonicalSessionKeyWriteMatchesDatabase,
+} from "./session-canonical-key.js";
 import { deleteSessionTranscriptIndexInTransaction } from "./session-transcript-index.js";
 
 function createTranscriptGeneration(): string {
@@ -72,7 +76,32 @@ export function ensureTranscriptSessionRoot(
   options: { allowStoredAlias?: boolean } = {},
 ): void {
   if (!options.allowStoredAlias) {
+    assertCanonicalSqliteSessionKeysCurrent(database);
     assertCanonicalSessionKeyWriteMatchesDatabase(database, scope.sessionKey);
+    const db = getSessionKysely(database.db);
+    const existing = executeSqliteQueryTakeFirstSync(
+      database.db,
+      db
+        .selectFrom("session_nodes")
+        .select(["current_session_id", "entry_json", "entry_valid"])
+        .where("session_key", "=", scope.sessionKey),
+    );
+    if (existing && existing.entry_valid !== 1) {
+      const retainedWindow =
+        existing.entry_json === "{}"
+          ? executeSqliteQueryTakeFirstSync(
+              database.db,
+              db
+                .selectFrom("session_windows")
+                .select("session_id")
+                .where("session_id", "=", existing.current_session_id)
+                .where("session_key", "=", scope.sessionKey),
+            )
+          : undefined;
+      if (!retainedWindow) {
+        throw new SessionEntryValidityMigrationRequiredError();
+      }
+    }
   }
   const db = getSessionKysely(database.db);
   const insertedNode = executeSqliteQuerySync(
