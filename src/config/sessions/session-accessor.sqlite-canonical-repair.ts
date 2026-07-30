@@ -1,14 +1,13 @@
-import fs from "node:fs";
 import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
 import type { Selectable } from "kysely";
 import {
   executeSqliteQuerySync,
   executeSqliteQueryTakeFirstSync,
 } from "../../infra/kysely-sync.js";
+import { withOpenClawAgentDatabaseReadOnly } from "../../state/openclaw-agent-db-readonly.js";
 import type { DB as OpenClawAgentKyselyDatabase } from "../../state/openclaw-agent-db.generated.js";
 import {
   openOpenClawAgentDatabase,
-  resolveOpenClawAgentSqlitePath,
   type OpenClawAgentDatabase,
 } from "../../state/openclaw-agent-db.js";
 import type { SessionEntrySummary } from "./session-accessor.sqlite-contract.js";
@@ -124,44 +123,43 @@ export function listSqliteSessionEntriesForCanonicalRepair(
 ): Array<SessionEntrySummary & { rawEntryJson?: string }> {
   const resolved = resolveSqliteScope({ ...scope, sessionKey: "" });
   const databaseOptions = toDatabaseOptions(resolved);
-  if (!fs.existsSync(resolveOpenClawAgentSqlitePath(databaseOptions))) {
-    return [];
-  }
-  const database = openOpenClawAgentDatabase(databaseOptions);
-  const db = getSessionKysely(database.db);
-  return executeSqliteQuerySync(
-    database.db,
-    db
-      .selectFrom("session_nodes")
-      .leftJoin("session_windows as retained_window", (join) =>
-        join
-          .onRef("retained_window.session_id", "=", "session_nodes.current_session_id")
-          .onRef("retained_window.session_key", "=", "session_nodes.session_key"),
-      )
-      .select([
-        "session_nodes.session_key",
-        "session_nodes.current_session_id",
-        "session_nodes.entry_json",
-        "session_nodes.updated_at",
-        "retained_window.session_id as retained_window_id",
-      ]),
-  ).rows.flatMap((row) => {
-    // Exact {} plus an owned window is the durable retained-history tombstone.
-    if (row.entry_json === "{}" && row.retained_window_id === row.current_session_id) {
-      return [];
-    }
-    const persistedEntry = parseSqliteSessionEntryJson(row);
-    const entry = persistedEntry ?? hydrateCanonicalRepairEntry(row);
-    const rawCompareRequired =
-      !persistedEntry || JSON.stringify(persistedEntry) !== JSON.stringify(entry);
-    return [
-      {
-        sessionKey: row.session_key,
-        entry,
-        ...(rawCompareRequired ? { rawEntryJson: row.entry_json } : {}),
-      },
-    ];
-  });
+  const result = withOpenClawAgentDatabaseReadOnly((database) => {
+    const db = getSessionKysely(database.db);
+    return executeSqliteQuerySync(
+      database.db,
+      db
+        .selectFrom("session_nodes")
+        .leftJoin("session_windows as retained_window", (join) =>
+          join
+            .onRef("retained_window.session_id", "=", "session_nodes.current_session_id")
+            .onRef("retained_window.session_key", "=", "session_nodes.session_key"),
+        )
+        .select([
+          "session_nodes.session_key",
+          "session_nodes.current_session_id",
+          "session_nodes.entry_json",
+          "session_nodes.updated_at",
+          "retained_window.session_id as retained_window_id",
+        ]),
+    ).rows.flatMap((row) => {
+      // Exact {} plus an owned window is the durable retained-history tombstone.
+      if (row.entry_json === "{}" && row.retained_window_id === row.current_session_id) {
+        return [];
+      }
+      const persistedEntry = parseSqliteSessionEntryJson(row);
+      const entry = persistedEntry ?? hydrateCanonicalRepairEntry(row);
+      const rawCompareRequired =
+        !persistedEntry || JSON.stringify(persistedEntry) !== JSON.stringify(entry);
+      return [
+        {
+          sessionKey: row.session_key,
+          entry,
+          ...(rawCompareRequired ? { rawEntryJson: row.entry_json } : {}),
+        },
+      ];
+    });
+  }, databaseOptions);
+  return result.found ? result.value : [];
 }
 
 function copySqliteSessionOwnedStateForRepair(params: {
