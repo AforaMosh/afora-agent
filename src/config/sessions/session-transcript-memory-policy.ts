@@ -1369,6 +1369,7 @@ export function recordTranscriptCompactionPolicyInTransaction(params: {
 }
 
 export type TranscriptMemoryPolicyTransitionKind =
+  | "append"
   | "archive"
   | "branch"
   | "checkpoint"
