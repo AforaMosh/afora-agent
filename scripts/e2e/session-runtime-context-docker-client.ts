@@ -235,6 +235,10 @@ async function verifyDoctorRepair(root: string) {
     database.close();
   }
   assert(migratedSessionId, "doctor did not migrate session");
+  assert(
+    migratedSessionId === "broken",
+    `doctor migrated unexpected current session id: ${migratedSessionId}`,
+  );
   const entries = (await readSessionTranscriptEvents({
     agentId: "main",
     sessionId: migratedSessionId,
@@ -243,7 +247,7 @@ async function verifyDoctorRepair(root: string) {
   const ids = entries.map((entryValue) => (entryValue as { id?: string }).id).filter(Boolean);
   assert(
     JSON.stringify(ids) ===
-      JSON.stringify(["broken-session", "parent", "plain-user", "plain-assistant"]),
+      JSON.stringify([migratedSessionId, "parent", "plain-user", "plain-assistant"]),
     `doctor kept wrong active branch: ${JSON.stringify(ids)}`,
   );
   assert(

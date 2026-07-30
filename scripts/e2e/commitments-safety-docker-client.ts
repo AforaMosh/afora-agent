@@ -13,7 +13,10 @@ import {
   listDueCommitmentsForSession,
   upsertInferredCommitments,
 } from "../../dist/commitments/store.js";
-import { closeOpenClawStateDatabase } from "../../dist/state/openclaw-state-db.js";
+
+type CommitmentProbeResult = {
+  due: Array<Record<string, unknown>>;
+};
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) {
@@ -37,7 +40,6 @@ async function withStateDir<T>(name: string, fn: (stateDir: string) => Promise<T
     return await fn(root);
   } finally {
     resetCommitmentExtractionRuntimeForTests();
-    closeOpenClawStateDatabase();
     if (previousStateDir === undefined) {
       deleteEnvValue("OPENCLAW_STATE_DIR");
     } else {
@@ -130,10 +132,26 @@ async function runPackagedDoctor(stateDir: string): Promise<void> {
   );
 }
 
+function runDueCommitmentProbe(stateDir: string, nowMs: number): CommitmentProbeResult {
+  const result = spawnSync("tsx", [process.argv[1]!, "--probe-due", String(nowMs)], {
+    cwd: process.cwd(),
+    env: {
+      ...process.env,
+      OPENCLAW_STATE_DIR: stateDir,
+    },
+    encoding: "utf8",
+    timeout: 120_000,
+  });
+  assert(
+    result.status === 0,
+    `commitment probe failed\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`,
+  );
+  return JSON.parse(result.stdout) as CommitmentProbeResult;
+}
+
 async function verifyDoctorImportAndRuntimeIsolation() {
   await withStateDir("commitments-doctor", async (stateDir) => {
     const nowMs = Date.now();
-    const cfg = { commitments: { enabled: true } };
     const sourcePath = path.join(stateDir, "commitments", "commitments.json");
     await fs.mkdir(path.dirname(sourcePath), { recursive: true });
     await fs.writeFile(
@@ -142,16 +160,10 @@ async function verifyDoctorImportAndRuntimeIsolation() {
       "utf8",
     );
 
-    const beforeDoctor = await listDueCommitmentsForSession({
-      cfg,
-      agentId: "main",
-      sessionKey: "agent:main:qa-channel:commitments",
-      nowMs,
-    });
-    assert(beforeDoctor.length === 0, "runtime imported legacy JSON without doctor");
+    const beforeDoctor = runDueCommitmentProbe(stateDir, nowMs);
+    assert(beforeDoctor.due.length === 0, "runtime imported legacy JSON without doctor");
     await fs.access(sourcePath);
 
-    closeOpenClawStateDatabase();
     await runPackagedDoctor(stateDir);
     await fs
       .access(sourcePath)
@@ -164,12 +176,7 @@ async function verifyDoctorImportAndRuntimeIsolation() {
         }
       });
 
-    const due = await listDueCommitmentsForSession({
-      cfg,
-      agentId: "main",
-      sessionKey: "agent:main:qa-channel:commitments",
-      nowMs,
-    });
+    const { due } = runDueCommitmentProbe(stateDir, nowMs);
     assert(due.length === 1, `unexpected imported due count ${due.length}`);
     assert(!("sourceUserText" in due[0]), "legacy source user text surfaced after import");
     assert(
@@ -177,6 +184,16 @@ async function verifyDoctorImportAndRuntimeIsolation() {
       "legacy source assistant text surfaced after import",
     );
   });
+}
+
+async function runDueCommitmentProbeMode(nowMs: number): Promise<void> {
+  const due = await listDueCommitmentsForSession({
+    cfg: { commitments: { enabled: true } },
+    agentId: "main",
+    sessionKey: "agent:main:qa-channel:commitments",
+    nowMs,
+  });
+  console.log(JSON.stringify({ due }));
 }
 
 async function verifyExpiryTransition() {
@@ -226,7 +243,13 @@ async function verifyExpiryTransition() {
   });
 }
 
-await verifyExtractionRemainsRetired();
-await verifyDoctorImportAndRuntimeIsolation();
-await verifyExpiryTransition();
-console.log("OK");
+if (process.argv[2] === "--probe-due") {
+  const nowMs = Number(process.argv[3]);
+  assert(Number.isFinite(nowMs), "commitment probe requires a finite timestamp");
+  await runDueCommitmentProbeMode(nowMs);
+} else {
+  await verifyExtractionRemainsRetired();
+  await verifyDoctorImportAndRuntimeIsolation();
+  await verifyExpiryTransition();
+  console.log("OK");
+}
