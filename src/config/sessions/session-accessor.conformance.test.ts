@@ -1788,7 +1788,7 @@ describe("sqlite session normalization", () => {
     ).toEqual([]);
   });
 
-  it("fails loud for delivery-confirmed lowercased SQLite session aliases", () => {
+  it("fails loud for delivery-confirmed lowercased SQLite session aliases", async () => {
     const env = { ...process.env, OPENCLAW_STATE_DIR: paths.stateDir };
     const canonicalKey = "agent:main:matrix:channel:!MixedCase:example.org";
     const legacyKey = canonicalKey.toLowerCase();
@@ -1818,6 +1818,21 @@ describe("sqlite session normalization", () => {
         storePath: paths.sqlitePath,
       }),
     ).toThrow("openclaw doctor --fix");
+    expect(() =>
+      listSqliteSessionEntries({ agentId: "main", env, storePath: paths.sqlitePath }),
+    ).toThrow("openclaw doctor --fix");
+    await expect(
+      appendSqliteTranscriptEvent(
+        {
+          agentId: "main",
+          env,
+          sessionId: "canonical-transcript-session",
+          sessionKey: canonicalKey,
+          storePath: paths.sqlitePath,
+        },
+        { id: "canonical-event", timestamp: new Date(20).toISOString(), type: "metadata" },
+      ),
+    ).rejects.toThrow("openclaw doctor --fix");
     expect(() =>
       replaceSqliteSessionEntrySync(
         { agentId: "main", env, sessionKey: canonicalKey, storePath: paths.sqlitePath },

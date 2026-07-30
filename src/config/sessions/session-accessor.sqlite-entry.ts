@@ -74,11 +74,13 @@ import type { SessionEntryListQuery, SessionEntryListScope } from "./session-acc
 import {
   assertCanonicalSessionKeyWrite,
   assertCanonicalSqliteSessionKeysCurrent,
+  nonCanonicalSessionKeyRowError,
 } from "./session-canonical-key.js";
 import { preserveSqliteSameKeySessionRolloverLineage } from "./session-entry-lineage.js";
 import { buildSessionCreationStamp } from "./session-entry-provenance.js";
 import { kickSessionHistoryDiskBudgetMaintenance } from "./session-history-eviction.js";
 import { resolveSessionStorePathForScope } from "./session-store-path.js";
+import { resolveDeliveryProvenCanonicalSessionKey } from "./store-entry.js";
 import type { GroupKeyResolution, SessionEntry } from "./types.js";
 import { mergeSessionEntry, mergeSessionEntryPreserveActivity } from "./types.js";
 
@@ -330,6 +332,10 @@ function listSqliteSessionEntriesFromDatabase(
     const entry = entries.get(sessionKey);
     if (!entry) {
       return [];
+    }
+    const deliveryCanonicalKey = resolveDeliveryProvenCanonicalSessionKey(sessionKey, entry);
+    if (deliveryCanonicalKey !== sessionKey) {
+      throw nonCanonicalSessionKeyRowError(deliveryCanonicalKey);
     }
     return [
       {

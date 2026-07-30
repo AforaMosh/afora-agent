@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
 import {
   executeSqliteQuerySync,
   executeSqliteQueryTakeFirstSync,
@@ -7,12 +8,21 @@ import type { OpenClawAgentDatabase } from "../../state/openclaw-agent-db.js";
 import { publishSqliteSessionEntryCacheInvalidation } from "./session-accessor.sqlite-entry-cache.js";
 import { normalizeSqliteNumber } from "./session-accessor.sqlite-normalize.js";
 import { getSessionKysely, type ResolvedTranscriptScope } from "./session-accessor.sqlite-scope.js";
-import { SessionEntryValidityMigrationRequiredError } from "./session-accessor.sqlite-status.js";
+import {
+  parseSqliteSessionEntryJson,
+  SessionEntryValidityMigrationRequiredError,
+} from "./session-accessor.sqlite-status.js";
 import {
   assertCanonicalSqliteSessionKeysCurrent,
   assertCanonicalSessionKeyWriteMatchesDatabase,
+  nonCanonicalSessionKeyRowError,
 } from "./session-canonical-key.js";
 import { deleteSessionTranscriptIndexInTransaction } from "./session-transcript-index.js";
+import {
+  foldedSessionKeyAliasCandidates,
+  normalizeStoreSessionKey,
+  resolveDeliveryProvenCanonicalSessionKey,
+} from "./store-entry.js";
 
 function createTranscriptGeneration(): string {
   return randomUUID().replaceAll("-", "");
@@ -79,13 +89,28 @@ export function ensureTranscriptSessionRoot(
     assertCanonicalSqliteSessionKeysCurrent(database);
     assertCanonicalSessionKeyWriteMatchesDatabase(database, scope.sessionKey);
     const db = getSessionKysely(database.db);
-    const existing = executeSqliteQueryTakeFirstSync(
+    const lookupKeys = uniqueStrings([
+      scope.sessionKey,
+      ...foldedSessionKeyAliasCandidates(normalizeStoreSessionKey(scope.sessionKey)),
+    ]);
+    const candidates = executeSqliteQuerySync(
       database.db,
       db
         .selectFrom("session_nodes")
-        .select(["current_session_id", "entry_json", "entry_valid"])
-        .where("session_key", "=", scope.sessionKey),
-    );
+        .select(["current_session_id", "entry_json", "entry_valid", "session_key", "updated_at"])
+        .where("session_key", "in", lookupKeys),
+    ).rows;
+    for (const candidate of candidates) {
+      const entry = parseSqliteSessionEntryJson(candidate);
+      if (
+        entry &&
+        resolveDeliveryProvenCanonicalSessionKey(candidate.session_key, entry) !==
+          candidate.session_key
+      ) {
+        throw nonCanonicalSessionKeyRowError(candidate.session_key);
+      }
+    }
+    const existing = candidates.find((candidate) => candidate.session_key === scope.sessionKey);
     if (existing && existing.entry_valid !== 1) {
       const retainedWindow =
         existing.entry_json === "{}"
