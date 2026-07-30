@@ -504,8 +504,12 @@ describe("session accessor seam", () => {
     ).toEqual({ entry_valid: -1 });
 
     database.db
-      .prepare("UPDATE session_nodes SET entry_json = ? WHERE session_key = ?")
-      .run(JSON.stringify({ sessionId: "pending-session", updatedAt: 13 }), "agent:main:pending");
+      .prepare("UPDATE session_nodes SET entry_json = ?, updated_at = ? WHERE session_key = ?")
+      .run(
+        JSON.stringify({ sessionId: "pending-session", updatedAt: 13 }),
+        13,
+        "agent:main:pending",
+      );
     expect(
       querySqliteSessionEntriesReadOnly({
         agentId: "main",
@@ -520,8 +524,12 @@ describe("session accessor seam", () => {
     ).toEqual({ entry_valid: 1 });
 
     database.db
-      .prepare("UPDATE session_nodes SET entry_json = ? WHERE session_key = ?")
-      .run(JSON.stringify({ sessionId: "pending-session", updatedAt: 14 }), "agent:main:pending");
+      .prepare("UPDATE session_nodes SET entry_json = ?, updated_at = ? WHERE session_key = ?")
+      .run(
+        JSON.stringify({ sessionId: "pending-session", updatedAt: 14 }),
+        14,
+        "agent:main:pending",
+      );
     const insertPending = database.db.prepare(
       "INSERT INTO session_nodes (session_key, current_session_id, entry_json, updated_at) VALUES (?, ?, ?, ?)",
     );
@@ -620,6 +628,11 @@ describe("session accessor seam", () => {
         '{"sessionId":"non-finite-updated-at","updatedAt":1e999}',
       ],
       ["nul-session-id", "nul-session-id", JSON.stringify({ sessionId: "\0x", updatedAt: 7 })],
+      [
+        "mismatched-session-id",
+        "promoted-session-id",
+        JSON.stringify({ sessionId: "blob-session-id", updatedAt: 7 }),
+      ],
       [
         "duplicate-session-id",
         "duplicate-session-id",

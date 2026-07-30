@@ -145,6 +145,12 @@ export function parseSqliteSessionEntryJson(row: {
     if (!storedSessionId || storedUpdatedAt === undefined) {
       return null;
     }
+    if (
+      (row.current_session_id !== undefined && row.current_session_id !== storedSessionId) ||
+      (row.updated_at !== undefined && row.updated_at !== storedUpdatedAt)
+    ) {
+      return null;
+    }
     // entry_json is the canonical record; promoted columns select rows but never override it.
     const entry = projectCanonicalSessionEntryShape(record);
     return typeof entry.sessionId === "string" ? entry : null;
@@ -156,13 +162,18 @@ export function parseSqliteSessionEntryJson(row: {
 function settlePendingSessionEntryValidity(database: SessionDatabaseReader): void {
   const db = getNodeSqliteKysely<SessionStatusDatabase>(database.db);
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    let pending: Array<{ entry_json: string; session_key: string }>;
+    let pending: Array<{
+      current_session_id: string;
+      entry_json: string;
+      session_key: string;
+      updated_at: number;
+    }>;
     try {
       pending = executeSqliteQuerySync(
         database.db,
         db
           .selectFrom("session_nodes")
-          .select(["entry_json", "session_key"])
+          .select(["current_session_id", "entry_json", "session_key", "updated_at"])
           .where("entry_valid", "=", 0),
       ).rows;
     } catch (error) {
