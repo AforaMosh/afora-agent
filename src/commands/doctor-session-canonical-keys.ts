@@ -16,6 +16,11 @@ import {
 } from "../config/sessions/session-accessor.sqlite-node-artifacts.js";
 import { mergeCanonicalSessionEntryCandidates } from "../config/sessions/session-canonical-key.js";
 import { setCanonicalSqliteSessionMainKey } from "../config/sessions/session-canonical-key.js";
+import {
+  foldedSessionKeyAliasCandidates,
+  isConfirmedLowercasedLegacyAlias,
+  normalizeStoreSessionKey,
+} from "../config/sessions/store-entry.js";
 import { resolveAllAgentSessionStoreTargetsSync } from "../config/sessions/targets.js";
 import { serializeJsonlLines } from "../config/sessions/transcript-jsonl.js";
 import type { SessionEntry } from "../config/sessions/types.js";
@@ -24,8 +29,11 @@ import {
   resolveSessionStoreAgentId,
   resolveStoredSessionKeyForAgentStore,
 } from "../gateway/session-store-key.js";
+import { normalizeConversationPeerId } from "../routing/conversation-ref.js";
 import { normalizeAgentId } from "../routing/session-key.js";
+import { parseThreadSessionSuffix } from "../sessions/session-key-utils.js";
 import { openOpenClawAgentDatabase } from "../state/openclaw-agent-db.js";
+import { deliveryContextFromSession } from "../utils/delivery-context.shared.js";
 import { resolveTargetSqlitePath } from "./doctor-session-sqlite-readers.js";
 
 type CanonicalSessionCandidate = {
@@ -70,6 +78,51 @@ type CanonicalSessionStore = {
   storePath: string;
 };
 
+function resolveDeliveryProvenCanonicalKey(sessionKey: string, entry: SessionEntry): string {
+  const normalizedKey = normalizeStoreSessionKey(sessionKey);
+  const delivery = deliveryContextFromSession(entry);
+  const channel = delivery?.channel?.trim().toLowerCase();
+  const peerId =
+    channel && delivery?.to ? normalizeConversationPeerId(channel, delivery.to) : undefined;
+  if (!channel || !peerId) {
+    return normalizedKey;
+  }
+  const parsedThread = parseThreadSessionSuffix(normalizedKey);
+  const baseSessionKey = parsedThread.baseSessionKey ?? normalizedKey;
+  const foldedBase = baseSessionKey.toLowerCase();
+  let peerStart = -1;
+  for (const peerKind of ["channel", "group"] as const) {
+    const marker = `${channel}:${peerKind}:`;
+    const nestedMarkerIndex = foldedBase.lastIndexOf(`:${marker}`);
+    const markerIndex = foldedBase.startsWith(marker)
+      ? 0
+      : nestedMarkerIndex >= 0
+        ? nestedMarkerIndex + 1
+        : -1;
+    if (markerIndex >= 0) {
+      peerStart = Math.max(peerStart, markerIndex + marker.length);
+    }
+  }
+  if (peerStart < 0) {
+    return normalizedKey;
+  }
+  const storedPeerId = baseSessionKey.slice(peerStart);
+  if (storedPeerId.toLowerCase() !== peerId.toLowerCase()) {
+    return normalizedKey;
+  }
+  const threadId = parsedThread.threadId
+    ? String(delivery.threadId ?? parsedThread.threadId).trim()
+    : undefined;
+  const candidate = normalizeStoreSessionKey(
+    `${baseSessionKey.slice(0, peerStart)}${peerId}${threadId ? `:thread:${threadId}` : ""}`,
+  );
+  return candidate !== normalizedKey &&
+    foldedSessionKeyAliasCandidates(candidate).includes(normalizedKey) &&
+    isConfirmedLowercasedLegacyAlias(entry, candidate)
+    ? candidate
+    : normalizedKey;
+}
+
 function listCanonicalSessionStores(params: {
   cfg: OpenClawConfig;
   env: NodeJS.ProcessEnv;
@@ -98,11 +151,14 @@ function collectCanonicalSessionCandidates(
       clone: false,
       storePath: target.storePath,
     })) {
-      const canonicalKey = resolveStoredSessionKeyForAgentStore({
-        cfg: params.cfg,
-        agentId: target.agentId,
-        sessionKey,
-      });
+      const canonicalKey = resolveDeliveryProvenCanonicalKey(
+        resolveStoredSessionKeyForAgentStore({
+          cfg: params.cfg,
+          agentId: target.agentId,
+          sessionKey,
+        }),
+        entry,
+      );
       const canonicalAgentId = resolveSessionStoreAgentId(params.cfg, canonicalKey);
       const canonicalizeLineageKey = (value: string | undefined) =>
         value

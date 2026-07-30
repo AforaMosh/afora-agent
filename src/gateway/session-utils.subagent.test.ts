@@ -111,6 +111,12 @@ describe("listSessionsFromStore subagent metadata", () => {
     expect(residual.selectionResidual).toBe(true);
     expect(residual.limit).toBeUndefined();
     expect(residual.spawnedBy).toBeUndefined();
+    expect(
+      buildSessionListSqlQuery(
+        { requireLastInteraction: true, limit: 1 },
+        { bounded: true, includeCreatorFilter: true, mainKey: "main", now },
+      ).query.limit,
+    ).toBeUndefined();
 
     const residualResult = await listSqlSelectedSessions({
       cfg,

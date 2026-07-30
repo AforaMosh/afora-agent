@@ -420,26 +420,40 @@ function backfillSessionTitleProjection(db: DatabaseSync): void {
   ) {
     return;
   }
-  const rows = db
-    .prepare("SELECT current_session_id, entry_json, session_key, updated_at FROM session_nodes")
-    .iterate() as Iterable<{
+  const firstPage = db.prepare(
+    "SELECT current_session_id, entry_json, session_key, updated_at FROM session_nodes ORDER BY session_key LIMIT 256",
+  );
+  const nextPage = db.prepare(
+    "SELECT current_session_id, entry_json, session_key, updated_at FROM session_nodes WHERE session_key > ? ORDER BY session_key LIMIT 256",
+  );
+  type TitleProjectionRow = {
     current_session_id: string;
     entry_json: string;
     session_key: string;
     updated_at: number;
-  }>;
+  };
   const update = db.prepare("UPDATE session_nodes SET display_name = ? WHERE session_key = ?");
-  for (const row of rows) {
-    const parsed = parseMigratedSessionEntry(row.entry_json);
-    if (!parsed) {
-      continue;
+  let cursor: string | undefined;
+  while (true) {
+    const rows = (
+      cursor === undefined ? firstPage.all() : nextPage.all(cursor)
+    ) as TitleProjectionRow[];
+    if (rows.length === 0) {
+      break;
     }
-    const entry = {
-      ...parsed,
-      sessionId: migratedText(parsed.sessionId) ?? row.current_session_id,
-      updatedAt: migratedNumber(parsed.updatedAt) ?? row.updated_at,
-    } as SessionEntry;
-    update.run(deriveSqliteSessionTitle(db, entry), row.session_key);
+    for (const row of rows) {
+      const parsed = parseMigratedSessionEntry(row.entry_json);
+      if (!parsed) {
+        continue;
+      }
+      const entry = {
+        ...parsed,
+        sessionId: migratedText(parsed.sessionId) ?? row.current_session_id,
+        updatedAt: migratedNumber(parsed.updatedAt) ?? row.updated_at,
+      } as SessionEntry;
+      update.run(deriveSqliteSessionTitle(db, entry), row.session_key);
+    }
+    cursor = rows.at(-1)?.session_key;
   }
   db.exec(`
     UPDATE session_nodes SET pinned_at = NULL WHERE pinned_at <= 0;

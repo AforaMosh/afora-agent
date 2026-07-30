@@ -208,7 +208,7 @@ export function buildSessionListSqlQuery(
   }
   // Callers set bounded only after proving every requested filter is represented in SQL;
   // search and boardFace remain residual and therefore always load the full candidate set.
-  if (params.bounded && !lineageRequiresResidual) {
+  if (params.bounded && !lineageRequiresResidual && !opts.requireLastInteraction) {
     query.limit = resolveSessionsListOffset(opts) + (resolveSessionsListLimit(opts, 100) ?? 100);
   }
   return { lineage, query };

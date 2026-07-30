@@ -15,6 +15,7 @@ import {
   openOpenClawAgentDatabase,
 } from "../state/openclaw-agent-db.js";
 import { withStateDirEnv } from "../test-helpers/state-dir-env.js";
+import { normalizeSessionDeliveryState } from "../utils/delivery-context.shared.js";
 import { repairCanonicalSessionKeys } from "./doctor-session-canonical-keys.js";
 
 afterEach(() => closeOpenClawAgentDatabasesForTest());
@@ -76,6 +77,83 @@ describe("doctor canonical session-key repair", () => {
         { entry: { sessionId: "newer", updatedAt: 10 }, value: "newer" },
       ])?.winner,
     ).toBe("newer");
+  });
+
+  it.each([
+    {
+      canonicalKey: "agent:main:matrix:channel:!MixedCase:example.org",
+      channel: "matrix",
+      chatType: "channel" as const,
+      label: "Matrix room",
+      to: "!MixedCase:example.org",
+    },
+    {
+      canonicalKey: "agent:main:signal:group:VWATodkf2hc8zdOS76q9Tb0+5Bi522E03qLdaQ/9ypg=",
+      channel: "signal",
+      chatType: "group" as const,
+      label: "Signal group",
+      to: "signal:group:VWATodkf2hc8zdOS76q9Tb0+5Bi522E03qLdaQ/9ypg=",
+    },
+  ])("restores a delivery-proven lowercased $label alias", async (fixture) => {
+    await withStateDirEnv("openclaw-doctor-canonical-delivery-alias-", async ({ stateDir }) => {
+      const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+      const storeTemplate = path.join(stateDir, "agents", "{agentId}", "sessions.json");
+      const storePath = resolveStorePath(storeTemplate, { agentId: "main", env });
+      const cfg = {
+        agents: { list: [{ id: "main", default: true }] },
+        session: { store: storeTemplate },
+      } as OpenClawConfig;
+      const legacyKey = fixture.canonicalKey.toLowerCase();
+      insertLegacySession({
+        agentId: "main",
+        entry: {
+          chatType: fixture.chatType,
+          delivery: normalizeSessionDeliveryState({
+            context: { channel: fixture.channel, to: fixture.to },
+          }),
+          sessionId: `${fixture.channel}-legacy-session`,
+          updatedAt: 10,
+        },
+        env,
+        eventText: `${fixture.label} history`,
+        sessionKey: legacyKey,
+        storePath,
+      });
+
+      expect(await repairCanonicalSessionKeys({ apply: true, cfg, env })).toMatchObject({
+        foundGroups: 1,
+        removedRows: 1,
+        repairedGroups: 1,
+      });
+      expect(
+        loadExactSessionEntryReadOnly({
+          agentId: "main",
+          env,
+          sessionKey: fixture.canonicalKey,
+          storePath,
+        })?.entry.sessionId,
+      ).toBe(`${fixture.channel}-legacy-session`);
+      expect(
+        loadExactSessionEntryReadOnly({ agentId: "main", env, sessionKey: legacyKey, storePath }),
+      ).toBeUndefined();
+      await expect(
+        loadTranscriptEvents({
+          agentId: "main",
+          env,
+          sessionId: `${fixture.channel}-legacy-session`,
+          sessionKey: fixture.canonicalKey,
+          storePath,
+        }),
+      ).resolves.toEqual([
+        expect.objectContaining({
+          message: expect.objectContaining({ content: `${fixture.label} history` }),
+        }),
+      ]);
+      expect(await repairCanonicalSessionKeys({ apply: true, cfg, env })).toMatchObject({
+        foundGroups: 0,
+        repairedGroups: 0,
+      });
+    });
   });
 
   it("prefers the canonical destination when repair timestamps tie", () => {
