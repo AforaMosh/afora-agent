@@ -324,7 +324,6 @@ export function prepareEmbeddedAttemptToolBase(params: {
         const name = tool.name.toLowerCase();
         return !(
           [
-            "read",
             "write",
             "edit",
             "apply_patch",

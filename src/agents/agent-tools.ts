@@ -22,7 +22,13 @@ import type {
   PluginHookChannelContext,
   PluginHookToolRequesterContext,
 } from "../plugins/hook-types.js";
-import type { MemoryInvocationToken } from "../plugins/memory-invocation.js";
+import {
+  getMemoryVirtualFilesystemView,
+  isMemoryInvocationEnforced,
+  isMemoryVirtualFilesystemPath,
+  readVirtualMemoryFilesystemPath,
+  type MemoryInvocationToken,
+} from "../plugins/memory-invocation.js";
 import { resolveMemoryFlushPlan } from "../plugins/memory-state.js";
 import { appendRuntimePluginToolGrant } from "../plugins/tool-grant-allowlist.js";
 import { getPluginToolMeta } from "../plugins/tools.js";
@@ -49,6 +55,7 @@ import {
   createSandboxedReadTool,
   createSandboxedWriteTool,
   wrapReadToolWithSkillContent,
+  wrapReadToolWithMemoryVirtualFilesystem,
   wrapToolMemoryFlushAppendOnlyWrite,
   wrapToolWorkspaceRootGuard,
   wrapToolWorkspaceRootGuardWithOptions,
@@ -85,6 +92,8 @@ import {
   filterLocalModelLeanTools,
   resolveLocalModelLeanPreserveToolNames,
 } from "./local-model-lean.js";
+import { wrapToolWithMemoryEgressPolicy } from "./memory-egress-tool-policy.js";
+import { isRawControlledMemoryWorkspacePath } from "./memory-virtual-filesystem-paths.js";
 import { createMemoryWriteProvenanceObserver } from "./memory-write-provenance.js";
 import type { ModelAuthMode } from "./model-auth.js";
 import { resolveOpenClawPluginToolsForOptions } from "./openclaw-plugin-tools.js";
@@ -175,6 +184,26 @@ function resolveSkillReadRoots(skillsSnapshot?: SkillSnapshot): string[] | undef
     return undefined;
   }
   return Array.from(roots);
+}
+
+function resolveMemoryVirtualPathForTool(params: {
+  pathname: string;
+  root: string;
+  containerWorkdir?: string;
+}): string | undefined {
+  if (isMemoryVirtualFilesystemPath(params.pathname)) {
+    return params.pathname;
+  }
+  const containerWorkdir = params.containerWorkdir?.replace(/\/+$/u, "");
+  if (containerWorkdir && params.pathname.startsWith(`${containerWorkdir}/`)) {
+    const relative = params.pathname.slice(containerWorkdir.length + 1);
+    return isMemoryVirtualFilesystemPath(relative) ? relative : undefined;
+  }
+  if (path.isAbsolute(params.pathname)) {
+    const relative = path.relative(params.root, params.pathname).split(path.sep).join("/");
+    return isMemoryVirtualFilesystemPath(relative) ? relative : undefined;
+  }
+  return undefined;
 }
 
 type BashToolsModule = typeof import("./bash-tools.js");
@@ -602,9 +631,20 @@ function createOpenClawCodingToolsInternal(options?: OpenClawCodingToolsOptions)
   options?.recordToolPrepStage?.("tool-policy");
   const execConfig = resolveExecToolConfig({ cfg: options?.config, agentId });
   const fsConfig = resolveToolFsConfig({ cfg: options?.config, agentId });
-  const fsPolicy = createToolFsPolicy({
-    workspaceOnly: isMemoryFlushRun || fsConfig.workspaceOnly,
-  });
+  const memoryIsolated = isMemoryInvocationEnforced(options?.memoryInvocationToken);
+  const memoryVirtualView = options?.memoryInvocationToken
+    ? getMemoryVirtualFilesystemView(options.memoryInvocationToken)
+    : undefined;
+  const memoryMounts =
+    memoryVirtualView?.roots.map(({ virtualRoot, mountHandle }) => ({
+      virtualRoot,
+      mountHandle,
+    })) ?? [];
+  const fsPolicy = memoryIsolated
+    ? memoryVirtualView
+      ? createToolFsPolicy({ kind: "authorized-memory-virtual", memoryMounts })
+      : createToolFsPolicy({ kind: "memory-blocked", reason: "memory-unavailable" })
+    : createToolFsPolicy({ workspaceOnly: isMemoryFlushRun || fsConfig.workspaceOnly });
   const sandboxRoot = sandbox?.workspaceDir;
   const sandboxFsBridge = sandbox?.fsBridge;
   const allowWorkspaceWrites = sandbox?.workspaceAccess !== "ro";
@@ -638,6 +678,34 @@ function createOpenClawCodingToolsInternal(options?: OpenClawCodingToolsOptions)
   const includeChannelTools = toolConstructionPlan.includeChannelTools;
   const includePluginTools = toolConstructionPlan.includePluginTools;
   const workspaceOnly = fsPolicy.workspaceOnly;
+  const wrapMemoryVirtualRead = (tool: AnyAgentTool): AnyAgentTool => {
+    if (!memoryVirtualView || !options?.memoryInvocationToken) {
+      return tool;
+    }
+    return wrapReadToolWithMemoryVirtualFilesystem(tool, {
+      resolveVirtualPath: (pathname) =>
+        resolveMemoryVirtualPathForTool({
+          pathname,
+          root: codingRoot,
+          ...(sandbox?.containerWorkdir ? { containerWorkdir: sandbox.containerWorkdir } : {}),
+        }),
+      isControlledWorkspacePath: async (pathname) =>
+        await isRawControlledMemoryWorkspacePath({
+          root: codingRoot,
+          pathname,
+          ...(sandbox?.containerWorkdir ? { containerWorkdir: sandbox.containerWorkdir } : {}),
+        }),
+      readVirtualPath: async ({ path: virtualPath, offset, limit }) =>
+        await readVirtualMemoryFilesystemPath({
+          token: options.memoryInvocationToken!,
+          path: virtualPath,
+          ...(offset !== undefined ? { offset } : {}),
+          ...(limit !== undefined
+            ? { limit: Math.max(1, Math.min(1_000, Math.trunc(limit))) }
+            : {}),
+        }),
+    });
+  };
   const skillReadRoots = sandboxRoot ? undefined : resolveSkillReadRoots(options?.skillsSnapshot);
   const applyPatchConfig = execConfig.applyPatch;
   // Secure by default: apply_patch is workspace-contained unless explicitly disabled.
@@ -661,6 +729,9 @@ function createOpenClawCodingToolsInternal(options?: OpenClawCodingToolsOptions)
   if (includeBaseCodingTools) {
     for (const tool of createCodingTools(codingRoot) as unknown as AnyAgentTool[]) {
       if (tool.name === "read") {
+        if (memoryIsolated && fsPolicy.kind === "memory-blocked") {
+          continue;
+        }
         if (sandboxRoot) {
           const sandboxed = createSandboxedReadTool({
             root: sandboxRoot,
@@ -675,10 +746,14 @@ function createOpenClawCodingToolsInternal(options?: OpenClawCodingToolsOptions)
               })
             : sandboxed;
           base.push(
-            wrapReadToolWithSkillContent(guarded, options?.skillsSnapshot?.resolvedSkills, {
-              modelContextWindowTokens: options?.modelContextWindowTokens,
-              imageSanitization,
-            }),
+            wrapReadToolWithSkillContent(
+              wrapMemoryVirtualRead(guarded),
+              options?.skillsSnapshot?.resolvedSkills,
+              {
+                modelContextWindowTokens: options?.modelContextWindowTokens,
+                imageSanitization,
+              },
+            ),
           );
           continue;
         }
@@ -693,10 +768,14 @@ function createOpenClawCodingToolsInternal(options?: OpenClawCodingToolsOptions)
             })
           : wrapped;
         base.push(
-          wrapReadToolWithSkillContent(guarded, options?.skillsSnapshot?.resolvedSkills, {
-            modelContextWindowTokens: options?.modelContextWindowTokens,
-            imageSanitization,
-          }),
+          wrapReadToolWithSkillContent(
+            wrapMemoryVirtualRead(guarded),
+            options?.skillsSnapshot?.resolvedSkills,
+            {
+              modelContextWindowTokens: options?.modelContextWindowTokens,
+              imageSanitization,
+            },
+          ),
         );
         continue;
       }
@@ -704,6 +783,9 @@ function createOpenClawCodingToolsInternal(options?: OpenClawCodingToolsOptions)
         continue;
       }
       if (tool.name === "write") {
+        if (memoryIsolated) {
+          continue;
+        }
         if (sandboxRoot) {
           continue;
         }
@@ -715,6 +797,9 @@ function createOpenClawCodingToolsInternal(options?: OpenClawCodingToolsOptions)
         continue;
       }
       if (tool.name === "edit") {
+        if (memoryIsolated) {
+          continue;
+        }
         if (sandboxRoot) {
           continue;
         }
@@ -731,81 +816,86 @@ function createOpenClawCodingToolsInternal(options?: OpenClawCodingToolsOptions)
   options?.recordToolPrepStage?.("base-coding-tools");
   const { cleanupMs: cleanupMsOverride, ...execDefaults } = options?.exec ?? {};
   const effectiveExecPolicy = applyExecPolicyLayer(execConfig, options?.exec);
-  const execTool = includeShellTools
-    ? createLazyExecTool({
-        ...execDefaults,
-        host: options?.exec?.host ?? execConfig.host,
-        mode: effectiveExecPolicy.mode,
-        security: effectiveExecPolicy.security,
-        ask: effectiveExecPolicy.ask,
-        config: options?.exec?.config ?? options?.config,
-        reviewer: options?.exec?.reviewer ?? execConfig.reviewer,
-        trigger: options?.trigger,
-        node: options?.exec?.node ?? execConfig.node,
-        pathPrepend: options?.exec?.pathPrepend ?? execConfig.pathPrepend,
-        safeBins: options?.exec?.safeBins ?? execConfig.safeBins,
-        strictInlineEval: options?.exec?.strictInlineEval ?? execConfig.strictInlineEval,
-        commandHighlighting: options?.exec?.commandHighlighting ?? execConfig.commandHighlighting,
-        safeBinTrustedDirs: options?.exec?.safeBinTrustedDirs ?? execConfig.safeBinTrustedDirs,
-        safeBinProfiles: options?.exec?.safeBinProfiles ?? execConfig.safeBinProfiles,
-        agentId,
-        cwd: codingRoot,
-        allowBackground,
-        scopeKey,
-        sessionKey: options?.sessionKey,
-        runId: options?.runId,
-        // Detached completions return to the live session, not the sandbox policy scope.
-        notifySessionKey: options?.runSessionKey ?? options?.sessionKey,
-        sessionId: options?.sessionId,
-        sessionStore: options?.config?.session?.store,
-        mainKey: options?.config?.session?.mainKey,
-        sessionScope: options?.config?.session?.scope,
-        eventRouting: resolveEventSessionRoutingPolicy({
-          cfg: options?.config,
-          sessionKey: options?.runSessionKey ?? options?.sessionKey,
-          channel: options?.messageProvider,
+  const execTool =
+    includeShellTools && !memoryIsolated
+      ? createLazyExecTool({
+          ...execDefaults,
+          host: options?.exec?.host ?? execConfig.host,
+          mode: effectiveExecPolicy.mode,
+          security: effectiveExecPolicy.security,
+          ask: effectiveExecPolicy.ask,
+          config: options?.exec?.config ?? options?.config,
+          reviewer: options?.exec?.reviewer ?? execConfig.reviewer,
+          trigger: options?.trigger,
+          node: options?.exec?.node ?? execConfig.node,
+          pathPrepend: options?.exec?.pathPrepend ?? execConfig.pathPrepend,
+          safeBins: options?.exec?.safeBins ?? execConfig.safeBins,
+          strictInlineEval: options?.exec?.strictInlineEval ?? execConfig.strictInlineEval,
+          commandHighlighting: options?.exec?.commandHighlighting ?? execConfig.commandHighlighting,
+          safeBinTrustedDirs: options?.exec?.safeBinTrustedDirs ?? execConfig.safeBinTrustedDirs,
+          safeBinProfiles: options?.exec?.safeBinProfiles ?? execConfig.safeBinProfiles,
+          agentId,
+          cwd: codingRoot,
+          allowBackground,
+          scopeKey,
+          sessionKey: options?.sessionKey,
+          runId: options?.runId,
+          // Detached completions return to the live session, not the sandbox policy scope.
+          notifySessionKey: options?.runSessionKey ?? options?.sessionKey,
+          sessionId: options?.sessionId,
+          sessionStore: options?.config?.session?.store,
+          mainKey: options?.config?.session?.mainKey,
+          sessionScope: options?.config?.session?.scope,
+          eventRouting: resolveEventSessionRoutingPolicy({
+            cfg: options?.config,
+            sessionKey: options?.runSessionKey ?? options?.sessionKey,
+            channel: options?.messageProvider,
+            accountId: options?.agentAccountId,
+          }),
+          messageProvider: options?.messageProvider,
+          currentChannelId: options?.currentChannelId,
+          currentThreadTs: options?.currentThreadTs,
+          channelContext: options?.channelContext,
           accountId: options?.agentAccountId,
-        }),
-        messageProvider: options?.messageProvider,
-        currentChannelId: options?.currentChannelId,
-        currentThreadTs: options?.currentThreadTs,
-        channelContext: options?.channelContext,
-        accountId: options?.agentAccountId,
-        approvalReviewerDeviceId: options?.approvalReviewerDeviceId,
-        nonInteractiveApproval: options?.swarmCollector,
-        backgroundMs: options?.exec?.backgroundMs ?? execConfig.backgroundMs,
-        timeoutSec: options?.exec?.timeoutSec ?? execConfig.timeoutSec,
-        approvalRunningNoticeMs:
-          options?.exec?.approvalRunningNoticeMs ?? execConfig.approvalRunningNoticeMs,
-        notifyOnExit: options?.exec?.notifyOnExit ?? execConfig.notifyOnExit,
-        notifyOnExitEmptySuccess:
-          options?.exec?.notifyOnExitEmptySuccess ?? execConfig.notifyOnExitEmptySuccess,
-        sandbox: sandbox
-          ? {
-              containerName: sandbox.containerName,
-              workspaceDir: sandbox.workspaceDir,
-              containerWorkdir: sandbox.containerWorkdir,
-              workdirValidation: sandbox.backend?.workdirValidation,
-              validateWorkdir: sandbox.backend?.validateWorkdir?.bind(sandbox.backend),
-              discardPreparedWorkdir: sandbox.backend?.discardPreparedWorkdir?.bind(
-                sandbox.backend,
-              ),
-              workdirRoots: sandbox.backend?.workdirRoots,
-              env: sandbox.backend?.env ?? sandbox.docker.env,
-              buildExecSpec: sandbox.backend?.buildExecSpec.bind(sandbox.backend),
-              finalizeExec: sandbox.backend?.finalizeExec?.bind(sandbox.backend),
-            }
-          : undefined,
-      })
-    : null;
-  const processTool = includeShellTools
-    ? createLazyProcessTool({
-        cleanupMs: cleanupMsOverride ?? execConfig.cleanupMs,
-        scopeKey,
-      })
-    : null;
+          approvalReviewerDeviceId: options?.approvalReviewerDeviceId,
+          nonInteractiveApproval: options?.swarmCollector,
+          backgroundMs: options?.exec?.backgroundMs ?? execConfig.backgroundMs,
+          timeoutSec: options?.exec?.timeoutSec ?? execConfig.timeoutSec,
+          approvalRunningNoticeMs:
+            options?.exec?.approvalRunningNoticeMs ?? execConfig.approvalRunningNoticeMs,
+          notifyOnExit: options?.exec?.notifyOnExit ?? execConfig.notifyOnExit,
+          notifyOnExitEmptySuccess:
+            options?.exec?.notifyOnExitEmptySuccess ?? execConfig.notifyOnExitEmptySuccess,
+          sandbox: sandbox
+            ? {
+                containerName: sandbox.containerName,
+                workspaceDir: sandbox.workspaceDir,
+                containerWorkdir: sandbox.containerWorkdir,
+                workdirValidation: sandbox.backend?.workdirValidation,
+                validateWorkdir: sandbox.backend?.validateWorkdir?.bind(sandbox.backend),
+                discardPreparedWorkdir: sandbox.backend?.discardPreparedWorkdir?.bind(
+                  sandbox.backend,
+                ),
+                workdirRoots: sandbox.backend?.workdirRoots,
+                env: sandbox.backend?.env ?? sandbox.docker.env,
+                buildExecSpec: sandbox.backend?.buildExecSpec.bind(sandbox.backend),
+                finalizeExec: sandbox.backend?.finalizeExec?.bind(sandbox.backend),
+              }
+            : undefined,
+        })
+      : null;
+  const processTool =
+    includeShellTools && !memoryIsolated
+      ? createLazyProcessTool({
+          cleanupMs: cleanupMsOverride ?? execConfig.cleanupMs,
+          scopeKey,
+        })
+      : null;
   const applyPatchTool =
-    !includeShellTools || !applyPatchEnabled || (sandboxRoot && !allowWorkspaceWrites)
+    !includeShellTools ||
+    memoryIsolated ||
+    !applyPatchEnabled ||
+    (sandboxRoot && !allowWorkspaceWrites)
       ? null
       : createApplyPatchTool({
           cwd: codingRoot,
@@ -1158,7 +1248,12 @@ function createOpenClawCodingToolsInternal(options?: OpenClawCodingToolsOptions)
   // Always normalize tool JSON Schemas before handing them to OpenClaw model runtime.
   // Without this, some providers (notably OpenAI) will reject root-level union schemas.
   // Provider-specific cleaning: Gemini needs constraint keywords stripped, but Anthropic expects them.
-  const normalized = authorizedTools.map((tool) =>
+  const memoryEgressGuarded = memoryIsolated
+    ? authorizedTools.map((tool) =>
+        wrapToolWithMemoryEgressPolicy(tool, options?.memoryInvocationToken),
+      )
+    : authorizedTools;
+  const normalized = memoryEgressGuarded.map((tool) =>
     normalizeToolParameters(tool, {
       modelProvider: options?.modelProvider,
       modelId: options?.modelId,

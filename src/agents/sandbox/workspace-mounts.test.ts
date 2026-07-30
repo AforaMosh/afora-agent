@@ -4,7 +4,11 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { appendWorkspaceMountArgs } from "./workspace-mounts.js";
+import {
+  appendMemoryVirtualMountArgs,
+  appendWorkspaceMountArgs,
+  formatMemoryVirtualMountHashState,
+} from "./workspace-mounts.js";
 
 const tmpDirs: string[] = [];
 
@@ -249,4 +253,91 @@ describe("appendWorkspaceMountArgs", () => {
       `${path.join(sandboxWorkspaceDir, "skills")}:/workspace/skills:ro,z`,
     );
   });
+});
+
+function makeMemoryVirtualMount(params?: {
+  virtualRoot?: "private" | "channel" | "shared" | "projections" | "postbox-review";
+  mountHandle?: string;
+}): {
+  viewId: string;
+  virtualRoot: "private" | "channel" | "shared" | "projections" | "postbox-review";
+  mountHandle: string;
+  sourcePath: string;
+} {
+  const viewRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-memory-view-test-"));
+  tmpDirs.push(viewRoot);
+  const virtualRoot = params?.virtualRoot ?? "private";
+  const mountHandle = params?.mountHandle ?? "mm1_abcdefghijklmnopqrstuvwx";
+  const sourcePath = path.join(viewRoot, virtualRoot, mountHandle);
+  fs.mkdirSync(sourcePath, { recursive: true });
+  return { viewId: "mvv1_test", virtualRoot, mountHandle, sourcePath };
+}
+
+describe("memory virtual sandbox mounts", () => {
+  it("mounts only authorized opaque roots read-only in deterministic order", () => {
+    const privateMount = makeMemoryVirtualMount({ virtualRoot: "private" });
+    const channelMount = makeMemoryVirtualMount({
+      virtualRoot: "channel",
+      mountHandle: "mm1_zabcdefghijklmnopqrstuvw",
+    });
+    const args: string[] = [];
+
+    appendMemoryVirtualMountArgs({
+      args,
+      workdir: "/workspace",
+      mounts: [privateMount, channelMount],
+    });
+
+    expect(args).toEqual([
+      "-v",
+      `${channelMount.sourcePath}:/workspace/channel/${channelMount.mountHandle}:ro,z`,
+      "-v",
+      `${privateMount.sourcePath}:/workspace/private/${privateMount.mountHandle}:ro,z`,
+    ]);
+    expect(args.join(" ")).not.toContain(
+      `${path.dirname(path.dirname(privateMount.sourcePath))}:/`,
+    );
+  });
+
+  it("makes view identity part of the mount hash state", () => {
+    const mount = makeMemoryVirtualMount();
+    const original = formatMemoryVirtualMountHashState([mount], "/workspace");
+    const changedView = formatMemoryVirtualMountHashState(
+      [{ ...mount, viewId: "mvv1_changed" }],
+      "/workspace",
+    );
+
+    expect(changedView).not.toEqual(original);
+  });
+
+  it.runIf(process.platform !== "win32")(
+    "rejects dangerous targets, non-view sources, and symlinked sources",
+    () => {
+      const mount = makeMemoryVirtualMount();
+      const args: string[] = [];
+      const symlinked = makeMemoryVirtualMount({
+        mountHandle: "mm1_yabcdefghijklmnopqrstuvw",
+      });
+      const outside = makeTempWorkspace();
+      fs.rmSync(symlinked.sourcePath, { recursive: true });
+      fs.symlinkSync(outside, symlinked.sourcePath, "dir");
+
+      expect(() => appendMemoryVirtualMountArgs({ args, workdir: "/", mounts: [mount] })).toThrow(
+        "invalid sandbox memory virtual mount",
+      );
+      expect(() =>
+        appendMemoryVirtualMountArgs({ args, workdir: "/workspace/..", mounts: [mount] }),
+      ).toThrow("invalid sandbox memory virtual mount");
+      expect(() =>
+        appendMemoryVirtualMountArgs({
+          args,
+          workdir: "/workspace",
+          mounts: [{ ...mount, sourcePath: path.dirname(mount.sourcePath) }],
+        }),
+      ).toThrow("invalid sandbox memory virtual mount");
+      expect(() =>
+        appendMemoryVirtualMountArgs({ args, workdir: "/workspace", mounts: [symlinked] }),
+      ).toThrow(/sandbox memory virtual mount/);
+    },
+  );
 });

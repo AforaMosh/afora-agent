@@ -52,4 +52,16 @@ describe("tool availability", () => {
     expect(toolNames).not.toContain("sessions_send");
     expect(toolNames).not.toContain("subagents");
   });
+
+  it("keeps enforced memory runs read-only without a virtual view", () => {
+    const tools = createOpenClawCodingTools({ memoryInvocationToken: {} as never });
+    const toolNames = tools.map((tool) => tool.name);
+
+    expect(toolNames).not.toContain("read");
+    expect(toolNames).not.toContain("write");
+    expect(toolNames).not.toContain("edit");
+    expect(toolNames).not.toContain("apply_patch");
+    expect(toolNames).not.toContain("exec");
+    expect(toolNames).not.toContain("process");
+  });
 });

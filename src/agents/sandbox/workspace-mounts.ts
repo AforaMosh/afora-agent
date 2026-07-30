@@ -4,13 +4,14 @@
  * Creates Docker bind specs for writable workspaces and read-only skill source mounts.
  */
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { isPathInside } from "../../infra/path-guards.js";
 import { SANDBOX_AGENT_WORKSPACE_MOUNT } from "./constants.js";
 import { resolveSandboxHostPathViaExistingAncestor } from "./host-paths.js";
-import type { SandboxWorkspaceAccess } from "./types.js";
+import type { SandboxMemoryVirtualMount, SandboxWorkspaceAccess } from "./types.js";
 
-export const SANDBOX_MOUNT_FORMAT_VERSION = 3;
+export const SANDBOX_MOUNT_FORMAT_VERSION = 4;
 const MATERIALIZED_SANDBOX_SKILLS_WORKSPACE_PARTS = [".openclaw", "sandbox-skills"] as const;
 
 /** Read-only skill directory mounted from the agent workspace into the sandbox workspace. */
@@ -18,6 +19,86 @@ export type ReadOnlyWorkspaceSkillMount = {
   hostPath: string;
   containerPath: string;
 };
+
+const MEMORY_VIRTUAL_ROOTS = new Set([
+  "private",
+  "channel",
+  "shared",
+  "projections",
+  "postbox-review",
+]);
+
+function assertMemoryVirtualMount(mount: SandboxMemoryVirtualMount, workdir: string): void {
+  const normalizedWorkdir = workdir.replace(/\/+$/u, "") || "/";
+  const normalizedSource = path.resolve(mount.sourcePath);
+  const viewRoot = path.resolve(normalizedSource, "../..");
+  const tempRoot = path.resolve(os.tmpdir());
+  const target = containerJoin(normalizedWorkdir, mount.virtualRoot, mount.mountHandle);
+  if (
+    !MEMORY_VIRTUAL_ROOTS.has(mount.virtualRoot) ||
+    !/^mm1_[A-Za-z0-9_-]{24,}$/u.test(mount.mountHandle) ||
+    !path.isAbsolute(mount.sourcePath) ||
+    normalizedSource !== path.join(viewRoot, mount.virtualRoot, mount.mountHandle) ||
+    !path.basename(viewRoot).startsWith("openclaw-memory-view-") ||
+    !isPathInside(tempRoot, viewRoot) ||
+    !path.posix.isAbsolute(normalizedWorkdir) ||
+    path.posix.normalize(normalizedWorkdir) !== normalizedWorkdir ||
+    normalizedWorkdir === "/" ||
+    normalizedWorkdir === SANDBOX_AGENT_WORKSPACE_MOUNT ||
+    !target.startsWith(`${normalizedWorkdir}/`)
+  ) {
+    throw new Error("invalid sandbox memory virtual mount");
+  }
+  const stat = fs.lstatSync(mount.sourcePath);
+  if (!stat.isDirectory() || stat.isSymbolicLink()) {
+    throw new Error("sandbox memory virtual mount must be a real directory");
+  }
+  const canonicalViewRoot = path.resolve(fs.realpathSync.native(viewRoot));
+  const canonicalSource = path.resolve(fs.realpathSync.native(normalizedSource));
+  if (canonicalSource !== path.join(canonicalViewRoot, mount.virtualRoot, mount.mountHandle)) {
+    throw new Error("sandbox memory virtual mount must not use a symlinked ancestor");
+  }
+}
+
+/** Stable config-hash input for ephemeral, read-only authorized memory mounts. */
+export function formatMemoryVirtualMountHashState(
+  mounts: readonly SandboxMemoryVirtualMount[],
+  workdir: string,
+): string[] {
+  return mounts
+    .map((mount) => {
+      assertMemoryVirtualMount(mount, workdir);
+      return `${mount.viewId}:${mount.sourcePath}:${containerJoin(
+        workdir,
+        mount.virtualRoot,
+        mount.mountHandle,
+      )}:ro`;
+    })
+    .toSorted();
+}
+
+/** Mount each authorization-specific root over the workspace as read-only. */
+export function appendMemoryVirtualMountArgs(params: {
+  args: string[];
+  workdir: string;
+  mounts: readonly SandboxMemoryVirtualMount[];
+}): void {
+  for (const mount of [...params.mounts].toSorted((left, right) =>
+    `${left.virtualRoot}/${left.mountHandle}`.localeCompare(
+      `${right.virtualRoot}/${right.mountHandle}`,
+    ),
+  )) {
+    assertMemoryVirtualMount(mount, params.workdir);
+    params.args.push(
+      "-v",
+      formatManagedWorkspaceBind({
+        hostPath: mount.sourcePath,
+        containerPath: containerJoin(params.workdir, mount.virtualRoot, mount.mountHandle),
+        readOnly: true,
+      }),
+    );
+  }
+}
 
 function formatManagedWorkspaceBind(params: {
   hostPath: string;

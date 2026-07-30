@@ -97,11 +97,18 @@ import {
 import { handleHotSandboxConfigMismatch } from "./current-config.js";
 import { readRegistryEntry, updateRegistry } from "./registry.js";
 import { buildSandboxContainerName, slugifySessionKey } from "./shared.js";
-import type { SandboxConfig, SandboxDockerConfig, SandboxWorkspaceAccess } from "./types.js";
+import type {
+  SandboxConfig,
+  SandboxDockerConfig,
+  SandboxMemoryVirtualMount,
+  SandboxWorkspaceAccess,
+} from "./types.js";
 import { validateSandboxSecurity } from "./validate-sandbox-security.js";
 import {
+  appendMemoryVirtualMountArgs,
   appendReadOnlyWorkspaceSkillMountArgs,
   appendWorkspaceMountArgs,
+  formatMemoryVirtualMountHashState,
   formatReadOnlyWorkspaceSkillMountHashState,
   resolveReadOnlyWorkspaceSkillMounts,
   SANDBOX_MOUNT_FORMAT_VERSION,
@@ -453,6 +460,7 @@ async function createSandboxContainer(params: {
   scopeKey: string;
   configHash?: string;
   readOnlyWorkspaceSkillMounts: readonly ReadOnlyWorkspaceSkillMount[];
+  memoryVirtualMounts?: readonly SandboxMemoryVirtualMount[];
 }) {
   const { name, cfg, workspaceDir, scopeKey } = params;
   await ensureDockerImage(cfg.image);
@@ -477,6 +485,15 @@ async function createSandboxContainer(params: {
     includeReadOnlyWorkspaceSkillMounts: false,
   });
   appendCustomBinds(args, cfg);
+  if (params.memoryVirtualMounts?.length) {
+    // Keep authorization-specific mounts after operator-configured binds so a
+    // broad custom workspace overlay cannot replace the opaque handle view.
+    appendMemoryVirtualMountArgs({
+      args,
+      workdir: cfg.workdir,
+      mounts: params.memoryVirtualMounts,
+    });
+  }
   appendReadOnlyWorkspaceSkillMountArgs({
     args,
     readOnlyWorkspaceSkillMounts: params.readOnlyWorkspaceSkillMounts,
@@ -500,6 +517,7 @@ type EnsureSandboxContainerParams = {
   workspaceDir: string;
   agentWorkspaceDir: string;
   skillsWorkspaceDir?: string;
+  memoryVirtualMounts?: readonly SandboxMemoryVirtualMount[];
   cfg: SandboxConfig;
   requireCurrentConfig?: boolean;
 };
@@ -537,6 +555,14 @@ async function ensureSandboxContainerLifecycle(
     readOnlyWorkspaceSkillMounts: formatReadOnlyWorkspaceSkillMountHashState(
       readOnlyWorkspaceSkillMounts,
     ),
+    ...(params.memoryVirtualMounts?.length
+      ? {
+          memoryVirtualMounts: formatMemoryVirtualMountHashState(
+            params.memoryVirtualMounts,
+            params.cfg.docker.workdir,
+          ),
+        }
+      : {}),
   });
   const now = Date.now();
   const state = await dockerContainerState(containerName);
@@ -561,6 +587,7 @@ async function ensureSandboxContainerLifecycle(
       const lastUsedAtMs = registryEntry?.lastUsedAtMs;
       const isHot =
         running &&
+        !params.memoryVirtualMounts?.length &&
         (typeof lastUsedAtMs !== "number" || now - lastUsedAtMs < HOT_CONTAINER_WINDOW_MS);
       if (isHot) {
         handleHotSandboxConfigMismatch({
@@ -589,6 +616,7 @@ async function ensureSandboxContainerLifecycle(
       scopeKey: params.scopeKey,
       configHash: expectedHash,
       readOnlyWorkspaceSkillMounts,
+      memoryVirtualMounts: params.memoryVirtualMounts,
     });
   } else if (!running) {
     await execDocker(["start", containerName]);
