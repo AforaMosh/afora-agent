@@ -117,6 +117,14 @@ describe("listSessionsFromStore subagent metadata", () => {
         { bounded: true, includeCreatorFilter: true, mainKey: "main", now },
       ).query.limit,
     ).toBeUndefined();
+    for (const residualFilter of [{ search: "needle" }, { boardFace: "chat" as const }]) {
+      expect(
+        buildSessionListSqlQuery(
+          { ...residualFilter, limit: 1 },
+          { bounded: true, includeCreatorFilter: true, mainKey: "main", now },
+        ).query.limit,
+      ).toBeUndefined();
+    }
 
     const residualResult = await listSqlSelectedSessions({
       cfg,
