@@ -262,19 +262,34 @@ function multiPreambleEvents(body, bodyText) {
     return null;
   }
   if (outputs === 0) {
-    return preambleThenToolCallEvents("First I check the workspace.", "exec", {
-      command: ["bash", "-lc", "sleep 2 && echo multiproof-one"],
-    }, "-1");
+    return preambleThenToolCallEvents(
+      "First I check the workspace.",
+      "exec",
+      {
+        command: ["bash", "-lc", "sleep 2 && echo multiproof-one"],
+      },
+      "-1",
+    );
   }
   if (outputs === 1) {
-    return preambleThenToolCallEvents("Now I look at the second thing.", "exec", {
-      command: ["bash", "-lc", "sleep 2 && echo multiproof-two"],
-    }, "-2");
+    return preambleThenToolCallEvents(
+      "Now I look at the second thing.",
+      "exec",
+      {
+        command: ["bash", "-lc", "sleep 2 && echo multiproof-two"],
+      },
+      "-2",
+    );
   }
   if (outputs === 2) {
-    return preambleThenToolCallEvents("Last one, then I answer.", "exec", {
-      command: ["bash", "-lc", "sleep 2 && echo multiproof-three"],
-    }, "-3");
+    return preambleThenToolCallEvents(
+      "Last one, then I answer.",
+      "exec",
+      {
+        command: ["bash", "-lc", "sleep 2 && echo multiproof-three"],
+      },
+      "-3",
+    );
   }
   return responseEvents("OPENCLAW_E2E_MULTIPROOF");
 }
