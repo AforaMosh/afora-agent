@@ -332,6 +332,18 @@ async function repairCanonicalSessionGroup(
     agentId: destination.agentId,
     allowCanonicalRepair: true,
     afterUpsertsInTransaction: (destinationDatabase) => {
+      const destinationAliasKeys = destinationStore
+        .map((candidate) => candidate.sessionKey)
+        .filter((sessionKey) => sessionKey !== winner.canonicalKey);
+      if (destinationAliasKeys.length > 0) {
+        copySessionNodeArtifactsForRepair(
+          destinationDatabase,
+          destinationDatabase,
+          destinationAliasKeys,
+          winner.canonicalKey,
+          { includeMembers: false },
+        );
+      }
       if (
         winner.sqlitePath === destination.sqlitePath &&
         winner.sessionKey !== winner.canonicalKey

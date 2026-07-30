@@ -375,7 +375,16 @@ function selectSessionEntries(params: {
   const entries =
     limit === undefined ? sortedWindow.slice(offset) : sortedWindow.slice(offset, offset + limit);
   const nextOffset = offset + entries.length;
-  const totalCount = params.sqlSelection?.totalCount ?? filtered.length;
+  const hasResidualCountFilter = Boolean(
+    params.entryFilter ||
+    params.opts.boardFace ||
+    normalizeOptionalString(params.opts.search) ||
+    normalizeOptionalString(params.opts.spawnedBy) ||
+    params.opts.requireLastInteraction === true,
+  );
+  const totalCount = hasResidualCountFilter
+    ? filtered.length
+    : (params.sqlSelection?.totalCount ?? filtered.length);
   const hasMore = nextOffset < totalCount;
   return {
     entries,
