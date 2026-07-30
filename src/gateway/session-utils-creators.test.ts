@@ -16,7 +16,8 @@ const getUserProfileListItem = vi.hoisted(() =>
 
 vi.mock("../state/user-profiles.js", () => ({ getUserProfileListItem }));
 
-import { listSessionsFromStore, listSessionsFromStoreAsync } from "./session-utils.js";
+import { listSessionsFromStore } from "./session-utils-list.js";
+import { listSessionsFromStoreAsync } from "./session-utils.js";
 
 afterEach(() => vi.restoreAllMocks());
 

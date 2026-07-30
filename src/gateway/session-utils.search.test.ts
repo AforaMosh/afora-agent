@@ -19,7 +19,8 @@ import {
 import { registerAgentRunContext, resetAgentEventsForTest } from "../infra/agent-events.js";
 import { closeOpenClawAgentDatabasesForTest } from "../state/openclaw-agent-db.js";
 import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
-import { buildGatewaySessionInfo, listSessionsFromStore } from "./session-utils.js";
+import { listSessionsFromStore } from "./session-utils-list.js";
+import { buildGatewaySessionInfo } from "./session-utils.js";
 
 const MAIN_SESSION_KEY = "agent:main:main";
 const MAIN_SESSION_ID = "sess-main";

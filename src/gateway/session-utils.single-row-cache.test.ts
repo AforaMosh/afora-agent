@@ -68,11 +68,8 @@ const subagentRegistryReadMock = vi.hoisted(() => {
 
 vi.mock("../agents/subagent-registry-read.js", () => subagentRegistryReadMock);
 
-import {
-  listSessionsFromStore,
-  listSessionsFromStoreAsync,
-  loadGatewaySessionRow,
-} from "./session-utils.js";
+import { listSessionsFromStore } from "./session-utils-list.js";
+import { listSessionsFromStoreAsync, loadGatewaySessionRow } from "./session-utils.js";
 
 const MAIN_AGENT_ID = "main";
 const TEST_MODEL = "openai/gpt-5.4";

@@ -18,7 +18,7 @@ import {
   deliveryContextFromSession,
   sessionDeliveryOrigin,
 } from "../utils/delivery-context.shared.js";
-import { listSessionsFromStore } from "./session-utils.js";
+import { listSessionsFromStore } from "./session-utils-list.js";
 
 const TELEGRAM_DIRECT_KEY = "agent:main:telegram:direct:7463849194";
 

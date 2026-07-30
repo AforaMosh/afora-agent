@@ -30,5 +30,5 @@ export { resolveGatewayModelSupportsImages } from "./session-utils-model.js";
 export { resolveSessionDisplayModelIdentityRef } from "./session-utils-model.js";
 export { loadGatewaySessionRow } from "./session-utils-search.js";
 export { buildGatewaySessionInfo } from "./session-utils-search.js";
-export { listSessionsFromStore } from "./session-utils-list.js";
+export { describeSessionFromStore } from "./session-utils-describe.js";
 export { listSessionsFromStoreAsync } from "./session-utils-list.js";

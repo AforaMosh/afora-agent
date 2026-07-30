@@ -7,6 +7,7 @@ import {
   type SessionPlacement,
   type SessionsPatchParams,
 } from "../../../packages/gateway-protocol/src/index.js";
+import { openClawRuntime } from "../../agents/openclaw-runtime.js";
 import { listConfiguredSessionStoreAgentIds, type SessionEntry } from "../../config/sessions.js";
 import { resolveAgentMainSessionKey } from "../../config/sessions/main-session.js";
 import {
@@ -16,6 +17,7 @@ import {
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { normalizeAgentId, parseAgentSessionKey } from "../../routing/session-key.js";
+import type { SessionSelector } from "../../sessions/session-service-contract.js";
 import { createLazyRuntimeModule } from "../../shared/lazy-runtime.js";
 import {
   resolvePluginSessionOwnershipError,
@@ -166,6 +168,30 @@ export function requireSessionKey(key: unknown, respond: RespondFn): string | nu
     return null;
   }
   return normalized;
+}
+
+/**
+ * Maps the runtime session result onto the Gateway error boundary.
+ * Undefined means the response was sent; null means the selector matched no session.
+ */
+export async function resolveGatewaySessionKey(params: {
+  cfg: OpenClawConfig;
+  respond: RespondFn;
+  selector: SessionSelector;
+}): Promise<string | null | undefined> {
+  const resolved = await openClawRuntime.sessions.resolve({
+    config: params.cfg,
+    selector: params.selector,
+  });
+  if (!resolved.ok) {
+    params.respond(
+      false,
+      undefined,
+      errorShape(ErrorCodes.INVALID_REQUEST, resolved.error.message),
+    );
+    return undefined;
+  }
+  return resolved.value?.key ?? null;
 }
 
 export function rejectPluginRuntimeSessionOwnershipMismatch(params: {

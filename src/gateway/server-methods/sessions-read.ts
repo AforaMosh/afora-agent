@@ -1,5 +1,4 @@
 // Read-only session queries.
-import { expectDefined } from "@openclaw/normalization-core";
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
 import {
   ErrorCodes,
@@ -13,7 +12,6 @@ import {
   validateSessionsSearchParams,
 } from "../../../packages/gateway-protocol/src/index.js";
 import { resolveDefaultAgentId } from "../../agents/agent-scope.js";
-import { openClawRuntime } from "../../agents/openclaw-runtime.js";
 import {
   isConfiguredSessionStoreAgentId,
   isPerAgentSessionStoreConfig,
@@ -61,7 +59,7 @@ import {
   readSessionPreviewItemsFromTranscript,
 } from "../session-transcript-readers.js";
 import {
-  listSessionsFromStore,
+  describeSessionFromStore,
   listSessionsFromStoreAsync,
   loadCombinedSessionStore,
   resolveFreshestSessionEntryFromStoreKeys,
@@ -82,6 +80,7 @@ import {
   filterSessionStoreToConfiguredAgents,
   loadSessionEntriesForTarget,
   requireSessionKey,
+  resolveGatewaySessionKey,
 } from "./sessions-shared.js";
 import type { GatewayClient, GatewayRequestContext, GatewayRequestHandlers } from "./types.js";
 import { assertValidParams } from "./validation.js";
@@ -638,21 +637,15 @@ export const sessionReadHandlers: GatewayRequestHandlers = {
       respond(true, { session: null }, undefined);
       return;
     }
-    const projectionStore =
-      store[target.canonicalKey] === entry ? store : { ...store, [target.canonicalKey]: entry };
-    const listed = listSessionsFromStore({
+    const row = describeSessionFromStore({
+      canonicalKey: target.canonicalKey,
       cfg,
+      entry,
+      includeDerivedTitles: params.includeDerivedTitles,
+      includeLastMessage: params.includeLastMessage,
       storePath,
-      store: projectionStore,
-      entryFilter: (candidateKey) => candidateKey === target.canonicalKey,
-      includeHidden: true,
-      opts: {
-        includeDerivedTitles: params.includeDerivedTitles,
-        includeLastMessage: params.includeLastMessage,
-        limit: 1,
-      },
+      store,
     });
-    const row = expectDefined(listed.sessions[0], "described session");
     const placement = row.sessionId
       ? context.workerSessionPlacementService?.getMany([row.sessionId]).get(row.sessionId)
       : undefined;
@@ -668,19 +661,19 @@ export const sessionReadHandlers: GatewayRequestHandlers = {
     if (!assertValidParams(params, validateSessionsResolveParams, "sessions.resolve", respond)) {
       return;
     }
-    const resolved = await openClawRuntime.sessions.resolve({
-      config: context.getRuntimeConfig(),
+    const key = await resolveGatewaySessionKey({
+      cfg: context.getRuntimeConfig(),
+      respond,
       selector: params,
     });
-    if (!resolved.ok) {
-      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, resolved.error.message));
+    if (key === undefined) {
       return;
     }
-    if (!resolved.value) {
+    if (key === null) {
       respond(true, { ok: false }, undefined);
       return;
     }
-    respond(true, { ok: true, key: resolved.value.key }, undefined);
+    respond(true, { ok: true, key }, undefined);
   },
   "sessions.get": async ({ params, respond, context }) => {
     const p = params as {

@@ -15,7 +15,6 @@ import {
   validateTalkSessionSubmitToolResultParams,
   validateTalkSessionTurnParams,
 } from "../../../packages/gateway-protocol/src/index.js";
-import { openClawRuntime } from "../../agents/openclaw-runtime.js";
 import { buildAgentMainSessionKey } from "../../routing/session-key.js";
 import { REALTIME_VOICE_AGENT_CONSULT_TOOL } from "../../talk/agent-consult-tool.js";
 import { REALTIME_VOICE_AGENT_CONTROL_TOOL } from "../../talk/agent-run-control-shared.js";
@@ -56,6 +55,7 @@ import {
   stopTalkTranscriptionRelaySession,
 } from "../talk-transcription-relay.js";
 import { formatForLog } from "../ws-log.js";
+import { resolveGatewaySessionKey } from "./sessions-shared.js";
 import { acknowledgeTalkSessionMark } from "./talk-session-mark.js";
 import {
   broadcastTalkRoomEvents,
@@ -215,8 +215,9 @@ export const talkSessionHandlers: GatewayRequestHandlers = {
           );
           return;
         }
-        const resolvedSession = await openClawRuntime.sessions.resolve({
-          config: context.getRuntimeConfig(),
+        const sessionKey = await resolveGatewaySessionKey({
+          cfg: context.getRuntimeConfig(),
+          respond,
           selector: {
             key: params.sessionKey,
             ...(spawnedBy ? { spawnedBy } : {}),
@@ -224,20 +225,15 @@ export const talkSessionHandlers: GatewayRequestHandlers = {
             includeUnknown: true,
           },
         });
-        if (!resolvedSession.ok) {
-          respond(
-            false,
-            undefined,
-            errorShape(ErrorCodes.INVALID_REQUEST, resolvedSession.error.message),
-          );
+        if (sessionKey === undefined) {
           return;
         }
-        if (!resolvedSession.value) {
+        if (sessionKey === null) {
           respondInvalidRequest(respond, `No session found: ${params.sessionKey}`);
           return;
         }
         const handoff = createTalkHandoff({
-          sessionKey: resolvedSession.value.key,
+          sessionKey,
           provider: normalizeOptionalString(params.provider),
           model: normalizeOptionalString(params.model),
           voice: normalizeOptionalString(params.voice),

@@ -27,6 +27,7 @@ import type { GatewayModelCatalogSnapshot } from "./server-model-catalog.types.j
 import { registerSessionAutomationSource } from "./session-automation-index.js";
 import { buildGatewaySessionEventFields } from "./session-event-payload.js";
 import { capArrayByJsonBytes } from "./session-transcript-readers.js";
+import { listSessionsFromStore } from "./session-utils-list.js";
 import { buildSingleRowStoreChildSessionsByKey } from "./session-utils-projection.js";
 import { buildGatewaySessionRow } from "./session-utils-row.js";
 import {
@@ -34,7 +35,6 @@ import {
   deriveSessionTitle,
   getSessionDefaults,
   listAgentsForGateway,
-  listSessionsFromStore,
   listSessionsFromStoreAsync,
   loadSessionEntry,
   loadSessionEntryReadOnly,
