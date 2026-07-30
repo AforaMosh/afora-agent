@@ -440,7 +440,7 @@ describe("session accessor seam", () => {
     expect(result.entries.map(({ sessionKey }) => sessionKey)).toEqual(["agent:main:valid"]);
   });
 
-  it("keeps valid legacy blobs while excluding only empty sessions placeholders", () => {
+  it("excludes rows whose canonical blob lacks a session id", () => {
     const database = openOpenClawAgentDatabase({
       agentId: "main",
       path: resolveSqliteTargetFromSessionStorePath(storePath, { agentId: "main" }).path,
@@ -463,6 +463,49 @@ describe("session accessor seam", () => {
     );
     insert.run("agent:main:custom:sessions", "nested-session", "{}", 7);
     insert.run(
+      "agent:main:blank-session-id",
+      "blank-session-id",
+      JSON.stringify({ sessionId: "\t\u00a0", updatedAt: 7 }),
+      7,
+    );
+    insert.run(
+      "agent:main:missing-updated-at",
+      "missing-updated-at",
+      JSON.stringify({ sessionId: "missing-updated-at" }),
+      7,
+    );
+    insert.run(
+      "agent:main:non-finite-updated-at",
+      "non-finite-updated-at",
+      '{"sessionId":"non-finite-updated-at","updatedAt":1e999}',
+      7,
+    );
+    insert.run(
+      "agent:main:nul-session-id",
+      "nul-session-id",
+      JSON.stringify({ sessionId: "\0x", updatedAt: 7 }),
+      7,
+    );
+    insert.run(
+      "agent:main:duplicate-session-id",
+      "duplicate-session-id",
+      '{"sessionId":"","sessionId":"duplicate-session-id","updatedAt":7}',
+      7,
+    );
+    insert.run(
+      "agent:main:duplicate-updated-at",
+      "duplicate-updated-at",
+      '{"sessionId":"duplicate-updated-at","updatedAt":7,"updatedAt":8}',
+      7,
+    );
+    insert.run("agent:main:xyz", "xyz", JSON.stringify({ sessionId: "xyz", updatedAt: 4 }), 4);
+    insert.run(
+      "agent:main:min-int-updated-at",
+      "min-int-updated-at",
+      '{"sessionId":"min-int-updated-at","updatedAt":-9223372036854775808}',
+      3,
+    );
+    insert.run(
       "agent:main:cron:job:run:one",
       "cron-run",
       JSON.stringify({ sessionId: "cron-run", updatedAt: 6 }),
@@ -483,17 +526,18 @@ describe("session accessor seam", () => {
 
     expect(result.totalCount).toBe(4);
     expect(result.entries.map(({ entry, sessionKey }) => [sessionKey, entry.sessionId])).toEqual([
-      ["agent:main:legacy", "legacy-session"],
       ["agent:main:custom:cron:x:run:y", "custom-session"],
       ["agent:main:sessions", "real-sessions-key"],
-      ["agent:main:custom:sessions", "nested-session"],
+      ["agent:main:xyz", "xyz"],
+      ["agent:main:min-int-updated-at", "min-int-updated-at"],
     ]);
-    expect(loadSessionEntry({ sessionKey: "agent:main:legacy", storePath })?.sessionId).toBe(
-      "legacy-session",
-    );
+    expect(loadSessionEntry({ sessionKey: "agent:main:legacy", storePath })).toBeUndefined();
     expect(
-      loadSessionEntry({ sessionKey: "agent:main:custom:sessions", storePath })?.sessionId,
-    ).toBe("nested-session");
+      loadSessionEntry({ sessionKey: "agent:main:duplicate-session-id", storePath }),
+    ).toBeUndefined();
+    expect(
+      loadSessionEntry({ sessionKey: "agent:main:custom:sessions", storePath }),
+    ).toBeUndefined();
     expect(
       querySqliteSessionEntriesReadOnly({
         agentId: "main",

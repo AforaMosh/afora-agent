@@ -290,6 +290,7 @@ export function readSqliteSessionEntryKeys(database: OpenClawAgentDatabaseReader
 export function resolveSqliteLifecyclePrimaryEntry(
   database: OpenClawAgentDatabase,
   target: { canonicalKey: string; storeKeys: string[] },
+  options: { allowCanonicalMove?: boolean } = {},
 ): { key: string; entry: SessionEntry } | undefined {
   const rows = target.storeKeys.flatMap((key) => {
     const sessionKey = key.trim();
@@ -300,7 +301,7 @@ export function resolveSqliteLifecyclePrimaryEntry(
     throw duplicateCanonicalSessionKeyError(target.canonicalKey);
   }
   const [row] = rows;
-  if (row && row.key !== target.canonicalKey) {
+  if (row && row.key !== target.canonicalKey && options.allowCanonicalMove !== true) {
     throw nonCanonicalSessionKeyRowError(target.canonicalKey);
   }
   return row;
@@ -309,10 +310,12 @@ export function resolveSqliteLifecyclePrimaryEntry(
 export function readSqliteLifecycleTargetSnapshot(
   database: OpenClawAgentDatabase,
   target: { canonicalKey: string; storeKeys: string[] },
+  options: { allowCanonicalMove?: boolean } = {},
 ): SqliteLifecycleTargetSnapshot {
+  assertCanonicalSqliteSessionKeysCurrent(database);
   const normalized = normalizeSqliteLifecycleTarget(target);
   return {
-    primary: resolveSqliteLifecyclePrimaryEntry(database, normalized),
+    primary: resolveSqliteLifecyclePrimaryEntry(database, normalized, options),
     rows: normalized.storeKeys.flatMap((sessionKey) => {
       const row = readExactSessionEntryRow(database, sessionKey);
       return row ? [{ entry: cloneSessionEntry(row.entry), sessionKey }] : [];
