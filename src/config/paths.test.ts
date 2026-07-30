@@ -77,12 +77,12 @@ describe("default install identity", () => {
     expect(isDefaultInstallIdentity({ HOME: "/tmp/copied-home" }, () => accountHome)).toBe(false);
   });
 
-  it("accepts installs relocated through OPENCLAW_HOME", () => {
+  it("rejects installs relocated through OPENCLAW_HOME", () => {
     const accountHome = "/home/test";
     const installHome = "/srv/openclaw";
     const stateDir = path.join(installHome, ".openclaw");
 
-    expect(isDefaultInstallIdentity({ OPENCLAW_HOME: installHome }, () => accountHome)).toBe(true);
+    expect(isDefaultInstallIdentity({ OPENCLAW_HOME: installHome }, () => accountHome)).toBe(false);
     expect(
       isDefaultInstallIdentity(
         {
@@ -92,10 +92,15 @@ describe("default install identity", () => {
         },
         () => accountHome,
       ),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       isDefaultInstallIdentity(
-        { OPENCLAW_HOME: installHome, OPENCLAW_STATE_DIR: "/tmp/copied-state" },
+        {
+          OPENCLAW_HOME: installHome,
+          OPENCLAW_PROFILE: "work",
+          OPENCLAW_STATE_DIR: path.join(installHome, ".openclaw-work"),
+          OPENCLAW_CONFIG_PATH: path.join(installHome, ".openclaw-work", "openclaw.json"),
+        },
         () => accountHome,
       ),
     ).toBe(false);
