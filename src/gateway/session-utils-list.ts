@@ -194,7 +194,12 @@ export function buildSessionListSqlQuery(
   const creatorId = normalizeOptionalString(opts.creatorId);
   const label = normalizeOptionalString(opts.label);
   const spawnedBy = normalizeOptionalString(opts.spawnedBy);
-  if (params.includeCreatorFilter && creatorId) {
+  const hasResidualFacetFilter =
+    lineageRequiresResidual ||
+    Boolean(normalizeOptionalString(opts.search)) ||
+    Boolean(opts.boardFace) ||
+    opts.requireLastInteraction === true;
+  if (params.includeCreatorFilter && !hasResidualFacetFilter && creatorId) {
     query.createdActorId = creatorId;
   }
   if (label) {

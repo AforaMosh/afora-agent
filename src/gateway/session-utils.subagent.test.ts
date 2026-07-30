@@ -105,12 +105,13 @@ describe("listSessionsFromStore subagent metadata", () => {
       });
     }
     const residual = buildSessionListSqlQuery(
-      { spawnedBy: parentKey, limit: 1 },
+      { creatorId: "creator-a", spawnedBy: parentKey, limit: 1 },
       { bounded: true, includeCreatorFilter: true, mainKey: "main", now },
     ).query;
     expect(residual.selectionResidual).toBe(true);
     expect(residual.limit).toBeUndefined();
     expect(residual.spawnedBy).toBeUndefined();
+    expect(residual.createdActorId).toBeUndefined();
     expect(
       buildSessionListSqlQuery(
         { requireLastInteraction: true, limit: 1 },
@@ -118,12 +119,12 @@ describe("listSessionsFromStore subagent metadata", () => {
       ).query.limit,
     ).toBeUndefined();
     for (const residualFilter of [{ search: "needle" }, { boardFace: "chat" as const }]) {
-      expect(
-        buildSessionListSqlQuery(
-          { ...residualFilter, limit: 1 },
-          { bounded: true, includeCreatorFilter: true, mainKey: "main", now },
-        ).query.limit,
-      ).toBeUndefined();
+      const residualQuery = buildSessionListSqlQuery(
+        { ...residualFilter, creatorId: "creator-a", limit: 1 },
+        { bounded: true, includeCreatorFilter: true, mainKey: "main", now },
+      ).query;
+      expect(residualQuery.createdActorId).toBeUndefined();
+      expect(residualQuery.limit).toBeUndefined();
     }
 
     const residualResult = await listSqlSelectedSessions({
