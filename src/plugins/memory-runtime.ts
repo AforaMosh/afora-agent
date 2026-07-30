@@ -10,7 +10,10 @@ import {
   isTrustedMemoryAccessContext,
   MemoryAccessContextError,
 } from "./memory-access-context.js";
-import { admitMemoryAuthorizationReadRuntime } from "./memory-authorization-runtime.js";
+import {
+  admitMemoryAuthorizationReadRuntime,
+  admitMemoryAuthorizationRuntime,
+} from "./memory-authorization-runtime.js";
 import { emitMemoryAuthorizationShadowSurfaceInspection } from "./memory-authorization-shadow.js";
 import { isMemoryIsolationCutoverAgent } from "./memory-cutover.js";
 import { getMemoryRuntime } from "./memory-state.js";
@@ -127,7 +130,10 @@ export async function authorizeActiveMemoryAccess(params: {
       error: "authorized memory backend unavailable",
     } as const;
   }
-  const admission = await admitMemoryAuthorizationReadRuntime(runtime);
+  const admission =
+    params.context.operation === "read" || params.context.operation === "retrieve"
+      ? await admitMemoryAuthorizationReadRuntime(runtime)
+      : await admitMemoryAuthorizationRuntime(runtime);
   if (!admission.ok) {
     return {
       runtime: null,

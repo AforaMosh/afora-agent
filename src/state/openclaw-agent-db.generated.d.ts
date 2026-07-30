@@ -125,6 +125,26 @@ export interface HeartbeatOutcomes {
   wake_source: string | null;
 }
 
+export interface MemoryAuditOutbox {
+  actor_ref: string;
+  agent_id: string;
+  attempts: Generated<number>;
+  content_hash: string | null;
+  created_at: number;
+  decision: string;
+  delivered_at: number | null;
+  event_id: string;
+  intent_id: string;
+  operation: string;
+  reason_code: string;
+  request_id: string;
+  resource_revision_id: string | null;
+  run_id: string;
+  state: string;
+  subject_ref: string;
+  updated_at: number;
+}
+
 export interface MemoryEgressReceipts {
   allowed_audiences_json: string;
   context_fingerprint: string;
@@ -408,6 +428,30 @@ export interface MemoryStores {
   updated_at: number;
 }
 
+export interface MemoryWriteIntents {
+  activated_at: number | null;
+  agent_id: string;
+  content_bytes: number | null;
+  content_hash: string | null;
+  context_fingerprint: string;
+  created_at: number;
+  final_locator: string | null;
+  idempotency_key: string;
+  indexed_at: number | null;
+  intent_id: string;
+  mutation_id: string;
+  mutation_kind: string;
+  pending_revision_id: string | null;
+  plan_id: string;
+  request_id: string;
+  resource_id: string | null;
+  run_id: string;
+  staged_locator: string | null;
+  state: string;
+  store_id: string;
+  updated_at: number;
+}
+
 export interface SchemaMeta {
   agent_id: string | null;
   app_version: string | null;
@@ -659,8 +703,8 @@ export interface TranscriptEventMemoryPolicies {
   created_at: number;
   delivery_audiences_json: string | null;
   event_seq: number;
-  run_exposure_set_id: string | null;
   run_exposure_revision: number | null;
+  run_exposure_set_id: string | null;
   run_id: string | null;
   session_id: string;
   session_identity_revision: string | null;
@@ -691,6 +735,7 @@ export interface DB {
   conversation_deliveries: ConversationDeliveries;
   conversations: Conversations;
   heartbeat_outcomes: HeartbeatOutcomes;
+  memory_audit_outbox: MemoryAuditOutbox;
   memory_egress_receipts: MemoryEgressReceipts;
   memory_embedding_cache: MemoryEmbeddingCache;
   memory_exposure_receipts: MemoryExposureReceipts;
@@ -719,6 +764,7 @@ export interface DB {
   memory_scoped_chunks_fts_idx: MemoryScopedChunksFtsIdx;
   memory_storage_roots: MemoryStorageRoots;
   memory_stores: MemoryStores;
+  memory_write_intents: MemoryWriteIntents;
   schema_meta: SchemaMeta;
   session_conversations: SessionConversations;
   session_members: SessionMembers;

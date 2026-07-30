@@ -9,6 +9,7 @@ export const OPENCLAW_STATE_STRICT_SCHEMA_VERSION = 3;
 // lazy ensures run; fold them into the next natural schema-version bump.
 export const LAZY_ADDITIVE_STATE_TABLES = [
   "memory_identity_bindings",
+  "memory_access_audit",
   "memory_principals",
   "model_catalog_remote",
   "sidebar_sections",
