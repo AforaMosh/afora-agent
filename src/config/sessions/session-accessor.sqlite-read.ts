@@ -24,7 +24,11 @@ import {
   resolveSqliteTranscriptReadScope,
   toDatabaseOptions,
 } from "./session-accessor.sqlite-scope.js";
-import { readAuthorizedTranscriptEventSeqs } from "./session-transcript-memory-policy.js";
+import {
+  readAuthorizedTranscriptEventSeqs,
+  readTranscriptMemoryPolicyExportManifestFromDatabase,
+  type TranscriptMemoryPolicyExportManifest,
+} from "./session-transcript-memory-policy.js";
 
 function filterAuthorizedTranscriptRows<Row extends { seq: number }>(
   database: OpenClawAgentDatabase,
@@ -58,6 +62,18 @@ export function loadSqliteTranscriptEventsSync(
   const resolved = resolveSqliteTranscriptReadScope(scope);
   const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
   return loadVisibleSqliteTranscriptEventsFromDatabase(database, resolved.sessionId);
+}
+
+/** Returns durable policy evidence for the same current-policy-visible export rows. */
+export function readSqliteTranscriptMemoryPolicyExportManifest(
+  scope: SessionTranscriptReadScope,
+): TranscriptMemoryPolicyExportManifest | undefined {
+  const resolved = resolveSqliteTranscriptReadScope(scope);
+  const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
+  return readTranscriptMemoryPolicyExportManifestFromDatabase({
+    database,
+    sessionId: resolved.sessionId,
+  });
 }
 
 /** Loads only the first transcript row for header metadata hot paths. */

@@ -31,7 +31,11 @@ import { cloneSessionEntry, getSessionKysely } from "./session-accessor.sqlite-s
 import { parseSqliteSessionEntryJson as parseSessionEntryRow } from "./session-accessor.sqlite-status.js";
 import { buildSessionResetBoundaryPlan } from "./session-reset-boundary-event.js";
 import { deleteSessionTranscriptIndexInTransaction } from "./session-transcript-index.js";
-import { readAuthorizedTranscriptEventSeqs } from "./session-transcript-memory-policy.js";
+import {
+  captureAuthorizedTranscriptMemoryArchivePoliciesInTransaction,
+  persistTranscriptMemoryArchiveInTransaction,
+  readAuthorizedTranscriptEventSeqs,
+} from "./session-transcript-memory-policy.js";
 import { serializeJsonlLines } from "./transcript-jsonl.js";
 import type { SessionEntry } from "./types.js";
 
@@ -215,8 +219,16 @@ export function planSqliteSessionStateDeleteIfUnreferenced(params: {
     return null;
   }
   const lines = readSqliteTranscriptArchiveLines(params.database, params.sessionId);
+  const archivePolicySnapshots =
+    params.archiveTranscript === false
+      ? undefined
+      : captureAuthorizedTranscriptMemoryArchivePoliciesInTransaction({
+          database: params.database,
+          sessionId: params.sessionId,
+        });
   return {
     archiveDirectory: params.archiveDirectory,
+    ...(archivePolicySnapshots ? { archivePolicySnapshots } : {}),
     archiveTranscript: params.archiveTranscript !== false,
     content: serializeJsonlLines(lines),
     hadTranscriptState:
@@ -247,6 +259,22 @@ export function deleteMaterializedSqliteSessionStatePlans(
       );
       if (currentContent !== plan.content) {
         throw new Error(`SQLite transcript changed before archive deletion for ${plan.sessionId}`);
+      }
+      if (
+        plan.archivedTranscript &&
+        plan.archivePolicySnapshots &&
+        !persistTranscriptMemoryArchiveInTransaction({
+          archivePath: plan.archivedTranscript.archivedPath,
+          content: plan.content,
+          database,
+          reason: plan.reason,
+          sessionId: plan.sessionId,
+          snapshots: plan.archivePolicySnapshots,
+        })
+      ) {
+        throw new Error(
+          `SQLite transcript policy changed before archive deletion for ${plan.sessionId}`,
+        );
       }
     }
     deleteSqliteSessionStateRows(database, plan.sessionId);

@@ -9,9 +9,12 @@ import {
 } from "./archive-compression.js";
 import { formatSessionArchiveTimestamp, type SessionArchiveReason } from "./artifacts.js";
 import type { SessionLifecycleArchivedTranscript } from "./session-accessor.sqlite-contract.js";
+import type { TranscriptMemoryArchivePolicySnapshot } from "./session-transcript-memory-policy.js";
 
 export type SqliteSessionStateDeletePlan = {
   archiveDirectory: string;
+  /** Captured before materializing an archive; revalidated before live rows are reclaimed. */
+  archivePolicySnapshots?: readonly TranscriptMemoryArchivePolicySnapshot[];
   archiveTranscript: boolean;
   content: string;
   hadTranscriptState: boolean;

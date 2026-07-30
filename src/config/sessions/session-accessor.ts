@@ -199,6 +199,7 @@ export {
   publishTranscriptUpdate,
   readLatestTranscriptAssistantText,
   readTranscriptEventAtSeqSync,
+  readTranscriptMemoryPolicyExportManifest,
   readTranscriptRawDelta,
   readTranscriptStatsSync,
   replaceTranscriptEvents,
