@@ -31,7 +31,6 @@ import {
   duplicateCanonicalSessionKeyError,
   nonCanonicalSessionKeyRowError,
 } from "./session-canonical-key.js";
-import { normalizeStoreSessionKey } from "./store-entry.js";
 import {
   dedupeSessionStoreTargetsBySqliteTarget,
   listConfiguredSessionStoreAgentIds,
@@ -62,7 +61,6 @@ function loadGatewayStoreEntries(params: {
   agentId: string;
   incognito?: boolean;
   includeDependencies?: boolean;
-  mainKey?: string;
   projection: GatewaySessionEntryProjection;
   query?: SessionEntryListQuery;
   storePath: string;
@@ -95,17 +93,7 @@ function loadGatewayStoreEntries(params: {
     });
   const dependencyKeys = [
     ...new Set(
-      params.includeDependencies
-        ? (result?.entries.flatMap(({ sessionKey }) => {
-            const normalized = normalizeStoreSessionKey(sessionKey);
-            const parsed = parseAgentSessionKey(normalized);
-            const legacyMain =
-              parsed && params.mainKey?.trim().toLowerCase() === parsed.rest.trim().toLowerCase()
-                ? ["main", `agent:${parsed.agentId}:main`]
-                : [];
-            return [sessionKey, normalized, parsed?.rest ?? sessionKey, ...legacyMain];
-          }) ?? [])
-        : [],
+      params.includeDependencies ? (result?.entries.map(({ sessionKey }) => sessionKey) ?? []) : [],
     ),
   ];
   const dependencies = new Map<string, SessionEntrySummary>();
@@ -269,7 +257,6 @@ function mergeOpenIncognitoStores(params: {
       incognito: true,
       includeDependencies: params.includeDependencies,
       projection: params.projection,
-      mainKey: params.cfg.session?.mainKey,
       ...(params.query ? { query: params.query } : {}),
       storePath: target.storePath,
     });
@@ -431,7 +418,6 @@ export function loadCombinedSessionStoreForGateway(
     const loaded = loadGatewayStoreEntries({
       agentId,
       includeDependencies: opts.includeRowContext === true,
-      mainKey: cfg.session?.mainKey,
       projection,
       ...(query ? { query } : {}),
       storePath,
