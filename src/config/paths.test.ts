@@ -75,9 +75,67 @@ describe("default install identity", () => {
     const accountHome = "/home/test";
 
     expect(isDefaultInstallIdentity({ HOME: "/tmp/copied-home" }, () => accountHome)).toBe(false);
-    expect(isDefaultInstallIdentity({ OPENCLAW_HOME: "/tmp/copied-home" }, () => accountHome)).toBe(
-      false,
-    );
+  });
+
+  it("accepts installs relocated through OPENCLAW_HOME", () => {
+    const accountHome = "/home/test";
+    const installHome = "/srv/openclaw";
+    const stateDir = path.join(installHome, ".openclaw");
+
+    expect(isDefaultInstallIdentity({ OPENCLAW_HOME: installHome }, () => accountHome)).toBe(true);
+    expect(
+      isDefaultInstallIdentity(
+        {
+          OPENCLAW_HOME: installHome,
+          OPENCLAW_STATE_DIR: stateDir,
+          OPENCLAW_CONFIG_PATH: path.join(stateDir, "openclaw.json"),
+        },
+        () => accountHome,
+      ),
+    ).toBe(true);
+    expect(
+      isDefaultInstallIdentity(
+        { OPENCLAW_HOME: installHome, OPENCLAW_STATE_DIR: "/tmp/copied-state" },
+        () => accountHome,
+      ),
+    ).toBe(false);
+  });
+
+  it("accepts the canonical paths a named profile projects", () => {
+    const home = "/home/test";
+    const profileStateDir = path.join(home, ".openclaw-work");
+
+    expect(
+      isDefaultInstallIdentity(
+        {
+          HOME: home,
+          OPENCLAW_PROFILE: "work",
+          OPENCLAW_STATE_DIR: profileStateDir,
+          OPENCLAW_CONFIG_PATH: path.join(profileStateDir, "openclaw.json"),
+        },
+        () => home,
+      ),
+    ).toBe(true);
+    expect(
+      isDefaultInstallIdentity(
+        {
+          HOME: home,
+          OPENCLAW_PROFILE: "work",
+          OPENCLAW_STATE_DIR: path.join(home, ".openclaw-other"),
+        },
+        () => home,
+      ),
+    ).toBe(false);
+    expect(
+      isDefaultInstallIdentity(
+        {
+          HOME: home,
+          OPENCLAW_PROFILE: "default",
+          OPENCLAW_STATE_DIR: path.join(home, ".openclaw"),
+        },
+        () => home,
+      ),
+    ).toBe(true);
   });
 });
 

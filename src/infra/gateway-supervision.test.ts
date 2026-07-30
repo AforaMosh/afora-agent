@@ -1,3 +1,5 @@
+import os from "node:os";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   assertGatewayServiceMutationAllowed,
@@ -45,8 +47,21 @@ describe("gateway supervision", () => {
         ...override,
       }),
     ).toThrow(
-      `${NON_DEFAULT_INSTALL_SERVICE_SKIP_REASON}. Rerun with HOME set to the OS account home and without OPENCLAW_HOME, OPENCLAW_STATE_DIR, or OPENCLAW_CONFIG_PATH overrides to restart the gateway.`,
+      `${NON_DEFAULT_INSTALL_SERVICE_SKIP_REASON}. Rerun with HOME set to the OS account home and with OPENCLAW_STATE_DIR and OPENCLAW_CONFIG_PATH either unset or pointing at the canonical paths for this OpenClaw home and profile to restart the gateway.`,
     );
+  });
+
+  it("allows native service mutation for a named profile's canonical state dir", () => {
+    const accountHome = os.userInfo().homedir;
+
+    expect(() =>
+      assertGatewayServiceMutationAllowed("restart the gateway", {
+        HOME: accountHome,
+        OPENCLAW_PROFILE: "work",
+        OPENCLAW_STATE_DIR: path.join(accountHome, ".openclaw-work"),
+        OPENCLAW_CONFIG_PATH: path.join(accountHome, ".openclaw-work", "openclaw.json"),
+      }),
+    ).not.toThrow();
   });
 
   it("explains why self-update must be delegated", () => {

@@ -129,6 +129,12 @@ openclaw gateway restart --wait 30s
 Inline `--password` can be exposed in local process listings. Prefer `--password-file`, env, or a SecretRef-backed `gateway.auth.password`.
 </Warning>
 
+### Install identity
+
+Service management (`install`, `start`, `stop`, `restart`, `uninstall`, Doctor service repair, and self-update service handling) belongs to the install that owns the host service. That is the canonical `.openclaw` directory under the OpenClaw home — `OPENCLAW_HOME` when set, otherwise the OS account home — or the `.openclaw-<profile>` directory a named profile projects.
+
+An `OPENCLAW_STATE_DIR` or `OPENCLAW_CONFIG_PATH` that points elsewhere is treated as isolated state and skipped, so copied state cannot rewrite the host service to target itself.
+
 ### External supervisors
 
 Set `OPENCLAW_SUPERVISOR_MODE=external` only when another process manager owns the Gateway lifecycle. In this mode:
