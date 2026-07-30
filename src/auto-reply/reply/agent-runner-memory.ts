@@ -52,6 +52,7 @@ import { logVerbose } from "../../globals.js";
 import { isAbortError } from "../../infra/abort-signal.js";
 import { emitAgentEvent, registerAgentRunContext } from "../../infra/agent-events.js";
 import { formatErrorMessage } from "../../infra/errors.js";
+import { isMemoryIsolationCutoverAgent } from "../../plugins/memory-cutover.js";
 import { resolveMemoryFlushPlan } from "../../plugins/memory-state.js";
 import { CommandLane } from "../../process/lanes.js";
 import { isIncognitoSessionKey, isUnscopedSessionKeySentinel } from "../../routing/session-key.js";
@@ -1205,6 +1206,13 @@ export async function runMemoryFlushIfNeeded(params: {
   replyOperation: ReplyOperation;
   onVisibleErrorPayloads?: (payloads: ReplyPayload[]) => void;
 }): Promise<MemoryFlushResult> {
+  const configuredAgentId = params.followupRun.run.agentId ?? resolveDefaultAgentId(params.cfg);
+  const memoryAgentId = params.sessionKey
+    ? resolveAgentIdFromSessionKey(params.sessionKey, configuredAgentId)
+    : configuredAgentId;
+  if (isMemoryIsolationCutoverAgent(memoryAgentId)) {
+    return { sessionEntry: params.sessionEntry, outcome: "skipped" };
+  }
   const memoryFlushPlan = resolveMemoryFlushPlan({ cfg: params.cfg });
   if (!memoryFlushPlan) {
     return { sessionEntry: params.sessionEntry, outcome: "skipped" };

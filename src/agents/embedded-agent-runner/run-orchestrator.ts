@@ -20,6 +20,12 @@ import {
   buildAgentHookContextIdentityFields,
 } from "../../plugins/hook-agent-context.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
+import {
+  createMemoryInvocation,
+  initializeMemoryInvocation,
+  isMemoryInvocationEnforced,
+  withMemoryInvocation,
+} from "../../plugins/memory-invocation.js";
 import { resolveUserPath } from "../../utils.js";
 import { isMarkdownCapableMessageChannel } from "../../utils/message-channel.js";
 import {
@@ -126,6 +132,13 @@ async function runEmbeddedAgentInternal(
     sessionFile: runSessionTarget.sessionKey,
     skillWorkshopProposalMutationBudget,
   });
+  const memoryInvocationToken = createMemoryInvocation({
+    agentId: runSessionTarget.agentId,
+    sessionId: runSessionTarget.sessionId,
+    sessionKey: runSessionTarget.sessionKey,
+    runId: params.runId,
+  });
+  params = { ...params, memoryInvocationToken };
   const sessionLane = resolveSessionLane(params.sessionKey?.trim() || params.sessionId);
   const globalLane = resolveGlobalLane(params.lane);
   // Outer fallback attempts defer session suspension only while another
@@ -171,217 +184,236 @@ async function runEmbeddedAgentInternal(
     params = { ...params, messageActionTurnCapability: recoveryMessageActionTurnCapability };
   }
 
-  return enqueueSession(async () => {
-    throwIfAborted();
-    // Same-session reads below must see any prior deferred transcript rewrite.
-    // Checkpoint before the global lane so unrelated sessions can still start
-    // while this session waits on its own maintenance lane.
-    params.replyOperation?.markWaitingForDeferredMaintenance();
-    try {
-      await waitForDeferredTurnMaintenanceForSession(params.sessionKey);
-    } finally {
-      params.replyOperation?.markDeferredMaintenanceWaitEnded();
-    }
-    throwIfAborted();
-    return enqueueGlobal(async () => {
+  return withMemoryInvocation(memoryInvocationToken, () =>
+    enqueueSession(async () => {
       throwIfAborted();
-      // Subscription-scoped claude-cli auth executes via the CLI backend;
-      // resolved post-admission so dispatched runs obey the same lifecycle,
-      // placement, and concurrency gates as native embedded runs.
-      const cliDispatched = await runEmbeddedAgentViaCliBackendIfEligible(params);
-      if (cliDispatched) {
-        return cliDispatched;
-      }
-      const started = Date.now();
-      const startupStages = createEmbeddedRunStageTracker();
-      const requestedWorkspaceResolution = resolveRunWorkspaceDir({
-        workspaceDir: params.workspaceDir,
-        sessionKey: params.sessionKey,
-        agentId: params.agentId,
-        config: params.config,
-      });
-      const config = params.config ?? EMPTY_EMBEDDED_AGENT_CONFIG;
-      const requestedAgentDir =
-        params.agentDir ?? resolveAgentDir(config, requestedWorkspaceResolution.agentId);
-      const retainIdleRunOwner = params.config === undefined;
-      const preparedInput = {
-        config,
-        agentId: requestedWorkspaceResolution.agentId,
-        agentDir: requestedAgentDir,
-        inheritedAuthDir: resolveDefaultAgentDir(config),
-        workspaceDir: requestedWorkspaceResolution.workspaceDir,
-        preserveWorkspaceDirOnRefresh: !requestedWorkspaceResolution.isCanonicalWorkspace,
-      };
-      // Configless direct hosts reuse one bounded idle generation. Gateway and explicitly
-      // configured runs release dynamic workspaces so one-off paths cannot accumulate owners.
-      // Cold plugin loading and provider discovery can exceed the lane no-progress budget.
-      // Active runtime acquisition is progress, not a hung lane task.
-      const preparedModelRuntimeLease = await withEmbeddedRunLaneProgressHeartbeat(
-        noteLaneTaskProgress,
-        () =>
-          params.preparedModelRuntimeMode === "isolated-read-only"
-            ? acquireReadOnlyPreparedModelRuntime(preparedInput)
-            : acquireAgentRunPreparedModelRuntime(preparedInput, { retainIdleRunOwner }),
-      );
-      const preparedModelRuntimeOwnerSnapshot = preparedModelRuntimeLease.snapshot;
+      // Same-session reads below must see any prior deferred transcript rewrite.
+      // Checkpoint before the global lane so unrelated sessions can still start
+      // while this session waits on its own maintenance lane.
+      params.replyOperation?.markWaitingForDeferredMaintenance();
       try {
-        // A reload may complete while admission waits. The committed generation owns config,
-        // directories, model selection, hooks, fallbacks, and every later run projection.
-        const rebound = bindRunToPreparedModelRuntime({
-          runParams: params,
-          requestedWorkspaceResolution,
-          preparedModelRuntime: preparedModelRuntimeOwnerSnapshot,
-        });
-        params = rebound.runParams;
-        const workspaceResolution = rebound.workspaceResolution;
-        const repoRoot =
-          resolveSystemPromptRepoRoot({
-            config: rebound.runParams.config,
-            workspaceDir: workspaceResolution.workspaceDir,
-            cwd: rebound.runParams.cwd,
-          }) ?? null;
-        const projectKey = repoRoot ? await resolveProjectKey(repoRoot) : null;
-        const activeProjectKeys = prepareEmbeddedSessionActiveProjectKeys(
-          params.sessionId,
-          projectKey,
-        );
-        const preparedModelRuntime = Object.freeze({
-          ...preparedModelRuntimeOwnerSnapshot,
-          repoRoot,
-          projectKey,
-          activeProjectKeys,
-        });
-        const preparedAgentId = workspaceResolution.agentId;
-        const resolvedWorkspace = workspaceResolution.workspaceDir;
-        const agentDir = preparedModelRuntime.agentDir;
-        const progressController = createEmbeddedRunProgressController({
-          attempt: params,
-          noteLaneTaskProgress,
-          startedAtMs: started,
-        });
-        const { notifyExecutionPhase } = progressController;
-        const emitStartupStageSummary = createEmbeddedRunStageSummaryEmitter({
-          label: "startup stages",
-          log,
-          runId: params.runId,
-          sessionId: params.sessionId,
-          tracker: startupStages,
-        });
-        params.onExecutionStarted?.({ lifecycleGeneration });
-        notifyExecutionPhase("runner_entered");
-        const canonicalWorkspace = resolveUserPath(
-          resolveAgentWorkspaceDir(preparedModelRuntime.config, preparedAgentId),
-        );
-        const isCanonicalWorkspace = canonicalWorkspace === resolvedWorkspace;
-        const redactedSessionId = redactRunIdentifier(params.sessionId);
-        const redactedSessionKey = redactRunIdentifier(params.sessionKey);
-        const redactedWorkspace = redactRunIdentifier(resolvedWorkspace);
-        if (requestedWorkspaceResolution.usedFallback) {
-          log.warn(
-            `[workspace-fallback] caller=runEmbeddedAgent reason=${requestedWorkspaceResolution.fallbackReason} run=${params.runId} session=${redactedSessionId} sessionKey=${redactedSessionKey} agent=${preparedAgentId} workspace=${redactedWorkspace}`,
-          );
-        }
-        startupStages.mark("workspace");
-        notifyExecutionPhase("workspace");
-        ensureRuntimePluginsLoaded({
-          config: preparedModelRuntime.config,
-          workspaceDir: resolvedWorkspace,
-          ...(params.allowGatewaySubagentBinding !== undefined
-            ? { allowGatewaySubagentBinding: params.allowGatewaySubagentBinding }
-            : {}),
-        });
-        startupStages.mark("runtime-plugins");
-        notifyExecutionPhase("runtime_plugins");
-
-        const { provider, modelId } = resolveInitialEmbeddedRunModel({
-          config: params.config,
-          agentId: workspaceResolution.agentId,
-          provider: params.provider,
-          model: params.model,
-        });
-        const normalizedSessionKey = params.sessionKey?.trim();
-        const fallbackConfigured = hasEmbeddedRunConfiguredModelFallbacks({
-          cfg: params.config,
-          agentId: params.agentId,
-          sessionKey: normalizedSessionKey,
-          modelFallbacksOverride: params.modelFallbacksOverride,
-        });
-        const resolvedSessionKey =
-          normalizedSessionKey ?? params.sessionTarget?.sessionKey ?? params.sessionId;
-        const hookRunner = getGlobalHookRunner();
-        const hookCtx = {
-          runId: params.runId,
-          jobId: params.jobId,
-          agentId: workspaceResolution.agentId,
-          sessionKey: resolvedSessionKey,
-          sessionId: params.sessionId,
-          workspaceDir: resolvedWorkspace,
-          activeProjectKeys: [...activeProjectKeys],
-          modelProviderId: provider,
-          modelId,
-          trigger: params.trigger,
-          ...buildAgentHookContextChannelFields(params),
-          ...buildAgentHookContextIdentityFields({
-            trigger: params.trigger,
-            senderId: params.senderId,
-            chatId: params.chatId,
-            channelContext: params.channelContext,
-          }),
-        };
-        const hookResult = await runBeforeAgentReplyForTurn({
-          runId: params.runId,
-          trigger: params.trigger,
-          event: { cleanedBody: params.prompt },
-          context: hookCtx,
-          onDispatch: () =>
-            notifyExecutionPhase("before_agent_reply", { provider, model: modelId }),
-          onDeclined: () => notifyExecutionPhase("runtime_plugins", { provider, model: modelId }),
-        });
-        if (hookResult?.handled) {
-          return {
-            payloads: buildHandledBeforeAgentReplyPayloads(hookResult.reply),
-            meta: {
-              durationMs: Date.now() - started,
-              agentMeta: {
-                sessionId: params.sessionId,
-                provider,
-                model: modelId,
-              },
-              finalAssistantVisibleText: hookResult.reply?.text ?? SILENT_REPLY_TOKEN,
-              finalAssistantRawText: hookResult.reply?.text ?? SILENT_REPLY_TOKEN,
-            },
-          };
-        }
-
-        return await executePreparedEmbeddedRun({
-          runParams: params,
-          provider,
-          modelId,
-          agentDir,
-          workspaceResolution,
-          workspaceDir: resolvedWorkspace,
-          isCanonicalWorkspace,
-          globalLane,
-          hookRunner,
-          hookContext: hookCtx,
-          fallbackConfigured,
-          isProbeSession,
-          resolvedSessionKey,
-          resolvedToolResultFormat,
-          startedAtMs: started,
-          startupStages,
-          emitStartupStageSummary,
-          progressController,
-          laneController,
-          lifecycleGeneration,
-          suspendForFailure,
-          preparedModelRuntime,
-        });
+        await waitForDeferredTurnMaintenanceForSession(params.sessionKey);
       } finally {
-        preparedModelRuntimeLease.release();
+        params.replyOperation?.markDeferredMaintenanceWaitEnded();
       }
-    });
-  }).finally(() => {
+      throwIfAborted();
+      return enqueueGlobal(async () => {
+        throwIfAborted();
+        // Subscription-scoped claude-cli auth executes via the CLI backend;
+        // resolved post-admission so dispatched runs obey the same lifecycle,
+        // placement, and concurrency gates as native embedded runs.
+        const cliDispatched = isMemoryInvocationEnforced(params.memoryInvocationToken)
+          ? null
+          : await runEmbeddedAgentViaCliBackendIfEligible(params);
+        if (cliDispatched) {
+          return cliDispatched;
+        }
+        const started = Date.now();
+        const startupStages = createEmbeddedRunStageTracker();
+        const requestedWorkspaceResolution = resolveRunWorkspaceDir({
+          workspaceDir: params.workspaceDir,
+          sessionKey: params.sessionKey,
+          agentId: params.agentId,
+          config: params.config,
+        });
+        const config = params.config ?? EMPTY_EMBEDDED_AGENT_CONFIG;
+        const requestedAgentDir =
+          params.agentDir ?? resolveAgentDir(config, requestedWorkspaceResolution.agentId);
+        const retainIdleRunOwner = params.config === undefined;
+        const preparedInput = {
+          config,
+          agentId: requestedWorkspaceResolution.agentId,
+          agentDir: requestedAgentDir,
+          inheritedAuthDir: resolveDefaultAgentDir(config),
+          workspaceDir: requestedWorkspaceResolution.workspaceDir,
+          preserveWorkspaceDirOnRefresh: !requestedWorkspaceResolution.isCanonicalWorkspace,
+        };
+        // Configless direct hosts reuse one bounded idle generation. Gateway and explicitly
+        // configured runs release dynamic workspaces so one-off paths cannot accumulate owners.
+        // Cold plugin loading and provider discovery can exceed the lane no-progress budget.
+        // Active runtime acquisition is progress, not a hung lane task.
+        const preparedModelRuntimeLease = await withEmbeddedRunLaneProgressHeartbeat(
+          noteLaneTaskProgress,
+          () =>
+            params.preparedModelRuntimeMode === "isolated-read-only"
+              ? acquireReadOnlyPreparedModelRuntime(preparedInput)
+              : acquireAgentRunPreparedModelRuntime(preparedInput, { retainIdleRunOwner }),
+        );
+        const preparedModelRuntimeOwnerSnapshot = preparedModelRuntimeLease.snapshot;
+        try {
+          // A reload may complete while admission waits. The committed generation owns config,
+          // directories, model selection, hooks, fallbacks, and every later run projection.
+          const rebound = bindRunToPreparedModelRuntime({
+            runParams: params,
+            requestedWorkspaceResolution,
+            preparedModelRuntime: preparedModelRuntimeOwnerSnapshot,
+          });
+          params = rebound.runParams;
+          const workspaceResolution = rebound.workspaceResolution;
+          const repoRoot =
+            resolveSystemPromptRepoRoot({
+              config: rebound.runParams.config,
+              workspaceDir: workspaceResolution.workspaceDir,
+              cwd: rebound.runParams.cwd,
+            }) ?? null;
+          const projectKey = repoRoot ? await resolveProjectKey(repoRoot) : null;
+          const activeProjectKeys = prepareEmbeddedSessionActiveProjectKeys(
+            params.sessionId,
+            projectKey,
+          );
+          const preparedModelRuntime = Object.freeze({
+            ...preparedModelRuntimeOwnerSnapshot,
+            repoRoot,
+            projectKey,
+            activeProjectKeys,
+          });
+          const preparedAgentId = workspaceResolution.agentId;
+          const resolvedWorkspace = workspaceResolution.workspaceDir;
+          const agentDir = preparedModelRuntime.agentDir;
+          const progressController = createEmbeddedRunProgressController({
+            attempt: params,
+            noteLaneTaskProgress,
+            startedAtMs: started,
+          });
+          const { notifyExecutionPhase } = progressController;
+          const emitStartupStageSummary = createEmbeddedRunStageSummaryEmitter({
+            label: "startup stages",
+            log,
+            runId: params.runId,
+            sessionId: params.sessionId,
+            tracker: startupStages,
+          });
+          params.onExecutionStarted?.({ lifecycleGeneration });
+          notifyExecutionPhase("runner_entered");
+          const canonicalWorkspace = resolveUserPath(
+            resolveAgentWorkspaceDir(preparedModelRuntime.config, preparedAgentId),
+          );
+          const isCanonicalWorkspace = canonicalWorkspace === resolvedWorkspace;
+          const redactedSessionId = redactRunIdentifier(params.sessionId);
+          const redactedSessionKey = redactRunIdentifier(params.sessionKey);
+          const redactedWorkspace = redactRunIdentifier(resolvedWorkspace);
+          if (requestedWorkspaceResolution.usedFallback) {
+            log.warn(
+              `[workspace-fallback] caller=runEmbeddedAgent reason=${requestedWorkspaceResolution.fallbackReason} run=${params.runId} session=${redactedSessionId} sessionKey=${redactedSessionKey} agent=${preparedAgentId} workspace=${redactedWorkspace}`,
+            );
+          }
+          startupStages.mark("workspace");
+          notifyExecutionPhase("workspace");
+          ensureRuntimePluginsLoaded({
+            config: preparedModelRuntime.config,
+            workspaceDir: resolvedWorkspace,
+            ...(params.allowGatewaySubagentBinding !== undefined
+              ? { allowGatewaySubagentBinding: params.allowGatewaySubagentBinding }
+              : {}),
+          });
+          startupStages.mark("runtime-plugins");
+          notifyExecutionPhase("runtime_plugins");
+
+          if (memoryInvocationToken) {
+            await initializeMemoryInvocation({
+              token: memoryInvocationToken,
+              cfg: preparedModelRuntime.config,
+              agentId: workspaceResolution.agentId,
+              sessionId: params.sessionId,
+              sessionKey: params.sessionKey?.trim() || params.sessionId,
+              runId: params.runId,
+              messageChannel: params.messageChannel ?? params.messageProvider,
+              agentAccountId: params.agentAccountId,
+              messageTo: params.messageTo,
+              messageThreadId: params.messageThreadId,
+            });
+          }
+
+          const { provider, modelId } = resolveInitialEmbeddedRunModel({
+            config: params.config,
+            agentId: workspaceResolution.agentId,
+            provider: params.provider,
+            model: params.model,
+          });
+          const normalizedSessionKey = params.sessionKey?.trim();
+          const fallbackConfigured = hasEmbeddedRunConfiguredModelFallbacks({
+            cfg: params.config,
+            agentId: params.agentId,
+            sessionKey: normalizedSessionKey,
+            modelFallbacksOverride: params.modelFallbacksOverride,
+          });
+          const resolvedSessionKey =
+            normalizedSessionKey ?? params.sessionTarget?.sessionKey ?? params.sessionId;
+          const hookRunner = getGlobalHookRunner();
+          const hookCtx = {
+            runId: params.runId,
+            jobId: params.jobId,
+            agentId: workspaceResolution.agentId,
+            sessionKey: resolvedSessionKey,
+            sessionId: params.sessionId,
+            workspaceDir: resolvedWorkspace,
+            activeProjectKeys: [...activeProjectKeys],
+            modelProviderId: provider,
+            modelId,
+            trigger: params.trigger,
+            ...buildAgentHookContextChannelFields(params),
+            ...buildAgentHookContextIdentityFields({
+              trigger: params.trigger,
+              senderId: params.senderId,
+              chatId: params.chatId,
+              channelContext: params.channelContext,
+            }),
+          };
+          const hookResult = await runBeforeAgentReplyForTurn({
+            runId: params.runId,
+            trigger: params.trigger,
+            event: { cleanedBody: params.prompt },
+            context: hookCtx,
+            onDispatch: () =>
+              notifyExecutionPhase("before_agent_reply", { provider, model: modelId }),
+            onDeclined: () => notifyExecutionPhase("runtime_plugins", { provider, model: modelId }),
+          });
+          if (hookResult?.handled) {
+            return {
+              payloads: buildHandledBeforeAgentReplyPayloads(hookResult.reply),
+              meta: {
+                durationMs: Date.now() - started,
+                agentMeta: {
+                  sessionId: params.sessionId,
+                  provider,
+                  model: modelId,
+                },
+                finalAssistantVisibleText: hookResult.reply?.text ?? SILENT_REPLY_TOKEN,
+                finalAssistantRawText: hookResult.reply?.text ?? SILENT_REPLY_TOKEN,
+              },
+            };
+          }
+
+          return await executePreparedEmbeddedRun({
+            runParams: params,
+            provider,
+            modelId,
+            agentDir,
+            workspaceResolution,
+            workspaceDir: resolvedWorkspace,
+            isCanonicalWorkspace,
+            globalLane,
+            hookRunner,
+            hookContext: hookCtx,
+            fallbackConfigured,
+            isProbeSession,
+            resolvedSessionKey,
+            resolvedToolResultFormat,
+            startedAtMs: started,
+            startupStages,
+            emitStartupStageSummary,
+            progressController,
+            laneController,
+            lifecycleGeneration,
+            suspendForFailure,
+            preparedModelRuntime,
+          });
+        } finally {
+          preparedModelRuntimeLease.release();
+        }
+      });
+    }),
+  ).finally(() => {
     revokeMessageActionTurnCapability(recoveryMessageActionTurnCapability);
   });
 }

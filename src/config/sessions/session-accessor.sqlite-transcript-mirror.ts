@@ -7,10 +7,12 @@ import type { OpenClawAgentDatabase } from "../../state/openclaw-agent-db.js";
 import type { TranscriptEvent } from "./session-accessor.sqlite-contract.js";
 import {
   loadSqliteTranscriptEventsFromDatabase,
+  loadVisibleSqliteTranscriptEventsFromDatabase,
   readTranscriptEventMessage,
 } from "./session-accessor.sqlite-read.js";
 import { getSessionKysely } from "./session-accessor.sqlite-scope.js";
 import { readMessageIdempotencyKey } from "./session-accessor.sqlite-transcript-store.js";
+import { isTranscriptMemoryPolicyEnforcedInDatabase } from "./session-transcript-memory-policy.js";
 
 // Keep supplied-key probes below SQLite's conservative variable ceiling.
 const TRANSCRIPT_MIRROR_KEY_QUERY_BATCH_SIZE = 900;
@@ -78,6 +80,12 @@ function readTranscriptMirrorFactsInSnapshot(
     idempotencyKeys: readonly string[];
   },
 ): TranscriptMirrorFacts {
+  if (isTranscriptMemoryPolicyEnforcedInDatabase(database.db)) {
+    return readMirrorFactsFromEvents(
+      loadVisibleSqliteTranscriptEventsFromDatabase(database, sessionId),
+      new Set(params.idempotencyKeys),
+    );
+  }
   const idempotencyKeys = [...new Set(params.idempotencyKeys)];
   const fallbackEvents = loadTranscriptEventsForMirrorFallback(database, sessionId);
   if (fallbackEvents !== undefined) {

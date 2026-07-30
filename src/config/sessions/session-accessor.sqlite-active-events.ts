@@ -35,6 +35,7 @@ import {
   normalizeVisibleMessageLimit,
   parseVisibleMessageCursor,
 } from "./session-accessor.sqlite-visible-cursor.js";
+import { activeTranscriptProjectionContainsUnauthorizedRows } from "./session-transcript-index.js";
 import type { SessionTranscriptProjectionState } from "./session-transcript-index.js";
 import { SessionTranscriptProjectionUnavailableError } from "./session-transcript-projection-error.js";
 import { startSessionTranscriptIndexReconcile } from "./session-transcript-reconcile.js";
@@ -126,7 +127,9 @@ function readProjectionSnapshot(
             activeMessageCount: row.active_message_count ?? 0,
             indexedSeq: row.indexed_seq,
             leafEventId: row.leaf_event_id,
-            needsRebuild: row.needs_rebuild !== 0,
+            needsRebuild:
+              row.needs_rebuild !== 0 ||
+              activeTranscriptProjectionContainsUnauthorizedRows(database.db, sessionId),
           },
         }
       : {}),

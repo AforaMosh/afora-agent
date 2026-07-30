@@ -9,6 +9,11 @@ import type {
   MemoryAuthorizationCapabilities,
 } from "../memory-host-sdk/host/authorization.js";
 import type { MemorySearchManager } from "../memory-host-sdk/host/types.js";
+import { isMemoryIsolationCutoverAgent } from "./memory-cutover.js";
+import {
+  isMemoryInvocationEnforced,
+  type MemoryInvocationToken,
+} from "./memory-invocation-token.js";
 
 const log = createSubsystemLogger("plugins/memory-state");
 
@@ -18,6 +23,7 @@ export type MemoryPromptSectionParams = {
   agentId?: string;
   agentSessionKey?: string;
   sandboxed?: boolean;
+  memoryInvocationToken?: MemoryInvocationToken;
 };
 
 export type MemoryPromptSectionBuilder = (params: MemoryPromptSectionParams) => string[];
@@ -38,6 +44,7 @@ export type PreparedMemoryPromptSection = Readonly<{
     agentId?: string;
     agentSessionKey?: string;
     sandboxed: boolean;
+    memoryInvocationEnforced: boolean;
   }>;
   lines: readonly string[];
 }>;
@@ -82,6 +89,7 @@ export type MemoryCorpusSupplement = {
     agentId?: string;
     agentSessionKey?: string;
     sandboxed?: boolean;
+    memoryInvocationToken?: MemoryInvocationToken;
   }): Promise<MemoryCorpusSearchResult[]>;
   get(params: {
     lookup: string;
@@ -90,6 +98,7 @@ export type MemoryCorpusSupplement = {
     agentId?: string;
     agentSessionKey?: string;
     sandboxed?: boolean;
+    memoryInvocationToken?: MemoryInvocationToken;
   }): Promise<MemoryCorpusGetResult | null>;
 };
 
@@ -300,10 +309,21 @@ export function registerMemoryPromptPreparation(
   memoryPluginState.promptPreparations = next;
 }
 
+function isMemoryPromptIsolationEnforced(params: MemoryPromptSectionParams): boolean {
+  const agentId = params.agentId?.trim();
+  return (
+    isMemoryInvocationEnforced(params.memoryInvocationToken) ||
+    (agentId !== undefined && agentId.length > 0 && isMemoryIsolationCutoverAgent(agentId))
+  );
+}
+
 function buildSynchronousMemoryPromptSection(params: MemoryPromptSectionParams): {
   primary: string[];
   supplements: Array<{ pluginId: string; lines: string[] }>;
 } {
+  if (isMemoryPromptIsolationEnforced(params)) {
+    return { primary: [], supplements: [] };
+  }
   const primary = normalizeMemoryPromptLines(
     memoryPluginState.capability?.capability.promptBuilder?.(params) ?? [],
   );
@@ -326,6 +346,7 @@ function cloneMemoryPromptSectionParams(
     agentId: params.agentId,
     agentSessionKey: params.agentSessionKey,
     sandboxed: params.sandboxed,
+    memoryInvocationToken: params.memoryInvocationToken,
   };
 }
 
@@ -338,6 +359,7 @@ function snapshotMemoryPromptContext(
     agentId: params.agentId,
     agentSessionKey: params.agentSessionKey,
     sandboxed: params.sandboxed === true,
+    memoryInvocationEnforced: isMemoryPromptIsolationEnforced(params),
   });
 }
 
@@ -351,6 +373,7 @@ function preparedMemoryPromptContextMatches(
     prepared.context.agentId === current.agentId &&
     prepared.context.agentSessionKey === current.agentSessionKey &&
     prepared.context.sandboxed === current.sandboxed &&
+    prepared.context.memoryInvocationEnforced === current.memoryInvocationEnforced &&
     prepared.context.availableTools.length === current.availableTools.length &&
     prepared.context.availableTools.every((tool, index) => tool === current.availableTools[index])
   );
@@ -365,7 +388,9 @@ export async function prepareMemoryPromptSection(
   const synchronous = buildSynchronousMemoryPromptSection(
     cloneMemoryPromptSectionParams(runParams),
   );
-  const preparationRegistrations = [...memoryPluginState.promptPreparations];
+  const preparationRegistrations = isMemoryPromptIsolationEnforced(runParams)
+    ? []
+    : [...memoryPluginState.promptPreparations];
   const preparedSupplements = await Promise.all(
     preparationRegistrations.map(async (registration) => ({
       pluginId: registration.pluginId,
@@ -436,6 +461,9 @@ export function resolveMemoryFlushPlan(params: {
   cfg?: OpenClawConfig;
   nowMs?: number;
 }): MemoryFlushPlan | null {
+  if (isMemoryInvocationEnforced()) {
+    return null;
+  }
   return memoryPluginState.capability?.capability.flushPlanResolver?.(params) ?? null;
 }
 export function getMemoryRuntime(): MemoryPluginRuntime | undefined {
@@ -449,24 +477,34 @@ export function hasMemoryRuntime(): boolean {
 function cloneMemoryPublicArtifact(
   artifact: MemoryPluginPublicArtifact,
 ): MemoryPluginPublicArtifact {
-  const agentIds = Array.isArray(artifact.agentIds) ? artifact.agentIds : [];
   return {
-    ...artifact,
-    agentIds: [...agentIds],
+    kind: artifact.kind,
+    workspaceDir: artifact.workspaceDir,
+    relativePath: artifact.relativePath,
+    absolutePath: artifact.absolutePath,
+    agentIds: [...artifact.agentIds],
+    contentType: artifact.contentType,
   };
 }
 
-// The sort below dereferences these fields, so a plugin-supplied artifact
-// missing any of them would crash every status/bridge consumer.
-function isValidMemoryPublicArtifact(
-  artifact: MemoryPluginPublicArtifact | null | undefined,
-): artifact is MemoryPluginPublicArtifact {
+function isValidMemoryPublicArtifact(artifact: unknown): artifact is MemoryPluginPublicArtifact {
+  if (!artifact || typeof artifact !== "object" || Array.isArray(artifact)) {
+    return false;
+  }
+  const record = artifact as Record<string, unknown>;
+  const agentIds = record.agentIds;
+  const contentType = record.contentType;
   return (
-    typeof artifact?.kind === "string" &&
-    typeof artifact.workspaceDir === "string" &&
-    typeof artifact.relativePath === "string" &&
-    typeof artifact.absolutePath === "string" &&
-    typeof artifact.contentType === "string"
+    [record.kind, record.workspaceDir, record.relativePath, record.absolutePath].every(
+      (value) => typeof value === "string" && value.trim().length > 0,
+    ) &&
+    (contentType === "markdown" || contentType === "json" || contentType === "text") &&
+    Array.isArray(agentIds) &&
+    agentIds.length > 0 &&
+    agentIds.every(
+      (agentId) => typeof agentId === "string" && agentId.length > 0 && agentId === agentId.trim(),
+    ) &&
+    new Set(agentIds).size === agentIds.length
   );
 }
 
@@ -483,32 +521,35 @@ export async function listActiveMemoryPublicArtifacts(params: {
   const artifacts = listed.filter(isValidMemoryPublicArtifact);
   if (artifacts.length < listed.length) {
     log.warn(
-      `ignoring ${listed.length - artifacts.length} malformed public memory artifact(s) from plugin "${pluginId}": artifacts must include string kind, workspaceDir, relativePath, absolutePath, and contentType`,
+      `ignoring ${listed.length - artifacts.length} malformed public memory artifact(s) from plugin "${pluginId}": artifacts require non-empty paths, a supported content type, and unique non-empty agentIds`,
     );
   }
-  return artifacts.map(cloneMemoryPublicArtifact).toSorted((left, right) => {
-    const workspaceOrder = left.workspaceDir.localeCompare(right.workspaceDir);
-    if (workspaceOrder !== 0) {
-      return workspaceOrder;
-    }
-    const relativePathOrder = left.relativePath.localeCompare(right.relativePath);
-    if (relativePathOrder !== 0) {
-      return relativePathOrder;
-    }
-    const kindOrder = left.kind.localeCompare(right.kind);
-    if (kindOrder !== 0) {
-      return kindOrder;
-    }
-    const contentTypeOrder = left.contentType.localeCompare(right.contentType);
-    if (contentTypeOrder !== 0) {
-      return contentTypeOrder;
-    }
-    const agentOrder = left.agentIds.join("\0").localeCompare(right.agentIds.join("\0"));
-    if (agentOrder !== 0) {
-      return agentOrder;
-    }
-    return left.absolutePath.localeCompare(right.absolutePath);
-  });
+  return artifacts
+    .filter((artifact) => !artifact.agentIds.some(isMemoryIsolationCutoverAgent))
+    .map(cloneMemoryPublicArtifact)
+    .toSorted((left, right) => {
+      const workspaceOrder = left.workspaceDir.localeCompare(right.workspaceDir);
+      if (workspaceOrder !== 0) {
+        return workspaceOrder;
+      }
+      const relativePathOrder = left.relativePath.localeCompare(right.relativePath);
+      if (relativePathOrder !== 0) {
+        return relativePathOrder;
+      }
+      const kindOrder = left.kind.localeCompare(right.kind);
+      if (kindOrder !== 0) {
+        return kindOrder;
+      }
+      const contentTypeOrder = left.contentType.localeCompare(right.contentType);
+      if (contentTypeOrder !== 0) {
+        return contentTypeOrder;
+      }
+      const agentOrder = left.agentIds.join("\0").localeCompare(right.agentIds.join("\0"));
+      if (agentOrder !== 0) {
+        return agentOrder;
+      }
+      return left.absolutePath.localeCompare(right.absolutePath);
+    });
 }
 
 export function restoreMemoryPluginState(state: MemoryPluginState): void {

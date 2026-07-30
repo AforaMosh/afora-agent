@@ -2,6 +2,7 @@
 import fs from "node:fs/promises";
 import type { Command } from "commander";
 import { callGatewayFromCli } from "openclaw/plugin-sdk/gateway-runtime";
+import { resolveDefaultAgentId } from "openclaw/plugin-sdk/memory-core-host-runtime-core";
 import { parseStrictPositiveInteger } from "openclaw/plugin-sdk/number-runtime";
 import {
   isRecord,
@@ -19,6 +20,7 @@ import {
 } from "./chatgpt-import.js";
 import { compileMemoryWikiVault } from "./compile.js";
 import {
+  isMemoryWikiReadIsolationUnavailable,
   resolveMemoryWikiAgentConfig,
   WIKI_SEARCH_BACKENDS,
   WIKI_SEARCH_CORPORA,
@@ -985,7 +987,17 @@ export function registerWikiCli(program: Command, registration: MemoryWikiCliReg
     const requestedAgentId = wiki.opts<WikiCommandOptions>().agent?.trim() || undefined;
     const currentAppConfig = registration.getAppConfig?.();
     const config = resolveConfig(requestedAgentId, currentAppConfig);
-    const agentId = config.agentId ?? requestedAgentId;
+    const agentId =
+      config.agentId ?? requestedAgentId ?? resolveDefaultAgentId(currentAppConfig ?? {});
+    if (
+      isMemoryWikiReadIsolationUnavailable({
+        config,
+        appConfig: currentAppConfig,
+        agentId,
+      })
+    ) {
+      throw new Error("memory unavailable");
+    }
     commandContext = {
       config,
       ...(currentAppConfig ? { appConfig: currentAppConfig } : {}),

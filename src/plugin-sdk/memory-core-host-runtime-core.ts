@@ -14,6 +14,14 @@ export { resolveCronStyleNow } from "../agents/current-time.js";
 export { resolveDefaultAgentId, resolveSessionAgentIds } from "../agents/agent-scope.js";
 export { resolveMemorySearchConfig } from "../agents/memory-search.js";
 export { resolveMemoryDreamingPluginConfig } from "../memory-host-sdk/dreaming.js";
+export type { MemoryInvocationToken } from "../plugins/memory-invocation.js";
+export {
+  isMemoryInvocationEnforced,
+  MEMORY_INVOCATION_UNAVAILABLE,
+  readAuthorizedMemoryForInvocation,
+  searchAuthorizedMemoryForInvocation,
+} from "../plugins/memory-invocation.js";
+export { isMemoryIsolationCutoverAgent } from "../plugins/memory-cutover.js";
 export { parseNonNegativeByteSize } from "../config/byte-size.js";
 export { getRuntimeConfig } from "../config/config.js";
 export type { OpenClawConfig } from "../config/config.js";

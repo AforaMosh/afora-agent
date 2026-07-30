@@ -5,7 +5,10 @@ import {
   errorShape,
   type GatewayRequestHandlerOptions,
 } from "openclaw/plugin-sdk/gateway-runtime";
-import { resolveSessionAgentIds } from "openclaw/plugin-sdk/memory-core-host-runtime-core";
+import {
+  isMemoryIsolationCutoverAgent,
+  resolveSessionAgentIds,
+} from "openclaw/plugin-sdk/memory-core-host-runtime-core";
 import { resolveMemoryRemDreamingConfig } from "openclaw/plugin-sdk/memory-core-host-status";
 import { resolvePluginConfigObject } from "openclaw/plugin-sdk/plugin-config-runtime";
 import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
@@ -97,6 +100,9 @@ function resolveExecutionContext(api: OpenClawPluginApi, agentId: string) {
   }
   if (!configuredAgentIds.includes(agentId)) {
     throw new InvalidSessionBackfillRequestError(`Unknown agent id "${agentId}".`);
+  }
+  if (isMemoryIsolationCutoverAgent(agentId)) {
+    throw new Error("memory unavailable");
   }
   const workspaceDir = api.runtime.agent.resolveAgentWorkspaceDir(config, agentId);
   const remConfig = resolveMemoryRemDreamingConfig({

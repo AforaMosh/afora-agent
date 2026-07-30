@@ -2,6 +2,7 @@ import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { isUsageCountedSessionTranscriptFileName } from "openclaw/plugin-sdk/memory-core-host-engine-qmd";
+import { isMemoryIsolationCutoverAgent } from "openclaw/plugin-sdk/memory-core-host-runtime-core";
 import type { PluginStateLeaseRunner } from "openclaw/plugin-sdk/plugin-state-runtime";
 import { buildAgentSessionKey } from "openclaw/plugin-sdk/routing";
 import {
@@ -165,6 +166,13 @@ async function withMemoryManagerForAgent(params: {
   withLease?: PluginStateLeaseRunner;
   run: (manager: MemoryManager) => Promise<void>;
 }): Promise<void> {
+  if (isMemoryIsolationCutoverAgent(params.agentId)) {
+    defaultRuntime.error(
+      "Memory is unavailable for this agent until scoped operator access is enabled.",
+    );
+    process.exitCode = 1;
+    return;
+  }
   const managerParams: Parameters<typeof getMemorySearchManager>[0] = {
     cfg: params.cfg,
     agentId: params.agentId,

@@ -25,12 +25,13 @@ import type {
   SqliteSessionEntryRemovalPlan,
 } from "./session-accessor.sqlite-lifecycle-types.js";
 import { normalizeSqliteNumber } from "./session-accessor.sqlite-normalize.js";
-import { loadSqliteTranscriptEventsFromDatabase } from "./session-accessor.sqlite-read.js";
+import { loadVisibleSqliteTranscriptEventsFromDatabase } from "./session-accessor.sqlite-read.js";
 import { collectSqliteSessionStateIdsForEntry } from "./session-accessor.sqlite-references.js";
 import { cloneSessionEntry, getSessionKysely } from "./session-accessor.sqlite-scope.js";
 import { parseSqliteSessionEntryJson as parseSessionEntryRow } from "./session-accessor.sqlite-status.js";
 import { buildSessionResetBoundaryPlan } from "./session-reset-boundary-event.js";
 import { deleteSessionTranscriptIndexInTransaction } from "./session-transcript-index.js";
+import { readAuthorizedTranscriptEventSeqs } from "./session-transcript-memory-policy.js";
 import { serializeJsonlLines } from "./transcript-jsonl.js";
 import type { SessionEntry } from "./types.js";
 
@@ -188,14 +189,18 @@ function readSqliteTranscriptArchiveLines(
   sessionId: string,
 ): string[] {
   const db = getSessionKysely(database.db);
-  return executeSqliteQuerySync(
+  const rows = executeSqliteQuerySync(
     database.db,
     db
       .selectFrom("transcript_events")
-      .select("event_json")
+      .select(["event_json", "seq"])
       .where("session_id", "=", sessionId)
       .orderBy("seq", "asc"),
-  ).rows.map((row) => row.event_json);
+  ).rows;
+  const authorizedSeqs = readAuthorizedTranscriptEventSeqs(database.db, sessionId);
+  return rows
+    .filter((row) => !authorizedSeqs || authorizedSeqs.has(row.seq))
+    .map((row) => row.event_json);
 }
 
 export function planSqliteSessionStateDeleteIfUnreferenced(params: {
@@ -362,7 +367,10 @@ export async function projectSqliteSessionEntryLifecycleMutation(
     const resetBoundaryPlan =
       upsert.resetBoundaryReason && expectedEntry?.sessionId
         ? await buildSessionResetBoundaryPlan({
-            events: loadSqliteTranscriptEventsFromDatabase(database, expectedEntry.sessionId),
+            events: loadVisibleSqliteTranscriptEventsFromDatabase(
+              database,
+              expectedEntry.sessionId,
+            ),
             reason: upsert.resetBoundaryReason,
           })
         : undefined;

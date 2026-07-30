@@ -47,7 +47,7 @@ import {
   planSqliteSessionStateAfterEntryRemoval,
   readReferencedSqliteSessionIdsAfterTargetMutation,
 } from "./session-accessor.sqlite-lifecycle-state.js";
-import { loadSqliteTranscriptEventsFromDatabase } from "./session-accessor.sqlite-read.js";
+import { loadVisibleSqliteTranscriptEventsFromDatabase } from "./session-accessor.sqlite-read.js";
 import {
   cloneSessionEntry,
   resolveSqliteReadScope,
@@ -173,7 +173,10 @@ export async function resetSqliteSessionEntryLifecycle(
         current?.entry.sessionId &&
         !sqliteSessionEntriesEqual(current.entry, nextEntry)
           ? await buildSessionResetBoundaryPlan({
-              events: loadSqliteTranscriptEventsFromDatabase(database, current.entry.sessionId),
+              events: loadVisibleSqliteTranscriptEventsFromDatabase(
+                database,
+                current.entry.sessionId,
+              ),
               reason: params.resetBoundaryReason,
             })
           : undefined;

@@ -12,6 +12,7 @@ import {
 } from "./memory-access-context.js";
 import { admitMemoryAuthorizationReadRuntime } from "./memory-authorization-runtime.js";
 import { emitMemoryAuthorizationShadowSurfaceInspection } from "./memory-authorization-shadow.js";
+import { isMemoryIsolationCutoverAgent } from "./memory-cutover.js";
 import { getMemoryRuntime } from "./memory-state.js";
 import { ensureStandaloneRuntimePluginRegistryLoaded } from "./runtime/standalone-runtime-registry-loader.js";
 
@@ -78,6 +79,9 @@ export async function getActiveMemorySearchManager(params: {
   agentId: string;
   purpose?: "default" | "status" | "cli";
 }) {
+  if (isMemoryIsolationCutoverAgent(params.agentId)) {
+    return { manager: null, error: "memory unavailable" };
+  }
   const runtime = ensureMemoryRuntime(params.cfg);
   if (!runtime) {
     return { manager: null, error: "memory plugin unavailable" };
