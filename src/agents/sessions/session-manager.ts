@@ -145,8 +145,16 @@ export class SessionManager extends SessionManagerBranching {
     tokensBefore: number,
     details?: unknown,
     fromHook?: boolean,
+    sourceEntryIds?: readonly string[],
   ): string {
-    return super.appendCompaction(summary, firstKeptEntryId, tokensBefore, details, fromHook);
+    return super.appendCompaction(
+      summary,
+      firstKeptEntryId,
+      tokensBefore,
+      details,
+      fromHook,
+      sourceEntryIds,
+    );
   }
 
   override appendResetBoundary(reason: ResetReason, firstKeptEntryId?: string): string {

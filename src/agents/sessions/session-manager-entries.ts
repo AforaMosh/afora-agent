@@ -138,7 +138,11 @@ export class SessionManagerEntries extends SessionManagerPersistence {
     tokensBefore: number,
     details?: unknown,
     fromHook?: boolean,
+    sourceEntryIds?: readonly string[],
   ): string {
+    const normalizedSourceEntryIds = sourceEntryIds
+      ? [...new Set(sourceEntryIds.map((entryId) => entryId.trim()).filter(Boolean))]
+      : undefined;
     const entry: CompactionEntry = {
       type: "compaction",
       id: generateSessionEntryId(this.byId),
@@ -146,6 +150,7 @@ export class SessionManagerEntries extends SessionManagerPersistence {
       timestamp: new Date().toISOString(),
       summary,
       firstKeptEntryId,
+      ...(normalizedSourceEntryIds?.length ? { sourceEntryIds: normalizedSourceEntryIds } : {}),
       tokensBefore,
       details,
       fromHook,

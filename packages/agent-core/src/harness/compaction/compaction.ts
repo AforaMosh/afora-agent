@@ -702,6 +702,8 @@ export async function generateSummary(
 export interface CompactionPreparation {
   /** Entry id where retained history starts. */
   firstKeptEntryId: string;
+  /** Immutable session-entry ids whose content can enter this compaction model call. */
+  sourceEntryIds: string[];
   /** Messages summarized into the history summary. */
   messagesToSummarize: AgentMessage[];
   /** Prefix messages summarized separately when compaction splits a turn. */
@@ -741,12 +743,16 @@ export function prepareCompaction(
   }
 
   let previousSummary: string | undefined;
+  const sourceEntryIds = new Set<string>();
   let effectiveEntries = pathEntries;
   let resetPreludeMessages: AgentMessage[] = [];
   let boundaryStart = 0;
   if (prevBoundaryIndex >= 0) {
     const prevBoundary = pathEntries[prevBoundaryIndex];
     previousSummary = prevBoundary?.type === "compaction" ? prevBoundary.summary : undefined;
+    if (prevBoundary?.type === "compaction") {
+      sourceEntryIds.add(prevBoundary.id);
+    }
     const firstKeptEntryId =
       prevBoundary?.type === "compaction" || prevBoundary?.type === "reset"
         ? prevBoundary.firstKeptEntryId
@@ -759,6 +765,9 @@ export function prepareCompaction(
           : [];
       resetPreludeMessages = keptEntries.flatMap((entry) => {
         const message = getMessageFromEntryForCompaction(entry);
+        if (message) {
+          sourceEntryIds.add(entry.id);
+        }
         return message ? [message] : [];
       });
       effectiveEntries = pathEntries.slice(prevBoundaryIndex + 1);
@@ -818,6 +827,7 @@ export function prepareCompaction(
     const msg = entry ? getMessageFromEntryForCompaction(entry) : undefined;
     if (msg) {
       messagesToSummarize.push(msg);
+      sourceEntryIds.add(entry.id);
     }
   }
   const turnPrefixMessages: AgentMessage[] = [];
@@ -827,6 +837,7 @@ export function prepareCompaction(
       const msg = entry ? getMessageFromEntryForCompaction(entry) : undefined;
       if (msg) {
         turnPrefixMessages.push(msg);
+        sourceEntryIds.add(entry.id);
       }
     }
   }
@@ -842,6 +853,7 @@ export function prepareCompaction(
 
   return ok({
     firstKeptEntryId,
+    sourceEntryIds: [...sourceEntryIds],
     messagesToSummarize,
     turnPrefixMessages,
     isSplitTurn: cutPoint.isSplitTurn,

@@ -48,6 +48,7 @@ import {
   composeSplitTurnInstructions,
   resolveCompactionInstructions,
 } from "./compaction-instructions.js";
+import { isCompactionMemoryPolicyEnforced } from "./compaction-memory-policy.js";
 import {
   appendSummarySection,
   auditSummaryQuality,
@@ -1078,6 +1079,13 @@ export default function compactionSafeguardExtension(api: ExtensionAPI): void {
     let hasRealSummarizable = containsRealConversation(baseMessagesToSummarize);
     let hasRealTurnPrefix = containsRealConversation(baseTurnPrefixMessages);
     if (!hasRealSummarizable && !hasRealTurnPrefix) {
+      if (isCompactionMemoryPolicyEnforced(ctx.sessionManager)) {
+        setCompactionSafeguardCancelReason(
+          ctx.sessionManager,
+          "Compaction cancelled because its prepared transcript sources do not contain conversation content.",
+        );
+        return { cancel: true };
+      }
       const branchMessages = filterReplayUnsafeSessionBranchMessages(
         stripRuntimeContextCustomMessages(collectSessionBranchMessages(ctx.sessionManager)),
       );

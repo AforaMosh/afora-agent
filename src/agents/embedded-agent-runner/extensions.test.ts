@@ -3,6 +3,7 @@ import type { SessionManager } from "openclaw/plugin-sdk/agent-sessions";
 import type { Model } from "openclaw/plugin-sdk/llm";
 import { describe, expect, it, vi } from "vitest";
 import type { OpenClawConfig } from "../../config/config.js";
+import compactionMemoryPolicyExtension from "../agent-hooks/compaction-memory-policy.js";
 import { getCompactionSafeguardRuntime } from "../agent-hooks/compaction-safeguard-runtime.js";
 import compactionSafeguardExtension from "../agent-hooks/compaction-safeguard.js";
 import contextPruningExtension from "../agent-hooks/context-pruning.js";
@@ -46,6 +47,7 @@ function expectSafeguardRuntime(
 ) {
   const { factories, sessionManager } = buildSafeguardFactories(cfg);
 
+  expect(factories[0]).toBe(compactionMemoryPolicyExtension);
   expect(factories).toContain(compactionSafeguardExtension);
   const runtime = getCompactionSafeguardRuntime(sessionManager);
   expect(runtime?.contextWindowTokens).toBe(200_000);
@@ -143,6 +145,7 @@ describe("buildEmbeddedExtensionFactories", () => {
       model: { api: "anthropic-messages", contextWindow: 200_000 } as Model,
     });
 
+    expect(factories[0]).toBe(compactionMemoryPolicyExtension);
     expect(factories).toContain(contextPruningExtension);
   });
 });
