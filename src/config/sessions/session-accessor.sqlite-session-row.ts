@@ -201,6 +201,7 @@ function deriveSessionTitleFromEventJson(
 export function refreshSqliteSessionTitleProjection(
   database: DatabaseSync,
   sessionId: string,
+  onChanged?: () => void,
 ): void {
   const db = getNodeSqliteKysely<SessionTitleDatabase>(database);
   const rows = executeSqliteQuerySync(
@@ -210,6 +211,7 @@ export function refreshSqliteSessionTitleProjection(
       .select(["session_key", "current_session_id", "entry_json", "updated_at", "display_name"])
       .where("current_session_id", "=", sessionId),
   ).rows;
+  let changed = false;
   for (const row of rows) {
     const entry = parseSqliteSessionEntryJson(row);
     if (!entry) {
@@ -224,7 +226,11 @@ export function refreshSqliteSessionTitleProjection(
           .set({ display_name: title })
           .where("session_key", "=", row.session_key),
       );
+      changed = true;
     }
+  }
+  if (changed) {
+    onChanged?.();
   }
 }
 

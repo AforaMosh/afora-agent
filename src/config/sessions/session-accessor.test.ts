@@ -698,6 +698,13 @@ describe("session accessor seam", () => {
       storePath,
     };
     await replaceSessionEntry(scope, { sessionId: scope.sessionId, updatedAt: 10 });
+    expect(
+      getSessionProjectedTitle(
+        listSessionEntries({ agentId: "main", storePath }).find(
+          ({ sessionKey }) => sessionKey === scope.sessionKey,
+        )?.entry,
+      ),
+    ).not.toBe("Investigate the session list query");
     await appendTranscriptMessage(scope, {
       message: { role: "user", content: "Investigate the session list query" },
     });

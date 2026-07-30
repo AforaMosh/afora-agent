@@ -358,6 +358,7 @@ function rebuildSessionTranscriptIndexInTransaction(
 export function reconcileSessionTranscriptIndexInTransaction(
   db: DatabaseSync,
   sessionId: string,
+  onTitleChanged?: () => void,
 ): boolean {
   const latest = executeSqliteQueryTakeFirstSync(
     db,
@@ -393,7 +394,7 @@ export function reconcileSessionTranscriptIndexInTransaction(
       createdAt: row.created_at,
     })),
   );
-  refreshSqliteSessionTitleProjection(db, sessionId);
+  refreshSqliteSessionTitleProjection(db, sessionId, onTitleChanged);
   return true;
 }
 
