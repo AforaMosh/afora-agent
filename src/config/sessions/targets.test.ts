@@ -30,6 +30,16 @@ async function resolveRealStorePath(sessionsDir: string): Promise<string> {
   return path.resolve(path.join(sessionsDir, "sessions.json"));
 }
 
+function agentMainScope(agentId: string, storePath: string, env?: NodeJS.ProcessEnv) {
+  const normalizedAgentId = normalizeAgentId(agentId);
+  return {
+    agentId: normalizedAgentId,
+    ...(env ? { env } : {}),
+    storePath,
+    sessionKey: `agent:${normalizedAgentId}:main`,
+  };
+}
+
 async function createAgentSessionStores(
   root: string,
   agentIds: string[],
@@ -39,14 +49,10 @@ async function createAgentSessionStores(
     const sessionsDir = path.join(root, "agents", agentId, "sessions");
     const storePath = path.join(sessionsDir, "sessions.json");
     await fs.mkdir(sessionsDir, { recursive: true });
-    await replaceSessionEntry(
-      {
-        agentId: normalizeAgentId(agentId),
-        storePath,
-        sessionKey: `agent:${normalizeAgentId(agentId)}:main`,
-      },
-      { sessionId: "sid", updatedAt: Date.now() },
-    );
+    await replaceSessionEntry(agentMainScope(agentId, storePath), {
+      sessionId: "sid",
+      updatedAt: Date.now(),
+    });
     storePaths[agentId] = await resolveRealStorePath(sessionsDir);
   }
   return storePaths;
@@ -511,10 +517,10 @@ describe("resolveSessionStoreTargets", () => {
         session: { store: storePath },
         agents: { entries: { main: { default: true }, ops: {} } },
       };
-      await replaceSessionEntry(
-        { agentId: "main", env, storePath, sessionKey: "agent:main:main" },
-        { sessionId: "main-session", updatedAt: 1 },
-      );
+      await replaceSessionEntry(agentMainScope("main", storePath, env), {
+        sessionId: "main-session",
+        updatedAt: 1,
+      });
       unregisterOpenClawAgentDatabase({ agentId: "main", env, path: databasePath });
 
       expect(resolveExistingAgentSessionStoreTargetsSync(cfg, "ops", { env })).toEqual([]);
@@ -876,19 +882,11 @@ describe("resolveAllAgentSessionStoreTargetsSync", () => {
       await fs.mkdir(mainSessionsDir, { recursive: true });
       await fs.mkdir(retiredSessionsDir, { recursive: true });
       await replaceSessionEntry(
-        {
-          agentId: "main",
-          storePath: path.join(mainSessionsDir, "sessions.json"),
-          sessionKey: "agent:main:main",
-        },
+        agentMainScope("main", path.join(mainSessionsDir, "sessions.json")),
         { sessionId: "sid-main", updatedAt: Date.now() },
       );
       await replaceSessionEntry(
-        {
-          agentId: "retired",
-          storePath: path.join(retiredSessionsDir, "sessions.json"),
-          sessionKey: "agent:retired:main",
-        },
+        agentMainScope("retired", path.join(retiredSessionsDir, "sessions.json")),
         { sessionId: "sid-retired", updatedAt: Date.now() },
       );
 
@@ -974,35 +972,19 @@ describe("resolveAllAgentSessionStoreTargetsSync", () => {
       await fs.mkdir(collisionSessionsDir, { recursive: true });
       await fs.mkdir(whitespaceSessionsDir, { recursive: true });
       await replaceSessionEntry(
-        {
-          agentId: "main",
-          storePath: path.join(mainSessionsDir, "sessions.json"),
-          sessionKey: "agent:main:main",
-        },
+        agentMainScope("main", path.join(mainSessionsDir, "sessions.json")),
         { sessionId: "sid-main", updatedAt: Date.now() },
       );
       await replaceSessionEntry(
-        {
-          agentId: "main",
-          storePath: path.join(junkSessionsDir, "sessions.json"),
-          sessionKey: "agent:main:main",
-        },
+        agentMainScope("main", path.join(junkSessionsDir, "sessions.json")),
         { sessionId: "sid-junk", updatedAt: Date.now() },
       );
       await replaceSessionEntry(
-        {
-          agentId: "main",
-          storePath: path.join(collisionSessionsDir, "sessions.json"),
-          sessionKey: "agent:main:main",
-        },
+        agentMainScope("main", path.join(collisionSessionsDir, "sessions.json")),
         { sessionId: "sid-collision", updatedAt: Date.now() },
       );
       await replaceSessionEntry(
-        {
-          agentId: "main",
-          storePath: path.join(whitespaceSessionsDir, "sessions.json"),
-          sessionKey: "agent:main:main",
-        },
+        agentMainScope("main", path.join(whitespaceSessionsDir, "sessions.json")),
         { sessionId: "sid-whitespace", updatedAt: Date.now() },
       );
 
