@@ -240,13 +240,20 @@ function selectCanonicalSessionCandidate(
     sourceAgentId: first.agentId,
   });
   const selected = mergeCanonicalSessionEntryCandidates(
-    candidates.map((candidate) => ({
-      entry: candidate.entry,
-      preferred:
-        candidate.sqlitePath === destination.sqlitePath &&
-        candidate.sessionKey === candidate.canonicalKey,
-      value: candidate,
-    })),
+    candidates
+      .toSorted((left, right) =>
+        Buffer.compare(
+          Buffer.from(`${left.sqlitePath}\0${left.sessionKey}`, "utf8"),
+          Buffer.from(`${right.sqlitePath}\0${right.sessionKey}`, "utf8"),
+        ),
+      )
+      .map((candidate) => ({
+        entry: candidate.entry,
+        preferred:
+          candidate.sqlitePath === destination.sqlitePath &&
+          candidate.sessionKey === candidate.canonicalKey,
+        value: candidate,
+      })),
   );
   return selected ? { ...selected, destination } : undefined;
 }

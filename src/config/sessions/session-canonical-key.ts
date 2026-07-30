@@ -299,7 +299,10 @@ export function mergeCanonicalSessionEntryCandidates<T>(
         (candidate.preferred === true
           ? !selected.preferred
           : !selected.preferred &&
-            JSON.stringify(candidate.entry).localeCompare(JSON.stringify(selected.entry)) > 0));
+            Buffer.compare(
+              Buffer.from(JSON.stringify(candidate.entry), "utf8"),
+              Buffer.from(JSON.stringify(selected.entry), "utf8"),
+            ) > 0));
     if (incomingWins) {
       selected = {
         entry: structuredClone(candidate.entry),
