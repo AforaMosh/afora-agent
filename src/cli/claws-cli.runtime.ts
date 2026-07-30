@@ -10,6 +10,7 @@ import {
   CLAW_ADD_RESULT_SCHEMA_VERSION,
   ClawAddMutationError,
 } from "../claws/add.js";
+import { planClawExtensions } from "../claws/application-plan.js";
 import { assertExperimentalClawsEnabled } from "../claws/experimental.js";
 import {
   CLAW_EXPORT_RESULT_SCHEMA_VERSION,
@@ -195,25 +196,46 @@ export async function runClawsInspectCommand(
     return;
   }
 
+  const extensionPlan = await planClawExtensions({
+    extensions: result.openClawProfile?.extensions ?? [],
+    workspace: result.source.packageRoot,
+    packagePreflight: preflightClawPackage,
+  });
+  const diagnostics = [...result.diagnostics, ...extensionPlan.blockers];
+  const valid = extensionPlan.blockers.length === 0;
   const payload = {
     schemaVersion: CLAW_INSPECT_RESULT_SCHEMA_VERSION,
     stability: CLAW_OUTPUT_STABILITY,
-    valid: true,
+    valid,
     source: result.source,
     manifest: result.manifest,
     ...(result.openClawProfile ? { openClawProfile: result.openClawProfile } : {}),
-    diagnostics: result.diagnostics,
+    extensions: extensionPlan.extensions,
+    diagnostics,
   };
   if (opts.json) {
     writeRuntimeJson(runtime, payload);
+    if (!valid) {
+      runtime.exit(1);
+    }
     return;
   }
   logExperimentalWarning(runtime);
   runtime.log(`Claw: ${result.source.name}@${result.source.version}`);
   runtime.log(`Agent: ${result.manifest.agent.name ?? result.manifest.agent.id}`);
   runtime.log(`Packages: ${result.manifest.packages.length}`);
+  runtime.log(`Extensions: ${extensionPlan.extensions.length}`);
+  for (const extension of extensionPlan.extensions) {
+    runtime.log(
+      `  ${extension.id}: ${extension.detectedFormat ?? "unresolved"} -> ${(extension.mapped ?? []).join(", ") || "no mapped capabilities"}`,
+    );
+  }
   runtime.log(`MCP servers: ${Object.keys(result.manifest.mcpServers).length}`);
   runtime.log(`Cron jobs: ${result.manifest.cronJobs.length}`);
+  if (!valid) {
+    runtime.error(formatDiagnostics(extensionPlan.blockers));
+    runtime.exit(1);
+  }
 }
 
 export async function runClawsAddCommand(

@@ -3,6 +3,8 @@ import type { PluginBundleFormat } from "./manifest-types.js";
 
 export type PluginArtifactFormat = "openclaw" | PluginBundleFormat;
 
+export const OPENCLAW_PLUGIN_ADAPTER_IDENTITY = "openclaw/v1" as const;
+
 export type PluginInstallArtifactInspection = {
   format: PluginArtifactFormat;
   mapped: string[];

@@ -110,6 +110,34 @@ The conventional profile is limited to 256 KiB, must be JSON-compatible YAML, ma
 not use aliases, anchors, tags, or merge keys, and must be a regular,
 non-symlinked, non-hardlinked file inside the package.
 
+An OpenClaw profile may also bind harness-specific extension packages:
+
+```yaml
+schemaVersion: 1
+agent: {}
+extensions:
+  - id: incident-tools
+    kind: plugin
+    format: claude
+    source: clawhub
+    ref: "@acme/incident-tools"
+    version: 2.0.0
+```
+
+`format` asserts the artifact format that OpenClaw must detect (`openclaw`,
+`claude`, `codex`, or `cursor`). The canonical plugin preflight resolves the
+exact artifact and reports which components the current OpenClaw adapter maps
+and which remain unavailable. Missing identity, integrity, format detection, or
+adapter identity blocks apply. Extension-backed plugins use the existing
+plugin installer and ownership model; they are not a second package system.
+
+OpenClaw ignores foreign harness profiles during apply. Package integrity still
+covers every published package byte, while a development snapshot binds the
+portable manifest, bootstrap and workspace sources, and the selected OpenClaw
+profile. Status and doctor report adapter mapping drift or unavailable
+inspection. Export writes extension-backed plugins to `profiles/openclaw.yml`
+and does not duplicate them in the portable `packages` list.
+
 Package and workspace paths must remain inside the package root. Manifests are
 limited to 1 MiB, package metadata to 256 KiB, and workspace sources enforce
 separate per-file and aggregate limits. Workspace sources also reject symlinked
@@ -222,7 +250,9 @@ removal follow the same ownership policy as other Claw resources.
 
 ## Inspect and preview
 
-Validate the source without planning local changes:
+Validate the source without planning local changes. For OpenClaw profile
+extensions, inspect also performs the canonical read-only artifact probe and
+reports mapped and unavailable components:
 
 ```bash
 openclaw claws inspect ./incident-triage.claw.json
