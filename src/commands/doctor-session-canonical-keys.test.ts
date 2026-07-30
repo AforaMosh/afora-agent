@@ -1,5 +1,6 @@
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { buildConversationIdentity } from "../config/sessions/conversation-identity.js";
 import { resolveStorePath } from "../config/sessions/paths.js";
 import {
   loadTranscriptEvents,
@@ -479,6 +480,17 @@ describe("doctor canonical session-key repair", () => {
            WHERE session_key = ?`,
         )
         .run("agent:main:main");
+      const repairConversation = buildConversationIdentity({
+        accountId: "work",
+        channel: "matrix",
+        deliveryTarget: "!Recovered:example.org",
+        kind: "group",
+        peerId: "!Recovered:example.org",
+        threadId: "thread-root",
+      });
+      if (!repairConversation) {
+        throw new Error("expected repair conversation identity");
+      }
       database.db
         .prepare(
           `INSERT INTO conversations (
@@ -486,17 +498,21 @@ describe("doctor canonical session-key repair", () => {
              thread_id, created_at, updated_at
            ) VALUES (?, 'matrix', 'work', 'group', ?, ?, 'thread-root', 10, 10)`,
         )
-        .run("conv-repair", "!Recovered:example.org", "!Recovered:example.org");
+        .run(
+          repairConversation.conversationRef,
+          "!Recovered:example.org",
+          "!Recovered:example.org",
+        );
       database.db
         .prepare(
           `UPDATE session_windows
              SET agent_harness_id = 'codex', chat_type = 'group', ended_at = 24,
                  model = 'gpt-5.4', model_provider = 'openai',
                  previous_session_id = 'previous-generation',
-                 primary_conversation_id = 'conv-repair', started_at = 23
+                 primary_conversation_id = ?, started_at = 23
            WHERE session_id = 'legacy'`,
         )
-        .run();
+        .run(repairConversation.conversationRef);
 
       expect(await repairCanonicalSessionKeys({ apply: true, cfg, env })).toMatchObject({
         foundGroups: 1,
