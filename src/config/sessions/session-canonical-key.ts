@@ -127,7 +127,7 @@ function canonicalSessionKeyTokensEqual(
 }
 
 export function assertCanonicalSqliteSessionKeysCurrent(
-  database: Pick<OpenClawAgentDatabase, "agentId" | "db">,
+  database: { agentId: string; db: DatabaseSync },
   mainKey?: string,
 ): CanonicalSessionKeyToken {
   const token = readCanonicalSessionKeyToken(database.db);
@@ -181,7 +181,7 @@ export function assertCanonicalSqliteSessionKeysCurrent(
 }
 
 export function setCanonicalSqliteSessionMainKey(
-  database: Pick<OpenClawAgentDatabase, "db">,
+  database: { db: DatabaseSync },
   mainKey: string | undefined,
 ): void {
   const canonicalMainKey = normalizeMainKey(mainKey);
@@ -208,7 +208,7 @@ export function setCanonicalSqliteSessionMainKey(
 }
 
 export function canonicalSqliteSessionKeyTokenIsCurrent(
-  database: Pick<OpenClawAgentDatabase, "db">,
+  database: { db: DatabaseSync },
   token: CanonicalSessionKeyToken,
 ): boolean {
   return canonicalSessionKeyTokensEqual(token, readCanonicalSessionKeyToken(database.db));
