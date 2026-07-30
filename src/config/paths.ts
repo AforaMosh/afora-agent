@@ -139,16 +139,13 @@ export function isDefaultInstallIdentity(
   homedir: () => string = resolveSystemAccountHomeDir,
 ): boolean {
   const accountHome = resolveRequiredHomeDir({}, homedir);
-  // OPENCLAW_HOME relocates every OpenClaw path default, and a named profile owns
-  // its own service label and canonical `.openclaw-<profile>` paths. Both are
-  // install identities that manage their own service. HOME is not: a copied home
-  // must not adopt the host service.
-  const installHome = resolveRequiredHomeDir(
-    { OPENCLAW_HOME: env.OPENCLAW_HOME },
-    () => accountHome,
-  );
-  const installHomedir = () => installHome;
-  const canonicalStateDir = path.join(installHome, profileStateDirName(env));
+  // Profiles have distinct host-service names; relocated homes do not. Keep
+  // OPENCLAW_HOME isolated so an alternate state tree cannot adopt that service.
+  if (env.OPENCLAW_HOME?.trim()) {
+    return false;
+  }
+  const accountHomedir = () => accountHome;
+  const canonicalStateDir = path.join(accountHome, profileStateDirName(env));
   if (
     normalizePathForComparison(resolveStateDir(env, envHomedir(env))) !==
     normalizePathForComparison(canonicalStateDir)
@@ -160,14 +157,13 @@ export function isDefaultInstallIdentity(
   }
   const defaultConfigEnv = {
     ...env,
-    HOME: installHome,
-    OPENCLAW_HOME: undefined,
+    HOME: accountHome,
     OPENCLAW_STATE_DIR: canonicalStateDir,
     OPENCLAW_CONFIG_PATH: undefined,
   };
   return (
     normalizePathForComparison(resolveConfigPathCandidate(env, envHomedir(env))) ===
-    normalizePathForComparison(resolveConfigPathCandidate(defaultConfigEnv, installHomedir))
+    normalizePathForComparison(resolveConfigPathCandidate(defaultConfigEnv, accountHomedir))
   );
 }
 
