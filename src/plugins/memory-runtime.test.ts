@@ -1,5 +1,6 @@
 /** Covers plugin memory provider runtime loading and registration contracts. */
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { MemoryAccessContextFacts } from "./memory-access-context.js";
 
 const resolveRuntimePluginRegistryMock =
   vi.fn<typeof import("./loader.js").resolveRuntimePluginRegistry>();
@@ -55,8 +56,67 @@ vi.mock("./memory-authorization-shadow.js", () => ({
 
 let getActiveMemorySearchManager: typeof import("./memory-runtime.js").getActiveMemorySearchManager;
 let resolveActiveMemoryBackendConfig: typeof import("./memory-runtime.js").resolveActiveMemoryBackendConfig;
+let authorizeActiveMemoryAccess: typeof import("./memory-runtime.js").authorizeActiveMemoryAccess;
 let closeActiveMemorySearchManager: typeof import("./memory-runtime.js").closeActiveMemorySearchManager;
 let closeActiveMemorySearchManagers: typeof import("./memory-runtime.js").closeActiveMemorySearchManagers;
+
+async function createTrustedReadContext() {
+  const { createMemoryAccessContextFactory } = await import("./memory-access-context.js");
+  const identity = {
+    sessionId: "session-1",
+    sessionIdentityRevision: "session-revision-1",
+    subjectRevision: "subject-revision-1",
+    subject: {
+      version: 1 as const,
+      kind: "user" as const,
+      principalId: "principal-owner",
+      creationEvidence: {
+        kind: "gateway-profile" as const,
+        revision: "creation-revision-1",
+      },
+    },
+  };
+  const create = createMemoryAccessContextFactory({
+    readCurrentSessionIdentity: async () => identity,
+    now: () => Date.parse("2026-07-29T12:00:00.000Z"),
+  });
+  return await create({
+    contextId: "context-1",
+    requestId: "request-1",
+    runId: "run-1",
+    agentId: "main",
+    sessionKey: "agent:main:main",
+    sessionId: identity.sessionId,
+    sessionIdentityRevision: identity.sessionIdentityRevision,
+    subjectRevision: identity.subjectRevision,
+    subject: identity.subject,
+    actor: {
+      kind: "principal",
+      actorKind: "human",
+      principalId: "principal-owner",
+      assurance: "gateway-profile",
+      evidenceRevision: "actor-revision-1",
+    },
+    verifiedPrincipals: [
+      {
+        principalId: "principal-owner",
+        assurance: "gateway-profile",
+        evidenceRevision: "principal-revision-1",
+      },
+    ],
+    delivery: {
+      sinkKind: "private",
+      audiences: [{ kind: "user", id: "principal-owner" }],
+      egressCapabilityIds: ["reply.final"],
+      egressRegistryRevision: "egress-revision-1",
+      deliveryRevision: "delivery-revision-1",
+    },
+    collaboration: { kind: "not-applicable" },
+    verifiedMemberships: [],
+    operation: "read",
+    hostFactsRevision: "host-facts-revision-1",
+  } satisfies MemoryAccessContextFacts);
+}
 
 function createMemoryAutoEnableFixture() {
   const rawConfig = {
@@ -159,6 +219,7 @@ describe("memory runtime auto-enable loading", () => {
     ({
       getActiveMemorySearchManager,
       resolveActiveMemoryBackendConfig,
+      authorizeActiveMemoryAccess,
       closeActiveMemorySearchManager,
       closeActiveMemorySearchManagers,
     } = await import("./memory-runtime.js"));
@@ -342,6 +403,27 @@ describe("memory runtime auto-enable loading", () => {
     expect(runtime.getMemorySearchManager).toHaveBeenCalledWith(params);
     expect(emitMemoryAuthorizationShadowSurfaceInspectionMock).toHaveBeenCalledOnce();
     expect(emitMemoryAuthorizationShadowSurfaceInspectionMock).toHaveBeenCalledWith(runtime);
+  });
+
+  it("fails closed for QMD authorization without acquiring the legacy manager", async () => {
+    const getMemorySearchManager = vi.fn(async () => ({ manager: null, error: "legacy path" }));
+    const runtime = {
+      getMemorySearchManager,
+      resolveMemoryBackendConfig: vi.fn(() => ({ backend: "qmd" as const })),
+    };
+    getMemoryRuntimeMock.mockReturnValue(runtime);
+
+    await expect(
+      authorizeActiveMemoryAccess({
+        cfg: {} as never,
+        context: await createTrustedReadContext(),
+      }),
+    ).resolves.toEqual({
+      runtime: null,
+      plan: null,
+      error: "authorized memory backend unavailable",
+    });
+    expect(getMemorySearchManager).not.toHaveBeenCalled();
   });
 
   it.each([

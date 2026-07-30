@@ -205,8 +205,8 @@ export function readPluginSdkSurfaceBudgets(env = process.env) {
       // +2: shared ingress error factory through channel-outbound and channel-message.
       // +2: shared ingress retention defaults through channel-outbound and channel-message.
       // +1: collision-safe MCP server-name assignment for native harness catalogs.
-      // +45: multiplayer-memory authorization shapes, runtime contract, and conformance types.
-      4819,
+      // +46: multiplayer-memory authorization shapes, runtime contract, conformance, and search handles.
+      4820,
       env,
     ),
     publicFunctionExports: readPluginSdkSurfaceBudgetEnv(

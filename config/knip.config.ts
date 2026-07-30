@@ -364,6 +364,10 @@ const config = {
     "src/gateway/board-view-ticket.ts": ["exports"],
     // Focused startup tests consume this explicit seam; production imports only the bootstrap.
     "src/gateway/server-startup-bootstrap.ts": ["exports"],
+    // Focused memory-authorization tests consume these context-branding and admission seams;
+    // the full-tree companion scan still verifies every exported test contract has a caller.
+    "src/plugins/memory-access-context.ts": ["exports", "types"],
+    "src/plugins/memory-runtime.ts": ["exports"],
     // Focused media tests consume these explicit seams; production uses the helpers in-module.
     "src/agents/embedded-agent-subscribe.handlers.lifecycle.ts": ["exports"],
     "src/gateway/server-methods/chat-webchat-media.ts": ["exports"],
