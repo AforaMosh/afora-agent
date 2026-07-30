@@ -45,7 +45,6 @@ async function installedFixture(
       name: "Worker",
       ...(options.avatar ? { identity: { avatar: options.avatar } } : {}),
     },
-    metadata: { "openclaw.config": "profiles/openclaw.yml" },
     workspace: {
       bootstrapFiles: { "SOUL.md": { source: "source/SOUL.md" } },
       files: [
@@ -199,7 +198,6 @@ describe("exportClawAgent", () => {
       manifest: {
         schemaVersion: 1,
         agent: { id: "worker", name: "Worker" },
-        metadata: { "openclaw.config": "profiles/openclaw.yml" },
         workspace: {
           bootstrapFiles: {},
           files: [{ source: "workspace/reference/policy.md", path: "reference/policy.md" }],
@@ -267,6 +265,11 @@ describe("exportClawAgent", () => {
       throw new Error(JSON.stringify(exported.diagnostics));
     }
     expect(exported.clawMarkdownBody?.toString("utf8")).toBe("managed soul\n");
+    expect(exported.manifest.metadata).toEqual({});
+    expect(exported.openClawProfile).toMatchObject({
+      schemaVersion: 1,
+      agent: { tools: { profile: "coding" } },
+    });
     expect(exported.manifest.workspace.bootstrapFiles).not.toHaveProperty("SOUL.md");
     await expect(readFile(join(out, "profiles", "openclaw.yml"), "utf8")).resolves.toContain(
       "profile: coding",

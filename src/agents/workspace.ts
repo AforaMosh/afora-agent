@@ -19,6 +19,7 @@ import {
 } from "../memory/root-memory-files.js";
 import { runCommandWithTimeout } from "../process/exec.js";
 import { isCronSessionKey, isSubagentSessionKey } from "../routing/session-key.js";
+import type { OpenClawStateDatabaseOptions } from "../state/openclaw-state-db.js";
 import { resolveUserPath } from "../utils.js";
 import {
   MAX_WORKSPACE_BOOTSTRAP_FILE_BYTES,
@@ -624,8 +625,11 @@ async function workspaceSetupStateHasSurvivalEvidence(params: {
   ].every((fileName) => generatedHashes.has(fileName));
 }
 
-function readCanonicalWorkspaceStateSnapshot(dir: string): WorkspaceStateSnapshot {
-  const snapshot = readWorkspaceStateSnapshot(dir);
+function readCanonicalWorkspaceStateSnapshot(
+  dir: string,
+  options: OpenClawStateDatabaseOptions = {},
+): WorkspaceStateSnapshot {
+  const snapshot = readWorkspaceStateSnapshot(dir, options);
   assertNoUnmigratedWorkspaceState({
     workspaceDir: dir,
   });
@@ -639,9 +643,10 @@ export async function isWorkspaceSetupCompleted(dir: string): Promise<boolean> {
 
 export async function resolveWorkspaceBootstrapStatus(
   dir: string,
+  options: OpenClawStateDatabaseOptions = {},
 ): Promise<"pending" | "complete"> {
   const resolvedDir = resolveUserPath(dir);
-  const state = readCanonicalWorkspaceStateSnapshot(resolvedDir).setup;
+  const state = readCanonicalWorkspaceStateSnapshot(resolvedDir, options).setup;
   if (typeof state.setupCompletedAt === "string" && state.setupCompletedAt.trim().length > 0) {
     return "complete";
   }
@@ -651,6 +656,89 @@ export async function resolveWorkspaceBootstrapStatus(
     return "complete";
   }
   return "pending";
+}
+
+export class WorkspaceBootstrapSeedConflictError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "WorkspaceBootstrapSeedConflictError";
+  }
+}
+
+export async function seedWorkspaceBootstrap(params: {
+  dir: string;
+  content: Buffer;
+  nowMs?: number;
+  stateOptions?: OpenClawStateDatabaseOptions;
+}): Promise<"seeded" | "already-seeded" | "consumed"> {
+  if (params.content.byteLength > MAX_WORKSPACE_BOOTSTRAP_FILE_BYTES) {
+    throw new WorkspaceBootstrapSeedConflictError(
+      `BOOTSTRAP.md exceeds ${MAX_WORKSPACE_BOOTSTRAP_FILE_BYTES} bytes.`,
+    );
+  }
+  let text: string;
+  try {
+    text = new TextDecoder("utf-8", { fatal: true }).decode(params.content);
+  } catch {
+    throw new WorkspaceBootstrapSeedConflictError("BOOTSTRAP.md must be valid UTF-8.");
+  }
+  if (text.trim().length === 0) {
+    throw new WorkspaceBootstrapSeedConflictError("BOOTSTRAP.md must not be empty.");
+  }
+
+  const dir = resolveUserPath(params.dir);
+  const bootstrapPath = path.join(dir, DEFAULT_BOOTSTRAP_FILENAME);
+  const initialState = readCanonicalWorkspaceStateSnapshot(dir, params.stateOptions).setup;
+  if (initialState.setupCompletedAt) {
+    return "consumed";
+  }
+  const bootstrapExists = await pathExists(bootstrapPath);
+  if (initialState.bootstrapSeededAt && !bootstrapExists) {
+    return "consumed";
+  }
+
+  await fs.mkdir(dir, { recursive: true });
+  let created = false;
+  if (!bootstrapExists) {
+    try {
+      await fs.writeFile(bootstrapPath, params.content, { flag: "wx" });
+      created = true;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "EEXIST") {
+        throw error;
+      }
+    }
+  }
+
+  if (!created) {
+    const existing = await readWorkspaceFileWithGuards({
+      filePath: bootstrapPath,
+      workspaceDir: dir,
+    });
+    if (!existing.ok) {
+      throw new WorkspaceBootstrapSeedConflictError(
+        "Existing BOOTSTRAP.md could not be read safely.",
+      );
+    }
+    if (!Buffer.from(existing.content, "utf8").equals(params.content)) {
+      throw new WorkspaceBootstrapSeedConflictError(
+        "Existing BOOTSTRAP.md differs from the consented Claw bootstrap.",
+      );
+    }
+  }
+
+  if (!initialState.bootstrapSeededAt) {
+    const nowMs = params.nowMs ?? Date.now();
+    mergeWorkspaceSetupState(
+      dir,
+      {
+        bootstrapSeededAt: new Date(nowMs).toISOString(),
+      },
+      nowMs,
+      params.stateOptions,
+    );
+  }
+  return created ? "seeded" : "already-seeded";
 }
 
 export async function isWorkspaceBootstrapPending(dir: string): Promise<boolean> {

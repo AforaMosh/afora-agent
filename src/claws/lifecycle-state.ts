@@ -64,6 +64,7 @@ type ClawRemoveResult = {
   status: "complete" | "partial";
   agentId: string;
   agentRemoved: boolean;
+  bootstrap?: RemovedWorkspaceFile;
   workspaceFiles: RemovedWorkspaceFile[];
   packages: ClawPackageRemovalResult[];
   mcpServers: RemovedMcpServer[];
@@ -109,6 +110,12 @@ export async function buildClawRemovePlan(
         message: `${file.path}: ${file.message ?? "unsafe file"}`,
       });
     }
+  }
+  if (record?.install.bootstrap && ["unsafe", "unknown"].includes(record.bootstrap.state)) {
+    blockers.push({
+      code: "bootstrap_cleanup_uncertain",
+      message: `BOOTSTRAP.md has ${record.bootstrap.state} ownership state and must be reconciled before removal.`,
+    });
   }
   for (const server of record?.mcpServers ?? []) {
     if (server.state === "pending") {
@@ -157,12 +164,18 @@ export async function buildClawRemovePlan(
       record.install.agentId,
       record.install.workspace,
     );
-    const workspaceHasModifiedFiles = record.workspaceFiles.some(
-      (file) => file.state === "modified",
-    );
+    const workspaceHasModifiedFiles =
+      record.workspaceFiles.some((file) => file.state === "modified") ||
+      record.bootstrap.state === "modified";
+    const trackedWorkspacePaths = [
+      ...record.workspaceFiles.map((file) => file.path),
+      ...(record.install.bootstrap && record.bootstrap.state === "pending"
+        ? [record.bootstrap.path]
+        : []),
+    ];
     const workspaceHasUntrackedEntries = await workspaceContainsUntrackedEntries(
       record.install.workspace,
-      record.workspaceFiles.map((file) => file.path),
+      trackedWorkspacePaths,
     );
     const attachedJobs = readAttachedCronJobs(record.install.agentId, options);
     const ownedSchedulerJobIds = new Set(
@@ -291,6 +304,28 @@ export async function buildClawRemovePlan(
         ...(file.state === "modified"
           ? { reason: "Local content changed; preserve the file." }
           : {}),
+      });
+    }
+    if (record.install.bootstrap) {
+      const bootstrapBlocked =
+        record.bootstrap.state === "unsafe" || record.bootstrap.state === "unknown";
+      actions.push({
+        kind: "bootstrap",
+        id: record.bootstrap.path,
+        action: record.bootstrap.state === "pending" ? "delete" : "retain",
+        target: `${record.bootstrap.workspace}:${record.bootstrap.path}`,
+        blocked: bootstrapBlocked,
+        details: {
+          expectedState: record.bootstrap.state,
+          contentDigest: record.install.bootstrap.contentDigest,
+          sourcePath: record.install.bootstrap.sourcePath,
+          lifecycle: "native-seed-once",
+        },
+        ...(record.bootstrap.state === "modified"
+          ? { reason: "Local bootstrap content changed; preserve the file." }
+          : record.bootstrap.state === "complete"
+            ? { reason: "Native onboarding already consumed the bootstrap." }
+            : {}),
       });
     }
     actions.push(...packagePlan.actions);
@@ -435,6 +470,8 @@ export async function applyClawRemovePlan(
   if (
     !record ||
     record.agentState === "modified" ||
+    (record.install.bootstrap &&
+      (record.bootstrap.state === "unsafe" || record.bootstrap.state === "unknown")) ||
     record.workspaceFiles.some((file) => file.state === "unsafe") ||
     record.mcpServers.some((server) => server.state === "pending")
   ) {
@@ -625,9 +662,24 @@ export async function applyClawRemovePlan(
   for (const file of record.workspaceFiles) {
     workspaceFiles.push(await removeClawWorkspaceFile(file));
   }
+  const bootstrap = record.install.bootstrap
+    ? record.bootstrap.state === "pending"
+      ? await removeClawWorkspaceFile({
+          workspace: record.bootstrap.workspace,
+          path: record.bootstrap.path,
+          contentDigest: record.install.bootstrap.contentDigest,
+          state: "unchanged",
+        })
+      : record.bootstrap.state === "modified"
+        ? { path: record.bootstrap.path, action: "retainedModified" as const }
+        : { path: record.bootstrap.path, action: "missing" as const }
+    : undefined;
   const cleanupErrors = workspaceFiles
     .filter((file) => file.action === "error")
     .map((file) => file.message ?? `Could not remove ${file.path}.`);
+  if (bootstrap?.action === "error") {
+    cleanupErrors.push(bootstrap.message ?? `Could not remove ${bootstrap.path}.`);
+  }
   if (cleanupErrors.length === 0 && cleanupTargets && committedNextConfig) {
     const workspaceHasRemainingEntries = await workspaceContainsUntrackedEntries(
       cleanupTargets.workspaceDir,
@@ -642,6 +694,7 @@ export async function applyClawRemovePlan(
         trashPath: options.trashPath,
         retainWorkspace:
           workspaceHasRemainingEntries ||
+          bootstrap?.action === "retainedModified" ||
           workspaceFiles.some((file) => file.action === "retainedModified"),
       })),
     );
@@ -658,6 +711,7 @@ export async function applyClawRemovePlan(
     status: complete ? "complete" : "partial",
     agentId: plan.agentId,
     agentRemoved,
+    ...(bootstrap ? { bootstrap } : {}),
     workspaceFiles,
     packages,
     mcpServers,
@@ -673,3 +727,5 @@ export async function applyClawRemovePlan(
         }),
   };
 }
+
+/* oxlint-disable max-lines -- Existing lifecycle owner is split in a follow-up. */
