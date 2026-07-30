@@ -89,14 +89,11 @@ export function normalizeSqliteStatus(value: unknown): SessionEntryStatus | null
     : null;
 }
 
-export function parseSqliteSessionEntryJson(
-  row: {
-    current_session_id?: string;
-    entry_json: string;
-    updated_at?: number;
-  },
-  hydratePromotedColumns = false,
-): SessionEntry | null {
+export function parseSqliteSessionEntryJson(row: {
+  current_session_id?: string;
+  entry_json: string;
+  updated_at?: number;
+}): SessionEntry | null {
   try {
     const parsed = JSON.parse(row.entry_json) as unknown;
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
@@ -121,15 +118,8 @@ export function parseSqliteSessionEntryJson(
     if (!storedSessionId || storedUpdatedAt === undefined) {
       return null;
     }
-    const entry = projectCanonicalSessionEntryShape(
-      hydratePromotedColumns
-        ? {
-            ...record,
-            sessionId: storedSessionId,
-            updatedAt: storedUpdatedAt,
-          }
-        : record,
-    );
+    // entry_json is the canonical record; promoted columns select rows but never override it.
+    const entry = projectCanonicalSessionEntryShape(record);
     return typeof entry.sessionId === "string" ? entry : null;
   } catch {
     return null;
@@ -378,7 +368,7 @@ function querySqliteSessionEntriesInSnapshot(
           return [...pinned, ...unpinned];
         })();
   const entries = rows.flatMap((row) => {
-    const entry = parseSqliteSessionEntryJson(row, true);
+    const entry = parseSqliteSessionEntryJson(row);
     if (!entry) {
       return [];
     }

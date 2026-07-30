@@ -68,6 +68,14 @@ export function assertCanonicalSessionKeyWrite(sessionKey: string, expectedAgent
   }
 }
 
+export function assertCanonicalSessionEntryLineageWrite(entry: SessionEntry): void {
+  for (const sessionKey of [entry.parentSessionKey, entry.spawnedBy]) {
+    if (sessionKey !== undefined) {
+      assertCanonicalSessionKeyWrite(sessionKey);
+    }
+  }
+}
+
 export function assertCanonicalSessionKeyWriteMatchesDatabase(
   database: { db: DatabaseSync },
   sessionKey: string,

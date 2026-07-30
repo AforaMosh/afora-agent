@@ -287,15 +287,18 @@ describe("doctor canonical session-key repair", () => {
         agents: { list: [{ id: "main", default: true }] },
         session: { store: storeTemplate },
       } as OpenClawConfig;
-      replaceSessionEntrySync(
-        { agentId: "main", env, sessionKey: "agent:main:child", storePath },
-        {
+      insertLegacySession({
+        agentId: "main",
+        env,
+        sessionKey: "agent:main:child",
+        storePath,
+        entry: {
           parentSessionKey: "Agent:Main:Parent ",
           sessionId: "child",
           spawnedBy: " ",
           updatedAt: 10,
         },
-      );
+      });
 
       expect(await repairCanonicalSessionKeys({ apply: true, cfg, env })).toMatchObject({
         foundGroups: 1,

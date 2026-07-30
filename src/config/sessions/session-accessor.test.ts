@@ -1198,6 +1198,32 @@ describe("session accessor seam", () => {
     ]);
   });
 
+  it("rejects non-canonical lineage without poisoning the store", async () => {
+    const sessionKey = "agent:main:child";
+    for (const entry of [{ parentSessionKey: "Agent:Main:Parent " }, { spawnedBy: " " }]) {
+      await expect(
+        replaceSessionEntry(
+          { agentId: "main", sessionKey, storePath },
+          { ...entry, sessionId: "child", updatedAt: 10 },
+        ),
+      ).rejects.toThrow("openclaw doctor --fix");
+    }
+    expect(loadSessionEntry({ agentId: "main", sessionKey, storePath })).toBeUndefined();
+
+    await replaceSessionEntry(
+      { agentId: "main", sessionKey, storePath },
+      {
+        parentSessionKey: "agent:main:parent",
+        sessionId: "child",
+        updatedAt: 10,
+      },
+    );
+    expect(loadSessionEntry({ agentId: "main", sessionKey, storePath })).toMatchObject({
+      parentSessionKey: "agent:main:parent",
+      sessionId: "child",
+    });
+  });
+
   it("does not persist abort target changes when the entry is absent", async () => {
     const result = await markSessionAbortTarget({
       scope: {

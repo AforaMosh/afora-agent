@@ -211,7 +211,7 @@ export function refreshSqliteSessionTitleProjection(
       .where("current_session_id", "=", sessionId),
   ).rows;
   for (const row of rows) {
-    const entry = parseSqliteSessionEntryJson(row, true);
+    const entry = parseSqliteSessionEntryJson(row);
     if (!entry) {
       continue;
     }

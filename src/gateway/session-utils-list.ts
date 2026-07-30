@@ -206,6 +206,8 @@ export function buildSessionListSqlQuery(
   if (opts.requireLastInteraction) {
     query.requireLastInteraction = true;
   }
+  // Callers set bounded only after proving every requested filter is represented in SQL;
+  // search and boardFace remain residual and therefore always load the full candidate set.
   if (params.bounded && !lineageRequiresResidual) {
     query.limit = resolveSessionsListOffset(opts) + (resolveSessionsListLimit(opts, 100) ?? 100);
   }
