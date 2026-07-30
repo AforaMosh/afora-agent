@@ -10,6 +10,7 @@ import {
   openOpenClawAgentDatabase,
   type OpenClawAgentDatabase,
 } from "../../state/openclaw-agent-db.js";
+import { normalizeSessionDeliveryState } from "../../utils/delivery-context.shared.js";
 import type { SessionEntrySummary } from "./session-accessor.sqlite-contract.js";
 import { publishSqliteSessionEntryCacheInvalidation } from "./session-accessor.sqlite-entry-cache.js";
 import { readSqliteSessionGenerationIdsForKeys } from "./session-accessor.sqlite-lifecycle-state.js";
@@ -94,10 +95,22 @@ export function listSqliteSessionGenerationIdsForCanonicalRepair(params: {
   );
 }
 
-/** Doctor inventory hydrates rejected legacy blobs from promoted identity/timestamp columns. */
-function hydrateCanonicalRepairEntry(
-  row: Selectable<OpenClawAgentKyselyDatabase["session_nodes"]>,
-): SessionEntry {
+type CanonicalRepairRow = Selectable<OpenClawAgentKyselyDatabase["session_nodes"]> & {
+  current_agent_harness_id: string | null;
+  current_chat_type: "channel" | "direct" | "group" | null;
+  current_ended_at: number | null;
+  current_model: string | null;
+  current_model_provider: string | null;
+  current_started_at: number | null;
+  current_window_id: string | null;
+  delivery_account_id: string | null;
+  delivery_channel: string | null;
+  delivery_target: string | null;
+  delivery_thread_id: string | null;
+};
+
+/** Doctor inventory hydrates rejected legacy blobs from promoted node/window columns. */
+function hydrateCanonicalRepairEntry(row: CanonicalRepairRow): SessionEntry {
   let record: Record<string, unknown> = {};
   try {
     const parsed = JSON.parse(row.entry_json) as unknown;
@@ -121,9 +134,27 @@ function hydrateCanonicalRepairEntry(
           ...(row.fork_source_entry_id ? { entryId: row.fork_source_entry_id } : {}),
         }
       : undefined;
+  const delivery =
+    row.delivery_channel && row.delivery_target
+      ? normalizeSessionDeliveryState({
+          context: {
+            channel: row.delivery_channel,
+            to: row.delivery_target,
+            ...(row.delivery_account_id ? { accountId: row.delivery_account_id } : {}),
+            ...(row.delivery_thread_id ? { threadId: row.delivery_thread_id } : {}),
+          },
+        })
+      : undefined;
   return projectCanonicalSessionEntryShape({
     ...record,
     ...(row.status ? { status: row.status } : {}),
+    ...(row.current_started_at !== null ? { startedAt: row.current_started_at } : {}),
+    ...(row.current_ended_at !== null ? { endedAt: row.current_ended_at } : {}),
+    ...(row.current_chat_type ? { chatType: row.current_chat_type } : {}),
+    ...(row.current_model_provider ? { modelProvider: row.current_model_provider } : {}),
+    ...(row.current_model ? { model: row.current_model } : {}),
+    ...(row.current_agent_harness_id ? { agentHarnessId: row.current_agent_harness_id } : {}),
+    ...(delivery ? { delivery } : {}),
     ...(row.created_at !== null ? { createdAt: row.created_at } : {}),
     ...(row.created_via ? { createdVia: row.created_via } : {}),
     ...(createdActor ? { createdActor } : {}),
@@ -158,16 +189,33 @@ export function listSqliteSessionEntriesForCanonicalRepair(
       database.db,
       db
         .selectFrom("session_nodes")
-        .leftJoin("session_windows as retained_window", (join) =>
+        .leftJoin("session_windows as current_window", (join) =>
           join
-            .onRef("retained_window.session_id", "=", "session_nodes.current_session_id")
-            .onRef("retained_window.session_key", "=", "session_nodes.session_key"),
+            .onRef("current_window.session_id", "=", "session_nodes.current_session_id")
+            .onRef("current_window.session_key", "=", "session_nodes.session_key"),
+        )
+        .leftJoin(
+          "conversations as current_conversation",
+          "current_conversation.conversation_id",
+          "current_window.primary_conversation_id",
         )
         .selectAll("session_nodes")
-        .select("retained_window.session_id as retained_window_id"),
+        .select([
+          "current_window.session_id as current_window_id",
+          "current_window.started_at as current_started_at",
+          "current_window.ended_at as current_ended_at",
+          "current_window.chat_type as current_chat_type",
+          "current_window.model_provider as current_model_provider",
+          "current_window.model as current_model",
+          "current_window.agent_harness_id as current_agent_harness_id",
+          "current_conversation.channel as delivery_channel",
+          "current_conversation.account_id as delivery_account_id",
+          "current_conversation.delivery_target",
+          "current_conversation.thread_id as delivery_thread_id",
+        ]),
     ).rows.flatMap((row) => {
       // Exact {} plus an owned window is the durable retained-history tombstone.
-      if (row.entry_json === "{}" && row.retained_window_id === row.current_session_id) {
+      if (row.entry_json === "{}" && row.current_window_id === row.current_session_id) {
         return [];
       }
       const persistedEntry = parseSqliteSessionEntryJson(row);

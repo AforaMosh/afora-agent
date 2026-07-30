@@ -15,7 +15,10 @@ import {
   openOpenClawAgentDatabase,
 } from "../state/openclaw-agent-db.js";
 import { withStateDirEnv } from "../test-helpers/state-dir-env.js";
-import { normalizeSessionDeliveryState } from "../utils/delivery-context.shared.js";
+import {
+  deliveryContextFromSession,
+  normalizeSessionDeliveryState,
+} from "../utils/delivery-context.shared.js";
 import { repairCanonicalSessionKeys } from "./doctor-session-canonical-keys.js";
 
 afterEach(() => closeOpenClawAgentDatabasesForTest());
@@ -328,14 +331,22 @@ describe("doctor canonical session-key repair", () => {
         { agentId: "main", env, sessionKey: "global", storePath: mainStore },
         { sessionId: "main-global", updatedAt: 10 },
       );
-      replaceSessionEntrySync(
-        { agentId: "ops", env, sessionKey: "global", storePath: opsStore },
-        { sessionId: "ops-global", updatedAt: 20 },
-      );
+      insertLegacySession({
+        agentId: "ops",
+        env,
+        sessionKey: "global",
+        storePath: opsStore,
+        entry: {
+          parentSessionKey: "parent",
+          sessionId: "ops-global",
+          spawnedBy: "controller",
+          updatedAt: 20,
+        },
+      });
 
       expect(await repairCanonicalSessionKeys({ apply: true, cfg, env })).toMatchObject({
-        foundGroups: 0,
-        repairedGroups: 0,
+        foundGroups: 1,
+        repairedGroups: 1,
       });
       expect(
         loadExactSessionEntryReadOnly({
@@ -345,14 +356,17 @@ describe("doctor canonical session-key repair", () => {
           storePath: mainStore,
         })?.entry.sessionId,
       ).toBe("main-global");
-      expect(
-        loadExactSessionEntryReadOnly({
-          agentId: "ops",
-          env,
-          sessionKey: "global",
-          storePath: opsStore,
-        })?.entry.sessionId,
-      ).toBe("ops-global");
+      const opsGlobal = loadExactSessionEntryReadOnly({
+        agentId: "ops",
+        env,
+        sessionKey: "global",
+        storePath: opsStore,
+      })?.entry;
+      expect(opsGlobal).toMatchObject({
+        parentSessionKey: "agent:ops:parent",
+        sessionId: "ops-global",
+        spawnedBy: "agent:ops:controller",
+      });
     });
   });
 
@@ -438,6 +452,23 @@ describe("doctor canonical session-key repair", () => {
            WHERE session_key = ?`,
         )
         .run("agent:main:main");
+      database.db
+        .prepare(
+          `INSERT INTO conversations (
+             conversation_id, channel, account_id, kind, peer_id, delivery_target,
+             thread_id, created_at, updated_at
+           ) VALUES (?, 'matrix', 'work', 'group', ?, ?, 'thread-root', 10, 10)`,
+        )
+        .run("conv-repair", "!Recovered:example.org", "!Recovered:example.org");
+      database.db
+        .prepare(
+          `UPDATE session_windows
+             SET agent_harness_id = 'codex', chat_type = 'group', ended_at = 24,
+                 model = 'gpt-5.4', model_provider = 'openai',
+                 primary_conversation_id = 'conv-repair', started_at = 23
+           WHERE session_id = 'legacy'`,
+        )
+        .run();
 
       expect(await repairCanonicalSessionKeys({ apply: true, cfg, env })).toMatchObject({
         foundGroups: 1,
@@ -466,6 +497,8 @@ describe("doctor canonical session-key repair", () => {
       expect(repaired).toMatchObject({
         archivedAt: 30,
         category: "investigation",
+        chatType: "group",
+        endedAt: 24,
         icon: "archive",
         label: "Recovered metadata",
         lastActivityAt: 29,
@@ -473,9 +506,19 @@ describe("doctor canonical session-key repair", () => {
         lastReadAt: 27,
         parentSessionKey: "agent:main:parent",
         pinnedAt: 26,
+        model: "gpt-5.4",
+        modelProvider: "openai",
+        agentHarnessId: "codex",
         sessionId: "legacy",
         spawnedBy: "agent:main:controller",
+        startedAt: 23,
         status: "failed",
+      });
+      expect(deliveryContextFromSession(repaired)).toEqual({
+        accountId: "work",
+        channel: "matrix",
+        threadId: "thread-root",
+        to: "!Recovered:example.org",
       });
       expect(() =>
         replaceSessionEntrySync(

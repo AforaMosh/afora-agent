@@ -159,7 +159,10 @@ function collectCanonicalSessionCandidates(
         }),
         entry,
       );
-      const canonicalAgentId = resolveSessionStoreAgentId(params.cfg, canonicalKey);
+      const canonicalAgentId =
+        canonicalKey === "global" || canonicalKey === "unknown"
+          ? target.agentId
+          : resolveSessionStoreAgentId(params.cfg, canonicalKey);
       const canonicalizeLineageKey = (value: string | undefined) =>
         value
           ? resolveStoredSessionKeyForAgentStore({

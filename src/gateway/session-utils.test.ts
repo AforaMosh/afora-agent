@@ -692,6 +692,42 @@ describe("gateway session utils", () => {
     }
   });
 
+  test("lightweight session rows retain calculable cost estimates", () => {
+    const cfg = {
+      agents: { list: [{ id: "main", default: true }] },
+      models: {
+        providers: {
+          openai: {
+            models: [
+              {
+                id: "priced-model",
+                cost: { input: 1, output: 2, cacheRead: 0, cacheWrite: 0 },
+              },
+            ],
+          },
+        },
+      },
+    } as unknown as OpenClawConfig;
+    const row = buildGatewaySessionRow({
+      cfg,
+      storePath: "",
+      store: {},
+      key: "agent:main:priced",
+      lightweightListRow: true,
+      skipTranscriptUsageFallback: true,
+      entry: {
+        sessionId: "priced-session",
+        updatedAt: 1,
+        modelProvider: "openai",
+        model: "priced-model",
+        inputTokens: 1_000_000,
+        outputTokens: 1_000_000,
+      },
+    });
+
+    expect(row.estimatedCostUsd).toBe(3);
+  });
+
   test("session rows and update events project the latest run failure reason", async () => {
     const cfg = createModelDefaultsConfig({ primary: "openai/gpt-5.4" });
     const failed = buildGatewaySessionRow({
