@@ -928,21 +928,33 @@ export function resolveManagedGatewayInstallerEnv(params: {
   }
   const accountHome = params.accountHome ?? userInfo().homedir;
   const hostEnv = params.hostEnv ?? process.env;
-  return {
+  const env: NodeJS.ProcessEnv = {
     ...params.env,
     HOME: accountHome,
     USERPROFILE: accountHome,
     APPDATA: hostEnv.APPDATA,
     LOCALAPPDATA: hostEnv.LOCALAPPDATA,
-    OPENCLAW_HOME: undefined,
-    OPENCLAW_PROFILE: undefined,
-    OPENCLAW_STATE_DIR: undefined,
-    OPENCLAW_CONFIG_PATH: undefined,
-    OPENCLAW_WINDOWS_TASK_NAME: undefined,
-    OPENCLAW_TASK_SCRIPT_NAME: undefined,
-    OPENCLAW_TASK_SCRIPT: undefined,
-    OPENCLAW_SERVICE_KIND: undefined,
   };
+  const isolatedIdentityKeys = new Set(
+    [
+      "OPENCLAW_HOME",
+      "OPENCLAW_PROFILE",
+      "OPENCLAW_STATE_DIR",
+      "OPENCLAW_CONFIG_PATH",
+      "OPENCLAW_WINDOWS_TASK_NAME",
+      "OPENCLAW_TASK_SCRIPT_NAME",
+      "OPENCLAW_TASK_SCRIPT",
+      "OPENCLAW_SERVICE_KIND",
+    ].map((key) => key.toUpperCase()),
+  );
+  // Windows environment keys are case-insensitive. Remove every casing variant
+  // so the installed CLI cannot inherit the isolated lane identity.
+  for (const key of Object.keys(env)) {
+    if (isolatedIdentityKeys.has(key.toUpperCase())) {
+      delete env[key];
+    }
+  }
+  return env;
 }
 
 export function parseManagedGatewayServiceInstalled(result: CommandResult): boolean {
