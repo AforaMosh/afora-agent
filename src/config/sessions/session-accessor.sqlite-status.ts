@@ -178,8 +178,9 @@ function settlePendingSessionEntryValidity(database: SessionDatabaseReader): voi
       throw new SessionEntryValidityMigrationRequiredError();
     }
     const settled = pending.map((row) => ({
-      ...row,
+      entry_json: row.entry_json,
       entryValid: parseSqliteSessionEntryJson(row) ? 1 : -1,
+      session_key: row.session_key,
     }));
     runSqliteImmediateTransactionSync(
       database.db,
