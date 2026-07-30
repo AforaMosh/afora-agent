@@ -29,6 +29,7 @@ import {
 import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
 import { withStateDirEnv } from "../test-helpers/state-dir-env.js";
 import { withEnvAsync } from "../test-utils/env.js";
+import { normalizeSessionDeliveryState } from "../utils/delivery-context.shared.js";
 import { listSessionsFromStoreAsync as listSqlSelectedSessions } from "./session-utils-list.js";
 import { listSessionsFromStoreForTest as listSessionsFromStore } from "./session-utils-list.test-support.js";
 import {
@@ -1457,6 +1458,41 @@ describe("loadCombinedSessionStoreForGateway includes disk-only agents (#32804)"
       expect(loadCombinedSessionStoreForGateway(cfg).store.global?.sessionId).toBe(
         "primary-global",
       );
+    });
+  });
+
+  test("rejects delivery-proven aliases from combined list projections", async () => {
+    await withStateDirEnv("openclaw-session-list-delivery-alias-", async ({ stateDir }) => {
+      const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+      const storePath = path.join(stateDir, "agents", "main", "sessions", "sessions.json");
+      const canonicalKey = "agent:main:matrix:channel:!MixedCase:example.org";
+      const legacyKey = canonicalKey.toLowerCase();
+      const entry = {
+        delivery: normalizeSessionDeliveryState({
+          context: { channel: "matrix", to: "!MixedCase:example.org" },
+        }),
+        sessionId: "legacy-list-alias",
+        updatedAt: 10,
+      };
+      const database = openOpenClawAgentDatabase({
+        agentId: "main",
+        env,
+        path: resolveSqliteTargetFromSessionStorePath(storePath, { agentId: "main", env }).path,
+      });
+      database.db
+        .prepare(
+          "INSERT INTO session_nodes (session_key, current_session_id, entry_json, updated_at) VALUES (?, ?, ?, ?)",
+        )
+        .run(legacyKey, entry.sessionId, JSON.stringify(entry), entry.updatedAt);
+      database.db
+        .prepare("UPDATE session_nodes SET entry_valid = 1 WHERE session_key = ?")
+        .run(legacyKey);
+
+      expect(() =>
+        loadCombinedSessionStoreForGateway({
+          agents: { list: [{ id: "main", default: true }] },
+        } as OpenClawConfig),
+      ).toThrow("openclaw doctor --fix");
     });
   });
 

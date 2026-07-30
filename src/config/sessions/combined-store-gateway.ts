@@ -31,6 +31,7 @@ import {
   duplicateCanonicalSessionKeyError,
   nonCanonicalSessionKeyRowError,
 } from "./session-canonical-key.js";
+import { resolveDeliveryProvenCanonicalSessionKey } from "./store-entry.js";
 import {
   dedupeSessionStoreTargetsBySqliteTarget,
   listConfiguredSessionStoreAgentIds,
@@ -194,6 +195,10 @@ function mergeGatewayEntries(params: {
     }
     if (key !== canonicalKey) {
       throw nonCanonicalSessionKeyRowError(canonicalKey);
+    }
+    const deliveryCanonicalKey = resolveDeliveryProvenCanonicalSessionKey(key, entry);
+    if (deliveryCanonicalKey !== key) {
+      throw nonCanonicalSessionKeyRowError(deliveryCanonicalKey);
     }
     const sentinelOwnerKey =
       canonicalKey === "global" || canonicalKey === "unknown"
