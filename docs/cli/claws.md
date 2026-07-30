@@ -67,6 +67,9 @@ There is no manifest pointer. Other harnesses may discover their own
 conventional profile, such as `profiles/codex.yml`, without changing the
 portable manifest.
 
+Experimental packages that used `metadata.openclaw.config` must move that file
+to `profiles/openclaw.yml` and remove the metadata entry.
+
 ```yaml
 schemaVersion: 1
 agent:

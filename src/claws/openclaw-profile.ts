@@ -84,10 +84,23 @@ async function readProfileFile(packageRoot: string, path: string): Promise<Buffe
 
 export async function readClawOpenClawProfile(params: {
   packageRoot: string;
+  metadata?: Record<string, string>;
 }): Promise<
   | { ok: true; profile?: ClawOpenClawProfile; raw?: Buffer; path?: string }
   | { ok: false; diagnostics: ClawDiagnostic[] }
 > {
+  if (Object.hasOwn(params.metadata ?? {}, "openclaw.config")) {
+    return {
+      ok: false,
+      diagnostics: [
+        diagnostic(
+          "legacy_openclaw_profile_pointer",
+          "metadata.openclaw.config is no longer supported; move the profile to profiles/openclaw.yml and remove the metadata entry.",
+          "$.metadata.openclaw.config",
+        ),
+      ],
+    };
+  }
   const declaredPath = OPENCLAW_CLAW_PROFILE_PATH;
   const packageFiles = await fsSafeRoot(params.packageRoot);
   if (!(await packageFiles.exists(declaredPath))) {
