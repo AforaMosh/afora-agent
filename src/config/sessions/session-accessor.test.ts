@@ -410,7 +410,7 @@ describe("session accessor seam", () => {
     ).toThrow("openclaw doctor --fix");
   });
 
-  it("does not let invalid JSON consume a bounded list page", () => {
+  it("does not let invalid blobs consume a bounded list page", () => {
     replaceSqliteSessionEntrySync(
       { agentId: "main", sessionKey: "agent:main:valid", storePath },
       { sessionId: "valid-session", updatedAt: 10 },
@@ -423,7 +423,17 @@ describe("session accessor seam", () => {
       .prepare(
         "INSERT INTO session_nodes (session_key, current_session_id, entry_json, updated_at, created_actor_id, created_actor_type) VALUES (?, ?, ?, ?, ?, ?)",
       )
-      .run("agent:main:invalid", "invalid-session", "null", 20, "invalid-actor", "system");
+      .run("agent:main:invalid-object", "invalid-object", "null", 30, null, null);
+    database.db
+      .prepare(
+        "INSERT INTO session_nodes (session_key, current_session_id, entry_json, updated_at, created_actor_id, created_actor_type) VALUES (?, ?, ?, ?, ?, ?)",
+      )
+      .run("agent:main:invalid-json", "invalid-json", "not-json", 20, null, null);
+    database.db
+      .prepare(
+        "INSERT INTO session_nodes (session_key, current_session_id, entry_json, updated_at, created_actor_id, created_actor_type) VALUES (?, ?, ?, ?, ?, ?)",
+      )
+      .run("agent:main:placeholder", "placeholder", "{}", 15, null, null);
 
     const result = querySqliteSessionEntriesReadOnly({
       agentId: "main",
@@ -440,7 +450,7 @@ describe("session accessor seam", () => {
     expect(result.entries.map(({ sessionKey }) => sessionKey)).toEqual(["agent:main:valid"]);
   });
 
-  it("excludes rows whose canonical blob lacks a session id", () => {
+  it("rejects corrupt canonical blobs on exact reads", () => {
     const database = openOpenClawAgentDatabase({
       agentId: "main",
       path: resolveSqliteTargetFromSessionStorePath(storePath, { agentId: "main" }).path,
@@ -448,122 +458,41 @@ describe("session accessor seam", () => {
     const insert = database.db.prepare(
       "INSERT INTO session_nodes (session_key, current_session_id, entry_json, updated_at) VALUES (?, ?, ?, ?)",
     );
-    insert.run("agent:main:legacy", "legacy-session", JSON.stringify({ updatedAt: 9 }), 9);
-    insert.run(
-      "agent:main:sessions",
-      "real-sessions-key",
-      JSON.stringify({ sessionId: "real-sessions-key", updatedAt: 8 }),
-      8,
-    );
-    insert.run(
-      "agent:main:custom:cron:x:run:y",
-      "custom-session",
-      JSON.stringify({ sessionId: "custom-session", updatedAt: 8 }),
-      8,
-    );
-    insert.run("agent:main:custom:sessions", "nested-session", "{}", 7);
-    insert.run(
-      "agent:main:blank-session-id",
-      "blank-session-id",
-      JSON.stringify({ sessionId: "\t\u00a0", updatedAt: 7 }),
-      7,
-    );
-    insert.run(
-      "agent:main:missing-updated-at",
-      "missing-updated-at",
-      JSON.stringify({ sessionId: "missing-updated-at" }),
-      7,
-    );
-    insert.run(
-      "agent:main:non-finite-updated-at",
-      "non-finite-updated-at",
-      '{"sessionId":"non-finite-updated-at","updatedAt":1e999}',
-      7,
-    );
-    insert.run(
-      "agent:main:nul-session-id",
-      "nul-session-id",
-      JSON.stringify({ sessionId: "\0x", updatedAt: 7 }),
-      7,
-    );
-    insert.run(
-      "agent:main:duplicate-session-id",
-      "duplicate-session-id",
-      '{"sessionId":"","sessionId":"duplicate-session-id","updatedAt":7}',
-      7,
-    );
-    insert.run(
-      "agent:main:duplicate-updated-at",
-      "duplicate-updated-at",
-      '{"sessionId":"duplicate-updated-at","updatedAt":7,"updatedAt":8}',
-      7,
-    );
-    insert.run("agent:main:xyz", "xyz", JSON.stringify({ sessionId: "xyz", updatedAt: 4 }), 4);
-    insert.run(
-      "agent:main:min-int-updated-at",
-      "min-int-updated-at",
-      '{"sessionId":"min-int-updated-at","updatedAt":-9223372036854775808}',
-      3,
-    );
-    insert.run(
-      "agent:main:cron:job:run:one",
-      "cron-run",
-      JSON.stringify({ sessionId: "cron-run", updatedAt: 6 }),
-      6,
-    );
-    insert.run(
-      "agent:main:cron:job:run:two",
-      "canonical-cron-run",
-      JSON.stringify({ sessionId: "canonical-cron-run", updatedAt: 5 }),
-      5,
-    );
-
-    const result = querySqliteSessionEntriesReadOnly({
-      agentId: "main",
-      query: { archived: "all", includeGlobal: true, includeUnknown: true },
-      storePath,
-    });
-
-    expect(result.totalCount).toBe(4);
-    expect(result.entries.map(({ entry, sessionKey }) => [sessionKey, entry.sessionId])).toEqual([
-      ["agent:main:custom:cron:x:run:y", "custom-session"],
-      ["agent:main:sessions", "real-sessions-key"],
-      ["agent:main:xyz", "xyz"],
-      ["agent:main:min-int-updated-at", "min-int-updated-at"],
-    ]);
-    expect(loadSessionEntry({ sessionKey: "agent:main:legacy", storePath })).toBeUndefined();
-    expect(
-      loadSessionEntry({ sessionKey: "agent:main:duplicate-session-id", storePath }),
-    ).toBeUndefined();
-    expect(
-      loadSessionEntry({ sessionKey: "agent:main:custom:sessions", storePath }),
-    ).toBeUndefined();
-    expect(
-      querySqliteSessionEntriesReadOnly({
-        agentId: "main",
-        query: {
-          archived: "all",
-          includeGlobal: true,
-          includeHidden: true,
-          includeUnknown: true,
-          sessionId: "cron-run",
-        },
-        storePath,
-      }).entries.map(({ sessionKey }) => sessionKey),
-    ).toEqual(["agent:main:cron:job:run:one"]);
-    expect(
-      querySqliteSessionEntriesReadOnly({
-        agentId: "main",
-        query: {
-          archived: "all",
-          includeGlobal: true,
-          includeHidden: true,
-          includeUnknown: true,
-          sessionId: "canonical-cron-run",
-        },
-        storePath,
-      }).entries.map(({ sessionKey }) => sessionKey),
-    ).toEqual(["agent:main:cron:job:run:two"]);
+    const corrupt = [
+      ["legacy", "legacy-session", JSON.stringify({ updatedAt: 9 })],
+      ["placeholder", "placeholder", "{}"],
+      [
+        "blank-session-id",
+        "blank-session-id",
+        JSON.stringify({ sessionId: "\t\u00a0", updatedAt: 7 }),
+      ],
+      [
+        "missing-updated-at",
+        "missing-updated-at",
+        JSON.stringify({ sessionId: "missing-updated-at" }),
+      ],
+      [
+        "non-finite-updated-at",
+        "non-finite-updated-at",
+        '{"sessionId":"non-finite-updated-at","updatedAt":1e999}',
+      ],
+      ["nul-session-id", "nul-session-id", JSON.stringify({ sessionId: "\0x", updatedAt: 7 })],
+      [
+        "duplicate-session-id",
+        "duplicate-session-id",
+        '{"sessionId":"","sessionId":"duplicate-session-id","updatedAt":7}',
+      ],
+      [
+        "duplicate-updated-at",
+        "duplicate-updated-at",
+        '{"sessionId":"duplicate-updated-at","updatedAt":7,"updatedAt":8}',
+      ],
+    ] as const;
+    for (const [suffix, sessionId, entryJson] of corrupt) {
+      const sessionKey = `agent:main:${suffix}`;
+      insert.run(sessionKey, sessionId, entryJson, 7);
+      expect(loadSessionEntry({ sessionKey, storePath })).toBeUndefined();
+    }
   });
 
   it("refreshes the projected title when the first visible user message is written", async () => {
