@@ -130,9 +130,11 @@ export function parseSqliteSessionEntryJson(row: {
       return null;
     }
     const record = parsed as Record<string, unknown>;
+    // An empty id is the intentional pre-initialization sentinel used by parent-fork
+    // decisions. It remains an entry; retained-history tombstones use an empty blob.
     const storedSessionId =
       typeof record.sessionId === "string" &&
-      record.sessionId.trim() &&
+      (record.sessionId === "" || record.sessionId.trim().length > 0) &&
       !record.sessionId.includes("\0")
         ? record.sessionId
         : undefined;
@@ -142,7 +144,7 @@ export function parseSqliteSessionEntryJson(row: {
         : undefined;
     // entry_json is canonical; current_session_id only indexes a live canonical blob.
     // Retained-window placeholders use {}, so column fallback would resurrect deleted sessions.
-    if (!storedSessionId || storedUpdatedAt === undefined) {
+    if (storedSessionId === undefined || storedUpdatedAt === undefined) {
       return null;
     }
     if (

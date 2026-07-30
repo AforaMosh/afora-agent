@@ -10,11 +10,7 @@ import {
   parseAgentSessionKey,
 } from "../../routing/session-key.js";
 import type { DB as OpenClawAgentKyselyDatabase } from "../../state/openclaw-agent-db.generated.js";
-import {
-  normalizeStoreSessionKey,
-  resolveDeliveryProvenCanonicalSessionKey,
-} from "./store-entry.js";
-import type { SessionEntry } from "./types.js";
+import { normalizeStoreSessionKey } from "./store-entry.js";
 
 const SESSION_CANONICAL_KEY_REPAIR_COMMAND = "openclaw doctor --fix";
 type CanonicalSessionDatabase = Pick<
@@ -182,7 +178,6 @@ export function assertCanonicalSqliteSessionKeysCurrent(
       .select([
         "session_nodes.session_key",
         "session_nodes.current_session_id",
-        "session_nodes.entry_json",
         "session_nodes.fork_source_session_key",
         "session_nodes.parent_session_key",
         "session_nodes.spawned_by",
@@ -194,21 +189,9 @@ export function assertCanonicalSqliteSessionKeysCurrent(
     }
     const trimmed = row.session_key.trim();
     const parsed = parseAgentSessionKey(trimmed);
-    let persistedEntry: SessionEntry | undefined;
-    try {
-      const value = JSON.parse(row.entry_json) as unknown;
-      persistedEntry =
-        value && typeof value === "object" && !Array.isArray(value)
-          ? (value as SessionEntry)
-          : undefined;
-    } catch {
-      // Entry validity owns malformed blobs; canonical validation still checks their key shape.
-    }
     if (
       row.session_key !== trimmed ||
       normalizeStoreSessionKey(trimmed) !== trimmed ||
-      (persistedEntry &&
-        resolveDeliveryProvenCanonicalSessionKey(trimmed, persistedEntry) !== trimmed) ||
       (!parsed && trimmed !== "global" && trimmed !== "unknown") ||
       (parsed && parsed.agentId !== normalizeAgentId(database.agentId)) ||
       (parsed && parsed.rest === "main" && canonicalMainKey !== "main")

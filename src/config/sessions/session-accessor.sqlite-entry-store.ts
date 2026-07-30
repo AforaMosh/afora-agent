@@ -46,8 +46,9 @@ import {
   nonCanonicalSessionKeyWriteError,
 } from "./session-canonical-key.js";
 import {
+  foldedSessionKeyAliasCandidates,
+  normalizeStoreSessionKey,
   resolveDeliveryProvenCanonicalSessionKey,
-  resolveSessionEntryCandidates,
 } from "./store-entry.js";
 import type { SessionEntry } from "./types.js";
 
@@ -96,6 +97,11 @@ function parseReadableSessionEntryRow(
 ): SessionEntry | null {
   const entry = parseProjectedSessionEntryRow(row);
   if (entry) {
+    // Doctor owns delivery-proven case repair. Exact runtime reads diagnose an
+    // unrepaired row without turning canonical-key validation into a blob scan.
+    if (resolveDeliveryProvenCanonicalSessionKey(row.session_key, entry) !== row.session_key) {
+      throw nonCanonicalSessionKeyRowError(row.session_key);
+    }
     return entry;
   }
   if (row.entry_json === "{}") {
@@ -176,26 +182,15 @@ function readSessionEntryRowUnchecked(
       .where("session_key", "in", lookupKeys)
       .orderBy("session_key", "asc"),
   ).rows;
-  const entries = new Map<string, ResolvedSessionEntryRow>();
+  let selected: ResolvedSessionEntryRow | undefined;
   for (const row of rows) {
     const entry = parseReadableSessionEntryRow(database, row);
-    if (!entry) {
+    if (!entry || row.session_key !== sessionKey.trim()) {
       continue;
     }
-    entries.set(row.session_key, { entry, legacyKeys: [], row });
+    selected = { entry, legacyKeys: [], row };
   }
-  const resolved = resolveSessionEntryCandidates({
-    entries: [...entries].map(([candidateKey, value]) => ({
-      entry: value.entry,
-      sessionKey: candidateKey,
-    })),
-    sessionKey,
-  });
-  if (!resolved.existing) {
-    return undefined;
-  }
-  const selected = entries.get(resolved.existing.sessionKey);
-  return selected ? { ...selected, legacyKeys: resolved.legacyKeys } : undefined;
+  return selected;
 }
 
 // Async updaters prepare against this complete selection. Capturing alias rows
@@ -242,7 +237,12 @@ export function collectSessionEntryLookupKeys(
   if (!trimmedKey) {
     return [];
   }
-  return [trimmedKey];
+  // Alias candidates are diagnostic probes only: a delivery-proven legacy row
+  // fails above, while a genuinely case-distinct peer is ignored, never merged.
+  return uniqueStrings([
+    trimmedKey,
+    ...foldedSessionKeyAliasCandidates(normalizeStoreSessionKey(trimmedKey)),
+  ]);
 }
 
 export function readExactSessionEntryRow(
