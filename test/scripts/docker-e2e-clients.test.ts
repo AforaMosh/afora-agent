@@ -14,7 +14,7 @@ describe("Docker E2E client scripts", () => {
     expect(source).toContain("../../dist/commitments/runtime.test-support.js");
     expect(source).toContain("../../dist/commitments/store.js");
     expect(source).toContain('spawnSync("tsx"');
-    expect(source).toContain("--probe-due");
+    expect(source).toContain("--probe-list");
     expect(source).not.toContain("../../dist/state/openclaw-state-db.js");
     expect(source).toContain("verifyExtractionRemainsRetired()");
     expect(source).toContain("verifyDoctorImportAndRuntimeIsolation()");

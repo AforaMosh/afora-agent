@@ -15,7 +15,7 @@ import {
 } from "../../dist/commitments/store.js";
 
 type CommitmentProbeResult = {
-  due: Array<Record<string, unknown>>;
+  commitments: Array<Record<string, unknown>>;
 };
 
 function assert(condition: unknown, message: string): asserts condition {
@@ -132,8 +132,8 @@ async function runPackagedDoctor(stateDir: string): Promise<void> {
   );
 }
 
-function runDueCommitmentProbe(stateDir: string, nowMs: number): CommitmentProbeResult {
-  const result = spawnSync("tsx", [process.argv[1]!, "--probe-due", String(nowMs)], {
+function runCommitmentStoreProbe(stateDir: string, nowMs: number): CommitmentProbeResult {
+  const result = spawnSync("tsx", [process.argv[1]!, "--probe-list", String(nowMs)], {
     cwd: process.cwd(),
     env: {
       ...process.env,
@@ -160,8 +160,8 @@ async function verifyDoctorImportAndRuntimeIsolation() {
       "utf8",
     );
 
-    const beforeDoctor = runDueCommitmentProbe(stateDir, nowMs);
-    assert(beforeDoctor.due.length === 0, "runtime imported legacy JSON without doctor");
+    const beforeDoctor = runCommitmentStoreProbe(stateDir, nowMs);
+    assert(beforeDoctor.commitments.length === 0, "runtime imported legacy JSON without doctor");
     await fs.access(sourcePath);
 
     await runPackagedDoctor(stateDir);
@@ -176,24 +176,19 @@ async function verifyDoctorImportAndRuntimeIsolation() {
         }
       });
 
-    const { due } = runDueCommitmentProbe(stateDir, nowMs);
-    assert(due.length === 1, `unexpected imported due count ${due.length}`);
-    assert(!("sourceUserText" in due[0]), "legacy source user text surfaced after import");
+    const { commitments } = runCommitmentStoreProbe(stateDir, nowMs);
+    assert(commitments.length === 1, `unexpected imported commitment count ${commitments.length}`);
+    assert(!("sourceUserText" in commitments[0]), "legacy source user text surfaced after import");
     assert(
-      !("sourceAssistantText" in due[0]),
+      !("sourceAssistantText" in commitments[0]),
       "legacy source assistant text surfaced after import",
     );
   });
 }
 
-async function runDueCommitmentProbeMode(nowMs: number): Promise<void> {
-  const due = await listDueCommitmentsForSession({
-    cfg: { commitments: { enabled: true } },
-    agentId: "main",
-    sessionKey: "agent:main:qa-channel:commitments",
-    nowMs,
-  });
-  console.log(JSON.stringify({ due }));
+async function runCommitmentStoreProbeMode(nowMs: number): Promise<void> {
+  const commitments = await listCommitments({ nowMs });
+  console.log(JSON.stringify({ commitments }));
 }
 
 async function verifyExpiryTransition() {
@@ -243,10 +238,10 @@ async function verifyExpiryTransition() {
   });
 }
 
-if (process.argv[2] === "--probe-due") {
+if (process.argv[2] === "--probe-list") {
   const nowMs = Number(process.argv[3]);
   assert(Number.isFinite(nowMs), "commitment probe requires a finite timestamp");
-  await runDueCommitmentProbeMode(nowMs);
+  await runCommitmentStoreProbeMode(nowMs);
 } else {
   await verifyExtractionRemainsRetired();
   await verifyDoctorImportAndRuntimeIsolation();
