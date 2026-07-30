@@ -29,6 +29,17 @@ type ClawAgent = {
   };
 };
 
+export type ClawExtensionFormat = "openclaw" | "claude" | "codex" | "cursor";
+
+export type ClawOpenClawExtension = {
+  id: string;
+  kind: "plugin";
+  format: ClawExtensionFormat;
+  source: "clawhub";
+  ref: string;
+  version: string;
+};
+
 export type ClawOpenClawProfile = {
   schemaVersion: 1;
   agent: {
@@ -73,6 +84,7 @@ export type ClawOpenClawProfile = {
       maxMs?: number;
     };
   };
+  extensions?: ClawOpenClawExtension[];
 };
 
 export const CLAW_BOOTSTRAP_FILE_NAMES = [
@@ -103,6 +115,27 @@ export type ClawPackage = {
 };
 
 export type ResolvedClawPackage = ClawPackage & { integrity: string };
+
+export type ClawPackagePreflightResult = {
+  ok: boolean;
+  action?: "install" | "reuse";
+  integrity?: string;
+  installId?: string;
+  warning?: string;
+  installedVersion?: string;
+  code?: string;
+  message?: string;
+  requirements?: ClawLocalPrerequisite[];
+  detectedFormat?: ClawExtensionFormat;
+  mapped?: string[];
+  unavailable?: string[];
+  adapterIdentity?: string;
+};
+
+export type ClawPackagePreflight = (
+  pkg: ClawPackage,
+  workspace: string,
+) => Promise<ClawPackagePreflightResult>;
 
 type ClawMcpServerCommon = {
   toolFilter?: {
@@ -205,6 +238,17 @@ export type ClawAddPlanAction = {
   reason?: string;
 };
 
+export type ClawExtensionPlan = ClawOpenClawExtension & {
+  detectedFormat?: ClawExtensionFormat;
+  integrity?: string;
+  installId?: string;
+  ownerAction?: "install" | "reuse";
+  mapped: string[];
+  unavailable: string[];
+  adapterIdentity?: string;
+  blocked: boolean;
+};
+
 export type ClawAddCapabilityChange = {
   kind: "agent" | "package" | "mcpServer" | "cronJob";
   id: string;
@@ -258,6 +302,7 @@ export type ClawAddPlan = {
     ready: boolean;
     requirements: ClawLocalPrerequisite[];
   };
+  extensions: ClawExtensionPlan[];
   blockers: ClawDiagnostic[];
   diagnostics: ClawDiagnostic[];
 };
