@@ -1,5 +1,6 @@
 // Store entry lookup resolves canonical keys and safe legacy aliases.
 import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeConversationPeerId } from "../../routing/conversation-ref.js";
 import {
   normalizeSessionKeyPreservingOpaquePeerIds,
   parseThreadSessionSuffix,
@@ -113,6 +114,55 @@ export function hasMismatchedCaseSensitiveDeliveryProof(
   }
   const storedThreadId = entryThreadId(entry);
   return Boolean(threadId && storedThreadId && storedThreadId !== threadId);
+}
+
+/** Restores an opaque case-sensitive peer only when the row's delivery target proves it. */
+export function resolveDeliveryProvenCanonicalSessionKey(
+  sessionKey: string,
+  entry: SessionEntry,
+): string {
+  const normalizedKey = normalizeStoreSessionKey(sessionKey);
+  const delivery = deliveryContextFromSession(entry);
+  const channel = delivery?.channel?.trim().toLowerCase();
+  const peerId =
+    channel && delivery?.to ? normalizeConversationPeerId(channel, delivery.to) : undefined;
+  if (!channel || !peerId) {
+    return normalizedKey;
+  }
+  const parsedThread = parseThreadSessionSuffix(normalizedKey);
+  const baseSessionKey = parsedThread.baseSessionKey ?? normalizedKey;
+  const foldedBase = baseSessionKey.toLowerCase();
+  let peerStart = -1;
+  for (const peerKind of ["channel", "group"] as const) {
+    const marker = `${channel}:${peerKind}:`;
+    const nestedMarkerIndex = foldedBase.lastIndexOf(`:${marker}`);
+    const markerIndex = foldedBase.startsWith(marker)
+      ? 0
+      : nestedMarkerIndex >= 0
+        ? nestedMarkerIndex + 1
+        : -1;
+    if (markerIndex >= 0) {
+      peerStart = Math.max(peerStart, markerIndex + marker.length);
+    }
+  }
+  if (peerStart < 0) {
+    return normalizedKey;
+  }
+  const storedPeerId = baseSessionKey.slice(peerStart);
+  if (storedPeerId.toLowerCase() !== peerId.toLowerCase()) {
+    return normalizedKey;
+  }
+  const threadId = parsedThread.threadId
+    ? String(delivery.threadId ?? parsedThread.threadId).trim()
+    : undefined;
+  const candidate = normalizeStoreSessionKey(
+    `${baseSessionKey.slice(0, peerStart)}${peerId}${threadId ? `:thread:${threadId}` : ""}`,
+  );
+  return candidate !== normalizedKey &&
+    foldedSessionKeyAliasCandidates(candidate).includes(normalizedKey) &&
+    isConfirmedLowercasedLegacyAlias(entry, candidate)
+    ? candidate
+    : normalizedKey;
 }
 
 type SessionEntryCandidate = {

@@ -122,11 +122,23 @@ describe("doctor canonical session-key repair", () => {
         sessionKey: legacyKey,
         storePath,
       });
+      const childKey = `agent:main:${fixture.channel}-child`;
+      insertLegacySession({
+        agentId: "main",
+        entry: {
+          parentSessionKey: legacyKey,
+          sessionId: `${fixture.channel}-child-session`,
+          updatedAt: 5,
+        },
+        env,
+        sessionKey: childKey,
+        storePath,
+      });
 
       expect(await repairCanonicalSessionKeys({ apply: true, cfg, env })).toMatchObject({
-        foundGroups: 1,
+        foundGroups: 2,
         removedRows: 1,
-        repairedGroups: 1,
+        repairedGroups: 2,
       });
       expect(
         loadExactSessionEntryReadOnly({
@@ -139,6 +151,10 @@ describe("doctor canonical session-key repair", () => {
       expect(
         loadExactSessionEntryReadOnly({ agentId: "main", env, sessionKey: legacyKey, storePath }),
       ).toBeUndefined();
+      expect(
+        loadExactSessionEntryReadOnly({ agentId: "main", env, sessionKey: childKey, storePath })
+          ?.entry.parentSessionKey,
+      ).toBe(fixture.canonicalKey);
       await expect(
         loadTranscriptEvents({
           agentId: "main",
@@ -385,6 +401,11 @@ describe("doctor canonical session-key repair", () => {
         sessionKey: "agent:main:child",
         storePath,
         entry: {
+          forkSource: {
+            entryId: "fork-entry",
+            sessionId: "fork-session",
+            sessionKey: "Agent:Main:Fork ",
+          },
           parentSessionKey: "Agent:Main:Parent ",
           sessionId: "child",
           spawnedBy: " ",
@@ -404,6 +425,11 @@ describe("doctor canonical session-key repair", () => {
           storePath,
         })?.entry,
       ).toMatchObject({
+        forkSource: {
+          entryId: "fork-entry",
+          sessionId: "fork-session",
+          sessionKey: "agent:main:fork",
+        },
         parentSessionKey: "agent:main:parent",
       });
       expect(

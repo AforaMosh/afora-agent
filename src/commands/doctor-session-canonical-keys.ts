@@ -17,9 +17,8 @@ import {
 import { mergeCanonicalSessionEntryCandidates } from "../config/sessions/session-canonical-key.js";
 import { setCanonicalSqliteSessionMainKey } from "../config/sessions/session-canonical-key.js";
 import {
-  foldedSessionKeyAliasCandidates,
-  isConfirmedLowercasedLegacyAlias,
   normalizeStoreSessionKey,
+  resolveDeliveryProvenCanonicalSessionKey,
 } from "../config/sessions/store-entry.js";
 import { resolveAllAgentSessionStoreTargetsSync } from "../config/sessions/targets.js";
 import { serializeJsonlLines } from "../config/sessions/transcript-jsonl.js";
@@ -29,11 +28,8 @@ import {
   resolveSessionStoreAgentId,
   resolveStoredSessionKeyForAgentStore,
 } from "../gateway/session-store-key.js";
-import { normalizeConversationPeerId } from "../routing/conversation-ref.js";
-import { normalizeAgentId } from "../routing/session-key.js";
-import { parseThreadSessionSuffix } from "../sessions/session-key-utils.js";
+import { normalizeAgentId, parseAgentSessionKey } from "../routing/session-key.js";
 import { openOpenClawAgentDatabase } from "../state/openclaw-agent-db.js";
-import { deliveryContextFromSession } from "../utils/delivery-context.shared.js";
 import { resolveTargetSqlitePath } from "./doctor-session-sqlite-readers.js";
 
 type CanonicalSessionCandidate = {
@@ -78,51 +74,6 @@ type CanonicalSessionStore = {
   storePath: string;
 };
 
-function resolveDeliveryProvenCanonicalKey(sessionKey: string, entry: SessionEntry): string {
-  const normalizedKey = normalizeStoreSessionKey(sessionKey);
-  const delivery = deliveryContextFromSession(entry);
-  const channel = delivery?.channel?.trim().toLowerCase();
-  const peerId =
-    channel && delivery?.to ? normalizeConversationPeerId(channel, delivery.to) : undefined;
-  if (!channel || !peerId) {
-    return normalizedKey;
-  }
-  const parsedThread = parseThreadSessionSuffix(normalizedKey);
-  const baseSessionKey = parsedThread.baseSessionKey ?? normalizedKey;
-  const foldedBase = baseSessionKey.toLowerCase();
-  let peerStart = -1;
-  for (const peerKind of ["channel", "group"] as const) {
-    const marker = `${channel}:${peerKind}:`;
-    const nestedMarkerIndex = foldedBase.lastIndexOf(`:${marker}`);
-    const markerIndex = foldedBase.startsWith(marker)
-      ? 0
-      : nestedMarkerIndex >= 0
-        ? nestedMarkerIndex + 1
-        : -1;
-    if (markerIndex >= 0) {
-      peerStart = Math.max(peerStart, markerIndex + marker.length);
-    }
-  }
-  if (peerStart < 0) {
-    return normalizedKey;
-  }
-  const storedPeerId = baseSessionKey.slice(peerStart);
-  if (storedPeerId.toLowerCase() !== peerId.toLowerCase()) {
-    return normalizedKey;
-  }
-  const threadId = parsedThread.threadId
-    ? String(delivery.threadId ?? parsedThread.threadId).trim()
-    : undefined;
-  const candidate = normalizeStoreSessionKey(
-    `${baseSessionKey.slice(0, peerStart)}${peerId}${threadId ? `:thread:${threadId}` : ""}`,
-  );
-  return candidate !== normalizedKey &&
-    foldedSessionKeyAliasCandidates(candidate).includes(normalizedKey) &&
-    isConfirmedLowercasedLegacyAlias(entry, candidate)
-    ? candidate
-    : normalizedKey;
-}
-
 function listCanonicalSessionStores(params: {
   cfg: OpenClawConfig;
   env: NodeJS.ProcessEnv;
@@ -144,62 +95,114 @@ function collectCanonicalSessionCandidates(
   params: { cfg: OpenClawConfig; env: NodeJS.ProcessEnv },
   stores: readonly CanonicalSessionStore[],
 ): CanonicalSessionCandidate[] {
-  const candidates: CanonicalSessionCandidate[] = [];
-  for (const target of stores) {
-    for (const { entry, rawEntryJson, sessionKey } of listSessionEntriesForCanonicalRepair({
+  const inventory = stores.flatMap((target) =>
+    listSessionEntriesForCanonicalRepair({
       agentId: target.agentId,
       clone: false,
       storePath: target.storePath,
-    })) {
-      const canonicalKey = resolveDeliveryProvenCanonicalKey(
-        resolveStoredSessionKeyForAgentStore({
-          cfg: params.cfg,
-          agentId: target.agentId,
-          sessionKey,
-        }),
-        entry,
-      );
-      const canonicalAgentId =
-        canonicalKey === "global" || canonicalKey === "unknown"
-          ? target.agentId
-          : resolveSessionStoreAgentId(params.cfg, canonicalKey);
-      const canonicalizeLineageKey = (value: string | undefined) =>
-        value
-          ? resolveStoredSessionKeyForAgentStore({
-              cfg: params.cfg,
-              agentId: canonicalAgentId,
-              sessionKey: value,
-            })
-          : undefined;
-      const parentSessionKey = canonicalizeLineageKey(entry.parentSessionKey);
-      const spawnedBy = canonicalizeLineageKey(entry.spawnedBy);
-      const normalizedEntry = { ...entry };
-      if (parentSessionKey) {
-        normalizedEntry.parentSessionKey = parentSessionKey;
-      } else {
-        delete normalizedEntry.parentSessionKey;
-      }
-      if (spawnedBy) {
-        normalizedEntry.spawnedBy = spawnedBy;
-      } else {
-        delete normalizedEntry.spawnedBy;
-      }
-      const lineageRepairRequired =
-        parentSessionKey !== entry.parentSessionKey || spawnedBy !== entry.spawnedBy;
-      candidates.push({
+    }).map(({ entry, rawEntryJson, sessionKey }) => {
+      const storedKey = resolveStoredSessionKeyForAgentStore({
+        cfg: params.cfg,
         agentId: target.agentId,
-        canonicalKey,
-        entry: normalizedEntry,
-        expectedEntry: entry,
-        lineageRepairRequired,
-        ...(rawEntryJson !== undefined ? { rawEntryJson } : {}),
         sessionKey,
-        sqlitePath: target.sqlitePath,
-        storePath: target.storePath,
       });
+      return {
+        canonicalKey: resolveDeliveryProvenCanonicalSessionKey(storedKey, entry),
+        entry,
+        rawEntryJson,
+        sessionKey,
+        storedKey,
+        target,
+      };
+    }),
+  );
+  const canonicalKeysByStoredKey = new Map<string, Set<string>>();
+  const addCanonicalMapping = (mappingKey: string, canonicalKey: string) => {
+    const mapped = canonicalKeysByStoredKey.get(mappingKey) ?? new Set<string>();
+    mapped.add(canonicalKey);
+    canonicalKeysByStoredKey.set(mappingKey, mapped);
+  };
+  for (const item of inventory) {
+    const ownerAgentId = parseAgentSessionKey(item.storedKey)?.agentId ?? item.target.agentId;
+    // Never synthesize folded aliases from a canonical row: the lowercase peer may be a
+    // distinct case-sensitive session whose row was pruned. Only inventoried keys are proof.
+    for (const key of [item.sessionKey, item.storedKey]) {
+      addCanonicalMapping(`${item.target.sqlitePath}\0${ownerAgentId}\0${key}`, item.canonicalKey);
+      addCanonicalMapping(`*\0${ownerAgentId}\0${key}`, item.canonicalKey);
     }
   }
-  return candidates;
+  return inventory.map(({ canonicalKey, entry, rawEntryJson, sessionKey, target }) => {
+    const canonicalAgentId =
+      canonicalKey === "global" || canonicalKey === "unknown"
+        ? target.agentId
+        : resolveSessionStoreAgentId(params.cfg, canonicalKey);
+    const canonicalizeLineageKey = (value: string | undefined) => {
+      if (!value) {
+        return undefined;
+      }
+      const storedKey = resolveStoredSessionKeyForAgentStore({
+        cfg: params.cfg,
+        agentId: canonicalAgentId,
+        sessionKey: value,
+      });
+      const ownerAgentId = parseAgentSessionKey(storedKey)?.agentId ?? canonicalAgentId;
+      for (const key of [value, storedKey]) {
+        const sameStore = canonicalKeysByStoredKey.get(
+          `${target.sqlitePath}\0${ownerAgentId}\0${key}`,
+        );
+        if (sameStore?.size === 1) {
+          return [...sameStore][0];
+        }
+      }
+      for (const key of [value, storedKey]) {
+        const crossStore = canonicalKeysByStoredKey.get(`*\0${ownerAgentId}\0${key}`);
+        if (crossStore?.size === 1) {
+          return [...crossStore][0];
+        }
+      }
+      return storedKey;
+    };
+    const parentSessionKey = canonicalizeLineageKey(entry.parentSessionKey);
+    const spawnedBy = canonicalizeLineageKey(entry.spawnedBy);
+    const forkSourceSessionKey = canonicalizeLineageKey(entry.forkSource?.sessionKey);
+    const normalizedEntry = { ...entry };
+    if (parentSessionKey) {
+      normalizedEntry.parentSessionKey = parentSessionKey;
+    } else {
+      delete normalizedEntry.parentSessionKey;
+    }
+    if (spawnedBy) {
+      normalizedEntry.spawnedBy = spawnedBy;
+    } else {
+      delete normalizedEntry.spawnedBy;
+    }
+    if (entry.forkSource && forkSourceSessionKey) {
+      normalizedEntry.forkSource = {
+        ...entry.forkSource,
+        sessionKey: forkSourceSessionKey,
+      };
+    } else if (entry.forkSource && entry.forkSource.sessionKey !== undefined) {
+      // A present but empty-normalized key cannot survive strict runtime validation. Missing
+      // legacy keys remain untouched so unrelated repair does not erase independent provenance.
+      const { sessionKey: _invalidSessionKey, ...forkProvenance } = entry.forkSource;
+      normalizedEntry.forkSource = forkProvenance as typeof entry.forkSource;
+    }
+    const lineageRepairRequired =
+      parentSessionKey !== entry.parentSessionKey ||
+      spawnedBy !== entry.spawnedBy ||
+      forkSourceSessionKey !== entry.forkSource?.sessionKey;
+    return {
+      agentId: target.agentId,
+      canonicalKey,
+      entry: normalizedEntry,
+      expectedEntry: entry,
+      lineageRepairRequired,
+      ...(rawEntryJson !== undefined ? { rawEntryJson } : {}),
+      sessionKey,
+      sqlitePath: target.sqlitePath,
+      storePath: target.storePath,
+    };
+  });
 }
 
 function resolveCanonicalDestination(params: {
