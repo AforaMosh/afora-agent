@@ -2,7 +2,6 @@ import { randomUUID } from "node:crypto";
 import { asOptionalRecord as asRecord } from "@openclaw/normalization-core/record-coerce";
 import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
 import { executeSqliteQueryTakeFirstSync } from "../../infra/kysely-sync.js";
-import { isMemoryIsolationCutoverAgent } from "../../plugins/memory-cutover.js";
 import { extractAssistantVisibleText } from "../../shared/chat-message-content.js";
 import {
   openOpenClawAgentDatabase,
@@ -17,7 +16,7 @@ import {
   writeSessionEntry,
 } from "./session-accessor.sqlite-entry-store.js";
 import { emitCommittedSessionIdentityDiff } from "./session-accessor.sqlite-identity.js";
-import { loadSqliteTranscriptEventsFromDatabase } from "./session-accessor.sqlite-read.js";
+import { loadVisibleSqliteTranscriptEventsFromDatabase } from "./session-accessor.sqlite-read.js";
 import {
   getSessionKysely,
   normalizeSqliteSessionKey,
@@ -123,7 +122,7 @@ function loadSessionBranchSummaries(
   }
 
   const branches = summarizeSessionBranches(
-    loadSqliteTranscriptEventsFromDatabase(database, sessionId),
+    loadVisibleSqliteTranscriptEventsFromDatabase(database, sessionId),
   );
   sessionBranchCache.delete(cacheKey);
   sessionBranchCache.set(cacheKey, { ...watermark, branches });
@@ -152,9 +151,6 @@ export async function listSqliteSessionBranches(
     sessionKey: sourceKey,
     ...(params.storePath ? { storePath: params.storePath } : {}),
   });
-  if (isMemoryIsolationCutoverAgent(resolved.agentId)) {
-    return { status: "failed" };
-  }
   try {
     const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
     const currentEntry = readSessionEntryRow(database, sourceKey)?.entry;
@@ -218,9 +214,6 @@ async function mutateSqliteSessionAtMessage(
     sessionKey: sourceKey,
     ...(params.storePath ? { storePath: params.storePath } : {}),
   });
-  if (isMemoryIsolationCutoverAgent(resolved.agentId)) {
-    return { status: "failed" };
-  }
   return await runExclusiveSqliteSessionWrite(resolved, async () => {
     let previousIdentity = new Map<string, SessionEntry>();
     let currentIdentity = new Map<string, SessionEntry>();
@@ -281,7 +274,9 @@ function mutateSqliteSessionAtMessageInTransaction(
   if (!memorySubjectSeed) {
     return { status: "failed" };
   }
-  const events = loadSqliteTranscriptEventsFromDatabase(database, currentEntry.sessionId);
+  // Pending, stale, and unlabeled rows must not be copied into a new branch.
+  // Copied visible rows retain only their source-bound policy companions.
+  const events = loadVisibleSqliteTranscriptEventsFromDatabase(database, currentEntry.sessionId);
   const cut = params.mode === "switch" ? undefined : resolveMessageCut(events, params.entryId);
   if (cut && "status" in cut) {
     return cut;
