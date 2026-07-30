@@ -28,7 +28,13 @@ const hoisted = vi.hoisted(() => ({
   resolveContextEngineMock: vi.fn(),
   countActiveRunsForSessionMock: vi.fn(),
   listSwarmRunsForGroupMock: vi.fn(),
+  resolveScopedMemoryDelegationDenialMock: vi.fn(),
   configOverride: {} as Record<string, unknown>,
+}));
+
+vi.mock("./scoped-memory-delegation.js", () => ({
+  resolveScopedMemoryDelegationDenial: (...args: unknown[]) =>
+    hoisted.resolveScopedMemoryDelegationDenialMock(...args),
 }));
 
 let resetSubagentRegistryForTests: typeof import("./subagent-registry.test-helpers.js").resetSubagentRegistryForTests;
@@ -198,6 +204,7 @@ describe("spawnSubagentDirect seam flow", () => {
     hoisted.resolveContextEngineMock.mockReset().mockResolvedValue({});
     hoisted.countActiveRunsForSessionMock.mockReset().mockReturnValue(0);
     hoisted.listSwarmRunsForGroupMock.mockReset().mockReturnValue([]);
+    hoisted.resolveScopedMemoryDelegationDenialMock.mockReset().mockReturnValue(undefined);
     hoisted.resolveAgentConfigMock.mockImplementation(
       (cfg: { agents?: { list?: Array<{ id?: string }> } }, agentId: string) =>
         cfg.agents?.list?.find((agent) => agent.id === agentId),
@@ -233,6 +240,25 @@ describe("spawnSubagentDirect seam flow", () => {
       status: "forbidden",
       error: expect.stringContaining("tools.swarm.enabled=true"),
     });
+    expect(gatewayRequestRecords()).toEqual([]);
+  });
+
+  it("denies cutover delegation before it creates a child session", async () => {
+    hoisted.resolveScopedMemoryDelegationDenialMock.mockReturnValue(
+      "Subagent delegation is unavailable because scoped-memory delegation is not yet authorized.",
+    );
+
+    const result = await spawnSubagentDirect(
+      { task: "delegate this" },
+      { agentSessionKey: "agent:main:main" },
+    );
+
+    expect(result).toMatchObject({
+      status: "forbidden",
+      error:
+        "Subagent delegation is unavailable because scoped-memory delegation is not yet authorized.",
+    });
+    expect(hoisted.updateSessionStoreMock).not.toHaveBeenCalled();
     expect(gatewayRequestRecords()).toEqual([]);
   });
 

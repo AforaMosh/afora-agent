@@ -19,8 +19,14 @@ const hoisted = vi.hoisted(() => {
     spawnAcpDirectMock,
     registerSubagentRunMock,
     runSubagentProgressMock,
+    resolveScopedMemoryDelegationDenialMock: vi.fn(),
   };
 });
+
+vi.mock("../scoped-memory-delegation.js", () => ({
+  resolveScopedMemoryDelegationDenial: (...args: unknown[]) =>
+    hoisted.resolveScopedMemoryDelegationDenialMock(...args),
+}));
 
 vi.mock("../subagent-spawn.js", () => ({
   SUBAGENT_SPAWN_CONTEXT_MODES: ["isolated", "fork"],
@@ -69,6 +75,7 @@ describe("sessions_spawn tool", () => {
     });
     hoisted.registerSubagentRunMock.mockReset();
     hoisted.runSubagentProgressMock.mockClear();
+    hoisted.resolveScopedMemoryDelegationDenialMock.mockReset().mockReturnValue(undefined);
   });
 
   function registerAcpBackendForTest() {
@@ -484,6 +491,30 @@ describe("sessions_spawn tool", () => {
       );
       expect(hoisted.spawnSubagentDirectMock).not.toHaveBeenCalled();
     });
+  });
+
+  it("denies visible cutover delegation before creating a child", async () => {
+    const callGateway = vi.fn();
+    hoisted.resolveScopedMemoryDelegationDenialMock.mockReturnValue(
+      "Subagent delegation is unavailable because scoped-memory delegation is not yet authorized.",
+    );
+    const tool = createSessionsSpawnTool({
+      agentSessionKey: "agent:main:main",
+      config: { agents: { list: [{ id: "main" }] } },
+      callGateway: callGateway as never,
+    });
+
+    const result = await tool.execute("visible-cutover", {
+      task: "inspect issue",
+      visible: true,
+    });
+
+    expect(result.details).toMatchObject({
+      status: "forbidden",
+      error:
+        "Subagent delegation is unavailable because scoped-memory delegation is not yet authorized.",
+    });
+    expect(callGateway).not.toHaveBeenCalled();
   });
 
   it("requires visible sessions for worktree options", async () => {

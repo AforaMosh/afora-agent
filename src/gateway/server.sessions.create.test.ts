@@ -57,6 +57,15 @@ import {
   seedSessionTranscript,
 } from "./test/server-sessions.test-helpers.js";
 
+const memoryDelegation = vi.hoisted(() => ({
+  resolveScopedMemoryDelegationDenial: vi.fn(),
+}));
+
+vi.mock("../agents/scoped-memory-delegation.js", () => ({
+  resolveScopedMemoryDelegationDenial: (...args: unknown[]) =>
+    memoryDelegation.resolveScopedMemoryDelegationDenial(...args),
+}));
+
 const { createSessionStoreDir, createSelectedGlobalSessionStore, openClient } =
   setupGatewaySessionsTestHarness();
 const execFileAsync = promisify(execFile);
@@ -1542,6 +1551,31 @@ test("sessions.create persists declared spawn lineage for spawn-owned creations"
   expect(created.ok, JSON.stringify(created.error)).toBe(true);
   expect(created.payload?.entry?.parentSessionKey).toBe("agent:main:main");
   expect(created.payload?.entry?.spawnDepth).toBe(2);
+});
+
+test("sessions.create rejects cutover spawn lineage before creating the child", async () => {
+  await createSessionStoreDir();
+  await writeSessionStore({
+    entries: {
+      "agent:main:main": sessionStoreEntry("sess-cutover-spawn-parent"),
+    },
+  });
+  memoryDelegation.resolveScopedMemoryDelegationDenial.mockReturnValueOnce(
+    "Subagent delegation is unavailable because scoped-memory delegation is not yet authorized.",
+  );
+
+  const created = await directSessionReq("sessions.create", {
+    agentId: "main",
+    parentSessionKey: "agent:main:main",
+    spawnDepth: 1,
+  });
+
+  expect(created.ok).toBe(false);
+  expect(created.error).toMatchObject({
+    code: "UNAVAILABLE",
+    message:
+      "Subagent delegation is unavailable because scoped-memory delegation is not yet authorized.",
+  });
 });
 
 test("sessions.create rejects spawnDepth without parentSessionKey", async () => {
