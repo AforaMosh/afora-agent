@@ -411,6 +411,7 @@ export function shouldRetryCliCronMcpProbeReply(text: string): boolean {
 export async function connectTestGatewayClient(params: {
   url: string;
   token: string;
+  caps?: string[];
   deviceIdentity?: DeviceIdentity;
   timeoutMs?: number;
   maxAttemptTimeoutMs?: number;
@@ -455,6 +456,7 @@ async function connectClientOnce(params: {
   url: string;
   token: string;
   timeoutMs: number;
+  caps?: string[];
   deviceIdentity?: DeviceIdentity;
   clientDisplayName?: string | null;
   requestTimeoutMs?: number;
@@ -491,6 +493,7 @@ async function connectClientOnce(params: {
       clientName: GATEWAY_CLIENT_NAMES.TEST,
       clientVersion: "dev",
       mode: GATEWAY_CLIENT_MODES.TEST,
+      ...(params.caps ? { caps: params.caps } : {}),
       connectChallengeTimeoutMs: params.timeoutMs,
       deviceIdentity: params.deviceIdentity,
       onHelloOk: () => finish({ client }),

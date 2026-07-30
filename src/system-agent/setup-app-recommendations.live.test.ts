@@ -33,6 +33,7 @@ const config: OpenClawConfig = {
     },
   },
   agents: {
+    entries: { main: { default: true } },
     defaults: {
       model: { primary: `openai/${modelId}` },
       models: {
