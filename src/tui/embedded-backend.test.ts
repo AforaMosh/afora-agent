@@ -305,9 +305,10 @@ function emitRegisteredAgentEvent(evt: unknown) {
 describe("EmbeddedTuiBackend", () => {
   const originalRuntimeLog = defaultRuntime.log;
   const originalRuntimeError = defaultRuntime.error;
+  let EmbeddedTuiBackendForTest: typeof import("./embedded-backend.js").EmbeddedTuiBackend;
 
   beforeAll(async () => {
-    await import("./embedded-backend.js");
+    ({ EmbeddedTuiBackend: EmbeddedTuiBackendForTest } = await import("./embedded-backend.js"));
   });
 
   beforeEach(() => {
@@ -394,6 +395,7 @@ describe("EmbeddedTuiBackend", () => {
     getSessionDefaultsMock.mockClear();
     activeEventSinks.clear();
     installEventDispatcher();
+    EmbeddedTuiBackendForTest.resetRuntimeGlobalsForTest();
     setEmbeddedMode(false);
     defaultRuntime.log = originalRuntimeLog;
     defaultRuntime.error = originalRuntimeError;
@@ -406,6 +408,7 @@ describe("EmbeddedTuiBackend", () => {
       clearEmbeddedPluginApprovalBroker(broker);
     }
     vi.useRealTimers();
+    EmbeddedTuiBackendForTest.resetRuntimeGlobalsForTest();
     setEmbeddedMode(false);
     defaultRuntime.log = originalRuntimeLog;
     defaultRuntime.error = originalRuntimeError;
@@ -602,6 +605,47 @@ describe("EmbeddedTuiBackend", () => {
       runId: "run-after-restart",
     });
     await vi.waitFor(() => expect(agentCommandFromIngressMock).toHaveBeenCalledOnce());
+    expect(onConnected).toHaveBeenCalledTimes(2);
+    await backend.stop();
+  });
+
+  it("does not restart until an in-flight stop completes", async () => {
+    const { EmbeddedTuiBackend } = await import("./embedded-backend.js");
+    const pending = deferred<{
+      payloads: Array<{ text: string }>;
+      meta: Record<string, unknown>;
+    }>();
+    agentCommandFromIngressMock.mockReturnValueOnce(pending.promise);
+    const backend = new EmbeddedTuiBackend();
+    const onConnected = vi.fn();
+    backend.onConnected = onConnected;
+
+    backend.start();
+    await flushMicrotasks();
+    await backend.sendChat({
+      sessionKey: "agent:main:main",
+      message: "finish before restart",
+      runId: "run-stop-before-restart",
+    });
+    registeredListener?.({
+      runId: "run-stop-before-restart",
+      stream: "lifecycle",
+      data: { phase: "end", stopReason: "stop" },
+    });
+
+    const stopPromise = backend.stop();
+    backend.start();
+    await flushMicrotasks();
+
+    expect(onConnected).toHaveBeenCalledTimes(1);
+    expect(isEmbeddedMode()).toBe(true);
+
+    pending.resolve({ payloads: [{ text: "done" }], meta: {} });
+    await stopPromise;
+    expect(isEmbeddedMode()).toBe(false);
+
+    backend.start();
+    await flushMicrotasks();
     expect(onConnected).toHaveBeenCalledTimes(2);
     await backend.stop();
   });
@@ -3816,6 +3860,26 @@ describe("EmbeddedTuiBackend", () => {
     expect(defaultRuntime.error).not.toBe(originalRuntimeError);
 
     await backend.stop();
+
+    expect(isEmbeddedMode()).toBe(false);
+    expect(defaultRuntime.log).toBe(originalRuntimeLog);
+    expect(defaultRuntime.error).toBe(originalRuntimeError);
+  });
+
+  it("restores process globals only after the last concurrent backend stops", async () => {
+    const { EmbeddedTuiBackend } = await import("./embedded-backend.js");
+    const firstBackend = new EmbeddedTuiBackend();
+    const secondBackend = new EmbeddedTuiBackend();
+    firstBackend.start();
+    secondBackend.start();
+
+    await firstBackend.stop();
+
+    expect(isEmbeddedMode()).toBe(true);
+    expect(defaultRuntime.log).not.toBe(originalRuntimeLog);
+    expect(defaultRuntime.error).not.toBe(originalRuntimeError);
+
+    await secondBackend.stop();
 
     expect(isEmbeddedMode()).toBe(false);
     expect(defaultRuntime.log).toBe(originalRuntimeLog);
