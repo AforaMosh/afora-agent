@@ -479,7 +479,7 @@ describe("doctor canonical session-key repair", () => {
         agentId: "main",
         entry: { sessionId: "legacy", updatedAt: 10 },
         env,
-        sessionKey: "agent:main:main",
+        sessionKey: "agent:main:main ",
         storePath,
       });
       const database = openOpenClawAgentDatabase({
@@ -493,10 +493,11 @@ describe("doctor canonical session-key repair", () => {
              SET entry_json = 'not-json', archived_at = 30, category = 'investigation',
                  icon = 'archive', label = 'Recovered metadata', last_activity_at = 29,
                  last_interaction_at = 28, last_read_at = 27, parent_session_key = 'agent:main:parent',
-                 pinned_at = 26, spawned_by = 'agent:main:controller', status = 'failed'
+                 pinned_at = 26, spawned_by = 'agent:main:controller', status = 'failed',
+                 display_name = 'Projected display name'
            WHERE session_key = ?`,
         )
-        .run("agent:main:main");
+        .run("agent:main:main ");
       const repairConversation = buildConversationIdentity({
         accountId: "work",
         channel: "matrix",
@@ -520,6 +521,11 @@ describe("doctor canonical session-key repair", () => {
           "!Recovered:example.org",
           "!Recovered:example.org",
         );
+      database.db
+        .prepare(
+          "INSERT INTO conversation_deliveries (operation_id, operation_kind, conversation_id, source_session_key, message_hash, status, created_at, updated_at) VALUES ('trimmed-alias-operation', 'turn', ?, 'agent:main:main', 'hash', 'sent', 10, 10)",
+        )
+        .run(repairConversation.conversationRef);
       database.db
         .prepare(
           `UPDATE session_windows
@@ -562,6 +568,7 @@ describe("doctor canonical session-key repair", () => {
         endedAt: 24,
         icon: "archive",
         label: "Recovered metadata",
+        displayName: "Projected display name",
         lastActivityAt: 29,
         lastInteractionAt: 28,
         lastReadAt: 27,
@@ -583,6 +590,13 @@ describe("doctor canonical session-key repair", () => {
         threadId: "thread-root",
         to: "!Recovered:example.org",
       });
+      expect(
+        database.db
+          .prepare(
+            "SELECT source_session_key FROM conversation_deliveries WHERE operation_id = 'trimmed-alias-operation'",
+          )
+          .get(),
+      ).toEqual({ source_session_key: "agent:main:work" });
       expect(() =>
         replaceSessionEntrySync(
           { agentId: "main", env, sessionKey: "agent:main:main", storePath },

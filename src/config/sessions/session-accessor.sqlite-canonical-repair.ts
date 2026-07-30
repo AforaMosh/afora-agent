@@ -101,7 +101,9 @@ export function rehomeSqliteSessionDeliveryReferencesForCanonicalRepair(
   canonicalKey: string,
   previousKeys: readonly string[],
 ): void {
-  const aliases = uniqueStrings(previousKeys).filter((key) => key && key !== canonicalKey);
+  const aliases = resolveSqliteCanonicalRepairLookupKeys(canonicalKey, previousKeys).filter(
+    (key) => key && key !== canonicalKey,
+  );
   if (aliases.length === 0) {
     return;
   }
@@ -188,6 +190,7 @@ function hydrateCanonicalRepairEntry(row: CanonicalRepairRow): SessionEntry {
       : {}),
     ...(forkSource ? { forkSource } : {}),
     ...(row.label ? { label: row.label } : {}),
+    ...(row.display_name ? { displayName: row.display_name } : {}),
     ...(row.category ? { category: row.category } : {}),
     ...(row.icon ? { icon: row.icon } : {}),
     ...(row.pinned_at !== null ? { pinnedAt: row.pinned_at } : {}),
