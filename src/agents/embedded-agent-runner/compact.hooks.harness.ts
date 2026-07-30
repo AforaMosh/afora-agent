@@ -257,6 +257,7 @@ export const resolveSandboxContextMock = vi.fn(async () => null);
 export const maybeCompactAgentHarnessSessionMock: Mock<
   (params?: unknown, options?: unknown) => Promise<unknown>
 > = vi.fn(async () => undefined);
+export const isMemoryIsolationCutoverAgentMock = vi.fn<(agentId: string) => boolean>(() => false);
 async function runCompactWithSafetyTimeoutMock(
   compact: () => Promise<unknown>,
   _timeoutMs?: number,
@@ -497,6 +498,8 @@ export function resetCompactSessionStateMocks(): void {
   resolveSandboxContextMock.mockResolvedValue(null);
   maybeCompactAgentHarnessSessionMock.mockReset();
   maybeCompactAgentHarnessSessionMock.mockResolvedValue(undefined);
+  isMemoryIsolationCutoverAgentMock.mockReset();
+  isMemoryIsolationCutoverAgentMock.mockReturnValue(false);
   resolveAgentHarnessPolicyMock.mockReset();
   resolveAgentHarnessPolicyMock.mockReturnValue({ runtime: "openclaw" });
   selectAgentHarnessMock.mockReset();
@@ -1004,6 +1007,10 @@ export async function loadCompactHooksHarness(): Promise<{
 
   vi.doMock("../../plugins/memory-runtime.js", () => ({
     getActiveMemorySearchManager: getMemorySearchManagerMock,
+  }));
+
+  vi.doMock("../../plugins/memory-cutover.js", () => ({
+    isMemoryIsolationCutoverAgent: isMemoryIsolationCutoverAgentMock,
   }));
 
   vi.doMock("../date-time.js", () => ({

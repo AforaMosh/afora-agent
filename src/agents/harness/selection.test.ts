@@ -47,6 +47,9 @@ const compactAuthMocks = vi.hoisted(() => ({
   prepareAgentRuntimeAuth: vi.fn(),
   resolveModelAsync: vi.fn(),
 }));
+const memoryCutoverMocks = vi.hoisted(() => ({
+  isMemoryIsolationCutoverAgent: vi.fn<(agentId: string) => boolean>(() => false),
+}));
 const providerOwnerMocks = vi.hoisted(() => ({
   resolveProviderRefOwnership: vi.fn(),
 }));
@@ -93,6 +96,9 @@ vi.mock("../runtime-plan/prepare-auth.js", async (importOriginal) => {
 vi.mock("../../plugins/providers.js", () => ({
   resolveProviderRefOwnership: providerOwnerMocks.resolveProviderRefOwnership,
 }));
+vi.mock("../../plugins/memory-cutover.js", () => ({
+  isMemoryIsolationCutoverAgent: memoryCutoverMocks.isMemoryIsolationCutoverAgent,
+}));
 
 const originalRuntime = process.env.OPENCLAW_AGENT_RUNTIME;
 
@@ -107,6 +113,8 @@ beforeEach(() => {
     model: { id: "gpt-5.5", provider: "openai" },
   });
   compactAuthMocks.getApiKeyForModel.mockResolvedValue({ apiKey: "test-key" });
+  memoryCutoverMocks.isMemoryIsolationCutoverAgent.mockReset();
+  memoryCutoverMocks.isMemoryIsolationCutoverAgent.mockReturnValue(false);
   providerOwnerMocks.resolveProviderRefOwnership.mockReset();
   providerOwnerMocks.resolveProviderRefOwnership.mockReturnValue({ status: "unowned" });
   cliBackendsTesting.setDepsForTest({
@@ -2128,6 +2136,19 @@ describe("selectAgentHarness", () => {
         config: agentModelRuntimeConfig("anthropic/claude-opus-4-7", "claude-cli"),
       }),
     ).resolves.toBeUndefined();
+  });
+
+  it("denies native compaction before selecting a harness model after cutover", async () => {
+    const compact = registerTestCompactor();
+    memoryCutoverMocks.isMemoryIsolationCutoverAgent.mockReturnValue(true);
+
+    await expect(maybeCompactAgentHarnessSession(createCompactionParams())).resolves.toMatchObject({
+      ok: false,
+      compacted: false,
+      failure: { reason: "scoped_memory_derivation_unavailable" },
+    });
+    expect(compact).not.toHaveBeenCalled();
+    expect(compactAuthMocks.resolveModelAsync).not.toHaveBeenCalled();
   });
 
   it("skips harness compaction preflight for claude-cli provider sessions", async () => {
