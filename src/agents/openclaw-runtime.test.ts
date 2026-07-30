@@ -6,6 +6,7 @@ import {
   resetAgentEventsForTest,
 } from "../infra/agent-events.js";
 import { SessionService } from "../sessions/session-service.js";
+import { AgentRunService } from "./agent-run-service.js";
 import { openClawRuntime } from "./openclaw-runtime.js";
 
 describe("openClawRuntime", () => {
@@ -15,6 +16,10 @@ describe("openClawRuntime", () => {
 
   it("exposes the canonical session service", () => {
     expect(openClawRuntime.sessions).toBeInstanceOf(SessionService);
+  });
+
+  it("exposes the canonical agent run service", () => {
+    expect(openClawRuntime.agentRuns).toBeInstanceOf(AgentRunService);
   });
 
   it("synchronously forwards enriched agent turn observations", () => {
