@@ -302,7 +302,7 @@ export type ClawAddPlan = {
     ready: boolean;
     requirements: ClawLocalPrerequisite[];
   };
-  extensions: ClawExtensionPlan[];
+  extensions?: ClawExtensionPlan[];
   blockers: ClawDiagnostic[];
   diagnostics: ClawDiagnostic[];
 };
