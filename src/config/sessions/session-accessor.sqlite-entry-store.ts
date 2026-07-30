@@ -428,6 +428,7 @@ function clearSqliteSessionEntryPreservingWindows(
   const cleared = {
     current_session_id: params.sessionId,
     entry_json: "{}",
+    entry_valid: -1,
     updated_at: params.updatedAt,
     status: null,
     created_at: null,
@@ -455,6 +456,13 @@ function clearSqliteSessionEntryPreservingWindows(
       .insertInto("session_nodes")
       .values({ session_key: params.sessionKey, ...cleared })
       .onConflict((conflict) => conflict.column("session_key").doUpdateSet(cleared)),
+  );
+  executeSqliteQuerySync(
+    database.db,
+    db
+      .updateTable("session_nodes")
+      .set({ entry_valid: -1 })
+      .where("session_key", "=", params.sessionKey),
   );
 }
 
@@ -645,6 +653,7 @@ export function writeSessionEntry(
         conflict.column("session_key").doUpdateSet({
           current_session_id: sessionNode.current_session_id,
           entry_json: sessionNode.entry_json,
+          entry_valid: sessionNode.entry_valid,
           updated_at: sessionNode.updated_at,
           status: sessionNode.status,
           created_at: sessionNode.created_at,
@@ -667,6 +676,10 @@ export function writeSessionEntry(
           last_activity_at: sessionNode.last_activity_at,
         }),
       ),
+  );
+  executeSqliteQuerySync(
+    database.db,
+    db.updateTable("session_nodes").set({ entry_valid: 1 }).where("session_key", "=", sessionKey),
   );
   executeSqliteQuerySync(
     database.db,

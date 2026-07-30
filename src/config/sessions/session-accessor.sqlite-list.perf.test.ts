@@ -43,6 +43,7 @@ describe("SQLite session list pushdown", () => {
             `Session ${index}`,
           );
         }
+        database.db.exec("UPDATE session_nodes SET entry_valid = 1");
         database.db.exec("COMMIT");
       } catch (error) {
         database.db.exec("ROLLBACK");

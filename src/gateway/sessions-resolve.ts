@@ -162,7 +162,14 @@ export async function resolveSessionKeyFromResolveParams(params: {
   }
 
   if (hasKey) {
-    const target = resolveGatewaySessionStoreTargetWithStore({ cfg, key, clone: false });
+    const target = resolveGatewaySessionStoreTargetWithStore({
+      cfg,
+      key,
+      clone: false,
+      // Hidden rows must stay indistinguishable from missing rows; surface the
+      // canonical repair diagnostic only after the requested row is visible.
+      deferCanonicalValidation: true,
+    });
     const store = target.store;
     if (store[target.canonicalKey]) {
       if (
@@ -174,6 +181,9 @@ export async function resolveSessionKeyFromResolveParams(params: {
         })
       ) {
         return noSessionFoundResult({ p, message: `No session found: ${key}` });
+      }
+      if (target.canonicalValidationError) {
+        throw target.canonicalValidationError;
       }
       const legacyKey = target.storeKeys.find(
         (candidate) => candidate !== target.canonicalKey && store[candidate],
@@ -204,6 +214,9 @@ export async function resolveSessionKeyFromResolveParams(params: {
       ) {
         // With no canonical row, a hidden alias must not reveal that repair state exists.
         return noSessionFoundResult({ p, message: `No session found: ${key}` });
+      }
+      if (target.canonicalValidationError) {
+        throw target.canonicalValidationError;
       }
       throw nonCanonicalSessionKeyRowError(target.canonicalKey);
     }

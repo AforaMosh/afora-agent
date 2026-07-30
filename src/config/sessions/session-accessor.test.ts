@@ -362,7 +362,7 @@ describe("session accessor seam", () => {
       path: resolveSqliteTargetFromSessionStorePath(storePath, { agentId: "ops_team" }).path,
     });
     const insert = database.db.prepare(
-      "INSERT INTO session_nodes (session_key, current_session_id, entry_json, updated_at, created_actor_id, created_actor_type) VALUES (?, ?, ?, ?, ?, ?)",
+      "INSERT INTO session_nodes (session_key, current_session_id, entry_json, entry_valid, updated_at, created_actor_id, created_actor_type) VALUES (?, ?, ?, 1, ?, ?, ?)",
     );
     insert.run(
       "agent:ops_team:own",
@@ -376,6 +376,9 @@ describe("session accessor seam", () => {
       "agent:ops_team:owner",
       "agent",
     );
+    database.db
+      .prepare("UPDATE session_nodes SET entry_valid = 1 WHERE session_key = ?")
+      .run("agent:ops_team:own");
     const result = querySqliteSessionEntriesReadOnly({
       agentId: "ops_team",
       query: {
@@ -448,6 +451,145 @@ describe("session accessor seam", () => {
     });
     expect(result.totalCount).toBe(1);
     expect(result.entries.map(({ sessionKey }) => sessionKey)).toEqual(["agent:main:valid"]);
+  });
+
+  it("settles rows left pending by an older same-version writer", () => {
+    const databasePath = resolveSqliteTargetFromSessionStorePath(storePath, {
+      agentId: "main",
+    }).path;
+    const database = openOpenClawAgentDatabase({ agentId: "main", path: databasePath });
+    database.db
+      .prepare(
+        "INSERT INTO session_nodes (session_key, current_session_id, entry_json, updated_at) VALUES (?, ?, ?, ?)",
+      )
+      .run(
+        "agent:main:pending",
+        "pending-session",
+        JSON.stringify({ sessionId: "pending-session", updatedAt: 12 }),
+        12,
+      );
+    expect(
+      querySqliteSessionEntriesReadOnly({
+        agentId: "main",
+        query: { archived: false, includeGlobal: true, includeUnknown: true },
+        storePath,
+      }).entries.map(({ sessionKey }) => sessionKey),
+    ).toContain("agent:main:pending");
+    expect(
+      database.db
+        .prepare("SELECT entry_valid FROM session_nodes WHERE session_key = ?")
+        .get("agent:main:pending"),
+    ).toEqual({ entry_valid: 1 });
+
+    database.db
+      .prepare("UPDATE session_nodes SET entry_json = '{}' WHERE session_key = ?")
+      .run("agent:main:pending");
+    expect(
+      database.db
+        .prepare("SELECT entry_valid FROM session_nodes WHERE session_key = ?")
+        .get("agent:main:pending"),
+    ).toEqual({ entry_valid: 0 });
+    expect(
+      querySqliteSessionEntriesReadOnly({
+        agentId: "main",
+        query: { archived: false, includeGlobal: true, includeUnknown: true },
+        storePath,
+      }).entries.map(({ sessionKey }) => sessionKey),
+    ).not.toContain("agent:main:pending");
+    expect(
+      database.db
+        .prepare("SELECT entry_valid FROM session_nodes WHERE session_key = ?")
+        .get("agent:main:pending"),
+    ).toEqual({ entry_valid: -1 });
+
+    database.db
+      .prepare("UPDATE session_nodes SET entry_json = ? WHERE session_key = ?")
+      .run(JSON.stringify({ sessionId: "pending-session", updatedAt: 13 }), "agent:main:pending");
+    expect(
+      querySqliteSessionEntriesReadOnly({
+        agentId: "main",
+        query: { archived: false, includeGlobal: true, includeUnknown: true },
+        storePath,
+      }).entries.map(({ sessionKey }) => sessionKey),
+    ).toContain("agent:main:pending");
+    expect(
+      database.db
+        .prepare("SELECT entry_valid FROM session_nodes WHERE session_key = ?")
+        .get("agent:main:pending"),
+    ).toEqual({ entry_valid: 1 });
+
+    database.db
+      .prepare("UPDATE session_nodes SET entry_json = ? WHERE session_key = ?")
+      .run(JSON.stringify({ sessionId: "pending-session", updatedAt: 14 }), "agent:main:pending");
+    const insertPending = database.db.prepare(
+      "INSERT INTO session_nodes (session_key, current_session_id, entry_json, updated_at) VALUES (?, ?, ?, ?)",
+    );
+    for (const index of [1, 2]) {
+      insertPending.run(
+        `agent:main:pending-${index}`,
+        `pending-session-${index}`,
+        JSON.stringify({ sessionId: `pending-session-${index}`, updatedAt: 14 + index }),
+        14 + index,
+      );
+    }
+    closeOpenClawAgentDatabasesForTest();
+    let readOnlyError: unknown;
+    try {
+      querySqliteSessionEntriesReadOnly({
+        agentId: "main",
+        query: { archived: false, includeGlobal: true, includeUnknown: true },
+        storePath,
+      });
+    } catch (error) {
+      readOnlyError = error;
+    }
+    expect(readOnlyError).toMatchObject({
+      code: "SESSION_ENTRY_VALIDITY_MIGRATION_REQUIRED",
+      message: expect.stringContaining("openclaw doctor --fix"),
+    });
+    expect(
+      openOpenClawAgentDatabase({ agentId: "main", path: databasePath })
+        .db.prepare(
+          "SELECT session_key, entry_valid FROM session_nodes WHERE session_key LIKE 'agent:main:pending%' ORDER BY session_key",
+        )
+        .all(),
+    ).toEqual([
+      { entry_valid: 1, session_key: "agent:main:pending" },
+      { entry_valid: 1, session_key: "agent:main:pending-1" },
+      { entry_valid: 1, session_key: "agent:main:pending-2" },
+    ]);
+  });
+
+  it("reports a typed repair diagnostic for a read-only pre-projection database", () => {
+    const databasePath = resolveSqliteTargetFromSessionStorePath(storePath, {
+      agentId: "main",
+    }).path;
+    const database = openOpenClawAgentDatabase({ agentId: "main", path: databasePath });
+    database.db.exec(`
+      DROP TRIGGER session_nodes_entry_valid_after_insert;
+      DROP TRIGGER session_nodes_entry_valid_after_entry_update;
+      DROP INDEX idx_agent_session_nodes_canonical_updated_at;
+      DROP INDEX idx_agent_session_nodes_canonical_last_interaction_at;
+      DROP INDEX idx_agent_session_nodes_canonical_creator;
+      DROP INDEX idx_agent_session_nodes_entry_valid_pending;
+      ALTER TABLE session_nodes DROP COLUMN entry_valid;
+    `);
+    closeOpenClawAgentDatabasesForTest();
+
+    let readOnlyError: unknown;
+    try {
+      querySqliteSessionEntriesReadOnly({
+        agentId: "main",
+        query: { archived: false, includeGlobal: true, includeUnknown: true },
+        storePath,
+      });
+    } catch (error) {
+      readOnlyError = error;
+    }
+    expect(readOnlyError).toMatchObject({
+      code: "SESSION_ENTRY_VALIDITY_MIGRATION_REQUIRED",
+      message: expect.stringContaining("openclaw doctor --fix"),
+    });
   });
 
   it("rejects corrupt canonical blobs on exact reads", () => {

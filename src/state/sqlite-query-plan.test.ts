@@ -183,6 +183,11 @@ describe("sqlite hot query plans", () => {
     });
     expectPlanUsesIndex({
       db: database.db,
+      indexName: "idx_agent_session_nodes_entry_valid_pending",
+      sql: "SELECT session_key, entry_json FROM session_nodes WHERE entry_valid = 0",
+    });
+    expectPlanUsesIndex({
+      db: database.db,
       indexName: "idx_agent_session_nodes_updated_at",
       sql: `
         SELECT session_key

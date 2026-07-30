@@ -704,19 +704,31 @@ describe.each([publicAccessorAdapter, sqliteAdapter])(
         updatedAt: 100,
       });
       const parseSpy = vi.spyOn(JSON, "parse");
+      const targetEntryParseCount = () =>
+        parseSpy.mock.calls.filter(
+          ([json]) =>
+            typeof json === "string" &&
+            json.includes('"sessionId":"target-session"') &&
+            json.includes('"model":"target"'),
+        ).length;
 
       try {
         expect(loadSqliteSessionEntry(scope)).toMatchObject({
           model: "target",
           sessionId: "target-session",
         });
-        const initialParseCount = parseSpy.mock.calls.length;
-        expect(initialParseCount).toBe(1);
+        expect(targetEntryParseCount()).toBe(1);
+        expect(
+          parseSpy.mock.calls.some(
+            ([json]) =>
+              typeof json === "string" && json.includes('"sessionId":"unrelated-session-'),
+          ),
+        ).toBe(false);
         expect(loadSqliteSessionEntry(scope)).toMatchObject({
           model: "target",
           sessionId: "target-session",
         });
-        expect(parseSpy).toHaveBeenCalledTimes(initialParseCount + 1);
+        expect(targetEntryParseCount()).toBe(2);
       } finally {
         parseSpy.mockRestore();
       }
@@ -1613,8 +1625,8 @@ describe("sqlite session normalization", () => {
     };
 
     for (const [sessionKey, sessionId] of [
-      ["agent:main:slack:channel:C1", "channel-session-1"],
-      ["agent:main:slack:channel:C2", "channel-session-2"],
+      ["agent:main:slack:channel:c1", "channel-session-1"],
+      ["agent:main:slack:channel:c2", "channel-session-2"],
     ] as const) {
       await patchSqliteSessionEntry(
         scopeFor(sessionKey),

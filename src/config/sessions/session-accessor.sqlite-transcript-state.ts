@@ -80,11 +80,19 @@ export function ensureTranscriptSessionRoot(
         session_key: scope.sessionKey,
         current_session_id: scope.sessionId,
         entry_json: "{}",
+        entry_valid: -1,
         updated_at: updatedAt,
       })
       .onConflict((conflict) => conflict.column("session_key").doNothing()),
   );
   if ((insertedNode.numAffectedRows ?? 0n) > 0n) {
+    executeSqliteQuerySync(
+      database.db,
+      db
+        .updateTable("session_nodes")
+        .set({ entry_valid: -1 })
+        .where("session_key", "=", scope.sessionKey),
+    );
     publishSqliteSessionEntryCacheInvalidation(database);
   }
   executeSqliteQuerySync(
