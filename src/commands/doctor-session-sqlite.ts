@@ -6,7 +6,6 @@ import { getRuntimeConfig } from "../config/config.js";
 import { resolveStateDir } from "../config/paths.js";
 import { parseSqliteSessionFileMarker } from "../config/sessions/legacy-sqlite-marker.js";
 import { resolveSessionFilePath } from "../config/sessions/paths.js";
-import { resolveSqliteScope } from "../config/sessions/session-accessor.sqlite-scope.js";
 import { importSqliteSessionRows } from "../config/sessions/session-accessor.sqlite.js";
 import { resolveUnsuffixedSqliteTargetFromSessionStorePath } from "../config/sessions/session-sqlite-target.js";
 import { normalizeStoreSessionKey } from "../config/sessions/store-entry.js";
@@ -595,6 +594,7 @@ async function importLegacySessionRecord(
       allowMalformedRowRepair: true,
       agentId: target.agentId,
       entry: record.entry,
+      preserveExactStoredKey: true,
       sessionKey: record.sessionKey,
       storePath: target.storePath,
     });
@@ -611,6 +611,7 @@ async function importLegacySessionRecord(
       allowMalformedRowRepair: true,
       agentId: target.agentId,
       entry: record.entry,
+      preserveExactStoredKey: true,
       sessionKey: record.sessionKey,
       storePath: target.storePath,
       ...(record.transcriptPath && shouldImportTranscript
@@ -639,6 +640,7 @@ async function importLegacySessionRecord(
     allowMalformedRowRepair: true,
     agentId: target.agentId,
     entry: record.entry,
+    preserveExactStoredKey: true,
     sessionKey: record.sessionKey,
     storePath: target.storePath,
     ...(record.transcriptPath && result.status === "ok" && shouldImportTranscript
@@ -689,11 +691,7 @@ function validateImportedRecordBeforeArchive(
   record: LegacySessionRecord,
   report: DoctorSessionSqliteTargetReport,
 ): void {
-  const normalizedKey = resolveSqliteScope({
-    agentId: target.agentId,
-    sessionKey: record.sessionKey,
-    storePath: target.storePath,
-  }).sessionKey;
+  const normalizedKey = record.sessionKey;
   const sqliteEntry = readOnlySqliteExactSessionEntry(target, normalizedKey);
   if (!sqliteEntry.ok || !sqliteEntry.entry) {
     report.issues.push({
@@ -1011,11 +1009,7 @@ function countAlreadyMigratedTranscriptEventsForImport(
   target: SessionStoreTarget,
   record: LegacySessionRecord,
 ): number | undefined {
-  const normalizedKey = resolveSqliteScope({
-    agentId: target.agentId,
-    sessionKey: record.sessionKey,
-    storePath: target.storePath,
-  }).sessionKey;
+  const normalizedKey = record.sessionKey;
   const sqliteEntry = readOnlySqliteExactSessionEntry(target, normalizedKey);
   if (!sqliteEntry.ok || sqliteEntry.entry?.entry.sessionId !== record.entry.sessionId) {
     return undefined;

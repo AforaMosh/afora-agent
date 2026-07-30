@@ -25,6 +25,7 @@ type SqliteSessionImportRowsParams = {
   allowMalformedRowRepair?: boolean;
   agentId?: string;
   env?: NodeJS.ProcessEnv;
+  preserveExactStoredKey?: boolean;
   storePath?: string;
   sessionKey: string;
   entry: SessionEntry;
@@ -43,12 +44,16 @@ type SqliteSessionImportRowsResult = {
 export async function importSqliteSessionRows(
   params: SqliteSessionImportRowsParams,
 ): Promise<SqliteSessionImportRowsResult> {
-  const resolved = resolveSqliteScope({
+  const resolvedScope = resolveSqliteScope({
     ...(params.agentId ? { agentId: params.agentId } : {}),
     ...(params.env ? { env: params.env } : {}),
     sessionKey: params.sessionKey,
     ...(params.storePath ? { storePath: params.storePath } : {}),
   });
+  // Doctor can stage the exact legacy key so canonical repair compares every alias candidate.
+  const resolved = params.preserveExactStoredKey
+    ? { ...resolvedScope, sessionKey: params.sessionKey }
+    : resolvedScope;
   return await runExclusiveSqliteSessionWrite(resolved, async () => {
     let transcriptEvents = 0;
     runOpenClawAgentWriteTransaction((database) => {
