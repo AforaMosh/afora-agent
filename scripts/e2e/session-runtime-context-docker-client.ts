@@ -7,6 +7,7 @@ import os from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { SessionManager } from "openclaw/plugin-sdk/agent-sessions";
+import { upsertSessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
 import { readSessionTranscriptEvents } from "openclaw/plugin-sdk/session-transcript-runtime";
 import {
   buildRuntimeContextCustomMessage,
@@ -51,14 +52,17 @@ function messageText(content: unknown): string {
 }
 
 async function verifyRuntimeContextTranscriptShape(root: string) {
-  const sessionManager = SessionManager.open(
-    {
-      agentId: "main",
-      sessionId: "runtime",
-      sessionKey: "agent:main:qa:docker-runtime-context-shape",
-    },
-    root,
-  );
+  const target = {
+    agentId: "main",
+    sessionId: "runtime",
+    sessionKey: "agent:main:qa:docker-runtime-context-shape",
+  };
+  await upsertSessionEntry({
+    agentId: target.agentId,
+    sessionKey: target.sessionKey,
+    entry: { sessionId: target.sessionId, updatedAt: Date.now() },
+  });
+  const sessionManager = SessionManager.open(target, root);
   const effectivePrompt = [
     "visible ask",
     "",

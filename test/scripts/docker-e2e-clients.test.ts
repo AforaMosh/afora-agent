@@ -13,6 +13,8 @@ describe("Docker E2E client scripts", () => {
     expect(source).toContain("../../dist/commitments/runtime.js");
     expect(source).toContain("../../dist/commitments/runtime.test-support.js");
     expect(source).toContain("../../dist/commitments/store.js");
+    expect(source).toContain("../../dist/state/openclaw-state-db.js");
+    expect(source).toContain("closeOpenClawStateDatabase();");
     expect(source).toContain("verifyExtractionRemainsRetired()");
     expect(source).toContain("verifyDoctorImportAndRuntimeIsolation()");
     expect(source).toContain("verifyExpiryTransition()");
@@ -24,6 +26,10 @@ describe("Docker E2E client scripts", () => {
     const source = readScript("scripts/e2e/session-runtime-context-docker-client.ts");
 
     expect(source).toContain("openclaw/plugin-sdk/agent-sessions");
+    expect(source).toContain("openclaw/plugin-sdk/session-store-runtime");
+    expect(source.indexOf("await upsertSessionEntry(")).toBeLessThan(
+      source.indexOf("SessionManager.open(target, root)"),
+    );
     expect(source).toContain(
       "../../dist/agents/embedded-agent-runner/run/runtime-context-prompt.js",
     );

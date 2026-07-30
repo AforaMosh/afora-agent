@@ -13,6 +13,7 @@ import {
   listDueCommitmentsForSession,
   upsertInferredCommitments,
 } from "../../dist/commitments/store.js";
+import { closeOpenClawStateDatabase } from "../../dist/state/openclaw-state-db.js";
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) {
@@ -36,6 +37,7 @@ async function withStateDir<T>(name: string, fn: (stateDir: string) => Promise<T
     return await fn(root);
   } finally {
     resetCommitmentExtractionRuntimeForTests();
+    closeOpenClawStateDatabase();
     if (previousStateDir === undefined) {
       deleteEnvValue("OPENCLAW_STATE_DIR");
     } else {
@@ -149,6 +151,7 @@ async function verifyDoctorImportAndRuntimeIsolation() {
     assert(beforeDoctor.length === 0, "runtime imported legacy JSON without doctor");
     await fs.access(sourcePath);
 
+    closeOpenClawStateDatabase();
     await runPackagedDoctor(stateDir);
     await fs
       .access(sourcePath)
