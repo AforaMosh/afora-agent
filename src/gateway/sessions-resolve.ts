@@ -250,6 +250,7 @@ export async function resolveSessionKeyFromResolveParams(params: {
         includeGlobal: p.includeGlobal === true,
         includeUnknown: !p.agentId && p.includeUnknown === true,
         ...lineageSqlQuery,
+        // The SQLite selector matches current_session_id OR exact session_key.
         sessionId,
       },
     });

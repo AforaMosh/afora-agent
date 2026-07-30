@@ -415,6 +415,27 @@ describe("session accessor seam", () => {
     ).toThrow("openclaw doctor --fix");
   });
 
+  it("matches an exact session key through the sessionId selector", () => {
+    const sessionKey = "agent:main:key-selector";
+    replaceSqliteSessionEntrySync(
+      { agentId: "main", sessionKey, storePath },
+      { sessionId: "different-session-id", updatedAt: 10 },
+    );
+
+    expect(
+      querySqliteSessionEntriesReadOnly({
+        agentId: "main",
+        query: {
+          archived: false,
+          includeGlobal: false,
+          includeUnknown: false,
+          sessionId: sessionKey,
+        },
+        storePath,
+      }).entries.map((entry) => entry.sessionKey),
+    ).toEqual([sessionKey]);
+  });
+
   it("does not let invalid blobs consume a bounded list page", () => {
     replaceSqliteSessionEntrySync(
       { agentId: "main", sessionKey: "agent:main:valid", storePath },
