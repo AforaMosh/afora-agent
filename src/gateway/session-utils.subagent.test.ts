@@ -1405,6 +1405,39 @@ describe("listSessionsFromStore subagent metadata", () => {
 });
 
 describe("loadCombinedSessionStoreForGateway includes disk-only agents (#32804)", () => {
+  test("fails loud for duplicate sentinels owned by the same agent", async () => {
+    await withStateDirEnv("openclaw-session-list-duplicate-sentinel-", async ({ stateDir }) => {
+      const primaryStore = path.join(stateDir, "agents", "main", "sessions", "sessions.json");
+      const workerStore = path.join(stateDir, "agents", "worker", "sessions", "sessions.json");
+      const retiredStore = path.join(stateDir, "retired", "worker", "sessions.json");
+      const cfg = {
+        agents: { list: [{ id: "main", default: true }, { id: "worker" }] },
+      } as OpenClawConfig;
+      await seedSessionEntry(
+        primaryStore,
+        "global",
+        { sessionId: "primary-global", updatedAt: 10 },
+        "main",
+      );
+      await seedSessionEntry(
+        workerStore,
+        "global",
+        { sessionId: "worker-global", updatedAt: 20 },
+        "worker",
+      );
+      await seedSessionEntry(
+        retiredStore,
+        "global",
+        { sessionId: "retired-worker-global", updatedAt: 30 },
+        "worker",
+      );
+
+      expect(() => loadCombinedSessionStoreForGateway(cfg)).toThrow(
+        "duplicate rows resolve to canonical session key global",
+      );
+    });
+  });
+
   test("keeps unrelated incognito agents out of bounded selection", async () => {
     await withStateDirEnv("openclaw-session-list-incognito-scope-", async ({ stateDir }) => {
       const storePath = path.join(stateDir, "agents", "main", "sessions", "sessions.json");

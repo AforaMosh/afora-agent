@@ -191,6 +191,7 @@ function mergeGatewayEntries(params: {
   configuredAgentIds?: ReadonlySet<string>;
   entries: readonly SessionEntrySummary[];
   requestedAgentId?: string;
+  seenSentinelOwners: Set<string>;
 }): boolean {
   let exact = true;
   for (const { sessionKey: key, entry } of params.entries) {
@@ -211,6 +212,16 @@ function mergeGatewayEntries(params: {
     }
     if (key !== canonicalKey) {
       throw nonCanonicalSessionKeyRowError(canonicalKey);
+    }
+    const sentinelOwnerKey =
+      canonicalKey === "global" || canonicalKey === "unknown"
+        ? `${canonicalKey}\0${canonicalAgentId}`
+        : undefined;
+    if (sentinelOwnerKey) {
+      if (params.seenSentinelOwners.has(sentinelOwnerKey)) {
+        throw duplicateCanonicalSessionKeyError(canonicalKey);
+      }
+      params.seenSentinelOwners.add(sentinelOwnerKey);
     }
     const projectedEntry = projectCombinedSessionEntry({
       agentId: canonicalAgentId,
@@ -417,6 +428,8 @@ export function loadCombinedSessionStoreForGateway(
   }
   const combined: Record<string, SessionEntry> = {};
   const rowContextCombined: Record<string, SessionEntry> = {};
+  const combinedSeenSentinelOwners = new Set<string>();
+  const rowContextSeenSentinelOwners = new Set<string>();
   let selectionExact = targets.length === 1 && !openIncognito && query?.selectionResidual !== true;
   for (const target of targets) {
     const agentId = target.agentId;
@@ -436,6 +449,7 @@ export function loadCombinedSessionStoreForGateway(
     const merge = (
       entries: readonly SessionEntrySummary[],
       destination: Record<string, SessionEntry>,
+      seenSentinelOwners: Set<string>,
     ) =>
       mergeGatewayEntries({
         agentId,
@@ -444,11 +458,12 @@ export function loadCombinedSessionStoreForGateway(
         ...(configuredAgentIds ? { configuredAgentIds } : {}),
         entries,
         ...(requestedAgentId ? { requestedAgentId } : {}),
+        seenSentinelOwners,
       });
-    selectionExact = merge(loaded.entries, combined) && selectionExact;
-    merge(loaded.entries, rowContextCombined);
+    selectionExact = merge(loaded.entries, combined, combinedSeenSentinelOwners) && selectionExact;
+    merge(loaded.entries, rowContextCombined, rowContextSeenSentinelOwners);
     if (loaded.dependencies) {
-      merge(loaded.dependencies, rowContextCombined);
+      merge(loaded.dependencies, rowContextCombined, rowContextSeenSentinelOwners);
     }
   }
 
