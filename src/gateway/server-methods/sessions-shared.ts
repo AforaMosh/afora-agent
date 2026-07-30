@@ -144,6 +144,8 @@ export function prepareGatewaySessionListQuery(params: {
   const hasOpenIncognito = listOpenIncognitoAgentDatabases().some(
     ({ agentId }) => !allowedIncognitoAgentIds || allowedIncognitoAgentIds.has(agentId),
   );
+  // Only identified non-admin clients receive the visibility entryFilter (including retries),
+  // so it is always paired with an unbounded candidate query here.
   const requiresClientVisibilityFilter = !isGatewayAdmin(params.client) && Boolean(identity);
   const hasFacetResidualFilters =
     Boolean(normalizeOptionalString(params.list.search)) ||
