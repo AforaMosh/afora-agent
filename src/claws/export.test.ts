@@ -277,6 +277,73 @@ describe("exportClawAgent", () => {
     await expect(readFile(join(out, "workspace", "SOUL.md"), "utf8")).rejects.toThrow();
   });
 
+  it("exports extension plugins into profile v1 without duplicating manifest packages", async () => {
+    const fixture = await installedFixture();
+    const integrity = `sha256:${"b".repeat(64)}`;
+    const extension = {
+      id: "coding-tools",
+      format: "claude" as const,
+      detectedFormat: "claude" as const,
+      mapped: ["commands", "skills"],
+      unavailable: ["agents"],
+      adapterIdentity: "openclaw/test",
+    };
+    persistClawPackageRef(
+      fixture.plan,
+      {
+        kind: "plugin",
+        source: "clawhub",
+        ref: "@acme/coding-tools",
+        version: "1.2.3",
+        integrity,
+        extension,
+      },
+      { env: fixture.env, relationship: "referenced" },
+    );
+
+    const result = await exportClawAgent("worker", join(fixture.root, "exported-extension"), {
+      env: fixture.env,
+      config: fixture.config,
+      sourceMcpServers: fixture.sourceMcpServers,
+      packageDeps: {
+        resolvePlugin: async () => ({
+          status: "found" as const,
+          pluginId: "coding-tools",
+          installedVersion: "1.2.3",
+          record: { source: "clawhub", integrity },
+        }),
+      },
+      packagePreflight: async () => ({
+        ok: true,
+        action: "reuse",
+        integrity,
+        installId: "coding-tools",
+        detectedFormat: "claude",
+        mapped: ["commands", "skills"],
+        unavailable: ["agents"],
+        adapterIdentity: "openclaw/test",
+      }),
+    });
+
+    expect(result.manifest.packages).toEqual([]);
+    expect(result.manifest.workspace.files).toContainEqual(
+      expect.objectContaining({ path: "reference/policy.md" }),
+    );
+    expect(result.openClawProfile).toMatchObject({
+      schemaVersion: 1,
+      extensions: [
+        {
+          id: "coding-tools",
+          kind: "plugin",
+          format: "claude",
+          source: "clawhub",
+          ref: "@acme/coding-tools",
+          version: "1.2.3",
+        },
+      ],
+    });
+  });
+
   it("rejects modified managed content instead of silently creating a snapshot", async () => {
     const fixture = await installedFixture();
     await writeFile(join(fixture.plan.agent.workspace, "SOUL.md"), "operator revision\n", "utf8");

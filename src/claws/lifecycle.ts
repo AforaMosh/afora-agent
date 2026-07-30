@@ -524,7 +524,23 @@ export async function buildClawAddPlan(params: {
     packagePreflight: context.packagePreflight,
   });
   const extensions = extensionPlan.extensions;
-  actions.push(...extensionPlan.actions);
+  const existingPackageActionIds = new Set(
+    actions.filter((action) => action.kind === "package").map((action) => action.id),
+  );
+  for (const [index, action] of extensionPlan.actions.entries()) {
+    if (existingPackageActionIds.has(action.id)) {
+      blockers.push(
+        blocker(
+          "extension_package_collision",
+          `$.profiles.openclaw.extensions[${index}]`,
+          `Extension package ${JSON.stringify(action.id)} is already declared by the portable manifest.`,
+        ),
+      );
+      continue;
+    }
+    actions.push(action);
+    existingPackageActionIds.add(action.id);
+  }
   capabilityChanges.push(...extensionPlan.capabilityChanges);
   blockers.push(...extensionPlan.blockers);
 

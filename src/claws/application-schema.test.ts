@@ -127,10 +127,89 @@ describe("Claw application planning v1", () => {
       }),
     ]);
     expect(plan.actions).toContainEqual(
-      expect.objectContaining({ kind: "package", id: "extension:market-data", blocked: false }),
+      expect.objectContaining({
+        kind: "package",
+        id: "plugin:@acme/market-data",
+        blocked: false,
+        details: expect.objectContaining({
+          extension: expect.objectContaining({
+            id: "market-data",
+            adapterIdentity: "openclaw/test",
+          }),
+        }),
+      }),
     );
     expect(plan.actions).toContainEqual(
       expect.objectContaining({ kind: "workspaceFile", id: "schemas/market.json" }),
+    );
+  });
+
+  it("blocks incomplete adapter provenance", async () => {
+    const { source, workspace } = await createPlanSource();
+    const plan = await buildClawAddPlan({
+      manifest: requireManifest({ schemaVersion: 1, agent: { id: "market-analyst" } }),
+      openClawProfile: { schemaVersion: 1, agent: {}, extensions: [extension] },
+      source,
+      context: {
+        workspace,
+        packagePreflight: async () => ({
+          ok: true,
+          action: "install",
+          integrity: `sha256:${"b".repeat(64)}`,
+          installId: "market-data",
+          detectedFormat: "claude",
+          mapped: ["skills"],
+          unavailable: [],
+        }),
+      },
+    });
+
+    expect(plan.blockers).toContainEqual(
+      expect.objectContaining({ code: "extension_provenance_incomplete" }),
+    );
+    expect(plan.actions).toContainEqual(
+      expect.objectContaining({ id: "plugin:@acme/market-data", blocked: true }),
+    );
+  });
+
+  it("blocks duplicate portable and profile package declarations", async () => {
+    const { source, workspace } = await createPlanSource();
+    const manifest = requireManifest({
+      schemaVersion: 1,
+      agent: { id: "market-analyst" },
+      packages: [
+        {
+          kind: "plugin",
+          source: "clawhub",
+          ref: "@acme/market-data",
+          version: "2.0.1",
+        },
+      ],
+    });
+    const plan = await buildClawAddPlan({
+      manifest,
+      openClawProfile: { schemaVersion: 1, agent: {}, extensions: [extension] },
+      source,
+      context: {
+        workspace,
+        packagePreflight: async () => ({
+          ok: true,
+          action: "install",
+          integrity: `sha256:${"b".repeat(64)}`,
+          installId: "market-data",
+          detectedFormat: "claude",
+          mapped: ["skills"],
+          unavailable: [],
+          adapterIdentity: "openclaw/test",
+        }),
+      },
+    });
+
+    expect(plan.blockers).toContainEqual(
+      expect.objectContaining({ code: "extension_package_collision" }),
+    );
+    expect(plan.actions.filter((action) => action.id === "plugin:@acme/market-data")).toHaveLength(
+      1,
     );
   });
 
@@ -159,7 +238,7 @@ describe("Claw application planning v1", () => {
       },
     });
 
-    expect(plan.extensions[0]?.blocked).toBe(true);
+    expect(plan.extensions?.[0]?.blocked).toBe(true);
     expect(plan.blockers).toContainEqual(
       expect.objectContaining({
         code: "extension_format_mismatch",
