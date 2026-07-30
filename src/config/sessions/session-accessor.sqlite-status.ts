@@ -4,7 +4,10 @@ import {
   executeSqliteQueryTakeFirstSync,
   getNodeSqliteKysely,
 } from "../../infra/kysely-sync.js";
-import { runSqliteDeferredTransactionSync } from "../../infra/sqlite-transaction.js";
+import {
+  runSqliteDeferredTransactionSync,
+  runSqliteImmediateTransactionSync,
+} from "../../infra/sqlite-transaction.js";
 import type { DB as OpenClawAgentKyselyDatabase } from "../../state/openclaw-agent-db.generated.js";
 import type { OpenClawAgentDatabase } from "../../state/openclaw-agent-db.js";
 import type {
@@ -21,8 +24,32 @@ import type { SessionEntry } from "./types.js";
 
 type SessionStatusDatabase = Pick<OpenClawAgentKyselyDatabase, "session_nodes">;
 type SessionListExpressionBuilder = ExpressionBuilder<SessionStatusDatabase, "session_nodes">;
-type SessionDatabaseReader = Pick<OpenClawAgentDatabase, "agentId" | "db">;
+type SessionDatabaseReader = Pick<OpenClawAgentDatabase, "agentId" | "db"> & {
+  writable?: boolean;
+};
 const CANONICAL_ENTRY_FIELDS = new Set(["sessionId", "updatedAt"]);
+const SESSION_ENTRY_VALIDITY_REPAIR_COMMAND = "openclaw doctor --fix";
+
+class SessionEntryValidityMigrationRequiredError extends Error {
+  readonly code = "SESSION_ENTRY_VALIDITY_MIGRATION_REQUIRED";
+
+  constructor() {
+    super(
+      `pending session entry projections require repair; stop the Gateway and run ${SESSION_ENTRY_VALIDITY_REPAIR_COMMAND}`,
+    );
+    this.name = "SessionEntryValidityMigrationRequiredError";
+  }
+}
+
+class PendingSessionEntryValidityRetry extends Error {}
+
+function isMissingEntryValidityColumnError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    (error as NodeJS.ErrnoException).code === "ERR_SQLITE_ERROR" &&
+    /\bno such column:\s*(?:"?session_nodes"?\.)?"?entry_valid"?/iu.test(error.message)
+  );
+}
 
 function hasDuplicateCanonicalEntryFields(json: string): boolean {
   const seen = new Set<string>();
@@ -126,6 +153,65 @@ export function parseSqliteSessionEntryJson(row: {
   }
 }
 
+function settlePendingSessionEntryValidity(database: SessionDatabaseReader): void {
+  const db = getNodeSqliteKysely<SessionStatusDatabase>(database.db);
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    let pending: Array<{ entry_json: string; session_key: string }>;
+    try {
+      pending = executeSqliteQuerySync(
+        database.db,
+        db
+          .selectFrom("session_nodes")
+          .select(["entry_json", "session_key"])
+          .where("entry_valid", "=", 0),
+      ).rows;
+    } catch (error) {
+      if (isMissingEntryValidityColumnError(error)) {
+        throw new SessionEntryValidityMigrationRequiredError();
+      }
+      throw error;
+    }
+    if (pending.length === 0) {
+      return;
+    }
+    if (database.writable === false) {
+      throw new SessionEntryValidityMigrationRequiredError();
+    }
+    const settled = pending.map((row) => ({
+      ...row,
+      entryValid: parseSqliteSessionEntryJson(row) ? 1 : -1,
+    }));
+    runSqliteImmediateTransactionSync(
+      database.db,
+      () => {
+        for (const row of settled) {
+          executeSqliteQuerySync(
+            database.db,
+            db
+              .updateTable("session_nodes")
+              .set({ entry_valid: row.entryValid })
+              .where("session_key", "=", row.session_key)
+              .where("entry_json", "=", row.entry_json)
+              .where("entry_valid", "=", 0),
+          );
+        }
+      },
+      { operationLabel: "settle pending session entry validity" },
+    );
+  }
+  throw new Error("SQLite session entries changed repeatedly during validity settlement");
+}
+
+function hasPendingSessionEntryValidity(database: SessionDatabaseReader): boolean {
+  const db = getNodeSqliteKysely<SessionStatusDatabase>(database.db);
+  return Boolean(
+    executeSqliteQueryTakeFirstSync(
+      database.db,
+      db.selectFrom("session_nodes").select("session_key").where("entry_valid", "=", 0).limit(1),
+    ),
+  );
+}
+
 function buildSessionListPredicate(
   eb: SessionListExpressionBuilder,
   query: SessionEntryListQuery,
@@ -219,18 +305,9 @@ function buildSessionListPredicate(
       .end();
     conditions.push(eb(hidden, "=", 0));
   }
-  const entryJsonValid = eb(eb.fn<number>("json_valid", ["entry_json"]), "=", eb.lit(1));
-  // Canonical writers use JSON.stringify, so escaped ASCII field labels are not a
-  // persisted read-path contract and must not grow a second compatibility parser here.
-  conditions.push(entryJsonValid);
-  conditions.push(
-    eb(
-      eb.fn<string>("substr", [eb.fn<string>("ltrim", ["entry_json"]), eb.lit(1), eb.lit(1)]),
-      "=",
-      "{",
-    ),
-  );
-  conditions.push(eb("entry_json", "!=", "{}"));
+  // Writers and pending-row settlement own canonical blob validation. The partial indexes make
+  // the exact parser contract available to selection/count queries without rescanning blobs.
+  conditions.push(eb("entry_valid", "=", eb.lit(1)));
   if (query.spawnedBy) {
     // Canonical sentinels are valid rows, but they never participate in child lineage.
     conditions.push(eb("session_key", "!=", "global"));
@@ -264,12 +341,34 @@ export function querySqliteSessionEntries(
     setProjectedTitle: (entry: SessionEntry, title: string | null) => void;
   },
 ): SqliteSessionEntryListQueryResult {
-  const validationToken = assertCanonicalSqliteSessionKeysCurrent(database, query.mainKey);
-  return runSqliteDeferredTransactionSync(
-    database.db,
-    () => querySqliteSessionEntriesInSnapshot(database, query, options, validationToken),
-    { operationLabel: "query session list" },
-  );
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    // Older same-version writers leave rows pending through the trigger. Reconcile only that
+    // partial-indexed set before relying on the steady-state validity indexes.
+    settlePendingSessionEntryValidity(database);
+    const validationToken = assertCanonicalSqliteSessionKeysCurrent(database, query.mainKey);
+    try {
+      return runSqliteDeferredTransactionSync(
+        database.db,
+        () => {
+          // This read establishes the same snapshot used by selection. A compatible writer
+          // that committed after settlement is retried instead of disappearing from the page.
+          if (hasPendingSessionEntryValidity(database)) {
+            throw new PendingSessionEntryValidityRetry();
+          }
+          return querySqliteSessionEntriesInSnapshot(database, query, options, validationToken);
+        },
+        { operationLabel: "query session list" },
+      );
+    } catch (error) {
+      if (!(error instanceof PendingSessionEntryValidityRetry)) {
+        throw error;
+      }
+      if (database.writable === false) {
+        throw new SessionEntryValidityMigrationRequiredError();
+      }
+    }
+  }
+  throw new Error("SQLite session entries changed repeatedly during list selection");
 }
 
 function querySqliteSessionEntriesInSnapshot(

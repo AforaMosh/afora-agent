@@ -72,10 +72,18 @@ describe("resolveSessionKeyFromResolveParams", () => {
   });
 
   it("hides canonical keys that fail the spawnedBy visibility filter", async () => {
+    const canonicalValidationError = new Error("openclaw doctor --fix");
     targetStore = {
       [canonicalKey]: { sessionId: "sess-1", updatedAt: 1 },
       [legacyKey]: { sessionId: "sess-legacy", updatedAt: 0 },
     };
+    hoisted.resolveGatewaySessionStoreTargetWithStoreMock.mockReturnValue({
+      canonicalKey,
+      canonicalValidationError,
+      storeKeys: [canonicalKey, legacyKey],
+      storePath,
+      store: targetStore,
+    });
     hoisted.listSessionsFromStoreMock.mockReturnValue({ sessions: [] });
 
     await expect(
@@ -90,6 +98,9 @@ describe("resolveSessionKeyFromResolveParams", () => {
         message: `No session found: ${canonicalKey}`,
       },
     });
+    expect(hoisted.resolveGatewaySessionStoreTargetWithStoreMock).toHaveBeenCalledWith(
+      expect.objectContaining({ deferCanonicalValidation: true }),
+    );
   });
 
   it("does not resolve reserved keys through a spawnedBy filter", async () => {

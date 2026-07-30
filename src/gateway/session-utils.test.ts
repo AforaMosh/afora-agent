@@ -2119,6 +2119,30 @@ describe("gateway session utils", () => {
     }
   });
 
+  test("resolveGatewaySessionStoreTargetWithStore can defer canonical diagnostics", async () => {
+    await withStateDirEnv("session-utils-target-deferred-validation-", async ({ stateDir }) => {
+      const storePath = path.join(stateDir, "sessions.json");
+      const cfg = {
+        session: { mainKey: "main", store: storePath },
+        agents: { list: [{ id: "main", default: true }] },
+      } as OpenClawConfig;
+      const store: Record<string, SessionEntry> = {
+        "agent:main:main": { sessionId: "canonical", updatedAt: 2 },
+        main: { sessionId: "alias", updatedAt: 1 },
+      };
+
+      const target = resolveGatewaySessionStoreTargetWithStore({
+        cfg,
+        key: "main",
+        store,
+        deferCanonicalValidation: true,
+      });
+
+      expect(target.store).toBe(store);
+      expect(target.canonicalValidationError?.message).toContain("openclaw doctor --fix");
+    });
+  });
+
   test("loadSessionEntry preserves a listed deleted main session over the live default main", async () => {
     resetConfigRuntimeState();
     try {

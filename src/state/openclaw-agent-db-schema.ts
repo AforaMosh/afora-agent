@@ -37,6 +37,7 @@ import {
 } from "./openclaw-agent-db-schema-helpers.js";
 import {
   backfillSessionConversations,
+  ensureSessionEntryValidityProjection,
   migrateConversationDeliveryTargetColumn,
   migrateSessionEntryStatusProjection,
   readSqliteTableColumns,
@@ -609,12 +610,13 @@ function ensureAgentSchema(
         );
       }
       if (previousVersion === targetVersion) {
+        ensureSessionEntryValidityProjection(db);
         if (hasPendingMemoryChunkMetadataMigration(db)) {
           migrateMemoryChunkMetadataSchema(db);
           db.exec(OPENCLAW_AGENT_SCHEMA_SQL);
         }
-        // Repeat index repair before the transactional schema assertion so a
-        // concurrent opener cannot turn repairable drift into a hard refusal.
+        // Repair consumes the canonical DDL, including additive validity indexes; keep it
+        // unconditional so same-version databases converge without a schema-version bump.
         repairCanonicalSqliteIndexes(db, pathname, OPENCLAW_AGENT_SCHEMA_SQL, {
           verifyPhysicalIntegrity: false,
         });
@@ -642,6 +644,7 @@ function ensureAgentSchema(
       }
       backfillSessionEntryProvenance(db, previousVersion);
       migrateSessionNodesAndWindows(db, previousVersion);
+      ensureSessionEntryValidityProjection(db);
       db.exec(OPENCLAW_AGENT_SCHEMA_SQL);
       migrateMemoryChunkMetadataSchema(db);
       if (previousVersion < targetVersion) {
