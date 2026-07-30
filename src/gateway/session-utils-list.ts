@@ -494,7 +494,7 @@ function prepareSessionList(params: SessionListBuildParams) {
     childLinksPruned = true;
   };
   const needsFilterAwareContext =
-    hasSpawnedByFilter || Boolean(normalizeOptionalString(opts.search));
+    Boolean(entryFilter) || hasSpawnedByFilter || Boolean(normalizeOptionalString(opts.search));
   if (entryFilter && filteredSessionKeys.size > 0 && needsFilterAwareContext) {
     pruneFilteredChildLinks(getRowContext());
   }
