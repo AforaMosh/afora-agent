@@ -324,10 +324,14 @@ export function ensureSessionEntryValidityProjection(db: DatabaseSync): void {
     END;
   `);
   const rows = db
-    .prepare("SELECT entry_json, session_key FROM session_nodes WHERE entry_valid = 0")
+    .prepare(
+      "SELECT current_session_id, entry_json, session_key, updated_at FROM session_nodes WHERE entry_valid = 0",
+    )
     .all() as Array<{
+    current_session_id: string;
     entry_json: string;
     session_key: string;
+    updated_at: number;
   }>;
   const update = db.prepare("UPDATE session_nodes SET entry_valid = ? WHERE session_key = ?");
   for (const row of rows) {
