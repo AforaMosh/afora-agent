@@ -430,17 +430,19 @@ function querySqliteSessionEntriesInSnapshot(
         creatorActors.set(`${actor.type}\0${actor.id ?? ""}`, actor);
       }
     }
+    const compareSessionKeys = (left: string, right: string) =>
+      Buffer.compare(Buffer.from(left, "utf8"), Buffer.from(right, "utf8"));
     const mergedEntries = [...entries.values()].toSorted((left, right) => {
       if (query.sortBy === "lastInteractionAt") {
         return (
           (right.entry.lastInteractionAt ?? 0) - (left.entry.lastInteractionAt ?? 0) ||
-          left.sessionKey.localeCompare(right.sessionKey)
+          compareSessionKeys(left.sessionKey, right.sessionKey)
         );
       }
       return (
         (right.entry.pinnedAt ?? 0) - (left.entry.pinnedAt ?? 0) ||
         (right.entry.updatedAt ?? 0) - (left.entry.updatedAt ?? 0) ||
-        left.sessionKey.localeCompare(right.sessionKey)
+        compareSessionKeys(left.sessionKey, right.sessionKey)
       );
     });
     const limit = query.limit === undefined ? undefined : Math.max(1, Math.floor(query.limit));
