@@ -91,9 +91,11 @@ export function assertCanonicalSessionEntryLineageWrite(
   database: { db: DatabaseSync },
   entry: SessionEntry,
 ): void {
-  const sessionKeys = [entry.parentSessionKey, entry.spawnedBy].filter(
-    (sessionKey): sessionKey is string => sessionKey !== undefined,
-  );
+  const sessionKeys = [
+    entry.parentSessionKey,
+    entry.spawnedBy,
+    entry.forkSource?.sessionKey,
+  ].filter((sessionKey): sessionKey is string => sessionKey !== undefined);
   if (sessionKeys.length === 0) {
     return;
   }

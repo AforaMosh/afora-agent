@@ -2133,6 +2133,16 @@ describe("session accessor seam", () => {
         { sessionId: "wrong-owner-session", updatedAt: 10 },
       ),
     ).rejects.toMatchObject({ code: "SESSION_CANONICAL_KEY_MIGRATION_REQUIRED" });
+    await expect(
+      upsertSessionEntry(
+        { agentId: "ops", sessionKey: "agent:ops:fork-child", storePath },
+        {
+          forkSource: { sessionId: "fork-source", sessionKey: "agent:main:wrong-owner" },
+          sessionId: "fork-child",
+          updatedAt: 10,
+        },
+      ),
+    ).rejects.toMatchObject({ code: "SESSION_CANONICAL_KEY_MIGRATION_REQUIRED" });
     const database = openOpenClawAgentDatabase({
       agentId: "ops",
       path: resolveSqliteTargetFromSessionStorePath(storePath, { agentId: "ops" }).path,

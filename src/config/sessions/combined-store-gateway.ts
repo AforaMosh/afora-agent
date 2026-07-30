@@ -31,7 +31,7 @@ import {
   duplicateCanonicalSessionKeyError,
   nonCanonicalSessionKeyRowError,
 } from "./session-canonical-key.js";
-import { foldedSessionKeyAliasCandidates, normalizeStoreSessionKey } from "./store-entry.js";
+import { normalizeStoreSessionKey } from "./store-entry.js";
 import {
   dedupeSessionStoreTargetsBySqliteTarget,
   listConfiguredSessionStoreAgentIds,
@@ -103,13 +103,7 @@ function loadGatewayStoreEntries(params: {
               parsed && params.mainKey?.trim().toLowerCase() === parsed.rest.trim().toLowerCase()
                 ? ["main", `agent:${parsed.agentId}:main`]
                 : [];
-            return [
-              sessionKey,
-              normalized,
-              ...foldedSessionKeyAliasCandidates(normalized),
-              parsed?.rest ?? sessionKey,
-              ...legacyMain,
-            ];
+            return [sessionKey, normalized, parsed?.rest ?? sessionKey, ...legacyMain];
           }) ?? [])
         : [],
     ),
