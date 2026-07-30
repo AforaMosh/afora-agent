@@ -11,12 +11,7 @@ import {
 } from "../acp/runtime/session-meta.js";
 import { getRegistryWorktree } from "../agents/worktrees/registry.js";
 import { managedWorktrees } from "../agents/worktrees/service.js";
-import {
-  loadSessionEntry,
-  loadTranscriptEvents,
-  replaceSessionEntry,
-} from "../config/sessions/session-accessor.js";
-import { replaceSqliteTranscriptEvents } from "../config/sessions/session-accessor.sqlite.js";
+import { loadSessionEntry, replaceSessionEntry } from "../config/sessions/session-accessor.js";
 import {
   beginSessionWorkAdmission,
   runExclusiveSessionLifecycleMutation,
