@@ -8,6 +8,7 @@ import { resolvePathViaExistingAncestorSync } from "../infra/boundary-path.js";
 import { assertNoSymlinkParents } from "../infra/fs-safe-advanced.js";
 import { FsSafeError, root as fsSafeRoot, type Root } from "../infra/fs-safe.js";
 import { resolveUserPath } from "../utils.js";
+import { planClawExtensions } from "./application-plan.js";
 import { digestClawMcpServer } from "./mcp.js";
 import { clawManifestWorkspaceConflictsWithPath } from "./schema.js";
 import { MAX_MANAGED_FILE_BYTES, MAX_MANAGED_WORKSPACE_BYTES } from "./source-limits.js";
@@ -22,7 +23,8 @@ import {
   type ClawManifest,
   type ClawLocalPrerequisite,
   type ClawOpenClawProfile,
-  type ClawPackage,
+  type ClawPackagePreflight,
+  type ClawPackagePreflightResult,
   type ClawSourceIdentity,
   type ClawWorkspaceSourceSnapshot,
 } from "./types.js";
@@ -48,20 +50,7 @@ export type ClawAddPlanContext = {
   existingWorkspacePaths?: Iterable<string>;
   existingMcpServerNames?: Iterable<string>;
   existingMcpServers?: Record<string, Record<string, unknown>>;
-  packagePreflight?: (
-    pkg: ClawPackage,
-    workspace: string,
-  ) => Promise<{
-    ok: boolean;
-    action?: "install" | "reuse";
-    integrity?: string;
-    installId?: string;
-    warning?: string;
-    requirements?: ClawLocalPrerequisite[];
-    installedVersion?: string;
-    code?: string;
-    message?: string;
-  }>;
+  packagePreflight?: ClawPackagePreflight;
 };
 
 function canonicalWorkspacePath(value: string): string {
@@ -467,7 +456,7 @@ export async function buildClawAddPlan(params: {
   }
 
   for (const pkg of params.manifest.packages) {
-    const preflight = context.packagePreflight
+    const preflight: ClawPackagePreflightResult = context.packagePreflight
       ? await context.packagePreflight(pkg, workspace)
       : {
           ok: false,
@@ -528,6 +517,16 @@ export async function buildClawAddPlan(params: {
       }),
     );
   }
+
+  const extensionPlan = await planClawExtensions({
+    extensions: params.openClawProfile?.extensions ?? [],
+    workspace,
+    packagePreflight: context.packagePreflight,
+  });
+  const extensions = extensionPlan.extensions;
+  actions.push(...extensionPlan.actions);
+  capabilityChanges.push(...extensionPlan.capabilityChanges);
+  blockers.push(...extensionPlan.blockers);
 
   const existingMcpServerNames = new Set(context.existingMcpServerNames ?? []);
   for (const [name, server] of Object.entries(params.manifest.mcpServers)) {
@@ -630,6 +629,7 @@ export async function buildClawAddPlan(params: {
         actions,
         capabilityChanges,
         blockers,
+        extensions,
       }),
     )
     .digest("hex")}`;
@@ -669,6 +669,7 @@ export async function buildClawAddPlan(params: {
       ready: readinessRequirements.length === 0,
       requirements: readinessRequirements,
     },
+    extensions,
     blockers,
     diagnostics: params.diagnostics ?? [],
   };
