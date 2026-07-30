@@ -2022,18 +2022,21 @@ describe("session accessor seam", () => {
     }
   });
 
-  it("rejects unscoped alias writes even with an explicit agent owner", async () => {
-    for (const sessionKey of ["main", "", "agent:ops:main ", "agent:OPS:upper"]) {
+  it("normalizes alias inputs before writes and rejects invalid owners", async () => {
+    for (const sessionKey of ["main", "agent:ops:main ", "agent:OPS:upper"]) {
       await expect(
         upsertSessionEntry(
           { agentId: "ops", sessionKey, storePath },
           { sessionId: "legacy-ops-session", updatedAt: 10 },
         ),
-      ).rejects.toMatchObject({
-        code: "SESSION_CANONICAL_KEY_MIGRATION_REQUIRED",
-        message: expect.stringContaining("openclaw doctor --fix"),
-      });
+      ).resolves.toMatchObject({ sessionId: "legacy-ops-session" });
     }
+    await expect(
+      upsertSessionEntry(
+        { agentId: "ops", sessionKey: "", storePath },
+        { sessionId: "empty-session", updatedAt: 10 },
+      ),
+    ).rejects.toMatchObject({ code: "SESSION_CANONICAL_KEY_MIGRATION_REQUIRED" });
     await expect(
       upsertSessionEntry(
         { agentId: "ops", sessionKey: "agent:main:wrong-owner", storePath },

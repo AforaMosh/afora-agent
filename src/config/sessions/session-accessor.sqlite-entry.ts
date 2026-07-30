@@ -415,7 +415,6 @@ export function replaceSqliteSessionEntrySync(
   scope: SessionAccessScope,
   entry: SessionEntry,
 ): void {
-  assertCanonicalSessionKeyWrite(scope.sessionKey);
   const resolved = resolveSqliteScope(scope);
   assertCanonicalSessionWriteScope(resolved);
   let previous = new Map<string, SessionEntry>();
@@ -438,7 +437,6 @@ export async function patchSqliteSessionEntry(
   ) => Promise<Partial<SessionEntry> | null> | Partial<SessionEntry> | null,
   options: SqliteSessionEntryPatchOptions = {},
 ): Promise<SessionEntry | null> {
-  assertCanonicalSessionKeyWrite(scope.sessionKey);
   const resolved = resolveSqliteScope(scope);
   assertCanonicalSessionWriteScope(resolved);
   return await patchSqliteSessionEntrySnapshot<

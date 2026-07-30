@@ -6,6 +6,7 @@ import {
   normalizeAgentId,
   parseAgentSessionKey,
   resolveAgentIdFromSessionKey,
+  toAgentStoreSessionKey,
 } from "../../routing/session-key.js";
 import { runQueuedStoreWrite, type StoreWriterQueue } from "../../shared/store-writer-queue.js";
 import type { DB as OpenClawAgentKyselyDatabase } from "../../state/openclaw-agent-db.generated.js";
@@ -146,12 +147,20 @@ export function resolveSqliteScope(
   if (!agentId) {
     throw new Error("Cannot resolve SQLite session scope without an agent id");
   }
+  const normalizedSessionKey = normalizeSqliteSessionKey(scope.sessionKey);
+  const sessionKey =
+    !normalizedSessionKey ||
+    normalizedSessionKey === "global" ||
+    normalizedSessionKey === "unknown" ||
+    parseAgentSessionKey(normalizedSessionKey)
+      ? normalizedSessionKey
+      : toAgentStoreSessionKey({ agentId, requestKey: normalizedSessionKey });
   return {
     agentId,
     ...(storeTarget?.shared && storeTarget.agentId ? { databaseAgentId: storeTarget.agentId } : {}),
     ...(scope.env ? { env: scope.env } : {}),
     ...(storeTarget ? { path: storeTarget.path } : {}),
-    sessionKey: normalizeSqliteSessionKey(scope.sessionKey),
+    sessionKey,
   };
 }
 
