@@ -13,10 +13,12 @@ vi.mock("../session-utils.js", async () => {
   return {
     ...actual,
     loadSessionEntry: deletedAgentSessionMocks.loadSessionEntry,
-    resolveDeletedAgentIdFromSessionKey:
-      deletedAgentSessionMocks.resolveDeletedAgentIdFromSessionKey,
   };
 });
+
+vi.mock("../../sessions/session-owner-validation.js", () => ({
+  resolveDeletedAgentIdFromSessionKey: deletedAgentSessionMocks.resolveDeletedAgentIdFromSessionKey,
+}));
 
 /** Resets mocked deleted-agent session lookups between tests. */
 export function resetDeletedAgentSessionMocks(): void {

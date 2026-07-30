@@ -2,11 +2,6 @@ import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
 } from "@openclaw/normalization-core/string-coerce";
-import {
-  readAcpSessionMeta,
-  readAcpSessionMetaForEntry,
-  repairAcpSessionMetaKeyForMigration,
-} from "../acp/runtime/session-meta.js";
 import { resolveModelAgentRuntimeMetadata } from "../agents/agent-runtime-metadata.js";
 import {
   listAgentEntries,
@@ -31,7 +26,6 @@ import {
 } from "../config/sessions.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { normalizeAgentId, parseAgentSessionKey } from "../routing/session-key.js";
-import { isAcpSessionKey } from "../sessions/session-key-utils.js";
 import {
   resolveSessionStoreTarget,
   resolveSessionStoreTargetWithStore,
@@ -39,86 +33,6 @@ import {
 import { listGatewayAgentsBasic } from "./agent-list.js";
 import { resolveGatewaySessionThinkingDefault } from "./session-utils-model.js";
 import type { GatewayAgentRow } from "./session-utils.types.js";
-
-/**
- * Returns the owning agent id if the session key belongs to an agent that is no
- * longer present in config (deleted). Returns null for non-agent legacy/global
- * keys, confirmed ACP runtime session keys, or when the owning agent still
- * exists (#65524).
- */
-export function resolveDeletedAgentIdFromSessionKey(
-  cfg: OpenClawConfig,
-  sessionKey: string,
-  entry?: SessionEntry | null,
-  options?: { acpMetadataSessionKey?: string | null },
-): string | null {
-  const parsed = parseAgentSessionKey(sessionKey);
-  if (!parsed) {
-    return null;
-  }
-  const agentId = normalizeAgentId(parsed.agentId);
-  if (listAgentIds(cfg).includes(agentId)) {
-    return null;
-  }
-  if (isAcpSessionKey(sessionKey) && !parsed.rest.startsWith("acp:binding:")) {
-    // Free ACP runtime keys use agent:<harnessId>:acp:<uuid>, but key shape is
-    // not proof: ACP bridge sessions can use ACP-shaped keys without SessionAcpMeta.
-    // Configured acp:binding keys stay owner-scoped even when ACP metadata exists.
-    const acpMeta = readAcpMetaForDeletedAgentCheck({
-      cfg,
-      sessionKey,
-      entry,
-      acpMetadataSessionKey: options?.acpMetadataSessionKey,
-    });
-    if (acpMeta) {
-      return null;
-    }
-  }
-  return agentId;
-}
-
-function readAcpMetaForDeletedAgentCheck(params: {
-  cfg: OpenClawConfig;
-  sessionKey: string;
-  entry?: Pick<SessionEntry, "acp" | "lifecycleRevision"> | null;
-  acpMetadataSessionKey?: string | null;
-}) {
-  if (params.entry?.acp) {
-    return params.entry.acp;
-  }
-
-  const acpMetadataSessionKey = normalizeOptionalString(params.acpMetadataSessionKey);
-  const directKeys = new Set<string>();
-  if (acpMetadataSessionKey) {
-    directKeys.add(acpMetadataSessionKey);
-  } else {
-    const acpMeta = readAcpSessionMeta({ sessionKey: params.sessionKey, cfg: params.cfg });
-    if (acpMeta) {
-      return acpMeta;
-    }
-  }
-  directKeys.add(params.sessionKey);
-
-  for (const directKey of directKeys) {
-    const acpMeta = readAcpSessionMetaForEntry({
-      sessionKey: directKey,
-      entry: params.entry ?? undefined,
-    });
-    if (acpMeta) {
-      return acpMeta;
-    }
-  }
-
-  repairAcpSessionMetaKeyForMigration({
-    sessionKey: params.sessionKey,
-    candidateSessionKeys: directKeys,
-    entry: params.entry ?? undefined,
-  });
-  return readAcpSessionMetaForEntry({
-    sessionKey: params.sessionKey,
-    entry: params.entry ?? undefined,
-  });
-}
 
 function loadSessionEntryWithMode(
   sessionKey: string,

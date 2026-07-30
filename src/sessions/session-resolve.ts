@@ -10,15 +10,12 @@ import {
 } from "../../packages/gateway-protocol/src/index.js";
 import { canonicalizeSessionEntryAliases, type SessionEntry } from "../config/sessions.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
-import {
-  filterAndSortSessionEntries,
-  listSessionsFromStore,
-  loadCombinedSessionStore,
-  resolveDeletedAgentIdFromSessionKey,
-  resolveSessionStoreTargetWithStore,
-} from "../gateway/session-utils.js";
+import { filterAndSortSessionEntries, listSessionsFromStore } from "../gateway/session-utils.js";
+import { loadCombinedSessionStore } from "./session-combined-store.js";
 import { resolveSessionIdMatchSelection } from "./session-id-resolution.js";
 import { parseSessionLabel } from "./session-label.js";
+import { resolveDeletedAgentIdFromSessionKey } from "./session-owner-validation.js";
+import { resolveSessionStoreTargetWithStore } from "./session-store-target.js";
 
 export type SessionsResolveResult =
   | { ok: true; key: string }

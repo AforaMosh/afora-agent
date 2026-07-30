@@ -17,14 +17,11 @@ import { clearSessionQueues } from "../../auto-reply/reply/queue/cleanup.js";
 import { resolveSessionWorkStartError, type SessionEntry } from "../../config/sessions.js";
 import { isSessionTranscriptProjectionUnavailableError } from "../../config/sessions/session-accessor.js";
 import { parseAgentSessionKey } from "../../routing/session-key.js";
+import { resolveDeletedAgentIdFromSessionKey } from "../../sessions/session-owner-validation.js";
 import { resolveRequestedSessionAgentId as resolveRequestedGlobalAgentId } from "../session-create-service.js";
 import { reactivateCompletedSubagentSession } from "../session-subagent-reactivation.js";
 import { readSessionMessageCountAsync } from "../session-transcript-readers.js";
-import {
-  loadSessionEntry,
-  loadSessionEntryReadOnly,
-  resolveDeletedAgentIdFromSessionKey,
-} from "../session-utils.js";
+import { loadSessionEntry, loadSessionEntryReadOnly } from "../session-utils.js";
 import { asWorkerInferenceControl } from "../worker-environments/inference-control.js";
 import { chatHandlers } from "./chat.js";
 import { hasTrackedActiveSessionRun } from "./session-active-runs.js";

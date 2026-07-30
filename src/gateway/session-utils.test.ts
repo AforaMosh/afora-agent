@@ -18,6 +18,7 @@ import { resolveSqliteTargetFromSessionStorePath } from "../config/sessions/sess
 import type { CronJob } from "../cron/types.js";
 import { createEmptyPluginRegistry } from "../plugins/registry-empty.js";
 import { resetPluginRuntimeStateForTest, setActivePluginRegistry } from "../plugins/runtime.js";
+import { resolveDeletedAgentIdFromSessionKey } from "../sessions/session-owner-validation.js";
 import { closeOpenClawAgentDatabasesForTest } from "../state/openclaw-agent-db.js";
 import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
 import { withStateDirEnv as withRawStateDirEnv } from "../test-helpers/state-dir-env.js";
@@ -38,7 +39,6 @@ import {
   loadSessionEntry,
   loadSessionEntryReadOnly,
   migrateAndPruneGatewaySessionStoreKey,
-  resolveDeletedAgentIdFromSessionKey,
   resolveGatewayModelSupportsImages,
   resolveSessionStoreTarget,
   resolveSessionStoreTargetWithStore,

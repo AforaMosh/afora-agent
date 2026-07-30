@@ -10,13 +10,10 @@ import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import { measureDiagnosticsTimelineSpanSync } from "../../infra/diagnostics-timeline.js";
 import { isIncognitoSessionKey } from "../../routing/session-key.js";
 import { resolveMissingAgentHarnessSessionError } from "../../sessions/agent-harness-session-key.js";
+import { resolveDeletedAgentIdFromSessionKey } from "../../sessions/session-owner-validation.js";
 import { isBrowserOperatorUiClient } from "../../utils/message-channel.js";
 import { pendingChatSendDedupeKey } from "../server-shared.js";
-import {
-  loadSessionEntry,
-  resolveDeletedAgentIdFromSessionKey,
-  resolveSessionModelRef,
-} from "../session-utils.js";
+import { loadSessionEntry, resolveSessionModelRef } from "../session-utils.js";
 import {
   hasGatewayAdminScope,
   resolveChatSendActiveScopeKey,

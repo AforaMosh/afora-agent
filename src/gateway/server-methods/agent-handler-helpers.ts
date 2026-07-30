@@ -19,13 +19,14 @@ import {
   resolveAgentHarnessSessionIdMismatchError,
 } from "../../sessions/agent-harness-session-key.js";
 import type { InputProvenance } from "../../sessions/input-provenance.js";
+import { resolveDeletedAgentIdFromSessionKey } from "../../sessions/session-owner-validation.js";
 import { setSafeTimeout } from "../../utils/timer-delay.js";
 import { ADMIN_SCOPE } from "../method-scopes.js";
 import {
   emitGatewaySessionEndPluginHook,
   emitGatewaySessionStartPluginHook,
 } from "../session-reset-service.js";
-import { loadSessionEntry, resolveDeletedAgentIdFromSessionKey } from "../session-utils.js";
+import { loadSessionEntry } from "../session-utils.js";
 import type { GatewayRequestHandlerOptions } from "./types.js";
 
 export const CRON_CONTINUATION_RELEASE_RECOVERY_DELAYS_MS = [250, 1_000, 4_000, 15_000] as const;

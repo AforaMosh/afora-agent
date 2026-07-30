@@ -39,10 +39,16 @@ vi.mock("../gateway/session-utils.js", async () => {
   return {
     ...actual,
     listSessionsFromStore: hoisted.listSessionsFromStoreMock,
-    resolveSessionStoreTargetWithStore: hoisted.resolveSessionStoreTargetWithStoreMock,
-    loadCombinedSessionStore: hoisted.loadCombinedSessionStoreMock,
   };
 });
+
+vi.mock("./session-combined-store.js", () => ({
+  loadCombinedSessionStore: hoisted.loadCombinedSessionStoreMock,
+}));
+
+vi.mock("./session-store-target.js", () => ({
+  resolveSessionStoreTargetWithStore: hoisted.resolveSessionStoreTargetWithStoreMock,
+}));
 
 const { resolveSessionKeyFromResolveParams } = await import("./session-resolve.js");
 
