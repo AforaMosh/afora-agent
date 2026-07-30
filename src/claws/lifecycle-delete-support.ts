@@ -12,6 +12,10 @@ import {
   deleteWorkspaceState,
   prepareWorkspaceStateDeletion,
 } from "../agents/workspace-state-store.js";
+import {
+  DEFAULT_BOOTSTRAP_FILENAME,
+  resolveWorkspaceBootstrapStatus,
+} from "../agents/workspace.js";
 import { pruneAgentConfig } from "../commands/agents.config.js";
 import { moveToTrash } from "../commands/onboard-helpers.js";
 import { resolveSessionTranscriptsDirForAgent } from "../config/sessions.js";
@@ -285,10 +289,17 @@ export const clawRemoveQuietRuntime: RuntimeEnv = {
   },
 };
 
-type ClawRemovableWorkspaceFile = PersistedClawWorkspaceFile & {
+type DigestOwnedWorkspaceFile = Pick<
+  PersistedClawWorkspaceFile,
+  "workspace" | "path" | "contentDigest"
+>;
+
+type DigestOwnedWorkspaceFileStatus = {
   state: "unchanged" | "modified" | "missing" | "unsafe";
   message?: string;
 };
+
+type ClawRemovableWorkspaceFile = DigestOwnedWorkspaceFile & DigestOwnedWorkspaceFileStatus;
 
 export type RemovedWorkspaceFile = {
   path: string;
@@ -301,9 +312,18 @@ export type ClawManagedFileStatus = PersistedClawWorkspaceFile & {
   message?: string;
 };
 
-export async function inspectClawWorkspaceFile(
-  record: PersistedClawWorkspaceFile,
-): Promise<ClawManagedFileStatus> {
+export type ClawBootstrapStatus = {
+  state: "pending" | "complete" | "modified" | "unsafe" | "unknown";
+  workspace: string;
+  path: string;
+  sourcePath?: string;
+  contentDigest?: string;
+  message?: string;
+};
+
+async function inspectDigestOwnedWorkspaceFile(
+  record: DigestOwnedWorkspaceFile,
+): Promise<DigestOwnedWorkspaceFileStatus> {
   try {
     const workspace = await fsSafeRoot(record.workspace, {
       hardlinks: "reject",
@@ -311,21 +331,62 @@ export async function inspectClawWorkspaceFile(
       symlinks: "reject",
     });
     if (!(await workspace.exists(record.path))) {
-      return { ...record, state: "missing" };
+      return { state: "missing" };
     }
     const content = await workspace.readBytes(record.path, { maxBytes: 1024 * 1024 });
     const digest = `sha256:${createHash("sha256").update(content).digest("hex")}`;
-    return { ...record, state: digest === record.contentDigest ? "unchanged" : "modified" };
+    return {
+      state: digest === record.contentDigest ? "unchanged" : "modified",
+    };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return { ...record, state: "missing" };
+      return { state: "missing" };
     }
     return {
-      ...record,
       state: "unsafe",
       message: error instanceof Error ? error.message : String(error),
     };
   }
+}
+
+export async function inspectClawWorkspaceFile(
+  record: PersistedClawWorkspaceFile,
+): Promise<ClawManagedFileStatus> {
+  return { ...record, ...(await inspectDigestOwnedWorkspaceFile(record)) };
+}
+
+export async function inspectClawBootstrap(
+  install: PersistedClawInstall,
+  options: OpenClawStateDatabaseOptions,
+): Promise<ClawBootstrapStatus> {
+  const nativeState = await resolveWorkspaceBootstrapStatus(install.workspace, options);
+  const base = {
+    workspace: install.workspace,
+    path: DEFAULT_BOOTSTRAP_FILENAME,
+    ...install.bootstrap,
+  };
+  if (nativeState === "complete") {
+    return { ...base, state: "complete" };
+  }
+  if (!install.bootstrap) {
+    return { ...base, state: nativeState };
+  }
+  const inspected = await inspectDigestOwnedWorkspaceFile({
+    workspace: install.workspace,
+    path: DEFAULT_BOOTSTRAP_FILENAME,
+    contentDigest: install.bootstrap.contentDigest,
+  });
+  if (inspected.state === "unchanged") {
+    return { ...base, state: "pending" };
+  }
+  if (inspected.state === "modified" || inspected.state === "unsafe") {
+    return {
+      ...base,
+      state: inspected.state,
+      ...(inspected.message ? { message: inspected.message } : {}),
+    };
+  }
+  return { ...base, state: "unknown", message: "BOOTSTRAP.md disappeared during inspection." };
 }
 
 export async function removeClawWorkspaceFile(

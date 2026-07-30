@@ -378,7 +378,6 @@ export async function exportClawAgent(
   const manifest: ClawManifest = {
     schemaVersion: CLAW_SCHEMA_VERSION,
     agent: portableAgent(agent, avatar.source),
-    ...(openClawProfile ? { metadata: { "openclaw.config": openClawProfilePath } } : {}),
     workspace: { bootstrapFiles, files },
     packages: record.packages
       .map((pkg) => ({
