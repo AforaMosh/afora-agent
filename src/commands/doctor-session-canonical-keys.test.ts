@@ -465,6 +465,7 @@ describe("doctor canonical session-key repair", () => {
           `UPDATE session_windows
              SET agent_harness_id = 'codex', chat_type = 'group', ended_at = 24,
                  model = 'gpt-5.4', model_provider = 'openai',
+                 previous_session_id = 'previous-generation',
                  primary_conversation_id = 'conv-repair', started_at = 23
            WHERE session_id = 'legacy'`,
         )
@@ -506,6 +507,7 @@ describe("doctor canonical session-key repair", () => {
         lastReadAt: 27,
         parentSessionKey: "agent:main:parent",
         pinnedAt: 26,
+        previousSessionId: "previous-generation",
         model: "gpt-5.4",
         modelProvider: "openai",
         agentHarnessId: "codex",

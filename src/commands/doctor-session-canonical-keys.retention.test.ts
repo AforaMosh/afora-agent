@@ -411,6 +411,13 @@ describe("doctor canonical session-key retention repair", () => {
       expect(
         mainDatabase.db
           .prepare(
+            "SELECT reason, created_at, updated_at FROM session_windows WHERE session_id = 'destination-only'",
+          )
+          .get(),
+      ).toEqual({ reason: "initial", created_at: 10, updated_at: 10 });
+      expect(
+        mainDatabase.db
+          .prepare(
             "SELECT seq, event_json FROM trajectory_runtime_events WHERE session_id = 'winner' ORDER BY seq",
           )
           .all(),

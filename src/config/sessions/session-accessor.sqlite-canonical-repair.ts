@@ -101,6 +101,7 @@ type CanonicalRepairRow = Selectable<OpenClawAgentKyselyDatabase["session_nodes"
   current_ended_at: number | null;
   current_model: string | null;
   current_model_provider: string | null;
+  current_previous_session_id: string | null;
   current_started_at: number | null;
   current_window_id: string | null;
   delivery_account_id: string | null;
@@ -153,6 +154,9 @@ function hydrateCanonicalRepairEntry(row: CanonicalRepairRow): SessionEntry {
     ...(row.current_chat_type ? { chatType: row.current_chat_type } : {}),
     ...(row.current_model_provider ? { modelProvider: row.current_model_provider } : {}),
     ...(row.current_model ? { model: row.current_model } : {}),
+    ...(row.current_previous_session_id
+      ? { previousSessionId: row.current_previous_session_id }
+      : {}),
     ...(row.current_agent_harness_id ? { agentHarnessId: row.current_agent_harness_id } : {}),
     ...(delivery ? { delivery } : {}),
     ...(row.created_at !== null ? { createdAt: row.created_at } : {}),
@@ -207,6 +211,7 @@ export function listSqliteSessionEntriesForCanonicalRepair(
           "current_window.chat_type as current_chat_type",
           "current_window.model_provider as current_model_provider",
           "current_window.model as current_model",
+          "current_window.previous_session_id as current_previous_session_id",
           "current_window.agent_harness_id as current_agent_harness_id",
           "current_conversation.channel as delivery_channel",
           "current_conversation.account_id as delivery_account_id",
@@ -436,7 +441,7 @@ function copySqliteSessionOwnedStateForRepair(params: {
         })
         .onConflict((conflict) =>
           params.preferSource && authoritativeSourceSessionIds.has(sessionId)
-            ? conflict.column("session_id").doUpdateSet(recoveryWindow)
+            ? conflict.column("session_id").doUpdateSet({ session_key: params.canonicalKey })
             : conflict.column("session_id").doNothing(),
         ),
     );
