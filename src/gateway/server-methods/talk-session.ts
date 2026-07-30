@@ -16,6 +16,7 @@ import {
   validateTalkSessionTurnParams,
 } from "../../../packages/gateway-protocol/src/index.js";
 import { buildAgentMainSessionKey } from "../../routing/session-key.js";
+import { resolveSessionKeyFromResolveParams } from "../../sessions/session-resolve.js";
 import { REALTIME_VOICE_AGENT_CONSULT_TOOL } from "../../talk/agent-consult-tool.js";
 import { REALTIME_VOICE_AGENT_CONTROL_TOOL } from "../../talk/agent-run-control-shared.js";
 import { controlRealtimeVoiceAgentRun } from "../../talk/agent-run-control.js";
@@ -23,7 +24,6 @@ import { resolveTalkSessionAgentId } from "../../talk/agent-target.js";
 import { ensureClientVoiceAgentSessionEntry } from "../../talk/client-voice-session.js";
 import { resolveConfiguredRealtimeVoiceProvider } from "../../talk/provider-resolver.js";
 import { ADMIN_SCOPE } from "../operator-scopes.js";
-import { resolveSessionKeyFromResolveParams } from "../sessions-resolve.js";
 import {
   cancelTalkHandoffTurn,
   createTalkHandoff,

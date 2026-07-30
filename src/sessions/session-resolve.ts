@@ -1,5 +1,5 @@
 import { expectDefined } from "@openclaw/normalization-core";
-// Gateway sessions.resolve implementation helper.
+// Canonical session selector resolution.
 // Resolves key/sessionId/label selectors into one canonical session key.
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
 import {
@@ -10,15 +10,15 @@ import {
 } from "../../packages/gateway-protocol/src/index.js";
 import { canonicalizeSessionEntryAliases, type SessionEntry } from "../config/sessions.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
-import { resolveSessionIdMatchSelection } from "../sessions/session-id-resolution.js";
-import { parseSessionLabel } from "../sessions/session-label.js";
 import {
   filterAndSortSessionEntries,
   listSessionsFromStore,
   loadCombinedSessionStoreForGateway,
   resolveDeletedAgentIdFromSessionKey,
   resolveGatewaySessionStoreTargetWithStore,
-} from "./session-utils.js";
+} from "../gateway/session-utils.js";
+import { resolveSessionIdMatchSelection } from "./session-id-resolution.js";
+import { parseSessionLabel } from "./session-label.js";
 
 export type SessionsResolveResult =
   | { ok: true; key: string }

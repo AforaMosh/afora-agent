@@ -15,8 +15,8 @@ import type {
   SessionTranscriptReadScope,
 } from "../../gateway/session-transcript-readers.js";
 import type { SessionsListResult } from "../../gateway/session-utils.types.js";
-import type { SessionsResolveResult } from "../../gateway/sessions-resolve.js";
 import { parseAgentSessionKey } from "../../routing/session-key.js";
+import type { SessionsResolveResult } from "../../sessions/session-resolve.js";
 import { readNonNegativeIntegerParam, readPositiveIntegerParam } from "./common.js";
 
 type EmbeddedCallGateway = <T = Record<string, unknown>>(opts: CallGatewayOptions) => Promise<T>;

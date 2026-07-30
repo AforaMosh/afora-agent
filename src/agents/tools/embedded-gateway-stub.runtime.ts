@@ -37,5 +37,5 @@ export {
   loadSessionEntryReadOnly as loadSessionEntry,
   resolveSessionModelRef,
 } from "../../gateway/session-utils.js";
-export { resolveSessionKeyFromResolveParams } from "../../gateway/sessions-resolve.js";
+export { resolveSessionKeyFromResolveParams } from "../../sessions/session-resolve.js";
 export type { SessionsListResult } from "../../gateway/session-utils.types.js";

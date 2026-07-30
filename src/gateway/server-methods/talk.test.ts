@@ -184,7 +184,7 @@ vi.mock("./chat.js", () => ({
   },
 }));
 
-vi.mock("../sessions-resolve.js", () => ({
+vi.mock("../../sessions/session-resolve.js", () => ({
   resolveSessionKeyFromResolveParams: mocks.resolveSessionKeyFromResolveParams,
 }));
 

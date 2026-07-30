@@ -11,7 +11,7 @@ import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { closeOpenClawAgentDatabasesForTest } from "../state/openclaw-agent-db.js";
 import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
 import { withStateDirEnv as withRawStateDirEnv } from "../test-helpers/state-dir-env.js";
-import { resolveSessionKeyFromResolveParams } from "./sessions-resolve.js";
+import { resolveSessionKeyFromResolveParams } from "./session-resolve.js";
 
 describe("resolveSessionKeyFromResolveParams store canonicalization", () => {
   const freshUpdatedAt = () => Date.now();

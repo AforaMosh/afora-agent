@@ -32,8 +32,10 @@ vi.mock("../config/sessions.js", async () => {
   };
 });
 
-vi.mock("./session-utils.js", async () => {
-  const actual = await vi.importActual<typeof import("./session-utils.js")>("./session-utils.js");
+vi.mock("../gateway/session-utils.js", async () => {
+  const actual = await vi.importActual<typeof import("../gateway/session-utils.js")>(
+    "../gateway/session-utils.js",
+  );
   return {
     ...actual,
     listSessionsFromStore: hoisted.listSessionsFromStoreMock,
@@ -43,7 +45,7 @@ vi.mock("./session-utils.js", async () => {
   };
 });
 
-const { resolveSessionKeyFromResolveParams } = await import("./sessions-resolve.js");
+const { resolveSessionKeyFromResolveParams } = await import("./session-resolve.js");
 
 describe("resolveSessionKeyFromResolveParams", () => {
   const canonicalKey = "agent:main:canon";

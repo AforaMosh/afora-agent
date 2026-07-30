@@ -36,6 +36,7 @@ import {
   normalizeAgentId,
   parseAgentSessionKey,
 } from "../../routing/session-key.js";
+import { resolveSessionKeyFromResolveParams } from "../../sessions/session-resolve.js";
 import { resolveRequestedSessionAgentId as resolveRequestedGlobalAgentId } from "../session-create-service.js";
 import {
   canAccessIncognitoSession,
@@ -68,7 +69,6 @@ import {
   type SessionsPreviewEntry,
   type SessionsPreviewResult,
 } from "../session-utils.js";
-import { resolveSessionKeyFromResolveParams } from "../sessions-resolve.js";
 import { projectWorkerSessionPlacement } from "../worker-environments/placement-projector.js";
 import { gatewayClientSessionCreator } from "./gateway-client-identity.js";
 import { loadOptionalServerMethodModelCatalog } from "./optional-model-catalog.js";

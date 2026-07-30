@@ -95,7 +95,7 @@ describe("session accessor boundary guard", () => {
         "src/gateway/boot.ts",
         "src/gateway/server-methods/artifacts.ts",
         "src/gateway/server-methods/chat.ts",
-        "src/gateway/sessions-resolve.ts",
+        "src/sessions/session-resolve.ts",
         "src/gateway/server-methods/sessions-files.ts",
         "src/gateway/server-methods/sessions-abort.ts",
         "src/gateway/server-methods/sessions-compact.ts",
