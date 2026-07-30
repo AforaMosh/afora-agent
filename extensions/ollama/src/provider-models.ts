@@ -47,6 +47,7 @@ const MAX_OLLAMA_DISCOVERY_PROBES = OLLAMA_CONTEXT_ENRICH_LIMIT * 4;
 const MAX_OLLAMA_SHOW_CACHE_ENTRIES = 256;
 const ollamaModelShowInfoCache = new Map<string, Promise<OllamaModelShowInfo>>();
 const OLLAMA_ALWAYS_BLOCKED_HOSTNAMES = new Set(["metadata.google.internal"]);
+const OLLAMA_CODE_MODE_PREFERRED_MODELS = new Set(["devstral-small-2:24b"]);
 
 export function buildOllamaBaseUrlSsrFPolicy(baseUrl: string) {
   const trimmed = baseUrl.trim();
@@ -339,6 +340,14 @@ function isKnownOllamaCloudReasoningModel(modelId: string): boolean {
   return normalized === "glm-5.2" || /^deepseek-v4-(?:flash|pro)$/.test(normalized);
 }
 
+function isPreferredOllamaCodeModeModel(modelId: string, capabilities?: string[]): boolean {
+  return (
+    OLLAMA_CODE_MODE_PREFERRED_MODELS.has(modelId.trim().toLowerCase()) &&
+    capabilities?.includes("completion") === true &&
+    capabilities.includes("tools")
+  );
+}
+
 export function buildOllamaModelDefinition(
   modelId: string,
   contextWindow?: number,
@@ -355,6 +364,12 @@ export function buildOllamaModelDefinition(
     supportsTools: capabilities?.includes("tools") ?? true,
     supportsUsageInStreaming: true,
     supportsJsonSchemaResponseFormat: !isOllamaCloudModel(modelId),
+    ...(isPreferredOllamaCodeModeModel(modelId, capabilities)
+      ? {
+          codeMode: "preferred" as const,
+          codeModeNativeFileTools: false,
+        }
+      : {}),
   };
   return {
     id: modelId,
