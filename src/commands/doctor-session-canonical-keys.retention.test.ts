@@ -134,6 +134,16 @@ describe("doctor canonical session-key retention repair", () => {
         .run();
       staleDestinationDatabase.db
         .prepare(
+          "INSERT INTO conversations (conversation_id, channel, account_id, kind, peer_id, delivery_target, metadata_json, created_at, updated_at) VALUES ('destination-conversation', 'webchat', 'default', 'direct', 'destination-peer', 'destination-peer', '{}', 10, 10)",
+        )
+        .run();
+      staleDestinationDatabase.db
+        .prepare(
+          "INSERT INTO session_conversations (session_id, conversation_id, role, first_seen_at, last_seen_at) VALUES ('winner', 'destination-conversation', 'related', 10, 10)",
+        )
+        .run();
+      staleDestinationDatabase.db
+        .prepare(
           "INSERT INTO transcript_events (session_id, seq, event_json, created_at) VALUES ('winner', 0, ?, 10)",
         )
         .run(
@@ -414,7 +424,7 @@ describe("doctor canonical session-key retention repair", () => {
             "SELECT reason, created_at, updated_at FROM session_windows WHERE session_id = 'destination-only'",
           )
           .get(),
-      ).toEqual({ reason: "initial", created_at: 10, updated_at: 10 });
+      ).toEqual({ reason: null, created_at: 10, updated_at: 10 });
       expect(
         mainDatabase.db
           .prepare(
@@ -479,6 +489,16 @@ describe("doctor canonical session-key retention repair", () => {
         conversation_id: "conversation-2",
         source_session_key: "agent:main:shared",
       });
+      expect(
+        mainDatabase.db
+          .prepare(
+            "SELECT conversation_id, role FROM session_conversations WHERE session_id = 'winner' ORDER BY conversation_id",
+          )
+          .all(),
+      ).toEqual([
+        { conversation_id: "conversation-1", role: "primary" },
+        { conversation_id: "destination-conversation", role: "related" },
+      ]);
       expect(
         mainDatabase.db
           .prepare("SELECT session_key, run_session_key FROM heartbeat_outcomes")

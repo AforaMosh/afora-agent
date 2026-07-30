@@ -466,25 +466,7 @@ function copySqliteSessionOwnedStateForRepair(params: {
         ),
     );
   }
-  const sourceConversationSessionIds = uniqueStrings([
-    ...windows.map((row) => row.session_id),
-    ...sessionLinks.map((row) => row.session_id),
-  ]).filter((sessionId) => authoritativeSourceSessionIds.has(sessionId));
-  if (params.preferSource && sourceConversationSessionIds.length > 0) {
-    executeSqliteQuerySync(
-      params.destination.db,
-      destinationDb
-        .deleteFrom("session_conversations")
-        .where("session_id", "in", sourceConversationSessionIds),
-    );
-  }
   for (const link of sessionLinks) {
-    if (
-      existingDestinationSessionIds.has(link.session_id) &&
-      (!params.preferSource || !authoritativeSourceSessionIds.has(link.session_id))
-    ) {
-      continue;
-    }
     executeSqliteQuerySync(
       params.destination.db,
       destinationDb

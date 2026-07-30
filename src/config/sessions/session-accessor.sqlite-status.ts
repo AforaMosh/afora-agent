@@ -116,6 +116,19 @@ export function normalizeSqliteStatus(value: unknown): SessionEntryStatus | null
     : null;
 }
 
+export function hasValidSqliteSessionEntryIdentity(entry: {
+  sessionId?: unknown;
+  updatedAt?: unknown;
+}): entry is { sessionId: string; updatedAt: number } {
+  return (
+    typeof entry.sessionId === "string" &&
+    (entry.sessionId === "" || entry.sessionId.trim().length > 0) &&
+    !entry.sessionId.includes("\0") &&
+    typeof entry.updatedAt === "number" &&
+    Number.isFinite(entry.updatedAt)
+  );
+}
+
 export function parseSqliteSessionEntryJson(row: {
   current_session_id?: string;
   entry_json: string;
@@ -132,21 +145,13 @@ export function parseSqliteSessionEntryJson(row: {
     const record = parsed as Record<string, unknown>;
     // An empty id is the intentional pre-initialization sentinel used by parent-fork
     // decisions. It remains an entry; retained-history tombstones use an empty blob.
-    const storedSessionId =
-      typeof record.sessionId === "string" &&
-      (record.sessionId === "" || record.sessionId.trim().length > 0) &&
-      !record.sessionId.includes("\0")
-        ? record.sessionId
-        : undefined;
-    const storedUpdatedAt =
-      typeof record.updatedAt === "number" && Number.isFinite(record.updatedAt)
-        ? record.updatedAt
-        : undefined;
-    // entry_json is canonical; current_session_id only indexes a live canonical blob.
-    // Retained-window placeholders use {}, so column fallback would resurrect deleted sessions.
-    if (storedSessionId === undefined || storedUpdatedAt === undefined) {
+    if (!hasValidSqliteSessionEntryIdentity(record)) {
       return null;
     }
+    const storedSessionId = record.sessionId;
+    const storedUpdatedAt = record.updatedAt;
+    // entry_json is canonical; current_session_id only indexes a live canonical blob.
+    // Retained-window placeholders use {}, so column fallback would resurrect deleted sessions.
     if (
       (row.current_session_id !== undefined && row.current_session_id !== storedSessionId) ||
       (row.updated_at !== undefined && row.updated_at !== storedUpdatedAt)

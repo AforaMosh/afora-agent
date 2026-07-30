@@ -151,6 +151,28 @@ describe("listSessionsFromStore subagent metadata", () => {
     expect(residualResult.totalCount).toBe(1);
     expect(residualResult.hasMore).toBe(false);
     expect(residualResult.nextOffset).toBeNull();
+
+    const creatorResidualResult = await listSqlSelectedSessions({
+      cfg,
+      storePath: "/tmp/sessions.json",
+      store: {
+        "agent:main:creator-a": {
+          createdActor: { type: "human", id: "creator-a" },
+          sessionId: "creator-a-session",
+          updatedAt: now,
+        },
+        "agent:main:creator-b": {
+          createdActor: { type: "human", id: "creator-b" },
+          sessionId: "creator-b-session",
+          updatedAt: now - 1,
+        },
+      },
+      opts: { creatorId: "creator-a", limit: 1 },
+      sqlSelection: { creatorFilterApplied: false, ordered: true, totalCount: 2 },
+    });
+    expect(creatorResidualResult.totalCount).toBe(1);
+    expect(creatorResidualResult.hasMore).toBe(false);
+    expect(creatorResidualResult.nextOffset).toBeNull();
   });
 
   test("searches channel-derived display names before row enrichment", async () => {
@@ -1405,7 +1427,7 @@ describe("listSessionsFromStore subagent metadata", () => {
 });
 
 describe("loadCombinedSessionStoreForGateway includes disk-only agents (#32804)", () => {
-  test("fails loud for duplicate sentinels owned by the same agent", async () => {
+  test("does not rediscover unregistered custom stores during combined reads", async () => {
     await withStateDirEnv("openclaw-session-list-duplicate-sentinel-", async ({ stateDir }) => {
       const primaryStore = path.join(stateDir, "agents", "main", "sessions", "sessions.json");
       const workerStore = path.join(stateDir, "agents", "worker", "sessions", "sessions.json");
@@ -1432,8 +1454,8 @@ describe("loadCombinedSessionStoreForGateway includes disk-only agents (#32804)"
         "worker",
       );
 
-      expect(() => loadCombinedSessionStoreForGateway(cfg)).toThrow(
-        "duplicate rows resolve to canonical session key global",
+      expect(loadCombinedSessionStoreForGateway(cfg).store.global?.sessionId).toBe(
+        "primary-global",
       );
     });
   });

@@ -372,6 +372,7 @@ function selectSessionEntries(params: {
     params.entryFilter ||
     params.opts.boardFace ||
     normalizeOptionalString(params.opts.search) ||
+    (creatorId && params.sqlSelection?.creatorFilterApplied === false) ||
     (normalizeOptionalString(params.opts.spawnedBy) && params.sqlSelection.ordered !== true) ||
     params.opts.requireLastInteraction === true,
   );

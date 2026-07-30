@@ -32,6 +32,7 @@ import {
   setSessionProjectedTitle,
 } from "./session-accessor.sqlite-session-row.js";
 import {
+  hasValidSqliteSessionEntryIdentity,
   parseSqliteSessionEntryJson as parseSessionEntryRow,
   SessionEntryValidityMigrationRequiredError,
 } from "./session-accessor.sqlite-status.js";
@@ -667,6 +668,9 @@ export function writeSessionEntry(
     }
   }
   const normalizedEntry = normalizeSqliteSessionEntryTimestamp(entry);
+  if (!hasValidSqliteSessionEntryIdentity(normalizedEntry)) {
+    throw new Error("Refusing invalid SQLite session entry identity");
+  }
   const updatedAt = normalizedEntry.updatedAt;
   // Doctor validated the raw rejected row before entering the transaction and passes its
   // hydrated snapshot explicitly; re-reading it through the runtime parser must stay fail-closed.

@@ -720,6 +720,20 @@ describe("session accessor seam", () => {
     );
   });
 
+  it("rejects invalid session identities before marking rows valid", async () => {
+    for (const [suffix, sessionId] of [
+      ["blank", "\t\u00a0"],
+      ["nul", "\0x"],
+    ] as const) {
+      await expect(
+        replaceSessionEntry(
+          { sessionKey: `agent:main:invalid-write-${suffix}`, storePath },
+          { sessionId, updatedAt: 7 },
+        ),
+      ).rejects.toThrow("invalid SQLite session entry identity");
+    }
+  });
+
   it("keeps retained placeholders out of doctor repair inventory", () => {
     const database = openOpenClawAgentDatabase({
       agentId: "main",
