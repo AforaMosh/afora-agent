@@ -257,6 +257,24 @@ export function readExactSessionEntryRow(
   return entry ? { entry, legacyKeys: [], row } : undefined;
 }
 
+/** Doctor import probes only its exact staged target and lets the legacy source replace a
+ * malformed partial row. Runtime exact reads continue to fail with the repair diagnostic. */
+export function readExactSessionEntryRowForImport(
+  database: OpenClawAgentDatabaseReader,
+  sessionKey: string,
+): ResolvedSessionEntryRow | undefined {
+  const db = getSessionKysely(database.db);
+  const row = executeSqliteQueryTakeFirstSync(
+    database.db,
+    db.selectFrom("session_nodes").selectAll().where("session_key", "=", sessionKey),
+  );
+  if (!row) {
+    return undefined;
+  }
+  const entry = parseProjectedSessionEntryRow(row);
+  return entry ? { entry, legacyKeys: [], row } : undefined;
+}
+
 export function readExactSessionEntryJson(
   database: OpenClawAgentDatabaseReader,
   sessionKey: string,

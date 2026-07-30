@@ -4214,6 +4214,31 @@ describe("session accessor seam", () => {
     ).not.toHaveProperty("sessionFile");
   });
 
+  it("lets doctor import replace a malformed partial SQLite row", async () => {
+    const sessionKey = "agent:main:partial-import";
+    const database = openOpenClawAgentDatabase({
+      agentId: "main",
+      path: resolveSqliteTargetFromSessionStorePath(storePath, { agentId: "main" }).path,
+    });
+    database.db
+      .prepare(
+        "INSERT INTO session_nodes (session_key, current_session_id, entry_json, updated_at) VALUES (?, ?, 'not-json', 5)",
+      )
+      .run(sessionKey, "partial-session");
+
+    await importSqliteSessionRows({
+      agentId: "main",
+      entry: { label: "Recovered import", sessionId: "imported-session", updatedAt: 10 },
+      sessionKey,
+      storePath,
+    });
+
+    expect(loadSessionEntry({ agentId: "main", sessionKey, storePath })).toMatchObject({
+      label: "Recovered import",
+      sessionId: "imported-session",
+    });
+  });
+
   it("tracks replacement and deletion transcript mutations", async () => {
     const dateNow = vi.spyOn(Date, "now").mockReturnValue(1_700_000_000_000);
     const scope = {

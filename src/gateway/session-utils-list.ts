@@ -424,20 +424,24 @@ function listSessionCreatorIdentities(
     const label = normalizeOptionalString(actor?.label);
     const avatarUrl = normalizeOptionalString(actor?.avatarUrl);
     const existing = creators.get(id);
-    const preferredLabel =
-      label && (!existing?.label || label.localeCompare(existing.label) < 0)
-        ? label
-        : existing?.label;
-    const preferredAvatarUrl = avatarUrl ?? existing?.avatarUrl;
-    if (
-      !existing ||
-      preferredLabel !== existing.label ||
-      preferredAvatarUrl !== existing.avatarUrl
-    ) {
+    let candidateOrder = 0;
+    if (existing) {
+      if (Boolean(label) !== Boolean(existing.label)) {
+        candidateOrder = label ? -1 : 1;
+      } else if (label !== existing.label) {
+        candidateOrder = (label ?? "") < (existing.label ?? "") ? -1 : 1;
+      } else if (Boolean(avatarUrl) !== Boolean(existing.avatarUrl)) {
+        candidateOrder = avatarUrl ? -1 : 1;
+      } else if (avatarUrl !== existing.avatarUrl) {
+        candidateOrder = (avatarUrl ?? "") < (existing.avatarUrl ?? "") ? -1 : 1;
+      }
+    }
+    const candidateWins = !existing || candidateOrder < 0;
+    if (candidateWins) {
       creators.set(id, {
         id,
-        ...(preferredLabel ? { label: preferredLabel } : {}),
-        ...(preferredAvatarUrl ? { avatarUrl: preferredAvatarUrl } : {}),
+        ...(label ? { label } : {}),
+        ...(avatarUrl ? { avatarUrl } : {}),
       });
     }
   };

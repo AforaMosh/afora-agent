@@ -43,6 +43,35 @@ it("selects creator labels deterministically across actor types", async () => {
   expect(result.creators).toEqual([{ id: "shared-id", label: "Bob" }]);
 });
 
+it("keeps creator label and avatar selection stable across actor order", async () => {
+  const orders = [
+    [
+      { type: "human" as const, id: "profile-ada" },
+      { type: "agent" as const, id: "profile-ada" },
+    ],
+    [
+      { type: "agent" as const, id: "profile-ada" },
+      { type: "human" as const, id: "profile-ada" },
+    ],
+  ];
+  for (const creatorActors of orders) {
+    const result = await listSessionsFromStoreAsync({
+      cfg: {} as OpenClawConfig,
+      opts: { archived: "all" },
+      sqlSelection: { creatorActors, ordered: true, totalCount: 0 },
+      store: {},
+      storePath: "/tmp/openclaw-session-creator-avatar-order",
+    });
+    expect(result.creators).toEqual([
+      {
+        avatarUrl: "/api/users/profile-ada/avatar?v=42",
+        id: "profile-ada",
+        label: "Ada",
+      },
+    ]);
+  }
+});
+
 it("keeps complete creator facets independent of paginated row snapshots", async () => {
   const result = await listSessionsFromStoreAsync({
     cfg: {} as OpenClawConfig,

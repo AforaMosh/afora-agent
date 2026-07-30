@@ -2,7 +2,7 @@ import { runOpenClawAgentWriteTransaction } from "../../state/openclaw-agent-db.
 import type { TranscriptEvent } from "./session-accessor.sqlite-contract.js";
 import { publishSqliteSessionEntryCacheInvalidation } from "./session-accessor.sqlite-entry-cache.js";
 import {
-  readExactSessionEntryRow,
+  readExactSessionEntryRowForImport,
   writeSessionEntry,
 } from "./session-accessor.sqlite-entry-store.js";
 import { readTranscriptEventJsonSetInTransaction } from "./session-accessor.sqlite-read.js";
@@ -53,7 +53,7 @@ export async function importSqliteSessionRows(
     runOpenClawAgentWriteTransaction((database) => {
       // Doctor may have staged another legacy alias in this database already. Inspect only this
       // exact import target; runtime-wide canonical validation runs after the import phase.
-      const currentEntry = readExactSessionEntryRow(database, resolved.sessionKey)?.entry;
+      const currentEntry = readExactSessionEntryRowForImport(database, resolved.sessionKey)?.entry;
       const preservedHarnessId =
         params.entry.agentHarnessId === undefined &&
         currentEntry?.sessionId === params.entry.sessionId &&
