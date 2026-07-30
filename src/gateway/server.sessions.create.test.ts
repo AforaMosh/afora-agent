@@ -1388,6 +1388,11 @@ test("sessions.create rejects worktrees for non-git agent workspaces", async () 
   const workspace = await makeNonGitTempDir("openclaw-session-plain-workspace-");
   testState.agentConfig = { workspace };
   await createSessionStoreDir();
+  const { clearConfigCache, clearRuntimeConfigSnapshot } = await import("../config/config.js");
+  // The suite gateway can snapshot config while the async fixture is being created.
+  // Refresh after the override so this request cannot reuse the default workspace.
+  clearRuntimeConfigSnapshot();
+  clearConfigCache();
   try {
     const created = await directSessionReq(
       "sessions.create",
