@@ -1099,6 +1099,11 @@ update_candidate() {
     echo "openclaw update failed" >&2
     openclaw_e2e_print_log "$UPDATE_ERR" >&2
     openclaw_e2e_print_log "$UPDATE_JSON" >&2
+    if [ "$UPDATE_RESTART_MODE" = "auto-auth" ]; then
+      openclaw_e2e_print_log "$SYSTEMCTL_SHIM_LOG" >&2
+      openclaw_e2e_print_log "$SYSTEMCTL_SHIM_DAEMON_LOG" >&2
+      openclaw_e2e_print_log "$HOME/.config/systemd/user/openclaw-gateway.service" >&2
+    fi
     return 1
   fi
   if [ "$UPDATE_RESTART_MODE" = "auto-auth" ]; then
