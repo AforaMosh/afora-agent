@@ -109,7 +109,7 @@ function loadSessionEntrySnapshot(database: SessionEntryCacheDatabase): LoadedSe
     database.db,
     db
       .selectFrom("session_nodes")
-      .select(["session_key", "display_name", "entry_json", "updated_at"])
+      .select(["session_key", "current_session_id", "display_name", "entry_json", "updated_at"])
       .orderBy("session_key"),
   ).rows;
   const entries = new Map<string, SessionEntry>();
@@ -170,7 +170,7 @@ function incrementallyRevalidateSessionEntrySnapshot(
       database.db,
       db
         .selectFrom("session_nodes")
-        .select(["session_key", "display_name", "entry_json"])
+        .select(["session_key", "current_session_id", "display_name", "entry_json", "updated_at"])
         .where("session_key", "in", changedKeys),
     ).rows;
     for (const row of changedRows) {
