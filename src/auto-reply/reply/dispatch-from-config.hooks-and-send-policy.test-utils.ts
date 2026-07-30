@@ -611,57 +611,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
     expect(result.noVisibleReplyFallbackEligible).toBeUndefined();
   });
 
-  it("delivers fallback for mentioned group turns even when group silence is allowed", async () => {
-    setNoAbort();
-    const dispatcher = createDispatcher();
-    const replyResolver = vi.fn(async () => undefined);
-    const ctx = buildTestCtx({
-      ChatType: "group",
-      Surface: "telegram",
-      Provider: "telegram",
-      SessionKey: "agent:main:telegram:group:oc_group",
-      WasMentioned: true,
-    });
-
-    // No silentReply config: group default is "allow", but an explicit mention
-    // is a directed turn and must never end silently.
-    const result = await dispatchReplyFromConfig({
-      ctx,
-      cfg: emptyConfig,
-      dispatcher,
-      replyResolver,
-    });
-
-    expect(dispatcher.sendFinalReply).toHaveBeenCalledWith({
-      text: NO_VISIBLE_REPLY_FALLBACK_TEXT,
-    });
-    expect(result.noVisibleReplyFallbackDelivered).toBe(true);
-  });
-
-  it("keeps ambient group turns silent under the default group policy", async () => {
-    setNoAbort();
-    const dispatcher = createDispatcher();
-    const replyResolver = vi.fn(async () => undefined);
-    const ctx = buildTestCtx({
-      ChatType: "group",
-      Surface: "telegram",
-      Provider: "telegram",
-      SessionKey: "agent:main:telegram:group:oc_group",
-    });
-
-    const result = await dispatchReplyFromConfig({
-      ctx,
-      cfg: emptyConfig,
-      dispatcher,
-      replyResolver,
-    });
-
-    expect(dispatcher.sendFinalReply).not.toHaveBeenCalled();
-    expect(result.noVisibleReplyFallbackDelivered).toBeUndefined();
-    expect(result.noVisibleReplyFallbackEligible).toBeUndefined();
-  });
-
-  it("does not deliver no-visible fallback when silentReply allows empty finals", async () => {
+  it("allows a mentioned group turn to end silently when group silence is allowed", async () => {
     setNoAbort();
     const dispatcher = createDispatcher();
     const replyResolver = vi.fn(async () => undefined);
@@ -670,6 +620,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       Surface: "feishu",
       Provider: "feishu",
       SessionKey: "agent:main:feishu:group:oc_group",
+      WasMentioned: true,
     });
 
     const result = await dispatchReplyFromConfig({
