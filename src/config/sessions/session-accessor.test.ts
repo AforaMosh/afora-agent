@@ -794,6 +794,30 @@ describe("session accessor seam", () => {
         )?.entry,
       ),
     ).toBe("Investigate the session list query");
+
+    const database = openOpenClawAgentDatabase({
+      agentId: "main",
+      path: resolveSqliteTargetFromSessionStorePath(storePath, { agentId: "main" }).path,
+    });
+    const { counts, restore } = trackSqliteStatementExecutions(
+      database.db,
+      ["titleScans"],
+      (sqlText) => (sqlText.includes('"event"."event_json"') ? "titleScans" : null),
+    );
+    try {
+      await upsertSessionEntry(
+        { agentId: "main", sessionKey: scope.sessionKey, storePath },
+        { status: "running" },
+      );
+      expect(counts.titleScans).toBe(0);
+    } finally {
+      restore();
+    }
+    expect(
+      getSessionProjectedTitle(
+        loadSessionEntry({ agentId: "main", sessionKey: scope.sessionKey, storePath }),
+      ),
+    ).toBe("Investigate the session list query");
   });
 
   it("backfills titles written before the projection existed", async () => {

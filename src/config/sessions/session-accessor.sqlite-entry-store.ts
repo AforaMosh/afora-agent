@@ -111,6 +111,16 @@ function parseReadableSessionEntryRow(
   throw new SessionEntryValidityMigrationRequiredError();
 }
 
+function sessionTitleMetadataEqual(left: SessionEntry | undefined, right: SessionEntry): boolean {
+  return Boolean(
+    left &&
+    left.label === right.label &&
+    left.displayName === right.displayName &&
+    left.subject === right.subject &&
+    left.groupId === right.groupId,
+  );
+}
+
 export function readSqliteSessionIdentitySnapshot(
   database: OpenClawAgentDatabase,
   sessionKeys: Iterable<string>,
@@ -627,10 +637,15 @@ export function writeSessionEntry(
   const updatedAt = normalizedEntry.updatedAt;
   // Doctor validated the raw rejected row before entering the transaction and passes its
   // hydrated snapshot explicitly; re-reading it through the runtime parser must stay fail-closed.
-  const canonicalPreviousEntry =
+  const canonicalPreviousRow =
     options.allowStoredAliases && options.previousEntry !== undefined
+      ? undefined
+      : readExactSessionEntryRow(database, sessionKey);
+  const canonicalPreviousEntry =
+    canonicalPreviousRow?.entry ??
+    (options.allowStoredAliases && options.previousEntry !== undefined
       ? (options.previousEntry ?? undefined)
-      : readExactSessionEntryRow(database, sessionKey)?.entry;
+      : undefined);
   const previousEntry =
     options.previousEntry === undefined
       ? canonicalPreviousEntry
@@ -677,9 +692,25 @@ export function writeSessionEntry(
     entry: normalizedEntry,
     previousEntry,
   });
+  const storedTitleProjection =
+    canonicalPreviousRow?.row ??
+    executeSqliteQueryTakeFirstSync(
+      database.db,
+      db
+        .selectFrom("session_nodes")
+        .select(["current_session_id", "display_name"])
+        .where("session_key", "=", sessionKey),
+    );
+  // Transcript append/rewrite paths refresh content-derived titles. Routine entry metadata
+  // updates retain that projection instead of rescanning the transcript inside the write lock.
+  const projectedTitle =
+    storedTitleProjection?.current_session_id === normalizedEntry.sessionId &&
+    sessionTitleMetadataEqual(previousEntry, normalizedEntry)
+      ? storedTitleProjection.display_name
+      : deriveSqliteSessionTitle(database.db, normalizedEntry);
   const sessionNode = bindSqliteSessionNode({
     entry: normalizedEntry,
-    projectedTitle: deriveSqliteSessionTitle(database.db, normalizedEntry),
+    projectedTitle,
     sessionKey,
     updatedAt,
   });
