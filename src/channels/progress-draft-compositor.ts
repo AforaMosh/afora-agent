@@ -91,6 +91,9 @@ export function createChannelProgressReceiptTracker(params?: { now?: () => numbe
           seenCommentaryIds.add(itemId);
           commentaryNotes += 1;
         }
+        // The same note is reported again without its id; remembering the text
+        // keeps that repeat from counting as a second note.
+        lastCommentaryText = trimmed;
         return;
       }
       if (trimmed !== lastCommentaryText) {
@@ -182,6 +185,10 @@ export function createChannelProgressDraftCompositor(params: {
   // place instead of appending one line per growing prefix.
   let lastIdLessCommentaryId: string | undefined;
   let lastIdLessCommentaryBare = "";
+  // Transports report one commentary item twice: once carrying the provider's
+  // item id and once without it. Keying by text lets both resolve to the same
+  // line instead of rendering the note twice.
+  const commentaryLineIdByBareText = new Map<string, string>();
   // Model preambles and narration share the status slot while tool lines keep
   // accumulating underneath for turns where neither source is available.
   let preambleText = "";
@@ -256,6 +263,7 @@ export function createChannelProgressDraftCompositor(params: {
     lastReasoningLine = undefined;
     lastIdLessCommentaryId = undefined;
     lastIdLessCommentaryBare = "";
+    commentaryLineIdByBareText.clear();
     preambleText = "";
     preambleItemId = undefined;
     preambleAt = undefined;
@@ -325,6 +333,12 @@ export function createChannelProgressDraftCompositor(params: {
   }): string => {
     if (commentary.itemId) {
       return `commentary:${commentary.itemId}`;
+    }
+    const knownLineId = commentary.bareNormalized
+      ? commentaryLineIdByBareText.get(commentary.bareNormalized)
+      : undefined;
+    if (knownLineId) {
+      return knownLineId;
     }
     if (!commentary.normalized) {
       // Sanitized to nothing (directive-only / NO_REPLY): no line to address, so
@@ -720,6 +734,9 @@ export function createChannelProgressDraftCompositor(params: {
       if (!itemId) {
         lastIdLessCommentaryId = lineId;
         lastIdLessCommentaryBare = bareNormalized;
+      }
+      if (bareNormalized) {
+        commentaryLineIdByBareText.set(bareNormalized, lineId);
       }
       const alreadyStarted = gate.hasStarted;
       await gate.startNow();
