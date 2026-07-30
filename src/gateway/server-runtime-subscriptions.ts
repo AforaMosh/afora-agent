@@ -1,14 +1,11 @@
 // Gateway event subscription wiring for agent, heartbeat, transcript, and lifecycle broadcasts.
 import { resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { openClawRuntime } from "../agents/openclaw-runtime.js";
 import { isAuditLedgerEnabled, resolveAuditMessageMode } from "../audit/audit-config.js";
 import { createAuditEventRecorder } from "../audit/audit-recorder.js";
 import { onTrustedMessageAuditEvent } from "../audit/message-audit-events.js";
 import { getRuntimeConfig } from "../config/io.js";
-import {
-  clearAgentRunContext,
-  onAgentAuditEvent,
-  onAgentRuntimeEvent,
-} from "../infra/agent-events.js";
+import { clearAgentRunContext, onAgentAuditEvent } from "../infra/agent-events.js";
 import { onTrustedToolExecutionEvent } from "../infra/diagnostic-events.js";
 import { onHeartbeatEvent } from "../infra/heartbeat-events.js";
 import type { SubsystemLogger } from "../logging/subsystem.js";
@@ -259,7 +256,7 @@ export function startGatewayEventSubscriptions(params: {
     return lifecycleEventHandlerPromise;
   };
 
-  const unsubscribeAgentEvents = onAgentRuntimeEvent((evt) => {
+  const unsubscribeAgentEvents = openClawRuntime.observeAgentTurns((evt) => {
     sessionObserver.handleEvent(evt);
     if (auditEnabled) {
       auditRecorder.record(evt);
