@@ -2,6 +2,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { isValidProfileName } from "../cli/profile-utils.js";
 import { resolveHomeRelativePath, resolveRequiredHomeDir } from "../infra/home-dir.js";
 import { parseTcpPort } from "../infra/tcp-port.js";
 import { isFastTestRuntimeEnv } from "../infra/test-runtime-env.js";
@@ -125,10 +126,13 @@ export function isDefaultStateDir(
 }
 
 /** Canonical state directory name for the selected profile, mirroring root `--profile`. */
-function profileStateDirName(env: NodeJS.ProcessEnv): string {
+function profileStateDirName(env: NodeJS.ProcessEnv): string | null {
   const profile = env.OPENCLAW_PROFILE?.trim();
   if (!profile || profile.toLowerCase() === "default") {
     return NEW_STATE_DIRNAME;
+  }
+  if (!isValidProfileName(profile)) {
+    return null;
   }
   return `${NEW_STATE_DIRNAME}-${profile}`;
 }
@@ -144,8 +148,13 @@ export function isDefaultInstallIdentity(
   if (env.OPENCLAW_HOME?.trim()) {
     return false;
   }
-  const accountHomedir = () => accountHome;
-  const canonicalStateDir = path.join(accountHome, profileStateDirName(env));
+  const stateDirName = profileStateDirName(env);
+  // Environment profiles can bypass root CLI parsing. Reject them before path
+  // construction so separators or dot segments cannot authorize a host service.
+  if (!stateDirName) {
+    return false;
+  }
+  const canonicalStateDir = path.join(accountHome, stateDirName);
   if (
     normalizePathForComparison(resolveStateDir(env, envHomedir(env))) !==
     normalizePathForComparison(canonicalStateDir)
@@ -155,15 +164,9 @@ export function isDefaultInstallIdentity(
   if (!env.OPENCLAW_CONFIG_PATH?.trim()) {
     return true;
   }
-  const defaultConfigEnv = {
-    ...env,
-    HOME: accountHome,
-    OPENCLAW_STATE_DIR: canonicalStateDir,
-    OPENCLAW_CONFIG_PATH: undefined,
-  };
   return (
-    normalizePathForComparison(resolveConfigPathCandidate(env, envHomedir(env))) ===
-    normalizePathForComparison(resolveConfigPathCandidate(defaultConfigEnv, accountHomedir))
+    normalizePathForComparison(resolveCanonicalConfigPath(env, canonicalStateDir)) ===
+    normalizePathForComparison(path.join(canonicalStateDir, CONFIG_FILENAME))
   );
 }
 
