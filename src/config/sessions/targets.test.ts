@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { withTempHome } from "openclaw/plugin-sdk/test-env";
 import { describe, expect, it } from "vitest";
+import { normalizeAgentId } from "../../routing/session-key.js";
 import {
   registerOpenClawAgentDatabase,
   unregisterOpenClawAgentDatabase,
@@ -39,7 +40,11 @@ async function createAgentSessionStores(
     const storePath = path.join(sessionsDir, "sessions.json");
     await fs.mkdir(sessionsDir, { recursive: true });
     await replaceSessionEntry(
-      { storePath, sessionKey: "main" },
+      {
+        agentId: normalizeAgentId(agentId),
+        storePath,
+        sessionKey: `agent:${normalizeAgentId(agentId)}:main`,
+      },
       { sessionId: "sid", updatedAt: Date.now() },
     );
     storePaths[agentId] = await resolveRealStorePath(sessionsDir);
@@ -425,7 +430,7 @@ describe("resolveSessionStoreTargets", () => {
           defaultAgentId: "main",
           env,
           storePath,
-          sessionKey: "main",
+          sessionKey: "agent:ops:main",
         },
         { sessionId: "ops-session", updatedAt: 1 },
       );
@@ -507,7 +512,7 @@ describe("resolveSessionStoreTargets", () => {
         agents: { entries: { main: { default: true }, ops: {} } },
       };
       await replaceSessionEntry(
-        { agentId: "main", env, storePath, sessionKey: "main" },
+        { agentId: "main", env, storePath, sessionKey: "agent:main:main" },
         { sessionId: "main-session", updatedAt: 1 },
       );
       unregisterOpenClawAgentDatabase({ agentId: "main", env, path: databasePath });
@@ -871,11 +876,19 @@ describe("resolveAllAgentSessionStoreTargetsSync", () => {
       await fs.mkdir(mainSessionsDir, { recursive: true });
       await fs.mkdir(retiredSessionsDir, { recursive: true });
       await replaceSessionEntry(
-        { storePath: path.join(mainSessionsDir, "sessions.json"), sessionKey: "main" },
+        {
+          agentId: "main",
+          storePath: path.join(mainSessionsDir, "sessions.json"),
+          sessionKey: "agent:main:main",
+        },
         { sessionId: "sid-main", updatedAt: Date.now() },
       );
       await replaceSessionEntry(
-        { storePath: path.join(retiredSessionsDir, "sessions.json"), sessionKey: "main" },
+        {
+          agentId: "retired",
+          storePath: path.join(retiredSessionsDir, "sessions.json"),
+          sessionKey: "agent:retired:main",
+        },
         { sessionId: "sid-retired", updatedAt: Date.now() },
       );
 
@@ -961,14 +974,18 @@ describe("resolveAllAgentSessionStoreTargetsSync", () => {
       await fs.mkdir(collisionSessionsDir, { recursive: true });
       await fs.mkdir(whitespaceSessionsDir, { recursive: true });
       await replaceSessionEntry(
-        { storePath: path.join(mainSessionsDir, "sessions.json"), sessionKey: "main" },
+        {
+          agentId: "main",
+          storePath: path.join(mainSessionsDir, "sessions.json"),
+          sessionKey: "agent:main:main",
+        },
         { sessionId: "sid-main", updatedAt: Date.now() },
       );
       await replaceSessionEntry(
         {
           agentId: "main",
           storePath: path.join(junkSessionsDir, "sessions.json"),
-          sessionKey: "main",
+          sessionKey: "agent:main:main",
         },
         { sessionId: "sid-junk", updatedAt: Date.now() },
       );
@@ -976,7 +993,7 @@ describe("resolveAllAgentSessionStoreTargetsSync", () => {
         {
           agentId: "main",
           storePath: path.join(collisionSessionsDir, "sessions.json"),
-          sessionKey: "main",
+          sessionKey: "agent:main:main",
         },
         { sessionId: "sid-collision", updatedAt: Date.now() },
       );
@@ -984,7 +1001,7 @@ describe("resolveAllAgentSessionStoreTargetsSync", () => {
         {
           agentId: "main",
           storePath: path.join(whitespaceSessionsDir, "sessions.json"),
-          sessionKey: "main",
+          sessionKey: "agent:main:main",
         },
         { sessionId: "sid-whitespace", updatedAt: Date.now() },
       );

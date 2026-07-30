@@ -22,6 +22,58 @@ import type { SessionEntry } from "./types.js";
 type SessionStatusDatabase = Pick<OpenClawAgentKyselyDatabase, "session_nodes">;
 type SessionListExpressionBuilder = ExpressionBuilder<SessionStatusDatabase, "session_nodes">;
 type SessionDatabaseReader = Pick<OpenClawAgentDatabase, "agentId" | "db">;
+const SQLITE_NON_ECMASCRIPT_WHITESPACE_GLOB =
+  "*[^\t\n\v\f\r \u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]*";
+const CANONICAL_ENTRY_FIELDS = new Set(["sessionId", "updatedAt"]);
+
+function hasDuplicateCanonicalEntryFields(json: string): boolean {
+  const seen = new Set<string>();
+  let depth = 0;
+  let escaped = false;
+  let inString = false;
+  let keyStart = -1;
+  let expectingTopLevelKey = false;
+  for (let index = 0; index < json.length; index += 1) {
+    const char = json[index];
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === "\\") {
+        escaped = true;
+      } else if (char === '"') {
+        inString = false;
+        if (keyStart >= 0) {
+          const key = JSON.parse(json.slice(keyStart, index + 1)) as unknown;
+          if (typeof key === "string" && CANONICAL_ENTRY_FIELDS.has(key)) {
+            if (seen.has(key)) {
+              return true;
+            }
+            seen.add(key);
+          }
+          keyStart = -1;
+          expectingTopLevelKey = false;
+        }
+      }
+      continue;
+    }
+    if (char === '"') {
+      inString = true;
+      if (depth === 1 && expectingTopLevelKey) {
+        keyStart = index;
+      }
+    } else if (char === "{" || char === "[") {
+      depth += 1;
+      if (depth === 1) {
+        expectingTopLevelKey = true;
+      }
+    } else if (char === "}" || char === "]") {
+      depth -= 1;
+    } else if (char === "," && depth === 1) {
+      expectingTopLevelKey = true;
+    }
+  }
+  return false;
+}
 
 export type SqliteSessionEntryListQueryResult = {
   creatorActors: NonNullable<SessionEntry["createdActor"]>[];
@@ -52,19 +104,31 @@ export function parseSqliteSessionEntryJson(
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
       return null;
     }
+    if (hasDuplicateCanonicalEntryFields(row.entry_json)) {
+      return null;
+    }
     const record = parsed as Record<string, unknown>;
+    const storedSessionId =
+      typeof record.sessionId === "string" &&
+      record.sessionId.trim() &&
+      !record.sessionId.includes("\0")
+        ? record.sessionId
+        : undefined;
+    const storedUpdatedAt =
+      typeof record.updatedAt === "number" && Number.isFinite(record.updatedAt)
+        ? record.updatedAt
+        : undefined;
+    // entry_json is canonical; current_session_id only indexes a live canonical blob.
+    // Retained-window placeholders use {}, so column fallback would resurrect deleted sessions.
+    if (!storedSessionId || storedUpdatedAt === undefined) {
+      return null;
+    }
     const entry = projectCanonicalSessionEntryShape(
       hydratePromotedColumns
         ? {
             ...record,
-            sessionId:
-              typeof record.sessionId === "string" && record.sessionId.trim()
-                ? record.sessionId
-                : row.current_session_id,
-            updatedAt:
-              typeof record.updatedAt === "number" && Number.isFinite(record.updatedAt)
-                ? record.updatedAt
-                : row.updated_at,
+            sessionId: storedSessionId,
+            updatedAt: storedUpdatedAt,
           }
         : record,
     );
@@ -175,7 +239,16 @@ function buildSessionListPredicate(
     .then(eb.case().when(agentRest, "=", "sessions").then(1).else(0).end())
     .else(0)
     .end();
-  conditions.push(eb(eb.fn<number>("json_valid", ["entry_json"]), "=", eb.lit(1)));
+  const entryJsonValid = eb(eb.fn<number>("json_valid", ["entry_json"]), "=", eb.lit(1));
+  const safeEntryJson = eb
+    .case()
+    .when(entryJsonValid)
+    .then(eb.ref("entry_json"))
+    .else(eb.val("{}"))
+    .end();
+  // Canonical writers use JSON.stringify, so escaped ASCII field labels are not a
+  // persisted read-path contract and must not grow a second compatibility parser here.
+  conditions.push(entryJsonValid);
   conditions.push(
     eb(
       eb.fn<string>("substr", [eb.fn<string>("ltrim", ["entry_json"]), eb.lit(1), eb.lit(1)]),
@@ -183,6 +256,33 @@ function buildSessionListPredicate(
       "{",
     ),
   );
+  conditions.push(
+    eb(eb.fn<string | null>("json_type", [safeEntryJson, eb.val("$.sessionId")]), "=", "text"),
+  );
+  const storedSessionId = eb.fn<string>("json_extract", [safeEntryJson, eb.val("$.sessionId")]);
+  const withoutSessionId = eb.fn<string>("json_remove", [safeEntryJson, eb.val("$.sessionId")]);
+  conditions.push(
+    eb(eb.fn<string | null>("json_type", [withoutSessionId, eb.val("$.sessionId")]), "is", null),
+  );
+  conditions.push(
+    eb(eb.fn<number>("instr", [storedSessionId, eb.fn<string>("char", [eb.val(0)])]), "=", 0),
+  );
+  conditions.push(
+    eb(
+      eb.fn<number>("glob", [eb.val(SQLITE_NON_ECMASCRIPT_WHITESPACE_GLOB), storedSessionId]),
+      "=",
+      1,
+    ),
+  );
+  const updatedAtType = eb.fn<string | null>("json_type", [safeEntryJson, eb.val("$.updatedAt")]);
+  conditions.push(eb.or([eb(updatedAtType, "=", "integer"), eb(updatedAtType, "=", "real")]));
+  const withoutUpdatedAt = eb.fn<string>("json_remove", [safeEntryJson, eb.val("$.updatedAt")]);
+  conditions.push(
+    eb(eb.fn<string | null>("json_type", [withoutUpdatedAt, eb.val("$.updatedAt")]), "is", null),
+  );
+  const storedUpdatedAt = eb.fn<number>("json_extract", [safeEntryJson, eb.val("$.updatedAt")]);
+  conditions.push(eb(storedUpdatedAt, ">=", -Number.MAX_VALUE));
+  conditions.push(eb(storedUpdatedAt, "<=", Number.MAX_VALUE));
   conditions.push(eb.or([eb(reservedPlaceholderKey, "=", 0), eb("entry_json", "!=", "{}")]));
   if (query.spawnedBy) {
     // Canonical sentinels are valid rows, but they never participate in child lineage.

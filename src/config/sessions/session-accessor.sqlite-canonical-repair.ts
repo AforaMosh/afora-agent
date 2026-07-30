@@ -30,6 +30,7 @@ import {
   deleteSessionTranscriptIndexInTransaction,
   reconcileSessionTranscriptIndexInTransaction,
 } from "./session-transcript-index.js";
+import { projectCanonicalSessionEntryShape } from "./store-entry-shape.js";
 import { normalizeStoreSessionKey } from "./store-entry.js";
 import type { SessionEntry } from "./types.js";
 
@@ -93,6 +94,35 @@ export function listSqliteSessionGenerationIdsForCanonicalRepair(params: {
 }
 
 /** Doctor inventory hydrates legacy blobs from promoted identity/timestamp columns. */
+function hydrateCanonicalRepairEntry(row: {
+  current_session_id: string;
+  entry_json: string;
+  updated_at: number;
+}): SessionEntry {
+  let record: Record<string, unknown> = {};
+  try {
+    const parsed = JSON.parse(row.entry_json) as unknown;
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      record = parsed as Record<string, unknown>;
+    }
+  } catch {
+    // Doctor owns malformed legacy repair; promoted identity columns keep the row reachable.
+  }
+  return projectCanonicalSessionEntryShape({
+    ...record,
+    sessionId:
+      typeof record.sessionId === "string" &&
+      record.sessionId.trim() &&
+      !record.sessionId.includes("\0")
+        ? record.sessionId
+        : row.current_session_id,
+    updatedAt:
+      typeof record.updatedAt === "number" && Number.isFinite(record.updatedAt)
+        ? record.updatedAt
+        : row.updated_at,
+  });
+}
+
 export function listSqliteSessionEntriesForCanonicalRepair(
   scope: SessionEntryListScope = {},
 ): Array<SessionEntrySummary & { rawEntryJson?: string }> {
@@ -106,13 +136,13 @@ export function listSqliteSessionEntriesForCanonicalRepair(
         .select(["session_key", "current_session_id", "entry_json", "updated_at"]),
     ).rows.flatMap((row) => {
       const persistedEntry = parseSqliteSessionEntryJson(row, false);
-      const entry = parseSqliteSessionEntryJson(row, true);
+      const entry = persistedEntry ?? hydrateCanonicalRepairEntry(row);
       const rawCompareRequired =
         !persistedEntry || JSON.stringify(persistedEntry) !== JSON.stringify(entry);
       return [
         {
           sessionKey: row.session_key,
-          entry: entry ?? { sessionId: row.current_session_id, updatedAt: row.updated_at },
+          entry,
           ...(rawCompareRequired ? { rawEntryJson: row.entry_json } : {}),
         },
       ];

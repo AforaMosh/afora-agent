@@ -591,9 +591,9 @@ export async function listSessionsFromStoreAsync(
         transcriptUsageMaxBytes: SESSIONS_LIST_TRANSCRIPT_USAGE_MAX_BYTES,
         storeChildSessionsByKey,
         rowContext: prepared.sharedRowContext,
-        // Aggregate lists may not have a concrete store path. Explicit last-message hydration
-        // uses the scoped read below; generic transcript usage fallback stays disabled here.
-        skipTranscriptUsageFallback: true,
+        // Aggregate paths resolve again per row: the agent key selects its durable store and an
+        // incognito key selects its process DB. Keep transcript work bounded to SQL survivors.
+        skipTranscriptUsageFallback: !includeTranscriptFields,
         lightweightListRow: true,
       });
       if (entry?.sessionId && includeTranscriptFields && includeLastMessage) {

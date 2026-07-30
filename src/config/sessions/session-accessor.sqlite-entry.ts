@@ -1,7 +1,6 @@
 import type { MsgContext } from "../../auto-reply/templating.js";
 import { executeSqliteQueryTakeFirstSync } from "../../infra/kysely-sync.js";
 import type { ChannelRouteRef } from "../../plugin-sdk/channel-route.js";
-import { parseAgentSessionKey } from "../../routing/session-key.js";
 import { withOpenClawAgentDatabaseReadOnly } from "../../state/openclaw-agent-db-readonly.js";
 import {
   isIncognitoOpenClawAgentSqlitePath,
@@ -99,17 +98,10 @@ const childSessionKeysByEntrySnapshot = new WeakMap<
   Map<string, string[]>
 >();
 
-function assertCanonicalSessionWriteScope(scope: SessionAccessScope): void {
-  const sessionKey = scope.sessionKey;
-  const trimmed = sessionKey.trim();
-  const parsed = parseAgentSessionKey(trimmed);
-  if (
-    !trimmed ||
-    sessionKey !== trimmed ||
-    (parsed !== null && !trimmed.startsWith(`agent:${parsed.agentId}:`))
-  ) {
-    assertCanonicalSessionKeyWrite(sessionKey, scope.agentId);
-  }
+function assertCanonicalSessionWriteScope(
+  scope: Pick<ResolvedSqliteScope, "agentId" | "sessionKey">,
+): void {
+  assertCanonicalSessionKeyWrite(scope.sessionKey, scope.agentId);
 }
 
 function getChildSessionKeysByParent(entries: Map<string, SessionEntry>): Map<string, string[]> {
@@ -430,8 +422,9 @@ export function replaceSqliteSessionEntrySync(
   scope: SessionAccessScope,
   entry: SessionEntry,
 ): void {
-  assertCanonicalSessionWriteScope(scope);
+  assertCanonicalSessionKeyWrite(scope.sessionKey);
   const resolved = resolveSqliteScope(scope);
+  assertCanonicalSessionWriteScope(resolved);
   let previous = new Map<string, SessionEntry>();
   let current = new Map<string, SessionEntry>();
   runOpenClawAgentWriteTransaction((database) => {
@@ -452,8 +445,9 @@ export async function patchSqliteSessionEntry(
   ) => Promise<Partial<SessionEntry> | null> | Partial<SessionEntry> | null,
   options: SqliteSessionEntryPatchOptions = {},
 ): Promise<SessionEntry | null> {
-  assertCanonicalSessionWriteScope(scope);
+  assertCanonicalSessionKeyWrite(scope.sessionKey);
   const resolved = resolveSqliteScope(scope);
+  assertCanonicalSessionWriteScope(resolved);
   return await patchSqliteSessionEntrySnapshot<
     ReturnType<typeof readSqliteSessionEntrySelectionSnapshot>
   >({
@@ -494,7 +488,12 @@ export async function patchSqliteSessionEntryTarget(
     existingEntry: (snapshot) => snapshot.primary?.entry,
     legacyKeys: () => scope.target.storeKeys,
     options,
-    readSnapshot: (database) => readSqliteLifecycleTargetSnapshot(database, scope.target),
+    readSnapshot: (database) =>
+      readSqliteLifecycleTargetSnapshot(database, scope.target, {
+        allowCanonicalMove:
+          scope.target.storeKeys.length === 1 &&
+          scope.target.storeKeys[0] !== scope.target.canonicalKey,
+      }),
     rehomeWindows: true,
     resolved,
     sessionKey: scope.target.canonicalKey,

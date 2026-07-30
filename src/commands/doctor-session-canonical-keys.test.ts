@@ -120,7 +120,10 @@ describe("doctor canonical session-key repair", () => {
       });
       database.db
         .prepare("UPDATE session_nodes SET entry_json = ? WHERE session_key = ?")
-        .run(JSON.stringify({ subject: "legacy", updatedAt: 10 }), "agent:main:main");
+        .run(
+          JSON.stringify({ sessionId: "\0invalid", subject: "legacy", updatedAt: 10 }),
+          "agent:main:main",
+        );
       expect(await repairCanonicalSessionKeys({ apply: true, cfg, env })).toMatchObject({
         foundGroups: 1,
         removedRows: 0,

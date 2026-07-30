@@ -10,7 +10,6 @@ import {
   parseAgentSessionKey,
 } from "../../routing/session-key.js";
 import type { DB as OpenClawAgentKyselyDatabase } from "../../state/openclaw-agent-db.generated.js";
-import type { OpenClawAgentDatabase } from "../../state/openclaw-agent-db.js";
 import { normalizeStoreSessionKey } from "./store-entry.js";
 import type { SessionEntry } from "./types.js";
 
@@ -51,24 +50,29 @@ function isCanonicalSessionKey(sessionKey: string): boolean {
   if (normalizeStoreSessionKey(sessionKey) !== sessionKey) {
     return false;
   }
-  return trimmed === "global" || trimmed === "unknown" || parseAgentSessionKey(trimmed) !== null;
+  const parsed = parseAgentSessionKey(trimmed);
+  return (
+    trimmed === "global" ||
+    trimmed === "unknown" ||
+    (parsed !== null && trimmed.startsWith(`agent:${parsed.agentId}:`))
+  );
 }
 
-export function assertCanonicalSessionKeyWrite(sessionKey: string, databaseAgentId?: string): void {
+export function assertCanonicalSessionKeyWrite(sessionKey: string, expectedAgentId?: string): void {
   const parsed = parseAgentSessionKey(sessionKey);
   if (
     !isCanonicalSessionKey(sessionKey) ||
-    (databaseAgentId && parsed && parsed.agentId !== normalizeAgentId(databaseAgentId))
+    (expectedAgentId && parsed && parsed.agentId !== normalizeAgentId(expectedAgentId))
   ) {
     throw new SessionCanonicalKeyMigrationRequiredError(sessionKey, "non-canonical-write");
   }
 }
 
 export function assertCanonicalSessionKeyWriteMatchesDatabase(
-  database: Pick<OpenClawAgentDatabase, "agentId" | "db">,
+  database: { db: DatabaseSync },
   sessionKey: string,
 ): void {
-  assertCanonicalSessionKeyWrite(sessionKey, database.agentId);
+  assertCanonicalSessionKeyWrite(sessionKey);
   const parsed = parseAgentSessionKey(sessionKey);
   if (!parsed || parsed.rest !== "main") {
     return;
@@ -151,7 +155,6 @@ export function assertCanonicalSqliteSessionKeysCurrent(
       row.session_key !== trimmed ||
       normalizeStoreSessionKey(trimmed) !== trimmed ||
       (!parsed && trimmed !== "global" && trimmed !== "unknown") ||
-      (parsed && parsed.agentId !== normalizeAgentId(database.agentId)) ||
       (parsed && parsed.rest === "main" && canonicalMainKey !== "main")
     ) {
       throw nonCanonicalSessionKeyRowError(trimmed || row.session_key);

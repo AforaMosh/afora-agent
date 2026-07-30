@@ -329,7 +329,8 @@ export function buildGatewaySessionRow(params: {
     sessionKey: key,
   });
   const estimatedCostUsd = lightweight
-    ? resolveNonNegativeNumber(entry?.estimatedCostUsd)
+    ? (resolveNonNegativeNumber(entry?.estimatedCostUsd) ??
+      resolveNonNegativeNumber(transcriptUsage?.estimatedCostUsd))
     : (resolveEstimatedSessionCostUsd({
         cfg,
         provider: rowModelProvider,
