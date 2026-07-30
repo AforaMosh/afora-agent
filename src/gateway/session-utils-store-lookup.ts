@@ -370,6 +370,13 @@ function resolveExplicitDeletedLegacyMainStoreTarget(params: {
     if (!match) {
       continue;
     }
+    if (best) {
+      const error = duplicateCanonicalSessionKeyError(canonicalKey);
+      if (!recordCanonicalError) {
+        throw error;
+      }
+      recordCanonicalError(error);
+    }
     if (!best || (match.entry.updatedAt ?? 0) >= (best.match.entry.updatedAt ?? 0)) {
       best = { storePath: target.storePath, store, match };
     }

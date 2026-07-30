@@ -68,11 +68,36 @@ export function assertCanonicalSessionKeyWrite(sessionKey: string, expectedAgent
   }
 }
 
-export function assertCanonicalSessionEntryLineageWrite(entry: SessionEntry): void {
-  for (const sessionKey of [entry.parentSessionKey, entry.spawnedBy]) {
-    if (sessionKey !== undefined) {
-      assertCanonicalSessionKeyWrite(sessionKey);
-    }
+function readCanonicalSessionMainKey(database: { db: DatabaseSync }): string {
+  const db = getNodeSqliteKysely<CanonicalSessionDatabase>(database.db);
+  return normalizeMainKey(
+    executeSqliteQueryTakeFirstSync(
+      database.db,
+      db.selectFrom("session_key_contract").select("main_key").where("id", "=", 1),
+    )?.main_key,
+  );
+}
+
+function assertCanonicalSessionMainKeyWrite(sessionKey: string, mainKey: string): void {
+  if (parseAgentSessionKey(sessionKey)?.rest === "main" && mainKey !== "main") {
+    throw nonCanonicalSessionKeyWriteError(sessionKey);
+  }
+}
+
+export function assertCanonicalSessionEntryLineageWrite(
+  database: { db: DatabaseSync },
+  entry: SessionEntry,
+): void {
+  const sessionKeys = [entry.parentSessionKey, entry.spawnedBy].filter(
+    (sessionKey): sessionKey is string => sessionKey !== undefined,
+  );
+  if (sessionKeys.length === 0) {
+    return;
+  }
+  const mainKey = readCanonicalSessionMainKey(database);
+  for (const sessionKey of sessionKeys) {
+    assertCanonicalSessionKeyWrite(sessionKey);
+    assertCanonicalSessionMainKeyWrite(sessionKey, mainKey);
   }
 }
 
@@ -81,20 +106,7 @@ export function assertCanonicalSessionKeyWriteMatchesDatabase(
   sessionKey: string,
 ): void {
   assertCanonicalSessionKeyWrite(sessionKey, database.agentId);
-  const parsed = parseAgentSessionKey(sessionKey);
-  if (!parsed || parsed.rest !== "main") {
-    return;
-  }
-  const db = getNodeSqliteKysely<CanonicalSessionDatabase>(database.db);
-  const mainKey = normalizeMainKey(
-    executeSqliteQueryTakeFirstSync(
-      database.db,
-      db.selectFrom("session_key_contract").select("main_key").where("id", "=", 1),
-    )?.main_key,
-  );
-  if (mainKey !== "main") {
-    throw nonCanonicalSessionKeyWriteError(sessionKey);
-  }
+  assertCanonicalSessionMainKeyWrite(sessionKey, readCanonicalSessionMainKey(database));
 }
 
 export function duplicateCanonicalSessionKeyError(
