@@ -75,7 +75,7 @@ import {
   getSessionDefaults,
   listAgentsForGateway,
   listSessionsFromStoreAsync,
-  loadCombinedSessionStoreForGateway,
+  loadCombinedSessionStore,
   loadSessionEntry,
   loadSessionEntryReadOnly,
   migrateAndPruneGatewaySessionStoreKey,
@@ -697,7 +697,7 @@ export class EmbeddedTuiBackend implements TuiBackend {
   async listSessions(opts?: Parameters<TuiBackend["listSessions"]>[0]): Promise<TuiSessionList> {
     await this.ready;
     const cfg = getRuntimeConfig();
-    const { storePath, store } = loadCombinedSessionStoreForGateway(cfg, {
+    const { storePath, store } = loadCombinedSessionStore(cfg, {
       agentId: opts?.agentId,
       projection: "list",
     });

@@ -16,7 +16,6 @@ import { managedWorktrees } from "../agents/worktrees/service.js";
 import { finalizeInboundContext } from "../auto-reply/reply/inbound-context.js";
 import { initSessionState } from "../auto-reply/reply/session.js";
 import { getRuntimeConfig } from "../config/io.js";
-import { loadCombinedSessionStoreForGateway } from "../config/sessions/combined-store-gateway.js";
 import {
   loadSessionEntry,
   loadTranscriptEvents,
@@ -26,6 +25,7 @@ import { resolveSqliteTargetFromSessionStorePath } from "../config/sessions/sess
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { createEmptyPluginRegistry } from "../plugins/registry-empty.js";
 import { setActivePluginRegistry } from "../plugins/runtime.js";
+import { loadCombinedSessionStore } from "../sessions/session-combined-store.js";
 import { listSessionStateEventsSince } from "../sessions/session-state-events.js";
 import {
   closeOpenClawAgentDatabasesForTest,
@@ -218,7 +218,7 @@ test("sessions.create keeps incognito rows process-local through list, spawn, re
         .get(key),
     ).toEqual({ session_key: key });
     expect(loadSessionEntry({ agentId: "main", sessionKey: key })?.incognito).toBe(true);
-    expect(loadCombinedSessionStoreForGateway(getRuntimeConfig()).store[key]?.incognito).toBe(true);
+    expect(loadCombinedSessionStore(getRuntimeConfig()).store[key]?.incognito).toBe(true);
     expect(loadSessionEntry({ agentId: "main", sessionKey: key, storePath })?.incognito).toBe(true);
     const persistentDatabase = openOpenClawAgentDatabase({
       agentId: "main",

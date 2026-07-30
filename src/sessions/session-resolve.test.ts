@@ -9,7 +9,7 @@ const hoisted = vi.hoisted(() => ({
   canonicalizeSessionEntryAliasesMock: vi.fn(),
   listSessionsFromStoreMock: vi.fn(),
   resolveGatewaySessionStoreTargetWithStoreMock: vi.fn(),
-  loadCombinedSessionStoreForGatewayMock: vi.fn(),
+  loadCombinedSessionStoreMock: vi.fn(),
   listAgentIdsMock: vi.fn(),
 }));
 
@@ -41,7 +41,7 @@ vi.mock("../gateway/session-utils.js", async () => {
     listSessionsFromStore: hoisted.listSessionsFromStoreMock,
     resolveGatewaySessionStoreTargetWithStore:
       hoisted.resolveGatewaySessionStoreTargetWithStoreMock,
-    loadCombinedSessionStoreForGateway: hoisted.loadCombinedSessionStoreForGatewayMock,
+    loadCombinedSessionStore: hoisted.loadCombinedSessionStoreMock,
   };
 });
 
@@ -72,7 +72,7 @@ describe("resolveSessionKeyFromResolveParams", () => {
     hoisted.canonicalizeSessionEntryAliasesMock.mockReset();
     hoisted.listSessionsFromStoreMock.mockReset();
     hoisted.resolveGatewaySessionStoreTargetWithStoreMock.mockReset();
-    hoisted.loadCombinedSessionStoreForGatewayMock.mockReset();
+    hoisted.loadCombinedSessionStoreMock.mockReset();
     hoisted.listAgentIdsMock.mockReset();
     targetStore = {};
     // Default: all agents are known (main is always present).
@@ -246,7 +246,7 @@ describe("resolveSessionKeyFromResolveParams", () => {
 
   it("rejects sessions belonging to a deleted agent (sessionId-based lookup)", async () => {
     const deletedAgentKey = "agent:deleted-agent:main";
-    hoisted.loadCombinedSessionStoreForGatewayMock.mockReturnValue({
+    hoisted.loadCombinedSessionStoreMock.mockReturnValue({
       storePath,
       store: { [deletedAgentKey]: { sessionId: "sess-orphan", updatedAt: 1 } },
     });
@@ -267,7 +267,7 @@ describe("resolveSessionKeyFromResolveParams", () => {
   });
 
   it("resolves sessionId matches from raw store metadata without hydrating session rows", async () => {
-    hoisted.loadCombinedSessionStoreForGatewayMock.mockReturnValue({
+    hoisted.loadCombinedSessionStoreMock.mockReturnValue({
       storePath,
       store: {
         "agent:main:noisy": { sessionId: "sess-noisy", updatedAt: 2 },
@@ -285,7 +285,7 @@ describe("resolveSessionKeyFromResolveParams", () => {
     });
 
     expect(result).toEqual({ ok: true, key: "agent:main:target" });
-    expect(hoisted.loadCombinedSessionStoreForGatewayMock).toHaveBeenCalledWith(cfg, {
+    expect(hoisted.loadCombinedSessionStoreMock).toHaveBeenCalledWith(cfg, {
       agentId: "main",
     });
     expect(hoisted.listSessionsFromStoreMock).not.toHaveBeenCalled();
@@ -293,7 +293,7 @@ describe("resolveSessionKeyFromResolveParams", () => {
 
   it("rejects sessions belonging to a deleted agent (label-based lookup)", async () => {
     const deletedAgentKey = "agent:deleted-agent:main";
-    hoisted.loadCombinedSessionStoreForGatewayMock.mockReturnValue({
+    hoisted.loadCombinedSessionStoreMock.mockReturnValue({
       storePath,
       store: { [deletedAgentKey]: { sessionId: "sess-orphan", updatedAt: 1, label: "my-label" } },
     });
@@ -308,7 +308,7 @@ describe("resolveSessionKeyFromResolveParams", () => {
       p: { label: "my-label", agentId: "main" },
     });
 
-    expect(hoisted.loadCombinedSessionStoreForGatewayMock).toHaveBeenCalledWith(cfg, {
+    expect(hoisted.loadCombinedSessionStoreMock).toHaveBeenCalledWith(cfg, {
       agentId: "main",
     });
     expect(result).toEqual({

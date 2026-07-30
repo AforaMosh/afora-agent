@@ -13,8 +13,8 @@ import {
 } from "./session-transcript-hit.js";
 
 const loadGatewaySessionStore = vi.hoisted(() => vi.fn());
-vi.mock("../config/sessions/combined-store-gateway.js", () => ({
-  loadCombinedSessionStoreForGateway: loadGatewaySessionStore,
+vi.mock("../sessions/session-combined-store.js", () => ({
+  loadCombinedSessionStore: loadGatewaySessionStore,
 }));
 
 it("filters incognito rows from the plugin cross-session store view", () => {

@@ -11,15 +11,13 @@ vi.mock("../session-utils.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../session-utils.js")>();
   return {
     ...actual,
-    loadCombinedSessionStoreForGateway: (
-      ...args: Parameters<typeof actual.loadCombinedSessionStoreForGateway>
-    ) => {
+    loadCombinedSessionStore: (...args: Parameters<typeof actual.loadCombinedSessionStore>) => {
       loader.calls(...args);
       if (loader.failNext) {
         loader.failNext = false;
         throw new Error("synthetic store load failure");
       }
-      return actual.loadCombinedSessionStoreForGateway(...args);
+      return actual.loadCombinedSessionStore(...args);
     },
   };
 });

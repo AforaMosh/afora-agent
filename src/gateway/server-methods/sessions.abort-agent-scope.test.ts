@@ -10,7 +10,7 @@ import type { GatewayClient, GatewayRequestContext, RespondFn } from "./types.js
 const chatAbortMock = vi.fn();
 const resolveSessionKeyForRunMock = vi.fn();
 const listSessionsFromStoreAsyncMock = vi.fn();
-const loadCombinedSessionStoreForGatewayMock = vi.fn();
+const loadCombinedSessionStoreMock = vi.fn();
 const isEmbeddedAgentRunInProgressMock = vi.fn();
 const abortEmbeddedAgentRunMock = vi.fn();
 const clearSessionQueuesMock = vi.fn();
@@ -45,8 +45,7 @@ vi.mock("../session-utils.js", async () => {
   return {
     ...actual,
     listSessionsFromStoreAsync: (...args: unknown[]) => listSessionsFromStoreAsyncMock(...args),
-    loadCombinedSessionStoreForGateway: (...args: unknown[]) =>
-      loadCombinedSessionStoreForGatewayMock(...args),
+    loadCombinedSessionStore: (...args: unknown[]) => loadCombinedSessionStoreMock(...args),
     loadSessionEntry: (...args: unknown[]) =>
       loadSessionEntryMock(...(args as [string, { agentId?: string }?])),
     loadSessionEntryReadOnly: (...args: unknown[]) =>
@@ -218,8 +217,8 @@ describe("sessions.abort agent scope", () => {
     resolveSessionKeyForRunMock.mockReset();
     listSessionsFromStoreAsyncMock.mockReset();
     listSessionsFromStoreAsyncMock.mockResolvedValue({ sessions: [] });
-    loadCombinedSessionStoreForGatewayMock.mockReset();
-    loadCombinedSessionStoreForGatewayMock.mockReturnValue({
+    loadCombinedSessionStoreMock.mockReset();
+    loadCombinedSessionStoreMock.mockReturnValue({
       storePath: "/tmp/openclaw-sessions.json",
       store: {},
     });

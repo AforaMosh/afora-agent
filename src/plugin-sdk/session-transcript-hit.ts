@@ -4,10 +4,10 @@ import { expectDefined } from "@openclaw/normalization-core";
 import { normalizeOptionalString } from "../../packages/normalization-core/src/string-coerce.js";
 import { uniqueStrings } from "../../packages/normalization-core/src/string-normalization.js";
 import { parseUsageCountedSessionIdFromFileName } from "../config/sessions/artifacts.js";
-import { loadCombinedSessionStoreForGateway as loadGatewaySessionStore } from "../config/sessions/combined-store-gateway.js";
 import type { SessionEntry } from "../config/sessions/types.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { isIncognitoSessionKey, normalizeAgentId } from "../routing/session-key.js";
+import { loadCombinedSessionStore } from "../sessions/session-combined-store.js";
 export {
   formatSessionTranscriptMemoryHitKey,
   parseSessionTranscriptMemoryHitKey,
@@ -27,7 +27,7 @@ export function loadCombinedSessionStoreForGateway(
   cfg: OpenClawConfig,
   opts: { agentId?: string; configuredAgentsOnly?: boolean } = {},
 ) {
-  const result = loadGatewaySessionStore(cfg, { ...opts, includeIncognito: false });
+  const result = loadCombinedSessionStore(cfg, { ...opts, includeIncognito: false });
   return {
     storePath: result.storePath,
     // Plugin search hits can be re-persisted into durable transcripts, so the

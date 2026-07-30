@@ -13,7 +13,7 @@ import type { OpenClawConfig } from "../config/types.openclaw.js";
 import {
   filterAndSortSessionEntries,
   listSessionsFromStore,
-  loadCombinedSessionStoreForGateway,
+  loadCombinedSessionStore,
   resolveDeletedAgentIdFromSessionKey,
   resolveGatewaySessionStoreTargetWithStore,
 } from "../gateway/session-utils.js";
@@ -195,7 +195,7 @@ export async function resolveSessionKeyFromResolveParams(params: {
   if (hasSessionId) {
     // sessionId can collide across stores; delegate selection so exact key
     // matches and ambiguity rules stay shared with other session-id callers.
-    const { store } = loadCombinedSessionStoreForGateway(cfg, { agentId: p.agentId });
+    const { store } = loadCombinedSessionStore(cfg, { agentId: p.agentId });
     const matches = findVisibleSessionIdMatches({ cfg, store, p, sessionId });
     const selection = resolveSessionIdMatchSelection(matches, sessionId);
     if (selection.kind === "none") {
@@ -231,7 +231,7 @@ export async function resolveSessionKeyFromResolveParams(params: {
     };
   }
 
-  const { storePath, store } = loadCombinedSessionStoreForGateway(cfg, { agentId: p.agentId });
+  const { storePath, store } = loadCombinedSessionStore(cfg, { agentId: p.agentId });
   const list = listSessionsFromStore({
     cfg,
     storePath,

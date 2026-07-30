@@ -13,7 +13,7 @@ import {
 import {
   addSessionMember,
   listSessionMembers,
-  loadCombinedSessionStoreForGateway,
+  loadCombinedSessionStore,
   removeSessionMember,
 } from "../../config/sessions.js";
 import { patchSessionEntry } from "../../config/sessions/session-accessor.js";
@@ -132,7 +132,7 @@ function knownSessionIdentities(params: {
     });
   };
   remember(params.actor);
-  for (const entry of Object.values(loadCombinedSessionStoreForGateway(params.cfg).store)) {
+  for (const entry of Object.values(loadCombinedSessionStore(params.cfg).store)) {
     remember(entry.createdActor ?? null);
   }
   for (const profile of listProfiles()) {

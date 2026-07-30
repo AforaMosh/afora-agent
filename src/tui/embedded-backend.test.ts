@@ -46,7 +46,7 @@ const getSessionDefaultsMock = vi.fn(() => ({
   model: null,
   contextTokens: null,
 }));
-const loadCombinedSessionStoreForGatewayMock = vi.fn((_options?: unknown) => ({
+const loadCombinedSessionStoreMock = vi.fn((_options?: unknown) => ({
   storePath: "/tmp/openclaw-sessions.json",
   store: {},
 }));
@@ -205,8 +205,7 @@ vi.mock("../gateway/session-utils.js", () => ({
   getSessionDefaults: () => getSessionDefaultsMock(),
   listAgentsForGateway: () => [],
   listSessionsFromStoreAsync: (...args: unknown[]) => listSessionsFromStoreAsyncMock(...args),
-  loadCombinedSessionStoreForGateway: (...args: unknown[]) =>
-    loadCombinedSessionStoreForGatewayMock(...args),
+  loadCombinedSessionStore: (...args: unknown[]) => loadCombinedSessionStoreMock(...args),
   loadSessionEntry: (sessionKey: string, opts?: { agentId?: string }) =>
     loadSessionEntryMock(sessionKey, opts),
   loadSessionEntryReadOnly: (sessionKey: string, opts?: { agentId?: string }) =>
@@ -329,8 +328,8 @@ describe("EmbeddedTuiBackend", () => {
     });
     listSessionsFromStoreAsyncMock.mockReset();
     listSessionsFromStoreAsyncMock.mockResolvedValue({ sessions: [] });
-    loadCombinedSessionStoreForGatewayMock.mockReset();
-    loadCombinedSessionStoreForGatewayMock.mockReturnValue({
+    loadCombinedSessionStoreMock.mockReset();
+    loadCombinedSessionStoreMock.mockReturnValue({
       storePath: "/tmp/openclaw-sessions.json",
       store: {},
     });
@@ -797,7 +796,7 @@ describe("EmbeddedTuiBackend", () => {
 
     await backend.listSessions({ agentId: "work", includeGlobal: true, search: "global" });
 
-    expect(loadCombinedSessionStoreForGatewayMock).toHaveBeenCalledWith(
+    expect(loadCombinedSessionStoreMock).toHaveBeenCalledWith(
       {},
       { agentId: "work", projection: "list" },
     );

@@ -65,7 +65,7 @@ import {
 } from "../../utils/delivery-context.shared.js";
 import { runTasksWithConcurrency } from "../../utils/run-with-concurrency.js";
 import { listGatewayAgentsBasic } from "../agent-list.js";
-import { loadCombinedSessionStoreForGateway, loadSessionEntryReadOnly } from "../session-utils.js";
+import { loadCombinedSessionStore, loadSessionEntryReadOnly } from "../session-utils.js";
 import { loadUsageStatusStaleWhileRevalidate } from "./models-auth-status-usage-cache.js";
 import type { GatewayRequestHandlers, RespondFn } from "./types.js";
 import { assertValidParams } from "./validation.js";
@@ -1346,7 +1346,7 @@ export const usageHandlers: GatewayRequestHandlers = {
         load: async () => {
           // Load session store for named sessions only on a result-cache miss.
           const sessionStoreOpts = effectiveAgentId ? { agentId: effectiveAgentId } : {};
-          const { storePath, store } = loadCombinedSessionStoreForGateway(config, sessionStoreOpts);
+          const { storePath, store } = loadCombinedSessionStore(config, sessionStoreOpts);
           const scopedStore = effectiveAgentId
             ? filterSessionStoreByAgent({
                 config,
