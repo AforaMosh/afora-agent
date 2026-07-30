@@ -262,6 +262,7 @@ export function readExactSessionEntryRow(
 export function readExactSessionEntryRowForImport(
   database: OpenClawAgentDatabaseReader,
   sessionKey: string,
+  options: { allowMalformedRowRepair?: boolean } = {},
 ): ResolvedSessionEntryRow | undefined {
   const db = getSessionKysely(database.db);
   const row = executeSqliteQueryTakeFirstSync(
@@ -271,8 +272,14 @@ export function readExactSessionEntryRowForImport(
   if (!row) {
     return undefined;
   }
-  const entry = parseProjectedSessionEntryRow(row);
-  return entry ? { entry, legacyKeys: [], row } : undefined;
+  const parsedEntry = parseProjectedSessionEntryRow(row);
+  if (!parsedEntry && !options.allowMalformedRowRepair) {
+    throw new SessionEntryValidityMigrationRequiredError();
+  }
+  const entry =
+    parsedEntry ??
+    ({ sessionId: row.current_session_id, updatedAt: row.updated_at } satisfies SessionEntry);
+  return { entry, legacyKeys: [], row };
 }
 
 export function readExactSessionEntryJson(
@@ -641,6 +648,7 @@ export function writeSessionEntry(
   entry: SessionEntry,
   options: {
     allowStoredAliases?: boolean;
+    forceTitleRefresh?: boolean;
     preserveNodeSuggestions?: boolean;
     previousEntry?: SessionEntry | null;
   } = {},
@@ -722,6 +730,7 @@ export function writeSessionEntry(
   // Transcript append/rewrite paths refresh content-derived titles. Routine entry metadata
   // updates retain that projection instead of rescanning the transcript inside the write lock.
   const projectedTitle =
+    !options.forceTitleRefresh &&
     storedTitleProjection?.current_session_id === normalizedEntry.sessionId &&
     sessionTitleMetadataEqual(previousEntry, normalizedEntry)
       ? storedTitleProjection.display_name

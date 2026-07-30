@@ -591,6 +591,7 @@ async function importLegacySessionRecord(
       return;
     }
     const imported = await importSqliteSessionRows({
+      allowMalformedRowRepair: true,
       agentId: target.agentId,
       entry: record.entry,
       sessionKey: record.sessionKey,
@@ -606,6 +607,7 @@ async function importLegacySessionRecord(
     return;
   } else if (result.status === "malformed") {
     const imported = await importSqliteSessionRows({
+      allowMalformedRowRepair: true,
       agentId: target.agentId,
       entry: record.entry,
       sessionKey: record.sessionKey,
@@ -633,6 +635,7 @@ async function importLegacySessionRecord(
     return;
   }
   const imported = await importSqliteSessionRows({
+    allowMalformedRowRepair: true,
     agentId: target.agentId,
     entry: record.entry,
     sessionKey: record.sessionKey,

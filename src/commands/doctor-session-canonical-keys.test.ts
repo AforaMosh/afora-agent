@@ -6,6 +6,7 @@ import {
   loadExactSessionEntryReadOnly,
   replaceSessionEntrySync,
 } from "../config/sessions/session-accessor.js";
+import { getSessionProjectedTitle } from "../config/sessions/session-accessor.sqlite-session-row.js";
 import { mergeCanonicalSessionEntryCandidates } from "../config/sessions/session-canonical-key.js";
 import { resolveSqliteTargetFromSessionStorePath } from "../config/sessions/session-sqlite-target.js";
 import type { SessionEntry } from "../config/sessions/types.js";
@@ -542,6 +543,7 @@ describe("doctor canonical session-key repair", () => {
         startedAt: 23,
         status: "failed",
       });
+      expect(getSessionProjectedTitle(repaired)).toBe("Recovered metadata");
       expect(deliveryContextFromSession(repaired)).toEqual({
         accountId: "work",
         channel: "matrix",

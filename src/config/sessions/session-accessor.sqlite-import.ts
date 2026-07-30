@@ -22,6 +22,7 @@ import type { SessionEntry } from "./types.js";
 
 /** Internal doctor/migration import target for one legacy session row. */
 type SqliteSessionImportRowsParams = {
+  allowMalformedRowRepair?: boolean;
   agentId?: string;
   env?: NodeJS.ProcessEnv;
   storePath?: string;
@@ -53,7 +54,9 @@ export async function importSqliteSessionRows(
     runOpenClawAgentWriteTransaction((database) => {
       // Doctor may have staged another legacy alias in this database already. Inspect only this
       // exact import target; runtime-wide canonical validation runs after the import phase.
-      const currentEntry = readExactSessionEntryRowForImport(database, resolved.sessionKey)?.entry;
+      const currentEntry = readExactSessionEntryRowForImport(database, resolved.sessionKey, {
+        allowMalformedRowRepair: params.allowMalformedRowRepair === true,
+      })?.entry;
       const preservedHarnessId =
         params.entry.agentHarnessId === undefined &&
         currentEntry?.sessionId === params.entry.sessionId &&

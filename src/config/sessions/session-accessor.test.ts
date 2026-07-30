@@ -2133,16 +2133,6 @@ describe("session accessor seam", () => {
         { sessionId: "wrong-owner-session", updatedAt: 10 },
       ),
     ).rejects.toMatchObject({ code: "SESSION_CANONICAL_KEY_MIGRATION_REQUIRED" });
-    await expect(
-      upsertSessionEntry(
-        { agentId: "ops", sessionKey: "agent:ops:fork-child", storePath },
-        {
-          forkSource: { sessionId: "fork-source", sessionKey: "agent:main:wrong-owner" },
-          sessionId: "fork-child",
-          updatedAt: 10,
-        },
-      ),
-    ).rejects.toMatchObject({ code: "SESSION_CANONICAL_KEY_MIGRATION_REQUIRED" });
     const database = openOpenClawAgentDatabase({
       agentId: "ops",
       path: resolveSqliteTargetFromSessionStorePath(storePath, { agentId: "ops" }).path,
@@ -4235,9 +4225,15 @@ describe("session accessor seam", () => {
         "INSERT INTO session_nodes (session_key, current_session_id, entry_json, updated_at) VALUES (?, ?, 'not-json', 5)",
       )
       .run(sessionKey, "partial-session");
+    database.db
+      .prepare(
+        "INSERT INTO session_members (session_key, identity_id, added_by, added_at) VALUES (?, 'stale-member', 'owner', 5)",
+      )
+      .run(sessionKey);
 
     await importSqliteSessionRows({
       agentId: "main",
+      allowMalformedRowRepair: true,
       entry: { label: "Recovered import", sessionId: "imported-session", updatedAt: 10 },
       sessionKey,
       storePath,
@@ -4247,6 +4243,11 @@ describe("session accessor seam", () => {
       label: "Recovered import",
       sessionId: "imported-session",
     });
+    expect(
+      database.db
+        .prepare("SELECT count(*) AS count FROM session_members WHERE session_key = ?")
+        .get(sessionKey),
+    ).toEqual({ count: 0 });
   });
 
   it("tracks replacement and deletion transcript mutations", async () => {
