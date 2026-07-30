@@ -533,6 +533,8 @@ function buildSessionsListResult(
     creators: listSessionCreatorIdentities(
       prepared.creatorEntries,
       prepared.sharedRowContext?.userProfileIdentityById ?? new Map(),
+      // Callers provide the SQL facet only when no residual filter can remove its source rows.
+      // Otherwise creatorEntries preserves the pre-creator-filter facet after residual filtering.
       params.sqlSelection.creatorActors,
     ),
     defaults: getSessionDefaults(params.cfg, params.modelCatalog, {

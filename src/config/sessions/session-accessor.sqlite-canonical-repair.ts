@@ -1,13 +1,14 @@
+import fs from "node:fs";
 import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
 import type { Selectable } from "kysely";
 import {
   executeSqliteQuerySync,
   executeSqliteQueryTakeFirstSync,
 } from "../../infra/kysely-sync.js";
-import { withOpenClawAgentDatabaseReadOnly } from "../../state/openclaw-agent-db-readonly.js";
 import type { DB as OpenClawAgentKyselyDatabase } from "../../state/openclaw-agent-db.generated.js";
 import {
   openOpenClawAgentDatabase,
+  resolveOpenClawAgentSqlitePath,
   type OpenClawAgentDatabase,
 } from "../../state/openclaw-agent-db.js";
 import type { SessionEntrySummary } from "./session-accessor.sqlite-contract.js";
@@ -93,7 +94,7 @@ export function listSqliteSessionGenerationIdsForCanonicalRepair(params: {
   );
 }
 
-/** Doctor inventory hydrates legacy blobs from promoted identity/timestamp columns. */
+/** Doctor inventory hydrates rejected legacy blobs from promoted identity/timestamp columns. */
 function hydrateCanonicalRepairEntry(row: {
   current_session_id: string;
   entry_json: string;
@@ -110,16 +111,10 @@ function hydrateCanonicalRepairEntry(row: {
   }
   return projectCanonicalSessionEntryShape({
     ...record,
-    sessionId:
-      typeof record.sessionId === "string" &&
-      record.sessionId.trim() &&
-      !record.sessionId.includes("\0")
-        ? record.sessionId
-        : row.current_session_id,
-    updatedAt:
-      typeof record.updatedAt === "number" && Number.isFinite(record.updatedAt)
-        ? record.updatedAt
-        : row.updated_at,
+    // The canonical parser rejected this blob, so duplicate or malformed identity fields are
+    // untrusted. Promoted columns remain the durable transcript identity for doctor repair.
+    sessionId: row.current_session_id,
+    updatedAt: row.updated_at,
   });
 }
 
@@ -127,28 +122,35 @@ export function listSqliteSessionEntriesForCanonicalRepair(
   scope: SessionEntryListScope = {},
 ): Array<SessionEntrySummary & { rawEntryJson?: string }> {
   const resolved = resolveSqliteScope({ ...scope, sessionKey: "" });
-  const result = withOpenClawAgentDatabaseReadOnly((database) => {
-    const db = getSessionKysely(database.db);
-    return executeSqliteQuerySync(
-      database.db,
-      db
-        .selectFrom("session_nodes")
-        .select(["session_key", "current_session_id", "entry_json", "updated_at"]),
-    ).rows.flatMap((row) => {
-      const persistedEntry = parseSqliteSessionEntryJson(row);
-      const entry = persistedEntry ?? hydrateCanonicalRepairEntry(row);
-      const rawCompareRequired =
-        !persistedEntry || JSON.stringify(persistedEntry) !== JSON.stringify(entry);
-      return [
-        {
-          sessionKey: row.session_key,
-          entry,
-          ...(rawCompareRequired ? { rawEntryJson: row.entry_json } : {}),
-        },
-      ];
-    });
-  }, toDatabaseOptions(resolved));
-  return result.found ? result.value : [];
+  const databaseOptions = toDatabaseOptions(resolved);
+  if (!fs.existsSync(resolveOpenClawAgentSqlitePath(databaseOptions))) {
+    return [];
+  }
+  const database = openOpenClawAgentDatabase(databaseOptions);
+  const db = getSessionKysely(database.db);
+  return executeSqliteQuerySync(
+    database.db,
+    db
+      .selectFrom("session_nodes")
+      .select(["session_key", "current_session_id", "entry_json", "entry_valid", "updated_at"]),
+  ).rows.flatMap((row) => {
+    // Retained-window placeholders are not logical sessions. Doctor must preserve their
+    // history without rehydrating the deleted entry into the canonical inventory.
+    if (row.entry_valid === -1 && row.entry_json === "{}") {
+      return [];
+    }
+    const persistedEntry = parseSqliteSessionEntryJson(row);
+    const entry = persistedEntry ?? hydrateCanonicalRepairEntry(row);
+    const rawCompareRequired =
+      !persistedEntry || JSON.stringify(persistedEntry) !== JSON.stringify(entry);
+    return [
+      {
+        sessionKey: row.session_key,
+        entry,
+        ...(rawCompareRequired ? { rawEntryJson: row.entry_json } : {}),
+      },
+    ];
+  });
 }
 
 function copySqliteSessionOwnedStateForRepair(params: {
