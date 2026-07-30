@@ -22,8 +22,6 @@ import type { SessionEntry } from "./types.js";
 type SessionStatusDatabase = Pick<OpenClawAgentKyselyDatabase, "session_nodes">;
 type SessionListExpressionBuilder = ExpressionBuilder<SessionStatusDatabase, "session_nodes">;
 type SessionDatabaseReader = Pick<OpenClawAgentDatabase, "agentId" | "db">;
-const SQLITE_NON_ECMASCRIPT_WHITESPACE_GLOB =
-  "*[^\t\n\v\f\r \u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]*";
 const CANONICAL_ENTRY_FIELDS = new Set(["sessionId", "updatedAt"]);
 
 function hasDuplicateCanonicalEntryFields(json: string): boolean {
@@ -231,21 +229,7 @@ function buildSessionListPredicate(
       .end();
     conditions.push(eb(hidden, "=", 0));
   }
-  const reservedPlaceholderKey = eb
-    .case()
-    .when("session_key", "=", "sessions")
-    .then(1)
-    .when("session_key", "like", "agent:%:sessions")
-    .then(eb.case().when(agentRest, "=", "sessions").then(1).else(0).end())
-    .else(0)
-    .end();
   const entryJsonValid = eb(eb.fn<number>("json_valid", ["entry_json"]), "=", eb.lit(1));
-  const safeEntryJson = eb
-    .case()
-    .when(entryJsonValid)
-    .then(eb.ref("entry_json"))
-    .else(eb.val("{}"))
-    .end();
   // Canonical writers use JSON.stringify, so escaped ASCII field labels are not a
   // persisted read-path contract and must not grow a second compatibility parser here.
   conditions.push(entryJsonValid);
@@ -256,34 +240,7 @@ function buildSessionListPredicate(
       "{",
     ),
   );
-  conditions.push(
-    eb(eb.fn<string | null>("json_type", [safeEntryJson, eb.val("$.sessionId")]), "=", "text"),
-  );
-  const storedSessionId = eb.fn<string>("json_extract", [safeEntryJson, eb.val("$.sessionId")]);
-  const withoutSessionId = eb.fn<string>("json_remove", [safeEntryJson, eb.val("$.sessionId")]);
-  conditions.push(
-    eb(eb.fn<string | null>("json_type", [withoutSessionId, eb.val("$.sessionId")]), "is", null),
-  );
-  conditions.push(
-    eb(eb.fn<number>("instr", [storedSessionId, eb.fn<string>("char", [eb.val(0)])]), "=", 0),
-  );
-  conditions.push(
-    eb(
-      eb.fn<number>("glob", [eb.val(SQLITE_NON_ECMASCRIPT_WHITESPACE_GLOB), storedSessionId]),
-      "=",
-      1,
-    ),
-  );
-  const updatedAtType = eb.fn<string | null>("json_type", [safeEntryJson, eb.val("$.updatedAt")]);
-  conditions.push(eb.or([eb(updatedAtType, "=", "integer"), eb(updatedAtType, "=", "real")]));
-  const withoutUpdatedAt = eb.fn<string>("json_remove", [safeEntryJson, eb.val("$.updatedAt")]);
-  conditions.push(
-    eb(eb.fn<string | null>("json_type", [withoutUpdatedAt, eb.val("$.updatedAt")]), "is", null),
-  );
-  const storedUpdatedAt = eb.fn<number>("json_extract", [safeEntryJson, eb.val("$.updatedAt")]);
-  conditions.push(eb(storedUpdatedAt, ">=", -Number.MAX_VALUE));
-  conditions.push(eb(storedUpdatedAt, "<=", Number.MAX_VALUE));
-  conditions.push(eb.or([eb(reservedPlaceholderKey, "=", 0), eb("entry_json", "!=", "{}")]));
+  conditions.push(eb("entry_json", "!=", "{}"));
   if (query.spawnedBy) {
     // Canonical sentinels are valid rows, but they never participate in child lineage.
     conditions.push(eb("session_key", "!=", "global"));
