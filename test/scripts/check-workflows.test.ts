@@ -256,6 +256,10 @@ describe("check-workflows", () => {
     expect(workflow).toContain('$process.CommandLine -like "*$probePath*"');
     expect(workflow).toContain('$process.CommandLine -like "*$eventsPath*"');
     expect(workflow).toContain("schtasks.exe /Delete /F /TN $taskName");
+    expect(workflow).toContain('$service = New-Object -ComObject "Schedule.Service"');
+    expect(workflow).toContain("task-before-cleanup.xml");
+    expect(workflow).toContain("cleanup-summary.txt");
+    expect(workflow).toContain(".artifacts/windows-schtasks/");
     expect(workflow).toContain("if: ${{ always() && !cancelled() }}");
     expect(workflow).toContain("if: ${{ always() && !cancelled() && inputs.require_wsl2 }}");
   });
