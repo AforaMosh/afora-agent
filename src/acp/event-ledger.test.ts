@@ -76,7 +76,12 @@ describe("ACP event ledger", () => {
 
     await expect(
       ledger.readReplay({ sessionId: "session-1", sessionKey: "agent:main:work" }),
-    ).resolves.toEqual({ complete: false, events: [] });
+    ).resolves.toEqual({
+      complete: false,
+      sessionId: "session-1",
+      sessionKey: "agent:main:work",
+      events: [],
+    });
   });
 
   it("falls back for non-finite event retention options", async () => {
@@ -179,7 +184,43 @@ describe("ACP event ledger", () => {
 
       await expect(
         ledger.readReplay({ sessionId: "session-1", sessionKey: "agent:main:work" }),
-      ).resolves.toEqual({ complete: false, events: [] });
+      ).resolves.toEqual({
+        complete: false,
+        sessionId: "session-1",
+        sessionKey: "agent:main:work",
+        events: [],
+      });
+    });
+  });
+
+  it("prefers newer incomplete SQLite history over an older complete replay by session key", async () => {
+    await withTempDir({ prefix: "openclaw-acp-ledger-" }, async (dir) => {
+      let now = 1000;
+      const ledger = createSqliteAcpEventLedger({
+        path: path.join(dir, "openclaw.sqlite"),
+        now: () => now++,
+      });
+      await ledger.startSession({
+        sessionId: "older-complete",
+        sessionKey: "agent:main:work",
+        cwd: "/work",
+        complete: true,
+      });
+      await ledger.startSession({
+        sessionId: "newer-incomplete",
+        sessionKey: "agent:main:work",
+        cwd: "/work",
+        complete: false,
+      });
+
+      await expect(
+        ledger.readReplayBySessionKey({ sessionKey: "agent:main:work" }),
+      ).resolves.toEqual({
+        complete: false,
+        sessionId: "newer-incomplete",
+        sessionKey: "agent:main:work",
+        events: [],
+      });
     });
   });
 
@@ -269,6 +310,32 @@ describe("ACP event ledger", () => {
     expect(replay.events.map((event) => event.update.sessionUpdate)).toEqual([
       "agent_message_chunk",
     ]);
+  });
+
+  it("prefers newer incomplete history over an older complete replay by session key", async () => {
+    let now = 1000;
+    const ledger = createInMemoryAcpEventLedger({ now: () => now++ });
+    await ledger.startSession({
+      sessionId: "older-complete",
+      sessionKey: "agent:main:work",
+      cwd: "/work",
+      complete: true,
+    });
+    await ledger.startSession({
+      sessionId: "newer-incomplete",
+      sessionKey: "agent:main:work",
+      cwd: "/work",
+      complete: false,
+    });
+
+    await expect(ledger.readReplayBySessionKey({ sessionKey: "agent:main:work" })).resolves.toEqual(
+      {
+        complete: false,
+        sessionId: "newer-incomplete",
+        sessionKey: "agent:main:work",
+        events: [],
+      },
+    );
   });
 
   it("preserves prompt history when a provisional ACP key becomes a canonical Gateway key", async () => {
@@ -418,6 +485,11 @@ describe("ACP event ledger", () => {
 
     await expect(
       ledger.readReplay({ sessionId: "session-1", sessionKey: "agent:main:work" }),
-    ).resolves.toEqual({ complete: false, events: [] });
+    ).resolves.toEqual({
+      complete: false,
+      sessionId: "session-1",
+      sessionKey: "agent:main:work",
+      events: [],
+    });
   });
 });

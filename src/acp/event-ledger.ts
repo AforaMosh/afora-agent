@@ -277,10 +277,10 @@ function createLedgerApi(params: {
   read: <T>(fn: () => T) => Promise<T>;
 }): AcpEventLedger {
   const buildReplay = (session: LedgerSession): AcpEventLedgerReplay => ({
-    complete: true,
+    complete: session.complete,
     sessionId: session.sessionId,
     sessionKey: session.sessionKey,
-    events: session.events.map((event) => cloneJsonValue(event)),
+    events: session.complete ? session.events.map((event) => cloneJsonValue(event)) : [],
   });
 
   return {
@@ -327,7 +327,7 @@ function createLedgerApi(params: {
     async readReplay(replayParams) {
       return params.read(() => {
         const session = params.state.store.sessions[replayParams.sessionId];
-        if (!session || session.sessionKey !== replayParams.sessionKey || !session.complete) {
+        if (!session || session.sessionKey !== replayParams.sessionKey) {
           return { complete: false, events: [] };
         }
         return buildReplay(session);
@@ -337,7 +337,7 @@ function createLedgerApi(params: {
     async readReplayBySessionId(replayParams) {
       return params.read(() => {
         const session = params.state.store.sessions[replayParams.sessionId];
-        if (!session || !session.complete) {
+        if (!session) {
           return { complete: false, events: [] };
         }
         return buildReplay(session);
@@ -346,11 +346,10 @@ function createLedgerApi(params: {
 
     async readReplayBySessionKey(replayParams) {
       return params.read(() => {
-        const session = Object.values(params.state.store.sessions)
-          .filter(
-            (candidate) => candidate.sessionKey === replayParams.sessionKey && candidate.complete,
-          )
-          .toSorted((a, b) => b.updatedAt - a.updatedAt)[0];
+        const matches = Object.values(params.state.store.sessions)
+          .filter((candidate) => candidate.sessionKey === replayParams.sessionKey)
+          .toSorted((a, b) => b.updatedAt - a.updatedAt || a.sessionId.localeCompare(b.sessionId));
+        const session = matches[0];
         if (!session) {
           return { complete: false, events: [] };
         }
@@ -455,7 +454,7 @@ function readSqliteSessionById(db: DatabaseSync, sessionId: string): LedgerSessi
   return row ? sqliteRowToLedgerSession(db, row) : undefined;
 }
 
-function readLatestCompleteSqliteSessionByKey(
+function readLatestSqliteSessionByKey(
   db: DatabaseSync,
   sessionKey: string,
 ): LedgerSession | undefined {
@@ -463,7 +462,7 @@ function readLatestCompleteSqliteSessionByKey(
     .prepare(
       `SELECT session_id, session_key, cwd, complete, created_at, updated_at, next_seq
          FROM acp_replay_sessions
-        WHERE session_key = ? AND complete = 1
+        WHERE session_key = ?
         ORDER BY updated_at DESC, session_id ASC
         LIMIT 1`,
     )
@@ -738,14 +737,14 @@ function appendSqliteUpdate(
 }
 
 function buildSqliteReplay(session: LedgerSession | undefined): AcpEventLedgerReplay {
-  if (!session?.complete) {
+  if (!session) {
     return { complete: false, events: [] };
   }
   return {
-    complete: true,
+    complete: session.complete,
     sessionId: session.sessionId,
     sessionKey: session.sessionKey,
-    events: session.events.map((event) => cloneJsonValue(event)),
+    events: session.complete ? session.events.map((event) => cloneJsonValue(event)) : [],
   };
 }
 
@@ -818,9 +817,8 @@ export function createSqliteAcpEventLedger(
 
     async readReplayBySessionKey(replayParams) {
       return read((db) =>
-        buildSqliteReplay(readLatestCompleteSqliteSessionByKey(db, replayParams.sessionKey)),
+        buildSqliteReplay(readLatestSqliteSessionByKey(db, replayParams.sessionKey)),
       );
     },
   };
 }
-/* oxlint-disable max-lines -- TODO: split this grandfathered oversized file. */
