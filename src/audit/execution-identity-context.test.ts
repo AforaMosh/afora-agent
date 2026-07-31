@@ -1,5 +1,5 @@
-import { afterAll, afterEach, describe, expect, it } from "vitest";
-import { cleanupTempDirs, makeTempDir } from "../../test/helpers/temp-dir.js";
+import { afterEach, describe, expect, it } from "vitest";
+import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import {
   closeOpenClawStateDatabaseForTest,
   openOpenClawStateDatabase,
@@ -11,11 +11,16 @@ import {
   type ExecutionIdentityAdmissionFacts,
 } from "./execution-identity-context.js";
 
-const tempDirs: string[] = [];
 const RETENTION_MS = 30 * 24 * 60 * 60_000;
 
+afterEach(() => {
+  closeOpenClawStateDatabaseForTest();
+});
+
+const tempDirs = useAutoCleanupTempDirTracker(afterEach);
+
 function databaseOptions() {
-  return { env: { OPENCLAW_STATE_DIR: makeTempDir(tempDirs, "openclaw-identity-") } };
+  return { env: { OPENCLAW_STATE_DIR: tempDirs.make("openclaw-identity-") } };
 }
 
 function facts(
@@ -30,14 +35,6 @@ function facts(
     ...overrides,
   };
 }
-
-afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
-});
-
-afterAll(() => {
-  cleanupTempDirs(tempDirs);
-});
 
 describe("execution identity context storage", () => {
   it("persists one frozen unattributed context idempotently across restart", () => {
