@@ -1,9 +1,11 @@
+import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { PassThrough } from "node:stream";
 import { describe, expect, it } from "vitest";
+import { getWindowsPowerShellExePath } from "../infra/windows-install-roots.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import { resolveGatewayWindowsTaskName } from "./constants.js";
 import { execSchtasks } from "./schtasks-exec.js";
@@ -17,6 +19,13 @@ import { resolveGatewayService } from "./service.js";
 
 const WAIT_INTERVAL_MS = 200;
 const WAIT_TIMEOUT_MS = 30_000;
+const TASK_LOGON_INTERACTIVE_TOKEN = 3;
+const TASK_RUNLEVEL_LEAST_PRIVILEGE = 0;
+
+type ScheduledTaskPrincipal = {
+  logonType: number;
+  runLevel: number;
+};
 
 async function sleep(): Promise<void> {
   await new Promise((resolve) => {
@@ -99,6 +108,65 @@ async function readTaskXml(taskName: string): Promise<string | null> {
   return result.code === 0
     ? result.stdout.replace(/^\uFEFF/u, "").replaceAll(String.fromCharCode(0), "")
     : null;
+}
+
+function readTaskPrincipal(taskName: string): ScheduledTaskPrincipal {
+  const encodedTaskName = Buffer.from(taskName, "utf8").toString("base64");
+  const script = [
+    "$ErrorActionPreference='Stop'",
+    `$taskName=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${encodedTaskName}'))`,
+    "$service=New-Object -ComObject 'Schedule.Service'",
+    "$service.Connect()",
+    "$principal=$service.GetFolder('\\').GetTask($taskName).Definition.Principal",
+    "$result=@{logonType=[int]$principal.LogonType;runLevel=[int]$principal.RunLevel}",
+    "[Console]::Out.Write(($result | ConvertTo-Json -Compress))",
+  ].join("; ");
+  const result = spawnSync(
+    getWindowsPowerShellExePath(),
+    [
+      "-NoProfile",
+      "-NonInteractive",
+      "-EncodedCommand",
+      Buffer.from(script, "utf16le").toString("base64"),
+    ],
+    { encoding: "utf8", timeout: 5_000, windowsHide: true },
+  );
+  if (result.error) {
+    throw result.error;
+  }
+  if (result.status !== 0) {
+    throw new Error(
+      `Could not inspect Scheduled Task principal for ${taskName}: ${
+        result.stderr.trim() || `PowerShell exited ${result.status ?? "without status"}`
+      }`,
+    );
+  }
+  const parsed = JSON.parse(result.stdout.trim()) as Partial<ScheduledTaskPrincipal>;
+  if (
+    typeof parsed.logonType !== "number" ||
+    !Number.isInteger(parsed.logonType) ||
+    typeof parsed.runLevel !== "number" ||
+    !Number.isInteger(parsed.runLevel)
+  ) {
+    throw new Error(`Scheduled Task principal returned invalid data for ${taskName}`);
+  }
+  return {
+    logonType: parsed.logonType,
+    runLevel: parsed.runLevel,
+  };
+}
+
+function assertInteractiveLeastPrivilegeTask(params: {
+  principal: ScheduledTaskPrincipal;
+  taskXml: string;
+}): void {
+  expect(params.taskXml).toContain("<LogonType>InteractiveToken</LogonType>");
+  expect(params.principal.logonType).toBe(TASK_LOGON_INTERACTIVE_TOKEN);
+  expect(params.principal.runLevel).toBe(TASK_RUNLEVEL_LEAST_PRIVILEGE);
+  const exportedRunLevel = params.taskXml.match(/<RunLevel>([^<]+)<\/RunLevel>/u)?.[1];
+  // Task Scheduler may omit the default LeastPrivilege node when exporting XML.
+  // If present, it must agree with the effective COM principal checked above.
+  expect(exportedRunLevel === undefined || exportedRunLevel === "LeastPrivilege").toBe(true);
 }
 
 async function clearActivePid(activePidPath: string, pid: number): Promise<void> {
@@ -223,6 +291,32 @@ function resolveTestId(): string {
   return configured;
 }
 
+describe("schtasks Windows integration principal assertion", () => {
+  it("accepts omitted default run level when COM reports least privilege", () => {
+    expect(() =>
+      assertInteractiveLeastPrivilegeTask({
+        taskXml: "<LogonType>InteractiveToken</LogonType>",
+        principal: {
+          logonType: TASK_LOGON_INTERACTIVE_TOKEN,
+          runLevel: TASK_RUNLEVEL_LEAST_PRIVILEGE,
+        },
+      }),
+    ).not.toThrow();
+  });
+
+  it("rejects an elevated effective run level", () => {
+    expect(() =>
+      assertInteractiveLeastPrivilegeTask({
+        taskXml: "<LogonType>InteractiveToken</LogonType><RunLevel>LeastPrivilege</RunLevel>",
+        principal: {
+          logonType: TASK_LOGON_INTERACTIVE_TOKEN,
+          runLevel: 1,
+        },
+      }),
+    ).toThrow();
+  });
+});
+
 const nativeIntegrationEnabled =
   process.platform === "win32" && process.env.CI_WINDOWS_SCHTASKS_INTEGRATION === "1";
 
@@ -298,9 +392,14 @@ describe.runIf(nativeIntegrationEnabled)("schtasks Windows integration", () => {
 
         expect((await execSchtasks(["/Query", "/TN", taskName])).code).toBe(0);
         const taskXml = await readTaskXml(taskName);
+        if (!taskXml) {
+          throw new Error(`Could not export Scheduled Task XML for ${taskName}`);
+        }
         expect(taskXml).toContain("<UserId>");
-        expect(taskXml).toContain("<LogonType>InteractiveToken</LogonType>");
-        expect(taskXml).toContain("<RunLevel>LeastPrivilege</RunLevel>");
+        assertInteractiveLeastPrivilegeTask({
+          taskXml,
+          principal: readTaskPrincipal(taskName),
+        });
         for (const startupEntryPath of resolveStartupEntryPaths(env)) {
           await expect(fs.access(startupEntryPath)).rejects.toThrow();
         }
