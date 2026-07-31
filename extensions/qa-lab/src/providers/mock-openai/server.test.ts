@@ -3363,6 +3363,54 @@ describe("qa mock openai server", () => {
     expect(outputText(await final.json())).toBe("subagent-1: ok\nsubagent-2: ok");
   });
 
+  it("repeats fanout synthesis on the final requester-settle wake", async () => {
+    const server = await startMockServer();
+    const prompt =
+      "Subagent fanout synthesis check: delegate two bounded subagents sequentially, then report both results together.";
+
+    const spawn = await postResponses(server, {
+      stream: true,
+      tools: [SESSIONS_SPAWN_TOOL],
+      input: [makeUserInput(prompt)],
+    });
+    expect(spawn.status).toBe(200);
+    expect(await spawn.text()).toContain('\\"label\\":\\"qa-fanout-alpha\\"');
+
+    const secondSpawn = await postResponses(server, {
+      stream: true,
+      tools: [SESSIONS_SPAWN_TOOL],
+      input: [
+        makeUserInput(prompt),
+        {
+          type: "function_call_output",
+          output:
+            '{"status":"accepted","childSessionKey":"agent:qa:subagent:alpha","note":"ALPHA-OK"}',
+        },
+      ],
+    });
+    expect(secondSpawn.status).toBe(200);
+    expect(await secondSpawn.text()).toContain('\\"label\\":\\"qa-fanout-beta\\"');
+
+    const completionTurn = await postResponses(server, {
+      stream: false,
+      input: [makeUserInput(prompt), makeUserInput("ALPHA-OK\nBETA-OK")],
+    });
+    expect(completionTurn.status).toBe(200);
+    expect(outputText(await completionTurn.json())).toBe("subagent-1: ok\nsubagent-2: ok");
+
+    const requesterSettle = await postResponses(server, {
+      stream: false,
+      input: [
+        makeUserInput(prompt),
+        makeUserInput(
+          "[Subagent Context] Every subagent spawned from this session has now settled; none are still running.",
+        ),
+      ],
+    });
+    expect(requesterSettle.status).toBe(200);
+    expect(outputText(await requesterSettle.json())).toBe("subagent-1: ok\nsubagent-2: ok");
+  });
+
   it("uses full request text when planning continuation subagent tool calls", async () => {
     const server = await startMockServer();
 
@@ -5447,6 +5495,91 @@ describe("qa mock openai server", () => {
     const text = final.content.find((block) => block.type === "text")?.text;
     expect(text).toBe(
       "Read: AGENT.md, SOUL.md, FOLLOWTHROUGH_INPUT.md\nWrote: repo-contract-summary.txt\nStatus: complete",
+    );
+  });
+
+  it("finishes Anthropic Code Mode compaction after the wrapped write result", async () => {
+    const server = await startMockServer();
+    const prompt =
+      "Compaction retry mutating tool check: read COMPACTION_RETRY_CONTEXT.md, then create compaction-retry-summary.txt and keep replay safety explicit.";
+    const tools = [
+      {
+        name: "exec",
+        input_schema: {
+          type: "object",
+          properties: { code: { type: "string" } },
+          required: ["code"],
+        },
+      },
+      {
+        name: "wait",
+        input_schema: {
+          type: "object",
+          properties: { runId: { type: "string" } },
+          required: ["runId"],
+        },
+      },
+    ];
+    const messages: Array<Record<string, unknown>> = [
+      { role: "user", content: [{ type: "text", text: prompt }] },
+    ];
+    const request = async () => {
+      const response = await postJson(server, "/v1/messages", {
+        model: "claude-opus-4-8",
+        max_tokens: 256,
+        tools,
+        messages,
+      });
+      expect(response.status).toBe(200);
+      return (await response.json()) as {
+        stop_reason: string;
+        content: Array<Record<string, unknown>>;
+      };
+    };
+    const requireToolUse = (body: {
+      stop_reason: string;
+      content: Array<Record<string, unknown>>;
+    }) => {
+      expect(body.stop_reason).toBe("tool_use");
+      const toolUse = body.content.find((block) => block.type === "tool_use");
+      if (!toolUse || typeof toolUse.id !== "string") {
+        throw new Error("Expected Anthropic Code Mode tool_use block");
+      }
+      expect(toolUse.name).toBe("exec");
+      return toolUse;
+    };
+    const appendCompletedResult = (toolUse: Record<string, unknown>, value: unknown) => {
+      messages.push(
+        { role: "assistant", content: [toolUse] },
+        {
+          role: "user",
+          content: [
+            {
+              type: "tool_result",
+              tool_use_id: toolUse.id,
+              content: JSON.stringify({ status: "completed", value }),
+            },
+          ],
+        },
+      );
+    };
+
+    const readContext = requireToolUse(await request());
+    appendCompletedResult(readContext, {
+      kind: "text",
+      content: "compaction retry evidence block 0000\ncompaction retry evidence block 0001",
+    });
+
+    const writeSummary = requireToolUse(await request());
+    appendCompletedResult(writeSummary, {
+      kind: "text",
+      content: "Successfully wrote 41 bytes to compaction-retry-summary.txt.",
+    });
+
+    const final = await request();
+    expect(final.stop_reason).toBe("end_turn");
+    expect(final.content.find((block) => block.type === "text")?.text).toBe(
+      "Protocol note: replay unsafe after write.",
     );
   });
 

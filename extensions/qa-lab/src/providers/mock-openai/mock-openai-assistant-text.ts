@@ -1,4 +1,5 @@
 // QA Lab mock provider assistant text fixtures.
+import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
 import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
 import {
   type ResponsesInputItem,
@@ -65,9 +66,22 @@ function readCompletedImageGenerationMediaPath(prompt: string): string | undefin
 export const QA_COMPACTION_RETRY_FINAL_MARKER = "Protocol note: replay unsafe after write.";
 
 export function isCanonicalCompactionRetryWriteResult(toolOutput: string): boolean {
-  return /^Successfully wrote \d+ bytes to compaction-retry-summary\.txt\.?$/i.test(
-    toolOutput.trim(),
-  );
+  const matchesCanonicalWrite = (value: string) =>
+    /^Successfully wrote \d+ bytes to compaction-retry-summary\.txt\.?$/i.test(value.trim());
+  if (matchesCanonicalWrite(toolOutput)) {
+    return true;
+  }
+  try {
+    const parsed = JSON.parse(toolOutput);
+    return (
+      isRecord(parsed) &&
+      parsed.kind === "text" &&
+      typeof parsed.content === "string" &&
+      matchesCanonicalWrite(parsed.content)
+    );
+  } catch {
+    return false;
+  }
 }
 
 export function buildAssistantText(

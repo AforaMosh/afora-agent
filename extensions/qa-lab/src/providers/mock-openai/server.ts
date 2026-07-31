@@ -1458,6 +1458,13 @@ async function buildResponsesPayload(
     });
   }
   const isSubagentFanoutPrompt = /subagent fanout synthesis check/i.test(allInputText);
+  const isSubagentFanoutRequesterSettle =
+    isSubagentFanoutPrompt &&
+    /every subagent spawned from this session has now settled/i.test(prompt);
+  if (isSubagentFanoutRequesterSettle) {
+    scenarioState.subagentFanoutPhase = 3;
+    return buildAssistantEvents("subagent-1: ok\nsubagent-2: ok");
+  }
   if (
     !toolOutput &&
     /subagent fanout synthesis check/i.test(prompt) &&
