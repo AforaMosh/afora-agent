@@ -32,6 +32,7 @@ export {
   slackQaProgressCommentaryTrueScenario,
   slackQaProgressCommentaryVerboseDedupeScenario,
   slackQaReactionGlyphNativeScenario,
+  slackQaSemanticProgressDefaultScenario,
   slackQaTableInvalidBlocksFallbackScenario,
   slackQaTablePresentationNativeScenario,
   slackQaTopLevelReplyShapeScenario,
@@ -158,6 +159,7 @@ export async function runSlackScenario(
     }
     environment.observedMessages.push({
       actionValues: collectSlackActionValues(message.blocks),
+      blocks: message.blocks,
       blockText: collectSlackBlockText(message.blocks),
       botId: message.bot_id,
       channelId: environment.channelId,
