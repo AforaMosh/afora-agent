@@ -164,6 +164,37 @@ describe("listPersistedBundledPluginLocationBridges", () => {
     ]);
   });
 
+  it("externalizes the shipped bundled DuckDuckGo plugin using official install metadata", async () => {
+    const pluginId = "duckduckgo";
+    const npmSpec = "@openclaw/duckduckgo-plugin";
+    readPersistedInstalledPluginIndexMock.mockResolvedValue(
+      makeIndex({
+        pluginId,
+        manifestPath: `/app/dist/extensions/${pluginId}/openclaw.plugin.json`,
+        manifestHash: "hash",
+        source: `/app/dist/extensions/${pluginId}/index.js`,
+        rootDir: `/app/dist/extensions/${pluginId}`,
+        origin: "bundled",
+        enabled: true,
+        startup: startupInfo,
+        compat: [],
+        packageInstall: {
+          warnings: [],
+        },
+      }),
+    );
+    loadPluginManifestRegistryForInstalledIndexMock.mockReturnValue(makeRegistry(pluginId, []));
+
+    await expect(listPersistedBundledPluginLocationBridges({})).resolves.toEqual([
+      {
+        bundledPluginId: pluginId,
+        pluginId,
+        preferredSource: "npm",
+        npmSpec,
+        clawhubSpec: `clawhub:${npmSpec}`,
+      },
+    ]);
+  });
   it("does not create a relocation bridge without persisted or official install metadata", async () => {
     readPersistedInstalledPluginIndexMock.mockResolvedValue(
       makeIndex({
