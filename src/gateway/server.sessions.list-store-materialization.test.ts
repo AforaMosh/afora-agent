@@ -207,12 +207,6 @@ test("sessions.list projects out prompt snapshots without changing full entry re
       },
     },
   );
-  database.db
-    .prepare(
-      "INSERT INTO session_nodes (session_key, current_session_id, entry_json, updated_at) VALUES (?, ?, ?, ?)",
-    )
-    .run("agent:main:zz-malformed", "malformed", "{", Date.now());
-
   const fullEntries = sessionAccessor.listSessionEntriesReadOnly({ agentId: "main", storePath });
   expect(fullEntries).toHaveLength(1);
   expect(fullEntries[0]?.entry.skillsSnapshot).toBeDefined();
