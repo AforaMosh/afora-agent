@@ -18,7 +18,12 @@ export type AcpLocalTurnProjectionState = {
   sessionKey: string;
   ledgerSessionId?: string;
   sentText: string;
+  assistantBlockPrefix: string;
+  assistantBlockText: string;
+  bufferedAssistantText?: string;
+  pendingAssistantBoundary: boolean;
   sentThought: string;
+  pendingThoughtSnapshot?: string;
   toolCalls: Map<
     string,
     {
@@ -57,6 +62,13 @@ function appendAssistantText(params: { previous: string; text?: unknown; delta?:
     : { full: params.previous, chunk: "" };
 }
 
+function joinAssistantBlocks(prefix: string, block: string): string {
+  if (!prefix) {
+    return block;
+  }
+  return block ? `${prefix}\n\n${block}` : prefix;
+}
+
 function eventError(data: Record<string, unknown>, fallback: string): Error {
   for (const key of ["error", "message", "reason"] as const) {
     const value = data[key];
@@ -83,6 +95,9 @@ export class AcpLocalTurnProjection {
       sessionKey: session.sessionKey,
       ...(session.ledgerSessionId ? { ledgerSessionId: session.ledgerSessionId } : {}),
       sentText: "",
+      assistantBlockPrefix: "",
+      assistantBlockText: "",
+      pendingAssistantBoundary: false,
       sentThought: "",
       toolCalls: new Map(),
       eventTail: Promise.resolve(),
@@ -101,14 +116,36 @@ export class AcpLocalTurnProjection {
     });
   }
 
+  enqueueAssistantMessageStart(state: AcpLocalTurnProjectionState): void {
+    state.eventTail = state.eventTail.then(() => {
+      state.assistantBlockPrefix = state.bufferedAssistantText ?? state.sentText;
+      state.assistantBlockText = "";
+      state.pendingAssistantBoundary = state.assistantBlockPrefix.length > 0;
+    });
+  }
+
   async finalize(
     state: AcpLocalTurnProjectionState,
     runId: string,
     finalText: string,
     isCurrent: () => boolean,
   ): Promise<boolean> {
-    if (finalText) {
-      await this.emitAssistantSnapshot(state, runId, finalText);
+    await this.emitPendingThoughtSnapshot(state, runId);
+    if (!isCurrent()) {
+      return false;
+    }
+    const canonicalAssistantText = finalText || state.bufferedAssistantText || "";
+    if (canonicalAssistantText) {
+      if (
+        state.bufferedAssistantText !== undefined &&
+        state.sentText &&
+        !canonicalAssistantText.startsWith(state.sentText)
+      ) {
+        throw new Error(
+          "ACP cannot replace committed assistant output; providers must mark replacement-capable output as replaceable before emitting it",
+        );
+      }
+      await this.emitAssistantSnapshot(state, runId, canonicalAssistantText);
       if (!isCurrent()) {
         return false;
       }
@@ -159,26 +196,73 @@ export class AcpLocalTurnProjection {
       if (resolveAssistantEventPhase(event.data) === "commentary") {
         return;
       }
-      const merged = appendAssistantText({
-        previous: state.sentText,
-        text: event.data.text,
-        delta: event.data.delta,
-      });
-      state.sentText = merged.full;
+      const previous = state.assistantBlockText;
+      const text = typeof event.data.text === "string" ? event.data.text : undefined;
+      const replace = event.data.replace === true;
+      const replaceable = event.data.replaceable === true;
+      if (
+        replace &&
+        text !== undefined &&
+        previous &&
+        !text.startsWith(previous) &&
+        state.bufferedAssistantText === undefined
+      ) {
+        throw new Error(
+          "ACP cannot replace committed assistant output; providers must mark replacement-capable output as replaceable before emitting it",
+        );
+      }
+      const merged =
+        (replace || replaceable || state.bufferedAssistantText !== undefined) && text !== undefined
+          ? {
+              full: text,
+              chunk: text.startsWith(previous) ? text.slice(previous.length) : "",
+            }
+          : appendAssistantText({
+              previous,
+              text: event.data.text,
+              delta: event.data.delta,
+            });
+      state.assistantBlockText = merged.full;
+      if (replaceable || state.bufferedAssistantText !== undefined) {
+        // ACP cannot retract chunks. Once a block becomes replaceable, retain the
+        // canonical turn text and commit only its stable final snapshot.
+        state.bufferedAssistantText = joinAssistantBlocks(
+          state.assistantBlockPrefix,
+          state.assistantBlockText,
+        );
+        return;
+      }
       if (merged.chunk) {
+        const separator = state.pendingAssistantBoundary && state.sentText ? "\n\n" : "";
+        const chunk = `${separator}${merged.chunk}`;
+        state.sentText += chunk;
+        state.pendingAssistantBoundary = false;
         await this.emitTurnUpdate(state, event.runId, {
           sessionUpdate: "agent_message_chunk",
-          content: { type: "text", text: merged.chunk },
+          content: { type: "text", text: chunk },
         });
       }
       return;
     }
     if (event.stream === "thinking") {
-      const merged = appendAssistantText({
-        previous: state.sentThought,
-        text: event.data.text,
-        delta: event.data.delta,
-      });
+      const bufferingSnapshot =
+        event.data.isReasoningSnapshot === true || state.pendingThoughtSnapshot !== undefined;
+      const previous = state.pendingThoughtSnapshot ?? state.sentThought;
+      const text = typeof event.data.text === "string" ? event.data.text : undefined;
+      const merged =
+        bufferingSnapshot && text !== undefined
+          ? { full: text, chunk: text.startsWith(previous) ? text.slice(previous.length) : "" }
+          : appendAssistantText({
+              previous,
+              text: event.data.text,
+              delta: event.data.delta,
+            });
+      if (bufferingSnapshot) {
+        // Reasoning snapshots may replace earlier text, while ACP thought updates
+        // are append-only. Hold the latest cumulative snapshot until finalization.
+        state.pendingThoughtSnapshot = merged.full;
+        return;
+      }
       state.sentThought = merged.full;
       if (merged.chunk) {
         await this.emitTurnUpdate(state, event.runId, {
@@ -268,6 +352,34 @@ export class AcpLocalTurnProjection {
     if (phase === "result") {
       state.toolCalls.delete(toolCallId);
     }
+  }
+
+  private async emitPendingThoughtSnapshot(
+    state: AcpLocalTurnProjectionState,
+    runId: string,
+  ): Promise<void> {
+    const snapshot = state.pendingThoughtSnapshot;
+    if (snapshot === undefined) {
+      return;
+    }
+    state.pendingThoughtSnapshot = undefined;
+    if (snapshot === state.sentThought) {
+      return;
+    }
+    if (state.sentThought && !snapshot.startsWith(state.sentThought)) {
+      throw new Error(
+        "ACP cannot replace committed thought output; providers must emit cumulative reasoning snapshots from the start",
+      );
+    }
+    const chunk = snapshot.slice(state.sentThought.length);
+    state.sentThought = snapshot;
+    if (!chunk) {
+      return;
+    }
+    await this.emitTurnUpdate(state, runId, {
+      sessionUpdate: "agent_thought_chunk",
+      content: { type: "text", text: chunk },
+    });
   }
 
   private async emitAssistantSnapshot(

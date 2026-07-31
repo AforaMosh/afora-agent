@@ -199,6 +199,8 @@ export type AgentCommandOpts = {
   onModelFallbackExhausted?: () => void;
   /** Called before delivery projection when the raw run contains an error payload. */
   onResultErrorPayload?: (message?: string) => void;
+  /** Synchronous notification that the backend started a new assistant message. */
+  onAssistantMessageStart?: () => void;
   /** Called when compaction rotates the active run onto a successor session. */
   onSessionIdChanged?: (sessionId: string) => void;
   /** Internal one-shot model probe mode: no tools, no workspace/chat prompt policy. */

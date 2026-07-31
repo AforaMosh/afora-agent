@@ -316,32 +316,92 @@ describe("AcpLocalTurnRuntime", () => {
     });
   });
 
-  it("does not replay streamed multi-payload assistant output during finalization", async () => {
-    const executeAgent = vi.fn(async (opts: { runId: string }) => {
-      emitAgentEvent({
-        runId: opts.runId,
-        stream: "assistant",
-        data: { text: "one" },
-      });
-      emitAgentEvent({
-        runId: opts.runId,
-        stream: "assistant",
-        data: { text: "two" },
-      });
-      return {
-        payloads: [{ text: "hidden", isReasoning: true }, { text: "one" }, { text: "two" }],
-        meta: {},
-      };
-    });
+  it("separates streamed assistant blocks without replaying final payloads", async () => {
+    const executeAgent = vi.fn(
+      async (opts: { runId: string; onAssistantMessageStart?: () => void }) => {
+        opts.onAssistantMessageStart?.();
+        emitAgentEvent({
+          runId: opts.runId,
+          stream: "assistant",
+          data: { text: "one" },
+        });
+        opts.onAssistantMessageStart?.();
+        emitAgentEvent({
+          runId: opts.runId,
+          stream: "assistant",
+          data: { text: "two" },
+        });
+        return {
+          payloads: [{ text: "hidden", isReasoning: true }, { text: "one" }, { text: "two" }],
+          meta: {},
+        };
+      },
+    );
     const { runtime, session, updates } = createHarness(executeAgent);
 
     await prompt(runtime, session);
 
-    expect(
-      updates
-        .filter((entry) => entry.update.sessionUpdate === "agent_message_chunk")
-        .map((entry) => entry.update.content.text),
-    ).toEqual(["one", "two"]);
+    const chunks = updates
+      .filter((entry) => entry.update.sessionUpdate === "agent_message_chunk")
+      .map((entry) =>
+        entry.update.sessionUpdate === "agent_message_chunk" && entry.update.content.type === "text"
+          ? entry.update.content.text
+          : "",
+      );
+    expect(chunks).toEqual(["one", "\n\ntwo"]);
+    expect(chunks.join("")).toBe("one\n\ntwo");
+  });
+
+  it("keeps replacement snapshots in the current assistant block", async () => {
+    const executeAgent = vi.fn(
+      async (opts: { runId: string; onAssistantMessageStart?: () => void }) => {
+        opts.onAssistantMessageStart?.();
+        emitAgentEvent({
+          runId: opts.runId,
+          stream: "assistant",
+          data: { text: "draft" },
+        });
+        emitAgentEvent({
+          runId: opts.runId,
+          stream: "assistant",
+          data: { text: "draft revised", replace: true },
+        });
+        return { payloads: [{ text: "draft revised" }], meta: {} };
+      },
+    );
+    const { runtime, session, updates } = createHarness(executeAgent);
+
+    await prompt(runtime, session);
+
+    const chunks = updates
+      .filter((entry) => entry.update.sessionUpdate === "agent_message_chunk")
+      .map((entry) =>
+        entry.update.sessionUpdate === "agent_message_chunk" && entry.update.content.type === "text"
+          ? entry.update.content.text
+          : "",
+      );
+    expect(chunks).toEqual(["draft", " revised"]);
+    expect(chunks.join("")).toBe("draft revised");
+  });
+
+  it("separates non-streamed final payload blocks", async () => {
+    const executeAgent = vi.fn(async () => ({
+      payloads: [{ text: "hidden", isReasoning: true }, { text: "one" }, { text: "two" }],
+      meta: {},
+    }));
+    const { runtime, session, updates } = createHarness(executeAgent);
+
+    await prompt(runtime, session);
+
+    const chunks = updates
+      .filter((entry) => entry.update.sessionUpdate === "agent_message_chunk")
+      .map((entry) =>
+        entry.update.sessionUpdate === "agent_message_chunk" && entry.update.content.type === "text"
+          ? entry.update.content.text
+          : "",
+    );
+    expect(chunks).toEqual(["one\n\ntwo"]);
+    expect(chunks.join("")).toBe("one\n\ntwo");
   });
 
   it("rejects an invalid concurrent prompt without cancelling active work", async () => {

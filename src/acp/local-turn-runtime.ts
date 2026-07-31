@@ -79,7 +79,7 @@ function payloadText(parts: unknown): string {
       return typeof text === "string" ? text : "";
     })
     .filter((text) => text.length > 0)
-    .join("");
+    .join("\n\n");
 }
 
 function normalizeStopReason(value: unknown): PromptResponse["stopReason"] {
@@ -337,6 +337,9 @@ export class AcpLocalTurnRuntime {
                 connection: this.options.connection,
                 sessionId: session.sessionId,
               }),
+              onAssistantMessageStart: () => {
+                this.projection.enqueueAssistantMessageStart(state.projection);
+              },
               abortSignal: signal,
               allowModelOverride: false,
               senderIsOwner: true,

@@ -713,6 +713,15 @@ describe("CLI attempt execution", () => {
     });
   }
 
+  it("forwards assistant message boundaries to the embedded runtime", async () => {
+    const onAssistantMessageStart = vi.fn();
+    const embedded = await runOpenClawEmbeddedAttemptForTest({
+      runId: "embedded-assistant-boundary",
+      opts: { onAssistantMessageStart },
+    });
+    expect(embedded.onAssistantMessageStart).toBe(onAssistantMessageStart);
+  });
+
   async function writeClaudeCliAssistantTranscript(cliSessionId: string) {
     // Claude stores resumable sessions under a workspace-derived project dir,
     // so stale-session tests must create the same on-disk shape.
