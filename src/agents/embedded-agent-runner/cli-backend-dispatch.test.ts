@@ -335,8 +335,10 @@ describe("runEmbeddedAgentViaCliBackendIfEligible gate", () => {
 describe("runEmbeddedAgentViaCliBackendIfEligible execution", () => {
   it("maps the embedded run onto a one-shot restricted CLI run", async () => {
     runCliAgent.mockResolvedValue(cliRunResult());
+    const approvalHost = {};
     const params = baseRunParams({
       toolsAllow: ["memory_search", "memory_get", "notes_retrieve_context"],
+      approvalHost,
     });
 
     const result = await runEmbeddedAgentViaCliBackendIfEligible(params);
@@ -353,6 +355,7 @@ describe("runEmbeddedAgentViaCliBackendIfEligible execution", () => {
       disableCliLiveSession: true,
       cleanupCliLiveSessionOnRunEnd: true,
       requireExplicitMessageTarget: true,
+      approvalHost,
       cliToolAvailability: {
         native: [],
         openClaw: ["memory_search", "memory_get", "notes_retrieve_context"],

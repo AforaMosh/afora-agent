@@ -314,6 +314,8 @@ type OpenClawCodingToolsOptions = {
   oneShotCliRun?: boolean;
   /** Stable run identifier for this agent invocation. */
   runId?: string;
+  /** Operator approval capabilities owned by the adapter that launched this run. */
+  approvalHost?: import("./agent-run-approval.js").AgentRunApprovalHost;
   /** Device-scoped operator session allowed to review approvals initiated by this run. */
   approvalReviewerDeviceId?: string;
   /** Diagnostic trace context for hook/log correlation during this run. */

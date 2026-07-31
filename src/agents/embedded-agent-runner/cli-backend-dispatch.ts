@@ -224,6 +224,7 @@ async function runEmbeddedAgentViaCliBackend(
       disableCliLiveSession: true,
       cleanupCliLiveSessionOnRunEnd: true,
       requireExplicitMessageTarget: true,
+      approvalHost: params.approvalHost,
       // Deliberately NOT forwarding cleanupBundleMcpOnRunEnd: on the CLI
       // runner it closes the process-wide loopback MCP server, which a
       // concurrent main turn or overlapping recall may still be using.
