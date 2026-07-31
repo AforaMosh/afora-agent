@@ -1,9 +1,11 @@
 /** Tests Gateway exec approval to ACP permission relay helpers. */
 import { describe, expect, it } from "vitest";
 import {
+  buildAcpPermissionOptions,
   buildAcpPermissionRequest,
   parseGatewayExecApprovalEventData,
   parseGatewayExecApprovalRequestEventPayload,
+  resolveAcpApprovalDecision,
   resolveGatewayDecisionFromPermissionOutcome,
 } from "./permission-relay.js";
 
@@ -19,6 +21,30 @@ function buildOptionsForAllowedDecisions(allowedDecisions: unknown) {
 }
 
 describe("ACP permission relay helpers", () => {
+  it("maps only selected approval options that ACP was offered", () => {
+    const options = buildAcpPermissionOptions(["allow-always", "deny"]);
+
+    expect(
+      resolveAcpApprovalDecision(
+        { outcome: { outcome: "selected", optionId: "allow-always" } },
+        options,
+      ),
+    ).toBe("allow-always");
+    expect(
+      resolveAcpApprovalDecision(
+        { outcome: { outcome: "selected", optionId: "allow-once" } },
+        options,
+      ),
+    ).toBeUndefined();
+    expect(
+      resolveAcpApprovalDecision({ outcome: { outcome: "cancelled" } }, options),
+    ).toBeUndefined();
+  });
+
+  it("preserves an empty authoritative approval decision set", () => {
+    expect(buildAcpPermissionOptions([])).toEqual([]);
+  });
+
   it("filters unknown decisions and falls back to allow-once plus deny", () => {
     const optionIds = (allowedDecisions: unknown) =>
       buildOptionsForAllowedDecisions(allowedDecisions).map((option) => option.optionId);

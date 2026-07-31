@@ -1,4 +1,4 @@
-/** Bridges Gateway exec approval events into ACP request_permission payloads and outcomes. */
+/** Shared ACP permission helpers plus the legacy Gateway approval relay. */
 import type {
   PermissionOption,
   RequestPermissionRequest,
@@ -6,7 +6,8 @@ import type {
 } from "@agentclientprotocol/sdk";
 import { normalizeOptionalString as readNonEmptyString } from "@openclaw/normalization-core/string-coerce";
 
-export type GatewayExecApprovalDecision = "allow-once" | "allow-always" | "deny";
+export type AcpApprovalDecision = "allow-once" | "allow-always" | "deny";
+export type GatewayExecApprovalDecision = AcpApprovalDecision;
 
 export type GatewayExecApprovalEvent = {
   approvalId: string;
@@ -25,9 +26,7 @@ export type GatewayExecApprovalDetails = {
 
 const FALLBACK_EXEC_APPROVAL_DECISIONS = ["allow-once", "deny"] as const;
 
-function normalizeGatewayExecApprovalDecision(
-  value: unknown,
-): GatewayExecApprovalDecision | undefined {
+function normalizeAcpApprovalDecision(value: unknown): AcpApprovalDecision | undefined {
   if (value === "allow-once" || value === "allow-always" || value === "deny") {
     return value;
   }
@@ -38,17 +37,17 @@ function normalizeGatewayExecApprovalDecision(
 function normalizeGatewayExecApprovalDecisions(value: unknown): GatewayExecApprovalDecision[] {
   const normalized = Array.isArray(value)
     ? value
-        .map(normalizeGatewayExecApprovalDecision)
+        .map(normalizeAcpApprovalDecision)
         .filter((decision): decision is GatewayExecApprovalDecision => Boolean(decision))
     : [];
   return normalized.length > 0 ? normalized : [...FALLBACK_EXEC_APPROVAL_DECISIONS];
 }
 
-/** Converts Gateway exec decisions into ACP permission options. */
-function buildAcpPermissionOptions(
-  decisions: readonly GatewayExecApprovalDecision[],
+/** Converts OpenClaw approval decisions into ACP permission options. */
+export function buildAcpPermissionOptions(
+  decisions: readonly AcpApprovalDecision[],
 ): PermissionOption[] {
-  const unique = new Set<GatewayExecApprovalDecision>(decisions);
+  const unique = new Set<AcpApprovalDecision>(decisions);
   const options: PermissionOption[] = [];
   if (unique.has("allow-once")) {
     options.push({
@@ -71,7 +70,20 @@ function buildAcpPermissionOptions(
       kind: "reject_once",
     });
   }
-  return options.length > 0 ? options : buildAcpPermissionOptions(FALLBACK_EXEC_APPROVAL_DECISIONS);
+  return options;
+}
+
+/** Maps a selected ACP option back to an approval decision only when it was offered. */
+export function resolveAcpApprovalDecision(
+  response: RequestPermissionResponse | undefined,
+  options: readonly PermissionOption[],
+): AcpApprovalDecision | undefined {
+  const outcome = response?.outcome;
+  if (!outcome || outcome.outcome !== "selected") {
+    return undefined;
+  }
+  const selected = options.find((option) => option.optionId === outcome.optionId);
+  return normalizeAcpApprovalDecision(selected?.optionId);
 }
 
 /** Parses legacy Gateway approval event data into ACP relay state. */
@@ -160,10 +172,5 @@ export function resolveGatewayDecisionFromPermissionOutcome(
   response: RequestPermissionResponse | undefined,
   options: readonly PermissionOption[],
 ): GatewayExecApprovalDecision | undefined {
-  const outcome = response?.outcome;
-  if (!outcome || outcome.outcome !== "selected") {
-    return undefined;
-  }
-  const selected = options.find((option) => option.optionId === outcome.optionId);
-  return normalizeGatewayExecApprovalDecision(selected?.optionId);
+  return resolveAcpApprovalDecision(response, options);
 }
