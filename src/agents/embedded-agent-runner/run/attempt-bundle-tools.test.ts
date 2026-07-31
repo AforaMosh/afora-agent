@@ -258,6 +258,27 @@ describe("prepareEmbeddedAttemptBundleTools", () => {
     expect(inheritedCapture).not.toHaveBeenCalled();
   });
 
+  it("retires a cleanup-owned runtime when MCP materialization fails", async () => {
+    const runtime = { sessionId: "owned-session" };
+    mocks.getOrCreateSessionMcpRuntime.mockResolvedValue(runtime);
+    mocks.materializeBundleMcpToolsForRun.mockRejectedValue(new Error("materialization failed"));
+    const input = createInput([], []);
+    input.attempt.cleanupBundleMcpOnRunEnd = true;
+
+    await expect(prepareEmbeddedAttemptBundleTools(input)).rejects.toThrow(
+      "materialization failed",
+    );
+
+    expect(mocks.retireSessionMcpRuntimeInstance).toHaveBeenCalledOnce();
+    expect(mocks.retireSessionMcpRuntimeInstance).toHaveBeenCalledWith({
+      runtime,
+      reason: "embedded-run-end",
+      preserveActiveLeases: true,
+      onError: expect.any(Function),
+    });
+    expect(mocks.createBundleLspToolRuntime).not.toHaveBeenCalled();
+  });
+
   it("disposes prepared bundle runtimes when later policy setup fails", async () => {
     const disposeMcp = vi.fn(async () => {});
     const disposeLsp = vi.fn(async () => {});

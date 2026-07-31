@@ -1,6 +1,7 @@
 /** Session MCP runtime manager lifecycle: maps, idle sweep, dispose, advertised catalog. */
 import { logWarn } from "../logger.js";
 import { isCombinedSessionMcpRuntime } from "./agent-bundle-mcp-combined.js";
+import { createPendingCreateTracker } from "./agent-bundle-mcp-manager-admission.js";
 import {
   DEFAULT_SESSION_MCP_RUNTIME_IDLE_TTL_MS,
   SESSION_MCP_MAX_IDLE_REQUESTER_RUNTIMES,
@@ -124,6 +125,9 @@ export type SessionMcpRuntimeManagerLifecycle = {
   runtimeKeysForSessionId: (sessionId: string) => string[];
   totalActiveLeasesForSessionId: (sessionId: string) => number;
   runExclusiveOnRuntimeKey: <T>(runtimeKey: string, work: () => Promise<T>) => Promise<T>;
+  runWithPendingCreate: <T>(sessionId: string, work: () => Promise<T>) => Promise<T>;
+  hasPendingCreate: (sessionId: string) => boolean;
+  totalPendingCreates: () => number;
   sweepIdleRuntimes: () => Promise<number>;
   enforceRequesterRuntimeCap: (sessionId: string, keepRuntimeKey: string) => Promise<void>;
   ensureIdleSweepTimer: () => void;
@@ -178,7 +182,6 @@ export function createSessionMcpRuntimeManagerLifecycle(
       }
     }
   };
-
   const runtimeKeysForSessionId = (sessionId: string): string[] => {
     const keys: string[] = [];
     for (const [runtimeKey, runtime] of store.runtimesBySessionId.entries()) {
@@ -189,6 +192,20 @@ export function createSessionMcpRuntimeManagerLifecycle(
     return keys;
   };
 
+  function pruneSessionState(sessionId: string): void {
+    const owned =
+      runtimeKeysForSessionId(sessionId).length > 0 ||
+      store.exactRetirementsBySessionId.has(sessionId) ||
+      pendingCreates.hasPending(sessionId);
+    if (owned) {
+      return;
+    }
+    store.deferredRetirementSessionIds.delete(sessionId);
+    store.advertisedScopedCatalogBySessionId.delete(sessionId);
+    forgetSessionKeysForSessionId(sessionId);
+  }
+
+  const pendingCreates = createPendingCreateTracker({ onSessionDrained: pruneSessionState });
   const totalActiveLeasesForSessionId = (sessionId: string): number => {
     let total = 0;
     for (const runtimeKey of runtimeKeysForSessionId(sessionId)) {
@@ -196,7 +213,6 @@ export function createSessionMcpRuntimeManagerLifecycle(
     }
     return total;
   };
-
   const runExclusiveOnRuntimeKey = <T>(runtimeKey: string, work: () => Promise<T>): Promise<T> => {
     const previous = store.requesterWorkChains.get(runtimeKey) ?? Promise.resolve();
     const run = previous.catch(() => undefined).then(() => work());
@@ -378,11 +394,7 @@ export function createSessionMcpRuntimeManagerLifecycle(
     } else {
       store.exactRetirementsBySessionId.delete(sessionId);
     }
-    if (remaining.length === 0 && runtimeKeysForSessionId(sessionId).length === 0) {
-      store.deferredRetirementSessionIds.delete(sessionId);
-      store.advertisedScopedCatalogBySessionId.delete(sessionId);
-      forgetSessionKeysForSessionId(sessionId);
-    }
+    pruneSessionState(sessionId);
   };
 
   const completeExactRetirement = async (
@@ -669,6 +681,9 @@ export function createSessionMcpRuntimeManagerLifecycle(
     runtimeKeysForSessionId,
     totalActiveLeasesForSessionId,
     runExclusiveOnRuntimeKey,
+    runWithPendingCreate: pendingCreates.run,
+    hasPendingCreate: pendingCreates.hasPending,
+    totalPendingCreates: pendingCreates.totalPending,
     sweepIdleRuntimes,
     enforceRequesterRuntimeCap,
     ensureIdleSweepTimer,

@@ -54,7 +54,7 @@ export function createSessionMcpRuntimeManager(
   const lifecycle = createSessionMcpRuntimeManagerLifecycle(store);
   const install = createSessionMcpRuntimeManagerInstall(lifecycle);
 
-  const manager: SessionMcpRuntimeManager = {
+  const managerCore: SessionMcpRuntimeManager = {
     async getOrCreate(params) {
       const idleTtlMs = resolveSessionMcpRuntimeIdleTtlMs();
       await lifecycle.sweepIdleRuntimes();
@@ -344,23 +344,34 @@ export function createSessionMcpRuntimeManager(
       if (runtime !== undefined && runtime.sessionId !== sessionId) {
         return false;
       }
+      let completedExactRetirement = false;
       if (runtime !== undefined) {
         const runtimes = isCombinedSessionMcpRuntime(runtime) ? runtime.managedParts : [runtime];
+        completedExactRetirement = await lifecycle.completeExactRuntimeRetirement(
+          runtime,
+          runtimes,
+        );
         if (
-          (await lifecycle.completeExactRuntimeRetirement(runtime, runtimes)) &&
-          !store.requiredRetirementSessionIds.has(sessionId)
+          completedExactRetirement &&
+          !store.requiredRetirementSessionIds.has(sessionId) &&
+          !store.deferredRetirementSessionIds.has(sessionId)
         ) {
           return true;
         }
       }
       if (!store.deferredRetirementSessionIds.has(sessionId)) {
-        return false;
+        return completedExactRetirement;
+      }
+      if (lifecycle.hasPendingCreate(sessionId)) {
+        // The active run owns admitted creation. Keep required retirement armed;
+        // the run-end watcher will retire the runtime after creation or reuse settles.
+        return completedExactRetirement;
       }
       if (
         lifecycle.totalActiveLeasesForSessionId(sessionId) > 0 ||
         (runtime?.activeLeases ?? 0) > 0
       ) {
-        return false;
+        return completedExactRetirement;
       }
       if (store.requiredRetirementSessionIds.has(sessionId)) {
         await lifecycle.disposeManagedSession(sessionId, { preserveRequiredRetirement: true });
@@ -374,7 +385,7 @@ export function createSessionMcpRuntimeManager(
         return false;
       }
       const managedSet = new Set(managed);
-      if (runtime !== undefined) {
+      if (runtime !== undefined && !completedExactRetirement) {
         if (isCombinedSessionMcpRuntime(runtime)) {
           if (!runtime.managedParts.every((part) => managedSet.has(part))) {
             return false;
@@ -439,6 +450,15 @@ export function createSessionMcpRuntimeManager(
       return lifecycle.totalActiveLeasesForSessionId(sessionId);
     },
   };
+  const manager: SessionMcpRuntimeManager = {
+    ...managerCore,
+    getOrCreate: (params) =>
+      lifecycle.runWithPendingCreate(params.sessionId, () => managerCore.getOrCreate(params)),
+    getOrCreateRequesterScoped: (params) =>
+      lifecycle.runWithPendingCreate(params.sessionId, () =>
+        managerCore.getOrCreateRequesterScoped(params),
+      ),
+  };
   // Test-only bookkeeping snapshot for drain assertions.
   Object.assign(manager, {
     bookkeepingSizesForTest: () => ({
@@ -446,6 +466,7 @@ export function createSessionMcpRuntimeManager(
       connectionMeta: store.connectionMetaByRuntimeKey.size,
       createInFlight: store.createInFlight.size,
       requesterWorkChains: store.requesterWorkChains.size,
+      pendingCreates: lifecycle.totalPendingCreates(),
       sessionKeys: store.sessionIdBySessionKey.size,
       idleTtl: store.idleTtlMsBySessionId.size,
       deferredRetirement: store.deferredRetirementSessionIds.size,

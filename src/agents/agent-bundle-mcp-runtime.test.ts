@@ -3197,6 +3197,213 @@ process.on("SIGINT", shutdown);`,
     await manager.disposeAll();
   });
 
+  it("continues an independently armed session retirement after exact retirement", async () => {
+    const disposeByWorkspace = new Map<string, ReturnType<typeof vi.fn>>();
+    const manager = testing.createSessionMcpRuntimeManager({
+      enableIdleSweepTimer: false,
+      createRuntime: (params) => {
+        const dispose = vi.fn<() => Promise<void>>().mockResolvedValue();
+        disposeByWorkspace.set(params.workspaceDir, dispose);
+        let activeLeases = 0;
+        return {
+          ...makeRuntime([{ toolName: "probe", description: "probe" }]),
+          sessionId: params.sessionId,
+          workspaceDir: params.workspaceDir,
+          configFingerprint: params.configFingerprint ?? "fingerprint",
+          get activeLeases() {
+            return activeLeases;
+          },
+          acquireLease: () => {
+            activeLeases += 1;
+            return () => {
+              activeLeases -= 1;
+            };
+          },
+          dispose,
+        };
+      },
+    });
+    const sessionId = "session-exact-and-session-retirement";
+    const runtimeA = await manager.getOrCreate({
+      sessionId,
+      workspaceDir: "/workspace-a",
+      cfg: { mcp: {} },
+    });
+    const release = runtimeA.acquireLease?.();
+
+    await expect(
+      manager.retireRuntimeInstance(runtimeA, { preserveActiveLeases: true }),
+    ).resolves.toBe(true);
+    const runtimeB = await manager.getOrCreate({
+      sessionId,
+      workspaceDir: "/workspace-b",
+      cfg: { mcp: {} },
+    });
+    expect(runtimeB).not.toBe(runtimeA);
+    expect(manager.deferRetirement(sessionId)).toBe(true);
+
+    release?.();
+    await expect(manager.completeDeferredRetirement(sessionId, runtimeA)).resolves.toBe(true);
+
+    expect(disposeByWorkspace.get("/workspace-a")).toHaveBeenCalledOnce();
+    expect(disposeByWorkspace.get("/workspace-b")).toHaveBeenCalledOnce();
+    expect(manager.peekSession({ sessionId })).toBeUndefined();
+    expect(testing.getBookkeepingSizes(manager).deferredRetirement).toBe(0);
+    await manager.disposeAll();
+  });
+
+  it("defers required retirement while replacement creation is admitted", async () => {
+    const disposeByWorkspace = new Map<string, ReturnType<typeof vi.fn>>();
+    let nowMs = 0;
+    let releaseBlockerDispose!: () => void;
+    const blockerDispose = new Promise<void>((resolve) => {
+      releaseBlockerDispose = resolve;
+    });
+    const manager = testing.createSessionMcpRuntimeManager({
+      enableIdleSweepTimer: false,
+      now: () => nowMs,
+      createRuntime: (params) => {
+        let activeLeases = 0;
+        const dispose =
+          params.workspaceDir === "/workspace-blocker"
+            ? vi.fn<() => Promise<void>>(() => blockerDispose)
+            : vi.fn<() => Promise<void>>().mockResolvedValue();
+        disposeByWorkspace.set(params.workspaceDir, dispose);
+        return {
+          ...makeRuntime([{ toolName: "probe", description: "probe" }]),
+          sessionId: params.sessionId,
+          workspaceDir: params.workspaceDir,
+          configFingerprint: params.configFingerprint ?? "fingerprint",
+          lastUsedAt: nowMs,
+          get activeLeases() {
+            return activeLeases;
+          },
+          acquireLease: () => {
+            activeLeases += 1;
+            return () => {
+              activeLeases -= 1;
+            };
+          },
+          dispose,
+        };
+      },
+    });
+    await manager.getOrCreate({
+      sessionId: "session-required-admission-blocker",
+      workspaceDir: "/workspace-blocker",
+      cfg: { mcp: {} },
+    });
+    const sessionId = "session-required-admission";
+    const sessionKey = "agent:test:session-required-admission";
+    const runtimeA = await manager.getOrCreate({
+      sessionId,
+      sessionKey,
+      workspaceDir: "/workspace-a",
+      cfg: { mcp: {} },
+    });
+    const releaseA = runtimeA.acquireLease?.();
+    await manager.retireRuntimeInstance(runtimeA, { preserveActiveLeases: true });
+    nowMs = 1_000_000_000_000;
+    const replacement = manager.getOrCreate({
+      sessionId,
+      sessionKey,
+      workspaceDir: "/workspace-b",
+      cfg: { mcp: {} },
+    });
+    expect(manager.deferRetirement(sessionId, { retainAcrossReuse: true })).toBe(true);
+
+    releaseA?.();
+    await expect(manager.completeDeferredRetirement(sessionId, runtimeA)).resolves.toBe(true);
+    expect(testing.getBookkeepingSizes(manager).pendingCreates).toBe(1);
+    expect(manager.resolveSessionId(sessionKey)).toBe(sessionId);
+
+    releaseBlockerDispose();
+    const runtimeB = await replacement;
+    expect(disposeByWorkspace.get("/workspace-a")).toHaveBeenCalledOnce();
+    expect(disposeByWorkspace.get("/workspace-b")).not.toHaveBeenCalled();
+    const releaseB = runtimeB.acquireLease?.();
+    await manager.retireRuntimeInstance(runtimeB, { preserveActiveLeases: true });
+    await expect(manager.completeDeferredRetirement(sessionId, runtimeB)).resolves.toBe(false);
+    releaseB?.();
+    await expect(manager.completeDeferredRetirement(sessionId, runtimeB)).resolves.toBe(true);
+    expect(disposeByWorkspace.get("/workspace-b")).toHaveBeenCalledOnce();
+    expect(manager.listSessionIds()).not.toContain(sessionId);
+    await manager.disposeSession(sessionId);
+    await manager.disposeAll();
+  });
+
+  it("cleans retained lookup state when the final admitted replacement fails", async () => {
+    let nowMs = 0;
+    let releaseBlockerDispose!: () => void;
+    const blockerDispose = new Promise<void>((resolve) => {
+      releaseBlockerDispose = resolve;
+    });
+    const manager = testing.createSessionMcpRuntimeManager({
+      enableIdleSweepTimer: false,
+      now: () => nowMs,
+      createRuntime: (params) => {
+        if (params.workspaceDir === "/workspace-failing-replacement") {
+          throw new Error("replacement failed");
+        }
+        let activeLeases = 0;
+        return {
+          ...makeRuntime([{ toolName: "probe", description: "probe" }]),
+          sessionId: params.sessionId,
+          workspaceDir: params.workspaceDir,
+          configFingerprint: params.configFingerprint ?? "fingerprint",
+          lastUsedAt: nowMs,
+          get activeLeases() {
+            return activeLeases;
+          },
+          acquireLease: () => {
+            activeLeases += 1;
+            return () => {
+              activeLeases -= 1;
+            };
+          },
+          dispose:
+            params.workspaceDir === "/workspace-blocker"
+              ? () => blockerDispose
+              : vi.fn<() => Promise<void>>().mockResolvedValue(),
+        };
+      },
+    });
+    await manager.getOrCreate({
+      sessionId: "session-failed-admission-blocker",
+      workspaceDir: "/workspace-blocker",
+      cfg: { mcp: {} },
+    });
+    const sessionId = "session-failed-admission";
+    const sessionKey = "agent:test:session-failed-admission";
+    const runtimeA = await manager.getOrCreate({
+      sessionId,
+      sessionKey,
+      workspaceDir: "/workspace-a",
+      cfg: { mcp: {} },
+    });
+    const releaseA = runtimeA.acquireLease?.();
+    await manager.retireRuntimeInstance(runtimeA, { preserveActiveLeases: true });
+    nowMs = 1_000_000_000_000;
+    const replacement = manager.getOrCreate({
+      sessionId,
+      sessionKey,
+      workspaceDir: "/workspace-failing-replacement",
+      cfg: { mcp: {} },
+    });
+
+    releaseA?.();
+    await expect(manager.completeDeferredRetirement(sessionId, runtimeA)).resolves.toBe(true);
+    expect(manager.resolveSessionId(sessionKey)).toBe(sessionId);
+    releaseBlockerDispose();
+    await expect(replacement).rejects.toThrow("replacement failed");
+    expect(manager.resolveSessionId(sessionKey)).toBeUndefined();
+    expect(testing.getBookkeepingSizes(manager)).toMatchObject({
+      exactRetirement: 0,
+      pendingCreates: 0,
+    });
+    await manager.disposeAll();
+  });
+
   it("retries exact runtime disposal without exposing the failed runtime for reuse", async () => {
     const dispose = vi.fn<() => Promise<void>>().mockRejectedValueOnce(new Error("dispose failed"));
     dispose.mockResolvedValueOnce();
@@ -4710,6 +4917,7 @@ describe("requester-scoped MCP connection resolution", () => {
       connectionMeta: 0,
       createInFlight: 0,
       requesterWorkChains: 0,
+      pendingCreates: 0,
       sessionKeys: 0,
       idleTtl: 0,
       deferredRetirement: 0,

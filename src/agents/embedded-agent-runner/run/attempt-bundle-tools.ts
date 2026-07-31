@@ -131,20 +131,21 @@ export async function prepareEmbeddedAttemptBundleTools(params: {
           });
         }
       : undefined;
-  const bundleMcpRuntime = bundleMcpSessionRuntime
-    ? await materializeBundleMcpToolsForRun({
-        runtime: bundleMcpSessionRuntime,
-        reservedToolNames: [
-          ...tools.map((tool) => tool.name),
-          ...(clientTools?.map((tool) => tool.function.name) ?? []),
-        ],
-        ...(disposeBundleMcpSessionRuntime
-          ? { disposeRuntime: disposeBundleMcpSessionRuntime }
-          : {}),
-      })
-    : undefined;
+  let bundleMcpRuntime: Awaited<ReturnType<typeof materializeBundleMcpToolsForRun>> | undefined;
   let bundleLspRuntime: Awaited<ReturnType<typeof createBundleLspToolRuntime>> | undefined;
   try {
+    bundleMcpRuntime = bundleMcpSessionRuntime
+      ? await materializeBundleMcpToolsForRun({
+          runtime: bundleMcpSessionRuntime,
+          reservedToolNames: [
+            ...tools.map((tool) => tool.name),
+            ...(clientTools?.map((tool) => tool.function.name) ?? []),
+          ],
+          ...(disposeBundleMcpSessionRuntime
+            ? { disposeRuntime: disposeBundleMcpSessionRuntime }
+            : {}),
+        })
+      : undefined;
     const bundleLspEnabled =
       !params.attempt.forceRestartSafeTools &&
       shouldCreateBundleLspRuntimeForAttempt({
@@ -261,7 +262,11 @@ export async function prepareEmbeddedAttemptBundleTools(params: {
     };
   } catch (error) {
     try {
-      await bundleMcpRuntime?.dispose();
+      if (bundleMcpRuntime) {
+        await bundleMcpRuntime.dispose();
+      } else {
+        await disposeBundleMcpSessionRuntime?.();
+      }
     } catch {
       // Preserve the preparation error; cleanup is best-effort.
     }
