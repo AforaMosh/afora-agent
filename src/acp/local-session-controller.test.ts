@@ -114,9 +114,9 @@ type SessionUpdatesMock = {
   stop: ReturnType<typeof vi.fn>;
 };
 
-function createSessionUpdates(
-  overrides: Partial<SessionUpdatesMock> = {},
-): AcpTranslatorSessionUpdates & { testMocks: SessionUpdatesMock } {
+type TestSessionUpdates = AcpTranslatorSessionUpdates & { testMocks: SessionUpdatesMock };
+
+function createSessionUpdates(overrides: Partial<SessionUpdatesMock> = {}): TestSessionUpdates {
   const emptyReplay: AcpEventLedgerReplay = { complete: false, events: [] };
   const mocks: SessionUpdatesMock = {
     emit: vi.fn(async () => {}),
@@ -135,7 +135,7 @@ function createSessionUpdates(
 function createController(params: {
   bindings?: AcpLocalSessionBindings;
   sessionRuntime?: AcpLocalSessionRuntime;
-  sessionUpdates?: AcpTranslatorSessionUpdates;
+  sessionUpdates?: TestSessionUpdates;
   turnRuntime?: AcpLocalTurnRuntime;
   options?: AcpLocalSessionControllerOptions["serverOptions"];
 }) {
