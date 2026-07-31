@@ -228,9 +228,10 @@ function runCandidateProvenance(
         object: {
           oid: candidateSha,
           committer: params.unsignedDirect ? { user: { login: "release-maintainer" } } : null,
-          signature: params.unsignedWebFlow || params.unsignedDirect || params.unsignedNoActor
-            ? null
-            : { isValid: true, state: "VALID", signer: { login: "release-maintainer" } },
+          signature:
+            params.unsignedWebFlow || params.unsignedDirect || params.unsignedNoActor
+              ? null
+              : { isValid: true, state: "VALID", signer: { login: "release-maintainer" } },
           associatedPullRequests: {
             nodes: [
               ...(params.openPr
