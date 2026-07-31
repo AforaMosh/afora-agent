@@ -12,7 +12,7 @@ import { extractFrontmatterBlock } from "../../packages/markdown-core/src/frontm
 import type { ChatType } from "../channels/chat-type.js";
 import { openRootFileFollowingParents } from "../infra/boundary-file-read.js";
 import { sameFileIdentity, type FileIdentityStat } from "../infra/fs-safe-advanced.js";
-import { pathExists, root as fsSafeRoot } from "../infra/fs-safe.js";
+import { FsSafeError, pathExists, root as fsSafeRoot } from "../infra/fs-safe.js";
 import { isPathInside } from "../infra/path-guards.js";
 import { retryAsync } from "../infra/retry.js";
 import {
@@ -751,7 +751,10 @@ export async function seedWorkspaceBootstrap(params: {
       });
       created = true;
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "EEXIST") {
+      const alreadyExists =
+        (error as NodeJS.ErrnoException).code === "EEXIST" ||
+        (error instanceof FsSafeError && error.code === "already-exists");
+      if (!alreadyExists) {
         throw error;
       }
     }
