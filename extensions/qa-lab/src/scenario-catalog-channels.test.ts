@@ -82,6 +82,9 @@ describe("qa scenario catalog channel contracts", () => {
     expect(flow).toContain('"taskTracking":false');
     expect(flow).toContain('"saveAs":"parentOutbound"');
     expect(flow).toContain("messages.slice(parentOutboundStartIndex)");
+    expect(flow).toContain("/debug/request-cursor");
+    expect(flow).toContain("/debug/requests?after=${fanoutRequestCursor}&view=signals");
+    expect(flow).not.toContain("`${env.mock.baseUrl}/debug/requests`");
     expect(flow).not.toContain("waitForAgentHistoryReply");
     expect(flow).not.toContain('"call":"waitForOutboundMessage"');
     expect(flow).not.toContain("childCompletionMarker");

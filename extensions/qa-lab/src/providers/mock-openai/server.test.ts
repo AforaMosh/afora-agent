@@ -350,6 +350,19 @@ describe("qa mock openai server", () => {
     expect(nextRequests).toHaveLength(1);
     expect(String(requireRecord(nextRequests[0], "next request").prompt)).toContain("overflow");
 
+    const requestSignals = requireArray(
+      await fetch(`${server.baseUrl}/debug/requests?after=${cursor}&view=signals`).then(
+        (response) => response.json(),
+      ),
+      "debug request signals after cursor",
+    );
+    expect(requestSignals).toEqual([
+      {
+        cursor: debugRequestLimit + 1,
+        allInputText: "cursor request overflow",
+      },
+    ]);
+
     const expired = await fetch(`${server.baseUrl}/debug/requests?after=0`);
     expect(expired.status).toBe(409);
     expect(await expired.json()).toEqual({
@@ -372,6 +385,12 @@ describe("qa mock openai server", () => {
     expect(invalid.status).toBe(400);
     expect(await invalid.json()).toEqual({
       error: "after must be a non-negative safe integer",
+    });
+
+    const invalidView = await fetch(`${server.baseUrl}/debug/requests?view=full`);
+    expect(invalidView.status).toBe(400);
+    expect(await invalidView.json()).toEqual({
+      error: 'view must be "signals" when provided',
     });
   });
 
@@ -2260,6 +2279,33 @@ describe("qa mock openai server", () => {
         {
           type: "function_call_output",
           output: "Successfully wrote 41 bytes to compaction-retry-summary.txt",
+        },
+        makeUserInput("Continue after compaction."),
+      ],
+    });
+
+    expect(finalReply.status).toBe(200);
+    expect(outputText(await finalReply.json())).toBe("Protocol note: replay unsafe after write.");
+  });
+
+  it("finishes a compacted retry after the canonical Code Mode result envelope", async () => {
+    const server = await startMockServer();
+
+    const finalReply = await postResponses(server, {
+      stream: false,
+      model: "gpt-5.6-luna",
+      input: [
+        {
+          type: "function_call_output",
+          output: JSON.stringify({
+            status: "completed",
+            value: {
+              kind: "text",
+              content: "Successfully wrote 41 bytes to compaction-retry-summary.txt.",
+            },
+            output: [],
+            replaySafe: false,
+          }),
         },
         makeUserInput("Continue after compaction."),
       ],
@@ -5498,7 +5544,7 @@ describe("qa mock openai server", () => {
     );
   });
 
-  it("finishes Anthropic Code Mode compaction after the wrapped write result", async () => {
+  it("finishes Anthropic Code Mode compaction after the write tool use is compacted", async () => {
     const server = await startMockServer();
     const prompt =
       "Compaction retry mutating tool check: read COMPACTION_RETRY_CONTEXT.md, then create compaction-retry-summary.txt and keep replay safety explicit.";
@@ -5571,9 +5617,23 @@ describe("qa mock openai server", () => {
     });
 
     const writeSummary = requireToolUse(await request());
-    appendCompletedResult(writeSummary, {
-      kind: "text",
-      content: "Successfully wrote 41 bytes to compaction-retry-summary.txt.",
+    messages.push({
+      role: "user",
+      content: [
+        {
+          type: "tool_result",
+          tool_use_id: writeSummary.id,
+          content: JSON.stringify({
+            status: "completed",
+            value: {
+              kind: "text",
+              content: "Successfully wrote 41 bytes to compaction-retry-summary.txt.",
+            },
+            output: [],
+            replaySafe: false,
+          }),
+        },
+      ],
     });
 
     const final = await request();

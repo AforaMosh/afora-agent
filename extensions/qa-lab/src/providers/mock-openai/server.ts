@@ -1764,8 +1764,22 @@ export async function startQaMockOpenAiServer(params?: {
       }
       if (req.method === "GET" && url.pathname === "/debug/requests") {
         const afterText = url.searchParams.get("after");
+        const view = url.searchParams.get("view");
+        if (view !== null && view !== "signals") {
+          writeJson(res, 400, { error: 'view must be "signals" when provided' });
+          return;
+        }
+        const projectRequests = (entries: MockOpenAiRequestSnapshot[]) =>
+          view === "signals"
+            ? entries.map(({ cursor, allInputText, plannedToolName, plannedToolArgs }) => ({
+                cursor,
+                allInputText,
+                plannedToolName,
+                plannedToolArgs,
+              }))
+            : entries;
         if (afterText === null) {
-          writeJson(res, 200, requests);
+          writeJson(res, 200, projectRequests(requests));
           return;
         }
         const after = parseQaDebugRequestCursor(afterText);
@@ -1792,11 +1806,7 @@ export async function startQaMockOpenAiServer(params?: {
           });
           return;
         }
-        writeJson(
-          res,
-          200,
-          requests.filter((request) => request.cursor > after),
-        );
+        writeJson(res, 200, projectRequests(requests.filter((request) => request.cursor > after)));
         return;
       }
       if (req.method === "GET" && url.pathname === "/debug/inflight-requests") {
