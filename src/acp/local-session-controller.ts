@@ -203,6 +203,10 @@ export class AcpLocalSessionController {
             },
         preserveCurrentLedgerIdentity: true,
         preserveCurrentRuntimeOptions: true,
+        requireExistingOnTargetChange: true,
+        ...(routedReplay.complete && routedReplay.sessionKey
+          ? { existingLedgerSessionKey: routedReplay.sessionKey }
+          : {}),
       });
       this.log(`loadSession: ${binding.sessionId} -> ${binding.sessionKey}`);
       return {
@@ -422,6 +426,7 @@ export class AcpLocalSessionController {
           ) => Promise<AcpEventLedgerReplay>;
         };
     requireExistingOnTargetChange?: boolean;
+    existingLedgerSessionKey?: string;
     preserveCurrentLedgerIdentity?: boolean;
     preserveCurrentRuntimeOptions?: boolean;
     runtimeOptions?: AcpSessionRuntimeOptions;
@@ -443,7 +448,11 @@ export class AcpLocalSessionController {
             if (params.enforceCreationRateLimit && !retainedCurrent) {
               this.enforceSessionCreateRateLimit(params.enforceCreationRateLimit);
             }
-            if (params.requireExistingOnTargetChange && !retainedCurrent) {
+            if (
+              params.requireExistingOnTargetChange &&
+              !retainedCurrent &&
+              params.existingLedgerSessionKey !== params.sessionKey
+            ) {
               await this.options.sessionRuntime.getExistingSessionSnapshot(params.sessionKey);
             }
             const sessionsToQuiesce = new Map<string, AcpLocalSessionBinding>();

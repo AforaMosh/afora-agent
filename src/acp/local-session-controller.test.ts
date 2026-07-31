@@ -266,6 +266,9 @@ describe("AcpLocalSessionController", () => {
     });
     const sessionRuntime = createSessionRuntime({
       resolveSessionKey: vi.fn(async ({ fallbackKey }) => fallbackKey),
+      getExistingSessionSnapshot: vi.fn(async () => {
+        throw new Error("ledger-only recovery must not require a canonical session row");
+      }),
     });
     const { bindings, controller } = createController({ sessionRuntime, sessionUpdates });
 
@@ -277,6 +280,22 @@ describe("AcpLocalSessionController", () => {
       record: false,
     });
     expect(bindings.get("agent:main:work")?.ledgerSessionId).toBe("ledger-session");
+  });
+
+  it("rejects loading an unknown session without creating a binding", async () => {
+    const sessionRuntime = createSessionRuntime({
+      getExistingSessionSnapshot: vi.fn(async (sessionKey) => {
+        throw new Error(`Session ${sessionKey} not found`);
+      }),
+    });
+    const { bindings, controller, sessionUpdates } = createController({ sessionRuntime });
+
+    await expect(controller.loadSession(loadSessionRequest("missing"))).rejects.toThrow(
+      "Session agent:main:missing not found",
+    );
+
+    expect(bindings.get("missing")).toBeUndefined();
+    expect(sessionUpdates.testMocks.startLedgerSession).not.toHaveBeenCalled();
   });
 
   it("prefers the current binding ledger over a newer canonical sibling on reload", async () => {
@@ -337,12 +356,16 @@ describe("AcpLocalSessionController", () => {
       events: [],
     };
     const resolveSessionKey = vi.fn(async ({ fallbackKey }) => fallbackKey);
+    const getExistingSessionSnapshot = vi.fn(async () => snapshot());
     const sessionUpdates = createSessionUpdates({
       readLedgerReplayBySessionId: vi.fn(async () => incompleteReplay),
       readLedgerReplayBySessionKey: vi.fn(async () => siblingReplay),
     });
     const { bindings, controller } = createController({
-      sessionRuntime: createSessionRuntime({ resolveSessionKey }),
+      sessionRuntime: createSessionRuntime({
+        resolveSessionKey,
+        getExistingSessionSnapshot,
+      }),
       sessionUpdates,
     });
 
@@ -352,8 +375,34 @@ describe("AcpLocalSessionController", () => {
       meta: {},
       fallbackKey: "agent:main:work",
     });
+    expect(getExistingSessionSnapshot).toHaveBeenCalledWith("agent:main:work");
     expect(sessionUpdates.testMocks.readLedgerReplayBySessionKey).not.toHaveBeenCalled();
     expect(bindings.get("acp-session")?.ledgerSessionId).toBe("acp-session");
+  });
+
+  it("rejects incomplete ledger identity when the canonical session is missing", async () => {
+    const sessionUpdates = createSessionUpdates({
+      readLedgerReplayBySessionId: vi.fn(async () => ({
+        complete: false,
+        sessionId: "acp-session",
+        sessionKey: "agent:main:missing",
+        events: [],
+      })),
+    });
+    const sessionRuntime = createSessionRuntime({
+      resolveSessionKey: vi.fn(async ({ fallbackKey }) => fallbackKey),
+      getExistingSessionSnapshot: vi.fn(async (sessionKey) => {
+        throw new Error(`Session ${sessionKey} not found`);
+      }),
+    });
+    const { bindings, controller } = createController({ sessionRuntime, sessionUpdates });
+
+    await expect(controller.loadSession(loadSessionRequest("acp-session"))).rejects.toThrow(
+      "Session agent:main:missing not found",
+    );
+
+    expect(bindings.get("acp-session")).toBeUndefined();
+    expect(sessionUpdates.testMocks.startLedgerSession).not.toHaveBeenCalled();
   });
 
   it("quiesces an active binding before selecting the final load replay", async () => {
