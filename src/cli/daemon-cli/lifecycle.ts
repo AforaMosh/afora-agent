@@ -562,6 +562,7 @@ export async function runDaemonRestart(opts: DaemonLifecycleOptions = {}): Promi
   if (isGatewayExternallySupervised()) {
     return await runExternalSupervisorRestart(opts);
   }
+  assertGatewayServiceMutationAllowed("restart the gateway");
   const jsonOutput = Boolean(opts.json);
   const service = resolveGatewayService();
   let restartedWithoutServiceManager = false;

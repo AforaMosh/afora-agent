@@ -14,6 +14,7 @@ import {
 import { doctorCommand } from "../../commands/doctor.js";
 import { UPDATE_PARENT_SUPPORTS_DOCTOR_CONFIG_WRITE_ENV } from "../../commands/doctor/shared/update-phase.js";
 import { resolveGatewayPort } from "../../config/config.js";
+import { isDefaultInstallIdentity } from "../../config/paths.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import {
   GATEWAY_SERVICE_KIND,
@@ -111,6 +112,7 @@ export type PreManagedServiceStop = {
   inspected: boolean;
   runtimeInspected: boolean;
   running: boolean;
+  serviceMutationAllowed?: boolean;
   serviceMatchesMutationRoot?: boolean;
   blockMessage?: string;
   serviceEnv?: NodeJS.ProcessEnv;
@@ -334,6 +336,15 @@ export async function maybeStopManagedServiceBeforeMutableUpdate(params: {
   shouldRestart: boolean;
   jsonMode: boolean;
 }): Promise<PreManagedServiceStop> {
+  if (!isDefaultInstallIdentity(process.env)) {
+    return {
+      stopped: false,
+      inspected: false,
+      runtimeInspected: false,
+      running: false,
+      serviceMutationAllowed: false,
+    };
+  }
   let service: ReturnType<typeof resolveGatewayService>;
   let serviceState: Awaited<ReturnType<typeof readGatewayServiceState>>;
   try {
@@ -949,6 +960,9 @@ function resolveManagedServiceNodeRunner(
  * when the package root is the same.
  */
 export async function resolveManagedServiceNodeRunnerOverride(): Promise<string | undefined> {
+  if (!isDefaultInstallIdentity(process.env)) {
+    return undefined;
+  }
   const command = await resolveGatewayService()
     .readCommand(process.env)
     .catch(() => null);
@@ -970,6 +984,9 @@ export async function resolveManagedServiceNodeRunnerOverride(): Promise<string 
 export async function resolveManagedServicePackageUpdateRoot(params: {
   root: string;
 }): Promise<ManagedServiceRootRedirect | null> {
+  if (!isDefaultInstallIdentity(process.env)) {
+    return null;
+  }
   const command = await resolveGatewayService()
     .readCommand(process.env)
     .catch(() => null);

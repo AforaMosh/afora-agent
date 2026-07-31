@@ -1,5 +1,6 @@
 // Defines gateway lifecycle ownership shared by service, restart, and update paths.
-import { isDefaultInstallIdentity } from "../config/paths.js";
+import { isDefaultInstallIdentity, resolveNativeServiceProfileConflict } from "../config/paths.js";
+import { resolveGatewayNativeServiceIdentityConflict } from "../daemon/constants.js";
 
 const GATEWAY_SUPERVISOR_MODE_ENV = "OPENCLAW_SUPERVISOR_MODE";
 export const EXTERNAL_SUPERVISOR_UPDATE_REQUIRED_REASON = "external-supervisor-update-required";
@@ -38,6 +39,26 @@ export function assertGatewayServiceMutationAllowed(
 ): void {
   if (isGatewayExternallySupervised(env)) {
     throw new Error(formatExternalSupervisorActionRequired(action));
+  }
+  const conflictingProfile = resolveNativeServiceProfileConflict(env);
+  if (conflictingProfile) {
+    if (conflictingProfile !== conflictingProfile.toLowerCase()) {
+      const platformName = process.platform === "win32" ? "Windows" : "macOS";
+      throw new Error(
+        `service management skipped: ${platformName} profile "${conflictingProfile}" is not lowercase-safe for case-insensitive state and native-service paths. Use a lowercase profile name to ${action}, or keep this profile runtime-only without a native service.`,
+      );
+    }
+    throw new Error(
+      `service management skipped: macOS profile "${conflictingProfile}" conflicts with a reserved LaunchAgent identity. Choose a different profile name to ${action}.`,
+    );
+  }
+  const serviceIdentityConflict = resolveGatewayNativeServiceIdentityConflict(env);
+  if (serviceIdentityConflict) {
+    const platformName =
+      process.platform === "darwin" ? "macOS" : process.platform === "win32" ? "Windows" : "Linux";
+    throw new Error(
+      `service management skipped: named profiles cannot override ${serviceIdentityConflict.envKey} for ${platformName} service management. Unset ${serviceIdentityConflict.envKey} so OpenClaw derives the native service identity from OPENCLAW_PROFILE to ${action}, or keep this profile runtime-only without a native service.`,
+    );
   }
   if (!isDefaultInstallIdentity(env)) {
     throw new Error(

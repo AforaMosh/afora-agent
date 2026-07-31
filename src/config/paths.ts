@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { isValidProfileName } from "../cli/profile-utils.js";
+import { resolveGatewayNativeServiceIdentityConflict } from "../daemon/constants.js";
 import { resolveHomeRelativePath, resolveRequiredHomeDir } from "../infra/home-dir.js";
 import { parseTcpPort } from "../infra/tcp-port.js";
 import { isFastTestRuntimeEnv } from "../infra/test-runtime-env.js";
@@ -137,15 +138,53 @@ function profileStateDirName(env: NodeJS.ProcessEnv): string | null {
   return `${NEW_STATE_DIRNAME}-${profile}`;
 }
 
+export function resolveNativeServiceProfileConflict(
+  env: NodeJS.ProcessEnv = process.env,
+  platform: NodeJS.Platform = process.platform,
+): string | null {
+  if (platform !== "darwin" && platform !== "win32") {
+    return null;
+  }
+  const profile = env.OPENCLAW_PROFILE?.trim();
+  if (!profile || profile.toLowerCase() === "default") {
+    return null;
+  }
+  // Normal macOS and Windows filesystems fold case, so case-distinct profile
+  // names can share state and native-service paths even though the CLI keeps
+  // them distinct. Leave the runtime profile valid, but deny service mutation.
+  if (profile !== profile.toLowerCase()) {
+    return profile;
+  }
+  if (platform !== "darwin") {
+    return null;
+  }
+  // These names map to the shipped default Gateway and node-host LaunchAgent
+  // labels, so authorizing them would let one profile control another service.
+  return profile === "gateway" || profile === "node" ? profile : null;
+}
+
 /** Whether host service management belongs to the active default install identity. */
 export function isDefaultInstallIdentity(
   env: NodeJS.ProcessEnv = process.env,
   homedir: () => string = resolveSystemAccountHomeDir,
+  platform: NodeJS.Platform = process.platform,
 ): boolean {
   const accountHome = resolveRequiredHomeDir({}, homedir);
   // Profiles have distinct host-service names; relocated homes do not. Keep
   // OPENCLAW_HOME isolated so an alternate state tree cannot adopt that service.
   if (env.OPENCLAW_HOME?.trim()) {
+    return false;
+  }
+  if (
+    normalizePathForComparison(resolveRequiredHomeDir(env, homedir)) !==
+    normalizePathForComparison(accountHome)
+  ) {
+    return false;
+  }
+  if (
+    resolveNativeServiceProfileConflict(env, platform) ||
+    resolveGatewayNativeServiceIdentityConflict(env, platform)
+  ) {
     return false;
   }
   const stateDirName = profileStateDirName(env);
@@ -161,11 +200,13 @@ export function isDefaultInstallIdentity(
   ) {
     return false;
   }
-  if (!env.OPENCLAW_CONFIG_PATH?.trim()) {
+  // Default installs historically allow implicit legacy config discovery.
+  // Named profiles must resolve their own config so they cannot inherit the default profile.
+  if (stateDirName === NEW_STATE_DIRNAME && !env.OPENCLAW_CONFIG_PATH?.trim()) {
     return true;
   }
   return (
-    normalizePathForComparison(resolveCanonicalConfigPath(env, canonicalStateDir)) ===
+    normalizePathForComparison(resolveConfigPathCandidate(env, envHomedir(env))) ===
     normalizePathForComparison(path.join(canonicalStateDir, CONFIG_FILENAME))
   );
 }
