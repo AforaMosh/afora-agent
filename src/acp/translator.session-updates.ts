@@ -110,6 +110,7 @@ export class AcpTranslatorSessionUpdates {
     session: AcpTranslatorSessionRef,
     runId: string,
     prompt: PromptRequest["prompt"],
+    shouldRecord?: () => boolean,
   ): Promise<void> {
     await this.enqueueLedgerMutation(resolveLedgerSessionId(session), async () => {
       if (this.stopped) {
@@ -121,6 +122,7 @@ export class AcpTranslatorSessionUpdates {
           sessionKey: session.sessionKey,
           runId,
           prompt,
+          shouldRecord,
         });
       } catch (err) {
         this.options.log(

@@ -44,6 +44,7 @@ export type AcpEventLedger = {
     sessionKey: string;
     runId: string;
     prompt: readonly ContentBlock[];
+    shouldRecord?: () => boolean;
   }) => Promise<void>;
   recordUpdate: (params: {
     sessionId: string;
@@ -292,6 +293,9 @@ function createLedgerApi(params: {
 
     async recordUserPrompt(promptParams) {
       await params.mutate(() => {
+        if (promptParams.shouldRecord && !promptParams.shouldRecord()) {
+          return;
+        }
         for (const update of createUserPromptUpdates(promptParams.prompt)) {
           appendUpdate(params.state, {
             sessionId: promptParams.sessionId,
@@ -768,6 +772,9 @@ export function createSqliteAcpEventLedger(
 
     async recordUserPrompt(promptParams) {
       mutate((db) => {
+        if (promptParams.shouldRecord && !promptParams.shouldRecord()) {
+          return;
+        }
         for (const update of createUserPromptUpdates(promptParams.prompt)) {
           appendSqliteUpdate(db, state, {
             sessionId: promptParams.sessionId,
