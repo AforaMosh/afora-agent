@@ -98,6 +98,7 @@ const LIVE_IMAGE_PROBE_ENABLED = isLiveModelProbeEnabled(process.env, LIVE_MODEL
 const OLLAMA_DEFAULT_BASE_URL = "http://127.0.0.1:11434";
 const OLLAMA_LOCAL_API_KEY_MARKER = "ollama-local";
 const OLLAMA_REMOTE_API_KEY_ENV = "OLLAMA_API_KEY";
+const FRONTIER_CODE_MODE_PROVIDERS = new Set(["anthropic", "google", "openai"]);
 const LOCAL_OLLAMA_HOSTNAMES = new Set([
   "localhost",
   "127.0.0.1",
@@ -118,6 +119,14 @@ type OllamaRuntimeApi = {
 };
 
 const describeLive = LIVE ? describe : describe.skip;
+
+function isFrontierCodeModeProof(): boolean {
+  const providers = parseCsvFilter(process.env.OPENCLAW_LIVE_PROVIDERS);
+  return (
+    providers?.size === FRONTIER_CODE_MODE_PROVIDERS.size &&
+    [...FRONTIER_CODE_MODE_PROVIDERS].every((provider) => providers.has(provider))
+  );
+}
 
 function parseCsvFilter(raw?: string): Set<string> | null {
   return parseLiveCsvFilter(raw, { lowercase: false });
@@ -1702,6 +1711,10 @@ describeLive("live models (profile keys)", () => {
   it(
     "completes across selected models",
     async () => {
+      if (isFrontierCodeModeProof()) {
+        logProgress("[live-models] generic sweep skipped for frontier Code Mode proof");
+        return;
+      }
       logProgress("[live-models] loading config");
       const loadedCfg = await withLiveStageTimeout(
         readLiveTestConfig(),
@@ -2351,6 +2364,68 @@ describeLive("live models (profile keys)", () => {
       void skipped;
     },
     LIVE_TEST_TIMEOUT_MS,
+  );
+
+  it(
+    "runs the frontier Code Mode edit-readback proof",
+    async () => {
+      if (!isFrontierCodeModeProof()) {
+        return;
+      }
+      const { execFile } = await import("node:child_process");
+      const { readFile } = await import("node:fs/promises");
+      const { promisify } = await import("node:util");
+      const execFileAsync = promisify(execFile);
+      const outputDir = `.artifacts/qa-e2e/code-mode-model-matrix/frontier-ci-${process.pid}`;
+      const args = [
+        "--import",
+        "tsx",
+        "scripts/code-mode-model-matrix.ts",
+        "--model",
+        "openai/gpt-5.6",
+        "--model",
+        "anthropic/claude-sonnet-5",
+        "--model",
+        "google/gemini-3.5-flash",
+        "--mode",
+        "auto",
+        "--mode",
+        "code",
+        "--task",
+        "edit-readback",
+        "--repetitions",
+        "1",
+        "--timeout",
+        "240",
+        "--thinking",
+        "off",
+        "--output-dir",
+        outputDir,
+      ];
+      try {
+        const result = await execFileAsync(process.execPath, args, {
+          cwd: process.cwd(),
+          encoding: "utf8",
+          env: process.env,
+          maxBuffer: 8 * 1024 * 1024,
+          timeout: 30 * 60 * 1000,
+        });
+        writeSync(2, result.stdout);
+        writeSync(2, result.stderr);
+      } catch (error) {
+        const commandError = error as Error & { stderr?: string; stdout?: string };
+        writeSync(2, commandError.stdout ?? "");
+        writeSync(2, commandError.stderr ?? "");
+        throw error;
+      }
+      const summary = JSON.parse(await readFile(`${outputDir}/summary.json`, "utf8")) as {
+        failed?: number;
+        passed?: number;
+        total?: number;
+      };
+      expect(summary).toMatchObject({ failed: 0, passed: 6, total: 6 });
+    },
+    35 * 60 * 1000,
   );
 });
 /* oxlint-disable max-lines -- TODO: split this grandfathered oversized file. */
