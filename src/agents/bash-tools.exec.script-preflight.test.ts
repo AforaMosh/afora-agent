@@ -12,8 +12,16 @@ import { detectUnsafeExecControlShellCommand } from "../infra/exec-control-comma
 import { withTempDir } from "../test-utils/temp-dir.js";
 import { createExecTool } from "./bash-tools.exec-run.js";
 
+const cancelUnusedApprovalMock = vi.hoisted(() => vi.fn(async () => undefined));
+const processGatewayAllowlistMock = vi.hoisted(() =>
+  vi.fn(async () => ({
+    allowWithoutEnforcedCommand: true,
+    cancelUnusedApproval: cancelUnusedApprovalMock,
+  })),
+);
+
 vi.mock("./bash-tools.exec-host-gateway.js", () => ({
-  processGatewayAllowlist: async () => ({ allowWithoutEnforcedCommand: true }),
+  processGatewayAllowlist: processGatewayAllowlistMock,
 }));
 
 vi.mock("./bash-tools.exec-host-node.js", () => ({
@@ -37,6 +45,12 @@ const runExecPreflight = (params: { command: string; workdir: string }) =>
 
 afterEach(() => {
   __setFsSafeTestHooksForTest();
+  cancelUnusedApprovalMock.mockClear();
+  processGatewayAllowlistMock.mockReset();
+  processGatewayAllowlistMock.mockResolvedValue({
+    allowWithoutEnforcedCommand: true,
+    cancelUnusedApproval: cancelUnusedApprovalMock,
+  });
 });
 
 async function expectSymlinkSwapDuringPreflightToAvoidErrors(params: {
@@ -120,6 +134,27 @@ describe("exec interactive OpenClaw channel login guard", () => {
 });
 
 describeNonWin("exec script preflight", () => {
+  it("cancels a foreground approval when the run aborts during lease handoff", async () => {
+    const controller = new AbortController();
+    const abortReason = new Error("run aborted");
+    processGatewayAllowlistMock.mockImplementationOnce(async () => {
+      controller.abort(abortReason);
+      return {
+        allowWithoutEnforcedCommand: true,
+        cancelUnusedApproval: cancelUnusedApprovalMock,
+      };
+    });
+
+    await expect(
+      createPreflightTool().execute(
+        "call-aborted-handoff",
+        { command: "pwd", workdir: process.cwd() },
+        controller.signal,
+      ),
+    ).rejects.toBe(abortReason);
+    expect(cancelUnusedApprovalMock).toHaveBeenCalledOnce();
+  });
+
   it("blocks shell env var injection tokens in python scripts before execution", async () => {
     await withTempDir("openclaw-exec-preflight-", async (tmp) => {
       const pyPath = path.join(tmp, "bad.py");
@@ -143,6 +178,7 @@ describeNonWin("exec script preflight", () => {
           workdir: tmp,
         }),
       ).rejects.toThrow(/exec preflight: detected likely shell variable injection \(\$DM_JSON\)/);
+      expect(cancelUnusedApprovalMock).toHaveBeenCalledOnce();
     });
   });
 

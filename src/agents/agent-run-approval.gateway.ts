@@ -1,5 +1,9 @@
 import { randomUUID } from "node:crypto";
-import { addTimerTimeoutGraceMs } from "@openclaw/normalization-core/number-coercion";
+import {
+  addTimerTimeoutGraceMs,
+  asDateTimestampMs,
+  resolveExpiresAtMsFromDurationMs,
+} from "@openclaw/normalization-core/number-coercion";
 import { ErrorCodes } from "../../packages/gateway-protocol/src/schema/error-codes.js";
 import type { CallGatewayOptions } from "../gateway/call.js";
 import { GatewayClientRequestError } from "../gateway/client.js";
@@ -8,10 +12,15 @@ import { formatErrorMessage } from "../infra/errors.js";
 import { DEFAULT_PLUGIN_APPROVAL_TIMEOUT_MS } from "../infra/plugin-approvals.js";
 import type {
   AgentRunApprovalHost,
+  AgentRunExecApprovalHost,
+  AgentRunExecApprovalLease,
   AgentRunPluginApprovalHost,
   AgentRunPluginApprovalResult,
 } from "./agent-run-approval.js";
-import { noAgentRunApprovalHost } from "./agent-run-approval.js";
+import {
+  AgentRunExecApprovalRunAbortedError,
+  noAgentRunApprovalHost,
+} from "./agent-run-approval.js";
 import { callGatewayTool } from "./tools/gateway.js";
 
 function resolveGatewayTimeoutMs(timeoutMs: number): number {
@@ -24,6 +33,171 @@ function readDecision(value: unknown): "allow-once" | "allow-always" | "deny" | 
     : value === null
       ? null
       : undefined;
+}
+
+function readExecRegistration(
+  value: unknown,
+  fallbackId: string,
+  timeoutMs: number,
+): Pick<AgentRunExecApprovalLease, "id" | "expiresAtMs" | "finalDecision"> {
+  const result = value && typeof value === "object" ? value : {};
+  const responseId = (result as { id?: unknown }).id;
+  if (typeof responseId === "string" && responseId !== fallbackId) {
+    throw new Error("Exec approval registration returned a mismatched approval id.");
+  }
+  const id = fallbackId;
+  const localExpiresAtMs = resolveExpiresAtMsFromDurationMs(timeoutMs) ?? 0;
+  const remoteExpiresAtMs = asDateTimestampMs((result as { expiresAtMs?: unknown }).expiresAtMs);
+  const expiresAtMs =
+    remoteExpiresAtMs === undefined
+      ? localExpiresAtMs
+      : Math.min(remoteExpiresAtMs, localExpiresAtMs);
+  if (!Object.hasOwn(result, "decision")) {
+    return { id, expiresAtMs };
+  }
+  const decision = readDecision((result as { decision?: unknown }).decision);
+  if (decision === undefined) {
+    throw new Error("Exec approval returned an invalid decision.");
+  }
+  return { id, expiresAtMs, finalDecision: decision };
+}
+
+function createGatewayExecApprovalHost(
+  approvalReviewerDeviceIds: readonly string[],
+  runtimeInstanceId: string,
+): AgentRunExecApprovalHost {
+  const cancelExecApproval = async (id: string, timeoutMs: number, bestEffort = false) => {
+    try {
+      await callGatewayTool(
+        "exec.approval.cancel",
+        { timeoutMs: 10_000 },
+        { id, timeoutMs },
+        { instanceId: runtimeInstanceId },
+      );
+    } catch (error) {
+      if (!bestEffort) {
+        throw error;
+      }
+    }
+  };
+  const throwIfRegisteredExecApprovalAborted = async (
+    id: string,
+    timeoutMs: number,
+    signal: AbortSignal | undefined,
+  ) => {
+    if (!signal?.aborted) {
+      return;
+    }
+    await cancelExecApproval(id, timeoutMs, true);
+    throw signal.reason ?? new Error("exec approval request aborted");
+  };
+  return Object.freeze({
+    supportsDetachedExecution: true,
+    request: async ({ request, timeoutMs, signal }) => {
+      signal?.throwIfAborted();
+      let result: unknown;
+      try {
+        result = await callGatewayTool(
+          "exec.approval.request",
+          { timeoutMs: resolveGatewayTimeoutMs(timeoutMs) },
+          {
+            ...request,
+            ...(approvalReviewerDeviceIds.length ? { approvalReviewerDeviceIds } : {}),
+            timeoutMs,
+            twoPhase: true,
+          },
+          {
+            expectFinal: false,
+            signal,
+            instanceId: runtimeInstanceId,
+            onSignalAbort: (requestGateway) =>
+              requestGateway("exec.approval.cancel", { id: request.id, timeoutMs }),
+          },
+        );
+      } catch (error) {
+        await cancelExecApproval(request.id, timeoutMs, true);
+        throw error;
+      }
+      let registration: Pick<AgentRunExecApprovalLease, "id" | "expiresAtMs" | "finalDecision">;
+      try {
+        registration = readExecRegistration(result, request.id, timeoutMs);
+      } catch (error) {
+        await cancelExecApproval(request.id, timeoutMs, true);
+        throw error;
+      }
+      const remainingTimeoutMs = () => Math.max(1, registration.expiresAtMs - Date.now());
+      await throwIfRegisteredExecApprovalAborted(registration.id, remainingTimeoutMs(), signal);
+      return Object.freeze<AgentRunExecApprovalLease>({
+        ...registration,
+        wait: async (waitParams) => {
+          await throwIfRegisteredExecApprovalAborted(
+            registration.id,
+            remainingTimeoutMs(),
+            waitParams?.signal,
+          );
+          try {
+            const waitResult = await callGatewayTool<{
+              id?: unknown;
+              decision?: unknown;
+              terminalReason?: unknown;
+            }>(
+              "exec.approval.waitDecision",
+              {
+                timeoutMs: resolveGatewayTimeoutMs(
+                  Math.max(0, registration.expiresAtMs - Date.now()),
+                ),
+              },
+              { id: registration.id },
+              {
+                signal: waitParams?.signal,
+                instanceId: runtimeInstanceId,
+                onSignalAbort: (requestGateway) =>
+                  requestGateway("exec.approval.cancel", {
+                    id: registration.id,
+                    timeoutMs: remainingTimeoutMs(),
+                  }),
+              },
+            );
+            await throwIfRegisteredExecApprovalAborted(
+              registration.id,
+              remainingTimeoutMs(),
+              waitParams?.signal,
+            );
+            if (waitResult?.id !== registration.id) {
+              throw new Error("Exec approval wait returned a mismatched approval id.");
+            }
+            if (waitResult?.terminalReason === "run-aborted") {
+              throw new AgentRunExecApprovalRunAbortedError();
+            }
+            const decision = readDecision(waitResult?.decision);
+            if (decision === undefined && waitResult) {
+              throw new Error("Exec approval returned an invalid decision.");
+            }
+            return decision ?? null;
+          } catch (error) {
+            if (isApprovalNotFoundError(error)) {
+              return null;
+            }
+            await cancelExecApproval(registration.id, remainingTimeoutMs(), true);
+            throw error;
+          }
+        },
+        resolveAutoReview: async () => {
+          await callGatewayTool(
+            "exec.approval.resolve",
+            { timeoutMs: 15_000 },
+            { id: registration.id, decision: "allow-once" },
+            {
+              scopes: ["operator.approvals"],
+              requireAgentRuntimeIdentity: true,
+              instanceId: runtimeInstanceId,
+            },
+          );
+        },
+        cancel: () => cancelExecApproval(registration.id, remainingTimeoutMs()),
+      });
+    },
+  });
 }
 
 function isGatewayInvalidRequestError(error: unknown): boolean {
@@ -147,10 +321,13 @@ async function requestGatewayPluginApproval(
       expectFinal: false,
       signal: params.signal,
       instanceId: runtimeInstanceId,
-      onSignalAbort: (request: Parameters<NonNullable<CallGatewayOptions["onSignalAbort"]>>[0]) =>
-        request("plugin.approval.cancel", {
+      onSignalAbort: async (
+        request: Parameters<NonNullable<CallGatewayOptions["onSignalAbort"]>>[0],
+      ) => {
+        await request("plugin.approval.cancel", {
           runtimeRequestId,
-        }),
+        });
+      },
     };
     try {
       requestResult = await callGatewayTool<{
@@ -285,6 +462,7 @@ export function createGatewayAgentRunApprovalHost(options?: {
   ]);
   const runtimeInstanceId = options?.runtimeInstanceId?.trim() || randomUUID();
   return Object.freeze({
+    exec: createGatewayExecApprovalHost(approvalReviewerDeviceIds, runtimeInstanceId),
     plugin: Object.freeze<AgentRunPluginApprovalHost>({
       request: (params) =>
         requestGatewayPluginApproval(params, approvalReviewerDeviceIds, runtimeInstanceId),

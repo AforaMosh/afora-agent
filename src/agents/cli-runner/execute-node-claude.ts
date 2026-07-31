@@ -257,6 +257,7 @@ export async function executeNodeClaudeRun(params: {
       const approvalId = crypto.randomUUID();
       const registration = await waitForNodeOperation({
         operation: params.deps.registerExecApprovalRequestForHostOrThrow({
+          approvalHost: contextParams.approvalHost,
           approvalId,
           command: approval.systemRunPlan.commandText,
           commandArgv: approval.systemRunPlan.argv,
@@ -269,21 +270,31 @@ export async function executeNodeClaudeRun(params: {
           unavailableDecisions: ["allow-always"],
           agentId: contextParams.agentId,
           sessionKey: contextParams.sessionKey,
-          ...(contextParams.approvalReviewerDeviceId
-            ? { approvalReviewerDeviceIds: [contextParams.approvalReviewerDeviceId] }
-            : {}),
+          signal: nodeAbortController.signal,
         }),
         signal: nodeAbortController.signal,
       });
       const decision = await waitForNodeOperation({
         operation: params.deps.resolveRegisteredExecApprovalDecision({
-          approvalId: registration.id,
+          approval: registration,
           preResolvedDecision: registration.finalDecision,
+          signal: nodeAbortController.signal,
         }),
         signal: nodeAbortController.signal,
       });
       if (decision === "allow-once" || decision === "allow-always") {
-        nodeResult = await invokeNode({ decision, plan: approval.systemRunPlan });
+        let dispatchSucceeded = false;
+        try {
+          nodeResult = await invokeNode({ decision, plan: approval.systemRunPlan });
+          if (nodeResult.ok) {
+            parseNodeClaudeResultPayload(nodeResult);
+            dispatchSucceeded = true;
+          }
+        } finally {
+          if (!dispatchSucceeded) {
+            await registration.cancel().catch(() => undefined);
+          }
+        }
       } else {
         nodeResult = {
           ok: false,

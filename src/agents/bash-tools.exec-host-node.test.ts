@@ -14,6 +14,11 @@ import type { ExecuteNodeHostCommandParams } from "./bash-tools.exec-host-node.t
 
 type StrictInlineEvalBoundary =
   typeof import("./bash-tools.exec-host-shared.js").enforceStrictInlineEvalApprovalBoundary;
+type RegisterExecApprovalRequest =
+  typeof import("./bash-tools.exec-approval-request.js").registerExecApprovalRequestForHostOrThrow;
+type DefaultExecApprovalRegister = Parameters<
+  typeof import("./bash-tools.exec-host-shared.js").createAndRegisterDefaultExecApprovalRequest
+>[0]["register"];
 type ExecAutoReviewer = typeof import("../infra/exec-auto-review.js").defaultExecAutoReviewer;
 type ExecAutoReviewDecision = Awaited<ReturnType<ExecAutoReviewer>>;
 type ExecAsk = import("../infra/exec-approvals.js").ExecAsk;
@@ -220,8 +225,17 @@ const enforceStrictInlineEvalApprovalBoundaryMock = vi.hoisted(() =>
   })),
 );
 const registerExecApprovalRequestForHostOrThrowMock = vi.hoisted(() =>
-  vi.fn(async () => undefined),
+  vi.fn<RegisterExecApprovalRequest>(),
 );
+const resolveAutoReviewApprovalMock = vi.hoisted(() => vi.fn());
+const cancelApprovalLeaseMock = vi.hoisted(() => vi.fn(async () => undefined));
+const createApprovalLease = (id: string) => ({
+  id,
+  expiresAtMs: Date.now() + 60_000,
+  wait: vi.fn(),
+  resolveAutoReview: resolveAutoReviewApprovalMock,
+  cancel: cancelApprovalLeaseMock,
+});
 const detectInterpreterInlineEvalArgvMock = vi.hoisted(() =>
   vi.fn(
     (): {
@@ -347,6 +361,12 @@ function createNodeHostRequest(
     defaultTimeoutSec: 30,
     approvalRunningNoticeMs: 0,
     warnings: [],
+    approvalHost: {
+      exec: {
+        supportsDetachedExecution: true,
+        request: vi.fn(),
+      },
+    } as never,
     agentId: "requested-agent",
     sessionKey: "requested-session",
     ...overrides,
@@ -634,10 +654,11 @@ describe("executeNodeHostCommand", () => {
     createAndRegisterDefaultExecApprovalRequestMock.mockImplementation(async (args?: unknown) => {
       const register =
         args && typeof args === "object" && "register" in args
-          ? (args as { register?: (approvalId: string) => Promise<void> }).register
+          ? (args as { register?: DefaultExecApprovalRegister }).register
           : undefined;
-      await register?.("approval-1");
+      const approval = (await register?.("approval-1")) ?? createApprovalLease("approval-1");
       return {
+        approval,
         approvalId: "approval-1",
         approvalSlug: "slug-1",
         warningText: "",
@@ -672,6 +693,16 @@ describe("executeNodeHostCommand", () => {
     detectInterpreterInlineEvalArgvMock.mockReset();
     detectInterpreterInlineEvalArgvMock.mockReturnValue(null);
     registerExecApprovalRequestForHostOrThrowMock.mockReset();
+    resolveAutoReviewApprovalMock.mockReset();
+    cancelApprovalLeaseMock.mockReset();
+    cancelApprovalLeaseMock.mockResolvedValue(undefined);
+    registerExecApprovalRequestForHostOrThrowMock.mockImplementation(async (params) =>
+      createApprovalLease(
+        params && typeof params === "object" && "approvalId" in params
+          ? params.approvalId
+          : "approval-1",
+      ),
+    );
   });
 
   it("returns outcome-unknown for an ambiguous direct node timeout", async () => {
@@ -776,7 +807,8 @@ describe("executeNodeHostCommand", () => {
       },
     });
     expect(createAndRegisterDefaultExecApprovalRequestMock).not.toHaveBeenCalled();
-    expect(callGatewayToolMock).toHaveBeenCalledTimes(4);
+    expect(resolveAutoReviewApprovalMock).toHaveBeenCalledOnce();
+    expect(callGatewayToolMock).toHaveBeenCalledTimes(3);
   });
 
   it("denies non-interactive approval requests without creating operator events", async () => {
@@ -1007,6 +1039,38 @@ describe("executeNodeHostCommand", () => {
     ).toBe(false);
   });
 
+  it("does not report a rejected detached approval after an ordinary run abort", async () => {
+    const abortController = new AbortController();
+    const abortReason = new Error("run aborted before approval wait rejected");
+    resolveApprovalDecisionOrUndefinedMock.mockImplementationOnce(async () => {
+      abortController.abort(abortReason);
+      throw abortReason;
+    });
+    resolveExecHostApprovalContextMock.mockReturnValue({
+      approvals: { allowlist: [], file: { version: 1, agents: {} } },
+      hostSecurity: "full",
+      hostAsk: "always",
+      askFallback: "deny",
+    });
+
+    const result = await executeNodeHostCommand(
+      createNodeHostRequest({
+        signal: abortController.signal,
+      }),
+    );
+
+    expect(result.details?.status).toBe("approval-pending");
+    await setImmediate();
+    expect(sendExecApprovalFollowupResultMock).not.toHaveBeenCalled();
+    expect(
+      callGatewayToolMock.mock.calls.some(
+        ([method, , params]) =>
+          method === "node.invoke" &&
+          (params as MockNodeInvokeParams | undefined)?.command === "system.run",
+      ),
+    ).toBe(false);
+  });
+
   it("never reports a completed detached node command as denied when delivery fails", async () => {
     const unhandledRejections = captureProcessUnhandledRejections();
 
@@ -1066,6 +1130,7 @@ describe("executeNodeHostCommand", () => {
 
     expect(createExecApprovalDecisionStateMock).not.toHaveBeenCalled();
     expect(sendExecApprovalFollowupResultMock).not.toHaveBeenCalled();
+    expect(cancelApprovalLeaseMock).toHaveBeenCalledOnce();
     expect(
       callGatewayToolMock.mock.calls.some(
         ([method, , params]) =>
@@ -1108,6 +1173,7 @@ describe("executeNodeHostCommand", () => {
     await setImmediate();
 
     expect(sendExecApprovalFollowupResultMock).not.toHaveBeenCalled();
+    expect(cancelApprovalLeaseMock).toHaveBeenCalledOnce();
     expect(
       callGatewayToolMock.mock.calls.some(
         ([method, , params]) =>
@@ -1270,6 +1336,7 @@ describe("executeNodeHostCommand", () => {
 
       expect(unhandledRejections.reasons).toEqual([]);
       expect(sendExecApprovalFollowupResultMock).not.toHaveBeenCalled();
+      expect(cancelApprovalLeaseMock).toHaveBeenCalledOnce();
     } finally {
       unhandledRejections.restore();
     }
@@ -1819,12 +1886,7 @@ describe("executeNodeHostCommand", () => {
         suppressDelivery: true,
       }),
     );
-    expect(callGatewayToolMock).toHaveBeenCalledWith(
-      "exec.approval.resolve",
-      { timeoutMs: 15_000 },
-      { id: expect.any(String), decision: "allow-once" },
-      { scopes: ["operator.approvals"], requireAgentRuntimeIdentity: true },
-    );
+    expect(resolveAutoReviewApprovalMock).toHaveBeenCalledOnce();
   });
 
   it("does not invoke the node after cancellation wins during auto-review", async () => {

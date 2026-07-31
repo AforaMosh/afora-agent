@@ -6,7 +6,11 @@ import {
   gatewayAgentRunApprovalHost,
   resolveGatewayAgentRunApprovalHost,
 } from "./agent-run-approval.gateway.js";
-import { noAgentRunApprovalHost } from "./agent-run-approval.js";
+import {
+  AgentRunExecApprovalRunAbortedError,
+  noAgentRunApprovalHost,
+} from "./agent-run-approval.js";
+import { DEFAULT_APPROVAL_TIMEOUT_MS } from "./bash-tools.exec-runtime.js";
 import { callGatewayTool } from "./tools/gateway.js";
 
 vi.mock("./tools/gateway.js", () => ({
@@ -59,6 +63,19 @@ function requestPayload() {
   };
 }
 
+function execRequestPayload() {
+  return {
+    id: "exec-approval-1",
+    command: "echo hi",
+    cwd: "/tmp",
+    host: "gateway" as const,
+    security: "allowlist" as const,
+    ask: "on-miss" as const,
+    runId: "run-1",
+    toolCallId: "tool-1",
+  };
+}
+
 describe("gatewayAgentRunApprovalHost", () => {
   beforeEach(() => {
     mockCallGatewayTool.mockReset();
@@ -100,6 +117,347 @@ describe("gatewayAgentRunApprovalHost", () => {
         instanceId: "approval-runtime-1",
         onSignalAbort: expect.any(Function),
       },
+    );
+  });
+
+  it("adapts exec registration and reviewer selection onto the Gateway wire", async () => {
+    const host = createGatewayAgentRunApprovalHost({
+      approvalReviewerDeviceIds: ["device-1"],
+      runtimeInstanceId: "approval-runtime-1",
+    });
+    const expiresAtMs = Date.now() + 120_000;
+    mockCallGatewayTool.mockResolvedValueOnce({
+      id: "exec-approval-1",
+      expiresAtMs,
+      decision: "allow-once",
+    });
+
+    await expect(
+      host.exec!.request({
+        request: execRequestPayload(),
+        timeoutMs: DEFAULT_APPROVAL_TIMEOUT_MS,
+      }),
+    ).resolves.toMatchObject({
+      id: "exec-approval-1",
+      expiresAtMs,
+      finalDecision: "allow-once",
+      wait: expect.any(Function),
+      resolveAutoReview: expect.any(Function),
+      cancel: expect.any(Function),
+    });
+    expect(mockCallGatewayTool).toHaveBeenCalledWith(
+      "exec.approval.request",
+      { timeoutMs: DEFAULT_APPROVAL_TIMEOUT_MS + 10_000 },
+      {
+        ...execRequestPayload(),
+        approvalReviewerDeviceIds: ["device-1"],
+        timeoutMs: DEFAULT_APPROVAL_TIMEOUT_MS,
+        twoPhase: true,
+      },
+      {
+        expectFinal: false,
+        signal: undefined,
+        instanceId: "approval-runtime-1",
+        onSignalAbort: expect.any(Function),
+      },
+    );
+  });
+
+  it("keeps exec lease cancellation and auto-review bound to the runtime instance", async () => {
+    const host = createGatewayAgentRunApprovalHost({
+      runtimeInstanceId: "approval-runtime-1",
+    });
+    mockCallGatewayTool
+      .mockResolvedValueOnce({ id: "exec-approval-1" })
+      .mockResolvedValueOnce({ id: "exec-approval-1", decision: "deny" })
+      .mockResolvedValue({ ok: true });
+
+    const lease = await host.exec!.request({
+      request: execRequestPayload(),
+      timeoutMs: DEFAULT_APPROVAL_TIMEOUT_MS,
+    });
+    const registrationAbortRequest = vi.fn().mockResolvedValue({ ok: true });
+    await mockCallGatewayTool.mock.calls[0]?.[3]?.onSignalAbort?.(registrationAbortRequest);
+    expect(registrationAbortRequest).toHaveBeenCalledWith("exec.approval.cancel", {
+      id: "exec-approval-1",
+      timeoutMs: DEFAULT_APPROVAL_TIMEOUT_MS,
+    });
+
+    await expect(lease.wait()).resolves.toBe("deny");
+    const waitAbortRequest = vi.fn().mockResolvedValue({ ok: true });
+    await mockCallGatewayTool.mock.calls[1]?.[3]?.onSignalAbort?.(waitAbortRequest);
+    expect(waitAbortRequest).toHaveBeenCalledWith("exec.approval.cancel", {
+      id: "exec-approval-1",
+      timeoutMs: expect.any(Number),
+    });
+
+    await lease.resolveAutoReview();
+    await lease.cancel();
+    expect(mockCallGatewayTool).toHaveBeenNthCalledWith(
+      3,
+      "exec.approval.resolve",
+      { timeoutMs: 15_000 },
+      { id: "exec-approval-1", decision: "allow-once" },
+      {
+        scopes: ["operator.approvals"],
+        requireAgentRuntimeIdentity: true,
+        instanceId: "approval-runtime-1",
+      },
+    );
+    expect(mockCallGatewayTool).toHaveBeenNthCalledWith(
+      4,
+      "exec.approval.cancel",
+      { timeoutMs: 10_000 },
+      { id: "exec-approval-1", timeoutMs: expect.any(Number) },
+      { instanceId: "approval-runtime-1" },
+    );
+  });
+
+  it("cancels an exec approval when the run aborts after registration", async () => {
+    const controller = new AbortController();
+    const abortReason = new Error("run aborted");
+    const host = createGatewayAgentRunApprovalHost({
+      runtimeInstanceId: "approval-runtime-1",
+    });
+    mockCallGatewayTool
+      .mockImplementationOnce(async () => {
+        controller.abort(abortReason);
+        return { id: "exec-approval-1", decision: "allow-once" };
+      })
+      .mockResolvedValueOnce({ ok: true, cancelled: 1 });
+
+    await expect(
+      host.exec!.request({
+        request: execRequestPayload(),
+        timeoutMs: DEFAULT_APPROVAL_TIMEOUT_MS,
+        signal: controller.signal,
+      }),
+    ).rejects.toBe(abortReason);
+    expect(mockCallGatewayTool).toHaveBeenNthCalledWith(
+      2,
+      "exec.approval.cancel",
+      { timeoutMs: 10_000 },
+      { id: "exec-approval-1", timeoutMs: DEFAULT_APPROVAL_TIMEOUT_MS },
+      { instanceId: "approval-runtime-1" },
+    );
+  });
+
+  it("cancels the requested exec approval after an ambiguous registration failure", async () => {
+    const host = createGatewayAgentRunApprovalHost({
+      runtimeInstanceId: "approval-runtime-1",
+    });
+    const transportError = new Error("gateway connection lost");
+    mockCallGatewayTool
+      .mockRejectedValueOnce(transportError)
+      .mockResolvedValueOnce({ ok: true, cancelled: 1 });
+
+    await expect(
+      host.exec!.request({
+        request: execRequestPayload(),
+        timeoutMs: DEFAULT_APPROVAL_TIMEOUT_MS,
+      }),
+    ).rejects.toBe(transportError);
+    expect(mockCallGatewayTool).toHaveBeenNthCalledWith(
+      2,
+      "exec.approval.cancel",
+      { timeoutMs: 10_000 },
+      { id: "exec-approval-1", timeoutMs: DEFAULT_APPROVAL_TIMEOUT_MS },
+      { instanceId: "approval-runtime-1" },
+    );
+  });
+
+  it("rejects a mismatched exec registration id and cancels the requested lease", async () => {
+    const host = createGatewayAgentRunApprovalHost({
+      runtimeInstanceId: "approval-runtime-1",
+    });
+    mockCallGatewayTool
+      .mockResolvedValueOnce({ id: "different-approval" })
+      .mockResolvedValueOnce({ ok: true, cancelled: 1 });
+
+    await expect(
+      host.exec!.request({
+        request: execRequestPayload(),
+        timeoutMs: DEFAULT_APPROVAL_TIMEOUT_MS,
+      }),
+    ).rejects.toThrow("mismatched approval id");
+    expect(mockCallGatewayTool).toHaveBeenNthCalledWith(
+      2,
+      "exec.approval.cancel",
+      { timeoutMs: 10_000 },
+      { id: "exec-approval-1", timeoutMs: DEFAULT_APPROVAL_TIMEOUT_MS },
+      { instanceId: "approval-runtime-1" },
+    );
+  });
+
+  it("cancels a registered exec approval before an already-aborted wait", async () => {
+    const controller = new AbortController();
+    const abortReason = new Error("run aborted");
+    const host = createGatewayAgentRunApprovalHost({
+      runtimeInstanceId: "approval-runtime-1",
+    });
+    mockCallGatewayTool
+      .mockResolvedValueOnce({ id: "exec-approval-1" })
+      .mockResolvedValueOnce({ ok: true, cancelled: 1 });
+    const lease = await host.exec!.request({
+      request: execRequestPayload(),
+      timeoutMs: DEFAULT_APPROVAL_TIMEOUT_MS,
+    });
+    controller.abort(abortReason);
+
+    await expect(lease.wait({ signal: controller.signal })).rejects.toBe(abortReason);
+    expect(mockCallGatewayTool).toHaveBeenNthCalledWith(
+      2,
+      "exec.approval.cancel",
+      { timeoutMs: 10_000 },
+      { id: "exec-approval-1", timeoutMs: expect.any(Number) },
+      { instanceId: "approval-runtime-1" },
+    );
+  });
+
+  it("bounds missing, invalid, and overly distant exec registration expiries", async () => {
+    const host = createGatewayAgentRunApprovalHost();
+    const nowMs = 1_800_000_000_000;
+    const requestedTimeoutMs = 5_000;
+    const dateNow = vi.spyOn(Date, "now").mockReturnValue(nowMs);
+    mockCallGatewayTool
+      .mockResolvedValueOnce({ id: "exec-approval-1" })
+      .mockResolvedValueOnce({ id: "exec-approval-1", expiresAtMs: Number.MAX_VALUE })
+      .mockResolvedValueOnce({
+        id: "exec-approval-1",
+        expiresAtMs: nowMs + requestedTimeoutMs + 60_000,
+      });
+
+    try {
+      await expect(
+        host.exec!.request({
+          request: execRequestPayload(),
+          timeoutMs: requestedTimeoutMs,
+        }),
+      ).resolves.toMatchObject({ expiresAtMs: nowMs + requestedTimeoutMs });
+      await expect(
+        host.exec!.request({
+          request: execRequestPayload(),
+          timeoutMs: requestedTimeoutMs,
+        }),
+      ).resolves.toMatchObject({ expiresAtMs: nowMs + requestedTimeoutMs });
+      await expect(
+        host.exec!.request({
+          request: execRequestPayload(),
+          timeoutMs: requestedTimeoutMs,
+        }),
+      ).resolves.toMatchObject({ expiresAtMs: nowMs + requestedTimeoutMs });
+      expect(mockCallGatewayTool).toHaveBeenNthCalledWith(
+        1,
+        "exec.approval.request",
+        { timeoutMs: requestedTimeoutMs + 10_000 },
+        expect.objectContaining({ timeoutMs: requestedTimeoutMs }),
+        expect.any(Object),
+      );
+    } finally {
+      dateNow.mockRestore();
+    }
+  });
+
+  it("bounds exec decision waits to the remaining registration lifetime", async () => {
+    const host = createGatewayAgentRunApprovalHost();
+    const nowMs = 1_800_000_000_000;
+    const dateNow = vi.spyOn(Date, "now").mockReturnValue(nowMs);
+    mockCallGatewayTool
+      .mockResolvedValueOnce({ id: "exec-approval-1", expiresAtMs: nowMs + 2_000 })
+      .mockResolvedValueOnce({ id: "exec-approval-1", decision: "allow-once" });
+
+    try {
+      const lease = await host.exec!.request({
+        request: execRequestPayload(),
+        timeoutMs: 5_000,
+      });
+      await expect(lease.wait()).resolves.toBe("allow-once");
+      expect(mockCallGatewayTool).toHaveBeenNthCalledWith(
+        2,
+        "exec.approval.waitDecision",
+        { timeoutMs: 12_000 },
+        { id: "exec-approval-1" },
+        expect.any(Object),
+      );
+    } finally {
+      dateNow.mockRestore();
+    }
+  });
+
+  it("maps Gateway exec wait outcomes without hiding run cancellation", async () => {
+    const host = createGatewayAgentRunApprovalHost({
+      runtimeInstanceId: "approval-runtime-1",
+    });
+    mockCallGatewayTool
+      .mockResolvedValueOnce({ id: "exec-approval-1" })
+      .mockResolvedValueOnce({ id: "exec-aborted" })
+      .mockResolvedValueOnce({
+        id: "exec-approval-1",
+        decision: null,
+        terminalReason: "timeout",
+      })
+      .mockResolvedValueOnce({
+        id: "exec-aborted",
+        decision: null,
+        terminalReason: "run-aborted",
+      });
+    const timeoutLease = await host.exec!.request({
+      request: execRequestPayload(),
+      timeoutMs: DEFAULT_APPROVAL_TIMEOUT_MS,
+    });
+    const abortedLease = await host.exec!.request({
+      request: { ...execRequestPayload(), id: "exec-aborted" },
+      timeoutMs: DEFAULT_APPROVAL_TIMEOUT_MS,
+    });
+
+    await expect(timeoutLease.wait()).resolves.toBeNull();
+    await expect(abortedLease.wait()).rejects.toBeInstanceOf(AgentRunExecApprovalRunAbortedError);
+  });
+
+  it("cancels an exec approval when decision waiting loses the Gateway transport", async () => {
+    const host = createGatewayAgentRunApprovalHost({
+      runtimeInstanceId: "approval-runtime-1",
+    });
+    const transportError = new Error("gateway connection lost");
+    mockCallGatewayTool
+      .mockResolvedValueOnce({ id: "exec-approval-1" })
+      .mockRejectedValueOnce(transportError)
+      .mockResolvedValueOnce({ ok: true, cancelled: 1 });
+
+    const lease = await host.exec!.request({
+      request: execRequestPayload(),
+      timeoutMs: DEFAULT_APPROVAL_TIMEOUT_MS,
+    });
+    await expect(lease.wait()).rejects.toBe(transportError);
+    expect(mockCallGatewayTool).toHaveBeenNthCalledWith(
+      3,
+      "exec.approval.cancel",
+      { timeoutMs: 10_000 },
+      { id: "exec-approval-1", timeoutMs: expect.any(Number) },
+      { instanceId: "approval-runtime-1" },
+    );
+  });
+
+  it("rejects a mismatched exec wait id and cancels the registered lease", async () => {
+    const host = createGatewayAgentRunApprovalHost({
+      runtimeInstanceId: "approval-runtime-1",
+    });
+    mockCallGatewayTool
+      .mockResolvedValueOnce({ id: "exec-approval-1" })
+      .mockResolvedValueOnce({ id: "different-approval", decision: "allow-once" })
+      .mockResolvedValueOnce({ ok: true, cancelled: 1 });
+
+    const lease = await host.exec!.request({
+      request: execRequestPayload(),
+      timeoutMs: DEFAULT_APPROVAL_TIMEOUT_MS,
+    });
+    await expect(lease.wait()).rejects.toThrow("mismatched approval id");
+    expect(mockCallGatewayTool).toHaveBeenNthCalledWith(
+      3,
+      "exec.approval.cancel",
+      { timeoutMs: 10_000 },
+      { id: "exec-approval-1", timeoutMs: expect.any(Number) },
+      { instanceId: "approval-runtime-1" },
     );
   });
 

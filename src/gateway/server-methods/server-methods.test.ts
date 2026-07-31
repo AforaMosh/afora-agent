@@ -2557,6 +2557,7 @@ describe("exec approval handlers", () => {
   const execApprovalNoop = () => false;
   type ExecApprovalHandlers = ReturnType<typeof createExecApprovalHandlers>;
   type ExecApprovalGetArgs = Parameters<ExecApprovalHandlers["exec.approval.get"]>[0];
+  type ExecApprovalCancelArgs = Parameters<ExecApprovalHandlers["exec.approval.cancel"]>[0];
   type ExecApprovalRequestArgs = Parameters<ExecApprovalHandlers["exec.approval.request"]>[0];
   type ExecApprovalResolveArgs = Parameters<ExecApprovalHandlers["exec.approval.resolve"]>[0];
   type ExecApprovalWaitArgs = Parameters<ExecApprovalHandlers["exec.approval.waitDecision"]>[0];
@@ -2580,6 +2581,7 @@ describe("exec approval handlers", () => {
   function createExecApprovalClient(params: {
     connId: string;
     clientId: string;
+    instanceId?: string;
     deviceId?: string;
     scopes?: string[];
     approvalRuntime?: boolean;
@@ -2596,7 +2598,7 @@ describe("exec approval handlers", () => {
     return {
       connId: params.connId,
       connect: {
-        client: { id: params.clientId },
+        client: { id: params.clientId, instanceId: params.instanceId },
         device: params.deviceId ? { id: params.deviceId } : undefined,
         scopes: params.scopes,
       },
@@ -2714,6 +2716,30 @@ describe("exec approval handlers", () => {
     });
   }
 
+  async function cancelExecApproval(params: {
+    handlers: ExecApprovalHandlers;
+    id: string;
+    timeoutMs?: number;
+    respond: ReturnType<typeof vi.fn>;
+    context: object;
+    client?: ExecApprovalCancelArgs["client"];
+  }) {
+    return expectDefined(
+      params.handlers["exec.approval.cancel"],
+      'params.handlers["exec.approval.cancel"] test invariant',
+    )({
+      params: {
+        id: params.id,
+        ...(params.timeoutMs === undefined ? {} : { timeoutMs: params.timeoutMs }),
+      } as ExecApprovalCancelArgs["params"],
+      respond: params.respond as unknown as ExecApprovalCancelArgs["respond"],
+      context: params.context as ExecApprovalCancelArgs["context"],
+      client: params.client ?? null,
+      req: { id: "req-cancel", type: "req", method: "exec.approval.cancel" },
+      isWebchatConnect: execApprovalNoop,
+    });
+  }
+
   async function resolveExecApproval(params: {
     handlers: ExecApprovalHandlers;
     id: string;
@@ -2789,6 +2815,425 @@ describe("exec approval handlers", () => {
       request: payload.request ?? {},
     };
   }
+
+  it("rejects an exec approval whose exact id was cancelled before registration", async () => {
+    const { manager, handlers, broadcasts, context } = createExecApprovalFixture();
+    const client = createExecApprovalClient({
+      connId: "conn-runtime",
+      clientId: "runtime-client",
+      instanceId: "runtime-instance",
+      approvalRuntime: true,
+    });
+    const cancelRespond = vi.fn();
+    await cancelExecApproval({
+      handlers,
+      id: "approval-cancel-before-register",
+      respond: cancelRespond,
+      context,
+      client,
+    });
+    expect(cancelRespond).toHaveBeenCalledWith(true, { ok: true, cancelled: 0 }, undefined);
+
+    const requestRespond = vi.fn();
+    await requestExecApproval({
+      handlers,
+      respond: requestRespond,
+      context,
+      client,
+      params: {
+        id: "approval-cancel-before-register",
+        twoPhase: true,
+        host: "gateway",
+        nodeId: undefined,
+        systemRunPlan: undefined,
+      },
+    });
+
+    expect(mockCallArg(requestRespond)).toBe(false);
+    expectRecordFields(mockCallArg(requestRespond, 0, 2), {
+      code: "UNAVAILABLE",
+      message: "exec approval request cancelled",
+    });
+    expect(manager.getSnapshot("approval-cancel-before-register")).toBeNull();
+    expect(broadcasts).toHaveLength(0);
+  });
+
+  it("rejects unsafe cancellation ids before retaining tombstones", async () => {
+    const { manager, handlers, context } = createExecApprovalFixture();
+    const respond = vi.fn();
+    await cancelExecApproval({
+      handlers,
+      id: "x".repeat(129),
+      respond,
+      context,
+      client: createExecApprovalClient({
+        connId: "conn-runtime",
+        clientId: "runtime-client",
+        instanceId: "runtime-instance",
+        approvalRuntime: true,
+      }),
+    });
+
+    expect(mockCallArg(respond)).toBe(false);
+    expectRecordFields(mockCallArg(respond, 0, 2), {
+      code: "INVALID_REQUEST",
+      message: expect.stringContaining("approval id must be 1-128 characters"),
+    });
+    expect(manager.listPendingRecords()).toHaveLength(0);
+  });
+
+  it("keeps cancellation tombstones for the requested approval lifetime", async () => {
+    const nowMs = 1_800_000_000_000;
+    const dateNow = vi.spyOn(Date, "now").mockReturnValue(nowMs);
+    const { manager, handlers, broadcasts, context } = createExecApprovalFixture();
+    const client = createExecApprovalClient({
+      connId: "conn-runtime",
+      clientId: "runtime-client",
+      instanceId: "runtime-instance",
+      approvalRuntime: true,
+    });
+
+    try {
+      await cancelExecApproval({
+        handlers,
+        id: "approval-long-cancel",
+        timeoutMs: 3_600_000,
+        respond: vi.fn(),
+        context,
+        client,
+      });
+      dateNow.mockReturnValue(nowMs + 2_000_000);
+
+      const requestRespond = vi.fn();
+      await requestExecApproval({
+        handlers,
+        respond: requestRespond,
+        context,
+        client,
+        params: {
+          id: "approval-long-cancel",
+          twoPhase: true,
+          host: "gateway",
+          nodeId: undefined,
+          systemRunPlan: undefined,
+        },
+      });
+
+      expect(mockCallArg(requestRespond)).toBe(false);
+      expectRecordFields(mockCallArg(requestRespond, 0, 2), {
+        code: "UNAVAILABLE",
+        message: "exec approval request cancelled",
+      });
+      expect(manager.getSnapshot("approval-long-cancel")).toBeNull();
+      expect(broadcasts).toHaveLength(0);
+    } finally {
+      dateNow.mockRestore();
+    }
+  });
+
+  it("does not shorten a saturated runtime cancellation fence", async () => {
+    const nowMs = 1_800_000_000_000;
+    const dateNow = vi.spyOn(Date, "now").mockReturnValue(nowMs);
+    const { manager, handlers, broadcasts, context } = createExecApprovalFixture();
+    const client = createExecApprovalClient({
+      connId: "conn-runtime",
+      clientId: "runtime-client",
+      instanceId: "runtime-instance",
+      approvalRuntime: true,
+    });
+
+    try {
+      await cancelExecApproval({
+        handlers,
+        id: "approval-long-cancel",
+        timeoutMs: 3_600_000,
+        respond: vi.fn(),
+        context,
+        client,
+      });
+      for (let index = 1; index <= 1_024; index += 1) {
+        await cancelExecApproval({
+          handlers,
+          id: `approval-short-cancel-${index}`,
+          timeoutMs: 1,
+          respond: vi.fn(),
+          context,
+          client,
+        });
+      }
+      dateNow.mockReturnValue(nowMs + 60_000);
+
+      const requestRespond = vi.fn();
+      await requestExecApproval({
+        handlers,
+        respond: requestRespond,
+        context,
+        client,
+        params: {
+          id: "approval-late-registration",
+          twoPhase: true,
+          host: "gateway",
+          nodeId: undefined,
+          systemRunPlan: undefined,
+        },
+      });
+
+      expect(mockCallArg(requestRespond)).toBe(false);
+      expectRecordFields(mockCallArg(requestRespond, 0, 2), {
+        code: "UNAVAILABLE",
+        message: "exec approval request cancelled",
+      });
+      expect(manager.getSnapshot("approval-late-registration")).toBeNull();
+      expect(broadcasts).toHaveLength(0);
+    } finally {
+      dateNow.mockRestore();
+    }
+  });
+
+  it("preserves live tombstones and fails closed only for a saturated connection", async () => {
+    const { manager, handlers, context } = createExecApprovalFixture();
+    for (let index = 0; index < 1_024; index += 1) {
+      await cancelExecApproval({
+        handlers,
+        id: `approval-${index}`,
+        respond: vi.fn(),
+        context,
+        client: createExecApprovalClient({
+          connId: `conn-${index}`,
+          clientId: `runtime-${index}`,
+          instanceId: `runtime-instance-${index}`,
+          approvalRuntime: true,
+        }),
+      });
+    }
+
+    const overflowClient = createExecApprovalClient({
+      connId: "conn-overflow",
+      clientId: "runtime-overflow",
+      instanceId: "runtime-instance-overflow",
+      approvalRuntime: true,
+    });
+    const overflowCancelRespond = vi.fn();
+    await cancelExecApproval({
+      handlers,
+      id: "approval-overflow",
+      respond: overflowCancelRespond,
+      context,
+      client: overflowClient,
+    });
+    expect(overflowCancelRespond).toHaveBeenCalledWith(true, { ok: true, cancelled: 0 }, undefined);
+
+    const overflowRequestRespond = vi.fn();
+    await requestExecApproval({
+      handlers,
+      respond: overflowRequestRespond,
+      context,
+      client: overflowClient,
+      params: {
+        id: "approval-overflow",
+        twoPhase: true,
+        host: "gateway",
+        nodeId: undefined,
+        systemRunPlan: undefined,
+      },
+    });
+    expect(mockCallArg(overflowRequestRespond)).toBe(false);
+    expectRecordFields(mockCallArg(overflowRequestRespond, 0, 2), {
+      code: "UNAVAILABLE",
+      message: "exec approval request cancelled",
+    });
+
+    const reconnectedOverflowRespond = vi.fn();
+    await requestExecApproval({
+      handlers,
+      respond: reconnectedOverflowRespond,
+      context,
+      client: createExecApprovalClient({
+        connId: "conn-overflow-reconnected",
+        clientId: "runtime-overflow-reconnected",
+        instanceId: "runtime-instance-overflow",
+        approvalRuntime: true,
+      }),
+      params: {
+        id: "approval-overflow",
+        twoPhase: true,
+        host: "gateway",
+        nodeId: undefined,
+        systemRunPlan: undefined,
+      },
+    });
+    expect(mockCallArg(reconnectedOverflowRespond)).toBe(false);
+    expectRecordFields(mockCallArg(reconnectedOverflowRespond, 0, 2), {
+      code: "UNAVAILABLE",
+      message: "exec approval request cancelled",
+    });
+
+    const unrelatedClient = createExecApprovalClient({
+      connId: "conn-after-runtime-overflow",
+      clientId: "runtime-after-runtime-overflow",
+      instanceId: "runtime-instance-after-runtime-overflow",
+      approvalRuntime: true,
+    });
+    const unrelatedRespond = vi.fn();
+    const unrelatedRequest = requestExecApproval({
+      handlers,
+      respond: unrelatedRespond,
+      context,
+      client: unrelatedClient,
+      params: {
+        id: "approval-after-runtime-overflow",
+        twoPhase: true,
+        host: "gateway",
+        nodeId: undefined,
+        systemRunPlan: undefined,
+      },
+    });
+    await vi.waitFor(() => expect(unrelatedRespond).toHaveBeenCalled());
+    expect(mockCallArg(unrelatedRespond)).toBe(true);
+
+    expect(manager.resolve("approval-after-runtime-overflow", "deny")).toBe(true);
+    await unrelatedRequest;
+
+    const oldestCancelledRespond = vi.fn();
+    await requestExecApproval({
+      handlers,
+      respond: oldestCancelledRespond,
+      context,
+      client: createExecApprovalClient({
+        connId: "conn-0",
+        clientId: "runtime-0",
+        instanceId: "runtime-instance-0",
+        approvalRuntime: true,
+      }),
+      params: {
+        id: "approval-0",
+        twoPhase: true,
+        host: "gateway",
+        nodeId: undefined,
+        systemRunPlan: undefined,
+      },
+    });
+    expect(mockCallArg(oldestCancelledRespond)).toBe(false);
+    expectRecordFields(mockCallArg(oldestCancelledRespond, 0, 2), {
+      code: "UNAVAILABLE",
+      message: "exec approval request cancelled",
+    });
+  });
+
+  it("lets only the owning runtime cancel an exact pending exec approval", async () => {
+    const { manager, handlers, broadcasts, context } = createExecApprovalFixture();
+    const owner = createExecApprovalClient({
+      connId: "conn-owner",
+      clientId: "runtime-owner",
+      instanceId: "runtime-instance-owner",
+      approvalRuntime: true,
+    });
+    const other = createExecApprovalClient({
+      connId: "conn-other",
+      clientId: "runtime-other",
+      instanceId: "runtime-instance-other",
+      approvalRuntime: true,
+    });
+    const requestRespond = vi.fn();
+    const requestPromise = requestExecApproval({
+      handlers,
+      respond: requestRespond,
+      context,
+      client: owner,
+      params: {
+        id: "approval-owned-cancel",
+        twoPhase: true,
+        host: "gateway",
+        nodeId: undefined,
+        systemRunPlan: undefined,
+      },
+    });
+    await vi.waitFor(() => expect(requestRespond).toHaveBeenCalled(), { timeout: 5_000 });
+    expect(mockCallArg(requestRespond)).toBe(true);
+    const registration = mockCallArg(requestRespond, 0, 1) as { id?: unknown };
+    expect(registration.id).toBe("approval-owned-cancel");
+    expect(manager.listPendingRecords().map((record) => record.id)).toContain(
+      "approval-owned-cancel",
+    );
+
+    const otherRespond = vi.fn();
+    await cancelExecApproval({
+      handlers,
+      id: "approval-owned-cancel",
+      respond: otherRespond,
+      context,
+      client: other,
+    });
+    expect(otherRespond).toHaveBeenCalledWith(true, { ok: true, cancelled: 0 }, undefined);
+    expect(manager.listPendingRecords().map((record) => record.id)).toContain(
+      "approval-owned-cancel",
+    );
+
+    const ownerRespond = vi.fn();
+    await cancelExecApproval({
+      handlers,
+      id: "approval-owned-cancel",
+      respond: ownerRespond,
+      context,
+      client: owner,
+    });
+    expect(ownerRespond).toHaveBeenCalledWith(true, { ok: true, cancelled: 1 }, undefined);
+    expect(manager.listPendingRecords().map((record) => record.id)).not.toContain(
+      "approval-owned-cancel",
+    );
+    expect(manager.getSnapshot("approval-owned-cancel")).toMatchObject({
+      terminalReason: "run-aborted",
+    });
+    expect(manager.getSnapshot("approval-owned-cancel")?.decision).toBeUndefined();
+    expect(
+      broadcasts.find((entry) => entry.event === "exec.approval.resolved")?.payload,
+    ).toMatchObject({
+      id: "approval-owned-cancel",
+      decision: "deny",
+    });
+    await requestPromise;
+  });
+
+  it("lets the owning runtime invalidate a resolved allow-once approval", async () => {
+    const { manager, handlers, context } = createExecApprovalFixture();
+    const owner = createExecApprovalClient({
+      connId: "conn-owner",
+      clientId: "runtime-owner",
+      instanceId: "runtime-instance-owner",
+      approvalRuntime: true,
+    });
+    const record = manager.create(
+      {
+        ...defaultExecApprovalRequestParams,
+        commandArgv: [...defaultExecApprovalRequestParams.commandArgv],
+        systemRunPlan: {
+          ...defaultExecApprovalRequestParams.systemRunPlan,
+          argv: [...defaultExecApprovalRequestParams.systemRunPlan.argv],
+        },
+      },
+      60_000,
+      "approval-resolved-cancel",
+    );
+    record.requestedByInstanceId = "runtime-instance-owner";
+    void manager.register(record, 60_000);
+    expect(manager.resolveAutoReview(record.id, "runtime-owner")).toBe(true);
+
+    const respond = vi.fn();
+    await cancelExecApproval({
+      handlers,
+      id: record.id,
+      respond,
+      context,
+      client: owner,
+    });
+
+    expect(respond).toHaveBeenCalledWith(true, { ok: true, cancelled: 1 }, undefined);
+    expect(manager.getSnapshot(record.id)).toMatchObject({
+      decision: "allow-once",
+      consumedDecision: "allow-once",
+    });
+    expect(manager.consumeAllowOnce(record.id, "system.run:approval-resolved-cancel")).toBe(false);
+  });
 
   async function waitForRequestedExecApprovalPayload(
     broadcasts: Array<{ event: string; payload: unknown }>,

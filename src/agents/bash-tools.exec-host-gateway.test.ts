@@ -163,6 +163,14 @@ const resolveApprovalDecisionOrUndefinedMock = vi.hoisted(() =>
   vi.fn(async (): Promise<string | null | undefined> => undefined),
 );
 const runAbortedApprovalError = vi.hoisted(() => new Error("run aborted"));
+const cancelApprovalLeaseMock = vi.hoisted(() => vi.fn(async () => undefined));
+const createApprovalLease = (id: string) => ({
+  id,
+  expiresAtMs: Date.now() + 60_000,
+  wait: vi.fn(),
+  resolveAutoReview: vi.fn(),
+  cancel: cancelApprovalLeaseMock,
+});
 const resolveExecHostApprovalContextMock = vi.hoisted(() =>
   vi.fn(
     (): MockExecHostApprovalContext => ({
@@ -354,6 +362,7 @@ describe("processGatewayAllowlist", () => {
       rationale: "allowed",
     });
     commitExecAuthorizationMock.mockReset();
+    cancelApprovalLeaseMock.mockReset();
     resolveApprovalDecisionOrUndefinedMock.mockReset();
     resolveApprovalDecisionOrUndefinedMock.mockResolvedValue(undefined);
     shouldResolveExecApprovalUnavailableInlineMock.mockReset();
@@ -382,6 +391,7 @@ describe("processGatewayAllowlist", () => {
     });
     createAndRegisterDefaultExecApprovalRequestMock.mockReset();
     createAndRegisterDefaultExecApprovalRequestMock.mockResolvedValue({
+      approval: createApprovalLease("req-1"),
       approvalId: "req-1",
       approvalSlug: "slug-1",
       warningText: "",
@@ -415,6 +425,12 @@ describe("processGatewayAllowlist", () => {
       approvalRunningNoticeMs: 0,
       maxOutput: 1000,
       pendingMaxOutput: 1000,
+      approvalHost: {
+        exec: {
+          supportsDetachedExecution: true,
+          request: vi.fn(),
+        },
+      } as never,
       ...rest,
     });
   }
@@ -699,6 +715,7 @@ describe("processGatewayAllowlist", () => {
   it("resolves a triggerless CLI no-route approval through the real gate", async () => {
     await useRealUnavailableApprovalGate();
     createAndRegisterDefaultExecApprovalRequestMock.mockResolvedValue({
+      approval: createApprovalLease("approval-cli-no-route"),
       approvalId: "approval-cli-no-route",
       approvalSlug: "slug",
       warningText: "",
@@ -746,6 +763,7 @@ describe("processGatewayAllowlist", () => {
   it("preserves a routed approval through the real gate", async () => {
     await useRealUnavailableApprovalGate();
     createAndRegisterDefaultExecApprovalRequestMock.mockResolvedValue({
+      approval: createApprovalLease("approval-routed"),
       approvalId: "approval-routed",
       approvalSlug: "slug",
       warningText: "",
@@ -770,7 +788,9 @@ describe("processGatewayAllowlist", () => {
     });
     expect(shouldResolveExecApprovalUnavailableInlineMock).toHaveReturnedWith(false);
     expect(resolveApprovalDecisionOrUndefinedMock).toHaveBeenCalledWith(
-      expect.objectContaining({ approvalId: "approval-routed" }),
+      expect.objectContaining({
+        approval: expect.objectContaining({ id: "approval-routed" }),
+      }),
     );
   });
 
@@ -931,10 +951,11 @@ describe("processGatewayAllowlist", () => {
     fs.writeFileSync(shadowGit, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
     try {
       const command = "git status";
-      await configurePlanBackedCommand({
+      const { resolvedPath } = await configurePlanBackedCommand({
         command,
         env: { PATH: tempDir },
       });
+      expect(resolvedPath).toBeTruthy();
 
       const result = await runGatewayAllowlist({
         command,
@@ -944,9 +965,9 @@ describe("processGatewayAllowlist", () => {
       });
 
       expect(defaultExecAutoReviewerMock).toHaveBeenCalledWith(
-        expect.objectContaining({ resolvedPath: shadowGit }),
+        expect.objectContaining({ resolvedPath }),
       );
-      expect(result).toEqual({ execCommandOverride: `${shadowGit} status` });
+      expect(result).toEqual({ execCommandOverride: `${resolvedPath} status` });
     } finally {
       fs.rmSync(tempDir, { recursive: true, force: true });
     }
@@ -1164,9 +1185,18 @@ describe("processGatewayAllowlist", () => {
     });
 
     const result = await runGatewayAllowlist({ command });
+    const enforced = buildAuthorizedShellCommandFromPlan({
+      plan: authorizationPlan,
+      mode: "enforced",
+      segmentSatisfiedBy: ["safeBuiltins"],
+    });
+    expect(enforced.ok).toBe(true);
+    if (!enforced.ok) {
+      throw new Error(enforced.reason);
+    }
 
     expect(createAndRegisterDefaultExecApprovalRequestMock).not.toHaveBeenCalled();
-    expect(result).toEqual({ execCommandOverride: command });
+    expect(result).toEqual({ execCommandOverride: enforced.command });
     expect(commitExecAuthorizationMock).toHaveBeenCalledWith(
       expect.objectContaining({
         authorization: expect.objectContaining({
@@ -2447,6 +2477,7 @@ EOF`,
     expect(runExecProcessMock).not.toHaveBeenCalled();
     expect(markBackgroundedMock).not.toHaveBeenCalled();
     expect(getActiveGatewayRootWorkCount()).toBe(0);
+    expect(cancelApprovalLeaseMock).toHaveBeenCalledOnce();
   });
 
   it("keeps the fire-and-forget path for channels without native approval clients", async () => {
@@ -2524,6 +2555,30 @@ EOF`,
       turnSourceChannel: "feishu",
       runId: "run-aborted",
       toolCallId: "tool-aborted",
+    });
+
+    expect(result.pendingResult?.details.status).toBe("approval-pending");
+    await vi.waitFor(() => {
+      expect(resolveApprovalDecisionOrUndefinedMock).toHaveBeenCalledOnce();
+    });
+    expect(commitExecAuthorizationMock).not.toHaveBeenCalled();
+    expect(runExecProcessMock).not.toHaveBeenCalled();
+    expect(sendExecApprovalFollowupResultMock).not.toHaveBeenCalled();
+  });
+
+  it("preserves ordinary aborts in detached gateway approval handling", async () => {
+    const abortController = new AbortController();
+    const abortReason = new Error("ordinary run abort");
+    abortController.abort(abortReason);
+    resolveApprovalDecisionOrUndefinedMock.mockRejectedValue(abortReason);
+    buildExecApprovalFollowupTargetMock.mockImplementation((value) => value);
+
+    const result = await runGatewayAllowlist({
+      command: "find . -maxdepth 1",
+      turnSourceChannel: "feishu",
+      runId: "run-ordinary-abort",
+      toolCallId: "tool-ordinary-abort",
+      signal: abortController.signal,
     });
 
     expect(result.pendingResult?.details.status).toBe("approval-pending");
@@ -2675,6 +2730,7 @@ EOF`,
       }),
     );
     expect(runExecProcessMock).not.toHaveBeenCalled();
+    expect(cancelApprovalLeaseMock).toHaveBeenCalledOnce();
   });
 
   it("binds explicit allow-always persistence to its evaluated policy snapshot", async () => {

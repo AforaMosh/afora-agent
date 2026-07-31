@@ -952,6 +952,49 @@ describe("ExecApprovalManager", () => {
     });
   });
 
+  it("invalidates resolved allow-once authority without erasing the winning decision", () => {
+    const { manager, databaseOptions } = createPersistentManager();
+    const record = manager.create({ command: "echo ok" }, 60_000, "approval-invalidated");
+    void manager.register(record, 60_000);
+    manager.resolveDetailed(record.id, "allow-once", { kind: "runtime", id: "runtime-owner" });
+
+    expect(manager.invalidateResolvedAllowOnce(record.id, "runtime-cancel:runtime-owner")).toBe(
+      true,
+    );
+    expect(manager.consumeAllowOnce(record.id, "system.run:approval-invalidated")).toBe(false);
+    expect(getOperatorApproval({ id: record.id, databaseOptions })).toMatchObject({
+      status: "allowed",
+      decision: "allow-once",
+      consumedBy: "runtime-cancel:runtime-owner",
+    });
+  });
+
+  it("invalidates allow-once authority when resolution wins a runtime cancellation race", () => {
+    const manager = new ExecApprovalManager();
+    const record = manager.create({ command: "echo ok" }, 60_000, "approval-cancel-race");
+    record.requestedByInstanceId = "runtime-owner";
+    void manager.register(record, 60_000);
+    const forceDeny = manager.forceDenyDetailed.bind(manager);
+    vi.spyOn(manager, "forceDenyDetailed").mockImplementation((...args) => {
+      expect(manager.resolveAutoReview(record.id, "runtime-owner")).toBe(true);
+      return forceDeny(...args);
+    });
+
+    expect(
+      manager.cancelForRuntime({
+        recordId: record.id,
+        runtimeInstanceId: "runtime-owner",
+        resolver: { kind: "runtime", id: "runtime-owner" },
+        resolvedBy: "runtime-owner",
+      }),
+    ).toMatchObject({
+      outcome: "invalidated",
+      record: { decision: "allow-once" },
+      liveRecord: { consumedDecision: "allow-once" },
+    });
+    expect(manager.consumeAllowOnce(record.id, "system.run:approval-cancel-race")).toBe(false);
+  });
+
   it("refuses allow-once redemption after the live grace window", () => {
     installTimerMocks();
     vi.spyOn(Date, "now").mockReturnValue(1_000);

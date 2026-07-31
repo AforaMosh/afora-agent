@@ -5,6 +5,7 @@
  */
 import { expectDefined } from "@openclaw/normalization-core";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import type { AgentRunApprovalHost } from "./agent-run-approval.js";
 import type { ExecuteNodeHostCommandParams } from "./bash-tools.exec-host-node.types.js";
 import type { BashSandboxConfig } from "./bash-tools.shared.js";
 import type { ExtensionContext } from "./sessions/index.js";
@@ -19,7 +20,7 @@ const CHANNEL_CONTEXT_ENV_KEY = "OPENCLAW_CHANNEL_CONTEXT";
 const OPENCLAW_CLI_ENV_VALUE = "1";
 type CapturedNodeHostParams = Pick<
   ExecuteNodeHostCommandParams,
-  "env" | "requestedEnv" | "workdir"
+  "approvalHost" | "env" | "requestedEnv" | "workdir"
 >;
 
 const mocks = vi.hoisted(() => ({
@@ -34,6 +35,7 @@ const mocks = vi.hoisted(() => ({
   gatewayParams: [] as Array<{
     env: Record<string, string>;
     requestedEnv?: Record<string, string>;
+    approvalHost?: AgentRunApprovalHost;
   }>,
   nodeHostParams: [] as CapturedNodeHostParams[],
   spawnInputs: [] as Array<{
@@ -56,10 +58,15 @@ vi.mock("../infra/shell-env.js", () => ({
 
 vi.mock("./bash-tools.exec-host-gateway.js", () => ({
   processGatewayAllowlist: vi.fn(
-    async (params: { env: Record<string, string>; requestedEnv?: Record<string, string> }) => {
+    async (params: {
+      env: Record<string, string>;
+      requestedEnv?: Record<string, string>;
+      approvalHost?: AgentRunApprovalHost;
+    }) => {
       mocks.gatewayParams.push({
         env: { ...params.env },
         requestedEnv: params.requestedEnv ? { ...params.requestedEnv } : undefined,
+        approvalHost: params.approvalHost,
       });
       return {};
     },
@@ -68,8 +75,14 @@ vi.mock("./bash-tools.exec-host-gateway.js", () => ({
 
 vi.mock("./bash-tools.exec-host-node.js", () => ({
   executeNodeHostCommand: vi.fn(
-    async (params: Pick<ExecuteNodeHostCommandParams, "env" | "requestedEnv" | "workdir">) => {
+    async (
+      params: Pick<
+        ExecuteNodeHostCommandParams,
+        "approvalHost" | "env" | "requestedEnv" | "workdir"
+      >,
+    ) => {
       mocks.nodeHostParams.push({
+        approvalHost: params.approvalHost,
         env: { ...params.env },
         requestedEnv: params.requestedEnv ? { ...params.requestedEnv } : undefined,
         workdir: params.workdir,
@@ -165,6 +178,53 @@ describe("exec resolve_exec_env hook wiring", () => {
     expect(mocks.spawnInputs[0]?.env?.[CHANNEL_CONTEXT_ENV_KEY]).toBe(
       mocks.gatewayParams[0]?.env[CHANNEL_CONTEXT_ENV_KEY],
     );
+  });
+
+  it("uses the prepared run approval host after parameter repair and finalization", async () => {
+    const fallbackHost: AgentRunApprovalHost = {
+      exec: { request: vi.fn() },
+    };
+    const runHost: AgentRunApprovalHost = {
+      exec: { request: vi.fn() },
+    };
+    const tool = createExecTool({
+      host: "gateway",
+      security: "full",
+      ask: "off",
+      approvalHost: fallbackHost,
+    });
+    const [definition] = toToolDefinitions([tool], {
+      agentId: "main",
+      sessionKey: "agent:main:main",
+      approvalHost: runHost,
+    });
+
+    await expectDefined(definition, "definition test invariant").execute(
+      "call-prepared-approval-host",
+      { command: "echo ok</arg_value>>", yieldMs: 120_000 },
+      undefined,
+      undefined,
+      testExtensionContext,
+    );
+
+    expect(mocks.gatewayParams[0]?.approvalHost).toBe(runHost);
+    expect(mocks.gatewayParams[0]?.approvalHost).not.toBe(fallbackHost);
+  });
+
+  it("treats a null hook context as absent during exec preparation", async () => {
+    const tool = createExecTool({
+      host: "gateway",
+      security: "full",
+      ask: "off",
+    });
+    const prepareBeforeToolCallParams = expectDefined(
+      tool.prepareBeforeToolCallParams,
+      "exec preparation hook",
+    );
+
+    await expect(
+      prepareBeforeToolCallParams({ command: "echo ok", yieldMs: 120_000 }, { hookContext: null }),
+    ).resolves.toMatchObject({ command: "echo ok" });
   });
 
   it("merges filtered plugin env into gateway execution and approval-visible requested env", async () => {
@@ -739,6 +799,12 @@ describe("exec resolve_exec_env hook wiring", () => {
   });
 
   it("recomputes plugin env when before_tool_call changes exec host", async () => {
+    const fallbackHost: AgentRunApprovalHost = {
+      exec: { request: vi.fn() },
+    };
+    const runHost: AgentRunApprovalHost = {
+      exec: { request: vi.fn() },
+    };
     mocks.hookRunner = {
       hasHooks: vi.fn(
         (hookName: string) => hookName === "resolve_exec_env" || hookName === "before_tool_call",
@@ -756,10 +822,12 @@ describe("exec resolve_exec_env hook wiring", () => {
       security: "full",
       ask: "off",
       sessionKey: "agent:main:telegram:chat-1",
+      approvalHost: fallbackHost,
     });
     const [definition] = toToolDefinitions([tool], {
       agentId: "main",
       sessionKey: "agent:main:telegram:chat-1",
+      approvalHost: runHost,
     });
 
     await expectDefined(definition, "definition test invariant").execute(
@@ -789,6 +857,8 @@ describe("exec resolve_exec_env hook wiring", () => {
       REQUEST_SAFE: "request",
     });
     expect(mocks.nodeHostParams[0]?.requestedEnv).not.toHaveProperty("GATEWAY_PLUGIN_SAFE");
+    expect(mocks.nodeHostParams[0]?.approvalHost).toBe(runHost);
+    expect(mocks.nodeHostParams[0]?.approvalHost).not.toBe(fallbackHost);
   });
 
   it("lets before_tool_call reroute gateway-invalid workdirs to node host execution", async () => {

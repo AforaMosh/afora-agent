@@ -68,6 +68,18 @@ export class InvalidApprovalIdError extends Error {
   }
 }
 
+/** Applies the canonical explicit approval-id contract before storage or lookup retention. */
+export function assertValidExplicitApprovalId(id: string): void {
+  if (
+    id.length > 128 ||
+    id === "." ||
+    id === ".." ||
+    EXPLICIT_APPROVAL_ID_INVALID_CHAR_PATTERN.test(id)
+  ) {
+    throw new InvalidApprovalIdError();
+  }
+}
+
 type ExecApprovalRequestPayload = InfraExecApprovalRequestPayload;
 
 // Distinguishes operator decisions from trusted auto-review resolutions.
@@ -145,6 +157,15 @@ type ExecApprovalForceDenyResult<TPayload = ExecApprovalRequestPayload> = WithLi
   ForceDenyOperatorApprovalResult,
   TPayload
 >;
+
+type ExecApprovalRuntimeCancelResult<TPayload = ExecApprovalRequestPayload> =
+  | ExecApprovalForceDenyResult<TPayload>
+  | { outcome: "not-owned" }
+  | {
+      outcome: "invalidated";
+      record: OperatorApprovalRecord;
+      liveRecord: ExecApprovalRecord<TPayload>;
+    };
 
 type ExecApprovalDurableLookup =
   | { outcome: "found"; record: OperatorApprovalRecord }
@@ -244,14 +265,8 @@ export class ExecApprovalManager<TPayload = ExecApprovalRequestPayload> {
     }
     // Empty remains the caller-facing sentinel for manager-generated ids.
     const hasExplicitId = id !== null && id !== undefined && id.length > 0;
-    if (
-      hasExplicitId &&
-      (id.length > 128 ||
-        id === "." ||
-        id === ".." ||
-        EXPLICIT_APPROVAL_ID_INVALID_CHAR_PATTERN.test(id))
-    ) {
-      throw new InvalidApprovalIdError();
+    if (hasExplicitId) {
+      assertValidExplicitApprovalId(id);
     }
     const resolvedId = hasExplicitId ? id : randomUUID();
     const record: ExecApprovalRecord<TPayload> = {
@@ -585,6 +600,58 @@ export class ExecApprovalManager<TPayload = ExecApprovalRequestPayload> {
       this.settleLocalStorageFailure(recordId);
     }
     return attachLiveRecord(result, localRecord) as ExecApprovalForceDenyResult<TPayload>;
+  }
+
+  /**
+   * Cancels one runtime-owned approval without leaving a resolved allow-once race redeemable.
+   * The manager transition is synchronous; durable resolution races are invalidated afterward.
+   */
+  cancelForRuntime(params: {
+    recordId: string;
+    runtimeInstanceId: string;
+    resolver: OperatorApprovalResolver;
+    resolvedBy: string | null;
+  }): ExecApprovalRuntimeCancelResult<TPayload> {
+    const liveRecord = this.pending.get(params.recordId)?.record;
+    if (!liveRecord) {
+      return { outcome: "not-found" };
+    }
+    if (liveRecord.requestedByInstanceId !== params.runtimeInstanceId) {
+      return { outcome: "not-owned" };
+    }
+    if (liveRecord.resolvedAtMs !== undefined) {
+      const record = this.projectLocalRecord(liveRecord);
+      if (!record) {
+        return { outcome: "corrupt" };
+      }
+      return this.invalidateResolvedAllowOnce(
+        params.recordId,
+        `runtime-cancel:${params.runtimeInstanceId}`,
+      )
+        ? { outcome: "invalidated", record, liveRecord }
+        : { outcome: "already-terminal", record, liveRecord };
+    }
+
+    const result = this.forceDenyDetailed(
+      params.recordId,
+      "run-aborted",
+      params.resolver,
+      "cancelled",
+      undefined,
+      false,
+      params.resolvedBy,
+    );
+    if (
+      (result.outcome === "already-terminal" || result.outcome === "expired") &&
+      result.liveRecord &&
+      this.invalidateResolvedAllowOnce(
+        params.recordId,
+        `runtime-cancel:${params.runtimeInstanceId}`,
+      )
+    ) {
+      return { outcome: "invalidated", record: result.record, liveRecord: result.liveRecord };
+    }
+    return result;
   }
 
   private settleLocalFromStore(
@@ -1092,6 +1159,14 @@ export class ExecApprovalManager<TPayload = ExecApprovalRequestPayload> {
     }
     entry.record.consumedDecision = "allow-once";
     return true;
+  }
+
+  /**
+   * Invalidates live allow-once authority without rewriting the durable winning decision.
+   * Cancellation and redemption race through the same single-consumer transition.
+   */
+  invalidateResolvedAllowOnce(recordId: string, invalidatedBy: string): boolean {
+    return this.consumeAllowOnce(recordId, invalidatedBy);
   }
 
   /**

@@ -162,13 +162,18 @@ export function createExecTool(
           reviewer: resolveExecReviewerDefaults({ defaults, agentId }),
           signal,
         });
+      const preparedArgs = args as ExecToolArgs;
       let params = requestPreparation.normalizeParams(args);
-      const resolveExecEnvPrepared = requestPreparation.isResolveExecEnvPrepared(
-        args as ExecToolArgs,
-      );
+      const preparedApprovalHostState =
+        requestPreparation.getExecApprovalHostPreparedState(preparedArgs);
+      const approvalHost = preparedApprovalHostState
+        ? preparedApprovalHostState.approvalHost
+        : defaults?.approvalHost;
+      const resolveExecEnvPrepared = requestPreparation.isResolveExecEnvPrepared(preparedArgs);
       const deferredResolveExecEnvState =
-        requestPreparation.getDeferredResolveExecEnvPreparedState(params);
-      const preparedWorkdirState = requestPreparation.getResolvedExecWorkdirPreparedState(params);
+        requestPreparation.getDeferredResolveExecEnvPreparedState(preparedArgs);
+      const preparedWorkdirState =
+        requestPreparation.getResolvedExecWorkdirPreparedState(preparedArgs);
 
       const maxOutput = DEFAULT_MAX_OUTPUT;
       const pendingMaxOutput = DEFAULT_PENDING_MAX_OUTPUT;
@@ -180,6 +185,7 @@ export function createExecTool(
       }
       const startedAt = Date.now();
       let execCommandOverride: string | undefined;
+      let cancelUnusedGatewayApproval: (() => Promise<void>) | undefined;
       const backgroundRequested = params.background === true;
       const yieldRequested = typeof params.yieldMs === "number";
       const foregroundFallbackWarning =
@@ -417,6 +423,7 @@ export function createExecTool(
             ask,
             autoReview,
             autoReviewer,
+            approvalHost,
             signal,
             strictInlineEval: defaults?.strictInlineEval,
             commandHighlighting: defaults?.commandHighlighting,
@@ -450,6 +457,7 @@ export function createExecTool(
             ask,
             autoReview,
             autoReviewer,
+            approvalHost,
             signal,
             safeBins,
             safeBinProfiles,
@@ -486,6 +494,7 @@ export function createExecTool(
           if (gatewayResult.deniedResult) {
             return gatewayResult.deniedResult;
           }
+          cancelUnusedGatewayApproval = gatewayResult.cancelUnusedApproval;
           signal?.throwIfAborted();
           execCommandOverride = gatewayResult.execCommandOverride;
           if (gatewayResult.allowWithoutEnforcedCommand) {
@@ -540,8 +549,10 @@ export function createExecTool(
             finalizeBackgroundExecTask({ handle: backgroundTask, outcome });
           },
         });
+        cancelUnusedGatewayApproval = undefined;
         discardPreparedSandboxWorkdir = null;
       } catch (error) {
+        await cancelUnusedGatewayApproval?.();
         discardPreparedSandboxWorkdir?.();
         throw error;
       }

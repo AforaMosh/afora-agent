@@ -1,9 +1,11 @@
+import { resolveTimerTimeoutMs } from "@openclaw/normalization-core/number-coercion";
 // Exec approval gateway methods create, list, inspect, and resolve command
 // approval requests, including iOS push delivery and requester visibility.
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
 import {
   ErrorCodes,
   errorShape,
+  validateExecApprovalCancelParams,
   validateExecApprovalGetParams,
   validateExecApprovalRequestParams,
   validateExecApprovalResolveParams,
@@ -30,7 +32,12 @@ import {
 } from "../../infra/system-run-approval-binding.js";
 import { resolveSystemRunApprovalRequestContext } from "../../infra/system-run-approval-context.js";
 import { normalizeAgentId } from "../../routing/session-key.js";
-import { InvalidApprovalIdError, type ExecApprovalManager } from "../exec-approval-manager.js";
+import {
+  assertValidExplicitApprovalId,
+  InvalidApprovalIdError,
+  type ExecApprovalManager,
+} from "../exec-approval-manager.js";
+import { publishAppliedApprovalResolution } from "./approval-publication.js";
 import { runApprovalRequestDeliveries } from "./approval-request-delivery.js";
 import {
   handleApprovalWaitDecision,
@@ -45,6 +52,7 @@ import {
   respondPendingApprovalLookupError,
   resolvePendingApprovalRecord,
 } from "./approval-shared.js";
+import { normalizeCommandSpans } from "./exec-approval-command-spans.js";
 import type { GatewayRequestHandlers } from "./types.js";
 import { assertValidParams } from "./validation.js";
 
@@ -52,6 +60,10 @@ const APPROVAL_ALLOW_ALWAYS_UNAVAILABLE_DETAILS = {
   reason: "APPROVAL_ALLOW_ALWAYS_UNAVAILABLE",
 } as const;
 const RESERVED_PLUGIN_APPROVAL_ID_PREFIX = "plugin:";
+const EXEC_APPROVAL_CANCELLATION_GRACE_MS = 30_000;
+const MAX_EXEC_APPROVAL_CANCELLATIONS_PER_RUNTIME = 1_024;
+const MAX_EXEC_APPROVAL_CANCELLATION_RUNTIMES = 1_024;
+const MAX_SATURATED_EXEC_APPROVAL_RUNTIMES = 1_024;
 
 type ExecApprovalIosPushDelivery = {
   handleRequested?: (
@@ -64,39 +76,105 @@ type ExecApprovalIosPushDelivery = {
   handleExpired?: (request: ExecApprovalRequest) => Promise<void>;
 };
 
-function normalizeCommandSpans(
-  spans: { startIndex: number; endIndex: number }[] | undefined,
-  commandLength: number,
-): { startIndex: number; endIndex: number }[] | undefined {
-  if (!spans) {
-    return undefined;
-  }
-  const candidates = spans
-    .filter(
-      (span) =>
-        Number.isSafeInteger(span.startIndex) &&
-        Number.isSafeInteger(span.endIndex) &&
-        span.startIndex >= 0 &&
-        span.endIndex > span.startIndex &&
-        span.endIndex <= commandLength,
-    )
-    .toSorted((a, b) => a.startIndex - b.startIndex || b.endIndex - a.endIndex);
-  const accepted: { startIndex: number; endIndex: number }[] = [];
-  let cursor = 0;
-  for (const span of candidates) {
-    if (span.startIndex < cursor) {
-      continue;
-    }
-    accepted.push({ startIndex: span.startIndex, endIndex: span.endIndex });
-    cursor = span.endIndex;
-  }
-  return accepted.length > 0 ? accepted : undefined;
-}
-
 export function createExecApprovalHandlers(
   manager: ExecApprovalManager,
   opts?: { forwarder?: ExecApprovalForwarder; iosPushDelivery?: ExecApprovalIosPushDelivery },
 ): GatewayRequestHandlers {
+  type CancellationRuntimeState = {
+    approvalIds: Map<string, number>;
+    rejectUntilMs?: number;
+  };
+  const cancellationRuntimeStates = new Map<string, CancellationRuntimeState>();
+  const saturatedCancellationRuntimeIds = new Map<string, number>();
+  let rejectUnknownRuntimeUntilMs = 0;
+  const pruneCancelledApprovalIds = (nowMs: number) => {
+    if (rejectUnknownRuntimeUntilMs <= nowMs) {
+      rejectUnknownRuntimeUntilMs = 0;
+    }
+    for (const [runtimeInstanceId, expiresAtMs] of saturatedCancellationRuntimeIds) {
+      if (expiresAtMs <= nowMs) {
+        saturatedCancellationRuntimeIds.delete(runtimeInstanceId);
+      }
+    }
+    for (const [runtimeInstanceId, state] of cancellationRuntimeStates) {
+      if ((state.rejectUntilMs ?? 0) <= nowMs) {
+        delete state.rejectUntilMs;
+      }
+      for (const [approvalId, expiresAtMs] of state.approvalIds) {
+        if (expiresAtMs <= nowMs) {
+          state.approvalIds.delete(approvalId);
+        }
+      }
+      if (state.approvalIds.size === 0 && state.rejectUntilMs === undefined) {
+        cancellationRuntimeStates.delete(runtimeInstanceId);
+      }
+    }
+  };
+  const rememberCancelledApprovalId = (
+    runtimeInstanceId: string,
+    approvalId: string,
+    timeoutMs?: number,
+  ) => {
+    const nowMs = Date.now();
+    pruneCancelledApprovalIds(nowMs);
+    const expiresAtMs =
+      nowMs +
+      resolveTimerTimeoutMs(timeoutMs, DEFAULT_EXEC_APPROVAL_TIMEOUT_MS) +
+      EXEC_APPROVAL_CANCELLATION_GRACE_MS;
+    let state = cancellationRuntimeStates.get(runtimeInstanceId);
+    if (!state) {
+      if (cancellationRuntimeStates.size >= MAX_EXEC_APPROVAL_CANCELLATION_RUNTIMES) {
+        const existingExpiry = saturatedCancellationRuntimeIds.get(runtimeInstanceId) ?? 0;
+        if (
+          existingExpiry > 0 ||
+          saturatedCancellationRuntimeIds.size < MAX_SATURATED_EXEC_APPROVAL_RUNTIMES
+        ) {
+          saturatedCancellationRuntimeIds.set(
+            runtimeInstanceId,
+            Math.max(existingExpiry, expiresAtMs),
+          );
+          return;
+        }
+        // Every bounded runtime slot is live. Preserve existing tombstones and
+        // fail closed only for previously unseen runtimes until the fence expires.
+        rejectUnknownRuntimeUntilMs = Math.max(rejectUnknownRuntimeUntilMs, expiresAtMs);
+        return;
+      }
+      state = { approvalIds: new Map() };
+      cancellationRuntimeStates.set(runtimeInstanceId, state);
+    }
+    if ((state.rejectUntilMs ?? 0) > nowMs) {
+      state.rejectUntilMs = Math.max(state.rejectUntilMs ?? 0, expiresAtMs);
+      return;
+    }
+    if (
+      !state.approvalIds.has(approvalId) &&
+      state.approvalIds.size >= MAX_EXEC_APPROVAL_CANCELLATIONS_PER_RUNTIME
+    ) {
+      let rejectUntilMs = expiresAtMs;
+      for (const cancelledUntilMs of state.approvalIds.values()) {
+        rejectUntilMs = Math.max(rejectUntilMs, cancelledUntilMs);
+      }
+      state.approvalIds.clear();
+      state.rejectUntilMs = rejectUntilMs;
+      return;
+    }
+    state.approvalIds.set(approvalId, expiresAtMs);
+  };
+  const isCancelledApprovalId = (runtimeInstanceId: string, approvalId: string) => {
+    const nowMs = Date.now();
+    pruneCancelledApprovalIds(nowMs);
+    const state = cancellationRuntimeStates.get(runtimeInstanceId);
+    return (
+      (saturatedCancellationRuntimeIds.get(runtimeInstanceId) ?? 0) > nowMs ||
+      (rejectUnknownRuntimeUntilMs > nowMs &&
+        state === undefined &&
+        !saturatedCancellationRuntimeIds.has(runtimeInstanceId)) ||
+      (state?.rejectUntilMs ?? 0) > nowMs ||
+      state?.approvalIds.has(approvalId) === true
+    );
+  };
+
   return {
     "exec.approval.get": async ({ params, respond, client }) => {
       if (!assertValidParams(params, validateExecApprovalGetParams, "exec.approval.get", respond)) {
@@ -133,6 +211,99 @@ export function createExecApprovalHandlers(
     },
     "exec.approval.list": async ({ respond, client }) => {
       respond(true, listVisiblePendingApprovalRequests({ manager, client }), undefined);
+    },
+    "exec.approval.cancel": async ({ params, respond, client, context }) => {
+      if (
+        !assertValidParams(
+          params,
+          validateExecApprovalCancelParams,
+          "exec.approval.cancel",
+          respond,
+        )
+      ) {
+        return;
+      }
+      if (client?.internal?.approvalRuntime !== true) {
+        respond(
+          false,
+          undefined,
+          errorShape(ErrorCodes.FORBIDDEN, "exec approval cancellation is internal-only"),
+        );
+        return;
+      }
+      const runtimeInstanceId = normalizeOptionalString(client.connect?.client?.instanceId);
+      if (!runtimeInstanceId) {
+        respond(
+          false,
+          undefined,
+          errorShape(ErrorCodes.FORBIDDEN, "exec approval runtime instance is required"),
+        );
+        return;
+      }
+      const { id: approvalId, timeoutMs } = params as { id: string; timeoutMs?: number };
+      try {
+        assertValidExplicitApprovalId(approvalId);
+      } catch (error) {
+        if (!(error instanceof InvalidApprovalIdError)) {
+          throw error;
+        }
+        respond(
+          false,
+          undefined,
+          errorShape(ErrorCodes.INVALID_REQUEST, error.message, {
+            details: { code: error.code, reason: error.reason },
+          }),
+        );
+        return;
+      }
+      let result: ReturnType<typeof manager.cancelForRuntime>;
+      try {
+        result = manager.cancelForRuntime({
+          recordId: approvalId,
+          runtimeInstanceId,
+          resolver: { kind: "runtime", id: client.connect?.client?.id ?? null },
+          resolvedBy: client.connect?.client?.displayName ?? client.connect?.client?.id ?? null,
+        });
+      } catch (error) {
+        context.logGateway?.error?.(
+          `exec approvals: cancellation failed for ${approvalId}: ${String(error)}`,
+        );
+        respond(
+          false,
+          undefined,
+          errorShape(ErrorCodes.UNAVAILABLE, "exec approval storage unavailable"),
+        );
+        return;
+      }
+      if (result.outcome === "not-found" || result.outcome === "not-owned") {
+        rememberCancelledApprovalId(runtimeInstanceId, approvalId, timeoutMs);
+        respond(true, { ok: true, cancelled: 0 }, undefined);
+        return;
+      }
+      if (result.outcome === "corrupt") {
+        respond(
+          false,
+          undefined,
+          errorShape(ErrorCodes.UNAVAILABLE, "exec approval storage unavailable"),
+        );
+        return;
+      }
+      if (result.outcome === "invalidated") {
+        respond(true, { ok: true, cancelled: 1 }, undefined);
+        return;
+      }
+      if (result.outcome !== "denied" || !result.liveRecord) {
+        respond(true, { ok: true, cancelled: 0 }, undefined);
+        return;
+      }
+      await publishAppliedApprovalResolution({
+        record: result.record,
+        liveRecord: result.liveRecord,
+        context,
+        forwarder: opts?.forwarder,
+        iosPushDelivery: opts?.iosPushDelivery,
+      });
+      respond(true, { ok: true, cancelled: 1 }, undefined);
     },
     "exec.approval.request": async ({ params, respond, context, client }) => {
       if (
@@ -184,6 +355,10 @@ export function createExecApprovalHandlers(
       // IDs are opaque cross-surface handles. Preserve every supplied byte so
       // the manager can reject unsafe values instead of silently normalizing them.
       const explicitId = p.id ?? null;
+      const runtimeInstanceId =
+        client?.internal?.approvalRuntime === true
+          ? normalizeOptionalString(client.connect?.client?.instanceId)
+          : undefined;
       const host = normalizeOptionalString(p.host) ?? "";
       const nodeId = normalizeOptionalString(p.nodeId) ?? "";
       const approvalContext = resolveSystemRunApprovalRequestContext({
@@ -341,6 +516,19 @@ export function createExecApprovalHandlers(
           errorShape(ErrorCodes.INVALID_REQUEST, "approval run already aborted", {
             details: { reason: "EXEC_APPROVAL_RUN_ABORTED" },
           }),
+        );
+        return;
+      }
+      if (
+        explicitId &&
+        runtimeInstanceId &&
+        client &&
+        isCancelledApprovalId(runtimeInstanceId, explicitId)
+      ) {
+        respond(
+          false,
+          undefined,
+          errorShape(ErrorCodes.UNAVAILABLE, "exec approval request cancelled"),
         );
         return;
       }

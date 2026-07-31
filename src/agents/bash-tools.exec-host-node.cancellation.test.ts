@@ -8,21 +8,34 @@ type NodeApprovalPolicy = Awaited<
   ReturnType<typeof import("./bash-tools.exec-host-shared.js").resolveExecHostApprovalContext>
 >;
 
-const mocks = vi.hoisted(() => ({
-  analyzeNodeApprovalRequirement: vi.fn(),
-  callGatewayTool: vi.fn(
-    async (
-      _method: string,
-      _options: unknown,
-      _params?: { command?: string },
-      _extra?: { scopes?: string[]; signal?: AbortSignal },
-    ) => ({ payload: { success: true, stdout: "ok", exitCode: 0 } }),
-  ),
-  invokeNodeSystemRunDirect: vi.fn(),
-  registerNodeApproval: vi.fn(async () => undefined),
-  requiresExecApproval: vi.fn(),
-  resolveExecHostApprovalContext: vi.fn(),
-}));
+const mocks = vi.hoisted(() => {
+  const approvalLease = {
+    id: "approval",
+    expiresAtMs: Date.now() + 60_000,
+    wait: vi.fn(),
+    resolveAutoReview: vi.fn(async () => undefined),
+    cancel: vi.fn(async () => undefined),
+  };
+  return {
+    analyzeNodeApprovalRequirement: vi.fn(),
+    approvalLease,
+    callGatewayTool: vi.fn(
+      async (
+        _method: string,
+        _options: unknown,
+        _params?: { command?: string },
+        _extra?: { scopes?: string[]; signal?: AbortSignal },
+      ) => ({ payload: { success: true, stdout: "ok", exitCode: 0 } }),
+    ),
+    invokeNodeSystemRunDirect: vi.fn(),
+    registerNodeApproval: vi.fn(async (approvalId: string) => ({
+      ...approvalLease,
+      id: approvalId,
+    })),
+    requiresExecApproval: vi.fn(),
+    resolveExecHostApprovalContext: vi.fn(),
+  };
+});
 
 vi.mock("../infra/exec-approvals.js", () => ({
   maxAsk: (left: ExecAsk, right: ExecAsk) => {
@@ -201,6 +214,7 @@ describe("node-host dispatch cancellation", () => {
       ),
     ).toBe(false);
     expect(mocks.registerNodeApproval).toHaveBeenCalledTimes(scenario.autoReview ? 1 : 0);
+    expect(mocks.approvalLease.cancel).toHaveBeenCalledTimes(scenario.autoReview ? 1 : 0);
   });
 
   it("forwards cancellation without removing auto-reviewed execution scopes", async () => {
@@ -228,6 +242,34 @@ describe("node-host dispatch cancellation", () => {
       expect.objectContaining({ command: "system.run" }),
       { scopes: ["operator.write", "operator.approvals"], signal: controller.signal },
     );
+    expect(mocks.approvalLease.resolveAutoReview).toHaveBeenCalledOnce();
+    expect(mocks.approvalLease.cancel).not.toHaveBeenCalled();
+  });
+
+  it("cancels the lease when auto-review resolution fails", async () => {
+    mocks.resolveExecHostApprovalContext.mockResolvedValue(createPolicy("allowlist", "on-miss"));
+    mocks.approvalLease.resolveAutoReview.mockRejectedValueOnce(
+      new Error("auto-review resolution failed"),
+    );
+    const reviewer: ExecAutoReviewer = async () => ({
+      decision: "allow-once",
+      risk: "low",
+      rationale: "safe command",
+    });
+
+    await expect(
+      executeNodeHostCommand(
+        createRequest({
+          security: "allowlist",
+          ask: "on-miss",
+          autoReview: true,
+          autoReviewer: reviewer,
+        }),
+      ),
+    ).rejects.toThrow("auto-review resolution failed");
+
+    expect(mocks.approvalLease.cancel).toHaveBeenCalledOnce();
+    expect(mocks.callGatewayTool).not.toHaveBeenCalled();
   });
 
   it("forwards cancellation for prepared commands that need no approval", async () => {
