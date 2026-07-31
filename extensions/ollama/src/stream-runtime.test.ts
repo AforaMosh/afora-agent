@@ -3049,6 +3049,23 @@ describe("createOllamaStreamFn", () => {
     );
 
     expect(fetchWithSsrFGuardMock).toHaveBeenCalledTimes(2);
+    const initialRequest = requireEntry(
+      fetchWithSsrFGuardMock.mock.calls,
+      0,
+      "initial guarded Ollama request",
+    )[0] as GuardedFetchCall;
+    const fallbackRequest = requireEntry(
+      fetchWithSsrFGuardMock.mock.calls,
+      1,
+      "fallback guarded Ollama request",
+    )[0] as GuardedFetchCall;
+    expect(fallbackRequest.url).toBe(initialRequest.url);
+    expect(fallbackRequest.policy).toBe(initialRequest.policy);
+    expect(fallbackRequest.signal).toBe(initialRequest.signal);
+    expect(fallbackRequest.timeoutMs).toBe(initialRequest.timeoutMs);
+    expect(fallbackRequest.auditContext).toBe(initialRequest.auditContext);
+    expect(fallbackRequest.init?.method).toBe(initialRequest.init?.method);
+    expect(fallbackRequest.init?.headers).toBe(initialRequest.init?.headers);
     expect(firstRelease).toHaveBeenCalledOnce();
     expect(secondRelease).toHaveBeenCalledOnce();
     expect(events.at(-1)?.type).toBe("done");
