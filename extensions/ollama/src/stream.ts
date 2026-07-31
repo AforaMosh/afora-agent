@@ -1578,7 +1578,7 @@ function createRawOllamaStreamFn(
                 flushVisibleText(resolveVisibleContent(false));
               }
             }
-            if (chunk.message?.tool_calls) {
+            if (chunk.message?.tool_calls && !structuredToolFallbackActive) {
               closeThinkingBlock();
               closeTextBlock();
               accumulatedToolCalls.push(...chunk.message.tool_calls);
