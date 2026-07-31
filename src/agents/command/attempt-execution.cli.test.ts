@@ -2702,6 +2702,82 @@ describe("CLI attempt execution", () => {
     });
   });
 
+  it("keeps approved exec continuation output bounded for CLI runtimes", async () => {
+    const sessionKey = "agent:main:direct:claude-exec-followup";
+    const sessionEntry: SessionEntry = {
+      sessionId: "openclaw-session-cli-exec-followup",
+      updatedAt: Date.now(),
+    };
+    const sessionStore: Record<string, SessionEntry> = { [sessionKey]: sessionEntry };
+    const prefix = "resume approved exec\n";
+    const completion = `Exec finished (code 0)\n${"x".repeat(80_000)}`;
+    const suffix = "\ncontinue the task";
+    const body = `${prefix}${completion}${suffix}`;
+    const execApprovalContinuationPromptRange = {
+      start: prefix.length,
+      end: prefix.length + completion.length,
+    };
+    const userTurnTranscriptRecorder = createUserTurnTranscriptRecorder({
+      input: { text: body },
+      target: createTestUserTurnTranscriptTarget({
+        sessionId: sessionEntry.sessionId,
+        sessionKey,
+        sessionEntry,
+        agentId: "main",
+        cwd: tmpDir,
+        storePath,
+      }),
+    });
+    await writeSessionStoreSeed(sessionStore);
+    runCliAgentMock.mockResolvedValueOnce(makeCliResult("bounded cli"));
+
+    await runAgentAttempt({
+      providerOverride: "claude-cli",
+      originalProvider: "claude-cli",
+      modelOverride: "opus",
+      cfg: {} as OpenClawConfig,
+      sessionEntry,
+      sessionId: sessionEntry.sessionId,
+      sessionKey,
+      sessionAgentId: "main",
+      sessionFile: path.join(tmpDir, "session.jsonl"),
+      workspaceDir: tmpDir,
+      body,
+      transcriptBody: body,
+      isFallbackRetry: false,
+      resolvedThinkLevel: "medium",
+      timeoutMs: 1_000,
+      runId: "run-cli-exec-followup",
+      opts: {
+        execApprovalContinuationPromptRange,
+      } as Parameters<typeof runAgentAttempt>[0]["opts"],
+      runContext: {} as Parameters<typeof runAgentAttempt>[0]["runContext"],
+      spawnedBy: undefined,
+      messageChannel: "telegram",
+      skillsSnapshot: undefined,
+      resolvedVerboseLevel: undefined,
+      agentDir: tmpDir,
+      onAgentEvent: vi.fn(),
+      authProfileProvider: "claude-cli",
+      sessionStore,
+      storePath,
+      sessionHasHistory: false,
+      userTurnTranscriptRecorder,
+    });
+
+    const cliArgs = firstRunCliAgentArg();
+    expect(cliArgs.prompt).toContain(prefix);
+    expect(cliArgs.prompt).toContain(suffix);
+    expect(cliArgs.prompt).toMatch(/UTF-16 code units omitted from approved exec output/);
+    expect(cliArgs.transcriptPrompt).toBeTypeOf("string");
+    expect(String(cliArgs.transcriptPrompt).length).toBeLessThanOrEqual(
+      prefix.length + 16_000 + suffix.length,
+    );
+    await expect(userTurnTranscriptRecorder.resolveMessage()).resolves.toMatchObject({
+      content: cliArgs.transcriptPrompt,
+    });
+  });
+
   it("routes canonical Anthropic models through the configured Claude CLI runtime", async () => {
     const sessionKey = "agent:main:direct:canonical-claude-cli";
     const sessionEntry: SessionEntry = {
@@ -3230,7 +3306,7 @@ describe("CLI attempt execution", () => {
     expect(firstEmbeddedAgentArg().prompt).not.toContain("[Inter-session message]");
   });
 
-  it("forwards trusted elevated defaults to embedded agent runs", async () => {
+  it("forwards trusted elevated defaults and rebases continuation spans for fallback prompts", async () => {
     const sessionKey = "agent:main:telegram:direct:123";
     const sessionEntry: SessionEntry = {
       sessionId: "openclaw-session-elevated-followup",
@@ -3242,6 +3318,8 @@ describe("CLI attempt execution", () => {
       allowed: true,
       defaultLevel: "on" as const,
     };
+    const body = "follow up after approved exec";
+    const execApprovalContinuationPromptRange = { start: 8, end: 20 };
     await writeSessionStoreSeed(sessionStore);
     runEmbeddedAgentMock.mockResolvedValueOnce({
       meta: { durationMs: 1 },
@@ -3258,13 +3336,14 @@ describe("CLI attempt execution", () => {
       sessionAgentId: "main",
       sessionFile: path.join(tmpDir, "session.jsonl"),
       workspaceDir: tmpDir,
-      body: "follow up after approved exec",
-      isFallbackRetry: false,
+      body,
+      isFallbackRetry: true,
       resolvedThinkLevel: "medium",
       timeoutMs: 1_000,
       runId: "run-elevated-followup",
       opts: {
         bashElevated,
+        execApprovalContinuationPromptRange,
       } as Parameters<typeof runAgentAttempt>[0]["opts"],
       runContext: {} as Parameters<typeof runAgentAttempt>[0]["runContext"],
       spawnedBy: undefined,
@@ -3276,13 +3355,21 @@ describe("CLI attempt execution", () => {
       authProfileProvider: "openai",
       sessionStore,
       storePath,
-      sessionHasHistory: false,
+      sessionHasHistory: true,
     });
 
+    const retryPrefix = "[Retry after the previous model attempt failed or timed out]\n\n";
     expectMockArgFields(runEmbeddedAgentMock, {
       provider: "openai",
       model: "gpt-5.4",
       bashElevated,
+      prompt: `${retryPrefix}${body}`,
+      execApprovalContinuationPromptRange: {
+        start: retryPrefix.length + execApprovalContinuationPromptRange.start,
+        end: retryPrefix.length + execApprovalContinuationPromptRange.end,
+      },
+      execApprovalContinuationTranscriptPromptRange: execApprovalContinuationPromptRange,
+      transcriptPrompt: body,
     });
   });
 

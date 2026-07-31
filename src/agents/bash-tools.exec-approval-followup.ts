@@ -24,12 +24,17 @@ import {
   buildExecApprovalFollowupIdempotencyKey,
   isExecApprovalFollowupSessionRebound,
 } from "./bash-tools.exec-approval-followup-state.js";
+import {
+  resizeExecApprovalContinuationPrompt,
+  type ExecApprovalContinuationPromptRange,
+} from "./bash-tools.exec-approval-output.js";
 import { sanitizeUserFacingText } from "./embedded-agent-helpers/sanitize-user-facing-text.js";
 import {
   formatExecDeniedUserMessage,
   isExecDeniedResultText,
   parseExecApprovalResultText,
 } from "./exec-approval-result.js";
+import { DEFAULT_MAX_LIVE_TOOL_RESULT_CHARS } from "./tool-result-limits.js";
 import { callGatewayTool } from "./tools/gateway.js";
 
 const log = createSubsystemLogger("agents/exec-approval-followup");
@@ -89,24 +94,36 @@ function formatUnknownError(error: unknown): string {
  * a successful result is emitted verbatim so trailing output whitespace, blank
  * lines and indentation survive into the continuation.
  */
-function buildExecApprovalFollowupPrompt(resultText: string): string {
+function buildExecApprovalFollowupPrompt(resultText: string): {
+  message: string;
+  resultRange?: ExecApprovalContinuationPromptRange;
+} {
   const trimmed = resultText.trim();
   if (isExecDeniedResultText(trimmed)) {
-    return buildExecDeniedFollowupPrompt(trimmed);
+    return { message: buildExecDeniedFollowupPrompt(trimmed) };
   }
-  return [
+  const prefix = [
     "An async command the user already approved has completed.",
     "Do not run the command again.",
     "If the task requires more steps, continue from this result before replying to the user.",
     "Only ask the user for help if you are actually blocked.",
     "",
     "Exact completion details:",
-    trimmed ? resultText : "",
-    "",
+  ].join("\n");
+  const suffix = [
     "Continue the task if needed, then reply to the user in a helpful way.",
     "If it succeeded, share the relevant output.",
     "If it failed, explain what went wrong.",
   ].join("\n");
+  const completionDetails = trimmed ? resultText : "";
+  const resultStart = prefix.length + 1;
+  return {
+    message: `${prefix}\n${completionDetails}\n\n${suffix}`,
+    resultRange: {
+      start: resultStart,
+      end: resultStart + completionDetails.length,
+    },
+  };
 }
 
 function shouldSuppressExecDeniedFollowup(sessionKey: string | undefined): boolean {
@@ -156,7 +173,12 @@ function formatDirectExecApprovalFollowupText(
   resultText: string,
   opts: { allowDenied?: boolean } = {},
 ): string | null {
-  const parsed = parseExecApprovalResultText(resultText);
+  const boundedResultText = resizeExecApprovalContinuationPrompt({
+    prompt: resultText,
+    range: { start: 0, end: resultText.length },
+    maxOutputUtf16Units: DEFAULT_MAX_LIVE_TOOL_RESULT_CHARS,
+  });
+  const parsed = parseExecApprovalResultText(boundedResultText);
   if (parsed.kind === "other" && !parsed.raw) {
     return null;
   }
@@ -272,13 +294,17 @@ function buildAgentFollowupArgs(params: {
   idempotencyKey?: string;
 }) {
   const { deliveryTarget, sessionOnlyOriginChannel } = params;
+  const followupPrompt = buildExecApprovalFollowupPrompt(params.resultText);
   // When the followup run has no deliverable route and no gateway-internal channel,
   // preserve the raw turnSourceChannel so the spawned agent inherits messageProvider.
   // Without this, tools.elevated.allowFrom.<provider> checks fail with provider=null.
   const fallbackChannel = sessionOnlyOriginChannel ?? params.turnSourceChannel;
   return {
     sessionKey: params.sessionKey,
-    message: buildExecApprovalFollowupPrompt(params.resultText),
+    message: followupPrompt.message,
+    ...(followupPrompt.resultRange
+      ? { execApprovalContinuationPromptRange: followupPrompt.resultRange }
+      : {}),
     deliver: deliveryTarget.deliver,
     ...(deliveryTarget.deliver ? { bestEffortDeliver: true as const } : {}),
     channel: deliveryTarget.deliver ? deliveryTarget.channel : fallbackChannel,

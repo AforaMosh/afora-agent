@@ -126,8 +126,14 @@ describe("exec approval followup", () => {
       resultText,
     });
 
-    const prompt = expectGatewayAgentFollowup({ sessionKey: "agent:main:main" }).message;
+    const params = expectGatewayAgentFollowup({ sessionKey: "agent:main:main" });
+    const prompt = params.message;
     expect(prompt).toContain(`Exact completion details:\n${resultText}\n\nContinue the task`);
+    const range = requireRecord(
+      params.execApprovalContinuationPromptRange,
+      "exec approval continuation prompt range",
+    );
+    expect(String(prompt).slice(Number(range.start), Number(range.end))).toBe(resultText);
   });
 
   it("trims denial details before classification and rendering", async () => {
@@ -141,6 +147,9 @@ describe("exec approval followup", () => {
     expect(prompt).toContain("did not run");
     expect(prompt).not.toContain("\r\n  Exec denied");
     expect(prompt).not.toContain("already approved has completed");
+    expect(expectGatewayAgentFollowup({ sessionKey: "agent:main:main" })).not.toHaveProperty(
+      "execApprovalContinuationPromptRange",
+    );
   });
 
   it("delivers successful result text to the agent without trimming it", async () => {

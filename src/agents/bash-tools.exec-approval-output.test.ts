@@ -5,7 +5,10 @@
  * accounting above the cap.
  */
 import { describe, expect, it } from "vitest";
-import { formatExecApprovalContinuationOutput } from "./bash-tools.exec-approval-output.js";
+import {
+  formatExecApprovalContinuationSourceOutput,
+  resizeExecApprovalContinuationPrompt,
+} from "./bash-tools.exec-approval-output.js";
 
 // Pinned rather than imported: the module keeps its budget private, and pinning
 // the resolved numbers makes any change to the cap or the head/tail split a
@@ -21,6 +24,17 @@ const TAIL = 3_974;
 const HEAD_LABELED = 11_903;
 const TAIL_LABELED = 3_968;
 const HEADER = "[stdout]\n".length;
+
+function formatExecApprovalContinuationOutput(
+  streams: Parameters<typeof formatExecApprovalContinuationSourceOutput>[0],
+): string {
+  const source = formatExecApprovalContinuationSourceOutput(streams);
+  return resizeExecApprovalContinuationPrompt({
+    prompt: source,
+    range: { start: 0, end: source.length },
+    maxOutputUtf16Units: MAX,
+  });
+}
 
 function marker(
   omitted: number,
@@ -117,10 +131,10 @@ describe("formatExecApprovalContinuationOutput", () => {
     expect(formatted.length).toBeLessThanOrEqual(MAX);
   });
 
-  it("holds the cap when the omitted count needs more digits than the cap itself", () => {
-    // The omitted count scales with the input, so a fixed five-digit marker
-    // reserve would overflow the cap once the input passes ~1M units.
-    for (const total of [100_000, 1_016_000, 12_000_000]) {
+  it("holds the cap when the omitted count grows beyond five digits", () => {
+    // The omitted count scales with the input, so the marker reserve must
+    // account for every digit available within the host transport bound.
+    for (const total of [100_000, 200_000]) {
       const formatted = formatExecApprovalContinuationOutput([
         { label: "output", value: "z".repeat(total) },
       ]);
@@ -205,5 +219,56 @@ describe("formatExecApprovalContinuationOutput", () => {
         "b".repeat(TAIL_LABELED),
     );
     expect(formatted.length).toBeLessThanOrEqual(MAX);
+  });
+
+  it("keeps valid host output intact until the resumed attempt resolves its cap", () => {
+    const stdout = "a".repeat(100_000);
+    const stderr = "b".repeat(100_000);
+
+    const formatted = formatExecApprovalContinuationSourceOutput([
+      { label: "stdout", value: stdout },
+      { label: "stderr", value: stderr },
+    ]);
+
+    expect(formatted).toBe(`[stdout]\n${stdout}\n[stderr]\n${stderr}`);
+  });
+
+  it("retains an absolute source cap before model resolution", () => {
+    const formatted = formatExecApprovalContinuationSourceOutput([
+      { label: "output", value: "z".repeat(300_000) },
+    ]);
+
+    expect(formatted.length).toBeLessThanOrEqual(256_000);
+    expect(formatted).toMatch(/UTF-16 code units omitted from approved exec output/);
+  });
+
+  it("resizes only the marked completion span for the resolved attempt", () => {
+    const prefix = "trusted continuation instructions\n";
+    const resultText = `Exec finished (code 1)\n[stdout]\n${"a".repeat(20_000)}\n[stderr]\n${"b".repeat(20_000)}`;
+    const suffix = "\ncontinue the task";
+    const prompt = `${prefix}${resultText}${suffix}`;
+
+    const resized = resizeExecApprovalContinuationPrompt({
+      prompt,
+      range: { start: prefix.length, end: prefix.length + resultText.length },
+      maxOutputUtf16Units: 8_000,
+    });
+
+    expect(resized.startsWith(prefix)).toBe(true);
+    expect(resized.endsWith(suffix)).toBe(true);
+    expect(resized.length).toBeLessThanOrEqual(prefix.length + 8_000 + suffix.length);
+    expect(resized).toMatch(/tail resumes in stderr/);
+    expect(resized).not.toMatch(/\[std(?!out\]\n|err\]\n)/);
+  });
+
+  it("ignores an invalid continuation span", () => {
+    const prompt = "unchanged";
+    expect(
+      resizeExecApprovalContinuationPrompt({
+        prompt,
+        range: { start: 2, end: 99 },
+        maxOutputUtf16Units: 4,
+      }),
+    ).toBe(prompt);
   });
 });

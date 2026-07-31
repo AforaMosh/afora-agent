@@ -1,3 +1,4 @@
+import type { ExecApprovalContinuationPromptRange } from "../../agents/bash-tools.exec-approval-output.js";
 import type { AgentInternalEvent } from "../../agents/internal-events.js";
 import type { InputProvenance } from "../../sessions/input-provenance.js";
 
@@ -38,6 +39,8 @@ export type AgentRunRequest = {
   acpTurnSource?: "manual_spawn";
   internalRuntimeHandoffId?: string;
   execApprovalFollowupExpectedSessionId?: string;
+  /** Backend-issued span containing approved exec completion details. */
+  execApprovalContinuationPromptRange?: ExecApprovalContinuationPromptRange;
   internalEvents?: AgentInternalEvent[];
   suppressPromptPersistence?: boolean;
   sessionEffects?: "visible" | "internal";

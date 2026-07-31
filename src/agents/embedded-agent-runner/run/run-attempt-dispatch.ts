@@ -9,6 +9,7 @@ import { applyAuthHeaderOverride, applyLocalNoAuthHeaderOverride } from "../../m
 import type { AgentRuntimePlan } from "../../runtime-plan/types.js";
 import { createToolTerminalObserver } from "../../tool-terminal-outcome.js";
 import type { SystemAgentToolOptions } from "../../tools/system-agent-tool.js";
+import { prepareExecApprovalContinuationForAttempt } from "./attempt-exec-approval-continuation.js";
 import { runEmbeddedAttemptWithBackend } from "./backend.js";
 import {
   EMBEDDED_RUN_LANE_HEARTBEAT_MS,
@@ -173,6 +174,16 @@ export async function dispatchEmbeddedRunAttempt(input: {
   };
 
   let cancellationRequested = false;
+  const preparedExecApprovalContinuation = prepareExecApprovalContinuationForAttempt({
+    prompt: runtime.prompt,
+    transcriptPrompt: params.transcriptPrompt,
+    promptRange: params.execApprovalContinuationPromptRange,
+    transcriptPromptRange: params.execApprovalContinuationTranscriptPromptRange,
+    contextTokenBudget: runtime.contextTokenBudget,
+    modelContextWindow: runtime.model.contextWindow,
+    modelMaxTokens: runtime.model.maxTokens,
+    userTurnTranscriptRecorder: params.userTurnTranscriptRecorder,
+  });
   const promptMedia = await preparePluginHarnessPromptImages({
     runParams: params,
     runtime,
@@ -236,8 +247,8 @@ export async function dispatchEmbeddedRunAttempt(input: {
         }
       : {}),
     skillsSnapshot: params.skillsSnapshot,
-    prompt: runtime.prompt,
-    transcriptPrompt: params.transcriptPrompt,
+    prompt: preparedExecApprovalContinuation.prompt,
+    transcriptPrompt: preparedExecApprovalContinuation.transcriptPrompt,
     userTurnTranscriptRecorder: params.userTurnTranscriptRecorder,
     skipPreparedUserTurnMessage: runtime.skipPreparedUserTurnMessage,
     currentInboundEventKind: params.currentInboundEventKind,

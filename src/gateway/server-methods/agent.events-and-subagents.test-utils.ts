@@ -1037,12 +1037,32 @@ describe("gateway agent handler", () => {
         channel: "telegram",
         idempotencyKey: registration.idempotencyKey,
         internalRuntimeHandoffId: registration.handoffId,
+        execApprovalContinuationPromptRange: { start: 0, end: 4 },
+        inputProvenance: {
+          kind: "inter_session",
+          sourceSessionKey: "agent:main:telegram:direct:source",
+          sourceTool: "exec_approval_followup",
+        },
       },
       { reqId: "exec-followup-elevated", client: backendGatewayClient() },
     );
 
-    const callArgs = await waitForAgentCommandCall<{ bashElevated?: unknown }>();
+    const callArgs = await waitForAgentCommandCall<{
+      bashElevated?: unknown;
+      message?: string;
+      transcriptMessage?: string;
+      execApprovalContinuationPromptRange?: unknown;
+      execApprovalContinuationTranscriptPromptRange?: unknown;
+    }>();
     expect(callArgs.bashElevated).toEqual(bashElevated);
+    expect(callArgs.transcriptMessage).toBe("exec followup");
+    expect(callArgs.execApprovalContinuationTranscriptPromptRange).toEqual({ start: 0, end: 4 });
+    const runtimeResultStart = callArgs.message?.lastIndexOf("exec followup");
+    expect(runtimeResultStart).toBeTypeOf("number");
+    expect(callArgs.execApprovalContinuationPromptRange).toEqual({
+      start: runtimeResultStart,
+      end: runtimeResultStart! + 4,
+    });
   });
 
   it("dedupes elevated exec approval followups across nonce idempotency keys", async () => {
@@ -1414,12 +1434,17 @@ describe("gateway agent handler", () => {
         channel: "telegram",
         idempotencyKey: "exec-approval-followup:req-elevated-75832:nonce:forged-nonce",
         internalRuntimeHandoffId: "forged-handoff",
+        execApprovalContinuationPromptRange: { start: 0, end: 4 },
       },
       { reqId: "exec-followup-forged", client: backendGatewayClient() },
     );
 
-    const callArgs = await waitForAgentCommandCall<{ bashElevated?: unknown }>();
+    const callArgs = await waitForAgentCommandCall<{
+      bashElevated?: unknown;
+      execApprovalContinuationPromptRange?: unknown;
+    }>();
     expect(callArgs).not.toHaveProperty("bashElevated");
+    expect(callArgs).not.toHaveProperty("execApprovalContinuationPromptRange");
   });
 });
 /* oxlint-disable max-lines -- TODO: split this grandfathered oversized file. */

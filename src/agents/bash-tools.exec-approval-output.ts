@@ -8,6 +8,7 @@
  * whitespace are preserved verbatim and the budget is the model-facing one.
  */
 import { sliceUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { DEFAULT_MAX_LIVE_TOOL_RESULT_CHARS } from "./tool-result-limits.js";
 
 /** One named output stream supplied by an exec host. */
 type ExecApprovalOutputStream = {
@@ -16,16 +17,18 @@ type ExecApprovalOutputStream = {
 };
 
 /**
- * Hard cap for continuation output, mirroring
- * `DEFAULT_MAX_LIVE_TOOL_RESULT_CHARS` (tool-result-limits.ts): the floor every
- * exec tool result is truncated to when the model context window is unknown.
- * The host builds this text before the resuming agent's model is resolved, and
- * the text re-enters as a user follow-up that bypasses the tool-result guard,
- * so it needs its own bound. Head-weighted because command output front-loads
- * the failure and back-loads the summary.
+ * The exec host still needs an absolute transport bound before the resumed
+ * attempt resolves its model. Gateway aggregate output and node combined
+ * output are capped at 200k units, so 256k preserves every valid payload plus
+ * stream headers while bounding malformed or future sources.
  */
-const MAX_UTF16_UNITS = 16_000;
+const MAX_SOURCE_UTF16_UNITS = 256_000;
 const HEAD_SHARE = 0.75;
+
+export type ExecApprovalContinuationPromptRange = {
+  start: number;
+  end: number;
+};
 
 function buildOmissionMarker(params: {
   omitted: number;
@@ -55,15 +58,16 @@ function buildOmissionMarker(params: {
 function resolveCutBudget(
   totalUnits: number,
   longestLabelUnits: number,
+  maxUtf16Units: number,
 ): { head: number; tail: number } {
   const markerReserve =
     buildOmissionMarker({
       omitted: totalUnits,
-      headUnits: MAX_UTF16_UNITS,
-      tailUnits: MAX_UTF16_UNITS,
+      headUnits: maxUtf16Units,
+      tailUnits: maxUtf16Units,
       resumingLabel: "x".repeat(longestLabelUnits),
     }).length + 2;
-  const content = MAX_UTF16_UNITS - markerReserve;
+  const content = Math.max(0, maxUtf16Units - markerReserve);
   const head = Math.floor(content * HEAD_SHARE);
   return { head, tail: content - head };
 }
@@ -111,6 +115,27 @@ function renderExecOutputStreams(streams: ExecApprovalOutputStream[]): RenderedE
   return { text, headerRanges, streamRanges };
 }
 
+function readRenderedExecOutput(text: string): RenderedExecOutput {
+  const headers = Array.from(text.matchAll(/(?:^|\n)\[(stdout|stderr|error)\]\n/g), (match) => {
+    const leadingNewlineUnits = match[0].startsWith("\n") ? 1 : 0;
+    const start = (match.index ?? 0) + leadingNewlineUnits;
+    return {
+      label: match[1] ?? "",
+      start,
+      end: start + match[0].length - leadingNewlineUnits,
+    };
+  });
+  return {
+    text,
+    headerRanges: headers.map(({ start, end }) => ({ start, end })),
+    streamRanges: headers.map((header, index) => ({
+      label: header.label,
+      contentStart: header.end,
+      end: headers[index + 1]?.start ?? text.length,
+    })),
+  };
+}
+
 /**
  * Pushes a cut off the interior of a generated header so a partial `[stde`
  * never reaches the model. Both directions shrink what is retained, which keeps
@@ -150,9 +175,15 @@ function resolveResumingStreamLabel(params: {
  * Renders approved exec output for the agent continuation, preserving exact
  * bytes under the cap and reporting an exact omitted-unit count above it.
  */
-export function formatExecApprovalContinuationOutput(streams: ExecApprovalOutputStream[]): string {
-  const rendered = renderExecOutputStreams(streams);
-  if (rendered.text.length <= MAX_UTF16_UNITS) {
+function formatRenderedExecApprovalContinuationOutput(
+  rendered: RenderedExecOutput,
+  maxUtf16Units: number,
+): string {
+  const requestedMax = Number.isFinite(maxUtf16Units)
+    ? Math.floor(maxUtf16Units)
+    : DEFAULT_MAX_LIVE_TOOL_RESULT_CHARS;
+  const boundedMax = Math.max(1, Math.min(requestedMax, MAX_SOURCE_UTF16_UNITS));
+  if (rendered.text.length <= boundedMax) {
     return rendered.text;
   }
 
@@ -160,7 +191,7 @@ export function formatExecApprovalContinuationOutput(streams: ExecApprovalOutput
     (widest, range) => Math.max(widest, range.label.length),
     0,
   );
-  const budget = resolveCutBudget(rendered.text.length, longestLabelUnits);
+  const budget = resolveCutBudget(rendered.text.length, longestLabelUnits, boundedMax);
   const headEnd = moveCutOutsideHeader(budget.head, rendered.headerRanges, "head");
   const tailStart = moveCutOutsideHeader(
     rendered.text.length - budget.tail,
@@ -180,5 +211,51 @@ export function formatExecApprovalContinuationOutput(streams: ExecApprovalOutput
       streamRanges: rendered.streamRanges,
     }),
   });
-  return `${head}\n${marker}\n${tail}`;
+  const formatted = `${head}\n${marker}\n${tail}`;
+  if (formatted.length <= boundedMax) {
+    return formatted;
+  }
+  return sliceUtf16Safe(
+    `[... ${rendered.text.length} UTF-16 code units omitted from approved exec output ...]`,
+    0,
+    boundedMax,
+  );
+}
+
+/**
+ * Formats the host-owned stream structure without imposing the model-specific
+ * cap. The resolved attempt applies that final cap before persistence and
+ * provider submission.
+ */
+export function formatExecApprovalContinuationSourceOutput(
+  streams: ExecApprovalOutputStream[],
+): string {
+  return formatRenderedExecApprovalContinuationOutput(
+    renderExecOutputStreams(streams),
+    MAX_SOURCE_UTF16_UNITS,
+  );
+}
+
+/** Applies the resolved attempt's output allowance to the marked prompt span. */
+export function resizeExecApprovalContinuationPrompt(params: {
+  prompt: string;
+  range: ExecApprovalContinuationPromptRange;
+  maxOutputUtf16Units: number;
+}): string {
+  const { prompt, range } = params;
+  if (
+    !Number.isSafeInteger(range.start) ||
+    !Number.isSafeInteger(range.end) ||
+    range.start < 0 ||
+    range.end < range.start ||
+    range.end > prompt.length
+  ) {
+    return prompt;
+  }
+  const resultText = prompt.slice(range.start, range.end);
+  const resized = formatRenderedExecApprovalContinuationOutput(
+    readRenderedExecOutput(resultText),
+    params.maxOutputUtf16Units,
+  );
+  return `${prompt.slice(0, range.start)}${resized}${prompt.slice(range.end)}`;
 }

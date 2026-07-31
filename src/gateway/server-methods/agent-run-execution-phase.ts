@@ -1,6 +1,7 @@
 import { ErrorCodes, errorShape } from "../../../packages/gateway-protocol/src/index.js";
 import type { AgentRunTerminalOutcome } from "../../agents/agent-run-terminal-outcome.js";
 import { consumeExecApprovalFollowupRuntimeHandoff } from "../../agents/bash-tools.exec-approval-followup-state.js";
+import type { ExecApprovalContinuationPromptRange } from "../../agents/bash-tools.exec-approval-output.js";
 import { runAgentHarnessBeforeMessageWriteHook } from "../../agents/harness/hook-helpers.js";
 import { scheduleMainSessionRecoveryPendingTarget } from "../../agents/main-session-recovery-owner-release.js";
 import {
@@ -55,6 +56,21 @@ import { resolveSessionRuntimeCwd } from "./agent-session-reset.js";
 import { gatewayClientSenderFields } from "./gateway-client-identity.js";
 import { emitSessionsChanged } from "./session-change-event.js";
 import type { GatewayRequestHandlerOptions } from "./types.js";
+
+function rebaseExecApprovalContinuationRange(params: {
+  source: string;
+  target: string;
+  range: ExecApprovalContinuationPromptRange;
+}): ExecApprovalContinuationPromptRange | undefined {
+  const sourceOffset = params.target.lastIndexOf(params.source);
+  if (sourceOffset < 0) {
+    return undefined;
+  }
+  return {
+    start: sourceOffset + params.range.start,
+    end: sourceOffset + params.range.end,
+  };
+}
 
 export function startAgentRunExecution(params: {
   prepared: PreparedAgentRunDispatch;
@@ -270,6 +286,38 @@ export function startAgentRunExecution(params: {
           sessionKey: params.requestedSessionKeyRaw,
         });
       }
+      const requestedExecApprovalRange = execApprovalFollowupRuntimeHandoff
+        ? params.request.execApprovalContinuationPromptRange
+        : undefined;
+      const requestMessage = params.request.message ?? "";
+      const requestTranscriptOffset = requestMessage.lastIndexOf(
+        params.effectiveTranscriptInputText,
+      );
+      const execApprovalContinuationTranscriptPromptRange =
+        requestedExecApprovalRange &&
+        Number.isSafeInteger(requestedExecApprovalRange.start) &&
+        Number.isSafeInteger(requestedExecApprovalRange.end) &&
+        requestedExecApprovalRange.start >= 0 &&
+        requestedExecApprovalRange.end >= requestedExecApprovalRange.start &&
+        requestedExecApprovalRange.end <= requestMessage.length &&
+        requestTranscriptOffset >= 0 &&
+        requestedExecApprovalRange.start >= requestTranscriptOffset &&
+        requestedExecApprovalRange.end <=
+          requestTranscriptOffset + params.effectiveTranscriptInputText.length
+          ? {
+              start: requestedExecApprovalRange.start - requestTranscriptOffset,
+              end: requestedExecApprovalRange.end - requestTranscriptOffset,
+            }
+          : undefined;
+      // Provenance annotation changes runtime offsets but leaves transcript
+      // bytes undecorated. Carry an exact range for each representation.
+      const execApprovalContinuationPromptRange = execApprovalContinuationTranscriptPromptRange
+        ? rebaseExecApprovalContinuationRange({
+            source: params.effectiveTranscriptInputText,
+            target: message,
+            range: execApprovalContinuationTranscriptPromptRange,
+          })
+        : undefined;
       // Plugin-owned additive grants stay internal to the authenticated in-process run.
       // Public agent params cannot supply them, and normal tool policy still filters them.
       const runtimePluginToolGrant =
@@ -331,6 +379,13 @@ export function startAgentRunExecution(params: {
           runContext,
           ...(execApprovalFollowupRuntimeHandoff?.bashElevated
             ? { bashElevated: execApprovalFollowupRuntimeHandoff.bashElevated }
+            : {}),
+          ...(execApprovalContinuationPromptRange ? { execApprovalContinuationPromptRange } : {}),
+          ...(execApprovalContinuationTranscriptPromptRange
+            ? {
+                execApprovalContinuationTranscriptPromptRange,
+                transcriptMessage: params.effectiveTranscriptInputText,
+              }
             : {}),
           groupId: params.groupId,
           groupChannel: params.groupChannel,

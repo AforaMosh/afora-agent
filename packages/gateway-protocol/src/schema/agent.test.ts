@@ -81,6 +81,35 @@ describe("AgentParamsSchema", () => {
     ).toBe(true);
   });
 
+  it("accepts a backend-issued approved exec continuation range", () => {
+    expect(
+      Value.Check(AgentParamsSchema, {
+        message: "resume from approved exec output",
+        sessionKey: "agent:main:main",
+        internalRuntimeHandoffId: "handoff-1",
+        execApprovalContinuationPromptRange: { start: 16, end: 128 },
+        idempotencyKey: "exec-followup-1",
+      }),
+    ).toBe(true);
+  });
+
+  it("rejects malformed approved exec continuation ranges", () => {
+    for (const execApprovalContinuationPromptRange of [
+      { start: -1, end: 128 },
+      { start: 16.5, end: 128 },
+      { start: 16, end: "128" },
+      { start: 16, end: 128, extra: true },
+    ]) {
+      expect(
+        Value.Check(AgentParamsSchema, {
+          message: "resume from approved exec output",
+          execApprovalContinuationPromptRange,
+          idempotencyKey: "exec-followup-invalid",
+        }),
+      ).toBe(false);
+    }
+  });
+
   it("rejects host-owned delivery media constraints from public requests", () => {
     expect(
       Value.Check(AgentParamsSchema, {

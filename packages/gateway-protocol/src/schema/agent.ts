@@ -322,6 +322,12 @@ export const AgentParamsSchema = closedObject({
   acpTurnSource: Type.Optional(Type.Literal("manual_spawn")),
   internalRuntimeHandoffId: Type.Optional(NonEmptyString),
   execApprovalFollowupExpectedSessionId: Type.Optional(NonEmptyString),
+  execApprovalContinuationPromptRange: Type.Optional(
+    closedObject({
+      start: Type.Integer({ minimum: 0 }),
+      end: Type.Integer({ minimum: 0 }),
+    }),
+  ),
   internalEvents: Type.Optional(Type.Array(AgentInternalEventSchema)),
   inputProvenance: Type.Optional(InputProvenanceSchema),
   suppressPromptPersistence: Type.Optional(Type.Boolean()),

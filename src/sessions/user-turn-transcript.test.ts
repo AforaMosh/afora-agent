@@ -252,6 +252,62 @@ describe("user turn transcript persistence", () => {
   });
 
   describe("createUserTurnTranscriptRecorder", () => {
+    it("replaces generated text before runtime persistence", async () => {
+      const recorder = createUserTurnTranscriptRecorder({
+        input: {
+          text: "oversized generated continuation",
+          timestamp: 123,
+          idempotencyKey: "exec-followup:user",
+        },
+        target: unusedRecorderTarget,
+      });
+
+      recorder.replaceTextBeforePersistence?.("context-sized continuation");
+
+      await expect(recorder.resolveMessage()).resolves.toMatchObject({
+        content: "context-sized continuation",
+        timestamp: 123,
+        idempotencyKey: "exec-followup:user",
+      });
+      expect(recorder.message?.content).toBe("context-sized continuation");
+    });
+
+    it("does not replace text after provider submission", async () => {
+      const recorder = createUserTurnTranscriptRecorder({
+        input: {
+          text: "submitted continuation",
+          timestamp: 123,
+        },
+        target: unusedRecorderTarget,
+      });
+
+      recorder.markSentToProvider?.();
+      recorder.replaceTextBeforePersistence?.("too late");
+
+      await expect(recorder.resolveMessage()).resolves.toMatchObject({
+        content: "submitted continuation",
+      });
+    });
+
+    it("applies replacement text to input resolved after sizing", async () => {
+      const recorder = createUserTurnTranscriptRecorder({
+        resolveInput: async () => ({
+          text: "deferred oversized continuation",
+          timestamp: 123,
+          idempotencyKey: "exec-followup:deferred:user",
+        }),
+        target: unusedRecorderTarget,
+      });
+
+      recorder.replaceTextBeforePersistence?.("context-sized deferred continuation");
+
+      await expect(recorder.resolveMessage()).resolves.toMatchObject({
+        content: "context-sized deferred continuation",
+        timestamp: 123,
+        idempotencyKey: "exec-followup:deferred:user",
+      });
+    });
+
     it("accepts and normalizes provider-defined persisted media kinds", () => {
       const input: UserTurnInput = {
         text: "inspect this attachment",
