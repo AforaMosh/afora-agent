@@ -357,6 +357,10 @@ export async function exportClawAgent(
   if (avatar.sidecar && !managedPaths.has(avatar.sidecar.path)) {
     contents.push(avatar.sidecar);
   }
+  const pendingPackageBootstrap =
+    record.bootstrapState === "pending"
+      ? await workspace.readBytes("BOOTSTRAP.md", { maxBytes: MAX_EXPORT_FILE_BYTES })
+      : undefined;
   const bootstrapFiles: ClawManifest["workspace"]["bootstrapFiles"] = {};
   const files: ClawManifest["workspace"]["files"] = [];
   for (const file of contents) {
@@ -418,7 +422,8 @@ export async function exportClawAgent(
   }
   const aggregateBytes =
     contents.reduce((total, file) => total + file.content.byteLength, 0) +
-    (clawMarkdownBody?.byteLength ?? 0);
+    (clawMarkdownBody?.byteLength ?? 0) +
+    (pendingPackageBootstrap?.byteLength ?? 0);
   if (aggregateBytes > MAX_MANAGED_WORKSPACE_BYTES) {
     throw new ClawExportError(
       "workspace_files_oversized",
@@ -476,6 +481,9 @@ export async function exportClawAgent(
         ...contents,
         ...(clawMarkdownBody ? [{ path: "CLAW.md#body", content: clawMarkdownBody }] : []),
         ...(openClawProfileRaw ? [{ path: openClawProfilePath, content: openClawProfileRaw }] : []),
+        ...(pendingPackageBootstrap
+          ? [{ path: "BOOTSTRAP.md", content: pendingPackageBootstrap }]
+          : []),
       ]),
       type: "module",
       openclaw: { claw: "CLAW.md" },
@@ -486,6 +494,10 @@ export async function exportClawAgent(
     filesWritten.push("package.json");
     await output.write("CLAW.md", clawMarkdownRaw, { overwrite: false });
     filesWritten.push("CLAW.md");
+    if (pendingPackageBootstrap) {
+      await output.write("BOOTSTRAP.md", pendingPackageBootstrap, { overwrite: false });
+      filesWritten.push("BOOTSTRAP.md");
+    }
   } catch (error) {
     await rm(target, { recursive: true, force: true }).catch(() => undefined);
     throw new ClawExportError(

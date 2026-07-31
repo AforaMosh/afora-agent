@@ -138,6 +138,51 @@ describe("package-root BOOTSTRAP.md", () => {
     });
   });
 
+  it("reports a missing package bootstrap as unknown when seeding failed before state was recorded", async () => {
+    const root = await createPackage();
+    const read = await readClawManifestFile(root);
+    if (!read.ok || !read.packageBootstrap) {
+      throw new Error("expected package bootstrap");
+    }
+    const workspace = join(root, "workspace");
+    const env = { OPENCLAW_STATE_DIR: join(root, "state") };
+    const plan = await buildClawAddPlan({
+      manifest: read.manifest,
+      clawMarkdownBody: read.clawMarkdownBody,
+      packageBootstrap: read.packageBootstrap,
+      source: read.source,
+      context: { workspace },
+    });
+    let config: OpenClawConfig = {};
+
+    const added = await applyClawAddPlan(plan, {
+      env,
+      nowMs: 1_000,
+      consentPlanIntegrity: plan.planIntegrity,
+      commitConfig: async (transform) => {
+        config = transform(config);
+      },
+      seedPackageBootstrap: async () => {
+        throw new Error("seed failed");
+      },
+    });
+
+    expect(added).toMatchObject({
+      status: "partial",
+      error: { code: "bootstrap_write_failed" },
+    });
+    expect(readWorkspaceStateSnapshot(workspace, { env }).setup.bootstrapSeededAt).toBeUndefined();
+    await expect(readFile(join(workspace, "BOOTSTRAP.md"), "utf8")).rejects.toThrow();
+    await expect(readClawStatus("bootstrap-worker", { env, config })).resolves.toMatchObject({
+      records: [
+        {
+          bootstrapState: "unknown",
+          bootstrap: { message: "BOOTSTRAP.md disappeared during inspection." },
+        },
+      ],
+    });
+  });
+
   it("omits bootstrap from update-style target plans", async () => {
     const root = await createPackage();
     const read = await readClawManifestFile(root);

@@ -11,6 +11,7 @@ import {
 import {
   deleteWorkspaceState,
   prepareWorkspaceStateDeletion,
+  readWorkspaceStateSnapshot,
 } from "../agents/workspace-state-store.js";
 import {
   DEFAULT_BOOTSTRAP_FILENAME,
@@ -360,12 +361,16 @@ export async function inspectClawBootstrap(
   options: OpenClawStateDatabaseOptions,
 ): Promise<ClawBootstrapStatus> {
   const nativeState = await resolveWorkspaceBootstrapStatus(install.workspace, options);
+  const setupState = readWorkspaceStateSnapshot(install.workspace, options).setup;
   const base = {
     workspace: install.workspace,
     path: DEFAULT_BOOTSTRAP_FILENAME,
     ...install.bootstrap,
   };
-  if (nativeState === "complete") {
+  const nativeBootstrapConsumed =
+    typeof setupState.setupCompletedAt === "string" ||
+    typeof setupState.bootstrapSeededAt === "string";
+  if (nativeState === "complete" && (!install.bootstrap || nativeBootstrapConsumed)) {
     return { ...base, state: "complete" };
   }
   if (!install.bootstrap) {

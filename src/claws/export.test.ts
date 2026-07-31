@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -25,6 +26,7 @@ async function installedFixture(
   options: {
     avatar?: string;
     extraWorkspaceFiles?: string[];
+    packageBootstrap?: boolean;
     soulContent?: string | Buffer;
     withPackage?: boolean;
   } = {},
@@ -104,9 +106,24 @@ async function installedFixture(
     integrity: "sha256:manifest",
     byteLength: 100,
   };
+  const packageBootstrapContent = Buffer.from("# First run\n\nReview the repository map first.\n");
+  const packageBootstrapPath = join(root, "BOOTSTRAP.md");
+  if (options.packageBootstrap) {
+    await writeFile(packageBootstrapPath, packageBootstrapContent);
+  }
   const plan = await buildClawAddPlan({
     manifest: parsed.manifest,
     source,
+    ...(options.packageBootstrap
+      ? {
+          packageBootstrap: {
+            sourcePath: "BOOTSTRAP.md",
+            realPath: packageBootstrapPath,
+            byteLength: packageBootstrapContent.byteLength,
+            digest: `sha256:${createHash("sha256").update(packageBootstrapContent).digest("hex")}`,
+          },
+        }
+      : {}),
     openClawProfile,
     context: { workspace: join(root, "workspace-worker") },
   });
@@ -291,6 +308,32 @@ describe("exportClawAgent", () => {
         sourceMcpServers: fixture.sourceMcpServers,
       }),
     ).rejects.toMatchObject({ code: "workspace_files_drifted" });
+  });
+
+  it("exports a pending package bootstrap as package-root BOOTSTRAP.md", async () => {
+    const fixture = await installedFixture({ packageBootstrap: true });
+    const out = join(fixture.root, "exported-bootstrap");
+
+    const result = await exportClawAgent("worker", out, {
+      env: fixture.env,
+      config: fixture.config,
+      packageDeps: fixture.packageDeps,
+      sourceMcpServers: fixture.sourceMcpServers,
+    });
+
+    expect(result.filesWritten).toContain("BOOTSTRAP.md");
+    await expect(readFile(join(out, "BOOTSTRAP.md"), "utf8")).resolves.toContain(
+      "repository map",
+    );
+    const exported = await readClawManifestFile(out);
+    expect(exported.ok).toBe(true);
+    if (!exported.ok) {
+      throw new Error(JSON.stringify(exported.diagnostics));
+    }
+    expect(exported.packageBootstrap).toMatchObject({
+      sourcePath: "BOOTSTRAP.md",
+      byteLength: "# First run\n\nReview the repository map first.\n".length,
+    });
   });
 
   it("exports a whitespace-only SOUL.md as an explicit workspace file", async () => {
