@@ -317,6 +317,9 @@ export function installCodeModeRepairHook(params: { agent: Agent }): void {
     if (!codeModeTool) {
       return prior;
     }
+    if (signal?.aborted && !context.executionStarted) {
+      return prior;
+    }
     const effective = mergePriorOutcome(context, prior);
 
     const failure = preserveOriginalDispatchEvidence(
