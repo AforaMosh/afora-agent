@@ -12,10 +12,8 @@ import { resolveGatewayWindowsTaskName } from "./constants.js";
 import { execSchtasks } from "./schtasks-exec.js";
 import { resolveStartupEntryPaths, resolveTaskLauncherScriptPath } from "./schtasks-layout.js";
 import { readWindowsProcessSnapshot } from "./schtasks-process.js";
-import {
-  probeScheduledTaskExists,
-  SCHEDULED_TASK_FALLBACK_TIMEOUT_MS,
-} from "./schtasks-runtime.js";
+import { probeScheduledTaskExists } from "./schtasks-runtime.js";
+import { type ProbeRunEvent, waitForExactProbeRun } from "./schtasks.integration.test-helpers.js";
 import { resolveTaskScriptPath } from "./schtasks.js";
 import type { GatewayServiceRuntime } from "./service-runtime.js";
 import type { GatewayServiceEnv } from "./service-types.js";
@@ -62,39 +60,10 @@ type FailureDiagnosticSnapshot = {
 
 type TaskDefinitionSnapshot = { exists: false; taskXml: null } | { exists: true; taskXml: string };
 
-async function sleep(): Promise<void> {
+async function sleep(delayMs = WAIT_INTERVAL_MS): Promise<void> {
   await new Promise((resolve) => {
-    setTimeout(resolve, WAIT_INTERVAL_MS);
+    setTimeout(resolve, delayMs);
   });
-}
-
-async function readRunPids(eventsPath: string): Promise<number[]> {
-  const content = await fs.readFile(eventsPath, "utf8").catch(() => "");
-  return content
-    .split(/\r?\n/u)
-    .map((line) => Number.parseInt(line.trim(), 10))
-    .filter((pid) => Number.isSafeInteger(pid) && pid > 1);
-}
-
-async function waitForRunCount(eventsPath: string, expected: number): Promise<number[]> {
-  const deadline = Date.now() + WAIT_TIMEOUT_MS;
-  let pids: number[] = [];
-  while (Date.now() < deadline) {
-    pids = await readRunPids(eventsPath);
-    if (pids.length >= expected) {
-      return pids;
-    }
-    await sleep();
-  }
-  throw new Error(`Timed out waiting for ${expected} Scheduled Task runs; observed ${pids.length}`);
-}
-
-function requireRunPid(pids: number[], index: number): number {
-  const pid = pids[index];
-  if (pid === undefined) {
-    throw new Error(`Scheduled Task run ${index + 1} did not record a process id`);
-  }
-  return pid;
 }
 
 async function waitForRuntimeStatus(
@@ -403,14 +372,34 @@ function assertInteractiveLeastPrivilegeTask(params: {
   expect(exportedRunLevel === undefined || exportedRunLevel === "LeastPrivilege").toBe(true);
 }
 
-function expectScheduledTaskRun(principal: ScheduledTaskPrincipal): void {
-  expect(principal.lastTaskResult).toBe(0);
-  expect(Date.parse(principal.lastRunTime)).not.toBeNaN();
-  expect(Date.parse(principal.lastRunTime)).toBeGreaterThan(0);
-}
-
-function expectNoDirectFallback(startedAt: number): void {
-  expect(Date.now() - startedAt).toBeLessThan(SCHEDULED_TASK_FALLBACK_TIMEOUT_MS);
+async function waitForSuccessfulScheduledTaskRun(
+  taskName: string,
+): Promise<ScheduledTaskPrincipal> {
+  const deadline = Date.now() + WAIT_TIMEOUT_MS;
+  let lastPrincipal: ScheduledTaskPrincipal | null = null;
+  let lastError: unknown;
+  while (Date.now() < deadline) {
+    try {
+      lastPrincipal = readTaskPrincipal(taskName);
+      if (
+        lastPrincipal.lastTaskResult === 0 &&
+        !Number.isNaN(Date.parse(lastPrincipal.lastRunTime)) &&
+        Date.parse(lastPrincipal.lastRunTime) > 0
+      ) {
+        return lastPrincipal;
+      }
+    } catch (error) {
+      lastError = error;
+    }
+    await sleep();
+  }
+  throw new Error(
+    `Timed out waiting for Scheduled Task ${taskName} to record a successful run; ${
+      lastPrincipal
+        ? `observed state=${lastPrincipal.taskState} result=${lastPrincipal.lastTaskResult}`
+        : `last inspection failed: ${lastError instanceof Error ? lastError.message : String(lastError)}`
+    }`,
+  );
 }
 
 async function readTaskDefinitionSnapshot(taskName: string): Promise<TaskDefinitionSnapshot> {
@@ -662,6 +651,35 @@ function expectProbeProcessAlive(pid: number): void {
   );
 }
 
+function expectScheduledTaskProbeOrigin(params: {
+  eventsPath: string;
+  probePath: string;
+  run: ProbeRunEvent;
+  scriptPath: string;
+}): void {
+  expect(params.run.ppid).not.toBe(process.pid);
+  const capture = readRelatedProcessDiagnostics([
+    params.eventsPath,
+    params.probePath,
+    params.scriptPath,
+  ]);
+  expect(capture.ok).toBe(true);
+  expect(capture.truncated).toBe(false);
+  const processEntry = capture.processes.find((entry) => entry.ProcessId === params.run.pid);
+  expect(processEntry?.ParentProcessId).toBe(params.run.ppid);
+  const parentEntry = capture.processes.find((entry) => entry.ProcessId === params.run.ppid);
+  const normalizeCommandLine = (value: string | null | undefined) =>
+    (value ?? "").replaceAll("/", "\\").toLowerCase();
+  const processCommandLine = normalizeCommandLine(processEntry?.CommandLine);
+  expect(processCommandLine.includes(normalizeCommandLine(params.probePath))).toBe(true);
+  expect(processCommandLine.includes(normalizeCommandLine(params.eventsPath))).toBe(true);
+  expect(
+    normalizeCommandLine(parentEntry?.CommandLine).includes(
+      normalizeCommandLine(params.scriptPath),
+    ),
+  ).toBe(true);
+}
+
 function resolveTestId(): string {
   const configured = process.env.CI_WINDOWS_SCHTASKS_TEST_ID?.trim();
   if (!configured) {
@@ -809,15 +827,17 @@ describe.runIf(nativeIntegrationEnabled)("schtasks Windows integration", () => {
         'const net = require("node:net");',
         "const eventsPath = process.argv[5];",
         "const activePidPath = process.argv[6];",
+        "const appendEvent = (phase) => fs.appendFileSync(eventsPath, `${JSON.stringify({ phase, pid: process.pid, ppid: process.ppid })}\\n`);",
         'const portIndex = process.argv.indexOf("--port");',
         "const port = Number.parseInt(process.argv[portIndex + 1] ?? '', 10);",
         "if (!Number.isInteger(port) || port < 1) throw new Error('Missing gateway --port');",
         "const activePidTempPath = `${activePidPath}.${process.pid}.tmp`;",
         "const server = net.createServer((socket) => socket.end());",
+        'appendEvent("started");',
         "server.listen({ host: '127.0.0.1', port, exclusive: true }, () => {",
         "  fs.writeFileSync(activePidTempPath, String(process.pid));",
         "  fs.renameSync(activePidTempPath, activePidPath);",
-        "  fs.appendFileSync(eventsPath, `${process.pid}\\n`);",
+        '  appendEvent("listening");',
         "});",
         "server.on('error', (error) => { console.error(error); process.exit(1); });",
         "setInterval(() => {}, 1000).unref();",
@@ -848,7 +868,6 @@ describe.runIf(nativeIntegrationEnabled)("schtasks Windows integration", () => {
         expect(path.relative(stateDir, scriptPath)).not.toMatch(/^\.\.(?:[\\/]|$)/u);
         expect(await canBindLoopbackPort(gatewayPort)).toBe(true);
 
-        const installStartedAt = Date.now();
         await service.install({
           env,
           stdout,
@@ -857,9 +876,6 @@ describe.runIf(nativeIntegrationEnabled)("schtasks Windows integration", () => {
           environment: { OPENCLAW_GATEWAY_PORT: String(gatewayPort) },
           description: `OpenClaw CI Scheduled Task integration ${id}`,
         });
-        // Measure only activation. The task/XML/COM probes below can be slow enough to
-        // cross the fallback deadline after a successful Scheduled Task launch.
-        expectNoDirectFallback(installStartedAt);
 
         expect((await execSchtasks(["/Query", "/TN", taskName])).code).toBe(0);
         const taskXml = await readTaskXml(taskName);
@@ -867,8 +883,10 @@ describe.runIf(nativeIntegrationEnabled)("schtasks Windows integration", () => {
           throw new Error(`Could not export Scheduled Task XML for ${taskName}`);
         }
         expect(taskXml).toContain("<UserId>");
-        installedPrincipal = readTaskPrincipal(taskName);
-        expectScheduledTaskRun(installedPrincipal);
+        expect(taskXml.replaceAll("/", "\\").toLowerCase()).toContain(
+          launcherPath.replaceAll("/", "\\").toLowerCase(),
+        );
+        installedPrincipal = await waitForSuccessfulScheduledTaskRun(taskName);
         assertInteractiveLeastPrivilegeTask({
           taskXml,
           principal: installedPrincipal,
@@ -879,8 +897,15 @@ describe.runIf(nativeIntegrationEnabled)("schtasks Windows integration", () => {
         const command = await service.readCommand(env);
         expect(command?.programArguments).toEqual(programArguments);
         expect(command?.environment?.OPENCLAW_GATEWAY_PORT).toBe(String(gatewayPort));
-        const installedPid = requireRunPid(await waitForRunCount(eventsPath, 1), 0);
+        const installedRun = await waitForExactProbeRun(eventsPath, 1);
+        const installedPid = installedRun.pid;
         expectProbeProcessAlive(installedPid);
+        expectScheduledTaskProbeOrigin({
+          eventsPath,
+          probePath,
+          run: installedRun,
+          scriptPath,
+        });
         expect(await canBindLoopbackPort(gatewayPort)).toBe(false);
         await waitForRuntimeStatus(readRuntime, "running", installedPid);
 
@@ -898,22 +923,26 @@ describe.runIf(nativeIntegrationEnabled)("schtasks Windows integration", () => {
         expect((await execSchtasks(["/Query", "/TN", taskName])).code).toBe(0);
 
         const startMutations: string[] = [];
-        const startStartedAt = Date.now();
         await service.start({
           env,
           stdout,
           onMutation: (mutation) => startMutations.push(mutation.mode),
         });
         expect(startMutations).toEqual(["schtasks-start"]);
-        expectNoDirectFallback(startStartedAt);
-        const startedPid = requireRunPid(await waitForRunCount(eventsPath, 2), 1);
+        const startedRun = await waitForExactProbeRun(eventsPath, 2);
+        const startedPid = startedRun.pid;
         expect(startedPid).not.toBe(installedPid);
         expectProbeProcessAlive(startedPid);
+        expectScheduledTaskProbeOrigin({
+          eventsPath,
+          probePath,
+          run: startedRun,
+          scriptPath,
+        });
         expect(await canBindLoopbackPort(gatewayPort)).toBe(false);
         await waitForRuntimeStatus(readRuntime, "running", startedPid);
 
         const restartMutations: string[] = [];
-        const restartStartedAt = Date.now();
         const restartResult = await service.restart({
           env,
           stdout,
@@ -921,11 +950,17 @@ describe.runIf(nativeIntegrationEnabled)("schtasks Windows integration", () => {
         });
         expect(restartResult).toEqual({ outcome: "completed" });
         expect(restartMutations).toEqual(["schtasks-end", "schtasks-restart"]);
-        expectNoDirectFallback(restartStartedAt);
-        const restartedPid = requireRunPid(await waitForRunCount(eventsPath, 3), 2);
+        const restartedRun = await waitForExactProbeRun(eventsPath, 3);
+        const restartedPid = restartedRun.pid;
         lifecyclePids = [installedPid, startedPid, restartedPid];
         expect(restartedPid).not.toBe(startedPid);
         expectProbeProcessAlive(restartedPid);
+        expectScheduledTaskProbeOrigin({
+          eventsPath,
+          probePath,
+          run: restartedRun,
+          scriptPath,
+        });
         await waitForProcessExit(startedPid);
         await clearActivePid(activePidPath, startedPid);
         expect(await canBindLoopbackPort(gatewayPort)).toBe(false);
