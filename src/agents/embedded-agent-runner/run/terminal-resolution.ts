@@ -66,6 +66,12 @@ type TerminalResolution =
   | { action: "retry" }
   | { action: "complete"; result: EmbeddedAgentRunResult };
 
+export type EmbeddedRunToolCapableContinuation = {
+  kind: "verification" | "completion";
+  instruction: string;
+  readOnlyToolsScope: "verification" | "run" | null;
+};
+
 export function resolveSettledTurnFinalizationRequest(input: {
   runParams: TerminalRunParams;
   attempt: EmbeddedRunAttemptResult;
@@ -184,11 +190,7 @@ export async function resolveEmbeddedRunTerminal(input: {
   apiKeyInfo: ResolvedProviderAuth | null;
   agentHarnessId: string;
   settledTurnFinalizationAttempted: boolean;
-  toolCapableContinuation?: {
-    kind: "verification" | "completion";
-    instruction: string;
-    readOnlyToolsScope: "verification" | "run" | null;
-  } | null;
+  toolCapableContinuation?: EmbeddedRunToolCapableContinuation | null;
   pluginHarnessOwnsTransport: boolean;
   pluginHarnessOwnsAuthBootstrap: boolean;
   reportedModelRef: { provider: string; model: string };
@@ -304,6 +306,12 @@ export async function resolveEmbeddedRunTerminal(input: {
     return { action: "retry" };
   }
   const availableTerminalToolPresentation = input.readTerminalToolPresentation();
+  const incompleteTurnFallbackEligible =
+    !terminalInterrupted &&
+    !promptError &&
+    !attempt.lastToolError &&
+    !hasAttemptTerminalState(attempt) &&
+    !input.replayState.hadPotentialSideEffects;
   if (
     !nextReasoningOnlyRetryInstruction &&
     nextCodeModeErrorRetryInstruction &&
@@ -367,7 +375,10 @@ export async function resolveEmbeddedRunTerminal(input: {
         ...input,
         text: incompletePayloadText,
         payloadCount,
-        availableTerminalToolPresentation,
+        incompleteTurnFallbackSafe: incompleteTurnFallbackEligible,
+        terminalToolPresentation: incompleteTurnFallbackEligible
+          ? availableTerminalToolPresentation
+          : undefined,
       });
     }
     const incompletePayloadText =
@@ -408,14 +419,7 @@ export async function resolveEmbeddedRunTerminal(input: {
         hadPotentialSideEffects: input.replayState.hadPotentialSideEffects,
         attempt,
       });
-  const incompleteTurnFallbackSafe = Boolean(
-    incompleteTurnText &&
-    !terminalInterrupted &&
-    !promptError &&
-    !attempt.lastToolError &&
-    !hasAttemptTerminalState(attempt) &&
-    !input.replayState.hadPotentialSideEffects,
-  );
+  const incompleteTurnFallbackSafe = Boolean(incompleteTurnText && incompleteTurnFallbackEligible);
   const terminalToolPresentation = incompleteTurnFallbackSafe
     ? availableTerminalToolPresentation
     : undefined;

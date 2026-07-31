@@ -1506,6 +1506,7 @@ describe("runEmbeddedAgent incomplete-turn safety", () => {
       expect(runAttemptCall(1).operation).toBe("attempt");
       expect(result.payloads?.[0]).toMatchObject({ isError: true });
       expect(result.payloads?.[0]?.text).toContain("stopped before producing a final answer");
+      expect(result.meta.error?.fallbackSafe).toBe(true);
       expectWarnMessageWith("Code Mode completion retries exhausted");
     } finally {
       resetRunOverflowCompactionHarnessMocks();

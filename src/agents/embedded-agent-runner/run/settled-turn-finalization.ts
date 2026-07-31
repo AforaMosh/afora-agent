@@ -23,7 +23,10 @@ import {
   type EmbeddedRunTerminalState,
 } from "./terminal-outcome.js";
 import { prepareEmbeddedRunTerminal } from "./terminal-preparation.js";
-import { resolveSettledTurnFinalizationRequest } from "./terminal-resolution.js";
+import {
+  type EmbeddedRunToolCapableContinuation,
+  resolveSettledTurnFinalizationRequest,
+} from "./terminal-resolution.js";
 import type { EmbeddedRunTerminalRetryState } from "./terminal-retry-state.js";
 import type { EmbeddedRunAttemptParams, EmbeddedRunAttemptResult } from "./types.js";
 
@@ -160,6 +163,15 @@ export async function prepareTerminalWithSettledTurnFinalization(input: {
         : codeModeContinuationToolPolicy === "read-only"
           ? "run"
           : null;
+    const toolCapableContinuation: EmbeddedRunToolCapableContinuation = {
+      kind: codeModeMutationVerificationRequired ? "verification" : "completion",
+      instruction: resolveCodeModeContinuationInstruction({
+        mutationVerificationRequired: codeModeMutationVerificationRequired,
+        targetlessSideEffectEvidence: codeModeTargetlessSideEffectEvidence,
+        toolPolicy: codeModeContinuationToolPolicy,
+      }),
+      readOnlyToolsScope,
+    };
     return {
       ...initial,
       prepared,
@@ -167,15 +179,7 @@ export async function prepareTerminalWithSettledTurnFinalization(input: {
       lastTurnTotal,
       finalizationAttempted: false,
       finalizationSucceeded: false,
-      toolCapableContinuation: {
-        kind: codeModeMutationVerificationRequired ? "verification" : "completion",
-        instruction: resolveCodeModeContinuationInstruction({
-          mutationVerificationRequired: codeModeMutationVerificationRequired,
-          targetlessSideEffectEvidence: codeModeTargetlessSideEffectEvidence,
-          toolPolicy: codeModeContinuationToolPolicy,
-        }),
-        readOnlyToolsScope,
-      },
+      toolCapableContinuation,
     };
   }
 
