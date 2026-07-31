@@ -15,6 +15,11 @@ import {
   type ClawCronGateway,
 } from "./cron.js";
 import {
+  clawBootstrapStateBlocksRemove,
+  planClawBootstrapRemoval,
+  removeClawBootstrap,
+} from "./lifecycle-bootstrap-removal.js";
+import {
   claimClawAgentConfigRemoval,
   digestClawAgentRemovalSurface,
   type ConfigCommit,
@@ -111,7 +116,7 @@ export async function buildClawRemovePlan(
       });
     }
   }
-  if (record?.install.bootstrap && ["unsafe", "unknown"].includes(record.bootstrap.state)) {
+  if (record && clawBootstrapStateBlocksRemove(record)) {
     blockers.push({
       code: "bootstrap_cleanup_uncertain",
       message: `BOOTSTRAP.md has ${record.bootstrap.state} ownership state and must be reconciled before removal.`,
@@ -306,27 +311,9 @@ export async function buildClawRemovePlan(
           : {}),
       });
     }
-    if (record.install.bootstrap) {
-      const bootstrapBlocked =
-        record.bootstrap.state === "unsafe" || record.bootstrap.state === "unknown";
-      actions.push({
-        kind: "bootstrap",
-        id: record.bootstrap.path,
-        action: record.bootstrap.state === "pending" ? "delete" : "retain",
-        target: `${record.bootstrap.workspace}:${record.bootstrap.path}`,
-        blocked: bootstrapBlocked,
-        details: {
-          expectedState: record.bootstrap.state,
-          contentDigest: record.install.bootstrap.contentDigest,
-          sourcePath: record.install.bootstrap.sourcePath,
-          lifecycle: "native-seed-once",
-        },
-        ...(record.bootstrap.state === "modified"
-          ? { reason: "Local bootstrap content changed; preserve the file." }
-          : record.bootstrap.state === "complete"
-            ? { reason: "Native onboarding already consumed the bootstrap." }
-            : {}),
-      });
+    const bootstrapAction = planClawBootstrapRemoval(record);
+    if (bootstrapAction) {
+      actions.push(bootstrapAction);
     }
     actions.push(...packagePlan.actions);
     const unmatchedMcpSelectors = new Set(mcpCleanup?.selected ?? []);
@@ -470,8 +457,7 @@ export async function applyClawRemovePlan(
   if (
     !record ||
     record.agentState === "modified" ||
-    (record.install.bootstrap &&
-      (record.bootstrap.state === "unsafe" || record.bootstrap.state === "unknown")) ||
+    clawBootstrapStateBlocksRemove(record) ||
     record.workspaceFiles.some((file) => file.state === "unsafe") ||
     record.mcpServers.some((server) => server.state === "pending")
   ) {
@@ -662,18 +648,7 @@ export async function applyClawRemovePlan(
   for (const file of record.workspaceFiles) {
     workspaceFiles.push(await removeClawWorkspaceFile(file));
   }
-  const bootstrap = record.install.bootstrap
-    ? record.bootstrap.state === "pending"
-      ? await removeClawWorkspaceFile({
-          workspace: record.bootstrap.workspace,
-          path: record.bootstrap.path,
-          contentDigest: record.install.bootstrap.contentDigest,
-          state: "unchanged",
-        })
-      : record.bootstrap.state === "modified"
-        ? { path: record.bootstrap.path, action: "retainedModified" as const }
-        : { path: record.bootstrap.path, action: "missing" as const }
-    : undefined;
+  const bootstrap = await removeClawBootstrap(record);
   const cleanupErrors = workspaceFiles
     .filter((file) => file.action === "error")
     .map((file) => file.message ?? `Could not remove ${file.path}.`);
@@ -727,5 +702,3 @@ export async function applyClawRemovePlan(
         }),
   };
 }
-
-/* oxlint-disable max-lines -- Existing lifecycle owner is split in a follow-up. */

@@ -4,6 +4,7 @@ import path from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 import { findOverlappingWorkspaceAgentIds } from "../agents/agent-delete-safety.js";
 import { listAgentEntries, resolveAgentDir } from "../agents/agent-scope.js";
+import { MAX_WORKSPACE_BOOTSTRAP_FILE_BYTES } from "../agents/workspace-bootstrap-read.js";
 import {
   prepareLegacyWorkspaceStateReset,
   removeLegacyWorkspaceStateForReset,
@@ -324,17 +325,18 @@ export type ClawBootstrapStatus = {
 
 async function inspectDigestOwnedWorkspaceFile(
   record: DigestOwnedWorkspaceFile,
+  maxBytes = 1024 * 1024,
 ): Promise<DigestOwnedWorkspaceFileStatus> {
   try {
     const workspace = await fsSafeRoot(record.workspace, {
       hardlinks: "reject",
-      maxBytes: 1024 * 1024,
+      maxBytes,
       symlinks: "reject",
     });
     if (!(await workspace.exists(record.path))) {
       return { state: "missing" };
     }
-    const content = await workspace.readBytes(record.path, { maxBytes: 1024 * 1024 });
+    const content = await workspace.readBytes(record.path, { maxBytes });
     const digest = `sha256:${createHash("sha256").update(content).digest("hex")}`;
     return {
       state: digest === record.contentDigest ? "unchanged" : "modified",
@@ -376,11 +378,14 @@ export async function inspectClawBootstrap(
   if (!install.bootstrap) {
     return { ...base, state: nativeState };
   }
-  const inspected = await inspectDigestOwnedWorkspaceFile({
-    workspace: install.workspace,
-    path: DEFAULT_BOOTSTRAP_FILENAME,
-    contentDigest: install.bootstrap.contentDigest,
-  });
+  const inspected = await inspectDigestOwnedWorkspaceFile(
+    {
+      workspace: install.workspace,
+      path: DEFAULT_BOOTSTRAP_FILENAME,
+      contentDigest: install.bootstrap.contentDigest,
+    },
+    MAX_WORKSPACE_BOOTSTRAP_FILE_BYTES,
+  );
   if (inspected.state === "unchanged") {
     return { ...base, state: "pending" };
   }
@@ -396,6 +401,7 @@ export async function inspectClawBootstrap(
 
 export async function removeClawWorkspaceFile(
   record: ClawRemovableWorkspaceFile,
+  maxBytes = 1024 * 1024,
 ): Promise<RemovedWorkspaceFile> {
   if (record.state === "missing") {
     return { path: record.path, action: "missing" };
@@ -406,7 +412,7 @@ export async function removeClawWorkspaceFile(
   try {
     const workspace = await fsSafeRoot(record.workspace, {
       hardlinks: "reject",
-      maxBytes: 1024 * 1024,
+      maxBytes,
       symlinks: "reject",
     });
     if (!(await workspace.exists(record.path))) {
@@ -414,7 +420,7 @@ export async function removeClawWorkspaceFile(
     }
     const stagedPath = `${record.path}.openclaw-claw-remove-${randomUUID()}`;
     await workspace.move(record.path, stagedPath, { overwrite: false });
-    const content = await workspace.readBytes(stagedPath, { maxBytes: 1024 * 1024 });
+    const content = await workspace.readBytes(stagedPath, { maxBytes });
     const digest = `sha256:${createHash("sha256").update(content).digest("hex")}`;
     if (digest !== record.contentDigest) {
       await workspace.move(stagedPath, record.path, { overwrite: false });

@@ -1853,6 +1853,37 @@ INSERT INTO macos_port_guardian_records VALUES (4242, 18789, '/usr/bin/ssh', 're
     );
   });
 
+  it("repairs same-version Claw bootstrap columns before runtime schema validation", () => {
+    const stateDir = createTempStateDir();
+    const env = { OPENCLAW_STATE_DIR: stateDir };
+    const databasePath = materializeCurrentStateDatabase(stateDir);
+
+    const { DatabaseSync } = requireNodeSqlite();
+    const shippedSchema = new DatabaseSync(databasePath);
+    try {
+      shippedSchema.exec(`
+        ALTER TABLE claw_installs DROP COLUMN bootstrap_source_path;
+        ALTER TABLE claw_installs DROP COLUMN bootstrap_content_digest;
+      `);
+      expect(readSqliteNumberPragma(shippedSchema, "user_version")).toBe(
+        OPENCLAW_STATE_SCHEMA_VERSION,
+      );
+    } finally {
+      shippedSchema.close();
+    }
+
+    const reopened = openOpenClawStateDatabase({ env });
+    const columns = reopened.db.prepare("PRAGMA table_info(claw_installs)").all() as Array<{
+      name: string;
+    }>;
+    expect(columns.map((column) => column.name)).toEqual(
+      expect.arrayContaining(["bootstrap_source_path", "bootstrap_content_digest"]),
+    );
+    expect(normalizeSqliteSchemaShapeSql(collectSqliteSchemaShape(reopened.db))).toEqual(
+      normalizeSqliteSchemaShapeSql(createInitialStateSchemaShape()),
+    );
+  });
+
   it("repairs physical ordinary-index drift before cold-open reads", () => {
     const stateDir = createTempStateDir();
     const env = { OPENCLAW_STATE_DIR: stateDir };

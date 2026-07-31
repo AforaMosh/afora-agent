@@ -419,6 +419,7 @@ function ensureSchema(db: DatabaseSync, pathname: string): void {
           repairCanonicalSqliteIndexes(db, pathname, OPENCLAW_STATE_SCHEMA_SQL, {
             verifyPhysicalIntegrity: false,
           });
+          ensureAdditiveStateColumns(db);
           assertCurrentStateRuntimeSchema(db, pathname);
         } else if (previousVersion === 5) {
           assertOpenClawStateDatabaseV5ForMigration(db, { pathname });
@@ -569,6 +570,8 @@ function assertStateDatabaseIntegrityBeforeMutation(
     });
   }
   if (userVersion === OPENCLAW_STATE_SCHEMA_VERSION) {
+    assertSqliteIntegrity(database, pathname);
+    ensureAdditiveStateColumns(database);
     verifyAndRepairCanonicalSqliteIndexes(database, pathname, OPENCLAW_STATE_SCHEMA_SQL, {
       allowMissingColumns: true,
       validateAfterRepair: () => assertCurrentStateRuntimeSchema(database, pathname),

@@ -132,6 +132,7 @@ export function workspaceFilesShareSourceIdentity(left: object, right: object): 
 async function readWorkspaceFileWithGuards(params: {
   filePath: string;
   workspaceDir: string;
+  useCache?: boolean;
 }): Promise<WorkspaceGuardedReadResult> {
   try {
     // A transient FS race (EAGAIN/EWOULDBLOCK/EINTR under load) on the open or
@@ -161,15 +162,18 @@ async function readWorkspaceFileWithGuards(params: {
 
         const identity = workspaceFileIdentity(opened.stat, opened.path);
         const sourceIdentity = [opened.path, opened.stat, identity] as const;
-        const cached = workspaceFileCache.get(params.filePath);
-        if (cached && cached.identity === identity) {
+        const cached =
+          params.useCache === false ? undefined : workspaceFileCache.get(params.filePath);
+        if (cached?.identity === identity) {
           syncFs.closeSync(opened.fd);
           return { ok: true, content: cached.content, sourceIdentity };
         }
 
         try {
           const content = await readWorkspaceBootstrapFile(opened.fd);
-          workspaceFileCache.set(params.filePath, { content, identity });
+          if (params.useCache !== false) {
+            workspaceFileCache.set(params.filePath, { content, identity });
+          }
           return { ok: true, content, sourceIdentity };
         } finally {
           syncFs.closeSync(opened.fd);
@@ -700,8 +704,8 @@ export async function resolveWorkspaceBootstrapStatus(
 }
 
 export class WorkspaceBootstrapSeedConflictError extends Error {
-  constructor(message: string) {
-    super(message);
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
     this.name = "WorkspaceBootstrapSeedConflictError";
   }
 }
@@ -764,10 +768,19 @@ export async function seedWorkspaceBootstrap(params: {
   if (!created) {
     await retryAsync(
       async () => {
-        const statBefore = await fs.stat(bootstrapPath);
+        let statBefore: syncFs.Stats;
+        try {
+          statBefore = await fs.stat(bootstrapPath);
+        } catch (error) {
+          throw new WorkspaceBootstrapSeedConflictError(
+            "Existing BOOTSTRAP.md could not be read safely.",
+            { cause: error },
+          );
+        }
         const existing = await readWorkspaceFileWithGuards({
           filePath: bootstrapPath,
           workspaceDir: dir,
+          useCache: false,
         });
         if (!existing.ok) {
           throw new WorkspaceBootstrapSeedConflictError(
@@ -780,7 +793,15 @@ export async function seedWorkspaceBootstrap(params: {
           );
         }
         await delay(20);
-        const statAfter = await fs.stat(bootstrapPath);
+        let statAfter: syncFs.Stats;
+        try {
+          statAfter = await fs.stat(bootstrapPath);
+        } catch (error) {
+          throw new WorkspaceBootstrapSeedConflictError(
+            "Existing BOOTSTRAP.md could not be read safely.",
+            { cause: error },
+          );
+        }
         if (
           statBefore.size !== statAfter.size ||
           statBefore.mtimeMs !== statAfter.mtimeMs ||
@@ -793,6 +814,7 @@ export async function seedWorkspaceBootstrap(params: {
         const stable = await readWorkspaceFileWithGuards({
           filePath: bootstrapPath,
           workspaceDir: dir,
+          useCache: false,
         });
         if (!stable.ok || !Buffer.from(stable.content, "utf8").equals(params.content)) {
           throw new WorkspaceBootstrapSeedConflictError(

@@ -1,8 +1,9 @@
 import { createHash } from "node:crypto";
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
+import { MAX_WORKSPACE_BOOTSTRAP_FILE_BYTES } from "../agents/workspace-bootstrap-read.js";
 import type { McpServerConfig } from "../config/types.mcp.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
@@ -27,6 +28,7 @@ async function installedFixture(
     avatar?: string;
     extraWorkspaceFiles?: string[];
     packageBootstrap?: boolean;
+    packageBootstrapContent?: Buffer;
     soulContent?: string | Buffer;
     withPackage?: boolean;
   } = {},
@@ -106,7 +108,9 @@ async function installedFixture(
     integrity: "sha256:manifest",
     byteLength: 100,
   };
-  const packageBootstrapContent = Buffer.from("# First run\n\nReview the repository map first.\n");
+  const packageBootstrapContent =
+    options.packageBootstrapContent ??
+    Buffer.from("# First run\n\nReview the repository map first.\n");
   const packageBootstrapPath = join(root, "BOOTSTRAP.md");
   if (options.packageBootstrap) {
     await writeFile(packageBootstrapPath, packageBootstrapContent);
@@ -322,9 +326,7 @@ describe("exportClawAgent", () => {
     });
 
     expect(result.filesWritten).toContain("BOOTSTRAP.md");
-    await expect(readFile(join(out, "BOOTSTRAP.md"), "utf8")).resolves.toContain(
-      "repository map",
-    );
+    await expect(readFile(join(out, "BOOTSTRAP.md"), "utf8")).resolves.toContain("repository map");
     const exported = await readClawManifestFile(out);
     expect(exported.ok).toBe(true);
     if (!exported.ok) {
@@ -333,6 +335,29 @@ describe("exportClawAgent", () => {
     expect(exported.packageBootstrap).toMatchObject({
       sourcePath: "BOOTSTRAP.md",
       byteLength: "# First run\n\nReview the repository map first.\n".length,
+    });
+  });
+
+  it("exports a large pending package bootstrap within the native size limit", async () => {
+    const content = Buffer.from("# First run\n\n" + "x".repeat(1024 * 1024 + 32));
+    expect(content.byteLength).toBeLessThanOrEqual(MAX_WORKSPACE_BOOTSTRAP_FILE_BYTES);
+    const fixture = await installedFixture({
+      packageBootstrap: true,
+      packageBootstrapContent: content,
+    });
+    const out = join(fixture.root, "exported-large-bootstrap");
+
+    const result = await exportClawAgent("worker", out, {
+      env: fixture.env,
+      config: fixture.config,
+      packageDeps: fixture.packageDeps,
+      sourceMcpServers: fixture.sourceMcpServers,
+    });
+
+    expect(result.filesWritten).toContain("BOOTSTRAP.md");
+    await expect(readFile(join(out, "BOOTSTRAP.md"))).resolves.toEqual(content);
+    await expect(stat(join(out, "BOOTSTRAP.md"))).resolves.toMatchObject({
+      size: content.byteLength,
     });
   });
 

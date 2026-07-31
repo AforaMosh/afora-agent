@@ -7,6 +7,7 @@ import {
   runOpenClawStateWriteTransaction,
   type OpenClawStateDatabaseOptions,
 } from "../state/openclaw-state-db.js";
+import { clawBootstrapProvenanceFromRow } from "./provenance-bootstrap.js";
 import type { ClawAddPlan, ClawPackage, ResolvedClawPackage } from "./types.js";
 
 const CLAW_INSTALL_RECORD_SCHEMA_VERSION = "openclaw.clawInstallRecord.v1" as const;
@@ -100,14 +101,7 @@ function rowToInstall(row: InstallRow): PersistedClawInstall {
     workspace: row.workspace,
     agentConfigDigest: row.agent_config_digest,
     agentOwnedPaths: JSON.parse(row.agent_owned_paths_json) as string[],
-    ...(row.bootstrap_source_path && row.bootstrap_content_digest
-      ? {
-          bootstrap: {
-            sourcePath: row.bootstrap_source_path,
-            contentDigest: row.bootstrap_content_digest,
-          },
-        }
-      : {}),
+    ...clawBootstrapProvenanceFromRow(row),
     status: row.status,
     addedAtMs: Number(row.added_at_ms),
     updatedAtMs: Number(row.updated_at_ms),
@@ -151,14 +145,7 @@ function rowToRecord(row: ClawInstallRow): PersistedClawInstall {
     workspace: row.workspace,
     agentConfigDigest: row.agent_config_digest,
     agentOwnedPaths: JSON.parse(row.agent_owned_paths_json) as string[],
-    ...(row.bootstrap_source_path && row.bootstrap_content_digest
-      ? {
-          bootstrap: {
-            sourcePath: row.bootstrap_source_path,
-            contentDigest: row.bootstrap_content_digest,
-          },
-        }
-      : {}),
+    ...clawBootstrapProvenanceFromRow(row),
     status: row.status,
     addedAtMs: Number(row.added_at_ms),
     updatedAtMs: Number(row.updated_at_ms),
@@ -736,5 +723,3 @@ export function readClawPackageRefs(
       .all(params) as PackageRefRow[];
   return rows.map(rowToPackageRef);
 }
-
-/* oxlint-disable max-lines -- Existing provenance owner is split in a follow-up. */

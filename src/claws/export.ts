@@ -5,6 +5,7 @@ import { dirname, relative, resolve, sep } from "node:path";
 import { stringify as stringifyYaml } from "yaml";
 import { listAgentEntries, resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
 import { openLocalAgentAvatarFile } from "../agents/identity-avatar-file.js";
+import { MAX_WORKSPACE_BOOTSTRAP_FILE_BYTES } from "../agents/workspace-bootstrap-read.js";
 import { normalizeConfiguredMcpServers } from "../config/mcp-config-normalize.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { readFileDescriptorBoundedSync } from "../infra/boundary-file-read.js";
@@ -359,7 +360,7 @@ export async function exportClawAgent(
   }
   const pendingPackageBootstrap =
     record.bootstrapState === "pending"
-      ? await workspace.readBytes("BOOTSTRAP.md", { maxBytes: MAX_EXPORT_FILE_BYTES })
+      ? await workspace.readBytes("BOOTSTRAP.md", { maxBytes: MAX_WORKSPACE_BOOTSTRAP_FILE_BYTES })
       : undefined;
   const bootstrapFiles: ClawManifest["workspace"]["bootstrapFiles"] = {};
   const files: ClawManifest["workspace"]["files"] = [];

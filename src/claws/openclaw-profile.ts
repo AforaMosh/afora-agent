@@ -5,7 +5,7 @@ import { parseClawOpenClawProfile } from "./schema.js";
 import type { ClawDiagnostic, ClawOpenClawProfile } from "./types.js";
 
 const MAX_PROFILE_BYTES = 256 * 1024;
-export const OPENCLAW_CLAW_PROFILE_PATH = "profiles/openclaw.yml";
+const OPENCLAW_CLAW_PROFILE_PATH = "profiles/openclaw.yml";
 
 function diagnostic(code: string, message: string, path = "$"): ClawDiagnostic {
   return { level: "error", code, phase: "parse", path, message };

@@ -2,6 +2,7 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
+import { MAX_WORKSPACE_BOOTSTRAP_FILE_BYTES } from "../agents/workspace-bootstrap-read.js";
 import { readWorkspaceStateSnapshot } from "../agents/workspace-state-store.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
@@ -259,6 +260,56 @@ describe("package-root BOOTSTRAP.md", () => {
     );
     expect(removePlan.actions).toContainEqual(
       expect.objectContaining({ kind: "workspace", action: "trash" }),
+    );
+    const removed = await applyClawRemovePlan(removePlan, {
+      env,
+      config,
+      consentPlanIntegrity: removePlan.planIntegrity,
+      commitConfig: async (transform) => {
+        config = transform(config);
+      },
+      purgeSessions: async () => undefined,
+      trashPath: async () => true,
+    });
+
+    expect(removed).toMatchObject({
+      status: "complete",
+      bootstrap: { path: "BOOTSTRAP.md", action: "deleted" },
+    });
+    await expect(readFile(join(workspace, "BOOTSTRAP.md"), "utf8")).rejects.toThrow();
+  });
+
+  it("removes an unchanged large pending bootstrap within the native size limit", async () => {
+    const content = "# First run\n\n" + "x".repeat(1024 * 1024 + 32);
+    expect(Buffer.byteLength(content)).toBeLessThanOrEqual(MAX_WORKSPACE_BOOTSTRAP_FILE_BYTES);
+    const root = await createPackage(content);
+    const read = await readClawManifestFile(root);
+    if (!read.ok || !read.packageBootstrap) {
+      throw new Error("expected package bootstrap");
+    }
+    const workspace = join(root, "workspace");
+    const env = { OPENCLAW_STATE_DIR: join(root, "state") };
+    const addPlan = await buildClawAddPlan({
+      manifest: read.manifest,
+      packageBootstrap: read.packageBootstrap,
+      source: read.source,
+      context: { workspace },
+    });
+    let config: OpenClawConfig = {};
+    await applyClawAddPlan(addPlan, {
+      env,
+      consentPlanIntegrity: addPlan.planIntegrity,
+      commitConfig: async (transform) => {
+        config = transform(config);
+      },
+    });
+
+    await expect(readClawStatus("bootstrap-worker", { env, config })).resolves.toMatchObject({
+      records: [{ bootstrapState: "pending" }],
+    });
+    const removePlan = await buildClawRemovePlan("bootstrap-worker", { env, config });
+    expect(removePlan.actions).toContainEqual(
+      expect.objectContaining({ kind: "bootstrap", action: "delete", blocked: false }),
     );
     const removed = await applyClawRemovePlan(removePlan, {
       env,
