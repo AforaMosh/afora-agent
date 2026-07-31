@@ -85,7 +85,7 @@ import {
   buildSessionMetadata,
   buildSessionPresentation,
   buildSessionUsageSnapshot,
-  type GatewaySessionPresentationRow,
+  type AcpSessionPresentationRow,
   type SessionSnapshot,
 } from "./translator.presentation.js";
 import {
@@ -1508,7 +1508,7 @@ export class AcpGatewayAgent implements Agent {
 
   private async getSessionSnapshot(
     sessionKey: string,
-    overrides?: Partial<GatewaySessionPresentationRow>,
+    overrides?: Partial<AcpSessionPresentationRow>,
   ): Promise<SessionSnapshot> {
     try {
       const row = await this.getGatewaySessionRow(sessionKey);
@@ -1592,7 +1592,7 @@ export class AcpGatewayAgent implements Agent {
 
   private async getGatewaySessionRow(
     sessionKey: string,
-  ): Promise<GatewaySessionPresentationRow | undefined> {
+  ): Promise<AcpSessionPresentationRow | undefined> {
     const result = await this.gateway.request<SessionsListResult>("sessions.list", {
       limit: 200,
       search: sessionKey,
@@ -1638,7 +1638,7 @@ export class AcpGatewayAgent implements Agent {
     configId: string,
     value: string | boolean,
   ): {
-    overrides: Partial<GatewaySessionPresentationRow>;
+    overrides: Partial<AcpSessionPresentationRow>;
     patch?: Record<string, string | boolean | null>;
   } {
     if (typeof value !== "string") {
@@ -1681,7 +1681,7 @@ export class AcpGatewayAgent implements Agent {
         const next = value === "inherit" ? null : value;
         return {
           patch: { responseUsage: next },
-          overrides: { responseUsage: next as GatewaySessionPresentationRow["responseUsage"] },
+          overrides: { responseUsage: next as AcpSessionPresentationRow["responseUsage"] },
         };
       }
       case ACP_ELEVATED_LEVEL_CONFIG_ID:

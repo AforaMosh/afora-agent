@@ -18,7 +18,6 @@ import {
   clearBootstrapSnapshot,
   clearBootstrapSnapshotOnSessionBoundary,
 } from "../agents/bootstrap-cache.js";
-import { clearAllCliSessions } from "../agents/cli-session.js";
 import { resetRegisteredAgentHarnessSessions } from "../agents/harness/registry.js";
 import { resolveSessionModelRef } from "../agents/session-model-ref.js";
 import { resolveSessionPlacementResetBlock } from "../agents/session-placement-admission.js";
@@ -36,16 +35,13 @@ import {
   deleteSessionEntryLifecycle,
   resetSessionEntryLifecycle,
 } from "../config/sessions.js";
-import { rebindCliSessionReseedReceiptsForReset } from "../config/sessions/cli-session-binding.js";
 import { formatSqliteSessionFileMarker } from "../config/sessions/legacy-sqlite-marker.js";
-import { resolveResetPreservedSelection } from "../config/sessions/reset-preserved-selection.js";
-import { sessionEntryForkedFromParent } from "../config/sessions/session-entry-lineage.js";
 import { loadResolvedSessionEntry } from "../config/sessions/session-entry-loader.js";
-import {
-  buildSessionCreationStamp,
-  type SessionCreatedActor,
-  type SessionCreatedVia,
+import type {
+  SessionCreatedActor,
+  SessionCreatedVia,
 } from "../config/sessions/session-entry-provenance.js";
+import { buildSessionResetEntry } from "../config/sessions/session-reset-entry.js";
 import { resolveSessionStoreKey } from "../config/sessions/session-store-key.js";
 import { resolveSessionStoreTarget } from "../config/sessions/session-store-target.js";
 import type { SessionAcpMeta } from "../config/sessions/types.js";
@@ -1381,119 +1377,22 @@ export async function performGatewaySessionReset(params: {
             return currentEntry;
           }
           resetBoundaryAppended = currentEntry !== undefined;
-          const resetPreservedSelection = resolveResetPreservedSelection({
-            entry: currentEntry,
-          });
           const now = Date.now();
-          const nextSessionId = currentEntry?.sessionId ?? randomUUID();
-          const creationStamp = currentEntry
-            ? {
-                createdVia: currentEntry.createdVia,
-                createdActor: currentEntry.createdActor,
-                createdAt: currentEntry.createdAt,
-              }
-            : params.creation
-              ? buildSessionCreationStamp(params.creation)
-              : {};
-          const nextEntry: SessionEntry = {
-            sessionId: nextSessionId,
-            lifecycleRevision: randomUUID(),
-            updatedAt: now,
-            sessionStartedAt: now,
-            systemSent: false,
-            abortedLastRun: false,
-            thinkingLevel: currentEntry?.thinkingLevel,
-            fastMode: currentEntry?.fastMode,
-            toolOverrides: currentEntry?.toolOverrides,
-            verboseLevel: currentEntry?.verboseLevel,
-            traceLevel: currentEntry?.traceLevel,
-            reasoningLevel: currentEntry?.reasoningLevel,
-            elevatedLevel: currentEntry?.elevatedLevel,
-            ttsAuto: currentEntry?.ttsAuto,
-            execHost: params.execNode
-              ? "node"
-              : params.clearExecBinding
-                ? undefined
-                : currentEntry?.execHost,
-            execSecurity: currentEntry?.execSecurity,
-            execAsk: currentEntry?.execAsk,
-            execNode: params.execNode
-              ? params.execNode
-              : params.clearExecBinding
-                ? undefined
-                : currentEntry?.execNode,
-            execCwd: params.execNode
-              ? params.execCwd
-              : params.clearExecBinding
-                ? undefined
-                : currentEntry?.execCwd,
-            responseUsage: currentEntry?.responseUsage,
-            pinnedAt: currentEntry?.pinnedAt,
-            icon: currentEntry?.icon,
-            // Resets should keep the user's explicit selection, but clear any
-            // temporary fallback model that was pinned during the previous run.
-            ...resetPreservedSelection,
-            groupActivation: currentEntry?.groupActivation,
-            groupActivationNeedsSystemIntro: currentEntry?.groupActivationNeedsSystemIntro,
-            chatType: currentEntry?.chatType,
-            compactionCount: 0,
-            sendPolicy: currentEntry?.sendPolicy,
-            queueMode: currentEntry?.queueMode,
-            queueDebounceMs: currentEntry?.queueDebounceMs,
-            queueCap: currentEntry?.queueCap,
-            queueDrop: currentEntry?.queueDrop,
-            spawnedBy: currentEntry?.spawnedBy,
-            spawnedWorkspaceDir: currentEntry?.spawnedWorkspaceDir,
-            spawnedCwd: params.clearSpawnedCwd
-              ? undefined
-              : (params.spawnedCwd ?? currentEntry?.spawnedCwd),
-            worktree: params.clearSpawnedCwd
-              ? undefined
-              : (params.worktree ?? currentEntry?.worktree),
-            parentSessionKey: currentEntry?.parentSessionKey,
-            ...creationStamp,
-            forkSource: currentEntry?.forkSource,
-            forkedFromParent: sessionEntryForkedFromParent(currentEntry) ? true : undefined,
-            spawnDepth: currentEntry?.spawnDepth,
-            subagentRole: currentEntry?.subagentRole,
-            subagentControlScope: currentEntry?.subagentControlScope,
-            label: currentEntry?.label,
-            displayName: currentEntry?.displayName,
-            delivery: currentEntry?.delivery,
-            groupId: currentEntry?.groupId,
-            subject: currentEntry?.subject,
-            groupChannel: currentEntry?.groupChannel,
-            space: currentEntry?.space,
-            pluginOwnerId: currentEntry?.pluginOwnerId ?? params.authorizedPluginId,
-            cliSessionBindings: currentEntry?.cliSessionBindings,
-            cliSessionIds: currentEntry?.cliSessionIds,
-            claudeCliSessionId: currentEntry?.claudeCliSessionId,
-            usageFamilyKey: currentEntry?.usageFamilyKey,
-            usageFamilySessionIds: currentEntry?.usageFamilySessionIds,
-            // Do not carry the cached skills catalog across /new. Long-lived channel
-            // sessions (Signal DMs/groups in particular) otherwise keep advertising a
-            // stale <available_skills> block even after reset/restart, because the
-            // skills snapshot version is runtime-local and may reset to 0.
-            inputTokens: 0,
-            outputTokens: 0,
-            totalTokens: 0,
-            totalTokensFresh: true,
-          };
-          // Drop CLI provider bindings so the next turn after reset starts a fresh
-          // CLI conversation on the provider side. Preserved only for spawned
-          // subagents (canonical `:subagent:` keys), where Tak Hoffman's fa56682b3ced
-          // regression fix intentionally protects CLI continuity for
-          // orchestration-driven resets. Non-subagent sessions that happen to set
-          // `parentSessionKey` (e.g. dashboard children) are not exempt.
-          if (resetBoundaryAppended && !isSubagentSessionKey(primaryKey)) {
-            clearAllCliSessions(nextEntry);
-          } else {
-            nextEntry.cliSessionBindings = rebindCliSessionReseedReceiptsForReset(
-              nextEntry.cliSessionBindings,
-              nextSessionId,
-            );
-          }
-          return nextEntry;
+          return buildSessionResetEntry({
+            currentEntry,
+            primaryKey,
+            resetBoundaryAppended,
+            now,
+            createId: randomUUID,
+            creation: params.creation,
+            authorizedPluginId: params.authorizedPluginId,
+            execNode: params.execNode,
+            execCwd: params.execCwd,
+            clearExecBinding: params.clearExecBinding,
+            spawnedCwd: params.spawnedCwd,
+            worktree: params.worktree,
+            clearSpawnedCwd: params.clearSpawnedCwd,
+          });
         },
         afterEntryMutation: async (mutation) => {
           if (resetSkipped) {

@@ -8,9 +8,9 @@ import { timestampMsToIsoString } from "@openclaw/normalization-core/number-coer
 import {
   normalizeFastMode,
   normalizeOptionalString,
+  type FastMode,
 } from "@openclaw/normalization-core/string-coerce";
 import { BASE_THINKING_LEVELS } from "../auto-reply/thinking.shared.js";
-import type { GatewaySessionRow } from "../gateway/session-utils.js";
 
 /** ACP config option ids exposed to compatible ACP clients. */
 export const ACP_THOUGHT_LEVEL_CONFIG_ID = "thought_level";
@@ -23,38 +23,37 @@ export const ACP_ELEVATED_LEVEL_CONFIG_ID = "elevated_level";
 export const ACP_TIMEOUT_CONFIG_ID = "timeout";
 export const ACP_TIMEOUT_SECONDS_CONFIG_ID = "timeout_seconds";
 
-/** Gateway session fields needed to build ACP session presentation state. */
-export type GatewaySessionPresentationRow = Pick<
-  GatewaySessionRow,
-  | "key"
-  | "kind"
-  | "channel"
-  | "parentSessionKey"
-  | "spawnedBy"
-  | "spawnDepth"
-  | "subagentRole"
-  | "subagentControlScope"
-  | "spawnedWorkspaceDir"
-  | "spawnedCwd"
-  | "displayName"
-  | "label"
-  | "derivedTitle"
-  | "updatedAt"
-  | "thinkingLevel"
-  | "fastMode"
-  | "effectiveFastMode"
-  | "modelProvider"
-  | "model"
-  | "thinkingLevels"
-  | "verboseLevel"
-  | "traceLevel"
-  | "reasoningLevel"
-  | "responseUsage"
-  | "elevatedLevel"
-  | "totalTokens"
-  | "totalTokensFresh"
-  | "contextTokens"
->;
+/** Storage-neutral session fields needed to build ACP presentation state. */
+export type AcpSessionPresentationRow = {
+  key: string;
+  kind?: string;
+  channel?: string;
+  parentSessionKey?: string;
+  spawnedBy?: string;
+  spawnDepth?: number;
+  subagentRole?: string;
+  subagentControlScope?: string;
+  spawnedWorkspaceDir?: string;
+  spawnedCwd?: string;
+  displayName?: string;
+  label?: string;
+  derivedTitle?: string;
+  updatedAt?: number | null;
+  thinkingLevel?: string;
+  fastMode?: FastMode;
+  effectiveFastMode?: FastMode;
+  modelProvider?: string;
+  model?: string;
+  thinkingLevels?: Array<{ id: string; name?: string }>;
+  verboseLevel?: string;
+  traceLevel?: string;
+  reasoningLevel?: string;
+  responseUsage?: string | null;
+  elevatedLevel?: string;
+  totalTokens?: number;
+  totalTokensFresh?: boolean;
+  contextTokens?: number;
+};
 
 /** ACP session controls and modes shown to the client. */
 type SessionPresentation = {
@@ -131,8 +130,8 @@ function buildSelectConfigOption(params: {
 }
 
 export function buildSessionPresentation(params: {
-  row?: GatewaySessionPresentationRow;
-  overrides?: Partial<GatewaySessionPresentationRow>;
+  row?: AcpSessionPresentationRow;
+  overrides?: Partial<AcpSessionPresentationRow>;
 }): SessionPresentation {
   const row = {
     ...params.row,
@@ -216,7 +215,7 @@ export function buildSessionPresentation(params: {
 }
 
 export function buildSessionMetadata(params: {
-  row?: GatewaySessionPresentationRow;
+  row?: AcpSessionPresentationRow;
   sessionKey: string;
 }): SessionMetadata {
   const title =
@@ -238,7 +237,7 @@ export function buildSessionMetadata(params: {
 }
 
 export function buildSessionUsageSnapshot(
-  row?: GatewaySessionPresentationRow,
+  row?: AcpSessionPresentationRow,
 ): SessionUsageSnapshot | undefined {
   const totalTokens = row?.totalTokens;
   const contextTokens = row?.contextTokens;

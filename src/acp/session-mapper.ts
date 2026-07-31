@@ -3,7 +3,7 @@ import { readBool, readString } from "@openclaw/acp-core/meta";
 import type { AcpServerOptions } from "@openclaw/acp-core/types";
 import type { GatewayClient } from "../gateway/client.js";
 
-type AcpSessionMeta = {
+export type AcpSessionMeta = {
   sessionKey?: string;
   sessionLabel?: string;
   resetSession?: boolean;
