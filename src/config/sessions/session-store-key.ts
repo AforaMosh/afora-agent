@@ -5,12 +5,6 @@ import {
 } from "@openclaw/normalization-core/string-coerce";
 import { listAgentIds, resolveDefaultAgentId } from "../../agents/agent-scope.js";
 import {
-  canonicalizeMainSessionAlias,
-  resolveAgentMainSessionKey,
-  resolveMainSessionKey,
-} from "./main-session.js";
-import type { OpenClawConfig } from "../types.openclaw.js";
-import {
   DEFAULT_AGENT_ID,
   normalizeAgentId,
   normalizeMainKey,
@@ -18,6 +12,12 @@ import {
   type ParsedAgentSessionKey,
 } from "../../routing/session-key.js";
 import { normalizeSessionKeyPreservingOpaquePeerIds } from "../../sessions/session-key-utils.js";
+import type { OpenClawConfig } from "../types.openclaw.js";
+import {
+  canonicalizeMainSessionAlias,
+  resolveAgentMainSessionKey,
+  resolveMainSessionKey,
+} from "./main-session.js";
 
 /** Canonicalize an opaque session key into the agent-scoped store namespace. */
 export function canonicalizeSessionKeyForAgent(agentId: string, key: string): string {
