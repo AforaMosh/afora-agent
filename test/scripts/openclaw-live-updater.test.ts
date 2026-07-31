@@ -528,7 +528,7 @@ describe("openclaw live updater", () => {
       (command: string, args: string[]) => {
         const call = [command, ...args].join(" ");
         calls.push(call);
-        if (call.includes("gateway status") && ++statusAttempts < 3) {
+        if (call.includes("gateway status") && ++statusAttempts < 7) {
           throw new Error("RPC warming up");
         }
       },
@@ -537,12 +537,64 @@ describe("openclaw live updater", () => {
       (ms: number) => delays.push(ms),
     );
 
-    expect(delays).toEqual([5_000, 5_000]);
+    expect(delays).toEqual([5_000, 5_000, 5_000, 5_000, 5_000, 5_000]);
     expect(calls).toEqual([
       "pnpm openclaw gateway status --deep --require-rpc --json",
       "pnpm openclaw gateway status --deep --require-rpc --json",
       "pnpm openclaw gateway status --deep --require-rpc --json",
+      "pnpm openclaw gateway status --deep --require-rpc --json",
+      "pnpm openclaw gateway status --deep --require-rpc --json",
+      "pnpm openclaw gateway status --deep --require-rpc --json",
+      "pnpm openclaw gateway status --deep --require-rpc --json",
       "pnpm openclaw health --verbose --json",
+    ]);
+  });
+
+  test("routes managed Gateway health through the injected port", () => {
+    const { root, mirror } = makeFixture();
+    writeBuild(mirror);
+    const entrypoint = path.join(mirror, "dist/index.js");
+    const callsPath = path.join(root, "managed-probe-calls.jsonl");
+    writeFileSync(
+      entrypoint,
+      `import { appendFileSync } from "node:fs";
+const args = process.argv.slice(2);
+appendFileSync(${JSON.stringify(callsPath)}, JSON.stringify({
+  args,
+  port: process.env.OPENCLAW_GATEWAY_PORT,
+}) + "\\n");
+if (args.includes("--port")) process.exit(2);
+`,
+    );
+
+    verifyGatewayReadiness(
+      () => {
+        throw new Error("managed probes must use the exact built Gateway CLI");
+      },
+      mirror,
+      git(mirror, "rev-parse", "HEAD"),
+      () => {},
+      {
+        configPath: path.join(root, "openclaw.json"),
+        entrypoint,
+        executable: process.execPath,
+        invocationPrefix: [entrypoint],
+        port: 18789,
+        runtime: process.execPath,
+      },
+    );
+
+    expect(
+      readFileSync(callsPath, "utf8")
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line)),
+    ).toEqual([
+      {
+        args: ["gateway", "status", "--deep", "--require-rpc", "--json"],
+        port: "18789",
+      },
+      { args: ["health", "--verbose", "--json"], port: "18789" },
     ]);
   });
 
@@ -1809,7 +1861,7 @@ describe("openclaw live updater", () => {
         },
       ),
     ).toThrow("RPC unavailable");
-    expect(statusCalls).toBe(4);
+    expect(statusCalls).toBe(8);
     expect(auditCalls).toBe(1);
   });
 

@@ -36,7 +36,7 @@ import {
 const DEFAULT_CHECKOUT = "/Users/steipete/openclaw";
 const DEFAULT_EXPECTED_ORIGIN = "openclaw/openclaw";
 const FULL_SHA_RE = /^[0-9a-f]{40}$/u;
-const GATEWAY_READINESS_ATTEMPTS = 3;
+const GATEWAY_READINESS_ATTEMPTS = 7;
 const GATEWAY_READINESS_RETRY_DELAY_MS = 5_000;
 const GATEWAY_CLI_TIMEOUT_MS = 30_000;
 const GATEWAY_STOP_PROOF_ATTEMPTS = 100;
@@ -1479,11 +1479,7 @@ function verifyGateway(runCommand, checkout, expectedSha, deployment = null) {
       ["gateway", "status", "--deep", "--require-rpc", "--json"],
       deployment,
     );
-    runBuiltGatewayCli(
-      checkout,
-      ["health", "--port", String(deployment.port), "--verbose", "--json"],
-      deployment,
-    );
+    runBuiltGatewayCli(checkout, ["health", "--verbose", "--json"], deployment);
     return;
   }
   runCommand(
