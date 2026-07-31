@@ -261,6 +261,7 @@ describe("check-workflows", () => {
     expect(workflow).toContain('$service = New-Object -ComObject "Schedule.Service"');
     expect(workflow).toContain("task-before-cleanup.xml");
     expect(workflow).toContain("cleanup-summary.txt");
+    expect(workflow).toContain("          exit 0");
     expect(workflow).toContain(".artifacts/windows-schtasks/");
     expect(workflow).toContain("if: ${{ always() && !cancelled() }}");
     expect(workflow).toContain("if: ${{ always() && !cancelled() && inputs.require_wsl2 }}");
