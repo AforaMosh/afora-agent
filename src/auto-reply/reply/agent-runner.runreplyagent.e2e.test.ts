@@ -845,7 +845,7 @@ describe("runReplyAgent heartbeat followup guard", () => {
     const sessionStore = {
       main: {
         sessionId: "pre-compact-session",
-        sessionFile: "/tmp/pre-compact.jsonl",
+        sessionFile: "main",
         updatedAt: Date.now(),
       },
     };
@@ -871,7 +871,7 @@ describe("runReplyAgent heartbeat followup guard", () => {
     active.updateSessionId("post-compact-session");
     sessionStore.main = {
       sessionId: "post-compact-session",
-      sessionFile: "/tmp/post-compact.jsonl",
+      sessionFile: "main",
       updatedAt: Date.now(),
     };
     active.complete();
@@ -880,7 +880,7 @@ describe("runReplyAgent heartbeat followup guard", () => {
     expect(state.runEmbeddedAgentMock).toHaveBeenCalledTimes(1);
     const [call] = mockCallArgs(state.runEmbeddedAgentMock, "run embedded agent");
     expect((call as AgentRunParams).sessionId).toBe("post-compact-session");
-    expect((call as AgentRunParams).sessionFile).toBe("/tmp/post-compact.jsonl");
+    expect((call as AgentRunParams).sessionFile).toBe("main");
   });
 
   it("drops runs when reply-lane admission sees an already-aborted caller", async () => {
@@ -1941,7 +1941,13 @@ describe("runReplyAgent pending final delivery capture", () => {
     expect(stored.restartRecoveryDeliveryRequestFingerprint).toBeUndefined();
     expect(stored.restartRecoveryDeliveryRunId).toBeUndefined();
     expect(stored.restartRecoveryDeliverySourceRunId).toBeUndefined();
-    expect(stored.pendingFinalDelivery).toBe(true);
+    expect(stored.pendingFinalDelivery).toMatchObject({
+      kind: "replayable",
+      text: "visible final",
+      context: { channel: "webchat" },
+      intentId: expect.any(String),
+      createdAt: expect.any(Number),
+    });
     expect(stored.restartRecoverySourceIngress).toBe("control-ui");
     expect(stored.restartRecoveryTerminalRunIds).toEqual(["control-ui-run"]);
   });
@@ -2602,7 +2608,13 @@ describe("runReplyAgent pending final delivery capture", () => {
     expect(state.beforeAgentReplyRunMock).toHaveBeenCalledOnce();
     expect(state.runEmbeddedAgentMock).toHaveBeenCalledOnce();
     expect(await readStoredMainSession(storePath)).toMatchObject({
-      pendingFinalDelivery: { kind: "transport-only" },
+      pendingFinalDelivery: {
+        kind: "replayable",
+        text: "model reply",
+        context: { channel: "discord" },
+        intentId: expect.any(String),
+        createdAt: expect.any(Number),
+      },
       restartRecoveryBeforeAgentReplyState: "continue",
       restartRecoverySourceIngress: "channel",
     });
