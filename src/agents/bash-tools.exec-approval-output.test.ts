@@ -5,14 +5,14 @@
  * accounting above the cap.
  */
 import { describe, expect, it } from "vitest";
-import {
-  EXEC_APPROVAL_CONTINUATION_OUTPUT_LIMITS as LIMITS,
-  formatExecApprovalContinuationOutput,
-} from "./bash-tools.exec-approval-output.js";
+import { formatExecApprovalContinuationOutput } from "./bash-tools.exec-approval-output.js";
 
-const MAX = LIMITS.maxUtf16Units;
-const HEAD = LIMITS.headUtf16Units;
-const TAIL = LIMITS.tailUtf16Units;
+// Pinned rather than imported: the module keeps its budget private, and pinning
+// the resolved numbers makes any change to the cap or the head/tail split a
+// deliberate edit here instead of a silent drift.
+const MAX = 16_000;
+const HEAD = 11_921;
+const TAIL = 3_974;
 const HEADER = "[stdout]\n".length;
 
 function marker(omitted: number, headUnits: number, tailUnits: number): string {

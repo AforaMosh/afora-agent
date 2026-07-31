@@ -89,7 +89,7 @@ function formatUnknownError(error: unknown): string {
  * a successful result is emitted verbatim so trailing output whitespace, blank
  * lines and indentation survive into the continuation.
  */
-export function buildExecApprovalFollowupPrompt(resultText: string): string {
+function buildExecApprovalFollowupPrompt(resultText: string): string {
   const trimmed = resultText.trim();
   if (isExecDeniedResultText(trimmed)) {
     return buildExecDeniedFollowupPrompt(trimmed);

@@ -24,10 +24,7 @@ import {
   type DiagnosticEventPayload,
 } from "../infra/diagnostic-events.js";
 import { sendMessage } from "../infra/outbound/message.js";
-import {
-  buildExecApprovalFollowupPrompt,
-  sendExecApprovalFollowup,
-} from "./bash-tools.exec-approval-followup.js";
+import { sendExecApprovalFollowup } from "./bash-tools.exec-approval-followup.js";
 import { callGatewayTool } from "./tools/gateway.js";
 
 const tempStoreDirs: string[] = [];
@@ -119,20 +116,28 @@ function expectDirectSend(expected: Record<string, unknown>) {
 }
 
 describe("exec approval followup", () => {
-  it("keeps successful completion details verbatim in the continuation prompt", () => {
-    const details =
+  it("keeps successful completion details verbatim in the continuation prompt", async () => {
+    const resultText =
       "Exec finished (gateway id=req-verbatim, code 0)\r\nfirst\r\n\tindented\n\n  spaced   \n  \t";
 
-    const prompt = buildExecApprovalFollowupPrompt(details);
+    await sendExecApprovalFollowup({
+      approvalId: "req-verbatim",
+      sessionKey: "agent:main:main",
+      resultText,
+    });
 
-    expect(prompt).toContain(`Exact completion details:\n${details}\n\nContinue the task`);
+    const prompt = expectGatewayAgentFollowup({ sessionKey: "agent:main:main" }).message;
+    expect(prompt).toContain(`Exact completion details:\n${resultText}\n\nContinue the task`);
   });
 
-  it("trims denial details before classification and rendering", () => {
-    const prompt = buildExecApprovalFollowupPrompt(
-      "\r\n  Exec denied (gateway id=req-denied, user-denied): uname -a  \t",
-    );
+  it("trims denial details before classification and rendering", async () => {
+    await sendExecApprovalFollowup({
+      approvalId: "req-denied",
+      sessionKey: "agent:main:main",
+      resultText: "\r\n  Exec denied (gateway id=req-denied, user-denied): uname -a  \t",
+    });
 
+    const prompt = expectGatewayAgentFollowup({ sessionKey: "agent:main:main" }).message;
     expect(prompt).toContain("did not run");
     expect(prompt).not.toContain("\r\n  Exec denied");
     expect(prompt).not.toContain("already approved has completed");

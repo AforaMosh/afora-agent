@@ -10,7 +10,7 @@
 import { sliceUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
 
 /** One named output stream supplied by an exec host. */
-export type ExecApprovalOutputStream = {
+type ExecApprovalOutputStream = {
   label: string;
   value?: string | null;
 };
@@ -49,13 +49,6 @@ const MARKER_RESERVE_UNITS =
 const CONTENT_BUDGET_UNITS = MAX_UTF16_UNITS - MARKER_RESERVE_UNITS;
 const HEAD_BUDGET_UNITS = Math.floor(CONTENT_BUDGET_UNITS * HEAD_SHARE);
 const TAIL_BUDGET_UNITS = CONTENT_BUDGET_UNITS - HEAD_BUDGET_UNITS;
-
-/** Continuation output budget, exported so tests assert against one source. */
-export const EXEC_APPROVAL_CONTINUATION_OUTPUT_LIMITS = {
-  maxUtf16Units: MAX_UTF16_UNITS,
-  headUtf16Units: HEAD_BUDGET_UNITS,
-  tailUtf16Units: TAIL_BUDGET_UNITS,
-} as const;
 
 type HeaderRange = { start: number; end: number };
 type StreamRange = { label: string; contentStart: number; end: number };
