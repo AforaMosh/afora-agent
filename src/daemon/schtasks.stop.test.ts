@@ -498,7 +498,7 @@ describe("Scheduled Task stop/restart cleanup", () => {
       inspectPortUsage.mockResolvedValue(freePortUsage());
       let forced = false;
       spawnSync.mockImplementation((command, args) => {
-        const executable = String(command).toLowerCase();
+        const executable = command.toLowerCase();
         if (executable.endsWith("taskkill.exe")) {
           const argv = Array.isArray(args) ? args.map(String) : [];
           if (argv.includes("/F")) {
@@ -551,7 +551,7 @@ describe("Scheduled Task stop/restart cleanup", () => {
       await stopScheduledTask({ env, stdout });
 
       const taskkillCalls = spawnSync.mock.calls
-        .filter(([command]) => String(command).toLowerCase().endsWith("taskkill.exe"))
+        .filter(([command]) => command.toLowerCase().endsWith("taskkill.exe"))
         .map(([, args]) => args);
       expect(taskkillCalls).toEqual([
         ["/T", "/PID", "4242"],
