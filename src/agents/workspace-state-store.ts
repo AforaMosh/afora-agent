@@ -378,6 +378,7 @@ export function readWorkspaceStateSnapshot(
   });
   if (
     initial.resolution.missingAliasKeys.length === 0 ||
+    options.readOnly ||
     (!initial.snapshot.setupExists && !initial.snapshot.attestation)
   ) {
     return initial.snapshot;
@@ -412,7 +413,7 @@ export function readWorkspaceStateSnapshot(
       });
     }
     return snapshot;
-  });
+  }, options);
 }
 
 export function mergeWorkspaceSetupState(
