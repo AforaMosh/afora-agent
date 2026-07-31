@@ -9,17 +9,29 @@ import { formatExecApprovalContinuationOutput } from "./bash-tools.exec-approval
 
 // Pinned rather than imported: the module keeps its budget private, and pinning
 // the resolved numbers makes any change to the cap or the head/tail split a
-// deliberate edit here instead of a silent drift. HEAD/TAIL hold for inputs
-// whose length is at most five digits; larger inputs widen the marker reserve.
+// deliberate edit here instead of a silent drift. These hold for inputs whose
+// length is at most five digits and whose widest stream label is at most six
+// UTF-16 units (`stdout`/`stderr`/`output`/`error`); larger inputs or longer
+// labels widen the marker reserve.
 const MAX = 16_000;
 const HEAD = 11_921;
 const TAIL = 3_974;
+// Generated headers make a `tail resumes in <label>` suffix possible, which
+// widens the reserved marker width and narrows the retained budget.
+const HEAD_LABELED = 11_903;
+const TAIL_LABELED = 3_968;
 const HEADER = "[stdout]\n".length;
 
-function marker(omitted: number, headUnits: number, tailUnits: number): string {
+function marker(
+  omitted: number,
+  headUnits: number,
+  tailUnits: number,
+  resumingLabel?: string,
+): string {
+  const resuming = resumingLabel ? `; tail resumes in ${resumingLabel}` : "";
   return (
     `[... ${omitted} UTF-16 code units omitted from approved exec output; ` +
-    `showing first ${headUnits} and last ${tailUnits} ...]`
+    `showing first ${headUnits} and last ${tailUnits}${resuming} ...]`
   );
 }
 
@@ -139,7 +151,7 @@ describe("formatExecApprovalContinuationOutput", () => {
 
   it("moves a head cut that lands inside a generated header", () => {
     // Places `[stderr]\n` so the raw head budget falls in its middle.
-    const stdout = "a".repeat(HEAD - HEADER - 1 - 4);
+    const stdout = "a".repeat(HEAD_LABELED - HEADER - 1 - 4);
     const stderr = "b".repeat(60_000);
 
     const formatted = formatExecApprovalContinuationOutput([
@@ -148,12 +160,10 @@ describe("formatExecApprovalContinuationOutput", () => {
     ]);
 
     const total = HEADER + stdout.length + 1 + HEADER + stderr.length;
-    const headUnits = HEAD - 4 - HEADER;
-    const omitted = total - headUnits - TAIL - HEADER;
+    const head = `[stdout]\n${stdout}\n`;
+    const omitted = total - head.length - TAIL_LABELED;
     expect(formatted).toBe(
-      `[stdout]\n${"a".repeat(headUnits - HEADER)}\n` +
-        `${marker(omitted, headUnits, TAIL)}\n` +
-        `[stderr]\n${"b".repeat(TAIL)}`,
+      `${head}\n${marker(omitted, head.length, TAIL_LABELED, "stderr")}\n${"b".repeat(TAIL_LABELED)}`,
     );
     expect(formatted).not.toMatch(/\[std(?!out\]\n|err\]\n)/);
     expect(formatted.length).toBeLessThanOrEqual(MAX);
@@ -161,8 +171,8 @@ describe("formatExecApprovalContinuationOutput", () => {
 
   it("moves a tail cut that lands inside a generated header", () => {
     // Places `[stderr]\n` so the raw tail cut falls in its middle.
-    const stdout = "a".repeat(12_013);
-    const stderr = "b".repeat(TAIL - 5);
+    const stdout = "a".repeat(13_000);
+    const stderr = "b".repeat(TAIL_LABELED - 5);
 
     const formatted = formatExecApprovalContinuationOutput([
       { label: "stdout", value: stdout },
@@ -170,18 +180,16 @@ describe("formatExecApprovalContinuationOutput", () => {
     ]);
 
     const total = HEADER + stdout.length + 1 + HEADER + stderr.length;
-    const headUnits = HEAD - HEADER;
-    const omitted = total - headUnits - stderr.length - HEADER;
+    const head = `[stdout]\n${"a".repeat(HEAD_LABELED - HEADER)}`;
+    const omitted = total - head.length - stderr.length;
     expect(formatted).toBe(
-      `[stdout]\n${"a".repeat(headUnits - HEADER)}\n` +
-        `${marker(omitted, headUnits, stderr.length)}\n` +
-        `[stderr]\n${stderr}`,
+      `${head}\n${marker(omitted, head.length, stderr.length, "stderr")}\n${stderr}`,
     );
     expect(formatted).not.toMatch(/\[std(?!out\]\n|err\]\n)/);
     expect(formatted.length).toBeLessThanOrEqual(MAX);
   });
 
-  it("omits the retained tail label when the head already showed that header", () => {
+  it("omits the resuming label when the head already showed that header", () => {
     const stdout = "a".repeat(4);
     const stderr = "b".repeat(MAX * 2);
 
@@ -192,8 +200,9 @@ describe("formatExecApprovalContinuationOutput", () => {
 
     const total = HEADER + stdout.length + 1 + HEADER + stderr.length;
     expect(formatted).toBe(
-      `[stdout]\naaaa\n[stderr]\n${"b".repeat(HEAD - 2 * HEADER - stdout.length - 1)}\n` +
-        `${marker(total - HEAD - TAIL, HEAD, TAIL)}\n${"b".repeat(TAIL)}`,
+      `[stdout]\naaaa\n[stderr]\n${"b".repeat(HEAD_LABELED - 2 * HEADER - stdout.length - 1)}\n` +
+        `${marker(total - HEAD_LABELED - TAIL_LABELED, HEAD_LABELED, TAIL_LABELED)}\n` +
+        "b".repeat(TAIL_LABELED),
     );
     expect(formatted.length).toBeLessThanOrEqual(MAX);
   });

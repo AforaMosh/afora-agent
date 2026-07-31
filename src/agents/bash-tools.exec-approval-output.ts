@@ -31,10 +31,15 @@ function buildOmissionMarker(params: {
   omitted: number;
   headUnits: number;
   tailUnits: number;
+  resumingLabel?: string;
 }): string {
+  // Naming the stream the tail resumes in keeps label information intact
+  // without splicing synthetic header bytes into the retained content, so the
+  // three counts below always sum to the exact input length.
+  const resuming = params.resumingLabel ? `; tail resumes in ${params.resumingLabel}` : "";
   return (
     `[... ${params.omitted} UTF-16 code units omitted from approved exec output; ` +
-    `showing first ${params.headUnits} and last ${params.tailUnits} ...]`
+    `showing first ${params.headUnits} and last ${params.tailUnits}${resuming} ...]`
   );
 }
 
@@ -43,15 +48,20 @@ function buildOmissionMarker(params: {
  * input length rather than from `MAX_UTF16_UNITS`, because the omitted count
  * scales with the input and a fixed five-digit reserve would let a megabyte of
  * output push the result past the hard cap. `omitted` can never exceed the
- * input length and each retained side can never exceed the cap, so this is the
- * widest marker the cut can produce for this input.
+ * input length, each retained side can never exceed the cap, and no stream
+ * label is longer than `longestLabelUnits`, so this is the widest marker the
+ * cut can produce for this input.
  */
-function resolveCutBudget(totalUnits: number): { head: number; tail: number } {
+function resolveCutBudget(
+  totalUnits: number,
+  longestLabelUnits: number,
+): { head: number; tail: number } {
   const markerReserve =
     buildOmissionMarker({
       omitted: totalUnits,
       headUnits: MAX_UTF16_UNITS,
       tailUnits: MAX_UTF16_UNITS,
+      resumingLabel: "x".repeat(longestLabelUnits),
     }).length + 2;
   const content = MAX_UTF16_UNITS - markerReserve;
   const head = Math.floor(content * HEAD_SHARE);
@@ -118,19 +128,22 @@ function moveCutOutsideHeader(
   return direction === "head" ? containing.start : containing.end;
 }
 
-/** Re-emits the tail stream's header when the omitted middle swallowed it. */
-function resolveRetainedTailLabel(params: {
+/**
+ * Names the stream the retained tail belongs to when the omitted middle
+ * swallowed that stream's header, so no label information is lost.
+ */
+function resolveResumingStreamLabel(params: {
   tailStart: number;
   headEnd: number;
   streamRanges: StreamRange[];
-}): string {
+}): string | undefined {
   const tailStream = params.streamRanges.find(
     (range) => range.contentStart <= params.tailStart && params.tailStart < range.end,
   );
   if (!tailStream || params.headEnd >= tailStream.contentStart) {
-    return "";
+    return undefined;
   }
-  return `[${tailStream.label}]\n`;
+  return tailStream.label;
 }
 
 /**
@@ -143,30 +156,29 @@ export function formatExecApprovalContinuationOutput(streams: ExecApprovalOutput
     return rendered.text;
   }
 
-  const budget = resolveCutBudget(rendered.text.length);
-  let headEnd = moveCutOutsideHeader(budget.head, rendered.headerRanges, "head");
+  const longestLabelUnits = rendered.streamRanges.reduce(
+    (widest, range) => Math.max(widest, range.label.length),
+    0,
+  );
+  const budget = resolveCutBudget(rendered.text.length, longestLabelUnits);
+  const headEnd = moveCutOutsideHeader(budget.head, rendered.headerRanges, "head");
   const tailStart = moveCutOutsideHeader(
     rendered.text.length - budget.tail,
     rendered.headerRanges,
     "tail",
   );
-  const tailLabel = resolveRetainedTailLabel({
-    tailStart,
-    headEnd,
-    streamRanges: rendered.streamRanges,
-  });
-  if (tailLabel) {
-    // The re-added header is paid for out of the head so the total stays capped.
-    headEnd = moveCutOutsideHeader(headEnd - tailLabel.length, rendered.headerRanges, "head");
-  }
 
   const head = sliceUtf16Safe(rendered.text, 0, headEnd);
   const tail = sliceUtf16Safe(rendered.text, tailStart);
-  const omitted = rendered.text.length - head.length - tail.length - tailLabel.length;
   const marker = buildOmissionMarker({
-    omitted,
+    omitted: rendered.text.length - head.length - tail.length,
     headUnits: head.length,
     tailUnits: tail.length,
+    resumingLabel: resolveResumingStreamLabel({
+      tailStart,
+      headEnd,
+      streamRanges: rendered.streamRanges,
+    }),
   });
-  return `${head}\n${marker}\n${tailLabel}${tail}`;
+  return `${head}\n${marker}\n${tail}`;
 }
