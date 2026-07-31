@@ -291,6 +291,28 @@ function resolveTestId(): string {
   return configured;
 }
 
+async function createIntegrationRoot(
+  configuredRoot: string | undefined,
+  id: string,
+): Promise<string> {
+  if (!configuredRoot) {
+    return fs.mkdtemp(path.join(os.tmpdir(), `openclaw-schtasks-int-${id}-`));
+  }
+  const rootDir = path.resolve(configuredRoot);
+  try {
+    // Cleanup may only remove a directory this exact run created.
+    await fs.mkdir(rootDir);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "EEXIST") {
+      throw new Error(`CI_WINDOWS_SCHTASKS_ROOT must not already exist: ${rootDir}`, {
+        cause: error,
+      });
+    }
+    throw error;
+  }
+  return rootDir;
+}
+
 describe("schtasks Windows integration principal assertion", () => {
   it("accepts omitted default run level when COM reports least privilege", () => {
     expect(() =>
@@ -315,6 +337,19 @@ describe("schtasks Windows integration principal assertion", () => {
       }),
     ).toThrow();
   });
+
+  it("refuses to reuse or delete an existing configured root", async () => {
+    const existingRoot = path.join(os.tmpdir(), `openclaw-schtasks-existing-${randomUUID()}`);
+    await fs.mkdir(existingRoot);
+    try {
+      await expect(createIntegrationRoot(existingRoot, "existing")).rejects.toThrow(
+        "CI_WINDOWS_SCHTASKS_ROOT must not already exist",
+      );
+      await expect(fs.access(existingRoot)).resolves.toBeUndefined();
+    } finally {
+      await fs.rm(existingRoot, { recursive: true, force: true });
+    }
+  });
 });
 
 const nativeIntegrationEnabled =
@@ -324,13 +359,7 @@ describe.runIf(nativeIntegrationEnabled)("schtasks Windows integration", () => {
   it("isolates and completes the native Scheduled Task lifecycle", async () => {
     const id = resolveTestId();
     const configuredRoot = process.env.CI_WINDOWS_SCHTASKS_ROOT?.trim();
-    const rootDir = configuredRoot
-      ? path.resolve(configuredRoot)
-      : await fs.mkdtemp(path.join(os.tmpdir(), `openclaw-schtasks-int-${id}-`));
-    if (configuredRoot) {
-      await fs.rm(rootDir, { recursive: true, force: true });
-      await fs.mkdir(rootDir, { recursive: true });
-    }
+    const rootDir = await createIntegrationRoot(configuredRoot, id);
     const accountHome = os.userInfo().homedir;
     const profile = `schtasks-int-${id}`;
     const stateDir = path.join(accountHome, `.openclaw-${profile}`);
