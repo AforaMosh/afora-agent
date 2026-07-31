@@ -10,15 +10,17 @@ import {
 } from "../../infra/sqlite-transaction.js";
 import type { DB as OpenClawAgentKyselyDatabase } from "../../state/openclaw-agent-db.generated.js";
 import type { OpenClawAgentDatabase } from "../../state/openclaw-agent-db.js";
-import type {
-  SessionEntryStatus,
-  SessionEntrySummary,
-} from "./session-accessor.sqlite-contract.js";
+import type { SessionEntrySummary } from "./session-accessor.sqlite-contract.js";
+import { normalizeSqliteStatus } from "./session-accessor.sqlite-normalize.js";
 import type { SessionEntryListQuery } from "./session-accessor.types.js";
 import {
   assertCanonicalSqliteSessionKeysCurrent,
   canonicalSqliteSessionKeyTokenIsCurrent,
 } from "./session-canonical-key.js";
+import {
+  hasValidSqliteSessionEntryIdentity,
+  parseSqliteSessionEntryRecord,
+} from "./session-entry-json.js";
 import { projectCanonicalSessionEntryShape } from "./store-entry-shape.js";
 import type { SessionEntry } from "./types.js";
 
@@ -27,7 +29,6 @@ type SessionListExpressionBuilder = ExpressionBuilder<SessionStatusDatabase, "se
 type SessionDatabaseReader = Pick<OpenClawAgentDatabase, "agentId" | "db"> & {
   writable?: boolean;
 };
-const CANONICAL_ENTRY_FIELDS = new Set(["sessionId", "updatedAt"]);
 const SESSION_ENTRY_VALIDITY_REPAIR_COMMAND = "openclaw doctor --fix";
 
 export class SessionEntryValidityMigrationRequiredError extends Error {
@@ -51,119 +52,23 @@ function isMissingEntryValidityColumnError(error: unknown): boolean {
   );
 }
 
-function hasDuplicateCanonicalEntryFields(json: string): boolean {
-  const seen = new Set<string>();
-  let depth = 0;
-  let escaped = false;
-  let inString = false;
-  let keyStart = -1;
-  let expectingTopLevelKey = false;
-  for (let index = 0; index < json.length; index += 1) {
-    const char = json[index];
-    if (inString) {
-      if (escaped) {
-        escaped = false;
-      } else if (char === "\\") {
-        escaped = true;
-      } else if (char === '"') {
-        inString = false;
-        if (keyStart >= 0) {
-          const key = JSON.parse(json.slice(keyStart, index + 1)) as unknown;
-          if (typeof key === "string" && CANONICAL_ENTRY_FIELDS.has(key)) {
-            if (seen.has(key)) {
-              return true;
-            }
-            seen.add(key);
-          }
-          keyStart = -1;
-          expectingTopLevelKey = false;
-        }
-      }
-      continue;
-    }
-    if (char === '"') {
-      inString = true;
-      if (depth === 1 && expectingTopLevelKey) {
-        keyStart = index;
-      }
-    } else if (char === "{" || char === "[") {
-      depth += 1;
-      if (depth === 1) {
-        expectingTopLevelKey = true;
-      }
-    } else if (char === "}" || char === "]") {
-      depth -= 1;
-    } else if (char === "," && depth === 1) {
-      expectingTopLevelKey = true;
-    }
-  }
-  return false;
-}
-
 export type SqliteSessionEntryListQueryResult = {
   creatorActors: NonNullable<SessionEntry["createdActor"]>[];
   entries: SessionEntrySummary[];
   totalCount: number;
 };
 
-export function normalizeSqliteStatus(value: unknown): SessionEntryStatus | null {
-  return value === "running" ||
-    value === "done" ||
-    value === "failed" ||
-    value === "killed" ||
-    value === "timeout"
-    ? value
-    : null;
-}
+export { normalizeSqliteStatus };
 
-export function hasValidSqliteSessionEntryIdentity(entry: {
-  sessionId?: unknown;
-  updatedAt?: unknown;
-}): entry is { sessionId: string; updatedAt: number } {
-  return (
-    typeof entry.sessionId === "string" &&
-    (entry.sessionId === "" || entry.sessionId.trim().length > 0) &&
-    !entry.sessionId.includes("\0") &&
-    typeof entry.updatedAt === "number" &&
-    Number.isFinite(entry.updatedAt)
-  );
-}
+export { hasValidSqliteSessionEntryIdentity };
 
 export function parseSqliteSessionEntryJson(row: {
   current_session_id?: string;
   entry_json: string;
   updated_at?: number;
 }): SessionEntry | null {
-  try {
-    const parsed = JSON.parse(row.entry_json) as unknown;
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      return null;
-    }
-    if (hasDuplicateCanonicalEntryFields(row.entry_json)) {
-      return null;
-    }
-    const record = parsed as Record<string, unknown>;
-    // An empty id is the intentional pre-initialization sentinel used by parent-fork
-    // decisions. It remains an entry; retained-history tombstones use an empty blob.
-    if (!hasValidSqliteSessionEntryIdentity(record)) {
-      return null;
-    }
-    const storedSessionId = record.sessionId;
-    const storedUpdatedAt = record.updatedAt;
-    // entry_json is canonical; current_session_id only indexes a live canonical blob.
-    // Retained-window placeholders use {}, so column fallback would resurrect deleted sessions.
-    if (
-      (row.current_session_id !== undefined && row.current_session_id !== storedSessionId) ||
-      (row.updated_at !== undefined && row.updated_at !== storedUpdatedAt)
-    ) {
-      return null;
-    }
-    // entry_json is the canonical record; promoted columns select rows but never override it.
-    const entry = projectCanonicalSessionEntryShape(record);
-    return typeof entry.sessionId === "string" ? entry : null;
-  } catch {
-    return null;
-  }
+  const record = parseSqliteSessionEntryRecord(row);
+  return record ? projectCanonicalSessionEntryShape(record) : null;
 }
 
 function settlePendingSessionEntryValidity(database: SessionDatabaseReader): void {

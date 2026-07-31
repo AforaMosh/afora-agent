@@ -21,6 +21,18 @@ export function normalizeSqliteChatType(value: unknown): "direct" | "group" | "c
   return null;
 }
 
+export function normalizeSqliteStatus(
+  value: unknown,
+): "running" | "done" | "failed" | "killed" | "timeout" | null {
+  return value === "running" ||
+    value === "done" ||
+    value === "failed" ||
+    value === "killed" ||
+    value === "timeout"
+    ? value
+    : null;
+}
+
 export function normalizeSqliteNumber(value: number | bigint): number {
   return typeof value === "bigint" ? Number(value) : value;
 }

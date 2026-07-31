@@ -1,6 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
 import { normalizeChatType, type ChatType } from "../channels/chat-type.js";
-import { parseSqliteSessionEntryJson } from "../config/sessions/session-accessor.sqlite-status.js";
+import { parseSqliteSessionEntryRecord } from "../config/sessions/session-entry-json.js";
 import { normalizeAccountId } from "../routing/account-id.js";
 import { buildConversationRef, normalizeConversationPeerId } from "../routing/conversation-ref.js";
 import { deriveSessionChatTypeFromKey } from "../sessions/session-chat-type-shared.js";
@@ -340,7 +340,7 @@ export function ensureSessionEntryValidityProjection(db: DatabaseSync): void {
       break;
     }
     for (const row of rows) {
-      update.run(parseSqliteSessionEntryJson(row) ? 1 : -1, row.session_key);
+      update.run(parseSqliteSessionEntryRecord(row) ? 1 : -1, row.session_key);
     }
   }
 }
