@@ -7,7 +7,6 @@ import {
 import { recordAuditEvent } from "./audit-event-store.js";
 import {
   inspectExecutionIdentityRun,
-  prepareExecutionIdentityContextAtAdmission,
   recordExecutionIdentityContextAtAdmission,
   type ExecutionIdentityAdmissionFacts,
 } from "./execution-identity-context.js";
@@ -35,6 +34,20 @@ function facts(
     runtime: { kind: "embedded" },
     ...overrides,
   };
+}
+
+function prepareExecutionIdentityContextAtAdmission(
+  admissionFacts: ExecutionIdentityAdmissionFacts,
+  options: Omit<Parameters<typeof recordExecutionIdentityContextAtAdmission>[1], "enabled"> = {},
+) {
+  const context = recordExecutionIdentityContextAtAdmission(admissionFacts, {
+    ...options,
+    enabled: true,
+  });
+  if (!context) {
+    throw new Error("expected execution identity context to be recorded");
+  }
+  return context;
 }
 
 describe("execution identity context storage", () => {
@@ -132,27 +145,34 @@ describe("execution identity context storage", () => {
     expect(context.invoker.principal?.principalRef).toMatch(/^hmac-sha256:v1:/u);
   });
 
-  it("fails closed when one run id is reused with different identity facts", () => {
+  it("rejects conflicting identity facts without replacing the original context", () => {
     const database = databaseOptions();
     const options = { ...database, runtimeInstanceId: "runtime-1" };
-    prepareExecutionIdentityContextAtAdmission(facts("run-conflict"), options);
-    expect(() =>
-      prepareExecutionIdentityContextAtAdmission(
-        facts("run-conflict", { agentId: "other" }),
-        options,
-      ),
-    ).toThrow("execution identity context conflict");
+    const original = prepareExecutionIdentityContextAtAdmission(facts("run-conflict"), options);
+    expect(
+      recordExecutionIdentityContextAtAdmission(facts("run-conflict", { agentId: "other" }), {
+        ...options,
+        enabled: true,
+      }),
+    ).toBeUndefined();
+    expect(inspectExecutionIdentityRun({ runId: "run-conflict" }, database).identity).toEqual({
+      state: "present",
+      context: original,
+    });
   });
 
-  it("fails closed instead of rotating a missing HMAC key with retained contexts", () => {
+  it("declines recording instead of rotating a missing HMAC key with retained contexts", () => {
     const database = databaseOptions();
     prepareExecutionIdentityContextAtAdmission(facts("run-before-key-loss"), database);
     openOpenClawStateDatabase(database).db.exec("DELETE FROM audit_identity_keys;");
     closeOpenClawStateDatabaseForTest();
 
-    expect(() =>
-      prepareExecutionIdentityContextAtAdmission(facts("run-after-key-loss"), database),
-    ).toThrow("audit identity key is missing");
+    expect(
+      recordExecutionIdentityContextAtAdmission(facts("run-after-key-loss"), {
+        ...database,
+        enabled: true,
+      }),
+    ).toBeUndefined();
   });
 
   it("skips new context rows when audit collection is disabled", () => {

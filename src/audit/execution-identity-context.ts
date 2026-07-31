@@ -365,7 +365,7 @@ function pruneExecutionIdentityContextsAfterInsert(
 }
 
 /** Prepare and synchronously persist the immutable context at run admission. */
-export function prepareExecutionIdentityContextAtAdmission(
+function prepareExecutionIdentityContextAtAdmission(
   facts: ExecutionIdentityAdmissionFacts,
   options: ExecutionIdentityStoreOptions = {},
 ): ExecutionIdentityContextV1 {
