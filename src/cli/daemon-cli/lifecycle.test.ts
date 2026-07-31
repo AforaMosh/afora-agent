@@ -5,7 +5,7 @@ import {
   expectRestartError,
   requireMockCallArg,
   type RestartParams,
-} from "./lifecycle-test-helpers.js";
+} from "./lifecycle.test-helpers.js";
 
 type RestartHealthSnapshot = {
   healthy: boolean;
