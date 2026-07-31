@@ -7,6 +7,7 @@ import { createHash } from "node:crypto";
 import syncFs from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 import { Minimatch } from "minimatch";
 import { extractFrontmatterBlock } from "../../packages/markdown-core/src/frontmatter.js";
 import type { ChatType } from "../channels/chat-type.js";
@@ -763,6 +764,7 @@ export async function seedWorkspaceBootstrap(params: {
   if (!created) {
     await retryAsync(
       async () => {
+        const statBefore = await fs.stat(bootstrapPath);
         const existing = await readWorkspaceFileWithGuards({
           filePath: bootstrapPath,
           workspaceDir: dir,
@@ -773,6 +775,26 @@ export async function seedWorkspaceBootstrap(params: {
           );
         }
         if (!Buffer.from(existing.content, "utf8").equals(params.content)) {
+          throw new WorkspaceBootstrapSeedConflictError(
+            "Existing BOOTSTRAP.md differs from the consented Claw bootstrap.",
+          );
+        }
+        await delay(20);
+        const statAfter = await fs.stat(bootstrapPath);
+        if (
+          statBefore.size !== statAfter.size ||
+          statBefore.mtimeMs !== statAfter.mtimeMs ||
+          statAfter.size !== params.content.byteLength
+        ) {
+          throw new WorkspaceBootstrapSeedConflictError(
+            "Existing BOOTSTRAP.md write has not stabilized.",
+          );
+        }
+        const stable = await readWorkspaceFileWithGuards({
+          filePath: bootstrapPath,
+          workspaceDir: dir,
+        });
+        if (!stable.ok || !Buffer.from(stable.content, "utf8").equals(params.content)) {
           throw new WorkspaceBootstrapSeedConflictError(
             "Existing BOOTSTRAP.md differs from the consented Claw bootstrap.",
           );
