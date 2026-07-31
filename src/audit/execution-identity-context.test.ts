@@ -78,6 +78,30 @@ describe("execution identity context storage", () => {
     expect(afterRestart.identity).toEqual({ state: "present", context: first });
   });
 
+  it("projects authoritative local CLI and system ingress without conflating them", () => {
+    const database = databaseOptions();
+    prepareExecutionIdentityContextAtAdmission(facts("run-local"), database);
+    prepareExecutionIdentityContextAtAdmission(
+      facts("run-system", {
+        ingress: { kind: "system", boundary: "gateway.boot", state: "present" },
+      }),
+      database,
+    );
+
+    expect(inspectExecutionIdentityRun({ runId: "run-local" }, database).identity).toMatchObject({
+      state: "present",
+      context: {
+        ingress: { kind: "local-cli", boundary: "agent-command.local", state: "present" },
+      },
+    });
+    expect(inspectExecutionIdentityRun({ runId: "run-system" }, database).identity).toMatchObject({
+      state: "present",
+      context: {
+        ingress: { kind: "system", boundary: "gateway.boot", state: "present" },
+      },
+    });
+  });
+
   it("lazily restores the additive table on an existing current-schema database", () => {
     const database = databaseOptions();
     const opened = openOpenClawStateDatabase(database);

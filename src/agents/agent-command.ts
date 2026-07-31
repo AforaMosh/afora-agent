@@ -559,9 +559,9 @@ async function agentCommandInternal(
   }
 }
 
-/** Runs an agent turn from CLI/runtime options against the resolved session and model policy. */
-export async function agentCommand(
+async function agentCommandWithAdmissionIngress(
   opts: AgentCommandOpts,
+  admissionIngress: ExecutionIdentityAdmissionFacts["ingress"],
   runtime: RuntimeEnv = defaultRuntime,
   deps?: CliDeps,
 ) {
@@ -581,11 +581,10 @@ export async function agentCommand(
           opts: {
             ...opts,
             lifecycleGeneration,
-            // agentCommand is the trusted-operator entrypoint used by CLI/local flows.
-            // Ingress callers must opt into owner identity explicitly via
-            // agentCommandFromIngress so network-facing paths cannot inherit this default by accident.
+            // Direct local and system entrypoints retain their established trusted
+            // execution semantics. Network ingress must opt into owner identity.
             senderIsOwner: opts.senderIsOwner ?? true,
-            // Local/CLI callers are trusted by default for per-run model overrides.
+            // Direct callers retain the established per-run model-override default.
             allowModelOverride: opts.allowModelOverride ?? true,
           },
           prepare: async (preparedOpts) =>
@@ -594,12 +593,43 @@ export async function agentCommand(
             await agentCommandInternal(
               prepared,
               prepared.opts,
-              { kind: "local-cli", boundary: "agent-command.local", state: "present" },
+              admissionIngress,
               runtime,
               resolvedDeps,
             ),
         }),
     ),
+  );
+}
+
+/** Runs an authoritative local-CLI turn against the resolved session and model policy. */
+export async function agentCommand(
+  opts: AgentCommandOpts,
+  runtime: RuntimeEnv = defaultRuntime,
+  deps?: CliDeps,
+) {
+  return await agentCommandWithAdmissionIngress(
+    opts,
+    { kind: "local-cli", boundary: "agent-command.local", state: "present" },
+    runtime,
+    deps,
+  );
+}
+
+/** Runs a system-owned turn whose producer supplies its authoritative admission boundary. */
+export async function agentCommandFromSystem(
+  opts: AgentCommandOpts,
+  admission: { boundary: string },
+  runtime: RuntimeEnv = defaultRuntime,
+  deps?: CliDeps,
+) {
+  // Keep system turns on the established trusted execution path while recording
+  // their producer-owned ingress fact instead of silently relabeling them as CLI.
+  return await agentCommandWithAdmissionIngress(
+    opts,
+    { kind: "system", boundary: admission.boundary, state: "present" },
+    runtime,
+    deps,
   );
 }
 

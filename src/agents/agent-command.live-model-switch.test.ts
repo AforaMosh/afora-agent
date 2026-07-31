@@ -657,11 +657,13 @@ vi.mock("../acp/control-plane/manager.js", () => ({
 }));
 
 let agentCommand: typeof import("./agent-command.js").agentCommand;
+let agentCommandFromSystem: typeof import("./agent-command.js").agentCommandFromSystem;
 let agentCommandTesting: typeof import("./agent-command.js").testing;
 
 beforeAll(async () => {
   const mod = await import("./agent-command.js");
   agentCommand ??= mod.agentCommand;
+  agentCommandFromSystem ??= mod.agentCommandFromSystem;
   agentCommandTesting ??= mod.testing;
 });
 
@@ -784,6 +786,17 @@ async function runBasicAgentCommand() {
     message: "hello",
     to: "+1234567890",
   });
+}
+
+async function runSystemAgentCommand() {
+  await agentCommandFromSystem(
+    {
+      message: "boot",
+      sessionKey: "agent:main:boot",
+      deliver: false,
+    },
+    { boundary: "gateway.boot" },
+  );
 }
 
 function runDiscordDelivery(overrides: Partial<Parameters<typeof agentCommand>[0]> = {}) {
@@ -1066,34 +1079,68 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
     );
   });
 
-  it("keeps ordinary runs available without recording identity when audit is disabled", async () => {
-    state.runtimeConfigMock = {
-      ...state.defaultRuntimeConfig,
-      logging: { audit: { enabled: false } },
-    };
+  it("records authoritative local and system ingress without inferring from session identity", async () => {
     setupSuccessfulAttempt();
 
     await runBasicAgentCommand();
+    await runSystemAgentCommand();
 
-    expect(state.runAgentAttemptMock).toHaveBeenCalledTimes(1);
-    expect(state.recordExecutionIdentityContextAtAdmissionMock).toHaveBeenCalledWith(
-      expect.objectContaining({ agentId: "default" }),
-      { enabled: false },
-    );
-  });
-
-  it("keeps ordinary runs available when best-effort identity persistence is unavailable", async () => {
-    setupSuccessfulAttempt();
-    state.recordExecutionIdentityContextAtAdmissionMock.mockReturnValue(undefined);
-
-    await runBasicAgentCommand();
-
-    expect(state.recordExecutionIdentityContextAtAdmissionMock).toHaveBeenCalledWith(
-      expect.objectContaining({ agentId: "default" }),
+    expect(state.recordExecutionIdentityContextAtAdmissionMock).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        ingress: { kind: "local-cli", boundary: "agent-command.local", state: "present" },
+      }),
       { enabled: true },
     );
-    expect(state.runAgentAttemptMock).toHaveBeenCalledTimes(1);
+    expect(state.recordExecutionIdentityContextAtAdmissionMock).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        ingress: { kind: "system", boundary: "gateway.boot", state: "present" },
+      }),
+      { enabled: true },
+    );
   });
+
+  it.each([
+    ["local CLI", runBasicAgentCommand],
+    ["system", runSystemAgentCommand],
+  ])(
+    "keeps %s runs available without recording identity when audit is disabled",
+    async (_name, run) => {
+      state.runtimeConfigMock = {
+        ...state.defaultRuntimeConfig,
+        logging: { audit: { enabled: false } },
+      };
+      setupSuccessfulAttempt();
+
+      await run();
+
+      expect(state.runAgentAttemptMock).toHaveBeenCalledTimes(1);
+      expect(state.recordExecutionIdentityContextAtAdmissionMock).toHaveBeenCalledWith(
+        expect.objectContaining({ agentId: "default" }),
+        { enabled: false },
+      );
+    },
+  );
+
+  it.each([
+    ["local CLI", runBasicAgentCommand],
+    ["system", runSystemAgentCommand],
+  ])(
+    "keeps %s runs available when best-effort identity persistence is unavailable",
+    async (_name, run) => {
+      setupSuccessfulAttempt();
+      state.recordExecutionIdentityContextAtAdmissionMock.mockReturnValue(undefined);
+
+      await run();
+
+      expect(state.recordExecutionIdentityContextAtAdmissionMock).toHaveBeenCalledWith(
+        expect.objectContaining({ agentId: "default" }),
+        { enabled: true },
+      );
+      expect(state.runAgentAttemptMock).toHaveBeenCalledTimes(1);
+    },
+  );
 
   it("forwards the auth profile bound to the configured default model", async () => {
     state.runtimeConfigMock = {
