@@ -380,7 +380,7 @@ describe("nodes camera_clip", () => {
 });
 
 describe("nodes photos_latest", () => {
-  it("returns empty content/details when no photos are available", async () => {
+  it("returns an explicit model-facing result when no photos are available", async () => {
     setupNodeInvokeMock({
       onInvoke: (invokeParams) => {
         expectInvokeParams(invokeParams, {
@@ -407,7 +407,7 @@ describe("nodes photos_latest", () => {
       { modelHasVision: false },
     );
 
-    expect(result.content ?? []).toStrictEqual([]);
+    expect(result.content).toStrictEqual([{ type: "text", text: "No photos found." }]);
     expect(result.details).toStrictEqual([]);
   });
 

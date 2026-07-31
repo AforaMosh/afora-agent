@@ -37,6 +37,7 @@ import {
   readFiniteNumberParam,
   readNonNegativeIntegerParam,
   readPositiveIntegerParam,
+  textResult,
 } from "./common.js";
 import type { GatewayCallOptions } from "./gateway.js";
 import { callGatewayTool } from "./gateway.js";
@@ -262,10 +263,7 @@ async function executePhotosLatest({
 
   if (photos.length === 0) {
     return await sanitizeToolResultImages(
-      {
-        content: [],
-        details: [],
-      },
+      textResult("No photos found.", []),
       "nodes:photos_latest",
       imageSanitization,
     );
