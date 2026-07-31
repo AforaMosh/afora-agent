@@ -38,17 +38,25 @@ function buildOmissionMarker(params: {
   );
 }
 
-// Widest marker the cut can produce, so headers, marker and both newlines are
-// budgeted inside MAX_UTF16_UNITS instead of pushing the result over it.
-const MARKER_RESERVE_UNITS =
-  buildOmissionMarker({
-    omitted: MAX_UTF16_UNITS,
-    headUnits: MAX_UTF16_UNITS,
-    tailUnits: MAX_UTF16_UNITS,
-  }).length + 2;
-const CONTENT_BUDGET_UNITS = MAX_UTF16_UNITS - MARKER_RESERVE_UNITS;
-const HEAD_BUDGET_UNITS = Math.floor(CONTENT_BUDGET_UNITS * HEAD_SHARE);
-const TAIL_BUDGET_UNITS = CONTENT_BUDGET_UNITS - HEAD_BUDGET_UNITS;
+/**
+ * Head/tail budget for one input. The marker reserve is derived from the actual
+ * input length rather than from `MAX_UTF16_UNITS`, because the omitted count
+ * scales with the input and a fixed five-digit reserve would let a megabyte of
+ * output push the result past the hard cap. `omitted` can never exceed the
+ * input length and each retained side can never exceed the cap, so this is the
+ * widest marker the cut can produce for this input.
+ */
+function resolveCutBudget(totalUnits: number): { head: number; tail: number } {
+  const markerReserve =
+    buildOmissionMarker({
+      omitted: totalUnits,
+      headUnits: MAX_UTF16_UNITS,
+      tailUnits: MAX_UTF16_UNITS,
+    }).length + 2;
+  const content = MAX_UTF16_UNITS - markerReserve;
+  const head = Math.floor(content * HEAD_SHARE);
+  return { head, tail: content - head };
+}
 
 type HeaderRange = { start: number; end: number };
 type StreamRange = { label: string; contentStart: number; end: number };
@@ -135,9 +143,10 @@ export function formatExecApprovalContinuationOutput(streams: ExecApprovalOutput
     return rendered.text;
   }
 
-  let headEnd = moveCutOutsideHeader(HEAD_BUDGET_UNITS, rendered.headerRanges, "head");
+  const budget = resolveCutBudget(rendered.text.length);
+  let headEnd = moveCutOutsideHeader(budget.head, rendered.headerRanges, "head");
   const tailStart = moveCutOutsideHeader(
-    rendered.text.length - TAIL_BUDGET_UNITS,
+    rendered.text.length - budget.tail,
     rendered.headerRanges,
     "tail",
   );

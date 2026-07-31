@@ -9,7 +9,8 @@ import { formatExecApprovalContinuationOutput } from "./bash-tools.exec-approval
 
 // Pinned rather than imported: the module keeps its budget private, and pinning
 // the resolved numbers makes any change to the cap or the head/tail split a
-// deliberate edit here instead of a silent drift.
+// deliberate edit here instead of a silent drift. HEAD/TAIL hold for inputs
+// whose length is at most five digits; larger inputs widen the marker reserve.
 const MAX = 16_000;
 const HEAD = 11_921;
 const TAIL = 3_974;
@@ -102,6 +103,25 @@ describe("formatExecApprovalContinuationOutput", () => {
     const [, omitted = 0, headUnits = 0, tailUnits = 0] = match!.map(Number);
     expect(omitted + headUnits + tailUnits).toBe(value.length);
     expect(formatted.length).toBeLessThanOrEqual(MAX);
+  });
+
+  it("holds the cap when the omitted count needs more digits than the cap itself", () => {
+    // The omitted count scales with the input, so a fixed five-digit marker
+    // reserve would overflow the cap once the input passes ~1M units.
+    for (const total of [100_000, 1_016_000, 12_000_000]) {
+      const formatted = formatExecApprovalContinuationOutput([
+        { label: "output", value: "z".repeat(total) },
+      ]);
+
+      const match =
+        /\[\.\.\. (\d+) UTF-16 code units omitted[^\]]+first (\d+) and last (\d+) \.\.\.\]/.exec(
+          formatted,
+        );
+      expect(match).not.toBeNull();
+      const [, omitted = 0, headUnits = 0, tailUnits = 0] = match!.map(Number);
+      expect(omitted + headUnits + tailUnits).toBe(total);
+      expect(formatted.length).toBeLessThanOrEqual(MAX);
+    }
   });
 
   it("never splits a surrogate pair at either cut", () => {
