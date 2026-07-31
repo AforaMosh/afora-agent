@@ -7,6 +7,7 @@ import {
   extractTranscriptStemFromSessionsMemoryHit,
   formatSessionTranscriptMemoryHitKey,
   loadCombinedSessionStore,
+  loadCombinedSessionStoreForGateway,
   parseSessionTranscriptMemoryHitKey,
   resolveSessionTranscriptMemoryHitKeyToSessionKeys,
   resolveTranscriptStemToSessionKeys,
@@ -33,6 +34,10 @@ it("filters incognito rows from the plugin cross-session store view", () => {
   expect(loadCombinedSessionStore({}).store).toEqual({
     "agent:main:dashboard:visible": { sessionId: "visible", updatedAt: 1 },
   });
+});
+
+it("keeps the shipped Gateway-named store loader as a deprecated alias", () => {
+  expect(loadCombinedSessionStoreForGateway).toBe(loadCombinedSessionStore);
 });
 
 describe("extractTranscriptStemFromSessionsMemoryHit", () => {

@@ -38,6 +38,9 @@ export function loadCombinedSessionStore(
   };
 }
 
+/** @deprecated Use `loadCombinedSessionStore`. Removal: 2026-10-31. */
+export const loadCombinedSessionStoreForGateway = loadCombinedSessionStore;
+
 const QMD_ARCHIVE_STEM_RE = /^(.+)-jsonl-(reset|deleted)-(.+)$/;
 const QMD_ARCHIVE_TIMESTAMP_RE =
   /^(\d{4}-\d{2}-\d{2})[tT](\d{2}-\d{2}-\d{2})(?:(?:\.|-)(\d{3}))?[zZ]$/;
