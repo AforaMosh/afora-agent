@@ -889,11 +889,14 @@ function wrapStreamPromoteStandaloneTextToolCalls(
   stream: AssistantStream,
   promotionAllowedToolNames: Set<string>,
   options?: {
-    allowMissingXmlFunctionClose?: boolean;
+    missingXmlFunctionCloseAllowedToolNames?: ReadonlySet<string>;
     scrubbedToolNames?: ReadonlySet<string>;
   },
 ): AssistantStream {
   const scrubbedToolNames = new Set(options?.scrubbedToolNames ?? []);
+  const missingXmlFunctionCloseAllowedToolNames = new Set(
+    options?.missingXmlFunctionCloseAllowedToolNames ?? [],
+  );
   const matcher = createStandaloneToolCallNameMatcher(
     new Set([...promotionAllowedToolNames, ...scrubbedToolNames]),
   );
@@ -905,7 +908,10 @@ function wrapStreamPromoteStandaloneTextToolCalls(
     message: unknown;
     preserveEmptyTextBlocks?: boolean;
   }): PlainTextToolCallMessageNormalization => {
-    const promote = (): PlainTextToolCallMessageNormalization => {
+    const promote = (
+      allowedToolNames: Set<string>,
+      allowMissingXmlFunctionClose = false,
+    ): PlainTextToolCallMessageNormalization => {
       if (!params.allowPromotion) {
         return undefined;
       }
@@ -931,11 +937,11 @@ function wrapStreamPromoteStandaloneTextToolCalls(
       };
       const promoted = projectPlainTextToolCallMessage({
         allowedStopReasons: STANDALONE_TEXT_TOOL_CALL_PROMOTION_STOP_REASONS,
-        allowedToolNames: promotionAllowedToolNames,
+        allowedToolNames,
         createToolCallBlock: createStableToolCallBlock,
         isRetainableNonTextBlock: isRetainableNonVisibleBlock,
         message: params.message,
-        ...(options?.allowMissingXmlFunctionClose
+        ...(allowMissingXmlFunctionClose
           ? { parseOptions: { allowMissingXmlFunctionClose: true } }
           : {}),
         requireAssistantRole: true,
@@ -943,12 +949,16 @@ function wrapStreamPromoteStandaloneTextToolCalls(
       });
       return promoted ? { kind: "promoted", ...promoted } : undefined;
     };
-    // The opt-in terminal repair can turn a fully closed parameter list into a
-    // call. Try it before incomplete-candidate scrubbing discards that payload.
-    if (options?.allowMissingXmlFunctionClose) {
-      const promoted = promote();
+    if (missingXmlFunctionCloseAllowedToolNames.size > 0) {
+      const promoted = promote(promotionAllowedToolNames);
       if (promoted) {
         return promoted;
+      }
+      // Missing-close repair is deliberately narrower than normal promotion:
+      // only Code Mode guest names may recover from a truncated outer function.
+      const repaired = promote(missingXmlFunctionCloseAllowedToolNames, true);
+      if (repaired) {
+        return repaired;
       }
     }
     const scrubbedOnly =
@@ -973,7 +983,7 @@ function wrapStreamPromoteStandaloneTextToolCalls(
     if (scrubbed) {
       return { kind: "scrubbed", ...scrubbed };
     }
-    return promote();
+    return promote(promotionAllowedToolNames);
   };
 
   const originalResult = stream.result.bind(stream);
@@ -1013,14 +1023,19 @@ export function wrapStreamFnPromoteStandaloneTextToolCalls(
   options?: {
     additionalAllowedToolNames?: ReadonlySet<string>;
     additionalScrubbedToolNames?: ReadonlySet<string>;
-    allowMissingXmlFunctionClose?: boolean;
+    allowMissingXmlFunctionCloseForAdditionalTools?: boolean;
   },
 ): StreamFn {
+  const additionalAllowedToolNames = new Set(options?.additionalAllowedToolNames ?? []);
   const promotionAllowedToolNames = new Set([
     ...(allowedToolNames ?? []),
-    ...(options?.additionalAllowedToolNames ?? []),
+    ...additionalAllowedToolNames,
   ]);
   const scrubbedToolNames = options?.additionalScrubbedToolNames;
+  const missingXmlFunctionCloseAllowedToolNames =
+    options?.allowMissingXmlFunctionCloseForAdditionalTools && additionalAllowedToolNames.size > 0
+      ? additionalAllowedToolNames
+      : undefined;
   if (promotionAllowedToolNames.size === 0 && !scrubbedToolNames?.size) {
     return baseFn;
   }
@@ -1029,13 +1044,13 @@ export function wrapStreamFnPromoteStandaloneTextToolCalls(
     if (maybeStream && typeof maybeStream === "object" && "then" in maybeStream) {
       return Promise.resolve(maybeStream).then((stream) =>
         wrapStreamPromoteStandaloneTextToolCalls(stream, promotionAllowedToolNames, {
-          ...options,
+          missingXmlFunctionCloseAllowedToolNames,
           scrubbedToolNames,
         }),
       );
     }
     return wrapStreamPromoteStandaloneTextToolCalls(maybeStream, promotionAllowedToolNames, {
-      ...options,
+      missingXmlFunctionCloseAllowedToolNames,
       scrubbedToolNames,
     });
   };

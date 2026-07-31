@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
+  resolveCodeModeContinuationInstruction,
   resolveCodeModeContinuationToolPolicy,
+  resolveCodeModeTargetlessSideEffectEvidence,
   resolveEmptyResponseRetryInstruction,
+  shouldLatchCodeModeReadOnlyForRun,
 } from "./incomplete-turn.js";
 import {
-  consumeForceReadOnlyToolsForNextAttempt,
   consumeForceRestartSafeToolsForNextAttempt,
   createEmbeddedRunTerminalRetryState,
+  resolveForceReadOnlyToolsForAttempt,
 } from "./terminal-retry-state.js";
 
 describe("settled Code Mode continuation policy", () => {
@@ -35,6 +38,133 @@ describe("settled Code Mode continuation policy", () => {
         replayMetadata: { hadPotentialSideEffects: false, replaySafe: true },
       }),
     ).toBeNull();
+  });
+
+  it("distinguishes targetless side effects from tracked file mutations", () => {
+    expect(
+      resolveCodeModeTargetlessSideEffectEvidence({
+        codeModeEngaged: true,
+        toolMetas: [
+          { replaySafe: false, codeModeHadTargetlessSideEffects: false },
+          { replaySafe: true },
+        ],
+      }),
+    ).toBe(false);
+    expect(
+      resolveCodeModeTargetlessSideEffectEvidence({
+        codeModeEngaged: true,
+        toolMetas: [
+          {
+            toolName: "write",
+            replaySafe: false,
+            mutatingAction: true,
+            fileTarget: { path: "result.txt" },
+          },
+        ],
+      }),
+    ).toBeNull();
+    expect(
+      resolveCodeModeTargetlessSideEffectEvidence({
+        codeModeEngaged: true,
+        toolMetas: [
+          { codeModeHadTargetlessSideEffects: false },
+          { codeModeHadTargetlessSideEffects: true },
+        ],
+      }),
+    ).toBe(true);
+    expect(
+      resolveCodeModeTargetlessSideEffectEvidence({
+        codeModeEngaged: true,
+        toolMetas: [
+          { replaySafe: false, codeModeHadTargetlessSideEffects: false },
+          { replaySafe: false },
+        ],
+      }),
+    ).toBeNull();
+    expect(
+      resolveCodeModeTargetlessSideEffectEvidence({
+        codeModeEngaged: true,
+        toolMetas: [
+          {
+            toolName: "write",
+            replaySafe: false,
+            mutatingAction: true,
+            fileMutationExecutionStarted: true,
+            fileTarget: { path: "result.txt" },
+          },
+        ],
+      }),
+    ).toBe(false);
+    expect(
+      resolveCodeModeTargetlessSideEffectEvidence({
+        codeModeEngaged: true,
+        toolMetas: [
+          {
+            toolName: "apply_patch",
+            replaySafe: false,
+            mutatingAction: true,
+            fileMutationExecutionStarted: true,
+            fileTargets: [{ path: "a.ts" }, { path: "b.ts" }],
+          },
+        ],
+      }),
+    ).toBe(false);
+  });
+
+  it.each([
+    {
+      label: "proven file-only mutation",
+      mutationVerificationRequired: true,
+      targetlessSideEffectEvidence: false,
+      expected: false,
+    },
+    {
+      label: "unknown side-effect coverage",
+      mutationVerificationRequired: true,
+      targetlessSideEffectEvidence: null,
+      expected: true,
+    },
+    {
+      label: "observed targetless side effect",
+      mutationVerificationRequired: true,
+      targetlessSideEffectEvidence: true,
+      expected: true,
+    },
+  ])("latches run-wide read-only policy for $label", (scenario) => {
+    expect(shouldLatchCodeModeReadOnlyForRun(scenario)).toBe(scenario.expected);
+  });
+
+  it.each([
+    {
+      label: "pending file verification",
+      mutationVerificationRequired: true,
+      targetlessSideEffectEvidence: false,
+      toolPolicy: "read-only" as const,
+      expectedFragment: "stopped before verification",
+    },
+    {
+      label: "completed and verified file mutation",
+      mutationVerificationRequired: false,
+      targetlessSideEffectEvidence: false,
+      toolPolicy: "normal" as const,
+      expectedFragment: "completed and verified file mutations",
+    },
+    {
+      label: "targetless mutation",
+      mutationVerificationRequired: false,
+      targetlessSideEffectEvidence: true,
+      toolPolicy: "read-only" as const,
+      expectedFragment: "using only the available read-only tools",
+    },
+    {
+      label: "read-only prior work",
+      mutationVerificationRequired: false,
+      targetlessSideEffectEvidence: null,
+      toolPolicy: "normal" as const,
+      expectedFragment: "previous Code Mode step was read-only",
+    },
+  ])("selects mutation-aware continuation text for $label", (scenario) => {
+    expect(resolveCodeModeContinuationInstruction(scenario)).toContain(scenario.expectedFragment);
   });
 
   it("retries an empty stop after a proven side-effect-free Code Mode error", () => {
@@ -179,13 +309,22 @@ describe("settled Code Mode continuation policy", () => {
     expect(consumeForceRestartSafeToolsForNextAttempt(state, true)).toBe(true);
   });
 
-  it("keeps terminal read-only tools latched across continuation attempts", () => {
+  it("keeps terminal verification restrictions latched at dispatch", () => {
     const state = createEmbeddedRunTerminalRetryState();
-    state.forceReadOnlyToolsForNextAttempt = true;
+    state.forceReadOnlyToolsUntilVerification = true;
 
-    expect(consumeForceReadOnlyToolsForNextAttempt(state, false)).toBe(true);
-    expect(state.forceReadOnlyToolsForNextAttempt).toBe(true);
-    expect(consumeForceReadOnlyToolsForNextAttempt(state, false)).toBe(true);
-    expect(consumeForceReadOnlyToolsForNextAttempt(state, true)).toBe(true);
+    expect(resolveForceReadOnlyToolsForAttempt(state, false)).toBe(true);
+    expect(state.forceReadOnlyToolsUntilVerification).toBe(true);
+    expect(resolveForceReadOnlyToolsForAttempt(state, false)).toBe(true);
+    expect(resolveForceReadOnlyToolsForAttempt(state, true)).toBe(true);
+  });
+
+  it("keeps targetless side-effect restrictions latched across attempts", () => {
+    const state = createEmbeddedRunTerminalRetryState();
+    state.forceReadOnlyToolsForRun = true;
+
+    expect(resolveForceReadOnlyToolsForAttempt(state, false)).toBe(true);
+    expect(resolveForceReadOnlyToolsForAttempt(state, false)).toBe(true);
+    expect(resolveForceReadOnlyToolsForAttempt(state, true)).toBe(true);
   });
 });

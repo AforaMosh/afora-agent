@@ -437,7 +437,7 @@ describe("Code Mode outer guest tool-call repair", () => {
       new Set(["exec"]),
       {
         additionalAllowedToolNames: new Set(["tools.read"]),
-        allowMissingXmlFunctionClose: true,
+        allowMissingXmlFunctionCloseForAdditionalTools: true,
       },
     );
     const wrapped = wrapStreamFnTranslateCodeModeGuestToolCalls(

@@ -41,8 +41,8 @@ import type { AgentToolUpdateCallback } from "./runtime/index.js";
 import { optionalStringEnum } from "./schema/typebox.js";
 import type { ToolDefinition } from "./sessions/index.js";
 import { resolveSwarmConfig } from "./swarm-config.js";
-import { isAgentToolReplaySafe } from "./tool-replay-safety.js";
 import { isDirectVisibleCatalogTool } from "./tool-search-catalog.js";
+import { isSideEffectFreeToolSearchCall } from "./tool-search-telemetry.js";
 import {
   addClientToolsToToolCatalog,
   applyToolCatalogCompaction,
@@ -199,7 +199,7 @@ function filterReadOnlyCodeModeCatalog(
   // Keep the prompt on that same boundary so models never see unavailable
   // mutation, plugin, client, or MCP methods during verification.
   return catalog.filter(
-    (entry) => entry.sourceName === "core" && isAgentToolReplaySafe(entry.tool),
+    (entry) => entry.sourceName === "core" && isSideEffectFreeToolSearchCall(entry, {}),
   );
 }
 
@@ -418,7 +418,9 @@ export function applyCodeModeCatalog(params: {
     enabled: true,
     isVisibleControlTool: isCodeModeControlTool,
     isVisibleCatalogTool: (tool) =>
-      directToolNames.has(tool.name) && isDirectVisibleCatalogTool(tool, directToolNames),
+      params.forceReadOnlyTools !== true &&
+      directToolNames.has(tool.name) &&
+      isDirectVisibleCatalogTool(tool, directToolNames),
     shouldCatalogTool: (tool) => !isCodeModeControlTool(tool),
   });
   // Only the catalog ref reflects the freshly compacted run catalog. Without it

@@ -446,6 +446,19 @@ function readCodeModeLastCallSideEffectFree(
     : undefined;
 }
 
+function readCodeModeHadTargetlessSideEffects(
+  toolName: string,
+  result: unknown,
+): boolean | undefined {
+  if (toolName !== "exec" && toolName !== "wait") {
+    return undefined;
+  }
+  const telemetry = asOptionalObjectRecord(readToolResultDetails(result)?.telemetry);
+  return typeof telemetry?.hadTargetlessSideEffects === "boolean"
+    ? telemetry.hadTargetlessSideEffects
+    : undefined;
+}
+
 function readCodeModeFileTarget(value: unknown): FileTarget | undefined {
   const record = asOptionalObjectRecord(value);
   const path = typeof record?.path === "string" ? record.path : undefined;
@@ -1650,6 +1663,10 @@ export async function handleToolExecutionEnd(
   const codeModeLastCallSideEffectFree = trustedCodeModeControl
     ? readCodeModeLastCallSideEffectFree(toolName, sanitizedResult)
     : undefined;
+  const codeModeHadTargetlessSideEffects =
+    trustedCodeModeControl && codeModeSideEffectFree === false
+      ? readCodeModeHadTargetlessSideEffects(toolName, sanitizedResult)
+      : undefined;
   const codeModeObservationOrderValid =
     trustedCodeModeControl &&
     initialCallSummary?.codeModeObservationOrderVersion !== undefined &&
@@ -1704,6 +1721,7 @@ export async function handleToolExecutionEnd(
     ...(fileTargetAbsent ? { fileTargetAbsent: true } : {}),
     ...(codeModeSideEffectFree !== undefined ? { sideEffectFree: codeModeSideEffectFree } : {}),
     ...(codeModeLastCallSideEffectFree !== undefined ? { codeModeLastCallSideEffectFree } : {}),
+    ...(codeModeHadTargetlessSideEffects !== undefined ? { codeModeHadTargetlessSideEffects } : {}),
     ...(codeModeSuccessfulObservationFileTargets !== undefined
       ? { codeModeSuccessfulObservationFileTargets }
       : {}),

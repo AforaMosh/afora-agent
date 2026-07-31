@@ -225,7 +225,7 @@ export function installEmbeddedAttemptStreamGuards(input: {
           additionalScrubbedToolNames: new Set(["tools"]),
           // Some small models close every XML parameter but omit only the final
           // function tag. This remains terminal-only and guest-name allowlisted.
-          allowMissingXmlFunctionClose: true,
+          allowMissingXmlFunctionCloseForAdditionalTools: true,
         }
       : undefined,
   );

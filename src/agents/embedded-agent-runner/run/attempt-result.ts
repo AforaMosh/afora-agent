@@ -93,6 +93,7 @@ function normalizeEmbeddedAttemptToolMetas(
       ): entry is {
         toolName: string;
         meta?: string;
+        durationMs?: number;
         replaySafe?: boolean;
         mutatingAction?: boolean;
         fileTarget?: EmbeddedRunAttemptResult["toolMetas"][number]["fileTarget"];
@@ -102,6 +103,7 @@ function normalizeEmbeddedAttemptToolMetas(
         fileTargetAbsent?: true;
         sideEffectFree?: boolean;
         codeModeLastCallSideEffectFree?: boolean;
+        codeModeHadTargetlessSideEffects?: boolean;
         codeModeSuccessfulObservationFileTargets?: EmbeddedRunAttemptResult["toolMetas"][number]["codeModeSuccessfulObservationFileTargets"];
         codeModeSuccessfulAbsenceObservationFileTargets?: EmbeddedRunAttemptResult["toolMetas"][number]["codeModeSuccessfulAbsenceObservationFileTargets"];
         codeModeUnverifiedMutationFileTargets?: EmbeddedRunAttemptResult["toolMetas"][number]["codeModeUnverifiedMutationFileTargets"];
@@ -118,6 +120,13 @@ function normalizeEmbeddedAttemptToolMetas(
         meta: entry.meta,
         replaySafe: entry.replaySafe === true,
       };
+      if (
+        typeof entry.durationMs === "number" &&
+        Number.isFinite(entry.durationMs) &&
+        entry.durationMs >= 0
+      ) {
+        normalized.durationMs = entry.durationMs;
+      }
       if (entry.sideEffectFree !== undefined) {
         normalized.sideEffectFree = entry.sideEffectFree;
       }
@@ -141,6 +150,9 @@ function normalizeEmbeddedAttemptToolMetas(
       }
       if (entry.codeModeLastCallSideEffectFree !== undefined) {
         normalized.codeModeLastCallSideEffectFree = entry.codeModeLastCallSideEffectFree;
+      }
+      if (entry.codeModeHadTargetlessSideEffects !== undefined) {
+        normalized.codeModeHadTargetlessSideEffects = entry.codeModeHadTargetlessSideEffects;
       }
       if (entry.codeModeSuccessfulObservationFileTargets !== undefined) {
         normalized.codeModeSuccessfulObservationFileTargets =

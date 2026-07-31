@@ -235,6 +235,7 @@ describe("Tool Search input schemas", () => {
     expect(catalogRef.current?.callSideEffectFreeSequence).toEqual([true, false, true]);
     expect(runtime.telemetry()).toMatchObject({
       lastCallSideEffectFree: true,
+      hadTargetlessSideEffects: false,
       successfulObservationFileTargets: [{ path: "facts.txt" }, { path: "result.txt" }],
       unverifiedMutationFileTargets: [],
     });
@@ -578,6 +579,7 @@ describe("Tool Search input schemas", () => {
 
     expect(runtime.telemetry()).toMatchObject({
       lastCallSideEffectFree: false,
+      hadTargetlessSideEffects: true,
       successfulObservationFileTargets: [],
       unverifiedMutationFileTargets: [],
     });

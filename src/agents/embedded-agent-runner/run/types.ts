@@ -271,6 +271,7 @@ export type EmbeddedRunAttemptResult = {
     fileTargetAbsent?: true;
     sideEffectFree?: boolean;
     codeModeLastCallSideEffectFree?: boolean;
+    codeModeHadTargetlessSideEffects?: boolean;
     codeModeSuccessfulObservationFileTargets?: FileTarget[];
     codeModeSuccessfulAbsenceObservationFileTargets?: FileTarget[];
     codeModeUnverifiedMutationFileTargets?: FileTarget[];

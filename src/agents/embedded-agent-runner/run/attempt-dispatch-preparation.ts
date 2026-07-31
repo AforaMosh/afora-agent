@@ -17,9 +17,9 @@ import { CODEX_HARNESS_ID, resolveAttemptTrajectoryAttribution } from "./runtime
 import type { createEmbeddedRunSessionPromptState } from "./session-prompt-state.js";
 import type { createEmbeddedRunTerminalRetryState } from "./terminal-retry-state.js";
 import {
-  consumeForceReadOnlyToolsForNextAttempt,
   consumeForceRestartSafeToolsForNextAttempt,
   MAX_BEFORE_AGENT_FINALIZE_REVISIONS,
+  resolveForceReadOnlyToolsForAttempt,
 } from "./terminal-retry-state.js";
 
 type PreparedRuntime = Awaited<ReturnType<typeof prepareEmbeddedRunRuntime>>;
@@ -198,7 +198,7 @@ export async function prepareAndDispatchEmbeddedRunAttempt(input: {
     terminalRetryState,
     params.forceRestartSafeTools === true,
   );
-  const forceReadOnlyTools = consumeForceReadOnlyToolsForNextAttempt(
+  const forceReadOnlyTools = resolveForceReadOnlyToolsForAttempt(
     terminalRetryState,
     params.forceReadOnlyTools === true,
   );

@@ -299,7 +299,7 @@ describe("wrapStreamFnPromoteStandaloneTextToolCalls", () => {
     );
     const wrapped = wrapStreamFnPromoteStandaloneTextToolCalls(baseFn as never, new Set(["exec"]), {
       additionalAllowedToolNames: new Set(["tools.read"]),
-      allowMissingXmlFunctionClose: true,
+      allowMissingXmlFunctionCloseForAdditionalTools: true,
     });
     const stream = (await Promise.resolve(
       wrapped({} as never, {} as never, {} as never),
@@ -320,6 +320,45 @@ describe("wrapStreamFnPromoteStandaloneTextToolCalls", () => {
       name: "tools.read",
       arguments: { path: "facts.txt" },
     });
+    expect(JSON.stringify({ events, result })).not.toContain(rawToolText);
+  });
+
+  it("does not promote outer tools with an omitted final function tag", async () => {
+    const rawToolText = [
+      "<function=exec>",
+      "<parameter=command>",
+      "rm -rf target",
+      "</parameter>",
+    ].join("\n");
+    const resultMessage = {
+      role: "assistant",
+      content: [{ type: "text", text: rawToolText }],
+      stopReason: "stop",
+    };
+    const baseFn = vi.fn(() =>
+      createFakeStream({
+        events: [
+          { type: "text_delta", contentIndex: 0, delta: rawToolText },
+          { type: "done", reason: "stop", message: structuredClone(resultMessage) },
+        ],
+        resultMessage,
+      }),
+    );
+    const wrapped = wrapStreamFnPromoteStandaloneTextToolCalls(baseFn as never, new Set(["exec"]), {
+      additionalAllowedToolNames: new Set(["tools.read"]),
+      allowMissingXmlFunctionCloseForAdditionalTools: true,
+    });
+    const stream = (await Promise.resolve(
+      wrapped({} as never, {} as never, {} as never),
+    )) as FakeWrappedStream;
+
+    const events = await collectStreamEvents(stream);
+    const result = requireRecord(await stream.result(), "result message");
+
+    expect(
+      events.some((event) => String(requireRecord(event, "event").type).startsWith("toolcall_")),
+    ).toBe(false);
+    expect(result).toMatchObject({ role: "assistant", content: [] });
     expect(JSON.stringify({ events, result })).not.toContain(rawToolText);
   });
 
@@ -352,7 +391,7 @@ describe("wrapStreamFnPromoteStandaloneTextToolCalls", () => {
     const wrapped = wrapStreamFnPromoteStandaloneTextToolCalls(baseFn as never, new Set(["exec"]), {
       additionalAllowedToolNames: new Set(["tools.read"]),
       additionalScrubbedToolNames: new Set(["tools"]),
-      allowMissingXmlFunctionClose: true,
+      allowMissingXmlFunctionCloseForAdditionalTools: true,
     });
     const stream = (await Promise.resolve(
       wrapped({} as never, {} as never, {} as never),

@@ -148,7 +148,11 @@ const SETTLED_TOOL_TERMINAL_CONTINUATION_INSTRUCTION =
   "The previous assistant turn completed its tool calls but did not produce a user-visible answer. Continue from the current transcript and produce the final user-visible answer now. Do not repeat completed tool calls or restart from scratch.";
 export const RESTART_SAFE_CODE_MODE_CONTINUATION_INSTRUCTION =
   "The previous Code Mode step completed mutations but stopped before verification. Continue from the transcript using only the available read-only tools. Do not repeat completed mutations. Verify the result, then follow the user's exact requested output format with no extra label or markdown.";
-export const NORMAL_CODE_MODE_CONTINUATION_INSTRUCTION =
+const VERIFY_CODE_MODE_MUTATION_CONTINUATION_INSTRUCTION =
+  "The previous Code Mode step completed file mutations but stopped before verification. Continue from the transcript using only the available read-only tools. Do not repeat completed mutations. Verify the changed files. If the user's requested work is incomplete, stop after verification so the next continuation can restore normal tools. Otherwise, follow the user's exact requested output format with no extra label or markdown.";
+const VERIFIED_CODE_MODE_MUTATION_CONTINUATION_INSTRUCTION =
+  "The previous Code Mode step completed and verified file mutations but stopped before the task was complete. Continue from the transcript with tools. Do not repeat completed mutations. Finish only the remaining work, verify any new mutations, and follow the user's exact requested output format with no extra label or markdown.";
+const NORMAL_CODE_MODE_CONTINUATION_INSTRUCTION =
   "The previous Code Mode step was read-only and stopped before the task was complete. Continue from the transcript with tools, use the actual prior output shape, and finish the remaining steps. Follow the user's exact requested output format with no extra label or markdown.";
 
 /**
@@ -195,6 +199,81 @@ export function resolveCodeModeContinuationToolPolicy(attempt: {
   return resolveAttemptReplayMetadata(attempt).hadPotentialSideEffects ? "read-only" : "normal";
 }
 
+/** Reports whether current Code Mode telemetry proves targetless side effects were absent or seen. */
+export function resolveCodeModeTargetlessSideEffectEvidence(attempt: {
+  codeModeEngaged?: boolean;
+  toolMetas?: ReadonlyArray<{
+    toolName?: string;
+    replaySafe?: boolean;
+    mutatingAction?: boolean;
+    fileTarget?: FileTarget;
+    fileTargets?: FileTarget[];
+    fileMutationExecutionStarted?: true;
+    sideEffectFree?: boolean;
+    asyncStarted?: boolean;
+    codeModeHadTargetlessSideEffects?: boolean;
+  }>;
+}): boolean | null {
+  if (attempt.codeModeEngaged !== true) {
+    return null;
+  }
+  let coveredPotentialSideEffect = false;
+  for (const tool of attempt.toolMetas ?? []) {
+    if (tool.codeModeHadTargetlessSideEffects === true) {
+      return true;
+    }
+    const potentiallySideEffecting =
+      tool.replaySafe !== true || tool.sideEffectFree === false || tool.asyncStarted === true;
+    if (!potentiallySideEffecting) {
+      continue;
+    }
+    const trackedNativeFileMutation =
+      tool.fileMutationExecutionStarted === true &&
+      tool.mutatingAction === true &&
+      (tool.toolName === "write" || tool.toolName === "edit" || tool.toolName === "apply_patch") &&
+      (tool.fileTarget !== undefined || (tool.fileTargets?.length ?? 0) > 0);
+    if (trackedNativeFileMutation) {
+      // This flag is emitted only for started core-owned workspace mutations.
+      // Their tracked targets prove the call did not mutate an unrelated surface.
+      coveredPotentialSideEffect = true;
+      continue;
+    }
+    if (tool.codeModeHadTargetlessSideEffects !== false) {
+      return null;
+    }
+    coveredPotentialSideEffect = true;
+  }
+  return coveredPotentialSideEffect ? false : null;
+}
+
+/** Keeps unknown or observed targetless effects latched while file verification is pending. */
+export function shouldLatchCodeModeReadOnlyForRun(params: {
+  mutationVerificationRequired: boolean;
+  targetlessSideEffectEvidence: boolean | null;
+}): boolean {
+  return (
+    params.targetlessSideEffectEvidence === true ||
+    (params.mutationVerificationRequired && params.targetlessSideEffectEvidence !== false)
+  );
+}
+
+/** Selects continuation wording without losing whether the prior attempt mutated files. */
+export function resolveCodeModeContinuationInstruction(params: {
+  mutationVerificationRequired: boolean;
+  targetlessSideEffectEvidence: boolean | null;
+  toolPolicy: CodeModeContinuationToolPolicy;
+}): string {
+  if (params.mutationVerificationRequired) {
+    return VERIFY_CODE_MODE_MUTATION_CONTINUATION_INSTRUCTION;
+  }
+  if (params.targetlessSideEffectEvidence === false) {
+    return VERIFIED_CODE_MODE_MUTATION_CONTINUATION_INSTRUCTION;
+  }
+  return params.toolPolicy === "read-only"
+    ? RESTART_SAFE_CODE_MODE_CONTINUATION_INSTRUCTION
+    : NORMAL_CODE_MODE_CONTINUATION_INSTRUCTION;
+}
+
 /**
  * Detects a completed Code Mode mutation that ended without a later
  * side-effect-free observation. Failed follow-up execs do not erase the need
@@ -214,6 +293,7 @@ export function resolveCodeModeMutationVerificationState(
       fileTargetAbsent?: true;
       sideEffectFree?: boolean;
       codeModeLastCallSideEffectFree?: boolean;
+      codeModeHadTargetlessSideEffects?: boolean;
       codeModeSuccessfulObservationFileTargets?: FileTarget[];
       codeModeSuccessfulAbsenceObservationFileTargets?: FileTarget[];
       codeModeUnverifiedMutationFileTargets?: FileTarget[];

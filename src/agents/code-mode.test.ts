@@ -259,6 +259,7 @@ describe("Code Mode catalog and model-visible surface", () => {
       ],
       config,
       catalogRef,
+      directToolNames: ["read", "write", "edit", "apply_patch", "search"],
       forceReadOnlyTools: true,
     });
     const exec = compacted.tools.find((tool) => tool.name === CODE_MODE_EXEC_TOOL_NAME);
@@ -266,6 +267,10 @@ describe("Code Mode catalog and model-visible surface", () => {
       properties?: { code?: { description?: string } };
     };
 
+    expect(compacted.tools.map((tool) => tool.name)).toEqual([
+      CODE_MODE_EXEC_TOOL_NAME,
+      CODE_MODE_WAIT_TOOL_NAME,
+    ]);
     expect(exec?.description).toContain("read-only recovery");
     expect(exec?.description).toContain("- tools.read(");
     expect(exec?.description).not.toContain("- tools.write(");

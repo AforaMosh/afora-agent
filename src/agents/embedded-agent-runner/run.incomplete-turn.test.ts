@@ -27,8 +27,8 @@ import {
   buildAttemptReplayMetadata,
   DEFAULT_EMPTY_RESPONSE_RETRY_LIMIT,
   DEFAULT_REASONING_ONLY_RETRY_LIMIT,
-  NORMAL_CODE_MODE_CONTINUATION_INSTRUCTION,
   RESTART_SAFE_CODE_MODE_CONTINUATION_INSTRUCTION,
+  resolveCodeModeContinuationInstruction,
   resolveCodeModeMutationVerificationState,
   resolveEmptyResponseRetryInstruction,
   isIncompleteTerminalAssistantTurn,
@@ -51,6 +51,16 @@ const EMPTY_RESPONSE_RETRY_INSTRUCTION =
   "The previous attempt did not produce a user-visible answer. Continue from the current state and produce the visible answer now. Do not restart from scratch.";
 const SETTLED_TOOL_TERMINAL_CONTINUATION_INSTRUCTION =
   "The previous assistant turn completed its tool calls but did not produce a user-visible answer. Continue from the current transcript and produce the final user-visible answer now. Do not repeat completed tool calls or restart from scratch.";
+const NORMAL_CODE_MODE_CONTINUATION_INSTRUCTION = resolveCodeModeContinuationInstruction({
+  mutationVerificationRequired: false,
+  targetlessSideEffectEvidence: null,
+  toolPolicy: "normal",
+});
+const VERIFY_CODE_MODE_MUTATION_CONTINUATION_INSTRUCTION = resolveCodeModeContinuationInstruction({
+  mutationVerificationRequired: true,
+  targetlessSideEffectEvidence: false,
+  toolPolicy: "read-only",
+});
 
 let runEmbeddedAgent: typeof import("./run.js").runEmbeddedAgent;
 
@@ -1426,14 +1436,14 @@ describe("runEmbeddedAgent incomplete-turn safety", () => {
     expect(mockedRunEmbeddedAttempt).toHaveBeenCalledTimes(3);
     expect(result.payloads?.[0]?.text).toBe("Verified the completed write.");
     const secondCall = runAttemptCall(1);
-    expect(secondCall.prompt).toBe(RESTART_SAFE_CODE_MODE_CONTINUATION_INSTRUCTION);
+    expect(secondCall.prompt).toBe(VERIFY_CODE_MODE_MUTATION_CONTINUATION_INSTRUCTION);
     expect(secondCall.suppressNextUserMessagePersistence).toBe(true);
     expect(secondCall.disableTools).not.toBe(true);
     expect(secondCall.forceRestartSafeTools).toBeFalsy();
     expect(secondCall.forceReadOnlyTools).toBe(true);
     expect(secondCall.operation).toBe("attempt");
     const thirdCall = runAttemptCall(2);
-    expect(thirdCall.prompt).toBe(RESTART_SAFE_CODE_MODE_CONTINUATION_INSTRUCTION);
+    expect(thirdCall.prompt).toBe(VERIFY_CODE_MODE_MUTATION_CONTINUATION_INSTRUCTION);
     expect(thirdCall.disableTools).not.toBe(true);
     expect(thirdCall.forceRestartSafeTools).toBeFalsy();
     expect(thirdCall.forceReadOnlyTools).toBe(true);
@@ -1442,7 +1452,7 @@ describe("runEmbeddedAgent incomplete-turn safety", () => {
     expectNoWarnMessageWith("settled post-tool turn lacked a final answer");
   });
 
-  it("keeps targetless mutation continuations read-only until the run finishes", async () => {
+  it("restores mutation tools after verifying a completed file write", async () => {
     const emptyStopAssistant = {
       role: "assistant",
       stopReason: "stop",
@@ -1455,7 +1465,15 @@ describe("runEmbeddedAgent incomplete-turn safety", () => {
       makeAttemptResult({
         assistantTexts: [],
         codeModeEngaged: true,
-        toolMetas: [{ toolName: "exec", replaySafe: false, sideEffectFree: false }],
+        toolMetas: [
+          {
+            toolName: "exec",
+            replaySafe: false,
+            sideEffectFree: false,
+            codeModeHadTargetlessSideEffects: false,
+            codeModeUnverifiedMutationFileTargets: [{ path: "first.txt" }],
+          },
+        ],
         replayMetadata: { hadPotentialSideEffects: true, replaySafe: false },
         currentAttemptReplayMetadata: { hadPotentialSideEffects: true, replaySafe: false },
         itemLifecycle: { startedCount: 1, completedCount: 1, activeCount: 0 },
@@ -1467,7 +1485,108 @@ describe("runEmbeddedAgent incomplete-turn safety", () => {
       makeAttemptResult({
         assistantTexts: [],
         codeModeEngaged: true,
-        toolMetas: [{ toolName: "exec", replaySafe: true, sideEffectFree: true }],
+        toolMetas: [
+          {
+            toolName: "read",
+            replaySafe: true,
+            sideEffectFree: true,
+            fileTarget: { path: "first.txt" },
+            fileTargetVerified: true,
+          },
+        ],
+        replayMetadata: { hadPotentialSideEffects: false, replaySafe: true },
+        currentAttemptReplayMetadata: { hadPotentialSideEffects: false, replaySafe: true },
+        itemLifecycle: { startedCount: 1, completedCount: 1, activeCount: 0 },
+        lastAssistant: emptyStopAssistant,
+        currentAttemptAssistant: emptyStopAssistant,
+      }),
+    );
+    const finalAssistant = {
+      role: "assistant",
+      stopReason: "stop",
+      provider: "huggingface",
+      model: "Qwen/Qwen3.5-9B",
+      content: [{ type: "text", text: "Wrote and verified both files." }],
+    } as unknown as NonNullable<EmbeddedRunAttemptResult["lastAssistant"]>;
+    mockedRunEmbeddedAttempt.mockResolvedValueOnce(
+      makeAttemptResult({
+        assistantTexts: ["Wrote and verified both files."],
+        codeModeEngaged: true,
+        toolMetas: [
+          {
+            toolName: "exec",
+            replaySafe: false,
+            sideEffectFree: false,
+            codeModeSuccessfulObservationFileTargets: [{ path: "second.txt" }],
+          },
+        ],
+        lastAssistant: finalAssistant,
+        currentAttemptAssistant: finalAssistant,
+        currentAttemptCompletedAssistant: finalAssistant,
+      }),
+    );
+    mockedBuildEmbeddedRunPayloads
+      .mockReturnValueOnce([])
+      .mockReturnValueOnce([])
+      .mockReturnValueOnce([{ text: "Wrote and verified both files." }]);
+
+    const result = await runEmbeddedAgent({
+      ...overflowBaseRunParams,
+      provider: "huggingface",
+      model: "Qwen/Qwen3.5-9B",
+      runId: "run-resume-mutation-after-verification",
+    });
+
+    expect(mockedRunEmbeddedAttempt).toHaveBeenCalledTimes(3);
+    expect(result.payloads?.[0]?.text).toBe("Wrote and verified both files.");
+    expect(runAttemptCall(1).prompt).toBe(VERIFY_CODE_MODE_MUTATION_CONTINUATION_INSTRUCTION);
+    expect(runAttemptCall(1).forceReadOnlyTools).toBe(true);
+    expect(runAttemptCall(2).prompt).toBe(NORMAL_CODE_MODE_CONTINUATION_INSTRUCTION);
+    expect(runAttemptCall(2).forceReadOnlyTools).toBe(false);
+  });
+
+  it("keeps mixed targeted and targetless mutations read-only after file verification", async () => {
+    const emptyStopAssistant = {
+      role: "assistant",
+      stopReason: "stop",
+      provider: "huggingface",
+      model: "Qwen/Qwen3.5-9B",
+      content: [],
+    } as unknown as NonNullable<EmbeddedRunAttemptResult["lastAssistant"]>;
+    mockedClassifyFailoverReason.mockReturnValue(null);
+    mockedRunEmbeddedAttempt.mockResolvedValueOnce(
+      makeAttemptResult({
+        assistantTexts: [],
+        codeModeEngaged: true,
+        toolMetas: [
+          {
+            toolName: "exec",
+            replaySafe: false,
+            sideEffectFree: false,
+            codeModeHadTargetlessSideEffects: true,
+            codeModeUnverifiedMutationFileTargets: [{ path: "result.txt" }],
+          },
+        ],
+        replayMetadata: { hadPotentialSideEffects: true, replaySafe: false },
+        currentAttemptReplayMetadata: { hadPotentialSideEffects: true, replaySafe: false },
+        itemLifecycle: { startedCount: 1, completedCount: 1, activeCount: 0 },
+        lastAssistant: emptyStopAssistant,
+        currentAttemptAssistant: emptyStopAssistant,
+      }),
+    );
+    mockedRunEmbeddedAttempt.mockResolvedValueOnce(
+      makeAttemptResult({
+        assistantTexts: [],
+        codeModeEngaged: true,
+        toolMetas: [
+          {
+            toolName: "read",
+            replaySafe: true,
+            sideEffectFree: true,
+            fileTarget: { path: "result.txt" },
+            fileTargetVerified: true,
+          },
+        ],
         replayMetadata: { hadPotentialSideEffects: false, replaySafe: true },
         currentAttemptReplayMetadata: { hadPotentialSideEffects: false, replaySafe: true },
         itemLifecycle: { startedCount: 1, completedCount: 1, activeCount: 0 },
@@ -1506,6 +1625,7 @@ describe("runEmbeddedAgent incomplete-turn safety", () => {
     expect(result.payloads?.[0]?.text).toBe("Verified the completed external action.");
     expect(runAttemptCall(1).forceReadOnlyTools).toBe(true);
     expect(runAttemptCall(2).forceReadOnlyTools).toBe(true);
+    expect(runAttemptCall(2).prompt).toBe(RESTART_SAFE_CODE_MODE_CONTINUATION_INSTRUCTION);
     expectWarnMessageWith("settled Code Mode work stopped before final verification");
   });
 
@@ -1638,7 +1758,7 @@ describe("runEmbeddedAgent incomplete-turn safety", () => {
     expect(mockedRunEmbeddedAttempt).toHaveBeenCalledTimes(2);
     expect(result.payloads?.[0]?.text).toBe("CM-EXAMPLE");
     const verificationCall = runAttemptCall(1);
-    expect(verificationCall.prompt).toBe(RESTART_SAFE_CODE_MODE_CONTINUATION_INSTRUCTION);
+    expect(verificationCall.prompt).toBe(VERIFY_CODE_MODE_MUTATION_CONTINUATION_INSTRUCTION);
     expect(verificationCall.forceReadOnlyTools).toBe(true);
     expectWarnMessageWith("settled Code Mode work stopped before final verification");
   });

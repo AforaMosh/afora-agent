@@ -11,10 +11,11 @@ import {
 } from "../usage-accumulator.js";
 import { runEmbeddedSettledTurnFinalizationWithBackend } from "./backend.js";
 import {
-  NORMAL_CODE_MODE_CONTINUATION_INSTRUCTION,
-  RESTART_SAFE_CODE_MODE_CONTINUATION_INSTRUCTION,
+  resolveCodeModeContinuationInstruction,
   resolveCodeModeMutationVerificationState,
   resolveCodeModeContinuationToolPolicy,
+  resolveCodeModeTargetlessSideEffectEvidence,
+  shouldLatchCodeModeReadOnlyForRun,
 } from "./incomplete-turn.js";
 import { withEmbeddedRunLaneProgressHeartbeat } from "./lane-runtime.js";
 import {
@@ -86,12 +87,34 @@ export async function prepareTerminalWithSettledTurnFinalization(input: {
   input.finalization.retryState.codeModeMutationVerification = codeModeMutationVerification;
   const codeModeMutationVerificationRequired =
     codeModeMutationVerification.pendingTargets.length > 0;
-  // Pending targets outlive the attempt that created them. Keep every later
-  // continuation read-only, including normal-tool fallback attempts, until a
-  // successfully ordered read verifies the mutation.
-  const codeModeContinuationToolPolicy = codeModeMutationVerificationRequired
+  const codeModeTargetlessSideEffectEvidence = resolveCodeModeTargetlessSideEffectEvidence(
+    initial.attempt,
+  );
+  if (
+    shouldLatchCodeModeReadOnlyForRun({
+      mutationVerificationRequired: codeModeMutationVerificationRequired,
+      targetlessSideEffectEvidence: codeModeTargetlessSideEffectEvidence,
+    })
+  ) {
+    input.finalization.retryState.forceReadOnlyToolsForRun = true;
+  }
+  if (!codeModeMutationVerificationRequired) {
+    // Dispatch and failover paths cannot release this guard. Only successful
+    // target reconciliation proves that mutation tools are safe to restore.
+    input.finalization.retryState.forceReadOnlyToolsUntilVerification = false;
+  }
+  // Known targets need one read-only verification attempt at a time. Once
+  // verified, later continuations may resume unfinished mutations. Targetless
+  // side effects remain read-only for the rest of the run.
+  const attemptContinuationToolPolicy = codeModeMutationVerificationRequired
     ? "read-only"
-    : resolveCodeModeContinuationToolPolicy(initial.attempt);
+    : codeModeTargetlessSideEffectEvidence === false
+      ? "normal"
+      : resolveCodeModeContinuationToolPolicy(initial.attempt);
+  const codeModeContinuationToolPolicy =
+    attemptContinuationToolPolicy && input.finalization.retryState.forceReadOnlyToolsForRun
+      ? "read-only"
+      : attemptContinuationToolPolicy;
   const prompt = resolveSettledTurnFinalizationRequest({
     runParams: input.terminalBase.runParams,
     attempt,
@@ -122,6 +145,14 @@ export async function prepareTerminalWithSettledTurnFinalization(input: {
   if (codeModeContinuationToolPolicy) {
     // Keep unfinished Code Mode work on the ordinary continuation path.
     // Mutating turns expose only host-enforced read-only tools.
+    const readOnlyToolsScope: "run" | "verification" | null = input.finalization.retryState
+      .forceReadOnlyToolsForRun
+      ? "run"
+      : codeModeMutationVerificationRequired
+        ? "verification"
+        : codeModeContinuationToolPolicy === "read-only"
+          ? "run"
+          : null;
     return {
       ...initial,
       prepared,
@@ -130,11 +161,12 @@ export async function prepareTerminalWithSettledTurnFinalization(input: {
       finalizationAttempted: false,
       finalizationSucceeded: false,
       toolCapableContinuation: {
-        instruction:
-          codeModeContinuationToolPolicy === "read-only"
-            ? RESTART_SAFE_CODE_MODE_CONTINUATION_INSTRUCTION
-            : NORMAL_CODE_MODE_CONTINUATION_INSTRUCTION,
-        forceReadOnlyTools: codeModeContinuationToolPolicy === "read-only",
+        instruction: resolveCodeModeContinuationInstruction({
+          mutationVerificationRequired: codeModeMutationVerificationRequired,
+          targetlessSideEffectEvidence: codeModeTargetlessSideEffectEvidence,
+          toolPolicy: codeModeContinuationToolPolicy,
+        }),
+        readOnlyToolsScope,
       },
     };
   }

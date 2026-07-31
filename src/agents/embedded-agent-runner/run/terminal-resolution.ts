@@ -185,7 +185,7 @@ export async function resolveEmbeddedRunTerminal(input: {
   settledTurnFinalizationAttempted: boolean;
   toolCapableContinuation?: {
     instruction: string;
-    forceReadOnlyTools: boolean;
+    readOnlyToolsScope: "verification" | "run" | null;
   } | null;
   pluginHarnessOwnsTransport: boolean;
   pluginHarnessOwnsAuthBootstrap: boolean;
@@ -320,12 +320,15 @@ export async function resolveEmbeddedRunTerminal(input: {
       retryState.codeModeVerificationContinuationAttempts < MAX_CODE_MODE_VERIFICATION_CONTINUATIONS
     ) {
       retryState.codeModeVerificationContinuationAttempts += 1;
+      if (input.toolCapableContinuation.readOnlyToolsScope === "run") {
+        retryState.forceReadOnlyToolsForRun = true;
+      } else if (input.toolCapableContinuation.readOnlyToolsScope === "verification") {
+        retryState.forceReadOnlyToolsUntilVerification = true;
+      }
       const forceReadOnlyTools =
-        retryState.forceReadOnlyToolsForNextAttempt ||
-        input.toolCapableContinuation.forceReadOnlyTools;
-      retryState.forceReadOnlyToolsForNextAttempt = forceReadOnlyTools;
+        retryState.forceReadOnlyToolsForRun || retryState.forceReadOnlyToolsUntilVerification;
       input.activateInternalPrompt(
-        forceReadOnlyTools
+        retryState.forceReadOnlyToolsForRun
           ? RESTART_SAFE_CODE_MODE_CONTINUATION_INSTRUCTION
           : input.toolCapableContinuation.instruction,
         true,

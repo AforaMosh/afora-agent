@@ -87,6 +87,7 @@ export type EmbeddedAgentSubscribeState = {
     fileTargetAbsent?: true;
     sideEffectFree?: boolean;
     codeModeLastCallSideEffectFree?: boolean;
+    codeModeHadTargetlessSideEffects?: boolean;
     codeModeSuccessfulObservationFileTargets?: import("./tool-mutation.js").FileTarget[];
     codeModeSuccessfulAbsenceObservationFileTargets?: import("./tool-mutation.js").FileTarget[];
     codeModeUnverifiedMutationFileTargets?: import("./tool-mutation.js").FileTarget[];

@@ -16,7 +16,8 @@ export type EmbeddedRunTerminalRetryState = {
   compactionContinuationInstruction: string | null;
   beforeFinalizeRevisionAttempts: number;
   forceRestartSafeToolsForNextAttempt: boolean;
-  forceReadOnlyToolsForNextAttempt: boolean;
+  forceReadOnlyToolsUntilVerification: boolean;
+  forceReadOnlyToolsForRun: boolean;
   codeModeMutationVerification: CodeModeMutationVerificationState;
 };
 
@@ -31,7 +32,8 @@ export function createEmbeddedRunTerminalRetryState(): EmbeddedRunTerminalRetryS
     compactionContinuationInstruction: null,
     beforeFinalizeRevisionAttempts: 0,
     forceRestartSafeToolsForNextAttempt: false,
-    forceReadOnlyToolsForNextAttempt: false,
+    forceReadOnlyToolsUntilVerification: false,
+    forceReadOnlyToolsForRun: false,
     codeModeMutationVerification: { pendingTargets: [] },
   };
 }
@@ -44,10 +46,14 @@ export function consumeForceRestartSafeToolsForNextAttempt(
   return runAlreadyForcesRestartSafeTools || state.forceRestartSafeToolsForNextAttempt;
 }
 
-/** Read the run-latched read-only restriction armed by terminal verification. */
-export function consumeForceReadOnlyToolsForNextAttempt(
+/** Resolve read-only policy without releasing verification state at dispatch time. */
+export function resolveForceReadOnlyToolsForAttempt(
   state: EmbeddedRunTerminalRetryState,
   runAlreadyForcesReadOnlyTools: boolean,
 ): boolean {
-  return runAlreadyForcesReadOnlyTools || state.forceReadOnlyToolsForNextAttempt;
+  return (
+    runAlreadyForcesReadOnlyTools ||
+    state.forceReadOnlyToolsForRun ||
+    state.forceReadOnlyToolsUntilVerification
+  );
 }

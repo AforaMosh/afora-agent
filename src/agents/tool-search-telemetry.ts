@@ -57,6 +57,7 @@ export function isSideEffectFreeToolSearchCall(
 
 export class ToolSearchMutationTelemetry {
   private lastCallSideEffectFree: boolean | undefined;
+  private hadTargetlessSideEffects = false;
   private readonly mutationTargetStates: MutationTargetState[] = [];
   private readonly successfulObservationFileTargets: FileTarget[] = [];
   private readonly successfulAbsenceObservationFileTargets: FileTarget[] = [];
@@ -149,6 +150,23 @@ export class ToolSearchMutationTelemetry {
     }
   }
 
+  private recordTargetlessSideEffect(
+    observation: ToolSearchExecutionObservation,
+    resultFileTargets?: readonly FileTarget[],
+  ): void {
+    if (observation.sideEffectFree) {
+      return;
+    }
+    const trackedTargets = mergeFileTargets(
+      observation.fileTarget ? [observation.fileTarget] : undefined,
+      observation.mutationFallbackFileTargets,
+      resultFileTargets,
+    );
+    if (!trackedTargets || trackedTargets.length === 0) {
+      this.hadTargetlessSideEffects = true;
+    }
+  }
+
   recordExecution(
     catalog: ToolSearchCatalogSession,
     entry: ToolSearchCatalogEntry,
@@ -193,6 +211,7 @@ export class ToolSearchMutationTelemetry {
     const resultFileTargets = buildTrackableToolMutationState(entry, {})?.mutatingAction
       ? buildToolResultFileTargets(entry.name, result, { includeDeleted: true })
       : undefined;
+    this.recordTargetlessSideEffect(observation, resultFileTargets);
     if (resultIsError) {
       catalog.callFailureCount = (catalog.callFailureCount ?? 0) + 1;
       if (observation.mutationStarted && observation.fileTarget) {
@@ -235,6 +254,9 @@ export class ToolSearchMutationTelemetry {
     error?: unknown,
   ): void {
     catalog.callFailureCount = (catalog.callFailureCount ?? 0) + 1;
+    if (observation) {
+      this.recordTargetlessSideEffect(observation);
+    }
     if (observation?.mutationStarted && observation.fileTarget) {
       this.completeMutation({ ...observation.fileTarget, expected: "unknown" }, true);
     }
@@ -252,6 +274,7 @@ export class ToolSearchMutationTelemetry {
   snapshot() {
     return {
       lastCallSideEffectFree: this.lastCallSideEffectFree,
+      hadTargetlessSideEffects: this.hadTargetlessSideEffects,
       successfulObservationFileTargets: this.successfulObservationFileTargets,
       successfulAbsenceObservationFileTargets: this.successfulAbsenceObservationFileTargets,
       unverifiedMutationFileTargets: this.unverifiedMutationFileTargets,
@@ -263,6 +286,7 @@ export function buildToolSearchTelemetry(
   catalog: ToolSearchCatalogSession,
   runtime: {
     lastCallSideEffectFree: boolean | undefined;
+    hadTargetlessSideEffects: boolean;
     successfulObservationFileTargets: readonly FileTarget[];
     successfulAbsenceObservationFileTargets: readonly FileTarget[];
     unverifiedMutationFileTargets: readonly FileTarget[];
@@ -286,6 +310,7 @@ export function buildToolSearchTelemetry(
     ...(typeof runtime.lastCallSideEffectFree === "boolean"
       ? { lastCallSideEffectFree: runtime.lastCallSideEffectFree }
       : {}),
+    hadTargetlessSideEffects: runtime.hadTargetlessSideEffects,
     successfulObservationFileTargets: [...runtime.successfulObservationFileTargets],
     successfulAbsenceObservationFileTargets: [...runtime.successfulAbsenceObservationFileTargets],
     unverifiedMutationFileTargets: [...runtime.unverifiedMutationFileTargets],
