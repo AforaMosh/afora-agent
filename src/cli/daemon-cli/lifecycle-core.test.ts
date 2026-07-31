@@ -268,6 +268,24 @@ describe("runServiceRestart token drift", () => {
     );
   });
 
+  it("aborts loaded-service mutation when the service guard rejects", async () => {
+    const repairLoadedService = vi.fn();
+
+    await expect(
+      runServiceRestart({
+        ...createServiceRunArgs(),
+        beforeServiceMutation: () => {
+          throw new Error("service mutation denied");
+        },
+        repairLoadedService,
+      }),
+    ).rejects.toThrow("service mutation denied");
+
+    expect(writeGatewayRestartIntentSync).not.toHaveBeenCalled();
+    expect(repairLoadedService).not.toHaveBeenCalled();
+    expect(service.restart).not.toHaveBeenCalled();
+  });
+
   it("does not run the service mutation guard before not-loaded recovery", async () => {
     service.isLoaded.mockResolvedValue(false);
     const beforeServiceMutation = vi.fn();

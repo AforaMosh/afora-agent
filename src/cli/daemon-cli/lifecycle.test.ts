@@ -1,6 +1,11 @@
 // Daemon lifecycle tests cover CLI service lifecycle orchestration and cleanup.
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { captureEnv } from "../../test-utils/env.js";
+import {
+  expectRestartError,
+  requireMockCallArg,
+  type RestartParams,
+} from "./lifecycle-test-helpers.js";
 
 type RestartHealthSnapshot = {
   healthy: boolean;
@@ -9,25 +14,6 @@ type RestartHealthSnapshot = {
   portUsage: { port: number; status: string; listeners: []; hints: []; errors?: string[] };
   waitOutcome?: string;
   elapsedMs?: number;
-};
-
-type RestartPostCheckContext = {
-  json: boolean;
-  stdout: NodeJS.WritableStream;
-  warnings: string[];
-  fail: (message: string, hints?: string[]) => void;
-};
-
-type RestartParams = {
-  opts?: { json?: boolean };
-  beforeServiceMutation?: () => void;
-  repairLoadedService?: (ctx: {
-    json: boolean;
-    stdout: NodeJS.WritableStream;
-    state: unknown;
-    issues: unknown[];
-  }) => Promise<unknown>;
-  postRestartCheck?: (ctx: RestartPostCheckContext) => Promise<void>;
 };
 
 const service = {
@@ -100,29 +86,6 @@ const createGatewayLifecycleMutationAudit = vi.fn(
       ...mutation,
     }),
 );
-
-function requireMockCallArg(
-  mockFn: { mock: { calls: unknown[][] } },
-  label: string,
-  index = 0,
-): Record<string, unknown> {
-  const arg = mockFn.mock.calls[index]?.[0] as Record<string, unknown> | undefined;
-  if (!arg) {
-    throw new Error(`expected ${label} call #${index + 1}`);
-  }
-  return arg;
-}
-
-async function expectRestartError(
-  promise: Promise<unknown>,
-): Promise<Error & { hints?: string[] }> {
-  try {
-    await promise;
-  } catch (error) {
-    return error as Error & { hints?: string[] };
-  }
-  throw new Error("expected restart to fail");
-}
 
 vi.mock("../../config/config.js", () => ({
   getRuntimeConfig: () => loadConfig(),
@@ -403,10 +366,17 @@ describe("runDaemonRestart health checks", () => {
   });
 
   it("preserves an install-time port override when config does not own the port", async () => {
+    await runDaemonStart({ json: true });
+    await runDaemonRestart({ json: true });
+
+    expect(requireMockCallArg(runServiceStart, "runServiceStart").expectedPort).toBeUndefined();
+    expect(requireMockCallArg(runServiceRestart, "runServiceRestart").expectedPort).toBeUndefined();
+  });
+
+  it("guards loaded service restart at the native mutation boundary", async () => {
     await runDaemonRestart({ json: true });
 
     const restartParams = requireMockCallArg(runServiceRestart, "runServiceRestart");
-    expect(restartParams.expectedPort).toBeUndefined();
     isDefaultInstallIdentity.mockReturnValue(false);
     expect(() => (restartParams.beforeServiceMutation as () => void)()).toThrow(
       /non-default state dir/,
@@ -857,6 +827,17 @@ describe("runDaemonRestart health checks", () => {
     expect(waitForGatewayHealthyRestart).not.toHaveBeenCalled();
     expect(terminateStaleGatewayPids).not.toHaveBeenCalled();
     expect(service.restart).not.toHaveBeenCalled();
+  });
+
+  it("rejects denied Darwin recovery when no unmanaged listener exists", async () => {
+    vi.spyOn(process, "platform", "get").mockReturnValue("darwin");
+    isDefaultInstallIdentity.mockReturnValue(false);
+    mockUnmanagedRestart();
+
+    await expect(runDaemonRestart({ json: true })).rejects.toThrow(/non-default state dir/);
+
+    expect(recoverInstalledLaunchAgent).not.toHaveBeenCalled();
+    expect(signalVerifiedGatewayPidSync).not.toHaveBeenCalled();
   });
 
   it("uses targeted RPC for an unmanaged Windows gateway restart", async () => {
