@@ -223,6 +223,8 @@ export async function createTelegramQaTransportAdapter(
         sutToken: runtimeEnv.sutToken,
         driverBotId: driverIdentity.id,
         sutAccountId: accountId,
+        // Mention-gating scenarios opt in through the shared transport policy.
+        requireMention: options.transportPolicy?.requireGroupMention === true,
       }),
     waitReady: async ({ gateway, timeoutMs, pollIntervalMs }) =>
       await waitForTelegramChannelRunning(gateway, accountId, {

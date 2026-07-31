@@ -117,19 +117,17 @@ describe("qa scenario catalog channel contracts", () => {
     expect(scenario.gatewayConfigPatch).toMatchObject({
       channels: {
         telegram: {
-          groups: { "*": { requireMention: false } },
           streaming: { mode: "partial" },
         },
       },
     });
+    expect(scenario.gatewayConfigPatch).not.toHaveProperty("channels.telegram.groups");
   });
 
-  it("disables Telegram mention gating for deterministic group delivery proofs", () => {
+  it("uses the Telegram transport default for transcript-role delivery proofs", () => {
     const scenario = readQaScenarioById("telegram-assistant-transcript-role-boundary");
 
-    expect(scenario.gatewayConfigPatch).toMatchObject({
-      channels: { telegram: { groups: { "*": { requireMention: false } } } },
-    });
+    expect(scenario.gatewayConfigPatch).toBeUndefined();
   });
 
   it("rejects malformed string matcher lists before running a flow", () => {

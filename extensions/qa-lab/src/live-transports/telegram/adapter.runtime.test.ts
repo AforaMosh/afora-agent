@@ -96,9 +96,28 @@ describe("Telegram QA transport adapter", () => {
     const addOutboundMessage = vi.fn().mockResolvedValue({ id: "out-1" });
     const editMessage = vi.fn().mockResolvedValue({ id: "out-1" });
     const adapter = await createTelegramQaTransportAdapter({
-      adapterOptions: { sutAccountId: "sut" },
+      adapterOptions: {
+        sutAccountId: "sut",
+        transportPolicy: { requireGroupMention: true },
+      },
       messages: { addInboundMessage, addOutboundMessage, editMessage },
     } as never);
+
+    expect(adapter.createGatewayConfig?.({ baseUrl: "http://127.0.0.1:1234" })).toMatchObject({
+      channels: {
+        telegram: {
+          accounts: {
+            sut: {
+              groups: {
+                "-100123": {
+                  requireMention: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    });
 
     await vi.waitFor(() => expect(pollResolvers).toHaveLength(1));
     await adapter.sendInbound?.({
