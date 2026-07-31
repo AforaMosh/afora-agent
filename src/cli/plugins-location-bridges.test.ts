@@ -42,7 +42,7 @@ function makeIndex(record: InstalledPluginIndex["plugins"][number]): InstalledPl
   };
 }
 
-function makeRegistry(pluginId: string): PluginManifestRegistry {
+function makeRegistry(pluginId: string, channels: string[] = [pluginId]): PluginManifestRegistry {
   return {
     plugins: [
       {
@@ -51,7 +51,7 @@ function makeRegistry(pluginId: string): PluginManifestRegistry {
         rootDir: `/app/dist/extensions/${pluginId}`,
         source: `/app/dist/extensions/${pluginId}/index.js`,
         origin: "bundled",
-        channels: [pluginId],
+        channels,
         providers: [],
         cliBackends: [],
         syntheticAuthRefs: [],
