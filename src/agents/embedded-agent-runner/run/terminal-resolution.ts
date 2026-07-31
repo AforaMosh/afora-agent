@@ -26,7 +26,6 @@ import {
   resolveEmptyResponseRetryInstruction,
   resolveIncompleteTurnPayloadText,
   resolveReasoningOnlyRetryInstruction,
-  RESTART_SAFE_CODE_MODE_CONTINUATION_INSTRUCTION,
   resolveReplaySafeCodeModeErrorRetryInstruction,
   resolveRunLivenessState,
   resolveSilentToolResultReplyPayload,
@@ -36,6 +35,10 @@ import {
   YIELD_DIAGNOSTIC_TEXT,
 } from "./incomplete-turn.js";
 import type { RunEmbeddedAgentParams } from "./params.js";
+import {
+  resolveCodeModeTerminalContinuation,
+  type EmbeddedRunToolCapableContinuation,
+} from "./terminal-code-mode-continuation.js";
 import {
   isEmbeddedRunTerminalAbort,
   isEmbeddedRunTerminalInterrupted,
@@ -49,9 +52,6 @@ import {
 import type { EmbeddedRunAttemptResult } from "./types.js";
 
 const MAX_MISSING_ASSISTANT_RETRIES = 1;
-const MAX_CODE_MODE_ERROR_CONTINUATIONS = 1;
-const MAX_CODE_MODE_COMPLETION_CONTINUATIONS = 1;
-const MAX_CODE_MODE_VERIFICATION_CONTINUATIONS = 2;
 const COMPACTION_CONTINUATION_RETRY_INSTRUCTION =
   "The previous attempt compacted the conversation context before producing a final user-visible answer. Continue from the compacted transcript and produce the final answer now. Do not restart from scratch, do not repeat completed work, and do not rerun tools unless the transcript clearly lacks required evidence.";
 const BEFORE_AGENT_FINALIZE_RETRY_PROMPT_PREFIX =
@@ -66,11 +66,7 @@ type TerminalResolution =
   | { action: "retry" }
   | { action: "complete"; result: EmbeddedAgentRunResult };
 
-export type EmbeddedRunToolCapableContinuation = {
-  kind: "verification" | "completion";
-  instruction: string;
-  readOnlyToolsScope: "verification" | "run" | null;
-};
+export type { EmbeddedRunToolCapableContinuation } from "./terminal-code-mode-continuation.js";
 
 export function resolveSettledTurnFinalizationRequest(input: {
   runParams: TerminalRunParams;
@@ -312,87 +308,29 @@ export async function resolveEmbeddedRunTerminal(input: {
     !attempt.lastToolError &&
     !hasAttemptTerminalState(attempt) &&
     !input.replayState.hadPotentialSideEffects;
-  if (
-    !nextReasoningOnlyRetryInstruction &&
-    nextCodeModeErrorRetryInstruction &&
-    retryState.codeModeErrorContinuationAttempts < MAX_CODE_MODE_ERROR_CONTINUATIONS
-  ) {
-    retryState.codeModeErrorContinuationAttempts += 1;
-    input.activateInternalPrompt(nextCodeModeErrorRetryInstruction, false);
-    log.warn(
-      `side-effect-free Code Mode failure stopped without correction: runId=${runParams.runId} sessionId=${runParams.sessionId} ` +
-        `provider=${input.activeErrorContext.provider}/${input.activeErrorContext.model} — retrying ${retryState.codeModeErrorContinuationAttempts}/${MAX_CODE_MODE_ERROR_CONTINUATIONS}`,
-    );
+  const codeModeContinuation = resolveCodeModeTerminalContinuation({
+    retryState,
+    nextReasoningOnlyRetryInstruction,
+    nextCodeModeErrorRetryInstruction,
+    toolCapableContinuation: input.toolCapableContinuation,
+    activateInternalPrompt: input.activateInternalPrompt,
+    runId: runParams.runId,
+    sessionId: runParams.sessionId,
+    provider: input.activeErrorContext.provider,
+    model: input.activeErrorContext.model,
+    incompleteTurnFallbackEligible,
+    availableTerminalToolPresentation,
+  });
+  if (codeModeContinuation?.action === "retry") {
     return { action: "retry" };
   }
-  if (!nextReasoningOnlyRetryInstruction && input.toolCapableContinuation) {
-    const verificationContinuation = input.toolCapableContinuation.kind === "verification";
-    const continuationAttempts = verificationContinuation
-      ? retryState.codeModeVerificationContinuationAttempts
-      : retryState.codeModeCompletionContinuationAttempts;
-    const maxContinuationAttempts = verificationContinuation
-      ? MAX_CODE_MODE_VERIFICATION_CONTINUATIONS
-      : MAX_CODE_MODE_COMPLETION_CONTINUATIONS;
-    if (continuationAttempts < maxContinuationAttempts) {
-      if (verificationContinuation) {
-        retryState.codeModeVerificationContinuationAttempts += 1;
-      } else {
-        retryState.codeModeCompletionContinuationAttempts += 1;
-      }
-      if (input.toolCapableContinuation.readOnlyToolsScope === "run") {
-        retryState.forceReadOnlyToolsForRun = true;
-      } else if (input.toolCapableContinuation.readOnlyToolsScope === "verification") {
-        retryState.forceReadOnlyToolsUntilVerification = true;
-      }
-      const forceReadOnlyTools =
-        retryState.forceReadOnlyToolsForRun || retryState.forceReadOnlyToolsUntilVerification;
-      input.activateInternalPrompt(
-        retryState.forceReadOnlyToolsForRun
-          ? RESTART_SAFE_CODE_MODE_CONTINUATION_INSTRUCTION
-          : input.toolCapableContinuation.instruction,
-        true,
-      );
-      log.warn(
-        `settled Code Mode work stopped before final verification: runId=${runParams.runId} sessionId=${runParams.sessionId} ` +
-          `provider=${input.activeErrorContext.provider}/${input.activeErrorContext.model} — retrying ${
-            verificationContinuation
-              ? retryState.codeModeVerificationContinuationAttempts
-              : retryState.codeModeCompletionContinuationAttempts
-          }/${maxContinuationAttempts} ` +
-          `with ${forceReadOnlyTools ? "read-only" : "normal"} tools`,
-      );
-      return { action: "retry" };
-    }
-    if (!verificationContinuation) {
-      const incompletePayloadText =
-        "⚠️ Agent completed Code Mode work but stopped before producing a final answer. Please inspect the changes and try again.";
-      log.warn(
-        `Code Mode completion retries exhausted: runId=${runParams.runId} sessionId=${runParams.sessionId} ` +
-          `provider=${input.activeErrorContext.provider}/${input.activeErrorContext.model} ` +
-          `attempts=${retryState.codeModeCompletionContinuationAttempts}/${MAX_CODE_MODE_COMPLETION_CONTINUATIONS} — surfacing incomplete-turn error`,
-      );
-      return surfaceIncompleteTurn({
-        ...input,
-        text: incompletePayloadText,
-        payloadCount,
-        incompleteTurnFallbackSafe: incompleteTurnFallbackEligible,
-        terminalToolPresentation: incompleteTurnFallbackEligible
-          ? availableTerminalToolPresentation
-          : undefined,
-      });
-    }
-    const incompletePayloadText =
-      "⚠️ Agent stopped before completing Code Mode verification. Please inspect the changes and try again.";
-    log.warn(
-      `Code Mode verification retries exhausted: runId=${runParams.runId} sessionId=${runParams.sessionId} ` +
-        `provider=${input.activeErrorContext.provider}/${input.activeErrorContext.model} ` +
-        `attempts=${retryState.codeModeVerificationContinuationAttempts}/${MAX_CODE_MODE_VERIFICATION_CONTINUATIONS} — surfacing incomplete-turn error`,
-    );
+  if (codeModeContinuation?.action === "incomplete") {
     return surfaceIncompleteTurn({
       ...input,
-      text: incompletePayloadText,
+      text: codeModeContinuation.text,
       payloadCount,
-      incompleteTurnFallbackSafe: false,
+      incompleteTurnFallbackSafe: codeModeContinuation.fallbackSafe,
+      terminalToolPresentation: codeModeContinuation.terminalToolPresentation,
     });
   }
   if (
