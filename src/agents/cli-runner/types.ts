@@ -32,6 +32,7 @@ import type { SpawnSecretInput } from "../../process/supervisor/types.js";
 import type { InputProvenance } from "../../sessions/input-provenance.js";
 import type { UserTurnTranscriptRecorder } from "../../sessions/user-turn-transcript.js";
 import type { SkillSnapshot } from "../../skills/types.js";
+import type { SessionMcpRuntimeCollector } from "../agent-bundle-mcp-runtime-capture.js";
 import type { AgentRunApprovalHost } from "../agent-run-approval.js";
 import type { ExecElevatedDefaults } from "../bash-tools.exec-types.js";
 import type { BootstrapContextMode } from "../bootstrap-files.js";
@@ -327,4 +328,6 @@ export type PreparedCliRunContext = {
   resultContentSourceByToolName?: ReadonlyMap<string, ToolResultContentSource>;
   cwdHash?: string;
   mcpDeliveryCapture?: true;
+  /** Exact process-local MCP runtimes acquired while this CLI command owns execution. */
+  bundleMcpRuntimeCollector?: SessionMcpRuntimeCollector;
 };

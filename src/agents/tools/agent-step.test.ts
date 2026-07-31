@@ -1,5 +1,5 @@
 // Agent step tests cover nested session handoff, transcript bookkeeping, and
-// session cleanup after completed nested turns.
+// exact command-owned cleanup after completed or timed-out nested turns.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { noAgentRunApprovalHost, type AgentRunApprovalHost } from "../agent-run-approval.js";
 import { runAgentStep } from "./agent-step.js";
@@ -7,21 +7,13 @@ import { testing } from "./agent-step.test-support.js";
 
 type AgentCommandRunner = typeof import("../../commands/agent.js").agentCommandFromIngress;
 
-const bundleMcpRuntimeMocks = vi.hoisted(() => ({
-  retireSessionMcpRuntimeForSessionKey: vi.fn(async () => true),
-}));
-
-vi.mock("../agent-bundle-mcp-tools.js", () => ({
-  retireSessionMcpRuntimeForSessionKey: bundleMcpRuntimeMocks.retireSessionMcpRuntimeForSessionKey,
-}));
-
 describe("runAgentStep", () => {
   afterEach(() => {
     testing.setDepsForTest();
     vi.clearAllMocks();
   });
 
-  it("keeps hostless nested steps process-local", async () => {
+  it("keeps hostless nested steps process-local with command-owned cleanup", async () => {
     // Nested steps disable automatic delivery and carry provenance so the reply
     // returns through the message tool path instead of the channel.
     const agentCommandFromIngress = vi.fn(async (_opts: Parameters<AgentCommandRunner>[0]) => ({
@@ -53,11 +45,7 @@ describe("runAgentStep", () => {
     expect(params?.message).toContain("hello");
     expect(params?.approvalHost).toBe(noAgentRunApprovalHost);
     expect(params?.abortSignal).toBeInstanceOf(AbortSignal);
-    expect(params).not.toHaveProperty("cleanupBundleMcpOnRunEnd");
-    expect(bundleMcpRuntimeMocks.retireSessionMcpRuntimeForSessionKey).toHaveBeenCalledWith({
-      sessionKey: "agent:main:subagent:child",
-      reason: "nested-agent-step-complete",
-    });
+    expect(params?.cleanupBundleMcpOnRunEnd).toBe(true);
   });
 
   it("keeps an injected approval host on normal nested turns", async () => {
@@ -125,8 +113,7 @@ describe("runAgentStep", () => {
     expect(capturedSignal?.aborted).toBe(true);
     expect(capturedSignal?.reason).toMatchObject({ name: "TimeoutError" });
     const params = agentCommandFromIngress.mock.calls[0]?.[0];
-    expect(params).not.toHaveProperty("cleanupBundleMcpOnRunEnd");
-    expect(bundleMcpRuntimeMocks.retireSessionMcpRuntimeForSessionKey).not.toHaveBeenCalled();
+    expect(params?.cleanupBundleMcpOnRunEnd).toBe(true);
   });
 
   it("discards a late reply when the backend delays abort handling", async () => {
@@ -149,17 +136,13 @@ describe("runAgentStep", () => {
         timeoutMs: 5,
       }),
     ).resolves.toBeUndefined();
-    expect(agentCommandFromIngress.mock.calls[0]?.[0]).not.toHaveProperty(
-      "cleanupBundleMcpOnRunEnd",
-    );
-    expect(bundleMcpRuntimeMocks.retireSessionMcpRuntimeForSessionKey).not.toHaveBeenCalled();
+    expect(agentCommandFromIngress.mock.calls[0]?.[0].cleanupBundleMcpOnRunEnd).toBe(true);
 
     resolveCommand?.({
       payloads: [{ text: "too late", mediaUrl: null }],
       meta: { durationMs: 1 },
     });
     await Promise.resolve();
-    expect(bundleMcpRuntimeMocks.retireSessionMcpRuntimeForSessionKey).not.toHaveBeenCalled();
   });
 
   it("forwards explicit transcript bodies for nested bookkeeping turns", async () => {
@@ -237,11 +220,7 @@ describe("runAgentStep", () => {
     ).resolves.toBeUndefined();
 
     const params = agentCommandFromIngress.mock.calls[0]?.[0];
-    expect(params).not.toHaveProperty("cleanupBundleMcpOnRunEnd");
-    expect(bundleMcpRuntimeMocks.retireSessionMcpRuntimeForSessionKey).toHaveBeenCalledWith({
-      sessionKey: "agent:main:subagent:child",
-      reason: "nested-agent-step-complete",
-    });
+    expect(params?.cleanupBundleMcpOnRunEnd).toBe(true);
   });
 
   it("returns trusted terminal presentations from incomplete transcript turns", async () => {

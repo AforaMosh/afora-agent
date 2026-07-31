@@ -6,7 +6,6 @@
 import crypto from "node:crypto";
 import { annotateInterSessionPromptText } from "../../sessions/input-provenance.js";
 import { INTERNAL_MESSAGE_CHANNEL } from "../../utils/message-channel.js";
-import { retireSessionMcpRuntimeForSessionKey } from "../agent-bundle-mcp-tools.js";
 import { noAgentRunApprovalHost, type AgentRunApprovalHost } from "../agent-run-approval.js";
 import { resolveNestedAgentLaneForSession } from "../lanes.js";
 
@@ -100,6 +99,9 @@ export async function runAgentStep(params: {
       allowModelOverride: false,
       approvalHost: params.approvalHost ?? noAgentRunApprovalHost,
       abortSignal: timeoutController.signal,
+      // The command owns its exact run lifetime. Its backend retires MCP only
+      // after that run stops, so a timed-out caller cannot tear down a newer turn.
+      cleanupBundleMcpOnRunEnd: true,
     })
     .then(
       (result) => ({ status: "completed" as const, result }),
@@ -117,10 +119,6 @@ export async function runAgentStep(params: {
     return undefined;
   }
   clearTimeout(timer);
-  await retireSessionMcpRuntimeForSessionKey({
-    sessionKey: params.sessionKey,
-    reason: "nested-agent-step-complete",
-  });
   if (outcome.status === "failed") {
     throw outcome.error;
   }
