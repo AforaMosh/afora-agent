@@ -1970,7 +1970,7 @@ describe("updateNpmInstalledPlugins", () => {
     ]);
   });
 
-  it("uses failure cleanup when metadata probing fails and disableOnFailure is enabled", async () => {
+  it("preserves explicit policy when metadata probing fails and disableOnFailure is enabled", async () => {
     const warn = vi.fn();
     const installPath = createInstalledPackageDir({
       name: "@martian-engineering/lossless-claw",
@@ -2023,8 +2023,8 @@ describe("updateNpmInstalledPlugins", () => {
       enabled: false,
       config: { preserved: true },
     });
-    expect(result.config.plugins?.allow).toEqual(["keep"]);
-    expect(result.config.plugins?.deny).toEqual(["blocked"]);
+    expect(result.config.plugins?.allow).toEqual(["lossless-claw", "keep"]);
+    expect(result.config.plugins?.deny).toEqual(["lossless-claw", "blocked"]);
     expect(result.config.plugins?.slots).toEqual({
       memory: "memory-core",
       contextEngine: "legacy",
@@ -2608,7 +2608,7 @@ describe("updateNpmInstalledPlugins", () => {
     ]);
   });
 
-  it("clears stale plugin policy and slot references when disabling failed updates", async () => {
+  it("preserves plugin policy and clears slot references when disabling failed updates", async () => {
     const warn = vi.fn();
     installPluginFromNpmSpecMock.mockResolvedValue({
       ok: false,
@@ -2651,8 +2651,8 @@ describe("updateNpmInstalledPlugins", () => {
       enabled: false,
     });
     expect(result.config.plugins?.installs?.demo).toEqual(config.plugins.installs.demo);
-    expect(result.config.plugins?.allow).toEqual(["keep"]);
-    expect(result.config.plugins?.deny).toEqual(["blocked"]);
+    expect(result.config.plugins?.allow).toEqual(["demo", "keep"]);
+    expect(result.config.plugins?.deny).toEqual(["demo", "blocked"]);
     expect(result.config.plugins?.slots).toEqual({
       memory: "memory-core",
       contextEngine: "legacy",
