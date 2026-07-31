@@ -323,7 +323,7 @@ jobs:
           fi
           export CI_WINDOWS_SCHTASKS_HEAD
           mkdir -p .artifacts/windows-schtasks
-          pnpm test:windows:schtasks:integration 2>&1 | tee .artifacts/windows-schtasks/test.log
+          pnpm test:windows:schtasks:integration
 
       - name: Clean native Scheduled Task residue
         id: native_cleanup
@@ -339,11 +339,6 @@ jobs:
           $taskName = "OpenClaw Gateway ($profile)"
           $stateDir = Join-Path $env:USERPROFILE ".openclaw-$profile"
           New-Item -ItemType Directory -Force -Path $env:TEST_ROOT | Out-Null
-          schtasks.exe /Query /TN $taskName /XML *> (Join-Path $env:TEST_ROOT "task-before-cleanup.xml")
-          schtasks.exe /Query /TN $taskName /V /FO LIST *> (Join-Path $env:TEST_ROOT "task-before-cleanup.txt")
-          if (Test-Path -LiteralPath $stateDir) {
-            Copy-Item -LiteralPath $stateDir -Destination (Join-Path $env:TEST_ROOT "state") -Recurse -Force
-          }
           schtasks.exe /End /TN $taskName 2>$null
           Start-Sleep -Milliseconds 200
           $activePidPath = Join-Path $env:TEST_ROOT "active-pid.txt"
@@ -428,8 +423,9 @@ jobs:
         with:
           name: windows-schtasks-proof-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
-            .artifacts/windows-schtasks/
-            ${{ runner.temp }}\openclaw-schtasks-${{ github.run_id }}-${{ github.run_attempt }}
+            .artifacts/windows-schtasks/proof.json
+            ${{ runner.temp }}\openclaw-schtasks-${{ github.run_id }}-${{ github.run_attempt }}\failure-diagnostics.json
+            ${{ runner.temp }}\openclaw-schtasks-${{ github.run_id }}-${{ github.run_attempt }}\cleanup-summary.txt
           if-no-files-found: warn
           retention-days: 7
 

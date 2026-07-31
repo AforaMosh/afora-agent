@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
+import { createServer, type AddressInfo } from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { PassThrough } from "node:stream";
@@ -9,9 +10,12 @@ import { getWindowsPowerShellExePath } from "../infra/windows-install-roots.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import { resolveGatewayWindowsTaskName } from "./constants.js";
 import { execSchtasks } from "./schtasks-exec.js";
-import { resolveStartupEntryPaths } from "./schtasks-layout.js";
+import { resolveStartupEntryPaths, resolveTaskLauncherScriptPath } from "./schtasks-layout.js";
 import { readWindowsProcessSnapshot } from "./schtasks-process.js";
-import { probeScheduledTaskExists } from "./schtasks-runtime.js";
+import {
+  probeScheduledTaskExists,
+  SCHEDULED_TASK_FALLBACK_TIMEOUT_MS,
+} from "./schtasks-runtime.js";
 import { resolveTaskScriptPath } from "./schtasks.js";
 import type { GatewayServiceRuntime } from "./service-runtime.js";
 import type { GatewayServiceEnv } from "./service-types.js";
@@ -19,13 +23,44 @@ import { resolveGatewayService } from "./service.js";
 
 const WAIT_INTERVAL_MS = 200;
 const WAIT_TIMEOUT_MS = 30_000;
+const DIAGNOSTIC_TEXT_LIMIT = 16_384;
+const DIAGNOSTIC_PROCESS_LIMIT = 32;
 const TASK_LOGON_INTERACTIVE_TOKEN = 3;
 const TASK_RUNLEVEL_LEAST_PRIVILEGE = 0;
 
 type ScheduledTaskPrincipal = {
+  lastRunTime: string;
+  lastTaskResult: number;
   logonType: number;
   runLevel: number;
+  taskState: number;
 };
+
+type WindowsProcessDiagnostic = {
+  CommandLine?: string | null;
+  ParentProcessId?: number;
+  ProcessId?: number;
+};
+
+type FailureDiagnosticSnapshot = {
+  capturedAt: string;
+  principal: ScheduledTaskPrincipal | null;
+  principalError: string | null;
+  processCapture: {
+    error: string | null;
+    ok: boolean;
+    processes: WindowsProcessDiagnostic[];
+    truncated: boolean;
+  };
+  taskXml: string | null;
+  verboseQuery: {
+    code: number;
+    stdout: string | null;
+    stderr: string | null;
+  };
+};
+
+type TaskDefinitionSnapshot = { exists: false; taskXml: null } | { exists: true; taskXml: string };
 
 async function sleep(): Promise<void> {
   await new Promise((resolve) => {
@@ -65,21 +100,26 @@ function requireRunPid(pids: number[], index: number): number {
 async function waitForRuntimeStatus(
   readRuntime: () => Promise<GatewayServiceRuntime>,
   expected: "running" | "stopped",
+  expectedPid?: number,
 ): Promise<void> {
   const deadline = Date.now() + WAIT_TIMEOUT_MS;
   let lastStatus = "unknown";
   let lastDetail = "";
+  let lastPid: number | undefined;
   while (Date.now() < deadline) {
     const runtime = await readRuntime();
     lastStatus = runtime.status ?? "unknown";
     lastDetail = runtime.detail ?? "";
-    if (runtime.status === expected) {
+    lastPid = runtime.pid;
+    if (runtime.status === expected && (expectedPid === undefined || runtime.pid === expectedPid)) {
       return;
     }
     await sleep();
   }
   throw new Error(
-    `Timed out waiting for Scheduled Task status=${expected}; observed ${lastStatus}: ${lastDetail}`,
+    `Timed out waiting for Scheduled Task status=${expected}${
+      expectedPid === undefined ? "" : ` pid=${expectedPid}`
+    }; observed ${lastStatus}${lastPid === undefined ? "" : ` pid=${lastPid}`}: ${lastDetail}`,
   );
 }
 
@@ -92,6 +132,45 @@ async function waitForProcessExit(pid: number): Promise<void> {
     await sleep();
   }
   throw new Error(`Timed out waiting for Scheduled Task process ${pid} to exit`);
+}
+
+async function reserveLoopbackPort(): Promise<number> {
+  const server = createServer();
+  await new Promise<void>((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", resolve);
+  });
+  const address = server.address();
+  if (!address || typeof address === "string") {
+    server.close();
+    throw new Error("Could not reserve a loopback port for the Scheduled Task probe");
+  }
+  const port = (address as AddressInfo).port;
+  await new Promise<void>((resolve, reject) => {
+    server.close((error) => (error ? reject(error) : resolve()));
+  });
+  return port;
+}
+
+async function canBindLoopbackPort(port: number): Promise<boolean> {
+  const server = createServer();
+  return new Promise<boolean>((resolve) => {
+    server.once("error", () => resolve(false));
+    server.listen(port, "127.0.0.1", () => {
+      server.close(() => resolve(true));
+    });
+  });
+}
+
+async function waitForLoopbackPortRelease(port: number): Promise<void> {
+  const deadline = Date.now() + WAIT_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    if (await canBindLoopbackPort(port)) {
+      return;
+    }
+    await sleep();
+  }
+  throw new Error(`Timed out waiting for Scheduled Task loopback port ${port} to be reusable`);
 }
 
 function isProcessAlive(pid: number): boolean {
@@ -117,8 +196,9 @@ function readTaskPrincipal(taskName: string): ScheduledTaskPrincipal {
     `$taskName=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${encodedTaskName}'))`,
     "$service=New-Object -ComObject 'Schedule.Service'",
     "$service.Connect()",
-    "$principal=$service.GetFolder('\\').GetTask($taskName).Definition.Principal",
-    "$result=@{logonType=[int]$principal.LogonType;runLevel=[int]$principal.RunLevel}",
+    "$task=$service.GetFolder('\\').GetTask($taskName)",
+    "$principal=$task.Definition.Principal",
+    "$result=@{logonType=[int]$principal.LogonType;runLevel=[int]$principal.RunLevel;taskState=[int]$task.State;lastTaskResult=[int64]$task.LastTaskResult;lastRunTime=$task.LastRunTime.ToUniversalTime().ToString('o')}",
     "[Console]::Out.Write(($result | ConvertTo-Json -Compress))",
   ].join("; ");
   const result = spawnSync(
@@ -146,14 +226,168 @@ function readTaskPrincipal(taskName: string): ScheduledTaskPrincipal {
     typeof parsed.logonType !== "number" ||
     !Number.isInteger(parsed.logonType) ||
     typeof parsed.runLevel !== "number" ||
-    !Number.isInteger(parsed.runLevel)
+    !Number.isInteger(parsed.runLevel) ||
+    typeof parsed.taskState !== "number" ||
+    !Number.isInteger(parsed.taskState) ||
+    typeof parsed.lastTaskResult !== "number" ||
+    !Number.isInteger(parsed.lastTaskResult) ||
+    typeof parsed.lastRunTime !== "string"
   ) {
     throw new Error(`Scheduled Task principal returned invalid data for ${taskName}`);
   }
   return {
+    lastRunTime: parsed.lastRunTime,
+    lastTaskResult: parsed.lastTaskResult,
     logonType: parsed.logonType,
     runLevel: parsed.runLevel,
+    taskState: parsed.taskState,
   };
+}
+
+function readRelatedProcessDiagnostics(needles: string[]): {
+  error: string | null;
+  ok: boolean;
+  processes: WindowsProcessDiagnostic[];
+  truncated: boolean;
+} {
+  const script = [
+    "$ErrorActionPreference='Stop'",
+    "Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,CommandLine | ConvertTo-Json -Compress",
+  ].join("; ");
+  const result = spawnSync(
+    getWindowsPowerShellExePath(),
+    [
+      "-NoProfile",
+      "-NonInteractive",
+      "-EncodedCommand",
+      Buffer.from(script, "utf16le").toString("base64"),
+    ],
+    { encoding: "utf8", maxBuffer: 1024 * 1024, timeout: 5_000, windowsHide: true },
+  );
+  if (result.error) {
+    return { error: result.error.message, ok: false, processes: [], truncated: false };
+  }
+  if (result.status !== 0) {
+    return {
+      error: result.stderr.trim() || `PowerShell exited ${result.status ?? "without status"}`,
+      ok: false,
+      processes: [],
+      truncated: false,
+    };
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(result.stdout.trim() || "[]");
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : String(error),
+      ok: false,
+      processes: [],
+      truncated: false,
+    };
+  }
+  const entries = (Array.isArray(parsed) ? parsed : [parsed]).filter(
+    (entry): entry is WindowsProcessDiagnostic => typeof entry === "object" && entry !== null,
+  );
+  const normalizedNeedles = needles.map((needle) => needle.replaceAll("/", "\\").toLowerCase());
+  const matching = entries.filter((entry) => {
+    const commandLine = (entry.CommandLine ?? "").replaceAll("/", "\\").toLowerCase();
+    return normalizedNeedles.some((needle) => commandLine.includes(needle));
+  });
+  const parentPids = new Set(
+    matching
+      .map((entry) => entry.ParentProcessId)
+      .filter((pid): pid is number => typeof pid === "number"),
+  );
+  const processes = entries.filter(
+    (entry) =>
+      matching.includes(entry) ||
+      (typeof entry.ProcessId === "number" && parentPids.has(entry.ProcessId)),
+  );
+  return {
+    error: null,
+    ok: true,
+    processes: processes.slice(0, DIAGNOSTIC_PROCESS_LIMIT),
+    truncated: processes.length > DIAGNOSTIC_PROCESS_LIMIT,
+  };
+}
+
+function sanitizeDiagnosticText(
+  value: string | null | undefined,
+  replacements: Array<[string, string]>,
+): string | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  const variantPlaceholders = new Map<string, string>();
+  for (const [privateValue, placeholder] of replacements) {
+    if (privateValue) {
+      for (const variant of new Set([
+        privateValue,
+        privateValue.replaceAll("/", "\\"),
+        privateValue.replaceAll("\\", "/"),
+      ])) {
+        variantPlaceholders.set(variant.toLowerCase(), placeholder);
+      }
+    }
+  }
+  const pattern = Array.from(variantPlaceholders.keys())
+    .toSorted((left, right) => right.length - left.length)
+    .map((variant) => variant.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"))
+    .join("|");
+  const sanitized = pattern
+    ? value.replace(new RegExp(pattern, "giu"), (match) => {
+        return variantPlaceholders.get(match.toLowerCase()) ?? match;
+      })
+    : value;
+  return sanitized.length <= DIAGNOSTIC_TEXT_LIMIT
+    ? sanitized
+    : `${sanitized.slice(0, DIAGNOSTIC_TEXT_LIMIT)}\n[truncated]`;
+}
+
+function sanitizeTaskXml(
+  value: string | null,
+  replacements: Array<[string, string]>,
+): string | null {
+  const identityRedacted =
+    value?.replace(
+      /<(UserId|Author)>([\s\S]*?)<\/\1>/giu,
+      (_match, tag: string) => `<${tag}><task-user></${tag}>`,
+    ) ?? null;
+  if (identityRedacted === null) {
+    return null;
+  }
+  return identityRedacted
+    .split(/(<[^>]+>)/gu)
+    .map((segment) =>
+      segment.startsWith("<") ? segment : (sanitizeDiagnosticText(segment, replacements) ?? ""),
+    )
+    .join("");
+}
+
+function sanitizeVerboseQuery(value: string, replacements: Array<[string, string]>): string | null {
+  return (
+    sanitizeDiagnosticText(value, replacements)?.replace(
+      /^(\s*(?:HostName|Run As User)\s*:\s*).*$/gimu,
+      "$1<redacted>",
+    ) ?? null
+  );
+}
+
+function resolveDiagnosticReplacements(params: {
+  rootDir: string;
+  stateDir: string;
+}): Array<[string, string]> {
+  const username = os.userInfo().username;
+  const domain = process.env.USERDOMAIN?.trim();
+  return [
+    [os.userInfo().homedir, "<account-home>"],
+    [params.rootDir, "<integration-root>"],
+    [params.stateDir, "<state-dir>"],
+    [domain && username ? `${domain}\\${username}` : "", "<task-user>"],
+    [process.env.COMPUTERNAME?.trim() ?? "", "<host>"],
+    [os.hostname(), "<host>"],
+  ];
 }
 
 function assertInteractiveLeastPrivilegeTask(params: {
@@ -167,6 +401,31 @@ function assertInteractiveLeastPrivilegeTask(params: {
   // Task Scheduler may omit the default LeastPrivilege node when exporting XML.
   // If present, it must agree with the effective COM principal checked above.
   expect(exportedRunLevel === undefined || exportedRunLevel === "LeastPrivilege").toBe(true);
+}
+
+function expectScheduledTaskRun(principal: ScheduledTaskPrincipal): void {
+  expect(principal.lastTaskResult).toBe(0);
+  expect(Date.parse(principal.lastRunTime)).not.toBeNaN();
+  expect(Date.parse(principal.lastRunTime)).toBeGreaterThan(0);
+}
+
+function expectNoDirectFallback(startedAt: number): void {
+  expect(Date.now() - startedAt).toBeLessThan(SCHEDULED_TASK_FALLBACK_TIMEOUT_MS);
+}
+
+async function readTaskDefinitionSnapshot(taskName: string): Promise<TaskDefinitionSnapshot> {
+  const exists = probeScheduledTaskExists(taskName);
+  if (exists === null) {
+    throw new Error(`Could not determine whether Scheduled Task ${taskName} exists`);
+  }
+  if (!exists) {
+    return { exists: false, taskXml: null };
+  }
+  const taskXml = await readTaskXml(taskName);
+  if (!taskXml) {
+    throw new Error(`Could not export Scheduled Task XML for ${taskName}`);
+  }
+  return { exists: true, taskXml };
 }
 
 async function clearActivePid(activePidPath: string, pid: number): Promise<void> {
@@ -219,17 +478,140 @@ async function forceKillActiveProcess(params: {
   await fs.rm(params.activePidPath, { force: true });
 }
 
+async function readFailureDiagnosticSnapshot(params: {
+  eventsPath: string;
+  probePath: string;
+  replacements: Array<[string, string]>;
+  scriptPath: string;
+  taskName: string;
+}): Promise<FailureDiagnosticSnapshot> {
+  const verboseQuery = await execSchtasks(["/Query", "/TN", params.taskName, "/V", "/FO", "LIST"]);
+  const taskXml = await readTaskXml(params.taskName);
+  let principal: ScheduledTaskPrincipal | null = null;
+  let principalError: string | null = null;
+  try {
+    principal = readTaskPrincipal(params.taskName);
+  } catch (error) {
+    principalError = error instanceof Error ? error.message : String(error);
+  }
+  const processCapture = readRelatedProcessDiagnostics([
+    params.scriptPath,
+    params.probePath,
+    params.eventsPath,
+  ]);
+  for (const process of processCapture.processes) {
+    process.CommandLine = sanitizeDiagnosticText(process.CommandLine, params.replacements);
+  }
+  return {
+    capturedAt: new Date().toISOString(),
+    principal,
+    principalError: sanitizeDiagnosticText(principalError, params.replacements),
+    processCapture: {
+      ...processCapture,
+      error: sanitizeDiagnosticText(processCapture.error, params.replacements),
+    },
+    taskXml: sanitizeTaskXml(taskXml, params.replacements),
+    verboseQuery: {
+      code: verboseQuery.code,
+      stdout: sanitizeVerboseQuery(verboseQuery.stdout, params.replacements),
+      stderr: sanitizeDiagnosticText(verboseQuery.stderr, params.replacements),
+    },
+  };
+}
+
+async function writeFailureDiagnostics(params: {
+  cleanupEnd: { stdout: string; stderr: string; code: number } | null;
+  postEnd: FailureDiagnosticSnapshot | null;
+  postEndError: string | null;
+  preCleanup: FailureDiagnosticSnapshot | null;
+  preCleanupError: string | null;
+  replacements: Array<[string, string]>;
+  rootDir: string;
+  serviceOutput: string;
+}): Promise<void> {
+  await fs.writeFile(
+    path.join(params.rootDir, "failure-diagnostics.json"),
+    `${JSON.stringify(
+      {
+        preCleanup: params.preCleanup,
+        preCleanupError: sanitizeDiagnosticText(params.preCleanupError, params.replacements),
+        cleanupEnd: params.cleanupEnd
+          ? {
+              code: params.cleanupEnd.code,
+              stdout: sanitizeDiagnosticText(params.cleanupEnd.stdout, params.replacements),
+              stderr: sanitizeDiagnosticText(params.cleanupEnd.stderr, params.replacements),
+            }
+          : null,
+        postEnd: params.postEnd,
+        postEndError: sanitizeDiagnosticText(params.postEndError, params.replacements),
+        serviceOutput: sanitizeDiagnosticText(params.serviceOutput, params.replacements),
+      },
+      null,
+      2,
+    )}\n`,
+    "utf8",
+  );
+}
+
 async function cleanupNativeTask(params: {
   activePidPath: string;
   eventsPath: string;
   preserveEvidence: boolean;
   probePath: string;
   rootDir: string;
+  scriptPath: string;
+  serviceOutput: string;
   stateDir: string;
   taskName: string;
 }): Promise<void> {
   const cleanupErrors: unknown[] = [];
-  await execSchtasks(["/End", "/TN", params.taskName]).catch(() => undefined);
+  const replacements = resolveDiagnosticReplacements({
+    rootDir: params.rootDir,
+    stateDir: params.stateDir,
+  });
+  const snapshotParams = {
+    eventsPath: params.eventsPath,
+    probePath: params.probePath,
+    replacements,
+    scriptPath: params.scriptPath,
+    taskName: params.taskName,
+  };
+  let preCleanup: FailureDiagnosticSnapshot | null = null;
+  let preCleanupError: string | null = null;
+  if (params.preserveEvidence) {
+    try {
+      preCleanup = await readFailureDiagnosticSnapshot(snapshotParams);
+    } catch (error) {
+      preCleanupError = error instanceof Error ? error.message : String(error);
+    }
+  }
+  const endResult = await execSchtasks(["/End", "/TN", params.taskName]).catch((error: unknown) => {
+    cleanupErrors.push(error);
+    return null;
+  });
+  if (params.preserveEvidence) {
+    let postEnd: FailureDiagnosticSnapshot | null = null;
+    let postEndError: string | null = null;
+    try {
+      postEnd = await readFailureDiagnosticSnapshot(snapshotParams);
+    } catch (error) {
+      postEndError = error instanceof Error ? error.message : String(error);
+    }
+    try {
+      await writeFailureDiagnostics({
+        cleanupEnd: endResult,
+        postEnd,
+        postEndError,
+        preCleanup,
+        preCleanupError,
+        replacements,
+        rootDir: params.rootDir,
+        serviceOutput: params.serviceOutput,
+      });
+    } catch (error) {
+      cleanupErrors.push(error);
+    }
+  }
   try {
     await forceKillActiveProcess({
       activePidPath: params.activePidPath,
@@ -319,8 +701,11 @@ describe("schtasks Windows integration principal assertion", () => {
       assertInteractiveLeastPrivilegeTask({
         taskXml: "<LogonType>InteractiveToken</LogonType>",
         principal: {
+          lastRunTime: "2026-07-31T00:00:00.0000000Z",
+          lastTaskResult: 0,
           logonType: TASK_LOGON_INTERACTIVE_TOKEN,
           runLevel: TASK_RUNLEVEL_LEAST_PRIVILEGE,
+          taskState: 3,
         },
       }),
     ).not.toThrow();
@@ -331,8 +716,11 @@ describe("schtasks Windows integration principal assertion", () => {
       assertInteractiveLeastPrivilegeTask({
         taskXml: "<LogonType>InteractiveToken</LogonType><RunLevel>LeastPrivilege</RunLevel>",
         principal: {
+          lastRunTime: "2026-07-31T00:00:00.0000000Z",
+          lastTaskResult: 0,
           logonType: TASK_LOGON_INTERACTIVE_TOKEN,
           runLevel: 1,
+          taskState: 3,
         },
       }),
     ).toThrow();
@@ -350,6 +738,25 @@ describe("schtasks Windows integration principal assertion", () => {
       await fs.rm(existingRoot, { recursive: true, force: true });
     }
   });
+
+  it("redacts task identities without rewriting placeholders", () => {
+    expect(
+      sanitizeDiagnosticText("openclaw user on host-user", [
+        ["openclaw", "<product>"],
+        ["user", "<task-user>"],
+      ]),
+    ).toBe("<product> <task-user> on host-<task-user>");
+    expect(
+      sanitizeTaskXml("<Task><Author>private</Author><UserId>S-1-5-21</UserId></Task>", [
+        ["user", "<task-user>"],
+      ]),
+    ).toBe("<Task><Author><task-user></Author><UserId><task-user></UserId></Task>");
+    expect(
+      sanitizeTaskXml("<Task><Author>private</Author><UserId>S-1-5-21</UserId></Task>", [
+        ["openclaw", "<product>"],
+      ]),
+    ).toBe("<Task><Author><task-user></Author><UserId><task-user></UserId></Task>");
+  });
 });
 
 const nativeIntegrationEnabled =
@@ -366,35 +773,54 @@ describe.runIf(nativeIntegrationEnabled)("schtasks Windows integration", () => {
     const activePidPath = path.join(rootDir, "active-pid.txt");
     const eventsPath = path.join(rootDir, "runs.txt");
     const probePath = path.join(rootDir, "probe.cjs");
+    const gatewayPort = await reserveLoopbackPort();
     const taskName = resolveGatewayWindowsTaskName(profile);
     const stdout = new PassThrough();
+    let serviceOutput = "";
+    stdout.setEncoding("utf8");
+    stdout.on("data", (chunk: string) => {
+      if (serviceOutput.length < DIAGNOSTIC_TEXT_LIMIT) {
+        serviceOutput = `${serviceOutput}${chunk}`.slice(0, DIAGNOSTIC_TEXT_LIMIT);
+      }
+    });
     const env: GatewayServiceEnv = {
       ...process.env,
       APPDATA: path.join(rootDir, "appdata"),
       HOME: accountHome,
       USERPROFILE: accountHome,
       OPENCLAW_CONFIG_PATH: path.join(stateDir, "openclaw.json"),
+      OPENCLAW_GATEWAY_PORT: String(gatewayPort),
       OPENCLAW_HOME: undefined,
       OPENCLAW_PROFILE: profile,
       OPENCLAW_STATE_DIR: stateDir,
       OPENCLAW_TASK_SCRIPT: undefined,
       OPENCLAW_TASK_SCRIPT_NAME: undefined,
-      OPENCLAW_WINDOWS_TASK_HIDDEN_LAUNCHER: undefined,
+      OPENCLAW_WINDOWS_TASK_HIDDEN_LAUNCHER: "1",
       OPENCLAW_WINDOWS_TASK_NAME: undefined,
     };
-    const defaultTaskXml = await readTaskXml("OpenClaw Gateway");
+    const defaultTaskBefore = await readTaskDefinitionSnapshot("OpenClaw Gateway");
     const scriptPath = resolveTaskScriptPath(env);
+    const launcherPath = resolveTaskLauncherScriptPath(env, scriptPath);
 
     await fs.writeFile(
       probePath,
       [
         'const fs = require("node:fs");',
-        "const activePidPath = process.argv[3];",
+        'const net = require("node:net");',
+        "const eventsPath = process.argv[5];",
+        "const activePidPath = process.argv[6];",
+        'const portIndex = process.argv.indexOf("--port");',
+        "const port = Number.parseInt(process.argv[portIndex + 1] ?? '', 10);",
+        "if (!Number.isInteger(port) || port < 1) throw new Error('Missing gateway --port');",
         "const activePidTempPath = `${activePidPath}.${process.pid}.tmp`;",
-        "fs.writeFileSync(activePidTempPath, String(process.pid));",
-        "fs.renameSync(activePidTempPath, activePidPath);",
-        "fs.appendFileSync(process.argv[2], `${process.pid}\\n`);",
-        "setInterval(() => {}, 1000);",
+        "const server = net.createServer((socket) => socket.end());",
+        "server.listen({ host: '127.0.0.1', port, exclusive: true }, () => {",
+        "  fs.writeFileSync(activePidTempPath, String(process.pid));",
+        "  fs.renameSync(activePidTempPath, activePidPath);",
+        "  fs.appendFileSync(eventsPath, `${process.pid}\\n`);",
+        "});",
+        "server.on('error', (error) => { console.error(error); process.exit(1); });",
+        "setInterval(() => {}, 1000).unref();",
         "",
       ].join("\n"),
       "utf8",
@@ -403,6 +829,16 @@ describe.runIf(nativeIntegrationEnabled)("schtasks Windows integration", () => {
     let testFailed = false;
     let testError: unknown;
     let lifecyclePids: number[] = [];
+    let installedPrincipal: ScheduledTaskPrincipal | null = null;
+    const programArguments = [
+      process.execPath,
+      probePath,
+      "gateway",
+      "--port",
+      String(gatewayPort),
+      eventsPath,
+      activePidPath,
+    ];
     try {
       await withEnvAsync(env, async () => {
         const service = resolveGatewayService();
@@ -410,11 +846,13 @@ describe.runIf(nativeIntegrationEnabled)("schtasks Windows integration", () => {
 
         expect((await execSchtasks(["/Query", "/TN", taskName])).code).not.toBe(0);
         expect(path.relative(stateDir, scriptPath)).not.toMatch(/^\.\.(?:[\\/]|$)/u);
+        expect(await canBindLoopbackPort(gatewayPort)).toBe(true);
 
+        const installStartedAt = Date.now();
         await service.install({
           env,
           stdout,
-          programArguments: [process.execPath, probePath, eventsPath, activePidPath],
+          programArguments,
           workingDirectory: rootDir,
           description: `OpenClaw CI Scheduled Task integration ${id}`,
         });
@@ -425,23 +863,23 @@ describe.runIf(nativeIntegrationEnabled)("schtasks Windows integration", () => {
           throw new Error(`Could not export Scheduled Task XML for ${taskName}`);
         }
         expect(taskXml).toContain("<UserId>");
+        installedPrincipal = readTaskPrincipal(taskName);
+        expectScheduledTaskRun(installedPrincipal);
+        expectNoDirectFallback(installStartedAt);
         assertInteractiveLeastPrivilegeTask({
           taskXml,
-          principal: readTaskPrincipal(taskName),
+          principal: installedPrincipal,
         });
         for (const startupEntryPath of resolveStartupEntryPaths(env)) {
           await expect(fs.access(startupEntryPath)).rejects.toThrow();
         }
         const command = await service.readCommand(env);
-        expect(command?.programArguments).toEqual([
-          process.execPath,
-          probePath,
-          eventsPath,
-          activePidPath,
-        ]);
+        expect(command?.programArguments).toEqual(programArguments);
+        expect(command?.environment?.OPENCLAW_GATEWAY_PORT).toBe(String(gatewayPort));
         const installedPid = requireRunPid(await waitForRunCount(eventsPath, 1), 0);
         expectProbeProcessAlive(installedPid);
-        await waitForRuntimeStatus(readRuntime, "running");
+        expect(await canBindLoopbackPort(gatewayPort)).toBe(false);
+        await waitForRuntimeStatus(readRuntime, "running", installedPid);
 
         const stopMutations: string[] = [];
         await service.stop({
@@ -452,22 +890,27 @@ describe.runIf(nativeIntegrationEnabled)("schtasks Windows integration", () => {
         expect(stopMutations).toEqual(["schtasks-stop"]);
         await waitForProcessExit(installedPid);
         await clearActivePid(activePidPath, installedPid);
+        await waitForLoopbackPortRelease(gatewayPort);
         await waitForRuntimeStatus(readRuntime, "stopped");
         expect((await execSchtasks(["/Query", "/TN", taskName])).code).toBe(0);
 
         const startMutations: string[] = [];
+        const startStartedAt = Date.now();
         await service.start({
           env,
           stdout,
           onMutation: (mutation) => startMutations.push(mutation.mode),
         });
         expect(startMutations).toEqual(["schtasks-start"]);
+        expectNoDirectFallback(startStartedAt);
         const startedPid = requireRunPid(await waitForRunCount(eventsPath, 2), 1);
         expect(startedPid).not.toBe(installedPid);
         expectProbeProcessAlive(startedPid);
-        await waitForRuntimeStatus(readRuntime, "running");
+        expect(await canBindLoopbackPort(gatewayPort)).toBe(false);
+        await waitForRuntimeStatus(readRuntime, "running", startedPid);
 
         const restartMutations: string[] = [];
+        const restartStartedAt = Date.now();
         const restartResult = await service.restart({
           env,
           stdout,
@@ -475,23 +918,28 @@ describe.runIf(nativeIntegrationEnabled)("schtasks Windows integration", () => {
         });
         expect(restartResult).toEqual({ outcome: "completed" });
         expect(restartMutations).toEqual(["schtasks-end", "schtasks-restart"]);
+        expectNoDirectFallback(restartStartedAt);
         const restartedPid = requireRunPid(await waitForRunCount(eventsPath, 3), 2);
         lifecyclePids = [installedPid, startedPid, restartedPid];
         expect(restartedPid).not.toBe(startedPid);
         expectProbeProcessAlive(restartedPid);
         await waitForProcessExit(startedPid);
         await clearActivePid(activePidPath, startedPid);
-        await waitForRuntimeStatus(readRuntime, "running");
+        expect(await canBindLoopbackPort(gatewayPort)).toBe(false);
+        await waitForRuntimeStatus(readRuntime, "running", restartedPid);
 
         await service.stop({ env, stdout });
         await waitForProcessExit(restartedPid);
         await clearActivePid(activePidPath, restartedPid);
+        await waitForLoopbackPortRelease(gatewayPort);
         await waitForRuntimeStatus(readRuntime, "stopped");
 
         await service.uninstall({ env, stdout });
         expect((await execSchtasks(["/Query", "/TN", taskName])).code).not.toBe(0);
         await expect(fs.access(scriptPath)).rejects.toThrow();
-        expect(await readTaskXml("OpenClaw Gateway")).toBe(defaultTaskXml);
+        await expect(fs.access(launcherPath)).rejects.toThrow();
+        expect(await canBindLoopbackPort(gatewayPort)).toBe(true);
+        expect(await readTaskDefinitionSnapshot("OpenClaw Gateway")).toEqual(defaultTaskBefore);
 
         const proofPath = process.env.CI_WINDOWS_SCHTASKS_PROOF_PATH?.trim();
         if (proofPath) {
@@ -512,11 +960,15 @@ describe.runIf(nativeIntegrationEnabled)("schtasks Windows integration", () => {
                 taskName,
                 lifecycle: ["install", "stop", "start", "restart", "stop", "uninstall"],
                 pids: lifecyclePids,
+                gatewayPort,
+                portReleaseRebind: true,
                 startupFallback: false,
                 defaultTaskUnchanged: true,
                 taskXml: {
                   interactiveToken: true,
                   leastPrivilege: true,
+                  logonType: installedPrincipal?.logonType,
+                  runLevel: installedPrincipal?.runLevel,
                 },
               },
               null,
@@ -540,6 +992,8 @@ describe.runIf(nativeIntegrationEnabled)("schtasks Windows integration", () => {
         preserveEvidence: testFailed,
         probePath,
         rootDir,
+        scriptPath,
+        serviceOutput,
         stateDir,
         taskName,
       });
