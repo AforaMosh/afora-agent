@@ -25,6 +25,7 @@ function recordHealthy(record: ClawStatusEntry): boolean {
   const healthyStates = new Set(["present", "unchanged", "complete"]);
   return (
     record.status === "complete" &&
+    record.bootstrapState === "complete" &&
     !record.orphaned &&
     record.resources.every((resource) => healthyStates.has(resource.state))
   );
@@ -36,6 +37,17 @@ function chipClassForState(state: string): string {
     : state === "pending" || state === "incomplete"
       ? "chip-warn"
       : "chip-danger";
+}
+
+function bootstrapStateLabel(state: ClawStatusEntry["bootstrapState"]): string {
+  const labels: Record<ClawStatusEntry["bootstrapState"], string> = {
+    pending: t("clawsPage.states.pending"),
+    complete: t("clawsPage.states.complete"),
+    modified: t("clawsPage.states.modified"),
+    unsafe: t("clawsPage.states.unsafe"),
+    unknown: t("clawsPage.states.unknown"),
+  };
+  return labels[state];
 }
 
 function resourceKindLabel(kind: ClawResourceStatus["kind"]): string {
@@ -260,6 +272,14 @@ function renderDetail(record: ClawStatusEntry) {
         <div>
           <dt>${t("clawsPage.source")}</dt>
           <dd>${sourceKindLabel(record.sourceKind)}</dd>
+        </div>
+        <div>
+          <dt>${t("clawsPage.bootstrap")}</dt>
+          <dd>
+            <span class="chip ${chipClassForState(record.bootstrapState)}"
+              >${bootstrapStateLabel(record.bootstrapState)}</span
+            >
+          </dd>
         </div>
         <div>
           <dt>${t("clawsPage.updated")}</dt>

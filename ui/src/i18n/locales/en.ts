@@ -1987,6 +1987,7 @@ export const en: TranslationMap = {
     agent: "Agent",
     source: "Source",
     updated: "Updated",
+    bootstrap: "First-run setup",
     independentOwner: "Also used outside this Claw",
     resourceKinds: {
       agent: "Agent",
@@ -2008,6 +2009,7 @@ export const en: TranslationMap = {
       pending: "Pending",
       failed: "Failed",
       removed: "Removed",
+      unknown: "Unknown",
     },
     origins: {
       clawIntroduced: "Added by this Claw",

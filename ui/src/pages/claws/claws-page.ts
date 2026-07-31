@@ -14,13 +14,18 @@ import {
   type ApplicationContext,
   type ApplicationGatewaySnapshot,
 } from "../../app/context.ts";
-import { renderPluginsHubTabs, type PluginsHubTab } from "../../components/plugins-hub-tabs.ts";
+import { renderHubTabs } from "../../components/hub-tabs.ts";
 import { renderSettingsWorkspace } from "../../components/settings-workspace.ts";
 import { t } from "../../i18n/index.ts";
 import { isGatewayMethodAdvertised } from "../../lib/gateway-methods.ts";
 import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
 import { SubscriptionsController } from "../../lit/subscriptions-controller.ts";
 import "../../styles/claws.css";
+import {
+  PLUGINS_HUB_PANEL_ID,
+  pluginsHubTabs,
+  type PluginsHubTab,
+} from "../plugins/plugins-hub.ts";
 import { renderClaws } from "./view.ts";
 
 function errorMessage(error: unknown): string {
@@ -68,7 +73,7 @@ class ClawsPage extends OpenClawLightDomElement {
     const wasConnected = this.connected;
     const wasAvailable = this.available;
     this.client = snapshot.client;
-    this.connected = snapshot.connected;
+    this.connected = snapshot.phase === "connected";
     this.available =
       isGatewayMethodAdvertised(snapshot, "claws.status") === true &&
       isGatewayMethodAdvertised(snapshot, "claws.doctor") === true;
@@ -175,9 +180,13 @@ class ClawsPage extends OpenClawLightDomElement {
       </section>
       ${renderSettingsWorkspace(html`
         <div class="plugins-hub-tabs-row">
-          ${renderPluginsHubTabs({
+          ${renderHubTabs({
+            id: "plugins",
             active: "claws",
-            showClaws: true,
+            tabs: pluginsHubTabs(null, true),
+            ariaLabel: t("pluginsPage.hubTablistLabel"),
+            panelId: PLUGINS_HUB_PANEL_ID,
+            className: "plugins-tabs",
             onSelect: (tab) => this.selectHubTab(tab),
           })}
         </div>

@@ -90,6 +90,7 @@ function projectStatusRecord(record: ClawStatusRecord): ClawStatusEntry {
     sourceKind: record.install.claw.kind,
     status: record.install.status,
     agentState: record.agentState,
+    bootstrapState: record.bootstrapState,
     orphaned: record.orphaned === true,
     addedAtMs: record.install.addedAtMs,
     updatedAtMs: record.install.updatedAtMs,
@@ -101,6 +102,7 @@ function isHealthy(record: ClawStatusEntry): boolean {
   const healthyResourceStates = new Set(["present", "unchanged", "complete"]);
   return (
     record.status === "complete" &&
+    record.bootstrapState === "complete" &&
     !record.orphaned &&
     record.resources.every((resource) => healthyResourceStates.has(resource.state))
   );

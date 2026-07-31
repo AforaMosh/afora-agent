@@ -64,6 +64,13 @@ export const ClawStatusEntrySchema = closedObject({
     Type.Literal("modified"),
     Type.Literal("missing"),
   ]),
+  bootstrapState: Type.Union([
+    Type.Literal("pending"),
+    Type.Literal("complete"),
+    Type.Literal("modified"),
+    Type.Literal("unsafe"),
+    Type.Literal("unknown"),
+  ]),
   orphaned: Type.Boolean(),
   addedAtMs: Type.Integer({ minimum: 0 }),
   updatedAtMs: Type.Integer({ minimum: 0 }),

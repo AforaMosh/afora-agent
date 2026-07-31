@@ -33,6 +33,8 @@ describe("Claw gateway projections", () => {
         updatedAtMs: 2,
       },
       agentState: "present",
+      bootstrapState: "complete",
+      bootstrap: { state: "complete", workspace: "/secret/workspace", path: "BOOTSTRAP.md" },
       workspaceFiles: [
         {
           path: "SOUL.md",
@@ -75,6 +77,7 @@ describe("Claw gateway projections", () => {
     const result = projectClawsStatus([record]);
     expect(validateClawsStatusResult(result)).toBe(true);
     expect(result.summary).toMatchObject({ claws: 1, healthy: 1, managed: 4, referenced: 1 });
+    expect(result.records[0]?.bootstrapState).toBe("complete");
     expect(result.records[0]?.resources).toEqual(
       expect.arrayContaining([
         expect.objectContaining({

@@ -11134,6 +11134,184 @@ public struct WebLoginWaitParams: Codable, Sendable {
     }
 }
 
+public struct ClawDoctorFinding: Codable, Sendable {
+    public let severity: AnyCodable
+    public let message: String
+    public let path: String?
+    public let requirement: String?
+    public let fixhint: String?
+
+    public init(
+        severity: AnyCodable,
+        message: String,
+        path: String? = nil,
+        requirement: String? = nil,
+        fixhint: String? = nil)
+    {
+        self.severity = severity
+        self.message = message
+        self.path = path
+        self.requirement = requirement
+        self.fixhint = fixhint
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case severity
+        case message
+        case path
+        case requirement
+        case fixhint = "fixHint"
+    }
+}
+
+public struct ClawResourceStatus: Codable, Sendable {
+    public let kind: AnyCodable
+    public let id: String
+    public let state: AnyCodable
+    public let relationship: AnyCodable?
+    public let origin: AnyCodable?
+    public let independentowner: Bool?
+
+    public init(
+        kind: AnyCodable,
+        id: String,
+        state: AnyCodable,
+        relationship: AnyCodable? = nil,
+        origin: AnyCodable? = nil,
+        independentowner: Bool? = nil)
+    {
+        self.kind = kind
+        self.id = id
+        self.state = state
+        self.relationship = relationship
+        self.origin = origin
+        self.independentowner = independentowner
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case kind
+        case id
+        case state
+        case relationship
+        case origin
+        case independentowner = "independentOwner"
+    }
+}
+
+public struct ClawStatusEntry: Codable, Sendable {
+    public let agentid: String
+    public let name: String
+    public let version: String
+    public let sourcekind: AnyCodable
+    public let status: AnyCodable
+    public let agentstate: AnyCodable
+    public let bootstrapstate: AnyCodable
+    public let orphaned: Bool
+    public let addedatms: Int
+    public let updatedatms: Int
+    public let resources: [ClawResourceStatus]
+
+    public init(
+        agentid: String,
+        name: String,
+        version: String,
+        sourcekind: AnyCodable,
+        status: AnyCodable,
+        agentstate: AnyCodable,
+        bootstrapstate: AnyCodable,
+        orphaned: Bool,
+        addedatms: Int,
+        updatedatms: Int,
+        resources: [ClawResourceStatus])
+    {
+        self.agentid = agentid
+        self.name = name
+        self.version = version
+        self.sourcekind = sourcekind
+        self.status = status
+        self.agentstate = agentstate
+        self.bootstrapstate = bootstrapstate
+        self.orphaned = orphaned
+        self.addedatms = addedatms
+        self.updatedatms = updatedatms
+        self.resources = resources
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case agentid = "agentId"
+        case name
+        case version
+        case sourcekind = "sourceKind"
+        case status
+        case agentstate = "agentState"
+        case bootstrapstate = "bootstrapState"
+        case orphaned
+        case addedatms = "addedAtMs"
+        case updatedatms = "updatedAtMs"
+        case resources
+    }
+}
+
+public struct ClawsDoctorParams: Codable, Sendable {}
+
+public struct ClawsDoctorResult: Codable, Sendable {
+    public let schemaversion: String
+    public let findings: [ClawDoctorFinding]
+    public let summary: [String: AnyCodable]
+
+    public init(
+        schemaversion: String,
+        findings: [ClawDoctorFinding],
+        summary: [String: AnyCodable])
+    {
+        self.schemaversion = schemaversion
+        self.findings = findings
+        self.summary = summary
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case schemaversion = "schemaVersion"
+        case findings
+        case summary
+    }
+}
+
+public struct ClawsStatusParams: Codable, Sendable {
+    public let target: String?
+
+    public init(
+        target: String? = nil)
+    {
+        self.target = target
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case target
+    }
+}
+
+public struct ClawsStatusResult: Codable, Sendable {
+    public let schemaversion: String
+    public let records: [ClawStatusEntry]
+    public let summary: [String: AnyCodable]
+
+    public init(
+        schemaversion: String,
+        records: [ClawStatusEntry],
+        summary: [String: AnyCodable])
+    {
+        self.schemaversion = schemaversion
+        self.records = records
+        self.summary = summary
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case schemaversion = "schemaVersion"
+        case records
+        case summary
+    }
+}
+
 public struct AgentSummary: Codable, Sendable {
     public let id: String
     public let kind: AgentKind?

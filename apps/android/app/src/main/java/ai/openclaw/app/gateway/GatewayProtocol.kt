@@ -164,6 +164,8 @@ enum class GatewayMethod(
   DoctorMemoryRepairDreamingArtifacts("doctor.memory.repairDreamingArtifacts"),
   DoctorMemoryDedupeDreamDiary("doctor.memory.dedupeDreamDiary"),
   DoctorMemoryRemHarness("doctor.memory.remHarness"),
+  ClawsStatus("claws.status"),
+  ClawsDoctor("claws.doctor"),
   LogsTail("logs.tail"),
   ChannelsStatus("channels.status"),
   ChannelsStart("channels.start"),

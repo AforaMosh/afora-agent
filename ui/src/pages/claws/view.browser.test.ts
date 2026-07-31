@@ -50,6 +50,7 @@ function fixtureHtml(): string {
             <dl class="claws-metadata">
               <div><dt>Version</dt><dd>1.2.0</dd></div>
               <div><dt>Source</dt><dd>package</dd></div>
+              <div><dt>First-run setup</dt><dd><span class="chip chip-ok">Complete</span></dd></div>
               <div><dt>Updated</dt><dd>just now</dd></div>
             </dl>
             <section class="claws-detail__section">

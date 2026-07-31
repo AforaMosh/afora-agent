@@ -19,6 +19,7 @@ const status: ClawsStatusResult = {
       sourceKind: "package",
       status: "complete",
       agentState: "present",
+      bootstrapState: "complete",
       orphaned: false,
       addedAtMs: 1_000,
       updatedAtMs: 2_000,
@@ -74,6 +75,33 @@ describe("renderClaws", () => {
     expect(container.textContent).toContain("Referenced");
     expect(container.textContent).toContain("Pre-existing");
     expect(container.textContent).toContain("Healthy");
+    expect(container.textContent).toContain("First-run setup");
+  });
+
+  it("shows pending first-run setup as needing attention", () => {
+    const container = document.createElement("div");
+    const pendingStatus: ClawsStatusResult = {
+      ...status,
+      records: [{ ...status.records[0], bootstrapState: "pending" }],
+      summary: { claws: 1, healthy: 0, attention: 1, managed: 0, referenced: 1 },
+    };
+    render(
+      renderClaws({
+        connected: true,
+        available: true,
+        loading: false,
+        error: null,
+        status: pendingStatus,
+        doctor,
+        selectedAgentId: "analyst",
+        onSelect: vi.fn(),
+      }),
+      container,
+    );
+
+    expect(container.textContent).toContain("Needs attention");
+    expect(container.textContent).toContain("First-run setup");
+    expect(container.textContent).toContain("Pending");
   });
 
   it("does not render lifecycle state when the method is unavailable", () => {
