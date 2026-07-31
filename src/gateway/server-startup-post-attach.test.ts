@@ -1217,8 +1217,8 @@ describe("startGatewayPostAttachRuntime", () => {
     );
   });
 
-  it("starts agent runtime plugin prewarm in the first post-ready turn", () => {
-    expect(testing.agentRuntimePluginPrewarmStartDelayMs).toBe(0);
+  it("delays agent runtime plugin prewarm after readiness", () => {
+    expect(testing.agentRuntimePluginPrewarmStartDelayMs).toBe(10_000);
   });
 
   it("defers context-window cache prewarm to a post-ready sidecar", async () => {
