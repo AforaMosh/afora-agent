@@ -116,6 +116,7 @@ const state = vi.hoisted(() => ({
   storePathMock: undefined as string | undefined,
   resolvedSessionKeyMock: undefined as string | undefined,
   trajectoryRecorderParamsMock: vi.fn(),
+  recordExecutionIdentityContextAtAdmissionMock: vi.fn(),
 }));
 
 vi.mock("./model-fallback-runner.js", () => ({
@@ -125,7 +126,8 @@ vi.mock("./model-fallback-runner.js", () => ({
 // Identity persistence has focused owner-boundary and real-run coverage. This
 // synthetic command suite deliberately reuses session-1 across independent tests.
 vi.mock("../audit/execution-identity-context.js", () => ({
-  prepareExecutionIdentityContextAtAdmission: vi.fn(),
+  recordExecutionIdentityContextAtAdmission: (...args: unknown[]) =>
+    state.recordExecutionIdentityContextAtAdmissionMock(...args),
 }));
 
 vi.mock("./command/attempt-execution.runtime.js", () => ({
@@ -1062,6 +1064,35 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
     expect(deliveryOrder).toBeLessThan(
       state.emitAgentEventMock.mock.invocationCallOrder[lastEndIndex] ?? 0,
     );
+  });
+
+  it("keeps ordinary runs available without recording identity when audit is disabled", async () => {
+    state.runtimeConfigMock = {
+      ...state.defaultRuntimeConfig,
+      logging: { audit: { enabled: false } },
+    };
+    setupSuccessfulAttempt();
+
+    await runBasicAgentCommand();
+
+    expect(state.runAgentAttemptMock).toHaveBeenCalledTimes(1);
+    expect(state.recordExecutionIdentityContextAtAdmissionMock).toHaveBeenCalledWith(
+      expect.objectContaining({ agentId: "default" }),
+      { enabled: false },
+    );
+  });
+
+  it("keeps ordinary runs available when best-effort identity persistence is unavailable", async () => {
+    setupSuccessfulAttempt();
+    state.recordExecutionIdentityContextAtAdmissionMock.mockReturnValue(undefined);
+
+    await runBasicAgentCommand();
+
+    expect(state.recordExecutionIdentityContextAtAdmissionMock).toHaveBeenCalledWith(
+      expect.objectContaining({ agentId: "default" }),
+      { enabled: true },
+    );
+    expect(state.runAgentAttemptMock).toHaveBeenCalledTimes(1);
   });
 
   it("forwards the auth profile bound to the configured default model", async () => {

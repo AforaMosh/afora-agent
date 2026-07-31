@@ -27,11 +27,12 @@ records into authorization evidence.
 
 ## Run identity inspection
 
-Execution identity recording is automatic and has no config or environment
-toggle. After session work admission succeeds, the Gateway synchronously
-persists one immutable context before model, ACP, or delivery work begins. A
-context write failure prevents the run from starting instead of silently
-running without the promised evidence.
+Execution identity recording follows the default-on audit ledger. Setting
+`logging.audit.enabled: false` stops new contexts as well as new events after
+restart. After session work admission succeeds, the Gateway synchronously
+attempts to persist one immutable context before model, ACP, or delivery work
+begins. Persistence remains best-effort: a failed write logs one operational
+warning and the run continues without exact-run identity evidence.
 
 Query a context by exact run id with `audit.run.inspect` or
 [`openclaw audit --run <id> --explain`](/cli/audit). The result explicitly
@@ -60,7 +61,7 @@ facts:
 - `unknown`: the exact run is not known, or expected context is corrupt or
   unreadable;
 - `unsupported`: best-effort activity shows the run, but no context is
-  available, as with a pre-feature or expired run;
+  available, as with a pre-feature, expired, disabled, or failed context write;
 - `unattributed`: the supported run has no usable invoker principal;
 - `attribution-only`: invoker attribution exists but was not evaluated for
   authorization.

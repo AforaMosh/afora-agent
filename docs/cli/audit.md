@@ -12,9 +12,9 @@ title: "Audit records"
 Query the Gateway's metadata-only activity ledger, or inspect immutable
 execution identity context for one exact agent run.
 
-The ledger is on by default for run and tool events. Set
+The ledger is on by default for run, tool, and execution identity records. Set
 [`logging.audit.enabled: false`](/gateway/configuration-reference#audit) and
-restart the Gateway to stop all new event records. Message records are
+restart the Gateway to stop all new audit records. Message records are
 separately disabled by default; set `logging.audit.messages` to `direct` or
 `all` and restart the Gateway to record them. Existing records stay queryable until they expire (30 days).
 
@@ -98,8 +98,10 @@ remain visible, so redirected output is still private operator data.
 An older Gateway produces an explicit `unsupported` result with
 `gateway_upgrade_required` and an upgrade-and-rerun next step. The CLI never
 reconstructs identity from legacy audit rows. A current Gateway distinguishes
-an unknown run, an unavailable pre-feature or expired context, and a corrupt
-context without claiming that missing best-effort activity proves no execution.
+an unknown run, an unavailable pre-feature, expired, disabled, or failed
+context write, and a corrupt context without claiming that missing best-effort
+activity proves no execution. Context persistence is best-effort: a failed
+write logs one operational warning and does not block the agent run.
 
 ## Recorded events
 

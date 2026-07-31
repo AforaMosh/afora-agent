@@ -8,6 +8,7 @@ import { recordAuditEvent } from "./audit-event-store.js";
 import {
   inspectExecutionIdentityRun,
   prepareExecutionIdentityContextAtAdmission,
+  recordExecutionIdentityContextAtAdmission,
   type ExecutionIdentityAdmissionFacts,
 } from "./execution-identity-context.js";
 
@@ -152,6 +153,35 @@ describe("execution identity context storage", () => {
     expect(() =>
       prepareExecutionIdentityContextAtAdmission(facts("run-after-key-loss"), database),
     ).toThrow("audit identity key is missing");
+  });
+
+  it("skips new context rows when audit collection is disabled", () => {
+    const database = databaseOptions();
+
+    expect(
+      recordExecutionIdentityContextAtAdmission(facts("run-disabled"), {
+        ...database,
+        enabled: false,
+      }),
+    ).toBeUndefined();
+
+    const rowCount = openOpenClawStateDatabase(database)
+      .db.prepare("SELECT COUNT(*) AS count FROM execution_identity_contexts")
+      .get() as { count: number };
+    expect(rowCount.count).toBe(0);
+  });
+
+  it("keeps admission available when context persistence fails", () => {
+    const database = databaseOptions();
+    const options = { ...database, runtimeInstanceId: "runtime-1" };
+    prepareExecutionIdentityContextAtAdmission(facts("run-best-effort"), options);
+
+    expect(
+      recordExecutionIdentityContextAtAdmission(
+        facts("run-best-effort", { agentId: "conflicting-agent" }),
+        { ...options, enabled: true },
+      ),
+    ).toBeUndefined();
   });
 
   it("prunes retention and row-cap overflow in bounded batches", () => {

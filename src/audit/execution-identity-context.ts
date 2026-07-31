@@ -17,6 +17,7 @@ import {
 } from "../infra/kysely-sync.js";
 import { normalizeSqliteNumber } from "../infra/sqlite-number.js";
 import { redactSensitiveText } from "../logging/redact.js";
+import { createSubsystemLogger } from "../logging/subsystem.js";
 import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
 import {
   openOpenClawStateDatabase,
@@ -41,9 +42,11 @@ const EXECUTION_IDENTITY_CONTEXT_MAX_ROWS = 100_000;
 const EXECUTION_IDENTITY_CONTEXT_PRUNE_BATCH_ROWS = 1_024;
 const EXECUTION_IDENTITY_HMAC_REF_RE = /^hmac-sha256:v1:[a-f0-9]{32}:[a-f0-9]{64}$/u;
 const PROCESS_RUNTIME_INSTANCE_ID = randomUUID();
+const log = createSubsystemLogger("audit/events");
 
 const ensuredDatabases = new WeakSet<DatabaseSync>();
 const contextRowCounts = new WeakMap<DatabaseSync, number>();
+let persistenceFailureWarned = false;
 
 // Keep this feature-local DDL byte-for-byte aligned with the canonical schema.
 const EXECUTION_IDENTITY_CONTEXT_SCHEMA_SQL = `
@@ -429,6 +432,28 @@ export function prepareExecutionIdentityContextAtAdmission(
       clearAuditIdentityKeyCacheForDatabase(transactionDatabase);
     }
     throw error;
+  }
+}
+
+/** Best-effort admission recording. Disabled collection and write failures never block a run. */
+export function recordExecutionIdentityContextAtAdmission(
+  facts: ExecutionIdentityAdmissionFacts,
+  options: ExecutionIdentityStoreOptions & { enabled: boolean },
+): ExecutionIdentityContextV1 | undefined {
+  const { enabled, ...storeOptions } = options;
+  if (!enabled) {
+    return undefined;
+  }
+  try {
+    return prepareExecutionIdentityContextAtAdmission(facts, storeOptions);
+  } catch {
+    if (!persistenceFailureWarned) {
+      persistenceFailureWarned = true;
+      log.warn(
+        "audit execution identity persistence failed; continuing without exact-run identity context",
+      );
+    }
+    return undefined;
   }
 }
 

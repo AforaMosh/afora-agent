@@ -1,7 +1,8 @@
 /** Main agent command orchestration for sessions, model selection, delivery, and attempts. */
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { isAuditLedgerEnabled } from "../audit/audit-config.js";
 import {
-  prepareExecutionIdentityContextAtAdmission,
+  recordExecutionIdentityContextAtAdmission,
   type ExecutionIdentityAdmissionFacts,
 } from "../audit/execution-identity-context.js";
 import type { VerboseLevel } from "../auto-reply/thinking.js";
@@ -225,14 +226,19 @@ async function agentCommandInternal(
       },
     });
     return await sessionWorkAdmission.run(async () => {
-      // Session work admission is the authoritative outer-run boundary. Record
-      // the immutable context before any model, ACP, or delivery work can start.
-      prepareExecutionIdentityContextAtAdmission({
-        runId,
-        agentId: sessionAgentId,
-        ingress: admissionIngress,
-        runtime: { kind: !isRawModelRun && acpResolution?.kind === "ready" ? "acp" : "embedded" },
-      });
+      // Session work admission is the authoritative outer-run boundary. Audit
+      // persistence is best-effort, so it must never turn telemetry loss into run loss.
+      recordExecutionIdentityContextAtAdmission(
+        {
+          runId,
+          agentId: sessionAgentId,
+          ingress: admissionIngress,
+          runtime: {
+            kind: !isRawModelRun && acpResolution?.kind === "ready" ? "acp" : "embedded",
+          },
+        },
+        { enabled: isAuditLedgerEnabled(cfg) },
+      );
       if (opts.deliver === true) {
         const sendPolicy = resolveSendPolicy({
           cfg,
