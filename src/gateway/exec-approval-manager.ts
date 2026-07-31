@@ -1105,6 +1105,24 @@ export class ExecApprovalManager<TPayload = ExecApprovalRequestPayload> {
     return entry.record;
   }
 
+  /** Finds pending or briefly retained terminal records for one runtime request. */
+  listLiveRecordsForRuntimeRequest(params: {
+    runtimeInstanceId: string;
+    runtimeRequestId: string;
+  }): ExecApprovalRecord<TPayload>[] {
+    const matches: ExecApprovalRecord<TPayload>[] = [];
+    for (const entry of this.pending.values()) {
+      const record = this.getLiveSnapshot(entry.record.id);
+      if (
+        record?.requestedByInstanceId === params.runtimeInstanceId &&
+        record.requestedByRuntimeRequestId === params.runtimeRequestId
+      ) {
+        matches.push(record);
+      }
+    }
+    return matches;
+  }
+
   listPendingRecords(): ExecApprovalRecord<TPayload>[] {
     const nowMs = Date.now();
     for (const entry of this.pending.values()) {

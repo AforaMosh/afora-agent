@@ -489,6 +489,67 @@ describe("plugin.approval.cancel", () => {
     expect(manager.getSnapshot(record.id)?.resolvedAtMs).toBeUndefined();
   });
 
+  it("invalidates resolved allow-once authority without republishing the winning decision", async () => {
+    const handler = createPluginApprovalHandlers(manager)["plugin.approval.cancel"];
+    const record = registerApproval(manager, "plugin:cancel-resolved");
+    expect(manager.resolveAutoReview(record.id, "runtime-owner")).toBe(true);
+    const context = createContext();
+    const opts = createOptions(
+      { id: record.id },
+      {
+        client: createClient({
+          clientId: "approval-runtime",
+          instanceId: "runtime-owner",
+          approvalRuntime: true,
+        }),
+        context,
+      },
+    );
+
+    await expectDefined(handler, "plugin.approval.cancel handler")(opts);
+
+    expect(expectResponseOk(opts)).toEqual({ ok: true, cancelled: 1 });
+    expect(manager.consumeAllowOnce(record.id, "plugin:cancel-resolved")).toBe(false);
+    expect(manager.getSnapshot(record.id)).toMatchObject({
+      status: "allowed",
+      decision: "allow-once",
+    });
+    expect(context.broadcast).not.toHaveBeenCalled();
+  });
+
+  it("invalidates resolved allow-once authority by runtime request id", async () => {
+    const handler = createPluginApprovalHandlers(manager)["plugin.approval.cancel"];
+    const record = registerApproval(
+      manager,
+      "plugin:cancel-resolved-request",
+      "owner",
+      "request-resolved",
+    );
+    expect(manager.resolveAutoReview(record.id, "runtime-owner")).toBe(true);
+    const context = createContext();
+    const opts = createOptions(
+      { runtimeRequestId: "request-resolved" },
+      {
+        client: createClient({
+          clientId: "approval-runtime",
+          instanceId: "runtime-owner",
+          approvalRuntime: true,
+        }),
+        context,
+      },
+    );
+
+    await expectDefined(handler, "plugin.approval.cancel handler")(opts);
+
+    expect(expectResponseOk(opts)).toEqual({ ok: true, cancelled: 1 });
+    expect(manager.consumeAllowOnce(record.id, "plugin:cancel-resolved-request")).toBe(false);
+    expect(manager.getSnapshot(record.id)).toMatchObject({
+      status: "allowed",
+      decision: "allow-once",
+    });
+    expect(context.broadcast).not.toHaveBeenCalled();
+  });
+
   it("is idempotent after the approval is terminal", async () => {
     const handler = createPluginApprovalHandlers(manager)["plugin.approval.cancel"];
     const record = registerApproval(manager, "plugin:cancel-idempotent");

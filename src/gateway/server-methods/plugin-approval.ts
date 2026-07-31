@@ -184,12 +184,10 @@ export function createPluginApprovalHandlers(
           : []
         : p.runtimeRequestId && runtimeInstanceId
           ? manager
-              .listPendingRecords()
-              .filter(
-                (record) =>
-                  record.requestedByInstanceId === runtimeInstanceId &&
-                  record.requestedByRuntimeRequestId === p.runtimeRequestId,
-              )
+              .listLiveRecordsForRuntimeRequest({
+                runtimeInstanceId,
+                runtimeRequestId: p.runtimeRequestId,
+              })
               .map((record) => record.id)
           : [];
       const cancelledRuntimeRequestId =
@@ -202,20 +200,21 @@ export function createPluginApprovalHandlers(
         // arrive later. Retain the logical request tombstone in both cases.
         rememberCancelledRuntimeRequest(runtimeInstanceId, cancelledRuntimeRequestId);
       }
+      if (!runtimeInstanceId) {
+        respond(true, { ok: true, cancelled: 0 }, undefined);
+        return;
+      }
       const resolvedBy = client.connect?.client?.displayName ?? client.connect?.client?.id ?? null;
       let cancelled = 0;
       for (const approvalId of approvalIds) {
-        let result: ReturnType<typeof manager.forceDenyDetailed>;
+        let result: ReturnType<typeof manager.cancelForRuntime>;
         try {
-          result = manager.forceDenyDetailed(
-            approvalId,
-            "run-aborted",
-            { kind: "runtime", id: client.connect?.client?.id ?? null },
-            "cancelled",
-            undefined,
-            false,
+          result = manager.cancelForRuntime({
+            recordId: approvalId,
+            runtimeInstanceId,
+            resolver: { kind: "runtime", id: client.connect?.client?.id ?? null },
             resolvedBy,
-          );
+          });
         } catch (error) {
           context.logGateway?.error?.(
             `plugin approvals: cancellation failed for ${approvalId}: ${String(error)}`,
@@ -234,6 +233,10 @@ export function createPluginApprovalHandlers(
             errorShape(ErrorCodes.UNAVAILABLE, "plugin approval storage unavailable"),
           );
           return;
+        }
+        if (result.outcome === "invalidated") {
+          cancelled += 1;
+          continue;
         }
         if (result.outcome !== "denied" || !result.liveRecord) {
           continue;
