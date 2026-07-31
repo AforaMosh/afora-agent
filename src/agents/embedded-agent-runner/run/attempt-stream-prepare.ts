@@ -16,6 +16,10 @@ import {
 } from "../../../plugins/hook-agent-context.js";
 import { getGlobalHookRunner } from "../../../plugins/hook-runner-global.js";
 import { recordStructuredReplayTrustForToolCall } from "../../agent-tools.before-tool-call.js";
+import {
+  clearParentToolCall,
+  recordParentToolCall,
+} from "../../agent-tools.before-tool-call.state.js";
 import { subscribeEmbeddedAgentSession } from "../../embedded-agent-subscribe.js";
 import { runAgentHarnessBeforeAgentFinalizeHook } from "../../harness/lifecycle-hook-helpers.js";
 import {
@@ -322,6 +326,10 @@ export function prepareEmbeddedAttemptStream(input: {
   toolMetasForTerminal = subscription.toolMetas;
 
   const toolSearchCatalogExecutor: ToolSearchCatalogToolExecutor = async (toolParams) => {
+    const parentToolCallId = toolParams.parentToolCallId;
+    if (parentToolCallId) {
+      recordParentToolCall(toolParams.toolCallId, parentToolCallId, attempt.runId);
+    }
     try {
       if (toolParams.source === "openclaw" && toolParams.sourceName === "core") {
         recordStructuredReplayTrustForToolCall(
@@ -376,6 +384,10 @@ export function prepareEmbeddedAttemptStream(input: {
       });
       notifyToolActivity(attempt.runId);
       throw error;
+    } finally {
+      if (parentToolCallId) {
+        clearParentToolCall(toolParams.toolCallId, attempt.runId);
+      }
     }
   };
 

@@ -16,6 +16,8 @@ import {
 import {
   adjustedParamsByToolCallId,
   buildAdjustedParamsKey,
+  clearParentToolCall,
+  recordParentToolCall,
   recordToolExecutionTracked,
 } from "./agent-tools.before-tool-call.state.js";
 import { markCodeModeControlTool } from "./code-mode-control-tools.js";
@@ -2038,6 +2040,126 @@ describe("handleToolExecutionEnd mutating failure recovery", () => {
       replayInvalid: true,
       hadPotentialSideEffects: true,
     });
+  });
+
+  it("accepts ordered Code Mode readback telemetry after its own nested mutation", async () => {
+    const { ctx } = createTestContext();
+
+    trustCodeModeControlCall("tool-code-mode-edit-readback", "exec");
+    await startTool(ctx, {
+      toolName: "exec",
+      toolCallId: "tool-code-mode-edit-readback",
+      args: {
+        code: 'await tools.edit({ path: "result.txt", oldText: "pending", newText: "done" }); return await tools.read({ path: "result.txt" });',
+      },
+    });
+    trustCoreToolCall("nested-edit", "edit");
+    recordParentToolCall("nested-edit", "tool-code-mode-edit-readback", "run-test");
+    try {
+      await executeTool(ctx, {
+        toolName: "edit",
+        toolCallId: "nested-edit",
+        args: { path: "result.txt", oldText: "pending", newText: "done" },
+        isError: false,
+        result: { details: { status: "completed" } },
+      });
+    } finally {
+      clearParentToolCall("nested-edit", "run-test");
+    }
+    trustCoreToolCall("nested-read", "read");
+    await executeTool(ctx, {
+      toolName: "read",
+      toolCallId: "nested-read",
+      args: { path: "result.txt" },
+      isError: false,
+      result: { content: [{ type: "text", text: "done" }] },
+    });
+    await endTool(ctx, {
+      toolName: "exec",
+      toolCallId: "tool-code-mode-edit-readback",
+      isError: false,
+      result: {
+        details: {
+          status: "completed",
+          sideEffectFree: false,
+          telemetry: {
+            hadTargetlessSideEffects: false,
+            successfulObservationFileTargets: [{ path: "result.txt" }],
+            unverifiedMutationFileTargets: [],
+          },
+        },
+      },
+    });
+
+    expect(ctx.state.toolMetas).toContainEqual(
+      expect.objectContaining({
+        toolName: "exec",
+        sideEffectFree: false,
+        codeModeHadTargetlessSideEffects: false,
+        codeModeSuccessfulObservationFileTargets: [{ path: "result.txt" }],
+        codeModeUnverifiedMutationFileTargets: [],
+      }),
+    );
+  });
+
+  it("rejects Code Mode readback telemetry after a later unrelated mutation", async () => {
+    const { ctx } = createTestContext();
+
+    trustCodeModeControlCall("tool-code-mode-stale-readback", "exec");
+    await startTool(ctx, {
+      toolName: "exec",
+      toolCallId: "tool-code-mode-stale-readback",
+      args: {
+        code: 'await tools.edit({ path: "result.txt", oldText: "pending", newText: "done" }); return await tools.read({ path: "result.txt" });',
+      },
+    });
+    trustCoreToolCall("nested-owned-edit", "edit");
+    recordParentToolCall("nested-owned-edit", "tool-code-mode-stale-readback", "run-test");
+    try {
+      await executeTool(ctx, {
+        toolName: "edit",
+        toolCallId: "nested-owned-edit",
+        args: { path: "result.txt", oldText: "pending", newText: "done" },
+        isError: false,
+        result: { details: { status: "completed" } },
+      });
+    } finally {
+      clearParentToolCall("nested-owned-edit", "run-test");
+    }
+    trustCoreToolCall("nested-read-before-race", "read");
+    await executeTool(ctx, {
+      toolName: "read",
+      toolCallId: "nested-read-before-race",
+      args: { path: "result.txt" },
+      isError: false,
+      result: { content: [{ type: "text", text: "done" }] },
+    });
+    trustCoreToolCall("unrelated-edit", "edit");
+    await executeTool(ctx, {
+      toolName: "edit",
+      toolCallId: "unrelated-edit",
+      args: { path: "result.txt", oldText: "done", newText: "changed" },
+      isError: false,
+      result: { details: { status: "completed" } },
+    });
+    await endTool(ctx, {
+      toolName: "exec",
+      toolCallId: "tool-code-mode-stale-readback",
+      isError: false,
+      result: {
+        details: {
+          status: "completed",
+          sideEffectFree: false,
+          telemetry: {
+            successfulObservationFileTargets: [{ path: "result.txt" }],
+            unverifiedMutationFileTargets: [],
+          },
+        },
+      },
+    });
+
+    const codeModeMeta = ctx.state.toolMetas.find((entry) => entry.toolName === "exec");
+    expect(codeModeMeta).not.toHaveProperty("codeModeSuccessfulObservationFileTargets");
   });
 
   it("does not let an overlapping Code Mode read verify a concurrent mutation", async () => {

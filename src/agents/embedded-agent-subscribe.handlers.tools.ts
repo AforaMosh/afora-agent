@@ -48,6 +48,7 @@ import {
   consumeStructuredReplaySafeToolCall,
   consumeTrackedToolExecutionStarted,
   peekCodeModeControlToolCall,
+  peekParentToolCall,
 } from "./agent-tools.before-tool-call.state.js";
 import { REQUIRED_PARAM_GROUPS, type RequiredParamGroup } from "./agent-tools.params.js";
 import type { ApplyPatchSummary } from "./apply-patch.js";
@@ -136,7 +137,11 @@ const fallbackToolTerminalObservers = new WeakMap<
 >();
 const nativeMutationOrderByState = new WeakMap<
   ToolHandlerContext["state"],
-  { completionVersion: number; inFlight: number }
+  {
+    completionVersion: number;
+    inFlight: number;
+    activeCodeModeControls: Map<string, { invalidated: boolean }>;
+  }
 >();
 
 function resolveFallbackToolTerminalObserver(ctx: ToolHandlerContext) {
@@ -154,9 +159,24 @@ function resolveNativeMutationOrder(state: ToolHandlerContext["state"]) {
   if (existing) {
     return existing;
   }
-  const created = { completionVersion: 0, inFlight: 0 };
+  const created = {
+    completionVersion: 0,
+    inFlight: 0,
+    activeCodeModeControls: new Map<string, { invalidated: boolean }>(),
+  };
   nativeMutationOrderByState.set(state, created);
   return created;
+}
+
+function invalidateConcurrentCodeModeObservations(
+  mutationOrder: ReturnType<typeof resolveNativeMutationOrder>,
+  ownerToolCallId?: string,
+): void {
+  for (const [toolCallId, control] of mutationOrder.activeCodeModeControls) {
+    if (toolCallId !== ownerToolCallId) {
+      control.invalidated = true;
+    }
+  }
 }
 const LIVE_EXEC_UPDATE_MIN_INTERVAL_MS = 250;
 const TRACE_REQUIRED_PARAM_GROUPS = {
@@ -1269,7 +1289,15 @@ export function handleToolExecutionStart(
     );
     const mutationOrder = resolveNativeMutationOrder(ctx.state);
     if (peekCodeModeControlToolCall(toolCallId, runId)) {
-      callSummary.codeModeObservationOrderVersion = mutationOrder.completionVersion;
+      // A control may trust nested readback only when every concurrent mutation
+      // belongs to that exact parent call.
+      const invalidated =
+        mutationOrder.inFlight > 0 || mutationOrder.activeCodeModeControls.size > 0;
+      if (mutationOrder.activeCodeModeControls.size > 0) {
+        invalidateConcurrentCodeModeObservations(mutationOrder);
+      }
+      mutationOrder.activeCodeModeControls.set(toolCallId, { invalidated });
+      callSummary.codeModeObservationTracked = true;
       mutationOrder.inFlight += 1;
       callSummary.mutationOrderStarted = true;
     } else if (callSummary.mutatingAction) {
@@ -1629,6 +1657,7 @@ export async function handleToolExecutionEnd(
   if (initialCallSummary?.mutationOrderStarted) {
     mutationOrder.inFlight = Math.max(0, mutationOrder.inFlight - 1);
   }
+  const activeCodeModeControl = mutationOrder.activeCodeModeControls.get(toolCallId);
   const fileTargetVerified =
     !isToolError &&
     trustedCoreTool &&
@@ -1669,9 +1698,10 @@ export async function handleToolExecutionEnd(
       : undefined;
   const codeModeObservationOrderValid =
     trustedCodeModeControl &&
-    initialCallSummary?.codeModeObservationOrderVersion !== undefined &&
+    initialCallSummary?.codeModeObservationTracked === true &&
+    activeCodeModeControl?.invalidated === false &&
     mutationOrder.inFlight === 0 &&
-    mutationOrder.completionVersion === initialCallSummary.codeModeObservationOrderVersion;
+    mutationOrder.activeCodeModeControls.size === 1;
   const codeModeSuccessfulObservationFileTargets =
     trustedCodeModeControl && codeModeObservationOrderValid
       ? readCodeModeFileTargets(toolName, sanitizedResult, "successfulObservationFileTargets")
@@ -1695,6 +1725,9 @@ export async function handleToolExecutionEnd(
     callSummary.replaySafe || sideEffectFreeCodeModeFailure || sideEffectFreeCodeModeSuccess;
   const attemptedPotentialSideEffect =
     executionStarted && (codeModeSideEffectFree === false || !replaySafe);
+  if (initialCallSummary?.codeModeObservationTracked) {
+    mutationOrder.activeCodeModeControls.delete(toolCallId);
+  }
   if (
     initialCallSummary?.mutationOrderStarted &&
     (!trustedCodeModeControl || (executionStarted && codeModeSideEffectFree !== true))
@@ -1702,6 +1735,7 @@ export async function handleToolExecutionEnd(
     // Code Mode controls are pessimistically mutating at start. Advance the
     // shared clock only after the result proves whether this call could mutate.
     mutationOrder.completionVersion += 1;
+    invalidateConcurrentCodeModeObservations(mutationOrder, peekParentToolCall(toolCallId, runId));
   }
   const meta = callSummary.meta;
   const asyncStarted = !isToolError && isAsyncStartedToolResult(sanitizedResult);

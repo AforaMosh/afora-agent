@@ -7,6 +7,7 @@ export const adjustedParamsByToolCallId = new Map<string, unknown>();
 export const preExecutionBlockedToolCallIds = new Set<string>();
 export const structuredReplaySafeToolCallIds = new Set<string>();
 export const codeModeControlToolCallIds = new Set<string>();
+const parentToolCallIdByToolCallId = new Map<string, string>();
 const startedToolCallIds = new Set<string>();
 const trackedToolCallIds = new Set<string>();
 
@@ -105,6 +106,23 @@ export function consumeCodeModeControlToolCall(toolCallId: string, runId?: strin
   return codeModeControl;
 }
 
+/** Preserve nested tool ownership across lifecycle events without inferring it from generated ids. */
+export function recordParentToolCall(
+  toolCallId: string,
+  parentToolCallId: string,
+  runId?: string,
+): void {
+  parentToolCallIdByToolCallId.set(buildAdjustedParamsKey({ runId, toolCallId }), parentToolCallId);
+}
+
+export function peekParentToolCall(toolCallId: string, runId?: string): string | undefined {
+  return parentToolCallIdByToolCallId.get(buildAdjustedParamsKey({ runId, toolCallId }));
+}
+
+export function clearParentToolCall(toolCallId: string, runId?: string): void {
+  parentToolCallIdByToolCallId.delete(buildAdjustedParamsKey({ runId, toolCallId }));
+}
+
 /** Clear adjusted tool parameters between isolated tests. */
 export function resetAdjustedParamsByToolCallIdForTests(): void {
   adjustedParamsByToolCallId.clear();
@@ -113,4 +131,5 @@ export function resetAdjustedParamsByToolCallIdForTests(): void {
   startedToolCallIds.clear();
   structuredReplaySafeToolCallIds.clear();
   codeModeControlToolCallIds.clear();
+  parentToolCallIdByToolCallId.clear();
 }

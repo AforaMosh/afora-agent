@@ -252,6 +252,33 @@ describe("Tool Search input schemas", () => {
     });
   });
 
+  it("clears an edited target after an ordered readback", async () => {
+    const edit = fakeTool(
+      "edit",
+      Type.Object({
+        path: Type.String(),
+        oldText: Type.String(),
+        newText: Type.String(),
+      }),
+    );
+    const read = fakeTool("read", Type.Object({ path: Type.String() }));
+    const { runtime } = createRuntime([edit, read]);
+
+    await runtime.call("edit", {
+      path: "editable.txt",
+      oldText: "status=pending",
+      newText: "status=verified",
+    });
+    await runtime.call("read", { path: "editable.txt" });
+
+    expect(runtime.telemetry()).toMatchObject({
+      callSequence: ["edit", "read"],
+      lastCallSideEffectFree: true,
+      successfulObservationFileTargets: [{ path: "editable.txt" }],
+      unverifiedMutationFileTargets: [],
+    });
+  });
+
   it("keeps a mutation unverified when a nested read returns an error result", async () => {
     const read = fakeTool("read", Type.Object({ path: Type.String() }));
     read.execute = vi.fn(async () => ({

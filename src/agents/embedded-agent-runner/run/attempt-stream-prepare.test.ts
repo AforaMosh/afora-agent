@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { peekParentToolCall } from "../../agent-tools.before-tool-call.state.js";
 import type { ToolSearchTargetTranscriptProjection } from "../../tool-search.js";
 
 const mocks = vi.hoisted(() => ({
@@ -373,6 +374,33 @@ describe("prepareEmbeddedAttemptStream", () => {
     expect(returned).toMatchObject({ details: { id: 42 } });
     expect(Object.isFrozen(returned)).toBe(true);
     expect(Object.isFrozen(returned.details)).toBe(true);
+  });
+
+  it("exposes nested tool ownership only during the target lifecycle", async () => {
+    const prepared = prepareCatalogExecutor([]);
+    const execute = vi.fn(async (toolCallId: string) => {
+      expect(peekParentToolCall(toolCallId, "run-output-schema")).toBe("call-code-mode");
+      return { content: [{ type: "text" as const, text: "ok" }], details: {} };
+    });
+
+    await prepared.toolSearchCatalogExecutor({
+      tool: {
+        name: "orchard_owned",
+        description: "Return ownership proof",
+        parameters: { type: "object", properties: {}, additionalProperties: false },
+        execute,
+      } as never,
+      toolName: "orchard_owned",
+      source: "openclaw",
+      sourceName: "fixture-plugin",
+      toolCallId: "call-owned",
+      parentToolCallId: "call-code-mode",
+      input: {},
+      acceptResultBeforeProjection: async (candidate) => candidate,
+    });
+
+    expect(execute).toHaveBeenCalledOnce();
+    expect(peekParentToolCall("call-owned", "run-output-schema")).toBeUndefined();
   });
 
   it("distinguishes an accepted abort from normal steering closure and sessions_yield", () => {

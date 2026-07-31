@@ -53,7 +53,7 @@ export type ToolCallSummary = {
   mutationFallbackFileTargets?: import("./tool-mutation.js").FileTarget[];
   mutationOrderStarted?: true;
   observedMutationCompletionVersion?: number;
-  codeModeObservationOrderVersion?: number;
+  codeModeObservationTracked?: true;
 };
 
 /** User-visible assistant stream payload emitted to subscribers. */
