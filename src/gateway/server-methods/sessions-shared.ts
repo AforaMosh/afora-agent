@@ -55,7 +55,7 @@ export function getSessionListOperationState(
 ) {
   const profileId = gatewayClientSessionCreator(client)?.id;
   const viewer = isGatewayAdmin(client)
-    ? "admin"
+    ? `admin:${profileId ?? "anonymous"}`
     : profileId
       ? `profile:${profileId}`
       : "anonymous";

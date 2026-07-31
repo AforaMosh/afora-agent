@@ -28,14 +28,14 @@ vi.mock("../session-utils.js", async (importOriginal) => {
 
 const { sessionReadHandlers } = await import("./sessions-read.js");
 
-function identifiedClient(profileId: string): GatewayClient {
+function identifiedClient(profileId: string, admin = false): GatewayClient {
   return {
     connect: {
       minProtocol: 1,
       maxProtocol: 1,
       client: { id: "openclaw-control-ui", version: "test", platform: "test", mode: "webchat" },
       role: "operator",
-      scopes: ["operator.read", "operator.write"],
+      scopes: ["operator.read", "operator.write", ...(admin ? ["operator.admin"] : [])],
     },
     authenticatedUserProfile: {
       profileId,
@@ -209,6 +209,29 @@ describe("sessions.list single-flight", () => {
 
       expect(owner.sessions.map((session) => session.key)).toContain("agent:main:draft");
       expect(viewer.sessions.map((session) => session.key)).not.toContain("agent:main:draft");
+      expect(loader.calls).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it("does not coalesce distinct administrator profiles", async () => {
+    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+      const config = await seedSessions();
+      const context = requestContext(config);
+      loader.calls.mockClear();
+
+      await Promise.all([
+        listSessions({
+          client: identifiedClient("admin-a@example.com", true),
+          context,
+          request: { archived: "all", limit: 100 },
+        }),
+        listSessions({
+          client: identifiedClient("admin-b@example.com", true),
+          context,
+          request: { archived: "all", limit: 100 },
+        }),
+      ]);
+
       expect(loader.calls).toHaveBeenCalledTimes(2);
     });
   });
