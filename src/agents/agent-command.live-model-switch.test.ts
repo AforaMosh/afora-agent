@@ -122,6 +122,12 @@ vi.mock("./model-fallback-runner.js", () => ({
   runWithModelFallback: (params: unknown) => state.runWithModelFallbackMock(params),
 }));
 
+// Identity persistence has focused owner-boundary and real-run coverage. This
+// synthetic command suite deliberately reuses session-1 across independent tests.
+vi.mock("../audit/execution-identity-context.js", () => ({
+  prepareExecutionIdentityContextAtAdmission: vi.fn(),
+}));
+
 vi.mock("./command/attempt-execution.runtime.js", () => ({
   buildAcpResult: (...args: unknown[]) => state.buildAcpResultMock(...args),
   createAcpToolLifecycleTracker: () => ({

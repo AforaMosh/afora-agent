@@ -82,10 +82,8 @@ export function loadOrCreateAuditIdentityKey(db: DatabaseSync): AuditIdentityKey
     db,
     kysely.selectFrom("audit_events").select("sequence").where("kind", "=", "message").limit(1),
   );
-  // sqlite-allow-raw -- a missing-key integrity check must tolerate older
-  // current-schema databases before the additive context table is lazily ensured.
   const hasExecutionContextTable = Boolean(
-    db
+    db /* sqlite-allow-raw -- Missing-key integrity must tolerate pre-ensure current-schema DBs. */
       .prepare("SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = ?")
       .get("execution_identity_contexts"),
   );
