@@ -10,6 +10,7 @@ export type EmbeddedRunTerminalRetryState = {
   reasoningOnlyAttempts: number;
   emptyResponseAttempts: number;
   codeModeErrorContinuationAttempts: number;
+  codeModeCompletionContinuationAttempts: number;
   codeModeVerificationContinuationAttempts: number;
   missingAssistantAttempts: number;
   compactionContinuationAttempts: number;
@@ -26,6 +27,7 @@ export function createEmbeddedRunTerminalRetryState(): EmbeddedRunTerminalRetryS
     reasoningOnlyAttempts: 0,
     emptyResponseAttempts: 0,
     codeModeErrorContinuationAttempts: 0,
+    codeModeCompletionContinuationAttempts: 0,
     codeModeVerificationContinuationAttempts: 0,
     missingAssistantAttempts: 0,
     compactionContinuationAttempts: 0,

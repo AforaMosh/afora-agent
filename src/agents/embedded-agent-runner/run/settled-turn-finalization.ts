@@ -115,6 +115,13 @@ export async function prepareTerminalWithSettledTurnFinalization(input: {
     attemptContinuationToolPolicy && input.finalization.retryState.forceReadOnlyToolsForRun
       ? "read-only"
       : attemptContinuationToolPolicy;
+  const settledTurnFinalizationAvailable =
+    typeof input.finalization.harness.finalizeSettledTurn === "function";
+  const codeModeCompletionContinuationExhausted =
+    !codeModeMutationVerificationRequired &&
+    input.finalization.retryState.codeModeCompletionContinuationAttempts >= 1;
+  const useIsolatedFinalization =
+    codeModeCompletionContinuationExhausted && settledTurnFinalizationAvailable;
   const prompt = resolveSettledTurnFinalizationRequest({
     runParams: input.terminalBase.runParams,
     attempt,
@@ -126,9 +133,9 @@ export async function prepareTerminalWithSettledTurnFinalization(input: {
       prepared.recoveredFinalAssistantPayloadsAfterPromptTimeout,
     hasTerminalToolPresentation: input.finalization.hasTerminalToolPresentation,
     terminalState: initial.terminalState,
-    settledTurnFinalizationAvailable:
-      typeof input.finalization.harness.finalizeSettledTurn === "function",
-    toolCapableContinuationAvailable: codeModeContinuationToolPolicy !== null,
+    settledTurnFinalizationAvailable,
+    toolCapableContinuationAvailable:
+      codeModeContinuationToolPolicy !== null && !useIsolatedFinalization,
     requireCodeModeMutationVerification: codeModeMutationVerificationRequired,
   });
   if (!prompt) {
@@ -142,7 +149,7 @@ export async function prepareTerminalWithSettledTurnFinalization(input: {
       toolCapableContinuation: null,
     };
   }
-  if (codeModeContinuationToolPolicy) {
+  if (codeModeContinuationToolPolicy && !useIsolatedFinalization) {
     // Keep unfinished Code Mode work on the ordinary continuation path.
     // Mutating turns expose only host-enforced read-only tools.
     const readOnlyToolsScope: "run" | "verification" | null = input.finalization.retryState
@@ -161,6 +168,7 @@ export async function prepareTerminalWithSettledTurnFinalization(input: {
       finalizationAttempted: false,
       finalizationSucceeded: false,
       toolCapableContinuation: {
+        kind: codeModeMutationVerificationRequired ? "verification" : "completion",
         instruction: resolveCodeModeContinuationInstruction({
           mutationVerificationRequired: codeModeMutationVerificationRequired,
           targetlessSideEffectEvidence: codeModeTargetlessSideEffectEvidence,

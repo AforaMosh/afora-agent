@@ -246,14 +246,14 @@ export function resolveCodeModeTargetlessSideEffectEvidence(attempt: {
   return coveredPotentialSideEffect ? false : null;
 }
 
-/** Keeps unknown or observed targetless effects latched while file verification is pending. */
+/** Keeps confirmed or unresolved targetless effects read-only for the rest of the run. */
 export function shouldLatchCodeModeReadOnlyForRun(params: {
   mutationVerificationRequired: boolean;
   targetlessSideEffectEvidence: boolean | null;
 }): boolean {
   return (
     params.targetlessSideEffectEvidence === true ||
-    (params.mutationVerificationRequired && params.targetlessSideEffectEvidence !== false)
+    (params.mutationVerificationRequired && params.targetlessSideEffectEvidence === null)
   );
 }
 
