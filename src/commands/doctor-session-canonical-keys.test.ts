@@ -463,6 +463,38 @@ describe("doctor canonical session-key repair", () => {
         foundGroups: 0,
         repairedGroups: 0,
       });
+      const database = openOpenClawAgentDatabase({
+        agentId: "main",
+        env,
+        path: resolveSqliteTargetFromSessionStorePath(storePath, { agentId: "main", env }).path,
+      });
+      database.db
+        .prepare("UPDATE session_nodes SET parent_session_key = ? WHERE session_key = ?")
+        .run("Agent:Main:Parent ", "agent:main:child");
+      expect(await repairCanonicalSessionKeys({ apply: true, cfg, env })).toMatchObject({
+        foundGroups: 1,
+        repairedGroups: 1,
+      });
+      expect(
+        database.db
+          .prepare("SELECT parent_session_key FROM session_nodes WHERE session_key = ?")
+          .get("agent:main:child"),
+      ).toEqual({ parent_session_key: "agent:main:parent" });
+      const canonicalJson = (
+        database.db
+          .prepare("SELECT entry_json FROM session_nodes WHERE session_key = ?")
+          .get("agent:main:child") as { entry_json: string }
+      ).entry_json;
+      database.db
+        .prepare("UPDATE session_nodes SET entry_json = ? WHERE session_key = ?")
+        .run(
+          JSON.stringify({ ...(JSON.parse(canonicalJson) as object), spawnedBy: null }),
+          "agent:main:child",
+        );
+      expect(await repairCanonicalSessionKeys({ apply: false, cfg, env })).toMatchObject({
+        foundGroups: 0,
+        repairedGroups: 0,
+      });
     });
   });
 

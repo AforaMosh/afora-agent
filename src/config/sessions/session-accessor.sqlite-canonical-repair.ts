@@ -248,8 +248,15 @@ export function listSqliteSessionEntriesForCanonicalRepair(
       }
       const persistedEntry = parseSqliteSessionEntryJson(row);
       const entry = persistedEntry ?? hydrateCanonicalRepairEntry(row);
-      const rawCompareRequired =
-        !persistedEntry || JSON.stringify(persistedEntry) !== JSON.stringify(entry);
+      const lineageProjectionMismatch = Boolean(
+        persistedEntry &&
+        ((row.parent_session_key ?? undefined) !==
+          (persistedEntry.parentSessionKey ?? persistedEntry.spawnedBy ?? undefined) ||
+          (row.spawned_by ?? undefined) !== (persistedEntry.spawnedBy ?? undefined) ||
+          (row.fork_source_session_key ?? undefined) !==
+            (persistedEntry.forkSource?.sessionKey ?? undefined)),
+      );
+      const rawCompareRequired = !persistedEntry || lineageProjectionMismatch;
       return [
         {
           sessionKey: row.session_key,

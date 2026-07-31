@@ -189,9 +189,9 @@ function collectCanonicalSessionCandidates(
       normalizedEntry.forkSource = forkProvenance as typeof entry.forkSource;
     }
     const lineageRepairRequired =
-      parentSessionKey !== entry.parentSessionKey ||
-      spawnedBy !== entry.spawnedBy ||
-      forkSourceSessionKey !== entry.forkSource?.sessionKey;
+      parentSessionKey !== (entry.parentSessionKey ?? undefined) ||
+      spawnedBy !== (entry.spawnedBy ?? undefined) ||
+      forkSourceSessionKey !== (entry.forkSource?.sessionKey ?? undefined);
     return {
       agentId: target.agentId,
       canonicalKey,
