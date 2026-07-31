@@ -419,6 +419,7 @@ jobs:
           if ($cleanupErrors.Count -gt 0) {
             throw ($cleanupErrors -join " ")
           }
+          exit 0
 
       - name: Upload native Scheduled Task proof
         id: native_proof_upload
