@@ -761,20 +761,30 @@ export async function seedWorkspaceBootstrap(params: {
   }
 
   if (!created) {
-    const existing = await readWorkspaceFileWithGuards({
-      filePath: bootstrapPath,
-      workspaceDir: dir,
-    });
-    if (!existing.ok) {
-      throw new WorkspaceBootstrapSeedConflictError(
-        "Existing BOOTSTRAP.md could not be read safely.",
-      );
-    }
-    if (!Buffer.from(existing.content, "utf8").equals(params.content)) {
-      throw new WorkspaceBootstrapSeedConflictError(
-        "Existing BOOTSTRAP.md differs from the consented Claw bootstrap.",
-      );
-    }
+    await retryAsync(
+      async () => {
+        const existing = await readWorkspaceFileWithGuards({
+          filePath: bootstrapPath,
+          workspaceDir: dir,
+        });
+        if (!existing.ok) {
+          throw new WorkspaceBootstrapSeedConflictError(
+            "Existing BOOTSTRAP.md could not be read safely.",
+          );
+        }
+        if (!Buffer.from(existing.content, "utf8").equals(params.content)) {
+          throw new WorkspaceBootstrapSeedConflictError(
+            "Existing BOOTSTRAP.md differs from the consented Claw bootstrap.",
+          );
+        }
+      },
+      {
+        attempts: 5,
+        minDelayMs: 20,
+        maxDelayMs: 80,
+        shouldRetry: (error) => error instanceof WorkspaceBootstrapSeedConflictError,
+      },
+    );
   }
 
   if (!initialState.bootstrapSeededAt) {
