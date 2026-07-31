@@ -308,9 +308,20 @@ jobs:
           CI_WINDOWS_SCHTASKS_PROOF_PATH: ${{ github.workspace }}\.artifacts\windows-schtasks\proof.json
           CI_WINDOWS_SCHTASKS_ROOT: ${{ runner.temp }}\openclaw-schtasks-${{ github.run_id }}-${{ github.run_attempt }}
           CI_WINDOWS_SCHTASKS_TEST_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+          EXPECTED_HEAD: ${{ inputs.target_ref }}
         run: |
           set -euo pipefail
           export PATH="$NODE_BIN:$PATH"
+          if [[ ! "$EXPECTED_HEAD" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Native Scheduled Task proof requires target_ref to be an exact 40-character commit SHA." >&2
+            exit 1
+          fi
+          CI_WINDOWS_SCHTASKS_HEAD="$(git rev-parse HEAD)"
+          if [[ "$CI_WINDOWS_SCHTASKS_HEAD" != "$EXPECTED_HEAD" ]]; then
+            echo "Checked out $CI_WINDOWS_SCHTASKS_HEAD, expected frozen target $EXPECTED_HEAD." >&2
+            exit 1
+          fi
+          export CI_WINDOWS_SCHTASKS_HEAD
           mkdir -p .artifacts/windows-schtasks
           pnpm test:windows:schtasks:integration 2>&1 | tee .artifacts/windows-schtasks/test.log
 

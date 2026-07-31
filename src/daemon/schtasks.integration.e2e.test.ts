@@ -367,13 +367,19 @@ describe.runIf(nativeIntegrationEnabled)("schtasks Windows integration", () => {
 
         const proofPath = process.env.CI_WINDOWS_SCHTASKS_PROOF_PATH?.trim();
         if (proofPath) {
+          const proofHead = process.env.CI_WINDOWS_SCHTASKS_HEAD?.trim();
+          if (!proofHead || !/^[0-9a-f]{40}$/u.test(proofHead)) {
+            throw new Error(
+              "CI_WINDOWS_SCHTASKS_HEAD must identify the exact 40-character checkout SHA",
+            );
+          }
           await fs.mkdir(path.dirname(proofPath), { recursive: true });
           await fs.writeFile(
             proofPath,
             `${JSON.stringify(
               {
                 result: "pass",
-                head: process.env.GITHUB_SHA ?? null,
+                head: proofHead,
                 profile,
                 taskName,
                 lifecycle: ["install", "stop", "start", "restart", "stop", "uninstall"],
