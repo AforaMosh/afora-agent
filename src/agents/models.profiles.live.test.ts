@@ -2389,6 +2389,8 @@ describeLive("live models (profile keys)", () => {
         "auto",
         "--mode",
         "code",
+        "--agent-runtime",
+        "default",
         "--task",
         "edit-readback",
         "--repetitions",
