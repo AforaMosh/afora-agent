@@ -857,6 +857,9 @@ describe.runIf(nativeIntegrationEnabled)("schtasks Windows integration", () => {
           environment: { OPENCLAW_GATEWAY_PORT: String(gatewayPort) },
           description: `OpenClaw CI Scheduled Task integration ${id}`,
         });
+        // Measure only activation. The task/XML/COM probes below can be slow enough to
+        // cross the fallback deadline after a successful Scheduled Task launch.
+        expectNoDirectFallback(installStartedAt);
 
         expect((await execSchtasks(["/Query", "/TN", taskName])).code).toBe(0);
         const taskXml = await readTaskXml(taskName);
@@ -866,7 +869,6 @@ describe.runIf(nativeIntegrationEnabled)("schtasks Windows integration", () => {
         expect(taskXml).toContain("<UserId>");
         installedPrincipal = readTaskPrincipal(taskName);
         expectScheduledTaskRun(installedPrincipal);
-        expectNoDirectFallback(installStartedAt);
         assertInteractiveLeastPrivilegeTask({
           taskXml,
           principal: installedPrincipal,
