@@ -2415,6 +2415,11 @@ describeLive("live models (profile keys)", () => {
           sourcePatchSha256: null,
         }),
       });
+      if (result.exitCode !== 0) {
+        const { readFile } = await import("node:fs/promises");
+        const failures = await readFile(`${result.outputDir}/results.jsonl`, "utf8");
+        throw new Error(`frontier Code Mode matrix failed:\n${failures}`);
+      }
       expect(result.exitCode).toBe(0);
       expect(result.summary).toMatchObject({
         counts: { failed: 0, passed: 6, total: 6 },
