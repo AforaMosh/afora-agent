@@ -2,6 +2,7 @@
 // Authenticates local MCP POST requests and extracts scoped Gateway context.
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import type { AgentRunApprovalHost } from "../agents/agent-run-approval.js";
 import type {
   SourceReplyDeliveryMode,
   TaskSuggestionDeliveryMode,
@@ -63,6 +64,7 @@ type McpLoopbackRequestAuth = {
   senderIsOwner: boolean;
   boundSessionKey?: string;
   boundContext?: McpLoopbackRequestContext;
+  boundApprovalHost?: AgentRunApprovalHost;
   boundCaptureKey?: string;
   boundGrantToken?: string;
 };
@@ -143,6 +145,7 @@ function resolveMcpSender(params: {
     return {
       senderIsOwner: clientGrant.context.senderIsOwner,
       boundContext: clientGrant.context,
+      boundApprovalHost: clientGrant.approvalHost,
       boundCaptureKey: clientGrant.captureKey,
       boundGrantToken: grantToken,
     };
@@ -280,6 +283,7 @@ export function validateMcpLoopbackRequest(params: {
     senderIsOwner: sender.senderIsOwner,
     boundSessionKey: sender.boundSessionKey,
     boundContext: sender.boundContext,
+    boundApprovalHost: sender.boundApprovalHost,
     boundCaptureKey: sender.boundCaptureKey,
     boundGrantToken: sender.boundGrantToken,
   };

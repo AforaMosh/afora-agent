@@ -1057,6 +1057,7 @@ export async function prepareCliRunContext(
         ? prepareDeps.mintMcpLoopbackClientGrant({
             context: mcpGrantContext,
             runtimeOwnerToken: mcpLoopbackRuntime.ownerToken,
+            approvalHost: params.approvalHost,
           })
         : undefined;
     const mcpClientGrantCapture =

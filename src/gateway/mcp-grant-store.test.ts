@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import type { AgentRunApprovalHost } from "../agents/agent-run-approval.js";
 import {
   activateMcpLoopbackClientGrantCapture,
   deactivateMcpLoopbackClientGrantCapture,
@@ -80,6 +81,11 @@ describe("mcp-grant-store", () => {
   });
 
   it("binds an immutable Gateway-selected context to a loopback client grant", () => {
+    const approvalHost: AgentRunApprovalHost = {
+      plugin: {
+        request: async () => ({ outcome: "unavailable", reason: "test" }),
+      },
+    };
     const context = {
       sessionKey: " agent:main:telegram:group:1 ",
       sessionId: "session-1",
@@ -101,7 +107,9 @@ describe("mcp-grant-store", () => {
     const grant = mintMcpLoopbackClientGrant({
       context,
       runtimeOwnerToken: "runtime-one",
+      approvalHost,
     });
+    expect(grant).not.toHaveProperty("approvalHost");
     expect(
       activateMcpLoopbackClientGrantCapture({
         token: grant.token,
@@ -117,19 +125,19 @@ describe("mcp-grant-store", () => {
     grant.context.sourceReplyOnly = false;
     grant.context.toolsAllow?.push("write");
 
-    expect(
-      resolveMcpLoopbackClientGrant({
-        token: grant.token,
-        runtimeOwnerToken: "runtime-one",
-        captureKey: "capture-one",
-      })?.context,
-    ).toEqual({
+    const resolved = resolveMcpLoopbackClientGrant({
+      token: grant.token,
+      runtimeOwnerToken: "runtime-one",
+      captureKey: "capture-one",
+    });
+    expect(resolved?.context).toEqual({
       ...context,
       sessionKey: "agent:main:telegram:group:1",
       clientCaps: ["tool-events"],
       sourceReplyOnly: true,
       toolsAllow: ["message"],
     });
+    expect(resolved?.approvalHost).toBe(approvalHost);
   });
 
   it("admits only the active capture on the grant's Gateway runtime", () => {

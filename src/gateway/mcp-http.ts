@@ -7,6 +7,7 @@ import {
   type ServerResponse,
 } from "node:http";
 import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { resolveGatewayAgentRunApprovalHost } from "../agents/agent-run-approval.gateway.js";
 import { resolveToolLoopDetectionConfig } from "../agents/tool-loop-detection-config.js";
 import { isAutomationsToolName } from "../agents/tools/automations-tool-name.js";
 import { getRuntimeConfig } from "../config/io.js";
@@ -363,7 +364,11 @@ async function startMcpLoopbackServer(port = 0): Promise<{
                 sessionKey: requestContext.sessionKey,
                 sessionId: requestContext.sessionId,
                 runId: requestContext.runId,
-                approvalReviewerDeviceId: requestContext.approvalReviewerDeviceId,
+                approvalHost: auth.boundContext
+                  ? auth.boundApprovalHost
+                  : resolveGatewayAgentRunApprovalHost({
+                      approvalReviewerDeviceId: requestContext.approvalReviewerDeviceId,
+                    }),
                 channelId: requestContext.currentChannelId,
                 turnSourceChannel: requestContext.messageProvider,
                 turnSourceTo: requestContext.currentChannelId,

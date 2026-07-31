@@ -992,6 +992,7 @@ function createOpenClawCodingToolsInternal(options?: OpenClawCodingToolsOptions)
             allowHostBrowserControl: sandbox ? sandbox.browserAllowHostControl : true,
             agentSessionKey: options?.sessionKey,
             runId: options?.runId,
+            approvalHost: options?.approvalHost,
             runSessionKey: options?.runSessionKey,
             agentChannel: resolveGatewayMessageChannel(
               options?.messageChannel ?? options?.messageProvider,
@@ -1209,7 +1210,7 @@ function createOpenClawCodingToolsInternal(options?: OpenClawCodingToolsOptions)
     sessionId: options?.sessionId,
     runId: options?.runId,
     trigger: options?.trigger,
-    approvalReviewerDeviceId: options?.approvalReviewerDeviceId,
+    approvalHost: options?.approvalHost,
     channelId: options?.hookChannelId ?? options?.currentChannelId,
     ...(hasRequester ? { requester } : {}),
     ...(turnSourceChannel ? { turnSourceChannel } : {}),

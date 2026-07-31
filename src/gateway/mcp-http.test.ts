@@ -2,6 +2,8 @@
 // JSON-RPC surface, including hook filtering and context propagation.
 import { request } from "node:http";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { gatewayAgentRunApprovalHost } from "../agents/agent-run-approval.gateway.js";
+import type { AgentRunApprovalHost } from "../agents/agent-run-approval.js";
 import type { AnyAgentTool } from "../agents/tools/common.js";
 import { getFreePortBlockWithPermissionFallback } from "../test-utils/ports.js";
 import { buildMcpToolSchema } from "./mcp-http.schema.js";
@@ -107,7 +109,7 @@ type BeforeToolCallHookInput = {
     sessionKey?: string;
     sessionId?: string;
     runId?: string;
-    approvalReviewerDeviceId?: string;
+    approvalHost?: AgentRunApprovalHost;
     channelId?: string;
     turnSourceChannel?: string;
     turnSourceTo?: string;
@@ -1279,6 +1281,11 @@ describe("mcp loopback server", () => {
 
   it("binds a CLI grant's complete context and ignores spoofed scope headers", async () => {
     const { port, runtime } = await startLoopbackServerForTest();
+    const approvalHost: AgentRunApprovalHost = {
+      plugin: {
+        request: vi.fn(async () => ({ outcome: "unavailable" as const, reason: "test" })),
+      },
+    };
     const grant = mintMcpLoopbackClientGrant({
       context: {
         sessionKey: "agent:main:discord:channel:bound",
@@ -1326,6 +1333,7 @@ describe("mcp loopback server", () => {
         spawnedBy: "agent:main:discord:channel:parent",
       },
       runtimeOwnerToken: runtime.ownerToken,
+      approvalHost,
     });
     expect(
       activateMcpLoopbackClientGrantCapture({
@@ -1418,7 +1426,7 @@ describe("mcp loopback server", () => {
       sessionKey: "agent:main:discord:channel:bound",
       sessionId: "session-bound",
       runId: "run-bound",
-      approvalReviewerDeviceId: "bound-reviewer",
+      approvalHost,
       channelId: "discord:bound",
       turnSourceChannel: "discord",
       turnSourceTo: "discord:bound",
@@ -2052,6 +2060,7 @@ describe("mcp loopback server", () => {
 
     expect(cronExecute).toHaveBeenCalledTimes(1);
     expect(getBeforeToolCallHookInput(0).params).toEqual(args);
+    expect(getBeforeToolCallHookInput(0).ctx?.approvalHost).toBe(gatewayAgentRunApprovalHost);
     expect(cronExecute.mock.calls[0]?.[1]).toEqual(args);
     expectMcpResultText(payload, "CRON_EXECUTED");
   });
