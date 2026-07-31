@@ -325,7 +325,7 @@ export function querySqliteSessionEntries(
 }
 
 export function readSqliteSessionEntriesByStatus(
-  database: OpenClawAgentDatabase,
+  database: SessionDatabaseReader,
   statuses: readonly SessionEntryStatus[],
   sessionKeys?: readonly string[],
 ): SessionEntrySummary[] {
