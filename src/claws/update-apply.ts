@@ -208,6 +208,11 @@ export async function applyClawUpdatePlan(
               ...(preflight.integrity ? { integrity: preflight.integrity } : {}),
               ...(preflight.installId ? { installId: preflight.installId } : {}),
               ...(preflight.warning ? { warning: preflight.warning } : {}),
+              ...(preflight.requirements ? { requirements: preflight.requirements } : {}),
+              ...(preflight.detectedFormat ? { detectedFormat: preflight.detectedFormat } : {}),
+              ...(preflight.mapped ? { mapped: preflight.mapped } : {}),
+              ...(preflight.unavailable ? { unavailable: preflight.unavailable } : {}),
+              ...(preflight.adapterIdentity ? { adapterIdentity: preflight.adapterIdentity } : {}),
             }
           : preflight;
       },

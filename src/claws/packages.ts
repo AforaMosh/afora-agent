@@ -257,6 +257,11 @@ export async function preflightClawPackage(
       message: `Plugin ${pkg.ref}@${pkg.version} did not resolve an artifact integrity.`,
     };
   }
+  const requirements = resolveClawPluginSetupRequirements({
+    pluginId: probe.pluginId,
+    setup: probe.setup,
+    env: options.env ?? process.env,
+  });
   if (!result.ok) {
     return {
       ok: false,
@@ -264,6 +269,11 @@ export async function preflightClawPackage(
       installedVersion: result.installedVersion,
       integrity,
       installId: probe.pluginId,
+      ...(requirements.length > 0 ? { requirements } : {}),
+      detectedFormat: probe.artifactInspection.format,
+      mapped: probe.artifactInspection.mapped,
+      unavailable: probe.artifactInspection.unavailable,
+      adapterIdentity: `openclaw/${VERSION}`,
       ...(probe.warning ? { warning: probe.warning } : {}),
       message: `Plugin ${pkg.ref}@${pkg.version} conflicts with installed version ${result.installedVersion}.`,
     };
@@ -280,11 +290,6 @@ export async function preflightClawPackage(
       message: `Plugin ${pkg.ref}@${pkg.version} is installed as ${result.installedId} with integrity ${result.installedIntegrity ?? "unknown"}, expected ${probe.pluginId} with ${integrity}.`,
     };
   }
-  const requirements = resolveClawPluginSetupRequirements({
-    pluginId: probe.pluginId,
-    setup: probe.setup,
-    env: options.env ?? process.env,
-  });
   return {
     ok: true,
     action: result.action,

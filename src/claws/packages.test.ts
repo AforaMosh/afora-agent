@@ -284,6 +284,56 @@ describe("preflightClawPackage isolated plugin inspection", () => {
     expect(createProbeExtensionsDir).not.toHaveBeenCalled();
   });
 
+  it("preserves canonical inspection when an installed plugin version conflicts", async () => {
+    const probePluginConflict = vi.fn(async () => ({
+      ok: true as const,
+      pluginId: "audit",
+      packageName: "@owner/audit",
+      targetDir: "/tmp/claw-plugin-probe/audit",
+      extensions: [],
+      artifactInspection: {
+        format: "claude" as const,
+        mapped: ["commands", "skills"],
+        unavailable: ["agents"],
+      },
+      clawhub: {
+        source: "clawhub" as const,
+        clawhubUrl: "https://clawhub.ai",
+        clawhubPackage: "@owner/audit",
+        clawhubFamily: "code-plugin" as const,
+        integrity,
+      },
+    }));
+
+    await expect(
+      preflightClawPackage(pluginPackage, "/tmp/workspace", {
+        deps: {
+          preflightPlugin: vi.fn(async () => ({
+            ok: false as const,
+            code: "plugin_version_conflict" as const,
+            error: "Installed plugin has a different version.",
+            installedVersion: "1.0.0",
+            expectedVersion: pluginPackage.version,
+            request: {} as never,
+          })),
+          probePlugin: probePluginConflict,
+          createProbeExtensionsDir: vi.fn(async () => "/tmp/claw-plugin-probe"),
+          removeProbeExtensionsDir: vi.fn(async () => undefined),
+        },
+      }),
+    ).resolves.toMatchObject({
+      ok: false,
+      code: "plugin_version_conflict",
+      installedVersion: "1.0.0",
+      integrity: `sha256-${Buffer.from("a".repeat(64), "hex").toString("base64")}`,
+      installId: "audit",
+      detectedFormat: "claude",
+      mapped: ["commands", "skills"],
+      unavailable: ["agents"],
+      adapterIdentity: expect.stringMatching(/^openclaw\//),
+    });
+  });
+
   it("inspects an exact installed plugin outside its live extension directory", async () => {
     const removeProbeExtensionsDir = vi.fn(async () => {
       throw new Error("temporary directory is still busy");

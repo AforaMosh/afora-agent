@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { ClawCronUpdateError } from "./cron-update.js";
+import type { buildClawAddPlan } from "./lifecycle.js";
 import {
   persistClawInstallRecord,
   readClawInstallRecord,
@@ -590,6 +591,35 @@ describe("applyClawUpdatePlan", () => {
         },
       ],
     };
+    const conflictPreflight = {
+      ok: false as const,
+      code: "plugin_version_conflict",
+      message: "The Claw owns the installed previous version.",
+      installedVersion: "1.0.0",
+      integrity: packageDetails.integrity,
+      installId: packageDetails.installId,
+      detectedFormat: extensionProvenance.detectedFormat,
+      mapped: extensionProvenance.mapped,
+      unavailable: extensionProvenance.unavailable,
+      adapterIdentity: extensionProvenance.adapterIdentity,
+    };
+    const buildAddPlan = vi.fn(async (params: Parameters<typeof buildClawAddPlan>[0]) => {
+      const preflight = await params.context.packagePreflight?.(
+        targetPackage,
+        addPlan.agent.workspace,
+      );
+      expect(preflight).toMatchObject({
+        ok: true,
+        action: "install",
+        integrity: packageDetails.integrity,
+        installId: packageDetails.installId,
+        detectedFormat: extensionProvenance.detectedFormat,
+        mapped: extensionProvenance.mapped,
+        unavailable: extensionProvenance.unavailable,
+        adapterIdentity: extensionProvenance.adapterIdentity,
+      });
+      return targetAddPlan;
+    });
     const applyPackage = vi.fn(async () => ({
       appliedIds: ["plugin:github"],
       rollback: vi.fn(async () => undefined),
@@ -602,7 +632,8 @@ describe("applyClawUpdatePlan", () => {
         config: {},
         ...consent(updatePlan),
         rebuildPlan: vi.fn(async () => updatePlan),
-        buildAddPlan: vi.fn(async () => targetAddPlan),
+        buildAddPlan,
+        packagePreflight: vi.fn(async () => conflictPreflight),
         readInstall: vi.fn(() => install),
         persistInstall: vi.fn(() => ({ ...install, claw: source })),
         applyWorkspace: vi.fn(async () => ({
@@ -621,6 +652,7 @@ describe("applyClawUpdatePlan", () => {
       },
     );
 
+    expect(buildAddPlan).toHaveBeenCalledOnce();
     expect(applyPackage).toHaveBeenCalledOnce();
   });
 
