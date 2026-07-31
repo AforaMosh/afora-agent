@@ -46,6 +46,10 @@ flow:
             - ref: env
             - 60000
         - call: reset
+        - call: fs.rm
+          args:
+            - expr: "path.join(env.gateway.workspaceDir, config.outputFile)"
+            - force: true
         - call: fs.writeFile
           args:
             - expr: "path.join(env.gateway.workspaceDir, config.contextFile)"

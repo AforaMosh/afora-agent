@@ -66,6 +66,12 @@ function readCompletedImageGenerationMediaPath(prompt: string): string | undefin
 export const QA_COMPACTION_RETRY_FINAL_MARKER = "Protocol note: replay unsafe after write.";
 
 export function isCanonicalCompactionRetryWriteResult(toolOutput: string): boolean {
+  const matchesCodeModeWriteDetails = (value: unknown) =>
+    isRecord(value) &&
+    value.changed === true &&
+    typeof value.patch === "string" &&
+    /(?:^|\n)\+\+\+ (?:b\/)?compaction-retry-summary\.txt(?:\n|$)/.test(value.patch) &&
+    /(?:^|\n)\+Replay safety: unsafe after write\.(?:\n|$)/.test(value.patch);
   const matchesCanonicalWrite = (value: unknown) => {
     if (typeof value === "string") {
       return /^Successfully wrote \d+ bytes to compaction-retry-summary\.txt\.?$/i.test(
@@ -86,14 +92,14 @@ export function isCanonicalCompactionRetryWriteResult(toolOutput: string): boole
   }
   try {
     const parsed = JSON.parse(toolOutput);
-    if (matchesCanonicalWrite(parsed)) {
+    if (matchesCanonicalWrite(parsed) || matchesCodeModeWriteDetails(parsed)) {
       return true;
     }
     return (
       isRecord(parsed) &&
       parsed.status === "completed" &&
       Object.hasOwn(parsed, "value") &&
-      matchesCanonicalWrite(parsed.value)
+      (matchesCanonicalWrite(parsed.value) || matchesCodeModeWriteDetails(parsed.value))
     );
   } catch {
     return false;

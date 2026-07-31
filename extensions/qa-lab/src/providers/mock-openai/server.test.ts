@@ -2288,7 +2288,7 @@ describe("qa mock openai server", () => {
     expect(outputText(await finalReply.json())).toBe("Protocol note: replay unsafe after write.");
   });
 
-  it("finishes a compacted retry after the canonical Code Mode result envelope", async () => {
+  it("finishes a compacted retry after the canonical Code Mode write details", async () => {
     const server = await startMockServer();
 
     const finalReply = await postResponses(server, {
@@ -2300,8 +2300,12 @@ describe("qa mock openai server", () => {
           output: JSON.stringify({
             status: "completed",
             value: {
-              kind: "text",
-              content: "Successfully wrote 41 bytes to compaction-retry-summary.txt.",
+              changed: true,
+              created: true,
+              diff: "+1 Replay safety: unsafe after write.",
+              patch:
+                "--- compaction-retry-summary.txt\n+++ compaction-retry-summary.txt\n@@ -0,0 +1,1 @@\n+Replay safety: unsafe after write.\n",
+              firstChangedLine: 1,
             },
             output: [],
             replaySafe: false,
@@ -5626,8 +5630,12 @@ describe("qa mock openai server", () => {
           content: JSON.stringify({
             status: "completed",
             value: {
-              kind: "text",
-              content: "Successfully wrote 41 bytes to compaction-retry-summary.txt.",
+              changed: true,
+              created: true,
+              diff: "+1 Replay safety: unsafe after write.",
+              patch:
+                "--- compaction-retry-summary.txt\n+++ compaction-retry-summary.txt\n@@ -0,0 +1,1 @@\n+Replay safety: unsafe after write.\n",
+              firstChangedLine: 1,
             },
             output: [],
             replaySafe: false,
