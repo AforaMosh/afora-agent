@@ -256,10 +256,10 @@ function isHuggingfaceQwenHybridThinkingModel(modelId: string): boolean {
   if (!leaf.startsWith("qwen3")) {
     return false;
   }
-  // Qwen publishes separate non-thinking Instruct and specialized Coder /
-  // retrieval variants under the same family prefix. Only hybrid/base models
-  // accept the chat-template thinking switch used by OpenAI-compatible routes.
-  return !/(?:coder|embedding|reranker|instruct)/u.test(leaf);
+  // Qwen publishes separate thinking-only, non-thinking Instruct, and
+  // specialized Coder / retrieval variants under the same family prefix.
+  // Only hybrid/base models accept the chat-template thinking switch.
+  return !/(?:coder|embedding|reranker|instruct|thinking)/u.test(leaf);
 }
 
 function isReasoningModelHeuristic(modelId: string): boolean {

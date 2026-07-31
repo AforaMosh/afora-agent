@@ -267,6 +267,10 @@ describe("huggingface models", () => {
             id: "Qwen/Qwen3-4B-Instruct-2507",
             providers: [{ provider: "primary", status: "live", supports_tools: true }],
           },
+          {
+            id: "Qwen/Qwen3-4B-Thinking-2507",
+            providers: [{ provider: "primary", status: "live", supports_tools: true }],
+          },
         ],
       }),
     );
@@ -302,6 +306,9 @@ describe("huggingface models", () => {
     expect(models.find((model) => model.id === "Qwen/Qwen3-4B-Instruct-2507")).toMatchObject({
       reasoning: false,
     });
+    const thinkingOnlyModel = models.find((model) => model.id === "Qwen/Qwen3-4B-Thinking-2507");
+    expect(thinkingOnlyModel?.reasoning).toBe(true);
+    expect(thinkingOnlyModel?.compat).toBeUndefined();
 
     const baseModel = { id: "test-org/chat-model" } as never;
     expect(normalizeHuggingfaceResolvedModel("test-org/chat-model", baseModel)).toBeUndefined();
