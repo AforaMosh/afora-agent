@@ -3,7 +3,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { saveAuthProfileStore } from "../agents/auth-profiles/store.js";
 import { CUSTOM_LOCAL_AUTH_MARKER } from "../agents/model-auth-markers.js";
 import type { OpenClawConfig } from "../config/types.js";
@@ -21,6 +21,25 @@ vi.mock("../plugins/capability-provider-runtime.js", async () => {
   return createEmptyCapabilityProviderMockModule();
 });
 
+const modelAuthTestControl = vi.hoisted(() => ({ forceMissingProvider: false }));
+
+vi.mock("../agents/model-auth.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../agents/model-auth.js")>();
+  return {
+    ...actual,
+    resolveApiKeyForProvider: async (...args: Parameters<typeof actual.resolveApiKeyForProvider>) => {
+      if (modelAuthTestControl.forceMissingProvider) {
+        throw new actual.ProviderAuthError(
+          "missing-provider-auth",
+          args[0].provider,
+          `No API key found for provider "${args[0].provider}".`,
+        );
+      }
+      return await actual.resolveApiKeyForProvider(...args);
+    },
+  };
+});
+
 vi.mock("../plugins/providers.js", async (importOriginal) => ({
   ...(await importOriginal()),
   resolveOwningPluginIdsForProvider: () => [],
@@ -31,6 +50,10 @@ const AUTH_ENV = {
   REMOTE_AUDIO_API_KEY: undefined,
   OPENCLAW_AGENT_DIR: undefined,
 } satisfies Record<string, string | undefined>;
+
+beforeEach(() => {
+  modelAuthTestControl.forceMissingProvider = false;
+});
 
 function createAudioProvider(
   id: string,
@@ -150,6 +173,7 @@ describe("runCapability local no-auth audio providers", () => {
   });
 
   it("regression #74644: plugin-only local no-auth audio provider can use no-auth", async () => {
+    modelAuthTestControl.forceMissingProvider = true;
     await withIsolatedAgentDir(async (agentDir) => {
       await withEnvAsync(AUTH_ENV, async () => {
         await withAudioFixture(
