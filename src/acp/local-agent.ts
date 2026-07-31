@@ -26,14 +26,14 @@ import {
   type SetSessionModeResponse,
 } from "@agentclientprotocol/sdk";
 import type { AcpLocalSessionController } from "./local-session-controller.js";
-import { ACP_LOCAL_AGENT_INFO } from "./types.js";
+import { ACP_AGENT_INFO } from "./types.js";
 
 const ACP_MODEL_AUTH_METHOD = {
   id: "openclaw-model-setup",
   name: "Configure OpenClaw model",
   description: "Authenticate a model provider and choose the OpenClaw model defaults.",
   type: "terminal" as const,
-  args: ["--configure-model"],
+  args: ["configure", "--section", "model"],
 };
 
 export class AcpLocalAgent implements Agent {
@@ -62,7 +62,7 @@ export class AcpLocalAgent implements Agent {
           close: {},
         },
       },
-      agentInfo: ACP_LOCAL_AGENT_INFO,
+      agentInfo: ACP_AGENT_INFO,
       authMethods: this.modelAuthAdvertised ? [ACP_MODEL_AUTH_METHOD] : [],
     };
   }

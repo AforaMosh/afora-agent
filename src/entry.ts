@@ -19,6 +19,7 @@ import {
   createGatewayStartupTrace,
 } from "./cli/startup-trace.js";
 import { normalizeWindowsArgv } from "./cli/windows-argv.js";
+import { tryHandleAcpInfoFastPath } from "./entry.acp-info-fast-path.js";
 import {
   enableOpenClawCompileCache,
   resolveEntryInstallRoot,
@@ -194,7 +195,7 @@ if (
       }
       gatewayEntryStartupTrace.mark("argv");
 
-      if (!tryHandleRootVersionFastPath(process.argv)) {
+      if (!tryHandleAcpInfoFastPath(process.argv) && !tryHandleRootVersionFastPath(process.argv)) {
         await runMainOrRootHelp(process.argv);
       }
     }

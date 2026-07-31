@@ -9,7 +9,7 @@ import {
 } from "./session-entry-provenance.js";
 import type { SessionEntry } from "./types.js";
 
-export type BuildSessionResetEntryParams = {
+type BuildSessionResetEntryParams = {
   currentEntry?: SessionEntry;
   primaryKey: string;
   resetBoundaryAppended: boolean;

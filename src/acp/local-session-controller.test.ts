@@ -8,14 +8,13 @@ import type {
 import { describe, expect, it, vi } from "vitest";
 import type { AcpEventLedgerReplay } from "./event-ledger.js";
 import { AcpLocalSessionBindings } from "./local-session-bindings.js";
-import {
-  AcpLocalSessionController,
-  type AcpLocalSessionControllerOptions,
-} from "./local-session-controller.js";
+import { AcpLocalSessionController } from "./local-session-controller.js";
 import type { AcpLocalSessionRuntime } from "./local-session-runtime.js";
 import type { AcpLocalTurnRuntime } from "./local-turn-runtime.js";
 import type { SessionSnapshot } from "./translator.presentation.js";
 import type { AcpTranslatorSessionUpdates } from "./translator.session-updates.js";
+
+type AcpLocalSessionControllerOptions = ConstructorParameters<typeof AcpLocalSessionController>[0];
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -254,6 +253,9 @@ describe("AcpLocalSessionController", () => {
       events: [
         {
           seq: 1,
+          at: 1,
+          sessionId: "ledger-session",
+          sessionKey: "agent:main:work",
           update: {
             sessionUpdate: "agent_message_chunk",
             content: { type: "text", text: "replayed" },
@@ -477,6 +479,9 @@ describe("AcpLocalSessionController", () => {
       events: [
         {
           seq: 1,
+          at: 1,
+          sessionId: "old-ledger",
+          sessionKey: "agent:main:work",
           update: {
             sessionUpdate: "agent_message_chunk",
             content: { type: "text", text: "stale" },

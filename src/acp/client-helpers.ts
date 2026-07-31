@@ -1,19 +1,13 @@
 /** Permission, environment, and spawn helpers for the standalone ACP client. */
 import * as readline from "node:readline";
 import type { RequestPermissionRequest, RequestPermissionResponse } from "@agentclientprotocol/sdk";
-import {
-  normalizeLowercaseStringOrEmpty,
-  normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
 import { sanitizeTerminalText } from "../../packages/terminal-core/src/safe-text.js";
 import {
   materializeWindowsSpawnProgram,
   resolveWindowsSpawnProgram,
 } from "../plugin-sdk/windows-spawn.js";
-import {
-  listKnownProviderAuthEnvVarNames,
-  omitEnvKeysCaseInsensitive,
-} from "../secrets/provider-env-vars.js";
+import { omitEnvKeysCaseInsensitive } from "../secrets/provider-env-vars.js";
 import { classifyAcpToolApproval, type AcpApprovalClass } from "./approval-classifier.js";
 
 type PermissionOption = RequestPermissionRequest["options"][number];
@@ -166,43 +160,11 @@ export function resolveAcpClientSpawnEnv(
   return env;
 }
 
-/** Returns true when the client should hide provider credentials from the spawned server. */
-export function shouldStripProviderAuthEnvVarsForAcpServer(
-  params: {
-    serverCommand?: string;
-    serverArgs?: string[];
-    defaultServerCommand?: string;
-    defaultServerArgs?: string[];
-  } = {},
-): boolean {
-  const serverCommand = normalizeOptionalString(params.serverCommand);
-  if (!serverCommand) {
-    return true;
-  }
-  const defaultServerCommand = normalizeOptionalString(params.defaultServerCommand);
-  if (!defaultServerCommand || serverCommand !== defaultServerCommand) {
-    return false;
-  }
-  const serverArgs = params.serverArgs ?? [];
-  const defaultServerArgs = params.defaultServerArgs ?? [];
-  return (
-    serverArgs.length === defaultServerArgs.length &&
-    serverArgs.every((arg, index) => arg === defaultServerArgs[index])
-  );
-}
-
 /** Builds the exact environment variable denylist used for ACP client subprocesses. */
 export function buildAcpClientStripKeys(params: {
-  stripProviderAuthEnvVars?: boolean;
   activeSkillEnvKeys?: Iterable<string>;
 }): Set<string> {
-  const stripKeys = new Set<string>(params.activeSkillEnvKeys ?? []);
-  if (params.stripProviderAuthEnvVars) {
-    for (const key of listKnownProviderAuthEnvVarNames()) {
-      stripKeys.add(key);
-    }
-  }
-  return stripKeys;
+  return new Set<string>(params.activeSkillEnvKeys ?? []);
 }
 
 type AcpSpawnRuntime = {

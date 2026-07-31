@@ -1,7 +1,7 @@
 import type { AgentSideConnection, SessionUpdate } from "@agentclientprotocol/sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { emitAgentEvent, resetAgentEventsForTest } from "../infra/agent-events.js";
-import { createInMemoryAcpEventLedger } from "./event-ledger.js";
+import { createInMemoryAcpEventLedger } from "./event-ledger.test-support.js";
 import type { AcpLocalSessionRuntime } from "./local-session-runtime.js";
 import { AcpLocalTurnRuntime, type AcpLocalTurnSession } from "./local-turn-runtime.js";
 import { AcpTranslatorSessionUpdates } from "./translator.session-updates.js";
@@ -166,7 +166,10 @@ describe("AcpLocalTurnRuntime", () => {
   });
 
   it("passes prompt text, images, cwd, runtime options, and provenance", async () => {
-    const executeAgent = vi.fn(async () => ({ payloads: [], meta: {} }));
+    const executeAgent = vi.fn(async (_opts: { message?: string }) => ({
+      payloads: [],
+      meta: {},
+    }));
     const { runtime, session } = createHarness(executeAgent, {
       provenanceMode: "meta+receipt",
     });
@@ -211,7 +214,10 @@ describe("AcpLocalTurnRuntime", () => {
   });
 
   it("rejects oversized prompts before execution", async () => {
-    const executeAgent = vi.fn(async () => ({ payloads: [], meta: {} }));
+    const executeAgent = vi.fn(async (_opts: { inputProvenance?: unknown }) => ({
+      payloads: [],
+      meta: {},
+    }));
     const { runtime, session } = createHarness(executeAgent, { prefixCwd: false });
 
     await expect(
@@ -243,7 +249,10 @@ describe("AcpLocalTurnRuntime", () => {
   });
 
   it("omits agent provenance metadata when provenance is off", async () => {
-    const executeAgent = vi.fn(async () => ({ payloads: [], meta: {} }));
+    const executeAgent = vi.fn(async (_opts: { inputProvenance?: unknown }) => ({
+      payloads: [],
+      meta: {},
+    }));
     const { runtime, session } = createHarness(executeAgent, { provenanceMode: "off" });
 
     await prompt(runtime, session);
@@ -399,7 +408,7 @@ describe("AcpLocalTurnRuntime", () => {
         entry.update.sessionUpdate === "agent_message_chunk" && entry.update.content.type === "text"
           ? entry.update.content.text
           : "",
-    );
+      );
     expect(chunks).toEqual(["one\n\ntwo"]);
     expect(chunks.join("")).toBe("one\n\ntwo");
   });
@@ -446,7 +455,11 @@ describe("AcpLocalTurnRuntime", () => {
     });
     const harness = createHarness(executeAgent, {
       sessionUpdate: vi.fn(async ({ update }: { update: SessionUpdate }) => {
-        if (update.sessionUpdate === "agent_message_chunk" && update.content.text === "first") {
+        if (
+          update.sessionUpdate === "agent_message_chunk" &&
+          update.content.type === "text" &&
+          update.content.text === "first"
+        ) {
           finalDeliveryStarted.resolve();
           await releaseFinalDelivery.promise;
         }
@@ -466,7 +479,11 @@ describe("AcpLocalTurnRuntime", () => {
     expect(
       updates
         .filter((update) => update.sessionUpdate === "agent_message_chunk")
-        .map((update) => update.content.text),
+        .map((update) =>
+          update.sessionUpdate === "agent_message_chunk" && update.content.type === "text"
+            ? update.content.text
+            : undefined,
+        ),
     ).toEqual(["first", "second"]);
   });
 

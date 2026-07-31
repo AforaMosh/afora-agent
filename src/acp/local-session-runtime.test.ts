@@ -2,10 +2,11 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import type { SessionEntry } from "../config/sessions/types.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
-import {
-  createAcpLocalSessionRuntime,
-  type AcpLocalSessionRuntimeDeps,
-} from "./local-session-runtime.js";
+import { createAcpLocalSessionRuntime } from "./local-session-runtime.js";
+
+type AcpLocalSessionRuntimeDeps = Required<
+  NonNullable<Parameters<typeof createAcpLocalSessionRuntime>[1]>
+>;
 
 const cfg: OpenClawConfig = {
   agents: {

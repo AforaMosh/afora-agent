@@ -1,7 +1,6 @@
 /** Tests ACP translator session-list cursor and page-size helpers. */
 import { describe, expect, it } from "vitest";
 import {
-  ACP_LIST_SESSIONS_MAX_FETCH_LIMIT,
   assertAbsoluteCwd,
   decodeListSessionsCursor,
   encodeListSessionsCursor,
@@ -21,10 +20,7 @@ describe("ACP translator session list helpers", () => {
     );
     expect(() =>
       decodeListSessionsCursor(
-        Buffer.from(
-          JSON.stringify({ v: 1, offset: ACP_LIST_SESSIONS_MAX_FETCH_LIMIT }),
-          "utf8",
-        ).toString("base64url"),
+        Buffer.from(JSON.stringify({ v: 1, offset: 10_101 }), "utf8").toString("base64url"),
       ),
     ).toThrow("Invalid ACP session list cursor offset.");
   });

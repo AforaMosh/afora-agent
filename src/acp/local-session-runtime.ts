@@ -56,8 +56,6 @@ import {
 const ACP_SESSION_TRANSCRIPT_LIMIT = 200;
 const ACP_SESSION_TRANSCRIPT_MAX_BYTES = 8 * 1024 * 1024;
 
-export type { SessionSnapshot } from "./translator.presentation.js";
-
 /** Storage-neutral transcript message shape consumed by ACP replay. */
 type AcpSessionTranscriptMessage = {
   role?: unknown;
@@ -65,7 +63,7 @@ type AcpSessionTranscriptMessage = {
 };
 
 /** Session row fields used by ACP presentation and list responses. */
-export type AcpLocalSessionPresentationRow = AcpSessionLineageRow & AcpSessionPresentationRow;
+type AcpLocalSessionPresentationRow = AcpSessionLineageRow & AcpSessionPresentationRow;
 
 /** Durable ACP-visible session fields supported by the local session domain. */
 export type AcpLocalSessionPatch = {
@@ -81,7 +79,7 @@ export type AcpLocalSessionPatch = {
 type LoadedSessionRecord = ReturnType<typeof loadResolvedSessionEntryReadOnly>;
 type CombinedSessionStore = ReturnType<typeof loadCombinedSessionStore>;
 
-export type AcpLocalSessionRuntimeDeps = {
+type AcpLocalSessionRuntimeDeps = {
   getConfig: () => OpenClawConfig;
   loadCombinedStore: (cfg: OpenClawConfig) => CombinedSessionStore;
   loadSession: (sessionKey: string) => LoadedSessionRecord;

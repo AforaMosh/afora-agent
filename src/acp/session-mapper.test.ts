@@ -1,57 +1,28 @@
-/** Tests ACP metadata session-key resolution against Gateway defaults and lookups. */
-import { describe, expect, it, vi } from "vitest";
-import type { GatewayClient } from "../gateway/client.js";
-import { parseSessionMeta, resolveSessionKey } from "./session-mapper.js";
-
-function createGateway(resolveLabelKey = "agent:main:label"): {
-  gateway: GatewayClient;
-  request: ReturnType<typeof vi.fn>;
-} {
-  const request = vi.fn(async (method: string, params: Record<string, unknown>) => {
-    if (method === "sessions.resolve" && "label" in params) {
-      return { ok: true, key: resolveLabelKey };
-    }
-    if (method === "sessions.resolve" && "key" in params) {
-      return { ok: true, key: params.key as string };
-    }
-    return { ok: true };
-  });
-
-  return {
-    gateway: { request } as unknown as GatewayClient,
-    request,
-  };
-}
+/** Tests ACP request metadata parsing for the process-local session runtime. */
+import { describe, expect, it } from "vitest";
+import { parseSessionMeta } from "./session-mapper.js";
 
 describe("acp session mapper", () => {
-  it("prefers explicit sessionLabel over sessionKey", async () => {
-    const { gateway, request } = createGateway();
-    const meta = parseSessionMeta({ sessionLabel: "support", sessionKey: "agent:main:main" });
-
-    const key = await resolveSessionKey({
-      meta,
-      fallbackKey: "acp:fallback",
-      gateway,
-      opts: {},
+  it("parses supported routing aliases", () => {
+    expect(
+      parseSessionMeta({
+        session: "agent:main:work",
+        label: "support",
+        reset: true,
+        requireExistingSession: true,
+        prefixCwd: false,
+      }),
+    ).toEqual({
+      sessionKey: "agent:main:work",
+      sessionLabel: "support",
+      resetSession: true,
+      requireExisting: true,
+      prefixCwd: false,
     });
-
-    expect(key).toBe("agent:main:label");
-    expect(request).toHaveBeenCalledTimes(1);
-    expect(request).toHaveBeenCalledWith("sessions.resolve", { label: "support" });
   });
 
-  it("lets meta sessionKey override default label", async () => {
-    const { gateway, request } = createGateway();
-    const meta = parseSessionMeta({ sessionKey: "agent:main:override" });
-
-    const key = await resolveSessionKey({
-      meta,
-      fallbackKey: "acp:fallback",
-      gateway,
-      opts: { defaultSessionLabel: "default-label" },
-    });
-
-    expect(key).toBe("agent:main:override");
-    expect(request).not.toHaveBeenCalled();
+  it("ignores non-object metadata", () => {
+    expect(parseSessionMeta(undefined)).toEqual({});
+    expect(parseSessionMeta("session")).toEqual({});
   });
 });

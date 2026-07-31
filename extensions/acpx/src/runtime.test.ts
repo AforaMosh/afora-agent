@@ -20,8 +20,8 @@ type TestSessionStore = {
   save(record: Record<string, unknown>): Promise<void>;
 };
 
-const DOCUMENTED_OPENCLAW_BRIDGE_COMMAND =
-  "env OPENCLAW_HIDE_BANNER=1 OPENCLAW_SUPPRESS_NOTES=1 openclaw acp --url ws://127.0.0.1:18789 --token-file ~/.openclaw/gateway.token --session agent:main:main";
+const DOCUMENTED_OPENCLAW_AGENT_COMMAND =
+  "env OPENCLAW_HIDE_BANNER=1 OPENCLAW_SUPPRESS_NOTES=1 openclaw acp --session agent:main:main";
 const CODEX_ACP_COMMAND = "npx @agentclientprotocol/codex-acp@1.1.2";
 const CODEX_ACP_WRAPPER_COMMAND = `node "/tmp/openclaw/acpx/codex-acp-wrapper.mjs"`;
 const CODEX_ACP_WRAPPER_COMMAND_WITH_LEASE = `${CODEX_ACP_WRAPPER_COMMAND} ${OPENCLAW_ACPX_LEASE_ID_ARG} lease-close ${OPENCLAW_GATEWAY_INSTANCE_ID_ARG} gateway-test`;
@@ -49,7 +49,7 @@ function makeRuntime(
     isHealthy(): boolean;
     probeAvailability(): Promise<void>;
   };
-  bridgeSafeDelegate: {
+  noMcpDelegate: {
     close: AcpRuntime["close"];
     ensureSession: AcpRuntime["ensureSession"];
     getStatus: NonNullable<AcpRuntime["getStatus"]>;
@@ -96,9 +96,9 @@ function makeRuntime(
         };
       }
     ).delegate,
-    bridgeSafeDelegate: (
+    noMcpDelegate: (
       runtime as unknown as {
-        bridgeSafeDelegate: {
+        noMcpDelegate: {
           close: AcpRuntime["close"];
           ensureSession: AcpRuntime["ensureSession"];
           getStatus: NonNullable<AcpRuntime["getStatus"]>;
@@ -107,7 +107,7 @@ function makeRuntime(
           probeAvailability(): Promise<void>;
         };
       }
-    ).bridgeSafeDelegate,
+    ).noMcpDelegate,
   };
 }
 
@@ -285,7 +285,7 @@ describe("AcpxRuntime fresh reset wrapper", () => {
       load: vi.fn(async () => undefined),
       save: vi.fn(async () => {}),
     };
-    const { runtime, delegate, bridgeSafeDelegate } = makeRuntime(baseStore, {
+    const { runtime, delegate, noMcpDelegate } = makeRuntime(baseStore, {
       openclawToolsMcpBridgeEnabled: true,
       mcpServers: [
         {
@@ -297,9 +297,7 @@ describe("AcpxRuntime fresh reset wrapper", () => {
       ],
     });
     const defaultProbe = vi.spyOn(delegate, "probeAvailability").mockResolvedValue(undefined);
-    const safeProbe = vi
-      .spyOn(bridgeSafeDelegate, "probeAvailability")
-      .mockResolvedValue(undefined);
+    const safeProbe = vi.spyOn(noMcpDelegate, "probeAvailability").mockResolvedValue(undefined);
 
     await runtime.probeAvailability();
 
@@ -3453,13 +3451,13 @@ describe("AcpxRuntime fresh reset wrapper", () => {
     expect(killed).toStrictEqual([]);
   });
 
-  it("routes openclaw ensureSession through the bridge-safe delegate when MCP servers are configured", async () => {
+  it("routes openclaw ensureSession through the no-MCP delegate when MCP servers are configured", async () => {
     const baseStore: TestSessionStore = {
       load: vi.fn(async () => undefined),
       save: vi.fn(async () => {}),
     };
 
-    const { runtime, delegate, bridgeSafeDelegate } = makeRuntime(baseStore, {
+    const { runtime, delegate, noMcpDelegate } = makeRuntime(baseStore, {
       mcpServers: [{ name: "tools", command: "mcp-tools" }] as never,
     });
     const defaultEnsure = vi.spyOn(delegate, "ensureSession").mockResolvedValue({
@@ -3467,10 +3465,10 @@ describe("AcpxRuntime fresh reset wrapper", () => {
       backend: "acpx",
       runtimeSessionName: "default",
     });
-    const bridgeEnsure = vi.spyOn(bridgeSafeDelegate, "ensureSession").mockResolvedValue({
+    const noMcpEnsure = vi.spyOn(noMcpDelegate, "ensureSession").mockResolvedValue({
       sessionKey: "agent:openclaw:acp:test",
       backend: "acpx",
-      runtimeSessionName: "bridge",
+      runtimeSessionName: "no-mcp",
     });
 
     const result = await runtime.ensureSession({
@@ -3479,8 +3477,8 @@ describe("AcpxRuntime fresh reset wrapper", () => {
       mode: "persistent",
     });
 
-    expect(result.runtimeSessionName).toBe("bridge");
-    expect(bridgeEnsure).toHaveBeenCalledOnce();
+    expect(result.runtimeSessionName).toBe("no-mcp");
+    expect(noMcpEnsure).toHaveBeenCalledOnce();
     expect(defaultEnsure).not.toHaveBeenCalled();
   });
 
@@ -3490,7 +3488,7 @@ describe("AcpxRuntime fresh reset wrapper", () => {
       save: vi.fn(async () => {}),
     };
 
-    const { runtime, delegate, bridgeSafeDelegate } = makeRuntime(baseStore, {
+    const { runtime, delegate, noMcpDelegate } = makeRuntime(baseStore, {
       mcpServers: [{ name: "tools", command: "mcp-tools" }] as never,
     });
     const defaultEnsure = vi.spyOn(delegate, "ensureSession").mockResolvedValue({
@@ -3498,10 +3496,10 @@ describe("AcpxRuntime fresh reset wrapper", () => {
       backend: "acpx",
       runtimeSessionName: "default",
     });
-    const bridgeEnsure = vi.spyOn(bridgeSafeDelegate, "ensureSession").mockResolvedValue({
+    const noMcpEnsure = vi.spyOn(noMcpDelegate, "ensureSession").mockResolvedValue({
       sessionKey: "agent:openclaw:acp:test",
       backend: "acpx",
-      runtimeSessionName: "bridge",
+      runtimeSessionName: "no-mcp",
     });
 
     const result = await runtime.ensureSession({
@@ -3512,23 +3510,23 @@ describe("AcpxRuntime fresh reset wrapper", () => {
 
     expect(result.runtimeSessionName).toBe("default");
     expect(defaultEnsure).toHaveBeenCalledOnce();
-    expect(bridgeEnsure).not.toHaveBeenCalled();
+    expect(noMcpEnsure).not.toHaveBeenCalled();
   });
 
-  it("routes handle-based follow-up calls for openclaw sessions through the bridge-safe delegate", async () => {
+  it("routes handle-based follow-up calls for openclaw sessions through the no-MCP delegate", async () => {
     const baseStore: TestSessionStore = {
       load: vi.fn(async () => undefined),
       save: vi.fn(async () => {}),
     };
 
-    const { runtime, delegate, bridgeSafeDelegate } = makeRuntime(baseStore, {
+    const { runtime, delegate, noMcpDelegate } = makeRuntime(baseStore, {
       mcpServers: [{ name: "tools", command: "mcp-tools" }] as never,
     });
     const defaultStatus = vi.spyOn(delegate, "getStatus").mockResolvedValue({
       summary: "default",
     });
-    const bridgeStatus = vi.spyOn(bridgeSafeDelegate, "getStatus").mockResolvedValue({
-      summary: "bridge",
+    const noMcpStatus = vi.spyOn(noMcpDelegate, "getStatus").mockResolvedValue({
+      summary: "no-mcp",
     });
     const handle: Parameters<NonNullable<AcpRuntime["getStatus"]>>[0]["handle"] = {
       sessionKey: "agent:openclaw:acp:test",
@@ -3538,18 +3536,18 @@ describe("AcpxRuntime fresh reset wrapper", () => {
 
     const status = await runtime.getStatus({ handle });
 
-    expect(status.summary).toBe("bridge");
-    expect(bridgeStatus).toHaveBeenCalledWith({ handle });
+    expect(status.summary).toBe("no-mcp");
+    expect(noMcpStatus).toHaveBeenCalledWith({ handle });
     expect(defaultStatus).not.toHaveBeenCalled();
   });
 
-  it("keeps MCP-enabled routing when the openclaw agent is overridden to a non-bridge adapter", async () => {
+  it("keeps MCP-enabled routing when the openclaw agent is overridden to a non-OpenClaw ACP adapter", async () => {
     const baseStore: TestSessionStore = {
       load: vi.fn(async () => undefined),
       save: vi.fn(async () => {}),
     };
 
-    const { runtime, delegate, bridgeSafeDelegate } = makeRuntime(baseStore, {
+    const { runtime, delegate, noMcpDelegate } = makeRuntime(baseStore, {
       mcpServers: [{ name: "tools", command: "mcp-tools" }] as never,
       agentRegistry: {
         resolve: (agentName: string) => (agentName === "openclaw" ? "codex" : agentName),
@@ -3561,10 +3559,10 @@ describe("AcpxRuntime fresh reset wrapper", () => {
       backend: "acpx",
       runtimeSessionName: "default",
     });
-    const bridgeEnsure = vi.spyOn(bridgeSafeDelegate, "ensureSession").mockResolvedValue({
+    const noMcpEnsure = vi.spyOn(noMcpDelegate, "ensureSession").mockResolvedValue({
       sessionKey: "agent:openclaw:acp:test",
       backend: "acpx",
-      runtimeSessionName: "bridge",
+      runtimeSessionName: "no-mcp",
     });
 
     const result = await runtime.ensureSession({
@@ -3575,16 +3573,16 @@ describe("AcpxRuntime fresh reset wrapper", () => {
 
     expect(result.runtimeSessionName).toBe("default");
     expect(defaultEnsure).toHaveBeenCalledOnce();
-    expect(bridgeEnsure).not.toHaveBeenCalled();
+    expect(noMcpEnsure).not.toHaveBeenCalled();
   });
 
-  it("uses the bridge-safe delegate for any agent mapped to the openclaw bridge command", async () => {
+  it("uses the no-MCP delegate for any agent mapped to the OpenClaw ACP command", async () => {
     const baseStore: TestSessionStore = {
       load: vi.fn(async () => undefined),
       save: vi.fn(async () => {}),
     };
 
-    const { runtime, delegate, bridgeSafeDelegate } = makeRuntime(baseStore, {
+    const { runtime, delegate, noMcpDelegate } = makeRuntime(baseStore, {
       mcpServers: [{ name: "tools", command: "mcp-tools" }] as never,
       agentRegistry: {
         resolve: (agentName: string) => (agentName === "codex" ? "openclaw acp" : agentName),
@@ -3596,10 +3594,10 @@ describe("AcpxRuntime fresh reset wrapper", () => {
       backend: "acpx",
       runtimeSessionName: "default",
     });
-    const bridgeEnsure = vi.spyOn(bridgeSafeDelegate, "ensureSession").mockResolvedValue({
+    const noMcpEnsure = vi.spyOn(noMcpDelegate, "ensureSession").mockResolvedValue({
       sessionKey: "agent:codex:acp:test",
       backend: "acpx",
-      runtimeSessionName: "bridge",
+      runtimeSessionName: "no-mcp",
     });
 
     const result = await runtime.ensureSession({
@@ -3608,22 +3606,22 @@ describe("AcpxRuntime fresh reset wrapper", () => {
       mode: "persistent",
     });
 
-    expect(result.runtimeSessionName).toBe("bridge");
-    expect(bridgeEnsure).toHaveBeenCalledOnce();
+    expect(result.runtimeSessionName).toBe("no-mcp");
+    expect(noMcpEnsure).toHaveBeenCalledOnce();
     expect(defaultEnsure).not.toHaveBeenCalled();
   });
 
-  it("uses the bridge-safe delegate for documented env-wrapped openclaw bridge commands", async () => {
+  it("uses the no-MCP delegate for documented env-wrapped OpenClaw ACP commands", async () => {
     const baseStore: TestSessionStore = {
       load: vi.fn(async () => undefined),
       save: vi.fn(async () => {}),
     };
 
-    const { runtime, delegate, bridgeSafeDelegate } = makeRuntime(baseStore, {
+    const { runtime, delegate, noMcpDelegate } = makeRuntime(baseStore, {
       mcpServers: [{ name: "tools", command: "mcp-tools" }] as never,
       agentRegistry: {
         resolve: (agentName: string) =>
-          agentName === "openclaw" ? DOCUMENTED_OPENCLAW_BRIDGE_COMMAND : agentName,
+          agentName === "openclaw" ? DOCUMENTED_OPENCLAW_AGENT_COMMAND : agentName,
         list: () => ["codex", "openclaw"],
       },
     });
@@ -3632,10 +3630,10 @@ describe("AcpxRuntime fresh reset wrapper", () => {
       backend: "acpx",
       runtimeSessionName: "default",
     });
-    const bridgeEnsure = vi.spyOn(bridgeSafeDelegate, "ensureSession").mockResolvedValue({
+    const noMcpEnsure = vi.spyOn(noMcpDelegate, "ensureSession").mockResolvedValue({
       sessionKey: "agent:openclaw:acp:test",
       backend: "acpx",
-      runtimeSessionName: "bridge",
+      runtimeSessionName: "no-mcp",
     });
 
     const result = await runtime.ensureSession({
@@ -3644,18 +3642,18 @@ describe("AcpxRuntime fresh reset wrapper", () => {
       mode: "persistent",
     });
 
-    expect(result.runtimeSessionName).toBe("bridge");
-    expect(bridgeEnsure).toHaveBeenCalledOnce();
+    expect(result.runtimeSessionName).toBe("no-mcp");
+    expect(noMcpEnsure).toHaveBeenCalledOnce();
     expect(defaultEnsure).not.toHaveBeenCalled();
   });
 
-  it("uses the bridge-safe delegate for local node openclaw entrypoints", async () => {
+  it("uses the no-MCP delegate for local node openclaw entrypoints", async () => {
     const baseStore: TestSessionStore = {
       load: vi.fn(async () => undefined),
       save: vi.fn(async () => {}),
     };
 
-    const { runtime, delegate, bridgeSafeDelegate } = makeRuntime(baseStore, {
+    const { runtime, delegate, noMcpDelegate } = makeRuntime(baseStore, {
       mcpServers: [{ name: "tools", command: "mcp-tools" }] as never,
       agentRegistry: {
         resolve: (agentName: string) =>
@@ -3668,10 +3666,10 @@ describe("AcpxRuntime fresh reset wrapper", () => {
       backend: "acpx",
       runtimeSessionName: "default",
     });
-    const bridgeEnsure = vi.spyOn(bridgeSafeDelegate, "ensureSession").mockResolvedValue({
+    const noMcpEnsure = vi.spyOn(noMcpDelegate, "ensureSession").mockResolvedValue({
       sessionKey: "agent:openclaw:acp:test",
       backend: "acpx",
-      runtimeSessionName: "bridge",
+      runtimeSessionName: "no-mcp",
     });
 
     const result = await runtime.ensureSession({
@@ -3680,8 +3678,8 @@ describe("AcpxRuntime fresh reset wrapper", () => {
       mode: "persistent",
     });
 
-    expect(result.runtimeSessionName).toBe("bridge");
-    expect(bridgeEnsure).toHaveBeenCalledOnce();
+    expect(result.runtimeSessionName).toBe("no-mcp");
+    expect(noMcpEnsure).toHaveBeenCalledOnce();
     expect(defaultEnsure).not.toHaveBeenCalled();
   });
 
@@ -3689,12 +3687,12 @@ describe("AcpxRuntime fresh reset wrapper", () => {
     const baseStore: TestSessionStore = {
       load: vi.fn(async () => ({
         acpxRecordId: "agent:openclaw:acp:test",
-        agentCommand: DOCUMENTED_OPENCLAW_BRIDGE_COMMAND,
+        agentCommand: DOCUMENTED_OPENCLAW_AGENT_COMMAND,
       })),
       save: vi.fn(async () => {}),
     };
 
-    const { runtime, delegate, bridgeSafeDelegate } = makeRuntime(baseStore, {
+    const { runtime, delegate, noMcpDelegate } = makeRuntime(baseStore, {
       mcpServers: [{ name: "tools", command: "mcp-tools" }] as never,
       agentRegistry: {
         resolve: (agentName: string) => (agentName === "openclaw" ? "codex" : agentName),
@@ -3704,8 +3702,8 @@ describe("AcpxRuntime fresh reset wrapper", () => {
     const defaultStatus = vi.spyOn(delegate, "getStatus").mockResolvedValue({
       summary: "default",
     });
-    const bridgeStatus = vi.spyOn(bridgeSafeDelegate, "getStatus").mockResolvedValue({
-      summary: "bridge",
+    const noMcpStatus = vi.spyOn(noMcpDelegate, "getStatus").mockResolvedValue({
+      summary: "no-mcp",
     });
 
     const status = await runtime.getStatus({
@@ -3716,37 +3714,35 @@ describe("AcpxRuntime fresh reset wrapper", () => {
       },
     });
 
-    expect(status.summary).toBe("bridge");
-    expect(bridgeStatus).toHaveBeenCalledOnce();
+    expect(status.summary).toBe("no-mcp");
+    expect(noMcpStatus).toHaveBeenCalledOnce();
     expect(defaultStatus).not.toHaveBeenCalled();
   });
 
-  it("probes through the bridge-safe delegate when probeAgent resolves to openclaw bridge", async () => {
+  it("probes through the no-MCP delegate when probeAgent resolves to OpenClaw ACP agent", async () => {
     const baseStore: TestSessionStore = {
       load: vi.fn(async () => undefined),
       save: vi.fn(async () => {}),
     };
 
-    const { runtime, delegate, bridgeSafeDelegate } = makeRuntime(baseStore, {
+    const { runtime, delegate, noMcpDelegate } = makeRuntime(baseStore, {
       mcpServers: [{ name: "tools", command: "mcp-tools" }] as never,
       probeAgent: "  OpenClaw  ",
       agentRegistry: {
         resolve: (agentName: string) =>
-          agentName === "openclaw" ? DOCUMENTED_OPENCLAW_BRIDGE_COMMAND : agentName,
+          agentName === "openclaw" ? DOCUMENTED_OPENCLAW_AGENT_COMMAND : agentName,
         list: () => ["codex", "openclaw"],
       },
     });
     const defaultProbe = vi.spyOn(delegate, "probeAvailability").mockResolvedValue(undefined);
-    const bridgeProbe = vi
-      .spyOn(bridgeSafeDelegate, "probeAvailability")
-      .mockResolvedValue(undefined);
+    const noMcpProbe = vi.spyOn(noMcpDelegate, "probeAvailability").mockResolvedValue(undefined);
     vi.spyOn(delegate, "isHealthy").mockReturnValue(false);
-    vi.spyOn(bridgeSafeDelegate, "isHealthy").mockReturnValue(true);
+    vi.spyOn(noMcpDelegate, "isHealthy").mockReturnValue(true);
 
     await runtime.probeAvailability();
 
     expect(runtime.isHealthy()).toBe(true);
-    expect(bridgeProbe).toHaveBeenCalledOnce();
+    expect(noMcpProbe).toHaveBeenCalledOnce();
     expect(defaultProbe).not.toHaveBeenCalled();
   });
 });

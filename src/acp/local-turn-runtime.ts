@@ -7,6 +7,7 @@ import type { AcpServerOptions, AcpSessionRuntimeOptions } from "@openclaw/acp-c
 import { normalizeFastMode } from "@openclaw/normalization-core/string-coerce";
 import { agentCommandFromIngress } from "../agents/agent-command.js";
 import { LocalAgentHost } from "../agents/local-agent-host.js";
+import { toErrorObject } from "../infra/errors.js";
 import { KeyedAsyncQueue } from "../plugin-sdk/keyed-async-queue.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { shortenHomePath } from "../utils.js";
@@ -41,7 +42,7 @@ export type AcpLocalTurnSession = {
   runtimeOptions?: AcpSessionRuntimeOptions;
 };
 
-export type AcpLocalTurnRuntimeOptions = Pick<AcpServerOptions, "prefixCwd" | "provenanceMode"> & {
+type AcpLocalTurnRuntimeOptions = Pick<AcpServerOptions, "prefixCwd" | "provenanceMode"> & {
   connection: AgentSideConnection;
   sessionRuntime: AcpLocalSessionRuntime;
   sessionUpdates: AcpTranslatorSessionUpdates;
@@ -172,7 +173,7 @@ export class AcpLocalTurnRuntime {
     try {
       prepared = this.preparePrompt(session, params);
     } catch (error) {
-      return Promise.reject(error);
+      return Promise.reject(toErrorObject(error, "ACP prompt preparation failed"));
     }
     const requestGeneration = this.reservePromptRequest(session.sessionId);
     const completion = this.runPrompt(session, params, prepared, requestGeneration);
@@ -247,8 +248,8 @@ export class AcpLocalTurnRuntime {
       }
       await Promise.allSettled(turns.map((turn) => turn.result));
       await Promise.allSettled(turns.map((turn) => turn.adapterState.projection.eventTail));
-      await Promise.allSettled([...this.promptCompletions.keys()]);
-      await Promise.allSettled([...this.pendingTransitionCommits]);
+      await Promise.allSettled(this.promptCompletions.keys());
+      await Promise.allSettled(this.pendingTransitionCommits);
       this.promptGenerations.clear();
       this.promptRequestGenerations.clear();
     })();
@@ -403,7 +404,7 @@ export class AcpLocalTurnRuntime {
         runId,
         reason: "Turn failed while projecting agent output.",
       });
-      throw error;
+      throw toErrorObject(error, "ACP projection failed");
     }
     if (executionError) {
       await this.finalizeOpenTools({
@@ -411,7 +412,7 @@ export class AcpLocalTurnRuntime {
         runId,
         reason: "Turn execution failed.",
       });
-      throw executionError;
+      throw toErrorObject(executionError, "ACP turn execution failed");
     }
     if (projection.terminalError) {
       const error = projection.terminalError;

@@ -178,7 +178,7 @@ snapshots or redirect the snapshot cache.
 OpenClaw also injects context markers into spawned child processes:
 
 - `OPENCLAW_SHELL=exec`: set for commands run through the `exec` tool.
-- `OPENCLAW_SHELL=acp-client`: set for `openclaw acp client` when it spawns the ACP bridge process.
+- `OPENCLAW_SHELL=acp-client`: set for `openclaw acp client` when it spawns an ACP agent process.
 - `OPENCLAW_SHELL=tui-local`: set for local TUI `!` shell commands.
 - `OPENCLAW_CLI=1`: set for child processes spawned by the CLI entry point.
 

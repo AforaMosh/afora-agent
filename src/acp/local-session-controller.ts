@@ -60,7 +60,7 @@ import type { AcpTranslatorSessionUpdates } from "./translator.session-updates.j
 const SESSION_CREATE_RATE_LIMIT_DEFAULT_MAX_REQUESTS = 120;
 const SESSION_CREATE_RATE_LIMIT_DEFAULT_WINDOW_MS = 10_000;
 
-export type AcpLocalSessionControllerOptions = {
+type AcpLocalSessionControllerOptions = {
   sessionRuntime: AcpLocalSessionRuntime;
   turnRuntime: AcpLocalTurnRuntime;
   bindings: AcpLocalSessionBindings;

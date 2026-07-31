@@ -3,6 +3,14 @@ import { describe, expect, it, vi } from "vitest";
 import { AcpLocalAgent } from "./local-agent.js";
 import type { AcpLocalSessionController } from "./local-session-controller.js";
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve };
+}
+
 function createController() {
   return {
     newSession: vi.fn(async () => ({ sessionId: "session-1" })),
@@ -72,7 +80,7 @@ describe("AcpLocalAgent", () => {
           id: "openclaw-model-setup",
           name: "Configure OpenClaw model",
           type: "terminal",
-          args: ["--configure-model"],
+          args: ["configure", "--section", "model"],
         },
       ],
     });
@@ -145,7 +153,7 @@ describe("AcpLocalAgent", () => {
   });
 
   it("delegates shutdown and preserves its completion boundary", async () => {
-    const release = Promise.withResolvers<void>();
+    const release = deferred<void>();
     const controller = createController();
     controller.shutdown.mockImplementation(async () => {
       await release.promise;

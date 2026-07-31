@@ -19,18 +19,19 @@ sidebarTitle: "MCP"
   `list`, `show`, `set`, and `unset` only read and write OpenClaw-managed `mcp.servers` entries in OpenClaw config. They do not include mcporter servers from `config/mcporter.json`; use `mcporter list` for that registry.
 </Note>
 
-Use [`openclaw acp`](/cli/acp) when OpenClaw should host a coding harness session itself and route that runtime through ACP.
+Use [`openclaw acp`](/cli/acp) when an ACP client should launch OpenClaw as a self-contained local agent.
 
 ## Choose the right MCP path
 
-| Goal                                                                | Use                                                                  | Why                                                                                                             |
-| ------------------------------------------------------------------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Let an external MCP client read/send OpenClaw channel conversations | `openclaw mcp serve`                                                 | OpenClaw is the MCP server and exposes Gateway-backed conversations over stdio.                                 |
-| Save third-party MCP servers for OpenClaw-managed agent runs        | `openclaw mcp add`, `set`, `configure`, `tools`, `login`             | OpenClaw is the MCP client-side registry and later projects those servers into eligible runtimes.               |
-| Check a saved server without running an agent turn                  | `openclaw mcp status`, `doctor`, `probe`                             | `status` and `doctor` inspect config; `probe` opens a live MCP connection and lists capabilities.               |
-| Edit MCP config from a browser                                      | Control UI `/settings/mcp` (`/mcp` alias)                            | The page shows inventory, enablement, OAuth/filter summaries, command hints, and a scoped `mcp` editor.         |
-| Give Codex app-server a scoped native MCP server                    | `mcp.servers.<name>.codex`                                           | The `codex` block only affects Codex app-server thread projection and is stripped before native config handoff. |
-| Run ACP-hosted harness sessions                                     | [`openclaw acp`](/cli/acp) and [ACP Agents](/tools/acp-agents-setup) | ACP bridge mode does not accept per-session MCP server injection; configure gateway/plugin bridges instead.     |
+| Goal                                                                | Use                                                      | Why                                                                                                             |
+| ------------------------------------------------------------------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Let an external MCP client read/send OpenClaw channel conversations | `openclaw mcp serve`                                     | OpenClaw is the MCP server and exposes Gateway-backed conversations over stdio.                                 |
+| Save third-party MCP servers for OpenClaw-managed agent runs        | `openclaw mcp add`, `set`, `configure`, `tools`, `login` | OpenClaw is the MCP client-side registry and later projects those servers into eligible runtimes.               |
+| Check a saved server without running an agent turn                  | `openclaw mcp status`, `doctor`, `probe`                 | `status` and `doctor` inspect config; `probe` opens a live MCP connection and lists capabilities.               |
+| Edit MCP config from a browser                                      | Control UI `/settings/mcp` (`/mcp` alias)                | The page shows inventory, enablement, OAuth/filter summaries, command hints, and a scoped `mcp` editor.         |
+| Give Codex app-server a scoped native MCP server                    | `mcp.servers.<name>.codex`                               | The `codex` block only affects Codex app-server thread projection and is stripped before native config handoff. |
+| Run OpenClaw itself as an ACP agent                                 | [`openclaw acp`](/cli/acp)                               | The self-contained agent uses OpenClaw-managed MCP config and does not accept per-session `mcpServers`.         |
+| Run an external ACP harness through OpenClaw                        | [ACP Agents](/tools/acp-agents-setup)                    | The Gateway-side ACPX plugin launches the harness; its MCP bridges are separate outbound configuration.         |
 
 <Tip>
 If you are not sure which path you need, start with `openclaw mcp status --verbose`. It shows what OpenClaw has saved without starting any MCP servers.
@@ -48,7 +49,7 @@ Use `openclaw mcp serve` when:
 - you already have a local or remote OpenClaw Gateway with routed sessions
 - you want one MCP server that works across OpenClaw's channel backends instead of running separate per-channel bridges
 
-Use [`openclaw acp`](/cli/acp) instead when OpenClaw should host the coding runtime itself and keep the agent session inside OpenClaw.
+Use [`openclaw acp`](/cli/acp) when the client should launch OpenClaw locally rather than access Gateway-backed channel conversations.
 
 ### How it works
 

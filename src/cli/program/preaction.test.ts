@@ -169,7 +169,7 @@ describe("registerPreActionHooks", () => {
       .action(() => {});
     const acp = programLocal
       .command("acp")
-      .option("--token <token>")
+      .option("--session <key>")
       .option("--verbose")
       .action(() => {});
     acp
@@ -882,7 +882,7 @@ describe("registerPreActionHooks", () => {
   it("uses the Commander action path for protocol stdout ownership", async () => {
     await runPreAction({
       parseArgv: ["acp"],
-      processArgv: ["node", "openclaw", "acp", "--token", "-secret"],
+      processArgv: ["node", "openclaw", "acp", "--verbose"],
     });
 
     expect(routeLogsToStderrMock).toHaveBeenCalledOnce();

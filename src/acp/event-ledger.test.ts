@@ -4,7 +4,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import { requireNodeSqlite } from "../infra/node-sqlite.js";
 import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
 import { withTempDir } from "../test-helpers/temp-dir.js";
-import { createInMemoryAcpEventLedger, createSqliteAcpEventLedger } from "./event-ledger.js";
+import { createSqliteAcpEventLedger } from "./event-ledger.js";
+import { createInMemoryAcpEventLedger } from "./event-ledger.test-support.js";
 
 describe("ACP event ledger", () => {
   afterEach(() => {

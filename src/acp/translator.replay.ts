@@ -1,10 +1,10 @@
 /** Gateway transcript message shape accepted by ACP replay extraction. */
-export type GatewayTranscriptMessage = {
+type GatewayTranscriptMessage = {
   role?: unknown;
   content?: unknown;
 };
 
-export type GatewayChatContentBlock = {
+type GatewayChatContentBlock = {
   type?: string;
   text?: string;
   thinking?: string;

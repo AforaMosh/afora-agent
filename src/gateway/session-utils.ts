@@ -4,7 +4,6 @@ export {
 } from "./session-utils.fs.js";
 export type {
   GatewaySessionRow,
-  SessionsListResult,
   SessionsPatchResult,
   SessionsPreviewEntry,
   SessionsPreviewResult,

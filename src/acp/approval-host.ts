@@ -387,7 +387,7 @@ async function requestPluginApproval(params: {
   };
 }
 
-export type AcpApprovalHostOptions = {
+type AcpApprovalHostOptions = {
   connection: AgentSideConnection;
   sessionId: string;
 };

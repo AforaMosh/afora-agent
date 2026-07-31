@@ -370,8 +370,8 @@ function createResetAwareSessionStore(
   };
 }
 
-const OPENCLAW_BRIDGE_EXECUTABLE = "openclaw";
-const OPENCLAW_BRIDGE_SUBCOMMAND = "acp";
+const OPENCLAW_ACP_EXECUTABLE = "openclaw";
+const OPENCLAW_ACP_SUBCOMMAND = "acp";
 const CODEX_ACP_AGENT_ID = "codex";
 const CODEX_ACP_OPENCLAW_PREFIX = "openai/";
 const CLAUDE_ACP_OPENCLAW_PREFIX = "anthropic/";
@@ -494,19 +494,19 @@ function isAcpCommand(
   return scriptName === params.executableName || scriptName === `${params.executableName}-wrapper`;
 }
 
-function isOpenClawBridgeCommand(command: string | undefined): boolean {
+function isOpenClawAcpCommand(command: string | undefined): boolean {
   if (!command) {
     return false;
   }
   const parts = unwrapEnvCommand(splitCommandParts(command.trim()));
-  if (basename(parts[0] ?? "") === OPENCLAW_BRIDGE_EXECUTABLE) {
-    return parts[1] === OPENCLAW_BRIDGE_SUBCOMMAND;
+  if (basename(parts[0] ?? "") === OPENCLAW_ACP_EXECUTABLE) {
+    return parts[1] === OPENCLAW_ACP_SUBCOMMAND;
   }
   if (basename(parts[0] ?? "") !== "node") {
     return false;
   }
   const scriptName = basename(parts[1] ?? "");
-  return /^openclaw(?:\.[cm]?js)?$/i.test(scriptName) && parts[2] === OPENCLAW_BRIDGE_SUBCOMMAND;
+  return /^openclaw(?:\.[cm]?js)?$/i.test(scriptName) && parts[2] === OPENCLAW_ACP_SUBCOMMAND;
 }
 
 function isCodexAcpCommand(command: string | undefined): boolean {
@@ -739,11 +739,11 @@ function resolveAgentCommand(params: {
   return normalizeAgentCommand(params.agentRegistry.resolve(normalizedAgentName));
 }
 
-function shouldUseBridgeSafeDelegateForCommand(command: string | undefined): boolean {
-  return isOpenClawBridgeCommand(command);
+function shouldUseNoMcpDelegateForCommand(command: string | undefined): boolean {
+  return isOpenClawAcpCommand(command);
 }
 
-function shouldUseDistinctBridgeDelegate(options: AcpRuntimeOptions): boolean {
+function shouldUseDistinctNoMcpDelegate(options: AcpRuntimeOptions): boolean {
   const { mcpServers } = options as { mcpServers?: unknown };
   return Array.isArray(mcpServers) && mcpServers.length > 0;
 }
@@ -793,7 +793,7 @@ export class AcpxRuntime implements AcpRuntime {
     CodexAcpModelOverride | undefined
   >();
   private readonly delegate: BaseAcpxRuntime;
-  private readonly bridgeSafeDelegate: BaseAcpxRuntime;
+  private readonly noMcpDelegate: BaseAcpxRuntime;
   private readonly probeDelegate: BaseAcpxRuntime;
   private readonly delegateOptions: AcpRuntimeOptions;
   private readonly delegateTestOptions: BaseAcpxRuntimeTestOptions;
@@ -842,7 +842,7 @@ export class AcpxRuntime implements AcpRuntime {
     this.delegateOptions = sharedOptions;
     this.delegateTestOptions = delegateTestOptions as BaseAcpxRuntimeTestOptions;
     this.delegate = new BaseAcpxRuntime(sharedOptions, this.delegateTestOptions);
-    this.bridgeSafeDelegate = shouldUseDistinctBridgeDelegate(options)
+    this.noMcpDelegate = shouldUseDistinctNoMcpDelegate(options)
       ? new BaseAcpxRuntime(
           {
             ...sharedOptions,
@@ -855,17 +855,17 @@ export class AcpxRuntime implements AcpRuntime {
       agentName: normalizeAgentName(options.probeAgent) ?? "codex",
       agentRegistry: this.agentRegistry,
     });
-    const useBridgeSafeProbe =
-      this.managedToolsMcpBridgeEnabled || shouldUseBridgeSafeDelegateForCommand(probeCommand);
-    this.probeDelegate = useBridgeSafeProbe ? this.bridgeSafeDelegate : this.delegate;
+    const useNoMcpProbe =
+      this.managedToolsMcpBridgeEnabled || shouldUseNoMcpDelegateForCommand(probeCommand);
+    this.probeDelegate = useNoMcpProbe ? this.noMcpDelegate : this.delegate;
   }
 
   private resolveDelegateForSession(params: {
     command: string | undefined;
     sessionKey: string;
   }): BaseAcpxRuntime {
-    if (shouldUseBridgeSafeDelegateForCommand(params.command)) {
-      return this.bridgeSafeDelegate;
+    if (shouldUseNoMcpDelegateForCommand(params.command)) {
+      return this.noMcpDelegate;
     }
     return this.resolveManagedToolsDelegateForSession(params.sessionKey);
   }
