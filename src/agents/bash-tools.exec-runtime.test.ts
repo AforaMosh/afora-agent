@@ -515,6 +515,17 @@ describe("exec notifyOnExit suppression", () => {
     expect(heartbeat.sessionKey).toBe("agent:main:main");
   });
 
+  it("still compacts multiline background notifications to one line", async () => {
+    await runBackgroundedExit({
+      reason: "manual-cancel",
+      stdout: "first line\n\tindented\n\n  spaced   \n",
+    });
+
+    const [message] = requireSystemEventCall();
+    expect(message).toContain("first line indented spaced");
+    expect(message.split("\n")).toHaveLength(1);
+  });
+
   it("still notifies for no-output background exec timeouts", async () => {
     await runBackgroundedExit({ reason: "overall-timeout" });
 

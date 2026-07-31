@@ -499,6 +499,55 @@ describe("exec approvals", () => {
     expect(agent.sessionKey).toBe("agent:main:main");
   });
 
+  it("carries multiline approved node output into the agent continuation", async () => {
+    const stdout = "first\r\n\tindented\n\n  spaced   \n[source output truncated]\n  \t";
+    const stderr = "warn one\nwarn two";
+    let agentParams: unknown;
+
+    mockAcceptedApprovalFlow({
+      onAgent: (params) => {
+        agentParams = params;
+      },
+      onNodeInvoke: (params) => {
+        const invoke = params as { command?: string };
+        if (invoke.command === "system.run.prepare") {
+          return buildPreparedSystemRunPayload(params);
+        }
+        if (invoke.command === "system.run") {
+          return {
+            payload: { success: true, stdout, stderr, error: null, exitCode: 0, timedOut: false },
+          };
+        }
+        return undefined;
+      },
+    });
+
+    const tool = createExecTool({
+      host: "node",
+      ask: "always",
+      approvalRunningNoticeMs: 0,
+      sessionKey: "agent:main:main",
+    });
+
+    const result = await tool.execute("call-multiline", { command: "print-streams" });
+    const details = expectPendingApprovalText(result, {
+      command: "print-streams",
+      host: "node",
+      nodeId: "node-1",
+      interactive: true,
+      allowedDecisions: "allow-once|deny",
+      cwdText: "(node default)",
+    });
+
+    await expect.poll(() => agentParams !== undefined, { timeout: 3000, interval: 1 }).toBe(true);
+    const message = String(requireRecord(agentParams, "agent followup params").message);
+    expect(message).toContain(
+      "Exact completion details:\n" +
+        `Exec finished (node=node-1 id=${details.approvalId}, code 0)\n` +
+        `[stdout]\n${stdout}\n[stderr]\n${stderr}\n\nContinue the task if needed`,
+    );
+  });
+
   it("skips approval when node allowlist is satisfied", async () => {
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-test-bin-"));
     const binDir = path.join(tempDir, "bin");

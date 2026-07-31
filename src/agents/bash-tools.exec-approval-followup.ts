@@ -83,8 +83,13 @@ function formatUnknownError(error: unknown): string {
   }
 }
 
-/** Builds the prompt used to resume an agent after an approved async exec completes. */
-function buildExecApprovalFollowupPrompt(resultText: string): string {
+/**
+ * Builds the prompt used to resume an agent after an approved async exec
+ * completes. Denied results are classified and rendered from trimmed text, but
+ * a successful result is emitted verbatim so trailing output whitespace, blank
+ * lines and indentation survive into the continuation.
+ */
+export function buildExecApprovalFollowupPrompt(resultText: string): string {
   const trimmed = resultText.trim();
   if (isExecDeniedResultText(trimmed)) {
     return buildExecDeniedFollowupPrompt(trimmed);
@@ -96,7 +101,7 @@ function buildExecApprovalFollowupPrompt(resultText: string): string {
     "Only ask the user for help if you are actually blocked.",
     "",
     "Exact completion details:",
-    trimmed,
+    trimmed ? resultText : "",
     "",
     "Continue the task if needed, then reply to the user in a helpful way.",
     "If it succeeded, share the relevant output.",
@@ -331,11 +336,14 @@ export async function sendExecApprovalFollowup(
   params: ExecApprovalFollowupParams,
 ): Promise<boolean> {
   const sessionKey = params.sessionKey?.trim();
-  const resultText = params.resultText.trim();
-  if (!resultText) {
+  const trimmedResultText = params.resultText.trim();
+  if (!trimmedResultText) {
     return false;
   }
-  const isDenied = isExecDeniedResultText(resultText);
+  const isDenied = isExecDeniedResultText(trimmedResultText);
+  // Denied text is a generated one-liner, but a successful result carries the
+  // command's own output; keep it verbatim so the agent sees what ran.
+  const resultText = isDenied ? trimmedResultText : params.resultText;
 
   const deliveryTarget = resolveExternalBestEffortDeliveryTarget({
     channel: params.turnSourceChannel,

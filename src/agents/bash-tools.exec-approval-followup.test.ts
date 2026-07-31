@@ -24,7 +24,10 @@ import {
   type DiagnosticEventPayload,
 } from "../infra/diagnostic-events.js";
 import { sendMessage } from "../infra/outbound/message.js";
-import { sendExecApprovalFollowup } from "./bash-tools.exec-approval-followup.js";
+import {
+  buildExecApprovalFollowupPrompt,
+  sendExecApprovalFollowup,
+} from "./bash-tools.exec-approval-followup.js";
 import { callGatewayTool } from "./tools/gateway.js";
 
 const tempStoreDirs: string[] = [];
@@ -116,6 +119,50 @@ function expectDirectSend(expected: Record<string, unknown>) {
 }
 
 describe("exec approval followup", () => {
+  it("keeps successful completion details verbatim in the continuation prompt", () => {
+    const details =
+      "Exec finished (gateway id=req-verbatim, code 0)\r\nfirst\r\n\tindented\n\n  spaced   \n  \t";
+
+    const prompt = buildExecApprovalFollowupPrompt(details);
+
+    expect(prompt).toContain(`Exact completion details:\n${details}\n\nContinue the task`);
+  });
+
+  it("trims denial details before classification and rendering", () => {
+    const prompt = buildExecApprovalFollowupPrompt(
+      "\r\n  Exec denied (gateway id=req-denied, user-denied): uname -a  \t",
+    );
+
+    expect(prompt).toContain("did not run");
+    expect(prompt).not.toContain("\r\n  Exec denied");
+    expect(prompt).not.toContain("already approved has completed");
+  });
+
+  it("delivers successful result text to the agent without trimming it", async () => {
+    const resultText = "Exec finished (gateway id=req-raw, code 0)\nline one\nline two\n  \t";
+
+    await sendExecApprovalFollowup({
+      approvalId: "req-raw",
+      sessionKey: "agent:main:main",
+      resultText,
+    });
+
+    const prompt = expectGatewayAgentFollowup({ sessionKey: "agent:main:main" }).message;
+    expect(prompt).toContain(`Exact completion details:\n${resultText}\n\nContinue the task`);
+  });
+
+  it("suppresses whitespace-only result text", async () => {
+    await expect(
+      sendExecApprovalFollowup({
+        approvalId: "req-whitespace-only",
+        resultText: " \r\n\t",
+      }),
+    ).resolves.toBe(false);
+
+    expect(callGatewayTool).not.toHaveBeenCalled();
+    expect(sendMessage).not.toHaveBeenCalled();
+  });
+
   it("uses an explicit denial prompt when the command did not run", async () => {
     await sendExecApprovalFollowup({
       approvalId: "req-1",
