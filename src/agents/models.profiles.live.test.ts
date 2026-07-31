@@ -2374,6 +2374,9 @@ describeLive("live models (profile keys)", () => {
       }
       const { parseCodeModeMatrixOptions, runCodeModeModelMatrix } =
         await import("../../scripts/code-mode-model-matrix.js");
+      const { execFile } = await import("node:child_process");
+      const { promisify } = await import("node:util");
+      const execFileAsync = promisify(execFile);
       const outputDir = `.artifacts/qa-e2e/code-mode-model-matrix/frontier-ci-${process.pid}`;
       const args = [
         "--model",
@@ -2397,11 +2400,12 @@ describeLive("live models (profile keys)", () => {
         "--output-dir",
         outputDir,
       ];
-      const image = process.env.OPENCLAW_LIVE_IMAGE?.trim() ?? "";
-      const selectedSha = image.match(/:([0-9a-f]{40})-matrix-acpx$/u)?.[1];
-      if (!selectedSha) {
-        throw new Error(`Could not resolve selected source SHA from OPENCLAW_LIVE_IMAGE=${image}`);
-      }
+      const { stdout: selectedShaOutput } = await execFileAsync(
+        "git",
+        ["-C", "/src", "rev-parse", "HEAD"],
+        { encoding: "utf8" },
+      );
+      const selectedSha = selectedShaOutput.trim();
       const result = await runCodeModeModelMatrix(parseCodeModeMatrixOptions(args, process.cwd()), {
         readSourceIdentity: async () => ({
           gitSha: selectedSha,
