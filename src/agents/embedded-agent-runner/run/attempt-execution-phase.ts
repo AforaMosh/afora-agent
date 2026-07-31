@@ -39,8 +39,19 @@ export async function runEmbeddedAttemptExecutionPhase(
     transport: { effectiveAgentTransport, providerTextTransforms },
   } = sessionRuntime;
   const { orphanRepair } = sessionRuntime.boundary;
-  const { codeModeDirectToolNames, codeModeDirectToolSchemas, codeModeNativeToolNames } =
-    toolCatalog;
+  const {
+    codeModeDirectToolNames,
+    codeModeDirectToolSchemas,
+    codeModeNativeToolNames,
+    effectiveTools,
+  } = toolCatalog;
+  const codeModeControlToolNames = new Set(
+    toolBase.codeModeControlsEnabledForRun
+      ? effectiveTools
+          .map((tool) => tool.name)
+          .filter((toolName) => toolName === "exec" || toolName === "wait")
+      : [],
+  );
   const { capabilityToolNames, liveAllowedToolNames, replayAllowedToolNames } =
     toolCatalog.toolSearchRunPlan;
   const { runtimeChannel } = systemPrompt;
@@ -109,6 +120,7 @@ export async function runEmbeddedAttemptExecutionPhase(
       markSourceReplyDelivered,
       sandboxSessionKey: input.setup.sandboxSessionKey,
       builtinToolNames,
+      codeModeControlToolNames,
       replaySafeToolNames,
     },
     lifecycle: {

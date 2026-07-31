@@ -153,7 +153,7 @@ afterEach(async () => {
 
 const beforeToolCallTesting = { adjustedParamsByToolCallId, buildAdjustedParamsKey };
 
-function createTestContext(): {
+function createTestContext(params: Partial<ToolHandlerContext["params"]> = {}): {
   ctx: ToolHandlerContext;
   warn: ReturnType<typeof vi.fn>;
   onBlockReplyFlush: ReturnType<
@@ -182,6 +182,7 @@ function createTestContext(): {
       onAgentEvent,
       onExecutionPhase,
       onToolResult: undefined,
+      ...params,
     },
     flushBlockReplyBuffer: vi.fn(),
     hookRunner: undefined,
@@ -2043,9 +2044,10 @@ describe("handleToolExecutionEnd mutating failure recovery", () => {
   });
 
   it("accepts ordered Code Mode readback telemetry after its own nested mutation", async () => {
-    const { ctx } = createTestContext();
+    const { ctx } = createTestContext({
+      codeModeControlToolNames: new Set(["exec", "wait"]),
+    });
 
-    trustCodeModeControlCall("tool-code-mode-edit-readback", "exec");
     await startTool(ctx, {
       toolName: "exec",
       toolCallId: "tool-code-mode-edit-readback",
@@ -2053,6 +2055,9 @@ describe("handleToolExecutionEnd mutating failure recovery", () => {
         code: 'await tools.edit({ path: "result.txt", oldText: "pending", newText: "done" }); return await tools.read({ path: "result.txt" });',
       },
     });
+    // Tool-definition execution records structured trust after agent-core's
+    // lifecycle start event, matching the production ordering.
+    trustCodeModeControlCall("tool-code-mode-edit-readback", "exec");
     trustCoreToolCall("nested-edit", "edit");
     recordParentToolCall("nested-edit", "tool-code-mode-edit-readback", "run-test");
     try {

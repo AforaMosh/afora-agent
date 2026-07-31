@@ -49,6 +49,7 @@ import {
   consumeTrackedToolExecutionStarted,
   peekCodeModeControlToolCall,
   peekParentToolCall,
+  recordCodeModeControlToolCall,
 } from "./agent-tools.before-tool-call.state.js";
 import { REQUIRED_PARAM_GROUPS, type RequiredParamGroup } from "./agent-tools.params.js";
 import type { ApplyPatchSummary } from "./apply-patch.js";
@@ -1196,6 +1197,11 @@ export function handleToolExecutionStart(
     const toolCallId = evt.toolCallId;
     const args = evt.args;
     const runId = ctx.params.runId;
+    if (ctx.params.codeModeControlToolNames?.has(toolName)) {
+      // Agent-core emits tool_execution_start before invoking the tool
+      // definition. Reserve marked control ownership before nested calls race.
+      recordCodeModeControlToolCall(toolCallId, runId);
+    }
     ctx.state.toolExecutionSinceLastBlockReply = true;
     emitExecutionPhaseBestEffort(ctx, {
       phase: "tool_execution_started",

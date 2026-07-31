@@ -327,6 +327,7 @@ type ToolHandlerParams = Pick<
   | "hasRepliedRef"
   | "sessionId"
   | "agentId"
+  | "codeModeControlToolNames"
   | "replaySafeToolNames"
   | "toolResultFormat"
   | "toolProgressDetail"

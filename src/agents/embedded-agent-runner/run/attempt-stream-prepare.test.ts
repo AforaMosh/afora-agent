@@ -76,6 +76,7 @@ function prepareCatalogExecutor(
     onBlockReplyFlush: vi.fn(),
     sandboxSessionKey: options?.sandboxSessionKey ?? "agent:main:main",
     builtinToolNames: new Set(),
+    codeModeControlToolNames: new Set(),
     replaySafeToolNames: new Set(),
   });
 }
@@ -122,6 +123,7 @@ describe("prepareEmbeddedAttemptStream", () => {
       onBlockReplyFlush: vi.fn(),
       sandboxSessionKey: "agent:main:main",
       builtinToolNames: new Set(),
+      codeModeControlToolNames: new Set(),
       replaySafeToolNames: new Set(),
     });
 
@@ -173,6 +175,7 @@ describe("prepareEmbeddedAttemptStream", () => {
       onBlockReplyFlush: vi.fn(),
       sandboxSessionKey: "agent:main:main",
       builtinToolNames: new Set(),
+      codeModeControlToolNames: new Set(),
       replaySafeToolNames: new Set(),
     });
     const subscriptionInput = mocks.buildSubscriptionParams.mock.calls.at(-1)?.[0] as {
@@ -251,6 +254,7 @@ describe("prepareEmbeddedAttemptStream", () => {
       onBlockReplyFlush: vi.fn(),
       sandboxSessionKey: "agent:main:main",
       builtinToolNames: new Set(),
+      codeModeControlToolNames: new Set(),
       replaySafeToolNames: new Set(),
     });
     const queued = prepared.queueHandle.queueMessage("new user input");

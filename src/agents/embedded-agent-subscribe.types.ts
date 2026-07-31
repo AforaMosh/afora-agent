@@ -134,6 +134,8 @@ export type SubscribeEmbeddedAgentSessionParams = {
    * Exact raw names of OpenClaw tools registered for this run.
    */
   builtinToolNames?: ReadonlySet<string>;
+  /** Exact visible names backed by marked Code Mode control tool instances. */
+  codeModeControlToolNames?: ReadonlySet<string>;
   /** Exact registered tool names whose concrete instances are safe to replay. */
   replaySafeToolNames?: ReadonlySet<string>;
   /**

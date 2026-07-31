@@ -89,6 +89,7 @@ export function prepareEmbeddedAttemptStream(input: {
   onBlockReplyFlush: EmbeddedRunAttemptParams["onBlockReplyFlush"];
   sandboxSessionKey: string;
   builtinToolNames: ReadonlySet<string>;
+  codeModeControlToolNames: ReadonlySet<string>;
   replaySafeToolNames: ReadonlySet<string>;
 }) {
   const attempt = input.attempt;
@@ -319,6 +320,7 @@ export function prepareEmbeddedAttemptStream(input: {
       sessionId: attempt.sessionId,
       agentId: input.hookAgentId,
       builtinToolNames: input.builtinToolNames,
+      codeModeControlToolNames: input.codeModeControlToolNames,
       replaySafeToolNames: input.replaySafeToolNames,
       internalEvents: attempt.internalEvents,
     }),
