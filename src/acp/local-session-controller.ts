@@ -141,26 +141,28 @@ export class AcpLocalSessionController {
     this.enforceSessionCreateRateLimit("newSession");
 
     const sessionId = this.createSessionId();
-    const meta = parseSessionMeta(params["_meta"]);
-    const sessionKey = await this.options.sessionRuntime.resolveSessionKey({
-      meta,
-      fallbackKey: `acp-bridge:${sessionId}`,
+    return await this.withSessionLifecycleRequest(sessionId, async () => {
+      const meta = parseSessionMeta(params["_meta"]);
+      const sessionKey = await this.options.sessionRuntime.resolveSessionKey({
+        meta,
+        fallbackKey: `acp-bridge:${sessionId}`,
+      });
+      const { binding, snapshot } = await this.setupSessionBinding({
+        sessionId,
+        sessionKey,
+        cwd: params.cwd,
+        meta,
+        completeLedger: true,
+        resetLedger: true,
+        replay: "none",
+      });
+      this.log(`newSession: ${binding.sessionId} -> ${binding.sessionKey}`);
+      return {
+        sessionId: binding.sessionId,
+        configOptions: snapshot.configOptions,
+        modes: snapshot.modes,
+      };
     });
-    const { binding, snapshot } = await this.setupSessionBinding({
-      sessionId,
-      sessionKey,
-      cwd: params.cwd,
-      meta,
-      completeLedger: true,
-      resetLedger: true,
-      replay: "none",
-    });
-    this.log(`newSession: ${binding.sessionId} -> ${binding.sessionKey}`);
-    return {
-      sessionId: binding.sessionId,
-      configOptions: snapshot.configOptions,
-      modes: snapshot.modes,
-    };
   }
 
   async loadSession(params: LoadSessionRequest): Promise<LoadSessionResponse> {
@@ -367,9 +369,13 @@ export class AcpLocalSessionController {
 
   async prompt(params: PromptRequest): Promise<PromptResponse> {
     let completion: Promise<PromptResponse> | undefined;
-    await this.withSessionAdmission(params.sessionId, async () => {
-      const binding = this.requireBinding(params.sessionId);
-      completion = this.options.turnRuntime.prompt(toBindingInput(binding), params);
+    // Route selection must commit before a later prompt reads the binding. Hold
+    // lifecycle ordering only through admission so later control can quiesce the turn.
+    await this.withSessionLifecycleRequest(params.sessionId, async () => {
+      await this.withSessionAdmission(params.sessionId, async () => {
+        const binding = this.requireBinding(params.sessionId);
+        completion = this.options.turnRuntime.prompt(toBindingInput(binding), params);
+      });
     });
     if (!completion) {
       throw new Error(`Session ${params.sessionId} prompt was not admitted`);

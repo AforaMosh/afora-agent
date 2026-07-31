@@ -1,4 +1,8 @@
-import type { LoadSessionRequest, ResumeSessionRequest } from "@agentclientprotocol/sdk";
+import type {
+  LoadSessionRequest,
+  PromptRequest,
+  ResumeSessionRequest,
+} from "@agentclientprotocol/sdk";
 import { describe, expect, it, vi } from "vitest";
 import { AcpLocalSessionBindings } from "./local-session-bindings.js";
 import { AcpLocalSessionController } from "./local-session-controller.js";
@@ -40,7 +44,7 @@ function createSessionRuntime(
   };
 }
 
-function createTurnRuntime(): AcpLocalTurnRuntime {
+function createTurnRuntime(overrides: Partial<AcpLocalTurnRuntime> = {}): AcpLocalTurnRuntime {
   return {
     activeRunCount: vi.fn(() => 0),
     activeSessionIds: vi.fn(() => new Set()),
@@ -48,6 +52,7 @@ function createTurnRuntime(): AcpLocalTurnRuntime {
     cancel: vi.fn(async () => {}),
     quiesceSession: vi.fn(async () => {}),
     shutdown: vi.fn(async () => {}),
+    ...overrides,
   } as unknown as AcpLocalTurnRuntime;
 }
 
@@ -78,18 +83,20 @@ function createController(params: {
   bindings?: AcpLocalSessionBindings;
   sessionRuntime?: AcpLocalSessionRuntime;
   resetSession?: boolean;
+  turnRuntime?: AcpLocalTurnRuntime;
 }) {
   const bindings = params.bindings ?? new AcpLocalSessionBindings();
   const sessionRuntime = params.sessionRuntime ?? createSessionRuntime();
   const sessionUpdates = createSessionUpdates();
+  const turnRuntime = params.turnRuntime ?? createTurnRuntime();
   const controller = new AcpLocalSessionController({
     bindings,
     sessionRuntime,
     sessionUpdates,
-    turnRuntime: createTurnRuntime(),
+    turnRuntime,
     serverOptions: params.resetSession ? { resetSession: true } : undefined,
   });
-  return { controller, sessionUpdates };
+  return { controller, sessionUpdates, turnRuntime };
 }
 
 function sessionRequest(method: "load" | "resume", sessionId: string) {
@@ -101,7 +108,56 @@ function sessionRequest(method: "load" | "resume", sessionId: string) {
   } as LoadSessionRequest & ResumeSessionRequest;
 }
 
+function promptRequest(sessionId: string): PromptRequest {
+  return {
+    sessionId,
+    prompt: [{ type: "text", text: "hello" }],
+    _meta: {},
+  } as PromptRequest;
+}
+
 describe("AcpLocalSessionController lifecycle ordering", () => {
+  it("does not let shutdown overtake new-session routing", async () => {
+    const routingStarted = deferred<void>();
+    const releaseRouting = deferred<void>();
+    const bindings = new AcpLocalSessionBindings();
+    const sessionRuntime = createSessionRuntime({
+      resolveSessionKey: vi.fn(async () => {
+        routingStarted.resolve();
+        await releaseRouting.promise;
+        return "agent:main:new";
+      }),
+    });
+    const shutdown = vi.fn(async () => {});
+    const turnRuntime = createTurnRuntime({ shutdown });
+    const { controller, sessionUpdates } = createController({
+      bindings,
+      sessionRuntime,
+      turnRuntime,
+    });
+
+    const creating = controller.newSession({
+      cwd: "/work",
+      mcpServers: [],
+      _meta: {},
+    });
+    await routingStarted.promise;
+    let shutdownSettled = false;
+    const shuttingDown = controller.shutdown().finally(() => {
+      shutdownSettled = true;
+    });
+    await Promise.resolve();
+    expect(shutdownSettled).toBe(false);
+
+    releaseRouting.resolve();
+    await expect(creating).resolves.toMatchObject({ sessionId: expect.any(String) });
+    await shuttingDown;
+
+    expect(bindings.list()).toEqual([]);
+    expect(shutdown).toHaveBeenCalledTimes(1);
+    expect(sessionUpdates.stop).toHaveBeenCalledTimes(1);
+  });
+
   it.each(["load", "resume"] as const)(
     "does not let close overtake %s while routing is pending",
     async (method) => {
@@ -138,6 +194,51 @@ describe("AcpLocalSessionController lifecycle ordering", () => {
       await routing;
       await closing;
       expect(bindings.get("session-1")).toBeUndefined();
+    },
+  );
+
+  it.each(["load", "resume"] as const)(
+    "does not let prompt admission overtake %s while routing is pending",
+    async (method) => {
+      const routingStarted = deferred<void>();
+      const releaseRouting = deferred<void>();
+      const bindings = new AcpLocalSessionBindings();
+      await bindings.replace({
+        sessionId: "session-1",
+        sessionKey: "agent:main:old",
+        cwd: "/old",
+      });
+      const sessionRuntime = createSessionRuntime({
+        resolveSessionKey: vi.fn(async () => {
+          routingStarted.resolve();
+          await releaseRouting.promise;
+          return "agent:main:new";
+        }),
+      });
+      const prompt = vi.fn(async () => ({ stopReason: "end_turn" as const }));
+      const turnRuntime = createTurnRuntime({ prompt });
+      const { controller } = createController({ bindings, sessionRuntime, turnRuntime });
+
+      const routing =
+        method === "load"
+          ? controller.loadSession(sessionRequest(method, "session-1"))
+          : controller.resumeSession(sessionRequest(method, "session-1"));
+      await routingStarted.promise;
+      const prompting = controller.prompt(promptRequest("session-1"));
+      await Promise.resolve();
+      expect(prompt).not.toHaveBeenCalled();
+
+      releaseRouting.resolve();
+      await routing;
+      await expect(prompting).resolves.toEqual({ stopReason: "end_turn" });
+      expect(prompt).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sessionId: "session-1",
+          sessionKey: "agent:main:new",
+          cwd: "/work",
+        }),
+        expect.objectContaining({ sessionId: "session-1" }),
+      );
     },
   );
 
