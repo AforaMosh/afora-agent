@@ -50,6 +50,7 @@ export type AcpSessionPresentationRow = {
   reasoningLevel?: string;
   responseUsage?: string | null;
   elevatedLevel?: string;
+  timeoutSeconds?: number;
   totalTokens?: number;
   totalTokensFresh?: boolean;
   contextTokens?: number;
@@ -142,6 +143,16 @@ export function buildSessionPresentation(params: {
   ];
   const currentModeId = normalizeOptionalString(row.thinkingLevel) || "adaptive";
   const currentFastMode = normalizeFastMode(row.effectiveFastMode ?? row.fastMode) ?? false;
+  const currentTimeout =
+    typeof row.timeoutSeconds === "number" &&
+    Number.isFinite(row.timeoutSeconds) &&
+    row.timeoutSeconds > 0
+      ? String(Math.floor(row.timeoutSeconds))
+      : "inherit";
+  const timeoutValues = ["inherit", "30", "60", "120", "300", "600"];
+  if (!timeoutValues.includes(currentTimeout)) {
+    timeoutValues.push(currentTimeout);
+  }
   if (!availableLevelIds.includes(currentModeId)) {
     availableLevelIds.push(currentModeId);
   }
@@ -208,6 +219,14 @@ export function buildSessionPresentation(params: {
       description: "Controls how aggressively the session allows elevated execution behavior.",
       currentValue: normalizeOptionalString(row.elevatedLevel) || "off",
       values: ["off", "on", "ask", "full"],
+    }),
+    buildSelectConfigOption({
+      id: ACP_TIMEOUT_SECONDS_CONFIG_ID,
+      name: "Turn timeout",
+      category: "_openclaw_runtime",
+      description: "Controls the maximum runtime for each turn in seconds.",
+      currentValue: currentTimeout,
+      values: timeoutValues,
     }),
   ];
 

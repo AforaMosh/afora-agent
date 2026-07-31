@@ -64,6 +64,12 @@ export class AcpLocalSessionBindings {
     return this.bySessionId.get(sessionId);
   }
 
+  list(): readonly AcpLocalSessionBinding[] {
+    return Object.freeze(
+      [...this.bySessionId.values()].toSorted((a, b) => a.sessionId.localeCompare(b.sessionId)),
+    );
+  }
+
   listBySessionKey(sessionKey: string): readonly AcpLocalSessionBinding[] {
     const sessionIds = this.sessionIdsByKey.get(sessionKey);
     if (!sessionIds) {

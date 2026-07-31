@@ -106,6 +106,25 @@ export class AcpTranslatorSessionUpdates {
     }
   }
 
+  async invalidateLedgerSession(session: AcpTranslatorSessionRef): Promise<void> {
+    await this.enqueueLedgerMutation(resolveLedgerSessionId(session), async () => {
+      if (this.stopped) {
+        return;
+      }
+      try {
+        await this.options.eventLedger.markIncomplete({
+          sessionId: resolveLedgerSessionId(session),
+          sessionKey: session.sessionKey,
+        });
+      } catch (err) {
+        this.options.log(
+          `event ledger invalidation failed for ${session.sessionId}: ${String(err)}`,
+        );
+        throw err;
+      }
+    });
+  }
+
   async recordUserPrompt(
     session: AcpTranslatorSessionRef,
     runId: string,

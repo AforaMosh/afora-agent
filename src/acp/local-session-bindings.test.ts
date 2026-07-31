@@ -40,6 +40,7 @@ describe("AcpLocalSessionBindings", () => {
     });
     expect(bindings.get("acp-1")).toBeUndefined();
     expect(bindings.listBySessionKey("agent:main:next")).toEqual([]);
+    expect(bindings.list().map((entry) => entry.sessionId)).toEqual(["acp-2"]);
   });
 
   it("returns immutable binding snapshots", async () => {

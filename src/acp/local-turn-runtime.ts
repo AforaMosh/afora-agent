@@ -138,6 +138,7 @@ export class AcpLocalTurnRuntime {
     { sessionId: string; sessionKey: string }
   >();
   private readonly sessionTransitions = new KeyedAsyncQueue();
+  private readonly pendingTransitionCommits = new Set<Promise<void>>();
   private readonly promptRequestGenerations = new Map<string, number>();
   private readonly promptGenerations = new Map<string, number>();
   private shutdownPromise?: Promise<void>;
@@ -160,7 +161,7 @@ export class AcpLocalTurnRuntime {
   }
 
   activeSessionIds(): ReadonlySet<string> {
-    return new Set(this.promptCompletions.values().map((entry) => entry.sessionId));
+    return new Set([...this.promptCompletions.values()].map((entry) => entry.sessionId));
   }
 
   prompt(session: AcpLocalTurnSession, params: PromptRequest): Promise<PromptResponse> {
@@ -193,18 +194,22 @@ export class AcpLocalTurnRuntime {
   }
 
   async cancel(sessionId: string, reason: unknown = new Error("ACP prompt cancelled")) {
+    if (this.stopped) {
+      return;
+    }
     if (!this.promptGenerations.has(sessionId) && !this.promptRequestGenerations.has(sessionId)) {
       return;
     }
     const generation = this.reservePromptRequest(sessionId);
     this.requestSessionTurnCancel(sessionId, reason);
-    void this.sessionTransitions
-      .enqueue(sessionId, async () => {
-        this.commitReservedGeneration(sessionId, generation);
-      })
-      .catch((error) => {
-        this.log(`failed to commit ACP cancellation for ${sessionId}: ${String(error)}`);
-      });
+    const commit = this.sessionTransitions.enqueue(sessionId, async () => {
+      this.commitReservedGeneration(sessionId, generation);
+    });
+    this.pendingTransitionCommits.add(commit);
+    const clearCommit = () => {
+      this.pendingTransitionCommits.delete(commit);
+    };
+    void commit.then(clearCommit, clearCommit);
   }
 
   async quiesceSession(
@@ -243,6 +248,7 @@ export class AcpLocalTurnRuntime {
       await Promise.allSettled(turns.map((turn) => turn.result));
       await Promise.allSettled(turns.map((turn) => turn.adapterState.projection.eventTail));
       await Promise.allSettled([...this.promptCompletions.keys()]);
+      await Promise.allSettled([...this.pendingTransitionCommits]);
       this.promptGenerations.clear();
       this.promptRequestGenerations.clear();
     })();
