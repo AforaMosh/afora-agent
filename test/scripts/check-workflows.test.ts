@@ -259,8 +259,10 @@ describe("check-workflows", () => {
     expect(workflow).toContain('$process.CommandLine -like "*$eventsPath*"');
     expect(workflow).toContain("schtasks.exe /Delete /F /TN $taskName");
     expect(workflow).toContain('$service = New-Object -ComObject "Schedule.Service"');
-    expect(workflow).toContain("task-before-cleanup.xml");
+    expect(workflow).toContain("failure-diagnostics.json");
     expect(workflow).toContain("cleanup-summary.txt");
+    expect(workflow).not.toContain("task-before-cleanup.xml");
+    expect(workflow).not.toContain("Copy-Item -LiteralPath $stateDir");
     expect(workflow).toContain("          exit 0");
     expect(workflow).toContain(".artifacts/windows-schtasks/");
     expect(workflow).toContain("if: ${{ always() && !cancelled() }}");

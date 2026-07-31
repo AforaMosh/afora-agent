@@ -854,6 +854,7 @@ describe.runIf(nativeIntegrationEnabled)("schtasks Windows integration", () => {
           stdout,
           programArguments,
           workingDirectory: rootDir,
+          environment: { OPENCLAW_GATEWAY_PORT: String(gatewayPort) },
           description: `OpenClaw CI Scheduled Task integration ${id}`,
         });
 

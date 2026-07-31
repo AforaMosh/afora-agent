@@ -23,8 +23,16 @@ const sleepMock = vi.hoisted(() =>
     timeState.now += ms;
   }),
 );
+type SpawnSyncResult = {
+  pid: number;
+  output: (string | null)[];
+  stdout: string;
+  stderr: string;
+  status: number;
+  signal: null;
+};
 const spawnSync = vi.hoisted(() =>
-  vi.fn(() => ({
+  vi.fn<(command: string, args?: readonly string[]) => SpawnSyncResult>(() => ({
     pid: 0,
     output: [null, "-2147024891", ""],
     stdout: "-2147024891",
