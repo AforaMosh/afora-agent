@@ -2372,15 +2372,10 @@ describeLive("live models (profile keys)", () => {
       if (!isFrontierCodeModeProof()) {
         return;
       }
-      const { execFile } = await import("node:child_process");
-      const { readFile } = await import("node:fs/promises");
-      const { promisify } = await import("node:util");
-      const execFileAsync = promisify(execFile);
+      const { parseCodeModeMatrixOptions, runCodeModeModelMatrix } =
+        await import("../../scripts/code-mode-model-matrix.js");
       const outputDir = `.artifacts/qa-e2e/code-mode-model-matrix/frontier-ci-${process.pid}`;
       const args = [
-        "--import",
-        "tsx",
-        "scripts/code-mode-model-matrix.ts",
         "--model",
         "openai/gpt-5.6",
         "--model",
@@ -2402,28 +2397,22 @@ describeLive("live models (profile keys)", () => {
         "--output-dir",
         outputDir,
       ];
-      try {
-        const result = await execFileAsync(process.execPath, args, {
-          cwd: process.cwd(),
-          encoding: "utf8",
-          env: process.env,
-          maxBuffer: 8 * 1024 * 1024,
-          timeout: 30 * 60 * 1000,
-        });
-        writeSync(2, result.stdout);
-        writeSync(2, result.stderr);
-      } catch (error) {
-        const commandError = error as Error & { stderr?: string; stdout?: string };
-        writeSync(2, commandError.stdout ?? "");
-        writeSync(2, commandError.stderr ?? "");
-        throw error;
+      const image = process.env.OPENCLAW_LIVE_IMAGE?.trim() ?? "";
+      const selectedSha = image.match(/:([0-9a-f]{40})-matrix-acpx$/u)?.[1];
+      if (!selectedSha) {
+        throw new Error(`Could not resolve selected source SHA from OPENCLAW_LIVE_IMAGE=${image}`);
       }
-      const summary = JSON.parse(await readFile(`${outputDir}/summary.json`, "utf8")) as {
-        failed?: number;
-        passed?: number;
-        total?: number;
-      };
-      expect(summary).toMatchObject({ failed: 0, passed: 6, total: 6 });
+      const result = await runCodeModeModelMatrix(parseCodeModeMatrixOptions(args, process.cwd()), {
+        readSourceIdentity: async () => ({
+          gitSha: selectedSha,
+          sourceDirty: false,
+          sourcePatchSha256: null,
+        }),
+      });
+      expect(result.exitCode).toBe(0);
+      expect(result.summary).toMatchObject({
+        counts: { failed: 0, passed: 6, total: 6 },
+      });
     },
     35 * 60 * 1000,
   );
