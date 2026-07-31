@@ -2390,7 +2390,7 @@ describeLive("live models (profile keys)", () => {
         "--mode",
         "code",
         "--agent-runtime",
-        "default",
+        "openclaw",
         "--task",
         "edit-readback",
         "--repetitions",
