@@ -327,7 +327,12 @@ vi.mock("../config/backup-rotation.js", () => ({
 }));
 
 vi.mock("../daemon/service.js", () => ({
-  readGatewayServiceState: async () => {
+  readGatewayServiceState: async (
+    _service: unknown,
+    args?: {
+      validateEnvBeforeStatusRead?: (env: NodeJS.ProcessEnv) => void;
+    },
+  ) => {
     const command = await serviceReadCommand();
     const env = {
       ...process.env,
@@ -335,6 +340,7 @@ vi.mock("../daemon/service.js", () => ({
         ? (command.environment as NodeJS.ProcessEnv | undefined)
         : undefined),
     };
+    args?.validateEnvBeforeStatusRead?.(env);
     const [loaded, runtime] = await Promise.all([
       serviceLoaded({ env }).catch(() => false),
       serviceReadRuntime(env).catch(() => undefined),
@@ -4245,6 +4251,75 @@ describe("update-cli", () => {
     expect(runDaemonRestart).not.toHaveBeenCalled();
     expect(packageInstallCommandCall()).toBeDefined();
   });
+
+  it.each([
+    {
+      platform: "darwin" as const,
+      envKey: "OPENCLAW_LAUNCHD_LABEL",
+      value: "ai.openclaw.gateway",
+    },
+    {
+      platform: "linux" as const,
+      envKey: "OPENCLAW_SYSTEMD_UNIT",
+      value: "openclaw-gateway.service",
+    },
+    {
+      platform: "win32" as const,
+      envKey: "OPENCLAW_WINDOWS_TASK_NAME",
+      value: "OpenClaw Gateway",
+    },
+  ])(
+    "does not reuse a conflicting $envKey selector from the managed service on $platform",
+    async ({ platform, envKey, value }) => {
+      const platformSpy = vi.spyOn(process, "platform", "get").mockReturnValue(platform);
+      const tempDir = await createTrackedTempDir(`openclaw-update-${platform}-selector-`);
+      const home = path.join(tempDir, "home");
+      const stateDir = path.join(home, ".openclaw-work");
+      const { nodeModules } = await setupInstalledPackageRoot(tempDir);
+      serviceReadCommand.mockResolvedValue({
+        programArguments: ["openclaw", "gateway", "run"],
+        environment: {
+          OPENCLAW_PROFILE: "work",
+          [envKey]: value,
+        },
+      });
+      serviceLoaded.mockResolvedValue(true);
+      serviceReadRuntime.mockResolvedValue({ status: "stopped", state: "stopped" });
+      mockFileBackedPathExists();
+      mockNpmGlobalRoot(nodeModules);
+
+      try {
+        await withEnvAsync(
+          {
+            HOME: home,
+            USERPROFILE: undefined,
+            OPENCLAW_HOME: undefined,
+            OPENCLAW_PROFILE: "work",
+            OPENCLAW_STATE_DIR: stateDir,
+            OPENCLAW_CONFIG_PATH: path.join(stateDir, "openclaw.json"),
+            [envKey]: undefined,
+          },
+          async () => {
+            await updateCommand({ yes: true });
+          },
+        );
+      } finally {
+        platformSpy.mockRestore();
+      }
+
+      expect(isDefaultInstallIdentity).toHaveBeenCalled();
+      expect(serviceReadRuntime).not.toHaveBeenCalled();
+      expect(suspendScheduledTaskAutoStartForUpdate).not.toHaveBeenCalled();
+      expect(serviceStop).not.toHaveBeenCalled();
+      expect(serviceRestart).not.toHaveBeenCalled();
+      expect(prepareRestartScript).not.toHaveBeenCalled();
+      expect(runRestartScript).not.toHaveBeenCalled();
+      expect(runDaemonRestart).not.toHaveBeenCalled();
+      expect(packageInstallCommandCall()).toBeUndefined();
+      expect(defaultRuntime.exit).toHaveBeenCalledWith(1);
+      expect(getErrorOutput()).toContain(envKey);
+    },
+  );
 
   it("restores Windows Scheduled Task autostart when service stop fails", async () => {
     const platformSpy = vi.spyOn(process, "platform", "get").mockReturnValue("win32");
