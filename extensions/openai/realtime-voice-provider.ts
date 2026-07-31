@@ -36,6 +36,7 @@ import {
   normalizeResolvedSecretInputString,
   normalizeSecretInputString,
 } from "openclaw/plugin-sdk/secret-input";
+import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
 import WebSocket from "ws";
 import {
   asFiniteNumber,
@@ -184,6 +185,7 @@ type RealtimeEvent = {
     name?: string;
     call_id?: string;
     arguments?: string;
+    status?: "completed" | "incomplete" | "in_progress";
   };
   response?: {
     id?: string;
@@ -610,6 +612,8 @@ class OpenAIRealtimeVoiceBridge implements RealtimeVoiceBridge {
   private static readonly CONNECT_TIMEOUT_MS = 10_000;
   private static readonly MAX_PENDING_AUDIO_CHUNKS = 320;
   private static readonly MAX_PENDING_AUDIO_BYTES = 1024 * 1024;
+  // Match the established Code Mode per-batch pending-tool concurrency limit.
+  private static readonly MAX_PENDING_TOOL_CALLS = 16;
   readonly supportsToolResultContinuation = true;
   readonly supportsToolResultSuppression = true;
 
@@ -636,6 +640,8 @@ class OpenAIRealtimeVoiceBridge implements RealtimeVoiceBridge {
   private connectionUrl = "";
   private toolCallBuffers = new Map<string, { name: string; callId: string; args: string }>();
   private deliveredToolCallKeys = new Set<string>();
+  private pendingInvalidToolCalls = new Map<string, Error>();
+  private pendingToolCallOverflowed = false;
   private readonly flowId = randomUUID();
   private sessionReadyFired = false;
   private reconnectReason: string | undefined;
@@ -1428,6 +1434,7 @@ class OpenAIRealtimeVoiceBridge implements RealtimeVoiceBridge {
 
       case "response.cancelled":
       case "response.done":
+        this.finalizePendingToolCalls(event);
         this.responseActive = false;
         this.responseCreateInFlight = false;
         this.manualResponseCreateEventId = null;
@@ -1464,13 +1471,18 @@ class OpenAIRealtimeVoiceBridge implements RealtimeVoiceBridge {
           name: buffered?.name || event.name,
           // The done payload owns the final JSON; streamed chunks may be stale or incomplete.
           rawArgs: event.arguments ?? buffered?.args,
+          authoritative: false,
         });
         this.toolCallBuffers.delete(key);
         return;
       }
 
       case "conversation.item.done": {
-        if (event.item?.type !== "function_call") {
+        if (
+          event.item?.type !== "function_call" ||
+          event.item.status === "incomplete" ||
+          event.item.status === "in_progress"
+        ) {
           return;
         }
         this.emitToolCallOnce({
@@ -1478,6 +1490,7 @@ class OpenAIRealtimeVoiceBridge implements RealtimeVoiceBridge {
           callId: event.item.call_id ?? event.call_id ?? event.item.id ?? event.item_id,
           name: event.item.name ?? event.name,
           rawArgs: event.item.arguments ?? event.arguments,
+          authoritative: true,
         });
         return;
       }
@@ -1591,8 +1604,9 @@ class OpenAIRealtimeVoiceBridge implements RealtimeVoiceBridge {
     callId?: string;
     name?: string;
     rawArgs?: string;
+    authoritative: boolean;
   }): void {
-    if (!this.config.onToolCall) {
+    if (!this.config.onToolCall || this.pendingToolCallOverflowed) {
       return;
     }
     const itemId = fields.itemId || fields.callId || "unknown";
@@ -1602,17 +1616,76 @@ class OpenAIRealtimeVoiceBridge implements RealtimeVoiceBridge {
     if (this.deliveredToolCallKeys.has(dedupeKey)) {
       return;
     }
-    this.deliveredToolCallKeys.add(dedupeKey);
-    let args: unknown = {};
+    let args: unknown;
+    let validationError: Error | undefined;
     try {
       args = JSON.parse(fields.rawArgs || "{}");
-    } catch {}
+    } catch {
+      validationError = new Error(
+        `OpenAI realtime tool call "${name || callId}" has invalid JSON arguments`,
+      );
+    }
+    if (!validationError && !isRecord(args)) {
+      validationError = new Error(
+        `OpenAI realtime tool call "${name || callId}" arguments must be a JSON object`,
+      );
+    }
+    if (validationError) {
+      if (!fields.authoritative) {
+        // Final-arguments events can precede a corrected authoritative conversation item.
+        if (
+          !this.pendingInvalidToolCalls.has(dedupeKey) &&
+          this.pendingInvalidToolCalls.size >= OpenAIRealtimeVoiceBridge.MAX_PENDING_TOOL_CALLS
+        ) {
+          this.pendingInvalidToolCalls.clear();
+          this.pendingToolCallOverflowed = true;
+          this.config.onError?.(
+            new Error(
+              `OpenAI realtime tool call pending argument limit exceeded (${OpenAIRealtimeVoiceBridge.MAX_PENDING_TOOL_CALLS})`,
+            ),
+          );
+          return;
+        }
+        this.pendingInvalidToolCalls.set(dedupeKey, validationError);
+        return;
+      }
+      this.pendingInvalidToolCalls.delete(dedupeKey);
+      this.config.onError?.(validationError);
+      return;
+    }
+    this.pendingInvalidToolCalls.delete(dedupeKey);
+    this.deliveredToolCallKeys.add(dedupeKey);
     this.config.onToolCall({
       itemId,
       callId,
       name,
       args,
     });
+  }
+
+  private finalizePendingToolCalls(event: RealtimeEvent): void {
+    if (this.pendingToolCallOverflowed) {
+      this.pendingToolCallOverflowed = false;
+      this.pendingInvalidToolCalls.clear();
+      return;
+    }
+    if (this.pendingInvalidToolCalls.size === 0) {
+      return;
+    }
+    const pendingError = this.pendingInvalidToolCalls.values().next().value;
+    this.pendingInvalidToolCalls.clear();
+    const status = event.response?.status;
+    if (
+      event.type === "response.cancelled" ||
+      status === "cancelled" ||
+      status === "failed" ||
+      status === "incomplete"
+    ) {
+      return;
+    }
+    if (pendingError) {
+      this.config.onError?.(pendingError);
+    }
   }
 
   private requestResponseCreate(): void {
@@ -1675,6 +1748,8 @@ class OpenAIRealtimeVoiceBridge implements RealtimeVoiceBridge {
     this.lastAssistantItemId = null;
     this.toolCallBuffers.clear();
     this.deliveredToolCallKeys.clear();
+    this.pendingInvalidToolCalls.clear();
+    this.pendingToolCallOverflowed = false;
   }
 
   private enqueuePendingAudio(audio: Buffer): void {
