@@ -340,11 +340,12 @@ export async function finishUpdate(params: {
   let refreshGatewayServiceEnv = false;
   let gatewayServiceEnv: NodeJS.ProcessEnv | undefined;
   let skipLegacyServiceRestart = false;
+  const serviceMutationAllowed = params.preManagedServiceStop?.serviceMutationAllowed !== false;
   let gatewayPort = resolveUpdatedGatewayRestartPort({
     config: restartConfigSnapshot.valid ? restartConfigSnapshot.config : undefined,
     processEnv: process.env,
   });
-  if (params.shouldRestart) {
+  if (params.shouldRestart && serviceMutationAllowed) {
     try {
       const serviceState = await readGatewayServiceState(resolveGatewayService(), {
         env: resolvePostUpdateServiceStateReadEnv({
@@ -420,7 +421,7 @@ export async function finishUpdate(params: {
     return;
   }
   const restartOk = await maybeRestartService({
-    shouldRestart: params.shouldRestart,
+    shouldRestart: params.shouldRestart && serviceMutationAllowed,
     result: resultWithPostUpdate,
     opts: params.opts,
     refreshServiceEnv: refreshGatewayServiceEnv,

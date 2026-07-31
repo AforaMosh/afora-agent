@@ -14,6 +14,7 @@ import {
   repairLaunchAgentBootstrap,
   restartLaunchAgent,
   resolveLaunchAgentPlistPath,
+  startLaunchAgent,
   stopLaunchAgent,
   uninstallLaunchAgent,
 } from "./launchd.js";
@@ -221,7 +222,8 @@ describeLaunchdIntegration("launchd integration", () => {
         await service.stop({ env: profileEnv, stdout });
         await waitForNotRunningRuntime({ env: profileEnv });
 
-        await service.start({ env: profileEnv, stdout });
+        const startResult = await startGatewayService(service, { env: profileEnv, stdout });
+        expect(startResult.outcome).toBe("started");
         const started = await waitForRunningRuntime({
           env: profileEnv,
           pidNot: installed.pid,
@@ -283,9 +285,7 @@ describeLaunchdIntegration("launchd integration", () => {
     const before = await waitForRunningRuntime({ env: launchEnv });
     await stopLaunchAgent({ env: launchEnv, stdout });
     await waitForNotRunningRuntime({ env: launchEnv });
-    const service = resolveGatewayService();
-    const startResult = await startGatewayService(service, { env: launchEnv, stdout });
-    expect(startResult.outcome).toBe("started");
+    await startLaunchAgent({ env: launchEnv, stdout });
     await expectRuntimePidReplaced({ env: launchEnv, previousPid: before.pid });
   }, 60_000);
 

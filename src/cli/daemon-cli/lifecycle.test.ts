@@ -35,6 +35,7 @@ const service = {
   restart: vi.fn(),
   stop: vi.fn(),
 };
+const isDefaultInstallIdentity = vi.hoisted(() => vi.fn(() => true));
 
 const runServiceStart = vi.fn();
 const runServiceRestart = vi.fn();
@@ -129,7 +130,10 @@ vi.mock("../../config/config.js", () => ({
   resolveGatewayPort: (cfg?: unknown, env?: unknown) => resolveGatewayPort(cfg, env),
 }));
 
-vi.mock("../../config/paths.js", () => ({ isDefaultInstallIdentity: () => true }));
+vi.mock("../../config/paths.js", () => ({
+  isDefaultInstallIdentity: () => isDefaultInstallIdentity(),
+  resolveNativeServiceProfileConflict: () => null,
+}));
 
 vi.mock("../../infra/gateway-processes.js", () => ({
   findVerifiedGatewayListenerPidsOnPortSync,
@@ -276,13 +280,12 @@ describe("runDaemonRestart health checks", () => {
     ]);
     delete process.env.OPENCLAW_CONTAINER_HINT;
     service.readCommand.mockReset();
-    service.readRuntime.mockReset();
-    service.readRuntime.mockResolvedValue({ status: "stopped" });
-    service.restart.mockReset();
+    service.readRuntime.mockReset().mockResolvedValue({ status: "stopped" });
+    service.restart.mockReset().mockResolvedValue({ outcome: "completed" });
     service.stop.mockReset();
-    runServiceStart.mockReset();
+    runServiceStart.mockReset().mockResolvedValue(undefined);
     runServiceRestart.mockReset();
-    runServiceStop.mockReset();
+    runServiceStop.mockReset().mockResolvedValue(undefined);
     waitForGatewayHealthyListener.mockReset();
     waitForGatewayHealthyRestart.mockReset();
     terminateStaleGatewayPids.mockReset();
@@ -290,43 +293,36 @@ describe("runDaemonRestart health checks", () => {
     renderRestartDiagnostics.mockReset();
     resolveGatewayPort.mockReset();
     findVerifiedGatewayListenerPidsOnPortSync.mockReset();
-    signalVerifiedGatewayPidSync.mockReset();
-    writeGatewayRestartIntentSync.mockReset();
+    signalVerifiedGatewayPidSync.mockReset().mockImplementation(() => {});
+    writeGatewayRestartIntentSync.mockReset().mockReturnValue(true);
     clearGatewayRestartIntentSync.mockReset();
-    formatGatewayPidList.mockReset();
+    formatGatewayPidList.mockReset().mockImplementation((pids) => pids.join(", "));
     probeGateway.mockReset();
     callGatewayCli.mockReset();
     isRestartEnabled.mockReset();
     loadConfig.mockReset();
-    readActiveGatewayLockPort.mockReset();
+    readActiveGatewayLockPort.mockReset().mockResolvedValue(undefined);
     readActiveGatewayLockIdentity.mockReset();
-    recoverInstalledLaunchAgent.mockReset();
+    recoverInstalledLaunchAgent.mockReset().mockResolvedValue(null);
     repairLoadedGatewayServiceForStart.mockReset();
-    isTerminalInteractive.mockReset();
-    isTerminalInteractive.mockReturnValue(true);
+    isTerminalInteractive.mockReset().mockReturnValue(true);
     appendGatewayLifecycleAudit.mockClear();
     createGatewayLifecycleMutationAudit.mockClear();
+    isDefaultInstallIdentity.mockReset().mockReturnValue(true);
 
     service.readCommand.mockResolvedValue({
       programArguments: ["openclaw", "gateway", "--port", "18789"],
       environment: {},
     });
-    service.restart.mockResolvedValue({ outcome: "completed" });
-    runServiceStart.mockResolvedValue(undefined);
-    recoverInstalledLaunchAgent.mockResolvedValue(null);
-    readActiveGatewayLockPort.mockResolvedValue(undefined);
     readActiveGatewayLockIdentity.mockResolvedValue({
       pid: 4200,
       ownerId: "gateway-owner-old",
       createdAt: "2026-07-16T12:00:00.000Z",
       port: 18_789,
     });
-    findInstalledSystemdGatewayScope.mockReset();
-    findInstalledSystemdGatewayScope.mockResolvedValue(null);
-    restartSystemdService.mockReset();
-    restartSystemdService.mockResolvedValue({ outcome: "completed" });
-    stopSystemdService.mockReset();
-    stopSystemdService.mockResolvedValue(undefined);
+    findInstalledSystemdGatewayScope.mockReset().mockResolvedValue(null);
+    restartSystemdService.mockReset().mockResolvedValue({ outcome: "completed" });
+    stopSystemdService.mockReset().mockResolvedValue(undefined);
 
     runServiceRestart.mockImplementation(async (params: RestartParams) => {
       const fail = (message: string, hints?: string[]) => {
@@ -342,7 +338,6 @@ describe("runDaemonRestart health checks", () => {
       });
       return true;
     });
-    runServiceStop.mockResolvedValue(undefined);
     waitForGatewayHealthyListener.mockResolvedValue({
       healthy: true,
       portUsage: { port: 18789, status: "busy", listeners: [], hints: [] },
@@ -383,9 +378,6 @@ describe("runDaemonRestart health checks", () => {
       },
     });
     isRestartEnabled.mockReturnValue(true);
-    signalVerifiedGatewayPidSync.mockImplementation(() => {});
-    writeGatewayRestartIntentSync.mockReturnValue(true);
-    formatGatewayPidList.mockImplementation((pids) => pids.join(", "));
   });
 
   afterEach(() => {
@@ -407,6 +399,16 @@ describe("runDaemonRestart health checks", () => {
     await runDaemonStart({ json: true });
 
     expect(recoverInstalledLaunchAgent).toHaveBeenCalledWith({ result: "started" });
+  });
+
+  it("rejects restart before any service or unmanaged-process mutation", async () => {
+    isDefaultInstallIdentity.mockReturnValue(false);
+
+    await expect(runDaemonRestart({ json: true })).rejects.toThrow(/non-default state dir/);
+
+    expect(runServiceRestart).not.toHaveBeenCalled();
+    expect(recoverInstalledLaunchAgent).not.toHaveBeenCalled();
+    expect(signalVerifiedGatewayPidSync).not.toHaveBeenCalled();
   });
 
   it("preserves an install-time port override when config does not own the port", async () => {

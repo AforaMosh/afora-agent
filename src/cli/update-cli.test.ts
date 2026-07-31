@@ -44,6 +44,11 @@ const resolveGlobalManager = vi.fn();
 const serviceLoaded = vi.fn();
 const serviceStop = vi.fn();
 const serviceRestart = vi.fn();
+const isDefaultInstallIdentity = vi.hoisted(() =>
+  vi.fn<(env?: NodeJS.ProcessEnv, homedir?: () => string, platform?: NodeJS.Platform) => boolean>(
+    () => true,
+  ),
+);
 const suspendScheduledTaskAutoStartForUpdate = vi.fn();
 const resumeScheduledTaskAutoStartAfterUpdate = vi.fn();
 const prepareRestartScript = vi.fn();
@@ -363,6 +368,15 @@ vi.mock("../daemon/schtasks.js", () => ({
     suspendScheduledTaskAutoStartForUpdate(...args),
   resumeScheduledTaskAutoStartAfterUpdate: (...args: unknown[]) =>
     resumeScheduledTaskAutoStartAfterUpdate(...args),
+}));
+
+vi.mock("../config/paths.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../config/paths.js")>()),
+  isDefaultInstallIdentity: (
+    env?: NodeJS.ProcessEnv,
+    homedir?: () => string,
+    platform?: NodeJS.Platform,
+  ) => isDefaultInstallIdentity(env, homedir, platform),
 }));
 
 vi.mock("../infra/ports.js", () => ({
@@ -1364,6 +1378,8 @@ describe("update-cli", () => {
     resolveGlobalManager.mockResolvedValue("npm");
     serviceStop.mockResolvedValue(undefined);
     serviceRestart.mockResolvedValue({ outcome: "completed" });
+    isDefaultInstallIdentity.mockReset();
+    isDefaultInstallIdentity.mockReturnValue(true);
     suspendScheduledTaskAutoStartForUpdate.mockResolvedValue(false);
     resumeScheduledTaskAutoStartAfterUpdate.mockResolvedValue(false);
     serviceLoaded.mockResolvedValue(false);
@@ -4204,6 +4220,30 @@ describe("update-cli", () => {
     expect(processOffSpy).toHaveBeenCalledWith("SIGBREAK", expect.any(Function));
     processOnSpy.mockRestore();
     processOffSpy.mockRestore();
+  });
+
+  it("does not inspect or mutate a Windows host service from an isolated install", async () => {
+    const platformSpy = vi.spyOn(process, "platform", "get").mockReturnValue("win32");
+    const tempDir = await createTrackedTempDir("openclaw-update-isolated-service-");
+    const { nodeModules } = await setupInstalledPackageRoot(tempDir);
+    mockRunningManagedGateway();
+    mockFileBackedPathExists();
+    mockNpmGlobalRoot(nodeModules);
+    isDefaultInstallIdentity.mockReturnValue(false);
+
+    await withEnvAsync({ OPENCLAW_HOME: path.join(tempDir, "relocated-home") }, async () => {
+      await updateCommand({ yes: true });
+    });
+    platformSpy.mockRestore();
+
+    expect(isDefaultInstallIdentity).toHaveBeenCalled();
+    expect(serviceReadCommand).not.toHaveBeenCalled();
+    expect(suspendScheduledTaskAutoStartForUpdate).not.toHaveBeenCalled();
+    expect(serviceStop).not.toHaveBeenCalled();
+    expect(prepareRestartScript).not.toHaveBeenCalled();
+    expect(runRestartScript).not.toHaveBeenCalled();
+    expect(runDaemonRestart).not.toHaveBeenCalled();
+    expect(packageInstallCommandCall()).toBeDefined();
   });
 
   it("restores Windows Scheduled Task autostart when service stop fails", async () => {

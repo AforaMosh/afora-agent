@@ -1,6 +1,6 @@
 import os from "node:os";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   assertGatewayServiceMutationAllowed,
   formatExternalSupervisorUpdateRequired,
@@ -63,6 +63,82 @@ describe("gateway supervision", () => {
       }),
     ).not.toThrow();
   });
+
+  it.each([
+    {
+      platform: "darwin" as const,
+      platformName: "macOS",
+      envKey: "OPENCLAW_LAUNCHD_LABEL",
+      value: "ai.openclaw.gateway",
+    },
+    {
+      platform: "linux" as const,
+      platformName: "Linux",
+      envKey: "OPENCLAW_SYSTEMD_UNIT",
+      value: "openclaw-gateway.service",
+    },
+    {
+      platform: "win32" as const,
+      platformName: "Windows",
+      envKey: "OPENCLAW_WINDOWS_TASK_NAME",
+      value: "OpenClaw Gateway",
+    },
+  ])(
+    "rejects named-profile $envKey overrides on $platformName",
+    ({ platform, platformName, envKey, value }) => {
+      const platformSpy = vi.spyOn(process, "platform", "get").mockReturnValue(platform);
+      const accountHome = os.userInfo().homedir;
+      try {
+        expect(() =>
+          assertGatewayServiceMutationAllowed("restart the gateway", {
+            HOME: accountHome,
+            OPENCLAW_PROFILE: "work",
+            OPENCLAW_STATE_DIR: path.join(accountHome, ".openclaw-work"),
+            OPENCLAW_CONFIG_PATH: path.join(accountHome, ".openclaw-work", "openclaw.json"),
+            [envKey]: value,
+          }),
+        ).toThrow(
+          `named profiles cannot override ${envKey} for ${platformName} service management`,
+        );
+      } finally {
+        platformSpy.mockRestore();
+      }
+    },
+  );
+
+  it("rejects macOS profile names that collide with reserved LaunchAgent identities", () => {
+    const platformSpy = vi.spyOn(process, "platform", "get").mockReturnValue("darwin");
+    try {
+      expect(() =>
+        assertGatewayServiceMutationAllowed("restart the gateway", {
+          OPENCLAW_PROFILE: "gateway",
+        }),
+      ).toThrow('macOS profile "gateway" conflicts with a reserved LaunchAgent identity');
+    } finally {
+      platformSpy.mockRestore();
+    }
+  });
+
+  it.each([
+    { platform: "darwin" as const, platformName: "macOS" },
+    { platform: "win32" as const, platformName: "Windows" },
+  ])(
+    "rejects case-distinct native service identities on $platformName",
+    ({ platform, platformName }) => {
+      const platformSpy = vi.spyOn(process, "platform", "get").mockReturnValue(platform);
+      try {
+        expect(() =>
+          assertGatewayServiceMutationAllowed("restart the gateway", {
+            OPENCLAW_PROFILE: "Main",
+          }),
+        ).toThrow(
+          `${platformName} profile "Main" is not lowercase-safe for case-insensitive state and native-service paths`,
+        );
+      } finally {
+        platformSpy.mockRestore();
+      }
+    },
+  );
 
   it("explains why self-update must be delegated", () => {
     expect(formatExternalSupervisorUpdateRequired()).toContain(
