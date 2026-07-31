@@ -210,7 +210,14 @@ function runAdvisoryStatus(overrides: Record<string, string> = {}) {
   };
 }
 
-function runCandidateProvenance(params: { openPr?: boolean; unsignedWebFlow?: boolean } = {}) {
+function runCandidateProvenance(
+  params: {
+    openPr?: boolean;
+    unsignedDirect?: boolean;
+    unsignedNoActor?: boolean;
+    unsignedWebFlow?: boolean;
+  } = {},
+) {
   const candidateSha = "a".repeat(40);
   const workdir = tempDirs.make("openclaw-telegram-provenance-");
   const fakeBin = join(workdir, "bin");
@@ -220,7 +227,8 @@ function runCandidateProvenance(params: { openPr?: boolean; unsignedWebFlow?: bo
       repository: {
         object: {
           oid: candidateSha,
-          signature: params.unsignedWebFlow
+          committer: params.unsignedDirect ? { user: { login: "release-maintainer" } } : null,
+          signature: params.unsignedWebFlow || params.unsignedDirect || params.unsignedNoActor
             ? null
             : { isValid: true, state: "VALID", signer: { login: "release-maintainer" } },
           associatedPullRequests: {
@@ -351,6 +359,13 @@ describe("release Telegram QA workflow", () => {
 
     const unsignedWebFlow = runCandidateProvenance({ unsignedWebFlow: true });
     expect(unsignedWebFlow.status, unsignedWebFlow.stderr).toBe(0);
+
+    const unsignedDirect = runCandidateProvenance({ unsignedDirect: true });
+    expect(unsignedDirect.status, unsignedDirect.stderr).toBe(0);
+
+    const unsignedNoActor = runCandidateProvenance({ unsignedNoActor: true });
+    expect(unsignedNoActor.status).toBe(1);
+    expect(unsignedNoActor.stderr).toContain("has no GitHub committer");
 
     const openPr = runCandidateProvenance({ openPr: true });
     expect(openPr.status).toBe(1);

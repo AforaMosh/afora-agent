@@ -308,7 +308,7 @@ jobs:
           repository_name="${GITHUB_REPOSITORY#*/}"
           candidate_metadata_json="$(
             gh_with_retry api graphql \
-              -f query='query($owner:String!,$name:String!,$oid:GitObjectID!){repository(owner:$owner,name:$name){object(oid:$oid){... on Commit{oid signature{isValid state signer{login}} associatedPullRequests(first:100){nodes{state headRefOid headRepository{nameWithOwner} baseRefName baseRepository{nameWithOwner} mergeCommit{oid} mergedBy{login}}}}}}}' \
+              -f query='query($owner:String!,$name:String!,$oid:GitObjectID!){repository(owner:$owner,name:$name){object(oid:$oid){... on Commit{oid committer{user{login}} signature{isValid state signer{login}} associatedPullRequests(first:100){nodes{state headRefOid headRepository{nameWithOwner} baseRefName baseRepository{nameWithOwner} mergeCommit{oid} mergedBy{login}}}}}}}' \
               -f owner="$repository_owner" \
               -f name="$repository_name" \
               -f oid="$candidate_sha"
@@ -417,9 +417,18 @@ jobs:
                   '[.data.repository.object.associatedPullRequests.nodes[] |
                     select(.state == "MERGED" and .baseRefName == $base and
                       .baseRepository.nameWithOwner == $repo and .mergeCommit.oid == $sha) |
-                    .mergedBy.login] | unique | select(length == 1) | .[0]' \
+                    .mergedBy.login] | unique | if length == 0 then "" elif length == 1 then .[0] else error("ambiguous release merge actor") end' \
                   <<<"$signature_json"
               )"
+              if [[ -z "$permission_actor" ]]; then
+                # Direct release commits have no merged PR. The exact canonical
+                # branch head still requires a current maintainer as committer.
+                permission_actor="$(jq -er '.data.repository.object.committer.user.login // empty' <<<"$signature_json")"
+              fi
+              if [[ -z "$permission_actor" ]]; then
+                echo "Unsigned direct release candidate ${candidate_sha} has no GitHub committer." >&2
+                exit 1
+              fi
             fi
             permission_json="$(
               gh_with_retry api \
@@ -1050,7 +1059,7 @@ jobs:
           repository_name="${GITHUB_REPOSITORY#*/}"
           candidate_metadata_json="$(
             gh_with_retry api graphql \
-              -f query='query($owner:String!,$name:String!,$oid:GitObjectID!){repository(owner:$owner,name:$name){object(oid:$oid){... on Commit{oid signature{isValid state signer{login}} associatedPullRequests(first:100){nodes{state headRefOid headRepository{nameWithOwner} baseRefName baseRepository{nameWithOwner} mergeCommit{oid} mergedBy{login}}}}}}}' \
+              -f query='query($owner:String!,$name:String!,$oid:GitObjectID!){repository(owner:$owner,name:$name){object(oid:$oid){... on Commit{oid committer{user{login}} signature{isValid state signer{login}} associatedPullRequests(first:100){nodes{state headRefOid headRepository{nameWithOwner} baseRefName baseRepository{nameWithOwner} mergeCommit{oid} mergedBy{login}}}}}}}' \
               -f owner="$repository_owner" \
               -f name="$repository_name" \
               -f oid="$candidate_sha"
@@ -1152,9 +1161,18 @@ jobs:
                   '[.data.repository.object.associatedPullRequests.nodes[] |
                     select(.state == "MERGED" and .baseRefName == $base and
                       .baseRepository.nameWithOwner == $repo and .mergeCommit.oid == $sha) |
-                    .mergedBy.login] | unique | select(length == 1) | .[0]' \
+                    .mergedBy.login] | unique | if length == 0 then "" elif length == 1 then .[0] else error("ambiguous release merge actor") end' \
                   <<<"$signature_json"
               )"
+              if [[ -z "$permission_actor" ]]; then
+                # Direct release commits have no merged PR. The exact canonical
+                # branch head still requires a current maintainer as committer.
+                permission_actor="$(jq -er '.data.repository.object.committer.user.login // empty' <<<"$signature_json")"
+              fi
+              if [[ -z "$permission_actor" ]]; then
+                echo "Unsigned direct release candidate ${candidate_sha} has no GitHub committer." >&2
+                exit 1
+              fi
             fi
             permission_json="$(
               gh_with_retry api \
