@@ -9,8 +9,8 @@ title: "Audit records"
 
 # `openclaw audit`
 
-Query the Gateway's metadata-only audit ledger for agent runs, tool actions, and
-opt-in message lifecycle records.
+Query the Gateway's metadata-only activity ledger, or inspect immutable
+execution identity context for one exact agent run.
 
 The ledger is on by default for run and tool events. Set
 [`logging.audit.enabled: false`](/gateway/configuration-reference#audit) and
@@ -30,6 +30,8 @@ openclaw audit
 openclaw audit --agent main --status failed
 openclaw audit --session "agent:main:main" --after 2026-07-01T00:00:00Z
 openclaw audit --run 8c69f72e-8b11-4c54-98d5-1a3dd67450c3
+openclaw audit --run 8c69f72e-8b11-4c54-98d5-1a3dd67450c3 --explain
+openclaw audit --run 8c69f72e-8b11-4c54-98d5-1a3dd67450c3 --explain --json
 openclaw audit --kind tool_action --limit 50 --json
 openclaw audit --kind message --direction outbound --channel telegram --json
 ```
@@ -38,7 +40,7 @@ openclaw audit --kind message --direction outbound --channel telegram --json
 
 - `--agent <id>`: exact agent id
 - `--session <key>`: exact session key
-- `--run <id>`: exact run id
+- `--run <id>`: exact run id; filters activity unless `--explain` is also set
 - `--kind <kind>`: `agent_run`, `tool_action`, or `message`
 - `--status <status>`: `started`, `succeeded`, `failed`, `cancelled`,
   `timed_out`, `blocked`, or `unknown`
@@ -46,8 +48,12 @@ openclaw audit --kind message --direction outbound --channel telegram --json
 - `--channel <channel>`: exact message channel
 - `--after <timestamp>` / `--before <timestamp>`: inclusive ISO timestamp or
   Unix milliseconds
-- `--limit <count>`: page size from 1 to 500; default `100`
-- `--cursor <sequence>`: continue a previous newest-first query
+- `--limit <count>`: activity page size from 1 to 500 (default `100`), or
+  decision page size from 1 to 100 with `--explain` (default `50`)
+- `--cursor <sequence>`: continue an activity page, or continue the decision
+  page with `--explain`
+- `--explain`: inspect immutable execution identity and run-admission reasoning;
+  requires `--run` and accepts only `--limit`, `--cursor`, and `--json`
 - `--json`: print the bounded page as JSON
 
 The CLI queries the versioned activity RPC so one command shows the complete
@@ -62,6 +68,38 @@ and raw message identity fields are absent. Agent, session, and run ids, timing,
 channels, outcomes, and stable HMAC references can correlate activity. Protect
 them with the same access controls and retention practices as other operator
 records.
+
+## Explain one run
+
+Use `--run <id> --explain` to query `audit.run.inspect` rather than the
+best-effort activity list. The text view renders these sections:
+
+1. **Identity**: trust domain, invoker, ingress, agent principal, agent
+   definition, runtime instance, represented subject, and sponsor.
+2. **Authority**: applicable grants and assurance evidence.
+3. **Lineage**: parent context or an explicit absent, unknown, or unsupported
+   state.
+4. **Decisions**: the bounded run-admission receipt page.
+5. **Missing evidence** and **Next steps**.
+
+Every field includes `present`, `absent`, `unknown`, or `unsupported`; the CLI
+does not infer a user from a session key, device id, display name, or shared
+credential. A direct local run currently shows an absent invoker and
+`unattributed` coverage. Its admission receipt says `not-applicable` because no
+identity-aware policy or grant evaluation was proven.
+
+JSON output is the Gateway result without lossy reformatting. It contains one
+bounded V1 context (maximum 16 KiB), up to 100 decision receipts, coverage and
+missing-evidence codes, and an optional `nextDecisionCursor`. Sensitive domain,
+runtime, invoker, assurance, ingress-source, and grant references are
+installation-local HMAC projections. Configured agent ids and exact run ids
+remain visible, so redirected output is still private operator data.
+
+An older Gateway produces an explicit `unsupported` result with
+`gateway_upgrade_required` and an upgrade-and-rerun next step. The CLI never
+reconstructs identity from legacy audit rows. A current Gateway distinguishes
+an unknown run, an unavailable pre-feature or expired context, and a corrupt
+context without claiming that missing best-effort activity proves no execution.
 
 ## Recorded events
 
@@ -123,6 +161,17 @@ openclaw gateway call audit.activity.list --params '{"channel":"telegram","limit
 
 The result is `{ "events": AuditActivityEventV1[], "nextCursor"?: string }`.
 Results are newest first and limited to 500 records per request.
+
+`audit.run.inspect` also requires `operator.read`:
+
+```bash
+openclaw gateway call audit.run.inspect \
+  --params '{"runId":"8c69f72e-8b11-4c54-98d5-1a3dd67450c3","decisionLimit":50}'
+```
+
+Its result is `{ "schemaVersion": 1, "run": ..., "identity": ..., "decisions":
+..., "coverage": ..., "nextDecisionCursor"?: ... }`. The request is closed;
+`runId` is required, `decisionLimit` is 1–100, and `decisionCursor` is optional.
 
 The shipped `audit.list` RPC remains unchanged for older run/tool clients. When
 `audit.activity.list` is unavailable on an older Gateway, the CLI retries

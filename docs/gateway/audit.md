@@ -20,6 +20,54 @@ normalized outcome codes. It never stores prompts, message bodies, tool
 arguments, tool results, attachments, filenames, URLs, command output, or raw
 error text.
 
+The Gateway also keeps an adjacent execution identity context for newly
+admitted agent runs. This context is authoritative for the identity facts it
+contains; it does not make the activity ledger lossless and does not turn audit
+records into authorization evidence.
+
+## Run identity inspection
+
+Execution identity recording is automatic and has no config or environment
+toggle. After session work admission succeeds, the Gateway synchronously
+persists one immutable context before model, ACP, or delivery work begins. A
+context write failure prevents the run from starting instead of silently
+running without the promised evidence.
+
+Query a context by exact run id with `audit.run.inspect` or
+[`openclaw audit --run <id> --explain`](/cli/audit). The result explicitly
+states the evidence state for these fields:
+
+- trust domain, invoker, and ingress;
+- agent principal, agent definition, and runtime instance;
+- represented subject and sponsor;
+- applicable grants and assurance evidence;
+- parent or child lineage when available.
+
+The foundation records a direct local run as `unattributed`: the Gateway cell,
+local CLI ingress, configured agent, and runtime binding are present, but no
+durable invoker principal is supplied at this boundary. A run becomes
+`attribution-only` only when an authoritative ingress supplies an invoker fact.
+Neither state means that identity affected an allow or deny decision.
+
+Each present context currently projects one run-admission receipt. Its outcome
+is `not-applicable`, its policy and grant references are empty, and its reason
+states that no identity-aware policy or grant evaluation was proven. This is
+an explanation of admission evidence, not an enforcement claim.
+
+Run inspection returns successful typed diagnostics instead of inventing
+facts:
+
+- `unknown`: the exact run is not known, or expected context is corrupt or
+  unreadable;
+- `unsupported`: best-effort activity shows the run, but no context is
+  available, as with a pre-feature or expired run;
+- `unattributed`: the supported run has no usable invoker principal;
+- `attribution-only`: invoker attribution exists but was not evaluated for
+  authorization.
+
+The method requires `operator.read`. Requests are closed and bounded to one
+run id, 1–100 decisions, and an optional decision cursor.
+
 ## Record families
 
 Run and tool events are recorded whenever auditing is enabled (the default).
@@ -89,6 +137,13 @@ Run and tool records retain `sessionKey` and `sessionId` for correlation;
 canonical session keys can themselves contain platform account or peer ids.
 Message records intentionally omit both.
 
+Execution identity contexts use the same installation-local key owner with a
+separate HMAC domain. Gateway-cell, runtime, invoker, ingress-source, assurance,
+and grant references are projected before persistence. Configured agent ids and
+exact run ids remain operator-visible. Contexts never contain prompt or message
+text, command bodies, arguments, paths, credentials, environment values, or
+arbitrary plugin payloads. Each encoded context is capped at 16 KiB.
+
 Audit exports remain sensitive operational metadata even without content:
 timing, channels, outcomes, and stable pseudonyms can correlate activity.
 Protect exports with the same access controls and retention practices as other
@@ -123,6 +178,13 @@ Upgrading from a Gateway with the earlier run/tool-only ledger migrates the
 schema automatically at startup (or via `openclaw doctor --fix`); existing
 rows and their ledger sequences are preserved.
 
+Execution identity contexts also live in the shared state database. Their
+additive table is created lazily on first use without a schema-version bump.
+Contexts are retained for 30 days, capped at 100,000 rows, and pruned in batches
+of at most 1,024 rows per context write. An older build ignores this table.
+These limits make the inspector an operational diagnostic surface, not a
+compliance archive.
+
 ## Querying
 
 - CLI: [`openclaw audit`](/cli/audit) with filters for agent, session, run,
@@ -131,6 +193,9 @@ rows and their ledger sequences are preserved.
   versioned V1 activity event union; the shipped `audit.list` RPC is unchanged
   for older run/tool clients. See
   [Gateway protocol](/gateway/protocol#audit-ledger-rpc).
+- Exact-run RPC: `audit.run.inspect` (requires `operator.read`) returns the
+  immutable V1 context, admission receipt, explicit coverage, and decision
+  cursor.
 
 ## Related
 

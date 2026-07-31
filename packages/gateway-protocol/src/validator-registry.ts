@@ -381,6 +381,10 @@ export const validateAgentParams = lazyCompile(AgentParamsSchema);
 export const validateAuditActivityListParams = lazyCompile<AuditActivityListParams>(
   AuditActivityListParamsSchema,
 );
+export {
+  validateAuditRunInspectParams,
+  validateExecutionIdentityContextV1,
+} from "./validator-registry-audit.js";
 export const validateAuditListParams = lazyCompile(AuditListParamsSchema);
 export const validateUsersListParams = lazyCompile(UsersListParamsSchema);
 export const validateUsersSelfParams = lazyCompile(UsersSelfParamsSchema);

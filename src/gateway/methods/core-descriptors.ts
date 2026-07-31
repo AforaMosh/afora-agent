@@ -136,6 +136,7 @@ const CORE_GATEWAY_METHOD_SPECS: readonly CoreGatewayMethodSpec[] = [
   { name: "board.event", scope: "operator.write", since: "<=2026.7" },
   { name: "audit.list", scope: "operator.read", since: "2026.7" },
   { name: "audit.activity.list", scope: "operator.read", since: "2026.7" },
+  { name: "audit.run.inspect", scope: "operator.read", since: "2026.7" },
   { name: "users.list", scope: "operator.read", since: "<=2026.7" },
   { name: "users.self", scope: "operator.write", since: "<=2026.7" },
   { name: "users.linkEmail", scope: "operator.admin", since: "<=2026.7" },

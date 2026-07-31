@@ -8472,6 +8472,198 @@ public struct AuditActivityListResult: Codable, Sendable {
     }
 }
 
+public struct ExecutionIdentityContextV1: Codable, Sendable {
+    public let schemaversion: Double
+    public let contextid: String
+    public let runid: String
+    public let createdat: Int
+    public let trustdomain: [String: AnyCodable]
+    public let invoker: [String: AnyCodable]
+    public let ingress: [String: AnyCodable]
+    public let agentprincipal: [String: AnyCodable]
+    public let agentdefinition: [String: AnyCodable]
+    public let runtimeinstance: [String: AnyCodable]
+    public let representedsubject: [String: AnyCodable]?
+    public let sponsor: [String: AnyCodable]?
+    public let applicablegrants: [[String: AnyCodable]]
+    public let assurance: [[String: AnyCodable]]
+    public let lineage: [String: AnyCodable]?
+    public let coveragestate: AnyCodable
+    public let missingevidence: [String]
+
+    public init(
+        schemaversion: Double,
+        contextid: String,
+        runid: String,
+        createdat: Int,
+        trustdomain: [String: AnyCodable],
+        invoker: [String: AnyCodable],
+        ingress: [String: AnyCodable],
+        agentprincipal: [String: AnyCodable],
+        agentdefinition: [String: AnyCodable],
+        runtimeinstance: [String: AnyCodable],
+        representedsubject: [String: AnyCodable]? = nil,
+        sponsor: [String: AnyCodable]? = nil,
+        applicablegrants: [[String: AnyCodable]],
+        assurance: [[String: AnyCodable]],
+        lineage: [String: AnyCodable]? = nil,
+        coveragestate: AnyCodable,
+        missingevidence: [String])
+    {
+        self.schemaversion = schemaversion
+        self.contextid = contextid
+        self.runid = runid
+        self.createdat = createdat
+        self.trustdomain = trustdomain
+        self.invoker = invoker
+        self.ingress = ingress
+        self.agentprincipal = agentprincipal
+        self.agentdefinition = agentdefinition
+        self.runtimeinstance = runtimeinstance
+        self.representedsubject = representedsubject
+        self.sponsor = sponsor
+        self.applicablegrants = applicablegrants
+        self.assurance = assurance
+        self.lineage = lineage
+        self.coveragestate = coveragestate
+        self.missingevidence = missingevidence
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case schemaversion = "schemaVersion"
+        case contextid = "contextId"
+        case runid = "runId"
+        case createdat = "createdAt"
+        case trustdomain = "trustDomain"
+        case invoker
+        case ingress
+        case agentprincipal = "agentPrincipal"
+        case agentdefinition = "agentDefinition"
+        case runtimeinstance = "runtimeInstance"
+        case representedsubject = "representedSubject"
+        case sponsor
+        case applicablegrants = "applicableGrants"
+        case assurance
+        case lineage
+        case coveragestate = "coverageState"
+        case missingevidence = "missingEvidence"
+    }
+}
+
+public struct DecisionReceiptV1: Codable, Sendable {
+    public let schemaversion: Double
+    public let receiptid: String
+    public let contextid: String
+    public let runid: String
+    public let actionid: String?
+    public let occurredat: Int
+    public let action: [String: AnyCodable]
+    public let decision: [String: AnyCodable]
+    public let enforcement: [String: AnyCodable]
+    public let source: [String: AnyCodable]
+    public let missingevidence: [String]
+    public let remediation: [[String: AnyCodable]]
+
+    public init(
+        schemaversion: Double,
+        receiptid: String,
+        contextid: String,
+        runid: String,
+        actionid: String? = nil,
+        occurredat: Int,
+        action: [String: AnyCodable],
+        decision: [String: AnyCodable],
+        enforcement: [String: AnyCodable],
+        source: [String: AnyCodable],
+        missingevidence: [String],
+        remediation: [[String: AnyCodable]])
+    {
+        self.schemaversion = schemaversion
+        self.receiptid = receiptid
+        self.contextid = contextid
+        self.runid = runid
+        self.actionid = actionid
+        self.occurredat = occurredat
+        self.action = action
+        self.decision = decision
+        self.enforcement = enforcement
+        self.source = source
+        self.missingevidence = missingevidence
+        self.remediation = remediation
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case schemaversion = "schemaVersion"
+        case receiptid = "receiptId"
+        case contextid = "contextId"
+        case runid = "runId"
+        case actionid = "actionId"
+        case occurredat = "occurredAt"
+        case action
+        case decision
+        case enforcement
+        case source
+        case missingevidence = "missingEvidence"
+        case remediation
+    }
+}
+
+public struct AuditRunInspectParams: Codable, Sendable {
+    public let runid: String
+    public let decisioncursor: String?
+    public let decisionlimit: Int?
+
+    public init(
+        runid: String,
+        decisioncursor: String? = nil,
+        decisionlimit: Int? = nil)
+    {
+        self.runid = runid
+        self.decisioncursor = decisioncursor
+        self.decisionlimit = decisionlimit
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case runid = "runId"
+        case decisioncursor = "decisionCursor"
+        case decisionlimit = "decisionLimit"
+    }
+}
+
+public struct AuditRunInspectResult: Codable, Sendable {
+    public let schemaversion: Double
+    public let run: [String: AnyCodable]
+    public let identity: AuditRunIdentityV1
+    public let decisions: [DecisionReceiptV1]
+    public let coverage: [String: AnyCodable]
+    public let nextdecisioncursor: String?
+
+    public init(
+        schemaversion: Double,
+        run: [String: AnyCodable],
+        identity: AuditRunIdentityV1,
+        decisions: [DecisionReceiptV1],
+        coverage: [String: AnyCodable],
+        nextdecisioncursor: String? = nil)
+    {
+        self.schemaversion = schemaversion
+        self.run = run
+        self.identity = identity
+        self.decisions = decisions
+        self.coverage = coverage
+        self.nextdecisioncursor = nextdecisioncursor
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case schemaversion = "schemaVersion"
+        case run
+        case identity
+        case decisions
+        case coverage
+        case nextdecisioncursor = "nextDecisionCursor"
+    }
+}
+
 public struct AuditEvent: Codable, Sendable {
     public let eventid: String
     public let sequence: Int

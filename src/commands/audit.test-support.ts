@@ -1,4 +1,5 @@
 import "./audit.js";
+import type { AuditRunInspectResult } from "../../packages/gateway-protocol/src/index.js";
 
 type AuditTestEvent = {
   occurredAt: number;
@@ -13,7 +14,10 @@ type AuditTestEvent = {
 };
 
 type AuditCommandTestApi = {
+  formatAuditRunInspection(result: AuditRunInspectResult): string[];
   formatAuditRows(events: readonly AuditTestEvent[]): string[];
+  hasExplainIncompatibleFilters(options: Record<string, unknown>): boolean;
+  parseAuditDecisionLimit(value: string | undefined): number;
   parseAuditLimit(value: string | undefined): number;
   parseAuditTimestamp(value: string | undefined, flag: string): number | undefined;
 };
@@ -25,8 +29,17 @@ function getTestApi(): AuditCommandTestApi {
 }
 
 export const testApi: AuditCommandTestApi = {
+  formatAuditRunInspection(result) {
+    return getTestApi().formatAuditRunInspection(result);
+  },
   formatAuditRows(events) {
     return getTestApi().formatAuditRows(events);
+  },
+  hasExplainIncompatibleFilters(options) {
+    return getTestApi().hasExplainIncompatibleFilters(options);
+  },
+  parseAuditDecisionLimit(value) {
+    return getTestApi().parseAuditDecisionLimit(value);
   },
   parseAuditLimit(value) {
     return getTestApi().parseAuditLimit(value);

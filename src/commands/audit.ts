@@ -6,6 +6,11 @@ import type {
   AuditActivityListResult,
   AuditListParams,
   AuditListResult,
+  AuditRunInspectParams,
+  AuditRunInspectResult,
+  DecisionReceiptV1,
+  ExecutionIdentityContextV1,
+  PrincipalRefV1,
 } from "../../packages/gateway-protocol/src/index.js";
 import { sanitizeTerminalText } from "../../packages/terminal-core/src/safe-text.js";
 import { parseAbsoluteTimeMs } from "../cron/parse.js";
@@ -15,6 +20,8 @@ import { type RuntimeEnv, writeRuntimeJson } from "../runtime.js";
 
 const DEFAULT_AUDIT_LIMIT = 100;
 const MAX_AUDIT_LIMIT = 500;
+const DEFAULT_AUDIT_DECISION_LIMIT = 50;
+const MAX_AUDIT_DECISION_LIMIT = 100;
 
 export type AuditListCommandOptions = {
   agentId?: string;
@@ -28,6 +35,7 @@ export type AuditListCommandOptions = {
   before?: string;
   cursor?: string;
   limit?: string;
+  explain?: boolean;
   json?: boolean;
 };
 
@@ -68,6 +76,19 @@ function parseAuditLimit(value: string | undefined): number {
   const parsed = parseStrictPositiveInteger(value);
   if (parsed === undefined || parsed > MAX_AUDIT_LIMIT) {
     throw new Error(`--limit must be between 1 and ${MAX_AUDIT_LIMIT}.`);
+  }
+  return parsed;
+}
+
+function parseAuditDecisionLimit(value: string | undefined): number {
+  if (!value) {
+    return DEFAULT_AUDIT_DECISION_LIMIT;
+  }
+  const parsed = parseStrictPositiveInteger(value);
+  if (parsed === undefined || parsed > MAX_AUDIT_DECISION_LIMIT) {
+    throw new Error(
+      `--limit must be between 1 and ${String(MAX_AUDIT_DECISION_LIMIT)} with --explain.`,
+    );
   }
   return parsed;
 }
@@ -115,6 +136,16 @@ function isUnsupportedActivityMethodError(value: unknown): value is Error {
     value.name === "GatewayClientRequestError" &&
     (value as Error & { gatewayCode?: unknown }).gatewayCode === "INVALID_REQUEST" &&
     (value.message === "unknown method: audit.activity.list" ||
+      value.message === "missing scope: operator.admin")
+  );
+}
+
+function isUnsupportedRunInspectMethodError(value: unknown): value is Error {
+  return (
+    value instanceof Error &&
+    value.name === "GatewayClientRequestError" &&
+    (value as Error & { gatewayCode?: unknown }).gatewayCode === "INVALID_REQUEST" &&
+    (value.message === "unknown method: audit.run.inspect" ||
       value.message === "missing scope: operator.admin")
   );
 }
@@ -171,11 +202,243 @@ async function queryAuditActivity(
   }
 }
 
+function unsupportedRunInspection(runId: string): AuditRunInspectResult {
+  const missingEvidence = ["identity.context"];
+  return {
+    schemaVersion: 1,
+    run: { runId, status: "unknown" },
+    identity: {
+      state: "unsupported",
+      reasonCode: "gateway_upgrade_required",
+      missingEvidence,
+      remediation: [
+        {
+          code: "upgrade_gateway",
+          text: "Upgrade the Gateway, run the agent again, and repeat this exact-run inspection.",
+        },
+      ],
+    },
+    decisions: [],
+    coverage: { state: "unsupported", missingEvidence },
+  };
+}
+
+async function queryAuditRunInspection(
+  params: AuditRunInspectParams,
+): Promise<AuditRunInspectResult> {
+  try {
+    return await callGateway<AuditRunInspectResult>({ method: "audit.run.inspect", params });
+  } catch (error) {
+    if (!isUnsupportedRunInspectMethodError(error)) {
+      throw error;
+    }
+    return unsupportedRunInspection(params.runId);
+  }
+}
+
+function safe(value: string): string {
+  return sanitizeTerminalText(value) || "-";
+}
+
+function principalText(principal: PrincipalRefV1): string {
+  return `${safe(principal.kind)} ${safe(principal.principalRef)} in ${safe(principal.domainRef)}`;
+}
+
+function fieldLine(label: string, state: string, value?: string): string {
+  return `  ${label} [${safe(state)}]${value ? `: ${safe(value)}` : ""}`;
+}
+
+const IDENTITY_FIELD_LABELS = [
+  "Trust domain",
+  "Invoker",
+  "Ingress",
+  "Agent principal",
+  "Agent definition",
+  "Runtime instance",
+  "Represented subject",
+  "Sponsor",
+  "Applicable grants",
+  "Assurance",
+] as const;
+
+function contextIdentityLines(context: ExecutionIdentityContextV1): string[] {
+  const grants = context.applicableGrants.map((grant) => `${grant.grantRef} [${grant.state}]`);
+  const assurance = context.assurance.map(
+    (item) => `${item.kind} ${item.evidenceRef} [${item.strength}]`,
+  );
+  return [
+    fieldLine(
+      "Trust domain",
+      context.trustDomain.state,
+      `${context.trustDomain.kind} ${context.trustDomain.domainRef}`,
+    ),
+    fieldLine(
+      "Invoker",
+      context.invoker.state,
+      context.invoker.principal ? principalText(context.invoker.principal) : undefined,
+    ),
+    fieldLine(
+      "Ingress",
+      context.ingress.state,
+      `${context.ingress.kind} at ${context.ingress.boundary}${
+        context.ingress.sourceRef ? ` (${context.ingress.sourceRef})` : ""
+      }`,
+    ),
+    fieldLine("Agent principal", "present", principalText(context.agentPrincipal)),
+    fieldLine(
+      "Agent definition",
+      context.agentDefinition.state,
+      `${context.agentDefinition.definitionRef}${
+        context.agentDefinition.revisionRef ? ` @ ${context.agentDefinition.revisionRef}` : ""
+      }`,
+    ),
+    fieldLine(
+      "Runtime instance",
+      context.runtimeInstance.state,
+      `${context.runtimeInstance.kind} ${context.runtimeInstance.runtimeRef}`,
+    ),
+    fieldLine(
+      "Represented subject",
+      context.representedSubject?.state ?? "absent",
+      context.representedSubject ? principalText(context.representedSubject.principal) : undefined,
+    ),
+    fieldLine(
+      "Sponsor",
+      context.sponsor?.state ?? "absent",
+      context.sponsor ? principalText(context.sponsor.principal) : undefined,
+    ),
+    fieldLine("Applicable grants", grants.length > 0 ? "present" : "absent", grants.join(", ")),
+    fieldLine("Assurance", assurance.length > 0 ? "present" : "absent", assurance.join(", ")),
+  ];
+}
+
+function unavailableIdentityLines(state: "unknown" | "unsupported"): string[] {
+  return IDENTITY_FIELD_LABELS.map((label) => fieldLine(label, state));
+}
+
+function decisionLines(receipt: DecisionReceiptV1): string[] {
+  return [
+    `  ${safe(receipt.action.family)}.${safe(receipt.action.operation)}: ${safe(receipt.decision.outcome)}`,
+    `    Coverage: ${safe(receipt.enforcement.coverageState)}`,
+    `    Reason: ${safe(receipt.decision.reasonCode)}`,
+    `    Source: ${safe(receipt.source.owner)} at ${safe(receipt.source.decisionBoundary)}`,
+    ...(receipt.action.summary ? [`    Summary: ${safe(receipt.action.summary)}`] : []),
+  ];
+}
+
+function formatAuditRunInspection(result: AuditRunInspectResult): string[] {
+  const lines = [
+    `Run ${safe(result.run.runId)}: ${safe(result.run.status)} (${safe(result.coverage.state)})`,
+    "",
+    "Identity",
+  ];
+  if (result.identity.state === "present") {
+    const identityLines = contextIdentityLines(result.identity.context);
+    lines.push(
+      `  Context: ${safe(result.identity.context.contextId)}`,
+      `  Created: ${timestampMsToIsoString(result.identity.context.createdAt) ?? String(result.identity.context.createdAt)}`,
+      ...identityLines.slice(0, 8),
+      "",
+      "Authority",
+      ...identityLines.slice(8),
+      "",
+      "Lineage",
+      result.identity.context.lineage
+        ? fieldLine(
+            "Parent",
+            "present",
+            result.identity.context.lineage.parentRunId ??
+              result.identity.context.lineage.parentContextId ??
+              `depth ${String(result.identity.context.lineage.depth)}`,
+          )
+        : fieldLine("Parent", "absent"),
+    );
+  } else {
+    lines.push(
+      `  Reason: ${safe(result.identity.reasonCode)}`,
+      ...unavailableIdentityLines(result.identity.state).slice(0, 8),
+      "",
+      "Authority",
+      ...unavailableIdentityLines(result.identity.state).slice(8),
+      "",
+      "Lineage",
+      fieldLine("Parent", result.identity.state),
+    );
+  }
+  lines.push("", "Decisions");
+  if (result.decisions.length === 0) {
+    lines.push("  none [absent]");
+  } else {
+    for (const receipt of result.decisions) {
+      lines.push(...decisionLines(receipt));
+    }
+  }
+  lines.push("", "Missing evidence");
+  lines.push(
+    ...(result.coverage.missingEvidence.length > 0
+      ? result.coverage.missingEvidence.map((item) => `  - ${safe(item)}`)
+      : ["  none"]),
+  );
+  const remediation = [
+    ...(result.identity.state === "present" ? [] : result.identity.remediation),
+    ...result.decisions.flatMap((decision) => decision.remediation),
+  ];
+  lines.push("", "Next steps");
+  lines.push(
+    ...(remediation.length > 0
+      ? [...new Map(remediation.map((item) => [item.code, item])).values()].map(
+          (item) => `  - ${safe(item.text)}`,
+        )
+      : ["  none"]),
+  );
+  if (result.nextDecisionCursor) {
+    lines.push(`  More decisions: --cursor ${safe(result.nextDecisionCursor)}`);
+  }
+  return lines;
+}
+
+function hasExplainIncompatibleFilters(options: AuditListCommandOptions): boolean {
+  return Boolean(
+    options.agentId ||
+    options.sessionKey ||
+    options.kind ||
+    options.status ||
+    options.direction ||
+    options.channel ||
+    options.after ||
+    options.before,
+  );
+}
+
 /** Query one stable page. JSON output is a bounded export with its next cursor. */
 export async function auditListCommand(
   options: AuditListCommandOptions,
   runtime: RuntimeEnv,
 ): Promise<void> {
+  if (options.explain) {
+    const runId = options.runId?.trim();
+    if (!runId) {
+      throw new Error("--run <id> is required with --explain.");
+    }
+    if (hasExplainIncompatibleFilters(options)) {
+      throw new Error(
+        "--explain accepts only --run, --limit, --cursor, and --json; remove activity-list filters.",
+      );
+    }
+    const result = await queryAuditRunInspection({
+      runId,
+      decisionLimit: parseAuditDecisionLimit(options.limit),
+      ...(options.cursor ? { decisionCursor: options.cursor } : {}),
+    });
+    if (options.json) {
+      writeRuntimeJson(runtime, result);
+      return;
+    }
+    for (const line of formatAuditRunInspection(result)) {
+      runtime.log(line);
+    }
+    return;
+  }
   validateAuditKind(options.kind);
   const after = parseAuditTimestamp(options.after, "--after");
   const before = parseAuditTimestamp(options.before, "--before");
@@ -212,6 +475,10 @@ const testApi = {
   formatAuditRows,
   hasMessageSpecificFilters,
   isUnsupportedActivityMethodError,
+  isUnsupportedRunInspectMethodError,
+  formatAuditRunInspection,
+  hasExplainIncompatibleFilters,
+  parseAuditDecisionLimit,
   parseAuditLimit,
   parseAuditTimestamp,
   toLegacyAuditListParams,

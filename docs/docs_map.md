@@ -1346,6 +1346,7 @@ Do not edit it by hand; run `pnpm docs:map:gen`.
 - Headings:
   - H1: openclaw audit
   - H2: Filters
+  - H2: Explain one run
   - H2: Recorded events
   - H2: Gateway RPC
   - H2: Related
@@ -3268,6 +3269,7 @@ Do not edit it by hand; run `pnpm docs:map:gen`.
 - Route: /gateway/audit
 - Headings:
   - H1: Audit history
+  - H2: Run identity inspection
   - H2: Record families
   - H2: Message lifecycle events
   - H3: Conversation-kind classification

@@ -1,5 +1,9 @@
 /** Main agent command orchestration for sessions, model selection, delivery, and attempts. */
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import {
+  prepareExecutionIdentityContextAtAdmission,
+  type ExecutionIdentityAdmissionFacts,
+} from "../audit/execution-identity-context.js";
 import type { VerboseLevel } from "../auto-reply/thinking.js";
 import type { CliDeps } from "../cli/deps.types.js";
 import { getRuntimeConfig } from "../config/io.js";
@@ -62,6 +66,7 @@ const log = createSubsystemLogger("agents/agent-command");
 async function agentCommandInternal(
   prepared: Awaited<ReturnType<typeof prepareAgentCommandExecution>>,
   initialOpts: AgentCommandOpts,
+  admissionIngress: ExecutionIdentityAdmissionFacts["ingress"],
   runtime: RuntimeEnv = defaultRuntime,
   deps?: CliDeps,
 ) {
@@ -220,6 +225,14 @@ async function agentCommandInternal(
       },
     });
     return await sessionWorkAdmission.run(async () => {
+      // Session work admission is the authoritative outer-run boundary. Record
+      // the immutable context before any model, ACP, or delivery work can start.
+      prepareExecutionIdentityContextAtAdmission({
+        runId,
+        agentId: sessionAgentId,
+        ingress: admissionIngress,
+        runtime: { kind: !isRawModelRun && acpResolution?.kind === "ready" ? "acp" : "embedded" },
+      });
       if (opts.deliver === true) {
         const sendPolicy = resolveSendPolicy({
           cfg,
@@ -572,7 +585,13 @@ export async function agentCommand(
           prepare: async (preparedOpts) =>
             await prepareAgentCommandExecution(preparedOpts, runtime),
           run: async (prepared) =>
-            await agentCommandInternal(prepared, prepared.opts, runtime, resolvedDeps),
+            await agentCommandInternal(
+              prepared,
+              prepared.opts,
+              { kind: "local-cli", boundary: "agent-command.local", state: "present" },
+              runtime,
+              resolvedDeps,
+            ),
         }),
     ),
   );
@@ -602,7 +621,14 @@ async function agentCommandFromIngressInternal(
       },
       prepare: async (preparedOpts) => await prepareAgentCommandExecution(preparedOpts, runtime),
       restoreAdmittedRecovery: recovery?.restoreAdmittedRecovery,
-      run: async (prepared) => await agentCommandInternal(prepared, prepared.opts, runtime, deps),
+      run: async (prepared) =>
+        await agentCommandInternal(
+          prepared,
+          prepared.opts,
+          { kind: "api", boundary: "agent-command.from-ingress", state: "unknown" },
+          runtime,
+          deps,
+        ),
     });
 
     if (result) {
