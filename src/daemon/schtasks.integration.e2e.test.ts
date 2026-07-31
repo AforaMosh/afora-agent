@@ -9,6 +9,7 @@ import { resolveGatewayWindowsTaskName } from "./constants.js";
 import { execSchtasks } from "./schtasks-exec.js";
 import { resolveStartupEntryPaths } from "./schtasks-layout.js";
 import { readWindowsProcessSnapshot } from "./schtasks-process.js";
+import { probeScheduledTaskExists } from "./schtasks-runtime.js";
 import { resolveTaskScriptPath } from "./schtasks.js";
 import type { GatewayServiceRuntime } from "./service-runtime.js";
 import type { GatewayServiceEnv } from "./service-types.js";
@@ -153,6 +154,7 @@ async function forceKillActiveProcess(params: {
 async function cleanupNativeTask(params: {
   activePidPath: string;
   eventsPath: string;
+  preserveEvidence: boolean;
   probePath: string;
   rootDir: string;
   stateDir: string;
@@ -169,21 +171,28 @@ async function cleanupNativeTask(params: {
   } catch (error) {
     cleanupErrors.push(error);
   }
-  try {
-    await execSchtasks(["/Delete", "/F", "/TN", params.taskName]);
-  } catch (error) {
-    cleanupErrors.push(error);
-  }
-  try {
-    const remaining = await execSchtasks(["/Query", "/TN", params.taskName]);
-    if (remaining.code === 0) {
-      cleanupErrors.push(new Error(`Scheduled Task cleanup left ${params.taskName} registered`));
-    }
-  } catch (error) {
-    cleanupErrors.push(error);
+  const deletion = await execSchtasks(["/Delete", "/F", "/TN", params.taskName]).catch(
+    (error: unknown) => {
+      cleanupErrors.push(error);
+      return null;
+    },
+  );
+  const taskExists = probeScheduledTaskExists(params.taskName);
+  if (taskExists === null) {
+    cleanupErrors.push(new Error(`Could not verify Scheduled Task cleanup for ${params.taskName}`));
+  } else if (taskExists) {
+    const detail = deletion ? (deletion.stderr || deletion.stdout).trim() : "";
+    cleanupErrors.push(
+      new Error(
+        `Scheduled Task cleanup left ${params.taskName} registered${detail ? `: ${detail}` : ""}`,
+      ),
+    );
   }
   if (cleanupErrors.length > 0) {
     throw new AggregateError(cleanupErrors, "Native Scheduled Task process or task cleanup failed");
+  }
+  if (params.preserveEvidence) {
+    return;
   }
   for (const cleanupPath of [params.stateDir, params.rootDir]) {
     try {
@@ -270,6 +279,7 @@ describe.runIf(nativeIntegrationEnabled)("schtasks Windows integration", () => {
 
     let testFailed = false;
     let testError: unknown;
+    let lifecyclePids: number[] = [];
     try {
       await withEnvAsync(env, async () => {
         const service = resolveGatewayService();
@@ -338,6 +348,7 @@ describe.runIf(nativeIntegrationEnabled)("schtasks Windows integration", () => {
         expect(restartResult).toEqual({ outcome: "completed" });
         expect(restartMutations).toEqual(["schtasks-end", "schtasks-restart"]);
         const restartedPid = requireRunPid(await waitForRunCount(eventsPath, 3), 2);
+        lifecyclePids = [installedPid, startedPid, restartedPid];
         expect(restartedPid).not.toBe(startedPid);
         expectProbeProcessAlive(restartedPid);
         await waitForProcessExit(startedPid);
@@ -353,6 +364,33 @@ describe.runIf(nativeIntegrationEnabled)("schtasks Windows integration", () => {
         expect((await execSchtasks(["/Query", "/TN", taskName])).code).not.toBe(0);
         await expect(fs.access(scriptPath)).rejects.toThrow();
         expect(await readTaskXml("OpenClaw Gateway")).toBe(defaultTaskXml);
+
+        const proofPath = process.env.CI_WINDOWS_SCHTASKS_PROOF_PATH?.trim();
+        if (proofPath) {
+          await fs.mkdir(path.dirname(proofPath), { recursive: true });
+          await fs.writeFile(
+            proofPath,
+            `${JSON.stringify(
+              {
+                result: "pass",
+                head: process.env.GITHUB_SHA ?? null,
+                profile,
+                taskName,
+                lifecycle: ["install", "stop", "start", "restart", "stop", "uninstall"],
+                pids: lifecyclePids,
+                startupFallback: false,
+                defaultTaskUnchanged: true,
+                taskXml: {
+                  interactiveToken: true,
+                  leastPrivilege: true,
+                },
+              },
+              null,
+              2,
+            )}\n`,
+            "utf8",
+          );
+        }
       });
     } catch (error) {
       testFailed = true;
@@ -365,6 +403,7 @@ describe.runIf(nativeIntegrationEnabled)("schtasks Windows integration", () => {
       await cleanupNativeTask({
         activePidPath,
         eventsPath,
+        preserveEvidence: testFailed,
         probePath,
         rootDir,
         stateDir,
