@@ -823,18 +823,28 @@ async function* parseSSE(response: Response): AsyncGenerator<Record<string, unkn
   try {
     while (true) {
       const { done, value } = await guard.read();
-      if (done) {
-        break;
+      if (value) {
+        buffer += decoder.decode(value, { stream: true });
       }
-      buffer += decoder.decode(value, { stream: true });
+      if (done) {
+        buffer += decoder.decode();
+      }
 
-      let idx = buffer.indexOf("\n\n");
-      while (idx !== -1) {
-        const chunk = buffer.slice(0, idx);
-        buffer = buffer.slice(idx + 2);
+      while (true) {
+        // Defer a possible CRLF only when CR does not already complete a blank line.
+        const deferTrailingCr =
+          !done && buffer.endsWith("\r") && !buffer.endsWith("\r\r") && !buffer.endsWith("\n\r");
+        const searchable = deferTrailingCr ? buffer.slice(0, -1) : buffer;
+        // A CRLF is one line ending: never backtrack its CR into a false blank line.
+        const boundary = /(?:\r\n|\r(?!\n)|\n)(?:\r\n|\r(?!\n)|\n)/.exec(searchable);
+        if (!boundary) {
+          break;
+        }
+        const chunk = buffer.slice(0, boundary.index);
+        buffer = buffer.slice(boundary.index + boundary[0].length);
 
         const dataLines = chunk
-          .split("\n")
+          .split(/\r\n|\r|\n/)
           .filter((l) => l.startsWith("data:"))
           .map((l) => l.slice(5).trim());
         if (dataLines.length > 0) {
@@ -850,7 +860,10 @@ async function* parseSSE(response: Response): AsyncGenerator<Record<string, unkn
             }
           }
         }
-        idx = buffer.indexOf("\n\n");
+      }
+
+      if (done) {
+        break;
       }
     }
   } finally {
