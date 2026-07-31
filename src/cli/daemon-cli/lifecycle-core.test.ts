@@ -254,6 +254,37 @@ describe("runServiceRestart token drift", () => {
     );
   });
 
+  it("runs the service mutation guard before restarting a loaded service", async () => {
+    const beforeServiceMutation = vi.fn();
+
+    await runServiceRestart({
+      ...createServiceRunArgs(),
+      beforeServiceMutation,
+    });
+
+    expect(beforeServiceMutation).toHaveBeenCalledTimes(1);
+    expect(beforeServiceMutation.mock.invocationCallOrder[0]).toBeLessThan(
+      service.restart.mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY,
+    );
+  });
+
+  it("does not run the service mutation guard before not-loaded recovery", async () => {
+    service.isLoaded.mockResolvedValue(false);
+    const beforeServiceMutation = vi.fn();
+
+    await runServiceRestart({
+      ...createServiceRunArgs(),
+      beforeServiceMutation,
+      onNotLoaded: async () => ({
+        result: "restarted",
+        message: "Gateway restart signal sent to unmanaged process on port 18789: 4200.",
+      }),
+    });
+
+    expect(beforeServiceMutation).not.toHaveBeenCalled();
+    expect(service.restart).not.toHaveBeenCalled();
+  });
+
   it("repairs managed port drift before restarting", async () => {
     service.readRuntime.mockResolvedValue({ status: "running", pid: 1234 });
     service.readCommand.mockResolvedValue({

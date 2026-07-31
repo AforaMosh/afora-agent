@@ -20,6 +20,7 @@ type RestartPostCheckContext = {
 
 type RestartParams = {
   opts?: { json?: boolean };
+  beforeServiceMutation?: () => void;
   repairLoadedService?: (ctx: {
     json: boolean;
     stdout: NodeJS.WritableStream;
@@ -401,22 +402,15 @@ describe("runDaemonRestart health checks", () => {
     expect(recoverInstalledLaunchAgent).toHaveBeenCalledWith({ result: "started" });
   });
 
-  it("rejects restart before any service or unmanaged-process mutation", async () => {
-    isDefaultInstallIdentity.mockReturnValue(false);
-
-    await expect(runDaemonRestart({ json: true })).rejects.toThrow(/non-default state dir/);
-
-    expect(runServiceRestart).not.toHaveBeenCalled();
-    expect(recoverInstalledLaunchAgent).not.toHaveBeenCalled();
-    expect(signalVerifiedGatewayPidSync).not.toHaveBeenCalled();
-  });
-
   it("preserves an install-time port override when config does not own the port", async () => {
-    await runDaemonStart({ json: true });
     await runDaemonRestart({ json: true });
 
-    expect(requireMockCallArg(runServiceStart, "runServiceStart").expectedPort).toBeUndefined();
-    expect(requireMockCallArg(runServiceRestart, "runServiceRestart").expectedPort).toBeUndefined();
+    const restartParams = requireMockCallArg(runServiceRestart, "runServiceRestart");
+    expect(restartParams.expectedPort).toBeUndefined();
+    isDefaultInstallIdentity.mockReturnValue(false);
+    expect(() => (restartParams.beforeServiceMutation as () => void)()).toThrow(
+      /non-default state dir/,
+    );
   });
 
   it("uses the installed service environment for managed restart health", async () => {
@@ -842,12 +836,15 @@ describe("runDaemonRestart health checks", () => {
   });
 
   it("signals a single unmanaged gateway process on restart", async () => {
+    vi.spyOn(process, "platform", "get").mockReturnValue("linux");
+    isDefaultInstallIdentity.mockReturnValue(false);
     findVerifiedGatewayListenerPidsOnPortSync.mockReturnValue([4200]);
     mockUnmanagedRestart({ runPostRestartCheck: true });
 
     await runDaemonRestart({ json: true });
 
     expect(findVerifiedGatewayListenerPidsOnPortSync).toHaveBeenCalledWith(18789);
+    expect(findInstalledSystemdGatewayScope).not.toHaveBeenCalled();
     expect(signalVerifiedGatewayPidSync).toHaveBeenCalledWith(4200, "SIGUSR1");
     expect(appendGatewayLifecycleAudit).toHaveBeenCalledWith({
       action: "restart",
@@ -1027,6 +1024,7 @@ describe("runDaemonRestart health checks", () => {
   });
 
   it("fails unmanaged restart when multiple gateway listeners are present", async () => {
+    isDefaultInstallIdentity.mockReturnValue(false);
     findVerifiedGatewayListenerPidsOnPortSync.mockReturnValue([4200, 4300]);
     mockUnmanagedRestart();
 

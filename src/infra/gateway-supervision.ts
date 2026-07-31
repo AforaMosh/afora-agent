@@ -66,3 +66,15 @@ export function assertGatewayServiceMutationAllowed(
     );
   }
 }
+
+export function resolveGatewayServiceMutationError(
+  action: string,
+  env: NodeJS.ProcessEnv = process.env,
+): Error | null {
+  try {
+    assertGatewayServiceMutationAllowed(action, env);
+    return null;
+  } catch (error) {
+    return error instanceof Error ? error : new Error(String(error));
+  }
+}
