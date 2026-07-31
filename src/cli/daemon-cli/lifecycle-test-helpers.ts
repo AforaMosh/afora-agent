@@ -1,4 +1,4 @@
-export type RestartPostCheckContext = {
+type RestartPostCheckContext = {
   json: boolean;
   stdout: NodeJS.WritableStream;
   warnings: string[];
