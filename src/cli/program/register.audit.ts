@@ -10,7 +10,7 @@ import { runCommandWithRuntime } from "../cli-utils.js";
 export function registerAuditCommand(program: Command): void {
   program
     .command("audit")
-    .description("Inspect metadata-only run, tool, and message lifecycle records")
+    .description("Inspect activity records and exact-run identity context")
     .option("--agent <id>", "Filter by agent id")
     .option("--session <key>", "Filter by exact session key")
     .option("--run <id>", "Filter by run id")

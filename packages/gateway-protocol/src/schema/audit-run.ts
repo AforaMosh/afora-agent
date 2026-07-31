@@ -199,19 +199,29 @@ export const DecisionReceiptV1Schema = closedObject({
   remediation: Type.Array(ExecutionIdentityRemediationV1Schema, { maxItems: 8 }),
 });
 
-const AuditRunIdentityUnavailableV1Schema = closedObject({
-  state: Type.Union([Type.Literal("unknown"), Type.Literal("unsupported")]),
+export const AuditRunIdentityPresentV1Schema = closedObject({
+  state: Type.Literal("present"),
+  context: ExecutionIdentityContextV1Schema,
+});
+
+export const AuditRunIdentityUnknownV1Schema = closedObject({
+  state: Type.Literal("unknown"),
+  reasonCode: ExecutionIdentityRefSchema,
+  missingEvidence: ExecutionIdentityRefArraySchema,
+  remediation: Type.Array(ExecutionIdentityRemediationV1Schema, { maxItems: 8 }),
+});
+
+export const AuditRunIdentityUnsupportedV1Schema = closedObject({
+  state: Type.Literal("unsupported"),
   reasonCode: ExecutionIdentityRefSchema,
   missingEvidence: ExecutionIdentityRefArraySchema,
   remediation: Type.Array(ExecutionIdentityRemediationV1Schema, { maxItems: 8 }),
 });
 
 export const AuditRunIdentityV1Schema = Type.Union([
-  closedObject({
-    state: Type.Literal("present"),
-    context: ExecutionIdentityContextV1Schema,
-  }),
-  AuditRunIdentityUnavailableV1Schema,
+  AuditRunIdentityPresentV1Schema,
+  AuditRunIdentityUnknownV1Schema,
+  AuditRunIdentityUnsupportedV1Schema,
 ]);
 
 export const AuditRunInspectParamsSchema = closedObject({

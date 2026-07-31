@@ -8608,6 +8608,76 @@ public struct DecisionReceiptV1: Codable, Sendable {
     }
 }
 
+public struct AuditRunIdentityPresentV1: Codable, Sendable {
+    public let state: String
+    public let context: ExecutionIdentityContextV1
+
+    public init(
+        state: String,
+        context: ExecutionIdentityContextV1)
+    {
+        self.state = state
+        self.context = context
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case state
+        case context
+    }
+}
+
+public struct AuditRunIdentityUnknownV1: Codable, Sendable {
+    public let state: String
+    public let reasoncode: String
+    public let missingevidence: [String]
+    public let remediation: [[String: AnyCodable]]
+
+    public init(
+        state: String,
+        reasoncode: String,
+        missingevidence: [String],
+        remediation: [[String: AnyCodable]])
+    {
+        self.state = state
+        self.reasoncode = reasoncode
+        self.missingevidence = missingevidence
+        self.remediation = remediation
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case state
+        case reasoncode = "reasonCode"
+        case missingevidence = "missingEvidence"
+        case remediation
+    }
+}
+
+public struct AuditRunIdentityUnsupportedV1: Codable, Sendable {
+    public let state: String
+    public let reasoncode: String
+    public let missingevidence: [String]
+    public let remediation: [[String: AnyCodable]]
+
+    public init(
+        state: String,
+        reasoncode: String,
+        missingevidence: [String],
+        remediation: [[String: AnyCodable]])
+    {
+        self.state = state
+        self.reasoncode = reasoncode
+        self.missingevidence = missingevidence
+        self.remediation = remediation
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case state
+        case reasoncode = "reasonCode"
+        case missingevidence = "missingEvidence"
+        case remediation
+    }
+}
+
 public struct AuditRunInspectParams: Codable, Sendable {
     public let runid: String
     public let decisioncursor: String?
@@ -18060,6 +18130,40 @@ public enum AuditActivityEventV1: Codable, Sendable {
         case .toolAction(let value): try value.encode(to: encoder)
         case .inboundMessage(let value): try value.encode(to: encoder)
         case .outboundMessage(let value): try value.encode(to: encoder)
+        }
+    }
+}
+
+public enum AuditRunIdentityV1: Codable, Sendable {
+    case present(AuditRunIdentityPresentV1)
+    case unknown(AuditRunIdentityUnknownV1)
+    case unsupported(AuditRunIdentityUnsupportedV1)
+
+    private enum CodingKeys: String, CodingKey {
+        case discriminator = "state"
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let discriminator = try container.decode(String.self, forKey: .discriminator)
+        switch discriminator {
+        case "present": self = try .present(AuditRunIdentityPresentV1(from: decoder))
+        case "unknown": self = try .unknown(AuditRunIdentityUnknownV1(from: decoder))
+        case "unsupported": self = try .unsupported(AuditRunIdentityUnsupportedV1(from: decoder))
+        default:
+            throw DecodingError.dataCorruptedError(
+                forKey: .discriminator,
+                in: container,
+                debugDescription: "Unknown AuditRunIdentityV1 discriminator value"
+            )
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        switch self {
+        case .present(let value): try value.encode(to: encoder)
+        case .unknown(let value): try value.encode(to: encoder)
+        case .unsupported(let value): try value.encode(to: encoder)
         }
     }
 }
