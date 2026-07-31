@@ -12,7 +12,7 @@ import { extractFrontmatterBlock } from "../../packages/markdown-core/src/frontm
 import type { ChatType } from "../channels/chat-type.js";
 import { openRootFileFollowingParents } from "../infra/boundary-file-read.js";
 import { sameFileIdentity, type FileIdentityStat } from "../infra/fs-safe-advanced.js";
-import { pathExists } from "../infra/fs-safe.js";
+import { pathExists, root as fsSafeRoot } from "../infra/fs-safe.js";
 import { isPathInside } from "../infra/path-guards.js";
 import { retryAsync } from "../infra/retry.js";
 import {
@@ -738,10 +738,17 @@ export async function seedWorkspaceBootstrap(params: {
   }
 
   await fs.mkdir(dir, { recursive: true });
+  const workspaceRoot = await fsSafeRoot(dir, {
+    hardlinks: "reject",
+    maxBytes: MAX_WORKSPACE_BOOTSTRAP_FILE_BYTES,
+    symlinks: "reject",
+  });
   let created = false;
   if (!bootstrapExists) {
     try {
-      await fs.writeFile(bootstrapPath, params.content, { flag: "wx" });
+      await workspaceRoot.write(DEFAULT_BOOTSTRAP_FILENAME, params.content, {
+        overwrite: false,
+      });
       created = true;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "EEXIST") {
