@@ -181,9 +181,9 @@ describe("paired-node WebSocket request cancellation", () => {
     let requestSignal: AbortSignal | undefined;
     handleGatewayRequest.mockImplementation(async (options: GatewayRequestOptions) => {
       requestSignal = options.signal;
-      await new Promise<void>((resolve) =>
-        options.signal?.addEventListener("abort", () => resolve()),
-      );
+      await new Promise<void>((resolve) => {
+        options.signal?.addEventListener("abort", () => resolve());
+      });
     });
 
     const dispatch = dispatcher.dispatch(

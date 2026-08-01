@@ -151,7 +151,7 @@ describe("OpenClaw shell locale preferences", () => {
     const refresh = vi.fn(async () => undefined);
     const ensureLoaded = vi.fn(async () => undefined);
     const runtimeConfig = {
-      state: { client, connected: true },
+      state: { client, connected: true, configSnapshot: { config: {} } },
       ensureLoaded,
       refresh,
     } as unknown as ApplicationContext["runtimeConfig"];

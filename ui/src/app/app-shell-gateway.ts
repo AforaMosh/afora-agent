@@ -170,7 +170,7 @@ export class ShellGatewayOwner {
       // A local settings draft owns config conflicts; external snapshots must not overwrite it.
       const runtimeConfig = this.host.context?.runtimeConfig;
       if (runtimeConfig && !runtimeConfig.state.configFormDirty) {
-        void runtimeConfig.refreshAfterCurrentLoad();
+        void (runtimeConfig.refreshAfterCurrentLoad?.() ?? runtimeConfig.refresh());
       }
       this.scheduleAgentRosterRefresh();
       return;
@@ -303,7 +303,9 @@ export class ShellGatewayOwner {
     // A new socket generation can miss config.changed events from downtime.
     // Pending prefs shadow their keys while this refresh updates every other field.
     if (!runtimeConfig.state.configLoading) {
-      void runtimeConfig.refresh();
+      void (runtimeConfig.state.configSnapshot
+        ? runtimeConfig.refresh()
+        : runtimeConfig.ensureLoaded());
     }
   }
 
