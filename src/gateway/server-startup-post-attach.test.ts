@@ -17,6 +17,7 @@ import {
 } from "../process/gateway-work-admission.js";
 import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
 import { withEnvAsync } from "../test-utils/env.js";
+import { stopLateSidecarsAfterCloseStarted } from "./server-sidecar-stop.js";
 
 const hoisted = vi.hoisted(() => {
   const startPluginServices = vi.fn<() => Promise<PluginServicesHandle | null>>(async () => null);
@@ -1967,7 +1968,7 @@ describe("startGatewayPostAttachRuntime", () => {
   it("stops post-ready sidecars registered after close started", () => {
     const postReadySidecar = { stop: vi.fn() };
 
-    testing.stopLateSidecarsAfterCloseStarted(
+    stopLateSidecarsAfterCloseStarted(
       [postReadySidecar],
       true,
       "post-ready",
@@ -1980,7 +1981,7 @@ describe("startGatewayPostAttachRuntime", () => {
   it("keeps post-ready sidecars running when close has not started", () => {
     const postReadySidecar = { stop: vi.fn() };
 
-    testing.stopLateSidecarsAfterCloseStarted(
+    stopLateSidecarsAfterCloseStarted(
       [postReadySidecar],
       false,
       "post-ready",
@@ -2000,7 +2001,7 @@ describe("startGatewayPostAttachRuntime", () => {
     const stopAfterFailures = vi.fn();
     const log = { warn: vi.fn() };
 
-    testing.stopLateSidecarsAfterCloseStarted(
+    stopLateSidecarsAfterCloseStarted(
       [
         { stop: stopWithSynchronousFailure },
         { stop: stopWithAsynchronousFailure },
@@ -2557,7 +2558,7 @@ describe("startGatewayPostAttachRuntime", () => {
     });
 
     expect(result.postReadySidecars).toHaveLength(2);
-    testing.stopLateSidecarsAfterCloseStarted(
+    stopLateSidecarsAfterCloseStarted(
       result.postReadySidecars,
       true,
       "post-ready",
