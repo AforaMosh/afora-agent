@@ -236,7 +236,9 @@ async function queryAuditRunInspection(
       throw error;
     }
     return unsupportedRunInspection(
-      "runId" in params ? { runId: params.runId } : { executionId: params.executionId },
+      typeof params.runId === "string"
+        ? { runId: params.runId }
+        : { executionId: params.executionId! },
     );
   }
 }

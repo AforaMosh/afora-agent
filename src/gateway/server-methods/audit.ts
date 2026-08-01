@@ -161,7 +161,7 @@ export const auditHandlers: GatewayRequestHandlers = {
     }
     const decisionOffset = parseDecisionCursor(params.decisionCursor);
     const executionOffset =
-      "runId" in params ? parseExecutionCursor(params.executionCursor) : undefined;
+      typeof params.runId === "string" ? parseExecutionCursor(params.executionCursor) : undefined;
     if (decisionOffset === null || executionOffset === null) {
       respond(
         false,
@@ -173,13 +173,13 @@ export const auditHandlers: GatewayRequestHandlers = {
     respond(
       true,
       inspectExecutionIdentityRun({
-        ...("runId" in params
+        ...(typeof params.runId === "string"
           ? {
               runId: params.runId,
               ...(executionOffset !== undefined ? { executionOffset } : {}),
               executionLimit: params.executionLimit ?? 50,
             }
-          : { executionId: params.executionId }),
+          : { executionId: params.executionId! }),
         ...(decisionOffset !== undefined ? { decisionOffset } : {}),
         decisionLimit: params.decisionLimit ?? 50,
       }),
