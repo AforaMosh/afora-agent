@@ -1350,6 +1350,7 @@ export function createRuntimeConfigCapability(
   let configLoad: Promise<void> | null = null;
   let schemaLoad: Promise<void> | null = null;
   let queuedConfigRefresh: Promise<void> | null = null;
+  let configRefreshRequestGeneration = 0;
   let disposed = false;
   let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
   let autoSaveInFlight: Promise<unknown> | null = null;
@@ -1655,18 +1656,20 @@ export function createRuntimeConfigCapability(
   const ensureSchemaLoaded = () =>
     state.configSchema ? Promise.resolve() : loadOnce("schema", () => loadConfigSchema(state));
   const refreshAfterCurrentLoad = (): Promise<void> => {
+    configRefreshRequestGeneration += 1;
     if (queuedConfigRefresh) {
       return queuedConfigRefresh;
     }
     const client = state.client;
     const connectionEpoch = currentConfigConnectionEpoch(state);
     const currentLoad = configLoad;
-    const queued = (currentLoad ?? Promise.resolve())
-      .catch(() => undefined)
-      .then(async () => {
+    const queued = (async () => {
+      await currentLoad?.catch(() => undefined);
+      while (true) {
         if (!client || !isCurrentConfigConnection(state, client, connectionEpoch)) {
           return;
         }
+        const generation = configRefreshRequestGeneration;
         cancelAppliedRefresh();
         try {
           await trackLoad(
@@ -1676,12 +1679,15 @@ export function createRuntimeConfigCapability(
         } finally {
           reconcileAppliedRefresh();
         }
-      })
-      .finally(() => {
-        if (queuedConfigRefresh === queued) {
-          queuedConfigRefresh = null;
+        if (generation === configRefreshRequestGeneration) {
+          return;
         }
-      });
+      }
+    })().finally(() => {
+      if (queuedConfigRefresh === queued) {
+        queuedConfigRefresh = null;
+      }
+    });
     queuedConfigRefresh = queued;
     return queued;
   };

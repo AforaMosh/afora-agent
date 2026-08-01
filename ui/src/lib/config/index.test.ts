@@ -543,10 +543,11 @@ describe("createRuntimeConfigCapability", () => {
     runtimeConfig.dispose();
   });
 
-  it("coalesces a config change into one fresh load after the active load settles", async () => {
+  it("replays config changes that arrive during the trailing refresh", async () => {
     const first = deferred<ConfigSnapshot>();
     const second = deferred<ConfigSnapshot>();
-    const responses = [first, second];
+    const third = deferred<ConfigSnapshot>();
+    const responses = [first, second, third];
     const request = vi.fn(() => {
       const response = responses.shift();
       if (!response) {
@@ -564,11 +565,14 @@ describe("createRuntimeConfigCapability", () => {
     first.resolve({ config: { source: "stale" }, raw: "{}", valid: true, issues: [] });
     await initialLoad;
     await vi.waitFor(() => expect(request).toHaveBeenCalledTimes(2));
-    second.resolve({ config: { source: "fresh" }, raw: "{}", valid: true, issues: [] });
+    expect(runtimeConfig.refreshAfterCurrentLoad()).toBe(refresh);
+    second.resolve({ config: { source: "still-stale" }, raw: "{}", valid: true, issues: [] });
+    await vi.waitFor(() => expect(request).toHaveBeenCalledTimes(3));
+    third.resolve({ config: { source: "fresh" }, raw: "{}", valid: true, issues: [] });
     await refresh;
 
     expect(runtimeConfig.state.configSnapshot?.config).toEqual({ source: "fresh" });
-    expect(request).toHaveBeenCalledTimes(2);
+    expect(request).toHaveBeenCalledTimes(3);
     runtimeConfig.dispose();
   });
 
