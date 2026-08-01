@@ -833,7 +833,7 @@ describe("buildStatusMessage", () => {
         },
       } as unknown as OpenClawConfig,
       agent: {
-        model: "openai/gpt-4.1",
+        model: "anthropic/claude-opus-4-6",
       },
       sessionEntry: {
         sessionId: "abc",
@@ -848,6 +848,47 @@ describe("buildStatusMessage", () => {
     const normalized = normalizeTestText(text);
 
     expect(normalized).toContain("Model: openai/gpt-4.1");
+    expect(normalized).toContain("channel override");
+  });
+
+  it("uses channel model auth instead of configured default auth", () => {
+    const text = buildStatusMessage({
+      config: {
+        channels: {
+          modelByChannel: {
+            discord: {
+              "123": "amazon-bedrock/us.anthropic.claude-sonnet-4-6",
+            },
+          },
+        },
+        models: {
+          providers: {
+            "amazon-bedrock": {
+              auth: "aws-sdk",
+              models: [{ id: "us.anthropic.claude-sonnet-4-6" }],
+            },
+          },
+        },
+      } as unknown as OpenClawConfig,
+      agent: {
+        model: "openai/gpt-5.5",
+      },
+      sessionEntry: {
+        sessionId: "channel-auth",
+        updatedAt: 0,
+        delivery: normalizeSessionDeliveryState({ context: { channel: "discord" } }),
+        groupId: "123",
+      },
+      sessionKey: "agent:main:main",
+      sessionScope: "per-sender",
+      queue: { mode: "collect", depth: 0 },
+      modelAuth: undefined,
+      activeModelAuth: undefined,
+    });
+    const normalized = normalizeTestText(text);
+
+    expect(normalized).toContain("Model: amazon-bedrock/us.anthropic.claude-sonnet-4-6");
+    expect(normalized).toContain("aws-sdk");
     expect(normalized).toContain("channel override");
   });
 
@@ -873,7 +914,7 @@ describe("buildStatusMessage", () => {
         },
       } as unknown as OpenClawConfig,
       agent: {
-        model: "minimax-portal/MiniMax-M2.7",
+        model: "anthropic/claude-opus-4-6",
         contextTokens: 1_048_576,
       },
       sessionEntry: {

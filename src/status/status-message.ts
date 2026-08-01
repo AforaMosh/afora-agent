@@ -15,11 +15,7 @@ import {
   areRuntimeModelRefsEquivalent,
   shouldPreferActiveRuntimeAliasAuthLabel,
 } from "../agents/model-runtime-aliases.js";
-import {
-  buildModelAliasIndex,
-  resolveConfiguredModelRef,
-  resolveModelRefFromString,
-} from "../agents/model-selection.js";
+import { resolveConfiguredModelRef } from "../agents/model-selection.js";
 import { resolveOpenAITextVerbosity } from "../agents/openai-text-verbosity.js";
 import { resolveSandboxRuntimeStatus } from "../agents/sandbox.js";
 import {
@@ -32,7 +28,6 @@ import type {
   ThinkLevel,
   VerboseLevel,
 } from "../auto-reply/thinking.js";
-import { resolveChannelModelOverride } from "../channels/model-overrides.js";
 import {
   resolveMainSessionKey,
   resolveFreshSessionTotalTokens,
@@ -59,7 +54,6 @@ import type { MediaUnderstandingDecision } from "../media-understanding/types.js
 import { resolveAgentIdFromSessionKey } from "../routing/session-key.js";
 import { formatFastModeStatusValue } from "../shared/fast-mode.js";
 import { resolveStatusTtsSnapshot } from "../tts/status-config.js";
-import { sessionDeliveryChannel, sessionDeliveryOrigin } from "../utils/delivery-context.shared.js";
 import {
   estimateUsageCost,
   formatTokenCount,
@@ -69,6 +63,7 @@ import {
 import { VERSION } from "../version.js";
 import { resolveAgentRuntimeLabel } from "./agent-runtime-label.js";
 import { resolveActiveFallbackState } from "./fallback-notice-state.js";
+import { resolveStatusChannelModel } from "./status-channel-model.js";
 
 type AgentDefaults = NonNullable<NonNullable<OpenClawConfig["agents"]>["defaults"]>;
 type AgentConfig = Partial<AgentDefaults> & {
@@ -89,6 +84,9 @@ type StatusArgs = {
   agent: AgentConfig;
   agentId?: string;
   configuredDefaultModelLabel?: string;
+  // Undefined lets direct formatter callers resolve channel routing; null records
+  // that the upstream status owner intentionally preserved another selection.
+  resolvedChannelModel?: { provider: string; model: string } | null;
   runtimeContextTokens?: number;
   explicitConfiguredContextTokens?: number;
   sessionEntry?: SessionEntry;
@@ -490,62 +488,6 @@ const formatVoiceModeLine = (
   return parts.join(" · ");
 };
 
-function resolveChannelModelNote(params: {
-  config?: OpenClawConfig;
-  entry?: SessionEntry;
-  selectedProvider: string;
-  selectedModel: string;
-  parentSessionKey?: string;
-}): string | undefined {
-  if (!params.config || !params.entry) {
-    return undefined;
-  }
-  if (
-    normalizeOptionalString(params.entry.modelOverride) ||
-    normalizeOptionalString(params.entry.providerOverride)
-  ) {
-    return undefined;
-  }
-  const channelOverride = resolveChannelModelOverride({
-    cfg: params.config,
-    channel: sessionDeliveryChannel(params.entry),
-    groupId: params.entry.groupId,
-    groupChatType: params.entry.chatType ?? sessionDeliveryOrigin(params.entry)?.chatType,
-    groupChannel: params.entry.groupChannel,
-    groupSubject: params.entry.subject,
-    parentSessionKey: params.parentSessionKey,
-    directUserIds: [
-      sessionDeliveryOrigin(params.entry)?.nativeDirectUserId,
-      sessionDeliveryOrigin(params.entry)?.from,
-      sessionDeliveryOrigin(params.entry)?.to,
-    ],
-  });
-  if (!channelOverride) {
-    return undefined;
-  }
-  const aliasIndex = buildModelAliasIndex({
-    cfg: params.config,
-    defaultProvider: DEFAULT_PROVIDER,
-    allowPluginNormalization: false,
-  });
-  const resolvedOverride = resolveModelRefFromString({
-    raw: channelOverride.model,
-    defaultProvider: DEFAULT_PROVIDER,
-    aliasIndex,
-    allowPluginNormalization: false,
-  });
-  if (!resolvedOverride) {
-    return undefined;
-  }
-  if (
-    resolvedOverride.ref.provider !== params.selectedProvider ||
-    resolvedOverride.ref.model !== params.selectedModel
-  ) {
-    return undefined;
-  }
-  return "channel override";
-}
-
 function hasUserPinnedModelSelection(entry: SessionEntry | undefined): boolean {
   if (!entry?.modelOverride) {
     return false;
@@ -593,8 +535,20 @@ export function buildStatusMessage(args: StatusArgs): string {
     defaultModel: DEFAULT_MODEL,
     allowPluginNormalization: false,
   });
-  const selectedProvider = entry?.providerOverride ?? resolved.provider ?? DEFAULT_PROVIDER;
-  const selectedModel = entry?.modelOverride ?? resolved.model ?? DEFAULT_MODEL;
+  const channelModel =
+    args.resolvedChannelModel === null
+      ? undefined
+      : (args.resolvedChannelModel ??
+        resolveStatusChannelModel({
+          cfg: args.config,
+          entry,
+          parentSessionKey: args.parentSessionKey,
+          defaultProvider: resolved.provider ?? DEFAULT_PROVIDER,
+        }));
+  const selectedProvider =
+    entry?.providerOverride ?? channelModel?.provider ?? resolved.provider ?? DEFAULT_PROVIDER;
+  const selectedModel =
+    entry?.modelOverride ?? channelModel?.model ?? resolved.model ?? DEFAULT_MODEL;
   const parseSelectedProvider = Boolean(
     entry?.modelOverride?.trim() && !entry?.providerOverride?.trim(),
   );
@@ -745,13 +699,7 @@ export function buildStatusMessage(args: StatusArgs): string {
     typeof resolvedActiveContextTokens === "number"
       ? Math.min(explicitRuntimeContextTokens, resolvedActiveContextTokens)
       : (explicitRuntimeContextTokens ?? resolvedActiveContextTokens);
-  const channelModelNote = resolveChannelModelNote({
-    config: args.config,
-    entry,
-    selectedProvider: selectedLookupProvider,
-    selectedModel: selectedLookupModel,
-    parentSessionKey: args.parentSessionKey,
-  });
+  const channelModelNote = channelModel ? "channel override" : undefined;
   const persistedContextTokens =
     typeof entry?.contextTokens === "number" && entry.contextTokens > 0
       ? entry.contextTokens

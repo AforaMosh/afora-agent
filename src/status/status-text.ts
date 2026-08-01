@@ -62,6 +62,7 @@ import {
   shouldUseCodexSyntheticUsageForRuntime,
 } from "./codex-synthetic-usage.js";
 import { resolveActiveFallbackState } from "./fallback-notice-state.js";
+import { resolveStatusChannelModel } from "./status-channel-model.js";
 import { formatCompactPluginHealthLine } from "./status-plugin-health.js";
 import { appendSessionCostLine, buildStatusUptimeLine } from "./status-runtime-lines.js";
 import type { BuildStatusTextParams } from "./status-text.types.js";
@@ -334,8 +335,29 @@ export async function buildStatusText(params: BuildStatusTextParams): Promise<st
     params.workspaceDir ??
     sessionEntry?.spawnedWorkspaceDir ??
     resolveAgentWorkspaceDir(cfg, statusAgentId);
-  const selectedProvider = sessionEntry?.providerOverride?.trim() ?? provider;
-  const selectedModel = sessionEntry?.modelOverride?.trim() ?? model;
+  const configuredDefaultRef = resolveDefaultModelForAgent({
+    cfg,
+    agentId: statusAgentId,
+    allowPluginNormalization: false,
+  });
+  const inputUsesConfiguredDefault = areRuntimeModelRefsEquivalent(
+    `${provider}/${model}`,
+    `${configuredDefaultRef.provider}/${configuredDefaultRef.model}`,
+    { config: cfg },
+  );
+  // Status directives run before normal reply routing applies channel defaults.
+  // Preserve any prepared non-default selection, including heartbeat overrides.
+  const channelModel = inputUsesConfiguredDefault
+    ? resolveStatusChannelModel({
+        cfg,
+        entry: sessionEntry,
+        parentSessionKey,
+        defaultProvider: configuredDefaultRef.provider,
+      })
+    : undefined;
+  const selectedProvider =
+    sessionEntry?.providerOverride?.trim() ?? channelModel?.provider ?? provider;
+  const selectedModel = sessionEntry?.modelOverride?.trim() ?? channelModel?.model ?? model;
   const parseSelectedProvider = Boolean(
     sessionEntry?.modelOverride?.trim() && !sessionEntry?.providerOverride?.trim(),
   );
@@ -348,7 +370,7 @@ export async function buildStatusText(params: BuildStatusTextParams): Promise<st
   const selectedLookupProvider = modelRefs.selected.provider || selectedProvider || provider;
   const selectedLookupModel = modelRefs.selected.model || selectedModel || model;
   const effectiveHarness =
-    params.resolvedHarness ??
+    (!channelModel ? params.resolvedHarness : undefined) ??
     (await resolveStatusHarnessId({
       cfg,
       provider: selectedLookupProvider,
@@ -562,17 +584,12 @@ export async function buildStatusText(params: BuildStatusTextParams): Promise<st
     resolvedFastMode ??
     resolveFastModeState({
       cfg,
-      provider,
-      model,
+      provider: selectedLookupProvider,
+      model: selectedLookupModel,
       agentId: statusAgentId,
       sessionEntry,
     }).mode;
   const agentFallbacksOverride = resolveAgentModelFallbacksOverride(cfg, statusAgentId);
-  const configuredDefaultRef = resolveDefaultModelForAgent({
-    cfg,
-    agentId: statusAgentId,
-    allowPluginNormalization: false,
-  });
   const configuredDefaultModelLabel = `${configuredDefaultRef.provider}/${configuredDefaultRef.model}`;
   const pluginHealthLine = Object.hasOwn(params, "pluginHealthLineOverride")
     ? params.pluginHealthLineOverride
@@ -665,7 +682,8 @@ export async function buildStatusText(params: BuildStatusTextParams): Promise<st
       ...agentDefaults,
       model: {
         ...toAgentModelListLike(agentDefaults.model),
-        primary: params.primaryModelLabelOverride ?? `${provider}/${model}`,
+        primary:
+          params.primaryModelLabelOverride ?? `${selectedLookupProvider}/${selectedLookupModel}`,
         ...(agentFallbacksOverride === undefined ? {} : { fallbacks: agentFallbacksOverride }),
       },
       ...(statusAgentContextTokens !== undefined
@@ -678,6 +696,7 @@ export async function buildStatusText(params: BuildStatusTextParams): Promise<st
     },
     agentId: statusAgentId,
     configuredDefaultModelLabel,
+    resolvedChannelModel: channelModel ?? null,
     explicitConfiguredContextTokens: configuredContextTokens,
     runtimeContextTokens: statusRuntimeContextTokens,
     sessionEntry,

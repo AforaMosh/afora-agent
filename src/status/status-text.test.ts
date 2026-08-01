@@ -119,6 +119,99 @@ describe("buildStatusText channel features", () => {
     expect(text).toContain("Telegram rich messages: off");
     expect(text).toContain("enable richMessages for this Telegram account");
   });
+
+  it("uses the channel model before resolving runtime facts", async () => {
+    const text = await buildStatusText({
+      cfg: {
+        agents: {
+          defaults: {
+            model: { primary: "openai/gpt-5.5" },
+            models: {
+              "openai/gpt-5.5": { agentRuntime: { id: "codex" } },
+              "xai/grok-4": { agentRuntime: { id: "openclaw" } },
+            },
+          },
+        },
+        channels: {
+          modelByChannel: {
+            telegram: {
+              "-100123": "xai/grok-4",
+            },
+          },
+        },
+      },
+      sessionEntry: {
+        sessionId: "telegram-channel-model",
+        updatedAt: 0,
+        delivery: normalizeSessionDeliveryState({ context: { channel: "telegram" } }),
+        groupId: "-100123",
+        chatType: "group",
+      },
+      sessionKey: "agent:main:telegram:group:-100123",
+      statusChannel: "telegram",
+      provider: "openai",
+      model: "gpt-5.5",
+      resolvedHarness: "codex",
+      resolvedVerboseLevel: "off",
+      resolvedReasoningLevel: "off",
+      resolveDefaultThinkingLevel: async () => undefined,
+      isGroup: true,
+      defaultGroupActivation: () => "mention",
+      pluginHealthLineOverride: "Plugins: test",
+      taskLineOverride: "",
+      skipDefaultTaskLookup: true,
+      includeTranscriptUsage: false,
+    });
+
+    expect(text).toContain("Model: xai/grok-4");
+    expect(text).toContain("channel override");
+    expect(text).toContain("Runtime: OpenClaw Default");
+    expect(text).not.toContain("Runtime: OpenAI Codex");
+  });
+
+  it("preserves a prepared non-default selection over the channel model", async () => {
+    const text = await buildStatusText({
+      cfg: {
+        agents: {
+          defaults: {
+            model: { primary: "openai/gpt-5.5" },
+          },
+        },
+        channels: {
+          modelByChannel: {
+            telegram: {
+              "-100123": "xai/grok-4",
+            },
+          },
+        },
+      },
+      sessionEntry: {
+        sessionId: "telegram-prepared-model",
+        updatedAt: 0,
+        delivery: normalizeSessionDeliveryState({ context: { channel: "telegram" } }),
+        groupId: "-100123",
+        chatType: "group",
+      },
+      sessionKey: "agent:main:telegram:group:-100123",
+      statusChannel: "telegram",
+      provider: "anthropic",
+      model: "claude-opus-4-6",
+      resolvedHarness: "openclaw",
+      resolvedVerboseLevel: "off",
+      resolvedReasoningLevel: "off",
+      resolveDefaultThinkingLevel: async () => undefined,
+      isGroup: true,
+      defaultGroupActivation: () => "mention",
+      pluginHealthLineOverride: "Plugins: test",
+      taskLineOverride: "",
+      skipDefaultTaskLookup: true,
+      includeTranscriptUsage: false,
+    });
+
+    expect(text).toContain("Model: anthropic/claude-opus-4-6");
+    expect(text).not.toContain("xai/grok-4");
+    expect(text).not.toContain("channel override");
+  });
 });
 
 describe("Codex usage after runtime fallback", () => {
