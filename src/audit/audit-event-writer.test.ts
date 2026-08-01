@@ -7,6 +7,7 @@ import {
 import { listAuditEvents } from "./audit-event-store.js";
 import type { AuditEventInput } from "./audit-event-types.js";
 import { createAuditEventWriter } from "./audit-event-writer.js";
+import { recordExecutionIdentityContextAtAdmission } from "./execution-identity-context.js";
 
 const tempDirs: string[] = [];
 
@@ -50,5 +51,34 @@ describe("audit event worker", () => {
     await writer.stop();
     expect(errors).toEqual([]);
     expect(listAuditEvents({ database, limit: 10 }).events).toHaveLength(1);
+  });
+
+  it("prunes expired identity contexts at startup without a new run", async () => {
+    const stateDir = makeTempDir(tempDirs, "openclaw-audit-writer-");
+    const database = { env: { OPENCLAW_STATE_DIR: stateDir } };
+    expect(
+      recordExecutionIdentityContextAtAdmission(
+        {
+          runId: "expired-before-startup",
+          agentId: "main",
+          ingress: { kind: "local-cli", boundary: "agent-command.local", state: "present" },
+          runtime: { kind: "embedded" },
+        },
+        { ...database, enabled: true, now: 0, runtimeInstanceId: "runtime-1" },
+      ),
+    ).toBeDefined();
+    closeOpenClawStateDatabaseForTest();
+
+    const errors: string[] = [];
+    const writer = createAuditEventWriter({ stateDir, onError: (error) => errors.push(error) });
+    await writer.ready;
+
+    expect(
+      openOpenClawStateDatabase(database)
+        .db.prepare("SELECT COUNT(*) AS count FROM execution_identity_contexts")
+        .get(),
+    ).toEqual({ count: 0 });
+    await writer.stop();
+    expect(errors).toEqual([]);
   });
 });

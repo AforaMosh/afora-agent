@@ -61,7 +61,9 @@ facts:
 - `unknown`: the exact run is not known, or expected context is corrupt or
   unreadable;
 - `unsupported`: best-effort activity shows the run, but no context is
-  available, as with a pre-feature, expired, disabled, or failed context write;
+  available, as with a pre-feature, disabled, or failed context write. A
+  context just beyond retention also uses this state while its bounded cleanup
+  is pending, with an explicit expiry remediation;
 - `unattributed`: the supported run has no usable invoker principal;
 - `attribution-only`: invoker attribution exists but was not evaluated for
   authorization.
@@ -181,10 +183,21 @@ rows and their ledger sequences are preserved.
 
 Execution identity contexts also live in the shared state database. Their
 additive table is created lazily on first use without a schema-version bump.
-Contexts are retained for 30 days, capped at 100,000 rows, and pruned in batches
-of at most 1,024 rows per context write. An older build ignores this table.
-These limits make the inspector an operational diagnostic surface, not a
-compliance archive.
+Contexts are retained for 30 days and capped at 100,000 rows. Exact-run
+inspection never returns a context or its admission decision after that
+context is older than 30 days, even if physical cleanup has not run. Expired
+rows are pruned during Gateway startup, hourly audit maintenance, and later
+context writes, with at most 1,024 identity-context rows removed per write or
+maintenance tick. Maintenance continues when collection is disabled. An older
+build ignores this table.
+
+Immediately after expiry, inspection can report the run as `unsupported` while
+the expired row still proves only that its identity context became unavailable;
+no expired fields or decisions are returned. After bounded cleanup, the same
+lookup can become `unknown` if no separately retained best-effort activity
+remains. That transition does not prove the run did not occur. These limits
+make the inspector an operational diagnostic surface, not a compliance
+archive.
 
 ## Querying
 

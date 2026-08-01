@@ -244,6 +244,42 @@ describe("audit gateway methods", () => {
     expect(respond).toHaveBeenCalledWith(true, expect.objectContaining({ schemaVersion: 1 }));
   });
 
+  it("returns an expired exact-run diagnostic without context fields or decisions", async () => {
+    inspectExecutionIdentityRun.mockReturnValue({
+      schemaVersion: 1,
+      run: { runId: "expired-run", status: "known" },
+      identity: {
+        state: "unsupported",
+        reasonCode: "identity_context_unavailable",
+        missingEvidence: ["identity.context"],
+        remediation: [
+          {
+            code: "run_again_after_expiry",
+            text: "This run's identity context is outside the 30-day retention window; run the operation again to record a new context.",
+          },
+        ],
+      },
+      decisions: [],
+      coverage: { state: "unsupported", missingEvidence: ["identity.context"] },
+    });
+
+    const respond = await runAuditHandler("audit.run.inspect", { runId: "expired-run" });
+    const result = respond.mock.calls[0]?.[1] as Record<string, unknown>;
+
+    expect(respond).toHaveBeenCalledWith(
+      true,
+      expect.objectContaining({
+        identity: expect.objectContaining({
+          state: "unsupported",
+          reasonCode: "identity_context_unavailable",
+        }),
+        decisions: [],
+      }),
+    );
+    expect(JSON.stringify(result)).not.toContain("contextId");
+    expect(JSON.stringify(result)).not.toContain("run_admission_identity_not_evaluated");
+  });
+
   it("rejects malformed run-inspection input before storage access", async () => {
     expect(
       await runAuditHandler("audit.run.inspect", { runId: "", extra: true }),

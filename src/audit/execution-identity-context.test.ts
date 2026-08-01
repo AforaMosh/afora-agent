@@ -7,6 +7,7 @@ import {
 import { recordAuditEvent } from "./audit-event-store.js";
 import {
   inspectExecutionIdentityRun,
+  pruneExpiredExecutionIdentityContexts,
   recordExecutionIdentityContextAtAdmission,
   type ExecutionIdentityAdmissionFacts,
 } from "./execution-identity-context.js";
@@ -74,7 +75,13 @@ describe("execution identity context storage", () => {
     expect(JSON.stringify(first)).not.toContain("runtime-secret-1");
 
     closeOpenClawStateDatabaseForTest();
-    const afterRestart = inspectExecutionIdentityRun({ runId: "run-1" }, database);
+    const afterRestart = inspectExecutionIdentityRun(
+      { runId: "run-1" },
+      {
+        ...database,
+        now: 999,
+      },
+    );
     expect(afterRestart.identity).toEqual({ state: "present", context: first });
   });
 
@@ -215,6 +222,29 @@ describe("execution identity context storage", () => {
     expect(rowCount.count).toBe(0);
   });
 
+  it("keeps bounded retention maintenance available while collection is disabled", () => {
+    const database = databaseOptions();
+    prepareExecutionIdentityContextAtAdmission(facts("run-before-disable"), {
+      ...database,
+      now: 0,
+      runtimeInstanceId: "runtime-1",
+    });
+    expect(
+      recordExecutionIdentityContextAtAdmission(facts("run-disabled"), {
+        ...database,
+        enabled: false,
+        now: RETENTION_MS + 1,
+      }),
+    ).toBeUndefined();
+
+    expect(pruneExpiredExecutionIdentityContexts({ database, now: RETENTION_MS + 1 })).toBe(1);
+    expect(
+      openOpenClawStateDatabase(database)
+        .db.prepare("SELECT COUNT(*) AS count FROM execution_identity_contexts")
+        .get(),
+    ).toEqual({ count: 0 });
+  });
+
   it("keeps admission available when context persistence fails", () => {
     const database = databaseOptions();
     const options = { ...database, runtimeInstanceId: "runtime-1" };
@@ -226,6 +256,144 @@ describe("execution identity context storage", () => {
         { ...options, enabled: true },
       ),
     ).toBeUndefined();
+  });
+
+  it("keeps admission available when insert-time retention cleanup fails", () => {
+    const database = databaseOptions();
+    prepareExecutionIdentityContextAtAdmission(facts("run-expired"), {
+      ...database,
+      now: 0,
+      runtimeInstanceId: "runtime-1",
+    });
+    openOpenClawStateDatabase(database).db.exec(`
+      CREATE TRIGGER reject_identity_cleanup
+      BEFORE DELETE ON execution_identity_contexts
+      BEGIN
+        SELECT RAISE(ABORT, 'cleanup unavailable');
+      END;
+    `);
+
+    expect(
+      recordExecutionIdentityContextAtAdmission(facts("run-still-admitted"), {
+        ...database,
+        enabled: true,
+        now: RETENTION_MS + 1,
+        runtimeInstanceId: "runtime-1",
+      }),
+    ).toBeUndefined();
+  });
+
+  it("stops projecting context and decisions immediately after the retention boundary", () => {
+    const database = databaseOptions();
+    const createdAt = 1_000;
+    prepareExecutionIdentityContextAtAdmission(facts("run-retention"), {
+      ...database,
+      now: createdAt,
+      contextId: "expired-context-secret",
+      runtimeInstanceId: "expired-runtime-secret",
+    });
+
+    const immediatelyBefore = inspectExecutionIdentityRun(
+      { runId: "run-retention" },
+      { ...database, now: createdAt + RETENTION_MS - 1 },
+    );
+    expect(immediatelyBefore.identity).toMatchObject({
+      state: "present",
+      context: { contextId: "expired-context-secret" },
+    });
+    expect(immediatelyBefore.decisions).toHaveLength(1);
+    expect(
+      inspectExecutionIdentityRun(
+        { runId: "run-retention" },
+        { ...database, now: createdAt + RETENTION_MS },
+      ).identity.state,
+    ).toBe("present");
+
+    const immediatelyAfter = inspectExecutionIdentityRun(
+      { runId: "run-retention" },
+      { ...database, now: createdAt + RETENTION_MS + 1 },
+    );
+    expect(immediatelyAfter).toMatchObject({
+      run: { status: "known" },
+      identity: {
+        state: "unsupported",
+        reasonCode: "identity_context_unavailable",
+        remediation: [
+          expect.objectContaining({
+            code: "run_again_after_expiry",
+            text: expect.stringContaining("outside the 30-day retention window"),
+          }),
+        ],
+      },
+      decisions: [],
+      coverage: { state: "unsupported", missingEvidence: ["identity.context"] },
+    });
+    expect(JSON.stringify(immediatelyAfter)).not.toContain("expired-context-secret");
+    expect(JSON.stringify(immediatelyAfter)).not.toContain("expired-runtime-secret");
+    expect(JSON.stringify(immediatelyAfter)).not.toContain("run_admission_identity_not_evaluated");
+
+    closeOpenClawStateDatabaseForTest();
+    expect(
+      inspectExecutionIdentityRun(
+        { runId: "run-retention" },
+        { ...database, now: createdAt + RETENTION_MS + 1 },
+      ),
+    ).toEqual(immediatelyAfter);
+
+    expect(
+      pruneExpiredExecutionIdentityContexts({
+        database,
+        now: createdAt + RETENTION_MS + 1,
+      }),
+    ).toBe(1);
+    expect(
+      inspectExecutionIdentityRun(
+        { runId: "run-retention" },
+        { ...database, now: createdAt + RETENTION_MS + 1 },
+      ),
+    ).toMatchObject({
+      run: { status: "unknown" },
+      identity: {
+        state: "unknown",
+        reasonCode: "run_not_found",
+        remediation: [
+          expect.objectContaining({ text: expect.stringContaining("not proof of no run") }),
+        ],
+      },
+      decisions: [],
+    });
+  });
+
+  it("prunes expired contexts in bounded maintenance batches without new inserts", () => {
+    const database = databaseOptions();
+    prepareExecutionIdentityContextAtAdmission(facts("schema-seed"), {
+      ...database,
+      now: 1,
+      runtimeInstanceId: "runtime-1",
+    });
+    const { db } = openOpenClawStateDatabase(database);
+    db.exec("DELETE FROM execution_identity_contexts;");
+    db.prepare(
+      `WITH RECURSIVE rows(n) AS (
+         VALUES (1)
+         UNION ALL
+         SELECT n + 1 FROM rows WHERE n < 1025
+       )
+       INSERT INTO execution_identity_contexts (
+         context_id, run_id, created_at, coverage_state, context_bytes, context_json
+       )
+       SELECT 'context-' || n, 'run-' || n, 0, 'unattributed', 2, '{}'
+       FROM rows`,
+    ).run();
+
+    expect(pruneExpiredExecutionIdentityContexts({ database, now: RETENTION_MS + 1 })).toBe(1_024);
+    expect(db.prepare("SELECT COUNT(*) AS count FROM execution_identity_contexts").get()).toEqual({
+      count: 1,
+    });
+    expect(pruneExpiredExecutionIdentityContexts({ database, now: RETENTION_MS + 1 })).toBe(1);
+    expect(db.prepare("SELECT COUNT(*) AS count FROM execution_identity_contexts").get()).toEqual({
+      count: 0,
+    });
   });
 
   it("prunes retention and row-cap overflow in bounded batches", () => {
@@ -284,7 +452,11 @@ describe("execution identity context storage", () => {
     const unknownDatabase = databaseOptions();
     expect(inspectExecutionIdentityRun({ runId: "never-seen" }, unknownDatabase)).toMatchObject({
       run: { status: "unknown" },
-      identity: { state: "unknown", reasonCode: "run_not_found" },
+      identity: {
+        state: "unknown",
+        reasonCode: "run_not_found",
+        remediation: [expect.objectContaining({ code: "verify_run_id" })],
+      },
     });
 
     recordAuditEvent(
@@ -304,7 +476,11 @@ describe("execution identity context storage", () => {
     );
     expect(inspectExecutionIdentityRun({ runId: "legacy-run" }, unknownDatabase)).toMatchObject({
       run: { status: "known" },
-      identity: { state: "unsupported", reasonCode: "identity_context_unavailable" },
+      identity: {
+        state: "unsupported",
+        reasonCode: "identity_context_unavailable",
+        remediation: [expect.objectContaining({ code: "record_new_identity_context" })],
+      },
     });
   });
 
@@ -316,7 +492,7 @@ describe("execution identity context storage", () => {
       contextId: "context-receipt",
       runtimeInstanceId: "runtime-1",
     });
-    const result = inspectExecutionIdentityRun({ runId: "run-receipt" }, database);
+    const result = inspectExecutionIdentityRun({ runId: "run-receipt" }, { ...database, now: 123 });
 
     expect(result.identity).toMatchObject({
       state: "present",
@@ -337,7 +513,10 @@ describe("execution identity context storage", () => {
       }),
     ]);
     expect(
-      inspectExecutionIdentityRun({ runId: "run-receipt", decisionOffset: 1 }, database).decisions,
+      inspectExecutionIdentityRun(
+        { runId: "run-receipt", decisionOffset: 1 },
+        { ...database, now: 123 },
+      ).decisions,
     ).toEqual([]);
   });
 });

@@ -98,10 +98,16 @@ remain visible, so redirected output is still private operator data.
 An older Gateway produces an explicit `unsupported` result with
 `gateway_upgrade_required` and an upgrade-and-rerun next step. The CLI never
 reconstructs identity from legacy audit rows. A current Gateway distinguishes
-an unknown run, an unavailable pre-feature, expired, disabled, or failed
-context write, and a corrupt context without claiming that missing best-effort
-activity proves no execution. Context persistence is best-effort: a failed
-write logs one operational warning and does not block the agent run.
+an unknown run, an unavailable pre-feature, disabled, or failed context write,
+an expired context, and a corrupt context without claiming that missing
+best-effort activity proves no execution. Once a context is older than 30 days,
+the CLI returns no fields or admission decisions from it. While bounded cleanup
+is pending, the result is `unsupported` with an expiry-and-rerun next step.
+After cleanup it can become `unknown` if no separately retained activity
+remains; this absence does not prove that the run did not occur. Startup and
+hourly maintenance prune at most 1,024 identity contexts per tick and continue
+when collection is disabled. Context persistence and cleanup remain
+best-effort: a failed write or cleanup does not block the agent run.
 
 ## Recorded events
 

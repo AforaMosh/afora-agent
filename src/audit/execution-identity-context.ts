@@ -101,8 +101,13 @@ type ExecutionIdentityStoreOptions = OpenClawStateDatabaseOptions & {
   };
 };
 
+type ExecutionIdentityReadOptions = OpenClawStateDatabaseOptions & {
+  now?: number;
+};
+
 type ExecutionIdentityContextReadResult =
   | { status: "found"; context: ExecutionIdentityContextV1 }
+  | { status: "expired" }
   | { status: "missing" }
   | { status: "corrupt"; reasonCode: "identity_context_corrupt" };
 
@@ -323,11 +328,7 @@ function countExecutionIdentityContexts(db: DatabaseSync): number {
   return normalizeSqliteNumber(row?.count ?? null) ?? 0;
 }
 
-function pruneExecutionIdentityContextsAfterInsert(
-  db: DatabaseSync,
-  now: number,
-  limits: { maxRows: number; pruneBatchRows: number },
-): void {
+function deleteExpiredExecutionIdentityContexts(db: DatabaseSync, now: number, limit: number) {
   const kysely = executionIdentityDb(db);
   const expiredIds = kysely
     .selectFrom("execution_identity_contexts")
@@ -335,11 +336,20 @@ function pruneExecutionIdentityContextsAfterInsert(
     .where("created_at", "<", now - EXECUTION_IDENTITY_CONTEXT_RETENTION_MS)
     .orderBy("created_at", "asc")
     .orderBy("context_id", "asc")
-    .limit(limits.pruneBatchRows);
-  const expired = executeSqliteQuerySync(
+    .limit(limit);
+  return executeSqliteQuerySync(
     db,
     kysely.deleteFrom("execution_identity_contexts").where("context_id", "in", expiredIds),
   );
+}
+
+function pruneExecutionIdentityContextsAfterInsert(
+  db: DatabaseSync,
+  now: number,
+  limits: { maxRows: number; pruneBatchRows: number },
+): void {
+  const kysely = executionIdentityDb(db);
+  const expired = deleteExpiredExecutionIdentityContexts(db, now, limits.pruneBatchRows);
   const expiredCount = Number(expired.numAffectedRows ?? 0n);
   const cached = contextRowCounts.get(db);
   let rowCount =
@@ -362,6 +372,29 @@ function pruneExecutionIdentityContextsAfterInsert(
     rowCount = Math.max(0, rowCount - Number(pruned.numAffectedRows ?? 0n));
   }
   contextRowCounts.set(db, rowCount);
+}
+
+/** Delete one bounded batch during the existing audit startup/hourly maintenance tick. */
+export function pruneExpiredExecutionIdentityContexts(
+  params: {
+    now?: number;
+    database?: OpenClawStateDatabaseOptions;
+  } = {},
+): number {
+  ensureExecutionIdentityContextSchema(params.database);
+  return runOpenClawStateWriteTransaction(
+    ({ db }) => {
+      const deleted = deleteExpiredExecutionIdentityContexts(
+        db,
+        params.now ?? Date.now(),
+        EXECUTION_IDENTITY_CONTEXT_PRUNE_BATCH_ROWS,
+      );
+      contextRowCounts.delete(db);
+      return Number(deleted.numAffectedRows ?? 0n);
+    },
+    params.database,
+    { operationLabel: "audit.execution-identity.context.maintenance" },
+  );
 }
 
 /** Prepare and synchronously persist the immutable context at run admission. */
@@ -460,7 +493,7 @@ export function recordExecutionIdentityContextAtAdmission(
 /** Read one exact run context while turning malformed rows into typed diagnostics. */
 function readExecutionIdentityContextByRunId(
   runId: string,
-  options: OpenClawStateDatabaseOptions = {},
+  options: ExecutionIdentityReadOptions = {},
 ): ExecutionIdentityContextReadResult {
   const normalizedRunId = ensureBoundedRef(runId, "run id");
   ensureExecutionIdentityContextSchema(options);
@@ -468,6 +501,15 @@ function readExecutionIdentityContextByRunId(
   const row = readRowByRunId(db, normalizedRunId);
   if (!row) {
     return { status: "missing" };
+  }
+  const createdAt = normalizeSqliteNumber(row.created_at);
+  if (
+    createdAt !== undefined &&
+    createdAt < (options.now ?? Date.now()) - EXECUTION_IDENTITY_CONTEXT_RETENTION_MS
+  ) {
+    // The indexed timestamp may explain availability, but expired context JSON
+    // must never be parsed or projected while bounded maintenance catches up.
+    return { status: "expired" };
   }
   try {
     return { status: "found", context: parseExecutionIdentityRow(row) };
@@ -535,10 +577,24 @@ function unavailableResult(params: {
   };
 }
 
+function unavailableIdentityContext(
+  runId: string,
+  remediation: { code: string; text: string },
+): AuditRunInspectResult {
+  return unavailableResult({
+    runId,
+    runStatus: "known",
+    state: "unsupported",
+    reasonCode: "identity_context_unavailable",
+    missingEvidence: ["identity.context"],
+    remediation: [remediation],
+  });
+}
+
 /** Project one exact run plus the truthful run-admission decision receipt. */
 export function inspectExecutionIdentityRun(
   params: { runId: string; decisionOffset?: number; decisionLimit?: number },
-  options: OpenClawStateDatabaseOptions = {},
+  options: ExecutionIdentityReadOptions = {},
 ): AuditRunInspectResult {
   const runId = ensureBoundedRef(params.runId, "run id");
   const contextResult = readExecutionIdentityContextByRunId(runId, options);
@@ -575,25 +631,23 @@ export function inspectExecutionIdentityRun(
       ],
     });
   }
+  if (contextResult.status === "expired") {
+    return unavailableIdentityContext(runId, {
+      code: "run_again_after_expiry",
+      text: "This run's identity context is outside the 30-day retention window; run the operation again to record a new context.",
+    });
+  }
   try {
     const auditPage = listAuditEvents({
       limit: 1,
       filters: { runId },
+      ...(options.now !== undefined ? { now: options.now } : {}),
       database: options,
     });
     if (auditPage.events.length > 0) {
-      return unavailableResult({
-        runId,
-        runStatus: "known",
-        state: "unsupported",
-        reasonCode: "identity_context_unavailable",
-        missingEvidence: ["identity.context"],
-        remediation: [
-          {
-            code: "run_again_after_upgrade",
-            text: "Run the operation again on a current Gateway to record execution identity context.",
-          },
-        ],
+      return unavailableIdentityContext(runId, {
+        code: "record_new_identity_context",
+        text: "Confirm audit collection is enabled and the Gateway is current, then run the operation again to record a new identity context.",
       });
     }
   } catch {
