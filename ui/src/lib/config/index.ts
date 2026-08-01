@@ -209,23 +209,59 @@ function createInitialConfigState(snapshot?: Partial<RuntimeConfigGatewaySnapsho
   };
 }
 
-function retireRuntimeConfigScope(state: ConfigState): void {
-  const navigation = {
-    configSearchQuery: state.configSearchQuery,
-    configActiveSection: state.configActiveSection,
-    configActiveSubsection: state.configActiveSubsection,
+type RetainedRuntimeConfigScope = {
+  state: ConfigState;
+  autoAllowlistedPluginIds?: Set<string>;
+};
+
+function captureRuntimeConfigScope(state: ConfigState): RetainedRuntimeConfigScope {
+  return {
+    state: {
+      ...state,
+      client: null,
+      connected: false,
+      configLoading: false,
+      configSchemaLoading: false,
+      configSaving: false,
+      configApplying: false,
+      configRawOriginalParsePending: null,
+      configAutoSaveStatus:
+        state.configAutoSaveStatus === "saving" ? "idle" : state.configAutoSaveStatus,
+    },
+    autoAllowlistedPluginIds: autoAllowlistedPluginIdsByState.get(state),
+  };
+}
+
+function adoptRuntimeConfigScope(
+  state: ConfigState,
+  retained: RetainedRuntimeConfigScope | undefined,
+): void {
+  const connection = {
+    client: state.client,
+    connected: state.connected,
+    applySessionKey: state.applySessionKey,
   };
   Object.assign(
     state,
-    createInitialConfigState({
-      client: state.client,
-      phase: state.connected ? "connected" : "reconnecting",
-      sessionKey: state.applySessionKey,
-    }),
-    navigation,
+    retained?.state ??
+      createInitialConfigState({
+        client: state.client,
+        phase: state.connected ? "connected" : "reconnecting",
+        sessionKey: state.applySessionKey,
+      }),
+    connection,
   );
-  state.chatError = null;
-  autoAllowlistedPluginIdsByState.delete(state);
+  if (!retained) {
+    state.chatError = null;
+  }
+  if (retained?.autoAllowlistedPluginIds) {
+    autoAllowlistedPluginIdsByState.set(state, retained.autoAllowlistedPluginIds);
+  } else {
+    autoAllowlistedPluginIdsByState.delete(state);
+  }
+  if (retained && state.configRawOriginal) {
+    setConfigRawOriginal(state, state.configRawOriginal);
+  }
 }
 
 function nextRequestVersion(state: ConfigState, key: "config" | "schema"): number {
@@ -1342,6 +1378,7 @@ export function createRuntimeConfigCapability(
   // a post-apply write is meaningless while the gateway restarts, so the
   // teardown flush fail-closes on them).
   let manualFlightInfo: { raw: string; ackHash: string | null } | null = null;
+  const retainedScopes = new Map<string, RetainedRuntimeConfigScope>();
   let gatewayScope = normalizeGatewayCredentialScope(
     gateway.connection?.gatewayUrl ?? gateway.snapshot.client?.gatewayUrl ?? "",
   );
@@ -1615,6 +1652,17 @@ export function createRuntimeConfigCapability(
       gateway.connection?.gatewayUrl ?? snapshot.client?.gatewayUrl ?? "",
     );
     const scopeChanged = nextGatewayScope !== gatewayScope;
+    if (scopeChanged) {
+      retainedScopes.delete(gatewayScope);
+      retainedScopes.set(gatewayScope, captureRuntimeConfigScope(state));
+      while (retainedScopes.size > 10) {
+        const oldest = retainedScopes.keys().next().value;
+        if (oldest === undefined) {
+          break;
+        }
+        retainedScopes.delete(oldest);
+      }
+    }
     gatewayScope = nextGatewayScope;
     state.client = snapshot.client;
     state.connected = connected;
@@ -1666,7 +1714,7 @@ export function createRuntimeConfigCapability(
         lastFlightSubmittedRaw = null;
         lastFlightAckHash = null;
         manualFlightInfo = null;
-        retireRuntimeConfigScope(state);
+        adoptRuntimeConfigScope(state, retainedScopes.get(nextGatewayScope));
       }
       // A reconnect must not strand a dirty draft whose debounce was just
       // cancelled; reschedule against the new connection. If the file moved

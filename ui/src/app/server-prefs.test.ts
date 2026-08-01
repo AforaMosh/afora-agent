@@ -1200,6 +1200,41 @@ describe("pushServerUiPrefs", () => {
     expect(localStorage.getItem(pendingKey("ws://a"))).not.toBeNull();
   });
 
+  it("retains pending intent per scope when storage is blocked", () => {
+    vi.stubGlobal("localStorage", {
+      getItem: () => {
+        throw new Error("storage blocked");
+      },
+      removeItem: () => {
+        throw new Error("storage blocked");
+      },
+      setItem: () => {
+        throw new Error("storage blocked");
+      },
+    });
+    const writerA = createClient(vi.fn(), "ws://gateway.test?tenant=a", false);
+    const writerB = createClient(vi.fn(), "ws://gateway.test?tenant=b", false);
+    pushServerUiPrefs(writerA, { theme: "knot" });
+    pushServerUiPrefs(writerB, { theme: "dash" });
+
+    flushServerUiPrefs(writerA);
+    expect(
+      resolveServerUiPrefState(
+        configWithPrefs({ theme: "claw" }),
+        "theme",
+        "ws://gateway.test?tenant=a",
+      ),
+    ).toMatchObject({ provenance: "pending", value: "knot" });
+    flushServerUiPrefs(writerB);
+    expect(
+      resolveServerUiPrefState(
+        configWithPrefs({ theme: "claw" }),
+        "theme",
+        "ws://gateway.test?tenant=b",
+      ),
+    ).toMatchObject({ provenance: "pending", value: "dash" });
+  });
+
   it("re-adopts scope when a stable writer gains or changes its gateway client", async () => {
     const request = vi.fn<(method: string, params?: unknown) => Promise<unknown>>(async () => ({}));
     const writer = createClient(request, "", false);

@@ -13,7 +13,7 @@ import {
 } from "./bootstrap-location.ts";
 import { bootstrapApplication } from "./bootstrap.ts";
 import type { ApplicationContext } from "./context.ts";
-import { loadSettings, saveSettings } from "./settings.ts";
+import { loadSettings, saveSettings, selectGatewaySettings } from "./settings.ts";
 
 // Startup progress (dynamic imports, gateway subscribe, router start) is not a
 // performance assertion, so these waits must not inherit vi.waitFor's 1s default:
@@ -595,6 +595,34 @@ describe("application theme server selections", () => {
     } finally {
       unsubscribe();
       runtime.stop();
+    }
+  });
+});
+
+describe("application navigation preferences", () => {
+  it("refreshes from the newly selected Gateway scope", () => {
+    const previousSettings = loadSettings();
+    const runtime = bootstrapApplication({ sessionPathBuilderReady: Promise.resolve() });
+    const gatewayUrl = "wss://navigation-scope.test?tenant=b";
+
+    try {
+      selectGatewaySettings(gatewayUrl, {
+        navCollapsed: true,
+        navWidth: 320,
+        sidebarEntries: ["route:usage"],
+        pinnedAgentIds: ["research"],
+      });
+      runtime.context.navigation.refresh();
+
+      expect(runtime.context.navigation.snapshot).toEqual({
+        navCollapsed: true,
+        navWidth: 320,
+        sidebarEntries: ["route:usage"],
+        pinnedAgentIds: ["research"],
+      });
+    } finally {
+      runtime.stop();
+      selectGatewaySettings(previousSettings.gatewayUrl, previousSettings);
     }
   });
 });

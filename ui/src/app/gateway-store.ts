@@ -289,6 +289,12 @@ export function createApplicationGateway(
       ...(logicalGatewayChanged && connectionOverrides.token === undefined
         ? { token: targetSettings.token }
         : {}),
+      ...(logicalGatewayChanged && connectionOverrides.password === undefined
+        ? { password: "" }
+        : {}),
+      ...(logicalGatewayChanged && connectionOverrides.bootstrapToken === undefined
+        ? { bootstrapToken: "" }
+        : {}),
     };
     const hasRequestedSessionKey = requestedSessionKey !== undefined;
     const nextSessionKey = hasRequestedSessionKey

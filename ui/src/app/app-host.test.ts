@@ -41,12 +41,14 @@ vi.mock("./stale-chunk-reload.ts", async () => {
 });
 
 type AppLifecycleState = {
+  loginGatewayUrl: string;
   loginToken: string;
   loginPassword: string;
   loginShowGatewayToken: boolean;
   loginShowGatewayPassword: boolean;
   disconnectedCallback: () => void;
   synchronizeGateway: (gateway: ApplicationGateway) => void;
+  updateLoginGatewayUrl: (value: string) => void;
 };
 
 type ShellInitializationState = {
@@ -302,6 +304,18 @@ describe("OpenClaw app lifecycle", () => {
     expect(app.loginToken).toBe("second");
     expect(app.loginPassword).toBe("second-password");
   });
+
+  it("clears a password when the login draft changes credential scope", () => {
+    const app = document.createElement("openclaw-app") as unknown as AppLifecycleState;
+    app.loginGatewayUrl = "wss://multi.test?tenant=a";
+    app.loginToken = "shared-token";
+    app.loginPassword = "tenant-a-password";
+
+    app.updateLoginGatewayUrl("wss://multi.test?tenant=b");
+
+    expect(app.loginToken).toBe("shared-token");
+    expect(app.loginPassword).toBe("");
+  });
 });
 
 describe("OpenClaw shell source initialization", () => {
@@ -398,6 +412,7 @@ describe("OpenClaw shell source initialization", () => {
       ({
         state: { client, connected: true },
         ensureLoaded: vi.fn(() => Promise.resolve()),
+        refresh: vi.fn(() => Promise.resolve()),
       }) as unknown as ApplicationContext["runtimeConfig"];
     const firstAgents = createAgents();
     const secondAgents = createAgents();
@@ -413,8 +428,8 @@ describe("OpenClaw shell source initialization", () => {
 
     expect(firstAgents.ensureList).toHaveBeenCalledOnce();
     expect(secondAgents.ensureList).toHaveBeenCalledOnce();
-    expect(firstRuntimeConfig.ensureLoaded).toHaveBeenCalledOnce();
-    expect(secondRuntimeConfig.ensureLoaded).toHaveBeenCalledOnce();
+    expect(firstRuntimeConfig.refresh).toHaveBeenCalledOnce();
+    expect(secondRuntimeConfig.refresh).toHaveBeenCalledOnce();
   });
 });
 

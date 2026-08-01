@@ -10,6 +10,7 @@ import {
   persistSessionToken,
   resolvePageGatewaySettings,
   saveSettings,
+  selectGatewaySettings,
   type UiSettings,
 } from "./settings.ts";
 import { resolveApplicationStartupSettings } from "./startup-settings.ts";
@@ -330,6 +331,75 @@ describe("loadSettings default gateway URL derivation", () => {
     const settings = loadSettings();
     expect(settings.gatewayUrl).toBe(gwUrl);
     expect(settings.token).toBe("gateway-a-token");
+  });
+
+  it("migrates a shipped query-gateway mirror into its credential scope", () => {
+    setTestLocation({ protocol: "https:", host: "gateway.example:8443", pathname: "/" });
+    const gatewayUrl = "wss://multi.example:8443/openclaw?tenant=a";
+    const legacyScope = "wss://multi.example:8443/openclaw";
+    localStorage.setItem(
+      `openclaw.control.settings.v1:${legacyScope}`,
+      JSON.stringify({
+        gatewayUrl,
+        theme: "knot",
+        sessionKey: "agent:main:legacy",
+        lastActiveSessionKey: "agent:main:legacy",
+        sessionsByGateway: {
+          [legacyScope]: {
+            sessionKey: "agent:main:legacy",
+            lastActiveSessionKey: "agent:main:legacy",
+          },
+        },
+      }),
+    );
+
+    expect(loadSettings(gatewayUrl)).toMatchObject({
+      gatewayUrl,
+      theme: "knot",
+      sessionKey: "agent:main:legacy",
+    });
+    const migrated = JSON.parse(
+      localStorage.getItem(`openclaw.control.settings.v1:${gatewayUrl}`) ?? "{}",
+    ) as { sessionsByGateway?: Record<string, unknown> };
+    expect(migrated.sessionsByGateway).toHaveProperty(gatewayUrl);
+    expect(migrated.sessionsByGateway).not.toHaveProperty(legacyScope);
+  });
+
+  it("keeps readable legacy settings when the migration write is blocked", () => {
+    setTestLocation({ protocol: "https:", host: "gateway.example:8443", pathname: "/" });
+    const gatewayUrl = "wss://readonly.example:8443/openclaw?tenant=a";
+    const legacyScope = "wss://readonly.example:8443/openclaw";
+    const storage = createStorageMock();
+    storage.setItem(
+      `openclaw.control.settings.v1:${legacyScope}`,
+      JSON.stringify({ gatewayUrl, theme: "dash" }),
+    );
+    vi.spyOn(storage, "setItem").mockImplementation(() => {
+      throw new Error("quota exceeded");
+    });
+    vi.stubGlobal("localStorage", storage);
+
+    expect(loadSettings(gatewayUrl)).toMatchObject({ gatewayUrl, theme: "dash" });
+  });
+
+  it("retains blocked-storage settings independently across Gateway scopes", () => {
+    setTestLocation({ protocol: "https:", host: "gateway.example:8443", pathname: "/" });
+    const gatewayA = "wss://blocked.example:8443/openclaw?tenant=a";
+    const gatewayB = "wss://blocked.example:8443/openclaw?tenant=b";
+    vi.stubGlobal("localStorage", null);
+    selectGatewaySettings(gatewayA, {
+      theme: "knot",
+      customTheme: createImportedCustomThemeFixture(),
+    });
+    selectGatewaySettings(gatewayB, { theme: "dash" });
+
+    expect(loadSettings(gatewayA)).toMatchObject({ theme: "knot" });
+    expect(loadSettings(gatewayA).customTheme).toBeDefined();
+    expect(loadSettings(gatewayB)).toMatchObject({ theme: "dash" });
+
+    vi.stubGlobal("localStorage", createStorageMock());
+    saveSettings(loadSettings(gatewayA));
+    saveSettings(loadSettings(gatewayB));
   });
 
   it("does not persist gateway tokens when saving settings", () => {

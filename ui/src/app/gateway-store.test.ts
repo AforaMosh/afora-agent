@@ -237,6 +237,16 @@ describe("createApplicationGateway connection phase", () => {
     expect(gateway.snapshot.phase).toBe("connecting");
   });
 
+  it("does not carry password or bootstrap credentials into a new logical Gateway", () => {
+    const { gateway, current } = createStore();
+    gateway.connect({ password: "gateway-a-password", bootstrapToken: "gateway-a-bootstrap" });
+
+    gateway.connect({ gatewayUrl: "wss://other-gateway.example.test" });
+
+    expect(current().opts.password).toBeUndefined();
+    expect(current().opts.bootstrapToken).toBeUndefined();
+  });
+
   it("adopts each selected Gateway's own settings instead of copying the source scope", () => {
     const gatewayA = "wss://multi.example.test?tenant=a";
     const gatewayB = "wss://multi.example.test?tenant=b";

@@ -301,6 +301,7 @@ const LAST_SEEN_KEY = "openclaw.control.serverPrefs.v1";
 const PENDING_KEY = "openclaw.control.serverPrefs.pending.v1";
 const CONFLICT_REDRAIN_DELAY_MS = 1_000;
 const MAX_CONFLICT_REDRAINS = 5;
+const MAX_IN_MEMORY_PREF_SCOPES = 10;
 const requestedServerUiPrefResets = new Set<SyncedPrefKey>();
 const requestedDeviceLocalPrefResets = new Set<SyncedPrefKey>();
 let applyingServerPrefs = false;
@@ -322,6 +323,20 @@ let lastReconciledConfigObject: unknown = null;
 // Storage can be blocked or cleared mid-session. Keep the current process's
 // accepted edge so equal snapshot objects do not manufacture theme revisions.
 const lastSeenPrefsByScope = new Map<string, string>();
+const pendingPrefsByScope = new Map<string, ServerUiPrefs>();
+function rememberScopedValue<T>(map: Map<string, T>, scope: string, value: T | null): void {
+  map.delete(scope);
+  if (value !== null) {
+    map.set(scope, value);
+  }
+  while (map.size > MAX_IN_MEMORY_PREF_SCOPES) {
+    const oldest = map.keys().next().value;
+    if (oldest === undefined) {
+      break;
+    }
+    map.delete(oldest);
+  }
+}
 function clearConflictRedrain(): void {
   if (conflictRedrainTimer !== null) {
     clearTimeout(conflictRedrainTimer);
@@ -360,10 +375,16 @@ function adoptPendingScope(scope: string, force = false): void {
   if (!force && scope === pendingScope) {
     return;
   }
+  if (pendingPrefs) {
+    rememberScopedValue(pendingPrefsByScope, pendingScope, { ...pendingPrefs });
+  }
   pendingScope = scope;
-  pendingPrefs = parseStoredPrefs(readStorage(PENDING_KEY, scope));
+  const stored = parseStoredPrefs(readStorage(PENDING_KEY, scope));
+  const inMemory = pendingPrefsByScope.get(scope);
+  pendingPrefs = stored || inMemory ? { ...stored, ...inMemory } : null;
 }
 function writePendingStorage(prefs: ServerUiPrefs | null): void {
+  rememberScopedValue(pendingPrefsByScope, pendingScope, prefs ? { ...prefs } : null);
   writeStorage(PENDING_KEY, pendingScope, prefs ? JSON.stringify(prefs) : null);
 }
 // localStorage pending is a cross-tab merged pool per gateway. Per-key read-merge-write prevents
@@ -384,15 +405,21 @@ function settlePendingStorage(ackedBatch: ServerUiPrefs): void {
   const merged = { ...stored, ...pendingPrefs };
   writePendingStorage(Object.keys(merged).length ? merged : null);
 }
-export function resetServerUiPrefsSync() {
+export function resetServerUiPrefsSync(options: { preserveScopedFallback?: boolean } = {}) {
   clearConflictRedrain();
+  if (options.preserveScopedFallback && pendingPrefs) {
+    rememberScopedValue(pendingPrefsByScope, pendingScope, { ...pendingPrefs });
+  }
   applyingServerPrefs = pushDraining = drainRequested = false;
   pendingScope = "";
   pendingPrefs = pushWriter = null;
   pushScope = "";
   lastReconciledScope = "";
   lastReconciledConfigObject = null;
-  lastSeenPrefsByScope.clear();
+  if (!options.preserveScopedFallback) {
+    lastSeenPrefsByScope.clear();
+    pendingPrefsByScope.clear();
+  }
   requestedServerUiPrefResets.clear();
   requestedDeviceLocalPrefResets.clear();
 }
@@ -441,7 +468,7 @@ export function applyServerUiPrefs(
   const key = JSON.stringify(prefs);
   const lastSeenRaw = lastSeenPrefsByScope.get(scope) ?? readStorage(LAST_SEEN_KEY, scope);
   if (key === lastSeenRaw) {
-    lastSeenPrefsByScope.set(scope, key);
+    rememberScopedValue(lastSeenPrefsByScope, scope, key);
     recordReconciledObject();
     return false;
   }
@@ -467,7 +494,7 @@ export function applyServerUiPrefs(
     }
   }
   writeStorage(LAST_SEEN_KEY, scope, key);
-  lastSeenPrefsByScope.set(scope, key);
+  rememberScopedValue(lastSeenPrefsByScope, scope, key);
   recordReconciledObject();
   if (Object.hasOwn(changed, "theme")) {
     hooks.onThemeChanged?.(changed.theme ?? null);
@@ -513,6 +540,7 @@ function adoptPushWriter(writer: ServerUiPrefsWriter): void {
     pendingPrefs = { ...pendingPrefs, ...unscopedPending };
     mergePendingIntoStorage();
     writeStorage(PENDING_KEY, "", null);
+    rememberScopedValue(pendingPrefsByScope, "", null);
   }
 }
 function removeBatch(batch: ServerUiPrefs): void {
@@ -586,7 +614,7 @@ async function drainPendingPrefs(writer: ServerUiPrefsWriter, epoch: number): Pr
         }
         const nextLastSeen = JSON.stringify(acknowledged);
         writeStorage(LAST_SEEN_KEY, pendingScope, nextLastSeen);
-        lastSeenPrefsByScope.set(pendingScope, nextLastSeen);
+        rememberScopedValue(lastSeenPrefsByScope, pendingScope, nextLastSeen);
         settlePendingStorage(batch);
         clearConflictRedrain();
         if (pushWriter !== writer || pushEpoch !== epoch) {
@@ -668,13 +696,11 @@ export function pushServerUiPrefs(
 export function flushServerUiPrefs(
   writer: ServerUiPrefsWriter,
   hooks: { afterCommit?: (commit: ServerUiPrefsCommit) => void } = {},
-): boolean {
+): void {
   adoptPushWriter(writer);
   clearConflictRedrain();
   pushEpoch += 1;
   pushDraining = drainRequested = false;
   pushAfterCommit = hooks.afterCommit;
-  const hasPending = pendingPrefs !== null;
   startPendingDrain(writer);
-  return hasPending;
 }

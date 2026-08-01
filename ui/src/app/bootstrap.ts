@@ -178,6 +178,18 @@ function createApplicationNavigationPreferences(
     get snapshot() {
       return snapshot;
     },
+    refresh() {
+      settings = loadSettings();
+      snapshot = {
+        navCollapsed: settings.navCollapsed,
+        navWidth: settings.navWidth,
+        sidebarEntries: settings.sidebarEntries,
+        pinnedAgentIds: settings.pinnedAgentIds ?? [],
+      };
+      for (const listener of listeners) {
+        listener(snapshot);
+      }
+    },
     update(patch) {
       const nextSnapshot = { ...snapshot, ...patch };
       if (

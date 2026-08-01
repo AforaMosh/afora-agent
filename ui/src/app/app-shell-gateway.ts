@@ -270,6 +270,7 @@ export class ShellGatewayOwner {
       // Gateway selection adopts that scope's browser-local appearance mirror
       // before server prefs reconcile; publish it even when the server delta is empty.
       this.host.context?.theme.refresh();
+      this.host.context?.navigation.refresh();
     }
     this.host.syncSidebarWorkboard();
     // Gateway-served chunks retry on reconnect after an earlier idle import failed.
@@ -295,13 +296,13 @@ export class ShellGatewayOwner {
     }
     this.host.runtimeConfigClient = snapshot.client;
     this.host.runtimeConfigSource = runtimeConfig;
-    const hasPendingPrefs = flushServerUiPrefs(runtimeConfig, {
+    flushServerUiPrefs(runtimeConfig, {
       afterCommit: ({ needsRefresh, retainedLocal }) =>
         this.reconcileCommittedServerUiPrefs(runtimeConfig, needsRefresh, retainedLocal),
     });
     // A new socket generation can miss config.changed events from downtime.
-    // Pending prefs own their post-ack refresh; otherwise fetch fresh state now.
-    void (hasPendingPrefs ? runtimeConfig.ensureLoaded() : runtimeConfig.refresh());
+    // Pending prefs shadow their keys while this refresh updates every other field.
+    void runtimeConfig.refresh();
   }
 
   ensureAgentsList(
@@ -353,7 +354,7 @@ export class ShellGatewayOwner {
       globalThis.clearTimeout(this.host.agentRosterRefreshTimer);
       this.host.agentRosterRefreshTimer = null;
     }
-    resetServerUiPrefsSync();
+    resetServerUiPrefsSync({ preserveScopedFallback: true });
   }
 
   dispose(): void {

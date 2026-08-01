@@ -47,6 +47,7 @@ export type ApplicationNavigationPreferencesSnapshot = {
 
 export type ApplicationNavigationPreferences = {
   readonly snapshot: ApplicationNavigationPreferencesSnapshot;
+  refresh: () => void;
   update: (patch: Partial<ApplicationNavigationPreferencesSnapshot>) => void;
   subscribe: (listener: (snapshot: ApplicationNavigationPreferencesSnapshot) => void) => () => void;
 };

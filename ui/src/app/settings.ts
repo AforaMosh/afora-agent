@@ -14,6 +14,10 @@ function settingsKeyForGateway(gatewayUrl: string): string {
   return `${SETTINGS_KEY_PREFIX}${normalizeGatewayCredentialScope(gatewayUrl)}`;
 }
 
+function legacySettingsKeyForGateway(gatewayUrl: string): string {
+  return `${SETTINGS_KEY_PREFIX}${normalizeGatewayTokenScope(gatewayUrl)}`;
+}
+
 function currentGatewaySelectionKeyForPage(pageUrl: string): string {
   return `${CURRENT_GATEWAY_SELECTION_KEY_PREFIX}${normalizeGatewayCredentialScope(pageUrl)}`;
 }
@@ -310,7 +314,8 @@ function readSettingsForGateway(
   storage: Storage | null,
   targetUrl: string,
 ): PersistedSettingsSource | null {
-  const scoped = parsePersistedSettings(storage?.getItem(settingsKeyForGateway(targetUrl)) ?? null);
+  const scopedKey = settingsKeyForGateway(targetUrl);
+  const scoped = parsePersistedSettings(storage?.getItem(scopedKey) ?? null);
   if (
     scoped &&
     (!normalizeOptionalString(scoped.gatewayUrl) || settingsMatchGatewayTarget(scoped, targetUrl))
@@ -320,7 +325,38 @@ function readSettingsForGateway(
       parsed: scoped,
     };
   }
-  return null;
+  const legacyKey = legacySettingsKeyForGateway(targetUrl);
+  if (legacyKey === scopedKey) {
+    return null;
+  }
+  const legacy = parsePersistedSettings(storage?.getItem(legacyKey) ?? null);
+  const legacyGatewayUrl = normalizeOptionalString(legacy?.gatewayUrl);
+  if (
+    !legacy ||
+    !legacyGatewayUrl ||
+    normalizeGatewayCredentialScope(legacyGatewayUrl) !== normalizeGatewayCredentialScope(targetUrl)
+  ) {
+    return null;
+  }
+  const legacyScope = normalizeGatewayTokenScope(targetUrl);
+  const scope = normalizeGatewayCredentialScope(targetUrl);
+  const legacySession = legacy.sessionsByGateway?.[legacyScope];
+  const sessionsByGateway = { ...legacy.sessionsByGateway };
+  delete sessionsByGateway[legacyScope];
+  if (legacySession) {
+    sessionsByGateway[scope] = legacySession;
+  }
+  const migrated: PersistedUiSettings = {
+    ...legacy,
+    gatewayUrl: targetUrl,
+    ...(Object.keys(sessionsByGateway).length > 0 ? { sessionsByGateway } : {}),
+  };
+  try {
+    storage?.setItem(scopedKey, JSON.stringify(migrated));
+  } catch {
+    // Read-only/quota-limited storage can still supply the legacy mirror for this session.
+  }
+  return { gatewayUrl: targetUrl, parsed: migrated };
 }
 
 function tokenSessionKeyForGateway(gatewayUrl: string): string {
@@ -414,23 +450,30 @@ export function persistSessionToken(gatewayUrl: string, token: string) {
   }
 }
 
-// Last write that never reached localStorage (private mode, quota, security
-// errors). Without it a setting picked on one page silently reverts when
-// another page re-reads storage in the same tab.
-let unpersistedSettings: UiSettings | null = null;
+// Writes that never reached localStorage (private mode, quota, security errors)
+// stay isolated by logical Gateway. Bound this fallback like persisted sessions.
+const unpersistedSettingsByScope = new Map<string, UiSettings>();
+let unpersistedSelectedGatewayUrl: string | null = null;
+
+function rememberUnpersistedSettings(settings: UiSettings): void {
+  const scope = normalizeGatewayCredentialScope(settings.gatewayUrl);
+  unpersistedSettingsByScope.delete(scope);
+  unpersistedSettingsByScope.set(scope, settings);
+  while (unpersistedSettingsByScope.size > MAX_SCOPED_SESSION_ENTRIES) {
+    const oldest = unpersistedSettingsByScope.keys().next().value;
+    if (oldest === undefined) {
+      break;
+    }
+    unpersistedSettingsByScope.delete(oldest);
+  }
+}
+
+function readUnpersistedSettings(gatewayUrl: string): UiSettings | null {
+  return unpersistedSettingsByScope.get(normalizeGatewayCredentialScope(gatewayUrl)) ?? null;
+}
 
 export function loadSettings(targetGatewayUrl?: string): UiSettings {
   const targetUrl = normalizeOptionalString(targetGatewayUrl);
-  const cached = unpersistedSettings;
-  if (
-    cached &&
-    (!targetUrl ||
-      normalizeGatewayCredentialScope(cached.gatewayUrl) ===
-        normalizeGatewayCredentialScope(targetUrl))
-  ) {
-    // Gateway auth stays session-scoped; re-derive it instead of caching it.
-    return { ...cached, token: loadSessionToken(cached.gatewayUrl) };
-  }
   const { pageUrl: pageDerivedUrl, effectiveUrl: derivedDefaultUrl } = deriveDefaultGatewayUrl();
   const defaultUrl = targetUrl ?? derivedDefaultUrl;
   const storage = getSafeLocalStorage();
@@ -459,7 +502,12 @@ export function loadSettings(targetGatewayUrl?: string): UiSettings {
   try {
     const selectedGatewayUrl =
       targetUrl ??
+      unpersistedSelectedGatewayUrl ??
       normalizeOptionalString(storage?.getItem(currentGatewaySelectionKeyForPage(pageDerivedUrl)));
+    const cached = readUnpersistedSettings(selectedGatewayUrl ?? defaultUrl);
+    if (cached) {
+      return { ...cached, token: loadSessionToken(cached.gatewayUrl) };
+    }
     const selected = selectedGatewayUrl
       ? readSettingsForGateway(storage, selectedGatewayUrl)
       : null;
@@ -573,7 +621,11 @@ export function loadSettings(targetGatewayUrl?: string): UiSettings {
     }
     return settings;
   } catch {
-    return defaults;
+    const fallbackUrl = targetUrl ?? unpersistedSelectedGatewayUrl ?? defaultUrl;
+    const cached = readUnpersistedSettings(fallbackUrl);
+    return cached
+      ? { ...cached, token: loadSessionToken(cached.gatewayUrl) }
+      : { ...defaults, gatewayUrl: fallbackUrl, token: loadSessionToken(fallbackUrl) };
   }
 }
 
@@ -719,21 +771,27 @@ function persistSettings(next: UiSettings, options: { selectGateway?: boolean } 
     ...(next.lobsterPetSounds === true ? { lobsterPetSounds: true } : {}),
   };
   const serialized = JSON.stringify(persisted);
-  unpersistedSettings = next;
+  const shouldPersistSelection =
+    options.selectGateway === true || unpersistedSelectedGatewayUrl !== null;
+  rememberUnpersistedSettings(next);
+  if (options.selectGateway || unpersistedSelectedGatewayUrl === null) {
+    unpersistedSelectedGatewayUrl = next.gatewayUrl;
+  }
   try {
     const { pageUrl } = deriveDefaultGatewayUrl();
     const selectionKey = currentGatewaySelectionKeyForPage(pageUrl);
     storage?.setItem(scopedKey, serialized);
-    if (options.selectGateway || storage?.getItem(selectionKey) == null) {
+    if (shouldPersistSelection || storage?.getItem(selectionKey) == null) {
       storage?.setItem(selectionKey, next.gatewayUrl);
     }
     storage?.removeItem(LEGACY_SETTINGS_KEY);
     if (storage) {
-      unpersistedSettings = null;
+      unpersistedSettingsByScope.delete(scope);
+      unpersistedSelectedGatewayUrl = null;
     }
   } catch {
     // best-effort — quota exceeded or security restrictions should not
     // prevent in-memory settings and visual updates from being applied;
-    // unpersistedSettings keeps this tab consistent until storage recovers
+    // the scoped fallback keeps this tab consistent until storage recovers
   }
 }

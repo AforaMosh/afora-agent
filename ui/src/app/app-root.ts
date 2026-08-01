@@ -14,6 +14,7 @@ import { OpenClawLightDomElement } from "../lit/openclaw-element.ts";
 import { SubscriptionsController } from "../lit/subscriptions-controller.ts";
 import { bootstrapApplication, type ApplicationRuntime } from "./bootstrap.ts";
 import { applicationContext, type ApplicationContext } from "./context.ts";
+import { normalizeGatewayCredentialScope } from "./gateway-scope.ts";
 import {
   APPROVAL_PAGE_ELEMENT,
   isOptionalElementDefined,
@@ -22,6 +23,7 @@ import {
 } from "./lazy-custom-element.ts";
 import { resolveOnboardingMode } from "./onboarding-mode.ts";
 import { controlUiPublicAssetPath } from "./public-assets.ts";
+import { resolveGatewayTokenForUrlEdit } from "./settings.ts";
 
 /**
  * Terminal-only document mode (`?view=terminal`): the mobile apps embed the
@@ -180,6 +182,17 @@ export class OpenClawApp extends OpenClawLightDomElement {
     this.loginShowGatewayPassword = false;
   }
 
+  private updateLoginGatewayUrl(value: string) {
+    const scopeChanged =
+      normalizeGatewayCredentialScope(value) !==
+      normalizeGatewayCredentialScope(this.loginGatewayUrl);
+    this.loginToken = resolveGatewayTokenForUrlEdit(this.loginGatewayUrl, value, this.loginToken);
+    if (scopeChanged) {
+      this.loginPassword = "";
+    }
+    this.loginGatewayUrl = value;
+  }
+
   override render() {
     const context = this.context;
     const runtime = this.runtime;
@@ -267,7 +280,7 @@ export class OpenClawApp extends OpenClawLightDomElement {
               showGatewayToken: this.loginShowGatewayToken,
               showGatewayPassword: this.loginShowGatewayPassword,
               onGatewayUrlChange: (value: string) => {
-                this.loginGatewayUrl = value;
+                this.updateLoginGatewayUrl(value);
               },
               onTokenChange: (value: string) => {
                 this.loginToken = value;

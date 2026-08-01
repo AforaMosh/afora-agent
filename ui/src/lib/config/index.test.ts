@@ -608,6 +608,45 @@ describe("createRuntimeConfigCapability", () => {
     expect(runtimeConfig.state.configSnapshot?.config).toEqual({ source: "gateway-b" });
     expect(runtimeConfig.state.configSchemaVersion).toBe("b");
     expect(requestB.mock.calls.map(([method]) => method)).toEqual(["config.get", "config.schema"]);
+
+    publish(true, clientA, clientA.gatewayUrl);
+    expect(runtimeConfig.state.configForm).toEqual({ source: "gateway-a-draft" });
+    expect(runtimeConfig.state.configFormDirty).toBe(true);
+    runtimeConfig.dispose();
+  });
+
+  it("restores a raw draft when returning to its logical Gateway scope", async () => {
+    const request = vi.fn(async (method: string) =>
+      method === "config.get"
+        ? {
+            config: { source: "gateway-a" },
+            raw: '{"source":"gateway-a"}',
+            hash: "hash-a",
+            valid: true,
+            issues: [],
+          }
+        : {},
+    );
+    const clientA = {
+      gatewayUrl: "ws://gateway.test?tenant=a",
+      request,
+    } as unknown as GatewayBrowserClient;
+    const clientB = {
+      gatewayUrl: "ws://gateway.test?tenant=b",
+      request,
+    } as unknown as GatewayBrowserClient;
+    const { gateway, publish } = createGatewayHarness(clientA);
+    const runtimeConfig = createRuntimeConfigCapability(gateway);
+    await runtimeConfig.ensureLoaded();
+    runtimeConfig.setRaw('{"source":"gateway-a-raw-draft"}');
+
+    publish(true, clientB, clientB.gatewayUrl);
+    expect(runtimeConfig.state.configFormDirty).toBe(false);
+    publish(true, clientA, clientA.gatewayUrl);
+
+    expect(runtimeConfig.state.configRaw).toBe('{"source":"gateway-a-raw-draft"}');
+    expect(runtimeConfig.state.configFormMode).toBe("raw");
+    expect(runtimeConfig.state.configFormDirty).toBe(true);
     runtimeConfig.dispose();
   });
 });
