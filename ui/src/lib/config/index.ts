@@ -1383,6 +1383,8 @@ export function createRuntimeConfigCapability(
   // a post-apply write is meaningless while the gateway restarts, so the
   // teardown flush fail-closes on them).
   let manualFlightInfo: { raw: string; ackHash: string | null } | null = null;
+  // Entries exist only for authored dirty/in-flight work. Clean state reloads;
+  // user drafts must not become a silent cache eviction when scopes change.
   const retainedScopes = new Map<string, RetainedRuntimeConfigScope>();
   let gatewayScope = normalizeGatewayCredentialScope(
     gateway.connection?.gatewayUrl ?? gateway.snapshot.client?.gatewayUrl ?? "",

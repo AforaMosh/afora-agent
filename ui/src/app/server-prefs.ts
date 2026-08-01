@@ -305,6 +305,7 @@ const LAST_SEEN_KEY = "openclaw.control.serverPrefs.v1";
 const PENDING_KEY = "openclaw.control.serverPrefs.pending.v1";
 const CONFLICT_REDRAIN_DELAY_MS = 1_000;
 const MAX_CONFLICT_REDRAINS = 5;
+const MAX_LAST_SEEN_MEMORY_SCOPES = 64;
 const requestedServerUiPrefResets = new Set<SyncedPrefKey>();
 const requestedDeviceLocalPrefResets = new Set<SyncedPrefKey>();
 let applyingServerPrefs = false;
@@ -326,6 +327,8 @@ let lastReconciledConfigObject: unknown = null;
 // Storage can be blocked or cleared mid-session. Keep the current process's
 // accepted edge so equal snapshot objects do not manufacture theme revisions.
 const lastSeenPrefsByScope = new Map<string, string>();
+// Unlike lastSeen, pending entries are uncommitted user intent. Never evict
+// them merely because durable browser storage is unavailable.
 const pendingPrefsByScope = new Map<string, ServerUiPrefs>();
 function rememberScopedValue<T>(map: Map<string, T>, scope: string, value: T | null): void {
   map.delete(scope);
@@ -335,6 +338,13 @@ function rememberScopedValue<T>(map: Map<string, T>, scope: string, value: T | n
 }
 function rememberLastSeen(scope: string, value: string): void {
   rememberScopedValue(lastSeenPrefsByScope, scope, value);
+  while (lastSeenPrefsByScope.size > MAX_LAST_SEEN_MEMORY_SCOPES) {
+    const oldest = lastSeenPrefsByScope.keys().next().value;
+    if (oldest === undefined) {
+      break;
+    }
+    lastSeenPrefsByScope.delete(oldest);
+  }
 }
 function clearConflictRedrain(): void {
   if (conflictRedrainTimer !== null) {
