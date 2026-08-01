@@ -4774,6 +4774,9 @@ describe("matrix live qa scenarios", () => {
 
     const scenario = requireMatrixQaScenario("matrix-voice-preflight-mention");
     expect(scenario.configOverrides?.audio?.enabled).toBe(true);
+    expect(scenario.configOverrides?.audio?.models).toEqual([
+      { model: "gpt-4o-transcribe", provider: "openai" },
+    ]);
     expect(scenario.configOverrides?.groupMentionPatterns).toEqual([
       MATRIX_QA_VOICE_PREFLIGHT_MENTION,
     ]);

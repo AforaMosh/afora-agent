@@ -846,11 +846,25 @@ export async function runMatrixQaLive(params: {
             enabledPluginIds: models.providerMode === "mock-openai" ? ["openai"] : undefined,
             fastMode: params.fastMode,
             controlUiEnabled: false,
-            mutateConfig: (cfg) =>
-              buildMatrixQaConfig(cfg, {
+            mutateConfig: (cfg) => {
+              const matrixConfig = buildMatrixQaConfig(cfg, {
                 ...gatewayConfigParams,
                 overrides,
-              }),
+              });
+              if (models.providerMode !== "mock-openai") {
+                return matrixConfig;
+              }
+              return {
+                ...matrixConfig,
+                agents: {
+                  ...matrixConfig.agents,
+                  defaults: {
+                    ...matrixConfig.agents?.defaults,
+                    imageGenerationModel: { primary: "openai/gpt-image-1" },
+                  },
+                },
+              };
+            },
           });
           await waitForMatrixChannelReady(nextHarness.gateway, sutAccountId);
           return nextHarness;

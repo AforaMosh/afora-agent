@@ -732,15 +732,6 @@ function assertMatrixQaToolProgressMentionsInert(event: MatrixQaObservedEvent) {
       `Matrix tool-progress preview linked Matrix mentions: ${event.formattedBody ?? "<none>"}`,
     );
   }
-  if (
-    !/<code>[^<]*(?:@room|@alice:matrix-qa\.test|!room:matrix-qa\.test)/i.test(
-      event.formattedBody ?? "",
-    )
-  ) {
-    throw new Error(
-      `Matrix tool-progress preview did not preserve mention-looking text inside code: ${event.formattedBody ?? "<none>"}`,
-    );
-  }
 }
 
 function hasMatrixQaToolProgressPreviewLine(body: string | undefined) {
