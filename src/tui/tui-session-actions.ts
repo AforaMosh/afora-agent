@@ -111,6 +111,10 @@ export function createSessionActions(context: SessionActionContext) {
     clearLocalRunIds,
     rememberSessionKey,
   } = context;
+  let refreshAgentsInFlight: {
+    promise: ReturnType<typeof refreshTuiAgentList>;
+    errorOwners: Array<() => boolean>;
+  } | null = null;
   let refreshSessionInfoInFlight: Promise<void> | null = null;
   let refreshSessionInfoQueued = false;
   let historyLoadGeneration = 0;
@@ -173,12 +177,34 @@ export function createSessionActions(context: SessionActionContext) {
     updateFooter();
   };
 
-  const refreshAgents = () =>
-    refreshTuiAgentList({
+  const refreshAgents = (options?: { shouldReportError?: () => boolean }) => {
+    const ownsError = options?.shouldReportError ?? (() => true);
+    if (refreshAgentsInFlight) {
+      refreshAgentsInFlight.errorOwners.push(ownsError);
+      return refreshAgentsInFlight.promise;
+    }
+    const errorOwners = [ownsError];
+    const refresh = refreshTuiAgentList({
       load: () => client.listAgents(),
       apply: applyAgentsResult,
-      reportError: (message) => chatLog.addSystem(`agents list failed: ${message}`),
+      reportError: (message) => {
+        if (errorOwners.some((ownsRefreshError) => ownsRefreshError())) {
+          chatLog.addSystem(`agents list failed: ${message}`);
+        }
+      },
     });
+    const activeRefresh = { promise: refresh, errorOwners };
+    refreshAgentsInFlight = activeRefresh;
+    const releaseRefresh = () => {
+      if (refreshAgentsInFlight === activeRefresh) {
+        refreshAgentsInFlight = null;
+      }
+    };
+    // Reconnect and live picker consumers share one roster and one failure;
+    // superseded pickers must not publish errors after their overlay is gone.
+    void refresh.then(releaseRefresh, releaseRefresh);
+    return refresh;
+  };
 
   const updateAgentFromSessionKey = (key: string) => {
     const parsed = parseAgentSessionKey(key);
