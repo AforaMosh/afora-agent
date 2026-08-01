@@ -726,6 +726,7 @@ export function buildGatewayCronService(params: {
       onLaneWait,
     }) => {
       const { agentId, cfg: runtimeConfig } = resolveCronAgent(job.agentId);
+      const execution = cron.resolveRunExecution(job.id);
       const sessionKey = resolveCronSessionTargetSessionKey(job.sessionTarget) ?? `cron:${job.id}`;
       return await runCronIsolatedAgentTurn({
         cfg: runtimeConfig,
@@ -739,6 +740,8 @@ export function buildGatewayCronService(params: {
         agentId,
         sessionKey,
         lane: "cron",
+        executionOrigin: execution.origin,
+        executionReservedAtMs: execution.reservationAt,
       });
     },
     runCommandJob: async ({ job, abortSignal }) => {
@@ -1130,7 +1133,11 @@ export function buildGatewayCronService(params: {
     fireOnExit: async (job, exit) => {
       await runWithGatewayIndependentRootWorkAdmission(async () =>
         fireOnExitJob(job, exit, {
-          run: (jobId, payload) => cron.run(jobId, "force", payload ? { payload } : undefined),
+          run: (jobId, payload) =>
+            cron.run(jobId, "force", {
+              ...(payload ? { payload } : {}),
+              executionOrigin: "exit",
+            }),
         }),
       );
     },
@@ -1158,6 +1165,7 @@ export function buildGatewayCronService(params: {
         fireStreamJob(job, {
           run: async (jobId, onDisposition) => {
             const result = await cron.run(jobId, "force", {
+              executionOrigin: "stream",
               evaluateTrigger: true,
               streamBatch: batch,
               streamScheduleKey,

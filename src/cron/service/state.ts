@@ -58,6 +58,9 @@ export type Logger = {
   error: (obj: unknown, msg?: string) => void;
 };
 
+/** Authoritative execution source carried from cron admission into delivery. */
+export type CronRunOrigin = "operator" | "stream" | "exit" | "scheduled";
+
 export type CronSystemEventEnqueueResult =
   | boolean
   | void
@@ -260,7 +263,14 @@ export type CronServiceState = {
   schedulingPaused: boolean;
   schedulerStarted: boolean;
   restartRecoveryPending: boolean;
-  activeManualRunJobIds: Set<string>;
+  activeRunOrigins: Map<
+    string,
+    {
+      origin: Exclude<CronRunOrigin, "scheduled">;
+      marker: CronActiveJobMarker;
+      reservationAt: number;
+    }
+  >;
   manualSetupTimeoutNotified: boolean;
   /** Bounds scheduled, manual, and on-exit work with one shared cron limit. */
   runAdmission: CronRunAdmission;
@@ -295,7 +305,7 @@ export function createCronServiceState(deps: CronServiceDeps): CronServiceState 
     schedulingPaused: false,
     schedulerStarted: false,
     restartRecoveryPending: false,
-    activeManualRunJobIds: new Set<string>(),
+    activeRunOrigins: new Map(),
     manualSetupTimeoutNotified: false,
     runAdmission: { active: 0, waiters: [] },
     queuedRunReservationsByJobId: new Map<string, QueuedCronRunReservation>(),
