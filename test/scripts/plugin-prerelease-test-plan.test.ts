@@ -178,8 +178,11 @@ describe("scripts/lib/plugin-prerelease-test-plan.mjs", () => {
     expect(assertionsScript).toContain("record.artifactKind");
     expect(assertionsScript).toContain("record.npmIntegrity");
     expect(assertionsScript).toContain("assertClawHubExternalInstallContract");
-    expect(assertionsScript).toContain("must not declare ${dependencyField}.openclaw");
-    expect(assertionsScript).toContain("unexpected kitchen-sink openclaw host package");
+    expect(assertionsScript).toContain("must not declare dependencies.openclaw");
+    expect(assertionsScript).toContain("dev host must match openclaw.build.openclawVersion");
+    expect(assertionsScript).toContain("host peer must match openclaw.install.minHostVersion");
+    expect(assertionsScript).toContain("openclaw peer must be optional");
+    expect(assertionsScript).toContain("missing kitchen-sink openclaw peer symlink");
     expect(assertionsScript).toContain("expectedErrorMessages");
     expect(assertionsScript).toContain(
       'const INVALID_PROBE_DIAGNOSTIC_SURFACE_MODES = new Set(["full", "adversarial"]);',
