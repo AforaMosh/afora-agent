@@ -543,6 +543,35 @@ describe("createRuntimeConfigCapability", () => {
     runtimeConfig.dispose();
   });
 
+  it("coalesces a config change into one fresh load after the active load settles", async () => {
+    const first = deferred<ConfigSnapshot>();
+    const second = deferred<ConfigSnapshot>();
+    const responses = [first, second];
+    const request = vi.fn(() => {
+      const response = responses.shift();
+      if (!response) {
+        throw new Error("unexpected config.get");
+      }
+      return response.promise;
+    });
+    const client = { request } as unknown as GatewayBrowserClient;
+    const { gateway } = createGatewayHarness(client);
+    const runtimeConfig = createRuntimeConfigCapability(gateway);
+
+    const initialLoad = runtimeConfig.ensureLoaded();
+    const refresh = runtimeConfig.refreshAfterCurrentLoad();
+    expect(runtimeConfig.refreshAfterCurrentLoad()).toBe(refresh);
+    first.resolve({ config: { source: "stale" }, raw: "{}", valid: true, issues: [] });
+    await initialLoad;
+    await vi.waitFor(() => expect(request).toHaveBeenCalledTimes(2));
+    second.resolve({ config: { source: "fresh" }, raw: "{}", valid: true, issues: [] });
+    await refresh;
+
+    expect(runtimeConfig.state.configSnapshot?.config).toEqual({ source: "fresh" });
+    expect(request).toHaveBeenCalledTimes(2);
+    runtimeConfig.dispose();
+  });
+
   it("retires snapshots, schemas, and drafts when the logical Gateway scope changes", async () => {
     vi.useFakeTimers();
     const requestA = vi.fn(async (method: string) => {

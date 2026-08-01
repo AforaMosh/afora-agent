@@ -146,6 +146,7 @@ function createRosterRefreshContext(params: {
     runtimeConfig: {
       state: { configFormDirty: false },
       refresh: refreshConfig,
+      refreshAfterCurrentLoad: refreshConfig,
     },
   } as unknown as ApplicationContext;
   return {

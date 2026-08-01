@@ -116,6 +116,7 @@ export type RuntimeConfigCapability = {
   ensureLoaded: () => Promise<void>;
   ensureSchemaLoaded: () => Promise<void>;
   refresh: (options?: LoadConfigOptions) => Promise<void>;
+  refreshAfterCurrentLoad: () => Promise<void>;
   refreshSchema: () => Promise<void>;
   patchForm: (path: Array<string | number>, value: unknown) => void;
   removeFormValue: (path: Array<string | number>) => void;
@@ -1348,6 +1349,7 @@ export function createRuntimeConfigCapability(
   const listeners = new Set<(state: ConfigState) => void>();
   let configLoad: Promise<void> | null = null;
   let schemaLoad: Promise<void> | null = null;
+  let queuedConfigRefresh: Promise<void> | null = null;
   let disposed = false;
   let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
   let autoSaveInFlight: Promise<unknown> | null = null;
@@ -1652,6 +1654,37 @@ export function createRuntimeConfigCapability(
   };
   const ensureSchemaLoaded = () =>
     state.configSchema ? Promise.resolve() : loadOnce("schema", () => loadConfigSchema(state));
+  const refreshAfterCurrentLoad = (): Promise<void> => {
+    if (queuedConfigRefresh) {
+      return queuedConfigRefresh;
+    }
+    const client = state.client;
+    const connectionEpoch = currentConfigConnectionEpoch(state);
+    const currentLoad = configLoad;
+    const queued = (currentLoad ?? Promise.resolve())
+      .catch(() => undefined)
+      .then(async () => {
+        if (!client || !isCurrentConfigConnection(state, client, connectionEpoch)) {
+          return;
+        }
+        cancelAppliedRefresh();
+        try {
+          await trackLoad(
+            "config",
+            run(() => loadConfig(state)),
+          );
+        } finally {
+          reconcileAppliedRefresh();
+        }
+      })
+      .finally(() => {
+        if (queuedConfigRefresh === queued) {
+          queuedConfigRefresh = null;
+        }
+      });
+    queuedConfigRefresh = queued;
+    return queued;
+  };
   const stopGateway = gateway.subscribe((snapshot) => {
     const clientChanged = state.client !== snapshot.client;
     const connected = snapshot.phase === "connected";
@@ -1684,6 +1717,7 @@ export function createRuntimeConfigCapability(
     if (clientChanged || connectionChanged) {
       configLoad = null;
       schemaLoad = null;
+      queuedConfigRefresh = null;
       // A dead prior-connection flight must not keep the reconnected owner's
       // explicit-operation FIFO waiting forever.
       explicitOpQueue = null;
@@ -1880,6 +1914,7 @@ export function createRuntimeConfigCapability(
     },
     ensureLoaded,
     ensureSchemaLoaded,
+    refreshAfterCurrentLoad,
     refresh: async (options) => {
       if (options?.discardPendingChanges) {
         await drainWritesForDiscard();

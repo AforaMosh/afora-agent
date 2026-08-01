@@ -169,12 +169,8 @@ export class ShellGatewayOwner {
     if (event.event === "config.changed") {
       // A local settings draft owns config conflicts; external snapshots must not overwrite it.
       const runtimeConfig = this.host.context?.runtimeConfig;
-      if (
-        runtimeConfig &&
-        !runtimeConfig.state.configFormDirty &&
-        !runtimeConfig.state.configLoading
-      ) {
-        void runtimeConfig.refresh();
+      if (runtimeConfig && !runtimeConfig.state.configFormDirty) {
+        void runtimeConfig.refreshAfterCurrentLoad();
       }
       this.scheduleAgentRosterRefresh();
       return;
