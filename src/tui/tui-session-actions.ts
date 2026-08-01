@@ -113,7 +113,7 @@ export function createSessionActions(context: SessionActionContext) {
   } = context;
   let refreshAgentsInFlight: {
     promise: ReturnType<typeof refreshTuiAgentList>;
-    errorOwners: Array<() => boolean>;
+    owners: Array<() => boolean>;
   } | null = null;
   let refreshSessionInfoInFlight: Promise<void> | null = null;
   let refreshSessionInfoQueued = false;
@@ -174,30 +174,34 @@ export function createSessionActions(context: SessionActionContext) {
     updateFooter();
   };
 
-  const refreshAgents = (options?: { shouldReportError?: () => boolean }) => {
-    const ownsError = options?.shouldReportError ?? (() => true);
+  const refreshAgents = (options?: { ownsRefresh?: () => boolean }) => {
+    const ownsRefresh = options?.ownsRefresh ?? (() => true);
     if (refreshAgentsInFlight) {
-      refreshAgentsInFlight.errorOwners.push(ownsError);
+      refreshAgentsInFlight.owners.push(ownsRefresh);
       return refreshAgentsInFlight.promise;
     }
-    const errorOwners = [ownsError];
+    const owners = [ownsRefresh];
     const refresh = refreshTuiAgentList({
       load: () => client.listAgents(),
-      apply: applyAgentsResult,
+      apply: (result) => {
+        if (owners.some((ownsResult) => ownsResult())) {
+          applyAgentsResult(result);
+        }
+      },
       reportError: (message) => {
-        if (errorOwners.some((ownsRefreshError) => ownsRefreshError())) {
+        if (owners.some((ownsResult) => ownsResult())) {
           chatLog.addSystem(`agents list failed: ${message}`);
         }
       },
     });
-    refreshAgentsInFlight = { promise: refresh, errorOwners };
+    refreshAgentsInFlight = { promise: refresh, owners };
     const releaseRefresh = () => {
       if (refreshAgentsInFlight?.promise === refresh) {
         refreshAgentsInFlight = null;
       }
     };
-    // Reconnect and live picker consumers share one roster and one failure;
-    // superseded pickers must not publish errors after their overlay is gone.
+    // One live subscriber owns roster publication and failures; reconnects
+    // remain authoritative after their shared picker is superseded.
     void refresh.then(releaseRefresh, releaseRefresh);
     return refresh;
   };
@@ -209,8 +213,8 @@ export function createSessionActions(context: SessionActionContext) {
     }
   };
 
-  const resolveModelSelection = (entry?: SessionInfoEntry) => {
-    return resolveSessionInfoModelSelection({
+  const resolveModelSelection = (entry?: SessionInfoEntry) =>
+    resolveSessionInfoModelSelection({
       currentProvider: state.sessionInfo.modelProvider,
       currentModel: state.sessionInfo.model,
       defaultProvider: lastSessionDefaults?.modelProvider,
@@ -220,7 +224,6 @@ export function createSessionActions(context: SessionActionContext) {
       overrideProvider: entry?.providerOverride,
       overrideModel: entry?.modelOverride,
     });
-  };
 
   const applySessionInfo = (params: {
     entry?: SessionInfoEntry | null;
@@ -268,9 +271,8 @@ export function createSessionActions(context: SessionActionContext) {
       "displayName",
       "updatedAt",
     ] as const) {
-      const value = entry?.[key];
-      if (value !== undefined) {
-        Object.assign(next, { [key]: value });
+      if (entry?.[key] !== undefined) {
+        Object.assign(next, { [key]: entry[key] });
       }
     }
     if (entry?.thinkingLevels !== undefined || defaults?.thinkingLevels !== undefined) {
@@ -287,11 +289,10 @@ export function createSessionActions(context: SessionActionContext) {
       next.totalTokensFresh = true;
     }
     if (params.clearMissingUsage) {
-      if (entry?.inputTokens === undefined) {
-        next.inputTokens = null;
-      }
-      if (entry?.outputTokens === undefined) {
-        next.outputTokens = null;
+      for (const key of ["inputTokens", "outputTokens"] as const) {
+        if (entry?.[key] === undefined) {
+          next[key] = null;
+        }
       }
       if (entry?.totalTokens === undefined && entry?.totalTokensFresh !== true) {
         next.totalTokens = null;

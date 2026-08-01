@@ -222,14 +222,16 @@ describe("tui session actions", () => {
       currentAgentId: "cached",
     });
     const updateHeader = vi.fn();
+    let pickerIsCurrent = true;
     const { refreshAgents } = createTestSessionActions({
       client: { listAgents } as unknown as TuiBackend,
       state,
       updateHeader,
     });
 
+    const pickerRefresh = refreshAgents({ ownsRefresh: () => pickerIsCurrent });
     const reconnectRefresh = refreshAgents();
-    const pickerRefresh = refreshAgents();
+    pickerIsCurrent = false;
     pendingRoster.resolve({
       defaultId: "main",
       mainKey: "main",
@@ -241,6 +243,53 @@ describe("tui session actions", () => {
     expect(updateHeader).toHaveBeenCalledTimes(1);
     expect(state.currentAgentId).toBe("main");
     expect(state.agents).toEqual([{ id: "main", kind: undefined, name: "Current Agent" }]);
+  });
+
+  it("does not apply a roster when its only picker owner is superseded", async () => {
+    const pendingRoster = createDeferred<{
+      defaultId: string;
+      mainKey: string;
+      scope: "per-sender";
+      agents: Array<{ id: string; name: string }>;
+    }>();
+    const cachedAgents = [{ id: "cached", name: "Cached Agent" }];
+    const state = createBaseState({
+      agentDefaultId: "cached",
+      sessionMainKey: "cached-main",
+      sessionScope: "global",
+      agents: cachedAgents,
+      currentAgentId: "cached",
+    });
+    const agentNames = new Map([["cached", "Cached Agent"]]);
+    const updateHeader = vi.fn();
+    const updateFooter = vi.fn();
+    let pickerIsCurrent = true;
+    const { refreshAgents } = createTestSessionActions({
+      client: { listAgents: vi.fn(() => pendingRoster.promise) } as unknown as TuiBackend,
+      state,
+      agentNames,
+      updateHeader,
+      updateFooter,
+    });
+
+    const refresh = refreshAgents({ ownsRefresh: () => pickerIsCurrent });
+    pickerIsCurrent = false;
+    pendingRoster.resolve({
+      defaultId: "replacement",
+      mainKey: "replacement-main",
+      scope: "per-sender",
+      agents: [{ id: "replacement", name: "Replacement Agent" }],
+    });
+    await expect(refresh).resolves.toEqual({ ok: true, value: undefined });
+
+    expect(state.currentAgentId).toBe("cached");
+    expect(state.agents).toBe(cachedAgents);
+    expect(state.agentDefaultId).toBe("cached");
+    expect(state.sessionMainKey).toBe("cached-main");
+    expect(state.sessionScope).toBe("global");
+    expect([...agentNames]).toEqual([["cached", "Cached Agent"]]);
+    expect(updateHeader).not.toHaveBeenCalled();
+    expect(updateFooter).not.toHaveBeenCalled();
   });
 
   it("shares a failed roster refresh once and allows the next caller to retry", async () => {
@@ -282,7 +331,7 @@ describe("tui session actions", () => {
       chatLog: { addSystem } as unknown as import("./components/chat-log.js").ChatLog,
     });
 
-    const refresh = refreshAgents({ shouldReportError: () => pickerIsCurrent });
+    const refresh = refreshAgents({ ownsRefresh: () => pickerIsCurrent });
     pickerIsCurrent = false;
     pendingFailure.reject(new Error("obsolete roster request failed"));
     await expect(refresh).resolves.toEqual({
@@ -302,7 +351,7 @@ describe("tui session actions", () => {
       chatLog: { addSystem } as unknown as import("./components/chat-log.js").ChatLog,
     });
 
-    const pickerRefresh = refreshAgents({ shouldReportError: () => pickerIsCurrent });
+    const pickerRefresh = refreshAgents({ ownsRefresh: () => pickerIsCurrent });
     const reconnectRefresh = refreshAgents();
     pickerIsCurrent = false;
     pendingFailure.reject(new Error("gateway unavailable"));
@@ -320,8 +369,8 @@ describe("tui session actions", () => {
       chatLog: { addSystem } as unknown as import("./components/chat-log.js").ChatLog,
     });
 
-    const olderPicker = refreshAgents({ shouldReportError: () => false });
-    const currentPicker = refreshAgents({ shouldReportError: () => true });
+    const olderPicker = refreshAgents({ ownsRefresh: () => false });
+    const currentPicker = refreshAgents({ ownsRefresh: () => true });
     pendingFailure.reject(new Error("current roster request failed"));
     await Promise.all([olderPicker, currentPicker]);
 

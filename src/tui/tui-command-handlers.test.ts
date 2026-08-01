@@ -536,10 +536,10 @@ describe("tui command handlers", () => {
 
     const olderPicker = harness.handleCommand("/agents");
     const [refreshOptions] = harness.refreshAgents.mock.calls[0] as [
-      { shouldReportError?: () => boolean } | undefined,
+      { ownsRefresh?: () => boolean } | undefined,
     ];
     await harness.handleCommand("/context");
-    if (refreshOptions?.shouldReportError?.() !== false) {
+    if (refreshOptions?.ownsRefresh?.() !== false) {
       harness.addSystem("agents list failed: obsolete roster request failed");
     }
     pendingRefresh.resolve({ ok: false, error: "obsolete roster request failed" });

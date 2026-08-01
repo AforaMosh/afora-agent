@@ -79,7 +79,7 @@ type CommandHandlerContext = {
   refreshSessionInfo: () => Promise<void>;
   loadHistory: () => Promise<unknown>;
   setSession: (key: string) => Promise<void>;
-  refreshAgents: (options?: { shouldReportError?: () => boolean }) => Promise<Result<void, string>>;
+  refreshAgents: (options?: { ownsRefresh?: () => boolean }) => Promise<Result<void, string>>;
   abortActive: (params?: { preferActive?: boolean }) => Promise<void>;
   setActivityStatus: (text: string) => void;
   formatSessionKey: (key: string) => string;
@@ -392,7 +392,7 @@ export function createCommandHandlers(context: CommandHandlerContext) {
   const openAgentSelector = async () => {
     const requestGeneration = beginPickerRequest();
     const refreshResult = await refreshAgents({
-      shouldReportError: () => isCurrentPickerRequest(requestGeneration),
+      ownsRefresh: () => isCurrentPickerRequest(requestGeneration),
     });
     if (!isCurrentPickerRequest(requestGeneration)) {
       return;
