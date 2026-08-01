@@ -134,8 +134,13 @@ function inspectAuthProfileJsonCell(
   }
   try {
     return { status: "readable", raw: JSON.parse(raw) as unknown };
-  } catch (error) {
-    return { status: "unreadable", cause: error };
+  } catch {
+    // Node JSON parser errors can include excerpts of the credential payload.
+    // Preserve the structural failure without moving stored secrets into logs.
+    return {
+      status: "unreadable",
+      cause: new SyntaxError(`Auth profile ${target} row contains malformed JSON.`),
+    };
   }
 }
 

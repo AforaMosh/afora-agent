@@ -30,6 +30,7 @@ import {
   saveAuthProfileStore,
 } from "./auth-profiles/store.js";
 import type { AuthProfileStore, OAuthCredential } from "./auth-profiles/types.js";
+import { formatRuntimeRefreshError } from "./prepared-model-runtime-refresh-error.js";
 
 type RuntimeOnlyOverlay = {
   profileId: string;
@@ -237,6 +238,37 @@ describe("auth profile sqlite store", () => {
       } finally {
         prepareSpy.mockRestore();
       }
+    });
+  });
+
+  it("replaces secret-bearing JSON parser errors with a structural cause", async () => {
+    await withAgentDirEnv("openclaw-auth-sqlite-malformed-json-", (agentDir) => {
+      saveAuthProfileStore(apiKeyStore("sk-test"), agentDir);
+      closeOpenClawAgentDatabasesForTest();
+      const marker = "private-provider-credential-marker";
+      const database = new DatabaseSync(resolveAuthProfileDatabasePath(agentDir));
+      database
+        .prepare("UPDATE auth_profile_store SET store_json = ? WHERE store_key = 'primary'")
+        .run(`{"profiles":{"provider":{"key":${marker}}}}`);
+      database.close();
+
+      const inspection = inspectPersistedAuthProfileStoreRaw(agentDir);
+      expect(inspection).toMatchObject({
+        status: "unreadable",
+        cause: expect.objectContaining({
+          name: "SyntaxError",
+          message: "Auth profile store row contains malformed JSON.",
+        }),
+      });
+      let loadError: unknown;
+      try {
+        loadAuthProfileStoreForRuntime(agentDir);
+      } catch (error) {
+        loadError = error;
+      }
+      const formatted = formatRuntimeRefreshError(loadError);
+      expect(formatted).toContain("Auth profile store row contains malformed JSON.");
+      expect(formatted).not.toContain(marker);
     });
   });
 
