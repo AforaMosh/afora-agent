@@ -1,5 +1,4 @@
 export const WORKSPACE_TEMPLATE_PACK_PATHS: readonly string[];
-export const DIST_RUNTIME_ARTIFACT_BASE_PATHS: readonly string[];
 export function createWorkspaceBootstrapSmokeEnv(
   env: NodeJS.ProcessEnv,
   homeDir: string,
@@ -10,7 +9,6 @@ export function runInstalledWorkspaceBootstrapSmoke(params: {
   nodeArgs?: string[];
   envOverrides?: NodeJS.ProcessEnv;
 }): void;
-export function collectDistRuntimeArtifactPaths(rootDir: string): string[];
 export function buildAndSmokeDistRuntimeArtifact(params: {
   rootDir: string;
   archivePath: string;
