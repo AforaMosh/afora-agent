@@ -134,17 +134,17 @@ export async function createTelegramQaTransportAdapter(
           continue;
         }
         const existingMessageId = busMessageIds.get(message.messageId);
-        if (update.edited_message) {
-          if (existingMessageId) {
-            await context.messages.editMessage({
-              accountId,
-              messageId: existingMessageId,
-              text: message.text,
-              timestamp: message.timestamp,
-            });
-          }
+        if (update.edited_message && existingMessageId) {
+          await context.messages.editMessage({
+            accountId,
+            messageId: existingMessageId,
+            text: message.text,
+            timestamp: message.timestamp,
+          });
           continue;
         }
+        // Telegram may expose only the final edit after the adapter resets between
+        // scenarios. Adopt that edit so the live observation cannot disappear.
         const outbound = await context.messages.addOutboundMessage({
           accountId,
           to: `${logicalConversationKind}:${logicalConversationId}`,
@@ -166,6 +166,41 @@ export async function createTelegramQaTransportAdapter(
       pollingError = error instanceof Error ? error : new Error(String(error));
     }
   });
+  const sendInbound = async (
+    input: Parameters<NonNullable<AdapterDefinition["sendInbound"]>>[0],
+  ) => {
+    heartbeat.throwIfFailed();
+    logicalConversationId = input.conversation.id;
+    logicalConversationKind = input.conversation.kind;
+    const text = renderTelegramQaInboundText(input, sutUsername);
+    const nativeReplyToId = input.replyToId ? nativeMessageIds.get(input.replyToId) : undefined;
+    const sent = await callTelegramApi<{ message_id: number }>(
+      runtimeEnv.driverToken,
+      "sendMessage",
+      {
+        chat_id: runtimeEnv.groupId,
+        text,
+        disable_notification: true,
+        ...(nativeReplyToId
+          ? {
+              reply_parameters: {
+                message_id: nativeReplyToId,
+                allow_sending_without_reply: true,
+              },
+            }
+          : {}),
+      },
+    );
+    const message = await context.messages.addInboundMessage({
+      ...input,
+      accountId,
+      senderId: String(driverIdentity.id),
+      senderName: driverIdentity.username,
+    });
+    nativeMessageIds.set(message.id, sent.message_id);
+    busMessageIds.set(sent.message_id, message.id);
+    return message;
+  };
   return {
     id: "telegram",
     label: "Telegram live",
@@ -178,38 +213,14 @@ export async function createTelegramQaTransportAdapter(
       }
       heartbeat.throwIfFailed();
     },
-    async sendInbound(input) {
-      heartbeat.throwIfFailed();
-      logicalConversationId = input.conversation.id;
-      logicalConversationKind = input.conversation.kind;
-      const text = renderTelegramQaInboundText(input, sutUsername);
-      const nativeReplyToId = input.replyToId ? nativeMessageIds.get(input.replyToId) : undefined;
-      const sent = await callTelegramApi<{ message_id: number }>(
-        runtimeEnv.driverToken,
-        "sendMessage",
-        {
-          chat_id: runtimeEnv.groupId,
-          text,
-          disable_notification: true,
-          ...(nativeReplyToId
-            ? {
-                reply_parameters: {
-                  message_id: nativeReplyToId,
-                  allow_sending_without_reply: true,
-                },
-              }
-            : {}),
-        },
-      );
-      const message = await context.messages.addInboundMessage({
-        ...input,
-        accountId,
-        senderId: String(driverIdentity.id),
-        senderName: driverIdentity.username,
+    sendInbound,
+    async sendNativeCommand(input) {
+      const { command, ...message } = input;
+      await sendInbound({
+        ...message,
+        text: `/${command}`,
+        nativeCommand: { name: command },
       });
-      nativeMessageIds.set(message.id, sent.message_id);
-      busMessageIds.set(sent.message_id, message.id);
-      return message;
     },
     resetTransport: () => {
       logicalConversationId = runtimeEnv.groupId;
