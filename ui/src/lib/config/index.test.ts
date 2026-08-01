@@ -182,7 +182,8 @@ describe("createRuntimeConfigCapability", () => {
       return {
         config: { count },
         raw: `{\n  "count": ${count}\n}\n`,
-        hash: `hash-${getCount}`,
+        hash: "root-hash",
+        configRevisionHash: `revision-${getCount}`,
         valid: true,
         issues: [],
       };
@@ -195,14 +196,14 @@ describe("createRuntimeConfigCapability", () => {
     runtimeConfig.patchForm(["count"], 2);
     await runtimeConfig.refreshAfterCurrentLoad();
     expect(runtimeConfig.state.configForm).toEqual({ count: 2 });
-    expect(runtimeConfig.state.configDraftBaseHash).toBe("hash-1");
+    expect(runtimeConfig.state.configDraftBaseHash).toBe("root-hash");
 
     runtimeConfig.patchForm(["count"], 1);
     await vi.advanceTimersByTimeAsync(CONFIG_FORM_AUTO_SAVE_DEBOUNCE_MS);
 
     expect(runtimeConfig.state.configForm).toEqual({ count: 3 });
     expect(runtimeConfig.state.configFormDirty).toBe(false);
-    expect(runtimeConfig.state.configDraftBaseHash).toBe("hash-2");
+    expect(runtimeConfig.state.configDraftBaseHash).toBe("root-hash");
     expect(methods).toEqual(["config.get", "config.get"]);
     runtimeConfig.dispose();
   });
@@ -783,7 +784,7 @@ describe("createRuntimeConfigCapability", () => {
     runtimeConfig.dispose();
   });
 
-  it("adopts a response-lost Apply after returning to its Gateway scope", async () => {
+  it("adopts response-lost Apply bytes while retaining legacy Apply intent", async () => {
     vi.useFakeTimers();
     const applyResponse = deferred<unknown>();
     let storedRaw = '{\n  "count": 1\n}\n';
@@ -810,7 +811,8 @@ describe("createRuntimeConfigCapability", () => {
       if (method === "config.apply") {
         writes.push(method);
         persistCanonicalRaw((params as { raw: string }).raw);
-        hash = "hash-a-3";
+        // Single-$include writes advance sourceConfig but leave the root hash unchanged.
+        hash = "hash-a-2";
         return applyResponse.promise;
       }
       if (method === "config.set") {
@@ -870,7 +872,7 @@ describe("createRuntimeConfigCapability", () => {
 
     expect(runtimeConfig.state.configForm).toMatchObject({ count: 3 });
     expect(runtimeConfig.state.configFormDirty).toBe(false);
-    expect(runtimeConfig.state.configNeedsApply).toBe(false);
+    expect(runtimeConfig.state.configNeedsApply).toBe(true);
     expect(writes).toEqual(["config.set", "config.apply", "config.patch"]);
     runtimeConfig.dispose();
   });
@@ -1120,7 +1122,8 @@ describe("createRuntimeConfigCapability", () => {
   it("waits for a scoped config.patch before legacy reconciliation", async () => {
     const patchResponse = deferred<unknown>();
     let storedRaw = '{\n  "count": 1\n}\n';
-    let hash = "hash-a-1";
+    const hash = "hash-a-1";
+    let revision = "revision-a-1";
     const methodsA: string[] = [];
     const requestA = vi.fn((method: string) => {
       methodsA.push(method);
@@ -1129,6 +1132,7 @@ describe("createRuntimeConfigCapability", () => {
           config: JSON.parse(storedRaw) as Record<string, unknown>,
           raw: storedRaw,
           hash,
+          configRevisionHash: revision,
           valid: true,
           issues: [],
         });
@@ -1136,7 +1140,7 @@ describe("createRuntimeConfigCapability", () => {
       if (method === "config.patch") {
         return patchResponse.promise.then(() => {
           storedRaw = '{\n  "count": 2\n}\n';
-          hash = "hash-a-2";
+          revision = "revision-a-2";
           return { config: { count: 2 }, hash };
         });
       }
@@ -1664,6 +1668,56 @@ describe("config form auto-save", () => {
     runtimeConfig.dispose();
     await vi.advanceTimersByTimeAsync(CONFIG_FORM_AUTO_SAVE_DEBOUNCE_MS * 2);
     expect(server.submissions).toHaveLength(0);
+  });
+
+  it("does not flush a stale base while interrupted reconciliation is active", async () => {
+    vi.useFakeTimers();
+    const reconciliation = deferred<ConfigSnapshot>();
+    let getCount = 0;
+    const sets: Array<{ raw: string; baseHash: string }> = [];
+    const request = vi.fn((method: string, params?: unknown) => {
+      if (method === "config.get") {
+        getCount += 1;
+        if (getCount === 1) {
+          return Promise.resolve({
+            config: { count: 1 },
+            raw: '{\n  "count": 1\n}\n',
+            hash: "hash-1",
+            valid: true,
+            issues: [],
+          });
+        }
+        return reconciliation.promise;
+      }
+      if (method === "config.set") {
+        sets.push(params as { raw: string; baseHash: string });
+        return new Promise(() => {});
+      }
+      return Promise.resolve({});
+    });
+    const client = { request } as unknown as GatewayBrowserClient;
+    const { gateway, publish } = createGatewayHarness(client);
+    const runtimeConfig = createRuntimeConfigCapability(gateway);
+    await runtimeConfig.ensureLoaded();
+    runtimeConfig.patchForm(["count"], 2);
+    void runtimeConfig.save();
+    await vi.waitFor(() => expect(sets).toHaveLength(1));
+
+    publish(false);
+    publish(true);
+    await vi.waitFor(() => expect(getCount).toBe(2));
+    runtimeConfig.dispose();
+    expect(sets).toHaveLength(1);
+
+    reconciliation.resolve({
+      config: { count: 2 },
+      raw: '{\n  "count": 2\n}\n',
+      hash: "hash-2",
+      valid: true,
+      issues: [],
+    });
+    await vi.advanceTimersByTimeAsync(CONFIG_FORM_AUTO_SAVE_DEBOUNCE_MS);
+    expect(sets).toHaveLength(1);
   });
 
   it("applies a clean snapshot's raw bytes verbatim instead of reserializing", async () => {
@@ -3316,7 +3370,7 @@ describe("config form auto-save", () => {
         if (sets.length === 1) {
           // Commits server-side, but the response never arrives.
           committedRaw = (params as { raw: string }).raw;
-          hash = "hash-2";
+          // A single-$include write can preserve the root file hash.
           return new Promise(() => {});
         }
         hash = "hash-3";
@@ -3342,7 +3396,7 @@ describe("config form auto-save", () => {
     await vi.advanceTimersByTimeAsync(CONFIG_FORM_AUTO_SAVE_DEBOUNCE_MS);
     expect(sets).toHaveLength(1);
     expect(runtimeConfig.state.configFormDirty).toBe(false);
-    expect(runtimeConfig.state.configDraftBaseHash).toBe("hash-2");
+    expect(runtimeConfig.state.configDraftBaseHash).toBe("hash-1");
     runtimeConfig.dispose();
   });
 

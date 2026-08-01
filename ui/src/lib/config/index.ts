@@ -215,12 +215,10 @@ type InterruptedRuntimeConfigWrite =
       kind: "apply" | "save";
       raw: string;
       baseHash: string;
-      changedRaw: boolean;
       settled: Promise<unknown>;
     }
   | {
       kind: "mutation";
-      baseHash: string | null;
       needsLegacyApply: boolean;
       settled: Promise<unknown>;
     };
@@ -230,19 +228,16 @@ type ManualRuntimeConfigSubmission =
       kind: "apply" | "save";
       raw: string | null;
       baseHash: string | null;
-      changedRaw: boolean;
       ackHash: string | null;
     }
   | {
       kind: "mutation";
-      baseHash: string | null;
       needsLegacyApply: boolean;
     };
 
 type ConfigSubmissionInfo = {
   raw: string;
   baseHash: string;
-  changedRaw: boolean;
   ackHash: string | null;
 };
 
@@ -738,8 +733,6 @@ async function submitConfigChange(
       }
     }
     const raw = serializeFormForSubmit(state);
-    const changedRaw =
-      typeof state.configSnapshot?.raw === "string" && raw !== state.configSnapshot.raw;
     const baseHash = state.configDraftBaseHash ?? state.configSnapshot?.hash;
     if (!baseHash) {
       state.lastError = "Config hash missing; reload and retry.";
@@ -749,14 +742,14 @@ async function submitConfigChange(
     // ack arrives, reconnect reconciliation still needs the submitted bytes
     // to recognize its own committed write. The post-ack report below
     // overwrites this with the real hash.
-    onSubmitted?.({ raw, baseHash, changedRaw, ackHash: null });
+    onSubmitted?.({ raw, baseHash, ackHash: null });
     const ack = await client.request(method, { raw, baseHash, ...extraParams });
     // The gateway acks writes with the persisted snapshot hash. Adopt it as
     // the new draft base; config.get remains the source of applied revision truth.
     const ackHash = readAckHash(ack);
     // Reported before the epoch check: dispose-chained teardown flushes need
     // this flight's own submission even though state mutation may be blocked.
-    onSubmitted?.({ raw, baseHash, changedRaw, ackHash });
+    onSubmitted?.({ raw, baseHash, ackHash });
     if (!isCurrent()) {
       return false;
     }
@@ -858,8 +851,6 @@ async function autoSaveConfig(
     }
   }
   const submittedRaw = serializeFormForSubmit(state);
-  const changedRaw =
-    typeof state.configSnapshot?.raw === "string" && submittedRaw !== state.configSnapshot.raw;
   const baseHash = state.configDraftBaseHash ?? state.configSnapshot?.hash;
   if (!baseHash) {
     state.configAutoSaveStatus = "error";
@@ -870,14 +861,14 @@ async function autoSaveConfig(
   state.lastError = null;
   state.chatError = null;
   try {
-    onSubmitted?.({ raw: submittedRaw, baseHash, changedRaw, ackHash: null });
+    onSubmitted?.({ raw: submittedRaw, baseHash, ackHash: null });
     const ack = await client.request("config.set", { raw: submittedRaw, baseHash });
     // The gateway acks with the persisted snapshot hash. Applied revision
     // truth arrives on config.get.
     const ackHash = readAckHash(ack);
     // Reported before the epoch check: dispose-chained teardown flushes need
     // this flight's own ack even though state mutation below is blocked.
-    onSubmitted?.({ raw: submittedRaw, baseHash, changedRaw, ackHash });
+    onSubmitted?.({ raw: submittedRaw, baseHash, ackHash });
     if (!isCurrent()) {
       return false;
     }
@@ -937,13 +928,13 @@ function adoptFreshSnapshotWhenDraftClears(state: ConfigState): boolean {
   const snapshot = state.configSnapshot;
   const snapshotHash = snapshot?.hash ?? null;
   const draftBaseHash = state.configDraftBaseHash ?? null;
-  if (
-    state.configFormDirty ||
-    !snapshot ||
-    !snapshotHash ||
-    !draftBaseHash ||
-    snapshotHash === draftBaseHash
-  ) {
+  if (state.configFormDirty || !snapshot) {
+    return false;
+  }
+  const originalMatchesSnapshot = state.configFormOriginal
+    ? configSubmissionMatchesSnapshot(serializeConfigForm(state.configFormOriginal), snapshot)
+    : false;
+  if (snapshotHash === draftBaseHash && originalMatchesSnapshot) {
     return false;
   }
   // An external refresh may advance the snapshot while a local draft owns the
@@ -1501,7 +1492,6 @@ export function createRuntimeConfigCapability(
         kind: "save",
         raw: autoSaveInFlight.raw,
         baseHash: autoSaveInFlight.baseHash,
-        changedRaw: autoSaveInFlight.changedRaw,
         settled: autoSaveInFlight.settled,
       };
     }
@@ -1516,13 +1506,11 @@ export function createRuntimeConfigCapability(
           kind: manualFlightInfo.kind,
           raw: manualFlightInfo.raw,
           baseHash: manualFlightInfo.baseHash,
-          changedRaw: manualFlightInfo.changedRaw,
           settled: manualSubmitInFlight,
         };
       }
       return {
         kind: "mutation",
-        baseHash: manualFlightInfo?.baseHash ?? state.configSnapshot?.hash ?? null,
         needsLegacyApply:
           manualFlightInfo?.kind === "mutation" && manualFlightInfo.needsLegacyApply,
         settled: manualSubmitInFlight,
@@ -1616,7 +1604,6 @@ export function createRuntimeConfigCapability(
     const flight: AutoSaveRuntimeConfigFlight = {
       raw: null,
       baseHash: null,
-      changedRaw: false,
       ackHash: null,
       settled: Promise.resolve(),
     };
@@ -1982,11 +1969,11 @@ export function createRuntimeConfigCapability(
             if (interrupted.kind === "mutation") {
               if (
                 state.configSnapshot?.appliedConfigHash === undefined &&
-                interrupted.needsLegacyApply &&
-                interrupted.baseHash !== null &&
-                state.configSnapshot?.hash &&
-                state.configSnapshot.hash !== interrupted.baseHash
+                interrupted.needsLegacyApply
               ) {
+                // The root hash does not advance for single-$include writes.
+                // A lost patch response therefore retains a conservative Apply
+                // affordance on legacy Gateways after reconciliation.
                 state.configNeedsApply = true;
               }
               publish();
@@ -1996,9 +1983,7 @@ export function createRuntimeConfigCapability(
             }
             const freshSnapshot = state.configSnapshot;
             const ownWriteCommitted = Boolean(
-              freshSnapshot?.hash &&
-              freshSnapshot.hash !== interrupted.baseHash &&
-              configSubmissionMatchesSnapshot(interrupted.raw, freshSnapshot),
+              freshSnapshot && configSubmissionMatchesSnapshot(interrupted.raw, freshSnapshot),
             );
             const hasNewerDraft = draftBefore.submittedRaw !== interrupted.raw;
             if (freshSnapshot && (ownWriteCommitted || hasNewerDraft)) {
@@ -2021,10 +2006,9 @@ export function createRuntimeConfigCapability(
               }
               if (freshSnapshot.appliedConfigHash === undefined && ownWriteCommitted) {
                 // A clean legacy Apply does not change file bytes, so equality
-                // cannot prove the aborted request reached restart work.
-                state.configNeedsApply =
-                  interrupted.kind === "save" ||
-                  (!interrupted.changedRaw && draftBefore.needsApply);
+                // cannot prove the aborted request reached restart work. Only
+                // appliedConfigHash may clear its existing Apply affordance.
+                state.configNeedsApply = interrupted.kind === "save" || draftBefore.needsApply;
               }
             }
             publish();
@@ -2054,7 +2038,6 @@ export function createRuntimeConfigCapability(
         cancelAppliedRefresh();
         manualFlightInfo = {
           kind: "mutation",
-          baseHash: state.configSnapshot?.hash ?? null,
           needsLegacyApply: true,
         };
         try {
@@ -2199,7 +2182,6 @@ export function createRuntimeConfigCapability(
           kind: "save",
           raw: null,
           baseHash: null,
-          changedRaw: false,
           ackHash: null,
         };
         manualFlightInfo = submission;
@@ -2230,7 +2212,6 @@ export function createRuntimeConfigCapability(
           kind: "apply",
           raw: null,
           baseHash: null,
-          changedRaw: false,
           ackHash: null,
         };
         manualFlightInfo = submission;
@@ -2299,7 +2280,6 @@ export function createRuntimeConfigCapability(
             }
             manualFlightInfo = {
               kind: "mutation",
-              baseHash: state.configSnapshot?.hash ?? null,
               needsLegacyApply: false,
             };
             let value: T;
@@ -2409,7 +2389,8 @@ export function createRuntimeConfigCapability(
       const canFlush =
         state.connected && client !== null && state.configFormMode === "form" && !writesSuspended;
       const autoFlight = autoSaveInFlight;
-      const pendingFlight = autoFlight?.settled ?? manualSubmitInFlight;
+      const pendingFlight =
+        autoFlight?.settled ?? manualSubmitInFlight ?? interruptedReconciliation;
       cancelScheduledAutoSave();
       appliedRefresh.dispose();
       if (canFlush && pendingFlight) {
