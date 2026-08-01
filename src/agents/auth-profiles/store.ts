@@ -42,7 +42,9 @@ import {
 } from "./persisted.js";
 import {
   captureRuntimeAuthProfileStorePublicationToken,
-  isRuntimeAuthProfileStorePublicationTokenCurrent,
+  getRuntimeAuthProfileStorePublicationGeneration,
+  isRuntimeAuthProfileStorePublicationMainCurrent,
+  isRuntimeAuthProfileStorePublicationOwnerCurrent,
   type RuntimeAuthProfileStorePublicationToken,
 } from "./runtime-publication-order.js";
 import {
@@ -220,12 +222,15 @@ function fenceRuntimeSnapshotPublication(params: {
   agentDir?: string;
   advancesOwner: boolean;
   database: OpenClawAgentDatabase;
+  inheritedMainGeneration?: number;
   publish: () => void;
+  publishAfterMainAdvance?: () => boolean;
 }): () => boolean {
   let token: RuntimeAuthProfileStorePublicationToken | undefined;
   const captureToken = () => {
     token = captureRuntimeAuthProfileStorePublicationToken(params.agentDir, {
       advanceOwner: params.advancesOwner,
+      inheritedMainGeneration: params.inheritedMainGeneration,
     });
   };
   const captureDeferred = deferOpenClawAgentPostCommitPublication(params.database, captureToken);
@@ -236,8 +241,11 @@ function fenceRuntimeSnapshotPublication(params: {
       }
       captureToken();
     }
-    if (!token || !isRuntimeAuthProfileStorePublicationTokenCurrent(token)) {
+    if (!token || !isRuntimeAuthProfileStorePublicationOwnerCurrent(token)) {
       return false;
+    }
+    if (!isRuntimeAuthProfileStorePublicationMainCurrent(token)) {
+      return params.publishAfterMainAdvance?.() ?? false;
     }
     params.publish();
     return true;
@@ -691,6 +699,18 @@ function stripRuntimeExternalProfileMetadata(store: AuthProfileStore): AuthProfi
   return stripped;
 }
 
+function stripUnpersistedRuntimeExternalProfiles(store: AuthProfileStore): AuthProfileStore {
+  const stripped = cloneAuthProfileStore(store);
+  const persistedProfileIds = new Set(stripped.runtimePersistedProfileIds ?? []);
+  for (const profileId of stripped.runtimeExternalProfileIds ?? []) {
+    if (!persistedProfileIds.has(profileId)) {
+      delete stripped.profiles[profileId];
+    }
+  }
+  pruneAuthProfileStoreReferences(stripped, new Set(Object.keys(stripped.profiles)));
+  return stripRuntimeExternalProfileMetadata(stripped);
+}
+
 function markRuntimePersistedProfiles(
   store: AuthProfileStore,
   persistedStore: AuthProfileStore = store,
@@ -742,6 +762,20 @@ function runtimeStoreInheritsMainState(
     usageStats,
   });
   return !isDeepStrictEqual(state(store), state(localStore));
+}
+
+function mergeLocalAuthProfileStoreWithInheritedStore(
+  localStore: AuthProfileStore,
+  mainStore: AuthProfileStore,
+): RuntimeAuthProfileStore {
+  const mergedStore = mergeAuthProfileStores(mainStore, localStore, {
+    preserveBaseRuntimeExternalProfiles: true,
+  });
+  return setRuntimeLocalProfileMetadata(
+    stripRuntimeExternalProfileMetadata(mergedStore),
+    listRuntimeLocalProfileIds(localStore, mainStore),
+    runtimeStoreInheritsMainState(mergedStore, localStore),
+  );
 }
 
 function rebuildDerivedRuntimeStoreFromCapturedLocalProfiles(
@@ -1200,14 +1234,7 @@ function loadAuthProfileStoreWithoutExternalProfilesFromPersistence(
       ...options,
       database: undefined,
     });
-  const mergedStore = mergeAuthProfileStores(mainStore, store, {
-    preserveBaseRuntimeExternalProfiles: true,
-  });
-  return setRuntimeLocalProfileMetadata(
-    stripRuntimeExternalProfileMetadata(mergedStore),
-    listRuntimeLocalProfileIds(store, mainStore),
-    runtimeStoreInheritsMainState(mergedStore, store),
-  );
+  return mergeLocalAuthProfileStoreWithInheritedStore(store, mainStore);
 }
 
 /** Load auth profiles with runtime external profiles removed from the result. */
@@ -1459,6 +1486,9 @@ function saveAuthProfileStoreInTransaction(
   const committedStore = loadAuthProfileStoreWithoutExternalProfilesFromPersistence(agentDir, {
     database,
   });
+  const inheritedMainGeneration = savesMainStore
+    ? undefined
+    : getRuntimeAuthProfileStorePublicationGeneration();
   const publishRuntimeSnapshots = () => {
     // Main-store publication invalidates derived stores. Capture the latest
     // overlays at the publication edge so post-commit refreshes are retained.
@@ -1531,11 +1561,43 @@ function saveAuthProfileStoreInTransaction(
       refreshDerivedSnapshot(derived);
     }
   };
+  const publishAfterMainAdvance = savesMainStore
+    ? undefined
+    : () => {
+        const currentMainRuntime = getRuntimeAuthProfileStoreSnapshot();
+        const existing = getRuntimeAuthProfileStoreSnapshot(agentDir);
+        if (!currentMainRuntime || !existing) {
+          return false;
+        }
+        if (credentialsChanged || stateChanged) {
+          noteRuntimeAuthProfileStorePersistedMutation(agentDir, {
+            credentialsChanged,
+            profileSetChanged,
+            stateChanged,
+            profileIds: changedProfileIds,
+          });
+        }
+        const refreshed = mergeLocalAuthProfileStoreWithInheritedStore(
+          localStore,
+          stripUnpersistedRuntimeExternalProfiles(currentMainRuntime),
+        );
+        const materialized = preserveResolvedSecretBackedCredentials({
+          next: refreshed,
+          existing,
+        });
+        setRuntimeAuthProfileStoreSnapshot(
+          mergeRuntimeExternalProfileReferences({ next: materialized, existing }),
+          agentDir,
+        );
+        return true;
+      };
   return fenceRuntimeSnapshotPublication({
     agentDir,
     advancesOwner: credentialsChanged || stateChanged,
     database,
+    inheritedMainGeneration,
     publish: publishRuntimeSnapshots,
+    publishAfterMainAdvance,
   });
 }
 

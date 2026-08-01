@@ -680,6 +680,50 @@ describe("promoteAuthProfileInOrder", () => {
     );
   });
 
+  it("does not bless stale inherited credentials at a derived commit edge", async () => {
+    await withAuthProfileTestState(
+      "openclaw-auth-derived-cross-database-order-",
+      async ({ agentDir, agentDirFor }) => {
+        const derivedAgentDir = agentDirFor("worker");
+        const mainStore = (key: string): AuthProfileStore => ({
+          version: AUTH_STORE_VERSION,
+          profiles: {
+            "openai:default": { type: "api_key", provider: "openai", key },
+          },
+        });
+        const derivedStore = (key: string): AuthProfileStore => ({
+          version: AUTH_STORE_VERSION,
+          profiles: {
+            "anthropic:local": { type: "api_key", provider: "anthropic", key },
+          },
+        });
+        saveAuthProfileStore(mainStore("sk-main-old"), agentDir);
+        saveAuthProfileStore(derivedStore("sk-derived-old"), derivedAgentDir);
+        replaceRuntimeAuthProfileStoreSnapshots([
+          { agentDir, store: loadAuthProfileStoreForRuntime(agentDir) },
+          { agentDir: derivedAgentDir, store: loadAuthProfileStoreForRuntime(derivedAgentDir) },
+        ]);
+
+        runAuthProfileWriteTransaction(derivedAgentDir, (database) => {
+          saveAuthProfileStore(
+            derivedStore("sk-derived-new"),
+            derivedAgentDir,
+            undefined,
+            database,
+          );
+          saveAuthProfileStore(mainStore("sk-main-new"), agentDir);
+        });
+
+        expect(
+          getRuntimeAuthProfileStoreSnapshot(derivedAgentDir)?.profiles["openai:default"],
+        ).toMatchObject({ key: "sk-main-new" });
+        expect(
+          getRuntimeAuthProfileStoreSnapshot(derivedAgentDir)?.profiles["anthropic:local"],
+        ).toMatchObject({ key: "sk-derived-new" });
+      },
+    );
+  });
+
   it("does not advance publication order for a rolled-back savepoint", async () => {
     await withAuthProfileTestState(
       "openclaw-auth-rolled-back-publication-order-",

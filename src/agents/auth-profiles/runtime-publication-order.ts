@@ -16,7 +16,7 @@ export type RuntimeAuthProfileStorePublicationToken = {
  */
 export function captureRuntimeAuthProfileStorePublicationToken(
   agentDir?: string,
-  options?: { advanceOwner?: boolean },
+  options?: { advanceOwner?: boolean; inheritedMainGeneration?: number },
 ): RuntimeAuthProfileStorePublicationToken {
   const ownerKey = resolveAuthProfileDatabasePath(agentDir);
   const mainKey = resolveAuthProfileDatabasePath();
@@ -35,15 +35,34 @@ export function captureRuntimeAuthProfileStorePublicationToken(
   return {
     ownerKey,
     ownerGeneration: ownerGenerations.get(ownerKey) ?? 0,
-    mainGeneration: ownerGenerations.get(mainKey) ?? 0,
+    mainGeneration:
+      ownerKey === mainKey
+        ? (ownerGenerations.get(mainKey) ?? 0)
+        : (options?.inheritedMainGeneration ?? ownerGenerations.get(mainKey) ?? 0),
   };
+}
+
+export function getRuntimeAuthProfileStorePublicationGeneration(agentDir?: string): number {
+  return ownerGenerations.get(resolveAuthProfileDatabasePath(agentDir)) ?? 0;
 }
 
 export function isRuntimeAuthProfileStorePublicationTokenCurrent(
   token: RuntimeAuthProfileStorePublicationToken,
 ): boolean {
   return (
-    token.ownerGeneration === (ownerGenerations.get(token.ownerKey) ?? 0) &&
-    token.mainGeneration === (ownerGenerations.get(resolveAuthProfileDatabasePath()) ?? 0)
+    isRuntimeAuthProfileStorePublicationOwnerCurrent(token) &&
+    isRuntimeAuthProfileStorePublicationMainCurrent(token)
   );
+}
+
+export function isRuntimeAuthProfileStorePublicationOwnerCurrent(
+  token: RuntimeAuthProfileStorePublicationToken,
+): boolean {
+  return token.ownerGeneration === (ownerGenerations.get(token.ownerKey) ?? 0);
+}
+
+export function isRuntimeAuthProfileStorePublicationMainCurrent(
+  token: RuntimeAuthProfileStorePublicationToken,
+): boolean {
+  return token.mainGeneration === (ownerGenerations.get(resolveAuthProfileDatabasePath()) ?? 0);
 }
