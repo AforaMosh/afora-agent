@@ -25,12 +25,14 @@ describe("qa scenario catalog channel contracts", () => {
     const scenario = readQaScenarioById("native-command-session-target");
     const config = readQaScenarioExecutionConfig("native-command-session-target") as
       | {
+          requiredChannelDriver?: string;
           requiredProviderMode?: string;
         }
       | undefined;
 
     expect(scenario.execution.channel).toBe("telegram");
     expect(config?.requiredProviderMode).toBe("mock-openai");
+    expect(config?.requiredChannelDriver).toBe("crabline");
     const flow = JSON.stringify(requireFlowScenario(scenario).execution.flow);
     expect(flow).toContain("transport.buildAgentDelivery");
     expect(flow).toContain("peer: { kind: 'group', id: delivery.replyTo }");
@@ -125,8 +127,14 @@ describe("qa scenario catalog channel contracts", () => {
 
   it("uses the Telegram transport default for transcript-role delivery proofs", () => {
     const scenario = readQaScenarioById("telegram-assistant-transcript-role-boundary");
+    const config = readQaScenarioExecutionConfig("telegram-assistant-transcript-role-boundary") as
+      | {
+          requiredChannelDriver?: string;
+        }
+      | undefined;
 
     expect(scenario.gatewayConfigPatch).toBeUndefined();
+    expect(config?.requiredChannelDriver).toBe("crabline");
   });
 
   it("rejects malformed string matcher lists before running a flow", () => {

@@ -32,6 +32,7 @@ scenario:
     summary: Start a real delayed channel turn, abort it through native `/stop`, then prove the conversation is unblocked.
     config:
       requiredProviderMode: mock-openai
+      requiredChannelDriver: crabline
       conversationId: native-stop-target
       senderId: qa-native-operator
       delayedPrompt: "Subagent recovery worker native command target proof. Wait until stopped."
