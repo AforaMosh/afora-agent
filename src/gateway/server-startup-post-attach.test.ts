@@ -1970,6 +1970,7 @@ describe("startGatewayPostAttachRuntime", () => {
     testing.stopPostReadySidecarsAfterCloseStarted({
       postReadySidecars: [postReadySidecar],
       closeStarted: true,
+      onStopError: vi.fn(),
     });
 
     expect(postReadySidecar.stop).toHaveBeenCalledTimes(1);
@@ -1981,9 +1982,39 @@ describe("startGatewayPostAttachRuntime", () => {
     testing.stopPostReadySidecarsAfterCloseStarted({
       postReadySidecars: [postReadySidecar],
       closeStarted: false,
+      onStopError: vi.fn(),
     });
 
     expect(postReadySidecar.stop).not.toHaveBeenCalled();
+  });
+
+  it("reports late sidecar stop failures and continues stopping later sidecars", async () => {
+    const synchronousFailure = new Error("synchronous stop failed");
+    const asynchronousFailure = new Error("asynchronous stop failed");
+    const stopWithSynchronousFailure = vi.fn(() => {
+      throw synchronousFailure;
+    });
+    const stopWithAsynchronousFailure = vi.fn(() => Promise.reject(asynchronousFailure));
+    const stopAfterFailures = vi.fn();
+    const onStopError = vi.fn();
+
+    testing.stopPostReadySidecarsAfterCloseStarted({
+      postReadySidecars: [
+        { stop: stopWithSynchronousFailure },
+        { stop: stopWithAsynchronousFailure },
+        { stop: stopAfterFailures },
+      ],
+      closeStarted: true,
+      onStopError,
+    });
+    await new Promise<void>((resolve) => setImmediate(resolve));
+
+    expect(stopWithSynchronousFailure).toHaveBeenCalledTimes(1);
+    expect(stopWithAsynchronousFailure).toHaveBeenCalledTimes(1);
+    expect(stopAfterFailures).toHaveBeenCalledTimes(1);
+    expect(onStopError).toHaveBeenCalledTimes(2);
+    expect(onStopError).toHaveBeenNthCalledWith(1, synchronousFailure, 0);
+    expect(onStopError).toHaveBeenNthCalledWith(2, asynchronousFailure, 1);
   });
 
   it("runs Gmail watcher after sidecars are ready", async () => {
@@ -2520,6 +2551,7 @@ describe("startGatewayPostAttachRuntime", () => {
     testing.stopPostReadySidecarsAfterCloseStarted({
       postReadySidecars: result.postReadySidecars,
       closeStarted: true,
+      onStopError: vi.fn(),
     });
     releasePostReadyWork();
     await vi.advanceTimersByTimeAsync(1_000);

@@ -27,6 +27,10 @@ import { STARTUP_UNAVAILABLE_GATEWAY_METHODS } from "./methods/core-descriptors.
 import type { GatewayRecoveryRuntime } from "./server-instance-runtime.types.js";
 import type { refreshLatestUpdateRestartSentinel } from "./server-restart-sentinel.js";
 import type { GatewaySidecarStartupMode } from "./server-sidecar-startup-mode.js";
+import {
+  stopPostReadySidecarsAfterCloseStarted,
+  type GatewayPostReadySidecarHandle,
+} from "./server-sidecar-stop.js";
 import { scheduleContextCachePrewarm } from "./server-startup-context-cache-prewarm.js";
 import { scheduleGatewayHandlerPrewarm } from "./server-startup-handler-prewarm.js";
 import type { logGatewayStartup } from "./server-startup-log.js";
@@ -72,20 +76,8 @@ const loadGatewayRestartSentinelModule = createLazyRuntimeModule(
   () => import("./server-restart-sentinel.js"),
 );
 
-export type GatewayPostReadySidecarHandle = { stop: () => Awaitable<void> };
-
-/** Stop sidecars immediately when shutdown has already started before they are reported. */
-export function stopPostReadySidecarsAfterCloseStarted(params: {
-  postReadySidecars: readonly GatewayPostReadySidecarHandle[];
-  closeStarted: boolean;
-}): void {
-  if (!params.closeStarted) {
-    return;
-  }
-  for (const postReadySidecar of params.postReadySidecars) {
-    void postReadySidecar.stop();
-  }
-}
+export { stopPostReadySidecarsAfterCloseStarted };
+export type { GatewayPostReadySidecarHandle };
 
 /** Measure provider-auth warming without letting event-loop stalls hide in wall time. */
 async function measureProviderAuthWarm(run: () => Promise<void>): Promise<{

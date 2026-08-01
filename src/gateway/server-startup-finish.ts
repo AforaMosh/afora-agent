@@ -491,6 +491,11 @@ export async function finishGatewayStartup(params: {
             stopPostReadySidecarsAfterCloseStarted({
               postReadySidecars,
               closeStarted: lifecycle.closePreludeStarted,
+              onStopError: (error, index) => {
+                log.warn(
+                  `post-ready sidecar ${index} failed to stop after close started: ${String(error)}`,
+                );
+              },
             });
             if (lifecycle.closePreludeStarted) {
               runtimeState.postReadySidecars = [];
@@ -501,6 +506,11 @@ export async function finishGatewayStartup(params: {
             stopPostReadySidecarsAfterCloseStarted({
               postReadySidecars: gatewayLifetimeSidecars,
               closeStarted: lifecycle.closePreludeStarted,
+              onStopError: (error, index) => {
+                log.warn(
+                  `gateway-lifetime sidecar ${index} failed to stop after close started: ${String(error)}`,
+                );
+              },
             });
             if (lifecycle.closePreludeStarted) {
               runtimeState.gatewayLifetimeSidecars = [];
