@@ -41,6 +41,14 @@ function createCustomThemePage(settings: Partial<UiSettings> = {}) {
   const state = page as unknown as CustomThemeImportState;
   state.context = {
     gateway: { connection: { gatewayUrl: "ws://gateway.test" } },
+    runtimeConfig: {
+      state: {
+        configApplying: false,
+        configAutoSaveStatus: "idle",
+        configFormDirty: false,
+        configSaving: false,
+      },
+    },
     theme: { recordServerSelection: vi.fn(), refresh: vi.fn(), serverSelection: null },
   } as unknown as ApplicationContext;
   state.settings = { ...loadSettings(), ...settings };
@@ -76,6 +84,7 @@ describe("ConfigPage custom theme import ownership", () => {
     state.setCustomThemeImportUrl("replacement");
 
     const pendingImport = state.importCustomTheme();
+    await vi.waitFor(() => expect(importCustomThemeFromUrl).toHaveBeenCalledOnce());
     state.clearCustomTheme();
     const clearMessage = state.customThemeImportMessage;
 
@@ -97,6 +106,7 @@ describe("ConfigPage custom theme import ownership", () => {
     state.setCustomThemeImportUrl("first");
 
     const pendingImport = state.importCustomTheme();
+    await vi.waitFor(() => expect(importCustomThemeFromUrl).toHaveBeenCalledOnce());
     state.setCustomThemeImportUrl("second");
     replacement.resolve(customThemeFixture("First", "first"));
     await pendingImport;
@@ -116,8 +126,10 @@ describe("ConfigPage custom theme import ownership", () => {
     state.setCustomThemeImportUrl("first");
 
     const firstImport = state.importCustomTheme();
+    await vi.waitFor(() => expect(importCustomThemeFromUrl).toHaveBeenCalledOnce());
     state.setCustomThemeImportUrl("second");
     const secondImport = state.importCustomTheme();
+    await vi.waitFor(() => expect(importCustomThemeFromUrl).toHaveBeenCalledTimes(2));
     first.resolve(customThemeFixture("First", "first"));
     await firstImport;
 
@@ -145,8 +157,10 @@ describe("ConfigPage custom theme import ownership", () => {
     state.setCustomThemeImportUrl("first");
 
     const firstImport = state.importCustomTheme();
+    await vi.waitFor(() => expect(importCustomThemeFromUrl).toHaveBeenCalledOnce());
     state.setCustomThemeImportUrl("second");
     const secondImport = state.importCustomTheme();
+    await vi.waitFor(() => expect(importCustomThemeFromUrl).toHaveBeenCalledTimes(2));
     const secondTheme = customThemeFixture("Second", "second");
     second.resolve(secondTheme);
     await secondImport;
@@ -168,6 +182,7 @@ describe("ConfigPage custom theme import ownership", () => {
     const { state } = createCustomThemePage();
     state.setCustomThemeImportUrl("first");
     const pendingImport = state.importCustomTheme();
+    await vi.waitFor(() => expect(importCustomThemeFromUrl).toHaveBeenCalledOnce());
 
     patchSettings({ theme: "knot" });
     state.adoptThemeSettings();
@@ -197,6 +212,7 @@ describe("ConfigPage custom theme import ownership", () => {
     } as ApplicationContext;
     state.setCustomThemeImportUrl("first");
     const pendingImport = state.importCustomTheme();
+    await vi.waitFor(() => expect(importCustomThemeFromUrl).toHaveBeenCalledOnce());
 
     serverSelection = { revision: 1, scope: "ws://gateway.test", theme: "claw" };
     state.adoptThemeSettings();
@@ -228,6 +244,7 @@ describe("ConfigPage custom theme import ownership", () => {
     state.adoptThemeSettings();
     state.setCustomThemeImportUrl("first");
     const pendingImport = state.importCustomTheme();
+    await vi.waitFor(() => expect(importCustomThemeFromUrl).toHaveBeenCalledOnce());
 
     serverSelection = { revision: 2, scope: "ws://gateway.test", theme: "custom" };
     state.adoptThemeSettings();
@@ -238,6 +255,62 @@ describe("ConfigPage custom theme import ownership", () => {
     expect(state.settings.customTheme?.themeId).toBe("first");
   });
 
+  it("honors the latest server Custom intent after an intervening built-in selection", async () => {
+    const pending = deferred<ImportedCustomTheme>();
+    importCustomThemeFromUrl.mockReturnValueOnce(pending.promise);
+    const { state } = createCustomThemePage();
+    let serverSelection: ApplicationThemeServerSelection | null = {
+      revision: 1,
+      scope: "ws://gateway.test",
+      theme: "claw",
+    };
+    state.context = {
+      ...state.context,
+      theme: {
+        ...state.context.theme,
+        get serverSelection() {
+          return serverSelection;
+        },
+      },
+    } as ApplicationContext;
+    state.adoptThemeSettings();
+    state.setCustomThemeImportUrl("first");
+    const pendingImport = state.importCustomTheme();
+    await vi.waitFor(() => expect(importCustomThemeFromUrl).toHaveBeenCalledOnce());
+
+    serverSelection = { revision: 2, scope: "ws://gateway.test", theme: "knot" };
+    patchSettings({ theme: "knot" });
+    state.adoptThemeSettings();
+    serverSelection = { revision: 3, scope: "ws://gateway.test", theme: "custom" };
+    state.adoptThemeSettings();
+    pending.resolve(customThemeFixture("First", "first"));
+    await pendingImport;
+
+    expect(state.settings.theme).toBe("custom");
+    expect(state.settings.customTheme?.themeId).toBe("first");
+  });
+
+  it("refuses to race an older pending full-config write", async () => {
+    const { state } = createCustomThemePage();
+    state.context = {
+      ...state.context,
+      runtimeConfig: {
+        ...state.context.runtimeConfig,
+        state: { ...state.context.runtimeConfig.state, configFormDirty: true },
+      },
+    } as ApplicationContext;
+    state.setCustomThemeImportUrl("first");
+    await state.importCustomTheme();
+
+    expect(importCustomThemeFromUrl).not.toHaveBeenCalled();
+    expect(state.customThemeImportBusy).toBe(false);
+    expect(state.customThemeImportMessage).toEqual({
+      kind: "error",
+      text: "You have unsaved changes",
+    });
+    expect(state.settings.customTheme).toBeUndefined();
+  });
+
   it("retires an import when navigation leaves Appearance", async () => {
     const pending = deferred<ImportedCustomTheme>();
     importCustomThemeFromUrl.mockReturnValueOnce(pending.promise);
@@ -245,6 +318,7 @@ describe("ConfigPage custom theme import ownership", () => {
     state.pageId = "appearance";
     state.setCustomThemeImportUrl("first");
     const pendingImport = state.importCustomTheme();
+    await vi.waitFor(() => expect(importCustomThemeFromUrl).toHaveBeenCalledOnce());
 
     state.pageId = "security";
     state.willUpdate(new Map([["pageId", "appearance"]]));
@@ -265,6 +339,7 @@ describe("ConfigPage custom theme import ownership", () => {
     state.synchronizeCustomThemeGatewayScope("ws://gateway-a.test");
     state.setCustomThemeImportUrl("first");
     const pendingImport = state.importCustomTheme();
+    await vi.waitFor(() => expect(importCustomThemeFromUrl).toHaveBeenCalledOnce());
 
     state.synchronizeCustomThemeGatewayScope("ws://gateway-b.test");
     pending.resolve(customThemeFixture("First", "first"));
@@ -284,6 +359,7 @@ describe("ConfigPage custom theme import ownership", () => {
     state.setCustomThemeImportUrl("first");
 
     const pendingImport = state.importCustomTheme();
+    await vi.waitFor(() => expect(importCustomThemeFromUrl).toHaveBeenCalledOnce());
     state.setTheme("knot");
     first.resolve(customThemeFixture("First", "first"));
     await pendingImport;
@@ -301,6 +377,7 @@ describe("ConfigPage custom theme import ownership", () => {
     const { page, state } = createCustomThemePage();
     state.setCustomThemeImportUrl("first");
     const pendingImport = state.importCustomTheme();
+    await vi.waitFor(() => expect(importCustomThemeFromUrl).toHaveBeenCalledOnce());
 
     page.disconnectedCallback();
     first.resolve(customThemeFixture("First", "first"));

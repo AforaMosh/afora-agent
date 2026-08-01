@@ -278,7 +278,10 @@ export class ConfigPage extends OpenClawLightDomElement {
   @state() private customThemeImportExpanded = false;
   @state() private customThemeImportFocusToken = 0;
   private customThemeImportGeneration = 0;
-  private customThemeActivationGeneration = 0;
+  private customThemeActivationIntent: { revision: number; theme: ThemeName | null } = {
+    revision: 0,
+    theme: null,
+  };
   private serverThemeSelectionRevision = 0;
   private customThemeGatewayScope = "";
   private configViewState: ConfigViewState = createConfigViewState();
@@ -716,14 +719,17 @@ export class ConfigPage extends OpenClawLightDomElement {
     const serverSelectionChanged =
       this.serverThemeSelectionRevision !== (serverSelection?.revision ?? 0);
     this.serverThemeSelectionRevision = serverSelection?.revision ?? 0;
-    // A first import supplies the palette needed to honor an accepted server Custom
-    // selection. Other server selections supersede only its auto-activation intent.
-    const serverSelectionRevokesActivation =
-      serverSelectionChanged && serverSelection?.theme !== "custom";
     if (next.customTheme?.importedAt !== this.settings.customTheme?.importedAt) {
       this.retireCustomThemeImport();
-    } else if (serverSelectionRevokesActivation || next.theme !== this.settings.theme) {
-      this.revokeCustomThemeActivation();
+    } else {
+      // Preserve the ordered selection, not only revocation: a newer server
+      // Custom choice can re-authorize the palette supplied by a pending import.
+      if (serverSelectionChanged) {
+        this.recordCustomThemeActivationIntent(serverSelection?.theme ?? null);
+      }
+      if (next.theme !== this.settings.theme) {
+        this.recordCustomThemeActivationIntent(next.theme);
+      }
     }
     this.settings = next;
   }
@@ -802,7 +808,7 @@ export class ConfigPage extends OpenClawLightDomElement {
   ) {
     switch (key) {
       case "theme":
-        this.revokeCustomThemeActivation();
+        this.recordCustomThemeActivationIntent(null);
         this.settings = resetServerUiPref("theme", this.currentThemePref());
         break;
       case "themeMode":
@@ -822,9 +828,7 @@ export class ConfigPage extends OpenClawLightDomElement {
     theme: ThemeName,
     context?: Parameters<typeof startThemeTransition>[0]["context"],
   ) {
-    if (theme !== "custom") {
-      this.revokeCustomThemeActivation();
-    }
+    this.recordCustomThemeActivationIntent(theme);
     const currentTheme = resolveTheme(this.settings.theme, this.settings.themeMode);
     const next = { ...this.settings, theme };
     startThemeTransition({
@@ -892,8 +896,11 @@ export class ConfigPage extends OpenClawLightDomElement {
     this.customThemeImportBusy = false;
   }
 
-  private revokeCustomThemeActivation() {
-    this.customThemeActivationGeneration += 1;
+  private recordCustomThemeActivationIntent(theme: ThemeName | null) {
+    this.customThemeActivationIntent = {
+      revision: this.customThemeActivationIntent.revision + 1,
+      theme,
+    };
   }
 
   private setCustomThemeImportUrl(next: string) {
@@ -907,8 +914,21 @@ export class ConfigPage extends OpenClawLightDomElement {
   }
 
   private async importCustomTheme() {
+    const configState = this.context.runtimeConfig.state;
+    if (
+      configState.configFormDirty ||
+      configState.configSaving ||
+      configState.configApplying ||
+      configState.configAutoSaveStatus === "saving"
+    ) {
+      // Full-config writes also own ui.prefs.theme. Starting an import while an
+      // older draft can still commit would make arrival order override click order.
+      this.customThemeImportExpanded = true;
+      this.customThemeImportMessage = { kind: "error", text: t("common.unsavedChanges") };
+      return;
+    }
     const generation = ++this.customThemeImportGeneration;
-    const activationGeneration = this.customThemeActivationGeneration;
+    const activationRevision = this.customThemeActivationIntent.revision;
     const importUrl = this.customThemeImportUrl;
     const selectThemeOnSuccess = !this.settings.customTheme;
     this.customThemeImportExpanded = true;
@@ -919,13 +939,13 @@ export class ConfigPage extends OpenClawLightDomElement {
       if (generation !== this.customThemeImportGeneration) {
         return;
       }
+      const activationIntent = this.customThemeActivationIntent;
+      const activationAllowed =
+        activationRevision === activationIntent.revision || activationIntent.theme === "custom";
       this.applySettings({
         ...this.settings,
         customTheme,
-        theme:
-          selectThemeOnSuccess && activationGeneration === this.customThemeActivationGeneration
-            ? "custom"
-            : this.settings.theme,
+        theme: selectThemeOnSuccess && activationAllowed ? "custom" : this.settings.theme,
       });
       this.customThemeImportUrl = "";
       this.customThemeImportMessage = {

@@ -7,6 +7,7 @@ import type { GatewayBrowserClient } from "../api/gateway.ts";
 import { normalizeSidebarEntries } from "../app-navigation.ts";
 import { isSupportedLocale } from "../i18n/index.ts";
 import type { RuntimeConfigCapability } from "../lib/config/index.ts";
+import { normalizeGatewayTokenScope } from "./gateway-scope.ts";
 import {
   loadSettings,
   normalizeChatFollowUpModeOverride,
@@ -130,6 +131,9 @@ export type ServerUiPrefState<T> = {
   value: T | undefined;
 };
 const SYNCED_PREF_KEYS = Object.keys(SYNCED_PREFS) as SyncedPrefKey[];
+function normalizeServerPrefsScope(scope: string): string {
+  return scope ? normalizeGatewayTokenScope(scope) : "";
+}
 function extractServerUiPrefs(configObject: unknown): ServerUiPrefs {
   const prefs = asRecord(asRecord(asRecord(configObject)?.ui)?.prefs);
   if (!prefs) {
@@ -151,6 +155,7 @@ export function resolveServerUiPrefState<K extends SyncedPrefKey>(
   scope = "",
   settings = loadSettings(),
 ): ServerUiPrefState<SyncedPrefValue<K>> {
+  scope = normalizeServerPrefsScope(scope);
   const specification = SYNCED_PREFS[key];
   const localValue = specification.local(settings) as SyncedPrefValue<K> | undefined;
   const resetPatch = specification.reset?.(settings);
@@ -422,7 +427,7 @@ export function applyServerUiPrefs(
     onThemeChanged?: (theme: ThemeName | null) => void;
   },
 ): boolean {
-  const scope = hooks.scope ?? "";
+  const scope = normalizeServerPrefsScope(hooks.scope ?? "");
   if (scope === lastReconciledScope && configObject === lastReconciledConfigObject) {
     return false;
   }
@@ -434,7 +439,7 @@ export function applyServerUiPrefs(
     scope === pendingScope ? pendingPrefs : parseStoredPrefs(readStorage(PENDING_KEY, scope));
   const prefs = extractServerUiPrefs(configObject);
   const key = JSON.stringify(prefs);
-  const lastSeenRaw = readStorage(LAST_SEEN_KEY, scope) ?? lastSeenPrefsByScope.get(scope) ?? null;
+  const lastSeenRaw = lastSeenPrefsByScope.get(scope) ?? readStorage(LAST_SEEN_KEY, scope);
   if (key === lastSeenRaw) {
     lastSeenPrefsByScope.set(scope, key);
     recordReconciledObject();
@@ -484,7 +489,7 @@ export function isApplyingServerUiPrefs(): boolean {
   return applyingServerPrefs;
 }
 function adoptPushWriter(writer: ServerUiPrefsWriter): void {
-  const scope = writer.state.client?.gatewayUrl ?? "";
+  const scope = normalizeServerPrefsScope(writer.state.client?.gatewayUrl ?? "");
   if (pushWriter === writer && pushScope === scope) {
     return;
   }
@@ -567,8 +572,13 @@ async function drainPendingPrefs(writer: ServerUiPrefsWriter, epoch: number): Pr
       }
       if (result.ok) {
         removeBatch(batch);
-        const lastSeen = parseStoredPrefs(readStorage(LAST_SEEN_KEY, pendingScope)) ?? {};
-        writeStorage(LAST_SEEN_KEY, pendingScope, JSON.stringify({ ...lastSeen, ...batch }));
+        const lastSeen =
+          parseStoredPrefs(
+            lastSeenPrefsByScope.get(pendingScope) ?? readStorage(LAST_SEEN_KEY, pendingScope),
+          ) ?? {};
+        const nextLastSeen = JSON.stringify({ ...lastSeen, ...batch });
+        writeStorage(LAST_SEEN_KEY, pendingScope, nextLastSeen);
+        lastSeenPrefsByScope.set(pendingScope, nextLastSeen);
         settlePendingStorage(batch);
         clearConflictRedrain();
         if (pushWriter !== writer || pushEpoch !== epoch) {

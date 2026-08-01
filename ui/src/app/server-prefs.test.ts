@@ -325,6 +325,50 @@ describe("applyServerUiPrefs", () => {
     expect(onThemeChanged).toHaveBeenCalledExactlyOnceWith("custom");
     expect(onApplied).not.toHaveBeenCalled();
   });
+
+  it("prefers the process baseline when storage stays readable but cannot be updated", () => {
+    const storage = createStorageMock();
+    storage.setItem("openclaw.control.serverPrefs.v1:ws://gw", JSON.stringify({ theme: "claw" }));
+    vi.spyOn(storage, "setItem").mockImplementation(() => {
+      throw new Error("storage read-only");
+    });
+    vi.stubGlobal("localStorage", storage);
+    const onApplied = vi.fn();
+    const onThemeChanged = vi.fn();
+
+    applyServerUiPrefs(configWithPrefs({ theme: "custom" }), {
+      scope: "ws://gw",
+      onApplied,
+      onThemeChanged,
+    });
+    applyServerUiPrefs(configWithPrefs({ theme: "custom" }), {
+      scope: "ws://gw",
+      onApplied,
+      onThemeChanged,
+    });
+
+    expect(onThemeChanged).toHaveBeenCalledExactlyOnceWith("custom");
+    expect(onApplied).not.toHaveBeenCalled();
+  });
+
+  it("treats equivalent Gateway URL spellings as one preference scope", () => {
+    const onApplied = vi.fn();
+    const onThemeChanged = vi.fn();
+    applyServerUiPrefs(configWithPrefs({ theme: "custom" }), {
+      scope: "ws://gw",
+      onApplied,
+      onThemeChanged,
+    });
+    onThemeChanged.mockClear();
+
+    applyServerUiPrefs(configWithPrefs({ theme: "custom" }), {
+      scope: "ws://gw/",
+      onApplied,
+      onThemeChanged,
+    });
+
+    expect(onThemeChanged).not.toHaveBeenCalled();
+  });
 });
 
 describe("changedServerUiPrefs", () => {
@@ -518,6 +562,30 @@ describe("pushServerUiPrefs", () => {
 
     requestGate.resolve({});
     await vi.waitFor(() => expect(localStorage.getItem(pendingKey(scope))).toBeNull());
+  });
+
+  it("retains an acknowledged theme baseline when storage cannot persist it", async () => {
+    const scope = "ws://gw";
+    const storage = createStorageMock();
+    storage.setItem(lastSeenKey(scope), JSON.stringify({ theme: "claw" }));
+    vi.spyOn(storage, "setItem").mockImplementation(() => {
+      throw new Error("storage read-only");
+    });
+    vi.stubGlobal("localStorage", storage);
+    const request = vi.fn(async () => ({}));
+    const afterCommit = vi.fn();
+
+    pushServerUiPrefs(createClient(request, scope), { theme: "knot" }, { afterCommit });
+    await vi.waitFor(() => expect(afterCommit).toHaveBeenCalledOnce());
+    const onThemeChanged = vi.fn();
+    expect(
+      applyServerUiPrefs(configWithPrefs({ theme: "knot" }), {
+        scope,
+        onApplied: vi.fn(),
+        onThemeChanged,
+      }),
+    ).toBe(false);
+    expect(onThemeChanged).not.toHaveBeenCalled();
   });
 
   it("keeps a synced default reset as a pending offline null intent", () => {
