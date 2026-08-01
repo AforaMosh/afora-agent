@@ -2,14 +2,11 @@ import { randomUUID } from "node:crypto";
 import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
 import type { SessionCompanionExchange } from "../../packages/gateway-protocol/src/schema/sessions.js";
 import { resolveAgentWorkspaceDir, resolveSessionAgentId } from "../agents/agent-scope.js";
-import {
-  readBtwTranscriptMessages,
-  resolveBtwSessionTranscriptPath,
-} from "../agents/btw-transcript.js";
 import { resolveSimpleCompletionSelectionForAgent } from "../agents/simple-completion-runtime.js";
 import { extractAssistantText, stripToolMessages } from "../agents/tools/chat-history-text.js";
 import { resolveUtilityModelRefForAgent } from "../agents/utility-model.js";
 import { resolveStorePath } from "../config/sessions.js";
+import { readSessionTranscriptBoundedMessageTailPage } from "../config/sessions/session-accessor.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import type { Message, Usage } from "../llm/types.js";
 import { redactToolPayloadText } from "../logging/redact.js";
@@ -33,6 +30,8 @@ const ANSWER_MAX_CHARS = 1200;
 const SEED_MAX_MESSAGES = 40;
 const SEED_MAX_BYTES = 24 * 1024;
 const SEED_MESSAGE_MAX_CHARS = 4000;
+const SEED_READ_MAX_MESSAGES = SEED_MAX_MESSAGES * 4 + 1;
+const SEED_READ_MAX_BYTES = 256 * 1024;
 const DELTA_MAX_BYTES = 4 * 1024;
 const MAX_CONCURRENT_ASKS = 6;
 const ASK_RATE_WINDOW_MS = 60_000;
@@ -178,6 +177,50 @@ function sanitizeSeedMessages(messages: unknown[]): SessionCompanionSeedMessage[
   return selected;
 }
 
+export function readSessionCompanionSeedMessages(params: {
+  agentId: string;
+  sessionId: string;
+  sessionKey: string;
+  storePath?: string;
+}): SessionCompanionSeedMessage[] {
+  try {
+    const page = readSessionTranscriptBoundedMessageTailPage(
+      {
+        agentId: params.agentId,
+        sessionId: params.sessionId,
+        sessionKey: params.sessionKey,
+        storePath: params.storePath,
+      },
+      {
+        maxBytes: SEED_READ_MAX_BYTES,
+        maxMessages: SEED_READ_MAX_MESSAGES,
+        offset: 0,
+      },
+    );
+    const messages = page.events.flatMap(({ event }) => {
+      if (!event || typeof event !== "object") {
+        return [];
+      }
+      const message = (event as { message?: unknown }).message;
+      return message && typeof message === "object" ? [message] : [];
+    });
+    if (isTrailingUserMessage(messages.at(-1))) {
+      messages.pop();
+    }
+    return sanitizeSeedMessages(messages);
+  } catch {
+    return [];
+  }
+}
+
+function isTrailingUserMessage(message: unknown): boolean {
+  return (
+    Boolean(message) &&
+    typeof message === "object" &&
+    (message as { role?: unknown }).role === "user"
+  );
+}
+
 async function defaultReadSeedMessages(params: {
   cfg: OpenClawConfig;
   agentId: string;
@@ -188,21 +231,12 @@ async function defaultReadSeedMessages(params: {
   if (!sessionId) {
     return [];
   }
-  const sessionFile = resolveBtwSessionTranscriptPath({
+  return readSessionCompanionSeedMessages({
+    agentId: params.agentId,
     sessionId,
-    sessionEntry: loaded.entry,
     sessionKey: params.sessionKey,
     storePath: loaded.storePath,
   });
-  if (!sessionFile) {
-    return [];
-  }
-  const messages = await readBtwTranscriptMessages({
-    sessionFile,
-    sessionId,
-    sessionKey: params.sessionKey,
-  });
-  return sanitizeSeedMessages(messages);
 }
 
 const EMPTY_USAGE: Usage = {
