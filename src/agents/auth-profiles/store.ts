@@ -42,16 +42,18 @@ import {
 } from "./persisted.js";
 import {
   captureRuntimeAuthProfileStorePublicationToken,
+  isRuntimeAuthProfileStorePublicationTokenCurrent,
+  type RuntimeAuthProfileStorePublicationToken,
+} from "./runtime-publication-order.js";
+import {
   clearRuntimeAuthProfileStoreSnapshot as clearRuntimeAuthProfileStoreSnapshotImpl,
   clearRuntimeAuthProfileStoreSnapshots as clearRuntimeAuthProfileStoreSnapshotsImpl,
   getRuntimeAuthProfileStoreSnapshot as getRuntimeAuthProfileStoreSnapshotImpl,
   getRuntimeAuthProfileStoreSnapshotRevision,
-  isRuntimeAuthProfileStorePublicationTokenCurrent,
   noteRuntimeAuthProfileStorePersistedMutation,
   listRuntimeAuthProfileStoreSnapshots,
   replaceRuntimeAuthProfileStoreSnapshots as replaceRuntimeAuthProfileStoreSnapshotsImpl,
   setRuntimeAuthProfileStoreSnapshot,
-  type RuntimeAuthProfileStorePublicationToken,
 } from "./runtime-snapshots.js";
 import {
   deletePersistedAuthProfileStoreRaw,
@@ -1163,8 +1165,7 @@ export function loadAuthProfileStoreForSecretsRuntime(
   });
 }
 
-/** Load auth profiles with runtime external profiles removed from the result. */
-export function loadAuthProfileStoreWithoutExternalProfiles(
+function loadAuthProfileStoreWithoutExternalProfilesFromPersistence(
   agentDir?: string,
   loadOptions?: Pick<
     LoadAuthProfileStoreOptions,
@@ -1207,6 +1208,14 @@ export function loadAuthProfileStoreWithoutExternalProfiles(
     listRuntimeLocalProfileIds(store, mainStore),
     runtimeStoreInheritsMainState(mergedStore, store),
   );
+}
+
+/** Load auth profiles with runtime external profiles removed from the result. */
+export function loadAuthProfileStoreWithoutExternalProfiles(
+  agentDir?: string,
+  loadOptions?: Pick<LoadAuthProfileStoreOptions, "allowKeychainPrompt" | "inheritedAuthDir">,
+): AuthProfileStore {
+  return loadAuthProfileStoreWithoutExternalProfilesFromPersistence(agentDir, loadOptions);
 }
 
 /** Ensure an auth store is available, including runtime/external profile overlays. */
@@ -1447,7 +1456,9 @@ function saveAuthProfileStoreInTransaction(
   if (stateChanged) {
     writePersistedAuthProfileStateRaw(statePayload, agentDir, database);
   }
-  const committedStore = loadAuthProfileStoreWithoutExternalProfiles(agentDir, { database });
+  const committedStore = loadAuthProfileStoreWithoutExternalProfilesFromPersistence(agentDir, {
+    database,
+  });
   const publishRuntimeSnapshots = () => {
     // Main-store publication invalidates derived stores. Capture the latest
     // overlays at the publication edge so post-commit refreshes are retained.
@@ -1462,9 +1473,10 @@ function saveAuthProfileStoreInTransaction(
       store: AuthProfileStore;
     }): void => {
       try {
-        const refreshed = loadAuthProfileStoreWithoutExternalProfiles(derived.agentDir, {
-          inheritedStore: committedStore,
-        });
+        const refreshed = loadAuthProfileStoreWithoutExternalProfilesFromPersistence(
+          derived.agentDir,
+          { inheritedStore: committedStore },
+        );
         const materialized = preserveResolvedSecretBackedCredentials({
           next: refreshed,
           existing: derived.store,

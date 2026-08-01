@@ -1,0 +1,54 @@
+import { resolveAuthProfileDatabasePath } from "./sqlite.js";
+
+const MAX_PUBLICATION_OWNERS = 256;
+let publicationRevision = 0;
+let evictionRevision = 0;
+const ownerGenerations = new Map<string, number>();
+
+export type RuntimeAuthProfileStorePublicationToken = {
+  ownerKey: string;
+  ownerGeneration: number;
+  mainGeneration: number;
+  evictionRevision: number;
+};
+
+/**
+ * Captures durable commit order without reopening SQLite during publication.
+ * Derived publishers also fence against newer main-store commits they inherit.
+ */
+export function captureRuntimeAuthProfileStorePublicationToken(
+  agentDir?: string,
+  options?: { advanceOwner?: boolean },
+): RuntimeAuthProfileStorePublicationToken {
+  const ownerKey = resolveAuthProfileDatabasePath(agentDir);
+  const mainKey = resolveAuthProfileDatabasePath();
+  if (options?.advanceOwner === true) {
+    publicationRevision += 1;
+    ownerGenerations.delete(ownerKey);
+    ownerGenerations.set(ownerKey, publicationRevision);
+    while (ownerGenerations.size > MAX_PUBLICATION_OWNERS) {
+      const oldestOwnerKey = ownerGenerations.keys().next().value;
+      if (oldestOwnerKey === undefined) {
+        break;
+      }
+      ownerGenerations.delete(oldestOwnerKey);
+      evictionRevision += 1;
+    }
+  }
+  return {
+    ownerKey,
+    ownerGeneration: ownerGenerations.get(ownerKey) ?? 0,
+    mainGeneration: ownerGenerations.get(mainKey) ?? 0,
+    evictionRevision,
+  };
+}
+
+export function isRuntimeAuthProfileStorePublicationTokenCurrent(
+  token: RuntimeAuthProfileStorePublicationToken,
+): boolean {
+  return (
+    token.evictionRevision === evictionRevision &&
+    token.ownerGeneration === (ownerGenerations.get(token.ownerKey) ?? 0) &&
+    token.mainGeneration === (ownerGenerations.get(resolveAuthProfileDatabasePath()) ?? 0)
+  );
+}
