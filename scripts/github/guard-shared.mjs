@@ -7,6 +7,7 @@ export const GITHUB_API_REQUEST_TIMEOUT_MS = 30_000;
 
 const githubApiRetryStatuses = new Set([502, 503, 504]);
 const githubApiRetryDelaysMs = [1_000, 2_000, 4_000];
+const githubPaginationMaxPages = 100;
 
 export function guardTrustedActorCandidates({ pullRequest, event, currentHeadSha }) {
   const eventHeadSha = event?.pull_request?.head?.sha;
@@ -236,6 +237,7 @@ export function createGitHubApi(token, options = {}) {
   const timeoutMs = options.timeoutMs ?? GITHUB_API_REQUEST_TIMEOUT_MS;
   const retryDelaysMs = options.retryDelaysMs ?? githubApiRetryDelaysMs;
   const responseMaxBodyBytes = options.responseMaxBodyBytes ?? GITHUB_RESPONSE_BODY_MAX_BYTES;
+  const readTransport = options.readTransport;
   const baseHeaders = {
     accept: "application/vnd.github+json",
     authorization: `Bearer ${token}`,
@@ -244,6 +246,8 @@ export function createGitHubApi(token, options = {}) {
   };
   const request = async (path, requestOptions = {}) => {
     const method = (requestOptions.method ?? "GET").toUpperCase();
+    const { routeHint, ...fetchOptions } = requestOptions;
+    const useReadTransport = method === "GET" && readTransport?.supports(path);
     const timeoutController = new AbortController();
     const requestSignal = combineAbortSignals([requestOptions.signal, timeoutController.signal]);
     let timeout;
@@ -256,10 +260,24 @@ export function createGitHubApi(token, options = {}) {
     });
     const operationPromise = (async () => {
       for (let attempt = 0; ; attempt += 1) {
+        if (useReadTransport) {
+          try {
+            return await readTransport.get(path, {
+              routeHint,
+              signal: requestSignal,
+            });
+          } catch (error) {
+            if (githubApiRetryStatuses.has(error?.status) && attempt < retryDelaysMs.length) {
+              await wait(retryDelaysMs[attempt], undefined, { signal: requestSignal });
+              continue;
+            }
+            throw error;
+          }
+        }
         const response = await fetchImpl(`https://api.github.com${path}`, {
-          ...requestOptions,
+          ...fetchOptions,
           signal: requestSignal,
-          headers: { ...baseHeaders, ...requestOptions.headers },
+          headers: { ...baseHeaders, ...fetchOptions.headers },
         });
         if (response.status === 204) {
           return null;
@@ -302,16 +320,25 @@ export function createGitHubApi(token, options = {}) {
   };
   return {
     request,
-    paginate: async (path) => {
+    paginate: async (path, paginateOptions = {}) => {
       const items = [];
-      for (let page = 1; ; page += 1) {
+      for (let page = 1; page <= githubPaginationMaxPages; page += 1) {
         const separator = path.includes("?") ? "&" : "?";
-        const pageItems = await request(`${path}${separator}per_page=100&page=${page}`);
+        const pageItems = await request(
+          `${path}${separator}per_page=100&page=${page}`,
+          paginateOptions,
+        );
+        if (!Array.isArray(pageItems)) {
+          throw new Error(`GitHub API returned a non-array page for ${path}.`);
+        }
         items.push(...pageItems);
         if (pageItems.length < 100) {
           return items;
         }
       }
+      throw new Error(
+        `GitHub API pagination exceeded ${githubPaginationMaxPages} pages for ${path}.`,
+      );
     },
   };
 }

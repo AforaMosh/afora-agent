@@ -19,6 +19,7 @@
 /test/scripts/security-sensitive-guard-script.test.ts @openclaw/openclaw-secops
 /scripts/github/dependency-guard.mjs @openclaw/openclaw-secops
 /scripts/github/security-sensitive-guard.mjs @openclaw/openclaw-secops
+/scripts/github/octopool-read.mjs @openclaw/openclaw-secops
 /.gitignore @openclaw/openclaw-secops
 /package-lock.json @openclaw/openclaw-secops
 /extensions/*/package-lock.json @openclaw/openclaw-secops

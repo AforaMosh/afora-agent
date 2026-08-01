@@ -99,7 +99,9 @@ describe("security-sensitive guard workflow", () => {
     expect(finalJob?.needs).toEqual(["security-sensitive-guard-detect"]);
     expect(finalJob?.if).toContain("always()");
     expect(detectSteps.at(-1)?.env?.OPENCLAW_SECURITY_SENSITIVE_GUARD_MODE).toBe("detect");
+    expect(detectSteps.at(-1)?.env?.OCTOPOOL_TOKEN).toBe("${{ secrets.OCTOPOOL_TOKEN }}");
     expect(finalSteps.at(-1)?.env?.OPENCLAW_SECURITY_SENSITIVE_GUARD_MODE).toBe("enforce");
+    expect(finalSteps.at(-1)?.env?.OCTOPOOL_TOKEN).toBe("${{ secrets.OCTOPOOL_TOKEN }}");
     expect(finalSteps.at(-1)?.env?.OPENCLAW_SECURITY_TEAM_SLUG).toBe("openclaw-secops");
     expect(finalSteps.at(-1)?.env?.OPENCLAW_SECURITY_APPROVERS).toBe(
       "vincentkoc,steipete,joshavant",

@@ -16,6 +16,7 @@ import {
   readBoundedGitHubErrorText,
   readBoundedGitHubJson,
 } from "./guard-shared.mjs";
+import { createOctopoolReadClientFromEnv } from "./octopool-read.mjs";
 
 /** Marker used to identify dependency guard comments. */
 const dependencyChangeMarker = "<!-- openclaw:dependency-guard -->";
@@ -456,7 +457,11 @@ function renderManifestChangeLine(change) {
 }
 
 export function githubApi(token, options = {}) {
-  const api = createGitHubApi(token, { ...options, userAgent: "openclaw-dependency-guard" });
+  const api = createGitHubApi(token, {
+    ...options,
+    readTransport: options.readTransport ?? createOctopoolReadClientFromEnv(),
+    userAgent: "openclaw-dependency-guard",
+  });
   return {
     ...api,
     graphql: async (query, variables) => {
@@ -651,7 +656,9 @@ async function main() {
   const pullPath = `/repos/${owner}/${repo}/pulls/${eventPullRequest.number}`;
   const pullRequest = await api.request(pullPath);
   const mode = process.env.OPENCLAW_DEPENDENCY_GUARD_MODE ?? "enforce";
-  const files = await api.paginate(`${pullPath}/files`);
+  const files = await api.paginate(`${pullPath}/files`, {
+    routeHint: { pr_head_sha: pullRequest.head?.sha },
+  });
   const dependencyFiles = files
     .map((file) => file.filename)
     .filter((filename) => typeof filename === "string" && isDependencyFile(filename))

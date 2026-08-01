@@ -31,6 +31,7 @@ import {
   securityApproverSet,
   shouldAutoscrubDependencyLockfiles,
 } from "../../scripts/github/dependency-guard.mjs";
+import { createOctopoolReadClient } from "../../scripts/github/octopool-read.mjs";
 
 const headSha = "a".repeat(40);
 const staleSha = "b".repeat(40);
@@ -682,6 +683,108 @@ describe("dependency guard script", () => {
       ),
     ).resolves.toEqual({ ok: true });
     expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it("relays only allowlisted guard GETs and keeps writes on the native client", async () => {
+    const readTransport = {
+      get: vi.fn().mockResolvedValue({ number: 1 }),
+      supports: vi.fn((path) => path === "/repos/openclaw/openclaw/pulls/1"),
+    };
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(Response.json({ ok: true }));
+    const api = githubApi("token", { fetchImpl, readTransport });
+
+    await expect(api.request("/repos/openclaw/openclaw/pulls/1")).resolves.toEqual({
+      number: 1,
+    });
+    await expect(
+      api.request("/repos/openclaw/openclaw/issues/1/comments", { method: "POST", body: "{}" }),
+    ).resolves.toEqual({ ok: true });
+
+    expect(readTransport.get).toHaveBeenCalledWith("/repos/openclaw/openclaw/pulls/1", {
+      routeHint: undefined,
+      signal: expect.any(AbortSignal),
+    });
+    expect(fetchImpl).toHaveBeenCalledWith(
+      "https://api.github.com/repos/openclaw/openclaw/issues/1/comments",
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
+
+  it("passes the immutable head SHA to relay-backed PR file pagination", async () => {
+    const readTransport = {
+      get: vi
+        .fn()
+        .mockResolvedValueOnce(Array.from({ length: 100 }, () => ({ filename: "a.ts" })))
+        .mockResolvedValueOnce([]),
+      supports: vi.fn().mockReturnValue(true),
+    };
+    const api = githubApi("token", { readTransport });
+
+    await expect(
+      api.paginate("/repos/openclaw/openclaw/pulls/1/files", {
+        routeHint: { pr_head_sha: headSha },
+      }),
+    ).resolves.toHaveLength(100);
+    expect(readTransport.get).toHaveBeenNthCalledWith(
+      1,
+      "/repos/openclaw/openclaw/pulls/1/files?per_page=100&page=1",
+      {
+        routeHint: { pr_head_sha: headSha },
+        signal: expect.any(AbortSignal),
+      },
+    );
+  });
+
+  it("retries transient relay failures without falling back to native GitHub reads", async () => {
+    const unavailable = Object.assign(new Error("unavailable"), { status: 503 });
+    const readTransport = {
+      get: vi.fn().mockRejectedValueOnce(unavailable).mockResolvedValueOnce({ number: 1 }),
+      supports: vi.fn().mockReturnValue(true),
+    };
+    const fetchImpl = vi.fn<typeof fetch>();
+
+    await expect(
+      githubApi("token", { fetchImpl, readTransport, retryDelaysMs: [0] }).request(
+        "/repos/openclaw/openclaw/pulls/1",
+      ),
+    ).resolves.toEqual({ number: 1 });
+    expect(readTransport.get).toHaveBeenCalledTimes(2);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("sends an allowlisted guard read through the Octopool GET relay", async () => {
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(
+      Response.json({
+        status: 200,
+        body: [{ filename: "a.ts" }],
+        body_encoding: "json",
+        relay: { cache: "hit", route_kind: "pr_files" },
+      }),
+    );
+    const client = createOctopoolReadClient({
+      url: "https://octopool.example.test",
+      pool: "maintainers",
+      token: "relay-token",
+      fetchImpl,
+    });
+
+    await expect(
+      client.get("/repos/openclaw/openclaw/pulls/1/files?per_page=100", {
+        routeHint: { pr_head_sha: headSha },
+      }),
+    ).resolves.toEqual([{ filename: "a.ts" }]);
+
+    expect(JSON.parse(String(fetchImpl.mock.calls[0]?.[1]?.body))).toEqual({
+      pool: "maintainers",
+      method: "GET",
+      path: "/repos/openclaw/openclaw/pulls/1/files",
+      query: { per_page: "100" },
+      headers: {
+        accept: "application/vnd.github+json",
+        "x-github-api-version": "2022-11-28",
+      },
+      route_hint: { pr_head_sha: headSha },
+    });
   });
 
   it("does not retry non-idempotent GitHub API requests", async () => {

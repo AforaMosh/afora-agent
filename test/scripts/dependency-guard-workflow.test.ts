@@ -138,6 +138,7 @@ describe("dependency guard workflow", () => {
     const autoscrubRunStep = workflowStep(autoscrubSteps, 3, "dependency guard autoscrub run step");
     const finalRunStep = workflowStep(finalSteps, 1, "dependency guard final run step");
     expect(detectRunStep.env?.OPENCLAW_DEPENDENCY_GUARD_MODE).toBe("detect");
+    expect(detectRunStep.env?.OCTOPOOL_TOKEN).toBe("${{ secrets.OCTOPOOL_TOKEN }}");
     expect(primaryTokenStep.uses).toBe(
       "actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1",
     );
@@ -163,7 +164,9 @@ describe("dependency guard workflow", () => {
       "${{ steps.app-token.outputs.token || steps.app-token-fallback.outputs.token }}",
     );
     expect(autoscrubRunStep.env?.OPENCLAW_DEPENDENCY_GUARD_MODE).toBe("autoscrub");
+    expect(autoscrubRunStep.env?.OCTOPOOL_TOKEN).toBe("${{ secrets.OCTOPOOL_TOKEN }}");
     expect(finalRunStep.env?.OPENCLAW_DEPENDENCY_GUARD_MODE).toBe("enforce");
+    expect(finalRunStep.env?.OCTOPOOL_TOKEN).toBe("${{ secrets.OCTOPOOL_TOKEN }}");
   });
 
   it("preserves dependency-guard as the final required check", () => {

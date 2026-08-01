@@ -16,6 +16,7 @@ import {
   readBoundedGitHubErrorText,
   readBoundedGitHubJson,
 } from "./guard-shared.mjs";
+import { createOctopoolReadClientFromEnv } from "./octopool-read.mjs";
 
 /** Marker used to identify security-sensitive guard comments. */
 export const securitySensitiveGuardMarker = "<!-- openclaw:security-sensitive-guard -->";
@@ -323,6 +324,7 @@ export async function findTrustedSecuritySensitiveGuardActor({
 export function githubApi(token, options = {}) {
   return createGitHubApi(token, {
     ...options,
+    readTransport: options.readTransport ?? createOctopoolReadClientFromEnv(),
     userAgent: "openclaw-security-sensitive-guard",
   });
 }
@@ -360,7 +362,9 @@ async function main() {
   const pullPath = `/repos/${owner}/${repo}/pulls/${eventPullRequest.number}`;
   const pullRequest = await api.request(pullPath);
   const mode = process.env.OPENCLAW_SECURITY_SENSITIVE_GUARD_MODE ?? "enforce";
-  const files = await api.paginate(`${pullPath}/files`);
+  const files = await api.paginate(`${pullPath}/files`, {
+    routeHint: { pr_head_sha: pullRequest.head?.sha },
+  });
   const securitySensitiveChanges = collectSecuritySensitiveChanges(files);
 
   const [comments, labels] = await Promise.all([

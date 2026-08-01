@@ -33,6 +33,9 @@ jobs:
         id: guard
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          OCTOPOOL_POOL: ${{ vars.OCTOPOOL_POOL }}
+          OCTOPOOL_TOKEN: ${{ secrets.OCTOPOOL_TOKEN }}
+          OCTOPOOL_URL: ${{ vars.OCTOPOOL_URL }}
           OPENCLAW_DEPENDENCY_GUARD_MODE: detect
           OPENCLAW_SECURITY_APPROVERS: vincentkoc,steipete,joshavant
           OPENCLAW_SECURITY_TEAM_SLUG: openclaw-secops
@@ -80,6 +83,9 @@ jobs:
       - name: Remove package lockfile changes
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          OCTOPOOL_POOL: ${{ vars.OCTOPOOL_POOL }}
+          OCTOPOOL_TOKEN: ${{ secrets.OCTOPOOL_TOKEN }}
+          OCTOPOOL_URL: ${{ vars.OCTOPOOL_URL }}
           OPENCLAW_DEPENDENCY_GUARD_AUTOSCRUB_TOKEN: ${{ steps.app-token.outputs.token || steps.app-token-fallback.outputs.token }}
           OPENCLAW_DEPENDENCY_GUARD_MODE: autoscrub
           OPENCLAW_SECURITY_APPROVERS: vincentkoc,steipete,joshavant
@@ -103,6 +109,9 @@ jobs:
       - name: Enforce dependency guard
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          OCTOPOOL_POOL: ${{ vars.OCTOPOOL_POOL }}
+          OCTOPOOL_TOKEN: ${{ secrets.OCTOPOOL_TOKEN }}
+          OCTOPOOL_URL: ${{ vars.OCTOPOOL_URL }}
           OPENCLAW_DEPENDENCY_GUARD_MODE: enforce
           OPENCLAW_SECURITY_APPROVERS: vincentkoc,steipete,joshavant
           OPENCLAW_SECURITY_TEAM_SLUG: openclaw-secops
