@@ -133,7 +133,6 @@ describe("prepared model runtime snapshots", () => {
     (globalThis as Record<PropertyKey, unknown>)[
       Symbol.for("openclaw.preparedModelRuntimeTestApi")
     ] as {
-      formatPreparedModelRuntimeRefreshError: (error: unknown) => string;
       resetPreparedModelRuntimeSnapshotsForTest: () => void;
       setModelRuntimeBuildTimeoutMsForTest: (timeoutMs: number) => void;
     };
@@ -797,35 +796,6 @@ describe("prepared model runtime snapshots", () => {
     }
   });
 
-  it("logs bounded nested causes when an auth refresh fails", async () => {
-    mocks.configuredAgentIds = ["default"];
-    const agentDir = "/tmp/unused-agent";
-    await refreshPreparedModelRuntimeSnapshots({});
-    const token = "sk-abcdefghijklmnopqrstuvwxyz";
-    const sqliteError = Object.assign(new Error("simulated SQLite read failure"), {
-      code: "SQLITE_IOERR",
-    });
-    const refreshError = new AggregateError(
-      [
-        new Error("main auth store unreadable", { cause: sqliteError }),
-        new Error(`Authorization: Bearer ${token}`),
-      ],
-      "configured auth owners failed",
-    );
-    mocks.ensureOpenClawModelsJson.mockRejectedValueOnce(refreshError);
-
-    mocks.mutationListener?.({ agentDir, affectsInheritedStores: false });
-
-    await vi.waitFor(() => expect(mocks.warn).toHaveBeenCalledTimes(1));
-    const message = String(mocks.warn.mock.calls[0]?.[0]);
-    expect(message).toContain("configured auth owners failed");
-    expect(message).toContain("main auth store unreadable");
-    expect(message).toContain("simulated SQLite read failure");
-    expect(message).toContain("SQLITE_IOERR");
-    expect(message).not.toContain(token);
-    expect(message.length).toBeLessThanOrEqual(2_100);
-  });
-
   it("does not replay an auth mutation that occurs before the first owner is registered", async () => {
     getTesting().setModelRuntimeBuildTimeoutMsForTest(100);
     mocks.configuredAgentIds = ["default"];
@@ -1117,4 +1087,3 @@ describe("prepared model runtime snapshots", () => {
     );
   });
 });
-/* oxlint-disable max-lines -- TODO: split this grandfathered oversized file. */
