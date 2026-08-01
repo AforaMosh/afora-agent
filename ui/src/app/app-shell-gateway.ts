@@ -12,7 +12,7 @@ import {
 import { i18n, isSupportedLocale } from "../i18n/index.ts";
 import type { ShellRouteState } from "./app-host-route-state.ts";
 import type { ApplicationContext } from "./context.ts";
-import { normalizeGatewayTokenScope } from "./gateway-scope.ts";
+import { normalizeGatewayCredentialScope } from "./gateway-scope.ts";
 import {
   applyServerUiPrefs,
   flushServerUiPrefs,
@@ -96,7 +96,7 @@ export class ShellGatewayOwner {
       return;
     }
     const gatewayUrl = context.gateway.connection.gatewayUrl;
-    const scope = normalizeGatewayTokenScope(gatewayUrl);
+    const scope = normalizeGatewayCredentialScope(gatewayUrl);
     applyServerUiPrefs(snapshot.config, {
       scope: gatewayUrl,
       onThemeChanged: (theme) => context.theme.recordServerSelection(theme, scope),
@@ -267,6 +267,9 @@ export class ShellGatewayOwner {
     this.ensureRuntimeConfig(snapshot);
     if (previousPhase !== "connected" && snapshot.phase === "connected") {
       i18n.retryPendingLocale();
+      // Gateway selection adopts that scope's browser-local appearance mirror
+      // before server prefs reconcile; publish it even when the server delta is empty.
+      this.host.context?.theme.refresh();
     }
     this.host.syncSidebarWorkboard();
     // Gateway-served chunks retry on reconnect after an earlier idle import failed.
@@ -292,11 +295,13 @@ export class ShellGatewayOwner {
     }
     this.host.runtimeConfigClient = snapshot.client;
     this.host.runtimeConfigSource = runtimeConfig;
-    flushServerUiPrefs(runtimeConfig, {
+    const hasPendingPrefs = flushServerUiPrefs(runtimeConfig, {
       afterCommit: ({ needsRefresh, retainedLocal }) =>
         this.reconcileCommittedServerUiPrefs(runtimeConfig, needsRefresh, retainedLocal),
     });
-    void runtimeConfig.ensureLoaded();
+    // A new socket generation can miss config.changed events from downtime.
+    // Pending prefs own their post-ack refresh; otherwise fetch fresh state now.
+    void (hasPendingPrefs ? runtimeConfig.ensureLoaded() : runtimeConfig.refresh());
   }
 
   ensureAgentsList(

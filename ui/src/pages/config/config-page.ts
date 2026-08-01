@@ -15,7 +15,7 @@ import {
   type ApplicationGatewaySnapshot,
 } from "../../app/context.ts";
 import { importCustomThemeFromUrl } from "../../app/custom-theme.ts";
-import { normalizeGatewayTokenScope } from "../../app/gateway-scope.ts";
+import { normalizeGatewayCredentialScope } from "../../app/gateway-scope.ts";
 import { hasOperatorAdminAccess } from "../../app/operator-access.ts";
 import {
   resetServerUiPref,
@@ -360,7 +360,7 @@ export class ConfigPage extends OpenClawLightDomElement {
   override connectedCallback() {
     super.connectedCallback();
     this.serverThemeSelectionRevision = this.currentServerThemeSelection()?.revision ?? 0;
-    this.customThemeGatewayScope = normalizeGatewayTokenScope(
+    this.customThemeGatewayScope = normalizeGatewayCredentialScope(
       this.context.gateway.connection.gatewayUrl,
     );
     this.settings = loadSettings();
@@ -557,7 +557,7 @@ export class ConfigPage extends OpenClawLightDomElement {
   }
 
   private synchronizeCustomThemeGatewayScope(scope: string) {
-    const normalizedScope = normalizeGatewayTokenScope(scope);
+    const normalizedScope = normalizeGatewayCredentialScope(scope);
     if (this.customThemeGatewayScope && normalizedScope !== this.customThemeGatewayScope) {
       this.retireCustomThemeImport();
       this.serverThemeSelectionRevision = this.currentServerThemeSelection()?.revision ?? 0;
@@ -736,7 +736,7 @@ export class ConfigPage extends OpenClawLightDomElement {
 
   private currentServerThemeSelection() {
     const serverSelection = this.context.theme.serverSelection;
-    const scope = normalizeGatewayTokenScope(this.context.gateway.connection.gatewayUrl);
+    const scope = normalizeGatewayCredentialScope(this.context.gateway.connection.gatewayUrl);
     return serverSelection?.scope === scope ? serverSelection : null;
   }
 
@@ -903,6 +903,14 @@ export class ConfigPage extends OpenClawLightDomElement {
     };
   }
 
+  private retireCustomThemeImportForConfigMutation() {
+    if (!this.customThemeImportBusy) {
+      return;
+    }
+    this.retireCustomThemeImport();
+    this.customThemeImportMessage = { kind: "error", text: t("common.unsavedChanges") };
+  }
+
   private setCustomThemeImportUrl(next: string) {
     if (next !== this.customThemeImportUrl) {
       this.retireCustomThemeImport();
@@ -915,7 +923,10 @@ export class ConfigPage extends OpenClawLightDomElement {
 
   private async importCustomTheme() {
     const configState = this.context.runtimeConfig.state;
+    const canonicalConfigPending =
+      configState.connected && (configState.configLoading || !configState.configSnapshot);
     if (
+      canonicalConfigPending ||
       configState.configFormDirty ||
       configState.configSaving ||
       configState.configApplying ||
@@ -924,7 +935,10 @@ export class ConfigPage extends OpenClawLightDomElement {
       // Full-config writes also own ui.prefs.theme. Starting an import while an
       // older draft can still commit would make arrival order override click order.
       this.customThemeImportExpanded = true;
-      this.customThemeImportMessage = { kind: "error", text: t("common.unsavedChanges") };
+      this.customThemeImportMessage = {
+        kind: "error",
+        text: t(canonicalConfigPending ? "common.loading" : "common.unsavedChanges"),
+      };
       return;
     }
     const generation = ++this.customThemeImportGeneration;
@@ -1054,11 +1068,20 @@ export class ConfigPage extends OpenClawLightDomElement {
       originalValue: configState.configFormOriginal,
       activeSection,
       activeSubsection,
-      onRawChange: (next) => runtimeConfig.setRaw(next),
+      onRawChange: (next) => {
+        this.retireCustomThemeImportForConfigMutation();
+        runtimeConfig.setRaw(next);
+      },
       onFormModeChange: (mode) => this.setFormMode(mode),
       onViewStateChange: () => this.requestUpdate(),
-      onFormPatch: (path, value) => runtimeConfig.patchForm(path, value),
-      onFormRemove: (path) => runtimeConfig.removeFormValue(path),
+      onFormPatch: (path, value) => {
+        this.retireCustomThemeImportForConfigMutation();
+        runtimeConfig.patchForm(path, value);
+      },
+      onFormRemove: (path) => {
+        this.retireCustomThemeImportForConfigMutation();
+        runtimeConfig.removeFormValue(path);
+      },
       onSectionChange: (section) => this.setActiveSection(section),
       onSubsectionChange: (section) => this.setActiveSubsection(section),
       onSave: () => void runtimeConfig.save(),

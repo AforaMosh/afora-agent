@@ -369,6 +369,24 @@ describe("applyServerUiPrefs", () => {
 
     expect(onThemeChanged).not.toHaveBeenCalled();
   });
+
+  it("keeps query-routed Gateways in distinct preference scopes", () => {
+    const onThemeChanged = vi.fn();
+    applyServerUiPrefs(configWithPrefs({ theme: "custom" }), {
+      scope: "ws://gw?tenant=a",
+      onApplied: vi.fn(),
+      onThemeChanged,
+    });
+    onThemeChanged.mockClear();
+
+    applyServerUiPrefs(configWithPrefs({ theme: "custom" }), {
+      scope: "ws://gw?tenant=b",
+      onApplied: vi.fn(),
+      onThemeChanged,
+    });
+
+    expect(onThemeChanged).toHaveBeenCalledExactlyOnceWith("custom");
+  });
 });
 
 describe("changedServerUiPrefs", () => {
@@ -580,6 +598,33 @@ describe("pushServerUiPrefs", () => {
     const onThemeChanged = vi.fn();
     expect(
       applyServerUiPrefs(configWithPrefs({ theme: "knot" }), {
+        scope,
+        onApplied: vi.fn(),
+        onThemeChanged,
+      }),
+    ).toBe(false);
+    expect(onThemeChanged).not.toHaveBeenCalled();
+  });
+
+  it("records an acknowledged reset as deletion instead of a literal null value", async () => {
+    const scope = "ws://gw";
+    localStorage.setItem(lastSeenKey(scope), JSON.stringify({ theme: "claw" }));
+    const afterCommit = vi.fn();
+    pushServerUiPrefs(
+      createClient(
+        vi.fn(async () => ({})),
+        scope,
+      ),
+      { theme: null },
+      {
+        afterCommit,
+      },
+    );
+    await vi.waitFor(() => expect(afterCommit).toHaveBeenCalledOnce());
+
+    const onThemeChanged = vi.fn();
+    expect(
+      applyServerUiPrefs(configWithPrefs({}), {
         scope,
         onApplied: vi.fn(),
         onThemeChanged,

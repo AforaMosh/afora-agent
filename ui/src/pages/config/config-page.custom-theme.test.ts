@@ -29,6 +29,7 @@ type CustomThemeImportState = {
   pageId: string;
   adoptThemeSettings: () => void;
   importCustomTheme: () => Promise<void>;
+  retireCustomThemeImportForConfigMutation: () => void;
   clearCustomTheme: () => void;
   setCustomThemeImportUrl: (next: string) => void;
   setTheme: (theme: ThemeName) => void;
@@ -43,6 +44,9 @@ function createCustomThemePage(settings: Partial<UiSettings> = {}) {
     gateway: { connection: { gatewayUrl: "ws://gateway.test" } },
     runtimeConfig: {
       state: {
+        configLoading: false,
+        configSnapshot: null,
+        connected: false,
         configApplying: false,
         configAutoSaveStatus: "idle",
         configFormDirty: false,
@@ -311,6 +315,47 @@ describe("ConfigPage custom theme import ownership", () => {
     expect(state.settings.customTheme).toBeUndefined();
   });
 
+  it("waits for the initial canonical config before importing", async () => {
+    const { state } = createCustomThemePage();
+    state.context = {
+      ...state.context,
+      runtimeConfig: {
+        ...state.context.runtimeConfig,
+        state: {
+          ...state.context.runtimeConfig.state,
+          configLoading: true,
+          connected: true,
+        },
+      },
+    } as ApplicationContext;
+    state.setCustomThemeImportUrl("first");
+
+    await state.importCustomTheme();
+
+    expect(importCustomThemeFromUrl).not.toHaveBeenCalled();
+    expect(state.customThemeImportMessage).toEqual({ kind: "error", text: "Loading…" });
+  });
+
+  it("cancels a pending import when a newer full-config edit starts", async () => {
+    const pending = deferred<ImportedCustomTheme>();
+    importCustomThemeFromUrl.mockReturnValueOnce(pending.promise);
+    const { state } = createCustomThemePage();
+    state.setCustomThemeImportUrl("first");
+    const pendingImport = state.importCustomTheme();
+    await vi.waitFor(() => expect(importCustomThemeFromUrl).toHaveBeenCalledOnce());
+
+    state.retireCustomThemeImportForConfigMutation();
+    pending.resolve(customThemeFixture("First", "first"));
+    await pendingImport;
+
+    expect(state.customThemeImportBusy).toBe(false);
+    expect(state.customThemeImportMessage).toEqual({
+      kind: "error",
+      text: "You have unsaved changes",
+    });
+    expect(state.settings.customTheme).toBeUndefined();
+  });
+
   it("retires an import when navigation leaves Appearance", async () => {
     const pending = deferred<ImportedCustomTheme>();
     importCustomThemeFromUrl.mockReturnValueOnce(pending.promise);
@@ -336,12 +381,12 @@ describe("ConfigPage custom theme import ownership", () => {
     const pending = deferred<ImportedCustomTheme>();
     importCustomThemeFromUrl.mockReturnValueOnce(pending.promise);
     const { state } = createCustomThemePage();
-    state.synchronizeCustomThemeGatewayScope("ws://gateway-a.test");
+    state.synchronizeCustomThemeGatewayScope("ws://gateway.test?tenant=a");
     state.setCustomThemeImportUrl("first");
     const pendingImport = state.importCustomTheme();
     await vi.waitFor(() => expect(importCustomThemeFromUrl).toHaveBeenCalledOnce());
 
-    state.synchronizeCustomThemeGatewayScope("ws://gateway-b.test");
+    state.synchronizeCustomThemeGatewayScope("ws://gateway.test?tenant=b");
     pending.resolve(customThemeFixture("First", "first"));
     await pendingImport;
 

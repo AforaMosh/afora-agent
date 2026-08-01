@@ -11,11 +11,11 @@ const TOKEN_SESSION_KEY_PREFIX = "openclaw.control.token.v1:";
 const MAX_SCOPED_SESSION_ENTRIES = 10;
 
 function settingsKeyForGateway(gatewayUrl: string): string {
-  return `${SETTINGS_KEY_PREFIX}${normalizeGatewayTokenScope(gatewayUrl)}`;
+  return `${SETTINGS_KEY_PREFIX}${normalizeGatewayCredentialScope(gatewayUrl)}`;
 }
 
 function currentGatewaySelectionKeyForPage(pageUrl: string): string {
-  return `${CURRENT_GATEWAY_SELECTION_KEY_PREFIX}${normalizeGatewayTokenScope(pageUrl)}`;
+  return `${CURRENT_GATEWAY_SELECTION_KEY_PREFIX}${normalizeGatewayCredentialScope(pageUrl)}`;
 }
 
 type ScopedSessionSelection = {
@@ -49,7 +49,7 @@ import {
 import { normalizeChatSplitLayout, type ChatSplitLayout } from "../pages/chat/split-layout.ts";
 import { resolveControlUiBasePath } from "./browser.ts";
 import { parseImportedCustomTheme, type ImportedCustomTheme } from "./custom-theme.ts";
-import { normalizeGatewayTokenScope } from "./gateway-scope.ts";
+import { normalizeGatewayCredentialScope, normalizeGatewayTokenScope } from "./gateway-scope.ts";
 import { normalizePinnedAgentIds } from "./settings-normalizers.ts";
 import { parseThemeSelection, type ThemeMode, type ThemeName } from "./theme.ts";
 import { normalizeLocalUserIdentity, type LocalUserIdentity } from "./user-identity.ts";
@@ -303,7 +303,7 @@ function settingsMatchGatewayTarget(parsed: PersistedUiSettings, targetUrl: stri
   if (!storedUrl) {
     return false;
   }
-  return normalizeGatewayTokenScope(storedUrl) === normalizeGatewayTokenScope(targetUrl);
+  return normalizeGatewayCredentialScope(storedUrl) === normalizeGatewayCredentialScope(targetUrl);
 }
 
 function readSettingsForGateway(
@@ -332,7 +332,7 @@ function resolveScopedSessionSelection(
   parsed: PersistedUiSettings,
   fallback: ScopedSessionSelection,
 ): ScopedSessionSelection {
-  const scope = normalizeGatewayTokenScope(gatewayUrl);
+  const scope = normalizeGatewayCredentialScope(gatewayUrl);
   const scoped = parsed.sessionsByGateway?.[scope];
   const scopedSessionKey = normalizeOptionalString(scoped?.sessionKey);
   const scopedLastActiveSessionKey = normalizeOptionalString(scoped?.lastActiveSessionKey);
@@ -419,13 +419,20 @@ export function persistSessionToken(gatewayUrl: string, token: string) {
 // another page re-reads storage in the same tab.
 let unpersistedSettings: UiSettings | null = null;
 
-export function loadSettings(): UiSettings {
+export function loadSettings(targetGatewayUrl?: string): UiSettings {
+  const targetUrl = normalizeOptionalString(targetGatewayUrl);
   const cached = unpersistedSettings;
-  if (cached) {
+  if (
+    cached &&
+    (!targetUrl ||
+      normalizeGatewayCredentialScope(cached.gatewayUrl) ===
+        normalizeGatewayCredentialScope(targetUrl))
+  ) {
     // Gateway auth stays session-scoped; re-derive it instead of caching it.
     return { ...cached, token: loadSessionToken(cached.gatewayUrl) };
   }
-  const { pageUrl: pageDerivedUrl, effectiveUrl: defaultUrl } = deriveDefaultGatewayUrl();
+  const { pageUrl: pageDerivedUrl, effectiveUrl: derivedDefaultUrl } = deriveDefaultGatewayUrl();
+  const defaultUrl = targetUrl ?? derivedDefaultUrl;
   const storage = getSafeLocalStorage();
 
   const defaults: UiSettings = {
@@ -450,13 +457,13 @@ export function loadSettings(): UiSettings {
   };
 
   try {
-    const selectedGatewayUrl = normalizeOptionalString(
-      storage?.getItem(currentGatewaySelectionKeyForPage(pageDerivedUrl)),
-    );
+    const selectedGatewayUrl =
+      targetUrl ??
+      normalizeOptionalString(storage?.getItem(currentGatewaySelectionKeyForPage(pageDerivedUrl)));
     const selected = selectedGatewayUrl
       ? readSettingsForGateway(storage, selectedGatewayUrl)
       : null;
-    const defaultSource = readSettingsForGateway(storage, defaultUrl);
+    const defaultSource = targetUrl ? null : readSettingsForGateway(storage, defaultUrl);
     const source = selected ?? defaultSource;
     if (!source) {
       return defaults;
@@ -574,6 +581,16 @@ export function saveSettings(next: UiSettings) {
   persistSettings(next);
 }
 
+/** Selects a logical Gateway from that Gateway's own saved/default mirror. */
+export function selectGatewaySettings(
+  gatewayUrl: string,
+  patch: Partial<UiSettings> = {},
+): UiSettings {
+  const next = { ...loadSettings(gatewayUrl), ...patch, gatewayUrl };
+  persistSettings(next, { selectGateway: true });
+  return next;
+}
+
 // Single change seam over the one write channel every settings mutation uses;
 // the server-prefs sync (app/server-prefs.ts) listens here to write synced
 // prefs through to config ui.prefs without each call site knowing about it.
@@ -613,7 +630,7 @@ export function loadLocalUserIdentity(): LocalUserIdentity {
 function persistSettings(next: UiSettings, options: { selectGateway?: boolean } = {}) {
   persistSessionToken(next.gatewayUrl, next.token);
   const storage = getSafeLocalStorage();
-  const scope = normalizeGatewayTokenScope(next.gatewayUrl);
+  const scope = normalizeGatewayCredentialScope(next.gatewayUrl);
   const scopedKey = settingsKeyForGateway(next.gatewayUrl);
   const chatFollowUpMode = normalizeChatFollowUpModeOverride(next.chatFollowUpMode);
   let existingSessionsByGateway: Record<string, ScopedSessionSelection> = {};

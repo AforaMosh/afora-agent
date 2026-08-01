@@ -237,6 +237,49 @@ describe("createApplicationGateway connection phase", () => {
     expect(gateway.snapshot.phase).toBe("connecting");
   });
 
+  it("adopts each selected Gateway's own settings instead of copying the source scope", () => {
+    const gatewayA = "wss://multi.example.test?tenant=a";
+    const gatewayB = "wss://multi.example.test?tenant=b";
+    localStorage.setItem(
+      `openclaw.control.settings.v1:${gatewayA}`,
+      JSON.stringify({
+        gatewayUrl: gatewayA,
+        theme: "knot",
+        themeMode: "dark",
+        sessionKey: "agent:main:gateway-a",
+        lastActiveSessionKey: "agent:main:gateway-a",
+      }),
+    );
+    localStorage.setItem(
+      `openclaw.control.settings.v1:${gatewayB}`,
+      JSON.stringify({
+        gatewayUrl: gatewayB,
+        theme: "dash",
+        themeMode: "light",
+        sessionKey: "agent:main:gateway-b",
+        lastActiveSessionKey: "agent:main:gateway-b",
+      }),
+    );
+    localStorage.setItem("openclaw.control.currentGateway.v1:ws://127.0.0.1:18789", gatewayA);
+    const { gateway } = createStore({ settings: loadSettings() });
+
+    gateway.connect({ gatewayUrl: gatewayB, token: "gateway-b-token" });
+    expect(gateway.snapshot.sessionKey).toBe("agent:main:gateway-b");
+    expect(loadSettings()).toMatchObject({
+      gatewayUrl: gatewayB,
+      theme: "dash",
+      themeMode: "light",
+    });
+
+    gateway.connect({ gatewayUrl: gatewayA, token: "gateway-a-token" });
+    expect(gateway.snapshot.sessionKey).toBe("agent:main:gateway-a");
+    expect(loadSettings()).toMatchObject({
+      gatewayUrl: gatewayA,
+      theme: "knot",
+      themeMode: "dark",
+    });
+  });
+
   it("keeps a newly selected Gateway's first retry at the login gate", () => {
     const { gateway, current } = createStore();
     gateway.start();

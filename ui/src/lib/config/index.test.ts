@@ -584,11 +584,11 @@ describe("createRuntimeConfigCapability", () => {
       return {};
     });
     const clientA = {
-      gatewayUrl: "ws://gateway-a.test",
+      gatewayUrl: "ws://gateway.test?tenant=a",
       request: requestA,
     } as unknown as GatewayBrowserClient;
     const clientB = {
-      gatewayUrl: "ws://gateway-b.test",
+      gatewayUrl: "ws://gateway.test?tenant=b",
       request: requestB,
     } as unknown as GatewayBrowserClient;
     const { gateway, publish } = createGatewayHarness(clientA);

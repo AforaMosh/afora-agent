@@ -19,7 +19,13 @@ import type {
   ApplicationGatewaySnapshot,
 } from "./context.ts";
 import { resolveControlUiAuthHeader } from "./control-ui-auth.ts";
-import { loadSettings, patchSettings, persistSessionToken } from "./settings.ts";
+import { normalizeGatewayCredentialScope } from "./gateway-scope.ts";
+import {
+  loadSettings,
+  patchSettings,
+  persistSessionToken,
+  selectGatewaySettings,
+} from "./settings.ts";
 import { readPresenceEntries, resolveSelfPresenceUser } from "./user-profile.ts";
 
 type GatewayClientFactory = (opts: GatewayBrowserClientOptions) => GatewayBrowserClient;
@@ -232,6 +238,15 @@ export function createApplicationGateway(
       return;
     }
     persistConnectionSettings = true;
+    if (
+      selectGateway &&
+      patch.gatewayUrl !== undefined &&
+      normalizeGatewayCredentialScope(patch.gatewayUrl) !==
+        normalizeGatewayCredentialScope(settings.gatewayUrl)
+    ) {
+      settings = selectGatewaySettings(patch.gatewayUrl, patch);
+      return;
+    }
     settings = patchSettings(patch, { selectGateway });
   };
   const recordGatewayEvent = (event: Parameters<GatewayEventListener>[0]) => {
@@ -263,18 +278,29 @@ export function createApplicationGateway(
   const connect = (overrides: ApplicationGatewayConnectOptions = {}) => {
     stopped = false;
     const { sessionKey: requestedSessionKey, ...connectionOverrides } = overrides;
-    const nextConnection = { ...connection, ...connectionOverrides };
+    const targetGatewayUrl = connectionOverrides.gatewayUrl ?? connection.gatewayUrl;
+    const logicalGatewayChanged =
+      normalizeGatewayCredentialScope(targetGatewayUrl) !==
+      normalizeGatewayCredentialScope(connection.gatewayUrl);
+    const targetSettings = logicalGatewayChanged ? loadSettings(targetGatewayUrl) : settings;
+    const nextConnection = {
+      ...connection,
+      ...connectionOverrides,
+      ...(logicalGatewayChanged && connectionOverrides.token === undefined
+        ? { token: targetSettings.token }
+        : {}),
+    };
     const hasRequestedSessionKey = requestedSessionKey !== undefined;
     const nextSessionKey = hasRequestedSessionKey
       ? requestedSessionKey.trim()
-      : snapshot.sessionKey;
+      : logicalGatewayChanged
+        ? targetSettings.sessionKey
+        : snapshot.sessionKey;
     // Only a gateway URL that differs from the current connection counts as an
     // explicit selection. The login gate always resubmits its prefilled URL, so
     // treating any override as a selection would let an ephemeral approval
     // document persist the serving gateway and clobber a saved remote choice.
-    const gatewayUrlChanged =
-      connectionOverrides.gatewayUrl !== undefined &&
-      connectionOverrides.gatewayUrl !== connection.gatewayUrl;
+    const gatewayUrlChanged = targetGatewayUrl !== connection.gatewayUrl;
     // A different Gateway has no established session to keep mounted on failure.
     if (gatewayUrlChanged) {
       everConnected = false;

@@ -3,7 +3,7 @@ import { ErrorCodes } from "@openclaw/gateway-client/browser";
 import { isRecord } from "@openclaw/normalization-core/record-coerce";
 import { GatewayRequestError, type GatewayBrowserClient } from "../../api/gateway.ts";
 import type { ConfigSchemaResponse, ConfigSnapshot, ConfigUiHints } from "../../api/types.ts";
-import { normalizeGatewayTokenScope } from "../../app/gateway-scope.ts";
+import { normalizeGatewayCredentialScope } from "../../app/gateway-scope.ts";
 import type { ApplicationGatewayPhase } from "../../app/gateway.ts";
 import { coerceConfigFormNumberString } from "../../components/config-form.numeric.ts";
 import { schemaType, type JsonSchema } from "../../components/config-form.shared.ts";
@@ -1342,7 +1342,7 @@ export function createRuntimeConfigCapability(
   // a post-apply write is meaningless while the gateway restarts, so the
   // teardown flush fail-closes on them).
   let manualFlightInfo: { raw: string; ackHash: string | null } | null = null;
-  let gatewayScope = normalizeGatewayTokenScope(
+  let gatewayScope = normalizeGatewayCredentialScope(
     gateway.connection?.gatewayUrl ?? gateway.snapshot.client?.gatewayUrl ?? "",
   );
 
@@ -1611,7 +1611,7 @@ export function createRuntimeConfigCapability(
     const clientChanged = state.client !== snapshot.client;
     const connected = snapshot.phase === "connected";
     const connectionChanged = state.connected !== connected;
-    const nextGatewayScope = normalizeGatewayTokenScope(
+    const nextGatewayScope = normalizeGatewayCredentialScope(
       gateway.connection?.gatewayUrl ?? snapshot.client?.gatewayUrl ?? "",
     );
     const scopeChanged = nextGatewayScope !== gatewayScope;

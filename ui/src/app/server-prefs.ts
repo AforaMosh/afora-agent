@@ -7,7 +7,7 @@ import type { GatewayBrowserClient } from "../api/gateway.ts";
 import { normalizeSidebarEntries } from "../app-navigation.ts";
 import { isSupportedLocale } from "../i18n/index.ts";
 import type { RuntimeConfigCapability } from "../lib/config/index.ts";
-import { normalizeGatewayTokenScope } from "./gateway-scope.ts";
+import { normalizeGatewayCredentialScope } from "./gateway-scope.ts";
 import {
   loadSettings,
   normalizeChatFollowUpModeOverride,
@@ -132,7 +132,7 @@ export type ServerUiPrefState<T> = {
 };
 const SYNCED_PREF_KEYS = Object.keys(SYNCED_PREFS) as SyncedPrefKey[];
 function normalizeServerPrefsScope(scope: string): string {
-  return scope ? normalizeGatewayTokenScope(scope) : "";
+  return scope ? normalizeGatewayCredentialScope(scope) : "";
 }
 function extractServerUiPrefs(configObject: unknown): ServerUiPrefs {
   const prefs = asRecord(asRecord(asRecord(configObject)?.ui)?.prefs);
@@ -576,7 +576,15 @@ async function drainPendingPrefs(writer: ServerUiPrefsWriter, epoch: number): Pr
           parseStoredPrefs(
             lastSeenPrefsByScope.get(pendingScope) ?? readStorage(LAST_SEEN_KEY, pendingScope),
           ) ?? {};
-        const nextLastSeen = JSON.stringify({ ...lastSeen, ...batch });
+        const acknowledged = { ...lastSeen };
+        for (const key of Object.keys(batch) as SyncedPrefKey[]) {
+          if (batch[key] === null) {
+            delete acknowledged[key];
+          } else {
+            (acknowledged as Record<string, unknown>)[key] = batch[key];
+          }
+        }
+        const nextLastSeen = JSON.stringify(acknowledged);
         writeStorage(LAST_SEEN_KEY, pendingScope, nextLastSeen);
         lastSeenPrefsByScope.set(pendingScope, nextLastSeen);
         settlePendingStorage(batch);
@@ -660,11 +668,13 @@ export function pushServerUiPrefs(
 export function flushServerUiPrefs(
   writer: ServerUiPrefsWriter,
   hooks: { afterCommit?: (commit: ServerUiPrefsCommit) => void } = {},
-): void {
+): boolean {
   adoptPushWriter(writer);
   clearConflictRedrain();
   pushEpoch += 1;
   pushDraining = drainRequested = false;
   pushAfterCommit = hooks.afterCommit;
+  const hasPending = pendingPrefs !== null;
   startPendingDrain(writer);
+  return hasPending;
 }

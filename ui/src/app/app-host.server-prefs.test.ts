@@ -1,6 +1,7 @@
 /* @vitest-environment jsdom */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { GatewayBrowserClient } from "../api/gateway.ts";
 import { i18n } from "../i18n/index.ts";
 import { createStorageMock } from "../test-helpers/storage.ts";
 import "./app-host.ts";
@@ -14,6 +15,10 @@ type ShellServerPreferencesState = {
     runtimeConfig: ApplicationContext["runtimeConfig"],
     needsRefresh: boolean,
     retainedLocal?: boolean,
+  ) => void;
+  ensureRuntimeConfig: (
+    snapshot: ApplicationContext["gateway"]["snapshot"],
+    runtimeConfig: ApplicationContext["runtimeConfig"],
   ) => void;
   reconcileServerUiPrefs: (runtimeConfig: ApplicationContext["runtimeConfig"]) => void;
 };
@@ -136,5 +141,35 @@ describe("OpenClaw shell locale preferences", () => {
     shell.reconcileServerUiPrefs(runtimeConfig);
     expect(recordServerSelection).toHaveBeenLastCalledWith("claw", "ws://theme.test");
     expect(loadSettings().theme).toBe("claw");
+  });
+
+  it("refreshes config on a new connected epoch when no pending prefs own the refresh", () => {
+    const client = {
+      gatewayUrl: "ws://theme.test",
+      request: vi.fn(),
+    } as unknown as GatewayBrowserClient;
+    const refresh = vi.fn(async () => undefined);
+    const ensureLoaded = vi.fn(async () => undefined);
+    const runtimeConfig = {
+      state: { client, connected: true },
+      ensureLoaded,
+      refresh,
+    } as unknown as ApplicationContext["runtimeConfig"];
+    const context = {
+      gateway: { connection: { gatewayUrl: client.gatewayUrl } },
+      runtimeConfig,
+    } as unknown as ApplicationContext;
+    const shell = document.createElement(
+      "openclaw-app-shell",
+    ) as unknown as ShellServerPreferencesState;
+    shell.runtime = { context };
+
+    shell.ensureRuntimeConfig(
+      { client, phase: "connected" } as ApplicationContext["gateway"]["snapshot"],
+      runtimeConfig,
+    );
+
+    expect(refresh).toHaveBeenCalledOnce();
+    expect(ensureLoaded).not.toHaveBeenCalled();
   });
 });
