@@ -402,7 +402,7 @@ function assertRealPathInside(parentPath, childPath, label) {
   }
 }
 
-function assertClawHubExternalInstallContract(installPath) {
+function assertKitchenSinkHostDependencyContract(installPath) {
   const packageJson = readJson(path.join(installPath, "package.json"));
   const buildHostVersion = packageJson.openclaw?.build?.openclawVersion;
   const minHostVersion = packageJson.openclaw?.install?.minHostVersion;
@@ -418,7 +418,9 @@ function assertClawHubExternalInstallContract(installPath) {
   if (packageJson.peerDependenciesMeta?.openclaw?.optional !== true) {
     throw new Error("kitchen-sink openclaw peer must be optional");
   }
+}
 
+function assertClawHubExternalInstallContract(installPath) {
   const openclawPeerPath = path.join(installPath, "node_modules", "openclaw");
   if (!fs.existsSync(openclawPeerPath)) {
     throw new Error(`missing kitchen-sink openclaw peer symlink: ${openclawPeerPath}`);
@@ -644,10 +646,12 @@ function assertInstalled() {
       throw new Error(`expected kitchen-sink ClawHub spec ${spec}, got ${record.spec}`);
     }
     if (record.clawhubPackage !== packageName) {
-      throw new Error(`expected ClawHub package ${packageName}, got ${record.clawhubPackage}`);
+      throw new Error(
+        `expected ClawHub package ${packageName}, got ${JSON.stringify(record.clawhubPackage)}`,
+      );
     }
     if (record.clawhubFamily !== "code-plugin" && record.clawhubFamily !== "bundle-plugin") {
-      throw new Error(`unexpected ClawHub family: ${record.clawhubFamily}`);
+      throw new Error(`unexpected ClawHub family: ${JSON.stringify(record.clawhubFamily)}`);
     }
     if (!record.version || !record.integrity || !record.resolvedAt) {
       throw new Error(`missing ClawHub resolution metadata: ${JSON.stringify(record)}`);
@@ -667,6 +671,9 @@ function assertInstalled() {
   }
   if (source === "clawhub" && record.artifactKind === "npm-pack") {
     assertClawHubExternalInstallContract(installPath);
+  }
+  if (source === "npm") {
+    assertKitchenSinkHostDependencyContract(installPath);
   }
   fs.writeFileSync(scratchFile(`kitchen-sink-${label}-install-path.txt`), installPath, "utf8");
 }

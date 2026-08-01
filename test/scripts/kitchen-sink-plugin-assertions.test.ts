@@ -66,17 +66,34 @@ function diagnosticErrors(messages: string[]) {
   return messages.map((message) => ({ level: "error", message }));
 }
 
+function kitchenSinkHostPackageJson() {
+  const hostVersion = "2026.7.1-2";
+  return {
+    name: "@openclaw/kitchen-sink",
+    version: "0.2.15",
+    devDependencies: { openclaw: hostVersion },
+    peerDependencies: { openclaw: `>=${hostVersion}` },
+    peerDependenciesMeta: { openclaw: { optional: true } },
+    openclaw: {
+      build: { openclawVersion: hostVersion },
+      install: { minHostVersion: `>=${hostVersion}` },
+    },
+  };
+}
+
 function runAssertInstalled({
   allInspectPayload,
   diagnostics = [],
   env = {},
   inspectPayload,
+  packageJson = kitchenSinkHostPackageJson(),
   surfaceMode = "full",
 }: {
   allInspectPayload?: unknown;
   diagnostics?: Array<{ level: string; message: string }>;
   env?: NodeJS.ProcessEnv;
   inspectPayload?: ReturnType<typeof fullSurfaceInspectPayload>;
+  packageJson?: ReturnType<typeof kitchenSinkHostPackageJson>;
   surfaceMode?: string;
 } = {}) {
   const label = `diagnostics-${process.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -93,6 +110,7 @@ function runAssertInstalled({
   delete spawnEnv.KITCHEN_SINK_REQUIRE_ALL_DIAGNOSTICS;
 
   try {
+    writeJson(path.join(installPath, "package.json"), packageJson);
     writeJson(pluginsJsonPath, {
       diagnostics,
       plugins: [{ id: pluginId, status: "loaded" }],
@@ -313,6 +331,45 @@ describe("kitchen-sink plugin assertions", () => {
     });
 
     expect(result.status).toBe(0);
+  });
+
+  it.each([
+    {
+      name: "production host dependency",
+      mutate: (packageJson: ReturnType<typeof kitchenSinkHostPackageJson>) => {
+        return { ...packageJson, dependencies: { openclaw: "2026.7.1-2" } };
+      },
+      expected: "must not declare dependencies.openclaw",
+    },
+    {
+      name: "drifted development host",
+      mutate: (packageJson: ReturnType<typeof kitchenSinkHostPackageJson>) => {
+        return { ...packageJson, devDependencies: { openclaw: "2026.7.1-1" } };
+      },
+      expected: "dev host must match openclaw.build.openclawVersion",
+    },
+    {
+      name: "drifted host peer",
+      mutate: (packageJson: ReturnType<typeof kitchenSinkHostPackageJson>) => {
+        return { ...packageJson, peerDependencies: { openclaw: ">=2026.7.1-1" } };
+      },
+      expected: "host peer must match openclaw.install.minHostVersion",
+    },
+    {
+      name: "required host peer",
+      mutate: (packageJson: ReturnType<typeof kitchenSinkHostPackageJson>) => {
+        return { ...packageJson, peerDependenciesMeta: { openclaw: { optional: false } } };
+      },
+      expected: "openclaw peer must be optional",
+    },
+  ])("rejects Kitchen Sink packages with a $name", ({ mutate, expected }) => {
+    const result = runAssertInstalled({
+      diagnostics: diagnosticErrors(REQUIRED_FULL_DIAGNOSTIC_CANARIES),
+      packageJson: mutate(kitchenSinkHostPackageJson()),
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(expected);
   });
 
   it("rejects diagnostics in conformance mode", () => {
