@@ -1907,6 +1907,162 @@ describe("tui-event-handlers: handleAgentEvent", () => {
     expect(tui.requestRender).not.toHaveBeenCalled();
   });
 
+  it.each(["on", "full"])(
+    "renders public tool item progress when verbose is %s",
+    (verboseLevel) => {
+      const { state, chatLog, tui, handleAgentEvent } = createHandlersHarness({
+        state: {
+          activeChatRunId: "run-progress",
+          sessionInfo: { verboseLevel },
+        },
+      });
+
+      handleAgentEvent({
+        runId: "run-progress",
+        sessionKey: state.currentSessionKey,
+        stream: "item",
+        data: {
+          itemId: "tool:web-fetch-1",
+          phase: "update",
+          kind: "tool",
+          name: "web_fetch",
+          toolCallId: "web-fetch-1",
+          progressText: "Fetching page content...",
+          status: "running",
+        },
+      });
+
+      expect(chatLog.updateToolResult).toHaveBeenCalledExactlyOnceWith(
+        "web-fetch-1",
+        { content: [{ type: "text", text: "Fetching page content..." }] },
+        { partial: true },
+      );
+      expect(tui.requestRender).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it("sanitizes public tool item progress before adding it to the visible card", () => {
+    const { chatLog, handleAgentEvent } = createHandlersHarness({
+      state: {
+        activeChatRunId: "run-progress",
+        sessionInfo: { verboseLevel: "on" },
+      },
+    });
+
+    handleAgentEvent({
+      runId: "run-progress",
+      stream: "item",
+      data: {
+        itemId: "tool:web-fetch-1",
+        phase: "update",
+        kind: "tool",
+        toolCallId: "web-fetch-1",
+        progressText: "\u001b[31mFetching page content...\u001b[0m\u0007",
+        status: "running",
+      },
+    });
+
+    expect(chatLog.updateToolResult).toHaveBeenCalledExactlyOnceWith(
+      "web-fetch-1",
+      { content: [{ type: "text", text: "Fetching page content..." }] },
+      { partial: true },
+    );
+  });
+
+  it("suppresses public tool item progress when verbose is off", () => {
+    const { chatLog, tui, handleAgentEvent } = createHandlersHarness({
+      state: {
+        activeChatRunId: "run-progress",
+        sessionInfo: { verboseLevel: "off" },
+      },
+    });
+
+    handleAgentEvent({
+      runId: "run-progress",
+      stream: "item",
+      data: {
+        itemId: "tool:web-fetch-1",
+        phase: "update",
+        kind: "tool",
+        toolCallId: "web-fetch-1",
+        progressText: "Fetching page content...",
+        status: "running",
+      },
+    });
+
+    expect(chatLog.updateToolResult).not.toHaveBeenCalled();
+    expect(tui.requestRender).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { name: "another active run", runId: "run-other", sessionKey: "agent:main:main" },
+    { name: "another selected session", runId: "run-progress", sessionKey: "agent:other:main" },
+  ])("ignores public tool item progress from $name", ({ runId, sessionKey }) => {
+    const { chatLog, tui, handleAgentEvent } = createHandlersHarness({
+      state: {
+        activeChatRunId: "run-progress",
+        sessionInfo: { verboseLevel: "full" },
+      },
+    });
+
+    handleAgentEvent({
+      runId,
+      sessionKey,
+      stream: "item",
+      data: {
+        itemId: "tool:web-fetch-1",
+        phase: "update",
+        kind: "tool",
+        toolCallId: "web-fetch-1",
+        progressText: "Other user's progress",
+        status: "running",
+      },
+    });
+
+    expect(chatLog.updateToolResult).not.toHaveBeenCalled();
+    expect(tui.requestRender).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { name: "a non-tool item", data: { kind: "command" } },
+    { name: "a terminal tool item", data: { phase: "end", status: "completed" } },
+    { name: "a mismatched tool item owner", data: { itemId: "tool:someone-else" } },
+    { name: "a missing tool call id", data: { toolCallId: undefined } },
+    { name: "blank public progress", data: { progressText: "  \t  " } },
+    {
+      name: "private nested output without public progress",
+      data: {
+        progressText: undefined,
+        partialResult: { content: [{ type: "text", text: "PRIVATE TOOL OUTPUT" }] },
+        progress: { text: "PRIVATE TOOL OUTPUT", privacy: "private" },
+      },
+    },
+  ])("ignores $name", ({ data }) => {
+    const { chatLog, tui, handleAgentEvent } = createHandlersHarness({
+      state: {
+        activeChatRunId: "run-progress",
+        sessionInfo: { verboseLevel: "full" },
+      },
+    });
+
+    handleAgentEvent({
+      runId: "run-progress",
+      stream: "item",
+      data: {
+        itemId: "tool:web-fetch-1",
+        phase: "update",
+        kind: "tool",
+        toolCallId: "web-fetch-1",
+        progressText: "Fetching page content...",
+        status: "running",
+        ...data,
+      },
+    });
+
+    expect(chatLog.updateToolResult).not.toHaveBeenCalled();
+    expect(tui.requestRender).not.toHaveBeenCalled();
+  });
+
   it("omits tool output when verbose is on (non-full)", () => {
     const { chatLog, handleAgentEvent } = createHandlersHarness({
       state: {
@@ -4048,6 +4204,104 @@ describe("tui-event-handlers: streaming watchdog", () => {
     expect(setActivityStatus).not.toHaveBeenCalledWith("idle");
     expect(state.activeChatRunId).toBe("run-tools");
 
+    handlers.dispose?.();
+  });
+
+  it("keeps hidden typed public tool progress alive without rendering private tool output", () => {
+    const { state, chatLog, tui, handlers } = createHarness({ streamingWatchdogMs: 5_000 });
+    state.sessionInfo.verboseLevel = "off";
+
+    handlers.handleChatEvent({
+      runId: "run-public-progress",
+      sessionKey: state.currentSessionKey,
+      state: "delta",
+      message: { content: "first" },
+    } satisfies ChatEvent);
+    tui.requestRender.mockClear();
+
+    const progressEvent = {
+      runId: "run-public-progress",
+      sessionKey: state.currentSessionKey,
+      stream: "item",
+      data: {
+        itemId: "tool:web-fetch-1",
+        phase: "update",
+        kind: "tool",
+        name: "web_fetch",
+        toolCallId: "web-fetch-1",
+        progressText: "Fetching page content...",
+        status: "running",
+      },
+    } satisfies AgentEvent;
+
+    vi.advanceTimersByTime(3_000);
+    handlers.handleAgentEvent(progressEvent);
+    vi.advanceTimersByTime(3_000);
+
+    expect(chatLog.addPendingSystem).not.toHaveBeenCalled();
+    expect(chatLog.updateToolResult).not.toHaveBeenCalled();
+    expect(tui.requestRender).not.toHaveBeenCalled();
+
+    handlers.handleAgentEvent(progressEvent);
+    vi.advanceTimersByTime(3_000);
+
+    expect(chatLog.addPendingSystem).not.toHaveBeenCalled();
+    expect(chatLog.updateToolResult).not.toHaveBeenCalled();
+    expect(tui.requestRender).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(2_001);
+
+    expect(chatLog.addPendingSystem).toHaveBeenCalledExactlyOnceWith(
+      "run-public-progress",
+      expectedTimeoutMessage,
+    );
+    handlers.dispose?.();
+  });
+
+  it.each([
+    { name: "another run", runId: "run-other" },
+    { name: "another session", sessionKey: "agent:other:main" },
+    {
+      name: "private nested tool output",
+      data: {
+        progressText: undefined,
+        progress: { text: "PRIVATE TOOL OUTPUT", visibility: "channel", privacy: "private" },
+      },
+    },
+    { name: "a different tool owner", data: { itemId: "tool:someone-else" } },
+  ])("does not let $name refresh the public-progress watchdog", ({ runId, sessionKey, data }) => {
+    const { state, chatLog, handlers } = createHarness({ streamingWatchdogMs: 5_000 });
+    state.sessionInfo.verboseLevel = "off";
+
+    handlers.handleChatEvent({
+      runId: "run-public-progress",
+      sessionKey: state.currentSessionKey,
+      state: "delta",
+      message: { content: "first" },
+    } satisfies ChatEvent);
+    vi.advanceTimersByTime(3_000);
+
+    handlers.handleAgentEvent({
+      runId: runId ?? "run-public-progress",
+      sessionKey: sessionKey ?? state.currentSessionKey,
+      stream: "item",
+      data: {
+        itemId: "tool:web-fetch-1",
+        phase: "update",
+        kind: "tool",
+        toolCallId: "web-fetch-1",
+        progressText: "Fetching page content...",
+        status: "running",
+        ...data,
+      },
+    } satisfies AgentEvent);
+    vi.advanceTimersByTime(2_001);
+
+    expect(chatLog.addPendingSystem).toHaveBeenCalledExactlyOnceWith(
+      "run-public-progress",
+      expectedTimeoutMessage,
+    );
+    expect(chatLog.updateToolResult).not.toHaveBeenCalled();
     handlers.dispose?.();
   });
 

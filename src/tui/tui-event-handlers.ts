@@ -597,6 +597,39 @@ export function createEventHandlers(context: EventHandlerContext) {
     if (!isKnownRun) {
       return;
     }
+    if (evt.stream === "item") {
+      const data = evt.data ?? {};
+      const toolCallId = asString(data.toolCallId, "");
+      const progressText =
+        typeof data.progressText === "string"
+          ? sanitizeRenderableText(data.progressText).trim()
+          : "";
+      if (
+        !isActiveRun ||
+        (evt.sessionKey !== undefined && !matchesSelectedTuiSession(state, evt)) ||
+        data.kind !== "tool" ||
+        data.phase !== "update" ||
+        data.status !== "running" ||
+        !toolCallId ||
+        data.itemId !== `tool:${toolCallId}` ||
+        !progressText
+      ) {
+        return;
+      }
+      armStreamingWatchdog(evt.runId);
+      if ((state.sessionInfo.verboseLevel ?? "off") === "off") {
+        return;
+      }
+      // Typed public progress is emitted only as an item; raw tool updates are
+      // deliberately suppressed, so adapt it into the existing tool card.
+      chatLog.updateToolResult(
+        toolCallId,
+        { content: [{ type: "text", text: progressText }] },
+        { partial: true },
+      );
+      tui.requestRender();
+      return;
+    }
     if (evt.stream === "tool") {
       if (isActiveRun) {
         armStreamingWatchdog(evt.runId);
