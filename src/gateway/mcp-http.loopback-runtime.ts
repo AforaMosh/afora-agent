@@ -20,6 +20,7 @@ type McpLoopbackToolCallResult = {
 } & McpLoopbackToolCallOutcome;
 
 export type McpLoopbackToolCallStart = Pick<McpLoopbackToolCallResult, "toolName" | "args">;
+type McpLoopbackPreparedToolCall = McpLoopbackToolCallStart & { toolCallId: string };
 
 type McpLoopbackToolCallCapture = {
   generation: number;
@@ -30,9 +31,12 @@ type McpLoopbackToolCallCapture = {
   onToolCallStart?: (call: McpLoopbackToolCallStart) => string | void;
   onToolCallUpdate?: (calls: {
     previous: McpLoopbackToolCallStart;
-    current: McpLoopbackToolCallStart;
+    current: McpLoopbackPreparedToolCall;
   }) => void;
-  onToolCallFinish?: (call: McpLoopbackToolCallStart, state: { prepared: boolean }) => void;
+  onToolCallFinish?: (
+    call: McpLoopbackToolCallStart | McpLoopbackPreparedToolCall,
+    state: { prepared: boolean },
+  ) => void;
   onToolCallResult: (call: McpLoopbackToolCallResult) => void;
   inFlight: number;
   activityVersion: number;
@@ -47,7 +51,7 @@ type McpLoopbackRequestCaptureHandle = {
 
 type McpLoopbackToolCallCaptureHandle = {
   capture: McpLoopbackToolCallCapture;
-  call: McpLoopbackToolCallStart;
+  call: McpLoopbackToolCallStart | McpLoopbackPreparedToolCall;
   correlationId?: string;
   prepared: boolean;
   finished: boolean;
@@ -87,9 +91,12 @@ export function beginMcpLoopbackToolCallCapture(params: {
   onToolCallStart?: (call: McpLoopbackToolCallStart) => string | void;
   onToolCallUpdate?: (calls: {
     previous: McpLoopbackToolCallStart;
-    current: McpLoopbackToolCallStart;
+    current: McpLoopbackPreparedToolCall;
   }) => void;
-  onToolCallFinish?: (call: McpLoopbackToolCallStart, state: { prepared: boolean }) => void;
+  onToolCallFinish?: (
+    call: McpLoopbackToolCallStart | McpLoopbackPreparedToolCall,
+    state: { prepared: boolean },
+  ) => void;
   onToolCallResult: (call: McpLoopbackToolCallResult) => void;
 }): void {
   const captureKey = params.captureKey.trim();
@@ -217,7 +224,7 @@ export function markMcpLoopbackToolCallStarted(params: {
 /** Update an admitted call with the final arguments produced by gateway hooks. */
 export function updateMcpLoopbackToolCallCapture(
   captureHandle: McpLoopbackToolCallCaptureHandle | undefined,
-  call: McpLoopbackToolCallStart,
+  call: McpLoopbackPreparedToolCall,
 ): void {
   if (!captureHandle || captureHandle.finished) {
     return;

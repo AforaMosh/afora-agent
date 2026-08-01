@@ -2388,6 +2388,7 @@ describe("mcp loopback server", () => {
         args: { action: "react", target: "original-target" },
       },
       current: {
+        toolCallId: expect.stringMatching(/^mcp-/),
         toolName: "message",
         args: {
           action: "send",
@@ -2398,6 +2399,7 @@ describe("mcp loopback server", () => {
     });
     expect(finishedCalls).toHaveBeenCalledWith(
       {
+        toolCallId: expect.stringMatching(/^mcp-/),
         toolName: "message",
         args: {
           action: "send",
@@ -2813,7 +2815,11 @@ describe("mcp loopback server", () => {
       privateState: "preserved",
     };
     expect(execute).toHaveBeenCalledWith(expect.stringMatching(/^mcp-/), finalArgs, undefined);
-    expect(onToolCallPrepared).toHaveBeenCalledWith({ toolName: "message", args: finalArgs });
+    expect(onToolCallPrepared).toHaveBeenCalledWith({
+      toolCallId: expect.stringMatching(/^mcp-/),
+      toolName: "message",
+      args: finalArgs,
+    });
     expect(onToolCallResult).toHaveBeenCalledWith(
       expect.objectContaining({ toolName: "message", args: finalArgs, outcome: "completed" }),
     );
