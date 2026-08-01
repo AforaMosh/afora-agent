@@ -558,10 +558,18 @@ export class ConfigPage extends OpenClawLightDomElement {
 
   private synchronizeCustomThemeGatewayScope(scope: string) {
     const normalizedScope = normalizeGatewayCredentialScope(scope);
-    if (this.customThemeGatewayScope && normalizedScope !== this.customThemeGatewayScope) {
-      this.retireCustomThemeImport();
-      this.serverThemeSelectionRevision = this.currentServerThemeSelection()?.revision ?? 0;
+    if (normalizedScope === this.customThemeGatewayScope) {
+      return;
     }
+    if (this.customThemeGatewayScope) {
+      this.retireCustomThemeImport();
+    }
+    const nextSettings = loadSettings(scope);
+    if (nextSettings.theme !== this.settings.theme) {
+      this.recordCustomThemeActivationIntent(nextSettings.theme);
+    }
+    this.settings = nextSettings;
+    this.serverThemeSelectionRevision = this.currentServerThemeSelection()?.revision ?? 0;
     this.customThemeGatewayScope = normalizedScope;
   }
 

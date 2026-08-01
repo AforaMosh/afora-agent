@@ -172,33 +172,36 @@ describe("paired-node WebSocket request cancellation", () => {
     expect(socket.listenerCount("close")).toBe(0);
   });
 
-  it("cancels an uncommitted Control UI full-config write on socket close", async () => {
-    const socket = new EventEmitter();
-    const { client, dispatcher } = createDispatcher(socket, {
-      id: GATEWAY_CLIENT_IDS.CONTROL_UI,
-      mode: GATEWAY_CLIENT_MODES.UI,
-    });
-    let requestSignal: AbortSignal | undefined;
-    handleGatewayRequest.mockImplementation(async (options: GatewayRequestOptions) => {
-      requestSignal = options.signal;
-      await new Promise<void>((resolve) => {
-        options.signal?.addEventListener("abort", () => resolve());
+  it.each(["config.set", "config.apply"])(
+    "cancels an uncommitted Control UI %s on socket close",
+    async (method) => {
+      const socket = new EventEmitter();
+      const { client, dispatcher } = createDispatcher(socket, {
+        id: GATEWAY_CLIENT_IDS.CONTROL_UI,
+        mode: GATEWAY_CLIENT_MODES.WEBCHAT,
       });
-    });
+      let requestSignal: AbortSignal | undefined;
+      handleGatewayRequest.mockImplementation(async (options: GatewayRequestOptions) => {
+        requestSignal = options.signal;
+        await new Promise<void>((resolve) => {
+          options.signal?.addEventListener("abort", () => resolve());
+        });
+      });
 
-    const dispatch = dispatcher.dispatch(
-      { type: "req", id: "control-ui-config-set", method: "config.set", params: {} },
-      client,
-    );
-    await vi.waitFor(() => expect(requestSignal).toBeDefined());
-    expect(requestSignal?.aborted).toBe(false);
+      const dispatch = dispatcher.dispatch(
+        { type: "req", id: `control-ui-${method}`, method, params: {} },
+        client,
+      );
+      await vi.waitFor(() => expect(requestSignal).toBeDefined());
+      expect(requestSignal?.aborted).toBe(false);
 
-    socket.emit("close", 1000, Buffer.alloc(0));
+      socket.emit("close", 1000, Buffer.alloc(0));
 
-    await dispatch;
-    expect(requestSignal?.aborted).toBe(true);
-    expect(socket.listenerCount("close")).toBe(0);
-  });
+      await dispatch;
+      expect(requestSignal?.aborted).toBe(true);
+      expect(socket.listenerCount("close")).toBe(0);
+    },
+  );
 
   it.each([
     {

@@ -1,7 +1,8 @@
 // Control UI startup settings resolve native auth handoff and URL parameters.
 import { inferBasePathFromPathname, sessionRouteNamespaceFromPath } from "../app-route-paths.ts";
 import { normalizeOptionalString } from "../lib/string-coerce.ts";
-import type { UiSettings } from "./settings.ts";
+import { normalizeGatewayCredentialScope } from "./gateway-scope.ts";
+import { loadSettings, type UiSettings } from "./settings.ts";
 
 type ApplicationStartupLocation = {
   pathname: string;
@@ -67,6 +68,14 @@ export function resolveApplicationStartupSettings(
     const gatewayUrl = normalizeOptionalString(nativeAuth.gatewayUrl);
     const token = normalizeOptionalString(nativeAuth.token);
     const nativePassword = normalizeOptionalString(nativeAuth.password);
+    if (
+      gatewayUrl &&
+      normalizeGatewayCredentialScope(gatewayUrl) !==
+        normalizeGatewayCredentialScope(settings.gatewayUrl)
+    ) {
+      settings = loadSettings(gatewayUrl);
+      changed = true;
+    }
     updateSettings({
       ...(gatewayUrl ? { gatewayUrl } : {}),
       ...(token ? { token } : {}),

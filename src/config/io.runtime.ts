@@ -278,6 +278,7 @@ export async function writeConfigFile(
     baseSnapshot,
     basePluginMetadataSnapshot: baseSnapshotRead.pluginMetadataSnapshot,
     assertConfigPathForWrite: options.assertConfigPathForWrite,
+    assertConfigWriteCurrentBeforeCommit: options.assertConfigWriteCurrentBeforeCommit,
     envSnapshotForRestore: resolveWriteEnvSnapshotForPath({
       actualConfigPath: io.configPath,
       expectedConfigPath: options.expectedConfigPath,

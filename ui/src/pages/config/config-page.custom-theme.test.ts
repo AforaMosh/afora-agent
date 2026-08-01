@@ -397,6 +397,51 @@ describe("ConfigPage custom theme import ownership", () => {
     expect(state.settings.customTheme).toBeUndefined();
   });
 
+  it("starts a new Gateway import from that Gateway's appearance settings", async () => {
+    const gatewayA = "ws://gateway.test?tenant=a";
+    const gatewayB = "ws://gateway.test?tenant=b";
+    const themeA = customThemeFixture("Gateway A", "gateway-a");
+    patchSettings({
+      gatewayUrl: gatewayA,
+      theme: "knot",
+      customTheme: themeA,
+      sidebarLiveActivity: true,
+    });
+    const { state } = createCustomThemePage();
+    state.context.gateway.connection.gatewayUrl = gatewayA;
+    state.synchronizeCustomThemeGatewayScope(gatewayA);
+    patchSettings({
+      gatewayUrl: gatewayB,
+      theme: "dash",
+      customTheme: undefined,
+      sidebarLiveActivity: false,
+    });
+    state.context.gateway.connection.gatewayUrl = gatewayB;
+    state.synchronizeCustomThemeGatewayScope(gatewayB);
+
+    const imported = customThemeFixture("Gateway B", "gateway-b");
+    importCustomThemeFromUrl.mockResolvedValueOnce(imported);
+    state.setCustomThemeImportUrl("gateway-b");
+    await state.importCustomTheme();
+
+    expect(state.settings).toMatchObject({
+      gatewayUrl: gatewayB,
+      theme: "custom",
+      customTheme: imported,
+      sidebarLiveActivity: false,
+    });
+    expect(loadSettings(gatewayB)).toMatchObject({
+      theme: "custom",
+      customTheme: imported,
+      sidebarLiveActivity: false,
+    });
+    expect(loadSettings(gatewayA)).toMatchObject({
+      theme: "knot",
+      customTheme: themeA,
+      sidebarLiveActivity: true,
+    });
+  });
+
   it("preserves a built-in selection made after the first import starts", async () => {
     const first = deferred<ImportedCustomTheme>();
     importCustomThemeFromUrl.mockReturnValueOnce(first.promise);

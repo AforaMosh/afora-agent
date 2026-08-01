@@ -260,25 +260,21 @@ function deriveDefaultGatewayUrl(): { pageUrl: string; effectiveUrl: string } {
   return { pageUrl, effectiveUrl };
 }
 
-/**
- * Standalone documents are owned by the Gateway that served their URL. Do not
- * let the full app's persisted remote selection retarget a security decision.
- * Native auth and explicit URL overrides are applied after this default.
- */
+// Standalone documents inherit the serving Gateway's scoped state, never a
+// persisted remote selection from the full app.
 export function resolvePageGatewaySettings(settings: UiSettings): UiSettings {
   const { effectiveUrl } = deriveDefaultGatewayUrl();
   if (
-    normalizeGatewayTokenScope(settings.gatewayUrl) === normalizeGatewayTokenScope(effectiveUrl)
+    normalizeGatewayCredentialScope(settings.gatewayUrl) ===
+    normalizeGatewayCredentialScope(effectiveUrl)
   ) {
     return settings;
   }
-  const session = loadGatewaySessionSelection(effectiveUrl);
   return {
-    ...settings,
+    ...loadSettings(effectiveUrl),
     gatewayUrl: effectiveUrl,
     token: resolveGatewayTokenForUrlEdit(settings.gatewayUrl, effectiveUrl, settings.token),
-    sessionKey: session.sessionKey,
-    lastActiveSessionKey: session.lastActiveSessionKey,
+    ...loadGatewaySessionSelection(effectiveUrl),
   };
 }
 
@@ -454,12 +450,6 @@ export function persistSessionToken(gatewayUrl: string, token: string) {
 // stay isolated by logical Gateway. They are user state, so never evict silently.
 const unpersistedSettingsByScope = new Map<string, UiSettings>();
 let unpersistedSelectedGatewayUrl: string | null = null;
-
-function rememberUnpersistedSettings(settings: UiSettings): void {
-  const scope = normalizeGatewayCredentialScope(settings.gatewayUrl);
-  unpersistedSettingsByScope.delete(scope);
-  unpersistedSettingsByScope.set(scope, settings);
-}
 
 function readUnpersistedSettings(gatewayUrl: string): UiSettings | null {
   return unpersistedSettingsByScope.get(normalizeGatewayCredentialScope(gatewayUrl)) ?? null;
@@ -766,7 +756,8 @@ function persistSettings(next: UiSettings, options: { selectGateway?: boolean } 
   const serialized = JSON.stringify(persisted);
   const shouldPersistSelection =
     options.selectGateway === true || unpersistedSelectedGatewayUrl !== null;
-  rememberUnpersistedSettings(next);
+  unpersistedSettingsByScope.delete(scope);
+  unpersistedSettingsByScope.set(scope, next);
   if (options.selectGateway || unpersistedSelectedGatewayUrl === null) {
     unpersistedSelectedGatewayUrl = next.gatewayUrl;
   }

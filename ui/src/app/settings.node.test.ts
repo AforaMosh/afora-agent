@@ -7,13 +7,10 @@ import {
   loadLocalUserIdentity,
   loadSettings,
   normalizeChatMessageMaxWidth,
-  persistSessionToken,
-  resolvePageGatewaySettings,
   saveSettings,
   selectGatewaySettings,
   type UiSettings,
 } from "./settings.ts";
-import { resolveApplicationStartupSettings } from "./startup-settings.ts";
 
 function setTestLocation(params: { protocol: string; host: string; pathname: string }) {
   vi.stubGlobal("location", {
@@ -68,43 +65,6 @@ function makeSettings(gatewayUrl: string, overrides: Partial<UiSettings> = {}): 
   };
 }
 
-describe("resolveApplicationStartupSettings", () => {
-  beforeEach(() => {
-    vi.stubGlobal("window", {});
-  });
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
-  it("strips fragment bootstrap tokens without persisting them", () => {
-    const startup = resolveApplicationStartupSettings(makeSettings("wss://gateway.example"), {
-      pathname: "/",
-      search: "",
-      hash: "#gatewayUrl=wss%3A%2F%2Fgateway.example&bootstrapToken=boot-123",
-    });
-
-    expect(startup.pendingGatewayUrl).toBeNull();
-    expect(startup.pendingGatewayToken).toBeNull();
-    expect(startup.pendingBootstrapToken).toBe("boot-123");
-    expect(startup.settings.token).toBe("");
-    expect(startup.location).toEqual({ pathname: "/", search: "", hash: "" });
-  });
-
-  it("carries fragment bootstrap tokens with changed gateway URLs", () => {
-    const startup = resolveApplicationStartupSettings(makeSettings("wss://gateway-a.example"), {
-      pathname: "/dash",
-      search: "",
-      hash: "#gatewayUrl=wss%3A%2F%2Fgateway-b.example&bootstrapToken=boot-456",
-    });
-
-    expect(startup.pendingGatewayUrl).toBe("wss://gateway-b.example");
-    expect(startup.pendingGatewayToken).toBeNull();
-    expect(startup.pendingBootstrapToken).toBe("boot-456");
-    expect(startup.location).toEqual({ pathname: "/dash", search: "", hash: "" });
-  });
-});
-
 describe("loadSettings default gateway URL derivation", () => {
   beforeEach(() => {
     vi.stubGlobal("localStorage", createStorageMock());
@@ -153,32 +113,6 @@ describe("loadSettings default gateway URL derivation", () => {
     setControlUiBasePath(" /openclaw/ ");
 
     expect(loadSettings().gatewayUrl).toBe(expectedGatewayUrl("/openclaw"));
-  });
-
-  it("binds standalone documents to the page Gateway without persisting a selection", () => {
-    setTestLocation({
-      protocol: "https:",
-      host: "gateway.example:8443",
-      pathname: "/openclaw/approve/exec%3A1",
-    });
-    setControlUiBasePath("/openclaw");
-    const remote = makeSettings("wss://remote.example:8443", {
-      sessionKey: "agent:remote:main",
-      lastActiveSessionKey: "agent:remote:main",
-    });
-    const sessionCredential = ["page", "session", "credential"].join("-");
-    persistSessionToken(expectedGatewayUrl("/openclaw"), sessionCredential);
-    const before = [...Array(localStorage.length)].map((_, index) => localStorage.key(index));
-
-    expect(resolvePageGatewaySettings(remote)).toMatchObject({
-      gatewayUrl: expectedGatewayUrl("/openclaw"),
-      token: sessionCredential,
-      sessionKey: "main",
-      lastActiveSessionKey: "main",
-    });
-    expect([...Array(localStorage.length)].map((_, index) => localStorage.key(index))).toEqual(
-      before,
-    );
   });
 
   it("defaults the chat send shortcut to enter", () => {

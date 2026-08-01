@@ -590,6 +590,7 @@ async function writeRootBoundJsonFile(params: {
   expectedRaw: string | null;
   rootSnapshot: ConfigFileSnapshot;
   assertConfigPathForWrite: () => void;
+  assertConfigWriteCurrentBeforeCommit?: () => void;
   preCommitRuntimePreflight?: () => Promise<unknown>;
   skipOutputLogs?: boolean;
 }): Promise<void> {
@@ -627,6 +628,7 @@ async function writeRootBoundJsonFile(params: {
   // run before the write.
   await params.preCommitRuntimePreflight?.();
   params.assertConfigPathForWrite();
+  params.assertConfigWriteCurrentBeforeCommit?.();
   warnIfJSON5CommentsWillBeStripped({
     raw: currentRaw,
     filePath: targetAtCommit.absolutePath,
@@ -836,6 +838,7 @@ async function tryWriteSingleTopLevelIncludeMutation(params: {
     expectedRaw: includeRawAtCommit,
     rootSnapshot: params.snapshot,
     assertConfigPathForWrite,
+    assertConfigWriteCurrentBeforeCommit: params.writeOptions?.assertConfigWriteCurrentBeforeCommit,
     skipOutputLogs: params.writeOptions?.skipOutputLogs,
     preCommitRuntimePreflight:
       runtimeEnvBaseline || callerPreCommit

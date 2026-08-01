@@ -436,6 +436,7 @@ export async function writeConfigFileFromContext(
           assertBaseSnapshotStillCurrent(snapshot, configPath, deps.fs);
         }
         options.assertConfigPathForWrite?.();
+        options.assertConfigWriteCurrentBeforeCommit?.();
         // Warn only after final guards pass, with no later await before rename.
         warnIfJSON5CommentsWillBeStripped({
           raw: snapshot.raw,

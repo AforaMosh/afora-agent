@@ -168,6 +168,45 @@ describe("createRuntimeConfigCapability", () => {
     runtimeConfig.dispose();
   });
 
+  it("adopts an external snapshot when a dirty draft reverts clean", async () => {
+    vi.useFakeTimers();
+    let getCount = 0;
+    const methods: string[] = [];
+    const request = vi.fn(async (method: string) => {
+      methods.push(method);
+      if (method !== "config.get") {
+        return {};
+      }
+      getCount += 1;
+      const count = getCount === 1 ? 1 : 3;
+      return {
+        config: { count },
+        raw: `{\n  "count": ${count}\n}\n`,
+        hash: `hash-${getCount}`,
+        valid: true,
+        issues: [],
+      };
+    });
+    const client = { request } as unknown as GatewayBrowserClient;
+    const { gateway } = createGatewayHarness(client);
+    const runtimeConfig = createRuntimeConfigCapability(gateway);
+    await runtimeConfig.ensureLoaded();
+
+    runtimeConfig.patchForm(["count"], 2);
+    await runtimeConfig.refreshAfterCurrentLoad();
+    expect(runtimeConfig.state.configForm).toEqual({ count: 2 });
+    expect(runtimeConfig.state.configDraftBaseHash).toBe("hash-1");
+
+    runtimeConfig.patchForm(["count"], 1);
+    await vi.advanceTimersByTimeAsync(CONFIG_FORM_AUTO_SAVE_DEBOUNCE_MS);
+
+    expect(runtimeConfig.state.configForm).toEqual({ count: 3 });
+    expect(runtimeConfig.state.configFormDirty).toBe(false);
+    expect(runtimeConfig.state.configDraftBaseHash).toBe("hash-2");
+    expect(methods).toEqual(["config.get", "config.get"]);
+    runtimeConfig.dispose();
+  });
+
   it("serializes schema-coerced form values with the draft base hash", async () => {
     const submitted: Array<{ method: string; params: unknown }> = [];
     let configGetCount = 0;
@@ -458,13 +497,11 @@ describe("createRuntimeConfigCapability", () => {
 
   it("ignores a save completion from an earlier connection epoch", async () => {
     const save = deferred<unknown>();
-    let getCount = 0;
     const request = vi.fn((method: string) => {
       if (method === "config.get") {
-        getCount += 1;
         return Promise.resolve({
-          config: { value: getCount },
-          hash: `hash-${getCount}`,
+          config: { value: 1 },
+          hash: "hash-1",
           valid: true,
           issues: [],
         });
@@ -743,6 +780,400 @@ describe("createRuntimeConfigCapability", () => {
     await vi.waitFor(() => expect(runtimeConfig.state.configFormDirty).toBe(true));
     expect(runtimeConfig.state.configForm).toEqual({ count: 1 });
     expect(runtimeConfig.state.configSnapshot?.config).toEqual({ count: 2 });
+    runtimeConfig.dispose();
+  });
+
+  it("adopts a response-lost Apply after returning to its Gateway scope", async () => {
+    vi.useFakeTimers();
+    const applyResponse = deferred<unknown>();
+    let storedRaw = '{\n  "count": 1\n}\n';
+    let hash = "hash-a-1";
+    const writes: string[] = [];
+    const persistCanonicalRaw = (raw: string) => {
+      const parsed = JSON.parse(raw) as Record<string, unknown>;
+      storedRaw = `${JSON.stringify(
+        { ...parsed, meta: { lastTouchedVersion: "test-version" } },
+        null,
+        2,
+      )}\n`;
+    };
+    const requestA = vi.fn((method: string, params?: unknown) => {
+      if (method === "config.get") {
+        return Promise.resolve({
+          config: JSON.parse(storedRaw) as Record<string, unknown>,
+          raw: storedRaw,
+          hash,
+          valid: true,
+          issues: [],
+        });
+      }
+      if (method === "config.apply") {
+        writes.push(method);
+        persistCanonicalRaw((params as { raw: string }).raw);
+        hash = "hash-a-3";
+        return applyResponse.promise;
+      }
+      if (method === "config.set") {
+        writes.push(method);
+        persistCanonicalRaw((params as { raw: string }).raw);
+        hash = "hash-a-2";
+        return Promise.resolve({ hash });
+      }
+      if (method === "config.patch") {
+        writes.push(method);
+        return Promise.resolve({ ok: true });
+      }
+      return Promise.resolve({});
+    });
+    const requestB = vi.fn(async (method: string) =>
+      method === "config.get"
+        ? { config: {}, raw: "{}", hash: "hash-b", valid: true, issues: [] }
+        : {},
+    );
+    const clientA = {
+      gatewayUrl: "ws://gateway.test?tenant=a",
+      request: requestA,
+    } as unknown as GatewayBrowserClient;
+    const clientB = {
+      gatewayUrl: "ws://gateway.test?tenant=b",
+      request: requestB,
+    } as unknown as GatewayBrowserClient;
+    const { gateway, publish } = createGatewayHarness(clientA);
+    const runtimeConfig = createRuntimeConfigCapability(gateway);
+    await runtimeConfig.ensureLoaded();
+
+    runtimeConfig.patchForm(["count"], 2);
+    await vi.advanceTimersByTimeAsync(CONFIG_FORM_AUTO_SAVE_DEBOUNCE_MS);
+    expect(runtimeConfig.state.configNeedsApply).toBe(true);
+
+    runtimeConfig.patchForm(["count"], 3);
+    const apply = runtimeConfig.apply();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(writes).toEqual(["config.set", "config.apply"]);
+
+    publish(true, clientB, clientB.gatewayUrl);
+    await runtimeConfig.ensureLoaded();
+    publish(true, clientA, clientA.gatewayUrl);
+    expect(runtimeConfig.state.configLoading).toBe(true);
+
+    const mutation = runtimeConfig.runExternalMutation((client) =>
+      client.request("config.patch", { raw: "{}" }),
+    );
+    await vi.advanceTimersByTimeAsync(0);
+    expect(writes).toEqual(["config.set", "config.apply"]);
+
+    applyResponse.reject(new Error("socket closed before response"));
+    await expect(apply).resolves.toBe(false);
+    await expect(mutation).resolves.toMatchObject({ ok: true, refresh: { ok: true } });
+    await vi.waitFor(() => expect(runtimeConfig.state.configLoading).toBe(false));
+    await vi.advanceTimersByTimeAsync(CONFIG_FORM_AUTO_SAVE_DEBOUNCE_MS);
+
+    expect(runtimeConfig.state.configForm).toMatchObject({ count: 3 });
+    expect(runtimeConfig.state.configFormDirty).toBe(false);
+    expect(runtimeConfig.state.configNeedsApply).toBe(false);
+    expect(writes).toEqual(["config.set", "config.apply", "config.patch"]);
+    runtimeConfig.dispose();
+  });
+
+  it("uses applied revision truth after a same-scope response-lost Apply", async () => {
+    vi.useFakeTimers();
+    const applyResponse = deferred<unknown>();
+    let storedRaw = '{\n  "count": 1\n}\n';
+    let hashCounter = 1;
+    let appliedHash = "hash-1";
+    const writes: string[] = [];
+    const request = vi.fn((method: string, params?: unknown) => {
+      if (method === "config.get") {
+        return Promise.resolve({
+          config: JSON.parse(storedRaw) as Record<string, unknown>,
+          raw: storedRaw,
+          hash: `hash-${hashCounter}`,
+          configRevisionHash: `hash-${hashCounter}`,
+          appliedConfigHash: appliedHash,
+          valid: true,
+          issues: [],
+        });
+      }
+      if (method === "config.set" || method === "config.apply") {
+        writes.push(method);
+        storedRaw = (params as { raw: string }).raw;
+        hashCounter += 1;
+        if (method === "config.apply") {
+          appliedHash = `hash-${hashCounter}`;
+          return applyResponse.promise;
+        }
+        return Promise.resolve({ hash: `hash-${hashCounter}` });
+      }
+      return Promise.resolve({});
+    });
+    const client = { request } as unknown as GatewayBrowserClient;
+    const { gateway, publish } = createGatewayHarness(client);
+    const runtimeConfig = createRuntimeConfigCapability(gateway);
+    await runtimeConfig.ensureLoaded();
+    runtimeConfig.patchForm(["count"], 2);
+    await vi.advanceTimersByTimeAsync(CONFIG_FORM_AUTO_SAVE_DEBOUNCE_MS);
+    runtimeConfig.patchForm(["count"], 3);
+    const apply = runtimeConfig.apply();
+    await vi.advanceTimersByTimeAsync(0);
+
+    publish(false);
+    applyResponse.reject(new Error("socket closed before response"));
+    await expect(apply).resolves.toBe(false);
+    publish(true);
+    await vi.waitFor(() => expect(runtimeConfig.state.configLoading).toBe(false));
+    await vi.advanceTimersByTimeAsync(CONFIG_FORM_AUTO_SAVE_DEBOUNCE_MS);
+
+    expect(runtimeConfig.state.configForm).toEqual({ count: 3 });
+    expect(runtimeConfig.state.configFormDirty).toBe(false);
+    expect(runtimeConfig.state.configNeedsApply).toBe(false);
+    expect(writes).toEqual(["config.set", "config.apply"]);
+    runtimeConfig.dispose();
+  });
+
+  it("keeps legacy Apply intent when a clean Apply disconnects before commit", async () => {
+    vi.useFakeTimers();
+    const applyResponse = deferred<unknown>();
+    let storedRaw = '{\n  "count": 1\n}\n';
+    let hash = "hash-a-1";
+    const writes: string[] = [];
+    const requestA = vi.fn((method: string, params?: unknown) => {
+      if (method === "config.get") {
+        return Promise.resolve({
+          config: JSON.parse(storedRaw) as Record<string, unknown>,
+          raw: storedRaw,
+          hash,
+          valid: true,
+          issues: [],
+        });
+      }
+      if (method === "config.set") {
+        writes.push(method);
+        storedRaw = (params as { raw: string }).raw;
+        hash = "hash-a-2";
+        return Promise.resolve({ hash });
+      }
+      if (method === "config.apply") {
+        writes.push(method);
+        return applyResponse.promise;
+      }
+      return Promise.resolve({});
+    });
+    const requestB = vi.fn(async (method: string) =>
+      method === "config.get"
+        ? { config: {}, raw: "{}", hash: "hash-b", valid: true, issues: [] }
+        : {},
+    );
+    const clientA = {
+      gatewayUrl: "ws://gateway.test?tenant=a",
+      request: requestA,
+    } as unknown as GatewayBrowserClient;
+    const clientB = {
+      gatewayUrl: "ws://gateway.test?tenant=b",
+      request: requestB,
+    } as unknown as GatewayBrowserClient;
+    const { gateway, publish } = createGatewayHarness(clientA);
+    const runtimeConfig = createRuntimeConfigCapability(gateway);
+    await runtimeConfig.ensureLoaded();
+    runtimeConfig.patchForm(["count"], 2);
+    await vi.advanceTimersByTimeAsync(CONFIG_FORM_AUTO_SAVE_DEBOUNCE_MS);
+
+    const apply = runtimeConfig.apply();
+    await vi.advanceTimersByTimeAsync(0);
+    publish(true, clientB, clientB.gatewayUrl);
+    await runtimeConfig.ensureLoaded();
+    publish(true, clientA, clientA.gatewayUrl);
+    applyResponse.reject(new Error("socket closed before commit"));
+    await expect(apply).resolves.toBe(false);
+    await vi.waitFor(() => expect(runtimeConfig.state.configLoading).toBe(false));
+    await vi.advanceTimersByTimeAsync(CONFIG_FORM_AUTO_SAVE_DEBOUNCE_MS);
+
+    expect(runtimeConfig.state.configForm).toEqual({ count: 2 });
+    expect(runtimeConfig.state.configFormDirty).toBe(false);
+    expect(runtimeConfig.state.configNeedsApply).toBe(true);
+    expect(writes).toEqual(["config.set", "config.apply"]);
+    runtimeConfig.dispose();
+  });
+
+  it("restores a revert made during a response-lost Apply", async () => {
+    vi.useFakeTimers();
+    const applyResponse = deferred<unknown>();
+    let storedRaw = '{\n  "count": 1\n}\n';
+    let hashCounter = 1;
+    const writes: Array<{ method: string; raw: string; baseHash: string }> = [];
+    const requestA = vi.fn((method: string, params?: unknown) => {
+      if (method === "config.get") {
+        return Promise.resolve({
+          config: JSON.parse(storedRaw) as Record<string, unknown>,
+          raw: storedRaw,
+          hash: `hash-a-${hashCounter}`,
+          valid: true,
+          issues: [],
+        });
+      }
+      if (method === "config.set" || method === "config.apply") {
+        const submission = params as { raw: string; baseHash: string };
+        writes.push({ method, ...submission });
+        storedRaw = submission.raw;
+        hashCounter += 1;
+        return method === "config.apply"
+          ? applyResponse.promise
+          : Promise.resolve({ hash: `hash-a-${hashCounter}` });
+      }
+      return Promise.resolve({});
+    });
+    const requestB = vi.fn(async (method: string) =>
+      method === "config.get"
+        ? { config: {}, raw: "{}", hash: "hash-b", valid: true, issues: [] }
+        : {},
+    );
+    const clientA = {
+      gatewayUrl: "ws://gateway.test?tenant=a",
+      request: requestA,
+    } as unknown as GatewayBrowserClient;
+    const clientB = {
+      gatewayUrl: "ws://gateway.test?tenant=b",
+      request: requestB,
+    } as unknown as GatewayBrowserClient;
+    const { gateway, publish } = createGatewayHarness(clientA);
+    const runtimeConfig = createRuntimeConfigCapability(gateway);
+    await runtimeConfig.ensureLoaded();
+    runtimeConfig.patchForm(["count"], 2);
+    await vi.advanceTimersByTimeAsync(CONFIG_FORM_AUTO_SAVE_DEBOUNCE_MS);
+
+    runtimeConfig.patchForm(["count"], 3);
+    const apply = runtimeConfig.apply();
+    await vi.advanceTimersByTimeAsync(0);
+    runtimeConfig.patchForm(["count"], 2);
+    expect(runtimeConfig.state.configFormDirty).toBe(false);
+
+    publish(true, clientB, clientB.gatewayUrl);
+    await runtimeConfig.ensureLoaded();
+    publish(true, clientA, clientA.gatewayUrl);
+    applyResponse.reject(new Error("socket closed before response"));
+    await expect(apply).resolves.toBe(false);
+    await vi.advanceTimersByTimeAsync(CONFIG_FORM_AUTO_SAVE_DEBOUNCE_MS);
+
+    expect(runtimeConfig.state.configForm).toEqual({ count: 2 });
+    expect(runtimeConfig.state.configFormDirty).toBe(false);
+    expect(runtimeConfig.state.configNeedsApply).toBe(true);
+    expect(writes.map(({ method }) => method)).toEqual([
+      "config.set",
+      "config.apply",
+      "config.set",
+    ]);
+    expect(writes.at(-1)).toMatchObject({ raw: '{\n  "count": 2\n}\n', baseHash: "hash-a-3" });
+    runtimeConfig.dispose();
+  });
+
+  it("retains legacy-Gateway Apply intent across a scope round trip", async () => {
+    vi.useFakeTimers();
+    let storedRaw = '{\n  "count": 1\n}\n';
+    let hash = "hash-a-1";
+    const requestA = vi.fn(async (method: string, params?: unknown) => {
+      if (method === "config.get") {
+        return {
+          config: JSON.parse(storedRaw) as Record<string, unknown>,
+          raw: storedRaw,
+          hash,
+          valid: true,
+          issues: [],
+        };
+      }
+      if (method === "config.set") {
+        storedRaw = (params as { raw: string }).raw;
+        hash = "hash-a-2";
+        return { hash };
+      }
+      return {};
+    });
+    const requestB = vi.fn(async (method: string) =>
+      method === "config.get"
+        ? { config: {}, raw: "{}", hash: "hash-b", valid: true, issues: [] }
+        : {},
+    );
+    const clientA = {
+      gatewayUrl: "ws://gateway.test?tenant=a",
+      request: requestA,
+    } as unknown as GatewayBrowserClient;
+    const clientB = {
+      gatewayUrl: "ws://gateway.test?tenant=b",
+      request: requestB,
+    } as unknown as GatewayBrowserClient;
+    const { gateway, publish } = createGatewayHarness(clientA);
+    const runtimeConfig = createRuntimeConfigCapability(gateway);
+    await runtimeConfig.ensureLoaded();
+
+    runtimeConfig.patchForm(["count"], 2);
+    await vi.advanceTimersByTimeAsync(CONFIG_FORM_AUTO_SAVE_DEBOUNCE_MS);
+    expect(runtimeConfig.state.configNeedsApply).toBe(true);
+
+    publish(true, clientB, clientB.gatewayUrl);
+    await runtimeConfig.ensureLoaded();
+    publish(true, clientA, clientA.gatewayUrl);
+    expect(runtimeConfig.state.configNeedsApply).toBe(true);
+
+    await runtimeConfig.refresh();
+    expect(runtimeConfig.state.configNeedsApply).toBe(true);
+    runtimeConfig.dispose();
+  });
+
+  it("waits for a scoped config.patch before legacy reconciliation", async () => {
+    const patchResponse = deferred<unknown>();
+    let storedRaw = '{\n  "count": 1\n}\n';
+    let hash = "hash-a-1";
+    const methodsA: string[] = [];
+    const requestA = vi.fn((method: string) => {
+      methodsA.push(method);
+      if (method === "config.get") {
+        return Promise.resolve({
+          config: JSON.parse(storedRaw) as Record<string, unknown>,
+          raw: storedRaw,
+          hash,
+          valid: true,
+          issues: [],
+        });
+      }
+      if (method === "config.patch") {
+        return patchResponse.promise.then(() => {
+          storedRaw = '{\n  "count": 2\n}\n';
+          hash = "hash-a-2";
+          return { config: { count: 2 }, hash };
+        });
+      }
+      return Promise.resolve({});
+    });
+    const requestB = vi.fn(async (method: string) =>
+      method === "config.get"
+        ? { config: {}, raw: "{}", hash: "hash-b", valid: true, issues: [] }
+        : {},
+    );
+    const clientA = {
+      gatewayUrl: "ws://gateway.test?tenant=a",
+      request: requestA,
+    } as unknown as GatewayBrowserClient;
+    const clientB = {
+      gatewayUrl: "ws://gateway.test?tenant=b",
+      request: requestB,
+    } as unknown as GatewayBrowserClient;
+    const { gateway, publish } = createGatewayHarness(clientA);
+    const runtimeConfig = createRuntimeConfigCapability(gateway);
+    await runtimeConfig.ensureLoaded();
+
+    const patch = runtimeConfig.patch({ raw: { count: 2 }, note: "test" });
+    await vi.waitFor(() => expect(methodsA).toContain("config.patch"));
+    publish(true, clientB, clientB.gatewayUrl);
+    await runtimeConfig.ensureLoaded();
+    publish(true, clientA, clientA.gatewayUrl);
+    expect(runtimeConfig.state.configLoading).toBe(true);
+    expect(methodsA.filter((method) => method === "config.get")).toHaveLength(1);
+
+    patchResponse.resolve({});
+    await expect(patch).resolves.toBe(false);
+    await vi.waitFor(() => expect(runtimeConfig.state.configLoading).toBe(false));
+
+    expect(methodsA.filter((method) => method === "config.get")).toHaveLength(2);
+    expect(runtimeConfig.state.configSnapshot?.config).toEqual({ count: 2 });
+    expect(runtimeConfig.state.configNeedsApply).toBe(true);
     runtimeConfig.dispose();
   });
 });
@@ -2906,15 +3337,12 @@ describe("config form auto-save", () => {
     await vi.advanceTimersByTimeAsync(0);
 
     // The reconnect reload recognizes the committed bytes as ours even
-    // though the ack (and its manualFlightInfo hash) never arrived: the
-    // process-local pending state survives instead of silently disappearing.
+    // though the ack never arrived and adopts them without a duplicate write.
     expect(runtimeConfig.state.configNeedsApply).toBe(true);
-
-    // …and the still-dirty draft retries against the committed hash.
     await vi.advanceTimersByTimeAsync(CONFIG_FORM_AUTO_SAVE_DEBOUNCE_MS);
-    expect(sets).toHaveLength(2);
-    expect(sets[1]).toEqual({ raw: '{\n  "count": 2\n}\n', baseHash: "hash-2" });
-    expect(runtimeConfig.state.configAutoSaveStatus).toBe("saved");
+    expect(sets).toHaveLength(1);
+    expect(runtimeConfig.state.configFormDirty).toBe(false);
+    expect(runtimeConfig.state.configDraftBaseHash).toBe("hash-2");
     runtimeConfig.dispose();
   });
 
@@ -2971,8 +3399,9 @@ describe("config form auto-save", () => {
     await vi.advanceTimersByTimeAsync(CONFIG_FORM_AUTO_SAVE_DEBOUNCE_MS);
 
     expect(runtimeConfig.state.configNeedsApply).toBe(true);
-    expect(sets).toHaveLength(2);
-    expect(sets[1]).toEqual({ raw: '{\n  "count": 2\n}\n', baseHash: "hash-2" });
+    expect(sets).toHaveLength(1);
+    expect(runtimeConfig.state.configFormDirty).toBe(false);
+    expect(runtimeConfig.state.configDraftBaseHash).toBe("hash-2");
     runtimeConfig.dispose();
   });
 

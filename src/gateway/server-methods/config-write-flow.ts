@@ -300,6 +300,9 @@ export async function commitGatewayConfigWrite(params: {
       ...params.writeOptions,
       assertConfigPathForWrite: () => {
         params.writeOptions.assertConfigPathForWrite?.();
+      },
+      assertConfigWriteCurrentBeforeCommit: () => {
+        params.writeOptions.assertConfigWriteCurrentBeforeCommit?.();
         if (params.signal?.aborted) {
           throw new Error("config write cancelled because its client disconnected");
         }

@@ -66,8 +66,8 @@ describe("commitGatewayConfigWrite", () => {
 
   it("cancels a disconnected Control UI write at the lock-time guard", async () => {
     configMocks.replaceConfigFile.mockImplementationOnce(
-      async (options: { writeOptions?: { assertConfigPathForWrite?: () => void } }) => {
-        options.writeOptions?.assertConfigPathForWrite?.();
+      async (options: { writeOptions?: { assertConfigWriteCurrentBeforeCommit?: () => void } }) => {
+        options.writeOptions?.assertConfigWriteCurrentBeforeCommit?.();
         throw new Error("expected disconnected write guard to throw");
       },
     );
@@ -87,6 +87,37 @@ describe("commitGatewayConfigWrite", () => {
         signal: controller.signal,
       }),
     ).rejects.toThrow("config write cancelled because its client disconnected");
+  });
+
+  it("does not roll back a committed write when the client disconnects after commit", async () => {
+    const controller = new AbortController();
+    configMocks.replaceConfigFile.mockImplementationOnce(
+      async (options: {
+        writeOptions?: {
+          assertConfigPathForWrite?: () => void;
+          assertConfigWriteCurrentBeforeCommit?: () => void;
+        };
+      }) => {
+        options.writeOptions?.assertConfigWriteCurrentBeforeCommit?.();
+        controller.abort();
+        expect(() => options.writeOptions?.assertConfigPathForWrite?.()).not.toThrow();
+        return { nextConfig: {}, persistedHash: "persisted-hash" };
+      },
+    );
+
+    await expect(
+      commitGatewayConfigWrite({
+        snapshot: {
+          path: "/tmp/openclaw.json",
+          exists: true,
+          raw: "{}",
+          hash: "hash-1",
+        } as never,
+        writeOptions: {},
+        nextConfig: {},
+        signal: controller.signal,
+      }),
+    ).resolves.toMatchObject({ hash: "persisted-hash" });
   });
 });
 

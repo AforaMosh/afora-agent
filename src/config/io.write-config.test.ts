@@ -1243,6 +1243,39 @@ describe("config io write", () => {
     },
   );
 
+  itWithHome("checks caller liveness only before the atomic config commit", async (home) => {
+    const configPath = configPathForHome(home);
+    await fs.mkdir(path.dirname(configPath), { recursive: true });
+    const originalRaw = formatConfig({ gateway: { mode: "local", port: 18789 } });
+    await fs.writeFile(configPath, originalRaw, "utf-8");
+    const io = createFastConfigIO(home, { configPath });
+    const snapshot = await io.readConfigFileSnapshot();
+    let clientConnected = true;
+    let livenessChecks = 0;
+
+    await io.writeConfigFile(
+      { gateway: { mode: "local", port: 19002 } },
+      {
+        baseSnapshot: snapshot,
+        assertConfigPathForWrite: () => {
+          if (fsNode.readFileSync(configPath, "utf-8") !== originalRaw) {
+            clientConnected = false;
+          }
+        },
+        assertConfigWriteCurrentBeforeCommit: () => {
+          livenessChecks += 1;
+          if (!clientConnected) {
+            throw new Error("client disconnected");
+          }
+        },
+      },
+    );
+
+    expect(livenessChecks).toBe(1);
+    expect(clientConnected).toBe(false);
+    await expect(fs.readFile(configPath, "utf-8")).resolves.toContain('"port": 19002');
+  });
+
   itWithHome(
     "rejects a base snapshot changed during preflight before replacing the root config",
     async (home) => {

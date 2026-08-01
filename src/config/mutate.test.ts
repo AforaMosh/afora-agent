@@ -1811,6 +1811,61 @@ describe("config mutate helpers", () => {
     await expect(fs.readFile(pluginsPath, "utf-8")).resolves.toBe(initialPluginsRaw);
   });
 
+  it("checks caller liveness only before a single-include commit", async () => {
+    const home = await suiteRootTracker.make("include-caller-liveness-commit");
+    const configPath = path.join(home, ".openclaw", "openclaw.json");
+    const pluginsPath = path.join(home, ".openclaw", "plugins.json5");
+    const rootConfig = { plugins: { $include: "./plugins.json5" } };
+    const initialPluginsRaw = `${JSON.stringify({ entries: {} }, null, 2)}\n`;
+    await fs.mkdir(path.dirname(configPath), { recursive: true });
+    await fs.writeFile(configPath, `${JSON.stringify(rootConfig, null, 2)}\n`, "utf-8");
+    await fs.writeFile(pluginsPath, initialPluginsRaw, "utf-8");
+    const snapshot = createSnapshot({
+      hash: "hash-include-caller-liveness-commit",
+      path: configPath,
+      parsed: rootConfig,
+      sourceConfig: { plugins: { entries: {} } },
+    });
+    let clientConnected = true;
+    let livenessChecks = 0;
+    const nextConfig = { plugins: { entries: { demo: { enabled: true } } } };
+    ioMocks.readConfigFileSnapshotForWrite.mockResolvedValue({
+      snapshot: createSnapshot({
+        hash: "hash-include-caller-liveness-committed",
+        path: configPath,
+        parsed: rootConfig,
+        sourceConfig: nextConfig,
+      }),
+      writeOptions: { expectedConfigPath: configPath },
+    });
+
+    await replaceConfigFile({
+      baseHash: snapshot.hash,
+      snapshot,
+      writeOptions: {
+        expectedConfigPath: snapshot.path,
+        ownedConfigPathForWrite: snapshot.path,
+        assertConfigPathForWrite: () => {
+          if (fsNode.readFileSync(pluginsPath, "utf-8") !== initialPluginsRaw) {
+            clientConnected = false;
+          }
+        },
+        assertConfigWriteCurrentBeforeCommit: () => {
+          livenessChecks += 1;
+          if (!clientConnected) {
+            throw new Error("client disconnected");
+          }
+        },
+        includeFileTargetsForWrite: { [pluginsPath]: await resolveIncludeTarget(pluginsPath) },
+      },
+      nextConfig,
+    });
+
+    expect(livenessChecks).toBe(1);
+    expect(clientConnected).toBe(false);
+    await expect(fs.readFile(pluginsPath, "utf-8")).resolves.toContain('"demo"');
+  });
+
   it.each(["active path", "refreshed snapshot path"] as const)(
     "rolls back an include write when the %s changes during the post-write read",
     async (changeKind) => {
