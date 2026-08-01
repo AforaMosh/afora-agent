@@ -41,14 +41,17 @@ import {
   mergeAuthProfileStores,
 } from "./persisted.js";
 import {
+  claimRuntimeAuthProfileStorePublicationToken,
   clearRuntimeAuthProfileStoreSnapshot as clearRuntimeAuthProfileStoreSnapshotImpl,
   clearRuntimeAuthProfileStoreSnapshots as clearRuntimeAuthProfileStoreSnapshotsImpl,
   getRuntimeAuthProfileStoreSnapshot as getRuntimeAuthProfileStoreSnapshotImpl,
   getRuntimeAuthProfileStoreSnapshotRevision,
+  isRuntimeAuthProfileStorePublicationTokenCurrent,
   noteRuntimeAuthProfileStorePersistedMutation,
   listRuntimeAuthProfileStoreSnapshots,
   replaceRuntimeAuthProfileStoreSnapshots as replaceRuntimeAuthProfileStoreSnapshotsImpl,
   setRuntimeAuthProfileStoreSnapshot,
+  type RuntimeAuthProfileStorePublicationToken,
 } from "./runtime-snapshots.js";
 import {
   deletePersistedAuthProfileStoreRaw,
@@ -209,6 +212,31 @@ function publishRuntimeSnapshotsAfterCommit(publish: (() => void) | undefined): 
     log.warn("auth profile store committed but runtime snapshot publication failed", { err });
     return false;
   }
+}
+
+function fenceRuntimeSnapshotPublication(params: {
+  agentDir?: string;
+  database: OpenClawAgentDatabase;
+  publish: () => void;
+}): () => boolean {
+  let token: RuntimeAuthProfileStorePublicationToken | undefined;
+  const captureToken = () => {
+    token = claimRuntimeAuthProfileStorePublicationToken(params.agentDir);
+  };
+  const captureDeferred = deferOpenClawAgentPostCommitPublication(params.database, captureToken);
+  return () => {
+    if (!token) {
+      if (captureDeferred) {
+        throw new Error("auth profile runtime snapshot publication ran before commit");
+      }
+      captureToken();
+    }
+    if (!token || !isRuntimeAuthProfileStorePublicationTokenCurrent(token)) {
+      return false;
+    }
+    params.publish();
+    return true;
+  };
 }
 
 const testing = {
@@ -1488,7 +1516,11 @@ function saveAuthProfileStoreInTransaction(
       refreshDerivedSnapshot(derived);
     }
   };
-  return publishRuntimeSnapshots;
+  return fenceRuntimeSnapshotPublication({
+    agentDir,
+    database,
+    publish: publishRuntimeSnapshots,
+  });
 }
 
 /** Save the auth profile store plus sidecar state, preserving runtime overlay metadata. */
@@ -1686,7 +1718,7 @@ export function saveAuthProfileStoreIfPersistenceSnapshotMatches(params: {
   options?: SaveAuthProfileStoreOptions;
 }): CommittedAuthProfileStoreSave {
   const agentDir = resolveRuntimeAuthProfileAgentDir(params.agentDir);
-  let publishRuntimeSnapshots: (() => void) | undefined;
+  let publishRuntimeSnapshots: (() => boolean) | undefined;
   const owned: AuthProfileStorePersistenceSnapshot = {
     credentialsRaw: null,
     stateRaw: null,
@@ -1726,7 +1758,9 @@ export function saveAuthProfileStoreIfPersistenceSnapshotMatches(params: {
           owned,
           captureRuntimeAuthProfileStorePersistenceSnapshot(agentDir),
         );
-        publishRuntimeSnapshots?.();
+        if (publishRuntimeSnapshots?.() !== true) {
+          return;
+        }
         recordRuntimeAuthProfileStoreOwnership(
           owned,
           captureRuntimeAuthProfileStorePersistenceSnapshot(params.agentDir),
@@ -1891,37 +1925,41 @@ export function restoreAuthProfileStorePersistenceSnapshot(
     if (stateRestored) {
       writePersistedAuthProfileStateRaw(snapshot.stateRaw, agentDir, database);
     }
-    publishRuntimeSnapshots = () => {
-      // Main credential mutation lineage invalidates derived snapshots. Capture
-      // them first so exact-owned entries can restore and newer entries rebuild.
-      const currentRuntimeStores = listRuntimeAuthProfileStoreSnapshots().map(
-        ({ agentDir: runtimeAgentDir, store }) => ({
-          agentDir: runtimeAgentDir,
-          store,
-          runtimeRevision: getRuntimeAuthProfileStoreSnapshotRevision(runtimeAgentDir),
-        }),
-      );
-      const currentRuntimeRevision = getRuntimeAuthProfileStoreSnapshotRevision(agentDir);
-      if (credentialsRestored || stateRestored) {
-        noteRuntimeAuthProfileStorePersistedMutation(agentDir, {
-          credentialsChanged: credentialsRestored,
-          profileSetChanged: credentialsRestored && profileSetChanged,
-          stateChanged: stateRestored,
-          profileIds: credentialsRestored ? changedProfileIds : [],
+    publishRuntimeSnapshots = fenceRuntimeSnapshotPublication({
+      agentDir,
+      database,
+      publish: () => {
+        // Main credential mutation lineage invalidates derived snapshots. Capture
+        // them first so exact-owned entries can restore and newer entries rebuild.
+        const currentRuntimeStores = listRuntimeAuthProfileStoreSnapshots().map(
+          ({ agentDir: runtimeAgentDir, store }) => ({
+            agentDir: runtimeAgentDir,
+            store,
+            runtimeRevision: getRuntimeAuthProfileStoreSnapshotRevision(runtimeAgentDir),
+          }),
+        );
+        const currentRuntimeRevision = getRuntimeAuthProfileStoreSnapshotRevision(agentDir);
+        if (credentialsRestored || stateRestored) {
+          noteRuntimeAuthProfileStorePersistedMutation(agentDir, {
+            credentialsChanged: credentialsRestored,
+            profileSetChanged: credentialsRestored && profileSetChanged,
+            stateChanged: stateRestored,
+            profileIds: credentialsRestored ? changedProfileIds : [],
+          });
+        }
+        reconcileRuntimeAuthProfileStorePersistenceSnapshot({
+          snapshot,
+          owned,
+          agentDir,
+          credentialsOwned,
+          stateOwned,
+          credentialsRestored,
+          stateRestored,
+          currentRuntimeStores,
+          currentRuntimeRevision,
         });
-      }
-      reconcileRuntimeAuthProfileStorePersistenceSnapshot({
-        snapshot,
-        owned,
-        agentDir,
-        credentialsOwned,
-        stateOwned,
-        credentialsRestored,
-        stateRestored,
-        currentRuntimeStores,
-        currentRuntimeRevision,
-      });
-    };
+      },
+    });
   });
   publishRuntimeSnapshotsAfterCommit(publishRuntimeSnapshots);
 }

@@ -19,6 +19,10 @@ let runtimeAuthStoreSnapshotsRevision = 0;
 // Per-store generations isolate rollback ownership; the global counter remains
 // the deletion generation for keys no longer present in this map.
 const runtimeAuthStoreSnapshotRevisions = new Map<string, number>();
+const MAX_RUNTIME_AUTH_PUBLICATION_OWNERS = 256;
+let runtimeAuthPublicationRevision = 0;
+let runtimeAuthPublicationEvictionRevision = 0;
+const runtimeAuthPublicationGenerations = new Map<string, number>();
 let persistedMutationRevision = 0;
 let evictedOwnerMutationFloor = 0;
 const MAX_PERSISTED_MUTATION_OWNERS = 256;
@@ -195,6 +199,52 @@ function recordChangedSnapshotRevisions(
 // and per-agent stores do not overwrite each other.
 function resolveRuntimeStoreKey(agentDir?: string): string {
   return resolveAuthProfileDatabasePath(agentDir);
+}
+
+export type RuntimeAuthProfileStorePublicationToken = {
+  ownerKey: string;
+  ownerGeneration: number;
+  mainGeneration: number;
+  evictionRevision: number;
+};
+
+/**
+ * Captures durable commit order without reopening SQLite during publication.
+ * Derived publishers also fence against newer main-store commits they inherit.
+ */
+export function claimRuntimeAuthProfileStorePublicationToken(
+  agentDir?: string,
+): RuntimeAuthProfileStorePublicationToken {
+  const ownerKey = resolveRuntimeStoreKey(agentDir);
+  const mainKey = resolveRuntimeStoreKey(undefined);
+  runtimeAuthPublicationRevision += 1;
+  runtimeAuthPublicationGenerations.delete(ownerKey);
+  runtimeAuthPublicationGenerations.set(ownerKey, runtimeAuthPublicationRevision);
+  while (runtimeAuthPublicationGenerations.size > MAX_RUNTIME_AUTH_PUBLICATION_OWNERS) {
+    const oldestOwnerKey = runtimeAuthPublicationGenerations.keys().next().value;
+    if (oldestOwnerKey === undefined) {
+      break;
+    }
+    runtimeAuthPublicationGenerations.delete(oldestOwnerKey);
+    runtimeAuthPublicationEvictionRevision += 1;
+  }
+  return {
+    ownerKey,
+    ownerGeneration: runtimeAuthPublicationGenerations.get(ownerKey) ?? 0,
+    mainGeneration: runtimeAuthPublicationGenerations.get(mainKey) ?? 0,
+    evictionRevision: runtimeAuthPublicationEvictionRevision,
+  };
+}
+
+export function isRuntimeAuthProfileStorePublicationTokenCurrent(
+  token: RuntimeAuthProfileStorePublicationToken,
+): boolean {
+  return (
+    token.evictionRevision === runtimeAuthPublicationEvictionRevision &&
+    token.ownerGeneration === (runtimeAuthPublicationGenerations.get(token.ownerKey) ?? 0) &&
+    token.mainGeneration ===
+      (runtimeAuthPublicationGenerations.get(resolveRuntimeStoreKey(undefined)) ?? 0)
+  );
 }
 
 function notifyRuntimeAuthStoreMutation(agentDir?: string): void {
