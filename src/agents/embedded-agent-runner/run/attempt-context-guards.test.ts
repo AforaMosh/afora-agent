@@ -77,6 +77,53 @@ describe("installEmbeddedAttemptContextGuards", () => {
     hoisted.readLastCacheTtlTimestamp.mockReturnValue(null);
   });
 
+  it.each([
+    { label: "configuration is missing", config: undefined },
+    { label: "pruning is omitted", config: { agents: { defaults: {} } } },
+    {
+      label: "pruning is disabled",
+      config: { agents: { defaults: { contextPruning: { mode: "off" } } } },
+    },
+  ])("skips provider discovery when cache-TTL $label", async ({ config }) => {
+    const input = createInput();
+    input.attempt = { ...input.attempt, config } as never;
+    const originalTransform = vi.fn(async (messages: AgentMessage[]) => messages);
+    input.activeSession.agent.transformContext = originalTransform;
+
+    const guards = installEmbeddedAttemptContextGuards(input as never);
+
+    expect(hoisted.isCacheTtlEligibleProvider).not.toHaveBeenCalled();
+    expect(hoisted.readLastCacheTtlTimestamp).not.toHaveBeenCalled();
+
+    const messages = [{ role: "user", content: "hello", timestamp: 1 }] as AgentMessage[];
+    await input.activeSession.agent.transformContext?.(messages, new AbortController().signal);
+    expect(originalTransform).toHaveBeenCalledOnce();
+
+    guards.remove();
+    expect(input.activeSession.agent.transformContext).toBe(originalTransform);
+  });
+
+  it("checks configured cache-TTL pruning without installing it for ineligible providers", () => {
+    const input = createInput();
+    input.attempt = {
+      ...input.attempt,
+      config: { agents: { defaults: { contextPruning: { mode: "cache-ttl" } } } },
+    } as never;
+    const originalTransform = input.activeSession.agent.transformContext;
+
+    const guards = installEmbeddedAttemptContextGuards(input as never);
+
+    expect(hoisted.isCacheTtlEligibleProvider).toHaveBeenCalledExactlyOnceWith(
+      "provider-1",
+      "model-1",
+      "anthropic-messages",
+    );
+    expect(hoisted.readLastCacheTtlTimestamp).not.toHaveBeenCalled();
+
+    guards.remove();
+    expect(input.activeSession.agent.transformContext).toBe(originalTransform);
+  });
+
   it("tracks mid-turn requests and restores attempt-local transforms", async () => {
     const input = createInput();
     const originalTransform = input.activeSession.agent.transformContext;
@@ -193,6 +240,11 @@ describe("installEmbeddedAttemptContextGuards", () => {
     ] as AgentMessage[];
 
     const guards = installEmbeddedAttemptContextGuards(input as never);
+    expect(hoisted.isCacheTtlEligibleProvider).toHaveBeenCalledExactlyOnceWith(
+      "anthropic",
+      "claude-sonnet-4-6",
+      "anthropic-messages",
+    );
     await input.activeSession.agent.transformContext?.(messages, new AbortController().signal);
     const firstTool = engineMessages?.find((message) => message.role === "toolResult");
     expect(firstTool?.content[0]).toMatchObject({

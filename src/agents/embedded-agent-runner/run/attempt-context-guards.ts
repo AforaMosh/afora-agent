@@ -86,13 +86,15 @@ export function installEmbeddedAttemptContextGuards(input: {
         }
       : {};
 
-  const cacheTtlSettings = isCacheTtlEligibleProvider(
-    attempt.provider,
-    attempt.modelId,
-    attempt.model.api,
-  )
-    ? resolveCacheTtlPruningSettings(attempt.config?.agents?.defaults?.contextPruning)
-    : undefined;
+  const configuredCacheTtlSettings = resolveCacheTtlPruningSettings(
+    attempt.config?.agents?.defaults?.contextPruning,
+  );
+  // Provider eligibility can load plugin runtimes; never pay that cost for disabled pruning.
+  const cacheTtlSettings =
+    configuredCacheTtlSettings &&
+    isCacheTtlEligibleProvider(attempt.provider, attempt.modelId, attempt.model.api)
+      ? configuredCacheTtlSettings
+      : undefined;
   const previousCacheTtlTransform = activeSession.agent.transformContext;
   let lastCacheTouchAt = cacheTtlSettings
     ? readLastCacheTtlTimestamp(input.sessionManager, {
