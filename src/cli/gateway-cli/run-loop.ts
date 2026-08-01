@@ -677,9 +677,10 @@ export async function runGatewayLoop(params: {
                 activeWorkDrainDeadlineAt === undefined
                   ? undefined
                   : Math.max(0, activeWorkDrainDeadlineAt - Date.now());
-              const rootDrainPromise = isRestart && restartIntent?.force
-                ? Promise.resolve({ drained: true, active: 0 })
-                : waitForActiveGatewayRootWork(rootDrainTimeoutMs);
+              const rootDrainPromise =
+                isRestart && restartIntent?.force
+                  ? Promise.resolve({ drained: true, active: 0 })
+                  : waitForActiveGatewayRootWork(rootDrainTimeoutMs);
               const activeTasks = getActiveTaskCount();
               const activeRuns = getActiveEmbeddedRunCount();
               activeTasksAtDrainStart = activeTasks;
