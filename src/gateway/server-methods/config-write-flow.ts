@@ -284,6 +284,7 @@ export async function commitGatewayConfigWrite(params: {
   nextConfig: OpenClawConfig;
   context?: GatewayRequestContext;
   disconnectSharedAuthClients?: boolean;
+  signal?: AbortSignal;
 }): Promise<{
   path: string;
   config: OpenClawConfig;
@@ -297,6 +298,12 @@ export async function commitGatewayConfigWrite(params: {
     baseHash: resolveConfigSnapshotHash(params.snapshot) ?? undefined,
     writeOptions: {
       ...params.writeOptions,
+      assertConfigPathForWrite: () => {
+        params.writeOptions.assertConfigPathForWrite?.();
+        if (params.signal?.aborted) {
+          throw new Error("config write cancelled because its client disconnected");
+        }
+      },
       auditOrigin: "config-rpc",
       runtimeRefresh: {
         ...params.writeOptions.runtimeRefresh,

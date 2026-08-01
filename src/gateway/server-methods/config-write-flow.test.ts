@@ -63,6 +63,31 @@ describe("commitGatewayConfigWrite", () => {
       }),
     );
   });
+
+  it("cancels a disconnected Control UI write at the lock-time guard", async () => {
+    configMocks.replaceConfigFile.mockImplementationOnce(
+      async (options: { writeOptions?: { assertConfigPathForWrite?: () => void } }) => {
+        options.writeOptions?.assertConfigPathForWrite?.();
+        throw new Error("expected disconnected write guard to throw");
+      },
+    );
+    const controller = new AbortController();
+    controller.abort();
+
+    await expect(
+      commitGatewayConfigWrite({
+        snapshot: {
+          path: "/tmp/openclaw.json",
+          exists: true,
+          raw: "{}",
+          hash: "hash-1",
+        } as never,
+        writeOptions: {},
+        nextConfig: {},
+        signal: controller.signal,
+      }),
+    ).rejects.toThrow("config write cancelled because its client disconnected");
+  });
 });
 
 describe("didActiveSharedGatewayAuthChange", () => {

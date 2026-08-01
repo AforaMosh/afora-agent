@@ -153,16 +153,18 @@ export function createGatewayAuthenticatedRequestDispatcher(params: {
 
     const executeRequest = async () => {
       // One-shot CLI clients cancel by closing their authenticated socket;
-      // leave long-lived SDK/UI invocations independent of connection teardown.
-      const nodeInvocationController =
-        req.method === "node.invoke" &&
-        client.connect.client.id === GATEWAY_CLIENT_IDS.CLI &&
-        client.connect.client.mode === GATEWAY_CLIENT_MODES.CLI
-          ? new AbortController()
-          : undefined;
-      const cancelNodeInvocation = () => nodeInvocationController?.abort();
-      if (nodeInvocationController) {
-        client.socket.once("close", cancelNodeInvocation);
+      // Control UI full-config writes also stay connection-owned until commit
+      // so a replaced Gateway cannot finish an unobservable stale write.
+      const cancelOnDisconnect =
+        (req.method === "node.invoke" &&
+          client.connect.client.id === GATEWAY_CLIENT_IDS.CLI &&
+          client.connect.client.mode === GATEWAY_CLIENT_MODES.CLI) ||
+        ((req.method === "config.set" || req.method === "config.apply") &&
+          client.connect.client.id === GATEWAY_CLIENT_IDS.CONTROL_UI);
+      const requestController = cancelOnDisconnect ? new AbortController() : undefined;
+      const cancelRequest = () => requestController?.abort();
+      if (requestController) {
+        client.socket.once("close", cancelRequest);
       }
       try {
         const { handleGatewayRequest } = await loadGatewayServerMethods();
@@ -174,15 +176,15 @@ export function createGatewayAuthenticatedRequestDispatcher(params: {
           extraHandlers,
           methodRegistry: getMethodRegistry?.(),
           context: buildRequestContext(),
-          ...(nodeInvocationController ? { signal: nodeInvocationController.signal } : {}),
+          ...(requestController ? { signal: requestController.signal } : {}),
         });
       } catch (err) {
         // Failure diagnostics and responses belong to the same request trace as the handler.
         logGateway.error(`request handler failed: ${formatForLog(err)}`);
         respond(false, undefined, errorShape(ErrorCodes.UNAVAILABLE, formatForLog(err)));
       } finally {
-        if (nodeInvocationController) {
-          client.socket.off("close", cancelNodeInvocation);
+        if (requestController) {
+          client.socket.off("close", cancelRequest);
         }
       }
     };

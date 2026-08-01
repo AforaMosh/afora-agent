@@ -879,7 +879,7 @@ export const configHandlers: GatewayRequestHandlers = {
     }
     respond(true, result, undefined);
   },
-  "config.set": async ({ params, respond, context }) => {
+  "config.set": async ({ params, respond, context, signal }) => {
     if (!assertValidParams(params, validateConfigSetParams, "config.set", respond)) {
       return;
     }
@@ -919,6 +919,7 @@ export const configHandlers: GatewayRequestHandlers = {
       writeOptions,
       nextConfig: parsed.writeConfig,
       context,
+      signal,
       respond,
     });
     if (!writeResult) {
@@ -1168,7 +1169,7 @@ export const configHandlers: GatewayRequestHandlers = {
       preparedSecretsSnapshot,
     });
   },
-  "config.apply": async ({ params, respond, client, context }) => {
+  "config.apply": async ({ params, respond, client, context, signal }) => {
     if (!assertValidParams(params, validateConfigApplyParams, "config.apply", respond)) {
       return;
     }
@@ -1213,6 +1214,7 @@ export const configHandlers: GatewayRequestHandlers = {
       nextConfig: parsed.writeConfig,
       context,
       disconnectSharedAuthClients,
+      signal,
       respond,
     });
     if (!writeResult) {

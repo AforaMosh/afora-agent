@@ -425,6 +425,14 @@ describe("applyServerUiPrefs", () => {
     expect(
       resolveServerUiPrefState(configWithPrefs({ theme: "claw" }), "theme", "ws://readonly"),
     ).toMatchObject({ provenance: "pending", value: "dash" });
+    expect(
+      sessionStorage.getItem("openclaw.control.serverPrefs.pending-migrated.v1:ws://readonly/"),
+    ).toBeNull();
+
+    resetServerUiPrefsSync();
+    expect(
+      resolveServerUiPrefState(configWithPrefs({ theme: "claw" }), "theme", "ws://readonly"),
+    ).toMatchObject({ provenance: "pending", value: "dash" });
   });
 
   it("does not resurrect a read-only legacy pending record after acknowledgement", async () => {

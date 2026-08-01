@@ -332,6 +332,7 @@ const lastSeenPrefsByScope = new Map<string, string>();
 // them merely because durable browser storage is unavailable.
 const pendingPrefsByScope = new Map<string, ServerUiPrefs>();
 const migratedLegacyPendingScopes = new Set<string>();
+const legacyPendingAliasesByScope = new Map<string, Set<string>>();
 function rememberScopedValue<T>(map: Map<string, T>, scope: string, value: T | null): void {
   map.delete(scope);
   if (value !== null) {
@@ -420,6 +421,22 @@ function recordPendingMigrationTombstone(scope: string): void {
     // Process memory still prevents resurrection for this app lifetime.
   }
 }
+function rememberLegacyPendingAlias(scope: string, legacyScope: string): void {
+  const aliases = legacyPendingAliasesByScope.get(scope) ?? new Set<string>();
+  aliases.add(legacyScope);
+  legacyPendingAliasesByScope.set(scope, aliases);
+}
+function finalizePendingMigrations(scope: string): void {
+  const aliases = legacyPendingAliasesByScope.get(scope);
+  if (!aliases) {
+    return;
+  }
+  legacyPendingAliasesByScope.delete(scope);
+  for (const legacyScope of aliases) {
+    recordPendingMigrationTombstone(legacyScope);
+    writeStorage(PENDING_KEY, legacyScope, null);
+  }
+}
 function migrateServerPrefsScope(authoredScope: string, normalizedScope: string): void {
   const aliases = new Set([authoredScope, trailingSlashScopeAlias(normalizedScope)]);
   for (const legacyScope of aliases) {
@@ -435,7 +452,7 @@ function migrateServerPrefsScope(authoredScope: string, normalizedScope: string)
         ...readPendingPrefsForScope(normalizedScope),
       };
       rememberScopedValue(pendingPrefsByScope, normalizedScope, mergedPending);
-      recordPendingMigrationTombstone(legacyScope);
+      rememberLegacyPendingAlias(normalizedScope, legacyScope);
       if (writeStorage(PENDING_KEY, normalizedScope, JSON.stringify(mergedPending))) {
         writeStorage(PENDING_KEY, legacyScope, null);
       }
@@ -506,6 +523,7 @@ export function resetServerUiPrefsSync(options: { preserveScopedFallback?: boole
       }
     }
     migratedLegacyPendingScopes.clear();
+    legacyPendingAliasesByScope.clear();
   }
   requestedServerUiPrefResets.clear();
   requestedDeviceLocalPrefResets.clear();
@@ -696,6 +714,7 @@ async function drainPendingPrefs(writer: ServerUiPrefsWriter, epoch: number): Pr
         writeStorage(LAST_SEEN_KEY, pendingScope, nextLastSeen);
         rememberLastSeen(pendingScope, nextLastSeen);
         settlePendingStorage(batch);
+        finalizePendingMigrations(pendingScope);
         clearConflictRedrain();
         if (pushWriter !== writer || pushEpoch !== epoch) {
           return;
@@ -734,6 +753,7 @@ async function drainPendingPrefs(writer: ServerUiPrefsWriter, epoch: number): Pr
       // refreshes and reloads preserve this local edit; only a server delta replaces it.
       removeBatch(batch);
       settlePendingStorage(batch);
+      finalizePendingMigrations(pendingScope);
       afterCommit?.({ needsRefresh: false, retainedLocal: true });
       return;
     }
