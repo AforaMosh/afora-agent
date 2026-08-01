@@ -18,6 +18,8 @@ import type {
 } from "./session-accessor.sqlite-contract.js";
 import {
   readVisibleMessageRange,
+  resolveContextMessagePositionRange,
+  resolveContextMessagePositions,
   resolveVisibleMessagePositionRange,
   resolveVisibleMessagePositions,
 } from "./session-accessor.sqlite-reset-window.js";
@@ -543,13 +545,16 @@ export function readSessionTranscriptMessageEventPage(
   });
 }
 
-/** Reads a tail page whose materialized event payloads fit a hard byte budget. */
-export function readSessionTranscriptBoundedMessageTailPage(
+function readBoundedMessageTailPage(
   scope: SessionTranscriptReadScope,
   options: { maxBytes: number; maxMessages: number; offset: number },
+  visibility: {
+    resolvePositionRange: typeof resolveVisibleMessagePositionRange;
+    resolvePositions: typeof resolveVisibleMessagePositions;
+  },
 ): SessionTranscriptBoundedMessageTailPage {
   return withCurrentProjectionSnapshot(scope, (projection) => {
-    const visible = resolveVisibleMessagePositions(projection);
+    const visible = visibility.resolvePositions(projection);
     const totalMessages = visible.total;
     const offset = Math.min(
       Math.max(0, Math.floor(Number.isFinite(options.offset) ? options.offset : 0)),
@@ -565,7 +570,7 @@ export function readSessionTranscriptBoundedMessageTailPage(
     );
     const endExclusive = Math.max(0, totalMessages - offset);
     const start = Math.max(0, endExclusive - maxMessages);
-    const positions = resolveVisibleMessagePositionRange(projection, start, endExclusive);
+    const positions = visibility.resolvePositionRange(projection, start, endExclusive);
     if (positions.length === 0 || maxBytes === 0) {
       return {
         activeLeafEntryId: projection.state.leafEventId,
@@ -627,6 +632,31 @@ export function readSessionTranscriptBoundedMessageTailPage(
       serializedBytes,
       totalMessages,
     };
+  });
+}
+
+/** Reads a transcript-visible tail page whose materialized payloads fit a hard byte budget. */
+export function readSessionTranscriptBoundedMessageTailPage(
+  scope: SessionTranscriptReadScope,
+  options: { maxBytes: number; maxMessages: number; offset: number },
+): SessionTranscriptBoundedMessageTailPage {
+  return readBoundedMessageTailPage(scope, options, {
+    resolvePositionRange: resolveVisibleMessagePositionRange,
+    resolvePositions: resolveVisibleMessagePositions,
+  });
+}
+
+/**
+ * Reads a model-context tail page without resurrecting messages discarded by
+ * the latest compaction or reset boundary.
+ */
+export function readSessionTranscriptBoundedContextMessageTailPage(
+  scope: SessionTranscriptReadScope,
+  options: { maxBytes: number; maxMessages: number; offset: number },
+): SessionTranscriptBoundedMessageTailPage {
+  return readBoundedMessageTailPage(scope, options, {
+    resolvePositionRange: resolveContextMessagePositionRange,
+    resolvePositions: resolveContextMessagePositions,
   });
 }
 

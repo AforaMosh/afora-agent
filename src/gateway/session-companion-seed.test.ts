@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import { persistSessionTranscriptTurn } from "../config/sessions/session-accessor.js";
+import {
+  appendTranscriptEvent,
+  persistSessionTranscriptTurn,
+} from "../config/sessions/session-accessor.js";
 import {
   closeOpenClawAgentDatabasesForTest,
   openOpenClawAgentDatabase,
@@ -90,5 +93,59 @@ describe("session companion transcript seed", () => {
     expect(seed.at(-1)).toEqual({ role: "assistant", text: "useful 49", ts: 49 });
     expect(seed.some((message) => message.text === "current question")).toBe(false);
     expect(seed.some((message) => message.text.startsWith("tool result"))).toBe(false);
+  });
+
+  it("does not reintroduce messages discarded by the latest compaction", async () => {
+    const stateDir = tempDirs.make("openclaw-companion-compaction-");
+    vi.stubEnv("OPENCLAW_STATE_DIR", stateDir);
+    const scope = {
+      agentId: "main",
+      env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+      sessionId: "companion-compaction-test",
+      sessionKey: "agent:main:companion-compaction-test",
+    };
+    await persistSessionTranscriptTurn(scope, {
+      messages: [
+        {
+          eventId: "discarded",
+          parentId: null,
+          message: { role: "user" as const, content: "discarded context", timestamp: 1 },
+        },
+        {
+          eventId: "retained",
+          parentId: "discarded",
+          message: { role: "user" as const, content: "retained context", timestamp: 2 },
+        },
+      ],
+      touchSessionEntry: false,
+    });
+    await appendTranscriptEvent(scope, {
+      type: "compaction",
+      id: "compaction",
+      parentId: "retained",
+      timestamp: "2026-08-01T00:00:00.000Z",
+      summary: "older context was compacted",
+      firstKeptEntryId: "retained",
+      tokensBefore: 100,
+    });
+    await persistSessionTranscriptTurn(scope, {
+      messages: [
+        {
+          eventId: "answer",
+          parentId: "compaction",
+          message: { role: "assistant" as const, content: "recent answer", timestamp: 3 },
+        },
+        {
+          eventId: "question",
+          parentId: "answer",
+          message: { role: "user" as const, content: "current question", timestamp: 4 },
+        },
+      ],
+      touchSessionEntry: false,
+    });
+
+    const seed = readSessionCompanionSeedMessages(scope);
+
+    expect(seed.map((message) => message.text)).toEqual(["retained context", "recent answer"]);
   });
 });

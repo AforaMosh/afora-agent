@@ -1,6 +1,8 @@
 import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
 import { extractAssistantText, stripToolMessages } from "../agents/tools/chat-history-text.js";
-import { readSessionTranscriptBoundedMessageTailPage } from "../config/sessions/session-accessor.js";
+import {
+  readSessionTranscriptBoundedContextMessageTailPage,
+} from "../config/sessions/session-accessor.js";
 import { redactToolPayloadText } from "../logging/redact.js";
 import type { SessionCompanionSeedMessage } from "./session-companion-state.js";
 
@@ -121,7 +123,7 @@ export function readSessionCompanionSeedMessages(params: {
       offset < SEED_READ_MAX_SCANNED_MESSAGES &&
       serializedBytes < SEED_READ_MAX_BYTES
     ) {
-      const page = readSessionTranscriptBoundedMessageTailPage(scope, {
+      const page = readSessionTranscriptBoundedContextMessageTailPage(scope, {
         maxBytes: SEED_READ_MAX_BYTES - serializedBytes,
         maxMessages: Math.min(SEED_READ_PAGE_MESSAGES, SEED_READ_MAX_SCANNED_MESSAGES - offset),
         offset,
