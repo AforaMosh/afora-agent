@@ -29,10 +29,19 @@ records into authorization evidence.
 
 Execution identity recording follows the default-on audit ledger. Setting
 `logging.audit.enabled: false` stops new contexts as well as new events after
-restart. After session work admission succeeds, the Gateway synchronously
-attempts to persist one immutable context before model, ACP, or delivery work
-begins. Persistence remains best-effort: a failed write logs one operational
-warning and the run continues without exact-run identity evidence.
+restart. After session work admission succeeds, OpenClaw validates and freezes
+one bounded identity envelope, immediately offers it to the existing audit
+writer queue, and continues the run without waiting for writer readiness,
+SQLite, or persistence. The worker initializes schema and HMAC-key state,
+pseudonymizes raw references, constructs the immutable context, validates its
+canonical bytes, and persists it. An accepted envelope can therefore be
+temporarily unavailable to inspection while queued work finishes.
+
+Persistence remains best-effort. Queue saturation, worker or storage failure,
+and process crashes can lose evidence; they log only a bounded operational
+warning and never abort the run. Normal Gateway and direct-local CLI shutdown
+flushes accepted work when the writer lifecycle permits, but abrupt termination
+can still lose queued evidence.
 
 Query a context by exact run id with `audit.run.inspect` or
 [`openclaw audit --run <id> --explain`](/cli/audit). The result explicitly
@@ -141,11 +150,14 @@ canonical session keys can themselves contain platform account or peer ids.
 Message records intentionally omit both.
 
 Execution identity contexts use the same installation-local key owner with a
-separate HMAC domain. Gateway-cell, runtime, invoker, ingress-source, assurance,
-and grant references are projected before persistence. Configured agent ids and
-exact run ids remain operator-visible. Contexts never contain prompt or message
-text, command bodies, arguments, paths, credentials, environment values, or
-arbitrary plugin payloads. Each encoded context is capped at 16 KiB.
+separate HMAC domain. Raw runtime, invoker, ingress-source, assurance, and grant
+references exist only in a deeply frozen, in-process worker message capped at
+16 KiB and 16 grant/assurance items. The worker replaces them with keyed
+pseudonyms before persistence; they are never stored, exported, inspected, or
+logged. Configured agent ids and exact run ids remain operator-visible.
+Contexts never contain prompt or message text, command bodies, arguments,
+paths, credentials, environment values, or arbitrary plugin payloads. Each
+encoded context is also capped at 16 KiB.
 
 Audit exports remain sensitive operational metadata even without content:
 timing, channels, outcomes, and stable pseudonyms can correlate activity.
@@ -158,8 +170,8 @@ The ledger is best-effort and deliberately bounded. Treat it as evidence of
 what was recorded, not as proof of what happened:
 
 - **Absence of a row proves nothing.** Pre-admission inbound drops, sends from
-  CLI processes without a running Gateway recorder, and plugin-local or
-  direct-send paths that bypass shared durable delivery leave no record.
+  plugin-local or direct-send paths that bypass shared durable delivery, a
+  dropped admission envelope, and crash-lost queued work can leave no record.
 - Writes go through a bounded background worker; worker failure or queue
   saturation drops records and logs one operational warning.
 - Crash-ambiguous outbound sends are recorded as `unknown` rather than
@@ -183,6 +195,8 @@ rows and their ledger sequences are preserved.
 
 Execution identity contexts also live in the shared state database. Their
 additive table is created lazily on first use without a schema-version bump.
+First-use schema creation, HMAC-key access, canonical context construction, and
+all SQLite work happen in the audit worker, never in agent admission.
 Contexts are retained for 30 days and capped at 100,000 rows. Exact-run
 inspection never returns a context or its admission decision after that
 context is older than 30 days, even if physical cleanup has not run. Expired

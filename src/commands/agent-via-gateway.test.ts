@@ -5,6 +5,10 @@ import os from "node:os";
 import path from "node:path";
 import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  configureExecutionIdentityAdmissionSink,
+  hasExecutionIdentityAdmissionSink,
+} from "../audit/execution-identity-admission.js";
 import type { OpenClawConfig } from "../config/config.js";
 import { loggingState } from "../logging/state.js";
 import type { RuntimeEnv } from "../runtime.js";
@@ -38,6 +42,11 @@ const isGatewayTransportError = vi.hoisted(() =>
 const agentCommand = vi.hoisted(() => vi.fn());
 const agentModuleLoadCount = vi.hoisted(() => vi.fn());
 const loadAgentSessionModuleMock = vi.hoisted(() => vi.fn());
+const auditRecorderMocks = vi.hoisted(() => ({
+  create: vi.fn(),
+  recordExecutionIdentity: vi.fn(() => true),
+  stop: vi.fn(async () => {}),
+}));
 
 const runtime: RuntimeEnv = {
   log: vi.fn(),
@@ -233,6 +242,15 @@ vi.mock("./agent.js", () => {
   agentModuleLoadCount();
   return { agentCommand };
 });
+vi.mock("../audit/audit-recorder.js", () => ({
+  createAuditEventRecorder: (...args: unknown[]) => {
+    auditRecorderMocks.create(...args);
+    return {
+      recordExecutionIdentity: auditRecorderMocks.recordExecutionIdentity,
+      stop: auditRecorderMocks.stop,
+    };
+  },
+}));
 
 let originalForceConsoleToStderr = false;
 let zeroTimeoutGatewayRequestMs: number | undefined;
@@ -254,6 +272,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllEnvs();
+  configureExecutionIdentityAdmissionSink(() => false)();
   agentViaGatewayTesting.setGatewayAbortRetryDelaysMsForTests();
   loggingState.forceConsoleToStderr = originalForceConsoleToStderr;
 });
@@ -1828,6 +1847,9 @@ describe("agentCliCommand", () => {
 
       expect(callGateway).not.toHaveBeenCalled();
       expect(agentCommand).toHaveBeenCalledTimes(1);
+      expect(auditRecorderMocks.create).toHaveBeenCalledWith({ messageMode: "off" });
+      expect(auditRecorderMocks.stop).toHaveBeenCalledOnce();
+      expect(hasExecutionIdentityAdmissionSink()).toBe(false);
       const localOpts = requireRecord(
         requireFirstCallArg(agentCommand, "embedded agent"),
         "embedded agent options",
@@ -1836,6 +1858,38 @@ describe("agentCliCommand", () => {
       expect(localOpts.cleanupCliLiveSessionOnRunEnd).toBe(true);
       expect(localOpts.oneShotCliRun).toBe(true);
       expect(runtime.log).toHaveBeenCalledWith("local");
+    });
+  });
+
+  it("owns and flushes the local audit writer without awaiting readiness", async () => {
+    await withTempStore(async () => {
+      agentCommand.mockImplementationOnce(async () => {
+        expect(hasExecutionIdentityAdmissionSink()).toBe(true);
+        return {
+          payloads: [{ text: "local" }],
+          meta: { durationMs: 1, agentMeta: { sessionId: "s", provider: "p", model: "m" } },
+        } as unknown as Awaited<ReturnType<typeof AgentCommand>>;
+      });
+
+      await agentCliCommand({ message: "hi", to: "+1555", local: true }, runtime);
+
+      expect(auditRecorderMocks.create).toHaveBeenCalledOnce();
+      expect(auditRecorderMocks.stop).toHaveBeenCalledOnce();
+      expect(hasExecutionIdentityAdmissionSink()).toBe(false);
+    });
+  });
+
+  it("reuses an existing Gateway-owned identity writer for local dispatch", async () => {
+    await withTempStore(async () => {
+      const existingSink = vi.fn(() => true);
+      const clearSink = configureExecutionIdentityAdmissionSink(existingSink);
+      mockLocalAgentReply();
+
+      await agentCliCommand({ message: "hi", to: "+1555", local: true }, runtime);
+
+      expect(auditRecorderMocks.create).not.toHaveBeenCalled();
+      expect(hasExecutionIdentityAdmissionSink()).toBe(true);
+      clearSink();
     });
   });
 

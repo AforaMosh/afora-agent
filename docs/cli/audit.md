@@ -100,14 +100,22 @@ An older Gateway produces an explicit `unsupported` result with
 reconstructs identity from legacy audit rows. A current Gateway distinguishes
 an unknown run, an unavailable pre-feature, disabled, or failed context write,
 an expired context, and a corrupt context without claiming that missing
-best-effort activity proves no execution. Once a context is older than 30 days,
-the CLI returns no fields or admission decisions from it. While bounded cleanup
-is pending, the result is `unsupported` with an expiry-and-rerun next step.
-After cleanup it can become `unknown` if no separately retained activity
-remains; this absence does not prove that the run did not occur. Startup and
-hourly maintenance prune at most 1,024 identity contexts per tick and continue
-when collection is disabled. Context persistence and cleanup remain
-best-effort: a failed write or cleanup does not block the agent run.
+best-effort activity proves no execution. A newly admitted run can also be
+temporarily unavailable while its bounded identity envelope waits in the audit
+writer queue; retry inspection after the run or normal process shutdown.
+Admission never waits for writer readiness, schema or HMAC-key initialization,
+SQLite, or persistence.
+
+Once a context is older than 30 days, the CLI returns no fields or admission
+decisions from it. While bounded cleanup is pending, the result is `unsupported`
+with an expiry-and-rerun next step. After cleanup it can become `unknown` if no
+separately retained activity remains; this absence does not prove that the run
+did not occur. Startup and hourly maintenance prune at most 1,024 identity
+contexts per tick and continue when collection is disabled. Queue saturation,
+worker/storage failure, cleanup failure, or abrupt process termination can lose
+best-effort evidence but never block or abort the agent run. Normal Gateway and
+direct-local CLI shutdown flushes accepted work when its writer lifecycle
+permits.
 
 ## Recorded events
 

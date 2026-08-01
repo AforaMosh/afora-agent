@@ -8,6 +8,10 @@ import {
   GATEWAY_CLIENT_NAMES,
 } from "../../packages/gateway-protocol/src/client-info.js";
 import { listAgentIds, resolveDefaultAgentId } from "../agents/agent-scope-config.js";
+import {
+  configureExecutionIdentityAdmissionSink,
+  hasExecutionIdentityAdmissionSink,
+} from "../audit/execution-identity-admission.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { CliDeps } from "../cli/deps.types.js";
 import { withProgress } from "../cli/progress.js";
@@ -121,6 +125,10 @@ const embeddedAgentCommandLoader = createLazyPromiseLoader(
   () => import("./agent.js").then((module) => module.agentCommand),
   { cacheRejections: true },
 );
+const auditRecorderModuleLoader = createLazyPromiseLoader(
+  () => import("../audit/audit-recorder.js"),
+  { cacheRejections: true },
+);
 const agentSessionModuleCache = createLazyPromiseLoader(() => agentSessionModuleLoader(), {
   cacheRejections: true,
 });
@@ -150,6 +158,7 @@ const loadReplyPayloadModule = replyPayloadModuleLoader.load;
 export const agentViaGatewayTesting = {
   resetLazyImportsForTests(): void {
     embeddedAgentCommandLoader.clear();
+    auditRecorderModuleLoader.clear();
     agentSessionModuleCache.clear();
     runtimeConfigModuleLoader.clear();
     replyPayloadModuleLoader.clear();
@@ -918,20 +927,40 @@ export async function agentCliCommand(
   try {
     if (dispatchOpts.local === true) {
       const agentCommand = await embeddedAgentCommandLoader.load();
-      const result = await agentCommand(
-        {
-          ...gatewayDispatchOpts,
-          agentId: gatewayDispatchOpts.agent,
-          replyAccountId: gatewayDispatchOpts.replyAccount,
-          cleanupBundleMcpOnRunEnd: true,
-          cleanupCliLiveSessionOnRunEnd: true,
-          oneShotCliRun: true,
-          abortSignal: signalBridge.signal,
-        },
-        runtime,
-        deps,
-      );
-      return returnAfterSignalExit(result, signalBridge.getReceivedSignal(), runtime);
+      let stopLocalAuditWriter: (() => Promise<void>) | undefined;
+      if (!hasExecutionIdentityAdmissionSink()) {
+        try {
+          const { createAuditEventRecorder } = await auditRecorderModuleLoader.load();
+          const recorder = createAuditEventRecorder({ messageMode: "off" });
+          const clearSink = configureExecutionIdentityAdmissionSink(
+            recorder.recordExecutionIdentity,
+          );
+          stopLocalAuditWriter = async () => {
+            clearSink();
+            await recorder.stop();
+          };
+        } catch {
+          // Admission will emit one bounded warning if evidence cannot be queued.
+        }
+      }
+      try {
+        const result = await agentCommand(
+          {
+            ...gatewayDispatchOpts,
+            agentId: gatewayDispatchOpts.agent,
+            replyAccountId: gatewayDispatchOpts.replyAccount,
+            cleanupBundleMcpOnRunEnd: true,
+            cleanupCliLiveSessionOnRunEnd: true,
+            oneShotCliRun: true,
+            abortSignal: signalBridge.signal,
+          },
+          runtime,
+          deps,
+        );
+        return returnAfterSignalExit(result, signalBridge.getReceivedSignal(), runtime);
+      } finally {
+        await stopLocalAuditWriter?.().catch(() => undefined);
+      }
     }
 
     try {

@@ -6,10 +6,15 @@ import {
 } from "../state/openclaw-state-db.js";
 import { recordAuditEvent } from "./audit-event-store.js";
 import {
-  inspectExecutionIdentityRun,
-  pruneExpiredExecutionIdentityContexts,
-  recordExecutionIdentityContextAtAdmission,
+  configureExecutionIdentityAdmissionSink,
+  enqueueExecutionIdentityContextAtAdmission,
+  type ExecutionIdentityAdmissionEnvelope,
   type ExecutionIdentityAdmissionFacts,
+} from "./execution-identity-admission.js";
+import {
+  inspectExecutionIdentityRun,
+  persistExecutionIdentityAdmissionEnvelope,
+  pruneExpiredExecutionIdentityContexts,
 } from "./execution-identity-context.js";
 
 const RETENTION_MS = 30 * 24 * 60 * 60_000;
@@ -39,16 +44,35 @@ function facts(
 
 function prepareExecutionIdentityContextAtAdmission(
   admissionFacts: ExecutionIdentityAdmissionFacts,
-  options: Omit<Parameters<typeof recordExecutionIdentityContextAtAdmission>[1], "enabled"> = {},
+  options: {
+    env?: NodeJS.ProcessEnv;
+    now?: number;
+    contextId?: string;
+    runtimeInstanceId?: string;
+    limits?: { maxRows: number; pruneBatchRows: number };
+  } = {},
 ) {
-  const context = recordExecutionIdentityContextAtAdmission(admissionFacts, {
-    ...options,
-    enabled: true,
+  const { contextId, runtimeInstanceId, now, limits, ...database } = options;
+  let envelope: ExecutionIdentityAdmissionEnvelope | undefined;
+  const clear = configureExecutionIdentityAdmissionSink((captured) => {
+    envelope = captured;
+    return true;
   });
-  if (!context) {
-    throw new Error("expected execution identity context to be recorded");
+  const result = enqueueExecutionIdentityContextAtAdmission(admissionFacts, {
+    enabled: true,
+    ...(contextId !== undefined ? { contextId } : {}),
+    ...(runtimeInstanceId !== undefined ? { runtimeInstanceId } : {}),
+    ...(now !== undefined ? { now } : {}),
+  });
+  clear();
+  if (!result || !envelope) {
+    throw new Error("expected admission envelope");
   }
-  return context;
+  return persistExecutionIdentityAdmissionEnvelope(envelope, {
+    ...database,
+    ...(now !== undefined ? { now } : {}),
+    ...(limits !== undefined ? { limits } : {}),
+  });
 }
 
 describe("execution identity context storage", () => {
@@ -180,12 +204,12 @@ describe("execution identity context storage", () => {
     const database = databaseOptions();
     const options = { ...database, runtimeInstanceId: "runtime-1" };
     const original = prepareExecutionIdentityContextAtAdmission(facts("run-conflict"), options);
-    expect(
-      recordExecutionIdentityContextAtAdmission(facts("run-conflict", { agentId: "other" }), {
-        ...options,
-        enabled: true,
-      }),
-    ).toBeUndefined();
+    expect(() =>
+      prepareExecutionIdentityContextAtAdmission(
+        facts("run-conflict", { agentId: "other" }),
+        options,
+      ),
+    ).toThrow("execution identity context conflict");
     expect(inspectExecutionIdentityRun({ runId: "run-conflict" }, database).identity).toEqual({
       state: "present",
       context: original,
@@ -198,22 +222,16 @@ describe("execution identity context storage", () => {
     openOpenClawStateDatabase(database).db.exec("DELETE FROM audit_identity_keys;");
     closeOpenClawStateDatabaseForTest();
 
-    expect(
-      recordExecutionIdentityContextAtAdmission(facts("run-after-key-loss"), {
-        ...database,
-        enabled: true,
-      }),
-    ).toBeUndefined();
+    expect(() =>
+      prepareExecutionIdentityContextAtAdmission(facts("run-after-key-loss"), database),
+    ).toThrow("audit identity key is missing");
   });
 
   it("skips new context rows when audit collection is disabled", () => {
     const database = databaseOptions();
 
     expect(
-      recordExecutionIdentityContextAtAdmission(facts("run-disabled"), {
-        ...database,
-        enabled: false,
-      }),
+      enqueueExecutionIdentityContextAtAdmission(facts("run-disabled"), { enabled: false }),
     ).toBeUndefined();
 
     const rowCount = openOpenClawStateDatabase(database)
@@ -230,11 +248,7 @@ describe("execution identity context storage", () => {
       runtimeInstanceId: "runtime-1",
     });
     expect(
-      recordExecutionIdentityContextAtAdmission(facts("run-disabled"), {
-        ...database,
-        enabled: false,
-        now: RETENTION_MS + 1,
-      }),
+      enqueueExecutionIdentityContextAtAdmission(facts("run-disabled"), { enabled: false }),
     ).toBeUndefined();
 
     expect(pruneExpiredExecutionIdentityContexts({ database, now: RETENTION_MS + 1 })).toBe(1);
@@ -245,20 +259,20 @@ describe("execution identity context storage", () => {
     ).toEqual({ count: 0 });
   });
 
-  it("keeps admission available when context persistence fails", () => {
+  it("leaves the original context intact when a later worker write conflicts", () => {
     const database = databaseOptions();
     const options = { ...database, runtimeInstanceId: "runtime-1" };
     prepareExecutionIdentityContextAtAdmission(facts("run-best-effort"), options);
 
-    expect(
-      recordExecutionIdentityContextAtAdmission(
+    expect(() =>
+      prepareExecutionIdentityContextAtAdmission(
         facts("run-best-effort", { agentId: "conflicting-agent" }),
-        { ...options, enabled: true },
+        options,
       ),
-    ).toBeUndefined();
+    ).toThrow("execution identity context conflict");
   });
 
-  it("keeps admission available when insert-time retention cleanup fails", () => {
+  it("rolls back the worker write when insert-time retention cleanup fails", () => {
     const database = databaseOptions();
     prepareExecutionIdentityContextAtAdmission(facts("run-expired"), {
       ...database,
@@ -273,14 +287,13 @@ describe("execution identity context storage", () => {
       END;
     `);
 
-    expect(
-      recordExecutionIdentityContextAtAdmission(facts("run-still-admitted"), {
+    expect(() =>
+      prepareExecutionIdentityContextAtAdmission(facts("run-still-admitted"), {
         ...database,
-        enabled: true,
         now: RETENTION_MS + 1,
         runtimeInstanceId: "runtime-1",
       }),
-    ).toBeUndefined();
+    ).toThrow("cleanup unavailable");
   });
 
   it("stops projecting context and decisions immediately after the retention boundary", () => {

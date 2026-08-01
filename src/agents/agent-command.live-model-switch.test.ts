@@ -116,7 +116,7 @@ const state = vi.hoisted(() => ({
   storePathMock: undefined as string | undefined,
   resolvedSessionKeyMock: undefined as string | undefined,
   trajectoryRecorderParamsMock: vi.fn(),
-  recordExecutionIdentityContextAtAdmissionMock: vi.fn(),
+  enqueueExecutionIdentityContextAtAdmissionMock: vi.fn(),
 }));
 
 vi.mock("./model-fallback-runner.js", () => ({
@@ -125,9 +125,9 @@ vi.mock("./model-fallback-runner.js", () => ({
 
 // Identity persistence has focused owner-boundary and real-run coverage. This
 // synthetic command suite deliberately reuses session-1 across independent tests.
-vi.mock("../audit/execution-identity-context.js", () => ({
-  recordExecutionIdentityContextAtAdmission: (...args: unknown[]) =>
-    state.recordExecutionIdentityContextAtAdmissionMock(...args),
+vi.mock("../audit/execution-identity-admission.js", () => ({
+  enqueueExecutionIdentityContextAtAdmission: (...args: unknown[]) =>
+    state.enqueueExecutionIdentityContextAtAdmissionMock(...args),
 }));
 
 vi.mock("./command/attempt-execution.runtime.js", () => ({
@@ -1085,14 +1085,14 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
     await runBasicAgentCommand();
     await runSystemAgentCommand();
 
-    expect(state.recordExecutionIdentityContextAtAdmissionMock).toHaveBeenNthCalledWith(
+    expect(state.enqueueExecutionIdentityContextAtAdmissionMock).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
         ingress: { kind: "local-cli", boundary: "agent-command.local", state: "present" },
       }),
       { enabled: true },
     );
-    expect(state.recordExecutionIdentityContextAtAdmissionMock).toHaveBeenNthCalledWith(
+    expect(state.enqueueExecutionIdentityContextAtAdmissionMock).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({
         ingress: { kind: "system", boundary: "gateway.boot", state: "present" },
@@ -1116,7 +1116,7 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
       await run();
 
       expect(state.runAgentAttemptMock).toHaveBeenCalledTimes(1);
-      expect(state.recordExecutionIdentityContextAtAdmissionMock).toHaveBeenCalledWith(
+      expect(state.enqueueExecutionIdentityContextAtAdmissionMock).toHaveBeenCalledWith(
         expect.objectContaining({ agentId: "default" }),
         { enabled: false },
       );
@@ -1130,11 +1130,11 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
     "keeps %s runs available when best-effort identity persistence is unavailable",
     async (_name, run) => {
       setupSuccessfulAttempt();
-      state.recordExecutionIdentityContextAtAdmissionMock.mockReturnValue(undefined);
+      state.enqueueExecutionIdentityContextAtAdmissionMock.mockReturnValue(undefined);
 
       await run();
 
-      expect(state.recordExecutionIdentityContextAtAdmissionMock).toHaveBeenCalledWith(
+      expect(state.enqueueExecutionIdentityContextAtAdmissionMock).toHaveBeenCalledWith(
         expect.objectContaining({ agentId: "default" }),
         { enabled: true },
       );

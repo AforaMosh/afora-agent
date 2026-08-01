@@ -17,6 +17,8 @@ scenario:
     - docs/concepts/qa-e2e-automation.md
   codeRefs:
     - src/agents/agent-command.ts
+    - src/audit/execution-identity-admission.ts
+    - src/audit/audit-event-writer.ts
     - src/audit/execution-identity-context.ts
     - src/gateway/server-methods/audit.ts
     - src/commands/audit.ts

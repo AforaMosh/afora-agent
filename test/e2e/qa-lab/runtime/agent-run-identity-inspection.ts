@@ -105,6 +105,13 @@ function assertJsonProjection(result: AuditRunInspectResult, runId: string) {
   if (result.run.runId !== runId || result.coverage.state !== context.coverageState) {
     throw new Error(`audit JSON projection did not preserve exact-run coverage: ${runId}`);
   }
+  if (
+    context.ingress.kind !== "local-cli" ||
+    context.ingress.state !== "present" ||
+    context.ingress.boundary !== "agent-command.local"
+  ) {
+    throw new Error("local agent run did not retain authoritative local-CLI ingress");
+  }
   const admission = result.decisions.find(
     (receipt) => receipt.action.family === "run" && receipt.action.operation === "admission",
   );
@@ -248,6 +255,8 @@ async function runProducer(options: ProducerOptions): Promise<QaEvidenceSummaryJ
       docsRefs: ["docs/gateway/audit.md", "docs/cli/audit.md"],
       codeRefs: [
         "src/agents/agent-command.ts",
+        "src/audit/execution-identity-admission.ts",
+        "src/audit/audit-event-writer.ts",
         "src/audit/execution-identity-context.ts",
         "src/gateway/server-methods/audit.ts",
         "src/commands/audit.ts",

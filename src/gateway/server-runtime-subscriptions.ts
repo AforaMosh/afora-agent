@@ -2,6 +2,7 @@
 import { resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { isAuditLedgerEnabled, resolveAuditMessageMode } from "../audit/audit-config.js";
 import { createAuditEventRecorder } from "../audit/audit-recorder.js";
+import { configureExecutionIdentityAdmissionSink } from "../audit/execution-identity-admission.js";
 import { onTrustedMessageAuditEvent } from "../audit/message-audit-events.js";
 import { getRuntimeConfig } from "../config/io.js";
 import {
@@ -74,6 +75,9 @@ export function startGatewayEventSubscriptions(params: {
   const auditRecorder = createAuditEventRecorder({
     messageMode: auditEnabled ? auditMessageMode : "off",
   });
+  const clearExecutionIdentityAdmissionSink = configureExecutionIdentityAdmissionSink(
+    auditRecorder.recordExecutionIdentity,
+  );
   const sessionObserver = createSessionObserver({
     getConfig: getRuntimeConfig,
     subscribers: params.sessionMessageSubscribers,
@@ -325,6 +329,7 @@ export function startGatewayEventSubscriptions(params: {
     unsubscribePrivateAuditEvents?.();
     unsubscribeToolAuditEvents?.();
     unsubscribeMessageAuditEvents?.();
+    clearExecutionIdentityAdmissionSink();
     await agentEventHandlerLoader
       .peek()
       ?.then((handler) => handler.dispose())

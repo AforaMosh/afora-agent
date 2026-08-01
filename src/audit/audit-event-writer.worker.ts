@@ -3,11 +3,17 @@ import { parentPort, workerData } from "node:worker_threads";
 import { closeOpenClawStateDatabase } from "../state/openclaw-state-db.js";
 import { pruneExpiredAuditEvents, recordAuditEvent } from "./audit-event-store.js";
 import type { AuditEventInput } from "./audit-event-types.js";
-import { pruneExpiredExecutionIdentityContexts } from "./execution-identity-context.js";
+import {
+  persistExecutionIdentityAdmissionEnvelope,
+  pruneExpiredExecutionIdentityContexts,
+} from "./execution-identity-context.js";
 
 const AUDIT_MAINTENANCE_INTERVAL_MS = 60 * 60_000;
 
-type AuditWriterRequest = { type: "record"; input: AuditEventInput } | { type: "stop" };
+type AuditWriterRequest =
+  | { type: "record-event"; input: AuditEventInput }
+  | { type: "record-execution-identity"; envelope: unknown }
+  | { type: "stop" };
 
 const stateDir =
   workerData && typeof workerData === "object" && typeof workerData.stateDir === "string"
@@ -18,6 +24,27 @@ if (!parentPort || !stateDir) {
 }
 const port = parentPort;
 const database = { env: { OPENCLAW_STATE_DIR: stateDir } };
+
+function executionIdentityFailureMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  if (
+    message.includes("audit identity key is missing") ||
+    message.includes("audit identity key is corrupt")
+  ) {
+    return "audit execution identity key unavailable";
+  }
+  if (message.includes("execution identity context conflict")) {
+    return "audit execution identity context conflict";
+  }
+  if (
+    message.includes("admission envelope") ||
+    message.includes("execution identity assurance") ||
+    message.includes("execution identity grant")
+  ) {
+    return "audit execution identity envelope rejected";
+  }
+  return "audit execution identity persistence failed";
+}
 
 function reportMaintenance(): void {
   try {
@@ -37,12 +64,21 @@ const maintenanceTimer = setInterval(reportMaintenance, AUDIT_MAINTENANCE_INTERV
 port.postMessage({ type: "ready" });
 
 port.on("message", (message: AuditWriterRequest) => {
-  if (message.type === "record") {
+  if (message.type === "record-event") {
     try {
       recordAuditEvent(message.input, database);
       port.postMessage({ type: "recorded" });
     } catch (error) {
       port.postMessage({ type: "record-error", error: String(error) });
+    }
+    return;
+  }
+  if (message.type === "record-execution-identity") {
+    try {
+      persistExecutionIdentityAdmissionEnvelope(message.envelope, database);
+      port.postMessage({ type: "recorded" });
+    } catch (error) {
+      port.postMessage({ type: "record-error", error: executionIdentityFailureMessage(error) });
     }
     return;
   }

@@ -2,9 +2,9 @@
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
 import { isAuditLedgerEnabled } from "../audit/audit-config.js";
 import {
-  recordExecutionIdentityContextAtAdmission,
+  enqueueExecutionIdentityContextAtAdmission,
   type ExecutionIdentityAdmissionFacts,
-} from "../audit/execution-identity-context.js";
+} from "../audit/execution-identity-admission.js";
 import type { VerboseLevel } from "../auto-reply/thinking.js";
 import type { CliDeps } from "../cli/deps.types.js";
 import { getRuntimeConfig } from "../config/io.js";
@@ -226,9 +226,9 @@ async function agentCommandInternal(
       },
     });
     return await sessionWorkAdmission.run(async () => {
-      // Session work admission is the authoritative outer-run boundary. Audit
-      // persistence is best-effort, so it must never turn telemetry loss into run loss.
-      recordExecutionIdentityContextAtAdmission(
+      // Session work admission owns these facts. Capture/enqueue stays bounded;
+      // the audit worker may persist later and can never turn evidence loss into run loss.
+      enqueueExecutionIdentityContextAtAdmission(
         {
           runId,
           agentId: sessionAgentId,

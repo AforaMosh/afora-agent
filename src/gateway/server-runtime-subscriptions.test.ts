@@ -1,6 +1,11 @@
 // Tests for gateway runtime subscription wiring.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  configureExecutionIdentityAdmissionSink,
+  enqueueExecutionIdentityContextAtAdmission,
+  hasExecutionIdentityAdmissionSink,
+} from "../audit/execution-identity-admission.js";
+import {
   emitAgentAuditEvent,
   emitAgentEvent,
   resetAgentEventsForTest,
@@ -49,6 +54,7 @@ const auditTestState = vi.hoisted(() => ({
   messageMode: "off" as "off" | "direct" | "all",
   created: 0,
   recorded: 0,
+  identityRecorded: 0,
   stopped: 0,
 }));
 const agentEventHandlerMocks = vi.hoisted(() => ({
@@ -69,6 +75,10 @@ vi.mock("../audit/audit-recorder.js", () => ({
       }),
       recordTool: vi.fn(),
       recordMessage: vi.fn(),
+      recordExecutionIdentity: vi.fn(() => {
+        auditTestState.identityRecorded += 1;
+        return true;
+      }),
       stop: vi.fn(async () => {
         auditTestState.stopped += 1;
       }),
@@ -121,6 +131,7 @@ describe("startGatewayEventSubscriptions", () => {
     auditTestState.messageMode = "off";
     auditTestState.created = 0;
     auditTestState.recorded = 0;
+    auditTestState.identityRecorded = 0;
     auditTestState.stopped = 0;
     agentEventHandlerMocks.create.mockReset().mockImplementation(() => {
       throw new Error("server-chat lazy load failure");
@@ -136,6 +147,7 @@ describe("startGatewayEventSubscriptions", () => {
     void unsubs?.taskUnsub();
     resetAgentEventsForTest();
     resetTaskRegistryForTests({ persist: false });
+    configureExecutionIdentityAdmissionSink(() => false)();
   });
 
   it("records audit events by default and stops the recorder on unsubscribe", async () => {
@@ -148,8 +160,22 @@ describe("startGatewayEventSubscriptions", () => {
       data: { phase: "start", startedAt: 1_000 },
     });
     expect(auditTestState.recorded).toBe(1);
+    expect(hasExecutionIdentityAdmissionSink()).toBe(true);
+    expect(
+      enqueueExecutionIdentityContextAtAdmission(
+        {
+          runId: "gateway-admission",
+          agentId: "main",
+          ingress: { kind: "system", boundary: "gateway.boot", state: "present" },
+          runtime: { kind: "embedded" },
+        },
+        { enabled: true, runtimeInstanceId: "runtime-1" },
+      )?.accepted,
+    ).toBe(true);
+    expect(auditTestState.identityRecorded).toBe(1);
     await unsubs.agentUnsub();
     expect(auditTestState.stopped).toBe(1);
+    expect(hasExecutionIdentityAdmissionSink()).toBe(false);
   });
 
   it("keeps retention maintenance but creates no producers when audit.enabled is false", async () => {

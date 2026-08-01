@@ -1,13 +1,10 @@
 /** Immutable execution identity context storage and run-admission projection. */
-import { randomUUID } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
 import type { Selectable } from "kysely";
 import type {
   AuditRunInspectResult,
   DecisionReceiptV1,
   ExecutionIdentityContextV1,
-  PrincipalRefV1,
 } from "../../packages/gateway-protocol/src/index.js";
 import { validateExecutionIdentityContextV1 } from "../../packages/gateway-protocol/src/index.js";
 import {
@@ -16,8 +13,6 @@ import {
   getNodeSqliteKysely,
 } from "../infra/kysely-sync.js";
 import { normalizeSqliteNumber } from "../infra/sqlite-number.js";
-import { redactSensitiveText } from "../logging/redact.js";
-import { createSubsystemLogger } from "../logging/subsystem.js";
 import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
 import {
   openOpenClawStateDatabase,
@@ -29,24 +24,22 @@ import {
   clearAuditIdentityKeyCacheForDatabase,
   pseudonymizeExecutionIdentityRef,
 } from "./audit-identity.js";
+import {
+  parseExecutionIdentityAdmissionEnvelope,
+  type ExecutionIdentityAdmissionEnvelope,
+} from "./execution-identity-admission.js";
 
 type ExecutionIdentityDatabase = Pick<OpenClawStateKyselyDatabase, "execution_identity_contexts">;
 type ExecutionIdentityRow = Selectable<OpenClawStateKyselyDatabase["execution_identity_contexts"]>;
-type ContextIngress = ExecutionIdentityContextV1["ingress"];
-type ContextRuntime = ExecutionIdentityContextV1["runtimeInstance"];
-type ContextAssurance = ExecutionIdentityContextV1["assurance"][number];
 
 const EXECUTION_IDENTITY_CONTEXT_MAX_BYTES = 16 * 1024;
 const EXECUTION_IDENTITY_CONTEXT_RETENTION_MS = 30 * 24 * 60 * 60_000;
 const EXECUTION_IDENTITY_CONTEXT_MAX_ROWS = 100_000;
 const EXECUTION_IDENTITY_CONTEXT_PRUNE_BATCH_ROWS = 1_024;
 const EXECUTION_IDENTITY_HMAC_REF_RE = /^hmac-sha256:v1:[a-f0-9]{32}:[a-f0-9]{64}$/u;
-const PROCESS_RUNTIME_INSTANCE_ID = randomUUID();
-const log = createSubsystemLogger("audit/events");
 
 const ensuredDatabases = new WeakSet<DatabaseSync>();
 const contextRowCounts = new WeakMap<DatabaseSync, number>();
-let persistenceFailureWarned = false;
 
 // Keep this feature-local DDL byte-for-byte aligned with the canonical schema.
 const EXECUTION_IDENTITY_CONTEXT_SCHEMA_SQL = `
@@ -63,38 +56,8 @@ CREATE TABLE IF NOT EXISTS execution_identity_contexts (
 ) STRICT;
 `;
 
-export type ExecutionIdentityAdmissionFacts = {
-  runId: string;
-  agentId: string;
-  ingress: {
-    kind: ContextIngress["kind"];
-    boundary: string;
-    state?: ContextIngress["state"];
-    rawSourceRef?: string;
-  };
-  runtime: {
-    kind: ContextRuntime["kind"];
-  };
-  invoker?: {
-    kind: PrincipalRefV1["kind"];
-    rawPrincipalRef: string;
-    displayLabel?: string;
-  };
-  applicableGrants?: Array<{
-    rawGrantRef: string;
-    state: ExecutionIdentityContextV1["applicableGrants"][number]["state"];
-  }>;
-  assurance?: Array<{
-    kind: ContextAssurance["kind"];
-    rawEvidenceRef: string;
-    strength: ContextAssurance["strength"];
-  }>;
-};
-
 type ExecutionIdentityStoreOptions = OpenClawStateDatabaseOptions & {
   now?: number;
-  contextId?: string;
-  runtimeInstanceId?: string;
   limits?: {
     maxRows: number;
     pruneBatchRows: number;
@@ -177,57 +140,39 @@ function uniqueSorted<T>(values: readonly T[], key: (value: T) => string): T[] {
 
 function buildExecutionIdentityContext(
   db: DatabaseSync,
-  facts: ExecutionIdentityAdmissionFacts,
-  fixed: { contextId: string; createdAt: number; runtimeInstanceId: string },
+  envelope: ExecutionIdentityAdmissionEnvelope,
+  fixed: { contextId: string; createdAt: number },
 ): ExecutionIdentityContextV1 {
-  const runId = ensureBoundedRef(facts.runId, "run id");
-  const agentId = ensureBoundedRef(facts.agentId, "agent id");
+  const runId = ensureBoundedRef(envelope.runId, "run id");
+  const agentId = ensureBoundedRef(envelope.agentId, "agent id");
   const contextId = ensureBoundedRef(fixed.contextId, "context id");
   const domainRef = hmacRef(db, "domain", "gateway-cell", "gateway-cell");
   const runtimeRef = hmacRef(
     db,
     "runtime",
     domainRef,
-    ensureRawRef(fixed.runtimeInstanceId, "runtime instance id"),
+    ensureRawRef(envelope.runtimeInstanceId, "runtime instance id"),
   );
-  const invoker = facts.invoker
+  const invoker = envelope.invoker
     ? {
         state: "present" as const,
         principal: {
-          kind: facts.invoker.kind,
+          kind: envelope.invoker.kind,
           domainRef,
           principalRef: hmacRef(
             db,
             "principal",
-            `${domainRef}:${facts.invoker.kind}`,
-            facts.invoker.rawPrincipalRef,
+            `${domainRef}:${envelope.invoker.kind}`,
+            envelope.invoker.rawPrincipalRef,
           ),
-          ...(facts.invoker.displayLabel !== undefined
-            ? {
-                displayLabel: truncateUtf16Safe(
-                  redactSensitiveText(facts.invoker.displayLabel, { mode: "tools" }),
-                  128,
-                ),
-              }
+          ...(envelope.invoker.displayLabel !== undefined
+            ? { displayLabel: envelope.invoker.displayLabel }
             : {}),
         },
       }
     : { state: "absent" as const };
-  const assuranceInputs = facts.assurance ?? [
-    {
-      kind: "runtime-binding" as const,
-      rawEvidenceRef: fixed.runtimeInstanceId,
-      strength: "boundary-verified" as const,
-    },
-  ];
-  if (assuranceInputs.length > 16) {
-    throw new Error("execution identity assurance exceeds 16 items");
-  }
-  if ((facts.applicableGrants?.length ?? 0) > 16) {
-    throw new Error("execution identity grants exceed 16 items");
-  }
   const assurance = uniqueSorted(
-    assuranceInputs.map((item) => ({
+    envelope.assurance.map((item) => ({
       kind: item.kind,
       evidenceRef: hmacRef(db, "evidence", `${domainRef}:${item.kind}`, item.rawEvidenceRef),
       strength: item.strength,
@@ -235,13 +180,13 @@ function buildExecutionIdentityContext(
     (item) => `${item.kind}\0${item.evidenceRef}\0${item.strength}`,
   );
   const applicableGrants = uniqueSorted(
-    (facts.applicableGrants ?? []).map((grant) => ({
+    envelope.applicableGrants.map((grant) => ({
       grantRef: hmacRef(db, "grant", domainRef, grant.rawGrantRef),
       state: grant.state,
     })),
     (grant) => `${grant.grantRef}\0${grant.state}`,
   );
-  const missingEvidence = facts.invoker ? [] : ["invoker.principal"];
+  const missingEvidence = envelope.invoker ? [] : ["invoker.principal"];
   const context: ExecutionIdentityContextV1 = {
     schemaVersion: 1,
     contextId,
@@ -250,26 +195,26 @@ function buildExecutionIdentityContext(
     trustDomain: { kind: "gateway-cell", domainRef, state: "present" },
     invoker,
     ingress: {
-      kind: facts.ingress.kind,
-      boundary: ensureBoundedRef(facts.ingress.boundary, "ingress boundary"),
-      state: facts.ingress.state ?? "present",
-      ...(facts.ingress.rawSourceRef
+      kind: envelope.ingress.kind,
+      boundary: ensureBoundedRef(envelope.ingress.boundary, "ingress boundary"),
+      state: envelope.ingress.state,
+      ...(envelope.ingress.rawSourceRef
         ? {
             sourceRef: hmacRef(
               db,
               "principal",
-              `${domainRef}:ingress:${facts.ingress.kind}`,
-              facts.ingress.rawSourceRef,
+              `${domainRef}:ingress:${envelope.ingress.kind}`,
+              envelope.ingress.rawSourceRef,
             ),
           }
         : {}),
     },
     agentPrincipal: { kind: "agent", domainRef, principalRef: agentId },
     agentDefinition: { definitionRef: agentId, state: "present" },
-    runtimeInstance: { runtimeRef, kind: facts.runtime.kind, state: "present" },
+    runtimeInstance: { runtimeRef, kind: envelope.runtime.kind, state: "present" },
     applicableGrants,
     assurance,
-    coverageState: facts.invoker ? "attribution-only" : "unattributed",
+    coverageState: envelope.invoker ? "attribution-only" : "unattributed",
     missingEvidence,
   };
   if (!validateExecutionIdentityContextV1(context)) {
@@ -397,22 +342,24 @@ export function pruneExpiredExecutionIdentityContexts(
   );
 }
 
-/** Prepare and synchronously persist the immutable context at run admission. */
-function prepareExecutionIdentityContextAtAdmission(
-  facts: ExecutionIdentityAdmissionFacts,
+/** Worker-owned canonicalization and persistence for one accepted admission envelope. */
+export function persistExecutionIdentityAdmissionEnvelope(
+  input: unknown,
   options: ExecutionIdentityStoreOptions = {},
 ): ExecutionIdentityContextV1 {
+  // Structured clone removes the admission-side freeze. Revalidate all bounds
+  // before schema/key access so malformed messages never reach persistence.
+  const envelope = parseExecutionIdentityAdmissionEnvelope(input);
   ensureExecutionIdentityContextSchema(options);
-  const runId = ensureBoundedRef(facts.runId, "run id");
+  const runId = envelope.runId;
   const opened = openOpenClawStateDatabase(options);
   const observed = readRowByRunId(opened.db, runId);
   const observedContext = observed ? parseExecutionIdentityRow(observed) : undefined;
   // HMAC lookup/key creation and canonical serialization finish before BEGIN.
   // The transaction only rereads the authoritative row and synchronously commits.
-  const plannedContext = buildExecutionIdentityContext(opened.db, facts, {
-    contextId: observedContext?.contextId ?? options.contextId ?? randomUUID(),
-    createdAt: observedContext?.createdAt ?? options.now ?? Date.now(),
-    runtimeInstanceId: options.runtimeInstanceId ?? PROCESS_RUNTIME_INSTANCE_ID,
+  const plannedContext = buildExecutionIdentityContext(opened.db, envelope, {
+    contextId: observedContext?.contextId ?? envelope.contextId,
+    createdAt: observedContext?.createdAt ?? envelope.createdAt,
   });
   let transactionDatabase: DatabaseSync | undefined;
   try {
@@ -465,28 +412,6 @@ function prepareExecutionIdentityContextAtAdmission(
       clearAuditIdentityKeyCacheForDatabase(transactionDatabase);
     }
     throw error;
-  }
-}
-
-/** Best-effort admission recording. Disabled collection and write failures never block a run. */
-export function recordExecutionIdentityContextAtAdmission(
-  facts: ExecutionIdentityAdmissionFacts,
-  options: ExecutionIdentityStoreOptions & { enabled: boolean },
-): ExecutionIdentityContextV1 | undefined {
-  const { enabled, ...storeOptions } = options;
-  if (!enabled) {
-    return undefined;
-  }
-  try {
-    return prepareExecutionIdentityContextAtAdmission(facts, storeOptions);
-  } catch {
-    if (!persistenceFailureWarned) {
-      persistenceFailureWarned = true;
-      log.warn(
-        "audit execution identity persistence failed; continuing without exact-run identity context",
-      );
-    }
-    return undefined;
   }
 }
 
