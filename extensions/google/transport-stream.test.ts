@@ -1214,7 +1214,13 @@ describe("google transport stream", () => {
           controller.close();
         },
       });
-      guardedFetchMock.mockResolvedValueOnce(new Response(body, { status: 200, headers }));
+      const contentType = headers["content-type"];
+      guardedFetchMock.mockResolvedValueOnce(
+        new Response(body, {
+          status: 200,
+          headers: contentType ? { "content-type": contentType } : undefined,
+        }),
+      );
 
       const result = await runGeminiStreamResult({ options: { apiKey: "gemini-api-key" } });
 

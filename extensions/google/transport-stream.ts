@@ -1066,7 +1066,7 @@ async function openGoogleSseAttempt(params: {
       const first = await iterator.next();
       if (attemptSignal?.timedOut() && !params.parentSignal?.aborted) {
         attemptSignal.cleanup();
-        await iterator.return?.();
+        await iterator.return?.(undefined);
         return { type: "timeout" };
       }
       if (first.done) {
