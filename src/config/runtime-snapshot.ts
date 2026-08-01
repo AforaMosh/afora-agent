@@ -1,6 +1,7 @@
 // Produces redacted runtime config snapshots for diagnostics and UI surfaces.
 import { sha256Base64Url } from "../infra/crypto-digest.js";
 import { clearExecutablePathCache } from "../infra/executable-path.js";
+import type { PluginMetadataSnapshot } from "../plugins/plugin-metadata-snapshot.types.js";
 import {
   resetPublishedConfigRuntimeEnv,
   type PreparedConfigRuntimeEnv,
@@ -104,8 +105,15 @@ export type RuntimeConfigSnapshotMetadata = {
   updatedAtMs: number;
 };
 
+export type PreparedRuntimeConfigSnapshot = {
+  runtimeConfig: OpenClawConfig;
+  sourceConfig: OpenClawConfig;
+  pluginMetadataSnapshot?: PluginMetadataSnapshot;
+};
+
 let runtimeConfigSnapshot: OpenClawConfig | null = null;
 let runtimeConfigSourceSnapshot: OpenClawConfig | null = null;
+let preparedRuntimeConfigSnapshot: PreparedRuntimeConfigSnapshot | null = null;
 let runtimeConfigSnapshotMetadata: RuntimeConfigSnapshotMetadata | null = null;
 let runtimeConfigAppliedHash: string | null = null;
 let runtimeConfigSnapshotRevision = 0;
@@ -169,7 +177,14 @@ export function setRuntimeConfigSnapshot(
   clearExecutablePathCache();
   runtimeConfigSnapshot = config;
   runtimeConfigSourceSnapshot = sourceConfig ?? null;
+  preparedRuntimeConfigSnapshot = null;
   runtimeConfigSnapshotMetadata = createRuntimeConfigSnapshotMetadata(config, sourceConfig);
+}
+
+/** Publish one validation-owned runtime/source/metadata handoff for command preparation. */
+export function setPreparedRuntimeConfigSnapshot(snapshot: PreparedRuntimeConfigSnapshot): void {
+  setRuntimeConfigSnapshot(snapshot.runtimeConfig, snapshot.sourceConfig);
+  preparedRuntimeConfigSnapshot = snapshot;
 }
 
 export function setAppliedRuntimeConfigSnapshot(
@@ -200,6 +215,7 @@ export function resetConfigRuntimeState(): void {
   clearExecutablePathCache();
   runtimeConfigSnapshot = null;
   runtimeConfigSourceSnapshot = null;
+  preparedRuntimeConfigSnapshot = null;
   runtimeConfigSnapshotMetadata = null;
   runtimeConfigAppliedHash = null;
   runtimeConfigSnapshotRevision = 0;
@@ -216,6 +232,10 @@ export function getRuntimeConfigSnapshot(): OpenClawConfig | null {
 
 export function getRuntimeConfigSourceSnapshot(): OpenClawConfig | null {
   return runtimeConfigSourceSnapshot;
+}
+
+export function getPreparedRuntimeConfigSnapshot(): PreparedRuntimeConfigSnapshot | null {
+  return preparedRuntimeConfigSnapshot;
 }
 
 export function getRuntimeConfigSnapshotMetadata(): RuntimeConfigSnapshotMetadata | null {

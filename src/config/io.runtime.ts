@@ -157,6 +157,7 @@ export async function readConfigFileSnapshotWithPluginMetadata(
     | "measure"
     | "observe"
     | "recoverSuspicious"
+    | "skipPluginValidation"
   >,
 ): Promise<ReadConfigFileSnapshotWithPluginMetadataResult> {
   return await createConfigIO({
@@ -164,6 +165,7 @@ export async function readConfigFileSnapshotWithPluginMetadata(
     ...(options?.observe === false ? { observe: false } : {}),
     ...(options?.isolateEnv ? { env: cloneEnvWithPlatformSemantics(process.env) } : {}),
     ...(options?.lowerPrecedenceEnv ? { lowerPrecedenceEnv: options.lowerPrecedenceEnv } : {}),
+    ...(options?.skipPluginValidation ? { pluginValidation: "skip" } : {}),
   }).readConfigFileSnapshotWithPluginMetadata({
     recoverSuspicious: options?.recoverSuspicious === true,
     allowSuspiciousRecovery: options?.allowSuspiciousRecovery,

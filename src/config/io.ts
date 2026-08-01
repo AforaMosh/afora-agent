@@ -43,6 +43,7 @@ export {
 export { projectConfigOntoRuntimeSourceSnapshot } from "./runtime-source-projection.js";
 export {
   clearRuntimeConfigSnapshot,
+  getPreparedRuntimeConfigSnapshot,
   getRuntimeConfigSnapshot,
   getRuntimeConfigSnapshotMetadata,
   getRuntimeConfigSourceSnapshot,
@@ -51,6 +52,7 @@ export {
   resolveRuntimeConfigCacheKey,
   selectApplicableRuntimeConfig,
   setAppliedRuntimeConfigSnapshot,
+  setPreparedRuntimeConfigSnapshot,
   setRuntimeConfigSnapshot,
   setRuntimeConfigSnapshotRefreshHandler,
 } from "./runtime-snapshot.js";

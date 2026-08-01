@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   finalizeRuntimeSnapshotWrite,
+  getPreparedRuntimeConfigSnapshot,
   getRuntimeConfigAppliedHash,
   hashRuntimeConfigValue,
   hasManagedRuntimeConfigWriteOwner,
@@ -16,6 +17,7 @@ import {
   resetConfigRuntimeState,
   resolveRuntimeConfigCacheKey,
   selectApplicableRuntimeConfig,
+  setPreparedRuntimeConfigSnapshot,
   setRuntimeConfigSnapshot,
   setRuntimeConfigAppliedHash,
   setRuntimeConfigSnapshotRefreshHandler,
@@ -78,6 +80,27 @@ describe("runtime snapshot state", () => {
 
     setRuntimeConfigSnapshot(runtimeConfig, sourceConfig);
     expect(getRuntimeConfigSourceSnapshot()).toEqual(sourceConfig);
+  });
+
+  it("keeps validation-owned config and plugin metadata in one prepared handoff", () => {
+    const runtimeConfig: OpenClawConfig = { gateway: { port: 18789 } };
+    const sourceConfig: OpenClawConfig = { gateway: { mode: "local" } };
+    const pluginMetadataSnapshot = { plugins: [] } as never;
+
+    setPreparedRuntimeConfigSnapshot({
+      runtimeConfig,
+      sourceConfig,
+      pluginMetadataSnapshot,
+    });
+
+    expect(getPreparedRuntimeConfigSnapshot()).toEqual({
+      runtimeConfig,
+      sourceConfig,
+      pluginMetadataSnapshot,
+    });
+
+    setRuntimeConfigSnapshot(runtimeConfig, sourceConfig);
+    expect(getPreparedRuntimeConfigSnapshot()).toBeNull();
   });
 
   it("tracks snapshot metadata and cache keys across runtime refreshes", () => {
@@ -170,6 +193,7 @@ describe("runtime snapshot state", () => {
     resetRuntimeConfigState();
     expect(getRuntimeConfigSnapshot()).toBeNull();
     expect(getRuntimeConfigSourceSnapshot()).toBeNull();
+    expect(getPreparedRuntimeConfigSnapshot()).toBeNull();
     expect(getRuntimeConfigSnapshotMetadata()).toBeNull();
   });
 

@@ -5,6 +5,7 @@ export {
   clearRuntimeConfigSnapshot,
   registerConfigWriteListener,
   createConfigIO,
+  getPreparedRuntimeConfigSnapshot,
   getRuntimeConfig,
   getRuntimeConfigSnapshotMetadata,
   getRuntimeConfigSnapshot,
@@ -27,6 +28,7 @@ export {
   resolveConfigSnapshotHash,
   resolveRuntimeConfigCacheKey,
   selectApplicableRuntimeConfig,
+  setPreparedRuntimeConfigSnapshot,
   setRuntimeConfigSnapshotRefreshHandler,
   setRuntimeConfigSnapshot,
   writeConfigFile,
@@ -42,6 +44,7 @@ export {
 export type {
   ConfigWriteAfterWrite,
   ConfigWriteFollowUp,
+  PreparedRuntimeConfigSnapshot,
   RuntimeConfigSnapshotMetadata,
 } from "./runtime-snapshot.js";
 export type {

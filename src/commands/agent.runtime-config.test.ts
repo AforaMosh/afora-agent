@@ -5,12 +5,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveAgentRuntimeConfig } from "../agents/agent-runtime-config.js";
 import { resolveSession } from "../agents/command/session.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { PluginMetadataSnapshot } from "../plugins/plugin-metadata-snapshot.types.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { createThrowingTestRuntime } from "./test-runtime-config-helpers.js";
 
 type ConfigSnapshotForWrite = {
   snapshot: { valid: boolean; resolved: OpenClawConfig };
-  writeOptions: Record<string, never>;
+  writeOptions: { basePluginMetadataSnapshot?: PluginMetadataSnapshot };
 };
 
 type ResolveCommandConfigParams = {
@@ -84,11 +85,34 @@ vi.mock("../secrets/target-registry.js", () => ({
   },
 }));
 
-const setRuntimeConfigSnapshotMock = vi.hoisted(() =>
-  vi.fn<(cfg: OpenClawConfig, sourceConfig: OpenClawConfig) => void>(),
+const getPreparedRuntimeConfigSnapshotMock = vi.hoisted(() =>
+  vi.fn<
+    () => {
+      runtimeConfig: OpenClawConfig;
+      sourceConfig: OpenClawConfig;
+      pluginMetadataSnapshot?: PluginMetadataSnapshot;
+    } | null
+  >(),
+);
+const setPreparedRuntimeConfigSnapshotMock = vi.hoisted(() =>
+  vi.fn<
+    (snapshot: {
+      runtimeConfig: OpenClawConfig;
+      sourceConfig: OpenClawConfig;
+      pluginMetadataSnapshot?: PluginMetadataSnapshot;
+    }) => void
+  >(),
 );
 vi.mock("../config/runtime-snapshot.js", () => ({
-  setRuntimeConfigSnapshot: setRuntimeConfigSnapshotMock,
+  getPreparedRuntimeConfigSnapshot: getPreparedRuntimeConfigSnapshotMock,
+  setPreparedRuntimeConfigSnapshot: setPreparedRuntimeConfigSnapshotMock,
+}));
+
+const resolvePluginMetadataSnapshotMock = vi.hoisted(() =>
+  vi.fn<() => PluginMetadataSnapshot | undefined>(),
+);
+vi.mock("../plugins/plugin-metadata-snapshot.js", () => ({
+  resolvePluginMetadataSnapshot: resolvePluginMetadataSnapshotMock,
 }));
 
 const getActiveSecretsRuntimeSnapshotMock = vi.hoisted(() => vi.fn<() => object | null>());
@@ -154,6 +178,7 @@ function mockConfig(home: string, storePath: string): OpenClawConfig {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  getPreparedRuntimeConfigSnapshotMock.mockReturnValue(null);
   getActiveSecretsRuntimeSnapshotMock.mockReturnValue({});
   readConfigFileSnapshotForWriteMock.mockResolvedValue({
     snapshot: { valid: false, resolved: {} as OpenClawConfig },
@@ -183,11 +208,12 @@ describe("agentCommand runtime config", () => {
       expect(activateSecretsRuntimeSnapshotMock).toHaveBeenCalledWith(
         expect.objectContaining({ sourceConfig, config: loadedConfig }),
       );
-      expect(setRuntimeConfigSnapshotMock).not.toHaveBeenCalled();
+      expect(readConfigFileSnapshotForWriteMock).toHaveBeenCalledOnce();
+      expect(setPreparedRuntimeConfigSnapshotMock).not.toHaveBeenCalled();
     });
   });
 
-  it("sets runtime snapshots from source config before embedded agent run", async () => {
+  it("uses prepared source config and metadata while materializing SecretRefs", async () => {
     await withTempHome(async (home) => {
       const store = path.join(home, "sessions.json");
       const loadedConfig = {
@@ -233,11 +259,13 @@ describe("agentCommand runtime config", () => {
           },
         },
       } as unknown as OpenClawConfig;
+      const pluginMetadataSnapshot = { plugins: [] } as unknown as PluginMetadataSnapshot;
 
       loadConfigMock.mockReturnValue(loadedConfig);
-      readConfigFileSnapshotForWriteMock.mockResolvedValue({
-        snapshot: { valid: true, resolved: sourceConfig },
-        writeOptions: {},
+      getPreparedRuntimeConfigSnapshotMock.mockReturnValue({
+        runtimeConfig: loadedConfig,
+        sourceConfig,
+        pluginMetadataSnapshot,
       });
       resolveCommandConfigWithSecretsMock.mockResolvedValueOnce({
         resolvedConfig,
@@ -257,8 +285,37 @@ describe("agentCommand runtime config", () => {
       const targetIds = requireResolveCommandConfigParams().targetIds;
       expect(targetIds.has("models.providers.*.apiKey")).toBe(true);
       expect(targetIds.has("channels.telegram.botToken")).toBe(false);
-      expect(setRuntimeConfigSnapshotMock).toHaveBeenCalledWith(resolvedConfig, sourceConfig);
+      expect(readConfigFileSnapshotForWriteMock).not.toHaveBeenCalled();
+      expect(resolvePluginMetadataSnapshotMock).not.toHaveBeenCalled();
+      expect(setPreparedRuntimeConfigSnapshotMock).toHaveBeenCalledWith({
+        runtimeConfig: resolvedConfig,
+        sourceConfig,
+        pluginMetadataSnapshot,
+      });
       expect(prepared.cfg).toBe(resolvedConfig);
+      expect(prepared.sourceConfig).toBe(sourceConfig);
+      expect(prepared.pluginMetadataSnapshot).toBe(pluginMetadataSnapshot);
+    });
+  });
+
+  it("reuses prepared config and metadata without a write snapshot read or metadata rescan", async () => {
+    await withTempHome(async (home) => {
+      const store = path.join(home, "sessions.json");
+      const loadedConfig = mockConfig(home, store);
+      const sourceConfig = { ...loadedConfig, logging: { level: "info" } } as OpenClawConfig;
+      const pluginMetadataSnapshot = { plugins: [] } as unknown as PluginMetadataSnapshot;
+      getPreparedRuntimeConfigSnapshotMock.mockReturnValue({
+        runtimeConfig: loadedConfig,
+        sourceConfig,
+        pluginMetadataSnapshot,
+      });
+
+      const prepared = await resolveAgentRuntimeConfig(runtime);
+
+      expect(readConfigFileSnapshotForWriteMock).not.toHaveBeenCalled();
+      expect(resolvePluginMetadataSnapshotMock).not.toHaveBeenCalled();
+      expect(prepared.sourceConfig).toBe(sourceConfig);
+      expect(prepared.pluginMetadataSnapshot).toBe(pluginMetadataSnapshot);
     });
   });
 
@@ -409,7 +466,10 @@ describe("agentCommand runtime config", () => {
 
       expect(readConfigFileSnapshotForWriteMock).toHaveBeenCalledTimes(1);
       expect(resolveCommandConfigWithSecretsMock).not.toHaveBeenCalled();
-      expect(setRuntimeConfigSnapshotMock).toHaveBeenCalledWith(loadedConfig, loadedConfig);
+      expect(setPreparedRuntimeConfigSnapshotMock).toHaveBeenCalledWith({
+        runtimeConfig: loadedConfig,
+        sourceConfig: loadedConfig,
+      });
       expect(prepared.cfg).toBe(loadedConfig);
     });
   });

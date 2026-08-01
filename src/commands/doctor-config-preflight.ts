@@ -7,7 +7,7 @@ import { cloneEnvWithPlatformSemantics } from "../config/env-vars.js";
 import {
   parseConfigJson5,
   preserveConfigSnapshotAsClobbered,
-  readConfigFileSnapshot,
+  readConfigFileSnapshotWithPluginMetadata,
   recoverConfigFromJsonRootSuffix,
   recoverConfigFromLastKnownGood,
 } from "../config/io.js";
@@ -18,6 +18,7 @@ import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { isTruthyEnvValue } from "../infra/env.js";
 import type { StartupMigrationLease } from "../infra/startup-migration-checkpoint.js";
 import { normalizePluginsConfig, resolveEffectiveEnableState } from "../plugins/config-state.js";
+import type { PluginMetadataSnapshot } from "../plugins/plugin-metadata-snapshot.types.js";
 import {
   buildDegradedPluginsFromVerificationFailures,
   formatPluginVerificationDiagnostic,
@@ -118,13 +119,14 @@ async function maybeMigrateLegacyConfig(): Promise<string[]> {
 }
 
 export type DoctorConfigPreflightResult = {
-  snapshot: Awaited<ReturnType<typeof readConfigFileSnapshot>>;
+  snapshot: Awaited<ReturnType<typeof readConfigFileSnapshotWithPluginMetadata>>["snapshot"];
   baseConfig: OpenClawConfig;
+  pluginMetadataSnapshot?: PluginMetadataSnapshot;
   cronCodexRuntimePolicyTargets?: CronCodexRuntimePolicyTarget[];
 };
 
 function collectDoctorLegacyIssues(
-  snapshot: Awaited<ReturnType<typeof readConfigFileSnapshot>>,
+  snapshot: DoctorConfigPreflightResult["snapshot"],
 ): LegacyConfigIssue[] {
   if (!snapshot.exists) {
     return [];
@@ -135,8 +137,8 @@ function collectDoctorLegacyIssues(
 }
 
 function addDoctorLegacyIssues(
-  snapshot: Awaited<ReturnType<typeof readConfigFileSnapshot>>,
-): Awaited<ReturnType<typeof readConfigFileSnapshot>> {
+  snapshot: DoctorConfigPreflightResult["snapshot"],
+): DoctorConfigPreflightResult["snapshot"] {
   const legacyIssues = collectDoctorLegacyIssues(snapshot);
   if (legacyIssues.length === 0) {
     return snapshot;
@@ -512,18 +514,20 @@ export async function runDoctorConfigPreflight(
       ...(options.observe === false ? { observe: false } : {}),
       skipPluginValidation: shouldSkipPluginValidationForDoctorConfigPreflight(),
     };
-    let snapshot = addDoctorLegacyIssues(
-      await measureStartupPreflightStep("config-snapshot", () =>
-        readConfigFileSnapshot(readOptions),
-      ),
+    let snapshotRead = await measureStartupPreflightStep("config-snapshot", () =>
+      readConfigFileSnapshotWithPluginMetadata(readOptions),
     );
+    let snapshot = addDoctorLegacyIssues(snapshotRead.snapshot);
+    let pluginMetadataSnapshot = snapshotRead.pluginMetadataSnapshot;
     if (options.repairPrefixedConfig === true && snapshot.exists && !snapshot.valid) {
       if (await recoverConfigFromJsonRootSuffix(snapshot)) {
         note(
           "Removed non-JSON prefix from openclaw.json; original saved as .clobbered.*.",
           "Config",
         );
-        snapshot = addDoctorLegacyIssues(await readConfigFileSnapshot(readOptions));
+        snapshotRead = await readConfigFileSnapshotWithPluginMetadata(readOptions);
+        snapshot = addDoctorLegacyIssues(snapshotRead.snapshot);
+        pluginMetadataSnapshot = snapshotRead.pluginMetadataSnapshot;
       } else if (
         await recoverConfigFromLastKnownGood({ snapshot, reason: "doctor-invalid-config" })
       ) {
@@ -531,7 +535,9 @@ export async function runDoctorConfigPreflight(
           "Restored openclaw.json from last-known-good; original saved as .clobbered.*.",
           "Config",
         );
-        snapshot = addDoctorLegacyIssues(await readConfigFileSnapshot(readOptions));
+        snapshotRead = await readConfigFileSnapshotWithPluginMetadata(readOptions);
+        snapshot = addDoctorLegacyIssues(snapshotRead.snapshot);
+        pluginMetadataSnapshot = snapshotRead.pluginMetadataSnapshot;
       }
       if (
         !snapshot.valid &&
@@ -714,6 +720,7 @@ export async function runDoctorConfigPreflight(
     return {
       snapshot,
       baseConfig,
+      ...(pluginMetadataSnapshot ? { pluginMetadataSnapshot } : {}),
       ...(cronCodexRuntimePolicyTargets.length > 0 ? { cronCodexRuntimePolicyTargets } : {}),
     };
   } finally {

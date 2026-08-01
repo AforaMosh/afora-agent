@@ -3,7 +3,11 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { withSuppressedNotes } from "../../../packages/terminal-core/src/note.js";
-import { readConfigFileSnapshot, setRuntimeConfigSnapshot } from "../../config/config.js";
+import {
+  readConfigFileSnapshot,
+  readConfigFileSnapshotWithPluginMetadata,
+  setPreparedRuntimeConfigSnapshot,
+} from "../../config/config.js";
 import { createInvalidConfigError } from "../../config/io.invalid-config.js";
 import {
   resolveIsNixMode,
@@ -34,8 +38,8 @@ const ALLOWED_INVALID_GATEWAY_SUBCOMMANDS = new Set([
 ]);
 const ALLOWED_INVALID_TASK_SUBCOMMANDS = new Set(["list", "audit"]);
 let didRunDoctorConfigFlow = false;
-let configSnapshotPromise: Promise<Awaited<ReturnType<typeof readConfigFileSnapshot>>> | null =
-  null;
+type BootstrapConfigSnapshot = Awaited<ReturnType<typeof readConfigFileSnapshotWithPluginMetadata>>;
+let configSnapshotPromise: Promise<BootstrapConfigSnapshot> | null = null;
 
 function resetConfigGuardStateForTests() {
   didRunDoctorConfigFlow = false;
@@ -190,15 +194,21 @@ function isGatewayStartupCommand(commandPath: string[]): boolean {
 }
 
 async function getConfigSnapshot(options?: { observe: false; skipPluginValidation?: true }) {
+  const readSnapshot = async (): Promise<BootstrapConfigSnapshot> => {
+    if (options?.skipPluginValidation) {
+      return { snapshot: await readConfigFileSnapshot(options) };
+    }
+    return await readConfigFileSnapshotWithPluginMetadata(options);
+  };
   if (options?.observe === false) {
-    return readConfigFileSnapshot(options);
+    return await readSnapshot();
   }
   // Tests often mutate config fixtures; caching can make those flaky.
   if (process.env.VITEST === "true") {
-    return readConfigFileSnapshot();
+    return await readSnapshot();
   }
   if (!configSnapshotPromise) {
-    const pendingSnapshot = readConfigFileSnapshot();
+    const pendingSnapshot = readSnapshot();
     configSnapshotPromise = pendingSnapshot;
     pendingSnapshot.catch(() => {
       if (configSnapshotPromise === pendingSnapshot) {
@@ -224,7 +234,7 @@ export async function ensureConfigReady(
   const commandPath = params.commandPath ?? [];
   const commandName = commandPath[0];
   const subcommandName = commandPath[1];
-  let preflightSnapshot: Awaited<ReturnType<typeof readConfigFileSnapshot>> | null = null;
+  let preflightSnapshot: BootstrapConfigSnapshot | null = null;
   const shouldConsiderStateMigration = shouldMigrateStateFromPath(commandPath);
   const requiresLegacyStateInput = shouldRunStateMigrationOnlyWithLegacyInputs(commandPath);
   const runStateMigrationPreflight = async () => {
@@ -250,8 +260,8 @@ export async function ensureConfigReady(
       });
     try {
       return !params.suppressDoctorStdout
-        ? (await runDoctorConfigPreflight()).snapshot
-        : (await withSuppressedNotes(runDoctorConfigPreflight)).snapshot;
+        ? await runDoctorConfigPreflight()
+        : await withSuppressedNotes(runDoctorConfigPreflight);
     } catch (error) {
       if (error instanceof ExitError) {
         // The migration owner has unwound its lease and heartbeat before this handoff.
@@ -276,7 +286,8 @@ export async function ensureConfigReady(
       : commandName === "status" || (commandName === "gateway" && subcommandName === "call")
         ? ({ observe: false } as const)
         : undefined;
-  let snapshot = preflightSnapshot ?? (await getConfigSnapshot(configSnapshotOptions));
+  let preparedSnapshot = preflightSnapshot ?? (await getConfigSnapshot(configSnapshotOptions));
+  let snapshot = preparedSnapshot.snapshot;
   if (
     !preflightSnapshot &&
     !didRunDoctorConfigFlow &&
@@ -286,7 +297,8 @@ export async function ensureConfigReady(
     snapshotHasConfiguredSessionStore(snapshot)
   ) {
     preflightSnapshot = await runStateMigrationPreflight();
-    snapshot = preflightSnapshot;
+    preparedSnapshot = preflightSnapshot;
+    snapshot = preparedSnapshot.snapshot;
   }
   const isBareGatewayForegroundRun =
     commandName === "gateway" && (subcommandName === undefined || subcommandName.trim() === "");
@@ -312,7 +324,13 @@ export async function ensureConfigReady(
 
   const invalid = snapshot.exists && !snapshot.valid;
   if (!invalid) {
-    setRuntimeConfigSnapshot(snapshot.runtimeConfig ?? snapshot.config, snapshot.sourceConfig);
+    setPreparedRuntimeConfigSnapshot({
+      runtimeConfig: snapshot.runtimeConfig ?? snapshot.config,
+      sourceConfig: snapshot.sourceConfig,
+      ...(preparedSnapshot.pluginMetadataSnapshot
+        ? { pluginMetadataSnapshot: preparedSnapshot.pluginMetadataSnapshot }
+        : {}),
+    });
   }
   if (!invalid) {
     return;
@@ -387,14 +405,13 @@ export async function ensureConfigReady(
         configSnapshotPromise = null;
         const { runDoctorConfigPreflight } =
           await import("../../commands/doctor-config-preflight.js");
-        const retrySnapshot = (
-          await runDoctorConfigPreflight({
-            migrateState: false,
-            migrateLegacyConfig: false,
-            invalidConfigNote: false,
-            ...configSnapshotOptions,
-          })
-        ).snapshot;
+        const retryPreparedSnapshot = await runDoctorConfigPreflight({
+          migrateState: false,
+          migrateLegacyConfig: false,
+          invalidConfigNote: false,
+          ...configSnapshotOptions,
+        });
+        const retrySnapshot = retryPreparedSnapshot.snapshot;
         if (retrySnapshot.exists && !retrySnapshot.valid) {
           const retryIssues = formatConfigIssueLines(retrySnapshot.issues, "-", {
             normalizeRoot: true,
@@ -404,10 +421,13 @@ export async function ensureConfigReady(
             retryIssues.join("\n") || "Unknown validation issue.",
           );
         }
-        setRuntimeConfigSnapshot(
-          retrySnapshot.runtimeConfig ?? retrySnapshot.config,
-          retrySnapshot.sourceConfig,
-        );
+        setPreparedRuntimeConfigSnapshot({
+          runtimeConfig: retrySnapshot.runtimeConfig ?? retrySnapshot.config,
+          sourceConfig: retrySnapshot.sourceConfig,
+          ...(retryPreparedSnapshot.pluginMetadataSnapshot
+            ? { pluginMetadataSnapshot: retryPreparedSnapshot.pluginMetadataSnapshot }
+            : {}),
+        });
       },
     });
     if (recovery.status === "recovered") {
