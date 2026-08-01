@@ -510,6 +510,8 @@ export async function runGatewayLoop(params: {
   const runAcceptedRequest = (acceptedRequest: GatewayRunSignalRequest) => {
     const { action, restartIntent } = acceptedRequest;
     const isRestart = action === "restart";
+    const isGracefulStop = action === "stop" && acceptedRequest.signal === "SIGTERM";
+    const shouldDrainActiveWork = isRestart || isGracefulStop;
     if (isRestart) {
       activeRestartRequest = acceptedRequest;
     }
@@ -552,26 +554,28 @@ export async function runGatewayLoop(params: {
     }
 
     void (async () => {
-      const restartDrainTimeoutMs = isRestart
+      const activeWorkDrainTimeoutMs = isRestart
         ? await resolveRestartDrainTimeoutMs(restartIntent)
-        : 0;
-      const restartDrainDeadlineAt =
-        isRestart && restartDrainTimeoutMs !== undefined
-          ? Date.now() + restartDrainTimeoutMs
+        : isGracefulStop
+          ? undefined
+          : 0;
+      const activeWorkDrainDeadlineAt =
+        shouldDrainActiveWork && activeWorkDrainTimeoutMs !== undefined
+          ? Date.now() + activeWorkDrainTimeoutMs
           : undefined;
-      if (!isRestart) {
+      if (!shouldDrainActiveWork) {
         armForceExitTimer(SHUTDOWN_TIMEOUT_MS);
-      } else if (restartDrainTimeoutMs !== undefined) {
+      } else if (activeWorkDrainTimeoutMs !== undefined) {
         // Allow extra time for draining active turns on explicitly capped restarts.
-        armForceExitTimer(restartDrainTimeoutMs + SHUTDOWN_TIMEOUT_MS);
+        armForceExitTimer(activeWorkDrainTimeoutMs + SHUTDOWN_TIMEOUT_MS);
       }
 
-      const formatRestartDrainBudget = () =>
-        restartDrainTimeoutMs === undefined
+      const formatDrainBudget = () =>
+        activeWorkDrainTimeoutMs === undefined
           ? "without a timeout"
-          : `with timeout ${restartDrainTimeoutMs}ms`;
-      const armCloseForceExitTimerForIndefiniteRestart = () => {
-        if (isRestart && restartDrainTimeoutMs === undefined) {
+          : `with timeout ${activeWorkDrainTimeoutMs}ms`;
+      const armCloseForceExitTimerAfterUnboundedDrain = () => {
+        if (shouldDrainActiveWork && activeWorkDrainTimeoutMs === undefined) {
           armForceExitTimer(SHUTDOWN_TIMEOUT_MS);
         }
       };
@@ -579,21 +583,21 @@ export async function runGatewayLoop(params: {
         if (!isRestart) {
           return null;
         }
-        if (restartDrainTimeoutMs === undefined) {
+        if (activeWorkDrainTimeoutMs === undefined) {
           return Math.max(0, SHUTDOWN_TIMEOUT_MS - RESTART_CLOSE_REPLY_DRAIN_SHUTDOWN_RESERVE_MS);
         }
-        return Math.max(0, (restartDrainDeadlineAt ?? Date.now()) - Date.now());
+        return Math.max(0, (activeWorkDrainDeadlineAt ?? Date.now()) - Date.now());
       };
 
       try {
-        // On restart, wait for in-flight agent turns to finish before
-        // tearing down the server so buffered messages are delivered.
-        if (isRestart) {
+        // SIGTERM is a graceful stop request. Fence new work, then let in-flight
+        // turns and their delivery finish before tearing down the server.
+        if (shouldDrainActiveWork) {
           let activeTasksAtDrainStart = 0;
           let activeRunsAtDrainStart = 0;
           let drainTimedOut = false;
           await measureGatewayRestartTrace(
-            "restart.drain",
+            isRestart ? "restart.drain" : "stop.drain",
             async () => {
               const {
                 abortEmbeddedAgentRun,
@@ -662,7 +666,7 @@ export async function runGatewayLoop(params: {
               const createStillPendingDrainLogger = () =>
                 setInterval(() => {
                   gatewayLog.warn(
-                    `still draining ${getActiveTaskCount()} active task(s) and ${getActiveEmbeddedRunCount()} active embedded run(s) before restart`,
+                    `still draining ${getActiveTaskCount()} active task(s) and ${getActiveEmbeddedRunCount()} active embedded run(s) before ${isRestart ? "restart" : "shutdown"}`,
                   );
                 }, RESTART_DRAIN_STILL_PENDING_WARN_MS);
 
@@ -670,10 +674,10 @@ export async function runGatewayLoop(params: {
               // sessions get an explicit restart error instead of silent task loss.
               markRestartDraining();
               const rootDrainTimeoutMs =
-                restartDrainDeadlineAt === undefined
+                activeWorkDrainDeadlineAt === undefined
                   ? undefined
-                  : Math.max(0, restartDrainDeadlineAt - Date.now());
-              const rootDrainPromise = restartIntent?.force
+                  : Math.max(0, activeWorkDrainDeadlineAt - Date.now());
+              const rootDrainPromise = isRestart && restartIntent?.force
                 ? Promise.resolve({ drained: true, active: 0 })
                 : waitForActiveGatewayRootWork(rootDrainTimeoutMs);
               const activeTasks = getActiveTaskCount();
@@ -685,7 +689,7 @@ export async function runGatewayLoop(params: {
 
               // Best-effort abort for compacting runs so long compaction operations
               // don't hold session write locks across restart boundaries.
-              if (activeRuns > 0) {
+              if (isRestart && activeRuns > 0) {
                 await markActiveMainSessionsForRestart("gateway restart drain");
                 abortEmbeddedAgentRun(undefined, { mode: "compacting", reason: "restart" });
               }
@@ -693,14 +697,14 @@ export async function runGatewayLoop(params: {
               if (activeTasks > 0 || activeRuns > 0) {
                 const taskBlockers = formatTaskBlockers();
                 gatewayLog.info(
-                  `draining ${activeTasks} active task(s) and ${activeRuns} active embedded run(s) before restart ${formatRestartDrainBudget()}`,
+                  `draining ${activeTasks} active task(s) and ${activeRuns} active embedded run(s) before ${isRestart ? "restart" : "shutdown"} ${formatDrainBudget()}`,
                 );
                 if (taskBlockers) {
                   gatewayLog.warn(
-                    `restart blocked by active background task run(s): ${taskBlockers}`,
+                    `${isRestart ? "restart" : "shutdown"} blocked by active background task run(s): ${taskBlockers}`,
                   );
                 }
-                if (restartIntent?.force) {
+                if (isRestart && restartIntent?.force) {
                   gatewayLog.warn("forced restart requested; skipping active work drain");
                   await markActiveMainSessionsForRestart(
                     restartIntent.reason ?? "forced gateway restart",
@@ -714,13 +718,13 @@ export async function runGatewayLoop(params: {
                   try {
                     const tasksDrainPromise =
                       activeTasks > 0
-                        ? waitForActiveTasks(restartDrainTimeoutMs)
+                        ? waitForActiveTasks(activeWorkDrainTimeoutMs)
                         : Promise.resolve({ drained: true });
                     runsDrain =
                       activeRuns > 0
-                        ? await waitForActiveEmbeddedRuns(restartDrainTimeoutMs)
+                        ? await waitForActiveEmbeddedRuns(activeWorkDrainTimeoutMs)
                         : { drained: true };
-                    if (!runsDrain.drained && activeRuns > 0) {
+                    if (isRestart && !runsDrain.drained && activeRuns > 0) {
                       gatewayLog.warn(
                         "active embedded run drain timeout reached; aborting active run(s) before restart",
                       );
@@ -735,12 +739,16 @@ export async function runGatewayLoop(params: {
                     gatewayLog.info("all active work drained");
                   } else {
                     drainTimedOut = true;
-                    gatewayLog.warn("drain timeout reached; proceeding with restart");
-                    await markActiveMainSessionsForRestart("gateway restart drain timeout");
-                    // Final best-effort abort to avoid carrying active runs into the
-                    // next lifecycle when drain time budget is exhausted.
-                    if (!abortedAfterRunTimeout) {
-                      abortEmbeddedAgentRun(undefined, { mode: "all", reason: "restart" });
+                    gatewayLog.warn(
+                      `drain timeout reached; proceeding with ${isRestart ? "restart" : "shutdown"}`,
+                    );
+                    if (isRestart) {
+                      await markActiveMainSessionsForRestart("gateway restart drain timeout");
+                      // Final best-effort abort to avoid carrying active runs into the
+                      // next lifecycle when drain time budget is exhausted.
+                      if (!abortedAfterRunTimeout) {
+                        abortEmbeddedAgentRun(undefined, { mode: "all", reason: "restart" });
+                      }
                     }
                   }
                 }
@@ -749,7 +757,7 @@ export async function runGatewayLoop(params: {
               if (!rootDrain.drained) {
                 drainTimedOut = true;
                 gatewayLog.warn(
-                  `gateway root transaction drain timeout reached with ${rootDrain.active} root(s) still active; proceeding with restart`,
+                  `gateway root transaction drain timeout reached with ${rootDrain.active} root(s) still active; proceeding with ${isRestart ? "restart" : "shutdown"}`,
                 );
               }
             },
@@ -762,7 +770,7 @@ export async function runGatewayLoop(params: {
           );
         }
 
-        if (!isRestart) {
+        if (!shouldDrainActiveWork) {
           // Keep reset-started finalizers alive without spending the shutdown
           // reserve that server teardown and the supervisor watchdog need.
           try {
@@ -781,7 +789,7 @@ export async function runGatewayLoop(params: {
           }
         }
 
-        armCloseForceExitTimerForIndefiniteRestart();
+        armCloseForceExitTimerAfterUnboundedDrain();
         const closeDrainTimeoutMs = resolveRestartCloseDrainTimeoutMs();
         await server?.close({
           reason: isRestart ? "gateway restarting" : "gateway stopping",
