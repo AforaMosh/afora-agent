@@ -331,9 +331,9 @@ export function createOpenAiCompatibleSpeechProvider<
       if (modelId !== undefined) {
         next.model = normalizeModel(modelId, options.defaultModel);
       }
-      const voiceId = trimToUndefined(talkProviderConfig.voiceId);
-      if (voiceId !== undefined) {
-        next.voice = voiceId;
+      const voice = resolveConfiguredSpeechVoice(talkProviderConfig);
+      if (voice !== undefined) {
+        next.voice = voice;
       }
       const speed = asFiniteNumber(talkProviderConfig.speed);
       if (speed !== undefined) {

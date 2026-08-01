@@ -1,5 +1,6 @@
 // OpenAI-compatible speech provider tests cover speech request and file output.
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { withSpeakerSelectionFallbackCompat } from "../../packages/speech-core/speaker.js";
 import { createOpenAiCompatibleSpeechProvider } from "./openai-compatible-speech-provider.js";
 
 const {
@@ -193,12 +194,21 @@ describe("createOpenAiCompatibleSpeechProvider", () => {
       if (!resolvedConfig) {
         throw new Error("missing resolved speech config");
       }
+      const talkConfig = provider.resolveTalkConfig?.({
+        cfg: {} as never,
+        baseTtsConfig: { providers: { [providerId]: { voice: "base-voice" } } },
+        talkProviderConfig: withSpeakerSelectionFallbackCompat(providerConfig),
+        timeoutMs: 1_000,
+      });
+      if (!talkConfig) {
+        throw new Error("missing resolved Talk speech config");
+      }
 
       postJsonRequestMock.mockImplementation(async () => ({
         response: new Response(new Uint8Array([1, 2, 3]), { status: 200 }),
         release: async () => {},
       }));
-      for (const config of [providerConfig, resolvedConfig]) {
+      for (const config of [providerConfig, resolvedConfig, talkConfig]) {
         await provider.synthesize({
           text: "Speak in the configured voice.",
           cfg: {} as never,
@@ -211,8 +221,9 @@ describe("createOpenAiCompatibleSpeechProvider", () => {
       const requestVoices = postJsonRequestMock.mock.calls.map(
         ([request]) => (request as { body: { voice: unknown } }).body.voice,
       );
-      expect(requestVoices).toEqual([expectedVoice, expectedVoice]);
+      expect(requestVoices).toEqual([expectedVoice, expectedVoice, expectedVoice]);
       expect(resolvedConfig.voice).toBe(expectedVoice);
+      expect(talkConfig.voice).toBe(expectedVoice);
     },
   );
 
