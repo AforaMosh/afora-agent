@@ -1967,11 +1967,12 @@ describe("startGatewayPostAttachRuntime", () => {
   it("stops post-ready sidecars registered after close started", () => {
     const postReadySidecar = { stop: vi.fn() };
 
-    testing.stopPostReadySidecarsAfterCloseStarted({
-      postReadySidecars: [postReadySidecar],
-      closeStarted: true,
-      onStopError: vi.fn(),
-    });
+    testing.stopLateSidecarsAfterCloseStarted(
+      [postReadySidecar],
+      true,
+      "post-ready",
+      { warn: vi.fn() },
+    );
 
     expect(postReadySidecar.stop).toHaveBeenCalledTimes(1);
   });
@@ -1979,11 +1980,12 @@ describe("startGatewayPostAttachRuntime", () => {
   it("keeps post-ready sidecars running when close has not started", () => {
     const postReadySidecar = { stop: vi.fn() };
 
-    testing.stopPostReadySidecarsAfterCloseStarted({
-      postReadySidecars: [postReadySidecar],
-      closeStarted: false,
-      onStopError: vi.fn(),
-    });
+    testing.stopLateSidecarsAfterCloseStarted(
+      [postReadySidecar],
+      false,
+      "post-ready",
+      { warn: vi.fn() },
+    );
 
     expect(postReadySidecar.stop).not.toHaveBeenCalled();
   });
@@ -1996,25 +1998,32 @@ describe("startGatewayPostAttachRuntime", () => {
     });
     const stopWithAsynchronousFailure = vi.fn(() => Promise.reject(asynchronousFailure));
     const stopAfterFailures = vi.fn();
-    const onStopError = vi.fn();
+    const log = { warn: vi.fn() };
 
-    testing.stopPostReadySidecarsAfterCloseStarted({
-      postReadySidecars: [
+    testing.stopLateSidecarsAfterCloseStarted(
+      [
         { stop: stopWithSynchronousFailure },
         { stop: stopWithAsynchronousFailure },
         { stop: stopAfterFailures },
       ],
-      closeStarted: true,
-      onStopError,
-    });
-    await new Promise<void>((resolve) => setImmediate(resolve));
+      true,
+      "post-ready",
+      log,
+    );
+    await Promise.resolve();
 
     expect(stopWithSynchronousFailure).toHaveBeenCalledTimes(1);
     expect(stopWithAsynchronousFailure).toHaveBeenCalledTimes(1);
     expect(stopAfterFailures).toHaveBeenCalledTimes(1);
-    expect(onStopError).toHaveBeenCalledTimes(2);
-    expect(onStopError).toHaveBeenNthCalledWith(1, synchronousFailure, 0);
-    expect(onStopError).toHaveBeenNthCalledWith(2, asynchronousFailure, 1);
+    expect(log.warn).toHaveBeenCalledTimes(2);
+    expect(log.warn).toHaveBeenNthCalledWith(
+      1,
+      `post-ready sidecar 0 failed to stop after close started: ${String(synchronousFailure)}`,
+    );
+    expect(log.warn).toHaveBeenNthCalledWith(
+      2,
+      `post-ready sidecar 1 failed to stop after close started: ${String(asynchronousFailure)}`,
+    );
   });
 
   it("runs Gmail watcher after sidecars are ready", async () => {
@@ -2548,11 +2557,12 @@ describe("startGatewayPostAttachRuntime", () => {
     });
 
     expect(result.postReadySidecars).toHaveLength(2);
-    testing.stopPostReadySidecarsAfterCloseStarted({
-      postReadySidecars: result.postReadySidecars,
-      closeStarted: true,
-      onStopError: vi.fn(),
-    });
+    testing.stopLateSidecarsAfterCloseStarted(
+      result.postReadySidecars,
+      true,
+      "post-ready",
+      { warn: vi.fn() },
+    );
     releasePostReadyWork();
     await vi.advanceTimersByTimeAsync(1_000);
 

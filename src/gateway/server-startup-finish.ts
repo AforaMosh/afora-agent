@@ -17,6 +17,7 @@ import { collectGatewayProcessMemoryUsageMb, finishGatewayRestartTrace } from ".
 import type { startGatewayCoreRuntime } from "./server-core-runtime.js";
 import { GATEWAY_EVENTS } from "./server-methods-list.js";
 import { setFallbackGatewayContextResolver } from "./server-plugins.js";
+import { stopLateSidecarsAfterCloseStarted } from "./server-sidecar-stop.js";
 import {
   enforceSharedGatewaySessionGenerationForConfigWrite,
   getRequiredSharedGatewaySessionGeneration,
@@ -415,13 +416,24 @@ export async function finishGatewayStartup(params: {
       runtimeState.heartbeatRunner = activated.heartbeatRunner;
     });
   };
+  const registerRuntimeSidecars = (
+    key: "postReadySidecars" | "gatewayLifetimeSidecars",
+    sidecars: typeof runtimeState.postReadySidecars,
+    label: string,
+  ) => {
+    runtimeState[key] = sidecars;
+    stopLateSidecarsAfterCloseStarted(sidecars, lifecycle.closePreludeStarted, label, log);
+    if (lifecycle.closePreludeStarted) {
+      runtimeState[key] = [];
+    }
+  };
   ({
     stopGatewayUpdateCheck: runtimeState.stopGatewayUpdateCheck,
     tailscaleCleanup: runtimeState.tailscaleCleanup,
     pluginServices: runtimeState.pluginServices,
   } = await startupTrace.measure("runtime.post-attach", () =>
     loadGatewayStartupPostAttachModule().then(
-      ({ startGatewayPostAttachRuntime, stopPostReadySidecarsAfterCloseStarted }) =>
+      ({ startGatewayPostAttachRuntime }) =>
         startGatewayPostAttachRuntime({
           minimalTestGateway,
           cfgAtStart,
@@ -486,36 +498,10 @@ export async function finishGatewayStartup(params: {
           onPluginServices: (pluginServices) => {
             runtimeState.pluginServices = pluginServices;
           },
-          onPostReadySidecars: (postReadySidecars) => {
-            runtimeState.postReadySidecars = postReadySidecars;
-            stopPostReadySidecarsAfterCloseStarted({
-              postReadySidecars,
-              closeStarted: lifecycle.closePreludeStarted,
-              onStopError: (error, index) => {
-                log.warn(
-                  `post-ready sidecar ${index} failed to stop after close started: ${String(error)}`,
-                );
-              },
-            });
-            if (lifecycle.closePreludeStarted) {
-              runtimeState.postReadySidecars = [];
-            }
-          },
-          onGatewayLifetimeSidecars: (gatewayLifetimeSidecars) => {
-            runtimeState.gatewayLifetimeSidecars = gatewayLifetimeSidecars;
-            stopPostReadySidecarsAfterCloseStarted({
-              postReadySidecars: gatewayLifetimeSidecars,
-              closeStarted: lifecycle.closePreludeStarted,
-              onStopError: (error, index) => {
-                log.warn(
-                  `gateway-lifetime sidecar ${index} failed to stop after close started: ${String(error)}`,
-                );
-              },
-            });
-            if (lifecycle.closePreludeStarted) {
-              runtimeState.gatewayLifetimeSidecars = [];
-            }
-          },
+          onPostReadySidecars: (sidecars) =>
+            registerRuntimeSidecars("postReadySidecars", sidecars, "post-ready"),
+          onGatewayLifetimeSidecars: (sidecars) =>
+            registerRuntimeSidecars("gatewayLifetimeSidecars", sidecars, "gateway-lifetime"),
           ...(workerPlacementRuntime
             ? {
                 startWorkerEnvironmentRuntime: async () => {

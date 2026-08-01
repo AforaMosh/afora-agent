@@ -143,8 +143,7 @@ export async function startGatewayServer(
     closeOnStartupFailure,
     createCloseHandler,
     runClosePrelude,
-    stopRegisteredGatewayLifetimeSidecars,
-    stopRegisteredPostReadySidecars,
+    stopRegisteredSidecarsForClose,
     terminalSessions,
   } = lifecycleRuntime;
   try {
@@ -192,8 +191,7 @@ export async function startGatewayServer(
         await beginClosePrelude();
         // Kill any live operator shells before the socket layer tears down.
         terminalSessions.disposeAll();
-        await stopRegisteredGatewayLifetimeSidecars();
-        await stopRegisteredPostReadySidecars();
+        await stopRegisteredSidecarsForClose();
         // Run gateway_stop plugin hook before shutdown
         const { runGlobalGatewayStopSafely } = await import("../plugins/hook-runner-global.js");
         await runGlobalGatewayStopSafely({

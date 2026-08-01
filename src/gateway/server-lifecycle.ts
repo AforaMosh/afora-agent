@@ -34,6 +34,10 @@ import {
 } from "./server-public.js";
 import type { prepareGatewayRuntimeState } from "./server-runtime-state-prepare.js";
 import {
+  stopRegisteredSidecarGroupsForClose,
+  stopRegisteredSidecars,
+} from "./server-sidecar-stop.js";
+import {
   getHealthVersion,
   incrementPresenceVersion,
   refreshGatewayHealthSnapshot,
@@ -363,20 +367,23 @@ export async function prepareGatewayLifecycle(params: {
       getEventLoopHealth: readinessEventLoopHealth.snapshot,
       getConfigReloaderHotReloadStatus: () => runtimeState?.configReloader.hotReloadStatus?.(),
     });
-  const stopRegisteredPostReadySidecars = async () => {
-    const postReadySidecars = runtimeState.postReadySidecars;
-    runtimeState.postReadySidecars = [];
-    for (const postReadySidecar of postReadySidecars) {
-      await postReadySidecar.stop();
-    }
+  const stopRuntimeSidecars = async (
+    key: "postReadySidecars" | "gatewayLifetimeSidecars",
+    label: string,
+  ) => {
+    const sidecars = runtimeState[key];
+    runtimeState[key] = [];
+    await stopRegisteredSidecars({ sidecars, label, log });
   };
-  const stopRegisteredGatewayLifetimeSidecars = async () => {
-    const gatewayLifetimeSidecars = runtimeState.gatewayLifetimeSidecars;
-    runtimeState.gatewayLifetimeSidecars = [];
-    for (const gatewayLifetimeSidecar of gatewayLifetimeSidecars) {
-      await gatewayLifetimeSidecar.stop();
-    }
-  };
+  const stopRegisteredPostReadySidecars = () =>
+    stopRuntimeSidecars("postReadySidecars", "post-ready");
+  const stopRegisteredGatewayLifetimeSidecars = () =>
+    stopRuntimeSidecars("gatewayLifetimeSidecars", "gateway-lifetime");
+  const stopRegisteredSidecarsForClose = () =>
+    stopRegisteredSidecarGroupsForClose([
+      stopRegisteredGatewayLifetimeSidecars,
+      stopRegisteredPostReadySidecars,
+    ]);
   const createCloseHandler = () => async (optsValue?: GatewayCloseOptions) => {
     const channelIds = listLoadedChannelPlugins().map((plugin) => plugin.id as ChannelId);
     const { createGatewayCloseHandler, drainActiveSessionsForShutdown } =
@@ -449,8 +456,7 @@ export async function prepareGatewayLifecycle(params: {
   const closeOnStartupFailure = async () => {
     try {
       await beginClosePrelude();
-      await stopRegisteredGatewayLifetimeSidecars();
-      await stopRegisteredPostReadySidecars();
+      await stopRegisteredSidecarsForClose();
       await runClosePrelude();
       await createCloseHandler()({ reason: "gateway startup failed" });
     } finally {
@@ -492,6 +498,7 @@ export async function prepareGatewayLifecycle(params: {
     refreshGatewayHealthSnapshotWithRuntime,
     stopRegisteredPostReadySidecars,
     stopRegisteredGatewayLifetimeSidecars,
+    stopRegisteredSidecarsForClose,
     createCloseHandler,
     clearFallbackGatewayContextForServer: {
       get: () => clearFallbackGatewayContextForServer,

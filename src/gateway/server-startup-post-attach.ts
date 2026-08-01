@@ -28,7 +28,6 @@ import type { GatewayRecoveryRuntime } from "./server-instance-runtime.types.js"
 import type { refreshLatestUpdateRestartSentinel } from "./server-restart-sentinel.js";
 import type { GatewaySidecarStartupMode } from "./server-sidecar-startup-mode.js";
 import {
-  stopPostReadySidecarsAfterCloseStarted,
   type GatewayPostReadySidecarHandle,
 } from "./server-sidecar-stop.js";
 import { scheduleContextCachePrewarm } from "./server-startup-context-cache-prewarm.js";
@@ -76,7 +75,6 @@ const loadGatewayRestartSentinelModule = createLazyRuntimeModule(
   () => import("./server-restart-sentinel.js"),
 );
 
-export { stopPostReadySidecarsAfterCloseStarted };
 export type { GatewayPostReadySidecarHandle };
 
 /** Measure provider-auth warming without letting event-loop stalls hide in wall time. */
@@ -1425,7 +1423,6 @@ export const testing = {
   scheduleProviderAuthStatePrewarm,
   scheduleRestartSentinelWakeAfterReady,
   shouldSkipStartupModelPrewarm,
-  stopPostReadySidecarsAfterCloseStarted,
 };
 export { testing as __testing };
 /* oxlint-disable max-lines -- TODO: split this grandfathered oversized file. */
