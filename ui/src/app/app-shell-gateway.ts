@@ -302,7 +302,9 @@ export class ShellGatewayOwner {
     });
     // A new socket generation can miss config.changed events from downtime.
     // Pending prefs shadow their keys while this refresh updates every other field.
-    void runtimeConfig.refresh();
+    if (!runtimeConfig.state.configLoading) {
+      void runtimeConfig.refresh();
+    }
   }
 
   ensureAgentsList(

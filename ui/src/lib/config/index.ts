@@ -212,7 +212,7 @@ function createInitialConfigState(snapshot?: Partial<RuntimeConfigGatewaySnapsho
 type RetainedRuntimeConfigScope = {
   state: ConfigState;
   autoAllowlistedPluginIds?: Set<string>;
-  interruptedWrite: { raw: string | null } | null;
+  interruptedWrite: { raw: string | null; settled: Promise<unknown> } | null;
 };
 
 function captureRuntimeConfigScope(
@@ -1360,6 +1360,7 @@ export function createRuntimeConfigCapability(
   // fresh snapshot before autosave resumes.
   let hasInterruptedWrite = false;
   let interruptedWriteRaw: string | null = null;
+  let interruptedWriteSettled: Promise<unknown> | null = null;
   // Blocks trailing autosaves while a discard drains pending writes; the
   // drained draft is about to be thrown away, not re-written.
   let suppressAutoSave = false;
@@ -1660,14 +1661,15 @@ export function createRuntimeConfigCapability(
     );
     const scopeChanged = nextGatewayScope !== gatewayScope;
     if (scopeChanged) {
-      const interruptedWrite =
-        autoSaveInFlight !== null || manualSubmitInFlight !== null
-          ? {
-              raw:
-                autoSaveInFlight !== null
-                  ? lastFlightSubmittedRaw
-                  : (manualFlightInfo?.raw ?? null),
-            }
+      const activeFlight = autoSaveInFlight ?? manualSubmitInFlight;
+      const interruptedWrite = activeFlight
+        ? {
+            raw:
+              autoSaveInFlight !== null ? lastFlightSubmittedRaw : (manualFlightInfo?.raw ?? null),
+            settled: activeFlight,
+          }
+        : hasInterruptedWrite && interruptedWriteSettled
+          ? { raw: interruptedWriteRaw, settled: interruptedWriteSettled }
           : null;
       if (state.configFormDirty || interruptedWrite) {
         retainedScopes.set(gatewayScope, captureRuntimeConfigScope(state, interruptedWrite));
@@ -1701,6 +1703,9 @@ export function createRuntimeConfigCapability(
           hasInterruptedWrite = true;
           interruptedWriteRaw =
             autoSaveInFlight !== null ? lastFlightSubmittedRaw : (manualFlightInfo?.raw ?? null);
+          // Same-scope reconnects rely on the protocol client's close-time
+          // request rejection; cross-scope returns retain the actual flight.
+          interruptedWriteSettled = Promise.resolve();
         }
         autoSaveInFlight = null;
         manualSubmitInFlight = null;
@@ -1729,6 +1734,7 @@ export function createRuntimeConfigCapability(
         adoptRuntimeConfigScope(state, retained);
         hasInterruptedWrite = Boolean(retained?.interruptedWrite);
         interruptedWriteRaw = retained?.interruptedWrite?.raw ?? null;
+        interruptedWriteSettled = retained?.interruptedWrite?.settled ?? null;
       }
       // A reconnect must not strand a dirty draft whose debounce was just
       // cancelled; reschedule against the new connection. If the file moved
@@ -1740,6 +1746,9 @@ export function createRuntimeConfigCapability(
           // authoritative snapshot before autosave resumes so an uncertain
           // flight can't strand a clean-looking draft or retry a stale base.
           const interruptedRaw = interruptedWriteRaw;
+          const interruptedSettled = interruptedWriteSettled;
+          const reconciliationClient = state.client;
+          const reconciliationEpoch = currentConfigConnectionEpoch(state);
           // A revert made while the write was in flight reads clean (the ack
           // never rebased the originals), so the reload below would replace
           // it with the committed bytes. Capture it for restoration.
@@ -1748,7 +1757,18 @@ export function createRuntimeConfigCapability(
               ? cloneConfigObject(state.configForm)
               : null;
           const draftRawBefore = draftFormBefore ? serializeConfigForm(draftFormBefore) : null;
-          const reconcile = run(() => loadConfig(state));
+          state.configLoading = true;
+          const reconcile = run(async () => {
+            await interruptedSettled?.catch(() => undefined);
+            if (
+              !reconciliationClient ||
+              !isCurrentConfigConnection(state, reconciliationClient, reconciliationEpoch)
+            ) {
+              return false;
+            }
+            state.configLoading = false;
+            return loadConfig(state);
+          });
           void trackLoad("config", reconcile);
           void reconcile.then((loaded) => {
             if (disposed) {
@@ -1766,6 +1786,7 @@ export function createRuntimeConfigCapability(
             }
             hasInterruptedWrite = false;
             interruptedWriteRaw = null;
+            interruptedWriteSettled = null;
             // If the interrupted write DID commit, the fresh snapshot is
             // exactly its bytes. Rebase a surviving draft onto the fresh hash
             // so the retry doesn't false-conflict against our own write. Any

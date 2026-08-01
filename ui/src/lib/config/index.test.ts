@@ -703,9 +703,9 @@ describe("createRuntimeConfigCapability", () => {
     runtimeConfig.patchForm(["count"], 1);
     expect(runtimeConfig.state.configFormDirty).toBe(false);
     publish(true, clientB, clientB.gatewayUrl);
-    writeGate.resolve({});
-    await Promise.resolve();
     publish(true, clientA, clientA.gatewayUrl);
+    expect(runtimeConfig.state.configLoading).toBe(true);
+    writeGate.resolve({});
 
     await vi.waitFor(() => expect(runtimeConfig.state.configFormDirty).toBe(true));
     expect(runtimeConfig.state.configForm).toEqual({ count: 1 });
@@ -2698,6 +2698,7 @@ describe("config form auto-save", () => {
     await vi.waitFor(() => expect(methods).toContain("config.set"));
     publish(false);
     publish(true);
+    await vi.waitFor(() => expect(runtimeConfig.state.configLoading).toBe(false));
 
     await expect(
       runtimeConfig.patch({ raw: { ui: { prefs: { themeMode: "dark" } } }, note: "test" }),

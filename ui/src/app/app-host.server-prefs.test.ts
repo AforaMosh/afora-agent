@@ -172,4 +172,31 @@ describe("OpenClaw shell locale preferences", () => {
     expect(refresh).toHaveBeenCalledOnce();
     expect(ensureLoaded).not.toHaveBeenCalled();
   });
+
+  it("does not race the RuntimeConfig owner's interrupted-write reconciliation", () => {
+    const client = {
+      gatewayUrl: "ws://theme.test",
+      request: vi.fn(),
+    } as unknown as GatewayBrowserClient;
+    const refresh = vi.fn(async () => undefined);
+    const runtimeConfig = {
+      state: { client, connected: true, configLoading: true },
+      refresh,
+    } as unknown as ApplicationContext["runtimeConfig"];
+    const context = {
+      gateway: { connection: { gatewayUrl: client.gatewayUrl } },
+      runtimeConfig,
+    } as unknown as ApplicationContext;
+    const shell = document.createElement(
+      "openclaw-app-shell",
+    ) as unknown as ShellServerPreferencesState;
+    shell.runtime = { context };
+
+    shell.ensureRuntimeConfig(
+      { client, phase: "connected" } as ApplicationContext["gateway"]["snapshot"],
+      runtimeConfig,
+    );
+
+    expect(refresh).not.toHaveBeenCalled();
+  });
 });

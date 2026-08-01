@@ -303,6 +303,7 @@ const LAST_SEEN_KEY = "openclaw.control.serverPrefs.v1";
 // Pending keys are local edits not yet acknowledged by the gateway. They shadow reconciliation so
 // snapshots cannot revert unacked edits, and persist so offline edits replay after reload/reconnect.
 const PENDING_KEY = "openclaw.control.serverPrefs.pending.v1";
+const MIGRATED_PENDING_KEY = "openclaw.control.serverPrefs.pending-migrated.v1";
 const CONFLICT_REDRAIN_DELAY_MS = 1_000;
 const MAX_CONFLICT_REDRAINS = 5;
 const MAX_LAST_SEEN_MEMORY_SCOPES = 64;
@@ -330,6 +331,7 @@ const lastSeenPrefsByScope = new Map<string, string>();
 // Unlike lastSeen, pending entries are uncommitted user intent. Never evict
 // them merely because durable browser storage is unavailable.
 const pendingPrefsByScope = new Map<string, ServerUiPrefs>();
+const migratedLegacyPendingScopes = new Set<string>();
 function rememberScopedValue<T>(map: Map<string, T>, scope: string, value: T | null): void {
   map.delete(scope);
   if (value !== null) {
@@ -389,28 +391,63 @@ function readPendingPrefsForScope(scope: string): ServerUiPrefs | null {
   const merged = { ...stored, ...inMemory, ...active };
   return Object.keys(merged).length > 0 ? merged : null;
 }
-function migrateServerPrefsScope(authoredScope: string, normalizedScope: string): void {
-  if (authoredScope === normalizedScope) {
-    return;
-  }
-  const legacyPending = parseStoredPrefs(readStorage(PENDING_KEY, authoredScope));
-  if (legacyPending) {
-    const mergedPending = {
-      ...legacyPending,
-      ...readPendingPrefsForScope(normalizedScope),
-    };
-    rememberScopedValue(pendingPrefsByScope, normalizedScope, mergedPending);
-    if (writeStorage(PENDING_KEY, normalizedScope, JSON.stringify(mergedPending))) {
-      writeStorage(PENDING_KEY, authoredScope, null);
+function trailingSlashScopeAlias(scope: string): string {
+  try {
+    const parsed = new URL(scope);
+    if (parsed.pathname !== "/" && !parsed.pathname.endsWith("/")) {
+      parsed.pathname += "/";
     }
+    return `${parsed.protocol}//${parsed.host}${parsed.pathname}${parsed.search}`;
+  } catch {
+    return scope.endsWith("/") ? scope : `${scope}/`;
   }
-  const canonicalLastSeen =
-    lastSeenPrefsByScope.get(normalizedScope) ?? readStorage(LAST_SEEN_KEY, normalizedScope);
-  const legacyLastSeen = readStorage(LAST_SEEN_KEY, authoredScope);
-  if (canonicalLastSeen === null && legacyLastSeen !== null) {
-    rememberLastSeen(normalizedScope, legacyLastSeen);
-    if (writeStorage(LAST_SEEN_KEY, normalizedScope, legacyLastSeen)) {
-      writeStorage(LAST_SEEN_KEY, authoredScope, null);
+}
+function hasPendingMigrationTombstone(scope: string): boolean {
+  if (migratedLegacyPendingScopes.has(scope)) {
+    return true;
+  }
+  try {
+    return globalThis.sessionStorage?.getItem(`${MIGRATED_PENDING_KEY}:${scope}`) === "1";
+  } catch {
+    return false;
+  }
+}
+function recordPendingMigrationTombstone(scope: string): void {
+  migratedLegacyPendingScopes.add(scope);
+  try {
+    globalThis.sessionStorage?.setItem(`${MIGRATED_PENDING_KEY}:${scope}`, "1");
+  } catch {
+    // Process memory still prevents resurrection for this app lifetime.
+  }
+}
+function migrateServerPrefsScope(authoredScope: string, normalizedScope: string): void {
+  const aliases = new Set([authoredScope, trailingSlashScopeAlias(normalizedScope)]);
+  for (const legacyScope of aliases) {
+    if (legacyScope === normalizedScope) {
+      continue;
+    }
+    const legacyPending = hasPendingMigrationTombstone(legacyScope)
+      ? null
+      : parseStoredPrefs(readStorage(PENDING_KEY, legacyScope));
+    if (legacyPending) {
+      const mergedPending = {
+        ...legacyPending,
+        ...readPendingPrefsForScope(normalizedScope),
+      };
+      rememberScopedValue(pendingPrefsByScope, normalizedScope, mergedPending);
+      recordPendingMigrationTombstone(legacyScope);
+      if (writeStorage(PENDING_KEY, normalizedScope, JSON.stringify(mergedPending))) {
+        writeStorage(PENDING_KEY, legacyScope, null);
+      }
+    }
+    const canonicalLastSeen =
+      lastSeenPrefsByScope.get(normalizedScope) ?? readStorage(LAST_SEEN_KEY, normalizedScope);
+    const legacyLastSeen = readStorage(LAST_SEEN_KEY, legacyScope);
+    if (canonicalLastSeen === null && legacyLastSeen !== null) {
+      rememberLastSeen(normalizedScope, legacyLastSeen);
+      if (writeStorage(LAST_SEEN_KEY, normalizedScope, legacyLastSeen)) {
+        writeStorage(LAST_SEEN_KEY, legacyScope, null);
+      }
     }
   }
 }
@@ -461,6 +498,14 @@ export function resetServerUiPrefsSync(options: { preserveScopedFallback?: boole
   if (!options.preserveScopedFallback) {
     lastSeenPrefsByScope.clear();
     pendingPrefsByScope.clear();
+    for (const scope of migratedLegacyPendingScopes) {
+      try {
+        globalThis.sessionStorage?.removeItem(`${MIGRATED_PENDING_KEY}:${scope}`);
+      } catch {
+        // Test/reset cleanup remains best-effort under blocked storage.
+      }
+    }
+    migratedLegacyPendingScopes.clear();
   }
   requestedServerUiPrefResets.clear();
   requestedDeviceLocalPrefResets.clear();

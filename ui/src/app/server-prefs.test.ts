@@ -399,7 +399,7 @@ describe("applyServerUiPrefs", () => {
     );
 
     expect(
-      resolveServerUiPrefState(configWithPrefs({ theme: "claw" }), "theme", "ws://gw/"),
+      resolveServerUiPrefState(configWithPrefs({ theme: "claw" }), "theme", "ws://gw"),
     ).toMatchObject({ provenance: "pending", value: "knot" });
     expect(localStorage.getItem("openclaw.control.serverPrefs.pending.v1:ws://gw")).toBe(
       JSON.stringify({ theme: "knot" }),
@@ -423,8 +423,38 @@ describe("applyServerUiPrefs", () => {
     vi.stubGlobal("localStorage", storage);
 
     expect(
-      resolveServerUiPrefState(configWithPrefs({ theme: "claw" }), "theme", "ws://readonly/"),
+      resolveServerUiPrefState(configWithPrefs({ theme: "claw" }), "theme", "ws://readonly"),
     ).toMatchObject({ provenance: "pending", value: "dash" });
+  });
+
+  it("does not resurrect a read-only legacy pending record after acknowledgement", async () => {
+    const storage = createStorageMock();
+    storage.setItem(
+      "openclaw.control.serverPrefs.pending.v1:ws://readonly-ack/",
+      JSON.stringify({ theme: "knot" }),
+    );
+    vi.spyOn(storage, "setItem").mockImplementation(() => {
+      throw new Error("storage read-only");
+    });
+    vi.stubGlobal("localStorage", storage);
+    expect(
+      resolveServerUiPrefState(configWithPrefs({ theme: "claw" }), "theme", "ws://readonly-ack"),
+    ).toMatchObject({ provenance: "pending", value: "knot" });
+    const afterCommit = vi.fn();
+    flushServerUiPrefs(
+      createServerPrefsWriter(
+        vi.fn(async () => ({})),
+        "ws://readonly-ack",
+      ),
+      { afterCommit },
+    );
+    await vi.waitFor(() => expect(afterCommit).toHaveBeenCalledOnce());
+    resetServerUiPrefsSync({ preserveScopedFallback: true });
+
+    expect(
+      resolveServerUiPrefState(configWithPrefs({ theme: "claw" }), "theme", "ws://readonly-ack")
+        .provenance,
+    ).not.toBe("pending");
   });
 });
 
