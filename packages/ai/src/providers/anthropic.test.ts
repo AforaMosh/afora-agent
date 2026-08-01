@@ -1672,6 +1672,94 @@ describe("Anthropic provider", () => {
     expect(result.usage.cost.total).toBeCloseTo(0.000075, 10);
   });
 
+  it.each([
+    {
+      label: "provider-complete arguments without streamed deltas",
+      input: { city: "Zurich", nested: { count: 2 } },
+      deltas: [],
+      expected: { city: "Zurich", nested: { count: 2 } },
+    },
+    {
+      label: "an empty provider input without streamed deltas",
+      input: {},
+      deltas: [],
+      expected: {},
+    },
+    {
+      label: "fragmented streamed arguments",
+      input: {},
+      deltas: ['{"city":"Zu', 'rich","nested":{"count":2}}'],
+      expected: { city: "Zurich", nested: { count: 2 } },
+    },
+    {
+      label: "streamed arguments replacing a provider preview",
+      input: { preview: true },
+      deltas: ['{"city":"Zurich"}'],
+      expected: { city: "Zurich" },
+    },
+  ])("preserves $label when an Anthropic tool block stops", async (testCase) => {
+    const client = createAnthropicSseClient([
+      {
+        type: "message_start",
+        message: { id: "msg_tool_seeded", usage: { input_tokens: 1, output_tokens: 0 } },
+      },
+      {
+        type: "content_block_start",
+        index: 0,
+        content_block: {
+          type: "tool_use",
+          id: "tool_seeded",
+          name: "lookup",
+          input: testCase.input,
+        },
+      },
+      ...testCase.deltas.map((partialJson) => ({
+        type: "content_block_delta",
+        index: 0,
+        delta: { type: "input_json_delta", partial_json: partialJson },
+      })),
+      { type: "content_block_stop", index: 0 },
+      {
+        type: "message_delta",
+        delta: { stop_reason: "tool_use" },
+        usage: { input_tokens: 1, output_tokens: 1 },
+      },
+      { type: "message_stop" },
+    ]);
+
+    const stream = streamAnthropic(
+      makeAnthropicModel(),
+      {
+        messages: [{ role: "user", content: "look up the city", timestamp: 0 }],
+        tools: [
+          {
+            name: "lookup",
+            description: "Look up a city",
+            parameters: { type: "object", properties: { city: { type: "string" } } },
+          },
+        ],
+      },
+      { apiKey: "sk-ant-provider", client: client as never },
+    );
+    const events = [];
+    for await (const event of stream) {
+      events.push(event);
+    }
+    const result = await stream.result();
+
+    expect(events.map((event) => event.type)).toEqual([
+      "start",
+      "toolcall_start",
+      ...testCase.deltas.map(() => "toolcall_delta"),
+      "toolcall_end",
+      "done",
+    ]);
+    expect(result.stopReason).toBe("toolUse");
+    expect(result.content).toEqual([
+      { type: "toolCall", id: "tool_seeded", name: "lookup", arguments: testCase.expected },
+    ]);
+  });
+
   it("routes interleaved active content blocks by their event indexes", async () => {
     const client = createAnthropicSseClient([
       {
