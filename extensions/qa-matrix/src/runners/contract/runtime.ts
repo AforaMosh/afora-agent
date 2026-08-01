@@ -18,6 +18,7 @@ import {
   type QaReportCheck,
 } from "openclaw/plugin-sdk/qa-runtime";
 import { normalizeQaProviderMode, type QaProviderModeInput } from "../../run-config.js";
+import { createLiveTransportQaRunId } from "../../shared/live-transport-artifacts.js";
 import { buildMatrixQaObservedEventsArtifact } from "../../substrate/artifacts.js";
 import { provisionMatrixQaRoom, type MatrixQaProvisionResult } from "../../substrate/client.js";
 import {
@@ -28,8 +29,8 @@ import {
   type MatrixQaConfigSnapshot,
 } from "../../substrate/config.js";
 import type { MatrixQaObservedEvent } from "../../substrate/events.js";
+import { startMatrixQaFaultProxy } from "../../substrate/fault-proxy.js";
 import { startMatrixQaHarness } from "../../substrate/harness.runtime.js";
-import { createLiveTransportQaRunId } from "../../shared/live-transport-artifacts.js";
 import { resolveMatrixQaModels, type ResolvedMatrixQaModels } from "./model-selection.js";
 import type { MatrixQaSyncStreams } from "./scenario-runtime-shared.js";
 import {
@@ -321,6 +322,27 @@ async function cleanupMatrixQaResource(params: {
   } catch (error) {
     const recovery = params.recovery ? `\nRecovery: ${params.recovery}` : "";
     throw new Error(`${formatErrorMessage(error)}${recovery}`, { cause: error });
+  }
+}
+
+async function startMatrixQaFaultProxyForHarness(params: {
+  harness: Pick<
+    Awaited<ReturnType<typeof startMatrixQaHarness>>,
+    "baseUrl" | "stop" | "stopCommand"
+  >;
+}) {
+  try {
+    return await startMatrixQaFaultProxy({
+      rules: [],
+      targetBaseUrl: params.harness.baseUrl,
+    });
+  } catch (error) {
+    await cleanupMatrixQaResource({
+      label: "Matrix homeserver cleanup after fault proxy startup failure",
+      action: () => params.harness.stop(),
+      recovery: params.harness.stopCommand,
+    }).catch(() => {});
+    throw error;
   }
 }
 
@@ -702,6 +724,9 @@ export async function runMatrixQaLive(params: {
   writeMatrixQaProgress(
     `harness ready ${formatMatrixQaDurationMs(harnessBootMs)} baseUrl=${harness.baseUrl}`,
   );
+  const faultProxy = await startMatrixQaFaultProxyForHarness({
+    harness,
+  });
   const { durationMs: provisioningMs, result: provisioning } = await (async () => {
     try {
       return await measureMatrixQaStep(() =>
@@ -723,6 +748,7 @@ export async function runMatrixQaLive(params: {
         action: () => harness.stop(),
         recovery: harness.stopCommand,
       }).catch(() => {});
+      await faultProxy.stop().catch(() => {});
       throw error;
     }
   })();
@@ -763,7 +789,7 @@ export async function runMatrixQaLive(params: {
   const gatewayConfigParams = {
     driverAccessToken: provisioning.driver.accessToken,
     driverUserId: provisioning.driver.userId,
-    homeserver: harness.baseUrl,
+    homeserver: faultProxy.baseUrl,
     observerAccessToken: provisioning.observer.accessToken,
     observerUserId: provisioning.observer.userId,
     sutAccessToken: provisioning.sut.accessToken,
@@ -940,6 +966,7 @@ export async function runMatrixQaLive(params: {
                 gatewayWorkspaceDir: scenarioGateway.harness.gateway.workspaceDir,
                 gatewayCall: async (method, paramsLocal, opts) =>
                   await scenarioGateway.harness.gateway.call(method, paramsLocal ?? {}, opts),
+                faultProxy,
                 outputDir,
                 registrationToken: harness.registrationToken,
                 restartGateway: async () => {
@@ -1098,6 +1125,14 @@ export async function runMatrixQaLive(params: {
       } catch (error) {
         appendLiveLaneIssue(cleanupErrors, "live gateway cleanup", error);
       }
+    }
+    try {
+      await cleanupMatrixQaResource({
+        label: "Matrix homeserver fault proxy cleanup",
+        action: () => faultProxy.stop(),
+      });
+    } catch (error) {
+      appendLiveLaneIssue(cleanupErrors, "Matrix fault proxy cleanup", error);
     }
     try {
       await cleanupMatrixQaResource({
@@ -1286,6 +1321,7 @@ export const testing = {
   resolveMatrixQaCanaryTimeoutMs,
   resolveMatrixQaModels,
   shouldWriteMatrixQaProgress,
+  startMatrixQaFaultProxyForHarness,
   summarizeMatrixQaGatewayStderrLog,
   summarizeMatrixQaConfigSnapshot,
   waitForMatrixChannelReady,
