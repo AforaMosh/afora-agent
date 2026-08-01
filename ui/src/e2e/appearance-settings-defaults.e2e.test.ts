@@ -41,6 +41,7 @@ function configResponse(prefs: Record<string, unknown>, hash: string) {
     hash,
     issues: [],
     raw: JSON.stringify(config),
+    runtimeConfig: config,
     valid: true,
   };
 }
@@ -122,6 +123,18 @@ async function captureViewport(page: Page, filename: string): Promise<void> {
     animations: "disabled",
     path: path.join(uiProofArtifactDir, filename),
   });
+}
+
+async function waitForMediaDeviceRefresh(page: Page): Promise<void> {
+  await expect
+    .poll(() =>
+      page
+        .locator('button[aria-label^="Refresh:"]')
+        .evaluateAll((buttons) =>
+          buttons.every((button) => !(button as HTMLButtonElement).disabled),
+        ),
+    )
+    .toBe(true);
 }
 
 describeControlUiE2e("Control UI Appearance defaults mocked Gateway E2E", () => {
@@ -213,6 +226,7 @@ describeControlUiE2e("Control UI Appearance defaults mocked Gateway E2E", () => 
       await page.evaluate(() => window.scrollTo(0, 0));
       await captureViewport(page, "01-explicit-overrides.png");
       await sendShortcutRow.scrollIntoViewIfNeeded();
+      await waitForMediaDeviceRefresh(page);
       await captureViewport(page, "02-explicit-chat-override.png");
 
       const withoutLocale = { ...initialPrefs };
@@ -339,6 +353,7 @@ describeControlUiE2e("Control UI Appearance defaults mocked Gateway E2E", () => 
       await page.evaluate(() => window.scrollTo(0, 0));
       await captureViewport(page, "03-inherited-defaults.png");
       await reloadedSendShortcutRow.scrollIntoViewIfNeeded();
+      await waitForMediaDeviceRefresh(page);
       await captureViewport(page, "04-inherited-chat-default.png");
     } finally {
       await context.close();
