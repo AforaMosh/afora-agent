@@ -11,7 +11,6 @@ import {
   type SlackQaScenarioContext,
   type SlackObservedMessage,
 } from "./slack-live.contracts.js";
-import { waitForSlackScenarioReply } from "./slack-live.message-observations.js";
 import {
   observeSlackScenarioMessages,
   waitForSlackScenarioReply,
