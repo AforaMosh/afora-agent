@@ -423,7 +423,7 @@ jobs:
               if [[ -z "$permission_actor" ]]; then
                 # Direct release commits have no merged PR. The exact canonical
                 # branch head still requires a current maintainer as committer.
-                permission_actor="$(jq -er '.data.repository.object.committer.user.login // empty' <<<"$signature_json")"
+                permission_actor="$(jq -r '.data.repository.object.committer.user.login // empty' <<<"$signature_json")"
               fi
               if [[ -z "$permission_actor" ]]; then
                 echo "Unsigned direct release candidate ${candidate_sha} has no GitHub committer." >&2
@@ -1167,7 +1167,7 @@ jobs:
               if [[ -z "$permission_actor" ]]; then
                 # Direct release commits have no merged PR. The exact canonical
                 # branch head still requires a current maintainer as committer.
-                permission_actor="$(jq -er '.data.repository.object.committer.user.login // empty' <<<"$signature_json")"
+                permission_actor="$(jq -r '.data.repository.object.committer.user.login // empty' <<<"$signature_json")"
               fi
               if [[ -z "$permission_actor" ]]; then
                 echo "Unsigned direct release candidate ${candidate_sha} has no GitHub committer." >&2
