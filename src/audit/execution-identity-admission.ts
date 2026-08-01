@@ -250,7 +250,9 @@ export function hasExecutionIdentityAdmissionSink(): boolean {
   return admissionSink !== undefined;
 }
 
-/** Capture and enqueue best-effort evidence; no worker readiness or persistence is awaited. */
+/**
+ * Capture and enqueue evidence. The returned ID is only a candidate until async persistence wins.
+ */
 export function enqueueExecutionIdentityContextAtAdmission(
   facts: ExecutionIdentityAdmissionFacts,
   options: {

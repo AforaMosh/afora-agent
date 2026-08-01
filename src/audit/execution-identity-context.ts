@@ -353,14 +353,13 @@ export function persistExecutionIdentityAdmissionEnvelope(
   ensureExecutionIdentityContextSchema(options);
   const runId = envelope.runId;
   const opened = openOpenClawStateDatabase(options);
-  const observed = readRowByRunId(opened.db, runId);
-  const observedContext = observed ? parseExecutionIdentityRow(observed) : undefined;
   // HMAC lookup/key creation and canonical serialization finish before BEGIN.
   // The transaction only rereads the authoritative row and synchronously commits.
   const plannedContext = buildExecutionIdentityContext(opened.db, envelope, {
-    contextId: observedContext?.contextId ?? envelope.contextId,
-    createdAt: observedContext?.createdAt ?? envelope.createdAt,
+    contextId: envelope.contextId,
+    createdAt: envelope.createdAt,
   });
+  const plannedContextJson = JSON.stringify(plannedContext);
   let transactionDatabase: DatabaseSync | undefined;
   try {
     return runOpenClawStateWriteTransaction(
@@ -369,17 +368,13 @@ export function persistExecutionIdentityAdmissionEnvelope(
         const existing = readRowByRunId(db, runId);
         if (existing) {
           const context = parseExecutionIdentityRow(existing);
-          const expected = {
-            ...plannedContext,
-            contextId: context.contextId,
-            createdAt: context.createdAt,
-          } satisfies ExecutionIdentityContextV1;
-          if (JSON.stringify(expected) !== existing.context_json) {
+          // Full canonical bytes, including the captured ID and timestamp, own replay identity.
+          // Never rewrite a newly captured envelope to resemble the retained run context.
+          if (plannedContextJson !== existing.context_json) {
             throw new Error(`execution identity context conflict for run ${runId}`);
           }
           return context;
         }
-        const contextJson = JSON.stringify(plannedContext);
         executeSqliteQuerySync(
           db,
           executionIdentityDb(db)
@@ -389,8 +384,8 @@ export function persistExecutionIdentityAdmissionEnvelope(
               run_id: plannedContext.runId,
               created_at: plannedContext.createdAt,
               coverage_state: plannedContext.coverageState,
-              context_bytes: Buffer.byteLength(contextJson, "utf8"),
-              context_json: contextJson,
+              context_bytes: Buffer.byteLength(plannedContextJson, "utf8"),
+              context_json: plannedContextJson,
             }),
         );
         pruneExecutionIdentityContextsAfterInsert(

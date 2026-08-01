@@ -211,7 +211,7 @@ describe("audit event worker", () => {
     expect(listAuditEvents({ database, limit: 10 }).events).toHaveLength(1);
   });
 
-  it("preserves FIFO idempotency and rejects a later conflicting run envelope", async () => {
+  it("preserves exact-envelope idempotency and safely reports every canonical conflict", async () => {
     const stateDir = tempDirs.make("openclaw-audit-writer-");
     const database = { env: { OPENCLAW_STATE_DIR: stateDir } };
     const errors: string[] = [];
@@ -226,22 +226,38 @@ describe("audit event worker", () => {
       },
       { contextId: "ordered-context", now: admittedAt, runtimeInstanceId: "runtime-1" },
     );
-    const conflict = captureExecutionIdentityAdmissionEnvelope(
+    const factConflict = captureExecutionIdentityAdmissionEnvelope(
       {
         runId: "ordered-run",
         agentId: "other",
-        ingress: { kind: "local-cli", boundary: "agent-command.local", state: "present" },
+        ingress: {
+          kind: "local-cli",
+          boundary: "agent-command.local",
+          state: "present",
+          rawSourceRef: "raw-conflict-source",
+        },
         runtime: { kind: "embedded" },
+        invoker: { kind: "local-account", rawPrincipalRef: "raw-conflict-principal" },
       },
-      { contextId: "ignored-context", now: admittedAt + 1, runtimeInstanceId: "runtime-1" },
+      { contextId: "ordered-context", now: admittedAt, runtimeInstanceId: "runtime-1" },
     );
+    const contextIdConflict = { ...original, contextId: "conflicting-context" };
+    const createdAtConflict = { ...original, createdAt: admittedAt + 1 };
 
+    const startedAt = performance.now();
     expect(writer.recordExecutionIdentity(original)).toBe(true);
     expect(writer.recordExecutionIdentity(original)).toBe(true);
-    expect(writer.recordExecutionIdentity(conflict)).toBe(true);
+    expect(writer.recordExecutionIdentity(contextIdConflict)).toBe(true);
+    expect(writer.recordExecutionIdentity(createdAtConflict)).toBe(true);
+    expect(writer.recordExecutionIdentity(factConflict)).toBe(true);
+    expect(performance.now() - startedAt).toBeLessThan(250);
     await writer.stop();
 
-    expect(errors).toEqual(["audit execution identity context conflict"]);
+    expect(errors).toEqual([
+      "audit execution identity context conflict",
+      "audit execution identity context conflict",
+      "audit execution identity context conflict",
+    ]);
     expect(
       inspectExecutionIdentityRun({ runId: "ordered-run" }, { ...database, now: admittedAt }),
     ).toMatchObject({
@@ -254,6 +270,13 @@ describe("audit event worker", () => {
         },
       },
     });
+    const persisted = openOpenClawStateDatabase(database)
+      .db.prepare("SELECT context_json FROM execution_identity_contexts WHERE run_id = ?")
+      .get("ordered-run") as { context_json: string };
+    for (const raw of ["raw-conflict-source", "raw-conflict-principal"]) {
+      expect(persisted.context_json).not.toContain(raw);
+      expect(JSON.stringify(errors)).not.toContain(raw);
+    }
   });
 
   it("keeps unavailable worker, schema, and insert failures off the admission path", async () => {

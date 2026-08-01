@@ -24,6 +24,7 @@ type AuditWriterMessage =
 export type AuditEventWriter = {
   ready: Promise<void>;
   record: (input: AuditEventInput) => boolean;
+  /** Reports only queue acceptance; persistence succeeds or fails asynchronously. */
   recordExecutionIdentity: (envelope: ExecutionIdentityAdmissionEnvelope) => boolean;
   stop: () => Promise<void>;
 };

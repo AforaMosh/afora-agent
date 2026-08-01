@@ -42,6 +42,36 @@ function facts(
   };
 }
 
+function captureExecutionIdentityAdmissionEnvelope(
+  admissionFacts: ExecutionIdentityAdmissionFacts,
+  options: {
+    now?: number;
+    contextId?: string;
+    runtimeInstanceId?: string;
+  } = {},
+): ExecutionIdentityAdmissionEnvelope {
+  const { contextId, runtimeInstanceId, now } = options;
+  let envelope: ExecutionIdentityAdmissionEnvelope | undefined;
+  const clear = configureExecutionIdentityAdmissionSink((captured) => {
+    envelope = captured;
+    return true;
+  });
+  try {
+    const result = enqueueExecutionIdentityContextAtAdmission(admissionFacts, {
+      enabled: true,
+      ...(contextId !== undefined ? { contextId } : {}),
+      ...(runtimeInstanceId !== undefined ? { runtimeInstanceId } : {}),
+      ...(now !== undefined ? { now } : {}),
+    });
+    if (!result || !envelope) {
+      throw new Error("expected admission envelope");
+    }
+    return envelope;
+  } finally {
+    clear();
+  }
+}
+
 function prepareExecutionIdentityContextAtAdmission(
   admissionFacts: ExecutionIdentityAdmissionFacts,
   options: {
@@ -53,21 +83,11 @@ function prepareExecutionIdentityContextAtAdmission(
   } = {},
 ) {
   const { contextId, runtimeInstanceId, now, limits, ...database } = options;
-  let envelope: ExecutionIdentityAdmissionEnvelope | undefined;
-  const clear = configureExecutionIdentityAdmissionSink((captured) => {
-    envelope = captured;
-    return true;
-  });
-  const result = enqueueExecutionIdentityContextAtAdmission(admissionFacts, {
-    enabled: true,
+  const envelope = captureExecutionIdentityAdmissionEnvelope(admissionFacts, {
     ...(contextId !== undefined ? { contextId } : {}),
     ...(runtimeInstanceId !== undefined ? { runtimeInstanceId } : {}),
     ...(now !== undefined ? { now } : {}),
   });
-  clear();
-  if (!result || !envelope) {
-    throw new Error("expected admission envelope");
-  }
   return persistExecutionIdentityAdmissionEnvelope(envelope, {
     ...database,
     ...(now !== undefined ? { now } : {}),
@@ -76,19 +96,19 @@ function prepareExecutionIdentityContextAtAdmission(
 }
 
 describe("execution identity context storage", () => {
-  it("persists one frozen unattributed context idempotently across restart", () => {
+  it("replays one byte-identical canonical context idempotently across restart", () => {
     const database = databaseOptions();
-    const options = {
-      ...database,
+    const envelope = captureExecutionIdentityAdmissionEnvelope(facts("run-1"), {
       now: 100,
       contextId: "context-1",
       runtimeInstanceId: "runtime-secret-1",
-    };
-    const first = prepareExecutionIdentityContextAtAdmission(facts("run-1"), options);
-    const second = prepareExecutionIdentityContextAtAdmission(facts("run-1"), {
-      ...options,
+    });
+    const first = persistExecutionIdentityAdmissionEnvelope(envelope, { ...database, now: 100 });
+
+    closeOpenClawStateDatabaseForTest();
+    const second = persistExecutionIdentityAdmissionEnvelope(structuredClone(envelope), {
+      ...database,
       now: 999,
-      contextId: "ignored-on-idempotent-read",
     });
 
     expect(second).toEqual(first);
@@ -107,6 +127,56 @@ describe("execution identity context storage", () => {
       },
     );
     expect(afterRestart.identity).toEqual({ state: "present", context: first });
+  });
+
+  it.each([
+    {
+      difference: "contextId",
+      mutate: (envelope: ExecutionIdentityAdmissionEnvelope) => ({
+        ...envelope,
+        contextId: "context-conflicting",
+      }),
+    },
+    {
+      difference: "createdAt",
+      mutate: (envelope: ExecutionIdentityAdmissionEnvelope) => ({
+        ...envelope,
+        createdAt: envelope.createdAt + 1,
+      }),
+    },
+    {
+      difference: "identity facts",
+      mutate: (envelope: ExecutionIdentityAdmissionEnvelope) => ({
+        ...envelope,
+        agentId: "other",
+      }),
+    },
+  ])("conflicts on a same-run $difference and leaves canonical bytes unchanged", ({ mutate }) => {
+    const database = databaseOptions();
+    const envelope = captureExecutionIdentityAdmissionEnvelope(facts("run-conflict"), {
+      contextId: "context-original",
+      now: 100,
+      runtimeInstanceId: "runtime-1",
+    });
+    const original = persistExecutionIdentityAdmissionEnvelope(envelope, {
+      ...database,
+      now: 100,
+    });
+    const originalRow = openOpenClawStateDatabase(database)
+      .db.prepare("SELECT context_json FROM execution_identity_contexts WHERE run_id = ?")
+      .get("run-conflict");
+
+    expect(() =>
+      persistExecutionIdentityAdmissionEnvelope(mutate(envelope), { ...database, now: 101 }),
+    ).toThrow("execution identity context conflict");
+    expect(
+      openOpenClawStateDatabase(database)
+        .db.prepare("SELECT context_json FROM execution_identity_contexts WHERE run_id = ?")
+        .get("run-conflict"),
+    ).toEqual(originalRow);
+    expect(
+      inspectExecutionIdentityRun({ runId: "run-conflict" }, { ...database, now: 101 }).identity,
+    ).toEqual({ state: "present", context: original });
   });
 
   it("projects authoritative local CLI and system ingress without conflating them", () => {
@@ -198,22 +268,6 @@ describe("execution identity context storage", () => {
       expect(encoded).not.toContain(secret);
     }
     expect(context.invoker.principal?.principalRef).toMatch(/^hmac-sha256:v1:/u);
-  });
-
-  it("rejects conflicting identity facts without replacing the original context", () => {
-    const database = databaseOptions();
-    const options = { ...database, runtimeInstanceId: "runtime-1" };
-    const original = prepareExecutionIdentityContextAtAdmission(facts("run-conflict"), options);
-    expect(() =>
-      prepareExecutionIdentityContextAtAdmission(
-        facts("run-conflict", { agentId: "other" }),
-        options,
-      ),
-    ).toThrow("execution identity context conflict");
-    expect(inspectExecutionIdentityRun({ runId: "run-conflict" }, database).identity).toEqual({
-      state: "present",
-      context: original,
-    });
   });
 
   it("declines recording instead of rotating a missing HMAC key with retained contexts", () => {

@@ -135,7 +135,7 @@ describe("execution identity admission envelope", () => {
     ).toThrow("expected admission envelope");
   });
 
-  it("keeps sink replacement ownership and makes unavailable paths nonblocking", () => {
+  it("reports queue acceptance without claiming persistence and keeps failures nonblocking", () => {
     const first = vi.fn(() => true);
     const second = vi.fn(() => true);
     const clearFirst = configureExecutionIdentityAdmissionSink(first);
