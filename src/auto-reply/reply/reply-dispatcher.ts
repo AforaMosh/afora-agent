@@ -2,6 +2,10 @@
 import type { TypingCallbacks } from "../../channels/typing.js";
 import type { HumanDelayConfig } from "../../config/types.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import {
+  isOutboundDeliveryError,
+  isPlatformMessageNotDispatchedError,
+} from "../../infra/outbound/deliver-types.js";
 import { generateSecureInt } from "../../infra/secure-random.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import type { SilentReplyConversationType } from "../../shared/silent-reply-policy.js";
@@ -42,6 +46,16 @@ export type ReplyDispatchDeliveryOutcome =
   | "cancelled"
   | "failed-before-deliver"
   | "failed-deliver";
+
+function isRetryableNoSendFailure(error: unknown): boolean {
+  if (isPlatformMessageNotDispatchedError(error)) {
+    return error.retryable;
+  }
+  if (!isOutboundDeliveryError(error) || error.sentBeforeError) {
+    return false;
+  }
+  return isPlatformMessageNotDispatchedError(error.cause) && error.cause.retryable;
+}
 
 type ReplyDispatchDeliveryOutcomeTracker = {
   promise: Promise<ReplyDispatchDeliveryOutcome>;
@@ -477,7 +491,10 @@ export function createReplyDispatcher(options: ReplyDispatcherOptions): ReplyDis
         deliveryOutcome = "delivered";
       })
       .catch(async (err: unknown) => {
-        deliveryOutcome = deliveryStarted ? "failed-deliver" : "failed-before-deliver";
+        deliveryOutcome =
+          deliveryStarted && !isRetryableNoSendFailure(err)
+            ? "failed-deliver"
+            : "failed-before-deliver";
         failedCounts[kind] += 1;
         // Error cleanup belongs to this send: idle/finalization must not race it.
         // Observer failures stay isolated from later queued deliveries.

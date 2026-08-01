@@ -1,6 +1,10 @@
 // Tests dispatch-from-config reply dispatch integration and final payload routing.
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { clearAgentHarnesses } from "../../agents/harness/registry.js";
+import {
+  OutboundDeliveryError,
+  PlatformMessageNotDispatchedError,
+} from "../../infra/outbound/deliver-types.js";
 import type { PluginHookReplyDispatchResult } from "../../plugins/hooks.test-fixtures.js";
 import { createInternalHookEventPayload } from "../../test-utils/internal-hook-event-payload.js";
 import { withReplyDispatcher } from "../dispatch-dispatcher.js";
@@ -694,6 +698,45 @@ describe("dispatchReplyFromConfig reply_dispatch hook", () => {
     expect(dispatcher.getFailedCounts?.()).toEqual({ tool: 0, block: 0, final: 1 });
     expect(sessionStoreMocks.updateSessionEntry).toHaveBeenCalledOnce();
     expect(sessionStoreMocks.currentEntry?.pendingFinalDelivery).toBeUndefined();
+  });
+
+  it("preserves pending final delivery after a retryable proven no-send failure", async () => {
+    hookMocks.runner.hasHooks.mockReturnValue(false);
+    sessionStoreMocks.currentEntry = {
+      sessionKey: "agent:test:session",
+      pendingFinalDelivery: pendingFinalDelivery("retry after listener recovery"),
+    };
+    sessionStoreMocks.resolveSessionStoreEntry.mockReturnValue({
+      existing: sessionStoreMocks.currentEntry,
+    });
+    const notDispatched = new PlatformMessageNotDispatchedError("listener not ready", {
+      cause: new Error("no active listener"),
+    });
+    const dispatcher = createReplyDispatcher({
+      deliver: async () => {
+        throw new OutboundDeliveryError(notDispatched.message, {
+          cause: notDispatched,
+          stage: "platform_send",
+        });
+      },
+    });
+
+    await withReplyDispatcher({
+      dispatcher,
+      run: () =>
+        dispatchReplyFromConfig({
+          ctx: createHookCtx(),
+          cfg: emptyConfig,
+          dispatcher,
+          replyResolver: async () => ({ text: "retry after listener recovery" }),
+        }),
+    });
+
+    expect(dispatcher.getFailedCounts?.()).toEqual({ tool: 0, block: 0, final: 1 });
+    expect(sessionStoreMocks.updateSessionEntry).toHaveBeenCalledOnce();
+    expect(sessionStoreMocks.currentEntry?.pendingFinalDelivery).toEqual(
+      pendingFinalDelivery("retry after listener recovery"),
+    );
   });
 
   it("clears pending final delivery after intentional pre-delivery cancellation", async () => {
