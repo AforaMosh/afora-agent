@@ -30,9 +30,9 @@ import {
 import {
   resolveCronNextRunWithLowerBound,
   resolveDeliveryState,
-  resolveDisabledHeartbeatOneShotRetryDecision,
+  resolveSkippedOneShotRetryDecision,
   resolveTransientCronRetryDecision,
-  shouldRetryDisabledHeartbeatOneShot,
+  shouldRetrySkippedOneShot,
 } from "./timer-trigger.js";
 
 type CronScheduleOwnership = "current" | "stale";
@@ -192,7 +192,7 @@ export function applyJobResult(
     !preserveOneShotSchedule &&
     job.deleteAfterRun === true &&
     result.status === "ok";
-  const retryDisabledHeartbeatOneShot = shouldRetryDisabledHeartbeatOneShot(job, result);
+  const retrySkippedOneShot = shouldRetrySkippedOneShot(job, result);
 
   if (!ownsSchedule) {
     // The completed invocation still owns its outcome, but the latest durable
@@ -207,10 +207,11 @@ export function applyJobResult(
       job.state.pacedNextRunAtMs = previousScheduleState.pacedNextRunAtMs;
       job.state.forcePreservedNextRunAtMs = previousScheduleState.nextRunAtMs;
     } else if (job.schedule.kind === "at") {
-      if (retryDisabledHeartbeatOneShot) {
-        const retryDecision = resolveDisabledHeartbeatOneShotRetryDecision({
+      if (retrySkippedOneShot) {
+        const retryDecision = resolveSkippedOneShotRetryDecision({
           cronConfig: state.deps.cronConfig,
           consecutiveSkipped: job.state.consecutiveSkipped,
+          retryAfterMs: result.retryAfterMs,
         });
         if (retryDecision.retryable && retryDecision.backoffMs !== undefined) {
           job.enabled = true;
@@ -223,7 +224,7 @@ export function applyJobResult(
               backoffMs: retryDecision.backoffMs,
               nextRunAtMs: job.state.nextRunAtMs,
             },
-            "cron: scheduling one-shot retry after disabled heartbeat",
+            "cron: scheduling one-shot retry after a transient skip",
           );
         } else {
           job.enabled = false;
@@ -235,7 +236,7 @@ export function applyJobResult(
               consecutiveSkipped: retryDecision.consecutiveSkipped,
               reason: retryDecision.reason,
             },
-            "cron: disabling one-shot job after disabled heartbeat retries",
+            "cron: disabling one-shot job after skipped retries",
           );
         }
       } else if (result.status === "ok" || result.status === "skipped") {

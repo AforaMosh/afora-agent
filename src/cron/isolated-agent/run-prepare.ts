@@ -412,6 +412,7 @@ export async function prepareCronRunContext(params: {
         result: withRunSession({
           status: "skipped",
           error: firstUnavailablePreflight.reason,
+          retryAfterMs: firstUnavailablePreflight.retryAfterMs,
           diagnostics: createCronRunDiagnosticsFromError(
             "model-preflight",
             firstUnavailablePreflight.reason,

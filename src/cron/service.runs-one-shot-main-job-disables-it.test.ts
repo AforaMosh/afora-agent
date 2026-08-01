@@ -326,6 +326,80 @@ async function expectNoMainSummaryForIsolatedRun(params: {
 }
 
 describe("CronService", () => {
+  it.each([
+    {
+      reason: "no retry delay",
+      outcome: { status: "skipped" as const, error: "not runnable" },
+    },
+    {
+      reason: "work already started",
+      outcome: {
+        status: "skipped" as const,
+        error: "execution already started",
+        executionStarted: true,
+        retryAfterMs: 300_000,
+      },
+    },
+  ])("keeps a skipped one-shot terminal when $reason", async ({ outcome }) => {
+    let now = Date.parse("2025-12-13T00:00:00.000Z");
+    const { store, cron } = await createCronHarness({
+      nowMs: () => now,
+      runIsolatedAgentJob: vi.fn(async () => outcome),
+    });
+    try {
+      const job = await cron.add({
+        name: "terminal skipped one-shot",
+        enabled: true,
+        schedule: { kind: "at", at: new Date(now + 1_000).toISOString() },
+        sessionTarget: "isolated",
+        wakeMode: "next-heartbeat",
+        payload: { kind: "agentTurn", message: "do not replay" },
+      });
+      now += 1_000;
+      await expect(cron.run(job.id, "due")).resolves.toEqual({ ok: true, ran: true });
+      const persisted = (await cron.list({ includeDisabled: true })).find(
+        (candidate) => candidate.id === job.id,
+      );
+      expect(persisted?.enabled).toBe(false);
+      expect(persisted?.state.nextRunAtMs).toBeUndefined();
+    } finally {
+      await stopCronAndCleanup(cron, store);
+    }
+  });
+
+  it("preserves a future one-shot when a forced run requests a transient skipped retry", async () => {
+    let now = Date.parse("2025-12-13T00:00:00.000Z");
+    const { store, cron } = await createCronHarness({
+      nowMs: () => now,
+      runIsolatedAgentJob: vi.fn(async () => ({
+        status: "skipped" as const,
+        error: "provider unavailable before execution",
+        retryAfterMs: 300_000,
+      })),
+    });
+    try {
+      const scheduledAt = now + 3_600_000;
+      const job = await cron.add({
+        name: "forced skipped one-shot preserves occurrence",
+        enabled: true,
+        schedule: { kind: "at", at: new Date(scheduledAt).toISOString() },
+        sessionTarget: "isolated",
+        wakeMode: "next-heartbeat",
+        payload: { kind: "agentTurn", message: "run at the original time" },
+      });
+      now += 1_000;
+      await expect(cron.run(job.id, "force")).resolves.toEqual({ ok: true, ran: true });
+      expect(
+        (await cron.list({ includeDisabled: true })).find((item) => item.id === job.id),
+      ).toMatchObject({
+        enabled: true,
+        state: { lastRunStatus: "skipped", nextRunAtMs: scheduledAt },
+      });
+    } finally {
+      await stopCronAndCleanup(cron, store);
+    }
+  });
+
   it("runs a one-shot main job and disables it after success when requested", async () => {
     const { store, cron, enqueueSystemEvent, requestHeartbeat, events, atMs, job } =
       await createMainOneShotJobHarness({

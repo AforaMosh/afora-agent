@@ -23,11 +23,11 @@ type TransientCronRetryDecision = {
   reason: "transient retry" | "max retries exhausted" | "permanent error";
 };
 
-type DisabledHeartbeatOneShotRetryDecision = {
+type SkippedOneShotRetryDecision = {
   retryable: boolean;
   consecutiveSkipped: number;
   backoffMs?: number;
-  reason: "disabled heartbeat retry" | "max retries exhausted";
+  reason: "skipped retry" | "max retries exhausted";
 };
 
 type QueuedSystemEventHandle = {
@@ -109,10 +109,11 @@ export function resolveTransientCronRetryDecision(params: {
   };
 }
 
-export function resolveDisabledHeartbeatOneShotRetryDecision(params: {
+export function resolveSkippedOneShotRetryDecision(params: {
   cronConfig?: CronConfig;
   consecutiveSkipped: number | undefined;
-}): DisabledHeartbeatOneShotRetryDecision {
+  retryAfterMs?: number;
+}): SkippedOneShotRetryDecision {
   const consecutiveSkipped = params.consecutiveSkipped ?? 0;
   if (consecutiveSkipped > DEFAULT_MAX_TRANSIENT_RETRIES) {
     return {
@@ -124,11 +125,14 @@ export function resolveDisabledHeartbeatOneShotRetryDecision(params: {
   return {
     retryable: true,
     consecutiveSkipped,
-    backoffMs: errorBackoffMs(
-      consecutiveSkipped,
-      DEFAULT_ERROR_BACKOFF_SCHEDULE_MS.slice(0, DEFAULT_MAX_TRANSIENT_RETRIES),
+    backoffMs: Math.max(
+      errorBackoffMs(
+        consecutiveSkipped,
+        DEFAULT_ERROR_BACKOFF_SCHEDULE_MS.slice(0, DEFAULT_MAX_TRANSIENT_RETRIES),
+      ),
+      params.retryAfterMs ?? 0,
     ),
-    reason: "disabled heartbeat retry",
+    reason: "skipped retry",
   };
 }
 
@@ -165,16 +169,30 @@ export function removeQueuedSystemEventHandle(
   }
 }
 
-export function shouldRetryDisabledHeartbeatOneShot(
+export function shouldRetrySkippedOneShot(
   job: CronJob,
-  result: { status: CronRunStatus; error?: string },
+  result: {
+    status: CronRunStatus;
+    error?: string;
+    executionStarted?: boolean;
+    retryAfterMs?: number;
+  },
 ): boolean {
-  return (
-    job.schedule.kind === "at" &&
+  if (job.schedule.kind !== "at" || result.status !== "skipped") {
+    return false;
+  }
+  if (
     job.sessionTarget === "main" &&
     job.wakeMode === "now" &&
-    result.status === "skipped" &&
     result.error === HEARTBEAT_SKIP_DISABLED
+  ) {
+    return true;
+  }
+  return (
+    result.executionStarted !== true &&
+    typeof result.retryAfterMs === "number" &&
+    Number.isFinite(result.retryAfterMs) &&
+    result.retryAfterMs > 0
   );
 }
 
@@ -195,12 +213,7 @@ export function isScheduledTerminalOneShotRetry(
   if (lastRunStatus === "error") {
     return true;
   }
-  return (
-    lastRunStatus === "skipped" &&
-    job.sessionTarget === "main" &&
-    job.wakeMode === "now" &&
-    job.state.lastError === HEARTBEAT_SKIP_DISABLED
-  );
+  return lastRunStatus === "skipped" && (job.state.consecutiveSkipped ?? 0) > 0;
 }
 
 export function resolveDeliveryState(params: {
