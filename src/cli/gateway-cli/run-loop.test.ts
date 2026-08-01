@@ -531,9 +531,82 @@ describe("runGatewayLoop", () => {
     });
   });
 
-  it.each(["SIGTERM", "SIGINT"] as const)(
-    "drains admitted root work before closing on %s",
-    async (signal) => {
+  it("drains active work without a timeout before closing on SIGTERM", async () => {
+    vi.clearAllMocks();
+    getActiveTaskCount.mockReturnValueOnce(1);
+    getActiveEmbeddedRunCount.mockReturnValueOnce(1);
+
+    await withIsolatedSignals(async ({ captureSignal }) => {
+      const { close, runtime, exited } = await createSignaledLoopHarness();
+      let releaseTasks: (() => void) | undefined;
+      let releaseRuns: (() => void) | undefined;
+      let releaseRoot: (() => void) | undefined;
+      const pendingTasks = new Promise<void>((resolve) => {
+        releaseTasks = resolve;
+      });
+      const pendingRuns = new Promise<void>((resolve) => {
+        releaseRuns = resolve;
+      });
+      const pendingRoot = new Promise<void>((resolve) => {
+        releaseRoot = resolve;
+      });
+      waitForActiveTasks.mockImplementationOnce(async () => {
+        await pendingTasks;
+        return { drained: true };
+      });
+      waitForActiveEmbeddedRuns.mockImplementationOnce(async () => {
+        await pendingRuns;
+        return { drained: true };
+      });
+      waitForActiveGatewayRootWork.mockImplementationOnce(async () => {
+        await pendingRoot;
+        return { drained: true, active: 0 };
+      });
+
+      try {
+        captureSignal("SIGTERM")();
+        await waitForLoopCondition(
+          () =>
+            waitForActiveTasks.mock.calls.length === 1 &&
+            waitForActiveEmbeddedRuns.mock.calls.length === 1 &&
+            waitForActiveGatewayRootWork.mock.calls.length === 1,
+          "expected SIGTERM to begin draining active gateway work",
+        );
+
+        expect(markGatewayDraining).toHaveBeenCalledOnce();
+        expect(waitForActiveTasks).toHaveBeenCalledWith(undefined);
+        expect(waitForActiveEmbeddedRuns).toHaveBeenCalledWith(undefined);
+        expect(waitForActiveGatewayRootWork).toHaveBeenCalledWith(undefined);
+        expect(abortEmbeddedAgentRun).not.toHaveBeenCalled();
+        expect(markRestartAbortedMainSessions).not.toHaveBeenCalled();
+        expect(close).not.toHaveBeenCalled();
+        expect(runtime.exit).not.toHaveBeenCalled();
+
+        releaseTasks?.();
+        releaseRuns?.();
+        releaseRoot?.();
+
+        await expect(exited).resolves.toBe(0);
+        expect(close).toHaveBeenCalledWith({
+          reason: "gateway stopping",
+          restartExpectedMs: null,
+        });
+      } finally {
+        releaseTasks?.();
+        releaseRuns?.();
+        releaseRoot?.();
+        await exited;
+        waitForActiveTasks.mockReset();
+        waitForActiveTasks.mockResolvedValue({ drained: true });
+        waitForActiveEmbeddedRuns.mockReset();
+        waitForActiveEmbeddedRuns.mockResolvedValue({ drained: true });
+        waitForActiveGatewayRootWork.mockReset();
+        waitForActiveGatewayRootWork.mockResolvedValue({ drained: true, active: 0 });
+      }
+    });
+  });
+
+  it("drains admitted root work before closing on SIGINT", async () => {
       vi.clearAllMocks();
 
       await withIsolatedSignals(async ({ captureSignal }) => {
@@ -548,10 +621,10 @@ describe("runGatewayLoop", () => {
         });
 
         try {
-          captureSignal(signal)();
+          captureSignal("SIGINT")();
           await waitForLoopCondition(
             () => waitForActiveGatewayRootWork.mock.calls.length === 1,
-            `expected ${signal} to drain admitted gateway root work`,
+            "expected SIGINT to drain admitted gateway root work",
           );
 
           expect(markGatewayDraining).toHaveBeenCalledOnce();
@@ -576,8 +649,7 @@ describe("runGatewayLoop", () => {
           waitForActiveGatewayRootWork.mockResolvedValue({ drained: true, active: 0 });
         }
       });
-    },
-  );
+  });
 
   it("continues direct shutdown when the bounded root-work drain times out", async () => {
     vi.clearAllMocks();
@@ -587,7 +659,7 @@ describe("runGatewayLoop", () => {
       const { close, runtime, exited } = await createSignaledLoopHarness();
 
       try {
-        captureSignal("SIGTERM")();
+        captureSignal("SIGINT")();
 
         await expect(exited).resolves.toBe(0);
         expect(waitForActiveGatewayRootWork).toHaveBeenCalledWith(15_000);
@@ -614,7 +686,7 @@ describe("runGatewayLoop", () => {
       const { close, runtime, exited } = await createSignaledLoopHarness();
 
       try {
-        captureSignal("SIGTERM")();
+        captureSignal("SIGINT")();
 
         await expect(exited).resolves.toBe(0);
         expect(waitForActiveGatewayRootWork).toHaveBeenCalledWith(15_000);
