@@ -237,7 +237,7 @@ export function querySqliteSessionEntries(
           const unpinned = executeSqliteQuerySync(
             database.db,
             (remaining === undefined ? selected : selected.limit(remaining))
-              .where("pinned_at", "is", null)
+              .where((eb) => eb.or([eb("pinned_at", "is", null), eb("pinned_at", "<=", 0)]))
               .orderBy("updated_at", "desc")
               .orderBy("session_key", "asc"),
           ).rows;

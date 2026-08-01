@@ -133,6 +133,7 @@ describe("session accessor seam", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
@@ -284,6 +285,13 @@ describe("session accessor seam", () => {
       { agentId: "main", sessionKey: "agent:main:a-unpinned", storePath },
       { sessionId: "unpinned-session", updatedAt: 20 },
     );
+    const database = openOpenClawAgentDatabase({
+      agentId: "main",
+      path: resolveSqliteTargetFromSessionStorePath(storePath, { agentId: "main" }).path,
+    });
+    database.db
+      .prepare("UPDATE session_nodes SET pinned_at = 0 WHERE session_key = ?")
+      .run("agent:main:z-zero");
 
     const query = (sortBy: "lastInteractionAt" | "updatedAt") =>
       querySqliteSessionEntriesReadOnly({
@@ -292,13 +300,13 @@ describe("session accessor seam", () => {
           archived: false,
           includeGlobal: true,
           includeUnknown: true,
-          limit: 1,
+          limit: 2,
           sortBy,
         },
         storePath,
       }).entries.map(({ sessionKey }) => sessionKey);
-    expect(query("updatedAt")).toEqual(["agent:main:a-unpinned"]);
-    expect(query("lastInteractionAt")).toEqual(["agent:main:a-unpinned"]);
+    expect(query("updatedAt")).toEqual(["agent:main:a-unpinned", "agent:main:z-zero"]);
+    expect(query("lastInteractionAt")).toEqual(["agent:main:a-unpinned", "agent:main:z-zero"]);
   });
 
   it("excludes pending rows from bounded list pages", () => {
@@ -395,6 +403,8 @@ describe("session accessor seam", () => {
   });
 
   it("refreshes a fallback projected title when its date changes", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(Date.UTC(2026, 6, 31, 12));
     const scope = {
       agentId: "main",
       sessionKey: "agent:main:fallback-title",
