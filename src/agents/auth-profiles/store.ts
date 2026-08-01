@@ -42,9 +42,8 @@ import {
 } from "./persisted.js";
 import {
   captureRuntimeAuthProfileStorePublicationToken,
+  consumeRuntimeAuthProfileStorePublicationToken,
   getRuntimeAuthProfileStorePublicationGeneration,
-  isRuntimeAuthProfileStorePublicationMainCurrent,
-  isRuntimeAuthProfileStorePublicationOwnerCurrent,
   type RuntimeAuthProfileStorePublicationToken,
 } from "./runtime-publication-order.js";
 import {
@@ -241,11 +240,15 @@ function fenceRuntimeSnapshotPublication(params: {
       }
       captureToken();
     }
-    if (!token || !isRuntimeAuthProfileStorePublicationOwnerCurrent(token)) {
+    if (!token) {
       return false;
     }
-    if (!isRuntimeAuthProfileStorePublicationMainCurrent(token)) {
+    const status = consumeRuntimeAuthProfileStorePublicationToken(token);
+    if (status === "main-superseded") {
       return params.publishAfterMainAdvance?.() ?? false;
+    }
+    if (status !== "current") {
+      return false;
     }
     params.publish();
     return true;
