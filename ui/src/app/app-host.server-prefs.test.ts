@@ -196,7 +196,6 @@ describe("OpenClaw shell locale preferences", () => {
       { client, phase: "connected" } as ApplicationContext["gateway"]["snapshot"],
       runtimeConfig,
     );
-
     expect(refresh).not.toHaveBeenCalled();
   });
 });

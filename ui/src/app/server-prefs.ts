@@ -403,6 +403,30 @@ function trailingSlashScopeAlias(scope: string): string {
     return scope.endsWith("/") ? scope : `${scope}/`;
   }
 }
+function discoverStoredScopeAliases(normalizedScope: string): string[] {
+  try {
+    const storage = globalThis.localStorage;
+    if (!storage) {
+      return [];
+    }
+    const aliases = new Set<string>();
+    const prefixes = [`${PENDING_KEY}:`, `${LAST_SEEN_KEY}:`];
+    for (let index = 0; index < storage.length; index += 1) {
+      const key = storage.key(index);
+      const prefix = prefixes.find((candidate) => key?.startsWith(candidate));
+      if (!key || !prefix) {
+        continue;
+      }
+      const scope = key.slice(prefix.length);
+      if (scope !== normalizedScope && normalizeGatewayCredentialScope(scope) === normalizedScope) {
+        aliases.add(scope);
+      }
+    }
+    return [...aliases];
+  } catch {
+    return [];
+  }
+}
 function hasPendingMigrationTombstone(scope: string): boolean {
   if (migratedLegacyPendingScopes.has(scope)) {
     return true;
@@ -438,7 +462,11 @@ function finalizePendingMigrations(scope: string): void {
   }
 }
 function migrateServerPrefsScope(authoredScope: string, normalizedScope: string): void {
-  const aliases = new Set([authoredScope, trailingSlashScopeAlias(normalizedScope)]);
+  const aliases = new Set([
+    authoredScope,
+    trailingSlashScopeAlias(normalizedScope),
+    ...discoverStoredScopeAliases(normalizedScope),
+  ]);
   for (const legacyScope of aliases) {
     if (legacyScope === normalizedScope) {
       continue;

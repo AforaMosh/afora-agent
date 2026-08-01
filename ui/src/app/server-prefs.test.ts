@@ -389,12 +389,13 @@ describe("applyServerUiPrefs", () => {
   });
 
   it("migrates raw legacy scope keys before reconciliation", () => {
+    const legacyScope = "WS://GW:80/a/../";
     localStorage.setItem(
-      "openclaw.control.serverPrefs.pending.v1:ws://gw/",
+      `openclaw.control.serverPrefs.pending.v1:${legacyScope}`,
       JSON.stringify({ theme: "knot" }),
     );
     localStorage.setItem(
-      "openclaw.control.serverPrefs.v1:ws://gw/",
+      `openclaw.control.serverPrefs.v1:${legacyScope}`,
       JSON.stringify({ theme: "claw" }),
     );
 
@@ -407,8 +408,10 @@ describe("applyServerUiPrefs", () => {
     expect(localStorage.getItem("openclaw.control.serverPrefs.v1:ws://gw")).toBe(
       JSON.stringify({ theme: "claw" }),
     );
-    expect(localStorage.getItem("openclaw.control.serverPrefs.pending.v1:ws://gw/")).toBeNull();
-    expect(localStorage.getItem("openclaw.control.serverPrefs.v1:ws://gw/")).toBeNull();
+    expect(
+      localStorage.getItem(`openclaw.control.serverPrefs.pending.v1:${legacyScope}`),
+    ).toBeNull();
+    expect(localStorage.getItem(`openclaw.control.serverPrefs.v1:${legacyScope}`)).toBeNull();
   });
 
   it("retains migrated pending intent when canonical storage writes fail", () => {
