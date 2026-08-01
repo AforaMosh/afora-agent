@@ -36,8 +36,8 @@ Docs: https://docs.openclaw.ai
 
 - **Security and authorization:** prevent channel allowlists from granting owner access, keep session exports inside the workspace, close a forged-marker/web-search boundary bypass, prevent non-owner ACP session exposure, reject unsafe explicit approval IDs, harden secret redaction and exec/OAuth approvals, validate downloaded install scripts, and prevent insecure secrets-plan writes. (#107403; related #104984; #104708; related #102391; #110417, #110745; related #103055; #111055, #112947, #112952, #112953, #112956, #112946, #112957, #113307; related #90013; #113707) Thanks @obviyus, @yetval, @VACInc, @pgondhi987, and @SebTardif.
 - **SQLite and data safety:** commit session indexes before transcript eviction, preserve state through maintenance races and live-WAL verification, reject invalid backups and schema data loss, make snapshot publication crash-recoverable, retain complete backups after interrupted commits, and evict only the exact corrupted cached database owner so repairs recover without a Gateway restart. (#108378, #113216; related #113209, #113210, #113211; #113287; related #113265; #113367, #113473, #113607, #114016, #114278) Thanks @yetval, @vincentkoc, @VACInc, and @rizquuula.
-- **Channel delivery:** stop Telegram durable-ingress loss across restarts and persist offsets only after spool writes, preserve Discord/iMessage/WhatsApp traffic across crashes or restarts, restore assistant context and interrupted turns after restart, suppress outbound echoes, deliver ingress retries whose queued run was dropped, report finalized Telegram previews to plugins, validate native settings, and preserve Telegram ingress outcomes. (#107288; related #107246; #113368; related #113315; #110274, #110409, #110418, #112548; related #112520; #112562, #114058, #114531, #111341, #115891; related #115888; #116214; related #116171; #116773) Thanks @obviyus, @carlosjarenom, @JesusSerrano-Seimako, @vincentkoc, @edenfunf, and @joshavant.
-- **Sessions and transcripts:** preserve final replies, active turns, Codex-bound history, and transcript cursors; prevent repeated tool-call IDs from poisoning sessions; close lifecycle races and cross-agent deadlocks; keep migrated transcripts usable after restart; and preserve TUI session state across switches and reconnects. (#107799; related #106594; #110389, #110518; related #109443; #112016, #112988, #114477; related #103077, #103089, #113005, #114187; #114524, #114504, #116077, #116399) Thanks @joshavant, @lockhartheavyindustries, @flashosophy, @yetval, @realaudreyserber-afk, @hvhoon, and @vincentkoc.
+- **Channel delivery:** stop Telegram durable-ingress loss across restarts and persist offsets only after spool writes, preserve Discord/iMessage/WhatsApp traffic across crashes or restarts, restore assistant context and interrupted turns after restart, suppress outbound echoes, deliver ingress retries whose queued run was dropped, report finalized Telegram previews to plugins, explain invalid native queue arguments instead of false model-failure fallbacks, validate native settings, and preserve Telegram ingress outcomes. (#107288; related #107246; #113368; related #113315; #110274, #110409, #110418, #112548; related #112520; #112562, #114058, #114531, #111341, #115891; related #115888; #116214; related #116171; #116726; related #116688; #116773) Thanks @obviyus, @carlosjarenom, @JesusSerrano-Seimako, @vincentkoc, @edenfunf, @joshavant, and @hannesrudolph.
+- **Sessions and transcripts:** preserve final replies, active turns, Codex-bound history, and transcript cursors; prevent repeated tool-call IDs from poisoning sessions; close lifecycle races and cross-agent deadlocks; keep migrated transcripts usable after restart; keep restart prompts on the active transcript tail; and preserve TUI session state across switches and reconnects. (#107799; related #106594; #110389, #110518; related #109443; #112016, #112988, #114477; related #103077, #103089, #113005, #114187; #114524, #114504, #116077, #116399, #117260) Thanks @joshavant, @lockhartheavyindustries, @flashosophy, @yetval, @realaudreyserber-afk, @hvhoon, and @vincentkoc.
 - **Install and upgrade:** preserve working installs on unsupported Node and npm 12, isolate source postinstall state, repair missing native adapters, keep versioned plugins off source paths, avoid dirty source builds, repair plugin config during upgrades, stabilize package-to-dev switches, restore production installs after the TypeBox package removal, ship documented plugin SDK typings, and discover external web-search plugins on fresh installs. (#106994; related #106870; #108100; related #107290; #111514; related #111513; #111682, #112829; related #112827; #113094, #113324, #113856, #113821, #114090, #114215; related #113975; #114327, #115292, #116333, #116345) Thanks @woohahahaaa, @fuller-stack-dev, @vincentkoc, @sallyom, @alxfyvwebaccts-png, and @pash-openai.
 - **Provider reliability:** prevent false Codex exhaustion and silent replies, honor Anthropic Retry-After, preserve selected Claude CLI profiles and adopted chats, remove the rejected Codex OAuth realtime fallback, recover stalled Claude CLI sessions without losing native cache continuity, reuse plugin metadata during model selection, bound stalled provider response bodies, and stabilize Ollama/LM Studio/local-model discovery. (#110381; related #96815; #110980, #111072; related #103849; #112458; related #95612, #107668; #113078, #113393, #114397, #114094; related #114086; #114288, #114405, #114582, #115211; related #115021; #113866, #114117, #109088) Thanks @xxw77, @yetval, @fuller-stack-dev, @cstreeter, @josh-cornelius, @lanyoung, @LeonidasLux, @BomBastikDE, @vincentkoc, @VACInc, and @SunnyShu0925.
 - **Agent and Codex runtime:** bound malformed Code Mode repair to one correction turn, preserve valid native Codex controls, keep promoted approvals from blocking unattended runs, and retain the original requester when an approval is promoted. (#115729; related #115311; #107588, #116117, #116152) Thanks @vincentkoc and @VACInc.
@@ -48,10 +48,228 @@ Docs: https://docs.openclaw.ai
 
 ### Complete contribution record
 
-This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8..edb6f59fbbad9c2235c0661bca73b1df0569e32c history: 5085 merged PRs. The generation manifest also supplies direct commits as editorial input; the grouped notes above prioritize user impact.
+This audited record covers the complete v2026.7.2-beta.6..02d06caeb0febe7ec3c0df1454b85c38f3fb27d1 history: 5089 merged PRs. The generation manifest also supplies direct commits as editorial input; the grouped notes above prioritize user impact.
 
 #### Pull requests
 
+- **PR #116726** Related #116688. Thanks @hannesrudolph.
+- **PR #116773**
+- **PR #116744**
+- **PR #117405**
+- **PR #117260**
+- **PR #110453**
+- **PR #113367** Thanks @vincentkoc.
+- **PR #113453**
+- **PR #113473** Thanks @vincentkoc.
+- **PR #113580** Thanks @vincentkoc.
+- **PR #108924** Related #108656. Thanks @obviyus.
+- **PR #107288** Related #107246. Thanks @obviyus.
+- **PR #109907**
+- **PR #109910**
+- **PR #110844**
+- **PR #110852**
+- **PR #110899**
+- **PR #110910**
+- **PR #110914**
+- **PR #110916**
+- **PR #111029** Related #109911. Thanks @edenfunf.
+- **PR #110660**
+- **PR #110857**
+- **PR #110886**
+- **PR #111149**
+- **PR #112056**
+- **PR #112284**
+- **PR #113073**
+- **PR #113945**
+- **PR #109861** Related #109851. Thanks @fuller-stack-dev.
+- **PR #109807** Thanks @fuller-stack-dev.
+- **PR #110515** Related #110451. Thanks @fuller-stack-dev.
+- **PR #111211** Thanks @fuller-stack-dev.
+- **PR #111212** Thanks @fuller-stack-dev.
+- **PR #111524**
+- **PR #111687**
+- **PR #111748** Thanks @fuller-stack-dev.
+- **PR #113224** Related #113218. Thanks @fuller-stack-dev.
+- **PR #108505**
+- **PR #108709**
+- **PR #108776**
+- **PR #109922**
+- **PR #110242**
+- **PR #110372**
+- **PR #110584**
+- **PR #110681**
+- **PR #110989**
+- **PR #111060**
+- **PR #112918**
+- **PR #113027**
+- **PR #113193** Related #85954. Thanks @omarshahine.
+- **PR #109579** Related #86425. Thanks @shushushv.
+- **PR #109719** Thanks @shushushv.
+- **PR #109964**
+- **PR #111048**
+- **PR #113022**
+- **PR #113053**
+- **PR #113122**
+- **PR #113354** Related #113353. Thanks @Solvely-Colin.
+- **PR #115211** Related #115021. Thanks @vincentkoc.
+- **PR #108835** Thanks @sibbl.
+- **PR #109341** Thanks @sibbl.
+- **PR #109433** Related #108781. Thanks @IWhatsskill.
+- **PR #109483** Thanks @IWhatsskill.
+- **PR #110661** Thanks @IWhatsskill.
+- **PR #111516** Thanks @IWhatsskill and @Solvely-Colin.
+- **PR #112721** Thanks @IWhatsskill and @Solvely-Colin.
+- **PR #108605** Related #108604.
+- **PR #108868**
+- **PR #108977**
+- **PR #109250**
+- **PR #109444**
+- **PR #109585**
+- **PR #110054**
+- **PR #110141**
+- **PR #110596**
+- **PR #113476**
+- **PR #113391** Thanks @fuller-stack-dev.
+- **PR #113392**
+- **PR #113633** Related #113412. Thanks @vincentkoc and @fuller-stack-dev.
+- **PR #113909**
+- **PR #108708** Related #108665.
+- **PR #112412** Related #112405. Thanks @fuller-stack-dev.
+- **PR #110644**
+- **PR #110960**
+- **PR #112554**
+- **PR #112787**
+- **PR #113006**
+- **PR #113127**
+- **PR #113173**
+- **PR #109720**
+- **PR #109947**
+- **PR #110285**
+- **PR #110631**
+- **PR #110632**
+- **PR #110635**
+- **PR #110994**
+- **PR #109236**
+- **PR #108770**
+- **PR #111932** Related #111931.
+- **PR #112163**
+- **PR #113419** Thanks @Patrick-Erichsen.
+- **PR #109837**
+- **PR #103895** Related #103673. Thanks @Patrick-Erichsen.
+- **PR #107986** Thanks @obviyus.
+- **PR #113158**
+- **PR #113199**
+- **PR #109817** Thanks @anagnorisis2peripeteia.
+- **PR #111457** Thanks @FMLS and @cursoragent and @hxy91819.
+- **PR #113861**
+- **PR #108043**
+- **PR #110597**
+- **PR #114037**
+- **PR #110978**
+- **PR #111112**
+- **PR #112387**
+- **PR #112585**
+- **PR #113165**
+- **PR #114328**
+- **PR #115790** Related #52019, #63531. Thanks @Rheingold777 and @ImLukeF.
+- **PR #116078** Thanks @vincentkoc.
+- **PR #116079** Thanks @vincentkoc.
+- **PR #116096** Thanks @shakkernerd.
+- **PR #116194** Thanks @shakkernerd.
+- **PR #114841** Thanks @omarshahine.
+- **PR #114854** Thanks @omarshahine.
+- **PR #114853** Thanks @omarshahine.
+- **PR #116740** Thanks @vincentkoc.
+- **PR #107403** Related #104984. Thanks @obviyus and @yetval.
+- **PR #104708** Related #102391. Thanks @VACInc and @yetval.
+- **PR #110417**
+- **PR #110745** Related #103055. Thanks @yetval.
+- **PR #111055**
+- **PR #112947** Thanks @pgondhi987.
+- **PR #112952** Thanks @pgondhi987.
+- **PR #112953** Thanks @pgondhi987.
+- **PR #112956** Thanks @pgondhi987.
+- **PR #112946** Thanks @pgondhi987.
+- **PR #112957** Thanks @pgondhi987.
+- **PR #113307** Related #90013. Thanks @SebTardif.
+- **PR #113707**
+- **PR #108378** Thanks @yetval.
+- **PR #113216** Related #113209, #113210, #113211. Thanks @vincentkoc.
+- **PR #113287** Related #113265. Thanks @vincentkoc.
+- **PR #113607** Thanks @vincentkoc.
+- **PR #114016** Thanks @VACInc.
+- **PR #114278** Thanks @rizquuula and @vincentkoc.
+- **PR #113368** Related #113315. Thanks @carlosjarenom and @obviyus and @JesusSerrano-Seimako.
+- **PR #110274**
+- **PR #110409**
+- **PR #110418** Thanks @obviyus.
+- **PR #112548** Related #112520.
+- **PR #112562**
+- **PR #114058**
+- **PR #114531** Thanks @obviyus.
+- **PR #111341**
+- **PR #115891** Related #115888. Thanks @edenfunf and @vincentkoc.
+- **PR #116214** Related #116171. Thanks @joshavant.
+- **PR #107799** Related #106594. Thanks @joshavant and @lockhartheavyindustries.
+- **PR #110389**
+- **PR #110518** Related #109443. Thanks @joshavant and @flashosophy.
+- **PR #112016**
+- **PR #112988**
+- **PR #114477** Related #103077, #103089, #113005, #114187. Thanks @yetval and @realaudreyserber-afk and @hvhoon.
+- **PR #114524**
+- **PR #114504**
+- **PR #116077** Thanks @vincentkoc.
+- **PR #116399**
+- **PR #106994** Related #106870.
+- **PR #108100** Related #107290. Thanks @woohahahaaa.
+- **PR #111514** Related #111513.
+- **PR #111682** Thanks @fuller-stack-dev.
+- **PR #112829** Related #112827. Thanks @fuller-stack-dev.
+- **PR #113094**
+- **PR #113324** Thanks @vincentkoc.
+- **PR #113856**
+- **PR #113821**
+- **PR #114090**
+- **PR #114215** Related #113975. Thanks @sallyom and @alxfyvwebaccts-png.
+- **PR #114327**
+- **PR #115292** Thanks @vincentkoc.
+- **PR #116333** Thanks @pash-openai.
+- **PR #116345** Thanks @vincentkoc.
+- **PR #110381** Related #96815. Thanks @xxw77.
+- **PR #110980**
+- **PR #111072** Related #103849. Thanks @yetval.
+- **PR #112458** Related #95612, #107668. Thanks @fuller-stack-dev and @cstreeter and @josh-cornelius.
+- **PR #113078** Thanks @fuller-stack-dev.
+- **PR #113393** Thanks @fuller-stack-dev.
+- **PR #114397**
+- **PR #114094** Related #114086. Thanks @lanyoung and @LeonidasLux and @BomBastikDE.
+- **PR #114288**
+- **PR #114405**
+- **PR #114582**
+- **PR #113866** Thanks @VACInc.
+- **PR #114117** Thanks @VACInc.
+- **PR #109088** Thanks @SunnyShu0925.
+- **PR #115729** Related #115311. Thanks @vincentkoc.
+- **PR #107588** Thanks @VACInc.
+- **PR #116117**
+- **PR #116152**
+- **PR #107236** Thanks @SL4N.
+- **PR #110351** Related #102236. Thanks @yetval.
+- **PR #111292** Related #111271, #111272, #111273, #111274.
+- **PR #112483** Thanks @joshavant.
+- **PR #113088** Related #113085. Thanks @metahacker.
+- **PR #114421**
+- **PR #114441** Thanks @efpiva.
+- **PR #110849** Thanks @nocodet888-arch.
+- **PR #114386** Related #103930. Thanks @qingminglong and @revision-co-ltd.
+- **PR #114449** Related #114385. Thanks @loulanyue and @alfredjbclaw.
+- **PR #114076** Related #105701. Thanks @qingminglong and @aniruddhaadak80.
+- **PR #114526** Thanks @IWhatsskill.
+- **PR #114505** Thanks @IWhatsskill.
+- **PR #116162** Related #116129. Thanks @vincentkoc and @obviyus.
+- **PR #113152** Thanks @joshavant.
+- **PR #111960** Related #111959. Thanks @ooiuuii.
+- **PR #93516** Related #102885. Thanks @Papilionidae.
 - **PR #107116** Related #107106.
 - **PR #107147**
 - **PR #107148**
@@ -143,7 +361,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #107297**
 - **PR #107025**
 - **PR #107319**
-- **PR #107236** Thanks @SL4N.
 - **PR #107321**
 - **PR #107326**
 - **PR #107328**
@@ -168,7 +385,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #107354**
 - **PR #107357**
 - **PR #107349** Related #107313.
-- **PR #107288** Related #107246. Thanks @obviyus.
 - **PR #107358** Thanks @fuller-stack-dev.
 - **PR #107370**
 - **PR #107361** Related #107335.
@@ -221,7 +437,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #107444**
 - **PR #107372**
 - **PR #99051** Related #98805.
-- **PR #107403** Related #104984. Thanks @obviyus and @yetval.
 - **PR #107455**
 - **PR #107456**
 - **PR #107457**
@@ -287,7 +502,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #107144** Thanks @SunnyShu0925.
 - **PR #107636**
 - **PR #107234** Thanks @wahaha1223 and @cursoragent.
-- **PR #104708** Related #102391. Thanks @VACInc and @yetval.
 - **PR #107652**
 - **PR #107315** Thanks @smthfoxy.
 - **PR #107654**
@@ -387,7 +601,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #107633**
 - **PR #107794** Thanks @fuller-stack-dev.
 - **PR #107827**
-- **PR #107799** Related #106594. Thanks @joshavant and @lockhartheavyindustries.
 - **PR #107828**
 - **PR #107830**
 - **PR #104824** Thanks @yetval.
@@ -498,7 +711,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #104853** Thanks @VectorPeak.
 - **PR #108052** Thanks @RomneyDa.
 - **PR #108041**
-- **PR #108043**
 - **PR #108048**
 - **PR #106737** Thanks @IWhatsskill.
 - **PR #108051**
@@ -506,7 +718,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #107881** Thanks @RomneyDa.
 - **PR #106395** Thanks @Alix-007.
 - **PR #108054**
-- **PR #106994** Related #106870.
 - **PR #108057** Related #108055.
 - **PR #108047**
 - **PR #108067**
@@ -543,7 +754,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #108123** Related #108097, #108098.
 - **PR #108139**
 - **PR #108121**
-- **PR #108100** Related #107290. Thanks @woohahahaaa.
 - **PR #108129**
 - **PR #108009** Thanks @miorbnli.
 - **PR #107719** Thanks @Leon-SK668.
@@ -579,7 +789,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #108151** Thanks @mushuiyu886.
 - **PR #108181**
 - **PR #108201**
-- **PR #107986** Thanks @obviyus.
 - **PR #108203**
 - **PR #108219**
 - **PR #108202**
@@ -759,7 +968,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #108597**
 - **PR #108615** Related #108600.
 - **PR #108626** Related #99270, #105184, #107447. Thanks @obviyus and @sgh6688 and @compoodment.
-- **PR #108505**
 - **PR #108628** Related #108595.
 - **PR #108627** Related #108608.
 - **PR #108633**
@@ -777,7 +985,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #108638**
 - **PR #108546** Thanks @krissding.
 - **PR #108064** Thanks @Alix-007.
-- **PR #108605** Related #108604.
 - **PR #108065** Thanks @Alix-007.
 - **PR #108063** Thanks @Alix-007.
 - **PR #108606** Thanks @Alix-007.
@@ -877,7 +1084,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #108351** Related #96163. Thanks @edenfunf and @tancolo.
 - **PR #105978** Thanks @zw-xysk.
 - **PR #108743** Thanks @Alix-007.
-- **PR #108770**
 - **PR #108760**
 - **PR #106541** Thanks @Pick-cat and @cursoragent.
 - **PR #108683** Related #95131, #105445, #107262. Thanks @a-m-a-r-a and @laurenceputra and @ndj888.
@@ -965,7 +1171,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #108887** Related #108362. Thanks @buhrclaw.
 - **PR #108577** Related #108570. Thanks @zhanxingxin1998.
 - **PR #108485** Thanks @VACInc.
-- **PR #108868**
 - **PR #108926** Related #108432. Thanks @jincheng-xydt and @bluedepth.
 - **PR #108929**
 - **PR #108932**
@@ -1035,7 +1240,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #107323** Related #107255. Thanks @paulpitchford.
 - **PR #108689** Related #107856. Thanks @destire-mio and @Igallta.
 - **PR #108825**
-- **PR #108708** Related #108665.
 - **PR #108833**
 - **PR #108863**
 - **PR #108940** Thanks @zhangguiping-xydt and @wanyongstar.
@@ -1096,7 +1300,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #108904** Related #107917. Thanks @geekforlife.
 - **PR #108618** Thanks @Monkey-wusky.
 - **PR #109201**
-- **PR #108709**
 - **PR #109184**
 - **PR #108823** Thanks @Leon-SK668.
 - **PR #106370** Thanks @Monkey-wusky.
@@ -1108,16 +1311,13 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #108827** Related #108587. Thanks @NianJiuZst and @andrea-kingautomation.
 - **PR #109211**
 - **PR #109146** Thanks @Alix-007.
-- **PR #108977**
 - **PR #109229**
-- **PR #108835** Thanks @sibbl.
 - **PR #108710** Thanks @bladin.
 - **PR #109223**
 - **PR #109238**
 - **PR #109147**
 - **PR #109052** Thanks @Pick-cat and @cursoragent.
 - **PR #109222**
-- **PR #108776**
 - **PR #106840** Related #106839. Thanks @bill-starfoundry.
 - **PR #109151**
 - **PR #109056** Thanks @sallyom.
@@ -1134,7 +1334,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #109246** Thanks @RomneyDa.
 - **PR #108858** Thanks @wings1029.
 - **PR #108801** Related #104377. Thanks @DaigoSoup and @Inhum.
-- **PR #109236**
 - **PR #108897** Thanks @tzy-17.
 - **PR #109259**
 - **PR #109271**
@@ -1220,7 +1419,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #109253** Thanks @Alix-007.
 - **PR #109346**
 - **PR #88919** Thanks @plexustech2006.
-- **PR #109341** Thanks @sibbl.
 - **PR #109220** Thanks @zw-xysk and @SunnyShu0925.
 - **PR #109241** Thanks @Alix-007.
 - **PR #109328**
@@ -1247,7 +1445,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #109425**
 - **PR #108953** Thanks @sunlit-deng.
 - **PR #108764**
-- **PR #109250**
 - **PR #90799** Related #99131. Thanks @wangwllu and @shakkernerd and @jwest75674.
 - **PR #103323** Thanks @NianJiuZst.
 - **PR #108184** Thanks @Leon-SK668.
@@ -1278,7 +1475,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #109393**
 - **PR #109481** Thanks @Leon-SK668.
 - **PR #109505**
-- **PR #109444**
 - **PR #109469** Thanks @Leon-SK668.
 - **PR #109513**
 - **PR #109454** Thanks @wings1029.
@@ -1309,7 +1505,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #109587**
 - **PR #109575**
 - **PR #109441**
-- **PR #109433** Related #108781. Thanks @IWhatsskill.
 - **PR #106526** Related #104854. Thanks @ekinnee.
 - **PR #109485** Thanks @wahaha1223.
 - **PR #109592** Thanks @ZengWen-DT.
@@ -1322,7 +1517,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #109589** Thanks @ZengWen-DT.
 - **PR #109629** Thanks @Patrick-Erichsen.
 - **PR #109590** Thanks @krissding.
-- **PR #109579** Related #86425. Thanks @shushushv.
 - **PR #109497**
 - **PR #109628**
 - **PR #69707** Thanks @badgerbees.
@@ -1330,7 +1524,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #109362**
 - **PR #98422** Related #98419. Thanks @ooiuuii.
 - **PR #109612** Related #109405. Thanks @wuqxuan and @NOVA-Openclaw.
-- **PR #108924** Related #108656. Thanks @obviyus.
 - **PR #109610** Thanks @zhangguiping-xydt.
 - **PR #109635**
 - **PR #109630**
@@ -1349,7 +1542,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #109633**
 - **PR #109540** Thanks @ZengWen-DT.
 - **PR #109655** Thanks @NianJiuZst.
-- **PR #109585**
 - **PR #109653**
 - **PR #109663**
 - **PR #109233** Thanks @yetval.
@@ -1389,7 +1581,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #109694**
 - **PR #109688**
 - **PR #109722**
-- **PR #109719** Thanks @shushushv.
 - **PR #109715**
 - **PR #90610** Thanks @ooiuuii.
 - **PR #89491** Related #81865. Thanks @abnershang.
@@ -1419,7 +1610,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #109764**
 - **PR #109716** Related #109316.
 - **PR #109769**
-- **PR #109720**
 - **PR #109681**
 - **PR #109780**
 - **PR #109790**
@@ -1471,13 +1661,11 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #101472** Thanks @cxbAsDev.
 - **PR #109915**
 - **PR #109917**
-- **PR #109907**
 - **PR #109841**
 - **PR #98390** Related #98389. Thanks @ooiuuii.
 - **PR #95368** Thanks @zats.
 - **PR #109679**
 - **PR #109921**
-- **PR #109910**
 - **PR #109432** Thanks @mushuiyu886.
 - **PR #109580** Related #109299. Thanks @wuqxuan and @pacoa-kdbg.
 - **PR #89783** Thanks @GeekyMax and @heyumeng154-alt.
@@ -1499,12 +1687,10 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #109796**
 - **PR #109200** Thanks @IWhatsskill.
 - **PR #99079** Related #99078. Thanks @ooiuuii.
-- **PR #109964**
 - **PR #95838** Related #95811. Thanks @DinoMC.
 - **PR #109954**
 - **PR #109987**
 - **PR #109712**
-- **PR #109483** Thanks @IWhatsskill.
 - **PR #109876**
 - **PR #109905** Related #109893.
 - **PR #109668**
@@ -1535,11 +1721,9 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #109828** Thanks @Yigtwxx.
 - **PR #109810**
 - **PR #109682** Thanks @YangManBOBO.
-- **PR #109947**
 - **PR #99287** Related #99269. Thanks @ooiuuii and @obviyus.
 - **PR #109743** Thanks @tzy-17 and @Patrick-Erichsen.
 - **PR #109952**
-- **PR #110054**
 - **PR #110088**
 - **PR #106942** Thanks @ZengWen-DT and @cursoragent.
 - **PR #110106**
@@ -1558,7 +1742,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #109811**
 - **PR #109809**
 - **PR #109808**
-- **PR #109922**
 - **PR #110117**
 - **PR #110177** Related #110150.
 - **PR #110161**
@@ -1574,10 +1757,8 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #108453** Related #108421. Thanks @smoe.
 - **PR #110191** Related #110152. Thanks @jalehman and @MasterBailey1.
 - **PR #109742** Thanks @tzy-17 and @Patrick-Erichsen.
-- **PR #110141**
 - **PR #110089**
 - **PR #110105**
-- **PR #109837**
 - **PR #110159**
 - **PR #110205**
 - **PR #110090**
@@ -1619,7 +1800,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #110245**
 - **PR #110095**
 - **PR #109870** Thanks @zhangguiping-xydt.
-- **PR #109817** Thanks @anagnorisis2peripeteia.
 - **PR #110215**
 - **PR #110252**
 - **PR #110183**
@@ -1628,7 +1808,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #98546** Thanks @zenglingbiao.
 - **PR #108883** Thanks @zenglingbiao.
 - **PR #105633** Thanks @HermanZeng.
-- **PR #110242**
 - **PR #110255**
 - **PR #109955** Related #109941. Thanks @DaigoSoup and @jalehman and @thomaswillner.
 - **PR #98802** Thanks @zenglingbiao.
@@ -1647,7 +1826,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #104209** Thanks @masatohoshino.
 - **PR #110275**
 - **PR #103518** Thanks @maweibin.
-- **PR #110274**
 - **PR #110264** Thanks @Patrick-Erichsen.
 - **PR #109903** Thanks @ZengWen-DT and @cursoragent.
 - **PR #103855** Thanks @Leon-SK668 and @Alix-007.
@@ -1685,7 +1863,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #110316**
 - **PR #110308**
 - **PR #110327**
-- **PR #110285**
 - **PR #110335** Related #110322.
 - **PR #110317**
 - **PR #110295**
@@ -1695,32 +1872,25 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #110332**
 - **PR #110341**
 - **PR #110353**
-- **PR #110351** Related #102236. Thanks @yetval.
 - **PR #110361**
 - **PR #110326**
 - **PR #110227**
-- **PR #110381** Related #96815. Thanks @xxw77.
 - **PR #109621** Thanks @zhangguiping-xydt.
-- **PR #109861** Related #109851. Thanks @fuller-stack-dev.
 - **PR #109230** Thanks @zhangguiping-xydt.
 - **PR #110357**
 - **PR #110271**
-- **PR #110409**
 - **PR #108909** Thanks @zhangguiping-xydt.
 - **PR #110366** Related #108976. Thanks @virtt.
 - **PR #110406**
 - **PR #109800** Thanks @Pick-cat.
-- **PR #110417**
 - **PR #110279** Thanks @wanyongstar.
 - **PR #110281** Thanks @wanyongstar.
 - **PR #110413**
-- **PR #110418** Thanks @obviyus.
 - **PR #110426** Thanks @fuller-stack-dev.
 - **PR #110315** Thanks @IWhatsskill.
 - **PR #110364**
 - **PR #110369** Related #110340.
 - **PR #110391** Related #110354.
-- **PR #109807** Thanks @fuller-stack-dev.
 - **PR #110396**
 - **PR #110395**
 - **PR #110375**
@@ -1734,7 +1904,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #110424**
 - **PR #110386**
 - **PR #110213** Related #110137. Thanks @MatthewSynthia and @tailzaarapp.
-- **PR #110389**
 - **PR #110446**
 - **PR #105874** Thanks @xialonglee.
 - **PR #110358** Related #110343.
@@ -1760,7 +1929,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #89864** Related #87303. Thanks @dwc1997 and @singlesue88m-create.
 - **PR #110452**
 - **PR #110278** Thanks @zhangguiping-xydt.
-- **PR #110453**
 - **PR #110447** Related #110439. Thanks @shakkernerd.
 - **PR #104340** Thanks @xialonglee.
 - **PR #110461**
@@ -1804,7 +1972,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #110331**
 - **PR #110520** Thanks @Pick-cat.
 - **PR #110524**
-- **PR #110372**
 - **PR #110523**
 - **PR #110530**
 - **PR #110463** Thanks @wanyongstar.
@@ -1812,7 +1979,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #109822**
 - **PR #110522**
 - **PR #110477**
-- **PR #110518** Related #109443. Thanks @joshavant and @flashosophy.
 - **PR #110468**
 - **PR #110548** Thanks @zhangguiping-xydt.
 - **PR #110505** Related #110503.
@@ -1858,7 +2024,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #110585**
 - **PR #105863** Thanks @xialonglee.
 - **PR #110534**
-- **PR #110596**
 - **PR #101774** Thanks @cxbAsDev.
 - **PR #110277** Thanks @zhangguiping-xydt.
 - **PR #110587** Related #110586.
@@ -1898,7 +2063,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #110630**
 - **PR #110581**
 - **PR #110621**
-- **PR #110597**
 - **PR #110625**
 - **PR #110626**
 - **PR #110560**
@@ -1912,8 +2076,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #110605**
 - **PR #110664**
 - **PR #110654**
-- **PR #110632**
-- **PR #110584**
 - **PR #110687**
 - **PR #110651**
 - **PR #108333** Thanks @cxbAsDev.
@@ -1925,7 +2087,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #110646**
 - **PR #110705** Related #110701. Thanks @shakkernerd.
 - **PR #110475**
-- **PR #110660**
 - **PR #110698**
 - **PR #110707**
 - **PR #110720**
@@ -1935,7 +2096,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #110708**
 - **PR #110483** Thanks @zhangguiping-xydt.
 - **PR #110615**
-- **PR #110631**
 - **PR #101447** Thanks @cxbAsDev.
 - **PR #110751**
 - **PR #110753**
@@ -1951,12 +2111,10 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #110653**
 - **PR #110806**
 - **PR #110740**
-- **PR #110644**
 - **PR #110807**
 - **PR #110810**
 - **PR #110392**
 - **PR #110809**
-- **PR #110635**
 - **PR #110618**
 - **PR #110798**
 - **PR #110808** Thanks @fuller-stack-dev.
@@ -1971,14 +2129,12 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #110833**
 - **PR #110779**
 - **PR #110845**
-- **PR #110844**
 - **PR #110863**
 - **PR #110441** Thanks @ZengWen-DT.
 - **PR #110398** Thanks @RomneyDa.
 - **PR #110839**
 - **PR #110856**
 - **PR #110864**
-- **PR #110852**
 - **PR #110830**
 - **PR #110846**
 - **PR #107879** Related #107804. Thanks @Solvely-Colin.
@@ -1991,24 +2147,19 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #110890**
 - **PR #110895**
 - **PR #110870**
-- **PR #110899**
 - **PR #110874**
 - **PR #110816**
-- **PR #110857**
 - **PR #110904**
 - **PR #110163** Thanks @IWhatsskill.
 - **PR #110891**
 - **PR #110909**
 - **PR #110889**
-- **PR #110910**
 - **PR #110821**
-- **PR #110914**
 - **PR #110912** Related #110911.
 - **PR #110905**
 - **PR #110919**
 - **PR #110897** Thanks @RomneyDa.
 - **PR #110913**
-- **PR #110916**
 - **PR #110139** Thanks @IWhatsskill.
 - **PR #110922** Related #110572.
 - **PR #110893** Related #110394. Thanks @omarshahine.
@@ -2029,7 +2180,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #110674** Thanks @ZengWen-DT.
 - **PR #110944** Related #108692. Thanks @JeffSteinbok.
 - **PR #110888**
-- **PR #110681**
 - **PR #110933**
 - **PR #110675** Thanks @ZengWen-DT.
 - **PR #110759** Thanks @tzy-17.
@@ -2062,7 +2212,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #109823** Thanks @Yigtwxx.
 - **PR #110927**
 - **PR #110981**
-- **PR #110980**
 - **PR #110594** Thanks @cxbAsDev.
 - **PR #109904** Related #100954. Thanks @Yigtwxx and @aniruddhaadak80.
 - **PR #110148** Thanks @Yigtwxx.
@@ -2083,8 +2232,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #110984**
 - **PR #110906**
 - **PR #110999**
-- **PR #110978**
-- **PR #110661** Thanks @IWhatsskill.
 - **PR #111009**
 - **PR #98941** Thanks @miorbnli.
 - **PR #98098** Thanks @lwy-2.
@@ -2110,9 +2257,7 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #110412** Related #109488. Thanks @alexzhu0 and @mcaxtr and @evelea.
 - **PR #111017**
 - **PR #111003**
-- **PR #111029** Related #109911. Thanks @edenfunf.
 - **PR #110052** Thanks @omarshahine.
-- **PR #110515** Related #110451. Thanks @fuller-stack-dev.
 - **PR #99115** Thanks @cxbAsDev.
 - **PR #110693** Thanks @lsr911.
 - **PR #110993**
@@ -2128,24 +2273,18 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #111042**
 - **PR #110731** Thanks @zhangguiping-xydt.
 - **PR #101830** Related #76233. Thanks @yetval and @100yenadmin.
-- **PR #111048**
 - **PR #110684** Thanks @mushuiyu886.
 - **PR #98074** Thanks @mpz4life.
-- **PR #110994**
 - **PR #110300** Thanks @shaoohh.
 - **PR #111043**
 - **PR #111036**
 - **PR #111069**
 - **PR #110903** Thanks @mushuiyu886.
-- **PR #111072** Related #103849. Thanks @yetval.
 - **PR #111030**
-- **PR #111055**
-- **PR #110745** Related #103055. Thanks @yetval.
 - **PR #111035**
 - **PR #111075**
 - **PR #104140** Thanks @qingminglong.
 - **PR #111066**
-- **PR #110886**
 - **PR #111013**
 - **PR #110956** Thanks @christiandesantis.
 - **PR #111095**
@@ -2170,8 +2309,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #110954** Thanks @zhangguiping-xydt.
 - **PR #111081** Thanks @sunlit-deng.
 - **PR #110060** Related #102392. Thanks @yetval.
-- **PR #108378** Thanks @yetval.
-- **PR #111112**
 - **PR #111124** Thanks @fuller-stack-dev.
 - **PR #103793** Thanks @yetval.
 - **PR #111106** Thanks @ZengWen-DT.
@@ -2185,7 +2322,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #111046**
 - **PR #111150**
 - **PR #110678** Thanks @YangManBOBO.
-- **PR #110960**
 - **PR #105911** Related #105679. Thanks @momothemage and @aniruddhaadak80.
 - **PR #111038**
 - **PR #110053** Related #109979. Thanks @LiLan0125 and @mcaxtr and @danharvey.
@@ -2205,7 +2341,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #110754** Thanks @mcaxtr.
 - **PR #111140**
 - **PR #110987**
-- **PR #111212** Thanks @fuller-stack-dev.
 - **PR #110797** Thanks @FMLS.
 - **PR #111228**
 - **PR #111052**
@@ -2218,7 +2353,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #111093** Thanks @Alix-007.
 - **PR #111169** Thanks @fuller-stack-dev.
 - **PR #105929** Related #105926.
-- **PR #111060**
 - **PR #111077** Thanks @LZY3538.
 - **PR #111245**
 - **PR #111076** Thanks @LZY3538.
@@ -2227,7 +2361,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #103706** Related #103668. Thanks @jincheng-xydt.
 - **PR #111061** Thanks @Alix-007.
 - **PR #111114**
-- **PR #111149**
 - **PR #110995**
 - **PR #111259**
 - **PR #111265**
@@ -2236,7 +2369,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #111249**
 - **PR #111267** Related #110325.
 - **PR #110941**
-- **PR #111211** Thanks @fuller-stack-dev.
 - **PR #111280**
 - **PR #110976**
 - **PR #111142**
@@ -2247,10 +2379,8 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #111221**
 - **PR #110862** Thanks @zhangguiping-xydt.
 - **PR #107614** Thanks @zhangguiping-xydt.
-- **PR #110989**
 - **PR #111297** Related #110325.
 - **PR #111039**
-- **PR #111292** Related #111271, #111272, #111273, #111274.
 - **PR #111044**
 - **PR #111104**
 - **PR #108323** Related #108238. Thanks @hxy91819 and @vivi-lucky2020.
@@ -2278,7 +2408,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #111324** Related #110201.
 - **PR #110831**
 - **PR #111194**
-- **PR #111341**
 - **PR #111298**
 - **PR #111041**
 - **PR #111371**
@@ -2353,7 +2482,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #111507** Related #111484.
 - **PR #111509**
 - **PR #111504**
-- **PR #111514** Related #111513.
 - **PR #111511**
 - **PR #111515**
 - **PR #111218**
@@ -2390,7 +2518,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #111364** Thanks @Yigtwxx.
 - **PR #111445**
 - **PR #111558**
-- **PR #111524**
 - **PR #111530**
 - **PR #111253** Thanks @mushuiyu886.
 - **PR #111618**
@@ -2448,7 +2575,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #111698**
 - **PR #111652** Thanks @pgondhi987.
 - **PR #111653** Thanks @pgondhi987.
-- **PR #111748** Thanks @fuller-stack-dev.
 - **PR #111749**
 - **PR #111674** Thanks @ZengWen-DT.
 - **PR #111619**
@@ -2471,7 +2597,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #110725** Thanks @zhangguiping-xydt and @hxy91819.
 - **PR #110741** Thanks @Leon-SK668 and @altaywtf.
 - **PR #111824** Related #111820. Thanks @dineshsuthar123.
-- **PR #111687**
 - **PR #111744** Related #111742. Thanks @ooiuuii and @altaywtf.
 - **PR #111855**
 - **PR #111871**
@@ -2481,7 +2606,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #111867**
 - **PR #111891**
 - **PR #111869** Related #111862. Thanks @jalehman.
-- **PR #111516** Thanks @IWhatsskill and @Solvely-Colin.
 - **PR #111883**
 - **PR #111911**
 - **PR #111783**
@@ -2494,9 +2618,7 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #111914**
 - **PR #111929**
 - **PR #111933**
-- **PR #111682** Thanks @fuller-stack-dev.
 - **PR #111672** Thanks @fuller-stack-dev.
-- **PR #111932** Related #111931.
 - **PR #111953** Thanks @fuller-stack-dev.
 - **PR #111831** Related #111643. Thanks @Solvely-Colin.
 - **PR #111963** Thanks @Patrick-Erichsen.
@@ -2545,7 +2667,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #111699**
 - **PR #109495** Thanks @RileyJJY.
 - **PR #112015** Thanks @RomneyDa.
-- **PR #112016**
 - **PR #110001** Thanks @YangManBOBO.
 - **PR #109923** Thanks @wangmiao0668000666.
 - **PR #104093** Thanks @mikasa0818.
@@ -2658,7 +2779,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #112025** Thanks @RomneyDa.
 - **PR #104278** Thanks @mikasa0818.
 - **PR #112186**
-- **PR #112163**
 - **PR #112181** Thanks @vincentkoc.
 - **PR #112185** Thanks @vincentkoc.
 - **PR #112199** Thanks @RomneyDa.
@@ -2741,7 +2861,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #111307** Thanks @Yigtwxx.
 - **PR #111239** Thanks @mushuiyu886.
 - **PR #110593** Thanks @cxbAsDev.
-- **PR #112056**
 - **PR #87986** Related #87985. Thanks @shbernal.
 - **PR #102537** Related #102323. Thanks @TUARAN and @yetval.
 - **PR #78139** Thanks @kate.
@@ -2754,10 +2873,8 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #112418** Thanks @pash-openai.
 - **PR #112354** Thanks @fuller-stack-dev.
 - **PR #112379**
-- **PR #112284**
 - **PR #101328** Thanks @giodl73-repo.
 - **PR #104111** Thanks @aaroneden and @obviyus.
-- **PR #112387**
 - **PR #112302**
 - **PR #112334** Thanks @VACInc.
 - **PR #112321** Related #112217, #112219, #112220.
@@ -2773,14 +2890,12 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #101973** Thanks @giodl73-repo and @Patrick-Erichsen.
 - **PR #112415**
 - **PR #112434**
-- **PR #112412** Related #112405. Thanks @fuller-stack-dev.
 - **PR #112467** Thanks @fuller-stack-dev.
 - **PR #112457** Related #112454. Thanks @fuller-stack-dev.
 - **PR #112471**
 - **PR #102228** Thanks @giodl73-repo and @Patrick-Erichsen.
 - **PR #112441**
 - **PR #112433** Related #112242.
-- **PR #103895** Related #103673. Thanks @Patrick-Erichsen.
 - **PR #112357**
 - **PR #102296** Thanks @giodl73-repo and @Patrick-Erichsen.
 - **PR #112308**
@@ -2813,7 +2928,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #112319**
 - **PR #112511**
 - **PR #103866** Related #103864. Thanks @niks999.
-- **PR #112458** Related #95612, #107668. Thanks @fuller-stack-dev and @cstreeter and @josh-cornelius.
 - **PR #112526**
 - **PR #112529** Thanks @RomneyDa.
 - **PR #90579** Related #90557. Thanks @wangwllu.
@@ -2830,7 +2944,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #112545**
 - **PR #112546**
 - **PR #112489**
-- **PR #112548** Related #112520.
 - **PR #112535**
 - **PR #112523**
 - **PR #112550** Related #112549.
@@ -2842,11 +2955,9 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #112539**
 - **PR #110216** Thanks @VACInc and @Serhii-Leniv.
 - **PR #110280** Thanks @RomneyDa.
-- **PR #112483** Thanks @joshavant.
 - **PR #112232**
 - **PR #112563**
 - **PR #112544**
-- **PR #112562**
 - **PR #112569** Thanks @RomneyDa.
 - **PR #112593** Related #100635. Thanks @HOYALIM and @aniruddhaadak80.
 - **PR #112570**
@@ -2857,7 +2968,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #112587**
 - **PR #112568**
 - **PR #112599**
-- **PR #112554**
 - **PR #112565**
 - **PR #112255**
 - **PR #112597**
@@ -2910,7 +3020,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #112567**
 - **PR #102959** Thanks @giodl73-repo and @Patrick-Erichsen.
 - **PR #110235** Thanks @stantheman0128 and @cursoragent.
-- **PR #112585**
 - **PR #108278** Thanks @xydt-juyaohui and @ly85206559 and @LiuwqGit.
 - **PR #111258** Thanks @LZY3538.
 - **PR #111860** Related #111858. Thanks @ooiuuii.
@@ -2949,7 +3058,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #112772**
 - **PR #112775**
 - **PR #112789**
-- **PR #112721** Thanks @IWhatsskill and @Solvely-Colin.
 - **PR #112788**
 - **PR #112753**
 - **PR #112769**
@@ -2969,7 +3077,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #112807** Related #112806. Thanks @joshavant.
 - **PR #112817**
 - **PR #112533** Thanks @RomneyDa.
-- **PR #112829** Related #112827. Thanks @fuller-stack-dev.
 - **PR #111391** Thanks @giodl73-repo.
 - **PR #112524** Thanks @RomneyDa.
 - **PR #112836** Thanks @fuller-stack-dev.
@@ -3029,7 +3136,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #112922**
 - **PR #112913**
 - **PR #112940**
-- **PR #112918**
 - **PR #112959**
 - **PR #112887**
 - **PR #112968**
@@ -3048,7 +3154,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #112999** Thanks @vincentkoc.
 - **PR #113002** Thanks @omarshahine.
 - **PR #113003**
-- **PR #112988**
 - **PR #112911**
 - **PR #112798**
 - **PR #113007**
@@ -3060,22 +3165,18 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #113017**
 - **PR #112740**
 - **PR #113004**
-- **PR #112787**
 - **PR #113010**
 - **PR #113026**
 - **PR #112929**
-- **PR #113022**
 - **PR #113023**
 - **PR #113024**
 - **PR #112989**
-- **PR #113027**
 - **PR #113020**
 - **PR #113037**
 - **PR #113028**
 - **PR #112909** Related #112741.
 - **PR #112756**
 - **PR #113025**
-- **PR #113053**
 - **PR #112938**
 - **PR #113040**
 - **PR #113039** Thanks @Solvely-Colin.
@@ -3083,7 +3184,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #113052** Related #112742.
 - **PR #112980** Thanks @Alix-007.
 - **PR #113061**
-- **PR #113006**
 - **PR #113058**
 - **PR #112453**
 - **PR #108916** Thanks @RileyJJY.
@@ -3091,10 +3191,8 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #113046**
 - **PR #113075**
 - **PR #113045** Thanks @giodl73-repo.
-- **PR #113094**
 - **PR #113072**
 - **PR #113099**
-- **PR #113078** Thanks @fuller-stack-dev.
 - **PR #113102**
 - **PR #113071**
 - **PR #106890** Related #106825. Thanks @yangxiansheng and @yetval.
@@ -3108,7 +3206,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #113112** Related #113108.
 - **PR #113120**
 - **PR #113110**
-- **PR #113122**
 - **PR #113042**
 - **PR #113129**
 - **PR #113132**
@@ -3116,9 +3213,7 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #113134**
 - **PR #113133** Thanks @Patrick-Erichsen.
 - **PR #113101** Related #112995, #112996.
-- **PR #113073**
 - **PR #113135**
-- **PR #113127**
 - **PR #112478** Related #112341. Thanks @loulanyue and @p0pfan.
 - **PR #113138**
 - **PR #110037** Thanks @giodl73-repo.
@@ -3131,37 +3226,27 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #113150**
 - **PR #113151** Thanks @jalehman.
 - **PR #113154**
-- **PR #113088** Related #113085. Thanks @metahacker.
-- **PR #113158**
 - **PR #113157**
 - **PR #113163** Related #113161. Thanks @fuller-stack-dev.
 - **PR #113155**
-- **PR #113165**
 - **PR #113167**
 - **PR #113175**
 - **PR #113179**
 - **PR #113156**
 - **PR #113174**
-- **PR #113152** Thanks @joshavant.
 - **PR #113187** Related #113186. Thanks @joshavant.
 - **PR #113178** Related #113177. Thanks @joshavant.
-- **PR #113173**
-- **PR #113199**
 - **PR #113202** Thanks @joshavant.
 - **PR #113201**
 - **PR #97881** Thanks @yetval.
-- **PR #111457** Thanks @FMLS and @cursoragent and @hxy91819.
 - **PR #113212** Thanks @vincentkoc.
 - **PR #112963**
-- **PR #113216** Related #113209, #113210, #113211. Thanks @vincentkoc.
 - **PR #113230**
 - **PR #113235**
 - **PR #113229** Thanks @vincentkoc.
 - **PR #113240**
-- **PR #112947** Thanks @pgondhi987.
 - **PR #113242**
 - **PR #113237**
-- **PR #112952** Thanks @pgondhi987.
 - **PR #112661** Related #111809. Thanks @joshavant and @andersonjeccel.
 - **PR #113228** Related #113227. Thanks @vincentkoc.
 - **PR #113247**
@@ -3178,7 +3263,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #113261** Related #113255. Thanks @vincentkoc.
 - **PR #113254**
 - **PR #113243**
-- **PR #113224** Related #113218. Thanks @fuller-stack-dev.
 - **PR #113239**
 - **PR #113234**
 - **PR #113238**
@@ -3195,16 +3279,11 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #113246**
 - **PR #113280** Thanks @vincentkoc.
 - **PR #113279**
-- **PR #113287** Related #113265. Thanks @vincentkoc.
-- **PR #112953** Thanks @pgondhi987.
 - **PR #113289** Thanks @vincentkoc.
 - **PR #112955** Thanks @pgondhi987.
 - **PR #111818** Related #111817. Thanks @ooiuuii and @altaywtf.
 - **PR #113295** Thanks @vincentkoc.
-- **PR #112956** Thanks @pgondhi987.
 - **PR #113296**
-- **PR #112946** Thanks @pgondhi987.
-- **PR #112957** Thanks @pgondhi987.
 - **PR #113303**
 - **PR #113299**
 - **PR #113298** Thanks @vincentkoc.
@@ -3220,17 +3299,14 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #113339**
 - **PR #113343**
 - **PR #113334**
-- **PR #113193** Related #85954. Thanks @omarshahine.
 - **PR #113350**
 - **PR #113338**
 - **PR #113336** Thanks @vincentkoc.
 - **PR #113356**
-- **PR #113324** Thanks @vincentkoc.
 - **PR #113364**
 - **PR #113363**
 - **PR #113373**
 - **PR #113355**
-- **PR #113367** Thanks @vincentkoc.
 - **PR #113381**
 - **PR #113382** Thanks @vincentkoc.
 - **PR #113384** Thanks @vincentkoc.
@@ -3241,9 +3317,7 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #111108** Thanks @scotthuang and @Patrick-Erichsen.
 - **PR #113322** Thanks @fr-meyer.
 - **PR #113390** Thanks @vincentkoc.
-- **PR #113393** Thanks @fuller-stack-dev.
 - **PR #113397**
-- **PR #113391** Thanks @fuller-stack-dev.
 - **PR #113399** Thanks @vincentkoc.
 - **PR #113400**
 - **PR #113406**
@@ -3251,10 +3325,8 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #113407**
 - **PR #113416**
 - **PR #113414**
-- **PR #113392**
 - **PR #113420** Thanks @vincentkoc.
 - **PR #113418**
-- **PR #113307** Related #90013. Thanks @SebTardif.
 - **PR #113428** Thanks @vincentkoc.
 - **PR #113424** Related #113410. Thanks @fuller-stack-dev.
 - **PR #113413** Thanks @fuller-stack-dev.
@@ -3268,11 +3340,8 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #113461** Thanks @vincentkoc.
 - **PR #113468** Related #112842. Thanks @RomneyDa.
 - **PR #113472**
-- **PR #113476**
-- **PR #113453**
 - **PR #113482**
 - **PR #113484** Thanks @vincentkoc.
-- **PR #113473** Thanks @vincentkoc.
 - **PR #113498** Thanks @vincentkoc.
 - **PR #113499**
 - **PR #113464** Related #113463. Thanks @fuller-stack-dev.
@@ -3311,7 +3380,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #112958**
 - **PR #113581** Thanks @vincentkoc.
 - **PR #113572**
-- **PR #113580** Thanks @vincentkoc.
 - **PR #113573**
 - **PR #113489** Thanks @bdjben.
 - **PR #113574**
@@ -3345,7 +3413,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #113602**
 - **PR #112855** Related #112854. Thanks @fr-meyer.
 - **PR #113610** Thanks @vincentkoc.
-- **PR #113607** Thanks @vincentkoc.
 - **PR #112951** Related #112950. Thanks @metahacker.
 - **PR #82366** Related #81715. Thanks @honor2030 and @KrasimirKralev.
 - **PR #113609**
@@ -3366,7 +3433,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #113621**
 - **PR #113634**
 - **PR #113616**
-- **PR #113633** Related #113412. Thanks @vincentkoc and @fuller-stack-dev.
 - **PR #113639**
 - **PR #113623**
 - **PR #113642**
@@ -3445,7 +3511,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #113109** Thanks @zenglingbiao.
 - **PR #113690**
 - **PR #113720**
-- **PR #113707**
 - **PR #113714**
 - **PR #113715**
 - **PR #113730**
@@ -3515,8 +3580,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #113858**
 - **PR #113807**
 - **PR #113855**
-- **PR #113856**
-- **PR #113821**
 - **PR #113840**
 - **PR #113871**
 - **PR #113865**
@@ -3532,7 +3595,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #113862**
 - **PR #113850**
 - **PR #113848**
-- **PR #113861**
 - **PR #113867**
 - **PR #113889**
 - **PR #113892** Related #113191. Thanks @shakkernerd and @jrvanwinkle.
@@ -3545,13 +3607,11 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #113907**
 - **PR #113888**
 - **PR #113886**
-- **PR #113909**
 - **PR #113897**
 - **PR #113919**
 - **PR #113913**
 - **PR #113922**
 - **PR #113566** Related #113564. Thanks @obviyus.
-- **PR #113354** Related #113353. Thanks @Solvely-Colin.
 - **PR #113917**
 - **PR #113712**
 - **PR #113936**
@@ -3600,7 +3660,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #113993**
 - **PR #113989**
 - **PR #113979**
-- **PR #113945**
 - **PR #113999**
 - **PR #113997**
 - **PR #114001**
@@ -3643,7 +3702,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #113471** Thanks @yt2102.
 - **PR #114054**
 - **PR #114047**
-- **PR #114058**
 - **PR #114060**
 - **PR #114064**
 - **PR #114061**
@@ -3657,12 +3715,10 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #114080**
 - **PR #114074**
 - **PR #114063**
-- **PR #114090**
 - **PR #114033**
 - **PR #114096**
 - **PR #114085**
 - **PR #114099**
-- **PR #113419** Thanks @Patrick-Erichsen.
 - **PR #114104** Thanks @RomneyDa.
 - **PR #114115**
 - **PR #114120**
@@ -3680,18 +3736,14 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #114056** Thanks @keshavbotagent and @jalehman.
 - **PR #114130**
 - **PR #114205** Thanks @fuller-stack-dev.
-- **PR #114016** Thanks @VACInc.
 - **PR #114212**
-- **PR #114037**
 - **PR #114213**
 - **PR #114217**
-- **PR #107588** Thanks @VACInc.
 - **PR #112000** Thanks @jesse-merhi.
 - **PR #114221**
 - **PR #114216**
 - **PR #114218**
 - **PR #113667** Thanks @JesusSerrano-Seimako and @obviyus.
-- **PR #114117** Thanks @VACInc.
 - **PR #114224**
 - **PR #114227**
 - **PR #114226** Thanks @fuller-stack-dev.
@@ -3717,11 +3769,9 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #114246**
 - **PR #114248**
 - **PR #114249**
-- **PR #113866** Thanks @VACInc.
 - **PR #114247**
 - **PR #114259** Related #114142. Thanks @shakkernerd and @dragonclaw-dragonflydb.
 - **PR #114258**
-- **PR #114215** Related #113975. Thanks @sallyom and @alxfyvwebaccts-png.
 - **PR #114260**
 - **PR #114256**
 - **PR #113081** Related #113079. Thanks @edenfunf.
@@ -3739,7 +3789,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #114280** Thanks @yangxiansheng.
 - **PR #114284**
 - **PR #113063** Related #113060. Thanks @dandriscoll.
-- **PR #114288**
 - **PR #113905** Related #106598. Thanks @yanmo42 and @jackinx.
 - **PR #114290**
 - **PR #105896** Related #105680. Thanks @momothemage and @aniruddhaadak80.
@@ -3759,14 +3808,12 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #114324**
 - **PR #114331**
 - **PR #114332**
-- **PR #114327**
 - **PR #114303**
 - **PR #114337**
 - **PR #114336**
 - **PR #114340**
 - **PR #114333**
 - **PR #114338**
-- **PR #114328**
 - **PR #114334**
 - **PR #114341**
 - **PR #114348**
@@ -3806,7 +3853,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #114346**
 - **PR #113405** Thanks @fede-kamel.
 - **PR #114378**
-- **PR #114397**
 - **PR #114381**
 - **PR #114391**
 - **PR #114366**
@@ -3822,16 +3868,13 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #113966**
 - **PR #114417** Thanks @RomneyDa.
 - **PR #114041** Thanks @zenglingbiao.
-- **PR #113368** Related #113315. Thanks @carlosjarenom and @obviyus and @JesusSerrano-Seimako.
 - **PR #114412**
 - **PR #114400**
 - **PR #114422**
-- **PR #114094** Related #114086. Thanks @lanyoung and @LeonidasLux and @BomBastikDE.
 - **PR #114399**
 - **PR #114401**
 - **PR #114429**
 - **PR #114383** Related #113612.
-- **PR #114421**
 - **PR #114377** Related #114374.
 - **PR #114413**
 - **PR #114028** Thanks @santhiprakash.
@@ -3844,13 +3887,11 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #114415** Related #114398.
 - **PR #112634** Related #109031. Thanks @lee-xydt and @shng-fujiwara.
 - **PR #114426**
-- **PR #114441** Thanks @efpiva.
 - **PR #114446** Related #111128. Thanks @Alex-YYYY.
 - **PR #114444**
 - **PR #114436**
 - **PR #114455**
 - **PR #114425**
-- **PR #114405**
 - **PR #111743** Related #111741. Thanks @ooiuuii.
 - **PR #114461** Related #96115, #111704. Thanks @cbertucci33 and @pallaoro.
 - **PR #114463**
@@ -3858,7 +3899,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #114469**
 - **PR #114132** Thanks @pgondhi987.
 - **PR #114370** Related #114279. Thanks @WilShi and @synthalorian.
-- **PR #93516** Related #102885. Thanks @Papilionidae.
 - **PR #114353**
 - **PR #114470**
 - **PR #114474** Related #94529. Thanks @cunweilv-star.
@@ -3878,7 +3918,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #114491** Related #83538. Thanks @Jerry-Xin and @swildcat10.
 - **PR #114496**
 - **PR #114489** Related #104501. Thanks @ekinnee.
-- **PR #114477** Related #103077, #103089, #113005, #114187. Thanks @yetval and @realaudreyserber-afk and @hvhoon.
 - **PR #114495**
 - **PR #114479**
 - **PR #114367**
@@ -3893,14 +3932,12 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #114432**
 - **PR #112166** Related #108331. Thanks @xialonglee and @obviyus and @Enominera.
 - **PR #114499**
-- **PR #114524**
 - **PR #114453**
 - **PR #111709** Thanks @kesava500.
 - **PR #112352** Thanks @kesava500.
 - **PR #114528**
 - **PR #114516**
 - **PR #114533**
-- **PR #114504**
 - **PR #114498**
 - **PR #114540** Thanks @hugenshen.
 - **PR #114537** Related #114321. Thanks @kevin2966n.
@@ -3912,7 +3949,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #114488** Related #114485.
 - **PR #114539**
 - **PR #113070** Related #113069. Thanks @sasan1200.
-- **PR #114531** Thanks @obviyus.
 - **PR #112492** Related #112477. Thanks @harjothkhara and @alfredo-torrijos.
 - **PR #114562**
 - **PR #114497**
@@ -3923,19 +3959,15 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #114511**
 - **PR #114569** Related #111383. Thanks @metaforismo.
 - **PR #114571**
-- **PR #111960** Related #111959. Thanks @ooiuuii.
 - **PR #114548**
 - **PR #114509**
 - **PR #110399** Thanks @Leon-SK668.
 - **PR #114549**
-- **PR #114386** Related #103930. Thanks @qingminglong and @revision-co-ltd.
 - **PR #114568** Related #114563.
 - **PR #114560**
 - **PR #114581**
-- **PR #114449** Related #114385. Thanks @loulanyue and @alfredjbclaw.
 - **PR #114106** Thanks @RomneyDa.
 - **PR #114556**
-- **PR #114582**
 - **PR #114559**
 - **PR #105931** Thanks @lsr911 and @altaywtf.
 - **PR #114585**
@@ -3956,11 +3988,7 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #97024** Thanks @0xghost42.
 - **PR #114618**
 - **PR #114465**
-- **PR #114076** Related #105701. Thanks @qingminglong and @aniruddhaadak80.
-- **PR #110849** Thanks @nocodet888-arch.
 - **PR #114357**
-- **PR #114526** Thanks @IWhatsskill.
-- **PR #114505** Thanks @IWhatsskill.
 - **PR #114638** Related #112749. Thanks @harjothkhara.
 - **PR #114416** Thanks @IWhatsskill.
 - **PR #114642** Related #39722. Thanks @bryanbaer.
@@ -4353,7 +4381,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #115245**
 - **PR #115213**
 - **PR #103957**
-- **PR #115211** Related #115021. Thanks @vincentkoc.
 - **PR #115212**
 - **PR #115222**
 - **PR #115232**
@@ -4415,7 +4442,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #111734** Thanks @ZengWen-DT.
 - **PR #115369**
 - **PR #115080** Thanks @galiniliev.
-- **PR #115292** Thanks @vincentkoc.
 - **PR #114471**
 - **PR #114952** Thanks @sallyom.
 - **PR #115378**
@@ -4513,7 +4539,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #115530** Related #109912. Thanks @openagent-ai.
 - **PR #115511**
 - **PR #115522** Related #95796. Thanks @DinoMC.
-- **PR #114278** Thanks @rizquuula and @vincentkoc.
 - **PR #115083** Related #115081. Thanks @ooiuuii and @vincentkoc.
 - **PR #115529**
 - **PR #115517** Related #114704. Thanks @andersonjeccel.
@@ -4644,7 +4669,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #115589** Thanks @RomneyDa.
 - **PR #115704** Thanks @vincentkoc.
 - **PR #115632** Thanks @vincentkoc.
-- **PR #115729** Related #115311. Thanks @vincentkoc.
 - **PR #115706**
 - **PR #115710**
 - **PR #115687**
@@ -4728,7 +4752,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #115791** Thanks @vincentkoc.
 - **PR #115783** Related #115524. Thanks @GlynLewis.
 - **PR #115785**
-- **PR #115790** Related #52019, #63531. Thanks @Rheingold777 and @ImLukeF.
 - **PR #56720** Related #56635. Thanks @Lidang-Jiang and @vincentkoc and @jacko2bot.
 - **PR #115677**
 - **PR #115796** Related #115585. Thanks @edenfunf.
@@ -4982,7 +5005,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #111131** Thanks @akalsey and @guptaishaan.
 - **PR #115890** Related #106760. Thanks @obviyus and @jackmtl71.
 - **PR #116011** Thanks @yetval and @vincentkoc.
-- **PR #116096** Thanks @shakkernerd.
 - **PR #116092** Thanks @vincentkoc.
 - **PR #116090** Related #63181. Thanks @vincentkoc and @deepujain and @matthiasroder.
 - **PR #116094** Related #113396. Thanks @vincentkoc and @syncword.
@@ -5004,16 +5026,13 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #111463** Related #103087. Thanks @yetval.
 - **PR #116115**
 - **PR #116126** Thanks @obviyus.
-- **PR #109088** Thanks @SunnyShu0925.
 - **PR #116125** Thanks @vincentkoc.
 - **PR #91221** Related #79375. Thanks @24373054 and @azfarh95.
-- **PR #116117**
 - **PR #116098** Related #116075. Thanks @shakkernerd.
 - **PR #116060** Related #105699. Thanks @metaforismo and @aniruddhaadak80.
 - **PR #116105** Related #85450. Thanks @metaforismo and @dylanma8232-art.
 - **PR #116119** Thanks @fuller-stack-dev.
 - **PR #115970** Thanks @vincentkoc.
-- **PR #116079** Thanks @vincentkoc.
 - **PR #116137**
 - **PR #116025** Related #116024. Thanks @joshuaboys.
 - **PR #116133** Thanks @obviyus.
@@ -5024,19 +5043,15 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #116044** Thanks @BsnizND.
 - **PR #116128** Related #116124. Thanks @yetval and @vincentkoc.
 - **PR #116136** Related #63454. Thanks @vincentkoc and @wheza99.
-- **PR #116078** Thanks @vincentkoc.
 - **PR #107565** Thanks @QiuYuang.
 - **PR #116057** Thanks @yetval and @vincentkoc.
 - **PR #116145** Thanks @vincentkoc.
 - **PR #89419** Related #89412. Thanks @1052326311 and @vincentkoc and @yetval.
-- **PR #116152**
 - **PR #116153** Thanks @vincentkoc.
 - **PR #116156** Thanks @vincentkoc.
-- **PR #116077** Thanks @vincentkoc.
 - **PR #115844** Thanks @vincentkoc.
 - **PR #116086** Related #116085. Thanks @vincentkoc.
 - **PR #116160** Thanks @vincentkoc.
-- **PR #116162** Related #116129. Thanks @vincentkoc and @obviyus.
 - **PR #116167**
 - **PR #116166** Thanks @vincentkoc.
 - **PR #115779** Related #91944. Thanks @OmerZeyveli and @vincentkoc and @suifatt7799-oss.
@@ -5049,10 +5064,8 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #116172** Thanks @vincentkoc.
 - **PR #116183** Thanks @vincentkoc.
 - **PR #116189** Thanks @vincentkoc.
-- **PR #116194** Thanks @shakkernerd.
 - **PR #116190**
 - **PR #116197** Related #116193. Thanks @shakkernerd.
-- **PR #115891** Related #115888. Thanks @edenfunf and @vincentkoc.
 - **PR #116196** Thanks @vincentkoc.
 - **PR #116174** Related #116154. Thanks @zhangguiping-xydt and @vincentkoc.
 - **PR #116202** Thanks @vincentkoc.
@@ -5064,7 +5077,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #80246** Related #77497. Thanks @haishmg and @vincentkoc and @Volodymyr120473.
 - **PR #116224** Thanks @vincentkoc.
 - **PR #116209** Thanks @vincentkoc.
-- **PR #116214** Related #116171. Thanks @joshavant.
 - **PR #116143** Thanks @obviyus.
 - **PR #116222** Thanks @vincentkoc.
 - **PR #116178** Related #116177. Thanks @miorbnli and @vincentkoc.
@@ -5103,9 +5115,7 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #116289** Thanks @vincentkoc.
 - **PR #116331** Thanks @RomneyDa.
 - **PR #115923** Thanks @IWhatsskill.
-- **PR #116333** Thanks @pash-openai.
 - **PR #116336**
-- **PR #116345** Thanks @vincentkoc.
 - **PR #116342** Related #116297. Thanks @omarshahine.
 - **PR #116246** Thanks @jesse-merhi.
 - **PR #116355**
@@ -5124,10 +5134,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #116301**
 - **PR #116389**
 - **PR #116387** Thanks @obviyus.
-- **PR #116399**
-- **PR #114841** Thanks @omarshahine.
-- **PR #114854** Thanks @omarshahine.
-- **PR #114853** Thanks @omarshahine.
 - **PR #114855** Thanks @omarshahine.
 - **PR #115484** Thanks @jjjhenriksen.
 - **PR #116285** Thanks @vincentkoc.
@@ -5135,8 +5141,6 @@ This audited record covers the complete a5b2e4167de860fe3fe3da7284cd5f36883560c8
 - **PR #116580** Thanks @vincentkoc.
 - **PR #116633** Thanks @vincentkoc.
 - **PR #116440** Thanks @RomneyDa.
-- **PR #116773**
-- **PR #116740** Thanks @vincentkoc.
 ## 2026.7.1
 
 OpenClaw v2026.7.1 brings major Control UI and onboarding overhauls, major updates to the official iOS, Android, and macOS apps, expanded model and provider support including GPT-5.6 compatibility, Tencent Hy3, and Meta Muse Spark 1.1, and stronger Codex and connected coding-agent workflows. Telegram, Slack, Discord, and Apple Messages each receive substantial updates, while Gateway crash loops, scheduled work, remote browser control, workspace terminals, sessions, and goals also improve. There are also many general fixes and refinements throughout OpenClaw.
