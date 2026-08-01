@@ -18,6 +18,7 @@ vi.mock("../../providers/server-runtime.js", () => ({
 import { startQaLiveLaneGateway } from "./live-gateway.runtime.js";
 
 type GatewayOptions = {
+  enabledPluginIds?: string[];
   providerBaseUrl?: string;
   providerMode?: string;
   transportBaseUrl?: string;
@@ -90,6 +91,7 @@ describe("startQaLiveLaneGateway", () => {
       providerMode: "mock-openai",
       primaryModel: "mock-openai/gpt-5.5",
       alternateModel: "mock-openai/gpt-5.5-alt",
+      enabledPluginIds: ["openai"],
       controlUiEnabled: false,
     });
 
@@ -98,6 +100,7 @@ describe("startQaLiveLaneGateway", () => {
     expect(gatewayOptions?.transportBaseUrl).toBe("http://127.0.0.1:43123");
     expect(gatewayOptions?.providerBaseUrl).toBe("http://127.0.0.1:44080/v1");
     expect(gatewayOptions?.providerMode).toBe("mock-openai");
+    expect(gatewayOptions?.enabledPluginIds).toEqual(["openai"]);
 
     await harness.stop();
     expect(gatewayStop).toHaveBeenCalledTimes(1);

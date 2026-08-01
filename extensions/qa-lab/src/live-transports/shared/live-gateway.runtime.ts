@@ -95,6 +95,7 @@ export async function startQaLiveLaneGateway(params: {
   providerMode: QaProviderMode;
   primaryModel: string;
   alternateModel: string;
+  enabledPluginIds?: string[];
   fastMode?: boolean;
   thinkingDefault?: QaThinkingLevel;
   claudeCliAuthMode?: QaCliBackendAuthMode;
@@ -113,6 +114,7 @@ export async function startQaLiveLaneGateway(params: {
       providerMode: params.providerMode,
       primaryModel: params.primaryModel,
       alternateModel: params.alternateModel,
+      enabledPluginIds: params.enabledPluginIds,
       fastMode: params.fastMode,
       thinkingDefault: params.thinkingDefault,
       claudeCliAuthMode: params.claudeCliAuthMode,

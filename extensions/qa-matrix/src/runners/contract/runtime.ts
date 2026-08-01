@@ -665,6 +665,7 @@ async function startMatrixQaLiveLaneGateway(params: {
   providerMode: "mock-openai" | "live-frontier";
   primaryModel: string;
   alternateModel: string;
+  enabledPluginIds?: string[];
   fastMode?: boolean;
   controlUiEnabled?: boolean;
   mutateConfig?: (cfg: OpenClawConfig) => OpenClawConfig;
@@ -841,6 +842,8 @@ export async function runMatrixQaLive(params: {
             providerMode: models.providerMode,
             primaryModel: models.primaryModel,
             alternateModel: models.alternateModel,
+            // Mock model routing still uses OpenAI's image and audio capability contracts.
+            enabledPluginIds: models.providerMode === "mock-openai" ? ["openai"] : undefined,
             fastMode: params.fastMode,
             controlUiEnabled: false,
             mutateConfig: (cfg) =>
