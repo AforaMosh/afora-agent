@@ -129,11 +129,13 @@ describe("plugins cli policy mutations", () => {
     });
     mockPluginRegistry(["alpha"]);
 
-    await runPluginsCommand(["plugins", "enable", "alpha"]);
+    await expect(runPluginsCommand(["plugins", "enable", "alpha"])).rejects.toThrow("__exit__:1");
 
     expect(writeConfigFile).not.toHaveBeenCalled();
+    expect(replaceConfigFile).not.toHaveBeenCalled();
     expect(refreshPluginRegistry).not.toHaveBeenCalled();
-    expect(runtimeLogs).toContain(`Plugin "alpha" could not be enabled (${reason}).`);
+    expect(runtimeErrors).toContain(`Plugin "alpha" could not be enabled (${reason}).`);
+    expect(runtimeLogs).not.toContain(`Plugin "alpha" could not be enabled (${reason}).`);
   });
 
   it("refuses plugin enablement in Nix mode before config mutation", async () => {
