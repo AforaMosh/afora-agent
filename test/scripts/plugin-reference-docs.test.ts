@@ -4,9 +4,9 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { materializePluginReferenceDocs, renderDocsHeadingMap } from "../../scripts/docs-list.js";
 import { preparePackageDocsMap, restorePackageDocsMap } from "../../scripts/package-docs-map.mjs";
-import { cleanupTempDirs, makeTempDir } from "../helpers/temp-dir.js";
+import { useAutoCleanupTempDirTracker } from "../helpers/temp-dir.js";
 
-const tempDirs: string[] = [];
+const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 const repoRoot = path.resolve(import.meta.dirname, "../..");
 const manualStart = "<!-- openclaw-plugin-reference:manual-start -->";
 const manualEnd = "<!-- openclaw-plugin-reference:manual-end -->";
@@ -19,8 +19,21 @@ function runGenerator(root: string, mode: string) {
   );
 }
 
+function addFixturePlugin(root: string, id: string) {
+  const pluginDir = path.join(root, "extensions", id);
+  mkdirSync(pluginDir, { recursive: true });
+  writeFileSync(
+    path.join(pluginDir, "package.json"),
+    `${JSON.stringify({ name: `@openclaw/${id}` })}\n`,
+  );
+  writeFileSync(
+    path.join(pluginDir, "openclaw.plugin.json"),
+    `${JSON.stringify({ id, description: `${id} plugin` })}\n`,
+  );
+}
+
 function createPluginDocsFixture() {
-  const root = makeTempDir(tempDirs, "openclaw-plugin-reference-docs-");
+  const root = tempDirs.make("openclaw-plugin-reference-docs-");
   const referenceDir = path.join(root, "docs", "plugins", "reference");
   mkdirSync(referenceDir, { recursive: true });
   mkdirSync(path.join(root, "scripts", "lib"), { recursive: true });
@@ -38,16 +51,7 @@ function createPluginDocsFixture() {
   writeFileSync(path.join(root, ".gitignore"), "docs/plugins/reference/generated-example.md\n");
 
   for (const id of ["anthropic", "generated-example"]) {
-    const pluginDir = path.join(root, "extensions", id);
-    mkdirSync(pluginDir, { recursive: true });
-    writeFileSync(
-      path.join(pluginDir, "package.json"),
-      `${JSON.stringify({ name: `@openclaw/${id}` })}\n`,
-    );
-    writeFileSync(
-      path.join(pluginDir, "openclaw.plugin.json"),
-      `${JSON.stringify({ id, description: `${id} plugin` })}\n`,
-    );
+    addFixturePlugin(root, id);
   }
 
   const authoredPath = path.join(referenceDir, "anthropic.md");
@@ -66,10 +70,6 @@ function createPluginDocsFixture() {
   rmSync(generatedPath);
   return { authoredBytes, authoredPath, generatedBytes, generatedPath, root };
 }
-
-afterEach(() => {
-  cleanupTempDirs(tempDirs);
-});
 
 describe("manifest-generated plugin reference docs", () => {
   it("restores clean-checkout routes while preserving authored pages byte-for-byte", () => {
@@ -118,6 +118,56 @@ describe("manifest-generated plugin reference docs", () => {
     expect(hidden.stderr).toContain("remove its .gitignore entry");
   });
 
+  it("rejects future generated pages before any mode can dirty the source checkout", () => {
+    const fixture = createPluginDocsFixture();
+    const inventoryPath = path.join(fixture.root, "docs", "plugins", "plugin-inventory.md");
+    const indexPath = path.join(fixture.root, "docs", "plugins", "reference.md");
+    const inventoryBefore = readFileSync(inventoryPath, "utf8");
+    const indexBefore = readFileSync(indexPath, "utf8");
+    const futurePath = path.join(
+      fixture.root,
+      "docs",
+      "plugins",
+      "reference",
+      "future-generated.md",
+    );
+    addFixturePlugin(fixture.root, "future-generated");
+
+    for (const mode of ["--write", "--check", "--materialize"]) {
+      const result = runGenerator(fixture.root, mode);
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain("future-generated.md is not explicitly listed in .gitignore");
+      expect(existsSync(futurePath)).toBe(false);
+      expect(existsSync(fixture.generatedPath)).toBe(false);
+      expect(readFileSync(inventoryPath, "utf8")).toBe(inventoryBefore);
+      expect(readFileSync(indexPath, "utf8")).toBe(indexBefore);
+      expect(readFileSync(fixture.authoredPath, "utf8")).toBe(fixture.authoredBytes);
+    }
+  });
+
+  it("keeps future human-authored reference pages visible and byte-identical", () => {
+    const fixture = createPluginDocsFixture();
+    addFixturePlugin(fixture.root, "future-authored");
+    const relativePath = "docs/plugins/reference/future-authored.md";
+    const authoredPath = path.join(fixture.root, relativePath);
+    const authoredBytes = `## Surface\n\nplugin\n\n${manualStart}\n\nFuture operator guidance.\n\n${manualEnd}\n`;
+    writeFileSync(authoredPath, authoredBytes);
+
+    const init = spawnSync("git", ["init", "--quiet"], { cwd: fixture.root, encoding: "utf8" });
+    expect(init.status, init.stderr).toBe(0);
+    const ignored = spawnSync("git", ["check-ignore", "--no-index", relativePath], {
+      cwd: fixture.root,
+      encoding: "utf8",
+    });
+    expect(ignored.status).toBe(1);
+
+    const result = runGenerator(fixture.root, "--write");
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("add its plugin id to AUTHORED_REFERENCE_PAGE_IDS");
+    expect(readFileSync(authoredPath, "utf8")).toBe(authoredBytes);
+    expect(existsSync(fixture.generatedPath)).toBe(false);
+  });
+
   it("materializes references before heading maps and no-lifecycle npm packaging", async () => {
     const fixture = createPluginDocsFixture();
 
@@ -145,7 +195,7 @@ describe("manifest-generated plugin reference docs", () => {
   });
 
   it("keeps standalone docs roots and publish mirror scripts independent", () => {
-    const docsRoot = makeTempDir(tempDirs, "openclaw-standalone-docs-");
+    const docsRoot = tempDirs.make("openclaw-standalone-docs-");
     mkdirSync(path.join(docsRoot, "docs"));
     expect(materializePluginReferenceDocs(path.join(docsRoot, "docs"))).toBe(false);
 

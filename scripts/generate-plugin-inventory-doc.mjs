@@ -612,6 +612,31 @@ function validateAuthoredReferencePages(records) {
   }
 }
 
+function validateReferencePageIgnoreCoverage(records) {
+  const ignoredPaths = new Set(
+    fs
+      .readFileSync(path.join(ROOT, ".gitignore"), "utf8")
+      .split(/\r?\n/u)
+      .map((entry) => entry.trim().replace(/^\/+/, "")),
+  );
+  for (const record of records.filter(hasGeneratedReferencePage)) {
+    const relativePath = `${REFERENCE_DIR}/${record.id}.md`;
+    if (AUTHORED_REFERENCE_PAGE_IDS.has(record.id)) {
+      if (ignoredPaths.has(relativePath)) {
+        throw new Error(
+          `${relativePath} contains human-authored documentation and must not be ignored`,
+        );
+      }
+      continue;
+    }
+    if (!ignoredPaths.has(relativePath)) {
+      throw new Error(
+        `${relativePath} is not explicitly listed in .gitignore; add its exact path before generating manifest-only plugin documentation`,
+      );
+    }
+  }
+}
+
 function readGeneratedDocs(records) {
   return [
     [REFERENCE_INDEX_PATH, renderReferenceIndex(records)],
@@ -713,9 +738,10 @@ function main(argv = process.argv.slice(2)) {
   }
 
   const records = collectPluginRecords();
+  validateAuthoredReferencePages(records);
+  validateReferencePageIgnoreCoverage(records);
   const next = renderDocument();
   const docPath = path.join(ROOT, DOC_PATH);
-  validateAuthoredReferencePages(records);
   if (write) {
     fs.writeFileSync(docPath, next, "utf8");
     writeGeneratedDocs(records);
