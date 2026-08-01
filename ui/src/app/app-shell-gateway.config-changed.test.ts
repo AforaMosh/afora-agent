@@ -21,7 +21,7 @@ describe("ShellGatewayOwner config.changed", () => {
       requestUpdate: vi.fn(),
     } as unknown as ShellGatewayHost);
 
-    owner.handleGatewayEvent({ event: "config.changed", payload: {} });
+    owner.handleGatewayEvent({ type: "event", event: "config.changed", payload: {} });
 
     expect(refreshAfterCurrentLoad).toHaveBeenCalledOnce();
     expect(refresh).not.toHaveBeenCalled();
