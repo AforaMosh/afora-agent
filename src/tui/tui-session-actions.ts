@@ -155,23 +155,20 @@ export function createSessionActions(context: SessionActionContext) {
         agentNames.set(agent.id, agent.name);
       }
     }
-    if (!state.initialSessionApplied) {
-      if (initialSessionAgentId) {
-        if (state.agents.some((agent) => agent.id === initialSessionAgentId)) {
-          state.currentAgentId = initialSessionAgentId;
-        }
-      } else if (!state.agents.some((agent) => agent.id === state.currentAgentId)) {
-        state.currentAgentId =
-          state.agents[0]?.id ?? normalizeAgentId(result.defaultId ?? state.currentAgentId);
+    if (!state.initialSessionApplied && initialSessionAgentId) {
+      if (state.agents.some((agent) => agent.id === initialSessionAgentId)) {
+        state.currentAgentId = initialSessionAgentId;
       }
+    } else if (!state.agents.some((agent) => agent.id === state.currentAgentId)) {
+      state.currentAgentId =
+        state.agents[0]?.id ?? normalizeAgentId(result.defaultId ?? state.currentAgentId);
+    }
+    if (!state.initialSessionApplied) {
       const nextSessionKey = resolveSessionKey(initialSessionInput);
       if (nextSessionKey !== state.currentSessionKey) {
         state.currentSessionKey = nextSessionKey;
       }
       state.initialSessionApplied = true;
-    } else if (!state.agents.some((agent) => agent.id === state.currentAgentId)) {
-      state.currentAgentId =
-        state.agents[0]?.id ?? normalizeAgentId(result.defaultId ?? state.currentAgentId);
     }
     updateHeader();
     updateFooter();
@@ -193,10 +190,9 @@ export function createSessionActions(context: SessionActionContext) {
         }
       },
     });
-    const activeRefresh = { promise: refresh, errorOwners };
-    refreshAgentsInFlight = activeRefresh;
+    refreshAgentsInFlight = { promise: refresh, errorOwners };
     const releaseRefresh = () => {
-      if (refreshAgentsInFlight === activeRefresh) {
+      if (refreshAgentsInFlight?.promise === refresh) {
         refreshAgentsInFlight = null;
       }
     };
@@ -208,12 +204,8 @@ export function createSessionActions(context: SessionActionContext) {
 
   const updateAgentFromSessionKey = (key: string) => {
     const parsed = parseAgentSessionKey(key);
-    if (!parsed) {
-      return;
-    }
-    const next = normalizeAgentId(parsed.agentId);
-    if (next !== state.currentAgentId) {
-      state.currentAgentId = next;
+    if (parsed) {
+      state.currentAgentId = normalizeAgentId(parsed.agentId);
     }
   };
 
@@ -262,38 +254,27 @@ export function createSessionActions(context: SessionActionContext) {
     }
 
     const next = { ...state.sessionInfo };
-    if (entry?.thinkingLevel !== undefined) {
-      next.thinkingLevel = entry.thinkingLevel;
+    for (const key of [
+      "thinkingLevel",
+      "agentRuntime",
+      "fastMode",
+      "verboseLevel",
+      "traceLevel",
+      "reasoningLevel",
+      "responseUsage",
+      "effectiveResponseUsage",
+      "inputTokens",
+      "outputTokens",
+      "displayName",
+      "updatedAt",
+    ] as const) {
+      const value = entry?.[key];
+      if (value !== undefined) {
+        Object.assign(next, { [key]: value });
+      }
     }
     if (entry?.thinkingLevels !== undefined || defaults?.thinkingLevels !== undefined) {
       next.thinkingLevels = entry?.thinkingLevels ?? defaults?.thinkingLevels;
-    }
-    if (entry?.agentRuntime !== undefined) {
-      next.agentRuntime = entry.agentRuntime;
-    }
-    if (entry?.fastMode !== undefined) {
-      next.fastMode = entry.fastMode;
-    }
-    if (entry?.verboseLevel !== undefined) {
-      next.verboseLevel = entry.verboseLevel;
-    }
-    if (entry?.traceLevel !== undefined) {
-      next.traceLevel = entry.traceLevel;
-    }
-    if (entry?.reasoningLevel !== undefined) {
-      next.reasoningLevel = entry.reasoningLevel;
-    }
-    if (entry?.responseUsage !== undefined) {
-      next.responseUsage = entry.responseUsage;
-    }
-    if (entry?.effectiveResponseUsage !== undefined) {
-      next.effectiveResponseUsage = entry.effectiveResponseUsage;
-    }
-    if (entry?.inputTokens !== undefined) {
-      next.inputTokens = entry.inputTokens;
-    }
-    if (entry?.outputTokens !== undefined) {
-      next.outputTokens = entry.outputTokens;
     }
     if (entry?.totalTokens !== undefined) {
       next.totalTokens = entry.totalTokens;
@@ -324,13 +305,6 @@ export function createSessionActions(context: SessionActionContext) {
       next.contextTokens =
         entry?.contextTokens ?? defaults?.contextTokens ?? state.sessionInfo.contextTokens;
     }
-    if (entry?.displayName !== undefined) {
-      next.displayName = entry.displayName;
-    }
-    if (entry?.updatedAt !== undefined) {
-      next.updatedAt = entry.updatedAt;
-    }
-
     const selection = resolveModelSelection(entry);
     if (selection.modelProvider !== undefined) {
       next.modelProvider = selection.modelProvider;

@@ -370,18 +370,19 @@ describe("tui command handlers", () => {
   });
 
   it("opens the refreshed agent picker after the selected agent is replaced", async () => {
+    const refresh = createDeferred<Result<void, string>>();
     const harness = createHarness({
       currentAgentId: "retired",
       currentSessionKey: "agent:retired:main",
       agents: [{ id: "retired", name: "Retired Agent" }],
-    });
-    harness.refreshAgents.mockImplementation(async () => {
-      harness.state.currentAgentId = "main";
-      harness.state.agents = [{ id: "main", name: "Available Agent" }];
-      return { ok: true, value: undefined };
+      refreshAgents: vi.fn(() => refresh.promise) as RefreshAgentsMock,
     });
 
-    await harness.handleCommand("/agents");
+    const openingPicker = harness.handleCommand("/agents");
+    harness.state.currentAgentId = "main";
+    harness.state.agents = [{ id: "main", name: "Available Agent" }];
+    refresh.resolve({ ok: true, value: undefined });
+    await openingPicker;
 
     expect(harness.openOverlay).toHaveBeenCalledTimes(1);
     expect(
