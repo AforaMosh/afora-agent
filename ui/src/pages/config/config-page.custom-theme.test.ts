@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ApplicationContext } from "../../app/context.ts";
+import type { ApplicationContext, ApplicationThemeServerSelection } from "../../app/context.ts";
 import * as customTheme from "../../app/custom-theme.ts";
 import type { ImportedCustomTheme } from "../../app/custom-theme.ts";
 import { loadSettings, patchSettings, type UiSettings } from "../../app/settings.ts";
@@ -40,7 +40,8 @@ function createCustomThemePage(settings: Partial<UiSettings> = {}) {
   const page = new ConfigPage();
   const state = page as unknown as CustomThemeImportState;
   state.context = {
-    theme: { recordServerSelection: vi.fn(), refresh: vi.fn(), serverSelectionRevision: 0 },
+    gateway: { connection: { gatewayUrl: "ws://gateway.test" } },
+    theme: { recordServerSelection: vi.fn(), refresh: vi.fn(), serverSelection: null },
   } as unknown as ApplicationContext;
   state.settings = { ...loadSettings(), ...settings };
   return { page, state };
@@ -180,29 +181,60 @@ describe("ConfigPage custom theme import ownership", () => {
     expect(state.settings.customTheme?.themeId).toBe("first");
   });
 
-  it("revokes activation when server intent changes but the local mirror is equal", async () => {
+  it("revokes activation when non-custom server intent changes but the local mirror is equal", async () => {
     const pending = deferred<ImportedCustomTheme>();
     importCustomThemeFromUrl.mockReturnValueOnce(pending.promise);
     const { state } = createCustomThemePage();
-    let serverSelectionRevision = 0;
+    let serverSelection: ApplicationThemeServerSelection | null = null;
     state.context = {
       ...state.context,
       theme: {
         ...state.context.theme,
-        get serverSelectionRevision() {
-          return serverSelectionRevision;
+        get serverSelection() {
+          return serverSelection;
         },
       },
     } as ApplicationContext;
     state.setCustomThemeImportUrl("first");
     const pendingImport = state.importCustomTheme();
 
-    serverSelectionRevision += 1;
+    serverSelection = { revision: 1, scope: "ws://gateway.test", theme: "claw" };
     state.adoptThemeSettings();
     pending.resolve(customThemeFixture("First", "first"));
     await pendingImport;
 
     expect(state.settings.theme).toBe("claw");
+    expect(state.settings.customTheme?.themeId).toBe("first");
+  });
+
+  it("honors accepted server Custom intent when the pending first import supplies its palette", async () => {
+    const pending = deferred<ImportedCustomTheme>();
+    importCustomThemeFromUrl.mockReturnValueOnce(pending.promise);
+    const { state } = createCustomThemePage();
+    let serverSelection: ApplicationThemeServerSelection | null = {
+      revision: 1,
+      scope: "ws://gateway.test",
+      theme: "claw",
+    };
+    state.context = {
+      ...state.context,
+      theme: {
+        ...state.context.theme,
+        get serverSelection() {
+          return serverSelection;
+        },
+      },
+    } as ApplicationContext;
+    state.adoptThemeSettings();
+    state.setCustomThemeImportUrl("first");
+    const pendingImport = state.importCustomTheme();
+
+    serverSelection = { revision: 2, scope: "ws://gateway.test", theme: "custom" };
+    state.adoptThemeSettings();
+    pending.resolve(customThemeFixture("First", "first"));
+    await pendingImport;
+
+    expect(state.settings.theme).toBe("custom");
     expect(state.settings.customTheme?.themeId).toBe("first");
   });
 

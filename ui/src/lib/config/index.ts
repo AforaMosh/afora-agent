@@ -3,6 +3,7 @@ import { ErrorCodes } from "@openclaw/gateway-client/browser";
 import { isRecord } from "@openclaw/normalization-core/record-coerce";
 import { GatewayRequestError, type GatewayBrowserClient } from "../../api/gateway.ts";
 import type { ConfigSchemaResponse, ConfigSnapshot, ConfigUiHints } from "../../api/types.ts";
+import { normalizeGatewayTokenScope } from "../../app/gateway-scope.ts";
 import type { ApplicationGatewayPhase } from "../../app/gateway.ts";
 import { coerceConfigFormNumberString } from "../../components/config-form.numeric.ts";
 import { schemaType, type JsonSchema } from "../../components/config-form.shared.ts";
@@ -106,6 +107,7 @@ type RuntimeConfigGatewaySnapshot = {
 
 type RuntimeConfigGateway = {
   readonly snapshot: RuntimeConfigGatewaySnapshot;
+  readonly connection?: { readonly gatewayUrl: string };
   subscribe: (listener: (snapshot: RuntimeConfigGatewaySnapshot) => void) => () => void;
 };
 
@@ -205,6 +207,25 @@ function createInitialConfigState(snapshot?: Partial<RuntimeConfigGatewaySnapsho
     configActiveSubsection: null,
     lastError: null,
   };
+}
+
+function retireRuntimeConfigScope(state: ConfigState): void {
+  const navigation = {
+    configSearchQuery: state.configSearchQuery,
+    configActiveSection: state.configActiveSection,
+    configActiveSubsection: state.configActiveSubsection,
+  };
+  Object.assign(
+    state,
+    createInitialConfigState({
+      client: state.client,
+      phase: state.connected ? "connected" : "reconnecting",
+      sessionKey: state.applySessionKey,
+    }),
+    navigation,
+  );
+  state.chatError = null;
+  autoAllowlistedPluginIdsByState.delete(state);
 }
 
 function nextRequestVersion(state: ConfigState, key: "config" | "schema"): number {
@@ -1321,6 +1342,9 @@ export function createRuntimeConfigCapability(
   // a post-apply write is meaningless while the gateway restarts, so the
   // teardown flush fail-closes on them).
   let manualFlightInfo: { raw: string; ackHash: string | null } | null = null;
+  let gatewayScope = normalizeGatewayTokenScope(
+    gateway.connection?.gatewayUrl ?? gateway.snapshot.client?.gatewayUrl ?? "",
+  );
 
   const publish = () => {
     if (disposed) {
@@ -1587,6 +1611,11 @@ export function createRuntimeConfigCapability(
     const clientChanged = state.client !== snapshot.client;
     const connected = snapshot.phase === "connected";
     const connectionChanged = state.connected !== connected;
+    const nextGatewayScope = normalizeGatewayTokenScope(
+      gateway.connection?.gatewayUrl ?? snapshot.client?.gatewayUrl ?? "",
+    );
+    const scopeChanged = nextGatewayScope !== gatewayScope;
+    gatewayScope = nextGatewayScope;
     state.client = snapshot.client;
     state.connected = connected;
     state.applySessionKey = snapshot.sessionKey;
@@ -1608,9 +1637,11 @@ export function createRuntimeConfigCapability(
         // rejection (protocol-client flushRequests rejects all pending
         // requests on socket close, so nothing here can hang forever).
         // Remember the uncertain submission for reconnect reconciliation.
-        hasInterruptedWrite = true;
-        interruptedWriteRaw =
-          autoSaveInFlight !== null ? lastFlightSubmittedRaw : (manualFlightInfo?.raw ?? null);
+        if (!scopeChanged) {
+          hasInterruptedWrite = true;
+          interruptedWriteRaw =
+            autoSaveInFlight !== null ? lastFlightSubmittedRaw : (manualFlightInfo?.raw ?? null);
+        }
         autoSaveInFlight = null;
         manualSubmitInFlight = null;
         autoSaveTrailing = false;
@@ -1626,6 +1657,16 @@ export function createRuntimeConfigCapability(
       state.configApplying = false;
       if (state.configAutoSaveStatus === "saving") {
         state.configAutoSaveStatus = "idle";
+      }
+      if (scopeChanged) {
+        // Config snapshots, schemas, and drafts belong to one logical Gateway.
+        // Retire them before publishing B's client so A's bytes cannot render or save there.
+        hasInterruptedWrite = false;
+        interruptedWriteRaw = null;
+        lastFlightSubmittedRaw = null;
+        lastFlightAckHash = null;
+        manualFlightInfo = null;
+        retireRuntimeConfigScope(state);
       }
       // A reconnect must not strand a dirty draft whose debounce was just
       // cancelled; reschedule against the new connection. If the file moved

@@ -19,6 +19,7 @@ function deferred<T>() {
 }
 
 function createGatewayHarness(client: GatewayBrowserClient) {
+  let gatewayUrl = client.gatewayUrl || "ws://gateway.test";
   let snapshot: {
     client: GatewayBrowserClient;
     phase: ApplicationGatewayPhase;
@@ -27,6 +28,9 @@ function createGatewayHarness(client: GatewayBrowserClient) {
   const listeners = new Set<(next: typeof snapshot) => void>();
   return {
     gateway: {
+      get connection() {
+        return { gatewayUrl };
+      },
       get snapshot() {
         return snapshot;
       },
@@ -35,7 +39,12 @@ function createGatewayHarness(client: GatewayBrowserClient) {
         return () => listeners.delete(listener);
       },
     },
-    publish: (connected: boolean, nextClient: GatewayBrowserClient = client) => {
+    publish: (
+      connected: boolean,
+      nextClient: GatewayBrowserClient = client,
+      nextGatewayUrl = nextClient.gatewayUrl || gatewayUrl,
+    ) => {
+      gatewayUrl = nextGatewayUrl;
       snapshot = {
         client: nextClient,
         phase: connected ? "connected" : "reconnecting",
@@ -531,6 +540,74 @@ describe("createRuntimeConfigCapability", () => {
     expect(runtimeConfig.state.configSchemaVersion).toBe("current");
     expect(runtimeConfig.state.configLoading).toBe(false);
     expect(runtimeConfig.state.configSchemaLoading).toBe(false);
+    runtimeConfig.dispose();
+  });
+
+  it("retires snapshots, schemas, and drafts when the logical Gateway scope changes", async () => {
+    vi.useFakeTimers();
+    const requestA = vi.fn(async (method: string) => {
+      if (method === "config.get") {
+        return {
+          config: { source: "gateway-a" },
+          raw: '{"source":"gateway-a"}',
+          hash: "hash-a",
+          valid: true,
+          issues: [],
+        };
+      }
+      if (method === "config.schema") {
+        return {
+          schema: { type: "object", title: "Gateway A" },
+          uiHints: { source: "gateway-a" },
+          version: "a",
+        };
+      }
+      return {};
+    });
+    const requestB = vi.fn(async (method: string) => {
+      if (method === "config.get") {
+        return {
+          config: { source: "gateway-b" },
+          raw: '{"source":"gateway-b"}',
+          hash: "hash-b",
+          valid: true,
+          issues: [],
+        };
+      }
+      if (method === "config.schema") {
+        return {
+          schema: { type: "object", title: "Gateway B" },
+          uiHints: { source: "gateway-b" },
+          version: "b",
+        };
+      }
+      return {};
+    });
+    const clientA = {
+      gatewayUrl: "ws://gateway-a.test",
+      request: requestA,
+    } as unknown as GatewayBrowserClient;
+    const clientB = {
+      gatewayUrl: "ws://gateway-b.test",
+      request: requestB,
+    } as unknown as GatewayBrowserClient;
+    const { gateway, publish } = createGatewayHarness(clientA);
+    const runtimeConfig = createRuntimeConfigCapability(gateway);
+    await Promise.all([runtimeConfig.ensureLoaded(), runtimeConfig.ensureSchemaLoaded()]);
+    runtimeConfig.patchForm(["source"], "gateway-a-draft");
+
+    publish(true, clientB, clientB.gatewayUrl);
+
+    expect(runtimeConfig.state.configSnapshot).toBeNull();
+    expect(runtimeConfig.state.configSchema).toBeNull();
+    expect(runtimeConfig.state.configForm).toBeNull();
+    expect(runtimeConfig.state.configFormDirty).toBe(false);
+    await Promise.all([runtimeConfig.ensureLoaded(), runtimeConfig.ensureSchemaLoaded()]);
+    await vi.advanceTimersByTimeAsync(CONFIG_FORM_AUTO_SAVE_DEBOUNCE_MS);
+
+    expect(runtimeConfig.state.configSnapshot?.config).toEqual({ source: "gateway-b" });
+    expect(runtimeConfig.state.configSchemaVersion).toBe("b");
+    expect(requestB.mock.calls.map(([method]) => method)).toEqual(["config.get", "config.schema"]);
     runtimeConfig.dispose();
   });
 });

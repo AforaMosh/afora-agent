@@ -314,6 +314,9 @@ let consecutiveConflictRedrains = 0;
 // failure. Only new objects are evaluated; the post-ack request-version bump makes them post-commit.
 let lastReconciledScope = "";
 let lastReconciledConfigObject: unknown = null;
+// Storage can be blocked or cleared mid-session. Keep the current process's
+// accepted edge so equal snapshot objects do not manufacture theme revisions.
+const lastSeenPrefsByScope = new Map<string, string>();
 function clearConflictRedrain(): void {
   if (conflictRedrainTimer !== null) {
     clearTimeout(conflictRedrainTimer);
@@ -384,6 +387,7 @@ export function resetServerUiPrefsSync() {
   pushScope = "";
   lastReconciledScope = "";
   lastReconciledConfigObject = null;
+  lastSeenPrefsByScope.clear();
   requestedServerUiPrefResets.clear();
   requestedDeviceLocalPrefResets.clear();
 }
@@ -430,8 +434,9 @@ export function applyServerUiPrefs(
     scope === pendingScope ? pendingPrefs : parseStoredPrefs(readStorage(PENDING_KEY, scope));
   const prefs = extractServerUiPrefs(configObject);
   const key = JSON.stringify(prefs);
-  const lastSeenRaw = readStorage(LAST_SEEN_KEY, scope);
+  const lastSeenRaw = readStorage(LAST_SEEN_KEY, scope) ?? lastSeenPrefsByScope.get(scope) ?? null;
   if (key === lastSeenRaw) {
+    lastSeenPrefsByScope.set(scope, key);
     recordReconciledObject();
     return false;
   }
@@ -457,6 +462,7 @@ export function applyServerUiPrefs(
     }
   }
   writeStorage(LAST_SEEN_KEY, scope, key);
+  lastSeenPrefsByScope.set(scope, key);
   recordReconciledObject();
   if (Object.hasOwn(changed, "theme")) {
     hooks.onThemeChanged?.(changed.theme ?? null);

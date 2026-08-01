@@ -570,3 +570,31 @@ describe("normalizeInitialApplicationLocation", () => {
     }
   });
 });
+
+describe("application theme server selections", () => {
+  it("records equal-valued authoritative selections as distinct edges", () => {
+    const runtime = bootstrapApplication({ sessionPathBuilderReady: Promise.resolve() });
+    const changed = vi.fn();
+    const unsubscribe = runtime.context.theme.subscribe(changed);
+
+    try {
+      runtime.context.theme.recordServerSelection("claw", "ws://gateway-a.test");
+      expect(runtime.context.theme.serverSelection).toEqual({
+        revision: 1,
+        scope: "ws://gateway-a.test",
+        theme: "claw",
+      });
+
+      runtime.context.theme.recordServerSelection("claw", "ws://gateway-a.test");
+      expect(runtime.context.theme.serverSelection).toEqual({
+        revision: 2,
+        scope: "ws://gateway-a.test",
+        theme: "claw",
+      });
+      expect(changed).toHaveBeenCalledTimes(2);
+    } finally {
+      unsubscribe();
+      runtime.stop();
+    }
+  });
+});

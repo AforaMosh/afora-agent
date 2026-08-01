@@ -12,6 +12,7 @@ import {
 import { i18n, isSupportedLocale } from "../i18n/index.ts";
 import type { ShellRouteState } from "./app-host-route-state.ts";
 import type { ApplicationContext } from "./context.ts";
+import { normalizeGatewayTokenScope } from "./gateway-scope.ts";
 import {
   applyServerUiPrefs,
   flushServerUiPrefs,
@@ -94,10 +95,11 @@ export class ShellGatewayOwner {
     if (!snapshot?.config || !context || context.runtimeConfig !== runtimeConfig) {
       return;
     }
-    const scope = context.gateway.connection.gatewayUrl;
+    const gatewayUrl = context.gateway.connection.gatewayUrl;
+    const scope = normalizeGatewayTokenScope(gatewayUrl);
     applyServerUiPrefs(snapshot.config, {
-      scope,
-      onThemeChanged: (theme) => context.theme.recordServerSelection(theme),
+      scope: gatewayUrl,
+      onThemeChanged: (theme) => context.theme.recordServerSelection(theme, scope),
       onApplied: (patch) => {
         if (patch.sidebarEntries !== undefined) {
           context.navigation.update({ sidebarEntries: patch.sidebarEntries });
@@ -105,7 +107,7 @@ export class ShellGatewayOwner {
         context.theme.refresh();
       },
     });
-    const localePref = resolveServerUiPrefState(snapshot.config, "locale", scope);
+    const localePref = resolveServerUiPrefState(snapshot.config, "locale", gatewayUrl);
     const localePrefSignature = JSON.stringify([scope, localePref.overridden, localePref.value]);
     if (localePrefSignature === this.host.lastLocalePrefSignature) {
       return;

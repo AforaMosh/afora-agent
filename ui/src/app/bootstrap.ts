@@ -34,6 +34,7 @@ import type {
   ApplicationNavigationPreferencesSnapshot,
   ApplicationSkillWorkshopRevisionHandoff,
   ApplicationTheme,
+  ApplicationThemeServerSelection,
 } from "./context.ts";
 import { syncCustomThemeStyleTag } from "./custom-theme.ts";
 import { createApplicationGateway } from "./gateway-store.ts";
@@ -53,7 +54,7 @@ import {
 import { createStartupLifecycle, type StartupStep } from "./startup-lifecycle.ts";
 import { resolveApplicationStartupSettings } from "./startup-settings.ts";
 import { startThemeTransition } from "./theme-transition.ts";
-import { resolveTheme, type ThemeMode, type ThemeName } from "./theme.ts";
+import { resolveTheme, type ThemeMode } from "./theme.ts";
 import { createWebPushCapability } from "./web-push.ts";
 
 function applyThemePresentation(settings: ReturnType<typeof loadSettings>): void {
@@ -78,8 +79,7 @@ function createApplicationTheme(
   initialSettings: UiSettings,
 ): ApplicationTheme & { dispose: () => void } {
   let settings = initialSettings;
-  let serverSelection: ThemeName | null | undefined;
-  let serverSelectionRevision = 0;
+  let serverSelection: ApplicationThemeServerSelection | null = null;
   let systemThemeCleanup: (() => void) | undefined;
   const listeners = new Set<() => void>();
 
@@ -121,15 +121,13 @@ function createApplicationTheme(
     get mode() {
       return settings.themeMode;
     },
-    get serverSelectionRevision() {
-      return serverSelectionRevision;
+    get serverSelection() {
+      return serverSelection;
     },
-    recordServerSelection(theme) {
-      if (theme === serverSelection) {
-        return;
-      }
-      serverSelection = theme;
-      serverSelectionRevision += 1;
+    recordServerSelection(theme, scope) {
+      // server-prefs already filters pending acknowledgements and unchanged snapshots.
+      // Preserve every remaining authored edge, including values seen before a shadowed edit.
+      serverSelection = { revision: (serverSelection?.revision ?? 0) + 1, scope, theme };
       publish();
     },
     setMode(mode: ThemeMode, element) {

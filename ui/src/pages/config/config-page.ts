@@ -15,6 +15,7 @@ import {
   type ApplicationGatewaySnapshot,
 } from "../../app/context.ts";
 import { importCustomThemeFromUrl } from "../../app/custom-theme.ts";
+import { normalizeGatewayTokenScope } from "../../app/gateway-scope.ts";
 import { hasOperatorAdminAccess } from "../../app/operator-access.ts";
 import {
   resetServerUiPref,
@@ -355,8 +356,10 @@ export class ConfigPage extends OpenClawLightDomElement {
 
   override connectedCallback() {
     super.connectedCallback();
-    this.serverThemeSelectionRevision = this.context.theme.serverSelectionRevision;
-    this.customThemeGatewayScope = this.context.gateway.connection.gatewayUrl;
+    this.serverThemeSelectionRevision = this.currentServerThemeSelection()?.revision ?? 0;
+    this.customThemeGatewayScope = normalizeGatewayTokenScope(
+      this.context.gateway.connection.gatewayUrl,
+    );
     this.settings = loadSettings();
     this.syncRouteData();
   }
@@ -551,11 +554,12 @@ export class ConfigPage extends OpenClawLightDomElement {
   }
 
   private synchronizeCustomThemeGatewayScope(scope: string) {
-    if (this.customThemeGatewayScope && scope !== this.customThemeGatewayScope) {
+    const normalizedScope = normalizeGatewayTokenScope(scope);
+    if (this.customThemeGatewayScope && normalizedScope !== this.customThemeGatewayScope) {
       this.retireCustomThemeImport();
-      this.serverThemeSelectionRevision = this.context.theme.serverSelectionRevision;
+      this.serverThemeSelectionRevision = this.currentServerThemeSelection()?.revision ?? 0;
     }
-    this.customThemeGatewayScope = scope;
+    this.customThemeGatewayScope = normalizedScope;
   }
 
   private handleSystemInfoGatewaySnapshot(snapshot: ApplicationGatewaySnapshot) {
@@ -708,15 +712,26 @@ export class ConfigPage extends OpenClawLightDomElement {
 
   private adoptThemeSettings() {
     const next = loadSettings();
+    const serverSelection = this.currentServerThemeSelection();
     const serverSelectionChanged =
-      this.serverThemeSelectionRevision !== this.context.theme.serverSelectionRevision;
-    this.serverThemeSelectionRevision = this.context.theme.serverSelectionRevision;
+      this.serverThemeSelectionRevision !== (serverSelection?.revision ?? 0);
+    this.serverThemeSelectionRevision = serverSelection?.revision ?? 0;
+    // A first import supplies the palette needed to honor an accepted server Custom
+    // selection. Other server selections supersede only its auto-activation intent.
+    const serverSelectionRevokesActivation =
+      serverSelectionChanged && serverSelection?.theme !== "custom";
     if (next.customTheme?.importedAt !== this.settings.customTheme?.importedAt) {
       this.retireCustomThemeImport();
-    } else if (serverSelectionChanged || next.theme !== this.settings.theme) {
+    } else if (serverSelectionRevokesActivation || next.theme !== this.settings.theme) {
       this.revokeCustomThemeActivation();
     }
     this.settings = next;
+  }
+
+  private currentServerThemeSelection() {
+    const serverSelection = this.context.theme.serverSelection;
+    const scope = normalizeGatewayTokenScope(this.context.gateway.connection.gatewayUrl);
+    return serverSelection?.scope === scope ? serverSelection : null;
   }
 
   private setLocale(locale: Locale | undefined) {

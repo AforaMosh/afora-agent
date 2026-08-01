@@ -303,6 +303,28 @@ describe("applyServerUiPrefs", () => {
     expect(onThemeChanged).toHaveBeenLastCalledWith("claw");
     expect(onApplied).not.toHaveBeenCalled();
   });
+
+  it("does not republish an equal theme when preference storage is unavailable", () => {
+    vi.stubGlobal("localStorage", {
+      getItem: () => {
+        throw new Error("storage blocked");
+      },
+      removeItem: () => {
+        throw new Error("storage blocked");
+      },
+      setItem: () => {
+        throw new Error("storage blocked");
+      },
+    });
+    const onApplied = vi.fn();
+    const onThemeChanged = vi.fn();
+
+    applyServerUiPrefs(configWithPrefs({ theme: "custom" }), { onApplied, onThemeChanged });
+    applyServerUiPrefs(configWithPrefs({ theme: "custom" }), { onApplied, onThemeChanged });
+
+    expect(onThemeChanged).toHaveBeenCalledExactlyOnceWith("custom");
+    expect(onApplied).not.toHaveBeenCalled();
+  });
 });
 
 describe("changedServerUiPrefs", () => {
