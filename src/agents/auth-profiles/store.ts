@@ -1417,7 +1417,7 @@ function saveAuthProfileStoreInTransaction(
   options: SaveAuthProfileStoreOptions | undefined,
   database: OpenClawAgentDatabase,
   publishFromSuppliedStore = false,
-): () => void {
+): () => boolean {
   const savedAuthPath = resolveAuthStorePath(agentDir);
   const mainAuthPath = resolveAuthStorePath();
   const savesMainStore = savedAuthPath === mainAuthPath;
