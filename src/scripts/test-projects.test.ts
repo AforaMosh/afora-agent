@@ -654,29 +654,72 @@ describe("test-projects args", () => {
   });
 
   it("routes extension helper targets to importing extension tests", () => {
-    expect(
-      buildVitestRunPlans(["extensions/memory-core/src/memory/test-runtime-mocks.ts"]),
-    ).toEqual([
-      {
-        config: "test/vitest/vitest.extension-memory.config.ts",
-        forwardedArgs: [],
-        includePatterns: [
-          "extensions/memory-core/src/memory/index.test.ts",
-          "extensions/memory-core/src/memory/manager.fts-only-reindex.test.ts",
-          "extensions/memory-core/src/memory/manager.legacy-migration-cleanup.test.ts",
-          "extensions/memory-core/src/memory/manager.reindex-recovery.test.ts",
-          "extensions/memory-core/src/memory/manager.self-heal-missing-identity.test.ts",
-          "extensions/memory-core/src/memory/manager.watcher-config.test.ts",
-          "extensions/memory-core/src/session-search-visibility.cross-agent.test.ts",
-          "extensions/memory-core/src/session-search-visibility.qmd.test.ts",
-          "extensions/memory-core/src/session-search-visibility.test.ts",
-          "extensions/memory-core/src/tools.citations.test.ts",
-          "extensions/memory-core/src/tools.recall-tracking.test.ts",
-          "extensions/memory-core/src/tools.test.ts",
-        ],
-        watchMode: false,
-      },
-    ]);
+    const helper = "extensions/memory-core/src/memory/test-runtime-mocks.ts";
+    const plans = buildVitestRunPlans([helper]);
+    expect(plans).toHaveLength(1);
+    const plan = expectDefined(plans[0], "memory-core test plan");
+    expect(plan).toMatchObject({
+      config: "test/vitest/vitest.extension-memory.config.ts",
+      forwardedArgs: [],
+      watchMode: false,
+    });
+
+    // Discover the complete transitive owner set so adding a real importer cannot break main.
+    const importSpecifier =
+      /\b(?:import|export)\s+(?:type\s+)?(?:[^'"]*?\s+from\s+)?["']([^"']+)["']|\bimport\s*\(\s*["']([^"']+)["']\s*\)/gu;
+    const queue = [helper];
+    const discovered = new Set(queue);
+    const expectedTests = new Set<string>();
+    for (const imported of queue) {
+      const term = path.posix.basename(imported, path.posix.extname(imported));
+      const grep = spawnSync(
+        "git",
+        ["grep", "-l", "--fixed-strings", term, "--", "extensions/memory-core"],
+        { encoding: "utf8" },
+      );
+      expect([0, 1]).toContain(grep.status);
+      for (const importer of grep.stdout.split("\n").filter(Boolean)) {
+        if (importer === imported || !/\.(?:[cm]?ts|tsx)$/u.test(importer)) {
+          continue;
+        }
+        const source = fs.readFileSync(importer, "utf8");
+        const importsTarget = [...source.matchAll(importSpecifier)].some((match) => {
+          const specifier = match[1] ?? match[2];
+          if (!specifier?.startsWith(".")) {
+            return false;
+          }
+          const resolved = path.posix.normalize(
+            path.posix.join(path.posix.dirname(importer), specifier),
+          );
+          return (
+            resolved.replace(/\.(?:[cm]?[jt]sx?)$/u, "") ===
+            imported.replace(/\.(?:[cm]?ts|tsx)$/u, "")
+          );
+        });
+        if (!importsTarget || discovered.has(importer)) {
+          continue;
+        }
+        discovered.add(importer);
+        if (importer.endsWith(".test.ts") && !importer.endsWith(".live.test.ts")) {
+          expectedTests.add(importer);
+        } else {
+          queue.push(importer);
+        }
+      }
+    }
+
+    expect([...expectedTests]).toEqual(
+      expect.arrayContaining([
+        "extensions/memory-core/src/memory/index.test.ts",
+        "extensions/memory-core/src/memory/manager.fts-only-reindex.test.ts",
+        "extensions/memory-core/src/memory/manager.legacy-migration-cleanup.test.ts",
+        "extensions/memory-core/src/memory/manager.reindex-recovery.test.ts",
+        "extensions/memory-core/src/memory/manager.self-heal-missing-identity.test.ts",
+      ]),
+    );
+    expect(plan.includePatterns).toEqual(
+      [...expectedTests].toSorted((left, right) => left.localeCompare(right)),
+    );
   });
 
   it("routes msteams extension tests to the msteams config", () => {
