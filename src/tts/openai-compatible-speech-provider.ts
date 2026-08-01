@@ -125,6 +125,17 @@ function resolveProviderConfigRecord(
   return asObject(providers?.[providerConfigKey]) ?? asObject(rawConfig[providerConfigKey]);
 }
 
+function resolveConfiguredSpeechVoice(
+  config: SpeechProviderConfig | undefined,
+): string | undefined {
+  return (
+    trimToUndefined(config?.speakerVoice) ??
+    trimToUndefined(config?.speakerVoiceId) ??
+    trimToUndefined(config?.voice) ??
+    trimToUndefined(config?.voiceId)
+  );
+}
+
 function readModelProviderConfig(
   cfg: unknown,
   providerConfigKey: string,
@@ -220,7 +231,7 @@ export function createOpenAiCompatibleSpeechProvider<
               policy: options.baseUrlPolicy,
             }),
       model: normalizeModel(trimToUndefined(raw?.model ?? raw?.modelId), options.defaultModel),
-      voice: trimToUndefined(raw?.voice ?? raw?.voiceId) ?? options.defaultVoice,
+      voice: resolveConfiguredSpeechVoice(raw) ?? options.defaultVoice,
       speed: asFiniteNumber(raw?.speed),
       responseFormat: normalizeResponseFormat({
         providerLabel: options.label,
@@ -246,7 +257,7 @@ export function createOpenAiCompatibleSpeechProvider<
               policy: options.baseUrlPolicy,
             }),
       model: normalizeModel(trimToUndefined(config.model ?? config.modelId), normalized.model),
-      voice: trimToUndefined(config.voice ?? config.voiceId) ?? normalized.voice,
+      voice: resolveConfiguredSpeechVoice(config) ?? normalized.voice,
       speed: asFiniteNumber(config.speed) ?? normalized.speed,
       responseFormat:
         normalizeResponseFormat({
