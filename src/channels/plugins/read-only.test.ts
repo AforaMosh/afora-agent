@@ -1163,6 +1163,56 @@ describe("listReadOnlyChannelPluginsForConfig", () => {
     expect(fs.existsSync(fullMarker)).toBe(false);
   });
 
+  it.runIf(process.platform !== "win32")(
+    "rejects external setup hardlinks introduced after metadata discovery",
+    () => {
+      const { pluginDir, fullMarker, setupMarker } = writeExternalSetupChannelPlugin({
+        pluginId: "external-chat-plugin",
+        channelId: "external-chat",
+      });
+      const cfg = createExternalChannelTestConfig({
+        pluginDir,
+        pluginId: "external-chat-plugin",
+      });
+      const options = { env: { ...process.env }, includePersistedAuthState: false };
+      const initial = resolveReadOnlyChannelPluginsForConfig(cfg, options);
+      expect(pluginIds(initial.plugins)).toContain("external-chat");
+      expect(fs.existsSync(setupMarker)).toBe(false);
+
+      const setupEntry = path.join(pluginDir, "setup-entry.cjs");
+      const hostileDir = makeTempDir();
+      const hostileMarker = path.join(hostileDir, "executed.txt");
+      const hostileSource = path.join(hostileDir, "payload.cjs");
+      fs.writeFileSync(
+        hostileSource,
+        fs
+          .readFileSync(setupEntry, "utf8")
+          .replace(JSON.stringify(setupMarker), JSON.stringify(hostileMarker)),
+        "utf8",
+      );
+      fs.unlinkSync(setupEntry);
+      fs.linkSync(hostileSource, setupEntry);
+      expect(fs.statSync(setupEntry).nlink).toBeGreaterThan(1);
+
+      const result = resolveReadOnlyChannelPluginsForConfig(cfg, {
+        ...options,
+        includeSetupFallbackPlugins: true,
+      });
+
+      expect(pluginIds(result.plugins)).toContain("external-chat");
+      expect(result.loadFailures).toEqual([
+        expect.objectContaining({
+          channelId: "external-chat",
+          pluginId: "external-chat-plugin",
+          message: expect.stringContaining("Unable to open plugin public surface"),
+        }),
+      ]);
+      expect(fs.existsSync(hostileMarker)).toBe(false);
+      expect(fs.existsSync(setupMarker)).toBe(false);
+      expect(fs.existsSync(fullMarker)).toBe(false);
+    },
+  );
+
   it("falls back to manifest metadata and reports setup-entry load failures", () => {
     const { pluginDir, fullMarker, setupMarker } = writeExternalSetupChannelPlugin({
       pluginId: "external-chat-plugin",
