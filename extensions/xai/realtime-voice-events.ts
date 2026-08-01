@@ -1,5 +1,5 @@
 import { canonicalizeBase64 } from "openclaw/plugin-sdk/media-runtime";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { isRecord, normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
 import {
   XAI_REALTIME_ACTIVE_RESPONSE_ERROR_PREFIX,
   XAI_REALTIME_NO_ACTIVE_RESPONSE_CANCEL_ERROR,
@@ -11,6 +11,21 @@ import { XaiRealtimeVoiceProtocol } from "./realtime-voice-protocol.js";
 
 export class XaiRealtimeMalformedAudioError extends Error {}
 
+function readXaiRealtimeTerminalFailure(event: XaiRealtimeEvent): string | undefined {
+  const status = normalizeOptionalString(event.response?.status)?.toLowerCase();
+  if (status !== "failed" && status !== "incomplete") {
+    return undefined;
+  }
+  const details = isRecord(event.response?.status_details)
+    ? event.response.status_details
+    : undefined;
+  if (status === "failed" && details?.error) {
+    return readXaiRealtimeErrorDetail(details.error);
+  }
+  const reason = normalizeOptionalString(details?.reason);
+  return `xAI realtime voice response ${status}${reason ? `: ${reason}` : ""}`;
+}
+
 export abstract class XaiRealtimeVoiceEvents extends XaiRealtimeVoiceProtocol {
   private assistantTranscriptBuffer = "";
   private assistantTranscriptFinalized = false;
@@ -20,16 +35,31 @@ export abstract class XaiRealtimeVoiceEvents extends XaiRealtimeVoiceProtocol {
   protected abstract onSessionUpdated(connection: XaiRealtimeVoiceConnection): void;
 
   protected handleEvent(event: XaiRealtimeEvent, connection: XaiRealtimeVoiceConnection): void {
-    this.config.onEvent?.({
-      direction: "server",
-      type: event.type,
-      detail: this.describeServerEvent(event),
-      ...(event.item_id ? { itemId: event.item_id } : {}),
-      ...((event.response_id ?? event.response?.id)
-        ? { responseId: event.response_id ?? event.response?.id }
-        : {}),
-    });
+    const terminalFailure =
+      event.type === "response.done" ? readXaiRealtimeTerminalFailure(event) : undefined;
+    if (!terminalFailure) {
+      this.config.onEvent?.({
+        direction: "server",
+        type: event.type,
+        detail: this.describeServerEvent(event),
+        ...(event.item_id ? { itemId: event.item_id } : {}),
+        ...((event.response_id ?? event.response?.id)
+          ? { responseId: event.response_id ?? event.response?.id }
+          : {}),
+      });
+    }
     if (!this.acceptsEvent(connection)) {
+      return;
+    }
+    if (terminalFailure) {
+      // Failed done events must not finish a successful turn or start queued,
+      // billable generation before the meeting receives its terminal error.
+      this.flushAssistantTranscript();
+      this.responseActive = false;
+      this.responseCreateInFlight = false;
+      this.responseCancelInFlight = false;
+      this.responseCreatePending = false;
+      this.config.onError?.(new Error(terminalFailure));
       return;
     }
     switch (event.type) {

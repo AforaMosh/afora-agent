@@ -775,6 +775,152 @@ describe("buildXaiRealtimeVoiceProvider", () => {
     });
   });
 
+  it.each([
+    {
+      status: "failed",
+      statusDetails: {
+        type: "failed",
+        error: { code: "server_error", message: "Voice generation failed upstream" },
+      },
+      expectedError: "Voice generation failed upstream",
+    },
+    {
+      status: "incomplete",
+      statusDetails: { type: "incomplete", reason: "content_filter" },
+      expectedError: "xAI realtime voice response incomplete: content_filter",
+    },
+    {
+      status: "incomplete",
+      statusDetails: { type: "incomplete", reason: "max_output_tokens" },
+      expectedError: "xAI realtime voice response incomplete: max_output_tokens",
+    },
+  ])(
+    "surfaces a $status response.done outcome instead of silently completing the turn",
+    async ({ status, statusDetails, expectedError }) => {
+      const callbackOrder: string[] = [];
+      const onTranscript = vi.fn((_role, _text, isFinal) => {
+        if (isFinal) {
+          callbackOrder.push("final-transcript");
+        }
+      });
+      const onEvent = vi.fn((event: { type: string }) => {
+        if (event.type === "response.done") {
+          callbackOrder.push("turn.ended");
+        }
+      });
+      const onError = vi.fn(() => callbackOrder.push("session.error"));
+      const bridge = buildXaiRealtimeVoiceProvider().createBridge({
+        providerConfig: { apiKey: "xai-test" }, // pragma: allowlist secret
+        onAudio: vi.fn(),
+        onClearAudio: vi.fn(),
+        onTranscript,
+        onEvent,
+        onError,
+      });
+      const { connecting, socket } = await openRealtimeBridge(bridge);
+      await connecting;
+
+      socket.emit("message", Buffer.from(JSON.stringify({ type: "response.created" })));
+      socket.emit(
+        "message",
+        Buffer.from(
+          JSON.stringify({ type: "response.output_text.delta", delta: "Partial answer" }),
+        ),
+      );
+      bridge.sendUserMessage?.("Queued meeting follow-up");
+
+      expect(parseSent(socket).filter((event) => event.type === "response.create")).toEqual([]);
+
+      socket.emit(
+        "message",
+        Buffer.from(
+          JSON.stringify({
+            type: "response.done",
+            response: { id: "resp_failed", status, status_details: statusDetails },
+          }),
+        ),
+      );
+
+      expect(onEvent.mock.calls.some(([event]) => event.type === "response.done")).toBe(false);
+      expect(onTranscript).toHaveBeenLastCalledWith("assistant", "Partial answer", true);
+      expect(onError).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ message: expectedError }),
+      );
+      expect(callbackOrder).toEqual(["final-transcript", "session.error"]);
+      expect(parseSent(socket).filter((event) => event.type === "response.create")).toEqual([]);
+    },
+  );
+
+  it("never starts a queued meeting generation after a failed response.done outcome", async () => {
+    const meetingOutcomes: string[] = [];
+    const bridge = buildXaiRealtimeVoiceProvider().createBridge({
+      providerConfig: { apiKey: "xai-test" }, // pragma: allowlist secret
+      onAudio: vi.fn(),
+      onClearAudio: vi.fn(),
+      onEvent: (event) => {
+        if (event.type === "response.done") {
+          meetingOutcomes.push("turn.ended");
+        }
+      },
+      onError: () => meetingOutcomes.push("session.error"),
+    });
+    const { connecting, socket } = await openRealtimeBridge(bridge);
+    await connecting;
+
+    socket.emit("message", Buffer.from(JSON.stringify({ type: "response.created" })));
+    bridge.sendUserMessage?.("Queued meeting follow-up");
+    socket.emit(
+      "message",
+      Buffer.from(
+        JSON.stringify({
+          type: "response.done",
+          response: {
+            status: "failed",
+            status_details: { type: "failed", error: { message: "Voice generation failed" } },
+          },
+        }),
+      ),
+    );
+
+    expect(parseSent(socket).filter((event) => event.type === "response.create")).toEqual([]);
+    expect(meetingOutcomes).toEqual(["session.error"]);
+  });
+
+  it.each(["completed", "cancelled"])(
+    "keeps a %s response.done outcome non-failing and starts queued work",
+    async (status) => {
+      const onError = vi.fn();
+      const onEvent = vi.fn();
+      const bridge = buildXaiRealtimeVoiceProvider().createBridge({
+        providerConfig: { apiKey: "xai-test" }, // pragma: allowlist secret
+        onAudio: vi.fn(),
+        onClearAudio: vi.fn(),
+        onError,
+        onEvent,
+      });
+      const { connecting, socket } = await openRealtimeBridge(bridge);
+      await connecting;
+
+      socket.emit("message", Buffer.from(JSON.stringify({ type: "response.created" })));
+      bridge.sendUserMessage?.("Queued meeting follow-up");
+
+      socket.emit(
+        "message",
+        Buffer.from(JSON.stringify({ type: "response.done", response: { status } })),
+      );
+
+      expect(onError).not.toHaveBeenCalled();
+      expect(onEvent).toHaveBeenCalledWith({
+        direction: "server",
+        type: "response.done",
+        detail: `status=${status}`,
+      });
+      expect(parseSent(socket).filter((event) => event.type === "response.create")).toEqual([
+        { type: "response.create" },
+      ]);
+    },
+  );
+
   it("buffers assistant transcript deltas and finalizes them when done has no text", async () => {
     const provider = buildXaiRealtimeVoiceProvider();
     const onTranscript = vi.fn();
