@@ -4,7 +4,7 @@ import { closeOpenClawStateDatabase } from "../state/openclaw-state-db.js";
 import { pruneExpiredAuditEvents, recordAuditEvent } from "./audit-event-store.js";
 import type { AuditEventInput } from "./audit-event-types.js";
 import {
-  persistExecutionIdentityAdmissionEnvelope,
+  processExecutionIdentityAdmissionWork,
   pruneExpiredExecutionIdentityContexts,
 } from "./execution-identity-context.js";
 
@@ -12,7 +12,7 @@ const AUDIT_MAINTENANCE_INTERVAL_MS = 60 * 60_000;
 
 type AuditWriterRequest =
   | { type: "record-event"; input: AuditEventInput }
-  | { type: "record-execution-identity"; envelope: unknown }
+  | { type: "record-execution-identity"; work: unknown }
   | { type: "stop" };
 
 const stateDir =
@@ -36,8 +36,13 @@ function executionIdentityFailureMessage(error: unknown): string {
   if (message.includes("execution identity context conflict")) {
     return "audit execution identity context conflict";
   }
+  if (message.includes("execution identity recovery evidence unavailable")) {
+    return "audit execution identity recovery evidence unavailable";
+  }
   if (
     message.includes("admission envelope") ||
+    message.includes("admission work") ||
+    message.includes("admission token") ||
     message.includes("execution identity assurance") ||
     message.includes("execution identity grant")
   ) {
@@ -75,7 +80,7 @@ port.on("message", (message: AuditWriterRequest) => {
   }
   if (message.type === "record-execution-identity") {
     try {
-      persistExecutionIdentityAdmissionEnvelope(message.envelope, database);
+      processExecutionIdentityAdmissionWork(message.work, database);
       port.postMessage({ type: "recorded" });
     } catch (error) {
       port.postMessage({ type: "record-error", error: executionIdentityFailureMessage(error) });

@@ -18,6 +18,7 @@ import {
   readMainSessionRecoveryOwner,
   releaseMainSessionRecoveryOwner,
 } from "./main-session-recovery-store.js";
+import { executionIdentity } from "./main-session-recovery.test-fixtures.js";
 
 const sessionKey = "agent:main:main";
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
@@ -83,6 +84,7 @@ describe("main session recovery store", () => {
         now: 200,
         observation: { sessionId: "session-1", cycleId: "cycle-1", revision: 1 },
         runId: "recovery-1",
+        executionIdentity: executionIdentity("recovery-1"),
       },
       target: { sessionKey: targetSessionKey, storePath },
     });
@@ -200,6 +202,7 @@ describe("main session recovery store", () => {
         now: 400,
         observation: { sessionId: "session-1", cycleId: "cycle-1", revision: 1 },
         runId: "stale-recovery",
+        executionIdentity: executionIdentity("stale-recovery"),
       },
       target: { sessionKey, storePath },
     });

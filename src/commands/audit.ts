@@ -27,6 +27,7 @@ export type AuditListCommandOptions = {
   agentId?: string;
   sessionKey?: string;
   runId?: string;
+  executionId?: string;
   kind?: AuditActivityListParams["kind"];
   status?: AuditActivityListParams["status"];
   direction?: AuditActivityListParams["direction"];
@@ -202,11 +203,13 @@ async function queryAuditActivity(
   }
 }
 
-function unsupportedRunInspection(runId: string): AuditRunInspectResult {
+function unsupportedRunInspection(
+  selector: { runId: string } | { executionId: string },
+): AuditRunInspectResult {
   const missingEvidence = ["identity.context"];
   return {
     schemaVersion: 1,
-    run: { runId, status: "unknown" },
+    run: { ...selector, status: "unknown" },
     identity: {
       state: "unsupported",
       reasonCode: "gateway_upgrade_required",
@@ -232,12 +235,14 @@ async function queryAuditRunInspection(
     if (!isUnsupportedRunInspectMethodError(error)) {
       throw error;
     }
-    return unsupportedRunInspection(params.runId);
+    return unsupportedRunInspection(
+      "runId" in params ? { runId: params.runId } : { executionId: params.executionId },
+    );
   }
 }
 
-function safe(value: string): string {
-  return sanitizeTerminalText(value) || "-";
+function safe(value: string | undefined): string {
+  return sanitizeTerminalText(value ?? "") || "-";
 }
 
 function principalText(principal: PrincipalRefV1): string {
@@ -327,8 +332,11 @@ function decisionLines(receipt: DecisionReceiptV1): string[] {
 }
 
 function formatAuditRunInspection(result: AuditRunInspectResult): string[] {
+  const selectorText = result.run.executionId
+    ? `Execution ${safe(result.run.executionId)}${result.run.runId ? ` (run ${safe(result.run.runId)})` : ""}`
+    : `Run ${safe(result.run.runId)}`;
   const lines = [
-    `Run ${safe(result.run.runId)}: ${safe(result.run.status)} (${safe(result.coverage.state)})`,
+    `${selectorText}: ${safe(result.run.status)} (${safe(result.coverage.state)})`,
     "",
     "Identity",
   ];
@@ -352,6 +360,20 @@ function formatAuditRunInspection(result: AuditRunInspectResult): string[] {
               `depth ${String(result.identity.context.lineage.depth)}`,
           )
         : fieldLine("Parent", "absent"),
+    );
+  } else if (result.identity.state === "ambiguous") {
+    lines.push(
+      `  Reason: ${safe(result.identity.reasonCode)}`,
+      ...result.identity.candidates.map(
+        (candidate) =>
+          `  Candidate: ${safe(candidate.executionId)} (context ${safe(candidate.contextId)}, ${timestampMsToIsoString(candidate.createdAt) ?? String(candidate.createdAt)})`,
+      ),
+      "",
+      "Authority",
+      fieldLine("Selection", "unknown"),
+      "",
+      "Lineage",
+      fieldLine("Parent", "unknown"),
     );
   } else {
     lines.push(
@@ -394,6 +416,9 @@ function formatAuditRunInspection(result: AuditRunInspectResult): string[] {
   if (result.nextDecisionCursor) {
     lines.push(`  More decisions: --cursor ${safe(result.nextDecisionCursor)}`);
   }
+  if (result.nextExecutionCursor) {
+    lines.push(`  More executions: --cursor ${safe(result.nextExecutionCursor)}`);
+  }
   return lines;
 }
 
@@ -417,16 +442,23 @@ export async function auditListCommand(
 ): Promise<void> {
   if (options.explain) {
     const runId = options.runId?.trim();
-    if (!runId) {
-      throw new Error("--run <id> is required with --explain.");
+    const executionId = options.executionId?.trim();
+    if (Boolean(runId) === Boolean(executionId)) {
+      throw new Error("Pass exactly one of --run <id> or --execution <id> with --explain.");
     }
     if (hasExplainIncompatibleFilters(options)) {
       throw new Error(
-        "--explain accepts only --run, --limit, --cursor, and --json; remove activity-list filters.",
+        "--explain accepts only --run or --execution, plus --limit, --cursor, and --json; remove activity-list filters.",
       );
     }
     const result = await queryAuditRunInspection({
-      runId,
+      ...(executionId
+        ? { executionId }
+        : {
+            runId: runId!,
+            executionLimit: parseAuditDecisionLimit(options.limit),
+            ...(options.cursor ? { executionCursor: options.cursor } : {}),
+          }),
       decisionLimit: parseAuditDecisionLimit(options.limit),
       ...(options.cursor ? { decisionCursor: options.cursor } : {}),
     });
@@ -438,6 +470,9 @@ export async function auditListCommand(
       runtime.log(line);
     }
     return;
+  }
+  if (options.executionId) {
+    throw new Error("--execution requires --explain.");
   }
   validateAuditKind(options.kind);
   const after = parseAuditTimestamp(options.after, "--after");

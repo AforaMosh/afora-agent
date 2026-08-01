@@ -198,7 +198,8 @@ CREATE TABLE IF NOT EXISTS audit_identity_keys (
 
 CREATE TABLE IF NOT EXISTS execution_identity_contexts (
   context_id TEXT NOT NULL PRIMARY KEY CHECK (length(context_id) BETWEEN 1 AND 256),
-  run_id TEXT NOT NULL UNIQUE CHECK (length(run_id) BETWEEN 1 AND 256),
+  execution_id TEXT NOT NULL UNIQUE CHECK (length(execution_id) BETWEEN 1 AND 256),
+  run_id TEXT NOT NULL CHECK (length(run_id) BETWEEN 1 AND 256),
   created_at INTEGER NOT NULL CHECK (created_at >= 0),
   coverage_state TEXT NOT NULL CHECK (
     coverage_state IN ('attribution-only', 'unattributed', 'unknown', 'unsupported')
@@ -207,6 +208,8 @@ CREATE TABLE IF NOT EXISTS execution_identity_contexts (
   context_json TEXT NOT NULL CHECK (length(context_json) > 0),
   UNIQUE (created_at, context_id)
 ) STRICT;
+CREATE INDEX IF NOT EXISTS execution_identity_contexts_run_created_idx
+  ON execution_identity_contexts (run_id, created_at, execution_id);
 
 CREATE TABLE IF NOT EXISTS session_state_events (
   sequence INTEGER PRIMARY KEY AUTOINCREMENT,

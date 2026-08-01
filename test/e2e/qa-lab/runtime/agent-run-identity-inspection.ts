@@ -1,4 +1,5 @@
 // QA Lab producer proves exact-run identity inspection through a real local turn and Gateway.
+import { spawn } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -134,15 +135,96 @@ function findLocalRunId(gateway: Awaited<ReturnType<typeof startQaGatewayChild>>
   });
   try {
     const rows = database
-      .prepare("SELECT run_id FROM execution_identity_contexts ORDER BY created_at, context_id")
-      .all() as Array<{ run_id: string }>;
-    if (rows.length !== 1 || !rows[0]?.run_id) {
-      throw new Error(`local run recorded ${String(rows.length)} execution identity contexts`);
+      .prepare(
+        "SELECT run_id, context_json FROM execution_identity_contexts ORDER BY created_at, context_id",
+      )
+      .all() as Array<{ run_id: string; context_json: string }>;
+    const localRows = rows.filter((row) => {
+      const context = parseJson<{ ingress?: { kind?: string } }>(
+        row.context_json,
+        "persisted local context",
+      );
+      return context.ingress?.kind === "local-cli";
+    });
+    if (localRows.length !== 1 || !localRows[0]?.run_id) {
+      throw new Error(
+        `local run recorded ${String(localRows.length)} local-CLI execution identity contexts`,
+      );
     }
-    return rows[0].run_id;
+    return localRows[0].run_id;
   } finally {
     database.close();
   }
+}
+
+function findRunExecutions(
+  gateway: Awaited<ReturnType<typeof startQaGatewayChild>>,
+  runId: string,
+) {
+  const stateDir = gateway.runtimeEnv.OPENCLAW_STATE_DIR;
+  if (!stateDir) {
+    throw new Error("QA Gateway did not expose its isolated state directory");
+  }
+  const database = new DatabaseSync(path.join(stateDir, "state", "openclaw.sqlite"), {
+    readOnly: true,
+  });
+  try {
+    return database
+      .prepare(
+        "SELECT execution_id, context_id, created_at, context_json FROM execution_identity_contexts WHERE run_id = ? ORDER BY created_at, execution_id",
+      )
+      .all(runId) as Array<{
+      execution_id: string;
+      context_id: string;
+      created_at: number;
+      context_json: string;
+    }>;
+  } finally {
+    database.close();
+  }
+}
+
+async function runRepeatedIngressTurns(
+  gateway: Awaited<ReturnType<typeof startQaGatewayChild>>,
+  repoRoot: string,
+  sessionId: string,
+): Promise<void> {
+  const script = path.join(
+    repoRoot,
+    "test/e2e/qa-lab/runtime/agent-run-identity-repeated-turn-child.ts",
+  );
+  await new Promise<void>((resolve, reject) => {
+    const child = spawn(process.execPath, ["--import", "tsx", script, sessionId], {
+      cwd: repoRoot,
+      env: { ...process.env, ...gateway.runtimeEnv },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    let output = "";
+    const collect = (chunk: Buffer) => {
+      if (output.length < 8_192) {
+        output += chunk.toString("utf8").slice(0, 8_192 - output.length);
+      }
+    };
+    child.stdout?.on("data", collect);
+    child.stderr?.on("data", collect);
+    const timer = setTimeout(() => child.kill("SIGTERM"), 120_000);
+    child.once("error", (error) => {
+      clearTimeout(timer);
+      reject(error);
+    });
+    child.once("exit", (code, signal) => {
+      clearTimeout(timer);
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(
+          new Error(
+            `repeated ingress child failed code=${String(code)} signal=${String(signal)}: ${output}`,
+          ),
+        );
+      }
+    });
+  });
 }
 
 async function runProof(options: ProducerOptions): Promise<string> {
@@ -182,6 +264,58 @@ async function runProof(options: ProducerOptions): Promise<string> {
     assertJsonProjection(before, runId);
     const beforeContext = normalizedContextJson(before);
 
+    const repeatedRunId = `identity-repeated-${randomUUID()}`;
+    await runRepeatedIngressTurns(gateway, options.repoRoot, repeatedRunId);
+    const repeatedRows = findRunExecutions(gateway, repeatedRunId);
+    if (
+      repeatedRows.length !== 2 ||
+      new Set(repeatedRows.map((row) => row.execution_id)).size !== 2 ||
+      new Set(repeatedRows.map((row) => row.context_id)).size !== 2
+    ) {
+      throw new Error(
+        `repeated same-session run recorded ${String(repeatedRows.length)} non-distinct executions`,
+      );
+    }
+    const discoveryText = await gateway.runCli(["audit", "--run", repeatedRunId, "--explain"]);
+    if (
+      !discoveryText.includes("execution_selection_required") ||
+      !discoveryText.includes("--execution <id> --explain")
+    ) {
+      throw new Error("ambiguous run discovery omitted exact-execution selection guidance");
+    }
+    const discovery = parseJson<AuditRunInspectResult>(
+      await gateway.runCli(["audit", "--run", repeatedRunId, "--explain", "--json"]),
+      "repeated-run discovery",
+    );
+    if (discovery.identity.state !== "ambiguous" || discovery.identity.candidates.length !== 2) {
+      throw new Error("repeated same-session run was not reported as two ambiguous executions");
+    }
+    const repeatedBeforeRestart = new Map<string, string>();
+    for (const row of repeatedRows) {
+      const text = await gateway.runCli(["audit", "--execution", row.execution_id, "--explain"]);
+      assertTextProjection(text);
+      const exact = parseJson<AuditRunInspectResult>(
+        await gateway.runCli(["audit", "--execution", row.execution_id, "--explain", "--json"]),
+        `execution ${row.execution_id}`,
+      );
+      const context = requireIdentityContext(exact);
+      if (
+        exact.run.executionId !== row.execution_id ||
+        context.executionId !== row.execution_id ||
+        context.contextId !== row.context_id ||
+        context.runId !== repeatedRunId ||
+        context.ingress.kind !== "api" ||
+        context.ingress.state !== "unknown"
+      ) {
+        throw new Error(`exact execution inspection selected the wrong turn: ${row.execution_id}`);
+      }
+      const exactContextJson = normalizedContextJson(exact);
+      if (exactContextJson !== row.context_json) {
+        throw new Error(`RPC context bytes differ from persisted bytes: ${row.execution_id}`);
+      }
+      repeatedBeforeRestart.set(row.execution_id, exactContextJson);
+    }
+
     await gateway.restartAfterStateMutation(async () => {});
 
     const afterText = await gateway.runCli(["audit", "--run", runId, "--explain"]);
@@ -195,6 +329,15 @@ async function runProof(options: ProducerOptions): Promise<string> {
     if (afterContext !== beforeContext) {
       throw new Error("normalized execution identity context bytes changed across Gateway restart");
     }
+    for (const [executionId, expectedContext] of repeatedBeforeRestart) {
+      const afterExact = parseJson<AuditRunInspectResult>(
+        await gateway.runCli(["audit", "--execution", executionId, "--explain", "--json"]),
+        `post-restart execution ${executionId}`,
+      );
+      if (normalizedContextJson(afterExact) !== expectedContext) {
+        throw new Error(`repeated execution changed across Gateway restart: ${executionId}`);
+      }
+    }
 
     const snapshotPath = path.join(options.artifactBase, SNAPSHOT_FILE);
     await fs.mkdir(options.artifactBase, { recursive: true });
@@ -203,10 +346,16 @@ async function runProof(options: ProducerOptions): Promise<string> {
       `${JSON.stringify(
         {
           runId,
+          repeatedRunId,
+          repeatedExecutions: repeatedRows.map((row) => ({
+            executionId: row.execution_id,
+            contextId: row.context_id,
+          })),
           coverage: before.coverage,
           decision: before.decisions[0]?.decision,
           contextSha256: sha256(beforeContext),
           byteEquivalentAfterRestart: true,
+          byteEquivalentPersistedReadback: true,
           textSections: TEXT_SECTIONS,
           identityFields: IDENTITY_FIELDS,
         },
@@ -215,7 +364,7 @@ async function runProof(options: ProducerOptions): Promise<string> {
       )}\n`,
       "utf8",
     );
-    return `local run=${runId}; Gateway pid=${gateway.pid ?? "unknown"}; text+JSON passed before/after replacement; normalized context sha256=${sha256(beforeContext)}`;
+    return `local run=${runId}; repeated run=${repeatedRunId} executions=${repeatedRows.map((row) => row.execution_id).join(",")}; Gateway pid=${gateway.pid ?? "unknown"}; text+JSON exact selection passed before/after replacement; normalized context sha256=${sha256(beforeContext)}`;
   } finally {
     await gateway?.stop().catch(() => undefined);
     await mock.stop();

@@ -44,7 +44,10 @@ import {
   type RestoredCronContinuation,
 } from "./agent-handler-helpers.js";
 import type { AgentRunRequest } from "./agent-request-types.js";
-import { resolveAgentRestartRecoveryChannelContext } from "./agent-restart-recovery-context.js";
+import {
+  resolveAgentRestartRecoveryChannelContext,
+  resolveAgentRestartRecoveryExecutionIdentityAdmission,
+} from "./agent-restart-recovery-context.js";
 import type { PreparedAgentRunDispatch } from "./agent-run-admission-phase.js";
 import {
   resolveAbortedAgentStopReason,
@@ -283,6 +286,13 @@ export function startAgentRunExecution(params: {
         params.inputProvenance?.kind === "inter_session" &&
         params.inputProvenance.sourceTool === "subagent_announce";
 
+      const executionIdentityAdmission = resolveAgentRestartRecoveryExecutionIdentityAdmission({
+        isRestartRecoveryResumeRun: params.isRestartRecoveryResumeRun,
+        retryOnly: params.request.internalExecutionIdentityRetry === true,
+        runId: params.runId,
+        sessionEntry: params.sessionEntry,
+      });
+
       const restartRecoveryChannelContext = resolveAgentRestartRecoveryChannelContext({
         canUseInternalRuntimeHandoff: params.canUseInternalRuntimeHandoff,
         expectedExistingSessionId: params.request.expectedExistingSessionId,
@@ -419,6 +429,7 @@ export function startAgentRunExecution(params: {
             ? { mainRestartRecoveryOwnerLease: params.mainRestartRecoveryOwnerLease }
             : {}),
           ...(params.isRestartRecoveryResumeRun ? { mainRestartRecoveryAdmitted: true } : {}),
+          ...(executionIdentityAdmission ? { executionIdentityAdmission } : {}),
           allowModelOverride: prepared.effectiveAllowModelOverride,
         },
         runId: params.runId,

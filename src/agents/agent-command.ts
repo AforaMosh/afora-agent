@@ -52,7 +52,11 @@ import { loadSessionStoreRuntime, resolveAgentCommandDeps } from "./command/runt
 import { persistSessionEntry, prepareCurrentRunDelivery } from "./command/session-helpers.js";
 import { prepareEmbeddedSessionState } from "./command/session-preparation.js";
 import { clearRotatedSessionMetadata } from "./command/session.js";
-import type { AgentCommandIngressOpts, AgentCommandOpts } from "./command/types.js";
+import type {
+  AgentCommandGatewayIngressOpts,
+  AgentCommandIngressOpts,
+  AgentCommandOpts,
+} from "./command/types.js";
 import {
   removeInternalSessionEffectsSession,
   resolveInternalSessionEffectsTarget,
@@ -237,7 +241,15 @@ async function agentCommandInternal(
             kind: !isRawModelRun && acpResolution?.kind === "ready" ? "acp" : "embedded",
           },
         },
-        { enabled: isAuditLedgerEnabled(cfg) },
+        {
+          enabled: isAuditLedgerEnabled(cfg),
+          ...(opts.executionIdentityAdmission
+            ? {
+                token: opts.executionIdentityAdmission.token,
+                retryOnly: opts.executionIdentityAdmission.retryOnly,
+              }
+            : {}),
+        },
       );
       if (opts.deliver === true) {
         const sendPolicy = resolveSendPolicy({
@@ -634,7 +646,7 @@ export async function agentCommandFromSystem(
 }
 
 async function agentCommandFromIngressInternal(
-  opts: AgentCommandIngressOpts,
+  opts: AgentCommandGatewayIngressOpts,
   runtime: RuntimeEnv = defaultRuntime,
   deps?: CliDeps,
   recovery?: {
@@ -686,7 +698,7 @@ export async function agentCommandFromIngress(
 
 /** Internal Gateway entrypoint that restores a rejected restart-recovery admission. */
 export async function agentCommandFromGatewayIngress(
-  opts: AgentCommandIngressOpts,
+  opts: AgentCommandGatewayIngressOpts,
   runtime: RuntimeEnv,
   deps: CliDeps | undefined,
   recovery: {

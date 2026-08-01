@@ -364,10 +364,15 @@ export function transitionMainSessionRecovery(
       if (command.attempt !== state.chargedAttempts + 1) {
         return { kind: "rejected", reason: "stale_revision" };
       }
+      const executionIdentity = state.executionIdentity ?? command.executionIdentity;
+      const executionIdentityMode = state.executionIdentity
+        ? ("retry-reference" as const)
+        : ("capture" as const);
       entry.mainRestartRecovery = {
         ...state,
         revision: nextRevision(state),
         chargedAttempts: command.attempt,
+        executionIdentity,
         reservation: {
           runId: command.runId,
           attempt: command.attempt,
@@ -383,6 +388,8 @@ export function transitionMainSessionRecovery(
           lifecycleGeneration: command.lifecycleGeneration,
           runId: command.runId,
           attempt: command.attempt,
+          executionIdentity,
+          executionIdentityMode,
         },
       };
     }
@@ -408,6 +415,10 @@ export function transitionMainSessionRecovery(
             ? Math.max(0, command.reservation.attempt - 1)
             : state.chargedAttempts,
         reservation: undefined,
+        ...(command.kind === "cancel_reservation" &&
+        command.reservation.executionIdentityMode === "capture"
+          ? { executionIdentity: undefined }
+          : {}),
       };
       return { kind: "applied" };
     }

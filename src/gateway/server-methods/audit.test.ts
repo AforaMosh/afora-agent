@@ -238,10 +238,34 @@ describe("audit gateway methods", () => {
 
     expect(inspectExecutionIdentityRun).toHaveBeenCalledWith({
       runId: "run-1",
+      executionLimit: 50,
       decisionOffset: 1,
       decisionLimit: 25,
     });
     expect(respond).toHaveBeenCalledWith(true, expect.objectContaining({ schemaVersion: 1 }));
+  });
+
+  it("projects exact execution selection and bounded run discovery pagination", async () => {
+    await runAuditHandler("audit.run.inspect", {
+      executionId: "execution-1",
+      decisionLimit: 20,
+    });
+    expect(inspectExecutionIdentityRun).toHaveBeenLastCalledWith({
+      executionId: "execution-1",
+      decisionLimit: 20,
+    });
+
+    await runAuditHandler("audit.run.inspect", {
+      runId: "run-1",
+      executionCursor: " 2 ",
+      executionLimit: 10,
+    });
+    expect(inspectExecutionIdentityRun).toHaveBeenLastCalledWith({
+      runId: "run-1",
+      executionOffset: 2,
+      executionLimit: 10,
+      decisionLimit: 50,
+    });
   });
 
   it("returns an expired exact-run diagnostic without context fields or decisions", async () => {

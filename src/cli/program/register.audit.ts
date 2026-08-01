@@ -14,6 +14,7 @@ export function registerAuditCommand(program: Command): void {
     .option("--agent <id>", "Filter by agent id")
     .option("--session <key>", "Filter by exact session key")
     .option("--run <id>", "Filter by run id")
+    .option("--execution <id>", "Inspect one exact execution id")
     .option("--kind <kind>", "Filter by kind (agent_run, tool_action, or message)")
     .option(
       "--status <status>",
@@ -39,6 +40,7 @@ export function registerAuditCommand(program: Command): void {
             agentId: opts.agent as string | undefined,
             sessionKey: opts.session as string | undefined,
             runId: opts.run as string | undefined,
+            executionId: opts.execution as string | undefined,
             kind: opts.kind as AuditListCommandOptions["kind"],
             status: opts.status as AuditListCommandOptions["status"],
             direction: opts.direction as AuditListCommandOptions["direction"],

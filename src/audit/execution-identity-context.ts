@@ -20,14 +20,17 @@ import {
   type OpenClawStateDatabaseOptions,
 } from "../state/openclaw-state-db.js";
 import { listAuditEvents } from "./audit-event-store.js";
-import {
-  clearAuditIdentityKeyCacheForDatabase,
-  pseudonymizeExecutionIdentityRef,
-} from "./audit-identity.js";
+import { clearAuditIdentityKeyCacheForDatabase } from "./audit-identity.js";
 import {
   parseExecutionIdentityAdmissionEnvelope,
-  type ExecutionIdentityAdmissionEnvelope,
+  parseExecutionIdentityAdmissionWork,
+  type ExecutionIdentityAdmissionToken,
 } from "./execution-identity-admission.js";
+import {
+  buildExecutionIdentityContext,
+  ensureBoundedExecutionIdentityRef,
+  freezeExecutionIdentityContext,
+} from "./execution-identity-context-build.js";
 
 type ExecutionIdentityDatabase = Pick<OpenClawStateKyselyDatabase, "execution_identity_contexts">;
 type ExecutionIdentityRow = Selectable<OpenClawStateKyselyDatabase["execution_identity_contexts"]>;
@@ -45,7 +48,8 @@ const contextRowCounts = new WeakMap<DatabaseSync, number>();
 const EXECUTION_IDENTITY_CONTEXT_SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS execution_identity_contexts (
   context_id TEXT NOT NULL PRIMARY KEY CHECK (length(context_id) BETWEEN 1 AND 256),
-  run_id TEXT NOT NULL UNIQUE CHECK (length(run_id) BETWEEN 1 AND 256),
+  execution_id TEXT NOT NULL UNIQUE CHECK (length(execution_id) BETWEEN 1 AND 256),
+  run_id TEXT NOT NULL CHECK (length(run_id) BETWEEN 1 AND 256),
   created_at INTEGER NOT NULL CHECK (created_at >= 0),
   coverage_state TEXT NOT NULL CHECK (
     coverage_state IN ('attribution-only', 'unattributed', 'unknown', 'unsupported')
@@ -54,6 +58,8 @@ CREATE TABLE IF NOT EXISTS execution_identity_contexts (
   context_json TEXT NOT NULL CHECK (length(context_json) > 0),
   UNIQUE (created_at, context_id)
 ) STRICT;
+CREATE INDEX IF NOT EXISTS execution_identity_contexts_run_created_idx
+  ON execution_identity_contexts (run_id, created_at, execution_id);
 `;
 
 type ExecutionIdentityStoreOptions = OpenClawStateDatabaseOptions & {
@@ -70,34 +76,12 @@ type ExecutionIdentityReadOptions = OpenClawStateDatabaseOptions & {
 
 type ExecutionIdentityContextReadResult =
   | { status: "found"; context: ExecutionIdentityContextV1 }
-  | { status: "expired" }
+  | { status: "expired"; runId: string }
   | { status: "missing" }
-  | { status: "corrupt"; reasonCode: "identity_context_corrupt" };
+  | { status: "corrupt"; runId: string; reasonCode: "identity_context_corrupt" };
 
 function executionIdentityDb(db: DatabaseSync) {
   return getNodeSqliteKysely<ExecutionIdentityDatabase>(db);
-}
-
-function ensureBoundedRef(value: string, label: string, maxLength = 256): string {
-  if (!value || value.length > maxLength) {
-    throw new Error(`${label} must be between 1 and ${String(maxLength)} characters`);
-  }
-  return value;
-}
-
-function ensureRawRef(value: string, label: string): string {
-  return ensureBoundedRef(value, label, 4_096);
-}
-
-function freezeContext<T>(value: T, seen = new WeakSet<object>()): T {
-  if (!value || typeof value !== "object" || seen.has(value as object)) {
-    return value;
-  }
-  seen.add(value as object);
-  for (const nested of Object.values(value as Record<string, unknown>)) {
-    freezeContext(nested, seen);
-  }
-  return Object.freeze(value);
 }
 
 function ensureExecutionIdentityContextSchema(options: OpenClawStateDatabaseOptions = {}): void {
@@ -116,117 +100,6 @@ function ensureExecutionIdentityContextSchema(options: OpenClawStateDatabaseOpti
   ensuredDatabases.add(database.db);
 }
 
-function hmacRef(
-  db: DatabaseSync,
-  kind: Parameters<typeof pseudonymizeExecutionIdentityRef>[0]["kind"],
-  scope: string,
-  value: string,
-): string {
-  return pseudonymizeExecutionIdentityRef({
-    db,
-    kind,
-    scope: ensureBoundedRef(scope, "HMAC scope"),
-    value: ensureRawRef(value, "HMAC value"),
-  });
-}
-
-function uniqueSorted<T>(values: readonly T[], key: (value: T) => string): T[] {
-  return [...new Map(values.map((value) => [key(value), value])).values()].toSorted((a, b) => {
-    const left = key(a);
-    const right = key(b);
-    return left < right ? -1 : left > right ? 1 : 0;
-  });
-}
-
-function buildExecutionIdentityContext(
-  db: DatabaseSync,
-  envelope: ExecutionIdentityAdmissionEnvelope,
-  fixed: { contextId: string; createdAt: number },
-): ExecutionIdentityContextV1 {
-  const runId = ensureBoundedRef(envelope.runId, "run id");
-  const agentId = ensureBoundedRef(envelope.agentId, "agent id");
-  const contextId = ensureBoundedRef(fixed.contextId, "context id");
-  const domainRef = hmacRef(db, "domain", "gateway-cell", "gateway-cell");
-  const runtimeRef = hmacRef(
-    db,
-    "runtime",
-    domainRef,
-    ensureRawRef(envelope.runtimeInstanceId, "runtime instance id"),
-  );
-  const invoker = envelope.invoker
-    ? {
-        state: "present" as const,
-        principal: {
-          kind: envelope.invoker.kind,
-          domainRef,
-          principalRef: hmacRef(
-            db,
-            "principal",
-            `${domainRef}:${envelope.invoker.kind}`,
-            envelope.invoker.rawPrincipalRef,
-          ),
-          ...(envelope.invoker.displayLabel !== undefined
-            ? { displayLabel: envelope.invoker.displayLabel }
-            : {}),
-        },
-      }
-    : { state: "absent" as const };
-  const assurance = uniqueSorted(
-    envelope.assurance.map((item) => ({
-      kind: item.kind,
-      evidenceRef: hmacRef(db, "evidence", `${domainRef}:${item.kind}`, item.rawEvidenceRef),
-      strength: item.strength,
-    })),
-    (item) => `${item.kind}\0${item.evidenceRef}\0${item.strength}`,
-  );
-  const applicableGrants = uniqueSorted(
-    envelope.applicableGrants.map((grant) => ({
-      grantRef: hmacRef(db, "grant", domainRef, grant.rawGrantRef),
-      state: grant.state,
-    })),
-    (grant) => `${grant.grantRef}\0${grant.state}`,
-  );
-  const missingEvidence = envelope.invoker ? [] : ["invoker.principal"];
-  const context: ExecutionIdentityContextV1 = {
-    schemaVersion: 1,
-    contextId,
-    runId,
-    createdAt: fixed.createdAt,
-    trustDomain: { kind: "gateway-cell", domainRef, state: "present" },
-    invoker,
-    ingress: {
-      kind: envelope.ingress.kind,
-      boundary: ensureBoundedRef(envelope.ingress.boundary, "ingress boundary"),
-      state: envelope.ingress.state,
-      ...(envelope.ingress.rawSourceRef
-        ? {
-            sourceRef: hmacRef(
-              db,
-              "principal",
-              `${domainRef}:ingress:${envelope.ingress.kind}`,
-              envelope.ingress.rawSourceRef,
-            ),
-          }
-        : {}),
-    },
-    agentPrincipal: { kind: "agent", domainRef, principalRef: agentId },
-    agentDefinition: { definitionRef: agentId, state: "present" },
-    runtimeInstance: { runtimeRef, kind: envelope.runtime.kind, state: "present" },
-    applicableGrants,
-    assurance,
-    coverageState: envelope.invoker ? "attribution-only" : "unattributed",
-    missingEvidence,
-  };
-  if (!validateExecutionIdentityContextV1(context)) {
-    throw new Error("prepared execution identity context violates the V1 contract");
-  }
-  const encoded = JSON.stringify(context);
-  if (Buffer.byteLength(encoded, "utf8") > EXECUTION_IDENTITY_CONTEXT_MAX_BYTES) {
-    throw new Error("prepared execution identity context exceeds 16 KiB");
-  }
-  return freezeContext(context);
-}
-
 function parseExecutionIdentityRow(row: ExecutionIdentityRow): ExecutionIdentityContextV1 {
   if (
     typeof row.context_json !== "string" ||
@@ -241,6 +114,7 @@ function parseExecutionIdentityRow(row: ExecutionIdentityRow): ExecutionIdentity
   }
   if (
     parsed.contextId !== row.context_id ||
+    parsed.executionId !== row.execution_id ||
     parsed.runId !== row.run_id ||
     parsed.createdAt !== normalizeSqliteNumber(row.created_at) ||
     parsed.coverageState !== row.coverage_state ||
@@ -250,17 +124,41 @@ function parseExecutionIdentityRow(row: ExecutionIdentityRow): ExecutionIdentity
   ) {
     throw new Error("context payload disagrees with indexed columns");
   }
-  return freezeContext(parsed);
+  return freezeExecutionIdentityContext(parsed);
 }
 
-function readRowByRunId(db: DatabaseSync, runId: string): ExecutionIdentityRow | undefined {
+function readRowByExecutionId(
+  db: DatabaseSync,
+  executionId: string,
+): ExecutionIdentityRow | undefined {
   return executeSqliteQueryTakeFirstSync(
     db,
     executionIdentityDb(db)
       .selectFrom("execution_identity_contexts")
       .selectAll()
-      .where("run_id", "=", runId),
+      .where("execution_id", "=", executionId),
   );
+}
+
+function readRowsByRunId(
+  db: DatabaseSync,
+  runId: string,
+  now: number,
+  offset: number,
+  limit: number,
+): ExecutionIdentityRow[] {
+  return executeSqliteQuerySync(
+    db,
+    executionIdentityDb(db)
+      .selectFrom("execution_identity_contexts")
+      .selectAll()
+      .where("run_id", "=", runId)
+      .where("created_at", ">=", now - EXECUTION_IDENTITY_CONTEXT_RETENTION_MS)
+      .orderBy("created_at", "asc")
+      .orderBy("execution_id", "asc")
+      .offset(offset)
+      .limit(limit),
+  ).rows;
 }
 
 function countExecutionIdentityContexts(db: DatabaseSync): number {
@@ -343,7 +241,7 @@ export function pruneExpiredExecutionIdentityContexts(
 }
 
 /** Worker-owned canonicalization and persistence for one accepted admission envelope. */
-export function persistExecutionIdentityAdmissionEnvelope(
+function persistExecutionIdentityAdmissionEnvelope(
   input: unknown,
   options: ExecutionIdentityStoreOptions = {},
 ): ExecutionIdentityContextV1 {
@@ -351,7 +249,7 @@ export function persistExecutionIdentityAdmissionEnvelope(
   // before schema/key access so malformed messages never reach persistence.
   const envelope = parseExecutionIdentityAdmissionEnvelope(input);
   ensureExecutionIdentityContextSchema(options);
-  const runId = envelope.runId;
+  const executionId = envelope.executionId;
   const opened = openOpenClawStateDatabase(options);
   // HMAC lookup/key creation and canonical serialization finish before BEGIN.
   // The transaction only rereads the authoritative row and synchronously commits.
@@ -365,13 +263,13 @@ export function persistExecutionIdentityAdmissionEnvelope(
     return runOpenClawStateWriteTransaction(
       ({ db }) => {
         transactionDatabase = db;
-        const existing = readRowByRunId(db, runId);
+        const existing = readRowByExecutionId(db, executionId);
         if (existing) {
           const context = parseExecutionIdentityRow(existing);
           // Full canonical bytes, including the captured ID and timestamp, own replay identity.
-          // Never rewrite a newly captured envelope to resemble the retained run context.
+          // Never rewrite a newly captured envelope to resemble the retained execution context.
           if (plannedContextJson !== existing.context_json) {
-            throw new Error(`execution identity context conflict for run ${runId}`);
+            throw new Error("execution identity context conflict for execution");
           }
           return context;
         }
@@ -381,6 +279,7 @@ export function persistExecutionIdentityAdmissionEnvelope(
             .insertInto("execution_identity_contexts")
             .values({
               context_id: plannedContext.contextId,
+              execution_id: plannedContext.executionId,
               run_id: plannedContext.runId,
               created_at: plannedContext.createdAt,
               coverage_state: plannedContext.coverageState,
@@ -410,15 +309,50 @@ export function persistExecutionIdentityAdmissionEnvelope(
   }
 }
 
-/** Read one exact run context while turning malformed rows into typed diagnostics. */
-function readExecutionIdentityContextByRunId(
-  runId: string,
+/** A durable recovery retry may only confirm the originally captured execution. */
+function verifyExecutionIdentityAdmissionRetry(
+  token: ExecutionIdentityAdmissionToken,
   options: ExecutionIdentityReadOptions = {},
-): ExecutionIdentityContextReadResult {
-  const normalizedRunId = ensureBoundedRef(runId, "run id");
+): ExecutionIdentityContextV1 {
   ensureExecutionIdentityContextSchema(options);
   const { db } = openOpenClawStateDatabase(options);
-  const row = readRowByRunId(db, normalizedRunId);
+  const existing = readRowByExecutionId(db, token.executionId);
+  if (!existing) {
+    // Never reconstruct identity from the later runtime after an ambiguous restart.
+    throw new Error("execution identity recovery evidence unavailable");
+  }
+  const context = parseExecutionIdentityRow(existing);
+  if (
+    context.contextId !== token.contextId ||
+    context.executionId !== token.executionId ||
+    context.runId !== token.runId ||
+    context.createdAt !== token.createdAt
+  ) {
+    throw new Error("execution identity context conflict for execution");
+  }
+  return context;
+}
+
+/** Worker-owned persistence/verification for one accepted bounded queue item. */
+export function processExecutionIdentityAdmissionWork(
+  input: unknown,
+  options: ExecutionIdentityStoreOptions = {},
+): ExecutionIdentityContextV1 {
+  const work = parseExecutionIdentityAdmissionWork(input);
+  return work.kind === "capture"
+    ? persistExecutionIdentityAdmissionEnvelope(work.envelope, options)
+    : verifyExecutionIdentityAdmissionRetry(work.token, options);
+}
+
+/** Read one exact execution while turning malformed rows into typed diagnostics. */
+function readExecutionIdentityContextByExecutionId(
+  executionId: string,
+  options: ExecutionIdentityReadOptions = {},
+): ExecutionIdentityContextReadResult {
+  const normalizedExecutionId = ensureBoundedExecutionIdentityRef(executionId, "execution id");
+  ensureExecutionIdentityContextSchema(options);
+  const { db } = openOpenClawStateDatabase(options);
+  const row = readRowByExecutionId(db, normalizedExecutionId);
   if (!row) {
     return { status: "missing" };
   }
@@ -429,12 +363,12 @@ function readExecutionIdentityContextByRunId(
   ) {
     // The indexed timestamp may explain availability, but expired context JSON
     // must never be parsed or projected while bounded maintenance catches up.
-    return { status: "expired" };
+    return { status: "expired", runId: row.run_id };
   }
   try {
     return { status: "found", context: parseExecutionIdentityRow(row) };
   } catch {
-    return { status: "corrupt", reasonCode: "identity_context_corrupt" };
+    return { status: "corrupt", runId: row.run_id, reasonCode: "identity_context_corrupt" };
   }
 }
 
@@ -443,6 +377,7 @@ function admissionDecision(context: ExecutionIdentityContextV1): DecisionReceipt
     schemaVersion: 1,
     receiptId: `${context.contextId}:admission`,
     contextId: context.contextId,
+    executionId: context.executionId,
     runId: context.runId,
     occurredAt: context.createdAt,
     action: {
@@ -476,16 +411,28 @@ function admissionDecision(context: ExecutionIdentityContextV1): DecisionReceipt
 }
 
 function unavailableResult(params: {
-  runId: string;
+  selector: { runId: string } | { executionId: string };
+  resolvedRunId?: string;
   runStatus: "known" | "unknown";
   state: "unknown" | "unsupported";
   reasonCode: string;
   missingEvidence: string[];
   remediation: Array<{ code: string; text: string }>;
 }): AuditRunInspectResult {
+  const run: AuditRunInspectResult["run"] =
+    "executionId" in params.selector
+      ? {
+          executionId: params.selector.executionId,
+          ...(params.resolvedRunId ? { runId: params.resolvedRunId } : {}),
+          status: params.runStatus,
+        }
+      : {
+          runId: params.resolvedRunId ?? params.selector.runId,
+          status: params.runStatus,
+        };
   return {
     schemaVersion: 1,
-    run: { runId: params.runId, status: params.runStatus },
+    run,
     identity: {
       state: params.state,
       reasonCode: params.reasonCode,
@@ -498,11 +445,13 @@ function unavailableResult(params: {
 }
 
 function unavailableIdentityContext(
-  runId: string,
+  selector: { runId: string } | { executionId: string },
   remediation: { code: string; text: string },
+  resolvedRunId?: string,
 ): AuditRunInspectResult {
   return unavailableResult({
-    runId,
+    selector,
+    resolvedRunId,
     runStatus: "known",
     state: "unsupported",
     reasonCode: "identity_context_unavailable",
@@ -511,34 +460,51 @@ function unavailableIdentityContext(
   });
 }
 
-/** Project one exact run plus the truthful run-admission decision receipt. */
-export function inspectExecutionIdentityRun(
-  params: { runId: string; decisionOffset?: number; decisionLimit?: number },
-  options: ExecutionIdentityReadOptions = {},
+function presentResult(params: {
+  context: ExecutionIdentityContextV1;
+  decisionOffset?: number;
+  decisionLimit?: number;
+}): AuditRunInspectResult {
+  const allDecisions = [admissionDecision(params.context)];
+  const offset = params.decisionOffset ?? 0;
+  const limit = params.decisionLimit ?? 50;
+  const decisions = allDecisions.slice(offset, offset + limit);
+  const nextOffset = offset + decisions.length;
+  return {
+    schemaVersion: 1,
+    run: {
+      runId: params.context.runId,
+      executionId: params.context.executionId,
+      status: "known",
+    },
+    identity: { state: "present", context: params.context },
+    decisions,
+    coverage: {
+      state: params.context.coverageState,
+      missingEvidence: [...params.context.missingEvidence],
+    },
+    ...(nextOffset < allDecisions.length ? { nextDecisionCursor: String(nextOffset) } : {}),
+  };
+}
+
+function inspectExactExecution(
+  params: { executionId: string; decisionOffset?: number; decisionLimit?: number },
+  options: ExecutionIdentityReadOptions,
 ): AuditRunInspectResult {
-  const runId = ensureBoundedRef(params.runId, "run id");
-  const contextResult = readExecutionIdentityContextByRunId(runId, options);
+  const executionId = ensureBoundedExecutionIdentityRef(params.executionId, "execution id");
+  const selector = { executionId };
+  const contextResult = readExecutionIdentityContextByExecutionId(executionId, options);
   if (contextResult.status === "found") {
-    const allDecisions = [admissionDecision(contextResult.context)];
-    const offset = params.decisionOffset ?? 0;
-    const limit = params.decisionLimit ?? 50;
-    const decisions = allDecisions.slice(offset, offset + limit);
-    const nextOffset = offset + decisions.length;
-    return {
-      schemaVersion: 1,
-      run: { runId, status: "known" },
-      identity: { state: "present", context: contextResult.context },
-      decisions,
-      coverage: {
-        state: contextResult.context.coverageState,
-        missingEvidence: [...contextResult.context.missingEvidence],
-      },
-      ...(nextOffset < allDecisions.length ? { nextDecisionCursor: String(nextOffset) } : {}),
-    };
+    return presentResult({
+      context: contextResult.context,
+      decisionOffset: params.decisionOffset,
+      decisionLimit: params.decisionLimit,
+    });
   }
   if (contextResult.status === "corrupt") {
     return unavailableResult({
-      runId,
+      selector,
+      resolvedRunId: contextResult.runId,
       runStatus: "known",
       state: "unknown",
       reasonCode: contextResult.reasonCode,
@@ -546,16 +512,124 @@ export function inspectExecutionIdentityRun(
       remediation: [
         {
           code: "inspect_state_integrity",
-          text: "Run openclaw doctor and inspect the shared state database before trusting this run.",
+          text: "Run openclaw doctor and inspect the shared state database before trusting this execution.",
         },
       ],
     });
   }
   if (contextResult.status === "expired") {
-    return unavailableIdentityContext(runId, {
-      code: "run_again_after_expiry",
-      text: "This run's identity context is outside the 30-day retention window; run the operation again to record a new context.",
-    });
+    return unavailableIdentityContext(
+      selector,
+      {
+        code: "run_again_after_expiry",
+        text: "This execution's identity context is outside the 30-day retention window; run the operation again to record a new context.",
+      },
+      contextResult.runId,
+    );
+  }
+  return unavailableResult({
+    selector,
+    runStatus: "unknown",
+    state: "unknown",
+    reasonCode: "execution_not_found",
+    missingEvidence: ["identity.context"],
+    remediation: [
+      {
+        code: "verify_execution_id",
+        text: "Verify the exact execution id; absence of best-effort identity evidence is not proof that no run occurred.",
+      },
+    ],
+  });
+}
+
+function hasAnyRunContext(db: DatabaseSync, runId: string): boolean {
+  return Boolean(
+    executeSqliteQueryTakeFirstSync(
+      db,
+      executionIdentityDb(db)
+        .selectFrom("execution_identity_contexts")
+        .select("context_id")
+        .where("run_id", "=", runId)
+        .limit(1),
+    ),
+  );
+}
+
+function inspectRunSelector(
+  params: {
+    runId: string;
+    executionOffset?: number;
+    executionLimit?: number;
+    decisionOffset?: number;
+    decisionLimit?: number;
+  },
+  options: ExecutionIdentityReadOptions,
+): AuditRunInspectResult {
+  const runId = ensureBoundedExecutionIdentityRef(params.runId, "run id");
+  ensureExecutionIdentityContextSchema(options);
+  const { db } = openOpenClawStateDatabase(options);
+  const now = options.now ?? Date.now();
+  const firstMatches = readRowsByRunId(db, runId, now, 0, 2);
+  if (firstMatches.length === 1) {
+    try {
+      return presentResult({
+        context: parseExecutionIdentityRow(firstMatches[0]!),
+        decisionOffset: params.decisionOffset,
+        decisionLimit: params.decisionLimit,
+      });
+    } catch {
+      return unavailableResult({
+        selector: { runId },
+        runStatus: "known",
+        state: "unknown",
+        reasonCode: "identity_context_corrupt",
+        missingEvidence: ["identity.context.valid"],
+        remediation: [
+          {
+            code: "inspect_state_integrity",
+            text: "Run openclaw doctor and inspect the shared state database before trusting this run.",
+          },
+        ],
+      });
+    }
+  }
+  if (firstMatches.length > 1) {
+    const offset = params.executionOffset ?? 0;
+    const limit = params.executionLimit ?? 50;
+    const page = readRowsByRunId(db, runId, now, offset, limit + 1);
+    const candidates = page.slice(0, limit).map((row) => ({
+      executionId: row.execution_id,
+      contextId: row.context_id,
+      createdAt: normalizeSqliteNumber(row.created_at) ?? 0,
+    }));
+    return {
+      schemaVersion: 1,
+      run: { runId, status: "known" },
+      identity: {
+        state: "ambiguous",
+        reasonCode: "execution_selection_required",
+        candidates,
+        missingEvidence: ["execution.selection"],
+        remediation: [
+          {
+            code: "select_execution_id",
+            text: "Select one candidate with openclaw audit --execution <id> --explain.",
+          },
+        ],
+      },
+      decisions: [],
+      coverage: { state: "unknown", missingEvidence: ["execution.selection"] },
+      ...(page.length > limit ? { nextExecutionCursor: String(offset + limit) } : {}),
+    };
+  }
+  if (hasAnyRunContext(db, runId)) {
+    return unavailableIdentityContext(
+      { runId },
+      {
+        code: "run_again_after_expiry",
+        text: "This run's retained identity contexts are outside the 30-day window; run the operation again to record a new execution.",
+      },
+    );
   }
   try {
     const auditPage = listAuditEvents({
@@ -565,14 +639,17 @@ export function inspectExecutionIdentityRun(
       database: options,
     });
     if (auditPage.events.length > 0) {
-      return unavailableIdentityContext(runId, {
-        code: "record_new_identity_context",
-        text: "Confirm audit collection is enabled and the Gateway is current, then run the operation again to record a new identity context.",
-      });
+      return unavailableIdentityContext(
+        { runId },
+        {
+          code: "record_new_identity_context",
+          text: "Confirm audit collection is enabled and the Gateway is current, then run the operation again to record a new execution context.",
+        },
+      );
     }
   } catch {
     return unavailableResult({
-      runId,
+      selector: { runId },
       runStatus: "unknown",
       state: "unknown",
       reasonCode: "run_evidence_unreadable",
@@ -580,13 +657,13 @@ export function inspectExecutionIdentityRun(
       remediation: [
         {
           code: "inspect_state_integrity",
-          text: "Run openclaw doctor and retry the exact run inspection.",
+          text: "Run openclaw doctor and retry the run inspection.",
         },
       ],
     });
   }
   return unavailableResult({
-    runId,
+    selector: { runId },
     runStatus: "unknown",
     state: "unknown",
     reasonCode: "run_not_found",
@@ -594,8 +671,26 @@ export function inspectExecutionIdentityRun(
     remediation: [
       {
         code: "verify_run_id",
-        text: "Verify the exact run id; absence of best-effort audit activity is not proof of no run.",
+        text: "Verify the run id; absence of best-effort audit activity is not proof of no run.",
       },
     ],
   });
+}
+
+/** Inspect one exact execution or discover bounded executions for a run correlation. */
+export function inspectExecutionIdentityRun(
+  params:
+    | {
+        runId: string;
+        executionOffset?: number;
+        executionLimit?: number;
+        decisionOffset?: number;
+        decisionLimit?: number;
+      }
+    | { executionId: string; decisionOffset?: number; decisionLimit?: number },
+  options: ExecutionIdentityReadOptions = {},
+): AuditRunInspectResult {
+  return "executionId" in params
+    ? inspectExactExecution(params, options)
+    : inspectRunSelector(params, options);
 }

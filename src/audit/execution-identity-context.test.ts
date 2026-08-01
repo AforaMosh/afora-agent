@@ -7,13 +7,14 @@ import {
 import { recordAuditEvent } from "./audit-event-store.js";
 import {
   configureExecutionIdentityAdmissionSink,
+  createExecutionIdentityAdmissionToken,
   enqueueExecutionIdentityContextAtAdmission,
   type ExecutionIdentityAdmissionEnvelope,
   type ExecutionIdentityAdmissionFacts,
 } from "./execution-identity-admission.js";
 import {
   inspectExecutionIdentityRun,
-  persistExecutionIdentityAdmissionEnvelope,
+  processExecutionIdentityAdmissionWork,
   pruneExpiredExecutionIdentityContexts,
 } from "./execution-identity-context.js";
 
@@ -47,19 +48,23 @@ function captureExecutionIdentityAdmissionEnvelope(
   options: {
     now?: number;
     contextId?: string;
+    executionId?: string;
     runtimeInstanceId?: string;
   } = {},
 ): ExecutionIdentityAdmissionEnvelope {
-  const { contextId, runtimeInstanceId, now } = options;
+  const { contextId, executionId, runtimeInstanceId, now } = options;
   let envelope: ExecutionIdentityAdmissionEnvelope | undefined;
   const clear = configureExecutionIdentityAdmissionSink((captured) => {
-    envelope = captured;
+    if (captured.kind === "capture") {
+      envelope = captured.envelope;
+    }
     return true;
   });
   try {
     const result = enqueueExecutionIdentityContextAtAdmission(admissionFacts, {
       enabled: true,
       ...(contextId !== undefined ? { contextId } : {}),
+      ...(executionId !== undefined ? { executionId } : {}),
       ...(runtimeInstanceId !== undefined ? { runtimeInstanceId } : {}),
       ...(now !== undefined ? { now } : {}),
     });
@@ -72,19 +77,28 @@ function captureExecutionIdentityAdmissionEnvelope(
   }
 }
 
+function persistExecutionIdentityAdmissionEnvelope(
+  envelope: ExecutionIdentityAdmissionEnvelope,
+  options: Parameters<typeof processExecutionIdentityAdmissionWork>[1] = {},
+) {
+  return processExecutionIdentityAdmissionWork({ kind: "capture", envelope }, options);
+}
+
 function prepareExecutionIdentityContextAtAdmission(
   admissionFacts: ExecutionIdentityAdmissionFacts,
   options: {
     env?: NodeJS.ProcessEnv;
     now?: number;
     contextId?: string;
+    executionId?: string;
     runtimeInstanceId?: string;
     limits?: { maxRows: number; pruneBatchRows: number };
   } = {},
 ) {
-  const { contextId, runtimeInstanceId, now, limits, ...database } = options;
+  const { contextId, executionId, runtimeInstanceId, now, limits, ...database } = options;
   const envelope = captureExecutionIdentityAdmissionEnvelope(admissionFacts, {
     ...(contextId !== undefined ? { contextId } : {}),
+    ...(executionId !== undefined ? { executionId } : {}),
     ...(runtimeInstanceId !== undefined ? { runtimeInstanceId } : {}),
     ...(now !== undefined ? { now } : {}),
   });
@@ -101,6 +115,7 @@ describe("execution identity context storage", () => {
     const envelope = captureExecutionIdentityAdmissionEnvelope(facts("run-1"), {
       now: 100,
       contextId: "context-1",
+      executionId: "execution-1",
       runtimeInstanceId: "runtime-secret-1",
     });
     const first = persistExecutionIdentityAdmissionEnvelope(envelope, { ...database, now: 100 });
@@ -120,7 +135,7 @@ describe("execution identity context storage", () => {
 
     closeOpenClawStateDatabaseForTest();
     const afterRestart = inspectExecutionIdentityRun(
-      { runId: "run-1" },
+      { executionId: "execution-1" },
       {
         ...database,
         now: 999,
@@ -151,32 +166,141 @@ describe("execution identity context storage", () => {
         agentId: "other",
       }),
     },
-  ])("conflicts on a same-run $difference and leaves canonical bytes unchanged", ({ mutate }) => {
+  ])(
+    "conflicts on a same-execution $difference and leaves canonical bytes unchanged",
+    ({ mutate }) => {
+      const database = databaseOptions();
+      const envelope = captureExecutionIdentityAdmissionEnvelope(facts("run-conflict"), {
+        contextId: "context-original",
+        executionId: "execution-original",
+        now: 100,
+        runtimeInstanceId: "runtime-1",
+      });
+      const original = persistExecutionIdentityAdmissionEnvelope(envelope, {
+        ...database,
+        now: 100,
+      });
+      const originalRow = openOpenClawStateDatabase(database)
+        .db.prepare("SELECT context_json FROM execution_identity_contexts WHERE execution_id = ?")
+        .get("execution-original");
+
+      expect(() =>
+        persistExecutionIdentityAdmissionEnvelope(mutate(envelope), { ...database, now: 101 }),
+      ).toThrow("execution identity context conflict");
+      expect(
+        openOpenClawStateDatabase(database)
+          .db.prepare("SELECT context_json FROM execution_identity_contexts WHERE execution_id = ?")
+          .get("execution-original"),
+      ).toEqual(originalRow);
+      expect(
+        inspectExecutionIdentityRun(
+          { executionId: "execution-original" },
+          { ...database, now: 101 },
+        ).identity,
+      ).toEqual({ state: "present", context: original });
+    },
+  );
+
+  it("keeps distinct turns sharing one run correlation exactly inspectable", () => {
     const database = databaseOptions();
-    const envelope = captureExecutionIdentityAdmissionEnvelope(facts("run-conflict"), {
-      contextId: "context-original",
-      now: 100,
-      runtimeInstanceId: "runtime-1",
-    });
-    const original = persistExecutionIdentityAdmissionEnvelope(envelope, {
+    const first = prepareExecutionIdentityContextAtAdmission(facts("session-run"), {
       ...database,
       now: 100,
+      contextId: "context-first",
+      executionId: "execution-first",
+      runtimeInstanceId: "runtime-1",
     });
-    const originalRow = openOpenClawStateDatabase(database)
-      .db.prepare("SELECT context_json FROM execution_identity_contexts WHERE run_id = ?")
-      .get("run-conflict");
+    const second = prepareExecutionIdentityContextAtAdmission(facts("session-run"), {
+      ...database,
+      now: 101,
+      contextId: "context-second",
+      executionId: "execution-second",
+      runtimeInstanceId: "runtime-1",
+    });
 
+    const discovery = inspectExecutionIdentityRun(
+      { runId: "session-run" },
+      { ...database, now: 101 },
+    );
+    expect(discovery).toMatchObject({
+      run: { runId: "session-run", status: "known" },
+      identity: {
+        state: "ambiguous",
+        reasonCode: "execution_selection_required",
+        candidates: [
+          { executionId: "execution-first", contextId: "context-first" },
+          { executionId: "execution-second", contextId: "context-second" },
+        ],
+      },
+      decisions: [],
+    });
+    expect(
+      inspectExecutionIdentityRun(
+        { runId: "session-run", executionLimit: 1 },
+        { ...database, now: 101 },
+      ),
+    ).toMatchObject({
+      identity: {
+        state: "ambiguous",
+        candidates: [{ executionId: "execution-first" }],
+      },
+      nextExecutionCursor: "1",
+    });
+    expect(
+      inspectExecutionIdentityRun(
+        { runId: "session-run", executionOffset: 1, executionLimit: 1 },
+        { ...database, now: 101 },
+      ),
+    ).toMatchObject({
+      identity: {
+        state: "ambiguous",
+        candidates: [{ executionId: "execution-second" }],
+      },
+    });
+    expect(
+      inspectExecutionIdentityRun({ executionId: "execution-first" }, { ...database, now: 101 })
+        .identity,
+    ).toEqual({ state: "present", context: first });
+    expect(
+      inspectExecutionIdentityRun({ executionId: "execution-second" }, { ...database, now: 101 })
+        .identity,
+    ).toEqual({ state: "present", context: second });
+  });
+
+  it("confirms durable retries without manufacturing lost evidence", () => {
+    const database = databaseOptions();
+    const envelope = captureExecutionIdentityAdmissionEnvelope(facts("run-recovery"), {
+      now: 100,
+      contextId: "context-recovery",
+      executionId: "execution-recovery",
+      runtimeInstanceId: "runtime-original",
+    });
+    const original = processExecutionIdentityAdmissionWork(
+      { kind: "capture", envelope },
+      { ...database, now: 100 },
+    );
+    const token = createExecutionIdentityAdmissionToken("run-recovery", {
+      now: 100,
+      contextId: "context-recovery",
+      executionId: "execution-recovery",
+    });
+
+    closeOpenClawStateDatabaseForTest();
+    expect(
+      processExecutionIdentityAdmissionWork({ kind: "retry-reference", token }, database),
+    ).toEqual(original);
+
+    const missingDatabase = databaseOptions();
     expect(() =>
-      persistExecutionIdentityAdmissionEnvelope(mutate(envelope), { ...database, now: 101 }),
-    ).toThrow("execution identity context conflict");
+      processExecutionIdentityAdmissionWork({ kind: "retry-reference", token }, missingDatabase),
+    ).toThrow("execution identity recovery evidence unavailable");
     expect(
-      openOpenClawStateDatabase(database)
-        .db.prepare("SELECT context_json FROM execution_identity_contexts WHERE run_id = ?")
-        .get("run-conflict"),
-    ).toEqual(originalRow);
-    expect(
-      inspectExecutionIdentityRun({ runId: "run-conflict" }, { ...database, now: 101 }).identity,
-    ).toEqual({ state: "present", context: original });
+      inspectExecutionIdentityRun({ executionId: "execution-recovery" }, missingDatabase),
+    ).toMatchObject({
+      run: { executionId: "execution-recovery", status: "unknown" },
+      identity: { state: "unknown", reasonCode: "execution_not_found" },
+      decisions: [],
+    });
   });
 
   it("projects authoritative local CLI and system ingress without conflating them", () => {
@@ -224,6 +348,11 @@ describe("execution identity context storage", () => {
         .prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name = ?")
         .get("execution_identity_contexts"),
     ).toEqual({ name: "execution_identity_contexts" });
+    expect(
+      reopened.db
+        .prepare("SELECT name FROM sqlite_schema WHERE type = 'index' AND name = ?")
+        .get("execution_identity_contexts_run_created_idx"),
+    ).toEqual({ name: "execution_identity_contexts_run_created_idx" });
   });
 
   it("records attribution only when an invoker fact is actually present", () => {
@@ -315,13 +444,17 @@ describe("execution identity context storage", () => {
 
   it("leaves the original context intact when a later worker write conflicts", () => {
     const database = databaseOptions();
-    const options = { ...database, runtimeInstanceId: "runtime-1" };
-    prepareExecutionIdentityContextAtAdmission(facts("run-best-effort"), options);
+    const envelope = captureExecutionIdentityAdmissionEnvelope(facts("run-best-effort"), {
+      contextId: "context-best-effort",
+      executionId: "execution-best-effort",
+      runtimeInstanceId: "runtime-1",
+    });
+    persistExecutionIdentityAdmissionEnvelope(envelope, database);
 
     expect(() =>
-      prepareExecutionIdentityContextAtAdmission(
-        facts("run-best-effort", { agentId: "conflicting-agent" }),
-        options,
+      persistExecutionIdentityAdmissionEnvelope(
+        { ...envelope, agentId: "conflicting-agent" },
+        database,
       ),
     ).toThrow("execution identity context conflict");
   });
@@ -357,6 +490,7 @@ describe("execution identity context storage", () => {
       ...database,
       now: createdAt,
       contextId: "expired-context-secret",
+      executionId: "expired-execution-secret",
       runtimeInstanceId: "expired-runtime-secret",
     });
 
@@ -388,7 +522,7 @@ describe("execution identity context storage", () => {
         remediation: [
           expect.objectContaining({
             code: "run_again_after_expiry",
-            text: expect.stringContaining("outside the 30-day retention window"),
+            text: expect.stringContaining("outside the 30-day window"),
           }),
         ],
       },
@@ -398,6 +532,17 @@ describe("execution identity context storage", () => {
     expect(JSON.stringify(immediatelyAfter)).not.toContain("expired-context-secret");
     expect(JSON.stringify(immediatelyAfter)).not.toContain("expired-runtime-secret");
     expect(JSON.stringify(immediatelyAfter)).not.toContain("run_admission_identity_not_evaluated");
+    const exactAfter = inspectExecutionIdentityRun(
+      { executionId: "expired-execution-secret" },
+      { ...database, now: createdAt + RETENTION_MS + 1 },
+    );
+    expect(exactAfter).toMatchObject({
+      run: { executionId: "expired-execution-secret", status: "known" },
+      identity: { state: "unsupported", reasonCode: "identity_context_unavailable" },
+      decisions: [],
+    });
+    expect(JSON.stringify(exactAfter)).not.toContain("expired-context-secret");
+    expect(JSON.stringify(exactAfter)).not.toContain("expired-runtime-secret");
 
     closeOpenClawStateDatabaseForTest();
     expect(
@@ -447,9 +592,9 @@ describe("execution identity context storage", () => {
          SELECT n + 1 FROM rows WHERE n < 1025
        )
        INSERT INTO execution_identity_contexts (
-         context_id, run_id, created_at, coverage_state, context_bytes, context_json
+         context_id, execution_id, run_id, created_at, coverage_state, context_bytes, context_json
        )
-       SELECT 'context-' || n, 'run-' || n, 0, 'unattributed', 2, '{}'
+       SELECT 'context-' || n, 'execution-' || n, 'run-' || n, 0, 'unattributed', 2, '{}'
        FROM rows`,
     ).run();
 

@@ -1,27 +1,14 @@
 import { describe, expect, it } from "vitest";
-import type {
-  InternalSessionEntry as SessionEntry,
-  MainRestartRecoveryState,
-} from "../config/sessions.js";
+import type { InternalSessionEntry as SessionEntry } from "../config/sessions.js";
 import { buildMainSessionRecoveryClearPatch } from "./main-session-recovery-clear.js";
 import {
   inspectMainSessionRecoveryHealth,
   projectMainSessionRecoveryLifecycle,
 } from "./main-session-recovery-lifecycle.js";
 import { transitionMainSessionRecovery } from "./main-session-recovery-state.js";
+import { executionIdentity, recoveryState } from "./main-session-recovery.test-fixtures.js";
 
 const sessionKey = "agent:main:main";
-
-function recoveryState(
-  overrides: Partial<MainRestartRecoveryState> = {},
-): MainRestartRecoveryState {
-  return {
-    cycleId: "cycle-1",
-    revision: 1,
-    chargedAttempts: 0,
-    ...overrides,
-  };
-}
 
 function interruptedEntry(overrides: Partial<SessionEntry> = {}): SessionEntry {
   return {
@@ -136,6 +123,7 @@ describe("main session recovery state", () => {
       now: 200,
       observation: { sessionId: "session-1", cycleId: "cycle-1", revision: 1 },
       runId: "recovery-1",
+      executionIdentity: executionIdentity("recovery-1"),
     });
     expect(prepared.kind).toBe("reserved");
     if (prepared.kind !== "reserved") {
@@ -150,6 +138,7 @@ describe("main session recovery state", () => {
         now: 201,
         observation: { sessionId: "session-1", cycleId: "cycle-1", revision: 1 },
         runId: "recovery-2",
+        executionIdentity: executionIdentity("recovery-2"),
       }),
     ).toEqual({ kind: "rejected", reason: "stale_revision" });
     expect(entry.mainRestartRecovery?.reservation).toMatchObject({
@@ -397,6 +386,7 @@ describe("main session recovery state", () => {
       now: 200,
       observation: { sessionId: "session-1", cycleId: "cycle-1", revision: 1 },
       runId: "recovery-1",
+      executionIdentity: executionIdentity("recovery-1"),
     });
     if (prepared.kind !== "reserved") {
       throw new Error("expected reservation");
@@ -653,6 +643,7 @@ describe("main session recovery state", () => {
         now: 500,
         observation: oldObservation,
         runId: "stale-run",
+        executionIdentity: executionIdentity("stale-run"),
       }),
     ).toEqual({ kind: "rejected", reason: "stale_cycle" });
   });

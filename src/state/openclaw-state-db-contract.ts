@@ -16,6 +16,7 @@ export const LAZY_ADDITIVE_STATE_TABLES = [
   "skill_workshop_proposal_rollbacks",
   "skill_workshop_proposals",
 ] as const;
+export const LAZY_ADDITIVE_STATE_INDEXES = ["execution_identity_contexts_run_created_idx"] as const;
 /** Maximum time one synchronous SQLite call may wait for a lock. */
 export const OPENCLAW_SQLITE_BUSY_TIMEOUT_MS = 5_000;
 /** User-facing guide for schema refusals; lives here so error sites avoid import cycles. */

@@ -19,6 +19,7 @@ export const OperationsProtocolSchemas = {
   AuditRunIdentityPresentV1: auditActivity.AuditRunIdentityPresentV1Schema,
   AuditRunIdentityUnknownV1: auditActivity.AuditRunIdentityUnknownV1Schema,
   AuditRunIdentityUnsupportedV1: auditActivity.AuditRunIdentityUnsupportedV1Schema,
+  AuditRunIdentityAmbiguousV1: auditActivity.AuditRunIdentityAmbiguousV1Schema,
   AuditRunIdentityV1: auditActivity.AuditRunIdentityV1Schema,
   AuditRunInspectParams: auditActivity.AuditRunInspectParamsSchema,
   AuditRunInspectResult: auditActivity.AuditRunInspectResultSchema,

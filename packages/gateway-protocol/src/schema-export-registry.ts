@@ -259,6 +259,7 @@ export {
   AuditRunIdentityPresentV1Schema,
   AuditRunIdentityUnknownV1Schema,
   AuditRunIdentityUnsupportedV1Schema,
+  AuditRunIdentityAmbiguousV1Schema,
   AuditRunIdentityV1Schema,
   AuditRunInspectParamsSchema,
   AuditRunInspectResultSchema,

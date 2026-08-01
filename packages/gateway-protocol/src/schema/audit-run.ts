@@ -1,4 +1,4 @@
-// Versioned exact-run execution identity and decision-receipt projections.
+// Versioned exact-execution identity and run-discovery projections.
 import { type Static, Type } from "typebox";
 import { closedObject } from "./closed-object.js";
 
@@ -104,6 +104,7 @@ const ExecutionIdentityRuntimeKindSchema = Type.Union([
 export const ExecutionIdentityContextV1Schema = closedObject({
   schemaVersion: Type.Literal(1),
   contextId: ExecutionIdentityRefSchema,
+  executionId: ExecutionIdentityRefSchema,
   runId: ExecutionIdentityRefSchema,
   createdAt: Type.Integer({ minimum: 0 }),
   trustDomain: closedObject({
@@ -145,6 +146,7 @@ export const ExecutionIdentityContextV1Schema = closedObject({
   lineage: Type.Optional(
     closedObject({
       parentContextId: Type.Optional(ExecutionIdentityRefSchema),
+      parentExecutionId: Type.Optional(ExecutionIdentityRefSchema),
       parentRunId: Type.Optional(ExecutionIdentityRefSchema),
       parentAgentPrincipal: Type.Optional(PrincipalRefV1Schema),
       delegationRef: Type.Optional(ExecutionIdentityRefSchema),
@@ -164,6 +166,7 @@ export const DecisionReceiptV1Schema = closedObject({
   schemaVersion: Type.Literal(1),
   receiptId: ExecutionIdentityRefSchema,
   contextId: ExecutionIdentityRefSchema,
+  executionId: ExecutionIdentityRefSchema,
   runId: ExecutionIdentityRefSchema,
   actionId: Type.Optional(ExecutionIdentityRefSchema),
   occurredAt: Type.Integer({ minimum: 0 }),
@@ -218,22 +221,46 @@ export const AuditRunIdentityUnsupportedV1Schema = closedObject({
   remediation: Type.Array(ExecutionIdentityRemediationV1Schema, { maxItems: 8 }),
 });
 
+export const AuditRunIdentityAmbiguousV1Schema = closedObject({
+  state: Type.Literal("ambiguous"),
+  reasonCode: ExecutionIdentityRefSchema,
+  candidates: Type.Array(
+    closedObject({
+      executionId: ExecutionIdentityRefSchema,
+      contextId: ExecutionIdentityRefSchema,
+      createdAt: Type.Integer({ minimum: 0 }),
+    }),
+    { maxItems: 50 },
+  ),
+  missingEvidence: ExecutionIdentityRefArraySchema,
+  remediation: Type.Array(ExecutionIdentityRemediationV1Schema, { maxItems: 8 }),
+});
+
 export const AuditRunIdentityV1Schema = Type.Union([
   AuditRunIdentityPresentV1Schema,
   AuditRunIdentityUnknownV1Schema,
   AuditRunIdentityUnsupportedV1Schema,
+  AuditRunIdentityAmbiguousV1Schema,
 ]);
 
-export const AuditRunInspectParamsSchema = closedObject({
-  runId: ExecutionIdentityRefSchema,
+const AuditRunDecisionPageParams = {
   decisionCursor: Type.Optional(ExecutionIdentityRefSchema),
   decisionLimit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
+};
+
+export const AuditRunInspectParamsSchema = closedObject({
+  runId: Type.Optional(ExecutionIdentityRefSchema),
+  executionId: Type.Optional(ExecutionIdentityRefSchema),
+  executionCursor: Type.Optional(ExecutionIdentityRefSchema),
+  executionLimit: Type.Optional(Type.Integer({ minimum: 1, maximum: 50 })),
+  ...AuditRunDecisionPageParams,
 });
 
 export const AuditRunInspectResultSchema = closedObject({
   schemaVersion: Type.Literal(1),
   run: closedObject({
-    runId: ExecutionIdentityRefSchema,
+    runId: Type.Optional(ExecutionIdentityRefSchema),
+    executionId: Type.Optional(ExecutionIdentityRefSchema),
     status: Type.Union([Type.Literal("known"), Type.Literal("unknown")]),
   }),
   identity: AuditRunIdentityV1Schema,
@@ -243,11 +270,28 @@ export const AuditRunInspectResultSchema = closedObject({
     missingEvidence: ExecutionIdentityRefArraySchema,
   }),
   nextDecisionCursor: Type.Optional(ExecutionIdentityRefSchema),
+  nextExecutionCursor: Type.Optional(ExecutionIdentityRefSchema),
 });
 
 export type PrincipalRefV1 = Static<typeof PrincipalRefV1Schema>;
 export type ExecutionIdentityContextV1 = Static<typeof ExecutionIdentityContextV1Schema>;
 export type DecisionReceiptV1 = Static<typeof DecisionReceiptV1Schema>;
 export type AuditRunIdentityV1 = Static<typeof AuditRunIdentityV1Schema>;
-export type AuditRunInspectParams = Static<typeof AuditRunInspectParamsSchema>;
+type AuditRunDecisionPage = {
+  decisionCursor?: string;
+  decisionLimit?: number;
+};
+export type AuditRunInspectParams =
+  | (AuditRunDecisionPage & {
+      runId: string;
+      executionId?: never;
+      executionCursor?: string;
+      executionLimit?: number;
+    })
+  | (AuditRunDecisionPage & {
+      executionId: string;
+      runId?: never;
+      executionCursor?: never;
+      executionLimit?: never;
+    });
 export type AuditRunInspectResult = Static<typeof AuditRunInspectResultSchema>;

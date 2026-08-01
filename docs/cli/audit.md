@@ -9,8 +9,9 @@ title: "Audit records"
 
 # `openclaw audit`
 
-Query the Gateway's metadata-only activity ledger, or inspect immutable
-execution identity context for one exact agent run.
+Query the Gateway's metadata-only activity ledger, discover executions that
+share a run correlation, or inspect immutable identity context for one exact
+agent execution.
 
 The ledger is on by default for run, tool, and execution identity records. Set
 [`logging.audit.enabled: false`](/gateway/configuration-reference#audit) and
@@ -31,6 +32,8 @@ openclaw audit --agent main --status failed
 openclaw audit --session "agent:main:main" --after 2026-07-01T00:00:00Z
 openclaw audit --run 8c69f72e-8b11-4c54-98d5-1a3dd67450c3
 openclaw audit --run 8c69f72e-8b11-4c54-98d5-1a3dd67450c3 --explain
+openclaw audit --execution 5da4c4c3-e1c9-4c95-a17d-6e5c10fd45cf --explain
+openclaw audit --execution 5da4c4c3-e1c9-4c95-a17d-6e5c10fd45cf --explain --json
 openclaw audit --run 8c69f72e-8b11-4c54-98d5-1a3dd67450c3 --explain --json
 openclaw audit --kind tool_action --limit 50 --json
 openclaw audit --kind message --direction outbound --channel telegram --json
@@ -41,6 +44,7 @@ openclaw audit --kind message --direction outbound --channel telegram --json
 - `--agent <id>`: exact agent id
 - `--session <key>`: exact session key
 - `--run <id>`: exact run id; filters activity unless `--explain` is also set
+- `--execution <id>`: exact execution id; requires `--explain`
 - `--kind <kind>`: `agent_run`, `tool_action`, or `message`
 - `--status <status>`: `started`, `succeeded`, `failed`, `cancelled`,
   `timed_out`, `blocked`, or `unknown`
@@ -48,12 +52,14 @@ openclaw audit --kind message --direction outbound --channel telegram --json
 - `--channel <channel>`: exact message channel
 - `--after <timestamp>` / `--before <timestamp>`: inclusive ISO timestamp or
   Unix milliseconds
-- `--limit <count>`: activity page size from 1 to 500 (default `100`), or
-  decision page size from 1 to 100 with `--explain` (default `50`)
-- `--cursor <sequence>`: continue an activity page, or continue the decision
-  page with `--explain`
+- `--limit <count>`: activity page size from 1 to 500 (default `100`), decision
+  page size from 1 to 100, or ambiguous execution-candidate page size from 1
+  to 50 with `--explain` (default `50`)
+- `--cursor <sequence>`: continue an activity, decision, or ambiguous
+  execution-candidate page
 - `--explain`: inspect immutable execution identity and run-admission reasoning;
-  requires `--run` and accepts only `--limit`, `--cursor`, and `--json`
+  requires exactly one of `--run` or `--execution` and accepts only `--limit`,
+  `--cursor`, and `--json`
 - `--json`: print the bounded page as JSON
 
 The CLI queries the versioned activity RPC so one command shows the complete
@@ -69,10 +75,21 @@ channels, outcomes, and stable HMAC references can correlate activity. Protect
 them with the same access controls and retention practices as other operator
 records.
 
-## Explain one run
+## Discover and explain executions
 
-Use `--run <id> --explain` to query `audit.run.inspect` rather than the
-best-effort activity list. The text view renders these sections:
+Every admitted outer turn receives an opaque `executionId`. `contextId`
+identifies its immutable evidence record; the existing `runId` stays a
+possibly shared session, routing, or recovery correlation. Use `--run <id>
+--explain` to discover retained executions rather than query the best-effort
+activity list. One match resolves directly. Multiple matches return
+`ambiguous`, list at most 50 candidates, and tell you to select one explicitly:
+
+```bash
+openclaw audit --execution <execution-id> --explain
+```
+
+OpenClaw never silently selects the first or latest execution. The exact text
+view renders these sections:
 
 1. **Identity**: trust domain, invoker, ingress, agent principal, agent
    definition, runtime instance, represented subject, and sponsor.
@@ -88,12 +105,15 @@ credential. A direct local run currently shows an absent invoker and
 `unattributed` coverage. Its admission receipt says `not-applicable` because no
 identity-aware policy or grant evaluation was proven.
 
-JSON output is the Gateway result without lossy reformatting. It contains one
+JSON output is the Gateway result without lossy reformatting. An exact result contains one
 bounded V1 context (maximum 16 KiB), up to 100 decision receipts, coverage and
-missing-evidence codes, and an optional `nextDecisionCursor`. Sensitive domain,
+missing-evidence codes, and an optional `nextDecisionCursor`. An ambiguous run
+result instead contains at most 50 execution candidates and an optional
+`nextExecutionCursor`. Sensitive domain,
 runtime, invoker, assurance, ingress-source, and grant references are
 installation-local HMAC projections. Configured agent ids and exact run ids
-remain visible, so redirected output is still private operator data.
+remain visible, as do context and execution ids, so redirected output is still
+private operator data.
 
 An older Gateway produces an explicit `unsupported` result with
 `gateway_upgrade_required` and an upgrade-and-rerun next step. The CLI never
@@ -183,11 +203,18 @@ Results are newest first and limited to 500 records per request.
 ```bash
 openclaw gateway call audit.run.inspect \
   --params '{"runId":"8c69f72e-8b11-4c54-98d5-1a3dd67450c3","decisionLimit":50}'
+
+openclaw gateway call audit.run.inspect \
+  --params '{"executionId":"5da4c4c3-e1c9-4c95-a17d-6e5c10fd45cf","decisionLimit":50}'
 ```
 
 Its result is `{ "schemaVersion": 1, "run": ..., "identity": ..., "decisions":
-..., "coverage": ..., "nextDecisionCursor"?: ... }`. The request is closed;
-`runId` is required, `decisionLimit` is 1–100, and `decisionCursor` is optional.
+..., "coverage": ..., "nextDecisionCursor"?: ..., "nextExecutionCursor"?: ... }`.
+The closed request accepts exactly one of `executionId` or `runId`.
+`decisionLimit` is 1–100 and `decisionCursor` is optional. Run discovery also
+accepts `executionLimit` from 1–50 and an optional `executionCursor`. A run
+with multiple retained executions returns the typed `ambiguous` identity state
+and no identity context or decisions until the caller selects an execution id.
 
 The shipped `audit.list` RPC remains unchanged for older run/tool clients. When
 `audit.activity.list` is unavailable on an older Gateway, the CLI retries

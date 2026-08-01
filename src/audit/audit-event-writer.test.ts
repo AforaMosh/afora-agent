@@ -9,22 +9,30 @@ import type { AuditEventInput } from "./audit-event-types.js";
 import { createAuditEventWriter } from "./audit-event-writer.js";
 import {
   configureExecutionIdentityAdmissionSink,
+  createExecutionIdentityAdmissionToken,
   enqueueExecutionIdentityContextAtAdmission,
   type ExecutionIdentityAdmissionEnvelope,
   type ExecutionIdentityAdmissionFacts,
 } from "./execution-identity-admission.js";
 import {
   inspectExecutionIdentityRun,
-  persistExecutionIdentityAdmissionEnvelope,
+  processExecutionIdentityAdmissionWork,
 } from "./execution-identity-context.js";
 
 function captureExecutionIdentityAdmissionEnvelope(
   facts: ExecutionIdentityAdmissionFacts,
-  options: { contextId?: string; now?: number; runtimeInstanceId?: string } = {},
+  options: {
+    contextId?: string;
+    executionId?: string;
+    now?: number;
+    runtimeInstanceId?: string;
+  } = {},
 ) {
   let captured: ExecutionIdentityAdmissionEnvelope | undefined;
-  const clear = configureExecutionIdentityAdmissionSink((envelope) => {
-    captured = envelope;
+  const clear = configureExecutionIdentityAdmissionSink((work) => {
+    if (work.kind === "capture") {
+      captured = work.envelope;
+    }
     return true;
   });
   const result = enqueueExecutionIdentityContextAtAdmission(facts, {
@@ -36,6 +44,13 @@ function captureExecutionIdentityAdmissionEnvelope(
     throw new Error("expected admission envelope");
   }
   return captured;
+}
+
+function persistExecutionIdentityAdmissionEnvelope(
+  envelope: ExecutionIdentityAdmissionEnvelope,
+  options: Parameters<typeof processExecutionIdentityAdmissionWork>[1] = {},
+) {
+  return processExecutionIdentityAdmissionWork({ kind: "capture", envelope }, options);
 }
 
 function input(): AuditEventInput {
@@ -51,6 +66,10 @@ function input(): AuditEventInput {
     agentId: "main",
     runId: "run-1",
   };
+}
+
+function captureWork(envelope: ExecutionIdentityAdmissionEnvelope) {
+  return { kind: "capture" as const, envelope };
 }
 
 afterEach(() => {
@@ -106,11 +125,16 @@ describe("audit event worker", () => {
         {
           enabled: true,
           contextId: "held-lock-context",
+          executionId: "held-lock-execution",
           now: admittedAt,
           runtimeInstanceId: "raw-runtime-secret",
         },
       ),
-    ).toEqual({ contextId: "held-lock-context", accepted: true });
+    ).toEqual({
+      candidateContextId: "held-lock-context",
+      candidateExecutionId: "held-lock-execution",
+      accepted: true,
+    });
     expect(performance.now() - startedAt).toBeLessThan(250);
     expect(
       db.prepare("SELECT name FROM sqlite_schema WHERE name = 'execution_identity_contexts'").get(),
@@ -130,6 +154,7 @@ describe("audit event worker", () => {
         state: "present",
         context: {
           contextId: "held-lock-context",
+          executionId: "held-lock-execution",
           runId: "held-lock-run",
           createdAt: admittedAt,
           ingress: {
@@ -194,14 +219,16 @@ describe("audit event worker", () => {
     expect(writer.record(input())).toBe(true);
     expect(
       writer.recordExecutionIdentity(
-        captureExecutionIdentityAdmissionEnvelope(
-          {
-            runId: "queue-full-run",
-            agentId: "main",
-            ingress: { kind: "local-cli", boundary: "agent-command.local" },
-            runtime: { kind: "embedded" },
-          },
-          { runtimeInstanceId: "runtime-1" },
+        captureWork(
+          captureExecutionIdentityAdmissionEnvelope(
+            {
+              runId: "queue-full-run",
+              agentId: "main",
+              ingress: { kind: "local-cli", boundary: "agent-command.local" },
+              runtime: { kind: "embedded" },
+            },
+            { runtimeInstanceId: "runtime-1" },
+          ),
         ),
       ),
     ).toBe(false);
@@ -224,7 +251,12 @@ describe("audit event worker", () => {
         ingress: { kind: "system", boundary: "gateway.boot", state: "present" },
         runtime: { kind: "embedded" },
       },
-      { contextId: "ordered-context", now: admittedAt, runtimeInstanceId: "runtime-1" },
+      {
+        contextId: "ordered-context",
+        executionId: "ordered-execution",
+        now: admittedAt,
+        runtimeInstanceId: "runtime-1",
+      },
     );
     const factConflict = captureExecutionIdentityAdmissionEnvelope(
       {
@@ -239,17 +271,32 @@ describe("audit event worker", () => {
         runtime: { kind: "embedded" },
         invoker: { kind: "local-account", rawPrincipalRef: "raw-conflict-principal" },
       },
-      { contextId: "ordered-context", now: admittedAt, runtimeInstanceId: "runtime-1" },
+      {
+        contextId: "ordered-context",
+        executionId: "ordered-execution",
+        now: admittedAt,
+        runtimeInstanceId: "runtime-1",
+      },
     );
     const contextIdConflict = { ...original, contextId: "conflicting-context" };
     const createdAtConflict = { ...original, createdAt: admittedAt + 1 };
 
     const startedAt = performance.now();
-    expect(writer.recordExecutionIdentity(original)).toBe(true);
-    expect(writer.recordExecutionIdentity(original)).toBe(true);
-    expect(writer.recordExecutionIdentity(contextIdConflict)).toBe(true);
-    expect(writer.recordExecutionIdentity(createdAtConflict)).toBe(true);
-    expect(writer.recordExecutionIdentity(factConflict)).toBe(true);
+    expect(writer.recordExecutionIdentity(captureWork(original))).toBe(true);
+    expect(writer.recordExecutionIdentity(captureWork(original))).toBe(true);
+    expect(
+      writer.recordExecutionIdentity({
+        kind: "retry-reference",
+        token: createExecutionIdentityAdmissionToken(original.runId, {
+          contextId: original.contextId,
+          executionId: original.executionId,
+          now: original.createdAt,
+        }),
+      }),
+    ).toBe(true);
+    expect(writer.recordExecutionIdentity(captureWork(contextIdConflict))).toBe(true);
+    expect(writer.recordExecutionIdentity(captureWork(createdAtConflict))).toBe(true);
+    expect(writer.recordExecutionIdentity(captureWork(factConflict))).toBe(true);
     expect(performance.now() - startedAt).toBeLessThan(250);
     await writer.stop();
 
@@ -279,6 +326,27 @@ describe("audit event worker", () => {
     }
   });
 
+  it("reports a lost durable recovery reference safely without blocking the caller", async () => {
+    const stateDir = tempDirs.make("openclaw-audit-writer-");
+    const errors: string[] = [];
+    const writer = createAuditEventWriter({ stateDir, onError: (error) => errors.push(error) });
+    const token = createExecutionIdentityAdmissionToken("raw-run-not-a-secret", {
+      contextId: "context-missing",
+      executionId: "execution-missing",
+      now: 100,
+    });
+
+    const startedAt = performance.now();
+    expect(writer.recordExecutionIdentity({ kind: "retry-reference", token })).toBe(true);
+    expect(performance.now() - startedAt).toBeLessThan(250);
+    await writer.stop();
+
+    expect(errors).toContain("audit execution identity recovery evidence unavailable");
+    expect(JSON.stringify(errors)).not.toContain(token.contextId);
+    expect(JSON.stringify(errors)).not.toContain(token.executionId);
+    expect(JSON.stringify(errors)).not.toContain(token.runId);
+  });
+
   it("keeps unavailable worker, schema, and insert failures off the admission path", async () => {
     const envelope = captureExecutionIdentityAdmissionEnvelope(
       {
@@ -297,7 +365,7 @@ describe("audit event worker", () => {
     });
     await unavailableWriter.ready;
     const unavailableStartedAt = performance.now();
-    expect(unavailableWriter.recordExecutionIdentity(envelope)).toBe(false);
+    expect(unavailableWriter.recordExecutionIdentity(captureWork(envelope))).toBe(false);
     expect(performance.now() - unavailableStartedAt).toBeLessThan(250);
     await unavailableWriter.stop();
     expect(unavailableErrors).toContain("audit event writer is unavailable; dropping metadata");
@@ -317,7 +385,7 @@ describe("audit event worker", () => {
       onError: (error) => schemaErrors.push(error),
     });
     const schemaStartedAt = performance.now();
-    expect(schemaWriter.recordExecutionIdentity(envelope)).toBe(true);
+    expect(schemaWriter.recordExecutionIdentity(captureWork(envelope))).toBe(true);
     expect(performance.now() - schemaStartedAt).toBeLessThan(250);
     await schemaWriter.stop();
     expect(schemaErrors).toContain("audit execution identity persistence failed");
@@ -338,7 +406,7 @@ describe("audit event worker", () => {
       onError: (error) => insertErrors.push(error),
     });
     const insertStartedAt = performance.now();
-    expect(insertWriter.recordExecutionIdentity(envelope)).toBe(true);
+    expect(insertWriter.recordExecutionIdentity(captureWork(envelope))).toBe(true);
     expect(performance.now() - insertStartedAt).toBeLessThan(250);
     await insertWriter.stop();
     expect(insertErrors).toContain("audit execution identity persistence failed");
@@ -372,7 +440,7 @@ describe("audit event worker", () => {
         rawSourceRef: () => rawSecret,
       },
     };
-    expect(writer.recordExecutionIdentity(unserializable as never)).toBe(false);
+    expect(writer.recordExecutionIdentity(captureWork(unserializable as never))).toBe(false);
     await writer.stop();
     expect(errors).toContain("audit execution identity envelope could not be queued");
     expect(JSON.stringify(errors)).not.toContain(rawSecret);
@@ -409,14 +477,16 @@ describe("audit event worker", () => {
     });
     expect(
       keyWriter.recordExecutionIdentity(
-        captureExecutionIdentityAdmissionEnvelope(
-          {
-            runId: "after-key-loss",
-            agentId: "main",
-            ingress: { kind: "local-cli", boundary: "agent-command.local" },
-            runtime: { kind: "embedded" },
-          },
-          { runtimeInstanceId: rawSecret },
+        captureWork(
+          captureExecutionIdentityAdmissionEnvelope(
+            {
+              runId: "after-key-loss",
+              agentId: "main",
+              ingress: { kind: "local-cli", boundary: "agent-command.local" },
+              runtime: { kind: "embedded" },
+            },
+            { runtimeInstanceId: rawSecret },
+          ),
         ),
       ),
     ).toBe(true);

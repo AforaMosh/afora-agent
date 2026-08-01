@@ -35,6 +35,7 @@ function parsePositiveCursor(cursor: string | undefined): number | undefined | n
 
 const parseAuditCursor = parsePositiveCursor;
 const parseDecisionCursor = parsePositiveCursor;
+const parseExecutionCursor = parsePositiveCursor;
 
 /** Preserve the shipped audit.list result shape for run/tool-only clients. */
 function mapLegacyAuditEvent(
@@ -159,18 +160,26 @@ export const auditHandlers: GatewayRequestHandlers = {
       return;
     }
     const decisionOffset = parseDecisionCursor(params.decisionCursor);
-    if (decisionOffset === null) {
+    const executionOffset =
+      "runId" in params ? parseExecutionCursor(params.executionCursor) : undefined;
+    if (decisionOffset === null || executionOffset === null) {
       respond(
         false,
         undefined,
-        errorShape(ErrorCodes.INVALID_REQUEST, "invalid audit.run.inspect decision cursor"),
+        errorShape(ErrorCodes.INVALID_REQUEST, "invalid audit.run.inspect cursor"),
       );
       return;
     }
     respond(
       true,
       inspectExecutionIdentityRun({
-        runId: params.runId,
+        ...("runId" in params
+          ? {
+              runId: params.runId,
+              ...(executionOffset !== undefined ? { executionOffset } : {}),
+              executionLimit: params.executionLimit ?? 50,
+            }
+          : { executionId: params.executionId }),
         ...(decisionOffset !== undefined ? { decisionOffset } : {}),
         decisionLimit: params.decisionLimit ?? 50,
       }),
@@ -183,4 +192,5 @@ export const testApi = {
   mapLegacyAuditEvent,
   parseAuditCursor,
   parseDecisionCursor,
+  parseExecutionCursor,
 };

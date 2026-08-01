@@ -646,6 +646,7 @@ export interface ExecutionIdentityContexts {
   context_json: string;
   coverage_state: string;
   created_at: number;
+  execution_id: string;
   run_id: string;
 }
 

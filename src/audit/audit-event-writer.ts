@@ -7,7 +7,7 @@ import { resolveStateDir } from "../config/paths.js";
 import { redactSensitiveText } from "../logging/redact.js";
 import { OPENCLAW_SQLITE_BUSY_TIMEOUT_MS } from "../state/openclaw-state-db.js";
 import type { AuditEventInput } from "./audit-event-types.js";
-import type { ExecutionIdentityAdmissionEnvelope } from "./execution-identity-admission.js";
+import type { ExecutionIdentityAdmissionWork } from "./execution-identity-admission.js";
 
 const MAX_PENDING_AUDIT_EVENTS = 4_096;
 // The worker can be synchronously blocked inside SQLite's busy timeout. Keep
@@ -25,7 +25,7 @@ export type AuditEventWriter = {
   ready: Promise<void>;
   record: (input: AuditEventInput) => boolean;
   /** Reports only queue acceptance; persistence succeeds or fails asynchronously. */
-  recordExecutionIdentity: (envelope: ExecutionIdentityAdmissionEnvelope) => boolean;
+  recordExecutionIdentity: (work: ExecutionIdentityAdmissionWork) => boolean;
   stop: () => Promise<void>;
 };
 
@@ -111,7 +111,7 @@ export function createAuditEventWriter(
   const enqueue = (
     message:
       | { type: "record-event"; input: AuditEventInput }
-      | { type: "record-execution-identity"; envelope: ExecutionIdentityAdmissionEnvelope },
+      | { type: "record-execution-identity"; work: ExecutionIdentityAdmissionWork },
   ): boolean => {
     if (stopped || unavailable || pending >= maxPending) {
       if (!stopped) {
@@ -181,7 +181,7 @@ export function createAuditEventWriter(
   return {
     ready,
     record: (input) => enqueue({ type: "record-event", input }),
-    recordExecutionIdentity: (envelope) => enqueue({ type: "record-execution-identity", envelope }),
+    recordExecutionIdentity: (work) => enqueue({ type: "record-execution-identity", work }),
     stop: async () => {
       if (stopped) {
         return;

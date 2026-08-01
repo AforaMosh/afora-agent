@@ -43,9 +43,23 @@ warning and never abort the run. Normal Gateway and direct-local CLI shutdown
 flushes accepted work when the writer lifecycle permits, but abrupt termination
 can still lose queued evidence.
 
-Query a context by exact run id with `audit.run.inspect` or
-[`openclaw audit --run <id> --explain`](/cli/audit). The result explicitly
-states the evidence state for these fields:
+Restart recovery stores only the safe execution/context/run ids and timestamp
+with its existing private recovery owner. A later ambiguous retry references
+that token instead of rebuilding identity from the new process. If the original
+queued context was lost, exact inspection stays explicitly unavailable; the
+retry never manufactures replacement evidence. Raw identity references are not
+stored in the recovery token.
+
+Each admitted outer turn receives a new opaque `executionId`; `contextId`
+identifies its immutable evidence record, while the existing `runId` remains a
+possibly shared routing, session, or recovery correlation. Query one exact
+execution with `audit.run.inspect` or
+[`openclaw audit --execution <id> --explain`](/cli/audit). Use `--run <id>
+--explain` to discover executions for a run correlation. One retained match
+resolves directly. Multiple matches return `ambiguous` with at most 50
+candidate execution ids and require exact selection; OpenClaw never chooses the
+first or latest execution silently. The result explicitly states the evidence
+state for these fields:
 
 - trust domain, invoker, and ingress;
 - agent principal, agent definition, and runtime instance;
@@ -53,7 +67,7 @@ states the evidence state for these fields:
 - applicable grants and assurance evidence;
 - parent or child lineage when available.
 
-The foundation records a direct local run as `unattributed`: the Gateway cell,
+The foundation records a direct local execution as `unattributed`: the Gateway cell,
 local CLI ingress, configured agent, and runtime binding are present, but no
 durable invoker principal is supplied at this boundary. A run becomes
 `attribution-only` only when an authoritative ingress supplies an invoker fact.
@@ -67,18 +81,22 @@ an explanation of admission evidence, not an enforcement claim.
 Run inspection returns successful typed diagnostics instead of inventing
 facts:
 
-- `unknown`: the exact run is not known, or expected context is corrupt or
-  unreadable;
+- `unknown`: the selected run or execution is not known, or expected context is
+  corrupt or unreadable;
 - `unsupported`: best-effort activity shows the run, but no context is
   available, as with a pre-feature, disabled, or failed context write. A
   context just beyond retention also uses this state while its bounded cleanup
   is pending, with an explicit expiry remediation;
+- `ambiguous`: a `runId` has multiple retained executions; select a candidate
+  `executionId` before inspecting identity or decisions;
 - `unattributed`: the supported run has no usable invoker principal;
 - `attribution-only`: invoker attribution exists but was not evaluated for
   authorization.
 
-The method requires `operator.read`. Requests are closed and bounded to one
-run id, 1–100 decisions, and an optional decision cursor.
+The method requires `operator.read`. Requests are closed and select exactly one
+`executionId` or `runId`. Decision pages contain at most 100 receipts;
+ambiguous run-discovery pages contain at most 50 candidate executions. Both use
+bounded cursors.
 
 ## Record families
 
@@ -154,7 +172,8 @@ separate HMAC domain. Raw runtime, invoker, ingress-source, assurance, and grant
 references exist only in a deeply frozen, in-process worker message capped at
 16 KiB and 16 grant/assurance items. The worker replaces them with keyed
 pseudonyms before persistence; they are never stored, exported, inspected, or
-logged. Configured agent ids and exact run ids remain operator-visible.
+logged. Configured agent ids plus context, execution, and run ids remain
+operator-visible.
 Contexts never contain prompt or message text, command bodies, arguments,
 paths, credentials, environment values, or arbitrary plugin payloads. Each
 encoded context is also capped at 16 KiB.
@@ -193,13 +212,16 @@ Upgrading from a Gateway with the earlier run/tool-only ledger migrates the
 schema automatically at startup (or via `openclaw doctor --fix`); existing
 rows and their ledger sequences are preserved.
 
-Execution identity contexts also live in the shared state database. Their
+Execution identity contexts also live in the shared state database. Canonical
+rows are keyed by unique execution and context ids; `runId` is a non-unique,
+indexed correlation. Their
 additive table is created lazily on first use without a schema-version bump.
 First-use schema creation, HMAC-key access, canonical context construction, and
 all SQLite work happen in the audit worker, never in agent admission.
-Contexts are retained for 30 days and capped at 100,000 rows. Exact-run
-inspection never returns a context or its admission decision after that
-context is older than 30 days, even if physical cleanup has not run. Expired
+Contexts are retained for 30 days and capped at 100,000 rows. Exact-execution
+inspection and run discovery never return a context, candidate, or admission
+decision after that context is older than 30 days, even if physical cleanup
+has not run. Expired
 rows are pruned during Gateway startup, hourly audit maintenance, and later
 context writes, with at most 1,024 identity-context rows removed per write or
 maintenance tick. Maintenance continues when collection is disabled. An older
@@ -221,9 +243,10 @@ archive.
   versioned V1 activity event union; the shipped `audit.list` RPC is unchanged
   for older run/tool clients. See
   [Gateway protocol](/gateway/protocol#audit-ledger-rpc).
-- Exact-run RPC: `audit.run.inspect` (requires `operator.read`) returns the
-  immutable V1 context, admission receipt, explicit coverage, and decision
-  cursor.
+- Identity RPC: `audit.run.inspect` (requires `operator.read`) accepts one
+  `executionId` for exact inspection or one `runId` for bounded discovery. It
+  returns the immutable V1 context and admission receipt for an exact match, or
+  a typed ambiguous candidate page when a run has multiple executions.
 
 ## Related
 

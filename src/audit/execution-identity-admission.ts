@@ -27,6 +27,7 @@ const closedObject = <T extends Parameters<typeof Type.Object>[0]>(properties: T
 const ExecutionIdentityAdmissionEnvelopeSchema = closedObject({
   envelopeVersion: Type.Literal(1),
   contextId: boundedRef(),
+  executionId: boundedRef(),
   runId: boundedRef(),
   createdAt: Type.Integer({ minimum: 0 }),
   runtimeInstanceId: rawRef(),
@@ -104,6 +105,14 @@ const ExecutionIdentityAdmissionEnvelopeSchema = closedObject({
   ),
 });
 
+const ExecutionIdentityAdmissionTokenSchema = closedObject({
+  tokenVersion: Type.Literal(1),
+  contextId: boundedRef(),
+  executionId: boundedRef(),
+  runId: boundedRef(),
+  createdAt: Type.Integer({ minimum: 0 }),
+});
+
 export type ExecutionIdentityAdmissionEnvelope = Static<
   typeof ExecutionIdentityAdmissionEnvelopeSchema
 >;
@@ -111,6 +120,7 @@ export type ExecutionIdentityAdmissionFacts = Omit<
   ExecutionIdentityAdmissionEnvelope,
   | "envelopeVersion"
   | "contextId"
+  | "executionId"
   | "createdAt"
   | "runtimeInstanceId"
   | "ingress"
@@ -123,7 +133,11 @@ export type ExecutionIdentityAdmissionFacts = Omit<
   applicableGrants?: ExecutionIdentityAdmissionEnvelope["applicableGrants"];
   assurance?: ExecutionIdentityAdmissionEnvelope["assurance"];
 };
-type ExecutionIdentityAdmissionSink = (envelope: ExecutionIdentityAdmissionEnvelope) => boolean;
+export type ExecutionIdentityAdmissionToken = Static<typeof ExecutionIdentityAdmissionTokenSchema>;
+export type ExecutionIdentityAdmissionWork =
+  | { kind: "capture"; envelope: ExecutionIdentityAdmissionEnvelope }
+  | { kind: "retry-reference"; token: ExecutionIdentityAdmissionToken };
+type ExecutionIdentityAdmissionSink = (work: ExecutionIdentityAdmissionWork) => boolean;
 
 let admissionSink: ExecutionIdentityAdmissionSink | undefined;
 let admissionFailureWarned = false;
@@ -160,6 +174,38 @@ function validateEnvelope(value: unknown): asserts value is ExecutionIdentityAdm
   }
 }
 
+function validateToken(value: unknown): asserts value is ExecutionIdentityAdmissionToken {
+  if (
+    !Value.Check(ExecutionIdentityAdmissionTokenSchema, value) ||
+    !Number.isSafeInteger(value.createdAt)
+  ) {
+    throw new Error("execution identity admission token violates its bounded contract");
+  }
+}
+
+/** Allocate the immutable correlation owned by one outer admitted turn. */
+export function createExecutionIdentityAdmissionToken(
+  runId: string,
+  options: { contextId?: string; executionId?: string; now?: number } = {},
+): ExecutionIdentityAdmissionToken {
+  const token = {
+    tokenVersion: 1 as const,
+    contextId: options.contextId ?? randomUUID(),
+    executionId: options.executionId ?? randomUUID(),
+    runId,
+    createdAt: options.now ?? Date.now(),
+  };
+  validateToken(token);
+  return freezeEnvelope(token);
+}
+
+export function parseExecutionIdentityAdmissionToken(
+  value: unknown,
+): ExecutionIdentityAdmissionToken {
+  validateToken(value);
+  return freezeEnvelope({ ...value });
+}
+
 function redactDisplayLabel(value: string): string {
   // The shared redactor's secret-prefix pass becomes stable on its second pass.
   // Stabilizing here lets the worker reject any altered structured-clone payload.
@@ -172,8 +218,25 @@ function redactDisplayLabel(value: string): string {
 /** Capture owned admission facts without touching filesystem or database state. */
 function captureExecutionIdentityAdmissionEnvelope(
   facts: ExecutionIdentityAdmissionFacts,
-  options: { contextId?: string; now?: number; runtimeInstanceId?: string } = {},
+  options: {
+    contextId?: string;
+    executionId?: string;
+    now?: number;
+    runtimeInstanceId?: string;
+    token?: ExecutionIdentityAdmissionToken;
+  } = {},
 ): ExecutionIdentityAdmissionEnvelope {
+  const token =
+    options.token ??
+    createExecutionIdentityAdmissionToken(facts.runId, {
+      contextId: options.contextId,
+      executionId: options.executionId,
+      now: options.now,
+    });
+  validateToken(token);
+  if (token.runId !== facts.runId) {
+    throw new Error("execution identity admission token disagrees with the admitted run");
+  }
   const runtimeInstanceId = options.runtimeInstanceId ?? PROCESS_RUNTIME_INSTANCE_ID;
   const assurance = facts.assurance ?? [
     {
@@ -184,9 +247,10 @@ function captureExecutionIdentityAdmissionEnvelope(
   ];
   const envelope = {
     envelopeVersion: 1 as const,
-    contextId: options.contextId ?? randomUUID(),
-    runId: facts.runId,
-    createdAt: options.now ?? Date.now(),
+    contextId: token.contextId,
+    executionId: token.executionId,
+    runId: token.runId,
+    createdAt: token.createdAt,
     runtimeInstanceId,
     agentId: facts.agentId,
     ingress: { ...facts.ingress, state: facts.ingress.state ?? "present" },
@@ -224,14 +288,40 @@ export function parseExecutionIdentityAdmissionEnvelope(
 ): ExecutionIdentityAdmissionEnvelope {
   validateEnvelope(value);
   const parsed = captureExecutionIdentityAdmissionEnvelope(value, {
-    contextId: value.contextId,
-    now: value.createdAt,
+    token: createExecutionIdentityAdmissionToken(value.runId, {
+      contextId: value.contextId,
+      executionId: value.executionId,
+      now: value.createdAt,
+    }),
     runtimeInstanceId: value.runtimeInstanceId,
   });
   if (JSON.stringify(parsed) !== JSON.stringify(value)) {
     throw new Error("execution identity admission envelope is not canonical");
   }
   return parsed;
+}
+
+/** Revalidate either bounded worker message before schema, key, or database work. */
+export function parseExecutionIdentityAdmissionWork(
+  value: unknown,
+): ExecutionIdentityAdmissionWork {
+  if (!value || typeof value !== "object") {
+    throw new Error("execution identity admission work violates its bounded contract");
+  }
+  const work = value as { kind?: unknown; envelope?: unknown; token?: unknown };
+  if (work.kind === "capture") {
+    return freezeEnvelope({
+      kind: "capture" as const,
+      envelope: parseExecutionIdentityAdmissionEnvelope(work.envelope),
+    });
+  }
+  if (work.kind === "retry-reference") {
+    return freezeEnvelope({
+      kind: "retry-reference" as const,
+      token: parseExecutionIdentityAdmissionToken(work.token),
+    });
+  }
+  throw new Error("execution identity admission work violates its bounded contract");
 }
 
 /** Install the current process lifecycle's writer without creating a second queue. */
@@ -258,19 +348,48 @@ export function enqueueExecutionIdentityContextAtAdmission(
   options: {
     enabled: boolean;
     contextId?: string;
+    executionId?: string;
     now?: number;
     runtimeInstanceId?: string;
+    token?: ExecutionIdentityAdmissionToken;
+    retryOnly?: boolean;
   },
-): { contextId: string; accepted: boolean } | undefined {
+):
+  | {
+      candidateContextId: string;
+      candidateExecutionId: string;
+      accepted: boolean;
+    }
+  | undefined {
   if (!options.enabled) {
     return undefined;
   }
   try {
-    const envelope = captureExecutionIdentityAdmissionEnvelope(facts, options);
+    const token =
+      options.token ??
+      createExecutionIdentityAdmissionToken(facts.runId, {
+        contextId: options.contextId,
+        executionId: options.executionId,
+        now: options.now,
+      });
+    validateToken(token);
+    const work: ExecutionIdentityAdmissionWork = options.retryOnly
+      ? { kind: "retry-reference", token }
+      : {
+          kind: "capture",
+          envelope: captureExecutionIdentityAdmissionEnvelope(facts, {
+            token,
+            runtimeInstanceId: options.runtimeInstanceId,
+          }),
+        };
     if (!admissionSink) {
       throw new Error("audit writer unavailable");
     }
-    return { contextId: envelope.contextId, accepted: admissionSink(envelope) };
+    return {
+      candidateContextId: token.contextId,
+      candidateExecutionId: token.executionId,
+      accepted: admissionSink(work),
+    };
   } catch {
     if (!admissionFailureWarned) {
       admissionFailureWarned = true;

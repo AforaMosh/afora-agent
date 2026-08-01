@@ -1258,10 +1258,20 @@ describe("main-session-restart-recovery", () => {
     )?.idempotencyKey;
     expect(firstRecoveryRunId).toEqual(expect.any(String));
     expect(firstRecoveryRunId).not.toBe("control-ui-run");
+    expect(gatewayParams().internalExecutionIdentityRetry).toBe(false);
     const pending = loadSessionEntry({ sessionKey: "agent:main:main", storePath });
     expect(pending).toMatchObject({
       abortedLastRun: true,
-      mainRestartRecovery: { chargedAttempts: 1 },
+      mainRestartRecovery: {
+        chargedAttempts: 1,
+        executionIdentity: {
+          tokenVersion: 1,
+          contextId: expect.any(String),
+          executionId: expect.any(String),
+          runId: firstRecoveryRunId,
+          createdAt: expect.any(Number),
+        },
+      },
       restartRecoveryDeliveryRunId: firstRecoveryRunId,
       restartRecoveryDeliverySourceRunId: "control-ui-run",
       sessionId: "main-session",
@@ -1279,6 +1289,13 @@ describe("main-session-restart-recovery", () => {
       )
       .filter((runId) => runId !== undefined);
     expect(runIds).toEqual([firstRecoveryRunId, firstRecoveryRunId]);
+    const agentRequests = vi
+      .mocked(callGateway)
+      .mock.calls.map(([request]) => request)
+      .filter((request) => request.method === "agent");
+    expect(
+      (agentRequests[1]!.params as Record<string, unknown>).internalExecutionIdentityRetry,
+    ).toBe(true);
     expect(loadSessionEntry({ sessionKey: "agent:main:main", storePath })).toMatchObject({
       abortedLastRun: false,
       mainRestartRecovery: { chargedAttempts: 2 },
@@ -1423,6 +1440,7 @@ describe("main-session-restart-recovery", () => {
     const entry = loadSessionEntry({ sessionKey: "agent:main:main", storePath });
     expect(entry?.mainRestartRecovery).toMatchObject({ chargedAttempts: 0 });
     expect(entry?.mainRestartRecovery?.reservation).toBeUndefined();
+    expect(entry?.mainRestartRecovery?.executionIdentity).toBeUndefined();
   });
 
   it("refunds an explicit Gateway rejection before recovery admission", async () => {
@@ -1446,6 +1464,7 @@ describe("main-session-restart-recovery", () => {
     const entry = loadSessionEntry({ sessionKey: "agent:main:main", storePath });
     expect(entry?.mainRestartRecovery).toMatchObject({ chargedAttempts: 0 });
     expect(entry?.mainRestartRecovery?.reservation).toBeUndefined();
+    expect(entry?.mainRestartRecovery?.executionIdentity).toBeUndefined();
   });
 
   it("does not settle an ambiguous recovery after a foreground owner wins admission", async () => {

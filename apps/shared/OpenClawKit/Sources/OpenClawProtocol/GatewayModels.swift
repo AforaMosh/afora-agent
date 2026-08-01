@@ -2609,6 +2609,7 @@ public struct AgentParams: Codable, Sendable {
     public let bootstrapcontextrunkind: AnyCodable?
     public let acpturnsource: String?
     public let internalruntimehandoffid: String?
+    public let internalexecutionidentityretry: Bool?
     public let execapprovalfollowupexpectedsessionid: String?
     public let internalevents: [[String: AnyCodable]]?
     public let inputprovenance: [String: AnyCodable]?
@@ -2657,6 +2658,7 @@ public struct AgentParams: Codable, Sendable {
         bootstrapcontextrunkind: AnyCodable? = nil,
         acpturnsource: String? = nil,
         internalruntimehandoffid: String? = nil,
+        internalexecutionidentityretry: Bool? = nil,
         execapprovalfollowupexpectedsessionid: String? = nil,
         internalevents: [[String: AnyCodable]]? = nil,
         inputprovenance: [String: AnyCodable]? = nil,
@@ -2704,6 +2706,7 @@ public struct AgentParams: Codable, Sendable {
         self.bootstrapcontextrunkind = bootstrapcontextrunkind
         self.acpturnsource = acpturnsource
         self.internalruntimehandoffid = internalruntimehandoffid
+        self.internalexecutionidentityretry = internalexecutionidentityretry
         self.execapprovalfollowupexpectedsessionid = execapprovalfollowupexpectedsessionid
         self.internalevents = internalevents
         self.inputprovenance = inputprovenance
@@ -2753,6 +2756,7 @@ public struct AgentParams: Codable, Sendable {
         case bootstrapcontextrunkind = "bootstrapContextRunKind"
         case acpturnsource = "acpTurnSource"
         case internalruntimehandoffid = "internalRuntimeHandoffId"
+        case internalexecutionidentityretry = "internalExecutionIdentityRetry"
         case execapprovalfollowupexpectedsessionid = "execApprovalFollowupExpectedSessionId"
         case internalevents = "internalEvents"
         case inputprovenance = "inputProvenance"
@@ -8475,6 +8479,7 @@ public struct AuditActivityListResult: Codable, Sendable {
 public struct ExecutionIdentityContextV1: Codable, Sendable {
     public let schemaversion: Double
     public let contextid: String
+    public let executionid: String
     public let runid: String
     public let createdat: Int
     public let trustdomain: [String: AnyCodable]
@@ -8494,6 +8499,7 @@ public struct ExecutionIdentityContextV1: Codable, Sendable {
     public init(
         schemaversion: Double,
         contextid: String,
+        executionid: String,
         runid: String,
         createdat: Int,
         trustdomain: [String: AnyCodable],
@@ -8512,6 +8518,7 @@ public struct ExecutionIdentityContextV1: Codable, Sendable {
     {
         self.schemaversion = schemaversion
         self.contextid = contextid
+        self.executionid = executionid
         self.runid = runid
         self.createdat = createdat
         self.trustdomain = trustdomain
@@ -8532,6 +8539,7 @@ public struct ExecutionIdentityContextV1: Codable, Sendable {
     private enum CodingKeys: String, CodingKey {
         case schemaversion = "schemaVersion"
         case contextid = "contextId"
+        case executionid = "executionId"
         case runid = "runId"
         case createdat = "createdAt"
         case trustdomain = "trustDomain"
@@ -8554,6 +8562,7 @@ public struct DecisionReceiptV1: Codable, Sendable {
     public let schemaversion: Double
     public let receiptid: String
     public let contextid: String
+    public let executionid: String
     public let runid: String
     public let actionid: String?
     public let occurredat: Int
@@ -8568,6 +8577,7 @@ public struct DecisionReceiptV1: Codable, Sendable {
         schemaversion: Double,
         receiptid: String,
         contextid: String,
+        executionid: String,
         runid: String,
         actionid: String? = nil,
         occurredat: Int,
@@ -8581,6 +8591,7 @@ public struct DecisionReceiptV1: Codable, Sendable {
         self.schemaversion = schemaversion
         self.receiptid = receiptid
         self.contextid = contextid
+        self.executionid = executionid
         self.runid = runid
         self.actionid = actionid
         self.occurredat = occurredat
@@ -8596,6 +8607,7 @@ public struct DecisionReceiptV1: Codable, Sendable {
         case schemaversion = "schemaVersion"
         case receiptid = "receiptId"
         case contextid = "contextId"
+        case executionid = "executionId"
         case runid = "runId"
         case actionid = "actionId"
         case occurredat = "occurredAt"
@@ -8678,23 +8690,65 @@ public struct AuditRunIdentityUnsupportedV1: Codable, Sendable {
     }
 }
 
+public struct AuditRunIdentityAmbiguousV1: Codable, Sendable {
+    public let state: String
+    public let reasoncode: String
+    public let candidates: [[String: AnyCodable]]
+    public let missingevidence: [String]
+    public let remediation: [[String: AnyCodable]]
+
+    public init(
+        state: String,
+        reasoncode: String,
+        candidates: [[String: AnyCodable]],
+        missingevidence: [String],
+        remediation: [[String: AnyCodable]])
+    {
+        self.state = state
+        self.reasoncode = reasoncode
+        self.candidates = candidates
+        self.missingevidence = missingevidence
+        self.remediation = remediation
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case state
+        case reasoncode = "reasonCode"
+        case candidates
+        case missingevidence = "missingEvidence"
+        case remediation
+    }
+}
+
 public struct AuditRunInspectParams: Codable, Sendable {
-    public let runid: String
+    public let runid: String?
+    public let executionid: String?
+    public let executioncursor: String?
+    public let executionlimit: Int?
     public let decisioncursor: String?
     public let decisionlimit: Int?
 
     public init(
-        runid: String,
+        runid: String? = nil,
+        executionid: String? = nil,
+        executioncursor: String? = nil,
+        executionlimit: Int? = nil,
         decisioncursor: String? = nil,
         decisionlimit: Int? = nil)
     {
         self.runid = runid
+        self.executionid = executionid
+        self.executioncursor = executioncursor
+        self.executionlimit = executionlimit
         self.decisioncursor = decisioncursor
         self.decisionlimit = decisionlimit
     }
 
     private enum CodingKeys: String, CodingKey {
         case runid = "runId"
+        case executionid = "executionId"
+        case executioncursor = "executionCursor"
+        case executionlimit = "executionLimit"
         case decisioncursor = "decisionCursor"
         case decisionlimit = "decisionLimit"
     }
@@ -8707,6 +8761,7 @@ public struct AuditRunInspectResult: Codable, Sendable {
     public let decisions: [DecisionReceiptV1]
     public let coverage: [String: AnyCodable]
     public let nextdecisioncursor: String?
+    public let nextexecutioncursor: String?
 
     public init(
         schemaversion: Double,
@@ -8714,7 +8769,8 @@ public struct AuditRunInspectResult: Codable, Sendable {
         identity: AuditRunIdentityV1,
         decisions: [DecisionReceiptV1],
         coverage: [String: AnyCodable],
-        nextdecisioncursor: String? = nil)
+        nextdecisioncursor: String? = nil,
+        nextexecutioncursor: String? = nil)
     {
         self.schemaversion = schemaversion
         self.run = run
@@ -8722,6 +8778,7 @@ public struct AuditRunInspectResult: Codable, Sendable {
         self.decisions = decisions
         self.coverage = coverage
         self.nextdecisioncursor = nextdecisioncursor
+        self.nextexecutioncursor = nextexecutioncursor
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -8731,6 +8788,7 @@ public struct AuditRunInspectResult: Codable, Sendable {
         case decisions
         case coverage
         case nextdecisioncursor = "nextDecisionCursor"
+        case nextexecutioncursor = "nextExecutionCursor"
     }
 }
 
@@ -18138,6 +18196,7 @@ public enum AuditRunIdentityV1: Codable, Sendable {
     case present(AuditRunIdentityPresentV1)
     case unknown(AuditRunIdentityUnknownV1)
     case unsupported(AuditRunIdentityUnsupportedV1)
+    case ambiguous(AuditRunIdentityAmbiguousV1)
 
     private enum CodingKeys: String, CodingKey {
         case discriminator = "state"
@@ -18150,6 +18209,7 @@ public enum AuditRunIdentityV1: Codable, Sendable {
         case "present": self = try .present(AuditRunIdentityPresentV1(from: decoder))
         case "unknown": self = try .unknown(AuditRunIdentityUnknownV1(from: decoder))
         case "unsupported": self = try .unsupported(AuditRunIdentityUnsupportedV1(from: decoder))
+        case "ambiguous": self = try .ambiguous(AuditRunIdentityAmbiguousV1(from: decoder))
         default:
             throw DecodingError.dataCorruptedError(
                 forKey: .discriminator,
@@ -18164,6 +18224,7 @@ public enum AuditRunIdentityV1: Codable, Sendable {
         case .present(let value): try value.encode(to: encoder)
         case .unknown(let value): try value.encode(to: encoder)
         case .unsupported(let value): try value.encode(to: encoder)
+        case .ambiguous(let value): try value.encode(to: encoder)
         }
     }
 }

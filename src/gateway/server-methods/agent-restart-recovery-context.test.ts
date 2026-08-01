@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { resolveAgentRestartRecoveryChannelContext } from "./agent-restart-recovery-context.js";
+import {
+  resolveAgentRestartRecoveryChannelContext,
+  resolveAgentRestartRecoveryExecutionIdentityAdmission,
+} from "./agent-restart-recovery-context.js";
 
 const matchingParams = {
   canUseInternalRuntimeHandoff: true,
@@ -80,6 +83,76 @@ describe("resolveAgentRestartRecoveryChannelContext", () => {
   ])("rejects a non-matching or uncorrelated claim", (override) => {
     expect(
       resolveAgentRestartRecoveryChannelContext({ ...matchingParams, ...override }),
+    ).toBeUndefined();
+  });
+});
+
+describe("resolveAgentRestartRecoveryExecutionIdentityAdmission", () => {
+  const sessionEntry = {
+    sessionId: "session-1",
+    updatedAt: 1,
+    mainRestartRecovery: {
+      cycleId: "cycle-1",
+      revision: 2,
+      chargedAttempts: 1,
+      executionIdentity: {
+        tokenVersion: 1,
+        contextId: "context-1",
+        executionId: "execution-1",
+        runId: "recovery-run-1",
+        createdAt: 100,
+      },
+    },
+  } as never;
+
+  it("captures once and reuses only the durable token on a later recovery", () => {
+    expect(
+      resolveAgentRestartRecoveryExecutionIdentityAdmission({
+        isRestartRecoveryResumeRun: true,
+        retryOnly: false,
+        runId: "recovery-run-1",
+        sessionEntry,
+      }),
+    ).toMatchObject({
+      retryOnly: false,
+      token: { executionId: "execution-1", contextId: "context-1" },
+    });
+    expect(
+      resolveAgentRestartRecoveryExecutionIdentityAdmission({
+        isRestartRecoveryResumeRun: true,
+        retryOnly: true,
+        runId: "rotated-transport-run",
+        sessionEntry,
+      }),
+    ).toMatchObject({
+      retryOnly: true,
+      token: { runId: "recovery-run-1", executionId: "execution-1" },
+    });
+  });
+
+  it("rejects capture mismatch or missing durable state without manufacturing a token", () => {
+    expect(() =>
+      resolveAgentRestartRecoveryExecutionIdentityAdmission({
+        isRestartRecoveryResumeRun: true,
+        retryOnly: false,
+        runId: "other-run",
+        sessionEntry,
+      }),
+    ).toThrow("disagrees with the admitted run");
+    expect(() =>
+      resolveAgentRestartRecoveryExecutionIdentityAdmission({
+        isRestartRecoveryResumeRun: true,
+        retryOnly: true,
+        runId: "other-run",
+        sessionEntry: { sessionId: "session-1", updatedAt: 1 },
+      }),
+    ).toThrow("token is unavailable");
+    expect(
+      resolveAgentRestartRecoveryExecutionIdentityAdmission({
+        isRestartRecoveryResumeRun: false,
+        retryOnly: false,
+        runId: "ordinary-run",
+      }),
     ).toBeUndefined();
   });
 });

@@ -1,11 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   configureExecutionIdentityAdmissionSink,
+  createExecutionIdentityAdmissionToken,
   enqueueExecutionIdentityContextAtAdmission,
   hasExecutionIdentityAdmissionSink,
   parseExecutionIdentityAdmissionEnvelope,
   type ExecutionIdentityAdmissionEnvelope,
   type ExecutionIdentityAdmissionFacts,
+  type ExecutionIdentityAdmissionWork,
 } from "./execution-identity-admission.js";
 
 const ADMISSION_MAX_BYTES = 16 * 1024;
@@ -23,11 +25,18 @@ function facts(overrides: Partial<ExecutionIdentityAdmissionFacts> = {}) {
 
 function captureEnvelope(
   admissionFacts: ExecutionIdentityAdmissionFacts,
-  options: { contextId?: string; now?: number; runtimeInstanceId?: string } = {},
+  options: {
+    contextId?: string;
+    executionId?: string;
+    now?: number;
+    runtimeInstanceId?: string;
+  } = {},
 ) {
   let captured: ExecutionIdentityAdmissionEnvelope | undefined;
-  const clear = configureExecutionIdentityAdmissionSink((envelope) => {
-    captured = envelope;
+  const clear = configureExecutionIdentityAdmissionSink((work) => {
+    if (work.kind === "capture") {
+      captured = work.envelope;
+    }
     return true;
   });
   try {
@@ -71,12 +80,18 @@ describe("execution identity admission envelope", () => {
           },
         ],
       }),
-      { contextId: "context-1", now: 123, runtimeInstanceId: "runtime-1" },
+      {
+        contextId: "context-1",
+        executionId: "execution-1",
+        now: 123,
+        runtimeInstanceId: "runtime-1",
+      },
     );
 
     expect(envelope).toMatchObject({
       envelopeVersion: 1,
       contextId: "context-1",
+      executionId: "execution-1",
       runId: "run-1",
       createdAt: 123,
       runtimeInstanceId: "runtime-1",
@@ -146,10 +161,15 @@ describe("execution identity admission envelope", () => {
       enqueueExecutionIdentityContextAtAdmission(facts(), {
         enabled: true,
         contextId: "context-queued",
+        executionId: "execution-queued",
         now: 1,
         runtimeInstanceId: "runtime-1",
       }),
-    ).toEqual({ contextId: "context-queued", accepted: true });
+    ).toEqual({
+      candidateContextId: "context-queued",
+      candidateExecutionId: "execution-queued",
+      accepted: true,
+    });
     expect(first).not.toHaveBeenCalled();
     expect(second).toHaveBeenCalledOnce();
     clearSecond();
@@ -161,5 +181,55 @@ describe("execution identity admission envelope", () => {
       ),
     ).not.toThrow();
     expect(enqueueExecutionIdentityContextAtAdmission(facts(), { enabled: false })).toBeUndefined();
+  });
+
+  it("allocates distinct execution identities for turns that share one run correlation", () => {
+    const work = vi.fn<(item: ExecutionIdentityAdmissionWork) => boolean>(() => true);
+    const clear = configureExecutionIdentityAdmissionSink(work);
+    try {
+      enqueueExecutionIdentityContextAtAdmission(facts({ runId: "session-1" }), {
+        enabled: true,
+      });
+      enqueueExecutionIdentityContextAtAdmission(facts({ runId: "session-1" }), {
+        enabled: true,
+      });
+    } finally {
+      clear();
+    }
+    const captures = work.mock.calls
+      .map(([item]) => item)
+      .filter((item) => item.kind === "capture");
+    expect(captures).toHaveLength(2);
+    expect(captures[0]!.envelope.runId).toBe("session-1");
+    expect(captures[1]!.envelope.runId).toBe("session-1");
+    expect(captures[0]!.envelope.executionId).not.toBe(captures[1]!.envelope.executionId);
+    expect(captures[0]!.envelope.contextId).not.toBe(captures[1]!.envelope.contextId);
+  });
+
+  it("queues only the safe token for a durable retry reference", () => {
+    const work = vi.fn<(item: ExecutionIdentityAdmissionWork) => boolean>(() => true);
+    const token = createExecutionIdentityAdmissionToken("run-recovery", {
+      contextId: "context-recovery",
+      executionId: "execution-recovery",
+      now: 123,
+    });
+    const clear = configureExecutionIdentityAdmissionSink(work);
+    try {
+      enqueueExecutionIdentityContextAtAdmission(
+        facts({
+          runId: "run-recovery",
+          ingress: {
+            kind: "api",
+            boundary: "agent-command.from-ingress",
+            rawSourceRef: "raw-private-reference",
+          },
+        }),
+        { enabled: true, token, retryOnly: true },
+      );
+    } finally {
+      clear();
+    }
+    expect(work).toHaveBeenCalledWith({ kind: "retry-reference", token });
+    expect(JSON.stringify(work.mock.calls)).not.toContain("raw-private-reference");
   });
 });
