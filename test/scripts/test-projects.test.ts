@@ -1211,7 +1211,7 @@ describe("scripts/test-projects changed-target routing", () => {
   it("keeps sharded oxlint runner edits on oxlint runner tests", () => {
     expect(resolveChangedTestTargetPlan(["scripts/run-oxlint-shards.mjs"])).toEqual({
       mode: "targets",
-      targets: ["test/scripts/run-oxlint.test.ts"],
+      targets: ["test/scripts/run-oxlint.test.ts", "test/scripts/ci-workflow-guards.test.ts"],
     });
   });
 
@@ -2474,6 +2474,7 @@ describe("scripts/test-projects changed-target routing", () => {
         includePatterns: [
           "test/scripts/build-all.test.ts",
           "test/scripts/check-dynamic-import-warts.test.ts",
+          "test/scripts/ci-workflow-guards.test.ts",
           "test/scripts/run-oxlint.test.ts",
           "test/scripts/tsdown-build.test.ts",
         ],
