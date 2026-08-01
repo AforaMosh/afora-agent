@@ -601,6 +601,41 @@ describe("promoteAuthProfileInOrder", () => {
     });
   });
 
+  it("lets a pending changed main save publish after a newer no-op save", async () => {
+    await withAuthProfileTestState(
+      "openclaw-auth-main-noop-publication-order-",
+      async ({ agentDir, agentDirFor }) => {
+        const derivedAgentDir = agentDirFor("worker");
+        const mainStore = (key: string): AuthProfileStore => ({
+          version: AUTH_STORE_VERSION,
+          profiles: {
+            "openai:default": { type: "api_key", provider: "openai", key },
+          },
+        });
+        saveAuthProfileStore(mainStore("sk-main-old"), agentDir);
+        replaceRuntimeAuthProfileStoreSnapshots([
+          { agentDir, store: loadAuthProfileStoreForRuntime(agentDir) },
+          { agentDir: derivedAgentDir, store: loadAuthProfileStoreForRuntime(derivedAgentDir) },
+        ]);
+        const deferred: Array<() => void> = [];
+        storeTesting.setRuntimeSnapshotPublisherForTest((publish) => {
+          deferred.push(publish);
+        });
+        saveAuthProfileStore(mainStore("sk-main-new"), agentDir);
+        saveAuthProfileStore(mainStore("sk-main-new"), agentDir);
+        storeTesting.resetRuntimeSnapshotPublisherForTest();
+
+        expect(deferred).toHaveLength(2);
+        deferred[1]?.();
+        deferred[0]?.();
+
+        expect(
+          getRuntimeAuthProfileStoreSnapshot(derivedAgentDir)?.profiles["openai:default"],
+        ).toMatchObject({ key: "sk-main-new" });
+      },
+    );
+  });
+
   it("does not publish derived credentials inherited before a newer main save", async () => {
     await withAuthProfileTestState(
       "openclaw-auth-deferred-derived-order-",

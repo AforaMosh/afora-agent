@@ -212,21 +212,24 @@ export type RuntimeAuthProfileStorePublicationToken = {
  * Captures durable commit order without reopening SQLite during publication.
  * Derived publishers also fence against newer main-store commits they inherit.
  */
-export function claimRuntimeAuthProfileStorePublicationToken(
+export function captureRuntimeAuthProfileStorePublicationToken(
   agentDir?: string,
+  options?: { advanceOwner?: boolean },
 ): RuntimeAuthProfileStorePublicationToken {
   const ownerKey = resolveRuntimeStoreKey(agentDir);
   const mainKey = resolveRuntimeStoreKey(undefined);
-  runtimeAuthPublicationRevision += 1;
-  runtimeAuthPublicationGenerations.delete(ownerKey);
-  runtimeAuthPublicationGenerations.set(ownerKey, runtimeAuthPublicationRevision);
-  while (runtimeAuthPublicationGenerations.size > MAX_RUNTIME_AUTH_PUBLICATION_OWNERS) {
-    const oldestOwnerKey = runtimeAuthPublicationGenerations.keys().next().value;
-    if (oldestOwnerKey === undefined) {
-      break;
+  if (options?.advanceOwner === true) {
+    runtimeAuthPublicationRevision += 1;
+    runtimeAuthPublicationGenerations.delete(ownerKey);
+    runtimeAuthPublicationGenerations.set(ownerKey, runtimeAuthPublicationRevision);
+    while (runtimeAuthPublicationGenerations.size > MAX_RUNTIME_AUTH_PUBLICATION_OWNERS) {
+      const oldestOwnerKey = runtimeAuthPublicationGenerations.keys().next().value;
+      if (oldestOwnerKey === undefined) {
+        break;
+      }
+      runtimeAuthPublicationGenerations.delete(oldestOwnerKey);
+      runtimeAuthPublicationEvictionRevision += 1;
     }
-    runtimeAuthPublicationGenerations.delete(oldestOwnerKey);
-    runtimeAuthPublicationEvictionRevision += 1;
   }
   return {
     ownerKey,

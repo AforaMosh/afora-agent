@@ -41,7 +41,7 @@ import {
   mergeAuthProfileStores,
 } from "./persisted.js";
 import {
-  claimRuntimeAuthProfileStorePublicationToken,
+  captureRuntimeAuthProfileStorePublicationToken,
   clearRuntimeAuthProfileStoreSnapshot as clearRuntimeAuthProfileStoreSnapshotImpl,
   clearRuntimeAuthProfileStoreSnapshots as clearRuntimeAuthProfileStoreSnapshotsImpl,
   getRuntimeAuthProfileStoreSnapshot as getRuntimeAuthProfileStoreSnapshotImpl,
@@ -216,12 +216,15 @@ function publishRuntimeSnapshotsAfterCommit(publish: (() => void) | undefined): 
 
 function fenceRuntimeSnapshotPublication(params: {
   agentDir?: string;
+  advancesOwner: boolean;
   database: OpenClawAgentDatabase;
   publish: () => void;
 }): () => boolean {
   let token: RuntimeAuthProfileStorePublicationToken | undefined;
   const captureToken = () => {
-    token = claimRuntimeAuthProfileStorePublicationToken(params.agentDir);
+    token = captureRuntimeAuthProfileStorePublicationToken(params.agentDir, {
+      advanceOwner: params.advancesOwner,
+    });
   };
   const captureDeferred = deferOpenClawAgentPostCommitPublication(params.database, captureToken);
   return () => {
@@ -1518,6 +1521,7 @@ function saveAuthProfileStoreInTransaction(
   };
   return fenceRuntimeSnapshotPublication({
     agentDir,
+    advancesOwner: credentialsChanged || stateChanged,
     database,
     publish: publishRuntimeSnapshots,
   });
@@ -1927,6 +1931,7 @@ export function restoreAuthProfileStorePersistenceSnapshot(
     }
     publishRuntimeSnapshots = fenceRuntimeSnapshotPublication({
       agentDir,
+      advancesOwner: credentialsRestored || stateRestored,
       database,
       publish: () => {
         // Main credential mutation lineage invalidates derived snapshots. Capture
