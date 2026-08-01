@@ -403,17 +403,18 @@ function assertRealPathInside(parentPath, childPath, label) {
 }
 
 function assertClawHubExternalInstallContract(installPath) {
-  const openclawPeerPath = path.join(installPath, "node_modules", "openclaw");
-  if (!fs.existsSync(openclawPeerPath)) {
-    throw new Error(`missing kitchen-sink openclaw peer symlink: ${openclawPeerPath}`);
+  const packageJson = readJson(path.join(installPath, "package.json"));
+  for (const dependencyField of ["dependencies", "peerDependencies"]) {
+    if (packageJson[dependencyField]?.openclaw !== undefined) {
+      throw new Error(`kitchen-sink must not declare ${dependencyField}.openclaw`);
+    }
   }
-  if (!fs.lstatSync(openclawPeerPath).isSymbolicLink()) {
-    throw new Error(`kitchen-sink openclaw peer is not a symlink: ${openclawPeerPath}`);
-  }
-  const hostRoot = fs.realpathSync(process.cwd());
-  const linkedHostRoot = fs.realpathSync(openclawPeerPath);
-  if (linkedHostRoot !== hostRoot) {
-    throw new Error(`expected kitchen-sink openclaw peer ${linkedHostRoot} to target ${hostRoot}`);
+
+  // OpenClaw injects plugin SDK aliases at load time. A plugin-local host copy
+  // or peer link would bypass that single host-owned runtime.
+  const openclawPackagePath = path.join(installPath, "node_modules", "openclaw");
+  if (fs.existsSync(openclawPackagePath)) {
+    throw new Error(`unexpected kitchen-sink openclaw host package: ${openclawPackagePath}`);
   }
 
   const dependencyPackagePath = path.join(installPath, "node_modules", "is-number", "package.json");
@@ -628,10 +629,12 @@ function assertInstalled() {
       throw new Error(`expected kitchen-sink ClawHub spec ${spec}, got ${record.spec}`);
     }
     if (record.clawhubPackage !== packageName) {
-      throw new Error(`expected ClawHub package ${packageName}, got ${record.clawhubPackage}`);
+      throw new Error(
+        `expected ClawHub package ${packageName}, got ${JSON.stringify(record.clawhubPackage)}`,
+      );
     }
     if (record.clawhubFamily !== "code-plugin" && record.clawhubFamily !== "bundle-plugin") {
-      throw new Error(`unexpected ClawHub family: ${record.clawhubFamily}`);
+      throw new Error(`unexpected ClawHub family: ${JSON.stringify(record.clawhubFamily)}`);
     }
     if (!record.version || !record.integrity || !record.resolvedAt) {
       throw new Error(`missing ClawHub resolution metadata: ${JSON.stringify(record)}`);

@@ -178,6 +178,8 @@ describe("scripts/lib/plugin-prerelease-test-plan.mjs", () => {
     expect(assertionsScript).toContain("record.artifactKind");
     expect(assertionsScript).toContain("record.npmIntegrity");
     expect(assertionsScript).toContain("assertClawHubExternalInstallContract");
+    expect(assertionsScript).toContain("must not declare ${dependencyField}.openclaw");
+    expect(assertionsScript).toContain("unexpected kitchen-sink openclaw host package");
     expect(assertionsScript).toContain("expectedErrorMessages");
     expect(assertionsScript).toContain(
       'const INVALID_PROBE_DIAGNOSTIC_SURFACE_MODES = new Set(["full", "adversarial"]);',
