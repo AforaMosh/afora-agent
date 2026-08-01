@@ -387,6 +387,45 @@ describe("applyServerUiPrefs", () => {
 
     expect(onThemeChanged).toHaveBeenCalledExactlyOnceWith("custom");
   });
+
+  it("migrates raw legacy scope keys before reconciliation", () => {
+    localStorage.setItem(
+      "openclaw.control.serverPrefs.pending.v1:ws://gw/",
+      JSON.stringify({ theme: "knot" }),
+    );
+    localStorage.setItem(
+      "openclaw.control.serverPrefs.v1:ws://gw/",
+      JSON.stringify({ theme: "claw" }),
+    );
+
+    expect(
+      resolveServerUiPrefState(configWithPrefs({ theme: "claw" }), "theme", "ws://gw/"),
+    ).toMatchObject({ provenance: "pending", value: "knot" });
+    expect(localStorage.getItem("openclaw.control.serverPrefs.pending.v1:ws://gw")).toBe(
+      JSON.stringify({ theme: "knot" }),
+    );
+    expect(localStorage.getItem("openclaw.control.serverPrefs.v1:ws://gw")).toBe(
+      JSON.stringify({ theme: "claw" }),
+    );
+    expect(localStorage.getItem("openclaw.control.serverPrefs.pending.v1:ws://gw/")).toBeNull();
+    expect(localStorage.getItem("openclaw.control.serverPrefs.v1:ws://gw/")).toBeNull();
+  });
+
+  it("retains migrated pending intent when canonical storage writes fail", () => {
+    const storage = createStorageMock();
+    storage.setItem(
+      "openclaw.control.serverPrefs.pending.v1:ws://readonly/",
+      JSON.stringify({ theme: "dash" }),
+    );
+    vi.spyOn(storage, "setItem").mockImplementation(() => {
+      throw new Error("storage read-only");
+    });
+    vi.stubGlobal("localStorage", storage);
+
+    expect(
+      resolveServerUiPrefState(configWithPrefs({ theme: "claw" }), "theme", "ws://readonly/"),
+    ).toMatchObject({ provenance: "pending", value: "dash" });
+  });
 });
 
 describe("changedServerUiPrefs", () => {
@@ -1217,7 +1256,6 @@ describe("pushServerUiPrefs", () => {
     pushServerUiPrefs(writerA, { theme: "knot" });
     pushServerUiPrefs(writerB, { theme: "dash" });
 
-    flushServerUiPrefs(writerA);
     expect(
       resolveServerUiPrefState(
         configWithPrefs({ theme: "claw" }),
@@ -1225,7 +1263,6 @@ describe("pushServerUiPrefs", () => {
         "ws://gateway.test?tenant=a",
       ),
     ).toMatchObject({ provenance: "pending", value: "knot" });
-    flushServerUiPrefs(writerB);
     expect(
       resolveServerUiPrefState(
         configWithPrefs({ theme: "claw" }),
@@ -1233,6 +1270,14 @@ describe("pushServerUiPrefs", () => {
         "ws://gateway.test?tenant=b",
       ),
     ).toMatchObject({ provenance: "pending", value: "dash" });
+
+    const onThemeChanged = vi.fn();
+    applyServerUiPrefs(configWithPrefs({ theme: "claw" }), {
+      scope: "ws://gateway.test?tenant=a",
+      onApplied: vi.fn(),
+      onThemeChanged,
+    });
+    expect(onThemeChanged).not.toHaveBeenCalled();
   });
 
   it("re-adopts scope when a stable writer gains or changes its gateway client", async () => {

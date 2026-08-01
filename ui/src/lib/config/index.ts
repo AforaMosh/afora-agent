@@ -212,9 +212,13 @@ function createInitialConfigState(snapshot?: Partial<RuntimeConfigGatewaySnapsho
 type RetainedRuntimeConfigScope = {
   state: ConfigState;
   autoAllowlistedPluginIds?: Set<string>;
+  interruptedWrite: { raw: string | null } | null;
 };
 
-function captureRuntimeConfigScope(state: ConfigState): RetainedRuntimeConfigScope {
+function captureRuntimeConfigScope(
+  state: ConfigState,
+  interruptedWrite: RetainedRuntimeConfigScope["interruptedWrite"],
+): RetainedRuntimeConfigScope {
   return {
     state: {
       ...state,
@@ -229,6 +233,7 @@ function captureRuntimeConfigScope(state: ConfigState): RetainedRuntimeConfigSco
         state.configAutoSaveStatus === "saving" ? "idle" : state.configAutoSaveStatus,
     },
     autoAllowlistedPluginIds: autoAllowlistedPluginIdsByState.get(state),
+    interruptedWrite,
   };
 }
 
@@ -1653,14 +1658,19 @@ export function createRuntimeConfigCapability(
     );
     const scopeChanged = nextGatewayScope !== gatewayScope;
     if (scopeChanged) {
-      retainedScopes.delete(gatewayScope);
-      retainedScopes.set(gatewayScope, captureRuntimeConfigScope(state));
-      while (retainedScopes.size > 10) {
-        const oldest = retainedScopes.keys().next().value;
-        if (oldest === undefined) {
-          break;
-        }
-        retainedScopes.delete(oldest);
+      const interruptedWrite =
+        autoSaveInFlight !== null || manualSubmitInFlight !== null
+          ? {
+              raw:
+                autoSaveInFlight !== null
+                  ? lastFlightSubmittedRaw
+                  : (manualFlightInfo?.raw ?? null),
+            }
+          : null;
+      if (state.configFormDirty || interruptedWrite) {
+        retainedScopes.set(gatewayScope, captureRuntimeConfigScope(state, interruptedWrite));
+      } else {
+        retainedScopes.delete(gatewayScope);
       }
     }
     gatewayScope = nextGatewayScope;
@@ -1709,12 +1719,14 @@ export function createRuntimeConfigCapability(
       if (scopeChanged) {
         // Config snapshots, schemas, and drafts belong to one logical Gateway.
         // Retire them before publishing B's client so A's bytes cannot render or save there.
-        hasInterruptedWrite = false;
-        interruptedWriteRaw = null;
         lastFlightSubmittedRaw = null;
         lastFlightAckHash = null;
         manualFlightInfo = null;
-        adoptRuntimeConfigScope(state, retainedScopes.get(nextGatewayScope));
+        const retained = retainedScopes.get(nextGatewayScope);
+        retainedScopes.delete(nextGatewayScope);
+        adoptRuntimeConfigScope(state, retained);
+        hasInterruptedWrite = Boolean(retained?.interruptedWrite);
+        interruptedWriteRaw = retained?.interruptedWrite?.raw ?? null;
       }
       // A reconnect must not strand a dirty draft whose debounce was just
       // cancelled; reschedule against the new connection. If the file moved

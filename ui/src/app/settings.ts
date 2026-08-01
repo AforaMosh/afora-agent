@@ -451,7 +451,7 @@ export function persistSessionToken(gatewayUrl: string, token: string) {
 }
 
 // Writes that never reached localStorage (private mode, quota, security errors)
-// stay isolated by logical Gateway. Bound this fallback like persisted sessions.
+// stay isolated by logical Gateway. They are user state, so never evict silently.
 const unpersistedSettingsByScope = new Map<string, UiSettings>();
 let unpersistedSelectedGatewayUrl: string | null = null;
 
@@ -459,13 +459,6 @@ function rememberUnpersistedSettings(settings: UiSettings): void {
   const scope = normalizeGatewayCredentialScope(settings.gatewayUrl);
   unpersistedSettingsByScope.delete(scope);
   unpersistedSettingsByScope.set(scope, settings);
-  while (unpersistedSettingsByScope.size > MAX_SCOPED_SESSION_ENTRIES) {
-    const oldest = unpersistedSettingsByScope.keys().next().value;
-    if (oldest === undefined) {
-      break;
-    }
-    unpersistedSettingsByScope.delete(oldest);
-  }
 }
 
 function readUnpersistedSettings(gatewayUrl: string): UiSettings | null {

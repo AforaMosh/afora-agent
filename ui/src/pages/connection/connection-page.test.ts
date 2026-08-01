@@ -8,6 +8,7 @@ import type {
   ApplicationGateway,
   ApplicationGatewaySnapshot,
 } from "../../app/context.ts";
+import type { UiSettings } from "../../app/settings.ts";
 import { ConnectionPage, supportsSystemInfo } from "./connection-page.ts";
 
 function deferred<T>() {
@@ -35,6 +36,29 @@ describe("supportsSystemInfo", () => {
     expect(supportsSystemInfo(hello)).toBe(true);
     expect(supportsSystemInfo(unsupportedHello)).toBe(false);
     expect(supportsSystemInfo(null)).toBe(false);
+  });
+});
+
+describe("ConnectionPage credential scope", () => {
+  it("clears the password when the Gateway URL changes credential scope", () => {
+    const page = new ConnectionPage();
+    const state = page as unknown as {
+      settings: UiSettings;
+      password: string;
+      updateConnection: (patch: Partial<UiSettings>) => void;
+    };
+    state.settings = {
+      gatewayUrl: "wss://multi.test?tenant=a",
+      token: "shared-token",
+    } as UiSettings;
+    state.password = "tenant-a-password";
+
+    state.updateConnection({
+      gatewayUrl: "wss://multi.test?tenant=b",
+      token: "shared-token",
+    });
+
+    expect(state.password).toBe("");
   });
 });
 

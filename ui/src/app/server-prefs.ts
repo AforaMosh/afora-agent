@@ -132,7 +132,12 @@ export type ServerUiPrefState<T> = {
 };
 const SYNCED_PREF_KEYS = Object.keys(SYNCED_PREFS) as SyncedPrefKey[];
 function normalizeServerPrefsScope(scope: string): string {
-  return scope ? normalizeGatewayCredentialScope(scope) : "";
+  if (!scope) {
+    return "";
+  }
+  const normalized = normalizeGatewayCredentialScope(scope);
+  migrateServerPrefsScope(scope, normalized);
+  return normalized;
 }
 function extractServerUiPrefs(configObject: unknown): ServerUiPrefs {
   const prefs = asRecord(asRecord(asRecord(configObject)?.ui)?.prefs);
@@ -173,8 +178,7 @@ export function resolveServerUiPrefState<K extends SyncedPrefKey>(
       value: localValue,
     };
   };
-  const shadowPrefs =
-    scope === pendingScope ? pendingPrefs : parseStoredPrefs(readStorage(PENDING_KEY, scope));
+  const shadowPrefs = readPendingPrefsForScope(scope);
   if (shadowPrefs && key in shadowPrefs) {
     const shadowValue = shadowPrefs[key];
     if (shadowValue === null) {
@@ -301,7 +305,6 @@ const LAST_SEEN_KEY = "openclaw.control.serverPrefs.v1";
 const PENDING_KEY = "openclaw.control.serverPrefs.pending.v1";
 const CONFLICT_REDRAIN_DELAY_MS = 1_000;
 const MAX_CONFLICT_REDRAINS = 5;
-const MAX_IN_MEMORY_PREF_SCOPES = 10;
 const requestedServerUiPrefResets = new Set<SyncedPrefKey>();
 const requestedDeviceLocalPrefResets = new Set<SyncedPrefKey>();
 let applyingServerPrefs = false;
@@ -329,13 +332,9 @@ function rememberScopedValue<T>(map: Map<string, T>, scope: string, value: T | n
   if (value !== null) {
     map.set(scope, value);
   }
-  while (map.size > MAX_IN_MEMORY_PREF_SCOPES) {
-    const oldest = map.keys().next().value;
-    if (oldest === undefined) {
-      break;
-    }
-    map.delete(oldest);
-  }
+}
+function rememberLastSeen(scope: string, value: string): void {
+  rememberScopedValue(lastSeenPrefsByScope, scope, value);
 }
 function clearConflictRedrain(): void {
   if (conflictRedrainTimer !== null) {
@@ -351,7 +350,7 @@ function readStorage(root: string, scope: string): string | null {
     return null;
   }
 }
-function writeStorage(root: string, scope: string, value: string | null): void {
+function writeStorage(root: string, scope: string, value: string | null): boolean {
   try {
     const key = `${root}:${scope}`;
     if (value === null) {
@@ -359,8 +358,10 @@ function writeStorage(root: string, scope: string, value: string | null): void {
     } else {
       globalThis.localStorage?.setItem(key, value);
     }
+    return true;
   } catch {
     // Quota/security failures degrade to in-memory tracking for this session.
+    return false;
   }
 }
 function parseStoredPrefs(raw: string | null): ServerUiPrefs | null {
@@ -371,6 +372,38 @@ function parseStoredPrefs(raw: string | null): ServerUiPrefs | null {
     return null;
   }
 }
+function readPendingPrefsForScope(scope: string): ServerUiPrefs | null {
+  const stored = parseStoredPrefs(readStorage(PENDING_KEY, scope));
+  const inMemory = pendingPrefsByScope.get(scope);
+  const active = scope === pendingScope ? pendingPrefs : null;
+  const merged = { ...stored, ...inMemory, ...active };
+  return Object.keys(merged).length > 0 ? merged : null;
+}
+function migrateServerPrefsScope(authoredScope: string, normalizedScope: string): void {
+  if (authoredScope === normalizedScope) {
+    return;
+  }
+  const legacyPending = parseStoredPrefs(readStorage(PENDING_KEY, authoredScope));
+  if (legacyPending) {
+    const mergedPending = {
+      ...legacyPending,
+      ...readPendingPrefsForScope(normalizedScope),
+    };
+    rememberScopedValue(pendingPrefsByScope, normalizedScope, mergedPending);
+    if (writeStorage(PENDING_KEY, normalizedScope, JSON.stringify(mergedPending))) {
+      writeStorage(PENDING_KEY, authoredScope, null);
+    }
+  }
+  const canonicalLastSeen =
+    lastSeenPrefsByScope.get(normalizedScope) ?? readStorage(LAST_SEEN_KEY, normalizedScope);
+  const legacyLastSeen = readStorage(LAST_SEEN_KEY, authoredScope);
+  if (canonicalLastSeen === null && legacyLastSeen !== null) {
+    rememberLastSeen(normalizedScope, legacyLastSeen);
+    if (writeStorage(LAST_SEEN_KEY, normalizedScope, legacyLastSeen)) {
+      writeStorage(LAST_SEEN_KEY, authoredScope, null);
+    }
+  }
+}
 function adoptPendingScope(scope: string, force = false): void {
   if (!force && scope === pendingScope) {
     return;
@@ -379,9 +412,8 @@ function adoptPendingScope(scope: string, force = false): void {
     rememberScopedValue(pendingPrefsByScope, pendingScope, { ...pendingPrefs });
   }
   pendingScope = scope;
-  const stored = parseStoredPrefs(readStorage(PENDING_KEY, scope));
-  const inMemory = pendingPrefsByScope.get(scope);
-  pendingPrefs = stored || inMemory ? { ...stored, ...inMemory } : null;
+  pendingPrefs = null;
+  pendingPrefs = readPendingPrefsForScope(scope);
 }
 function writePendingStorage(prefs: ServerUiPrefs | null): void {
   rememberScopedValue(pendingPrefsByScope, pendingScope, prefs ? { ...prefs } : null);
@@ -462,13 +494,12 @@ export function applyServerUiPrefs(
     lastReconciledScope = scope;
     lastReconciledConfigObject = configObject;
   };
-  const shadowPrefs =
-    scope === pendingScope ? pendingPrefs : parseStoredPrefs(readStorage(PENDING_KEY, scope));
+  const shadowPrefs = readPendingPrefsForScope(scope);
   const prefs = extractServerUiPrefs(configObject);
   const key = JSON.stringify(prefs);
   const lastSeenRaw = lastSeenPrefsByScope.get(scope) ?? readStorage(LAST_SEEN_KEY, scope);
   if (key === lastSeenRaw) {
-    rememberScopedValue(lastSeenPrefsByScope, scope, key);
+    rememberLastSeen(scope, key);
     recordReconciledObject();
     return false;
   }
@@ -494,7 +525,7 @@ export function applyServerUiPrefs(
     }
   }
   writeStorage(LAST_SEEN_KEY, scope, key);
-  rememberScopedValue(lastSeenPrefsByScope, scope, key);
+  rememberLastSeen(scope, key);
   recordReconciledObject();
   if (Object.hasOwn(changed, "theme")) {
     hooks.onThemeChanged?.(changed.theme ?? null);
@@ -520,13 +551,7 @@ function adoptPushWriter(writer: ServerUiPrefsWriter): void {
   if (pushWriter === writer && pushScope === scope) {
     return;
   }
-  const unscopedPending =
-    pendingScope === ""
-      ? {
-          ...parseStoredPrefs(readStorage(PENDING_KEY, "")),
-          ...pendingPrefs,
-        }
-      : null;
+  const unscopedPending = pendingScope === "" ? readPendingPrefsForScope("") : null;
   clearConflictRedrain();
   pushEpoch += 1;
   pushWriter = writer;
@@ -614,7 +639,7 @@ async function drainPendingPrefs(writer: ServerUiPrefsWriter, epoch: number): Pr
         }
         const nextLastSeen = JSON.stringify(acknowledged);
         writeStorage(LAST_SEEN_KEY, pendingScope, nextLastSeen);
-        rememberScopedValue(lastSeenPrefsByScope, pendingScope, nextLastSeen);
+        rememberLastSeen(pendingScope, nextLastSeen);
         settlePendingStorage(batch);
         clearConflictRedrain();
         if (pushWriter !== writer || pushEpoch !== epoch) {

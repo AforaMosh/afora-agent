@@ -12,6 +12,7 @@ import {
   type ApplicationContext,
   type ApplicationGatewaySnapshot,
 } from "../../app/context.ts";
+import { normalizeGatewayCredentialScope } from "../../app/gateway-scope.ts";
 import { loadGatewaySessionSelection, loadSettings, type UiSettings } from "../../app/settings.ts";
 import { renderDocsLink } from "../../components/settings-ui.ts";
 import { renderSettingsWorkspace } from "../../components/settings-workspace.ts";
@@ -239,6 +240,17 @@ export class ConnectionPage extends OpenClawLightDomElement {
     });
   }
 
+  private updateConnection(patch: Partial<UiSettings>) {
+    if (
+      patch.gatewayUrl !== undefined &&
+      normalizeGatewayCredentialScope(patch.gatewayUrl) !==
+        normalizeGatewayCredentialScope(this.settings.gatewayUrl)
+    ) {
+      this.password = "";
+    }
+    this.settings = { ...this.settings, ...patch };
+  }
+
   override render() {
     const gateway = this.context.gateway.snapshot;
     const body = renderConnection({
@@ -252,9 +264,7 @@ export class ConnectionPage extends OpenClawLightDomElement {
       systemInfoUnavailable: this.systemInfoUnavailable,
       showGatewayToken: this.gatewayTokenVisible,
       showGatewayPassword: this.gatewayPasswordVisible,
-      onConnectionChange: (patch) => {
-        this.settings = { ...this.settings, ...patch };
-      },
+      onConnectionChange: (patch) => this.updateConnection(patch),
       onPasswordChange: (next) => (this.password = next),
       onSessionKeyChange: (sessionKey) => {
         this.sessionKeyDirty = true;

@@ -642,11 +642,74 @@ describe("createRuntimeConfigCapability", () => {
 
     publish(true, clientB, clientB.gatewayUrl);
     expect(runtimeConfig.state.configFormDirty).toBe(false);
+    for (let index = 0; index < 12; index += 1) {
+      const cleanClient = {
+        gatewayUrl: `ws://gateway.test?tenant=clean-${index}`,
+        request,
+      } as unknown as GatewayBrowserClient;
+      publish(true, cleanClient, cleanClient.gatewayUrl);
+    }
     publish(true, clientA, clientA.gatewayUrl);
 
     expect(runtimeConfig.state.configRaw).toBe('{"source":"gateway-a-raw-draft"}');
     expect(runtimeConfig.state.configFormMode).toBe("raw");
     expect(runtimeConfig.state.configFormDirty).toBe(true);
+    runtimeConfig.dispose();
+  });
+
+  it("reconciles an interrupted write and preserves its scoped revert", async () => {
+    vi.useFakeTimers();
+    const writeGate = deferred<unknown>();
+    let storedRaw = '{"count":1}';
+    const requestA = vi.fn((method: string, params?: unknown) => {
+      if (method === "config.get") {
+        return Promise.resolve({
+          config: JSON.parse(storedRaw) as Record<string, unknown>,
+          raw: storedRaw,
+          hash: storedRaw === '{"count":1}' ? "hash-a-1" : "hash-a-2",
+          valid: true,
+          issues: [],
+        });
+      }
+      if (method === "config.set") {
+        const submittedRaw = (params as { raw: string }).raw;
+        return writeGate.promise.then(() => {
+          storedRaw = submittedRaw;
+          return { hash: "hash-a-2" };
+        });
+      }
+      return Promise.resolve({});
+    });
+    const requestB = vi.fn(async (method: string) =>
+      method === "config.get"
+        ? { config: {}, raw: "{}", hash: "hash-b", valid: true, issues: [] }
+        : {},
+    );
+    const clientA = {
+      gatewayUrl: "ws://gateway.test?tenant=a",
+      request: requestA,
+    } as unknown as GatewayBrowserClient;
+    const clientB = {
+      gatewayUrl: "ws://gateway.test?tenant=b",
+      request: requestB,
+    } as unknown as GatewayBrowserClient;
+    const { gateway, publish } = createGatewayHarness(clientA);
+    const runtimeConfig = createRuntimeConfigCapability(gateway);
+    await runtimeConfig.ensureLoaded();
+    runtimeConfig.patchForm(["count"], 2);
+    await vi.advanceTimersByTimeAsync(CONFIG_FORM_AUTO_SAVE_DEBOUNCE_MS);
+    expect(requestA.mock.calls.some(([method]) => method === "config.set")).toBe(true);
+
+    runtimeConfig.patchForm(["count"], 1);
+    expect(runtimeConfig.state.configFormDirty).toBe(false);
+    publish(true, clientB, clientB.gatewayUrl);
+    writeGate.resolve({});
+    await Promise.resolve();
+    publish(true, clientA, clientA.gatewayUrl);
+
+    await vi.waitFor(() => expect(runtimeConfig.state.configFormDirty).toBe(true));
+    expect(runtimeConfig.state.configForm).toEqual({ count: 1 });
+    expect(runtimeConfig.state.configSnapshot?.config).toEqual({ count: 2 });
     runtimeConfig.dispose();
   });
 });
