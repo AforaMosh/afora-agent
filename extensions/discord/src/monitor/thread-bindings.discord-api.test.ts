@@ -3,6 +3,7 @@ import { ChannelType } from "discord-api-types/v10";
 import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import * as discordClientModule from "../client.js";
+import { DiscordError } from "../internal/rest-errors.js";
 import * as discordSendModule from "../send.js";
 import { createDiscordSendReceipt } from "../send.receipt.js";
 import { EMPTY_DISCORD_TEST_CONFIG } from "../test-support/config.js";
@@ -56,6 +57,29 @@ function firstMockCall(mock: { mock: { calls: unknown[][] } }, label: string): u
     throw new Error(`expected ${label} call`);
   }
   return call;
+}
+
+function createThreadBindingRecord(overrides: Partial<ThreadBindingRecord> = {}) {
+  return {
+    accountId: "default",
+    channelId: "parent-1",
+    threadId: "thread-1",
+    targetKind: "subagent",
+    targetSessionKey: "agent:main:subagent:test",
+    agentId: "main",
+    boundBy: "test",
+    boundAt: Date.now(),
+    lastActivityAt: Date.now(),
+    webhookId: "wh_1",
+    webhookToken: "tok_1",
+    ...overrides,
+  } satisfies ThreadBindingRecord;
+}
+
+function createDiscordResponseError(status: number) {
+  return new DiscordError(new Response(null, { status }), {
+    message: `Discord returned ${status}`,
+  });
 }
 
 describe("resolveChannelIdForBinding", () => {
@@ -223,19 +247,7 @@ describe("maybeSendBindingMessage", () => {
     const cfg = {
       channels: { discord: { token: "tok" } },
     } as OpenClawConfig;
-    const record = {
-      accountId: "default",
-      channelId: "parent-1",
-      threadId: "thread-1",
-      targetKind: "subagent",
-      targetSessionKey: "agent:main:subagent:test",
-      agentId: "main",
-      boundBy: "test",
-      boundAt: Date.now(),
-      lastActivityAt: Date.now(),
-      webhookId: "wh_1",
-      webhookToken: "tok_1",
-    } satisfies ThreadBindingRecord;
+    const record = createThreadBindingRecord();
 
     await maybeSendBindingMessage({
       cfg,
@@ -256,5 +268,70 @@ describe("maybeSendBindingMessage", () => {
       },
     ]);
     expect(sendMessageDiscord).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { label: "a provider 503", error: createDiscordResponseError(503) },
+    { label: "a provider 408", error: createDiscordResponseError(408) },
+    {
+      label: "a reset after connecting",
+      error: Object.assign(new Error("socket hang up"), { code: "ECONNRESET" }),
+    },
+    { label: "an aborted request", error: new DOMException("aborted", "AbortError") },
+    {
+      label: "a request timeout",
+      error: new DOMException("The operation was aborted due to timeout", "TimeoutError"),
+    },
+  ])("never replays a webhook introduction after $label", async ({ error }) => {
+    sendWebhookMessageDiscord.mockRejectedValueOnce(error);
+
+    await maybeSendBindingMessage({
+      cfg: EMPTY_DISCORD_TEST_CONFIG,
+      record: createThreadBindingRecord(),
+      text: "hello webhook",
+    });
+
+    expect(sendWebhookMessageDiscord).toHaveBeenCalledTimes(1);
+    expect(sendMessageDiscord).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { label: "a provider 400", error: createDiscordResponseError(400) },
+    { label: "a provider 404", error: createDiscordResponseError(404) },
+    {
+      label: "a connection refusal before delivery",
+      error: Object.assign(new Error("fetch failed"), {
+        cause: Object.assign(new Error("connect ECONNREFUSED"), { code: "ECONNREFUSED" }),
+      }),
+    },
+    { label: "an unknown failure", error: new Error("unexpected response") },
+  ])("preserves the bot fallback after $label", async ({ error }) => {
+    sendWebhookMessageDiscord.mockRejectedValueOnce(error);
+
+    await maybeSendBindingMessage({
+      cfg: EMPTY_DISCORD_TEST_CONFIG,
+      record: createThreadBindingRecord(),
+      text: "hello webhook",
+    });
+
+    expect(sendWebhookMessageDiscord).toHaveBeenCalledTimes(1);
+    expect(sendMessageDiscord).toHaveBeenCalledTimes(1);
+    expect(sendMessageDiscord).toHaveBeenCalledWith(
+      "channel:thread-1",
+      "hello webhook",
+      expect.objectContaining({ accountId: "default" }),
+    );
+  });
+
+  it("keeps explicit bot-only binding messages on the bot transport", async () => {
+    await maybeSendBindingMessage({
+      cfg: EMPTY_DISCORD_TEST_CONFIG,
+      record: createThreadBindingRecord(),
+      text: "goodbye webhook",
+      preferWebhook: false,
+    });
+
+    expect(sendWebhookMessageDiscord).not.toHaveBeenCalled();
+    expect(sendMessageDiscord).toHaveBeenCalledTimes(1);
   });
 });

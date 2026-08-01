@@ -6,6 +6,7 @@ import { logVerbose } from "openclaw/plugin-sdk/runtime-env";
 import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
 import { createDiscordRestClient } from "../client.js";
 import { createChannelWebhook, getChannel } from "../internal/discord.js";
+import { classifyDiscordDeliveryFailure } from "../retry.js";
 import { sendMessageDiscord, sendWebhookMessageDiscord } from "../send.js";
 import { createThreadDiscord } from "../send.messages.js";
 import { resolveDiscordChannelId } from "../target-parsing.js";
@@ -158,6 +159,9 @@ export async function maybeSendBindingMessage(params: {
       return;
     } catch (err) {
       logVerbose(`discord thread binding webhook send failed: ${summarizeDiscordError(err)}`);
+      if (classifyDiscordDeliveryFailure(err) === "ambiguous") {
+        return;
+      }
     }
   }
   try {
