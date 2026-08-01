@@ -96,19 +96,6 @@ function canUseFastExplicitModelDirective(params: {
   );
 }
 
-function resolveDirectiveCommandText(params: {
-  ctx: FinalizedRuntimeMsgContext;
-  sessionCtx: TemplateContext;
-}) {
-  const commandSource = params.sessionCtx.commandText;
-  const promptSource = params.sessionCtx.agentText;
-  return {
-    commandSource,
-    promptSource,
-    commandText: commandSource || promptSource,
-  };
-}
-
 type ReplyDirectiveContinuation = {
   commandSource: string;
   command: ReturnType<typeof buildCommandContext>;
@@ -230,10 +217,7 @@ export async function resolveReplyDirectives(params: {
   let provider = initialProvider;
   let model = initialModel;
 
-  const { commandText } = resolveDirectiveCommandText({
-    ctx,
-    sessionCtx,
-  });
+  const commandText = sessionCtx.commandText || sessionCtx.agentText;
   const command = buildCommandContext({
     ctx,
     cfg,
