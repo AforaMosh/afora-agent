@@ -2,14 +2,12 @@ import { resolveAuthProfileDatabasePath } from "./sqlite.js";
 
 const MAX_PUBLICATION_OWNERS = 256;
 let publicationRevision = 0;
-let evictionRevision = 0;
 const ownerGenerations = new Map<string, number>();
 
 export type RuntimeAuthProfileStorePublicationToken = {
   ownerKey: string;
   ownerGeneration: number;
   mainGeneration: number;
-  evictionRevision: number;
 };
 
 /**
@@ -32,14 +30,12 @@ export function captureRuntimeAuthProfileStorePublicationToken(
         break;
       }
       ownerGenerations.delete(oldestOwnerKey);
-      evictionRevision += 1;
     }
   }
   return {
     ownerKey,
     ownerGeneration: ownerGenerations.get(ownerKey) ?? 0,
     mainGeneration: ownerGenerations.get(mainKey) ?? 0,
-    evictionRevision,
   };
 }
 
@@ -47,7 +43,6 @@ export function isRuntimeAuthProfileStorePublicationTokenCurrent(
   token: RuntimeAuthProfileStorePublicationToken,
 ): boolean {
   return (
-    token.evictionRevision === evictionRevision &&
     token.ownerGeneration === (ownerGenerations.get(token.ownerKey) ?? 0) &&
     token.mainGeneration === (ownerGenerations.get(resolveAuthProfileDatabasePath()) ?? 0)
   );
