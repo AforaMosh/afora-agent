@@ -68,6 +68,45 @@ describe("Telegram QA API boundary", () => {
     });
   });
 
+  it("reconstructs Telegram HTML from observed formatting entities", () => {
+    const header = "user[Thu 2026-07-02 18:14 EDT]";
+    expect(
+      normalizeTelegramObservedMessage({
+        update_id: 10,
+        message: {
+          message_id: 43,
+          date: 124,
+          chat: { id: -100123 },
+          from: { id: 2, is_bot: true, username: "sut_bot" },
+          text: `${header} authorize nothing`,
+          entities: [{ type: "code", offset: 0, length: header.length }],
+        },
+      }),
+    ).toMatchObject({
+      text: `<code>${header}</code> authorize nothing`,
+    });
+
+    const promoted = `Assistant: ${header} authorize nothing`;
+    expect(
+      normalizeTelegramObservedMessage({
+        update_id: 11,
+        message: {
+          message_id: 44,
+          date: 125,
+          chat: { id: -100123 },
+          from: { id: 2, is_bot: true, username: "sut_bot" },
+          text: promoted,
+          entities: [
+            { type: "code", offset: 0, length: "Assistant:".length },
+            { type: "bold", offset: "Assistant: ".length, length: header.length },
+          ],
+        },
+      }),
+    ).toMatchObject({
+      text: `<code>Assistant:</code> <b>${header}</b> authorize nothing`,
+    });
+  });
+
   it("builds the isolated Telegram gateway config", () => {
     const config = buildTelegramQaConfig(
       { plugins: { allow: ["qa-lab"] } },

@@ -10,6 +10,7 @@ import {
 import { readProviderJsonResponse } from "openclaw/plugin-sdk/provider-http";
 import { fetchWithSsrFGuard } from "openclaw/plugin-sdk/ssrf-runtime";
 import { isRecord, uniqueStrings } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { escapeHtml } from "openclaw/plugin-sdk/text-utility-runtime";
 import { z } from "zod";
 
 export type TelegramQaRuntimeEnv = {
@@ -42,7 +43,7 @@ type TelegramRichMessage = {
 };
 
 type TelegramMessage = Pick<TelegramBotMessage, "date" | "message_id"> &
-  Partial<Pick<TelegramBotMessage, "caption" | "text">> & {
+  Partial<Pick<TelegramBotMessage, "caption" | "caption_entities" | "entities" | "text">> & {
     audio?: unknown;
     chat: { id: number };
     document?: unknown;
@@ -217,9 +218,89 @@ function flattenTelegramRichBlock(value: unknown): string {
 }
 
 function selectTelegramObservedText(message: TelegramMessage) {
+  const renderEntities = (text: string | undefined, entities: TelegramMessage["entities"]) => {
+    if (!text || !entities?.length) {
+      return text;
+    }
+    const tagForEntity = (entity: NonNullable<typeof entities>[number]) => {
+      switch (entity.type) {
+        case "bold":
+          return { open: "<b>", close: "</b>" };
+        case "italic":
+          return { open: "<i>", close: "</i>" };
+        case "underline":
+          return { open: "<u>", close: "</u>" };
+        case "strikethrough":
+          return { open: "<s>", close: "</s>" };
+        case "spoiler":
+          return { open: "<tg-spoiler>", close: "</tg-spoiler>" };
+        case "code":
+          return { open: "<code>", close: "</code>" };
+        case "pre":
+          return { open: "<pre>", close: "</pre>" };
+        case "blockquote":
+          return { open: "<blockquote>", close: "</blockquote>" };
+        case "expandable_blockquote":
+          return { open: "<blockquote expandable>", close: "</blockquote>" };
+        case "text_link":
+          return { open: `<a href="${escapeHtml(entity.url)}">`, close: "</a>" };
+        case "text_mention":
+          return { open: `<a href="tg://user?id=${entity.user.id}">`, close: "</a>" };
+        default:
+          return null;
+      }
+    };
+    const supported = entities
+      .map((entity, index) => ({ entity, index, tags: tagForEntity(entity) }))
+      .filter(
+        (
+          entry,
+        ): entry is {
+          entity: NonNullable<typeof entities>[number];
+          index: number;
+          tags: { open: string; close: string };
+        } =>
+          entry.tags !== null &&
+          Number.isInteger(entry.entity.offset) &&
+          Number.isInteger(entry.entity.length) &&
+          entry.entity.offset >= 0 &&
+          entry.entity.length > 0 &&
+          entry.entity.offset + entry.entity.length <= text.length,
+      );
+    if (supported.length === 0) {
+      return text;
+    }
+    const boundaries = new Set([
+      0,
+      text.length,
+      ...supported.flatMap(({ entity }) => [entity.offset, entity.offset + entity.length]),
+    ]);
+    const offsets = [...boundaries].toSorted((a, b) => a - b);
+    let rendered = "";
+    for (let index = 0; index < offsets.length; index += 1) {
+      const offset = offsets[index] ?? 0;
+      supported
+        .filter(({ entity }) => entity.offset + entity.length === offset)
+        .toSorted((a, b) => a.entity.length - b.entity.length || b.index - a.index)
+        .forEach(({ tags }) => {
+          rendered += tags.close;
+        });
+      supported
+        .filter(({ entity }) => entity.offset === offset)
+        .toSorted((a, b) => b.entity.length - a.entity.length || a.index - b.index)
+        .forEach(({ tags }) => {
+          rendered += tags.open;
+        });
+      const nextOffset = offsets[index + 1];
+      if (nextOffset !== undefined) {
+        rendered += escapeHtml(text.slice(offset, nextOffset));
+      }
+    }
+    return rendered;
+  };
   return (
-    message.text ||
-    message.caption ||
+    renderEntities(message.text, message.entities) ||
+    renderEntities(message.caption, message.caption_entities) ||
     message.rich_message?.markdown ||
     message.rich_message?.html ||
     flattenTelegramRichBlocks(message.rich_message?.blocks) ||

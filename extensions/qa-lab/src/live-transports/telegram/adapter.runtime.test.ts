@@ -118,6 +118,12 @@ describe("Telegram QA transport adapter", () => {
         },
       },
     });
+    expect(adapter.buildAgentDelivery({ target: "dm:logical-room" })).toEqual({
+      channel: "telegram",
+      to: "-100123",
+      replyChannel: "telegram",
+      replyTo: "-100123",
+    });
 
     await vi.waitFor(() => expect(pollResolvers).toHaveLength(1));
     await adapter.sendInbound?.({

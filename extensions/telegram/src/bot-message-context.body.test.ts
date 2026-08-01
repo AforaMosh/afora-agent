@@ -1,6 +1,7 @@
 // Telegram tests cover bot message context.body plugin behavior.
 import { describe, expect, it, vi } from "vitest";
 import { normalizeAllowFrom } from "./bot-access.js";
+import { hasLeadingBotCommandAddressedToOtherBot } from "./bot/body-helpers.js";
 
 const {
   resolveStickerVisionSupportRuntimeMock,
@@ -629,6 +630,56 @@ describe("resolveTelegramInboundBody", () => {
     );
     expect(result?.rawBody).toBe(text);
     expect(result?.effectiveWasMentioned).toBe(true);
+  });
+
+  it("ignores commands addressed to another bot when mentions are optional", async () => {
+    const logger = { info: vi.fn() };
+    const command = "/status@other_bot";
+
+    const result = await resolveTelegramBody({
+      cfg: { channels: { telegram: {} } } as never,
+      msg: {
+        message_id: 9,
+        date: 1_700_000_009,
+        chat: { id: -1001234567890, type: "supergroup", title: "Test Group" },
+        from: { id: 46, first_name: "Eve" },
+        text: command,
+        entities: [{ type: "bot_command", offset: 0, length: command.length }],
+      } as never,
+      isGroup: true,
+      chatId: -1001234567890,
+      senderId: "46",
+      senderUsername: "",
+      groupConfig: { requireMention: false } as never,
+      requireMention: false,
+      logger,
+    });
+
+    expect(result).toBeNull();
+  });
+
+  it("keeps messages when the leading command targets this bot", async () => {
+    const ownCommand = "/status@bot";
+    const otherCommand = "/help@other_bot";
+    const text = `${ownCommand} ${otherCommand}`;
+
+    expect(
+      hasLeadingBotCommandAddressedToOtherBot(
+        {
+          text,
+          entities: [
+            { type: "bot_command", offset: 0, length: ownCommand.length },
+            {
+              type: "bot_command",
+              offset: ownCommand.length + 1,
+              length: otherCommand.length,
+            },
+          ],
+          chat: { id: -1001234567890, type: "supergroup", title: "Test Group" },
+        } as never,
+        "bot",
+      ),
+    ).toBe(false);
   });
 
   it("does not transcribe group audio for unauthorized senders", async () => {

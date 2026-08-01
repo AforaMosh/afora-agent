@@ -26,16 +26,15 @@ describe("qa scenario catalog channel contracts", () => {
     const config = readQaScenarioExecutionConfig("native-command-session-target") as
       | {
           requiredProviderMode?: string;
-          sessionKey?: string;
         }
       | undefined;
 
     expect(scenario.execution.channel).toBe("telegram");
     expect(config?.requiredProviderMode).toBe("mock-openai");
-    expect(config?.sessionKey).toBe("agent:main:telegram:direct:qa-native-operator");
-    expect(JSON.stringify(requireFlowScenario(scenario).execution.flow)).toContain(
-      "session.key === config.sessionKey && session.hasActiveRun === true",
-    );
+    const flow = JSON.stringify(requireFlowScenario(scenario).execution.flow);
+    expect(flow).toContain("transport.buildAgentDelivery");
+    expect(flow).toContain("peer: { kind: 'group', id: delivery.replyTo }");
+    expect(flow).toContain("session.key === sessionKey && session.hasActiveRun === true");
   });
 
   it("keeps channel-owned scenarios independent from the driver implementation", () => {
