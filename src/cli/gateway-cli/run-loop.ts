@@ -453,10 +453,9 @@ export async function runGatewayLoop(params: {
 
   const SUPERVISOR_STOP_TIMEOUT_MS = 30_000;
   const SHUTDOWN_TIMEOUT_MS = SUPERVISOR_STOP_TIMEOUT_MS - 5_000;
-  const STOP_ACTIVE_WORK_DRAIN_TIMEOUT_MS = Math.max(
-    0,
-    SHUTDOWN_TIMEOUT_MS - CLOSE_REPLY_DRAIN_SHUTDOWN_RESERVE_MS,
-  );
+  const SIGTERM_SHUTDOWN_TIMEOUT_MS = 60_000;
+  const STOP_ACTIVE_WORK_DRAIN_TIMEOUT_MS =
+    SIGTERM_SHUTDOWN_TIMEOUT_MS - CLOSE_REPLY_DRAIN_SHUTDOWN_RESERVE_MS;
   const clearPendingStartupForceExitTimer = () => {
     if (!pendingStartupForceExitTimer) {
       return;
@@ -568,7 +567,7 @@ export async function runGatewayLoop(params: {
           ? Date.now() + activeWorkDrainTimeoutMs
           : undefined;
       if (!isRestart) {
-        armForceExitTimer(SHUTDOWN_TIMEOUT_MS);
+        armForceExitTimer(isGracefulStop ? SIGTERM_SHUTDOWN_TIMEOUT_MS : SHUTDOWN_TIMEOUT_MS);
       } else if (activeWorkDrainTimeoutMs !== undefined) {
         // Allow extra time for draining active turns on explicitly capped restarts.
         armForceExitTimer(activeWorkDrainTimeoutMs + SHUTDOWN_TIMEOUT_MS);

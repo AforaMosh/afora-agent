@@ -574,10 +574,10 @@ describe("runGatewayLoop", () => {
         );
 
         expect(markGatewayDraining).toHaveBeenCalledOnce();
-        expect(waitForActiveTasks).toHaveBeenCalledWith(15_000);
-        expect(waitForActiveEmbeddedRuns).toHaveBeenCalledWith(15_000);
+        expect(waitForActiveTasks).toHaveBeenCalledWith(50_000);
+        expect(waitForActiveEmbeddedRuns).toHaveBeenCalledWith(50_000);
         expect(waitForActiveGatewayRootWork).toHaveBeenCalledOnce();
-        expect(waitForActiveGatewayRootWork.mock.calls[0]?.[0]).toBeLessThanOrEqual(15_000);
+        expect(waitForActiveGatewayRootWork.mock.calls[0]?.[0]).toBeLessThanOrEqual(50_000);
         expect(abortEmbeddedAgentRun).not.toHaveBeenCalled();
         expect(markRestartAbortedMainSessions).not.toHaveBeenCalled();
         expect(close).not.toHaveBeenCalled();
@@ -622,10 +622,10 @@ describe("runGatewayLoop", () => {
         captureSignal("SIGTERM")();
 
         await expect(exited).resolves.toBe(0);
-        expect(waitForActiveTasks).toHaveBeenCalledWith(15_000);
-        expect(waitForActiveEmbeddedRuns).toHaveBeenCalledWith(15_000);
+        expect(waitForActiveTasks).toHaveBeenCalledWith(50_000);
+        expect(waitForActiveEmbeddedRuns).toHaveBeenCalledWith(50_000);
         expect(waitForActiveGatewayRootWork).toHaveBeenCalledOnce();
-        expect(waitForActiveGatewayRootWork.mock.calls[0]?.[0]).toBeLessThanOrEqual(15_000);
+        expect(waitForActiveGatewayRootWork.mock.calls[0]?.[0]).toBeLessThanOrEqual(50_000);
         expect(abortEmbeddedAgentRun).not.toHaveBeenCalled();
         expect(markRestartAbortedMainSessions).not.toHaveBeenCalled();
         expect(gatewayLog.warn).toHaveBeenCalledWith(
