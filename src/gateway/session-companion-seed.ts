@@ -1,8 +1,6 @@
 import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
 import { extractAssistantText, stripToolMessages } from "../agents/tools/chat-history-text.js";
-import {
-  readSessionTranscriptBoundedContextMessageTailPage,
-} from "../config/sessions/session-accessor.js";
+import { readSessionTranscriptBoundedContextMessageTailPage } from "../config/sessions/session-accessor.js";
 import { redactToolPayloadText } from "../logging/redact.js";
 import type { SessionCompanionSeedMessage } from "./session-companion-state.js";
 
