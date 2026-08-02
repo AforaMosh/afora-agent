@@ -31,7 +31,7 @@ const gatewayLog = createSubsystemLogger("gateway");
 const LAUNCHD_SUPERVISED_RESTART_EXIT_DELAY_MS = 1500;
 const DEFAULT_RESTART_DRAIN_TIMEOUT_MS = 300_000;
 const RESTART_DRAIN_STILL_PENDING_WARN_MS = 30_000;
-const RESTART_CLOSE_REPLY_DRAIN_SHUTDOWN_RESERVE_MS = 10_000;
+const CLOSE_REPLY_DRAIN_SHUTDOWN_RESERVE_MS = 10_000;
 const UPDATE_RESPAWN_HEALTH_TIMEOUT_MS = 10_000;
 const UPDATE_RESPAWN_HEALTH_POLL_MS = 200;
 const LOG_FLUSH_EXIT_TIMEOUT_MS = 4_000;
@@ -453,6 +453,10 @@ export async function runGatewayLoop(params: {
 
   const SUPERVISOR_STOP_TIMEOUT_MS = 30_000;
   const SHUTDOWN_TIMEOUT_MS = SUPERVISOR_STOP_TIMEOUT_MS - 5_000;
+  const STOP_ACTIVE_WORK_DRAIN_TIMEOUT_MS = Math.max(
+    0,
+    SHUTDOWN_TIMEOUT_MS - CLOSE_REPLY_DRAIN_SHUTDOWN_RESERVE_MS,
+  );
   const clearPendingStartupForceExitTimer = () => {
     if (!pendingStartupForceExitTimer) {
       return;
@@ -557,13 +561,13 @@ export async function runGatewayLoop(params: {
       const activeWorkDrainTimeoutMs = isRestart
         ? await resolveRestartDrainTimeoutMs(restartIntent)
         : isGracefulStop
-          ? undefined
+          ? STOP_ACTIVE_WORK_DRAIN_TIMEOUT_MS
           : 0;
       const activeWorkDrainDeadlineAt =
         shouldDrainActiveWork && activeWorkDrainTimeoutMs !== undefined
           ? Date.now() + activeWorkDrainTimeoutMs
           : undefined;
-      if (!shouldDrainActiveWork) {
+      if (!isRestart) {
         armForceExitTimer(SHUTDOWN_TIMEOUT_MS);
       } else if (activeWorkDrainTimeoutMs !== undefined) {
         // Allow extra time for draining active turns on explicitly capped restarts.
@@ -574,8 +578,8 @@ export async function runGatewayLoop(params: {
         activeWorkDrainTimeoutMs === undefined
           ? "without a timeout"
           : `with timeout ${activeWorkDrainTimeoutMs}ms`;
-      const armCloseForceExitTimerAfterUnboundedDrain = () => {
-        if (shouldDrainActiveWork && activeWorkDrainTimeoutMs === undefined) {
+      const armCloseForceExitTimerForIndefiniteRestart = () => {
+        if (isRestart && activeWorkDrainTimeoutMs === undefined) {
           armForceExitTimer(SHUTDOWN_TIMEOUT_MS);
         }
       };
@@ -584,7 +588,7 @@ export async function runGatewayLoop(params: {
           return null;
         }
         if (activeWorkDrainTimeoutMs === undefined) {
-          return Math.max(0, SHUTDOWN_TIMEOUT_MS - RESTART_CLOSE_REPLY_DRAIN_SHUTDOWN_RESERVE_MS);
+          return Math.max(0, SHUTDOWN_TIMEOUT_MS - CLOSE_REPLY_DRAIN_SHUTDOWN_RESERVE_MS);
         }
         return Math.max(0, (activeWorkDrainDeadlineAt ?? Date.now()) - Date.now());
       };
@@ -776,7 +780,7 @@ export async function runGatewayLoop(params: {
           // reserve that server teardown and the supervisor watchdog need.
           try {
             const rootDrain = await eagerLifecycleRuntime.waitForActiveGatewayRootWork(
-              Math.max(0, SHUTDOWN_TIMEOUT_MS - RESTART_CLOSE_REPLY_DRAIN_SHUTDOWN_RESERVE_MS),
+              Math.max(0, SHUTDOWN_TIMEOUT_MS - CLOSE_REPLY_DRAIN_SHUTDOWN_RESERVE_MS),
             );
             if (!rootDrain.drained) {
               gatewayLog.warn(
@@ -790,7 +794,7 @@ export async function runGatewayLoop(params: {
           }
         }
 
-        armCloseForceExitTimerAfterUnboundedDrain();
+        armCloseForceExitTimerForIndefiniteRestart();
         const closeDrainTimeoutMs = resolveRestartCloseDrainTimeoutMs();
         await server?.close({
           reason: isRestart ? "gateway restarting" : "gateway stopping",
