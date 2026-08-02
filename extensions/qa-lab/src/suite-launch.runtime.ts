@@ -37,10 +37,12 @@ import {
 import { createQaSuiteProgressController } from "./suite-progress.js";
 import {
   buildQaSuiteSummaryJson,
+  shouldLogQaSuiteProgress,
   type QaSuiteResult,
   type QaSuiteRunParams,
   type QaSuiteScenarioResult,
   type QaSuiteSummaryJson,
+  writeQaSuiteProgress,
 } from "./suite.js";
 import {
   isQaTestFileScenario,
@@ -354,9 +356,18 @@ async function runQaTestFileSuiteFromRuntime(params: {
   const outputDir = await resolveQaSuiteOutputDir(repoRoot, runParams?.outputDir);
   const providerMode = normalizeQaProviderMode(runParams?.providerMode ?? DEFAULT_QA_PROVIDER_MODE);
   const primaryModel = runParams?.primaryModel?.trim() || defaultQaModelForMode(providerMode);
+  const progressEnabled = shouldLogQaSuiteProgress();
   return await runQaTestFileScenarios({
     evidenceMode: runParams?.evidenceMode,
     ...(runParams?.failFast ? { failFast: true } : {}),
+    ...(progressEnabled
+      ? {
+          onCommandOutput: (stream: "stderr" | "stdout", chunk: Buffer) => {
+            (stream === "stdout" ? process.stdout : process.stderr).write(chunk);
+          },
+          progress: (message: string) => writeQaSuiteProgress(true, message),
+        }
+      : {}),
     repoRoot,
     outputDir,
     providerMode,
