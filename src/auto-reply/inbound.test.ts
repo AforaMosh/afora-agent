@@ -448,7 +448,9 @@ describe("createInboundDebouncer", () => {
   it("normalizes shipped flush callbacks that return structural thenables", async () => {
     const flushed = vi.fn();
     const completion = Promise.resolve().then(flushed);
-    const thenable: PromiseLike<void> = { then: completion.then.bind(completion) };
+    const thenable = Object.defineProperty({}, "then", {
+      value: completion.then.bind(completion),
+    }) as PromiseLike<void>;
     const debouncer = createInboundDebouncer<{ key: string; id: string }>({
       debounceMs: 0,
       buildKey: (item) => item.key,
