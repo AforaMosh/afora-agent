@@ -152,6 +152,26 @@ describe("runCronIsolatedAgentTurn - meta.error status propagation", () => {
     expect(result.delivered).toBe(false);
   });
 
+  it("delivers a settled-tool finalization payload instead of reporting a missing reply", async () => {
+    const finalPayload = { text: "The write failed because permission was denied." };
+    mockAgentRun({ payloads: [finalPayload] });
+    mockAnnounceOutcome({
+      summary: finalPayload.text,
+      outputText: finalPayload.text,
+      synthesizedText: finalPayload.text,
+      deliveryPayload: finalPayload,
+      deliveryPayloads: [finalPayload],
+    });
+
+    const result = await runCronIsolatedAgentTurn(makeIsolatedAgentParamsFixture());
+
+    expect(dispatchCronDeliveryMock).toHaveBeenCalledWith(
+      expect.objectContaining({ deliveryPayloads: [finalPayload] }),
+    );
+    expect(result.status).toBe("ok");
+    expect(result.error).toBeUndefined();
+  });
+
   it("marks empty message-tool attempts without source delivery as cron errors", async () => {
     mockAgentRun({
       didSendViaMessagingTool: true,
