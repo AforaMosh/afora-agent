@@ -45,6 +45,8 @@ describe("Gateway agent shutdown", () => {
       const instance = await createOpenClawTestInstance({
         name: "agent-sigterm-drain",
         config: createTestConfig(modelServer.baseUrl),
+        nodeExecutable: process.execPath,
+        entrypointArgs: ["--import", "tsx", "src/entry.ts"],
         env: { OPENCLAW_SKIP_PROVIDERS: undefined },
         stopTimeoutMs: 30_000,
       });
