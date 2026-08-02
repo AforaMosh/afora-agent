@@ -17,6 +17,10 @@ on:
         required: true
         default: slack-canary
         type: string
+      slack_channel_id:
+        description: Optional Slack channel override for disposable visual proof
+        required: false
+        type: string
       gateway_setup:
         description: Start a persistent gateway instead of running the selected QA scenario
         required: false
@@ -250,6 +254,7 @@ jobs:
           GATEWAY_SETUP: ${{ inputs.gateway_setup }}
           HYDRATE_MODE: ${{ inputs.hydrate_mode }}
           SCENARIO_ID: ${{ inputs.scenario_id }}
+          SLACK_CHANNEL_ID: ${{ inputs.slack_channel_id }}
           APPROVAL_CHECKPOINTS: ${{ inputs.approval_checkpoints }}
         shell: bash
         run: |
@@ -323,6 +328,9 @@ jobs:
           gateway_args=()
           approval_args=()
           scenario_args=(--scenario "$SCENARIO_ID")
+          if [[ -n "${SLACK_CHANNEL_ID:-}" ]]; then
+            scenario_args+=(--slack-channel-id "$SLACK_CHANNEL_ID")
+          fi
           scenario_label="$SCENARIO_ID"
           if [[ "$GATEWAY_SETUP" == "true" ]]; then
             if [[ "$APPROVAL_CHECKPOINTS" == "true" ]]; then
