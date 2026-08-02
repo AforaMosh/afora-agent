@@ -38,6 +38,103 @@ function buildResponse(
 }
 
 describe("Slack QA debug capture", () => {
+  it("preserves native Slack task-card stream snapshots", async () => {
+    const taskSnapshots = [
+      [
+        { type: "plan_update", title: "Verify semantic Slack progress" },
+        {
+          id: "plan_step_1",
+          status: "in_progress",
+          title: "Prepare progress fixture",
+          type: "task_update",
+        },
+      ],
+      [
+        { type: "plan_update", title: "Verify semantic Slack progress" },
+        {
+          id: "plan_step_1",
+          status: "complete",
+          title: "Prepare progress fixture",
+          type: "task_update",
+        },
+      ],
+      [
+        { type: "plan_update", title: "Verify semantic Slack progress" },
+        {
+          id: "plan_step_1",
+          status: "complete",
+          title: "Prepare progress fixture",
+          type: "task_update",
+        },
+      ],
+    ];
+    const buildStreamRequest = (params: {
+      chunks: unknown[];
+      flowId: string;
+      method: "chat.appendStream" | "chat.startStream" | "chat.stopStream";
+    }) => ({
+      id: params.method === "chat.startStream" ? 1 : params.method === "chat.appendStream" ? 2 : 3,
+      ...buildMessageRequest({ flowId: params.flowId, method: params.method, text: "" }),
+      dataText: new URLSearchParams({
+        channel: "C123",
+        chunks: JSON.stringify(params.chunks),
+        ...(params.method === "chat.startStream" ? { thread_ts: "1.000000" } : { ts: "2.000000" }),
+      }).toString(),
+    });
+    const events = [
+      buildResponse("stop", true),
+      buildStreamRequest({
+        chunks: taskSnapshots[2] ?? [],
+        flowId: "stop",
+        method: "chat.stopStream",
+      }),
+      buildResponse("append", true),
+      buildStreamRequest({
+        chunks: taskSnapshots[1] ?? [],
+        flowId: "append",
+        method: "chat.appendStream",
+      }),
+      buildResponse("start", true),
+      buildStreamRequest({
+        chunks: taskSnapshots[0] ?? [],
+        flowId: "start",
+        method: "chat.startStream",
+      }),
+    ];
+    const store = {
+      getSessionEvents: () => events,
+      readBlob: () => null,
+    };
+
+    await expect(
+      readSlackQaMessageWrites({
+        afterRequestEventId: 0,
+        sessionId: "qa-slack",
+        store,
+      }),
+    ).resolves.toEqual([
+      {
+        channelId: "C123",
+        chunks: taskSnapshots[0],
+        text: "",
+        threadTs: "1.000000",
+        ts: "2.000000",
+      },
+      {
+        channelId: "C123",
+        chunks: taskSnapshots[1],
+        text: "",
+        ts: "2.000000",
+      },
+      {
+        channelId: "C123",
+        chunks: taskSnapshots[2],
+        text: "",
+        ts: "2.000000",
+      },
+    ]);
+  });
+
   it("preserves only successful Slack post and update snapshots", async () => {
     const postRequest = buildMessageRequest({
       flowId: "post",

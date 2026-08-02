@@ -137,28 +137,48 @@ export const slackQaSemanticProgressDefaultScenario: SlackQaScenarioImplementati
         ) {
           throw new Error("raw tool or message-delivery activity leaked into Slack");
         }
-        const snapshots = messages.flatMap((message) =>
-          (message.blocks ?? []).flatMap((block) => {
+        const readTask = (task: unknown, idKey: "id" | "task_id") => {
+          if (
+            !isRecord(task) ||
+            typeof task[idKey] !== "string" ||
+            typeof task.title !== "string" ||
+            typeof task.status !== "string"
+          ) {
+            return undefined;
+          }
+          return { id: task[idKey], status: task.status, title: task.title };
+        };
+        const snapshots = messages.flatMap((message) => {
+          const chunks = message.chunks ?? [];
+          const streamTitle = chunks.find(
+            (chunk) => isRecord(chunk) && chunk.type === "plan_update",
+          );
+          if (isRecord(streamTitle) && streamTitle.title === planTitle) {
+            const tasks = chunks.flatMap((chunk) => {
+              if (!isRecord(chunk) || chunk.type !== "task_update") {
+                return [];
+              }
+              const task = readTask(chunk, "id");
+              return task ? [task] : [];
+            });
+            return tasks.length === taskTitles.length ? [{ tasks, ts: message.ts }] : [];
+          }
+          return (message.blocks ?? []).flatMap((block) => {
             if (!isRecord(block) || block.type !== "plan" || block.title !== planTitle) {
               return [];
             }
             const tasks = Array.isArray(block.tasks)
               ? block.tasks.flatMap((task) => {
-                  if (
-                    !isRecord(task) ||
-                    task.type !== "task_card" ||
-                    typeof task.task_id !== "string" ||
-                    typeof task.title !== "string" ||
-                    typeof task.status !== "string"
-                  ) {
+                  if (!isRecord(task) || task.type !== "task_card") {
                     return [];
                   }
-                  return [{ id: task.task_id, status: task.status, title: task.title }];
+                  const parsed = readTask(task, "task_id");
+                  return parsed ? [parsed] : [];
                 })
               : [];
             return tasks.length === taskTitles.length ? [{ tasks, ts: message.ts }] : [];
-          }),
-        );
+          });
+        });
         if (snapshots.length < 4) {
           throw new Error(`expected four Slack task-card snapshots; got ${snapshots.length}`);
         }

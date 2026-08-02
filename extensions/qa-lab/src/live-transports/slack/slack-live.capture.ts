@@ -7,7 +7,13 @@ const SLACK_QA_CAPTURE_EVENT_LIMIT = 5_000;
 const SLACK_QA_CAPTURE_SETTLE_TIMEOUT_MS = 5_000;
 const SLACK_QA_MESSAGE_TEXT_MAX_CHARS = 2_048;
 const SLACK_QA_BLOCK_TEXT_MAX_ITEMS = 64;
-const SLACK_QA_MESSAGE_WRITE_METHODS = new Set(["chat.postMessage", "chat.update"]);
+const SLACK_QA_MESSAGE_WRITE_METHODS = new Set([
+  "chat.appendStream",
+  "chat.postMessage",
+  "chat.startStream",
+  "chat.stopStream",
+  "chat.update",
+]);
 
 type SlackQaCaptureStore = {
   getSessionEvents(sessionId: string, limit?: number): Array<Record<string, unknown>>;
@@ -90,7 +96,7 @@ export function getSlackQaMessageWriteCursor(params: {
   );
 }
 
-function parseSlackQaBlocks(value: unknown): unknown[] | undefined {
+function parseSlackQaJsonArray(value: unknown): unknown[] | undefined {
   if (Array.isArray(value)) {
     return value;
   }
@@ -121,7 +127,8 @@ function parseSlackQaMessageWrite(params: {
   if (!request || !channelId || !ts) {
     return undefined;
   }
-  const blocks = parseSlackQaBlocks(request.blocks);
+  const blocks = parseSlackQaJsonArray(request.blocks);
+  const chunks = parseSlackQaJsonArray(request.chunks);
   const blockText = collectSlackBlockText(blocks)
     .slice(0, SLACK_QA_BLOCK_TEXT_MAX_ITEMS)
     .map((text) => text.slice(0, SLACK_QA_MESSAGE_TEXT_MAX_CHARS));
@@ -130,6 +137,7 @@ function parseSlackQaMessageWrite(params: {
     text: truncateSlackQaText(request.text) ?? "",
     ts,
     ...(blockText.length > 0 ? { blockText } : {}),
+    ...(chunks ? { chunks } : {}),
     ...(typeof request.thread_ts === "string"
       ? { threadTs: request.thread_ts.slice(0, SLACK_QA_MESSAGE_TEXT_MAX_CHARS) }
       : {}),

@@ -325,7 +325,7 @@ describe("scripts/mantis/publish-pr-evidence", () => {
         scenario: "slack-openclaw-desktop-smoke",
         comparison: {
           candidate: {
-            expected: "Slack QA and VM gateway setup pass",
+            expected: "Selected Slack QA scenario passes",
             sha: "bbb",
             status: "fail",
           },

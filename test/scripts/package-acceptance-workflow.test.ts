@@ -3446,6 +3446,7 @@ describe("package artifact reuse", () => {
       "scenario_args=()",
       "slack-qa/qa-suite-summary.json",
       "slack-qa/qa-evidence.json",
+      'expected_result="Selected Slack QA scenario passes"',
       "required: $slack_qa_required",
     ]);
     expect(workflow).not.toContain("gateway_args=(--gateway-setup)\n          approval_args=()");

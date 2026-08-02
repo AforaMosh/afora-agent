@@ -205,17 +205,14 @@ describe("Slack live QA runtime helpers", () => {
     const taskIds = ["plan_step_1", "plan_step_2", "plan_step_3"];
     const snapshot = (statuses: string[]) => ({
       channelId: "C123456789",
-      blocks: [
-        {
-          type: "plan",
-          title: "Verify semantic Slack progress",
-          tasks: taskTitles.map((title, index) => ({
-            type: "task_card",
-            task_id: taskIds[index],
-            title,
-            status: statuses[index],
-          })),
-        },
+      chunks: [
+        { type: "plan_update", title: "Verify semantic Slack progress" },
+        ...taskTitles.map((title, index) => ({
+          type: "task_update",
+          id: taskIds[index],
+          title,
+          status: statuses[index],
+        })),
       ],
       text: "",
       ts: "2.000000",

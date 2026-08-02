@@ -231,6 +231,7 @@ export type SlackObservedMessage = {
   blocks?: unknown[];
   botId?: string;
   channelId: string;
+  chunks?: unknown[];
   matchedScenario?: boolean;
   scenarioId?: string;
   scenarioTitle?: string;
