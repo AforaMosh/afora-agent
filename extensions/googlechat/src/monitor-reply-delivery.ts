@@ -5,7 +5,7 @@ import type { ResolvedGoogleChatAccount } from "./accounts.js";
 import { deleteGoogleChatMessage, sendGoogleChatMessage, updateGoogleChatMessage } from "./api.js";
 import type { GoogleChatCoreRuntime, GoogleChatRuntimeEnv } from "./monitor-types.js";
 
-export type GoogleChatTypingMessage =
+type GoogleChatTypingMessage =
   | {
       placement: "top-level";
       name: string;
