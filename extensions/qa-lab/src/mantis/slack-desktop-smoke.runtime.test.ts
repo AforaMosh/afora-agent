@@ -193,6 +193,9 @@ describe("mantis Slack desktop smoke runtime", () => {
     expect(runArgs).toContain("openclaw/openclaw#85141");
     expect(runArgs).not.toContain("--no-sync");
     const remoteScript = runArgs?.at(-1);
+    if (!remoteScript) {
+      throw new Error("expected Crabbox remote script");
+    }
     expect(remoteScript).toContain("hydrate_mode='source'");
     expect(remoteScript).toContain("${BROWSER:-}");
     expect(remoteScript).toContain("${CHROME_BIN:-}");
