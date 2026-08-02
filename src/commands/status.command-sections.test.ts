@@ -1,5 +1,6 @@
 // Status command section tests cover footer, health, and report section rendering.
 import { describe, expect, it } from "vitest";
+import { formatHealthChannelLines } from "./health-format.js";
 import type { HealthSummary } from "./health.js";
 import {
   buildStatusFooterLines,
@@ -230,6 +231,45 @@ describe("status.command-sections", () => {
       { Item: "Forum", Status: "muted(OFF)", Detail: "not configured" },
       { Item: "Matrix", Status: "ok(LINKED)", Detail: "linked" },
       { Item: "Pager", Status: "warn(UNLINKED)", Detail: "not linked" },
+    ]);
+  });
+
+  it("marks configured plugin registration failures as warnings without trusting plugin ids", () => {
+    const rows = buildStatusHealthRows({
+      health: {
+        durationMs: 42,
+        channels: {
+          qqbot: { accountId: "default", configured: true },
+        },
+        channelOrder: ["qqbot"],
+        channelLabels: { qqbot: "QQ Bot" },
+        plugins: {
+          loaded: [],
+          errors: [
+            {
+              id: "qqbot:ok",
+              origin: "global",
+              activated: false,
+              activationSource: "explicit",
+              error: "missing buffered reply dispatcher",
+            },
+          ],
+        },
+      } as HealthSummary,
+      formatHealthChannelLines,
+      ok: (value) => `ok(${value})`,
+      warn: (value) => `warn(${value})`,
+      muted: (value) => `muted(${value})`,
+    });
+
+    expect(rows).toEqual([
+      { Item: "Gateway", Status: "ok(reachable)", Detail: "42ms" },
+      { Item: "QQ Bot", Status: "ok(OK)", Detail: "configured" },
+      {
+        Item: "Plugin",
+        Status: "warn(WARN)",
+        Detail: "failed - qqbot:ok: missing buffered reply dispatcher",
+      },
     ]);
   });
 
