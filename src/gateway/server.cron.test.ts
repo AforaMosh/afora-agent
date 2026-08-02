@@ -424,6 +424,8 @@ function getWebhookCall(index: number) {
   const [args] = fetchWithSsrFGuardMock.mock.calls[index] as unknown as [
     {
       url?: string;
+      maxRedirects?: number;
+      requireHttps?: boolean;
       init?: {
         method?: string;
         headers?: Record<string, string>;
@@ -434,7 +436,13 @@ function getWebhookCall(index: number) {
   const url = args.url ?? "";
   const init = args.init ?? {};
   const body = JSON.parse(init.body ?? "{}") as Record<string, unknown>;
-  return { url, init, body };
+  return {
+    url,
+    init,
+    body,
+    maxRedirects: args.maxRedirects,
+    requireHttps: args.requireHttps,
+  };
 }
 
 describe("gateway server cron", () => {
@@ -1704,6 +1712,7 @@ describe("gateway server cron", () => {
     await writeCronConfig({
       cron: {
         webhookToken: "cron-webhook-token",
+        webhookTokenDestinations: ["https://example.invalid/cron-finished"],
       },
     });
 
@@ -1735,6 +1744,8 @@ describe("gateway server cron", () => {
       expect(notifyCall.init.method).toBe("POST");
       expect(notifyCall.init.headers?.Authorization).toBe("Bearer cron-webhook-token");
       expect(notifyCall.init.headers?.["Content-Type"]).toBe("application/json");
+      expect(notifyCall.maxRedirects).toBe(0);
+      expect(notifyCall.requireHttps).toBe(true);
       const notifyBody = notifyCall.body;
       expect(notifyBody.action).toBe("finished");
       expect(notifyBody.jobId).toBe(notifyJobId);
@@ -1771,7 +1782,7 @@ describe("gateway server cron", () => {
       const completionCall = getWebhookCall(1);
       expect(completionCall.url).toBe("https://example.invalid/completion-destination");
       expect(completionCall.init.method).toBe("POST");
-      expect(completionCall.init.headers?.Authorization).toBe("Bearer cron-webhook-token");
+      expect(completionCall.init.headers?.Authorization).toBeUndefined();
       expect(completionCall.body.action).toBe("finished");
       expect(completionCall.body.jobId).toBe(completionJobId);
       expect(completionCall.body.summary).toBe("ok");

@@ -6,6 +6,7 @@ import { listAgentEntries, listAgentIds, resolveDefaultAgentId } from "../agents
 import { abortAndDrainEmbeddedAgentRun } from "../agents/embedded-agent.js";
 import { isSilentReplyText, SILENT_REPLY_TOKEN } from "../auto-reply/tokens.js";
 import type { CliDeps } from "../cli/deps.types.js";
+import { resolveCronWebhookTokenDestinations } from "../config/cron-webhook-token-destinations.js";
 import { getRuntimeConfig } from "../config/io.js";
 import {
   canonicalizeMainSessionAlias,
@@ -279,6 +280,9 @@ export function buildGatewayCronService(params: {
   const env = params.env ?? process.env;
   const storePath = resolveCronJobsStorePathFromConfig(params.cfg, env);
   const cronEnabled = env.OPENCLAW_SKIP_CRON !== "1" && params.cfg.cron?.enabled !== false;
+  const webhookTokenDestinations = resolveCronWebhookTokenDestinations(
+    params.cfg.cron?.webhookTokenDestinations,
+  );
 
   const findAgentEntry = (cfg: OpenClawConfig, agentId: string) =>
     listAgentEntries(cfg).find((entry) => normalizeAgentId(entry.id) === agentId);
@@ -855,6 +859,7 @@ export function buildGatewayCronService(params: {
         onDeliveryAccepted,
         ...(deadlineAtMs !== undefined ? { deadlineAtMs } : {}),
         webhookToken: params.cfg.cron?.webhookToken,
+        webhookTokenDestinations,
       });
     },
     runScriptJob: async ({ job, streamBatch, abortSignal }) => {
@@ -1004,6 +1009,7 @@ export function buildGatewayCronService(params: {
         logger: cronLogger,
         resolveCronAgent,
         webhookToken: params.cfg.cron?.webhookToken,
+        webhookTokenDestinations,
         job,
         text,
         runAtMs,
@@ -1105,6 +1111,7 @@ export function buildGatewayCronService(params: {
           logger: cronLogger,
           resolveCronAgent,
           webhookToken: params.cfg.cron?.webhookToken,
+          webhookTokenDestinations,
           globalFailureDestination: params.cfg.cron?.failureAlert,
         });
       }

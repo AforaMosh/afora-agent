@@ -743,6 +743,7 @@ Use the latest-generation, best-tier model available from your provider for untr
       enabled: false,
     },
     webhookToken: "replace-with-dedicated-webhook-token",
+    webhookTokenDestinations: ["https://hooks.example.com/cron"],
     sessionRetention: "24h",
   },
 }
@@ -751,6 +752,9 @@ Use the latest-generation, best-tier model available from your provider for untr
 `webhookToken` is sent as `Authorization: Bearer <token>` on automation webhook POSTs.
 Webhook URLs must not include embedded username/password credentials; use
 `webhookToken` when the receiver supports bearer authentication.
+To opt into exact destination scoping, set `webhookTokenDestinations` to the HTTPS URLs
+that may receive the bearer token. Leaving it unset preserves existing behavior; `[]`
+withholds the token from every destination. Authenticated scoped requests do not follow redirects.
 
 Automation jobs, run history, and quarantined malformed jobs live in the shared SQLite state database. Use the CLI or Gateway API to change jobs; `cron.store` is retired.
 

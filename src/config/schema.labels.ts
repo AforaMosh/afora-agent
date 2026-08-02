@@ -754,6 +754,7 @@ export const FIELD_LABELS: Record<string, string> = {
   cron: "Automations",
   "cron.enabled": "Automations Enabled",
   "cron.webhookToken": "Automations Webhook Bearer Token",
+  "cron.webhookTokenDestinations": "Automations Webhook Bearer Destinations",
   "cron.sessionRetention": "Automations Session Retention",
   transcripts: "Transcripts",
   "transcripts.enabled": "Transcripts Enabled",

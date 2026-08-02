@@ -89,6 +89,8 @@ export const AUTOMATION_FIELD_HELP: Record<string, string> = {
     "Enables automation execution for stored schedules managed by the gateway. Keep enabled for normal reminder/automation flows, and disable only to pause all automation execution without deleting jobs.",
   "cron.webhookToken":
     "Bearer token attached to automation webhook POST deliveries when webhook mode is used. Prefer secret/env substitution and rotate this token regularly if shared webhook endpoints are internet-reachable.",
+  "cron.webhookTokenDestinations":
+    "Optional exact HTTPS URLs allowed to receive the automation webhook bearer token. Leave unset to preserve bearer delivery to all webhook URLs; set an empty list to withhold the token everywhere.",
   "cron.sessionRetention":
     "Controls how long completed automation run sessions are kept before pruning (`24h`, `7d`, `1h30m`, or `false` to disable pruning; default: `24h`). Use shorter retention to reduce storage growth on high-frequency schedules.",
   transcripts:

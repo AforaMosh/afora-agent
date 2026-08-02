@@ -326,7 +326,7 @@ select it to open the owning Approvals page.
     - For main-session tasks, webhook and none delivery modes are available.
     - Advanced edit controls include delete-after-run, clear agent override, cron exact/stagger options, agent model/thinking overrides, and best-effort delivery toggles.
     - Form validation is inline with field-level errors; invalid values disable the save button until fixed.
-    - Set `cron.webhookToken` to send a dedicated bearer token; if omitted, the webhook is sent without an auth header.
+    - Set `cron.webhookToken` to send a dedicated bearer token; if omitted, the webhook is sent without an auth header. Optionally set `cron.webhookTokenDestinations` to exact HTTPS URLs that may receive it.
     - `cron.webhook` is a retired legacy fallback rejected by current config validation. Run `openclaw doctor --fix` to migrate stored jobs that still use `notify: true` to explicit per-job webhook or completion delivery and remove the old key.
 
   </Accordion>

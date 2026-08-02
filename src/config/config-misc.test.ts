@@ -1013,6 +1013,31 @@ describe("cron webhook schema", () => {
 
     expect(res.success).toBe(true);
   });
+
+  it("accepts optional exact HTTPS bearer destinations", () => {
+    const res = OpenClawSchema.safeParse({
+      cron: {
+        webhookTokenDestinations: ["https://hooks.example.com/cron?tenant=ops"],
+      },
+    });
+
+    expect(res.success).toBe(true);
+  });
+
+  it.each([
+    "http://hooks.example.com/cron",
+    "https://user@hooks.example.com/cron",
+    "https://*.example.com/cron",
+    "https://hooks.example.com/cron#fragment",
+  ])("rejects invalid bearer destination %s", (destination) => {
+    const res = OpenClawSchema.safeParse({
+      cron: {
+        webhookTokenDestinations: [destination],
+      },
+    });
+
+    expect(res.success).toBe(false);
+  });
 });
 
 describe("broadcast", () => {
