@@ -59,6 +59,7 @@ type AssistantStreamData = {
   delta: string;
   replace?: true;
   mediaUrls?: string[];
+  mediaType?: "image" | "audio" | "video" | "file";
   phase?: AssistantPhase;
 };
 

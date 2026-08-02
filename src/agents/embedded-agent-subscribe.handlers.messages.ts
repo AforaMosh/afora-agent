@@ -774,6 +774,7 @@ function buildAssistantStreamData(params: {
   replace?: boolean;
   mediaUrls?: string[];
   mediaUrl?: string;
+  mediaType?: "image" | "audio" | "video" | "file";
   phase?: AssistantPhase;
   itemId?: string;
 }): {
@@ -781,6 +782,7 @@ function buildAssistantStreamData(params: {
   delta: string;
   replace?: true;
   mediaUrls?: string[];
+  mediaType?: "image" | "audio" | "video" | "file";
   phase?: AssistantPhase;
   itemId?: string;
 } {
@@ -790,6 +792,7 @@ function buildAssistantStreamData(params: {
     delta: params.delta ?? "",
     replace: params.replace ? true : undefined,
     mediaUrls: mediaUrls.length ? mediaUrls : undefined,
+    mediaType: mediaUrls.length ? params.mediaType : undefined,
     phase: params.phase,
     itemId: params.itemId,
   };
@@ -1214,6 +1217,7 @@ export function handleMessageUpdate(
         delta: releaseHeldSnapshot ? currentSourcePartial.text : deltaText,
         replace: releaseHeldSnapshot || replace,
         mediaUrls,
+        mediaType: hasAudio ? "audio" : undefined,
         phase: deliveryPhase ?? assistantPhase,
       });
       ctx.emitAssistantStreamData(data, { emitPartialReply: !currentSourcePartial.hold });
@@ -1370,6 +1374,7 @@ export function handleMessageEnd(
   const parsedText = trimmedText ? parseReplyDirectives(trimmedText) : null;
   const cleanedText = parsedText?.text ?? "";
   const { mediaUrls, hasMedia } = resolveSendableOutboundReplyParts(parsedText ?? {});
+  const hasAudio = Boolean(parsedText?.audioAsVoice);
 
   const finalizeMessageEnd = () => {
     ctx.state.deltaBuffer = "";
@@ -1426,6 +1431,7 @@ export function handleMessageEnd(
       delta: finalStreamDelta,
       replace: shouldReplaceFinalStream,
       mediaUrls,
+      mediaType: hasAudio ? "audio" : undefined,
       phase: assistantPhase,
     });
     ctx.emitAssistantStreamData(data);
