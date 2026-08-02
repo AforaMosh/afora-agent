@@ -82,7 +82,11 @@ describe("Gateway agent shutdown", () => {
           idempotencyKey: runId,
         });
         expect(started).toMatchObject({ runId, status: "accepted" });
-        await modelServer.requestStarted;
+        await waitForProofStep(
+          modelServer.requestStarted,
+          30_000,
+          () => `model request did not start\n${instance.logs()}`,
+        );
 
         const child = instance.child;
         if (!child) {
@@ -105,8 +109,20 @@ describe("Gateway agent shutdown", () => {
 
         modelServer.releaseResponse();
 
-        await expect(finalEvent).resolves.toMatchObject({ runId, state: "final" });
-        await expect(exited).resolves.toEqual([0, null]);
+        await expect(
+          waitForProofStep(
+            finalEvent,
+            30_000,
+            () => `agent did not emit a final event after model completion\n${instance.logs()}`,
+          ),
+        ).resolves.toMatchObject({ runId, state: "final" });
+        await expect(
+          waitForProofStep(
+            exited,
+            30_000,
+            () => `gateway did not exit after its active turn completed\n${instance.logs()}`,
+          ),
+        ).resolves.toEqual([0, null]);
         expect(instance.logs()).toContain("all active work drained");
       } finally {
         modelServer.releaseResponse();
@@ -115,6 +131,26 @@ describe("Gateway agent shutdown", () => {
     },
   );
 });
+
+async function waitForProofStep<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  timeoutMessage: () => string,
+): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => reject(new Error(timeoutMessage())), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer) {
+      clearTimeout(timer);
+    }
+  }
+}
 
 function createTestConfig(baseUrl: string): OpenClawConfig {
   return {
