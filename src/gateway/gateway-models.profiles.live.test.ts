@@ -2677,36 +2677,38 @@ function buildGatewayToolReadMessage(params: {
   toolProbePath: string;
   strictReply: boolean;
 }): string {
-  const filename = path.basename(params.toolProbePath);
-  const context =
-    `OpenClaw release validation created a synthetic local test note named "${filename}" ` +
-    "in your current workspace.";
+  const readArgs = JSON.stringify({ path: params.toolProbePath });
   const task =
-    "Use OpenClaw's workspace file reader, not a shell command, to inspect that note and " +
-    "report the values recorded for LEFT and RIGHT.";
+    "OpenClaw release validation created a synthetic local test note in your current workspace. " +
+    `Use the tool named \`read\` (or \`Read\`) with JSON arguments ${readArgs} ` +
+    "to inspect it, not a shell command.";
   if (!params.strictReply) {
-    return `${context} ${task}`;
+    return `${task} Report the values recorded for LEFT and RIGHT.`;
   }
-  return (
-    `${context} It contains no user data or secrets. ${task} ` +
-    "Reply with only the LEFT and RIGHT values, separated by one space."
-  );
+  return `${task} The note contains no user data or secrets. Reply with only the LEFT and RIGHT values, separated by one space.`;
 }
 
 describe("buildGatewayToolReadMessage", () => {
-  it("keeps the request inside the workspace and out of tool-call syntax", () => {
+  it("requires a workspace read before reporting the synthetic note", () => {
     const message = buildGatewayToolReadMessage({
       toolProbePath: "/tmp/operator/workspace/.openclaw-live-tool-probe-deadbeef.txt",
       strictReply: true,
     });
 
-    expect(message).toContain('named ".openclaw-live-tool-probe-deadbeef.txt"');
+    expect(message).toContain(
+      JSON.stringify({ path: "/tmp/operator/workspace/.openclaw-live-tool-probe-deadbeef.txt" }),
+    );
     expect(message).toContain("synthetic local test note");
+    expect(message).toContain("tool named `read`");
+    expect(message).toContain("not a shell command");
     expect(message).toContain("no user data or secrets");
-    expect(message).toContain("workspace file reader, not a shell command");
-    expect(message).not.toContain("/tmp/operator");
-    expect(message).not.toContain('{"path"');
-    expect(message).not.toContain("tool named");
+  });
+
+  it("serializes Windows and quoted paths as JSON tool arguments", () => {
+    const toolProbePath = 'C:\\Users\\operator\\workspace\\"probe".txt';
+    const message = buildGatewayToolReadMessage({ toolProbePath, strictReply: false });
+
+    expect(message).toContain(JSON.stringify({ path: toolProbePath }));
   });
 });
 
