@@ -20,6 +20,8 @@ type OpenClawTestStateOptions = NonNullable<Parameters<typeof createOpenClawTest
 type OpenClawTestInstanceOptions = {
   name: string;
   cwd?: string;
+  nodeExecutable?: string;
+  entrypointArgs?: string[];
   port?: number;
   gatewayToken?: string;
   hookToken?: string;
@@ -325,6 +327,9 @@ export async function createOpenClawTestInstance(
   options: OpenClawTestInstanceOptions,
 ): Promise<OpenClawTestInstance> {
   const cwd = options.cwd ?? process.cwd();
+  const nodeExecutable = options.nodeExecutable ?? "node";
+  const resolveEntrypoint = () =>
+    options.entrypointArgs ? Promise.resolve(options.entrypointArgs) : resolveGatewayEntrypoint(cwd);
   const port = options.port ?? (await getFreePort());
   const gatewayToken = options.gatewayToken ?? `gateway-${options.name}-${randomUUID()}`;
   const hookToken = options.hookToken ?? `token-${options.name}-${randomUUID()}`;
@@ -374,11 +379,11 @@ export async function createOpenClawTestInstance(
       return child;
     },
     env,
-    entrypoint: () => resolveGatewayEntrypoint(cwd),
+    entrypoint: resolveEntrypoint,
     cli: async (args, commandOptions = {}) => {
-      const entrypoint = await resolveGatewayEntrypoint(cwd);
+      const entrypoint = await resolveEntrypoint();
       return await runCommand({
-        args: ["node", ...entrypoint, ...args],
+        args: [nodeExecutable, ...entrypoint, ...args],
         cwd,
         env,
         timeoutMs: commandOptions.timeoutMs ?? COMMAND_TIMEOUT_MS,
@@ -388,9 +393,9 @@ export async function createOpenClawTestInstance(
       if (child && !hasChildExited(child) && !child.killed) {
         return;
       }
-      const entrypoint = await resolveGatewayEntrypoint(cwd);
+      const entrypoint = await resolveEntrypoint();
       child = spawn(
-        "node",
+        nodeExecutable,
         [
           ...entrypoint,
           "gateway",
