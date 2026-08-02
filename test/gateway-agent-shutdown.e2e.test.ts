@@ -18,6 +18,7 @@ const WAIT_OPTIONS = { timeout: 10_000, interval: 25 } as const;
 type AgentEventPayload = {
   runId?: string;
   state?: string;
+  [key: string]: unknown;
 };
 
 type DelayedModelServer = {
@@ -82,11 +83,19 @@ describe("Gateway agent shutdown", () => {
           idempotencyKey: runId,
         });
         expect(started).toMatchObject({ runId, status: "accepted" });
-        await waitForProofStep(
-          modelServer.requestStarted,
+        const providerStart = await waitForProofStep(
+          Promise.race([
+            modelServer.requestStarted.then(() => ({ kind: "request" as const })),
+            finalEvent.then((payload) => ({ kind: "final" as const, payload })),
+          ]),
           30_000,
           () => `model request did not start\n${instance.logs()}`,
         );
+        if (providerStart.kind === "final") {
+          throw new Error(
+            `agent finished before the model request started: ${JSON.stringify(providerStart.payload)}\n${instance.logs()}`,
+          );
+        }
 
         const child = instance.child;
         if (!child) {
