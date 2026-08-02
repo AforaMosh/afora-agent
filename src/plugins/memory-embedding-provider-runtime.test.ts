@@ -166,6 +166,26 @@ describe("memory embedding provider runtime resolution", () => {
     expect(runtimeModule.getMemoryEmbeddingProvider("google")).toBe(googleAdapter);
   });
 
+  it("resolves a configured provider through its auth provider alias", () => {
+    const geminiAdapter = {
+      ...createCapabilityAdapter("gemini"),
+      authProviderId: "google",
+    };
+    registerMemoryEmbeddingProvider(geminiAdapter);
+    const config = {
+      models: {
+        providers: {
+          "google-work": {
+            api: "google",
+            models: [],
+          },
+        },
+      },
+    } as never;
+
+    expect(runtimeModule.getMemoryEmbeddingProvider("google-work", config)).toBe(geminiAdapter);
+  });
+
   it("leaves ambiguous registered auth provider aliases unresolved", () => {
     registerMemoryEmbeddingProvider({
       ...createCapabilityAdapter("gemini"),
