@@ -1,4 +1,5 @@
 // Control UI chat module implements realtime talk shared behavior.
+import { AGENT_RUN_TERMINAL_RETRY_GRACE_MS } from "../../../../src/agents/agent-run-terminal-grace.js";
 import { REALTIME_VOICE_AGENT_CONSULT_TOOL_NAME } from "../../../../src/talk/agent-consult-tool.js";
 import {
   buildRealtimeVoiceAgentCancelProviderResult,
@@ -228,8 +229,6 @@ type AgentWaitResult = {
   yielded?: boolean;
 };
 
-const EMPTY_FINAL_FALLBACK_GRACE_MS = 500;
-
 function extractTextFromMessage(message: unknown): string {
   if (!message || typeof message !== "object") {
     return "";
@@ -345,7 +344,7 @@ function waitForChatResult(params: {
           }
           emptyFinalFallbackTimer = window.setTimeout(() => {
             settleResolve("OpenClaw finished with no text.");
-          }, EMPTY_FINAL_FALLBACK_GRACE_MS);
+          }, AGENT_RUN_TERMINAL_RETRY_GRACE_MS);
         })
         .catch((error: unknown) => {
           settleReject(error instanceof Error ? error : new Error(String(error)));

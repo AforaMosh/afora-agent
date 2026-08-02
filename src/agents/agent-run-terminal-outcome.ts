@@ -18,6 +18,8 @@ import {
   type AgentRunTimeoutPhase,
 } from "./run-timeout-attribution.js";
 
+export { AGENT_RUN_TERMINAL_RETRY_GRACE_MS } from "./agent-run-terminal-grace.js";
+
 /** Wait status reported by agent run terminal wait paths. */
 type AgentRunWaitStatus = "ok" | "error" | "timeout";
 
@@ -467,9 +469,6 @@ type AgentRunTerminalInput = {
 type AgentRunTerminalWaitInput = Omit<AgentRunTerminalInput, "status"> & {
   status?: unknown;
 };
-
-/** Shared grace window for terminal observations that may still be followed by a retry. */
-export const AGENT_RUN_TERMINAL_RETRY_GRACE_MS = 15_000;
 
 const HARD_TIMEOUT_PHASES = new Set<AgentRunTimeoutPhase>(["preflight", "provider", "post_turn"]);
 
