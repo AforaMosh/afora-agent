@@ -15,7 +15,7 @@ const SESSION_KEY = "agent:main:main";
 const TEST_TIMEOUT_MS = 180_000;
 const WAIT_OPTIONS = { timeout: 10_000, interval: 25 } as const;
 
-type AgentEventPayload = {
+type ChatEventPayload = {
   runId?: string;
   state?: string;
   [key: string]: unknown;
@@ -53,8 +53,8 @@ describe("Gateway agent shutdown", () => {
       await instance.startGateway();
 
       const runId = randomUUID();
-      let resolveFinalEvent: ((payload: AgentEventPayload) => void) | undefined;
-      const finalEvent = new Promise<AgentEventPayload>((resolve) => {
+      let resolveFinalEvent: ((payload: ChatEventPayload) => void) | undefined;
+      const finalEvent = new Promise<ChatEventPayload>((resolve) => {
         resolveFinalEvent = resolve;
       });
       const client = await connectGatewayClient({
@@ -63,10 +63,10 @@ describe("Gateway agent shutdown", () => {
         role: "operator",
         scopes: ["operator.admin", "operator.read", "operator.write"],
         onEvent: (event) => {
-          if (event.event !== "agent" || !event.payload || typeof event.payload !== "object") {
+          if (event.event !== "chat" || !event.payload || typeof event.payload !== "object") {
             return;
           }
-          const payload = event.payload as AgentEventPayload;
+          const payload = event.payload as ChatEventPayload;
           if (payload.runId === runId && payload.state === "final") {
             resolveFinalEvent?.(payload);
           }
