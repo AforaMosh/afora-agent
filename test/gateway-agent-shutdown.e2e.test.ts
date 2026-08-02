@@ -109,7 +109,7 @@ describe("Gateway agent shutdown", () => {
         expect(child.kill("SIGTERM")).toBe(true);
 
         await vi.waitFor(() => {
-          expect(instance.logs()).toContain("before shutdown with timeout 15000ms");
+          expect(instance.logs()).toContain("before shutdown with timeout 50000ms");
         }, WAIT_OPTIONS);
         await new Promise<void>((resolve) => setTimeout(resolve, 250));
         expect(exitedEarly, instance.logs()).toBe(false);
