@@ -1,5 +1,6 @@
 /** Tests inbound auto-reply handling across channel message contexts. */
 import path from "node:path";
+import { runInNewContext } from "node:vm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { OpenClawConfig } from "../config/config.js";
 import type { GroupKeyResolution } from "../config/sessions.js";
@@ -448,8 +449,8 @@ describe("createInboundDebouncer", () => {
   it("normalizes shipped flush callbacks that return structural thenables", async () => {
     const flushed = vi.fn();
     const completion = Promise.resolve().then(flushed);
-    const thenable = Object.defineProperty({}, "then", {
-      value: completion.then.bind(completion),
+    const thenable = runInNewContext("Promise.resolve(completion)", {
+      completion,
     }) as PromiseLike<void>;
     const debouncer = createInboundDebouncer<{ key: string; id: string }>({
       debounceMs: 0,
