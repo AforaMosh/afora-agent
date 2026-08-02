@@ -96,6 +96,7 @@ type TestDispatchSequenceEntry =
 let mockedDispatchSequence: TestDispatchSequenceEntry[] = [];
 let mockedQueuedDispatchCounts: TestDispatchCounts = { tool: 0, block: 0, final: 0 };
 let mockedDispatcherCapturesDeliveryErrors = false;
+let mockedDispatchError: Error | undefined;
 
 let mockedProgressEvents: string[] = [];
 let mockedEmptyProgressToolName: string | undefined;
@@ -400,7 +401,8 @@ function createPreparedSlackMessage(params?: {
 
 async function dispatchNativeProgressScenario(params: {
   events: typeof mockedReplyOptionEvents;
-  finalPayload?: { text: string; isError?: boolean };
+  finalPayload?: TestReplyPayload;
+  dispatchSequence?: TestDispatchSequenceEntry[];
   progress?: {
     label?: string | false;
     maxLineChars?: number;
@@ -416,18 +418,21 @@ async function dispatchNativeProgressScenario(params: {
     teamId: string;
     client: Record<string, unknown>;
   };
+  relayIdentity?: { username?: string; iconUrl?: string; iconEmoji?: string };
 }) {
   mockedNativeStreaming = true;
   mockedSlackStreamingMode = "progress";
   mockedSlackDraftMode = "status_final";
   mockedDispatchSequence =
-    params.finalPayload === undefined ? [] : [{ kind: "final", payload: params.finalPayload }];
+    params.dispatchSequence ??
+    (params.finalPayload === undefined ? [] : [{ kind: "final", payload: params.finalPayload }]);
   mockedReplyOptionEvents = params.events;
 
   await dispatchPreparedSlackMessage(
     createPreparedSlackMessage({
       replyToMode: params.replyToMode,
       eventScope: params.eventScope,
+      relayIdentity: params.relayIdentity,
       accountConfig: {
         streaming: {
           mode: "progress",
@@ -1086,6 +1091,9 @@ vi.mock("openclaw/plugin-sdk/channel-inbound", async (importOriginal) => {
           mockedQueuedDispatchCounts[entry.kind] -= 1;
         }
       }
+      if (mockedDispatchError) {
+        throw mockedDispatchError;
+      }
       return {
         admission: { kind: "dispatch" } as const,
         dispatched: true as const,
@@ -1145,6 +1153,7 @@ describe("dispatchPreparedSlackMessage preview fallback", () => {
     mockedDispatchSequence = [{ kind: "final", payload: { text: FINAL_REPLY_TEXT } }];
     mockedQueuedDispatchCounts = { tool: 0, block: 0, final: 0 };
     mockedDispatcherCapturesDeliveryErrors = false;
+    mockedDispatchError = undefined;
     mockedProgressEvents = [];
     mockedEmptyProgressToolName = undefined;
     mockedReplyOptionEvents = [];
@@ -2995,6 +3004,28 @@ describe("dispatchPreparedSlackMessage preview fallback", () => {
     ]);
   });
 
+  it("derives the native plan title from typed steps when no explanation is available", async () => {
+    await dispatchNativeProgressScenario({
+      finalPayload: { text: FINAL_REPLY_TEXT },
+      events: [
+        {
+          kind: "plan",
+          phase: "update",
+          steps: [
+            { step: "Inspect code", status: "in_progress" },
+            { step: "Validate delivery", status: "pending" },
+          ],
+        },
+      ],
+    });
+
+    expectNativeProgressStart([
+      planUpdate("Inspect code and 1 more step"),
+      taskUpdate(planTaskId(1), "Inspect code", "in_progress"),
+      taskUpdate(planTaskId(2), "Validate delivery", "pending"),
+    ]);
+  });
+
   it("keeps plan explanation in native chunks alongside a fresh preamble", async () => {
     await dispatchNativeProgressScenario({
       finalPayload: { text: FINAL_REPLY_TEXT },
@@ -3454,6 +3485,130 @@ describe("dispatchPreparedSlackMessage preview fallback", () => {
     );
     expectRecordFields(deliverParams, { replyThreadTs: THREAD_TS });
     expect(deliverParams.replies).toEqual([{ text: "tool failed", isError: true }]);
+  });
+
+  it("keeps approval replies visible alongside an active native progress plan", async () => {
+    const approvalPayload = {
+      text: "Approval required before deployment",
+      presentation: {
+        blocks: [
+          {
+            type: "buttons",
+            buttons: [
+              { label: "Approve", action: { type: "callback", value: "approve-deployment" } },
+            ],
+          },
+        ],
+      },
+    };
+    await dispatchNativeProgressScenario({
+      events: [
+        {
+          kind: "plan",
+          phase: "update",
+          explanation: "Deploy the release",
+          steps: [{ step: "Request deployment approval", status: "in_progress" }],
+        },
+      ],
+      dispatchSequence: [
+        { kind: "block", payload: approvalPayload },
+        { kind: "final", payload: { text: FINAL_REPLY_TEXT } },
+      ],
+    });
+
+    expect(startSlackStreamMock).toHaveBeenCalledTimes(1);
+    expect(deliverRepliesMock).toHaveBeenCalledTimes(2);
+    const approvalParams = requireRecord(
+      requireMockCall(deliverRepliesMock, 0, "approval delivery")[0],
+      "approval delivery params",
+    );
+    expectRecordFields(approvalParams, { replyThreadTs: THREAD_TS });
+    expect(approvalParams.replies).toEqual([approvalPayload]);
+    expectDeliverReplyCall(1, FINAL_REPLY_TEXT);
+  });
+
+  it("preserves media and custom identity with an active native progress plan", async () => {
+    const relayIdentity = { username: "Release Claw", iconEmoji: ":rocket:" };
+    await dispatchNativeProgressScenario({
+      finalPayload: {
+        text: "Generated release chart",
+        mediaUrl: "https://example.com/release-chart.png",
+      },
+      relayIdentity,
+      events: [
+        {
+          kind: "plan",
+          phase: "update",
+          explanation: "Generate the release chart",
+          steps: [{ step: "Render release metrics", status: "in_progress" }],
+        },
+      ],
+    });
+
+    expectMockCallArgFields(startSlackStreamMock, 0, "native progress identity", {
+      identity: relayIdentity,
+    });
+    const deliverParams = requireRecord(
+      requireMockCall(deliverRepliesMock, 0, "media final delivery")[0],
+      "media final delivery params",
+    );
+    expectRecordFields(deliverParams, { replyThreadTs: THREAD_TS, identity: relayIdentity });
+    expect(deliverParams.replies).toEqual([
+      {
+        text: "Generated release chart",
+        mediaUrl: "https://example.com/release-chart.png",
+      },
+    ]);
+  });
+
+  it("marks an active native plan as error when the fresh final send fails", async () => {
+    deliverRepliesMock.mockRejectedValueOnce(new Error("final send failed"));
+
+    await expect(
+      dispatchNativeProgressScenario({
+        finalPayload: { text: FINAL_REPLY_TEXT },
+        events: [
+          {
+            kind: "plan",
+            phase: "update",
+            explanation: "Deliver the result",
+            steps: [{ step: "Send the final answer", status: "in_progress" }],
+          },
+        ],
+      }),
+    ).rejects.toThrow("final send failed");
+
+    expect(appendSlackStreamMock).not.toHaveBeenCalled();
+    expectMockCallArgFields(stopSlackStreamMock, 0, "failed final native cleanup", {
+      chunks: [
+        planUpdate("Deliver the result"),
+        taskUpdate(planTaskId(1), "Send the final answer", "error"),
+      ],
+    });
+  });
+
+  it("marks an active native plan as error when dispatch throws", async () => {
+    mockedDispatchError = new Error("agent dispatch failed");
+
+    await expect(
+      dispatchNativeProgressScenario({
+        events: [
+          {
+            kind: "plan",
+            phase: "update",
+            explanation: "Run the agent task",
+            steps: [{ step: "Execute the requested work", status: "in_progress" }],
+          },
+        ],
+      }),
+    ).rejects.toThrow("agent dispatch failed");
+
+    expectMockCallArgFields(stopSlackStreamMock, 0, "dispatch exception native cleanup", {
+      chunks: [
+        planUpdate("Run the agent task"),
+        taskUpdate(planTaskId(1), "Execute the requested work", "error"),
+      ],
+    });
   });
 
   it("completes a native Slack progress plan even when no final text is sent", async () => {

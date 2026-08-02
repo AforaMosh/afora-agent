@@ -298,7 +298,6 @@ const slackTraceScenarios: Record<SlackTraceScenarioName, readonly SlackTraceSte
     { kind: "reply-start" },
     {
       kind: "plan",
-      explanation: "Implement semantic Slack progress",
       steps: [
         { step: "Inspect the Slack lifecycle", status: "in_progress" },
         { step: "Validate wire delivery", status: "pending" },
@@ -308,7 +307,6 @@ const slackTraceScenarios: Record<SlackTraceScenarioName, readonly SlackTraceSte
     { kind: "tool-progress", name: "message", phase: "start" },
     {
       kind: "plan",
-      explanation: "Implement semantic Slack progress",
       steps: [
         { step: "Inspect the Slack lifecycle", status: "completed" },
         { step: "Validate wire delivery", status: "in_progress" },

@@ -97,14 +97,18 @@ describe("native Slack semantic task chunks", () => {
     expect(buildSlackProgressStreamStartChunks({})).toBeUndefined();
   });
 
-  it("uses a neutral plan title when structured steps have no explanation", () => {
+  it("derives a meaningful plan title from structured steps when no explanation is available", () => {
     expect(
       buildSlackProgressStreamStartChunks({
-        plan: [{ step: "Inspect code", status: "in_progress" }],
+        plan: [
+          { step: "Inspect code", status: "in_progress" },
+          { step: "Validate delivery", status: "pending" },
+        ],
       }),
     ).toEqual([
-      planUpdate("Task progress"),
+      planUpdate("Inspect code and 1 more step"),
       taskUpdate("plan_step_1", "Inspect code", "in_progress"),
+      taskUpdate("plan_step_2", "Validate delivery", "pending"),
     ]);
   });
 

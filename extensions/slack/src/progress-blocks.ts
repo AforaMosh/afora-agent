@@ -96,9 +96,14 @@ function resolvePlanTitle(params: {
   title?: string;
   tasks: readonly SlackPlanTask[];
 }): string {
-  return compactChunkText(
-    params.title?.trim() || params.label?.trim() || SLACK_PROGRESS_PLAN_FALLBACK_TITLE,
-  );
+  const firstTask = params.tasks[0];
+  const remainingTaskCount = Math.max(0, params.tasks.length - 1);
+  const structuredFallback = firstTask
+    ? remainingTaskCount > 0
+      ? `${firstTask.title} and ${remainingTaskCount} more ${remainingTaskCount === 1 ? "step" : "steps"}`
+      : firstTask.title
+    : SLACK_PROGRESS_PLAN_FALLBACK_TITLE;
+  return compactChunkText(params.title?.trim() || params.label?.trim() || structuredFallback);
 }
 
 function buildSlackProgressStreamChunks(params: {
