@@ -2,6 +2,7 @@
 import { installChannelDmPolicyContractSuite } from "openclaw/plugin-sdk/channel-test-helpers";
 import { DEFAULT_ACCOUNT_ID } from "openclaw/plugin-sdk/setup";
 import { describe, expect, it, vi } from "vitest";
+import { TelegramConfigSchema } from "../config-api.js";
 import { promptTelegramAllowFromForAccount, telegramSetupAdapter } from "./setup-core.js";
 import {
   buildTelegramDmAccessWarningLines,
@@ -78,6 +79,41 @@ describe("telegram DM access warning helpers", () => {
     expect(lines.join("\n")).toContain(
       `openclaw config set channels.telegram.accounts.alerts.allowFrom '["YOUR_USER_ID"]'`,
     );
+  });
+
+  it.each([
+    ["default", DEFAULT_ACCOUNT_ID],
+    ["named", "alerts"],
+  ])("keeps every %s-account warning command valid when followed sequentially", (_, accountId) => {
+    const commands = buildTelegramDmAccessWarningLines(accountId).filter((line) =>
+      line.includes("openclaw config set "),
+    );
+    const accountConfig: {
+      botToken: string;
+      dmPolicy?: "allowlist";
+      allowFrom?: string[];
+    } = { botToken: "fake" };
+    const telegramConfig =
+      accountId === DEFAULT_ACCOUNT_ID
+        ? accountConfig
+        : { accounts: { [accountId]: accountConfig } };
+
+    expect(commands).toHaveLength(2);
+    for (const command of commands) {
+      if (command.includes(".dmPolicy ")) {
+        accountConfig.dmPolicy = "allowlist";
+      } else if (command.includes(".allowFrom ")) {
+        accountConfig.allowFrom = ["123456789"];
+      } else {
+        throw new Error(`Unrecognized setup command: ${command}`);
+      }
+      expect(TelegramConfigSchema.safeParse(telegramConfig).success, command).toBe(true);
+    }
+
+    expect(accountConfig).toMatchObject({
+      allowFrom: ["123456789"],
+      dmPolicy: "allowlist",
+    });
   });
 
   it("skips the warning when an allowFrom entry already exists", () => {
