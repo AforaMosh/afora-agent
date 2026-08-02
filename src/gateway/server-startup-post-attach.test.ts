@@ -1968,12 +1968,7 @@ describe("startGatewayPostAttachRuntime", () => {
   it("stops post-ready sidecars registered after close started", () => {
     const postReadySidecar = { stop: vi.fn() };
 
-    stopLateSidecarsAfterCloseStarted(
-      [postReadySidecar],
-      true,
-      "post-ready",
-      { warn: vi.fn() },
-    );
+    stopLateSidecarsAfterCloseStarted([postReadySidecar], true, "post-ready", { warn: vi.fn() });
 
     expect(postReadySidecar.stop).toHaveBeenCalledTimes(1);
   });
@@ -1981,12 +1976,7 @@ describe("startGatewayPostAttachRuntime", () => {
   it("keeps post-ready sidecars running when close has not started", () => {
     const postReadySidecar = { stop: vi.fn() };
 
-    stopLateSidecarsAfterCloseStarted(
-      [postReadySidecar],
-      false,
-      "post-ready",
-      { warn: vi.fn() },
-    );
+    stopLateSidecarsAfterCloseStarted([postReadySidecar], false, "post-ready", { warn: vi.fn() });
 
     expect(postReadySidecar.stop).not.toHaveBeenCalled();
   });
@@ -2558,12 +2548,9 @@ describe("startGatewayPostAttachRuntime", () => {
     });
 
     expect(result.postReadySidecars).toHaveLength(2);
-    stopLateSidecarsAfterCloseStarted(
-      result.postReadySidecars,
-      true,
-      "post-ready",
-      { warn: vi.fn() },
-    );
+    stopLateSidecarsAfterCloseStarted(result.postReadySidecars, true, "post-ready", {
+      warn: vi.fn(),
+    });
     releasePostReadyWork();
     await vi.advanceTimersByTimeAsync(1_000);
 
