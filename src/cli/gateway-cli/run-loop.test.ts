@@ -531,7 +531,7 @@ describe("runGatewayLoop", () => {
     });
   });
 
-  it("drains active work without a timeout before closing on SIGTERM", async () => {
+  it("drains active work before the SIGTERM shutdown deadline", async () => {
     vi.clearAllMocks();
     getActiveTaskCount.mockReturnValueOnce(1);
     getActiveEmbeddedRunCount.mockReturnValueOnce(1);
@@ -574,9 +574,10 @@ describe("runGatewayLoop", () => {
         );
 
         expect(markGatewayDraining).toHaveBeenCalledOnce();
-        expect(waitForActiveTasks).toHaveBeenCalledWith(undefined);
-        expect(waitForActiveEmbeddedRuns).toHaveBeenCalledWith(undefined);
-        expect(waitForActiveGatewayRootWork).toHaveBeenCalledWith(undefined);
+        expect(waitForActiveTasks).toHaveBeenCalledWith(15_000);
+        expect(waitForActiveEmbeddedRuns).toHaveBeenCalledWith(15_000);
+        expect(waitForActiveGatewayRootWork).toHaveBeenCalledOnce();
+        expect(waitForActiveGatewayRootWork.mock.calls[0]?.[0]).toBeLessThanOrEqual(15_000);
         expect(abortEmbeddedAgentRun).not.toHaveBeenCalled();
         expect(markRestartAbortedMainSessions).not.toHaveBeenCalled();
         expect(close).not.toHaveBeenCalled();
@@ -596,6 +597,49 @@ describe("runGatewayLoop", () => {
         releaseRuns?.();
         releaseRoot?.();
         await exited;
+        waitForActiveTasks.mockReset();
+        waitForActiveTasks.mockResolvedValue({ drained: true });
+        waitForActiveEmbeddedRuns.mockReset();
+        waitForActiveEmbeddedRuns.mockResolvedValue({ drained: true });
+        waitForActiveGatewayRootWork.mockReset();
+        waitForActiveGatewayRootWork.mockResolvedValue({ drained: true, active: 0 });
+      }
+    });
+  });
+
+  it("continues SIGTERM shutdown when the active-work drain deadline expires", async () => {
+    vi.clearAllMocks();
+    getActiveTaskCount.mockReturnValueOnce(1);
+    getActiveEmbeddedRunCount.mockReturnValueOnce(1);
+    waitForActiveTasks.mockResolvedValueOnce({ drained: false });
+    waitForActiveEmbeddedRuns.mockResolvedValueOnce({ drained: false });
+    waitForActiveGatewayRootWork.mockResolvedValueOnce({ drained: false, active: 2 });
+
+    await withIsolatedSignals(async ({ captureSignal }) => {
+      const { close, runtime, exited } = await createSignaledLoopHarness();
+
+      try {
+        captureSignal("SIGTERM")();
+
+        await expect(exited).resolves.toBe(0);
+        expect(waitForActiveTasks).toHaveBeenCalledWith(15_000);
+        expect(waitForActiveEmbeddedRuns).toHaveBeenCalledWith(15_000);
+        expect(waitForActiveGatewayRootWork).toHaveBeenCalledOnce();
+        expect(waitForActiveGatewayRootWork.mock.calls[0]?.[0]).toBeLessThanOrEqual(15_000);
+        expect(abortEmbeddedAgentRun).not.toHaveBeenCalled();
+        expect(markRestartAbortedMainSessions).not.toHaveBeenCalled();
+        expect(gatewayLog.warn).toHaveBeenCalledWith(
+          "drain timeout reached; proceeding with shutdown",
+        );
+        expect(gatewayLog.warn).toHaveBeenCalledWith(
+          "gateway root transaction drain timeout reached with 2 root(s) still active; proceeding with shutdown",
+        );
+        expect(close).toHaveBeenCalledWith({
+          reason: "gateway stopping",
+          restartExpectedMs: null,
+        });
+        expect(runtime.exit).toHaveBeenCalledWith(0);
+      } finally {
         waitForActiveTasks.mockReset();
         waitForActiveTasks.mockResolvedValue({ drained: true });
         waitForActiveEmbeddedRuns.mockReset();
