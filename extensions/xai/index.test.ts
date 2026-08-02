@@ -249,6 +249,7 @@ describe("xai provider plugin", () => {
     expect(result.provider.baseUrl).toBe("https://cli-chat-proxy.grok.com/v1");
     expect(result.provider.auth).toBe("oauth");
     expect(result.provider.apiKey).toBeUndefined();
+    expect(result.provider.headers).toEqual({ "x-grok-client-version": "0.1.202" });
     expect(result.provider.models.map((model) => model.id)).toEqual([
       "auto",
       "grok-composer-2.5-fast",
@@ -432,6 +433,7 @@ describe("xai provider plugin", () => {
     expect(result.provider.baseUrl).toBe("https://cli-chat-proxy.grok.com/v1");
     expect(result.provider.auth).toBe("oauth");
     expect(result.provider.apiKey).toBeUndefined();
+    expect(result.provider.headers).toEqual({ "x-grok-client-version": "0.1.202" });
     expect(result.provider.models.map((model) => model.id)).toContain("auto");
     expect(result.provider.models.map((model) => model.id)).toContain("grok-build-0.1");
   });
