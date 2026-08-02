@@ -237,12 +237,18 @@ describe("status.command-sections", () => {
   it("marks configured plugin registration failures as warnings without trusting plugin ids", () => {
     const rows = buildStatusHealthRows({
       health: {
+        ok: true,
+        ts: 0,
         durationMs: 42,
         channels: {
           qqbot: { accountId: "default", configured: true },
         },
         channelOrder: ["qqbot"],
         channelLabels: { qqbot: "QQ Bot" },
+        heartbeatSeconds: 60,
+        defaultAgentId: "main",
+        agents: [],
+        sessions: { path: "/tmp/sessions.json", count: 0, recent: [] },
         plugins: {
           loaded: [],
           errors: [
@@ -255,7 +261,7 @@ describe("status.command-sections", () => {
             },
           ],
         },
-      } as HealthSummary,
+      },
       formatHealthChannelLines,
       ok: (value) => `ok(${value})`,
       warn: (value) => `warn(${value})`,

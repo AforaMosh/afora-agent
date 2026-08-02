@@ -260,9 +260,7 @@ describe("healthCommand", () => {
     expect(output).toContain(
       "Plugin: failed - memory-owner: configured-unavailable (missing-main-entry): main entry missing",
     );
-    expect(output).toContain(
-      "Plugin: failed - openclaw-qqbot: missing buffered reply dispatcher",
-    );
+    expect(output).toContain("Plugin: failed - openclaw-qqbot: missing buffered reply dispatcher");
     expect(output).not.toContain("optional-broken");
     expect(runtime.exit).not.toHaveBeenCalled();
   });

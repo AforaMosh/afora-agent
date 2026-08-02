@@ -144,10 +144,7 @@ const isProbeFailure = (summary: ChannelAccountHealthSummary): boolean => {
 // Plugin diagnostics cross terminal/table trust boundaries; invisible Unicode
 // direction, surrogate, and line controls must not spoof the rendered status.
 const sanitizePluginHealthText = (value: string, maxLength: number): string =>
-  shortenText(
-    sanitizeTerminalText(value).replace(/[\p{Cf}\p{Cs}\p{Zl}\p{Zp}]/gu, ""),
-    maxLength,
-  );
+  shortenText(sanitizeTerminalText(value).replace(/[\p{Cf}\p{Cs}\p{Zl}\p{Zp}]/gu, ""), maxLength);
 
 /** Formats channel health and actionable plugin failures for human CLI output. */
 export const formatHealthChannelLines = (
