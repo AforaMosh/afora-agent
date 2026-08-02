@@ -1,28 +1,15 @@
 // Cron failure alert tests cover notification behavior for failed scheduled jobs.
-import fs from "node:fs/promises";
-import os from "node:os";
-import path from "node:path";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { CronService } from "./service.js";
+import { setupCronServiceSuite } from "./service.test-harness.js";
+import type { CronJobCreate } from "./types.js";
 
 type CronServiceParams = ConstructorParameters<typeof CronService>[0];
 
-const noopLogger = {
-  debug: vi.fn(),
-  info: vi.fn(),
-  warn: vi.fn(),
-  error: vi.fn(),
-};
-
-async function makeStorePath() {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-cron-failure-alert-"));
-  return {
-    storePath: path.join(dir, "cron", "jobs.json"),
-    cleanup: async () => {
-      await fs.rm(dir, { recursive: true, force: true });
-    },
-  };
-}
+const { logger, makeStorePath } = setupCronServiceSuite({
+  prefix: "openclaw-cron-failure-alert-",
+  baseTimeIso: "2026-01-01T00:00:00.000Z",
+});
 
 function createFailureAlertCron(params: {
   storePath: string;
@@ -34,11 +21,51 @@ function createFailureAlertCron(params: {
     storePath: params.storePath,
     cronEnabled: true,
     cronConfig: params.cronConfig,
-    log: noopLogger,
+    log: logger,
     enqueueSystemEvent: vi.fn(),
     requestHeartbeat: vi.fn(),
     runIsolatedAgentJob: params.runIsolatedAgentJob,
     sendCronFailureAlert: params.sendCronFailureAlert,
+  });
+}
+
+type IsolatedRunResult = Awaited<ReturnType<NonNullable<CronServiceParams["runIsolatedAgentJob"]>>>;
+
+async function withFailureAlertCron(
+  params: { cronConfig?: CronServiceParams["cronConfig"]; result: IsolatedRunResult },
+  run: (context: {
+    cron: CronService;
+    sendCronFailureAlert: ReturnType<typeof vi.fn>;
+  }) => Promise<void>,
+) {
+  const store = await makeStorePath();
+  const sendCronFailureAlert = vi.fn(async () => undefined);
+  const cron = createFailureAlertCron({
+    storePath: store.storePath,
+    cronConfig: params.cronConfig,
+    runIsolatedAgentJob: vi.fn(async () => params.result),
+    sendCronFailureAlert,
+  });
+  await cron.start();
+  try {
+    await run({ cron, sendCronFailureAlert });
+  } finally {
+    cron.stop();
+    await store.cleanup();
+  }
+}
+
+function addFailureAlertJob(
+  cron: CronService,
+  params: Pick<CronJobCreate, "name"> & Partial<CronJobCreate>,
+) {
+  return cron.add({
+    enabled: true,
+    schedule: { kind: "every", everyMs: 60_000 },
+    sessionTarget: "isolated",
+    wakeMode: "next-heartbeat",
+    payload: { kind: "agentTurn", message: "run report" },
+    ...params,
   });
 }
 
@@ -79,283 +106,181 @@ function expectAlertTextContaining(
 }
 
 describe("CronService failure alerts", () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
-    noopLogger.debug.mockClear();
-    noopLogger.info.mockClear();
-    noopLogger.warn.mockClear();
-    noopLogger.error.mockClear();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   it("alerts after configured consecutive failures and honors cooldown", async () => {
-    const store = await makeStorePath();
-    const sendCronFailureAlert = vi.fn(async () => undefined);
-    const runIsolatedAgentJob = vi.fn(async () => ({
-      status: "error" as const,
-      error: "wrong model id",
-    }));
-
-    const cron = createFailureAlertCron({
-      storePath: store.storePath,
-      cronConfig: {
-        failureAlert: {
-          enabled: true,
-          after: 2,
-          cooldownMs: 60_000,
+    await withFailureAlertCron(
+      {
+        cronConfig: {
+          failureAlert: {
+            enabled: true,
+            after: 2,
+            cooldownMs: 60_000,
+          },
         },
+        result: { status: "error", error: "wrong model id" },
       },
-      runIsolatedAgentJob,
-      sendCronFailureAlert,
-    });
+      async ({ cron, sendCronFailureAlert }) => {
+        const job = await addFailureAlertJob(cron, {
+          name: "daily report",
+          delivery: { mode: "announce", channel: "telegram", to: "19098680" },
+        });
 
-    await cron.start();
-    const job = await cron.add({
-      name: "daily report",
-      enabled: true,
-      schedule: { kind: "every", everyMs: 60_000 },
-      sessionTarget: "isolated",
-      wakeMode: "next-heartbeat",
-      payload: { kind: "agentTurn", message: "run report" },
-      delivery: { mode: "announce", channel: "telegram", to: "19098680" },
-    });
+        await cron.run(job.id, "force");
+        expect(sendCronFailureAlert).not.toHaveBeenCalled();
 
-    await cron.run(job.id, "force");
-    expect(sendCronFailureAlert).not.toHaveBeenCalled();
+        await cron.run(job.id, "force");
+        expect(sendCronFailureAlert).toHaveBeenCalledTimes(1);
+        const firstAlert = expectAlertFields(sendCronFailureAlert, {
+          channel: "telegram",
+          to: "19098680",
+        });
+        expect((firstAlert.job as { id?: string } | undefined)?.id).toBe(job.id);
+        expectAlertTextContaining(sendCronFailureAlert, 'Automation "daily report" failed 2 times');
 
-    await cron.run(job.id, "force");
-    expect(sendCronFailureAlert).toHaveBeenCalledTimes(1);
-    const firstAlert = expectAlertFields(sendCronFailureAlert, {
-      channel: "telegram",
-      to: "19098680",
-    });
-    expect((firstAlert.job as { id?: string } | undefined)?.id).toBe(job.id);
-    expectAlertTextContaining(sendCronFailureAlert, 'Automation "daily report" failed 2 times');
+        await cron.run(job.id, "force");
+        expect(sendCronFailureAlert).toHaveBeenCalledTimes(1);
 
-    await cron.run(job.id, "force");
-    expect(sendCronFailureAlert).toHaveBeenCalledTimes(1);
-
-    vi.advanceTimersByTime(60_000);
-    await cron.run(job.id, "force");
-    expect(sendCronFailureAlert).toHaveBeenCalledTimes(2);
-    expectAlertTextContaining(sendCronFailureAlert, 'Automation "daily report" failed 4 times');
-
-    cron.stop();
-    await store.cleanup();
+        vi.advanceTimersByTime(60_000);
+        await cron.run(job.id, "force");
+        expect(sendCronFailureAlert).toHaveBeenCalledTimes(2);
+        expectAlertTextContaining(sendCronFailureAlert, 'Automation "daily report" failed 4 times');
+      },
+    );
   });
 
   it("supports per-job failure alert override when global alerts are disabled", async () => {
-    const store = await makeStorePath();
-    const sendCronFailureAlert = vi.fn(async () => undefined);
-    const runIsolatedAgentJob = vi.fn(async () => ({
-      status: "error" as const,
-      error: "timeout",
-    }));
-
-    const cron = createFailureAlertCron({
-      storePath: store.storePath,
-      cronConfig: {
-        failureAlert: {
-          enabled: false,
+    await withFailureAlertCron(
+      {
+        cronConfig: {
+          failureAlert: {
+            enabled: false,
+          },
         },
+        result: { status: "error", error: "timeout" },
       },
-      runIsolatedAgentJob,
-      sendCronFailureAlert,
-    });
+      async ({ cron, sendCronFailureAlert }) => {
+        const job = await addFailureAlertJob(cron, {
+          name: "job with override",
+          failureAlert: {
+            after: 1,
+            channel: "telegram",
+            to: "12345",
+            cooldownMs: 1,
+          },
+        });
 
-    await cron.start();
-    const job = await cron.add({
-      name: "job with override",
-      enabled: true,
-      schedule: { kind: "every", everyMs: 60_000 },
-      sessionTarget: "isolated",
-      wakeMode: "next-heartbeat",
-      payload: { kind: "agentTurn", message: "run report" },
-      failureAlert: {
-        after: 1,
-        channel: "telegram",
-        to: "12345",
-        cooldownMs: 1,
+        await cron.run(job.id, "force");
+        expect(sendCronFailureAlert).toHaveBeenCalledTimes(1);
+        expectAlertFields(sendCronFailureAlert, {
+          channel: "telegram",
+          to: "12345",
+        });
       },
-    });
-
-    await cron.run(job.id, "force");
-    expect(sendCronFailureAlert).toHaveBeenCalledTimes(1);
-    expectAlertFields(sendCronFailureAlert, {
-      channel: "telegram",
-      to: "12345",
-    });
-
-    cron.stop();
-    await store.cleanup();
+    );
   });
 
   it("respects per-job failureAlert=false and suppresses alerts", async () => {
-    const store = await makeStorePath();
-    const sendCronFailureAlert = vi.fn(async () => undefined);
-    const runIsolatedAgentJob = vi.fn(async () => ({
-      status: "error" as const,
-      error: "auth error",
-    }));
-
-    const cron = createFailureAlertCron({
-      storePath: store.storePath,
-      cronConfig: {
-        failureAlert: {
-          enabled: true,
-          after: 1,
+    await withFailureAlertCron(
+      {
+        cronConfig: {
+          failureAlert: {
+            enabled: true,
+            after: 1,
+          },
         },
+        result: { status: "error", error: "auth error" },
       },
-      runIsolatedAgentJob,
-      sendCronFailureAlert,
-    });
+      async ({ cron, sendCronFailureAlert }) => {
+        const job = await addFailureAlertJob(cron, {
+          name: "disabled alert job",
+          failureAlert: false,
+        });
 
-    await cron.start();
-    const job = await cron.add({
-      name: "disabled alert job",
-      enabled: true,
-      schedule: { kind: "every", everyMs: 60_000 },
-      sessionTarget: "isolated",
-      wakeMode: "next-heartbeat",
-      payload: { kind: "agentTurn", message: "run report" },
-      failureAlert: false,
-    });
-
-    await cron.run(job.id, "force");
-    await cron.run(job.id, "force");
-    expect(sendCronFailureAlert).not.toHaveBeenCalled();
-
-    cron.stop();
-    await store.cleanup();
+        await cron.run(job.id, "force");
+        await cron.run(job.id, "force");
+        expect(sendCronFailureAlert).not.toHaveBeenCalled();
+      },
+    );
   });
 
   it("preserves includeSkipped through failure alert updates", async () => {
-    const store = await makeStorePath();
-    const sendCronFailureAlert = vi.fn(async () => undefined);
-    const runIsolatedAgentJob = vi.fn(async () => ({
-      status: "skipped" as const,
-      error: "requests-in-flight",
-    }));
-
-    const cron = createFailureAlertCron({
-      storePath: store.storePath,
-      cronConfig: {
-        failureAlert: {
-          enabled: true,
-          after: 1,
+    await withFailureAlertCron(
+      {
+        cronConfig: {
+          failureAlert: {
+            enabled: true,
+            after: 1,
+          },
         },
+        result: { status: "skipped", error: "requests-in-flight" },
       },
-      runIsolatedAgentJob,
-      sendCronFailureAlert,
-    });
+      async ({ cron, sendCronFailureAlert }) => {
+        const job = await addFailureAlertJob(cron, {
+          name: "updated skipped alert job",
+          failureAlert: { after: 1, channel: "telegram", to: "12345" },
+        });
 
-    await cron.start();
-    const job = await cron.add({
-      name: "updated skipped alert job",
-      enabled: true,
-      schedule: { kind: "every", everyMs: 60_000 },
-      sessionTarget: "isolated",
-      wakeMode: "next-heartbeat",
-      payload: { kind: "agentTurn", message: "run report" },
-      failureAlert: {
-        after: 1,
-        channel: "telegram",
-        to: "12345",
+        const updated = await cron.update(job.id, {
+          failureAlert: { includeSkipped: true },
+        });
+        const updatedFailureAlert = updated?.failureAlert;
+        if (!updatedFailureAlert) {
+          throw new Error("expected updated failure alert config");
+        }
+        expect(updatedFailureAlert.after).toBe(1);
+        expect(updatedFailureAlert.channel).toBe("telegram");
+        expect(updatedFailureAlert.to).toBe("12345");
+        expect(updatedFailureAlert.includeSkipped).toBe(true);
+
+        await cron.run(job.id, "force");
+        expectAlertFields(sendCronFailureAlert, { channel: "telegram", to: "12345" });
+        expectAlertTextContaining(
+          sendCronFailureAlert,
+          'Automation "updated skipped alert job" skipped 1 times',
+        );
       },
-    });
-
-    const updated = await cron.update(job.id, {
-      failureAlert: {
-        includeSkipped: true,
-      },
-    });
-    const updatedFailureAlert = updated?.failureAlert;
-    if (!updatedFailureAlert) {
-      throw new Error("expected updated failure alert config");
-    }
-    expect(updatedFailureAlert.after).toBe(1);
-    expect(updatedFailureAlert.channel).toBe("telegram");
-    expect(updatedFailureAlert.to).toBe("12345");
-    expect(updatedFailureAlert.includeSkipped).toBe(true);
-
-    await cron.run(job.id, "force");
-    expectAlertFields(sendCronFailureAlert, {
-      channel: "telegram",
-      to: "12345",
-    });
-    expectAlertTextContaining(
-      sendCronFailureAlert,
-      'Automation "updated skipped alert job" skipped 1 times',
     );
-
-    cron.stop();
-    await store.cleanup();
   });
 
   it("threads failure alert mode/accountId and skips best-effort jobs", async () => {
-    const store = await makeStorePath();
-    const sendCronFailureAlert = vi.fn(async () => undefined);
-    const runIsolatedAgentJob = vi.fn(async () => ({
-      status: "error" as const,
-      error: "temporary upstream error",
-    }));
+    await withFailureAlertCron(
+      {
+        cronConfig: {
+          failureAlert: {
+            enabled: true,
+            after: 1,
+            mode: "webhook",
+            accountId: "global-account",
+          },
+        },
+        result: { status: "error", error: "temporary upstream error" },
+      },
+      async ({ cron, sendCronFailureAlert }) => {
+        const normalJob = await addFailureAlertJob(cron, {
+          name: "normal alert job",
+          delivery: { mode: "announce", channel: "telegram", to: "19098680" },
+        });
+        const bestEffortJob = await addFailureAlertJob(cron, {
+          name: "best effort alert job",
+          delivery: {
+            mode: "announce",
+            channel: "telegram",
+            to: "19098680",
+            bestEffort: true,
+          },
+        });
 
-    const cron = createFailureAlertCron({
-      storePath: store.storePath,
-      cronConfig: {
-        failureAlert: {
-          enabled: true,
-          after: 1,
+        await cron.run(normalJob.id, "force");
+        expect(sendCronFailureAlert).toHaveBeenCalledTimes(1);
+        expectAlertFields(sendCronFailureAlert, {
           mode: "webhook",
           accountId: "global-account",
-        },
+          to: undefined,
+        });
+
+        await cron.run(bestEffortJob.id, "force");
+        expect(sendCronFailureAlert).toHaveBeenCalledTimes(1);
       },
-      runIsolatedAgentJob,
-      sendCronFailureAlert,
-    });
-
-    await cron.start();
-    const normalJob = await cron.add({
-      name: "normal alert job",
-      enabled: true,
-      schedule: { kind: "every", everyMs: 60_000 },
-      sessionTarget: "isolated",
-      wakeMode: "next-heartbeat",
-      payload: { kind: "agentTurn", message: "run report" },
-      delivery: { mode: "announce", channel: "telegram", to: "19098680" },
-    });
-    const bestEffortJob = await cron.add({
-      name: "best effort alert job",
-      enabled: true,
-      schedule: { kind: "every", everyMs: 60_000 },
-      sessionTarget: "isolated",
-      wakeMode: "next-heartbeat",
-      payload: { kind: "agentTurn", message: "run report" },
-      delivery: {
-        mode: "announce",
-        channel: "telegram",
-        to: "19098680",
-        bestEffort: true,
-      },
-    });
-
-    await cron.run(normalJob.id, "force");
-    expect(sendCronFailureAlert).toHaveBeenCalledTimes(1);
-    expectAlertFields(sendCronFailureAlert, {
-      mode: "webhook",
-      accountId: "global-account",
-      to: undefined,
-    });
-
-    await cron.run(bestEffortJob.id, "force");
-    expect(sendCronFailureAlert).toHaveBeenCalledTimes(1);
-
-    cron.stop();
-    await store.cleanup();
+    );
   });
 
   it.each([
@@ -537,45 +462,28 @@ describe("CronService failure alerts", () => {
       },
     },
   ])("$name", async ({ globalAlert, jobAlert, expected }) => {
-    const store = await makeStorePath();
-    const sendCronFailureAlert = vi.fn(async () => undefined);
-    const cron = createFailureAlertCron({
-      storePath: store.storePath,
-      cronConfig: { failureAlert: globalAlert },
-      runIsolatedAgentJob: vi.fn(async () => ({
-        status: "error" as const,
-        error: "temporary upstream error",
-      })),
-      sendCronFailureAlert,
-    });
-
-    await cron.start();
-    const job = await cron.add({
-      name: "globally routed failure alert",
-      enabled: true,
-      schedule: { kind: "every", everyMs: 60_000 },
-      sessionTarget: "isolated",
-      wakeMode: "next-heartbeat",
-      payload: { kind: "agentTurn", message: "run report" },
-      delivery: {
-        mode: "announce",
-        channel: "telegram",
-        to: "telegram:19098680",
+    await withFailureAlertCron(
+      {
+        cronConfig: { failureAlert: globalAlert },
+        result: { status: "error", error: "temporary upstream error" },
       },
-      ...(jobAlert ? { failureAlert: jobAlert } : {}),
-    });
+      async ({ cron, sendCronFailureAlert }) => {
+        const job = await addFailureAlertJob(cron, {
+          name: "globally routed failure alert",
+          delivery: { mode: "announce", channel: "telegram", to: "telegram:19098680" },
+          ...(jobAlert ? { failureAlert: jobAlert } : {}),
+        });
 
-    await cron.run(job.id, "force");
+        await cron.run(job.id, "force");
 
-    expect(sendCronFailureAlert).toHaveBeenCalledOnce();
-    expectAlertFields(sendCronFailureAlert, expected);
-    expectAlertTextContaining(
-      sendCronFailureAlert,
-      'Automation "globally routed failure alert" failed 1 times',
+        expect(sendCronFailureAlert).toHaveBeenCalledOnce();
+        expectAlertFields(sendCronFailureAlert, expected);
+        expectAlertTextContaining(
+          sendCronFailureAlert,
+          'Automation "globally routed failure alert" failed 1 times',
+        );
+      },
     );
-
-    cron.stop();
-    await store.cleanup();
   });
 
   it.each([
@@ -600,301 +508,204 @@ describe("CronService failure alerts", () => {
       },
     },
   ])("does not duplicate an explicitly owned $name", async ({ failureDestination }) => {
-    const store = await makeStorePath();
-    const sendCronFailureAlert = vi.fn(async () => undefined);
-    const cron = createFailureAlertCron({
-      storePath: store.storePath,
-      cronConfig: {
-        failureAlert: {
-          enabled: true,
-          after: 1,
-          mode: "webhook",
-          to: "https://alerts.example.test/global-failures",
+    await withFailureAlertCron(
+      {
+        cronConfig: {
+          failureAlert: {
+            enabled: true,
+            after: 1,
+            mode: "webhook",
+            to: "https://alerts.example.test/global-failures",
+          },
         },
+        result: { status: "error", error: "temporary upstream error" },
       },
-      runIsolatedAgentJob: vi.fn(async () => ({
-        status: "error" as const,
-        error: "temporary upstream error",
-      })),
-      sendCronFailureAlert,
-    });
+      async ({ cron, sendCronFailureAlert }) => {
+        const job = await addFailureAlertJob(cron, {
+          name: "explicitly routed failure destination",
+          delivery: { mode: "none", failureDestination },
+        });
 
-    await cron.start();
-    const job = await cron.add({
-      name: "explicitly routed failure destination",
-      enabled: true,
-      schedule: { kind: "every", everyMs: 60_000 },
-      sessionTarget: "isolated",
-      wakeMode: "next-heartbeat",
-      payload: { kind: "agentTurn", message: "run report" },
-      delivery: { mode: "none", failureDestination },
-    });
+        expect(job.delivery?.failureDestination).toBeDefined();
+        await cron.run(job.id, "force");
 
-    expect(job.delivery?.failureDestination).toBeDefined();
-    await cron.run(job.id, "force");
-
-    expect(sendCronFailureAlert).not.toHaveBeenCalled();
-
-    cron.stop();
-    await store.cleanup();
+        expect(sendCronFailureAlert).not.toHaveBeenCalled();
+      },
+    );
   });
 
   it("preserves explicit job alerts alongside an owned failure destination", async () => {
-    const store = await makeStorePath();
-    const sendCronFailureAlert = vi.fn(async () => undefined);
-    const cron = createFailureAlertCron({
-      storePath: store.storePath,
-      cronConfig: {
-        failureAlert: {
-          enabled: true,
-          after: 1,
-          mode: "webhook",
-          to: "https://alerts.example.test/global-failures",
+    await withFailureAlertCron(
+      {
+        cronConfig: {
+          failureAlert: {
+            enabled: true,
+            after: 1,
+            mode: "webhook",
+            to: "https://alerts.example.test/global-failures",
+          },
         },
+        result: { status: "error", error: "temporary upstream error" },
       },
-      runIsolatedAgentJob: vi.fn(async () => ({
-        status: "error" as const,
-        error: "temporary upstream error",
-      })),
-      sendCronFailureAlert,
-    });
+      async ({ cron, sendCronFailureAlert }) => {
+        const job = await addFailureAlertJob(cron, {
+          name: "explicit job alert with a failure destination",
+          delivery: {
+            mode: "none",
+            failureDestination: { channel: "slack", to: "#alerts" },
+          },
+          failureAlert: {
+            after: 1,
+            mode: "announce",
+            channel: "telegram",
+            to: "telegram:19098680",
+          },
+        });
 
-    await cron.start();
-    const job = await cron.add({
-      name: "explicit job alert with a failure destination",
-      enabled: true,
-      schedule: { kind: "every", everyMs: 60_000 },
-      sessionTarget: "isolated",
-      wakeMode: "next-heartbeat",
-      payload: { kind: "agentTurn", message: "run report" },
-      delivery: {
-        mode: "none",
-        failureDestination: { channel: "slack", to: "#alerts" },
-      },
-      failureAlert: {
-        after: 1,
-        mode: "announce",
-        channel: "telegram",
-        to: "telegram:19098680",
-      },
-    });
+        await cron.run(job.id, "force");
 
-    await cron.run(job.id, "force");
-
-    expect(sendCronFailureAlert).toHaveBeenCalledOnce();
-    expectAlertFields(sendCronFailureAlert, {
-      mode: "announce",
-      channel: "telegram",
-      to: "telegram:19098680",
-    });
-    expectAlertTextContaining(
-      sendCronFailureAlert,
-      'Automation "explicit job alert with a failure destination" failed 1 times',
-    );
-
-    cron.stop();
-    await store.cleanup();
-  });
-
-  it("preserves global skipped alerts alongside an owned failure destination", async () => {
-    const store = await makeStorePath();
-    const sendCronFailureAlert = vi.fn(async () => undefined);
-    const cron = createFailureAlertCron({
-      storePath: store.storePath,
-      cronConfig: {
-        failureAlert: {
-          enabled: true,
-          after: 1,
-          includeSkipped: true,
+        expect(sendCronFailureAlert).toHaveBeenCalledOnce();
+        expectAlertFields(sendCronFailureAlert, {
           mode: "announce",
           channel: "telegram",
           to: "telegram:19098680",
-        },
+        });
+        expectAlertTextContaining(
+          sendCronFailureAlert,
+          'Automation "explicit job alert with a failure destination" failed 1 times',
+        );
       },
-      runIsolatedAgentJob: vi.fn(async () => ({
-        status: "skipped" as const,
-        error: "requests-in-flight",
-      })),
-      sendCronFailureAlert,
-    });
-
-    await cron.start();
-    const job = await cron.add({
-      name: "skipped job with a failure destination",
-      enabled: true,
-      schedule: { kind: "every", everyMs: 60_000 },
-      sessionTarget: "isolated",
-      wakeMode: "next-heartbeat",
-      payload: { kind: "agentTurn", message: "run report" },
-      delivery: {
-        mode: "none",
-        failureDestination: { channel: "slack", to: "#alerts" },
-      },
-    });
-
-    await cron.run(job.id, "force");
-
-    expect(sendCronFailureAlert).toHaveBeenCalledOnce();
-    expectAlertFields(sendCronFailureAlert, {
-      mode: "announce",
-      channel: "telegram",
-      to: "telegram:19098680",
-    });
-    expectAlertTextContaining(
-      sendCronFailureAlert,
-      'Automation "skipped job with a failure destination" skipped 1 times',
     );
+  });
 
-    cron.stop();
-    await store.cleanup();
+  it("preserves global skipped alerts alongside an owned failure destination", async () => {
+    await withFailureAlertCron(
+      {
+        cronConfig: {
+          failureAlert: {
+            enabled: true,
+            after: 1,
+            includeSkipped: true,
+            mode: "announce",
+            channel: "telegram",
+            to: "telegram:19098680",
+          },
+        },
+        result: { status: "skipped", error: "requests-in-flight" },
+      },
+      async ({ cron, sendCronFailureAlert }) => {
+        const job = await addFailureAlertJob(cron, {
+          name: "skipped job with a failure destination",
+          delivery: {
+            mode: "none",
+            failureDestination: { channel: "slack", to: "#alerts" },
+          },
+        });
+
+        await cron.run(job.id, "force");
+
+        expect(sendCronFailureAlert).toHaveBeenCalledOnce();
+        expectAlertFields(sendCronFailureAlert, {
+          mode: "announce",
+          channel: "telegram",
+          to: "telegram:19098680",
+        });
+        expectAlertTextContaining(
+          sendCronFailureAlert,
+          'Automation "skipped job with a failure destination" skipped 1 times',
+        );
+      },
+    );
   });
 
   it("alerts for repeated skipped runs only when opted in", async () => {
-    const store = await makeStorePath();
-    const sendCronFailureAlert = vi.fn(async () => undefined);
-    const runIsolatedAgentJob = vi.fn(async () => ({
-      status: "skipped" as const,
-      error: "disabled",
-    }));
-
-    const cron = createFailureAlertCron({
-      storePath: store.storePath,
-      cronConfig: {
-        failureAlert: {
-          enabled: true,
-          after: 2,
-          cooldownMs: 60_000,
-          includeSkipped: true,
+    await withFailureAlertCron(
+      {
+        cronConfig: {
+          failureAlert: {
+            enabled: true,
+            after: 2,
+            cooldownMs: 60_000,
+            includeSkipped: true,
+          },
         },
+        result: { status: "skipped", error: "disabled" },
       },
-      runIsolatedAgentJob,
-      sendCronFailureAlert,
-    });
+      async ({ cron, sendCronFailureAlert }) => {
+        const job = await addFailureAlertJob(cron, {
+          name: "gateway restart",
+          payload: { kind: "agentTurn", message: "restart gateway if needed" },
+          delivery: { mode: "announce", channel: "telegram", to: "19098680" },
+        });
 
-    await cron.start();
-    const job = await cron.add({
-      name: "gateway restart",
-      enabled: true,
-      schedule: { kind: "every", everyMs: 60_000 },
-      sessionTarget: "isolated",
-      wakeMode: "next-heartbeat",
-      payload: { kind: "agentTurn", message: "restart gateway if needed" },
-      delivery: { mode: "announce", channel: "telegram", to: "19098680" },
-    });
+        await cron.run(job.id, "force");
+        expect(sendCronFailureAlert).not.toHaveBeenCalled();
 
-    await cron.run(job.id, "force");
-    expect(sendCronFailureAlert).not.toHaveBeenCalled();
+        await cron.run(job.id, "force");
+        expect(sendCronFailureAlert).toHaveBeenCalledTimes(1);
+        expectAlertFields(sendCronFailureAlert, { channel: "telegram", to: "19098680" });
+        const alertText = alertCallArg(sendCronFailureAlert).text;
+        expect(typeof alertText).toBe("string");
+        if (typeof alertText !== "string") {
+          throw new Error("expected failure alert text");
+        }
+        expect(alertText).toMatch(
+          /Automation "gateway restart" skipped 2 times\nSkip reason: disabled/,
+        );
 
-    await cron.run(job.id, "force");
-    expect(sendCronFailureAlert).toHaveBeenCalledTimes(1);
-    expectAlertFields(sendCronFailureAlert, {
-      channel: "telegram",
-      to: "19098680",
-    });
-    const alertText = alertCallArg(sendCronFailureAlert).text;
-    expect(typeof alertText).toBe("string");
-    if (typeof alertText !== "string") {
-      throw new Error("expected failure alert text");
-    }
-    expect(alertText).toMatch(
-      /Automation "gateway restart" skipped 2 times\nSkip reason: disabled/,
+        const skippedJob = cron.getJob(job.id);
+        expect(skippedJob?.state.consecutiveSkipped).toBe(2);
+        expect(skippedJob?.state.consecutiveErrors).toBe(0);
+      },
     );
-
-    const skippedJob = cron.getJob(job.id);
-    expect(skippedJob?.state.consecutiveSkipped).toBe(2);
-    expect(skippedJob?.state.consecutiveErrors).toBe(0);
-
-    cron.stop();
-    await store.cleanup();
   });
 
-  it("surfaces classified causes before raw errors in failure alerts", async () => {
-    const store = await makeStorePath();
-    const sendCronFailureAlert = vi.fn(async () => undefined);
-    const runIsolatedAgentJob = vi.fn(async () => ({
-      status: "error" as const,
-      error: "cron: job execution timed out",
-    }));
-
-    const cron = createFailureAlertCron({
-      storePath: store.storePath,
-      cronConfig: {
-        failureAlert: {
-          enabled: true,
-          after: 1,
-        },
+  it.each([
+    [
+      "surfaces classified causes before raw errors in failure alerts",
+      {
+        jobName: "timeout cause alert",
+        result: { status: "error" as const, error: "cron: job execution timed out" },
+        expected:
+          'Automation "timeout cause alert" failed 1 times\n' +
+          "Cause: timeout\n" +
+          "Last error: cron: job execution timed out",
       },
-      runIsolatedAgentJob,
-      sendCronFailureAlert,
-    });
-
-    await cron.start();
-    const job = await cron.add({
-      name: "timeout cause alert",
-      enabled: true,
-      schedule: { kind: "every", everyMs: 60_000 },
-      sessionTarget: "isolated",
-      wakeMode: "next-heartbeat",
-      payload: { kind: "agentTurn", message: "ping" },
-      delivery: { mode: "announce", channel: "telegram", to: "19098680" },
-    });
-
-    await cron.run(job.id, "force");
-    expect(sendCronFailureAlert).toHaveBeenCalledTimes(1);
-    const alertText = alertCallArg(sendCronFailureAlert).text;
-    expect(alertText).toBe(
-      'Automation "timeout cause alert" failed 1 times\n' +
-        "Cause: timeout\n" +
-        "Last error: cron: job execution timed out",
-    );
-
-    cron.stop();
-    await store.cleanup();
-  });
-
-  it("uses provider context when surfacing failure alert causes", async () => {
-    const store = await makeStorePath();
-    const sendCronFailureAlert = vi.fn(async () => undefined);
-    const runIsolatedAgentJob = vi.fn(async () => ({
-      status: "error" as const,
-      error: "403 Key limit exceeded (monthly limit)",
-      provider: "openrouter",
-    }));
-
-    const cron = createFailureAlertCron({
-      storePath: store.storePath,
-      cronConfig: {
-        failureAlert: {
-          enabled: true,
-          after: 1,
+    ],
+    [
+      "uses provider context when surfacing failure alert causes",
+      {
+        jobName: "provider limit alert",
+        result: {
+          status: "error" as const,
+          error: "403 Key limit exceeded (monthly limit)",
+          provider: "openrouter",
         },
+        expected:
+          'Automation "provider limit alert" failed 1 times\n' +
+          "Cause: billing\n" +
+          "Last error: 403 Key limit exceeded (monthly limit)",
       },
-      runIsolatedAgentJob,
-      sendCronFailureAlert,
-    });
+    ],
+  ])("%s", async (_title, { jobName, result, expected }) => {
+    await withFailureAlertCron(
+      {
+        cronConfig: { failureAlert: { enabled: true, after: 1 } },
+        result,
+      },
+      async ({ cron, sendCronFailureAlert }) => {
+        const job = await addFailureAlertJob(cron, {
+          name: jobName,
+          payload: { kind: "agentTurn", message: "ping" },
+          delivery: { mode: "announce", channel: "telegram", to: "19098680" },
+        });
 
-    await cron.start();
-    const job = await cron.add({
-      name: "provider limit alert",
-      enabled: true,
-      schedule: { kind: "every", everyMs: 60_000 },
-      sessionTarget: "isolated",
-      wakeMode: "next-heartbeat",
-      payload: { kind: "agentTurn", message: "ping" },
-      delivery: { mode: "announce", channel: "telegram", to: "19098680" },
-    });
-
-    await cron.run(job.id, "force");
-    expect(sendCronFailureAlert).toHaveBeenCalledTimes(1);
-    const alertText = alertCallArg(sendCronFailureAlert).text;
-    expect(alertText).toBe(
-      'Automation "provider limit alert" failed 1 times\n' +
-        "Cause: billing\n" +
-        "Last error: 403 Key limit exceeded (monthly limit)",
+        await cron.run(job.id, "force");
+        expect(sendCronFailureAlert).toHaveBeenCalledTimes(1);
+        const alertText = alertCallArg(sendCronFailureAlert).text;
+        expect(alertText).toBe(expected);
+      },
     );
-
-    cron.stop();
-    await store.cleanup();
   });
 
   it("does not reclassify permanent local script errors in failure alerts", async () => {

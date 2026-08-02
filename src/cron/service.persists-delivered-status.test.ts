@@ -67,7 +67,10 @@ async function closeWebhookServer(server: ReturnType<typeof createServer>) {
   });
 }
 
-function buildIsolatedAgentTurnJob(name: string): CronAddInput {
+function buildIsolatedAgentTurnJob(
+  name: string,
+  delivery: NonNullable<CronAddInput["delivery"]> = { mode: "none" },
+): CronAddInput {
   return {
     name,
     enabled: true,
@@ -75,64 +78,52 @@ function buildIsolatedAgentTurnJob(name: string): CronAddInput {
     sessionTarget: "isolated",
     wakeMode: "next-heartbeat",
     payload: { kind: "agentTurn", message: "test" },
-    delivery: { mode: "none" },
+    delivery,
   };
 }
 
 function buildAnnounceIsolatedAgentTurnJob(name: string): CronAddInput {
-  return {
-    ...buildIsolatedAgentTurnJob(name),
-    delivery: { mode: "announce", channel: "forum", to: "123" },
-  };
+  return buildIsolatedAgentTurnJob(name, { mode: "announce", channel: "forum", to: "123" });
 }
 
 function buildWebhookIsolatedAgentTurnJob(name: string): CronAddInput {
-  return {
-    ...buildIsolatedAgentTurnJob(name),
-    delivery: { mode: "webhook", to: "https://example.invalid/cron-completion" },
-  };
+  return buildIsolatedAgentTurnJob(name, {
+    mode: "webhook",
+    to: "https://example.invalid/cron-completion",
+  });
 }
 
 function buildAnnounceWithFailureDestinationJob(name: string): CronAddInput {
-  return {
-    ...buildAnnounceIsolatedAgentTurnJob(name),
-    delivery: {
-      mode: "announce",
-      channel: "forum",
-      to: "123",
-      failureDestination: {
-        mode: "webhook",
-        to: "https://example.invalid/cron-failure",
-      },
+  return buildIsolatedAgentTurnJob(name, {
+    mode: "announce",
+    channel: "forum",
+    to: "123",
+    failureDestination: {
+      mode: "webhook",
+      to: "https://example.invalid/cron-failure",
     },
-  };
+  });
 }
 
 function buildFailureDestinationOnlyJob(name: string): CronAddInput {
-  return {
-    ...buildIsolatedAgentTurnJob(name),
-    delivery: {
-      mode: "none",
-      failureDestination: {
-        mode: "webhook",
-        to: "https://example.invalid/cron-failure",
-      },
+  return buildIsolatedAgentTurnJob(name, {
+    mode: "none",
+    failureDestination: {
+      mode: "webhook",
+      to: "https://example.invalid/cron-failure",
     },
-  };
+  });
 }
 
 function buildBestEffortFailureDestinationOnlyJob(name: string): CronAddInput {
-  return {
-    ...buildFailureDestinationOnlyJob(name),
-    delivery: {
-      mode: "none",
-      bestEffort: true,
-      failureDestination: {
-        mode: "webhook",
-        to: "https://example.invalid/cron-failure",
-      },
+  return buildIsolatedAgentTurnJob(name, {
+    mode: "none",
+    bestEffort: true,
+    failureDestination: {
+      mode: "webhook",
+      to: "https://example.invalid/cron-failure",
     },
-  };
+  });
 }
 
 function buildMainSessionSystemEventJob(name: string): CronAddInput {
