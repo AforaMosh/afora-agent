@@ -1816,6 +1816,9 @@ describe("agentCliCommand", () => {
   it("skips gateway when --local is set", async () => {
     await withTempStore(async () => {
       mockLocalAgentReply();
+      agentViaGatewayTesting.setGatewayRuntimeDepsLoaderForTests(async () => {
+        throw new Error("local dispatch loaded gateway runtime dependencies");
+      });
 
       await agentCliCommand(
         {
