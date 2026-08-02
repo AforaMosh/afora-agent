@@ -43,6 +43,10 @@ import type { GoogleChatAttachment, GoogleChatEvent } from "./types.js";
 
 setGoogleChatWebhookEventProcessor(processGoogleChatEvent);
 
+type GoogleChatTurnAdoptionLifecycle = NonNullable<
+  Parameters<GoogleChatCoreRuntime["channel"]["inbound"]["run"]>[0]["turnAdoptionLifecycle"]
+>;
+
 function logVerbose(core: GoogleChatCoreRuntime, runtime: GoogleChatRuntimeEnv, message: string) {
   if (core.logging.shouldLogVerbose()) {
     runtime.log?.(`[googlechat] ${message}`);
@@ -398,12 +402,41 @@ async function processMessageWithPipeline(params: {
 
   // Failed placeholder edits still need cleanup, but only the first reply may reuse them.
   let typingMessageAvailableForReply = Boolean(typingMessageLease.current);
+  let typingCleanupOwner: "handler" | "deferred-turn" = "handler";
+  let typingCleanup: Promise<void> | undefined;
+  const settleTypingMessage = () => {
+    typingCleanup ??= cleanupGoogleChatTypingMessage({ account, runtime, typingMessageLease });
+    return typingCleanup;
+  };
+  const ingressLifecycle = turnAdoptionLifecycle as GoogleChatTurnAdoptionLifecycle | undefined;
+  const typingTurnLifecycle =
+    ingressLifecycle && typingMessageLease.current
+      ? ({
+          ...ingressLifecycle,
+          onDeferred: () => {
+            const accepted = ingressLifecycle.onDeferred?.();
+            if (accepted !== false) {
+              // Deferred reply ownership outlives inbound.run; terminal queue settlement
+              // must own the placeholder so a later reply can still promote it.
+              typingCleanupOwner = "deferred-turn";
+            }
+            return accepted;
+          },
+          onSettled: () => {
+            try {
+              ingressLifecycle.onSettled?.();
+            } finally {
+              void settleTypingMessage();
+            }
+          },
+        } satisfies GoogleChatTurnAdoptionLifecycle)
+      : turnAdoptionLifecycle;
   try {
     await core.channel.inbound.run({
       channel: "googlechat",
       accountId: route.accountId,
       raw: message,
-      ...(turnAdoptionLifecycle ? { turnAdoptionLifecycle } : {}),
+      ...(typingTurnLifecycle ? { turnAdoptionLifecycle: typingTurnLifecycle } : {}),
       adapter: {
         ingest: () => ({
           id: message.name ?? spaceId,
@@ -462,7 +495,9 @@ async function processMessageWithPipeline(params: {
       },
     });
   } finally {
-    await cleanupGoogleChatTypingMessage({ account, runtime, typingMessageLease });
+    if (typingCleanupOwner === "handler") {
+      await settleTypingMessage();
+    }
   }
 }
 

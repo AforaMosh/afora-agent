@@ -12,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { OpenClawConfig } from "../runtime-api.js";
 import type { ResolvedGoogleChatAccount } from "./accounts.js";
 import { sendGoogleChatMessage } from "./api.js";
+import type { GoogleChatIngressLifecycle } from "./monitor-ingress.js";
 import type { GoogleChatCoreRuntime, WebhookTarget } from "./monitor-types.js";
 import { createGoogleChatWebhookRequestHandler } from "./monitor-webhook.js";
 import "./monitor.js";
@@ -19,7 +20,11 @@ import type { GoogleChatEvent } from "./types.js";
 
 const monitorMocks = vi.hoisted(() => ({
   processEvent: undefined as
-    | ((event: GoogleChatEvent, target: WebhookTarget) => Promise<void>)
+    | ((
+        event: GoogleChatEvent,
+        target: WebhookTarget,
+        lifecycle?: GoogleChatIngressLifecycle,
+      ) => Promise<void>)
     | undefined,
   verifyGoogleChatRequest: vi.fn(async () => ({ ok: true as const })),
 }));
@@ -64,6 +69,9 @@ const incomingResource = "spaces/AAA/messages/inbound";
 type TurnMode =
   | "silent"
   | "visible"
+  | "deferred-visible"
+  | "deferred-silent"
+  | "deferred-abandoned"
   | "turn-error"
   | "later-chunk-error"
   | "message-tool-only"
@@ -181,6 +189,9 @@ function createAccount(id: string): ResolvedGoogleChatAccount {
 }
 
 type TurnArgs = {
+  turnAdoptionLifecycle?: GoogleChatIngressLifecycle & {
+    onSettled?: () => void;
+  };
   adapter: {
     resolveTurn: () => {
       delivery: {
@@ -203,42 +214,63 @@ function createCore(mode: TurnMode, account: ResolvedGoogleChatAccount) {
       false | { to: string; replyToId?: string | null; threadId?: string }
     >,
     failed: 0,
+    resumeDeferred: undefined as (() => Promise<void>) | undefined,
   };
-  const run = vi.fn(async ({ adapter }: TurnArgs) => {
+  const run = vi.fn(async ({ adapter, turnAdoptionLifecycle }: TurnArgs) => {
     if (mode === "turn-error") {
       throw new Error("stub: model turn failed");
     }
     const { delivery } = adapter.resolveTurn();
-    const dispatcher = createReplyDispatcher({
-      deliver: async (payload, info) => {
-        dispatch.durableDecisions.push(delivery.durable(payload, info));
-        await delivery.deliver(payload);
-        delivery.onDelivered();
-      },
-      onError: delivery.onError,
-    });
-    try {
-      if (mode === "message-tool-only") {
-        await sendGoogleChatMessage({
-          account,
-          space: "spaces/AAA",
-          text: "Visible message tool answer",
-        });
+    const dispatchReply = async () => {
+      const dispatcher = createReplyDispatcher({
+        deliver: async (payload, info) => {
+          dispatch.durableDecisions.push(delivery.durable(payload, info));
+          await delivery.deliver(payload);
+          delivery.onDelivered();
+        },
+        onError: delivery.onError,
+      });
+      try {
+        if (mode === "message-tool-only") {
+          await sendGoogleChatMessage({
+            account,
+            space: "spaces/AAA",
+            text: "Visible message tool answer",
+          });
+        }
+        if (mode === "fallback-then-final") {
+          dispatcher.sendBlockReply({ text: "First assistant answer" });
+          dispatch.accepted = dispatcher.sendFinalReply({ text: "Second assistant answer" });
+        } else {
+          const silent =
+            mode === "silent" || mode === "deferred-silent" || mode === "message-tool-only";
+          dispatch.accepted = dispatcher.sendFinalReply({
+            text: silent ? "NO_REPLY" : "Visible assistant answer",
+          });
+        }
+      } finally {
+        dispatcher.markComplete();
+        await dispatcher.waitForIdle();
+        dispatch.failed = dispatcher.getFailedCounts().final;
       }
-      if (mode === "fallback-then-final") {
-        dispatcher.sendBlockReply({ text: "First assistant answer" });
-        dispatch.accepted = dispatcher.sendFinalReply({ text: "Second assistant answer" });
-      } else {
-        const silent = mode === "silent" || mode === "message-tool-only";
-        dispatch.accepted = dispatcher.sendFinalReply({
-          text: silent ? "NO_REPLY" : "Visible assistant answer",
-        });
-      }
-    } finally {
-      dispatcher.markComplete();
-      await dispatcher.waitForIdle();
-      dispatch.failed = dispatcher.getFailedCounts().final;
+    };
+    if (mode.startsWith("deferred-")) {
+      turnAdoptionLifecycle?.onDeferred();
+      dispatch.resumeDeferred = async () => {
+        try {
+          if (mode === "deferred-abandoned") {
+            await turnAdoptionLifecycle?.onAbandoned();
+          } else {
+            await turnAdoptionLifecycle?.onAdopted();
+            await dispatchReply();
+          }
+        } finally {
+          turnAdoptionLifecycle?.onSettled?.();
+        }
+      };
+      return;
     }
+    await dispatchReply();
   });
   const core = {
     logging: { shouldLogVerbose: () => false },
@@ -254,13 +286,29 @@ function createCore(mode: TurnMode, account: ResolvedGoogleChatAccount) {
   return { core, dispatch, run };
 }
 
-async function runWebhookTurn(params: { mode: TurnMode; id: string; stub?: StubOptions }) {
+async function runWebhookTurn(params: {
+  mode: TurnMode;
+  id: string;
+  stub?: StubOptions;
+  afterAccepted?: (state: {
+    requests: ChatRequest[];
+    resumeDeferred: () => Promise<void>;
+  }) => Promise<void>;
+}) {
   const account = createAccount(params.id);
   const errors: string[] = [];
   const runtime = { error: (message: string) => errors.push(message), log: vi.fn() };
   const { core, dispatch, run } = createCore(params.mode, account);
   const google = createGoogleStub(params.stub);
   const fetchRouting = rerouteGoogleFetch();
+  const ingressLifecycle: GoogleChatIngressLifecycle & { onSettled: ReturnType<typeof vi.fn> } = {
+    admission: "exclusive",
+    abortSignal: new AbortController().signal,
+    onAdopted: vi.fn(async () => {}),
+    onDeferred: vi.fn(),
+    onAbandoned: vi.fn(async () => {}),
+    onSettled: vi.fn(),
+  };
   let webhookStatus = 0;
   let durableHeader: string | null = null;
 
@@ -281,7 +329,11 @@ async function runWebhookTurn(params: { mode: TurnMode; id: string; stub?: StubO
             throw new Error("Google Chat production event processor was not registered");
           }
           // Durable persistence is outside the typing owner; replay the admitted event immediately.
-          await monitorMocks.processEvent(raw as GoogleChatEvent, target);
+          await monitorMocks.processEvent(
+            raw as GoogleChatEvent,
+            target,
+            params.mode.startsWith("deferred-") ? ingressLifecycle : undefined,
+          );
           return { kind: "durable" as const };
         },
       },
@@ -317,11 +369,29 @@ async function runWebhookTurn(params: { mode: TurnMode; id: string; stub?: StubO
         webhookStatus = response.status;
         durableHeader = response.headers.get("x-openclaw-delivery-accepted");
         await response.text();
+        if (params.afterAccepted) {
+          if (!dispatch.resumeDeferred) {
+            throw new Error("Deferred Google Chat turn was not captured");
+          }
+          await params.afterAccepted({
+            requests: google.requests,
+            resumeDeferred: dispatch.resumeDeferred,
+          });
+        }
       },
     );
   });
 
-  return { ...google, account, dispatch, durableHeader, errors, run, webhookStatus };
+  return {
+    ...google,
+    account,
+    dispatch,
+    durableHeader,
+    errors,
+    ingressLifecycle,
+    run,
+    webhookStatus,
+  };
 }
 
 function requestShape(requests: ChatRequest[]) {
@@ -371,6 +441,85 @@ describe("Google Chat typing placeholder ownership through real HTTP", () => {
 
     expect(result.webhookStatus).toBe(200);
     expect(result.dispatch.accepted).toBe(true);
+    expect(requestShape(result.requests)).toEqual([
+      { method: "POST", pathname: "/v1/spaces/AAA/messages", text: "_OpenClaw is typing..._" },
+      { method: "PATCH", pathname: `/v1/${typingResource}`, text: "Visible assistant answer" },
+    ]);
+  });
+
+  it("deletes queued typing only after a deferred silent turn settles", async () => {
+    const result = await runWebhookTurn({
+      mode: "deferred-silent",
+      id: "deferred-silent",
+      afterAccepted: async ({ requests, resumeDeferred }) => {
+        expect(requestShape(requests)).toEqual([
+          { method: "POST", pathname: "/v1/spaces/AAA/messages", text: "_OpenClaw is typing..._" },
+        ]);
+        await resumeDeferred();
+        await vi.waitFor(() => {
+          expect(requestShape(requests)).toEqual([
+            {
+              method: "POST",
+              pathname: "/v1/spaces/AAA/messages",
+              text: "_OpenClaw is typing..._",
+            },
+            { method: "DELETE", pathname: `/v1/${typingResource}` },
+          ]);
+        });
+      },
+    });
+
+    expect(result.webhookStatus).toBe(200);
+    expect(result.dispatch.accepted).toBe(false);
+    expect(result.ingressLifecycle.onAdopted).toHaveBeenCalledOnce();
+    expect(result.ingressLifecycle.onSettled).toHaveBeenCalledOnce();
+  });
+
+  it("deletes queued typing when deferred ownership is abandoned without a reply", async () => {
+    const result = await runWebhookTurn({
+      mode: "deferred-abandoned",
+      id: "deferred-abandoned",
+      afterAccepted: async ({ requests, resumeDeferred }) => {
+        expect(requestShape(requests)).toEqual([
+          { method: "POST", pathname: "/v1/spaces/AAA/messages", text: "_OpenClaw is typing..._" },
+        ]);
+        await resumeDeferred();
+        await vi.waitFor(() => {
+          expect(requestShape(requests)).toEqual([
+            {
+              method: "POST",
+              pathname: "/v1/spaces/AAA/messages",
+              text: "_OpenClaw is typing..._",
+            },
+            { method: "DELETE", pathname: `/v1/${typingResource}` },
+          ]);
+        });
+      },
+    });
+
+    expect(result.webhookStatus).toBe(200);
+    expect(result.ingressLifecycle.onAdopted).not.toHaveBeenCalled();
+    expect(result.ingressLifecycle.onAbandoned).toHaveBeenCalledOnce();
+    expect(result.ingressLifecycle.onSettled).toHaveBeenCalledOnce();
+  });
+
+  it("keeps a queued typing placeholder until the deferred turn delivers its visible reply", async () => {
+    const result = await runWebhookTurn({
+      mode: "deferred-visible",
+      id: "deferred-visible",
+      afterAccepted: async ({ requests, resumeDeferred }) => {
+        expect(requestShape(requests)).toEqual([
+          { method: "POST", pathname: "/v1/spaces/AAA/messages", text: "_OpenClaw is typing..._" },
+        ]);
+        await resumeDeferred();
+      },
+    });
+
+    expect(result.webhookStatus).toBe(200);
+    expect(result.dispatch.accepted).toBe(true);
+    expect(result.ingressLifecycle.onDeferred).toHaveBeenCalledOnce();
+    expect(result.ingressLifecycle.onAdopted).toHaveBeenCalledOnce();
+    expect(result.ingressLifecycle.onSettled).toHaveBeenCalledOnce();
     expect(requestShape(result.requests)).toEqual([
       { method: "POST", pathname: "/v1/spaces/AAA/messages", text: "_OpenClaw is typing..._" },
       { method: "PATCH", pathname: `/v1/${typingResource}`, text: "Visible assistant answer" },
