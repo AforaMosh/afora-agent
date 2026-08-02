@@ -329,7 +329,9 @@ export async function createOpenClawTestInstance(
   const cwd = options.cwd ?? process.cwd();
   const nodeExecutable = options.nodeExecutable ?? "node";
   const resolveEntrypoint = () =>
-    options.entrypointArgs ? Promise.resolve(options.entrypointArgs) : resolveGatewayEntrypoint(cwd);
+    options.entrypointArgs
+      ? Promise.resolve(options.entrypointArgs)
+      : resolveGatewayEntrypoint(cwd);
   const port = options.port ?? (await getFreePort());
   const gatewayToken = options.gatewayToken ?? `gateway-${options.name}-${randomUUID()}`;
   const hookToken = options.hookToken ?? `token-${options.name}-${randomUUID()}`;
