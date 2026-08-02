@@ -1,8 +1,25 @@
+import * as computerUse from "./computer-use.js";
 import * as nodes from "./nodes.js";
 import * as nodeInvoke from "./protocol-schemas-node-invoke.js";
 import * as nodePresence from "./protocol-schemas-node-presence.js";
 
 export const NodeProtocolSchemas = {
+  ComputerUseCapabilities: computerUse.ComputerUseCapabilitiesSchema,
+  ComputerUseReadiness: computerUse.ComputerUseReadinessSchema,
+  ComputerActionName: computerUse.ComputerActionNameSchema,
+  ComputerTargetClass: computerUse.ComputerTargetClassSchema,
+  ComputerDeliveryMode: computerUse.ComputerDeliveryModeSchema,
+  ComputerObservationClass: computerUse.ComputerObservationClassSchema,
+  OpaqueComputerReference: computerUse.OpaqueComputerReferenceSchema,
+  ComputerTarget: computerUse.ComputerTargetSchema,
+  ComputerActionV2: computerUse.ComputerActionV2Schema,
+  ComputerActV2Request: computerUse.ComputerActV2RequestSchema,
+  ComputerAccessibilityElement: computerUse.ComputerAccessibilityElementSchema,
+  ComputerObservation: computerUse.ComputerObservationSchema,
+  ComputerResource: computerUse.ComputerResourceSchema,
+  ComputerActV2Error: computerUse.ComputerActV2ErrorSchema,
+  ComputerActErrorCode: computerUse.ComputerActErrorCodeSchema,
+  ComputerActV2Result: computerUse.ComputerActV2ResultSchema,
   NodePairListParams: nodes.NodePairListParamsSchema,
   NodePairApproveParams: nodes.NodePairApproveParamsSchema,
   NodePairRejectParams: nodes.NodePairRejectParamsSchema,

@@ -69,6 +69,9 @@ import {
   NodePairApproveParamsSchema,
   NodePairRejectParamsSchema,
   NodePairRemoveParamsSchema,
+  ComputerUseCapabilitiesSchema,
+  ComputerActV2RequestSchema,
+  ComputerActV2ResultSchema,
   NodeRenameParamsSchema,
   NodeListParamsSchema,
   NodePluginToolsUpdateParamsSchema,
@@ -428,6 +431,9 @@ export const validateNodePairListParams = lazyCompile(NodePairListParamsSchema);
 export const validateNodePairApproveParams = lazyCompile(NodePairApproveParamsSchema);
 export const validateNodePairRejectParams = lazyCompile(NodePairRejectParamsSchema);
 export const validateNodePairRemoveParams = lazyCompile(NodePairRemoveParamsSchema);
+export const validateComputerUseCapabilities = lazyCompile(ComputerUseCapabilitiesSchema);
+export const validateComputerActV2Request = lazyCompile(ComputerActV2RequestSchema);
+export const validateComputerActV2Result = lazyCompile(ComputerActV2ResultSchema);
 export const validateNodeRenameParams = lazyCompile(NodeRenameParamsSchema);
 export const validateNodeListParams = lazyCompile(NodeListParamsSchema);
 export const validateNodePluginToolsUpdateParams = lazyCompile(NodePluginToolsUpdateParamsSchema);

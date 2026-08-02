@@ -2,6 +2,7 @@
 import type { Static } from "typebox";
 import { Type } from "typebox";
 import { closedObject } from "./closed-object.js";
+import { ComputerUseCapabilitiesSchema } from "./computer-use.js";
 import { GatewayClientIdSchema, GatewayClientModeSchema, NonEmptyString } from "./primitives.js";
 import { SessionVisibilitySchema } from "./sessions-sharing-values.js";
 import { SnapshotSchema, StateVersionSchema } from "./snapshot.js";
@@ -45,6 +46,9 @@ export const ConnectParamsSchema = closedObject({
   }),
   caps: Type.Optional(Type.Array(NonEmptyString, { default: [] })),
   commands: Type.Optional(Type.Array(NonEmptyString)),
+  // Additive v2 Computer Use declaration. Absent nodes retain the generic v1
+  // command-pair contract; Gateway must not infer semantic capabilities.
+  computerUse: Type.Optional(ComputerUseCapabilitiesSchema),
   permissions: Type.Optional(Type.Record(NonEmptyString, Type.Boolean())),
   pathEnv: Type.Optional(Type.String()),
   role: Type.Optional(NonEmptyString),
