@@ -944,7 +944,12 @@ export function createAgentEventHandler({
     }
     const projected = chatRunState.resolveBuffer(clientRunId);
     const mergedText = projected.text;
-    if (projected.suppress || shouldHideHeartbeatChatOutput(clientRunId, sourceRunId)) {
+    // Media-only frames still need an immediate live update; waiting for the
+    // terminal flush leaves long-running media generation visibly silent.
+    if (
+      (projected.suppress && !hasFreshMedia) ||
+      shouldHideHeartbeatChatOutput(clientRunId, sourceRunId)
+    ) {
       return;
     }
     const broadcastDelta = resolveBroadcastDelta({

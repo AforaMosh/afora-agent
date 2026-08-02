@@ -565,17 +565,22 @@ describe("agent event handler", () => {
     emitAgentEvent(handler, "run-media-only", "assistant", {
       mediaUrls: [" https://example.test/one.png ", "", "https://example.test/one.png"],
     });
-    emitLifecycleEnd(handler, "run-media-only");
 
-    const chatCalls = chatBroadcastCalls(broadcast);
-    expect(chatCalls).toHaveLength(2);
-    expect(chatCalls[0]?.[1]).toMatchObject({
+    const liveChatCalls = chatBroadcastCalls(broadcast);
+    expect(liveChatCalls).toHaveLength(1);
+    expect(liveChatCalls[0]?.[1]).toMatchObject({
       state: "delta",
       deltaText: "",
       message: {
         content: [{ type: "image", url: "https://example.test/one.png" }],
       },
     });
+    expect(sessionChatCalls(nodeSendToSession)).toHaveLength(1);
+
+    emitLifecycleEnd(handler, "run-media-only");
+
+    const chatCalls = chatBroadcastCalls(broadcast);
+    expect(chatCalls).toHaveLength(2);
     expect(chatCalls[1]?.[1]).toMatchObject({
       state: "final",
       message: {
