@@ -91,6 +91,56 @@ export async function installTalkBrowserFixtures(page: Page) {
   });
 }
 
+export async function installVideoTalkCameraFixture(
+  page: Page,
+  trackWindowKey: "openclawGeminiVideoTalkTracks" | "openclawVideoTalkTracks",
+) {
+  await page.addInitScript((windowKey) => {
+    const getUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+    Object.defineProperty(navigator.mediaDevices, "getUserMedia", {
+      configurable: true,
+      value: async (constraints: MediaStreamConstraints) => {
+        let stream: MediaStream;
+        if (constraints.video) {
+          const canvas = document.createElement("canvas");
+          canvas.width = 640;
+          canvas.height = 480;
+          const context = canvas.getContext("2d");
+          if (!context) {
+            throw new Error("Video Talk camera fixture could not create a canvas context");
+          }
+          stream = canvas.captureStream(0);
+          const videoTrack = stream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack;
+          let animationFrame = 0;
+          const drawFrame = () => {
+            if (videoTrack.readyState !== "live") {
+              return;
+            }
+            context.fillStyle = "#335577";
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            videoTrack.requestFrame();
+            animationFrame = window.requestAnimationFrame(drawFrame);
+          };
+          drawFrame();
+          window.addEventListener(
+            "pagehide",
+            () => {
+              window.cancelAnimationFrame(animationFrame);
+              videoTrack.stop();
+            },
+            { once: true },
+          );
+        } else {
+          stream = await getUserMedia(constraints);
+        }
+        const trackWindow = window as unknown as Record<string, MediaStreamTrack[] | undefined>;
+        trackWindow[windowKey] = [...(trackWindow[windowKey] ?? []), ...stream.getTracks()];
+        return stream;
+      },
+    });
+  }, trackWindowKey);
+}
+
 export async function captureComposerProof(page: Page, fileName: string) {
   const artifactDir = path.join(process.cwd(), ".artifacts", "control-ui-e2e", "voice-controls");
   await mkdir(artifactDir, { recursive: true });

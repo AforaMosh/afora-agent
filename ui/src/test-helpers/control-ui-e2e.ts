@@ -210,6 +210,8 @@ export type ControlUiMockGatewayScenario = {
   /** Initial gateway-owned custom group catalog (sessions.groups.*), in order. */
   sessionGroups?: string[];
   terminalEnabled?: boolean;
+  /** Explicit provider origins that must reach Playwright's native WebSocket routes. */
+  webSocketPassthroughOrigins?: string[];
   workspace?: string;
   workspaceGit?: boolean;
 };
@@ -450,6 +452,7 @@ function normalizeScenario(
     sessionKey,
     sessionGroups: scenario.sessionGroups ?? [],
     terminalEnabled: scenario.terminalEnabled ?? false,
+    webSocketPassthroughOrigins: scenario.webSocketPassthroughOrigins ?? [],
     workspace: scenario.workspace ?? "",
     workspaceGit: scenario.workspaceGit ?? false,
   };
@@ -1404,6 +1407,8 @@ function installControlUiMockGateway(
     }
   }
 
+  const NativeWebSocket = window.WebSocket;
+
   class MockWebSocket extends EventTarget {
     static readonly CLOSED = 3;
     static readonly CLOSING = 2;
@@ -1423,8 +1428,19 @@ function installControlUiMockGateway(
     readonly url: string;
     private tickTimer: number | null = null;
 
-    constructor(url: string | URL) {
+    constructor(url: string | URL, protocols?: string | string[]) {
       super();
+      // Existing scenarios intentionally mock every socket; provider routing is explicit.
+      if (
+        scenario.webSocketPassthroughOrigins.length > 0 &&
+        scenario.webSocketPassthroughOrigins.includes(
+          new URL(String(url), window.location.href).origin,
+        )
+      ) {
+        return (protocols === undefined
+          ? new NativeWebSocket(url)
+          : new NativeWebSocket(url, protocols)) as unknown as MockWebSocket;
+      }
       this.url = String(url);
       MockWebSocket.latest = this;
       sockets.push(this);

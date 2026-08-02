@@ -14,6 +14,7 @@ import {
   installBlockedMicrophoneFixture,
   installBlockedVideoTalkFixture,
   installTalkBrowserFixtures,
+  installVideoTalkCameraFixture,
   videoTalkCatalog,
 } from "./browser-talk-start-stop.fixtures.ts";
 
@@ -43,6 +44,50 @@ describeControlUiE2e("Control UI browser Talk", () => {
   afterAll(async () => {
     await browser?.close();
     await server?.close();
+  });
+
+  it("routes explicitly allowed provider sockets without stealing the mocked Gateway", async () => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    const providerOrigin = "wss://generativelanguage.googleapis.com";
+    const providerUrl = `${providerOrigin}/ws/browser-talk-routing-proof`;
+    const providerMessages: unknown[] = [];
+    const providerProtocols: string[][] = [];
+    const gateway = await installMockGateway(page, {
+      webSocketPassthroughOrigins: [providerOrigin],
+    });
+    await page.routeWebSocket(`${providerOrigin}/**`, (socket) => {
+      providerProtocols.push(socket.protocols());
+      socket.onMessage((message) => {
+        providerMessages.push(
+          JSON.parse(typeof message === "string" ? message : message.toString()),
+        );
+        socket.send(JSON.stringify({ setupComplete: {} }));
+      });
+    });
+
+    try {
+      await page.goto(`${server.baseUrl}chat`);
+      const response = await page.evaluate(async (url) => {
+        const socket = new WebSocket(url, ["openclaw-e2e-provider"]);
+        return await new Promise<unknown>((resolve, reject) => {
+          socket.addEventListener("open", () => socket.send(JSON.stringify({ setup: {} })));
+          socket.addEventListener("message", (event) => {
+            resolve(JSON.parse(String(event.data)));
+            socket.close();
+          });
+          socket.addEventListener("error", () => reject(new Error("Provider socket did not open")));
+        });
+      }, providerUrl);
+
+      expect(response).toEqual({ setupComplete: {} });
+      expect(providerMessages).toEqual([{ setup: {} }]);
+      expect(providerProtocols).toEqual([["openclaw-e2e-provider"]]);
+      expect(await gateway.getSocketUrls()).not.toContain(providerUrl);
+      expect(await gateway.getRequests("connect")).toHaveLength(1);
+    } finally {
+      await context.close();
+    }
   });
 
   it("starts a provider WebSocket session and stops browser audio resources", async () => {
@@ -360,24 +405,8 @@ describeControlUiE2e("Control UI browser Talk", () => {
         },
       },
     });
+    await installVideoTalkCameraFixture(page, "openclawVideoTalkTracks");
     await page.addInitScript(() => {
-      const getUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
-      Object.defineProperty(navigator.mediaDevices, "getUserMedia", {
-        configurable: true,
-        value: async (constraints: MediaStreamConstraints) => {
-          const stream = await getUserMedia(constraints);
-          (
-            window as Window & {
-              openclawVideoTalkTracks?: MediaStreamTrack[];
-            }
-          ).openclawVideoTalkTracks = [
-            ...((window as Window & { openclawVideoTalkTracks?: MediaStreamTrack[] })
-              .openclawVideoTalkTracks ?? []),
-            ...stream.getTracks(),
-          ];
-          return stream;
-        },
-      });
       class FakeDataChannel extends EventTarget {
         readyState = "open";
         sent: unknown[] = [];
@@ -586,6 +615,7 @@ describeControlUiE2e("Control UI browser Talk", () => {
     const context = await browser.newContext({ permissions: ["camera", "microphone"] });
     const page = await context.newPage();
     const gateway = await installMockGateway(page, {
+      webSocketPassthroughOrigins: ["wss://generativelanguage.googleapis.com"],
       methodResponses: {
         "talk.catalog": videoTalkCatalog("google"),
         "talk.client.create": {
@@ -631,25 +661,7 @@ describeControlUiE2e("Control UI browser Talk", () => {
         }
       });
     });
-    await page.addInitScript(() => {
-      const getUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
-      Object.defineProperty(navigator.mediaDevices, "getUserMedia", {
-        configurable: true,
-        value: async (constraints: MediaStreamConstraints) => {
-          const stream = await getUserMedia(constraints);
-          (
-            window as Window & {
-              openclawGeminiVideoTalkTracks?: MediaStreamTrack[];
-            }
-          ).openclawGeminiVideoTalkTracks = [
-            ...((window as Window & { openclawGeminiVideoTalkTracks?: MediaStreamTrack[] })
-              .openclawGeminiVideoTalkTracks ?? []),
-            ...stream.getTracks(),
-          ];
-          return stream;
-        },
-      });
-    });
+    await installVideoTalkCameraFixture(page, "openclawGeminiVideoTalkTracks");
 
     try {
       await page.setViewportSize({ width: 1366, height: 900 });
@@ -732,6 +744,7 @@ describeControlUiE2e("Control UI browser Talk", () => {
     const context = await browser.newContext();
     const page = await context.newPage();
     const gateway = await installMockGateway(page, {
+      webSocketPassthroughOrigins: ["wss://generativelanguage.googleapis.com"],
       methodResponses: {
         "talk.catalog": videoTalkCatalog("google"),
         "talk.client.create": {
