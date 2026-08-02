@@ -623,10 +623,9 @@ describe("buildEmbeddedRunPayloads", () => {
     expect(payloads[1]?.text).toContain("Write");
   });
 
-  it("still shows exec tool errors when timedOut is true (no file-write boundary)", () => {
-    // Exec timeouts never set `fileTarget`, so the new file-write boundary
-    // never matches. Exec/message/cron/gateway tools keep the visible
-    // warning because the disk-write idempotency reasoning does not apply.
+  it("does not warn for timed-out exec errors when a successful user-facing reply exists", () => {
+    // Exec/bash use the generic recovery rule: a successful final reply proves
+    // the agent recovered, unlike a failed user-visible write.
     const payloads = buildPayloads({
       assistantTexts: ["The script is ready."],
       lastAssistant: { stopReason: "end_turn" } as unknown as AssistantMessage,
@@ -638,29 +637,52 @@ describe("buildEmbeddedRunPayloads", () => {
       },
     });
 
-    expect(payloads).toHaveLength(2);
-    expect(payloads[1]?.isError).toBe(true);
-    expect(payloads[1]?.text).toContain("Exec");
+    expectSinglePayloadSummary(payloads, { text: "The script is ready." });
   });
 
-  it("shows exec tool errors when assistant output claims success", () => {
+  it("does not warn for exec-like tool errors when a successful user-facing reply exists", () => {
     const payloads = buildPayloads({
       assistantTexts: ["The script is ready to use and saved in your workspace."],
       lastAssistant: { stopReason: "end_turn" } as unknown as AssistantMessage,
       lastToolError: {
         toolName: "exec",
         error: "/bin/bash: line 1: python: command not found",
+        mutatingAction: true,
       },
     });
 
-    expect(payloads).toHaveLength(2);
-    expect(payloads[0]?.text).toBe("The script is ready to use and saved in your workspace.");
-    expect(payloads[1]?.isError).toBe(true);
-    expect(payloads[1]?.text).toContain("Exec");
-    expect(payloads[1]?.text).not.toContain("python: command not found");
-    expect(getReplyPayloadMetadata(payloads[1] as object)?.nonTerminalToolErrorWarning).toBe(
-      undefined,
-    );
+    expectSinglePayloadSummary(payloads, {
+      text: "The script is ready to use and saved in your workspace.",
+    });
+  });
+
+  it("does not warn for bash tool errors when a successful user-facing reply exists", () => {
+    const payloads = buildPayloads({
+      assistantTexts: ["Recovered after the command failed."],
+      lastAssistant: { stopReason: "end_turn" } as unknown as AssistantMessage,
+      lastToolError: {
+        toolName: "bash",
+        error: "exit code 1",
+        mutatingAction: true,
+      },
+    });
+
+    expectSinglePayloadSummary(payloads, { text: "Recovered after the command failed." });
+  });
+
+  it("keeps exec-like tool error warnings when there is no user-facing reply", () => {
+    const payloads = buildPayloads({
+      lastToolError: {
+        toolName: "exec",
+        error: "/bin/bash: line 1: python: command not found",
+        mutatingAction: true,
+      },
+    });
+
+    expectSingleToolErrorPayload(payloads, {
+      title: "Exec",
+      absentDetail: "python: command not found",
+    });
   });
 
   it("shows mutating tool errors when assistant output does not acknowledge the failure", () => {
