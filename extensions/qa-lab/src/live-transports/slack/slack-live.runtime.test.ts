@@ -182,7 +182,7 @@ describe("Slack live QA runtime helpers", () => {
     const scenario = testing.findScenario(["slack-semantic-progress-default"])[0];
     const run = scenario?.buildRun("U999999999");
 
-    expect(scenario?.configOverrides).toBeUndefined();
+    expect(scenario?.configOverrides).toEqual({ replyToMode: "all" });
     expect(run).toMatchObject({ expectReply: true, settleObservedMs: 3_000 });
     expect(run && "beforeRun" in run ? run.beforeRun : undefined).toBeTypeOf("function");
     expect(run && "input" in run ? run.input : "").toContain("update_plan");

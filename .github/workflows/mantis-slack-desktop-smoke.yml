@@ -17,6 +17,11 @@ on:
         required: true
         default: slack-canary
         type: string
+      gateway_setup:
+        description: Start a persistent gateway instead of running the selected QA scenario
+        required: false
+        default: false
+        type: boolean
       approval_checkpoints:
         description: Run native Slack approval checkpoint mode instead of gateway setup
         required: false
@@ -242,6 +247,7 @@ jobs:
           CRABBOX_PROVIDER: ${{ inputs.crabbox_provider }}
           CRABBOX_MARKET: ${{ inputs.crabbox_market }}
           KEEP_VM: ${{ inputs.keep_vm }}
+          GATEWAY_SETUP: ${{ inputs.gateway_setup }}
           HYDRATE_MODE: ${{ inputs.hydrate_mode }}
           SCENARIO_ID: ${{ inputs.scenario_id }}
           APPROVAL_CHECKPOINTS: ${{ inputs.approval_checkpoints }}
@@ -314,10 +320,19 @@ jobs:
           if [[ -n "${CRABBOX_MARKET:-}" ]]; then
             market_args=(--market "$CRABBOX_MARKET")
           fi
-          gateway_args=(--gateway-setup)
+          gateway_args=()
           approval_args=()
           scenario_args=(--scenario "$SCENARIO_ID")
           scenario_label="$SCENARIO_ID"
+          if [[ "$GATEWAY_SETUP" == "true" ]]; then
+            if [[ "$APPROVAL_CHECKPOINTS" == "true" ]]; then
+              echo "gateway_setup and approval_checkpoints are mutually exclusive." >&2
+              exit 2
+            fi
+            gateway_args=(--gateway-setup)
+            scenario_args=()
+            scenario_label="gateway-setup"
+          fi
           if [[ "$APPROVAL_CHECKPOINTS" == "true" ]]; then
             approval_args=(--approval-checkpoints)
             gateway_args=()
@@ -383,6 +398,21 @@ jobs:
           expected_result="Slack QA and VM gateway setup pass"
           checkpoint_artifacts='[]'
           checkpoint_required=false
+          slack_qa_required=false
+          if [[ "$GATEWAY_SETUP" == "true" ]]; then
+            evidence_summary="Mantis started a persistent OpenClaw Slack gateway inside a Crabbox Linux VNC desktop for manual QA."
+            expected_result="VM gateway setup passes"
+            screenshot_required=false
+            desktop_capture_inline=false
+          elif [[ "$status" == "pass" ]]; then
+            slack_qa_required=true
+            for required_qa_artifact in qa-suite-summary.json qa-evidence.json; do
+              if [[ ! -s "$root/slack-qa/$required_qa_artifact" ]]; then
+                echo "Passing Slack QA is missing $required_qa_artifact." >&2
+                exit 1
+              fi
+            done
+          fi
           if [[ "$APPROVAL_CHECKPOINTS" == "true" ]]; then
             evidence_summary="Mantis ran Slack native approval QA inside a Crabbox Linux VNC desktop, rendered pending/resolved approval checkpoints from the Slack API messages, and stored Slack QA artifacts."
             screenshot_required=false
@@ -442,6 +472,7 @@ jobs:
             --argjson checkpoint_artifacts "$checkpoint_artifacts" \
             --argjson screenshot_required "$screenshot_required" \
             --argjson desktop_capture_inline "$desktop_capture_inline" \
+            --argjson slack_qa_required "$slack_qa_required" \
             '{
               schemaVersion: 1,
               id: "slack-desktop-smoke",
@@ -459,6 +490,9 @@ jobs:
                 { kind: "fullVideo", lane: "candidate", label: "Slack desktop MP4", path: "slack-desktop-smoke.mp4", targetPath: "slack-desktop.mp4", required: false },
                 { kind: "metadata", lane: "run", label: "Slack desktop summary", path: "mantis-slack-desktop-smoke-summary.json", targetPath: "summary.json" },
                 { kind: "report", lane: "run", label: "Slack desktop report", path: "mantis-slack-desktop-smoke-report.md", targetPath: "report.md" },
+                { kind: "metadata", lane: "run", label: "Slack QA summary", path: "slack-qa/qa-suite-summary.json", targetPath: "slack-qa-summary.json", required: $slack_qa_required },
+                { kind: "metadata", lane: "run", label: "Slack QA evidence", path: "slack-qa/qa-evidence.json", targetPath: "slack-qa-evidence.json", required: $slack_qa_required },
+                { kind: "report", lane: "run", label: "Slack QA report", path: "slack-qa/qa-suite-report.md", targetPath: "slack-qa-report.md", required: false },
                 { kind: "metadata", lane: "run", label: "Slack command log", path: "slack-desktop-command.log", targetPath: "slack-desktop-command.log", required: false },
                 { kind: "metadata", lane: "run", label: "Slack preview metadata", path: "slack-desktop-smoke-preview.json", targetPath: "slack-desktop-preview.json", required: false },
                 { kind: "metadata", lane: "run", label: "Slack error", path: "error.txt", targetPath: "error.txt", required: false }

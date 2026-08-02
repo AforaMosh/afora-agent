@@ -234,6 +234,13 @@ describe("mantis Slack desktop smoke runtime", () => {
     expect(remoteScript).toContain('sudo apt-get update -y >>"$out/apt.log" 2>&1 || true');
     expect(remoteScript).toContain("slack-desktop-smoke.mp4");
     expect(remoteScript).not.toContain("-video_size");
+    expect(remoteScript).toContain('touch "$out/desktop-capture-ready"');
+    expect(remoteScript).toContain('touch "$out/desktop-capture-started"');
+    expect(remoteScript).toContain('while [ ! -f "$out/desktop-capture-started" ]');
+    expect(remoteScript).toContain('while [ ! -f "$out/desktop-capture-ready" ]');
+    expect(remoteScript.indexOf('remote_body_pid="$!"')).toBeLessThan(
+      remoteScript.indexOf("ffmpeg -hide_banner"),
+    );
     expect(remoteScript).toContain("openclaw qa slack");
     expect(remoteScript).toContain("--scenario 'slack-canary'");
     expect(remoteScript).toContain(

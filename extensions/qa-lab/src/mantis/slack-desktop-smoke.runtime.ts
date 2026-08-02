@@ -654,17 +654,6 @@ else
   sudo apt-get update -y >>"$out/apt.log" 2>&1 || true
   sudo DEBIAN_FRONTEND=noninteractive apt-get install -y ffmpeg >>"$out/apt.log" 2>&1 || true
 fi
-if command -v ffmpeg >/dev/null 2>&1; then
-  display_input="$DISPLAY"
-  case "$display_input" in
-    *.*) ;;
-    *) display_input="$display_input.0" ;;
-  esac
-  ffmpeg -hide_banner -loglevel error -y -f x11grab -framerate 15 -i "$display_input" -t 45 -pix_fmt yuv420p "$out/slack-desktop-smoke.mp4" >"$out/ffmpeg.log" 2>&1 &
-  video_pid=$!
-else
-  echo "ffmpeg missing; video artifact skipped" >"$out/ffmpeg.log"
-fi
 if [ "$setup_gateway" = "1" ]; then
   nohup "$browser_bin" \
     --user-data-dir="$profile" \
@@ -805,6 +794,17 @@ console.log(match[1] + " " + match[2]);
     echo "Unsupported hydrate mode: $hydrate_mode" >&2
     exit 3
   fi
+  signal_desktop_capture_ready() {
+    touch "$out/desktop-capture-ready"
+    capture_start_deadline=$((SECONDS + 30))
+    while [ ! -f "$out/desktop-capture-started" ]; do
+      if [ "$SECONDS" -ge "$capture_start_deadline" ]; then
+        echo "Timed out waiting for desktop capture to start." >&2
+        exit 3
+      fi
+      sleep 1
+    done
+  }
   if [ "$setup_gateway" = "1" ]; then
     export OPENCLAW_HOME="$HOME/.openclaw-mantis/slack-openclaw"
     mkdir -p "$OPENCLAW_HOME"
@@ -847,6 +847,7 @@ MANTIS_SLACK_PATCH
       exit 1
     fi
     disown "$gateway_pid" >/dev/null 2>&1 || true
+    signal_desktop_capture_ready
   else
     slack_qa_output_dir=".artifacts/qa-e2e/mantis/$(basename "$out")/slack-qa"
     rm -rf "$slack_qa_output_dir" "$out/slack-qa"
@@ -862,6 +863,7 @@ MANTIS_SLACK_PATCH
     if [ "$fast_mode" = "1" ]; then
       qa_args+=(--fast)
     fi
+    signal_desktop_capture_ready
     if [ "$approval_checkpoints" = "1" ]; then
       checkpoint_dir="$out/approval-checkpoints"
       mkdir -p "$checkpoint_dir"
@@ -1105,6 +1107,23 @@ else
   run_mantis_remote_body >"$out/slack-desktop-command.log" 2>&1 &
 fi
 remote_body_pid="$!"
+while [ ! -f "$out/desktop-capture-ready" ] && kill -0 "$remote_body_pid" >/dev/null 2>&1; do
+  sleep 1
+done
+if [ -f "$out/desktop-capture-ready" ]; then
+  if command -v ffmpeg >/dev/null 2>&1; then
+    display_input="$DISPLAY"
+    case "$display_input" in
+      *.*) ;;
+      *) display_input="$display_input.0" ;;
+    esac
+    ffmpeg -hide_banner -loglevel error -y -f x11grab -framerate 15 -i "$display_input" -t 180 -pix_fmt yuv420p "$out/slack-desktop-smoke.mp4" >"$out/ffmpeg.log" 2>&1 &
+    video_pid=$!
+  else
+    echo "ffmpeg missing; video artifact skipped" >"$out/ffmpeg.log"
+  fi
+  touch "$out/desktop-capture-started"
+fi
 (
   while kill -0 "$remote_body_pid" >/dev/null 2>&1; do
     echo "MANTIS_REMOTE_HEARTBEAT $(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -1130,6 +1149,12 @@ else
   scrot "$out/slack-desktop-smoke.png" || true
 fi
 if [ -n "$video_pid" ]; then
+  kill -INT "$video_pid" >/dev/null 2>&1 || true
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
+    kill -0 "$video_pid" >/dev/null 2>&1 || break
+    sleep 1
+  done
+  kill -TERM "$video_pid" >/dev/null 2>&1 || true
   wait "$video_pid" || true
 fi
 if [ "$setup_gateway" != "1" ]; then

@@ -3434,6 +3434,23 @@ describe("package artifact reuse", () => {
     ]);
   });
 
+  it("runs the selected Mantis Slack scenario by default and requires its QA evidence", () => {
+    const workflow = readFileSync(MANTIS_SLACK_DESKTOP_SMOKE_WORKFLOW, "utf8");
+
+    expectTextToIncludeAll(workflow, [
+      "gateway_setup:",
+      "default: false",
+      'scenario_args=(--scenario "$SCENARIO_ID")',
+      'if [[ "$GATEWAY_SETUP" == "true" ]]; then',
+      "gateway_args=(--gateway-setup)",
+      "scenario_args=()",
+      "slack-qa/qa-suite-summary.json",
+      "slack-qa/qa-evidence.json",
+      "required: $slack_qa_required",
+    ]);
+    expect(workflow).not.toContain("gateway_args=(--gateway-setup)\n          approval_args=()");
+  });
+
   it("fails Docker E2E release lanes when summary artifacts are missing", () => {
     const cases = [
       {

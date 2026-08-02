@@ -56,6 +56,7 @@ export const slackQaCanaryScenario: SlackQaScenarioImplementation = {
 };
 
 export const slackQaSemanticProgressDefaultScenario: SlackQaScenarioImplementation = {
+  configOverrides: { replyToMode: "all" },
   buildRun: (sutUserId) => {
     const suffix = randomUUID().slice(0, 8).toUpperCase();
     const greetingMarker = `SLACK-QA-GREETING-${suffix}`;
