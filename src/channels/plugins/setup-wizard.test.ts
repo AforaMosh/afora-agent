@@ -147,6 +147,39 @@ function createConfigure() {
   }).configure;
 }
 
+describe("channel setup wizard text inputs", () => {
+  it("rejects a malformed required text input result", async () => {
+    let applied = false;
+    const queued = createQueuedWizardPrompter();
+    queued.text.mockResolvedValueOnce(undefined);
+    const configure = buildChannelSetupWizardAdapterFromSetupWizard({
+      plugin: createLegacyPlugin(),
+      wizard: {
+        ...createLegacyWizard(),
+        credentials: [],
+        textInputs: [
+          {
+            inputKey: "label",
+            message: "Label",
+            applySet: ({ cfg }) => {
+              applied = true;
+              return cfg;
+            },
+          },
+        ],
+      },
+    }).configure;
+
+    await expect(
+      runSetupWizardConfigure({
+        configure,
+        prompter: queued.prompter,
+      }),
+    ).rejects.toThrow("Required");
+    expect(applied).toBe(false);
+  });
+});
+
 describe("channel setup wizard account scoping", () => {
   it("does not prefill or overwrite the existing account when adding a new account", async () => {
     const main = {

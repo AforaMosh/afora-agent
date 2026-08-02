@@ -326,6 +326,52 @@ describe("promptResolvedAllowFrom", () => {
 });
 
 describe("promptSingleChannelSecretInput", () => {
+  it("keeps a configured token when replacement returns a malformed value", async () => {
+    const prompter = createSecretInputPrompter({
+      selects: ["plaintext"],
+      confirms: [false],
+    });
+    prompter.text.mockResolvedValueOnce(undefined as never);
+
+    const result = await runPromptSingleChannelSecretInput({
+      prompter,
+      providerHint: "telegram",
+      credentialLabel: "Telegram bot token",
+      accountConfigured: true,
+      canUseEnv: false,
+      hasConfigToken: true,
+      preferredEnvVar: "TELEGRAM_BOT_TOKEN",
+    });
+
+    expect(result).toEqual({ action: "keep" });
+    expect(prompter.confirm).toHaveBeenCalledTimes(1);
+    expect(prompter.text).toHaveBeenCalledTimes(1);
+  });
+
+  it("trims a replacement token before returning it", async () => {
+    const prompter = createSecretInputPrompter({
+      selects: ["plaintext"],
+      confirms: [false],
+      texts: ["  replacement-token  "],
+    });
+
+    const result = await runPromptSingleChannelSecretInput({
+      prompter,
+      providerHint: "telegram",
+      credentialLabel: "Telegram bot token",
+      accountConfigured: true,
+      canUseEnv: false,
+      hasConfigToken: true,
+      preferredEnvVar: "TELEGRAM_BOT_TOKEN",
+    });
+
+    expect(result).toEqual({
+      action: "set",
+      value: "replacement-token",
+      resolvedValue: "replacement-token",
+    });
+  });
+
   it("returns use-env action when plaintext mode selects env fallback", async () => {
     const prompter = createSecretInputPrompter({
       selects: ["plaintext"],
