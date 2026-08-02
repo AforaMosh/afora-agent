@@ -140,6 +140,7 @@ describe("live transport QA scenario selection", () => {
     { channelId: "matrix", scenarioId: "thread-follow-up" },
     { channelId: "telegram", scenarioId: "channel-canary" },
     { channelId: "telegram", scenarioId: "channel-message-flows" },
+    { channelId: "discord", scenarioId: "channel-canary" },
   ] as const)(
     "keeps $scenarioId eligible through both $channelId drivers",
     ({ channelId, scenarioId }) => {
@@ -156,16 +157,21 @@ describe("live transport QA scenario selection", () => {
     },
   );
 
-  it("rejects the shared channel canary on unsupported Discord drivers", () => {
+  it("defaults dedicated Discord selection to live and excludes live-only modules from Crabline", () => {
+    const implicitLive = resolveDiscordQaScenarioIds(MOCK_LANE);
+    const explicitLive = resolveDiscordQaScenarioIds({ ...MOCK_LANE, channelDriver: "live" });
+    const crabline = resolveDiscordQaScenarioIds({ ...MOCK_LANE, channelDriver: "crabline" });
+
+    expect(explicitLive).toEqual(implicitLive);
+    expect(implicitLive).toContain("discord-canary");
+    expect(crabline).toContain("discord-crabline-roundtrip");
+    expect(crabline).not.toContain("discord-canary");
     expect(() =>
-      resolveCatalogLiveTransportQaScenarioIds({
+      resolveDiscordQaScenarioIds({
         ...MOCK_LANE,
-        channelId: "discord",
         channelDriver: "crabline",
-        scenarioIds: ["channel-canary"],
+        scenarioIds: ["discord-canary"],
       }),
-    ).toThrow(
-      "selected QA scenario(s) do not match the current QA lane: channel-canary (channel=qa-channel|telegram)",
-    );
+    ).toThrow("channelDriver=live");
   });
 });

@@ -152,11 +152,14 @@ function scrubQaGatewayChildTestRunnerEnv(env: NodeJS.ProcessEnv): NodeJS.Proces
   return env;
 }
 
-function createQaGatewayEmptyTransport() {
+function createQaGatewayEmptyTransport(): Pick<
+  QaTransportAdapter,
+  "requiredPluginIds" | "createGatewayConfig" | "stageGatewayRuntime"
+> {
   return {
     requiredPluginIds: [] as const,
     createGatewayConfig: () => ({}),
-  } satisfies Pick<QaTransportAdapter, "requiredPluginIds" | "createGatewayConfig">;
+  };
 }
 
 function resolveQaGatewayChildCommand(repoRoot: string): QaGatewayChildCommand {
@@ -1233,7 +1236,10 @@ export async function startQaGatewayChild(params: {
   command?: QaGatewayChildCommand;
   useRepoCli?: boolean;
   providerBaseUrl?: string;
-  transport?: Pick<QaTransportAdapter, "requiredPluginIds" | "createGatewayConfig">;
+  transport?: Pick<
+    QaTransportAdapter,
+    "requiredPluginIds" | "createGatewayConfig" | "stageGatewayRuntime"
+  >;
   transportBaseUrl: string;
   controlUiAllowedOrigins?: string[];
   providerMode?: QaProviderMode;
@@ -1287,6 +1293,7 @@ export async function startQaGatewayChild(params: {
     const configPath = path.join(tempRoot, "openclaw.json");
     const gatewayToken = `qa-suite-${randomUUID()}`;
     const transport = params.transport ?? createQaGatewayEmptyTransport();
+    await transport.stageGatewayRuntime?.({ tempRoot });
     await seedQaAgentWorkspace({
       workspaceDir,
       repoRoot: params.repoRoot,
@@ -1395,7 +1402,6 @@ export async function startQaGatewayChild(params: {
     let env: NodeJS.ProcessEnv | null = null;
     let migrationConvergenceRestartUsed = false;
     let reuseStartupLaunchState = false;
-
     const nodeExecPath = gatewayExecutablePath ?? (await resolveQaNodeExecPath());
     const cliArgsPrefix = gatewayExecutablePath
       ? gatewayArgsPrefix
