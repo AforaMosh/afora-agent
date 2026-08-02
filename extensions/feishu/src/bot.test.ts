@@ -1591,9 +1591,19 @@ describe("handleFeishuMessage command authorization", () => {
       },
     });
 
-    await dispatchMessage({ cfg, event });
+    await dispatchMessage({ cfg, event, botOpenId: "ou-bot" });
 
     expect(mockShouldComputeCommandAuthorized).toHaveBeenCalledWith("/model", cfg);
+    const context = mockCallArg<{
+      BodyForAgent?: string;
+      CommandBody?: string;
+      RawBody?: string;
+      WasMentioned?: boolean;
+    }>(mockFinalizeInboundContext, 0, 0);
+    expect(context.BodyForAgent).toContain('<at user_id="ou-bot">Bot</at>/model');
+    expect(context.RawBody).toBe('<at user_id="ou-bot">Bot</at>/model');
+    expect(context.CommandBody).toBe("/model");
+    expect(context.WasMentioned).toBe(true);
   });
 
   it("falls back to top-level allowFrom for group command authorization", async () => {
