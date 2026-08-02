@@ -254,6 +254,7 @@ export function renderGroupedMessage(
   const visibleToolCards = hasToolCards && (opts.showToolCalls ?? true);
   if (
     !markdown &&
+    !reasoningMarkdown &&
     !visibleToolCards &&
     !hasImages &&
     !hasPairingQrExpiryNotices &&
