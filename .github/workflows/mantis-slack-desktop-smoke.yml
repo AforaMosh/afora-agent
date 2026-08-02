@@ -21,6 +21,20 @@ on:
         description: Optional Slack channel override for disposable visual proof
         required: false
         type: string
+      publish_proof_only:
+        description: Publish a prepared proof bundle from a shared Crabbox lease
+        required: false
+        default: false
+        type: boolean
+      proof_lease_id:
+        description: Shared Crabbox lease containing a prepared proof bundle
+        required: false
+        type: string
+      proof_remote_dir:
+        description: Absolute bundle directory inside the shared Crabbox lease
+        required: false
+        default: /tmp/claw639-local-proof
+        type: string
       gateway_setup:
         description: Start a persistent gateway instead of running the selected QA scenario
         required: false
@@ -169,6 +183,7 @@ jobs:
   run_slack_desktop:
     name: Run Slack desktop smoke
     needs: validate_ref
+    if: inputs.publish_proof_only != true
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     environment: qa-live-shared
@@ -565,3 +580,104 @@ jobs:
             --artifact-url "$ARTIFACT_URL" \
             --run-url "https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
             --request-source "$REQUEST_SOURCE"
+
+  publish_local_proof:
+    name: Publish prepared Slack visual proof
+    needs: validate_ref
+    if: inputs.publish_proof_only == true
+    runs-on: ubuntu-24.04
+    environment: qa-live-shared
+    steps:
+      - name: Checkout harness ref
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Setup Go for Crabbox CLI
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version: "1.26.x"
+          cache: false
+
+      - name: Install Crabbox CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          install_dir="${RUNNER_TEMP}/crabbox"
+          mkdir -p "$install_dir" "$HOME/.local/bin"
+          git init "$install_dir/src"
+          git -C "$install_dir/src" remote add origin https://github.com/openclaw/crabbox.git
+          timeout --signal=TERM --kill-after=10s 120s git -C "$install_dir/src" fetch --depth 1 origin "$CRABBOX_REF"
+          git -C "$install_dir/src" checkout --detach FETCH_HEAD
+          go build -C "$install_dir/src" -o "$HOME/.local/bin/crabbox" ./cmd/crabbox
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Pull prepared proof bundle
+        id: pull_proof
+        env:
+          CRABBOX_COORDINATOR: ${{ secrets.CRABBOX_COORDINATOR }}
+          CRABBOX_COORDINATOR_TOKEN: ${{ secrets.CRABBOX_COORDINATOR_TOKEN }}
+          CRABBOX_ACCESS_CLIENT_ID: ${{ secrets.CRABBOX_ACCESS_CLIENT_ID }}
+          CRABBOX_ACCESS_CLIENT_SECRET: ${{ secrets.CRABBOX_ACCESS_CLIENT_SECRET }}
+          PROOF_LEASE_ID: ${{ inputs.proof_lease_id }}
+          PROOF_REMOTE_DIR: ${{ inputs.proof_remote_dir }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$PROOF_LEASE_ID" ]]; then
+            echo "proof_lease_id is required in publish_proof_only mode." >&2
+            exit 2
+          fi
+          root="${RUNNER_TEMP}/claw639-local-proof"
+          mkdir -p "$root"
+          crabbox cp --provider aws --id "$PROOF_LEASE_ID" "SANDBOX:${PROOF_REMOTE_DIR}/." "$root"
+          test -s "$root/mantis-evidence.json"
+          test -s "$root/slack-semantic-progress.mp4"
+          echo "output_dir=$root" >> "$GITHUB_OUTPUT"
+
+      - name: Upload prepared proof artifact
+        id: upload_artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: claw639-local-slack-proof-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.pull_proof.outputs.output_dir }}
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Create Mantis GitHub App token
+        id: mantis_app_token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        with:
+          app-id: ${{ secrets.MANTIS_GITHUB_APP_ID }}
+          private-key: ${{ secrets.MANTIS_GITHUB_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+          permission-issues: write
+          permission-pull-requests: write
+
+      - name: Publish prepared Slack visual proof
+        env:
+          GH_TOKEN: ${{ steps.mantis_app_token.outputs.token }}
+          MANTIS_ARTIFACT_R2_ACCESS_KEY_ID: ${{ secrets.MANTIS_ARTIFACT_R2_ACCESS_KEY_ID }}
+          MANTIS_ARTIFACT_R2_BUCKET: openclaw-crabbox-artifacts
+          MANTIS_ARTIFACT_R2_ENDPOINT: ${{ vars.MANTIS_ARTIFACT_R2_ENDPOINT }}
+          MANTIS_ARTIFACT_R2_PUBLIC_BASE_URL: https://artifacts.openclaw.ai
+          MANTIS_ARTIFACT_R2_REGION: auto
+          MANTIS_ARTIFACT_R2_SECRET_ACCESS_KEY: ${{ secrets.MANTIS_ARTIFACT_R2_SECRET_ACCESS_KEY }}
+          TARGET_PR: ${{ inputs.pr_number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$TARGET_PR" ]]; then
+            echo "pr_number is required in publish_proof_only mode." >&2
+            exit 2
+          fi
+          root="${{ steps.pull_proof.outputs.output_dir }}"
+          node scripts/mantis/publish-pr-evidence.mjs \
+            --manifest "$root/mantis-evidence.json" \
+            --target-pr "$TARGET_PR" \
+            --artifact-root "mantis/slack-semantic-progress/pr-${TARGET_PR}/run-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
+            --marker "<!-- mantis-slack-semantic-progress-local-proof -->" \
+            --artifact-url "${{ steps.upload_artifact.outputs.artifact-url }}" \
+            --run-url "https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+            --request-source workflow_dispatch
