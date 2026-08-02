@@ -16,14 +16,15 @@ export const agentWaitHandler: GatewayRequestHandlers["agent.wait"] = async ({
     typeof params.timeoutMs === "number" && Number.isFinite(params.timeoutMs)
       ? Math.max(0, Math.floor(params.timeoutMs))
       : 30_000;
-  // `hasActiveChatRun` must exclude agent-kind abort entries so wait snapshot
-  // preference continues to distinguish chat.send from agent RPC runs.
+  // Talk's lifecycle final can precede chat.send's delayed source reply.
+  // This opt-in waits for the recorded chat outcome instead of false no-text.
   const activeChatEntry = context.chatAbortControllers.get(runId);
   const hasActiveChatRun = activeChatEntry !== undefined && activeChatEntry.kind !== "agent";
+  const preferChatResult = params.awaitChatResult === true || hasActiveChatRun;
   const snapshot = await waitForAgentJob({
     runId,
     timeoutMs,
-    ...(hasActiveChatRun ? { source: "chat" } : {}),
+    ...(preferChatResult ? { source: "chat" } : {}),
   });
   if (!snapshot) {
     const activeRunRegistered = activeChatEntry !== undefined;
@@ -38,6 +39,7 @@ export const agentWaitHandler: GatewayRequestHandlers["agent.wait"] = async ({
   respond(true, {
     runId,
     status: snapshot.status,
+    resultText: snapshot.resultText,
     startedAt: snapshot.startedAt,
     endedAt: snapshot.endedAt,
     error: snapshot.error,

@@ -362,6 +362,8 @@ export const AgentIdentityResultSchema = closedObject({
 export const AgentWaitParamsSchema = closedObject({
   runId: NonEmptyString,
   timeoutMs: Type.Optional(Type.Integer({ minimum: 0 })),
+  // Wait for chat.send's finalized source reply instead of a lifecycle event.
+  awaitChatResult: Type.Optional(Type.Boolean()),
 });
 
 /** Wake request from external schedulers or devices into an agent session. */

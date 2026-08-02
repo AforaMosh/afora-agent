@@ -4,7 +4,11 @@ import type { DedupeEntry } from "../server-shared.js";
 import { setGatewayDedupeEntry } from "./agent-job.js";
 import { agentHandlers } from "./agent.js";
 
-function waitThroughGateway(params: { runId: string; timeoutMs: number }) {
+function waitThroughGateway(params: {
+  runId: string;
+  timeoutMs: number;
+  awaitChatResult?: boolean;
+}) {
   const respond = vi.fn();
   const handler = expectDefined(
     agentHandlers["agent.wait"],
@@ -20,14 +24,24 @@ function waitThroughGateway(params: { runId: string; timeoutMs: number }) {
   return { promise, respond };
 }
 
-function completeRun(dedupe: Map<string, DedupeEntry>, runId: string): void {
+function completeRun(
+  dedupe: Map<string, DedupeEntry>,
+  runId: string,
+  options: { source?: "agent" | "chat"; resultText?: string } = {},
+): void {
   setGatewayDedupeEntry({
     dedupe,
-    key: `agent:${runId}`,
+    key: `${options.source ?? "agent"}:${runId}`,
     entry: {
       ts: Date.now(),
       ok: true,
-      payload: { runId, status: "ok", startedAt: 100, endedAt: 200 },
+      payload: {
+        runId,
+        status: "ok",
+        startedAt: 100,
+        endedAt: 200,
+        ...(options.resultText ? { resultText: options.resultText } : {}),
+      },
     },
   });
 }
@@ -50,6 +64,7 @@ describe("agent.wait gateway dedupe observations", () => {
     const expected = {
       runId,
       status: "ok",
+      resultText: undefined,
       startedAt: 100,
       endedAt: 200,
       error: undefined,
@@ -85,6 +100,31 @@ describe("agent.wait gateway dedupe observations", () => {
     expect(completed.respond).toHaveBeenCalledWith(
       true,
       expect.objectContaining({ runId, status: "ok", endedAt: 200 }),
+    );
+  });
+
+  it("waits for the chat completion result after an earlier lifecycle terminal", async () => {
+    const runId = "run-await-chat-result";
+    const dedupe = new Map<string, DedupeEntry>();
+    completeRun(dedupe, runId);
+
+    const waiter = waitThroughGateway({ runId, timeoutMs: 1_000, awaitChatResult: true });
+    await Promise.resolve();
+    expect(waiter.respond).not.toHaveBeenCalled();
+
+    completeRun(dedupe, runId, {
+      source: "chat",
+      resultText: "The delayed source reply wins.",
+    });
+    await waiter.promise;
+
+    expect(waiter.respond).toHaveBeenCalledWith(
+      true,
+      expect.objectContaining({
+        runId,
+        status: "ok",
+        resultText: "The delayed source reply wins.",
+      }),
     );
   });
 

@@ -1,5 +1,4 @@
 // Control UI chat module implements realtime talk shared behavior.
-import { AGENT_RUN_TERMINAL_RETRY_GRACE_MS } from "../../../../src/agents/agent-run-terminal-grace.js";
 import { REALTIME_VOICE_AGENT_CONSULT_TOOL_NAME } from "../../../../src/talk/agent-consult-tool.js";
 import {
   buildRealtimeVoiceAgentCancelProviderResult,
@@ -218,6 +217,7 @@ type ChatPayload = {
 
 type AgentWaitResult = {
   status?: string;
+  resultText?: string;
   error?: string;
   stopReason?: string;
   endedAt?: number;
@@ -298,7 +298,6 @@ function waitForChatResult(params: {
     }, params.timeoutMs);
     let settled = false;
     let emptyFinalWaitStarted = false;
-    let emptyFinalFallbackTimer: number | undefined;
     const onAbort = () => {
       settleReject(new DOMException("OpenClaw tool call aborted", "AbortError"));
     };
@@ -329,6 +328,7 @@ function waitForChatResult(params: {
         .request<AgentWaitResult>("agent.wait", {
           runId: params.runId,
           timeoutMs: params.timeoutMs,
+          awaitChatResult: true,
         })
         .then((result) => {
           if (settled) {
@@ -342,9 +342,7 @@ function waitForChatResult(params: {
           if (result?.status === "timeout") {
             return;
           }
-          emptyFinalFallbackTimer = window.setTimeout(() => {
-            settleResolve("OpenClaw finished with no text.");
-          }, AGENT_RUN_TERMINAL_RETRY_GRACE_MS);
+          settleResolve(result?.resultText?.trim() || "OpenClaw finished with no text.");
         })
         .catch((error: unknown) => {
           settleReject(error instanceof Error ? error : new Error(String(error)));
@@ -376,9 +374,6 @@ function waitForChatResult(params: {
     });
     function cleanup() {
       window.clearTimeout(timer);
-      if (emptyFinalFallbackTimer !== undefined) {
-        window.clearTimeout(emptyFinalFallbackTimer);
-      }
       params.signal?.removeEventListener("abort", onAbort);
       unsubscribe();
     }

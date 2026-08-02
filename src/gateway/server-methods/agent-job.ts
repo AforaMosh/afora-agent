@@ -19,6 +19,7 @@ const AGENT_RUN_CACHE_MAX_ENTRIES = 5_000;
 
 type AgentJobTerminalSnapshot = {
   status: "ok" | "error" | "timeout";
+  resultText?: string;
   startedAt?: number;
   endedAt?: number;
   error?: string;
@@ -120,7 +121,11 @@ function mergeSnapshot(
   if (!existing || !shouldPreserveTerminalSnapshot(existing, incoming)) {
     return incoming;
   }
-  return { ...existing, cachedAt: incoming.cachedAt };
+  return {
+    ...existing,
+    cachedAt: incoming.cachedAt,
+    ...(existing.resultText || !incoming.resultText ? {} : { resultText: incoming.resultText }),
+  };
 }
 
 function notifyAgentRunWaiters(runId: string) {
@@ -334,6 +339,7 @@ function parseDedupeObservation(entry: DedupeEntry): DedupeObservation {
         yielded?: unknown;
         timeoutPhase?: unknown;
         providerStarted?: unknown;
+        resultText?: unknown;
         result?: unknown;
       }
     | undefined;
@@ -376,6 +382,7 @@ function parseDedupeObservation(entry: DedupeEntry): DedupeObservation {
     state: "terminal",
     snapshot: {
       status: terminalOutcome.status,
+      ...(asString(payload?.resultText) ? { resultText: asString(payload?.resultText) } : {}),
       startedAt,
       endedAt,
       error: terminalOutcome.status === "ok" ? undefined : terminalOutcome.error,
@@ -504,6 +511,7 @@ function addAgentRunWaiter(runId: string, waiter: AgentJobWaiter): () => void {
 function publicSnapshot(snapshot: AgentRunObservation): AgentJobTerminalSnapshot {
   return {
     status: snapshot.status,
+    resultText: snapshot.resultText,
     startedAt: snapshot.startedAt,
     endedAt: snapshot.endedAt,
     error: snapshot.error,

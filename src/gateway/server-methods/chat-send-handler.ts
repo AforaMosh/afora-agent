@@ -552,6 +552,7 @@ export async function handleChatSend(
               await persistGatewayUserTurnTranscriptBestEffort();
             }
             let broadcastedSourceReplyFinal = false;
+            let sourceReplyResultText: string | undefined;
             // WebChat persistence has two owners. Agent runs persist model-visible turns
             // through OpenClaw runtime's SessionManager; this dispatcher only owns live delivery payloads.
             // Do not blindly mirror agent-run final payloads into JSONL or chat.history can
@@ -576,6 +577,9 @@ export async function handleChatSend(
                 deliveredReplies: replyDispatch.deliveredReplies,
                 emitFirstAssistantServerTiming,
                 hasReturnedAgentErrorPayloads: returnedAgentErrorPayloads.length > 0,
+                onFinalText: (text) => {
+                  sourceReplyResultText = text;
+                },
                 session: preparedSession.value,
               });
             }
@@ -609,7 +613,11 @@ export async function handleChatSend(
                         status: "error" as const,
                         summary: returnedAgentErrorMessage ?? "agent returned an error payload",
                       }
-                    : { runId: clientRunId, status: "ok" as const },
+                    : {
+                        runId: clientRunId,
+                        status: "ok" as const,
+                        ...(sourceReplyResultText ? { resultText: sourceReplyResultText } : {}),
+                      },
                   ...(returnedAgentError ? { error: returnedAgentError } : {}),
                 },
               });
