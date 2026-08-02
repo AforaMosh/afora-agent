@@ -304,22 +304,24 @@ describe("getTelegramSequentialKey", () => {
       },
       "telegram:789:approval",
     ],
-    ...(["exec", "plugin"] as const).map((approvalKind) => [
-      {
-        update: {
-          callback_query: {
-            message: mockMessage({ chat: mockChat({ id: 654 }) }),
-            data: buildTelegramApprovalCallbackData({
-              type: "approval",
-              approvalKind,
-              approvalId: "signed-approval",
-              decision: "allow-once",
-            }),
+    ...(["exec", "plugin"] as const).map(
+      (approvalKind): [Parameters<typeof getTelegramSequentialKey>[0], string] => [
+        {
+          update: {
+            callback_query: {
+              message: mockMessage({ chat: mockChat({ id: 654 }) }),
+              data: buildTelegramApprovalCallbackData({
+                type: "approval",
+                approvalKind,
+                approvalId: "signed-approval",
+                decision: "allow-once",
+              }),
+            },
           },
         },
-      },
-      "telegram:654:approval",
-    ]),
+        "telegram:654:approval",
+      ],
+    ),
     [
       {
         update: {

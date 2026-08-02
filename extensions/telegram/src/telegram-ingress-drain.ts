@@ -159,6 +159,9 @@ function canReconcileTelegramLegacyLane(params: {
     }
   }
   const message = candidate.message ?? candidate.edited_message ?? callback?.message;
+  if (message == null) {
+    return false;
+  }
   const chatId = message?.chat?.id;
   const chatType = message?.chat?.type;
   const threadId = message?.message_thread_id;
