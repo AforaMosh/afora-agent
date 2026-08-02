@@ -12,6 +12,8 @@ import {
   setActivePluginRegistry,
 } from "openclaw/plugin-sdk/plugin-test-runtime";
 import { createReplyDispatcher } from "openclaw/plugin-sdk/reply-runtime";
+import { withEnvAsync, withServer } from "openclaw/plugin-sdk/test-env";
+import { chunkTextForOutbound } from "openclaw/plugin-sdk/text-chunking";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PluginRuntime } from "../runtime-api.js";
 import { setZaloRuntime } from "./runtime.js";
@@ -287,6 +289,171 @@ describe("Zalo polling media replies", () => {
     }
   });
 
+  it.each([
+    { name: "sends every caption chunk", rejectedRequest: undefined },
+    { name: "preserves the accepted photo when the overflow fails", rejectedRequest: 2 },
+    { name: "records no delivery when the photo is rejected", rejectedRequest: 1 },
+  ])("$name through the real monitored Bot API transport", async ({ rejectedRequest }) => {
+    const requests: Array<{ method: string; body: Record<string, unknown> }> = [];
+    const deliveryErrors: unknown[] = [];
+    const actualApi = await vi.importActual<typeof import("./api.js")>("./api.js");
+    const sendPhotoThroughActualApi = async (...args: unknown[]) => {
+      const [token, params, fetcher] = args as Parameters<typeof actualApi.sendPhoto>;
+      return await actualApi.sendPhoto(token, params, fetcher);
+    };
+    const sendMessageThroughActualApi = async (...args: unknown[]) => {
+      const [token, params, fetcher] = args as Parameters<typeof actualApi.sendMessage>;
+      return await actualApi.sendMessage(token, params, fetcher);
+    };
+    const core = getZaloRuntimeMock() as PluginRuntime;
+    vi.mocked(core.channel.text.chunkMarkdownTextWithMode).mockImplementation((text, limit) =>
+      chunkTextForOutbound(text, limit),
+    );
+    dispatchReplyWithBufferedBlockDispatcherMock.mockImplementation(
+      async ({
+        dispatcherOptions,
+      }: {
+        dispatcherOptions: Parameters<typeof createReplyDispatcher>[0];
+      }) => {
+        const dispatcher = createReplyDispatcher({
+          ...dispatcherOptions,
+          onError: async (error, info) => {
+            deliveryErrors.push(error);
+            await dispatcherOptions.onError?.(error, info);
+          },
+        });
+        dispatcher.sendToolResult({
+          text: "a".repeat(3000),
+          mediaUrl: "https://93.184.216.34/monitored-photo.png",
+        });
+        dispatcher.markComplete();
+        await dispatcher.waitForIdle();
+        return { queuedFinal: false, counts: dispatcher.getQueuedCounts() };
+      },
+    );
+
+    await sendPhotoMock.withImplementation(sendPhotoThroughActualApi, async () => {
+      await sendMessageMock.withImplementation(sendMessageThroughActualApi, async () => {
+        await withServer(
+          (request, response) => {
+            let body = "";
+            request.setEncoding("utf8");
+            request.on("data", (chunk: string) => {
+              body += chunk;
+            });
+            request.on("end", () => {
+              const method = request.url?.split("/").at(-1) ?? "unknown";
+              requests.push({ method, body: JSON.parse(body) as Record<string, unknown> });
+              response.writeHead(200, { "content-type": "application/json" });
+              response.end(
+                JSON.stringify(
+                  requests.length === rejectedRequest
+                    ? {
+                        ok: false,
+                        error_code: 400,
+                        description: "Bot API rejected monitored reply",
+                      }
+                    : { ok: true, result: { message_id: `${method}-${String(requests.length)}` } },
+                ),
+              );
+            });
+          },
+          async (apiUrl) => {
+            await withEnvAsync({ ZALO_API_URL: apiUrl }, async () => {
+              setActivePluginRegistry(createEmptyPluginRegistry());
+              getUpdatesMock
+                .mockResolvedValueOnce({
+                  ok: true,
+                  result: createTextUpdate({
+                    messageId: "polling-long-caption-loopback",
+                    userId: "user-1",
+                    userName: "User One",
+                    chatId: "dm-chat-1",
+                  }),
+                })
+                .mockImplementation(() => new Promise(() => {}));
+
+              const { monitorZaloProvider } = await loadCachedLifecycleMonitorModule(
+                "zalo-polling-media-reply",
+              );
+              const abort = new AbortController();
+              const runtime = createRuntimeEnv();
+              const statusSink =
+                vi.fn<(patch: { lastInboundAt?: number; lastOutboundAt?: number }) => void>();
+              const { account, config } = createLifecycleMonitorSetup({
+                accountId: "acct-zalo-loopback",
+                dmPolicy: "open",
+                webhookUrl: "",
+              });
+              const run = monitorZaloProvider({
+                token: "zalo-token",
+                account,
+                config,
+                runtime,
+                statusSink,
+                abortSignal: abort.signal,
+              });
+
+              try {
+                await vi.waitFor(() => {
+                  expect(requests).toHaveLength(rejectedRequest === 1 ? 1 : 2);
+                  expect(dispatchReplyWithBufferedBlockDispatcherMock).toHaveBeenCalledOnce();
+                  if (rejectedRequest) {
+                    expect(deliveryErrors).toHaveLength(1);
+                  } else {
+                    expect(
+                      statusSink.mock.calls.filter(([patch]) => patch.lastOutboundAt !== undefined)
+                        .length,
+                    ).toBeGreaterThanOrEqual(2);
+                  }
+                });
+                expect(requests[0]).toEqual({
+                  method: "sendPhoto",
+                  body: {
+                    chat_id: "dm-chat-1",
+                    photo: "https://93.184.216.34/monitored-photo.png",
+                    caption: "a".repeat(2000),
+                  },
+                });
+                if (rejectedRequest !== 1) {
+                  expect(requests[1]).toEqual({
+                    method: "sendMessage",
+                    body: { chat_id: "dm-chat-1", text: "a".repeat(1000) },
+                  });
+                }
+                if (rejectedRequest === 2) {
+                  expect(deliveryErrors).toEqual([
+                    expect.objectContaining({
+                      cause: expect.objectContaining({ name: "ZaloApiError" }),
+                      sentBeforeError: true,
+                      visibleReplySent: true,
+                      deliveryResult: expect.objectContaining({
+                        messageIds: ["sendPhoto-1"],
+                        receipt: expect.objectContaining({ platformMessageIds: ["sendPhoto-1"] }),
+                      }),
+                    }),
+                  ]);
+                } else if (rejectedRequest === 1) {
+                  expect(deliveryErrors).toEqual([
+                    expect.objectContaining({ name: "ZaloApiError" }),
+                  ]);
+                  expect(
+                    statusSink.mock.calls.filter(([patch]) => patch.lastOutboundAt !== undefined),
+                  ).toHaveLength(0);
+                } else {
+                  expect(deliveryErrors).toHaveLength(0);
+                }
+              } finally {
+                abort.abort();
+                await run;
+              }
+            });
+          },
+        );
+      });
+    });
+  });
+
   it.each<ZaloReplyFailureCase>([
     { name: "block text", kind: "block", payload: { text: "block reply" } },
     { name: "tool text", kind: "tool", payload: { text: "tool reply" } },
@@ -354,7 +521,7 @@ describe("Zalo polling media replies", () => {
     const acceptedMessageId = `zalo-accepted-${testCase.partial ?? "none"}`;
     const acceptedResponse = {
       ok: true,
-      ...(testCase.missingMessageId ? {} : { result: { message_id: acceptedMessageId } }),
+      result: testCase.missingMessageId ? {} : { message_id: acceptedMessageId },
     };
     const isMedia = Boolean(testCase.payload.mediaUrl || testCase.payload.mediaUrls?.length);
     if (testCase.blocked) {

@@ -55,7 +55,10 @@ const lifecycleMocks = vi.hoisted(
       ok: true,
       result: { message_id: "zalo-test-reply-1" },
     })),
-    sendPhotoMock: vi.fn(async () => ({ ok: true })),
+    sendPhotoMock: vi.fn(async () => ({
+      ok: true,
+      result: { message_id: "zalo-test-photo-1" },
+    })),
     getZaloRuntimeMock: vi.fn(),
   }),
 );

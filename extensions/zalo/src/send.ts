@@ -18,6 +18,7 @@ type ZaloSendOptions = {
   token?: string;
   accountId?: string;
   cfg?: OpenClawConfig;
+  fetcher?: ZaloFetch;
   mediaUrl?: string;
   caption?: string;
   verbose?: boolean;
@@ -29,6 +30,7 @@ type ZaloSendResult = {
   messageId?: string;
   receipt: MessageReceipt;
   error?: string;
+  cause?: unknown;
 };
 
 function createZaloSendReceipt(params: {
@@ -88,6 +90,7 @@ async function runZaloSend(
     return {
       ok: false,
       error: formatErrorMessage(err),
+      cause: err,
       receipt: createZaloSendReceipt({ chatId: params.chatId, kind: params.kind }),
     };
   }
@@ -104,12 +107,12 @@ function resolveSendContext(options: ZaloSendOptions): {
     });
     const token = options.token || account.token;
     const proxy = options.proxy ?? account.config.proxy;
-    return { token, fetcher: resolveZaloProxyFetch(proxy) };
+    return { token, fetcher: options.fetcher ?? resolveZaloProxyFetch(proxy) };
   }
 
   const token = options.token ?? resolveZaloToken(undefined, options.accountId).token;
   const proxy = options.proxy;
-  return { token, fetcher: resolveZaloProxyFetch(proxy) };
+  return { token, fetcher: options.fetcher ?? resolveZaloProxyFetch(proxy) };
 }
 
 function resolveValidatedSendContext(
