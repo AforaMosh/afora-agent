@@ -1,3 +1,4 @@
+import type { RunCliAgentParams } from "../../agents/cli-runner/types.js";
 import type { SessionToolOverrides } from "../../config/sessions/types.js";
 // Shared get-reply type contracts for command, directive, and runtime layers.
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
@@ -16,6 +17,8 @@ export type ReplySessionBinding = {
 };
 
 type InternalReplySessionOptions = {
+  /** Internal CLI execution policy for reply paths that require a non-agent run mode. */
+  executionMode?: RunCliAgentParams["executionMode"];
   expectedExistingSessionId?: string;
   onDeliberateSilentTerminalReply?: () => void;
   onSessionPrepared?: (binding: ReplySessionBinding) => void;

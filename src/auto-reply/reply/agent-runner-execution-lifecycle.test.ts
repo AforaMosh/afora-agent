@@ -20,6 +20,7 @@ import type {
   FallbackRunnerParams,
   EmbeddedAgentParams,
 } from "./agent-runner-execution.test-support.js";
+import type { InternalGetReplyOptions } from "./get-reply.types.js";
 import { createReplyOperation, type ReplyOperation } from "./reply-run-registry.js";
 
 const state = setupAgentRunnerExecutionTestState();
@@ -550,7 +551,7 @@ describe("executeAgentTurn: run lifecycle and ownership", () => {
     expect(runtime.pendingMcpAppModelContext).toBeUndefined();
   });
 
-  it("propagates commitment-only bootstrap scope to CLI runs", async () => {
+  it("propagates commitment-only execution policy to CLI runs", async () => {
     state.isCliProviderMock.mockReturnValue(true);
     state.runWithModelFallbackMock.mockImplementationOnce(async (params: FallbackRunnerParams) => ({
       result: await params.run("claude-cli", "sonnet-4.6"),
@@ -565,13 +566,16 @@ describe("executeAgentTurn: run lifecycle and ownership", () => {
     const followupRun = createFollowupRun();
     followupRun.run.provider = "claude-cli";
     followupRun.run.model = "sonnet-4.6";
+    const opts: InternalGetReplyOptions = {
+      isHeartbeat: true,
+      bootstrapContextMode: "lightweight",
+      disableTools: true,
+      executionMode: "side-question",
+      [HEARTBEAT_RUN_SCOPE]: "commitment-only",
+    };
     const params = createMinimalRunAgentTurnParams({
       followupRun,
-      opts: {
-        isHeartbeat: true,
-        bootstrapContextMode: "lightweight",
-        [HEARTBEAT_RUN_SCOPE]: "commitment-only",
-      },
+      opts,
     });
     params.isHeartbeat = true;
 
@@ -582,6 +586,8 @@ describe("executeAgentTurn: run lifecycle and ownership", () => {
       trigger: "heartbeat",
       bootstrapContextMode: "lightweight",
       bootstrapContextRunKind: "commitment-only",
+      disableTools: true,
+      executionMode: "side-question",
     });
   });
 

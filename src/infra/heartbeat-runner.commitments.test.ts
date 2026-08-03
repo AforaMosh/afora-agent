@@ -1,5 +1,6 @@
 // Covers heartbeat commitment checks and runner scheduling behavior.
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { InternalGetReplyOptions } from "../auto-reply/reply/get-reply.types.js";
 import { HEARTBEAT_TOKEN } from "../auto-reply/tokens.js";
 import { listDueCommitmentSessionKeys } from "../commitments/store.js";
 import { readCommitmentsForTest, seedCommitmentsForTest } from "../commitments/store.test-utils.js";
@@ -120,6 +121,7 @@ describe("runHeartbeatOnce commitments", () => {
 
   async function setupCommitmentCase(params?: {
     replyText?: string;
+    replyError?: Error;
     target?: "last" | "none";
     heartbeatAccountId?: string;
     commitmentAccountId?: string | null;
@@ -190,7 +192,7 @@ describe("runHeartbeatOnce commitments", () => {
             OriginatingTo?: string;
             SessionKey?: string;
           },
-          opts?: { disableTools?: boolean; skillFilter?: string[] },
+          opts?: InternalGetReplyOptions,
         ) => {
           expect(ctx.Body).toContain("Due inferred follow-up commitments");
           expect(ctx.Body).toContain("How did the interview go?");
@@ -202,7 +204,11 @@ describe("runHeartbeatOnce commitments", () => {
             params?.isolatedSession ? `${sessionKey}:heartbeat` : sessionKey,
           );
           expect(opts?.disableTools).toBe(true);
+          expect(opts?.executionMode).toBe("side-question");
           expect(opts?.skillFilter).toStrictEqual([]);
+          if (params?.replyError) {
+            throw params.replyError;
+          }
           return { text: params?.replyText ?? "How did the interview go?" };
         },
       );
@@ -847,6 +853,11 @@ describe("runHeartbeatOnce commitments", () => {
       attempts: 1,
       dismissedAtMs: nowMs,
     });
+  });
+
+  it("keeps a due commitment pending when the reply runner rejects", async () => {
+    const { store } = await setupCommitmentCase({ replyError: new Error("guard failure") });
+    expectCommitmentFields(store.commitments[0], { status: "pending", attempts: 1 });
   });
 
   it("keeps due commitment heartbeats on the text ack while tools are disabled", async () => {
