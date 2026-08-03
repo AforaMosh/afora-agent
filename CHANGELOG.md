@@ -18,6 +18,7 @@ Docs: https://docs.openclaw.ai
 
 ### Fixes
 
+- **OpenCode Go:** use the documented `hy3` model identifier instead of the failing `hy3-preview` alias.
 - **Codex native subagents:** retain the parent app-server subscription and recognize multi-agent V2 child activity until a yielded child completion reaches its requester.
 - **Dependency security:** updates production dependency resolutions for `brace-expansion` and PostCSS to patched versions. (#113428)
 - **Execution and transport safety:** browser, sandbox, exec, MCP, and secret-resolution paths reject unsafe inputs and handle stream failures without crashing the host process.
