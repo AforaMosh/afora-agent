@@ -670,6 +670,157 @@ describe("channel refresh sequencing", () => {
     channels.dispose();
   });
 
+  it("upgrades an in-flight runtime refresh when an operator requests a channel probe", async () => {
+    const pendingRuntime = createDeferred<ChannelsStatusSnapshot | null>();
+    const pendingProbe = createDeferred<ChannelsStatusSnapshot | null>();
+    const request = vi.fn(async (_method: string, params?: unknown) =>
+      (params as { probe?: boolean } | undefined)?.probe
+        ? pendingProbe.promise
+        : pendingRuntime.promise,
+    );
+    const channels = createChannelCapability({
+      snapshot: { client: { request }, phase: "connected" },
+      subscribe: () => () => undefined,
+    } as never);
+
+    const runtimeRefresh = channels.refresh(false);
+    const probeRefresh = channels.refresh(true);
+    try {
+      expect(request).toHaveBeenNthCalledWith(1, "channels.status", {
+        probe: false,
+        timeoutMs: 8000,
+      });
+      expect(request).toHaveBeenNthCalledWith(2, "channels.status", {
+        probe: true,
+        timeoutMs: 8000,
+      });
+      expect(channels.state.channelsLoadingProbe).toBe(true);
+
+      pendingProbe.resolve(createChannelsSnapshot("probed"));
+      await probeRefresh;
+      expect(channels.state.channelsSnapshot?.channelLabels.test).toBe("probed");
+      expect(channels.state.channelsLoading).toBe(false);
+      expect(channels.state.channelsError).toBeNull();
+
+      pendingRuntime.resolve(createChannelsSnapshot("stale runtime"));
+      await runtimeRefresh;
+      expect(channels.state.channelsSnapshot?.channelLabels.test).toBe("probed");
+      expect(channels.state.channelsLoading).toBe(false);
+      expect(channels.state.channelsError).toBeNull();
+    } finally {
+      pendingRuntime.resolve(createChannelsSnapshot("cleanup"));
+      pendingProbe.resolve(createChannelsSnapshot("cleanup"));
+      await Promise.all([runtimeRefresh, probeRefresh]);
+      channels.dispose();
+    }
+  });
+
+  it("keeps an upgraded channel probe active when the superseded runtime refresh fails", async () => {
+    const pendingRuntime = createDeferred<ChannelsStatusSnapshot | null>();
+    const pendingProbe = createDeferred<ChannelsStatusSnapshot | null>();
+    const request = vi.fn(async (_method: string, params?: unknown) =>
+      (params as { probe?: boolean } | undefined)?.probe
+        ? pendingProbe.promise
+        : pendingRuntime.promise,
+    );
+    const channels = createChannelCapability({
+      snapshot: { client: { request }, phase: "connected" },
+      subscribe: () => () => undefined,
+    } as never);
+
+    const runtimeRefresh = channels.refresh(false);
+    const probeRefresh = channels.refresh(true);
+    try {
+      expect(request).toHaveBeenCalledTimes(2);
+
+      pendingRuntime.reject(new Error("superseded runtime refresh failed"));
+      await runtimeRefresh;
+      expect(channels.state.channelsLoading).toBe(true);
+      expect(channels.state.channelsLoadingProbe).toBe(true);
+      expect(channels.state.channelsError).toBeNull();
+
+      pendingProbe.resolve(createChannelsSnapshot("probed"));
+      await probeRefresh;
+      expect(channels.state.channelsSnapshot?.channelLabels.test).toBe("probed");
+      expect(channels.state.channelsLoading).toBe(false);
+      expect(channels.state.channelsError).toBeNull();
+    } finally {
+      pendingRuntime.resolve(createChannelsSnapshot("cleanup"));
+      pendingProbe.resolve(createChannelsSnapshot("cleanup"));
+      await Promise.all([runtimeRefresh, probeRefresh]);
+      channels.dispose();
+    }
+  });
+
+  it("preserves an upgraded channel probe error after a superseded runtime refresh succeeds", async () => {
+    const pendingRuntime = createDeferred<ChannelsStatusSnapshot | null>();
+    const pendingProbe = createDeferred<ChannelsStatusSnapshot | null>();
+    const request = vi.fn(async (_method: string, params?: unknown) =>
+      (params as { probe?: boolean } | undefined)?.probe
+        ? pendingProbe.promise
+        : pendingRuntime.promise,
+    );
+    const channels = createChannelCapability({
+      snapshot: { client: { request }, phase: "connected" },
+      subscribe: () => () => undefined,
+    } as never);
+    const previous = createChannelsSnapshot("previous");
+    channels.state.channelsSnapshot = previous;
+
+    const runtimeRefresh = channels.refresh(false);
+    const probeRefresh = channels.refresh(true);
+    try {
+      expect(request).toHaveBeenCalledTimes(2);
+
+      pendingProbe.reject(new Error("plugin health check failed"));
+      await probeRefresh;
+      expect(channels.state.channelsSnapshot).toBe(previous);
+      expect(channels.state.channelsError).toBe("Error: plugin health check failed");
+      expect(channels.state.channelsLoading).toBe(false);
+
+      pendingRuntime.resolve(createChannelsSnapshot("stale runtime"));
+      await runtimeRefresh;
+      expect(channels.state.channelsSnapshot).toBe(previous);
+      expect(channels.state.channelsError).toBe("Error: plugin health check failed");
+      expect(channels.state.channelsLoading).toBe(false);
+    } finally {
+      pendingRuntime.resolve(createChannelsSnapshot("cleanup"));
+      pendingProbe.resolve(createChannelsSnapshot("cleanup"));
+      await Promise.all([runtimeRefresh, probeRefresh]);
+      channels.dispose();
+    }
+  });
+
+  it.each([false, true])(
+    "coalesces concurrent channel status refreshes with probe=%s",
+    async (probe) => {
+      const pending = createDeferred<ChannelsStatusSnapshot | null>();
+      const request = vi.fn(() => pending.promise);
+      const channels = createChannelCapability({
+        snapshot: { client: { request }, phase: "connected" },
+        subscribe: () => () => undefined,
+      } as never);
+
+      const refresh = channels.refresh(probe);
+      const duplicateRefresh = channels.refresh(probe);
+      try {
+        await duplicateRefresh;
+        expect(request).toHaveBeenCalledTimes(1);
+        expect(channels.state.channelsLoading).toBe(true);
+        expect(channels.state.channelsLoadingProbe).toBe(probe);
+
+        pending.resolve(createChannelsSnapshot("complete"));
+        await refresh;
+        expect(channels.state.channelsLoading).toBe(false);
+        expect(channels.state.channelsLoadingProbe).toBeNull();
+      } finally {
+        pending.resolve(createChannelsSnapshot("cleanup"));
+        await refresh;
+        channels.dispose();
+      }
+    },
+  );
+
   it("keeps a stale slow probe from replacing a newer runtime snapshot", async () => {
     const slowProbe = createDeferred<ChannelsStatusSnapshot | null>();
     const fastRuntime = createDeferred<ChannelsStatusSnapshot | null>();

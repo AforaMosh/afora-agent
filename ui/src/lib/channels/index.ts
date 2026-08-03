@@ -194,7 +194,7 @@ async function loadChannels(
   if (!client || !state.connected) {
     return;
   }
-  if (state.channelsLoading && (!state.channelsLoadingProbe || probe)) {
+  if (state.channelsLoading && state.channelsLoadingProbe === probe) {
     return;
   }
   const refreshSeq = (state.channelsRefreshSeq ?? 0) + 1;
