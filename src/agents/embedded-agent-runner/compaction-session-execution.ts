@@ -564,7 +564,7 @@ export async function executePreparedCompactionSession(runtime: PreparedCompacti
       } finally {
         await releaseCompactionSessionLock({
           release: sessionLock.release,
-          requesterSessionKey: params.sessionKey,
+          requesterSessionKey: sessionTarget.sessionKey,
           onRedriveError: (error) => {
             log.warn(
               `[compaction] failed to redrive suspended subagent completions: ${String(error)}`,
