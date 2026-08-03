@@ -231,17 +231,20 @@ describe("security audit exec surface findings", () => {
       channels: { discord: { dm: { policy: "open" } } },
       path: "channels.discord.dm.policy",
     },
-  ])("uses canonical open-inbound resolution for $name", async ({ channels, path }) => {
-    const findings = await collectSecurityAuditFindings({
-      channels,
-      tools: { exec: { mode: "allowlist", host: "gateway" } },
-    } as unknown as OpenClawConfig);
-    const finding = findings.find(
-      (entry) => entry.checkId === "security.exposure.open_channels_with_exec",
-    );
+  ])(
+    "uses canonical open-inbound resolution for $name",
+    async ({ channels, path: expectedPath }) => {
+      const findings = await collectSecurityAuditFindings({
+        channels,
+        tools: { exec: { mode: "allowlist", host: "gateway" } },
+      } as unknown as OpenClawConfig);
+      const finding = findings.find(
+        (entry) => entry.checkId === "security.exposure.open_channels_with_exec",
+      );
 
-    expect(finding?.detail).toContain(path);
-  });
+      expect(finding?.detail).toContain(expectedPath);
+    },
+  );
 
   it("escalates open channel exec exposure when full exec is configured", async () => {
     const findings = await collectSecurityAuditFindings({
