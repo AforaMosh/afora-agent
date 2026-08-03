@@ -238,6 +238,34 @@ export function createSubagentRegistryLifecycleRequesterWake(
       completeRequesterSettleWakeBatch(frozenBatchRunIds, requesterSettleWake.rearmGeneration);
       return;
     }
+    if (requesterSettleWake?.requesterYieldBatch === true) {
+      const deliveryStatus = entry.delivery?.status;
+      const completionSettled =
+        deliveryStatus === "delivered" ||
+        deliveryStatus === "suspended" ||
+        ((deliveryStatus === "failed" || deliveryStatus === "not_required") &&
+          typeof entry.cleanupCompletedAt === "number");
+      const deliveredFinalAwaitingCleanup =
+        typeof requesterSettleWake.rearmGeneration === "number" &&
+        (frozenBatchRunIds ?? [runId]).some((batchRunId) => {
+          const finalOwner = params.runs.get(batchRunId);
+          return Boolean(
+            finalOwner &&
+            finalOwner.requesterSessionKey === requesterSessionKey &&
+            finalOwner.requesterSettleWake?.requesterYieldBatch === true &&
+            finalOwner.requesterSettleWake.rearmGeneration ===
+              requesterSettleWake.rearmGeneration &&
+            finalOwner.delivery?.requesterVisibleFinalGeneration ===
+              requesterSettleWake.rearmGeneration &&
+            typeof finalOwner.cleanupCompletedAt !== "number",
+          );
+        });
+      // Frozen yields can coexist with an active completion or its uncommitted
+      // cleanup; only that owner may admit the first or retire an existing final.
+      if (!hasSubagentRunEnded(entry) || !completionSettled || deliveredFinalAwaitingCleanup) {
+        return;
+      }
+    }
     if (
       entry.collect ||
       !requesterSessionKey ||
