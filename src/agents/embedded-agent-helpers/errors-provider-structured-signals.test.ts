@@ -69,6 +69,31 @@ describe("provider failover hook structured signals", () => {
     ).toEqual({ kind: "reason", reason: "auth" });
   });
 
+  it("lets provider hooks classify structured 403 messages before generic auth", () => {
+    providerRuntimeMocks.classifyProviderPluginError.mockImplementation((context) =>
+      context.provider === "xai" &&
+      context.status === 403 &&
+      context.errorMessage.includes("run out of credits")
+        ? "billing"
+        : undefined,
+    );
+
+    expect(
+      classifyFailoverSignal({
+        provider: "xai",
+        status: 403,
+        message: "You have run out of credits",
+      }),
+    ).toEqual({ kind: "reason", reason: "billing" });
+    expect(
+      classifyFailoverSignal({
+        provider: "xai",
+        status: 403,
+        message: "Forbidden",
+      }),
+    ).toEqual({ kind: "reason", reason: "auth" });
+  });
+
   it("does not call the direct provider hook for unstructured classified messages", () => {
     // Plain message classifiers run first; provider hooks only see structured
     // descriptors where a plugin can make a reliable decision.

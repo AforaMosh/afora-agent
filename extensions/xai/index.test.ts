@@ -442,9 +442,15 @@ describe("xai provider plugin", () => {
     );
   });
 
-  it("classifies Grok usage and spending limit errors", async () => {
+  it("classifies xAI billing and rate-limit errors", async () => {
     const provider = await registerSingleProviderPlugin(plugin);
 
+    for (const errorMessage of [
+      '403 {"error":"You have run out of credits"}',
+      '403 {"error":"You need a Grok subscription to access this model"}',
+    ]) {
+      expect(provider.classifyFailoverReason?.({ errorMessage })).toBe("billing");
+    }
     expect(
       provider.classifyFailoverReason?.({
         errorMessage:
@@ -465,8 +471,7 @@ describe("xai provider plugin", () => {
     ).toBe("rate_limit");
     expect(
       provider.classifyFailoverReason?.({
-        errorMessage:
-          '400 {"code":"Client specified an invalid argument","error":"Incorrect API key provided: xa***en. You can obtain an API key from https://console.x.ai."}',
+        errorMessage: '403 {"error":"Forbidden"}',
       }),
     ).toBeUndefined();
   });
