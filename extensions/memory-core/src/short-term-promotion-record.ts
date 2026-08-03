@@ -375,9 +375,7 @@ export async function recordGroundedShortTermCandidates(params: {
       const normalizedPath = normalizeMemoryPath(item.path);
       if (
         !rawSnippet ||
-        isContaminatedDreamingSnippet(rawSnippet, {
-          allowTranscriptTurnSnippet: isShortTermSessionCorpusPath(normalizedPath),
-        }) ||
+        isContaminatedDreamingSnippet(rawSnippet) ||
         !normalizedPath ||
         !isShortTermMemoryPath(normalizedPath) ||
         !Number.isFinite(item.startLine) ||

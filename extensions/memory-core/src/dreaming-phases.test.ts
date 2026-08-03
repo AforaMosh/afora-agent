@@ -1290,6 +1290,16 @@ describe("memory-core dreaming phases", () => {
           timestamp: "2026-04-05T18:03:00.000Z",
           content: [{ type: "text", text: `${renderedPadding}🎉 omitted tail` }],
         },
+        {
+          role: "assistant",
+          timestamp: "2026-04-05T18:03:30.000Z",
+          content: [
+            {
+              type: "text",
+              text: "Candidate: Default to action. confidence: 0.76 evidence: memory/.dreams/session-corpus/2026-04-05.txt:1-1 recalls: 3 status: staged",
+            },
+          ],
+        },
       ],
     });
     await seedDreamingSessionTranscript({
@@ -1380,8 +1390,13 @@ describe("memory-core dreaming phases", () => {
       ranked.find((candidate) => candidate.path.includes("session-corpus"))?.provenance,
     ).toMatchObject({ sessionKind: "interactive" });
     const snippets = ranked.map((candidate) => candidate.snippet);
+    expect(snippets).toContain("User: Move backups to S3 Glacier.");
+    expect(snippets).toContain("Assistant: Set retention to 365 days.");
     expectIncludesSubstring(snippets, "Move backups to S3 Glacier.");
     expectIncludesSubstring(snippets, "Set retention to 365 days.");
+    expect(snippets).not.toContain(
+      "Assistant: Candidate: Default to action. confidence: 0.76 evidence: memory/.dreams/session-corpus/2026-04-05.txt:1-1 recalls: 3 status: staged",
+    );
   });
 
   it("redacts sensitive session content before writing session corpus", async () => {
