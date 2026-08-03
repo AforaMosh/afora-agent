@@ -231,6 +231,20 @@ describe("security audit exec surface findings", () => {
       channels: { discord: { dm: { policy: "open" } } },
       path: "channels.discord.dm.policy",
     },
+    {
+      name: "nested-only DM policy",
+      channels: {
+        matrix: {
+          accounts: { work: { dmPolicy: "allowlist", dm: { policy: "open" } } },
+        },
+      },
+      path: "channels.matrix.accounts.work.dm.policy",
+    },
+    {
+      name: "account named dm",
+      channels: { discord: { accounts: { dm: { groupPolicy: "open" } } } },
+      path: "channels.discord.accounts.dm.groupPolicy",
+    },
   ])(
     "uses canonical open-inbound resolution for $name",
     async ({ channels, path: expectedPath }) => {

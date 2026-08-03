@@ -57,6 +57,15 @@ describe("security audit trust model findings", () => {
     expect(collectLikelyMultiUserSetupFindings(cfg)).toEqual([]);
   });
 
+  it("ignores model routing records that resemble inbound policy", () => {
+    const cfg = {
+      channels: { modelByChannel: { discord: { groupPolicy: "open" } } },
+    } as unknown as OpenClawConfig;
+
+    expect(collectExposureMatrixFindings(cfg)).toEqual([]);
+    expect(collectLikelyMultiUserSetupFindings(cfg)).toEqual([]);
+  });
+
   it("evaluates trust-model exposure findings", () => {
     const cases = [
       {

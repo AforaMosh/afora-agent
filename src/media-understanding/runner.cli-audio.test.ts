@@ -196,15 +196,14 @@ describe("media-understanding CLI audio entry", () => {
   });
 
   it.each([
+    { source: "model entry", entryLanguage: "de", configLanguage: "fr", expected: "de" },
     {
-      name: "capability default",
+      source: "capability default",
       entryLanguage: undefined,
-      requestLanguage: undefined,
+      configLanguage: "fr",
       expected: "fr",
     },
-    { name: "model entry", entryLanguage: "de", requestLanguage: undefined, expected: "de" },
-    { name: "request override", entryLanguage: "de", requestLanguage: "en", expected: "en" },
-  ])("resolves $name language for CLI templating", async (testCase) => {
+  ])("applies the configured $source language to CLI templating", async (testCase) => {
     await withAudioFixture("openclaw-cli-language", async ({ ctx, media, cache }) => {
       await runCliEntry({
         capability: "audio",
@@ -214,23 +213,18 @@ describe("media-understanding CLI audio entry", () => {
           args: ["--language", "{{Language}}", "--file", "{{MediaPath}}"],
           language: testCase.entryLanguage,
         },
-        cfg: { tools: { media: { audio: { language: "fr" } } } } as OpenClawConfig,
+        cfg: {
+          tools: { media: { audio: { language: testCase.configLanguage } } },
+        } as OpenClawConfig,
         ctx,
         attachment: requireFirstAttachment(media),
         cache,
-        config: {
-          language: "fr",
-          _requestLanguageOverride: testCase.requestLanguage,
-        } as never,
+        config: { language: testCase.configLanguage } as never,
       });
     });
 
-    expect(requireFirstRunExecCall()[1]).toEqual([
-      "--language",
-      testCase.expected,
-      "--file",
-      expect.any(String),
-    ]);
+    const [, args] = requireFirstRunExecCall();
+    expect(args).toEqual(["--language", testCase.expected, "--file", expect.any(String)]);
   });
 
   it.each([

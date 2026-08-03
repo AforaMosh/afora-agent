@@ -17,7 +17,10 @@ import { passesManifestOwnerBasePolicy } from "../plugins/manifest-owner-policy.
 import { hasConfiguredWebSearchCredential } from "../plugins/web-search-credential-presence.js";
 import { inferParamBFromIdOrName } from "../shared/model-param-b.js";
 import { collectAuditModelRefs } from "./audit-model-refs.js";
-import { listConfiguredOpenInboundPolicyPaths } from "./audit-open-inbound.js";
+import {
+  listConfiguredOpenInboundPolicyPaths,
+  type ConfiguredOpenInboundPolicyOptions,
+} from "./audit-open-inbound.js";
 
 /** Lightweight audit finding shape used by summary-only audit helpers. */
 type SecurityAuditFinding = {
@@ -30,13 +33,16 @@ type SecurityAuditFinding = {
 
 const SMALL_MODEL_PARAM_B_MAX = 300;
 
-function summarizeGroupPolicy(cfg: OpenClawConfig): {
+function summarizeGroupPolicy(
+  cfg: OpenClawConfig,
+  openInboundOptions?: ConfiguredOpenInboundPolicyOptions,
+): {
   open: number;
   allowlist: number;
   other: number;
   openDm: number;
 } {
-  const openPolicies = listConfiguredOpenInboundPolicyPaths(cfg);
+  const openPolicies = listConfiguredOpenInboundPolicyPaths(cfg, openInboundOptions);
   const channels = cfg.channels as Record<string, unknown> | undefined;
   if (!channels || typeof channels !== "object") {
     return { open: 0, allowlist: 0, other: 0, openDm: 0 };
@@ -137,8 +143,11 @@ function isBrowserEnabled(cfg: OpenClawConfig): boolean {
 }
 
 /** Produce a concise inventory of major security-relevant surfaces. */
-export function collectAttackSurfaceSummaryFindings(cfg: OpenClawConfig): SecurityAuditFinding[] {
-  const group = summarizeGroupPolicy(cfg);
+export function collectAttackSurfaceSummaryFindings(
+  cfg: OpenClawConfig,
+  openInboundOptions?: ConfiguredOpenInboundPolicyOptions,
+): SecurityAuditFinding[] {
+  const group = summarizeGroupPolicy(cfg, openInboundOptions);
   const elevated = cfg.tools?.elevated?.enabled !== false;
   const webhooksEnabled = cfg.hooks?.enabled === true;
   const internalHooksEnabled = hasConfiguredInternalHooks(cfg);

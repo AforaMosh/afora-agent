@@ -24,7 +24,10 @@ import {
   resolveNodeCommandAllowlist,
 } from "../gateway/node-command-policy.js";
 import { collectAuditModelRefs } from "./audit-model-refs.js";
-import { listConfiguredOpenInboundPolicyPaths } from "./audit-open-inbound.js";
+import {
+  listConfiguredOpenInboundPolicyPaths,
+  type ConfiguredOpenInboundPolicyOptions,
+} from "./audit-open-inbound.js";
 import { GATEWAY_CONTROL_PLANE_TOOLS } from "./dangerous-tools.js";
 
 /**
@@ -373,8 +376,13 @@ function hasConfiguredGroupTargets(section: Record<string, unknown>): boolean {
   });
 }
 
-function listPotentialMultiUserSignals(cfg: OpenClawConfig): string[] {
-  const out = new Set(listConfiguredOpenInboundPolicyPaths(cfg).map((path) => `${path}="open"`));
+function listPotentialMultiUserSignals(
+  cfg: OpenClawConfig,
+  openInboundOptions?: ConfiguredOpenInboundPolicyOptions,
+): string[] {
+  const out = new Set(
+    listConfiguredOpenInboundPolicyPaths(cfg, openInboundOptions).map((path) => `${path}="open"`),
+  );
   const channels = cfg.channels as Record<string, unknown> | undefined;
   if (!channels || typeof channels !== "object") {
     return [];
@@ -1132,9 +1140,12 @@ export function collectModelHygieneFindings(cfg: OpenClawConfig): SecurityAuditF
   return findings;
 }
 
-export function collectExposureMatrixFindings(cfg: OpenClawConfig): SecurityAuditFinding[] {
+export function collectExposureMatrixFindings(
+  cfg: OpenClawConfig,
+  openInboundOptions?: ConfiguredOpenInboundPolicyOptions,
+): SecurityAuditFinding[] {
   const findings: SecurityAuditFinding[] = [];
-  const openInboundPolicies = listConfiguredOpenInboundPolicyPaths(cfg);
+  const openInboundPolicies = listConfiguredOpenInboundPolicyPaths(cfg, openInboundOptions);
   if (openInboundPolicies.length === 0) {
     return findings;
   }
@@ -1187,9 +1198,12 @@ export function collectExposureMatrixFindings(cfg: OpenClawConfig): SecurityAudi
   return findings;
 }
 
-export function collectLikelyMultiUserSetupFindings(cfg: OpenClawConfig): SecurityAuditFinding[] {
+export function collectLikelyMultiUserSetupFindings(
+  cfg: OpenClawConfig,
+  openInboundOptions?: ConfiguredOpenInboundPolicyOptions,
+): SecurityAuditFinding[] {
   const findings: SecurityAuditFinding[] = [];
-  const signals = listPotentialMultiUserSignals(cfg);
+  const signals = listPotentialMultiUserSignals(cfg, openInboundOptions);
   if (signals.length === 0) {
     return findings;
   }

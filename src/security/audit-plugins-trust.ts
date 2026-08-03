@@ -21,6 +21,8 @@ import type { SecurityAuditFinding } from "./audit.types.js";
 import { listInstalledPluginDirs } from "./installed-plugin-dirs.js";
 
 type PluginTrustPolicyDeps = {
+  buildPluginToolGroups: typeof import("../agents/tool-policy.js").buildPluginToolGroups;
+  expandPolicyWithPluginGroups: typeof import("../agents/tool-policy.js").expandPolicyWithPluginGroups;
   resolveConfiguredToolPolicies: typeof import("../agents/agent-tools.policy.js").resolveConfiguredToolPolicies;
   isToolAllowedByPolicies: typeof import("../agents/tool-policy-match.js").isToolAllowedByPolicies;
   resolveSandboxConfigForAgent: typeof import("../agents/sandbox/config.js").resolveSandboxConfigForAgent;
@@ -33,7 +35,10 @@ const loadPluginTrustPolicyDeps = createLazyPromise<PluginTrustPolicyDeps>(
       import("../agents/agent-tools.policy.js"),
       import("../agents/sandbox/config.js"),
       import("../agents/tool-policy-match.js"),
-    ]).then(([agentToolPolicy, sandboxConfig, toolPolicyMatch]) => ({
+      import("../agents/tool-policy.js"),
+    ]).then(([agentToolPolicy, sandboxConfig, toolPolicyMatch, toolPolicy]) => ({
+      buildPluginToolGroups: toolPolicy.buildPluginToolGroups,
+      expandPolicyWithPluginGroups: toolPolicy.expandPolicyWithPluginGroups,
       resolveConfiguredToolPolicies: agentToolPolicy.resolveConfiguredToolPolicies,
       isToolAllowedByPolicies: toolPolicyMatch.isToolAllowedByPolicies,
       resolveSandboxConfigForAgent: sandboxConfig.resolveSandboxConfigForAgent,
@@ -193,16 +198,16 @@ export async function collectPluginsTrustFindings(params: {
   if (pluginDirs.length > 0) {
     const allow = params.cfg.plugins?.allow;
     const allowConfigured = Array.isArray(allow) && allow.length > 0;
+    const pluginIndex = loadPluginRegistrySnapshot({
+      config: params.cfg,
+      stateDir: params.stateDir,
+    });
+    const normalizePluginId = createPluginRegistryIdNormalizer(pluginIndex);
 
     if (allowConfigured) {
       const installedPluginIds = new Set(pluginDirs.map((dir) => path.basename(dir).toLowerCase()));
-      const pluginIndex = loadPluginRegistrySnapshot({
-        config: params.cfg,
-        stateDir: params.stateDir,
-      });
       // Allowlist entries may use aliases/canonical ids. Normalize against the
       // current registry before treating an entry as phantom.
-      const normalizePluginId = createPluginRegistryIdNormalizer(pluginIndex);
       const indexedPluginIds = new Set(
         pluginIndex.plugins.map((plugin) => plugin.pluginId.toLowerCase()),
       );
@@ -280,11 +285,26 @@ export async function collectPluginsTrustFindings(params: {
     });
     if (enabledExtensionPluginIds.length > 0) {
       const deps = await loadPluginTrustPolicyDeps();
-      const pluginPolicyProbes = [
-        "__openclaw_plugin_probe__",
-        "group:plugins",
-        ...enabledExtensionPluginIds,
-      ];
+      const enabledPluginIds = new Set(
+        enabledExtensionPluginIds.map((pluginId) => normalizePluginId(pluginId).toLowerCase()),
+      );
+      const declaredPluginTools = pluginIndex.plugins.flatMap((plugin) => {
+        const pluginId = normalizePluginId(plugin.pluginId).toLowerCase();
+        if (!enabledPluginIds.has(pluginId)) {
+          return [];
+        }
+        return (plugin.contributions?.contracts.tools ?? []).map((name) => ({ name, pluginId }));
+      });
+      const pluginGroups = deps.buildPluginToolGroups({
+        tools: declaredPluginTools,
+        toolMeta: (tool) => ({ pluginId: tool.pluginId }),
+      });
+      // Older indexes can lack contracts.tools. Retain the conservative identifier probes
+      // until their manifest metadata is refreshed, but prefer concrete runtime tool names.
+      const pluginPolicyProbes =
+        pluginGroups.all.length > 0
+          ? pluginGroups.all
+          : ["__openclaw_plugin_probe__", "group:plugins", ...enabledExtensionPluginIds];
       const contexts: Array<{
         label: string;
         agentId?: string;
@@ -310,9 +330,14 @@ export async function collectPluginsTrustFindings(params: {
           sandboxMode,
           agentId: context.agentId ?? null,
         });
-        // Runtime expands group/plugin ids to concrete plugin tools after policy
-        // resolution, so probe those identifiers as well as broad allow rules.
-        if (pluginPolicyProbes.some((probe) => deps.isToolAllowedByPolicies(probe, policies))) {
+        const expandedPolicies = policies.map((policy) =>
+          deps.expandPolicyWithPluginGroups(policy, pluginGroups),
+        );
+        // Provider/model policies only intersect these base layers at runtime; they cannot
+        // re-add a plugin tool removed here. A permissive base is therefore the audit boundary.
+        if (
+          pluginPolicyProbes.some((probe) => deps.isToolAllowedByPolicies(probe, expandedPolicies))
+        ) {
           permissiveContexts.push(context.label);
         }
       }

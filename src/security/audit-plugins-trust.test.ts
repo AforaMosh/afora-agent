@@ -48,6 +48,7 @@ const mockPluginRegistryIds = vi.hoisted(() => [
   "lmstudio",
   "memory-core",
   "ollama",
+  "some-plugin",
 ]);
 
 const readInstalledPackageVersionMock = vi.hoisted(() =>
@@ -117,7 +118,12 @@ vi.mock("../plugins/plugin-registry.js", () => ({
   createPluginRegistryIdNormalizer: () => (id: string) => id,
   loadPluginRegistrySnapshot: () => ({
     diagnostics: [],
-    plugins: mockPluginRegistryIds.map((pluginId) => ({ pluginId })),
+    plugins: mockPluginRegistryIds.map((pluginId) => ({
+      pluginId,
+      ...(pluginId === "some-plugin"
+        ? { contributions: { contracts: { tools: ["some_plugin_tool"] } } }
+        : {}),
+    })),
   }),
 }));
 
@@ -603,6 +609,67 @@ describe("security audit extension tool reachability findings", () => {
               (finding) => finding.checkId === "plugins.tools_reachable_permissive_policy",
             ),
           ).toBe(true);
+        },
+      },
+      {
+        name: "flags an agent profile widened with the plugin group",
+        cfg: {
+          plugins: { allow: ["some-plugin"] },
+          tools: { profile: "coding" },
+          agents: {
+            entries: {
+              ops: { tools: { profile: "coding", alsoAllow: ["group:plugins"] } },
+            },
+          },
+        } satisfies OpenClawConfig,
+        assert: (findings: Awaited<ReturnType<typeof runSharedExtensionsAudit>>) => {
+          const finding = findings.find(
+            (entry) => entry.checkId === "plugins.tools_reachable_permissive_policy",
+          );
+          expect(finding?.detail).toContain("- agents.entries.ops");
+          expect(finding?.detail).not.toContain("- default");
+        },
+      },
+      {
+        name: "flags an exact declared plugin tool allowlist",
+        cfg: {
+          plugins: { allow: ["some-plugin"] },
+          tools: { allow: ["some_plugin_tool"] },
+        } satisfies OpenClawConfig,
+        assert: (findings: Awaited<ReturnType<typeof runSharedExtensionsAudit>>) => {
+          expect(
+            findings.some(
+              (finding) => finding.checkId === "plugins.tools_reachable_permissive_policy",
+            ),
+          ).toBe(true);
+        },
+      },
+      {
+        name: "honors plugin group denies after runtime-equivalent expansion",
+        cfg: {
+          plugins: { allow: ["some-plugin"] },
+          tools: { deny: ["group:plugins"] },
+        } satisfies OpenClawConfig,
+        assert: (findings: Awaited<ReturnType<typeof runSharedExtensionsAudit>>) => {
+          expect(
+            findings.some(
+              (finding) => finding.checkId === "plugins.tools_reachable_permissive_policy",
+            ),
+          ).toBe(false);
+        },
+      },
+      {
+        name: "honors plugin id denies after runtime-equivalent expansion",
+        cfg: {
+          plugins: { allow: ["some-plugin"] },
+          tools: { deny: ["some-plugin"] },
+        } satisfies OpenClawConfig,
+        assert: (findings: Awaited<ReturnType<typeof runSharedExtensionsAudit>>) => {
+          expect(
+            findings.some(
+              (finding) => finding.checkId === "plugins.tools_reachable_permissive_policy",
+            ),
+          ).toBe(false);
         },
       },
       {
