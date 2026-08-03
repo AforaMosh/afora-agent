@@ -75,16 +75,25 @@ function invokeEmbeddingCreate(mock: ReturnType<typeof vi.fn>, body: unknown) {
   return (mock as unknown as (body: unknown) => unknown)(body);
 }
 
+type MockOpenAiEmbeddingPost = (
+  path: string,
+  options: { body?: unknown; timeout?: number },
+) => unknown;
+
 function installMockOpenAiEmbeddingTransport(params: {
-  post: (path: string, options: { body?: unknown; timeout?: number }) => unknown;
-  onRequest?: () => void;
+  post: MockOpenAiEmbeddingPost | ReturnType<typeof vi.fn>;
+  onRequest?: (() => void) | ReturnType<typeof vi.fn>;
 }): void {
   vi.doMock("openclaw/plugin-sdk/ssrf-runtime", async (importOriginal) => ({
     ...(await importOriginal<typeof import("openclaw/plugin-sdk/ssrf-runtime")>()),
     fetchWithSsrFGuard: async (request: { init?: RequestInit; timeoutMs?: number }) => {
-      params.onRequest?.();
-      const body = JSON.parse(String(request.init?.body)) as unknown;
-      const payload = await params.post("/embeddings", { body, timeout: request.timeoutMs });
+      (params.onRequest as (() => void) | undefined)?.();
+      if (typeof request.init?.body !== "string") {
+        throw new Error("expected serialized embedding request body");
+      }
+      const body = JSON.parse(request.init.body) as unknown;
+      const post = params.post as MockOpenAiEmbeddingPost;
+      const payload = await post("/embeddings", { body, timeout: request.timeoutMs });
       return {
         response:
           payload instanceof Response

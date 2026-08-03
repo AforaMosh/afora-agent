@@ -509,9 +509,6 @@
       "openclaw/plugin-sdk/text-utility-runtime": [
         "../packages/plugin-sdk/dist/src/plugin-sdk/text-utility-runtime.d.ts"
       ],
-      "openclaw/plugin-sdk/thinking-level": [
-        "../packages/plugin-sdk/dist/src/plugin-sdk/thinking-level.d.ts"
-      ],
       "openclaw/plugin-sdk/tool-payload": [
         "../packages/plugin-sdk/dist/src/plugin-sdk/tool-payload.d.ts"
       ],
