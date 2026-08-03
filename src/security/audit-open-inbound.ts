@@ -23,7 +23,11 @@ export function resolveConfiguredChannelDmAllowFromModes(params: {
       continue;
     }
     const rank = CHANNEL_ORIGIN_RANK[entry.origin];
-    for (const channelId of [entry.channel.id, ...(entry.channel.aliases ?? [])]) {
+    for (const rawChannelId of [entry.channel.id, ...(entry.channel.aliases ?? [])]) {
+      const channelId = rawChannelId?.trim();
+      if (!channelId) {
+        continue;
+      }
       const current = modes.get(channelId);
       if (!current || rank <= current.rank) {
         modes.set(channelId, { mode, rank });

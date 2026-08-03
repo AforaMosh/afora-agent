@@ -119,12 +119,11 @@ vi.mock("../plugins/plugin-registry.js", () => ({
   createPluginRegistryIdNormalizer: () => (id: string) => id,
   loadPluginRegistrySnapshot: () => ({
     diagnostics: [],
-    plugins: mockPluginRegistryIds.map((pluginId) => ({
-      pluginId,
-      ...(pluginId === "some-plugin"
-        ? { contributions: { contracts: { tools: ["some_plugin_tool"] } } }
-        : {}),
-    })),
+    plugins: mockPluginRegistryIds.map((pluginId) =>
+      pluginId === "some-plugin"
+        ? { pluginId, contributions: { contracts: { tools: ["some_plugin_tool"] } } }
+        : { pluginId },
+    ),
   }),
 }));
 

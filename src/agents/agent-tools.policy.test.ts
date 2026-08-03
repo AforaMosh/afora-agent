@@ -69,17 +69,19 @@ describe("agent-tools.policy", () => {
   it.each([
     {
       name: "global",
-      cfg: { tools: { profile: "coding", alsoAllow: ["group:plugins"] } },
+      cfg: {
+        tools: { profile: "coding", alsoAllow: ["group:plugins"] },
+      } satisfies OpenClawConfig,
       agentTools: undefined,
     },
     {
       name: "agent",
-      cfg: { tools: { profile: "coding" } },
+      cfg: { tools: { profile: "coding" } } satisfies OpenClawConfig,
       agentTools: { profile: "coding" as const, alsoAllow: ["group:plugins"] },
     },
   ])("merges $name profile alsoAllow in configured policy resolution", ({ cfg, agentTools }) => {
     const policies = resolveConfiguredToolPolicies({
-      cfg: cfg satisfies OpenClawConfig,
+      cfg,
       agentTools,
     });
 
