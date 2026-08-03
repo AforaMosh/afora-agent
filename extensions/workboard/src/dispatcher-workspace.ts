@@ -44,6 +44,40 @@ export async function cleanupWorkboardRunWorktree(params: {
   });
 }
 
+type WorkboardTerminalRunEvent = {
+  runId: string;
+  outcome?: "ok" | "error" | "timeout" | "killed" | "reset" | "deleted";
+  error?: string;
+};
+
+function terminalRunReason(event: WorkboardTerminalRunEvent): string {
+  const error = event.error?.trim().slice(0, 1200);
+  if (error) {
+    return `Subagent run ended with an error before recording a Workboard terminal action: ${error}`;
+  }
+  switch (event.outcome) {
+    case "timeout":
+      return "Subagent run timed out before recording a Workboard terminal action.";
+    case "killed":
+      return "Subagent run was killed before recording a Workboard terminal action.";
+    case "reset":
+      return "Subagent run was reset before recording a Workboard terminal action.";
+    case "deleted":
+      return "Subagent run was deleted before recording a Workboard terminal action.";
+    case "error":
+      return "Subagent run failed before recording a Workboard terminal action.";
+    default:
+      return "Subagent run completed without recording workboard_complete or workboard_block.";
+  }
+}
+
+export async function reconcileWorkboardTerminalRun(params: {
+  store: WorkboardStore;
+  event: WorkboardTerminalRunEvent;
+}): Promise<void> {
+  await params.store.blockTerminalRun(params.event.runId, terminalRunReason(params.event));
+}
+
 export async function resolveDispatchWorkspaceAccess(params: {
   card: WorkboardCard;
   currentAccess?: WorkboardWorkspaceAccess;
