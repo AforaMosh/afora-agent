@@ -183,7 +183,7 @@ function makeSlowCrabbox(helpText: string, mode: "help" | "version", delayMs: nu
 const args = process.argv.slice(2); const mode = ${JSON.stringify(mode)};
 if (args[0] === "--version") {
   if (mode === "version") setTimeout(() => process.exit(0), ${delayMs});
-  else console.log(process.env.OPENCLAW_FAKE_CRABBOX_VERSION || "crabbox 0.22.1");
+  else console.log(process.env.OPENCLAW_FAKE_CRABBOX_VERSION || "crabbox 0.41.0");
 } else if (args[0] === "run" && args[1] === "--help") {
   if (mode === "help") setTimeout(() => { process.stderr.write(${JSON.stringify(runHelpText)}); process.exit(0); }, ${delayMs});
   else process.stdout.write(${JSON.stringify(runHelpText)});
@@ -407,7 +407,7 @@ function runSuccessfulWrapper(helpText: string, args: string[], options: Wrapper
 function runBrokerWrapper(args: string[], options: WrapperOptions = {}) {
   return runWrapper(brokerProviderHelp, args, {
     ...options,
-    env: { OPENCLAW_FAKE_CRABBOX_VERSION: "crabbox 0.40.0", ...options.env },
+    env: { OPENCLAW_FAKE_CRABBOX_VERSION: "crabbox 0.41.0", ...options.env },
   });
 }
 
@@ -1152,7 +1152,7 @@ describe("scripts/crabbox-wrapper", () => {
         env: { OPENCLAW_FAKE_CRABBOX_VERSION: "crabbox 0.40.0" },
       },
     );
-    expect(output.args).toContain("azure");
+    expect(output.args).toContain("daytona");
     expect(result.stderr).toContain(
       "blacksmith-testbox:requires Crabbox >= 0.41.0 for Blacksmith all-scope inventory",
     );
@@ -1191,7 +1191,7 @@ describe("scripts/crabbox-wrapper", () => {
     });
 
     expect(result.status).toBe(0);
-    expect(result.stdout.trim()).toBe("crabbox 0.22.1");
+    expect(result.stdout.trim()).toBe("crabbox 0.41.0");
     expect(result.stderr).not.toContain("route workload=");
   });
 
@@ -1199,7 +1199,7 @@ describe("scripts/crabbox-wrapper", () => {
     const result = runDefaultWrapper(["--version", "--workload", "surprise"]);
 
     expect(result.status).toBe(0);
-    expect(result.stdout.trim()).toBe("crabbox 0.22.1");
+    expect(result.stdout.trim()).toBe("crabbox 0.41.0");
     expect(result.stderr).not.toContain("unsupported Crabbox workload");
   });
 
