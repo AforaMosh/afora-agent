@@ -122,6 +122,10 @@ struct LocalFixtureChatTransport: OpenClawChatTransport {
     private let fixture: LocalChatFixture
     private let store: LocalFixtureChatStore
 
+    init() {
+        self.init(fixture: .appleReviewDemo)
+    }
+
     init(fixture: LocalChatFixture) {
         self.fixture = fixture
         self.store = LocalFixtureChatStore(fixture: fixture)
@@ -148,10 +152,6 @@ struct LocalFixtureChatTransport: OpenClawChatTransport {
                 provider: self.fixture.modelProvider,
                 contextWindow: 128_000),
         ]
-    }
-
-    func isSwarmEnabled(sessionKey _: String) async throws -> Bool {
-        ProcessInfo.processInfo.arguments.contains("--openclaw-swarm-chat-fixture")
     }
 
     func sendMessage(
@@ -192,63 +192,6 @@ struct LocalFixtureChatTransport: OpenClawChatTransport {
             sessions: sessions)
     }
 
-    func listChildSessions(parentKey: String) async throws -> [OpenClawChatSessionEntry] {
-        guard ProcessInfo.processInfo.arguments.contains("--openclaw-swarm-chat-fixture") else { return [] }
-        let groupID = "swarm:\(parentKey):research"
-        return [
-            self.swarmChild("polling", "National polling", status: "done", groupID: groupID, parentKey: parentKey),
-            self.swarmChild("work", "Work and labor", status: "running", groupID: groupID, parentKey: parentKey),
-            self.swarmChild("health", "Health", status: "running", groupID: groupID, parentKey: parentKey),
-            self.swarmChild(
-                "trust",
-                "Governance and trust",
-                status: nil,
-                groupID: groupID,
-                parentKey: parentKey,
-                queued: true),
-            self.swarmChild("media", "Media signals", status: "failed", groupID: groupID, parentKey: parentKey),
-        ]
-    }
-
-    private func swarmChild(
-        _ key: String,
-        _ label: String,
-        status: String?,
-        groupID: String,
-        parentKey: String,
-        queued: Bool = false) -> OpenClawChatSessionEntry
-    {
-        OpenClawChatSessionEntry(
-            key: "agent:main:subagent:\(key)",
-            kind: "direct",
-            displayName: label,
-            surface: nil,
-            subject: nil,
-            room: nil,
-            space: nil,
-            updatedAt: 1,
-            sessionId: nil,
-            systemSent: nil,
-            abortedLastRun: nil,
-            thinkingLevel: nil,
-            verboseLevel: nil,
-            inputTokens: nil,
-            outputTokens: nil,
-            totalTokens: nil,
-            modelProvider: self.fixture.modelProvider,
-            model: self.fixture.modelID,
-            contextTokens: 128_000,
-            parentSessionKey: parentKey,
-            spawnedBy: parentKey,
-            status: status,
-            hasActiveRun: status == "running",
-            subagentRunState: queued ? "active" : nil,
-            swarmGroupId: groupID,
-            swarmPhase: "Research",
-            swarmPhaseRank: 0,
-            swarmLog: "Comparing labor, education, health, trust, and media signals.")
-    }
-
     func setSessionModel(sessionKey _: String, model _: String?) async throws {}
 
     func setSessionThinking(sessionKey _: String, thinkingLevel _: String) async throws {}
@@ -278,103 +221,7 @@ struct LocalFixtureChatTransport: OpenClawChatTransport {
     func compactSession(sessionKey _: String) async throws {}
 }
 
-struct AppleReviewDemoChatTransport: OpenClawChatTransport {
-    private let transport = LocalFixtureChatTransport(fixture: .appleReviewDemo)
-
-    func createSession(
-        key: String,
-        label: String?,
-        parentSessionKey: String?,
-        worktree: Bool?) async throws -> OpenClawChatCreateSessionResponse
-    {
-        try await self.transport.createSession(
-            key: key,
-            label: label,
-            parentSessionKey: parentSessionKey,
-            worktree: worktree)
-    }
-
-    func requestHistory(sessionKey: String) async throws -> OpenClawChatHistoryPayload {
-        try await self.transport.requestHistory(sessionKey: sessionKey)
-    }
-
-    func listModels() async throws -> [OpenClawChatModelChoice] {
-        try await self.transport.listModels()
-    }
-
-    func sendMessage(
-        sessionKey: String,
-        message: String,
-        thinking: String,
-        idempotencyKey: String,
-        attachments: [OpenClawChatAttachmentPayload]) async throws -> OpenClawChatSendResponse
-    {
-        try await self.transport.sendMessage(
-            sessionKey: sessionKey,
-            message: message,
-            thinking: thinking,
-            idempotencyKey: idempotencyKey,
-            attachments: attachments)
-    }
-
-    func abortRun(sessionKey: String, runId: String) async throws {
-        try await self.transport.abortRun(sessionKey: sessionKey, runId: runId)
-    }
-
-    func listSessions(
-        limit: Int?,
-        search: String?,
-        archived: Bool) async throws -> OpenClawChatSessionsListResponse
-    {
-        try await self.transport.listSessions(limit: limit, search: search, archived: archived)
-    }
-
-    func setSessionModel(sessionKey: String, model: String?) async throws {
-        try await self.transport.setSessionModel(sessionKey: sessionKey, model: model)
-    }
-
-    func patchSessionModel(
-        sessionKey: String,
-        agentID: String?,
-        model: String?) async throws -> OpenClawChatModelPatchResult?
-    {
-        try await self.transport.patchSessionModel(
-            sessionKey: sessionKey,
-            agentID: agentID,
-            model: model)
-    }
-
-    func setSessionThinking(sessionKey: String, thinkingLevel: String) async throws {
-        try await self.transport.setSessionThinking(sessionKey: sessionKey, thinkingLevel: thinkingLevel)
-    }
-
-    func requestHealth(timeoutMs: Int) async throws -> Bool {
-        try await self.transport.requestHealth(timeoutMs: timeoutMs)
-    }
-
-    func waitForRunCompletion(
-        runId: String,
-        timeoutMs: Int) async -> OpenClawChatRunObservation
-    {
-        await self.transport.waitForRunCompletion(runId: runId, timeoutMs: timeoutMs)
-    }
-
-    func events() -> AsyncStream<OpenClawChatTransportEvent> {
-        self.transport.events()
-    }
-
-    func setActiveSessionKey(_ sessionKey: String) async throws {
-        try await self.transport.setActiveSessionKey(sessionKey)
-    }
-
-    func resetSession(sessionKey: String) async throws {
-        try await self.transport.resetSession(sessionKey: sessionKey)
-    }
-
-    func compactSession(sessionKey: String) async throws {
-        try await self.transport.compactSession(sessionKey: sessionKey)
-    }
-}
+typealias AppleReviewDemoChatTransport = LocalFixtureChatTransport
 
 private actor LocalFixtureChatStore {
     private let fixture: LocalChatFixture

@@ -508,6 +508,26 @@ struct IOSGatewayChatTransportTests {
 }
 
 struct LocalFixtureChatTransportTests {
+    @Test func `apple review alias keeps fixture and protocol defaults`() async throws {
+        let source = AppleReviewDemoChatTransport()
+        let transport: any OpenClawChatTransport = source
+
+        #expect(try await transport.listModels().map(\.modelID) == ["local-demo"])
+        #expect(try await !(transport.isSwarmEnabled(sessionKey: "main")))
+        #expect(try await (transport.listChildSessions(parentKey: "main")).isEmpty)
+
+        let initialHistory = try await transport.requestHistory(sessionKey: "main")
+        let initialMessageCount = try #require(initialHistory.messages).count
+        _ = try await source.sendMessage(
+            sessionKey: "main",
+            message: "shared actor store",
+            thinking: "auto",
+            idempotencyKey: "alias-copy",
+            attachments: [])
+        let updatedHistory = try await transport.requestHistory(sessionKey: "main")
+        #expect(try #require(updatedHistory.messages).count == initialMessageCount + 2)
+    }
+
     @Test func `sent user turn carries gateway idempotency metadata`() async throws {
         let transport = LocalFixtureChatTransport(fixture: .appleReviewDemo)
 
