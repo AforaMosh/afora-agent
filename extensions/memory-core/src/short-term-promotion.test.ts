@@ -357,6 +357,39 @@ describe("short-term promotion", () => {
     });
   });
 
+  it("records session-corpus transcript turns without admitting dreaming artifacts", async () => {
+    await withTempWorkspace(async (workspaceDir) => {
+      await recordGroundedShortTermCandidates({
+        workspaceDir,
+        query: "__dreaming_session_backfill__:2026-04-03",
+        items: [
+          {
+            path: "memory/.dreams/session-corpus/2026-04-03.txt",
+            startLine: 1,
+            endLine: 1,
+            snippet: "User: Prefer aisle seats when booking flights.",
+            score: 0.9,
+          },
+          {
+            path: "memory/.dreams/session-corpus/2026-04-03.txt",
+            startLine: 2,
+            endLine: 2,
+            snippet:
+              "Assistant: Candidate: Default to action. confidence: 0.76 evidence: memory/.dreams/session-corpus/2026-04-03.txt:1-1 recalls: 3 status: staged",
+            score: 0.9,
+          },
+        ],
+        nowMs: Date.parse("2026-04-03T10:00:00.000Z"),
+      });
+
+      const entries = Object.values(await readRecallStoreEntries(workspaceDir));
+      expect(entries).toHaveLength(1);
+      expect(readEntrySnippet(expectDefined(entries[0], "session-corpus recall entry"))).toBe(
+        "User: Prefer aisle seats when booking flights.",
+      );
+    });
+  });
+
   it("ignores dream report paths when recording short-term recalls", async () => {
     await withTempWorkspace(async (workspaceDir) => {
       await recordShortTermRecalls({
