@@ -242,6 +242,40 @@ describe("Nextcloud Talk durable ingress", () => {
     });
   });
 
+  it("drains another room while keeping the active room serialized", async () => {
+    await withQueue(async (queue) => {
+      let releaseFirst = () => {};
+      const firstDelivery = new Promise<void>((resolve) => {
+        releaseFirst = resolve;
+      });
+      const delivered: string[] = [];
+      const spool = startSpool(queue, async (message, lifecycle) => {
+        delivered.push(message.messageId);
+        if (message.messageId === "msg-room-a-first") {
+          await firstDelivery;
+        }
+        await lifecycle.onAdopted();
+      });
+      try {
+        await spool.receive(createRawEvent({ messageId: "msg-room-a-first", roomToken: "room-a" }));
+        await vi.waitFor(() => expect(delivered).toEqual(["msg-room-a-first"]));
+
+        await spool.receive(
+          createRawEvent({ messageId: "msg-room-a-second", roomToken: "room-a" }),
+        );
+        await spool.receive(createRawEvent({ messageId: "msg-room-b-first", roomToken: "room-b" }));
+        await vi.waitFor(() => expect(delivered).toEqual(["msg-room-a-first", "msg-room-b-first"]));
+
+        releaseFirst();
+        await spool.waitForIdle();
+        expect(delivered).toEqual(["msg-room-a-first", "msg-room-b-first", "msg-room-a-second"]);
+      } finally {
+        releaseFirst();
+        await spool.stop();
+      }
+    });
+  });
+
   it("completes a gated turn that does not dispatch", async () => {
     await withQueue(async (queue) => {
       const deliver = vi.fn(async () => {});
