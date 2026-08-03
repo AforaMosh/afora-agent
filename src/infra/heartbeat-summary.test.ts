@@ -6,18 +6,39 @@ import {
   resolveHeartbeatSummaryForAgent,
 } from "./heartbeat-summary.js";
 
+type HeartbeatSummaryCase = {
+  readonly name: string;
+  readonly config: OpenClawConfig;
+  readonly agentId: string;
+  readonly eligible: boolean;
+  readonly expected: Pick<
+    ReturnType<typeof resolveHeartbeatSummaryForAgent>,
+    "enabled" | "every" | "everyMs"
+  >;
+};
+
 describe("resolveHeartbeatSummaryForAgent", () => {
   it("accepts keyed agents and rejects the internal list projection in raw config", () => {
     const entries = { main: { default: true } };
 
     expect(AgentsSchema.safeParse({ entries }).success).toBe(true);
-    expect(AgentsSchema.safeParse({ list: [{ id: "main", default: true }] }).success).toBe(false);
+    const rejected = AgentsSchema.safeParse({
+      entries,
+      list: [{ id: "main", default: true }],
+    });
+    expect(rejected.success).toBe(false);
+    expect(rejected.error?.issues).toEqual([
+      expect.objectContaining({
+        code: "unrecognized_keys",
+        keys: ["list"],
+      }),
+    ]);
   });
 
-  it.each([
+  const heartbeatSummaryCases: readonly HeartbeatSummaryCase[] = [
     {
       name: "uses the default cadence when heartbeat config is absent",
-      config: {} satisfies OpenClawConfig,
+      config: {},
       agentId: "main",
       eligible: true,
       expected: { enabled: true, every: "30m", everyMs: 30 * 60_000 },
@@ -29,7 +50,7 @@ describe("resolveHeartbeatSummaryForAgent", () => {
           defaults: { heartbeat: { every: "0m" } },
           entries: { main: { default: true }, ops: {} },
         },
-      } satisfies OpenClawConfig,
+      },
       agentId: "ops",
       eligible: true,
       expected: { enabled: false, every: "disabled", everyMs: null },
@@ -41,7 +62,7 @@ describe("resolveHeartbeatSummaryForAgent", () => {
           defaults: { heartbeat: { every: "30m" } },
           entries: { main: { default: true, heartbeat: { every: "0m" } } },
         },
-      } satisfies OpenClawConfig,
+      },
       agentId: "main",
       eligible: true,
       expected: { enabled: false, every: "disabled", everyMs: null },
@@ -53,7 +74,7 @@ describe("resolveHeartbeatSummaryForAgent", () => {
           defaults: { heartbeat: { every: "0m" } },
           entries: { main: { default: true, heartbeat: { every: "15m" } } },
         },
-      } satisfies OpenClawConfig,
+      },
       agentId: "main",
       eligible: true,
       expected: { enabled: true, every: "15m", everyMs: 15 * 60_000 },
@@ -68,7 +89,7 @@ describe("resolveHeartbeatSummaryForAgent", () => {
             ops: { heartbeat: { every: "15m" } },
           },
         },
-      } satisfies OpenClawConfig,
+      },
       agentId: "main",
       eligible: false,
       expected: { enabled: false, every: "disabled", everyMs: null },
@@ -80,12 +101,14 @@ describe("resolveHeartbeatSummaryForAgent", () => {
           defaults: { heartbeat: { every: "45m" } },
           entries: { main: { default: true }, ops: {} },
         },
-      } satisfies OpenClawConfig,
+      },
       agentId: "ops",
       eligible: true,
       expected: { enabled: true, every: "45m", everyMs: 45 * 60_000 },
     },
-  ])("$name", ({ config, agentId, eligible, expected }) => {
+  ];
+
+  it.each(heartbeatSummaryCases)("$name", ({ config, agentId, eligible, expected }) => {
     const summary = resolveHeartbeatSummaryForAgent(config, agentId);
 
     expect(isHeartbeatEnabledForAgent(config, agentId)).toBe(eligible);
