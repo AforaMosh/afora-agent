@@ -4957,7 +4957,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
     }
   });
 
-  it("does not persist fallback state for an equivalent CLI runtime alias", async () => {
+  it("does not persist aggregate usage or fallback state for a CLI runtime alias", async () => {
     const sessionEntry: SessionEntry = {
       sessionId: "session",
       updatedAt: Date.now(),
@@ -5002,8 +5002,8 @@ describe("runReplyAgent typing (heartbeat)", () => {
     expect(stored.fallbackNotice).toBeUndefined();
     expect(stored.modelProvider).toBe("claude-cli");
     expect(stored.model).toBe("claude-opus-4-7");
-    expect(stored.totalTokens).toBe(36_000);
-    expect(stored.totalTokensFresh).toBe(true);
+    expect(stored.totalTokens).toBeUndefined();
+    expect(stored.totalTokensFresh).toBe(false);
   });
 
   it("surfaces overflow fallback when embedded run returns empty payloads", async () => {

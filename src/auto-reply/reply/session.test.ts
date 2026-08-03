@@ -4768,9 +4768,12 @@ describe("persistSessionUsageUpdate", () => {
       expected: { inputTokens: 100_000, outputTokens: 8_000, cacheRead: 18_000, cacheWrite: 4_000 },
     },
     {
-      name: "marks totalTokens as unknown when no fresh context snapshot is available",
+      name: "does not treat aggregate CLI usage as a fresh context snapshot",
       seed: {},
-      update: { usage: { input: 50_000, output: 5_000, total: 55_000 } },
+      update: {
+        usage: { input: 50_000, output: 5_000, total: 55_000 },
+        providerUsed: "claude-cli",
+      },
       expected: { totalTokens: undefined, totalTokensFresh: false },
     },
     {
