@@ -2,16 +2,23 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { Value } from "typebox/value";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { SnapshotSchema } from "../../packages/gateway-protocol/src/schema/snapshot.js";
 import type { ChannelAccountSnapshot } from "../channels/plugins/types.public.js";
 import type { ChannelPlugin } from "../channels/plugins/types.public.js";
+import type { OpenClawConfig } from "../config/types.openclaw.js";
 import type { HealthSummary } from "../gateway/health/types.js";
 import { createPluginRecord } from "../plugins/status.test-fixtures.js";
 import { MAX_TIMER_TIMEOUT_MS } from "../shared/number-coercion.js";
 import { createOpenClawTestState } from "../test-utils/openclaw-test-state.js";
 import {
+  buildTelegramHealthSummary,
   createLegacyHealthSnapshotCollector,
+  listTelegramAccountIdsForTest,
+  resolveTelegramAccountForTest,
   type LegacyHealthSnapshotParams,
+  type TelegramHealthAccount,
 } from "./health.snapshot.test-support.js";
 
 let testConfig: Record<string, unknown> = {};
@@ -30,17 +37,6 @@ let probeTelegramAccountForTestOverride:
   | undefined;
 
 type HealthTestPlugin = Pick<ChannelPlugin, "id" | "meta" | "capabilities" | "config" | "status">;
-
-type TelegramHealthAccount = {
-  accountId: string;
-  token: string;
-  configured: boolean;
-  config: {
-    proxy?: string;
-    network?: Record<string, unknown>;
-    apiRoot?: string;
-  };
-};
 
 type DiscordHealthAccount = {
   accountId: string;
@@ -105,89 +101,6 @@ async function loadFreshHealthModulesForTest() {
     createChannelTestPluginBase: channelTestUtils.createChannelTestPluginBase,
     createTestRegistry: channelTestUtils.createTestRegistry,
     getHealthSnapshot: createLegacyHealthSnapshotCollector(collectSnapshot),
-  };
-}
-
-function getTelegramChannelConfig(cfg: Record<string, unknown>) {
-  const channels = cfg.channels as Record<string, unknown> | undefined;
-  return (channels?.telegram as Record<string, unknown> | undefined) ?? {};
-}
-
-function listTelegramAccountIdsForTest(cfg: Record<string, unknown>): string[] {
-  const telegram = getTelegramChannelConfig(cfg);
-  const accounts = telegram.accounts as Record<string, unknown> | undefined;
-  const ids: string[] = [];
-  for (const accountId of Object.keys(accounts ?? {})) {
-    if (accountId) {
-      ids.push(accountId);
-    }
-  }
-  return ids.length > 0 ? ids : ["default"];
-}
-
-function readTokenFromFile(tokenFile: unknown): string {
-  if (typeof tokenFile !== "string" || !tokenFile.trim()) {
-    return "";
-  }
-  try {
-    return fs.readFileSync(tokenFile, "utf8").trim();
-  } catch {
-    return "";
-  }
-}
-
-function resolveTelegramAccountForTest(params: {
-  cfg: Record<string, unknown>;
-  accountId?: string | null;
-}): TelegramHealthAccount {
-  const telegram = getTelegramChannelConfig(params.cfg);
-  const accounts = (telegram.accounts as Record<string, Record<string, unknown>> | undefined) ?? {};
-  const accountId = params.accountId?.trim() || "default";
-  const channelConfig = { ...telegram };
-  delete (channelConfig as { accounts?: unknown }).accounts;
-  const merged = {
-    ...channelConfig,
-    ...accounts[accountId],
-  };
-  const tokenFromConfig =
-    typeof merged.botToken === "string" && merged.botToken.trim() ? merged.botToken.trim() : "";
-  const token =
-    tokenFromConfig ||
-    readTokenFromFile(merged.tokenFile) ||
-    (accountId === "default" ? (process.env.TELEGRAM_BOT_TOKEN?.trim() ?? "") : "");
-  return {
-    accountId,
-    token,
-    configured: token.length > 0,
-    config: {
-      ...(typeof merged.proxy === "string" && merged.proxy.trim()
-        ? { proxy: merged.proxy.trim() }
-        : {}),
-      ...(merged.network && typeof merged.network === "object" && !Array.isArray(merged.network)
-        ? { network: merged.network as Record<string, unknown> }
-        : {}),
-      ...(typeof merged.apiRoot === "string" && merged.apiRoot.trim()
-        ? { apiRoot: merged.apiRoot.trim() }
-        : {}),
-    },
-  };
-}
-
-function buildTelegramHealthSummary(snapshot: {
-  accountId: string;
-  configured?: boolean;
-  probe?: unknown;
-  lastProbeAt?: number | null;
-}) {
-  const probeRecord =
-    snapshot.probe && typeof snapshot.probe === "object"
-      ? (snapshot.probe as Record<string, unknown>)
-      : null;
-  return {
-    accountId: snapshot.accountId,
-    configured: Boolean(snapshot.configured),
-    ...(probeRecord ? { probe: probeRecord } : {}),
-    ...(snapshot.lastProbeAt ? { lastProbeAt: snapshot.lastProbeAt } : {}),
   };
 }
 
@@ -1065,6 +978,67 @@ describe("collectGatewayHealthSnapshot", () => {
     expect(ops?.heartbeat.everyMs).toBe(60 * 60 * 1000);
     expect(ops?.heartbeat.every).toBe("1h");
   });
+
+  it.each([
+    {
+      name: "disabled global cadence",
+      every: "0m",
+      entries: { main: { default: true }, ops: {} },
+      heartbeatSeconds: 0,
+      expected: [
+        { agentId: "main", enabled: false, every: "disabled", everyMs: null },
+        { agentId: "ops", enabled: false, every: "disabled", everyMs: null },
+      ],
+    },
+    {
+      name: "mixed per-agent disabled and enabled cadence",
+      every: "30m",
+      entries: {
+        main: { default: true, heartbeat: { every: "0m" } },
+        ops: { heartbeat: { every: "15m" } },
+      },
+      heartbeatSeconds: 0,
+      expected: [
+        { agentId: "main", enabled: false, every: "disabled", everyMs: null },
+        { agentId: "ops", enabled: true, every: "15m", everyMs: 15 * 60_000 },
+      ],
+    },
+    {
+      name: "enabled agent override of disabled global cadence",
+      every: "0m",
+      entries: {
+        main: { default: true, heartbeat: { every: "15m" } },
+        ops: { heartbeat: { every: "0m" } },
+      },
+      heartbeatSeconds: 15 * 60,
+      expected: [
+        { agentId: "main", enabled: true, every: "15m", everyMs: 15 * 60_000 },
+        { agentId: "ops", enabled: false, every: "disabled", everyMs: null },
+      ],
+    },
+  ])(
+    "reports truthful heartbeat state for $name",
+    async ({ every, entries, expected, heartbeatSeconds }) => {
+      testConfig = {
+        agents: { defaults: { heartbeat: { every } }, entries },
+      } satisfies OpenClawConfig;
+      testStore = {};
+
+      const snapshot = await getHealthSnapshot({ timeoutMs: 10, probe: false });
+      const heartbeatAgents = snapshot.agents.map(({ agentId, heartbeat }) => ({
+        agentId,
+        enabled: heartbeat.enabled,
+        every: heartbeat.every,
+        everyMs: heartbeat.everyMs,
+      }));
+
+      expect(heartbeatAgents).toEqual(expected);
+      expect(snapshot.heartbeatSeconds).toBe(heartbeatSeconds);
+      const healthSchema = SnapshotSchema.properties.health;
+      expect(Value.Check(healthSchema, snapshot)).toBe(true);
+      expect(Value.Check(healthSchema, { ...snapshot, heartbeatSeconds: null })).toBe(false);
+    },
+  );
 
   it("passes agent scope when summarizing configured agent sessions", async () => {
     testConfig = {
