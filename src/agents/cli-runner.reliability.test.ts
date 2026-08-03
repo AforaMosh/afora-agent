@@ -3494,12 +3494,32 @@ describe("runCliAgent reliability", () => {
     }
   });
 
-  it("persists Claude native assistant identity on successful output", async () => {
+  it("persists every Claude native assistant identity on successful output", async () => {
     supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
       const input = args[0] as Parameters<ReturnType<typeof getProcessSupervisor>["spawn"]>[0];
       input.onStdout?.(
         [
           JSON.stringify({ type: "system", subtype: "init", session_id: "claude-session" }),
+          JSON.stringify({
+            type: "assistant",
+            uuid: "assistant-leading-text",
+            session_id: "claude-session",
+            message: {
+              model: "claude-opus-5",
+              role: "assistant",
+              content: [{ type: "text", text: "leading text" }],
+            },
+          }),
+          JSON.stringify({
+            type: "assistant",
+            uuid: "assistant-tool-use",
+            session_id: "claude-session",
+            message: {
+              model: "claude-opus-5",
+              role: "assistant",
+              content: [{ type: "tool_use", id: "tool-1", name: "Bash", input: {} }],
+            },
+          }),
           JSON.stringify({
             type: "assistant",
             uuid: "assistant-native-turn",
@@ -3563,7 +3583,7 @@ describe("runCliAgent reliability", () => {
           __openclaw: {
             importedFrom: "claude-cli",
             cliSessionId: "claude-session",
-            externalId: "assistant-native-turn",
+            externalIds: ["assistant-leading-text", "assistant-tool-use", "assistant-native-turn"],
           },
         }),
       );

@@ -59,6 +59,8 @@ export type CliOutput = {
   sessionId?: string;
   /** Backend-owned assistant boundary that can safely anchor a later resumed fork. */
   resumeCheckpointId?: string;
+  /** Native Claude assistant records rendered into this durable OpenClaw turn. */
+  nativeAssistantIds?: string[];
   usage?: CliUsage;
   /** Terminal cumulative turn usage for diagnostics; reply accounting keeps using `usage`. */
   diagnosticUsage?: CliUsage;
@@ -531,20 +533,27 @@ function pickCliSessionId(
   return undefined;
 }
 
+function pickClaudeAssistantId(params: {
+  backend: CliBackendConfig;
+  providerId: string;
+  parsed: Record<string, unknown>;
+}): string | undefined {
+  if (!isClaudeStreamJsonDialect(params) || params.parsed.type !== "assistant") {
+    return undefined;
+  }
+  const assistantId = typeof params.parsed.uuid === "string" ? params.parsed.uuid.trim() : "";
+  return assistantId || undefined;
+}
+
 function pickCliResumeCheckpointId(params: {
   backend: CliBackendConfig;
   providerId: string;
   parsed: Record<string, unknown>;
 }): string | undefined {
-  if (
-    !isClaudeStreamJsonDialect(params) ||
-    params.parsed.type !== "assistant" ||
-    params.parsed.parent_tool_use_id != null
-  ) {
+  if (params.parsed.parent_tool_use_id != null) {
     return undefined;
   }
-  const checkpointId = typeof params.parsed.uuid === "string" ? params.parsed.uuid.trim() : "";
-  return checkpointId || undefined;
+  return pickClaudeAssistantId(params);
 }
 
 function shouldUnwrapNestedCliResultText(params: {
@@ -1363,6 +1372,7 @@ export function createCliJsonlStreamingParser(params: {
   let previousMessageHadToolUse = false;
   let sessionId: string | undefined;
   let resumeCheckpointId: string | undefined;
+  const nativeAssistantIds: string[] = [];
   let usage: CliUsage | undefined;
   let diagnosticUsage: CliUsage | undefined;
   let output: CliOutput | null = null;
@@ -1635,6 +1645,10 @@ export function createCliJsonlStreamingParser(params: {
       usage = nextUsage ?? usage;
     }
     if (parsed.type === "assistant" && isRecord(parsed.message)) {
+      const nativeAssistantId = pickClaudeAssistantId({ ...params, parsed });
+      if (nativeAssistantId && !nativeAssistantIds.includes(nativeAssistantId)) {
+        nativeAssistantIds.push(nativeAssistantId);
+      }
       resumeCheckpointId = pickCliResumeCheckpointId({ ...params, parsed }) ?? resumeCheckpointId;
       params.onAssistantMessage?.(parsed.message);
     }
@@ -1713,6 +1727,7 @@ export function createCliJsonlStreamingParser(params: {
         ...result,
         text,
         ...(resumeCheckpointId ? { resumeCheckpointId } : {}),
+        ...(nativeAssistantIds.length > 0 ? { nativeAssistantIds: [...nativeAssistantIds] } : {}),
         ...(diagnosticUsage ? { diagnosticUsage } : {}),
       };
       // An interim result commits its segment. Rebase boundary state so later
@@ -1954,11 +1969,20 @@ export function createCliJsonlStreamingParser(params: {
           sessionId,
           usage,
           ...(resumeCheckpointId ? { resumeCheckpointId } : {}),
+          ...(nativeAssistantIds.length > 0 ? { nativeAssistantIds: [...nativeAssistantIds] } : {}),
         };
       }
       const text = texts.join("\n").trim();
       return text
-        ? { text, sessionId, usage, ...(resumeCheckpointId ? { resumeCheckpointId } : {}) }
+        ? {
+            text,
+            sessionId,
+            usage,
+            ...(resumeCheckpointId ? { resumeCheckpointId } : {}),
+            ...(nativeAssistantIds.length > 0
+              ? { nativeAssistantIds: [...nativeAssistantIds] }
+              : {}),
+          }
         : null;
     },
   };
@@ -1977,6 +2001,7 @@ function parseCliJsonl(
   }
   let sessionId: string | undefined;
   let resumeCheckpointId: string | undefined;
+  const nativeAssistantIds: string[] = [];
   let usage: CliUsage | undefined;
   const texts: string[] = [];
   let streamJsonText = "";
@@ -1999,6 +2024,10 @@ function parseCliJsonl(
       }
       resumeCheckpointId =
         pickCliResumeCheckpointId({ backend, providerId, parsed }) ?? resumeCheckpointId;
+      const nativeAssistantId = pickClaudeAssistantId({ backend, providerId, parsed });
+      if (nativeAssistantId && !nativeAssistantIds.includes(nativeAssistantId)) {
+        nativeAssistantIds.push(nativeAssistantId);
+      }
       const nextUsage = readCliUsage(parsed);
       const shouldUseUsage = !isClaudeStreamJsonResult({ backend, providerId, parsed }) || !usage;
       if (shouldUseUsage) {
@@ -2042,6 +2071,9 @@ function parseCliJsonl(
           return {
             ...claudeResult,
             ...(resumeCheckpointId ? { resumeCheckpointId } : {}),
+            ...(nativeAssistantIds.length > 0
+              ? { nativeAssistantIds: [...nativeAssistantIds] }
+              : {}),
           };
         }
         // Live sessions reparse the completed JSONL transcript, so preserve
@@ -2076,6 +2108,7 @@ function parseCliJsonl(
           ...claudeResult,
           text,
           ...(resumeCheckpointId ? { resumeCheckpointId } : {}),
+          ...(nativeAssistantIds.length > 0 ? { nativeAssistantIds: [...nativeAssistantIds] } : {}),
         };
         segmentStart = streamJsonText.length;
         currentMessageStart = segmentStart;
@@ -2153,6 +2186,7 @@ function parseCliJsonl(
       sessionId,
       usage,
       ...(resumeCheckpointId ? { resumeCheckpointId } : {}),
+      ...(nativeAssistantIds.length > 0 ? { nativeAssistantIds: [...nativeAssistantIds] } : {}),
     };
   }
   if (streamJsonDialect) {

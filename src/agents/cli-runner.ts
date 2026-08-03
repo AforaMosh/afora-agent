@@ -345,7 +345,7 @@ async function persistCliAssistantTranscript(params: {
   text: string;
   modelId: string;
   cliSessionId?: string;
-  nativeAssistantId?: string;
+  nativeAssistantIds?: string[];
   usage?: {
     input?: number;
     output?: number;
@@ -378,16 +378,18 @@ async function persistCliAssistantTranscript(params: {
         totalTokens: params.usage?.total,
       }),
     });
-    // Claude's assistant UUID is the native turn identity shared with its JSONL history.
-    // Persist it at the writer so unequal live/imported renderings reconcile without text guesses.
+    // Claude emits several assistant records for a streamed turn. Persist all of
+    // their UUIDs here so importing its JSONL cannot replay an earlier fragment.
     const message =
-      isClaudeCliProvider(runParams.provider) && params.cliSessionId && params.nativeAssistantId
+      isClaudeCliProvider(runParams.provider) &&
+      params.cliSessionId &&
+      params.nativeAssistantIds?.length
         ? {
             ...assistantMessage,
             __openclaw: {
               importedFrom: "claude-cli",
               cliSessionId: params.cliSessionId,
-              externalId: params.nativeAssistantId,
+              externalIds: params.nativeAssistantIds,
             },
           }
         : assistantMessage;
@@ -1359,7 +1361,7 @@ export async function runPreparedCliAgent(
           text: sourceReplyWasDelivered ? "" : assistantText,
           modelId: context.modelId,
           cliSessionId: effectiveCliSessionId,
-          nativeAssistantId: output.resumeCheckpointId,
+          nativeAssistantIds: output.nativeAssistantIds,
           usage: output.usage,
         });
         // A stateless backend may emit an id, but it never becomes continuity.

@@ -924,16 +924,30 @@ describe("cli session history", () => {
     });
   });
 
-  it("deduplicates unequal durable and imported assistant renderings by native turn identity", async () => {
+  it("deduplicates every imported assistant fragment in a durable Claude turn", async () => {
     await withClaudeProjectsDir(async ({ homeDir, sessionId, filePath }) => {
-      const externalId = "assistant-native-turn";
+      const externalIds = [
+        "assistant-leading-text",
+        "assistant-tool-use",
+        "assistant-final-text",
+      ] as const;
       await fs.writeFile(
         filePath,
         createClaudeTextHistoryLines([
           {
             role: "assistant",
-            uuid: externalId,
-            content: "leading native text\n\nfinal native text",
+            uuid: externalIds[0],
+            content: "leading native text",
+          },
+          {
+            role: "assistant",
+            uuid: externalIds[1],
+            content: "native tool fragment",
+          },
+          {
+            role: "assistant",
+            uuid: externalIds[2],
+            content: "final native text",
           },
         ]),
         "utf-8",
@@ -944,7 +958,7 @@ describe("cli session history", () => {
           content: [{ type: "text", text: "final durable text" }],
           __openclaw: {
             importedFrom: "claude-cli",
-            externalId,
+            externalIds,
             cliSessionId: sessionId,
           },
         },
