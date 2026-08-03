@@ -2262,6 +2262,7 @@ describe("startGatewayPostAttachRuntime", () => {
       pluginServices,
       postReadySidecars,
       cron: { stop: vi.fn() },
+      shutdownProcessSupervisor: vi.fn(async () => undefined),
       heartbeatRunner: { stop: vi.fn(), updateConfig: vi.fn() },
       nodePresenceTimers: new Map(),
       broadcast: vi.fn(),
