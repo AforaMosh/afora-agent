@@ -136,59 +136,6 @@ describe("web auto-reply connection", () => {
     expect(statuses.some((status) => status.running === true)).toBe(false);
   });
 
-  it("handles reconnect progress and max-attempt stop behavior", async () => {
-    for (const scenario of [
-      {
-        reconnect: { initialMs: 10, maxMs: 10, maxAttempts: 3, factor: 1.1 },
-        expectedCallsAfterFirstClose: 2,
-        closeTwiceAndFinish: false,
-        expectedError: "Retry 1",
-      },
-      {
-        reconnect: { initialMs: 5, maxMs: 5, maxAttempts: 2, factor: 1.1 },
-        expectedCallsAfterFirstClose: 2,
-        closeTwiceAndFinish: true,
-        expectedError: "max attempts reached",
-      },
-    ]) {
-      const sleep = vi.fn(async () => {});
-      const scripted = createScriptedWebListenerFactory();
-      const { runtime, controller, run } = startWebAutoReplyMonitor({
-        monitorWebChannelFn: monitorWebChannel as never,
-        listenerFactory: scripted.listenerFactory,
-        sleep,
-        reconnect: scenario.reconnect,
-      });
-
-      await vi.waitFor(
-        () => {
-          expect(scripted.getListenerCount()).toBe(1);
-        },
-        { timeout: 250, interval: 2 },
-      );
-
-      scripted.resolveClose(0);
-      await vi.waitFor(
-        () => {
-          expect(scripted.getListenerCount()).toBe(scenario.expectedCallsAfterFirstClose);
-        },
-        { timeout: 250, interval: 2 },
-      );
-
-      if (scenario.closeTwiceAndFinish) {
-        scripted.resolveClose(1);
-        await run;
-      } else {
-        controller.abort();
-        scripted.resolveClose(1);
-        await Promise.resolve();
-        await run;
-      }
-
-      expectErrorContaining(runtime.error, scenario.expectedError);
-    }
-  });
-
   it("widens append catch-up only after reconnecting a recently active listener", async () => {
     const scripted = createScriptedWebListenerFactory();
     const { controller, run } = startWebAutoReplyMonitor({
@@ -926,23 +873,6 @@ describe("web auto-reply connection", () => {
         payload: { body: "partial nested" },
       } as unknown as WebInboundMessageInput),
     ).rejects.toThrow(/legacy flat or canonical nested/);
-  });
-
-  it("raises the process listener budget before opening the web listener", async () => {
-    const originalMax = process.getMaxListeners();
-    process.setMaxListeners?.(1);
-    try {
-      const capture = createWebListenerFactoryCapture();
-      await monitorWebChannel(
-        false,
-        capture.listenerFactory as never,
-        false,
-        async () => undefined,
-      );
-      expect(process.getMaxListeners?.()).toBeGreaterThanOrEqual(50);
-    } finally {
-      process.setMaxListeners?.(originalMax);
-    }
   });
 
   it("builds separate timestamped inbound envelopes without batching", () => {

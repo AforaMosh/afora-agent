@@ -176,23 +176,14 @@ export async function monitorWebChannel(
   const baileysGroupMetaCache: WhatsAppBaileysGroupMetadataCache = new Map();
   const echoTracker = createEchoTracker({ maxItems: 100, logVerbose });
 
+  const sigintAbortController = new AbortController();
+  const monitorAbortSignal = abortSignal ?? sigintAbortController.signal;
   const sleep =
     tuning.sleep ??
-    ((ms: number, signal?: AbortSignal) => sleepWithAbort(ms, signal ?? abortSignal));
-  const stopRequested = () => abortSignal?.aborted === true;
-
-  // Avoid noisy MaxListenersExceeded warnings in test environments where
-  // multiple gateway instances may be constructed.
-  const currentMaxListeners = process.getMaxListeners?.() ?? 10;
-  if (process.setMaxListeners && currentMaxListeners < 50) {
-    process.setMaxListeners(50);
-  }
-
-  let sigintStop = false;
-  const handleSigint = () => {
-    sigintStop = true;
-  };
-  process.once("SIGINT", handleSigint);
+    ((ms: number, signal?: AbortSignal) => sleepWithAbort(ms, signal ?? monitorAbortSignal));
+  const stopRequested = () => monitorAbortSignal.aborted;
+  // Standalone monitors own Ctrl+C; Gateway supplies its account-owned cancellation signal.
+  const handleSigint = () => sigintAbortController.abort();
 
   const transportTimeoutMs = tuning.transportTimeoutMs ?? DEFAULT_TRANSPORT_TIMEOUT_MS;
   const messageTimeoutMs = tuning.messageTimeoutMs ?? 30 * 60 * 1000;
@@ -212,7 +203,7 @@ export async function monitorWebChannel(
     watchdogCheckMs,
     reconnectPolicy,
     socketTiming,
-    abortSignal,
+    abortSignal: monitorAbortSignal,
     sleep,
     isNonRetryableStatus: isNonRetryableWebCloseStatus,
   });
@@ -220,6 +211,9 @@ export async function monitorWebChannel(
   statusController.emit();
 
   try {
+    if (!abortSignal) {
+      process.once("SIGINT", handleSigint);
+    }
     while (true) {
       if (stopRequested()) {
         break;
@@ -289,7 +283,7 @@ export async function monitorWebChannel(
                 : undefined,
               shouldDebounce,
               socketRef: controller.socketRef,
-              shouldRetryDisconnect: () => !sigintStop && controller.shouldRetryDisconnect(),
+              shouldRetryDisconnect: () => controller.shouldRetryDisconnect(),
               disconnectRetryPolicy: reconnectPolicy,
               disconnectRetryAbortSignal: controller.getDisconnectRetryAbortSignal(),
               groupMetadataCache,
@@ -367,7 +361,7 @@ export async function monitorWebChannel(
         });
       } catch (error) {
         const setupDecision = controller.resolveSetupErrorDecision(error);
-        if (setupDecision === "aborted") {
+        if (stopRequested() || setupDecision === "aborted") {
           await controller.shutdown();
           break;
         }
@@ -475,7 +469,7 @@ export async function monitorWebChannel(
         accountId: account.accountId,
         capability: CHANNEL_APPROVAL_NATIVE_RUNTIME_CONTEXT_CAPABILITY,
         context: { accountId: account.accountId },
-        abortSignal,
+        abortSignal: monitorAbortSignal,
       });
       controller.setUnhandledRejectionCleanup(
         registerUnhandledRejectionHandler((reason) => {
@@ -572,7 +566,7 @@ export async function monitorWebChannel(
         clearInterval(periodicDrainInterval);
         approvalContextLease?.dispose();
       });
-      if (stopRequested() || sigintStop || reason === "aborted") {
+      if (stopRequested() || reason === "aborted") {
         await controller.shutdown();
         break;
       }
@@ -682,8 +676,10 @@ export async function monitorWebChannel(
       }
     }
   } finally {
+    if (!abortSignal) {
+      process.removeListener("SIGINT", handleSigint);
+    }
     statusController.markStopped();
-    process.removeListener("SIGINT", handleSigint);
     await controller.shutdown();
   }
 }

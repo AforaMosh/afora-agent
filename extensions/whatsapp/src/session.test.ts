@@ -262,6 +262,7 @@ describe("web session", () => {
 
     await createWaSocket(true, false, { authDir });
     const passed = readLastSocketOptions();
+    expect(passed).not.toHaveProperty("version");
     expect(passed.printQRInTerminal).toBe(false);
     expect(passed.fireInitQueries).toBe(true);
     expect(passed.keepAliveIntervalMs).toBe(DEFAULT_WHATSAPP_SOCKET_TIMING.keepAliveIntervalMs);
@@ -281,6 +282,18 @@ describe("web session", () => {
     expect(write.options.mode).toBe(0o600);
     expect(write.options.flag).toBe("wx");
     openMock.restore();
+  });
+
+  it("uses the bundled Baileys protocol version without an outbound lookup", async () => {
+    const versionLookup = vi.spyOn(globalThis, "fetch");
+    try {
+      await createWaSocket(false, false, { authDir: createTempAuthDir("openclaw-wa-version") });
+
+      expect(versionLookup).not.toHaveBeenCalled();
+      expect(readLastSocketOptions()).not.toHaveProperty("version");
+    } finally {
+      versionLookup.mockRestore();
+    }
   });
 
   it("creates standalone directory sockets without inbound message consumers", async () => {
@@ -308,6 +321,7 @@ describe("web session", () => {
     await createWaDirectorySocket(authDir);
 
     expect(readLastSocketOptions().fireInitQueries).toBe(false);
+    expect(readLastSocketOptions()).not.toHaveProperty("version");
     for (const event of [
       "CB:message",
       "CB:call",

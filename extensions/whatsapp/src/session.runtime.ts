@@ -9,7 +9,6 @@ export function createBaileysSignalRepository(
 
 export {
   BufferJSON,
-  fetchLatestBaileysVersion,
   makeCacheableSignalKeyStore,
   makeWASocket,
   useMultiFileAuthState,

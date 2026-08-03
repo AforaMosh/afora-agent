@@ -36,7 +36,6 @@ import { renderQrTerminal } from "./qr-terminal.js";
 import { getStatusCode } from "./session-errors.js";
 import {
   createBaileysSignalRepository,
-  fetchLatestBaileysVersion,
   makeCacheableSignalKeyStore,
   makeWASocket,
   useMultiFileAuthState,
@@ -257,7 +256,6 @@ async function createWaSocketInternal(
   const saveCreds = async () => {
     await writeCredsJsonAtomically(authDir, state.creds);
   };
-  const { version } = await fetchLatestBaileysVersion();
   const waWebSocketUrl = resolveWaWebSocketUrl(opts.waWebSocketUrl) ?? resolveEnvWaWebSocketUrl();
   const agent = await resolveEnvProxyAgent(sessionLogger);
   const fetchAgent = await resolveEnvFetchDispatcher(sessionLogger, agent);
@@ -337,7 +335,6 @@ async function createWaSocketInternal(
       creds: state.creds,
       keys: signalKeys,
     },
-    version,
     logger,
     printQRInTerminal: false,
     browser: ["openclaw", "cli", VERSION],

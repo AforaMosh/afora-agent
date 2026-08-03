@@ -681,16 +681,6 @@ export function resetBaileysMocks() {
     implementation: useMultiFileAuthStateImpl,
   });
 
-  const fetchLatestBaileysVersion = vi.mocked(baileys.fetchLatestBaileysVersion);
-  const fetchLatestBaileysVersionImpl: typeof baileys.fetchLatestBaileysVersion = (...args) =>
-    (
-      recreated.mod.fetchLatestBaileysVersion as unknown as typeof baileys.fetchLatestBaileysVersion
-    )(...args);
-  resetMockExport({
-    current: fetchLatestBaileysVersion,
-    implementation: fetchLatestBaileysVersionImpl,
-  });
-
   const makeCacheableSignalKeyStore = vi.mocked(baileys.makeCacheableSignalKeyStore);
   const makeCacheableSignalKeyStoreImpl: typeof baileys.makeCacheableSignalKeyStore = (...args) =>
     (
