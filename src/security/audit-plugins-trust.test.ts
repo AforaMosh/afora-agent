@@ -45,6 +45,7 @@ const mockPluginRegistryIds = vi.hoisted(() => [
   "brave",
   "discord",
   "google",
+  "legacy-plugin",
   "lmstudio",
   "memory-core",
   "ollama",
@@ -530,6 +531,10 @@ describe("security audit extension tool reachability findings", () => {
       recursive: true,
       mode: 0o700,
     });
+    await fs.mkdir(path.join(sharedExtensionsStateDir, "extensions", "legacy-plugin"), {
+      recursive: true,
+      mode: 0o700,
+    });
   });
 
   afterAll(async () => {
@@ -670,6 +675,20 @@ describe("security audit extension tool reachability findings", () => {
               (finding) => finding.checkId === "plugins.tools_reachable_permissive_policy",
             ),
           ).toBe(false);
+        },
+      },
+      {
+        name: "retains conservative probes for mixed legacy tool metadata",
+        cfg: {
+          plugins: { allow: ["some-plugin", "legacy-plugin"] },
+          tools: { deny: ["group:plugins"] },
+        } satisfies OpenClawConfig,
+        assert: (findings: Awaited<ReturnType<typeof runSharedExtensionsAudit>>) => {
+          expect(
+            findings.some(
+              (finding) => finding.checkId === "plugins.tools_reachable_permissive_policy",
+            ),
+          ).toBe(true);
         },
       },
       {

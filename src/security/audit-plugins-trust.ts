@@ -299,12 +299,18 @@ export async function collectPluginsTrustFindings(params: {
         tools: declaredPluginTools,
         toolMeta: (tool) => ({ pluginId: tool.pluginId }),
       });
-      // Older indexes can lack contracts.tools. Retain the conservative identifier probes
-      // until their manifest metadata is refreshed, but prefer concrete runtime tool names.
-      const pluginPolicyProbes =
-        pluginGroups.all.length > 0
-          ? pluginGroups.all
-          : ["__openclaw_plugin_probe__", "group:plugins", ...enabledExtensionPluginIds];
+      const declaredPluginIds = new Set(declaredPluginTools.map((tool) => tool.pluginId));
+      const pluginsMissingToolContracts = [...enabledPluginIds].filter(
+        (pluginId) => !declaredPluginIds.has(pluginId),
+      );
+      // Older indexes can lack contracts.tools for only some enabled plugins. Keep
+      // conservative probes for those gaps while using concrete names everywhere else.
+      const pluginPolicyProbes = [
+        ...pluginGroups.all,
+        ...(pluginsMissingToolContracts.length > 0
+          ? ["__openclaw_plugin_probe__", ...pluginsMissingToolContracts]
+          : []),
+      ];
       const contexts: Array<{
         label: string;
         agentId?: string;
