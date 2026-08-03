@@ -229,7 +229,7 @@ function firstAddedMemory(add: ReturnType<typeof vi.fn>) {
 }
 
 async function withMockedOpenAiMemoryPlugin<T>(params: {
-  ensureGlobalUndiciEnvProxyDispatcher: ReturnType<typeof vi.fn>;
+  onEmbeddingRequest: ReturnType<typeof vi.fn>;
   embeddingsCreate?: ReturnType<typeof vi.fn>;
   openAiPost?: ReturnType<typeof vi.fn>;
   loadLanceDbModule: ReturnType<typeof vi.fn>;
@@ -247,7 +247,7 @@ async function withMockedOpenAiMemoryPlugin<T>(params: {
   vi.resetModules();
   installMockOpenAiEmbeddingTransport({
     post,
-    onRequest: params.ensureGlobalUndiciEnvProxyDispatcher,
+    onRequest: params.onEmbeddingRequest,
   });
   vi.doMock("./lancedb-runtime.js", () => ({
     loadLanceDbModule: params.loadLanceDbModule,
@@ -715,7 +715,7 @@ describe("memory plugin e2e", () => {
     const embeddingsCreate = vi.fn(async () => ({
       data: [{ embedding: [0.1, 0.2, 0.3] }],
     }));
-    const ensureGlobalUndiciEnvProxyDispatcher = vi.fn();
+    const onEmbeddingRequest = vi.fn();
     const toArray = vi.fn(async () => []);
     const limit = vi.fn(() => ({ toArray }));
     const vectorSearch = vi.fn(() => createAgentScopedVectorQuery(limit));
@@ -733,7 +733,7 @@ describe("memory plugin e2e", () => {
     }));
 
     await withMockedOpenAiMemoryPlugin({
-      ensureGlobalUndiciEnvProxyDispatcher,
+      onEmbeddingRequest,
       embeddingsCreate,
       loadLanceDbModule,
       run: async (dynamicMemoryPlugin) => {
@@ -772,7 +772,7 @@ describe("memory plugin e2e", () => {
     const embeddingsCreate = vi.fn(async () => ({
       data: [{ embedding: [0.1, 0.2, 0.3] }],
     }));
-    const ensureGlobalUndiciEnvProxyDispatcher = vi.fn();
+    const onEmbeddingRequest = vi.fn();
     const toArray = vi.fn(async () => [
       {
         id: "memory-stale-media",
@@ -809,7 +809,7 @@ describe("memory plugin e2e", () => {
     }));
 
     await withMockedOpenAiMemoryPlugin({
-      ensureGlobalUndiciEnvProxyDispatcher,
+      onEmbeddingRequest,
       embeddingsCreate,
       loadLanceDbModule,
       run: async (dynamicMemoryPlugin) => {
@@ -866,7 +866,7 @@ describe("memory plugin e2e", () => {
 
   test("returns unavailable when memory_recall embedding does not settle", async () => {
     vi.useFakeTimers();
-    const ensureGlobalUndiciEnvProxyDispatcher = vi.fn();
+    const onEmbeddingRequest = vi.fn();
     const post = vi.fn(() => new Promise(() => {}));
     const loadLanceDbModule = vi.fn(async () => ({
       connect: vi.fn(async () => ({
@@ -883,7 +883,7 @@ describe("memory plugin e2e", () => {
 
     try {
       await withMockedOpenAiMemoryPlugin({
-        ensureGlobalUndiciEnvProxyDispatcher,
+        onEmbeddingRequest,
         openAiPost: post,
         loadLanceDbModule,
         run: async (dynamicMemoryPlugin) => {
@@ -943,7 +943,7 @@ describe("memory plugin e2e", () => {
   });
 
   test("normalizes signed decimal CLI limits through the shared parser", async () => {
-    const ensureGlobalUndiciEnvProxyDispatcher = vi.fn();
+    const onEmbeddingRequest = vi.fn();
     const toArray = vi.fn(async () => []);
     const limit = vi.fn(() => ({ toArray }));
     const select = vi.fn(() => ({ limit, toArray }));
@@ -962,7 +962,7 @@ describe("memory plugin e2e", () => {
     }));
 
     await withMockedOpenAiMemoryPlugin({
-      ensureGlobalUndiciEnvProxyDispatcher,
+      onEmbeddingRequest,
       loadLanceDbModule,
       run: async (dynamicMemoryPlugin) => {
         const registerCli = vi.fn();
@@ -1051,7 +1051,7 @@ describe("memory plugin e2e", () => {
     const embeddingsCreate = vi.fn(async () => ({
       data: [{ embedding: [0.1, 0.2, 0.3] }],
     }));
-    const ensureGlobalUndiciEnvProxyDispatcher = vi.fn();
+    const onEmbeddingRequest = vi.fn();
     const toArray = vi.fn(async () => [
       {
         id: "memory-1",
@@ -1080,7 +1080,7 @@ describe("memory plugin e2e", () => {
     }));
 
     await withMockedOpenAiMemoryPlugin({
-      ensureGlobalUndiciEnvProxyDispatcher,
+      onEmbeddingRequest,
       embeddingsCreate,
       loadLanceDbModule,
       run: async (dynamicMemoryPlugin) => {
@@ -1131,7 +1131,7 @@ describe("memory plugin e2e", () => {
         );
 
         expect(loadLanceDbModule).toHaveBeenCalledTimes(1);
-        expect(ensureGlobalUndiciEnvProxyDispatcher).toHaveBeenCalledOnce();
+        expect(onEmbeddingRequest).toHaveBeenCalledOnce();
         expect(embeddingsCreate).toHaveBeenCalledWith({
           model: "text-embedding-3-small",
           input: expectedRecallQuery,
@@ -1165,7 +1165,7 @@ describe("memory plugin e2e", () => {
           );
         }),
     );
-    const ensureGlobalUndiciEnvProxyDispatcher = vi.fn();
+    const onEmbeddingRequest = vi.fn();
     const toArray = vi.fn(() => new Promise(() => {}));
     const limit = vi.fn(() => ({ toArray }));
     const loadLanceDbModule = vi.fn(async () => ({
@@ -1183,7 +1183,7 @@ describe("memory plugin e2e", () => {
 
     try {
       await withMockedOpenAiMemoryPlugin({
-        ensureGlobalUndiciEnvProxyDispatcher,
+        onEmbeddingRequest,
         openAiPost: post,
         loadLanceDbModule,
         run: async (dynamicMemoryPlugin) => {
@@ -1224,7 +1224,7 @@ describe("memory plugin e2e", () => {
           await vi.advanceTimersByTimeAsync(15_000);
 
           await expect(resultPromise).resolves.toBeUndefined();
-          expect(ensureGlobalUndiciEnvProxyDispatcher).toHaveBeenCalledOnce();
+          expect(onEmbeddingRequest).toHaveBeenCalledOnce();
           expect(firstMockArg(post as unknown as MockCallSource, "post path")).toBe("/embeddings");
           const postOptions = firstObjectArg(post as unknown as MockCallSource, "post options", 1);
           expect(postOptions.timeout).toBe(15_000);
@@ -1384,7 +1384,7 @@ describe("memory plugin e2e", () => {
     const embeddingsCreate = vi.fn(async () => ({
       data: [{ embedding: [0.1, 0.2, 0.3] }],
     }));
-    const ensureGlobalUndiciEnvProxyDispatcher = vi.fn();
+    const onEmbeddingRequest = vi.fn();
     const toArray = vi.fn(async () => [
       {
         id: "memory-1",
@@ -1432,7 +1432,7 @@ describe("memory plugin e2e", () => {
     vi.resetModules();
     installMockOpenAiEmbeddingTransport({
       post: (_path, opts) => invokeEmbeddingCreate(embeddingsCreate, opts.body),
-      onRequest: ensureGlobalUndiciEnvProxyDispatcher,
+      onRequest: onEmbeddingRequest,
     });
     vi.doMock("./lancedb-runtime.js", () => ({
       loadLanceDbModule,
@@ -1505,7 +1505,7 @@ describe("memory plugin e2e", () => {
     const embeddingsCreate = vi.fn(async () => ({
       data: [{ embedding: [0.1, 0.2, 0.3] }],
     }));
-    const ensureGlobalUndiciEnvProxyDispatcher = vi.fn();
+    const onEmbeddingRequest = vi.fn();
     const loadLanceDbModule = vi.fn(async () => ({
       connect: vi.fn(async () => ({
         tableNames: vi.fn(async () => ["memories"]),
@@ -1541,7 +1541,7 @@ describe("memory plugin e2e", () => {
     vi.resetModules();
     installMockOpenAiEmbeddingTransport({
       post: (_path, opts) => invokeEmbeddingCreate(embeddingsCreate, opts.body),
-      onRequest: ensureGlobalUndiciEnvProxyDispatcher,
+      onRequest: onEmbeddingRequest,
     });
     vi.doMock("./lancedb-runtime.js", () => ({
       loadLanceDbModule,
@@ -1612,7 +1612,7 @@ describe("memory plugin e2e", () => {
     const embeddingsCreate = vi.fn(async () => ({
       data: [{ embedding: [0.1, 0.2, 0.3] }],
     }));
-    const ensureGlobalUndiciEnvProxyDispatcher = vi.fn();
+    const onEmbeddingRequest = vi.fn();
     const add = vi.fn(async () => undefined);
     const loadLanceDbModule = vi.fn(async () => ({
       connect: vi.fn(async () => ({
@@ -1649,7 +1649,7 @@ describe("memory plugin e2e", () => {
     vi.resetModules();
     installMockOpenAiEmbeddingTransport({
       post: (_path, opts) => invokeEmbeddingCreate(embeddingsCreate, opts.body),
-      onRequest: ensureGlobalUndiciEnvProxyDispatcher,
+      onRequest: onEmbeddingRequest,
     });
     vi.doMock("./lancedb-runtime.js", () => ({
       loadLanceDbModule,
@@ -1765,7 +1765,7 @@ describe("memory plugin e2e", () => {
     const embeddingsCreate = vi.fn(async () => ({
       data: [{ embedding: [0.1, 0.2, 0.3] }],
     }));
-    const ensureGlobalUndiciEnvProxyDispatcher = vi.fn();
+    const onEmbeddingRequest = vi.fn();
     const loadLanceDbModule = vi.fn(async () => ({
       connect: vi.fn(async () => ({
         tableNames: vi.fn(async () => ["memories"]),
@@ -1801,7 +1801,7 @@ describe("memory plugin e2e", () => {
     vi.resetModules();
     installMockOpenAiEmbeddingTransport({
       post: (_path, opts) => invokeEmbeddingCreate(embeddingsCreate, opts.body),
-      onRequest: ensureGlobalUndiciEnvProxyDispatcher,
+      onRequest: onEmbeddingRequest,
     });
     vi.doMock("./lancedb-runtime.js", () => ({
       loadLanceDbModule,
@@ -1860,7 +1860,7 @@ describe("memory plugin e2e", () => {
     const embeddingsCreate = vi.fn(async () => ({
       data: [{ embedding: [0.1, 0.2, 0.3] }],
     }));
-    const ensureGlobalUndiciEnvProxyDispatcher = vi.fn();
+    const onEmbeddingRequest = vi.fn();
     const add = vi.fn(async () => undefined);
     const toArray = vi.fn(async () => []);
     const limit = vi.fn(() => ({ toArray }));
@@ -1882,7 +1882,7 @@ describe("memory plugin e2e", () => {
     vi.resetModules();
     installMockOpenAiEmbeddingTransport({
       post: (_path, opts) => invokeEmbeddingCreate(embeddingsCreate, opts.body),
-      onRequest: ensureGlobalUndiciEnvProxyDispatcher,
+      onRequest: onEmbeddingRequest,
     });
     vi.doMock("./lancedb-runtime.js", () => ({
       loadLanceDbModule,
@@ -1936,7 +1936,7 @@ describe("memory plugin e2e", () => {
       );
 
       expect(loadLanceDbModule).toHaveBeenCalledTimes(1);
-      expect(ensureGlobalUndiciEnvProxyDispatcher).toHaveBeenCalledOnce();
+      expect(onEmbeddingRequest).toHaveBeenCalledOnce();
       expect(embeddingsCreate).toHaveBeenCalledTimes(1);
       expect(embeddingsCreate).toHaveBeenCalledWith({
         model: "text-embedding-3-small",
@@ -1960,7 +1960,7 @@ describe("memory plugin e2e", () => {
     const embeddingsCreate = vi.fn(async () => ({
       data: [{ embedding: [0.1, 0.2, 0.3] }],
     }));
-    const ensureGlobalUndiciEnvProxyDispatcher = vi.fn();
+    const onEmbeddingRequest = vi.fn();
     const add = vi.fn(async () => undefined);
     const toArray = vi.fn(async () => []);
     const limit = vi.fn(() => ({ toArray }));
@@ -1999,7 +1999,7 @@ describe("memory plugin e2e", () => {
     vi.resetModules();
     installMockOpenAiEmbeddingTransport({
       post: (_path, opts) => invokeEmbeddingCreate(embeddingsCreate, opts.body),
-      onRequest: ensureGlobalUndiciEnvProxyDispatcher,
+      onRequest: onEmbeddingRequest,
     });
     vi.doMock("./lancedb-runtime.js", () => ({
       loadLanceDbModule,
@@ -2069,7 +2069,7 @@ describe("memory plugin e2e", () => {
     const embeddingsCreate = vi.fn(async () => ({
       data: [{ embedding: [0.1, 0.2, 0.3] }],
     }));
-    const ensureGlobalUndiciEnvProxyDispatcher = vi.fn();
+    const onEmbeddingRequest = vi.fn();
     const add = vi.fn(async () => undefined);
     const loadLanceDbModule = vi.fn(async () => ({
       connect: vi.fn(async () => ({
@@ -2106,7 +2106,7 @@ describe("memory plugin e2e", () => {
     vi.resetModules();
     installMockOpenAiEmbeddingTransport({
       post: (_path, opts) => invokeEmbeddingCreate(embeddingsCreate, opts.body),
-      onRequest: ensureGlobalUndiciEnvProxyDispatcher,
+      onRequest: onEmbeddingRequest,
     });
     vi.doMock("./lancedb-runtime.js", () => ({
       loadLanceDbModule,
@@ -2178,7 +2178,7 @@ describe("memory plugin e2e", () => {
     const embeddingsCreate = vi.fn(async () => ({
       data: [{ embedding: [0.1, 0.2, 0.3] }],
     }));
-    const ensureGlobalUndiciEnvProxyDispatcher = vi.fn();
+    const onEmbeddingRequest = vi.fn();
     const add = vi.fn(async () => undefined);
     const loadLanceDbModule = vi.fn(async () => ({
       connect: vi.fn(async () => ({
@@ -2215,7 +2215,7 @@ describe("memory plugin e2e", () => {
     vi.resetModules();
     installMockOpenAiEmbeddingTransport({
       post: (_path, opts) => invokeEmbeddingCreate(embeddingsCreate, opts.body),
-      onRequest: ensureGlobalUndiciEnvProxyDispatcher,
+      onRequest: onEmbeddingRequest,
     });
     vi.doMock("./lancedb-runtime.js", () => ({
       loadLanceDbModule,
@@ -2280,7 +2280,7 @@ describe("memory plugin e2e", () => {
       vi.fn(async () => ({
         data: [{ embedding: [0.1, 0.2, 0.3] }],
       }));
-    const ensureGlobalUndiciEnvProxyDispatcher = vi.fn();
+    const onEmbeddingRequest = vi.fn();
     const add = vi.fn(async () => undefined);
     const toArray = vi.fn(async () => overrides?.searchResults ?? []);
     const limit = vi.fn(() => ({ toArray }));
@@ -2302,7 +2302,7 @@ describe("memory plugin e2e", () => {
     vi.resetModules();
     installMockOpenAiEmbeddingTransport({
       post: (_path, opts) => invokeEmbeddingCreate(embeddingsCreate, opts.body),
-      onRequest: ensureGlobalUndiciEnvProxyDispatcher,
+      onRequest: onEmbeddingRequest,
     });
     vi.doMock("./lancedb-runtime.js", () => ({
       loadLanceDbModule,
@@ -2341,7 +2341,7 @@ describe("memory plugin e2e", () => {
       add,
       agentEnd,
       embeddingsCreate,
-      ensureGlobalUndiciEnvProxyDispatcher,
+      onEmbeddingRequest,
       loadLanceDbModule,
       logger,
       sessionEnd,
@@ -2626,7 +2626,7 @@ describe("memory plugin e2e", () => {
       }
       return { data: [{ embedding: [3, 4, ...Array.from({ length: 1023 }, () => 0)] }] };
     });
-    const ensureGlobalUndiciEnvProxyDispatcher = vi.fn();
+    const onEmbeddingRequest = vi.fn();
     const toArray = vi.fn(async () => []);
     const limit = vi.fn(() => ({ toArray }));
     const vectorSearch = vi.fn((_vector?: number[]) => createAgentScopedVectorQuery(limit));
@@ -2657,7 +2657,7 @@ describe("memory plugin e2e", () => {
     });
     installMockOpenAiEmbeddingTransport({
       post,
-      onRequest: ensureGlobalUndiciEnvProxyDispatcher,
+      onRequest: onEmbeddingRequest,
     });
     vi.doMock("./lancedb-runtime.js", () => ({
       loadLanceDbModule,
@@ -2692,11 +2692,11 @@ describe("memory plugin e2e", () => {
       await recallTool.execute("test-call-dims", { query: "hello dimensions" });
 
       expect(loadLanceDbModule).toHaveBeenCalledTimes(1);
-      expect(ensureGlobalUndiciEnvProxyDispatcher).toHaveBeenCalledTimes(2);
+      expect(onEmbeddingRequest).toHaveBeenCalledTimes(2);
       expect(
         expectDefined(
-          ensureGlobalUndiciEnvProxyDispatcher.mock.invocationCallOrder[0],
-          "LanceDB proxy dispatcher invocation",
+          onEmbeddingRequest.mock.invocationCallOrder[0],
+          "LanceDB embedding request invocation",
         ),
       ).toBeLessThan(
         expectDefined(embeddingsCreate.mock.invocationCallOrder[0], "LanceDB embedding invocation"),
@@ -2730,7 +2730,7 @@ describe("memory plugin e2e", () => {
     const embeddingsCreate = vi.fn(async () => ({
       data: [{ embedding: [0.1, 0.2, 0.3] }],
     }));
-    const ensureGlobalUndiciEnvProxyDispatcher = vi.fn();
+    const onEmbeddingRequest = vi.fn();
     const toArray = vi.fn(async () => []);
     const limit = vi.fn(() => ({ toArray }));
     const vectorSearch = vi.fn(() => createAgentScopedVectorQuery(limit));
@@ -2753,7 +2753,7 @@ describe("memory plugin e2e", () => {
     vi.resetModules();
     installMockOpenAiEmbeddingTransport({
       post: (_path, opts) => invokeEmbeddingCreate(embeddingsCreate, opts.body),
-      onRequest: ensureGlobalUndiciEnvProxyDispatcher,
+      onRequest: onEmbeddingRequest,
     });
     vi.doMock("./lancedb-runtime.js", () => ({
       loadLanceDbModule,
@@ -2960,6 +2960,11 @@ describe("memory plugin e2e", () => {
     expect(() => normalizeEmbeddingVector([0.1, Number.NaN])).toThrow(
       "Embedding response contains non-numeric values",
     );
+    const nonFiniteBase64 = Buffer.alloc(Float32Array.BYTES_PER_ELEMENT);
+    nonFiniteBase64.writeFloatLE(Number.NaN);
+    expect(() => normalizeEmbeddingVector(nonFiniteBase64.toString("base64"))).toThrow(
+      "Embedding response contains non-numeric values",
+    );
     expect(() => normalizeEmbeddingVector("abc")).toThrow(
       "Base64 embedding response has invalid byte length",
     );
@@ -3104,7 +3109,7 @@ describe("memory plugin e2e", () => {
     const embeddingsCreate = vi.fn(async () => ({
       data: [{ embedding: [0.1, 0.2, 0.3] }],
     }));
-    const ensureGlobalUndiciEnvProxyDispatcher = vi.fn();
+    const onEmbeddingRequest = vi.fn();
     const add = vi.fn(async () => undefined);
     const toArray = vi.fn(async () => []);
     const limit = vi.fn(() => ({ toArray }));
@@ -3124,7 +3129,7 @@ describe("memory plugin e2e", () => {
     }));
 
     await withMockedOpenAiMemoryPlugin({
-      ensureGlobalUndiciEnvProxyDispatcher,
+      onEmbeddingRequest,
       embeddingsCreate,
       loadLanceDbModule,
       run: async (dynamicMemoryPlugin) => {
@@ -3191,7 +3196,7 @@ describe("memory plugin e2e", () => {
         });
 
         expect(stored.details?.action).toBe("created");
-        expect(ensureGlobalUndiciEnvProxyDispatcher).toHaveBeenCalledOnce();
+        expect(onEmbeddingRequest).toHaveBeenCalledOnce();
         expect(embeddingsCreate).toHaveBeenCalledWith({
           model: "text-embedding-3-small",
           input: "The user prefers concise replies",

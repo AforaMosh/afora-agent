@@ -431,6 +431,12 @@ allowlist such as `["all"]`.
 | `secrets.requireManagedProviders` | Config SecretRefs and `secrets.providers.*` declarations | Set to `true` to require SecretRefs to point at declared providers.     |
 | `secrets.denySources`             | Secret provider sources and SecretRef sources            | Deny sources such as `exec`, `file`, or another configured source name. |
 
+The retired `secrets.allowInsecureProviders` rule could not produce evidence
+after its underlying provider flags were removed. Existing policy files that
+contain it fail closed as unsupported until an operator removes the rule.
+OpenClaw does not remove it automatically because that would silently change
+the authored policy intent and attestation hash.
+
 #### Exec approvals
 
 Exec-approvals checks read the runtime `exec_approvals_config` singleton row in
@@ -752,7 +758,7 @@ Example JSON output:
       }
     ]
   },
-  "checksRun": 30,
+  "checksRun": 67,
   "checksSkipped": 0,
   "findings": []
 }

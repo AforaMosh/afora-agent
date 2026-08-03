@@ -2,6 +2,7 @@ import { Buffer } from "node:buffer";
 import type { AgentToolResult } from "openclaw/plugin-sdk/agent-core";
 import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
 import { formatErrorMessage, toErrorObject } from "openclaw/plugin-sdk/error-runtime";
+import { withTrustedEnvProxyGuardedFetchMode } from "openclaw/plugin-sdk/fetch-runtime";
 import { resolveGlobalSingleton } from "openclaw/plugin-sdk/global-singleton";
 import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
 import { canonicalizeBase64 } from "openclaw/plugin-sdk/media-runtime";
@@ -9,6 +10,7 @@ import type { MemoryEmbeddingProvider } from "openclaw/plugin-sdk/memory-core-ho
 import { resolveTimerTimeoutMs } from "openclaw/plugin-sdk/number-runtime";
 import {
   assertOkOrThrowHttpError,
+  executeProviderOperationWithRetry,
   readProviderJsonResponse,
 } from "openclaw/plugin-sdk/provider-http";
 import { fetchWithSsrFGuard } from "openclaw/plugin-sdk/ssrf-runtime";
@@ -22,6 +24,7 @@ const loadMemoryEmbeddingProviderModule = createLazyRuntimeModule(
 const loadMemoryHostCoreModule = createLazyRuntimeModule(
   () => import("openclaw/plugin-sdk/memory-host-core"),
 );
+const DEFAULT_DIRECT_EMBEDDING_TIMEOUT_MS = 10 * 60_000;
 
 export type Embeddings = {
   embed(text: string, options?: { timeoutMs?: number }): Promise<number[]>;
@@ -124,27 +127,50 @@ class OpenAiCompatibleEmbeddings implements Embeddings {
         : {}),
     };
 
-    // Direct URL overrides are not registered local-provider trust boundaries. Keep
-    // strict SSRF policy here; private endpoints belong behind provider adapters.
-    const { response, release } = await fetchWithSsrFGuard({
-      url: `${this.baseUrl}/embeddings`,
-      init: {
-        method: "POST",
-        headers: {
-          accept: "application/json",
-          authorization: `Bearer ${this.apiKey}`,
-          "content-type": "application/json",
-        },
-        body: JSON.stringify(params),
+    const explicitTimeoutMs = request.options?.timeoutMs;
+    const hasExplicitTimeout =
+      typeof explicitTimeoutMs === "number" &&
+      Number.isFinite(explicitTimeoutMs) &&
+      explicitTimeoutMs > 0;
+    return await executeProviderOperationWithRetry({
+      provider: "openai-compatible-embeddings",
+      stage: "create",
+      retry: hasExplicitTimeout
+        ? false
+        : {
+            attempts: 3,
+            baseDelayMs: 500,
+            maxDelayMs: 1_000,
+            shouldRetry: ({ error }) => isRetryableEmbeddingRequestError(error),
+          },
+      operation: async () => {
+        // Direct URL overrides are not registered local-provider trust boundaries. Keep
+        // guarded host policy while preserving operator-managed proxy egress.
+        const { response, release } = await fetchWithSsrFGuard(
+          withTrustedEnvProxyGuardedFetchMode({
+            url: `${this.baseUrl}/embeddings`,
+            init: {
+              method: "POST",
+              headers: {
+                accept: "application/json",
+                authorization: `Bearer ${this.apiKey}`,
+                "content-type": "application/json",
+              },
+              body: JSON.stringify(params),
+            },
+            timeoutMs: hasExplicitTimeout
+              ? explicitTimeoutMs
+              : DEFAULT_DIRECT_EMBEDDING_TIMEOUT_MS,
+            auditContext: "memory-lancedb:openai-compatible-embeddings",
+          }),
+        );
+        try {
+          return await readEmbeddingResponse(response);
+        } finally {
+          await release();
+        }
       },
-      timeoutMs: request.options?.timeoutMs,
-      auditContext: "memory-lancedb:openai-compatible-embeddings",
     });
-    try {
-      return await readEmbeddingResponse(response);
-    } finally {
-      await release();
-    }
   }
 }
 
@@ -154,6 +180,28 @@ async function readEmbeddingResponse(response: Response): Promise<EmbeddingCreat
     response,
     "memory-lancedb embeddings",
   );
+}
+
+function isRetryableEmbeddingRequestError(error: unknown): boolean {
+  let current: unknown = error;
+  for (let depth = 0; depth < 3 && current !== undefined; depth += 1) {
+    const record = asRecord(current);
+    const status = typeof record?.status === "number" ? record.status : undefined;
+    if (status !== undefined) {
+      return status === 408 || status === 409 || status === 429 || status >= 500;
+    }
+    const code = typeof record?.code === "string" ? record.code : "";
+    const message = formatErrorMessage(current);
+    if (
+      /^(?:ECONNRESET|ECONNREFUSED|EHOSTUNREACH|ENETUNREACH|ENOTFOUND|ETIMEDOUT)$/u.test(code) ||
+      /^UND_ERR_/u.test(code) ||
+      /\b(?:fetch failed|timed out|timeout)\b/iu.test(message)
+    ) {
+      return true;
+    }
+    current = record?.cause;
+  }
+  return false;
 }
 
 function isEmbeddingDimensionsRejectedError(error: unknown): boolean {
@@ -493,6 +541,9 @@ export function normalizeEmbeddingVector(value: unknown): number[] {
     const floats: number[] = [];
     for (let offset = 0; offset < bytes.byteLength; offset += Float32Array.BYTES_PER_ELEMENT) {
       floats.push(view.getFloat32(offset, true));
+    }
+    if (!floats.every(Number.isFinite)) {
+      throw new Error("Embedding response contains non-numeric values");
     }
     return floats;
   }

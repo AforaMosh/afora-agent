@@ -613,7 +613,7 @@ describe("registerPolicyDoctorChecks", () => {
     const cfg = configWithPolicy({
       secrets: {
         providers: {
-          vault: { source: "file", path: ".secrets.json", allowInsecurePath: true },
+          vault: { source: "file", path: ".secrets.json" },
           command: { source: "exec", command: "vault", args: ["read", "openai/api-key"] },
         },
       },
