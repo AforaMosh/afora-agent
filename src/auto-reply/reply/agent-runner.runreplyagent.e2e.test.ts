@@ -748,6 +748,55 @@ describe("runReplyAgent active steering", () => {
     expect(onAdopted).not.toHaveBeenCalled();
   });
 
+  it("queues a compacting steer until the active owner clears", async () => {
+    state.queueEmbeddedAgentMessageMock.mockReturnValueOnce({
+      queued: false,
+      sessionId: "session",
+      reason: "compacting",
+      target: "none",
+      gatewayHealth: "live",
+    });
+    const active = createReplyOperation({
+      sessionKey: "main",
+      sessionId: "session",
+      resetTriggered: false,
+    });
+    active.setPhase("preflight_compacting");
+    const { followupRun, run } = createMinimalRun({
+      isActive: true,
+      isRunActive: () => true,
+      isStreaming: true,
+      shouldSteer: true,
+      resolvedQueueMode: "steer",
+    });
+
+    try {
+      await expect(run()).resolves.toBeUndefined();
+
+      expect(vi.mocked(enqueueFollowupRun)).toHaveBeenCalledTimes(1);
+      const enqueueArgs = mockCallArgs(vi.mocked(enqueueFollowupRun), "enqueue follow-up");
+      const queued = enqueueArgs[1] as FollowupRun;
+      expect(queued).toBe(followupRun);
+      expect(vi.mocked(scheduleFollowupDrain)).not.toHaveBeenCalled();
+      expect(state.runEmbeddedAgentMock).not.toHaveBeenCalled();
+
+      active.complete();
+
+      expect(vi.mocked(scheduleFollowupDrain)).toHaveBeenCalledTimes(1);
+      const drainArgs = mockCallArgs(vi.mocked(scheduleFollowupDrain), "schedule follow-up drain");
+      const runFollowup = drainArgs[1];
+      if (typeof runFollowup !== "function") {
+        throw new Error("expected scheduled follow-up runner");
+      }
+      await runFollowup(queued);
+      expect(state.runEmbeddedAgentMock).toHaveBeenCalledTimes(1);
+    } finally {
+      if (active.result === null) {
+        active.complete();
+      }
+    }
+  });
+
   it("admits an ordinary rejected steering turn with durable recovery state", async () => {
     const sessionEntry: SessionEntry = {
       sessionId: "session",
