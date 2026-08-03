@@ -759,7 +759,13 @@ Before a first run, check the wrapper from the repo root:
 pnpm crabbox:run -- --help | sed -n '1,120p'
 ```
 
-The repo wrapper refuses a stale Crabbox binary that does not advertise the selected provider, and Blacksmith-backed runs require Crabbox 0.22.0 or newer so the wrapper gets the current Testbox sync, queue, and cleanup behavior. In Codex worktrees or linked/sparse checkouts, avoid the local `pnpm crabbox:run` script because pnpm may reconcile dependencies before Crabbox starts; invoke the node wrapper directly instead:
+The repo wrapper refuses a stale Crabbox binary that does not advertise the
+selected provider. Blacksmith-backed runs require Crabbox 0.41.0 or newer so
+admission can use all-organization inventory and a nonterminal active Testbox
+count, in addition to the current sync, queue, and cleanup behavior. In Codex
+worktrees or linked/sparse checkouts, avoid the local `pnpm crabbox:run` script
+because pnpm may reconcile dependencies before Crabbox starts; invoke the node
+wrapper directly instead:
 
 ```bash
 node scripts/crabbox-wrapper.mjs run --provider blacksmith-testbox --timing-json --shell -- "pnpm test <path-or-filter>"
