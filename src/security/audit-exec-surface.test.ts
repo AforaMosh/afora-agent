@@ -218,6 +218,31 @@ describe("security audit exec surface findings", () => {
     expect(hasFinding("security.exposure.open_channels_with_exec", "warn", findings)).toBe(true);
   });
 
+  it.each([
+    {
+      name: "account override",
+      channels: {
+        discord: { groupPolicy: "allowlist", accounts: { work: { groupPolicy: "open" } } },
+      },
+      path: "channels.discord.accounts.work.groupPolicy",
+    },
+    {
+      name: "legacy DM policy",
+      channels: { discord: { dm: { policy: "open" } } },
+      path: "channels.discord.dm.policy",
+    },
+  ])("uses canonical open-inbound resolution for $name", async ({ channels, path }) => {
+    const findings = await collectSecurityAuditFindings({
+      channels,
+      tools: { exec: { mode: "allowlist", host: "gateway" } },
+    } as unknown as OpenClawConfig);
+    const finding = findings.find(
+      (entry) => entry.checkId === "security.exposure.open_channels_with_exec",
+    );
+
+    expect(finding?.detail).toContain(path);
+  });
+
   it("escalates open channel exec exposure when full exec is configured", async () => {
     const findings = await collectSecurityAuditFindings({
       channels: {

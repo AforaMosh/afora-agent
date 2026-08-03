@@ -17,6 +17,7 @@ import { passesManifestOwnerBasePolicy } from "../plugins/manifest-owner-policy.
 import { hasConfiguredWebSearchCredential } from "../plugins/web-search-credential-presence.js";
 import { inferParamBFromIdOrName } from "../shared/model-param-b.js";
 import { collectAuditModelRefs } from "./audit-model-refs.js";
+import { listConfiguredOpenInboundPolicyPaths } from "./audit-open-inbound.js";
 
 /** Lightweight audit finding shape used by summary-only audit helpers. */
 type SecurityAuditFinding = {
@@ -33,12 +34,13 @@ function summarizeGroupPolicy(cfg: OpenClawConfig): {
   open: number;
   allowlist: number;
   other: number;
+  openDm: number;
 } {
+  const openPolicies = listConfiguredOpenInboundPolicyPaths(cfg);
   const channels = cfg.channels as Record<string, unknown> | undefined;
   if (!channels || typeof channels !== "object") {
-    return { open: 0, allowlist: 0, other: 0 };
+    return { open: 0, allowlist: 0, other: 0, openDm: 0 };
   }
-  let open = 0;
   let allowlist = 0;
   let other = 0;
   for (const value of Object.values(channels)) {
@@ -47,15 +49,18 @@ function summarizeGroupPolicy(cfg: OpenClawConfig): {
     }
     const section = value as Record<string, unknown>;
     const policy = section.groupPolicy;
-    if (policy === "open") {
-      open += 1;
-    } else if (policy === "allowlist") {
+    if (policy === "allowlist") {
       allowlist += 1;
-    } else {
+    } else if (policy !== "open") {
       other += 1;
     }
   }
-  return { open, allowlist, other };
+  return {
+    open: openPolicies.filter((entry) => entry.endsWith(".groupPolicy")).length,
+    allowlist,
+    other,
+    openDm: openPolicies.filter((entry) => !entry.endsWith(".groupPolicy")).length,
+  };
 }
 
 function extractAgentIdFromSource(source: string): string | null {
@@ -141,6 +146,8 @@ export function collectAttackSurfaceSummaryFindings(cfg: OpenClawConfig): Securi
 
   const detail =
     `groups: open=${group.open}, allowlist=${group.allowlist}` +
+    `\n` +
+    `direct messages: open=${group.openDm}` +
     `\n` +
     `tools.elevated: ${elevated ? "enabled" : "disabled"}` +
     `\n` +

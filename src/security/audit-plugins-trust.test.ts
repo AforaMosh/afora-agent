@@ -143,22 +143,43 @@ vi.mock("../agents/sandbox/config.js", () => ({
   resolveSandboxConfigForAgent: () => ({ mode: "off" }),
 }));
 
-vi.mock("../agents/sandbox/tool-policy.js", () => ({
-  resolveSandboxToolPolicyForAgent: () => undefined,
+vi.mock("../agents/agent-tools.policy.js", () => ({
+  resolveConfiguredToolPolicies: ({
+    cfg,
+    agentTools,
+  }: {
+    cfg: OpenClawConfig;
+    agentTools?: OpenClawConfig["tools"];
+  }) => {
+    const profile = agentTools?.profile ?? cfg.tools?.profile;
+    const alsoAllow = agentTools?.alsoAllow ?? cfg.tools?.alsoAllow ?? [];
+    const profileAllow =
+      profile === "coding"
+        ? ["read", "write", "edit", "apply_patch", "exec", "process"]
+        : profile === "minimal"
+          ? ["session_status"]
+          : undefined;
+    const policies = [
+      profileAllow ? { allow: [...profileAllow, ...alsoAllow] } : undefined,
+      cfg.tools?.allow || cfg.tools?.deny
+        ? { allow: cfg.tools.allow, deny: cfg.tools.deny }
+        : undefined,
+      agentTools?.allow || agentTools?.deny
+        ? { allow: agentTools.allow, deny: agentTools.deny }
+        : undefined,
+    ];
+    return policies.filter(Boolean);
+  },
 }));
 
 vi.mock("../agents/tool-policy-match.js", () => ({
-  isToolAllowedByPolicies: (_tool: string, policies: unknown[]) =>
-    policies.every((policy) => policy == null),
-}));
-
-vi.mock("../agents/tool-policy.js", () => ({
-  resolveToolProfilePolicy: (profile: unknown) =>
-    profile === "coding" || profile === "minimal" ? {} : undefined,
-}));
-
-vi.mock("../agents/sandbox-tool-policy.js", () => ({
-  pickSandboxToolPolicy: () => undefined,
+  isToolAllowedByPolicies: (tool: string, policies: Array<{ allow?: string[]; deny?: string[] }>) =>
+    policies.every((policy) => {
+      if (policy.deny?.includes(tool) || policy.deny?.includes("*")) {
+        return false;
+      }
+      return !policy.allow?.length || policy.allow.includes(tool) || policy.allow.includes("*");
+    }),
 }));
 
 describe("security audit install metadata findings", () => {
@@ -568,6 +589,20 @@ describe("security audit extension tool reachability findings", () => {
               (finding) => finding.checkId === "plugins.tools_reachable_permissive_policy",
             ),
           ).toBe(false);
+        },
+      },
+      {
+        name: "flags restrictive profiles widened with the plugin group",
+        cfg: {
+          plugins: { allow: ["some-plugin"] },
+          tools: { profile: "coding", alsoAllow: ["group:plugins"] },
+        } satisfies OpenClawConfig,
+        assert: (findings: Awaited<ReturnType<typeof runSharedExtensionsAudit>>) => {
+          expect(
+            findings.some(
+              (finding) => finding.checkId === "plugins.tools_reachable_permissive_policy",
+            ),
+          ).toBe(true);
         },
       },
       {

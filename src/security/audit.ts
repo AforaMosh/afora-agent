@@ -50,6 +50,7 @@ import {
   type McporterRegistryReadOutcome,
   type McporterRegistryRejectReason,
 } from "./audit-mcporter-registry.js";
+import { listConfiguredOpenInboundPolicyPaths } from "./audit-open-inbound.js";
 import type {
   SecurityAuditFinding,
   SecurityAuditReport,
@@ -716,7 +717,7 @@ function collectExecRuntimeFindings(cfg: OpenClawConfig): SecurityAuditFinding[]
   );
   const fullExecScopes = effectiveExecScopes.filter((entry) => entry.security === "full");
   const execEnabledScopes = effectiveExecScopes.filter((entry) => entry.security !== "deny");
-  const openExecSurfacePaths = collectOpenExecSurfacePaths(cfg);
+  const openExecSurfacePaths = listConfiguredOpenInboundPolicyPaths(cfg);
 
   if (fullExecScopes.length > 0) {
     findings.push({
@@ -1156,41 +1157,6 @@ async function collectAgentSkillMcpBoundaryFindings(params: {
       'For agents that need per-agent MCP isolation, set their exec policy to security="deny" or a tight allowlist, run them in sandbox/container/OS-user isolation where the global MCP registry is not readable, split sensitive MCP servers into a separate gateway/trust boundary, or require per-agent MCP credentials at the server layer.',
   });
   return findings;
-}
-
-function collectOpenExecSurfacePaths(cfg: OpenClawConfig): string[] {
-  const channels = asNullableRecord(cfg.channels);
-  if (!channels) {
-    return [];
-  }
-  const hits = new Set<string>();
-  const seen = new WeakSet<object>();
-  const visit = (value: unknown, scope: string) => {
-    const record = asNullableRecord(value);
-    if (!record || seen.has(record)) {
-      return;
-    }
-    seen.add(record);
-    if (record.groupPolicy === "open") {
-      hits.add(`${scope}.groupPolicy`);
-    }
-    if (record.dmPolicy === "open") {
-      hits.add(`${scope}.dmPolicy`);
-    }
-    for (const [key, nested] of Object.entries(record)) {
-      if (key === "groups" || key === "accounts" || key === "dms") {
-        visit(nested, `${scope}.${key}`);
-        continue;
-      }
-      if (asNullableRecord(nested)) {
-        visit(nested, `${scope}.${key}`);
-      }
-    }
-  };
-  for (const [channelId, channelValue] of Object.entries(channels)) {
-    visit(channelValue, `channels.${channelId}`);
-  }
-  return Array.from(hits).toSorted();
 }
 
 function collectAutoAllowSkillsHits(approvals: ExecApprovalsFile): string[] {

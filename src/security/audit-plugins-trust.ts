@@ -20,31 +20,23 @@ import { createLazyPromise } from "../shared/lazy-runtime.js";
 import type { SecurityAuditFinding } from "./audit.types.js";
 import { listInstalledPluginDirs } from "./installed-plugin-dirs.js";
 
-type SandboxToolPolicy = import("../agents/sandbox/types.js").SandboxToolPolicy;
-
 type PluginTrustPolicyDeps = {
+  resolveConfiguredToolPolicies: typeof import("../agents/agent-tools.policy.js").resolveConfiguredToolPolicies;
   isToolAllowedByPolicies: typeof import("../agents/tool-policy-match.js").isToolAllowedByPolicies;
-  pickSandboxToolPolicy: typeof import("../agents/sandbox-tool-policy.js").pickSandboxToolPolicy;
   resolveSandboxConfigForAgent: typeof import("../agents/sandbox/config.js").resolveSandboxConfigForAgent;
-  resolveSandboxToolPolicyForAgent: typeof import("../agents/sandbox/tool-policy.js").resolveSandboxToolPolicyForAgent;
-  resolveToolProfilePolicy: typeof import("../agents/tool-policy.js").resolveToolProfilePolicy;
 };
 
 /** Lazily load tool-policy helpers so basic security imports avoid agent policy modules. */
 const loadPluginTrustPolicyDeps = createLazyPromise(
   () =>
     Promise.all([
+      import("../agents/agent-tools.policy.js"),
       import("../agents/sandbox/config.js"),
-      import("../agents/sandbox/tool-policy.js"),
       import("../agents/tool-policy-match.js"),
-      import("../agents/tool-policy.js"),
-      import("../agents/sandbox-tool-policy.js"),
-    ]).then(([sandboxConfig, sandboxToolPolicy, toolPolicyMatch, toolPolicy, auditToolPolicy]) => ({
+    ]).then(([agentToolPolicy, sandboxConfig, toolPolicyMatch]) => ({
+      resolveConfiguredToolPolicies: agentToolPolicy.resolveConfiguredToolPolicies,
       isToolAllowedByPolicies: toolPolicyMatch.isToolAllowedByPolicies,
-      pickSandboxToolPolicy: auditToolPolicy.pickSandboxToolPolicy,
       resolveSandboxConfigForAgent: sandboxConfig.resolveSandboxConfigForAgent,
-      resolveSandboxToolPolicyForAgent: sandboxToolPolicy.resolveSandboxToolPolicyForAgent,
-      resolveToolProfilePolicy: toolPolicy.resolveToolProfilePolicy,
     })),
   { cacheRejections: true },
 );
@@ -128,28 +120,6 @@ async function isChannelPluginConfigured(
   return false;
 }
 
-function resolveToolPolicies(params: {
-  cfg: OpenClawConfig;
-  deps: PluginTrustPolicyDeps;
-  agentTools?: AgentToolsConfig;
-  sandboxMode?: "off" | "non-main" | "all";
-  agentId?: string | null;
-}): Array<SandboxToolPolicy | undefined> {
-  const profile = params.agentTools?.profile ?? params.cfg.tools?.profile;
-  const profilePolicy = params.deps.resolveToolProfilePolicy(profile);
-  const policies: Array<SandboxToolPolicy | undefined> = [
-    profilePolicy,
-    params.deps.pickSandboxToolPolicy(params.cfg.tools ?? undefined),
-    params.deps.pickSandboxToolPolicy(params.agentTools),
-  ];
-  if (params.sandboxMode === "all") {
-    policies.push(
-      params.deps.resolveSandboxToolPolicyForAgent(params.cfg, params.agentId ?? undefined),
-    );
-  }
-  return policies;
-}
-
 function normalizePluginIdSet(entries: string[]): Set<string> {
   return new Set(
     entries
@@ -196,48 +166,6 @@ function resolveEnabledExtensionPluginIds(params: {
     enabled.push(normalizedId);
   }
   return enabled;
-}
-
-function collectAllowEntries(config?: { allow?: string[]; alsoAllow?: string[] }): string[] {
-  const out: string[] = [];
-  if (Array.isArray(config?.allow)) {
-    out.push(...config.allow);
-  }
-  if (Array.isArray(config?.alsoAllow)) {
-    out.push(...config.alsoAllow);
-  }
-  return out
-    .map((entry) => normalizeOptionalLowercaseString(entry))
-    .filter((entry): entry is string => Boolean(entry));
-}
-
-function hasExplicitPluginAllow(params: {
-  allowEntries: string[];
-  enabledPluginIds: Set<string>;
-}): boolean {
-  return params.allowEntries.some(
-    (entry) => entry === "group:plugins" || params.enabledPluginIds.has(entry),
-  );
-}
-
-function hasProviderPluginAllow(params: {
-  byProvider?: Record<string, { allow?: string[]; alsoAllow?: string[]; deny?: string[] }>;
-  enabledPluginIds: Set<string>;
-}): boolean {
-  if (!params.byProvider) {
-    return false;
-  }
-  for (const policy of Object.values(params.byProvider)) {
-    if (
-      hasExplicitPluginAllow({
-        allowEntries: collectAllowEntries(policy),
-        enabledPluginIds: params.enabledPluginIds,
-      })
-    ) {
-      return true;
-    }
-  }
-  return false;
 }
 
 function isPinnedRegistrySpec(spec: string): boolean {
@@ -352,7 +280,11 @@ export async function collectPluginsTrustFindings(params: {
     });
     if (enabledExtensionPluginIds.length > 0) {
       const deps = await loadPluginTrustPolicyDeps();
-      const enabledPluginSet = new Set(enabledExtensionPluginIds);
+      const pluginPolicyProbes = [
+        "__openclaw_plugin_probe__",
+        "group:plugins",
+        ...enabledExtensionPluginIds,
+      ];
       const contexts: Array<{
         label: string;
         agentId?: string;
@@ -371,39 +303,16 @@ export async function collectPluginsTrustFindings(params: {
 
       const permissiveContexts: string[] = [];
       for (const context of contexts) {
-        const profile = context.tools?.profile ?? params.cfg.tools?.profile;
-        const restrictiveProfile = Boolean(deps.resolveToolProfilePolicy(profile));
         const sandboxMode = deps.resolveSandboxConfigForAgent(params.cfg, context.agentId).mode;
-        // Probe with a synthetic plugin tool id: broad allow policies will allow
-        // it, while restrictive profiles or explicit allowlists should not.
-        const policies = resolveToolPolicies({
+        const policies = deps.resolveConfiguredToolPolicies({
           cfg: params.cfg,
-          deps,
           agentTools: context.tools,
           sandboxMode,
-          agentId: context.agentId,
+          agentId: context.agentId ?? null,
         });
-        const broadPolicy = deps.isToolAllowedByPolicies("__openclaw_plugin_probe__", policies);
-        const explicitPluginAllow =
-          !restrictiveProfile &&
-          (hasExplicitPluginAllow({
-            allowEntries: collectAllowEntries(params.cfg.tools),
-            enabledPluginIds: enabledPluginSet,
-          }) ||
-            hasProviderPluginAllow({
-              byProvider: params.cfg.tools?.byProvider,
-              enabledPluginIds: enabledPluginSet,
-            }) ||
-            hasExplicitPluginAllow({
-              allowEntries: collectAllowEntries(context.tools),
-              enabledPluginIds: enabledPluginSet,
-            }) ||
-            hasProviderPluginAllow({
-              byProvider: context.tools?.byProvider,
-              enabledPluginIds: enabledPluginSet,
-            }));
-
-        if (broadPolicy || explicitPluginAllow) {
+        // Runtime expands group/plugin ids to concrete plugin tools after policy
+        // resolution, so probe those identifiers as well as broad allow rules.
+        if (pluginPolicyProbes.some((probe) => deps.isToolAllowedByPolicies(probe, policies))) {
           permissiveContexts.push(context.label);
         }
       }
