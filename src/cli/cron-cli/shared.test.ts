@@ -1,6 +1,7 @@
 // Cron shared tests cover shared cron CLI parsing, display, and error helpers.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { visibleWidth } from "../../../packages/terminal-core/src/ansi.js";
+import * as terminalTheme from "../../../packages/terminal-core/src/theme.js";
 import type { CronJob } from "../../cron/types.js";
 import type { RuntimeEnv } from "../../runtime.js";
 import { resolveCronCreateScheduleFromArgs } from "./schedule-options.js";
@@ -276,9 +277,85 @@ describe("printCronList", () => {
     expectLogsToInclude(logs, "(stagger 5m)");
   });
 
-  it("marks trigger schedules and shows evaluation details", () => {
+  it.each([
+    {
+      label: "fixed interval",
+      schedule: { kind: "every" as const, everyMs: 30_000 },
+      expected: "every 30s+trigger",
+    },
+    {
+      label: "cron expression",
+      schedule: { kind: "cron" as const, expr: "*/5 * * * *", staggerMs: 0 },
+      expected: "cron */5 * * * *+trigger",
+    },
+    {
+      label: "timezone cron expression",
+      schedule: {
+        kind: "cron" as const,
+        expr: "*/5 * * * *",
+        tz: "America/Los_Angeles",
+        staggerMs: 0,
+      },
+      expected: "cron */5 * * * * @ America/Los_Angeles+trigger",
+      listExpected: "cron */5 * * ...+trigger (exact)",
+    },
+    {
+      label: "staggered timezone cron expression",
+      schedule: {
+        kind: "cron" as const,
+        expr: "0 * * * *",
+        tz: "America/Los_Angeles",
+        staggerMs: 300_000,
+      },
+      expected: "cron 0 * * * * @ America/Los_Angeles+trigger",
+      listExpected: "cron 0 *...+trigger (stagger 5m)",
+    },
+    {
+      label: "stream source",
+      schedule: { kind: "stream" as const, command: ["echo"] },
+      expected: "stream echo+trigger",
+    },
+    {
+      label: "stream source with a working directory",
+      schedule: { kind: "stream" as const, command: ["echo"], cwd: "/r" },
+      expected: "stream echo @ /r+trigger",
+    },
+    {
+      label: "stream source with an unfinished command escape",
+      schedule: {
+        kind: "stream" as const,
+        command: ["printf", `${String.fromCharCode(0x1b)}[`],
+      },
+      expected: "stream printf +trigger",
+    },
+    {
+      label: "stream source with an unfinished working-directory escape",
+      schedule: {
+        kind: "stream" as const,
+        command: ["echo"],
+        cwd: `/repo${String.fromCharCode(0x1b)}[`,
+      },
+      expected: "stream echo @ /repo+trigger",
+    },
+    {
+      label: "documented long stream source",
+      schedule: { kind: "stream" as const, command: ["node", "scripts/build-events.mjs"] },
+      expected: "stream node scripts/build-events.mjs+trigger",
+      listExpected: "stream node scripts/b...+trigger",
+    },
+    {
+      label: "documented long stream source with a working directory",
+      schedule: {
+        kind: "stream" as const,
+        command: ["node", "scripts/build-events.mjs"],
+        cwd: "/repo",
+      },
+      expected: "stream node scripts/build-events.mjs @ /repo+trigger",
+      listExpected: "stream node scripts/b...+trigger",
+    },
+  ])("marks $label condition triggers in both human views", ({ schedule, expected, ...row }) => {
     const job = createBaseJob({
-      schedule: { kind: "every", everyMs: 30_000 },
+      schedule,
       trigger: { script: "json({ fire: true })", once: true },
       state: {
         triggerEvalCount: 4,
@@ -289,12 +366,285 @@ describe("printCronList", () => {
 
     const list = createRuntimeLogCapture();
     printCronList([job], list.runtime);
-    expectLogsToInclude(list.logs, "every 30s+trigger");
+    expectLogsToInclude(list.logs, "listExpected" in row ? row.listExpected : expected);
 
     const show = createRuntimeLogCapture();
     printCronShow(job, show.runtime);
+    expectLogsToInclude(show.logs, `schedule: ${expected}`);
+    expect(show.logs.find((line) => line.startsWith("schedule: "))).not.toContain(
+      String.fromCharCode(0x1b),
+    );
     expectLogsToInclude(show.logs, "trigger: once=yes; evals=4;");
   });
+
+  it.each([
+    {
+      label: "trust-disabled source",
+      streamStatus: "disabled" as const,
+      streamError: "stream sources require cron.triggers.enabled=true",
+      lastRunStatus: undefined,
+      expectedStatus: "idle (disabled)",
+      jsonStatus: "idle",
+    },
+    {
+      label: "globally disabled source",
+      streamStatus: "disabled" as const,
+      streamError: "cron is disabled",
+      lastRunStatus: "ok" as const,
+      expectedStatus: "ok (disabled)",
+      jsonStatus: "ok",
+    },
+    {
+      label: "restarting source",
+      streamStatus: "restarting" as const,
+      streamError: "stream source exited (exit, code 1)",
+      lastRunStatus: "ok" as const,
+      expectedStatus: "ok (restarting)",
+      jsonStatus: "ok",
+    },
+  ])(
+    "shows $label lifecycle and remediation without changing JSON status",
+    ({ streamStatus, streamError, lastRunStatus, expectedStatus, jsonStatus }) => {
+      const job = createBaseJob({
+        id: "stream-lifecycle-job",
+        schedule: { kind: "stream", command: ["echo"] },
+        sessionTarget: "isolated",
+        payload: { kind: "agentTurn", message: "handle stream events" },
+        state: { streamStatus, streamError, lastRunStatus },
+      });
+
+      const list = createRuntimeLogCapture();
+      printCronList([job], list.runtime);
+      const header = list.logs[0] ?? "";
+      const row = list.logs[1] ?? "";
+      expect(row).toContain(expectedStatus);
+      expect(visibleWidth(row.slice(0, row.indexOf("isolated")))).toBe(
+        visibleWidth(header.slice(0, header.indexOf("Target"))),
+      );
+
+      const show = createRuntimeLogCapture();
+      printCronShow(job, show.runtime);
+      expect(show.logs).toContain(`status: ${expectedStatus}`);
+      expect(show.logs).toContain(`stream status: ${streamStatus}`);
+      expect(show.logs).toContain(`stream error: ${streamError}`);
+      expect(show.logs).toContain("last error: -");
+
+      expect(enrichCronJsonWithStatus(job)).toEqual({ ...job, status: jsonStatus });
+      expect(enrichCronJsonWithStatus({ jobs: [job] })).toEqual({
+        jobs: [{ ...job, status: jsonStatus }],
+      });
+    },
+  );
+
+  it("keeps a healthy stream source separate from its payload run status", () => {
+    const job = createBaseJob({
+      schedule: { kind: "stream", command: ["echo"] },
+      state: { streamStatus: "running", lastRunStatus: "ok" },
+    });
+
+    const list = createRuntimeLogCapture();
+    printCronList([job], list.runtime);
+    expect(list.logs[1]).toContain("ok");
+    expect(list.logs[1]).not.toContain("ok (running)");
+
+    const show = createRuntimeLogCapture();
+    printCronShow(job, show.runtime);
+    expect(show.logs).toContain("status: ok");
+    expect(show.logs).toContain("stream status: running");
+    expect(show.logs).toContain("stream error: -");
+    expect(enrichCronJsonWithStatus(job)).toMatchObject({ status: "ok" });
+  });
+
+  it("preserves disabled and active-run precedence for stream-source lifecycle", () => {
+    const disabled = createBaseJob({
+      enabled: false,
+      schedule: { kind: "stream", command: ["echo"] },
+      state: { streamStatus: "disabled", lastRunStatus: "error" },
+    });
+    const disabledShow = createRuntimeLogCapture();
+    printCronShow(disabled, disabledShow.runtime);
+    expect(disabledShow.logs).toContain("status: disabled");
+    expect(disabledShow.logs).toContain("stream status: disabled");
+    expect(enrichCronJsonWithStatus(disabled)).toMatchObject({ status: "disabled" });
+
+    const active = createBaseJob({
+      schedule: { kind: "stream", command: ["echo"] },
+      state: { runningAtMs: Date.now(), streamStatus: "restarting" },
+    });
+    const activeShow = createRuntimeLogCapture();
+    printCronShow(active, activeShow.runtime);
+    expect(activeShow.logs).toContain("status: running (restarting)");
+    expect(activeShow.logs).toContain("stream status: restarting");
+    expect(enrichCronJsonWithStatus(active)).toMatchObject({ status: "running" });
+
+    const activeList = createRuntimeLogCapture();
+    printCronList([active], activeList.runtime);
+    expect(activeList.logs[1]).toContain("run... (restarting)");
+  });
+
+  it("preserves source status when repeated payload failures fill the status column", () => {
+    const job = createBaseJob({
+      schedule: { kind: "stream", command: ["echo"] },
+      state: {
+        lastRunStatus: "error",
+        consecutiveErrors: 12,
+        streamStatus: "disabled",
+        streamError: "cron is disabled",
+      },
+    });
+
+    const list = createRuntimeLogCapture();
+    printCronList([job], list.runtime);
+    expect(list.logs[1]).toContain("error... (disabled)");
+
+    const show = createRuntimeLogCapture();
+    printCronShow(job, show.runtime);
+    expect(show.logs).toContain("status: error (12x) (disabled)");
+    expect(enrichCronJsonWithStatus(job)).toMatchObject({ status: "error" });
+  });
+
+  it.each([
+    {
+      streamStatus: "disabled" as const,
+      lastRunStatus: "ok" as const,
+      enabled: true,
+      severity: "error" as const,
+    },
+    {
+      streamStatus: "restarting" as const,
+      lastRunStatus: "ok" as const,
+      enabled: true,
+      severity: "warn" as const,
+    },
+    {
+      streamStatus: "restarting" as const,
+      lastRunStatus: "error" as const,
+      enabled: true,
+      severity: "error" as const,
+    },
+    {
+      streamStatus: "starting" as const,
+      lastRunStatus: "error" as const,
+      enabled: true,
+      severity: "error" as const,
+    },
+    {
+      streamStatus: "error" as const,
+      lastRunStatus: "error" as const,
+      enabled: false,
+      severity: "error" as const,
+    },
+  ])(
+    "colors a $streamStatus source with an $lastRunStatus run by the highest severity",
+    ({ streamStatus, lastRunStatus, enabled, severity }) => {
+      const rich = vi.spyOn(terminalTheme, "isRich").mockReturnValue(true);
+      const success = vi.spyOn(terminalTheme.theme, "success");
+      const sourceSeverity = vi.spyOn(terminalTheme.theme, severity);
+      try {
+        const job = createBaseJob({
+          enabled,
+          schedule: { kind: "stream", command: ["echo"] },
+          state: {
+            lastRunStatus,
+            streamStatus,
+            ...(streamStatus === "error" ? { streamRestartExhausted: true } : {}),
+          },
+        });
+        const list = createRuntimeLogCapture();
+        printCronList([job], list.runtime);
+
+        const runStatus = enabled ? lastRunStatus : "disabled";
+        const sourceStatus = streamStatus === "error" ? "source" : streamStatus;
+        expect(sourceSeverity).toHaveBeenCalledWith(
+          expect.stringContaining(`${runStatus} (${sourceStatus})`),
+        );
+        expect(success).not.toHaveBeenCalled();
+        expect(enrichCronJsonWithStatus(job)).toMatchObject({ status: runStatus });
+      } finally {
+        sourceSeverity.mockRestore();
+        success.mockRestore();
+        rich.mockRestore();
+      }
+    },
+  );
+
+  it("renders terminal-hostile stream errors as one safe line", () => {
+    const escape = String.fromCharCode(0x1b);
+    const bell = String.fromCharCode(0x07);
+    const streamError = `source failed\n${escape}[31mforged${escape}[0m${escape}]8;;https://invalid.example${bell}link${escape}]8;;${bell}`;
+    const job = createBaseJob({
+      schedule: { kind: "stream", command: ["echo"] },
+      state: {
+        lastRunStatus: "error",
+        lastError: streamError,
+        streamStatus: "error",
+        streamError,
+        streamRestartExhausted: true,
+      },
+    });
+
+    const show = createRuntimeLogCapture();
+    printCronShow(job, show.runtime);
+    expect(show.logs).toContain("stream error: source failed\\nforgedlink");
+    expect(show.logs).toContain("last error: source failed\\nforgedlink");
+    expect(show.logs.every((line) => !line.includes("\n") && !line.includes(escape))).toBe(true);
+  });
+
+  it.each([
+    {
+      label: "exhausted source restarts",
+      enabled: true,
+      streamError: "stream source exited (exit, code 1)",
+      streamConsecutiveFailures: 5,
+    },
+    {
+      label: "a failed stop with a retained live child",
+      enabled: true,
+      streamError: "stream source failed to stop: process still running",
+      streamConsecutiveFailures: 0,
+    },
+    {
+      label: "a committed disable with a retained live child",
+      enabled: false,
+      streamError: "stream source failed to stop: process still running",
+      streamConsecutiveFailures: 0,
+    },
+  ])(
+    "gives safe operator recovery for $label",
+    ({ enabled, streamError, streamConsecutiveFailures }) => {
+      const job = createBaseJob({
+        enabled,
+        schedule: { kind: "stream", command: ["echo"] },
+        state: {
+          lastRunStatus: "error",
+          lastError: streamError,
+          consecutiveErrors: 5,
+          streamStatus: "error",
+          streamError,
+          streamConsecutiveFailures,
+          streamRestartExhausted: true,
+        },
+      });
+
+      const list = createRuntimeLogCapture();
+      printCronList([job], list.runtime);
+      const expectedStatus = enabled ? "error (5x) (source)" : "disabled (source)";
+      expect(list.logs[1]).toContain(expectedStatus);
+
+      const show = createRuntimeLogCapture();
+      printCronShow(job, show.runtime);
+      expect(show.logs).toContain(`status: ${expectedStatus}`);
+      expect(show.logs).toContain("stream status: error");
+      expect(show.logs).toContain(
+        "stream recovery: resolve the source error and verify its process has stopped before manually re-enabling this automation",
+      );
+      expect(show.logs.join("\n")).not.toContain("restart attempts exhausted");
+      expect(enrichCronJsonWithStatus(job)).toEqual({
+        ...job,
+        status: enabled ? "error" : "disabled",
+      });
+    },
+  );
 
   it("shows on-exit schedules in list and show output", () => {
     const job = createBaseJob({
@@ -380,6 +730,41 @@ describe("printCronList", () => {
         autoDisabled: { reason: "consecutive-failures", consecutiveErrors: 10 },
       },
     });
+  });
+
+  it("keeps a retained stream source visible above inherited auto-disable metadata", () => {
+    const rich = vi.spyOn(terminalTheme, "isRich").mockReturnValue(true);
+    const error = vi.spyOn(terminalTheme.theme, "error");
+    try {
+      const job = createBaseJob({
+        enabled: false,
+        schedule: { kind: "stream", command: ["node", "events.mjs"] },
+        state: {
+          lastRunStatus: "error",
+          consecutiveErrors: 10,
+          autoDisabled: {
+            reason: "consecutive-failures",
+            atMs: Date.now() - 60_000,
+            consecutiveErrors: 10,
+          },
+          streamStatus: "error",
+          streamError: "stream source failed to stop: process still running",
+          streamRestartExhausted: true,
+        },
+      });
+
+      const list = createRuntimeLogCapture();
+      printCronList([job], list.runtime);
+      expect(error).toHaveBeenCalledWith(expect.stringContaining("(source)"));
+
+      const show = createRuntimeLogCapture();
+      printCronShow(job, show.runtime);
+      expect(show.logs).toContain("status: disabled (10x) (source)");
+      expect(enrichCronJsonWithStatus(job)).toMatchObject({ status: "disabled" });
+    } finally {
+      error.mockRestore();
+      rich.mockRestore();
+    }
   });
 
   it("caps the failure count so the status column never overflows", () => {

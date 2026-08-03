@@ -220,6 +220,145 @@ describe("cron stream watchers", () => {
     await shutdown;
   });
 
+  it("records a stubborn replacement failure under the current durable source identity", async () => {
+    vi.useFakeTimers();
+    let durableIdentity = "source:original";
+    const persistedFailures: Array<{ error: string; sourceIdentity: string }> = [];
+    const recordFailure = vi.fn(
+      async (
+        _jobId: string,
+        error: string,
+        _patch: Partial<CronJob["state"]>,
+        _scheduleKey: string,
+        sourceIdentity: string,
+      ) => {
+        if (sourceIdentity === durableIdentity) {
+          persistedFailures.push({ error, sourceIdentity });
+        }
+      },
+    );
+    const { fake, watchers } = createCronStreamWatcherFixture({ recordFailure });
+    await watchers.start(job({ state: { streamSourceIdentity: durableIdentity } }));
+    const child = fake.runs[0];
+    if (!child) {
+      throw new Error("expected initial stream child");
+    }
+    vi.mocked(child.cancel).mockImplementation(() => {});
+    durableIdentity = "source:replacement";
+    const replacement = job({
+      schedule: { kind: "stream", command: ["replacement"], batchMs: 50 },
+      state: { streamSourceIdentity: durableIdentity },
+    });
+
+    try {
+      const replacing = watchers.start(replacement);
+      const failedReplacement = expect(replacing).rejects.toThrow("stream source did not exit");
+      await vi.advanceTimersByTimeAsync(10_000);
+      await failedReplacement;
+
+      expect(fake.spawn).toHaveBeenCalledOnce();
+      expect(recordFailure).toHaveBeenCalledWith(
+        "stream-job",
+        expect.stringContaining("stream source failed to stop"),
+        expect.objectContaining({ streamStatus: "error", streamRestartExhausted: true }),
+        expect.stringContaining("replacement"),
+        "source:replacement",
+      );
+      expect(persistedFailures).toEqual([
+        {
+          error: expect.stringContaining("stream source failed to stop"),
+          sourceIdentity: "source:replacement",
+        },
+      ]);
+      expect(watchers.inspect("stream-job")).toMatchObject({
+        sourceIdentity: "source:replacement",
+        processAlive: true,
+      });
+    } finally {
+      fake.exits[0]?.(exitResult({ reason: "manual-cancel" }));
+      await watchers.stopAll("shutdown").catch(() => undefined);
+    }
+  });
+
+  it.each([
+    {
+      label: "accepted old-source partial",
+      previousMatch: "^keep$",
+      replacementMatch: "^other$",
+      partial: "keep",
+      previousMaxBatchBytes: 1_024,
+      replacementMaxBatchBytes: 1_024,
+      expectedDropped: 1,
+    },
+    {
+      label: "ignored old-source partial",
+      previousMatch: "^old$",
+      replacementMatch: "^new$",
+      partial: "new",
+      previousMaxBatchBytes: 1_024,
+      replacementMaxBatchBytes: 1_024,
+      expectedDropped: 0,
+    },
+    {
+      label: "accepted partial within the original intake bound",
+      previousMatch: "^x+$",
+      replacementMatch: "^x+$",
+      partial: "x".repeat(5_000),
+      previousMaxBatchBytes: 8_192,
+      replacementMaxBatchBytes: 1_024,
+      expectedDropped: 1,
+    },
+  ])(
+    "classifies $label with original source semantics during replacement",
+    async ({
+      previousMatch,
+      replacementMatch,
+      partial,
+      previousMaxBatchBytes,
+      replacementMaxBatchBytes,
+      expectedDropped,
+    }) => {
+      const { fake, watchers } = createCronStreamWatcherFixture({ minIntervalMs: 1 });
+      await watchers.start(
+        job({
+          schedule: {
+            kind: "stream",
+            command: ["original-source"],
+            mode: "match",
+            match: previousMatch,
+            maxBatchBytes: previousMaxBatchBytes,
+          },
+          state: { streamSourceIdentity: "source:original" },
+        }),
+      );
+
+      try {
+        fake.inputs[0]?.onStdout?.(partial);
+        await settle();
+        await watchers.start(
+          job({
+            schedule: {
+              kind: "stream",
+              command: ["replacement-source"],
+              mode: "match",
+              match: replacementMatch,
+              maxBatchBytes: replacementMaxBatchBytes,
+            },
+            state: { streamSourceIdentity: "source:replacement" },
+          }),
+        );
+
+        expect(fake.spawn).toHaveBeenCalledTimes(2);
+        expect(watchers.inspect("stream-job")).toMatchObject({
+          sourceIdentity: "source:replacement",
+          droppedBatches: expectedDropped,
+        });
+      } finally {
+        await watchers.stopAll("shutdown");
+      }
+    },
+  );
+
   it("leaves an exit queued ahead of a requested stop to the stop operation", async () => {
     const { fake, updateState, recordFailure, watchers } = createCronStreamWatcherFixture({
       minIntervalMs: 1,

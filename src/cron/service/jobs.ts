@@ -52,6 +52,29 @@ import type { CronServiceState } from "./state.js";
 const CRON_DECLARATIVE_LABEL_MAX_LENGTH = 200;
 type DeliveryValidationOptions = { configuredChannels?: readonly string[] };
 
+function resetCronJobStateForExplicitEnable(job: CronJob): boolean {
+  // Imperative and declarative enables share one recovery boundary; preserve
+  // execution history while clearing only the scheduler/source failure gates.
+  const { state } = job;
+  const stream = job.schedule.kind === "stream";
+  const recovered = Boolean(
+    state.autoDisabled ||
+    state.consecutiveErrors ||
+    state.scheduleErrorCount ||
+    (stream &&
+      (state.streamRestartExhausted || state.streamConsecutiveFailures || state.streamError)),
+  );
+  delete state.autoDisabled;
+  state.consecutiveErrors = 0;
+  state.scheduleErrorCount = 0;
+  if (stream) {
+    state.streamRestartExhausted = undefined;
+    state.streamConsecutiveFailures = 0;
+    state.streamError = undefined;
+  }
+  return recovered;
+}
+
 export { assertSupportedJobSpec };
 
 export {
@@ -391,20 +414,13 @@ export function applyJobPatch(
     job.state = { ...job.state, ...statePatch };
   }
   if (patch.enabled === true) {
-    delete job.state.autoDisabled;
-    job.state.consecutiveErrors = 0;
-    job.state.scheduleErrorCount = 0;
+    resetCronJobStateForExplicitEnable(job);
   }
   if ("agentId" in patch) {
     job.agentId = normalizeOptionalAgentId((patch as { agentId?: unknown }).agentId);
   }
   if ("sessionKey" in patch) {
     job.sessionKey = normalizeOptionalString((patch as { sessionKey?: unknown }).sessionKey);
-  }
-  if (job.schedule.kind === "stream" && patch.enabled === true) {
-    job.state.streamRestartExhausted = undefined;
-    job.state.streamConsecutiveFailures = 0;
-    job.state.streamError = undefined;
   }
   if (previousScheduleKind === "stream" && job.schedule.kind !== "stream") {
     job.state.streamStatus = undefined;
@@ -454,11 +470,12 @@ export function applyDeclarativeJobSpec(
   opts: {
     defaultAgentId?: string;
     enabledExplicit: boolean;
+    systemOwned?: boolean;
     nowMs: number;
     cronConfig?: CronConfig;
     scheduledToolPolicy?: CronScheduledToolPolicy;
   } & DeliveryValidationOptions,
-) {
+): boolean {
   const previouslyUsedToolRuntime = cronJobUsesToolRuntime(job);
   const explicitlyDeclaresToolsAllow = input.payload.toolsAllow !== undefined;
   const previousToolsAllow = job.payload.toolsAllow;
@@ -542,8 +559,14 @@ export function applyDeclarativeJobSpec(
   } else {
     delete job.delivery;
   }
+  let recoveredExplicitEnable = false;
   if (opts.enabledExplicit) {
     job.enabled = input.enabled;
+    // System-owned convergence applies configuration, not operator recovery;
+    // its scheduler-owned failure evidence must survive routine restarts.
+    if (job.enabled && !opts.systemOwned) {
+      recoveredExplicitEnable = resetCronJobStateForExplicitEnable(job);
+    }
   }
   assertTriggerSupport(job, {
     cronConfig: opts.cronConfig,
@@ -565,6 +588,7 @@ export function applyDeclarativeJobSpec(
   assertAnnounceDeliveryChannelSupport(job, opts.configuredChannels);
   assertFailureDestinationSupport(job);
   assertCronExpressionSatisfiable(job, opts.nowMs, computeJobNextRunAtMs);
+  return recoveredExplicitEnable;
 }
 
 function mergeCronDelivery(
@@ -601,17 +625,13 @@ function mergeCronDelivery(
       next.completionDestination = undefined;
     }
   }
-  if ("channel" in patch) {
-    next.channel = normalizeOptionalString(patch.channel);
-  }
-  if ("to" in patch) {
-    next.to = normalizeOptionalString(patch.to);
+  for (const field of ["channel", "to", "accountId"] as const) {
+    if (field in patch) {
+      next[field] = normalizeOptionalString(patch[field]);
+    }
   }
   if ("threadId" in patch) {
     next.threadId = normalizeOptionalThreadValue(patch.threadId);
-  }
-  if ("accountId" in patch) {
-    next.accountId = normalizeOptionalString(patch.accountId);
   }
   if (typeof patch.bestEffort === "boolean") {
     next.bestEffort = patch.bestEffort;
@@ -649,17 +669,10 @@ function mergeCronDelivery(
         }
       }
       if (patchFd) {
-        if ("channel" in patchFd) {
-          const channel = normalizeOptionalString(patchFd.channel) ?? "";
-          nextFd.channel = channel ? channel : undefined;
-        }
-        if ("to" in patchFd) {
-          const to = normalizeOptionalString(patchFd.to) ?? "";
-          nextFd.to = to ? to : undefined;
-        }
-        if ("accountId" in patchFd) {
-          const accountId = normalizeOptionalString(patchFd.accountId) ?? "";
-          nextFd.accountId = accountId ? accountId : undefined;
+        for (const field of ["channel", "to", "accountId"] as const) {
+          if (field in patchFd) {
+            nextFd[field] = normalizeOptionalString(patchFd[field]);
+          }
         }
         if ("mode" in patchFd) {
           const mode = normalizeOptionalString(patchFd.mode) ?? "";
@@ -700,11 +713,8 @@ function mergeCronFailureAlert(
   if (patch === false) {
     return false;
   }
-  if (patch === null) {
-    return undefined;
-  }
-  if (patch === undefined) {
-    return existing;
+  if (patch == null) {
+    return patch === null ? undefined : existing;
   }
   const base = existing === false || existing === undefined ? {} : existing;
   const next: CronFailureAlert = { ...base };
@@ -713,11 +723,10 @@ function mergeCronFailureAlert(
     const after = typeof patch.after === "number" && Number.isFinite(patch.after) ? patch.after : 0;
     next.after = after > 0 ? Math.floor(after) : undefined;
   }
-  if ("channel" in patch) {
-    next.channel = normalizeOptionalString(patch.channel);
-  }
-  if ("to" in patch) {
-    next.to = normalizeOptionalString(patch.to);
+  for (const field of ["channel", "to", "accountId"] as const) {
+    if (field in patch) {
+      next[field] = normalizeOptionalString(patch[field]);
+    }
   }
   if ("cooldownMs" in patch) {
     const cooldownMs =
@@ -734,11 +743,6 @@ function mergeCronFailureAlert(
     const mode = normalizeOptionalString(patch.mode) ?? "";
     next.mode = mode === "announce" || mode === "webhook" ? mode : undefined;
   }
-  if ("accountId" in patch) {
-    const accountId = normalizeOptionalString(patch.accountId) ?? "";
-    next.accountId = accountId ? accountId : undefined;
-  }
-
   return next;
 }
 

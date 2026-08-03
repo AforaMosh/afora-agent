@@ -219,7 +219,9 @@ export class CronStreamJobOwner {
       const nextScheduleKey = cronStreamScheduleKey(job.schedule);
       const nextSourceIdentity = sourceIdentityFor(job);
       if (!this.ownsSource(nextScheduleKey, nextSourceIdentity)) {
-        await this.stopOperation("schedule-update");
+        // The replacement identity already owns durable state. Adopt it before
+        // teardown so a stubborn old child records failure against that owner.
+        await this.stopOperation("schedule-update", job);
       }
       // A newer stop can arrive while replacement waits for the old child.
       if (this.removalRequested || requestEpoch !== this.requestEpoch) {
@@ -502,11 +504,14 @@ export class CronStreamJobOwner {
     if (reason === "removed") {
       this.retired = true;
     }
+    this.state = "stopping";
+    ++this.generation;
+    // Fence admission, then classify old output with its original matcher and
+    // bounds before adopting the durable replacement for teardown accounting.
+    const outputStopState = this.output.beginStop();
     if (job) {
       this.adoptJob(job, cronStreamScheduleKey(job.schedule), sourceIdentityFor(job));
     }
-    this.state = "stopping";
-    ++this.generation;
 
     let retirementError: unknown;
     if (stopRequiresSourceRetirement(reason)) {
@@ -532,7 +537,6 @@ export class CronStreamJobOwner {
     this.restartTimer = undefined;
     clearTimer(this.stableTimer);
     this.stableTimer = undefined;
-    const outputStopState = this.output.beginStop();
 
     const run = this.run;
     let stopError: unknown;

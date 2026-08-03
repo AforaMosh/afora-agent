@@ -258,16 +258,20 @@ export async function add(state: CronServiceState, input: CronJobCreate, opts?: 
       }
       const now = state.deps.nowMs();
       const nextJob = structuredClone(existing);
-      applyDeclarativeJobSpec(nextJob, normalizedInput, {
+      const recoveredExplicitEnable = applyDeclarativeJobSpec(nextJob, normalizedInput, {
         defaultAgentId: state.deps.defaultAgentId,
         enabledExplicit: opts?.enabledExplicit === true,
+        systemOwned: opts?.systemOwned === true,
         nowMs: now,
         cronConfig: state.deps.cronConfig,
         scheduledToolPolicy: opts?.scheduledToolPolicy,
         configuredChannels,
       });
       const includeEnabled = opts?.enabledExplicit === true;
+      // Recovery mutates durable source state even when the declaration is
+      // otherwise identical; discarding it would leave an exhausted source dead.
       if (
+        !recoveredExplicitEnable &&
         isDeepStrictEqual(
           declarativeFields(existing, includeEnabled),
           declarativeFields(nextJob, includeEnabled),
