@@ -3,6 +3,7 @@ import * as crypto from "node:crypto";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+import { createSolidPngBuffer } from "openclaw/plugin-sdk/test-fixtures";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { normalizeSource } from "../messaging/media-source.js";
 import {
@@ -79,6 +80,7 @@ function makePrepareResponse(uploadId: string, parts: number): UploadPrepareResp
 
 /** Fixture: a 20-byte buffer that spans 3 parts at block_size=8. */
 const FIXTURE_BUFFER = Buffer.from("0123456789abcdefghij"); // 20 bytes
+const IMAGE_FIXTURE_BUFFER = createSolidPngBuffer(2, 2, { r: 40, g: 90, b: 180, a: 96 });
 
 // ============ fetch stub for COS PUT ============
 
@@ -418,48 +420,163 @@ describe("media-chunked: ChunkedMediaApi.uploadChunked", () => {
     }
   });
 
-  it("uses the verified localPath handle if the path is replaced before chunked upload", async () => {
-    const tmp = await fs.promises.mkdtemp(path.join(os.tmpdir(), "chunked-verified-"));
-    const filePath = path.join(tmp, "fixture.bin");
-    await fs.promises.writeFile(filePath, FIXTURE_BUFFER);
-    const source = await normalizeSource({ localPath: filePath }, { maxSize: 1_000_000 });
-    await fs.promises.rm(filePath);
-    await fs.promises.writeFile(filePath, Buffer.from("replacement bytes"));
-    try {
-      const client = mockApiClient();
-      const tm = mockTokenManager();
-      stubFetchOk();
+  it.each([
+    {
+      label: "converted PNG image",
+      fileType: MediaFileType.IMAGE,
+      storedName: "queued.webp",
+      expectedName: "queued.png",
+      bytes: IMAGE_FIXTURE_BUFFER,
+    },
+    {
+      label: "matching mixed-case PNG alias",
+      fileType: MediaFileType.IMAGE,
+      storedName: "queued.PNG",
+      expectedName: "queued.PNG",
+      bytes: IMAGE_FIXTURE_BUFFER,
+    },
+    {
+      label: "unknown image bytes",
+      fileType: MediaFileType.IMAGE,
+      storedName: "queued.webp",
+      expectedName: "queued.webp",
+      bytes: FIXTURE_BUFFER,
+    },
+    {
+      label: "video upload",
+      fileType: MediaFileType.VIDEO,
+      storedName: "queued.webp",
+      expectedName: "queued.webp",
+      bytes: IMAGE_FIXTURE_BUFFER,
+    },
+    {
+      label: "document upload",
+      fileType: MediaFileType.FILE,
+      storedName: "queued.webp",
+      expectedName: "queued.webp",
+      bytes: IMAGE_FIXTURE_BUFFER,
+    },
+  ])(
+    "reconciles chunked image filenames without changing source custody: $label",
+    async ({ fileType, storedName, expectedName, bytes }) => {
+      const tmp = await fs.promises.mkdtemp(path.join(os.tmpdir(), "chunked-image-name-"));
+      const filePath = path.join(tmp, storedName);
+      await fs.promises.writeFile(filePath, bytes);
+      const source = await normalizeSource({ localPath: filePath }, { maxSize: 1024 * 1024 });
+      try {
+        const client = mockApiClient();
+        const fetchSpy = stubFetchOk();
+        client.request.mockImplementation(async (_token, _method, requestPath) => {
+          if (requestPath.endsWith("/upload_prepare")) {
+            return { ...makePrepareResponse("uid-image-name", 1), block_size: bytes.length };
+          }
+          if (requestPath.endsWith("/upload_part_finish")) {
+            return {};
+          }
+          if (requestPath.endsWith("/files")) {
+            return { file_uuid: "u", file_info: "fi", ttl: 10 } satisfies UploadMediaResponse;
+          }
+          throw new Error(`unexpected ${requestPath}`);
+        });
 
-      client.request.mockImplementation(async (_t, _m, p) => {
-        if (p.endsWith("/upload_prepare")) {
-          return makePrepareResponse("uid-verified", 3);
-        }
-        if (p.endsWith("/upload_part_finish")) {
-          return {};
-        }
-        if (p.endsWith("/files")) {
-          return { file_uuid: "u", file_info: "fi", ttl: 10 } satisfies UploadMediaResponse;
-        }
-        throw new Error(`unexpected ${p}`);
-      });
+        const api = new ChunkedMediaApi(client, mockTokenManager());
+        await api.uploadChunked({
+          scope: "c2c",
+          targetId: "u1",
+          fileType,
+          source,
+          creds: { appId: "a", clientSecret: "s" },
+        });
 
-      const api = new ChunkedMediaApi(client, tm);
-      await api.uploadChunked({
-        scope: "c2c",
-        targetId: "u1",
-        fileType: MediaFileType.VIDEO,
-        source,
-        creds: { appId: "a", clientSecret: "s" },
-      });
-
-      const prepareCall = client.request.mock.calls.find((c) => c[2].endsWith("/upload_prepare"))!;
-      const prepareBody = prepareCall[3] as { md5: string };
-      expect(prepareBody.md5).toBe(crypto.createHash("md5").update(FIXTURE_BUFFER).digest("hex"));
-    } finally {
-      if (source.kind === "localPath") {
-        await source.opened?.close().catch(() => undefined);
+        const prepareCall = client.request.mock.calls.find((call) =>
+          call[2].endsWith("/upload_prepare"),
+        );
+        expect(prepareCall?.[3]).toMatchObject({
+          file_type: fileType,
+          file_name: expectedName,
+          file_size: bytes.length,
+          md5: crypto.createHash("md5").update(bytes).digest("hex"),
+        });
+        const upload = fetchSpy.mock.calls[0]?.[0] as { init?: { body?: Blob } };
+        expect(Buffer.from(await upload.init!.body!.arrayBuffer())).toEqual(bytes);
+        expect(await fs.promises.readFile(filePath)).toEqual(bytes);
+      } finally {
+        if (source.kind === "localPath") {
+          await source.opened?.close().catch(() => undefined);
+        }
+        await fs.promises.rm(tmp, { recursive: true, force: true });
       }
-      await fs.promises.rm(tmp, { recursive: true, force: true });
-    }
-  });
+    },
+  );
+
+  it.each([
+    {
+      label: "video hashes",
+      fileType: MediaFileType.VIDEO,
+      storedName: "fixture.bin",
+      expectedName: "fixture.bin",
+      bytes: FIXTURE_BUFFER,
+    },
+    {
+      label: "image MIME and hashes",
+      fileType: MediaFileType.IMAGE,
+      storedName: "fixture.webp",
+      expectedName: "fixture.png",
+      bytes: IMAGE_FIXTURE_BUFFER,
+    },
+  ])(
+    "uses the verified localPath handle when the path is replaced: $label",
+    async ({ fileType, storedName, expectedName, bytes }) => {
+      const tmp = await fs.promises.mkdtemp(path.join(os.tmpdir(), "chunked-verified-"));
+      const filePath = path.join(tmp, storedName);
+      await fs.promises.writeFile(filePath, bytes);
+      const source = await normalizeSource({ localPath: filePath }, { maxSize: 1_000_000 });
+      await fs.promises.rm(filePath);
+      await fs.promises.writeFile(filePath, Buffer.from("replacement bytes"));
+      try {
+        const client = mockApiClient();
+        const tm = mockTokenManager();
+        stubFetchOk();
+
+        client.request.mockImplementation(async (_t, _m, p) => {
+          if (p.endsWith("/upload_prepare")) {
+            return {
+              ...makePrepareResponse("uid-verified", 3),
+              block_size: Math.ceil(bytes.length / 3),
+            };
+          }
+          if (p.endsWith("/upload_part_finish")) {
+            return {};
+          }
+          if (p.endsWith("/files")) {
+            return { file_uuid: "u", file_info: "fi", ttl: 10 } satisfies UploadMediaResponse;
+          }
+          throw new Error(`unexpected ${p}`);
+        });
+
+        const api = new ChunkedMediaApi(client, tm);
+        await api.uploadChunked({
+          scope: "c2c",
+          targetId: "u1",
+          fileType,
+          source,
+          creds: { appId: "a", clientSecret: "s" },
+        });
+
+        const prepareCall = client.request.mock.calls.find((c) =>
+          c[2].endsWith("/upload_prepare"),
+        )!;
+        expect(prepareCall[3]).toMatchObject({
+          file_type: fileType,
+          file_name: expectedName,
+          md5: crypto.createHash("md5").update(bytes).digest("hex"),
+        });
+      } finally {
+        if (source.kind === "localPath") {
+          await source.opened?.close().catch(() => undefined);
+        }
+        await fs.promises.rm(tmp, { recursive: true, force: true });
+      }
+    },
+  );
 });
