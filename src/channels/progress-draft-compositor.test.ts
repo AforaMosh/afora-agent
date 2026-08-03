@@ -5,6 +5,7 @@ import {
   createChannelProgressReceiptTracker,
   PROGRESS_STATUS_PREAMBLE_FRESH_MS,
 } from "./progress-draft-compositor.js";
+import { formatReasoningProgressDisplayLine } from "./progress-draft-status-text.js";
 import { DEFAULT_PROGRESS_DRAFT_INITIAL_DELAY_MS } from "./streaming.js";
 
 describe("createChannelProgressDraftCompositor", () => {
@@ -322,6 +323,49 @@ describe("createChannelProgressDraftCompositor", () => {
     expect(update).toHaveBeenLastCalledWith("Shelling\n\n🛠️ Exec\n🧠 _Reading files_", {
       lines: ["🛠️ Exec", "🧠 _Reading files_"],
     });
+  });
+
+  it.each([
+    ["flag", "🇺🇸", "🧠 ", 120],
+    ["family", "👨‍👩‍👧‍👦", "🧠 ", 120],
+    ["skin tone", "👍🏽", "🧠 ", 120],
+    ["combining accent", "e\u0301", "🧠 ", 120],
+    ["keycap", "1️⃣", "🧠 ", 120],
+    ["custom prefix", "🇺🇸", "👩‍💻 ", 120],
+    ["unprefixed snapshot", "🇺🇸", "", 120],
+    ["one-character budget", "🇺🇸", "🧠 ", 1],
+    ["two-character budget", "🇺🇸", "🧠 ", 2],
+  ] as const)(
+    "keeps %s reasoning graphemes intact in native snapshots",
+    async (_name, grapheme, prefix, maxChars) => {
+      const update = vi.fn();
+      const progress = createChannelProgressDraftCompositor({
+        entry: {
+          streaming: { mode: "progress", progress: { label: false, maxLineChars: maxChars } },
+        },
+        mode: "progress",
+        active: true,
+        seed: "unicode",
+        reasoningLinePrefix: prefix,
+        update,
+      });
+      await progress.start();
+      const padding = "a".repeat(Math.max(0, maxChars - Array.from(prefix).length - 3));
+      await progress.pushReasoningProgress(`${padding}${grapheme}zzzz`);
+      const line = maxChars < 3 ? "…" : `${prefix}_${padding}…_`;
+      expect(progress.getSnapshot().lines).toEqual([line]);
+      expect(update).toHaveBeenLastCalledWith(
+        prefix && maxChars > 2 ? line : expect.stringContaining(line),
+        {
+          lines: [line],
+        },
+      );
+      expect(Array.from(line).length).toBeLessThanOrEqual(maxChars);
+    },
+  );
+
+  it("charges dense reasoning families by code-point weight", () => {
+    expect(formatReasoningProgressDisplayLine("👨‍👩‍👧‍👦".repeat(120), 120)).toBe(`_${"👨‍👩‍👧‍👦".repeat(16)}…_`);
   });
 
   it("labels window narration with a 💬 prefix", async () => {

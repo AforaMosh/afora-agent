@@ -85,6 +85,7 @@ export function createChannelProgressDraftCompositor(params: {
   const setTimeoutFn = params.setTimeoutFn ?? setTimeout;
   const clearTimeoutFn = params.clearTimeoutFn ?? clearTimeout;
   const reasoningLinePrefix = params.reasoningLinePrefix ?? "";
+  const reasoningLinePrefixLength = Array.from(reasoningLinePrefix).length;
   const commentaryLinePrefix = params.commentaryLinePrefix ?? "";
   const commentaryItalics = params.commentaryItalics ?? true;
   const stripLaneItalics = (text: string): string =>
@@ -590,14 +591,18 @@ export function createChannelProgressDraftCompositor(params: {
       if (!normalized) {
         return false;
       }
+      const maxLineChars = resolveChannelProgressDraftMaxLineChars(params.entry);
+      const visiblePrefix = reasoningLinePrefixLength < maxLineChars ? reasoningLinePrefix : "";
+      // Reserve the actual channel prefix before truncating; native snapshots
+      // otherwise overflow and rendered lines lose whole graphemes or italics.
       const compactLine = formatReasoningProgressDisplayLine(
         normalized,
-        resolveChannelProgressDraftMaxLineChars(params.entry),
+        maxLineChars - (visiblePrefix ? reasoningLinePrefixLength : 0),
       );
       if (!compactLine) {
         return false;
       }
-      const displayLine = `${reasoningLinePrefix}${compactLine}`;
+      const displayLine = `${visiblePrefix}${compactLine}`;
       // Reasoning streams usually arrive as deltas. Replace the previous
       // reasoning line so the draft stays compact instead of appending noise.
       const priorIndex =

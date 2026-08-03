@@ -21,6 +21,7 @@ const REASONING_PROGRESS_TAG_PREFIXES = REASONING_PROGRESS_TAG_NAMES.flatMap((na
   `<${name}`,
   `</${name}`,
 ]);
+const reasoningGraphemeSegmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
 
 export function normalizeReasoningProgressLine(text: string): string {
   const reasoningText = readReasoningProgressTextOutsideCode(text);
@@ -111,6 +112,10 @@ export function formatReasoningProgressDisplayLine(text: string, maxChars: numbe
   if (Array.from(formatted).length <= maxChars) {
     return formatted;
   }
+  // Balanced italic markers cannot fit around an ellipsis below three characters.
+  if (maxChars < 3) {
+    return "…";
+  }
   const italic = formatted.match(/^_(.*)_$/u);
   if (!italic) {
     return compactReasoningProgressDisplayLine(formatted, maxChars);
@@ -128,10 +133,17 @@ function compactReasoningProgressDisplayLine(text: string, maxChars: number): st
   if (maxChars <= 1) {
     return "…";
   }
-  const head = chars
-    .slice(0, maxChars - 1)
-    .join("")
-    .trimEnd();
+  let head = "";
+  let remaining = maxChars - 1;
+  for (const { segment } of reasoningGraphemeSegmenter.segment(normalized)) {
+    const codePointCount = Array.from(segment).length;
+    if (codePointCount > remaining) {
+      break;
+    }
+    head += segment;
+    remaining -= codePointCount;
+  }
+  head = head.trimEnd();
   const boundary = head.search(/\s+\S*$/u);
   if (boundary > Math.floor(maxChars * 0.6)) {
     return `${head.slice(0, boundary).trimEnd()}…`;
