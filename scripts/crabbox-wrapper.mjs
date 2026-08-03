@@ -37,6 +37,7 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const CRABBOX_METADATA_PROBE_TIMEOUT_MS = 5_000;
 const MAX_TIMING_JSON_LINE_CHARS = 1024 * 1024;
 const REMOTE_CHANGED_GATE_BUNDLE_FILE = ".openclaw-crabbox-changed-gate.bundle";
+const BLACKSMITH_TESTBOX_ADMISSION_LIMIT = 6;
 // A cold Crabbox (first call after an upgrade, or one on a loaded machine) can
 // exceed the snappy default probe timeout while it renders `run --help` or does
 // first-run init. Retry the metadata probes once with this generous timeout so a
@@ -860,7 +861,58 @@ function crabboxProviderReadiness(providerName, versionText, targetContext) {
       recovery: `run \`${recoveryCommand(doctorArgs)}\``,
     };
   }
+  if (canonicalProvider === "blacksmith-testbox") {
+    return blacksmithTestboxReadiness(doctor.stdout, doctorArgs);
+  }
   return { ready: true, reason: "doctor-ready" };
+}
+
+function blacksmithTestboxReadiness(output, doctorArgs) {
+  let parsed;
+  try {
+    parsed = JSON.parse(output);
+  } catch {
+    return {
+      ready: false,
+      reason: "doctor did not return valid JSON inventory",
+      recovery: `run \`${recoveryCommand(doctorArgs)}\``,
+    };
+  }
+  const providerCheck = Array.isArray(parsed?.checks)
+    ? parsed.checks.find(
+        (check) =>
+          check?.check === "provider" &&
+          canonicalProviderName(check?.provider ?? check?.details?.provider ?? "") ===
+            "blacksmith-testbox",
+      )
+    : undefined;
+  const inventoryScope = providerCheck?.details?.inventory_scope;
+  const rawActiveLeases = providerCheck?.details?.active_leases;
+  if (inventoryScope !== "all" || !/^\d+$/u.test(`${rawActiveLeases ?? ""}`)) {
+    return {
+      ready: false,
+      reason: "doctor lacks all-scope Blacksmith active lease inventory",
+      recovery: "update Crabbox, then retry",
+    };
+  }
+  const activeLeases = Number.parseInt(rawActiveLeases, 10);
+  if (!Number.isSafeInteger(activeLeases)) {
+    return {
+      ready: false,
+      reason: "doctor returned an invalid Blacksmith active lease count",
+      recovery: `run \`${recoveryCommand(doctorArgs)}\``,
+    };
+  }
+  if (activeLeases >= BLACKSMITH_TESTBOX_ADMISSION_LIMIT) {
+    return {
+      ready: false,
+      reason: `active Testboxes ${activeLeases}/${BLACKSMITH_TESTBOX_ADMISSION_LIMIT}`,
+    };
+  }
+  return {
+    ready: true,
+    reason: `doctor-ready active=${activeLeases}/${BLACKSMITH_TESTBOX_ADMISSION_LIMIT}`,
+  };
 }
 
 function compactDiagnosticText(value, maxLength = 500) {

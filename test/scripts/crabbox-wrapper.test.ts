@@ -104,7 +104,15 @@ async function main() {
     if (process.env.OPENCLAW_FAKE_CRABBOX_EXPECT_DOCTOR_TARGET && target !== process.env.OPENCLAW_FAKE_CRABBOX_EXPECT_DOCTOR_TARGET) { process.stderr.write("doctor target mismatch: got=" + target + "\n"); process.exit(64); }
     if (process.env.OPENCLAW_FAKE_CRABBOX_EXPECT_DOCTOR_WINDOWS_MODE && windowsMode !== process.env.OPENCLAW_FAKE_CRABBOX_EXPECT_DOCTOR_WINDOWS_MODE) { process.stderr.write("doctor windows mode mismatch: got=" + windowsMode + "\n"); process.exit(64); }
     const unready = new Set((process.env.OPENCLAW_FAKE_CRABBOX_UNREADY_PROVIDERS || "").split(",").filter(Boolean));
-    const ready = !unready.has(provider); process[ready ? "stdout" : "stderr"].write(JSON.stringify({ ok: ready, provider }) + "\n");
+    const ready = !unready.has(provider);
+    if (Object.hasOwn(process.env, "OPENCLAW_FAKE_CRABBOX_DOCTOR_JSON")) {
+      process[ready ? "stdout" : "stderr"].write(process.env.OPENCLAW_FAKE_CRABBOX_DOCTOR_JSON + "\n");
+      process.exit(ready ? 0 : 1);
+    }
+    const details = provider === "blacksmith-testbox"
+      ? { provider, inventory_scope: "all", active_leases: process.env.OPENCLAW_FAKE_BLACKSMITH_ACTIVE_LEASES || "0" }
+      : { provider };
+    process[ready ? "stdout" : "stderr"].write(JSON.stringify({ ok: ready, provider, checks: [{ status: ready ? "ok" : "failed", check: "provider", provider, details }] }) + "\n");
     process.exit(ready ? 0 : 1);
   }
   if (args[0] === "run" || args[0] === "warmup") { ${stampClaimScript} }
@@ -735,6 +743,34 @@ describe("scripts/crabbox-wrapper", () => {
     );
   });
 
+  it("routes away from Blacksmith at the active Testbox admission limit", () => {
+    const { output, result } = runSuccessfulBrokerWrapper(
+      ["run", "--workload", "ci-fast", "--", "echo ok"],
+      {
+        env: {
+          OPENCLAW_FAKE_BLACKSMITH_ACTIVE_LEASES: "6",
+        },
+      },
+    );
+    expect(output.args).toContain("daytona");
+    expect(result.stderr).toContain("blacksmith-testbox:active Testboxes 6/6");
+  });
+
+  it("fails closed to Daytona when Blacksmith all-scope inventory is unavailable", () => {
+    const { output, result } = runSuccessfulBrokerWrapper(
+      ["run", "--workload", "ci-fast", "--", "echo ok"],
+      {
+        env: {
+          OPENCLAW_FAKE_CRABBOX_DOCTOR_JSON: '{"ok":true,"provider":"blacksmith-testbox"}',
+        },
+      },
+    );
+    expect(output.args).toContain("daytona");
+    expect(result.stderr).toContain(
+      "blacksmith-testbox:doctor lacks all-scope Blacksmith active lease inventory",
+    );
+  });
+
   it("uses brokered cloud providers as the final CI fallback", () => {
     const { output, result } = runSuccessfulBrokerWrapper(
       ["run", "--workload=ci-fast", "--", "echo ok"],
@@ -812,7 +848,7 @@ describe("scripts/crabbox-wrapper", () => {
         "--workload",
         "ci-fast",
         "--idle-timeout",
-        "90m",
+        "30m",
         "--ttl",
         "240m",
         "--timing-json",
@@ -831,7 +867,7 @@ describe("scripts/crabbox-wrapper", () => {
 
     expect(output.args).toContain("daytona");
     expect(output.args).not.toContain("blacksmith-testbox");
-    expect(output.args).toContain("90m");
+    expect(output.args).toContain("30m");
     expect(output.args).toContain("240m");
     expect(output.args.slice(-3)).toEqual(["corepack", "pnpm", "check:changed"]);
     expect(result.stderr).toContain("route workload=ci-fast selected=daytona");
@@ -1242,7 +1278,7 @@ describe("scripts/crabbox-wrapper", () => {
     expect(result.stdout).toBe("");
     expect(result.stderr).toContain("no ready provider for workload=ci-fast");
     expect(result.stderr).toContain("provider readiness");
-    expect(result.stderr).toContain('{"ok":false,"provider":"blacksmith-testbox"}');
+    expect(result.stderr).toContain('{"ok":false,"provider":"blacksmith-testbox"');
     expect(result.stderr).toMatch(
       /recovery: run `\S+crabbox doctor --provider blacksmith-testbox --json`/u,
     );
@@ -1361,7 +1397,7 @@ describe("scripts/crabbox-wrapper", () => {
     expect(result.stderr).toContain("direct `blacksmith testbox warmup` leases");
   });
 
-  it("allows reused Blacksmith Testboxes when the Crabbox SSH key exists", () => {
+  it("allows owned Blacksmith lease reuse to bypass automatic admission", () => {
     const home = mkdtempSync(path.join(tmpdir(), "openclaw-crabbox-home-"));
     tempDirs.push(home);
     const keyPath = path.join(testCrabboxConfigDir(home), "testboxes", "tbx_owned", "id_ed25519");
@@ -1369,8 +1405,23 @@ describe("scripts/crabbox-wrapper", () => {
     writeFileSync(keyPath, "fake test key\n", "utf8");
 
     const result = runDefaultWrapper(
-      ["run", "--provider", "blacksmith-testbox", "--id", "tbx_owned", "--", "echo ok"],
-      { env: testHomeEnv(home) },
+      [
+        "run",
+        "--workload",
+        "ci-fast",
+        "--provider",
+        "blacksmith-testbox",
+        "--id",
+        "tbx_owned",
+        "--",
+        "echo ok",
+      ],
+      {
+        env: {
+          ...testHomeEnv(home),
+          OPENCLAW_FAKE_BLACKSMITH_ACTIVE_LEASES: "99",
+        },
+      },
     );
 
     expect(result.status).toBe(0);
