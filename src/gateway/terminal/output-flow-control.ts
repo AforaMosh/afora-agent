@@ -29,7 +29,7 @@ export class TerminalOutputController {
   private emittedOffset = 0;
   private lastInputAtMs = Number.NEGATIVE_INFINITY;
   private desiredPaused = false;
-  private reassertTimer: ReturnType<typeof setInterval> | null = null;
+  private recoveryTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(options: TerminalOutputControllerOptions) {
     this.backend = options.backend;
@@ -83,17 +83,15 @@ export class TerminalOutputController {
     // after that authoritative replay high-water mark.
     this.emittedOffset = this.endOffsetValue;
     this.lastInputAtMs = Number.NEGATIVE_INFINITY;
-    if (this.reassertTimer) {
-      this.desiredPaused = false;
-      this.tryResume();
+    if (this.recoveryTimer) {
+      this.resumeAfterPressure();
     }
   }
 
   dispose(opts?: { flush?: boolean }): void {
     this.coalescer.dispose(opts);
-    if (this.reassertTimer) {
-      clearInterval(this.reassertTimer);
-      this.reassertTimer = null;
+    if (this.recoveryTimer) {
+      this.stopRecoveryTimer();
       this.desiredPaused = false;
       this.tryResume();
     }
@@ -115,7 +113,7 @@ export class TerminalOutputController {
       return;
     }
     if (bufferedAmount >= TERMINAL_OUTPUT_HIGH_WATER_BYTES) {
-      this.ensureReassertTimer();
+      this.ensureRecoveryTimer();
       if (!this.desiredPaused) {
         this.desiredPaused = true;
         this.tryPause();
@@ -123,16 +121,15 @@ export class TerminalOutputController {
       return;
     }
     if (bufferedAmount <= TERMINAL_OUTPUT_LOW_WATER_BYTES && this.desiredPaused) {
-      this.desiredPaused = false;
-      this.tryResume();
+      this.resumeAfterPressure();
     }
   }
 
-  private ensureReassertTimer(): void {
-    if (this.reassertTimer) {
+  private ensureRecoveryTimer(): void {
+    if (this.recoveryTimer) {
       return;
     }
-    this.reassertTimer = setInterval(() => {
+    this.recoveryTimer = setInterval(() => {
       const bufferedAmount = this.maxBufferedAmount(this.getConnIds());
       if (bufferedAmount !== undefined) {
         if (bufferedAmount >= TERMINAL_OUTPUT_HIGH_WATER_BYTES) {
@@ -147,10 +144,27 @@ export class TerminalOutputController {
       if (this.desiredPaused) {
         this.tryPause();
       } else {
-        this.tryResume();
+        this.resumeAfterPressure();
       }
     }, TERMINAL_OUTPUT_REASSERT_MS);
-    this.reassertTimer.unref?.();
+    this.recoveryTimer.unref?.();
+  }
+
+  private stopRecoveryTimer(): void {
+    if (!this.recoveryTimer) {
+      return;
+    }
+    clearInterval(this.recoveryTimer);
+    this.recoveryTimer = null;
+  }
+
+  private resumeAfterPressure(): void {
+    this.desiredPaused = false;
+    // Keep the recovery owner alive across native failures, but retire it as
+    // soon as the PTY actually resumes so idle sessions do not wake forever.
+    if (this.tryResume()) {
+      this.stopRecoveryTimer();
+    }
   }
 
   private maxBufferedAmount(connIds: readonly string[]): number | undefined {
@@ -172,11 +186,13 @@ export class TerminalOutputController {
     }
   }
 
-  private tryResume(): void {
+  private tryResume(): boolean {
     try {
       this.backend.resume();
+      return true;
     } catch {
       // The failsafe timer retries after a prior pause.
+      return false;
     }
   }
 }
