@@ -1202,7 +1202,7 @@ describe("loadOpenClawPlugins", () => {
     expect(getDetachedTaskLifecycleRuntimeRegistration()).toBeUndefined();
   });
 
-  it("restores cached memory capability public artifacts on cache hits", async () => {
+  it("re-registers memory capability public artifacts after registry retirement", async () => {
     useNoBundledPlugins();
     const workspaceDir = makeTempDir();
     const absolutePath = path.join(workspaceDir, "MEMORY.md");
@@ -1261,9 +1261,11 @@ describe("loadOpenClawPlugins", () => {
     );
 
     setActivePluginRegistry(createEmptyPluginRegistry());
+    expect(isPluginRegistryRetired(first)).toBe(true);
 
     const second = loadOpenClawPlugins(options);
-    expect(second).toBe(first);
+    expect(second).not.toBe(first);
+    expect(isPluginRegistryRetired(second)).toBe(false);
     await expect(listActiveMemoryPublicArtifacts({ cfg: {} as never })).resolves.toEqual(
       expectedArtifacts,
     );

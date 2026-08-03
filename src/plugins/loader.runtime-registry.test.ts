@@ -23,8 +23,16 @@ import {
 } from "./memory-embedding-providers.js";
 import { buildMemoryPromptSection, registerMemoryCapability } from "./memory-state.js";
 import { clearPluginMetadataLifecycleCaches } from "./plugin-metadata-lifecycle.js";
+import { isPluginRegistryRetired } from "./registry-lifecycle.js";
 import { createEmptyPluginRegistry } from "./registry.js";
-import { getActivePluginRegistry, setActivePluginRegistry } from "./runtime.js";
+import {
+  captureActivePluginRegistrySnapshot,
+  clearActivePluginRegistry,
+  getActivePluginRegistry,
+  restoreActivePluginRegistrySnapshot,
+  setActivePluginRegistry,
+  stageActivePluginRegistry,
+} from "./runtime.js";
 import type { PluginRuntime } from "./runtime/types.js";
 
 afterEach(() => {
@@ -296,6 +304,62 @@ describe("resolveRuntimePluginRegistry", () => {
     setActivePluginRegistry(registry, "startup-registry");
 
     expect(resolveRuntimePluginRegistry()).toBe(registry);
+  });
+});
+
+describe("cached plugin registry lifecycle", () => {
+  it("reuses live registries without resurrecting retired gateway registries", async () => {
+    const options = {
+      config: { plugins: { allow: ["retired-registry-fixture"], slots: { memory: "none" } } },
+      workspaceDir: makeTempDir(),
+    };
+    const registry = loadAndActivateRootPluginRegistry(options);
+
+    expect(loadAndActivateRootPluginRegistry(options)).toBe(registry);
+
+    await clearActivePluginRegistry();
+
+    expect(isPluginRegistryRetired(registry)).toBe(true);
+    expect(getActivePluginRegistry()).toBeNull();
+
+    const restarted = loadAndActivateRootPluginRegistry(options);
+
+    expect(restarted).not.toBe(registry);
+    expect(isPluginRegistryRetired(registry)).toBe(true);
+    expect(getActivePluginRegistry()).toBe(restarted);
+    expect(loadAndActivateRootPluginRegistry(options)).toBe(restarted);
+  });
+
+  it("keeps non-activating snapshots reusable after the root registry retires", async () => {
+    const options = {
+      config: { plugins: { allow: ["snapshot-registry-fixture"], slots: { memory: "none" } } },
+      workspaceDir: makeTempDir(),
+    };
+    const root = loadAndActivateRootPluginRegistry(options);
+    const snapshotOptions = { ...options, activate: false };
+    const snapshot = loadOpenClawPlugins(snapshotOptions);
+
+    await clearActivePluginRegistry();
+
+    expect(isPluginRegistryRetired(root)).toBe(true);
+    expect(isPluginRegistryRetired(snapshot)).toBe(false);
+    expect(loadOpenClawPlugins(snapshotOptions)).toBe(snapshot);
+    expect(getActivePluginRegistry()).toBeNull();
+  });
+
+  it("keeps a restored activation snapshot eligible for exact-key reuse", () => {
+    const options = {
+      config: { plugins: { allow: ["rollback-registry-fixture"], slots: { memory: "none" } } },
+      workspaceDir: makeTempDir(),
+    };
+    const root = loadAndActivateRootPluginRegistry(options);
+    const snapshot = captureActivePluginRegistrySnapshot();
+
+    stageActivePluginRegistry(createEmptyPluginRegistry(), "failed-activation", "default");
+    restoreActivePluginRegistrySnapshot(snapshot);
+
+    expect(isPluginRegistryRetired(root)).toBe(false);
+    expect(loadAndActivateRootPluginRegistry(options)).toBe(root);
   });
 });
 

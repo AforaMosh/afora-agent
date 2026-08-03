@@ -11,7 +11,7 @@ import type {
   GatewayRequestHandler,
   GatewayRequestHandlerOptions,
 } from "../../gateway/server-methods/types.js";
-import { withEnv } from "../../test-utils/env.js";
+import { withEnv, withEnvAsync } from "../../test-utils/env.js";
 import { cleanupReplacedPluginHostRegistry } from "../host-hook-cleanup.js";
 import {
   clearPluginHostRuntimeState,
@@ -24,7 +24,11 @@ import {
 } from "../host-hook-scheduled-turns.js";
 import { loadOpenClawPlugins } from "../loader.js";
 import { clearPluginLoaderCache, makeTempDir, writePlugin } from "../loader.test-fixtures.js";
-import { resetPluginRuntimeStateForTest, setActivePluginRegistry } from "../runtime.js";
+import {
+  clearActivePluginRegistry,
+  resetPluginRuntimeStateForTest,
+  setActivePluginRegistry,
+} from "../runtime.js";
 import { createPluginRecord } from "../status.test-helpers.js";
 import type { OpenClawPluginApi } from "../types.js";
 
@@ -721,6 +725,76 @@ describe("plugin scheduled turns", () => {
       { mode: "none" },
     ]);
     expect(listPluginSessionSchedulerJobs("loader-scheduler-runtime")).toEqual([]);
+  });
+
+  it("binds cached plugin gateway handlers to the new cron owner after gateway restart", async () => {
+    const pluginId = "loader-restart-scheduler";
+    const method = `${pluginId}.schedule`;
+    const bundledDir = makeTempDir();
+    writePlugin({
+      id: pluginId,
+      dir: bundledDir,
+      filename: "index.cjs",
+      body: `module.exports = {
+  id: "${pluginId}",
+  register(api) {
+    api.registerGatewayMethod("${method}", async ({ respond }) => {
+      respond(true, await api.session.workflow.scheduleSessionTurn({
+        sessionKey: "agent:main:main",
+        message: "wake after restart",
+        delayMs: 1,
+      }));
+    });
+  },
+};`,
+    });
+    const firstCron = createMockCronService();
+    const secondCron = createMockCronService();
+    const firstAdd = vi.fn(async () => makeCronJob({ id: "first-gateway-job" }));
+    const secondAdd = vi.fn(async () => makeCronJob({ id: "restarted-gateway-job" }));
+    firstCron.add = firstAdd;
+    secondCron.add = secondAdd;
+    const config = {
+      plugins: {
+        enabled: true,
+        entries: { [pluginId]: { enabled: true } },
+      },
+    };
+
+    await withEnvAsync(
+      {
+        OPENCLAW_BUNDLED_PLUGINS_DIR: bundledDir,
+        OPENCLAW_DISABLE_BUNDLED_PLUGINS: undefined,
+        OPENCLAW_STATE_DIR: makeTempDir(),
+      },
+      async () => {
+        const first = loadOpenClawPlugins({ config, hostServices: { cron: firstCron } });
+        const firstHandler = first.gatewayHandlers[method];
+        if (!firstHandler) {
+          throw new Error("missing first gateway scheduler handler");
+        }
+
+        await expect(
+          invokePluginGatewayHandler({ handler: firstHandler, method }),
+        ).resolves.toEqual(expect.objectContaining({ id: "first-gateway-job", pluginId }));
+
+        await clearActivePluginRegistry();
+
+        const restarted = loadOpenClawPlugins({ config, hostServices: { cron: secondCron } });
+        const restartedHandler = restarted.gatewayHandlers[method];
+        if (!restartedHandler) {
+          throw new Error("missing restarted gateway scheduler handler");
+        }
+
+        expect(restarted).not.toBe(first);
+        expect(restartedHandler).not.toBe(firstHandler);
+        await expect(
+          invokePluginGatewayHandler({ handler: restartedHandler, method }),
+        ).resolves.toEqual(expect.objectContaining({ id: "restarted-gateway-job", pluginId }));
+        expect(firstAdd).toHaveBeenCalledTimes(1);
+        expect(secondAdd).toHaveBeenCalledTimes(1);
+      },
+    );
   });
 
   it("keeps stale scheduled-turn rollback non-throwing when cron cleanup fails", async () => {
