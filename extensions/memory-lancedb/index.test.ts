@@ -81,19 +81,18 @@ type MockOpenAiEmbeddingPost = (
 ) => unknown;
 
 function installMockOpenAiEmbeddingTransport(params: {
-  post: MockOpenAiEmbeddingPost | ReturnType<typeof vi.fn>;
-  onRequest?: (() => void) | ReturnType<typeof vi.fn>;
+  post: MockOpenAiEmbeddingPost;
+  onRequest?: () => void;
 }): void {
   vi.doMock("openclaw/plugin-sdk/ssrf-runtime", async (importOriginal) => ({
     ...(await importOriginal<typeof import("openclaw/plugin-sdk/ssrf-runtime")>()),
     fetchWithSsrFGuard: async (request: { init?: RequestInit; timeoutMs?: number }) => {
-      (params.onRequest as (() => void) | undefined)?.();
+      params.onRequest?.();
       if (typeof request.init?.body !== "string") {
         throw new Error("expected serialized embedding request body");
       }
       const body = JSON.parse(request.init.body) as unknown;
-      const post = params.post as MockOpenAiEmbeddingPost;
-      const payload = await post("/embeddings", { body, timeout: request.timeoutMs });
+      const payload = await params.post("/embeddings", { body, timeout: request.timeoutMs });
       return {
         response:
           payload instanceof Response
@@ -246,8 +245,8 @@ async function withMockedOpenAiMemoryPlugin<T>(params: {
 
   vi.resetModules();
   installMockOpenAiEmbeddingTransport({
-    post,
-    onRequest: params.onEmbeddingRequest,
+    post: post as unknown as MockOpenAiEmbeddingPost,
+    onRequest: params.onEmbeddingRequest as unknown as () => void,
   });
   vi.doMock("./lancedb-runtime.js", () => ({
     loadLanceDbModule: params.loadLanceDbModule,
