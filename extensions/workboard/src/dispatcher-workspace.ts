@@ -50,6 +50,28 @@ type WorkboardTerminalRunEvent = {
   error?: string;
 };
 
+const MAX_PENDING_TERMINAL_RUNS = 64;
+const pendingTerminalRunEvents = new WeakMap<
+  WorkboardStore,
+  Map<string, WorkboardTerminalRunEvent>
+>();
+
+function rememberPendingTerminalRun(store: WorkboardStore, event: WorkboardTerminalRunEvent): void {
+  let events = pendingTerminalRunEvents.get(store);
+  if (!events) {
+    events = new Map();
+    pendingTerminalRunEvents.set(store, events);
+  }
+  if (events.has(event.runId)) {
+    return;
+  }
+  events.set(event.runId, event);
+  const oldestRunId = events.keys().next().value;
+  if (events.size > MAX_PENDING_TERMINAL_RUNS && oldestRunId) {
+    events.delete(oldestRunId);
+  }
+}
+
 function terminalRunReason(event: WorkboardTerminalRunEvent): string {
   const error = event.error?.trim().slice(0, 1200);
   if (error) {
@@ -75,7 +97,29 @@ export async function reconcileWorkboardTerminalRun(params: {
   store: WorkboardStore;
   event: WorkboardTerminalRunEvent;
 }): Promise<void> {
-  await params.store.blockTerminalRun(params.event.runId, terminalRunReason(params.event));
+  const card = await params.store.blockTerminalRun(
+    params.event.runId,
+    terminalRunReason(params.event),
+  );
+  if (!card) {
+    // `subagent_ended` can arrive after run() resolves but before dispatch
+    // records the run id. Retain this owner-local event for that exact write.
+    rememberPendingTerminalRun(params.store, params.event);
+  }
+}
+
+export async function reconcilePendingWorkboardTerminalRun(params: {
+  store: WorkboardStore;
+  runId: string;
+}): Promise<WorkboardTerminalRunEvent | undefined> {
+  const events = pendingTerminalRunEvents.get(params.store);
+  const event = events?.get(params.runId);
+  if (!event) {
+    return undefined;
+  }
+  events?.delete(params.runId);
+  const card = await params.store.blockTerminalRun(event.runId, terminalRunReason(event));
+  return card ? event : undefined;
 }
 
 export async function resolveDispatchWorkspaceAccess(params: {

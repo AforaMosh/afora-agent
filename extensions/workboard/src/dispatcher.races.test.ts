@@ -164,6 +164,52 @@ describe("Workboard dispatcher lifecycle races", () => {
     expect((await store.get(card.id))?.metadata?.claim).toBeUndefined();
   });
 
+  it("reconciles a terminal event that arrives before the run id is persisted", async () => {
+    const store = new WorkboardStore(createMemoryStore());
+    const card = await store.create({
+      title: "Terminal before persistence",
+      status: "ready",
+      workspaceAccess: { unrestricted: true },
+    });
+    const originalUpdate = store.update.bind(store);
+    vi.spyOn(store, "update").mockImplementation(async (id, patch) => {
+      if (patch.runId === "run-terminal-before-persist") {
+        await reconcileWorkboardTerminalRun({
+          store,
+          event: {
+            runId: "run-terminal-before-persist",
+            outcome: "error",
+            error: "worker exited immediately",
+          },
+        });
+      }
+      return await originalUpdate(id, patch);
+    });
+
+    await dispatchAndStartWorkboardCards({
+      store,
+      subagent: { run: vi.fn().mockResolvedValue({ runId: "run-terminal-before-persist" }) },
+      options: { now: 10, maxStarts: 1 },
+    });
+
+    const current = await store.get(card.id);
+    expect(current).toMatchObject({
+      status: "blocked",
+      runId: "run-terminal-before-persist",
+      execution: { status: "blocked", runId: "run-terminal-before-persist" },
+      metadata: {
+        attempts: [
+          expect.objectContaining({
+            status: "blocked",
+            runId: "run-terminal-before-persist",
+            error: expect.stringContaining("worker exited immediately"),
+          }),
+        ],
+      },
+    });
+    expect(current?.metadata?.claim).toBeUndefined();
+  });
+
   it("blocks a nominal terminal run that omitted its Workboard lifecycle action", async () => {
     const store = new WorkboardStore(createMemoryStore());
     const card = await store.create({
