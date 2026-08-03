@@ -321,6 +321,23 @@ export class CodexNativeSubagentMonitor {
         : undefined;
       const state = parentThreadId ? this.parentStates.get(parentThreadId) : undefined;
       if (state && parentThreadId) {
+        // Codex multi-agent V2 exposes the child only through this parent-scoped
+        // activity item; the later wait item has no receiver thread ids.
+        if (
+          notification.method === "item/completed" &&
+          readString(item, "type") === "subAgentActivity"
+        ) {
+          const childThreadId = readString(item, "agentThreadId")?.trim();
+          const agentPath = readString(item, "agentPath");
+          if (childThreadId) {
+            this.registerChildThread(
+              parentThreadId,
+              childThreadId,
+              agentPath === undefined ? {} : { agentPath },
+            );
+          }
+          return state;
+        }
         const isSpawnAgentTool = normalizeToolName(readString(item, "tool")) === "spawnagent";
         const childThreadIds = isSpawnAgentTool
           ? new Set([

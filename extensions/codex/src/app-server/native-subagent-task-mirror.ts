@@ -75,6 +75,15 @@ export class CodexNativeSubagentTaskMirror {
       return;
     }
     if (notification.method === "item/started" || notification.method === "item/completed") {
+      const item = isJsonObject(params.item) ? params.item : undefined;
+      if (
+        notification.method === "item/completed" &&
+        item &&
+        readString(item, "type") === "subAgentActivity"
+      ) {
+        this.handleSubagentActivityItem(params);
+        return;
+      }
       this.handleCollabAgentItem(params);
     }
   }
@@ -245,34 +254,75 @@ export class CodexNativeSubagentTaskMirror {
     }
   }
 
-  private createTaskFromCollabSpawnItem(threadId: string, item: JsonObject): void {
-    const normalizedThreadId = threadId.trim();
-    if (!normalizedThreadId || this.mirroredThreadIds.has(normalizedThreadId)) {
+  private handleSubagentActivityItem(params: JsonObject): void {
+    const item = isJsonObject(params.item) ? params.item : undefined;
+    if (
+      !item ||
+      readString(item, "type") !== "subAgentActivity" ||
+      readString(params, "threadId") !== this.params.parentThreadId
+    ) {
       return;
     }
-    this.mirroredThreadIds.add(normalizedThreadId);
+    const threadId = trimOptional(readString(item, "agentThreadId"));
+    if (!threadId || normalizeSubagentActivityKind(readString(item, "kind")) !== "started") {
+      return;
+    }
+    const agentPath = trimOptional(readString(item, "agentPath"));
+    const eventAt = this.now();
+    this.createRunningTask({
+      threadId,
+      label: "Codex subagent",
+      task: agentPath ? `Codex native subagent ${agentPath}` : "Codex native subagent",
+      startedAt: eventAt,
+      progressSummary: "Codex native subagent started.",
+    });
+  }
+
+  private createTaskFromCollabSpawnItem(threadId: string, item: JsonObject): void {
     const prompt = trimOptional(readString(item, "prompt"));
-    const runId = codexNativeSubagentRunId(normalizedThreadId);
+    const eventAt = this.now();
+    this.createRunningTask({
+      threadId,
+      label: "Codex subagent",
+      task: prompt ?? "Codex native subagent",
+      startedAt: eventAt,
+      progressSummary: "Codex native subagent spawned.",
+    });
+  }
+
+  private createRunningTask(params: {
+    threadId: string;
+    label: string;
+    task: string;
+    startedAt: number;
+    progressSummary: string;
+  }): void {
+    const threadId = params.threadId.trim();
+    if (!threadId || this.mirroredThreadIds.has(threadId)) {
+      return;
+    }
+    this.mirroredThreadIds.add(threadId);
+    const runId = codexNativeSubagentRunId(threadId);
     const createdAt = this.now();
     const taskRecord = this.runtime.tryCreateRunningTaskRun({
       sourceId: runId,
       agentId: this.params.agentId,
       runId,
-      label: "Codex subagent",
-      task: prompt ?? "Codex native subagent",
+      label: params.label,
+      task: params.task,
       notifyPolicy: "silent",
       deliveryStatus: "not_applicable",
       preferMetadata: true,
-      startedAt: createdAt,
+      startedAt: params.startedAt,
       lastEventAt: createdAt,
-      progressSummary: "Codex native subagent spawned.",
+      progressSummary: params.progressSummary,
     });
     if (!taskRecord) {
-      this.mirroredThreadIds.delete(normalizedThreadId);
-      this.failedMirrorThreadIds.add(normalizedThreadId);
+      this.mirroredThreadIds.delete(threadId);
+      this.failedMirrorThreadIds.add(threadId);
       return;
     }
-    this.failedMirrorThreadIds.delete(normalizedThreadId);
+    this.failedMirrorThreadIds.delete(threadId);
     this.terminalRunIds.delete(runId);
     this.authoritativeRunIds.delete(runId);
   }
@@ -452,6 +502,10 @@ function readNullableString(value: JsonObject, key: string): string | null | und
 
 function normalizeToolName(value: string | undefined): string | undefined {
   return value?.replace(/[^a-z0-9]/giu, "").toLowerCase();
+}
+
+function normalizeSubagentActivityKind(value: string | undefined): "started" | undefined {
+  return value?.replace(/[^a-z]/giu, "").toLowerCase() === "started" ? "started" : undefined;
 }
 
 function normalizeCollabToolCallStatus(value: string | undefined): string | undefined {
