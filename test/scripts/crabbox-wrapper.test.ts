@@ -812,15 +812,27 @@ describe("scripts/crabbox-wrapper", () => {
       type: "c7a.8xlarge",
     },
     {
+      workload: "ci-docker",
+      provider: "azure",
+      unavailable: "blacksmith-testbox",
+      type: "Standard_D16ads_v6",
+    },
+    {
+      workload: "ci-docker",
+      provider: "aws",
+      unavailable: "blacksmith-testbox,azure",
+      type: "c7a.8xlarge",
+    },
+    {
       workload: "release-proof",
       provider: "azure",
-      unavailable: "blacksmith-testbox,daytona",
+      unavailable: "blacksmith-testbox",
       type: "Standard_D16ads_v6",
     },
     {
       workload: "release-proof",
       provider: "aws",
-      unavailable: "blacksmith-testbox,daytona,azure",
+      unavailable: "blacksmith-testbox,azure",
       type: "c7a.8xlarge",
     },
   ])(
@@ -1093,6 +1105,17 @@ describe("scripts/crabbox-wrapper", () => {
 
     expect(result.status).toBe(2);
     expect(result.stderr).toContain("workload=windows requires target=windows");
+    expect(result.stdout).toBe("");
+  });
+
+  it("rejects Docker CI on non-Linux targets", () => {
+    const result = runBrokerWrapper(
+      ["run", "--workload", "ci-docker", "--target", "windows", "--", "echo ok"],
+      {},
+    );
+
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain("workload=ci-docker requires target=linux");
     expect(result.stdout).toBe("");
   });
 
@@ -1978,6 +2001,56 @@ describe("scripts/crabbox-wrapper", () => {
     const { output } = runSuccessfulWindowsHydrate(...args);
 
     expect(output.args).toEqual(windowsHydrateArgs(...args));
+  });
+
+  it("upgrades generic Docker CI hydration to the Docker-required job", () => {
+    const { output } = runSuccessfulBrokerWrapper([
+      "actions",
+      "hydrate",
+      "--workload",
+      "ci-docker",
+      "--provider",
+      "azure",
+      "--target",
+      "linux",
+      "--id",
+      "cbx_existing",
+      "--job",
+      "hydrate",
+    ]);
+
+    expect(output.args).toEqual([
+      "actions",
+      "hydrate",
+      "--provider",
+      "azure",
+      "--target",
+      "linux",
+      "--id",
+      "cbx_existing",
+      "--job",
+      "hydrate-docker",
+    ]);
+  });
+
+  it("preserves an explicit specialized Docker CI hydration job", () => {
+    const { output } = runSuccessfulBrokerWrapper([
+      "actions",
+      "hydrate",
+      "--workload",
+      "ci-docker",
+      "--provider",
+      "azure",
+      "--target",
+      "linux",
+      "--id",
+      "cbx_existing",
+      "--job",
+      "hydrate-github",
+    ]);
+
+    expect(output.args).toContain("hydrate-github");
+    expect(output.args).not.toContain("hydrate-docker");
   });
 
   it("keeps WSL2 hydrate actions on the requested job", () => {

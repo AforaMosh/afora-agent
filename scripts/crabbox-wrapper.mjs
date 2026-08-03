@@ -23,6 +23,7 @@ import { StringDecoder } from "node:string_decoder";
 import { fileURLToPath } from "node:url";
 import {
   crabboxProviderChain,
+  crabboxWorkloadHydrateJob,
   crabboxWorkloadServerType,
   normalizeCrabboxWorkload,
 } from "./crabbox-routing-policy.mjs";
@@ -713,6 +714,15 @@ function selectedProvider(commandArgs, advertisedProviders = [], versionText = "
       error: "Crabbox workload=windows requires target=windows",
     };
   }
+  if (workload === "ci-docker" && (targetContext.target || "linux") !== "linux") {
+    return {
+      provider: "",
+      source: "policy",
+      workload,
+      chain: [],
+      error: "Crabbox workload=ci-docker requires target=linux",
+    };
+  }
   const configured = canonicalProviderName(configProvider());
   const chain = workload
     ? crabboxProviderChain({
@@ -1133,13 +1143,26 @@ function ensureNativeWindowsHydrateJob(commandArgs) {
     return commandArgs;
   }
 
+  return replaceGenericHydrateJob(commandArgs, "hydrate-windows-daemon");
+}
+
+function ensureWorkloadHydrateJob(commandArgs, selection, targetContext) {
+  if (commandArgs[0] !== "actions" || commandArgs[1] !== "hydrate") {
+    return commandArgs;
+  }
+  const replacementJob = crabboxWorkloadHydrateJob({
+    workload: selection.workload,
+    target: targetContext.target,
+  });
+  return replacementJob ? replaceGenericHydrateJob(commandArgs, replacementJob) : commandArgs;
+}
+
+function replaceGenericHydrateJob(commandArgs, replacementJob) {
   const currentJob = optionValue(commandArgs, "--job");
   if (currentJob && currentJob !== "hydrate") {
     return commandArgs;
   }
-
   const normalizedArgs = [...commandArgs];
-  const replacementJob = "hydrate-windows-daemon";
   const optionEnd = commandOptionEnd(normalizedArgs);
   for (let index = 0; index < optionEnd; index += 1) {
     const arg = normalizedArgs[index];
@@ -3753,7 +3776,11 @@ const targetContext = effectiveTargetContext(args);
 let normalizedArgs = ensureAwsMacOnDemandMarket(
   ensurePolicyCapacity(
     ensurePolicyProvider(
-      ensureNativeWindowsHydrateJob(ensureAzureWindowsProvider(args, provider, providers)),
+      ensureWorkloadHydrateJob(
+        ensureNativeWindowsHydrateJob(ensureAzureWindowsProvider(args, provider, providers)),
+        providerSelection,
+        targetContext,
+      ),
       providerSelection,
     ),
     providerSelection,
