@@ -2785,7 +2785,7 @@ describe("subagent registry lifecycle hardening", () => {
         batchRunIds: ["run-1", "run-2"],
         requesterYieldBatch: true,
         rearmGeneration: 3,
-      };
+      } satisfies NonNullable<SubagentRunRecord["requesterSettleWake"]>;
       const entry = createRunEntry({
         expectsCompletionMessage: true,
         delivery: { status: "pending" },
@@ -4295,7 +4295,7 @@ describe("requester settle wake trigger", () => {
       batchRunIds: ["run-final", "run-last"],
       requesterYieldBatch: true,
       rearmGeneration: 3,
-    };
+    } satisfies NonNullable<SubagentRunRecord["requesterSettleWake"]>;
     const finalOwner = createRunEntry({
       runId: "run-final",
       childSessionKey: "agent:main:subagent:final",
@@ -4344,7 +4344,7 @@ describe("requester settle wake trigger", () => {
       requesterYieldBatch: true,
       rearmGeneration: 3,
       retireAfterSettle: true,
-    };
+    } satisfies NonNullable<SubagentRunRecord["requesterSettleWake"]>;
     const finalOwner = createRunEntry({
       runId: "run-final",
       childSessionKey: "agent:main:subagent:final",
@@ -4424,7 +4424,7 @@ describe("requester settle wake trigger", () => {
       batchRunIds: ["run-1", "run-2"],
       requesterYieldBatch: true,
       rearmGeneration: 3,
-    };
+    } satisfies NonNullable<SubagentRunRecord["requesterSettleWake"]>;
     const entry = createRunEntry({
       endedAt: 4_000,
       delivery: { status: "delivered", requesterVisibleFinalGeneration: 3 },
