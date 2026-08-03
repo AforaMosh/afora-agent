@@ -4148,7 +4148,7 @@ describe("requester settle wake trigger", () => {
     expect(settleWake).not.toHaveBeenCalled();
     expect(entry.requesterSettleWake).toBeUndefined();
     expect(taskExecutorMocks.completeTaskRunByRunId.mock.invocationCallOrder[0]).toBeLessThan(
-      runSubagentAnnounceFlow.mock.invocationCallOrder[0]!,
+      vi.mocked(runSubagentAnnounceFlow).mock.invocationCallOrder[0]!,
     );
   });
 

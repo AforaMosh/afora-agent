@@ -5,13 +5,9 @@ import { isFastTestRuntimeEnv } from "../infra/env.js";
 import { runWithGatewayIndependentRootWorkAdmission } from "../process/gateway-work-admission.js";
 import { emitSessionLifecycleEvent } from "../sessions/session-lifecycle-events.js";
 import { createLazyImportLoader } from "../shared/lazy-promise.js";
-import {
-  SUBAGENT_ENDED_REASON_ERROR,
-  SUBAGENT_ENDED_REASON_KILLED,
-} from "./subagent-lifecycle-events.js";
+import { SUBAGENT_ENDED_REASON_ERROR } from "./subagent-lifecycle-events.js";
 import { shouldSuppressSubagentRecoverySessionEffects } from "./subagent-recovery-state.js";
 import type { createSubagentRegistryCompletionRuntime } from "./subagent-registry-completion-runtime.js";
-import { resolveFinalizedSubagentTaskState } from "./subagent-registry-completion.js";
 import { reconcileOrphanedRun, safeRemoveAttachmentsDir } from "./subagent-registry-helpers.js";
 import type { createSubagentRegistryLifecycleController } from "./subagent-registry-lifecycle.js";
 import { createInterruptedRecoveryCoordinator } from "./subagent-registry-restart-recovery-coordinator.js";
@@ -24,18 +20,18 @@ import {
   SUBAGENT_SUSPENDED_DELIVERY_HARD_CAP,
   SUBAGENT_SUSPENDED_DELIVERY_WARNING_COUNT,
 } from "./subagent-registry-suspended-delivery.js";
+import { resumeYieldedSubagentRequesterRecovery } from "./subagent-registry-sweeper-yielded-recovery.js";
 export { retireSupersededSubagentRun } from "./subagent-registry-sweeper-retire.js";
 import {
   reconcileDurableSubagentKillIntent,
   reconcileProvisionalSubagentKill,
-  resolveSubagentTaskForRun,
 } from "./subagent-registry-sweep-kill.js";
 import type {
   ContextEngineSubagentEndedParams,
   SubagentCompletionRequest,
   SubagentRunRecord,
 } from "./subagent-registry.types.js";
-import { hasSubagentRunEnded, isStaleUnendedSubagentRun } from "./subagent-run-liveness.js";
+import { isStaleUnendedSubagentRun } from "./subagent-run-liveness.js";
 import { isSessionLifecycleChangedGatewayError } from "./subagent-session-cleanup.js";
 import {
   loadSubagentSessionEntry,
@@ -299,77 +295,14 @@ export function createSubagentRegistrySweeper(params: {
           // The restored FIFO callback owns this row until durable settlement.
           continue;
         }
-        const yieldedWakeNeedsExecutionOwner =
-          entry.requesterSettleWake?.requesterYieldBatch === true &&
-          (!hasSubagentRunEnded(entry) ||
-            entry.terminalOwner === "interrupted-recovery" ||
-            entry.execution.restartRecovery?.phase === "accepted" ||
-            Boolean(entry.killIntent || entry.killReconciliation));
-        if (entry.requesterSettleWake && !yieldedWakeNeedsExecutionOwner) {
-          const delivery = entry.delivery;
-          const markedFinalAwaitingCleanup =
-            delivery?.status === "delivered" &&
-            typeof entry.requesterSettleWake.rearmGeneration === "number" &&
-            delivery.requesterVisibleFinalGeneration === entry.requesterSettleWake.rearmGeneration;
-          const yieldedWakeNeedsCleanupOwner =
-            entry.requesterSettleWake.requesterYieldBatch === true &&
-            typeof entry.cleanupCompletedAt !== "number" &&
-            (delivery?.status === "pending" ||
-              delivery?.status === "in_progress" ||
-              delivery?.status === "failed" ||
-              markedFinalAwaitingCleanup);
-          if (yieldedWakeNeedsCleanupOwner) {
-            const alreadyAnnounced =
-              delivery?.status === "delivered" || typeof delivery?.announcedAt === "number";
-            const suppressedKilledCompletion =
-              entry.endedReason === SUBAGENT_ENDED_REASON_KILLED &&
-              entry.suppressCompletionDelivery === true &&
-              entry.execution.outcome?.status === "error";
-            if (
-              entry.cleanupHandled !== true &&
-              (entry.completion?.resultText !== undefined || suppressedKilledCompletion) &&
-              entry.endedReason !== undefined &&
-              entry.pauseReason !== "sessions_yield" &&
-              !getAgentRunContext(runId) &&
-              delivery?.disposition !== "session_queued" &&
-              (alreadyAnnounced ||
-                suppressedKilledCompletion ||
-                (delivery?.nextAttemptAt ?? 0) <= now)
-            ) {
-              const expectedTask = resolveFinalizedSubagentTaskState(entry);
-              const task = resolveSubagentTaskForRun(
-                params.getRunsForChildSession(entry.childSessionKey),
-                entry,
-              );
-              const committedCompletion = Boolean(
-                expectedTask &&
-                task.lookup === "available" &&
-                task.task &&
-                (task.task.status === expectedTask.status ||
-                  (expectedTask.status !== "cancelled" && task.task.status === "succeeded")) &&
-                task.task.endedAt === expectedTask.endedAt,
-              );
-              const committedSuppressedKill = Boolean(
-                suppressedKilledCompletion &&
-                task.lookup === "available" &&
-                task.task?.status === "cancelled" &&
-                typeof task.task.endedAt === "number" &&
-                Number.isFinite(task.task.endedAt) &&
-                typeof entry.execution.endedAt === "number" &&
-                task.task.endedAt >= entry.execution.endedAt,
-              );
-              if (committedCompletion || committedSuppressedKill) {
-                // Exact task ownership fences provider races; delivered finals skip
-                // announcement, while reconciled kills need no captured reply.
-                if (params.startSubagentAnnounceCleanupFlow(runId, entry)) {
-                  resumedRuns.add(runId);
-                }
-              }
+        if (entry.requesterSettleWake) {
+          const yieldedRecovery = resumeYieldedSubagentRequesterRecovery(runId, entry, now, params);
+          if (yieldedRecovery !== "execution-owner") {
+            if (yieldedRecovery === "requester-wake") {
+              params.resumeRequesterSettleWake(runId, entry);
             }
             continue;
           }
-          params.resumeRequesterSettleWake(runId, entry);
-          continue;
         }
         if (isSuspendedPendingFinalDelivery(entry)) {
           const expired =
