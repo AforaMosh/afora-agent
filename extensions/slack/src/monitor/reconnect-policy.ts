@@ -13,7 +13,7 @@ export const SLACK_SOCKET_RECONNECT_POLICY = {
   jitter: 0.25,
 } as const;
 
-type SlackSocketDisconnectEvent = "disconnect" | "unable_to_socket_mode_start" | "error";
+type SlackSocketDisconnectEvent = "disconnect" | "unable_to_socket_mode_start";
 
 type EmitterLike = {
   on: (event: string, listener: (...args: unknown[]) => void) => unknown;
@@ -90,12 +90,36 @@ export function formatSlackSocketModeSharedConnectionWarning(activeConnections: 
 export function registerSlackSocketModeConnectionDiagnostics(params: {
   app: unknown;
   onSharedConnection: (activeConnections: number) => void;
-}): () => void {
+  onDisconnected: (error?: unknown) => void;
+  onReconnected: (isCurrentConnection: () => boolean) => void;
+}): {
+  isConnected: () => boolean;
+  markStartedConnection: () => () => boolean;
+  unregister: () => void;
+} {
   const emitter = getSocketEmitter(params.app);
   if (!emitter) {
-    return () => {};
+    return {
+      isConnected: () => true,
+      markStartedConnection: () => () => true,
+      unregister: () => {},
+    };
   }
   let hasWarned = false;
+  let connectionState: "idle" | "connected" | "recovering" = "idle";
+  let connectionEpoch = 0;
+  const captureConnection = () => {
+    const capturedEpoch = connectionEpoch;
+    return () => connectionState === "connected" && connectionEpoch === capturedEpoch;
+  };
+  const markStartedConnection = () => {
+    // Bolt resolves start only after hello; restarted receiver adapters may omit that event.
+    if (connectionState !== "connected") {
+      connectionState = "connected";
+      connectionEpoch += 1;
+    }
+    return captureConnection();
+  };
   const listener = (message: unknown, isBinary?: unknown) => {
     if (isBinary === true || hasWarned) {
       return;
@@ -107,9 +131,57 @@ export function registerSlackSocketModeConnectionDiagnostics(params: {
     hasWarned = true;
     params.onSharedConnection(activeConnections);
   };
+  // Native Slack reconnects never emit `disconnected`; observe their lifecycle
+  // without resolving the terminal waiter or starting a competing reconnect.
+  const handleConnectionLoss = (error?: unknown) => {
+    if (connectionState !== "connected") {
+      return;
+    }
+    connectionState = "recovering";
+    connectionEpoch += 1;
+    params.onDisconnected(error);
+  };
+  const handleConnectionError = (error: unknown) => {
+    if (connectionState === "connected") {
+      handleConnectionLoss(error);
+    } else if (connectionState === "recovering") {
+      params.onDisconnected(error);
+    }
+  };
+  const handleConnected = () => {
+    if (connectionState === "connected") {
+      return;
+    }
+    const wasRecovering = connectionState === "recovering";
+    connectionState = "connected";
+    connectionEpoch += 1;
+    if (wasRecovering) {
+      params.onReconnected(captureConnection());
+    }
+  };
+  const handleManualDisconnect = () => {
+    connectionState = "idle";
+    connectionEpoch += 1;
+  };
   emitter.on("ws_message", listener);
-  return () => {
-    emitter.off("ws_message", listener);
+  emitter.on("close", handleConnectionLoss);
+  emitter.on("error", handleConnectionError);
+  emitter.on("reconnecting", handleConnectionLoss);
+  emitter.on("connected", handleConnected);
+  emitter.on("disconnecting", handleManualDisconnect);
+  return {
+    isConnected: () => connectionState === "connected",
+    markStartedConnection,
+    unregister: () => {
+      connectionState = "idle";
+      connectionEpoch += 1;
+      emitter.off("ws_message", listener);
+      emitter.off("close", handleConnectionLoss);
+      emitter.off("error", handleConnectionError);
+      emitter.off("reconnecting", handleConnectionLoss);
+      emitter.off("connected", handleConnected);
+      emitter.off("disconnecting", handleManualDisconnect);
+    },
   };
 }
 
@@ -132,13 +204,11 @@ export function waitForSlackSocketDisconnect(
     const disconnectListener = () => resolveOnce({ event: "disconnect" });
     const startFailListener = (error?: unknown) =>
       resolveOnce({ event: "unable_to_socket_mode_start", error });
-    const errorListener = (error: unknown) => resolveOnce({ event: "error", error });
     const abortListener = () => resolveOnce({ event: "disconnect" });
 
     const cleanup = () => {
       emitter.off("disconnected", disconnectListener);
       emitter.off("unable_to_socket_mode_start", startFailListener);
-      emitter.off("error", errorListener);
       abortSignal?.removeEventListener("abort", abortListener);
     };
 
@@ -149,7 +219,6 @@ export function waitForSlackSocketDisconnect(
 
     emitter.on("disconnected", disconnectListener);
     emitter.on("unable_to_socket_mode_start", startFailListener);
-    emitter.on("error", errorListener);
     abortSignal?.addEventListener("abort", abortListener, { once: true });
   });
 }

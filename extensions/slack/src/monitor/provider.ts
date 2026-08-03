@@ -61,6 +61,7 @@ import {
   resolveSlackIdentityHealth,
   resolveSlackInstallationIdentity,
   type SlackAuthTestIdentity,
+  type SlackIdentityHealth,
 } from "./enterprise-install.js";
 import { registerSlackMonitorEvents } from "./events.js";
 import { createSlackDurableIngress } from "./ingress.js";
@@ -397,6 +398,22 @@ export async function monitorSlackProvider(opts: MonitorSlackOpts = {}) {
     ...(opts.abortSignal ? { abortSignal: opts.abortSignal } : {}),
   });
   const monitorContextRef: { current?: SlackMonitorContext } = {};
+  const socketConnectionRef: { current?: () => boolean } = {};
+  const publishCurrentSlackConnectedStatus = (
+    identityHealth: SlackIdentityHealth,
+    isCurrentConnection?: () => boolean,
+  ) => {
+    if (opts.abortSignal?.aborted) {
+      return;
+    }
+    if (slackMode === "socket") {
+      const isCurrent = isCurrentConnection ?? socketConnectionRef.current;
+      if (!isCurrent?.()) {
+        return;
+      }
+    }
+    publishSlackConnectedStatus(opts.setStatus, identityHealth);
+  };
   const { app, receiver, socketModeLogger } = createSlackBoltApp({
     interop: await getSlackBoltInterop(),
     slackMode,
@@ -419,7 +436,7 @@ export async function monitorSlackProvider(opts: MonitorSlackOpts = {}) {
           isEnterpriseInstall: identity.isEnterpriseInstall,
         })
       ) {
-        publishSlackConnectedStatus(opts.setStatus, current.identityHealth);
+        publishCurrentSlackConnectedStatus(current.identityHealth);
       }
     },
   });
@@ -458,15 +475,6 @@ export async function monitorSlackProvider(opts: MonitorSlackOpts = {}) {
         }
       : null;
   let unregisterHttpHandler: (() => void) | null = null;
-  const unregisterSocketModeConnectionDiagnostics =
-    slackMode === "socket"
-      ? registerSlackSocketModeConnectionDiagnostics({
-          app,
-          onSharedConnection: (activeConnections) => {
-            runtime.log?.(warn(formatSlackSocketModeSharedConnectionWarning(activeConnections)));
-          },
-        })
-      : () => {};
 
   let botUserId = "";
   let botId = "";
@@ -578,7 +586,6 @@ export async function monitorSlackProvider(opts: MonitorSlackOpts = {}) {
     mediaMaxBytes,
   });
   monitorContextRef.current = ctx;
-
   const recoverSlackIdentity = async () => {
     if (ctx.identityHealth.lifecycle !== "blocked") {
       return;
@@ -601,6 +608,29 @@ export async function monitorSlackProvider(opts: MonitorSlackOpts = {}) {
       // The socket is usable while identity remains degraded; retry on its next start.
     }
   };
+  const publishRecoveredSlackIdentity = async (isCurrentConnection: () => boolean) => {
+    await recoverSlackIdentity();
+    publishCurrentSlackConnectedStatus(ctx.identityHealth, isCurrentConnection);
+  };
+  const socketModeConnectionDiagnostics =
+    slackMode === "socket"
+      ? registerSlackSocketModeConnectionDiagnostics({
+          app,
+          onSharedConnection: (activeConnections) => {
+            runtime.log?.(warn(formatSlackSocketModeSharedConnectionWarning(activeConnections)));
+          },
+          onDisconnected: (error) => publishSlackDisconnectedStatus(opts.setStatus, error),
+          onReconnected: (isCurrentConnection) => {
+            // Slack emits lifecycle events synchronously and never observes async listener errors.
+            void publishRecoveredSlackIdentity(isCurrentConnection).catch((error) => {
+              runtime.error?.(
+                `slack socket mode identity recovery failed: ${formatUnknownError(error)}`,
+              );
+            });
+          },
+        })
+      : undefined;
+  socketConnectionRef.current = socketModeConnectionDiagnostics?.isConnected;
 
   // Slack's socket-mode client keeps ping/pong health private and closes on
   // missed pongs. App events are useful status activity, but not transport proof.
@@ -818,10 +848,10 @@ export async function monitorSlackProvider(opts: MonitorSlackOpts = {}) {
         log: runtime.log,
         accountId: account.accountId,
       });
-      publishSlackConnectedStatus(opts.setStatus, ctx.identityHealth);
+      publishCurrentSlackConnectedStatus(ctx.identityHealth);
     }
 
-    if (slackMode === "socket") {
+    if (socketModeConnectionDiagnostics) {
       let reconnectAttempts = 0;
       let hasLoggedSocketConnected = false;
       while (!opts.abortSignal?.aborted) {
@@ -831,8 +861,9 @@ export async function monitorSlackProvider(opts: MonitorSlackOpts = {}) {
             abortSignal: opts.abortSignal,
             onStarted: async () => {
               reconnectAttempts = 0;
-              await recoverSlackIdentity();
-              publishSlackConnectedStatus(opts.setStatus, ctx.identityHealth);
+              await publishRecoveredSlackIdentity(
+                socketModeConnectionDiagnostics.markStartedConnection(),
+              );
               if (!hasLoggedSocketConnected) {
                 hasLoggedSocketConnected = true;
                 runtime.log?.(
@@ -950,7 +981,7 @@ export async function monitorSlackProvider(opts: MonitorSlackOpts = {}) {
       setSlackDefaultSendIdentity(account.accountId, undefined);
     }
     opts.abortSignal?.removeEventListener("abort", stopOnAbort);
-    unregisterSocketModeConnectionDiagnostics();
+    socketModeConnectionDiagnostics?.unregister();
     unregisterHttpHandler?.();
     await durableIngress.stop();
     await gracefulStop();
