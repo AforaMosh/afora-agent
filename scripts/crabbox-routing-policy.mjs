@@ -11,12 +11,36 @@ const workloadAliases = new Map([
   ["windows", "windows"],
 ]);
 
+const linuxCloudServerTypes = {
+  "ci-fast": {
+    aws: "c7a.4xlarge",
+    azure: "Standard_D4ads_v6",
+  },
+  "ci-proof": {
+    aws: "c7a.8xlarge",
+    azure: "Standard_D16ads_v6",
+  },
+  "release-proof": {
+    aws: "c7a.8xlarge",
+    azure: "Standard_D16ads_v6",
+  },
+};
+
 export function normalizeCrabboxWorkload(value) {
   const normalized = `${value ?? ""}`.trim().toLowerCase();
   if (!normalized) {
     return "";
   }
   return workloadAliases.get(normalized) ?? null;
+}
+
+export function crabboxWorkloadServerType({ workload, provider, target }) {
+  const normalizedTarget = `${target ?? ""}`.trim().toLowerCase() || "linux";
+  if (normalizedTarget !== "linux") {
+    return "";
+  }
+  const sizes = linuxCloudServerTypes[workload];
+  return sizes?.[`${provider ?? ""}`.trim().toLowerCase()] ?? "";
 }
 
 export function crabboxProviderChain({

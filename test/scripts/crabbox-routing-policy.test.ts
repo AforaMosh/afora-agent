@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   crabboxProviderChain,
+  crabboxWorkloadServerType,
   normalizeCrabboxWorkload,
   selectReadyCrabboxProvider,
 } from "../../scripts/crabbox-routing-policy.mjs";
@@ -12,6 +13,51 @@ describe("Crabbox routing policy", () => {
     expect(normalizeCrabboxWorkload("check")).toBe("ci-fast");
     expect(normalizeCrabboxWorkload("release")).toBe("release-proof");
     expect(normalizeCrabboxWorkload("unknown")).toBeNull();
+  });
+
+  it.each([
+    ["ci-fast", "azure", "Standard_D4ads_v6"],
+    ["ci-fast", "aws", "c7a.4xlarge"],
+    ["ci-proof", "azure", "Standard_D16ads_v6"],
+    ["ci-proof", "aws", "c7a.8xlarge"],
+    ["release-proof", "azure", "Standard_D16ads_v6"],
+    ["release-proof", "aws", "c7a.8xlarge"],
+  ] as const)("sizes %s automatic %s fallback as %s", (workload, provider, expected) => {
+    expect(crabboxWorkloadServerType({ workload, provider, target: "linux" })).toBe(expected);
+  });
+
+  it("treats Crabbox's empty target default as Linux", () => {
+    expect(
+      crabboxWorkloadServerType({
+        workload: "ci-fast",
+        provider: "azure",
+        target: "",
+      }),
+    ).toBe("Standard_D4ads_v6");
+  });
+
+  it("leaves Daytona and non-Linux sizing with their provider owners", () => {
+    expect(
+      crabboxWorkloadServerType({
+        workload: "ci-fast",
+        provider: "daytona",
+        target: "linux",
+      }),
+    ).toBe("");
+    expect(
+      crabboxWorkloadServerType({
+        workload: "ci-proof",
+        provider: "azure",
+        target: "windows",
+      }),
+    ).toBe("");
+    expect(
+      crabboxWorkloadServerType({
+        workload: "ci-proof",
+        provider: "aws",
+        target: "macos",
+      }),
+    ).toBe("");
   });
 
   it("routes CI checks through Blacksmith, Daytona, Azure, then AWS", () => {

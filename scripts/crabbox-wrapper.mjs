@@ -21,7 +21,11 @@ import { homedir, tmpdir } from "node:os";
 import { delimiter, dirname, extname, isAbsolute, relative, resolve } from "node:path";
 import { StringDecoder } from "node:string_decoder";
 import { fileURLToPath } from "node:url";
-import { crabboxProviderChain, normalizeCrabboxWorkload } from "./crabbox-routing-policy.mjs";
+import {
+  crabboxProviderChain,
+  crabboxWorkloadServerType,
+  normalizeCrabboxWorkload,
+} from "./crabbox-routing-policy.mjs";
 import {
   canonicalProviderName,
   isProviderAdvertised,
@@ -1077,6 +1081,29 @@ function ensurePolicyProvider(commandArgs, selection) {
   const normalizedArgs = [...commandArgs];
   const optionEnd = commandOptionEnd(normalizedArgs);
   normalizedArgs.splice(optionEnd, 0, "--provider", selection.provider);
+  return normalizedArgs;
+}
+
+function ensurePolicyCapacity(commandArgs, selection, targetContext) {
+  if (
+    selection.source !== "policy" ||
+    !selection.provider ||
+    hasOption(commandArgs, "--id") ||
+    hasOption(commandArgs, "--class") ||
+    hasOption(commandArgs, "--type")
+  ) {
+    return commandArgs;
+  }
+  const serverType = crabboxWorkloadServerType({
+    workload: selection.workload,
+    provider: canonicalProviderName(selection.provider),
+    target: targetContext.target,
+  });
+  if (!serverType) {
+    return commandArgs;
+  }
+  const normalizedArgs = [...commandArgs];
+  normalizedArgs.splice(commandOptionEnd(normalizedArgs), 0, "--type", serverType);
   return normalizedArgs;
 }
 
@@ -3722,10 +3749,15 @@ if (providerSelection.error) {
 const provider = providerSelection.provider;
 const canonicalProvider = canonicalProviderName(provider);
 const commandProviderValue = commandProvider(args);
+const targetContext = effectiveTargetContext(args);
 let normalizedArgs = ensureAwsMacOnDemandMarket(
-  ensurePolicyProvider(
-    ensureNativeWindowsHydrateJob(ensureAzureWindowsProvider(args, provider, providers)),
+  ensurePolicyCapacity(
+    ensurePolicyProvider(
+      ensureNativeWindowsHydrateJob(ensureAzureWindowsProvider(args, provider, providers)),
+      providerSelection,
+    ),
     providerSelection,
+    targetContext,
   ),
   provider,
 );

@@ -716,6 +716,10 @@ Blacksmith work only while the organization-wide inventory reports fewer than
 six active Testboxes. The wrapper requires Crabbox doctor output with
 `inventory_scope=all` and a numeric `active_leases`; a saturated, unavailable,
 or older inventory contract fails closed to Daytona, then Azure and AWS.
+Automatic Linux cloud fallbacks use bounded workload sizes: `ci-fast` pins
+Azure `Standard_D4ads_v6` or AWS `c7a.4xlarge`, while `ci-proof` and
+`release-proof` pin Azure `Standard_D16ads_v6` or AWS `c7a.8xlarge`. Daytona
+keeps CPU, memory, and disk ownership in its configured snapshot.
 Explicit `--provider blacksmith-testbox` requests and reuse of an owned
 `--id` bypass this admission policy. This is load shedding rather than an
 atomic hard cap, and it does not create or retain a warm pool. Update Crabbox

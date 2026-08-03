@@ -738,6 +738,7 @@ describe("scripts/crabbox-wrapper", () => {
       },
     );
     expect(output.args).toContain("daytona");
+    expect(output.args).not.toContain("--type");
     expect(result.stderr).toContain(
       "route workload=ci-fast selected=daytona chain=blacksmith-testbox,daytona,azure,aws",
     );
@@ -781,7 +782,111 @@ describe("scripts/crabbox-wrapper", () => {
       },
     );
     expect(output.args).toContain("aws");
+    expect(output.args).toContain("c7a.4xlarge");
     expect(result.stderr).toContain("selected=aws");
+  });
+
+  it.each([
+    {
+      workload: "ci-fast",
+      provider: "azure",
+      unavailable: "blacksmith-testbox,daytona",
+      type: "Standard_D4ads_v6",
+    },
+    {
+      workload: "ci-fast",
+      provider: "aws",
+      unavailable: "blacksmith-testbox,daytona,azure",
+      type: "c7a.4xlarge",
+    },
+    {
+      workload: "ci-proof",
+      provider: "azure",
+      unavailable: "blacksmith-testbox,daytona",
+      type: "Standard_D16ads_v6",
+    },
+    {
+      workload: "ci-proof",
+      provider: "aws",
+      unavailable: "blacksmith-testbox,daytona,azure",
+      type: "c7a.8xlarge",
+    },
+    {
+      workload: "release-proof",
+      provider: "azure",
+      unavailable: "blacksmith-testbox,daytona",
+      type: "Standard_D16ads_v6",
+    },
+    {
+      workload: "release-proof",
+      provider: "aws",
+      unavailable: "blacksmith-testbox,daytona,azure",
+      type: "c7a.8xlarge",
+    },
+  ])(
+    "pins automatic $workload $provider fallback to $type",
+    ({ workload, provider, unavailable, type }) => {
+      const { output } = runSuccessfulBrokerWrapper(
+        ["run", "--workload", workload, "--", "echo ok"],
+        {
+          env: {
+            OPENCLAW_FAKE_CRABBOX_UNREADY_PROVIDERS: unavailable,
+          },
+        },
+      );
+
+      expect(output.args).toContain(provider);
+      expect(output.args).toContain("--type");
+      expect(output.args).toContain(type);
+    },
+  );
+
+  it.each([
+    {
+      name: "explicit provider",
+      args: ["run", "--workload", "ci-fast", "--provider", "azure", "--", "echo ok"],
+    },
+    {
+      name: "explicit type",
+      args: [
+        "run",
+        "--workload",
+        "ci-fast",
+        "--provider",
+        "aws",
+        "--type",
+        "c7a.12xlarge",
+        "--",
+        "echo ok",
+      ],
+    },
+    {
+      name: "explicit class",
+      args: [
+        "run",
+        "--workload",
+        "ci-fast",
+        "--provider",
+        "aws",
+        "--class",
+        "fast",
+        "--",
+        "echo ok",
+      ],
+    },
+  ])("preserves $name capacity intent", ({ args }) => {
+    const { output } = runSuccessfulBrokerWrapper(args, {
+      env: {
+        OPENCLAW_FAKE_CRABBOX_UNREADY_PROVIDERS: "blacksmith-testbox,daytona",
+      },
+    });
+
+    if (args.includes("--type")) {
+      expect(output.args.filter((arg: string) => arg === "--type")).toHaveLength(1);
+      expect(output.args).toContain("c7a.12xlarge");
+    } else {
+      expect(output.args).not.toContain("--type");
+    }
   });
 
   it("keeps the configured provider when no workload is requested", () => {
@@ -954,6 +1059,7 @@ describe("scripts/crabbox-wrapper", () => {
       },
     );
     expect(output.args).toContain("aws");
+    expect(output.args).not.toContain("--type");
     expect(result.stderr).toContain("chain=aws");
   });
 
@@ -978,6 +1084,7 @@ describe("scripts/crabbox-wrapper", () => {
       },
     );
     expect(output.args).toContain("azure");
+    expect(output.args).not.toContain("--type");
     expect(result.stderr).toContain("chain=azure,aws");
   });
 
