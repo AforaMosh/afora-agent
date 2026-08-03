@@ -158,9 +158,7 @@ class OpenAiCompatibleEmbeddings implements Embeddings {
               },
               body: JSON.stringify(params),
             },
-            timeoutMs: hasExplicitTimeout
-              ? explicitTimeoutMs
-              : DEFAULT_DIRECT_EMBEDDING_TIMEOUT_MS,
+            timeoutMs: hasExplicitTimeout ? explicitTimeoutMs : DEFAULT_DIRECT_EMBEDDING_TIMEOUT_MS,
             auditContext: "memory-lancedb:openai-compatible-embeddings",
           }),
         );
