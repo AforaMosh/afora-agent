@@ -6,6 +6,7 @@ import type {
   SubagentRegistryLifecycleState,
 } from "./subagent-registry-lifecycle-contracts.js";
 import type { RequesterSettleWakeState, SubagentRunRecord } from "./subagent-registry.types.js";
+import { hasSubagentRunEnded } from "./subagent-run-liveness.js";
 
 type RequesterSettleWakeBatchState =
   import("./subagent-announce.requester-settle-wake.js").RequesterSettleWakeBatchState;
@@ -207,6 +208,36 @@ export function createSubagentRegistryLifecycleRequesterWake(
 
   function scheduleRequesterSettleWake(runId: string, entry: SubagentRunRecord): void {
     const requesterSessionKey = entry.requesterSessionKey?.trim();
+    const requesterSettleWake = entry.requesterSettleWake;
+    const frozenBatchRunIds = requesterSettleWake?.batchRunIds;
+    if (
+      requesterSessionKey &&
+      requesterSettleWake?.requesterYieldBatch === true &&
+      typeof requesterSettleWake.rearmGeneration === "number" &&
+      frozenBatchRunIds?.includes(runId) &&
+      frozenBatchRunIds.every((batchRunId) => {
+        const sibling = params.runs.get(batchRunId);
+        return Boolean(
+          sibling &&
+          sibling.requesterSessionKey === requesterSessionKey &&
+          sibling.requesterSettleWake?.requesterYieldBatch === true &&
+          sibling.requesterSettleWake.rearmGeneration === requesterSettleWake.rearmGeneration &&
+          sibling.delivery?.status === "delivered" &&
+          hasSubagentRunEnded(sibling),
+        );
+      }) &&
+      frozenBatchRunIds.some(
+        (batchRunId) =>
+          params.runs.get(batchRunId)?.delivery?.requesterVisibleFinalGeneration ===
+          requesterSettleWake.rearmGeneration,
+      ) &&
+      params.countPendingDescendantRuns(requesterSessionKey) === 0
+    ) {
+      // Completion already delivered this fully drained generation's final;
+      // canonical batch retirement preserves delete rows, rollback, and later waves.
+      completeRequesterSettleWakeBatch(frozenBatchRunIds, requesterSettleWake.rearmGeneration);
+      return;
+    }
     if (
       entry.collect ||
       !requesterSessionKey ||

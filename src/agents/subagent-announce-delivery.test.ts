@@ -1725,6 +1725,7 @@ describe("deliverSubagentAnnouncement completion delivery", () => {
   it.each([
     {
       name: "accepted session spawn",
+      requesterVisibleFinalDelivered: false,
       result: {
         payloads: [],
         acceptedSessionSpawns: [{ runId: "run-child", childSessionKey: "agent:main:child" }],
@@ -1732,6 +1733,7 @@ describe("deliverSubagentAnnouncement completion delivery", () => {
     },
     {
       name: "successful cron add",
+      requesterVisibleFinalDelivered: false,
       result: {
         payloads: [],
         successfulCronAdds: 1,
@@ -1739,6 +1741,7 @@ describe("deliverSubagentAnnouncement completion delivery", () => {
     },
     {
       name: "a successful visible reply alongside a failed-tool warning",
+      requesterVisibleFinalDelivered: true,
       result: {
         payloads: [
           { text: "Yield failed before completion.", isError: true },
@@ -1748,6 +1751,7 @@ describe("deliverSubagentAnnouncement completion delivery", () => {
     },
     {
       name: "a successful visible reply alongside hidden reasoning",
+      requesterVisibleFinalDelivered: true,
       result: {
         payloads: [
           { text: "Waiting for the delegated task.", isReasoning: true },
@@ -1755,41 +1759,45 @@ describe("deliverSubagentAnnouncement completion delivery", () => {
         ],
       },
     },
-  ])("accepts session-only completion handoff with $name evidence", async ({ result }) => {
-    const dispatchGatewayMethodInProcess = createInProcessGatewayMock({
-      result,
-    });
-    testing.setDepsForTest({
-      dispatchGatewayMethodInProcess,
-      getRequesterSessionActivity: () => ({
-        sessionId: "requester-session-local",
-        isActive: false,
-      }),
-      getRuntimeConfig: () => ({}) as never,
-    });
+  ])(
+    "accepts session-only completion handoff with $name evidence",
+    async ({ result, requesterVisibleFinalDelivered }) => {
+      const dispatchGatewayMethodInProcess = createInProcessGatewayMock({
+        result,
+      });
+      testing.setDepsForTest({
+        dispatchGatewayMethodInProcess,
+        getRequesterSessionActivity: () => ({
+          sessionId: "requester-session-local",
+          isActive: false,
+        }),
+        getRuntimeConfig: () => ({}) as never,
+      });
 
-    const delivery = await deliverSubagentAnnouncement({
-      requesterSessionKey: "agent:main:local-session",
-      targetRequesterSessionKey: "agent:main:local-session",
-      triggerMessage: "child done",
-      steerMessage: "child done",
-      requesterIsSubagent: false,
-      expectsCompletionMessage: true,
-      bestEffortDeliver: true,
-      directIdempotencyKey: "announce-local-side-effect",
-    });
+      const delivery = await deliverSubagentAnnouncement({
+        requesterSessionKey: "agent:main:local-session",
+        targetRequesterSessionKey: "agent:main:local-session",
+        triggerMessage: "child done",
+        steerMessage: "child done",
+        requesterIsSubagent: false,
+        expectsCompletionMessage: true,
+        bestEffortDeliver: true,
+        directIdempotencyKey: "announce-local-side-effect",
+      });
 
-    expectRecordFields(delivery, {
-      delivered: true,
-      path: "direct",
-    });
-    expectInProcessAgentParams(dispatchGatewayMethodInProcess, {
-      deliver: false,
-      channel: undefined,
-      to: undefined,
-      bestEffortDeliver: true,
-    });
-  });
+      expectRecordFields(delivery, {
+        delivered: true,
+        path: "direct",
+      });
+      expect(delivery.requesterVisibleFinalDelivered === true).toBe(requesterVisibleFinalDelivered);
+      expectInProcessAgentParams(dispatchGatewayMethodInProcess, {
+        deliver: false,
+        channel: undefined,
+        to: undefined,
+        bestEffortDeliver: true,
+      });
+    },
+  );
 
   it("keeps announce-agent delivery primary for dormant completion events with child output", async () => {
     const callGateway = createPayloadGatewayMock({ text: "requester voice completion" });
@@ -2942,6 +2950,7 @@ describe("deliverSubagentAnnouncement completion delivery", () => {
     });
 
     expectDeliveryPath(result, "direct");
+    expect(result.requesterVisibleFinalDelivered).toBeUndefined();
     expectGatewayAgentParams(callGateway, {
       deliver: false,
       channel: "discord",
@@ -2958,32 +2967,71 @@ describe("deliverSubagentAnnouncement completion delivery", () => {
       name: "accepts message delivery to the requester",
       target: { provider: "discord", accountId: "acct-1", to: "dm:U123" },
       fallsBack: false,
+      requesterVisibleFinalDelivered: true,
+    },
+    {
+      name: "does not mistake committed requester progress for its final",
+      target: {
+        provider: "discord",
+        accountId: "acct-1",
+        to: "dm:U123",
+        sourceReplyFinal: false,
+      },
+      fallsBack: false,
+      requesterVisibleFinalDelivered: false,
+    },
+    {
+      name: "recognizes an explicitly committed requester final",
+      target: {
+        provider: "discord",
+        accountId: "acct-1",
+        to: "dm:U123",
+        sourceReplyFinal: true,
+      },
+      fallsBack: false,
+      requesterVisibleFinalDelivered: true,
     },
     {
       name: "accepts legacy targetless delivery on the requester provider",
       target: { provider: "message" },
       fallsBack: false,
+      requesterVisibleFinalDelivered: true,
     },
     {
       name: "repairs a completion sent to another recipient",
       target: { provider: "discord", accountId: "acct-1", to: "dm:OTHER" },
       fallsBack: true,
+      requesterVisibleFinalDelivered: false,
+    },
+    {
+      name: "does not mistake another recipient's final for the requester's",
+      target: {
+        provider: "discord",
+        accountId: "acct-1",
+        to: "dm:OTHER",
+        sourceReplyFinal: true,
+      },
+      fallsBack: true,
+      requesterVisibleFinalDelivered: false,
     },
     {
       name: "repairs a targetless completion sent through another provider",
       target: { provider: "slack" },
       fallsBack: true,
+      requesterVisibleFinalDelivered: false,
     },
     {
       name: "repairs a completion sent through another requester account",
       target: { provider: "discord", accountId: "acct-other", to: "dm:U123" },
       fallsBack: true,
+      requesterVisibleFinalDelivered: false,
     },
     {
       name: "preserves authoritative source delivery alongside an unrelated send",
       target: { provider: "discord", accountId: "acct-1", to: "dm:OTHER" },
       didDeliverSourceReplyViaMessageTool: true,
       fallsBack: false,
+      requesterVisibleFinalDelivered: true,
     },
     {
       name: "preserves targetless source media alongside an unrelated targeted send",
@@ -2995,6 +3043,7 @@ describe("deliverSubagentAnnouncement completion delivery", () => {
       },
       messagingToolSentMediaUrls: ["/tmp/current-source.mp3"],
       fallsBack: false,
+      requesterVisibleFinalDelivered: false,
     },
     {
       name: "does not mistake an off-target attachment for targetless source media",
@@ -3006,6 +3055,7 @@ describe("deliverSubagentAnnouncement completion delivery", () => {
       },
       messagingToolSentMediaUrls: ["/tmp/off-target.mp3"],
       fallsBack: true,
+      requesterVisibleFinalDelivered: false,
     },
   ])(
     "$name",
@@ -3014,6 +3064,7 @@ describe("deliverSubagentAnnouncement completion delivery", () => {
       didDeliverSourceReplyViaMessageTool,
       messagingToolSentMediaUrls,
       fallsBack,
+      requesterVisibleFinalDelivered,
     }) => {
       const callGateway = createGatewayMock({
         result: {
@@ -3035,6 +3086,7 @@ describe("deliverSubagentAnnouncement completion delivery", () => {
       });
 
       expectDeliveryPath(result, "direct");
+      expect(result.requesterVisibleFinalDelivered === true).toBe(requesterVisibleFinalDelivered);
       if (fallsBack) {
         expect(sendMessage).toHaveBeenCalledWith(
           expect.objectContaining({
