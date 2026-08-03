@@ -494,8 +494,16 @@ describe("WhatsApp dmPolicy precedence", () => {
       sock: { sendMessage: sendMessageMock },
       remoteJid: "15550009999@s.whatsapp.net",
     });
+    const commandAuthorized = await checkCommandAuthorizedForDm({
+      cfg: { channels: { whatsapp } },
+      accountId,
+      from: "+15550009999",
+      senderE164: "+15550009999",
+      selfE164: "+15550009999",
+    });
 
     expectSilentlyBlocked(result);
+    expect(commandAuthorized).toBe(false);
     expect(result.shouldMarkRead).toBe(false);
     expect(result.isSelfChat).toBe(false);
     expect(result.resolvedAccountId).toBe(accountId);

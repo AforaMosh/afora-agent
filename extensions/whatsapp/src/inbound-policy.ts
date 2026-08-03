@@ -182,7 +182,10 @@ export async function resolveWhatsAppCommandAuthorized(params: {
   const sender = getSenderIdentity(params.msg, params.authDir);
   const dmSender = sender.e164 ?? admission.conversation.id;
   const groupSender = sender.e164 ?? "";
-  if (!normalizeE164(isGroup ? groupSender : dmSender)) {
+  if (
+    !normalizeE164(isGroup ? groupSender : dmSender) ||
+    (!isGroup && policy.account.selfChatMode === false && policy.isSamePhone(dmSender))
+  ) {
     return false;
   }
 
