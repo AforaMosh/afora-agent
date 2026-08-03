@@ -53,6 +53,7 @@ import {
   resolveCompactionTimeoutMs,
 } from "./compaction-safety-timeout.js";
 import { prepareCompactionSessionAgent } from "./compaction-session-agent.js";
+import { releaseCompactionSessionLock } from "./compaction-session-delivery-recovery.js";
 import { buildEmbeddedExtensionFactories } from "./extensions.js";
 import { getHistoryLimitFromSessionKey, limitHistoryTurns } from "./history.js";
 import { log } from "./logger.js";
@@ -558,8 +559,19 @@ export async function executePreparedCompactionSession(runtime: PreparedCompacti
         }
       }
     } finally {
-      await runtime.disposeToolRuntimes();
-      await sessionLock.release();
+      try {
+        await runtime.disposeToolRuntimes();
+      } finally {
+        await releaseCompactionSessionLock({
+          release: sessionLock.release,
+          requesterSessionKey: params.sessionKey,
+          onRedriveError: (error) => {
+            log.warn(
+              `[compaction] failed to redrive suspended subagent completions: ${String(error)}`,
+            );
+          },
+        });
+      }
     }
   } catch (err) {
     const reason = resolveCompactionFailureReason({
