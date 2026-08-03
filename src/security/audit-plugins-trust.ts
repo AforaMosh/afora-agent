@@ -27,7 +27,7 @@ type PluginTrustPolicyDeps = {
 };
 
 /** Lazily load tool-policy helpers so basic security imports avoid agent policy modules. */
-const loadPluginTrustPolicyDeps = createLazyPromise(
+const loadPluginTrustPolicyDeps = createLazyPromise<PluginTrustPolicyDeps>(
   () =>
     Promise.all([
       import("../agents/agent-tools.policy.js"),
