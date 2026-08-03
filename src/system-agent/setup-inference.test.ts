@@ -144,6 +144,10 @@ beforeAll(async () => {
   pluginMetadataSnapshot = installSystemAgentPluginMetadataTestSnapshot(
     materializedMainRuntimeConfig,
   );
+  preparedPluginMetadataSnapshot = resolvePluginMetadataSnapshot({
+    config: materializedMainRuntimeConfig,
+    env: process.env,
+  });
   cliBackendsTesting.setDepsForTest({
     resolvePluginSetupCliBackend: () => undefined,
     resolvePluginSetupRegistry: () => ({ cliBackends: [] }) as never,
