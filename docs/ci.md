@@ -711,6 +711,17 @@ report public networking with no Tailscale state before uploading any script.
 Owned AWS/Hetzner capacity also remains the fallback for Blacksmith outages,
 quota issues, or explicit owned-capacity testing.
 
+Automatic `ci-fast`, `ci-proof`, and `release-proof` routing admits new
+Blacksmith work only while the organization-wide inventory reports fewer than
+six active Testboxes. The wrapper requires Crabbox doctor output with
+`inventory_scope=all` and a numeric `active_leases`; a saturated, unavailable,
+or older inventory contract fails closed to Daytona, then Azure and AWS.
+Explicit `--provider blacksmith-testbox` requests and reuse of an owned
+`--id` bypass this admission policy. This is load shedding rather than an
+atomic hard cap, and it does not create or retain a warm pool. Update Crabbox
+when automatic routing reports that the all-scope inventory contract is
+missing.
+
 Agents do not pre-warm for anticipated work. Acquire a Testbox lazily when the
 first heavy command is ready, reuse the returned `tbx_...` id for later heavy
 commands, sync the current checkout on every run, and stop it before handoff.
