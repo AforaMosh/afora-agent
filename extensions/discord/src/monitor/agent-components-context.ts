@@ -10,7 +10,7 @@ import type {
   DiscordChannelContext,
 } from "./agent-components.types.js";
 import { normalizeDiscordDisplaySlug, normalizeDiscordSlug } from "./allow-list.js";
-import { resolveDiscordChannelInfoSafe } from "./channel-access.js";
+import { resolveDiscordChannelIdSafe, resolveDiscordChannelInfoSafe } from "./channel-access.js";
 
 function formatUsername(user: { username: string; discriminator?: string | null }): string {
   if (user.discriminator && user.discriminator !== "0") {
@@ -106,9 +106,11 @@ export async function resolveComponentInteractionContext(params: {
   defer?: boolean;
 }): Promise<ComponentInteractionContext | null> {
   const { interaction, label } = params;
-  const channelId = interaction.rawData.channel_id;
+  // Discord deprecated channel_id, but older shipped interaction payloads still carry it.
+  const channelId =
+    resolveDiscordChannelIdSafe(interaction.channel) ?? interaction.rawData.channel_id;
   if (!channelId) {
-    logError(`${label}: missing channel_id in interaction`);
+    logError(`${label}: missing channel id in interaction`);
     return null;
   }
 

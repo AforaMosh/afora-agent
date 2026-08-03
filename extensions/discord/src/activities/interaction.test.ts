@@ -1,4 +1,4 @@
-import { ComponentType, InteractionResponseType } from "discord-api-types/v10";
+import { ChannelType, ComponentType, InteractionResponseType } from "discord-api-types/v10";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ButtonInteraction } from "../internal/discord.js";
 import { createInteraction } from "../internal/interactions.js";
@@ -65,6 +65,96 @@ describe("Discord Activity interaction", () => {
     expect(post).toHaveBeenCalledWith("/interactions/interaction-1/itoken/callback", {
       body: { type: InteractionResponseType.LaunchActivity },
     });
+  });
+
+  it("records and launches a real modern interaction without deprecated channel_id", async () => {
+    const runtime = createActivityTestRuntime();
+    setDiscordActivitiesRuntime(runtime);
+    const recordPendingLaunch = vi.spyOn(runtime.store, "recordPendingLaunch");
+    const button = createDiscordActivityButton(componentContext(), "123456789012345678");
+    if (!button) {
+      throw new Error("expected activity button");
+    }
+    const post = vi.fn(async () => undefined);
+    const client = createInternalTestClient();
+    attachRestMock(client, { post });
+    client.componentHandler.register(button);
+    const payload = createInternalComponentInteractionPayload({
+      id: "modern-activity",
+      token: "modern-activity-token",
+      channel: { id: "777", type: ChannelType.DM },
+      user: {
+        id: "99",
+        username: "alice",
+        discriminator: "0",
+        global_name: null,
+        avatar: null,
+      },
+      data: {
+        component_type: ComponentType.Button,
+        custom_id: "ocactivity1_AAAAAAAAAAAAAAAAAAAAAA",
+      },
+    });
+
+    expect(payload).not.toHaveProperty("channel_id");
+    await client.handleInteraction(payload);
+
+    expect(recordPendingLaunch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accountId: "default",
+        channelId: "777",
+        discordUserId: "99",
+        widgetId: "AAAAAAAAAAAAAAAAAAAAAA",
+      }),
+    );
+    expect(post).toHaveBeenCalledWith(
+      "/interactions/modern-activity/modern-activity-token/callback",
+      { body: { type: InteractionResponseType.LaunchActivity } },
+    );
+  });
+
+  it("prefers the canonical Activity channel id over a conflicting legacy field", async () => {
+    const runtime = createActivityTestRuntime();
+    setDiscordActivitiesRuntime(runtime);
+    const recordPendingLaunch = vi.spyOn(runtime.store, "recordPendingLaunch");
+    const button = createDiscordActivityButton(componentContext(), "123456789012345678");
+    const launchActivity = vi.fn(async () => undefined);
+    const interaction = {
+      channel: { id: "canonical-channel", type: ChannelType.DM },
+      rawData: { channel_id: "legacy-other-channel" },
+      userId: "42",
+      launchActivity,
+    } as unknown as ButtonInteraction;
+
+    await button?.run(interaction, { widgetId: "AAAAAAAAAAAAAAAAAAAAAA" });
+
+    expect(recordPendingLaunch).toHaveBeenCalledWith(
+      expect.objectContaining({ channelId: "canonical-channel", discordUserId: "42" }),
+    );
+    expect(launchActivity).toHaveBeenCalledOnce();
+  });
+
+  it("keeps malformed Activity channels from creating pending launch records", async () => {
+    const runtime = createActivityTestRuntime();
+    setDiscordActivitiesRuntime(runtime);
+    const recordPendingLaunch = vi.spyOn(runtime.store, "recordPendingLaunch");
+    const logError = vi.fn();
+    const button = createDiscordActivityButton(componentContext(), "123456789012345678", {
+      logError,
+    });
+    const launchActivity = vi.fn(async () => undefined);
+    const interaction = {
+      channel: { id: "", type: ChannelType.DM },
+      rawData: {},
+      userId: "42",
+      launchActivity,
+    } as unknown as ButtonInteraction;
+
+    await button?.run(interaction, { widgetId: "AAAAAAAAAAAAAAAAAAAAAA" });
+
+    expect(recordPendingLaunch).not.toHaveBeenCalled();
+    expect(logError).toHaveBeenCalledOnce();
+    expect(launchActivity).toHaveBeenCalledOnce();
   });
 
   it("launches for a channel member outside the agent allowlist", async () => {

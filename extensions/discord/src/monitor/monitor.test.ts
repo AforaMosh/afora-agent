@@ -1,5 +1,5 @@
 // Discord tests cover monitor plugin behavior.
-import { ChannelType } from "discord-api-types/v10";
+import { ChannelType, ComponentType } from "discord-api-types/v10";
 import type { DiscordAccountConfig, OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
 import { buildPluginBindingApprovalCustomId } from "openclaw/plugin-sdk/conversation-runtime";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
@@ -11,6 +11,12 @@ import type {
   ModalInteraction,
   StringSelectMenuInteraction,
 } from "../internal/discord.js";
+import {
+  attachRestMock,
+  createInternalComponentInteractionPayload as createComponentPayload,
+  createInternalModalInteractionPayload as createModalPayload,
+  createInternalTestClient,
+} from "../internal/test-builders.test-support.js";
 import { createDiscordSendReceipt } from "../send.receipt.js";
 import {
   dispatchPluginInteractiveHandlerMock,
@@ -22,6 +28,7 @@ import {
   resolveStorePathMock,
 } from "../test-support/component-runtime.js";
 import type { DiscordGuildEntryResolved } from "./allow-list.js";
+import { createDiscordQuestionButton } from "./questions.js";
 
 type CreateDiscordComponentButton =
   (typeof import("./agent-components.js").createDiscordComponentControls)[number];
@@ -359,6 +366,55 @@ describe("discord component interactions", () => {
     expect(typeof dispatchParams?.replyOptions?.onModelSelected).toBe("function");
     await expect(resolveDiscordComponentEntryWithPersistence({ id: "btn_1" })).resolves.toBeNull();
   });
+
+  it.each(["button", "select", "modal", "question", "unauthorized"] as const)(
+    "dispatches real modern %s payloads without deprecated channel_id",
+    async (kind) => {
+      const context = createComponentContext(kind === "unauthorized" ? { allowFrom: [] } : {});
+      const questionId = "ask_0123456789abcdef0123456789abcdef";
+      const answer = { status: "answered" as const, questionId, optionValue: "ok" };
+      const resolveQuestion = vi.fn(async () => answer);
+      registerDiscordComponentEntries({
+        entries: [createButtonEntry(kind === "select" ? { kind: "select" } : {})],
+        modals: [createModalEntry()],
+      });
+      const client = createInternalTestClient();
+      const post = vi.fn(async (..._args: unknown[]) => ({ id: "1", channel_id: "dm-channel" }));
+      attachRestMock(client, { post });
+      client.modalHandler.register(createDiscordComponentModal(context));
+      client.componentHandler.register(
+        kind === "question"
+          ? createDiscordQuestionButton({ ...context, authContext: context, resolveQuestion })
+          : kind === "select"
+            ? createDiscordComponentStringSelect(context)
+            : createDiscordComponentButton(context),
+      );
+      const createPayload = kind === "modal" ? createModalPayload : createComponentPayload;
+      const payload = createPayload({
+        id: `modern-${kind}`,
+        token: "modern-token",
+        channel: { id: "dm-channel", type: ChannelType.DM },
+        user: { ...createComponentInteractionBase().user, global_name: null, avatar: null },
+        data: {
+          custom_id:
+            kind === "question"
+              ? `ocq:id=${questionId};i=1`
+              : kind === "modal"
+                ? "ocmodal:mid=mdl_1"
+                : "occomp:cid=btn_1",
+          ...(kind === "select"
+            ? { component_type: ComponentType.StringSelect, values: ["alpha"] }
+            : {}),
+        },
+      });
+      expect(payload).not.toHaveProperty("channel_id");
+      await client.handleInteraction(payload);
+      expect(post.mock.calls[0]?.[0]).toBe(`/interactions/modern-${kind}/modern-token/callback`);
+      expect(kind === "question" ? resolveQuestion : dispatchReplyMock).toHaveBeenCalledTimes(
+        kind === "unauthorized" ? 0 : 1,
+      );
+    },
+  );
 
   it("records DM component interactions with user originating targets", async () => {
     registerDiscordComponentEntries({

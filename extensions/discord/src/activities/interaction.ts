@@ -7,6 +7,7 @@ import type { ButtonInteraction, ComponentData } from "../internal/discord.js";
 import { Button } from "../internal/discord.js";
 import { replySilently } from "../monitor/agent-components-reply.js";
 import type { AgentComponentContext } from "../monitor/agent-components.types.js";
+import { resolveDiscordChannelIdSafe } from "../monitor/channel-access.js";
 import { getDiscordActivitiesRuntime } from "./runtime.js";
 
 const REGISTRATION_WIDGET_ID = "AAAAAAAAAAAAAAAAAAAAAA";
@@ -47,7 +48,9 @@ class DiscordActivityButton extends Button {
       return;
     }
     const runtime = getDiscordActivitiesRuntime();
-    const channelId = interaction.rawData.channel_id;
+    // Discord deprecated channel_id, but older shipped interaction payloads still carry it.
+    const channelId =
+      resolveDiscordChannelIdSafe(interaction.channel) ?? interaction.rawData.channel_id;
     const discordUserId = interaction.userId;
     if (!runtime || !channelId || !discordUserId) {
       this.logPendingLaunchFailure(new Error("missing activity runtime or interaction identity"));
