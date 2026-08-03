@@ -707,7 +707,7 @@
   "uiHints": {
     "webSearch.apiKey": {
       "label": "Gemini Search API Key",
-      "help": "Gemini API key for Google Search grounding (fallback: GEMINI_API_KEY env var).",
+      "help": "Gemini API key for Google Search grounding (fallback: GEMINI_API_KEY or GOOGLE_API_KEY env var).",
       "sensitive": true,
       "placeholder": "AIza..."
     },
