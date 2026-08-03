@@ -569,6 +569,7 @@ function bindPreparedPluginMetadataSnapshot(
   });
   return snapshot;
 }
+
 function activateCodexSetup(params: Omit<TestSetupInferenceActivationParams, "kind">) {
   return activateSetupInference({
     kind: "codex-cli",
