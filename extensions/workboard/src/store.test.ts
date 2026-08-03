@@ -277,6 +277,102 @@ describe("WorkboardStore", () => {
     }
   });
 
+  it("hydrates sqlite card lists with a bounded statement count", async () => {
+    const prepareSpy = vi.spyOn(DatabaseSync.prototype, "prepare");
+
+    async function measureList(cardCount: number) {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-workboard-sqlite-list-"));
+      const dbPath = path.join(dir, "workboard.sqlite");
+      const stores = createWorkboardSqliteStores({ dbPath });
+      const store = new WorkboardStore(stores.cards, {
+        boards: stores.boards,
+        subscriptions: stores.subscriptions,
+        attachments: stores.attachments,
+      });
+      try {
+        const created = [];
+        for (let index = 0; index < cardCount; index += 1) {
+          created.push(
+            await store.create({
+              title: `Bulk card ${index}`,
+              labels: [`label-${index}`, "shared"],
+              execution: {
+                id: `execution-${index}`,
+                kind: "agent-session",
+                engine: "codex",
+                mode: "autonomous",
+                status: "running",
+                model: "openai/gpt-5.5",
+                startedAt: index + 1,
+                updatedAt: index + 2,
+              },
+              metadata: {
+                comments: [
+                  { id: `comment-${index}-1`, body: "First", createdAt: index + 3 },
+                  { id: `comment-${index}-2`, body: "Second", createdAt: index + 4 },
+                ],
+                links: [
+                  {
+                    id: `link-${index}`,
+                    type: "blocks",
+                    targetCardId: `external-${index}`,
+                    createdAt: index + 5,
+                  },
+                ],
+                proof: [
+                  {
+                    id: `proof-${index}`,
+                    status: "passed",
+                    command: "pnpm test",
+                    createdAt: index + 6,
+                  },
+                ],
+              },
+            }),
+          );
+        }
+
+        const expectedById = new Map(
+          await Promise.all(
+            created.map(async (card) => [card.id, await stores.cards.lookup(card.id)] as const),
+          ),
+        );
+        const expectedOrder = created
+          .map((card) => card.id)
+          .toSorted((left, right) => {
+            const leftCard = expectedById.get(left)?.card;
+            const rightCard = expectedById.get(right)?.card;
+            return (
+              (leftCard?.createdAt ?? 0) - (rightCard?.createdAt ?? 0) || left.localeCompare(right)
+            );
+          });
+
+        prepareSpy.mockClear();
+        const entries = await stores.cards.entries();
+        const statementCount = prepareSpy.mock.calls.length;
+
+        expect(entries.map((entry) => entry.key)).toEqual(expectedOrder);
+        expect(entries.map((entry) => entry.value)).toEqual(
+          entries.map((entry) => expectedById.get(entry.key)),
+        );
+        return statementCount;
+      } finally {
+        stores.close();
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
+    }
+
+    try {
+      const smallStatementCount = await measureList(3);
+      const largeStatementCount = await measureList(30);
+
+      expect(largeStatementCount).toBe(smallStatementCount);
+      expect(smallStatementCount).toBeGreaterThan(1);
+    } finally {
+      prepareSpy.mockRestore();
+    }
+  });
+
   it("migrates a version 2 workboard table to STRICT without losing rows", async () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-workboard-strict-migration-"));
     const dbPath = path.join(dir, "workboard.sqlite");
