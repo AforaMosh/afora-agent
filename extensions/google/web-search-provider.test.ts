@@ -123,7 +123,7 @@ describe("google web search provider", () => {
         docs: "https://docs.openclaw.ai/tools/web",
         error: "missing_gemini_api_key",
         message:
-          "web_search (gemini) needs an API key. Set GEMINI_API_KEY or GOOGLE_API_KEY in the Gateway environment, configure plugins.entries.google.config.webSearch.apiKey, or reuse models.providers.google.apiKey. If you do not want to configure a search API key, use web_fetch for a specific URL or the browser tool for interactive pages.",
+          "web_search (gemini) needs an API key. Configure plugins.entries.google.config.webSearch.apiKey, set GEMINI_API_KEY in the Gateway environment, reuse models.providers.google.apiKey, or set GOOGLE_API_KEY as a fallback. If you do not want to configure a search API key, use web_fetch for a specific URL or the browser tool for interactive pages.",
       });
     });
   });
@@ -494,11 +494,11 @@ describe("google web search provider", () => {
       expectedApiKey: "AIza-gemini-env-test",
     },
     {
-      label: "keeps GOOGLE_API_KEY ahead of the model provider credential",
+      label: "preserves an explicit model provider credential over ambient GOOGLE_API_KEY",
       geminiApiKey: undefined,
       googleApiKey: "AIza-google-env-test",
       providerApiKey: "AIza-provider-test",
-      expectedApiKey: "AIza-google-env-test",
+      expectedApiKey: "AIza-provider-test",
     },
   ])("$label", async ({ label, geminiApiKey, googleApiKey, providerApiKey, expectedApiKey }) => {
     await withEnvAsync({ GEMINI_API_KEY: geminiApiKey, GOOGLE_API_KEY: googleApiKey }, async () => {

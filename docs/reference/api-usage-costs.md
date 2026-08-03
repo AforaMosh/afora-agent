@@ -77,7 +77,7 @@ See [Memory](/concepts/memory).
 
 ### Web search tool
 
-`web_search` can incur usage charges depending on the selected provider. Providers read keys from environment variables or `plugins.entries.<id>.config.webSearch.apiKey`; exact precedence varies by provider:
+`web_search` can incur usage charges depending on the selected provider. Providers read keys from environment variables or `plugins.entries.<id>.config.webSearch.apiKey`; exact precedence varies by provider. Gemini keeps an explicitly configured Google model provider key ahead of `GOOGLE_API_KEY`:
 
 | Provider               | Env var(s)                                                                                                                                                             |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
