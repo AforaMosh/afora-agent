@@ -7,18 +7,15 @@ import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
 import { canonicalizeBase64 } from "openclaw/plugin-sdk/media-runtime";
 import type { MemoryEmbeddingProvider } from "openclaw/plugin-sdk/memory-core-host-engine-embeddings";
 import { resolveTimerTimeoutMs } from "openclaw/plugin-sdk/number-runtime";
-import { ensureGlobalUndiciEnvProxyDispatcher } from "openclaw/plugin-sdk/runtime-env";
+import {
+  assertOkOrThrowHttpError,
+  readProviderJsonResponse,
+} from "openclaw/plugin-sdk/provider-http";
+import { fetchWithSsrFGuard } from "openclaw/plugin-sdk/ssrf-runtime";
 import { asOptionalRecord as asRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
 import type { OpenClawPluginApi } from "./api.js";
 import type { MemoryConfig } from "./config.js";
 
-type OpenAiEmbeddingClient = {
-  post<T>(
-    path: string,
-    options: { body: unknown; timeout?: number; maxRetries?: number },
-  ): Promise<T>;
-};
-const loadOpenAiModule = createLazyRuntimeModule(() => import("openai"));
 const loadMemoryEmbeddingProviderModule = createLazyRuntimeModule(
   () => import("openclaw/plugin-sdk/memory-core-host-engine-embeddings"),
 );
@@ -72,17 +69,19 @@ async function drainRetainedProviders(): Promise<void> {
 }
 
 class OpenAiCompatibleEmbeddings implements Embeddings {
-  private clientPromise: Promise<OpenAiEmbeddingClient>;
+  private baseUrl: string;
 
   constructor(
-    apiKey: string,
+    private apiKey: string,
     private model: string,
     baseUrl?: string,
     private dimensions?: number,
   ) {
-    this.clientPromise = loadOpenAiModule().then(
-      ({ default: OpenAI }) => new OpenAI({ apiKey, baseURL: baseUrl }) as OpenAiEmbeddingClient,
-    );
+    this.baseUrl = (
+      baseUrl?.trim() ||
+      process.env.OPENAI_BASE_URL?.trim() ||
+      "https://api.openai.com/v1"
+    ).replace(/\/+$/u, "");
   }
 
   async embed(text: string, options?: { timeoutMs?: number }): Promise<number[]> {
@@ -125,18 +124,36 @@ class OpenAiCompatibleEmbeddings implements Embeddings {
         : {}),
     };
 
-    ensureGlobalUndiciEnvProxyDispatcher();
-    // The OpenAI SDK's embeddings helper injects encoding_format=base64 when
-    // omitted, then decodes the response. Several compatible providers either
-    // reject encoding_format or always return float arrays, so use the generic
-    // transport and normalize the response ourselves.
-    return await (
-      await this.clientPromise
-    ).post<EmbeddingCreateResponse>("/embeddings", {
-      body: params,
-      ...(request.options?.timeoutMs ? { timeout: request.options.timeoutMs, maxRetries: 0 } : {}),
+    // Direct URL overrides are not registered local-provider trust boundaries. Keep
+    // strict SSRF policy here; private endpoints belong behind provider adapters.
+    const { response, release } = await fetchWithSsrFGuard({
+      url: `${this.baseUrl}/embeddings`,
+      init: {
+        method: "POST",
+        headers: {
+          accept: "application/json",
+          authorization: `Bearer ${this.apiKey}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify(params),
+      },
+      timeoutMs: request.options?.timeoutMs,
+      auditContext: "memory-lancedb:openai-compatible-embeddings",
     });
+    try {
+      return await readEmbeddingResponse(response);
+    } finally {
+      await release();
+    }
   }
+}
+
+async function readEmbeddingResponse(response: Response): Promise<EmbeddingCreateResponse> {
+  await assertOkOrThrowHttpError(response, "memory-lancedb embeddings");
+  return await readProviderJsonResponse<EmbeddingCreateResponse>(
+    response,
+    "memory-lancedb embeddings",
+  );
 }
 
 function isEmbeddingDimensionsRejectedError(error: unknown): boolean {
