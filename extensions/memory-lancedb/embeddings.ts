@@ -192,7 +192,7 @@ function isRetryableEmbeddingRequestError(error: unknown): boolean {
     const message = formatErrorMessage(current);
     if (
       /^(?:ECONNRESET|ECONNREFUSED|EHOSTUNREACH|ENETUNREACH|ENOTFOUND|ETIMEDOUT)$/u.test(code) ||
-      /^UND_ERR_/u.test(code) ||
+      code.startsWith("UND_ERR_") ||
       /\b(?:fetch failed|timed out|timeout)\b/iu.test(message)
     ) {
       return true;
