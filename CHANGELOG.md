@@ -18,6 +18,7 @@ Docs: https://docs.openclaw.ai
 
 ### Fixes
 
+- **Codex native subagents:** retain the parent app-server subscription until a yielded child completion reaches its requester.
 - **Dependency security:** updates production dependency resolutions for `brace-expansion` and PostCSS to patched versions. (#113428)
 - **Execution and transport safety:** browser, sandbox, exec, MCP, and secret-resolution paths reject unsafe inputs and handle stream failures without crashing the host process.
 - **Delivery and channel stability:** outbound receipts, delivery evidence, channel lifecycle, health monitoring, and gateway queues recover cleanly under retries, restarts, and overload.

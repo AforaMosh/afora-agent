@@ -1372,6 +1372,9 @@ export async function runCodexAppServerAttempt(
     trajectoryEndRecorded = true;
   };
   let nativeHookRelay: NativeHookRelayRegistrationHandle | undefined;
+  const nativeSubagentMonitorRef: {
+    current?: ReturnType<typeof registerCodexNativeSubagentMonitor>;
+  } = {};
   let releaseSharedClientLease: (() => void) | undefined;
   let sharedCodexClientRetiredForOneShotCleanup = false;
   const releaseSharedClientLeaseOnce = () => {
@@ -2078,7 +2081,7 @@ export async function runCodexAppServerAttempt(
     appServer.start.transport === "stdio"
       ? (appServer.start.env?.CODEX_HOME ?? resolveCodexAppServerHomeDir(agentDir))
       : undefined;
-  registerCodexNativeSubagentMonitor({
+  nativeSubagentMonitorRef.current = registerCodexNativeSubagentMonitor({
     client,
     parentThreadId: thread.threadId,
     requesterSessionKey: params.sessionKey,
@@ -3193,7 +3196,20 @@ export async function runCodexAppServerAttempt(
     if (!timedOut && !runAbortController.signal.aborted) {
       await steeringQueueRef.current?.flushPending();
     }
-    if (!timedOut) {
+    const yieldedOneShotCleanupDeferred =
+      !timedOut &&
+      params.cleanupBundleMcpOnRunEnd === true &&
+      yieldDetected &&
+      nativeSubagentMonitorRef.current?.deferUntilParentSettles(thread.threadId, async () => {
+        // Keep the parent subscription alive until native child delivery;
+        // unsubscribing first drops the completion signal that settles cleanup.
+        await unsubscribeCodexThreadBestEffort(client, {
+          threadId: thread.threadId,
+          timeoutMs: CODEX_APP_SERVER_UNSUBSCRIBE_TIMEOUT_MS,
+        });
+        await releaseSharedClientLeaseAndRetireOneShotClient();
+      });
+    if (!timedOut && !yieldedOneShotCleanupDeferred) {
       await unsubscribeCodexThreadBestEffort(client, {
         threadId: thread.threadId,
         timeoutMs: CODEX_APP_SERVER_UNSUBSCRIBE_TIMEOUT_MS,
@@ -3204,7 +3220,9 @@ export async function runCodexAppServerAttempt(
     notificationCleanup();
     requestCleanup();
     closeCleanup?.();
-    await releaseSharedClientLeaseAndRetireOneShotClient();
+    if (!yieldedOneShotCleanupDeferred) {
+      await releaseSharedClientLeaseAndRetireOneShotClient();
+    }
     if (nativeHookRelay) {
       if (shouldDelayNativeHookRelayUnregister) {
         // Codex hook subprocesses can outlive a completed app-server turn by a
