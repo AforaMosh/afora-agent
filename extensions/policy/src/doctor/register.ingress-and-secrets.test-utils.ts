@@ -76,12 +76,11 @@ function workspacePolicy(allowedAccess: string[], denyTools?: string[]) {
   };
 }
 
-function managedSecretsPolicy(denySources?: string[], allowInsecureProviders?: boolean) {
+function managedSecretsPolicy(denySources?: string[]) {
   return {
     secrets: {
       requireManagedProviders: true,
       ...(denySources ? { denySources } : {}),
-      ...(allowInsecureProviders === undefined ? {} : { allowInsecureProviders }),
     },
   };
 }
@@ -624,7 +623,7 @@ describe("registerPolicyDoctorChecks", () => {
         },
       },
     });
-    const policy = managedSecretsPolicy(["exec"], false);
+    const policy = managedSecretsPolicy(["exec"]);
 
     const result = await runPolicyScenario(cfg, policy, "global-doctor");
     const evidence = collectPolicyEvidence(cfg as unknown as Record<string, unknown>);
