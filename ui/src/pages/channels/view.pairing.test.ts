@@ -61,6 +61,7 @@ function createProps(overrides: Partial<ChannelsProps> = {}): ChannelsProps {
     configSchema: null,
     configSchemaLoading: false,
     configForm: null,
+    configError: null,
     configUiHints: {},
     configSaving: false,
     configFormDirty: false,

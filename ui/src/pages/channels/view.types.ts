@@ -51,6 +51,7 @@ export type ChannelsProps = {
   configSchema: unknown;
   configSchemaLoading: boolean;
   configForm: Record<string, unknown> | null;
+  configError: string | null;
   configUiHints: ConfigUiHints;
   configSaving: boolean;
   configFormDirty: boolean;

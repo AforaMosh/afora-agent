@@ -1,9 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { GatewayBrowserClient } from "../../api/gateway.ts";
+import { GatewayRequestError, type GatewayBrowserClient } from "../../api/gateway.ts";
 import type { NostrProfile } from "../../api/types.ts";
 import type { ApplicationContext, ApplicationGatewaySnapshot } from "../../app/context.ts";
 import { createChannelCapability } from "../../lib/channels/index.ts";
 import { createRuntimeConfigCapability } from "../../lib/config/index.ts";
+import { getRenderedModalDialog } from "../../test-helpers/modal-dialog.ts";
 import "./channels-page.ts";
 
 const NOSTR_PROFILE_REQUEST_TIMEOUT_MS = 30_000;
@@ -136,6 +137,77 @@ afterEach(() => {
 });
 
 describe("ChannelsPage lifecycle", () => {
+  it("shows rejected config saves inside the open channel dialog without hiding status errors", async () => {
+    const gateway = createGateway();
+    const persistedConfig = { channels: { telegram: { enabled: true } } };
+    const rejection = new GatewayRequestError({
+      code: "INVALID_REQUEST",
+      message: "invalid config: channels.telegram.botToken: token is required",
+    });
+    const request = vi.fn(async (method: string) => {
+      if (method === "config.set") {
+        throw rejection;
+      }
+      if (method === "config.get") {
+        return { config: persistedConfig, hash: "test", valid: true, issues: [] };
+      }
+      return {};
+    });
+    gateway.snapshot.client = { request } as unknown as GatewayBrowserClient;
+    const source = createContext(gateway);
+    source.channels.state.channelsSnapshot = {
+      ts: 0,
+      channelOrder: ["telegram"],
+      channelLabels: { telegram: "Telegram" },
+      channels: { telegram: { configured: true, running: true } },
+      channelAccounts: {},
+      channelDefaultAccountId: {},
+    };
+    source.channels.state.channelsError = "Channel status refresh failed";
+    source.runtimeConfig.state.configSnapshot = { config: persistedConfig, hash: "test" };
+    source.runtimeConfig.state.configFormOriginal = persistedConfig;
+    source.runtimeConfig.state.configForm = { channels: { telegram: { enabled: false } } };
+    source.runtimeConfig.state.configFormDirty = true;
+
+    const page = document.createElement("openclaw-channels-page") as ChannelsPageTestElement;
+    page.context = source.context;
+    document.body.append(page);
+    await page.updateComplete;
+
+    expect(page.querySelector(".settings-page > .callout.danger")?.textContent).toContain(
+      "Channel status refresh failed",
+    );
+    const channelRow = page.querySelector<HTMLButtonElement>("button.channels-item");
+    expect(channelRow).toBeInstanceOf(HTMLButtonElement);
+    channelRow!.click();
+    await page.updateComplete;
+
+    const { modal, dialog } = await getRenderedModalDialog(page);
+    expect(dialog.open).toBe(true);
+    const save = modal.querySelector<HTMLButtonElement>(".channels-detail .btn.primary");
+    expect(save).toBeInstanceOf(HTMLButtonElement);
+    expect(save?.disabled).toBe(false);
+    save!.click();
+
+    await vi.waitFor(() => {
+      expect(request).toHaveBeenCalledWith(
+        "config.set",
+        expect.objectContaining({ baseHash: "test" }),
+      );
+      expect(request).toHaveBeenCalledWith("config.get", {});
+      expect(source.runtimeConfig.state.lastError).toContain("channels.telegram.botToken");
+      expect(modal.querySelector(".channels-detail [role=alert]")?.textContent).toContain(
+        "channels.telegram.botToken: token is required",
+      );
+    });
+    expect(dialog.open).toBe(true);
+    expect(page.querySelector(".settings-page > .callout.danger")?.textContent).toContain(
+      "Channel status refresh failed",
+    );
+    source.runtimeConfig.dispose();
+    source.channels.dispose();
+  });
+
   it("loads schema again when the runtime-config source changes", async () => {
     const gateway = createGateway();
     const first = createContext(gateway);

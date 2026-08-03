@@ -42,6 +42,7 @@ function createProps(snapshot: ChannelsProps["snapshot"]): ChannelsProps {
     configSchema: null,
     configSchemaLoading: false,
     configForm: null,
+    configError: null,
     configUiHints: {},
     configSaving: false,
     configFormDirty: false,
@@ -269,6 +270,42 @@ describe("channel config advanced tier", () => {
 });
 
 describe("channel detail", () => {
+  it.each(["telegram", "whatsapp", "nostr", "guildchat"])(
+    "shows %s save failures in the active dialog without replacing channel status errors",
+    (channelId) => {
+      const status =
+        channelId === "whatsapp" ? createWhatsAppStatus() : { configured: true, running: true };
+      const props = createProps({
+        ts: Date.now(),
+        channelOrder: [channelId],
+        channelLabels: { [channelId]: channelId },
+        channels: { [channelId]: status },
+        channelAccounts: {},
+        channelDefaultAccountId: {},
+      });
+      props.selectedChannel = channelId;
+      props.lastError = "Channel status request failed";
+      props.configError = "Channel configuration could not be saved";
+
+      const container = document.createElement("div");
+      render(renderChannels(props), container);
+
+      expect(container.querySelector(".channels-detail [role=alert]")?.textContent).toBe(
+        "Channel configuration could not be saved",
+      );
+      expect(container.querySelector(".settings-page > .callout.danger")?.textContent).toBe(
+        "Channel status request failed",
+      );
+
+      props.configError = null;
+      render(renderChannels(props), container);
+      expect(container.querySelector(".channels-detail [role=alert]")).toBeNull();
+      expect(container.querySelector(".settings-page > .callout.danger")?.textContent).toBe(
+        "Channel status request failed",
+      );
+    },
+  );
+
   it("links every channel to its docs page", () => {
     const props = createProps({
       ts: Date.now(),

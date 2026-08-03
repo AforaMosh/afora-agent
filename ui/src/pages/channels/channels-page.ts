@@ -666,6 +666,7 @@ class ChannelsPage extends OpenClawLightDomElement {
           configSchema: config.configSchema,
           configSchemaLoading: config.configSchemaLoading,
           configForm: config.configForm,
+          configError: config.lastError,
           configUiHints: config.configUiHints,
           configSaving: config.configSaving,
           configFormDirty: config.configFormDirty,
