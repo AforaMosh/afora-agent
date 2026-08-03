@@ -1,0 +1,28 @@
+title: Plugin SDK doctor and health contracts
+
+scenario:
+  id: plugin-sdk-doctor-health-contracts
+  surface: plugins
+  category: plugins.authoring-and-packaging-plugins
+  coverage:
+    primary:
+      - observability.plugin-sdk-doctor-health-contracts
+  objective: Verify plugin doctor migrations and structured health checks execute through the public Plugin SDK contracts and real doctor CLI commands.
+  successCriteria:
+    - Doctor loads a configured plugin's manifest-owned runtime-doctor contract.
+    - Doctor --fix migrates the plugin's legacy config and is idempotent on rerun.
+    - Doctor --lint --json emits a structured Policy plugin health finding.
+    - The same health check reruns clean after its condition is repaired.
+  docsRefs:
+    - docs/plugins/sdk-entrypoints.md
+    - docs/cli/doctor.md
+  codeRefs:
+    - src/plugin-sdk/runtime-doctor.ts
+    - src/plugin-sdk/health.ts
+    - src/plugins/doctor-contract-registry.ts
+    - src/flows/bundled-health-checks.ts
+    - test/e2e/qa-lab/plugins/plugin-sdk-doctor-health-contracts.e2e.test.ts
+  execution:
+    kind: vitest
+    path: test/e2e/qa-lab/plugins/plugin-sdk-doctor-health-contracts.e2e.test.ts
+    summary: Run real doctor fix and lint commands against public plugin doctor and health contracts.
