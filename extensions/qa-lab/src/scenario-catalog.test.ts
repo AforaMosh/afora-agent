@@ -991,6 +991,24 @@ describe("qa scenario catalog", () => {
     expect(scenario.title).toBe("Instruction followthrough repo contract");
   });
 
+  it("scopes prompt diagnostics to requests after each scenario cursor", () => {
+    for (const scenarioId of [
+      "instruction-followthrough-repo-contract",
+      "subagent-handoff",
+    ] as const) {
+      const scenario = requireFlowScenario(readQaScenarioById(scenarioId));
+      const flow = JSON.stringify(scenario.execution.flow);
+      const cursorIndex = flow.indexOf("/debug/request-cursor");
+      const promptIndex = flow.indexOf('"call":"runAgentPrompt"');
+      const requestsIndex = flow.indexOf("/debug/requests?after=${requestCursorBefore}");
+
+      expect(cursorIndex, scenarioId).toBeGreaterThanOrEqual(0);
+      expect(cursorIndex, scenarioId).toBeLessThan(promptIndex);
+      expect(requestsIndex, scenarioId).toBeGreaterThan(promptIndex);
+      expect(flow, scenarioId).not.toContain("`${env.mock.baseUrl}/debug/requests`");
+    }
+  });
+
   it("declares native QA-channel fixtures by channel", () => {
     const scenarioIds = [
       "instruction-followthrough-repo-contract",
