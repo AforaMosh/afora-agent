@@ -1080,6 +1080,12 @@ describe("stuck session diagnostics threshold", () => {
 
       for (let attempt = 2; attempt <= 6; attempt += 1) {
         vi.advanceTimersByTime(30_000);
+        logSessionStateChange({
+          sessionId: "s1",
+          sessionKey: "main",
+          state: "processing",
+          reason: "run_started",
+        });
         markDiagnosticModelStartedForTest({
           sessionId: "s1",
           sessionKey: "main",

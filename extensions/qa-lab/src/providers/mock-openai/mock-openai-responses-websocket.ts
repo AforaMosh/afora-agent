@@ -13,6 +13,7 @@ export type QaMockResponsesDispatchResult = {
   };
   onResponseSent?: () => void;
   previewPauseMs?: number;
+  responsePauseMs?: number;
 };
 
 type QaMockResponsesWebSocketDispatch = (params: {
@@ -208,6 +209,9 @@ export function attachQaMockResponsesWebSocketServer(params: {
             return;
           }
           const { events } = dispatched;
+          if (dispatched.responsePauseMs !== undefined) {
+            await sleep(dispatched.responsePauseMs);
+          }
           const completion = events.find((event) => event.type === "response.completed");
           if (completion?.type === "response.completed") {
             if (!events.some((event) => event.type === "response.created")) {

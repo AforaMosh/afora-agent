@@ -1320,13 +1320,17 @@ export function startDiagnosticHeartbeat(
         activity,
         staleMs: stuckSessionWarnMs,
       });
+      const repeatedRequestAttention =
+        state.state === "processing" &&
+        (activity.repeatedRequestNoProgressAgeMs ?? 0) > stuckSessionWarnMs;
       if (
         (state.state === "processing" && ageMs > stuckSessionWarnMs) ||
+        repeatedRequestAttention ||
         idleQueuedRecoverableStall
       ) {
         const attentionAgeMs = idleQueuedRecoverableStall
           ? (activity.lastProgressAgeMs ?? ageMs)
-          : ageMs;
+          : Math.max(ageMs, activity.repeatedRequestNoProgressAgeMs ?? 0);
         const classification = logSessionAttention({
           sessionId: state.sessionId,
           sessionKey: state.sessionKey,
