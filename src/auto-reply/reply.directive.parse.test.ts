@@ -212,11 +212,31 @@ describe("directive parsing", () => {
     expect(model.cleaned).toBe("please sync now");
     expect(model.hasModelDirective).toBe(true);
     expect(model.rawModelDirective).toBe("openai/gpt-4.1-mini");
+    expect(model.modelSessionOnly).toBe(false);
 
     const think = parseInlineDirectives("please sync /think:high now");
     expect(think.cleaned).toBe("please sync now");
     expect(think.hasThinkDirective).toBe(true);
     expect(think.thinkLevel).toBe("high");
+  });
+
+  it("preserves the /model here session-only scope", () => {
+    const model = parseInlineDirectives("please sync /model here openai/gpt-4.1-mini now");
+    expect(model.cleaned).toBe("please sync now");
+    expect(model.hasModelDirective).toBe(true);
+    expect(model.rawModelDirective).toBe("openai/gpt-4.1-mini");
+    expect(model.modelSessionOnly).toBe(true);
+  });
+
+  it("preserves the /model here scope for native slash commands", () => {
+    const model = parseInlineDirectives("/model here openai/gpt-4.1-mini", {
+      nativeCommand: "model",
+    });
+
+    expect(model.cleaned).toBe("");
+    expect(model.rawModelDirective).toBe("openai/gpt-4.1-mini");
+    expect(model.modelSessionOnly).toBe(true);
+    expect(model.nativeCommand).toEqual({ name: "model" });
   });
 
   it("keeps --persist as ordinary text for inline directives", () => {

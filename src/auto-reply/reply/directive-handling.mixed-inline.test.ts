@@ -240,6 +240,65 @@ describe("mixed inline directives", () => {
     );
   });
 
+  it.each([
+    { name: "directive-only", body: "/model here openai/gpt-5.6-luna" },
+    { name: "mixed-content", body: "please reply /model here openai/gpt-5.6-luna" },
+  ])("keeps an owner $name selection session-only", async ({ body }) => {
+    const { result, sessionEntry } = await applyMixedDirectives({
+      body,
+      senderIsOwner: true,
+      allowedModels: [{ provider: "openai", id: "gpt-5.6-luna", name: "GPT-5.6-Luna" }],
+    });
+
+    expect(result).toMatchObject({
+      ...(body.startsWith("/model")
+        ? { kind: "reply" }
+        : { kind: "continue", provider: "openai", model: "gpt-5.6-luna" }),
+    });
+    expect(sessionEntry).toMatchObject({
+      providerOverride: "openai",
+      modelOverride: "gpt-5.6-luna",
+      modelOverrideSource: "user",
+    });
+    expect(persistStickyModelSelectionBestEffort).not.toHaveBeenCalled();
+  });
+
+  it("clears the current session pin with /model here default", async () => {
+    const sessionEntry = createSessionEntry({
+      providerOverride: "openai",
+      modelOverride: "gpt-5.6-luna",
+      modelOverrideSource: "user",
+    });
+    const { result } = await applyMixedDirectives({
+      body: "/model here default",
+      senderIsOwner: true,
+      sessionEntry,
+      allowedModels: [{ provider: "anthropic", id: "claude-opus-4-6", name: "Claude Opus" }],
+    });
+
+    expect(result).toMatchObject({ kind: "reply" });
+    expect(sessionEntry.providerOverride).toBeUndefined();
+    expect(sessionEntry.modelOverride).toBeUndefined();
+    expect(sessionEntry.modelOverrideSource).toBeUndefined();
+    expect(persistStickyModelSelectionBestEffort).not.toHaveBeenCalled();
+  });
+
+  it("keeps an operator.admin selection session-only", async () => {
+    const { result, sessionEntry } = await applyMixedDirectives({
+      body: "/model here openai/gpt-5.6-luna",
+      gatewayClientScopes: ["operator.admin"],
+      allowedModels: [{ provider: "openai", id: "gpt-5.6-luna", name: "GPT-5.6-Luna" }],
+    });
+
+    expect(result).toMatchObject({ kind: "reply" });
+    expect(sessionEntry).toMatchObject({
+      providerOverride: "openai",
+      modelOverride: "gpt-5.6-luna",
+      modelOverrideSource: "user",
+    });
+    expect(persistStickyModelSelectionBestEffort).not.toHaveBeenCalled();
+  });
+
   it("routes a mixed default reset to the actual default after clearing override fields", async () => {
     const { result, sessionEntry } = await applyMixedDirectives({
       body: "please reply /model default",

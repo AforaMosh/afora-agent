@@ -183,9 +183,11 @@ export async function applyInlineDirectiveOverrides(params: {
   let { directives } = params;
   let { provider, model } = params;
   let { contextTokens } = params;
-  const canPersistStickyModelSelection = Array.isArray(ctx.GatewayClientScopes)
-    ? ctx.GatewayClientScopes.includes("operator.admin")
-    : command.senderIsOwner;
+  const canPersistStickyModelSelection =
+    !directives.modelSessionOnly &&
+    (Array.isArray(ctx.GatewayClientScopes)
+      ? ctx.GatewayClientScopes.includes("operator.admin")
+      : command.senderIsOwner);
   const directiveModelState = {
     allowedModelKeys: modelState.allowedModelKeys,
     allowedModelCatalog: modelState.allowedModelCatalog,

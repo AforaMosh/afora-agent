@@ -8,7 +8,31 @@ describe("extractModelDirective", () => {
       const result = extractModelDirective("/model gpt-5");
       expect(result.hasDirective).toBe(true);
       expect(result.rawModel).toBe("gpt-5");
+      expect(result.sessionOnly).toBe(false);
       expect(result.cleaned).toBe("");
+    });
+
+    it("extracts a session-only /model here selection", () => {
+      const result = extractModelDirective("/model here anthropic/claude-opus-4-6");
+      expect(result.hasDirective).toBe(true);
+      expect(result.rawModel).toBe("anthropic/claude-opus-4-6");
+      expect(result.sessionOnly).toBe(true);
+      expect(result.cleaned).toBe("");
+    });
+
+    it("extracts a session-only default reset", () => {
+      const result = extractModelDirective("/model here default");
+      expect(result.hasDirective).toBe(true);
+      expect(result.rawModel).toBe("default");
+      expect(result.sessionOnly).toBe(true);
+      expect(result.cleaned).toBe("");
+    });
+
+    it("keeps here as a model name when no selection follows it", () => {
+      const result = extractModelDirective("/model here");
+      expect(result.hasDirective).toBe(true);
+      expect(result.rawModel).toBe("here");
+      expect(result.sessionOnly).toBe(false);
     });
 
     it("does not treat /models as a /model directive", () => {
@@ -31,10 +55,13 @@ describe("extractModelDirective", () => {
     });
 
     it("extracts /model with a runtime override", () => {
-      const result = extractModelDirective("/model anthropic/claude-opus-4-7 --runtime claude-cli");
+      const result = extractModelDirective(
+        "/model here anthropic/claude-opus-4-7 --runtime claude-cli",
+      );
       expect(result.hasDirective).toBe(true);
       expect(result.rawModel).toBe("anthropic/claude-opus-4-7");
       expect(result.rawRuntime).toBe("claude-cli");
+      expect(result.sessionOnly).toBe(true);
       expect(result.cleaned).toBe("");
     });
 
