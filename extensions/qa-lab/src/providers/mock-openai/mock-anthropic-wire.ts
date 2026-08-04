@@ -6,13 +6,14 @@ import {
   type AnthropicMessage,
   type AnthropicMessagesRequest,
   type AnthropicStreamEvent,
+  type QaMockProviderFailure,
   countApproxTokens,
 } from "./mock-openai-contracts.js";
 
 // Anthropic Messages conversion preserves role and tool ordering while reusing
 // the shared Responses scenario dispatcher for provider parity.
 
-function normalizeAnthropicSystemToString(
+export function normalizeAnthropicSystemToString(
   system: AnthropicMessagesRequest["system"],
 ): string | undefined {
   if (typeof system === "string") {
@@ -145,7 +146,7 @@ export function convertAnthropicMessagesToResponsesInput(params: {
   return items;
 }
 
-export type ExtractedAssistantOutput = {
+type ExtractedAssistantOutput = {
   text: string;
   toolCalls: Array<{ id: string; name: string; input: Record<string, unknown> }>;
 };
@@ -233,6 +234,19 @@ export function buildAnthropicMessageResponse(params: {
     usage: {
       input_tokens: approxInputTokens,
       output_tokens: approxOutputTokens,
+    },
+  };
+}
+
+export function buildAnthropicFailureResponse(
+  failure: QaMockProviderFailure,
+): Record<string, unknown> {
+  return {
+    type: "error",
+    error: {
+      type: failure.type,
+      ...(failure.code ? { code: failure.code } : {}),
+      message: failure.message,
     },
   };
 }

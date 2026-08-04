@@ -1009,7 +1009,7 @@ describe("qa scenario catalog", () => {
     }
   });
 
-  it("proves thread memory causality after waiting for the scoped outbound", () => {
+  it("captures thread memory routing diagnostics before waiting for the scoped outbound", () => {
     const scenario = requireFlowScenario(readQaScenarioById("thread-memory-isolation"));
     const flow = JSON.stringify(scenario.execution.flow);
 
@@ -1020,8 +1020,10 @@ describe("qa scenario catalog", () => {
     });
     expect(flow).toContain("/debug/request-cursor");
     expect(flow).toContain("/debug/requests?after=${requestCursorBefore}");
+    expect(flow).toContain('"call":"waitForCondition"');
     expect(flow).toContain("scenarioRequests.length === 3");
     expect(flow).toContain("searchPlanRequest.plannedToolName === 'memory_search'");
+    expect(flow).toContain("disabled memory_search, or routed incorrectly");
     expect(flow).toContain(
       "searchResultRequest.toolOutputCallId === searchPlanRequest.plannedToolCallId",
     );
@@ -1030,8 +1032,8 @@ describe("qa scenario catalog", () => {
       "finalRequest.toolOutputCallId === searchResultRequest.plannedToolCallId",
     );
     expect(flow).toContain('"sinceIndex":{"ref":"outboundStartIndex"}');
-    expect(flow.indexOf('"call":"waitForOutboundMessage"')).toBeLessThan(
-      flow.indexOf('"set":"scenarioRequests"'),
+    expect(flow.indexOf('"call":"waitForCondition"')).toBeLessThan(
+      flow.indexOf('"call":"waitForOutboundMessage"'),
     );
   });
 

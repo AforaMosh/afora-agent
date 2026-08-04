@@ -2315,6 +2315,65 @@ describe("qa mock openai server", () => {
     expect(requests.every((request) => request.errorCode === "context_length_exceeded")).toBe(true);
   });
 
+  it("injects one Anthropic overflow per session before planning the logical write", async () => {
+    const server = await startMockServer();
+    const bodyFor = (sessionId: string) => ({
+      system: `Runtime: embedded | sessionId=${sessionId}`,
+      tools: [
+        {
+          name: "exec",
+          input_schema: {
+            type: "object",
+            properties: {
+              language: { type: "string" },
+              code: { type: "string" },
+            },
+            required: ["code"],
+          },
+        },
+        {
+          name: "wait",
+          input_schema: {
+            type: "object",
+            properties: { runId: { type: "string" } },
+            required: ["runId"],
+          },
+        },
+      ],
+      messages: [
+        makeAnthropicUserText(
+          `${QA_COMPACTION_RETRY_PROMPT}\n${QA_COMPACTION_RETRY_OVERFLOW_PADDING}`,
+        ),
+      ],
+    });
+
+    const first = await postAnthropicMessages(server, bodyFor("anthropic-overflow-a"));
+    expect(first.status).toBe(400);
+    expect(await first.json()).toEqual({
+      type: "error",
+      error: {
+        type: "invalid_request_error",
+        code: "context_length_exceeded",
+        message: "This model's maximum context length was exceeded.",
+      },
+    });
+
+    const second = await postAnthropicMessages(server, bodyFor("anthropic-overflow-a"));
+    expect(second.status).toBe(200);
+    const content = requireArray(
+      requireRecord(await second.json(), "Anthropic response").content,
+      "content",
+    );
+    expect(content).toContainEqual(expect.objectContaining({ type: "tool_use", name: "exec" }));
+    expect(await getJson(server, "/debug/last-request")).toMatchObject({
+      plannedToolName: "write",
+      plannedWireToolName: "exec",
+    });
+
+    const independent = await postAnthropicMessages(server, bodyFor("anthropic-overflow-b"));
+    expect(independent.status).toBe(400);
+  });
+
   it("excludes compaction summary requests from overflow injection", async () => {
     const server = await startMockServer();
     const initial = await postNonStreamingResponses(server, {
@@ -2494,6 +2553,28 @@ describe("qa mock openai server", () => {
         compactionSummaryFaultMode: "empty-output-once",
       }),
     ]);
+  });
+
+  it("excludes Anthropic compaction summary requests from overflow injection", async () => {
+    const server = await startMockServer();
+    const response = await postAnthropicMessages(server, {
+      system: QA_COMPACTION_SUMMARY_INSTRUCTIONS,
+      messages: [
+        makeAnthropicUserText(
+          `<conversation>\n${QA_COMPACTION_RETRY_OVERFLOW_PADDING}\n</conversation>`,
+        ),
+      ],
+    });
+
+    expect(response.status).toBe(200);
+    const body = requireRecord(await response.json(), "Anthropic summary response");
+    expect(requireArray(body.content, "content")).toContainEqual(
+      expect.objectContaining({ type: "text", text: expect.stringContaining("## Goal") }),
+    );
+    expect(await getJson(server, "/debug/last-request")).toMatchObject({
+      requestKind: "compaction-summary",
+      outcome: "success",
+    });
   });
 
   it("handles staged scalar compaction summaries and promotes the durable merge without state leakage", async () => {
@@ -6367,6 +6448,88 @@ Update and merge these partial structured summaries.`,
     expect(text).toBe(
       "Read: AGENT.md, SOUL.md, FOLLOWTHROUGH_INPUT.md\nWrote: repo-contract-summary.txt\nStatus: complete",
     );
+  });
+
+  it("uses native Codex custom exec, output arrays, and cell_id waits", async () => {
+    const server = await startMockServer();
+    const tools = [
+      { type: "custom", name: "exec", format: { type: "grammar", syntax: "lark", definition: "" } },
+      {
+        type: "function",
+        name: "wait",
+        parameters: {
+          type: "object",
+          properties: { cell_id: { type: "string" } },
+          required: ["cell_id"],
+        },
+      },
+    ];
+    const prompt = QA_COMPACTION_RETRY_PROMPT;
+    const execPayload = await expectOpenAiNonStreamingResponsesJson(server, {
+      tools,
+      input: [makeUserInput(prompt)],
+    });
+    const execCall = outputItem(execPayload);
+    expect(execCall).toMatchObject({ type: "custom_tool_call", name: "exec" });
+    const source = String(execCall.input);
+    expect(source).toContain("tools[target.name](targetArgs)");
+    expect(source).toContain("text(JSON.stringify(value));");
+    expect(source).not.toContain("tools.callValue");
+    expect(source).not.toContain("target.id");
+    expect(source).not.toMatch(/ALL_TOOLS[^\n]*\.id/);
+    expect(source).not.toContain("return value");
+
+    const execCallId = outputToolCallId(execCall, "native-exec");
+    const waitPayload = await expectOpenAiNonStreamingResponsesJson(server, {
+      tools,
+      input: [
+        makeUserInput(prompt),
+        execCall,
+        {
+          type: "custom_tool_call_output",
+          call_id: execCallId,
+          output: [
+            {
+              type: "input_text",
+              text: "Script running with cell ID cell-write-1\nLive output:\n",
+            },
+          ],
+        },
+      ],
+    });
+    const waitCall = outputToolCall(waitPayload, "wait");
+    expect(outputToolArgsFromItem(waitCall)).toEqual({ cell_id: "cell-write-1" });
+
+    const finalPayload = await expectOpenAiNonStreamingResponsesJson(server, {
+      tools,
+      input: [
+        makeUserInput(prompt),
+        execCall,
+        {
+          type: "custom_tool_call_output",
+          call_id: execCallId,
+          output: [
+            {
+              type: "input_text",
+              text: "Script running with cell ID cell-write-1\nLive output:\n",
+            },
+          ],
+        },
+        waitCall,
+        {
+          type: "function_call_output",
+          call_id: outputToolCallId(waitCall, "native-wait"),
+          output: [
+            { type: "input_text", text: "Script completed\nWall time: 0.1 seconds\nOutput:\n" },
+            {
+              type: "input_text",
+              text: JSON.stringify(QA_COMPACTION_RETRY_CODE_MODE_WRITE_RESULT),
+            },
+          ],
+        },
+      ],
+    });
+    expect(outputText(finalPayload)).toBe("Protocol note: replay unsafe after write.");
   });
 
   it("routes Anthropic image generation through Code Mode when only exec and wait are visible", async () => {
