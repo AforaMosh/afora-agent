@@ -278,4 +278,37 @@ describe("Matrix QA Lab scenario flows", () => {
       },
     });
   });
+
+  it("configures image generation before the single generated-image flow call", () => {
+    const scenario = requireFlowScenario(
+      readQaScenarioById("matrix-room-generated-image-delivery"),
+    );
+    const actions = scenario.execution.flow?.steps[0]?.actions ?? [];
+
+    expect(scenario.execution).toMatchObject({
+      channel: "matrix",
+      retryCount: 0,
+      timeoutMs: 180_000,
+      config: {
+        requiredChannelDriver: "live",
+      },
+    });
+    expect(actions).toEqual([
+      {
+        call: "ensureImageGenerationConfigured",
+        args: [{ ref: "env" }],
+      },
+      {
+        set: "scenarioModule",
+        value: {
+          expr: "await qaImport('./live-transports/matrix/scenarios/scenario-runtime-media.js')",
+        },
+      },
+      {
+        call: "scenarioModule.runGeneratedImageDeliveryScenario",
+        args: [{ expr: "scenarioContext" }],
+        saveAs: "result",
+      },
+    ]);
+  });
 });
