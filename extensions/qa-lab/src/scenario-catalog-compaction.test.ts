@@ -56,6 +56,15 @@ describe("qa compaction scenario catalog", () => {
     const scenario = requireFlowScenario(readQaScenarioById("compaction-retry-mutating-tool"));
     const flow = JSON.stringify(scenario.execution.flow);
     const serializedScenario = JSON.stringify(scenario);
+    const actions = scenario.execution.flow?.steps[0]?.actions ?? [];
+    const readSetExpression = (name: string) => {
+      const action = actions.find((candidate) => (candidate as { set?: string }).set === name) as
+        | { value?: { expr?: string } }
+        | undefined;
+      return action?.value?.expr ?? "";
+    };
+    const writeRequestsExpr = readSetExpression("writeRequests");
+    const postWriteContinuationsExpr = readSetExpression("postWriteContinuations");
     const knownGap =
       "known-harness-gap compaction-retry-mutating-tool: provider-error recovery does not invoke Codex native compaction; native token-threshold compaction needs a separate scenario.";
 
@@ -122,24 +131,64 @@ describe("qa compaction scenario catalog", () => {
     expect(flow).toContain("overflowRequests.length === 1");
     expect(flow).toContain("overflowRequest.rawByteLength > config.overflowThresholdBytes");
     expect(flow).toContain("writeRequests.length === 1");
-    expect(flow).toContain("String(request.allInputText ?? '').includes(sessionId)");
+    expect(writeRequestsExpr).toContain("request.plannedToolName === 'write'");
+    expect(writeRequestsExpr).toContain("request.cursor > overflowRequest.cursor");
+    expect(writeRequestsExpr).toContain("String(request.allInputText ?? '').includes(sessionId)");
+    expect(writeRequestsExpr).toContain(
+      "String(request.allInputText ?? '').includes(config.promptSnippet)",
+    );
+    expect(writeRequestsExpr).toContain(
+      "String(request.allInputText ?? '').includes(config.durableMarker)",
+    );
+    expect(writeRequestsExpr).not.toContain("request.requestKind");
+    expect(writeRequestsExpr).not.toContain("request.outcome");
+    expect(writeRequestsExpr).not.toContain("request.toolOutput");
+    expect(writeRequestsExpr).not.toContain("request.plannedToolArgs");
+    expect(writeRequestsExpr).not.toContain("request.plannedWireToolName");
+    expect(flow).toContain("writeRequest.requestKind === 'agent-initial'");
+    expect(flow).toContain("writeRequest.outcome === 'success'");
+    expect(flow).toContain("!writeRequest.toolOutput");
     expect(flow).toContain(
       "String(writeRequest.allInputText ?? '').includes(config.durableMarker)",
     );
-    expect(flow).toContain("request.cursor > overflowRequest.cursor");
-    expect(flow).toContain("request.plannedWireToolName === 'exec'");
-    expect(flow).toContain("request.plannedToolArgs?.path === config.outputFile");
-    expect(flow).toContain("request.plannedToolArgs?.content === config.expectedFileContent");
+    expect(flow).not.toContain("request.plannedWireToolName === 'exec'");
+    expect(flow).toContain(
+      "writeRequest.plannedWireToolName === undefined || writeRequest.plannedWireToolName === 'exec'",
+    );
+    expect(flow).toContain("writeRequest.plannedToolArgs?.path === config.outputFile");
+    expect(flow).toContain("writeRequest.plannedToolArgs?.content === config.expectedFileContent");
+    expect(flow).toContain(
+      'writeWireToolName","value":{"expr":"writeRequest.plannedWireToolName ?? writeRequest.plannedToolName',
+    );
+    expect(flow).toContain(
+      "event.toolCallId === writeRequest.plannedToolCallId && event.name === writeWireToolName",
+    );
+    expect(flow).toContain("successfulWriteTranscriptEvents.length === 1");
+    expect(flow).toContain("transcript.successfulToolCallCounts[writeWireToolName] === 1");
+    expect(flow).not.toContain("transcript.successfulToolCallCounts.write === 1");
+    expect(postWriteContinuationsExpr).toContain("request.requestKind === 'tool-continuation'");
+    expect(postWriteContinuationsExpr).toContain("request.cursor > writeRequest.cursor");
+    expect(postWriteContinuationsExpr).toContain(
+      "String(request.allInputText ?? '').includes(sessionId)",
+    );
+    expect(postWriteContinuationsExpr).not.toContain("request.outcome");
+    expect(postWriteContinuationsExpr).not.toContain("request.plannedToolName");
+    expect(postWriteContinuationsExpr).not.toContain("request.toolOutputCallId");
+    expect(postWriteContinuationsExpr).not.toContain("request.toolOutputStructuredError");
     expect(flow).toContain("let currentCallId = writeRequest.plannedToolCallId");
+    expect(flow).toContain("postWriteContinuations.filter");
     expect(flow).toContain("request.toolOutputCallId === currentCallId");
     expect(flow).toContain("request.plannedToolName === 'wait'");
     expect(flow).toContain("currentCallId = request.plannedToolCallId");
+    expect(flow).toContain("continuationChain.requests.length === postWriteContinuations.length");
+    expect(flow).toContain(
+      "continuationChain.requests.every((request, index) => request === postWriteContinuations[index])",
+    );
     expect(flow).toContain(
       "continuationChain.requests.length === continuationChain.waits.length + 1",
     );
     expect(flow).toContain("request.outcome === 'success'");
     expect(flow).toContain("request.toolOutputStructuredError !== true");
-    expect(flow).toContain("transcript.successfulToolCallCounts.write === 1");
     expect(flow).toContain("terminalContinuations.length === 1");
     expect(flow).toContain("terminalContinuations[0] === continuationChain.terminal");
     expect(flow).toContain("String(terminalContinuations[0].toolOutput ?? '').trim().length > 0");
@@ -166,6 +215,14 @@ describe("qa compaction scenario catalog", () => {
     expect(flow).toContain("durable: String(request.allInputText ?? '')");
     expect(flow).toContain("bulky: String(request.allInputText ?? '')");
     expect(flow).toContain("inputChars: String(request.allInputText ?? '').length");
+    expect(flow).toContain(
+      "resolvedWireTool: request.plannedWireToolName ?? request.plannedToolName ?? null",
+    );
+    expect(flow).toContain("logicalWrites=${String(writeRequests.length)}");
+    expect(flow).toContain("wireTool=${String(writeWireToolName)}");
+    expect(flow).toContain(
+      "wireSuccesses=${String(transcript.successfulToolCallCounts[writeWireToolName] ?? 0)}",
+    );
     expect(flow).not.toContain("clientSessionId");
     expect(flow).toContain("tailBlocks:");
     expect(flow).toContain(".sort().slice(0, 16)");
