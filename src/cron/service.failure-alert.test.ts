@@ -144,6 +144,46 @@ describe("CronService failure alerts", () => {
     );
   });
 
+  it("alerts by default with no failure alert config at all", async () => {
+    await withFailureAlertCron(
+      {
+        failureAlert: undefined,
+        runResult: { status: "error", error: "expired oauth token" },
+      },
+      async ({ cron, sendCronFailureAlert, addJob }) => {
+        const job = await addJob("default alert job", { delivery: createTelegramDelivery() });
+
+        await cron.run(job.id, "force");
+        expect(sendCronFailureAlert).not.toHaveBeenCalled();
+
+        await cron.run(job.id, "force");
+        expect(sendCronFailureAlert).toHaveBeenCalledTimes(1);
+        expectAlertFields(sendCronFailureAlert, { channel: "telegram", to: "19098680" });
+        expectAlertTextContaining(
+          sendCronFailureAlert,
+          'Automation "default alert job" failed 2 times',
+        );
+      },
+    );
+  });
+
+  it("suppresses inherited alerts when global alerts are disabled", async () => {
+    await withFailureAlertCron(
+      {
+        failureAlert: { enabled: false },
+        runResult: { status: "error", error: "expired oauth token" },
+      },
+      async ({ cron, sendCronFailureAlert, addJob }) => {
+        const job = await addJob("globally disabled job", { delivery: createTelegramDelivery() });
+
+        await cron.run(job.id, "force");
+        await cron.run(job.id, "force");
+        await cron.run(job.id, "force");
+        expect(sendCronFailureAlert).not.toHaveBeenCalled();
+      },
+    );
+  });
+
   it("supports per-job failure alert override when global alerts are disabled", async () => {
     await withFailureAlertCron(
       {

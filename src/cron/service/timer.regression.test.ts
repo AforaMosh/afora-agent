@@ -2907,6 +2907,8 @@ describe("cron service timer regressions", () => {
       payload: { kind: "agentTurn", message: "fail" },
       state: { consecutiveErrors: 8 },
     });
+    // Opt out of default-on failure alerts; this test proves auto-disable only.
+    job.failureAlert = false;
 
     applyJobResult(
       state,
@@ -3008,6 +3010,8 @@ describe("cron service timer regressions", () => {
       payload: { kind: "agentTurn", message: "fail" },
       state: { consecutiveErrors: 9, nextRunAtMs: startedAt + 60_000 },
     });
+    // Opt out of default-on failure alerts; this test proves auto-disable only.
+    job.failureAlert = false;
 
     applyJobResult(
       state,

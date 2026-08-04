@@ -95,7 +95,10 @@ export function resolveFailureAlert(
   if (job.failureAlert === false) {
     return null;
   }
-  if (!jobConfig && globalConfig?.enabled !== true) {
+  // Alerts are on by default: a scheduled job that starts failing must surface
+  // it instead of going silent forever. Opt out per job (`failureAlert: false`)
+  // or globally (`cron.failureAlert.enabled: false`).
+  if (!jobConfig && globalConfig?.enabled === false) {
     return null;
   }
 
