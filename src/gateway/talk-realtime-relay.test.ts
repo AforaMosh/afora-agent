@@ -1427,6 +1427,11 @@ describe("talk realtime gateway relay", () => {
       language: "de",
     });
     await Promise.resolve();
+    const relay = relaySessions.get(session.relaySessionId);
+    expect(relay).toBeDefined();
+    if (!relay) {
+      throw new Error("expected active relay session");
+    }
 
     const sessionFields = expectRecordFields(session, {
       provider: "relay-test",
@@ -1474,6 +1479,7 @@ describe("talk realtime gateway relay", () => {
       audioBase64: Buffer.from("audio-out").toString("base64"),
     });
     expectRecordFields(audioPayload.talkEvent, { type: "output.audio.delta" });
+    expect(relay.harness.talk.recentEvents).toContain(audioPayload.talkEvent);
     expectDelivery(audioPayload, true);
 
     const markPayload = findEventPayload(events, (payload) => payload.type === "mark");
@@ -1482,6 +1488,12 @@ describe("talk realtime gateway relay", () => {
       type: "mark",
       markName: "mark-1",
     });
+    expectRecordFields(markPayload.talkEvent, {
+      type: "output.audio.done",
+      payload: { markName: "mark-1" },
+      final: true,
+    });
+    expect(relay.harness.talk.recentEvents).toContain(markPayload.talkEvent);
     expectDelivery(markPayload, false);
 
     const partialTranscript = findEventPayload(
@@ -1619,6 +1631,7 @@ describe("talk realtime gateway relay", () => {
       byteLength: Buffer.from("audio-in").byteLength,
     });
     expectRecordFields(inputAudioPayload.talkEvent, { type: "input.audio.delta" });
+    expect(relay.harness.talk.recentEvents).toContain(inputAudioPayload.talkEvent);
     expectDelivery(inputAudioPayload, true);
 
     const clearPayload = findEventPayload(events, (payload) => payload.type === "clear");
