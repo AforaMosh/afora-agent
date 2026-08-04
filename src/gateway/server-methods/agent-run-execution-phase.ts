@@ -356,6 +356,7 @@ export function startAgentRunExecution(params: {
                 scheduledToolPolicy: params.restoredCronContinuation.scheduledToolPolicy,
               })
             : undefined,
+          scheduledRuntimeAuthority: params.restoredCronContinuation?.scheduledRuntimeAuthority,
           requireExplicitMessageTarget:
             params.restoredCronContinuation?.cliSessionBindingFacts?.requireExplicitMessageTarget,
           cliSessionBindingFacts: params.restoredCronContinuation?.cliSessionBindingFacts,

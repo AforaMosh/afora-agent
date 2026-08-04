@@ -79,6 +79,18 @@ export function formatScheduledToolPolicyAdvisory(params: {
   return lines.join("\n");
 }
 
+/** Advisory for inherited caps created before native app/MCP authority was captured. */
+export function formatIncompleteScheduledRuntimeAuthorityAdvisory(names: string[]): string | null {
+  if (names.length === 0) {
+    return null;
+  }
+  return [
+    `${pluralize(names.length, "automation")} ${names.length === 1 ? "has" : "have"} incomplete inherited app/MCP authority${formatJobNameList(names)}.`,
+    "- Existing OpenClaw tool caps continue unchanged, but native Codex apps or MCP tools may be unavailable.",
+    "- Reauthorize in place from the original authenticated Codex session by editing the job's tool cap; the job id, schedule, delivery, and run history are preserved.",
+  ].join("\n");
+}
+
 /** Convert legacy cron issue counts into doctor preview lines. */
 export function formatLegacyIssuePreview(issues: CronLegacyIssueCounts): string[] {
   const lines: string[] = [];

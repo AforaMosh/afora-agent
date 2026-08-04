@@ -111,6 +111,7 @@ import {
 const agentHarnessRuntimeMocks = vi.hoisted(() => ({
   forceModelToolsUnsupported: false,
   skipRequesterScopedMcpMaterialization: false,
+  requesterScopedMcpTools: undefined as unknown,
 }));
 
 vi.mock("openclaw/plugin-sdk/agent-harness-runtime", async (importOriginal) => {
@@ -126,6 +127,11 @@ vi.mock("openclaw/plugin-sdk/agent-harness-runtime", async (importOriginal) => {
     ) => {
       if (agentHarnessRuntimeMocks.skipRequesterScopedMcpMaterialization) {
         return undefined;
+      }
+      if (agentHarnessRuntimeMocks.requesterScopedMcpTools) {
+        return agentHarnessRuntimeMocks.requesterScopedMcpTools as Awaited<
+          ReturnType<typeof actual.materializeRequesterScopedMcpToolsForHarnessRun>
+        >;
       }
       return await actual.materializeRequesterScopedMcpToolsForHarnessRun(...args);
     },
@@ -1013,6 +1019,7 @@ setupRunAttemptTestHooks();
 beforeEach(() => {
   agentHarnessRuntimeMocks.forceModelToolsUnsupported = false;
   agentHarnessRuntimeMocks.skipRequesterScopedMcpMaterialization = false;
+  agentHarnessRuntimeMocks.requesterScopedMcpTools = undefined;
 });
 
 describe("runCodexAppServerAttempt", () => {
@@ -2088,6 +2095,32 @@ describe("runCodexAppServerAttempt", () => {
       "thread/resume",
       "thread/resume",
     ]);
+  });
+
+  it("adds admitted requester MCP tools to the mutable cron creator cap", async () => {
+    const scopedTool = createRuntimeDynamicTool("todoist__find-tasks");
+    agentHarnessRuntimeMocks.requesterScopedMcpTools = {
+      tools: [scopedTool],
+      advertisedTools: [scopedTool],
+      dispose: vi.fn(async () => undefined),
+    };
+    let creatorAllowlist: Array<string | { name: string; pluginId?: string }> | undefined;
+    testing.setOpenClawCodingToolsFactoryForTests((options) => {
+      creatorAllowlist ??= options.cronCreatorToolAllowlistRef;
+      return [];
+    });
+    const { sessionFile, workspaceDir } = createRunPaths();
+    const harness = createStartedThreadHarness();
+    const params = createParams(sessionFile, workspaceDir);
+    params.disableTools = false;
+    setCodexTestModelSupportsTools(params, true);
+
+    const run = runCodexAppServerAttempt(params);
+    await harness.waitForMethod("turn/start");
+    await harness.completeTurn({ threadId: "thread-1", turnId: "turn-1" });
+    await run;
+
+    expect(creatorAllowlist).toContain("todoist__find-tasks");
   });
   it("keeps message in the registered schema when disabled for an internal turn", async () => {
     const { sessionFile, workspaceDir } = createRunPaths();

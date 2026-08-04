@@ -1417,6 +1417,36 @@ describe("cron tool", () => {
     expect(params?.payload?.toolsAllow).toEqual(["read", "automations"]);
   });
 
+  it("attaches server-only runtime authority to finite creator-capped adds", async () => {
+    const resolveCreatorRuntimeAuthority = vi.fn(async () => ({
+      version: 1 as const,
+      runtime: "codex" as const,
+      openClawTools: ["read", "automations"],
+      apps: [],
+      userMcpServers: [{ serverName: "todoist", toolNames: ["list"] }],
+      pluginMcpServers: [],
+    }));
+    const tool = createTestCronTool({
+      agentSessionKey: "agent:main:telegram:group:restricted-room",
+      creatorToolAllowlist: ["read", "cron"],
+      resolveCreatorRuntimeAuthority,
+    });
+
+    await tool.execute("call-default-capped-runtime-authority", {
+      action: "add",
+      job: buildReminderAgentTurnJob(),
+    });
+
+    expect(resolveCreatorRuntimeAuthority).toHaveBeenCalledOnce();
+    expect(expectSingleGatewayCallMethod("cron.add")).toMatchObject({
+      internalScheduledRuntimeAuthority: {
+        version: 1,
+        runtime: "codex",
+        userMcpServers: [{ serverName: "todoist", toolNames: ["list"] }],
+      },
+    });
+  });
+
   it("caps trigger-script systemEvent adds to the creator tool surface", async () => {
     const tool = createTestCronTool({
       agentSessionKey: "agent:main:telegram:group:restricted-room",

@@ -153,6 +153,21 @@ describe("createPersistCronSessionEntry", () => {
         ownerSessionKey: "agent:main:discord:group:ops",
         ownerAccountId: "work",
       },
+      scheduledRuntimeAuthority: {
+        version: 1,
+        runtime: "codex",
+        openClawTools: ["write"],
+        apps: [
+          {
+            appId: "todoist",
+            allowDestructiveActions: false,
+            allowOpenWorld: true,
+            approvalMode: "ask",
+          },
+        ],
+        userMcpServers: [],
+        pluginMcpServers: [],
+      },
       persistSessionEntry,
     });
 
@@ -183,6 +198,21 @@ describe("createPersistCronSessionEntry", () => {
           mode: "account",
           ownerSessionKey: "agent:main:discord:group:ops",
           ownerAccountId: "work",
+        },
+        scheduledRuntimeAuthority: {
+          version: 1,
+          runtime: "codex",
+          openClawTools: ["write"],
+          apps: [
+            {
+              appId: "todoist",
+              allowDestructiveActions: false,
+              allowOpenWorld: true,
+              approvalMode: "ask",
+            },
+          ],
+          userMcpServers: [],
+          pluginMcpServers: [],
         },
       },
     });

@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { formatScheduledToolPolicyAdvisory } from "./repair-plan.js";
+import {
+  formatIncompleteScheduledRuntimeAuthorityAdvisory,
+  formatScheduledToolPolicyAdvisory,
+} from "./repair-plan.js";
 import { normalizeStoredCronJobs } from "./store-migration.js";
 
 function job(overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -123,5 +126,24 @@ describe("migrateScheduledToolPolicy", () => {
         invalidJobs: result.invalidScheduledToolPolicyJobs,
       }),
     ).toContain("openclaw cron edit <id> --tools");
+  });
+
+  it("identifies default-capped jobs that predate runtime authority capture", () => {
+    const incomplete = job({
+      payload: {
+        kind: "agentTurn",
+        message: "run",
+        toolsAllow: ["write"],
+        toolsAllowIsDefault: true,
+      },
+    });
+    const result = normalizeStoredCronJobs([incomplete]);
+
+    expect(result.incompleteScheduledRuntimeAuthorityJobs).toEqual(["Legacy"]);
+    expect(
+      formatIncompleteScheduledRuntimeAuthorityAdvisory(
+        result.incompleteScheduledRuntimeAuthorityJobs,
+      ),
+    ).toContain("original authenticated Codex session");
   });
 });

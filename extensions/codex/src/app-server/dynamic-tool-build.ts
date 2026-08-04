@@ -48,6 +48,8 @@ import {
 import { filterToolsForVisionInputs } from "./vision-tools.js";
 import { resolveCodexWebSearchPlan, type CodexNativeWebSearchSupport } from "./web-search.js";
 
+type ScheduledRuntimeAuthority = NonNullable<EmbeddedRunAttemptParams["scheduledRuntimeAuthority"]>;
+
 type OpenClawCodingToolsOptions = NonNullable<
   Parameters<(typeof import("openclaw/plugin-sdk/agent-harness"))["createOpenClawCodingTools"]>[0]
 >;
@@ -109,6 +111,12 @@ type DynamicToolBuildParams = {
     frameToolCallId?: string;
     frameImageIdentity?: string;
   };
+  captureScheduledRuntimeAuthority?: (
+    openClawTools: readonly string[],
+  ) => Promise<ScheduledRuntimeAuthority | undefined>;
+  cronCreatorToolAllowlistRef?: NonNullable<
+    OpenClawCodingToolsOptions["cronCreatorToolAllowlistRef"]
+  >;
 };
 /** Splits sandbox and run session keys so tool calls can bind to both scopes when needed. */
 function resolveOpenClawCodingToolsSessionKeys(
@@ -237,6 +245,7 @@ export async function buildDynamicTools(input: DynamicToolBuildParams) {
   toolBuildStages.mark("load-agent-harness-tools");
   const sessionKeys = resolveOpenClawCodingToolsSessionKeys(params, input.sandboxSessionKey);
   const nativeExecutionPolicy = resolveCodexNativeExecutionPolicyForDynamicTools(input);
+  const cronCreatorToolAllowlist = input.cronCreatorToolAllowlistRef ?? [];
   const allTools = createOpenClawCodingTools({
     agentId: input.sessionAgentId,
     ...buildEmbeddedAttemptToolRunContext(params),
@@ -317,6 +326,15 @@ export async function buildDynamicTools(input: DynamicToolBuildParams) {
     hasRepliedRef: params.hasRepliedRef,
     modelHasVision,
     computerContextEpoch: input.computerContextEpoch,
+    cronCreatorToolAllowlistRef: cronCreatorToolAllowlist,
+    resolveCronCreatorRuntimeAuthority: input.captureScheduledRuntimeAuthority
+      ? () =>
+          input.captureScheduledRuntimeAuthority!(
+            cronCreatorToolAllowlist.map((entry) =>
+              typeof entry === "string" ? entry : entry.name,
+            ),
+          )
+      : undefined,
     requireExplicitMessageTarget:
       params.requireExplicitMessageTarget ?? isSubagentSessionKey(params.sessionKey),
     sourceReplyDeliveryMode: params.sourceReplyDeliveryMode,

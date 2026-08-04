@@ -25,6 +25,8 @@ const WEB_SEARCH_TOOL_NAME = "web_search";
 
 const MISSING_WEB_SEARCH_PROVIDER_DIAGNOSTIC_MESSAGE =
   "web_search tool requested in toolsAllow but no web search provider is selected. Configure one with: openclaw configure --section web, or set tools.web.search.provider.";
+const INCOMPLETE_SCHEDULED_RUNTIME_AUTHORITY_MESSAGE =
+  "This automation predates inherited Codex app/MCP authority capture. OpenClaw tools remain capped, but native apps or MCP tools may be unavailable. Reauthorize the job in place from its original authenticated Codex session.";
 
 export function toolsAllowRequestsWebSearch(toolsAllow?: string[]): boolean {
   const explicitAllow = (toolsAllow ?? []).filter(
@@ -149,6 +151,31 @@ export function createCronRunDiagnosticsFromMissingWebSearchProvider(params: {
           severity: "warn",
           message: MISSING_WEB_SEARCH_PROVIDER_DIAGNOSTIC_MESSAGE,
           toolName: WEB_SEARCH_TOOL_NAME,
+        },
+      ],
+    },
+    { nowMs: params.nowMs },
+  );
+}
+
+/** Makes the legacy partial-cap behavior visible without pausing an existing job. */
+export function createCronRunDiagnosticsFromIncompleteRuntimeAuthority(params: {
+  toolsAllowIsDefault?: boolean;
+  hasRuntimeAuthority: boolean;
+  nowMs?: () => number;
+}): CronRunDiagnostics | undefined {
+  if (params.toolsAllowIsDefault !== true || params.hasRuntimeAuthority) {
+    return undefined;
+  }
+  return normalizeCronRunDiagnostics(
+    {
+      summary: INCOMPLETE_SCHEDULED_RUNTIME_AUTHORITY_MESSAGE,
+      entries: [
+        {
+          ts: params.nowMs?.() ?? Date.now(),
+          source: "cron-preflight",
+          severity: "warn",
+          message: INCOMPLETE_SCHEDULED_RUNTIME_AUTHORITY_MESSAGE,
         },
       ],
     },

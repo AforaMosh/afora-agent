@@ -56,6 +56,7 @@ Docs: https://docs.openclaw.ai
 
 ### Fixes
 
+- **Codex scheduled app and MCP authority:** preserve the creator's bounded Codex app and configured MCP tool grants on new isolated automations, revalidate current app/server availability at execution, keep shell/files and plugin context disabled, and surface upgrade guidance for existing capped jobs that need explicit in-place reauthorization. Fixes #113475.
 - **Control UI dynamic deep links:** reuse the initial route loader result when publishing real agent, session, dashboard, Workboard, Memory, and Plugins paths, avoiding redundant route-loader work during startup. Thanks @shakkernerd.
 - **Linux gateway service ownership:** refuse user-scope systemd publication and activation when the same gateway unit name is already owned or cannot be verified in the system scope, including `--force`, with actionable recovery guidance instead of creating restart-looping dual managers. Fixes #116129.
 - **macOS remote tunnel lifecycle:** prevent cancelled or superseded restart backoffs from recreating SSH tunnels, and join a tunnel create that another caller started while the actor was suspended.

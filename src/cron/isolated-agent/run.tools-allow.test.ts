@@ -287,7 +287,7 @@ describe("runCronIsolatedAgentTurn toolsAllow passthrough", () => {
   );
 
   it(
-    "does not warn for default-derived toolsAllow that includes web_search",
+    "warns when a legacy default-derived cap lacks inherited app/MCP authority",
     { timeout: RUN_TOOLS_ALLOW_TIMEOUT_MS },
     async () => {
       const result = await runCronIsolatedAgentTurn(
@@ -295,7 +295,15 @@ describe("runCronIsolatedAgentTurn toolsAllow passthrough", () => {
       );
 
       expect(result.status).toBe("ok");
-      expect(result.diagnostics).toBeUndefined();
+      expect(result.diagnostics).toMatchObject({
+        entries: [
+          expect.objectContaining({
+            source: "cron-preflight",
+            severity: "warn",
+            message: expect.stringContaining("predates inherited Codex app/MCP authority"),
+          }),
+        ],
+      });
     },
   );
 

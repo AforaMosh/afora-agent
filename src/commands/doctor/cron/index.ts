@@ -17,6 +17,7 @@ import {
 import {
   formatLegacyIssuePreview,
   formatScheduledToolPolicyAdvisory,
+  formatIncompleteScheduledRuntimeAuthorityAdvisory,
   formatUnresolvedCommandPromptAdvisory,
   formatUnresolvedShellPromptAdvisory,
 } from "./repair-plan.js";
@@ -209,6 +210,11 @@ export async function collectLegacyCronStoreHealthFindings(params: {
       normalized.invalidScheduledToolPolicyJobs,
       "cron-scheduled-authority-valid",
       "have invalid scheduled authority provenance",
+    ],
+    [
+      normalized.incompleteScheduledRuntimeAuthorityJobs,
+      "cron-scheduled-runtime-authority-reauthorization",
+      "have incomplete inherited app/MCP authority",
     ],
   ] as const) {
     if (names.length > 0) {
@@ -403,6 +409,12 @@ export async function maybeRepairLegacyCronStore(params: {
   });
   if (scheduledToolPolicyAdvisory) {
     note(scheduledToolPolicyAdvisory, "Cron");
+  }
+  const runtimeAuthorityAdvisory = formatIncompleteScheduledRuntimeAuthorityAdvisory(
+    normalized.incompleteScheduledRuntimeAuthorityJobs,
+  );
+  if (runtimeAuthorityAdvisory) {
+    note(runtimeAuthorityAdvisory, "Cron");
   }
   const previewLines = formatLegacyIssuePreview(normalized.issues);
   if (legacyStoreDetected) {
