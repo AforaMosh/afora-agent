@@ -4,6 +4,7 @@ import {
   materializeRequesterScopedMcpToolsForHarnessRun,
   resolveAgentDir,
 } from "openclaw/plugin-sdk/agent-harness-runtime";
+import type { CodexAppServerClient } from "./client.js";
 import {
   buildDynamicTools,
   formatCodexDynamicToolBuildStageSummary,
@@ -19,6 +20,7 @@ import { captureCodexScheduledRuntimeAuthority } from "./effective-mcp-catalog.j
 import { emitCodexAppServerEvent } from "./run-attempt-lifecycle.js";
 import type { CodexAttemptRuntime } from "./run-attempt-runtime.js";
 import { resolveCodexDynamicToolDirectNames } from "./run-attempt-tools.js";
+import type { CodexAppServerThreadLifecycleBinding } from "./thread-lifecycle-types.js";
 
 export async function prepareCodexAttemptTools(runtime: CodexAttemptRuntime) {
   const {
@@ -110,6 +112,11 @@ export async function prepareCodexAttemptTools(runtime: CodexAttemptRuntime) {
     frameImageIdentity?: string;
   } = { value: 0 };
   const cronCreatorToolAllowlist: Array<string | { name: string; pluginId?: string }> = [];
+  // Authority capture must inspect the active thread: a resumed binding can lag the live client,
+  // which would otherwise drop the creator's already-attested MCP surface.
+  let scheduledRuntimeAuthoritySource:
+    | { client: CodexAppServerClient; thread: CodexAppServerThreadLifecycleBinding }
+    | undefined;
   const commonToolParams = {
     params: dynamicToolParams,
     resolvedWorkspace,
@@ -130,16 +137,22 @@ export async function prepareCodexAttemptTools(runtime: CodexAttemptRuntime) {
       void emitCodexAppServerEvent(params, event);
     },
     computerContextEpoch,
-    captureScheduledRuntimeAuthority: async (openClawTools: readonly string[]) =>
-      await captureCodexScheduledRuntimeAuthority({
-        bindingStore: connection.bindingStore,
-        bindingIdentity: connection.bindingIdentity,
+    captureScheduledRuntimeAuthority: async (openClawTools: readonly string[]) => {
+      const source = scheduledRuntimeAuthoritySource;
+      if (!source) {
+        return undefined;
+      }
+      return await captureCodexScheduledRuntimeAuthority({
+        client: source.client,
+        threadId: source.thread.threadId,
+        pluginAppPolicyContext: source.thread.pluginAppPolicyContext,
         config: params.config,
         agentId: sessionAgentId,
         cwd: effectiveCwd,
         toolOverrides: params.toolOverrides,
         openClawTools,
-      }),
+      });
+    },
   };
   const tools = await buildDynamicTools({
     ...commonToolParams,
@@ -285,6 +298,12 @@ export async function prepareCodexAttemptTools(runtime: CodexAttemptRuntime) {
     suppressedDynamicToolOutcomeOrdinals,
     onCodexToolOutcome,
     allocateCodexToolOutcomeOrdinal,
+    setScheduledRuntimeAuthoritySource(
+      client: CodexAppServerClient,
+      thread: CodexAppServerThreadLifecycleBinding,
+    ) {
+      scheduledRuntimeAuthoritySource = { client, thread };
+    },
   };
 }
 

@@ -120,6 +120,7 @@ export async function startCodexAttemptRuntime(resources: CodexAttemptResources)
         }),
     );
     state.thread = startupResult.thread;
+    attemptTools.setScheduledRuntimeAuthoritySource(state.client, state.thread);
     state.runtimeArtifact = startupResult.runtimeArtifact;
     state.turnRouter = startupResult.turnRouter;
     state.turnRoute = startupResult.turnRoute;
