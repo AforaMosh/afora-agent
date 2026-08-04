@@ -219,7 +219,8 @@ export function readPluginSdkSurfaceBudgets(env = process.env) {
       // +1: canonical webhook route identity for plugin-owned target registries.
       // +3: canonical ready, blocked, and stopped channel lifecycle patch factories.
       // +1: bounded external-content sanitizer for plugin-owned untrusted projections.
-      4830,
+      // +2: delivery-gated provisional parent-fork settlement result and helper.
+      4832,
       env,
     ),
     publicFunctionExports: readPluginSdkSurfaceBudgetEnv(
@@ -266,7 +267,8 @@ export function readPluginSdkSurfaceBudgets(env = process.env) {
       // +1: canonical webhook route identity for plugin-owned target registries.
       // +3: canonical ready, blocked, and stopped channel lifecycle patch factories.
       // +1: bounded external-content sanitizer for plugin-owned untrusted projections.
-      2907,
+      // +1: delivery-gated provisional parent-fork settlement helper.
+      2908,
       env,
     ),
     publicDeprecatedExports: readPluginSdkSurfaceBudgetEnv(
