@@ -266,6 +266,7 @@
     "!dist/extensions/duckduckgo/**",
     "!dist/extensions/exa/**",
     "!dist/extensions/feishu/**",
+    "!dist/extensions/facetime/**",
     "!dist/extensions/featherless/**",
     "!dist/extensions/firecrawl/**",
     "!dist/extensions/fireworks/**",
