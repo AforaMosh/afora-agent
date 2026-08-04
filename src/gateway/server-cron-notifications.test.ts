@@ -12,15 +12,19 @@ import {
 } from "../process/gateway-work-admission.js";
 import { setActiveDegradedSecretOwners } from "../secrets/runtime-degraded-state.js";
 
-const mocks = vi.hoisted(() => ({
-  fetchWithSsrFGuard: vi.fn(async (_request: unknown) => ({
+const mocks = vi.hoisted(() => {
+  const okWebhookFetchResult = () => ({
     response: new Response(null, { status: 204 }),
     finalUrl: "https://example.invalid/cron",
     release: vi.fn(async () => {}),
-  })),
-  sendFailureNotificationAnnounce: vi.fn(),
-  sendCronAnnouncePayloadStrict: vi.fn(),
-}));
+  });
+  return {
+    okWebhookFetchResult,
+    fetchWithSsrFGuard: vi.fn(async (_request: unknown) => okWebhookFetchResult()),
+    sendFailureNotificationAnnounce: vi.fn(),
+    sendCronAnnouncePayloadStrict: vi.fn(),
+  };
+});
 
 vi.mock("../infra/net/fetch-guard.js", () => ({
   fetchWithSsrFGuard: mocks.fetchWithSsrFGuard,
@@ -65,7 +69,10 @@ function webhookRequestBody() {
 }
 
 function createVoidDeferred(): { promise: Promise<void>; resolve: () => void } {
-  const { promise, resolve } = Promise.withResolvers<void>();
+  let resolve = () => {};
+  const promise = new Promise<void>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
   return { promise, resolve };
 }
 
@@ -103,11 +110,7 @@ describe("dispatchGatewayCronFinishedNotifications", () => {
   beforeEach(() => {
     resetGatewayWorkAdmission();
     vi.clearAllMocks();
-    mocks.fetchWithSsrFGuard.mockImplementation(async () => ({
-      response: new Response(null, { status: 204 }),
-      finalUrl: "https://example.invalid/cron",
-      release: vi.fn(async () => {}),
-    }));
+    mocks.fetchWithSsrFGuard.mockImplementation(async () => mocks.okWebhookFetchResult());
     mocks.sendFailureNotificationAnnounce.mockResolvedValue(undefined);
     mocks.sendCronAnnouncePayloadStrict.mockResolvedValue(undefined);
   });
@@ -121,11 +124,7 @@ describe("dispatchGatewayCronFinishedNotifications", () => {
     const deferred = createVoidDeferred();
     mocks.fetchWithSsrFGuard.mockImplementationOnce(async () => {
       await deferred.promise;
-      return {
-        response: new Response(null, { status: 204 }),
-        finalUrl: "https://example.invalid/cron",
-        release: vi.fn(async () => {}),
-      };
+      return mocks.okWebhookFetchResult();
     });
     const job = createCompletionWebhookJob();
     const parentAdmission = tryBeginGatewayRootWorkAdmission();
