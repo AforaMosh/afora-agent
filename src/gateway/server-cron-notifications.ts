@@ -413,6 +413,7 @@ async function sendGatewayCronFailureAlertUnderAdmission(
       cfg: runtimeConfig,
       agentId,
       jobId: params.job.id,
+      requireDeliverableChannel: true,
       target: {
         channel: params.channel,
         to: params.to,
