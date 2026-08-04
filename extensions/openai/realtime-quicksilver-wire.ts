@@ -385,11 +385,7 @@ function decodeOpenAIQuicksilverCallId(params: {
   return callId;
 }
 
-function describeOpenAIQuicksilverCallError(
-  status: number,
-  detail: string,
-  auth: OpenAIQuicksilverAuth,
-): string {
+function describeOpenAIQuicksilverCallError(status: number, detail: string): string {
   const normalized = detail.toLowerCase();
   if (status === 403) {
     return "GPT-Live rejected the Platform session (403). Verify API-key access, voice, and model for /v1/live. Accepted voices: alloy, ash, ballad, cedar, coral, echo, marin, sage, shimmer, verse. Accepted models: gpt-live-1-codex, gpt-live-1-boulder-alpha.";
@@ -490,7 +486,7 @@ export async function createOpenAIQuicksilverCall(params: {
     );
     throw new OpenAIQuicksilverCallError(
       isGptLive
-        ? describeOpenAIQuicksilverCallError(response.status, detail, params.auth)
+        ? describeOpenAIQuicksilverCallError(response.status, detail)
         : `OpenAI Realtime call creation failed (${response.status})${detail ? `: ${detail}` : ""}`,
       response.status,
     );
