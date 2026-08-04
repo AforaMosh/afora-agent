@@ -1607,15 +1607,25 @@ describe("executeNodeHostCommand", () => {
       deniedReason: null,
     });
 
-    await expect(
-      executeNodeHostCommand(
-        createNodeHostRequest({
-          ask: "always",
-          trigger: "cron",
-        }),
-      ),
-    ).rejects.toThrow("denied");
+    const result = await executeNodeHostCommand(
+      createNodeHostRequest({
+        ask: "always",
+        trigger: "cron",
+      }),
+    );
 
+    expect(result.details).toMatchObject({
+      status: "failed",
+      timedOut: true,
+    });
+    expect(result.content).toEqual([
+      {
+        type: "text",
+        text: expect.stringContaining(
+          "Exec denied (node=node-1 id=approval-1, approval-timeout: policy-unavailable)",
+        ),
+      },
+    ]);
     expect(resolveExecHostApprovalContextMock).toHaveBeenCalledTimes(2);
     expect(
       callGatewayToolMock.mock.calls.some(
