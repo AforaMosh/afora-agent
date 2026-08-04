@@ -209,8 +209,19 @@ export async function captureCodexScheduledRuntimeAuthority(params: {
   }
   const statuses = await listCodexMcpServerStatuses(params.client, params.threadId);
   const policyApps = params.pluginAppPolicyContext?.apps ?? {};
+  const callableAppIds =
+    Object.keys(policyApps).length === 0
+      ? new Set<string>()
+      : new Set(
+          (await params.client.request("app/installed", { forceRefresh: true })).apps
+            .filter((app) => app.enabled && app.callable)
+            .map((app) => app.id),
+        );
+  const availablePolicyApps = Object.fromEntries(
+    Object.entries(policyApps).filter(([appId]) => callableAppIds.has(appId)),
+  );
   const pluginByServer = new Map<string, string>();
-  for (const policy of Object.values(policyApps)) {
+  for (const policy of Object.values(availablePolicyApps)) {
     if (policy.source === "account") {
       continue;
     }
@@ -245,7 +256,7 @@ export async function captureCodexScheduledRuntimeAuthority(params: {
     version: 1,
     runtime: "codex",
     openClawTools: [...params.openClawTools],
-    apps: Object.entries(policyApps).map(([appId, policy]) => ({
+    apps: Object.entries(availablePolicyApps).map(([appId, policy]) => ({
       appId,
       allowDestructiveActions: policy.allowDestructiveActions,
       allowOpenWorld: true,

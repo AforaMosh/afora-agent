@@ -19,6 +19,14 @@ beforeEach(() => {
 describe("captureCodexScheduledRuntimeAuthority", () => {
   it("captures exact apps and MCP tools while excluding app transport metadata and secrets", async () => {
     const request = vi.fn(async (method: string) => {
+      if (method === "app/installed") {
+        return {
+          apps: [
+            { id: "todoist", enabled: true, callable: true },
+            { id: "stale-app", enabled: true, callable: false },
+          ],
+        };
+      }
       if (method === "config/read") {
         return {
           layers: [],
@@ -60,6 +68,14 @@ describe("captureCodexScheduledRuntimeAuthority", () => {
             allowDestructiveActions: false,
             destructiveApprovalMode: "ask",
             mcpServerNames: ["calendar-native"],
+          },
+          "stale-app": {
+            configKey: "stale",
+            marketplaceName: "openai-curated",
+            pluginName: "stale",
+            allowDestructiveActions: false,
+            destructiveApprovalMode: "deny",
+            mcpServerNames: [],
           },
         },
       },
