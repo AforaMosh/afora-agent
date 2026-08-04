@@ -157,6 +157,39 @@ describe("exec approval requests", () => {
     expect(callGatewayTool).not.toHaveBeenCalled();
   });
 
+  it("does not turn local cancellation into permissive ask fallback", async () => {
+    const controller = new AbortController();
+    let fallbackAuthorizationReached = false;
+
+    await runWithLocalExecApprovalHandler({
+      handler: async () => await new Promise<never>(() => {}),
+      signal: controller.signal,
+      run: async () => {
+        const registration = await registerExecApprovalRequestForHostOrThrow({
+          approvalId: "cancelled-local-approval",
+          command: "echo hi",
+          workdir: "/tmp",
+          host: "gateway",
+          security: "full",
+          ask: "always",
+        });
+        const decision = resolveRegisteredExecApprovalDecision({
+          approvalId: registration.id,
+          preResolvedDecision: registration.finalDecision,
+        }).then((value) => {
+          fallbackAuthorizationReached = value === null;
+          return value;
+        });
+
+        controller.abort(new Error("turn cancelled"));
+        await expect(decision).rejects.toSatisfy(isExecApprovalRunAbortedError);
+      },
+    });
+
+    expect(fallbackAuthorizationReached).toBe(false);
+    expect(callGatewayTool).not.toHaveBeenCalled();
+  });
+
   it("bounds missing registration expiries when the process clock is invalid", async () => {
     vi.mocked(callGatewayTool).mockResolvedValue({ id: "approval-id" });
     const dateNow = vi.spyOn(Date, "now").mockReturnValue(Number.NaN);

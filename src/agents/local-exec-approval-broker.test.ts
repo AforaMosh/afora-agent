@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  ExecApprovalRunAbortedError,
   getLocalExecApprovalBroker,
   runWithLocalExecApprovalHandler,
   type LocalExecApprovalRequest,
@@ -74,7 +75,7 @@ describe("LocalExecApprovalBroker", () => {
     expect(getLocalExecApprovalBroker()).toBeUndefined();
   });
 
-  it("owns timeout and cancellation even when the host handler does not settle", async () => {
+  it("distinguishes timeout from cancellation when the host handler does not settle", async () => {
     const controller = new AbortController();
     await runWithLocalExecApprovalHandler({
       handler: async () => await new Promise<never>(() => {}),
@@ -86,7 +87,9 @@ describe("LocalExecApprovalBroker", () => {
 
         broker?.register(approvalRequest("approval-2"));
         controller.abort(new Error("turn cancelled"));
-        await expect(broker?.wait("approval-2")).resolves.toBeNull();
+        await expect(broker?.wait("approval-2")).rejects.toBeInstanceOf(
+          ExecApprovalRunAbortedError,
+        );
       },
     });
   });

@@ -27,7 +27,10 @@ import {
   DEFAULT_APPROVAL_REQUEST_TIMEOUT_MS,
   DEFAULT_APPROVAL_TIMEOUT_MS,
 } from "./bash-tools.exec-runtime.js";
-import { getLocalExecApprovalBroker } from "./local-exec-approval-broker.js";
+import {
+  ExecApprovalRunAbortedError,
+  getLocalExecApprovalBroker,
+} from "./local-exec-approval-broker.js";
 import { callGatewayTool } from "./tools/gateway.js";
 
 const POSIX_COMMAND_HIGHLIGHT_SHELLS: ReadonlySet<string> = POSIX_PARSEABLE_SHELL_WRAPPERS;
@@ -138,13 +141,6 @@ export type ExecApprovalRegistration = {
   expiresAtMs: number;
   finalDecision?: string | null;
 };
-
-class ExecApprovalRunAbortedError extends Error {
-  constructor() {
-    super("Exec approval cancelled because its run was aborted");
-    this.name = "ExecApprovalRunAbortedError";
-  }
-}
 
 export function isExecApprovalRunAbortedError(error: unknown): boolean {
   return error instanceof ExecApprovalRunAbortedError;

@@ -89,6 +89,13 @@ type PendingApproval = {
   expiresAtMs: number;
 };
 
+export class ExecApprovalRunAbortedError extends Error {
+  constructor() {
+    super("Exec approval cancelled because its run was aborted");
+    this.name = "ExecApprovalRunAbortedError";
+  }
+}
+
 /**
  * Owns two-phase exec approvals for one process-local agent turn.
  *
@@ -154,22 +161,27 @@ class LocalExecApprovalBroker {
     };
     const expiresAtMs = Date.now() + request.timeoutMs;
     const controller = new AbortController();
-    const timeout = setTimeout(
-      () => controller.abort(new Error(`Exec approval "${request.id}" expired`)),
-      request.timeoutMs,
-    );
+    const timeoutReason = new Error(`Exec approval "${request.id}" expired`);
+    const timeout = setTimeout(() => controller.abort(timeoutReason), request.timeoutMs);
     timeout.unref?.();
     const onAbort = () => controller.abort(this.signal?.reason);
     this.signal?.addEventListener("abort", onAbort, { once: true });
     if (this.signal?.aborted) {
       onAbort();
     }
-    const aborted = new Promise<null>((resolve) => {
+    const aborted = new Promise<null>((resolve, reject) => {
+      const settleAbort = () => {
+        if (controller.signal.reason === timeoutReason) {
+          resolve(null);
+          return;
+        }
+        reject(new ExecApprovalRunAbortedError());
+      };
       if (controller.signal.aborted) {
-        resolve(null);
+        settleAbort();
         return;
       }
-      controller.signal.addEventListener("abort", () => resolve(null), { once: true });
+      controller.signal.addEventListener("abort", settleAbort, { once: true });
     });
     const decision = Promise.race([
       Promise.resolve()
