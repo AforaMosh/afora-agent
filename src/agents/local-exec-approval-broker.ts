@@ -187,6 +187,9 @@ class LocalExecApprovalBroker {
       Promise.resolve()
         .then(() => this.requestApproval(reviewerRequest, controller.signal))
         .then((result) => {
+          if (Date.now() >= expiresAtMs) {
+            return null;
+          }
           if (result === null) {
             return null;
           }
@@ -207,13 +210,20 @@ class LocalExecApprovalBroker {
   async wait(approvalId: string): Promise<ExecApprovalDecision | null | undefined> {
     const pending = this.pending.get(approvalId);
     if (!pending) {
+      if (!this.active) {
+        throw new ExecApprovalRunAbortedError();
+      }
       return undefined;
     }
     try {
       if (Date.now() >= pending.expiresAtMs) {
         return null;
       }
-      return await pending.decision;
+      const decision = await pending.decision;
+      if (!this.active) {
+        throw new ExecApprovalRunAbortedError();
+      }
+      return Date.now() >= pending.expiresAtMs ? null : decision;
     } finally {
       this.pending.delete(approvalId);
     }

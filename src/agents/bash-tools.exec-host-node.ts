@@ -22,6 +22,7 @@ import { formatExecApprovalContinuationSourceOutput } from "./bash-tools.exec-ap
 import {
   buildExecApprovalRequesterContext,
   buildExecApprovalTurnSourceContext,
+  hasLocalExecApprovalHost,
   isExecApprovalRunAbortedError,
   registerExecApprovalRequestForHostOrThrow,
 } from "./bash-tools.exec-approval-request.js";
@@ -413,10 +414,32 @@ export async function executeNodeHostCommand(
         ...requestArgs,
         register: registerNodeApproval,
       });
+      const localApprovalHost = hasLocalExecApprovalHost();
+      const inlineDecision =
+        localApprovalHost && preResolvedDecision === undefined
+          ? await execHostShared.resolveApprovalDecisionOrUndefined({
+              approvalId,
+              preResolvedDecision,
+              onFailure: () => undefined,
+            })
+          : preResolvedDecision;
+      params.signal?.throwIfAborted();
+      if (localApprovalHost && inlineDecision === undefined) {
+        throw new Error(
+          execHostShared.buildHeadlessExecApprovalDeniedMessage({
+            trigger: params.trigger,
+            host: "node",
+            security: hostSecurity,
+            ask: hostAsk,
+            askFallback,
+          }),
+        );
+      }
       if (
+        localApprovalHost ||
         execHostShared.shouldResolveExecApprovalUnavailableInline({
           unavailableReason,
-          preResolvedDecision,
+          preResolvedDecision: inlineDecision,
         })
       ) {
         const {
@@ -424,7 +447,7 @@ export async function executeNodeHostCommand(
           approvedByAsk: initialApprovedByAsk,
           deniedReason: initialDeniedReason,
         } = execHostShared.createExecApprovalDecisionState({
-          decision: preResolvedDecision,
+          decision: inlineDecision,
           askFallback,
         });
         let approvedByAsk = initialApprovedByAsk;
@@ -456,7 +479,7 @@ export async function executeNodeHostCommand(
           );
         }
         inlineApprovedByAsk = strictInlineEvalDecision.approvedByAsk;
-        inlineApprovalSource = preResolvedDecision === null ? "ask-fallback" : undefined;
+        inlineApprovalSource = inlineDecision === null ? "ask-fallback" : undefined;
         if (inlineApprovalSource) {
           inlineDispatchAuthority = "ask-fallback";
           inlineFallbackPolicy = currentFallback ?? undefined;
@@ -465,9 +488,11 @@ export async function executeNodeHostCommand(
         }
         inlineApprovalDecision = inlineApprovalSource
           ? null
-          : strictInlineEvalDecision.approvedByAsk
-            ? "allow-once"
-            : null;
+          : inlineDecision === "allow-always"
+            ? "allow-always"
+            : strictInlineEvalDecision.approvedByAsk
+              ? "allow-once"
+              : null;
         inlineApprovalId = approvalId;
       } else {
         const followupTarget = execHostShared.buildExecApprovalFollowupTarget({

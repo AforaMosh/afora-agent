@@ -66,6 +66,8 @@ const log = createSubsystemLogger("agents/agent-command");
 async function agentCommandInternalUnwrapped(
   prepared: Awaited<ReturnType<typeof prepareAgentCommandExecution>>,
   initialOpts: AgentCommandOpts,
+  lifecycleAbortController: AbortController,
+  runAbortSignal: AbortSignal,
   runtime: RuntimeEnv = defaultRuntime,
   deps?: CliDeps,
 ) {
@@ -74,7 +76,6 @@ async function agentCommandInternalUnwrapped(
   const suppressVisibleSessionEffects = initialOpts.sessionEffects === "internal";
   const preserveUserFacingSessionModelState =
     initialOpts.preserveUserFacingSessionModelState === true;
-  const lifecycleAbortController = new AbortController();
   const storedDeliveryMediaUrls =
     prepared.sessionEntry?.restartRecoveryDeliveryRunId === prepared.runId &&
     Array.isArray(prepared.sessionEntry.restartRecoveryDeliveryMediaUrls)
@@ -106,9 +107,7 @@ async function agentCommandInternalUnwrapped(
   }
   let opts: AgentCommandOpts = {
     ...preparedOpts,
-    abortSignal: preparedOpts.abortSignal
-      ? AbortSignal.any([preparedOpts.abortSignal, lifecycleAbortController.signal])
-      : lifecycleAbortController.signal,
+    abortSignal: runAbortSignal,
   };
   const {
     body,
@@ -584,10 +583,22 @@ async function agentCommandInternal(
   runtime: RuntimeEnv = defaultRuntime,
   deps?: CliDeps,
 ) {
+  const lifecycleAbortController = new AbortController();
+  const runAbortSignal = initialOpts.abortSignal
+    ? AbortSignal.any([initialOpts.abortSignal, lifecycleAbortController.signal])
+    : lifecycleAbortController.signal;
   return await runWithLocalExecApprovalHandler({
     handler: initialOpts.localExecApprovalHandler,
-    signal: initialOpts.abortSignal,
-    run: async () => await agentCommandInternalUnwrapped(prepared, initialOpts, runtime, deps),
+    signal: runAbortSignal,
+    run: async () =>
+      await agentCommandInternalUnwrapped(
+        prepared,
+        initialOpts,
+        lifecycleAbortController,
+        runAbortSignal,
+        runtime,
+        deps,
+      ),
   });
 }
 

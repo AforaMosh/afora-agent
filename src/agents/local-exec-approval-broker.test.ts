@@ -94,6 +94,28 @@ describe("LocalExecApprovalBroker", () => {
     });
   });
 
+  it("rejects a handler decision that settles after the absolute deadline", async () => {
+    let resolveDecision: (decision: "allow-once") => void = () => {};
+    const decision = new Promise<"allow-once">((resolve) => {
+      resolveDecision = resolve;
+    });
+    const now = vi.spyOn(Date, "now").mockReturnValue(100);
+    try {
+      await runWithLocalExecApprovalHandler({
+        handler: async () => await decision,
+        run: async () => {
+          const broker = getLocalExecApprovalBroker();
+          broker?.register({ ...approvalRequest("approval-1"), timeoutMs: 1_000 });
+          now.mockReturnValue(1_100);
+          resolveDecision("allow-once");
+          await expect(broker?.wait("approval-1")).resolves.toBeNull();
+        },
+      });
+    } finally {
+      now.mockRestore();
+    }
+  });
+
   it("rejects allow-always when ask policy permits one-shot approval only", async () => {
     await runWithLocalExecApprovalHandler({
       handler: async () => "allow-always",
@@ -189,5 +211,20 @@ describe("LocalExecApprovalBroker", () => {
       new Error('Exec approval "approval-late" rejected because its local scope ended'),
     );
     expect(requestApproval).not.toHaveBeenCalled();
+  });
+
+  it("rejects waits through retained async context after the turn settles", async () => {
+    let broker: ReturnType<typeof getLocalExecApprovalBroker>;
+    await runWithLocalExecApprovalHandler({
+      handler: async () => await new Promise<never>(() => {}),
+      run: async () => {
+        broker = getLocalExecApprovalBroker();
+        broker?.register(approvalRequest("approval-late-wait"));
+      },
+    });
+
+    await expect(broker?.wait("approval-late-wait")).rejects.toBeInstanceOf(
+      ExecApprovalRunAbortedError,
+    );
   });
 });

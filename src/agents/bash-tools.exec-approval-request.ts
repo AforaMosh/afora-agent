@@ -146,6 +146,11 @@ export function isExecApprovalRunAbortedError(error: unknown): boolean {
   return error instanceof ExecApprovalRunAbortedError;
 }
 
+/** Returns whether the current agent execution owns a process-local approval host. */
+export function hasLocalExecApprovalHost(): boolean {
+  return getLocalExecApprovalBroker() !== undefined;
+}
+
 /** Registers a two-phase exec approval request with the gateway. */
 async function registerExecApprovalRequest(
   params: RequestExecApprovalDecisionParams,

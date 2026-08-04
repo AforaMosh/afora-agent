@@ -222,6 +222,7 @@ const enforceStrictInlineEvalApprovalBoundaryMock = vi.hoisted(() =>
 const registerExecApprovalRequestForHostOrThrowMock = vi.hoisted(() =>
   vi.fn(async () => undefined),
 );
+const hasLocalExecApprovalHostMock = vi.hoisted(() => vi.fn(() => false));
 const detectInterpreterInlineEvalArgvMock = vi.hoisted(() =>
   vi.fn(
     (): {
@@ -272,6 +273,7 @@ vi.mock("../infra/system-run-approval-context.js", () => ({
 vi.mock("./bash-tools.exec-approval-request.js", () => ({
   buildExecApprovalRequesterContext: vi.fn(() => ({})),
   buildExecApprovalTurnSourceContext: vi.fn(() => ({})),
+  hasLocalExecApprovalHost: hasLocalExecApprovalHostMock,
   isExecApprovalRunAbortedError: (error: unknown) => error === runAbortedApprovalError,
   registerExecApprovalRequestForHostOrThrow: registerExecApprovalRequestForHostOrThrowMock,
 }));
@@ -669,6 +671,8 @@ describe("executeNodeHostCommand", () => {
     detectInterpreterInlineEvalArgvMock.mockReset();
     detectInterpreterInlineEvalArgvMock.mockReturnValue(null);
     registerExecApprovalRequestForHostOrThrowMock.mockReset();
+    hasLocalExecApprovalHostMock.mockReset();
+    hasLocalExecApprovalHostMock.mockReturnValue(false);
   });
 
   it("returns outcome-unknown for an ambiguous direct node timeout", async () => {
@@ -798,6 +802,44 @@ describe("executeNodeHostCommand", () => {
     });
     expect(createAndRegisterDefaultExecApprovalRequestMock).not.toHaveBeenCalled();
     expect(registerExecApprovalRequestForHostOrThrowMock).not.toHaveBeenCalled();
+  });
+
+  it("waits inline for a process-local node approval host", async () => {
+    hasLocalExecApprovalHostMock.mockReturnValue(true);
+    createAndRegisterDefaultExecApprovalRequestMock.mockResolvedValue({
+      approvalId: "approval-1",
+      approvalSlug: "slug-1",
+      warningText: "",
+      expiresAtMs: Date.now() + 60_000,
+      preResolvedDecision: undefined,
+      initiatingSurface: "origin",
+      sentApproverDms: false,
+      unavailableReason: null,
+    });
+    resolveExecHostApprovalContextMock.mockReturnValue({
+      approvals: { allowlist: [], file: { version: 1, agents: {} } },
+      hostSecurity: "full",
+      hostAsk: "always",
+      askFallback: "deny",
+    });
+    createExecApprovalDecisionStateMock.mockReturnValue({
+      baseDecision: { timedOut: false },
+      approvedByAsk: true,
+      deniedReason: null,
+    });
+
+    const result = await executeNodeHostCommand(createNodeHostRequest({ ask: "always" }));
+
+    expect(result.details?.status).not.toBe("approval-pending");
+    expect(resolveApprovalDecisionOrUndefinedMock).toHaveBeenCalledOnce();
+    expect(buildExecApprovalPendingToolResultMock).not.toHaveBeenCalled();
+    expect(
+      callGatewayToolMock.mock.calls.some(
+        ([method, , params]) =>
+          method === "node.invoke" &&
+          (params as MockNodeInvokeParams | undefined)?.command === "system.run",
+      ),
+    ).toBe(true);
   });
 
   it.each([
