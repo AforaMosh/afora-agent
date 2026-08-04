@@ -8,6 +8,10 @@ import {
 import { buildOpenAIRealtimeVoiceProvider } from "./realtime-voice-provider.js";
 
 const mintSecretMock = vi.hoisted(() => vi.fn());
+const experimentalRealtimeConfig = {
+  talk: { realtime: { experimentalModels: true } },
+} as never;
+
 vi.mock("./realtime-provider-shared.js", async () => {
   const actual = await vi.importActual<typeof import("./realtime-provider-shared.js")>(
     "./realtime-provider-shared.js",
@@ -84,12 +88,14 @@ describe("openai realtime voice provider gpt-live transport routing", () => {
     expect(
       provider.createBridge({
         ...callbacks,
+        cfg: experimentalRealtimeConfig,
         providerConfig: { apiKey: "test-key", model: "gpt-live-1-boulder-alpha" },
       }),
     ).toMatchObject({ supportsToolResultContinuation: true });
     expect(() =>
       provider.createBridge({
         ...callbacks,
+        cfg: experimentalRealtimeConfig,
         providerConfig: { apiKey: "test-key", model: "gpt-live-1" },
         runAgentConsult: vi.fn(async () => ({ text: "done" })),
       }),
@@ -102,10 +108,22 @@ describe("openai realtime voice provider gpt-live transport routing", () => {
     ).not.toThrow();
   });
 
+  it("requires the Labs gate before creating a direct gpt-live bridge", () => {
+    const provider = buildOpenAIRealtimeVoiceProvider();
+    expect(() =>
+      provider.createBridge({
+        providerConfig: { apiKey: "test-key", model: "gpt-live-1-boulder-alpha" },
+        onAudio: vi.fn(),
+        onClearAudio: vi.fn(),
+      }),
+    ).toThrow("Experimental realtime models are disabled");
+  });
+
   it("rejects Azure credentials before creating a Platform GPT-Live bridge", () => {
     const provider = buildOpenAIRealtimeVoiceProvider();
     expect(() =>
       provider.createBridge({
+        cfg: experimentalRealtimeConfig,
         providerConfig: {
           apiKey: "azure-test-key",
           model: "gpt-live-1-boulder-alpha",

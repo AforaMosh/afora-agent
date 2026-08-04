@@ -170,6 +170,8 @@ export type RealtimeVoiceProviderPlugin = {
   aliases?: string[];
   defaultModel?: string;
   models?: readonly string[];
+  /** Classifies explicit model ids that require the Talk experimental-model gate. */
+  isExperimentalModel?: (model: string) => boolean;
   /** Known speaker voices for pickers; providers still accept free-form values. */
   voices?: readonly string[];
   autoSelectOrder?: number;

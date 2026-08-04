@@ -2,6 +2,7 @@
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { resolveAgentDir } from "openclaw/plugin-sdk/agent-runtime";
+import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
 import { canonicalizeBase64 } from "openclaw/plugin-sdk/media-runtime";
 import type { PluginLogger } from "openclaw/plugin-sdk/plugin-entry";
 import {
@@ -62,7 +63,6 @@ import {
   getUnsupportedOpenAIGptLiveModelMessage,
   isOpenAIGptLiveModel,
   isSupportedOpenAIGptLiveModel,
-  OPENAI_GPT_LIVE_MODELS,
 } from "./realtime-quicksilver.js";
 
 type OpenAIRealtimeVoice =
@@ -110,13 +110,12 @@ type OpenAIRealtimeVoiceBridgeConfig = RealtimeVoiceBridgeCreateRequest & {
 };
 
 const OPENAI_REALTIME_DEFAULT_MODEL = "gpt-realtime-2.1";
-// Picker suggestions surfaced through talk.catalog; each value is live-verified
-// against the OpenAI realtime APIs. Free-form model values are still accepted.
+// Picker suggestions surfaced through talk.catalog. Private GPT-Live models
+// remain available through an explicit talk.realtime.model selection.
 const OPENAI_REALTIME_MODELS = [
   "gpt-realtime-2.1",
   "gpt-realtime-2.1-mini",
   "gpt-realtime-2",
-  ...OPENAI_GPT_LIVE_MODELS,
 ] as const;
 const OPENAI_REALTIME_INPUT_TRANSCRIPTION_MODEL = "gpt-4o-mini-transcribe";
 const OPENAI_REALTIME_CAPABILITIES: RealtimeVoiceProviderCapabilities = {
@@ -158,6 +157,21 @@ const OPENAI_REALTIME_VOICES = [
   "marin",
   "cedar",
 ] as const satisfies readonly OpenAIRealtimeVoice[];
+
+function isOpenAIRealtimeModelEnabled(cfg: OpenClawConfig | undefined, model: string | undefined) {
+  return !isOpenAIGptLiveModel(model) || cfg?.talk?.realtime?.experimentalModels === true;
+}
+
+function assertOpenAIRealtimeModelEnabled(
+  cfg: OpenClawConfig | undefined,
+  model: string | undefined,
+): void {
+  if (!isOpenAIRealtimeModelEnabled(cfg, model)) {
+    throw new Error(
+      "Experimental realtime models are disabled. Enable them in Labs before starting Talk.",
+    );
+  }
+}
 
 function normalizeOpenAIRealtimeVoice(value: unknown): OpenAIRealtimeVoice | undefined {
   if (typeof value !== "string") {
@@ -1902,6 +1916,7 @@ async function createOpenAIRealtimeBrowserSession(
 
   const model = req.model ?? config.model ?? OPENAI_REALTIME_DEFAULT_MODEL;
   if (isOpenAIGptLiveModel(model)) {
+    assertOpenAIRealtimeModelEnabled(req.cfg, model);
     assertSupportedOpenAIGptLiveModel(model);
     if (!quicksilverBroker) {
       throw new Error("OpenAI GPT-Live browser session broker is unavailable");
@@ -2035,12 +2050,16 @@ export function buildOpenAIRealtimeVoiceProvider(options?: {
     // GA and GPT-Live accept the same ten voices; quicksilver validates at call
     // creation because voice is immutable once the session starts.
     models: OPENAI_REALTIME_MODELS,
+    isExperimentalModel: isOpenAIGptLiveModel,
     voices: OPENAI_REALTIME_VOICES,
     autoSelectOrder: 10,
     capabilities: OPENAI_REALTIME_CAPABILITIES,
     resolveConfig: ({ rawConfig }) => normalizeProviderConfig(rawConfig),
     isConfigured: ({ cfg, agentId, providerConfig }) => {
       const config = normalizeProviderConfig(providerConfig);
+      if (!isOpenAIRealtimeModelEnabled(cfg, config.model)) {
+        return false;
+      }
       if (isOpenAIGptLiveModel(config.model) && !isSupportedOpenAIGptLiveModel(config.model)) {
         return false;
       }
@@ -2062,6 +2081,7 @@ export function buildOpenAIRealtimeVoiceProvider(options?: {
       const config = normalizeProviderConfig(req.providerConfig);
       const model = config.model;
       if (model && isOpenAIGptLiveModel(model)) {
+        assertOpenAIRealtimeModelEnabled(req.cfg, model);
         assertSupportedOpenAIGptLiveModel(model);
         if (config.azureEndpoint || config.azureDeployment) {
           throw new Error(
@@ -2132,6 +2152,9 @@ export function buildOpenAIRealtimeVoiceProvider(options?: {
       }
       const model = config.model ?? OPENAI_REALTIME_DEFAULT_MODEL;
       if (isOpenAIGptLiveModel(model)) {
+        if (!isOpenAIRealtimeModelEnabled(cfg, model)) {
+          return false;
+        }
         if (!isSupportedOpenAIGptLiveModel(model)) {
           return false;
         }
@@ -2169,6 +2192,9 @@ export function buildOpenAIRealtimeVoiceProvider(options?: {
       const config = normalizeProviderConfig(providerConfig);
       if (!isOpenAIGptLiveModel(config.model)) {
         return undefined;
+      }
+      if (!isOpenAIRealtimeModelEnabled(cfg, config.model)) {
+        return false;
       }
       if (config.azureEndpoint || config.azureDeployment) {
         return false;

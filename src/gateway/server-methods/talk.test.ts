@@ -114,6 +114,7 @@ vi.mock("../../realtime-transcription/provider-registry.js", () => ({
 }));
 
 vi.mock("../../talk/provider-resolver.js", () => ({
+  isRealtimeVoiceModelEnabled: vi.fn(() => true),
   isRealtimeVoiceProviderConfigured: mocks.isRealtimeVoiceProviderConfigured,
   resolveConfiguredRealtimeVoiceProvider: mocks.resolveConfiguredRealtimeVoiceProvider,
   resolveRealtimeVoiceProviderCapabilities: mocks.resolveRealtimeVoiceProviderCapabilities,
@@ -482,6 +483,7 @@ describe("talk.catalog handler", () => {
               label: "Google Live Voice",
               configured: true,
               defaultModel: "gemini-live",
+              models: ["talk-model"],
               modes: ["realtime"],
               transports: ["provider-websocket", "gateway-relay"],
               brains: ["agent-consult"],
@@ -517,7 +519,7 @@ describe("talk.catalog handler", () => {
       id: "openai",
       label: "OpenAI Realtime",
       defaultModel: "gpt-realtime-2.1",
-      models: ["gpt-realtime-2.1", "gpt-live-1-boulder-alpha"],
+      models: ["gpt-realtime-2.1"],
       voices: ["alloy", "marin"],
       resolveConfig: vi.fn(({ rawConfig }: { rawConfig: Record<string, unknown> }) => rawConfig),
       isConfigured: vi.fn(() => false),

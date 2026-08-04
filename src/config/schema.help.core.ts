@@ -182,6 +182,8 @@ export const CORE_FIELD_HELP: Record<string, string> = {
   "talk.realtime.providers": "Provider-specific realtime voice settings keyed by provider id.",
   "talk.realtime.providers.*": "Provider-owned realtime voice config for the matching provider id.",
   "talk.realtime.providers.*.apiKey": "Provider API key for realtime Talk.", // pragma: allowlist secret
+  "talk.realtime.experimentalModels":
+    "Allow provider-declared experimental realtime models. Disabled by default; enable only for explicitly enrolled preview access.",
   "talk.realtime.model":
     "Realtime provider model id override for browser or Gateway-owned Talk sessions.",
   "talk.realtime.speakerVoice":

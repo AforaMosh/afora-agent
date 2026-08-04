@@ -210,6 +210,7 @@ const TalkRealtimeSchema = z
   .strictObject({
     provider: z.string().optional(),
     providers: z.record(z.string(), TalkProviderEntrySchema).optional(),
+    experimentalModels: z.boolean().optional(),
     model: z.string().optional(),
     speakerVoice: z.string().optional(),
     speakerVoiceId: z.string().optional(),
