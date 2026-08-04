@@ -55,6 +55,7 @@ import {
   resolveInternalSessionEffectsTarget,
 } from "./internal-session-effects.js";
 import { AGENT_LANE_SUBAGENT } from "./lanes.js";
+import { runWithLocalExecApprovalHandler } from "./local-exec-approval-broker.js";
 import type { MainSessionRecoveryPendingTarget } from "./main-session-recovery-store.js";
 import type { AgentRunSessionTarget } from "./run-session-target.js";
 import { createAgentRunRestartAbortError } from "./run-termination.js";
@@ -62,7 +63,7 @@ import { measureAgentStartup } from "./startup-timing.js";
 
 const log = createSubsystemLogger("agents/agent-command");
 
-async function agentCommandInternal(
+async function agentCommandInternalUnwrapped(
   prepared: Awaited<ReturnType<typeof prepareAgentCommandExecution>>,
   initialOpts: AgentCommandOpts,
   runtime: RuntimeEnv = defaultRuntime,
@@ -575,6 +576,19 @@ async function agentCommandInternal(
     }
     clearAgentRunContext(runId, lifecycleGeneration);
   }
+}
+
+async function agentCommandInternal(
+  prepared: Awaited<ReturnType<typeof prepareAgentCommandExecution>>,
+  initialOpts: AgentCommandOpts,
+  runtime: RuntimeEnv = defaultRuntime,
+  deps?: CliDeps,
+) {
+  return await runWithLocalExecApprovalHandler({
+    handler: initialOpts.localExecApprovalHandler,
+    signal: initialOpts.abortSignal,
+    run: async () => await agentCommandInternalUnwrapped(prepared, initialOpts, runtime, deps),
+  });
 }
 
 /** Runs an agent turn from CLI/runtime options against the resolved session and model policy. */

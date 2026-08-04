@@ -5,6 +5,7 @@
  */
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_APPROVAL_TIMEOUT_MS } from "./bash-tools.exec-runtime.js";
+import { runWithLocalExecApprovalHandler } from "./local-exec-approval-broker.js";
 
 const commandExplainerMock = vi.hoisted(() => ({
   importCount: 0,
@@ -140,6 +141,20 @@ describe("exec approval requests", () => {
         preResolvedDecision: undefined,
       }),
     ).rejects.toSatisfy(isExecApprovalRunAbortedError);
+  });
+
+  it("does not fall through to the Gateway when a local approval is missing", async () => {
+    await expect(
+      runWithLocalExecApprovalHandler({
+        handler: async () => "allow-once",
+        run: async () =>
+          await resolveRegisteredExecApprovalDecision({
+            approvalId: "missing-local-approval",
+            preResolvedDecision: undefined,
+          }),
+      }),
+    ).resolves.toBeNull();
+    expect(callGatewayTool).not.toHaveBeenCalled();
   });
 
   it("bounds missing registration expiries when the process clock is invalid", async () => {

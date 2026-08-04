@@ -27,6 +27,7 @@ import {
   DEFAULT_APPROVAL_REQUEST_TIMEOUT_MS,
   DEFAULT_APPROVAL_TIMEOUT_MS,
 } from "./bash-tools.exec-runtime.js";
+import { getLocalExecApprovalBroker } from "./local-exec-approval-broker.js";
 import { callGatewayTool } from "./tools/gateway.js";
 
 const POSIX_COMMAND_HIGHLIGHT_SHELLS: ReadonlySet<string> = POSIX_PARSEABLE_SHELL_WRAPPERS;
@@ -153,6 +154,13 @@ export function isExecApprovalRunAbortedError(error: unknown): boolean {
 async function registerExecApprovalRequest(
   params: RequestExecApprovalDecisionParams,
 ): Promise<ExecApprovalRegistration> {
+  const localBroker = getLocalExecApprovalBroker();
+  if (localBroker) {
+    return localBroker.register({
+      ...params,
+      timeoutMs: DEFAULT_APPROVAL_TIMEOUT_MS,
+    });
+  }
   // Two-phase registration is critical: the ID must be registered server-side
   // before exec returns `approval-pending`, otherwise `/approve` can race and orphan.
   const registrationResult = await callGatewayTool(
@@ -178,6 +186,10 @@ export async function resolveRegisteredExecApprovalDecision(params: {
 }): Promise<string | null> {
   if (params.preResolvedDecision !== undefined) {
     return params.preResolvedDecision ?? null;
+  }
+  const localBroker = getLocalExecApprovalBroker();
+  if (localBroker) {
+    return (await localBroker.wait(params.approvalId)) ?? null;
   }
   try {
     const decisionResult = await callGatewayTool<{ decision: string }>(
