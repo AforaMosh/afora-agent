@@ -367,15 +367,13 @@ export async function executeNodeHostCommand(
           : preResolvedDecision;
       params.signal?.throwIfAborted();
       if (localApprovalHost && inlineDecision === undefined) {
-        throw new Error(
-          execHostShared.buildHeadlessExecApprovalDeniedMessage({
-            trigger: params.trigger,
-            host: "node",
-            security: hostSecurity,
-            ask: hostAsk,
-            askFallback,
-          }),
-        );
+        return formatNodeExecApprovalDeniedToolResult({
+          nodeId: target.nodeId,
+          approvalId,
+          deniedReason: "approval-request-failed",
+          command: params.command,
+          cwd: params.workdir,
+        });
       }
       if (
         localApprovalHost ||

@@ -141,6 +141,25 @@ describe("LocalExecApprovalBroker", () => {
     });
   });
 
+  it("keeps authorization policy private from host mutation", async () => {
+    await runWithLocalExecApprovalHandler({
+      handler: async (request) => {
+        expect(Object.isFrozen(request.allowedDecisions)).toBe(true);
+        try {
+          (request.allowedDecisions as Array<"allow-once" | "allow-always" | "deny">).push(
+            "allow-always",
+          );
+        } catch {}
+        return "allow-always";
+      },
+      run: async () => {
+        const broker = getLocalExecApprovalBroker();
+        broker?.register({ ...approvalRequest("approval-1"), ask: "always" });
+        await expect(broker?.wait("approval-1")).resolves.toBe("deny");
+      },
+    });
+  });
+
   it("projects secrets and spoofable display text out of host requests", async () => {
     const projectedRequests: LocalExecApprovalRequest[] = [];
     const requestApproval = vi.fn(async (request: LocalExecApprovalRequest) => {

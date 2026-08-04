@@ -130,6 +130,7 @@ class LocalExecApprovalBroker {
       command: commandTextSource,
     });
     const allowedDecisions = resolveExecApprovalRequestAllowedDecisions(request);
+    const allowedDecisionSet = new Set(allowedDecisions);
     const envKeys = buildSystemRunApprovalEnvBinding(request.env).envKeys;
     const reviewerRequest: LocalExecApprovalRequest = {
       id: request.id,
@@ -146,7 +147,7 @@ class LocalExecApprovalBroker {
         : undefined,
       commandSpans: sanitizedCommand.text === commandTextSource ? request.commandSpans : undefined,
       unavailableDecisions: request.unavailableDecisions,
-      allowedDecisions,
+      allowedDecisions: Object.freeze([...allowedDecisions]),
       agentId: request.agentId,
       resolvedPath: request.resolvedPath,
       sessionKey: request.sessionKey,
@@ -195,7 +196,7 @@ class LocalExecApprovalBroker {
           }
           // Local hosts replace Gateway transport, not Gateway policy. An
           // excluded verdict must fail closed before exec authorization sees it.
-          return allowedDecisions.includes(result) ? result : "deny";
+          return allowedDecisionSet.has(result) ? result : "deny";
         }),
       aborted,
     ]).finally(() => {
