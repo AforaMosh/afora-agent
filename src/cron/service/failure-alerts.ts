@@ -87,13 +87,28 @@ function clampNonNegativeInt(value: unknown, fallback: number): number {
 /**
  * Global failure-alert gate: alerts are on by default so a failing scheduled
  * job surfaces instead of going silent forever; `enabled: false` opts out.
+ * Destination-only global objects (the migrated legacy `cron.failureDestination`
+ * contract) stay destination-only: they already route per-run failure
+ * notifications without consulting `enabled`, so inheriting threshold alerts
+ * too would double every notification at that destination after upgrade.
  * Every consumer of "are inherited alerts active" must use this predicate so
  * mutation validation and runtime emission never diverge.
  */
 export function cronFailureAlertsGloballyEnabled(
-  failureAlert: { enabled?: boolean } | undefined,
+  failureAlert:
+    | { enabled?: boolean; mode?: unknown; channel?: unknown; to?: unknown; accountId?: unknown }
+    | undefined,
 ): boolean {
-  return failureAlert?.enabled !== false;
+  if (failureAlert?.enabled !== undefined) {
+    return failureAlert.enabled;
+  }
+  const destinationConfigured =
+    failureAlert !== undefined &&
+    (failureAlert.mode !== undefined ||
+      failureAlert.channel !== undefined ||
+      failureAlert.to !== undefined ||
+      failureAlert.accountId !== undefined);
+  return !destinationConfigured;
 }
 
 /** Resolves effective failure-alert policy from job config, delivery defaults, and global cron config. */
@@ -150,6 +165,17 @@ export function resolveFailureAlert(
   const inheritsDeliveryThread =
     mode !== "webhook" && inheritsDeliveryRoute && accountId === job.delivery?.accountId;
 
+  // A webhook-primary job with no configured alert route inherits its webhook
+  // URL as the alert target; the alert must inherit webhook mode with it, or
+  // the URL would be handed to chat-target resolution as a "last" recipient.
+  const inheritsWebhookPrimaryRoute =
+    mode === undefined &&
+    explicitTo === undefined &&
+    jobChannel === undefined &&
+    globalChannel === undefined &&
+    job.delivery?.mode === "webhook" &&
+    deliveryTo !== undefined;
+
   // Announce alerts inherit the job delivery target; webhook alerts require an
   // explicit alert target so chat recipients are not reused as URLs.
   return {
@@ -159,8 +185,13 @@ export function resolveFailureAlert(
       DEFAULT_FAILURE_ALERT_COOLDOWN_MS,
     ),
     channel,
-    to: mode === "webhook" ? explicitTo : (explicitTo ?? compatibleDeliveryTo),
-    mode,
+    to:
+      mode === "webhook"
+        ? explicitTo
+        : inheritsWebhookPrimaryRoute
+          ? deliveryTo
+          : (explicitTo ?? compatibleDeliveryTo),
+    mode: inheritsWebhookPrimaryRoute ? "webhook" : mode,
     accountId,
     threadId: inheritsDeliveryThread ? job.delivery?.threadId : undefined,
     includeSkipped: jobConfig?.includeSkipped ?? globalConfig?.includeSkipped ?? false,

@@ -1503,7 +1503,7 @@ when preserving announce delivery. `openclaw doctor --fix` strips a leftover
 destination for every job. The retired `cron.failureDestination` block is merged
 into it by [`openclaw doctor --fix`](/cli/doctor).
 
-- `enabled`: enable failure alerts for automation jobs (default: `true`). Set to `false` to silence inherited alerts globally; per-job `failureAlert: false` opts out one job. By default an alert routes to the job's delivery target, falling back to the session's last channel.
+- `enabled`: enable failure alerts for automation jobs (default: `true`). Set to `false` to silence inherited alerts globally; per-job `failureAlert: false` opts out one job. By default an alert routes to the job's delivery target, falling back to the session's last channel. A global object carrying only destination fields (`mode`, `channel`, `to`, `accountId`) without `enabled` stays destination-only: it keeps routing per-run failure notifications but does not activate inherited threshold alerts — set `enabled: true` to add them.
 - `after`: consecutive failures before an alert fires (positive integer, min: `1`; default: `2`).
 - `cooldownMs`: minimum milliseconds between repeated alerts for the same job (non-negative integer; default: `3600000`).
 - `includeSkipped`: count consecutive skipped runs toward the alert threshold (default: `false`). Skipped runs are tracked separately and do not affect execution-error backoff.

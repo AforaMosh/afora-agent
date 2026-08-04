@@ -176,6 +176,67 @@ describe("CronService failure alerts", () => {
     );
   });
 
+  it("keeps a destination-only global object destination-only (no inherited threshold alert)", async () => {
+    // Migrated legacy `cron.failureDestination` shape: destination fields, no
+    // `enabled`. Per-run failure notifications already use it, so inheriting
+    // threshold alerts too would double every notification after upgrade.
+    await withFailureAlertCron(
+      {
+        failureAlert: { channel: "telegram", to: "999" },
+        runResult: { status: "error", error: "expired oauth token" },
+      },
+      async ({ cron, sendCronFailureAlert, addJob }) => {
+        const job = await addJob("destination-only global job", {
+          delivery: createTelegramDelivery(),
+        });
+
+        await cron.run(job.id, "force");
+        await cron.run(job.id, "force");
+        await cron.run(job.id, "force");
+        expect(sendCronFailureAlert).not.toHaveBeenCalled();
+      },
+    );
+  });
+
+  it("treats a threshold-only global object as default-on", async () => {
+    await withFailureAlertCron(
+      {
+        failureAlert: { after: 1 },
+        runResult: { status: "error", error: "expired oauth token" },
+      },
+      async ({ cron, sendCronFailureAlert, addJob }) => {
+        const job = await addJob("threshold-only global job", {
+          delivery: createTelegramDelivery(),
+        });
+
+        await cron.run(job.id, "force");
+        expect(sendCronFailureAlert).toHaveBeenCalledTimes(1);
+      },
+    );
+  });
+
+  it("inherits webhook mode and URL for a webhook-primary job with no alert config", async () => {
+    await withFailureAlertCron(
+      {
+        failureAlert: undefined,
+        runResult: { status: "error", error: "expired oauth token" },
+      },
+      async ({ cron, sendCronFailureAlert, addJob }) => {
+        const job = await addJob("webhook primary job", {
+          delivery: { mode: "webhook", to: "https://example.invalid/hook" },
+        });
+
+        await cron.run(job.id, "force");
+        await cron.run(job.id, "force");
+        expect(sendCronFailureAlert).toHaveBeenCalledTimes(1);
+        expectAlertFields(sendCronFailureAlert, {
+          mode: "webhook",
+          to: "https://example.invalid/hook",
+        });
+      },
+    );
+  });
+
   it("falls back to the owning agent's lane when channel alert delivery fails", async () => {
     await withFailureAlertCron(
       {
