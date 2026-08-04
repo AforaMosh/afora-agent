@@ -220,16 +220,16 @@ describe("directive parsing", () => {
     expect(think.thinkLevel).toBe("high");
   });
 
-  it("preserves the /model here session-only scope", () => {
-    const model = parseInlineDirectives("please sync /model here openai/gpt-4.1-mini now");
+  it("preserves the trailing /model -s session-only scope", () => {
+    const model = parseInlineDirectives("please sync /model openai/gpt-4.1-mini -s now");
     expect(model.cleaned).toBe("please sync now");
     expect(model.hasModelDirective).toBe(true);
     expect(model.rawModelDirective).toBe("openai/gpt-4.1-mini");
     expect(model.modelSessionOnly).toBe(true);
   });
 
-  it("preserves the /model here scope for native slash commands", () => {
-    const model = parseInlineDirectives("/model here openai/gpt-4.1-mini", {
+  it("preserves the trailing /model --session scope for native slash commands", () => {
+    const model = parseInlineDirectives("/model openai/gpt-4.1-mini --session", {
       nativeCommand: "model",
     });
 
@@ -237,6 +237,13 @@ describe("directive parsing", () => {
     expect(model.rawModelDirective).toBe("openai/gpt-4.1-mini");
     expect(model.modelSessionOnly).toBe(true);
     expect(model.nativeCommand).toEqual({ name: "model" });
+  });
+
+  it("keeps here as the selected model in mixed commands", () => {
+    const model = parseInlineDirectives("please /model here continue");
+    expect(model.cleaned).toBe("please continue");
+    expect(model.rawModelDirective).toBe("here");
+    expect(model.modelSessionOnly).toBe(false);
   });
 
   it("keeps --persist as ordinary text for inline directives", () => {

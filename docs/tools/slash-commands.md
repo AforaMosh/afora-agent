@@ -202,7 +202,7 @@ plugins.
     | `/elevated [on\|off\|ask\|full]` | Toggle elevated mode. Alias: `/elev` |
     | `/exec host=<auto\|sandbox\|gateway\|node> security=<deny\|allowlist\|full> ask=<off\|on-miss\|always> node=<id>` | Show or set exec defaults |
     | `/login [codex\|openai\|openai-codex]` | Pair Codex/OpenAI login from a private chat or Web UI session. Owner/admin only |
-    | `/model [here] [name\|#\|status]` | Show or set the model; `here` limits a selection to the current session |
+    | `/model [name\|#\|status] [-s\|--session]` | Show or set the model; `-s` limits a selection to the current session |
     | `/models [provider] [page] [limit=<n>\|all]` | List configured/auth-available providers or models |
     | `/queue <mode>` | Manage active-run queue behavior. See [Queue](/concepts/queue) and [Queue steering](/concepts/queue-steering) |
     | `/steer <message>` | Inject guidance into the active run. Alias: `/tell`. See [Steer](/tools/steer) |
@@ -218,8 +218,8 @@ plugins.
       </Accordion>
       <Accordion title="Model switching details">
         - `/model <model>` persists the new model immediately to the session. For owner/admin callers, a non-default choice also updates the agent's effective configured default.
-        - `/model here <model>` changes only the current session and never updates the configured default.
-        - `/model here default` clears the current session selection without changing the configured default.
+        - `/model <model> -s` (or `--session`) changes only the current session and never updates the configured default.
+        - `/model default -s` clears the current session selection without changing the configured default.
         - If the agent is idle, the next run uses it right away.
         - If a run is active, the switch is marked pending and applied at the next clean retry point.
 
@@ -369,8 +369,8 @@ use the Control UI Tools panel or config surfaces.
 /model list        # same
 /model 3           # select by number from picker
 /model openai/gpt-5.4
-/model here openai/gpt-5.4 # select only for this session
-/model here default       # clear only this session's selection
+/model openai/gpt-5.4 -s # select only for this session
+/model default -s        # clear only this session's selection
 /model opus@anthropic:default
 /model default     # clear the session model selection
 /model status      # detailed view with endpoint and API mode

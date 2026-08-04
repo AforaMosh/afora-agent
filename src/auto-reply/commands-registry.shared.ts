@@ -637,7 +637,7 @@ export function buildBuiltinChatCommands(
       formatArgs: COMMAND_ARG_FORMATTERS.exec,
     }),
     defineBuiltinCommand("model", "Show or set the model.", "options", "essential", {
-      args: [defineCommandArgument("model", "Model id; prefix with here for this session only")],
+      args: [defineCommandArgument("model", "Model id; add -s for this session only")],
     }),
     defineBuiltinCommand("models", "List model providers/models.", "options", "standard", {
       acceptsArgs: true,

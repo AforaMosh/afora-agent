@@ -241,8 +241,8 @@ describe("mixed inline directives", () => {
   });
 
   it.each([
-    { name: "directive-only", body: "/model here openai/gpt-5.6-luna" },
-    { name: "mixed-content", body: "please reply /model here openai/gpt-5.6-luna" },
+    { name: "directive-only", body: "/model openai/gpt-5.6-luna -s" },
+    { name: "mixed-content", body: "please reply /model openai/gpt-5.6-luna -s" },
   ])("keeps an owner $name selection session-only", async ({ body }) => {
     const { result, sessionEntry } = await applyMixedDirectives({
       body,
@@ -263,14 +263,14 @@ describe("mixed inline directives", () => {
     expect(persistStickyModelSelectionBestEffort).not.toHaveBeenCalled();
   });
 
-  it("clears the current session pin with /model here default", async () => {
+  it("clears the current session pin with /model default -s", async () => {
     const sessionEntry = createSessionEntry({
       providerOverride: "openai",
       modelOverride: "gpt-5.6-luna",
       modelOverrideSource: "user",
     });
     const { result } = await applyMixedDirectives({
-      body: "/model here default",
+      body: "/model default -s",
       senderIsOwner: true,
       sessionEntry,
       allowedModels: [{ provider: "anthropic", id: "claude-opus-4-6", name: "Claude Opus" }],
@@ -285,7 +285,7 @@ describe("mixed inline directives", () => {
 
   it("keeps an operator.admin selection session-only", async () => {
     const { result, sessionEntry } = await applyMixedDirectives({
-      body: "/model here openai/gpt-5.6-luna",
+      body: "/model openai/gpt-5.6-luna --session",
       gatewayClientScopes: ["operator.admin"],
       allowedModels: [{ provider: "openai", id: "gpt-5.6-luna", name: "GPT-5.6-Luna" }],
     });

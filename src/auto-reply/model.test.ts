@@ -12,27 +12,36 @@ describe("extractModelDirective", () => {
       expect(result.cleaned).toBe("");
     });
 
-    it("extracts a session-only /model here selection", () => {
-      const result = extractModelDirective("/model here anthropic/claude-opus-4-6");
+    it("extracts a session-only selection with -s", () => {
+      const result = extractModelDirective("/model anthropic/claude-opus-4-6 -s");
       expect(result.hasDirective).toBe(true);
       expect(result.rawModel).toBe("anthropic/claude-opus-4-6");
       expect(result.sessionOnly).toBe(true);
       expect(result.cleaned).toBe("");
     });
 
-    it("extracts a session-only default reset", () => {
-      const result = extractModelDirective("/model here default");
+    it("extracts a session-only default reset with --session", () => {
+      const result = extractModelDirective("/model default --session");
       expect(result.hasDirective).toBe(true);
       expect(result.rawModel).toBe("default");
       expect(result.sessionOnly).toBe(true);
       expect(result.cleaned).toBe("");
     });
 
-    it("keeps here as a model name when no selection follows it", () => {
-      const result = extractModelDirective("/model here");
+    it("keeps here as a model name and preserves following message text", () => {
+      const result = extractModelDirective("please /model here continue");
       expect(result.hasDirective).toBe(true);
       expect(result.rawModel).toBe("here");
       expect(result.sessionOnly).toBe(false);
+      expect(result.cleaned).toBe("please continue");
+    });
+
+    it("does not reinterpret a leading -s as the session option", () => {
+      const result = extractModelDirective("/model -s opus");
+      expect(result.hasDirective).toBe(true);
+      expect(result.rawModel).toBe("-s");
+      expect(result.sessionOnly).toBe(false);
+      expect(result.cleaned).toBe("opus");
     });
 
     it("does not treat /models as a /model directive", () => {
@@ -56,7 +65,7 @@ describe("extractModelDirective", () => {
 
     it("extracts /model with a runtime override", () => {
       const result = extractModelDirective(
-        "/model here anthropic/claude-opus-4-7 --runtime claude-cli",
+        "/model anthropic/claude-opus-4-7 --runtime claude-cli -s",
       );
       expect(result.hasDirective).toBe(true);
       expect(result.rawModel).toBe("anthropic/claude-opus-4-7");

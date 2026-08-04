@@ -171,15 +171,15 @@ openclaw config set agents.defaults.modelPolicy.allow '["openai/gpt-5.4","anthro
 /model list
 /model 3
 /model openai/gpt-5.4
-/model here openai/gpt-5.4
-/model here default
+/model openai/gpt-5.4 -s
+/model default -s
 /model default
 /model status
 ```
 
 - `/model` and `/model list` show a compact numbered picker (model family + available providers); `/model <#>` selects from it. On Discord this opens provider/model dropdowns with a Submit step. `/models add` is deprecated and returns a message instead of registering models from chat.
-- `/model <model>` persists the new session selection immediately. For an owner or `operator.admin` caller, a non-default selection also becomes that agent's effective default: OpenClaw updates the agent's explicit primary when one exists, otherwise `agents.defaults.model`. Use `/model here <model>` to pin only the current session without changing either configured default. If the agent is idle, the next run uses it right away; if a run is already active, the switch is queued for the next clean retry point (or a later one, if tool activity or reply output already started).
-- `/model here default` clears the current session selection so it inherits the effective configured default again. Bare `/model default` clears the same session selection; it does not recover a configured default that an earlier sticky `/model <model>` already replaced.
+- `/model <model>` persists the new session selection immediately. For an owner or `operator.admin` caller, a non-default selection also becomes that agent's effective default: OpenClaw updates the agent's explicit primary when one exists, otherwise `agents.defaults.model`. Add `-s` (or `--session`) after the model to pin only the current session without changing either configured default. If the agent is idle, the next run uses it right away; if a run is already active, the switch is queued for the next clean retry point (or a later one, if tool activity or reply output already started).
+- `/model default -s` clears the current session selection so it inherits the effective configured default again. Bare `/model default` clears the same session selection; it does not recover a configured default that an earlier sticky `/model <model>` already replaced.
 - A user-selected `/model` ref is strict for that session: if it becomes unreachable, the reply fails visibly instead of silently falling back through `agents.defaults.model.fallbacks`. Configured defaults and cron job primaries still use fallback chains.
 - `/model status` is the detailed view: auth candidates per provider, and (when configured) the provider endpoint `baseUrl` plus `api` mode.
 - Model refs are parsed by splitting on the first `/`; type `provider/model`. If the model ID itself contains `/` (OpenRouter-style), include the provider prefix, e.g. `/model openrouter/moonshotai/kimi-k2`. If you omit the provider, OpenClaw tries: (1) alias match, (2) unique configured-provider match for that exact unprefixed model id, (3) the configured default provider (deprecated fallback) — and if that provider no longer exposes the configured default model, the first configured provider/model instead, to avoid surfacing a stale removed-provider default.
