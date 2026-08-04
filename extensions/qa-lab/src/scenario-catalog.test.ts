@@ -1009,6 +1009,32 @@ describe("qa scenario catalog", () => {
     }
   });
 
+  it("proves thread memory causality before waiting for the scoped outbound", () => {
+    const scenario = requireFlowScenario(readQaScenarioById("thread-memory-isolation"));
+    const flow = JSON.stringify(scenario.execution.flow);
+
+    expect(scenario.execution).toMatchObject({
+      channel: "qa-channel",
+      providerMode: "mock-openai",
+      retryCount: 0,
+    });
+    expect(flow).toContain("/debug/request-cursor");
+    expect(flow).toContain("/debug/requests?after=${requestCursorBefore}");
+    expect(flow).toContain("scenarioRequests.length === 3");
+    expect(flow).toContain("searchPlanRequest.plannedToolName === 'memory_search'");
+    expect(flow).toContain(
+      "searchResultRequest.toolOutputCallId === searchPlanRequest.plannedToolCallId",
+    );
+    expect(flow).toContain("searchResultRequest.plannedToolName === 'memory_get'");
+    expect(flow).toContain(
+      "finalRequest.toolOutputCallId === searchResultRequest.plannedToolCallId",
+    );
+    expect(flow).toContain('"sinceIndex":{"ref":"outboundStartIndex"}');
+    expect(flow.indexOf('"set":"scenarioRequests"')).toBeLessThan(
+      flow.indexOf('"call":"waitForOutboundMessage"'),
+    );
+  });
+
   it("declares native QA-channel fixtures by channel", () => {
     const scenarioIds = [
       "instruction-followthrough-repo-contract",

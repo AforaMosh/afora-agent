@@ -3570,6 +3570,29 @@ Update and merge these partial structured summaries.`,
     expect(threadMemorySearchText).toContain('"name":"memory_search"');
     expect(threadMemorySearchText).toContain("ORBIT-22");
 
+    const threadMemoryGetText = await expectStreamingResponsesText(server, {
+      instructions:
+        "@openclaw Thread memory check: what is the hidden thread codename stored only in memory? Use memory tools first and reply only in this thread.",
+      input: [
+        makeToolOutput(
+          JSON.stringify({
+            results: [
+              {
+                path: "MEMORY.md",
+                startLine: 1,
+                endLine: 1,
+                snippet: "Thread-hidden codename: ORBIT-22.",
+              },
+            ],
+          }),
+        ),
+        makeUserInput("Protocol note: acknowledged. Continue with the QA scenario plan."),
+      ],
+    });
+    expect(threadMemoryGetText).toContain('"name":"memory_get"');
+    expect(threadMemoryGetText).toContain('\\"path\\":\\"MEMORY.md\\"');
+    expect(threadMemoryGetText).not.toContain("hidden thread codename is ORBIT-22");
+
     const threadMemorySummary = await expectNonStreamingResponses(server, {
       instructions:
         "@openclaw Thread memory check: what is the hidden thread codename stored only in memory? Use memory tools first and reply only in this thread.",
