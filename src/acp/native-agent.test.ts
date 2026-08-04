@@ -245,6 +245,7 @@ describe("AcpNativeAgent", () => {
       }
       decision = (
         await broker.request({
+          runId: opts.runId,
           request: {
             title: `Deploy\u202Eprod ${secret}`,
             description: `Review\u0000\n${secret}`,
@@ -287,6 +288,7 @@ describe("AcpNativeAgent", () => {
       }
       decision = (
         await broker.request({
+          runId: opts.runId,
           request: {
             title: "x".repeat(81),
             description: "bounded description",
@@ -307,6 +309,53 @@ describe("AcpNativeAgent", () => {
 
     expect(decision).toBe("deny");
     expect(harness.requestPermission).not.toHaveBeenCalled();
+    await harness.agent.shutdown();
+  });
+
+  it("denies plugin approvals retained from an earlier native run", async () => {
+    const runIds: string[] = [];
+    let releaseSecond: (() => void) | undefined;
+    const executeAgent = vi.fn(async (opts: AgentCommandIngressOpts) => {
+      runIds.push(opts.runId ?? "");
+      if (runIds.length === 2) {
+        await new Promise<void>((resolve) => {
+          releaseSecond = resolve;
+        });
+      }
+      return { payloads: [], meta: {} };
+    });
+    const harness = createHarness(executeAgent);
+    const session = harness.agent.newSession({ cwd: "/tmp/project", mcpServers: [] });
+
+    await harness.agent.prompt({
+      sessionId: session.sessionId,
+      prompt: [{ type: "text", text: "first" }],
+    });
+    const second = harness.agent.prompt({
+      sessionId: session.sessionId,
+      prompt: [{ type: "text", text: "second" }],
+    });
+    await vi.waitFor(() => expect(executeAgent).toHaveBeenCalledTimes(2));
+    const broker = getEmbeddedPluginApprovalBroker();
+    if (!broker) {
+      throw new Error("expected embedded plugin approval broker");
+    }
+
+    await expect(
+      broker.request({
+        runId: runIds[0],
+        request: {
+          title: "stale approval",
+          description: "must not reach the host",
+          sessionKey: `agent:main:acp:${session.sessionId}`,
+        },
+        timeoutMs: 1_000,
+      }),
+    ).resolves.toMatchObject({ decision: "deny" });
+    expect(harness.requestPermission).not.toHaveBeenCalled();
+
+    releaseSecond?.();
+    await second;
     await harness.agent.shutdown();
   });
 
@@ -377,6 +426,65 @@ describe("AcpNativeAgent", () => {
       if (teardown === "close") {
         await harness.agent.shutdown();
       }
+    },
+  );
+
+  it("bounds prompt replacement when the superseded executor ignores abort", async () => {
+    const executeAgent = vi.fn(async () => await new Promise<never>(() => {}));
+    const harness = createHarness(executeAgent, undefined, { abortSettleTimeoutMs: 5 });
+    const session = harness.agent.newSession({ cwd: "/tmp/project", mcpServers: [] });
+    void harness.agent
+      .prompt({
+        sessionId: session.sessionId,
+        prompt: [{ type: "text", text: "first" }],
+      })
+      .catch(() => {});
+    await vi.waitFor(() => expect(executeAgent).toHaveBeenCalledOnce());
+
+    await expect(
+      harness.agent.prompt({
+        sessionId: session.sessionId,
+        prompt: [{ type: "text", text: "replacement" }],
+      }),
+    ).resolves.toEqual({ stopReason: "cancelled" });
+    expect(executeAgent).toHaveBeenCalledOnce();
+    await harness.agent.shutdown();
+  });
+
+  it.each(["cancel", "close"] as const)(
+    "drops late thought events after native session %s",
+    async (teardown) => {
+      let runId = "";
+      const executeAgent = vi.fn(async (opts: AgentCommandIngressOpts) => {
+        runId = opts.runId ?? "";
+        return await new Promise<never>(() => {});
+      });
+      const harness = createHarness(executeAgent, undefined, { abortSettleTimeoutMs: 5 });
+      const session = harness.agent.newSession({ cwd: "/tmp/project", mcpServers: [] });
+      void harness.agent
+        .prompt({
+          sessionId: session.sessionId,
+          prompt: [{ type: "text", text: "wait" }],
+        })
+        .catch(() => {});
+      await vi.waitFor(() => expect(executeAgent).toHaveBeenCalledOnce());
+
+      if (teardown === "cancel") {
+        harness.agent.cancel({ sessionId: session.sessionId });
+      } else {
+        await harness.agent.closeSession({ sessionId: session.sessionId });
+      }
+      harness.emit({
+        runId,
+        seq: 1,
+        stream: "assistant",
+        ts: Date.now(),
+        data: { delta: "late thought" },
+      });
+      await Promise.resolve();
+
+      expect(harness.updates).toEqual([]);
+      await harness.agent.shutdown();
     },
   );
 

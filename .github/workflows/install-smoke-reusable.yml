@@ -152,6 +152,8 @@ jobs:
         run: |
           timeout --kill-after=30s 20m docker run --rm --entrypoint sh openclaw-dockerfile-smoke:local -lc '
             which openclaw &&
+            which openclaw-acp &&
+            test -x /app/openclaw-acp.mjs &&
             openclaw --version &&
             node -e "
               const fs = require(\"node:fs\");
@@ -481,6 +483,8 @@ jobs:
         run: |
           timeout --kill-after=30s 20m docker run --rm --entrypoint sh "$IMAGE_REF" -lc '
             which openclaw &&
+            which openclaw-acp &&
+            test -x /app/openclaw-acp.mjs &&
             openclaw --version &&
             node -e "
               const fs = require(\"node:fs\");

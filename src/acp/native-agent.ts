@@ -33,6 +33,7 @@ import { buildApprovalPresentation } from "../infra/approval-presentation.js";
 import { setEmbeddedMode } from "../infra/embedded-mode.js";
 import {
   clearEmbeddedPluginApprovalBroker,
+  type EmbeddedPluginApprovalRequest,
   EmbeddedPluginApprovalBroker,
   setEmbeddedPluginApprovalBroker,
 } from "../infra/embedded-plugin-approval-broker.js";
@@ -81,6 +82,7 @@ type NativeSession = {
 };
 
 type ActiveTurn = {
+  runId: string;
   controller: AbortController;
   completion: Promise<PromptResponse>;
 };
@@ -424,7 +426,10 @@ export class AcpNativeAgent implements Agent {
     const previous = this.activeTurns.get(session.id);
     if (previous) {
       previous.controller.abort(new Error("ACP prompt superseded"));
-      await previous.completion.catch(() => {});
+      const settled = await this.waitForPromptCompletions([previous.completion], session.id);
+      if (!settled) {
+        return { stopReason: "cancelled" };
+      }
     }
     // Waiting prompts are admitted work but are not active turns yet. Recheck
     // teardown and supersession fences before they can touch runtime state.
@@ -443,8 +448,9 @@ export class AcpNativeAgent implements Agent {
     }
 
     const controller = new AbortController();
-    const completion = this.runPrompt(session, params, controller);
-    this.activeTurns.set(session.id, { controller, completion });
+    const runId = this.createId();
+    const completion = this.runPrompt(session, params, controller, runId, promptGeneration);
+    this.activeTurns.set(session.id, { runId, controller, completion });
     try {
       return await completion;
     } finally {
@@ -479,8 +485,15 @@ export class AcpNativeAgent implements Agent {
 
   private async waitForAdmittedPrompts(sessionId?: string): Promise<void> {
     const completions = this.collectAdmittedPrompts(sessionId);
+    await this.waitForPromptCompletions(completions, sessionId);
+  }
+
+  private async waitForPromptCompletions(
+    completions: Promise<PromptResponse>[],
+    sessionId?: string,
+  ): Promise<boolean> {
     if (completions.length === 0) {
-      return;
+      return true;
     }
     let timeout: NodeJS.Timeout | undefined;
     const outcome = await Promise.race([
@@ -499,6 +512,7 @@ export class AcpNativeAgent implements Agent {
           (sessionId ? ` for session ${sessionId}` : ""),
       );
     }
+    return outcome === "settled";
   }
 
   async closeSession(params: CloseSessionRequest): Promise<CloseSessionResponse> {
@@ -544,6 +558,8 @@ export class AcpNativeAgent implements Agent {
     session: NativeSession,
     params: PromptRequest,
     controller: AbortController,
+    runId: string,
+    promptGeneration: number,
   ): Promise<PromptResponse> {
     const text = extractTextFromPrompt(params.prompt, MAX_PROMPT_BYTES);
     const attachments = extractAttachmentsFromPrompt(params.prompt);
@@ -555,18 +571,25 @@ export class AcpNativeAgent implements Agent {
       throw new Error(`Prompt exceeds maximum allowed size of ${MAX_PROMPT_BYTES} bytes`);
     }
 
-    const runId = this.createId();
     let sentThought = "";
     let updateTail = Promise.resolve();
+    const isPromptCurrent = () =>
+      !controller.signal.aborted &&
+      !this.stopping &&
+      !this.closingSessions.has(session.id) &&
+      this.sessions.get(session.id) === session &&
+      session.promptGeneration === promptGeneration;
     const enqueueUpdate = (
       update: Parameters<AgentSideConnection["sessionUpdate"]>[0]["update"],
     ) => {
-      updateTail = updateTail.then(() =>
-        this.connection.sessionUpdate({ sessionId: session.id, update }),
-      );
+      updateTail = updateTail.then(async () => {
+        if (isPromptCurrent()) {
+          await this.connection.sessionUpdate({ sessionId: session.id, update });
+        }
+      });
     };
     const unsubscribe = this.subscribeAgentEvents((event) => {
-      if (event.runId !== runId) {
+      if (event.runId !== runId || !isPromptCurrent()) {
         return;
       }
       const projected = this.projectThoughtEvent(event, sentThought);
@@ -689,14 +712,14 @@ export class AcpNativeAgent implements Agent {
     return resolveGatewayDecisionFromPermissionOutcome(response, permission.options) ?? "deny";
   }
 
-  private async relayPluginApproval(approval: PluginApprovalRequest): Promise<void> {
+  private async relayPluginApproval(approval: EmbeddedPluginApprovalRequest): Promise<void> {
     const session = resolveSessionForPluginApproval(this.sessions.values(), approval.request);
     if (!session) {
       this.pluginApprovalBroker.resolve(approval.id, "deny");
       return;
     }
     const activeTurn = this.activeTurns.get(session.id);
-    if (!activeTurn) {
+    if (!activeTurn || !approval.runId || approval.runId !== activeTurn.runId) {
       this.pluginApprovalBroker.resolve(approval.id, "deny");
       return;
     }
