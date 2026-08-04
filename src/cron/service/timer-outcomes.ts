@@ -7,7 +7,10 @@ import { cronSchedulingInputsEqual } from "../schedule-identity.js";
 import { computeNextRunAtMs } from "../schedule.js";
 import { createCronStreamSourceIdentity } from "../stream-schedule.js";
 import type { CronJob, CronRunStatus } from "../types.js";
-import { maybeAutoDisableCronJobAfterRunFailure } from "./auto-disable.js";
+import {
+  cronRunFailureAtAutoDisableThreshold,
+  maybeAutoDisableCronJobAfterRunFailure,
+} from "./auto-disable.js";
 import {
   failureNotificationDeliveryFromJobState,
   maybeEmitFailureAlert,
@@ -143,19 +146,26 @@ export function applyJobResult(
   if (result.status === "error") {
     job.state.consecutiveErrors = (job.state.consecutiveErrors ?? 0) + 1;
     job.state.consecutiveSkipped = 0;
-    maybeEmitFailureAlert(state, {
-      job,
-      alertConfig,
-      status: "error",
-      error: result.error,
-      errorReason: job.state.lastErrorReason,
-      runAtMs: result.startedAt,
-      consecutiveCount: job.state.consecutiveErrors,
-      ...(opts?.replayFailureAlertAtMs !== undefined
-        ? { delivery: "record-only" as const, occurredAtMs: opts.replayFailureAlertAtMs }
-        : {}),
-      deferredNotifications: opts?.deferredNotifications,
-    });
+    // At the auto-disable threshold the auto-disable notification (with its
+    // recovery command) is the single terminal message; skip the regular alert
+    // even on the rare stale-ownership/forced runs where the disable itself is
+    // deferred to the next owned failure.
+    const deferToAutoDisableNotification = cronRunFailureAtAutoDisableThreshold(job);
+    if (!deferToAutoDisableNotification) {
+      maybeEmitFailureAlert(state, {
+        job,
+        alertConfig,
+        status: "error",
+        error: result.error,
+        errorReason: job.state.lastErrorReason,
+        runAtMs: result.startedAt,
+        consecutiveCount: job.state.consecutiveErrors,
+        ...(opts?.replayFailureAlertAtMs !== undefined
+          ? { delivery: "record-only" as const, occurredAtMs: opts.replayFailureAlertAtMs }
+          : {}),
+        deferredNotifications: opts?.deferredNotifications,
+      });
+    }
   } else if (result.status === "skipped") {
     job.state.consecutiveErrors = 0;
     job.state.consecutiveSkipped = (job.state.consecutiveSkipped ?? 0) + 1;

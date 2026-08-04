@@ -2942,6 +2942,44 @@ describe("cron service timer regressions", () => {
     expect(deferredNotifications).toHaveLength(1);
   });
 
+  it("emits only the auto-disable notification on the terminal failure with default alerts", () => {
+    const startedAt = Date.parse("2026-08-01T12:00:00.000Z");
+    const deferredNotifications: Array<() => void> = [];
+    const enqueueSystemEvent = vi.fn();
+    const state = createCronServiceState({
+      cronEnabled: true,
+      storePath: "/tmp/cron-terminal-notification-dedupe.json",
+      log: noopLogger,
+      nowMs: () => startedAt,
+      enqueueSystemEvent,
+      requestHeartbeat: vi.fn(),
+      runIsolatedAgentJob: createDefaultIsolatedRunner(),
+    });
+    const job = createIsolatedRegressionJob({
+      id: "terminal-notification-dedupe",
+      name: "terminal notification dedupe",
+      scheduledAt: startedAt,
+      schedule: { kind: "every", everyMs: 60_000, anchorMs: startedAt },
+      payload: { kind: "agentTurn", message: "fail" },
+      state: { consecutiveErrors: 9 },
+    });
+
+    applyJobResult(
+      state,
+      job,
+      { status: "error", error: "tenth failure", startedAt, endedAt: startedAt + 10 },
+      { deferredNotifications },
+    );
+
+    expect(job.state.autoDisabled).toMatchObject({ reason: "consecutive-failures" });
+    expect(deferredNotifications).toHaveLength(1);
+    for (const notify of deferredNotifications) {
+      notify();
+    }
+    expect(enqueueSystemEvent).toHaveBeenCalledOnce();
+    expect(enqueueSystemEvent.mock.calls[0]?.[0]).toContain("auto-disabled");
+  });
+
   it("resets the auto-disable streak after a successful recurring run", () => {
     const startedAt = Date.parse("2026-08-01T13:00:00.000Z");
     const state = createCronServiceState({

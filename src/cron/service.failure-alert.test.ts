@@ -37,15 +37,23 @@ async function withFailureAlertCron(
   params: {
     failureAlert: FailureAlertConfig;
     runResult?: IsolatedAgentRunResult;
+    sendAlertError?: string;
   },
   run: (context: {
     cron: CronService;
     sendCronFailureAlert: ReturnType<typeof vi.fn>;
+    enqueueSystemEvent: ReturnType<typeof vi.fn>;
     addJob: (name: string, overrides?: Partial<CronJobCreate>) => ReturnType<CronService["add"]>;
   }) => Promise<void>,
 ): Promise<void> {
   const store = await makeStorePath();
-  const sendCronFailureAlert = vi.fn(async () => undefined);
+  const sendCronFailureAlert = vi.fn(async () => {
+    if (params.sendAlertError) {
+      throw new Error(params.sendAlertError);
+    }
+    return undefined;
+  });
+  const enqueueSystemEvent = vi.fn();
   const runResult = params.runResult ?? {
     status: "error",
     error: "temporary upstream error",
@@ -55,7 +63,7 @@ async function withFailureAlertCron(
     cronEnabled: true,
     cronConfig: { failureAlert: params.failureAlert },
     log: noopLogger,
-    enqueueSystemEvent: vi.fn(),
+    enqueueSystemEvent,
     requestHeartbeat: vi.fn(),
     runIsolatedAgentJob: vi.fn(async () => runResult),
     sendCronFailureAlert,
@@ -66,6 +74,7 @@ async function withFailureAlertCron(
     await run({
       cron,
       sendCronFailureAlert,
+      enqueueSystemEvent,
       addJob: async (name, overrides) => await cron.add(createFailureAlertJob(name, overrides)),
     });
   } finally {
@@ -163,6 +172,28 @@ describe("CronService failure alerts", () => {
           sendCronFailureAlert,
           'Automation "default alert job" failed 2 times',
         );
+      },
+    );
+  });
+
+  it("falls back to the owning agent's lane when channel alert delivery fails", async () => {
+    await withFailureAlertCron(
+      {
+        failureAlert: { enabled: true, after: 1 },
+        runResult: { status: "error", error: "expired oauth token" },
+        sendAlertError: "no route for keyless job",
+      },
+      async ({ cron, sendCronFailureAlert, enqueueSystemEvent, addJob }) => {
+        const job = await addJob("routeless job", { delivery: createTelegramDelivery() });
+
+        await cron.run(job.id, "force");
+        expect(sendCronFailureAlert).toHaveBeenCalledTimes(1);
+        await vi.waitFor(() => {
+          expect(enqueueSystemEvent).toHaveBeenCalledWith(
+            expect.stringContaining('Automation "routeless job" failed 1 times'),
+            expect.objectContaining({ agentId: job.agentId }),
+          );
+        });
       },
     );
   });

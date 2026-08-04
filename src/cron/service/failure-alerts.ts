@@ -84,6 +84,18 @@ function clampNonNegativeInt(value: unknown, fallback: number): number {
   return floored >= 0 ? floored : fallback;
 }
 
+/**
+ * Global failure-alert gate: alerts are on by default so a failing scheduled
+ * job surfaces instead of going silent forever; `enabled: false` opts out.
+ * Every consumer of "are inherited alerts active" must use this predicate so
+ * mutation validation and runtime emission never diverge.
+ */
+export function cronFailureAlertsGloballyEnabled(
+  failureAlert: { enabled?: boolean } | undefined,
+): boolean {
+  return failureAlert?.enabled !== false;
+}
+
 /** Resolves effective failure-alert policy from job config, delivery defaults, and global cron config. */
 export function resolveFailureAlert(
   state: { deps: Pick<CronServiceState["deps"], "cronConfig"> },
@@ -95,10 +107,7 @@ export function resolveFailureAlert(
   if (job.failureAlert === false) {
     return null;
   }
-  // Alerts are on by default: a scheduled job that starts failing must surface
-  // it instead of going silent forever. Opt out per job (`failureAlert: false`)
-  // or globally (`cron.failureAlert.enabled: false`).
-  if (!jobConfig && globalConfig?.enabled === false) {
+  if (!jobConfig && !cronFailureAlertsGloballyEnabled(globalConfig)) {
     return null;
   }
 
@@ -204,6 +213,11 @@ function emitFailureAlert(
           { jobId: params.job.id, err: String(err) },
           "cron: failure alert delivery failed",
         );
+        // The cooldown is already armed, so a refused channel route (e.g. a
+        // keyless job whose "last" target is rejected by delivery safety)
+        // would otherwise silence the alert for the whole cooldown window.
+        // Keep a visible outcome by falling back to the owning agent's lane.
+        state.deps.enqueueSystemEvent(text, { agentId: params.job.agentId });
       });
     return;
   }

@@ -85,6 +85,19 @@ export function autoDisableCronJob(params: {
   return true;
 }
 
+/**
+ * True when a just-recorded run failure is at the auto-disable threshold.
+ * The regular failure alert defers to the auto-disable notification at this
+ * point so operators get one terminal message, not two.
+ */
+export function cronRunFailureAtAutoDisableThreshold(job: CronJob): boolean {
+  return (
+    (job.schedule.kind === "cron" || job.schedule.kind === "every") &&
+    !job.state.autoDisabled &&
+    (job.state.consecutiveErrors ?? 0) >= MAX_CONSECUTIVE_RUN_FAILURES
+  );
+}
+
 /** Auto-disables only time-based recurring jobs once their run-error streak reaches the limit. */
 export function maybeAutoDisableCronJobAfterRunFailure(params: {
   state: CronServiceState;
