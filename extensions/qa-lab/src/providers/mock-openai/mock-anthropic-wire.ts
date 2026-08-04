@@ -1,4 +1,5 @@
 // QA Lab Anthropic Messages wire conversion and response events.
+import { createHash } from "node:crypto";
 import {
   type ResponsesInputItem,
   type StreamEvent,
@@ -150,6 +151,57 @@ type ExtractedAssistantOutput = {
   text: string;
   toolCalls: Array<{ id: string; name: string; input: Record<string, unknown> }>;
 };
+
+const NATIVE_ANTHROPIC_TOOL_USE_ID_RE = /^toolu_[A-Za-z0-9_]+$/;
+const ANTHROPIC_TOOL_USE_ID_MAX_LENGTH = 64;
+
+function isNativeAnthropicToolUseId(id: string): boolean {
+  return id.length <= ANTHROPIC_TOOL_USE_ID_MAX_LENGTH && NATIVE_ANTHROPIC_TOOL_USE_ID_RE.test(id);
+}
+
+export function adaptAnthropicToolCallIds(events: StreamEvent[]): StreamEvent[] {
+  const adaptedIds = new Map<string, string>();
+  const adaptId = (id: string) => {
+    if (isNativeAnthropicToolUseId(id)) {
+      return id;
+    }
+    const existing = adaptedIds.get(id);
+    if (existing) {
+      return existing;
+    }
+    const adapted = `toolu_${createHash("sha256").update(id).digest("hex").slice(0, 48)}`;
+    adaptedIds.set(id, adapted);
+    return adapted;
+  };
+  const adaptItem = (item: Record<string, unknown>) => {
+    if (
+      (item.type === "function_call" || item.type === "custom_tool_call") &&
+      typeof item.call_id === "string"
+    ) {
+      return { ...item, call_id: adaptId(item.call_id) };
+    }
+    return item;
+  };
+
+  return events.map((event) => {
+    if (event.type === "response.output_item.added" || event.type === "response.output_item.done") {
+      return { ...event, item: adaptItem(event.item) };
+    }
+    if (event.type === "response.custom_tool_call_input.delta") {
+      return { ...event, call_id: adaptId(event.call_id) };
+    }
+    if (event.type === "response.completed") {
+      return {
+        ...event,
+        response: {
+          ...event.response,
+          output: event.response.output.map(adaptItem),
+        },
+      };
+    }
+    return event;
+  });
+}
 
 export function extractFinalAssistantOutputFromEvents(
   events: StreamEvent[],

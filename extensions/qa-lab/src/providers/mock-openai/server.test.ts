@@ -3,6 +3,8 @@ import { once } from "node:events";
 import { afterEach, describe, expect, it } from "vitest";
 import { WebSocket } from "ws";
 import { readQaMockRequestCursor } from "../shared/debug-request-cursor.js";
+import { adaptAnthropicToolCallIds } from "./mock-anthropic-wire.js";
+import type { StreamEvent } from "./mock-openai-contracts.js";
 import { readTargetFromPrompt } from "./mock-openai-tooling.js";
 import { startQaMockOpenAiServer } from "./server.js";
 
@@ -6294,6 +6296,16 @@ Update and merge these partial structured summaries.`,
     const server = await startMockServer();
 
     const body = (await expectAnthropicMessagesJson(server, {
+      tools: [
+        {
+          name: "read",
+          input_schema: {
+            type: "object",
+            properties: { path: { type: "string" } },
+            required: ["path"],
+          },
+        },
+      ],
       messages: [
         makeAnthropicUserText(
           "Read the seeded docs and report worked, failed, blocked, and follow-up items.",
@@ -6311,8 +6323,10 @@ Update and merge these partial structured summaries.`,
     expect(body.model).toBe("claude-opus-4-8");
     expect(body.stop_reason).toBe("tool_use");
     const toolUseBlock = body.content.find((block) => block.type === "tool_use") as
-      | { name: string; input: Record<string, unknown> }
+      | { id: string; name: string; input: Record<string, unknown> }
       | undefined;
+    expect(toolUseBlock?.id).toMatch(/^toolu_[A-Za-z0-9_]+$/);
+    expect(toolUseBlock?.id.length).toBeLessThanOrEqual(64);
     expect(toolUseBlock?.name).toBe("read");
     expect(toolUseBlock?.input).toEqual({ path: "repo/docs/help/testing.md" });
 
@@ -6321,7 +6335,82 @@ Update and merge these partial structured summaries.`,
       "debug request",
     );
     expect(debugPayload.model).toBe("claude-opus-4-8");
+    expect(debugPayload.plannedToolCallId).toBe(toolUseBlock?.id);
     expect(debugPayload.plannedToolName).toBe("read");
+  });
+
+  it("preserves already-native Anthropic tool IDs while adapting shared generated IDs", () => {
+    const nativeId = "toolu_native_123";
+    const generatedId = "call_mock_read_generated_1";
+    const events: StreamEvent[] = [
+      {
+        type: "response.output_item.added",
+        item: { type: "function_call", name: "read", call_id: nativeId, arguments: "{}" },
+      },
+      {
+        type: "response.output_item.done",
+        item: { type: "function_call", name: "read", call_id: nativeId, arguments: "{}" },
+      },
+      {
+        type: "response.output_item.added",
+        item: { type: "function_call", name: "read", call_id: generatedId, arguments: "{}" },
+      },
+      {
+        type: "response.output_item.done",
+        item: { type: "function_call", name: "read", call_id: generatedId, arguments: "{}" },
+      },
+      {
+        type: "response.completed",
+        response: {
+          id: "response_mock",
+          status: "completed",
+          output: [
+            { type: "function_call", name: "read", call_id: nativeId, arguments: "{}" },
+            { type: "function_call", name: "read", call_id: generatedId, arguments: "{}" },
+          ],
+          usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 },
+        },
+      },
+    ];
+
+    const adapted = adaptAnthropicToolCallIds(events);
+    const callIds = adapted.flatMap((event) => {
+      if (
+        event.type === "response.output_item.added" ||
+        event.type === "response.output_item.done"
+      ) {
+        return typeof event.item.call_id === "string" ? [event.item.call_id] : [];
+      }
+      if (event.type === "response.completed") {
+        return event.response.output.flatMap((item) =>
+          typeof item.call_id === "string" ? [item.call_id] : [],
+        );
+      }
+      return [];
+    });
+    const adaptedGeneratedIds = callIds.filter((id) => id !== nativeId);
+    const repeatedGeneratedIds = adaptAnthropicToolCallIds(events).flatMap((event) => {
+      if (
+        event.type === "response.output_item.added" ||
+        event.type === "response.output_item.done"
+      ) {
+        return event.item.call_id === nativeId || typeof event.item.call_id !== "string"
+          ? []
+          : [event.item.call_id];
+      }
+      if (event.type === "response.completed") {
+        return event.response.output.flatMap((item) =>
+          item.call_id === nativeId || typeof item.call_id !== "string" ? [] : [item.call_id],
+        );
+      }
+      return [];
+    });
+
+    expect(callIds.filter((id) => id === nativeId)).toHaveLength(3);
+    expect(new Set(adaptedGeneratedIds).size).toBe(1);
+    expect(repeatedGeneratedIds).toEqual(adaptedGeneratedIds);
+    expect(adaptedGeneratedIds[0]).toMatch(/^toolu_[A-Za-z0-9_]+$/);
+    expect(adaptedGeneratedIds[0]?.length).toBeLessThanOrEqual(64);
   });
 
   it("routes Anthropic hidden tools through Code Mode and preserves scenario evidence", async () => {
@@ -6350,16 +6439,24 @@ Update and merge these partial structured summaries.`,
       },
     ];
     const messages: Array<Record<string, unknown>> = [makeAnthropicUserText(prompt)];
+    const emittedToolUseIds: string[] = [];
 
-    const request = async () => {
+    const request = async (expectedToolResultId?: string) => {
       const response = await expectAnthropicMessages(server, {
         tools,
         messages,
       });
-      return (await response.json()) as {
+      const body = (await response.json()) as {
         stop_reason: string;
         content: Array<Record<string, unknown>>;
       };
+      const debug = requireRecord(await getJson(server, "/debug/last-request"), "debug request");
+      if (expectedToolResultId) {
+        expect(debug.toolOutputCallId).toBe(expectedToolResultId);
+      } else {
+        expect(debug).not.toHaveProperty("toolOutputCallId");
+      }
+      return body;
     };
     const readToolUse = (body: {
       stop_reason: string;
@@ -6370,6 +6467,9 @@ Update and merge these partial structured summaries.`,
       if (!toolUse || typeof toolUse.id !== "string" || typeof toolUse.name !== "string") {
         throw new Error("Expected Anthropic tool_use block");
       }
+      expect(toolUse.id).toMatch(/^toolu_[A-Za-z0-9_]+$/);
+      expect(toolUse.id.length).toBeLessThanOrEqual(64);
+      emittedToolUseIds.push(toolUse.id);
       return toolUse;
     };
     const appendToolResult = (
@@ -6381,8 +6481,14 @@ Update and merge these partial structured summaries.`,
         makeAnthropicToolResult(toolUse.id, JSON.stringify(result)),
       );
     };
-    const expectPlan = async (name: string, args: Record<string, unknown>, wireName = "exec") => {
+    const expectPlan = async (
+      name: string,
+      args: Record<string, unknown>,
+      callId: string,
+      wireName = "exec",
+    ) => {
       const debug = requireRecord(await getJson(server, "/debug/last-request"), "debug request");
+      expect(debug.plannedToolCallId).toBe(callId);
       expect(debug.plannedToolName).toBe(name);
       expect(debug.plannedWireToolName).toBe(wireName);
       expect(debug.plannedToolArgs).toEqual(args);
@@ -6393,15 +6499,16 @@ Update and merge these partial structured summaries.`,
     const readAgentCode = String(requireRecord(readAgent.input, "exec input").code);
     expect(readAgentCode).toContain("tools.callValue(target.id, targetArgs)");
     expect(readAgentCode).toContain("value.content.slice(0, 2048)");
-    await expectPlan("read", { path: "AGENT.md" });
+    await expectPlan("read", { path: "AGENT.md" }, String(readAgent.id));
 
     appendToolResult(readAgent, { status: "waiting", runId: "qa-code-mode-read-agent" });
-    const waitForAgent = readToolUse(await request());
+    const waitForAgent = readToolUse(await request(String(readAgent.id)));
     expect(waitForAgent.name).toBe("wait");
     const waitDebug = requireRecord(
       await fetch(`${server.baseUrl}/debug/last-request`).then((response) => response.json()),
       "wait debug request",
     );
+    expect(waitDebug.plannedToolCallId).toBe(waitForAgent.id);
     expect(waitDebug.plannedToolName).toBe("wait");
     expect(waitDebug).not.toHaveProperty("plannedWireToolName");
     expect(waitDebug.plannedToolArgs).toEqual({ runId: "qa-code-mode-read-agent" });
@@ -6410,17 +6517,17 @@ Update and merge these partial structured summaries.`,
       status: "completed",
       value: { kind: "text", content: "# Repo contract\nDo not stop after planning." },
     });
-    const readSoul = readToolUse(await request());
+    const readSoul = readToolUse(await request(String(waitForAgent.id)));
     expect(readSoul.name).toBe("exec");
-    await expectPlan("read", { path: "SOUL.md" });
+    await expectPlan("read", { path: "SOUL.md" }, String(readSoul.id));
 
     appendToolResult(readSoul, {
       status: "completed",
       value: { kind: "text", content: "# Execution style\nStay action-first." },
     });
-    const readInput = readToolUse(await request());
+    const readInput = readToolUse(await request(String(readSoul.id)));
     expect(readInput.name).toBe("exec");
-    await expectPlan("read", { path: "FOLLOWTHROUGH_INPUT.md" });
+    await expectPlan("read", { path: "FOLLOWTHROUGH_INPUT.md" }, String(readInput.id));
 
     appendToolResult(readInput, {
       status: "completed",
@@ -6430,24 +6537,29 @@ Update and merge these partial structured summaries.`,
           "Mission: prove you followed the repo contract.\nEvidence path: AGENT.md -> SOUL.md -> FOLLOWTHROUGH_INPUT.md -> repo-contract-summary.txt",
       },
     });
-    const writeSummary = readToolUse(await request());
+    const writeSummary = readToolUse(await request(String(readInput.id)));
     expect(writeSummary.name).toBe("exec");
-    await expectPlan("write", {
-      path: "repo-contract-summary.txt",
-      content:
-        "Mission: prove you followed the repo contract.\nEvidence: AGENT.md -> SOUL.md -> FOLLOWTHROUGH_INPUT.md\nStatus: complete",
-    });
+    await expectPlan(
+      "write",
+      {
+        path: "repo-contract-summary.txt",
+        content:
+          "Mission: prove you followed the repo contract.\nEvidence: AGENT.md -> SOUL.md -> FOLLOWTHROUGH_INPUT.md\nStatus: complete",
+      },
+      String(writeSummary.id),
+    );
 
     appendToolResult(writeSummary, {
       status: "completed",
       value: "Successfully wrote 146 bytes to repo-contract-summary.txt.",
     });
-    const final = await request();
+    const final = await request(String(writeSummary.id));
     expect(final.stop_reason).toBe("end_turn");
     const text = final.content.find((block) => block.type === "text")?.text;
     expect(text).toBe(
       "Read: AGENT.md, SOUL.md, FOLLOWTHROUGH_INPUT.md\nWrote: repo-contract-summary.txt\nStatus: complete",
     );
+    expect(new Set(emittedToolUseIds).size).toBe(emittedToolUseIds.length);
   });
 
   it("uses native Codex custom exec, output arrays, and cell_id waits", async () => {
@@ -7222,6 +7334,16 @@ Update and merge these partial structured summaries.`,
     ).map((request) => requireRecord(request, "Anthropic debug request"));
     expect(debugRequests).toHaveLength(8);
     expect(debugRequests.every((request) => request.providerVariant === "anthropic")).toBe(true);
+    expect(debugRequests.map((request) => request.plannedToolCallId)).toEqual([
+      readCallIds[0],
+      undefined,
+      readCallIds[1],
+      undefined,
+      readCallIds[2],
+      undefined,
+      readCallIds[3],
+      undefined,
+    ]);
     expect(debugRequests.map((request) => request.toolOutputCallId)).toEqual([
       undefined,
       readCallIds[0],
@@ -7249,6 +7371,16 @@ Update and merge these partial structured summaries.`,
 
     const response = await expectAnthropicMessages(server, {
       stream: true,
+      tools: [
+        {
+          name: "read",
+          input_schema: {
+            type: "object",
+            properties: { path: { type: "string" } },
+            required: ["path"],
+          },
+        },
+      ],
       messages: [
         makeAnthropicUserText(
           "Read the seeded docs and report worked, failed, blocked, and follow-up items.",
@@ -7264,6 +7396,25 @@ Update and merge these partial structured summaries.`,
     expect(body).toContain("repo/docs/help/testing.md");
     expect(body).toContain("event: message_delta");
     expect(body).toContain("event: message_stop");
+    const events = body
+      .split("\n")
+      .filter((line) => line.startsWith("data: "))
+      .map((line) =>
+        requireRecord(JSON.parse(line.slice("data: ".length)) as unknown, "Anthropic SSE event"),
+      );
+    const toolUseStart = events.find(
+      (event) =>
+        event.type === "content_block_start" &&
+        requireRecord(event.content_block, "Anthropic SSE content block").type === "tool_use",
+    );
+    const toolUse = requireRecord(
+      toolUseStart?.content_block,
+      "Anthropic SSE tool_use content block",
+    );
+    expect(toolUse.id).toMatch(/^toolu_[A-Za-z0-9_]+$/);
+    expect(String(toolUse.id).length).toBeLessThanOrEqual(64);
+    const debug = requireRecord(await getJson(server, "/debug/last-request"), "debug request");
+    expect(debug.plannedToolCallId).toBe(toolUse.id);
   });
 
   it("streams Anthropic /v1/messages tool_result follow-ups as text deltas", async () => {

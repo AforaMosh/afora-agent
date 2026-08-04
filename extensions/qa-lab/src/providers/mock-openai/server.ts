@@ -12,6 +12,7 @@ import {
   buildMessagesPayload,
   normalizeAnthropicMessagesRequest,
 } from "./mock-anthropic-messages.js";
+import { adaptAnthropicToolCallIds } from "./mock-anthropic-wire.js";
 import {
   buildAssistantText,
   isCanonicalCompactionRetryWriteResult,
@@ -2446,6 +2447,9 @@ export async function startQaMockOpenAiServer(params?: {
       }
     } finally {
       inflightRequests.delete(inflightRequestId);
+    }
+    if (request.route === "anthropic-messages") {
+      events = adaptAnthropicToolCallIds(events);
     }
     const plannedTool = extractScenarioPlannedTool(events);
     const terminalRequesterCase = extractLastMatchingUserTurn(

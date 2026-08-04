@@ -12,7 +12,7 @@ scenario:
   objective: Verify OpenClaw persists one overflow compaction, prunes bulky historical turns, retries from durable context, and performs the requested mutation exactly once.
   successCriteria:
     - One coded over-threshold provider overflow produces one persisted OpenClaw overflow compaction and one compacted retry retaining durable current context.
-    - OpenClaw performs exactly one successful write, one causal continuation, and returns the exact file content and final marker.
+    - OpenClaw performs exactly one successful write, then one terminal continuation after zero-or-more causally linked waits, and returns the exact file content and final marker.
     - OpenClaw proves session-memory.pruning by retaining a nonempty contiguous suffix ending at block 15 while pruning marker block 10.
     - OpenClaw records one overflow-retry checkpoint whose branch preserves the independent pre-compaction assistant marker.
     - The Codex runtime-pair cell reports a known harness gap before gateway, session, or provider work and makes no compaction coverage claim.
@@ -25,6 +25,7 @@ scenario:
   execution:
     kind: flow
     summary: Force one OpenClaw context overflow, verify persisted pruning evidence, and prove exactly-once mutation after compaction.
+    retryCount: 0
     config:
       outputFile: compaction-retry-summary.txt
       promptSnippet: Compaction retry mutating tool check
@@ -33,7 +34,6 @@ scenario:
       checkpointMarker: QA-COMPACTION-PRECOMPACTION-ASSISTANT-MARKER
       overflowThresholdBytes: 262144
       expectedFileContent: "Replay safety: unsafe after write.\n"
-      expectedWriteToolResult: Successfully wrote 35 bytes to compaction-retry-summary.txt
       finalMarker: "Protocol note: replay unsafe after write."
       prompt: |-
         Compaction retry mutating tool check. Current durable context marker: QA-COMPACTION-DURABLE-MARKER.
@@ -97,8 +97,6 @@ flow:
                 ref: config.prompt
               timeoutMs:
                 expr: liveTurnTimeoutMs(env, 120000)
-              transcriptToolName: write
-              requireSuccessfulTranscriptToolResult: true
         - call: waitForCondition
           saveAs: outbound
           args:
@@ -128,7 +126,7 @@ flow:
             expr: "overflowRequests[0]"
         - set: writeRequests
           value:
-            expr: "scenarioRequests.filter((request) => request.requestKind === 'agent-initial' && request.outcome === 'success' && request.plannedToolName === 'write' && !request.toolOutput && request.cursor > overflowRequest.cursor && String(request.allInputText ?? '').includes(sessionId) && String(request.allInputText ?? '').includes(config.promptSnippet) && String(request.allInputText ?? '').includes(config.durableMarker) && request.plannedToolArgs?.path === config.outputFile && request.plannedToolArgs?.content === config.expectedFileContent)"
+            expr: "scenarioRequests.filter((request) => request.requestKind === 'agent-initial' && request.outcome === 'success' && request.plannedToolName === 'write' && request.plannedWireToolName === 'exec' && !request.toolOutput && request.cursor > overflowRequest.cursor && String(request.allInputText ?? '').includes(sessionId) && String(request.allInputText ?? '').includes(config.promptSnippet) && String(request.allInputText ?? '').includes(config.durableMarker) && request.plannedToolArgs?.path === config.outputFile && request.plannedToolArgs?.content === config.expectedFileContent)"
         - assert:
             expr: "writeRequests.length === 1"
             message:
@@ -159,13 +157,24 @@ flow:
             expr: "String(writeRequest.allInputText ?? '').includes(config.durableMarker)"
             message:
               expr: "`compacted retry did not retain durable current context: ${JSON.stringify({ overflow: overflowEvidence, write: writeEvidence })}`"
-        - set: postWriteContinuations
+        - set: continuationChain
           value:
-            expr: "scenarioRequests.filter((request) => request.requestKind === 'tool-continuation' && request.outcome === 'success' && request.plannedToolName === undefined && request.cursor > writeRequest.cursor && request.toolOutputCallId === writeRequest.plannedToolCallId && String(request.allInputText ?? '').includes(sessionId) && String(request.toolOutput ?? '').trim() === config.expectedWriteToolResult)"
+            expr: "(() => { const candidates = scenarioRequests.filter((request) => request.requestKind === 'tool-continuation' && request.cursor > writeRequest.cursor && String(request.allInputText ?? '').includes(sessionId)).toSorted((left, right) => left.cursor - right.cursor); const requests = []; const waits = []; const followedCallIds = new Set(); let currentCallId = writeRequest.plannedToolCallId; let previousCursor = writeRequest.cursor; let terminal; let valid = typeof currentCallId === 'string' && currentCallId.length > 0; while (valid) { if (followedCallIds.has(currentCallId)) { valid = false; break; } followedCallIds.add(currentCallId); const matches = candidates.filter((request) => request.cursor > previousCursor && request.toolOutputCallId === currentCallId); if (matches.length !== 1) { valid = false; break; } const request = matches[0]; requests.push(request); previousCursor = request.cursor; if (request.plannedToolName === 'wait') { if (typeof request.plannedToolCallId !== 'string' || request.plannedToolCallId.length === 0) { valid = false; break; } waits.push(request); currentCallId = request.plannedToolCallId; continue; } if (request.plannedToolName === undefined) { terminal = request; break; } valid = false; } return { valid, requests, waits, terminal }; })()"
         - assert:
-            expr: "postWriteContinuations.length === 1"
+            expr: "continuationChain.valid === true && continuationChain.requests.length === continuationChain.waits.length + 1 && continuationChain.requests.every((request) => request.outcome === 'success' && request.toolOutputStructuredError !== true)"
             message:
-              expr: "`expected one post-write continuation and no replayed mutation: ${JSON.stringify(requestEvidence.filter((request) => request.cursor > writeRequest.cursor))}`"
+              expr: "`expected one successful causal continuation chain after the logical write: ${JSON.stringify(requestEvidence.filter((request) => request.cursor > writeRequest.cursor))}`"
+        - set: terminalContinuations
+          value:
+            expr: "continuationChain.requests.filter((request) => request.plannedToolName === undefined)"
+        - assert:
+            expr: "terminalContinuations.length === 1 && terminalContinuations[0] === continuationChain.terminal && String(terminalContinuations[0].toolOutput ?? '').trim().length > 0 && terminalContinuations[0].toolOutputStructuredError !== true"
+            message:
+              expr: "`expected exactly one non-error terminal continuation after zero-or-more linked waits: ${JSON.stringify(requestEvidence.filter((request) => request.cursor > writeRequest.cursor))}`"
+        - assert:
+            expr: "continuationChain.waits.every((request) => request.plannedToolName === 'wait' && typeof request.plannedToolCallId === 'string' && request.plannedToolCallId.length > 0) && new Set([writeRequest.plannedToolCallId, ...continuationChain.waits.map((request) => request.plannedToolCallId)]).size === continuationChain.waits.length + 1"
+            message:
+              expr: "`linked wait calls did not preserve distinct causal call ids: ${JSON.stringify(requestEvidence.filter((request) => request.cursor > writeRequest.cursor))}`"
         - call: fs.readFile
           saveAs: writtenSummary
           args:
@@ -191,9 +200,9 @@ flow:
           value:
             expr: "scenarioRequests.filter((request) => request.requestKind === 'compaction-summary')"
         - assert:
-            expr: "compactionSummaryRequests.every((request) => request.outcome === 'success' && request.plannedToolName === undefined)"
+            expr: "compactionSummaryRequests.length === 1 && compactionSummaryRequests[0].outcome === 'success' && compactionSummaryRequests[0].plannedToolName === undefined && compactionSummaryRequests[0].toolOutputStructuredError !== true"
             message:
-              expr: "`OpenClaw compaction summary requests included a failure or tool plan: ${JSON.stringify(requestEvidence.filter((request) => request.kind === 'compaction-summary'))}`"
+              expr: "`expected exactly one successful OpenClaw compaction summary request: ${JSON.stringify(requestEvidence.filter((request) => request.kind === 'compaction-summary'))}`"
         - call: readRawQaSessionStore
           saveAs: store
           args:

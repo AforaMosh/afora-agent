@@ -70,7 +70,7 @@ describe("qa compaction scenario catalog", () => {
       "One coded over-threshold provider overflow produces one persisted OpenClaw overflow compaction and one compacted retry retaining durable current context.",
     );
     expect(scenario.successCriteria).toContain(
-      "OpenClaw performs exactly one successful write, one causal continuation, and returns the exact file content and final marker.",
+      "OpenClaw performs exactly one successful write, then one terminal continuation after zero-or-more causally linked waits, and returns the exact file content and final marker.",
     );
     expect(scenario.successCriteria).toContain(
       "OpenClaw proves session-memory.pruning by retaining a nonempty contiguous suffix ending at block 15 while pruning marker block 10.",
@@ -114,8 +114,10 @@ describe("qa compaction scenario catalog", () => {
     expect(flow).toContain("seedQaSessionTranscript");
     expect(flow).toContain("sessions.compaction.branch");
     expect(flow).toContain("env.runtimeId");
-    expect(flow).toContain('"transcriptToolName":"write"');
-    expect(flow).toContain('"requireSuccessfulTranscriptToolResult":true');
+    expect(scenario.execution.retryCount).toBe(0);
+    expect(flow).not.toContain('"transcriptToolName":"write"');
+    expect(flow).not.toContain('"requireSuccessfulTranscriptToolResult":true');
+    expect(serializedScenario).not.toContain("expectedWriteToolResult");
     expect(flow).toContain("outbound.text === config.finalMarker");
     expect(flow).toContain("overflowRequests.length === 1");
     expect(flow).toContain("overflowRequest.rawByteLength > config.overflowThresholdBytes");
@@ -125,20 +127,30 @@ describe("qa compaction scenario catalog", () => {
       "String(writeRequest.allInputText ?? '').includes(config.durableMarker)",
     );
     expect(flow).toContain("request.cursor > overflowRequest.cursor");
+    expect(flow).toContain("request.plannedWireToolName === 'exec'");
     expect(flow).toContain("request.plannedToolArgs?.path === config.outputFile");
     expect(flow).toContain("request.plannedToolArgs?.content === config.expectedFileContent");
-    expect(flow).toContain("request.toolOutputCallId === writeRequest.plannedToolCallId");
-    expect(flow).toContain("request.cursor > writeRequest.cursor");
+    expect(flow).toContain("let currentCallId = writeRequest.plannedToolCallId");
+    expect(flow).toContain("request.toolOutputCallId === currentCallId");
+    expect(flow).toContain("request.plannedToolName === 'wait'");
+    expect(flow).toContain("currentCallId = request.plannedToolCallId");
     expect(flow).toContain(
-      "String(request.toolOutput ?? '').trim() === config.expectedWriteToolResult",
+      "continuationChain.requests.length === continuationChain.waits.length + 1",
     );
+    expect(flow).toContain("request.outcome === 'success'");
+    expect(flow).toContain("request.toolOutputStructuredError !== true");
+    expect(flow).toContain("transcript.successfulToolCallCounts.write === 1");
+    expect(flow).toContain("terminalContinuations.length === 1");
+    expect(flow).toContain("terminalContinuations[0] === continuationChain.terminal");
+    expect(flow).toContain("String(terminalContinuations[0].toolOutput ?? '').trim().length > 0");
+    expect(flow).toContain("new Set([writeRequest.plannedToolCallId");
     expect(flow).not.toContain("config.expectedOpenClawToolResult");
     expect(flow).not.toContain("String(request.toolOutput ?? '').includes(`---");
     expect(flow).not.toContain("String(request.toolOutput ?? '').includes(`+++");
-    expect(flow).toContain("postWriteContinuations.length === 1");
     expect(flow).toContain(
-      "compactionSummaryRequests.every((request) => request.outcome === 'success' && request.plannedToolName === undefined)",
+      "compactionSummaryRequests.length === 1 && compactionSummaryRequests[0].outcome === 'success' && compactionSummaryRequests[0].plannedToolName === undefined && compactionSummaryRequests[0].toolOutputStructuredError !== true",
     );
+    expect(flow).not.toContain("compactionSummaryRequests.every(");
     expect(flow).not.toContain("compactionSummaryRequests.length >= 1");
     expect(flow).toContain(
       "writeRequest.rawByteLength < config.overflowThresholdBytes && writeRequest.rawByteLength < overflowRequest.rawByteLength",
