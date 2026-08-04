@@ -1886,39 +1886,67 @@ async function buildResponsesPayload(
     return buildAssistantEvents("NONE");
   }
   if (/thread memory check/i.test(allInputText)) {
-    if (!scenarioToolOutput) {
+    if (!hasCompletedToolOutput) {
       return buildToolCallEventsWithArgs("memory_search", {
         query: "hidden thread codename ORBIT-22",
         maxResults: 3,
       });
     }
-    if (memoryToolUnavailable) {
+    const directThreadMemoryJson =
+      Array.isArray(toolJson?.results) || typeof toolJson?.text === "string" ? toolJson : null;
+    const completedMemoryValue =
+      toolJson?.status === "completed" &&
+      (completedToolName === "memory_search" || completedToolName === "memory_get") &&
+      toolJson.value !== null &&
+      typeof toolJson.value === "object" &&
+      !Array.isArray(toolJson.value)
+        ? (toolJson.value as Record<string, unknown>)
+        : null;
+    const threadMemoryJson = completedMemoryValue ?? directThreadMemoryJson;
+    const threadMemoryToolName = completedMemoryValue
+      ? completedToolName
+      : Array.isArray(threadMemoryJson?.results)
+        ? "memory_search"
+        : typeof threadMemoryJson?.text === "string"
+          ? "memory_get"
+          : undefined;
+    const threadMemoryUnavailable =
+      threadMemoryJson?.unavailable === true ||
+      threadMemoryJson?.disabled === true ||
+      (typeof threadMemoryJson?.error === "string" && threadMemoryJson.error.trim().length > 0);
+    if (threadMemoryUnavailable) {
       return buildAssistantEvents("NONE");
     }
-    const results = Array.isArray(toolJson?.results)
-      ? (toolJson.results as Array<Record<string, unknown>>)
-      : [];
-    const first = results[0];
-    if (
-      typeof first?.path === "string" &&
-      (typeof first.startLine === "number" || typeof first.endLine === "number")
-    ) {
-      const from =
-        typeof first.startLine === "number"
-          ? Math.max(1, first.startLine)
-          : typeof first.endLine === "number"
-            ? Math.max(1, first.endLine)
-            : 1;
-      return buildToolCallEventsWithArgs("memory_get", {
-        path: first.path,
-        from,
-        lines: 4,
-      });
+    if (threadMemoryToolName === "memory_search") {
+      const results = Array.isArray(threadMemoryJson?.results)
+        ? (threadMemoryJson.results as Array<Record<string, unknown>>)
+        : [];
+      const first = results[0];
+      if (
+        typeof first?.path === "string" &&
+        (typeof first.startLine === "number" || typeof first.endLine === "number")
+      ) {
+        const from =
+          typeof first.startLine === "number"
+            ? Math.max(1, first.startLine)
+            : typeof first.endLine === "number"
+              ? Math.max(1, first.endLine)
+              : 1;
+        return buildToolCallEventsWithArgs("memory_get", {
+          path: first.path,
+          from,
+          lines: 4,
+        });
+      }
     }
-    const transcriptOrbitCode = extractOrbitCode(scenarioToolOutput);
-    if (transcriptOrbitCode) {
+    const memoryGetText =
+      threadMemoryToolName === "memory_get" && typeof threadMemoryJson?.text === "string"
+        ? threadMemoryJson.text
+        : "";
+    const memoryGetOrbitCode = extractOrbitCode(memoryGetText);
+    if (memoryGetOrbitCode) {
       return buildAssistantEvents(
-        `Protocol note: I checked memory in-thread and the hidden thread codename is ${transcriptOrbitCode}.`,
+        `Protocol note: I checked memory in-thread and the hidden thread codename is ${memoryGetOrbitCode}.`,
       );
     }
     return buildAssistantEvents("NONE");

@@ -3549,6 +3549,115 @@ Update and merge these partial structured summaries.`,
     expect(imageRequest.size).toBe("1024x1024");
   });
 
+  it("requires memory_get before answering thread recall in Code Mode", async () => {
+    const server = await startMockServer();
+    const prompt =
+      "@openclaw Thread memory check: what is the hidden thread codename stored only in memory? Use memory tools first and reply only in this thread.";
+    const codeModeTools = [
+      {
+        type: "function",
+        name: "exec",
+        parameters: {
+          type: "object",
+          properties: {
+            language: { type: "string" },
+            code: { type: "string" },
+          },
+          required: ["code"],
+        },
+      },
+      {
+        type: "function",
+        name: "wait",
+        parameters: {
+          type: "object",
+          properties: { runId: { type: "string" } },
+          required: ["runId"],
+        },
+      },
+    ];
+    const initialInput: Array<Record<string, unknown>> = [
+      {
+        type: "additional_tools",
+        role: "developer",
+        tools: codeModeTools,
+      },
+      makeUserInput(prompt),
+    ];
+
+    const searchPlan = await expectOpenAiNonStreamingResponsesJson(server, {
+      input: initialInput,
+    });
+    const searchCall = outputToolCall(searchPlan, "exec");
+    const searchCallId = outputToolCallId(searchCall, "call_mock_memory_search");
+    const continuationInput: Array<Record<string, unknown>> = [
+      makeUserInput(prompt),
+      searchCall,
+      makeToolOutputWithCallId(
+        searchCallId,
+        JSON.stringify({
+          status: "completed",
+          value: {
+            results: [
+              {
+                path: "MEMORY.md",
+                startLine: 1,
+                endLine: 1,
+                snippet: "Thread-hidden codename: ORBIT-21.",
+              },
+            ],
+          },
+        }),
+      ),
+    ];
+
+    const getPlan = await expectOpenAiNonStreamingResponsesJson(server, {
+      input: continuationInput,
+    });
+    const getCall = outputToolCall(getPlan, "memory_get");
+    const getCallId = outputToolCallId(getCall, "call_mock_memory_get");
+    expect(getCallId).not.toBe(searchCallId);
+    expect(outputItems(getPlan).some((item) => item.type === "message")).toBe(false);
+    expect(JSON.stringify(getPlan)).not.toContain("hidden thread codename is ORBIT-21");
+    continuationInput.push(
+      getCall,
+      makeToolOutputWithCallId(
+        getCallId,
+        JSON.stringify({
+          status: "completed",
+          value: { text: "Thread-hidden codename: ORBIT-22." },
+        }),
+      ),
+    );
+
+    const final = await expectOpenAiNonStreamingResponsesJson(server, {
+      input: continuationInput,
+    });
+    expect(outputText(final)).toContain("ORBIT-22");
+    expect(outputText(final)).not.toContain("ORBIT-21");
+    expect(outputItems(final).some((item) => item.type === "function_call")).toBe(false);
+
+    const requests = requireArray(await getJson(server, "/debug/requests"), "debug requests").map(
+      (request, index) => requireRecord(request, `debug request ${index}`),
+    );
+    expect(requests).toHaveLength(3);
+    expect(requests[0]).toMatchObject({
+      plannedToolName: "memory_search",
+      plannedWireToolName: "exec",
+      plannedToolCallId: searchCallId,
+    });
+    expect(requests[1]).toMatchObject({
+      toolOutputCallId: searchCallId,
+      plannedToolName: "memory_get",
+      plannedToolCallId: getCallId,
+    });
+    expect(requests[1]).not.toHaveProperty("plannedWireToolName");
+    expect(requests[2]).toMatchObject({
+      toolOutputCallId: getCallId,
+    });
+    expect(requests[2]).not.toHaveProperty("plannedToolName");
+  });
+
   it("supports advanced QA memory and subagent recovery prompts", async () => {
     const server = await startMockServer();
 
@@ -3607,17 +3716,17 @@ Update and merge these partial structured summaries.`,
     });
     expect(JSON.stringify(await threadMemorySummary.json())).toContain("ORBIT-22");
 
-    const structuredThreadMemorySummary = await expectNonStreamingResponses(server, {
+    const rawThreadMemorySummary = await expectNonStreamingResponses(server, {
       instructions:
         "@openclaw Thread memory check: what is the hidden thread codename stored only in memory? Use memory tools first and reply only in this thread.",
       input: [
-        makeToolOutput({
-          text: "Thread-hidden codename: ORBIT-22.",
-        }),
+        makeToolOutput("Thread-hidden codename: ORBIT-23."),
         makeUserInput("Protocol note: acknowledged. Continue with the QA scenario plan."),
       ],
     });
-    expect(JSON.stringify(await structuredThreadMemorySummary.json())).toContain("ORBIT-22");
+    const rawThreadMemoryText = JSON.stringify(await rawThreadMemorySummary.json());
+    expect(rawThreadMemoryText).toContain("NONE");
+    expect(rawThreadMemoryText).not.toContain("ORBIT-23");
 
     const unavailableThreadMemorySummary = await expectNonStreamingResponses(server, {
       input: [
@@ -6359,70 +6468,83 @@ Update and merge these partial structured summaries.`,
     if (!readToolUse || typeof readToolUse.id !== "string") {
       throw new Error("Expected Anthropic read tool_use block");
     }
-    messages.push(
-      { role: "assistant", content: [readToolUse] },
-      makeAnthropicToolResult(
-        readToolUse.id,
-        JSON.stringify({ status: "waiting", runId: "ordinary-read" }),
-      ),
-    );
-
-    const body = (await expectAnthropicMessagesJson(server, {
-      tools,
-      messages,
-    })) as {
-      stop_reason: string;
-      content: Array<Record<string, unknown>>;
-    };
-    expect(body.stop_reason).toBe("end_turn");
-    expect(body.content.some((block) => block.type === "tool_use")).toBe(false);
+    for (const result of [
+      { status: "waiting", runId: "ordinary-read" },
+      {
+        status: "completed",
+        value: { status: "waiting", runId: "ordinary-read-completed-value" },
+      },
+    ]) {
+      const body = (await expectAnthropicMessagesJson(server, {
+        tools,
+        messages: [
+          ...messages,
+          { role: "assistant", content: [readToolUse] },
+          makeAnthropicToolResult(readToolUse.id, JSON.stringify(result)),
+        ],
+      })) as {
+        stop_reason: string;
+        content: Array<Record<string, unknown>>;
+      };
+      expect(body.stop_reason).toBe("end_turn");
+      expect(body.content.some((block) => block.type === "tool_use")).toBe(false);
+    }
   });
 
   it("does not interpret unmarked direct exec results as Code Mode control envelopes", async () => {
     const server = await startMockServer();
-    const body = (await expectAnthropicMessagesJson(server, {
-      tools: [
-        {
-          name: "exec",
-          input_schema: {
-            type: "object",
-            properties: { code: { type: "string" } },
-            required: ["code"],
+    const tools = [
+      {
+        name: "exec",
+        input_schema: {
+          type: "object",
+          properties: { code: { type: "string" } },
+          required: ["code"],
+        },
+      },
+      {
+        name: "wait",
+        input_schema: {
+          type: "object",
+          properties: { runId: { type: "string" } },
+          required: ["runId"],
+        },
+      },
+    ];
+    const messages = [
+      makeAnthropicUserText("Direct exec envelope isolation check."),
+      {
+        role: "assistant",
+        content: [
+          {
+            type: "tool_use",
+            id: "toolu_direct_exec",
+            name: "exec",
+            input: { language: "javascript", code: "return 1;" },
           },
-        },
-        {
-          name: "wait",
-          input_schema: {
-            type: "object",
-            properties: { runId: { type: "string" } },
-            required: ["runId"],
-          },
-        },
-      ],
-      messages: [
-        makeAnthropicUserText("Direct exec envelope isolation check."),
-        {
-          role: "assistant",
-          content: [
-            {
-              type: "tool_use",
-              id: "toolu_direct_exec",
-              name: "exec",
-              input: { language: "javascript", code: "return 1;" },
-            },
-          ],
-        },
-        makeAnthropicToolResult(
-          "toolu_direct_exec",
-          JSON.stringify({ status: "waiting", runId: "direct-exec" }),
-        ),
-      ],
-    })) as {
-      stop_reason: string;
-      content: Array<Record<string, unknown>>;
-    };
-    expect(body.stop_reason).toBe("end_turn");
-    expect(body.content.some((block) => block.type === "tool_use")).toBe(false);
+        ],
+      },
+    ];
+    for (const result of [
+      { status: "waiting", runId: "direct-exec" },
+      {
+        status: "completed",
+        value: { status: "waiting", runId: "direct-exec-completed-value" },
+      },
+    ]) {
+      const body = (await expectAnthropicMessagesJson(server, {
+        tools,
+        messages: [
+          ...messages,
+          makeAnthropicToolResult("toolu_direct_exec", JSON.stringify(result)),
+        ],
+      })) as {
+        stop_reason: string;
+        content: Array<Record<string, unknown>>;
+      };
+      expect(body.stop_reason).toBe("end_turn");
+      expect(body.content.some((block) => block.type === "tool_use")).toBe(false);
+    }
   });
 
   it("finishes Anthropic Code Mode fanout after the second wrapped spawn result", async () => {

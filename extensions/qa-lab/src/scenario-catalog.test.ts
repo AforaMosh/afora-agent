@@ -1009,7 +1009,7 @@ describe("qa scenario catalog", () => {
     }
   });
 
-  it("proves thread memory causality before waiting for the scoped outbound", () => {
+  it("proves thread memory causality after waiting for the scoped outbound", () => {
     const scenario = requireFlowScenario(readQaScenarioById("thread-memory-isolation"));
     const flow = JSON.stringify(scenario.execution.flow);
 
@@ -1030,8 +1030,8 @@ describe("qa scenario catalog", () => {
       "finalRequest.toolOutputCallId === searchResultRequest.plannedToolCallId",
     );
     expect(flow).toContain('"sinceIndex":{"ref":"outboundStartIndex"}');
-    expect(flow.indexOf('"set":"scenarioRequests"')).toBeLessThan(
-      flow.indexOf('"call":"waitForOutboundMessage"'),
+    expect(flow.indexOf('"call":"waitForOutboundMessage"')).toBeLessThan(
+      flow.indexOf('"set":"scenarioRequests"'),
     );
   });
 
