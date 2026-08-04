@@ -614,9 +614,42 @@ describe("qa scenario catalog", () => {
     expect(readQaScenarioById("long-context-progress-watchdog").sourcePath).toBe(
       "qa/scenarios/runtime/long-context-progress-watchdog.yaml",
     );
-    const gatewayRestart = readQaScenarioById("gateway-restart-inflight-run");
+    const gatewayRestart = requireFlowScenario(readQaScenarioById("gateway-restart-inflight-run"));
     const gatewayRestartFlow = gatewayRestart.execution.flow;
     const gatewayRestartContract = JSON.stringify(gatewayRestartFlow);
+    const gatewayRestartActions = gatewayRestartFlow?.steps[0]?.actions ?? [];
+    const recoveryPollIndex = gatewayRestartActions.findIndex(
+      (action) =>
+        (action as { call?: string }).call === "waitForCondition" &&
+        (action as { saveAs?: string }).saveAs === "settledRecovery",
+    );
+    const outboundIndex = gatewayRestartActions.findIndex(
+      (action) =>
+        (action as { call?: string }).call === "waitForOutboundMessage" &&
+        (action as { saveAs?: string }).saveAs === "outbound",
+    );
+    const preOutboundRecoveryAssertIndex = gatewayRestartActions.findIndex((action) =>
+      String((action as { assert?: { expr?: unknown } }).assert?.expr ?? "").includes(
+        "restartRecoveryRequestsBeforeOutbound.length === 1",
+      ),
+    );
+    const preOutboundHeartbeatAssertIndex = gatewayRestartActions.findIndex((action) =>
+      String((action as { assert?: { expr?: unknown } }).assert?.expr ?? "").includes(
+        "!String(restartRecoveryRequestsBeforeOutbound[0].prompt ?? '').includes('[OpenClaw heartbeat poll]')",
+      ),
+    );
+    const settledRequestsIndex = gatewayRestartActions.findIndex(
+      (action) => (action as { set?: string }).set === "settledRecoveryRequests",
+    );
+    const settledDedupeAssertIndex = gatewayRestartActions.findIndex((action) =>
+      String((action as { assert?: { expr?: unknown } }).assert?.expr ?? "").includes(
+        "settledRestartRecoveryRequests.length === 1",
+      ),
+    );
+    const recoveryPoll = gatewayRestartActions[recoveryPollIndex] as
+      | { args?: Array<{ lambda?: { expr?: string } }> }
+      | undefined;
+    const recoveryPollExpr = recoveryPoll?.args?.[0]?.lambda?.expr ?? "";
     expect(gatewayRestart.execution.retryCount).toBe(0);
     expect(JSON.stringify(gatewayRestart.gatewayConfigPatch)).toContain(
       '"alsoAllow":["qa_restart_wait","qa_restart_unsafe_probe"]',
@@ -630,16 +663,25 @@ describe("qa scenario catalog", () => {
     expect(gatewayRestartContract).toContain("interruptedMatches.length === 1");
     expect(gatewayRestartContract).toContain("restartNotices.length === 0");
     expect(gatewayRestartContract).toContain("dispatching restart-safe recovery");
-    expect(gatewayRestartContract).toContain(
-      "recoveryRequests.filter((request) => String(request.prompt ?? '').includes('Your previous turn was interrupted by a gateway restart') && String(request.allInputText ?? '').includes(config.interruptedMarker))",
+    expect(recoveryPollIndex).toBeGreaterThanOrEqual(0);
+    expect(recoveryPollExpr).toContain(
+      "String(request.prompt ?? '').includes('Your previous turn was interrupted by a gateway restart')",
     );
-    expect(gatewayRestartContract).toContain("restartRecoveryRequests.length === 1");
-    expect(gatewayRestartContract).toContain(
-      "!String(restartRecoveryRequests[0]?.prompt ?? '').includes('[OpenClaw heartbeat poll]')",
+    expect(recoveryPollExpr).toContain(
+      "String(request.allInputText ?? '').includes(config.interruptedMarker)",
     );
-    expect(gatewayRestartContract).not.toContain(
-      "recoveryRequests.every((request) => !String(request.allInputText ?? '').includes('[OpenClaw heartbeat poll]'))",
+    expect(recoveryPollExpr).toContain("restartRecoveryRequests.length >= 1");
+    expect(recoveryPollExpr).toContain(
+      "String(transcript.finalText ?? '').includes(config.interruptedMarker)",
     );
+    expect(preOutboundRecoveryAssertIndex).toBeGreaterThan(recoveryPollIndex);
+    expect(preOutboundHeartbeatAssertIndex).toBeGreaterThan(preOutboundRecoveryAssertIndex);
+    expect(outboundIndex).toBeGreaterThan(preOutboundHeartbeatAssertIndex);
+    expect(settledRequestsIndex).toBeGreaterThan(outboundIndex);
+    expect(settledDedupeAssertIndex).toBeGreaterThan(settledRequestsIndex);
+    expect(
+      gatewayRestartActions.some((action) => (action as { call?: string }).call === "sleep"),
+    ).toBe(false);
     expect(gatewayRestartContract).toContain("recoveryPromptHeartbeat=false");
     expect(gatewayRestartContract).toContain("liveTurnTimeoutMs(env, 180000)");
     expect(gatewayRestartContract).toContain("id: `dm:${conversationId}`");
@@ -1021,33 +1063,83 @@ describe("qa scenario catalog", () => {
     }
   });
 
-  it("captures thread memory routing diagnostics before waiting for the scoped outbound", () => {
-    const scenario = requireFlowScenario(readQaScenarioById("thread-memory-isolation"));
-    const flow = JSON.stringify(scenario.execution.flow);
-
-    expect(scenario.execution).toMatchObject({
-      channel: "qa-channel",
-      providerMode: "mock-openai",
-      retryCount: 0,
-    });
-    expect(flow).toContain("/debug/request-cursor");
-    expect(flow).toContain("/debug/requests?after=${requestCursorBefore}");
-    expect(flow).toContain('"call":"waitForCondition"');
-    expect(flow).toContain("scenarioRequests.length === 3");
-    expect(flow).toContain("searchPlanRequest.plannedToolName === 'memory_search'");
-    expect(flow).toContain("disabled memory_search, or routed incorrectly");
-    expect(flow).toContain(
-      "searchResultRequest.toolOutputCallId === searchPlanRequest.plannedToolCallId",
-    );
-    expect(flow).toContain("searchResultRequest.plannedToolName === 'memory_get'");
-    expect(flow).toContain(
+  it.each([
+    [
+      "thread-memory-isolation",
+      "poll",
       "finalRequest.toolOutputCallId === searchResultRequest.plannedToolCallId",
-    );
-    expect(flow).toContain('"sinceIndex":{"ref":"outboundStartIndex"}');
-    expect(flow.indexOf('"call":"waitForCondition"')).toBeLessThan(
-      flow.indexOf('"call":"waitForOutboundMessage"'),
-    );
-  });
+    ],
+    [
+      "memory-tools-channel-context",
+      "poll",
+      "finalRequest.toolOutputCallId === searchResultRequest.plannedToolCallId",
+    ],
+    [
+      "agent-tool-consumption",
+      "immediate",
+      "getResultRequest.toolOutputCallId === searchResultRequest.plannedToolCallId",
+    ],
+  ] as const)(
+    "asserts the complete memory tool chain before %s delivery",
+    (scenarioId, requestCollectionMode, finalLinkNeedle) => {
+      const scenario = requireFlowScenario(readQaScenarioById(scenarioId));
+      const actions = scenario.execution.flow?.steps[0]?.actions ?? [];
+      const outboundIndex = actions.findIndex(
+        (action) => (action as { call?: string }).call === "waitForOutboundMessage",
+      );
+      const requestCollectionIndex = actions.findIndex((action) =>
+        requestCollectionMode === "poll"
+          ? (action as { call?: string }).call === "waitForCondition" &&
+            (action as { saveAs?: string }).saveAs === "scenarioRequests"
+          : (action as { set?: string }).set === "scenarioRequests",
+      );
+      const requestCountAssertIndex = actions.findIndex((action) =>
+        String((action as { assert?: { expr?: unknown } }).assert?.expr ?? "").includes(
+          "scenarioRequests.length === 3",
+        ),
+      );
+      const searchPlanAssertIndex = actions.findIndex((action) =>
+        String((action as { assert?: { expr?: unknown } }).assert?.expr ?? "").includes(
+          "searchPlanRequest.plannedToolName === 'memory_search'",
+        ),
+      );
+      const searchResultAssertIndex = actions.findIndex((action) =>
+        String((action as { assert?: { expr?: unknown } }).assert?.expr ?? "").includes(
+          "searchResultRequest.toolOutputCallId === searchPlanRequest.plannedToolCallId",
+        ),
+      );
+      const finalRequestAssertIndex = actions.findIndex((action) =>
+        String((action as { assert?: { expr?: unknown } }).assert?.expr ?? "").includes(
+          finalLinkNeedle,
+        ),
+      );
+
+      expect(requestCollectionIndex, scenarioId).toBeGreaterThanOrEqual(0);
+      expect(requestCountAssertIndex, scenarioId).toBeGreaterThan(requestCollectionIndex);
+      expect(searchPlanAssertIndex, scenarioId).toBeGreaterThan(requestCountAssertIndex);
+      expect(searchResultAssertIndex, scenarioId).toBeGreaterThan(searchPlanAssertIndex);
+      expect(finalRequestAssertIndex, scenarioId).toBeGreaterThan(searchResultAssertIndex);
+      expect(outboundIndex, scenarioId).toBeGreaterThan(finalRequestAssertIndex);
+
+      if (requestCollectionMode === "poll") {
+        const requestPoll = actions[requestCollectionIndex] as
+          | { args?: Array<{ lambda?: { expr?: string } }> }
+          | undefined;
+        expect(requestPoll?.args?.[0]?.lambda?.expr, scenarioId).toContain(
+          "requests.length >= 3 ? requests : undefined",
+        );
+      } else {
+        expect(
+          actions.some(
+            (action) =>
+              (action as { call?: string }).call === "waitForCondition" &&
+              (action as { saveAs?: string }).saveAs === "scenarioRequests",
+          ),
+          scenarioId,
+        ).toBe(false);
+      }
+    },
+  );
 
   it("declares native QA-channel fixtures by channel", () => {
     const scenarioIds = [

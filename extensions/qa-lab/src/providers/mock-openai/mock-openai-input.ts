@@ -267,7 +267,7 @@ export function extractSlackMpimRetainedBotNonce(
   return undefined;
 }
 
-export function extractAllInputTexts(input: ResponsesInputItem[]) {
+function extractAllInputTexts(input: ResponsesInputItem[]) {
   const texts: string[] = [];
   for (const item of input) {
     if (typeof item.output === "string" && item.output.trim()) {

@@ -63,9 +63,50 @@ describe("qa compaction scenario catalog", () => {
         | undefined;
       return action?.value?.expr ?? "";
     };
+    const readAssertExpression = (needle: string) => {
+      const action = actions.find((candidate) =>
+        String((candidate as { assert?: { expr?: unknown } }).assert?.expr ?? "").includes(needle),
+      ) as { assert?: { expr?: string } } | undefined;
+      return action?.assert?.expr ?? "";
+    };
+    const actionIndex = (predicate: (action: (typeof actions)[number]) => boolean) =>
+      actions.findIndex(predicate);
     const writeRequestsExpr = readSetExpression("writeRequests");
     const postWriteContinuationsExpr = readSetExpression("postWriteContinuations");
     const writeTranscriptToolCallIdExpr = readSetExpression("writeTranscriptToolCallId");
+    const continuationChainExpr = readSetExpression("continuationChain");
+    const continuationAssertIndex = actionIndex((action) =>
+      String((action as { assert?: { expr?: unknown } }).assert?.expr ?? "").includes(
+        "continuationChain.valid === true",
+      ),
+    );
+    const terminalAssertIndex = actionIndex((action) =>
+      String((action as { assert?: { expr?: unknown } }).assert?.expr ?? "").includes(
+        "terminalContinuations.length === 1",
+      ),
+    );
+    const distinctCallIdsAssertIndex = actionIndex((action) =>
+      String((action as { assert?: { expr?: unknown } }).assert?.expr ?? "").includes(
+        "new Set([writeRequest.plannedToolCallId",
+      ),
+    );
+    const stableCellIdAssertIndex = actionIndex((action) =>
+      String((action as { assert?: { expr?: unknown } }).assert?.expr ?? "").includes(
+        "continuationChain.waits.length === 0",
+      ),
+    );
+    const scriptCompletedAssertIndex = actionIndex((action) =>
+      String((action as { assert?: { expr?: unknown } }).assert?.expr ?? "").includes(
+        "startsWith('Script completed\\n')",
+      ),
+    );
+    const outboundWaitIndex = actionIndex(
+      (action) =>
+        (action as { call?: string }).call === "waitForCondition" &&
+        (action as { saveAs?: string }).saveAs === "outbound",
+    );
+    const stableCellIdAssertExpr = readAssertExpression("continuationChain.waits.length === 0");
+    const scriptCompletedAssertExpr = readAssertExpression("startsWith('Script completed\\n')");
     const knownGap =
       "known-harness-gap compaction-retry-mutating-tool: provider-error recovery does not invoke Codex native compaction; native token-threshold compaction needs a separate scenario.";
 
@@ -193,6 +234,8 @@ describe("qa compaction scenario catalog", () => {
     expect(flow).toContain("request.toolOutputCallId === currentCallId");
     expect(flow).toContain("request.plannedToolName === 'wait'");
     expect(flow).toContain("currentCallId = request.plannedToolCallId");
+    expect(continuationChainExpr).toContain("request.toolOutputCallId === currentCallId");
+    expect(continuationChainExpr).toContain("request.plannedToolName === 'wait'");
     expect(flow).toContain("continuationChain.requests.length === postWriteContinuations.length");
     expect(flow).toContain(
       "continuationChain.requests.every((request, index) => request === postWriteContinuations[index])",
@@ -206,6 +249,21 @@ describe("qa compaction scenario catalog", () => {
     expect(flow).toContain("terminalContinuations[0] === continuationChain.terminal");
     expect(flow).toContain("String(terminalContinuations[0].toolOutput ?? '').trim().length > 0");
     expect(flow).toContain("new Set([writeRequest.plannedToolCallId");
+    expect(stableCellIdAssertExpr).toContain("continuationChain.waits.length === 0 ||");
+    expect(stableCellIdAssertExpr).toContain(
+      "typeof request.plannedToolArgs?.cell_id === 'string'",
+    );
+    expect(stableCellIdAssertExpr).toContain(
+      "new Set(continuationChain.waits.map((request) => request.plannedToolArgs.cell_id)).size === 1",
+    );
+    expect(scriptCompletedAssertExpr).toContain("writeWireToolName !== 'exec'");
+    expect(scriptCompletedAssertExpr).toContain("startsWith('Script completed\\n')");
+    expect(continuationAssertIndex).toBeGreaterThanOrEqual(0);
+    expect(terminalAssertIndex).toBeGreaterThan(continuationAssertIndex);
+    expect(distinctCallIdsAssertIndex).toBeGreaterThan(terminalAssertIndex);
+    expect(stableCellIdAssertIndex).toBeGreaterThan(distinctCallIdsAssertIndex);
+    expect(scriptCompletedAssertIndex).toBeGreaterThan(stableCellIdAssertIndex);
+    expect(outboundWaitIndex).toBeGreaterThan(scriptCompletedAssertIndex);
     expect(flow).not.toContain("config.expectedOpenClawToolResult");
     expect(flow).not.toContain("String(request.toolOutput ?? '').includes(`---");
     expect(flow).not.toContain("String(request.toolOutput ?? '').includes(`+++");

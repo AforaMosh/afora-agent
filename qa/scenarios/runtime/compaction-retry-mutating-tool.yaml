@@ -97,17 +97,6 @@ flow:
                 ref: config.prompt
               timeoutMs:
                 expr: liveTurnTimeoutMs(env, 120000)
-        - call: waitForCondition
-          saveAs: outbound
-          args:
-            - lambda:
-                expr: "state.getSnapshot().messages.filter((candidate) => candidate.direction === 'outbound' && candidate.conversation.id === 'qa-operator' && candidate.text.includes(config.finalMarker)).at(-1)"
-            - expr: liveTurnTimeoutMs(env, 45000)
-            - 100
-        - assert:
-            expr: "outbound.text === config.finalMarker"
-            message:
-              expr: "`unexpected final compaction reply: ${JSON.stringify(outbound.text)}`"
         - set: scenarioRequests
           value:
             expr: "await fetchJson(`${env.mock.baseUrl}/debug/requests?after=${requestCursorBefore}`)"
@@ -195,6 +184,25 @@ flow:
             expr: "continuationChain.waits.every((request) => request.plannedToolName === 'wait' && typeof request.plannedToolCallId === 'string' && request.plannedToolCallId.length > 0) && new Set([writeRequest.plannedToolCallId, ...continuationChain.waits.map((request) => request.plannedToolCallId)]).size === continuationChain.waits.length + 1"
             message:
               expr: "`linked wait calls did not preserve distinct causal call ids: ${JSON.stringify(postWriteContinuations)}`"
+        - assert:
+            expr: "continuationChain.waits.length === 0 || (continuationChain.waits.every((request) => typeof request.plannedToolArgs?.cell_id === 'string' && request.plannedToolArgs.cell_id.length > 0) && new Set(continuationChain.waits.map((request) => request.plannedToolArgs.cell_id)).size === 1)"
+            message:
+              expr: "`linked waits did not preserve one nonempty Code Mode cell id: ${JSON.stringify(postWriteContinuations)}`"
+        - assert:
+            expr: "writeWireToolName !== 'exec' || String(terminalContinuations[0].toolOutput ?? '').startsWith('Script completed\\n')"
+            message:
+              expr: "`Code Mode terminal continuation did not report successful completion: ${JSON.stringify(terminalContinuations[0])}`"
+        - call: waitForCondition
+          saveAs: outbound
+          args:
+            - lambda:
+                expr: "state.getSnapshot().messages.filter((candidate) => candidate.direction === 'outbound' && candidate.conversation.id === 'qa-operator' && candidate.text.includes(config.finalMarker)).at(-1)"
+            - expr: liveTurnTimeoutMs(env, 45000)
+            - 100
+        - assert:
+            expr: "outbound.text === config.finalMarker"
+            message:
+              expr: "`unexpected final compaction reply: ${JSON.stringify(outbound.text)}`"
         - call: fs.readFile
           saveAs: writtenSummary
           args:
