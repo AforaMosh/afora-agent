@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readQaScenarioById } from "./scenario-catalog.js";
-import { requireFlowScenario } from "./scenario-catalog.test-utils.js";
+import { readFlowAssertExpression, requireFlowScenario } from "./scenario-catalog.test-utils.js";
 
 describe("qa compaction scenario catalog", () => {
   it.each([
@@ -63,12 +63,8 @@ describe("qa compaction scenario catalog", () => {
         | undefined;
       return action?.value?.expr ?? "";
     };
-    const readAssertExpression = (needle: string) => {
-      const action = actions.find((candidate) =>
-        String((candidate as { assert?: { expr?: unknown } }).assert?.expr ?? "").includes(needle),
-      ) as { assert?: { expr?: string } } | undefined;
-      return action?.assert?.expr ?? "";
-    };
+    const readAssertExpression = (needle: string) =>
+      actions.map(readFlowAssertExpression).find((expression) => expression.includes(needle)) ?? "";
     const actionIndex = (predicate: (action: (typeof actions)[number]) => boolean) =>
       actions.findIndex(predicate);
     const writeRequestsExpr = readSetExpression("writeRequests");
@@ -76,27 +72,19 @@ describe("qa compaction scenario catalog", () => {
     const writeTranscriptToolCallIdExpr = readSetExpression("writeTranscriptToolCallId");
     const continuationChainExpr = readSetExpression("continuationChain");
     const continuationAssertIndex = actionIndex((action) =>
-      String((action as { assert?: { expr?: unknown } }).assert?.expr ?? "").includes(
-        "continuationChain.valid === true",
-      ),
+      readFlowAssertExpression(action).includes("continuationChain.valid === true"),
     );
     const terminalAssertIndex = actionIndex((action) =>
-      String((action as { assert?: { expr?: unknown } }).assert?.expr ?? "").includes(
-        "terminalContinuations.length === 1",
-      ),
+      readFlowAssertExpression(action).includes("terminalContinuations.length === 1"),
     );
     const distinctCallIdsAssertIndex = actionIndex((action) =>
-      String((action as { assert?: { expr?: unknown } }).assert?.expr ?? "").includes(
-        "new Set([writeRequest.plannedToolCallId",
-      ),
+      readFlowAssertExpression(action).includes("new Set([writeRequest.plannedToolCallId"),
     );
     const stableCellIdAssertIndex = actionIndex((action) =>
-      String((action as { assert?: { expr?: unknown } }).assert?.expr ?? "").includes(
-        "continuationChain.waits.length === 0",
-      ),
+      readFlowAssertExpression(action).includes("continuationChain.waits.length === 0"),
     );
     const terminalEvidenceAssertIndex = actionIndex((action) =>
-      String((action as { assert?: { expr?: unknown } }).assert?.expr ?? "").includes(
+      readFlowAssertExpression(action).includes(
         "terminalContinuations[0].providerVariant === 'openai'",
       ),
     );
