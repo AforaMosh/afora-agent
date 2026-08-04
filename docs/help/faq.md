@@ -142,7 +142,8 @@ First-run Q&A - install, onboard, auth routes, subscriptions, initial failures -
 
     - **Cron jobs**: isolated jobs can set a `model` override per job.
     - **Agents**: route tasks to separate agents with different default models, thinking levels, and stream params.
-    - **On-demand session switch**: `/model <model> -s` (or `--session`) switches only the current session model at any time. Owner/admin `/model <model>` also updates the agent's effective configured default.
+    - **Configured default + current session**: Owner/admin `/model <model>` changes both. If the agent has no explicit primary model, it changes the shared `agents.defaults.model` fallback.
+    - **Current session only**: `/model <model> -s` (or `--session`) changes only this session and leaves configured defaults unchanged.
 
     Example - same model, different per-agent settings:
 

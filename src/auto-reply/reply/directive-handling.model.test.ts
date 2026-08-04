@@ -1919,7 +1919,7 @@ describe("handleDirectiveOnly model persist behavior (fixes #1435)", () => {
 
     expect(result?.text).toContain("Model set to");
     expect(result?.text).toContain("openai/gpt-4o");
-    expect(result?.text).toContain("for this session");
+    expect(result?.text).toContain("for this session and as this agent's configured default.");
     expect(result?.text).not.toContain("failed");
     expect(sessionEntry.liveModelSwitchPending).toBe(true);
     expect(stickyModelMock.persistBestEffort).toHaveBeenCalledWith({
@@ -1948,7 +1948,9 @@ describe("handleDirectiveOnly model persist behavior (fixes #1435)", () => {
       canPersistStickyModelSelection: false,
     });
 
-    expect(result?.text).toContain("Model set to openai/gpt-4o for this session.");
+    expect(result?.text).toContain(
+      "Model set to openai/gpt-4o for this session only; configured default unchanged.",
+    );
     expect(sessionEntry).toMatchObject({
       providerOverride: "openai",
       modelOverride: "gpt-4o",
@@ -1965,7 +1967,9 @@ describe("handleDirectiveOnly model persist behavior (fixes #1435)", () => {
       }),
     );
 
-    expect(result?.text).toContain("Model set to openai/gpt-4o for this session.");
+    expect(result?.text).toContain(
+      "Model set to openai/gpt-4o for this session and as this agent's configured default.",
+    );
     expect(result?.text).toContain("Runtime set to openclaw for this session.");
     expect(sessionEntry).toMatchObject({
       providerOverride: "openai",
@@ -2138,7 +2142,9 @@ describe("handleDirectiveOnly model persist behavior (fixes #1435)", () => {
     });
 
     const text = result?.text ?? "";
-    expect(text).toContain("Model set to openai/gpt-4o for this session.");
+    expect(text).toContain(
+      "Model set to openai/gpt-4o for this session and as this agent's configured default.",
+    );
     expect(text).toContain(
       "Thinking level set to medium (adaptive not supported for openai/gpt-4o).",
     );
@@ -2181,7 +2187,9 @@ describe("handleDirectiveOnly model persist behavior (fixes #1435)", () => {
       sessionEntry,
     });
 
-    expect(result?.text).toContain("Model set to opencode/claude-opus-4-7 for this session.");
+    expect(result?.text).toContain(
+      "Model set to opencode/claude-opus-4-7 for this session and as this agent's configured default.",
+    );
     expect(result?.text ?? "").not.toContain("xhigh not supported");
     expect(sessionEntry.thinkingLevel).toBe("xhigh");
   });
@@ -2394,7 +2402,7 @@ describe("handleDirectiveOnly model persist behavior (fixes #1435)", () => {
     });
 
     expect(result?.text).toContain(
-      "Model set to Opus (anthropic/claude-opus-4-6) for this session.",
+      "Model set to Opus (anthropic/claude-opus-4-6) for this session and as this agent's configured default.",
     );
     expect(result?.text).toContain("Auth profile set to anthropic:work.");
     expect(sessionEntry.providerOverride).toBe("anthropic");

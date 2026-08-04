@@ -61,6 +61,19 @@ export const formatInternalVerbosePersistenceDeniedText = () =>
 export const formatInternalVerboseCurrentReplyOnlyText = () =>
   "Verbose logging set for the current reply only.";
 
+export function formatModelSelectionScopeAck(params: {
+  isDefault: boolean;
+  label: string;
+  updatesConfiguredDefault: boolean;
+}): string {
+  if (params.isDefault) {
+    return `Session model reset to configured default (${params.label}).`;
+  }
+  return params.updatesConfiguredDefault
+    ? `Model set to ${params.label} for this session and as this agent's configured default.`
+    : `Model set to ${params.label} for this session only; configured default unchanged.`;
+}
+
 export function canPersistSessionDirectiveDefaults(params: {
   messageProvider?: string;
   surface?: string;

@@ -252,8 +252,20 @@ describe("mixed inline directives", () => {
 
     expect(result).toMatchObject(
       body.startsWith("/model")
-        ? { kind: "reply" }
-        : { kind: "continue", provider: "openai", model: "gpt-5.6-luna" },
+        ? {
+            kind: "reply",
+            reply: {
+              text: "Model set to openai/gpt-5.6-luna for this session only; configured default unchanged.",
+            },
+          }
+        : {
+            kind: "continue",
+            provider: "openai",
+            model: "gpt-5.6-luna",
+            directiveAck: {
+              text: "Model set to openai/gpt-5.6-luna for this session only; configured default unchanged.",
+            },
+          },
     );
     expect(sessionEntry).toMatchObject({
       providerOverride: "openai",
@@ -276,7 +288,12 @@ describe("mixed inline directives", () => {
       allowedModels: [{ provider: "anthropic", id: "claude-opus-4-6", name: "Claude Opus" }],
     });
 
-    expect(result).toMatchObject({ kind: "reply" });
+    expect(result).toMatchObject({
+      kind: "reply",
+      reply: {
+        text: "Session model reset to configured default (anthropic/claude-opus-4-6).",
+      },
+    });
     expect(sessionEntry.providerOverride).toBeUndefined();
     expect(sessionEntry.modelOverride).toBeUndefined();
     expect(sessionEntry.modelOverrideSource).toBeUndefined();
@@ -290,7 +307,12 @@ describe("mixed inline directives", () => {
       allowedModels: [{ provider: "openai", id: "gpt-5.6-luna", name: "GPT-5.6-Luna" }],
     });
 
-    expect(result).toMatchObject({ kind: "reply" });
+    expect(result).toMatchObject({
+      kind: "reply",
+      reply: {
+        text: "Model set to openai/gpt-5.6-luna for this session only; configured default unchanged.",
+      },
+    });
     expect(sessionEntry).toMatchObject({
       providerOverride: "openai",
       modelOverride: "gpt-5.6-luna",
@@ -326,6 +348,9 @@ describe("mixed inline directives", () => {
       provider: "anthropic",
       model: "claude-opus-4-6",
       contextTokens: 90_000,
+      directiveAck: {
+        text: "Session model reset to configured default (anthropic/claude-opus-4-6).",
+      },
     });
     expect(sessionEntry.providerOverride).toBeUndefined();
     expect(sessionEntry.modelOverride).toBeUndefined();

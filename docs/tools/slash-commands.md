@@ -202,7 +202,7 @@ plugins.
     | `/elevated [on\|off\|ask\|full]` | Toggle elevated mode. Alias: `/elev` |
     | `/exec host=<auto\|sandbox\|gateway\|node> security=<deny\|allowlist\|full> ask=<off\|on-miss\|always> node=<id>` | Show or set exec defaults |
     | `/login [codex\|openai\|openai-codex]` | Pair Codex/OpenAI login from a private chat or Web UI session. Owner/admin only |
-    | `/model [name\|#\|status] [-s\|--session]` | Show or set the model; `-s` limits a selection to the current session |
+    | `/model [name\|#\|status] [-s\|--session]` | Show or select a model. Owner/admin selections update the configured default; `-s` changes only this session |
     | `/models [provider] [page] [limit=<n>\|all]` | List configured/auth-available providers or models |
     | `/queue <mode>` | Manage active-run queue behavior. See [Queue](/concepts/queue) and [Queue steering](/concepts/queue-steering) |
     | `/steer <message>` | Inject guidance into the active run. Alias: `/tell`. See [Steer](/tools/steer) |
@@ -217,9 +217,16 @@ plugins.
 
       </Accordion>
       <Accordion title="Model switching details">
-        - `/model <model>` persists the new model immediately to the session. For owner/admin callers, a non-default choice also updates the agent's effective configured default.
-        - `/model <model> -s` (or `--session`) changes only the current session and never updates the configured default.
-        - `/model default -s` clears the current session selection without changing the configured default.
+        **Scope in one line:** bare owner/admin `/model <model>` changes the agent-wide default; `-s` changes only the current session. When an agent inherits `agents.defaults.model`, changing its effective default changes that shared global fallback.
+
+        | Goal | Command | Effect |
+        | --- | --- | --- |
+        | Change the configured default | `/model <model>` as owner/admin | Changes this session and the agent's effective configured default. If the agent has no explicit primary, this changes the shared `agents.defaults.model` fallback |
+        | Change only this session | `/model <model> -s` (or `--session`) | Changes this session; configured defaults remain unchanged |
+        | Use the configured default again | `/model default` (with or without `-s`) | Clears this session's selection so it inherits the current configured default |
+
+        A non-owner `/model <model>` selection is also session-only because it cannot write configured defaults. Resetting with `/model default` does not recover a configured default that an earlier owner/admin selection replaced.
+
         - If the agent is idle, the next run uses it right away.
         - If a run is active, the switch is marked pending and applied at the next clean retry point.
 
@@ -364,15 +371,17 @@ use the Control UI Tools panel or config surfaces.
 
 ## `/model`: model selection
 
+Bare owner/admin `/model <model>` uses **default scope**: it changes this session and the agent-wide configured default. Adding `-s` uses **session scope**: only this session changes. For agents without an explicit primary model, the configured default is the shared global `agents.defaults.model` fallback.
+
 ```text
 /model             # show model picker
 /model list        # same
 /model 3           # select by number from picker
-/model openai/gpt-5.4
-/model openai/gpt-5.4 -s # select only for this session
-/model default -s        # clear only this session's selection
+/model openai/gpt-5.4    # owner/admin: session + configured default
+/model openai/gpt-5.4 -s # this session only; configured default unchanged
+/model default -s        # clear this session's selection; use configured default
 /model opus@anthropic:default
-/model default     # clear the session model selection
+/model default     # same reset; does not restore an older configured default
 /model status      # detailed view with endpoint and API mode
 ```
 

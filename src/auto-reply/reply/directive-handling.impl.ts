@@ -46,6 +46,7 @@ import {
   formatInternalExecPersistenceDeniedText,
   formatInternalVerboseCurrentReplyOnlyText,
   formatInternalVerbosePersistenceDeniedText,
+  formatModelSelectionScopeAck,
   enqueueModeSwitchEvents,
   persistSessionDirectiveSnapshot,
   rejectSessionDirectiveTransaction,
@@ -654,9 +655,11 @@ export async function handleDirectiveOnly(
     const label = `${modelSelection.provider}/${modelSelection.model}`;
     const labelWithAlias = modelSelection.alias ? `${modelSelection.alias} (${label})` : label;
     parts.push(
-      modelSelection.isDefault
-        ? `Model reset to default (${labelWithAlias}).`
-        : `Model set to ${labelWithAlias} for this session.`,
+      formatModelSelectionScopeAck({
+        isDefault: modelSelection.isDefault,
+        label: labelWithAlias,
+        updatesConfiguredDefault: params.canPersistStickyModelSelection === true,
+      }),
     );
     if (profileOverride) {
       parts.push(`Auth profile set to ${profileOverride}.`);
