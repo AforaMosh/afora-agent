@@ -202,9 +202,12 @@ export function resolveFailureAlert(
     accountId,
     threadId: inheritsDeliveryThread ? job.delivery?.threadId : undefined,
     includeSkipped: jobConfig?.includeSkipped ?? globalConfig?.includeSkipped ?? false,
-    defaultInherited:
-      !jobConfig &&
-      (globalConfig === undefined || Object.values(globalConfig).every((v) => v === undefined)),
+    // Default-inherited means "active because of the default, not because an
+    // operator asked for alerts". Threshold-only tuning (`after`/`cooldownMs`)
+    // rides the default path, so it must defer to a confirmed per-run notice
+    // exactly as an unconfigured job does; only `enabled: true` or per-job
+    // config is an explicit opt-in that stacks on top of that notice.
+    defaultInherited: !jobConfig && globalConfig?.enabled !== true,
   };
 }
 

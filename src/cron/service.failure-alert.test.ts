@@ -179,101 +179,62 @@ describe("CronService failure alerts", () => {
     );
   });
 
-  it("defers default alerts to a CONFIRMED per-run failure notification", async () => {
-    // An announce-primary job whose failure notice actually reached the target
-    // already owns this run's visible outcome; do not double it. Unconfirmed
-    // ("unknown") and failed deliveries keep the alert - see the tests below.
+  // One table for the global-config gate: which shapes alert at all, and which
+  // defer to a CONFIRMED per-run failure notice instead of stacking on it.
+  // Announced jobs ACK their notice (delivered: true), so deferral applies.
+  it.each([
+    {
+      name: "no config defers to a confirmed announce notice",
+      globalAlert: undefined,
+      confirmedNotice: true,
+      expectedAlerts: 0,
+    },
+    {
+      name: "threshold-only tuning rides the default path and also defers",
+      globalAlert: { after: 1 },
+      confirmedNotice: true,
+      expectedAlerts: 0,
+    },
+    {
+      name: "explicit enabled:true stacks on a confirmed notice",
+      globalAlert: { enabled: true, after: 2 },
+      confirmedNotice: true,
+      expectedAlerts: 1,
+    },
+    {
+      name: "destination-only legacy shape never inherits threshold alerts",
+      globalAlert: { channel: "telegram", to: "999" },
+      confirmedNotice: true,
+      expectedAlerts: 0,
+    },
+    {
+      name: "destination plus threshold stays off without enabled",
+      globalAlert: { to: "999", after: 1 },
+      confirmedNotice: false,
+      expectedAlerts: 0,
+    },
+    {
+      name: "threshold-only alerts when the notice is unconfirmed",
+      globalAlert: { after: 2 },
+      confirmedNotice: false,
+      expectedAlerts: 1,
+    },
+  ])("global gate: $name", async ({ globalAlert, confirmedNotice, expectedAlerts }) => {
     await withFailureAlertCron(
       {
-        failureAlert: undefined,
+        failureAlert: globalAlert,
         runResult: {
           status: "error",
           error: "expired oauth token",
-          deliveryAttempted: true,
-          delivered: true,
+          ...(confirmedNotice ? { deliveryAttempted: true, delivered: true } : {}),
         },
       },
       async ({ cron, sendCronFailureAlert, addJob }) => {
-        const job = await addJob("announced job", { delivery: createTelegramDelivery() });
+        const job = await addJob("gate job", { delivery: createTelegramDelivery() });
 
         await cron.run(job.id, "force");
         await cron.run(job.id, "force");
-        await cron.run(job.id, "force");
-        expect(sendCronFailureAlert).not.toHaveBeenCalled();
-      },
-    );
-  });
-
-  it("keeps threshold alerts on announced jobs when the operator enables them explicitly", async () => {
-    await withFailureAlertCron(
-      {
-        failureAlert: { enabled: true, after: 2 },
-        runResult: { status: "error", error: "expired oauth token" },
-      },
-      async ({ cron, sendCronFailureAlert, addJob }) => {
-        const job = await addJob("explicit alert job", { delivery: createTelegramDelivery() });
-
-        await cron.run(job.id, "force");
-        await cron.run(job.id, "force");
-        expect(sendCronFailureAlert).toHaveBeenCalledTimes(1);
-        expectAlertFields(sendCronFailureAlert, { channel: "telegram", to: "19098680" });
-      },
-    );
-  });
-
-  it("keeps a destination-only global object destination-only (no inherited threshold alert)", async () => {
-    // Migrated legacy `cron.failureDestination` shape: destination fields, no
-    // `enabled`. Per-run failure notifications already use it, so inheriting
-    // threshold alerts too would double every notification after upgrade.
-    await withFailureAlertCron(
-      {
-        failureAlert: { channel: "telegram", to: "999" },
-        runResult: { status: "error", error: "expired oauth token" },
-      },
-      async ({ cron, sendCronFailureAlert, addJob }) => {
-        const job = await addJob("destination-only global job", {
-          delivery: createTelegramDelivery(),
-        });
-
-        await cron.run(job.id, "force");
-        await cron.run(job.id, "force");
-        await cron.run(job.id, "force");
-        expect(sendCronFailureAlert).not.toHaveBeenCalled();
-      },
-    );
-  });
-
-  it("keeps a mixed destination+threshold global object off without enabled", async () => {
-    // { to, after } carries a destination, so inherited threshold alerts stay
-    // off until enabled:true - the case the config reference now spells out.
-    await withFailureAlertCron(
-      {
-        failureAlert: { to: "999", after: 1 },
-        runResult: { status: "error", error: "expired oauth token" },
-      },
-      async ({ cron, sendCronFailureAlert, addJob }) => {
-        const job = await addJob("mixed global job", { delivery: { mode: "none" } });
-
-        await cron.run(job.id, "force");
-        await cron.run(job.id, "force");
-        expect(sendCronFailureAlert).not.toHaveBeenCalled();
-      },
-    );
-  });
-
-  it("treats a threshold-only global object as default-on", async () => {
-    await withFailureAlertCron(
-      {
-        failureAlert: { after: 1 },
-        runResult: { status: "error", error: "expired oauth token" },
-      },
-      async ({ cron, sendCronFailureAlert, addJob }) => {
-        const job = await addJob("threshold-only global job", {
-          delivery: createTelegramDelivery(),
-        });
-
-        await cron.run(job.id, "force");
-        expect(sendCronFailureAlert).toHaveBeenCalledTimes(1);
+        expect(sendCronFailureAlert).toHaveBeenCalledTimes(expectedAlerts);
       },
     );
   });
