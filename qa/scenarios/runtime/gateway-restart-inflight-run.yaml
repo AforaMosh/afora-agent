@@ -44,6 +44,7 @@ scenario:
     kind: flow
     runtime: openclaw
     timeoutMs: 420000
+    retryCount: 0
     summary: Restart while replay-safe Code Mode wait is executing, then verify automatic reconstruction and delivery.
     config:
       requiredProviderMode: mock-openai
@@ -175,12 +176,16 @@ flow:
         - set: recoveryRequests
           value:
             expr: "env.mock ? (await fetchJson(`${env.mock.baseUrl}/debug/requests?after=${requestCursorBefore}`)) : []"
+        - set: restartRecoveryRequests
+          value:
+            expr: "recoveryRequests.filter((request) => String(request.prompt ?? '').includes('Your previous turn was interrupted by a gateway restart') && String(request.allInputText ?? '').includes(config.interruptedMarker))"
         - assert:
-            expr: "recoveryRequests.some((request) => String(request.allInputText ?? '').includes('Your previous turn was interrupted by a gateway restart'))"
-            message: restart recovery prompt did not reach the provider
+            expr: "restartRecoveryRequests.length === 1"
+            message:
+              expr: "`expected exactly one restart recovery provider request, got ${restartRecoveryRequests.length}; total post-cursor requests=${recoveryRequests.length}`"
         - assert:
-            expr: "recoveryRequests.every((request) => !String(request.allInputText ?? '').includes('[OpenClaw heartbeat poll]'))"
-            message: heartbeat poll raced the restart recovery proof
+            expr: "!String(restartRecoveryRequests[0]?.prompt ?? '').includes('[OpenClaw heartbeat poll]')"
+            message: restart recovery provider request was replaced by a heartbeat poll
         - set: recoveryLogs
           value:
             expr: readGatewayLogs().slice(gatewayLogCursor)
@@ -188,4 +193,4 @@ flow:
             expr: "recoveryLogs.includes('dispatching restart-safe recovery') && recoveryLogs.includes('restart-safe recovery tool policy retained')"
             message:
               expr: "`restart-safe host policy was not observed; logs=${recoveryLogs}`"
-      detailsExpr: "`session=${sessionKey} plannedTool=${plannedWait.plannedToolName} persistedTail=${interruptedTranscript.lastMessageRole}/${interruptedTranscript.lastAssistantStopReason}/${interruptedTranscript.lastAssistantToolNames?.join(',')} recoveredTail=${postRestartTranscript.lastMessageRole}/${postRestartTranscript.lastAssistantStopReason}/${postRestartTranscript.lastAssistantContentTypes?.join(',')} recoveredMarkers=${interruptedMatches.length} resendNotices=${restartNotices.length} restartSafePolicy=true heartbeatPoll=false\\n${outbound.text}`"
+      detailsExpr: "`session=${sessionKey} plannedTool=${plannedWait.plannedToolName} persistedTail=${interruptedTranscript.lastMessageRole}/${interruptedTranscript.lastAssistantStopReason}/${interruptedTranscript.lastAssistantToolNames?.join(',')} recoveredTail=${postRestartTranscript.lastMessageRole}/${postRestartTranscript.lastAssistantStopReason}/${postRestartTranscript.lastAssistantContentTypes?.join(',')} recoveredMarkers=${interruptedMatches.length} resendNotices=${restartNotices.length} restartSafePolicy=true recoveryPromptHeartbeat=false\\n${outbound.text}`"

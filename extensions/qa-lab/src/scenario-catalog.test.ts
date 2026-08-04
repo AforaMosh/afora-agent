@@ -614,11 +614,13 @@ describe("qa scenario catalog", () => {
     expect(readQaScenarioById("long-context-progress-watchdog").sourcePath).toBe(
       "qa/scenarios/runtime/long-context-progress-watchdog.yaml",
     );
-    const gatewayRestartFlow = readQaScenarioById("gateway-restart-inflight-run").execution.flow;
+    const gatewayRestart = readQaScenarioById("gateway-restart-inflight-run");
+    const gatewayRestartFlow = gatewayRestart.execution.flow;
     const gatewayRestartContract = JSON.stringify(gatewayRestartFlow);
-    expect(
-      JSON.stringify(readQaScenarioById("gateway-restart-inflight-run").gatewayConfigPatch),
-    ).toContain('"alsoAllow":["qa_restart_wait","qa_restart_unsafe_probe"]');
+    expect(gatewayRestart.execution.retryCount).toBe(0);
+    expect(JSON.stringify(gatewayRestart.gatewayConfigPatch)).toContain(
+      '"alsoAllow":["qa_restart_wait","qa_restart_unsafe_probe"]',
+    );
     expect(gatewayRestartContract).toContain("plannedToolName === 'wait'");
     expect(gatewayRestartContract).toContain("lastAssistantToolNames?.includes('wait')");
     expect(gatewayRestartContract).toContain("restartRecoveryDeliveryContext");
@@ -628,11 +630,21 @@ describe("qa scenario catalog", () => {
     expect(gatewayRestartContract).toContain("interruptedMatches.length === 1");
     expect(gatewayRestartContract).toContain("restartNotices.length === 0");
     expect(gatewayRestartContract).toContain("dispatching restart-safe recovery");
-    expect(gatewayRestartContract).toContain("[OpenClaw heartbeat poll]");
+    expect(gatewayRestartContract).toContain(
+      "recoveryRequests.filter((request) => String(request.prompt ?? '').includes('Your previous turn was interrupted by a gateway restart') && String(request.allInputText ?? '').includes(config.interruptedMarker))",
+    );
+    expect(gatewayRestartContract).toContain("restartRecoveryRequests.length === 1");
+    expect(gatewayRestartContract).toContain(
+      "!String(restartRecoveryRequests[0]?.prompt ?? '').includes('[OpenClaw heartbeat poll]')",
+    );
+    expect(gatewayRestartContract).not.toContain(
+      "recoveryRequests.every((request) => !String(request.allInputText ?? '').includes('[OpenClaw heartbeat poll]'))",
+    );
+    expect(gatewayRestartContract).toContain("recoveryPromptHeartbeat=false");
     expect(gatewayRestartContract).toContain("liveTurnTimeoutMs(env, 180000)");
     expect(gatewayRestartContract).toContain("id: `dm:${conversationId}`");
     expect(gatewayRestartContract).toContain("dmScope: env.cfg.session?.dmScope");
-    expect(readQaScenarioById("gateway-restart-inflight-run").gatewayConfigPatch).toMatchObject({
+    expect(gatewayRestart.gatewayConfigPatch).toMatchObject({
       plugins: {
         slots: { memory: "none" },
         entries: {
