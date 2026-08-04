@@ -57,11 +57,7 @@ import {
   createConversationsSendTool,
   createConversationsTurnTool,
 } from "./tools/conversation-tools.js";
-import {
-  createCronTool,
-  type CronCreatorToolAllowlistEntry,
-  type CronToolOptions,
-} from "./tools/cron-tool.js";
+import { createCronTool, type CronCreatorToolAllowlistEntry } from "./tools/cron-tool.js";
 import { createDashboardTool } from "./tools/dashboard-tool.js";
 import { createEmbeddedCallGateway } from "./tools/embedded-gateway-stub.js";
 import { createGatewayToolCallerWrapper } from "./tools/gateway-caller-context.js";
@@ -140,7 +136,9 @@ export function createOpenClawTools(
     pluginToolDenylist?: string[];
     /** Effective caller tool surface to persist on isolated cron agentTurn jobs. */
     cronCreatorToolAllowlist?: CronCreatorToolAllowlistEntry[];
-    resolveCronCreatorRuntimeAuthority?: CronToolOptions["resolveCreatorRuntimeAuthority"];
+    resolveCronCreatorRuntimeAuthority?: NonNullable<
+      Parameters<typeof createCronTool>[0]
+    >["resolveCreatorRuntimeAuthority"];
     /** Current channel ID for auto-threading. */
     currentChannelId?: string;
     /** Trusted normalized conversation kind for the active inbound turn. */

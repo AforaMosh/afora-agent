@@ -384,6 +384,150 @@ describe("startOrResumeThread — user mcp.servers projection (regression: #8081
     expect(startParams?.config?.mcp_servers).toBeUndefined();
   });
 
+  it("reprojects only captured OpenClaw MCP servers for a bounded scheduled turn", async () => {
+    const sessionFile = path.join(tempDir, "session.jsonl");
+    const workspaceDir = path.join(tempDir, "workspace");
+    const params = createParams(sessionFile, workspaceDir, {
+      mcp: {
+        servers: {
+          memory: {
+            transport: "stdio",
+            command: "node",
+            args: ["/opt/memory-mcp.js"],
+            toolFilter: { include: ["read_graph", "create_entities"] },
+          },
+          addedLater: {
+            transport: "stdio",
+            command: "node",
+            args: ["/opt/new-mcp.js"],
+          },
+        },
+      },
+    } as unknown as EmbeddedRunAttemptParams["config"]);
+    params.scheduledRuntimeAuthority = {
+      version: 1,
+      runtime: "codex",
+      openClawTools: ["automations"],
+      apps: [],
+      userMcpServers: [
+        {
+          source: "openclaw",
+          serverName: "memory",
+          toolNames: ["create_entities", "read_graph", "delete_entities"],
+        },
+      ],
+      pluginMcpServers: [],
+    };
+    const request = vi.fn(async (method: string, _params?: unknown) => {
+      if (method === "config/read") {
+        return {
+          layers: [],
+          config: { mcp_servers: { nativeAddedLater: { command: "native-new" } } },
+        };
+      }
+      if (method === "thread/start") {
+        return threadStartResult();
+      }
+      throw new Error(`unexpected method: ${method}`);
+    });
+
+    await startOrResumeThread({
+      client: { request } as never,
+      params,
+      cwd: workspaceDir,
+      dynamicTools: [],
+      appServer: createAppServerOptions(),
+      nativeCodeModeEnabled: false,
+      userMcpServersEnabled: false,
+    });
+
+    expect(request.mock.calls.map(([method]) => method)).toEqual(["config/read", "thread/start"]);
+    const startParams = request.mock.calls[1]?.[1] as {
+      config?: { mcp_servers?: Record<string, unknown> };
+    };
+    expect(startParams?.config?.mcp_servers).toEqual({
+      memory: {
+        command: "node",
+        args: ["/opt/memory-mcp.js"],
+        enabled: true,
+        enabled_tools: ["create_entities", "read_graph"],
+      },
+      nativeAddedLater: { enabled: false },
+    });
+    expect(startParams?.config?.mcp_servers).not.toHaveProperty("addedLater");
+  });
+
+  it("fails closed when a captured OpenClaw MCP server is no longer available", async () => {
+    const sessionFile = path.join(tempDir, "session.jsonl");
+    const workspaceDir = path.join(tempDir, "workspace");
+    const params = createParams(sessionFile, workspaceDir, { mcp: { servers: {} } } as never);
+    params.scheduledRuntimeAuthority = {
+      version: 1,
+      runtime: "codex",
+      openClawTools: ["automations"],
+      apps: [],
+      userMcpServers: [{ source: "openclaw", serverName: "removed", toolNames: ["read_graph"] }],
+      pluginMcpServers: [],
+    };
+    const request = vi.fn(async (method: string) => {
+      if (method === "config/read") {
+        return { layers: [], config: {} };
+      }
+      throw new Error(`unexpected method: ${method}`);
+    });
+
+    await expect(
+      startOrResumeThread({
+        client: { request } as never,
+        params,
+        cwd: workspaceDir,
+        dynamicTools: [],
+        appServer: createAppServerOptions(),
+        nativeCodeModeEnabled: false,
+        userMcpServersEnabled: false,
+      }),
+    ).rejects.toThrow("Scheduled Codex MCP authority is no longer available for: removed");
+    expect(request).toHaveBeenCalledOnce();
+  });
+
+  it("rejects a captured server name that changes between OpenClaw and Codex ownership", async () => {
+    const sessionFile = path.join(tempDir, "session.jsonl");
+    const workspaceDir = path.join(tempDir, "workspace");
+    const params = createParams(sessionFile, workspaceDir, {
+      mcp: { servers: { notes: { transport: "stdio", command: "openclaw-notes" } } },
+    } as never);
+    params.scheduledRuntimeAuthority = {
+      version: 1,
+      runtime: "codex",
+      openClawTools: ["automations"],
+      apps: [],
+      userMcpServers: [{ source: "codex", serverName: "notes", toolNames: ["read"] }],
+      pluginMcpServers: [],
+    };
+    const request = vi.fn(async (method: string) => {
+      if (method === "config/read") {
+        return {
+          layers: [],
+          config: { mcp_servers: { notes: { command: "codex-notes" } } },
+        };
+      }
+      throw new Error(`unexpected method: ${method}`);
+    });
+
+    await expect(
+      startOrResumeThread({
+        client: { request } as never,
+        params,
+        cwd: workspaceDir,
+        dynamicTools: [],
+        appServer: createAppServerOptions(),
+        nativeCodeModeEnabled: false,
+        userMcpServersEnabled: false,
+      }),
+    ).rejects.toThrow("OpenClaw and Codex both define: notes");
+    expect(request).toHaveBeenCalledOnce();
+  });
+
   it("starts a new thread when an existing binding lacks the matching user MCP fingerprint", async () => {
     const sessionFile = path.join(tempDir, "session.jsonl");
     const workspaceDir = path.join(tempDir, "workspace");

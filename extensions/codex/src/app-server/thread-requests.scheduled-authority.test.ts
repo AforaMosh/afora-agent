@@ -20,7 +20,7 @@ describe("buildCodexScheduledRuntimeAuthorityConfigPatch", () => {
               approvalMode: "ask",
             },
           ],
-          userMcpServers: [{ serverName: "todoist", toolNames: ["add", "list"] }],
+          userMcpServers: [{ source: "codex", serverName: "todoist", toolNames: ["add", "list"] }],
           pluginMcpServers: [
             { pluginId: "calendar", serverName: "calendar-native", toolNames: ["events"] },
           ],

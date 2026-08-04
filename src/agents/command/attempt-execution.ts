@@ -1033,6 +1033,7 @@ export function runAgentAttempt(params: {
     runtimePluginToolGrant: params.opts.runtimePluginToolGrant,
     trustedInternalHandoff: params.opts.trustedInternalHandoff,
     scheduledToolPolicy: params.opts.scheduledToolPolicy,
+    scheduledRuntimeAuthority: params.opts.scheduledRuntimeAuthority,
     internalEvents: params.opts.internalEvents,
     inputProvenance: params.opts.inputProvenance,
     sourceReplyDeliveryMode: params.opts.sourceReplyDeliveryMode,

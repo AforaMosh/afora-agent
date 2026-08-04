@@ -4,11 +4,13 @@ import {
   type EmbeddedRunAttemptParams,
   type McpToolCatalog,
 } from "openclaw/plugin-sdk/agent-harness-runtime";
+import { buildCodexUserMcpServersThreadConfigPatch } from "openclaw/plugin-sdk/codex-mcp-projection";
 import type { CodexAppServerClient } from "./client.js";
 import type { CodexMcpServerStatus } from "./protocol.js";
 import { sessionBindingIdentity, type CodexAppServerBindingStore } from "./session-binding.js";
 import type { CodexAppServerBindingIdentity } from "./session-binding.js";
 import { retainSharedCodexAppServerClientByInstanceId } from "./shared-client.js";
+import { readCodexInheritedMcpServerState } from "./thread-requests.js";
 
 const MCP_STATUS_PAGE_SIZE = 100;
 const MCP_STATUS_MAX_PAGES = 100;
@@ -20,11 +22,6 @@ function asRecord(value: unknown): Record<string, unknown> | undefined {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : undefined;
-}
-
-function readConnectorId(raw: unknown): string | undefined {
-  const meta = asRecord(asRecord(raw)?.["_meta"]);
-  return readString(meta?.connector_id);
 }
 
 function readString(value: unknown): string | undefined {
@@ -189,6 +186,10 @@ export async function loadCodexEffectiveMcpCatalog(
 export async function captureCodexScheduledRuntimeAuthority(params: {
   bindingStore: CodexAppServerBindingStore;
   bindingIdentity: CodexAppServerBindingIdentity;
+  config: EmbeddedRunAttemptParams["config"];
+  agentId: string;
+  cwd: string;
+  toolOverrides: EmbeddedRunAttemptParams["toolOverrides"];
   openClawTools: readonly string[];
 }): Promise<ScheduledRuntimeAuthority | undefined> {
   const binding = await params.bindingStore.read(params.bindingIdentity);
@@ -200,9 +201,22 @@ export async function captureCodexScheduledRuntimeAuthority(params: {
     return undefined;
   }
   try {
+    const projectedOpenClawMcp = buildCodexUserMcpServersThreadConfigPatch(params.config, {
+      agentId: params.agentId,
+      toolOverrides: params.toolOverrides,
+    });
+    const openClawMcpServerNames = new Set(Object.keys(projectedOpenClawMcp?.mcp_servers ?? {}));
+    const nativeMcpState = await readCodexInheritedMcpServerState(retained.client, params.cwd);
+    const ambiguousServerNames = [...openClawMcpServerNames]
+      .filter((serverName) => nativeMcpState.all.includes(serverName))
+      .toSorted();
+    if (ambiguousServerNames.length > 0) {
+      throw new Error(
+        `Cannot capture scheduled MCP authority because OpenClaw and Codex both define: ${ambiguousServerNames.join(", ")}. Rename one server, then retry.`,
+      );
+    }
     const statuses = await listCodexMcpServerStatuses(retained.client, binding.threadId);
     const policyApps = binding.pluginAppPolicyContext?.apps ?? {};
-    const capturedAppIds = new Set(Object.keys(policyApps));
     const pluginByServer = new Map<string, string>();
     for (const policy of Object.values(policyApps)) {
       if (policy.source === "account") {
@@ -218,21 +232,25 @@ export async function captureCodexScheduledRuntimeAuthority(params: {
       const entries = Object.entries(status.tools).toSorted(([left], [right]) =>
         left.localeCompare(right),
       );
-      const appOwned =
-        status.name === CODEX_APPS_MCP_SERVER_NAME &&
-        entries.some(([, raw]) => {
-          const connectorId = readConnectorId(raw);
-          return connectorId ? capturedAppIds.has(connectorId) : false;
-        });
-      if (appOwned) {
+      // Apps are captured through their policy ids, never as an ambient MCP server.
+      if (status.name === CODEX_APPS_MCP_SERVER_NAME) {
         continue;
       }
       const toolNames = entries.map(([toolName]) => toolName);
+      if (toolNames.length === 0) {
+        continue;
+      }
       const pluginId = pluginByServer.get(status.name);
       if (pluginId) {
         pluginMcpServers.push({ pluginId, serverName: status.name, toolNames });
-      } else {
-        userMcpServers.push({ serverName: status.name, toolNames });
+      } else if (openClawMcpServerNames.has(status.name)) {
+        userMcpServers.push({
+          source: "openclaw",
+          serverName: status.name,
+          toolNames,
+        });
+      } else if (nativeMcpState.all.includes(status.name)) {
+        userMcpServers.push({ source: "codex", serverName: status.name, toolNames });
       }
     }
     return {

@@ -1423,7 +1423,7 @@ describe("cron tool", () => {
       runtime: "codex" as const,
       openClawTools: ["read", "automations"],
       apps: [],
-      userMcpServers: [{ serverName: "todoist", toolNames: ["list"] }],
+      userMcpServers: [{ source: "codex" as const, serverName: "todoist", toolNames: ["list"] }],
       pluginMcpServers: [],
     }));
     const tool = createTestCronTool({
@@ -1442,7 +1442,7 @@ describe("cron tool", () => {
       internalScheduledRuntimeAuthority: {
         version: 1,
         runtime: "codex",
-        userMcpServers: [{ serverName: "todoist", toolNames: ["list"] }],
+        userMcpServers: [{ source: "codex", serverName: "todoist", toolNames: ["list"] }],
       },
     });
   });

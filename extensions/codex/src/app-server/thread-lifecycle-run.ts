@@ -48,8 +48,9 @@ import { resolveCodexAppServerThreadModelSelection } from "./thread-model-select
 import { materializePendingSupervisionBranch } from "./thread-supervision.js";
 
 export async function startOrResumeThread(
-  params: CodexStartOrResumeThreadParams,
+  input: CodexStartOrResumeThreadParams,
 ): Promise<CodexAppServerThreadLifecycleBinding> {
+  let params = input;
   const incognito = isIncognitoSessionKey(params.params.sessionKey);
   const clientId = resolveCodexAppServerClientInstanceId(params.client);
   const bindingIdentity: CodexAppServerBindingIdentity = sessionBindingIdentity({

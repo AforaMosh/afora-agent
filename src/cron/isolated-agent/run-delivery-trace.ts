@@ -13,7 +13,9 @@ import {
   type CronDeliveryPlan,
 } from "../delivery-plan.js";
 import {
+  createCronRunDiagnosticsFromIncompleteRuntimeAuthority,
   createCronRunDiagnosticsFromMissingWebSearchProvider,
+  mergeCronRunDiagnostics,
   toolsAllowRequestsWebSearch,
 } from "../run-diagnostics.js";
 import { resolveCronDeliverySessionKey } from "../session-target.js";
@@ -182,13 +184,18 @@ export async function createCronToolsAllowPreflightDiagnostics(params: {
   agentDir?: string;
   sessionKey?: string;
   agentPayload: Extract<CronJob["payload"], { kind: "agentTurn" }> | null;
+  hasRuntimeAuthority: boolean;
 }): Promise<CronRunDiagnostics | undefined> {
   const toolsAllow = params.agentPayload?.toolsAllow;
+  const runtimeAuthorityDiagnostics = createCronRunDiagnosticsFromIncompleteRuntimeAuthority({
+    toolsAllowIsDefault: params.agentPayload?.toolsAllowIsDefault,
+    hasRuntimeAuthority: params.hasRuntimeAuthority,
+  });
   if (
     params.agentPayload?.toolsAllowIsDefault === true ||
     !toolsAllowRequestsWebSearch(toolsAllow)
   ) {
-    return undefined;
+    return runtimeAuthorityDiagnostics;
   }
   try {
     const { shouldSuppressManagedWebSearchTool } = await loadCodexNativeWebSearch();
@@ -203,7 +210,7 @@ export async function createCronToolsAllowPreflightDiagnostics(params: {
         agentDir: params.agentDir,
       })
     ) {
-      return undefined;
+      return runtimeAuthorityDiagnostics;
     }
     const { resolveWebSearchToolRuntimeContext } = await loadWebToolRuntimeContext();
     const { config, preferRuntimeProviders, runtimeWebSearch } = resolveWebSearchToolRuntimeContext(
@@ -219,15 +226,15 @@ export async function createCronToolsAllowPreflightDiagnostics(params: {
       runtimeWebSearch,
       preferRuntimeProviders,
     });
-    return createCronRunDiagnosticsFromMissingWebSearchProvider({
-      toolsAllow,
-      hasWebSearchProvider,
-    });
+    return mergeCronRunDiagnostics(
+      createCronRunDiagnosticsFromMissingWebSearchProvider({ toolsAllow, hasWebSearchProvider }),
+      runtimeAuthorityDiagnostics,
+    );
   } catch (error) {
     logWarn(
       `[cron:${params.jobId}] Failed to inspect web_search provider state for toolsAllow diagnostics: ${String(error)}`,
     );
-    return undefined;
+    return runtimeAuthorityDiagnostics;
   }
 }
 

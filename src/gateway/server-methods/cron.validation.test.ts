@@ -881,7 +881,7 @@ describe("cron method validation", () => {
       runtime: "codex",
       openClawTools: ["read"],
       apps: [],
-      userMcpServers: [{ serverName: "todoist", toolNames: ["list"] }],
+      userMcpServers: [{ source: "codex", serverName: "todoist", toolNames: ["list"] }],
       pluginMcpServers: [],
     };
     const params = agentTurnCronParams({

@@ -40,7 +40,7 @@ describe("assertSupportedTurn", () => {
               approvalMode: "ask",
             },
           ],
-          userMcpServers: [{ serverName: "notes", toolNames: ["read_note"] }],
+          userMcpServers: [{ source: "codex", serverName: "notes", toolNames: ["read_note"] }],
           pluginMcpServers: [],
         },
       } as SessionPlacementTurnParams),

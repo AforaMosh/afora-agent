@@ -35,6 +35,7 @@ type CodexUserMcpServersProjectionOptions = {
   agentDir?: string;
   allowLiteralOAuthProjection?: boolean;
   onServerUnavailable?: (serverName: string, error: unknown) => void;
+  serverNames?: readonly string[];
   toolOverrides?: Pick<SessionToolOverrides, "mcpServers" | "mcpToolsDeny">;
 };
 
@@ -76,6 +77,14 @@ function readSessionMcpServerOverride(
   return overrides && Object.hasOwn(overrides, name) ? overrides[name] : undefined;
 }
 
+function selectCodexProjectedMcpServerEntries(
+  servers: BundleMcpConfig["mcpServers"],
+  options: CodexUserMcpServersProjectionOptions | undefined,
+): Array<[string, BundleMcpServerConfig]> {
+  const selectedNames = options?.serverNames ? new Set(options.serverNames) : undefined;
+  return Object.entries(servers).filter(([name]) => !selectedNames || selectedNames.has(name));
+}
+
 /** Returns Codex CLI args with TOML MCP server overrides injected. */
 export function injectCodexMcpConfigArgs(
   args: string[] | undefined,
@@ -104,7 +113,7 @@ export function buildCodexUserMcpServersThreadConfigPatch(
   const userServers = normalizeConfiguredMcpServers(cfg?.mcp?.servers);
   // Fail-closed: requester-scoped servers never enter harness-native MCP config.
   const { staticServers } = partitionMcpServersByConnectionScope(userServers);
-  const entries = Object.entries(staticServers);
+  const entries = selectCodexProjectedMcpServerEntries(staticServers, options);
   if (entries.length === 0) {
     return undefined;
   }
@@ -142,7 +151,7 @@ export async function buildCodexUserMcpServersThreadConfigPatchForRuntime(
   const userServers = normalizeConfiguredMcpServers(cfg?.mcp?.servers);
   // Fail-closed: requester-scoped servers never enter harness-native MCP config.
   const { staticServers } = partitionMcpServersByConnectionScope(userServers);
-  const entries = Object.entries(staticServers);
+  const entries = selectCodexProjectedMcpServerEntries(staticServers, options);
   if (entries.length === 0) {
     return undefined;
   }

@@ -3,7 +3,10 @@ import {
   formatErrorMessage,
   isHostScopedAgentToolActive,
 } from "openclaw/plugin-sdk/agent-harness-runtime";
-import { buildCodexUserMcpServersThreadConfigPatchForRuntime } from "openclaw/plugin-sdk/codex-mcp-projection";
+import {
+  buildCodexUserMcpServersThreadConfigPatch,
+  buildCodexUserMcpServersThreadConfigPatchForRuntime,
+} from "openclaw/plugin-sdk/codex-mcp-projection";
 import { getCodexAppServerClientInstanceId } from "./client.js";
 import { isSystemAgentOnlyCodexDynamicToolAllowlist } from "./dynamic-tool-profile.js";
 import { resolveCodexNativeSkillIsolation } from "./native-skill-isolation.js";
@@ -25,6 +28,7 @@ import {
   buildCodexRingZeroThreadConfigPatch,
   buildCodexScheduledRuntimeAuthorityConfigPatch,
   CODEX_RING_ZERO_BASE_INSTRUCTIONS,
+  readCodexMcpServerState,
   readCodexInheritedMcpServerNames,
   readCodexInheritedMcpServerState,
 } from "./thread-requests.js";
@@ -61,20 +65,62 @@ export async function prepareCodexThreadLifecyclePreflight(params: CodexStartOrR
   const contextEngineBinding = lifecycleTiming.measureSync("context-engine-binding", () =>
     buildContextEngineBinding(params.params, params.contextEngineProjection),
   );
-  const userMcpServersConfigPatch =
-    params.userMcpServersEnabled === false
-      ? undefined
-      : await buildCodexUserMcpServersThreadConfigPatchForRuntime(params.params.config, {
+  const scheduledRuntimeAuthority = params.params.scheduledRuntimeAuthority;
+  const scheduledOpenClawMcpServerNames =
+    scheduledRuntimeAuthority?.userMcpServers
+      .filter((server) => server.source === "openclaw")
+      .map((server) => server.serverName) ?? [];
+  const configuredOpenClawMcpServerState = scheduledRuntimeAuthority
+    ? readCodexMcpServerState(
+        buildCodexUserMcpServersThreadConfigPatch(params.params.config, {
           agentId: params.agentId ?? params.params.agentId,
-          agentDir: params.params.agentDir,
-          allowLiteralOAuthProjection: params.appServer.connectionClass !== "remote",
           toolOverrides: params.params.toolOverrides,
-          onServerUnavailable: (serverName, error) =>
-            embeddedAgentLog.warn("skipping unavailable MCP OAuth server", {
-              serverName,
-              error: formatErrorMessage(error),
-            }),
-        });
+        }) ?? {},
+        "OpenClaw MCP projection",
+      )
+    : { all: [], enabled: [], toolPolicies: {}, apps: undefined };
+  const scheduledInheritedMcpServerState = scheduledRuntimeAuthority
+    ? await lifecycleTiming.measure("scheduled-mcp-config-read", () =>
+        readCodexInheritedMcpServerState(params.client, params.cwd, params.signal),
+      )
+    : { all: [], enabled: [], toolPolicies: {}, apps: undefined };
+  if (scheduledRuntimeAuthority) {
+    const openClawServerNames = new Set(configuredOpenClawMcpServerState.all);
+    const nativeServerNames = new Set(scheduledInheritedMcpServerState.all);
+    const ambiguousServerNames = scheduledRuntimeAuthority.userMcpServers
+      .filter((server) =>
+        server.source === "openclaw"
+          ? nativeServerNames.has(server.serverName)
+          : openClawServerNames.has(server.serverName),
+      )
+      .map((server) => server.serverName)
+      .toSorted();
+    if (ambiguousServerNames.length > 0) {
+      throw new Error(
+        `Scheduled MCP authority is ambiguous because OpenClaw and Codex both define: ${ambiguousServerNames.join(", ")}. Rename one server, then explicitly reauthorize this automation.`,
+      );
+    }
+  }
+  const shouldProjectUserMcpServers = scheduledRuntimeAuthority
+    ? scheduledOpenClawMcpServerNames.length > 0
+    : params.userMcpServersEnabled !== false;
+  const userMcpServersConfigPatch = shouldProjectUserMcpServers
+    ? await buildCodexUserMcpServersThreadConfigPatchForRuntime(params.params.config, {
+        agentId: params.agentId ?? params.params.agentId,
+        agentDir: params.params.agentDir,
+        allowLiteralOAuthProjection: params.appServer.connectionClass !== "remote",
+        ...(scheduledRuntimeAuthority ? { serverNames: scheduledOpenClawMcpServerNames } : {}),
+        toolOverrides: params.params.toolOverrides,
+        onServerUnavailable: (serverName, error) =>
+          embeddedAgentLog.warn("skipping unavailable MCP OAuth server", {
+            serverName,
+            error: formatErrorMessage(error),
+          }),
+      })
+    : undefined;
+  const projectedOpenClawMcpServerState = scheduledRuntimeAuthority
+    ? readCodexMcpServerState(userMcpServersConfigPatch ?? {}, "OpenClaw MCP runtime projection")
+    : { all: [], enabled: [], toolPolicies: {}, apps: undefined };
   const nativeSkillIsolation = await lifecycleTiming.measure("native-skill-isolation", () =>
     resolveCodexNativeSkillIsolation({
       client: params.client,
@@ -109,7 +155,6 @@ export async function prepareCodexThreadLifecyclePreflight(params: CodexStartOrR
         readCodexInheritedMcpServerNames(params.client, params.cwd, params.signal),
       )
     : [];
-  const scheduledRuntimeAuthority = params.params.scheduledRuntimeAuthority;
   if (scheduledRuntimeAuthority?.apps.length) {
     const installed = await params.client.request("app/installed", { forceRefresh: true });
     const callableAppIds = new Set(
@@ -124,16 +169,16 @@ export async function prepareCodexThreadLifecyclePreflight(params: CodexStartOrR
       );
     }
   }
-  const scheduledInheritedMcpServerState = scheduledRuntimeAuthority
-    ? await lifecycleTiming.measure("scheduled-mcp-config-read", () =>
-        readCodexInheritedMcpServerState(params.client, params.cwd, params.signal),
-      )
-    : { all: [], enabled: [], toolPolicies: {}, apps: undefined };
   if (scheduledRuntimeAuthority) {
-    const enabledServers = new Set(scheduledInheritedMcpServerState.enabled);
+    const enabledNativeServers = new Set(scheduledInheritedMcpServerState.enabled);
+    const enabledOpenClawServers = new Set(projectedOpenClawMcpServerState.enabled);
     const unavailableServers = scheduledRuntimeAuthority.userMcpServers
-      .map((server) => server.serverName)
-      .filter((serverName) => !enabledServers.has(serverName));
+      .filter((server) =>
+        server.source === "openclaw"
+          ? !enabledOpenClawServers.has(server.serverName)
+          : !enabledNativeServers.has(server.serverName),
+      )
+      .map((server) => server.serverName);
     if (unavailableServers.length > 0) {
       throw new Error(
         `Scheduled Codex MCP authority is no longer available for: ${unavailableServers.join(", ")}. Restore the server, then explicitly reauthorize this automation.`,
@@ -143,14 +188,14 @@ export async function prepareCodexThreadLifecyclePreflight(params: CodexStartOrR
   const currentApps = isJsonObject(scheduledInheritedMcpServerState.apps)
     ? scheduledInheritedMcpServerState.apps
     : undefined;
-  const appDefaults = isJsonObject(currentApps?.["_default"]) ? currentApps["_default"] : undefined;
+  const rawAppDefaults = currentApps?.["_default"];
+  const appDefaults = isJsonObject(rawAppDefaults) ? rawAppDefaults : undefined;
   const effectiveScheduledRuntimeAuthority = scheduledRuntimeAuthority
     ? {
         ...scheduledRuntimeAuthority,
         apps: scheduledRuntimeAuthority.apps.map((app) => {
-          const current = isJsonObject(currentApps?.[app.appId])
-            ? currentApps[app.appId]
-            : undefined;
+          const rawCurrent = currentApps?.[app.appId];
+          const current = isJsonObject(rawCurrent) ? rawCurrent : undefined;
           const currentDestructive =
             typeof current?.destructive_enabled === "boolean"
               ? current.destructive_enabled
@@ -178,15 +223,17 @@ export async function prepareCodexThreadLifecyclePreflight(params: CodexStartOrR
           };
         }),
         userMcpServers: scheduledRuntimeAuthority.userMcpServers.map((server) => {
-          const currentPolicy = scheduledInheritedMcpServerState.toolPolicies[server.serverName];
+          const currentState =
+            server.source === "openclaw"
+              ? projectedOpenClawMcpServerState
+              : scheduledInheritedMcpServerState;
+          const currentPolicy = currentState.toolPolicies[server.serverName];
           const enabled = currentPolicy?.enabled ? new Set(currentPolicy.enabled) : undefined;
           const disabled = new Set(currentPolicy?.disabled ?? []);
-          return {
-            ...server,
-            toolNames: server.toolNames.filter(
-              (toolName) => (!enabled || enabled.has(toolName)) && !disabled.has(toolName),
-            ),
-          };
+          const toolNames = server.toolNames.filter(
+            (toolName) => (!enabled || enabled.has(toolName)) && !disabled.has(toolName),
+          );
+          return Object.assign({}, server, { toolNames });
         }),
       }
     : undefined;
@@ -201,7 +248,10 @@ export async function prepareCodexThreadLifecyclePreflight(params: CodexStartOrR
   const scheduledRuntimeAuthorityConfigPatch = effectiveScheduledRuntimeAuthority
     ? buildCodexScheduledRuntimeAuthorityConfigPatch({
         authority: effectiveScheduledRuntimeAuthority,
-        inheritedMcpServerNames: scheduledInheritedMcpServerState.all,
+        inheritedMcpServerNames: [
+          ...scheduledInheritedMcpServerState.all,
+          ...projectedOpenClawMcpServerState.all,
+        ],
         inheritedApps: currentApps,
       })
     : undefined;

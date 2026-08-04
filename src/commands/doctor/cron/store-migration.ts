@@ -92,19 +92,6 @@ export function collectStoredCronCodexRuntimePolicyTargets(
   return [...targets.values()];
 }
 
-type NormalizeCronStoreJobsResult = {
-  codexRuntimePolicyTargets: CronCodexRuntimePolicyTarget[];
-  issues: CronStoreIssues;
-  unresolvedAgentTurnCommandPromptJobs: string[];
-  unresolvedAgentTurnShellToolPromptJobs: string[];
-  legacyScheduledToolPolicyJobs: string[];
-  invalidScheduledToolPolicyJobs: string[];
-  incompleteScheduledRuntimeAuthorityJobs: string[];
-  jobs: Array<Record<string, unknown>>;
-  mutated: boolean;
-  removedJobs: Array<{ job: Record<string, unknown>; reason: string; sourceIndex: number }>;
-};
-
 function incrementIssue(issues: CronStoreIssues, key: CronStoreIssueKey) {
   issues[key] = (issues[key] ?? 0) + 1;
 }
@@ -307,7 +294,7 @@ export function normalizeStoredCronJobs(
     migrateCodexModelRefs?: boolean;
     shouldMigrateCodexRuntimePolicyTarget?: (target: CronCodexRuntimePolicyTarget) => boolean;
   } = {},
-): NormalizeCronStoreJobsResult {
+) {
   const issues: CronStoreIssues = {};
   const unresolvedAgentTurnCommandPromptJobs: string[] = [];
   const unresolvedAgentTurnShellToolPromptJobs: string[] = [];
@@ -318,7 +305,11 @@ export function normalizeStoredCronJobs(
   };
   let mutated = false;
   const keptJobs: Array<Record<string, unknown>> = [];
-  const removedJobs: NormalizeCronStoreJobsResult["removedJobs"] = [];
+  const removedJobs: Array<{
+    job: Record<string, unknown>;
+    reason: string;
+    sourceIndex: number;
+  }> = [];
   const codexRuntimePolicyTargets = new Map<string, CronCodexRuntimePolicyTarget>();
 
   for (const [sourceIndex, raw] of jobs.entries()) {

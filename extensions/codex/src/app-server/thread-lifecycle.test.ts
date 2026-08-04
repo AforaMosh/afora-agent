@@ -21,7 +21,7 @@ import {
   resetCodexTestBindingStore,
   testCodexAppServerBindingStore,
 } from "./session-binding.test-helpers.js";
-import { createCodexTestModel } from "./test-support.js";
+import { createCodexTestModel, useAutoCleanupTempDirTracker } from "./test-support.js";
 import {
   buildDeveloperInstructions,
   buildTurnCollaborationMode,
@@ -1822,7 +1822,7 @@ describe("Codex plugin binding recovery", () => {
     const sessionFile = path.join(tempDir, "session.jsonl");
     const workspaceDir = path.join(tempDir, "workspace");
     const params = createThreadLifecycleParams(sessionFile, workspaceDir);
-    const request = vi.fn(async (method: string) => {
+    const request = vi.fn(async (method: string, _params?: unknown) => {
       if (method === "thread/start" || method === "thread/resume") {
         return threadStartResult("thread-settled");
       }
@@ -2355,13 +2355,14 @@ describe("Codex thread-effective app attestation", () => {
 });
 
 describe("Codex scheduled runtime authority lifecycle", () => {
-  beforeEach(async () => {
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-codex-scheduled-authority-"));
+  const tempDirs = useAutoCleanupTempDirTracker(afterEach);
+
+  beforeEach(() => {
+    tempDir = tempDirs.make("openclaw-codex-scheduled-authority-");
     resetCodexTestBindingStore();
   });
 
   afterEach(async () => {
-    await fs.rm(tempDir, { recursive: true, force: true });
     vi.restoreAllMocks();
   });
 
@@ -2373,12 +2374,12 @@ describe("Codex scheduled runtime authority lifecycle", () => {
       runtime: "codex",
       openClawTools: ["cron"],
       apps: [],
-      userMcpServers: [{ serverName: "todoist", toolNames: ["add", "list"] }],
+      userMcpServers: [{ source: "codex", serverName: "todoist", toolNames: ["add", "list"] }],
       pluginMcpServers: [],
     };
     let enabledTools = ["add", "list"];
     let threadNumber = 0;
-    const request = vi.fn(async (method: string) => {
+    const request = vi.fn(async (method: string, _params?: unknown) => {
       if (method === "config/read") {
         return {
           layers: [],

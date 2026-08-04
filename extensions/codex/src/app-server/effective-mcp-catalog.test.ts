@@ -19,20 +19,32 @@ beforeEach(() => {
 describe("captureCodexScheduledRuntimeAuthority", () => {
   it("captures exact apps and MCP tools while excluding app transport metadata and secrets", async () => {
     const release = vi.fn();
-    const request = vi.fn().mockResolvedValue({
-      data: [
-        {
-          name: "codex_apps",
-          tools: {
-            search_tasks: {
-              _meta: { connector_id: "todoist", authorization: "Bearer secret-sentinel" },
+    const request = vi.fn(async (method: string) => {
+      if (method === "config/read") {
+        return {
+          layers: [],
+          config: { mcp_servers: { "calendar-native": { command: "calendar" } } },
+        };
+      }
+      if (method === "mcpServerStatus/list") {
+        return {
+          data: [
+            {
+              name: "codex_apps",
+              tools: {
+                search_tasks: {
+                  _meta: { connector_id: "todoist", authorization: "Bearer secret-sentinel" },
+                },
+              },
             },
-          },
-        },
-        { name: "todoist-user", tools: { list: {}, add: {} } },
-        { name: "calendar-native", tools: { events_list: {} } },
-      ],
-      nextCursor: null,
+            { name: "todoist-user", tools: { list: {}, add: {} } },
+            { name: "calendar-native", tools: { events_list: {} } },
+            { name: "unattributed-runtime-server", tools: { escape: {} } },
+          ],
+          nextCursor: null,
+        };
+      }
+      throw new Error(`unexpected method: ${method}`);
     });
     sharedClientMocks.retainById.mockReturnValueOnce({ client: { request }, release });
     const bindingStore = {
@@ -60,6 +72,16 @@ describe("captureCodexScheduledRuntimeAuthority", () => {
     const authority = await captureCodexScheduledRuntimeAuthority({
       bindingStore: bindingStore as never,
       bindingIdentity: { kind: "session", agentId: "main", sessionId: "session-1" },
+      config: {
+        mcp: {
+          servers: {
+            "todoist-user": { transport: "stdio", command: "todoist-user" },
+          },
+        },
+      } as never,
+      agentId: "main",
+      cwd: "/workspace",
+      toolOverrides: undefined,
       openClawTools: ["cron", "read"],
     });
 
@@ -75,7 +97,13 @@ describe("captureCodexScheduledRuntimeAuthority", () => {
           approvalMode: "ask",
         },
       ],
-      userMcpServers: [{ serverName: "todoist-user", toolNames: ["add", "list"] }],
+      userMcpServers: [
+        {
+          source: "openclaw",
+          serverName: "todoist-user",
+          toolNames: ["add", "list"],
+        },
+      ],
       pluginMcpServers: [
         {
           pluginId: "calendar",
@@ -85,6 +113,39 @@ describe("captureCodexScheduledRuntimeAuthority", () => {
       ],
     });
     expect(JSON.stringify(authority)).not.toContain("secret-sentinel");
+    expect(release).toHaveBeenCalledOnce();
+  });
+
+  it("rejects an MCP server name configured by both OpenClaw and Codex", async () => {
+    const release = vi.fn();
+    const request = vi.fn(async (method: string) => {
+      if (method === "config/read") {
+        return { layers: [], config: { mcp_servers: { notes: { command: "native" } } } };
+      }
+      throw new Error(`unexpected method: ${method}`);
+    });
+    sharedClientMocks.retainById.mockReturnValueOnce({ client: { request }, release });
+    const bindingStore = {
+      read: vi.fn().mockResolvedValue({
+        threadId: "thread-1",
+        clientId: "client-1",
+        cwd: "/workspace",
+      }),
+    };
+
+    await expect(
+      captureCodexScheduledRuntimeAuthority({
+        bindingStore: bindingStore as never,
+        bindingIdentity: { kind: "session", agentId: "main", sessionId: "session-1" },
+        config: {
+          mcp: { servers: { notes: { transport: "stdio", command: "openclaw" } } },
+        } as never,
+        agentId: "main",
+        cwd: "/workspace",
+        toolOverrides: undefined,
+        openClawTools: ["automations"],
+      }),
+    ).rejects.toThrow("OpenClaw and Codex both define: notes");
     expect(release).toHaveBeenCalledOnce();
   });
 });

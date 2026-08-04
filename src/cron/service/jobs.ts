@@ -7,15 +7,6 @@ import {
 import type { CronConfig } from "../../config/types.cron.js";
 import { normalizeOptionalAccountId } from "../../routing/account-id.js";
 import { resolveCronDeliveryPlan } from "../delivery-plan.js";
-import {
-  bindScheduledRuntimeAuthorityToToolsAllow,
-  type ScheduledRuntimeAuthority,
-} from "../scheduled-runtime-authority.js";
-import {
-  createTrustedCronScheduledToolPolicy,
-  resolveCronScheduledToolPolicy,
-  type CronScheduledToolPolicy,
-} from "../scheduled-tool-policy.js";
 import { normalizeCronScriptPayload } from "../script-payload.js";
 import { normalizeCronStaggerMs, resolveDefaultCronStaggerMs } from "../stagger.js";
 import { createCronStreamSourceIdentity } from "../stream-schedule.js";
@@ -50,6 +41,11 @@ import {
 } from "./jobs-validation.js";
 import { normalizeOptionalAgentId, normalizeRequiredName } from "./normalize.js";
 import { mergeCronPayload } from "./payload-merge.js";
+import {
+  reconcileCronScheduledPolicies,
+  stampCronScheduledPolicies,
+  type CronScheduledPolicyInputs,
+} from "./scheduled-policy-reconcile.js";
 import type { CronServiceState } from "./state.js";
 
 const CRON_DECLARATIVE_LABEL_MAX_LENGTH = 200;
@@ -75,79 +71,11 @@ export {
   isJobDue,
   resolveJobPayloadTextForMain,
 } from "./jobs-scheduling.js";
-function stampScheduledToolPolicy(
-  job: CronJob,
-  scheduledToolPolicy: CronScheduledToolPolicy | undefined,
-): void {
-  if (!cronJobUsesToolRuntime(job) || job.payload.toolsAllow === undefined) {
-    delete job.scheduledToolPolicy;
-    return;
-  }
-  const policy = scheduledToolPolicy ?? createTrustedCronScheduledToolPolicy();
-  if (
-    policy.mode === "account" &&
-    (job.owner?.sessionKey !== policy.ownerSessionKey ||
-      job.owner?.accountId !== policy.ownerAccountId)
-  ) {
-    throw new Error("scheduled account policy must match the persisted job owner");
-  }
-  job.scheduledToolPolicy = structuredClone(policy);
-}
-
-function stampScheduledRuntimeAuthority(
-  job: CronJob,
-  authority: ScheduledRuntimeAuthority | undefined,
-): void {
-  if (!cronJobUsesToolRuntime(job) || job.payload.toolsAllow === undefined || !authority) {
-    delete job.scheduledRuntimeAuthority;
-    return;
-  }
-  job.scheduledRuntimeAuthority = bindScheduledRuntimeAuthorityToToolsAllow({
-    authority: structuredClone(authority),
-    toolsAllow: job.payload.toolsAllow,
-  });
-}
-
-function reconcileScheduledToolPolicy(params: {
-  job: CronJob;
-  previouslyUsedToolRuntime: boolean;
-  explicitlyMutatesToolsAllow: boolean;
-  scheduledToolPolicy?: CronScheduledToolPolicy;
-  scheduledRuntimeAuthority?: ScheduledRuntimeAuthority;
-}): void {
-  const { job } = params;
-  if (!cronJobUsesToolRuntime(job) || job.payload.toolsAllow === undefined) {
-    delete job.scheduledToolPolicy;
-    delete job.scheduledRuntimeAuthority;
-    return;
-  }
-  const current = resolveCronScheduledToolPolicy({
-    toolsAllow: job.payload.toolsAllow,
-    scheduledToolPolicy: job.scheduledToolPolicy,
-    owner: job.owner,
-  });
-  if (current) {
-    job.scheduledToolPolicy = current;
-    if (params.explicitlyMutatesToolsAllow) {
-      stampScheduledRuntimeAuthority(job, params.scheduledRuntimeAuthority);
-    }
-    return;
-  }
-  delete job.scheduledToolPolicy;
-  if (params.explicitlyMutatesToolsAllow || !params.previouslyUsedToolRuntime) {
-    stampScheduledToolPolicy(job, params.scheduledToolPolicy);
-    stampScheduledRuntimeAuthority(job, params.scheduledRuntimeAuthority);
-  }
-}
-
 /** Creates a normalized cron job row from public add input and computes its initial schedule. */
 export function createJob(
   state: CronServiceState,
   input: CronJobCreate,
-  opts?: {
-    scheduledToolPolicy?: CronScheduledToolPolicy;
-    scheduledRuntimeAuthority?: ScheduledRuntimeAuthority;
-  },
+  opts?: CronScheduledPolicyInputs,
 ): CronJob {
   const now = state.deps.nowMs();
   const id = normalizeOptionalString(input.id) ?? crypto.randomUUID();
@@ -246,8 +174,7 @@ export function createJob(
   // New trusted jobs are explicit by construction. Agent-runtime callers are
   // required to arrive with a creator cap before the service can apply this default.
   applyDefaultCronToolsAllow(job);
-  stampScheduledToolPolicy(job, opts?.scheduledToolPolicy);
-  stampScheduledRuntimeAuthority(job, opts?.scheduledRuntimeAuthority);
+  stampCronScheduledPolicies(job, opts ?? {});
   assertSupportedJobSpec(job);
   assertPacingSupport(job);
   assertTriggerSupport(job, {
@@ -278,9 +205,7 @@ export function applyJobPatch(
     defaultAgentId?: string;
     scheduleValidationNowMs?: number;
     cronConfig?: CronConfig;
-    scheduledToolPolicy?: CronScheduledToolPolicy;
-    scheduledRuntimeAuthority?: ScheduledRuntimeAuthority;
-  },
+  } & CronScheduledPolicyInputs,
 ) {
   const previouslyUsedToolRuntime = cronJobUsesToolRuntime(job);
   const explicitlyClearsToolsAllow = patch.payload?.toolsAllow === null;
@@ -377,7 +302,7 @@ export function applyJobPatch(
     // Ordinary edits to an existing capless job intentionally remain legacy.
     applyDefaultCronToolsAllow(job);
   }
-  reconcileScheduledToolPolicy({
+  reconcileCronScheduledPolicies({
     job,
     previouslyUsedToolRuntime,
     explicitlyMutatesToolsAllow:
@@ -473,9 +398,7 @@ export function applyDeclarativeJobSpec(
     enabledExplicit: boolean;
     nowMs: number;
     cronConfig?: CronConfig;
-    scheduledToolPolicy?: CronScheduledToolPolicy;
-    scheduledRuntimeAuthority?: ScheduledRuntimeAuthority;
-  },
+  } & CronScheduledPolicyInputs,
 ) {
   const previouslyUsedToolRuntime = cronJobUsesToolRuntime(job);
   const explicitlyDeclaresToolsAllow = input.payload.toolsAllow !== undefined;
@@ -548,7 +471,7 @@ export function applyDeclarativeJobSpec(
       applyDefaultCronToolsAllow(job);
     }
   }
-  reconcileScheduledToolPolicy({
+  reconcileCronScheduledPolicies({
     job,
     previouslyUsedToolRuntime,
     explicitlyMutatesToolsAllow: explicitlyDeclaresToolsAllow,
