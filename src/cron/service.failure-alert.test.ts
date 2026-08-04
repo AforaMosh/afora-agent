@@ -43,6 +43,7 @@ async function withFailureAlertCron(
     cron: CronService;
     sendCronFailureAlert: ReturnType<typeof vi.fn>;
     enqueueSystemEvent: ReturnType<typeof vi.fn>;
+    requestHeartbeat: ReturnType<typeof vi.fn>;
     addJob: (name: string, overrides?: Partial<CronJobCreate>) => ReturnType<CronService["add"]>;
   }) => Promise<void>,
 ): Promise<void> {
@@ -54,6 +55,7 @@ async function withFailureAlertCron(
     return undefined;
   });
   const enqueueSystemEvent = vi.fn();
+  const requestHeartbeat = vi.fn();
   const runResult = params.runResult ?? {
     status: "error",
     error: "temporary upstream error",
@@ -64,7 +66,7 @@ async function withFailureAlertCron(
     cronConfig: { failureAlert: params.failureAlert },
     log: noopLogger,
     enqueueSystemEvent,
-    requestHeartbeat: vi.fn(),
+    requestHeartbeat,
     runIsolatedAgentJob: vi.fn(async () => runResult),
     sendCronFailureAlert,
   });
@@ -75,6 +77,7 @@ async function withFailureAlertCron(
       cron,
       sendCronFailureAlert,
       enqueueSystemEvent,
+      requestHeartbeat,
       addJob: async (name, overrides) => await cron.add(createFailureAlertJob(name, overrides)),
     });
   } finally {
@@ -291,6 +294,40 @@ describe("CronService failure alerts", () => {
             expect.objectContaining({ agentId: job.agentId }),
           );
         });
+      },
+    );
+  });
+
+  it("scopes the fallback wake to the owning agent for a non-default wakeMode=now job", async () => {
+    await withFailureAlertCron(
+      {
+        failureAlert: { enabled: true, after: 1 },
+        runResult: { status: "error", error: "expired oauth token" },
+        sendAlertError: "no route for keyless job",
+      },
+      async ({ cron, enqueueSystemEvent, requestHeartbeat, addJob }) => {
+        const job = await addJob("owned watcher", {
+          agentId: "ops",
+          wakeMode: "now",
+          delivery: createTelegramDelivery(),
+        });
+
+        await cron.run(job.id, "force");
+        await vi.waitFor(() => {
+          expect(enqueueSystemEvent).toHaveBeenCalledWith(
+            expect.stringContaining('Automation "owned watcher" failed 1 times'),
+            expect.objectContaining({ agentId: "ops" }),
+          );
+        });
+        // An unscoped wake fans out globally instead of processing this owner's
+        // event, leaving the alert unseen with its cooldown already armed.
+        expect(requestHeartbeat).toHaveBeenCalledWith(
+          expect.objectContaining({
+            source: "cron",
+            intent: "immediate",
+            agentId: "ops",
+          }),
+        );
       },
     );
   });

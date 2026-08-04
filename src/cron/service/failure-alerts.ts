@@ -240,10 +240,15 @@ function emitFailureAlert(
   const notifyAgentLane = () => {
     state.deps.enqueueSystemEvent(text, { agentId: params.job.agentId });
     if (params.job.wakeMode === "now") {
+      // Scope the wake to the owner that just received the event; an unscoped
+      // wake fans out globally and can leave this job's event unprocessed
+      // while its alert cooldown is already armed.
       state.deps.requestHeartbeat({
         source: "cron",
         intent: "immediate",
         reason: `cron:${params.job.id}:failure-alert`,
+        agentId: params.job.agentId,
+        sessionKey: params.job.sessionKey,
       });
     }
   };
