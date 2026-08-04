@@ -6641,6 +6641,10 @@ Update and merge these partial structured summaries.`,
             { type: "input_text", text: "Script completed\nWall time: 0.1 seconds\nOutput:\n" },
             {
               type: "input_text",
+              text: JSON.stringify({ status: "completed", value: { changed: false } }),
+            },
+            {
+              type: "input_text",
               text: JSON.stringify(QA_COMPACTION_RETRY_CODE_MODE_WRITE_RESULT),
             },
           ],
@@ -6648,6 +6652,106 @@ Update and merge these partial structured summaries.`,
       ],
     });
     expect(outputText(finalPayload)).toBe("Protocol note: replay unsafe after write.");
+  });
+
+  it.each([
+    {
+      label: "failed header with canonical JSON",
+      output: [
+        { type: "input_text", text: "Script failed\nWall time: 0.1 seconds\nOutput:\n" },
+        {
+          type: "input_text",
+          text: JSON.stringify(QA_COMPACTION_RETRY_CODE_MODE_WRITE_RESULT),
+        },
+      ],
+    },
+    {
+      label: "terminated header with canonical JSON",
+      output: [
+        { type: "input_text", text: "Script terminated\nWall time: 0.1 seconds\nOutput:\n" },
+        {
+          type: "input_text",
+          text: JSON.stringify(QA_COMPACTION_RETRY_CODE_MODE_WRITE_RESULT),
+        },
+      ],
+    },
+    {
+      label: "unknown header with canonical JSON",
+      output: [
+        { type: "input_text", text: "Script paused\nWall time: 0.1 seconds\nOutput:\n" },
+        {
+          type: "input_text",
+          text: JSON.stringify(QA_COMPACTION_RETRY_CODE_MODE_WRITE_RESULT),
+        },
+      ],
+    },
+    {
+      label: "failed header followed by a running marker",
+      output: [
+        { type: "input_text", text: "Script failed\nWall time: 0.1 seconds\nOutput:\n" },
+        {
+          type: "input_text",
+          text: "Script running with cell ID cell-write-late\nLive output:\n",
+        },
+      ],
+    },
+    {
+      label: "missing header with canonical JSON",
+      output: [
+        {
+          type: "input_text",
+          text: JSON.stringify(QA_COMPACTION_RETRY_CODE_MODE_WRITE_RESULT),
+        },
+      ],
+    },
+    {
+      label: "reordered completed header and canonical JSON",
+      output: [
+        {
+          type: "input_text",
+          text: JSON.stringify(QA_COMPACTION_RETRY_CODE_MODE_WRITE_RESULT),
+        },
+        { type: "input_text", text: "Script completed\nWall time: 0.1 seconds\nOutput:\n" },
+      ],
+    },
+    {
+      label: "completed header without JSON",
+      output: [{ type: "input_text", text: "Script completed\nWall time: 0.1 seconds\nOutput:\n" }],
+    },
+  ])("rejects native Code Mode compaction evidence with $label", async ({ output }) => {
+    const server = await startMockServer();
+    const tools = [
+      { type: "custom", name: "exec", format: { type: "grammar", syntax: "lark", definition: "" } },
+      {
+        type: "function",
+        name: "wait",
+        parameters: {
+          type: "object",
+          properties: { cell_id: { type: "string" } },
+          required: ["cell_id"],
+        },
+      },
+    ];
+    const execPayload = await expectOpenAiNonStreamingResponsesJson(server, {
+      tools,
+      input: [makeUserInput(QA_COMPACTION_RETRY_PROMPT)],
+    });
+    const execCall = outputItem(execPayload);
+    const payload = await expectOpenAiNonStreamingResponsesJson(server, {
+      tools,
+      input: [
+        makeUserInput(QA_COMPACTION_RETRY_PROMPT),
+        execCall,
+        {
+          type: "custom_tool_call_output",
+          call_id: outputToolCallId(execCall, "native-exec"),
+          output,
+        },
+      ],
+    });
+
+    expect(outputItems(payload).some((item) => item.type === "function_call")).toBe(false);
+    expect(outputText(payload)).not.toBe("Protocol note: replay unsafe after write.");
   });
 
   it("routes Anthropic image generation through Code Mode when only exec and wait are visible", async () => {

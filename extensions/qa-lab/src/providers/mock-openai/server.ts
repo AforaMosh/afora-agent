@@ -487,26 +487,34 @@ function parseNativeCodeModeOutput(
   if (!Array.isArray(output)) {
     return null;
   }
-  const texts = output
-    .map((item) =>
-      typeof item === "string"
-        ? item.trim()
-        : item &&
-            typeof item === "object" &&
-            typeof (item as Record<string, unknown>).text === "string"
-          ? String((item as Record<string, unknown>).text).trim()
-          : "",
-    )
-    .filter(Boolean);
-  const cellId = /Script running with cell ID ([^\s\n]+)/.exec(texts.join("\n"))?.[1];
+  const readText = (item: unknown) =>
+    typeof item === "string"
+      ? item
+      : item &&
+          typeof item === "object" &&
+          typeof (item as Record<string, unknown>).text === "string"
+        ? String((item as Record<string, unknown>).text)
+        : null;
+  const statusText = readText(output[0]);
+  if (!statusText) {
+    return null;
+  }
+  const cellId = /^Script running with cell ID ([^\s\n]+)/u.exec(statusText)?.[1];
   if (cellId) {
     return { status: "waiting", cellId };
   }
-  for (const text of texts.toReversed()) {
+  if (!statusText.startsWith("Script completed\n")) {
+    return null;
+  }
+  for (const item of output.slice(1).toReversed()) {
+    const text = readText(item);
+    if (!text) {
+      continue;
+    }
     try {
       return { status: "completed", value: JSON.parse(text) as unknown };
     } catch {
-      // Codex prepends a human-readable status item before JSON output.
+      // Native Code Mode may emit non-JSON content before the final value.
     }
   }
   return null;
@@ -780,7 +788,8 @@ async function buildResponsesPayload(
   const hasCompletedToolOutput = hasToolOutput(input);
   const rawToolOutput = extractToolOutput(input);
   const codeModeSurface = resolveCodeModeExecSurface(toolDeclarationBody);
-  const codeModeControlJson = isCodeModeControlToolOutput(toolDeclarationBody, input)
+  const hasCodeModeControlOutput = isCodeModeControlToolOutput(toolDeclarationBody, input);
+  const codeModeControlJson = hasCodeModeControlOutput
     ? codeModeSurface === "native"
       ? parseNativeCodeModeOutput(extractToolOutputValue(input))
       : parseToolOutputJson(rawToolOutput)
@@ -788,7 +797,9 @@ async function buildResponsesPayload(
   const toolOutput =
     codeModeControlJson?.status === "completed" && Object.hasOwn(codeModeControlJson, "value")
       ? stringifyScenarioToolOutput(codeModeControlJson.value)
-      : rawToolOutput;
+      : codeModeSurface === "native" && hasCodeModeControlOutput
+        ? ""
+        : rawToolOutput;
   const completedToolCall = findToolCallByCallId(input, extractToolOutputCallId(input));
   const completedToolName = (() => {
     if (completedToolCall?.name !== "exec") {

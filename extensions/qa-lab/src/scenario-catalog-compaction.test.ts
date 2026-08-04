@@ -95,9 +95,9 @@ describe("qa compaction scenario catalog", () => {
         "continuationChain.waits.length === 0",
       ),
     );
-    const scriptCompletedAssertIndex = actionIndex((action) =>
+    const terminalEvidenceAssertIndex = actionIndex((action) =>
       String((action as { assert?: { expr?: unknown } }).assert?.expr ?? "").includes(
-        "startsWith('Script completed\\n')",
+        "terminalContinuations[0].providerVariant === 'openai'",
       ),
     );
     const outboundWaitIndex = actionIndex(
@@ -106,7 +106,9 @@ describe("qa compaction scenario catalog", () => {
         (action as { saveAs?: string }).saveAs === "outbound",
     );
     const stableCellIdAssertExpr = readAssertExpression("continuationChain.waits.length === 0");
-    const scriptCompletedAssertExpr = readAssertExpression("startsWith('Script completed\\n')");
+    const terminalEvidenceAssertExpr = readAssertExpression(
+      "terminalContinuations[0].providerVariant === 'openai'",
+    );
     const knownGap =
       "known-harness-gap compaction-retry-mutating-tool: provider-error recovery does not invoke Codex native compaction; native token-threshold compaction needs a separate scenario.";
 
@@ -256,14 +258,31 @@ describe("qa compaction scenario catalog", () => {
     expect(stableCellIdAssertExpr).toContain(
       "new Set(continuationChain.waits.map((request) => request.plannedToolArgs.cell_id)).size === 1",
     );
-    expect(scriptCompletedAssertExpr).toContain("writeWireToolName !== 'exec'");
-    expect(scriptCompletedAssertExpr).toContain("startsWith('Script completed\\n')");
+    expect(terminalEvidenceAssertExpr).toContain("writeWireToolName !== 'exec'");
+    const openAiEvidenceIndex = terminalEvidenceAssertExpr.indexOf(
+      "terminalContinuations[0].providerVariant === 'openai'",
+    );
+    const anthropicEvidenceIndex = terminalEvidenceAssertExpr.indexOf(
+      "terminalContinuations[0].providerVariant === 'anthropic'",
+    );
+    const unknownProviderFailClosedIndex = terminalEvidenceAssertExpr.lastIndexOf(": false");
+    expect(openAiEvidenceIndex).toBeGreaterThanOrEqual(0);
+    expect(terminalEvidenceAssertExpr).toContain("startsWith('Script completed\\n')");
+    expect(anthropicEvidenceIndex).toBeGreaterThan(openAiEvidenceIndex);
+    expect(terminalEvidenceAssertExpr).toContain(
+      "JSON.parse(String(terminalContinuations[0].toolOutput ?? ''))",
+    );
+    expect(terminalEvidenceAssertExpr).toContain("parsed !== null");
+    expect(terminalEvidenceAssertExpr).toContain("typeof parsed === 'object'");
+    expect(terminalEvidenceAssertExpr).toContain("!Array.isArray(parsed)");
+    expect(terminalEvidenceAssertExpr).toContain("parsed.status === 'completed'");
+    expect(unknownProviderFailClosedIndex).toBeGreaterThan(anthropicEvidenceIndex);
     expect(continuationAssertIndex).toBeGreaterThanOrEqual(0);
     expect(terminalAssertIndex).toBeGreaterThan(continuationAssertIndex);
     expect(distinctCallIdsAssertIndex).toBeGreaterThan(terminalAssertIndex);
     expect(stableCellIdAssertIndex).toBeGreaterThan(distinctCallIdsAssertIndex);
-    expect(scriptCompletedAssertIndex).toBeGreaterThan(stableCellIdAssertIndex);
-    expect(outboundWaitIndex).toBeGreaterThan(scriptCompletedAssertIndex);
+    expect(terminalEvidenceAssertIndex).toBeGreaterThan(stableCellIdAssertIndex);
+    expect(outboundWaitIndex).toBeGreaterThan(terminalEvidenceAssertIndex);
     expect(flow).not.toContain("config.expectedOpenClawToolResult");
     expect(flow).not.toContain("String(request.toolOutput ?? '').includes(`---");
     expect(flow).not.toContain("String(request.toolOutput ?? '').includes(`+++");
