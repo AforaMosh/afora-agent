@@ -250,11 +250,11 @@ describe("mixed inline directives", () => {
       allowedModels: [{ provider: "openai", id: "gpt-5.6-luna", name: "GPT-5.6-Luna" }],
     });
 
-    expect(result).toMatchObject({
-      ...(body.startsWith("/model")
+    expect(result).toMatchObject(
+      body.startsWith("/model")
         ? { kind: "reply" }
-        : { kind: "continue", provider: "openai", model: "gpt-5.6-luna" }),
-    });
+        : { kind: "continue", provider: "openai", model: "gpt-5.6-luna" },
+    );
     expect(sessionEntry).toMatchObject({
       providerOverride: "openai",
       modelOverride: "gpt-5.6-luna",
