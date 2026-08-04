@@ -238,7 +238,12 @@ function emitFailureAlert(
   ].join("\n");
 
   const notifyAgentLane = () => {
-    state.deps.enqueueSystemEvent(text, { agentId: params.job.agentId });
+    // Queue into the same lane the wake below targets; an agent-only enqueue
+    // with a session-scoped wake leaves the woken session with no event.
+    state.deps.enqueueSystemEvent(text, {
+      agentId: params.job.agentId,
+      sessionKey: params.job.sessionKey,
+    });
     if (params.job.wakeMode === "now") {
       // Scope the wake to the owner that just received the event; an unscoped
       // wake fans out globally and can leave this job's event unprocessed

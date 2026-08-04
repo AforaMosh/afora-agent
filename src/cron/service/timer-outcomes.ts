@@ -156,7 +156,10 @@ export function applyJobResult(
         errorReason: job.state.lastErrorReason,
         runAtMs: result.startedAt,
         consecutiveCount: job.state.consecutiveErrors ?? 1,
-        runFailureNotificationOwned: deliveryState.failureNotification.status !== "not-requested",
+        // Only a CONFIRMED delivery owns this run's visible outcome. A failed or
+        // unknown completion notification must not suppress the alert, or the
+        // run ends with nothing delivered and nothing explaining why.
+        runFailureNotificationOwned: deliveryState.failureNotification.status === "delivered",
         ...(opts?.replayFailureAlertAtMs !== undefined
           ? { delivery: "record-only" as const, occurredAtMs: opts.replayFailureAlertAtMs }
           : {}),

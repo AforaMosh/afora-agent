@@ -179,13 +179,19 @@ describe("CronService failure alerts", () => {
     );
   });
 
-  it("defers default alerts to the per-run failure notification on announced jobs", async () => {
-    // An announce-primary job already delivers a failure notification for every
-    // failed run; the default-inherited threshold alert must not double it.
+  it("defers default alerts to a CONFIRMED per-run failure notification", async () => {
+    // An announce-primary job whose failure notice actually reached the target
+    // already owns this run's visible outcome; do not double it. Unconfirmed
+    // ("unknown") and failed deliveries keep the alert - see the tests below.
     await withFailureAlertCron(
       {
         failureAlert: undefined,
-        runResult: { status: "error", error: "expired oauth token" },
+        runResult: {
+          status: "error",
+          error: "expired oauth token",
+          deliveryAttempted: true,
+          delivered: true,
+        },
       },
       async ({ cron, sendCronFailureAlert, addJob }) => {
         const job = await addJob("announced job", { delivery: createTelegramDelivery() });
@@ -328,6 +334,83 @@ describe("CronService failure alerts", () => {
             agentId: "ops",
           }),
         );
+      },
+    );
+  });
+
+  it("still alerts when the per-run failure notification outcome is unknown", async () => {
+    await withFailureAlertCron(
+      {
+        failureAlert: undefined,
+        runResult: { status: "error", error: "expired oauth token" },
+      },
+      async ({ cron, sendCronFailureAlert, addJob }) => {
+        const job = await addJob("unknown notice job", { delivery: createTelegramDelivery() });
+
+        await cron.run(job.id, "force");
+        await cron.run(job.id, "force");
+        expect(sendCronFailureAlert).toHaveBeenCalledTimes(1);
+      },
+    );
+  });
+
+  it("still alerts when the per-run failure notification was not delivered", async () => {
+    // Suppressing on a FAILED completion notification would end the run with
+    // nothing delivered and nothing explaining why - the bug class this fixes.
+    await withFailureAlertCron(
+      {
+        failureAlert: undefined,
+        runResult: {
+          status: "error",
+          error: "expired oauth token",
+          deliveryAttempted: true,
+          delivered: false,
+        },
+      },
+      async ({ cron, sendCronFailureAlert, addJob }) => {
+        const job = await addJob("undelivered notice job", {
+          delivery: createTelegramDelivery(),
+        });
+
+        await cron.run(job.id, "force");
+        await cron.run(job.id, "force");
+        expect(sendCronFailureAlert).toHaveBeenCalledTimes(1);
+        expectAlertTextContaining(
+          sendCronFailureAlert,
+          'Automation "undelivered notice job" failed 2 times',
+        );
+      },
+    );
+  });
+
+  it("queues the fallback event in the session the wake targets", async () => {
+    await withFailureAlertCron(
+      {
+        failureAlert: { enabled: true, after: 1 },
+        runResult: { status: "error", error: "expired oauth token" },
+        sendAlertError: "no route for keyless job",
+      },
+      async ({ cron, enqueueSystemEvent, requestHeartbeat, addJob }) => {
+        const job = await addJob("session scoped watcher", {
+          agentId: "ops",
+          sessionKey: "agent:ops:custom",
+          wakeMode: "now",
+          delivery: createTelegramDelivery(),
+        });
+
+        await cron.run(job.id, "force");
+        await vi.waitFor(() => {
+          expect(enqueueSystemEvent).toHaveBeenCalledWith(
+            expect.stringContaining('Automation "session scoped watcher" failed 1 times'),
+            expect.objectContaining({ agentId: "ops", sessionKey: "agent:ops:custom" }),
+          );
+        });
+        // Wake and enqueue must address the same lane or the woken session
+        // finds no event while the cooldown is already armed.
+        const wake = requestHeartbeat.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+        const enqueueOpts = enqueueSystemEvent.mock.calls.at(-1)?.[1] as Record<string, unknown>;
+        expect(wake?.sessionKey).toBe(enqueueOpts?.sessionKey);
+        expect(wake?.agentId).toBe(enqueueOpts?.agentId);
       },
     );
   });
