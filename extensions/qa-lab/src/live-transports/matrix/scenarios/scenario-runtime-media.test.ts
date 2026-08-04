@@ -133,8 +133,8 @@ describe("Matrix generated image delivery", () => {
     expect(sendTextMessage).toHaveBeenCalledTimes(1);
     expect(message).toContain("$event-3");
     expect(message).toContain("$event-10");
-    expect(message).not.toContain("$event-1\"");
-    expect(message).not.toContain("$event-2\"");
+    expect(message).not.toContain('$event-1"');
+    expect(message).not.toContain('$event-2"');
     expect(message).not.toContain("$other-room");
   });
 });
