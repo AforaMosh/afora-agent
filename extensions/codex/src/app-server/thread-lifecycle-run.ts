@@ -75,10 +75,21 @@ export async function startOrResumeThread(
       ringZeroClientInstanceId,
       ringZeroConfigFingerprint,
       ringZeroInheritedMcpServerNames,
+      scheduledRuntimeAuthorityConfigPatch,
+      scheduledRuntimeAuthorityConfigFingerprint,
       userMcpServersConfigPatch,
       userMcpServersFingerprint,
       webSearchThreadConfigFingerprint,
     } = await prepareCodexThreadLifecyclePreflight(params);
+    if (scheduledRuntimeAuthorityConfigPatch) {
+      params = {
+        ...params,
+        finalConfigPatch: mergeCodexThreadConfigs(
+          params.finalConfigPatch,
+          scheduledRuntimeAuthorityConfigPatch,
+        ),
+      };
+    }
     let binding = await lifecycleTiming.measure("read-binding", () =>
       params.bindingStore.read(bindingIdentity),
     );
@@ -233,6 +244,22 @@ export async function startOrResumeThread(
         threadId: binding.threadId,
       });
       await clearCurrentBinding("rotating a ring-zero thread binding");
+    }
+    if (
+      binding?.threadId &&
+      binding.scheduledRuntimeAuthorityConfigFingerprint !==
+        scheduledRuntimeAuthorityConfigFingerprint &&
+      (scheduledRuntimeAuthorityConfigFingerprint !== undefined ||
+        binding.scheduledRuntimeAuthorityConfigFingerprint !== undefined)
+    ) {
+      // Codex loaded threads can retain their creation-time app/MCP config.
+      // Rotate whenever the stored cap's current-policy intersection changes.
+      embeddedAgentLog.debug(
+        "codex app-server scheduled runtime authority changed; rotating thread",
+        { threadId: binding.threadId },
+      );
+      await clearCurrentBinding("rotating scheduled runtime authority");
+      binding = undefined;
     }
     if (
       binding?.threadId &&
@@ -601,6 +628,7 @@ export async function startOrResumeThread(
           nativeSkillIsolationFingerprint,
           userMcpServersFingerprint,
           ringZeroConfigFingerprint,
+          scheduledRuntimeAuthorityConfigFingerprint,
           ringZeroClientInstanceId,
           networkProxyConfigFingerprint,
           contextEngineBinding,
@@ -635,6 +663,7 @@ export async function startOrResumeThread(
       nativeSkillIsolationFingerprint,
       userMcpServersFingerprint,
       ringZeroConfigFingerprint,
+      scheduledRuntimeAuthorityConfigFingerprint,
       ringZeroClientInstanceId,
       networkProxyConfigFingerprint,
       contextEngineBinding,

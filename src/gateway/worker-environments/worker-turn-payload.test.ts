@@ -28,6 +28,21 @@ describe("assertSupportedTurn", () => {
           ownerSessionKey: "agent:main:discord:group:ops",
           ownerAccountId: "default",
         },
+        scheduledRuntimeAuthority: {
+          version: 1,
+          runtime: "codex",
+          openClawTools: ["write"],
+          apps: [
+            {
+              appId: "todoist",
+              allowDestructiveActions: false,
+              allowOpenWorld: true,
+              approvalMode: "ask",
+            },
+          ],
+          userMcpServers: [{ serverName: "notes", toolNames: ["read_note"] }],
+          pluginMcpServers: [],
+        },
       } as SessionPlacementTurnParams),
     ).toEqual({ provider: "openai", model: "gpt-5.4" });
   });

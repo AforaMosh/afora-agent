@@ -56,7 +56,7 @@ import { withGatewayToolCallerIdentity } from "./gateway-caller-context.js";
 import { callGatewayTool, readGatewayCallOptions, type GatewayCallOptions } from "./gateway.js";
 import { resolveInternalSessionKey, resolveMainSessionAlias } from "./sessions-helpers.js";
 
-export type { CronCreatorToolAllowlistEntry } from "./cron-tool.types.js";
+export type { CronCreatorToolAllowlistEntry, CronToolOptions } from "./cron-tool.types.js";
 
 function isMissingOrEmptyObject(value: unknown): boolean {
   return !value || (isRecord(value) && Object.keys(value).length === 0);
@@ -440,6 +440,8 @@ Job wakeMode (main jobs): "now"(default)|"next-heartbeat". Restricted automation
               throw new Error("job required");
             }
             const canonicalJob = canonicalizeCronToolObject(params.job as Record<string, unknown>);
+            // Reserved transport is always supplied by the trusted resolver below, never model input.
+            delete canonicalJob.internalScheduledRuntimeAuthority;
             assertNoCronShellExecution(canonicalJob);
             assertCronDeliveryInputNonBlankFields(canonicalJob.delivery);
             assertCronPacingInput(canonicalJob.pacing, { nullableClears: false });
@@ -468,6 +470,13 @@ Job wakeMode (main jobs): "now"(default)|"next-heartbeat". Restricted automation
               delete job.enabled;
             }
             capCronJobToolsAllowOnCreate(job, opts?.creatorToolAllowlist);
+            const scheduledRuntimeAuthority =
+              isRecord(job.payload) &&
+              Array.isArray(job.payload.toolsAllow) &&
+              job.payload.toolsAllowIsDefault === true &&
+              !job.payload.toolsAllow.includes("*")
+                ? await opts?.resolveCreatorRuntimeAuthority?.()
+                : undefined;
             if (job && typeof job === "object") {
               const { mainKey, alias } = resolveMainSessionAlias(runtimeConfig);
               const resolvedSessionKey = opts?.agentSessionKey
@@ -560,6 +569,9 @@ Job wakeMode (main jobs): "now"(default)|"next-heartbeat". Restricted automation
             return jsonResult(
               await callGateway("cron.add", gatewayOpts, {
                 ...job,
+                ...(scheduledRuntimeAuthority
+                  ? { internalScheduledRuntimeAuthority: scheduledRuntimeAuthority }
+                  : {}),
               }),
             );
           }
@@ -609,6 +621,7 @@ Job wakeMode (main jobs): "now"(default)|"next-heartbeat". Restricted automation
                 id,
                 patch,
                 creatorToolAllowlist: opts?.creatorToolAllowlist,
+                resolveCreatorRuntimeAuthority: opts?.resolveCreatorRuntimeAuthority,
                 gatewayOpts,
                 callGateway,
               }),

@@ -8,6 +8,10 @@ import type { CronConfig } from "../../config/types.cron.js";
 import { normalizeOptionalAccountId } from "../../routing/account-id.js";
 import { resolveCronDeliveryPlan } from "../delivery-plan.js";
 import {
+  bindScheduledRuntimeAuthorityToToolsAllow,
+  type ScheduledRuntimeAuthority,
+} from "../scheduled-runtime-authority.js";
+import {
   createTrustedCronScheduledToolPolicy,
   resolveCronScheduledToolPolicy,
   type CronScheduledToolPolicy,
@@ -91,15 +95,31 @@ function stampScheduledToolPolicy(
   job.scheduledToolPolicy = structuredClone(policy);
 }
 
+function stampScheduledRuntimeAuthority(
+  job: CronJob,
+  authority: ScheduledRuntimeAuthority | undefined,
+): void {
+  if (!cronJobUsesToolRuntime(job) || job.payload.toolsAllow === undefined || !authority) {
+    delete job.scheduledRuntimeAuthority;
+    return;
+  }
+  job.scheduledRuntimeAuthority = bindScheduledRuntimeAuthorityToToolsAllow({
+    authority: structuredClone(authority),
+    toolsAllow: job.payload.toolsAllow,
+  });
+}
+
 function reconcileScheduledToolPolicy(params: {
   job: CronJob;
   previouslyUsedToolRuntime: boolean;
   explicitlyMutatesToolsAllow: boolean;
   scheduledToolPolicy?: CronScheduledToolPolicy;
+  scheduledRuntimeAuthority?: ScheduledRuntimeAuthority;
 }): void {
   const { job } = params;
   if (!cronJobUsesToolRuntime(job) || job.payload.toolsAllow === undefined) {
     delete job.scheduledToolPolicy;
+    delete job.scheduledRuntimeAuthority;
     return;
   }
   const current = resolveCronScheduledToolPolicy({
@@ -109,11 +129,15 @@ function reconcileScheduledToolPolicy(params: {
   });
   if (current) {
     job.scheduledToolPolicy = current;
+    if (params.explicitlyMutatesToolsAllow) {
+      stampScheduledRuntimeAuthority(job, params.scheduledRuntimeAuthority);
+    }
     return;
   }
   delete job.scheduledToolPolicy;
   if (params.explicitlyMutatesToolsAllow || !params.previouslyUsedToolRuntime) {
     stampScheduledToolPolicy(job, params.scheduledToolPolicy);
+    stampScheduledRuntimeAuthority(job, params.scheduledRuntimeAuthority);
   }
 }
 
@@ -121,7 +145,10 @@ function reconcileScheduledToolPolicy(params: {
 export function createJob(
   state: CronServiceState,
   input: CronJobCreate,
-  opts?: DeliveryValidationOptions & { scheduledToolPolicy?: CronScheduledToolPolicy },
+  opts?: DeliveryValidationOptions & {
+    scheduledToolPolicy?: CronScheduledToolPolicy;
+    scheduledRuntimeAuthority?: ScheduledRuntimeAuthority;
+  },
 ): CronJob {
   const now = state.deps.nowMs();
   const id = normalizeOptionalString(input.id) ?? crypto.randomUUID();
@@ -221,6 +248,7 @@ export function createJob(
   // required to arrive with a creator cap before the service can apply this default.
   applyDefaultCronToolsAllow(job);
   stampScheduledToolPolicy(job, opts?.scheduledToolPolicy);
+  stampScheduledRuntimeAuthority(job, opts?.scheduledRuntimeAuthority);
   assertSupportedJobSpec(job);
   assertPacingSupport(job);
   assertTriggerSupport(job, {
@@ -253,6 +281,7 @@ export function applyJobPatch(
     scheduleValidationNowMs?: number;
     cronConfig?: CronConfig;
     scheduledToolPolicy?: CronScheduledToolPolicy;
+    scheduledRuntimeAuthority?: ScheduledRuntimeAuthority;
   } & DeliveryValidationOptions,
 ) {
   const previouslyUsedToolRuntime = cronJobUsesToolRuntime(job);
@@ -356,6 +385,7 @@ export function applyJobPatch(
     explicitlyMutatesToolsAllow:
       patch.payload !== undefined && Object.hasOwn(patch.payload, "toolsAllow"),
     scheduledToolPolicy: opts?.scheduledToolPolicy,
+    scheduledRuntimeAuthority: opts?.scheduledRuntimeAuthority,
   });
   if (patch.delivery) {
     const implicitMode = resolveCronDeliveryPlan(job).mode;
@@ -457,6 +487,7 @@ export function applyDeclarativeJobSpec(
     nowMs: number;
     cronConfig?: CronConfig;
     scheduledToolPolicy?: CronScheduledToolPolicy;
+    scheduledRuntimeAuthority?: ScheduledRuntimeAuthority;
   } & DeliveryValidationOptions,
 ) {
   const previouslyUsedToolRuntime = cronJobUsesToolRuntime(job);
@@ -535,6 +566,7 @@ export function applyDeclarativeJobSpec(
     previouslyUsedToolRuntime,
     explicitlyMutatesToolsAllow: explicitlyDeclaresToolsAllow,
     scheduledToolPolicy: opts.scheduledToolPolicy,
+    scheduledRuntimeAuthority: opts.scheduledRuntimeAuthority,
   });
   const delivery = resolveInitialCronDelivery(input);
   if (delivery) {

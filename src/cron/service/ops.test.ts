@@ -69,6 +69,14 @@ describe("scheduled tool policy provenance", () => {
           ownerSessionKey: "agent:main:discord:group:ops",
           ownerAccountId: "work",
         },
+        scheduledRuntimeAuthority: {
+          version: 1,
+          runtime: "codex",
+          openClawTools: ["write", "read"],
+          apps: [],
+          userMcpServers: [],
+          pluginMcpServers: [],
+        },
       },
     );
     expect(account.scheduledToolPolicy).toEqual({
@@ -77,6 +85,10 @@ describe("scheduled tool policy provenance", () => {
       ownerSessionKey: "agent:main:discord:group:ops",
       ownerAccountId: "work",
     });
+    expect(account.scheduledRuntimeAuthority?.openClawTools).toEqual(["write"]);
+
+    const routine = await update(state, account.id, { description: "routine" });
+    expect(routine.scheduledRuntimeAuthority).toEqual(account.scheduledRuntimeAuthority);
     if (state.timer) {
       clearTimeout(state.timer);
     }
@@ -103,6 +115,7 @@ describe("scheduled tool policy provenance", () => {
 
     const routine = await update(state, created.id, { description: "routine" });
     expect(routine.scheduledToolPolicy).toBeUndefined();
+    expect(routine.scheduledRuntimeAuthority).toBeUndefined();
 
     const reauthorized = await update(
       state,
@@ -115,9 +128,18 @@ describe("scheduled tool policy provenance", () => {
           ownerSessionKey: "agent:main:discord:group:ops",
           ownerAccountId: "work",
         },
+        scheduledRuntimeAuthority: {
+          version: 1,
+          runtime: "codex",
+          openClawTools: ["write"],
+          apps: [],
+          userMcpServers: [],
+          pluginMcpServers: [],
+        },
       },
     );
     expect(reauthorized.scheduledToolPolicy?.mode).toBe("account");
+    expect(reauthorized.scheduledRuntimeAuthority).toBeDefined();
     if (state.timer) {
       clearTimeout(state.timer);
     }

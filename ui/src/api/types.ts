@@ -725,6 +725,7 @@ export type CronJob = CronJobBase<
   CronFailureAlert | false
 > & {
   state?: CronJobState;
+  scheduledRuntimeAuthority?: unknown;
 };
 
 export type CronStatus = {

@@ -558,6 +558,9 @@ export function printCronShow(
   runtime.log(`next: ${formatRelative(job.state.nextRunAtMs, Date.now())}`);
   runtime.log(`last: ${formatRelative(job.state.lastRunAtMs, Date.now())}`);
   runtime.log(`status: ${formatCronStatusForDisplay(job)}`);
+  runtime.log(
+    `inherited app/MCP authority: ${job.payload.toolsAllowIsDefault === true ? (job.scheduledRuntimeAuthority ? "complete" : "incomplete — reauthorize from the original authenticated Codex session") : "not applicable"}`,
+  );
   // lastError is the run/schedule failure message; the diagnostic line below is
   // the run-diagnostics summary and can be empty when only lastError is set.
   runtime.log(`last error: ${job.state.lastError ?? "-"}`);

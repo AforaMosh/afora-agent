@@ -908,6 +908,40 @@ describe("cron method validation", () => {
     expectCronSuccess(respond);
   });
 
+  it("accepts closed runtime authority only from an authenticated agent runtime", async () => {
+    const internalScheduledRuntimeAuthority = {
+      version: 1,
+      runtime: "codex",
+      openClawTools: ["read"],
+      apps: [],
+      userMcpServers: [{ serverName: "todoist", toolNames: ["list"] }],
+      pluginMcpServers: [],
+    };
+    const params = agentTurnCronParams({
+      internalScheduledRuntimeAuthority,
+      payload: {
+        kind: "agentTurn",
+        message: "hello",
+        toolsAllow: ["read"],
+        toolsAllowIsDefault: true,
+      },
+    });
+    const scoped = await invokeCronAdd(params, { client: callerClient("ops") });
+    expect(requireCronAddPayload(scoped.context)).not.toHaveProperty(
+      "internalScheduledRuntimeAuthority",
+    );
+    expect(scoped.context.cron.add.mock.calls[0]?.[1]).toMatchObject({
+      scheduledRuntimeAuthority: internalScheduledRuntimeAuthority,
+    });
+
+    const operator = await invokeCronAdd(params);
+    expect(operator.context.cron.add).not.toHaveBeenCalled();
+    expectResponseError(operator.respond, {
+      code: "INVALID_REQUEST",
+      messageIncludes: "scheduled runtime authority requires an authenticated agent runtime",
+    });
+  });
+
   it("defaults scoped cron.add ownership to the trusted caller when agentId is omitted", async () => {
     const { context, respond } = await invokeCronAdd(agentTurnCronParams(), {
       client: callerClient("ops"),

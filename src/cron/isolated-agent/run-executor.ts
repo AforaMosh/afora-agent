@@ -522,6 +522,7 @@ function createCronPromptExecutor(params: {
                   params.agentPayload?.toolsAllowIsDefault,
                 ),
                 scheduledToolPolicy,
+                scheduledRuntimeAuthority: params.job.scheduledRuntimeAuthority,
                 abortSignal: params.abortSignal,
                 onExecutionStarted: params.onExecutionStarted,
                 onExecutionPhase: params.onExecutionPhase,
@@ -622,6 +623,7 @@ function createCronPromptExecutor(params: {
           bootstrapContextRunKind: "cron",
           toolsAllow: params.agentPayload?.toolsAllow,
           scheduledToolPolicy,
+          scheduledRuntimeAuthority: params.job.scheduledRuntimeAuthority,
           execOverrides: params.suppressExecNotifyOnExit
             ? {
                 notifyOnExit: false,

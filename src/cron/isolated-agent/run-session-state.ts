@@ -10,6 +10,7 @@ import { mergeSessionSnapshotChanges } from "../../config/sessions/session-snaps
 import { isCronSessionKey } from "../../sessions/session-key-utils.js";
 import { isSessionWorkAdmissionActive } from "../../sessions/session-lifecycle-admission.js";
 import type { SkillSnapshot } from "../../skills/types.js";
+import type { ScheduledRuntimeAuthority } from "../scheduled-runtime-authority.js";
 import type { CronScheduledToolPolicy } from "../scheduled-tool-policy.js";
 import type { resolveCronSession } from "./session.js";
 
@@ -227,6 +228,7 @@ export function createCronRunContinuationSession(params: {
   toolsAllow?: string[];
   toolsAllowIsDefault?: boolean;
   scheduledToolPolicy?: CronScheduledToolPolicy;
+  scheduledRuntimeAuthority?: ScheduledRuntimeAuthority;
   cliSessionBindingFacts?: {
     extraSystemPromptStatic?: string;
     sourceReplyDeliveryMode?: "automatic" | "message_tool_only";
@@ -244,6 +246,9 @@ export function createCronRunContinuationSession(params: {
     ...(params.toolsAllow !== undefined ? { toolsAllow: [...params.toolsAllow] } : {}),
     ...(params.toolsAllowIsDefault === true ? { toolsAllowIsDefault: true } : {}),
     ...(scheduledToolPolicy ? { scheduledToolPolicy } : {}),
+    ...(params.scheduledRuntimeAuthority
+      ? { scheduledRuntimeAuthority: structuredClone(params.scheduledRuntimeAuthority) }
+      : {}),
     ...(params.cliSessionBindingFacts
       ? { cliSessionBindingFacts: { ...params.cliSessionBindingFacts } }
       : {}),

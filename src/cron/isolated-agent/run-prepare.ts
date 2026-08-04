@@ -24,7 +24,11 @@ import {
 import { resolveCronSkillsSnapshot } from "../../skills/runtime/cron-snapshot.js";
 import type { SkillSnapshot } from "../../skills/types.js";
 import type { CronDeliveryPlan } from "../delivery-plan.js";
-import { createCronRunDiagnosticsFromError } from "../run-diagnostics.js";
+import {
+  createCronRunDiagnosticsFromError,
+  createCronRunDiagnosticsFromIncompleteRuntimeAuthority,
+  mergeCronRunDiagnostics,
+} from "../run-diagnostics.js";
 import { resolveCronScheduledToolPolicy } from "../scheduled-tool-policy.js";
 import { isDetachedCronSessionTarget } from "../session-target.js";
 import type { CronJob, CronRunDiagnostics } from "../types.js";
@@ -501,17 +505,23 @@ export async function prepareCronRunContext(params: {
       findModelInCatalog(thinkingSelection.catalog, provider, model)?.api ??
       configuredProvider?.models?.find((candidate) => candidate.id === model)?.api ??
       configuredProvider?.api;
-    const preflightDiagnostics = await createCronToolsAllowPreflightDiagnostics({
-      cfg: cfgWithAgentDefaults,
-      jobId: input.job.id,
-      provider,
-      model,
-      modelApi,
-      agentId: modelOwner.agentId,
-      agentDir: modelOwner.agentDir,
-      sessionKey: agentSessionKey,
-      agentPayload,
-    });
+    const preflightDiagnostics = mergeCronRunDiagnostics(
+      await createCronToolsAllowPreflightDiagnostics({
+        cfg: cfgWithAgentDefaults,
+        jobId: input.job.id,
+        provider,
+        model,
+        modelApi,
+        agentId: modelOwner.agentId,
+        agentDir: modelOwner.agentDir,
+        sessionKey: agentSessionKey,
+        agentPayload,
+      }),
+      createCronRunDiagnosticsFromIncompleteRuntimeAuthority({
+        toolsAllowIsDefault: agentPayload?.toolsAllowIsDefault,
+        hasRuntimeAuthority: input.job.scheduledRuntimeAuthority !== undefined,
+      }),
+    );
     const { deliveryPlan, deliveryRequested, resolvedDelivery, sourceDelivery } =
       await resolveCronDeliveryContext({
         cfg: cfgWithAgentDefaults,
@@ -674,6 +684,7 @@ export async function prepareCronRunContext(params: {
             scheduledToolPolicy: input.job.scheduledToolPolicy,
             owner: input.job.owner,
           }),
+          scheduledRuntimeAuthority: input.job.scheduledRuntimeAuthority,
           cliSessionBindingFacts: {
             sourceReplyDeliveryMode: sourceDelivery.sourceReplyDeliveryMode,
             requireExplicitMessageTarget: sourceDelivery.messageTool.requireExplicitTarget,

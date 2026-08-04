@@ -71,6 +71,16 @@ describe("cron protocol validators", () => {
     const scheduledToolPolicy = { version: 1, mode: "trusted" } as const;
     expectCases(validateCronAddParams, false, [add({ scheduledToolPolicy })]);
     expectCases(validateCronUpdateParams, false, [update({ scheduledToolPolicy })]);
+    const scheduledRuntimeAuthority = {
+      version: 1,
+      runtime: "codex",
+      openClawTools: [],
+      apps: [],
+      userMcpServers: [],
+      pluginMcpServers: [],
+    } as const;
+    expectCases(validateCronAddParams, false, [add({ scheduledRuntimeAuthority })]);
+    expectCases(validateCronUpdateParams, false, [update({ scheduledRuntimeAuthority })]);
   });
 
   it("accepts failure alert field clears only in update patches", () => {

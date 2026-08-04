@@ -1,21 +1,30 @@
 import type { AgentHarness } from "openclaw/plugin-sdk/agent-harness";
 import {
   assignMcpCatalogSafeServerNames,
+  type EmbeddedRunAttemptParams,
   type McpToolCatalog,
 } from "openclaw/plugin-sdk/agent-harness-runtime";
 import type { CodexAppServerClient } from "./client.js";
 import type { CodexMcpServerStatus } from "./protocol.js";
 import { sessionBindingIdentity, type CodexAppServerBindingStore } from "./session-binding.js";
+import type { CodexAppServerBindingIdentity } from "./session-binding.js";
 import { retainSharedCodexAppServerClientByInstanceId } from "./shared-client.js";
 
 const MCP_STATUS_PAGE_SIZE = 100;
 const MCP_STATUS_MAX_PAGES = 100;
+const CODEX_APPS_MCP_SERVER_NAME = "codex_apps";
+type ScheduledRuntimeAuthority = NonNullable<EmbeddedRunAttemptParams["scheduledRuntimeAuthority"]>;
 type AgentHarnessMcpCatalogParams = Parameters<NonNullable<AgentHarness["loadMcpToolCatalog"]>>[0];
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : undefined;
+}
+
+function readConnectorId(raw: unknown): string | undefined {
+  const meta = asRecord(asRecord(raw)?.["_meta"]);
+  return readString(meta?.connector_id);
 }
 
 function readString(value: unknown): string | undefined {
@@ -171,6 +180,74 @@ export async function loadCodexEffectiveMcpCatalog(
       ),
       params.toolOverrides,
     );
+  } finally {
+    retained.release();
+  }
+}
+
+/** Captures the exact already-attested Codex app/MCP surface without persisting credentials. */
+export async function captureCodexScheduledRuntimeAuthority(params: {
+  bindingStore: CodexAppServerBindingStore;
+  bindingIdentity: CodexAppServerBindingIdentity;
+  openClawTools: readonly string[];
+}): Promise<ScheduledRuntimeAuthority | undefined> {
+  const binding = await params.bindingStore.read(params.bindingIdentity);
+  if (!binding?.clientId) {
+    return undefined;
+  }
+  const retained = retainSharedCodexAppServerClientByInstanceId(binding.clientId);
+  if (!retained) {
+    return undefined;
+  }
+  try {
+    const statuses = await listCodexMcpServerStatuses(retained.client, binding.threadId);
+    const policyApps = binding.pluginAppPolicyContext?.apps ?? {};
+    const capturedAppIds = new Set(Object.keys(policyApps));
+    const pluginByServer = new Map<string, string>();
+    for (const policy of Object.values(policyApps)) {
+      if (policy.source === "account") {
+        continue;
+      }
+      for (const serverName of policy.mcpServerNames) {
+        pluginByServer.set(serverName, policy.configKey);
+      }
+    }
+    const userMcpServers: ScheduledRuntimeAuthority["userMcpServers"] = [];
+    const pluginMcpServers: ScheduledRuntimeAuthority["pluginMcpServers"] = [];
+    for (const status of statuses.toSorted((left, right) => left.name.localeCompare(right.name))) {
+      const entries = Object.entries(status.tools).toSorted(([left], [right]) =>
+        left.localeCompare(right),
+      );
+      const appOwned =
+        status.name === CODEX_APPS_MCP_SERVER_NAME &&
+        entries.some(([, raw]) => {
+          const connectorId = readConnectorId(raw);
+          return connectorId ? capturedAppIds.has(connectorId) : false;
+        });
+      if (appOwned) {
+        continue;
+      }
+      const toolNames = entries.map(([toolName]) => toolName);
+      const pluginId = pluginByServer.get(status.name);
+      if (pluginId) {
+        pluginMcpServers.push({ pluginId, serverName: status.name, toolNames });
+      } else {
+        userMcpServers.push({ serverName: status.name, toolNames });
+      }
+    }
+    return {
+      version: 1,
+      runtime: "codex",
+      openClawTools: [...params.openClawTools],
+      apps: Object.entries(policyApps).map(([appId, policy]) => ({
+        appId,
+        allowDestructiveActions: policy.allowDestructiveActions,
+        allowOpenWorld: true,
+        approvalMode: policy.destructiveApprovalMode ?? "deny",
+      })),
+      userMcpServers,
+      pluginMcpServers,
+    };
   } finally {
     retained.release();
   }

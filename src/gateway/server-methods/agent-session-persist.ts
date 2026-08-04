@@ -18,6 +18,7 @@ import {
 } from "../../config/sessions/session-accessor.js";
 import { buildSessionCreationStamp } from "../../config/sessions/session-entry-provenance.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import { normalizeScheduledRuntimeAuthority } from "../../cron/scheduled-runtime-authority.js";
 import { normalizeCronScheduledToolPolicy } from "../../cron/scheduled-tool-policy.js";
 import { assertAgentRunLifecycleGenerationCurrent } from "../../infra/agent-events.js";
 import { resolveSendPolicy } from "../../sessions/send-policy.js";
@@ -224,6 +225,12 @@ export async function persistAgentSessionPhase(params: {
                   "cron run continuation has no reusable native CLI session";
                 throw new Error(restoredCronContinuationError);
               }
+              const scheduledToolPolicy = normalizeCronScheduledToolPolicy(
+                marker.scheduledToolPolicy,
+              );
+              const scheduledRuntimeAuthority = normalizeScheduledRuntimeAuthority(
+                marker.scheduledRuntimeAuthority,
+              );
               restoredCronContinuation = {
                 ...params.restoredCronContinuationIdentity,
                 provider,
@@ -231,13 +238,8 @@ export async function persistAgentSessionPhase(params: {
                 ...(freshEntry.thinkingLevel ? { thinking: freshEntry.thinkingLevel } : {}),
                 ...(marker.toolsAllow !== undefined ? { toolsAllow: [...marker.toolsAllow] } : {}),
                 ...(marker.toolsAllowIsDefault === true ? { toolsAllowIsDefault: true } : {}),
-                ...(normalizeCronScheduledToolPolicy(marker.scheduledToolPolicy)
-                  ? {
-                      scheduledToolPolicy: normalizeCronScheduledToolPolicy(
-                        marker.scheduledToolPolicy,
-                      ),
-                    }
-                  : {}),
+                ...(scheduledToolPolicy ? { scheduledToolPolicy } : {}),
+                ...(scheduledRuntimeAuthority ? { scheduledRuntimeAuthority } : {}),
                 ...(marker.cliSessionBindingFacts
                   ? { cliSessionBindingFacts: { ...marker.cliSessionBindingFacts } }
                   : {}),

@@ -15,6 +15,7 @@ import {
   resolveCodexDynamicToolsLoadingForRuntime,
 } from "./dynamic-tool-profile.js";
 import { createCodexDynamicToolBridge } from "./dynamic-tools.js";
+import { captureCodexScheduledRuntimeAuthority } from "./effective-mcp-catalog.js";
 import { emitCodexAppServerEvent } from "./run-attempt-lifecycle.js";
 import type { CodexAttemptRuntime } from "./run-attempt-runtime.js";
 import { resolveCodexDynamicToolDirectNames } from "./run-attempt-tools.js";
@@ -108,6 +109,7 @@ export async function prepareCodexAttemptTools(runtime: CodexAttemptRuntime) {
     frameToolCallId?: string;
     frameImageIdentity?: string;
   } = { value: 0 };
+  const cronCreatorToolAllowlist: Array<string | { name: string; pluginId?: string }> = [];
   const commonToolParams = {
     params: dynamicToolParams,
     resolvedWorkspace,
@@ -128,9 +130,16 @@ export async function prepareCodexAttemptTools(runtime: CodexAttemptRuntime) {
       void emitCodexAppServerEvent(params, event);
     },
     computerContextEpoch,
+    captureScheduledRuntimeAuthority: async (openClawTools: readonly string[]) =>
+      await captureCodexScheduledRuntimeAuthority({
+        bindingStore: connection.bindingStore,
+        bindingIdentity: connection.bindingIdentity,
+        openClawTools,
+      }),
   };
   const tools = await buildDynamicTools({
     ...commonToolParams,
+    cronCreatorToolAllowlistRef: cronCreatorToolAllowlist,
     onPersistentWebSearchPolicyResolved: (allowed) => {
       toolState.persistentWebSearchAllowed = allowed;
     },
@@ -211,6 +220,17 @@ export async function prepareCodexAttemptTools(runtime: CodexAttemptRuntime) {
   const scopedAdvertised = scopedMcpTools
     ? filterCodexDynamicTools(scopedMcpTools.advertisedTools, pluginConfig)
     : [];
+  // Requester MCP tools are bridged after the base OpenClaw tool factory runs.
+  // Carry their exact admitted names into the mutable cron creator cap too.
+  const creatorToolNames = new Set(
+    cronCreatorToolAllowlist.map((entry) => (typeof entry === "string" ? entry : entry.name)),
+  );
+  for (const tool of scopedExecutable) {
+    if (!creatorToolNames.has(tool.name)) {
+      cronCreatorToolAllowlist.push(tool.name);
+      creatorToolNames.add(tool.name);
+    }
+  }
   const toolsWithScopedMcp = scopedExecutable.length > 0 ? [...tools, ...scopedExecutable] : tools;
   const registeredWithScopedMcp =
     scopedAdvertised.length > 0 ? [...registeredTools, ...scopedAdvertised] : registeredTools;

@@ -2480,6 +2480,83 @@ describe("Codex thread-effective app attestation", () => {
   });
 });
 
+describe("Codex scheduled runtime authority lifecycle", () => {
+  beforeEach(async () => {
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-codex-scheduled-authority-"));
+    resetCodexTestBindingStore();
+  });
+
+  afterEach(async () => {
+    await fs.rm(tempDir, { recursive: true, force: true });
+    vi.restoreAllMocks();
+  });
+
+  it("rotates a loaded thread when current MCP policy narrows the stored cap", async () => {
+    const workspaceDir = path.join(tempDir, "workspace");
+    const params = createThreadLifecycleParams(path.join(tempDir, "session.jsonl"), workspaceDir);
+    params.scheduledRuntimeAuthority = {
+      version: 1,
+      runtime: "codex",
+      openClawTools: ["cron"],
+      apps: [],
+      userMcpServers: [{ serverName: "todoist", toolNames: ["add", "list"] }],
+      pluginMcpServers: [],
+    };
+    let enabledTools = ["add", "list"];
+    let threadNumber = 0;
+    const request = vi.fn(async (method: string) => {
+      if (method === "config/read") {
+        return {
+          layers: [],
+          config: {
+            mcp_servers: { todoist: { enabled: true, enabled_tools: enabledTools } },
+          },
+        };
+      }
+      if (method === "thread/start") {
+        return threadStartResult(`thread-${++threadNumber}`);
+      }
+      throw new Error(`unexpected method: ${method}`);
+    });
+    const common = {
+      client: { request } as never,
+      params,
+      cwd: workspaceDir,
+      dynamicTools: [],
+      appServer: createThreadLifecycleAppServerOptions(),
+    };
+
+    const first = await startOrResumeThread(common);
+    enabledTools = ["list"];
+    const second = await startOrResumeThread(common);
+
+    expect(first).toMatchObject({ threadId: "thread-1", lifecycle: { action: "started" } });
+    expect(second).toMatchObject({ threadId: "thread-2", lifecycle: { action: "started" } });
+    expect(request.mock.calls.map(([method]) => method)).toEqual([
+      "config/read",
+      "thread/start",
+      "config/read",
+      "thread/start",
+    ]);
+    const starts = request.mock.calls.filter(([method]) => method === "thread/start");
+    expect(starts[0]?.[1]).toEqual(
+      expect.objectContaining({
+        config: expect.objectContaining({
+          "features.plugins": false,
+          mcp_servers: { todoist: { enabled: true, enabled_tools: ["add", "list"] } },
+        }),
+      }),
+    );
+    expect(starts[1]?.[1]).toEqual(
+      expect.objectContaining({
+        config: expect.objectContaining({
+          mcp_servers: { todoist: { enabled: true, enabled_tools: ["list"] } },
+        }),
+      }),
+    );
+  });
+});
+
 describe("Codex app-server adopted thread lifecycle", () => {
   beforeEach(async () => {
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-codex-thread-adoption-"));

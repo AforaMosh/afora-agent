@@ -72,6 +72,7 @@ type ThreadRequestContext = {
   nativeSkillIsolationFingerprint?: string;
   userMcpServersFingerprint?: string;
   ringZeroConfigFingerprint?: string;
+  scheduledRuntimeAuthorityConfigFingerprint?: string;
   ringZeroClientInstanceId?: string;
   networkProxyConfigFingerprint?: string;
   contextEngineBinding?: CodexAppServerContextEngineBinding;
@@ -132,6 +133,7 @@ export async function resumeExistingCodexThread(
     nativeSkillIsolationFingerprint,
     userMcpServersFingerprint,
     ringZeroConfigFingerprint,
+    scheduledRuntimeAuthorityConfigFingerprint,
     ringZeroClientInstanceId,
     networkProxyConfigFingerprint,
     contextEngineBinding,
@@ -262,6 +264,7 @@ export async function resumeExistingCodexThread(
       userMcpServersFingerprint,
       mcpServersFingerprint: nextMcpServersFingerprint,
       ringZeroConfigFingerprint,
+      scheduledRuntimeAuthorityConfigFingerprint,
       ringZeroClientInstanceId,
       networkProxyProfileName: params.appServer.networkProxy?.profileName,
       networkProxyConfigFingerprint,
@@ -404,6 +407,7 @@ export async function startFreshCodexThread(
     nativeSkillIsolationFingerprint,
     userMcpServersFingerprint,
     ringZeroConfigFingerprint,
+    scheduledRuntimeAuthorityConfigFingerprint,
     ringZeroClientInstanceId,
     networkProxyConfigFingerprint,
     contextEngineBinding,
@@ -547,6 +551,7 @@ export async function startFreshCodexThread(
           userMcpServersFingerprint,
           mcpServersFingerprint: nextMcpServersFingerprint,
           ringZeroConfigFingerprint,
+          scheduledRuntimeAuthorityConfigFingerprint,
           ringZeroClientInstanceId,
           networkProxyProfileName: params.appServer.networkProxy?.profileName,
           networkProxyConfigFingerprint,
@@ -598,6 +603,7 @@ export async function startFreshCodexThread(
     userMcpServersFingerprint,
     mcpServersFingerprint: nextMcpServersFingerprint,
     ringZeroConfigFingerprint,
+    scheduledRuntimeAuthorityConfigFingerprint,
     ringZeroClientInstanceId,
     networkProxyProfileName: params.appServer.networkProxy?.profileName,
     networkProxyConfigFingerprint,

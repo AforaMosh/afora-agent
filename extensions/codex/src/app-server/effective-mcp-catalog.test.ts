@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { loadCodexEffectiveMcpCatalog } from "./effective-mcp-catalog.js";
+import {
+  captureCodexScheduledRuntimeAuthority,
+  loadCodexEffectiveMcpCatalog,
+} from "./effective-mcp-catalog.js";
 
 const sharedClientMocks = vi.hoisted(() => ({
   retainById: vi.fn(),
@@ -11,6 +14,79 @@ vi.mock("./shared-client.js", () => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+});
+
+describe("captureCodexScheduledRuntimeAuthority", () => {
+  it("captures exact apps and MCP tools while excluding app transport metadata and secrets", async () => {
+    const release = vi.fn();
+    const request = vi.fn().mockResolvedValue({
+      data: [
+        {
+          name: "codex_apps",
+          tools: {
+            search_tasks: {
+              _meta: { connector_id: "todoist", authorization: "Bearer secret-sentinel" },
+            },
+          },
+        },
+        { name: "todoist-user", tools: { list: {}, add: {} } },
+        { name: "calendar-native", tools: { events_list: {} } },
+      ],
+      nextCursor: null,
+    });
+    sharedClientMocks.retainById.mockReturnValueOnce({ client: { request }, release });
+    const bindingStore = {
+      read: vi.fn().mockResolvedValue({
+        threadId: "thread-1",
+        clientId: "client-1",
+        cwd: "/workspace",
+        pluginAppPolicyContext: {
+          fingerprint: "policy",
+          pluginAppIds: { calendar: ["todoist"] },
+          apps: {
+            todoist: {
+              configKey: "calendar",
+              marketplaceName: "openai-curated",
+              pluginName: "calendar",
+              allowDestructiveActions: false,
+              destructiveApprovalMode: "ask",
+              mcpServerNames: ["calendar-native"],
+            },
+          },
+        },
+      }),
+    };
+
+    const authority = await captureCodexScheduledRuntimeAuthority({
+      bindingStore: bindingStore as never,
+      bindingIdentity: { kind: "session", agentId: "main", sessionId: "session-1" },
+      openClawTools: ["cron", "read"],
+    });
+
+    expect(authority).toEqual({
+      version: 1,
+      runtime: "codex",
+      openClawTools: ["cron", "read"],
+      apps: [
+        {
+          appId: "todoist",
+          allowDestructiveActions: false,
+          allowOpenWorld: true,
+          approvalMode: "ask",
+        },
+      ],
+      userMcpServers: [{ serverName: "todoist-user", toolNames: ["add", "list"] }],
+      pluginMcpServers: [
+        {
+          pluginId: "calendar",
+          serverName: "calendar-native",
+          toolNames: ["events_list"],
+        },
+      ],
+    });
+    expect(JSON.stringify(authority)).not.toContain("secret-sentinel");
+    expect(release).toHaveBeenCalledOnce();
+  });
 });
 
 describe("loadCodexEffectiveMcpCatalog", () => {
