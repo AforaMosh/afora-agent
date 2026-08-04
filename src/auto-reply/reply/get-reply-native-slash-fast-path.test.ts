@@ -170,6 +170,10 @@ describe("maybeResolveNativeSlashCommandFastReply", () => {
       expected: 'Unexpected argument "please" for /reasoning.',
     },
     { command: "/exec host=node please", expected: 'Unexpected argument "please" for /exec.' },
+    {
+      command: "/model openai/gpt-5.5 --runtime codex --runtime acp",
+      expected: 'Unexpected argument "--runtime" for /model.',
+    },
   ])(
     "rejects trailing prose instead of dropping native command $command",
     async ({ command, expected }) => {

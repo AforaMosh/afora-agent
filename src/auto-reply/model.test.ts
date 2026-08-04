@@ -74,6 +74,18 @@ describe("extractModelDirective", () => {
       expect(result.cleaned).toBe("");
     });
 
+    it("preserves duplicate runtime and session options for validation", () => {
+      const runtime = extractModelDirective(
+        "/model openai/gpt-5.6-luna --runtime codex --runtime acp",
+      );
+      expect(runtime.rawRuntime).toBe("codex");
+      expect(runtime.cleaned).toBe("--runtime acp");
+
+      const session = extractModelDirective("/model openai/gpt-5.6-luna -s -s");
+      expect(session.sessionOnly).toBe(true);
+      expect(session.cleaned).toBe("-s");
+    });
+
     it("extracts /model with profile override", () => {
       const result = extractModelDirective("/model gpt-5@myprofile");
       expect(result.hasDirective).toBe(true);

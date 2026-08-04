@@ -239,6 +239,29 @@ describe("directive parsing", () => {
     expect(model.nativeCommand).toEqual({ name: "model" });
   });
 
+  it("rejects duplicate native /model options through unconsumed arguments", () => {
+    const model = parseInlineDirectives(
+      "/model openai/gpt-4.1-mini --runtime codex --runtime acp",
+      { nativeCommand: "model" },
+    );
+
+    expect(model.rawModelDirective).toBe("openai/gpt-4.1-mini");
+    expect(model.rawModelRuntime).toBe("codex");
+    expect(model.cleaned).toBe("--runtime acp");
+    expect(model.nativeCommand).toEqual({
+      name: "model",
+      unconsumedArguments: "--runtime acp",
+    });
+  });
+
+  it("preserves duplicate inline /model options as message text", () => {
+    const model = parseInlineDirectives("please sync /model openai/gpt-4.1-mini -s -s now");
+
+    expect(model.rawModelDirective).toBe("openai/gpt-4.1-mini");
+    expect(model.modelSessionOnly).toBe(true);
+    expect(model.cleaned).toBe("please sync -s now");
+  });
+
   it("keeps here as the selected model in mixed commands", () => {
     const model = parseInlineDirectives("please /model here continue");
     expect(model.cleaned).toBe("please continue");
