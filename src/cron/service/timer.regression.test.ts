@@ -2963,6 +2963,9 @@ describe("cron service timer regressions", () => {
       payload: { kind: "agentTurn", message: "fail" },
       state: { consecutiveErrors: 9 },
     });
+    // Delivery mode none: these tests prove alert/auto-disable interplay, not
+    // the announced-job deferral to per-run failure notifications.
+    job.delivery = { mode: "none" };
 
     applyJobResult(
       state,
@@ -3001,6 +3004,9 @@ describe("cron service timer regressions", () => {
       payload: { kind: "agentTurn", message: "fail" },
       state: { consecutiveErrors: 9, nextRunAtMs: startedAt + 60_000 },
     });
+    // Delivery mode none: these tests prove alert/auto-disable interplay, not
+    // the announced-job deferral to per-run failure notifications.
+    job.delivery = { mode: "none" };
 
     applyJobResult(
       state,

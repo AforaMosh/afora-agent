@@ -22,6 +22,13 @@ type ResolvedFailureAlert = {
   accountId?: string;
   threadId?: string | number;
   includeSkipped: boolean;
+  /**
+   * True when no job or global alert config exists and the alert is active
+   * purely by default. Default alerts cover otherwise-invisible failures;
+   * explicit config is an operator opt-in that alerts even when completion
+   * delivery already announces the failed run.
+   */
+  defaultInherited: boolean;
 };
 
 /** Returns the last failure-notification delivery trace persisted on a cron job. */
@@ -195,6 +202,9 @@ export function resolveFailureAlert(
     accountId,
     threadId: inheritsDeliveryThread ? job.delivery?.threadId : undefined,
     includeSkipped: jobConfig?.includeSkipped ?? globalConfig?.includeSkipped ?? false,
+    defaultInherited:
+      !jobConfig &&
+      (globalConfig === undefined || Object.values(globalConfig).every((v) => v === undefined)),
   };
 }
 
@@ -281,6 +291,8 @@ export function maybeEmitFailureAlert(
     delivery?: "emit" | "record-only";
     occurredAtMs?: number;
     deferredNotifications?: DeferredCronNotifications;
+    /** True when completion delivery already owns a failure notification for this run. */
+    runFailureNotificationOwned?: boolean;
   },
 ) {
   const alertConfig = params.alertConfig;
@@ -294,6 +306,18 @@ export function maybeEmitFailureAlert(
   ) {
     // Completion delivery owns explicit failure routes and clear-only opt-outs.
     // Suppress failed-run duplicates without disabling global skipped alerts.
+    return;
+  }
+  if (
+    params.status === "error" &&
+    alertConfig.defaultInherited &&
+    params.runFailureNotificationOwned
+  ) {
+    // Default-inherited alerts cover otherwise-invisible failures only. When
+    // this run's failure notification is already owned by completion delivery
+    // (primary announce fallback or a failure destination), a default alert
+    // would deliver a second message to the same target. Explicit job/global
+    // alert config keeps both: that is an operator opt-in.
     return;
   }
   // Best-effort delivery suppresses inherited alert noise, not an independently

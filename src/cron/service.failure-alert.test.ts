@@ -153,25 +153,61 @@ describe("CronService failure alerts", () => {
     );
   });
 
-  it("alerts by default with no failure alert config at all", async () => {
+  it("alerts by default when a job's failures are otherwise invisible", async () => {
     await withFailureAlertCron(
       {
         failureAlert: undefined,
         runResult: { status: "error", error: "expired oauth token" },
       },
       async ({ cron, sendCronFailureAlert, addJob }) => {
-        const job = await addJob("default alert job", { delivery: createTelegramDelivery() });
+        const job = await addJob("default alert job", { delivery: { mode: "none" } });
 
         await cron.run(job.id, "force");
         expect(sendCronFailureAlert).not.toHaveBeenCalled();
 
         await cron.run(job.id, "force");
         expect(sendCronFailureAlert).toHaveBeenCalledTimes(1);
-        expectAlertFields(sendCronFailureAlert, { channel: "telegram", to: "19098680" });
+        expectAlertFields(sendCronFailureAlert, { channel: "last" });
         expectAlertTextContaining(
           sendCronFailureAlert,
           'Automation "default alert job" failed 2 times',
         );
+      },
+    );
+  });
+
+  it("defers default alerts to the per-run failure notification on announced jobs", async () => {
+    // An announce-primary job already delivers a failure notification for every
+    // failed run; the default-inherited threshold alert must not double it.
+    await withFailureAlertCron(
+      {
+        failureAlert: undefined,
+        runResult: { status: "error", error: "expired oauth token" },
+      },
+      async ({ cron, sendCronFailureAlert, addJob }) => {
+        const job = await addJob("announced job", { delivery: createTelegramDelivery() });
+
+        await cron.run(job.id, "force");
+        await cron.run(job.id, "force");
+        await cron.run(job.id, "force");
+        expect(sendCronFailureAlert).not.toHaveBeenCalled();
+      },
+    );
+  });
+
+  it("keeps threshold alerts on announced jobs when the operator enables them explicitly", async () => {
+    await withFailureAlertCron(
+      {
+        failureAlert: { enabled: true, after: 2 },
+        runResult: { status: "error", error: "expired oauth token" },
+      },
+      async ({ cron, sendCronFailureAlert, addJob }) => {
+        const job = await addJob("explicit alert job", { delivery: createTelegramDelivery() });
+
+        await cron.run(job.id, "force");
+        await cron.run(job.id, "force");
+        expect(sendCronFailureAlert).toHaveBeenCalledTimes(1);
+        expectAlertFields(sendCronFailureAlert, { channel: "telegram", to: "19098680" });
       },
     );
   });

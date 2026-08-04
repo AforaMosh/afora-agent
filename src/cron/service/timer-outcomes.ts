@@ -156,6 +156,7 @@ export function applyJobResult(
         errorReason: job.state.lastErrorReason,
         runAtMs: result.startedAt,
         consecutiveCount: job.state.consecutiveErrors ?? 1,
+        runFailureNotificationOwned: deliveryState.failureNotification.status !== "not-requested",
         ...(opts?.replayFailureAlertAtMs !== undefined
           ? { delivery: "record-only" as const, occurredAtMs: opts.replayFailureAlertAtMs }
           : {}),
