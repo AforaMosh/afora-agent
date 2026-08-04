@@ -891,6 +891,7 @@ export const FIELD_LABELS: Record<string, string> = {
   "talk.realtime.providers": "Talk Realtime Provider Settings",
   "talk.realtime.providers.*": "Talk Realtime Provider Config",
   "talk.realtime.providers.*.apiKey": "Talk Realtime Provider API Key", // pragma: allowlist secret
+  "talk.realtime.experimentalModels": "Experimental Realtime Models",
   "talk.realtime.model": "Talk Realtime Model",
   "talk.realtime.speakerVoice": "Talk Realtime Speaker Voice",
   "talk.realtime.speakerVoiceId": "Talk Realtime Speaker Voice ID",

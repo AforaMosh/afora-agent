@@ -43,6 +43,7 @@ describe("talk normalization", () => {
       },
       realtime: {
         provider: "openai",
+        experimentalModels: true,
         providers: {
           openai: {
             model: "gpt-realtime",
@@ -73,6 +74,7 @@ describe("talk normalization", () => {
       },
       realtime: {
         provider: "openai",
+        experimentalModels: true,
         providers: {
           openai: {
             model: "gpt-realtime",

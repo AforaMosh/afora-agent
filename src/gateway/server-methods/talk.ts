@@ -36,6 +36,7 @@ import {
   listRealtimeVoiceProviders,
 } from "../../talk/provider-registry.js";
 import {
+  isRealtimeVoiceModelEnabled,
   isRealtimeVoiceProviderConfigured,
   resolveConfiguredRealtimeVoiceProvider,
   resolveRealtimeVoiceProviderCapabilities,
@@ -389,8 +390,20 @@ function buildTalkCatalog(config: OpenClawConfig) {
         if (provider.defaultModel) {
           entry.defaultModel = provider.defaultModel;
         }
-        if (provider.models?.length) {
-          entry.models = [...provider.models];
+        const catalogModels = [...(provider.models ?? [])];
+        const configuredModel =
+          provider.id === activeRealtimeProvider
+            ? normalizeOptionalString((providerConfig as { model?: unknown }).model)
+            : undefined;
+        if (
+          configuredModel &&
+          isRealtimeVoiceModelEnabled({ provider, providerConfig, cfg: config }) &&
+          !catalogModels.includes(configuredModel)
+        ) {
+          catalogModels.push(configuredModel);
+        }
+        if (catalogModels.length > 0) {
+          entry.models = catalogModels;
         }
         if (provider.voices?.length) {
           entry.voices = [...provider.voices];

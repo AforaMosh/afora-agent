@@ -12,6 +12,9 @@ import { buildOpenAIRealtimeVoiceProvider } from "./realtime-voice-provider.js";
 const INTERNAL_REALTIME_VOICE_PROVIDER = Symbol.for("openclaw.internal.realtime-voice-provider.v1");
 const OPENAI_REALTIME_REJECTED_KEY_MESSAGE =
   "OpenAI Realtime rejected the selected API key. Update or remove the active OpenAI API-key source";
+const EXPERIMENTAL_REALTIME_CONFIG = {
+  talk: { realtime: { experimentalModels: true } },
+} as never;
 
 function readInternalRealtimeVoiceProviderApi(provider: object) {
   return Reflect.get(provider, INTERNAL_REALTIME_VOICE_PROVIDER) as {
@@ -417,6 +420,11 @@ describe("buildOpenAIRealtimeVoiceProvider", () => {
     const provider = buildOpenAIRealtimeVoiceProvider();
 
     expect(provider.defaultModel).toBe("gpt-realtime-2.1");
+    expect(provider.models).toEqual([
+      "gpt-realtime-2.1",
+      "gpt-realtime-2.1-mini",
+      "gpt-realtime-2",
+    ]);
     expect(provider.capabilities).toEqual({
       transports: ["webrtc", "gateway-relay"],
       inputAudioFormats: [
@@ -924,6 +932,7 @@ describe("buildOpenAIRealtimeVoiceProvider", () => {
           { id: "voice", agentDir: "/tmp/openclaw-agent-voice" },
         ],
       },
+      talk: { realtime: { experimentalModels: true } },
     } as never;
     const providerConfig = { model: "gpt-live-1-boulder-alpha" };
 
@@ -935,6 +944,29 @@ describe("buildOpenAIRealtimeVoiceProvider", () => {
         profileTypes?.includes("oauth") === true,
     );
     expect(provider.isConfigured({ cfg, agentId: "voice", providerConfig })).toBe(false);
+  });
+
+  it("requires the Labs gate before creating a gpt-live browser session", async () => {
+    const createBrowserSession = vi.fn();
+    const provider = buildOpenAIRealtimeVoiceProvider({
+      quicksilverBrowserSessionBroker: {
+        capabilities: { handlesAgentConsult: true as const },
+        createBrowserSession,
+        cancelBrowserSession: vi.fn(),
+      },
+    });
+
+    await expect(
+      provider.createBrowserSession?.({
+        providerConfig: { apiKey: "sk-platform" }, // pragma: allowlist secret
+        model: "gpt-live-1-boulder-alpha",
+        agentId: "main",
+        workspaceDir: "/tmp/openclaw-agent-workspace",
+        initialItems: [],
+        runAgentConsult: vi.fn(async () => ({ text: "Done" })),
+      } as never),
+    ).rejects.toThrow("Experimental realtime models are disabled");
+    expect(createBrowserSession).not.toHaveBeenCalled();
   });
 
   it("routes gpt-live Platform sessions through the native quicksilver broker", async () => {
@@ -957,6 +989,7 @@ describe("buildOpenAIRealtimeVoiceProvider", () => {
       },
     });
     const request = {
+      cfg: EXPERIMENTAL_REALTIME_CONFIG,
       providerConfig: { apiKey: "sk-platform" }, // pragma: allowlist secret
       model: "gpt-live-1-boulder-alpha",
       agentId: "main",
@@ -997,6 +1030,7 @@ describe("buildOpenAIRealtimeVoiceProvider", () => {
       agents: {
         list: [{ id: "voice", agentDir: "/tmp/openclaw-agent-voice" }],
       },
+      talk: { realtime: { experimentalModels: true } },
     } as never;
 
     await expect(
@@ -1045,7 +1079,7 @@ describe("buildOpenAIRealtimeVoiceProvider", () => {
 
     await expect(
       provider.createBrowserSession?.({
-        cfg: {} as never,
+        cfg: EXPERIMENTAL_REALTIME_CONFIG,
         providerConfig: {},
         model: "gpt-live-1-boulder-alpha",
         agentId: "main",
@@ -1080,6 +1114,7 @@ describe("buildOpenAIRealtimeVoiceProvider", () => {
       agents: {
         list: [{ id: "voice", agentDir: "/tmp/openclaw-agent-voice" }],
       },
+      talk: { realtime: { experimentalModels: true } },
     } as never;
     const internalApi = readInternalRealtimeVoiceProviderApi(provider);
     const providerConfig = { model: "gpt-live-1-boulder-alpha" };
@@ -1151,7 +1186,10 @@ describe("buildOpenAIRealtimeVoiceProvider", () => {
         cancelBrowserSession: vi.fn(),
       },
     });
-    const cfg = { agents: { defaults: {} } } as never;
+    const cfg = {
+      agents: { defaults: {} },
+      talk: { realtime: { experimentalModels: true } },
+    } as never;
 
     expect(provider.isConfigured({ cfg, providerConfig: { model: "gpt-live-1-mini" } })).toBe(
       false,
@@ -1233,7 +1271,7 @@ describe("buildOpenAIRealtimeVoiceProvider", () => {
         initialItems: [],
         runAgentConsult: vi.fn(async () => ({ text: "Done" })),
       } as never),
-    ).rejects.toThrow('Unsupported GPT-Live model "gpt-live-1-mini"');
+    ).rejects.toThrow("This experimental realtime model is not supported by this OpenClaw build.");
     expect(createBrowserSession).not.toHaveBeenCalled();
     expect(resolveProviderOAuthAccessMock).not.toHaveBeenCalled();
   });
@@ -1247,7 +1285,7 @@ describe("buildOpenAIRealtimeVoiceProvider", () => {
         providerConfig: { model: "gpt-live-future-alias" },
         autoRespondToAudio: false,
       }),
-    ).toContain('Unsupported GPT-Live model "gpt-live-future-alias"');
+    ).toContain("This experimental realtime model is not supported by this OpenClaw build.");
     expect(
       internalApi.validateGatewayRelayLaunch({
         providerConfig: { model: "gpt-realtime-2.1" },
@@ -1276,6 +1314,7 @@ describe("buildOpenAIRealtimeVoiceProvider", () => {
     });
 
     await provider.createBrowserSession?.({
+      cfg: EXPERIMENTAL_REALTIME_CONFIG,
       providerConfig: { apiKey: "sk-platform" }, // pragma: allowlist secret
       model: "gpt-live-1-boulder-alpha",
       agentId: "main",
@@ -1424,6 +1463,7 @@ describe("buildOpenAIRealtimeVoiceProvider", () => {
     });
 
     await provider.createBrowserSession?.({
+      cfg: EXPERIMENTAL_REALTIME_CONFIG,
       providerConfig: {
         apiKey: "sk-platform", // pragma: allowlist secret
         model: "gpt-live-1-boulder-alpha",
@@ -1471,6 +1511,7 @@ describe("buildOpenAIRealtimeVoiceProvider", () => {
 
     await expect(
       provider.createBrowserSession?.({
+        cfg: EXPERIMENTAL_REALTIME_CONFIG,
         providerConfig: {},
         model: "gpt-live-1-boulder-alpha",
       }),
