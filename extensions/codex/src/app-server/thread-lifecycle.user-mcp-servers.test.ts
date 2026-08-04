@@ -394,7 +394,9 @@ describe("startOrResumeThread — user mcp.servers projection (regression: #8081
             transport: "stdio",
             command: "node",
             args: ["/opt/memory-mcp.js"],
-            toolFilter: { include: ["read_graph", "create_entities"] },
+            toolFilter: {
+              include: ["read_graph", "create_entities", "delete_observations"],
+            },
           },
           addedLater: {
             transport: "stdio",
@@ -437,13 +439,17 @@ describe("startOrResumeThread — user mcp.servers projection (regression: #8081
       cwd: workspaceDir,
       dynamicTools: [],
       appServer: createAppServerOptions(),
+      buildFinalConfigPatch: () => ({
+        configPatch: { "features.hooks": true },
+        nativeHookRelayGeneration: "scheduled-authority-test",
+      }),
       nativeCodeModeEnabled: false,
       userMcpServersEnabled: false,
     });
 
     expect(request.mock.calls.map(([method]) => method)).toEqual(["config/read", "thread/start"]);
     const startParams = request.mock.calls[1]?.[1] as {
-      config?: { mcp_servers?: Record<string, unknown> };
+      config?: Record<string, unknown> & { mcp_servers?: Record<string, unknown> };
     };
     expect(startParams?.config?.mcp_servers).toEqual({
       memory: {
@@ -454,6 +460,7 @@ describe("startOrResumeThread — user mcp.servers projection (regression: #8081
       },
       nativeAddedLater: { enabled: false },
     });
+    expect(startParams?.config?.["features.hooks"]).toBe(true);
     expect(startParams?.config?.mcp_servers).not.toHaveProperty("addedLater");
   });
 

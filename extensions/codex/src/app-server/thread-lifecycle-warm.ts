@@ -17,6 +17,7 @@ import type {
   CodexAppServerContextEngineBinding,
   CodexAppServerThreadBinding,
 } from "./session-binding.js";
+import { resolveCodexThreadFinalConfigPatch } from "./thread-final-config.js";
 import { fingerprintCodexThreadConfig } from "./thread-fingerprints.js";
 import { CodexThreadBindingConflictError } from "./thread-lifecycle-errors.js";
 import type { CodexThreadLifecycleTimingTracker } from "./thread-lifecycle-timing.js";
@@ -146,13 +147,10 @@ export async function tryReuseCodexLiveThread(
     return {};
   }
 
-  const prebuiltFinalConfigPatch = params.buildFinalConfigPatch?.({
+  const prebuiltFinalConfigPatch = resolveCodexThreadFinalConfigPatch(params, {
     action: "resume",
     binding,
-  }) ?? {
-    configPatch: params.finalConfigPatch,
-    nativeHookRelayGeneration: params.nativeHookRelayGeneration,
-  };
+  });
   const pluginAppsConfigPatch =
     params.pluginThreadConfig?.enabled && binding.pluginAppPolicyContext
       ? buildCodexPluginAppsConfigPatchFromPolicyContext(binding.pluginAppPolicyContext)

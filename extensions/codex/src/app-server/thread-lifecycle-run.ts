@@ -26,6 +26,7 @@ import {
   shouldRotateCodexGpt56MultiAgentBinding,
 } from "./thread-binding-policy.js";
 import { isContextEngineBindingCompatible } from "./thread-context-engine.js";
+import { resolveCodexThreadFinalConfigPatch } from "./thread-final-config.js";
 import {
   areDynamicToolFingerprintsCompatible,
   areUserMcpServersFingerprintsCompatible,
@@ -138,10 +139,7 @@ export async function startOrResumeThread(
             params.pluginThreadConfig?.build(),
           )
         : undefined;
-      const finalConfigPatch = params.buildFinalConfigPatch?.({ action: "start" }) ?? {
-        configPatch: params.finalConfigPatch,
-        nativeHookRelayGeneration: params.nativeHookRelayGeneration,
-      };
+      const finalConfigPatch = resolveCodexThreadFinalConfigPatch(params, { action: "start" });
       const config = lifecycleTiming.measureSync("merge-thread-config", () =>
         applyCodexNativeSkillIsolation(
           mergeCodexThreadConfigs(

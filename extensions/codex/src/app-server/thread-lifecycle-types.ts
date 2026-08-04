@@ -19,11 +19,11 @@ export type CodexAppServerThreadLifecycleBinding = CodexAppServerThreadBinding &
   liveThreadConfigFingerprint?: string;
 };
 
-type CodexThreadFinalConfigPatchDecision =
+export type CodexThreadFinalConfigPatchDecision =
   | { action: "resume"; binding: CodexAppServerThreadBinding }
   | { action: "start" };
 
-type CodexThreadFinalConfigPatchResult = {
+export type CodexThreadFinalConfigPatchResult = {
   configPatch?: JsonObject;
   nativeHookRelayGeneration?: string;
 };

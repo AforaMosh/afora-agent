@@ -35,6 +35,7 @@ import type {
   CodexAppServerThreadBinding,
 } from "./session-binding.js";
 import { isCodexAppServerStartSelectionChangedError } from "./shared-client.js";
+import { resolveCodexThreadFinalConfigPatch } from "./thread-final-config.js";
 import {
   fingerprintCodexThreadConfig,
   readActiveCodexTurnIdsFromResume,
@@ -153,14 +154,12 @@ export async function resumeExistingCodexThread(
       resumeBinding.connectionScope === "supervision"
         ? undefined
         : (params.params.authProfileId ?? resumeBinding.authProfileId);
-    const finalConfigPatch = context.prebuiltFinalConfigPatch ??
-      params.buildFinalConfigPatch?.({
+    const finalConfigPatch =
+      context.prebuiltFinalConfigPatch ??
+      resolveCodexThreadFinalConfigPatch(params, {
         action: "resume",
         binding: resumeBinding,
-      }) ?? {
-        configPatch: params.finalConfigPatch,
-        nativeHookRelayGeneration: params.nativeHookRelayGeneration,
-      };
+      });
     // Codex rebuilds effective config on thread/resume, so replay the app
     // allowlist persisted at thread/start or plugin tools disappear after one turn.
     const pluginAppsConfigPatch =
@@ -429,10 +428,7 @@ export async function startFreshCodexThread(
         params.pluginThreadConfig?.build(),
       )))
     : undefined;
-  const finalConfigPatch = params.buildFinalConfigPatch?.({ action: "start" }) ?? {
-    configPatch: params.finalConfigPatch,
-    nativeHookRelayGeneration: params.nativeHookRelayGeneration,
-  };
+  const finalConfigPatch = resolveCodexThreadFinalConfigPatch(params, { action: "start" });
   const config = lifecycleTiming.measureSync("merge-thread-config", () =>
     applyCodexNativeSkillIsolation(
       mergeCodexThreadConfigs(
