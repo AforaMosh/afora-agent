@@ -273,7 +273,11 @@ describe("command-startup-policy", () => {
   });
 
   it("suppresses startup stdout for the bare acp protocol", () => {
-    expect(resolvePolicy({ commandPath: ["acp"] }).suppressDoctorStdout).toBe(true);
+    const policy = resolvePolicy({ commandPath: ["acp"] });
+
+    expect(policy.suppressDoctorStdout).toBe(true);
+    expect(policy.loadPlugins).toBe(true);
+    expect(policy.pluginRegistry).toEqual({ scope: "all" });
   });
 
   it("keeps startup stdout for non-protocol commands", () => {

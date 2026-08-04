@@ -324,7 +324,11 @@ export const cliCommandCatalog: readonly CliCommandCatalogEntry[] = [
   {
     commandPath: ["acp"],
     exact: true,
-    policy: { ownsProtocolStdout: true },
+    policy: {
+      loadPlugins: "always",
+      pluginRegistry: { scope: "all" },
+      ownsProtocolStdout: true,
+    },
   },
   { commandPath: ["approvals"], policy: { networkProxy: "bypass" } },
   // automations is a commander alias for cron; argv-derived command paths keep the typed token.
