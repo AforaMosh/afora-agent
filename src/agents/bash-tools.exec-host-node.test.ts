@@ -842,6 +842,51 @@ describe("executeNodeHostCommand", () => {
     ).toBe(true);
   });
 
+  it("returns a structured failure when a process-local node approval is denied", async () => {
+    hasLocalExecApprovalHostMock.mockReturnValue(true);
+    resolveApprovalDecisionOrUndefinedMock.mockResolvedValue("deny");
+    createAndRegisterDefaultExecApprovalRequestMock.mockResolvedValue({
+      approvalId: "approval-denied",
+      approvalSlug: "slug-denied",
+      warningText: "",
+      expiresAtMs: Date.now() + 60_000,
+      preResolvedDecision: undefined,
+      initiatingSurface: "origin",
+      sentApproverDms: false,
+      unavailableReason: null,
+    });
+    resolveExecHostApprovalContextMock.mockReturnValue({
+      approvals: { allowlist: [], file: { version: 1, agents: {} } },
+      hostSecurity: "full",
+      hostAsk: "always",
+      askFallback: "deny",
+    });
+    createExecApprovalDecisionStateMock.mockReturnValue({
+      baseDecision: { timedOut: false },
+      approvedByAsk: false,
+      deniedReason: "user-denied",
+    });
+
+    const result = await executeNodeHostCommand(createNodeHostRequest({ ask: "always" }));
+
+    expect(result.details).toMatchObject({
+      status: "failed",
+      timedOut: false,
+    });
+    expect(result.content).toEqual([
+      {
+        type: "text",
+        text: expect.stringContaining("Exec denied (node=node-1 id=approval-denied, user-denied)"),
+      },
+    ]);
+    expect(callGatewayToolMock).not.toHaveBeenCalledWith(
+      "node.invoke",
+      expect.anything(),
+      expect.objectContaining({ command: "system.run" }),
+      expect.anything(),
+    );
+  });
+
   it.each([
     { name: "an already-rejected approval", delayed: false },
     { name: "an approval cancelled after the pending result", delayed: true },

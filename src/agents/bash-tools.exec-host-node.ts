@@ -21,6 +21,7 @@ import {
   registerExecApprovalRequestForHostOrThrow,
 } from "./bash-tools.exec-approval-request.js";
 import {
+  formatNodeExecApprovalDeniedToolResult,
   formatNodeInvokeFailureFollowup,
   formatNodeInvokeFailureToolResult,
   invokeNodeSystemRun,
@@ -409,15 +410,13 @@ export async function executeNodeHostCommand(
           requiresAutoReviewHumanApproval: autoReviewRequiresHumanApproval,
         });
         if (strictInlineEvalDecision.deniedReason || !strictInlineEvalDecision.approvedByAsk) {
-          throw new Error(
-            execHostShared.buildHeadlessExecApprovalDeniedMessage({
-              trigger: params.trigger,
-              host: "node",
-              security: currentFallback?.hostSecurity ?? hostSecurity,
-              ask: currentFallback?.hostAsk ?? hostAsk,
-              askFallback: currentFallback?.askFallback ?? askFallback,
-            }),
-          );
+          return formatNodeExecApprovalDeniedToolResult({
+            nodeId: target.nodeId,
+            approvalId,
+            deniedReason: strictInlineEvalDecision.deniedReason ?? "approval-required",
+            command: params.command,
+            cwd: params.workdir,
+          });
         }
         inlineApprovedByAsk = strictInlineEvalDecision.approvedByAsk;
         inlineApprovalSource = inlineDecision === null ? "ask-fallback" : undefined;
