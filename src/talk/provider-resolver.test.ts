@@ -2,6 +2,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { RealtimeVoiceProviderPlugin } from "../plugins/types.js";
 import {
+  isRealtimeVoiceModelEnabled,
   resolveConfiguredRealtimeVoiceProvider,
   resolveRealtimeVoiceProviderCapabilities,
 } from "./provider-resolver.js";
@@ -281,6 +282,37 @@ describe("realtime voice provider resolver", () => {
       voice: "cedar",
       resolved: true,
     });
+  });
+
+  it("keeps provider-declared experimental models behind the Talk Labs gate", () => {
+    const provider: RealtimeVoiceProviderPlugin = {
+      id: "preview",
+      label: "Preview",
+      isExperimentalModel: (model) => model.startsWith("preview-"),
+      isConfigured: () => true,
+      createBridge: () => {
+        throw new Error("unused");
+      },
+    };
+    const providerConfig = { model: "preview-realtime-model" };
+
+    expect(isRealtimeVoiceModelEnabled({ provider, providerConfig, cfg: {} })).toBe(false);
+    expect(() =>
+      resolveConfiguredRealtimeVoiceProvider({
+        configuredProviderId: provider.id,
+        providerConfigs: { preview: providerConfig },
+        providers: [provider],
+        cfg: {},
+      }),
+    ).toThrow("Enable them in Labs");
+    expect(
+      resolveConfiguredRealtimeVoiceProvider({
+        configuredProviderId: provider.id,
+        providerConfigs: { preview: providerConfig },
+        providers: [provider],
+        cfg: { talk: { realtime: { experimentalModels: true } } },
+      }).provider,
+    ).toBe(provider);
   });
 
   it("throws a caller-specified message when no providers exist", () => {

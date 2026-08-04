@@ -54,6 +54,8 @@ export type TalkRealtimeConfig = {
   provider?: string;
   /** Provider-specific realtime voice config keyed by provider id. */
   providers?: Record<string, TalkProviderConfig>;
+  /** Allow provider-declared experimental realtime models (default: false). */
+  experimentalModels?: boolean;
   /** Provider model override for realtime sessions. */
   model?: string;
   /** Provider speaker voice name override for realtime sessions. */

@@ -111,6 +111,9 @@ function normalizeTalkRealtimeConfig(value: unknown): TalkRealtimeConfig | undef
   if (providers) {
     normalized.providers = providers;
   }
+  if (typeof source.experimentalModels === "boolean") {
+    normalized.experimentalModels = source.experimentalModels;
+  }
   const model = normalizeOptionalString(source.model);
   if (model) {
     normalized.model = model;

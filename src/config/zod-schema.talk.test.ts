@@ -31,6 +31,7 @@ describe("OpenClawSchema talk validation", () => {
         talk: {
           realtime: {
             provider: "openai",
+            experimentalModels: true,
             providers: {
               openai: {
                 model: "gpt-realtime",

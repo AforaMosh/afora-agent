@@ -43,6 +43,26 @@ export type ResolveConfiguredRealtimeVoiceProviderParams = {
   noRegisteredProviderMessage?: string;
 };
 
+function configuredRealtimeVoiceModel(
+  providerConfig: RealtimeVoiceProviderConfig,
+): string | undefined {
+  const model = providerConfig.model;
+  return typeof model === "string" && model.trim() ? model.trim() : undefined;
+}
+
+export function isRealtimeVoiceModelEnabled(params: {
+  provider: RealtimeVoiceProviderPlugin;
+  providerConfig: RealtimeVoiceProviderConfig;
+  cfg?: OpenClawConfig;
+}): boolean {
+  const model = configuredRealtimeVoiceModel(params.providerConfig);
+  return (
+    !model ||
+    !params.provider.isExperimentalModel?.(model) ||
+    params.cfg?.talk?.realtime?.experimentalModels === true
+  );
+}
+
 export function resolveRealtimeVoiceProviderCapabilities(params: {
   provider: RealtimeVoiceProviderPlugin;
   providerConfig: RealtimeVoiceProviderConfig;
@@ -73,6 +93,9 @@ export function isRealtimeVoiceProviderConfigured(params: {
   agentId?: string;
   surface?: "browser-session" | "gateway-relay" | "bridge";
 }): boolean {
+  if (!isRealtimeVoiceModelEnabled(params)) {
+    return false;
+  }
   const internalConfigured =
     params.surface === "browser-session"
       ? isInternalRealtimeVoiceBrowserSessionConfigured(params)
@@ -95,6 +118,7 @@ export function resolveConfiguredRealtimeVoiceProvider(
 ): ResolvedRealtimeVoiceProvider {
   const cfgForResolve = params.cfgForResolve ?? params.cfg ?? ({} as OpenClawConfig);
   const providers = params.providers ?? listRealtimeVoiceProviders(params.cfg);
+  let experimentalModelBlocked = false;
   const resolution = resolveConfiguredCapabilityProvider({
     configuredProviderId: params.configuredProviderId,
     providerConfigs: params.providerConfigs,
@@ -122,14 +146,19 @@ export function resolveConfiguredRealtimeVoiceProvider(
         rawConfigWithOverrides
       );
     },
-    isProviderConfigured: ({ provider, cfg, providerConfig }) =>
-      isRealtimeVoiceProviderConfigured({
+    isProviderConfigured: ({ provider, cfg, providerConfig }) => {
+      if (!isRealtimeVoiceModelEnabled({ provider, providerConfig, cfg })) {
+        experimentalModelBlocked = true;
+        return false;
+      }
+      return isRealtimeVoiceProviderConfigured({
         provider,
         cfg,
         providerConfig,
         agentId: params.agentId,
         surface: params.surface,
-      }),
+      });
+    },
   });
 
   if (!resolution.ok && resolution.code === "missing-configured-provider") {
@@ -141,6 +170,11 @@ export function resolveConfiguredRealtimeVoiceProvider(
     throw new Error(params.noRegisteredProviderMessage ?? "No realtime voice provider registered");
   }
   if (!resolution.ok) {
+    if (experimentalModelBlocked) {
+      throw new Error(
+        "Experimental realtime models are disabled. Enable them in Labs before starting Talk.",
+      );
+    }
     throw new Error(`Realtime voice provider "${resolution.provider?.id}" is not configured`);
   }
 
