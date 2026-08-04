@@ -113,7 +113,7 @@ flow:
             expr: "await fetchJson(`${env.mock.baseUrl}/debug/requests?after=${requestCursorBefore}`)"
         - set: requestEvidence
           value:
-            expr: "scenarioRequests.map((request) => ({ cursor: request.cursor, kind: request.requestKind, outcome: request.outcome, code: request.errorCode ?? null, bytes: request.rawByteLength, inputChars: String(request.allInputText ?? '').length, tailBlocks: [...new Set(Array.from({ length: 16 }, (_, index) => String(index).padStart(2, '0')).filter((id) => String(request.allInputText ?? '').includes(`post-marker historical user block ${id}`)))].sort().slice(0, 16), prompt: String(request.allInputText ?? '').includes(config.promptSnippet), durable: String(request.allInputText ?? '').includes(config.durableMarker), bulky: String(request.allInputText ?? '').includes(config.bulkyMarker), tool: request.plannedToolName ?? null, resolvedWireTool: request.plannedWireToolName ?? request.plannedToolName ?? null }))"
+            expr: "scenarioRequests.map((request) => ({ cursor: request.cursor, kind: request.requestKind, outcome: request.outcome, code: request.errorCode ?? null, bytes: request.rawByteLength, inputChars: String(request.allInputText ?? '').length, tailBlocks: [...new Set(Array.from({ length: 16 }, (_, index) => String(index).padStart(2, '0')).filter((id) => String(request.allInputText ?? '').includes(`post-marker historical user block ${id}`)))].sort().slice(0, 16), prompt: String(request.allInputText ?? '').includes(config.promptSnippet), durable: String(request.allInputText ?? '').includes(config.durableMarker), bulky: String(request.allInputText ?? '').includes(config.bulkyMarker), tool: request.plannedToolName ?? null, resolvedWireTool: request.plannedWireToolName ?? request.plannedToolName ?? null, callId: request.plannedToolCallId ?? null, itemId: request.plannedToolItemId ?? null, transcriptId: typeof request.plannedToolItemId === 'string' && request.plannedToolItemId.length > 0 ? `${request.plannedToolCallId}|${request.plannedToolItemId}` : request.plannedToolCallId ?? null }))"
         - set: overflowRequests
           value:
             expr: "scenarioRequests.filter((request) => request.requestKind === 'agent-initial' && request.outcome === 'error' && request.errorCode === 'context_length_exceeded' && String(request.allInputText ?? '').includes(sessionId) && String(request.allInputText ?? '').includes(config.promptSnippet) && String(request.allInputText ?? '').includes(config.durableMarker))"
@@ -141,6 +141,9 @@ flow:
         - set: writeWireToolName
           value:
             expr: "writeRequest.plannedWireToolName ?? writeRequest.plannedToolName"
+        - set: writeTranscriptToolCallId
+          value:
+            expr: "typeof writeRequest.plannedToolItemId === 'string' && writeRequest.plannedToolItemId.length > 0 ? `${writeRequest.plannedToolCallId}|${writeRequest.plannedToolItemId}` : writeRequest.plannedToolCallId"
         - set: overflowEvidence
           value:
             expr: "requestEvidence.find((request) => request.cursor === overflowRequest.cursor)"
@@ -154,11 +157,11 @@ flow:
             - ref: sessionKey
         - set: successfulWriteTranscriptEvents
           value:
-            expr: "(transcript.successfulToolCallEvents ?? []).filter((event) => event.toolCallId === writeRequest.plannedToolCallId && event.name === writeWireToolName)"
+            expr: "(transcript.successfulToolCallEvents ?? []).filter((event) => event.toolCallId === writeTranscriptToolCallId && event.name === writeWireToolName)"
         - assert:
             expr: "successfulWriteTranscriptEvents.length === 1"
             message:
-              expr: "`expected one authenticated successful transcript event for the logical write's wire call: ${JSON.stringify({ write: writeEvidence, wireTool: writeWireToolName, events: transcript.successfulToolCallEvents ?? [] })}`"
+              expr: "`expected one authenticated successful transcript event for the logical write's wire call: ${JSON.stringify({ write: writeEvidence, wireTool: writeWireToolName, callId: writeRequest.plannedToolCallId, itemId: writeRequest.plannedToolItemId, transcriptId: writeTranscriptToolCallId, events: transcript.successfulToolCallEvents ?? [] })}`"
         - assert:
             expr: "transcript.successfulToolCallCounts[writeWireToolName] === 1"
             message:
@@ -253,4 +256,4 @@ flow:
             expr: "branchSummary.finalText === config.checkpointMarker"
             message:
               expr: "`checkpoint branch did not preserve pre-compaction assistant marker: ${JSON.stringify({ key: branchResult.key, finalText: branchSummary.finalText })}`"
-      detailsExpr: "`${outbound.text}\\nOpenClaw originalBytes=${String(overflowRequest.rawByteLength)} retryBytes=${String(writeRequest.rawByteLength)} logicalWrites=${String(writeRequests.length)} wireTool=${String(writeWireToolName)} wireSuccesses=${String(transcript.successfulToolCallCounts[writeWireToolName] ?? 0)} compactions=${String(sessionEntry.compactionCount)} checkpoints=${String(overflowCheckpoints.length)}`"
+      detailsExpr: "`${outbound.text}\\nOpenClaw originalBytes=${String(overflowRequest.rawByteLength)} retryBytes=${String(writeRequest.rawByteLength)} logicalWrites=${String(writeRequests.length)} wireTool=${String(writeWireToolName)} callId=${String(writeRequest.plannedToolCallId)} itemId=${String(writeRequest.plannedToolItemId)} transcriptId=${String(writeTranscriptToolCallId)} wireSuccesses=${String(transcript.successfulToolCallCounts[writeWireToolName] ?? 0)} compactions=${String(sessionEntry.compactionCount)} checkpoints=${String(overflowCheckpoints.length)}`"

@@ -131,7 +131,7 @@ import {
   buildReleaseAuditJson,
   buildReleaseHandoffMarkdown,
   extractPlannedToolName,
-  extractPlannedToolCallId,
+  extractPlannedToolIdentity,
   extractPlannedToolArgs,
   splitMockStreamingText,
   buildQaLongFinalText,
@@ -2377,6 +2377,7 @@ export async function startQaMockOpenAiServer(params?: {
       | "outcome"
       | "errorCode"
       | "plannedToolCallId"
+      | "plannedToolItemId"
       | "plannedToolName"
       | "plannedWireToolName"
       | "plannedToolArgs"
@@ -2451,6 +2452,7 @@ export async function startQaMockOpenAiServer(params?: {
     if (request.route === "anthropic-messages") {
       events = adaptAnthropicToolCallIds(events);
     }
+    const plannedToolIdentity = extractPlannedToolIdentity(events);
     const plannedTool = extractScenarioPlannedTool(events);
     const terminalRequesterCase = extractLastMatchingUserTurn(
       input,
@@ -2479,7 +2481,10 @@ export async function startQaMockOpenAiServer(params?: {
     recordRequest({
       ...requestSnapshotBase,
       outcome: failure ? "error" : "success",
-      plannedToolCallId: extractPlannedToolCallId(events),
+      plannedToolCallId: plannedToolIdentity.callId,
+      ...(request.route === "responses" && plannedToolIdentity.itemId
+        ? { plannedToolItemId: plannedToolIdentity.itemId }
+        : {}),
       plannedToolName: plannedTool.name,
       ...(plannedTool.wireName && plannedTool.wireName !== plannedTool.name
         ? { plannedWireToolName: plannedTool.wireName }

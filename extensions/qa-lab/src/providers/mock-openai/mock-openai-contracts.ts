@@ -158,6 +158,7 @@ export type MockOpenAiRequestSnapshot = {
   errorCode?: string;
   rawByteLength: number;
   plannedToolCallId?: string;
+  plannedToolItemId?: string;
   plannedToolName?: string;
   plannedWireToolName?: string;
   plannedToolArgs?: Record<string, unknown>;

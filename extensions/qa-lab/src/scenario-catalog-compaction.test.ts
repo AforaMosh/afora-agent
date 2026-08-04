@@ -65,6 +65,7 @@ describe("qa compaction scenario catalog", () => {
     };
     const writeRequestsExpr = readSetExpression("writeRequests");
     const postWriteContinuationsExpr = readSetExpression("postWriteContinuations");
+    const writeTranscriptToolCallIdExpr = readSetExpression("writeTranscriptToolCallId");
     const knownGap =
       "known-harness-gap compaction-retry-mutating-tool: provider-error recovery does not invoke Codex native compaction; native token-threshold compaction needs a separate scenario.";
 
@@ -157,11 +158,23 @@ describe("qa compaction scenario catalog", () => {
     );
     expect(flow).toContain("writeRequest.plannedToolArgs?.path === config.outputFile");
     expect(flow).toContain("writeRequest.plannedToolArgs?.content === config.expectedFileContent");
+    expect(flow).toContain("typeof writeRequest.plannedToolCallId === 'string'");
+    expect(flow).not.toContain(
+      "writeRequest.plannedToolCallId.length > 0 && typeof writeRequest.plannedToolItemId",
+    );
     expect(flow).toContain(
       'writeWireToolName","value":{"expr":"writeRequest.plannedWireToolName ?? writeRequest.plannedToolName',
     );
+    expect(writeTranscriptToolCallIdExpr).toContain(
+      "typeof writeRequest.plannedToolItemId === 'string'",
+    );
+    expect(writeTranscriptToolCallIdExpr).toContain("writeRequest.plannedToolItemId.length > 0");
+    expect(writeTranscriptToolCallIdExpr).toContain(
+      "`${writeRequest.plannedToolCallId}|${writeRequest.plannedToolItemId}`",
+    );
+    expect(writeTranscriptToolCallIdExpr).toContain(": writeRequest.plannedToolCallId");
     expect(flow).toContain(
-      "event.toolCallId === writeRequest.plannedToolCallId && event.name === writeWireToolName",
+      "event.toolCallId === writeTranscriptToolCallId && event.name === writeWireToolName",
     );
     expect(flow).toContain("successfulWriteTranscriptEvents.length === 1");
     expect(flow).toContain("transcript.successfulToolCallCounts[writeWireToolName] === 1");
@@ -218,8 +231,17 @@ describe("qa compaction scenario catalog", () => {
     expect(flow).toContain(
       "resolvedWireTool: request.plannedWireToolName ?? request.plannedToolName ?? null",
     );
+    expect(flow).toContain("callId: request.plannedToolCallId ?? null");
+    expect(flow).toContain("itemId: request.plannedToolItemId ?? null");
+    expect(flow).toContain(
+      "transcriptId: typeof request.plannedToolItemId === 'string' && request.plannedToolItemId.length > 0",
+    );
+    expect(flow).toContain(": request.plannedToolCallId ?? null");
     expect(flow).toContain("logicalWrites=${String(writeRequests.length)}");
     expect(flow).toContain("wireTool=${String(writeWireToolName)}");
+    expect(flow).toContain("callId=${String(writeRequest.plannedToolCallId)}");
+    expect(flow).toContain("itemId=${String(writeRequest.plannedToolItemId)}");
+    expect(flow).toContain("transcriptId=${String(writeTranscriptToolCallId)}");
     expect(flow).toContain(
       "wireSuccesses=${String(transcript.successfulToolCallCounts[writeWireToolName] ?? 0)}",
     );

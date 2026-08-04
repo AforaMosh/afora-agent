@@ -5428,7 +5428,8 @@ Update and merge these partial structured summaries.`,
     });
 
     const payload = await response.json();
-    expect(outputItem(payload)).toMatchObject({ type: "function_call", name: "apply_patch" });
+    const item = outputItem(payload);
+    expect(item).toMatchObject({ type: "function_call", name: "apply_patch" });
     const args = outputToolArgs(payload);
     expect(args).not.toHaveProperty("__qaFailureMode");
     expect(args.input).toBeTypeOf("string");
@@ -5438,6 +5439,9 @@ Update and merge these partial structured summaries.`,
       expect(args.input).toContain("\n@@\n-runtime-tool-fixture-denied-original\n");
     }
     expect(args.input).toContain("\n*** End Patch\n");
+    const debug = requireRecord(await getJson(server, "/debug/last-request"), "function plan");
+    expect(debug.plannedToolCallId).toBe(item.call_id);
+    expect(debug.plannedToolItemId).toBe(item.id);
   });
 
   it.each([
@@ -5480,6 +5484,7 @@ Update and merge these partial structured summaries.`,
     );
     expect(debug.plannedToolName).toBe("apply_patch");
     expect(debug.plannedToolCallId).toBe(item.call_id);
+    expect(debug.plannedToolItemId).toBe(item.id);
     expect(debug.plannedToolArgs).toEqual({ input: item.input });
   });
 
@@ -6336,6 +6341,7 @@ Update and merge these partial structured summaries.`,
     );
     expect(debugPayload.model).toBe("claude-opus-4-8");
     expect(debugPayload.plannedToolCallId).toBe(toolUseBlock?.id);
+    expect(debugPayload).not.toHaveProperty("plannedToolItemId");
     expect(debugPayload.plannedToolName).toBe("read");
   });
 
