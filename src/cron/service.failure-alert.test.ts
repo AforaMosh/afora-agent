@@ -243,6 +243,24 @@ describe("CronService failure alerts", () => {
     );
   });
 
+  it("keeps a mixed destination+threshold global object off without enabled", async () => {
+    // { to, after } carries a destination, so inherited threshold alerts stay
+    // off until enabled:true - the case the config reference now spells out.
+    await withFailureAlertCron(
+      {
+        failureAlert: { to: "999", after: 1 },
+        runResult: { status: "error", error: "expired oauth token" },
+      },
+      async ({ cron, sendCronFailureAlert, addJob }) => {
+        const job = await addJob("mixed global job", { delivery: { mode: "none" } });
+
+        await cron.run(job.id, "force");
+        await cron.run(job.id, "force");
+        expect(sendCronFailureAlert).not.toHaveBeenCalled();
+      },
+    );
+  });
+
   it("treats a threshold-only global object as default-on", async () => {
     await withFailureAlertCron(
       {
