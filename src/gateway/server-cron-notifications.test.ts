@@ -335,8 +335,7 @@ describe("dispatchGatewayCronFinishedNotifications", () => {
     expect(mocks.sendCronAnnouncePayloadStrict).toHaveBeenCalledWith(
       expect.objectContaining({
         message: "cron failed\nRun started: 2026-01-15 10:30 EST",
-        // Alerts must refuse internal-sink resolution so an unroutable target
-        // falls back to the agent lane instead of vanishing.
+        // Refuse internal-sink resolution so unroutable targets fall back to the agent lane.
         requireDeliverableChannel: true,
       }),
     );
