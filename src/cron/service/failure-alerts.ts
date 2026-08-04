@@ -196,6 +196,17 @@ function emitFailureAlert(
     `${detailLabel}: ${truncatedError}`,
   ].join("\n");
 
+  const notifyAgentLane = () => {
+    state.deps.enqueueSystemEvent(text, { agentId: params.job.agentId });
+    if (params.job.wakeMode === "now") {
+      state.deps.requestHeartbeat({
+        source: "cron",
+        intent: "immediate",
+        reason: `cron:${params.job.id}:failure-alert`,
+      });
+    }
+  };
+
   if (state.deps.sendCronFailureAlert) {
     void state.deps
       .sendCronFailureAlert({
@@ -213,23 +224,16 @@ function emitFailureAlert(
           { jobId: params.job.id, err: String(err) },
           "cron: failure alert delivery failed",
         );
-        // The cooldown is already armed, so a refused channel route (e.g. a
-        // keyless job whose "last" target is rejected by delivery safety)
-        // would otherwise silence the alert for the whole cooldown window.
-        // Keep a visible outcome by falling back to the owning agent's lane.
-        state.deps.enqueueSystemEvent(text, { agentId: params.job.agentId });
+        // The cooldown is already armed, so a send that fails or is refused
+        // (rejected keyless "last" route, dead webhook) would otherwise
+        // silence the alert for the whole cooldown window. Keep a visible
+        // outcome by falling back to the owning agent's lane.
+        notifyAgentLane();
       });
     return;
   }
 
-  state.deps.enqueueSystemEvent(text, { agentId: params.job.agentId });
-  if (params.job.wakeMode === "now") {
-    state.deps.requestHeartbeat({
-      source: "cron",
-      intent: "immediate",
-      reason: `cron:${params.job.id}:failure-alert`,
-    });
-  }
+  notifyAgentLane();
 }
 
 /** Emits a failure alert when threshold, best-effort, and cooldown policy allow it. */
