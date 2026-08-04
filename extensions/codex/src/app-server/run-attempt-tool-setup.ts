@@ -134,6 +134,10 @@ export async function prepareCodexAttemptTools(runtime: CodexAttemptRuntime) {
       await captureCodexScheduledRuntimeAuthority({
         bindingStore: connection.bindingStore,
         bindingIdentity: connection.bindingIdentity,
+        config: params.config,
+        agentId: sessionAgentId,
+        cwd: effectiveCwd,
+        toolOverrides: params.toolOverrides,
         openClawTools,
       }),
   };

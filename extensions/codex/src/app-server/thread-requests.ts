@@ -113,10 +113,10 @@ export function buildCodexScheduledRuntimeAuthorityConfigPatch(params: {
     },
   };
   for (const app of params.authority.apps) {
-    const inheritedApp = isJsonObject(params.inheritedApps?.[app.appId])
-      ? params.inheritedApps[app.appId]
-      : undefined;
-    const inheritedTools = isJsonObject(inheritedApp?.tools) ? inheritedApp.tools : undefined;
+    const rawInheritedApp = params.inheritedApps?.[app.appId];
+    const inheritedApp = isJsonObject(rawInheritedApp) ? rawInheritedApp : undefined;
+    const rawInheritedTools = inheritedApp?.tools;
+    const inheritedTools = isJsonObject(rawInheritedTools) ? rawInheritedTools : undefined;
     const tools: JsonObject = {};
     for (const [toolName, rawTool] of Object.entries(inheritedTools ?? {})) {
       if (!isJsonObject(rawTool)) {
@@ -528,17 +528,67 @@ export async function readCodexInheritedMcpServerNames(
   return (await readCodexInheritedMcpServerState(client, cwd, signal)).all;
 }
 
+type CodexMcpServerState = {
+  all: string[];
+  enabled: string[];
+  toolPolicies: Record<string, { enabled?: string[]; disabled: string[] }>;
+  apps?: JsonValue;
+};
+
+/** Parses a current MCP config so a stored scheduled grant cannot undo revocation. */
+export function readCodexMcpServerState(
+  config: JsonObject,
+  source = "Codex config/read",
+): CodexMcpServerState {
+  const configuredServers = config.mcp_servers;
+  if (configuredServers === undefined) {
+    return { all: [], enabled: [], toolPolicies: {}, apps: config.apps };
+  }
+  if (!isJsonObject(configuredServers)) {
+    throw new Error(`${source} returned invalid mcp_servers`);
+  }
+  const all = Object.keys(configuredServers).toSorted();
+  const enabled = all.filter((name) => {
+    const server = configuredServers[name];
+    return isJsonObject(server) && server.enabled !== false;
+  });
+  const toolPolicies: Record<string, { enabled?: string[]; disabled: string[] }> = {};
+  for (const name of enabled) {
+    const server = configuredServers[name];
+    if (!isJsonObject(server)) {
+      continue;
+    }
+    const readToolNames = (value: JsonValue | undefined, field: string): string[] | undefined => {
+      if (value === undefined) {
+        return undefined;
+      }
+      if (!Array.isArray(value)) {
+        throw new Error(`${source} returned invalid mcp_servers.${name}.${field}`);
+      }
+      const names: string[] = [];
+      for (const entry of value) {
+        if (typeof entry !== "string") {
+          throw new Error(`${source} returned invalid mcp_servers.${name}.${field}`);
+        }
+        names.push(entry);
+      }
+      return [...new Set(names)].toSorted();
+    };
+    const enabledTools = readToolNames(server.enabled_tools, "enabled_tools");
+    toolPolicies[name] = {
+      ...(enabledTools !== undefined ? { enabled: enabledTools } : {}),
+      disabled: readToolNames(server.disabled_tools, "disabled_tools") ?? [],
+    };
+  }
+  return { all, enabled, toolPolicies, apps: config.apps };
+}
+
 /** Reads current server enablement so a stored scheduled grant cannot undo revocation. */
 export async function readCodexInheritedMcpServerState(
   client: Pick<CodexAppServerClient, "request">,
   cwd: string,
   signal?: AbortSignal,
-): Promise<{
-  all: string[];
-  enabled: string[];
-  toolPolicies: Record<string, { enabled?: string[]; disabled: string[] }>;
-  apps?: JsonValue;
-}> {
+): Promise<CodexMcpServerState> {
   const response: CodexConfigReadResponse = await client.request(
     "config/read",
     {
@@ -569,47 +619,7 @@ export async function readCodexInheritedMcpServerState(
       );
     }
   }
-  const configuredServers = response.config.mcp_servers;
-  if (configuredServers === undefined) {
-    return { all: [], enabled: [], toolPolicies: {}, apps: response.config.apps };
-  }
-  if (!isJsonObject(configuredServers)) {
-    throw new Error("Codex config/read returned invalid mcp_servers");
-  }
-  const all = Object.keys(configuredServers).toSorted();
-  const enabled = all.filter((name) => {
-    const server = configuredServers[name];
-    return isJsonObject(server) && server.enabled !== false;
-  });
-  const toolPolicies: Record<string, { enabled?: string[]; disabled: string[] }> = {};
-  for (const name of enabled) {
-    const server = configuredServers[name];
-    if (!isJsonObject(server)) {
-      continue;
-    }
-    const readToolNames = (value: JsonValue | undefined, field: string): string[] | undefined => {
-      if (value === undefined) {
-        return undefined;
-      }
-      if (!Array.isArray(value)) {
-        throw new Error(`Codex config/read returned invalid mcp_servers.${name}.${field}`);
-      }
-      const names: string[] = [];
-      for (const entry of value) {
-        if (typeof entry !== "string") {
-          throw new Error(`Codex config/read returned invalid mcp_servers.${name}.${field}`);
-        }
-        names.push(entry);
-      }
-      return [...new Set(names)].toSorted();
-    };
-    const enabledTools = readToolNames(server.enabled_tools, "enabled_tools");
-    toolPolicies[name] = {
-      ...(enabledTools !== undefined ? { enabled: enabledTools } : {}),
-      disabled: readToolNames(server.disabled_tools, "disabled_tools") ?? [],
-    };
-  }
-  return { all, enabled, toolPolicies, apps: response.config.apps };
+  return readCodexMcpServerState(response.config);
 }
 
 export async function assertCodexRingZeroHasNoManagedHooks(

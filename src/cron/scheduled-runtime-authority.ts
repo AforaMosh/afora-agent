@@ -5,20 +5,23 @@ const MAX_AUTHORITY_NAMES = 2_048;
 const MAX_AUTHORITY_NAME_LENGTH = 256;
 const MAX_AUTHORITY_JSON_BYTES = 256 * 1024;
 
-export type ScheduledRuntimeAuthorityApp = {
+type ScheduledRuntimeAuthorityApp = {
   appId: string;
   allowDestructiveActions: boolean;
   allowOpenWorld: boolean;
   approvalMode: "allow" | "deny" | "auto" | "ask";
 };
 
-export type ScheduledRuntimeAuthorityMcpServer = {
+type ScheduledRuntimeAuthorityMcpServer = {
+  source: "openclaw" | "codex";
   serverName: string;
   toolNames: string[];
 };
 
-export type ScheduledRuntimeAuthorityPluginMcpServer = ScheduledRuntimeAuthorityMcpServer & {
+type ScheduledRuntimeAuthorityPluginMcpServer = {
   pluginId: string;
+  serverName: string;
+  toolNames: string[];
 };
 
 /** Durable upper bound for runtime-owned capabilities delegated to a scheduled turn. */
@@ -65,15 +68,21 @@ function normalizeMcpServers(
     if (!isRecord(entry)) {
       return undefined;
     }
+    const source = entry.source;
     const serverName = normalizeName(entry.serverName);
     const toolNames = normalizeNames(entry.toolNames);
     const pluginId = pluginOwned ? normalizeName(entry.pluginId) : undefined;
-    if (!serverName || !toolNames || (pluginOwned && !pluginId)) {
+    if (
+      (!pluginOwned && source !== "openclaw" && source !== "codex") ||
+      !serverName ||
+      !toolNames ||
+      (pluginOwned && !pluginId)
+    ) {
       return undefined;
     }
     const allowedKeys = pluginOwned
       ? new Set(["pluginId", "serverName", "toolNames"])
-      : new Set(["serverName", "toolNames"]);
+      : new Set(["source", "serverName", "toolNames"]);
     if (Object.keys(entry).some((key) => !allowedKeys.has(key))) {
       return undefined;
     }
@@ -82,11 +91,16 @@ function normalizeMcpServers(
       return undefined;
     }
     seen.add(key);
-    normalized.push(pluginId ? { pluginId, serverName, toolNames } : { serverName, toolNames });
+    normalized.push(
+      pluginId
+        ? { pluginId, serverName, toolNames }
+        : { source: source as "openclaw" | "codex", serverName, toolNames },
+    );
   }
   return normalized.toSorted((left, right) => {
-    const leftPlugin = "pluginId" in left ? left.pluginId : "";
-    const rightPlugin = "pluginId" in right ? right.pluginId : "";
+    const leftPlugin = "pluginId" in left && typeof left.pluginId === "string" ? left.pluginId : "";
+    const rightPlugin =
+      "pluginId" in right && typeof right.pluginId === "string" ? right.pluginId : "";
     return leftPlugin.localeCompare(rightPlugin) || left.serverName.localeCompare(right.serverName);
   });
 }

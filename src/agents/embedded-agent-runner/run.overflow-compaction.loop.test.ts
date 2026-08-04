@@ -131,6 +131,24 @@ describe("embedded run retry dispatch", () => {
     mocks.settleRequesterAfterSessionSpawns.mockReset();
   });
 
+  it("forwards scheduled runtime authority to the selected harness attempt", async () => {
+    const input = makeDispatchInput({}, createEmbeddedRunReplayState());
+    const scheduledRuntimeAuthority: NonNullable<typeof input.params.scheduledRuntimeAuthority> = {
+      version: 1,
+      runtime: "codex",
+      openClawTools: ["automations"],
+      apps: [],
+      userMcpServers: [{ source: "openclaw", serverName: "memory", toolNames: ["read_graph"] }],
+      pluginMcpServers: [],
+    };
+    input.params.scheduledRuntimeAuthority = scheduledRuntimeAuthority;
+
+    const result = await dispatchEmbeddedRunAttempt(input);
+
+    expect(result.preparedAttempt.scheduledRuntimeAuthority).toBe(scheduledRuntimeAuthority);
+    expect(mocks.runAttempt).toHaveBeenCalledWith(result.preparedAttempt);
+  });
+
   it("preserves caller-owned session and unsafe replay state on the next attempt", async () => {
     const sessionManager = { owner: "caller" };
     const replayState = observeReplayMetadata(

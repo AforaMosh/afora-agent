@@ -18,7 +18,9 @@ function authority(): ScheduledRuntimeAuthority {
         approvalMode: "ask",
       },
     ],
-    userMcpServers: [{ serverName: "todoist-mcp", toolNames: ["tasks/add", "tasks/list"] }],
+    userMcpServers: [
+      { source: "codex", serverName: "todoist-mcp", toolNames: ["tasks/add", "tasks/list"] },
+    ],
     pluginMcpServers: [
       { pluginId: "calendar", serverName: "calendar-mcp", toolNames: ["events/list"] },
     ],
@@ -57,6 +59,7 @@ describe("scheduled runtime authority", () => {
       normalizeScheduledRuntimeAuthority({
         ...authority(),
         userMcpServers: Array.from({ length: 257 }, (_, index) => ({
+          source: "codex",
           serverName: `server-${index}`,
           toolNames: [],
         })),

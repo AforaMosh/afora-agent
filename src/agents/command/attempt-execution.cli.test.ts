@@ -4180,6 +4180,27 @@ describe("CLI attempt execution", () => {
       authProfileIdSource: "user",
     });
   });
+
+  it("forwards scheduled runtime authority only into embedded attempts", async () => {
+    const scheduledRuntimeAuthority = {
+      version: 1 as const,
+      runtime: "codex" as const,
+      openClawTools: ["automations"],
+      apps: [],
+      userMcpServers: [
+        { source: "openclaw" as const, serverName: "memory", toolNames: ["read_graph"] },
+      ],
+      pluginMcpServers: [],
+    };
+
+    const embeddedArg = await runOpenClawEmbeddedAttemptForTest({
+      runId: "scheduled-runtime-authority",
+      opts: { scheduledRuntimeAuthority },
+    });
+
+    expect(embeddedArg.scheduledRuntimeAuthority).toBe(scheduledRuntimeAuthority);
+    expect(runCliAgentMock).not.toHaveBeenCalled();
+  });
 });
 
 describe("embedded attempt harness pinning", () => {

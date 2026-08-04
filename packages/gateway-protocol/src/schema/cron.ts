@@ -142,6 +142,7 @@ const CronScheduledToolPolicySchema = Type.Union([
   }),
 ]);
 const ScheduledRuntimeMcpServerSchema = closedObject({
+  source: Type.Union([Type.Literal("openclaw"), Type.Literal("codex")]),
   serverName: NonEmptyString,
   toolNames: Type.Array(NonEmptyString, { maxItems: 256 }),
 });
