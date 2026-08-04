@@ -25,7 +25,7 @@ afterEach(() => {
 });
 
 describe("GPT-Live call creation", () => {
-  it("uses one multipart /v1/live wire shape for OAuth and API-key auth", async () => {
+  it("uses the ChatGPT backend JSON route for OAuth and multipart /v1/live for API keys", async () => {
     vi.stubEnv("OPENCLAW_VERSION", "2026.7.2-test");
     const requests: Array<{ url: string; init?: RequestInit }> = [];
     const fetchImpl = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
@@ -54,7 +54,9 @@ describe("GPT-Live call creation", () => {
       callId: "rtc_1",
       sidebandUrl: "wss://api.openai.com/v1/live/rtc_1",
     });
-    expect(requests[0]?.url).toBe("https://api.openai.com/v1/live");
+    expect(requests[0]?.url).toBe(
+      "https://chatgpt.com/backend-api/codex/realtime/calls?intent=quicksilver&architecture=avas",
+    );
     expect(requests[0]?.init?.headers).toEqual({
       Authorization: "Bearer oauth-token",
       "OpenAI-Alpha": "quicksilver=v2",
@@ -65,7 +67,11 @@ describe("GPT-Live call creation", () => {
       "thread-id": "oauth-thread",
       version: "2026.7.2-test",
       "x-session-id": "oauth-realtime",
-      "Content-Type": expect.stringMatching(/^multipart\/form-data; boundary=/),
+      "Content-Type": "application/json",
+    });
+    expect(JSON.parse(String(requests[0]?.init?.body))).toEqual({
+      sdp: "v=oauth-offer\r\n",
+      session,
     });
 
     await expect(
@@ -86,18 +92,15 @@ describe("GPT-Live call creation", () => {
     });
     expect(requests[1]?.init?.headers).not.toHaveProperty("chatgpt-account-id");
 
-    for (const request of requests) {
-      expect(request.url).not.toContain("?");
-      const headers = request.init?.headers as Record<string, string> | undefined;
-      const boundary = headers?.["Content-Type"]?.split("boundary=")[1];
-      const body = request.init?.body;
-      expect(boundary).toBeTruthy();
-      expect(typeof body).toBe("string");
-      expect(body).toContain(`--${boundary}\r\n`);
-      expect(body).toContain('name="sdp"\r\nContent-Type: application/sdp');
-      expect(body).toContain('name="session"\r\nContent-Type: application/json');
-      expect(body).toContain(JSON.stringify(session));
-    }
+    const apiHeaders = requests[1]?.init?.headers as Record<string, string> | undefined;
+    const boundary = apiHeaders?.["Content-Type"]?.split("boundary=")[1];
+    const apiBody = requests[1]?.init?.body;
+    expect(boundary).toBeTruthy();
+    expect(typeof apiBody).toBe("string");
+    expect(apiBody).toContain(`--${boundary}\r\n`);
+    expect(apiBody).toContain('name="sdp"\r\nContent-Type: application/sdp');
+    expect(apiBody).toContain('name="session"\r\nContent-Type: application/json');
+    expect(apiBody).toContain(JSON.stringify(session));
   });
 
   it.each(["gpt-realtime-2.1", "gpt-realtime-2.1-mini", "gpt-realtime-2"])(
@@ -151,7 +154,7 @@ describe("GPT-Live call creation", () => {
       status: 403,
       body: "Voice session access denied.",
       message:
-        "GPT-Live rejected the session (403). This overloaded response most often means the voice or model is invalid for /v1/live. Accepted voices: alloy, ash, ballad, cedar, coral, echo, marin, sage, shimmer, verse. Accepted models: gpt-live-1-codex, gpt-live-1-boulder-alpha. Account access may also be unavailable; verify the selected ChatGPT OAuth profile and chatgpt-account-id.",
+        "GPT-Live rejected the Platform session (403). Verify API-key access, voice, and model for /v1/live. Accepted voices: alloy, ash, ballad, cedar, coral, echo, marin, sage, shimmer, verse. Accepted models: gpt-live-1-codex, gpt-live-1-boulder-alpha.",
     },
     {
       name: "Platform waitlist denial",
@@ -180,6 +183,24 @@ describe("GPT-Live call creation", () => {
       name: "OpenAIQuicksilverCallError",
       status,
       message,
+    });
+  });
+
+  it("reports ChatGPT subscription entitlement failures on the OAuth route", async () => {
+    const fetchImpl = vi.fn(async () => new Response("Not entitled", { status: 403 }));
+    const promise = createOpenAIQuicksilverCall({
+      auth: { type: "oauth", token: "oauth-token", accountId: "acct-1" },
+      requestIds: createRequestIds("oauth-error"),
+      sdp: "v=offer\r\n",
+      session: buildOpenAIQuicksilverSession({ model: "gpt-live-1-boulder-alpha" }),
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+
+    await expect(promise).rejects.toMatchObject({
+      name: "OpenAIQuicksilverCallError",
+      status: 403,
+      message:
+        "GPT-Live rejected the ChatGPT subscription session (403). Verify that the selected OAuth account has GPT-Live access and a valid chatgpt-account-id.",
     });
   });
 

@@ -509,14 +509,6 @@ async function resolveOpenAIQuicksilverBridgeAuth(params: {
   cfg: RealtimeVoiceBridgeCreateRequest["cfg"] | undefined;
   agentId?: string;
 }) {
-  const subscriptionAuth = await resolveOpenAIChatGptSubscriptionAuth({
-    cfg: params.cfg,
-    agentDir:
-      params.cfg && params.agentId ? resolveAgentDir(params.cfg, params.agentId) : undefined,
-  });
-  if (subscriptionAuth) {
-    return subscriptionAuth;
-  }
   const platformAuth = await resolveOpenAIRealtimePlatformAuth(params);
   if (platformAuth.status === "available") {
     return { type: "api-key" as const, token: platformAuth.value };
@@ -528,6 +520,14 @@ async function resolveOpenAIQuicksilverBridgeAuth(params: {
     })
   ) {
     throw new Error(OPENAI_GPT_LIVE_AUTHORED_PLATFORM_AUTH_UNAVAILABLE);
+  }
+  const subscriptionAuth = await resolveOpenAIChatGptSubscriptionAuth({
+    cfg: params.cfg,
+    agentDir:
+      params.cfg && params.agentId ? resolveAgentDir(params.cfg, params.agentId) : undefined,
+  });
+  if (subscriptionAuth) {
+    return subscriptionAuth;
   }
   throw new Error(OPENAI_GPT_LIVE_AUTH_REQUIRED);
 }
@@ -1901,39 +1901,14 @@ async function createOpenAIRealtimeBrowserSession(
       instructions: buildOpenAIQuicksilverInstructions(req.instructions),
       ...(req.voice ? {} : configuredVoice ? { voice: configuredVoice } : {}),
     };
-    const subscriptionAuth = await resolveOpenAIChatGptSubscriptionAuth({
-      cfg: req.cfg,
-      agentDir: req.cfg ? resolveAgentDir(req.cfg, req.agentId) : undefined,
-    });
-    if (subscriptionAuth) {
-      const session = await quicksilverBroker.createBrowserSession(
-        quicksilverRequest,
-        subscriptionAuth,
-      );
-      quicksilverBrokerBySession.set(session, quicksilverBroker);
-      return session;
-    }
-    const auth = await resolveOpenAIRealtimePlatformAuth({
+    const auth = await resolveOpenAIQuicksilverBridgeAuth({
       configuredApiKey: config.apiKey,
       cfg: req.cfg,
+      agentId: req.agentId,
     });
-    if (auth.status === "available") {
-      const session = await quicksilverBroker.createBrowserSession(quicksilverRequest, {
-        type: "api-key",
-        token: auth.value,
-      });
-      quicksilverBrokerBySession.set(session, quicksilverBroker);
-      return session;
-    }
-    if (
-      hasOpenAIRealtimePlatformAuthInput({
-        configuredApiKey: config.apiKey,
-        cfg: req.cfg,
-      })
-    ) {
-      throw new Error(OPENAI_GPT_LIVE_AUTHORED_PLATFORM_AUTH_UNAVAILABLE);
-    }
-    throw new Error(OPENAI_GPT_LIVE_AUTH_REQUIRED);
+    const session = await quicksilverBroker.createBrowserSession(quicksilverRequest, auth);
+    quicksilverBrokerBySession.set(session, quicksilverBroker);
+    return session;
   }
   const auth = await resolveOpenAIRealtimePlatformAuth({
     configuredApiKey: config.apiKey,

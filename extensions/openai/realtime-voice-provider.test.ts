@@ -1117,7 +1117,7 @@ describe("buildOpenAIRealtimeVoiceProvider", () => {
     ).toBeUndefined();
   });
 
-  it("prefers ChatGPT OAuth over Platform auth for gpt-live", async () => {
+  it("prefers Platform auth over ChatGPT OAuth for gpt-live", async () => {
     const oauthToken = createTestJwt({
       "https://api.openai.com/auth": { chatgpt_account_id: "account-123" },
     });
@@ -1149,10 +1149,12 @@ describe("buildOpenAIRealtimeVoiceProvider", () => {
     } as never);
 
     expect(createBrowserSession).toHaveBeenCalledWith(expect.any(Object), {
-      type: "oauth",
-      token: oauthToken,
-      accountId: "account-123",
+      type: "api-key",
+      token: "sk-platform", // pragma: allowlist secret
     });
+    expect(resolveProviderAuthProfileApiKeyMock).not.toHaveBeenCalledWith(
+      expect.objectContaining({ profileTypes: ["oauth"] }),
+    );
   });
 
   it("keeps Platform precedence for GA realtime when OAuth is also available", async () => {

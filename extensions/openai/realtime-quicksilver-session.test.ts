@@ -164,12 +164,17 @@ describe("GPT-Live offer broker", () => {
       auth: { type: "oauth" as const, token: "oauth-token", accountId: "account-123" },
       authorization: "Bearer oauth-token",
       accountId: "account-123",
+      callUrl:
+        "https://chatgpt.com/backend-api/codex/realtime/calls?intent=quicksilver&architecture=avas",
+      contentType: "application/json",
     },
     {
       name: "API key",
       auth: { type: "api-key" as const, token: "platform-key" },
       authorization: "Bearer platform-key",
       accountId: undefined,
+      callUrl: "https://api.openai.com/v1/live",
+      contentType: expect.stringMatching(/^multipart\/form-data; boundary=/),
     },
   ])("uses matching $name headers on signaling and the API sideband", async (authCase) => {
     vi.stubEnv("OPENCLAW_VERSION", "2026.7.2-test");
@@ -199,8 +204,7 @@ describe("GPT-Live offer broker", () => {
       );
 
       const sideband = socketRequests[0];
-      expect(signalingUrl).toBe("https://api.openai.com/v1/live");
-      expect(signalingUrl).not.toContain("?");
+      expect(signalingUrl).toBe(authCase.callUrl);
       expect(sideband?.url).toBe("wss://api.openai.com/v1/live/rtc_header-parity");
       expect(signalingHeaders).toMatchObject({
         Authorization: authCase.authorization,
@@ -211,7 +215,7 @@ describe("GPT-Live offer broker", () => {
         "session-id": expect.any(String),
         "thread-id": expect.any(String),
         "x-session-id": expect.any(String),
-        "Content-Type": expect.stringMatching(/^multipart\/form-data; boundary=/),
+        "Content-Type": authCase.contentType,
       });
       expect(sideband?.headers).toMatchObject({
         Authorization: authCase.authorization,
