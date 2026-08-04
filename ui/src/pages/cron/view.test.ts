@@ -802,7 +802,7 @@ describe("cron view editor", () => {
     expect(container.querySelector('option[value="script"]')).toBeNull();
   });
 
-  it("surfaces incomplete inherited app/MCP authority on legacy default-capped jobs", () => {
+  it("surfaces only server-classified incomplete inherited app/MCP authority", () => {
     const job = createJob("legacy-inherited", {
       payload: {
         kind: "agentTurn",
@@ -811,16 +811,18 @@ describe("cron view editor", () => {
         toolsAllowIsDefault: true,
       },
     });
-    const incomplete = renderView({ jobs: [job], editingJobId: job.id });
+    const inferredOnly = renderView({ jobs: [job], editingJobId: job.id });
     expect(
-      incomplete.querySelector('[data-test-id="cron-runtime-authority-warning"]')?.textContent,
-    ).toContain("Incomplete inherited app/MCP authority");
+      inferredOnly.querySelector('[data-test-id="cron-runtime-authority-warning"]'),
+    ).toBeNull();
 
-    const complete = renderView({
-      jobs: [{ ...job, scheduledRuntimeAuthority: { version: 1 } }],
+    const classified = renderView({
+      jobs: [{ ...job, runtimeAuthorityStatus: "incomplete" }],
       editingJobId: job.id,
     });
-    expect(complete.querySelector('[data-test-id="cron-runtime-authority-warning"]')).toBeNull();
+    expect(
+      classified.querySelector('[data-test-id="cron-runtime-authority-warning"]'),
+    ).not.toBeNull();
   });
 
   it("highlights locked command payloads as shell and keeps heartbeat payloads plain", () => {

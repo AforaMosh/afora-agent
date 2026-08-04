@@ -45,7 +45,12 @@ describe("scheduled tool policy provenance", () => {
       schedule: { kind: "every" as const, everyMs: 60_000 },
       sessionTarget: "isolated" as const,
       wakeMode: "now" as const,
-      payload: { kind: "agentTurn" as const, message: "run", toolsAllow: ["write"] },
+      payload: {
+        kind: "agentTurn" as const,
+        message: "run",
+        toolsAllow: ["write"],
+        toolsAllowIsDefault: true,
+      },
     };
 
     const trusted = await add(state, { ...base, name: "trusted" });
@@ -120,7 +125,13 @@ describe("scheduled tool policy provenance", () => {
     const reauthorized = await update(
       state,
       created.id,
-      { payload: { kind: "agentTurn", toolsAllow: ["write"] } },
+      {
+        payload: {
+          kind: "agentTurn",
+          toolsAllow: ["write"],
+          toolsAllowIsDefault: true,
+        },
+      },
       {
         scheduledToolPolicy: {
           version: 1,
@@ -140,6 +151,30 @@ describe("scheduled tool policy provenance", () => {
     );
     expect(reauthorized.scheduledToolPolicy?.mode).toBe("account");
     expect(reauthorized.scheduledRuntimeAuthority).toBeDefined();
+
+    const explicitlyNarrowed = await update(
+      state,
+      created.id,
+      {
+        payload: {
+          kind: "agentTurn",
+          toolsAllow: ["write"],
+          toolsAllowIsDefault: false,
+        },
+      },
+      {
+        scheduledRuntimeAuthority: {
+          version: 1,
+          runtime: "codex",
+          openClawTools: ["write"],
+          apps: [],
+          userMcpServers: [],
+          pluginMcpServers: [],
+        },
+      },
+    );
+    expect(explicitlyNarrowed.payload.toolsAllowIsDefault).toBeUndefined();
+    expect(explicitlyNarrowed.scheduledRuntimeAuthority).toBeUndefined();
     if (state.timer) {
       clearTimeout(state.timer);
     }

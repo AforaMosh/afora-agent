@@ -470,6 +470,8 @@ Job wakeMode (main jobs): "now"(default)|"next-heartbeat". Restricted automation
               delete job.enabled;
             }
             capCronJobToolsAllowOnCreate(job, opts?.creatorToolAllowlist);
+            // Explicit toolsAllow is an OpenClaw-only custom cap. Until typed app/MCP selectors
+            // exist, only auto-derived caps may inherit ambient runtime authority.
             const scheduledRuntimeAuthority =
               isRecord(job.payload) &&
               Array.isArray(job.payload.toolsAllow) &&

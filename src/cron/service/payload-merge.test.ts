@@ -152,6 +152,24 @@ describe("mergeCronPayload trigger tool caps", () => {
     ).toEqual({ kind: "agentTurn", message: "before", toolsAllow: ["read"] });
   });
 
+  it("clears default provenance when an explicit patch repeats the default list", () => {
+    expect(
+      mergeCronPayload(
+        {
+          kind: "agentTurn",
+          message: "before",
+          toolsAllow: ["read", "cron"],
+          toolsAllowIsDefault: true,
+        },
+        {
+          kind: "agentTurn",
+          toolsAllow: ["read", "cron"],
+          toolsAllowIsDefault: false,
+        },
+      ),
+    ).toEqual({ kind: "agentTurn", message: "before", toolsAllow: ["read", "cron"] });
+  });
+
   it("clears toolsAllow explicitly across a kind change", () => {
     expect(
       mergeCronPayload(

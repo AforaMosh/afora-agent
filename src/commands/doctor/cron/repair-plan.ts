@@ -79,7 +79,7 @@ export function formatScheduledToolPolicyAdvisory(params: {
   return lines.join("\n");
 }
 
-/** Advisory for inherited caps created before native app/MCP authority was captured. */
+/** Advisory for current Codex routes whose inherited app/MCP authority predates capture. */
 export function formatIncompleteScheduledRuntimeAuthorityAdvisory(names: string[]): string | null {
   if (names.length === 0) {
     return null;

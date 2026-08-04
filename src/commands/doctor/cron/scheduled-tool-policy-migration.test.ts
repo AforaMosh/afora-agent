@@ -128,22 +128,9 @@ describe("migrateScheduledToolPolicy", () => {
     ).toContain("openclaw cron edit <id> --tools");
   });
 
-  it("identifies default-capped jobs that predate runtime authority capture", () => {
-    const incomplete = job({
-      payload: {
-        kind: "agentTurn",
-        message: "run",
-        toolsAllow: ["write"],
-        toolsAllowIsDefault: true,
-      },
-    });
-    const result = normalizeStoredCronJobs([incomplete]);
-
-    expect(result.incompleteScheduledRuntimeAuthorityJobs).toEqual(["Legacy"]);
-    expect(
-      formatIncompleteScheduledRuntimeAuthorityAdvisory(
-        result.incompleteScheduledRuntimeAuthorityJobs,
-      ),
-    ).toContain("original authenticated Codex session");
+  it("formats the runtime authority recovery advisory from classified names", () => {
+    expect(formatIncompleteScheduledRuntimeAuthorityAdvisory(["Legacy"])).toContain(
+      "original authenticated Codex session",
+    );
   });
 });

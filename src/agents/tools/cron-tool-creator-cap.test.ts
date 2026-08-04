@@ -47,10 +47,48 @@ describe("cron tool creator cap", () => {
     );
 
     expect(patch).toEqual({
-      payload: { kind: "agentTurn", toolsAllow: ["read"] },
+      payload: { kind: "agentTurn", toolsAllow: ["read"], toolsAllowIsDefault: false },
     });
     expect(input).toEqual({
       payload: { kind: "agentTurn", toolsAllow: ["read", "exec"] },
+    });
+  });
+
+  it("marks a same-list explicit update as non-default provenance", () => {
+    const patch = readReadyPatch(
+      planCronJobUpdatePatch({
+        patch: { payload: { toolsAllow: ["read", "cron"] } },
+        creatorToolAllowlist: ["read", "cron"],
+        currentJob: {
+          payload: {
+            kind: "agentTurn",
+            message: "work",
+            toolsAllow: ["read", "automations"],
+            toolsAllowIsDefault: true,
+          },
+        },
+      }),
+    );
+
+    expect(patch).toEqual({
+      payload: {
+        kind: "agentTurn",
+        toolsAllow: ["read", "automations"],
+        toolsAllowIsDefault: false,
+      },
+    });
+  });
+
+  it("marks explicit finite updates without a restricted creator surface", () => {
+    expect(
+      readReadyPatch(
+        planCronJobUpdatePatch({
+          patch: { payload: { kind: "agentTurn", toolsAllow: ["read"] } },
+          creatorToolAllowlist: undefined,
+        }),
+      ),
+    ).toEqual({
+      payload: { kind: "agentTurn", toolsAllow: ["read"], toolsAllowIsDefault: false },
     });
   });
 

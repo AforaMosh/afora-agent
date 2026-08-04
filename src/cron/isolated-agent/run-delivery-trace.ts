@@ -158,6 +158,7 @@ export function buildCronDeliveryTrace(params: {
 export async function createCronToolsAllowPreflightDiagnostics(params: {
   cfg: OpenClawConfig;
   jobId: string;
+  agentRuntime: string;
   provider: string;
   model: string;
   modelApi?: string;
@@ -169,6 +170,7 @@ export async function createCronToolsAllowPreflightDiagnostics(params: {
 }): Promise<CronRunDiagnostics | undefined> {
   const toolsAllow = params.agentPayload?.toolsAllow;
   const runtimeAuthorityDiagnostics = createCronRunDiagnosticsFromIncompleteRuntimeAuthority({
+    agentRuntime: params.agentRuntime,
     toolsAllowIsDefault: params.agentPayload?.toolsAllowIsDefault,
     hasRuntimeAuthority: params.hasRuntimeAuthority,
   });

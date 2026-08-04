@@ -733,8 +733,6 @@ export function normalizeStoredCronJobs(
     unresolvedAgentTurnShellToolPromptJobs,
     legacyScheduledToolPolicyJobs: scheduledToolPolicyMigrations.legacyJobs,
     invalidScheduledToolPolicyJobs: scheduledToolPolicyMigrations.invalidJobs,
-    incompleteScheduledRuntimeAuthorityJobs:
-      scheduledToolPolicyMigrations.incompleteRuntimeAuthorityJobs,
     jobs,
     mutated,
     removedJobs,

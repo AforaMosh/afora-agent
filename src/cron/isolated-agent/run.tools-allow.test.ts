@@ -10,6 +10,7 @@ import {
   loadModelCatalogMock,
   loadRunCronIsolatedAgentTurn,
   resolveConfiguredModelRefMock,
+  resolveEffectiveAgentRuntimeMock,
   resetRunCronIsolatedAgentTurnHarness,
   resolveDeliveryTargetMock,
   runEmbeddedAgentMock,
@@ -290,6 +291,7 @@ describe("runCronIsolatedAgentTurn toolsAllow passthrough", () => {
     "warns when a legacy default-derived cap lacks inherited app/MCP authority",
     { timeout: RUN_TOOLS_ALLOW_TIMEOUT_MS },
     async () => {
+      resolveEffectiveAgentRuntimeMock.mockReturnValue("codex");
       const result = await runCronIsolatedAgentTurn(
         makeParamsWithDefaultToolsAllow(["web_search"]),
       );
@@ -304,6 +306,21 @@ describe("runCronIsolatedAgentTurn toolsAllow passthrough", () => {
           }),
         ],
       });
+    },
+  );
+
+  it(
+    "does not warn for an OpenClaw legacy default-derived cap",
+    { timeout: RUN_TOOLS_ALLOW_TIMEOUT_MS },
+    async () => {
+      resolveEffectiveAgentRuntimeMock.mockReturnValue("openclaw");
+
+      const result = await runCronIsolatedAgentTurn(
+        makeParamsWithDefaultToolsAllow(["web_search"]),
+      );
+
+      expect(result.status).toBe("ok");
+      expect(result.diagnostics).toBeUndefined();
     },
   );
 

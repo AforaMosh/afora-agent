@@ -1,5 +1,4 @@
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { normalizeScheduledRuntimeAuthority } from "../../../cron/scheduled-runtime-authority.js";
 import {
   createAccountCronScheduledToolPolicy,
   normalizeCronScheduledToolPolicy,
@@ -18,11 +17,9 @@ type ScheduledToolPolicyMigrationResult = {
 export function createScheduledToolPolicyMigrationCollector() {
   const legacyJobs: string[] = [];
   const invalidJobs: string[] = [];
-  const incompleteRuntimeAuthorityJobs: string[] = [];
   return {
     legacyJobs,
     invalidJobs,
-    incompleteRuntimeAuthorityJobs,
     migrate(raw: Record<string, unknown>, onMigrated: () => void) {
       const result = migrateScheduledToolPolicy(raw);
       const jobName = normalizeOptionalString(raw.name) ?? normalizeOptionalString(raw.id);
@@ -33,15 +30,6 @@ export function createScheduledToolPolicyMigrationCollector() {
         legacyJobs.push(jobName);
       } else if (result.status === "invalid" && jobName) {
         invalidJobs.push(jobName);
-      }
-      const payload = readRecord(raw.payload);
-      if (
-        jobName &&
-        (result.status === "current" || result.status === "migrated") &&
-        payload?.toolsAllowIsDefault === true &&
-        !normalizeScheduledRuntimeAuthority(raw.scheduledRuntimeAuthority)
-      ) {
-        incompleteRuntimeAuthorityJobs.push(jobName);
       }
       return result.mutated;
     },

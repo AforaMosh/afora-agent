@@ -902,7 +902,7 @@ function renderDetailView(props: CronProps, mode: CronPanelMode) {
     `,
     renderDetailHeader(props, mode, selectedJob),
     renderAdminRequired(props),
-    selectedJob?.payload.toolsAllowIsDefault === true && !selectedJob.scheduledRuntimeAuthority
+    selectedJob?.runtimeAuthorityStatus === "incomplete"
       ? html`<div class="cron-error-banner" data-test-id="cron-runtime-authority-warning">
           ${t("cron.detail.incompleteRuntimeAuthority")}
         </div>`

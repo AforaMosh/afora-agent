@@ -160,11 +160,16 @@ export function createCronRunDiagnosticsFromMissingWebSearchProvider(params: {
 
 /** Makes the legacy partial-cap behavior visible without pausing an existing job. */
 export function createCronRunDiagnosticsFromIncompleteRuntimeAuthority(params: {
+  agentRuntime?: string;
   toolsAllowIsDefault?: boolean;
   hasRuntimeAuthority: boolean;
   nowMs?: () => number;
 }): CronRunDiagnostics | undefined {
-  if (params.toolsAllowIsDefault !== true || params.hasRuntimeAuthority) {
+  if (
+    params.agentRuntime !== "codex" ||
+    params.toolsAllowIsDefault !== true ||
+    params.hasRuntimeAuthority
+  ) {
     return undefined;
   }
   return normalizeCronRunDiagnostics(

@@ -314,6 +314,55 @@ describe("collectLegacyCronStoreHealthFindings", () => {
     ).resolves.toEqual([]);
   });
 
+  it("reports incomplete app/MCP authority only for current configured Codex routes", async () => {
+    const storePath = await makeTempStorePath();
+    await writeCurrentCronStore(storePath, [
+      createCurrentCronJob({
+        id: "codex-job",
+        name: "Codex job",
+        scheduledToolPolicy: { version: 1, mode: "trusted" },
+        payload: {
+          kind: "agentTurn",
+          message: "run",
+          toolsAllow: ["read"],
+          toolsAllowIsDefault: true,
+        },
+      }),
+      createCurrentCronJob({
+        id: "openclaw-job",
+        name: "OpenClaw job",
+        scheduledToolPolicy: { version: 1, mode: "trusted" },
+        payload: {
+          kind: "agentTurn",
+          message: "run",
+          model: "anthropic/claude-sonnet-4-5",
+          toolsAllow: ["read"],
+          toolsAllowIsDefault: true,
+        },
+      }),
+    ]);
+    const cfg = {
+      ...createCronConfig(storePath),
+      agents: {
+        defaults: {
+          model: { primary: "openai/gpt-5.5" },
+          models: {
+            "openai/gpt-5.5": { agentRuntime: { id: "codex" } },
+          },
+        },
+      },
+    } as OpenClawConfig;
+
+    const findings = await collectLegacyCronStoreHealthFindings({ cfg });
+
+    expect(findings).toEqual([
+      expect.objectContaining({
+        requirement: "cron-scheduled-runtime-authority-reauthorization",
+        message: expect.stringContaining("1 tool-bearing automation"),
+      }),
+    ]);
+  });
+
   it("reports a legacy quarantine sidecar without creating or modifying a SQLite database", async () => {
     const storePath = await makeTempStorePath();
     vi.stubEnv("OPENCLAW_STATE_DIR", path.dirname(path.dirname(storePath)));

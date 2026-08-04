@@ -107,7 +107,21 @@ function capCronJobToolsAllow(params: {
   params.payload.toolsAllow = creatorToolNames.filter((toolName) =>
     isToolAllowedByPolicyName(toolName, requestedPolicy),
   );
+  // Finite caller-provided lists are OpenClaw-only caps. They must not inherit
+  // ambient app/MCP authority until those runtimes have typed selectors.
   delete params.payload.toolsAllowIsDefault;
+}
+
+function markExplicitFiniteToolsAllowPatch(payload: Record<string, unknown>): void {
+  if (
+    Array.isArray(payload.toolsAllow) &&
+    !payload.toolsAllow.includes("*") &&
+    payload.toolsAllowIsDefault !== true
+  ) {
+    // `false` is an internal patch signal. The service consumes it by clearing
+    // stored default provenance instead of persisting the marker.
+    payload.toolsAllowIsDefault = false;
+  }
 }
 
 export function capCronJobToolsAllowOnCreate(
@@ -153,11 +167,15 @@ export function planCronJobUpdatePatch(params: {
       trigger: patch.trigger,
       creatorToolAllowlist: params.creatorToolAllowlist,
     });
+    markExplicitFiniteToolsAllowPatch(payload);
     return { kind: "ready", patch };
   }
 
   const needsStoredPayloadKind = payload !== undefined && explicitPayloadKind === undefined;
   if (!needsStoredPayloadKind && !params.creatorToolAllowlist) {
+    if (payload) {
+      markExplicitFiniteToolsAllowPatch(payload);
+    }
     return { kind: "ready", patch };
   }
   if (!params.currentJob) {
@@ -171,6 +189,9 @@ export function planCronJobUpdatePatch(params: {
     patch.payload = payload;
   }
   if (!params.creatorToolAllowlist) {
+    if (payload) {
+      markExplicitFiniteToolsAllowPatch(payload);
+    }
     return { kind: "ready", patch };
   }
 
@@ -199,5 +220,8 @@ export function planCronJobUpdatePatch(params: {
         ? existingPayload.toolsAllow
         : undefined,
   });
+  if (writesToolsAllow) {
+    markExplicitFiniteToolsAllowPatch(nextPayload);
+  }
   return { kind: "ready", patch };
 }

@@ -569,6 +569,8 @@ export const CronJobSchema = closedObject({
   owner: Type.Optional(CronOwnerSchema),
   scheduledToolPolicy: Type.Optional(CronScheduledToolPolicySchema),
   scheduledRuntimeAuthority: Type.Optional(ScheduledRuntimeAuthoritySchema),
+  /** Transient recovery status computed from the current configured primary route. */
+  runtimeAuthorityStatus: Type.Optional(Type.Literal("incomplete")),
   agentId: Type.Optional(NonEmptyString),
   sessionKey: Type.Optional(NonEmptyString),
   name: NonEmptyString,

@@ -762,6 +762,39 @@ describe("cron method validation", () => {
     );
   });
 
+  it("reports incomplete runtime authority only in full current-Codex job views", async () => {
+    setRuntimeConfig({
+      agents: {
+        defaults: {
+          model: { primary: "openai/gpt-5.5" },
+          models: {
+            "openai/gpt-5.5": { agentRuntime: { id: "codex" } },
+          },
+        },
+      },
+    });
+    const context = createCronContext(
+      createCronJob({
+        payload: {
+          kind: "agentTurn",
+          message: "hello",
+          toolsAllow: ["read"],
+          toolsAllowIsDefault: true,
+        },
+      }),
+    );
+
+    const full = await invokeCron("cron.list", {}, { context });
+    expect(JSON.stringify(full.respond.mock.calls[0]?.[1])).toContain(
+      '"runtimeAuthorityStatus":"incomplete"',
+    );
+
+    const compact = await invokeCron("cron.list", { compact: true }, { context });
+    expect(JSON.stringify(compact.respond.mock.calls[0]?.[1])).not.toContain(
+      "runtimeAuthorityStatus",
+    );
+  });
+
   it("filters operator command cron jobs from caller-scoped cron.list", async () => {
     const context = createCronContext([
       createCronJob({
@@ -939,6 +972,55 @@ describe("cron method validation", () => {
     expectResponseError(operator.respond, {
       code: "INVALID_REQUEST",
       messageIncludes: "scheduled runtime authority requires an authenticated agent runtime",
+    });
+  });
+
+  it("rejects ambient runtime authority paired with explicit finite caps", async () => {
+    const authority = {
+      version: 1,
+      runtime: "codex",
+      openClawTools: ["read"],
+      apps: [],
+      userMcpServers: [{ source: "codex", serverName: "memory", toolNames: ["read_graph"] }],
+      pluginMcpServers: [],
+    };
+    const add = await invokeCronAdd(
+      agentTurnCronParams({
+        internalScheduledRuntimeAuthority: authority,
+        payload: {
+          kind: "agentTurn",
+          message: "hello",
+          toolsAllow: ["read"],
+          toolsAllowIsDefault: false,
+        },
+      }),
+      { client: callerClient("ops") },
+    );
+    expect(add.context.cron.add).not.toHaveBeenCalled();
+    expectResponseError(add.respond, {
+      code: "INVALID_REQUEST",
+      messageIncludes: "default-derived finite tool cap",
+    });
+
+    const update = await invokeCronUpdate(
+      {
+        id: "cron-1",
+        patch: {
+          payload: {
+            kind: "agentTurn",
+            toolsAllow: ["read"],
+            toolsAllowIsDefault: false,
+          },
+        },
+        internalScheduledRuntimeAuthority: authority,
+      },
+      createCronJob({ id: "cron-1", agentId: "ops" }),
+      { client: callerClient("ops") },
+    );
+    expect(update.context.cron.update).not.toHaveBeenCalled();
+    expectResponseError(update.respond, {
+      code: "INVALID_REQUEST",
+      messageIncludes: "default-derived finite tool cap",
     });
   });
 

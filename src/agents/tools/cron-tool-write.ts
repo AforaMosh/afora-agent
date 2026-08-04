@@ -88,6 +88,8 @@ export async function updateCronJobFromAgentTool(params: {
       assertNoCronShellExecution(prepared.patch);
     }
     try {
+      // Explicit toolsAllow is an OpenClaw-only custom cap. Capturing ambient apps/MCP here
+      // would widen the caller's stated restriction without a typed selection contract.
       const scheduledRuntimeAuthority =
         isRecord(prepared.patch.payload) &&
         Object.hasOwn(prepared.patch.payload, "toolsAllow") &&

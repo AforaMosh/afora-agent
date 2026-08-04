@@ -726,6 +726,7 @@ export type CronJob = CronJobBase<
 > & {
   state?: CronJobState;
   scheduledRuntimeAuthority?: unknown;
+  runtimeAuthorityStatus?: "incomplete";
 };
 
 export type CronStatus = {

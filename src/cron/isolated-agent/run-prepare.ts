@@ -504,6 +504,7 @@ export async function prepareCronRunContext(params: {
     const preflightDiagnostics = await createCronToolsAllowPreflightDiagnostics({
       cfg: cfgWithAgentDefaults,
       jobId: input.job.id,
+      agentRuntime: effectiveAgentRuntime,
       provider,
       model,
       modelApi,

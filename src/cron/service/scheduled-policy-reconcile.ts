@@ -38,7 +38,12 @@ function stampScheduledRuntimeAuthority(
   job: CronJob,
   authority: ScheduledRuntimeAuthority | undefined,
 ): void {
-  if (!cronJobUsesToolRuntime(job) || job.payload.toolsAllow === undefined || !authority) {
+  if (
+    !cronJobUsesToolRuntime(job) ||
+    job.payload.toolsAllow === undefined ||
+    job.payload.toolsAllowIsDefault !== true ||
+    !authority
+  ) {
     delete job.scheduledRuntimeAuthority;
     return;
   }

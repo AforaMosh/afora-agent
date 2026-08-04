@@ -18,6 +18,7 @@ import {
 } from "../../../packages/gateway-protocol/src/index.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import { resolveCronJobConfigRevision } from "../../cron/config-revision.js";
+import { resolveConfiguredCronRuntimeAuthorityStatus } from "../../cron/configured-runtime-authority.js";
 import {
   assertValidCronAnnounceDelivery,
   assertValidCronCreateDelivery,
@@ -110,10 +111,12 @@ function publicCronScratch(
   };
 }
 
-function cronJobReadView(job: CronJob) {
+function cronJobReadView(job: CronJob, params: { cfg: OpenClawConfig; defaultAgentId?: string }) {
   const publicJob = toPublicCronJob(job);
+  const runtimeAuthorityStatus = resolveConfiguredCronRuntimeAuthorityStatus({ ...params, job });
   return {
     ...publicJob,
+    ...(runtimeAuthorityStatus ? { runtimeAuthorityStatus } : {}),
     configRevision: resolveCronJobConfigRevision(job),
     nextRunAtMs: job.state.nextRunAtMs,
     lastRunAtMs: job.state.lastRunAtMs,
@@ -515,7 +518,11 @@ export const cronHandlers: GatewayRequestHandlers = {
       respond(true, { ...page, jobs: page.jobs.map(compactCronListJob) }, undefined);
       return;
     }
-    const jobs = page.jobs.map(cronJobReadView);
+    const readViewParams = {
+      cfg: context.getRuntimeConfig(),
+      defaultAgentId: context.cron.getDefaultAgentId(),
+    };
+    const jobs = page.jobs.map((job) => cronJobReadView(job, readViewParams));
     if (p.includeDeliveryPreviews === false) {
       // Full job rows are the default because editors need their payloads. Delivery
       // previews are independently suppressible so list-only callers avoid per-job I/O
@@ -566,7 +573,14 @@ export const cronHandlers: GatewayRequestHandlers = {
       );
       return;
     }
-    respond(true, cronJobReadView(job), undefined);
+    respond(
+      true,
+      cronJobReadView(job, {
+        cfg: context.getRuntimeConfig(),
+        defaultAgentId: context.cron.getDefaultAgentId(),
+      }),
+      undefined,
+    );
   },
   "cron.scratch.get": async ({ params, respond, context, client }) => {
     if (!assertValidParams(params, validateCronScratchGetParams, "cron.scratch.get", respond)) {
@@ -740,6 +754,8 @@ export const cronHandlers: GatewayRequestHandlers = {
       return;
     }
     if (scheduledRuntimeAuthority && !hasDefaultFiniteToolsAllow(jobCreate)) {
+      // Ambient app/MCP authority belongs only to creator-derived caps. Keep
+      // explicit finite lists OpenClaw-only even if a client injects an envelope.
       respondInvalidCronParams(
         respond,
         "cron.add",
@@ -817,9 +833,15 @@ export const cronHandlers: GatewayRequestHandlers = {
         ? {
             created: result.created,
             ...(result.updated === undefined ? {} : { updated: result.updated }),
-            job: cronJobReadView(job),
+            job: cronJobReadView(job, {
+              cfg: context.getRuntimeConfig(),
+              defaultAgentId: context.cron.getDefaultAgentId(),
+            }),
           }
-        : cronJobReadView(job),
+        : cronJobReadView(job, {
+            cfg: context.getRuntimeConfig(),
+            defaultAgentId: context.cron.getDefaultAgentId(),
+          }),
       undefined,
     );
   },
@@ -913,6 +935,8 @@ export const cronHandlers: GatewayRequestHandlers = {
         !Array.isArray(patch.payload.toolsAllow) ||
         patch.payload.toolsAllow.includes("*"))
     ) {
+      // The planner's false marker deliberately clears default provenance;
+      // callers cannot pair an explicit finite cap with ambient authority.
       respondInvalidCronParams(
         respond,
         "cron.update",
@@ -1038,7 +1062,14 @@ export const cronHandlers: GatewayRequestHandlers = {
       return;
     }
     context.logGateway.info("cron: job updated", { jobId });
-    respond(true, cronJobReadView(job), undefined);
+    respond(
+      true,
+      cronJobReadView(job, {
+        cfg: context.getRuntimeConfig(),
+        defaultAgentId: context.cron.getDefaultAgentId(),
+      }),
+      undefined,
+    );
   },
   "cron.remove": async ({ params, respond, context, client }) => {
     if (!assertValidParams(params, validateCronRemoveParams, "cron.remove", respond)) {
