@@ -220,7 +220,8 @@ export function readPluginSdkSurfaceBudgets(env = process.env) {
       // +3: canonical ready, blocked, and stopped channel lifecycle patch factories.
       // +1: bounded external-content sanitizer for plugin-owned untrusted projections.
       // +2: delivery-gated provisional parent-fork settlement result and helper.
-      4832,
+      // +1: auth-profile preservation decision for native model pickers.
+      4833,
       env,
     ),
     publicFunctionExports: readPluginSdkSurfaceBudgetEnv(
@@ -268,7 +269,8 @@ export function readPluginSdkSurfaceBudgets(env = process.env) {
       // +3: canonical ready, blocked, and stopped channel lifecycle patch factories.
       // +1: bounded external-content sanitizer for plugin-owned untrusted projections.
       // +1: delivery-gated provisional parent-fork settlement helper.
-      2908,
+      // +1: auth-profile preservation decision for native model pickers.
+      2909,
       env,
     ),
     publicDeprecatedExports: readPluginSdkSurfaceBudgetEnv(
