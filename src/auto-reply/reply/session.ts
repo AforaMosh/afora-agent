@@ -617,6 +617,13 @@ async function initSessionStateAttemptLocked(
     throw new Error(archivedSessionError);
   }
   const provisionalParentForkId = normalizeOptionalString(ctx.ProvisionalParentForkId);
+  const parentSessionKey = normalizeOptionalString(ctx.ParentSessionKey);
+  const provisionalParentForkOwned = Boolean(
+    !provisionalParentForkId ||
+    createdNewEntry ||
+    (entry?.provisionalParentFork?.id === provisionalParentForkId &&
+      entry.provisionalParentFork.parentSessionKey === parentSessionKey),
+  );
   const resetUnconfirmedParentFork = Boolean(
     entry?.provisionalParentFork && entry.provisionalParentFork.id !== provisionalParentForkId,
   );
@@ -1016,7 +1023,6 @@ async function initSessionStateAttemptLocked(
   if (threadLabel) {
     sessionEntry.displayName = threadLabel;
   }
-  const parentSessionKey = normalizeOptionalString(ctx.ParentSessionKey);
   const alreadyForked = sessionEntryForkedFromParent(sessionEntry);
   if (params.signal?.aborted === true) {
     throw new Error("reply session initialization aborted");
@@ -1086,6 +1092,7 @@ async function initSessionStateAttemptLocked(
         agentId,
         alreadyForked,
         parentSessionKey,
+        provisionalParentForkOwned,
         provisionalParentForkId,
         readEntry,
         sessionEntry: entryToCommit,
