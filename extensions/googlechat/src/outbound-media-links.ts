@@ -3,12 +3,18 @@ import { formatTextWithAttachmentLinks } from "openclaw/plugin-sdk/reply-payload
 
 const GOOGLE_CHAT_UNSUPPORTED_OUTBOUND_MEDIA_MESSAGE =
   "Google Chat outbound attachments require remote HTTP(S) URLs; native, local, and non-web attachments are not supported by this service-account channel.";
-const GOOGLE_CHAT_URL_CONTROL_CHARACTERS = /[\u0000-\u001F\u007F]/u;
+
+function hasGoogleChatUrlControlCharacter(value: string): boolean {
+  return Array.from(value).some((character) => {
+    const code = character.charCodeAt(0);
+    return code <= 0x1f || code === 0x7f;
+  });
+}
 
 export function filterGoogleChatRemoteMediaUrls(mediaUrls: readonly string[]): string[] {
   return mediaUrls.flatMap((value) => {
     // WHATWG URL normalizes these characters, but the rendered link uses this value.
-    if (GOOGLE_CHAT_URL_CONTROL_CHARACTERS.test(value)) {
+    if (hasGoogleChatUrlControlCharacter(value)) {
       return [];
     }
     const mediaUrl = value.trim();
