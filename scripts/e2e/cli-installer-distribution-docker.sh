@@ -60,7 +60,9 @@ test "$(command -v openclaw-acp)" = "$prefix_acp"
 test "$(git -C /tmp/openclaw-source rev-parse HEAD)" = "$OPENCLAW_SOURCE_SHA"
 openclaw_version="$(openclaw --version)"
 openclaw --help >/tmp/openclaw-help
+openclaw-acp --help >/tmp/openclaw-acp-help
 test -s /tmp/openclaw-help
+grep -Fq "Run OpenClaw as a self-contained ACP agent" /tmp/openclaw-acp-help
 status_json="$(openclaw update status --json)"
 STATUS_JSON="$status_json" node -e "
   const status = JSON.parse(process.env.STATUS_JSON);
@@ -111,7 +113,9 @@ docker_e2e_docker_run_cmd run -d \
     node_version="$(node --version)"
     openclaw_version="$(openclaw --version)"
     openclaw --help >/tmp/openclaw-help
+    openclaw-acp --help >/tmp/openclaw-acp-help
     test -s /tmp/openclaw-help
+    grep -Fq "Run OpenClaw as a self-contained ACP agent" /tmp/openclaw-acp-help
     printf "hostedNode=%s@%s\n" "$node_path" "$node_version"
     printf "hostedOpenClaw=%s@%s\n" "$openclaw_path" "$openclaw_version"
     printf "hostedOpenClawAcp=%s\n" "$openclaw_acp_path"

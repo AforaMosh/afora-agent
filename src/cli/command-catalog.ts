@@ -365,6 +365,16 @@ export const cliCommandCatalog: readonly CliCommandCatalogEntry[] = [
     exact: true,
     policy: { ownsProtocolStdout: true },
   },
+  {
+    commandPath: ["acp", "native"],
+    exact: true,
+    policy: { hideBanner: true, ownsProtocolStdout: true },
+  },
+  {
+    commandPath: ["acp", "info"],
+    exact: true,
+    policy: { configGuard: "skip", hideBanner: true, loadPlugins: "never" },
+  },
   { commandPath: ["approvals"], policy: { networkProxy: "bypass" } },
   {
     commandPath: ["approvals", "pending"],

@@ -21,6 +21,8 @@ import {
   type RequestPermissionRequest,
   type RequestPermissionResponse,
 } from "@agentclientprotocol/sdk";
+import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { sanitizeTerminalText } from "../../packages/terminal-core/src/safe-text.js";
 import { agentCommandFromIngress } from "../agents/agent-command.js";
 import { resolveDefaultAgentId } from "../agents/agent-scope-config.js";
 import { resolveEmbeddedAbortSettleTimeoutMs } from "../agents/embedded-agent-runner/run/attempt.abort-settle-timeout.js";
@@ -35,6 +37,7 @@ import {
   EmbeddedPluginApprovalBroker,
   setEmbeddedPluginApprovalBroker,
 } from "../infra/embedded-plugin-approval-broker.js";
+import { formatErrorMessage } from "../infra/errors.js";
 import type { ExecApprovalDecision } from "../infra/exec-approvals.js";
 import {
   createFixedWindowRateLimiter,
@@ -58,6 +61,7 @@ import {
 import { ACP_AGENT_INFO } from "./types.js";
 
 const MAX_PROMPT_BYTES = 2 * 1024 * 1024;
+const MAX_ACP_PROMPT_ERROR_CHARS = 1_000;
 const SESSION_CREATE_RATE_LIMIT_DEFAULT_MAX_REQUESTS = 120;
 const SESSION_CREATE_RATE_LIMIT_DEFAULT_WINDOW_MS = 10_000;
 
@@ -68,6 +72,20 @@ const silentRuntime: RuntimeEnv = {
     throw new Error(`unexpected agent runtime exit ${code}`);
   },
 };
+
+function toAcpPromptRequestError(error: unknown): RequestError {
+  if (error instanceof RequestError) {
+    return error;
+  }
+  const detail = truncateUtf16Safe(
+    sanitizeTerminalText(formatErrorMessage(error)).trim(),
+    MAX_ACP_PROMPT_ERROR_CHARS,
+  );
+  return RequestError.internalError(
+    { kind: "agent_execution_failed" },
+    `agent prompt failed: ${detail || "unknown error"}`,
+  );
+}
 
 type AgentExecutor = typeof agentCommandFromIngress;
 
@@ -331,7 +349,9 @@ export class AcpNativeAgent implements Agent {
   }
 
   prompt(params: PromptRequest): Promise<PromptResponse> {
-    const completion = this.runAdmittedPrompt(params);
+    const completion = this.runAdmittedPrompt(params).catch((error: unknown) => {
+      throw toAcpPromptRequestError(error);
+    });
     const admitted = this.admittedPrompts.get(params.sessionId) ?? new Set();
     admitted.add(completion);
     this.admittedPrompts.set(params.sessionId, admitted);

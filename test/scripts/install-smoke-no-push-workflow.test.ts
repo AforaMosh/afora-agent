@@ -201,6 +201,9 @@ describe("install smoke no-push root image transport", () => {
       const smoke = step(job(workflow, jobName), "Run root Dockerfile CLI smoke");
       expect(smoke.run, jobName).toContain("which openclaw-acp");
       expect(smoke.run, jobName).toContain("test -x /app/openclaw-acp.mjs");
+      expect(smoke.run, jobName).toContain(
+        'openclaw-acp --help | grep -F "Run OpenClaw as a self-contained ACP agent"',
+      );
     }
   });
 

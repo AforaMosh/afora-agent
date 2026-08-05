@@ -96,6 +96,37 @@ function rawDataToText(data: RawData): string {
 }
 
 describe("ACP CLI process exit", () => {
+  it("prints only the runtime contract from fresh state", () => {
+    const stateDir = mkdtempSync(path.join(tmpdir(), "openclaw-acp-info-"));
+    try {
+      const result = spawnSync(
+        process.execPath,
+        ["--import", "tsx", "src/entry.ts", "acp", "info"],
+        {
+          cwd: path.resolve("."),
+          encoding: "utf8",
+          env: createAcpProcessEnv(stateDir),
+          killSignal: "SIGKILL",
+          timeout: CHILD_PROCESS_TIMEOUT_MS,
+        },
+      );
+
+      expect(result.error).toBeUndefined();
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.stderr).toBe("");
+      expect(JSON.parse(result.stdout)).toEqual({
+        schemaVersion: 1,
+        protocol: "acp",
+        transport: "stdio",
+        execution: "in-process",
+        gatewayRequired: false,
+      });
+      expect(result.stdout).toBe(`${JSON.stringify(JSON.parse(result.stdout))}\n`);
+    } finally {
+      rmSync(stateDir, { force: true, recursive: true });
+    }
+  });
+
   it.each([
     { args: ["acp", "--help"], usage: "Usage: openclaw acp [options] [command]" },
     { args: ["acp", "client", "--help"], usage: "Usage: openclaw acp client [options]" },

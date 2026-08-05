@@ -1,4 +1,4 @@
-import { PROTOCOL_VERSION, type AgentSideConnection } from "@agentclientprotocol/sdk";
+import { PROTOCOL_VERSION, RequestError, type AgentSideConnection } from "@agentclientprotocol/sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   registerExecApprovalRequestForHostOrThrow,
@@ -153,14 +153,45 @@ describe("AcpNativeAgent", () => {
     );
     const failedSession = failedHarness.agent.newSession({ cwd: "/tmp/project", mcpServers: [] });
 
-    await expect(
-      failedHarness.agent.prompt({
+    const failure = await failedHarness.agent
+      .prompt({
         sessionId: failedSession.sessionId,
         prompt: [{ type: "text", text: "fail" }],
-      }),
-    ).rejects.toThrow("provider exploded");
+      })
+      .catch((error: unknown) => error);
+    expect(failure).toBeInstanceOf(RequestError);
+    expect(failure).toMatchObject({
+      code: -32603,
+      data: { kind: "agent_execution_failed" },
+    });
+    expect((failure as Error).message).toContain("agent prompt failed: provider exploded");
     expect(failedHarness.updates).toEqual([]);
     await failedHarness.agent.shutdown();
+  });
+
+  it("redacts and bounds native prompt failures before returning them over ACP", async () => {
+    const secret = `sk-${"a".repeat(48)}`; // pragma: allowlist secret
+    const harness = createHarness(
+      vi.fn(async () => {
+        throw new Error(`provider\u001b[2K failed with token ${secret} ${"x".repeat(2_000)}`);
+      }),
+    );
+    const session = harness.agent.newSession({ cwd: "/tmp/project", mcpServers: [] });
+
+    const failure = await harness.agent
+      .prompt({
+        sessionId: session.sessionId,
+        prompt: [{ type: "text", text: "fail safely" }],
+      })
+      .catch((error: unknown) => error);
+
+    expect(failure).toBeInstanceOf(RequestError);
+    expect((failure as RequestError).code).toBe(-32603);
+    expect((failure as Error).message).toContain("agent prompt failed: provider failed");
+    expect((failure as Error).message).not.toContain(secret);
+    expect((failure as Error).message).not.toContain("\u001b");
+    expect((failure as Error).message.length).toBeLessThanOrEqual(1_100);
+    await harness.agent.shutdown();
   });
 
   it("advertises model setup to ACP clients with terminal authentication", async () => {

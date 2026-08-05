@@ -1,4 +1,5 @@
 // Sub-CLI descriptor catalog used for root help placeholders and lazy registration.
+import { isAcpMachineOutput } from "../acp-output-mode.js";
 import { isCronMachineOutput } from "../cron-cli/output-mode.js";
 import { isDevicesMachineOutput } from "../devices-output-mode.js";
 import { isGatewayMachineOutput } from "../gateway-cli/output-mode.js";
@@ -19,6 +20,7 @@ const subCliCommandCatalog = defineCommandDescriptorCatalog([
     name: "acp",
     description: "Run OpenClaw ACP runtimes and Gateway bridge tools",
     hasSubcommands: true,
+    machineOutput: ({ argv }) => isAcpMachineOutput(argv),
   },
   {
     name: "gateway",

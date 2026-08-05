@@ -155,6 +155,7 @@ jobs:
             which openclaw-acp &&
             test -x /app/openclaw-acp.mjs &&
             openclaw --version &&
+            openclaw-acp --help | grep -F "Run OpenClaw as a self-contained ACP agent" &&
             node -e "
               const fs = require(\"node:fs\");
               const path = require(\"node:path\");
@@ -486,6 +487,7 @@ jobs:
             which openclaw-acp &&
             test -x /app/openclaw-acp.mjs &&
             openclaw --version &&
+            openclaw-acp --help | grep -F "Run OpenClaw as a self-contained ACP agent" &&
             node -e "
               const fs = require(\"node:fs\");
               const path = require(\"node:path\");
