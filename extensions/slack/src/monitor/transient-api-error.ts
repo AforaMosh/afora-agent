@@ -15,7 +15,11 @@ import { classifyTransientNetworkErrorCode } from "openclaw/plugin-sdk/retry-run
 export function isTransientSlackApiError(error: unknown): boolean {
   if (error instanceof WebAPIPlatformError) {
     // Slack converts successful HTTP responses into platform errors after its request retries.
-    return error.data.error === "internal_error";
+    return (
+      error.data.error === "internal_error" ||
+      error.data.error === "service_unavailable" ||
+      error.data.error === "ratelimited"
+    );
   }
   if (error instanceof WebAPIRateLimitedError) {
     return true;

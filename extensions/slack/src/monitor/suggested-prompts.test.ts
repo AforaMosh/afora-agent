@@ -66,6 +66,14 @@ describe("updateSlackSuggestedPrompts", () => {
       error: new WebAPIPlatformError({ ok: false, error: "internal_error" }),
     },
     {
+      label: "Slack platform service outage",
+      error: new WebAPIPlatformError({ ok: false, error: "service_unavailable" }),
+    },
+    {
+      label: "Slack platform rate limit",
+      error: new WebAPIPlatformError({ ok: false, error: "ratelimited" }),
+    },
+    {
       label: "temporary HTTP outage",
       error: new WebAPIHTTPError(503, "Service Unavailable", {}, "temporary outage"),
     },
@@ -169,6 +177,24 @@ describe("updateSlackSuggestedPrompts", () => {
       }),
     ).resolves.toBe(false);
   });
+
+  it.each(["missing_scope", "invalid_arguments"])(
+    "returns the original threaded Assistant %s rejection to its event owner",
+    async (errorCode) => {
+      const error = new WebAPIPlatformError({ ok: false, error: errorCode });
+      const setSuggestedPrompts = vi.fn().mockRejectedValue(error);
+
+      await expect(
+        updateSlackSuggestedPrompts({
+          botToken: "",
+          client: createSlackClient(setSuggestedPrompts),
+          channelId: "D123",
+          threadTs: "1729999327.187299",
+          prompts: [{ title: "Draft a reply", message: "Help me draft a reply." }],
+        }),
+      ).rejects.toBe(error);
+    },
+  );
 
   it("preserves the Assistant View owner's existing transient-failure catch", async () => {
     const error = new WebAPIPlatformError({ ok: false, error: "internal_error" });

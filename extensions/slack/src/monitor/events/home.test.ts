@@ -277,64 +277,36 @@ describe("registerSlackHomeEvents", () => {
     });
   });
 
-  it("retries an actual Slack platform failure through durable ingress and publishes once", async () => {
-    const fetch = vi
-      .fn()
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify({ ok: false, error: "internal_error" }), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        }),
-      )
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify({ ok: true, view: { id: "V_TEST" } }), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        }),
-      );
+  it.each(["internal_error", "service_unavailable", "ratelimited"])(
+    "retries actual Slack Home platform %s through durable ingress",
+    async (errorCode) => {
+      const fetch = vi
+        .fn()
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ ok: false, error: errorCode }), {
+            status: 200,
+            headers: {
+              "content-type": "application/json",
+              ...(errorCode === "ratelimited" ? { "retry-after": "1" } : {}),
+            },
+          }),
+        )
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ ok: true, view: { id: "V_TEST" } }), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          }),
+        );
 
-    await withDurableHomeIngress(fetch, async ({ receive, ingress, queue, runtimeError }) => {
-      const event = createHomeEvent("Ev-home-transient");
-      await receive(event);
-
-      await vi.waitFor(
-        async () => {
-          await ingress.waitForIdle();
-          expect(fetch).toHaveBeenCalledTimes(2);
-        },
-        { timeout: 5_000, interval: 50 },
-      );
-
-      expect(event.ack).toHaveBeenCalledOnce();
-      expect(runtimeError).toHaveBeenCalledOnce();
-      expect(runtimeError).toHaveBeenCalledWith(expect.stringContaining("internal_error"));
-      await expect(
-        queue.enqueue("Ev-home-transient", {} as SlackIngressPayload),
-      ).resolves.toMatchObject({ kind: "completed" });
-    });
-  });
-
-  it("retries Agent View suggested prompts and durably records its marker", async () => {
-    const fetch = vi
-      .fn()
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify({ ok: false, error: "internal_error" }), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        }),
-      )
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify({ ok: true }), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        }),
-      );
-
-    await withDurableHomeIngress(
-      fetch,
-      async ({ receive, ingress, queue, runtimeError, agentViewState, recordSlackAgentView }) => {
-        const event = createHomeEvent("Ev-agent-view-transient", "messages");
+      await withDurableHomeIngress(fetch, async ({ receive, ingress, queue, runtimeError }) => {
+        const eventId = `Ev-home-transient-${errorCode}`;
+        const event = createHomeEvent(eventId);
         await receive(event);
+        await ingress.waitForIdle();
+
+        await expect(queue.listPending()).resolves.toMatchObject([
+          { id: eventId, attempts: 1, lastError: expect.stringContaining(errorCode) },
+        ]);
 
         await vi.waitFor(
           async () => {
@@ -346,21 +318,73 @@ describe("registerSlackHomeEvents", () => {
 
         expect(event.ack).toHaveBeenCalledOnce();
         expect(runtimeError).toHaveBeenCalledOnce();
-        expect(recordSlackAgentView).toHaveBeenCalledOnce();
-        await expect(agentViewState.isEnabled()).resolves.toBe(true);
-        const restartedAgentViewState = createSlackAgentViewState({
-          accountId: "default",
-          teamId: "T_TEST",
-          apiAppId: "A_TEST",
-          warn: vi.fn(),
+        expect(runtimeError).toHaveBeenCalledWith(expect.stringContaining(errorCode));
+        await expect(queue.enqueue(eventId, {} as SlackIngressPayload)).resolves.toMatchObject({
+          kind: "completed",
         });
-        await expect(restartedAgentViewState.isEnabled()).resolves.toBe(true);
-        await expect(
-          queue.enqueue("Ev-agent-view-transient", {} as SlackIngressPayload),
-        ).resolves.toMatchObject({ kind: "completed" });
-      },
-    );
-  });
+      });
+    },
+  );
+
+  it.each(["internal_error", "service_unavailable", "ratelimited"])(
+    "retries Agent View prompt platform %s and durably records its marker",
+    async (errorCode) => {
+      const fetch = vi
+        .fn()
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ ok: false, error: errorCode }), {
+            status: 200,
+            headers: {
+              "content-type": "application/json",
+              ...(errorCode === "ratelimited" ? { "retry-after": "1" } : {}),
+            },
+          }),
+        )
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ ok: true }), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          }),
+        );
+
+      await withDurableHomeIngress(
+        fetch,
+        async ({ receive, ingress, queue, runtimeError, agentViewState, recordSlackAgentView }) => {
+          const eventId = `Ev-agent-view-transient-${errorCode}`;
+          const event = createHomeEvent(eventId, "messages");
+          await receive(event);
+          await ingress.waitForIdle();
+
+          await expect(queue.listPending()).resolves.toMatchObject([
+            { id: eventId, attempts: 1, lastError: expect.stringContaining(errorCode) },
+          ]);
+
+          await vi.waitFor(
+            async () => {
+              await ingress.waitForIdle();
+              expect(fetch).toHaveBeenCalledTimes(2);
+            },
+            { timeout: 5_000, interval: 50 },
+          );
+
+          expect(event.ack).toHaveBeenCalledOnce();
+          expect(runtimeError).toHaveBeenCalledOnce();
+          expect(recordSlackAgentView).toHaveBeenCalledOnce();
+          await expect(agentViewState.isEnabled()).resolves.toBe(true);
+          const restartedAgentViewState = createSlackAgentViewState({
+            accountId: "default",
+            teamId: "T_TEST",
+            apiAppId: "A_TEST",
+            warn: vi.fn(),
+          });
+          await expect(restartedAgentViewState.isEnabled()).resolves.toBe(true);
+          await expect(queue.enqueue(eventId, {} as SlackIngressPayload)).resolves.toMatchObject({
+            kind: "completed",
+          });
+        },
+      );
+    },
+  );
 
   it.each(["home", "messages"] as const)(
     "replays exhausted real Slack client rate limits for the %s tab",

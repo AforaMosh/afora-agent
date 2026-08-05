@@ -48,8 +48,8 @@ export async function updateSlackSuggestedPrompts(
     });
     return true;
   } catch (error) {
-    if (isTransientSlackApiError(error)) {
-      // Definitive capability rejection stays false; durable owners must retry temporary failures.
+    if (params.threadTs || isTransientSlackApiError(error)) {
+      // Threaded actions need their real failure; only threadless Home probes may reject quietly.
       throw error;
     }
     logVerbose(

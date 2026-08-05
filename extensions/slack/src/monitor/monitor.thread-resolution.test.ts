@@ -154,6 +154,68 @@ describe("createSlackThreadTsResolver", () => {
     expect(historyMock).toHaveBeenCalledTimes(2);
   });
 
+  it.each(["service_unavailable", "ratelimited"])(
+    "returns actual Slack platform %s to durable ingress without caching ambiguity",
+    async (errorCode) => {
+      const responses = [
+        new Response(JSON.stringify({ ok: false, error: errorCode }), {
+          status: 200,
+          headers: {
+            "content-type": "application/json",
+            ...(errorCode === "ratelimited" ? { "retry-after": "1" } : {}),
+          },
+        }),
+        new Response(JSON.stringify({ ok: true, messages: [{ ts: "1", thread_ts: "9" }] }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      ];
+      const fetch = vi.fn(async (input: RequestInfo | URL) => {
+        const url = new URL(
+          typeof input === "string" ? input : input instanceof URL ? input.href : input.url,
+        );
+        if (
+          url.origin !== "https://slack-proof.invalid" ||
+          url.pathname !== "/api/conversations.history"
+        ) {
+          throw new Error(`unexpected Slack thread proof request: ${url.origin}${url.pathname}`);
+        }
+        const response = responses.shift();
+        if (!response) {
+          throw new Error("unexpected Slack thread proof retry");
+        }
+        return response;
+      });
+      const resolver = createSlackThreadTsResolver({
+        client: new WebClient("xoxb-fixture", {
+          slackApiUrl: "https://slack-proof.invalid/api/",
+          fetch,
+          logLevel: LogLevel.ERROR,
+          retryConfig: { retries: 0 },
+        }),
+        cacheTtlMs: 60_000,
+        maxSize: 5,
+      });
+      const message = makeThreadReplyMessage("1");
+      const turnAdoptionLifecycle = createDurableTurnLifecycle();
+
+      await expect(
+        resolver.resolve({ message, source: "message", turnAdoptionLifecycle }),
+      ).rejects.toMatchObject({
+        data: {
+          error: errorCode,
+          ...(errorCode === "ratelimited" ? { response_metadata: { retryAfter: 1 } } : {}),
+        },
+      });
+      expect(fetch).toHaveBeenCalledOnce();
+
+      await expect(
+        resolver.resolve({ message, source: "app_mention", turnAdoptionLifecycle }),
+      ).resolves.toMatchObject({ thread_ts: "9" });
+      expect(fetch).toHaveBeenCalledTimes(2);
+    },
+  );
+
   it("retries exhausted actual Slack client rate limits without caching ambiguity", async () => {
     const rateLimited = () => new Response("", { status: 429, headers: { "retry-after": "0" } });
     const fetch = vi
