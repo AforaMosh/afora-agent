@@ -98,20 +98,23 @@ Supported keys: `voice` / `voice_id` / `voiceId`, `model` / `model_id` / `modelI
 }
 ```
 
-OpenAI browser WebRTC and Gateway-relay Talk support native GPT-Live. Set
-`talk.realtime.model` to `gpt-live-1-codex` (recommended) or
-`gpt-live-1-boulder-alpha`; `gpt-live-1` and `gpt-live-1-mini` are not valid.
+OpenAI browser WebRTC and Gateway-relay Talk support enrolled experimental
+realtime models. Enable **Experimental realtime models** in Labs (or set
+`talk.realtime.experimentalModels: true`), then set `talk.realtime.model` to
+the exact model id supplied for your account.
 GPT-Live requires Platform API-key auth through the Frameless Bidi `/v1/live`
 route, whose access is currently
 [waitlist-gated](https://openai.com/form/gpt-live-1-in-the-api/).
 
-The quickest setup is the Control UI: **Settings → Talk**, pick **OpenAI** and
-a `gpt-live-*` model. A ChatGPT/Codex OAuth profile does not configure
+Experimental preview ids are not listed in the normal Talk model picker.
+After enabling the Labs gate, set `talk.realtime.provider: "openai"` and the
+exact enrolled `talk.realtime.model` value in config; the configured model then
+appears in the Talk catalog. A ChatGPT/Codex OAuth profile does not configure
 GPT-Live. GPT-Live also requires the bundled `openai` plugin registered in full
-mode; a restrictive `plugins.allow` list fails
-session creation with "OpenAI GPT-Live browser session broker is unavailable".
-Runtime bounds: 8 concurrent sessions per Gateway and a 30-minute session TTL.
-Browser sessions also use 60-second single-use offer tokens.
+mode; a restrictive `plugins.allow` list fails session creation with "OpenAI
+GPT-Live browser session broker is unavailable". Runtime bounds: 8 concurrent
+sessions per Gateway and a 30-minute session TTL. Browser sessions also use
+60-second single-use offer tokens.
 
 GPT-Live accepts `alloy`, `ash`, `ballad`, `cedar`, `coral`, `echo`, `marin`,
 `sage`, `shimmer`, and `verse`. A `403 Voice session access denied` response is
