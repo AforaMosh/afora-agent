@@ -100,6 +100,41 @@ describe("createWebChannelStatusController", () => {
     expect(patches).toHaveLength(idlePatchCount);
   });
 
+  it("starts refreshing work admitted while the connection is being set up", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(1000);
+    const patches: Record<string, unknown>[] = [];
+    const controller = createWebChannelStatusController((s) => patches.push({ ...s }));
+
+    controller.noteBusy(true);
+    controller.noteConnected();
+    vi.advanceTimersByTime(60_000);
+
+    expect(patches.at(-1)).toMatchObject({
+      connected: true,
+      busy: true,
+      lastRunActivityAt: 61_000,
+    });
+  });
+
+  it("does not carry setup work through a connection close", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(1000);
+    const patches: Record<string, unknown>[] = [];
+    const controller = createWebChannelStatusController((s) => patches.push({ ...s }));
+
+    controller.noteBusy(true);
+    controller.noteClose({
+      reconnectAttempts: 1,
+      healthState: "reconnecting",
+    });
+    controller.noteConnected();
+    const reconnectPatchCount = patches.length;
+    vi.advanceTimersByTime(2 * 60_000);
+
+    expect(patches).toHaveLength(reconnectPatchCount);
+  });
+
   it("does not rearm prior busy work merely when the socket reconnects", () => {
     vi.useFakeTimers();
     vi.setSystemTime(1000);
