@@ -24,12 +24,13 @@ export function makeIsolatedAgentParamsFixture(overrides?: LooseRecord) {
   // without repeating unrelated scheduler defaults.
   const jobOverrides =
     overrides && "job" in overrides ? (overrides.job as LooseRecord | undefined) : undefined;
+  const { job: _job, ...paramOverrides } = overrides ?? {};
   return {
     cfg: {},
     deps: {} as never,
     job: makeIsolatedAgentJobFixture(jobOverrides),
     message: "test",
     sessionKey: "cron:test",
-    ...overrides,
+    ...paramOverrides,
   };
 }

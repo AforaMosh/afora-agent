@@ -3065,7 +3065,7 @@ describe("cron tool", () => {
       params: {
         id: "job-race",
         expectedConfigRevision: "sha256:first",
-        patch: { payload: { kind: "agentTurn", message: "updated", toolsAllow: ["read"] } },
+        patch: { payload: { kind: "agentTurn", message: "updated" } },
       },
     });
     expect(readGatewayCall(3)).toEqual({
@@ -3073,7 +3073,7 @@ describe("cron tool", () => {
       params: {
         id: "job-race",
         expectedConfigRevision: "sha256:second",
-        patch: { payload: { kind: "agentTurn", message: "updated", toolsAllow: [] } },
+        patch: { payload: { kind: "agentTurn", message: "updated" } },
       },
     });
   });
@@ -3122,13 +3122,7 @@ describe("cron tool", () => {
       params: {
         id: "job-11",
         expectedConfigRevision: "sha256:test",
-        patch: {
-          payload: {
-            kind: "agentTurn",
-            model: "openai/gpt-5.5",
-            toolsAllow: ["read"],
-          },
-        },
+        patch: { payload: { kind: "agentTurn", model: "openai/gpt-5.5" } },
       },
     });
   });

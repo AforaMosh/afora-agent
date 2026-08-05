@@ -583,7 +583,11 @@ describe("createOpenClawTools Gateway caller identity", () => {
     await tool.execute("tool-call-1", {});
 
     expect(observedGatewayCallerIdentities).toEqual([
-      { agentId: "main", sessionKey: "agent:main:discord:channel:123" },
+      {
+        agentId: "main",
+        sessionKey: "agent:main:discord:channel:123",
+        cronCreatorPolicy: { version: 1, codexNativeSurface: "disabled" },
+      },
     ]);
   });
 
@@ -600,6 +604,7 @@ describe("createOpenClawTools Gateway caller identity", () => {
       {
         agentId: "main",
         sessionKey: "agent:main:discord:channel:123",
+        cronCreatorPolicy: { version: 1, codexNativeSurface: "disabled" },
         turnSourceChannel: "discord",
         turnSourceTo: "channel:123",
         turnSourceAccountId: "work",
@@ -621,6 +626,7 @@ describe("createOpenClawTools Gateway caller identity", () => {
       {
         agentId: "main",
         sessionKey: "agent:main:discord:channel:123",
+        cronCreatorPolicy: { version: 1, codexNativeSurface: "disabled" },
         turnSourceChannel: "discord",
         turnSourceTo: "channel:123",
         turnSourceAccountId: "creator-account",
