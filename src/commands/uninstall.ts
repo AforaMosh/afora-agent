@@ -13,6 +13,7 @@ import {
   removeLegacyWorkspaceStateForReset,
 } from "../agents/workspace-legacy-state.js";
 import { formatCliCommand } from "../cli/command-format.js";
+import { removeCompletionInstall } from "../cli/completion-runtime.js";
 import { isNixMode } from "../config/config.js";
 import { resolveGatewayService } from "../daemon/service.js";
 import { formatErrorMessage } from "../infra/errors.js";
@@ -194,6 +195,16 @@ export async function uninstallCommand(runtime: RuntimeEnv, opts: UninstallOptio
   }
 
   if (scopes.has("state")) {
+    // Completion profiles point into state, so remove owned entries before deleting their cache.
+    const completionProfiles = await removeCompletionInstall({ dryRun });
+    for (const profilePath of completionProfiles) {
+      const label = shortenHomeInString(profilePath);
+      runtime.log(
+        dryRun
+          ? `[dry-run] remove OpenClaw completion from ${label}`
+          : `Removed OpenClaw completion from ${label}`,
+      );
+    }
     if (!scopes.has("workspace")) {
       for (const workspaceDir of workspaceDirs) {
         const legacyPlan = prepareLegacyWorkspaceStateReset(workspaceDir);
