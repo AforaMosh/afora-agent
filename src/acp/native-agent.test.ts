@@ -10,6 +10,7 @@ import type { AgentEventPayload } from "../infra/agent-events.js";
 import { isEmbeddedMode } from "../infra/embedded-mode.js";
 import { getEmbeddedPluginApprovalBroker } from "../infra/embedded-plugin-approval-broker.js";
 import { PLUGIN_APPROVAL_DETAIL_MAX_LENGTH } from "../infra/plugin-approvals.js";
+import { isAcpSessionKey } from "../sessions/session-key-utils.js";
 import { AcpNativeAgent } from "./native-agent.js";
 
 function createHarness(
@@ -106,7 +107,7 @@ describe("AcpNativeAgent", () => {
     expect(executeAgent).toHaveBeenCalledWith(
       expect.objectContaining({
         message: "reply through Buzz",
-        sessionKey: `agent:main:acp:${session.sessionId}`,
+        sessionKey: `agent:main:native-acp:${session.sessionId}`,
         cwd: "/tmp/project",
         deliver: false,
         senderIsOwner: false,
@@ -115,6 +116,8 @@ describe("AcpNativeAgent", () => {
       }),
       expect.any(Object),
     );
+    const ingress = executeAgent.mock.calls[0]?.[0] as AgentCommandIngressOpts;
+    expect(isAcpSessionKey(ingress.sessionKey)).toBe(false);
     expect(harness.updates).toContainEqual({
       sessionId: session.sessionId,
       update: {

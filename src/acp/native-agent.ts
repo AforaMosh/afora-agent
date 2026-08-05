@@ -115,6 +115,16 @@ type NativeAgentDependencies = {
   abortSettleTimeoutMs?: number;
 };
 
+function buildNativeSessionKey(params: { agentId: string; sessionId: string }): string {
+  // The `acp:` namespace is reserved for sessions backed by an external ACP
+  // runtime. Native ACP already owns the model loop, so using it would reroute
+  // this in-process turn through the ACP session manager.
+  return toAgentStoreSessionKey({
+    agentId: params.agentId,
+    requestKey: `native-acp:${params.sessionId}`,
+  });
+}
+
 function permissionOptions(decisions: readonly ExecApprovalDecision[]): PermissionOption[] {
   return decisions.map((decision) => ({
     optionId: decision,
@@ -340,7 +350,7 @@ export class AcpNativeAgent implements Agent {
     const agentId = this.resolveAgentId();
     const session: NativeSession = {
       id,
-      key: toAgentStoreSessionKey({ agentId, requestKey: `acp:${id}` }),
+      key: buildNativeSessionKey({ agentId, sessionId: id }),
       cwd: params.cwd,
       promptGeneration: 0,
     };
