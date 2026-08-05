@@ -156,6 +156,7 @@ private data class PendingRealtimePlaybackMark(
 
 internal data class PendingRealtimeOutputClear(
   val playbackGeneration: Long,
+  val outputGeneration: Long?,
   val completion: CompletableDeferred<Unit>,
 )
 
@@ -1362,17 +1363,22 @@ class TalkModeManager internal constructor(
       }
       "clear" -> {
         val clearGeneration = obj["outputGeneration"].asPositiveLongOrNull()
-        val (pending, expectedGeneration) =
+        val (matchingPending, expectedGeneration) =
           synchronized(realtimeCapturePauseLock) {
             val pending = pendingRealtimeOutputClear
+            val pendingMatches = pending != null && (clearGeneration == null || pending.outputGeneration == clearGeneration)
             val currentMatches = clearGeneration == null || realtimePlaybackIdentity?.outputGeneration == clearGeneration
-            pending to (pending?.playbackGeneration ?: realtimePlaybackGeneration.takeIf { currentMatches })
+            pending.takeIf { pendingMatches } to
+              (
+                pending?.playbackGeneration?.takeIf { pendingMatches }
+                  ?: realtimePlaybackGeneration.takeIf { currentMatches }
+              )
           }
         if (expectedGeneration != null && stopRealtimePlayback(expectedGeneration)) {
           val marks = takePendingRealtimePlaybackMarks()
           acknowledgeRealtimePlaybackMarks(marks)
         }
-        pending?.completion?.complete(Unit)
+        matchingPending?.completion?.complete(Unit)
       }
       "mark" -> {
         val markName = obj["markName"].asStringOrNull()?.trim()?.takeIf(String::isNotEmpty) ?: return
@@ -2952,7 +2958,8 @@ class TalkModeManager internal constructor(
   ): Boolean =
     realtimeOutputCancellationMutex.withLock {
       val sessionId = cancellation.first ?: return@withLock true
-      val pending = PendingRealtimeOutputClear(cancellation.third, CompletableDeferred())
+      val pending =
+        PendingRealtimeOutputClear(cancellation.third, cancellation.second?.outputGeneration, CompletableDeferred())
       synchronized(realtimeCapturePauseLock) {
         if (realtimeSessionId != sessionId) return@withLock true
         pendingRealtimeOutputClear = pending
