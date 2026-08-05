@@ -33,6 +33,14 @@ type HomeHandler = (args: {
 type SlackIngressQueue = NonNullable<Parameters<typeof createSlackDurableIngress>[0]["queue"]>;
 type SlackIngressPayload = Parameters<SlackIngressQueue["enqueue"]>[1];
 
+const transientPlatformErrors = [
+  "internal_error",
+  "service_unavailable",
+  "ratelimited",
+  "fatal_error",
+  "request_timeout",
+] as const;
+
 function createDurableHomeLifecycle(): SlackIngressTurnLifecycle {
   return {
     admission: "exclusive",
@@ -277,7 +285,7 @@ describe("registerSlackHomeEvents", () => {
     });
   });
 
-  it.each(["internal_error", "service_unavailable", "ratelimited", "fatal_error"])(
+  it.each(transientPlatformErrors)(
     "retries actual Slack Home platform %s through durable ingress",
     async (errorCode) => {
       const fetch = vi
@@ -326,7 +334,7 @@ describe("registerSlackHomeEvents", () => {
     },
   );
 
-  it.each(["internal_error", "service_unavailable", "ratelimited", "fatal_error"])(
+  it.each(transientPlatformErrors)(
     "retries Agent View prompt platform %s and durably records its marker",
     async (errorCode) => {
       const fetch = vi
@@ -428,7 +436,13 @@ describe("registerSlackHomeEvents", () => {
     },
   );
 
-  it.each(["invalid_arguments", "missing_scope"])(
+  it.each([
+    "invalid_arguments",
+    "missing_scope",
+    "org_login_required",
+    "invalid_auth",
+    "invalid_form_data",
+  ])(
     "keeps permanent Agent View capability rejection %s from blocking the next event",
     async (errorCode) => {
       const fetch = vi

@@ -28,6 +28,7 @@ const transientPlatformErrors = [
   "service_unavailable",
   "ratelimited",
   "fatal_error",
+  "request_timeout",
 ] as const;
 
 function slackResponse(body: Record<string, unknown>, retryAfter?: string): Response {
@@ -306,6 +307,21 @@ describe("Slack Assistant durable ingress", () => {
       type: "assistant_thread_context_changed" as const,
       method: "conversations.replies",
       error: "invalid_arguments",
+    },
+    {
+      type: "assistant_thread_started" as const,
+      method: "assistant.threads.setSuggestedPrompts",
+      error: "org_login_required",
+    },
+    {
+      type: "assistant_thread_started" as const,
+      method: "assistant.threads.setSuggestedPrompts",
+      error: "invalid_auth",
+    },
+    {
+      type: "assistant_thread_started" as const,
+      method: "assistant.threads.setSuggestedPrompts",
+      error: "invalid_form_data",
     },
   ])("surfaces permanent $error from $type without poisoning the next event", async (scenario) => {
     const { fetch, requests } = createGuardedSlackFetch([

@@ -70,6 +70,10 @@ describe("updateSlackSuggestedPrompts", () => {
       error: new WebAPIPlatformError({ ok: false, error: "fatal_error" }),
     },
     {
+      label: "Slack platform request_timeout",
+      error: new WebAPIPlatformError({ ok: false, error: "request_timeout" }),
+    },
+    {
       label: "Slack platform service outage",
       error: new WebAPIPlatformError({ ok: false, error: "service_unavailable" }),
     },
@@ -122,6 +126,18 @@ describe("updateSlackSuggestedPrompts", () => {
     {
       label: "missing permission",
       error: new WebAPIPlatformError({ ok: false, error: "missing_scope" }),
+    },
+    {
+      label: "enterprise migration",
+      error: new WebAPIPlatformError({ ok: false, error: "org_login_required" }),
+    },
+    {
+      label: "invalid authentication",
+      error: new WebAPIPlatformError({ ok: false, error: "invalid_auth" }),
+    },
+    {
+      label: "malformed request configuration",
+      error: new WebAPIPlatformError({ ok: false, error: "invalid_form_data" }),
     },
     {
       label: "invalid prompt blocks",

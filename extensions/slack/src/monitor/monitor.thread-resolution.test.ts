@@ -154,7 +154,7 @@ describe("createSlackThreadTsResolver", () => {
     expect(historyMock).toHaveBeenCalledTimes(2);
   });
 
-  it.each(["service_unavailable", "ratelimited", "fatal_error"])(
+  it.each(["service_unavailable", "ratelimited", "fatal_error", "request_timeout"])(
     "returns actual Slack platform %s to durable ingress without caching ambiguity",
     async (errorCode) => {
       const responses = [

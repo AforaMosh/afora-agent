@@ -12,15 +12,19 @@ import {
 } from "openclaw/plugin-sdk/error-runtime";
 import { classifyTransientNetworkErrorCode } from "openclaw/plugin-sdk/retry-runtime";
 
+// SDK-built POSTs have complete bodies, so request_timeout signals transport truncation.
+const retryableSlackPlatformErrors = new Set([
+  "fatal_error",
+  "internal_error",
+  "request_timeout",
+  "ratelimited",
+  "service_unavailable",
+]);
+
 export function isTransientSlackApiError(error: unknown): boolean {
   if (error instanceof WebAPIPlatformError) {
     // Slack converts successful HTTP responses into platform errors after its request retries.
-    return (
-      error.data.error === "fatal_error" ||
-      error.data.error === "internal_error" ||
-      error.data.error === "service_unavailable" ||
-      error.data.error === "ratelimited"
-    );
+    return retryableSlackPlatformErrors.has(error.data.error);
   }
   if (error instanceof WebAPIRateLimitedError) {
     return true;
