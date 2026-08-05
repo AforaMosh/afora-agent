@@ -22,6 +22,17 @@ actor TalkModeRuntime {
         case fallback
     }
 
+    typealias StartDependencies = (
+        realtime: @Sendable (Int) async throws -> Void,
+        projectFallback: @Sendable () async -> Void,
+        fallback: @Sendable (Int) async -> Void)
+
+    private struct NativeFallbackOwner {
+        let lifecycleGeneration: Int
+        let recognitionGeneration: Int
+        let realtimeRelayGeneration: UInt64
+    }
+
     let logger = Logger(subsystem: "ai.openclaw", category: "talk.runtime")
     private let ttsLogger = Logger(subsystem: "ai.openclaw", category: "talk.tts")
     private static let defaultModelIdFallback = "eleven_v3"
@@ -96,6 +107,7 @@ actor TalkModeRuntime {
     private var pendingRealtimeRelayStartLifecycleGeneration: Int?
     var realtimeRestartGeneration: UInt64 = 0
     var realtimeRestartTask: Task<Void, Never>?
+    var startDependencies: StartDependencies?
     private var speechLocaleID: String?
     private var lastInterruptedAtSeconds: Double?
     private var voiceAliases: [String: String] = [:]
@@ -225,15 +237,27 @@ actor TalkModeRuntime {
         generation == self.lifecycleGeneration && self.isEnabled
     }
 
+    private func canOwnNativeFallback(_ owner: NativeFallbackOwner) -> Bool {
+        self.isCurrent(owner.lifecycleGeneration) &&
+            !self.isPaused &&
+            self.recognitionGeneration == owner.recognitionGeneration &&
+            self.realtimeRelayGeneration == owner.realtimeRelayGeneration &&
+            self.realtimeRelayStartGeneration == nil &&
+            self.realtimeSession == nil
+    }
+
     func start() async {
         let gen = self.lifecycleGeneration
         guard voiceWakeSupported else { return }
 
-        guard await PermissionManager.ensureVoiceWakePermissions(interactive: true) else {
-            self.logger.error("talk runtime not starting: permissions missing")
-            return
+        let startDependencies = self.startDependencies
+        if startDependencies == nil {
+            guard await PermissionManager.ensureVoiceWakePermissions(interactive: true) else {
+                self.logger.error("talk runtime not starting: permissions missing")
+                return
+            }
+            await reloadConfig()
         }
-        await reloadConfig()
         guard self.isCurrent(gen) else { return }
         if self.isPaused {
             self.phase = .idle
@@ -246,8 +270,16 @@ actor TalkModeRuntime {
         let bypassRealtime = self.bypassRealtimeOnNextStart
         self.bypassRealtimeOnNextStart = false
         if self.shouldAttemptRealtimeRelay(), !bypassRealtime {
+            let fallbackOwner = NativeFallbackOwner(
+                lifecycleGeneration: gen,
+                recognitionGeneration: self.recognitionGeneration,
+                realtimeRelayGeneration: self.realtimeRelayGeneration &+ 1)
             do {
-                try await self.startRealtimeRelay(generation: gen)
+                if let startDependencies {
+                    try await startDependencies.realtime(gen)
+                } else {
+                    try await self.startRealtimeRelay(generation: gen)
+                }
                 return
             } catch is CancellationError {
                 if self.consumePendingRealtimeRelayStart() {
@@ -256,16 +288,28 @@ actor TalkModeRuntime {
                 return
             } catch {
                 self.pendingRealtimeRelayStartLifecycleGeneration = nil
+                guard self.canOwnNativeFallback(fallbackOwner) else { return }
                 self.logger.error(
                     "talk realtime unavailable; using native fallback: " +
                         "\(error.localizedDescription, privacy: .public)")
-                await MainActor.run {
-                    TalkModeController.shared.updatePartialTranscript(
-                        "Realtime unavailable — using native speech")
+                if let startDependencies {
+                    await startDependencies.projectFallback()
+                } else {
+                    await MainActor.run {
+                        TalkModeController.shared.updatePartialTranscript(
+                            "Realtime unavailable — using native speech")
+                    }
                 }
+                // The UI projection crosses actors. A newer relay or recognition owner
+                // must keep the failed attempt from tearing down or replacing its capture.
+                guard self.canOwnNativeFallback(fallbackOwner) else { return }
             }
         }
-        await self.startNativeFallback(generation: gen)
+        if let startDependencies {
+            await startDependencies.fallback(gen)
+        } else {
+            await self.startNativeFallback(generation: gen)
+        }
     }
 
     private func stop() async {
@@ -303,6 +347,21 @@ actor TalkModeRuntime {
     #if DEBUG
     func _test_enableRealtimeRelaySelection() {
         (self.macOSRealtimeRelayOptIn, self.hasGatewayRealtimeRelayTuple) = (true, true)
+    }
+
+    func _test_setStartDependencies(
+        startRealtimeRelay: @escaping @Sendable (Int) async throws -> Void,
+        projectNativeFallback: @escaping @Sendable () async -> Void = {},
+        startNativeFallback: @escaping @Sendable (Int) async -> Void)
+    {
+        self.startDependencies = (
+            realtime: startRealtimeRelay,
+            projectFallback: projectNativeFallback,
+            fallback: startNativeFallback)
+    }
+
+    func _test_beginRecognitionAttempt(lifecycleGeneration: Int) -> Int? {
+        self.beginRecognitionAttempt(lifecycleGeneration: lifecycleGeneration)
     }
     #endif
 
@@ -409,9 +468,9 @@ actor TalkModeRuntime {
     }
 
     private func startRecognition(lifecycleGeneration: Int) async -> Bool {
-        self.recognitionGeneration &+= 1
-        let recognitionAttempt = self.recognitionGeneration
-        self.discardRecognitionResources()
+        guard let recognitionAttempt = self.beginRecognitionAttempt(
+            lifecycleGeneration: lifecycleGeneration)
+        else { return false }
 
         let voiceWakeLocale = await MainActor.run { AppStateStore.shared.voiceWakeLocaleID }
         let selectedInputUID = await MainActor.run { AppStateStore.shared.voiceWakeMicID }
@@ -491,6 +550,14 @@ actor TalkModeRuntime {
         guard started else { return false }
         self.startRMSTicker(meter: self.rmsMeter)
         return true
+    }
+
+    private func beginRecognitionAttempt(lifecycleGeneration: Int) -> Int? {
+        guard self.isCurrent(lifecycleGeneration), !self.isPaused else { return nil }
+        self.recognitionGeneration &+= 1
+        let recognitionAttempt = self.recognitionGeneration
+        self.discardRecognitionResources()
+        return recognitionAttempt
     }
 
     func canCommitRecognitionStart(lifecycleGeneration: Int, recognitionAttempt: Int) -> Bool {
