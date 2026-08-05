@@ -28,6 +28,17 @@ describe("extractModelDirective", () => {
       expect(result.cleaned).toBe("");
     });
 
+    it.each(["-slow", "--sessional"])(
+      "does not treat partial session option %s as session-only",
+      (option) => {
+        const result = extractModelDirective(`/model anthropic/claude-opus-4-6 ${option}`);
+        expect(result.hasDirective).toBe(true);
+        expect(result.rawModel).toBe("anthropic/claude-opus-4-6");
+        expect(result.sessionOnly).toBe(false);
+        expect(result.cleaned).toBe(option);
+      },
+    );
+
     it("keeps here as a model name and preserves following message text", () => {
       const result = extractModelDirective("please /model here continue");
       expect(result.hasDirective).toBe(true);

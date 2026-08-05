@@ -174,6 +174,10 @@ describe("maybeResolveNativeSlashCommandFastReply", () => {
       command: "/model openai/gpt-5.5 --runtime codex --runtime acp",
       expected: 'Unexpected argument "--runtime" for /model.',
     },
+    {
+      command: "/model openai/gpt-5.5 -slow",
+      expected: 'Unexpected argument "-slow" for /model.',
+    },
   ])(
     "rejects trailing prose instead of dropping native command $command",
     async ({ command, expected }) => {

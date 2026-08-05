@@ -275,6 +275,24 @@ describe("mixed inline directives", () => {
     expect(persistStickyModelSelectionBestEffort).not.toHaveBeenCalled();
   });
 
+  it("does not let a partial session option suppress the configured-default write", async () => {
+    const { result } = await applyMixedDirectives({
+      body: "please reply /model openai/gpt-5.6-luna -slow",
+      senderIsOwner: true,
+      allowedModels: [{ provider: "openai", id: "gpt-5.6-luna", name: "GPT-5.6-Luna" }],
+    });
+
+    expect(result).toMatchObject({
+      kind: "continue",
+      provider: "openai",
+      model: "gpt-5.6-luna",
+      directiveAck: {
+        text: "Model set to openai/gpt-5.6-luna for this session and as this agent's configured default.",
+      },
+    });
+    expect(persistStickyModelSelectionBestEffort).toHaveBeenCalledOnce();
+  });
+
   it("clears the current session pin with /model default -s", async () => {
     const sessionEntry = createSessionEntry({
       providerOverride: "openai",

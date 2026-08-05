@@ -239,6 +239,17 @@ describe("directive parsing", () => {
     expect(model.nativeCommand).toEqual({ name: "model" });
   });
 
+  it.each(["-slow", "--sessional"])(
+    "preserves partial session option %s as ordinary text",
+    (option) => {
+      const model = parseInlineDirectives(`please sync /model openai/gpt-4.1-mini ${option} now`);
+
+      expect(model.rawModelDirective).toBe("openai/gpt-4.1-mini");
+      expect(model.modelSessionOnly).toBe(false);
+      expect(model.cleaned).toBe(`please sync ${option} now`);
+    },
+  );
+
   it("rejects duplicate native /model options through unconsumed arguments", () => {
     const model = parseInlineDirectives(
       "/model openai/gpt-4.1-mini --runtime codex --runtime acp",
