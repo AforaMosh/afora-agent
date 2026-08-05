@@ -211,7 +211,7 @@ export function applyJobPatch(
     CronScheduledPolicyInputs,
 ) {
   const previouslyUsedToolRuntime = cronJobUsesToolRuntime(job);
-  const previousPayloadKind = job.payload.kind;
+  const entersAgentTurn = job.payload.kind !== "agentTurn" && patch.payload?.kind === "agentTurn";
   const explicitlyClearsToolsAllow = patch.payload?.toolsAllow === null;
   const previousScheduleKind = job.schedule.kind;
   if ("name" in patch) {
@@ -311,7 +311,7 @@ export function applyJobPatch(
     previouslyUsedToolRuntime,
     explicitlyMutatesToolsAllow:
       (patch.payload !== undefined && Object.hasOwn(patch.payload, "toolsAllow")) ||
-      (previousPayloadKind !== "agentTurn" && job.payload.kind === "agentTurn"),
+      entersAgentTurn,
     scheduledToolPolicy: opts?.scheduledToolPolicy,
     scheduledNativePolicy: opts?.scheduledNativePolicy,
   });

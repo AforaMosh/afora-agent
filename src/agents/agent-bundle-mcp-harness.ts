@@ -39,7 +39,7 @@ type ConfiguredHarnessMcpTools = {
   advertisedTools: AnyAgentTool[];
   appTools: AnyAgentTool[];
   diagnostics?: Awaited<ReturnType<typeof materializeBundleMcpToolsForRun>>["diagnostics"];
-  restrictAppTools: (allowedTools: AnyAgentTool[]) => void;
+  restrictAppTools?: (allowedTools: readonly AnyAgentTool[]) => void;
   dispose: () => Promise<void>;
 };
 

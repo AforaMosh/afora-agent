@@ -93,7 +93,7 @@ export function createGatewayToolCallerWrapper(
           turnSourceTo: source.currentMessagingTarget ?? source.currentChannelId ?? source.agentTo,
           turnSourceAccountId: source.agentAccountId,
           turnSourceThreadId: source.currentThreadTs ?? source.agentThreadId,
-          cronCreatorPolicy: { version: 1, codexNativeSurface: "disabled" as const },
+          cronCreatorPolicy: { version: 1 as const, codexNativeSurface: "disabled" as const },
         }
       : undefined;
   return (tool) => wrapToolWithGatewayCallerIdentity(tool, identity);
