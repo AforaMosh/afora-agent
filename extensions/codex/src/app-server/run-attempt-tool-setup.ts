@@ -7,6 +7,7 @@ import {
   resolveEmbeddedAttemptToolConstructionPlan,
   supportsModelTools,
 } from "openclaw/plugin-sdk/agent-harness-runtime";
+import { resolveCodexMcpToolOverridesForAgent } from "openclaw/plugin-sdk/codex-mcp-projection";
 import {
   buildDynamicTools,
   formatCodexDynamicToolBuildStageSummary,
@@ -167,7 +168,10 @@ export async function prepareCodexAttemptTools(runtime: CodexAttemptRuntime) {
         requesterSenderId: params.senderId,
         agentAccountId: params.agentAccountId,
         messageChannel: params.messageChannel ?? params.messageProvider,
-        toolOverrides: params.toolOverrides,
+        toolOverrides: resolveCodexMcpToolOverridesForAgent(params.config, {
+          agentId: sessionAgentId,
+          toolOverrides: params.toolOverrides,
+        }),
         toolsEnabled: mcpToolsEnabled,
         disableTools: params.disableTools,
         reservedToolNames: [

@@ -1,5 +1,6 @@
 import { resolveCronJobEffectiveAgentId } from "../../cron/agent-id.js";
 import {
+  constrainCronScheduledNativePolicy,
   createCronScheduledNativePolicy,
   deriveCronScheduledNativePolicy,
   type CronScheduledNativePolicy,
@@ -80,7 +81,11 @@ export function resolveCronScheduledNativePolicyForCaller(params: {
         "agent-runtime cron authority changes require signed native creator provenance",
       );
     }
-    return createCronScheduledNativePolicy(creatorPolicy.codexNativeSurface);
+    return constrainCronScheduledNativePolicy({
+      scheduledNativePolicy: createCronScheduledNativePolicy(creatorPolicy.codexNativeSurface),
+      toolsAllow: params.toolsAllow,
+      toolsAllowIsDefault: creatorPolicy.openClawToolsCap === "creator-default",
+    });
   }
   return deriveCronScheduledNativePolicy(params.toolsAllow);
 }

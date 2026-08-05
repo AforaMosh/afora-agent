@@ -65,6 +65,27 @@ export async function withGatewayToolCallerIdentity<T>(
   );
 }
 
+/** Signs whether a cron mutation retained the creator-default cap after canonical tool capping. */
+export async function withGatewayCronCreatorToolCap<T>(
+  toolsAllowIsDefault: boolean,
+  run: () => Promise<T> | T,
+): Promise<T> {
+  const identity = getGatewayToolCallerIdentity();
+  if (!identity?.cronCreatorPolicy) {
+    return await run();
+  }
+  return await withGatewayToolCallerIdentity(
+    {
+      ...identity,
+      cronCreatorPolicy: {
+        ...identity.cronCreatorPolicy,
+        openClawToolsCap: toolsAllowIsDefault ? "creator-default" : "explicit",
+      },
+    },
+    run,
+  );
+}
+
 export function wrapToolWithGatewayCallerIdentity(
   tool: AnyAgentTool,
   identity: GatewayToolCallerIdentity | undefined,
@@ -93,7 +114,11 @@ export function createGatewayToolCallerWrapper(
           turnSourceTo: source.currentMessagingTarget ?? source.currentChannelId ?? source.agentTo,
           turnSourceAccountId: source.agentAccountId,
           turnSourceThreadId: source.currentThreadTs ?? source.agentThreadId,
-          cronCreatorPolicy: { version: 1 as const, codexNativeSurface: "disabled" as const },
+          cronCreatorPolicy: {
+            version: 1 as const,
+            codexNativeSurface: "disabled" as const,
+            openClawToolsCap: "explicit" as const,
+          },
         }
       : undefined;
   return (tool) => wrapToolWithGatewayCallerIdentity(tool, identity);

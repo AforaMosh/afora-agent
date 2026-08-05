@@ -348,6 +348,7 @@ export async function buildDynamicTools(input: DynamicToolBuildParams) {
     cronCreatorPolicy: {
       version: 1,
       codexNativeSurface: input.nativeToolSurfaceEnabled ? "inherit" : "disabled",
+      openClawToolsCap: "explicit",
     },
     requireExplicitMessageTarget:
       params.requireExplicitMessageTarget ?? isSubagentSessionKey(params.sessionKey),

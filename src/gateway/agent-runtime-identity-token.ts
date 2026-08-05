@@ -24,6 +24,7 @@ type AgentRuntimeCronSelfManagementContext = {
 export type AgentRuntimeCronCreatorPolicy = {
   version: 1;
   codexNativeSurface: "inherit" | "disabled";
+  openClawToolsCap: "creator-default" | "explicit";
 };
 
 export type AgentRuntimeIdentity = {
@@ -89,11 +90,18 @@ function decodeCronCreatorPolicy(value: unknown): AgentRuntimeCronCreatorPolicy 
     !isRecord(value) ||
     value.version !== 1 ||
     (value.codexNativeSurface !== "inherit" && value.codexNativeSurface !== "disabled") ||
-    Object.keys(value).some((key) => key !== "version" && key !== "codexNativeSurface")
+    (value.openClawToolsCap !== "creator-default" && value.openClawToolsCap !== "explicit") ||
+    Object.keys(value).some(
+      (key) => key !== "version" && key !== "codexNativeSurface" && key !== "openClawToolsCap",
+    )
   ) {
     return undefined;
   }
-  return { version: 1, codexNativeSurface: value.codexNativeSurface };
+  return {
+    version: 1,
+    codexNativeSurface: value.codexNativeSurface,
+    openClawToolsCap: value.openClawToolsCap,
+  };
 }
 
 async function readSharedAgentRuntimeIdentitySecret(): Promise<string | null> {

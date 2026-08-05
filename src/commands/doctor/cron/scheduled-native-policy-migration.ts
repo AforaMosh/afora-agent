@@ -1,5 +1,6 @@
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
 import {
+  constrainCronScheduledNativePolicy,
   deriveCronScheduledNativePolicy,
   normalizeCronScheduledNativePolicy,
 } from "../../../cron/scheduled-native-policy.js";
@@ -31,11 +32,26 @@ function migrateScheduledNativePolicy(
     if (!normalized) {
       return { mutated: false, status: "invalid" };
     }
-    const mutated = JSON.stringify(raw.scheduledNativePolicy) !== JSON.stringify(normalized);
-    if (mutated) {
-      raw.scheduledNativePolicy = normalized;
+    if (
+      !Array.isArray(payload.toolsAllow) ||
+      !payload.toolsAllow.every((value): value is string => typeof value === "string")
+    ) {
+      return { mutated: false, status: "invalid" };
     }
-    return { mutated, status: "current" };
+    const constrained = constrainCronScheduledNativePolicy({
+      scheduledNativePolicy: normalized,
+      toolsAllow: payload.toolsAllow,
+      toolsAllowIsDefault: payload.toolsAllowIsDefault === true,
+    });
+    if (!constrained) {
+      return { mutated: false, status: "invalid" };
+    }
+    const mutated = JSON.stringify(raw.scheduledNativePolicy) !== JSON.stringify(constrained);
+    if (mutated) {
+      raw.scheduledNativePolicy = constrained;
+      onMigrated(constrained);
+    }
+    return { mutated, status: mutated ? "migrated" : "current" };
   }
   if (
     !Array.isArray(payload.toolsAllow) ||

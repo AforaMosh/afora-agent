@@ -58,10 +58,39 @@ describe("scheduled native policy migration", () => {
       { kind: "systemEvent", text: "run" },
       { id: "event", name: "Event", scheduledNativePolicy: { version: 1, mode: "inherit" } },
     );
-    const result = normalizeStoredCronJobs([current, malformed, inapplicable]);
+    const explicitFinite = job(
+      { kind: "agentTurn", message: "run", toolsAllow: ["read"] },
+      {
+        id: "explicit",
+        name: "Explicit finite",
+        scheduledNativePolicy: { version: 1, mode: "inherit" },
+      },
+    );
+    const defaultFinite = job(
+      {
+        kind: "agentTurn",
+        message: "run",
+        toolsAllow: ["read"],
+        toolsAllowIsDefault: true,
+      },
+      {
+        id: "default",
+        name: "Default finite",
+        scheduledNativePolicy: { version: 1, mode: "inherit" },
+      },
+    );
+    const result = normalizeStoredCronJobs([
+      current,
+      malformed,
+      inapplicable,
+      explicitFinite,
+      defaultFinite,
+    ]);
 
     expect(result.invalidScheduledNativePolicyJobs).toEqual(["Bad", "Event"]);
     expect(current.scheduledNativePolicy).toEqual({ version: 1, mode: "disabled" });
+    expect(explicitFinite.scheduledNativePolicy).toEqual({ version: 1, mode: "disabled" });
+    expect(defaultFinite.scheduledNativePolicy).toEqual({ version: 1, mode: "inherit" });
   });
 
   it("is idempotent after migration", () => {

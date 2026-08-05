@@ -1,5 +1,5 @@
 import {
-  deriveCronScheduledNativePolicy,
+  constrainCronScheduledNativePolicy,
   normalizeCronScheduledNativePolicy,
   type CronScheduledNativePolicy,
 } from "../scheduled-native-policy.js";
@@ -47,7 +47,11 @@ function stampScheduledNativePolicy(
   if (job.scheduledToolPolicy?.mode === "account" && !normalized) {
     throw new Error("account-scoped cron authority requires signed native creator provenance");
   }
-  const policy = normalized ?? deriveCronScheduledNativePolicy(job.payload.toolsAllow);
+  const policy = constrainCronScheduledNativePolicy({
+    scheduledNativePolicy: normalized,
+    toolsAllow: job.payload.toolsAllow,
+    toolsAllowIsDefault: job.payload.toolsAllowIsDefault,
+  });
   if (!policy) {
     delete job.scheduledNativePolicy;
     return;
@@ -96,7 +100,16 @@ export function reconcileCronScheduledPolicies(
   if (params.explicitlyMutatesToolsAllow || !params.previouslyUsedToolRuntime) {
     stampScheduledNativePolicy(job, params.scheduledNativePolicy);
   } else if (currentNativePolicy) {
-    job.scheduledNativePolicy = currentNativePolicy;
+    const constrained = constrainCronScheduledNativePolicy({
+      scheduledNativePolicy: currentNativePolicy,
+      toolsAllow: job.payload.toolsAllow,
+      toolsAllowIsDefault: job.payload.toolsAllowIsDefault,
+    });
+    if (constrained) {
+      job.scheduledNativePolicy = constrained;
+    } else {
+      delete job.scheduledNativePolicy;
+    }
   } else {
     // Missing/invalid persisted provenance remains visible to preflight and Doctor.
     delete job.scheduledNativePolicy;

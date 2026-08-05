@@ -90,17 +90,36 @@ describe("agent runtime identity token", () => {
     const token = await runtimeToken.mintAgentRuntimeIdentityToken({
       agentId: "main",
       sessionKey: "agent:main:main",
-      cronCreatorPolicy: { version: 1, codexNativeSurface: "inherit" },
+      cronCreatorPolicy: {
+        version: 1,
+        codexNativeSurface: "inherit",
+        openClawToolsCap: "creator-default",
+      },
     });
 
     await expect(runtimeToken.verifyAgentRuntimeIdentityToken(token)).resolves.toMatchObject({
-      cronCreatorPolicy: { version: 1, codexNativeSurface: "inherit" },
+      cronCreatorPolicy: {
+        version: 1,
+        codexNativeSurface: "inherit",
+        openClawToolsCap: "creator-default",
+      },
     });
     await expect(
       runtimeToken.mintAgentRuntimeIdentityToken({
         agentId: "main",
         sessionKey: "agent:main:main",
-        cronCreatorPolicy: { version: 1, codexNativeSurface: "unknown" } as never,
+        cronCreatorPolicy: { version: 1, codexNativeSurface: "inherit" } as never,
+      }),
+    ).rejects.toThrow("invalid cron creator policy");
+    await expect(
+      runtimeToken.mintAgentRuntimeIdentityToken({
+        agentId: "main",
+        sessionKey: "agent:main:main",
+        cronCreatorPolicy: {
+          version: 1,
+          codexNativeSurface: "unknown",
+          openClawToolsCap: "explicit",
+        } as never,
       }),
     ).rejects.toThrow("invalid cron creator policy");
   });

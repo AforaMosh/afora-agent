@@ -290,6 +290,7 @@ function callerClient(
   sessionKey?: string,
   currentJobId?: string,
   currentJobExpiresAtMs = Date.now() + 60_000,
+  openClawToolsCap: "creator-default" | "explicit" = "explicit",
 ): GatewayClient {
   return {
     connect: {} as GatewayClient["connect"],
@@ -298,7 +299,11 @@ function callerClient(
         kind: "agentRuntime",
         agentId,
         sessionKey: sessionKey ?? `agent:${agentId}:main`,
-        cronCreatorPolicy: { version: 1, codexNativeSurface: "inherit" },
+        cronCreatorPolicy: {
+          version: 1,
+          codexNativeSurface: "inherit",
+          openClawToolsCap,
+        },
         ...(accountId ? { turnSourceAccountId: accountId } : {}),
         ...(currentJobId
           ? {
@@ -920,7 +925,7 @@ describe("cron method validation", () => {
     expectCronSuccess(respond);
   });
 
-  it("uses signed native provenance independently of a finite OpenClaw tool cap", async () => {
+  it("disables native authority for an explicit finite OpenClaw tool cap", async () => {
     const { context, respond } = await invokeCronAdd(
       agentTurnCronParams({
         agentId: "ops",
@@ -930,7 +935,49 @@ describe("cron method validation", () => {
     );
 
     expect(context.cron.add.mock.calls[0]?.[1]).toMatchObject({
+      scheduledNativePolicy: { version: 1, mode: "disabled" },
+    });
+    expectCronSuccess(respond);
+  });
+
+  it("preserves native authority for an authenticated creator-default finite cap", async () => {
+    const { context, respond } = await invokeCronAdd(
+      agentTurnCronParams({
+        agentId: "ops",
+        payload: {
+          kind: "agentTurn",
+          message: "hello",
+          toolsAllow: ["read"],
+          toolsAllowIsDefault: true,
+        },
+      }),
+      {
+        client: callerClient("ops", undefined, undefined, undefined, undefined, "creator-default"),
+      },
+    );
+
+    expect(context.cron.add.mock.calls[0]?.[1]).toMatchObject({
       scheduledNativePolicy: { version: 1, mode: "inherit" },
+    });
+    expectCronSuccess(respond);
+  });
+
+  it("does not trust a forged creator-default payload marker", async () => {
+    const { context, respond } = await invokeCronAdd(
+      agentTurnCronParams({
+        agentId: "ops",
+        payload: {
+          kind: "agentTurn",
+          message: "hello",
+          toolsAllow: ["read"],
+          toolsAllowIsDefault: true,
+        },
+      }),
+      { client: callerClient("ops") },
+    );
+
+    expect(context.cron.add.mock.calls[0]?.[1]).toMatchObject({
+      scheduledNativePolicy: { version: 1, mode: "disabled" },
     });
     expectCronSuccess(respond);
   });
@@ -1933,7 +1980,7 @@ describe("cron method validation", () => {
         ownerSessionKey: "agent:ops:main",
         ownerAccountId: "default",
       },
-      scheduledNativePolicy: { version: 1, mode: "inherit" },
+      scheduledNativePolicy: { version: 1, mode: "disabled" },
     });
     expectCronSuccess(respond);
   });
@@ -1963,7 +2010,7 @@ describe("cron method validation", () => {
         ownerSessionKey: "agent:ops:main",
         ownerAccountId: "default",
       },
-      scheduledNativePolicy: { version: 1, mode: "inherit" },
+      scheduledNativePolicy: { version: 1, mode: "disabled" },
     });
     expectCronSuccess(respond);
   });

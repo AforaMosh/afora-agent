@@ -586,7 +586,11 @@ describe("createOpenClawTools Gateway caller identity", () => {
       {
         agentId: "main",
         sessionKey: "agent:main:discord:channel:123",
-        cronCreatorPolicy: { version: 1, codexNativeSurface: "disabled" },
+        cronCreatorPolicy: {
+          version: 1,
+          codexNativeSurface: "disabled",
+          openClawToolsCap: "explicit",
+        },
       },
     ]);
   });
@@ -604,7 +608,11 @@ describe("createOpenClawTools Gateway caller identity", () => {
       {
         agentId: "main",
         sessionKey: "agent:main:discord:channel:123",
-        cronCreatorPolicy: { version: 1, codexNativeSurface: "disabled" },
+        cronCreatorPolicy: {
+          version: 1,
+          codexNativeSurface: "disabled",
+          openClawToolsCap: "explicit",
+        },
         turnSourceChannel: "discord",
         turnSourceTo: "channel:123",
         turnSourceAccountId: "work",
@@ -626,7 +634,11 @@ describe("createOpenClawTools Gateway caller identity", () => {
       {
         agentId: "main",
         sessionKey: "agent:main:discord:channel:123",
-        cronCreatorPolicy: { version: 1, codexNativeSurface: "disabled" },
+        cronCreatorPolicy: {
+          version: 1,
+          codexNativeSurface: "disabled",
+          openClawToolsCap: "explicit",
+        },
         turnSourceChannel: "discord",
         turnSourceTo: "channel:123",
         turnSourceAccountId: "creator-account",

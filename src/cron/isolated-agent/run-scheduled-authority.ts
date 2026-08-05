@@ -1,4 +1,5 @@
 import {
+  constrainCronScheduledNativePolicy,
   normalizeCronScheduledNativePolicy,
   type CronScheduledNativePolicy,
 } from "../scheduled-native-policy.js";
@@ -35,7 +36,18 @@ export function resolveScheduledCronAuthority(job: CronJob): ScheduledCronAuthor
   });
   const invalidScheduledToolPolicy =
     job.scheduledToolPolicy !== undefined && scheduledToolPolicy === undefined;
-  if (!toolsAllow || !scheduledNativePolicy || invalidScheduledToolPolicy) {
+  const constrainedNativePolicy = constrainCronScheduledNativePolicy({
+    scheduledNativePolicy,
+    toolsAllow,
+    toolsAllowIsDefault: job.payload.toolsAllowIsDefault,
+  });
+  const invalidNativePolicyForCap = scheduledNativePolicy?.mode !== constrainedNativePolicy?.mode;
+  if (
+    !toolsAllow ||
+    !scheduledNativePolicy ||
+    invalidNativePolicyForCap ||
+    invalidScheduledToolPolicy
+  ) {
     return {
       ok: false,
       error:

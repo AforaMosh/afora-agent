@@ -192,6 +192,35 @@ describe("runCronIsolatedAgentTurn toolsAllow passthrough", () => {
     expect(runEmbeddedAgentMock).not.toHaveBeenCalled();
   });
 
+  it("fails closed when an explicit finite cap carries inherited native authority", async () => {
+    const params = makeParamsWithToolsAllow(["cron"]);
+    (params.job as { scheduledNativePolicy?: unknown }).scheduledNativePolicy = {
+      version: 1,
+      mode: "inherit",
+    };
+
+    const result = await runCronIsolatedAgentTurn(params);
+
+    expect(result.status).toBe("error");
+    expect(result.error).toContain("Scheduled authority is missing or invalid");
+    expect(runEmbeddedAgentMock).not.toHaveBeenCalled();
+  });
+
+  it("accepts inherited native authority for a creator-default finite cap", async () => {
+    const params = makeParamsWithDefaultToolsAllow(["cron"]);
+    (params.job as { scheduledNativePolicy?: unknown }).scheduledNativePolicy = {
+      version: 1,
+      mode: "inherit",
+    };
+
+    await runCronIsolatedAgentTurn(params);
+
+    expect(requireEmbeddedAgentCall().scheduledNativePolicy).toEqual({
+      version: 1,
+      mode: "inherit",
+    });
+  });
+
   it(
     "keeps capped accountless legacy jobs on the ordinary sender-policy path",
     { timeout: RUN_TOOLS_ALLOW_TIMEOUT_MS },

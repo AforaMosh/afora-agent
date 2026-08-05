@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  constrainCronScheduledNativePolicy,
   deriveCronScheduledNativePolicy,
   normalizeCronScheduledNativePolicy,
   resolveCronScheduledAgentRuntime,
@@ -30,6 +31,45 @@ describe("scheduled native policy", () => {
     });
     expect(deriveCronScheduledNativePolicy([])).toEqual({ version: 1, mode: "disabled" });
     expect(deriveCronScheduledNativePolicy(undefined)).toBeUndefined();
+  });
+
+  it.each([
+    {
+      name: "wildcard cap",
+      policy: { version: 1, mode: "inherit" } as const,
+      toolsAllow: ["*"],
+      toolsAllowIsDefault: false,
+      expected: "inherit",
+    },
+    {
+      name: "creator-default finite cap",
+      policy: { version: 1, mode: "inherit" } as const,
+      toolsAllow: ["read"],
+      toolsAllowIsDefault: true,
+      expected: "inherit",
+    },
+    {
+      name: "explicit finite cap",
+      policy: { version: 1, mode: "inherit" } as const,
+      toolsAllow: ["read"],
+      toolsAllowIsDefault: false,
+      expected: "disabled",
+    },
+    {
+      name: "disabled provenance",
+      policy: { version: 1, mode: "disabled" } as const,
+      toolsAllow: ["*"],
+      toolsAllowIsDefault: true,
+      expected: "disabled",
+    },
+  ])("constrains native authority for $name", (testCase) => {
+    expect(
+      constrainCronScheduledNativePolicy({
+        scheduledNativePolicy: testCase.policy,
+        toolsAllow: testCase.toolsAllow,
+        toolsAllowIsDefault: testCase.toolsAllowIsDefault,
+      }),
+    ).toEqual({ version: 1, mode: testCase.expected });
   });
 
   it("forces OpenClaw only when native authority is disabled", () => {

@@ -79,7 +79,7 @@ describe("scheduled tool policy provenance", () => {
       ownerSessionKey: "agent:main:discord:group:ops",
       ownerAccountId: "work",
     });
-    expect(account.scheduledNativePolicy).toEqual({ version: 1, mode: "inherit" });
+    expect(account.scheduledNativePolicy).toEqual({ version: 1, mode: "disabled" });
     if (state.timer) {
       clearTimeout(state.timer);
     }

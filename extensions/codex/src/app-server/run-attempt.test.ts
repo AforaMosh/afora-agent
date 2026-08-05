@@ -115,6 +115,7 @@ const agentHarnessRuntimeMocks = vi.hoisted(() => ({
   forceModelToolsUnsupported: false,
   skipConfiguredMcpMaterialization: true,
   configuredMcpTools: undefined as unknown,
+  materializeConfiguredMcpCalls: [] as unknown[],
 }));
 
 vi.mock("openclaw/plugin-sdk/agent-harness-runtime", async (importOriginal) => {
@@ -128,6 +129,7 @@ vi.mock("openclaw/plugin-sdk/agent-harness-runtime", async (importOriginal) => {
     materializeConfiguredMcpToolsForHarnessRun: async (
       ...args: Parameters<typeof actual.materializeConfiguredMcpToolsForHarnessRun>
     ) => {
+      agentHarnessRuntimeMocks.materializeConfiguredMcpCalls.push(args[0]);
       if (agentHarnessRuntimeMocks.configuredMcpTools) {
         return agentHarnessRuntimeMocks.configuredMcpTools as Awaited<
           ReturnType<typeof actual.materializeConfiguredMcpToolsForHarnessRun>
@@ -1040,6 +1042,7 @@ beforeEach(() => {
   agentHarnessRuntimeMocks.forceModelToolsUnsupported = false;
   agentHarnessRuntimeMocks.skipConfiguredMcpMaterialization = true;
   agentHarnessRuntimeMocks.configuredMcpTools = undefined;
+  agentHarnessRuntimeMocks.materializeConfiguredMcpCalls = [];
 });
 
 describe("runCodexAppServerAttempt", () => {
@@ -1539,6 +1542,22 @@ describe("runCodexAppServerAttempt", () => {
     const harness = createStartedThreadHarness();
     const params = createParams(sessionFile, workspaceDir);
     params.disableTools = false;
+    params.config = {
+      ...params.config,
+      mcp: {
+        servers: {
+          mainOnly: {
+            url: "https://main.example.test/mcp",
+            codex: { agents: ["main"] },
+          },
+          otherOnly: {
+            url: "https://other.example.test/mcp",
+            codex: { agents: ["other"] },
+          },
+        },
+      },
+    } as typeof params.config;
+    params.toolOverrides = { mcpServers: { mainOnly: true, otherOnly: true } };
     setCodexTestModelSupportsTools(params, true);
 
     const run = runCodexAppServerAttempt(params);
@@ -1558,6 +1577,10 @@ describe("runCodexAppServerAttempt", () => {
     await run;
 
     expect(toolFactory).toHaveBeenCalled();
+    expect(agentHarnessRuntimeMocks.materializeConfiguredMcpCalls[0]).toMatchObject({
+      toolOverrides: { mcpServers: { mainOnly: true, otherOnly: false } },
+      policyContext: { agentId: "main" },
+    });
     const creatorAllowlist = toolFactory.mock.calls[0]?.[0]?.cronCreatorToolAllowlistRef;
     expect(creatorAllowlist).toContain("project-tracker__list");
     expect(toolFactory.mock.calls[1]?.[0]?.cronCreatorToolAllowlistRef).toBeUndefined();
