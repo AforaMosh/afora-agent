@@ -20,6 +20,25 @@ function configWithModelAlias(alias: string): OpenClawConfig {
 }
 
 describe("reply directive aliases", () => {
+  it("parses configured alias session scope through the inline directive boundary", () => {
+    const cfg = configWithModelAlias("fable");
+    const parsed = parseInlineDirectives("/fable -s", {
+      modelAliases: resolveConfiguredDirectiveAliases({
+        cfg,
+        commandTextHasSlash: true,
+        reservedCommands: new Set(),
+      }),
+    });
+
+    expect(parsed).toMatchObject({
+      cleaned: "",
+      hasModelDirective: true,
+      rawModelDirective: "fable",
+      rawModelRuntime: undefined,
+      modelSessionOnly: true,
+    });
+  });
+
   it("does not expose skill command names as inline model aliases", () => {
     const reservedCommands = new Set<string>();
     const cfg = configWithModelAlias("demo_skill");

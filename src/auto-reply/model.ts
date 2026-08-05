@@ -3,6 +3,23 @@ import { normalizeStringEntries } from "@openclaw/normalization-core/string-norm
 import { splitTrailingAuthProfile } from "../agents/model-ref-profile.js";
 import { escapeRegExp } from "../utils.js";
 
+const MODEL_REF_PATTERN = String.raw`[A-Za-z0-9_.:@-]+(?:\/[A-Za-z0-9_.:@-]+)*`;
+const MODEL_RUNTIME_VALUE_PATTERN = String.raw`[A-Za-z0-9_.:-]+`;
+// Captures 2/3 are runtime-first; 4/5 are session-first so duplicates stay unconsumed.
+const MODEL_TRAILING_OPTIONS_PATTERN = String.raw`(?:(?:\s+(?:--runtime|runtime=|harness=)\s*(${MODEL_RUNTIME_VALUE_PATTERN}))(\s+(?:--session|-s)(?=$|\s))?|(\s+(?:--session|-s)(?=$|\s))(?:\s+(?:--runtime|runtime=|harness=)\s*(${MODEL_RUNTIME_VALUE_PATTERN}))?)?`;
+const MODEL_DIRECTIVE_PATTERN = new RegExp(
+  String.raw`(?:^|\s)\/model(?=$|\s|:)\s*:?\s*(${MODEL_REF_PATTERN})?${MODEL_TRAILING_OPTIONS_PATTERN}`,
+  "i",
+);
+
+function parseModelDirectiveMatch(match: RegExpMatchArray | null) {
+  return {
+    rawModel: match?.[1]?.trim(),
+    rawRuntime: (match?.[2] ?? match?.[5])?.trim(),
+    sessionOnly: Boolean(match?.[3] ?? match?.[4]),
+  };
+}
+
 /** Extract and remove a `/model` directive, including optional auth profile/runtime hints. */
 export function extractModelDirective(
   body?: string,
@@ -19,11 +36,7 @@ export function extractModelDirective(
     return { cleaned: "", sessionOnly: false, hasDirective: false };
   }
 
-  // Runtime and session are unique options but may appear in either order.
-  // Captures 2/3 are runtime-first; 4/5 are session-first so duplicates stay unconsumed.
-  const modelMatch = body.match(
-    /(?:^|\s)\/model(?=$|\s|:)\s*:?\s*([A-Za-z0-9_.:@-]+(?:\/[A-Za-z0-9_.:@-]+)*)?(?:(?:\s+(?:--runtime|runtime=|harness=)\s*([A-Za-z0-9_.:-]+))(\s+(?:--session|-s)(?=$|\s))?|(\s+(?:--session|-s)(?=$|\s))(?:\s+(?:--runtime|runtime=|harness=)\s*([A-Za-z0-9_.:-]+))?)?/i,
-  );
+  const modelMatch = body.match(MODEL_DIRECTIVE_PATTERN);
 
   const aliases = normalizeStringEntries(options?.aliases);
   const aliasMatch =
@@ -31,15 +44,13 @@ export function extractModelDirective(
       ? null
       : body.match(
           new RegExp(
-            `(?:^|\\s)\\/(${aliases.map(escapeRegExp).join("|")})(?=$|\\s|:)(?:\\s*:\\s*)?`,
+            String.raw`(?:^|\s)\/(${aliases.map(escapeRegExp).join("|")})(?=$|\s|:)(?:\s*:)?${MODEL_TRAILING_OPTIONS_PATTERN}`,
             "i",
           ),
         );
 
   const match = modelMatch ?? aliasMatch;
-  const raw = modelMatch ? modelMatch?.[1]?.trim() : aliasMatch?.[1]?.trim();
-  const rawRuntime = (modelMatch?.[2] ?? modelMatch?.[5])?.trim();
-  const sessionOnly = Boolean(modelMatch?.[3] ?? modelMatch?.[4]);
+  const { rawModel: raw, rawRuntime, sessionOnly } = parseModelDirectiveMatch(match);
 
   let rawModel = raw;
   let rawProfile: string | undefined;

@@ -42,6 +42,9 @@ command handling is enabled for the surface.
       persist to the session and reply with an acknowledgement.
     - In **normal chat** messages with other text, they act as inline hints and
       do **not** persist session settings.
+      Model selection is the exception: an inline `/model` or configured
+      `/<alias>` persists the session selection, and an authorized owner/admin
+      selection without `-s` may also request a configured-default update.
     - Directives only apply for **authorized senders**. If `commands.allowFrom`
       is set, it is the only allowlist used; otherwise authorization comes from
       channel allowlists, pairing, and always-on access-group enforcement. Unauthorized
@@ -218,6 +221,8 @@ plugins.
       </Accordion>
       <Accordion title="Model switching details">
         **Scope in one line:** a direct owner/admin `/model <model>` changes the session and requests a best-effort configured-default update; `-s` changes only the current session. When an agent inherits `agents.defaults.model`, the update target is that shared global fallback.
+
+        Configured `/<alias>` shorthands accept the same trailing `--runtime`, `-s`, and `--session` options as `/model <alias>`.
 
         | Goal | Command | Effect |
         | --- | --- | --- |

@@ -1,6 +1,7 @@
 // Tests mixed directives through the real reply admission and transaction boundary.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ModelCatalogEntry } from "../../agents/model-catalog.js";
+import type { ModelAliasIndex } from "../../agents/model-selection.js";
 import { persistStickyModelSelectionBestEffort } from "../../agents/sticky-model-selection.js";
 import type { OpenClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
@@ -69,6 +70,8 @@ async function applyMixedDirectives(params: {
   defaultProvider?: string;
   defaultModel?: string;
   allowedModels?: ModelCatalogEntry[];
+  modelAliases?: string[];
+  aliasIndex?: ModelAliasIndex;
   senderIsOwner?: boolean;
   gatewayClientScopes?: string[];
 }) {
@@ -80,15 +83,18 @@ async function applyMixedDirectives(params: {
   const sessionKey = params.sessionKey ?? "agent:main:dm:1";
   const sessionEntry = params.sessionEntry ?? createSessionEntry();
   const sessionStore = { [sessionKey]: sessionEntry };
-  const directives = parseInlineDirectives(params.body);
+  const directives = parseInlineDirectives(params.body, {
+    modelAliases: params.modelAliases,
+  });
   const allowedModels = params.allowedModels ?? [];
+  const aliasIndex = params.aliasIndex ?? { byAlias: new Map(), byKey: new Map() };
   const modelState: Parameters<typeof applyInlineDirectiveOverrides>[0]["modelState"] = {
     provider,
     model,
     requestedRouteResolution: "resolved",
     allowedModelKeys: new Set(allowedModels.map((entry) => `${entry.provider}/${entry.id}`)),
     allowedModelCatalog: allowedModels,
-    policyAliasIndex: { byAlias: new Map(), byKey: new Map() },
+    policyAliasIndex: aliasIndex,
     resetModelOverride: false,
     resolveThinkingCatalog: async () => allowedModels,
     resolveDefaultThinkingLevel: async () => "off",
@@ -141,7 +147,7 @@ async function applyMixedDirectives(params: {
     elevatedFailures: [],
     defaultProvider: params.defaultProvider ?? provider,
     defaultModel: params.defaultModel ?? model,
-    aliasIndex: { byAlias: new Map(), byKey: new Map() },
+    aliasIndex,
     provider,
     model,
     modelState,
@@ -273,6 +279,43 @@ describe("mixed inline directives", () => {
       modelOverride: "gpt-5.6-luna",
       modelOverrideSource: "user",
     });
+    expect(persistStickyModelSelectionBestEffort).not.toHaveBeenCalled();
+  });
+
+  it("applies an owner alias session scope without continuing to the model", async () => {
+    const aliasIndex: ModelAliasIndex = {
+      byAlias: new Map([
+        [
+          "luna",
+          {
+            alias: "luna",
+            ref: { provider: "openai", model: "gpt-5.6-luna" },
+          },
+        ],
+      ]),
+      byKey: new Map([["openai/gpt-5.6-luna", ["luna"]]]),
+    };
+    const { result, sessionEntry } = await applyMixedDirectives({
+      body: "/luna -s",
+      modelAliases: ["luna"],
+      aliasIndex,
+      senderIsOwner: true,
+      storePath: "/tmp/sessions.json",
+      allowedModels: [{ provider: "openai", id: "gpt-5.6-luna", name: "GPT-5.6-Luna" }],
+    });
+
+    expect(result).toEqual({
+      kind: "reply",
+      reply: {
+        text: "Model set to luna (openai/gpt-5.6-luna) for this session only; configured default unchanged.",
+      },
+    });
+    expect(sessionEntry).toMatchObject({
+      providerOverride: "openai",
+      modelOverride: "gpt-5.6-luna",
+      modelOverrideSource: "user",
+    });
+    expect(persistenceMocks.persist).toHaveBeenCalledOnce();
     expect(persistStickyModelSelectionBestEffort).not.toHaveBeenCalled();
   });
 
