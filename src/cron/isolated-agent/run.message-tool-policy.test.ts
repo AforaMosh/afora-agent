@@ -32,6 +32,14 @@ import {
 const runCronIsolatedAgentTurn = await loadRunCronIsolatedAgentTurn();
 const { executeCronRun } = await import("./run-executor.js");
 
+function scheduledNativeModeForPayload(payload: Record<string, unknown>): "inherit" | "disabled" {
+  return payload.toolsAllowIsDefault === true ||
+    (Array.isArray(payload.toolsAllow) &&
+      payload.toolsAllow.some((tool) => typeof tool === "string" && tool.trim() === "*"))
+    ? "inherit"
+    : "disabled";
+}
+
 function makeMessageToolPolicyJob(
   delivery: Record<string, unknown> = { mode: "none" },
   payload: Record<string, unknown> = {
@@ -41,16 +49,17 @@ function makeMessageToolPolicyJob(
     toolsAllowIsDefault: true,
   },
 ) {
+  const resolvedPayload =
+    payload.toolsAllow === undefined
+      ? { ...payload, toolsAllow: ["*"], toolsAllowIsDefault: true }
+      : payload;
   return {
     id: "message-tool-policy",
     name: "Message Tool Policy",
     schedule: { kind: "every", everyMs: 60_000 },
     sessionTarget: "isolated",
-    scheduledNativePolicy: { version: 1, mode: "inherit" },
-    payload:
-      payload.toolsAllow === undefined
-        ? { ...payload, toolsAllow: ["*"], toolsAllowIsDefault: true }
-        : payload,
+    scheduledNativePolicy: { version: 1, mode: scheduledNativeModeForPayload(resolvedPayload) },
+    payload: resolvedPayload,
     delivery,
   } as unknown as CronJob;
 }
@@ -82,7 +91,7 @@ function makeAnnounceMessageToolJob(
     name: options.name ?? "Message Tool Policy",
     schedule: { kind: "every", everyMs: 60_000 },
     sessionTarget: "isolated",
-    scheduledNativePolicy: { version: 1, mode: "inherit" },
+    scheduledNativePolicy: { version: 1, mode: scheduledNativeModeForPayload(payload) },
     payload,
     delivery: { mode: "announce", channel: "messagechat", to: "123", ...options.delivery },
   } as unknown as CronJob;
@@ -812,7 +821,9 @@ describe("runCronIsolatedAgentTurn message tool policy", () => {
 
     await runCronIsolatedAgentTurn({
       ...makeParams(),
-      job: makeAnnounceMessageToolJob({ payload: { toolsAllow: ["message"] } }),
+      job: makeAnnounceMessageToolJob({
+        payload: { toolsAllow: ["message"], toolsAllowIsDefault: true },
+      }),
     });
 
     expect(runCliAgentMock).toHaveBeenCalledTimes(1);
@@ -841,7 +852,12 @@ describe("runCronIsolatedAgentTurn message tool policy", () => {
       ...makeParams(),
       job: makeMessageToolPolicyJob(
         { mode: "announce", channel: "messagechat", to: "123" },
-        { kind: "agentTurn", message: "send a message", toolsAllow: ["read"] },
+        {
+          kind: "agentTurn",
+          message: "send a message",
+          toolsAllow: ["read"],
+          toolsAllowIsDefault: true,
+        },
       ),
     });
 
