@@ -27,7 +27,7 @@ function stringifyHistoricalValue(value: unknown): string {
   try {
     return JSON.stringify(value);
   } catch {
-    return String(value);
+    return "[Unserializable historical value]";
   }
 }
 
@@ -57,69 +57,114 @@ function applyVeniceGeminiToolHistoryCompatibility(
   if (model.provider !== "venice" || !isVeniceGeminiModelId(model.id)) {
     return;
   }
-  const signaturesByToolCallId = new Map<string, string>();
+  const historicalToolCallBatches: Array<
+    Array<{ id: string; name: string; thoughtSignature?: string }>
+  > = [];
+  let hasHistoricalSignature = false;
   const requiresUnsignedCallFallback = isVeniceGemini3ModelId(model.id);
   for (const message of context.messages ?? []) {
-    if (message.role !== "assistant") {
-      continue;
-    }
     if (
-      message.api !== model.api ||
-      message.provider !== model.provider ||
-      message.model !== model.id
+      message.role !== "assistant" ||
+      message.stopReason === "error" ||
+      message.stopReason === "aborted"
     ) {
       continue;
     }
+    const isExactRoute =
+      message.api === model.api &&
+      message.provider === model.provider &&
+      message.model === model.id;
+    const batch: Array<{ id: string; name: string; thoughtSignature?: string }> = [];
     for (const block of message.content) {
-      if (
-        block.type === "toolCall" &&
-        typeof block.id === "string" &&
+      if (block.type !== "toolCall" || typeof block.id !== "string") {
+        continue;
+      }
+      const thoughtSignature =
+        isExactRoute &&
         typeof block.thoughtSignature === "string" &&
         block.thoughtSignature.length > 0
-      ) {
-        signaturesByToolCallId.set(block.id, block.thoughtSignature);
-      }
+          ? block.thoughtSignature
+          : undefined;
+      hasHistoricalSignature ||= thoughtSignature !== undefined;
+      batch.push({
+        id: block.id,
+        name: block.name,
+        ...(thoughtSignature ? { thoughtSignature } : {}),
+      });
+    }
+    if (batch.length > 0) {
+      historicalToolCallBatches.push(batch);
     }
   }
   if (
-    (signaturesByToolCallId.size === 0 && !requiresUnsignedCallFallback) ||
+    (!hasHistoricalSignature && !requiresUnsignedCallFallback) ||
     !Array.isArray(payload.messages)
   ) {
     return;
   }
-  const downgradedToolCalls = new Map<string, string>();
+  let historicalBatchIndex = 0;
+  let pendingDowngradedToolCalls: Map<string, string[]> | undefined;
   for (const message of payload.messages) {
     if (!message || typeof message !== "object") {
+      pendingDowngradedToolCalls = undefined;
       continue;
     }
     const record = message as Record<string, unknown>;
+    if (record.role === "tool") {
+      const toolCallId = typeof record.tool_call_id === "string" ? record.tool_call_id : undefined;
+      const toolNames = toolCallId ? pendingDowngradedToolCalls?.get(toolCallId) : undefined;
+      const toolName = toolNames?.shift();
+      if (!toolName) {
+        continue;
+      }
+      if (toolNames.length === 0) {
+        pendingDowngradedToolCalls?.delete(toolCallId);
+      }
+      const result = stringifyHistoricalValue(record.content);
+      for (const key of Object.keys(record)) {
+        delete record[key];
+      }
+      record.role = "user";
+      record.content = `[Historical tool result for ${toolName}:\n${result}]`;
+      continue;
+    }
+    pendingDowngradedToolCalls = undefined;
     if (record.role !== "assistant" || !Array.isArray(record.tool_calls)) {
       continue;
     }
+
+    // Tool-call ids are provider-local and can be reused on later turns. Match
+    // signature metadata and result rewriting to this assistant occurrence.
+    const historicalBatch = historicalToolCallBatches[historicalBatchIndex++];
     let shouldDowngradeBatch = false;
     const describedCalls: Array<ReturnType<typeof describeHistoricalToolCall>> = [];
-    for (const toolCall of record.tool_calls) {
+    for (const [toolCallIndex, toolCall] of record.tool_calls.entries()) {
       if (!toolCall || typeof toolCall !== "object") {
         continue;
       }
       const toolCallRecord = toolCall as Record<string, unknown>;
+      const historicalCall = historicalBatch?.[toolCallIndex];
+      const describedCall = describeHistoricalToolCall(toolCallRecord);
       const signature =
-        typeof toolCallRecord.id === "string"
-          ? signaturesByToolCallId.get(toolCallRecord.id)
+        historicalCall?.id === toolCallRecord.id && historicalCall.name === describedCall.name
+          ? historicalCall.thoughtSignature
           : undefined;
       if (signature) {
         toolCallRecord.thought_signature = signature;
       } else if (requiresUnsignedCallFallback) {
         shouldDowngradeBatch = true;
       }
-      describedCalls.push(describeHistoricalToolCall(toolCallRecord));
+      describedCalls.push(describedCall);
     }
     if (!shouldDowngradeBatch) {
       continue;
     }
+    pendingDowngradedToolCalls = new Map<string, string[]>();
     for (const call of describedCalls) {
       if (call.id) {
-        downgradedToolCalls.set(call.id, call.name);
+        const names = pendingDowngradedToolCalls.get(call.id) ?? [];
+        names.push(call.name);
+        pendingDowngradedToolCalls.set(call.id, names);
       }
     }
     const existingContent = stringifyHistoricalValue(record.content);
@@ -127,26 +172,6 @@ function applyVeniceGeminiToolHistoryCompatibility(
       .filter((part) => part.length > 0)
       .join("\n");
     delete record.tool_calls;
-  }
-  if (downgradedToolCalls.size === 0) {
-    return;
-  }
-  for (const message of payload.messages) {
-    if (!message || typeof message !== "object") {
-      continue;
-    }
-    const record = message as Record<string, unknown>;
-    const toolCallId = typeof record.tool_call_id === "string" ? record.tool_call_id : undefined;
-    const toolName = toolCallId ? downgradedToolCalls.get(toolCallId) : undefined;
-    if (record.role !== "tool" || !toolName) {
-      continue;
-    }
-    const result = stringifyHistoricalValue(record.content);
-    for (const key of Object.keys(record)) {
-      delete record[key];
-    }
-    record.role = "user";
-    record.content = `[Historical tool result for ${toolName}:\n${result}]`;
   }
 }
 

@@ -278,17 +278,11 @@ describe("venice provider plugin", () => {
         messages: [
           {
             role: "assistant",
-            api: "openai-chatgpt-responses",
-            provider: "openai",
-            model: "gpt-5.6-sol",
-            content: [{ type: "toolCall", id: "foreign_call", name: "web_fetch", arguments: {} }],
-          },
-          {
-            role: "assistant",
             api: "openai-completions",
             provider: "venice",
             model: "gemini-3-6-flash",
             content: [
+              { type: "toolCall", id: "foreign_call", name: "web_fetch", arguments: {} },
               { type: "toolCall", id: "legacy_call", name: "read", arguments: {} },
               {
                 type: "toolCall",
@@ -316,6 +310,163 @@ describe("venice provider plugin", () => {
       { role: "user", content: "[Historical tool result for read:\nsigned result]" },
     ]);
     expect(messages[4]).toEqual({ role: "user", content: "current prompt" });
+  });
+
+  it("pairs reused Gemini tool-call ids by assistant occurrence", async () => {
+    const provider = await registerSingleProviderPlugin(plugin);
+    const capturedPayloads: Record<string, unknown>[] = [];
+    const payloads = [
+      {
+        model: "gemini-3-6-flash",
+        messages: [
+          {
+            role: "assistant",
+            tool_calls: [
+              { id: "call_0", type: "function", function: { name: "read", arguments: "{}" } },
+            ],
+          },
+          { role: "tool", tool_call_id: "call_0", content: "read result" },
+          {
+            role: "assistant",
+            tool_calls: [
+              { id: "call_0", type: "function", function: { name: "write", arguments: "{}" } },
+            ],
+          },
+          { role: "tool", tool_call_id: "call_0", content: "write result" },
+          { role: "user", content: "current prompt" },
+        ],
+      },
+      {
+        model: "gemini-3-6-flash",
+        messages: [
+          {
+            role: "assistant",
+            tool_calls: [
+              { id: "call_0", type: "function", function: { name: "read", arguments: "{}" } },
+            ],
+          },
+          { role: "tool", tool_call_id: "call_0", content: "legacy result" },
+          {
+            role: "assistant",
+            tool_calls: [
+              { id: "call_0", type: "function", function: { name: "write", arguments: "{}" } },
+            ],
+          },
+          { role: "tool", tool_call_id: "call_0", content: "signed result" },
+          { role: "user", content: "current prompt" },
+        ],
+      },
+    ];
+    const baseStreamFn = (_model: unknown, _context: unknown, options: unknown) => {
+      const payload = structuredClone(payloads[capturedPayloads.length]!);
+      (options as { onPayload?: (payload: Record<string, unknown>) => void })?.onPayload?.(payload);
+      capturedPayloads.push(payload);
+      return {} as never;
+    };
+    const streamFn = provider.wrapStreamFn?.({
+      streamFn: baseStreamFn as never,
+      providerId: "venice",
+      modelId: "gemini-3-6-flash",
+      thinkingLevel: "high",
+    } as never);
+
+    await streamFn?.(
+      { api: "openai-completions", provider: "venice", id: "gemini-3-6-flash" } as never,
+      {
+        messages: [
+          {
+            role: "assistant",
+            api: "openai-completions",
+            provider: "venice",
+            model: "gemini-3-6-flash",
+            content: [
+              {
+                type: "toolCall",
+                id: "call_0",
+                name: "read",
+                arguments: {},
+                thoughtSignature: "SIG-READ",
+              },
+            ],
+          },
+          {
+            role: "assistant",
+            api: "openai-completions",
+            provider: "venice",
+            model: "gemini-3-6-flash",
+            content: [
+              {
+                type: "toolCall",
+                id: "call_0",
+                name: "write",
+                arguments: {},
+                thoughtSignature: "SIG-WRITE",
+              },
+            ],
+          },
+        ],
+      } as never,
+      {},
+    );
+
+    const signedMessages = capturedPayloads[0]!.messages as Array<Record<string, unknown>>;
+    expect(signedMessages[0]).toMatchObject({
+      tool_calls: [{ id: "call_0", thought_signature: "SIG-READ" }],
+    });
+    expect(signedMessages[2]).toMatchObject({
+      tool_calls: [{ id: "call_0", thought_signature: "SIG-WRITE" }],
+    });
+
+    await streamFn?.(
+      { api: "openai-completions", provider: "venice", id: "gemini-3-6-flash" } as never,
+      {
+        messages: [
+          {
+            role: "assistant",
+            api: "openai-completions",
+            provider: "venice",
+            model: "gemini-3-6-flash",
+            content: [{ type: "toolCall", id: "call_0", name: "read", arguments: {} }],
+          },
+          {
+            role: "assistant",
+            api: "openai-completions",
+            provider: "venice",
+            model: "gemini-3-6-flash",
+            content: [
+              {
+                type: "toolCall",
+                id: "call_0",
+                name: "write",
+                arguments: {},
+                thoughtSignature: "SIG-WRITE",
+              },
+            ],
+          },
+        ],
+      } as never,
+      {},
+    );
+
+    const mixedMessages = capturedPayloads[1]!.messages as Array<Record<string, unknown>>;
+    expect(mixedMessages[0]).toMatchObject({
+      role: "assistant",
+      content: expect.stringContaining("[Historical tool call: read("),
+    });
+    expect(mixedMessages[0]).not.toHaveProperty("tool_calls");
+    expect(mixedMessages[1]).toEqual({
+      role: "user",
+      content: "[Historical tool result for read:\nlegacy result]",
+    });
+    expect(mixedMessages[2]).toMatchObject({
+      role: "assistant",
+      tool_calls: [{ id: "call_0", thought_signature: "SIG-WRITE" }],
+    });
+    expect(mixedMessages[3]).toEqual({
+      role: "tool",
+      tool_call_id: "call_0",
+      content: "signed result",
+    });
   });
 
   it("leaves unsigned Gemini 2.5 history unchanged", async () => {
