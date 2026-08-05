@@ -173,9 +173,9 @@ describe("current plugin metadata snapshot", () => {
     withPluginMetadataSnapshotScope(
       snapshot,
       () => {
+        expect(getCurrentPluginMetadataSnapshot({ config })).toBe(snapshot);
         expect(
           getCurrentPluginMetadataSnapshot({
-            allowWorkspaceScopedSnapshot: true,
             requireDefaultDiscoveryContext: true,
           }),
         ).toBe(snapshot);
