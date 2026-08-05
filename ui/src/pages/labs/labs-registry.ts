@@ -179,6 +179,20 @@ export const LAB_FEATURES = [
     // the recorder, so this outlives the reload plan's `logging: none` rule.
     restartHint: () => t("labsPage.restartRequired"),
   },
+  {
+    id: "experimentalRealtimeModels",
+    title: () => t("labsPage.experimentalRealtimeModels.title"),
+    description: () => t("labsPage.experimentalRealtimeModels.description"),
+    docsUrl: "https://docs.openclaw.ai/nodes/talk",
+    configPath: ["talk", "realtime", "experimentalModels"],
+    onValue: true,
+    offValue: false,
+    activeValues: [true],
+    readEnabled: null,
+    enableAlso: null,
+    resetScope: "gate",
+    restartHint: null,
+  },
 ] as const satisfies readonly LabFeature[];
 
 function recordAtPath(config: Record<string, unknown>, path: readonly string[]): unknown {

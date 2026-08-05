@@ -8,7 +8,7 @@ import { property, state } from "lit/decorators.js";
 import { applicationContext, type ApplicationContext } from "../../app/context.ts";
 import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
 import { SubscriptionsController } from "../../lit/subscriptions-controller.ts";
-import { isTalkGptLiveModel, resolveTalkRealtimeSelection } from "./talk-schema.ts";
+import { resolveTalkRealtimeSelection } from "./talk-schema.ts";
 import {
   renderTalk,
   selectedTalkProviderOption,
@@ -81,10 +81,7 @@ class TalkSettingsPage extends OpenClawLightDomElement {
       (runtimeConfig) => this.refreshCatalogOnConfigChange(runtimeConfig.state),
     );
 
-  /**
-   * GPT-Live Platform credentials can change outside the Control UI without
-   * advancing the config hash, so returning focus re-reads catalog readiness.
-   */
+  /** Provider credentials can change outside Control UI without advancing the config hash. */
   private readonly refreshOnFocus = () => {
     const connection = this.connection;
     if (connection?.client && connection.connected) {
@@ -195,13 +192,6 @@ class TalkSettingsPage extends OpenClawLightDomElement {
     const runtimeConfig = this.context.runtimeConfig;
     if (model !== null) {
       runtimeConfig.patchForm(["talk", "realtime", "model"], model);
-      // GPT-Live is WebRTC-only; a configured relay or provider-websocket
-      // transport would make the just-picked model fail at session create, so
-      // clearing it lets the default client-owned WebRTC path apply.
-      const transport = this.liveSelection().transport;
-      if (isTalkGptLiveModel(model) && transport && transport !== "webrtc") {
-        runtimeConfig.removeFormValue(["talk", "realtime", "transport"]);
-      }
       return;
     }
     runtimeConfig.removeFormValue(["talk", "realtime", "model"]);
