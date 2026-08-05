@@ -19,8 +19,10 @@ export function extractModelDirective(
     return { cleaned: "", sessionOnly: false, hasDirective: false };
   }
 
+  // Runtime and session are unique options but may appear in either order.
+  // Captures 2/3 are runtime-first; 4/5 are session-first so duplicates stay unconsumed.
   const modelMatch = body.match(
-    /(?:^|\s)\/model(?=$|\s|:)\s*:?\s*([A-Za-z0-9_.:@-]+(?:\/[A-Za-z0-9_.:@-]+)*)?(?:\s+(?:--runtime|runtime=|harness=)\s*([A-Za-z0-9_.:-]+))?(\s+(?:--session|-s)(?=$|\s))?/i,
+    /(?:^|\s)\/model(?=$|\s|:)\s*:?\s*([A-Za-z0-9_.:@-]+(?:\/[A-Za-z0-9_.:@-]+)*)?(?:(?:\s+(?:--runtime|runtime=|harness=)\s*([A-Za-z0-9_.:-]+))(\s+(?:--session|-s)(?=$|\s))?|(\s+(?:--session|-s)(?=$|\s))(?:\s+(?:--runtime|runtime=|harness=)\s*([A-Za-z0-9_.:-]+))?)?/i,
   );
 
   const aliases = normalizeStringEntries(options?.aliases);
@@ -36,8 +38,8 @@ export function extractModelDirective(
 
   const match = modelMatch ?? aliasMatch;
   const raw = modelMatch ? modelMatch?.[1]?.trim() : aliasMatch?.[1]?.trim();
-  const rawRuntime = modelMatch?.[2]?.trim();
-  const sessionOnly = Boolean(modelMatch?.[3]);
+  const rawRuntime = (modelMatch?.[2] ?? modelMatch?.[5])?.trim();
+  const sessionOnly = Boolean(modelMatch?.[3] ?? modelMatch?.[4]);
 
   let rawModel = raw;
   let rawProfile: string | undefined;

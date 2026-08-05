@@ -114,7 +114,7 @@ describe("maybeResolveNativeSlashCommandFastReply", () => {
       ),
       agentId: "main",
       agentDir: "/tmp/agent",
-      agentCfg: undefined,
+      agentCfg: config?.agents?.defaults,
       commandAuthorized: true,
       defaultProvider: "openai",
       defaultModel: "gpt-5.5",
@@ -187,6 +187,33 @@ describe("maybeResolveNativeSlashCommandFastReply", () => {
         handled: true,
         reply: expect.objectContaining({ text: expected }),
       });
+    },
+  );
+
+  it.each(["--runtime codex -s", "-s --runtime codex"])(
+    "applies native /model runtime and session options from %s",
+    async (options) => {
+      const storePath = path.join(tempDirs.make("openclaw-native-model-options-"), "sessions.json");
+      const { result } = await resolveNativeDirectiveCommand(
+        `/model openai/gpt-5.5 ${options}`,
+        {
+          session: { store: storePath },
+          agents: { defaults: { models: { "openai/gpt-5.5": {} } } },
+        },
+        { shouldContinue: true },
+      );
+
+      expect(result).toMatchObject({
+        handled: true,
+        reply: {
+          text: "Session model reset to configured default (openai/gpt-5.5). Runtime set to codex for this session.",
+        },
+      });
+      const sessionEntry = loadExactSessionEntry({
+        sessionKey: "agent:main:telegram:123",
+        storePath,
+      })?.entry;
+      expect(sessionEntry).toMatchObject({ agentRuntimeOverride: "codex" });
     },
   );
 

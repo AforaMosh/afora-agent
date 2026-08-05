@@ -276,6 +276,34 @@ describe("mixed inline directives", () => {
     expect(persistStickyModelSelectionBestEffort).not.toHaveBeenCalled();
   });
 
+  it.each(["--runtime codex -s", "-s --runtime codex"])(
+    "applies mixed-content /model runtime and session options from %s",
+    async (options) => {
+      const { result, sessionEntry } = await applyMixedDirectives({
+        body: `please reply /model openai/gpt-5.6-luna ${options}`,
+        senderIsOwner: true,
+        allowedModels: [{ provider: "openai", id: "gpt-5.6-luna", name: "GPT-5.6-Luna" }],
+      });
+
+      expect(result).toMatchObject({
+        kind: "continue",
+        provider: "openai",
+        model: "gpt-5.6-luna",
+        directiveAck: {
+          text: expect.stringContaining(
+            "Model set to openai/gpt-5.6-luna for this session only; configured default unchanged.",
+          ),
+        },
+      });
+      expect(sessionEntry).toMatchObject({
+        providerOverride: "openai",
+        modelOverride: "gpt-5.6-luna",
+        agentRuntimeOverride: "codex",
+      });
+      expect(persistStickyModelSelectionBestEffort).not.toHaveBeenCalled();
+    },
+  );
+
   it.each([
     { name: "directive-only", body: "/model openai/gpt-5.6-luna" },
     { name: "mixed-content", body: "please reply /model openai/gpt-5.6-luna" },

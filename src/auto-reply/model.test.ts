@@ -74,10 +74,15 @@ describe("extractModelDirective", () => {
       expect(result.rawModel).toBe("anthropic/claude-opus-4-6");
     });
 
-    it("extracts /model with a runtime override", () => {
-      const result = extractModelDirective(
-        "/model anthropic/claude-opus-4-7 --runtime claude-cli -s",
-      );
+    it.each([
+      "--runtime claude-cli -s",
+      "-s --runtime claude-cli",
+      "runtime= claude-cli -s",
+      "-s runtime= claude-cli",
+      "harness= claude-cli -s",
+      "-s harness= claude-cli",
+    ])("extracts runtime and session options from %s", (options) => {
+      const result = extractModelDirective(`/model anthropic/claude-opus-4-7 ${options}`);
       expect(result.hasDirective).toBe(true);
       expect(result.rawModel).toBe("anthropic/claude-opus-4-7");
       expect(result.rawRuntime).toBe("claude-cli");
