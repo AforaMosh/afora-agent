@@ -28,16 +28,21 @@ async function initializeRepository(root: string, gitTemplate: string): Promise<
   return await fs.realpath(repo);
 }
 
-async function addRemote(root: string, repo: string): Promise<void> {
+async function initializeOrigin(root: string, repo: string): Promise<void> {
   const remote = path.join(root, "remote.git");
   await execFileAsync("git", ["clone", "--bare", repo, remote]);
-  await git(repo, "remote", "add", "origin", remote);
+  await git(repo, "remote", "add", "origin", "../remote.git");
   await git(repo, "push", "-u", "origin", "main");
   await git(repo, "remote", "set-head", "origin", "-a");
 }
 
+async function syncOrigin(repo: string): Promise<void> {
+  await git(repo, "push", "origin", "main");
+}
+
 describe("ManagedWorktreeService provisioned state", () => {
   let templateRoot: string;
+  let templateFixtureRoot: string;
   let templateRepo: string;
   let gitTemplate: string;
   let root: string;
@@ -50,8 +55,11 @@ describe("ManagedWorktreeService provisioned state", () => {
     const tempRoot = await fs.realpath(os.tmpdir());
     templateRoot = await fs.mkdtemp(path.join(tempRoot, "openclaw-worktree-state-template-"));
     gitTemplate = path.join(templateRoot, "git-template");
+    templateFixtureRoot = path.join(templateRoot, "fixture");
     await fs.mkdir(path.join(gitTemplate, "hooks"), { recursive: true });
-    templateRepo = await initializeRepository(templateRoot, gitTemplate);
+    await fs.mkdir(templateFixtureRoot);
+    templateRepo = await initializeRepository(templateFixtureRoot, gitTemplate);
+    await initializeOrigin(templateFixtureRoot, templateRepo);
   });
 
   afterAll(async () => {
@@ -61,8 +69,12 @@ describe("ManagedWorktreeService provisioned state", () => {
   beforeEach(async () => {
     const tempRoot = await fs.realpath(os.tmpdir());
     root = await fs.mkdtemp(path.join(tempRoot, "openclaw-worktree-state-"));
-    repo = path.join(root, "repo");
-    await fs.cp(templateRepo, repo, { mode: fsConstants.COPYFILE_FICLONE, recursive: true });
+    const fixtureRoot = path.join(root, "fixture");
+    await fs.cp(templateFixtureRoot, fixtureRoot, {
+      mode: fsConstants.COPYFILE_FICLONE,
+      recursive: true,
+    });
+    repo = path.join(fixtureRoot, "repo");
     repo = await fs.realpath(repo);
     env = { ...process.env, OPENCLAW_STATE_DIR: path.join(root, "openclaw-state") };
     now = 1_700_000_000_000;
@@ -81,7 +93,7 @@ describe("ManagedWorktreeService provisioned state", () => {
     await git(repo, "commit", "-m", "configure worktree provisioning");
     const source = Buffer.alloc(2 * 1024 * 1024, 0x61);
     await fs.writeFile(path.join(repo, "large.local"), source);
-    await addRemote(root, repo);
+    await syncOrigin(repo);
 
     const created = await service.create({ repoRoot: repo, name: "large-local", baseRef: "HEAD" });
     await service.acquire(created.id);
@@ -103,7 +115,7 @@ describe("ManagedWorktreeService provisioned state", () => {
     await git(repo, "commit", "-m", "configure worktree provisioning");
     await fs.writeFile(path.join(repo, ".env.local"), "value=source\n");
     await fs.writeFile(path.join(repo, "settings.local"), "theme=source\n");
-    await addRemote(root, repo);
+    await syncOrigin(repo);
 
     const manifestRemoved = await service.create({
       repoRoot: repo,
@@ -155,7 +167,7 @@ describe("ManagedWorktreeService provisioned state", () => {
     await fs.writeFile(path.join(repo, ".gitignore"), ".env.local\n");
     await git(repo, "add", ".gitignore");
     await git(repo, "commit", "-m", "ignore local environment");
-    await addRemote(root, repo);
+    await syncOrigin(repo);
     const legacyPath = path.join(root, "legacy-worktree");
     await git(repo, "worktree", "add", "-b", "openclaw/legacy", legacyPath, "HEAD");
     insertRegistryWorktree(env, {

@@ -1,4 +1,5 @@
 import { execFile } from "node:child_process";
+import { constants as fsConstants } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -67,7 +68,10 @@ describe("worktree run lease", () => {
     root = caseTempDirs.make("openclaw-run-lease-", tempRoot);
     repo = path.join(root, "repo");
     // Each case keeps a private .git directory; only repository construction is shared.
-    await fs.cp(templateRepo, repo, { recursive: true });
+    await fs.cp(templateRepo, repo, {
+      mode: fsConstants.COPYFILE_FICLONE,
+      recursive: true,
+    });
     repo = await fs.realpath(repo);
     env = { ...process.env, OPENCLAW_STATE_DIR: path.join(root, "openclaw-state") };
     service = new ManagedWorktreeService({ env });
