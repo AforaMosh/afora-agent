@@ -135,7 +135,7 @@ describe("GPT-Live call creation", () => {
       status: 403,
       body: "Voice session access denied.",
       message:
-        "GPT-Live rejected the Platform session (403). Verify API-key access, voice, and model for /v1/live. Accepted voices: alloy, ash, ballad, cedar, coral, echo, marin, sage, shimmer, verse. Accepted model: gpt-live-1-boulder-alpha.",
+        "The experimental realtime service rejected the Platform session (403). Verify API-key enrollment, voice, and model access.",
     },
     {
       name: "Platform waitlist denial",
@@ -148,8 +148,7 @@ describe("GPT-Live call creation", () => {
       name: "unsupported route model",
       status: 400,
       body: "Field `session.model` is not allowed for this Codex realtime session",
-      message:
-        "The GPT-Live model value is not permitted on /v1/live. Accepted value: gpt-live-1-boulder-alpha.",
+      message: "The configured experimental realtime model is not permitted for this account.",
     },
   ])("maps $name", async ({ status, body, message }) => {
     const fetchImpl = vi.fn(async () => new Response(body, { status }));
