@@ -4,7 +4,7 @@ import { html, render } from "lit";
 import { describe, expect, it, vi } from "vitest";
 import { renderTalk } from "./talk.ts";
 
-function gptLiveProps(configBusy: boolean): Parameters<typeof renderTalk>[0] {
+function talkProps(configBusy: boolean): Parameters<typeof renderTalk>[0] {
   return {
     selection: {
       provider: "openai",
@@ -41,7 +41,7 @@ function gptLiveProps(configBusy: boolean): Parameters<typeof renderTalk>[0] {
 describe("renderTalk", () => {
   it("locks every curated picker when config mutation is unavailable", () => {
     const container = document.createElement("div");
-    render(renderTalk(gptLiveProps(true)), container);
+    render(renderTalk(talkProps(true)), container);
 
     const provider = container.querySelector<HTMLElement & { disabled?: boolean }>(
       "wa-radio-group",
@@ -55,13 +55,13 @@ describe("renderTalk", () => {
     ).toBe(true);
   });
 
-  it("requires Platform API-key auth for GPT-Live Boulder", () => {
+  it("keeps experimental enrollment guidance out of the provider picker", () => {
     const container = document.createElement("div");
-    render(renderTalk(gptLiveProps(false)), container);
+    render(renderTalk(talkProps(false)), container);
 
     const text = container.textContent?.replace(/\s+/gu, " ") ?? "";
-    expect(text).toContain("requires an enrolled OpenAI Platform API key");
-    expect(text).toContain("ChatGPT/Codex OAuth does not configure this preview route");
-    expect(text).not.toContain("No Platform API key needed");
+    expect(text).toContain("OpenAI");
+    expect(text).not.toContain("Boulder");
+    expect(text).not.toContain("Platform API key");
   });
 });
