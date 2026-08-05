@@ -16,6 +16,7 @@ export function isTransientSlackApiError(error: unknown): boolean {
   if (error instanceof WebAPIPlatformError) {
     // Slack converts successful HTTP responses into platform errors after its request retries.
     return (
+      error.data.error === "fatal_error" ||
       error.data.error === "internal_error" ||
       error.data.error === "service_unavailable" ||
       error.data.error === "ratelimited"

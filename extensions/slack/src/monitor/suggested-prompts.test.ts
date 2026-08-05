@@ -66,6 +66,10 @@ describe("updateSlackSuggestedPrompts", () => {
       error: new WebAPIPlatformError({ ok: false, error: "internal_error" }),
     },
     {
+      label: "Slack platform fatal failure",
+      error: new WebAPIPlatformError({ ok: false, error: "fatal_error" }),
+    },
+    {
       label: "Slack platform service outage",
       error: new WebAPIPlatformError({ ok: false, error: "service_unavailable" }),
     },

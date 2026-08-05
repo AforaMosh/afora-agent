@@ -277,7 +277,7 @@ describe("registerSlackHomeEvents", () => {
     });
   });
 
-  it.each(["internal_error", "service_unavailable", "ratelimited"])(
+  it.each(["internal_error", "service_unavailable", "ratelimited", "fatal_error"])(
     "retries actual Slack Home platform %s through durable ingress",
     async (errorCode) => {
       const fetch = vi
@@ -326,7 +326,7 @@ describe("registerSlackHomeEvents", () => {
     },
   );
 
-  it.each(["internal_error", "service_unavailable", "ratelimited"])(
+  it.each(["internal_error", "service_unavailable", "ratelimited", "fatal_error"])(
     "retries Agent View prompt platform %s and durably records its marker",
     async (errorCode) => {
       const fetch = vi

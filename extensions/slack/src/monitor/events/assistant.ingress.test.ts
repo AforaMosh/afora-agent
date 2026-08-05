@@ -23,7 +23,12 @@ type SlackFetchStep = { method: string; body: Record<string, unknown>; retryAfte
 
 const slackApiRoot = "https://slack-proof.invalid/api/";
 const botMessage = { user: "U_BOT", ts: "1700000000.000200", text: "assistant reply" };
-const transientPlatformErrors = ["internal_error", "service_unavailable", "ratelimited"] as const;
+const transientPlatformErrors = [
+  "internal_error",
+  "service_unavailable",
+  "ratelimited",
+  "fatal_error",
+] as const;
 
 function slackResponse(body: Record<string, unknown>, retryAfter?: string): Response {
   return new Response(JSON.stringify(body), {
