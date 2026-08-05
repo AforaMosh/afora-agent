@@ -112,13 +112,23 @@ function applyVeniceGeminiToolHistoryCompatibility(
     const record = message as Record<string, unknown>;
     if (record.role === "tool") {
       const toolCallId = typeof record.tool_call_id === "string" ? record.tool_call_id : undefined;
-      const toolNames = toolCallId ? pendingDowngradedToolCalls?.get(toolCallId) : undefined;
-      const toolName = toolNames?.shift();
+      if (!toolCallId) {
+        continue;
+      }
+      const pendingCalls = pendingDowngradedToolCalls;
+      if (!pendingCalls) {
+        continue;
+      }
+      const toolNames = pendingCalls.get(toolCallId);
+      if (!toolNames) {
+        continue;
+      }
+      const toolName = toolNames.shift();
       if (!toolName) {
         continue;
       }
       if (toolNames.length === 0) {
-        pendingDowngradedToolCalls?.delete(toolCallId);
+        pendingCalls.delete(toolCallId);
       }
       const result = stringifyHistoricalValue(record.content);
       for (const key of Object.keys(record)) {
@@ -146,7 +156,9 @@ function applyVeniceGeminiToolHistoryCompatibility(
       const historicalCall = historicalBatch?.[toolCallIndex];
       const describedCall = describeHistoricalToolCall(toolCallRecord);
       const signature =
-        historicalCall?.id === toolCallRecord.id && historicalCall.name === describedCall.name
+        historicalCall &&
+        historicalCall.id === toolCallRecord.id &&
+        historicalCall.name === describedCall.name
           ? historicalCall.thoughtSignature
           : undefined;
       if (signature) {
