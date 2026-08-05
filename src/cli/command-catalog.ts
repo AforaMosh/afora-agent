@@ -368,7 +368,12 @@ export const cliCommandCatalog: readonly CliCommandCatalogEntry[] = [
   {
     commandPath: ["acp", "native"],
     exact: true,
-    policy: { hideBanner: true, ownsProtocolStdout: true },
+    policy: {
+      hideBanner: true,
+      loadPlugins: "always",
+      pluginRegistry: { scope: "all" },
+      ownsProtocolStdout: true,
+    },
   },
   {
     commandPath: ["acp", "info"],

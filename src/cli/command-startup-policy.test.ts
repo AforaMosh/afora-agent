@@ -390,6 +390,8 @@ describe("command-startup-policy", () => {
     const policy = resolvePolicy({ commandPath: ["acp", "native"] });
 
     expect(policy.hideBanner).toBe(true);
+    expect(policy.loadPlugins).toBe(true);
+    expect(policy.pluginRegistry).toEqual({ scope: "all" });
     expect(policy.suppressDoctorStdout).toBe(true);
   });
 
