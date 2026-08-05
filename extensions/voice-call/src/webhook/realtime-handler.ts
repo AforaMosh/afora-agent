@@ -256,8 +256,29 @@ export type StreamSession = {
 
 type CallRegistration = {
   callId: string;
+  agentId: string;
   instructions: string;
   initialGreetingInstructions?: string;
+  provider: RealtimeVoiceProviderPlugin;
+  providerConfig: RealtimeVoiceProviderConfig;
+};
+
+type ResolveRealtimeCallRegistration = (
+  call: CallRecord,
+) => Omit<CallRegistration, "callId" | "initialGreetingInstructions">;
+
+type RealtimeCallBaseFields = {
+  providerCallId: string;
+  timestamp: number;
+  direction: "inbound" | "outbound";
+  from?: string;
+  to?: string;
+};
+
+type PreparedRealtimeCall = {
+  callRecord: CallRecord;
+  baseFields: RealtimeCallBaseFields;
+  initialGreeting?: string;
 };
 
 type ActiveRealtimeVoiceBridge = RealtimeVoiceBridgeSession;
@@ -371,11 +392,9 @@ export class RealtimeCallHandler {
     private readonly config: VoiceCallRealtimeConfig,
     private readonly manager: CallManager,
     private readonly provider: VoiceCallProvider,
-    private readonly realtimeProvider: RealtimeVoiceProviderPlugin,
-    private readonly providerConfig: RealtimeVoiceProviderConfig,
+    private readonly resolveCallRegistration: ResolveRealtimeCallRegistration,
     private readonly servePath: string,
     private readonly coreConfig?: OpenClawConfig,
-    private readonly resolveInstructions?: (call: CallRecord) => string,
   ) {}
 
   setPublicUrl(url: string): void {
@@ -648,21 +667,63 @@ export class RealtimeCallHandler {
     callerMeta: Omit<PendingStreamToken, "expiry">,
     adapter: StreamFrameAdapter,
   ): ActiveRealtimeVoiceBridge | null {
-    const registration = this.registerCallInManager(callSid, callerMeta);
-    if (!registration) {
+    const preparedCall = this.prepareCallInManager(callSid, callerMeta);
+    if (!preparedCall) {
       ws.close(1008, "Caller rejected by policy");
       return null;
     }
 
-    const { callId, instructions, initialGreetingInstructions } = registration;
-    const callRecord = this.manager.getCallByProviderCallId(callSid);
+    const { callRecord } = preparedCall;
+    const callId = callRecord.callId;
+    const hadPredecessorOnAdmission = this.activeBridgesByCallId.has(callId);
+    let callEndEmitted = false;
+    const emitCallEnd = (reason: "completed" | "error") => {
+      if (callEndEmitted) {
+        return;
+      }
+      callEndEmitted = true;
+      this.endCallInManager(callSid, callId, reason);
+      if (reason !== "error") {
+        return;
+      }
+      void Promise.resolve(
+        this.provider.hangupCall({ callId, providerCallId: callSid, reason }),
+      ).catch((error: unknown) => {
+        console.warn(
+          `[voice-call] Failed to hang up realtime call ${callSid}: ${formatErrorMessage(error)}`,
+        );
+      });
+    };
+
+    let resolvedRegistration: ReturnType<ResolveRealtimeCallRegistration>;
+    try {
+      resolvedRegistration = this.resolveCallRegistration(callRecord);
+    } catch (error) {
+      console.error(
+        `[voice-call] Failed to resolve realtime call registration callId=${callId} providerCallId=${callSid}: ${formatErrorMessage(error)}`,
+      );
+      if (!hadPredecessorOnAdmission) {
+        emitCallEnd("error");
+      }
+      ws.close(1011, "Check realtime configuration for routed agent");
+      return null;
+    }
+
+    const registration = this.admitCallInManager(preparedCall, resolvedRegistration);
+    const {
+      agentId,
+      instructions,
+      initialGreetingInstructions,
+      provider: realtimeProvider,
+      providerConfig,
+    } = registration;
     const harness = createRealtimeVoiceSessionHarness({
       talk: {
         sessionId: `voice-call:${callId}:realtime`,
         mode: "realtime",
         transport: "gateway-relay",
         brain: "agent-consult",
-        provider: this.realtimeProvider.id,
+        provider: realtimeProvider.id,
       },
       talkPayloads: {
         turnStarted: () => ({ callId, providerCallId: callSid }),
@@ -675,7 +736,7 @@ export class RealtimeCallHandler {
       onTalkEvent: (event) => appendRecentTalkEventMetadata(callRecord, event),
     });
     let providerHandlesInputAudioBargeIn =
-      this.realtimeProvider.capabilities?.handlesInputAudioBargeIn === true;
+      realtimeProvider.capabilities?.handlesInputAudioBargeIn === true;
     const cancelOutputAudioForBargeIn = (
       source: "local" | "provider",
       interruptProvider?: (audioPlaybackActive: boolean) => void,
@@ -717,24 +778,6 @@ export class RealtimeCallHandler {
     console.log(
       `[voice-call] Realtime bridge starting for call ${callId} (providerCallId=${callSid}, initialGreeting=${initialGreetingInstructions ? "queued" : "absent"})`,
     );
-    let callEndEmitted = false;
-    const emitCallEnd = (reason: "completed" | "error") => {
-      if (callEndEmitted) {
-        return;
-      }
-      callEndEmitted = true;
-      this.endCallInManager(callSid, callId, reason);
-      if (reason !== "error") {
-        return;
-      }
-      void Promise.resolve(
-        this.provider.hangupCall({ callId, providerCallId: callSid, reason }),
-      ).catch((error: unknown) => {
-        console.warn(
-          `[voice-call] Failed to hang up realtime call ${callSid}: ${formatErrorMessage(error)}`,
-        );
-      });
-    };
 
     const sendString = (message: string): boolean => {
       if (ws.readyState !== WebSocket.OPEN) {
@@ -779,10 +822,9 @@ export class RealtimeCallHandler {
       silenceFrames: 12,
     });
     const interruptResponseOnInputAudio =
-      typeof this.providerConfig.interruptResponseOnInputAudio === "boolean"
-        ? this.providerConfig.interruptResponseOnInputAudio
+      typeof providerConfig.interruptResponseOnInputAudio === "boolean"
+        ? providerConfig.interruptResponseOnInputAudio
         : undefined;
-    const hadPredecessorOnAdmission = this.activeBridgesByCallId.has(callId);
     // Providers may close synchronously before createBridge returns; no consult can exist yet.
     const nativeConsultOwner: { current?: ActiveRealtimeVoiceBridge } = {};
     // Provisional ownership accepts callbacks fired during createBridge. Commit
@@ -790,9 +832,10 @@ export class RealtimeCallHandler {
     const userTranscriptAdoption = this.beginUserTranscriptOwnerAdoption(callId);
     const userTranscriptOwner = userTranscriptAdoption.owner;
     const bridgeParams: Parameters<typeof harness.createBridge>[0] = {
-      provider: this.realtimeProvider,
+      provider: realtimeProvider,
       cfg: this.coreConfig,
-      providerConfig: this.providerConfig,
+      agentId,
+      providerConfig,
       interruptResponseOnInputAudio,
       instructions,
       tools: this.config.tools,
@@ -1559,12 +1602,12 @@ export class RealtimeCallHandler {
     }
   }
 
-  private registerCallInManager(
+  private prepareCallInManager(
     callSid: string,
     callerMeta: Omit<PendingStreamToken, "expiry"> = {},
-  ): CallRegistration | null {
+  ): PreparedRealtimeCall | null {
     const timestamp = Date.now();
-    const baseFields = {
+    const baseFields: RealtimeCallBaseFields = {
       providerCallId: callSid,
       timestamp,
       direction: callerMeta.direction ?? "inbound",
@@ -1581,19 +1624,28 @@ export class RealtimeCallHandler {
     console.log(
       `[voice-call] Realtime call ${callRecord.callId} initial greeting ${initialGreeting ? "queued" : "absent"}`,
     );
+    return { callRecord, baseFields, initialGreeting };
+  }
+
+  private admitCallInManager(
+    preparedCall: PreparedRealtimeCall,
+    registration: ReturnType<ResolveRealtimeCallRegistration>,
+  ): CallRegistration {
+    const { callRecord, baseFields, initialGreeting } = preparedCall;
     if (callRecord.metadata) {
       delete callRecord.metadata.initialMessage;
     }
 
     this.manager.processEvent({
-      id: `realtime-answered-${callSid}`,
+      id: `realtime-answered-${baseFields.providerCallId}`,
       callId: callRecord.callId,
       type: "call.answered",
       ...baseFields,
     });
 
-    const instructions = this.resolveInstructions?.(callRecord) ?? this.config.instructions;
+    const instructions = registration.instructions;
     return {
+      ...registration,
       callId: callRecord.callId,
       instructions,
       initialGreetingInstructions: buildGreetingInstructions(instructions, initialGreeting),
