@@ -34,7 +34,7 @@ export function filterGoogleChatRemoteMediaUrls(mediaUrls: readonly string[]): s
   });
 }
 
-export function validateGoogleChatRemoteMediaUrls(
+function validateGoogleChatRemoteMediaUrls(
   mediaUrls: readonly string[],
   options?: { hasLocalMedia?: boolean },
 ): string[] {
