@@ -215,6 +215,7 @@ data class GatewayHelloSummary(
   val authRole: String? = null,
   val authScopes: List<String> = emptyList(),
   val methods: Set<String> = emptySet(),
+  val capabilities: Set<String> = emptySet(),
 )
 
 data class GatewayUpdateAvailableSummary(
@@ -1512,12 +1513,19 @@ class GatewaySession(
       val server = obj["server"].asObjectOrNull()
       val serverName = server?.get("host").asStringOrNull()
       val serverVersion = server?.get("version").asStringOrNull()
+      val features = obj["features"].asObjectOrNull()
       val methods =
-        obj["features"]
-          .asObjectOrNull()
+        features
           ?.get("methods")
           .asArrayOrNull()
           ?.mapNotNull { it.asStringOrNull()?.trim()?.takeIf { method -> method.isNotEmpty() } }
+          ?.toSet()
+          .orEmpty()
+      val capabilities =
+        features
+          ?.get("capabilities")
+          .asArrayOrNull()
+          ?.mapNotNull { it.asStringOrNull()?.trim()?.takeIf { capability -> capability.isNotEmpty() } }
           ?.toSet()
           .orEmpty()
       val authObj = obj["auth"].asObjectOrNull()
@@ -1578,6 +1586,7 @@ class GatewaySession(
             authRole = authRole,
             authScopes = authScopes,
             methods = methods,
+            capabilities = capabilities,
           ),
       )
     }

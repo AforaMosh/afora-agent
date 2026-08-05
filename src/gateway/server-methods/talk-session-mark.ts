@@ -1,11 +1,7 @@
-import {
-  ErrorCodes,
-  errorShape,
-  validateTalkSessionAcknowledgeMarkParams,
-} from "../../../packages/gateway-protocol/src/index.js";
+import { validateTalkSessionAcknowledgeMarkParams } from "../../../packages/gateway-protocol/src/index.js";
 import { acknowledgeTalkRealtimeRelayMark } from "../talk-realtime-relay.js";
 import { getUnifiedTalkSession, requireUnifiedTalkSessionConn } from "../talk-session-registry.js";
-import { formatForLog } from "../ws-log.js";
+import { respondInvalidRequest, respondOk, respondUnavailable } from "./talk-session-response.js";
 import type { GatewayRequestHandler } from "./types.js";
 import { assertValidParams } from "./validation.js";
 
@@ -23,14 +19,7 @@ export const acknowledgeTalkSessionMark: GatewayRequestHandler = ({ params, resp
   try {
     const session = getUnifiedTalkSession(params.sessionId);
     if (session.kind !== "realtime-relay") {
-      respond(
-        false,
-        undefined,
-        errorShape(
-          ErrorCodes.INVALID_REQUEST,
-          "talk.session.acknowledgeMark requires realtime relay",
-        ),
-      );
+      respondInvalidRequest(respond, "talk.session.acknowledgeMark requires realtime relay");
       return;
     }
     acknowledgeTalkRealtimeRelayMark({
@@ -38,17 +27,8 @@ export const acknowledgeTalkSessionMark: GatewayRequestHandler = ({ params, resp
       connId: requireUnifiedTalkSessionConn(session, client?.connId),
       markName: params.markName,
     });
-    respond(true, { ok: true }, undefined);
+    respondOk(respond);
   } catch (error) {
-    const message = formatForLog(error);
-    respond(
-      false,
-      undefined,
-      errorShape(ErrorCodes.UNAVAILABLE, message, {
-        details: {
-          talkIssue: { code: "realtime_unavailable", message, phase: "request" },
-        },
-      }),
-    );
+    respondUnavailable(respond, error);
   }
 };

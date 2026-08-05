@@ -1493,6 +1493,7 @@ class OpenAIRealtimeVoiceBridge implements RealtimeVoiceBridge {
   }
 
   handleBargeIn(options?: RealtimeVoiceBargeInOptions): void {
+    const clearAudio = options?.onClearAudio ?? this.config.onClearAudio;
     const assistantItemId = this.lastAssistantItemId;
     const responseStartTimestamp = this.responseStartTimestamp;
     const force = options?.force === true;
@@ -1539,13 +1540,13 @@ class OpenAIRealtimeVoiceBridge implements RealtimeVoiceBridge {
         },
         `reason=barge-in audioEndMs=${audioEndMs}`,
       );
-      this.config.onClearAudio("barge-in");
+      clearAudio("barge-in");
       this.clearOutstandingMarks();
       this.lastAssistantItemId = null;
       this.responseStartTimestamp = null;
       return;
     }
-    this.config.onClearAudio("barge-in");
+    clearAudio("barge-in");
   }
 
   private handleCompletedResponse(

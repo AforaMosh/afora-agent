@@ -177,6 +177,7 @@ export function registerDefaultAuthTokenSuite(): void {
       expect(payload?.features?.capabilities).toContain(
         GATEWAY_SERVER_CAPS.SYSTEM_AGENT_SETUP_MODEL_REF,
       );
+      expect(payload?.features?.capabilities).toContain(GATEWAY_SERVER_CAPS.TALK_OUTPUT_GENERATION);
       expect(payload?.snapshot?.configPath).toBe(createConfigIO().configPath);
       expect(payload?.snapshot?.stateDir).toBe(STATE_DIR);
       expect(payload?.policy?.allowedSessionVisibilities).toEqual([

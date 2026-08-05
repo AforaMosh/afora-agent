@@ -1726,7 +1726,12 @@ describe("talk.session unified handlers", () => {
 
     const cancelRespond = vi.fn();
     await callTalkHandler("talk.session.cancelOutput", {
-      params: { sessionId: "relay-unified-1", turnId: "turn-1", reason: "barge-in" },
+      params: {
+        sessionId: "relay-unified-1",
+        turnId: "turn-1",
+        outputGeneration: 3,
+        reason: "barge-in",
+      },
       id: "3",
       respond: cancelRespond,
       context: {},
@@ -1735,9 +1740,28 @@ describe("talk.session unified handlers", () => {
       relaySessionId: "relay-unified-1",
       connId: "conn-1",
       turnId: "turn-1",
+      outputGeneration: 3,
       reason: "barge-in",
     });
     expect(mocks.cancelTalkRealtimeRelayTurn).not.toHaveBeenCalled();
+
+    const legacyCancelRespond = vi.fn();
+    await callTalkHandler("talk.session.cancelOutput", {
+      params: {
+        sessionId: "relay-unified-1",
+        turnId: "turn-1",
+        reason: "legacy-barge-in",
+      },
+      id: "3-legacy",
+      respond: legacyCancelRespond,
+      context: {},
+    });
+    const legacyCancelError = expectRespondError(legacyCancelRespond, {
+      code: ErrorCodes.INVALID_REQUEST,
+    });
+    expect(legacyCancelError.message).toContain("requires outputGeneration");
+    expect(legacyCancelError.message).toContain("upgrade the client");
+    expect(mocks.cancelTalkRealtimeRelayOutput).toHaveBeenCalledTimes(1);
 
     const markRespond = vi.fn();
     await callTalkHandler("talk.session.acknowledgeMark", {
