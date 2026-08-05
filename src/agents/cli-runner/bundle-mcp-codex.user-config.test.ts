@@ -393,28 +393,6 @@ describe("buildCodexUserMcpServersThreadConfigPatch", () => {
     expect(patch!.mcp_servers.two).toMatchObject({ command: "two" });
   });
 
-  it("projects only explicitly selected servers for a bounded scheduled turn", async () => {
-    const cfg = {
-      mcp: {
-        servers: {
-          captured: { transport: "stdio", command: "captured" },
-          addedLater: { transport: "stdio", command: "added-later" },
-        },
-      },
-    } as unknown as OpenClawConfig;
-
-    expect(buildCodexUserMcpServersThreadConfigPatch(cfg, { serverNames: ["captured"] })).toEqual({
-      mcp_servers: { captured: { command: "captured" } },
-    });
-    await expect(
-      buildCodexUserMcpServersThreadConfigPatchForRuntime(cfg, {
-        serverNames: ["captured"],
-      }),
-    ).resolves.toEqual({
-      mcp_servers: { captured: { command: "captured" } },
-    });
-  });
-
   it("projects auth-profile backed user MCP servers with a fresh bearer header at runtime", async () => {
     authMocks.loadAuthProfileStoreForSecretsRuntime.mockReturnValueOnce({
       version: 1,

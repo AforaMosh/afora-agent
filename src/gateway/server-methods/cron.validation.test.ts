@@ -298,6 +298,7 @@ function callerClient(
         kind: "agentRuntime",
         agentId,
         sessionKey: sessionKey ?? `agent:${agentId}:main`,
+        cronCreatorPolicy: { version: 1, codexNativeSurface: "inherit" },
         ...(accountId ? { turnSourceAccountId: accountId } : {}),
         ...(currentJobId
           ? {
@@ -762,39 +763,6 @@ describe("cron method validation", () => {
     );
   });
 
-  it("reports incomplete runtime authority only in full current-Codex job views", async () => {
-    setRuntimeConfig({
-      agents: {
-        defaults: {
-          model: { primary: "openai/gpt-5.5" },
-          models: {
-            "openai/gpt-5.5": { agentRuntime: { id: "codex" } },
-          },
-        },
-      },
-    });
-    const context = createCronContext(
-      createCronJob({
-        payload: {
-          kind: "agentTurn",
-          message: "hello",
-          toolsAllow: ["read"],
-          toolsAllowIsDefault: true,
-        },
-      }),
-    );
-
-    const full = await invokeCron("cron.list", {}, { context });
-    expect(JSON.stringify(full.respond.mock.calls[0]?.[1])).toContain(
-      '"runtimeAuthorityStatus":"incomplete"',
-    );
-
-    const compact = await invokeCron("cron.list", { compact: true }, { context });
-    expect(JSON.stringify(compact.respond.mock.calls[0]?.[1])).not.toContain(
-      "runtimeAuthorityStatus",
-    );
-  });
-
   it("filters operator command cron jobs from caller-scoped cron.list", async () => {
     const context = createCronContext([
       createCronJob({
@@ -941,89 +909,6 @@ describe("cron method validation", () => {
     expectCronSuccess(respond);
   });
 
-  it("accepts closed runtime authority only from an authenticated agent runtime", async () => {
-    const internalScheduledRuntimeAuthority = {
-      version: 1,
-      runtime: "codex",
-      openClawTools: ["read"],
-      apps: [],
-      userMcpServers: [{ source: "codex", serverName: "todoist", toolNames: ["list"] }],
-      pluginMcpServers: [],
-    };
-    const params = agentTurnCronParams({
-      internalScheduledRuntimeAuthority,
-      payload: {
-        kind: "agentTurn",
-        message: "hello",
-        toolsAllow: ["read"],
-        toolsAllowIsDefault: true,
-      },
-    });
-    const scoped = await invokeCronAdd(params, { client: callerClient("ops") });
-    expect(requireCronAddPayload(scoped.context)).not.toHaveProperty(
-      "internalScheduledRuntimeAuthority",
-    );
-    expect(scoped.context.cron.add.mock.calls[0]?.[1]).toMatchObject({
-      scheduledRuntimeAuthority: internalScheduledRuntimeAuthority,
-    });
-
-    const operator = await invokeCronAdd(params);
-    expect(operator.context.cron.add).not.toHaveBeenCalled();
-    expectResponseError(operator.respond, {
-      code: "INVALID_REQUEST",
-      messageIncludes: "scheduled runtime authority requires an authenticated agent runtime",
-    });
-  });
-
-  it("rejects ambient runtime authority paired with explicit finite caps", async () => {
-    const authority = {
-      version: 1,
-      runtime: "codex",
-      openClawTools: ["read"],
-      apps: [],
-      userMcpServers: [{ source: "codex", serverName: "memory", toolNames: ["read_graph"] }],
-      pluginMcpServers: [],
-    };
-    const add = await invokeCronAdd(
-      agentTurnCronParams({
-        internalScheduledRuntimeAuthority: authority,
-        payload: {
-          kind: "agentTurn",
-          message: "hello",
-          toolsAllow: ["read"],
-          toolsAllowIsDefault: false,
-        },
-      }),
-      { client: callerClient("ops") },
-    );
-    expect(add.context.cron.add).not.toHaveBeenCalled();
-    expectResponseError(add.respond, {
-      code: "INVALID_REQUEST",
-      messageIncludes: "default-derived finite tool cap",
-    });
-
-    const update = await invokeCronUpdate(
-      {
-        id: "cron-1",
-        patch: {
-          payload: {
-            kind: "agentTurn",
-            toolsAllow: ["read"],
-            toolsAllowIsDefault: false,
-          },
-        },
-        internalScheduledRuntimeAuthority: authority,
-      },
-      createCronJob({ id: "cron-1", agentId: "ops" }),
-      { client: callerClient("ops") },
-    );
-    expect(update.context.cron.update).not.toHaveBeenCalled();
-    expectResponseError(update.respond, {
-      code: "INVALID_REQUEST",
-      messageIncludes: "default-derived finite tool cap",
-    });
-  });
-
   it("defaults scoped cron.add ownership to the trusted caller when agentId is omitted", async () => {
     const { context, respond } = await invokeCronAdd(agentTurnCronParams(), {
       client: callerClient("ops"),
@@ -1033,6 +918,35 @@ describe("cron method validation", () => {
     expect(payload.agentId).toBe("ops");
     expect(payload).not.toHaveProperty("callerScope");
     expectCronSuccess(respond);
+  });
+
+  it("uses signed native provenance independently of a finite OpenClaw tool cap", async () => {
+    const { context, respond } = await invokeCronAdd(
+      agentTurnCronParams({
+        agentId: "ops",
+        payload: { kind: "agentTurn", message: "hello", toolsAllow: ["read"] },
+      }),
+      { client: callerClient("ops") },
+    );
+
+    expect(context.cron.add.mock.calls[0]?.[1]).toMatchObject({
+      scheduledNativePolicy: { version: 1, mode: "inherit" },
+    });
+    expectCronSuccess(respond);
+  });
+
+  it("rejects an agent-runtime authority mutation without signed native provenance", async () => {
+    const client = callerClient("ops");
+    delete client.internal?.agentRuntimeIdentity?.cronCreatorPolicy;
+    const { context, respond } = await invokeCronAdd(agentTurnCronParams({ agentId: "ops" }), {
+      client,
+    });
+
+    expect(context.cron.add).not.toHaveBeenCalled();
+    expectResponseError(respond, {
+      code: "INVALID_REQUEST",
+      messageIncludes: "signed native creator provenance",
+    });
   });
 
   it("rejects agent-runtime tool jobs without an explicit toolsAllow cap", async () => {
@@ -2019,6 +1933,37 @@ describe("cron method validation", () => {
         ownerSessionKey: "agent:ops:main",
         ownerAccountId: "default",
       },
+      scheduledNativePolicy: { version: 1, mode: "inherit" },
+    });
+    expectCronSuccess(respond);
+  });
+
+  it("passes signed native provenance when an existing tool job enters agent-turn execution", async () => {
+    const { context, respond } = await invokeCronUpdate(
+      {
+        id: "cron-1",
+        patch: { payload: { kind: "agentTurn", message: "continue" } },
+      },
+      createCronJob({
+        agentId: "ops",
+        owner: {
+          agentId: "ops",
+          sessionKey: "agent:ops:main",
+          accountId: "default",
+        },
+        payload: { kind: "script", script: "return true", toolsAllow: ["read"] },
+      }),
+      { client: callerClient("ops") },
+    );
+
+    expect(context.cron.updateWithPrecondition.mock.calls[0]?.[3]).toEqual({
+      scheduledToolPolicy: {
+        version: 1,
+        mode: "account",
+        ownerSessionKey: "agent:ops:main",
+        ownerAccountId: "default",
+      },
+      scheduledNativePolicy: { version: 1, mode: "inherit" },
     });
     expectCronSuccess(respond);
   });

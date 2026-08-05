@@ -211,6 +211,7 @@ export function applyJobPatch(
     CronScheduledPolicyInputs,
 ) {
   const previouslyUsedToolRuntime = cronJobUsesToolRuntime(job);
+  const previousPayloadKind = job.payload.kind;
   const explicitlyClearsToolsAllow = patch.payload?.toolsAllow === null;
   const previousScheduleKind = job.schedule.kind;
   if ("name" in patch) {
@@ -309,9 +310,10 @@ export function applyJobPatch(
     job,
     previouslyUsedToolRuntime,
     explicitlyMutatesToolsAllow:
-      patch.payload !== undefined && Object.hasOwn(patch.payload, "toolsAllow"),
+      (patch.payload !== undefined && Object.hasOwn(patch.payload, "toolsAllow")) ||
+      (previousPayloadKind !== "agentTurn" && job.payload.kind === "agentTurn"),
     scheduledToolPolicy: opts?.scheduledToolPolicy,
-    scheduledRuntimeAuthority: opts?.scheduledRuntimeAuthority,
+    scheduledNativePolicy: opts?.scheduledNativePolicy,
   });
   if (patch.delivery) {
     const implicitMode = resolveCronDeliveryPlan(job).mode;
@@ -491,7 +493,7 @@ export function applyDeclarativeJobSpec(
     previouslyUsedToolRuntime,
     explicitlyMutatesToolsAllow: explicitlyDeclaresToolsAllow,
     scheduledToolPolicy: opts.scheduledToolPolicy,
-    scheduledRuntimeAuthority: opts.scheduledRuntimeAuthority,
+    scheduledNativePolicy: opts.scheduledNativePolicy,
   });
   const delivery = resolveInitialCronDelivery(input);
   if (delivery) {

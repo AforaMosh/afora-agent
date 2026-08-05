@@ -25,6 +25,7 @@ import {
   migrateLegacyAgentTurnCommandPayload,
   migrateLegacyCronPayload,
 } from "./payload-migration.js";
+import { createScheduledNativePolicyMigrationCollector } from "./scheduled-native-policy-migration.js";
 import { createScheduledToolPolicyMigrationCollector } from "./scheduled-tool-policy-migration.js";
 
 type CronStoreIssueKey =
@@ -42,6 +43,8 @@ type CronStoreIssueKey =
   | "legacyTopLevelDeliveryFields"
   | "legacyDeliveryMode"
   | "migratedScheduledToolPolicy"
+  | "migratedScheduledNativePolicy"
+  | "migratedScheduledNativePolicyDisabled"
   | "invalidSchedule"
   | "invalidPayload";
 
@@ -91,6 +94,20 @@ export function collectStoredCronCodexRuntimePolicyTargets(
   }
   return [...targets.values()];
 }
+
+type NormalizeCronStoreJobsResult = {
+  codexRuntimePolicyTargets: CronCodexRuntimePolicyTarget[];
+  issues: CronStoreIssues;
+  unresolvedAgentTurnCommandPromptJobs: string[];
+  unresolvedAgentTurnShellToolPromptJobs: string[];
+  legacyScheduledToolPolicyJobs: string[];
+  invalidScheduledToolPolicyJobs: string[];
+  legacyScheduledNativePolicyJobs: string[];
+  invalidScheduledNativePolicyJobs: string[];
+  jobs: Array<Record<string, unknown>>;
+  mutated: boolean;
+  removedJobs: Array<{ job: Record<string, unknown>; reason: string; sourceIndex: number }>;
+};
 
 function incrementIssue(issues: CronStoreIssues, key: CronStoreIssueKey) {
   issues[key] = (issues[key] ?? 0) + 1;
@@ -294,22 +311,19 @@ export function normalizeStoredCronJobs(
     migrateCodexModelRefs?: boolean;
     shouldMigrateCodexRuntimePolicyTarget?: (target: CronCodexRuntimePolicyTarget) => boolean;
   } = {},
-) {
+): NormalizeCronStoreJobsResult {
   const issues: CronStoreIssues = {};
   const unresolvedAgentTurnCommandPromptJobs: string[] = [];
   const unresolvedAgentTurnShellToolPromptJobs: string[] = [];
   const scheduledToolPolicyMigrations = createScheduledToolPolicyMigrationCollector();
+  const scheduledNativePolicyMigrations = createScheduledNativePolicyMigrationCollector();
   const unresolvedAgentTurnPromptJobsByKind = {
     commandPromptWithoutShellAccess: unresolvedAgentTurnCommandPromptJobs,
     shellToolPrompt: unresolvedAgentTurnShellToolPromptJobs,
   };
   let mutated = false;
   const keptJobs: Array<Record<string, unknown>> = [];
-  const removedJobs: Array<{
-    job: Record<string, unknown>;
-    reason: string;
-    sourceIndex: number;
-  }> = [];
+  const removedJobs: NormalizeCronStoreJobsResult["removedJobs"] = [];
   const codexRuntimePolicyTargets = new Map<string, CronCodexRuntimePolicyTarget>();
 
   for (const [sourceIndex, raw] of jobs.entries()) {
@@ -699,6 +713,13 @@ export function normalizeStoredCronJobs(
       trackIssue("migratedScheduledToolPolicy"),
     );
     mutated ||= scheduledPolicyMutated;
+    const scheduledNativePolicyMutated = scheduledNativePolicyMigrations.migrate(raw, (policy) => {
+      trackIssue("migratedScheduledNativePolicy");
+      if (policy?.mode === "disabled") {
+        trackIssue("migratedScheduledNativePolicyDisabled");
+      }
+    });
+    mutated ||= scheduledNativePolicyMutated;
 
     const invalidPersistedReason = getInvalidPersistedCronJobReason(raw);
     if (
@@ -733,6 +754,8 @@ export function normalizeStoredCronJobs(
     unresolvedAgentTurnShellToolPromptJobs,
     legacyScheduledToolPolicyJobs: scheduledToolPolicyMigrations.legacyJobs,
     invalidScheduledToolPolicyJobs: scheduledToolPolicyMigrations.invalidJobs,
+    legacyScheduledNativePolicyJobs: scheduledNativePolicyMigrations.legacyJobs,
+    invalidScheduledNativePolicyJobs: scheduledNativePolicyMigrations.invalidJobs,
     jobs,
     mutated,
     removedJobs,

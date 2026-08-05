@@ -1,5 +1,5 @@
-import type { ScheduledRuntimeAuthority } from "../../cron/scheduled-runtime-authority.js";
 // Cron tool type declarations shared with the cron tool implementation.
+import type { AgentRuntimeCronCreatorPolicy } from "../../gateway/agent-runtime-identity-token.js";
 import type { DeliveryContext } from "../../utils/delivery-context.shared.js";
 import type { callGatewayTool } from "./gateway.js";
 
@@ -21,8 +21,8 @@ export type CronToolOptions = {
    * need this cap persisted before the original session policy is lost.
    */
   creatorToolAllowlist?: CronCreatorToolAllowlistEntry[];
-  /** Captures the already-attested native runtime surface when cron actually delegates it. */
-  resolveCreatorRuntimeAuthority?: () => Promise<ScheduledRuntimeAuthority | undefined>;
+  /** Host-derived native authority; never accepted from model-authored arguments. */
+  cronCreatorPolicy?: AgentRuntimeCronCreatorPolicy;
   selfRemoveOnlyJobId?: string;
   runId?: string;
 };

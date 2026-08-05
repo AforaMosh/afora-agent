@@ -5515,8 +5515,6 @@ export const en: TranslationMap = {
       deliverySection: "Delivery",
       active: "Active",
       paused: "Paused",
-      incompleteRuntimeAuthority:
-        "Incomplete inherited app/MCP authority. Existing OpenClaw tools still run, but Codex apps or MCP tools may be unavailable until this job is reauthorized in place from its original authenticated Codex session.",
     },
     actions: {
       runNow: "Run now",

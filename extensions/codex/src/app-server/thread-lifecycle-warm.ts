@@ -17,7 +17,6 @@ import type {
   CodexAppServerContextEngineBinding,
   CodexAppServerThreadBinding,
 } from "./session-binding.js";
-import { resolveCodexThreadFinalConfigPatch } from "./thread-final-config.js";
 import { fingerprintCodexThreadConfig } from "./thread-fingerprints.js";
 import { CodexThreadBindingConflictError } from "./thread-lifecycle-errors.js";
 import type { CodexThreadLifecycleTimingTracker } from "./thread-lifecycle-timing.js";
@@ -49,7 +48,6 @@ type CodexWarmThreadReuseParams = {
   startModelProvider?: string;
   startModelSelection: ReturnType<typeof resolveCodexAppServerThreadModelSelection>;
   throwIfAborted: () => void;
-  userMcpServersConfigPatch?: JsonObject;
 };
 
 type CodexWarmThreadReuseResult = {
@@ -133,7 +131,6 @@ export async function tryReuseCodexLiveThread(
     startModelProvider,
     startModelSelection,
     throwIfAborted,
-    userMcpServersConfigPatch,
   } = options;
 
   if (
@@ -147,10 +144,13 @@ export async function tryReuseCodexLiveThread(
     return {};
   }
 
-  const prebuiltFinalConfigPatch = resolveCodexThreadFinalConfigPatch(params, {
+  const prebuiltFinalConfigPatch = params.buildFinalConfigPatch?.({
     action: "resume",
     binding,
-  });
+  }) ?? {
+    configPatch: params.finalConfigPatch,
+    nativeHookRelayGeneration: params.nativeHookRelayGeneration,
+  };
   const pluginAppsConfigPatch =
     params.pluginThreadConfig?.enabled && binding.pluginAppPolicyContext
       ? buildCodexPluginAppsConfigPatchFromPolicyContext(binding.pluginAppPolicyContext)
@@ -158,7 +158,6 @@ export async function tryReuseCodexLiveThread(
   const resumeAuthProfileId = params.params.authProfileId ?? binding.authProfileId;
   const resumeConfig = mergeCodexThreadConfigs(
     params.config,
-    userMcpServersConfigPatch,
     pluginAppsConfigPatch,
     prebuiltFinalConfigPatch.configPatch,
   );

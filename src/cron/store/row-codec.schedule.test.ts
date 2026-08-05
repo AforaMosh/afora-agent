@@ -44,14 +44,6 @@ describe("schedule column codec round-trip", () => {
           ownerSessionKey: "agent:main:discord:group:ops",
           ownerAccountId: "work",
         },
-        scheduledRuntimeAuthority: {
-          version: 1,
-          runtime: "codex",
-          openClawTools: ["write"],
-          apps: [],
-          userMcpServers: [],
-          pluginMcpServers: [],
-        },
       }),
     );
 
@@ -60,14 +52,6 @@ describe("schedule column codec round-trip", () => {
       mode: "account",
       ownerSessionKey: "agent:main:discord:group:ops",
       ownerAccountId: "work",
-    });
-    expect(job.scheduledRuntimeAuthority).toEqual({
-      version: 1,
-      runtime: "codex",
-      openClawTools: ["write"],
-      apps: [],
-      userMcpServers: [],
-      pluginMcpServers: [],
     });
   });
 

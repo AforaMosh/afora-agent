@@ -18,7 +18,6 @@ import {
 } from "../../../packages/gateway-protocol/src/index.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import { resolveCronJobConfigRevision } from "../../cron/config-revision.js";
-import { resolveConfiguredCronRuntimeAuthorityStatus } from "../../cron/configured-runtime-authority.js";
 import {
   assertValidCronAnnounceDelivery,
   assertValidCronCreateDelivery,
@@ -28,7 +27,7 @@ import { resolveCronDeliveryPreviews } from "../../cron/delivery-preview.js";
 import { assertCronDeliveryInputNonBlankFields } from "../../cron/delivery-target-validation.js";
 import { normalizeCronJobCreate, normalizeCronJobPatch } from "../../cron/normalize.js";
 import { toPublicCronJob } from "../../cron/public-job.js";
-import { normalizeScheduledRuntimeAuthority } from "../../cron/scheduled-runtime-authority.js";
+import type { CronScheduledNativePolicy } from "../../cron/scheduled-native-policy.js";
 import { CRON_JOB_SCRATCH_MAX_BYTES } from "../../cron/scratch-contract.js";
 import { applyJobPatch } from "../../cron/service/jobs.js";
 import {
@@ -62,6 +61,7 @@ import {
   cronJobMatchesCallerScope,
   cronPatchSessionRefsMatchCaller,
   readCronCallerScope,
+  resolveCronScheduledNativePolicyForCaller,
   resolveCronScheduledToolPolicyForCaller,
   type CronCallerScope,
 } from "./cron-caller-scope.js";
@@ -111,12 +111,10 @@ function publicCronScratch(
   };
 }
 
-function cronJobReadView(job: CronJob, params: { cfg: OpenClawConfig; defaultAgentId?: string }) {
+function cronJobReadView(job: CronJob) {
   const publicJob = toPublicCronJob(job);
-  const runtimeAuthorityStatus = resolveConfiguredCronRuntimeAuthorityStatus({ ...params, job });
   return {
     ...publicJob,
-    ...(runtimeAuthorityStatus ? { runtimeAuthorityStatus } : {}),
     configRevision: resolveCronJobConfigRevision(job),
     nextRunAtMs: job.state.nextRunAtMs,
     lastRunAtMs: job.state.lastRunAtMs,
@@ -284,14 +282,6 @@ function cronPatchTouchesToolRuntime(patch: CronJobPatch): boolean {
   return patch.payload !== undefined || Object.hasOwn(patch, "trigger");
 }
 
-function hasDefaultFiniteToolsAllow(job: Pick<CronJob, "payload">): boolean {
-  return (
-    job.payload.toolsAllowIsDefault === true &&
-    Array.isArray(job.payload.toolsAllow) &&
-    !job.payload.toolsAllow.includes("*")
-  );
-}
-
 function assertCronDoesNotTargetAgentHarness(input: {
   agentId?: string | null;
   sessionTarget?: string | null;
@@ -341,40 +331,6 @@ function respondInvalidCronParams(respond: RespondFn, method: string, reason: st
     undefined,
     errorShape(ErrorCodes.INVALID_REQUEST, `invalid ${method} params: ${reason}`),
   );
-}
-
-function readInternalScheduledRuntimeAuthority(params: {
-  input: unknown;
-  callerScope: CronCallerScope | undefined;
-  method: "cron.add" | "cron.update";
-  respond: RespondFn;
-}) {
-  const raw = (params.input as { internalScheduledRuntimeAuthority?: unknown } | null)
-    ?.internalScheduledRuntimeAuthority;
-  if (raw !== undefined && !params.callerScope) {
-    respondInvalidCronParams(
-      params.respond,
-      params.method,
-      "scheduled runtime authority requires an authenticated agent runtime",
-    );
-    return undefined;
-  }
-  const authority = normalizeScheduledRuntimeAuthority(raw);
-  if (raw !== undefined && !authority) {
-    respondInvalidCronParams(params.respond, params.method, "invalid scheduled runtime authority");
-    return undefined;
-  }
-  return {
-    authority,
-    publicInput:
-      raw === undefined || !params.input || typeof params.input !== "object"
-        ? params.input
-        : Object.fromEntries(
-            Object.entries(params.input).filter(
-              ([key]) => key !== "internalScheduledRuntimeAuthority",
-            ),
-          ),
-  };
 }
 
 function respondMissingCronJobId(respond: RespondFn, method: string): void {
@@ -518,11 +474,7 @@ export const cronHandlers: GatewayRequestHandlers = {
       respond(true, { ...page, jobs: page.jobs.map(compactCronListJob) }, undefined);
       return;
     }
-    const readViewParams = {
-      cfg: context.getRuntimeConfig(),
-      defaultAgentId: context.cron.getDefaultAgentId(),
-    };
-    const jobs = page.jobs.map((job) => cronJobReadView(job, readViewParams));
+    const jobs = page.jobs.map(cronJobReadView);
     if (p.includeDeliveryPreviews === false) {
       // Full job rows are the default because editors need their payloads. Delivery
       // previews are independently suppressible so list-only callers avoid per-job I/O
@@ -573,14 +525,7 @@ export const cronHandlers: GatewayRequestHandlers = {
       );
       return;
     }
-    respond(
-      true,
-      cronJobReadView(job, {
-        cfg: context.getRuntimeConfig(),
-        defaultAgentId: context.cron.getDefaultAgentId(),
-      }),
-      undefined,
-    );
+    respond(true, cronJobReadView(job), undefined);
   },
   "cron.scratch.get": async ({ params, respond, context, client }) => {
     if (!assertValidParams(params, validateCronScratchGetParams, "cron.scratch.get", respond)) {
@@ -669,20 +614,7 @@ export const cronHandlers: GatewayRequestHandlers = {
       declarationKey?: unknown;
       displayName?: unknown;
       enabled?: unknown;
-      internalScheduledRuntimeAuthority?: unknown;
     } | null;
-    const callerScope = readCronCallerScope(client);
-    const runtimeAuthorityInput = readInternalScheduledRuntimeAuthority({
-      input: params,
-      callerScope,
-      method: "cron.add",
-      respond,
-    });
-    if (!runtimeAuthorityInput) {
-      return;
-    }
-    const { authority: scheduledRuntimeAuthority, publicInput: publicParams } =
-      runtimeAuthorityInput;
     if (
       typeof rawParams?.declarationKey === "string" &&
       rawParams.declarationKey.trim().length === 0
@@ -709,7 +641,7 @@ export const cronHandlers: GatewayRequestHandlers = {
     try {
       assertCronDeliveryInputNonBlankFields((params as { delivery?: unknown } | null)?.delivery);
       normalized =
-        normalizeCronJobCreate(publicParams, {
+        normalizeCronJobCreate(params, {
           sessionContext: { sessionKey },
         }) ?? params;
     } catch (err) {
@@ -727,6 +659,7 @@ export const cronHandlers: GatewayRequestHandlers = {
     if (!assertValidParams(candidate, validateCronAddParams, "cron.add", respond)) {
       return;
     }
+    const callerScope = readCronCallerScope(client);
     const jobCreate = applyCronCreateCallerScopeDefault(candidate as CronJobCreate, callerScope);
     const cfg = context.getRuntimeConfig();
     try {
@@ -753,15 +686,17 @@ export const cronHandlers: GatewayRequestHandlers = {
       );
       return;
     }
-    if (scheduledRuntimeAuthority && !hasDefaultFiniteToolsAllow(jobCreate)) {
-      // Ambient app/MCP authority belongs only to creator-derived caps. Keep
-      // explicit finite lists OpenClaw-only even if a client injects an envelope.
-      respondInvalidCronParams(
-        respond,
-        "cron.add",
-        "scheduled runtime authority requires a default-derived finite tool cap",
-      );
-      return;
+    let scheduledNativePolicy: CronScheduledNativePolicy | undefined;
+    if (cronJobUsesToolRuntime(jobCreate)) {
+      try {
+        scheduledNativePolicy = resolveCronScheduledNativePolicyForCaller({
+          callerScope,
+          toolsAllow: jobCreate.payload.toolsAllow,
+        });
+      } catch (err) {
+        respondInvalidCronParams(respond, "cron.add", formatErrorMessage(err));
+        return;
+      }
     }
     const timestampValidation = validateScheduleTimestamp(jobCreate.schedule);
     if (!timestampValidation.ok) {
@@ -799,7 +734,7 @@ export const cronHandlers: GatewayRequestHandlers = {
         ...(cronJobUsesToolRuntime(jobCreate)
           ? {
               scheduledToolPolicy: resolveCronScheduledToolPolicyForCaller(callerScope),
-              ...(scheduledRuntimeAuthority ? { scheduledRuntimeAuthority } : {}),
+              scheduledNativePolicy,
             }
           : {}),
       });
@@ -833,34 +768,16 @@ export const cronHandlers: GatewayRequestHandlers = {
         ? {
             created: result.created,
             ...(result.updated === undefined ? {} : { updated: result.updated }),
-            job: cronJobReadView(job, {
-              cfg: context.getRuntimeConfig(),
-              defaultAgentId: context.cron.getDefaultAgentId(),
-            }),
+            job: cronJobReadView(job),
           }
-        : cronJobReadView(job, {
-            cfg: context.getRuntimeConfig(),
-            defaultAgentId: context.cron.getDefaultAgentId(),
-          }),
+        : cronJobReadView(job),
       undefined,
     );
   },
   "cron.update": async ({ params, respond, context, client }) => {
-    const callerScope = readCronCallerScope(client);
-    const runtimeAuthorityInput = readInternalScheduledRuntimeAuthority({
-      input: params,
-      callerScope,
-      method: "cron.update",
-      respond,
-    });
-    if (!runtimeAuthorityInput) {
-      return;
-    }
-    const { authority: scheduledRuntimeAuthority, publicInput: publicParams } =
-      runtimeAuthorityInput;
     let normalizedPatch: ReturnType<typeof normalizeCronJobPatch>;
     try {
-      const rawPatch = (publicParams as { patch?: unknown } | null)?.patch;
+      const rawPatch = (params as { patch?: unknown } | null)?.patch;
       const rawDisplayName =
         rawPatch && typeof rawPatch === "object"
           ? (rawPatch as { displayName?: unknown }).displayName
@@ -886,9 +803,9 @@ export const cronHandlers: GatewayRequestHandlers = {
       return;
     }
     const candidate =
-      normalizedPatch && typeof publicParams === "object" && publicParams !== null
-        ? { ...publicParams, patch: normalizedPatch }
-        : publicParams;
+      normalizedPatch && typeof params === "object" && params !== null
+        ? { ...params, patch: normalizedPatch }
+        : params;
     if (!assertValidParams(candidate, validateCronUpdateParams, "cron.update", respond)) {
       return;
     }
@@ -898,6 +815,7 @@ export const cronHandlers: GatewayRequestHandlers = {
       patch: Record<string, unknown>;
       expectedConfigRevision?: string;
     };
+    const callerScope = readCronCallerScope(client);
     const jobId = resolveCronJobId(p);
     if (!jobId) {
       respond(
@@ -929,20 +847,28 @@ export const cronHandlers: GatewayRequestHandlers = {
       respondInvalidCronParams(respond, "cron.update", "session target outside caller scope");
       return;
     }
-    if (
-      scheduledRuntimeAuthority &&
-      (patch.payload?.toolsAllowIsDefault !== true ||
-        !Array.isArray(patch.payload.toolsAllow) ||
-        patch.payload.toolsAllow.includes("*"))
-    ) {
-      // The planner's false marker deliberately clears default provenance;
-      // callers cannot pair an explicit finite cap with ambient authority.
-      respondInvalidCronParams(
-        respond,
-        "cron.update",
-        "scheduled runtime authority requires a default-derived finite tool cap",
-      );
-      return;
+    const explicitlyMutatesToolsAllow =
+      patch.payload !== undefined && Object.hasOwn(patch.payload, "toolsAllow");
+    const entersAgentTurn =
+      patch.payload?.kind === "agentTurn" && currentJob.payload.kind !== "agentTurn";
+    const reauthorizesNativePolicy = explicitlyMutatesToolsAllow || entersAgentTurn;
+    let scheduledNativePolicy: CronScheduledNativePolicy | undefined;
+    if (reauthorizesNativePolicy) {
+      try {
+        const prospective = await assertValidCronUpdatePatch({
+          cfg,
+          defaultAgentId: context.cron.getDefaultAgentId(),
+          currentJob,
+          patch,
+        });
+        scheduledNativePolicy = resolveCronScheduledNativePolicyForCaller({
+          callerScope,
+          toolsAllow: prospective.payload.toolsAllow,
+        });
+      } catch (err) {
+        respondInvalidCronParams(respond, "cron.update", formatErrorMessage(err));
+        return;
+      }
     }
     if (patch.schedule) {
       const timestampValidation = validateScheduleTimestamp(patch.schedule);
@@ -1021,7 +947,7 @@ export const cronHandlers: GatewayRequestHandlers = {
         cronPatchTouchesToolRuntime(patch)
           ? {
               scheduledToolPolicy: resolveCronScheduledToolPolicyForCaller(callerScope),
-              ...(scheduledRuntimeAuthority ? { scheduledRuntimeAuthority } : {}),
+              ...(reauthorizesNativePolicy ? { scheduledNativePolicy } : {}),
             }
           : undefined,
       );
@@ -1062,14 +988,7 @@ export const cronHandlers: GatewayRequestHandlers = {
       return;
     }
     context.logGateway.info("cron: job updated", { jobId });
-    respond(
-      true,
-      cronJobReadView(job, {
-        cfg: context.getRuntimeConfig(),
-        defaultAgentId: context.cron.getDefaultAgentId(),
-      }),
-      undefined,
-    );
+    respond(true, cronJobReadView(job), undefined);
   },
   "cron.remove": async ({ params, respond, context, client }) => {
     if (!assertValidParams(params, validateCronRemoveParams, "cron.remove", respond)) {

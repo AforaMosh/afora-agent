@@ -3,13 +3,19 @@ type LooseRecord = Record<string, unknown>;
 
 /** Builds a loose cron job fixture for isolated-agent unit tests. */
 export function makeIsolatedAgentJobFixture(overrides?: LooseRecord) {
+  const payload = { kind: "agentTurn", message: "test" };
   return {
     id: "test-job",
     name: "Test Job",
     schedule: { kind: "cron", expr: "0 9 * * *", tz: "UTC" },
     sessionTarget: "isolated",
-    payload: { kind: "agentTurn", message: "test" },
+    scheduledNativePolicy: { version: 1, mode: "inherit" },
     ...overrides,
+    payload: {
+      toolsAllow: ["*"],
+      toolsAllowIsDefault: true,
+      ...(overrides?.payload ? (overrides.payload as LooseRecord) : payload),
+    },
   } as never;
 }
 

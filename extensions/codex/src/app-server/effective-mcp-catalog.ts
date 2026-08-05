@@ -1,21 +1,15 @@
 import type { AgentHarness } from "openclaw/plugin-sdk/agent-harness";
 import {
   assignMcpCatalogSafeServerNames,
-  type EmbeddedRunAttemptParams,
   type McpToolCatalog,
 } from "openclaw/plugin-sdk/agent-harness-runtime";
-import { buildCodexUserMcpServersThreadConfigPatch } from "openclaw/plugin-sdk/codex-mcp-projection";
 import type { CodexAppServerClient } from "./client.js";
-import type { PluginAppPolicyContext } from "./plugin-thread-config.js";
 import type { CodexMcpServerStatus } from "./protocol.js";
 import { sessionBindingIdentity, type CodexAppServerBindingStore } from "./session-binding.js";
 import { retainSharedCodexAppServerClientByInstanceId } from "./shared-client.js";
-import { readCodexInheritedMcpServerState } from "./thread-requests.js";
 
 const MCP_STATUS_PAGE_SIZE = 100;
 const MCP_STATUS_MAX_PAGES = 100;
-const CODEX_APPS_MCP_SERVER_NAME = "codex_apps";
-type ScheduledRuntimeAuthority = NonNullable<EmbeddedRunAttemptParams["scheduledRuntimeAuthority"]>;
 type AgentHarnessMcpCatalogParams = Parameters<NonNullable<AgentHarness["loadMcpToolCatalog"]>>[0];
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
@@ -180,78 +174,4 @@ export async function loadCodexEffectiveMcpCatalog(
   } finally {
     retained.release();
   }
-}
-
-/** Captures the exact already-attested Codex app/MCP surface without persisting credentials. */
-export async function captureCodexScheduledRuntimeAuthority(params: {
-  client: Pick<CodexAppServerClient, "request">;
-  threadId: string;
-  pluginAppPolicyContext?: PluginAppPolicyContext;
-  config: EmbeddedRunAttemptParams["config"];
-  agentId: string;
-  cwd: string;
-  toolOverrides: EmbeddedRunAttemptParams["toolOverrides"];
-  openClawTools: readonly string[];
-}): Promise<ScheduledRuntimeAuthority> {
-  const projectedOpenClawMcp = buildCodexUserMcpServersThreadConfigPatch(params.config, {
-    agentId: params.agentId,
-    toolOverrides: params.toolOverrides,
-  });
-  const openClawMcpServerNames = new Set(Object.keys(projectedOpenClawMcp?.mcp_servers ?? {}));
-  const nativeMcpState = await readCodexInheritedMcpServerState(params.client, params.cwd);
-  const ambiguousServerNames = [...openClawMcpServerNames]
-    .filter((serverName) => nativeMcpState.all.includes(serverName))
-    .toSorted();
-  if (ambiguousServerNames.length > 0) {
-    throw new Error(
-      `Cannot capture scheduled MCP authority because OpenClaw and Codex both define: ${ambiguousServerNames.join(", ")}. Rename one server, then retry.`,
-    );
-  }
-  const statuses = await listCodexMcpServerStatuses(params.client, params.threadId);
-  const policyApps = params.pluginAppPolicyContext?.apps ?? {};
-  const pluginByServer = new Map<string, string>();
-  for (const policy of Object.values(policyApps)) {
-    if (policy.source === "account") {
-      continue;
-    }
-    for (const serverName of policy.mcpServerNames) {
-      pluginByServer.set(serverName, policy.configKey);
-    }
-  }
-  const userMcpServers: ScheduledRuntimeAuthority["userMcpServers"] = [];
-  const pluginMcpServers: ScheduledRuntimeAuthority["pluginMcpServers"] = [];
-  for (const status of statuses.toSorted((left, right) => left.name.localeCompare(right.name))) {
-    const entries = Object.entries(status.tools).toSorted(([left], [right]) =>
-      left.localeCompare(right),
-    );
-    // Apps are captured through their policy ids, never as an ambient MCP server.
-    if (status.name === CODEX_APPS_MCP_SERVER_NAME) {
-      continue;
-    }
-    const toolNames = entries.map(([toolName]) => toolName);
-    if (toolNames.length === 0) {
-      continue;
-    }
-    const pluginId = pluginByServer.get(status.name);
-    if (pluginId) {
-      pluginMcpServers.push({ pluginId, serverName: status.name, toolNames });
-    } else if (openClawMcpServerNames.has(status.name)) {
-      userMcpServers.push({ source: "openclaw", serverName: status.name, toolNames });
-    } else if (nativeMcpState.all.includes(status.name)) {
-      userMcpServers.push({ source: "codex", serverName: status.name, toolNames });
-    }
-  }
-  return {
-    version: 1,
-    runtime: "codex",
-    openClawTools: [...params.openClawTools],
-    apps: Object.entries(policyApps).map(([appId, policy]) => ({
-      appId,
-      allowDestructiveActions: policy.allowDestructiveActions,
-      allowOpenWorld: true,
-      approvalMode: policy.destructiveApprovalMode ?? "deny",
-    })),
-    userMcpServers,
-    pluginMcpServers,
-  };
 }

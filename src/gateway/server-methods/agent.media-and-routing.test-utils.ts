@@ -1432,21 +1432,6 @@ describe("gateway agent handler", () => {
         basePersisted: true,
         toolsAllow: ["image_generate", "write"],
         toolsAllowIsDefault: true,
-        scheduledRuntimeAuthority: {
-          version: 1,
-          runtime: "codex",
-          openClawTools: ["image_generate", "write"],
-          apps: [
-            {
-              appId: "todoist",
-              allowDestructiveActions: false,
-              allowOpenWorld: true,
-              approvalMode: "ask",
-            },
-          ],
-          userMcpServers: [],
-          pluginMcpServers: [],
-        },
         cliSessionBindingFacts: {
           sourceReplyDeliveryMode: "automatic" as const,
           requireExplicitMessageTarget: true,
@@ -1491,7 +1476,6 @@ describe("gateway agent handler", () => {
       sessionId?: string;
       toolsAllow?: string[];
       toolsAllowIsDefault?: boolean;
-      scheduledRuntimeAuthority?: unknown;
       requireExplicitMessageTarget?: boolean;
       sourceReplyDeliveryMode?: string;
       cliSessionBindingFacts?: {
@@ -1508,9 +1492,6 @@ describe("gateway agent handler", () => {
     expect(callArgs.bootstrapContextRunKind).toBe("cron");
     expect(callArgs.toolsAllow).toEqual(["image_generate", "write"]);
     expect(callArgs.toolsAllowIsDefault).toBe(true);
-    expect(callArgs.scheduledRuntimeAuthority).toEqual(
-      entry.cronRunContinuation?.scheduledRuntimeAuthority,
-    );
     expect(callArgs.requireExplicitMessageTarget).toBe(true);
     expect(callArgs.sourceReplyDeliveryMode).toBe("automatic");
     expect(callArgs.cliSessionBindingFacts).toEqual({

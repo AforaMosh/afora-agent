@@ -10,7 +10,6 @@ import {
   loadModelCatalogMock,
   loadRunCronIsolatedAgentTurn,
   resolveConfiguredModelRefMock,
-  resolveEffectiveAgentRuntimeMock,
   resetRunCronIsolatedAgentTurnHarness,
   resolveDeliveryTargetMock,
   runEmbeddedAgentMock,
@@ -59,6 +58,7 @@ function makeParamsWithToolsAllow(toolsAllow: string[]) {
         ownerSessionKey: "agent:main:whatsapp:group:team",
         ownerAccountId: "default",
       },
+      scheduledNativePolicy: { version: 1, mode: "disabled" },
       payload: {
         kind: "agentTurn",
         message: "check allowed tools",
@@ -81,6 +81,7 @@ function makeParamsWithDefaultToolsAllow(toolsAllow: string[]) {
         ownerSessionKey: "agent:main:whatsapp:group:team",
         ownerAccountId: "default",
       },
+      scheduledNativePolicy: { version: 1, mode: "disabled" },
       payload: {
         kind: "agentTurn",
         message: "check allowed tools",
@@ -100,6 +101,7 @@ function requireEmbeddedAgentCall(): {
     ownerSessionKey: string;
     ownerAccountId: string;
   };
+  scheduledNativePolicy?: { version: 1; mode: "inherit" | "disabled" };
 } {
   const call = runEmbeddedAgentMock.mock.calls[0]?.[0] as
     | {
@@ -111,6 +113,7 @@ function requireEmbeddedAgentCall(): {
           ownerSessionKey: string;
           ownerAccountId: string;
         };
+        scheduledNativePolicy?: { version: 1; mode: "inherit" | "disabled" };
       }
     | undefined;
   if (!call) {
@@ -150,16 +153,44 @@ describe("runCronIsolatedAgentTurn toolsAllow passthrough", () => {
   });
 
   it(
-    "keeps capless legacy runs on the ordinary policy path",
+    "fails closed for capless legacy runs without native provenance",
     { timeout: RUN_TOOLS_ALLOW_TIMEOUT_MS },
     async () => {
-      await runCronIsolatedAgentTurn(makeParams());
+      const result = await runCronIsolatedAgentTurn(makeParams());
 
-      const call = requireEmbeddedAgentCall();
-      expect(call.toolsAllow).toBeUndefined();
-      expect(call.scheduledToolPolicy).toBeUndefined();
+      expect(runEmbeddedAgentMock).not.toHaveBeenCalled();
+      expect(result.status).toBe("error");
+      expect(result.error).toContain("openclaw doctor --fix");
     },
   );
+
+  it("fails closed when only native provenance is present without a durable tool cap", async () => {
+    const params = makeParams();
+    (params.job as unknown as { scheduledNativePolicy?: unknown }).scheduledNativePolicy = {
+      version: 1,
+      mode: "inherit",
+    };
+
+    const result = await runCronIsolatedAgentTurn(params);
+
+    expect(result.status).toBe("error");
+    expect(result.error).toContain("Scheduled authority is missing or invalid");
+    expect(runEmbeddedAgentMock).not.toHaveBeenCalled();
+  });
+
+  it("fails closed for an invalid persisted scheduled tool policy", async () => {
+    const params = makeParamsWithToolsAllow(["cron"]);
+    (params.job as { scheduledToolPolicy?: unknown }).scheduledToolPolicy = {
+      version: 2,
+      mode: "account",
+    };
+
+    const result = await runCronIsolatedAgentTurn(params);
+
+    expect(result.status).toBe("error");
+    expect(result.error).toContain("Scheduled authority is missing or invalid");
+    expect(runEmbeddedAgentMock).not.toHaveBeenCalled();
+  });
 
   it(
     "keeps capped accountless legacy jobs on the ordinary sender-policy path",
@@ -167,6 +198,7 @@ describe("runCronIsolatedAgentTurn toolsAllow passthrough", () => {
     async () => {
       const params = makeParamsWithToolsAllow(["cron"]);
       delete (params.job as { owner?: { accountId?: string } }).owner?.accountId;
+      delete (params.job as { scheduledToolPolicy?: unknown }).scheduledToolPolicy;
 
       await runCronIsolatedAgentTurn(params);
 
@@ -192,6 +224,7 @@ describe("runCronIsolatedAgentTurn toolsAllow passthrough", () => {
         ownerSessionKey: "agent:main:whatsapp:group:team",
         ownerAccountId: "default",
       });
+      expect(call.scheduledNativePolicy).toEqual({ version: 1, mode: "disabled" });
     },
   );
 
@@ -288,33 +321,9 @@ describe("runCronIsolatedAgentTurn toolsAllow passthrough", () => {
   );
 
   it(
-    "warns when a legacy default-derived cap lacks inherited app/MCP authority",
+    "does not warn for default-derived toolsAllow that includes web_search",
     { timeout: RUN_TOOLS_ALLOW_TIMEOUT_MS },
     async () => {
-      resolveEffectiveAgentRuntimeMock.mockReturnValue("codex");
-      const result = await runCronIsolatedAgentTurn(
-        makeParamsWithDefaultToolsAllow(["web_search"]),
-      );
-
-      expect(result.status).toBe("ok");
-      expect(result.diagnostics).toMatchObject({
-        entries: [
-          expect.objectContaining({
-            source: "cron-preflight",
-            severity: "warn",
-            message: expect.stringContaining("predates inherited Codex app/MCP authority"),
-          }),
-        ],
-      });
-    },
-  );
-
-  it(
-    "does not warn for an OpenClaw legacy default-derived cap",
-    { timeout: RUN_TOOLS_ALLOW_TIMEOUT_MS },
-    async () => {
-      resolveEffectiveAgentRuntimeMock.mockReturnValue("openclaw");
-
       const result = await runCronIsolatedAgentTurn(
         makeParamsWithDefaultToolsAllow(["web_search"]),
       );

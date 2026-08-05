@@ -14,7 +14,7 @@ import { parseDeliveryInput } from "./delivery-field-schemas.js";
 import { normalizeCronCommandArgv, normalizeCronPayload } from "./normalize-payload.js";
 import { parseAbsoluteTimeMs } from "./parse.js";
 import { coerceFiniteScheduleNumber } from "./schedule-number.js";
-import { normalizeScheduledRuntimeAuthority } from "./scheduled-runtime-authority.js";
+import { normalizeCronScheduledNativePolicy } from "./scheduled-native-policy.js";
 import { normalizeCronScheduledToolPolicy } from "./scheduled-tool-policy.js";
 import { inferCronJobName } from "./service/normalize.js";
 import {
@@ -396,14 +396,12 @@ export function normalizeCronJobInput(
     }
   }
 
-  if ("scheduledRuntimeAuthority" in base) {
-    const scheduledRuntimeAuthority = normalizeScheduledRuntimeAuthority(
-      base.scheduledRuntimeAuthority,
-    );
-    if (scheduledRuntimeAuthority) {
-      next.scheduledRuntimeAuthority = scheduledRuntimeAuthority;
+  if ("scheduledNativePolicy" in base) {
+    const scheduledNativePolicy = normalizeCronScheduledNativePolicy(base.scheduledNativePolicy);
+    if (scheduledNativePolicy) {
+      next.scheduledNativePolicy = scheduledNativePolicy;
     } else {
-      delete next.scheduledRuntimeAuthority;
+      delete next.scheduledNativePolicy;
     }
   }
 

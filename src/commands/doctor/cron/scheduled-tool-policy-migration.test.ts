@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  formatIncompleteScheduledRuntimeAuthorityAdvisory,
-  formatScheduledToolPolicyAdvisory,
-} from "./repair-plan.js";
+import { formatScheduledToolPolicyAdvisory } from "./repair-plan.js";
 import { normalizeStoredCronJobs } from "./store-migration.js";
 
 function job(overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -126,11 +123,5 @@ describe("migrateScheduledToolPolicy", () => {
         invalidJobs: result.invalidScheduledToolPolicyJobs,
       }),
     ).toContain("openclaw cron edit <id> --tools");
-  });
-
-  it("formats the runtime authority recovery advisory from classified names", () => {
-    expect(formatIncompleteScheduledRuntimeAuthorityAdvisory(["Legacy"])).toContain(
-      "original authenticated Codex session",
-    );
   });
 });

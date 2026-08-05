@@ -107,21 +107,7 @@ function capCronJobToolsAllow(params: {
   params.payload.toolsAllow = creatorToolNames.filter((toolName) =>
     isToolAllowedByPolicyName(toolName, requestedPolicy),
   );
-  // Finite caller-provided lists are OpenClaw-only caps. They must not inherit
-  // ambient app/MCP authority until those runtimes have typed selectors.
   delete params.payload.toolsAllowIsDefault;
-}
-
-function markExplicitFiniteToolsAllowPatch(payload: Record<string, unknown>): void {
-  if (
-    Array.isArray(payload.toolsAllow) &&
-    !payload.toolsAllow.includes("*") &&
-    payload.toolsAllowIsDefault !== true
-  ) {
-    // `false` is an internal patch signal. The service consumes it by clearing
-    // stored default provenance instead of persisting the marker.
-    payload.toolsAllowIsDefault = false;
-  }
 }
 
 export function capCronJobToolsAllowOnCreate(
@@ -167,15 +153,11 @@ export function planCronJobUpdatePatch(params: {
       trigger: patch.trigger,
       creatorToolAllowlist: params.creatorToolAllowlist,
     });
-    markExplicitFiniteToolsAllowPatch(payload);
     return { kind: "ready", patch };
   }
 
   const needsStoredPayloadKind = payload !== undefined && explicitPayloadKind === undefined;
   if (!needsStoredPayloadKind && !params.creatorToolAllowlist) {
-    if (payload) {
-      markExplicitFiniteToolsAllowPatch(payload);
-    }
     return { kind: "ready", patch };
   }
   if (!params.currentJob) {
@@ -183,20 +165,30 @@ export function planCronJobUpdatePatch(params: {
   }
 
   const existingPayload = params.currentJob.payload;
+  const existingPayloadKind = readCronPayloadKind(existingPayload);
   const payloadKind = explicitPayloadKind ?? readCronPayloadKind(existingPayload);
   if (payload && payloadKind !== undefined) {
     payload.kind = payloadKind;
     patch.payload = payload;
   }
   if (!params.creatorToolAllowlist) {
-    if (payload) {
-      markExplicitFiniteToolsAllowPatch(payload);
-    }
     return { kind: "ready", patch };
   }
 
   const trigger = Object.hasOwn(patch, "trigger") ? patch.trigger : params.currentJob.trigger;
   const writesToolsAllow = payload !== undefined && Object.hasOwn(payload, "toolsAllow");
+  const entersToolPayload =
+    payloadKind !== existingPayloadKind &&
+    (payloadKind === "agentTurn" || payloadKind === "script");
+  const enablesTriggerScript =
+    Object.hasOwn(patch, "trigger") &&
+    hasCronTriggerScript(trigger) &&
+    !hasCronTriggerScript(params.currentJob.trigger);
+  if (!writesToolsAllow && !entersToolPayload && !enablesTriggerScript) {
+    // Same-kind message/model edits retain the stored cap and native policy.
+    // Synthesizing toolsAllow here would misclassify a routine edit as reauthorization.
+    return { kind: "ready", patch };
+  }
   if (
     payloadKind !== "agentTurn" &&
     payloadKind !== "script" &&
@@ -220,8 +212,5 @@ export function planCronJobUpdatePatch(params: {
         ? existingPayload.toolsAllow
         : undefined,
   });
-  if (writesToolsAllow) {
-    markExplicitFiniteToolsAllowPatch(nextPayload);
-  }
   return { kind: "ready", patch };
 }

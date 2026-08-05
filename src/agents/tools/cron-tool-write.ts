@@ -1,6 +1,5 @@
 // Agent cron-tool write safety and optimistic update orchestration.
 import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
-import type { ScheduledRuntimeAuthority } from "../../cron/scheduled-runtime-authority.js";
 import { isRecord } from "../../utils.js";
 import { planCronJobUpdatePatch } from "./cron-tool-creator-cap.js";
 import type { CronCreatorToolAllowlistEntry, GatewayToolCaller } from "./cron-tool.types.js";
@@ -32,7 +31,6 @@ async function prepareCronJobUpdateForGateway(params: {
   creatorToolAllowlist: readonly CronCreatorToolAllowlistEntry[] | undefined;
   gatewayOpts: GatewayCallOptions;
   callGateway: GatewayToolCaller;
-  resolveCreatorRuntimeAuthority?: () => Promise<ScheduledRuntimeAuthority | undefined>;
 }): Promise<{ patch: Record<string, unknown>; expectedConfigRevision?: string }> {
   const initialPlan = planCronJobUpdatePatch({
     patch: params.patch,
@@ -77,7 +75,6 @@ export async function updateCronJobFromAgentTool(params: {
   creatorToolAllowlist: readonly CronCreatorToolAllowlistEntry[] | undefined;
   gatewayOpts: GatewayCallOptions;
   callGateway: GatewayToolCaller;
-  resolveCreatorRuntimeAuthority?: () => Promise<ScheduledRuntimeAuthority | undefined>;
 }): Promise<unknown> {
   const callerIncludedPayloadPatch = isRecord(params.patch.payload);
   for (let attempt = 0; attempt < 2; attempt += 1) {
@@ -88,22 +85,11 @@ export async function updateCronJobFromAgentTool(params: {
       assertNoCronShellExecution(prepared.patch);
     }
     try {
-      // Explicit toolsAllow is an OpenClaw-only custom cap. Capturing ambient apps/MCP here
-      // would widen the caller's stated restriction without a typed selection contract.
-      const scheduledRuntimeAuthority =
-        isRecord(prepared.patch.payload) &&
-        Object.hasOwn(prepared.patch.payload, "toolsAllow") &&
-        prepared.patch.payload.toolsAllowIsDefault === true
-          ? await params.resolveCreatorRuntimeAuthority?.()
-          : undefined;
       return await params.callGateway("cron.update", params.gatewayOpts, {
         id: params.id,
         patch: prepared.patch,
         ...(prepared.expectedConfigRevision
           ? { expectedConfigRevision: prepared.expectedConfigRevision }
-          : {}),
-        ...(scheduledRuntimeAuthority
-          ? { internalScheduledRuntimeAuthority: scheduledRuntimeAuthority }
           : {}),
       });
     } catch (error) {

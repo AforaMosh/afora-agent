@@ -25,6 +25,7 @@ import { resolveCronSkillsSnapshot } from "../../skills/runtime/cron-snapshot.js
 import type { SkillSnapshot } from "../../skills/types.js";
 import type { CronDeliveryPlan } from "../delivery-plan.js";
 import { createCronRunDiagnosticsFromError } from "../run-diagnostics.js";
+import { normalizeCronScheduledNativePolicy } from "../scheduled-native-policy.js";
 import { resolveCronScheduledToolPolicy } from "../scheduled-tool-policy.js";
 import { isDetachedCronSessionTarget } from "../session-target.js";
 import type { CronJob, CronRunDiagnostics } from "../types.js";
@@ -33,6 +34,7 @@ import {
   resolveCronModelSelectionOwner,
   resolveCronThinkingSelection,
 } from "./model-selection.js";
+import { resolveScheduledOpenClawAuthPortabilityError } from "./run-auth-portability.js";
 import { buildCronAgentDefaultsConfig, resolveCronActiveRuntimeConfig } from "./run-config.js";
 import { buildCurrentConversationContextBlock } from "./run-current-context.js";
 import {
@@ -319,6 +321,38 @@ export async function prepareCronRunContext(params: {
       sessionId: currentRunSessionId(),
       sessionKey: runSessionKey,
     });
+    const scheduledNativePolicy = normalizeCronScheduledNativePolicy(
+      input.job.scheduledNativePolicy,
+    );
+    const scheduledToolsAllow =
+      input.job.payload.kind === "agentTurn" &&
+      Array.isArray(input.job.payload.toolsAllow) &&
+      input.job.payload.toolsAllow.every((toolName) => typeof toolName === "string")
+        ? input.job.payload.toolsAllow
+        : undefined;
+    const scheduledToolPolicy = resolveCronScheduledToolPolicy({
+      toolsAllow: scheduledToolsAllow,
+      scheduledToolPolicy: input.job.scheduledToolPolicy,
+      owner: input.job.owner,
+    });
+    const invalidScheduledToolPolicy =
+      input.job.scheduledToolPolicy !== undefined && scheduledToolPolicy === undefined;
+    if (
+      input.job.payload.kind === "agentTurn" &&
+      (!scheduledToolsAllow || !scheduledNativePolicy || invalidScheduledToolPolicy)
+    ) {
+      const error =
+        "Scheduled authority is missing or invalid. Run `openclaw doctor --fix`, then explicitly reauthorize this automation from an authenticated agent session.";
+      sessionWorkAdmission.release();
+      return {
+        ok: false,
+        result: withRunSession({
+          status: "error",
+          error,
+          diagnostics: createCronRunDiagnosticsFromError("cron-preflight", error),
+        }),
+      };
+    }
     if (!cronSession.sessionEntry.label?.trim() && baseSessionKey.startsWith("cron:")) {
       const labelSuffix =
         typeof input.job.name === "string" && input.job.name.trim()
@@ -441,14 +475,17 @@ export async function prepareCronRunContext(params: {
       hookThinking: isGmailHook ? runtimeCfg.hooks?.gmail?.thinking : undefined,
       sessionThinking: cronSession.sessionEntry.thinkingLevel,
     });
-    const effectiveAgentRuntime = resolveEffectiveAgentRuntime({
-      cfg: cfgWithAgentDefaults,
-      provider,
-      modelId: model,
-      agentId: modelOwner.agentId,
-      sessionKey: agentSessionKey,
-      sessionEntry: cronSession.sessionEntry,
-    });
+    const effectiveAgentRuntime =
+      scheduledNativePolicy?.mode === "disabled"
+        ? "openclaw"
+        : resolveEffectiveAgentRuntime({
+            cfg: cfgWithAgentDefaults,
+            provider,
+            modelId: model,
+            agentId: modelOwner.agentId,
+            sessionKey: agentSessionKey,
+            sessionEntry: cronSession.sessionEntry,
+          });
     let requestedThinkLevel = thinkingSelection.requestedThinkLevel;
     if (!requestedThinkLevel) {
       requestedThinkLevel = resolveThinkingDefault({
@@ -504,7 +541,6 @@ export async function prepareCronRunContext(params: {
     const preflightDiagnostics = await createCronToolsAllowPreflightDiagnostics({
       cfg: cfgWithAgentDefaults,
       jobId: input.job.id,
-      agentRuntime: effectiveAgentRuntime,
       provider,
       model,
       modelApi,
@@ -512,7 +548,6 @@ export async function prepareCronRunContext(params: {
       agentDir: modelOwner.agentDir,
       sessionKey: agentSessionKey,
       agentPayload,
-      hasRuntimeAuthority: input.job.scheduledRuntimeAuthority !== undefined,
     });
     const { deliveryPlan, deliveryRequested, resolvedDelivery, sourceDelivery } =
       await resolveCronDeliveryContext({
@@ -608,14 +643,13 @@ export async function prepareCronRunContext(params: {
     const hasSessionAuthProfileOverride = Boolean(
       cronSession.sessionEntry.authProfileOverride?.trim(),
     );
+    const authProfileRuntime = await loadCronAuthProfileRuntime();
     const authProfileId =
       !hasSessionAuthProfileOverride &&
       !hasConfiguredAuthProfiles(cfgWithAgentDefaults) &&
       !hasAnyAuthProfileStoreSource(agentDir)
         ? undefined
-        : await (
-            await loadCronAuthProfileRuntime()
-          ).resolveSessionAuthProfileOverride({
+        : await authProfileRuntime.resolveSessionAuthProfileOverride({
             // Auth profile resolution can mutate session state; pass the same
             // store and key that persistence will later write.
             cfg: cfgWithAgentDefaults,
@@ -632,6 +666,29 @@ export async function prepareCronRunContext(params: {
             storePath: cronSession.storePath,
             isNewSession: cronSession.isNewSession && input.job.sessionTarget !== "isolated",
           });
+    if (scheduledNativePolicy?.mode === "disabled" && authProfileId) {
+      const authPortabilityError = resolveScheduledOpenClawAuthPortabilityError({
+        provider,
+        profileId: authProfileId,
+        credential: authProfileRuntime.ensureAuthProfileStore(agentDir, {
+          config: cfgWithAgentDefaults,
+          readOnly: true,
+        }).profiles[authProfileId],
+      });
+      if (authPortabilityError) {
+        sessionWorkAdmission.release();
+        return {
+          ok: false,
+          result: withRunSession({
+            status: "error",
+            error: authPortabilityError,
+            diagnostics: createCronRunDiagnosticsFromError("model-preflight", authPortabilityError),
+            provider,
+            model,
+          }),
+        };
+      }
+    }
     const liveSelection: CronLiveSelection = {
       provider,
       model,
@@ -654,11 +711,14 @@ export async function prepareCronRunContext(params: {
       workspaceDir,
       allowGatewaySubagentBinding: true,
       selections: runtimePluginCandidates.map((candidate) => {
-        const runtime = resolveSessionRuntimeOverrideForProvider({
-          provider: candidate.provider,
-          entry: cronSession.sessionEntry,
-          cfg: cfgWithAgentDefaults,
-        });
+        const runtime =
+          scheduledNativePolicy?.mode === "disabled"
+            ? "openclaw"
+            : resolveSessionRuntimeOverrideForProvider({
+                provider: candidate.provider,
+                entry: cronSession.sessionEntry,
+                cfg: cfgWithAgentDefaults,
+              });
         return runtime
           ? { provider: candidate.provider, modelId: candidate.model, runtime, agentId }
           : { provider: candidate.provider, modelId: candidate.model, agentId };
@@ -676,7 +736,7 @@ export async function prepareCronRunContext(params: {
             scheduledToolPolicy: input.job.scheduledToolPolicy,
             owner: input.job.owner,
           }),
-          scheduledRuntimeAuthority: input.job.scheduledRuntimeAuthority,
+          scheduledNativePolicy,
           cliSessionBindingFacts: {
             sourceReplyDeliveryMode: sourceDelivery.sourceReplyDeliveryMode,
             requireExplicitMessageTarget: sourceDelivery.messageTool.requireExplicitTarget,

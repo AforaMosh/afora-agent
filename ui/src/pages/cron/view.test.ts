@@ -802,29 +802,6 @@ describe("cron view editor", () => {
     expect(container.querySelector('option[value="script"]')).toBeNull();
   });
 
-  it("surfaces only server-classified incomplete inherited app/MCP authority", () => {
-    const job = createJob("legacy-inherited", {
-      payload: {
-        kind: "agentTurn",
-        message: "run",
-        toolsAllow: ["read"],
-        toolsAllowIsDefault: true,
-      },
-    });
-    const inferredOnly = renderView({ jobs: [job], editingJobId: job.id });
-    expect(
-      inferredOnly.querySelector('[data-test-id="cron-runtime-authority-warning"]'),
-    ).toBeNull();
-
-    const classified = renderView({
-      jobs: [{ ...job, runtimeAuthorityStatus: "incomplete" }],
-      editingJobId: job.id,
-    });
-    expect(
-      classified.querySelector('[data-test-id="cron-runtime-authority-warning"]'),
-    ).not.toBeNull();
-  });
-
   it("highlights locked command payloads as shell and keeps heartbeat payloads plain", () => {
     const job = createJob("job-command", {
       name: "Backup",

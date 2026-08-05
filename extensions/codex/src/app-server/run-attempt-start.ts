@@ -37,7 +37,6 @@ export async function startCodexAttemptRuntime(resources: CodexAttemptResources)
     buildActiveRunAttemptParams,
     startupAuthAccountCacheKey,
     startupEnvApiKeyCacheKey,
-    bundleMcpThreadConfig,
     nativeToolSurfaceEnabled,
     nativeProviderWebSearchSupport,
     sandboxExecServerEnabled,
@@ -96,7 +95,6 @@ export async function startCodexAttemptRuntime(resources: CodexAttemptResources)
       webSearchAllowed: toolState.webSearchAllowed,
       developerInstructions: turnState.promptBuild.developerInstructions,
       buildFinalConfigPatch: buildNativeHookRelayFinalConfigPatch,
-      bundleMcpThreadConfig,
       nativeToolSurfaceEnabled,
       nativeProviderWebSearchSupport,
       sandboxExecServerEnabled,
@@ -120,7 +118,6 @@ export async function startCodexAttemptRuntime(resources: CodexAttemptResources)
         }),
     );
     state.thread = startupResult.thread;
-    attemptTools.setScheduledRuntimeAuthoritySource(state.client, state.thread);
     state.runtimeArtifact = startupResult.runtimeArtifact;
     state.turnRouter = startupResult.turnRouter;
     state.turnRoute = startupResult.turnRoute;

@@ -4180,27 +4180,6 @@ describe("CLI attempt execution", () => {
       authProfileIdSource: "user",
     });
   });
-
-  it("forwards scheduled runtime authority only into embedded attempts", async () => {
-    const scheduledRuntimeAuthority = {
-      version: 1 as const,
-      runtime: "codex" as const,
-      openClawTools: ["automations"],
-      apps: [],
-      userMcpServers: [
-        { source: "openclaw" as const, serverName: "memory", toolNames: ["read_graph"] },
-      ],
-      pluginMcpServers: [],
-    };
-
-    const embeddedArg = await runOpenClawEmbeddedAttemptForTest({
-      runId: "scheduled-runtime-authority",
-      opts: { scheduledRuntimeAuthority },
-    });
-
-    expect(embeddedArg.scheduledRuntimeAuthority).toBe(scheduledRuntimeAuthority);
-    expect(runCliAgentMock).not.toHaveBeenCalled();
-  });
 });
 
 describe("embedded attempt harness pinning", () => {
@@ -4319,6 +4298,66 @@ describe("embedded attempt harness pinning", () => {
       agentHarnessId: "codex",
       agentHarnessRuntimeOverride: "codex",
       modelSelectionLocked: true,
+    });
+  });
+
+  it("forces a creator-disabled scheduled continuation onto OpenClaw", async () => {
+    const sessionEntry: SessionEntry = {
+      sessionId: "scheduled-continuation",
+      updatedAt: Date.now(),
+      agentHarnessId: "codex",
+      agentRuntimeOverride: "codex",
+    };
+    runEmbeddedAgentMock.mockResolvedValueOnce({
+      meta: { durationMs: 1 },
+    } satisfies EmbeddedAgentRunResult);
+
+    await runAgentAttempt({
+      providerOverride: "anthropic",
+      originalProvider: "anthropic",
+      modelOverride: "claude-opus-4-7",
+      cfg: {
+        agents: {
+          defaults: {
+            models: {
+              "anthropic/claude-opus-4-7": { agentRuntime: { id: "claude-cli" } },
+            },
+          },
+        },
+      } as OpenClawConfig,
+      sessionEntry,
+      agentHarnessRuntimeOverride: "codex",
+      sessionId: sessionEntry.sessionId,
+      sessionKey: "agent:main:cron:scheduled-continuation",
+      sessionAgentId: "main",
+      sessionFile: path.join(tmpDir, "session.jsonl"),
+      workspaceDir: tmpDir,
+      body: "continue the scheduled task",
+      isFallbackRetry: false,
+      resolvedThinkLevel: "medium",
+      timeoutMs: 1_000,
+      runId: "run-scheduled-continuation",
+      opts: {
+        scheduledNativePolicy: { version: 1, mode: "disabled" },
+      } as Parameters<typeof runAgentAttempt>[0]["opts"],
+      runContext: {} as Parameters<typeof runAgentAttempt>[0]["runContext"],
+      spawnedBy: undefined,
+      messageChannel: undefined,
+      skillsSnapshot: undefined,
+      resolvedVerboseLevel: undefined,
+      agentDir: tmpDir,
+      onAgentEvent: vi.fn(),
+      authProfileProvider: "anthropic",
+      sessionHasHistory: true,
+    });
+
+    expect(runCliAgentMock).not.toHaveBeenCalled();
+    expectMockArgFields(runEmbeddedAgentMock, {
+      provider: "anthropic",
+      model: "claude-opus-4-7",
+      agentHarnessId: "openclaw",
+      agentHarnessRuntimeOverride: "openclaw",
+      scheduledNativePolicy: { version: 1, mode: "disabled" },
     });
   });
 

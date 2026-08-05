@@ -2,7 +2,6 @@
 // Keep heavyweight tool construction out of this module so harness imports can
 // register quickly inside gateway startup and Docker e2e runs.
 
-import { shouldLoadRequesterScopedMcpHarnessRuntime } from "../agents/agent-bundle-mcp-runtime-shared.js";
 import {
   mergeAgentRunAttemptTerminal,
   normalizeAgentRunAttemptTerminal,
@@ -384,22 +383,18 @@ export async function prepareHarnessNativeMcpAppPreview(params: {
  * Materialize requester-scoped MCP tools for a harness run (dynamic tools, not
  * harness-native MCP config). Lazy-loaded so harness plugins avoid the MCP manager graph.
  */
-export async function materializeRequesterScopedMcpToolsForHarnessRun(
+export async function materializeConfiguredMcpToolsForHarnessRun(
   params: Parameters<
-    typeof import("../agents/agent-bundle-mcp-harness.js").materializeRequesterScopedMcpToolsForHarnessRun
+    typeof import("../agents/agent-bundle-mcp-harness.js").materializeConfiguredMcpToolsForHarnessRun
   >[0],
 ): Promise<
   Awaited<
     ReturnType<
-      typeof import("../agents/agent-bundle-mcp-harness.js").materializeRequesterScopedMcpToolsForHarnessRun
+      typeof import("../agents/agent-bundle-mcp-harness.js").materializeConfiguredMcpToolsForHarnessRun
     >
   >
 > {
-  const shouldLoad = shouldLoadRequesterScopedMcpHarnessRuntime(params);
-  if (!shouldLoad) {
-    return undefined;
-  }
-  const { materializeRequesterScopedMcpToolsForHarnessRun: materialize } =
+  const { materializeConfiguredMcpToolsForHarnessRun: materialize } =
     await import("../agents/agent-bundle-mcp-harness.js");
   return materialize(params);
 }

@@ -47,48 +47,10 @@ describe("cron tool creator cap", () => {
     );
 
     expect(patch).toEqual({
-      payload: { kind: "agentTurn", toolsAllow: ["read"], toolsAllowIsDefault: false },
+      payload: { kind: "agentTurn", toolsAllow: ["read"] },
     });
     expect(input).toEqual({
       payload: { kind: "agentTurn", toolsAllow: ["read", "exec"] },
-    });
-  });
-
-  it("marks a same-list explicit update as non-default provenance", () => {
-    const patch = readReadyPatch(
-      planCronJobUpdatePatch({
-        patch: { payload: { toolsAllow: ["read", "cron"] } },
-        creatorToolAllowlist: ["read", "cron"],
-        currentJob: {
-          payload: {
-            kind: "agentTurn",
-            message: "work",
-            toolsAllow: ["read", "automations"],
-            toolsAllowIsDefault: true,
-          },
-        },
-      }),
-    );
-
-    expect(patch).toEqual({
-      payload: {
-        kind: "agentTurn",
-        toolsAllow: ["read", "automations"],
-        toolsAllowIsDefault: false,
-      },
-    });
-  });
-
-  it("marks explicit finite updates without a restricted creator surface", () => {
-    expect(
-      readReadyPatch(
-        planCronJobUpdatePatch({
-          patch: { payload: { kind: "agentTurn", toolsAllow: ["read"] } },
-          creatorToolAllowlist: undefined,
-        }),
-      ),
-    ).toEqual({
-      payload: { kind: "agentTurn", toolsAllow: ["read"], toolsAllowIsDefault: false },
     });
   });
 
@@ -110,7 +72,7 @@ describe("cron tool creator cap", () => {
     ).toEqual({ kind: "needs-current-job" });
   });
 
-  it("preserves explicit narrower caps and re-derives stored defaults", () => {
+  it("keeps same-kind payload edits routine without synthesizing policy fields", () => {
     const narrower = readReadyPatch(
       planCronJobUpdatePatch({
         patch: { payload: { message: "updated" } },
@@ -135,13 +97,23 @@ describe("cron tool creator cap", () => {
       }),
     );
 
-    expect(narrower).toEqual({
-      payload: { kind: "agentTurn", message: "updated", toolsAllow: ["read"] },
-    });
-    expect(storedDefault).toEqual({
+    expect(narrower).toEqual({ payload: { kind: "agentTurn", message: "updated" } });
+    expect(storedDefault).toEqual({ payload: { kind: "agentTurn", message: "updated" } });
+  });
+
+  it("caps a transition into an agent-turn payload", () => {
+    const patch = readReadyPatch(
+      planCronJobUpdatePatch({
+        patch: { payload: { kind: "agentTurn", message: "work" } },
+        creatorToolAllowlist: ["read", "cron"],
+        currentJob: { payload: { kind: "systemEvent", text: "wake" } },
+      }),
+    );
+
+    expect(patch).toEqual({
       payload: {
         kind: "agentTurn",
-        message: "updated",
+        message: "work",
         toolsAllow: ["read", "automations"],
         toolsAllowIsDefault: true,
       },

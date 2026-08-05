@@ -1,5 +1,6 @@
 /** Behavior tests for harness-facing requester-scoped MCP materialization. */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { getPluginToolMeta } from "../plugins/tools.js";
 import type { SessionMcpRuntime } from "./agent-bundle-mcp-types.js";
 
 const mocks = vi.hoisted(() => {
@@ -22,10 +23,7 @@ const mocks = vi.hoisted(() => {
   >();
   const runtimes = new Map<string, Runtime>();
   let resolveImpl:
-    | ((params: {
-        sessionId: string;
-        requesterSenderId?: string | null;
-      }) => Promise<Runtime | undefined>)
+    | ((params: { sessionId: string; requesterSenderId?: string | null }) => Promise<Runtime>)
     | undefined;
 
   return {
@@ -34,12 +32,12 @@ const mocks = vi.hoisted(() => {
     setResolveImpl(impl?: typeof resolveImpl) {
       resolveImpl = impl;
     },
-    getOrCreateRequesterScopedMcpRuntime: vi.fn(
+    getOrCreateSessionMcpRuntime: vi.fn(
       async (params: { sessionId: string; requesterSenderId?: string | null }) => {
         if (resolveImpl) {
           return resolveImpl(params);
         }
-        return undefined;
+        throw new Error("missing MCP runtime test implementation");
       },
     ),
     rememberAdvertisedScopedMcpCatalog: vi.fn(
@@ -60,15 +58,20 @@ vi.mock("./agent-bundle-mcp-runtime.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./agent-bundle-mcp-runtime.js")>();
   return {
     ...actual,
-    getOrCreateRequesterScopedMcpRuntime: mocks.getOrCreateRequesterScopedMcpRuntime,
+    getOrCreateSessionMcpRuntime: mocks.getOrCreateSessionMcpRuntime,
     rememberAdvertisedScopedMcpCatalog: mocks.rememberAdvertisedScopedMcpCatalog,
     getAdvertisedScopedMcpCatalog: mocks.getAdvertisedScopedMcpCatalog,
   };
 });
 
-import { materializeRequesterScopedMcpToolsForHarnessRun } from "./agent-bundle-mcp-harness.js";
+import { materializeConfiguredMcpToolsForHarnessRun } from "./agent-bundle-mcp-harness.js";
 
-function makeRuntime(params: { sessionId: string; requesterSenderId: string }): SessionMcpRuntime {
+function makeRuntime(params: {
+  sessionId: string;
+  requesterSenderId?: string;
+  empty?: boolean;
+  appOnly?: boolean;
+}): SessionMcpRuntime {
   const serverName = "user-mail";
   const catalog = {
     version: 1,
@@ -80,16 +83,19 @@ function makeRuntime(params: { sessionId: string; requesterSenderId: string }): 
         toolCount: 1,
       },
     },
-    tools: [
-      {
-        serverName,
-        safeServerName: serverName,
-        toolName: "inbox",
-        description: "read inbox",
-        inputSchema: { type: "object", properties: {} },
-        fallbackDescription: "read inbox",
-      },
-    ],
+    tools: params.empty
+      ? []
+      : [
+          {
+            serverName,
+            safeServerName: serverName,
+            toolName: "inbox",
+            description: "read inbox",
+            inputSchema: { type: "object", properties: {} },
+            fallbackDescription: "read inbox",
+            ...(params.appOnly ? { uiVisibility: ["app"] as const } : {}),
+          },
+        ],
   };
   let lastUsedAt = Date.now();
   let activeLeases = 0;
@@ -97,7 +103,9 @@ function makeRuntime(params: { sessionId: string; requesterSenderId: string }): 
     sessionId: params.sessionId,
     workspaceDir: "/workspace",
     configFingerprint: "fp",
-    requesterScope: { requesterSenderId: params.requesterSenderId },
+    ...(params.requesterSenderId
+      ? { requesterScope: { requesterSenderId: params.requesterSenderId } }
+      : {}),
     createdAt: Date.now(),
     get lastUsedAt() {
       return lastUsedAt;
@@ -125,7 +133,7 @@ function makeRuntime(params: { sessionId: string; requesterSenderId: string }): 
       content: [
         {
           type: "text",
-          text: `live:${toolName}:${params.requesterSenderId}`,
+          text: `live:${toolName}:${params.requesterSenderId ?? "static"}`,
         },
       ],
       isError: false,
@@ -136,7 +144,7 @@ function makeRuntime(params: { sessionId: string; requesterSenderId: string }): 
 
 beforeEach(() => {
   mocks.reset();
-  mocks.getOrCreateRequesterScopedMcpRuntime.mockClear();
+  mocks.getOrCreateSessionMcpRuntime.mockClear();
   mocks.rememberAdvertisedScopedMcpCatalog.mockClear();
   mocks.getAdvertisedScopedMcpCatalog.mockClear();
 });
@@ -145,10 +153,12 @@ afterEach(() => {
   mocks.reset();
 });
 
-describe("materializeRequesterScopedMcpToolsForHarnessRun", () => {
+describe("materializeConfiguredMcpToolsForHarnessRun", () => {
   it("returns undefined before any requester resolves", async () => {
-    mocks.setResolveImpl(async () => undefined);
-    const result = await materializeRequesterScopedMcpToolsForHarnessRun({
+    mocks.setResolveImpl(async (params) =>
+      makeRuntime({ sessionId: params.sessionId, empty: true }),
+    );
+    const result = await materializeConfiguredMcpToolsForHarnessRun({
       sessionId: "session-empty",
       workspaceDir: "/workspace",
       requesterSenderId: "guest",
@@ -157,11 +167,32 @@ describe("materializeRequesterScopedMcpToolsForHarnessRun", () => {
     expect(mocks.rememberAdvertisedScopedMcpCatalog).not.toHaveBeenCalled();
   });
 
+  it("materializes static MCP without requester identity and forwards overrides", async () => {
+    mocks.setResolveImpl(async (params) => makeRuntime({ sessionId: params.sessionId }));
+    const toolOverrides = { mcpServers: { "user-mail": true } };
+
+    const result = await materializeConfiguredMcpToolsForHarnessRun({
+      sessionId: "session-static",
+      workspaceDir: "/workspace",
+      toolOverrides,
+    });
+
+    expect(result?.tools.map((tool) => tool.name)).toEqual(["user-mail__inbox"]);
+    expect(getPluginToolMeta(result!.tools[0]!)?.pluginId).toBe("bundle-mcp");
+    expect(mocks.getOrCreateSessionMcpRuntime).toHaveBeenCalledWith(
+      expect.objectContaining({ toolOverrides }),
+    );
+    expect(mocks.rememberAdvertisedScopedMcpCatalog).not.toHaveBeenCalled();
+    const live = await result!.tools[0]!.execute("static", {});
+    expect(live.content[0]).toMatchObject({ text: "live:inbox:static" });
+    await result?.dispose();
+  });
+
   it("keeps advertised specs stable and returns not-connected for unauthed senders", async () => {
     mocks.setResolveImpl(async (params) => {
       const senderId = params.requesterSenderId;
       if (senderId !== "authed") {
-        return undefined;
+        return makeRuntime({ sessionId: params.sessionId, empty: true });
       }
       return makeRuntime({
         sessionId: params.sessionId,
@@ -169,7 +200,7 @@ describe("materializeRequesterScopedMcpToolsForHarnessRun", () => {
       });
     });
 
-    const authed = await materializeRequesterScopedMcpToolsForHarnessRun({
+    const authed = await materializeConfiguredMcpToolsForHarnessRun({
       sessionId: "session-stable",
       workspaceDir: "/workspace",
       requesterSenderId: "authed",
@@ -185,7 +216,7 @@ describe("materializeRequesterScopedMcpToolsForHarnessRun", () => {
     });
     await authed!.dispose();
 
-    const guest = await materializeRequesterScopedMcpToolsForHarnessRun({
+    const guest = await materializeConfiguredMcpToolsForHarnessRun({
       sessionId: "session-stable",
       workspaceDir: "/workspace",
       requesterSenderId: "guest",
@@ -209,7 +240,7 @@ describe("materializeRequesterScopedMcpToolsForHarnessRun", () => {
       const senderId =
         typeof params.requesterSenderId === "string" ? params.requesterSenderId : undefined;
       if (!senderId) {
-        return undefined;
+        return makeRuntime({ sessionId: params.sessionId, empty: true });
       }
       return makeRuntime({
         sessionId: params.sessionId,
@@ -217,12 +248,12 @@ describe("materializeRequesterScopedMcpToolsForHarnessRun", () => {
       });
     });
 
-    const alice = await materializeRequesterScopedMcpToolsForHarnessRun({
+    const alice = await materializeConfiguredMcpToolsForHarnessRun({
       sessionId: "session-route",
       workspaceDir: "/workspace",
       requesterSenderId: "alice",
     });
-    const bob = await materializeRequesterScopedMcpToolsForHarnessRun({
+    const bob = await materializeConfiguredMcpToolsForHarnessRun({
       sessionId: "session-route",
       workspaceDir: "/workspace",
       requesterSenderId: "bob",
@@ -240,5 +271,78 @@ describe("materializeRequesterScopedMcpToolsForHarnessRun", () => {
 
     await alice!.dispose();
     await bob!.dispose();
+  });
+
+  it("applies the runtime allowlist to app-only MCP policy projections", async () => {
+    mocks.setResolveImpl(async (params) =>
+      makeRuntime({ sessionId: params.sessionId, appOnly: true }),
+    );
+
+    const denied = await materializeConfiguredMcpToolsForHarnessRun({
+      sessionId: "session-app-denied",
+      workspaceDir: "/workspace",
+      toolsAllow: ["group:plugins"],
+      policyContext: {
+        config: { tools: { deny: ["user-mail__inbox"] } },
+        sessionId: "session-app-denied",
+        runId: "run-app-denied",
+        agentId: "main",
+      },
+    });
+    expect(denied?.tools).toEqual([]);
+    expect(denied?.appTools).toEqual([]);
+    await denied?.dispose();
+
+    const allowed = await materializeConfiguredMcpToolsForHarnessRun({
+      sessionId: "session-app-allowed",
+      workspaceDir: "/workspace",
+      toolsAllow: ["group:plugins"],
+    });
+    expect(allowed?.tools).toEqual([]);
+    expect(allowed?.appTools.map((tool) => tool.name)).toEqual(["user-mail__inbox"]);
+    await allowed?.dispose();
+  });
+
+  it("uses scheduled authority instead of reevaluating sender overlays", async () => {
+    mocks.setResolveImpl(async (params) => makeRuntime({ sessionId: params.sessionId }));
+    const config = {
+      tools: {
+        toolsBySender: {
+          "*": { deny: ["user-mail__inbox"] },
+        },
+      },
+    };
+    const base = {
+      workspaceDir: "/workspace",
+      cfg: config,
+      toolsAllow: ["*"],
+      policyContext: {
+        config,
+        sessionId: "session-sender-policy",
+        runId: "run-sender-policy",
+        agentId: "main",
+        senderId: "guest",
+        messageProvider: "discord",
+      },
+    };
+
+    const ordinary = await materializeConfiguredMcpToolsForHarnessRun({
+      ...base,
+      sessionId: "session-sender-policy",
+    });
+    expect(ordinary?.tools).toEqual([]);
+    await ordinary?.dispose();
+
+    const scheduled = await materializeConfiguredMcpToolsForHarnessRun({
+      ...base,
+      sessionId: "session-scheduled-policy",
+      policyContext: {
+        ...base.policyContext,
+        sessionId: "session-scheduled-policy",
+        scheduledToolPolicy: { version: 1, mode: "trusted" },
+      },
+    });
+    expect(scheduled?.tools.map((tool) => tool.name)).toEqual(["user-mail__inbox"]);
+    await scheduled?.dispose();
   });
 });

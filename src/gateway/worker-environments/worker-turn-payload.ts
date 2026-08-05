@@ -3,11 +3,13 @@ import {
   WORKER_INFERENCE_MAX_CONTEXT_MESSAGES,
   WORKER_PROTOCOL_MAX_INFERENCE_PAYLOAD_BYTES,
 } from "../../../packages/gateway-protocol/src/schema/worker-inference.js";
+import { resolveSessionMcpConfigSummary } from "../../agents/agent-bundle-mcp-runtime-config.js";
 import {
   isDefaultAgentRuntimeId,
   normalizeOptionalAgentRuntimeId,
   OPENCLAW_AGENT_RUNTIME_ID,
 } from "../../agents/agent-runtime-id.js";
+import { shouldCreateBundleMcpRuntimeForAttempt } from "../../agents/embedded-agent-runner/run/attempt-tool-construction-plan.js";
 import {
   buildUsageAgentMetaFields,
   resolveReportedModelRef,
@@ -174,6 +176,27 @@ export function assertSupportedTurn(params: SessionPlacementTurnParams): {
   }
   if (params.clientTools?.length) {
     throw new Error("Cloud worker turns do not support client-provided tools");
+  }
+  if (params.scheduledNativePolicy?.mode === "inherit") {
+    throw new Error(
+      "Cloud workers cannot currently preserve this scheduled turn's inherited native tool authority. Stop the cloud worker for this session, then retry locally with `openclaw gateway call sessions.reclaim`.",
+    );
+  }
+  if (
+    shouldCreateBundleMcpRuntimeForAttempt({
+      toolsEnabled: params.modelRun !== true && params.promptMode !== "none",
+      disableTools: params.disableTools,
+      toolsAllow: params.toolsAllow,
+    }) &&
+    resolveSessionMcpConfigSummary({
+      workspaceDir: params.workspaceDir,
+      cfg: params.config,
+      toolOverrides: params.toolOverrides,
+    }).serverNames.length > 0
+  ) {
+    throw new Error(
+      "Cloud workers cannot currently preserve this scheduled turn's MCP tool authority. Stop the cloud worker for this session, then retry locally with `openclaw gateway call sessions.reclaim`.",
+    );
   }
   const modelRef = resolveTurnModelRef(params);
   const explicitRuntime =

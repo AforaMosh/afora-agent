@@ -100,7 +100,6 @@ import {
 import {
   replaceWithEffectiveCronCreatorToolAllowlist,
   type CronCreatorToolAllowlistEntry,
-  type CronToolOptions,
 } from "./tools/cron-tool.js";
 import { wrapToolWithGatewayCallerIdentity } from "./tools/gateway-caller-context.js";
 
@@ -311,8 +310,8 @@ type OpenClawCodingToolsOptions = {
   inheritedToolAllowlistRef?: string[];
   /** Mutable cron creator cap ref for callers that append final runtime tools later. */
   cronCreatorToolAllowlistRef?: CronCreatorToolAllowlistEntry[];
-  /** Native runtime-owned authority captured lazily after its thread is attested. */
-  resolveCronCreatorRuntimeAuthority?: CronToolOptions["resolveCreatorRuntimeAuthority"];
+  /** Host-derived native authority captured by the cron tool's signed identity. */
+  cronCreatorPolicy?: import("../gateway/agent-runtime-identity-token.js").AgentRuntimeCronCreatorPolicy;
   /** If true, the model has native vision capability */
   modelHasVision?: boolean;
   /** Mutable model-context generation used to expire screenshot coordinate frames. */
@@ -779,7 +778,7 @@ function createOpenClawCodingToolsInternal(options?: OpenClawCodingToolsOptions)
             pluginToolAllowlist,
             pluginToolDenylist,
             cronCreatorToolAllowlist,
-            resolveCronCreatorRuntimeAuthority: options?.resolveCronCreatorRuntimeAuthority,
+            cronCreatorPolicy: options?.cronCreatorPolicy,
             currentChannelId: options?.currentChannelId,
             currentChatType: options?.chatType,
             currentMessagingTarget: options?.currentMessagingTarget,

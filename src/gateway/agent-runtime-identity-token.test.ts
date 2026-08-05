@@ -84,6 +84,27 @@ describe("agent runtime identity token", () => {
     });
   });
 
+  it("round-trips the signed cron creator policy and rejects malformed input", async () => {
+    useTempHome();
+    const runtimeToken = await importRuntimeTokenModule();
+    const token = await runtimeToken.mintAgentRuntimeIdentityToken({
+      agentId: "main",
+      sessionKey: "agent:main:main",
+      cronCreatorPolicy: { version: 1, codexNativeSurface: "inherit" },
+    });
+
+    await expect(runtimeToken.verifyAgentRuntimeIdentityToken(token)).resolves.toMatchObject({
+      cronCreatorPolicy: { version: 1, codexNativeSurface: "inherit" },
+    });
+    await expect(
+      runtimeToken.mintAgentRuntimeIdentityToken({
+        agentId: "main",
+        sessionKey: "agent:main:main",
+        cronCreatorPolicy: { version: 1, codexNativeSurface: "unknown" } as never,
+      }),
+    ).rejects.toThrow("invalid cron creator policy");
+  });
+
   it("round-trips a signed visible-session spawn policy", async () => {
     useTempHome();
     const runtimeToken = await importRuntimeTokenModule();

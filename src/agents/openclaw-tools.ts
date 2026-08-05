@@ -136,9 +136,8 @@ export function createOpenClawTools(
     pluginToolDenylist?: string[];
     /** Effective caller tool surface to persist on isolated cron agentTurn jobs. */
     cronCreatorToolAllowlist?: CronCreatorToolAllowlistEntry[];
-    resolveCronCreatorRuntimeAuthority?: NonNullable<
-      Parameters<typeof createCronTool>[0]
-    >["resolveCreatorRuntimeAuthority"];
+    /** Host-derived native authority captured by the cron tool's signed identity. */
+    cronCreatorPolicy?: import("../gateway/agent-runtime-identity-token.js").AgentRuntimeCronCreatorPolicy;
     /** Current channel ID for auto-threading. */
     currentChannelId?: string;
     /** Trusted normalized conversation kind for the active inbound turn. */
@@ -500,7 +499,7 @@ export function createOpenClawTools(
               threadId: options?.currentThreadTs ?? options?.agentThreadId,
             },
             creatorToolAllowlist: options?.cronCreatorToolAllowlist,
-            resolveCreatorRuntimeAuthority: options?.resolveCronCreatorRuntimeAuthority,
+            cronCreatorPolicy: options?.cronCreatorPolicy,
             runId: options?.runId,
             ...(options?.cronSelfRemoveOnlyJobId
               ? { selfRemoveOnlyJobId: options.cronSelfRemoveOnlyJobId }

@@ -141,39 +141,6 @@ const CronScheduledToolPolicySchema = Type.Union([
     ownerAccountId: NonEmptyString,
   }),
 ]);
-const ScheduledRuntimeMcpServerSchema = closedObject({
-  source: Type.Union([Type.Literal("openclaw"), Type.Literal("codex")]),
-  serverName: NonEmptyString,
-  toolNames: Type.Array(NonEmptyString, { maxItems: 256 }),
-});
-const ScheduledRuntimeAuthoritySchema = closedObject({
-  version: Type.Literal(1),
-  runtime: Type.Literal("codex"),
-  openClawTools: Type.Array(NonEmptyString, { maxItems: 256 }),
-  apps: Type.Array(
-    closedObject({
-      appId: NonEmptyString,
-      allowDestructiveActions: Type.Boolean(),
-      allowOpenWorld: Type.Boolean(),
-      approvalMode: Type.Union([
-        Type.Literal("allow"),
-        Type.Literal("deny"),
-        Type.Literal("auto"),
-        Type.Literal("ask"),
-      ]),
-    }),
-    { maxItems: 256 },
-  ),
-  userMcpServers: Type.Array(ScheduledRuntimeMcpServerSchema, { maxItems: 256 }),
-  pluginMcpServers: Type.Array(
-    closedObject({
-      pluginId: NonEmptyString,
-      serverName: NonEmptyString,
-      toolNames: Type.Array(NonEmptyString, { maxItems: 256 }),
-    }),
-    { maxItems: 256 },
-  ),
-});
 const CronAnnounceChannelSchema = Type.Union([Type.Literal("last"), NonBlankString]);
 const CronFailoverReasonSchema = Type.Union([
   Type.Literal("auth"),
@@ -568,9 +535,6 @@ export const CronJobSchema = closedObject({
   displayName: Type.Optional(CronDisplayNameSchema),
   owner: Type.Optional(CronOwnerSchema),
   scheduledToolPolicy: Type.Optional(CronScheduledToolPolicySchema),
-  scheduledRuntimeAuthority: Type.Optional(ScheduledRuntimeAuthoritySchema),
-  /** Transient recovery status computed from the current configured primary route. */
-  runtimeAuthorityStatus: Type.Optional(Type.Literal("incomplete")),
   agentId: Type.Optional(NonEmptyString),
   sessionKey: Type.Optional(NonEmptyString),
   name: NonEmptyString,

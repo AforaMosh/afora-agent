@@ -2178,6 +2178,56 @@ describe("worker turn launcher", () => {
     expect(placements.get(SESSION_ID)).toMatchObject({ state: "reclaimed", turnClaim: null });
   });
 
+  it.each(["active", "reclaimed"] as const)(
+    "rejects unsupported scheduled authority before %s worker admission side effects",
+    async (placementState) => {
+      if (placementState === "active") {
+        seedActivePlacement();
+      } else {
+        seedReclaimedPlacement();
+      }
+      const redispatchReclaimed = vi.fn(async () => {
+        throw new Error("unexpected redispatch");
+      });
+      const resolveWorkspacePath = vi.fn(async () => root);
+      const claimTurn = vi.spyOn(placements, "claimTurn");
+      const onAdmitted = vi.fn();
+      const runLocal = vi.fn(async () => ({ meta: { durationMs: 1 } }));
+      const environments = unusedEnvironments();
+      const provider = createWorkerSessionTurnPlacementProvider({
+        environments,
+        placements,
+        redispatchReclaimed,
+        resolveWorkspacePath,
+      });
+
+      await expect(
+        provider.executeTurn(
+          {
+            sessionId: SESSION_ID,
+            sessionKey: SESSION_KEY,
+            agentId: "main",
+            runId: `run-${placementState}-unsupported`,
+          },
+          {
+            ...turn(`run-${placementState}-unsupported`),
+            scheduledNativePolicy: { version: 1, mode: "inherit" },
+          },
+          runLocal,
+          onAdmitted,
+        ),
+      ).rejects.toThrow(/cannot currently preserve.*native tool authority/is);
+
+      expect(redispatchReclaimed).not.toHaveBeenCalled();
+      expect(resolveWorkspacePath).not.toHaveBeenCalled();
+      expect(claimTurn).not.toHaveBeenCalled();
+      expect(onAdmitted).not.toHaveBeenCalled();
+      expect(environments.get).not.toHaveBeenCalled();
+      expect(environments.startTunnel).not.toHaveBeenCalled();
+      expect(runLocal).not.toHaveBeenCalled();
+    },
+  );
+
   it("does not fall back locally when reclaimed redispatch fails", async () => {
     seedReclaimedPlacement();
     const provider = createWorkerSessionTurnPlacementProvider({

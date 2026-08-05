@@ -26,10 +26,8 @@ import {
   shouldRotateCodexGpt56MultiAgentBinding,
 } from "./thread-binding-policy.js";
 import { isContextEngineBindingCompatible } from "./thread-context-engine.js";
-import { resolveCodexThreadFinalConfigPatch } from "./thread-final-config.js";
 import {
   areDynamicToolFingerprintsCompatible,
-  areUserMcpServersFingerprintsCompatible,
   shouldStartTransientNoToolThread,
 } from "./thread-fingerprints.js";
 import { CodexThreadBindingConflictError } from "./thread-lifecycle-errors.js";
@@ -49,9 +47,8 @@ import { resolveCodexAppServerThreadModelSelection } from "./thread-model-select
 import { materializePendingSupervisionBranch } from "./thread-supervision.js";
 
 export async function startOrResumeThread(
-  input: CodexStartOrResumeThreadParams,
+  params: CodexStartOrResumeThreadParams,
 ): Promise<CodexAppServerThreadLifecycleBinding> {
-  let params = input;
   const incognito = isIncognitoSessionKey(params.params.sessionKey);
   const clientId = resolveCodexAppServerClientInstanceId(params.client);
   const bindingIdentity: CodexAppServerBindingIdentity = sessionBindingIdentity({
@@ -68,7 +65,6 @@ export async function startOrResumeThread(
       environmentSelectionFingerprint,
       hostSystemAgentActive,
       legacyDynamicToolsFingerprint,
-      legacyUserMcpServersFingerprint,
       lifecycleTiming,
       nativeSkillIsolation,
       nativeSkillIsolationFingerprint,
@@ -77,21 +73,8 @@ export async function startOrResumeThread(
       ringZeroClientInstanceId,
       ringZeroConfigFingerprint,
       ringZeroInheritedMcpServerNames,
-      scheduledRuntimeAuthorityConfigPatch,
-      scheduledRuntimeAuthorityConfigFingerprint,
-      userMcpServersConfigPatch,
-      userMcpServersFingerprint,
       webSearchThreadConfigFingerprint,
     } = await prepareCodexThreadLifecyclePreflight(params);
-    if (scheduledRuntimeAuthorityConfigPatch) {
-      params = {
-        ...params,
-        finalConfigPatch: mergeCodexThreadConfigs(
-          params.finalConfigPatch,
-          scheduledRuntimeAuthorityConfigPatch,
-        ),
-      };
-    }
     let binding = await lifecycleTiming.measure("read-binding", () =>
       params.bindingStore.read(bindingIdentity),
     );
@@ -139,12 +122,14 @@ export async function startOrResumeThread(
             params.pluginThreadConfig?.build(),
           )
         : undefined;
-      const finalConfigPatch = resolveCodexThreadFinalConfigPatch(params, { action: "start" });
+      const finalConfigPatch = params.buildFinalConfigPatch?.({ action: "start" }) ?? {
+        configPatch: params.finalConfigPatch,
+        nativeHookRelayGeneration: params.nativeHookRelayGeneration,
+      };
       const config = lifecycleTiming.measureSync("merge-thread-config", () =>
         applyCodexNativeSkillIsolation(
           mergeCodexThreadConfigs(
             params.config,
-            userMcpServersConfigPatch,
             pluginThreadConfig?.configPatch,
             finalConfigPatch.configPatch,
           ),
@@ -185,11 +170,6 @@ export async function startOrResumeThread(
           dynamicToolsContainDeferred,
           webSearchThreadConfigFingerprint,
           nativeSkillIsolationFingerprint,
-          userMcpServersFingerprint,
-          mcpServersFingerprint:
-            params.mcpServersFingerprintEvaluated === true
-              ? params.mcpServersFingerprint
-              : pendingBinding.mcpServersFingerprint,
           networkProxyProfileName: params.appServer.networkProxy?.profileName,
           networkProxyConfigFingerprint,
           nativeHookRelayGeneration: finalConfigPatch.nativeHookRelayGeneration,
@@ -243,22 +223,6 @@ export async function startOrResumeThread(
         threadId: binding.threadId,
       });
       await clearCurrentBinding("rotating a ring-zero thread binding");
-    }
-    if (
-      binding?.threadId &&
-      binding.scheduledRuntimeAuthorityConfigFingerprint !==
-        scheduledRuntimeAuthorityConfigFingerprint &&
-      (scheduledRuntimeAuthorityConfigFingerprint !== undefined ||
-        binding.scheduledRuntimeAuthorityConfigFingerprint !== undefined)
-    ) {
-      // Codex loaded threads can retain their creation-time app/MCP config.
-      // Rotate whenever the stored cap's current-policy intersection changes.
-      embeddedAgentLog.debug(
-        "codex app-server scheduled runtime authority changed; rotating thread",
-        { threadId: binding.threadId },
-      );
-      await clearCurrentBinding("rotating scheduled runtime authority");
-      binding = undefined;
     }
     if (
       binding?.threadId &&
@@ -326,38 +290,6 @@ export async function startOrResumeThread(
     const transientNativeToolRestriction =
       params.nativeCodeModeEnabled === false && !persistentWebSearchRestriction;
     const transientWebSearchRestriction = isTransientWebSearchRestriction(params);
-    const explicitTransientWebSearchRestriction =
-      params.webSearchAllowed === false &&
-      params.persistentWebSearchAllowed !== false &&
-      transientWebSearchRestriction;
-    const unknownProviderWebSearchSupport = params.nativeProviderWebSearchSupport === "unknown";
-    if (
-      binding?.threadId &&
-      params.mcpServersFingerprintEvaluated === true &&
-      binding.mcpServersFingerprint !== params.mcpServersFingerprint
-    ) {
-      assertCodexBindingMayBeReplaced(binding, "changing MCP configuration");
-      if (
-        !ringZeroActive &&
-        (transientNativeToolRestriction ||
-          (webSearchBindingChanged &&
-            (explicitTransientWebSearchRestriction || unknownProviderWebSearchSupport)))
-      ) {
-        embeddedAgentLog.debug(
-          "codex app-server MCP config changed during transient restricted turn; starting transient thread",
-          {
-            threadId: binding.threadId,
-          },
-        );
-        preserveExistingBinding = true;
-      } else {
-        embeddedAgentLog.debug("codex app-server MCP config changed; starting a new thread", {
-          threadId: binding.threadId,
-        });
-        await clearCurrentBinding("rotating a stale thread binding");
-      }
-      binding = undefined;
-    }
     // A transient native-tool restriction must not replace a legacy binding just
     // because that binding predates search fingerprints. Explicit persistent
     // search denial still rotates first so the restricted thread can persist.
@@ -436,20 +368,6 @@ export async function startOrResumeThread(
         binding = undefined;
         rotatedContextEngineBinding = true;
       }
-    }
-    if (
-      binding?.threadId &&
-      !areUserMcpServersFingerprintsCompatible({
-        previous: binding.userMcpServersFingerprint,
-        next: userMcpServersFingerprint,
-        nextLegacy: legacyUserMcpServersFingerprint,
-      })
-    ) {
-      embeddedAgentLog.debug("codex app-server user MCP config changed; starting a new thread", {
-        threadId: binding.threadId,
-      });
-      await clearCurrentBinding("rotating a stale thread binding");
-      binding = undefined;
     }
     if (
       binding?.threadId &&
@@ -607,7 +525,6 @@ export async function startOrResumeThread(
           startModelProvider,
           startModelSelection,
           throwIfAborted,
-          userMcpServersConfigPatch,
         });
         if (warmReuse.binding) {
           return warmReuse.binding;
@@ -620,14 +537,11 @@ export async function startOrResumeThread(
           bindingIdentity,
           startModelSelection,
           startModelProvider,
-          userMcpServersConfigPatch,
           dynamicToolsFingerprint,
           dynamicToolsContainDeferred,
           webSearchThreadConfigFingerprint,
           nativeSkillIsolationFingerprint,
-          userMcpServersFingerprint,
           ringZeroConfigFingerprint,
-          scheduledRuntimeAuthorityConfigFingerprint,
           ringZeroClientInstanceId,
           networkProxyConfigFingerprint,
           contextEngineBinding,
@@ -655,14 +569,11 @@ export async function startOrResumeThread(
       bindingIdentity,
       startModelSelection,
       startModelProvider,
-      userMcpServersConfigPatch,
       dynamicToolsFingerprint,
       dynamicToolsContainDeferred,
       webSearchThreadConfigFingerprint,
       nativeSkillIsolationFingerprint,
-      userMcpServersFingerprint,
       ringZeroConfigFingerprint,
-      scheduledRuntimeAuthorityConfigFingerprint,
       ringZeroClientInstanceId,
       networkProxyConfigFingerprint,
       contextEngineBinding,

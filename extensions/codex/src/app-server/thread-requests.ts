@@ -31,8 +31,6 @@ import {
 import { buildDeveloperInstructions } from "./thread-prompt.js";
 import { resolveCodexWebSearchPlan, type CodexNativeWebSearchSupport } from "./web-search.js";
 
-type ScheduledRuntimeAuthority = NonNullable<EmbeddedRunAttemptParams["scheduledRuntimeAuthority"]>;
-
 export const CODEX_RING_ZERO_BASE_INSTRUCTIONS = "";
 
 // Stream structured patch snapshots so large generated edits keep the turn active.
@@ -98,69 +96,6 @@ const CODEX_RING_ZERO_THREAD_CONFIG: JsonObject = {
   notify: [],
   web_search: "disabled",
 };
-
-/** Projects a finite scheduled cap without re-enabling Codex shell, files, or plugin context. */
-export function buildCodexScheduledRuntimeAuthorityConfigPatch(params: {
-  authority: ScheduledRuntimeAuthority;
-  inheritedMcpServerNames: readonly string[];
-  inheritedApps?: JsonObject;
-}): JsonObject {
-  const apps: JsonObject = {
-    _default: {
-      enabled: false,
-      destructive_enabled: false,
-      open_world_enabled: false,
-    },
-  };
-  for (const app of params.authority.apps) {
-    const rawInheritedApp = params.inheritedApps?.[app.appId];
-    const inheritedApp = isJsonObject(rawInheritedApp) ? rawInheritedApp : undefined;
-    const rawInheritedTools = inheritedApp?.tools;
-    const inheritedTools = isJsonObject(rawInheritedTools) ? rawInheritedTools : undefined;
-    const tools: JsonObject = {};
-    for (const [toolName, rawTool] of Object.entries(inheritedTools ?? {})) {
-      if (!isJsonObject(rawTool)) {
-        continue;
-      }
-      const currentApproval = rawTool.approval_mode;
-      tools[toolName] = {
-        ...(rawTool.enabled === false ? { enabled: false } : {}),
-        approval_mode:
-          app.approvalMode === "ask" || currentApproval === "prompt" || currentApproval === "writes"
-            ? "prompt"
-            : "auto",
-      };
-    }
-    apps[app.appId] = {
-      enabled: true,
-      destructive_enabled: app.allowDestructiveActions,
-      open_world_enabled: app.allowOpenWorld,
-      default_tools_approval_mode: app.approvalMode === "ask" ? "prompt" : "auto",
-      ...(app.approvalMode === "ask" ? { approvals_reviewer: "user" } : {}),
-      ...(Object.keys(tools).length > 0 ? { tools } : {}),
-    };
-  }
-  const capturedMcp = new Map(
-    params.authority.userMcpServers.map((server) => [server.serverName, server.toolNames] as const),
-  );
-  const mcpServers: JsonObject = {};
-  for (const serverName of new Set([
-    ...params.inheritedMcpServerNames,
-    ...capturedMcp.keys(),
-    ...params.authority.pluginMcpServers.map((server) => server.serverName),
-  ])) {
-    const toolNames = capturedMcp.get(serverName);
-    mcpServers[serverName] = toolNames
-      ? { enabled: true, enabled_tools: toolNames }
-      : { enabled: false };
-  }
-  return {
-    "features.apps": params.authority.apps.length > 0,
-    "features.plugins": false,
-    apps,
-    mcp_servers: mcpServers,
-  };
-}
 
 const CODEX_RING_ZERO_RESTRICTED_FEATURES = new Set([
   "apps",
@@ -525,70 +460,6 @@ export async function readCodexInheritedMcpServerNames(
   cwd: string,
   signal?: AbortSignal,
 ): Promise<string[]> {
-  return (await readCodexInheritedMcpServerState(client, cwd, signal)).all;
-}
-
-type CodexMcpServerState = {
-  all: string[];
-  enabled: string[];
-  toolPolicies: Record<string, { enabled?: string[]; disabled: string[] }>;
-  apps?: JsonValue;
-};
-
-/** Parses a current MCP config so a stored scheduled grant cannot undo revocation. */
-export function readCodexMcpServerState(
-  config: JsonObject,
-  source = "Codex config/read",
-): CodexMcpServerState {
-  const configuredServers = config.mcp_servers;
-  if (configuredServers === undefined) {
-    return { all: [], enabled: [], toolPolicies: {}, apps: config.apps };
-  }
-  if (!isJsonObject(configuredServers)) {
-    throw new Error(`${source} returned invalid mcp_servers`);
-  }
-  const all = Object.keys(configuredServers).toSorted();
-  const enabled = all.filter((name) => {
-    const server = configuredServers[name];
-    return isJsonObject(server) && server.enabled !== false;
-  });
-  const toolPolicies: Record<string, { enabled?: string[]; disabled: string[] }> = {};
-  for (const name of enabled) {
-    const server = configuredServers[name];
-    if (!isJsonObject(server)) {
-      continue;
-    }
-    const readToolNames = (value: JsonValue | undefined, field: string): string[] | undefined => {
-      if (value === undefined) {
-        return undefined;
-      }
-      if (!Array.isArray(value)) {
-        throw new Error(`${source} returned invalid mcp_servers.${name}.${field}`);
-      }
-      const names: string[] = [];
-      for (const entry of value) {
-        if (typeof entry !== "string") {
-          throw new Error(`${source} returned invalid mcp_servers.${name}.${field}`);
-        }
-        names.push(entry);
-      }
-      return [...new Set(names)].toSorted();
-    };
-    const enabledTools = readToolNames(server.enabled_tools, "enabled_tools");
-    toolPolicies[name] = {
-      ...(enabledTools !== undefined ? { enabled: enabledTools } : {}),
-      disabled: readToolNames(server.disabled_tools, "disabled_tools") ?? [],
-    };
-  }
-  return { all, enabled, toolPolicies, apps: config.apps };
-}
-
-/** Reads current server enablement so a stored scheduled grant cannot undo revocation. */
-export async function readCodexInheritedMcpServerState(
-  client: Pick<CodexAppServerClient, "request">,
-  cwd: string,
-  signal?: AbortSignal,
-): Promise<CodexMcpServerState> {
   const response: CodexConfigReadResponse = await client.request(
     "config/read",
     {
@@ -611,15 +482,20 @@ export async function readCodexInheritedMcpServerState(
       layer.name.type === "legacyManagedConfigTomlFromFile" ||
       layer.name.type === "legacyManagedConfigTomlFromMdm"
     ) {
-      throw new Error(`Codex restricted runtime cannot override config layer ${layer.name.type}`);
+      throw new Error(`Codex ring-zero cannot override config layer ${layer.name.type}`);
     }
     if (!CODEX_RING_ZERO_OVERRIDABLE_LAYER_TYPES.has(layer.name.type)) {
-      throw new Error(
-        `Codex restricted runtime does not recognize config layer ${layer.name.type}`,
-      );
+      throw new Error(`Codex ring-zero does not recognize config layer ${layer.name.type}`);
     }
   }
-  return readCodexMcpServerState(response.config);
+  const configuredServers = response.config.mcp_servers;
+  if (configuredServers === undefined) {
+    return [];
+  }
+  if (!isJsonObject(configuredServers)) {
+    throw new Error("Codex config/read returned invalid mcp_servers");
+  }
+  return Object.keys(configuredServers).toSorted();
 }
 
 export async function assertCodexRingZeroHasNoManagedHooks(

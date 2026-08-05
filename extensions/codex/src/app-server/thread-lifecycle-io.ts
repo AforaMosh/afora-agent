@@ -35,7 +35,6 @@ import type {
   CodexAppServerThreadBinding,
 } from "./session-binding.js";
 import { isCodexAppServerStartSelectionChangedError } from "./shared-client.js";
-import { resolveCodexThreadFinalConfigPatch } from "./thread-final-config.js";
 import {
   fingerprintCodexThreadConfig,
   readActiveCodexTurnIdsFromResume,
@@ -66,14 +65,11 @@ type ThreadRequestContext = {
   bindingIdentity: CodexAppServerBindingIdentity;
   startModelSelection: ReturnType<typeof resolveCodexAppServerThreadModelSelection>;
   startModelProvider?: string;
-  userMcpServersConfigPatch?: JsonObject;
   dynamicToolsFingerprint: string;
   dynamicToolsContainDeferred: boolean;
   webSearchThreadConfigFingerprint?: string;
   nativeSkillIsolationFingerprint?: string;
-  userMcpServersFingerprint?: string;
   ringZeroConfigFingerprint?: string;
-  scheduledRuntimeAuthorityConfigFingerprint?: string;
   ringZeroClientInstanceId?: string;
   networkProxyConfigFingerprint?: string;
   contextEngineBinding?: CodexAppServerContextEngineBinding;
@@ -127,14 +123,11 @@ export async function resumeExistingCodexThread(
     bindingIdentity,
     startModelSelection,
     startModelProvider,
-    userMcpServersConfigPatch,
     dynamicToolsFingerprint,
     dynamicToolsContainDeferred,
     webSearchThreadConfigFingerprint,
     nativeSkillIsolationFingerprint,
-    userMcpServersFingerprint,
     ringZeroConfigFingerprint,
-    scheduledRuntimeAuthorityConfigFingerprint,
     ringZeroClientInstanceId,
     networkProxyConfigFingerprint,
     contextEngineBinding,
@@ -154,12 +147,14 @@ export async function resumeExistingCodexThread(
       resumeBinding.connectionScope === "supervision"
         ? undefined
         : (params.params.authProfileId ?? resumeBinding.authProfileId);
-    const finalConfigPatch =
-      context.prebuiltFinalConfigPatch ??
-      resolveCodexThreadFinalConfigPatch(params, {
+    const finalConfigPatch = context.prebuiltFinalConfigPatch ??
+      params.buildFinalConfigPatch?.({
         action: "resume",
         binding: resumeBinding,
-      });
+      }) ?? {
+        configPatch: params.finalConfigPatch,
+        nativeHookRelayGeneration: params.nativeHookRelayGeneration,
+      };
     // Codex rebuilds effective config on thread/resume, so replay the app
     // allowlist persisted at thread/start or plugin tools disappear after one turn.
     const pluginAppsConfigPatch =
@@ -167,12 +162,7 @@ export async function resumeExistingCodexThread(
         ? buildCodexPluginAppsConfigPatchFromPolicyContext(resumeBinding.pluginAppPolicyContext)
         : undefined;
     const resumeConfig = applyCodexNativeSkillIsolation(
-      mergeCodexThreadConfigs(
-        params.config,
-        userMcpServersConfigPatch,
-        pluginAppsConfigPatch,
-        finalConfigPatch.configPatch,
-      ),
+      mergeCodexThreadConfigs(params.config, pluginAppsConfigPatch, finalConfigPatch.configPatch),
       nativeSkillIsolation,
     );
     const resumeParams = lifecycleTiming.measureSync("thread-resume-params", () =>
@@ -242,10 +232,6 @@ export async function resumeExistingCodexThread(
     }
     throwIfAborted();
     const boundAuthProfileId = authProfileId;
-    const nextMcpServersFingerprint =
-      params.mcpServersFingerprintEvaluated === true
-        ? params.mcpServersFingerprint
-        : resumeBinding.mcpServersFingerprint;
     const resumePatch = {
       cwd: params.cwd,
       rolloutPath: resolveCodexThreadRolloutPath(response.thread) ?? resumeBinding.rolloutPath,
@@ -260,10 +246,7 @@ export async function resumeExistingCodexThread(
       dynamicToolsContainDeferred,
       webSearchThreadConfigFingerprint,
       nativeSkillIsolationFingerprint,
-      userMcpServersFingerprint,
-      mcpServersFingerprint: nextMcpServersFingerprint,
       ringZeroConfigFingerprint,
-      scheduledRuntimeAuthorityConfigFingerprint,
       ringZeroClientInstanceId,
       networkProxyProfileName: params.appServer.networkProxy?.profileName,
       networkProxyConfigFingerprint,
@@ -399,14 +382,11 @@ export async function startFreshCodexThread(
     bindingIdentity,
     startModelSelection,
     startModelProvider,
-    userMcpServersConfigPatch,
     dynamicToolsFingerprint,
     dynamicToolsContainDeferred,
     webSearchThreadConfigFingerprint,
     nativeSkillIsolationFingerprint,
-    userMcpServersFingerprint,
     ringZeroConfigFingerprint,
-    scheduledRuntimeAuthorityConfigFingerprint,
     ringZeroClientInstanceId,
     networkProxyConfigFingerprint,
     contextEngineBinding,
@@ -428,12 +408,14 @@ export async function startFreshCodexThread(
         params.pluginThreadConfig?.build(),
       )))
     : undefined;
-  const finalConfigPatch = resolveCodexThreadFinalConfigPatch(params, { action: "start" });
+  const finalConfigPatch = params.buildFinalConfigPatch?.({ action: "start" }) ?? {
+    configPatch: params.finalConfigPatch,
+    nativeHookRelayGeneration: params.nativeHookRelayGeneration,
+  };
   const config = lifecycleTiming.measureSync("merge-thread-config", () =>
     applyCodexNativeSkillIsolation(
       mergeCodexThreadConfigs(
         params.config,
-        userMcpServersConfigPatch,
         pluginThreadConfig?.configPatch,
         finalConfigPatch.configPatch,
       ),
@@ -525,8 +507,6 @@ export async function startFreshCodexThread(
     params.params.authProfileId,
     response.modelProvider ?? requestModelProvider ?? startModelProvider ?? modelProvider,
   );
-  const nextMcpServersFingerprint =
-    params.mcpServersFingerprintEvaluated === true ? params.mcpServersFingerprint : undefined;
   if (!preserveExistingBinding) {
     const committed = await lifecycleTiming.measure("thread-start-write-binding", () =>
       params.bindingStore.mutate(bindingIdentity, {
@@ -544,10 +524,7 @@ export async function startFreshCodexThread(
           dynamicToolsContainDeferred,
           webSearchThreadConfigFingerprint,
           nativeSkillIsolationFingerprint,
-          userMcpServersFingerprint,
-          mcpServersFingerprint: nextMcpServersFingerprint,
           ringZeroConfigFingerprint,
-          scheduledRuntimeAuthorityConfigFingerprint,
           ringZeroClientInstanceId,
           networkProxyProfileName: params.appServer.networkProxy?.profileName,
           networkProxyConfigFingerprint,
@@ -596,10 +573,7 @@ export async function startFreshCodexThread(
     dynamicToolsFingerprint,
     dynamicToolsContainDeferred,
     nativeSkillIsolationFingerprint,
-    userMcpServersFingerprint,
-    mcpServersFingerprint: nextMcpServersFingerprint,
     ringZeroConfigFingerprint,
-    scheduledRuntimeAuthorityConfigFingerprint,
     ringZeroClientInstanceId,
     networkProxyProfileName: params.appServer.networkProxy?.profileName,
     networkProxyConfigFingerprint,

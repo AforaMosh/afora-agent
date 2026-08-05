@@ -1,6 +1,7 @@
 // Codex harness live gateway tests exercise real CLI backend sessions, cron probes, media probes, and command surfaces.
 import { randomBytes, randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
+import { createRequire } from "node:module";
 import { createServer } from "node:net";
 import os from "node:os";
 import path from "node:path";
@@ -494,6 +495,7 @@ async function writeLiveGatewayConfig(params: {
   port: number;
   token: string;
   workspace: string;
+  mcpProbeServerPath?: string;
 }): Promise<void> {
   const parsedModel = parseModelKey(params.modelKey);
   const appServerArgs = buildCodexCompactionAppServerArgs(params.compactionMode);
@@ -548,6 +550,18 @@ async function writeLiveGatewayConfig(params: {
         },
       },
     },
+    ...(params.mcpProbeServerPath
+      ? {
+          mcp: {
+            servers: {
+              cronCleanupProbe: {
+                command: process.execPath,
+                args: [params.mcpProbeServerPath],
+              },
+            },
+          },
+        }
+      : {}),
     ...(CODEX_HARNESS_AUTH_MODE === "api-key" && parsedModel.provider === "openai"
       ? {
           secrets: { providers: { default: { source: "env" } } },
@@ -1354,6 +1368,8 @@ async function verifyCodexGuardianProbe(params: {
 async function verifyCodexCronMcpProbe(params: {
   client: GatewayClient;
   env: NodeJS.ProcessEnv;
+  invocationPath: string;
+  invocationNonce: string;
   port: number;
   sessionKey: string;
   token: string;
@@ -1407,20 +1423,66 @@ async function verifyCodexCronMcpProbe(params: {
     expectedSessionTarget: "current",
   });
   if (createdJob.id) {
-    await runOpenClawCliJson(
-      [
-        "cron",
-        "rm",
-        createdJob.id,
-        "--json",
-        "--url",
-        `ws://127.0.0.1:${params.port}`,
-        "--token",
-        params.token,
-      ],
-      params.env,
-    );
+    await params.client.request("cron.update", {
+      id: createdJob.id,
+      patch: {
+        sessionTarget: "isolated",
+        payload: {
+          kind: "agentTurn",
+          message:
+            "Call the configured MCP tool cronCleanupProbe__cleanup_probe exactly once. " +
+            "After it succeeds, reply with only CRON_MCP_SCHEDULED_OK.",
+        },
+      },
+    });
+    await fs.rm(params.invocationPath, { force: true });
+    const forced = await params.client.request("cron.run", {
+      id: createdJob.id,
+      mode: "force",
+    });
+    expect(forced).toMatchObject({ ok: true, enqueued: true });
+    const invocationDeadline = Date.now() + CODEX_HARNESS_REQUEST_TIMEOUT_MS;
+    let invocation = "";
+    while (Date.now() < invocationDeadline) {
+      invocation = await fs.readFile(params.invocationPath, "utf8").catch(() => "");
+      if (invocation.trim()) {
+        break;
+      }
+      await delay(500);
+    }
+    expect(invocation.trim()).toBe(params.invocationNonce);
+    await params.client.request("cron.remove", { id: createdJob.id }).catch(() => undefined);
   }
+}
+
+async function writeCodexCronMcpProbeServer(root: string): Promise<{
+  invocationPath: string;
+  invocationNonce: string;
+  serverPath: string;
+}> {
+  const require = createRequire(import.meta.url);
+  const sdkMcpServerPath = require.resolve("@modelcontextprotocol/sdk/server/mcp.js");
+  const sdkStdioServerPath = require.resolve("@modelcontextprotocol/sdk/server/stdio.js");
+  const invocationPath = path.join(root, "cron-mcp-invocation.txt");
+  const invocationNonce = `CRON-MCP-${randomUUID()}`;
+  const serverPath = path.join(root, "cron-mcp-server.mjs");
+  await fs.writeFile(
+    serverPath,
+    [
+      `import fs from "node:fs/promises";`,
+      `import { McpServer } from ${JSON.stringify(sdkMcpServerPath)};`,
+      `import { StdioServerTransport } from ${JSON.stringify(sdkStdioServerPath)};`,
+      `const server = new McpServer({ name: "cron-mcp-live-proof", version: "1.0.0" });`,
+      `server.tool("cleanup_probe", "Record the scheduled MCP proof", async () => {`,
+      `  await fs.writeFile(${JSON.stringify(invocationPath)}, ${JSON.stringify(invocationNonce)}, "utf8");`,
+      `  return { content: [{ type: "text", text: "cron-mcp-scheduled-ok" }] };`,
+      `});`,
+      `await server.connect(new StdioServerTransport());`,
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+  return { invocationPath, invocationNonce, serverPath };
 }
 
 async function waitForCodexSubagentStarted(params: {
@@ -1699,12 +1761,16 @@ describeLive("gateway live (Codex harness)", () => {
       setTestEnvValue("OPENCLAW_STATE_DIR", stateDir);
 
       await fs.mkdir(stateDir, { recursive: true });
+      const mcpProbe = CODEX_HARNESS_MCP_PROBE
+        ? await writeCodexCronMcpProbeServer(tempDir)
+        : undefined;
       await writeLiveGatewayConfig({
         configPath,
         modelKey,
         port,
         token,
         workspace,
+        ...(mcpProbe ? { mcpProbeServerPath: mcpProbe.serverPath } : {}),
         codexAppServerMode: CODEX_HARNESS_GUARDIAN_PROBE ? "guardian" : "yolo",
         codeModeOnly: CODEX_HARNESS_CODE_MODE_ONLY,
         compactionMode: CODEX_HARNESS_COMPACTION_MODE,
@@ -1922,6 +1988,9 @@ describeLive("gateway live (Codex harness)", () => {
             }
 
             if (CODEX_HARNESS_MCP_PROBE) {
+              if (!mcpProbe) {
+                throw new Error("Codex MCP probe server was not prepared");
+              }
               logCodexLiveStep("cron-mcp-probe:start", { sessionKey });
               await verifyCodexCronMcpProbe({
                 client: activeClient,
@@ -1929,6 +1998,8 @@ describeLive("gateway live (Codex harness)", () => {
                 port,
                 token,
                 env: process.env,
+                invocationPath: mcpProbe.invocationPath,
+                invocationNonce: mcpProbe.invocationNonce,
               });
               logCodexLiveStep("cron-mcp-probe:done");
             }

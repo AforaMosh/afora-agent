@@ -11,7 +11,7 @@ import {
   type SessionEntry,
 } from "../../config/sessions.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
-import type { ScheduledRuntimeAuthority } from "../../cron/scheduled-runtime-authority.js";
+import type { CronScheduledNativePolicy } from "../../cron/scheduled-native-policy.js";
 import type { CronScheduledToolPolicy } from "../../cron/scheduled-tool-policy.js";
 import type { PluginHookSessionEndReason } from "../../plugins/hook-types.js";
 import {
@@ -40,7 +40,7 @@ export type RestoredCronContinuation = {
   toolsAllow?: string[];
   toolsAllowIsDefault?: boolean;
   scheduledToolPolicy?: CronScheduledToolPolicy;
-  scheduledRuntimeAuthority?: ScheduledRuntimeAuthority;
+  scheduledNativePolicy?: CronScheduledNativePolicy;
   cliSessionBindingFacts?: {
     extraSystemPromptStatic?: string;
     sourceReplyDeliveryMode?: "automatic" | "message_tool_only";
@@ -155,7 +155,11 @@ export function cronContinuationHasReusableRuntime(params: {
   agentId: string;
   provider: string;
   model: string;
+  scheduledNativePolicy?: CronScheduledNativePolicy;
 }): boolean {
+  if (params.scheduledNativePolicy?.mode === "disabled") {
+    return true;
+  }
   const executionProvider =
     resolveCliRuntimeExecutionProvider({
       provider: params.provider,

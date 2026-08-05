@@ -8,7 +8,7 @@ import { normalizeCronJobIdentityFields } from "../normalize-job-identity.js";
 import { normalizeCronJobInput } from "../normalize.js";
 import { getInvalidPersistedCronJobReason } from "../persisted-shape.js";
 import { tryCronScheduleIdentity } from "../schedule-identity.js";
-import { normalizeScheduledRuntimeAuthority } from "../scheduled-runtime-authority.js";
+import { normalizeCronScheduledNativePolicy } from "../scheduled-native-policy.js";
 import { normalizeCronScheduledToolPolicy } from "../scheduled-tool-policy.js";
 import type { CronJob, CronJobState, CronPacing, CronSchedule, CronStoreFile } from "../types.js";
 import { bindDeliveryColumns, deliveryFromRow } from "./delivery-codec.js";
@@ -282,9 +282,7 @@ function rowToCronJob(row: CronJobRow): CronJob | null {
   const trigger = triggerFromRow(row);
   const pacing = pacingFromRow(row);
   const scheduledToolPolicy = normalizeCronScheduledToolPolicy(jobJson.scheduledToolPolicy);
-  const scheduledRuntimeAuthority = normalizeScheduledRuntimeAuthority(
-    jobJson.scheduledRuntimeAuthority,
-  );
+  const scheduledNativePolicy = normalizeCronScheduledNativePolicy(jobJson.scheduledNativePolicy);
   if (!schedule || !payload) {
     return null;
   }
@@ -303,7 +301,7 @@ function rowToCronJob(row: CronJobRow): CronJob | null {
         }
       : {}),
     ...(scheduledToolPolicy ? { scheduledToolPolicy } : {}),
-    ...(scheduledRuntimeAuthority ? { scheduledRuntimeAuthority } : {}),
+    ...(scheduledNativePolicy ? { scheduledNativePolicy } : {}),
     name: row.name,
     ...(row.description ? { description: row.description } : {}),
     enabled: row.enabled !== 0,

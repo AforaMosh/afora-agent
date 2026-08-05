@@ -34,14 +34,23 @@ const { executeCronRun } = await import("./run-executor.js");
 
 function makeMessageToolPolicyJob(
   delivery: Record<string, unknown> = { mode: "none" },
-  payload: Record<string, unknown> = { kind: "agentTurn", message: "send a message" },
+  payload: Record<string, unknown> = {
+    kind: "agentTurn",
+    message: "send a message",
+    toolsAllow: ["*"],
+    toolsAllowIsDefault: true,
+  },
 ) {
   return {
     id: "message-tool-policy",
     name: "Message Tool Policy",
     schedule: { kind: "every", everyMs: 60_000 },
     sessionTarget: "isolated",
-    payload,
+    scheduledNativePolicy: { version: 1, mode: "inherit" },
+    payload:
+      payload.toolsAllow === undefined
+        ? { ...payload, toolsAllow: ["*"], toolsAllowIsDefault: true }
+        : payload,
     delivery,
   } as never;
 }
@@ -54,12 +63,27 @@ function makeAnnounceMessageToolJob(
     payload?: Record<string, unknown>;
   } = {},
 ) {
+  const payload: Record<string, unknown> = {
+    kind: "agentTurn",
+    message: "send a message",
+    toolsAllow: ["*"],
+    toolsAllowIsDefault: true,
+    ...options.payload,
+  };
+  if (
+    options.payload &&
+    Object.hasOwn(options.payload, "toolsAllow") &&
+    !Object.hasOwn(options.payload, "toolsAllowIsDefault")
+  ) {
+    delete payload.toolsAllowIsDefault;
+  }
   return {
     id: options.id ?? "message-tool-policy",
     name: options.name ?? "Message Tool Policy",
     schedule: { kind: "every", everyMs: 60_000 },
     sessionTarget: "isolated",
-    payload: { kind: "agentTurn", message: "send a message", ...options.payload },
+    scheduledNativePolicy: { version: 1, mode: "inherit" },
+    payload,
     delivery: { mode: "announce", channel: "messagechat", to: "123", ...options.delivery },
   } as never;
 }
@@ -565,7 +589,13 @@ describe("runCronIsolatedAgentTurn message tool policy", () => {
         name: "Message Tool Policy",
         schedule: { kind: "every", everyMs: 60_000 },
         sessionTarget: "isolated",
-        payload: { kind: "agentTurn", message: "send a message" },
+        scheduledNativePolicy: { version: 1, mode: "inherit" },
+        payload: {
+          kind: "agentTurn",
+          message: "send a message",
+          toolsAllow: ["*"],
+          toolsAllowIsDefault: true,
+        },
         delivery: { mode: "none", channel: "topicchat", to: "room#42", threadId: 42 },
       } as never,
     });
@@ -663,7 +693,13 @@ describe("runCronIsolatedAgentTurn message tool policy", () => {
         name: "Message Tool Policy",
         schedule: { kind: "every", everyMs: 60_000 },
         sessionTarget: "isolated",
-        payload: { kind: "agentTurn", message: "send a message" },
+        scheduledNativePolicy: { version: 1, mode: "inherit" },
+        payload: {
+          kind: "agentTurn",
+          message: "send a message",
+          toolsAllow: ["*"],
+          toolsAllowIsDefault: true,
+        },
         delivery: { mode: "none" },
       } as never,
     });
@@ -862,7 +898,7 @@ describe("runCronIsolatedAgentTurn message tool policy", () => {
     expect(cliRun.toolsAllow).toEqual(["read", "cron"]);
   });
 
-  it("keeps a cron-tool default toolsAllow marker after a self-edit before CLI execution", async () => {
+  it("keeps a cron-tool default toolsAllow marker while reauthorizing a self-edit to OpenClaw", async () => {
     mockCliAnnounceRun();
     const job = makeMessageToolPolicyJob(
       { mode: "announce", channel: "messagechat", to: "123" },
@@ -887,12 +923,11 @@ describe("runCronIsolatedAgentTurn message tool policy", () => {
       job,
     });
 
-    const cliRun = expectRecordFields(
-      getMockCallArg(runCliAgentMock, 0, 0, "CLI run"),
-      {},
-      "CLI run params",
-    );
-    expect(cliRun.toolsAllow).toEqual(["read", "cron"]);
+    expect(runCliAgentMock).not.toHaveBeenCalled();
+    const embeddedRun = expectEmbeddedRunFields({ toolsAllow: ["read", "cron"] });
+    expect(embeddedRun.agentHarnessRuntimeOverride).toBe("openclaw");
+    expect(job.payload.toolsAllowIsDefault).toBe(true);
+    expect(job.scheduledNativePolicy).toEqual({ version: 1, mode: "disabled" });
   });
 
   it("keeps automatic exec completion notifications when announce delivery is active", async () => {

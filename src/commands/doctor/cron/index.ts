@@ -3,9 +3,7 @@ import { isRecord } from "@openclaw/normalization-core/record-coerce";
 import { note } from "../../../../packages/terminal-core/src/note.js";
 import { formatCliCommand } from "../../../cli/command-format.js";
 import type { OpenClawConfig } from "../../../config/types.openclaw.js";
-import { resolveConfiguredCronRuntimeAuthorityStatus } from "../../../cron/configured-runtime-authority.js";
 import { loadCronQuarantinedJobs, resolveCronJobsStorePath } from "../../../cron/store.js";
-import type { CronJob } from "../../../cron/types.js";
 import type { HealthFinding } from "../../../flows/health-checks.js";
 import { formatErrorMessage as errorMessage } from "../../../infra/errors.js";
 import { resolveOpenClawStateSqlitePath } from "../../../state/openclaw-state-db.paths.js";
@@ -21,7 +19,7 @@ import {
 import {
   formatLegacyIssuePreview,
   formatScheduledToolPolicyAdvisory,
-  formatIncompleteScheduledRuntimeAuthorityAdvisory,
+  formatScheduledNativePolicyAdvisory,
   formatUnresolvedCommandPromptAdvisory,
   formatUnresolvedShellPromptAdvisory,
 } from "./repair-plan.js";
@@ -35,28 +33,6 @@ export {
 
 function pluralize(count: number, noun: string) {
   return `${count} ${noun}${count === 1 ? "" : "s"}`;
-}
-
-function collectIncompleteScheduledRuntimeAuthorityJobs(params: {
-  cfg: OpenClawConfig;
-  jobs: ReadonlyArray<Record<string, unknown>>;
-}): string[] {
-  const names: string[] = [];
-  for (const raw of params.jobs) {
-    const job = raw as unknown as CronJob;
-    if (resolveConfiguredCronRuntimeAuthorityStatus({ cfg: params.cfg, job }) === "incomplete") {
-      const name =
-        typeof raw.name === "string" && raw.name.trim()
-          ? raw.name.trim()
-          : typeof raw.id === "string" && raw.id.trim()
-            ? raw.id.trim()
-            : undefined;
-      if (name) {
-        names.push(name);
-      }
-    }
-  }
-  return names;
 }
 
 function readLegacyCronStorePath(cfg: OpenClawConfig): string | undefined {
@@ -267,10 +243,6 @@ export async function collectLegacyCronStoreHealthFindings(params: {
   }
 
   const normalized = normalizeStoredCronJobs(rawJobs);
-  const incompleteRuntimeAuthorityJobs = collectIncompleteScheduledRuntimeAuthorityJobs({
-    cfg: params.cfg,
-    jobs: normalized.jobs,
-  });
   for (const line of formatLegacyIssuePreview(normalized.issues)) {
     findings.push(
       legacyCronStoreFinding({
@@ -292,9 +264,14 @@ export async function collectLegacyCronStoreHealthFindings(params: {
       "have invalid scheduled authority provenance",
     ],
     [
-      incompleteRuntimeAuthorityJobs,
-      "cron-scheduled-runtime-authority-reauthorization",
-      "have incomplete inherited app/MCP authority",
+      normalized.legacyScheduledNativePolicyJobs,
+      "cron-scheduled-native-authority-reauthorization",
+      "require explicit native authority reauthorization",
+    ],
+    [
+      normalized.invalidScheduledNativePolicyJobs,
+      "cron-scheduled-native-authority-valid",
+      "have invalid native authority provenance",
     ],
   ] as const) {
     if (names.length > 0) {
@@ -496,10 +473,6 @@ export async function maybeRepairLegacyCronStore(params: {
   }
 
   const normalized = normalizeStoredCronJobs(rawJobs);
-  const incompleteRuntimeAuthorityJobs = collectIncompleteScheduledRuntimeAuthorityJobs({
-    cfg: params.cfg,
-    jobs: normalized.jobs,
-  });
   const notifyCount = rawJobs.filter((job) => job.notify === true).length;
   const dreamingStaleCount = countStaleDreamingJobs(rawJobs);
   // Unresolved agentTurn command prompts are not auto-fixable; keep them out of the
@@ -523,11 +496,12 @@ export async function maybeRepairLegacyCronStore(params: {
   if (scheduledToolPolicyAdvisory) {
     note(scheduledToolPolicyAdvisory, "Cron");
   }
-  const runtimeAuthorityAdvisory = formatIncompleteScheduledRuntimeAuthorityAdvisory(
-    incompleteRuntimeAuthorityJobs,
-  );
-  if (runtimeAuthorityAdvisory) {
-    note(runtimeAuthorityAdvisory, "Cron");
+  const scheduledNativePolicyAdvisory = formatScheduledNativePolicyAdvisory({
+    legacyJobs: normalized.legacyScheduledNativePolicyJobs,
+    invalidJobs: normalized.invalidScheduledNativePolicyJobs,
+  });
+  if (scheduledNativePolicyAdvisory) {
+    note(scheduledNativePolicyAdvisory, "Cron");
   }
   const previewLines = formatLegacyIssuePreview(normalized.issues);
   if (legacyStoreDetected) {

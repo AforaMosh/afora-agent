@@ -1,9 +1,6 @@
 import {
   assertContextEngineHostSupport,
   CODEX_APP_SERVER_CONTEXT_ENGINE_HOST,
-  embeddedAgentLog,
-  loadCodexBundleMcpThreadConfig,
-  supportsModelTools,
   type EmbeddedRunAttemptParams,
 } from "openclaw/plugin-sdk/agent-harness-runtime";
 import { prepareCodexAppServerAuthBinding } from "./auth-binding.js";
@@ -138,15 +135,6 @@ export async function prepareCodexAttemptRuntime(connection: CodexAttemptConnect
       ? undefined
       : resolveCodexAppServerFallbackApiKeyCacheKey({ startOptions: appServer.start });
   preDynamicStartupStages.mark("auth-cache");
-  const bundleMcpThreadConfig = await loadCodexBundleMcpThreadConfig({
-    workspaceDir: effectiveWorkspace,
-    cfg: params.config,
-    toolsEnabled: usesSupervisionConnection || supportsModelTools(params.model),
-    disableTools: params.disableTools,
-    toolsAllow: params.toolsAllow,
-    toolOverrides: params.toolOverrides,
-  });
-  preDynamicStartupStages.mark("bundle-mcp");
   const sandboxExecServerEnabled = isCodexSandboxExecServerEnabled(pluginConfig);
   const nativeToolSurfaceEnabled = shouldEnableCodexAppServerNativeToolSurface(
     runtimeParams,
@@ -182,9 +170,6 @@ export async function prepareCodexAttemptRuntime(connection: CodexAttemptConnect
         })
       : "unsupported";
   preDynamicStartupStages.mark("provider-capabilities");
-  for (const diagnostic of bundleMcpThreadConfig.diagnostics) {
-    embeddedAgentLog.warn(`bundle-mcp: ${diagnostic.pluginId}: ${diagnostic.message}`);
-  }
   if (activeContextEngine) {
     assertContextEngineHostSupport({
       contextEngine: activeContextEngine,
@@ -208,7 +193,6 @@ export async function prepareCodexAttemptRuntime(connection: CodexAttemptConnect
     effectiveRuntimeModelId,
     startupAuthAccountCacheKey,
     startupEnvApiKeyCacheKey,
-    bundleMcpThreadConfig,
     sandboxExecServerEnabled,
     nativeToolSurfaceEnabled,
     nativeProviderWebSearchSupport,

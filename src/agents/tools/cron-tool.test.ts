@@ -1417,65 +1417,6 @@ describe("cron tool", () => {
     expect(params?.payload?.toolsAllow).toEqual(["read", "automations"]);
   });
 
-  it("attaches server-only runtime authority to finite creator-capped adds", async () => {
-    const resolveCreatorRuntimeAuthority = vi.fn(async () => ({
-      version: 1 as const,
-      runtime: "codex" as const,
-      openClawTools: ["read", "automations"],
-      apps: [],
-      userMcpServers: [{ source: "codex" as const, serverName: "todoist", toolNames: ["list"] }],
-      pluginMcpServers: [],
-    }));
-    const tool = createTestCronTool({
-      agentSessionKey: "agent:main:telegram:group:restricted-room",
-      creatorToolAllowlist: ["read", "cron"],
-      resolveCreatorRuntimeAuthority,
-    });
-
-    await tool.execute("call-default-capped-runtime-authority", {
-      action: "add",
-      job: buildReminderAgentTurnJob(),
-    });
-
-    expect(resolveCreatorRuntimeAuthority).toHaveBeenCalledOnce();
-    expect(expectSingleGatewayCallMethod("cron.add")).toMatchObject({
-      internalScheduledRuntimeAuthority: {
-        version: 1,
-        runtime: "codex",
-        userMcpServers: [{ source: "codex", serverName: "todoist", toolNames: ["list"] }],
-      },
-    });
-  });
-
-  it("does not capture ambient runtime authority for explicit finite caps", async () => {
-    const resolveCreatorRuntimeAuthority = vi.fn(async () => ({
-      version: 1 as const,
-      runtime: "codex" as const,
-      openClawTools: ["read"],
-      apps: [],
-      userMcpServers: [],
-      pluginMcpServers: [],
-    }));
-    const tool = createTestCronTool({
-      agentSessionKey: "agent:main:telegram:group:restricted-room",
-      creatorToolAllowlist: ["read", "cron"],
-      resolveCreatorRuntimeAuthority,
-    });
-
-    await tool.execute("call-explicit-capped-runtime-authority", {
-      action: "add",
-      job: {
-        ...buildReminderAgentTurnJob(),
-        payload: { kind: "agentTurn", message: "hello", toolsAllow: ["read"] },
-      },
-    });
-
-    expect(resolveCreatorRuntimeAuthority).not.toHaveBeenCalled();
-    expect(expectSingleGatewayCallMethod("cron.add")).not.toHaveProperty(
-      "internalScheduledRuntimeAuthority",
-    );
-  });
-
   it("caps trigger-script systemEvent adds to the creator tool surface", async () => {
     const tool = createTestCronTool({
       agentSessionKey: "agent:main:telegram:group:restricted-room",
@@ -1578,46 +1519,7 @@ describe("cron tool", () => {
       method: "cron.update",
       params: {
         id: "job-dormant",
-        patch: {
-          payload: {
-            kind: "systemEvent",
-            toolsAllow: ["read"],
-            toolsAllowIsDefault: false,
-          },
-        },
-      },
-    });
-  });
-
-  it("does not capture ambient runtime authority for explicit finite updates", async () => {
-    callGatewayMock.mockResolvedValueOnce({ ok: true });
-    const resolveCreatorRuntimeAuthority = vi.fn();
-    const tool = createTestCronTool({
-      agentSessionKey: "agent:main:telegram:group:restricted-room",
-      creatorToolAllowlist: ["read", "cron"],
-      resolveCreatorRuntimeAuthority,
-    });
-
-    await tool.execute("call-explicit-update-runtime-authority", {
-      action: "update",
-      id: "job-explicit",
-      patch: {
-        payload: { kind: "agentTurn", toolsAllow: ["read"] },
-      },
-    });
-
-    expect(resolveCreatorRuntimeAuthority).not.toHaveBeenCalled();
-    expect(readGatewayCall()).toEqual({
-      method: "cron.update",
-      params: {
-        id: "job-explicit",
-        patch: {
-          payload: {
-            kind: "agentTurn",
-            toolsAllow: ["read"],
-            toolsAllowIsDefault: false,
-          },
-        },
+        patch: { payload: { kind: "systemEvent", toolsAllow: ["read"] } },
       },
     });
   });
@@ -2729,7 +2631,6 @@ describe("cron tool", () => {
       model: "openrouter/deepseek/deepseek-r1",
       fallbacks: ["openrouter/gpt-4.1-mini", "anthropic/claude-haiku-3-5"],
       toolsAllow: ["exec", "read"],
-      toolsAllowIsDefault: false,
     });
   });
 
@@ -2753,13 +2654,7 @@ describe("cron tool", () => {
       params: {
         id: "job-flat-system-event-cap",
         expectedConfigRevision: "sha256:test",
-        patch: {
-          payload: {
-            kind: "systemEvent",
-            toolsAllow: ["cron"],
-            toolsAllowIsDefault: false,
-          },
-        },
+        patch: { payload: { kind: "systemEvent", toolsAllow: ["cron"] } },
       },
     });
   });
@@ -2940,7 +2835,6 @@ describe("cron tool", () => {
     expect(params?.patch?.payload).toEqual({
       kind: "agentTurn",
       toolsAllow: ["exec", "read"],
-      toolsAllowIsDefault: false,
     });
   });
 
@@ -3001,13 +2895,7 @@ describe("cron tool", () => {
       params: {
         id: "job-system-event",
         expectedConfigRevision: "sha256:test",
-        patch: {
-          payload: {
-            kind: "systemEvent",
-            toolsAllow: ["cron"],
-            toolsAllowIsDefault: false,
-          },
-        },
+        patch: { payload: { kind: "systemEvent", toolsAllow: ["cron"] } },
       },
     });
   });
@@ -3048,7 +2936,6 @@ describe("cron tool", () => {
     expect(params?.patch?.payload).toEqual({
       kind: "agentTurn",
       toolsAllow: ["read"],
-      toolsAllowIsDefault: false,
     });
   });
 

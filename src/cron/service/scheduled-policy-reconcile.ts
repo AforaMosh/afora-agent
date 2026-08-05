@@ -1,7 +1,8 @@
 import {
-  bindScheduledRuntimeAuthorityToToolsAllow,
-  type ScheduledRuntimeAuthority,
-} from "../scheduled-runtime-authority.js";
+  deriveCronScheduledNativePolicy,
+  normalizeCronScheduledNativePolicy,
+  type CronScheduledNativePolicy,
+} from "../scheduled-native-policy.js";
 import {
   createTrustedCronScheduledToolPolicy,
   resolveCronScheduledToolPolicy,
@@ -12,7 +13,7 @@ import type { CronJob } from "../types.js";
 
 export type CronScheduledPolicyInputs = {
   scheduledToolPolicy?: CronScheduledToolPolicy;
-  scheduledRuntimeAuthority?: ScheduledRuntimeAuthority;
+  scheduledNativePolicy?: CronScheduledNativePolicy;
 };
 
 function stampScheduledToolPolicy(
@@ -34,28 +35,29 @@ function stampScheduledToolPolicy(
   job.scheduledToolPolicy = structuredClone(policy);
 }
 
-function stampScheduledRuntimeAuthority(
+function stampScheduledNativePolicy(
   job: CronJob,
-  authority: ScheduledRuntimeAuthority | undefined,
+  scheduledNativePolicy: CronScheduledNativePolicy | undefined,
 ): void {
-  if (
-    !cronJobUsesToolRuntime(job) ||
-    job.payload.toolsAllow === undefined ||
-    job.payload.toolsAllowIsDefault !== true ||
-    !authority
-  ) {
-    delete job.scheduledRuntimeAuthority;
+  if (job.payload.kind !== "agentTurn" || job.payload.toolsAllow === undefined) {
+    delete job.scheduledNativePolicy;
     return;
   }
-  job.scheduledRuntimeAuthority = bindScheduledRuntimeAuthorityToToolsAllow({
-    authority: structuredClone(authority),
-    toolsAllow: job.payload.toolsAllow,
-  });
+  const normalized = normalizeCronScheduledNativePolicy(scheduledNativePolicy);
+  if (job.scheduledToolPolicy?.mode === "account" && !normalized) {
+    throw new Error("account-scoped cron authority requires signed native creator provenance");
+  }
+  const policy = normalized ?? deriveCronScheduledNativePolicy(job.payload.toolsAllow);
+  if (!policy) {
+    delete job.scheduledNativePolicy;
+    return;
+  }
+  job.scheduledNativePolicy = policy;
 }
 
 export function stampCronScheduledPolicies(job: CronJob, inputs: CronScheduledPolicyInputs): void {
   stampScheduledToolPolicy(job, inputs.scheduledToolPolicy);
-  stampScheduledRuntimeAuthority(job, inputs.scheduledRuntimeAuthority);
+  stampScheduledNativePolicy(job, inputs.scheduledNativePolicy);
 }
 
 export function reconcileCronScheduledPolicies(
@@ -68,23 +70,35 @@ export function reconcileCronScheduledPolicies(
   const { job } = params;
   if (!cronJobUsesToolRuntime(job) || job.payload.toolsAllow === undefined) {
     delete job.scheduledToolPolicy;
-    delete job.scheduledRuntimeAuthority;
+    delete job.scheduledNativePolicy;
     return;
   }
-  const current = resolveCronScheduledToolPolicy({
+
+  const currentToolPolicy = resolveCronScheduledToolPolicy({
     toolsAllow: job.payload.toolsAllow,
     scheduledToolPolicy: job.scheduledToolPolicy,
     owner: job.owner,
   });
-  if (current) {
-    job.scheduledToolPolicy = current;
-    if (params.explicitlyMutatesToolsAllow) {
-      stampScheduledRuntimeAuthority(job, params.scheduledRuntimeAuthority);
+  if (currentToolPolicy) {
+    job.scheduledToolPolicy = currentToolPolicy;
+  } else {
+    delete job.scheduledToolPolicy;
+    if (params.explicitlyMutatesToolsAllow || !params.previouslyUsedToolRuntime) {
+      stampScheduledToolPolicy(job, params.scheduledToolPolicy);
     }
+  }
+
+  if (job.payload.kind !== "agentTurn") {
+    delete job.scheduledNativePolicy;
     return;
   }
-  delete job.scheduledToolPolicy;
+  const currentNativePolicy = normalizeCronScheduledNativePolicy(job.scheduledNativePolicy);
   if (params.explicitlyMutatesToolsAllow || !params.previouslyUsedToolRuntime) {
-    stampCronScheduledPolicies(job, params);
+    stampScheduledNativePolicy(job, params.scheduledNativePolicy);
+  } else if (currentNativePolicy) {
+    job.scheduledNativePolicy = currentNativePolicy;
+  } else {
+    // Missing/invalid persisted provenance remains visible to preflight and Doctor.
+    delete job.scheduledNativePolicy;
   }
 }

@@ -10,7 +10,7 @@ import { mergeSessionSnapshotChanges } from "../../config/sessions/session-snaps
 import { isCronSessionKey } from "../../sessions/session-key-utils.js";
 import { isSessionWorkAdmissionActive } from "../../sessions/session-lifecycle-admission.js";
 import type { SkillSnapshot } from "../../skills/types.js";
-import type { ScheduledRuntimeAuthority } from "../scheduled-runtime-authority.js";
+import type { CronScheduledNativePolicy } from "../scheduled-native-policy.js";
 import type { CronScheduledToolPolicy } from "../scheduled-tool-policy.js";
 import type { resolveCronSession } from "./session.js";
 
@@ -228,7 +228,7 @@ export function createCronRunContinuationSession(params: {
   toolsAllow?: string[];
   toolsAllowIsDefault?: boolean;
   scheduledToolPolicy?: CronScheduledToolPolicy;
-  scheduledRuntimeAuthority?: ScheduledRuntimeAuthority;
+  scheduledNativePolicy?: CronScheduledNativePolicy;
   cliSessionBindingFacts?: {
     extraSystemPromptStatic?: string;
     sourceReplyDeliveryMode?: "automatic" | "message_tool_only";
@@ -236,18 +236,24 @@ export function createCronRunContinuationSession(params: {
   };
   persistSessionEntry: PersistSessionEntry;
 }): CronRunContinuationSession {
+  if (!Array.isArray(params.toolsAllow) || !params.scheduledNativePolicy) {
+    throw new Error("cron continuation requires a complete scheduled authority envelope");
+  }
   const scheduledToolPolicy = resolveScheduledToolPolicyContext({
     toolsAllow: params.toolsAllow,
     scheduledToolPolicy: params.scheduledToolPolicy,
   });
+  if (params.scheduledToolPolicy !== undefined && !scheduledToolPolicy) {
+    throw new Error("cron continuation scheduled tool policy is invalid");
+  }
   const continuation: NonNullable<SessionEntry["cronRunContinuation"]> = {
     lifecycleRevision: params.cronSession.lifecycleRevision,
     phase: "running" as const,
-    ...(params.toolsAllow !== undefined ? { toolsAllow: [...params.toolsAllow] } : {}),
+    toolsAllow: [...params.toolsAllow],
     ...(params.toolsAllowIsDefault === true ? { toolsAllowIsDefault: true } : {}),
     ...(scheduledToolPolicy ? { scheduledToolPolicy } : {}),
-    ...(params.scheduledRuntimeAuthority
-      ? { scheduledRuntimeAuthority: structuredClone(params.scheduledRuntimeAuthority) }
+    ...(params.scheduledNativePolicy
+      ? { scheduledNativePolicy: structuredClone(params.scheduledNativePolicy) }
       : {}),
     ...(params.cliSessionBindingFacts
       ? { cliSessionBindingFacts: { ...params.cliSessionBindingFacts } }

@@ -1,5 +1,6 @@
 // Ambient trusted caller context for model-mediated Gateway tool calls.
 import { AsyncLocalStorage } from "node:async_hooks";
+import type { AgentRuntimeCronCreatorPolicy } from "../../gateway/agent-runtime-identity-token.js";
 import { copyAgentToolMetadata } from "../agent-tool-metadata.js";
 import type { AnyAgentTool } from "./common.js";
 
@@ -8,6 +9,8 @@ type GatewayToolCallerIdentity = {
   sessionKey: string;
   /** Host-signed capability for the scheduled run's existing self-management surface. */
   cronSelfManagementJobId?: string;
+  /** Host-derived native authority captured when this runtime creates or reauthorizes cron. */
+  cronCreatorPolicy?: AgentRuntimeCronCreatorPolicy;
   // Trusted run context, carried separately from model-authored tool arguments.
   turnSourceChannel?: string;
   turnSourceTo?: string;
@@ -46,6 +49,7 @@ export async function withGatewayToolCallerIdentity<T>(
       ...(identity.cronSelfManagementJobId?.trim()
         ? { cronSelfManagementJobId: identity.cronSelfManagementJobId.trim() }
         : {}),
+      ...(identity.cronCreatorPolicy ? { cronCreatorPolicy: identity.cronCreatorPolicy } : {}),
       ...(identity.turnSourceChannel?.trim()
         ? { turnSourceChannel: identity.turnSourceChannel.trim() }
         : {}),
@@ -89,6 +93,7 @@ export function createGatewayToolCallerWrapper(
           turnSourceTo: source.currentMessagingTarget ?? source.currentChannelId ?? source.agentTo,
           turnSourceAccountId: source.agentAccountId,
           turnSourceThreadId: source.currentThreadTs ?? source.agentThreadId,
+          cronCreatorPolicy: { version: 1, codexNativeSurface: "disabled" as const },
         }
       : undefined;
   return (tool) => wrapToolWithGatewayCallerIdentity(tool, identity);
