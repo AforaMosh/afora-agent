@@ -37,7 +37,6 @@ import {
   detachRelayAgentRuns,
   enforceRelaySessionLimits,
   pruneInactiveRelayAgentRuns,
-  registerTalkRealtimeRelayAgentRun,
   resetTalkRealtimeRelayContinuity,
   steerTalkRealtimeRelayAgentRun,
 } from "./talk-realtime-relay-operations.js";
