@@ -675,9 +675,10 @@ describe("headless Code Mode", () => {
           const calls = Array.from({ length: 129 }, () => () =>
             tools.call("openclaw:core:budgeted", {}),
           );
-          // Keep each leg within the 128-call pending cap while proving the cumulative budget.
-          await Promise.all(calls.slice(0, 128).map((call) => call()));
-          await calls[128]();
+          // Keep each leg within the default 16-call pending cap while proving the cumulative budget.
+          for (let offset = 0; offset < calls.length; offset += 16) {
+            await Promise.all(calls.slice(offset, offset + 16).map((call) => call()));
+          }
           return true;
         `,
         maxToolCalls: 200,
