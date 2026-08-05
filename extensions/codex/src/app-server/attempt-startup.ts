@@ -59,7 +59,6 @@ import type {
   CodexDynamicToolSpec,
   CodexSandboxPolicy,
   CodexTurnEnvironmentParams,
-  JsonObject,
 } from "./protocol.js";
 import {
   ensureCodexSandboxExecServerEnvironment,

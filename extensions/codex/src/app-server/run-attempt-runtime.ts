@@ -31,7 +31,6 @@ export async function prepareCodexAttemptRuntime(connection: CodexAttemptConnect
     startupClientAuthProfileId,
     agentDir,
     preDynamicStartupStages,
-    effectiveWorkspace,
     contextSessionKey,
     sandboxSessionKey,
     sessionAgentId,

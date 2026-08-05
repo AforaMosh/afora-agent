@@ -231,7 +231,7 @@ export async function prepareCodexAttemptTools(runtime: CodexAttemptRuntime) {
     const configuredMcpAppTools = configuredMcpTools
       ? filterCodexDynamicTools(configuredMcpTools.appTools, pluginConfig)
       : [];
-    configuredMcpTools?.restrictAppTools(configuredMcpAppTools);
+    configuredMcpTools?.restrictAppTools?.(configuredMcpAppTools);
     const creatorToolNames = new Set(
       cronCreatorToolAllowlist.map((entry) => (typeof entry === "string" ? entry : entry.name)),
     );
