@@ -1382,7 +1382,7 @@ async function sendMessageSlackQueuedInner(params: {
       throw new Error("missing_enterprise_slack_upload_completion_client");
     }
     const [firstChunk, ...rest] = resolvedChunks;
-    lastMessageId = await uploadSlackFile({
+    const uploaded = await uploadSlackFile({
       client,
       ...(enterpriseDelivery?.uploadCompletionClient
         ? { completionClient: enterpriseDelivery.uploadCompletionClient }
@@ -1400,6 +1400,9 @@ async function sendMessageSlackQueuedInner(params: {
       onPlatformSendDispatch: dispatchOnce,
       ...(enterpriseDelivery ? { auditContext: "slack-enterprise-immediate-upload" } : {}),
     });
+    lastMessageId = uploaded.messageId;
+    const confirmedThreadTs = normalizeSlackThreadTsCandidate(uploaded.confirmedThreadTs);
+    canonicalDeliveredThreadTs ??= confirmedThreadTs;
     sentMessageIds.push(lastMessageId);
     await reportDelivery({
       messageId: lastMessageId,
@@ -1409,7 +1412,7 @@ async function sendMessageSlackQueuedInner(params: {
         platformMessageIds: [lastMessageId],
         channelId,
         kind: "media",
-        threadTs: normalizeSlackThreadTsCandidate(opts.threadTs),
+        threadTs: confirmedThreadTs,
       }),
     });
     chunksToPost = rest;
@@ -1486,7 +1489,7 @@ async function sendMessageSlackQueuedInner(params: {
       platformMessageIds: sentMessageIds.length ? sentMessageIds : [messageId],
       channelId: deliveredChannelId,
       kind: opts.mediaUrl ? "media" : "text",
-      threadTs: opts.mediaUrl ? deliveredThreadTs : canonicalDeliveredThreadTs,
+      threadTs: canonicalDeliveredThreadTs,
     }),
   };
 }
