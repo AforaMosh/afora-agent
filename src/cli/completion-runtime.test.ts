@@ -548,6 +548,55 @@ describe("completion-runtime", () => {
     });
   });
 
+  it("continues after an unreadable profile and removes later owned entries", async () => {
+    await withBashCompletionHome(async ({ homeDir }) => {
+      const zshProfile = resolveCompletionProfilePath("zsh");
+      const bashProfile = path.join(homeDir, ".bash_profile");
+      const bashCachePath = resolveCompletionCachePath("bash", "openclaw");
+      const readError = Object.assign(new Error("profile unreadable"), { code: "EACCES" });
+      const onProfileError = vi.fn();
+      await fs.writeFile(zshProfile, "export ZSH_KEEP=1\n", "utf-8");
+      await fs.writeFile(
+        bashProfile,
+        `# OpenClaw Completion\n[ -f "${bashCachePath}" ] && source "${bashCachePath}"\n`,
+        "utf-8",
+      );
+
+      const readFile = vi.spyOn(fs, "readFile").mockRejectedValueOnce(readError);
+      await expect(removeCompletionInstall({ onProfileError })).resolves.toEqual([bashProfile]);
+      readFile.mockRestore();
+
+      expect(onProfileError).toHaveBeenCalledWith(zshProfile, readError);
+      await expect(fs.readFile(zshProfile, "utf-8")).resolves.toBe("export ZSH_KEEP=1\n");
+      await expect(fs.readFile(bashProfile, "utf-8")).resolves.toBe("");
+    });
+  });
+
+  it("continues after a profile write failure and removes later owned entries", async () => {
+    await withBashCompletionHome(async ({ homeDir }) => {
+      const zshProfile = resolveCompletionProfilePath("zsh");
+      const bashProfile = path.join(homeDir, ".bash_profile");
+      const zshCachePath = resolveCompletionCachePath("zsh", "openclaw");
+      const bashCachePath = resolveCompletionCachePath("bash", "openclaw");
+      const writeError = new Error("profile is not writable");
+      const onProfileError = vi.fn();
+      const zshContent = `# OpenClaw Completion\n[ -f "${zshCachePath}" ] && source "${zshCachePath}"\n`;
+      await fs.writeFile(zshProfile, zshContent, "utf-8");
+      await fs.writeFile(
+        bashProfile,
+        `# OpenClaw Completion\n[ -f "${bashCachePath}" ] && source "${bashCachePath}"\n`,
+        "utf-8",
+      );
+      outputFileMocks.publishOutputFileAtomically.mockRejectedValueOnce(writeError);
+
+      await expect(removeCompletionInstall({ onProfileError })).resolves.toEqual([bashProfile]);
+
+      expect(onProfileError).toHaveBeenCalledWith(zshProfile, writeError);
+      await expect(fs.readFile(zshProfile, "utf-8")).resolves.toBe(zshContent);
+      await expect(fs.readFile(bashProfile, "utf-8")).resolves.toBe("");
+    });
+  });
+
   it.skipIf(process.platform === "win32")(
     "removes aliased shell registrations once with dry-run parity",
     async () => {

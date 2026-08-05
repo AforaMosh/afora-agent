@@ -197,7 +197,14 @@ export async function uninstallCommand(runtime: RuntimeEnv, opts: UninstallOptio
   if (scopes.has("state")) {
     // Completion profiles point into state, so remove owned entries before deleting their cache.
     try {
-      const completionProfiles = await removeCompletionInstall({ dryRun });
+      const completionProfiles = await removeCompletionInstall({
+        dryRun,
+        onProfileError: (profilePath, error) => {
+          runtime.error(
+            `Failed to remove OpenClaw shell completion from ${shortenHomeInString(profilePath)}: ${formatErrorMessage(error)}. State cleanup will continue; remove the affected completion block manually if it remains.`,
+          );
+        },
+      });
       for (const profilePath of completionProfiles) {
         const label = shortenHomeInString(profilePath);
         runtime.log(

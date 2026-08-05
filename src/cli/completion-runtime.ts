@@ -432,7 +432,11 @@ async function writeCompletionProfile(profilePath: string, content: string): Pro
 
 /** Removes OpenClaw-owned completion entries from supported shell profiles. */
 export async function removeCompletionInstall(
-  options: { dryRun?: boolean; binName?: string } = {},
+  options: {
+    dryRun?: boolean;
+    binName?: string;
+    onProfileError?: (profilePath: string, error: unknown) => void;
+  } = {},
 ): Promise<string[]> {
   const binName = options.binName ?? "openclaw";
   const changedPaths: string[] = [];
@@ -446,26 +450,25 @@ export async function removeCompletionInstall(
   for (const shell of COMPLETION_SHELLS) {
     const cachePath = resolveCompletionCachePath(shell, binName);
     for (const profilePath of resolveCompletionProfileCandidates(shell)) {
-      let content: string;
       try {
-        content = await fs.readFile(profilePath, "utf-8");
+        const content = await fs.readFile(profilePath, "utf-8");
+        const referentPath = await fs.realpath(profilePath);
+        const existing = profilesByReferent.get(referentPath);
+        if (existing) {
+          existing.cachePaths.add(cachePath);
+          continue;
+        }
+        profilesByReferent.set(referentPath, {
+          cachePaths: new Set([cachePath]),
+          content,
+          profilePath,
+        });
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code === "ENOENT") {
           continue;
         }
-        throw error;
+        options.onProfileError?.(profilePath, error);
       }
-      const referentPath = await fs.realpath(profilePath);
-      const existing = profilesByReferent.get(referentPath);
-      if (existing) {
-        existing.cachePaths.add(cachePath);
-        continue;
-      }
-      profilesByReferent.set(referentPath, {
-        cachePaths: new Set([cachePath]),
-        content,
-        profilePath,
-      });
     }
   }
 
@@ -474,10 +477,15 @@ export async function removeCompletionInstall(
     if (next === profile.content) {
       continue;
     }
-    changedPaths.push(profile.profilePath);
     if (!options.dryRun) {
-      await writeCompletionProfile(referentPath, next);
+      try {
+        await writeCompletionProfile(referentPath, next);
+      } catch (error) {
+        options.onProfileError?.(profile.profilePath, error);
+        continue;
+      }
     }
+    changedPaths.push(profile.profilePath);
   }
 
   return changedPaths;

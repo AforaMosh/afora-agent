@@ -84,7 +84,12 @@ describe("uninstallCommand", () => {
       dryRun: true,
     });
 
-    expect(removeCompletionInstall).toHaveBeenCalledWith({ dryRun: true });
+    expect(removeCompletionInstall).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dryRun: true,
+        onProfileError: expect.any(Function),
+      }),
+    );
     expect(cleanupCommandLogMessages(runtime)).toContain(
       "[dry-run] remove OpenClaw completion from /tmp/.bashrc",
     );
