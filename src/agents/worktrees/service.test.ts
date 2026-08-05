@@ -61,21 +61,17 @@ async function initializeRepository(
   return await fs.realpath(repo);
 }
 
-async function initializeOrigin(root: string, repo: string): Promise<void> {
+async function addRemote(root: string, repo: string): Promise<string> {
   const remote = path.join(root, "remote.git");
   await execFileAsync("git", ["clone", "--bare", repo, remote]);
-  await git(repo, "remote", "add", "origin", "../remote.git");
+  await git(repo, "remote", "add", "origin", remote);
   await git(repo, "push", "-u", "origin", "main");
   await git(repo, "remote", "set-head", "origin", "-a");
-}
-
-async function syncOrigin(repo: string): Promise<void> {
-  await git(repo, "push", "origin", "main");
+  return remote;
 }
 
 describe("ManagedWorktreeService", () => {
   let templateRoot: string;
-  let templateFixtureRoot: string;
   let templateRepo: string;
   let gitTemplate: string;
   let stateDir: string;
@@ -117,14 +113,11 @@ describe("ManagedWorktreeService", () => {
     const tempRoot = await fs.realpath(os.tmpdir());
     templateRoot = await fs.mkdtemp(path.join(tempRoot, "openclaw-managed-worktrees-template-"));
     gitTemplate = path.join(templateRoot, "git-template");
-    templateFixtureRoot = path.join(templateRoot, "fixture");
     stateDir = path.join(templateRoot, "state");
     // Keep the hooks directory expected by hook-safety coverage without copying
     // the host's sample hooks into every per-test repository.
     await fs.mkdir(path.join(gitTemplate, "hooks"), { recursive: true });
-    await fs.mkdir(templateFixtureRoot);
-    templateRepo = await initializeRepository(templateFixtureRoot, gitTemplate);
-    await initializeOrigin(templateFixtureRoot, templateRepo);
+    templateRepo = await initializeRepository(templateRoot, gitTemplate);
   });
 
   afterAll(async () => {
@@ -134,11 +127,12 @@ describe("ManagedWorktreeService", () => {
 
   beforeEach(async () => {
     root = path.join(templateRoot, `case-${caseOrdinal++}`);
-    await fs.cp(templateFixtureRoot, root, {
+    await fs.mkdir(root);
+    repo = path.join(root, "repo");
+    await fs.cp(templateRepo, repo, {
       mode: fsConstants.COPYFILE_FICLONE,
       recursive: true,
     });
-    repo = path.join(root, "repo");
     repo = await fs.realpath(repo);
     env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
     now = 1_700_000_000_000;
@@ -154,7 +148,7 @@ describe("ManagedWorktreeService", () => {
   });
 
   it("creates from origin HEAD and returns the existing live named worktree", async () => {
-    await syncOrigin(repo);
+    await addRemote(root, repo);
     const created = await service.create({ repoRoot: repo, name: "remote-task" });
     const repeated = await service.create({ repoRoot: repo, name: "remote-task" });
 
@@ -184,7 +178,7 @@ describe("ManagedWorktreeService", () => {
   });
 
   it("lists repository branches default-first with deterministic ordering", async () => {
-    await syncOrigin(repo);
+    await addRemote(root, repo);
     await git(repo, "branch", "feature-a");
     await git(repo, "push", "origin", "feature-a");
     await git(repo, "branch", "-D", "feature-a");
@@ -209,7 +203,7 @@ describe("ManagedWorktreeService", () => {
   });
 
   it("creates a worktree from a remote-only branch ref returned by the picker", async () => {
-    await syncOrigin(repo);
+    await addRemote(root, repo);
     await git(repo, "checkout", "-b", "remote-only");
     await fs.writeFile(path.join(repo, "remote-only.txt"), "remote\n");
     await git(repo, "add", "remote-only.txt");
@@ -234,7 +228,6 @@ describe("ManagedWorktreeService", () => {
   });
 
   it("lists local branches without a remote", async () => {
-    await git(repo, "remote", "remove", "origin");
     await git(repo, "branch", "side");
     const result = await service.listRepositoryBranches(repo);
     expect(result.defaultBranch).toBeUndefined();
@@ -386,7 +379,7 @@ describe("ManagedWorktreeService", () => {
   });
 
   it("does not remove a concurrent successful create during remote fallback", async () => {
-    await syncOrigin(repo);
+    await addRemote(root, repo);
 
     const results = await Promise.allSettled([
       service.create({ repoRoot: repo, name: "concurrent" }),
@@ -406,7 +399,6 @@ describe("ManagedWorktreeService", () => {
   });
 
   it("falls back to local HEAD when fetch fails", async () => {
-    await git(repo, "remote", "remove", "origin");
     await git(repo, "remote", "add", "origin", path.join(root, "missing.git"));
     const created = await service.create({ repoRoot: repo, name: "offline" });
     expect(created.baseRef).toBe("HEAD");
@@ -434,7 +426,7 @@ describe("ManagedWorktreeService", () => {
   });
 
   it("retries worktree add from local HEAD when the resolved remote base is stale", async () => {
-    await syncOrigin(repo);
+    await addRemote(root, repo);
     const blob = await git(repo, "rev-parse", "HEAD:README.md");
     const tooLongForCheckout = "x".repeat(300);
     const tree = await gitWithInput(
@@ -450,7 +442,7 @@ describe("ManagedWorktreeService", () => {
   });
 
   it("preserves a pre-existing branch when a managed name collides", async () => {
-    await syncOrigin(repo);
+    await addRemote(root, repo);
     await git(repo, "branch", "openclaw/existing-name", "HEAD");
     const branchTip = await git(repo, "rev-parse", "openclaw/existing-name");
 
@@ -757,7 +749,7 @@ describe("ManagedWorktreeService", () => {
   });
 
   it("removes lossless run-end worktrees but keeps dirty and unpushed work", async () => {
-    await syncOrigin(repo);
+    await addRemote(root, repo);
     const clean = await materializeDownstreamFixture("clean");
     await service.acquire(clean.id);
     expect(await service.removeIfLossless(clean.id)).toBe(true);
@@ -784,7 +776,7 @@ describe("ManagedWorktreeService", () => {
     await git(repo, "add", ".gitignore", ".worktreeinclude");
     await git(repo, "commit", "-m", "configure worktree provisioning");
     await fs.writeFile(path.join(repo, ".env.local"), "value=old-source\n");
-    await syncOrigin(repo);
+    await addRemote(root, repo);
 
     const rotated = await materializeDownstreamFixture("rotated-local", {
       provisionedPaths: [".env.local"],
@@ -832,7 +824,7 @@ describe("ManagedWorktreeService", () => {
       await git(repo, "commit", "-m", "configure worktree provisioning");
       const sourcePath = path.join(repo, ".env.local");
       await fs.writeFile(sourcePath, "value=source\n", { mode: 0o644 });
-      await syncOrigin(repo);
+      await addRemote(root, repo);
 
       const executable = await materializeDownstreamFixture("executable-local", {
         provisionedPaths: [".env.local"],
