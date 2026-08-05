@@ -17,8 +17,8 @@ import {
 import { resolveEffectiveAgentRuntime } from "../../agents/thinking-runtime.js";
 import { triggerSessionPatchHook } from "../../gateway/session-patch-hooks.js";
 import { enqueueSystemEvent } from "../../infra/system-events.js";
+import { applyModelOverrideWithAuthProfileCompatibility } from "../../sessions/auth-profile-preservation.js";
 import {
-  applyModelOverrideToSessionEntry,
   isModelSelectionLocked,
   MODEL_SELECTION_LOCKED_MESSAGE,
 } from "../../sessions/model-overrides.js";
@@ -493,8 +493,11 @@ export async function handleDirectiveOnly(
       sessionEntry.thinkingLevel = remappedUnsupportedThinkLevel;
     }
     if (modelSelection) {
-      const applied = applyModelOverrideToSessionEntry({
+      const applied = applyModelOverrideWithAuthProfileCompatibility({
+        cfg: params.cfg,
+        agentDir,
         entry: sessionEntry,
+        currentProvider: provider,
         selection: modelSelection,
         profileOverride,
         markLiveSwitchPending: true,
