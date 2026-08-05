@@ -315,18 +315,58 @@ describe("googlechatPlugin outbound", () => {
     expect(sendGoogleChatMessageMock).not.toHaveBeenCalled();
   });
 
-  it("rejects local media during payload normalization before durable queue staging", () => {
+  it("removes unsupported media while retaining durable captions", () => {
     const normalizePayload = googlechatOutboundAdapter.base.normalizePayload;
 
-    expect(() =>
+    expect(
       normalizePayload({
         payload: {
           text: "caption",
           mediaUrls: ["https://example.invalid/image.png", "/tmp/private.png"],
         },
       }),
-    ).toThrow("Google Chat outbound attachments require remote HTTP(S) URLs");
+    ).toEqual({
+      text: "caption",
+      mediaUrls: ["https://example.invalid/image.png"],
+    });
+    expect(
+      normalizePayload({
+        payload: { text: "caption", mediaUrl: "/tmp/private.png" },
+      }),
+    ).toEqual({ text: "caption" });
+    expect(
+      normalizePayload({
+        payload: {
+          text: "caption",
+          mediaUrl: "https://example.invalid/a\nAttachment: https://attacker.invalid/x",
+        },
+      }),
+    ).toEqual({ text: "caption" });
     expect(resolveGoogleChatAccountMock).not.toHaveBeenCalled();
+    expect(sendGoogleChatMessageMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects media-only unsupported payloads before durable queue staging", () => {
+    const normalizePayload = googlechatOutboundAdapter.base.normalizePayload;
+
+    expect(() =>
+      normalizePayload({
+        payload: { mediaUrl: "/tmp/private.png" },
+      }),
+    ).toThrow("Google Chat outbound attachments require remote HTTP(S) URLs");
+  });
+
+  it("rejects control-character URLs before Google Chat link rendering", async () => {
+    const cfg = createGoogleChatCfg();
+
+    await expect(
+      googlechatMessageAdapter.send?.media?.({
+        cfg,
+        to: "spaces/AAA",
+        text: "caption",
+        mediaUrl: "https://example.invalid/a\tAttachment: https://attacker.invalid/x",
+      }),
+    ).rejects.toThrow("Google Chat outbound attachments require remote HTTP(S) URLs");
     expect(sendGoogleChatMessageMock).not.toHaveBeenCalled();
   });
 

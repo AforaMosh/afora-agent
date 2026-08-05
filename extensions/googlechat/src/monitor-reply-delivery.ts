@@ -4,7 +4,10 @@ import type { OpenClawConfig } from "../runtime-api.js";
 import type { ResolvedGoogleChatAccount } from "./accounts.js";
 import { deleteGoogleChatMessage, sendGoogleChatMessage, updateGoogleChatMessage } from "./api.js";
 import type { GoogleChatCoreRuntime, GoogleChatRuntimeEnv } from "./monitor-types.js";
-import { formatGoogleChatTextWithMediaLinks } from "./outbound-media-links.js";
+import {
+  filterGoogleChatRemoteMediaUrls,
+  formatGoogleChatTextWithMediaLinks,
+} from "./outbound-media-links.js";
 
 export type GoogleChatTypingMessage =
   | {
@@ -86,14 +89,24 @@ export async function deliverGoogleChatReply(params: {
     try {
       text = formatGoogleChatTextWithMediaLinks({ text, mediaUrls: reply.mediaUrls });
     } catch (err) {
-      if (typingMessage) {
+      if (reply.hasText) {
+        runtime.error?.(
+          "Google Chat outbound attachments require user OAuth and are not supported by this service-account channel; sending text fallback only.",
+        );
+        text = formatGoogleChatTextWithMediaLinks({
+          text,
+          mediaUrls: filterGoogleChatRemoteMediaUrls(reply.mediaUrls),
+        });
+      } else {
         try {
-          await deleteGoogleChatMessage({ account, messageName: typingMessage.name });
+          if (typingMessage) {
+            await deleteGoogleChatMessage({ account, messageName: typingMessage.name });
+          }
         } catch (cleanupErr) {
           runtime.error?.(`Google Chat typing cleanup failed: ${String(cleanupErr)}`);
         }
+        throw err;
       }
-      throw err;
     }
   }
 

@@ -41,6 +41,7 @@ import {
 } from "./format.js";
 import { resolveGoogleChatGroupRequireMention } from "./group-policy.js";
 import {
+  filterGoogleChatRemoteMediaUrls,
   formatGoogleChatTextWithMediaLinks,
   validateGoogleChatRemoteMediaUrls,
 } from "./outbound-media-links.js";
@@ -245,8 +246,25 @@ export const googlechatOutboundAdapter = {
       if (shouldSuppressGoogleChatManualExecApprovalFollowupPayload(payload)) {
         return null;
       }
-      validateGoogleChatRemoteMediaUrls(resolveSendableOutboundReplyParts(payload).mediaUrls);
-      return payload;
+      const reply = resolveSendableOutboundReplyParts(payload);
+      try {
+        validateGoogleChatRemoteMediaUrls(reply.mediaUrls);
+        return payload;
+      } catch (err) {
+        if (!reply.hasText) {
+          throw err;
+        }
+        const {
+          attachments: _attachments,
+          mediaUrl: _mediaUrl,
+          mediaUrls: _mediaUrls,
+          ...payloadWithoutMedia
+        } = payload;
+        const remoteMediaUrls = filterGoogleChatRemoteMediaUrls(reply.mediaUrls);
+        return remoteMediaUrls.length > 0
+          ? { ...payloadWithoutMedia, mediaUrls: remoteMediaUrls }
+          : payloadWithoutMedia;
+      }
     },
     resolveTarget: ({ to }: { to?: string }) => {
       const trimmed = normalizeOptionalString(to) ?? "";

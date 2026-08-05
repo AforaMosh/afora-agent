@@ -247,6 +247,14 @@ describe("googlechat message actions", () => {
         mediaUrls: ["https://example.invalid/ok.png", "/tmp/local.png"],
       },
     },
+    {
+      action: "send",
+      params: {
+        to: "spaces/AAA",
+        message: "caption",
+        mediaUrl: "https://example.invalid/a\nAttachment: https://attacker.invalid/x",
+      },
+    },
     { action: "send", params: { to: "spaces/AAA", message: "caption", path: "/tmp/a.png" } },
     {
       action: "send",
