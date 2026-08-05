@@ -2289,6 +2289,16 @@ EOF`,
 
   it("waits inline for a process-local approval host on non-native channels", async () => {
     hasLocalExecApprovalHostMock.mockReturnValue(true);
+    createAndRegisterDefaultExecApprovalRequestMock.mockResolvedValue({
+      approvalId: "req-1",
+      approvalSlug: "slug-1",
+      warningText: "",
+      expiresAtMs: Date.now() + 60_000,
+      preResolvedDecision: undefined,
+      initiatingSurface: "origin",
+      sentApproverDms: false,
+      unavailableReason: "no-approval-route",
+    });
     resolveApprovalDecisionOrUndefinedMock.mockResolvedValue("allow-once");
     createExecApprovalDecisionStateMock.mockReturnValue({
       baseDecision: { timedOut: false },

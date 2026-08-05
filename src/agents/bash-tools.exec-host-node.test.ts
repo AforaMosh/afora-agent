@@ -222,6 +222,9 @@ const enforceStrictInlineEvalApprovalBoundaryMock = vi.hoisted(() =>
 const registerExecApprovalRequestForHostOrThrowMock = vi.hoisted(() =>
   vi.fn(async () => undefined),
 );
+const registerResolvedLocalExecApprovalForHostOrThrowMock = vi.hoisted(() =>
+  vi.fn(async () => ({ finalDecision: "allow-once" })),
+);
 const hasLocalExecApprovalHostMock = vi.hoisted(() => vi.fn(() => false));
 const detectInterpreterInlineEvalArgvMock = vi.hoisted(() =>
   vi.fn(
@@ -276,6 +279,8 @@ vi.mock("./bash-tools.exec-approval-request.js", () => ({
   hasLocalExecApprovalHost: hasLocalExecApprovalHostMock,
   isExecApprovalRunAbortedError: (error: unknown) => error === runAbortedApprovalError,
   registerExecApprovalRequestForHostOrThrow: registerExecApprovalRequestForHostOrThrowMock,
+  registerResolvedLocalExecApprovalForHostOrThrow:
+    registerResolvedLocalExecApprovalForHostOrThrowMock,
 }));
 
 vi.mock("./bash-tools.exec-host-shared.js", () => ({
@@ -1923,6 +1928,43 @@ describe("executeNodeHostCommand", () => {
       { id: expect.any(String), decision: "allow-once" },
       { scopes: ["operator.approvals"], requireAgentRuntimeIdentity: true },
     );
+  });
+
+  it("keeps node auto-review settlement on the process-local authority", async () => {
+    hasLocalExecApprovalHostMock.mockReturnValue(true);
+    const autoReviewer = vi.fn<ExecAutoReviewer>(async () => ({
+      decision: "allow-once",
+      risk: "low",
+      rationale: "safe read",
+    }));
+    resolveExecHostApprovalContextMock.mockReturnValue({
+      approvals: { allowlist: [], file: { version: 1, agents: {} } },
+      hostSecurity: "allowlist",
+      hostAsk: "on-miss",
+      askFallback: "deny",
+    });
+    requiresExecApprovalMock.mockImplementation(
+      (params?: { allowlistSatisfied?: boolean; durableApprovalSatisfied?: boolean }) =>
+        params?.allowlistSatisfied !== true && params?.durableApprovalSatisfied !== true,
+    );
+
+    const result = await executeNodeHostCommand(
+      createNodeHostRequest({
+        security: "allowlist",
+        ask: "on-miss",
+        autoReview: true,
+        autoReviewer,
+      }),
+    );
+
+    expect(result.details?.status).toBe("completed");
+    expect(registerResolvedLocalExecApprovalForHostOrThrowMock).toHaveBeenCalledWith(
+      expect.objectContaining({ host: "node" }),
+      "allow-once",
+    );
+    expect(
+      callGatewayToolMock.mock.calls.some(([method]) => method === "exec.approval.resolve"),
+    ).toBe(false);
   });
 
   it("does not invoke the node after cancellation wins during auto-review", async () => {

@@ -19,6 +19,7 @@ import {
   hasLocalExecApprovalHost,
   isExecApprovalRunAbortedError,
   registerExecApprovalRequestForHostOrThrow,
+  registerResolvedLocalExecApprovalForHostOrThrow,
 } from "./bash-tools.exec-approval-request.js";
 import {
   formatNodeExecApprovalDeniedToolResult,
@@ -311,16 +312,40 @@ export async function executeNodeHostCommand(
       const autoReviewAllowed = decision.decision === "allow-once" && decision.risk === "low";
       if (autoReviewAllowed) {
         const approvalId = randomUUID();
-        await registerNodeApproval(approvalId, {
-          requireDeliveryRoute: false,
-          suppressDelivery: true,
-        });
-        await callGatewayTool(
-          "exec.approval.resolve",
-          { timeoutMs: 15_000 },
-          { id: approvalId, decision: "allow-once" },
-          { scopes: [APPROVALS_SCOPE], requireAgentRuntimeIdentity: true },
-        );
+        if (hasLocalExecApprovalHost()) {
+          await registerResolvedLocalExecApprovalForHostOrThrow(
+            {
+              approvalId,
+              systemRunPlan: prepared.plan,
+              env: target.env,
+              workdir: prepared.cwd,
+              host: "node",
+              nodeId: target.nodeId,
+              toolCallId: params.toolCallId,
+              security: hostSecurity,
+              ask: hostAsk,
+              ...unavailableDecisionRequestParams,
+              commandHighlighting: params.commandHighlighting,
+              ...buildExecApprovalRequesterContext({
+                agentId: prepared.agentId,
+                sessionKey: prepared.sessionKey,
+              }),
+              ...buildExecApprovalTurnSourceContext(params),
+            },
+            "allow-once",
+          );
+        } else {
+          await registerNodeApproval(approvalId, {
+            requireDeliveryRoute: false,
+            suppressDelivery: true,
+          });
+          await callGatewayTool(
+            "exec.approval.resolve",
+            { timeoutMs: 15_000 },
+            { id: approvalId, decision: "allow-once" },
+            { scopes: [APPROVALS_SCOPE], requireAgentRuntimeIdentity: true },
+          );
+        }
         inlineApprovedByAsk = true;
         inlineApprovalDecision = "allow-once";
         inlineApprovalId = approvalId;

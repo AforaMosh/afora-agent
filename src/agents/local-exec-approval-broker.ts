@@ -208,6 +208,27 @@ class LocalExecApprovalBroker {
     return { id: request.id, expiresAtMs };
   }
 
+  registerResolved(
+    request: LocalExecApprovalRegistrationRequest,
+    decision: ExecApprovalDecision,
+  ): LocalExecApprovalRegistration {
+    if (!this.active) {
+      throw new Error(`Exec approval "${request.id}" rejected because its local scope ended`);
+    }
+    if (this.pending.has(request.id)) {
+      throw new Error(`Exec approval "${request.id}" is already pending`);
+    }
+    const allowedDecisions = resolveExecApprovalRequestAllowedDecisions(request);
+    if (!allowedDecisions.includes(decision)) {
+      throw new Error(`Exec approval decision "${decision}" is unavailable for this request`);
+    }
+    return {
+      id: request.id,
+      expiresAtMs: Date.now() + request.timeoutMs,
+      finalDecision: decision,
+    };
+  }
+
   async wait(approvalId: string): Promise<ExecApprovalDecision | null | undefined> {
     const pending = this.pending.get(approvalId);
     if (!pending) {

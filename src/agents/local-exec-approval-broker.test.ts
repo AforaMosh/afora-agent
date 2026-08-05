@@ -41,6 +41,25 @@ describe("LocalExecApprovalBroker", () => {
     );
   });
 
+  it("settles trusted local decisions without invoking the approval handler", async () => {
+    const requestApproval = vi.fn(async () => "deny" as const);
+    await runWithLocalExecApprovalHandler({
+      handler: requestApproval,
+      run: async () => {
+        const registration = getLocalExecApprovalBroker()?.registerResolved(
+          approvalRequest("approval-1"),
+          "allow-once",
+        );
+
+        expect(registration).toMatchObject({
+          id: "approval-1",
+          finalDecision: "allow-once",
+        });
+      },
+    });
+    expect(requestApproval).not.toHaveBeenCalled();
+  });
+
   it("rejects duplicate pending approval ids", async () => {
     await runWithLocalExecApprovalHandler({
       handler: async () => "deny",

@@ -374,3 +374,19 @@ export async function registerExecApprovalRequestForHostOrThrow(
     throw new Error(`Exec approval registration failed: ${String(err)}`, { cause: err });
   }
 }
+
+/** Registers an already-settled approval with the process-local authority. */
+export async function registerResolvedLocalExecApprovalForHostOrThrow(
+  params: HostExecApprovalParams,
+  decision: ExecApprovalDecision,
+): Promise<ExecApprovalRegistration> {
+  try {
+    const localBroker = getLocalExecApprovalBroker();
+    if (!localBroker) {
+      throw new Error("process-local exec approval host is unavailable");
+    }
+    return localBroker.registerResolved(await buildHostApprovalDecisionParams(params), decision);
+  } catch (err) {
+    throw new Error(`Exec approval registration failed: ${String(err)}`, { cause: err });
+  }
+}

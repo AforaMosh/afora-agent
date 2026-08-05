@@ -418,9 +418,13 @@ function buildGatewayExecApprovalFollowupSummary(params: {
 function shouldAwaitGatewayApprovalInline(params: {
   turnSourceChannel?: string;
   approvalFollowupMode?: "agent" | "direct";
+  unavailableReason: string | null;
 }): boolean {
   if (hasLocalExecApprovalHost()) {
     return true;
+  }
+  if (params.unavailableReason !== null) {
+    return false;
   }
   if (params.approvalFollowupMode !== undefined) {
     return false;
@@ -1127,7 +1131,7 @@ export async function processGatewayAllowlist(
       };
     };
 
-    if (unavailableReason === null && shouldAwaitGatewayApprovalInline(params)) {
+    if (shouldAwaitGatewayApprovalInline({ ...params, unavailableReason })) {
       if (params.runId) {
         emitAgentEvent({
           runId: params.runId,
