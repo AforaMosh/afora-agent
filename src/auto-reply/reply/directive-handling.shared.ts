@@ -1,5 +1,6 @@
 // Shared directive parsing helpers used by model and auth directive handlers.
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import type { StickyModelSelectionDispatchOutcome } from "../../agents/sticky-model-selection.js";
 import { formatCliCommand } from "../../cli/command-format.js";
 import {
   adoptPersistedSessionSnapshot,
@@ -64,14 +65,18 @@ export const formatInternalVerboseCurrentReplyOnlyText = () =>
 export function formatModelSelectionScopeAck(params: {
   isDefault: boolean;
   label: string;
-  updatesConfiguredDefault: boolean;
+  configuredDefaultUpdate?: StickyModelSelectionDispatchOutcome;
 }): string {
   if (params.isDefault) {
     return `Session model reset to configured default (${params.label}).`;
   }
-  return params.updatesConfiguredDefault
-    ? `Model set to ${params.label} for this session and as this agent's configured default.`
-    : `Model set to ${params.label} for this session only; configured default unchanged.`;
+  if (params.configuredDefaultUpdate === "requested") {
+    return `Model set to ${params.label} for this session. Configured default update requested.`;
+  }
+  if (params.configuredDefaultUpdate === "skipped-immutable") {
+    return `Model set to ${params.label} for this session. Configured default unchanged because configuration is immutable.`;
+  }
+  return `Model set to ${params.label} for this session only; configured default unchanged.`;
 }
 
 export function canPersistSessionDirectiveDefaults(params: {

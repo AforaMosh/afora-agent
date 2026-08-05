@@ -145,7 +145,7 @@ OpenClaw **pins the chosen auth profile per session** to keep provider caches wa
 - a compaction completes (compaction count increments)
 - the profile is in cooldown/disabled
 
-Manual selection via `/model …@<profileId>` sets a **user override** for that session and is not auto-rotated until a new session starts.
+Manual selection via `/model …@<profileId> -s` sets a **user override** for that session and is not auto-rotated until a new session starts.
 
 <Note>
 Auto-pinned profiles (selected by the session router) are treated as a **preference**: they are tried first, but OpenClaw may rotate to another profile on rate limits/timeouts. When the original profile becomes available again, new runs can prefer it again without changing the selected model or runtime. User-pinned profiles stay locked to that profile; if it fails and model fallbacks are configured, OpenClaw moves to the next model instead of switching profiles.

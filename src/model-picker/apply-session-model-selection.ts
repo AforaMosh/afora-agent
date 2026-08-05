@@ -9,7 +9,10 @@ import {
   resolveCompatibleAgentRuntimeForProvider,
   resolveSessionRuntimeOverrideForProvider,
 } from "../agents/session-runtime-compat.js";
-import { persistStickyModelSelectionBestEffort } from "../agents/sticky-model-selection.js";
+import {
+  persistStickyModelSelectionBestEffort,
+  type StickyModelSelectionDispatchOutcome,
+} from "../agents/sticky-model-selection.js";
 import { resolveEffectiveAgentRuntime } from "../agents/thinking-runtime.js";
 import { applyModelRuntimeDirective } from "../auto-reply/reply/directive-handling.model-runtime.js";
 import { resolveContextTokens } from "../auto-reply/reply/model-selection-context.js";
@@ -70,6 +73,7 @@ export type ApplySessionModelSelectionResult =
       effectiveModelRef: string;
       changed: boolean;
       contextTokens: number;
+      configuredDefaultUpdate?: StickyModelSelectionDispatchOutcome;
       runtimeChange?: { kind: "clear" } | { kind: "set"; runtime: string };
       thinkingRemap?: {
         from: ThinkLevel;
@@ -300,9 +304,13 @@ export async function applySessionModelSelection(
   const model = request.model;
   const effectiveModelRef = `${provider}/${model}`;
   const changed = applied.changed || thinkingRemap !== undefined;
-  if (params.canPersistStickyModelSelection === true && !request.isDefault) {
-    persistStickyModelSelectionBestEffort({ agentId: params.agentId, model: effectiveModelRef });
-  }
+  const configuredDefaultUpdate =
+    params.canPersistStickyModelSelection === true && !request.isDefault
+      ? persistStickyModelSelectionBestEffort({
+          agentId: params.agentId,
+          model: effectiveModelRef,
+        })
+      : undefined;
   if (changed) {
     triggerSessionPatchHook({
       cfg: params.cfg,
@@ -369,6 +377,7 @@ export async function applySessionModelSelection(
       modelContextWindow: selectedCatalogEntry?.contextWindow,
       modelContextTokens: selectedCatalogEntry?.contextTokens,
     }),
+    ...(configuredDefaultUpdate ? { configuredDefaultUpdate } : {}),
     ...(applied.runtimeChange ? { runtimeChange: applied.runtimeChange } : {}),
     ...(thinkingRemap ? { thinkingRemap } : {}),
   };

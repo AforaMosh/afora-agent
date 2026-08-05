@@ -638,7 +638,7 @@ export function buildBuiltinChatCommands(
     }),
     defineBuiltinCommand(
       "model",
-      "Show or set the model; owner/admin selections update the agent default.",
+      "Show or set the model; direct owner/admin selections request a default update.",
       "options",
       "essential",
       {

@@ -420,7 +420,7 @@ export async function applyInlineDirectiveOverrides(params: {
           formatModelSelectionScopeAck({
             isDefault: modelSelection.isDefault,
             label: labelWithAlias,
-            updatesConfiguredDefault: canPersistStickyModelSelection,
+            configuredDefaultUpdate: applied.configuredDefaultUpdate,
           }),
           applied.thinkingRemap
             ? `Thinking level set to ${applied.thinkingRemap.to} (${applied.thinkingRemap.from} not supported for ${applied.thinkingRemap.provider}/${applied.thinkingRemap.model}).`

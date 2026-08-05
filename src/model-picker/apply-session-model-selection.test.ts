@@ -136,6 +136,7 @@ describe("applySessionModelSelection", () => {
       effectiveModelRef: "openai/gpt-4o",
       changed: true,
       contextTokens: 12_000,
+      configuredDefaultUpdate: "requested",
     });
     expect(sessionEntry).toMatchObject({
       providerOverride: "openai",
@@ -202,6 +203,7 @@ describe("applySessionModelSelection", () => {
     );
 
     expect(result.status).toBe("applied");
+    expect(result).not.toHaveProperty("configuredDefaultUpdate");
     expect(sessionEntry).toMatchObject({
       providerOverride: "openai",
       modelOverride: "gpt-4o",
@@ -217,7 +219,10 @@ describe("applySessionModelSelection", () => {
       createParams({ sessionEntry, canPersistStickyModelSelection: true }),
     );
 
-    expect(result.status).toBe("applied");
+    expect(result).toMatchObject({
+      status: "applied",
+      configuredDefaultUpdate: "requested",
+    });
     expect(sessionEntry).toMatchObject({
       providerOverride: "openai",
       modelOverride: "gpt-4o",

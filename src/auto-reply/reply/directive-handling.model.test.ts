@@ -483,7 +483,7 @@ beforeEach(() => {
   vi.mocked(resolveSessionAgentId).mockReset().mockReturnValue("main");
   vi.mocked(enqueueSystemEvent).mockClear();
   queueMocks.refreshQueuedFollowupSession.mockReset();
-  stickyModelMock.persistBestEffort.mockClear();
+  stickyModelMock.persistBestEffort.mockReset().mockReturnValue("requested");
   clearInternalHooks();
 });
 
@@ -846,7 +846,10 @@ describe("/model chat UX", () => {
     expect(reply?.text).toContain("Current:");
     expect(reply?.text).toContain("Think: medium (change with /think <level>)");
     expect(reply?.text).toContain("Browse: /models");
-    expect(reply?.text).toContain("Switch: /model <provider/model>");
+    expect(reply?.text).toContain(
+      "Direct: /model <provider/model> (owner/admin requests a default update)",
+    );
+    expect(reply?.text).toContain("Session only: /model <provider/model> -s");
   });
 
   it("includes the thinking level in channel-specific model summaries", async () => {
@@ -869,6 +872,8 @@ describe("/model chat UX", () => {
 
     expect(reply?.channelData).toBeDefined();
     expect(reply?.text).toContain("Think: medium (change with /think <level>)");
+    expect(reply?.text).toContain("Tap below to switch this session only");
+    expect(reply?.text).toContain("/model <provider/model> for a direct selection");
   });
 
   it("shows the effective thinking level for the selected runtime", async () => {
@@ -1919,7 +1924,7 @@ describe("handleDirectiveOnly model persist behavior (fixes #1435)", () => {
 
     expect(result?.text).toContain("Model set to");
     expect(result?.text).toContain("openai/gpt-4o");
-    expect(result?.text).toContain("for this session and as this agent's configured default.");
+    expect(result?.text).toContain("for this session. Configured default update requested.");
     expect(result?.text).not.toContain("failed");
     expect(sessionEntry.liveModelSwitchPending).toBe(true);
     expect(stickyModelMock.persistBestEffort).toHaveBeenCalledWith({
@@ -1958,6 +1963,21 @@ describe("handleDirectiveOnly model persist behavior (fixes #1435)", () => {
     expect(stickyModelMock.persistBestEffort).not.toHaveBeenCalled();
   });
 
+  it("reports immutable configuration without claiming a default update", async () => {
+    stickyModelMock.persistBestEffort.mockReturnValueOnce("skipped-immutable");
+    const sessionEntry = createSessionEntry();
+
+    const result = await runHandleCommand("/model openai/gpt-4o", { sessionEntry });
+
+    expect(result?.text).toContain(
+      "Model set to openai/gpt-4o for this session. Configured default unchanged because configuration is immutable.",
+    );
+    expect(sessionEntry).toMatchObject({
+      providerOverride: "openai",
+      modelOverride: "gpt-4o",
+    });
+  });
+
   it("persists an explicit runtime with a directive-only model switch", async () => {
     const sessionEntry = createSessionEntry();
     const result = await handleDirectiveOnly(
@@ -1968,7 +1988,7 @@ describe("handleDirectiveOnly model persist behavior (fixes #1435)", () => {
     );
 
     expect(result?.text).toContain(
-      "Model set to openai/gpt-4o for this session and as this agent's configured default.",
+      "Model set to openai/gpt-4o for this session. Configured default update requested.",
     );
     expect(result?.text).toContain("Runtime set to openclaw for this session.");
     expect(sessionEntry).toMatchObject({
@@ -2143,7 +2163,7 @@ describe("handleDirectiveOnly model persist behavior (fixes #1435)", () => {
 
     const text = result?.text ?? "";
     expect(text).toContain(
-      "Model set to openai/gpt-4o for this session and as this agent's configured default.",
+      "Model set to openai/gpt-4o for this session. Configured default update requested.",
     );
     expect(text).toContain(
       "Thinking level set to medium (adaptive not supported for openai/gpt-4o).",
@@ -2188,7 +2208,7 @@ describe("handleDirectiveOnly model persist behavior (fixes #1435)", () => {
     });
 
     expect(result?.text).toContain(
-      "Model set to opencode/claude-opus-4-7 for this session and as this agent's configured default.",
+      "Model set to opencode/claude-opus-4-7 for this session. Configured default update requested.",
     );
     expect(result?.text ?? "").not.toContain("xhigh not supported");
     expect(sessionEntry.thinkingLevel).toBe("xhigh");
@@ -2402,7 +2422,7 @@ describe("handleDirectiveOnly model persist behavior (fixes #1435)", () => {
     });
 
     expect(result?.text).toContain(
-      "Model set to Opus (anthropic/claude-opus-4-6) for this session and as this agent's configured default.",
+      "Model set to Opus (anthropic/claude-opus-4-6) for this session. Configured default update requested.",
     );
     expect(result?.text).toContain("Auth profile set to anthropic:work.");
     expect(sessionEntry.providerOverride).toBe("anthropic");

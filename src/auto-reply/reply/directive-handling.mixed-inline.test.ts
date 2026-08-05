@@ -160,6 +160,7 @@ async function applyMixedDirectives(params: {
 describe("mixed inline directives", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(persistStickyModelSelectionBestEffort).mockReturnValue("requested");
     persistenceMocks.persist.mockImplementation(async ({ entry }) => ({
       status: "current",
       entry: { ...entry },
@@ -275,6 +276,27 @@ describe("mixed inline directives", () => {
     expect(persistStickyModelSelectionBestEffort).not.toHaveBeenCalled();
   });
 
+  it.each([
+    { name: "directive-only", body: "/model openai/gpt-5.6-luna" },
+    { name: "mixed-content", body: "please reply /model openai/gpt-5.6-luna" },
+  ])("reports immutable config for an owner $name selection", async ({ body }) => {
+    vi.mocked(persistStickyModelSelectionBestEffort).mockReturnValueOnce("skipped-immutable");
+
+    const { result } = await applyMixedDirectives({
+      body,
+      senderIsOwner: true,
+      allowedModels: [{ provider: "openai", id: "gpt-5.6-luna", name: "GPT-5.6-Luna" }],
+    });
+
+    const expectedText =
+      "Model set to openai/gpt-5.6-luna for this session. Configured default unchanged because configuration is immutable.";
+    expect(result).toMatchObject(
+      body.startsWith("/model")
+        ? { kind: "reply", reply: { text: expectedText } }
+        : { kind: "continue", directiveAck: { text: expectedText } },
+    );
+  });
+
   it("does not let a partial session option suppress the configured-default write", async () => {
     const { result } = await applyMixedDirectives({
       body: "please reply /model openai/gpt-5.6-luna -slow",
@@ -287,7 +309,7 @@ describe("mixed inline directives", () => {
       provider: "openai",
       model: "gpt-5.6-luna",
       directiveAck: {
-        text: "Model set to openai/gpt-5.6-luna for this session and as this agent's configured default.",
+        text: "Model set to openai/gpt-5.6-luna for this session. Configured default update requested.",
       },
     });
     expect(persistStickyModelSelectionBestEffort).toHaveBeenCalledOnce();

@@ -10,7 +10,10 @@ import {
   resolveFastModeState,
 } from "../../agents/fast-mode.js";
 import { resolveSandboxRuntimeStatus } from "../../agents/sandbox.js";
-import { persistStickyModelSelectionBestEffort } from "../../agents/sticky-model-selection.js";
+import {
+  persistStickyModelSelectionBestEffort,
+  type StickyModelSelectionDispatchOutcome,
+} from "../../agents/sticky-model-selection.js";
 import { resolveEffectiveAgentRuntime } from "../../agents/thinking-runtime.js";
 import { triggerSessionPatchHook } from "../../gateway/session-patch-hooks.js";
 import { enqueueSystemEvent } from "../../infra/system-events.js";
@@ -456,6 +459,7 @@ export async function handleDirectiveOnly(
     elevatedEnabled &&
     elevatedAllowed;
   let modelSelectionUpdated = false;
+  let configuredDefaultUpdate: StickyModelSelectionDispatchOutcome | undefined;
   const appliedSessionEntry = sessionEntry;
   const touchedSessionFields = resolveDirectiveTouchedSessionFields({
     directives,
@@ -527,7 +531,7 @@ export async function handleDirectiveOnly(
       !modelSelection.isDefault &&
       params.canPersistStickyModelSelection === true
     ) {
-      persistStickyModelSelectionBestEffort({
+      configuredDefaultUpdate = persistStickyModelSelectionBestEffort({
         agentId: activeAgentId,
         model: `${modelSelection.provider}/${modelSelection.model}`,
       });
@@ -658,7 +662,7 @@ export async function handleDirectiveOnly(
       formatModelSelectionScopeAck({
         isDefault: modelSelection.isDefault,
         label: labelWithAlias,
-        updatesConfiguredDefault: params.canPersistStickyModelSelection === true,
+        configuredDefaultUpdate,
       }),
     );
     if (profileOverride) {

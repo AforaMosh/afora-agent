@@ -166,7 +166,7 @@ openclaw config set agents.defaults.modelPolicy.allow '["openai/gpt-5.4","anthro
 
 ## `/model` in chat
 
-Bare owner/admin `/model <model>` uses **default scope**: it changes this session and the agent-wide configured default. Adding `-s` uses **session scope**: only this session changes. If the agent has no explicit primary model, its effective default is the shared global `agents.defaults.model` fallback.
+Direct owner/admin `/model <model>` requests **default scope**: it changes this session and starts a best-effort configured-default update. Adding `-s` uses **session scope**: only this session changes. If the agent has no explicit primary model, its effective default is the shared global `agents.defaults.model` fallback.
 
 ```text
 /model
@@ -179,8 +179,8 @@ Bare owner/admin `/model <model>` uses **default scope**: it changes this sessio
 /model status
 ```
 
-- `/model` and `/model list` show a compact numbered picker (model family + available providers); `/model <#>` selects from it. On Discord this opens provider/model dropdowns with a Submit step. `/models add` is deprecated and returns a message instead of registering models from chat.
-- **Configured default:** Owner/admin `/model <model>` changes both the current session and that agent's effective configured default. OpenClaw updates the agent's explicit primary when one exists; otherwise it updates the shared `agents.defaults.model` fallback.
+- `/model` and `/model list` show a compact numbered picker (model family + available providers); `/model <#>` selects from it. The Telegram callback picker is session-only. The Discord picker follows the direct command flow, so an owner/admin submission requests a configured-default update. `/models add` is deprecated and returns a message instead of registering models from chat.
+- **Configured default:** Direct owner/admin `/model <model>` changes the current session and requests a best-effort update of the effective configured default. OpenClaw targets the agent's explicit primary when one exists; otherwise it targets the shared `agents.defaults.model` fallback. Immutable configuration is left unchanged, and asynchronous write failures are logged without reverting the session selection.
 - **Current session only:** `/model <model> -s` (or `--session`) changes the current session without changing either configured default. A non-owner's bare `/model <model>` is also session-only because that caller cannot write configured defaults.
 - **Reset the session:** `/model default` (with or without `-s`) clears the current session selection so it inherits the current effective configured default. It does not restore an older configured default that a previous owner/admin `/model <model>` replaced.
 - If the agent is idle, a model change applies to the next run immediately. If a run is already active, the switch is queued for the next clean retry point (or a later one, if tool activity or reply output already started).
