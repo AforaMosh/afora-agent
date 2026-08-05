@@ -93,6 +93,23 @@ describe("uninstallCommand", () => {
     );
   });
 
+  it("continues state cleanup when completion profile cleanup fails", async () => {
+    removeCompletionInstall.mockRejectedValueOnce(
+      new Error("EACCES: permission denied, open '/tmp/.bashrc'"),
+    );
+
+    await uninstallCommand(runtime, {
+      state: true,
+      yes: true,
+      nonInteractive: true,
+    });
+
+    expect(removeStateAndLinkedPaths).toHaveBeenCalled();
+    expect(runtime.error).toHaveBeenCalledWith(
+      expect.stringContaining("State cleanup will continue"),
+    );
+  });
+
   it("does not remove completion entries without state cleanup", async () => {
     await uninstallCommand(runtime, {
       workspace: true,
