@@ -1294,7 +1294,7 @@ describe("buildOpenAIRealtimeVoiceProvider", () => {
     ).not.toHaveProperty("supportsGatewayControl");
   });
 
-  it("does not advertise or use ChatGPT OAuth for GA browser realtime", async () => {
+  it("uses ChatGPT OAuth as the browser-only fallback for GA realtime", async () => {
     const oauthToken = createTestJwt({
       "https://api.openai.com/auth": { chatgpt_account_id: "account-123" },
     });
@@ -1337,13 +1337,14 @@ describe("buildOpenAIRealtimeVoiceProvider", () => {
         providerConfig: { model: "gpt-realtime-2.1" },
         agentId: "main",
       }),
-    ).toBe(false);
-    await expect(provider.createBrowserSession?.(request)).rejects.toThrow(
-      "OpenAI Realtime voice requires an OpenAI Platform API key",
-    );
-    expect(createBrowserSession).not.toHaveBeenCalled();
-    expect(resolveProviderAuthProfileApiKeyMock).not.toHaveBeenCalledWith(
-      expect.objectContaining({ profileTypes: ["oauth"] }),
+    ).toBe(true);
+    await expect(provider.createBrowserSession?.(request)).resolves.toMatchObject({
+      clientSecret: "broker-token",
+      offerUrl: "/plugins/openai/realtime/calls",
+    });
+    expect(createBrowserSession).toHaveBeenCalledWith(
+      expect.objectContaining({ model: "gpt-realtime-2.1", voice: "cedar" }),
+      { type: "oauth", token: oauthToken, accountId: "account-123" },
     );
     expect(fetchWithSsrFGuardMock).not.toHaveBeenCalled();
   });

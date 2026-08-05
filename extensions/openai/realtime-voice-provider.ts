@@ -1,6 +1,7 @@
 // Openai provider module implements model/runtime integration.
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
+import { resolveAgentDir } from "openclaw/plugin-sdk/agent-runtime";
 import { canonicalizeBase64 } from "openclaw/plugin-sdk/media-runtime";
 import type { PluginLogger } from "openclaw/plugin-sdk/plugin-entry";
 import {
@@ -53,6 +54,7 @@ import { buildOpenAIQuicksilverInstructions } from "./realtime-quicksilver-instr
 import {
   createOpenAIQuicksilverBrowserSessionBroker,
   OPENAI_QUICKSILVER_CAPABILITIES,
+  resolveOpenAIChatGptSubscriptionAuth,
 } from "./realtime-quicksilver-session.js";
 import { buildOpenAIRealtimeSidebandUrl } from "./realtime-quicksilver-wire.js";
 import {
@@ -620,6 +622,20 @@ function hasOpenAIRealtimePlatformAuthInput(params: {
     return true;
   }
   return hasOpenAIRealtimeApiKeyInput(undefined);
+}
+
+function hasOpenAIChatGptSubscriptionAuthInput(params: {
+  cfg: RealtimeVoiceBrowserSessionCreateRequest["cfg"] | undefined;
+  agentId?: string;
+}): boolean {
+  return isProviderAuthProfileConfigured({
+    provider: "openai",
+    cfg: params.cfg,
+    agentDir:
+      params.cfg && params.agentId ? resolveAgentDir(params.cfg, params.agentId) : undefined,
+    profileTypes: ["oauth"],
+    includeExternalCliAuth: false,
+  });
 }
 
 function isOpenAIRealtimeMaxSessionDurationError(detail: string): boolean {
@@ -2181,7 +2197,6 @@ async function createOpenAIRealtimeBrowserSession(
       cfg: req.cfg,
     });
     const session = await quicksilverBroker.createBrowserSession(quicksilverRequest, auth);
-    quicksilverBrokerBySession.set(session, quicksilverBroker);
     return session;
   }
   const auth = await resolveOpenAIRealtimePlatformAuth({
@@ -2189,7 +2204,32 @@ async function createOpenAIRealtimeBrowserSession(
     cfg: req.cfg,
   });
   if (auth.status === "missing") {
-    throw new Error(OPENAI_REALTIME_PLATFORM_AUTH_REQUIRED);
+    if (
+      hasOpenAIRealtimePlatformAuthInput({
+        configuredApiKey: config.apiKey,
+        cfg: req.cfg,
+      })
+    ) {
+      throw new Error(OPENAI_REALTIME_PLATFORM_AUTH_REQUIRED);
+    }
+    const subscriptionAuth = await resolveOpenAIChatGptSubscriptionAuth({
+      cfg: req.cfg,
+      agentDir: req.cfg ? resolveAgentDir(req.cfg, req.agentId) : undefined,
+    });
+    if (!subscriptionAuth) {
+      throw new Error(OPENAI_REALTIME_PLATFORM_AUTH_REQUIRED);
+    }
+    if (!quicksilverBroker) {
+      throw new Error("OpenAI realtime browser session broker is unavailable");
+    }
+    return await quicksilverBroker.createBrowserSession(
+      {
+        ...req,
+        model,
+        voice: normalizeOpenAIRealtimeVoice(req.voice) ?? config.voice ?? "alloy",
+      },
+      subscriptionAuth,
+    );
   }
 
   const { session, voice } = buildOpenAIRealtimeBrowserSessionConfig(req, config, model);
@@ -2315,7 +2355,7 @@ export function buildOpenAIRealtimeVoiceProvider(options?: {
       ),
   };
   const internalApi: OpenAIInternalRealtimeVoiceProviderApi = {
-    isBrowserSessionConfigured: ({ cfg, providerConfig }) => {
+    isBrowserSessionConfigured: ({ cfg, providerConfig, agentId }) => {
       const config = normalizeProviderConfig(providerConfig);
       if (config.azureEndpoint || config.azureDeployment) {
         return false;
@@ -2333,10 +2373,14 @@ export function buildOpenAIRealtimeVoiceProvider(options?: {
           })
         );
       }
-      return hasOpenAIRealtimePlatformAuthInput({
-        configuredApiKey: config.apiKey,
-        cfg,
-      });
+      return (
+        hasOpenAIRealtimePlatformAuthInput({
+          configuredApiKey: config.apiKey,
+          cfg,
+        }) ||
+        (options?.quicksilverBrowserSessionBroker !== undefined &&
+          hasOpenAIChatGptSubscriptionAuthInput({ cfg, agentId }))
+      );
     },
     resolveBrowserSessionCapabilities: ({ cfg, providerConfig, model }) => {
       const config = normalizeProviderConfig(providerConfig);
