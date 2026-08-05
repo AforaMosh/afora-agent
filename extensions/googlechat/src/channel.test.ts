@@ -172,7 +172,7 @@ function requireMockArg(mock: ReturnType<typeof vi.fn>, callIndex = 0, argIndex 
 }
 
 describe("googlechatPlugin outbound", () => {
-  it("declares durable text, remote media, and thread delivery with receipt proofs", async () => {
+  it("declares durable text, text-rendered remote media, and thread delivery with receipt proofs", async () => {
     sendGoogleChatMessageMock.mockResolvedValue({
       messageName: "spaces/AAA/messages/msg-1",
     });
@@ -194,16 +194,28 @@ describe("googlechatPlugin outbound", () => {
         },
         media: async () => {
           sendGoogleChatMessageMock.mockClear();
-          const result = await googlechatMessageAdapter.send?.media?.({
+          const payload = googlechatOutboundAdapter.base.normalizePayload({
+            payload: {
+              text: "caption",
+              mediaUrls: [
+                "https://example.invalid/image.png",
+                "https://example.invalid/second.png",
+              ],
+            },
+          });
+          expect(payload).toEqual({
+            text: "caption\n\nAttachment: https://example.invalid/image.png\nAttachment: https://example.invalid/second.png",
+          });
+          const result = await googlechatMessageAdapter.send?.text?.({
             cfg,
             to: "spaces/AAA",
-            text: "caption",
-            mediaUrl: "https://example.invalid/image.png",
+            text: payload?.text ?? "",
             threadId: "thread-media",
           });
-          expect(result?.receipt.parts[0]?.kind).toBe("media");
+          expect(result?.receipt.parts[0]?.kind).toBe("text");
+          expect(sendGoogleChatMessageMock).toHaveBeenCalledOnce();
           expect(requireMockArg(sendGoogleChatMessageMock)).toMatchObject({
-            text: "caption\n\nAttachment: https://example.invalid/image.png",
+            text: "caption\n\nAttachment: https://example.invalid/image.png\nAttachment: https://example.invalid/second.png",
             thread: "thread-media",
           });
         },
@@ -287,32 +299,24 @@ describe("googlechatPlugin outbound", () => {
     expect(topLevel.receipt.threadId).toBeUndefined();
   });
 
-  it("delivers media-only remote URLs and rejects non-web media before provider access", async () => {
-    const cfg = createGoogleChatCfg();
-    sendGoogleChatMessageMock.mockResolvedValue({
-      messageName: "spaces/AAA/messages/msg-media",
-    });
+  it("renders accepted media links into one durable text body and removes media fields", () => {
+    const normalizePayload = googlechatOutboundAdapter.base.normalizePayload;
 
-    await googlechatMessageAdapter.send?.media?.({
-      cfg,
-      to: "spaces/AAA",
-      text: "",
-      mediaUrl: "https://example.invalid/image.png",
-    });
-    expect(requireMockArg(sendGoogleChatMessageMock)).toMatchObject({
-      text: "Attachment: https://example.invalid/image.png",
-    });
-
-    sendGoogleChatMessageMock.mockClear();
-    await expect(
-      googlechatMessageAdapter.send?.media?.({
-        cfg,
-        to: "spaces/AAA",
-        text: "caption",
-        mediaUrl: "/tmp/image.png",
+    expect(
+      normalizePayload({
+        payload: {
+          text: "caption",
+          mediaUrls: ["https://example.invalid/image.png", "http://cdn.example.invalid/second.png"],
+        },
       }),
-    ).rejects.toThrow("Google Chat outbound attachments require remote HTTP(S) URLs");
-    expect(sendGoogleChatMessageMock).not.toHaveBeenCalled();
+    ).toEqual({
+      text: "caption\n\nAttachment: https://example.invalid/image.png\nAttachment: http://cdn.example.invalid/second.png",
+    });
+    expect(
+      normalizePayload({
+        payload: { mediaUrl: "https://example.invalid/image.png" },
+      }),
+    ).toEqual({ text: "Attachment: https://example.invalid/image.png" });
   });
 
   it("removes unsupported media while retaining durable captions", () => {
@@ -326,8 +330,7 @@ describe("googlechatPlugin outbound", () => {
         },
       }),
     ).toEqual({
-      text: "caption",
-      mediaUrls: ["https://example.invalid/image.png"],
+      text: "caption\n\nAttachment: https://example.invalid/image.png",
     });
     expect(
       normalizePayload({
@@ -356,17 +359,16 @@ describe("googlechatPlugin outbound", () => {
     ).toThrow("Google Chat outbound attachments require remote HTTP(S) URLs");
   });
 
-  it("rejects control-character URLs before Google Chat link rendering", async () => {
-    const cfg = createGoogleChatCfg();
+  it("rejects control-character media before Google Chat link rendering", () => {
+    const normalizePayload = googlechatOutboundAdapter.base.normalizePayload;
 
-    await expect(
-      googlechatMessageAdapter.send?.media?.({
-        cfg,
-        to: "spaces/AAA",
-        text: "caption",
-        mediaUrl: "https://example.invalid/a\tAttachment: https://attacker.invalid/x",
+    expect(() =>
+      normalizePayload({
+        payload: {
+          mediaUrl: "https://example.invalid/a\tAttachment: https://attacker.invalid/x",
+        },
       }),
-    ).rejects.toThrow("Google Chat outbound attachments require remote HTTP(S) URLs");
+    ).toThrow("Google Chat outbound attachments require remote HTTP(S) URLs");
     expect(sendGoogleChatMessageMock).not.toHaveBeenCalled();
   });
 

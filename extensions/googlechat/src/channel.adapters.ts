@@ -43,7 +43,6 @@ import { resolveGoogleChatGroupRequireMention } from "./group-policy.js";
 import {
   filterGoogleChatRemoteMediaUrls,
   formatGoogleChatTextWithMediaLinks,
-  validateGoogleChatRemoteMediaUrls,
 } from "./outbound-media-links.js";
 
 const loadGoogleChatChannelRuntime = createLazyRuntimeNamedExport(
@@ -247,23 +246,26 @@ export const googlechatOutboundAdapter = {
         return null;
       }
       const reply = resolveSendableOutboundReplyParts(payload);
-      try {
-        validateGoogleChatRemoteMediaUrls(reply.mediaUrls);
+      if (!reply.hasMedia) {
         return payload;
+      }
+      const {
+        attachments: _attachments,
+        mediaUrl: _mediaUrl,
+        mediaUrls: _mediaUrls,
+        ...payloadWithoutMedia
+      } = payload;
+      const formatTextFallback = (mediaUrls: readonly string[]) => ({
+        ...payloadWithoutMedia,
+        text: formatGoogleChatTextWithMediaLinks({ text: reply.text, mediaUrls }),
+      });
+      try {
+        return formatTextFallback(reply.mediaUrls);
       } catch (err) {
         if (!reply.hasText) {
           throw err;
         }
-        const {
-          attachments: _attachments,
-          mediaUrl: _mediaUrl,
-          mediaUrls: _mediaUrls,
-          ...payloadWithoutMedia
-        } = payload;
-        const remoteMediaUrls = filterGoogleChatRemoteMediaUrls(reply.mediaUrls);
-        return remoteMediaUrls.length > 0
-          ? { ...payloadWithoutMedia, mediaUrls: remoteMediaUrls }
-          : payloadWithoutMedia;
+        return formatTextFallback(filterGoogleChatRemoteMediaUrls(reply.mediaUrls));
       }
     },
     resolveTarget: ({ to }: { to?: string }) => {
@@ -305,16 +307,5 @@ export const googlechatMessageAdapter = defineChannelMessageAdapter({
   },
   send: {
     text: googlechatOutboundAdapter.attachedResults.sendText,
-    media: async ({ mediaUrl, ...ctx }) => {
-      const text = formatGoogleChatTextWithMediaLinks({
-        text: ctx.text,
-        mediaUrls: [mediaUrl],
-      });
-      return await sendGoogleChatOutboundText({
-        ...ctx,
-        text,
-        kind: "media",
-      });
-    },
   },
 });
