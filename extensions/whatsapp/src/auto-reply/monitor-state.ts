@@ -33,6 +33,7 @@ export function createWebChannelStatusController(statusSink?: (status: WebChanne
   let lastDisconnectWasWatchdogRecovery = false;
   let busyActivityHeartbeat: ReturnType<typeof setInterval> | null = null;
   let busyWorkAwaitingConnection = false;
+  let activeConnectionToken: symbol | null = null;
   const status: WebChannelStatus = {
     running: true,
     connected: false,
@@ -78,9 +79,47 @@ export function createWebChannelStatusController(statusSink?: (status: WebChanne
     busyActivityHeartbeat.unref?.();
   };
 
+  const noteBusy = (busy: boolean, at = Date.now()) => {
+    const changed = status.busy !== busy || status.lastRunActivityAt !== at;
+    status.busy = busy;
+    status.lastRunActivityAt = at;
+    if (busy && status.connected) {
+      // Only a current pending-work report may arm this timer. Reconnect must
+      // not revive busy state inherited from the prior socket lifecycle.
+      ensureBusyActivityHeartbeat();
+    } else if (busy) {
+      // Inbox attachment can admit work before the connection is published.
+      // Carry that current setup fact to noteConnected, but never across close.
+      busyWorkAwaitingConnection = true;
+    } else {
+      busyWorkAwaitingConnection = false;
+      clearBusyActivityHeartbeat();
+    }
+    if (!changed) {
+      return;
+    }
+    if (status.connected && busy) {
+      status.healthState = "healthy";
+      status.lifecycle = "ready";
+    }
+    emit();
+  };
+
   return {
     emit,
     snapshot: () => status,
+    beginConnectionSetup() {
+      const token = Symbol();
+      activeConnectionToken = token;
+      return {
+        noteBusy(busy: boolean, at = Date.now()) {
+          if (activeConnectionToken !== token) {
+            return;
+          }
+          noteBusy(busy, at);
+        },
+      };
+    },
     noteConnected(at = Date.now()) {
       Object.assign(status, channelReadyPatch({ lastConnectedAt: at, lastEventAt: at }));
       Object.assign(status, createTransportActivityStatusPatch(at));
@@ -114,31 +153,7 @@ export function createWebChannelStatusController(statusSink?: (status: WebChanne
       Object.assign(status, createTransportActivityStatusPatch(at));
       emit();
     },
-    noteBusy(busy: boolean, at = Date.now()) {
-      const changed = status.busy !== busy || status.lastRunActivityAt !== at;
-      status.busy = busy;
-      status.lastRunActivityAt = at;
-      if (busy && status.connected) {
-        // Only a current pending-work report may arm this timer. Reconnect must
-        // not revive busy state inherited from the prior socket lifecycle.
-        ensureBusyActivityHeartbeat();
-      } else if (busy) {
-        // Inbox attachment can admit work before the connection is published.
-        // Carry that current setup fact to noteConnected, but never across close.
-        busyWorkAwaitingConnection = true;
-      } else {
-        busyWorkAwaitingConnection = false;
-        clearBusyActivityHeartbeat();
-      }
-      if (!changed) {
-        return;
-      }
-      if (status.connected && busy) {
-        status.healthState = "healthy";
-        status.lifecycle = "ready";
-      }
-      emit();
-    },
+    noteBusy,
     noteWatchdogStale(at = Date.now()) {
       status.lastEventAt = at;
       if (status.connected) {
@@ -163,6 +178,7 @@ export function createWebChannelStatusController(statusSink?: (status: WebChanne
       const at = params.at ?? Date.now();
       clearBusyActivityHeartbeat();
       busyWorkAwaitingConnection = false;
+      activeConnectionToken = null;
       lastDisconnectWasWatchdogRecovery = params.watchdogRecovery === true;
       status.connected = false;
       status.lastEventAt = at;
@@ -181,6 +197,7 @@ export function createWebChannelStatusController(statusSink?: (status: WebChanne
     markStopped(at = Date.now()) {
       clearBusyActivityHeartbeat();
       busyWorkAwaitingConnection = false;
+      activeConnectionToken = null;
       const terminalDisconnect = status.lifecycle === "blocked";
       if (!isTerminalHealthState(status.healthState)) {
         Object.assign(status, channelStoppedPatch({ lastEventAt: at, terminalDisconnect }));

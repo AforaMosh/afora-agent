@@ -106,7 +106,8 @@ describe("createWebChannelStatusController", () => {
     const patches: Record<string, unknown>[] = [];
     const controller = createWebChannelStatusController((s) => patches.push({ ...s }));
 
-    controller.noteBusy(true);
+    const setup = controller.beginConnectionSetup();
+    setup.noteBusy(true);
     controller.noteConnected();
     vi.advanceTimersByTime(60_000);
 
@@ -117,17 +118,20 @@ describe("createWebChannelStatusController", () => {
     });
   });
 
-  it("does not carry setup work through a connection close", () => {
+  it("ignores pending-work callbacks from a closed connection", () => {
     vi.useFakeTimers();
     vi.setSystemTime(1000);
     const patches: Record<string, unknown>[] = [];
     const controller = createWebChannelStatusController((s) => patches.push({ ...s }));
 
-    controller.noteBusy(true);
+    const setup = controller.beginConnectionSetup();
+    setup.noteBusy(true);
     controller.noteClose({
       reconnectAttempts: 1,
       healthState: "reconnecting",
     });
+    controller.beginConnectionSetup();
+    setup.noteBusy(true);
     controller.noteConnected();
     const reconnectPatchCount = patches.length;
     vi.advanceTimersByTime(2 * 60_000);
