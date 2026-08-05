@@ -107,6 +107,8 @@ function waitForFast<T>(
 }
 
 describe("agent event handler", () => {
+  const handlers = new Set<ReturnType<typeof createAgentEventHandler>>();
+
   beforeEach(() => {
     resetAgentEventsForTest({ preserveListeners: true });
     vi.mocked(getRuntimeConfig).mockReturnValue({});
@@ -133,6 +135,10 @@ describe("agent event handler", () => {
   });
 
   afterEach(() => {
+    for (const handler of handlers) {
+      handler.dispose();
+    }
+    handlers.clear();
     vi.useRealTimers();
     resetAgentEventsForTest({ preserveListeners: true });
   });
@@ -184,6 +190,7 @@ describe("agent event handler", () => {
       updateRunToolErrorSummary: params?.updateRunToolErrorSummary,
       resolveSessionActiveRunState: params?.resolveSessionActiveRunState,
     });
+    handlers.add(handler);
 
     return {
       nowSpy,
@@ -709,14 +716,16 @@ describe("agent event handler", () => {
     expect(agentBroadcastCalls(broadcast)).toHaveLength(1);
   });
 
-  it("coalesces assistant agent events under the chat delta throttle", () => {
-    let now = 10_000;
-    const nowSpy = vi.spyOn(Date, "now").mockImplementation(() => now);
+  it("trailing-flushes the latest assistant text at the chat delta throttle boundary", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(10_000);
     const { broadcast, nodeSendToSession, chatRunState, handler } = createHarness();
     registerNamedChatRun(chatRunState, "agent-throttle");
 
     for (let i = 0; i < 5; i += 1) {
-      now = 10_000 + i * 20;
+      if (i > 0) {
+        vi.advanceTimersByTime(20);
+      }
       emitAgentEvent(
         handler,
         "run-agent-throttle",
@@ -738,7 +747,59 @@ describe("agent event handler", () => {
         }
       ).data?.text,
     ).toBe("x");
-    nowSpy.mockRestore();
+
+    vi.advanceTimersByTime(69);
+    expect(chatBroadcastCalls(broadcast)).toHaveLength(1);
+
+    vi.advanceTimersByTime(1);
+    const chatCalls = chatBroadcastCalls(broadcast);
+    expect(chatCalls).toHaveLength(2);
+    expect(sessionChatCalls(nodeSendToSession)).toHaveLength(2);
+    expect(chatCalls[1]?.[1]).toMatchObject({
+      seq: 5,
+      state: "delta",
+      deltaText: "xxxx",
+      message: { content: [{ type: "text", text: "xxxxx" }] },
+    });
+  });
+
+  it("cancels a pending trailing flush when a direct delta supersedes it", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(20_000);
+    const { broadcast, chatRunState, handler } = createHarness();
+    registerNamedChatRun(chatRunState, "direct-supersedes-flush");
+
+    emitAgentEvent(handler, "run-direct-supersedes-flush", "assistant", {
+      text: "Hello",
+      delta: "Hello",
+    });
+    vi.advanceTimersByTime(50);
+    emitAgentEvent(
+      handler,
+      "run-direct-supersedes-flush",
+      "assistant",
+      { text: "Hello world", delta: " world" },
+      { seq: 2 },
+    );
+    expect(vi.getTimerCount()).toBe(1);
+
+    // Model an event-loop stall: wall time passes before the queued timer runs.
+    vi.setSystemTime(20_200);
+    emitAgentEvent(
+      handler,
+      "run-direct-supersedes-flush",
+      "assistant",
+      { text: "Hello world!", delta: "!" },
+      { seq: 3 },
+    );
+
+    expect(vi.getTimerCount()).toBe(0);
+    expect(chatBroadcastCalls(broadcast).map(([, payload]) => payload)).toMatchObject([
+      { state: "delta", deltaText: "Hello" },
+      { seq: 3, state: "delta", deltaText: " world!" },
+    ]);
+    vi.runOnlyPendingTimers();
+    expect(chatBroadcastCalls(broadcast)).toHaveLength(2);
   });
 
   it("flushes coalesced assistant agent text before lifecycle end", () => {
@@ -1202,17 +1263,19 @@ describe("agent event handler", () => {
   });
 
   it("flushes buffered text as delta before final when throttle suppresses the latest chunk", () => {
-    let now = 10_000;
-    const nowSpy = vi.spyOn(Date, "now").mockImplementation(() => now);
+    vi.useFakeTimers();
+    vi.setSystemTime(10_000);
     const { broadcast, nodeSendToSession, chatRunState, handler } = createHarness();
     registerNamedChatRun(chatRunState, "flush");
 
     emitAgentEvent(handler, "run-flush", "assistant", { text: "Hello" });
 
-    now = 10_100;
+    vi.advanceTimersByTime(100);
     emitAgentEvent(handler, "run-flush", "assistant", { text: "Hello world" });
+    expect(vi.getTimerCount()).toBe(1);
 
     emitLifecycleEnd(handler, "run-flush");
+    expect(vi.getTimerCount()).toBe(0);
 
     const chatCalls = chatBroadcastCalls(broadcast);
     expect(chatCalls).toHaveLength(3);
@@ -1230,7 +1293,8 @@ describe("agent event handler", () => {
     expect(secondPayload.message?.content?.[0]?.text).toBe("Hello world");
     expect(thirdPayload.state).toBe("final");
     expect(sessionChatCalls(nodeSendToSession)).toHaveLength(3);
-    nowSpy.mockRestore();
+    vi.runOnlyPendingTimers();
+    expect(chatBroadcastCalls(broadcast)).toHaveLength(3);
   });
 
   it("preserves pre-tool assistant text when later segments stream as non-prefix snapshots", () => {
@@ -1465,8 +1529,8 @@ describe("agent event handler", () => {
   });
 
   it("flushes buffered chat delta before tool start events", () => {
-    let now = 12_000;
-    const nowSpy = vi.spyOn(Date, "now").mockImplementation(() => now);
+    vi.useFakeTimers();
+    vi.setSystemTime(12_000);
     const {
       broadcast,
       broadcastToConnIds,
@@ -1488,7 +1552,7 @@ describe("agent event handler", () => {
     emitAgentEvent(handler, "run-tool-flush", "assistant", { text: "Before tool" });
 
     // Throttled assistant update (within 150ms window).
-    now = 12_050;
+    vi.advanceTimersByTime(50);
     emitAgentEvent(
       handler,
       "run-tool-flush",
@@ -1496,6 +1560,7 @@ describe("agent event handler", () => {
       { text: "Before tool expanded" },
       { seq: 2 },
     );
+    expect(vi.getTimerCount()).toBe(1);
 
     emitAgentEvent(
       handler,
@@ -1504,6 +1569,7 @@ describe("agent event handler", () => {
       { phase: "start", name: "read", toolCallId: "tool-flush-1" },
       { seq: 3 },
     );
+    expect(vi.getTimerCount()).toBe(0);
 
     const chatCalls = chatBroadcastCalls(broadcast);
     expect(chatCalls).toHaveLength(2);
@@ -1521,7 +1587,8 @@ describe("agent event handler", () => {
     const flushCallOrder = broadcast.mock.invocationCallOrder[1] ?? 0;
     const toolCallOrder = broadcastToConnIds.mock.invocationCallOrder[0] ?? Number.MAX_SAFE_INTEGER;
     expect(flushCallOrder).toBeLessThan(toolCallOrder);
-    nowSpy.mockRestore();
+    vi.runOnlyPendingTimers();
+    expect(chatBroadcastCalls(broadcast)).toHaveLength(2);
   });
 
   it("routes tool events only to registered recipients when verbose is enabled", () => {
@@ -2711,6 +2778,23 @@ describe("agent event handler", () => {
         ([, payload]) => (payload as { state?: string }).state === "error",
       ),
     ).toBe(false);
+  });
+
+  it("cancels pending chat delta flushes when the handler is disposed", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(30_000);
+    const { broadcast, chatRunState, handler } = createHarness();
+    registerNamedChatRun(chatRunState, "dispose-flush");
+
+    emitAgentEvent(handler, "run-dispose-flush", "assistant", { text: "Hello" });
+    vi.advanceTimersByTime(50);
+    emitAgentEvent(handler, "run-dispose-flush", "assistant", { text: "Hello world" }, { seq: 2 });
+    expect(vi.getTimerCount()).toBe(1);
+
+    handler.dispose();
+    expect(vi.getTimerCount()).toBe(0);
+    vi.advanceTimersByTime(100);
+    expect(chatBroadcastCalls(broadcast)).toHaveLength(1);
   });
 
   it("clears tracked active runs before terminal sessions.changed broadcasts", async () => {

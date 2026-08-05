@@ -221,6 +221,7 @@ function normalizeHeartbeatChatFinalText(params: {
  * do not finalize a run before fallback or retry reuses the same runId.
  */
 const AGENT_LIFECYCLE_ERROR_RETRY_GRACE_MS = 15_000;
+const CHAT_DELTA_THROTTLE_MS = 150;
 
 export type ChatEventBroadcast = GatewayBroadcastFn;
 
@@ -414,14 +415,34 @@ export function createAgentEventHandler({
     event: AgentEventRuntimePayload;
     opts?: TerminalLifecycleOptions;
   };
+  type PendingChatDeltaFlush = {
+    timer: NodeJS.Timeout;
+    sessionKey: string;
+    agentId: string | undefined;
+    clientRunId: string;
+    sourceRunId: string;
+    seq: number;
+    controlUiVisible: boolean | undefined;
+  };
 
   const pendingTerminalLifecycleErrors = new Map<string, PendingTerminalLifecycleError>();
+  const pendingChatDeltaFlushes = new Map<string, PendingChatDeltaFlush>();
 
   type AgentTextThrottleStream = "assistant" | "thinking";
 
   const agentTextThrottleStreams = ["assistant", "thinking"] as const;
 
+  const clearPendingChatDeltaFlush = (clientRunId: string) => {
+    const pending = pendingChatDeltaFlushes.get(clientRunId);
+    if (!pending) {
+      return;
+    }
+    clearTimeout(pending.timer);
+    pendingChatDeltaFlushes.delete(clientRunId);
+  };
+
   const clearBufferedChatState = (clientRunId: string) => {
+    clearPendingChatDeltaFlush(clientRunId);
     chatRunState.clearRun(clientRunId);
   };
 
@@ -880,6 +901,31 @@ export function createAgentEventHandler({
     pendingTerminalLifecycleErrors.set(evt.runId, { timer, event: evt, opts });
   };
 
+  const scheduleChatDeltaFlush = (facts: Omit<PendingChatDeltaFlush, "timer">, delayMs: number) => {
+    const existing = pendingChatDeltaFlushes.get(facts.clientRunId);
+    if (existing) {
+      pendingChatDeltaFlushes.set(facts.clientRunId, { ...facts, timer: existing.timer });
+      return;
+    }
+    const timer = setSafeTimeout(() => {
+      const pending = pendingChatDeltaFlushes.get(facts.clientRunId);
+      if (!pending || pending.timer !== timer) {
+        return;
+      }
+      pendingChatDeltaFlushes.delete(facts.clientRunId);
+      flushBufferedChatDeltaIfNeeded(
+        pending.sessionKey,
+        pending.agentId,
+        pending.clientRunId,
+        pending.sourceRunId,
+        pending.seq,
+        { controlUiVisible: pending.controlUiVisible },
+      );
+    }, delayMs);
+    timer.unref?.();
+    pendingChatDeltaFlushes.set(facts.clientRunId, { ...facts, timer });
+  };
+
   const emitChatDelta = (
     sessionKey: string,
     agentId: string | undefined,
@@ -904,7 +950,21 @@ export function createAgentEventHandler({
     run.rawBuffer = mergedRawText;
     run.bufferUpdatedAt = now;
     const last = run.deltaSentAt ?? 0;
-    if (now - last < 150) {
+    const elapsedMs = now - last;
+    if (elapsedMs < CHAT_DELTA_THROTTLE_MS) {
+      // Keep one fixed-deadline trailing flush. Later chunks update its
+      // delivery facts without extending the throttle window.
+      scheduleChatDeltaFlush(
+        {
+          sessionKey,
+          agentId,
+          clientRunId,
+          sourceRunId,
+          seq,
+          controlUiVisible: opts?.controlUiVisible,
+        },
+        Math.min(CHAT_DELTA_THROTTLE_MS, Math.max(0, CHAT_DELTA_THROTTLE_MS - elapsedMs)),
+      );
       return;
     }
     const projected = chatRunState.resolveBuffer(clientRunId);
@@ -919,6 +979,7 @@ export function createAgentEventHandler({
     if (!broadcastDelta) {
       return;
     }
+    clearPendingChatDeltaFlush(clientRunId);
     run.deltaSentAt = now;
     run.deltaLastBroadcastLen = mergedText.length;
     run.deltaLastBroadcastText = mergedText;
@@ -974,6 +1035,7 @@ export function createAgentEventHandler({
     seq: number,
     opts?: { controlUiVisible?: boolean; firstAssistantTimingEntry?: ChatRunEntry },
   ) => {
+    clearPendingChatDeltaFlush(clientRunId);
     const { text, shouldSuppressSilent } = resolveBufferedChatTextState(clientRunId, sourceRunId, {
       suppressLeadFragments: true,
     });
@@ -1071,7 +1133,7 @@ export function createAgentEventHandler({
     // suppressed the most recent chunk, leaving the client with stale text.
     // Only flush if the buffered text differs from the last broadcast to avoid duplicates.
     flushBufferedChatDeltaIfNeeded(sessionKey, opts?.agentId, clientRunId, sourceRunId, seq, opts);
-    chatRunState.clearRun(clientRunId);
+    clearBufferedChatState(clientRunId);
     const spawnedBy = resolveSpawnedBy(sessionKey);
     if (jobState !== "error") {
       const payload = {
@@ -1690,12 +1752,16 @@ export function createAgentEventHandler({
 
   return Object.assign(handleEvent, {
     dispose: () => {
-      // Deferred provider errors belong to this gateway subscription. Letting
-      // them outlive shutdown can project stale terminal state into a successor.
+      // Deferred lifecycle and chat work belongs to this gateway subscription.
+      // Letting it outlive shutdown can project stale state into a successor.
       for (const pending of pendingTerminalLifecycleErrors.values()) {
         clearTimeout(pending.timer);
       }
       pendingTerminalLifecycleErrors.clear();
+      for (const pending of pendingChatDeltaFlushes.values()) {
+        clearTimeout(pending.timer);
+      }
+      pendingChatDeltaFlushes.clear();
     },
   });
 }
