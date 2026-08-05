@@ -116,7 +116,7 @@ describe("venice provider plugin", () => {
     ]);
   });
 
-  it("replays Gemini signatures and marks foreign history in Venice's top-level field", async () => {
+  it("replays Gemini signatures and downgrades foreign tool history to text", async () => {
     const provider = await registerSingleProviderPlugin(plugin);
     const capturedPayloads: Record<string, unknown>[] = [];
     const baseStreamFn = (_model: unknown, _context: unknown, options: unknown) => {
@@ -227,17 +227,20 @@ describe("venice provider plugin", () => {
       } as never,
       {},
     );
-    const crossRouteToolCall = (
-      (capturedPayloads[1]!.messages as Array<Record<string, unknown>>)[1]!.tool_calls as Array<
-        Record<string, unknown>
-      >
-    )[0];
-    expect(crossRouteToolCall).toMatchObject({
-      thought_signature: "skip_thought_signature_validator",
+    const crossRouteMessages = capturedPayloads[1]!.messages as Array<Record<string, unknown>>;
+    expect(crossRouteMessages[1]).toMatchObject({
+      role: "assistant",
+      content: expect.stringContaining("[Historical tool call: echo_value("),
     });
+    expect(crossRouteMessages[1]).not.toHaveProperty("tool_calls");
+    expect(crossRouteMessages[2]).toMatchObject({
+      role: "user",
+      content: "[Historical tool result for echo_value:\nok]",
+    });
+    expect(crossRouteMessages[2]).not.toHaveProperty("tool_call_id");
   });
 
-  it("marks unsigned mixed-model and parallel Gemini history for validation bypass", async () => {
+  it("downgrades mixed signed and unsigned Gemini tool batches to text history", async () => {
     const provider = await registerSingleProviderPlugin(plugin);
     let capturedPayload: Record<string, unknown> | undefined;
     const baseStreamFn = (_model: unknown, _context: unknown, options: unknown) => {
@@ -252,6 +255,10 @@ describe("venice provider plugin", () => {
               { id: "signed_call", type: "function", function: { name: "read" } },
             ],
           },
+          { role: "tool", tool_call_id: "foreign_call", content: "foreign result" },
+          { role: "tool", tool_call_id: "legacy_call", content: "legacy result" },
+          { role: "tool", tool_call_id: "signed_call", content: "signed result" },
+          { role: "user", content: "current prompt" },
         ],
       };
       (options as { onPayload?: (payload: Record<string, unknown>) => void })?.onPayload?.(payload);
@@ -297,16 +304,21 @@ describe("venice provider plugin", () => {
       {},
     );
 
-    const toolCalls = (capturedPayload!.messages as Array<Record<string, unknown>>)[0]!
-      .tool_calls as Array<Record<string, unknown>>;
-    expect(toolCalls.map((toolCall) => toolCall.thought_signature)).toEqual([
-      "skip_thought_signature_validator",
-      "skip_thought_signature_validator",
-      "SIG-EXACT-SAME-ROUTE==",
+    const messages = capturedPayload!.messages as Array<Record<string, unknown>>;
+    expect(messages[0]).toMatchObject({
+      role: "assistant",
+      content: expect.stringContaining("[Historical tool call: web_fetch("),
+    });
+    expect(messages[0]).not.toHaveProperty("tool_calls");
+    expect(messages.slice(1, 4)).toEqual([
+      { role: "user", content: "[Historical tool result for web_fetch:\nforeign result]" },
+      { role: "user", content: "[Historical tool result for read:\nlegacy result]" },
+      { role: "user", content: "[Historical tool result for read:\nsigned result]" },
     ]);
+    expect(messages[4]).toEqual({ role: "user", content: "current prompt" });
   });
 
-  it("does not add the Gemini 3 validator bypass to unsigned Gemini 2.5 history", async () => {
+  it("leaves unsigned Gemini 2.5 history unchanged", async () => {
     const provider = await registerSingleProviderPlugin(plugin);
     let capturedPayload: Record<string, unknown> | undefined;
     const baseStreamFn = (_model: unknown, _context: unknown, options: unknown) => {

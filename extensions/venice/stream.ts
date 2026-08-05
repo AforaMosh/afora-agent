@@ -17,9 +17,39 @@ function isVeniceGemini3ModelId(modelId: unknown): boolean {
   return typeof modelId === "string" && /^gemini-3(?:[.-]|$)/.test(modelId.trim().toLowerCase());
 }
 
-const GEMINI_THOUGHT_SIGNATURE_VALIDATOR_SKIP = "skip_thought_signature_validator";
+function stringifyHistoricalValue(value: unknown): string {
+  if (typeof value === "string") {
+    return value;
+  }
+  if (value === null || value === undefined) {
+    return "";
+  }
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
 
-function applyVeniceGeminiThoughtSignatures(
+function describeHistoricalToolCall(toolCall: Record<string, unknown>): {
+  id?: string;
+  name: string;
+  text: string;
+} {
+  const fn =
+    toolCall.function && typeof toolCall.function === "object"
+      ? (toolCall.function as Record<string, unknown>)
+      : {};
+  const name = typeof fn.name === "string" && fn.name.length > 0 ? fn.name : "unknown_tool";
+  const args = stringifyHistoricalValue(fn.arguments) || "{}";
+  return {
+    ...(typeof toolCall.id === "string" ? { id: toolCall.id } : {}),
+    name,
+    text: `[Historical tool call: ${name}(${args})]`,
+  };
+}
+
+function applyVeniceGeminiToolHistoryCompatibility(
   payload: Record<string, unknown>,
   context: Parameters<NonNullable<ProviderWrapStreamFnContext["streamFn"]>>[1],
   model: Parameters<NonNullable<ProviderWrapStreamFnContext["streamFn"]>>[0],
@@ -28,9 +58,7 @@ function applyVeniceGeminiThoughtSignatures(
     return;
   }
   const signaturesByToolCallId = new Map<string, string>();
-  const fallbackSignature = isVeniceGemini3ModelId(model.id)
-    ? GEMINI_THOUGHT_SIGNATURE_VALIDATOR_SKIP
-    : undefined;
+  const requiresUnsignedCallFallback = isVeniceGemini3ModelId(model.id);
   for (const message of context.messages ?? []) {
     if (message.role !== "assistant") {
       continue;
@@ -54,11 +82,12 @@ function applyVeniceGeminiThoughtSignatures(
     }
   }
   if (
-    (signaturesByToolCallId.size === 0 && !fallbackSignature) ||
+    (signaturesByToolCallId.size === 0 && !requiresUnsignedCallFallback) ||
     !Array.isArray(payload.messages)
   ) {
     return;
   }
+  const downgradedToolCalls = new Map<string, string>();
   for (const message of payload.messages) {
     if (!message || typeof message !== "object") {
       continue;
@@ -67,6 +96,8 @@ function applyVeniceGeminiThoughtSignatures(
     if (record.role !== "assistant" || !Array.isArray(record.tool_calls)) {
       continue;
     }
+    let shouldDowngradeBatch = false;
+    const describedCalls: Array<ReturnType<typeof describeHistoricalToolCall>> = [];
     for (const toolCall of record.tool_calls) {
       if (!toolCall || typeof toolCall !== "object") {
         continue;
@@ -78,16 +109,44 @@ function applyVeniceGeminiThoughtSignatures(
           : undefined;
       if (signature) {
         toolCallRecord.thought_signature = signature;
-      } else if (
-        fallbackSignature &&
-        (typeof toolCallRecord.thought_signature !== "string" ||
-          toolCallRecord.thought_signature.length === 0)
-      ) {
-        // Gemini 3 validates every historical function call, including calls
-        // imported from another provider or recorded before signature capture.
-        toolCallRecord.thought_signature = fallbackSignature;
+      } else if (requiresUnsignedCallFallback) {
+        shouldDowngradeBatch = true;
+      }
+      describedCalls.push(describeHistoricalToolCall(toolCallRecord));
+    }
+    if (!shouldDowngradeBatch) {
+      continue;
+    }
+    for (const call of describedCalls) {
+      if (call.id) {
+        downgradedToolCalls.set(call.id, call.name);
       }
     }
+    const existingContent = stringifyHistoricalValue(record.content);
+    record.content = [existingContent, ...describedCalls.map((call) => call.text)]
+      .filter((part) => part.length > 0)
+      .join("\n");
+    delete record.tool_calls;
+  }
+  if (downgradedToolCalls.size === 0) {
+    return;
+  }
+  for (const message of payload.messages) {
+    if (!message || typeof message !== "object") {
+      continue;
+    }
+    const record = message as Record<string, unknown>;
+    const toolCallId = typeof record.tool_call_id === "string" ? record.tool_call_id : undefined;
+    const toolName = toolCallId ? downgradedToolCalls.get(toolCallId) : undefined;
+    if (record.role !== "tool" || !toolName) {
+      continue;
+    }
+    const result = stringifyHistoricalValue(record.content);
+    for (const key of Object.keys(record)) {
+      delete record[key];
+    }
+    record.role = "user";
+    record.content = `[Historical tool result for ${toolName}:\n${result}]`;
   }
 }
 
@@ -106,6 +165,6 @@ export function createVeniceStreamWrapper(
         replaceNullReasoningContent: true,
       });
     }
-    applyVeniceGeminiThoughtSignatures(payload, context, model);
+    applyVeniceGeminiToolHistoryCompatibility(payload, context, model);
   });
 }
