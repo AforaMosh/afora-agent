@@ -27,28 +27,7 @@ import {
 } from "./payload-migration.js";
 import { createScheduledNativePolicyMigrationCollector } from "./scheduled-native-policy-migration.js";
 import { createScheduledToolPolicyMigrationCollector } from "./scheduled-tool-policy-migration.js";
-
-type CronStoreIssueKey =
-  | "jobId"
-  | "missingId"
-  | "nonStringId"
-  | "legacyScheduleString"
-  | "legacyScheduleCron"
-  | "legacyPayloadKind"
-  | "legacyPayloadCodexModel"
-  | "legacyAgentTurnCommandPayload"
-  | "unresolvedAgentTurnShellToolPrompt"
-  | "legacyPayloadProvider"
-  | "legacyTopLevelPayloadFields"
-  | "legacyTopLevelDeliveryFields"
-  | "legacyDeliveryMode"
-  | "migratedScheduledToolPolicy"
-  | "migratedScheduledNativePolicy"
-  | "migratedScheduledNativePolicyDisabled"
-  | "invalidSchedule"
-  | "invalidPayload";
-
-type CronStoreIssues = Partial<Record<CronStoreIssueKey, number>>;
+import type { CronStoreIssueKey, CronStoreIssues } from "./store-migration-issues.js";
 
 export type CronCodexRuntimePolicyTarget = {
   agentId?: string;
