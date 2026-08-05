@@ -938,7 +938,11 @@ await gateway.request("talk.session.create", {
   sessionKey: "main",
 });
 await gateway.request("talk.session.appendAudio", { sessionId, audioBase64 });
-await gateway.request("talk.session.cancelOutput", { sessionId, reason: "barge-in" });
+await gateway.request("talk.session.cancelOutput", {
+  sessionId,
+  outputGeneration: currentOutputGeneration,
+  reason: "barge-in",
+});
 await gateway.request("talk.session.submitToolResult", {
   sessionId,
   callId,
@@ -964,6 +968,10 @@ await gateway.request("talk.client.create", {
 await gateway.request("talk.client.toolCall", { sessionKey, callId, name, args });
 await gateway.request("talk.client.steer", { sessionKey, text, mode: "steer" });
 ```
+
+Use the generation from the current output audio event. A current gateway
+rejects cancellation without one with `INVALID_REQUEST`; wait for generation
+metadata or upgrade the client instead of sending an ambiguous cancellation.
 
 Browser-owned WebRTC/provider-websocket sessions use `talk.client.create`,
 because the browser owns provider negotiation and media transport while the

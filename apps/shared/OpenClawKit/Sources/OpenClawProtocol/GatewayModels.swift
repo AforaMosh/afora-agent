@@ -10789,21 +10789,25 @@ public struct TalkSessionAcknowledgeMarkParams: Codable, Sendable {
 public struct TalkSessionCancelOutputParams: Codable, Sendable {
     public let sessionid: String
     public let turnid: String?
+    public let outputgeneration: Int?
     public let reason: String?
 
     public init(
         sessionid: String,
         turnid: String? = nil,
+        outputgeneration: Int? = nil,
         reason: String? = nil)
     {
         self.sessionid = sessionid
         self.turnid = turnid
+        self.outputgeneration = outputgeneration
         self.reason = reason
     }
 
     private enum CodingKeys: String, CodingKey {
         case sessionid = "sessionId"
         case turnid = "turnId"
+        case outputgeneration = "outputGeneration"
         case reason
     }
 }
