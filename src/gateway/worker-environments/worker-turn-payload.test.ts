@@ -292,6 +292,34 @@ describe("assertSupportedTurn", () => {
     expect(assertSupportedTurn(turn)).toEqual({ provider: "openai", model: "gpt-5.4" });
   });
 
+  it("keeps same-namespace session denials fail-closed", () => {
+    const turn = {
+      sessionId: "session-denied-same-namespace",
+      sessionFile: "/tmp/session.jsonl",
+      workspaceDir: "/tmp/workspace",
+      prompt: "run",
+      timeoutMs: 1_000,
+      runId: "run-denied-same-namespace",
+      provider: "openai",
+      model: "gpt-5.4",
+      config: {
+        agents: {
+          defaults: {
+            models: { "openai/gpt-5.4": { agentRuntime: { id: "openclaw" } } },
+          },
+        },
+        mcp: { servers: { docs: { command: "docs" } } },
+      },
+      toolsAllow: ["docs__read_docs"],
+      toolOverrides: { mcpToolsDeny: { docs: ["read_docs"] } },
+      scheduledNativePolicy: { version: 1, mode: "disabled" },
+    } as SessionPlacementTurnParams;
+
+    expect(() => assertSupportedTurn(turn)).toThrow(
+      /cannot currently preserve.*MCP tool authority.*reauthorize.*sessions\.reclaim/is,
+    );
+  });
+
   it("accepts requester-scoped MCP that senderless scheduled turns cannot resolve", () => {
     const resolve = vi.fn(async () => null);
     mcpConnectionResolverTesting.setMcpServerConnectionResolversForTest([

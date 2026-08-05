@@ -318,7 +318,8 @@ export function resolveSessionMcpConfigSummary(params: {
   // names could be attributed to the wrong namespace.
   const staticToolNamePrefixes = Object.entries(staticServers)
     // A universal exclude also hides resources/prompts utilities. Exact filters
-    // cannot be inverted from sanitized model-facing names, so stay conservative.
+    // and session denials cannot be inverted from sanitized model-facing names,
+    // so same-namespace cases stay conservative.
     .filter(([, server]) => !mcpToolFilterExcludesAll(server.toolFilter))
     .map(
       ([serverName]) =>
