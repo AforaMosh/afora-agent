@@ -161,8 +161,9 @@ explicit runtime config.
 GA OpenAI Realtime voice goes through the public **OpenAI Platform Realtime
 API** and normally requires a Platform API key. Browser Talk can instead use a
 ChatGPT OAuth profile through the Gateway-owned WebRTC offer broker. GPT-Live
-uses the Platform Frameless Bidi `/v1/live` route and requires Platform API-key
-auth.
+Talk uses Platform WebRTC calls plus a Gateway-owned sideband, while backend
+voice consumers use the direct Frameless Bidi WebSocket. Both require Platform
+API-key auth.
 
 Platform auth is resolved in this order: configured realtime API key, `openai`
 API-key profile, then `OPENAI_API_KEY`. GA browser Talk falls back to ChatGPT
