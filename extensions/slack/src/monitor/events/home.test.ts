@@ -40,6 +40,10 @@ const transientPlatformErrors = [
   "fatal_error",
   "request_timeout",
 ] as const;
+const malformedRetryAfterHeaders = [
+  { headerLabel: "missing", retryAfter: undefined },
+  { headerLabel: "invalid", retryAfter: "not-a-timeout" },
+] as const;
 
 function createDurableHomeLifecycle(): SlackIngressTurnLifecycle {
   return {
@@ -436,6 +440,59 @@ describe("registerSlackHomeEvents", () => {
     },
   );
 
+  it.each(
+    malformedRetryAfterHeaders.flatMap(({ headerLabel, retryAfter }) =>
+      (["home", "messages"] as const).map((tab) => ({ headerLabel, retryAfter, tab })),
+    ),
+  )("replays malformed Retry-After $headerLabel for the $tab tab", async (scenario) => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response("", {
+          status: 429,
+          headers: scenario.retryAfter === undefined ? {} : { "retry-after": scenario.retryAfter },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true, view: { id: "V_TEST" } }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+
+    await withDurableHomeIngress(
+      fetch,
+      async ({ receive, ingress, queue, agentViewState, recordSlackAgentView }) => {
+        const eventId = `Ev-${scenario.tab}-${scenario.headerLabel}-retry-header`;
+        const event = createHomeEvent(eventId, scenario.tab);
+        await receive(event);
+        await ingress.waitForIdle();
+
+        await expect(queue.listPending()).resolves.toMatchObject([
+          {
+            id: eventId,
+            attempts: 1,
+            lastError: expect.stringContaining("Retry header did not contain a valid timeout"),
+          },
+        ]);
+        await vi.waitFor(
+          async () => {
+            await ingress.waitForIdle();
+            expect(fetch).toHaveBeenCalledTimes(2);
+          },
+          { timeout: 5_000, interval: 50 },
+        );
+
+        expect(event.ack).toHaveBeenCalledOnce();
+        expect(recordSlackAgentView).toHaveBeenCalledTimes(scenario.tab === "messages" ? 1 : 0);
+        await expect(agentViewState.isEnabled()).resolves.toBe(scenario.tab === "messages");
+        await expect(queue.enqueue(eventId, {} as SlackIngressPayload)).resolves.toMatchObject({
+          kind: "completed",
+        });
+      },
+    );
+  });
+
   it.each([
     "invalid_arguments",
     "missing_scope",
@@ -619,6 +676,14 @@ describe("registerSlackHomeEvents", () => {
   });
 
   it.each([
+    {
+      label: "unclassified plain local failure",
+      error: new Error("local provider unavailable"),
+    },
+    {
+      label: "incomplete rate-limit-like failure",
+      error: new Error("Retry header did not contain a valid timeout"),
+    },
     {
       label: "unknown platform failure",
       error: new WebAPIPlatformError({ ok: false, error: "unknown_error" }),

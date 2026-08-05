@@ -254,6 +254,50 @@ describe("createSlackThreadTsResolver", () => {
   });
 
   it.each([
+    { headerLabel: "missing", retryAfter: undefined },
+    { headerLabel: "invalid", retryAfter: "not-a-timeout" },
+  ])(
+    "replays malformed Retry-After $headerLabel without poisoning thread lookup",
+    async (scenario) => {
+      const fetch = vi
+        .fn()
+        .mockResolvedValueOnce(
+          new Response("", {
+            status: 429,
+            headers:
+              scenario.retryAfter === undefined ? {} : { "retry-after": scenario.retryAfter },
+          }),
+        )
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ ok: true, messages: [{ ts: "1", thread_ts: "9" }] }), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          }),
+        );
+      const resolver = createSlackThreadTsResolver({
+        client: new WebClient("xoxb-fixture", {
+          slackApiUrl: "https://slack-proof.invalid/api/",
+          fetch,
+          logLevel: LogLevel.ERROR,
+          retryConfig: { retries: 0 },
+        }),
+        cacheTtlMs: 60_000,
+        maxSize: 5,
+      });
+      const message = makeThreadReplyMessage("1");
+      const turnAdoptionLifecycle = createDurableTurnLifecycle();
+
+      await expect(
+        resolver.resolve({ message, source: "message", turnAdoptionLifecycle }),
+      ).rejects.toThrow("Retry header did not contain a valid timeout");
+      await expect(
+        resolver.resolve({ message, source: "app_mention", turnAdoptionLifecycle }),
+      ).resolves.toMatchObject({ thread_ts: "9" });
+      expect(fetch).toHaveBeenCalledTimes(2);
+    },
+  );
+
+  it.each([
     {
       label: "an actually malformed URL",
       fail: async () => await globalThis.fetch("http://[invalid"),

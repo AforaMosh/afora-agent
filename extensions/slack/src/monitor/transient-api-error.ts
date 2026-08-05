@@ -37,7 +37,13 @@ export function isTransientSlackApiError(error: unknown): boolean {
     );
   }
   if (!(error instanceof WebAPIRequestError)) {
-    return false;
+    // Slack SDK unwraps malformed 429 Retry-After into this exact uncoded Error;
+    // retry only that dependency contract so durable work is not lost.
+    return (
+      error instanceof Error &&
+      error.name === "Error" &&
+      error.message.startsWith("Retry header did not contain a valid timeout (url: ")
+    );
   }
   const candidates = collectErrorGraphCandidates(error.original, (current) => [
     current.cause,

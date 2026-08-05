@@ -120,6 +120,14 @@ describe("updateSlackSuggestedPrompts", () => {
 
   it.each([
     {
+      label: "unclassified plain local failure",
+      error: new Error("local prompt provider unavailable"),
+    },
+    {
+      label: "incomplete rate-limit-like failure",
+      error: new Error("Retry header did not contain a valid timeout"),
+    },
+    {
       label: "Assistant View capability rejection",
       error: new WebAPIPlatformError({ ok: false, error: "invalid_arguments" }),
     },

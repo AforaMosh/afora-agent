@@ -19,7 +19,12 @@ type SlackIngressQueue = NonNullable<Parameters<typeof createSlackDurableIngress
 type SlackIngressPayload = Parameters<SlackIngressQueue["enqueue"]>[1];
 type SlackFetch = NonNullable<ConstructorParameters<typeof WebClient>[1]>["fetch"];
 type AssistantEventType = "assistant_thread_started" | "assistant_thread_context_changed";
-type SlackFetchStep = { method: string; body: Record<string, unknown>; retryAfter?: string };
+type SlackFetchStep = {
+  method: string;
+  body: Record<string, unknown>;
+  retryAfter?: string;
+  status?: number;
+};
 
 const slackApiRoot = "https://slack-proof.invalid/api/";
 const botMessage = { user: "U_BOT", ts: "1700000000.000200", text: "assistant reply" };
@@ -30,10 +35,14 @@ const transientPlatformErrors = [
   "fatal_error",
   "request_timeout",
 ] as const;
+const malformedRetryAfterHeaders = [
+  { headerLabel: "missing", retryAfter: undefined },
+  { headerLabel: "invalid", retryAfter: "not-a-timeout" },
+] as const;
 
-function slackResponse(body: Record<string, unknown>, retryAfter?: string): Response {
+function slackResponse(body: Record<string, unknown>, retryAfter?: string, status = 200): Response {
   return new Response(JSON.stringify(body), {
-    status: 200,
+    status,
     headers: {
       "content-type": "application/json",
       ...(retryAfter === undefined ? {} : { "retry-after": retryAfter }),
@@ -73,7 +82,7 @@ function createGuardedSlackFetch(steps: SlackFetchStep[]) {
       body: new URLSearchParams(init.body),
       requestedAt: Date.now(),
     });
-    return slackResponse(step.body, step.retryAfter);
+    return slackResponse(step.body, step.retryAfter, step.status);
   });
   return { fetch, requests };
 }
@@ -232,6 +241,76 @@ describe("Slack Assistant durable ingress", () => {
       );
     },
   );
+
+  it.each(
+    malformedRetryAfterHeaders.flatMap(({ headerLabel, retryAfter }) => [
+      {
+        headerLabel,
+        name: "suggested prompts",
+        type: "assistant_thread_started" as const,
+        steps: [
+          {
+            method: "assistant.threads.setSuggestedPrompts",
+            body: { ok: false },
+            status: 429,
+            retryAfter,
+          },
+          { method: "assistant.threads.setSuggestedPrompts", body: { ok: true } },
+        ],
+      },
+      {
+        headerLabel,
+        name: "history lookup",
+        type: "assistant_thread_context_changed" as const,
+        steps: [
+          { method: "conversations.replies", body: { ok: false }, status: 429, retryAfter },
+          { method: "conversations.replies", body: { ok: true, messages: [botMessage] } },
+          { method: "chat.update", body: { ok: true } },
+        ],
+      },
+      {
+        headerLabel,
+        name: "metadata update",
+        type: "assistant_thread_context_changed" as const,
+        steps: [
+          { method: "conversations.replies", body: { ok: true, messages: [botMessage] } },
+          { method: "chat.update", body: { ok: false }, status: 429, retryAfter },
+          { method: "conversations.replies", body: { ok: true, messages: [botMessage] } },
+          { method: "chat.update", body: { ok: true } },
+        ],
+      },
+    ]),
+  )("replays malformed Retry-After $headerLabel for Assistant $name", async (scenario) => {
+    const { fetch, requests } = createGuardedSlackFetch(scenario.steps);
+
+    await withDurableAssistantIngress(fetch, async ({ receive, ingress, queue, runtimeError }) => {
+      const eventId = `Ev-assistant-${scenario.name.replace(" ", "-")}-${scenario.headerLabel}-429`;
+      const event = createAssistantEvent(eventId, scenario.type);
+      await receive(event);
+      await ingress.waitForIdle();
+
+      await expect(queue.listPending()).resolves.toMatchObject([
+        {
+          id: eventId,
+          attempts: 1,
+          lastError: expect.stringContaining("Retry header did not contain a valid timeout"),
+        },
+      ]);
+      await vi.waitFor(
+        async () => {
+          await ingress.waitForIdle();
+          expect(requests).toHaveLength(scenario.steps.length);
+        },
+        { timeout: 5_000, interval: 50 },
+      );
+
+      expect(event.ack).toHaveBeenCalledOnce();
+      expect(runtimeError).toHaveBeenCalledOnce();
+      await expect(queue.enqueue(eventId, {} as SlackIngressPayload)).resolves.toMatchObject({
+        kind: "completed",
+      });
+    });
+  });
 
   it.each(
     transientPlatformErrors.flatMap((error) => [
