@@ -183,6 +183,7 @@ export function assertSupportedTurn(params: SessionPlacementTurnParams): {
     );
   }
   if (
+    params.scheduledNativePolicy !== undefined &&
     shouldCreateBundleMcpRuntimeForAttempt({
       toolsEnabled: params.modelRun !== true && params.promptMode !== "none",
       disableTools: params.disableTools,

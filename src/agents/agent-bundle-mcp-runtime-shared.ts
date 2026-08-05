@@ -2,7 +2,11 @@ import type { SessionToolOverrides } from "../config/sessions/types.js";
 /** Shared session MCP runtime constants and create-runtime factory type. */
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import type { PluginManifestRegistry } from "../plugins/manifest-registry.js";
-import type { SessionMcpRequesterScope, SessionMcpRuntime } from "./agent-bundle-mcp-types.js";
+import type {
+  SessionMcpRequesterScope,
+  SessionMcpRuntime,
+  SessionMcpRuntimeManager,
+} from "./agent-bundle-mcp-types.js";
 import type { McpServerConnectionResolved } from "./mcp-connection-resolver.js";
 
 export const SESSION_MCP_RUNTIME_MANAGER_KEY = Symbol.for("openclaw.sessionMcpRuntimeManager");
@@ -11,6 +15,20 @@ export const SESSION_MCP_RUNTIME_SWEEP_INTERVAL_MS = 60 * 1000;
 // Bounds live per-sender MCP transports in one session between idle sweeps;
 // far above concurrent-run parallelism, so active requesters never evict.
 export const SESSION_MCP_MAX_IDLE_REQUESTER_RUNTIMES = 64;
+
+/** Checks whether the deprecated requester-only harness bridge can affect this turn. */
+export function shouldLoadRequesterScopedMcpHarnessRuntime(params: {
+  sessionId: string;
+  requesterSenderId?: string | null;
+}): boolean {
+  if (params.requesterSenderId?.trim()) {
+    return true;
+  }
+  const manager = (globalThis as Record<PropertyKey, unknown>)[SESSION_MCP_RUNTIME_MANAGER_KEY] as
+    | SessionMcpRuntimeManager
+    | undefined;
+  return (manager?.getAdvertisedScopedCatalog(params.sessionId)?.tools.length ?? 0) > 0;
+}
 
 export type CreateSessionMcpRuntime = (params: {
   sessionId: string;

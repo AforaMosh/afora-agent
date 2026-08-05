@@ -70,6 +70,56 @@ describe("assertSupportedTurn", () => {
     ).toThrow(/cannot currently preserve.*MCP tool authority.*sessions\.reclaim/is);
   });
 
+  it("keeps configured MCP available to ordinary cloud turns", () => {
+    const turn = {
+      sessionId: "session-ordinary",
+      sessionFile: "/tmp/session.jsonl",
+      workspaceDir: "/tmp/workspace",
+      prompt: "run",
+      timeoutMs: 1_000,
+      runId: "run-ordinary",
+      provider: "openai",
+      model: "gpt-5.4",
+      config: {
+        agents: {
+          defaults: {
+            models: { "openai/gpt-5.4": { agentRuntime: { id: "openclaw" } } },
+          },
+        },
+        mcp: { servers: { docs: { command: "docs" } } },
+      },
+      toolsAllow: ["*"],
+    } as SessionPlacementTurnParams;
+
+    expect(assertSupportedTurn(turn)).toEqual({ provider: "openai", model: "gpt-5.4" });
+  });
+
+  it("accepts scheduled configured MCP when the effective override disables it", () => {
+    const turn = {
+      sessionId: "session-disabled-override",
+      sessionFile: "/tmp/session.jsonl",
+      workspaceDir: "/tmp/workspace",
+      prompt: "run",
+      timeoutMs: 1_000,
+      runId: "run-disabled-override",
+      provider: "openai",
+      model: "gpt-5.4",
+      config: {
+        agents: {
+          defaults: {
+            models: { "openai/gpt-5.4": { agentRuntime: { id: "openclaw" } } },
+          },
+        },
+        mcp: { servers: { docs: { command: "docs" } } },
+      },
+      toolOverrides: { mcpServers: { docs: false } },
+      toolsAllow: ["*"],
+      scheduledNativePolicy: { version: 1, mode: "disabled" },
+    } as SessionPlacementTurnParams;
+
+    expect(assertSupportedTurn(turn)).toEqual({ provider: "openai", model: "gpt-5.4" });
+  });
+
   it("accepts a finite cap that cannot reach configured MCP", () => {
     const turn = {
       sessionId: "session-1",

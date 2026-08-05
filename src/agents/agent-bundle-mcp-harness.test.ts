@@ -40,6 +40,17 @@ const mocks = vi.hoisted(() => {
         throw new Error("missing MCP runtime test implementation");
       },
     ),
+    getOrCreateRequesterScopedMcpRuntime: vi.fn(
+      async (params: { sessionId: string; requesterSenderId?: string | null }) => {
+        if (!params.requesterSenderId?.trim()) {
+          return undefined;
+        }
+        if (resolveImpl) {
+          return resolveImpl(params);
+        }
+        throw new Error("missing requester MCP runtime test implementation");
+      },
+    ),
     rememberAdvertisedScopedMcpCatalog: vi.fn(
       (sessionId: string, catalog: typeof advertised extends Map<string, infer V> ? V : never) => {
         advertised.set(sessionId, catalog);
@@ -59,12 +70,16 @@ vi.mock("./agent-bundle-mcp-runtime.js", async (importOriginal) => {
   return {
     ...actual,
     getOrCreateSessionMcpRuntime: mocks.getOrCreateSessionMcpRuntime,
+    getOrCreateRequesterScopedMcpRuntime: mocks.getOrCreateRequesterScopedMcpRuntime,
     rememberAdvertisedScopedMcpCatalog: mocks.rememberAdvertisedScopedMcpCatalog,
     getAdvertisedScopedMcpCatalog: mocks.getAdvertisedScopedMcpCatalog,
   };
 });
 
-import { materializeConfiguredMcpToolsForHarnessRun } from "./agent-bundle-mcp-harness.js";
+import {
+  materializeConfiguredMcpToolsForHarnessRun,
+  materializeRequesterScopedMcpToolsForHarnessRun,
+} from "./agent-bundle-mcp-harness.js";
 
 function makeRuntime(params: {
   sessionId: string;
@@ -145,12 +160,46 @@ function makeRuntime(params: {
 beforeEach(() => {
   mocks.reset();
   mocks.getOrCreateSessionMcpRuntime.mockClear();
+  mocks.getOrCreateRequesterScopedMcpRuntime.mockClear();
   mocks.rememberAdvertisedScopedMcpCatalog.mockClear();
   mocks.getAdvertisedScopedMcpCatalog.mockClear();
 });
 
 afterEach(() => {
   mocks.reset();
+});
+
+describe("materializeRequesterScopedMcpToolsForHarnessRun", () => {
+  it("keeps static MCP harness-native and preserves the legacy result surface", async () => {
+    mocks.setResolveImpl(async (params) =>
+      makeRuntime({
+        sessionId: params.sessionId,
+        requesterSenderId: params.requesterSenderId ?? undefined,
+      }),
+    );
+
+    const withoutRequester = await materializeRequesterScopedMcpToolsForHarnessRun({
+      sessionId: "session-legacy-static",
+      workspaceDir: "/workspace",
+    });
+    expect(withoutRequester).toBeUndefined();
+    expect(mocks.getOrCreateSessionMcpRuntime).not.toHaveBeenCalled();
+
+    const requester = await materializeRequesterScopedMcpToolsForHarnessRun({
+      sessionId: "session-legacy-requester",
+      workspaceDir: "/workspace",
+      requesterSenderId: "alice",
+    });
+    expect(requester?.tools.map((tool) => tool.name)).toEqual(["user-mail__inbox"]);
+    expect(Object.keys(requester ?? {}).toSorted()).toEqual([
+      "advertisedTools",
+      "dispose",
+      "tools",
+    ]);
+    const live = await requester!.tools[0]!.execute("legacy", {});
+    expect(live.content[0]).toMatchObject({ text: "live:inbox:alice" });
+    await requester?.dispose();
+  });
 });
 
 describe("materializeConfiguredMcpToolsForHarnessRun", () => {

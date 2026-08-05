@@ -2178,9 +2178,14 @@ describe("worker turn launcher", () => {
     expect(placements.get(SESSION_ID)).toMatchObject({ state: "reclaimed", turnClaim: null });
   });
 
-  it.each(["active", "reclaimed"] as const)(
-    "rejects unsupported scheduled authority before %s worker admission side effects",
-    async (placementState) => {
+  it.each([
+    ["active", "native"],
+    ["reclaimed", "native"],
+    ["active", "mcp"],
+    ["reclaimed", "mcp"],
+  ] as const)(
+    "rejects unsupported scheduled authority before %s worker admission side effects (%s)",
+    async (placementState, authorityKind) => {
       if (placementState === "active") {
         seedActivePlacement();
       } else {
@@ -2201,22 +2206,38 @@ describe("worker turn launcher", () => {
         resolveWorkspacePath,
       });
 
+      const runId = `run-${placementState}-${authorityKind}-unsupported`;
+      const candidateTurn = {
+        ...turn(runId),
+        scheduledNativePolicy: {
+          version: 1 as const,
+          mode: authorityKind === "native" ? ("inherit" as const) : ("disabled" as const),
+        },
+        ...(authorityKind === "mcp"
+          ? {
+              config: { mcp: { servers: { docs: { command: "docs" } } } },
+              toolsAllow: ["*"],
+            }
+          : {}),
+      };
+
       await expect(
         provider.executeTurn(
           {
             sessionId: SESSION_ID,
             sessionKey: SESSION_KEY,
             agentId: "main",
-            runId: `run-${placementState}-unsupported`,
+            runId,
           },
-          {
-            ...turn(`run-${placementState}-unsupported`),
-            scheduledNativePolicy: { version: 1, mode: "inherit" },
-          },
+          candidateTurn,
           runLocal,
           onAdmitted,
         ),
-      ).rejects.toThrow(/cannot currently preserve.*native tool authority/is);
+      ).rejects.toThrow(
+        authorityKind === "native"
+          ? /cannot currently preserve.*native tool authority/is
+          : /cannot currently preserve.*MCP tool authority/is,
+      );
 
       expect(redispatchReclaimed).not.toHaveBeenCalled();
       expect(resolveWorkspacePath).not.toHaveBeenCalled();
