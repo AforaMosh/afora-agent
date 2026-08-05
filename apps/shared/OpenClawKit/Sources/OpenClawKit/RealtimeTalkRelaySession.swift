@@ -119,6 +119,7 @@ public struct RealtimeTalkTranscript: Equatable, Sendable {
 public enum RealtimeTalkRelayTermination: Equatable, Sendable {
     case remoteClose(reason: String?)
     case eventStreamEnded
+    case outputCancellationFailed
 }
 
 private actor RealtimeAudioSender {
@@ -1234,6 +1235,7 @@ extension RealtimeTalkRelaySession {
                 // A failed current cancellation leaves remote output ownership unknown.
                 // Keep the fence until terminal teardown makes late audio impossible.
                 self.close(sendClose: true)
+                self.onTermination(.outputCancellationFailed)
             }
         }
     }
