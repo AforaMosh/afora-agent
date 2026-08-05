@@ -11,6 +11,7 @@ import { normalizeOptionalString as parseString } from "@openclaw/normalization-
 import { isApprovalNotFoundError } from "../infra/approval-errors.js";
 import type {
   ExecApprovalCommandSpan,
+  ExecApprovalDecision,
   ExecApprovalUnavailableDecision,
   ExecAsk,
   ExecSecurity,
@@ -385,7 +386,13 @@ export async function registerResolvedLocalExecApprovalForHostOrThrow(
     if (!localBroker) {
       throw new Error("process-local exec approval host is unavailable");
     }
-    return localBroker.registerResolved(await buildHostApprovalDecisionParams(params), decision);
+    return localBroker.registerResolved(
+      {
+        ...(await buildHostApprovalDecisionParams(params)),
+        timeoutMs: DEFAULT_APPROVAL_TIMEOUT_MS,
+      },
+      decision,
+    );
   } catch (err) {
     throw new Error(`Exec approval registration failed: ${String(err)}`, { cause: err });
   }
