@@ -1992,15 +1992,20 @@ describeLive("gateway live (Codex harness)", () => {
                 throw new Error("Codex MCP probe server was not prepared");
               }
               logCodexLiveStep("cron-mcp-probe:start", { sessionKey });
-              await verifyCodexCronMcpProbe({
-                client: activeClient,
-                sessionKey,
-                port,
-                token,
-                env: process.env,
-                invocationPath: mcpProbe.invocationPath,
-                invocationNonce: mcpProbe.invocationNonce,
-              });
+              const unsubscribeCronMcpDebugEvents = await subscribeCodexLiveDebugEvents(sessionKey);
+              try {
+                await verifyCodexCronMcpProbe({
+                  client: activeClient,
+                  sessionKey,
+                  port,
+                  token,
+                  env: process.env,
+                  invocationPath: mcpProbe.invocationPath,
+                  invocationNonce: mcpProbe.invocationNonce,
+                });
+              } finally {
+                unsubscribeCronMcpDebugEvents();
+              }
               logCodexLiveStep("cron-mcp-probe:done");
             }
 
