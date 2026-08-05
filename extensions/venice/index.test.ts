@@ -115,4 +115,123 @@ describe("venice provider plugin", () => {
       },
     ]);
   });
+
+  it("replays Gemini tool-call thought signatures in Venice's top-level wire field", async () => {
+    const provider = await registerSingleProviderPlugin(plugin);
+    const capturedPayloads: Record<string, unknown>[] = [];
+    const baseStreamFn = (_model: unknown, _context: unknown, options: unknown) => {
+      const payload = {
+        model: "gemini-3-6-flash",
+        messages: [
+          { role: "user", content: "echo" },
+          {
+            role: "assistant",
+            tool_calls: [
+              {
+                id: "call_1",
+                type: "function",
+                function: { name: "echo_value", arguments: '{"value":"repro"}' },
+              },
+            ],
+          },
+          { role: "tool", tool_call_id: "call_1", content: "ok" },
+        ],
+      };
+      (options as { onPayload?: (payload: Record<string, unknown>) => void })?.onPayload?.(payload);
+      capturedPayloads.push(payload);
+      return {} as never;
+    };
+
+    const streamFn = provider.wrapStreamFn?.({
+      streamFn: baseStreamFn as never,
+      providerId: "venice",
+      modelId: "gemini-3-6-flash",
+      thinkingLevel: "high",
+    } as never);
+
+    expect(streamFn).toBeTypeOf("function");
+    await streamFn?.(
+      { api: "openai-completions", provider: "venice", id: "gemini-3-6-flash" } as never,
+      {
+        messages: [
+          { role: "user", content: "echo" },
+          {
+            role: "assistant",
+            api: "openai-completions",
+            provider: "venice",
+            model: "gemini-3-6-flash",
+            content: [
+              {
+                type: "toolCall",
+                id: "call_1",
+                name: "echo_value",
+                arguments: { value: "repro" },
+                thoughtSignature: "SIG-VENICE-OPAQUE-ABC==",
+              },
+            ],
+          },
+          {
+            role: "toolResult",
+            toolCallId: "call_1",
+            toolName: "echo_value",
+            content: [{ type: "text", text: "ok" }],
+            isError: false,
+          },
+        ],
+      } as never,
+      {},
+    );
+
+    expect(capturedPayloads[0]).toMatchObject({
+      messages: [
+        { role: "user", content: "echo" },
+        {
+          role: "assistant",
+          tool_calls: [
+            {
+              id: "call_1",
+              thought_signature: "SIG-VENICE-OPAQUE-ABC==",
+            },
+          ],
+        },
+        { role: "tool", tool_call_id: "call_1", content: "ok" },
+      ],
+    });
+    const replayedToolCall = (
+      (capturedPayloads[0]!.messages as Array<Record<string, unknown>>)[1]!.tool_calls as Array<
+        Record<string, unknown>
+      >
+    )[0];
+    expect(replayedToolCall).not.toHaveProperty("extra_content");
+
+    await streamFn?.(
+      { api: "openai-completions", provider: "venice", id: "gemini-3-6-flash" } as never,
+      {
+        messages: [
+          {
+            role: "assistant",
+            api: "google-generative-ai",
+            provider: "google",
+            model: "gemini-3-6-flash",
+            content: [
+              {
+                type: "toolCall",
+                id: "call_1",
+                name: "echo_value",
+                arguments: {},
+                thoughtSignature: "SIG-CROSS-ROUTE",
+              },
+            ],
+          },
+        ],
+      } as never,
+      {},
+    );
+    const crossRouteToolCall = (
+      (capturedPayloads[1]!.messages as Array<Record<string, unknown>>)[1]!.tool_calls as Array<
+        Record<string, unknown>
+      >
+    )[0];
+    expect(crossRouteToolCall).not.toHaveProperty("thought_signature");
+  });
 });
