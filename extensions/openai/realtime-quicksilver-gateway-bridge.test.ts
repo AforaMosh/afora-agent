@@ -612,9 +612,8 @@ describe("GPT-Live gateway relay bridge", () => {
       runAgentConsult: vi.fn(async () => ({ text: "done" })),
       logger: { debug: vi.fn(), warn: vi.fn() },
       resolveAuth: vi.fn(async () => ({
-        type: "oauth" as const,
-        token: "oauth-token",
-        accountId: "account-1",
+        type: "api-key" as const,
+        token: "platform-key",
       })),
       createPeer: vi.fn((callbacks) => {
         peerCallbacks = callbacks;
@@ -811,9 +810,8 @@ describe("GPT-Live gateway relay bridge", () => {
       runAgentConsult: vi.fn(async () => ({ text: "done" })),
       logger: { debug: vi.fn(), warn: vi.fn() },
       resolveAuth: vi.fn(async () => ({
-        type: "oauth" as const,
-        token: "oauth-token",
-        accountId: "account-1",
+        type: "api-key" as const,
+        token: "platform-key",
       })),
       createPeer: vi.fn(() => peerPromise),
       connectTimeoutMs: 5,
@@ -873,9 +871,8 @@ describe("GPT-Live gateway relay bridge", () => {
       runAgentConsult,
       logger: { debug: vi.fn(), warn: vi.fn() },
       resolveAuth: vi.fn(async () => ({
-        type: "oauth" as const,
-        token: "oauth-token",
-        accountId: "account-1",
+        type: "api-key" as const,
+        token: "platform-key",
       })),
       createPeer: vi.fn(async () => peer),
       fetchImpl: vi.fn(async () => createCallResponse("v=answer\r\n", "rtc_bridge")),
@@ -947,9 +944,8 @@ describe("GPT-Live gateway relay bridge", () => {
       runAgentConsult: vi.fn(async () => ({ text: "done" })),
       logger: { debug: vi.fn(), warn: vi.fn() },
       resolveAuth: vi.fn(async () => ({
-        type: "oauth" as const,
-        token: "oauth-token",
-        accountId: "account-1",
+        type: "api-key" as const,
+        token: "platform-key",
       })),
       createPeer: vi.fn(async () => ({
         createOffer: vi.fn(async () => "v=offer\r\n"),
