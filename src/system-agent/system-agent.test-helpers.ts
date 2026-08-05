@@ -17,8 +17,9 @@ import {
   restoreCurrentPluginMetadataSnapshotState,
   setCurrentPluginMetadataSnapshot,
 } from "../plugins/current-plugin-metadata-snapshot.js";
+import { resolveInstalledPluginIndexPolicyHash } from "../plugins/installed-plugin-index-policy.js";
+import { resolvePluginControlPlaneFingerprint } from "../plugins/plugin-control-plane-context.js";
 import { resolvePluginMetadataSnapshot } from "../plugins/plugin-metadata-snapshot.js";
-import type { RuntimeEnv } from "../runtime.js";
 import { listSystemAgentAuditEntriesForTests } from "./audit.test-support.js";
 import { resolveSystemAgentConfiguredRouteFromConfig } from "./inference-route.js";
 import {
@@ -33,6 +34,14 @@ type SystemAgentVerifiedInferenceTestFixture = {
 };
 
 export type SystemAgentPluginMetadataTestSnapshot = {
+  /** Rebind one prepared inventory to the exact authored config under test. */
+  bind: (
+    params: Parameters<typeof resolvePluginMetadataSnapshot>[0],
+  ) => ReturnType<typeof resolvePluginMetadataSnapshot>;
+  bindForConfig: (
+    config: OpenClawConfig,
+    workspaceDir?: string,
+  ) => ReturnType<typeof resolvePluginMetadataSnapshot>;
   /** Rebind after a test redirects to another empty state root with the same plugin inventory. */
   rebindForCurrentEnv: () => void;
   restore: () => void;
@@ -72,12 +81,39 @@ export function installSystemAgentPluginMetadataTestSnapshot(
   config: OpenClawConfig = {},
 ): SystemAgentPluginMetadataTestSnapshot {
   const previous = captureCurrentPluginMetadataSnapshotState();
-  const snapshot = resolvePluginMetadataSnapshot({ config, env: process.env });
+  const prepared = resolvePluginMetadataSnapshot({ config, env: process.env });
+  const bind = (params: Parameters<typeof resolvePluginMetadataSnapshot>[0]) => {
+    const policyHash = resolveInstalledPluginIndexPolicyHash(params.config);
+    const index =
+      prepared.index.policyHash === policyHash ? prepared.index : { ...prepared.index, policyHash };
+    const snapshot = {
+      ...prepared,
+      index,
+      policyHash,
+      configFingerprint: resolvePluginControlPlaneFingerprint({
+        config: params.config,
+        env: params.env,
+        index,
+        policyHash,
+        workspaceDir: params.workspaceDir,
+      }),
+      ...(params.workspaceDir ? { workspaceDir: params.workspaceDir } : {}),
+    };
+    setCurrentPluginMetadataSnapshot(snapshot, {
+      config: params.config,
+      env: params.env,
+      workspaceDir: params.workspaceDir,
+    });
+    return snapshot;
+  };
   const rebindForCurrentEnv = () => {
-    setCurrentPluginMetadataSnapshot(snapshot, { config, env: process.env });
+    bind({ config, env: process.env });
   };
   rebindForCurrentEnv();
   return {
+    bind,
+    bindForConfig: (nextConfig, workspaceDir) =>
+      bind({ config: nextConfig, env: process.env, workspaceDir }),
     rebindForCurrentEnv,
     restore: () => restoreCurrentPluginMetadataSnapshotState(previous),
   };
@@ -293,25 +329,4 @@ export async function createSystemAgentVerifiedInferenceTestFixture(
     deps,
   });
   return { binding, deps };
-}
-
-/**
- * Test helpers for capturing OpenClaw runtime output.
- *
- * Tests use this lightweight runtime instead of the real CLI runtime so exits
- * become thrown errors and logs are easy to assert.
- */
-/** Create a RuntimeEnv that records log/error lines for tests. */
-export function createSystemAgentTestRuntime(): { runtime: RuntimeEnv; lines: string[] } {
-  const lines: string[] = [];
-  return {
-    lines,
-    runtime: {
-      log: (...args) => lines.push(args.join(" ")),
-      error: (...args) => lines.push(args.join(" ")),
-      exit: (code) => {
-        throw new Error(`exit ${code}`);
-      },
-    },
-  };
 }
