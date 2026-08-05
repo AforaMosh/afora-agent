@@ -344,7 +344,10 @@ describe("codex doctor contract", () => {
         dynamicToolsFingerprint: hashCodexAppServerBindingFingerprint(rawDynamicToolsFingerprint),
       },
     });
-    expect(stored?.binding).not.toHaveProperty("userMcpServersFingerprint");
+    if (stored?.state !== "active") {
+      throw new Error("expected migrated Codex binding to remain active");
+    }
+    expect(stored.binding).not.toHaveProperty("userMcpServersFingerprint");
     expect(Buffer.byteLength(JSON.stringify(stored))).toBeLessThan(65_536);
     expect(JSON.stringify(stored)).not.toContain("dynamic-marker");
     expect(JSON.stringify(stored)).not.toContain("user-mcp-marker");
