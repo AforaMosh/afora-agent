@@ -47,6 +47,7 @@ import {
   adoptRelayProviderToolCallId,
   broadcastRelayTurnStarted,
   broadcastToOwner,
+  clearTalkRealtimeRelayOutputGeneration,
   ensureRelayTurn,
   relaySessions,
   type CreateTalkRealtimeRelaySessionParams,
@@ -219,6 +220,7 @@ export function createTalkRealtimeRelaySession(
         const recorded = relay.harness.recordOutputAudio(audio);
         broadcastRelayTurnStarted(relay, recorded.turn.event);
         if (recorded.outputAudioStarted) {
+          relay.outputGeneration += 1;
           broadcastEvent({ relaySessionId, type: "audioStarted" }, recorded.outputAudioStarted);
         }
         broadcastEvent(
@@ -237,13 +239,13 @@ export function createTalkRealtimeRelaySession(
         if (!relay) {
           return;
         }
-        // Advance the harness flush generation before publishing the provider clear.
-        // This suppresses the barge-in fallback so clients receive one clear only.
-        relay.harness.flushOutput(() => {
-          broadcastEvent(
-            { relaySessionId, type: "clear", ...(reason ? { reason } : {}) },
-            relay.harness.finishOutputAudio(reason ?? "clear"),
-          );
+        const generation = relay.pendingProviderClearGeneration ?? relay.outputGeneration;
+        relay.pendingProviderClearGeneration = undefined;
+        clearTalkRealtimeRelayOutputGeneration({
+          session: relay,
+          generation,
+          reason: reason ?? "clear",
+          providerReason: reason,
         });
       },
       sendMark: (markName) => {
@@ -597,6 +599,7 @@ export function createTalkRealtimeRelaySession(
     pendingWorkingToolResults: new Map(),
     forcedTerminalProviderResults: new Map(),
     toolResultEpoch: 0,
+    outputGeneration: 0,
     ...(params.cfg ? { voiceConfig: params.cfg } : {}),
     voiceSessionCreated: false,
     voiceTranscriptSeq: 0,
