@@ -1,15 +1,13 @@
 import { isRecord } from "@openclaw/normalization-core/record-coerce";
 
-export type CronScheduledNativeMode = "inherit" | "disabled";
-
 /** Creator-derived ceiling for runtime-native capabilities on scheduled turns. */
 export type CronScheduledNativePolicy = {
   version: 1;
-  mode: CronScheduledNativeMode;
+  mode: "inherit" | "disabled";
 };
 
 export function createCronScheduledNativePolicy(
-  mode: CronScheduledNativeMode,
+  mode: CronScheduledNativePolicy["mode"],
 ): CronScheduledNativePolicy {
   return { version: 1, mode };
 }
