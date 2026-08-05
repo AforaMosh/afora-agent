@@ -7,6 +7,8 @@ version and the additive schema surface. Dates are authoring dates (2026).
 
 ## Unreleased
 
+- Advertise generation-aware Realtime Talk output cancellation through the
+  additive `talk-output-generation` server capability.
 - Add semantic `agent` / `system` roster kinds negotiated through the `agent-kind` client capability.
 - Rename structured-question item `id` to `questionId` and flatten keyed answer arrays.
 - Slim worker and session-catalog payloads to the active wire contract.

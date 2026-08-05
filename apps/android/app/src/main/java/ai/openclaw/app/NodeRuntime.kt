@@ -182,6 +182,7 @@ private const val CRON_JOBS_MAX_COUNT = CRON_JOBS_PAGE_SIZE * CRON_JOBS_MAX_PAGE
 private const val CRON_JOBS_SNAPSHOT_MAX_ATTEMPTS = 3
 private const val OperatorAdminScope = "operator.admin"
 private const val OperatorPairingScope = "operator.pairing"
+private const val TALK_OUTPUT_GENERATION_SERVER_CAPABILITY = "talk-output-generation"
 
 private fun execApprovalOutcomeUnknownMessage(): String = nativeText("Resolution outcome unknown. Actions stay disabled until the Gateway record is verified.").source
 
@@ -1373,6 +1374,7 @@ class NodeRuntime private constructor(
   private val canvasRehydrateSeq = AtomicLong(0)
 
   @Volatile private var nodePresenceAliveLastSuccessAtMs: Long? = null
+  @Volatile private var operatorServerCapabilities = emptySet<String>()
   private var operatorConnected = false
   private var operatorStatusText: String = "Offline"
   private var nodeStatusText: String = "Offline"
@@ -1392,6 +1394,7 @@ class NodeRuntime private constructor(
         _gatewayVersion.value = hello.serverVersion
         _gatewayUpdateAvailable.value = hello.updateAvailable
         replaceGatewayMethods(hello.methods)
+        operatorServerCapabilities = hello.capabilities
         val operatorScopes = normalizeOperatorScopes(hello.authScopes)
         _operatorScopes.value = operatorScopes
         _devicePairingCapabilities.value =
@@ -1603,6 +1606,7 @@ class NodeRuntime private constructor(
     _gatewayVersion.value = null
     _gatewayUpdateAvailable.value = null
     replaceGatewayMethods(emptySet())
+    operatorServerCapabilities = emptySet()
     _operatorScopes.value = emptyList()
     _devicePairingCapabilities.value = GatewayDevicePairingCapabilities()
     _seamColorArgb.value = DEFAULT_SEAM_COLOR_ARGB
@@ -2058,6 +2062,9 @@ class NodeRuntime private constructor(
       onBeforeSpeak = { micCapture.pauseForTts() },
       onAfterSpeak = { micCapture.resumeAfterTts() },
       onStoppedByRelay = { finishTalkModeAfterRelayClose() },
+      supportsRealtimeOutputGeneration = {
+        TALK_OUTPUT_GENERATION_SERVER_CAPABILITY in operatorServerCapabilities
+      },
     )
   }
 
