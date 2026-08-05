@@ -2235,7 +2235,7 @@ describe("worker turn launcher", () => {
         ),
       ).rejects.toThrow(
         authorityKind === "native"
-          ? /cannot currently preserve.*native tool authority/is
+          ? /cannot preserve.*inherited native tool authority.*reauthorize.*explicit finite tool cap.*automations edit.*--tools.*sessions\.reclaim.*retry locally/is
           : /cannot currently preserve.*MCP tool authority/is,
       );
 
