@@ -2,7 +2,7 @@
 // talk.catalog, above the embedded talk schema editor (see memory.ts for the
 // same curated-rows-above-schema shape). The pickers and the raw form patch the
 // same config draft, so both stay in sync without narrowing the schema.
-import { html, nothing, type TemplateResult } from "lit";
+import { html, type TemplateResult } from "lit";
 import {
   renderDocsLink,
   renderSettingsRow,
@@ -12,7 +12,7 @@ import {
   renderSettingsValue,
 } from "../../components/settings-ui.ts";
 import { t } from "../../i18n/index.ts";
-import { isTalkGptLiveModel, type TalkRealtimeSelection } from "./talk-schema.ts";
+import type { TalkRealtimeSelection } from "./talk-schema.ts";
 
 /** One realtime provider row from talk.catalog, reduced to what the pickers use. */
 export type TalkRealtimeProviderOption = {
@@ -277,28 +277,6 @@ function renderVoiceRow(props: TalkViewProps) {
   });
 }
 
-/**
- * GPT-Live uses the Platform-only preview route instead of the GA browser OAuth
- * fallback, so it gets its own explainer row rather than a provider footnote.
- */
-function renderGptLiveRow(props: TalkViewProps) {
-  const provider = selectedTalkProviderOption(props.catalog, props.selection);
-  const { model } = effectiveTalkValues(props.selection, provider);
-  if (provider?.id !== "openai" || !isTalkGptLiveModel(model)) {
-    return nothing;
-  }
-  // `configured` is a generic readiness boolean: false can also mean a broken
-  // configured API key or an unavailable broker, so the badge stays neutral and
-  // the description carries the sign-in guidance.
-  return renderSettingsRow({
-    title: t("talkPage.gptLive.title"),
-    description: t("talkPage.gptLive.hint"),
-    control: provider.configured
-      ? renderSettingsStatus({ kind: "ok", label: t("talkPage.gptLive.ready") })
-      : renderSettingsStatus({ kind: "warn", label: t("talkPage.status.notReady") }),
-  });
-}
-
 export function renderTalk(props: TalkViewProps) {
   return html`
     <section class="talk-page">
@@ -313,7 +291,7 @@ export function renderTalk(props: TalkViewProps) {
           },
           html`
             ${renderStatusRow(props)} ${renderProviderRow(props)} ${renderModelRow(props)}
-            ${renderVoiceRow(props)} ${renderGptLiveRow(props)}
+            ${renderVoiceRow(props)}
           `,
         )}
       </div>

@@ -2278,13 +2278,8 @@ export const en: TranslationMap = {
     },
     voice: {
       title: "Speaker voice",
-      description: "Voice used for spoken replies. GPT-Live locks the voice once a call starts.",
+      description: "Voice used for spoken replies.",
       default: "Provider default",
-    },
-    gptLive: {
-      title: "GPT-Live",
-      hint: "GPT-Live Boulder requires an enrolled OpenAI Platform API key with /v1/live access. ChatGPT/Codex OAuth does not configure this preview route. Browser Talk only. Delegated work can be steered while running and requires exact spoken confirmation for high-impact actions.",
-      ready: "Ready",
     },
   },
   memoryPage: {
@@ -2692,6 +2687,11 @@ export const en: TranslationMap = {
       title: "Message audit metadata",
       description:
         "Record content-free metadata for direct conversations in the audit ledger. Message content is never stored.",
+    },
+    experimentalRealtimeModels: {
+      title: "Experimental realtime models",
+      description:
+        "Allow enrolled preview model ids in Talk. Keep this off unless your account has explicit provider access.",
     },
   },
   aboutPage: {

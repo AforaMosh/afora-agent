@@ -191,6 +191,13 @@ describe("LabsPage", () => {
       expectedPatch: { logging: { audit: { messages: "direct" } } },
       note: "labs: update auditMessages",
     },
+    {
+      label: "Experimental realtime models",
+      index: 6,
+      sourceConfig: {},
+      expectedPatch: { talk: { realtime: { experimentalModels: true } } },
+      note: "labs: update experimentalRealtimeModels",
+    },
   ])("writes the on value at the registered config path when enabling $label", async (testCase) => {
     const { page, runtimeConfig } = await mountPage(testCase.sourceConfig);
     const toggle = labToggle(page, testCase.index, testCase.label);
