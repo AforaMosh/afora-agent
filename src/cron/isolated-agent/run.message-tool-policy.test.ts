@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createSourceDeliveryPlan } from "../../infra/outbound/source-delivery-plan.js";
 import type { SkillSnapshot } from "../../skills/types.js";
 import { applyJobPatch } from "../service/jobs.js";
-import type { CronDeliveryMode } from "../types.js";
+import type { CronDeliveryMode, CronJob } from "../types.js";
 import type { MutableCronSession } from "./run-session-state.js";
 import {
   buildSafeExternalPromptMock,
@@ -52,7 +52,7 @@ function makeMessageToolPolicyJob(
         ? { ...payload, toolsAllow: ["*"], toolsAllowIsDefault: true }
         : payload,
     delivery,
-  } as never;
+  } as unknown as CronJob;
 }
 
 function makeAnnounceMessageToolJob(
@@ -85,7 +85,7 @@ function makeAnnounceMessageToolJob(
     scheduledNativePolicy: { version: 1, mode: "inherit" },
     payload,
     delivery: { mode: "announce", channel: "messagechat", to: "123", ...options.delivery },
-  } as never;
+  } as unknown as CronJob;
 }
 
 function makeParams() {

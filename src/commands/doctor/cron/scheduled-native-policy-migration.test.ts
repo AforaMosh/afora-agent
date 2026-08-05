@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { normalizeStoredCronJobs } from "./store-migration.js";
 
-function job(payload: Record<string, unknown>, overrides: Record<string, unknown> = {}) {
+function job(
+  payload: Record<string, unknown>,
+  overrides: Record<string, unknown> = {},
+): Record<string, unknown> & { payload: Record<string, unknown> } {
   return {
     id: "job-1",
     name: "Job one",

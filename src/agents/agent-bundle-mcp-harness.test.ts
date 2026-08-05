@@ -1,7 +1,7 @@
 /** Behavior tests for harness-facing requester-scoped MCP materialization. */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getPluginToolMeta } from "../plugins/tools.js";
-import type { SessionMcpRuntime } from "./agent-bundle-mcp-types.js";
+import type { McpToolCatalog, SessionMcpRuntime } from "./agent-bundle-mcp-types.js";
 
 const mocks = vi.hoisted(() => {
   type Runtime = SessionMcpRuntime;
@@ -73,7 +73,7 @@ function makeRuntime(params: {
   appOnly?: boolean;
 }): SessionMcpRuntime {
   const serverName = "user-mail";
-  const catalog = {
+  const catalog: McpToolCatalog = {
     version: 1,
     generatedAt: 0,
     servers: {
@@ -93,7 +93,7 @@ function makeRuntime(params: {
             description: "read inbox",
             inputSchema: { type: "object", properties: {} },
             fallbackDescription: "read inbox",
-            ...(params.appOnly ? { uiVisibility: ["app"] as const } : {}),
+            ...(params.appOnly ? { uiVisibility: ["app"] } : {}),
           },
         ],
   };
