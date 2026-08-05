@@ -1527,7 +1527,7 @@ describe("runCodexAppServerAttempt", () => {
     };
     const toolFactory = vi.fn(
       (
-        options: Parameters<
+        _options: Parameters<
           NonNullable<typeof dynamicToolBuildState.openClawCodingToolsFactory>
         >[0],
       ) => {
@@ -1551,7 +1551,8 @@ describe("runCodexAppServerAttempt", () => {
       "project-tracker__list",
     );
     expect(
-      (threadStart?.params as { config?: { mcp_servers?: unknown } }).config?.mcp_servers,
+      (threadStart?.params as { config?: { mcp_servers?: unknown } } | undefined)?.config
+        ?.mcp_servers,
     ).toBeUndefined();
     await harness.completeTurn({ threadId: "thread-1", turnId: "turn-1" });
     await run;
