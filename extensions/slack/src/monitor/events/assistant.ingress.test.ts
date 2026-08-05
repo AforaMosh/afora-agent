@@ -54,8 +54,9 @@ function createGuardedSlackFetch(steps: SlackFetchStep[]) {
     );
     const step = steps[requests.length];
     if (
+      !step ||
       url.origin !== "https://slack-proof.invalid" ||
-      url.pathname !== `/api/${step?.method}` ||
+      url.pathname !== `/api/${step.method}` ||
       init?.method !== "POST" ||
       typeof init.body !== "string"
     ) {
