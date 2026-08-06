@@ -110,6 +110,7 @@ export async function prepareCodexAttemptTools(runtime: CodexAttemptRuntime) {
     frameToolCallId?: string;
     frameImageIdentity?: string;
   } = { value: 0 };
+  const cronCreatorToolAllowlist: Array<string | { name: string; pluginId?: string }> = [];
   const commonToolParams = {
     params: dynamicToolParams,
     resolvedWorkspace,
@@ -133,6 +134,7 @@ export async function prepareCodexAttemptTools(runtime: CodexAttemptRuntime) {
   };
   const tools = await buildDynamicTools({
     ...commonToolParams,
+    cronCreatorToolAllowlistRef: cronCreatorToolAllowlist,
     onPersistentWebSearchPolicyResolved: (allowed) => {
       toolState.persistentWebSearchAllowed = allowed;
     },
@@ -282,6 +284,23 @@ export async function prepareCodexAttemptTools(runtime: CodexAttemptRuntime) {
         allocateToolOutcomeOrdinal: allocateCodexToolOutcomeOrdinal,
       },
     });
+    const configuredMcpProjectedNames = new Set(configuredMcpExecutable.map((tool) => tool.name));
+    const configuredMcpExecutableIdentities = new Map(
+      (configuredMcpTools?.executableToolIdentities ?? []).map((tool) => [tool.name, tool]),
+    );
+    // The automations tool closes over this ref during the first tool build.
+    // Finalize it only after Codex profile filtering, hook wrapping, and schema quarantine.
+    cronCreatorToolAllowlist.splice(
+      0,
+      cronCreatorToolAllowlist.length,
+      ...toolBridge.availableToolIdentities
+        .filter(
+          (tool) =>
+            !configuredMcpProjectedNames.has(tool.name) ||
+            configuredMcpExecutableIdentities.has(tool.name),
+        )
+        .map((tool) => configuredMcpExecutableIdentities.get(tool.name) ?? tool),
+    );
     return {
       tools: toolsWithConfiguredMcp,
       registeredTools: registeredWithConfiguredMcp,

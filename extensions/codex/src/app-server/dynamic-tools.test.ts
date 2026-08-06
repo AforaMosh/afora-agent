@@ -363,6 +363,9 @@ describe("createCodexDynamicToolBridge", () => {
     expect(new Set(names).size).toBe(names.length);
     expect(names.every((name) => name.length <= 128)).toBe(true);
     expect(names.every((name) => /^[A-Za-z0-9_-]+$/.test(name))).toBe(true);
+    expect(forward.availableToolIdentities.map((tool) => tool.name)).toEqual(
+      tools.map((tool) => tool.name),
+    );
   });
 
   it("dispatches a reserved-name projection through the canonical OpenClaw identity", async () => {
@@ -427,6 +430,7 @@ describe("createCodexDynamicToolBridge", () => {
 
     expect(specNames(bridge.availableSpecs)).toEqual(["message"]);
     expect(specNames(bridge.specs)).toEqual([HEARTBEAT_RESPONSE_TOOL_NAME, "message"]);
+    expect(bridge.availableToolIdentities).toEqual([{ name: "message" }]);
 
     const result = await bridge.handleToolCall(
       {
@@ -837,6 +841,7 @@ describe("createCodexDynamicToolBridge", () => {
 
     expect(specNames(bridge.availableSpecs)).toEqual(["message"]);
     expect(specNames(bridge.specs)).toEqual(["message"]);
+    expect(bridge.availableToolIdentities).toEqual([{ name: "message" }]);
     expect(bridge.telemetry.quarantinedTools).toEqual([
       {
         tool: "fuzzplugin_move_angles",
@@ -997,6 +1002,7 @@ describe("createCodexDynamicToolBridge", () => {
 
     expect(specNames(registeredBridge.availableSpecs)).toEqual(["message"]);
     expect(specNames(registeredBridge.specs)).toEqual(["message"]);
+    expect(registeredBridge.availableToolIdentities).toEqual([{ name: "message" }]);
   });
 
   it("can expose all dynamic tools directly for compatibility", () => {

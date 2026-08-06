@@ -313,6 +313,9 @@ describe("materializeConfiguredMcpToolsForHarnessRun", () => {
     });
 
     expect(result?.tools.map((tool) => tool.name)).toEqual(["user-mail__inbox"]);
+    expect(result?.executableToolIdentities).toEqual([
+      { name: "user-mail__inbox", pluginId: "bundle-mcp" },
+    ]);
     expect(getPluginToolMeta(result!.tools[0]!)?.pluginId).toBe("bundle-mcp");
     expect(mocks.getOrCreateSessionMcpRuntime).toHaveBeenCalledWith(
       expect.objectContaining({ toolOverrides }),
@@ -430,6 +433,7 @@ describe("materializeConfiguredMcpToolsForHarnessRun", () => {
     expect(guest).toBeDefined();
     expect(guest!.advertisedTools.map((tool) => tool.name)).toEqual(advertisedNames);
     expect(guest!.tools.map((tool) => tool.name)).toEqual(advertisedNames);
+    expect(guest!.executableToolIdentities).toEqual([]);
 
     const notConnected = await guest!.tools[0]!.execute("c2", {});
     expect(notConnected.details).toMatchObject({ status: "error" });
@@ -537,6 +541,7 @@ describe("materializeConfiguredMcpToolsForHarnessRun", () => {
       },
     });
     expect(denied?.tools).toEqual([]);
+    expect(denied?.executableToolIdentities).toEqual([]);
     expect(denied?.appTools).toEqual([]);
     await denied?.dispose();
 
@@ -546,7 +551,46 @@ describe("materializeConfiguredMcpToolsForHarnessRun", () => {
       toolsAllow: ["group:plugins"],
     });
     expect(allowed?.tools).toEqual([]);
+    expect(allowed?.executableToolIdentities).toEqual([]);
     expect(allowed?.appTools.map((tool) => tool.name)).toEqual(["user-mail__inbox"]);
     await allowed?.dispose();
+  });
+
+  it.each(["user-mail__inbox", "group:plugins"])(
+    "records only live MCP identities allowed by %s",
+    async (toolAllow) => {
+      mocks.setResolveImpl(async (params) => makeRuntime({ sessionId: params.sessionId }));
+
+      const result = await materializeConfiguredMcpToolsForHarnessRun({
+        sessionId: `session-authority-${toolAllow}`,
+        workspaceDir: "/workspace",
+        toolsAllow: [toolAllow],
+      });
+
+      expect(result?.executableToolIdentities).toEqual([
+        { name: "user-mail__inbox", pluginId: "bundle-mcp" },
+      ]);
+      await result?.dispose();
+    },
+  );
+
+  it("excludes final-policy-denied MCP tools from executable identities", async () => {
+    mocks.setResolveImpl(async (params) => makeRuntime({ sessionId: params.sessionId }));
+
+    const result = await materializeConfiguredMcpToolsForHarnessRun({
+      sessionId: "session-authority-denied",
+      workspaceDir: "/workspace",
+      toolsAllow: ["group:plugins"],
+      policyContext: {
+        config: { tools: { deny: ["user-mail__inbox"] } },
+        sessionId: "session-authority-denied",
+        runId: "run-authority-denied",
+        agentId: "main",
+      },
+    });
+
+    expect(result?.tools).toEqual([]);
+    expect(result?.executableToolIdentities).toEqual([]);
+    await result?.dispose();
   });
 });

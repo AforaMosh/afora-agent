@@ -219,6 +219,24 @@ unrestricted `*` policy; `automations edit --clear-tools` restores that explicit
 policy. Existing jobs that predate an explicit tool policy retain their current behavior
 until their tool policy is explicitly edited or the job is recreated.
 
+Codex agent turns also include live OpenClaw-configured MCP tools in that captured default
+ceiling. Only tools that are connected, executable, and allowed by the final turn policy are
+captured; advertised-only stubs and app-only tools are not. Upgrading does not widen existing
+jobs. Review the stored `payload.toolsAllow` and `payload.toolsAllowIsDefault` fields with
+`openclaw automations list --all --json` or `openclaw automations show <job-id> --json`.
+
+To recover an existing job that should use a configured MCP tool, use an authenticated operator
+command to name the exact intended ceiling, for example:
+
+```bash
+openclaw automations edit <job-id> --tools "read,project-tracker__list"
+```
+
+Alternatively, recreate the job with `automations add|create --tools <tool,...>`. Use
+`automations edit <job-id> --clear-tools` only when an explicit unrestricted operator-owned
+ceiling is intended. OpenClaw does not automatically mutate existing jobs when configured tools
+change.
+
 `--model` sets the job's primary model; it does not replace a session `/model` override, so configured fallback chains still apply on top of it. An unresolved or disallowed model fails the run with an explicit validation error rather than silently falling back to the default. If a job has `--model` but no explicit or configured fallback list, OpenClaw passes an empty fallback override instead of silently appending the agent primary as a hidden retry target.
 
 Model-selection precedence for isolated jobs, highest first:

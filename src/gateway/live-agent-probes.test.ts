@@ -3,6 +3,7 @@
  */
 import { describe, expect, it, vi } from "vitest";
 import {
+  assertCronJobDefaultToolAuthority,
   assertCronJobMatches,
   assertLiveImageProbeReply,
   buildLiveCronProbeMessage,
@@ -152,5 +153,45 @@ describe("live-agent-probes", () => {
         expectedSessionTarget: "current",
       }),
     ).toBeUndefined();
+  });
+
+  it("validates persisted creator-default tool authority from the public cron row", () => {
+    expect(
+      assertCronJobDefaultToolAuthority({
+        job: {
+          id: "job-mcp-proof",
+          payload: {
+            kind: "agentTurn",
+            message: "scheduled probe",
+            toolsAllow: ["read", "cronCleanupProbe__cleanup_probe"],
+            toolsAllowIsDefault: true,
+          },
+        },
+        expectedTool: "cronCleanupProbe__cleanup_probe",
+      }),
+    ).toBeUndefined();
+  });
+
+  it.each([
+    {
+      label: "canonical tool is absent",
+      payload: { toolsAllow: ["read"], toolsAllowIsDefault: true },
+    },
+    {
+      label: "default marker is absent",
+      payload: { toolsAllow: ["read", "cronCleanupProbe__cleanup_probe"] },
+    },
+  ])("reports bounded recovery diagnostics when $label", ({ payload }) => {
+    expect(() =>
+      assertCronJobDefaultToolAuthority({
+        job: {
+          id: "job-mcp-proof",
+          payload: { kind: "agentTurn", message: "scheduled probe", ...payload },
+        },
+        expectedTool: "cronCleanupProbe__cleanup_probe",
+      }),
+    ).toThrow(
+      /did not persist.*expectedTool="cronCleanupProbe__cleanup_probe".*toolsAllowIsDefault=.*inspect job="job-mcp-proof" with openclaw automations show <job-id> --json/u,
+    );
   });
 });

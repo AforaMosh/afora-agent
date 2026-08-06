@@ -1518,17 +1518,25 @@ describe("runCodexAppServerAttempt", () => {
     expect(turnStart.cwd).toBe(taskCwd);
   });
 
-  it("bridges configured MCP as dynamic tools", async () => {
+  it("bridges configured MCP and finalizes the cron creator cap before thread start", async () => {
     const configuredTool = createRuntimeDynamicTool("project-tracker__list");
     const dispose = vi.fn(async () => undefined);
     agentHarnessRuntimeMocks.configuredMcpTools = {
       tools: [configuredTool],
+      executableToolIdentities: [{ name: "project-tracker__list", pluginId: "bundle-mcp" }],
       advertisedTools: [configuredTool],
       appTools: [],
       restrictAppTools: vi.fn(),
       dispose,
     };
-    testing.setOpenClawCodingToolsFactoryForTests(() => []);
+    const toolFactory = vi.fn(
+      (
+        _options: Parameters<
+          NonNullable<typeof dynamicToolBuildState.openClawCodingToolsFactory>
+        >[0],
+      ) => [],
+    );
+    testing.setOpenClawCodingToolsFactoryForTests(toolFactory);
     const { sessionFile, workspaceDir } = createRunPaths();
     const harness = createStartedThreadHarness();
     const params = createParams(sessionFile, workspaceDir);
@@ -1578,6 +1586,10 @@ describe("runCodexAppServerAttempt", () => {
       toolOverrides: { mcpServers: { mainOnly: true, otherOnly: false } },
       policyContext: { agentId: "main" },
     });
+    expect(toolFactory.mock.calls[0]?.[0]?.cronCreatorToolAllowlistRef).toEqual([
+      { name: "project-tracker__list", pluginId: "bundle-mcp" },
+    ]);
+    expect(toolFactory.mock.calls[1]?.[0]?.cronCreatorToolAllowlistRef).toBeUndefined();
     expect(dispose).toHaveBeenCalled();
   });
 
@@ -1587,6 +1599,7 @@ describe("runCodexAppServerAttempt", () => {
     const dispose = vi.fn(async () => undefined);
     agentHarnessRuntimeMocks.configuredMcpTools = {
       tools: [configuredTool],
+      executableToolIdentities: [{ name: "project-tracker__list", pluginId: "bundle-mcp" }],
       advertisedTools: [configuredTool],
       appTools: [],
       restrictAppTools: vi.fn(),
@@ -1614,6 +1627,7 @@ describe("runCodexAppServerAttempt", () => {
     const dispose = vi.fn(async () => undefined);
     agentHarnessRuntimeMocks.configuredMcpTools = {
       tools: [configuredTool],
+      executableToolIdentities: [{ name: "project-tracker__list", pluginId: "bundle-mcp" }],
       advertisedTools: [configuredTool],
       appTools: [configuredTool],
       restrictAppTools: vi.fn(() => {
@@ -1690,6 +1704,7 @@ describe("runCodexAppServerAttempt", () => {
     const firstDispose = vi.fn(async () => undefined);
     agentHarnessRuntimeMocks.configuredMcpTools = {
       tools: [firstTool],
+      executableToolIdentities: [{ name: "project-tracker__list", pluginId: "bundle-mcp" }],
       advertisedTools: [firstTool],
       appTools: [],
       restrictAppTools: vi.fn(),
@@ -1710,6 +1725,7 @@ describe("runCodexAppServerAttempt", () => {
     const secondDispose = vi.fn(async () => undefined);
     agentHarnessRuntimeMocks.configuredMcpTools = {
       tools: [secondTool],
+      executableToolIdentities: [{ name: "project-tracker__list", pluginId: "bundle-mcp" }],
       advertisedTools: [secondTool],
       appTools: [],
       restrictAppTools: vi.fn(),
@@ -1749,6 +1765,7 @@ describe("runCodexAppServerAttempt", () => {
     };
     agentHarnessRuntimeMocks.configuredMcpTools = {
       tools: [changedTool],
+      executableToolIdentities: [{ name: "project-tracker__list", pluginId: "bundle-mcp" }],
       advertisedTools: [changedTool],
       appTools: [],
       restrictAppTools: vi.fn(),

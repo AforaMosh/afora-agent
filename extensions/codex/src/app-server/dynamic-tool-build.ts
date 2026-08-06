@@ -98,6 +98,10 @@ type DynamicToolBuildParams = {
   forceHeartbeatTool?: boolean;
   ignoreDisableMessageTool?: boolean;
   ignoreRuntimePlan?: boolean;
+  /** Mutable creator cap finalized after every executable dynamic tool is known. */
+  cronCreatorToolAllowlistRef?: NonNullable<
+    OpenClawCodingToolsOptions["cronCreatorToolAllowlistRef"]
+  >;
   /** Host fact resolver; injectable only for focused plugin contract tests. */
   isHostScopedToolActive?: (toolName: string) => boolean;
   onYieldDetected: () => void;
@@ -288,6 +292,7 @@ export async function buildDynamicTools(input: DynamicToolBuildParams) {
           }),
     config: params.config,
     authProfileStore: params.toolAuthProfileStore ?? params.authProfileStore,
+    cronCreatorToolAllowlistRef: input.cronCreatorToolAllowlistRef,
     abortSignal: input.runAbortController.signal,
     emitBeforeToolCallDiagnostics: false,
     modelProvider: params.model.provider,

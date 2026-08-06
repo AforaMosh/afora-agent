@@ -71,6 +71,15 @@ Agent-turn jobs default to the creating conversation when session context is ava
   </Accordion>
 </AccordionGroup>
 
+## Tool authority
+
+Agent-created jobs persist a tool ceiling. Codex-created defaults include connected configured MCP
+tools that survived the creating turn's final policy. Existing jobs are never widened on upgrade or
+configuration change: inspect `payload.toolsAllow` and `payload.toolsAllowIsDefault` with
+`automations show <job-id> --json`, then explicitly reauthorize with
+`automations edit <job-id> --tools <tool,...>` or recreate the job. `--clear-tools` is an explicit
+authenticated-operator choice to use an unrestricted ceiling, not a migration command.
+
 ## Delivery
 
 `openclaw automations list` and `openclaw automations show <job-id>` preview the resolved delivery route. For `channel: "last"`, the preview shows whether the route resolved from the main or current session, or will fail closed.

@@ -357,6 +357,8 @@ function hasExplicitNonSourceMessageRoute(
 export type CodexDynamicToolBridge = {
   availableSpecs: CodexDynamicToolSpec[];
   specs: CodexDynamicToolSpec[];
+  /** Canonical executable identities after hook wrapping and schema quarantine. */
+  availableToolIdentities: Array<{ name: string; pluginId?: string }>;
   resultContentSourceForTool: (toolName: string) => AnyAgentTool["resultContentSource"];
   handleToolCall: (
     params: CodexDynamicToolCallParams,
@@ -558,6 +560,10 @@ export function createCodexDynamicToolBridge(params: {
       entries: registeredSpecTools,
       loading: params.loading ?? "searchable",
       directToolNames,
+    }),
+    availableToolIdentities: availableTools.map((entry) => {
+      const pluginId = getPluginToolMeta(entry.tool)?.pluginId;
+      return pluginId ? { name: entry.canonicalName, pluginId } : { name: entry.canonicalName };
     }),
     resultContentSourceForTool: (toolName) => toolMap.get(toolName)?.tool.resultContentSource,
     telemetry,

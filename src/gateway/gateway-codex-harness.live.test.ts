@@ -38,6 +38,7 @@ import {
   shouldUseCodexHarnessSubagentOnlyFastPath,
 } from "./gateway-codex-harness.live-helpers.js";
 import {
+  assertCronJobDefaultToolAuthority,
   assertCronJobMatches,
   assertCronJobVisibleViaCli,
   buildLiveCronProbeMessage,
@@ -1426,17 +1427,34 @@ async function verifyCodexCronMcpProbe(params: {
     if (!jobId) {
       throw new Error(`cron mcp probe job ${cronProbe.name} has no id`);
     }
+    const scheduledMessage =
+      "Call the configured MCP tool cronCleanupProbe__cleanup_probe exactly once. " +
+      "After it succeeds, reply with only CRON_MCP_SCHEDULED_OK.";
     await params.client.request("cron.update", {
       id: jobId,
       patch: {
         sessionTarget: "isolated",
         payload: {
           kind: "agentTurn",
-          message:
-            "Call the configured MCP tool cronCleanupProbe__cleanup_probe exactly once. " +
-            "After it succeeds, reply with only CRON_MCP_SCHEDULED_OK.",
+          message: scheduledMessage,
         },
       },
+    });
+    const scheduledJob = await assertCronJobVisibleViaCli({
+      port: params.port,
+      token: params.token,
+      env: params.env,
+      expectedName: cronProbe.name,
+      expectedMessage: scheduledMessage,
+    });
+    if (!scheduledJob) {
+      throw new Error(
+        `cron mcp probe job ${jobId} disappeared after scheduling; inspect with openclaw automations show ${jobId} --json`,
+      );
+    }
+    assertCronJobDefaultToolAuthority({
+      job: scheduledJob,
+      expectedTool: "cronCleanupProbe__cleanup_probe",
     });
     await fs.rm(params.invocationPath, { force: true });
     const forced = await params.client.request("cron.run", {

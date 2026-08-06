@@ -1417,6 +1417,31 @@ describe("cron tool", () => {
     expect(params?.payload?.toolsAllow).toEqual(["read", "automations"]);
   });
 
+  it("stores a late-materialized canonical MCP tool in the default creator cap", async () => {
+    const creatorToolAllowlist: Array<string | { name: string; pluginId?: string }> = [
+      "read",
+      "automations",
+    ];
+    const tool = createTestCronTool({
+      agentSessionKey: "agent:main:telegram:group:restricted-room",
+      creatorToolAllowlist,
+    });
+    creatorToolAllowlist.push({ name: "project-tracker__list", pluginId: "bundle-mcp" });
+
+    await tool.execute("call-default-capped-add-mcp-tools", {
+      action: "add",
+      job: buildReminderAgentTurnJob(),
+    });
+
+    const params = expectSingleGatewayCallMethod("cron.add") as
+      | { payload?: { toolsAllow?: string[]; toolsAllowIsDefault?: boolean } }
+      | undefined;
+    expect(params?.payload).toMatchObject({
+      toolsAllow: ["read", "automations", "project-tracker__list"],
+      toolsAllowIsDefault: true,
+    });
+  });
+
   it("caps trigger-script systemEvent adds to the creator tool surface", async () => {
     const tool = createTestCronTool({
       agentSessionKey: "agent:main:telegram:group:restricted-room",
@@ -1605,6 +1630,36 @@ describe("cron tool", () => {
       | { payload?: { toolsAllow?: string[] } }
       | undefined;
     expect(params?.payload?.toolsAllow).toEqual(["active_memory_search"]);
+  });
+
+  it.each([
+    { requested: ["project-tracker__list"], label: "exact tool" },
+    { requested: ["group:plugins"], label: "plugin group" },
+  ])("intersects configured MCP with an explicit $label cap", async ({ requested }) => {
+    const tool = createTestCronTool({
+      agentSessionKey: "agent:main:telegram:group:restricted-room",
+      creatorToolAllowlist: [
+        { name: "project-tracker__list", pluginId: "bundle-mcp" },
+        { name: "automations" },
+      ],
+    });
+
+    await tool.execute("call-capped-add-configured-mcp", {
+      action: "add",
+      job: {
+        ...buildReminderAgentTurnJob(),
+        payload: {
+          kind: "agentTurn",
+          message: "hello",
+          toolsAllow: requested,
+        },
+      },
+    });
+
+    const params = expectSingleGatewayCallMethod("cron.add") as
+      | { payload?: { toolsAllow?: string[] } }
+      | undefined;
+    expect(params?.payload?.toolsAllow).toEqual(["project-tracker__list"]);
   });
 
   it("recovers concatenated cron add keys from local tool-call parsers", async () => {
@@ -3020,6 +3075,40 @@ describe("cron tool", () => {
       params: {
         id: "job-10",
         patch: { enabled: false },
+      },
+    });
+  });
+
+  it("does not widen an existing finite cap after configured MCP becomes available", async () => {
+    callGatewayMock
+      .mockResolvedValueOnce({
+        id: "job-existing-finite",
+        configRevision: "sha256:existing-finite",
+        payload: { kind: "agentTurn", message: "before", toolsAllow: ["read"] },
+      })
+      .mockResolvedValueOnce({ ok: true });
+    const tool = createTestCronTool({
+      creatorToolAllowlist: [
+        { name: "read" },
+        { name: "automations" },
+        { name: "project-tracker__list", pluginId: "bundle-mcp" },
+      ],
+    });
+
+    await tool.execute("call-update-existing-finite-after-mcp", {
+      action: "update",
+      id: "job-existing-finite",
+      patch: { payload: { message: "after" } },
+    });
+
+    expect(readGatewayCall(1)).toEqual({
+      method: "cron.update",
+      params: {
+        id: "job-existing-finite",
+        expectedConfigRevision: "sha256:existing-finite",
+        patch: {
+          payload: { kind: "agentTurn", message: "after", toolsAllow: ["read"] },
+        },
       },
     });
   });

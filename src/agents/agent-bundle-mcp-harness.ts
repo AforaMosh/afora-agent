@@ -31,6 +31,8 @@ import type { AnyAgentTool } from "./tools/common.js";
 type ConfiguredHarnessMcpTools = {
   /** Executable tools for this turn (live binding or not-connected stubs). */
   tools: AnyAgentTool[];
+  /** Canonical identities backed by a live runtime after final harness policy. */
+  executableToolIdentities: Array<{ name: string; pluginId?: string }>;
   /**
    * Session-stable advertised tool surface for dynamic-tool fingerprints.
    * Identical for every sender once the session has observed a scoped catalog.
@@ -182,12 +184,20 @@ function buildHarnessMcpTools(params: {
   const filteredAppTools = applyHarnessToolPolicy(projectedAppTools, params.materialization);
   const allowedNames = new Set(filteredAdvertised.map((tool) => tool.name));
   const executableTools = filteredTools.filter((tool) => allowedNames.has(tool.name));
+  const liveToolNames = new Set((params.liveRuntime?.tools ?? []).map((tool) => tool.name));
+  const executableToolIdentities = executableTools
+    .filter((tool) => liveToolNames.has(tool.name))
+    .map((tool) => {
+      const pluginId = getPluginToolMeta(tool)?.pluginId;
+      return pluginId ? { name: tool.name, pluginId } : { name: tool.name };
+    });
 
   let disposed = false;
   return {
     hasProjectedSurface: advertisedTools.length > 0 || projectedAppTools.length > 0,
     materialized: {
       tools: executableTools,
+      executableToolIdentities,
       advertisedTools: filteredAdvertised,
       appTools: filteredAppTools,
       diagnostics: params.liveRuntime?.diagnostics,

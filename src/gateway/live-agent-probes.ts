@@ -21,7 +21,13 @@ type CronListCliResult = {
     sessionTarget?: string;
     agentId?: string | null;
     sessionKey?: string | null;
-    payload?: { kind?: string; text?: string; message?: string };
+    payload?: {
+      kind?: string;
+      text?: string;
+      message?: string;
+      toolsAllow?: string[];
+      toolsAllowIsDefault?: boolean;
+    };
   }>;
 };
 
@@ -256,4 +262,37 @@ export function assertCronJobMatches(params: {
   if (params.job.sessionTarget !== expectedSessionTarget) {
     throw new Error(`cron sessionTarget mismatch: ${params.job.sessionTarget ?? "<missing>"}`);
   }
+}
+
+/** Assert the persisted public cron row captured one expected creator-default tool. */
+export function assertCronJobDefaultToolAuthority(params: {
+  job: CronListJob;
+  expectedTool: string;
+}): void {
+  const rawToolsAllow = params.job.payload?.toolsAllow;
+  const toolsAllow = Array.isArray(rawToolsAllow)
+    ? rawToolsAllow.filter((tool): tool is string => typeof tool === "string")
+    : [];
+  if (
+    toolsAllow.includes(params.expectedTool) &&
+    params.job.payload?.toolsAllowIsDefault === true
+  ) {
+    return;
+  }
+  const visibleTools = toolsAllow.slice(0, 32).map((tool) => tool.slice(0, 160));
+  const omittedToolCount = Math.max(0, toolsAllow.length - visibleTools.length);
+  const jobRef = (params.job.id ?? params.job.name ?? "<unknown>").slice(0, 160);
+  const expectedToolDiagnostic = params.expectedTool.slice(0, 160);
+  throw new Error(
+    [
+      `cron job ${jobRef} did not persist the expected creator-default tool authority before force-run`,
+      `expectedTool=${JSON.stringify(expectedToolDiagnostic)}`,
+      `toolsAllowIsDefault=${String(params.job.payload?.toolsAllowIsDefault)}`,
+      `toolsAllow=${JSON.stringify(visibleTools)}`,
+      omittedToolCount > 0 ? `omittedToolCount=${omittedToolCount}` : undefined,
+      `inspect job=${JSON.stringify(jobRef)} with openclaw automations show <job-id> --json; explicitly reauthorize exact tools or recreate the job`,
+    ]
+      .filter(Boolean)
+      .join("; "),
+  );
 }
