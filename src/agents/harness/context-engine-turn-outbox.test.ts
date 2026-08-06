@@ -13,10 +13,12 @@ import { drainPendingContextEngineTurnsBeforeRun } from "./context-engine-turn-a
 import {
   drainContextEngineTurnOutbox,
   enqueueContextEngineTurnCommit,
-  type ContextEngineTurnOutboxPayload,
 } from "./context-engine-turn-outbox.js";
 
 const tempDirs: string[] = [];
+type ContextEngineTurnOutboxPayload = Parameters<
+  typeof enqueueContextEngineTurnCommit
+>[0]["payload"];
 
 afterEach(() => {
   closeOpenClawAgentDatabasesForTest();
