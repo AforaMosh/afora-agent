@@ -851,6 +851,7 @@ describe("/model chat UX", () => {
       "Direct: /model <provider/model> (owner/admin requests a default update)",
     );
     expect(reply?.text).toContain("Session only: /model <provider/model> -s");
+    expect(reply?.text).toContain("Runtime: /model <provider/model> --runtime <runtime> -s");
   });
 
   it("includes the thinking level in channel-specific model summaries", async () => {
@@ -875,6 +876,9 @@ describe("/model chat UX", () => {
     expect(reply?.text).toContain("Think: medium (change with /think <level>)");
     expect(reply?.text).toContain("Tap below to switch this session only");
     expect(reply?.text).toContain("/model <provider/model> for a direct selection");
+    expect(reply?.text).toContain(
+      "/model <provider/model> --runtime <runtime> -s to switch harnesses",
+    );
   });
 
   it("shows the effective thinking level for the selected runtime", async () => {

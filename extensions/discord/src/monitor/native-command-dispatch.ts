@@ -30,7 +30,7 @@ type DispatchDiscordCommandInteractionParams = {
 export type DispatchDiscordCommandInteractionResult = {
   accepted: boolean;
   effectiveRoute?: ResolvedAgentRoute;
-  suppressedFinalReply?: ReplyPayload;
+  hiddenFinalReply?: ReplyPayload;
 };
 
 export type DispatchDiscordCommandInteraction = (

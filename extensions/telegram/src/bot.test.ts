@@ -2789,7 +2789,7 @@ describe("createTelegramBot", () => {
     expect(editCall[0]).toBe(1234);
     expect(editCall[1]).toBe(17);
     expect(editCall[2]).toBe(
-      `${CHECK_MARK_EMOJI} Model changed to <b>openai/gpt-5.4</b>\n\nSession-only model selection. Runtime unchanged. Use /model openai/gpt-5.4 --runtime &lt;runtime&gt; to switch harnesses. The agent default in openclaw.json is unchanged; /reset or a new session may return to that default.`,
+      `${CHECK_MARK_EMOJI} Model changed to <b>openai/gpt-5.4</b>\n\nSession-only model selection. Runtime unchanged. Use /model openai/gpt-5.4 --runtime &lt;runtime&gt; -s to switch harnesses. The agent default in openclaw.json is unchanged; /reset or a new session may return to that default.`,
     );
     expect(requireRecord(editCall[3], "edit params").parse_mode).toBe("HTML");
 

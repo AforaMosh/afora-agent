@@ -473,7 +473,7 @@ export async function maybeHandleModelDirectiveInfo(params: {
           "Tap below to switch this session only, or use:",
           "/model <provider/model> for a direct selection",
           "/model <provider/model> -s for this session only",
-          "/model <provider/model> --runtime <runtime> to switch harnesses",
+          "/model <provider/model> --runtime <runtime> -s to switch harnesses",
           "/model status for details",
         ]
           .filter(Boolean)
@@ -490,7 +490,7 @@ export async function maybeHandleModelDirectiveInfo(params: {
         "",
         "Direct: /model <provider/model> (owner/admin requests a default update)",
         "Session only: /model <provider/model> -s",
-        "Runtime: /model <provider/model> --runtime <runtime>",
+        "Runtime: /model <provider/model> --runtime <runtime> -s",
         "Browse: /models (providers) or /models <provider> (models)",
         "More: /model status",
       ]

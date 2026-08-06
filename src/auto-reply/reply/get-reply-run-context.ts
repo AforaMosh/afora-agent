@@ -19,6 +19,11 @@ import {
 } from "../../routing/session-key.js";
 import { resolveSkillWorkshopConfig } from "../../skills/workshop/config.js";
 import { hasControlCommand } from "../command-detection.js";
+import {
+  isNativeCommandTurn,
+  isTextSlashCommandTurn,
+  resolveCommandTurnContext,
+} from "../command-turn-context.js";
 import { resolveEnvelopeFormatOptions } from "../envelope.js";
 import { normalizeThinkLevel } from "../thinking.js";
 import { SILENT_REPLY_TOKEN } from "../tokens.js";
@@ -63,7 +68,6 @@ export async function prepareReplyRunContext(params: RunPreparedReplyParams) {
     sessionCfg,
     commandAuthorized,
     command,
-    allowTextCommands,
     defaultActivation,
     elevatedEnabled,
     elevatedAllowed,
@@ -233,8 +237,11 @@ export async function prepareReplyRunContext(params: RunPreparedReplyParams) {
     normalizedCommandBody === rawBodyTrimmed ||
     normalizedCommandBody === rawBodyTrimmed.toLowerCase();
   const isResetOrNewCommand = /^\/(new|reset)(?:\s|$)/i.test(normalizedCommandBody);
+  const commandTurn = resolveCommandTurnContext(ctx);
+  const isExplicitCommandTurn =
+    isNativeCommandTurn(commandTurn) || isTextSlashCommandTurn(commandTurn);
   if (
-    allowTextCommands &&
+    isExplicitCommandTurn &&
     (!commandAuthorized || !command.isAuthorizedSender) &&
     isWholeMessageCommand &&
     (hasControlCommand(rawBodyTrimmed, cfg) || isResetOrNewCommand)

@@ -9,6 +9,7 @@ import {
   reserveSkillCommandNames,
   resolveConfiguredDirectiveAliases,
 } from "./get-reply-directive-aliases.js";
+import { clearInlineDirectives } from "./get-reply-directives-utils.js";
 import { resolveReplyDirectives } from "./get-reply-directives.js";
 import { withFastReplyConfig } from "./get-reply-fast-path.test-support.js";
 import { buildTestCtx } from "./test-ctx.js";
@@ -16,9 +17,15 @@ import { buildTestCtx } from "./test-ctx.js";
 const directiveApplyMocks = vi.hoisted(() => ({
   apply: vi.fn(),
 }));
+const textRoutingMocks = vi.hoisted(() => ({
+  shouldHandle: vi.fn(),
+}));
 
 vi.mock("./get-reply-directives-apply.js", () => ({
   applyInlineDirectiveOverrides: (...args: unknown[]) => directiveApplyMocks.apply(...args),
+}));
+vi.mock("../commands-text-routing.js", () => ({
+  shouldHandleTextCommands: (...args: unknown[]) => textRoutingMocks.shouldHandle(...args),
 }));
 
 type DirectiveApplyParams = Parameters<
@@ -70,29 +77,39 @@ function makeTypingController() {
   };
 }
 
-async function resolveModelDirective(params: { body: string; authorized?: boolean }) {
+async function resolveModelDirective(params: {
+  body: string;
+  agentText?: string;
+  authorized?: boolean;
+  cfg?: OpenClawConfig;
+  surface?: string;
+}) {
   const authorized = params.authorized ?? true;
   const { body } = params;
+  const agentText = params.agentText ?? body;
+  const surface = params.surface ?? "whatsapp";
   const sessionKey = "agent:main:whatsapp:+2000";
   const sessionEntry = createSessionEntry();
   const sessionCtx = {
-    Body: body,
-    BodyStripped: body,
-    BodyForAgent: body,
+    Body: agentText,
+    BodyStripped: agentText,
+    BodyForAgent: agentText,
     CommandBody: body,
     commandText: body,
-    agentText: body,
+    agentText,
     rawText: body,
-    Provider: "whatsapp",
-    Surface: "whatsapp",
+    Provider: surface,
+    Surface: surface,
   } as TemplateContext;
   const result = await resolveReplyDirectives({
     ctx: buildTestCtx({
-      Body: body,
+      Body: agentText,
       CommandBody: body,
       CommandAuthorized: authorized,
+      Provider: surface,
+      Surface: surface,
     }),
-    cfg: withFastReplyConfig(configWithModelAlias("fable")),
+    cfg: withFastReplyConfig(params.cfg ?? configWithModelAlias("fable")),
     agentId: "main",
     agentDir: "/tmp/main-agent",
     workspaceDir: "/tmp",
@@ -122,6 +139,9 @@ describe("reply directive aliases", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubEnv("OPENCLAW_TEST_FAST", "1");
+    textRoutingMocks.shouldHandle.mockImplementation(
+      (params: { cfg: OpenClawConfig }) => params.cfg.commands?.text !== false,
+    );
     directiveApplyMocks.apply.mockImplementation(async (params: DirectiveApplyParams) => ({
       kind: "continue",
       directives: params.directives,
@@ -191,9 +211,12 @@ describe("reply directive aliases", () => {
     expect(sessionEntry).toEqual(createSessionEntry());
   });
 
-  it("does not apply a model directive from unauthorized mixed input", async () => {
-    const { result, sessionEntry } = await resolveModelDirective({
-      body: "please /model anthropic/claude-opus-4-6 -s now",
+  it("preserves unauthorized mixed input exactly without exposing model state", async () => {
+    const body = "please /model anthropic/claude-opus-4-6@work --runtime codex -s now";
+    const agentText = "[wrapped]\nplease /model anthropic/claude-opus-4-6 now";
+    const { result, sessionEntry, sessionCtx } = await resolveModelDirective({
+      body,
+      agentText,
       authorized: false,
     });
 
@@ -201,12 +224,53 @@ describe("reply directive aliases", () => {
     if (result.kind !== "continue") {
       throw new Error(`expected continue result, got ${result.kind}`);
     }
-    expect(result.result.directives.hasModelDirective).toBe(false);
+    expect(result.result.directives).toEqual(clearInlineDirectives(body));
+    expect(result.result.cleanedBody).toBe(agentText);
+    expect(sessionCtx).toMatchObject({
+      agentText,
+      Body: agentText,
+      BodyForAgent: agentText,
+      BodyStripped: agentText,
+    });
     expect(result.result.provider).toBe("anthropic");
     expect(result.result.model).toBe("claude-opus-4-6");
     expect(directiveApplyMocks.apply).toHaveBeenCalledWith(
       expect.objectContaining({
         directives: expect.objectContaining({ hasModelDirective: false }),
+        provider: "anthropic",
+        model: "claude-opus-4-6",
+      }),
+    );
+    expect(sessionEntry).toEqual(createSessionEntry());
+  });
+
+  it("keeps commands.text:false model syntax literal, including an empty agent projection", async () => {
+    const body = "please /fable --runtime codex -s now";
+    const { result, sessionEntry, sessionCtx } = await resolveModelDirective({
+      body,
+      agentText: "",
+      cfg: {
+        ...configWithModelAlias("fable"),
+        commands: { text: false },
+      } as OpenClawConfig,
+      surface: "discord",
+    });
+
+    expect(result.kind).toBe("continue");
+    if (result.kind !== "continue") {
+      throw new Error(`expected continue result, got ${result.kind}`);
+    }
+    expect(result.result.directives).toEqual(clearInlineDirectives(body));
+    expect(result.result.cleanedBody).toBe("");
+    expect(sessionCtx).toMatchObject({
+      agentText: "",
+      Body: "",
+      BodyForAgent: "",
+      BodyStripped: "",
+    });
+    expect(directiveApplyMocks.apply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        directives: clearInlineDirectives(body),
         provider: "anthropic",
         model: "claude-opus-4-6",
       }),

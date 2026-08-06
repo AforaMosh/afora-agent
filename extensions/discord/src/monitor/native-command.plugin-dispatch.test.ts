@@ -1088,7 +1088,7 @@ describe("Discord native plugin command dispatch", () => {
     expect(interaction.deleteReply).toHaveBeenCalledTimes(1);
   });
 
-  it("returns the final suppressed reply without sending it to Discord", async () => {
+  it("returns a non-empty no-visible-result final without sending it to Discord", async () => {
     const cfg = createConfig();
     const interaction = createInteraction();
     interaction.responseState = "deferred";
@@ -1130,9 +1130,67 @@ describe("Discord native plugin command dispatch", () => {
       log: { error: vi.fn() } as never,
     });
 
-    expect(result.suppressedFinalReply).toBe(finalReply);
+    expect(result.hiddenFinalReply).toBe(finalReply);
     expect(interaction.followUp).not.toHaveBeenCalled();
     expect(interaction.reply).not.toHaveBeenCalled();
+    expect(interaction.deleteReply).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    {
+      label: "hook cancellation",
+      payload: { text: "cancelled core final" },
+      suppression: { reason: "cancelled_by_reply_payload_sending_hook" as const },
+    },
+    {
+      label: "empty final",
+      payload: { text: "  " },
+      suppression: { reason: "no_visible_result" as const },
+    },
+  ])("does not capture a hidden final for $label", async ({ payload, suppression }) => {
+    const cfg = createConfig();
+    const interaction = createInteraction();
+    interaction.responseState = "deferred";
+    nativeCommandRuntime.dispatchChannelInboundTurn = async (plan) => {
+      await plan.delivery.onDelivered?.(
+        payload,
+        { kind: "final" },
+        {
+          visibleReplySent: false,
+          suppression,
+        },
+      );
+      return {
+        admission: { kind: "dispatch" },
+        dispatched: true,
+        ctxPayload: plan.ctxPayload,
+        routeSessionKey: plan.route.sessionKey,
+        dispatchResult: {
+          counts: { final: 0, block: 0, tool: 0 },
+          queuedFinal: false,
+        },
+      };
+    };
+
+    const result = await dispatchDiscordNativeAgentReply({
+      cfg,
+      discordConfig: cfg.channels?.discord ?? {},
+      accountId: "default",
+      interaction: interaction as never,
+      ctxPayload: { SessionKey: "agent:main:discord:dm:owner" } as never,
+      effectiveRoute: {
+        accountId: "default",
+        agentId: "main",
+        sessionKey: "agent:main:discord:dm:owner",
+      },
+      channelConfig: null,
+      mediaLocalRoots: [],
+      preferFollowUp: true,
+      suppressReplies: true,
+      log: { error: vi.fn() } as never,
+    });
+
+    expect(result.hiddenFinalReply).toBeUndefined();
     expect(interaction.deleteReply).toHaveBeenCalledTimes(1);
   });
 

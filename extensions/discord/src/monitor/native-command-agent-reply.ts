@@ -35,7 +35,7 @@ type NativeCommandEffectiveRoute = {
 };
 
 type DispatchDiscordNativeAgentReplyResult = {
-  suppressedFinalReply?: ReplyPayload;
+  hiddenFinalReply?: ReplyPayload;
 };
 
 export async function dispatchDiscordNativeAgentReply(params: {
@@ -56,7 +56,7 @@ export async function dispatchDiscordNativeAgentReply(params: {
 
   let didReply = false;
   let finalReplyOutcome: "accepted" | "failed" | "suppressed" | undefined;
-  let suppressedFinalReply: ReplyPayload | undefined;
+  const dispatchResult: DispatchDiscordNativeAgentReplyResult = {};
   const turnResult = await nativeCommandRuntime.dispatchChannelInboundTurn({
     cfg: params.cfg,
     channel: "discord",
@@ -99,9 +99,14 @@ export async function dispatchDiscordNativeAgentReply(params: {
             };
       },
       onDelivered: (payload, info, result) => {
-        // Hidden picker dispatch still needs the core command's final text for its notice.
-        if (params.suppressReplies && info.kind === "final" && result?.visibleReplySent === false) {
-          suppressedFinalReply = payload;
+        // Hidden picker dispatch reuses only a real core final suppressed by this adapter.
+        if (
+          params.suppressReplies &&
+          info.kind === "final" &&
+          result?.suppression?.reason === "no_visible_result" &&
+          payload.text?.trim()
+        ) {
+          dispatchResult.hiddenFinalReply = payload;
         }
         // A failed final outweighs later suppression until Discord accepts a final.
         if (
@@ -140,13 +145,13 @@ export async function dispatchDiscordNativeAgentReply(params: {
 
   if (!didReply && (params.suppressReplies || finalReplyOutcome === "suppressed")) {
     await settleDiscordInteractionWithoutVisibleReply(params.interaction);
-    return { suppressedFinalReply };
+    return dispatchResult;
   }
   if (
     didReply ||
     (turnResult.dispatched && hasVisibleInboundReplyDispatch(turnResult.dispatchResult))
   ) {
-    return { suppressedFinalReply };
+    return dispatchResult;
   }
 
   await safeDiscordInteractionCall("interaction empty fallback", async () => {
@@ -160,5 +165,5 @@ export async function dispatchDiscordNativeAgentReply(params: {
     }
     await params.interaction.reply(payload);
   });
-  return { suppressedFinalReply };
+  return dispatchResult;
 }

@@ -12,6 +12,7 @@ import type { SessionEntry } from "../../config/sessions.js";
 import { HEARTBEAT_RUN_SCOPE } from "../../infra/heartbeat-run-scope.js";
 import { MESSAGE_TOOL_ONLY_DELIVERY_HINT } from "../../plugin-sdk/message-tool-delivery-hints.js";
 import { normalizeSessionDeliveryState } from "../../utils/delivery-context.shared.js";
+import { hasControlCommand } from "../command-detection.js";
 import { runReplyAgent } from "./agent-runner.runtime.js";
 import { applySessionHints } from "./body.js";
 import {
@@ -351,6 +352,7 @@ describe("runPreparedReply media-only handling", () => {
     vi.mocked(buildGroupChatContext).mockReturnValue("");
     vi.mocked(buildInboundUserContextPrefix).mockReset().mockReturnValue("");
     vi.mocked(resolveInboundUserContextPromptJoiner).mockReturnValue(undefined);
+    vi.mocked(hasControlCommand).mockReturnValue(false);
     replyRunTesting.resetReplyRunRegistry();
   });
 
@@ -994,6 +996,83 @@ describe("runPreparedReply media-only handling", () => {
       text: "I didn't receive any text in your message. Please resend or add a caption.",
     });
     expect(vi.mocked(runReplyAgent)).not.toHaveBeenCalled();
+  });
+
+  it.each(["/model openai/gpt-5.5", "/reset examples"])(
+    "keeps suppressed normal command text in the model prompt: %s",
+    async (body) => {
+      vi.mocked(hasControlCommand).mockReturnValue(true);
+      const result = await runPreparedReply(
+        baseParams({
+          ctx: {
+            ...createInboundTurn(body, "internal", "direct"),
+            CommandAuthorized: false,
+            CommandTurn: {
+              kind: "normal",
+              source: "message",
+              authorized: false,
+              body,
+            },
+          },
+          sessionCtx: {
+            ...createSessionTurn(body, "internal", "direct"),
+          },
+          commandAuthorized: false,
+          command: {
+            surface: "internal",
+            channel: "internal",
+            isAuthorizedSender: false,
+            abortKey: "session-key",
+            ownerList: [],
+            senderIsOwner: false,
+            rawBodyNormalized: body,
+            commandBodyNormalized: body,
+          } as never,
+          isNewSession: false,
+        }),
+      );
+
+      expect(result).toEqual({ text: "ok" });
+      expect(requireRunReplyAgentCall().followupRun.prompt).toBe(body);
+    },
+  );
+
+  it("silently drops an explicit unauthorized whole-message text slash command", async () => {
+    const body = "/model openai/gpt-5.5";
+    vi.mocked(hasControlCommand).mockReturnValue(true);
+    const params = baseParams({
+      ctx: {
+        ...createInboundTurn(body, "internal", "direct"),
+        CommandSource: "text",
+        CommandAuthorized: false,
+        CommandTurn: {
+          kind: "text-slash",
+          source: "text",
+          authorized: false,
+          commandName: "model",
+          body,
+        },
+      },
+      sessionCtx: {
+        ...createSessionTurn(body, "internal", "direct"),
+      },
+      commandAuthorized: false,
+      command: {
+        surface: "internal",
+        channel: "internal",
+        isAuthorizedSender: false,
+        abortKey: "session-key",
+        ownerList: [],
+        senderIsOwner: false,
+        rawBodyNormalized: body,
+        commandBodyNormalized: body,
+      } as never,
+      isNewSession: false,
+    });
+
+    await expect(runPreparedReply(params)).resolves.toBeUndefined();
+    expect(runReplyAgent).not.toHaveBeenCalled();
+    expect(params.typing.cleanup).toHaveBeenCalledOnce();
   });
 
   it("still skips metadata-only turns when inbound context adds chat_id", async () => {

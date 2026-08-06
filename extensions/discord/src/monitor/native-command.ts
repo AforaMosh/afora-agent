@@ -703,7 +703,7 @@ async function dispatchDiscordCommandInteraction(params: {
     return directStatusResult;
   }
 
-  const { suppressedFinalReply } = await dispatchDiscordNativeAgentReply({
+  const { hiddenFinalReply } = await dispatchDiscordNativeAgentReply({
     cfg,
     discordConfig,
     accountId,
@@ -718,7 +718,7 @@ async function dispatchDiscordCommandInteraction(params: {
     log,
   });
 
-  return { accepted: true, effectiveRoute, suppressedFinalReply };
+  return { accepted: true, effectiveRoute, hiddenFinalReply };
 }
 
 export function createDiscordCommandArgFallbackButton(params: DiscordCommandArgContext): Button {
