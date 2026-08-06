@@ -136,14 +136,15 @@ export async function createMatrixDraftController(params: {
       },
       onPlanUpdate: async (payload) => {
         if (payload.phase !== "update") {
-          return;
+          return false;
         }
         if (progressDraftStreaming) {
-          await progressDraft.pushPlanProgress(payload.steps, { explanation: payload.explanation });
-          return;
+          return await progressDraft.pushPlanProgress(payload.steps, {
+            explanation: payload.explanation,
+          });
         }
         if (!draftStream || previewPlanSuppressed) {
-          return;
+          return false;
         }
         previewPlan = payload.steps?.length
           ? payload.steps.map((step) => ({ ...step }))
@@ -152,16 +153,18 @@ export async function createMatrixDraftController(params: {
         const text = renderPreviewPlan();
         if (text) {
           draftStream.update(text);
+          return true;
         }
+        return false;
       },
       onApprovalEvent: async (payload) => {
-        await progressDraft.pushApprovalEvent(payload);
+        return await progressDraft.pushApprovalEvent(payload);
       },
       onCommandOutput: async (payload) => {
         await progressDraft.pushCommandOutputEvent(payload);
       },
       onPatchSummary: async (payload) => {
-        await progressDraft.pushPatchEvent(payload);
+        return await progressDraft.pushPatchEvent(payload);
       },
     };
   };

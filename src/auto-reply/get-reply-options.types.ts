@@ -103,8 +103,8 @@ type ReasoningProgressPayload = {
   progressTokens: number;
 };
 
-/** Return false when a channel intentionally keeps a progress event out of user-visible UI. */
-type ProgressCallbackResult = false | void;
+/** Return false when a channel keeps progress out of visible UI; true/void confirms rendering. */
+type ProgressCallbackResult = boolean | void;
 
 /** Reply generation options shared by auto-reply, webchat, channels, and tests. */
 export type GetReplyOptions = {
@@ -193,7 +193,10 @@ export type GetReplyOptions = {
    * block boundaries without waiting for transport acks. */
   onBlockReplyQueued?: (payload: ReplyPayload, context?: BlockReplyContext) => Promise<void> | void;
   onBlockReply?: (payload: ReplyPayload, context?: BlockReplyContext) => Promise<void> | void;
-  onToolResult?: (payload: ReplyPayload) => Promise<void> | void;
+  /** Return false when the callback did not render operator-visible progress. */
+  onToolResult?: (
+    payload: ReplyPayload,
+  ) => Promise<ProgressCallbackResult> | ProgressCallbackResult;
   /** Called when a tool phase starts/updates, before summary payloads are emitted. */
   onToolStart?: (payload: {
     itemId?: string;
@@ -256,7 +259,7 @@ export type GetReplyOptions = {
     explanation?: string;
     steps?: AgentPlanStep[];
     source?: string;
-  }) => Promise<void> | void;
+  }) => Promise<ProgressCallbackResult> | ProgressCallbackResult;
   /** Called when an approval becomes pending or resolves. */
   onApprovalEvent?: (payload: {
     phase?: string;
@@ -272,7 +275,7 @@ export type GetReplyOptions = {
     reason?: string;
     scope?: "turn" | "session";
     message?: string;
-  }) => Promise<void> | void;
+  }) => Promise<ProgressCallbackResult> | ProgressCallbackResult;
   /** Called when command output streams or completes. */
   onCommandOutput?: (payload: {
     itemId?: string;
@@ -297,7 +300,7 @@ export type GetReplyOptions = {
     modified?: string[];
     deleted?: string[];
     summary?: string;
-  }) => Promise<void> | void;
+  }) => Promise<ProgressCallbackResult> | ProgressCallbackResult;
   /** Called when context auto-compaction starts (allows UX feedback during the pause). */
   onCompactionStart?: () => Promise<void> | void;
   /** Called when context auto-compaction completes. */

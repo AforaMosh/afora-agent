@@ -628,17 +628,17 @@ export function createMSTeamsReplyDispatcher(params: {
         },
         onPlanUpdate: async (payload: PipelinePayload) => {
           if (payload?.phase !== "update") {
-            return;
+            return false;
           }
-          await streamController.pushPlanProgress(normalizeAgentPlanSteps(payload.steps), {
+          return await streamController.pushPlanProgress(normalizeAgentPlanSteps(payload.steps), {
             explanation: typeof payload.explanation === "string" ? payload.explanation : undefined,
           });
         },
         onApprovalEvent: async (payload: PipelinePayload) => {
           if (payload?.phase !== "requested") {
-            return;
+            return false;
           }
-          await streamController.pushProgressLine(
+          return await streamController.pushProgressLine(
             buildChannelProgressDraftLine({
               event: "approval",
               phase: payload.phase as string,
@@ -670,9 +670,9 @@ export function createMSTeamsReplyDispatcher(params: {
         },
         onPatchSummary: async (payload: PipelinePayload) => {
           if (payload?.phase !== "end") {
-            return;
+            return false;
           }
-          await streamController.pushProgressLine(
+          return await streamController.pushProgressLine(
             buildChannelProgressDraftLine({
               event: "patch",
               ...(typeof payload?.itemId === "string" ? { itemId: payload.itemId } : {}),

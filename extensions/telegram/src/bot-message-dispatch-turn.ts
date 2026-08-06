@@ -250,18 +250,22 @@ export async function runTelegramDispatchTurn(params: {
             onToolResult: async (payload) => {
               const text = payload.text?.trim();
               if (!text) {
-                return;
+                return false;
               }
               const updatedDraft = await params.progress.pushToolProgress(text, {
                 startImmediately: true,
               });
+              if (updatedDraft) {
+                return;
+              }
               if (
-                !updatedDraft &&
                 isFastModeAutoProgressPayload(payload) &&
                 !params.progress.canPushToolProgress()
               ) {
                 await params.delivery.sendPayload(payload);
+                return;
               }
+              return false;
             },
             onCommandOutput: params.progress.handleCommandOutput,
             onPatchSummary: params.progress.handlePatchSummary,

@@ -138,7 +138,7 @@ describe("durable inbound reply delivery", () => {
     const controller = new AbortController();
     const payload = setReplyPayloadMetadata(
       { text: "still working", isStatusNotice: true },
-      { activeTurnReceipt: { abortSignal: controller.signal, maxRetries: 2 } },
+      { activeTurnReceipt: { abortSignal: controller.signal, maxRetries: 1 } },
     );
 
     await deliverInboundReplyWithMessageSendContext({
@@ -151,7 +151,7 @@ describe("durable inbound reply delivery", () => {
     });
 
     expect(latestSendDurableMessageBatchRequest()).toMatchObject({
-      maxRetries: 2,
+      maxRetries: 1,
       signal: controller.signal,
     });
   });

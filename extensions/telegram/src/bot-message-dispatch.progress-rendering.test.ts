@@ -85,6 +85,25 @@ describeTelegramDispatch("dispatchTelegramMessage progress-rendering", () => {
     );
   });
 
+  it("reports phase-filtered plan updates as not rendered", async () => {
+    const draftStream = createSequencedDraftStream(2001);
+    createTelegramDraftStream.mockReturnValue(draftStream);
+    let rendered: boolean | void = undefined;
+    dispatchReplyWithBufferedBlockDispatcher.mockImplementation(async ({ replyOptions }) => {
+      rendered = await replyOptions?.onPlanUpdate?.({ phase: "start" });
+      return { queuedFinal: false };
+    });
+
+    await dispatchWithContext({
+      context: createContext(),
+      streamMode: "progress",
+      telegramCfg: { streaming: { mode: "progress", progress: { label: false } } },
+    });
+
+    expect(rendered).toBe(false);
+    expect(draftStream.updatePreview).not.toHaveBeenCalled();
+  });
+
   it("renders the headline immediately when the preamble arrives after tool progress", async () => {
     const draftStream = createSequencedDraftStream(2001);
     createTelegramDraftStream.mockReturnValue(draftStream);

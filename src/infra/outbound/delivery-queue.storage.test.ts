@@ -254,6 +254,24 @@ describe("delivery-queue storage", () => {
       expect(readQueuedEntry(tmpDir(), id).attemptCount).toBe(2);
     });
 
+    it("allows an active-turn receipt exactly one reconnect recovery attempt", async () => {
+      const id = await enqueueTextDelivery({
+        channel: "directchat",
+        to: "+1555",
+        payloads: [{ text: "still working" }],
+        maxRetries: 1,
+      });
+
+      await expect(reserveDeliveryAttempt(id, 1, tmpDir())).resolves.toEqual({
+        status: "reserved",
+        attemptCount: 1,
+      });
+      await expect(reserveDeliveryAttempt(id, 1, tmpDir())).resolves.toEqual({
+        status: "exhausted",
+        attemptCount: 1,
+      });
+    });
+
     it("creates and removes a queue entry", async () => {
       const id = await enqueueTextDelivery(
         {

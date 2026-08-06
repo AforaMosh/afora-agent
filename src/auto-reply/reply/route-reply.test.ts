@@ -225,7 +225,7 @@ describe("routeReply", () => {
     const controller = new AbortController();
     const payload = setReplyPayloadMetadata(
       { text: "still working", isStatusNotice: true },
-      { activeTurnReceipt: { abortSignal: controller.signal, maxRetries: 2 } },
+      { activeTurnReceipt: { abortSignal: controller.signal, maxRetries: 1 } },
     );
 
     await routeReply({
@@ -236,7 +236,7 @@ describe("routeReply", () => {
       abortSignal: controller.signal,
     });
 
-    expectLastDeliveryFields({ maxRetries: 2, abortSignal: controller.signal });
+    expectLastDeliveryFields({ maxRetries: 1, abortSignal: controller.signal });
   });
 
   it("skips sends when abort signal is already aborted", async () => {

@@ -271,7 +271,7 @@ export function createDiscordDraftPreviewController(params: {
       await progressDraft.pushToolProgress(line, options);
     },
     async pushPlanProgress(steps?: AgentPlanStep[], options?: { explanation?: string }) {
-      await progressDraft.pushPlanProgress(steps, options);
+      return await progressDraft.pushPlanProgress(steps, options);
     },
     async pushReasoningProgress(text?: string, options?: { snapshot?: boolean }) {
       await progressDraft.pushReasoningProgress(text, options);

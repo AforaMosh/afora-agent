@@ -460,18 +460,18 @@ export async function dispatchPreparedSlackMessage(prepared: PreparedSlackMessag
         },
         onPlanUpdate: async (payload) => {
           if (payload.phase !== "update") {
-            return;
+            return false;
           }
-          await progress.pushPlanProgress(payload.steps, payload.explanation);
+          return await progress.pushPlanProgress(payload.steps, payload.explanation);
         },
         onApprovalEvent: async (payload) => {
-          await progress.progressDraft.pushApprovalEvent(payload);
+          return await progress.progressDraft.pushApprovalEvent(payload);
         },
         onCommandOutput: async (payload) => {
           await progress.progressDraft.pushCommandOutputEvent(payload);
         },
         onPatchSummary: async (payload) => {
-          await progress.progressDraft.pushPatchEvent(payload);
+          return await progress.progressDraft.pushPatchEvent(payload);
         },
       },
     });

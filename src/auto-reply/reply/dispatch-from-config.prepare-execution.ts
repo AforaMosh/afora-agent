@@ -275,7 +275,7 @@ export async function prepareDispatchExecution(state: ChooseDispatchRouteReadySt
       releaseStart: () => releaseStart?.(),
     };
   };
-  const wrapProgressCallback = <Args extends unknown[], Result extends false | void>(
+  const wrapProgressCallback = <Args extends unknown[], Result extends boolean | void>(
     callback: ((...args: Args) => Promise<Result> | Result) | undefined,
     options?: {
       allowWhenToolSummariesHidden?: boolean;
@@ -437,7 +437,7 @@ export async function prepareDispatchExecution(state: ChooseDispatchRouteReadySt
         text: ACTIVE_TURN_RECEIPT_TEXT,
         isStatusNotice: true,
       },
-      { activeTurnReceipt: { abortSignal, maxRetries: 2 } },
+      { activeTurnReceipt: { abortSignal, maxRetries: 1 } },
     );
     if (shouldRouteToOriginating) {
       const result = await sendPayloadAsync(payload, abortSignal, false, "final");

@@ -222,8 +222,8 @@ export async function executeDispatch(state: PrepareDispatchExecutionReadyState)
                       isFastModeAutoProgress,
                     );
                     if (progressCallbackForwarded) {
-                      await onToolResultFromReplyOptions?.(payload);
-                      if (onToolResultFromReplyOptions) {
+                      const rendered = await onToolResultFromReplyOptions?.(payload);
+                      if (onToolResultFromReplyOptions && rendered !== false) {
                         state.activeTurnReceipt.noteVisible();
                       }
                     }
@@ -353,8 +353,8 @@ export async function executeDispatch(state: PrepareDispatchExecutionReadyState)
                       requiresToolSummaryVisibility: true,
                     })
                   ) {
-                    await state.onPlanUpdateFromReplyOptions?.(normalized);
-                    if (state.onPlanUpdateFromReplyOptions) {
+                    const rendered = await state.onPlanUpdateFromReplyOptions?.(normalized);
+                    if (state.onPlanUpdateFromReplyOptions && rendered !== false) {
                       state.activeTurnReceipt.noteVisible();
                     }
                   }
@@ -387,8 +387,8 @@ export async function executeDispatch(state: PrepareDispatchExecutionReadyState)
                       requiresToolSummaryVisibility: true,
                     })
                   ) {
-                    await state.onApprovalEventFromReplyOptions?.(payload);
-                    if (state.onApprovalEventFromReplyOptions) {
+                    const rendered = await state.onApprovalEventFromReplyOptions?.(payload);
+                    if (state.onApprovalEventFromReplyOptions && rendered !== false) {
                       state.activeTurnReceipt.noteVisible();
                     }
                   }
@@ -411,8 +411,8 @@ export async function executeDispatch(state: PrepareDispatchExecutionReadyState)
                       requiresToolSummaryVisibility: true,
                     })
                   ) {
-                    await state.onPatchSummaryFromReplyOptions?.(payload);
-                    if (state.onPatchSummaryFromReplyOptions) {
+                    const rendered = await state.onPatchSummaryFromReplyOptions?.(payload);
+                    if (state.onPatchSummaryFromReplyOptions && rendered !== false) {
                       state.activeTurnReceipt.noteVisible();
                     }
                   }

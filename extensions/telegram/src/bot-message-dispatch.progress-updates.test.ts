@@ -699,6 +699,7 @@ describeTelegramDispatch("dispatchTelegramMessage progress-updates", () => {
   it("keeps string tool-result progress beneath a Telegram preamble", async () => {
     const draftStream = createSequencedDraftStream(2001);
     createTelegramDraftStream.mockReturnValue(draftStream);
+    let rendered: boolean | void = undefined;
     dispatchReplyWithBufferedBlockDispatcher.mockImplementation(async ({ replyOptions }) => {
       await replyOptions?.onReplyStart?.();
       await replyOptions?.onItemEvent?.({
@@ -706,7 +707,7 @@ describeTelegramDispatch("dispatchTelegramMessage progress-updates", () => {
         itemId: "preamble-1",
         progressText: "Checking recent context",
       });
-      await replyOptions?.onToolResult?.({ text: "Background task still running" });
+      rendered = await replyOptions?.onToolResult?.({ text: "Background task still running" });
       return { queuedFinal: false };
     });
 
@@ -722,7 +723,27 @@ describeTelegramDispatch("dispatchTelegramMessage progress-updates", () => {
     const preview = draftStream.updatePreview.mock.calls.at(-1)?.[0];
     expect(preview?.text).toBe("Shelling\nChecking recent context\nBackground task still running");
     expect(JSON.stringify(preview?.richMessage)).toContain("Background task still running");
+    expect(rendered).not.toBe(false);
     expect(deliverReplies).not.toHaveBeenCalled();
+  });
+
+  it("reports empty tool-result progress as not rendered", async () => {
+    const draftStream = createSequencedDraftStream(2001);
+    createTelegramDraftStream.mockReturnValue(draftStream);
+    let rendered: boolean | void = undefined;
+    dispatchReplyWithBufferedBlockDispatcher.mockImplementation(async ({ replyOptions }) => {
+      rendered = await replyOptions?.onToolResult?.({ text: "   " });
+      return { queuedFinal: false };
+    });
+
+    await dispatchWithContext({
+      context: createContext(),
+      streamMode: "progress",
+      telegramCfg: { streaming: { mode: "progress", progress: { label: "Shelling" } } },
+    });
+
+    expect(rendered).toBe(false);
+    expect(draftStream.updatePreview).not.toHaveBeenCalled();
   });
 
   it("retracts the Telegram preamble headline by item identity", async () => {

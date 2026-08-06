@@ -273,14 +273,15 @@ export function createTelegramProgressController(params: {
   };
   const handlePlanUpdate = async (payload: CallbackPayload<"onPlanUpdate">) => {
     if (payload.phase === "update" && canPushToolProgress()) {
-      await compositor.pushPlanProgress(payload.steps, {
+      return await compositor.pushPlanProgress(payload.steps, {
         explanation: payload.explanation,
       });
     }
+    return false;
   };
   const handleApprovalEvent = async (payload: CallbackPayload<"onApprovalEvent">) => {
     if (payload.phase === "requested") {
-      await pushToolProgress(
+      return await pushToolProgress(
         buildChannelProgressDraftLine({
           event: "approval",
           phase: payload.phase,
@@ -291,6 +292,7 @@ export function createTelegramProgressController(params: {
         }),
       );
     }
+    return false;
   };
   const handleCommandOutput = async (payload: CallbackPayload<"onCommandOutput">) => {
     if (payload.phase === "end") {
@@ -310,7 +312,7 @@ export function createTelegramProgressController(params: {
   };
   const handlePatchSummary = async (payload: CallbackPayload<"onPatchSummary">) => {
     if (payload.phase === "end") {
-      await pushToolProgress(
+      return await pushToolProgress(
         buildChannelProgressDraftLine({
           event: "patch",
           itemId: payload.itemId,
@@ -325,6 +327,7 @@ export function createTelegramProgressController(params: {
         }),
       );
     }
+    return false;
   };
 
   return {

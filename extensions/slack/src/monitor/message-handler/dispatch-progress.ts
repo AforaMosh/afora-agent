@@ -433,11 +433,10 @@ export function createSlackProgressRuntime(runtimeParams: {
 
   const pushPlanProgress = async (steps?: AgentPlanStep[], explanation?: string) => {
     if (streamMode === "status_final") {
-      await progressDraft.pushPlanProgress(steps, { explanation });
-      return;
+      return await progressDraft.pushPlanProgress(steps, { explanation });
     }
     if (previewToolProgressSuppressed || !draftStream) {
-      return;
+      return false;
     }
     const text = formatChannelProgressDraftText({
       entry: account.config,
@@ -450,7 +449,9 @@ export function createSlackProgressRuntime(runtimeParams: {
     if (text) {
       draftStream.update(text);
       hasStreamedMessage = true;
+      return true;
     }
+    return false;
   };
 
   const pushPreviewProgress = async (

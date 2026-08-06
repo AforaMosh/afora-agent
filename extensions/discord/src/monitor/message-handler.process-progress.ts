@@ -178,13 +178,14 @@ export function createDiscordMessageProgressRuntime(params: {
     },
     onPlanUpdate: async (payload) => {
       if (payload.phase === "update") {
-        await draftPreview.pushPlanProgress(payload.steps, {
+        return await draftPreview.pushPlanProgress(payload.steps, {
           explanation: payload.explanation,
         });
       }
+      return false;
     },
     onApprovalEvent: async (payload) => {
-      await draftPreview.pushApprovalEvent(payload);
+      return await draftPreview.pushApprovalEvent(payload);
     },
     onCommandOutput: async (payload) => {
       if (isFailedProgress(payload)) {
@@ -194,7 +195,7 @@ export function createDiscordMessageProgressRuntime(params: {
       return undefined;
     },
     onPatchSummary: async (payload) => {
-      await draftPreview.pushPatchEvent(payload);
+      return await draftPreview.pushPatchEvent(payload);
     },
     onCompactionStart: async () => {
       if (!isProcessAborted(abortSignal)) {

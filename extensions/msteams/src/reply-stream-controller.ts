@@ -410,15 +410,15 @@ export function createTeamsReplyStreamController(params: {
     async pushProgressLine(
       line?: string | ChannelProgressDraftLine,
       options?: { toolName?: string },
-    ): Promise<void> {
+    ): Promise<boolean> {
       if (!stream || streamMode !== "progress") {
-        return;
+        return false;
       }
       if (
         options?.toolName !== undefined &&
         !isChannelProgressDraftWorkToolName(options.toolName)
       ) {
-        return;
+        return false;
       }
       if (shouldStreamPreviewToolProgress) {
         const normalized = normalizeChannelProgressDraftLineIdentity(line);
@@ -434,15 +434,17 @@ export function createTeamsReplyStreamController(params: {
       const progressActive = await progressDraftGate.noteWork();
       if ((hadStarted || progressActive) && progressDraftGate.hasStarted) {
         renderInformativeUpdate();
+        return true;
       }
+      return false;
     },
 
     async pushPlanProgress(
       steps?: AgentPlanStep[],
       options?: { explanation?: string },
-    ): Promise<void> {
+    ): Promise<boolean> {
       if (!stream || streamMode !== "progress" || streamFinalizationPending) {
-        return;
+        return false;
       }
       latestPlan = steps?.length ? steps.map((entry) => ({ ...entry })) : undefined;
       latestPlanExplanation = options?.explanation?.replace(/\s+/g, " ").trim() || undefined;
@@ -451,6 +453,7 @@ export function createTeamsReplyStreamController(params: {
       if (hadStarted && progressDraftGate.hasStarted) {
         renderInformativeUpdate();
       }
+      return progressDraftGate.hasStarted;
     },
 
     preparePayload(payload: ReplyPayload): Maybe<ReplyPayload> {

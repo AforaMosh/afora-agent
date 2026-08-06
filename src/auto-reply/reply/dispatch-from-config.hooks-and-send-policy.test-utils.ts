@@ -2890,6 +2890,53 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
     }
   });
 
+  it("keeps the active-turn receipt when channel-owned progress callbacks render nothing", async () => {
+    vi.useFakeTimers();
+    try {
+      setNoAbort();
+      const deliveredTexts: string[] = [];
+      const dispatcher = createReplyDispatcher({
+        deliver: async (payload) => {
+          deliveredTexts.push(payload.text ?? "");
+        },
+      });
+      const terminal = createDeferred<ReplyPayload>();
+      const notRendered = vi.fn(async () => false as const);
+      const run = dispatchReplyFromConfig({
+        ctx: buildTestCtx({ ChatType: "direct", SessionKey: "receipt:callback-noop" }),
+        cfg: emptyConfig,
+        dispatcher,
+        replyResolver: async (_ctx: MsgContext, opts?: GetReplyOptions) => {
+          await opts?.onPlanUpdate?.({ phase: "start" });
+          await opts?.onApprovalEvent?.({ phase: "resolved" });
+          await opts?.onPatchSummary?.({ phase: "start" });
+          await opts?.onToolResult?.({ text: "🛠️ Inspect: filtered by channel" });
+          return await terminal.promise;
+        },
+        replyOptions: {
+          suppressDefaultToolProgressMessages: true,
+          allowProgressCallbacksWhenSourceDeliverySuppressed: true,
+          onPlanUpdate: notRendered,
+          onApprovalEvent: notRendered,
+          onPatchSummary: notRendered,
+          onToolResult: notRendered,
+        },
+      });
+
+      await vi.advanceTimersByTimeAsync(ACTIVE_TURN_RECEIPT_DELAY_MS);
+      expect(notRendered).toHaveBeenCalledTimes(4);
+      expect(deliveredTexts).toContain(ACTIVE_TURN_RECEIPT_TEXT);
+
+      terminal.resolve({ text: "callback-noop final" });
+      await run;
+      dispatcher.markComplete();
+      await dispatcher.waitForIdle();
+      expect(deliveredTexts).toEqual([ACTIVE_TURN_RECEIPT_TEXT, "callback-noop final"]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("forwards suppressed tool progress callbacks in message-tool-only mode", async () => {
     setNoAbort();
     sessionStoreMocks.currentEntry = {
