@@ -1,3 +1,4 @@
+import { RealtimeTalkAdoptionGate } from "./realtime-talk-adoption-gate.ts";
 // Control UI chat module implements realtime talk google live behavior.
 import {
   bytesToBase64,
@@ -12,7 +13,6 @@ import {
   buildGoogleLiveUrl,
   GoogleLiveConnectionLifecycle,
   GOOGLE_LIVE_SETUP_TIMEOUT_MS,
-  runRealtimeTalkCleanup,
 } from "./realtime-talk-google-live-lifecycle.ts";
 import {
   GoogleLiveToolOwner,
@@ -22,6 +22,7 @@ import { openRealtimeTalkCamera, openRealtimeTalkInput } from "./realtime-talk-i
 import type { RealtimeTalkJsonPcmWebSocketSessionResult } from "./realtime-talk-shared.ts";
 import {
   createRealtimeTalkEventEmitter,
+  runRealtimeTalkCleanup,
   steerRealtimeTalkActiveConsult,
   shouldAutoControlRealtimeVoiceAgentText,
   type RealtimeTalkTransport,
@@ -58,6 +59,8 @@ type GoogleLiveMessage = {
 
 const GOOGLE_LIVE_VIDEO_FRAME_INTERVAL_MS = 1_000;
 const GOOGLE_LIVE_VIDEO_MESSAGE_MAX_BYTES = 512 * 1024;
+const MAX_PENDING_PROVIDER_EVENTS = 32;
+const MAX_PENDING_PROVIDER_EVENT_BYTES = 128 * 1024;
 function googleLiveVideoMessage(frame: RealtimeTalkVideoFrame): unknown {
   return {
     realtimeInput: {
@@ -95,12 +98,13 @@ export class GoogleLiveRealtimeTalkTransport implements RealtimeTalkTransport {
   private readonly outputQueue = new RealtimeTalkPcmOutputQueue();
   private readonly emitTalkEvent: ReturnType<typeof createRealtimeTalkEventEmitter>;
   private readonly toolOwner: GoogleLiveToolOwner;
+  private adoptionGate = this.createAdoptionGate();
 
   constructor(
     private readonly session: RealtimeTalkJsonPcmWebSocketSessionResult,
     private readonly ctx: RealtimeTalkTransportContext,
   ) {
-    this.emitTalkEvent = createRealtimeTalkEventEmitter(ctx, session);
+    this.emitTalkEvent = ctx.emitTalkEvent ?? createRealtimeTalkEventEmitter(ctx, session);
     this.toolOwner = new GoogleLiveToolOwner({
       ctx,
       emitTalkEvent: this.emitTalkEvent,
@@ -152,6 +156,7 @@ export class GoogleLiveRealtimeTalkTransport implements RealtimeTalkTransport {
     }
     const wsUrl = buildGoogleLiveUrl(this.session);
     this.closed = false;
+    this.adoptionGate = this.createAdoptionGate();
     this.cameraPublished = false;
     this.mediaSetupController?.abort();
     const mediaSetupController = new AbortController();
@@ -211,7 +216,8 @@ export class GoogleLiveRealtimeTalkTransport implements RealtimeTalkTransport {
   }
 
   activate(): void {
-    if (this.closed || !this.lifecycle.activate()) {
+    const shouldActivate = this.lifecycle.activate();
+    if (this.closed || !shouldActivate) {
       return;
     }
     try {
@@ -232,6 +238,7 @@ export class GoogleLiveRealtimeTalkTransport implements RealtimeTalkTransport {
       }
       this.assertActivationCurrent();
       this.startVideoFrames();
+      this.adoptionGate.adopt();
     } catch (error) {
       try {
         this.stop({ emitClosed: false });
@@ -273,6 +280,7 @@ export class GoogleLiveRealtimeTalkTransport implements RealtimeTalkTransport {
   private releaseResources(): void {
     const mediaSetupController = this.mediaSetupController;
     this.mediaSetupController = null;
+    this.adoptionGate.discard();
     this.clearSetupTimeout();
     const inputMeter = this.inputMeter;
     this.inputMeter = null;
@@ -372,12 +380,20 @@ export class GoogleLiveRealtimeTalkTransport implements RealtimeTalkTransport {
     if (this.closed || this.ws !== ws) {
       return;
     }
-    if (message.setupComplete && this.lifecycle.markReady(ws)) {
-      this.clearSetupTimeout();
+    if (message.setupComplete) {
+      if (this.lifecycle.markReady(ws)) {
+        this.clearSetupTimeout();
+      }
+      delete message.setupComplete;
     }
-    // The parent session adopts the candidate after start() resolves. Provider
-    // events remain provisional until activate() publishes that ownership.
-    if (!this.lifecycle.isActive) {
+    if (!message.serverContent && !message.toolCall && !message.toolCallCancellation) {
+      return;
+    }
+    this.adoptionGate.push(message);
+  }
+
+  private handleProviderMessage(message: GoogleLiveMessage): void {
+    if (this.closed) {
       return;
     }
     const content = message.serverContent;
@@ -471,6 +487,21 @@ export class GoogleLiveRealtimeTalkTransport implements RealtimeTalkTransport {
       });
     }
     this.toolOwner.cancel(message.toolCallCancellation?.ids);
+  }
+
+  private createAdoptionGate(): RealtimeTalkAdoptionGate<GoogleLiveMessage> {
+    return new RealtimeTalkAdoptionGate({
+      maxCount: MAX_PENDING_PROVIDER_EVENTS,
+      maxBytes: MAX_PENDING_PROVIDER_EVENT_BYTES,
+      measure: (message) => new TextEncoder().encode(JSON.stringify(message)).byteLength,
+      consume: (message) => this.handleProviderMessage(message),
+      onOverflow: () => {
+        const ws = this.ws;
+        if (ws) {
+          this.failConnection(ws, "Realtime provider event buffer limit exceeded");
+        }
+      },
+    });
   }
 
   private playPcm16(base64: string): void {

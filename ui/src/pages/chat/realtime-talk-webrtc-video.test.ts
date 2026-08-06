@@ -150,6 +150,7 @@ describe("OpenAI Realtime Video Talk", () => {
     );
 
     await transport.start();
+    transport.activate();
     const peer = FakePeerConnection.instance;
     expect(getUserMedia).toHaveBeenCalledOnce();
     expect(peer?.addTrack).toHaveBeenCalledWith(audioTrack, audio);
@@ -266,6 +267,7 @@ describe("OpenAI Realtime Video Talk", () => {
     );
 
     await transport.start();
+    transport.activate();
     await transport.setVideoEnabled(true);
     firstVideoTrack.dispatchEvent(new Event("ended"));
 
@@ -301,6 +303,7 @@ describe("OpenAI Realtime Video Talk", () => {
     );
 
     await transport.start();
+    transport.activate();
     await expect(transport.setVideoEnabled(true)).rejects.toThrow("Camera access is blocked");
 
     expect(audioStop).not.toHaveBeenCalled();
@@ -341,6 +344,7 @@ describe("OpenAI Realtime Video Talk", () => {
     );
 
     await transport.start();
+    transport.activate();
     const enabling = transport.setVideoEnabled(true);
     await vi.waitFor(() => expect(getUserMedia).toHaveBeenCalledTimes(2));
     transport.stop();
@@ -396,6 +400,7 @@ describe("OpenAI Realtime Video Talk", () => {
     );
 
     await transport.start();
+    transport.activate();
     await transport.setVideoEnabled(true);
     await transport.switchCamera("back");
 
@@ -456,6 +461,7 @@ describe("OpenAI Realtime Video Talk", () => {
     );
 
     await transport.start();
+    transport.activate();
     await transport.setVideoEnabled(true);
     await expect(transport.switchCamera("missing")).rejects.toThrow(
       "The selected camera is unavailable",

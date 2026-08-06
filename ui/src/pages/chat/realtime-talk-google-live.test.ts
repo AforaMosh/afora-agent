@@ -142,6 +142,36 @@ describe("GoogleLiveRealtimeTalkTransport", () => {
     expect(readyEvent.transport).toBe("provider-websocket");
   });
 
+  it("uses setup completion for readiness while buffering provider effects until adoption", async () => {
+    const onTranscript = vi.fn();
+    const transport = createTransport({ onTranscript });
+    const { start, ws } = await beginTransport(transport);
+    ws.emitOpen();
+    ws.emitMessage(
+      encodeJsonFrame({
+        serverContent: {
+          inputTranscription: { text: "first", finished: true },
+        },
+      }),
+    );
+    ws.emitMessage(encodeJsonFrame({ setupComplete: {} }));
+    await expect(start).resolves.toBe("ready");
+    ws.emitMessage(
+      encodeJsonFrame({
+        serverContent: {
+          outputTranscription: { text: "second", finished: true },
+        },
+      }),
+    );
+    await flushMicrotasks();
+
+    expect(onTranscript).not.toHaveBeenCalled();
+    transport.activate();
+
+    expect(onTranscript.mock.calls.map(([entry]) => entry.text)).toEqual(["first", "second"]);
+    transport.stop();
+  });
+
   it("releases owned media when the live socket closes", async () => {
     const onStatus = vi.fn();
     const onTranscript = vi.fn();
@@ -168,6 +198,20 @@ describe("GoogleLiveRealtimeTalkTransport", () => {
     );
     await flushMicrotasks();
     expect(onTranscript).not.toHaveBeenCalled();
+  });
+
+  it("throws a provider close recorded after setup but before adoption", async () => {
+    const onStatus = vi.fn();
+    const transport = createTransport({ onStatus });
+    const { start, ws } = await beginTransport(transport);
+    ws.emitOpen();
+    ws.emitMessage(encodeJsonFrame({ setupComplete: {} }));
+    await expect(start).resolves.toBe("ready");
+
+    ws.emitClose();
+
+    expect(() => transport.activate()).toThrow("Realtime connection closed");
+    expect(onStatus).not.toHaveBeenCalled();
   });
 
   it("preserves socket error precedence and ignores the later close", async () => {

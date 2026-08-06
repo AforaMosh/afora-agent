@@ -236,7 +236,9 @@ describe("RealtimeTalkSession transcript queue", () => {
 
       expect(transcriptSignals).toHaveLength(1);
       expect(transcriptSignals[0]?.aborted).toBe(false);
-      await vi.advanceTimersByTimeAsync(30_000);
+      await vi.advanceTimersByTimeAsync(14_999);
+      expect(transcriptSignals[0]?.aborted).toBe(false);
+      await vi.advanceTimersByTimeAsync(1);
       await vi.runAllTimersAsync();
 
       expect(transcriptSignals[0]?.aborted).toBe(true);
@@ -248,10 +250,11 @@ describe("RealtimeTalkSession transcript queue", () => {
         {
           sessionKey: "agent:main:main",
           voiceSessionId: "voice-drain-timeout",
+          allocationId: undefined,
         },
         {
           signal: closeSignals[0],
-          timeoutMs: 30_000,
+          timeoutMs: 9_166,
         },
       );
       expect(closeSignals[0]).not.toBe(transcriptSignals[0]);

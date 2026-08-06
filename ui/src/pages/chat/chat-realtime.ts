@@ -61,10 +61,10 @@ function resetChatRealtimeConversation(state: ChatRealtimeState) {
   state.realtimeTalkConversation = [];
 }
 
-export function stopChatRealtimeTalk(state: ChatRealtimeState) {
-  const session = state.realtimeTalkSession;
-  // Retire callback ownership before stop() can synchronously report idle.
-  // Otherwise a closing session can still mutate the newly selected route.
+function resetChatRealtime(state: ChatRealtimeState, session: RealtimeTalkSession | null) {
+  if (session && state.realtimeTalkSession !== session) {
+    return;
+  }
   state.realtimeTalkSession = null;
   state.realtimeTalkActive = false;
   state.realtimeTalkStatus = "idle";
@@ -76,6 +76,12 @@ export function stopChatRealtimeTalk(state: ChatRealtimeState) {
   state.realtimeTalkVideoPending = false;
   state.realtimeTalkCameraError = false;
   resetChatRealtimeConversation(state);
+}
+
+export function stopChatRealtimeTalk(state: ChatRealtimeState) {
+  const session = state.realtimeTalkSession;
+  // Retire callback ownership before stop() can synchronously mutate the new route.
+  resetChatRealtime(state, session);
   session?.stop();
 }
 
@@ -183,11 +189,16 @@ export function attachChatRealtimeActions(state: ChatRealtimeState) {
           if (state.realtimeTalkSession !== session) {
             return;
           }
+          if (status === "idle") {
+            resetChatRealtime(state, session);
+            state.requestUpdate();
+            return;
+          }
           state.realtimeTalkStatus = status;
           state.realtimeTalkDetail = detail ?? null;
           state.realtimeTalkCameraError = false;
-          state.realtimeTalkActive = status !== "idle";
-          if (status === "idle" || status === "error") {
+          state.realtimeTalkActive = true;
+          if (status === "error") {
             state.realtimeTalkInputLevel.set(0);
           }
           state.requestUpdate();

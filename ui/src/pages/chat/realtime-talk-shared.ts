@@ -14,6 +14,26 @@ import type { GatewayBrowserClient, GatewayEventFrame } from "../../api/gateway.
 export type RealtimeTalkStatus = "idle" | "connecting" | "listening" | "thinking" | "error";
 export type RealtimeTalkEvent = TalkEvent;
 
+export function runRealtimeTalkCleanup(steps: Array<() => void>, soft = false) {
+  let firstError: Error | undefined;
+  for (const step of steps) {
+    try {
+      step();
+    } catch (error) {
+      firstError ??=
+        error instanceof Error
+          ? error
+          : new Error("Realtime Talk cleanup failed", { cause: error });
+    }
+  }
+  if (firstError && !soft) throw firstError;
+  return firstError;
+}
+
+export function runRealtimeTalkObservers(...steps: Array<() => void>): void {
+  if (runRealtimeTalkCleanup(steps, true)) console.warn("Realtime Talk observer failed");
+}
+
 export type RealtimeTalkCallbacks = {
   onStatus?: (status: RealtimeTalkStatus, detail?: string) => void;
   onVideoCapability?: (capable: boolean) => void;
@@ -42,10 +62,16 @@ type RealtimeTalkAudioContract = {
   outputSampleRateHz: number;
 };
 
+export type RealtimeTalkTerminalPayload = {
+  outcome: "completed" | "error";
+  message?: string;
+};
+
 export type RealtimeTalkWebRtcSdpSessionResult = {
   provider: string;
   transport: "webrtc";
   voiceSessionId?: string;
+  allocationId?: string;
   clientSecret: string;
   offerUrl?: string;
   offerHeaders?: Record<string, string>;
@@ -54,12 +80,14 @@ export type RealtimeTalkWebRtcSdpSessionResult = {
   expiresAt?: number;
   consultThinkingLevel?: string;
   consultFastMode?: boolean;
+  terminal?: RealtimeTalkTerminalPayload;
 };
 
 export type RealtimeTalkJsonPcmWebSocketSessionResult = {
   provider: string;
   transport: "provider-websocket";
   voiceSessionId?: string;
+  allocationId?: string;
   protocol: string;
   clientSecret: string;
   websocketUrl: string;
@@ -70,6 +98,7 @@ export type RealtimeTalkJsonPcmWebSocketSessionResult = {
   expiresAt?: number;
   consultThinkingLevel?: string;
   consultFastMode?: boolean;
+  terminal?: RealtimeTalkTerminalPayload;
 };
 
 export type RealtimeTalkGatewayRelaySessionResult = {
@@ -120,6 +149,7 @@ export type RealtimeTalkTransportContext = {
   voiceSessionId?: string;
   flushTranscriptWrites?: () => Promise<void>;
   callbacks: RealtimeTalkCallbacks;
+  emitTalkEvent?: (input: RealtimeTalkEventInput) => void;
   inputDeviceId?: string;
   videoDeviceId?: string;
   consultThinkingLevel?: string;
@@ -135,9 +165,7 @@ export function createRealtimeTalkEventEmitter(
   let activeTurnId: string | undefined;
   const sessionId = resolveRealtimeTalkEventSessionId(ctx, session);
   return (input) => {
-    if (!ctx.callbacks.onTalkEvent) {
-      return;
-    }
+    if (!ctx.callbacks.onTalkEvent) return;
     const turnId = resolveRealtimeTalkTurnId(input);
     seq += 1;
     ctx.callbacks.onTalkEvent({
@@ -173,9 +201,7 @@ export function createRealtimeTalkEventEmitter(
       activeTurnId = input.turnId ?? activeTurnId ?? `turn-${++turnSeq}`;
       return activeTurnId;
     }
-    if (!isTurnScopedTalkEvent(input.type)) {
-      return input.turnId;
-    }
+    if (!isTurnScopedTalkEvent(input.type)) return input.turnId;
     activeTurnId = input.turnId ?? activeTurnId ?? `turn-${++turnSeq}`;
     return activeTurnId;
   }
