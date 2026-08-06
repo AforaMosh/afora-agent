@@ -209,12 +209,15 @@ export function createOrResumeClientVoiceSession(params: {
   transcriptCapable?: boolean;
   voiceSessionId?: string;
   now?: number;
+  onCreated?: () => void;
+  assertCommitAllowed?: () => void;
 }): string {
   const voiceSessionId = params.voiceSessionId?.trim() || randomUUID();
   const provider = params.provider?.trim() || undefined;
   const now = params.now ?? Date.now();
   runOpenClawAgentWriteTransaction(
     (database) => {
+      params.assertCommitAllowed?.();
       const existing = readRecordInTransaction(database, voiceSessionId);
       if (existing) {
         assertClientVoiceSessionResumable(existing, params);
@@ -228,6 +231,7 @@ export function createOrResumeClientVoiceSession(params: {
         writeRecordInTransaction(database, existing);
         return;
       }
+      params.onCreated?.();
       writeRecordInTransaction(database, {
         version: RECORD_VERSION,
         voiceSessionId,
@@ -286,15 +290,17 @@ export async function ensureClientVoiceAgentSessionEntry(params: {
   agentId: string;
   sessionKey: string;
   deadlineAt?: number;
+  assertCommitAllowed?: () => void;
 }): Promise<string> {
+  const assertCommitAllowed = () => {
+    params.assertCommitAllowed?.();
+    if (params.deadlineAt !== undefined && Date.now() >= params.deadlineAt) {
+      throw new Error("Realtime browser session expired during startup; try again");
+    }
+  };
   const created = await patchSessionEntry(
     params,
     (_entry, context) => {
-      // Browser credentials can be short-lived. Check at the authoritative
-      // write boundary so a queued write cannot create an unusable empty chat.
-      if (params.deadlineAt !== undefined && Date.now() >= params.deadlineAt) {
-        throw new Error("Realtime browser session expired during startup; try again");
-      }
       if (context.existingEntry?.sessionId) {
         return null;
       }
@@ -303,7 +309,10 @@ export async function ensureClientVoiceAgentSessionEntry(params: {
       }
       return buildSessionCreationStamp({ via: "talk", actor: { type: "human" } });
     },
-    { fallbackEntry: mergeSessionEntry(undefined, {}) },
+    {
+      assertCommitAllowed,
+      fallbackEntry: mergeSessionEntry(undefined, {}),
+    },
   );
   if (!created?.sessionId) {
     throw new Error(`agent session could not be initialized (${params.sessionKey})`);

@@ -44,6 +44,7 @@ import {
   submitTalkRealtimeRelayToolResult,
 } from "../talk-realtime-relay.js";
 import {
+  acquireTalkConnectionLease,
   forgetUnifiedTalkSession,
   getUnifiedTalkSession,
   rememberUnifiedTalkSession,
@@ -183,6 +184,7 @@ export const talkSessionHandlers: GatewayRequestHandlers = {
     const mode = normalizeTalkSessionMode(params);
     const transport = normalizeTalkSessionTransport({ mode, transport: params.transport });
     const brain = normalizeTalkSessionBrain({ mode, brain: params.brain });
+    let creationLease: ReturnType<typeof acquireTalkConnectionLease> | undefined;
 
     if (transport === "webrtc" || transport === "provider-websocket") {
       respondInvalidRequest(
@@ -267,6 +269,10 @@ export const talkSessionHandlers: GatewayRequestHandlers = {
         respond(false, undefined, errorShape(ErrorCodes.UNAVAILABLE, "Talk session unavailable"));
         return;
       }
+      creationLease = acquireTalkConnectionLease(
+        connId,
+        "Talk connection closed during session startup",
+      );
 
       if (mode === "realtime") {
         if (transport !== "gateway-relay" || brain !== "agent-consult") {
@@ -309,10 +315,16 @@ export const talkSessionHandlers: GatewayRequestHandlers = {
           requireSessionKeyForProfile: true,
           warn: (message) => context.logGateway.warn(`talk realtime context: ${message}`),
         });
+        creationLease.assertActive();
         const sessionKey =
           realtimeContext.requestedSessionKey ??
           buildAgentMainSessionKey({ agentId: realtimeContext.agentId });
-        await ensureClientVoiceAgentSessionEntry({ agentId: realtimeContext.agentId, sessionKey });
+        await ensureClientVoiceAgentSessionEntry({
+          agentId: realtimeContext.agentId,
+          sessionKey,
+          assertCommitAllowed: creationLease.assertActive,
+        });
+        creationLease.assertActive();
         const session = createTalkRealtimeRelaySession({
           context,
           connId,
@@ -328,6 +340,7 @@ export const talkSessionHandlers: GatewayRequestHandlers = {
           language: normalizeOptionalLowercaseString(params.language),
           forceAgentConsultOnFinalTranscript: relayLaunch.forceAgentConsultOnFinalTranscript,
         });
+        creationLease.assertActive();
         rememberUnifiedTalkSession(session.relaySessionId, {
           kind: "realtime-relay",
           connId,
@@ -359,12 +372,14 @@ export const talkSessionHandlers: GatewayRequestHandlers = {
           providerConfigs: transcriptionConfig.providers,
           defaultModel: transcriptionConfig.model,
         });
+        creationLease.assertActive();
         const session = createTalkTranscriptionRelaySession({
           context,
           connId,
           provider: resolution.provider,
           providerConfig: resolution.providerConfig,
         });
+        creationLease.assertActive();
         rememberUnifiedTalkSession(session.transcriptionSessionId, {
           kind: "transcription-relay",
           connId,
@@ -384,6 +399,8 @@ export const talkSessionHandlers: GatewayRequestHandlers = {
       );
     } catch (err) {
       respondUnavailable(respond, err);
+    } finally {
+      creationLease?.release();
     }
   },
   "talk.session.join": async ({ params, respond, client, context }) => {

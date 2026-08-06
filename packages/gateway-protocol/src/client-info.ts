@@ -81,6 +81,7 @@ export type GatewayClientInfo = {
 export const GATEWAY_CLIENT_CAPS = {
   AGENT_KIND: "agent-kind",
   APPROVALS: "approvals",
+  BROWSER_ALLOCATION_V1: "browser-allocation-v1",
   EXEC_APPROVALS: "exec-approvals",
   INLINE_WIDGETS: "inline-widgets",
   RUN_TOOL_BINDINGS: "run-tool-bindings",

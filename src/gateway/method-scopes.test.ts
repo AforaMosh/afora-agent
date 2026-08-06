@@ -93,6 +93,8 @@ describe("method scope resolution", () => {
     ["node.pair.approve", ["operator.pairing"]],
     ["poll", ["operator.write"]],
     ["talk.client.create", ["operator.talk"]],
+    ["talk.client.commit", ["operator.talk"]],
+    ["talk.client.abort", ["operator.talk"]],
     ["talk.client.transcript", ["operator.talk"]],
     ["talk.client.close", ["operator.talk"]],
     ["talk.client.toolCall", ["operator.talk"]],

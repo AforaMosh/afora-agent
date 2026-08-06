@@ -137,13 +137,14 @@ describe("client voice session", () => {
   });
 
   it("creates, resumes, and enforces ownership and open state", async () => {
+    const onCreated = vi.fn();
     const voiceSessionId = createOrResumeClientVoiceSession({
       agentId: "main",
       sessionKey: "agent:main:main",
       provider: "google",
       origin: "client",
       voiceSessionId: "voice-1",
-      now: 10,
+      onCreated,
     });
     expect(
       createOrResumeClientVoiceSession({
@@ -151,9 +152,10 @@ describe("client voice session", () => {
         sessionKey: "agent:main:main",
         origin: "client",
         voiceSessionId,
-        now: 20,
+        onCreated,
       }),
     ).toBe(voiceSessionId);
+    expect(onCreated).toHaveBeenCalledTimes(1);
     expect(clientVoiceSessionTesting.readRecord("main", voiceSessionId)).toMatchObject({
       provider: "google",
     });

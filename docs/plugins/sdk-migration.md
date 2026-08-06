@@ -958,15 +958,75 @@ await gateway.request("talk.session.submitToolResult", {
 await gateway.request("talk.session.submitToolResult", { sessionId, callId, result });
 await gateway.request("talk.session.close", { sessionId });
 
-// Client-owned provider session API.
-await gateway.request("talk.client.create", {
-  mode: "realtime",
-  transport: "webrtc",
-  brain: "agent-consult",
-  sessionKey: "main",
-});
-await gateway.request("talk.client.toolCall", { sessionKey, callId, name, args });
-await gateway.request("talk.client.steer", { sessionKey, text, mode: "steer" });
+// Client-owned provider session API. Capability-negotiated clients prepare,
+// start, then atomically publish browser media.
+async function runClientTalkSession() {
+  const session = await gateway.request("talk.client.create", {
+    mode: "realtime",
+    transport: "webrtc",
+    brain: "agent-consult",
+    sessionKey: "main",
+  });
+  if (session.terminal) {
+    await gateway.request("talk.client.close", {
+      sessionKey: "main",
+      voiceSessionId: session.voiceSessionId,
+      allocationId: session.allocationId,
+    });
+    if (session.terminal.outcome === "error") {
+      throw new Error(session.terminal.message ?? "Provider session ended during setup");
+    }
+    return;
+  }
+  try {
+    await startBrowserTransport(session);
+  } catch (error) {
+    if (session.allocationId) {
+      await gateway.request("talk.client.abort", {
+        sessionKey: "main",
+        voiceSessionId: session.voiceSessionId,
+        allocationId: session.allocationId,
+      });
+    }
+    throw error;
+  }
+  if (session.allocationId) {
+    const commit = await gateway.request("talk.client.commit", {
+      sessionKey: "main",
+      voiceSessionId: session.voiceSessionId,
+      allocationId: session.allocationId,
+    });
+    if (commit.state === "terminal") {
+      await stopBrowserTransport(session.allocationId);
+      await gateway.request("talk.client.close", {
+        sessionKey: "main",
+        voiceSessionId: session.voiceSessionId,
+        allocationId: session.allocationId,
+      });
+      if (commit.terminal.outcome === "error") {
+        throw new Error(commit.terminal.message ?? "Provider session ended before commit");
+      }
+      return;
+    }
+    if (commit.state !== "committed") {
+      await stopBrowserTransport(session.allocationId);
+      await gateway.request("talk.client.abort", {
+        sessionKey: "main",
+        voiceSessionId: session.voiceSessionId,
+        allocationId: session.allocationId,
+      });
+      throw new Error(`Unexpected allocation commit state: ${commit.state}`);
+    }
+  }
+  await gateway.request("talk.client.toolCall", { sessionKey, callId, name, args });
+  await gateway.request("talk.client.steer", { sessionKey, text, mode: "steer" });
+  await gateway.request("talk.client.close", {
+    sessionKey: "main",
+    voiceSessionId: session.voiceSessionId,
+    allocationId: session.allocationId,
+  });
+}
+await runClientTalkSession();
 ```
 
 Use the generation from the current output audio event. A current gateway
@@ -978,6 +1038,26 @@ because the browser owns provider negotiation and media transport while the
 Gateway owns credentials, instructions, and tool policy. `talk.session.*` is
 the common Gateway-managed surface for gateway-relay realtime, gateway-relay
 transcription, and managed-room native STT/TTS sessions.
+
+Clients opt into prepared browser allocation ownership with the
+`browser-allocation-v1` Gateway capability. Buffer finalized candidate
+transcripts within a hard bound until commit succeeds, then flush them in
+order. Abort only a definitive pre-commit failure. If a commit acknowledgement
+is lost, retry the same id once and close both possible local owners if the
+result remains ambiguous; do not abort the candidate. Provider terminal events
+arrive as `talk.client.allocation.terminal`, separately from canonical
+`talk.event`; drain accepted transcripts before acknowledging exact close.
+Legacy clients without the capability remain auto-committed.
+
+`talk.client.create` can include `terminal` when the provider ends while setup
+is still being assembled. Do not start that setup; acknowledge its exact
+`allocationId` with `talk.client.close`. A commit result can likewise be
+`{ state: "terminal", terminal }`: stop only that candidate transport, drain
+any accepted transcript items, and close the same allocation. In either case,
+surface `outcome: "error"` as failure and treat `outcome: "completed"` as a
+clean end. Apply the same exact-match rule to
+`talk.client.allocation.terminal` events so a stale event cannot stop a newer
+replacement transport.
 
 Legacy configs that place realtime selectors beside `talk.provider` /
 `talk.providers` should be repaired with `openclaw doctor --fix`; runtime Talk
