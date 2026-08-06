@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   listAgentEntries: vi.fn(),
   resolveFastModeState: vi.fn(),
   resolveReplyExecOverrides: vi.fn(),
+  shouldHandleTextCommands: vi.fn(() => false),
 }));
 
 function makeSessionEntry(overrides: Partial<SessionEntry> = {}): SessionEntry {
@@ -299,7 +300,7 @@ vi.mock("../../routing/session-key.js", () => ({
 }));
 
 vi.mock("../commands-text-routing.js", () => ({
-  shouldHandleTextCommands: vi.fn(() => false),
+  shouldHandleTextCommands: (...args: unknown[]) => mocks.shouldHandleTextCommands(...args),
 }));
 
 vi.mock("./commands-context.js", () => ({
@@ -372,6 +373,7 @@ describe("resolveReplyDirectives", () => {
     mocks.listAgentEntries.mockReset();
     mocks.resolveFastModeState.mockReset();
     mocks.resolveReplyExecOverrides.mockReset();
+    mocks.shouldHandleTextCommands.mockReset().mockReturnValue(false);
 
     mocks.listAgentEntries.mockReturnValue([]);
     mocks.createModelSelectionState.mockResolvedValue({
@@ -468,6 +470,33 @@ describe("resolveReplyDirectives", () => {
       throw new Error("expected a single directive reply");
     }
     expect(getReplyPayloadMetadata(result.reply)?.deliverDespiteSourceReplySuppression).toBe(true);
+  });
+
+  it("preserves explicitly suppressed command-shaped text for the model", async () => {
+    const body = "/model openai/gpt-5.5";
+    mocks.shouldHandleTextCommands.mockReturnValue(true);
+
+    const { result } = await resolveHelloWithModelDefaults({
+      body,
+      commandAuthorized: true,
+      defaultThinking: "off",
+      defaultReasoning: "on",
+      ctx: {
+        CommandInterpretationSuppressed: true,
+        CommandTurn: {
+          kind: "normal",
+          source: "message",
+          authorized: false,
+          body,
+        },
+      },
+    });
+
+    expectContinueResult(result, { cleanedBody: body });
+    expect(mockCallInput(mocks.createModelSelectionState).hasModelDirective).toBe(false);
+    expect(mockCallInput(mocks.applyInlineDirectiveOverrides).directives).toMatchObject({
+      hasModelDirective: false,
+    });
   });
 
   it("keeps one-turn fast mode with the resolved fast mode", async () => {

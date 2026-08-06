@@ -229,7 +229,8 @@ export async function resolveReplyDirectives(params: {
     surface: command.surface,
     commandSource: ctx.CommandSource,
   });
-  const canInterpretTextDirectives = allowTextCommands && command.isAuthorizedSender;
+  const canInterpretTextDirectives =
+    allowTextCommands && command.isAuthorizedSender && ctx.CommandInterpretationSuppressed !== true;
   const commandTextHasSlash = commandText.includes("/");
   const hasConfiguredModelAliases =
     commandTextHasSlash &&
@@ -257,7 +258,7 @@ export async function resolveReplyDirectives(params: {
   // Only load workspace skill commands when we actually need them to filter aliases.
   // This avoids scanning skills for messages that only use plain text with no slash syntax.
   const skillCommands =
-    allowTextCommands && commandTextHasSlash && rawAliases.length > 0
+    canInterpretTextDirectives && commandTextHasSlash && rawAliases.length > 0
       ? (await loadSkillCommands()).listSkillCommandsForWorkspace({
           workspaceDir,
           cfg,
