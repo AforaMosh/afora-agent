@@ -149,6 +149,8 @@ export async function runQaFlowSuiteFromRuntime(params?: QaSuiteRunParams): Prom
       scenarioIds: params.scenarioIds,
       runtimePair: params.runtimePair,
       writeEvidenceFile: params.writeEvidenceFile,
+      profileCheckpoint: params.profileCheckpoint,
+      profileCheckpointChannel: params.profileCheckpointChannel,
     });
   }
   return useIsolatedScenarioWorkers
