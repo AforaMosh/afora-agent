@@ -5,6 +5,7 @@ import type {
   ClawAddPlanAction,
   ClawDiagnostic,
   ClawExtensionPlan,
+  ClawLocalPrerequisite,
   ClawOpenClawExtension,
   ClawOpenClawProfile,
   ClawPackage,
@@ -49,8 +50,11 @@ function extensionCapabilityChange(params: {
     kind: "package" as const,
     id: `extension:${params.extension.id}`,
     path: `openclaw.extensions.${params.extension.id}`,
-    action: "install" as const,
-    reason: "The OpenClaw profile declares downloadable extension content or executable code.",
+    action: params.preflight.action === "reuse" ? ("reuse" as const) : ("install" as const),
+    reason:
+      params.preflight.action === "reuse"
+        ? "The OpenClaw profile requires access to an existing native extension."
+        : "The OpenClaw profile requires installation of native extension content or executable code.",
     effect,
   };
   return {
@@ -69,11 +73,13 @@ export async function planClawExtensions(params: {
   extensions: ClawExtensionPlan[];
   actions: ClawAddPlanAction[];
   capabilityChanges: ClawAddCapabilityChange[];
+  requirements: ClawLocalPrerequisite[];
   blockers: ClawDiagnostic[];
 }> {
   const extensions: ClawExtensionPlan[] = [];
   const actions: ClawAddPlanAction[] = [];
   const capabilityChanges: ClawAddCapabilityChange[] = [];
+  const requirements: ClawLocalPrerequisite[] = [];
   const blockers: ClawDiagnostic[] = [];
 
   for (const [index, extension] of params.extensions.entries()) {
@@ -127,12 +133,23 @@ export async function planClawExtensions(params: {
     if (diagnostic) {
       blockers.push(diagnostic);
     }
+    if (preflight.ok && preflight.requirements) {
+      requirements.push(...preflight.requirements);
+    }
+    const requirementState: ClawExtensionPlan["requirementState"] = diagnostic
+      ? "conflicting"
+      : preflight.action === "install"
+        ? "missing-installable"
+        : preflight.requirements && preflight.requirements.length > 0
+          ? "setup-required"
+          : "satisfied";
     const extensionPlan: ClawExtensionPlan = {
       ...extension,
       ...(preflight.detectedFormat ? { detectedFormat: preflight.detectedFormat } : {}),
       ...(preflight.integrity ? { integrity: preflight.integrity } : {}),
       ...(preflight.installId ? { installId: preflight.installId } : {}),
       ...(preflight.action ? { ownerAction: preflight.action } : {}),
+      requirementState,
       mapped: preflight.mapped ?? [],
       unavailable: preflight.unavailable ?? [],
       ...(preflight.adapterIdentity ? { adapterIdentity: preflight.adapterIdentity } : {}),
@@ -142,7 +159,7 @@ export async function planClawExtensions(params: {
     actions.push({
       kind: "package",
       id: `plugin:${extension.ref}`,
-      action: "install",
+      action: preflight.ok && preflight.action === "reuse" ? "reuse" : "install",
       target: `${extension.source}:${extension.ref}@${extension.version}`,
       ...(preflight.integrity ? { digest: preflight.integrity } : {}),
       details: {
@@ -153,6 +170,8 @@ export async function planClawExtensions(params: {
         ...(preflight.integrity ? { integrity: preflight.integrity } : {}),
         ...(preflight.installId ? { installId: preflight.installId } : {}),
         ...(preflight.action ? { ownerAction: preflight.action } : {}),
+        requirementState,
+        ...(preflight.requirements ? { prerequisites: preflight.requirements } : {}),
         ...(completeProvenance
           ? {
               extension: {
@@ -178,5 +197,5 @@ export async function planClawExtensions(params: {
     capabilityChanges.push(extensionCapabilityChange({ extension, preflight }));
   }
 
-  return { extensions, actions, capabilityChanges, blockers };
+  return { extensions, actions, capabilityChanges, requirements, blockers };
 }

@@ -222,7 +222,7 @@ describe("applyClawUpdatePlan", () => {
     });
   });
 
-  it("activates cron only after package and agent updates succeed", async () => {
+  it("activates cron only after owned state and agent updates succeed", async () => {
     const updatePlan = plan([
       {
         kind: "agent",
@@ -272,7 +272,91 @@ describe("applyClawUpdatePlan", () => {
       },
     );
 
-    expect(order).toEqual(["workspace", "mcp", "package", "agent", "cron", "provenance"]);
+    expect(order).toEqual(["workspace", "mcp", "agent", "cron", "provenance"]);
+  });
+
+  it("realizes new plugin requirements before workspace mutation and retains them on failure", async () => {
+    const targetPackage = {
+      kind: "plugin" as const,
+      source: "clawhub" as const,
+      ref: "github",
+      version: "1.0.0",
+    };
+    const packageDetails = {
+      ...targetPackage,
+      integrity: "sha256:github",
+      installId: "github",
+      ownerAction: "install" as const,
+    };
+    const desiredDigest = `sha256:${createHash("sha256")
+      .update(
+        stableStringify({
+          package: targetPackage,
+          integrity: packageDetails.integrity,
+          installId: packageDetails.installId,
+          riskWarning: undefined,
+          extension: undefined,
+        }),
+      )
+      .digest("hex")}`;
+    const updatePlan = plan([
+      {
+        kind: "package",
+        id: "plugin:github",
+        action: "add",
+        target: "packages.plugin:github",
+        blocked: false,
+        reason: "target adds a shared plugin requirement",
+        desiredDigest,
+      },
+    ]);
+    const packageAddPlan: ClawAddPlan = {
+      ...addPlan,
+      actions: [
+        {
+          kind: "package",
+          id: "plugin:github",
+          action: "install",
+          target: "clawhub:github@1.0.0",
+          details: packageDetails,
+          blocked: false,
+        },
+      ],
+    };
+    const order: string[] = [];
+    const requirementRollback = vi.fn(async () => undefined);
+
+    await expect(
+      applyClawUpdatePlan(
+        updatePlan,
+        {
+          targetManifest: { ...manifest, packages: [targetPackage] },
+          targetSource: source,
+        },
+        {
+          config: {},
+          ...consent(updatePlan),
+          rebuildPlan: vi.fn(async () => updatePlan),
+          buildAddPlan: vi.fn(async () => packageAddPlan),
+          readInstall: vi.fn(() => install),
+          applyPackage: vi.fn(async (phase) => {
+            order.push("requirement");
+            expect(phase.actions.map((action) => action.id)).toEqual(["plugin:github"]);
+            return { appliedIds: ["plugin:github"], rollback: requirementRollback };
+          }),
+          applyWorkspace: vi.fn(async () => {
+            order.push("workspace");
+            throw new Error("workspace unavailable");
+          }),
+        },
+      ),
+    ).rejects.toMatchObject({
+      code: "update_partial",
+      message: expect.stringContaining("shared requirements were retained"),
+    });
+
+    expect(order).toEqual(["requirement", "workspace"]);
+    expect(requirementRollback).not.toHaveBeenCalled();
   });
 
   it("preserves cron prerequisites when the gateway mutation outcome is uncertain", async () => {
@@ -604,7 +688,7 @@ describe("applyClawUpdatePlan", () => {
       adapterIdentity: extensionProvenance.adapterIdentity,
     };
     const buildAddPlan = vi.fn(async (params: Parameters<typeof buildClawAddPlan>[0]) => {
-      const preflight = await params.context.packagePreflight?.(
+      const preflight = await params.context?.packagePreflight?.(
         targetPackage,
         addPlan.agent.workspace,
       );

@@ -480,7 +480,7 @@ export async function buildClawAddPlan(params: {
     actions.push({
       kind: "package",
       id: `${pkg.kind}:${pkg.ref}`,
-      action: "install",
+      action: preflight.ok && preflight.action === "reuse" ? "reuse" : "install",
       target: `${pkg.source}:${pkg.ref}@${pkg.version}`,
       digest: preflight.integrity,
       details: {
@@ -495,6 +495,13 @@ export async function buildClawAddPlan(params: {
             ? "present-exact"
             : "absent",
         ownerAction: preflight.action,
+        requirementState: !preflight.ok
+          ? "conflicting"
+          : preflight.action === "install"
+            ? "missing-installable"
+            : preflight.requirements && preflight.requirements.length > 0
+              ? "setup-required"
+              : "satisfied",
       },
       blocked: !preflight.ok,
       ...(diagnostic ? { reason: diagnostic.message } : {}),
@@ -504,8 +511,11 @@ export async function buildClawAddPlan(params: {
         kind: "package",
         id: `${pkg.kind}:${pkg.ref}`,
         path: `packages.${pkg.kind}.${pkg.ref}`,
-        action: "install",
-        reason: "The Claw declares downloadable package content or executable code.",
+        action: preflight.ok && preflight.action === "reuse" ? "reuse" : "install",
+        reason:
+          preflight.ok && preflight.action === "reuse"
+            ? "The Claw requires access to an existing package capability."
+            : "The Claw requires downloadable package content or executable code.",
         effect: {
           kind: pkg.kind,
           source: pkg.source,
@@ -543,6 +553,7 @@ export async function buildClawAddPlan(params: {
     existingPackageActionIds.add(action.id);
   }
   capabilityChanges.push(...extensionPlan.capabilityChanges);
+  readinessRequirements.push(...extensionPlan.requirements);
   blockers.push(...extensionPlan.blockers);
 
   const existingMcpServerNames = new Set(context.existingMcpServerNames ?? []);

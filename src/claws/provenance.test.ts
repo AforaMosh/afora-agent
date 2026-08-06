@@ -1,7 +1,7 @@
 // Tests root Claw install ownership and the narrow agent/workspace mutation slice.
 import { access, mkdir, rmdir, symlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import {
@@ -12,7 +12,9 @@ import { applyClawAddPlan, ClawAddMutationError } from "./add.js";
 import { ClawCronInstallError } from "./cron.js";
 import { buildClawAddPlan } from "./lifecycle.js";
 import { replaceClawPackageRefExpected } from "./package-update-provenance.js";
+import { ClawPackageInstallError } from "./packages.js";
 import {
+  clawInstallRecordMatchesPlan,
   persistClawInstallRecord,
   persistClawPackageRef,
   readClawInstallRecord,
@@ -32,7 +34,13 @@ afterEach(() => {
 
 async function makePlan(
   manifestValue: unknown = { schemaVersion: 1, agent: { id: "worker" } },
-  options: { workspace?: string; openClawProfile?: ClawOpenClawProfile } = {},
+  options: {
+    workspace?: string;
+    openClawProfile?: ClawOpenClawProfile;
+    packagePreflight?: NonNullable<
+      Parameters<typeof buildClawAddPlan>[0]["context"]
+    >["packagePreflight"];
+  } = {},
 ) {
   const root = tempDirs.make("openclaw-claw-add-");
   const parsed = parseClawManifest(manifestValue);
@@ -53,7 +61,10 @@ async function makePlan(
     manifest: parsed.manifest,
     openClawProfile: options.openClawProfile,
     source,
-    context: { workspace: options.workspace ?? join(root, "workspace-worker") },
+    context: {
+      workspace: options.workspace ?? join(root, "workspace-worker"),
+      ...(options.packagePreflight ? { packagePreflight: options.packagePreflight } : {}),
+    },
   });
   return { root, plan };
 }
@@ -209,6 +220,9 @@ describe("Claw root install provenance", () => {
     });
 
     expect(resumed).toEqual(first);
+    expect(clawInstallRecordMatchesPlan(first, { ...plan, planIntegrity: "sha256:changed" })).toBe(
+      false,
+    );
     expect(readClawInstallRecord("worker", { env: stateEnv(root) })).toMatchObject({
       agentId: "worker",
       status: "pending",
@@ -377,6 +391,235 @@ describe("Claw root install provenance", () => {
 });
 
 describe("applyClawAddPlan", () => {
+  it("realizes shared plugin requirements before creating the agent workspace", async () => {
+    const { root, plan } = await makePlan(
+      {
+        schemaVersion: 1,
+        agent: { id: "worker" },
+        packages: [
+          {
+            kind: "plugin",
+            source: "clawhub",
+            ref: "@acme/audit",
+            version: "1.0.0",
+          },
+        ],
+      },
+      {
+        packagePreflight: async () => ({
+          ok: true,
+          action: "install",
+          integrity: `sha256:${"a".repeat(64)}`,
+          installId: "audit",
+        }),
+      },
+    );
+    const order: string[] = [];
+
+    const result = await applyClawAddPlan(plan, {
+      consentPlanIntegrity: plan.planIntegrity,
+      env: stateEnv(root),
+      installPackages: async () => {
+        await expect(access(plan.agent.workspace)).rejects.toThrow();
+        order.push("requirement");
+        return [];
+      },
+      commitConfig: async (transform) => {
+        order.push("agent");
+        transform({});
+      },
+    });
+
+    expect(result.status).toBe("complete");
+    expect(order).toEqual(["requirement", "agent"]);
+  });
+
+  it("retains an introduced shared requirement when later agent creation fails", async () => {
+    const { root, plan } = await makePlan(
+      {
+        schemaVersion: 1,
+        agent: { id: "worker" },
+        packages: [
+          {
+            kind: "plugin",
+            source: "clawhub",
+            ref: "@acme/audit",
+            version: "1.0.0",
+          },
+        ],
+      },
+      {
+        packagePreflight: async () => ({
+          ok: true,
+          action: "install",
+          integrity: `sha256:${"a".repeat(64)}`,
+          installId: "audit",
+        }),
+      },
+    );
+    const requirement = {
+      schemaVersion: "openclaw.clawPackageRef.v1" as const,
+      agentId: "worker",
+      clawName: "@acme/worker",
+      kind: "plugin" as const,
+      source: "clawhub" as const,
+      ref: "@acme/audit",
+      version: "1.0.0",
+      integrity: `sha256:${"a".repeat(64)}`,
+      status: "complete" as const,
+      relationship: "referenced" as const,
+      origin: "claw-introduced" as const,
+      independentOwner: false,
+      installedAtMs: 1,
+      updatedAtMs: 1,
+    };
+
+    const result = await applyClawAddPlan(plan, {
+      consentPlanIntegrity: plan.planIntegrity,
+      env: stateEnv(root),
+      installPackages: async () => [requirement],
+      commitConfig: async () => {
+        throw new Error("config unavailable");
+      },
+    });
+
+    expect(result).toMatchObject({
+      status: "partial",
+      workspaceCreated: false,
+      configCommitted: false,
+      packages: [{ ref: "@acme/audit", origin: "claw-introduced" }],
+      error: { code: "config_commit_failed" },
+    });
+    await expect(access(plan.agent.workspace)).rejects.toThrow();
+  });
+
+  it("reports retained plugin requirements when a later workspace package fails", async () => {
+    const { root, plan } = await makePlan(
+      {
+        schemaVersion: 1,
+        agent: { id: "worker" },
+        packages: [
+          {
+            kind: "plugin",
+            source: "clawhub",
+            ref: "@acme/audit",
+            version: "1.0.0",
+          },
+          {
+            kind: "skill",
+            source: "clawhub",
+            ref: "research",
+            version: "1.0.0",
+          },
+        ],
+      },
+      {
+        packagePreflight: async (pkg) => ({
+          ok: true,
+          action: "install",
+          integrity:
+            pkg.kind === "plugin" ? `sha256:${"a".repeat(64)}` : `sha256:${"b".repeat(64)}`,
+          ...(pkg.kind === "plugin" ? { installId: "audit" } : {}),
+        }),
+      },
+    );
+    const requirement = {
+      schemaVersion: "openclaw.clawPackageRef.v1" as const,
+      agentId: "worker",
+      clawName: "@acme/worker",
+      kind: "plugin" as const,
+      source: "clawhub" as const,
+      ref: "@acme/audit",
+      version: "1.0.0",
+      integrity: `sha256:${"a".repeat(64)}`,
+      status: "complete" as const,
+      relationship: "referenced" as const,
+      origin: "claw-introduced" as const,
+      independentOwner: false,
+      installedAtMs: 1,
+      updatedAtMs: 1,
+    };
+    const failedSkill = {
+      ...requirement,
+      kind: "skill" as const,
+      ref: "research",
+      integrity: `sha256:${"b".repeat(64)}`,
+      status: "failed" as const,
+      relationship: "managed" as const,
+    };
+    const installPackages = vi
+      .fn()
+      .mockResolvedValueOnce([requirement])
+      .mockRejectedValueOnce(
+        new ClawPackageInstallError("package_install_failed", "skill installer failed", [
+          failedSkill,
+        ]),
+      );
+
+    const result = await applyClawAddPlan(plan, {
+      consentPlanIntegrity: plan.planIntegrity,
+      env: stateEnv(root),
+      installPackages,
+      commitConfig: async (transform) => {
+        transform({});
+      },
+    });
+
+    expect(installPackages).toHaveBeenCalledTimes(2);
+    expect(result).toMatchObject({
+      status: "partial",
+      packages: [
+        { kind: "plugin", ref: "@acme/audit", status: "complete" },
+        { kind: "skill", ref: "research", status: "failed" },
+      ],
+      error: { code: "package_install_failed", message: "skill installer failed" },
+    });
+  });
+
+  it("stops before agent mutation when a shared requirement fails", async () => {
+    const { root, plan } = await makePlan(
+      {
+        schemaVersion: 1,
+        agent: { id: "worker" },
+        packages: [
+          {
+            kind: "plugin",
+            source: "clawhub",
+            ref: "@acme/audit",
+            version: "1.0.0",
+          },
+        ],
+      },
+      {
+        packagePreflight: async () => ({
+          ok: true,
+          action: "install",
+          integrity: `sha256:${"a".repeat(64)}`,
+          installId: "audit",
+        }),
+      },
+    );
+    const commitConfig = vi.fn();
+
+    const result = await applyClawAddPlan(plan, {
+      consentPlanIntegrity: plan.planIntegrity,
+      env: stateEnv(root),
+      installPackages: async () => {
+        throw new ClawPackageInstallError("package_install_failed", "installer failed", []);
+      },
+      commitConfig,
+    });
+
+    expect(result).toMatchObject({
+      status: "partial",
+      workspaceCreated: false,
+      configCommitted: false,
+      error: { code: "package_install_failed", message: "installer failed" },
+    });
+    expect(commitConfig).not.toHaveBeenCalled();
+    await expect(access(plan.agent.workspace)).rejects.toThrow();
+  });
+
   it("appends one agent, preserves defaults and existing agents, and creates a new workspace", async () => {
     const { root, plan } = await makePlan(
       {
@@ -571,13 +814,36 @@ describe("applyClawAddPlan", () => {
   });
 
   it("records a partial add when the workspace appears after planning", async () => {
-    const { root, plan } = await makePlan();
+    const { root, plan } = await makePlan(
+      {
+        schemaVersion: 1,
+        agent: { id: "worker" },
+        packages: [
+          {
+            kind: "plugin",
+            source: "clawhub",
+            ref: "@acme/audit",
+            version: "1.0.0",
+          },
+        ],
+      },
+      {
+        packagePreflight: async () => ({
+          ok: true,
+          action: "install",
+          integrity: `sha256:${"a".repeat(64)}`,
+          installId: "audit",
+        }),
+      },
+    );
+    const installPackages = vi.fn();
     await mkdir(plan.agent.workspace);
 
     await expect(
       applyClawAddPlan(plan, {
         consentPlanIntegrity: plan.planIntegrity,
         env: stateEnv(root),
+        installPackages,
       }),
     ).resolves.toMatchObject({
       status: "partial",
@@ -586,6 +852,7 @@ describe("applyClawAddPlan", () => {
       error: { code: "workspace_collision" },
     });
     expect(readInstallRow("worker", root)?.status).toBe("partial");
+    expect(installPackages).not.toHaveBeenCalled();
   });
 
   it("records parent-directory creation failures before workspace mutation", async () => {

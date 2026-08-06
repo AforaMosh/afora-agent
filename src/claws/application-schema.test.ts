@@ -123,6 +123,7 @@ describe("Claw application planning v1", () => {
         detectedFormat: "claude",
         mapped: ["commands", "skills"],
         unavailable: ["agents"],
+        requirementState: "missing-installable",
         blocked: false,
       }),
     ]);
@@ -142,6 +143,49 @@ describe("Claw application planning v1", () => {
     expect(plan.actions).toContainEqual(
       expect.objectContaining({ kind: "workspaceFile", id: "schemas/market.json" }),
     );
+  });
+
+  it("reports a reused extension with remaining local setup as setup-required", async () => {
+    const { source, workspace } = await createPlanSource();
+    const prerequisite = {
+      kind: "plugin-setup" as const,
+      plugin: "market-data",
+      provider: "market-data",
+      envVars: ["MARKET_DATA_TOKEN"],
+      authMethods: [],
+    };
+    const plan = await buildClawAddPlan({
+      manifest: requireManifest({ schemaVersion: 1, agent: { id: "market-analyst" } }),
+      openClawProfile: { schemaVersion: 1, agent: {}, extensions: [extension] },
+      source,
+      context: {
+        workspace,
+        packagePreflight: async () => ({
+          ok: true,
+          action: "reuse",
+          integrity: `sha256:${"b".repeat(64)}`,
+          installId: "market-data",
+          detectedFormat: "claude",
+          mapped: ["skills"],
+          unavailable: [],
+          adapterIdentity: "openclaw/test",
+          requirements: [prerequisite],
+        }),
+      },
+    });
+
+    expect(plan.extensions?.[0]).toMatchObject({
+      requirementState: "setup-required",
+      ownerAction: "reuse",
+    });
+    expect(plan.actions).toContainEqual(
+      expect.objectContaining({
+        kind: "package",
+        action: "reuse",
+        details: expect.objectContaining({ requirementState: "setup-required" }),
+      }),
+    );
+    expect(plan.readiness).toEqual({ ready: false, requirements: [prerequisite] });
   });
 
   it("blocks incomplete adapter provenance", async () => {

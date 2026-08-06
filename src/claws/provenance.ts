@@ -165,6 +165,31 @@ function rowToRecord(row: ClawInstallRow): PersistedClawInstall {
   };
 }
 
+export function clawInstallRecordMatchesPlan(
+  record: PersistedClawInstall,
+  plan: ClawAddPlan,
+): boolean {
+  const bootstrap = bootstrapProvenance(plan);
+  return (
+    record.schemaVersion === CLAW_INSTALL_RECORD_SCHEMA_VERSION &&
+    record.claw.kind === plan.claw.kind &&
+    record.claw.name === plan.claw.name &&
+    record.claw.version === plan.claw.version &&
+    record.claw.packageRoot === plan.claw.packageRoot &&
+    record.claw.manifestPath === plan.claw.manifestPath &&
+    record.claw.integrityKind === plan.claw.integrityKind &&
+    record.claw.integrity === plan.claw.integrity &&
+    record.claw.byteLength === plan.claw.byteLength &&
+    record.manifestSchemaVersion === plan.manifestSchemaVersion &&
+    record.planIntegrity === plan.planIntegrity &&
+    record.workspace === plan.agent.workspace &&
+    record.agentConfigDigest === digestAgentConfig(plan) &&
+    stableStringify(record.agentOwnedPaths) === stableStringify(agentOwnedPaths(plan)) &&
+    record.bootstrap?.sourcePath === bootstrap?.sourcePath &&
+    record.bootstrap?.contentDigest === bootstrap?.contentDigest
+  );
+}
+
 function selectClawInstallRow(db: DatabaseSync, agentId: string): ClawInstallRow | undefined {
   return db /* sqlite-allow-raw: this Claw prototype state-table read is scoped to one owned row. */
     .prepare(
@@ -177,6 +202,14 @@ function selectClawInstallRow(db: DatabaseSync, agentId: string): ClawInstallRow
         WHERE agent_id = ?`,
     )
     .get(agentId) as ClawInstallRow | undefined;
+}
+
+export function readClawInstallRecordFromDatabase(
+  db: DatabaseSync,
+  agentId: string,
+): PersistedClawInstall | undefined {
+  const row = selectClawInstallRow(db, agentId);
+  return row ? rowToRecord(row) : undefined;
 }
 
 function getClawInstallRow(
@@ -194,31 +227,8 @@ export function readClawInstallRecord(
   return row ? rowToRecord(row) : undefined;
 }
 
-function isSameInstallAttempt(
-  row: ClawInstallRow,
-  plan: ClawAddPlan,
-  agentConfigDigest: string,
-  ownedPaths: string[],
-): boolean {
-  const bootstrap = bootstrapProvenance(plan);
-  return (
-    row.schema_version === CLAW_INSTALL_RECORD_SCHEMA_VERSION &&
-    row.source_kind === plan.claw.kind &&
-    row.claw_name === plan.claw.name &&
-    row.claw_version === plan.claw.version &&
-    row.package_root === plan.claw.packageRoot &&
-    row.manifest_path === plan.claw.manifestPath &&
-    row.integrity_kind === plan.claw.integrityKind &&
-    row.integrity === plan.claw.integrity &&
-    Number(row.source_byte_length) === plan.claw.byteLength &&
-    Number(row.manifest_schema_version) === plan.manifestSchemaVersion &&
-    row.plan_integrity === plan.planIntegrity &&
-    row.workspace === plan.agent.workspace &&
-    row.agent_config_digest === agentConfigDigest &&
-    row.agent_owned_paths_json === JSON.stringify(ownedPaths) &&
-    row.bootstrap_source_path === (bootstrap?.sourcePath ?? null) &&
-    row.bootstrap_content_digest === (bootstrap?.contentDigest ?? null)
-  );
+function isSameInstallAttempt(row: ClawInstallRow, plan: ClawAddPlan): boolean {
+  return clawInstallRecordMatchesPlan(rowToRecord(row), plan);
 }
 
 export function persistClawInstallRecord(
@@ -233,10 +243,7 @@ export function persistClawInstallRecord(
   return runOpenClawStateWriteTransaction(({ db }) => {
     const existing = selectClawInstallRow(db, plan.agent.finalId);
     if (existing) {
-      if (
-        existing.status !== "complete" &&
-        isSameInstallAttempt(existing, plan, agentConfigDigest, ownedPaths)
-      ) {
+      if (existing.status !== "complete" && isSameInstallAttempt(existing, plan)) {
         return rowToRecord(existing);
       }
       // A nonmatching partial attempt remains durable ownership evidence. A later

@@ -258,6 +258,41 @@ export async function applyClawUpdatePlan(
     }
   }
 
+  const applyPackage = options.applyPackage ?? applyClawPackageUpdate;
+  const requirementActions = fresh.actions.filter(
+    (action) =>
+      action.kind === "package" &&
+      action.action !== "unchanged" &&
+      action.action !== "release" &&
+      action.action !== "remove" &&
+      targetPackages.get(action.id)?.kind === "plugin",
+  );
+  const remainingPackageActions = fresh.actions.filter(
+    (action) => action.kind === "package" && !requirementActions.includes(action),
+  );
+  const applyPackageActions = async (
+    actions: ClawUpdateAction[],
+  ): Promise<ClawPackageUpdateExecution> => {
+    if (actions.length === 0) {
+      return { appliedIds: [], rollback: async () => undefined };
+    }
+    return await applyPackage({ ...fresh, actions }, params.targetManifest, targetAddPlan, options);
+  };
+
+  let requirementExecution: ClawPackageUpdateExecution;
+  try {
+    requirementExecution = await applyPackageActions(requirementActions);
+  } catch (error) {
+    if (error instanceof ClawPackageUpdateError && error.partial) {
+      throw partialMutation(error.message);
+    }
+    throw new ClawUpdateMutationError(
+      "package_update_failed",
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+  const retainedRequirementMutation = requirementExecution.appliedIds.length > 0;
+
   const applyWorkspace = options.applyWorkspace ?? applyClawWorkspaceUpdate;
   let workspaceExecution: ClawWorkspaceUpdateExecution;
   try {
@@ -265,6 +300,11 @@ export async function applyClawUpdatePlan(
   } catch (error) {
     if (error instanceof ClawWorkspaceUpdateError && error.partial) {
       throw partialMutation(error.message);
+    }
+    if (retainedRequirementMutation) {
+      throw partialMutation(
+        `${error instanceof Error ? error.message : String(error)}; successfully realized shared requirements were retained`,
+      );
     }
     throw new ClawUpdateMutationError(
       "workspace_update_failed",
@@ -288,16 +328,20 @@ export async function applyClawUpdatePlan(
     if (partial) {
       throw partialMutation(`${error.message}; MCP config write outcome is uncertain`);
     }
+    if (retainedRequirementMutation) {
+      throw partialMutation(
+        `${error instanceof Error ? error.message : String(error)}; successfully realized shared requirements were retained`,
+      );
+    }
     throw new ClawUpdateMutationError(
       "mcp_update_failed",
       error instanceof Error ? error.message : String(error),
     );
   }
 
-  const applyPackage = options.applyPackage ?? applyClawPackageUpdate;
   let packageExecution: ClawPackageUpdateExecution;
   try {
-    packageExecution = await applyPackage(fresh, params.targetManifest, targetAddPlan, options);
+    packageExecution = await applyPackageActions(remainingPackageActions);
   } catch (error) {
     const rollbackFailures: string[] = [];
     try {
@@ -320,6 +364,11 @@ export async function applyClawUpdatePlan(
     if (rollbackFailures.length > 0) {
       throw partialMutation(
         `${error instanceof Error ? error.message : String(error)}; ${rollbackFailures.join("; ")}`,
+      );
+    }
+    if (retainedRequirementMutation) {
+      throw partialMutation(
+        `${error instanceof Error ? error.message : String(error)}; successfully realized shared requirements were retained`,
       );
     }
     throw new ClawUpdateMutationError(
@@ -424,6 +473,11 @@ export async function applyClawUpdatePlan(
           `${error instanceof Error ? error.message : String(error)}; ${rollbackFailures.join("; ")}`,
         );
       }
+      if (retainedRequirementMutation) {
+        throw partialMutation(
+          `${error instanceof Error ? error.message : String(error)}; successfully realized shared requirements were retained`,
+        );
+      }
       if (error instanceof ClawUpdateMutationError) {
         throw error;
       }
@@ -488,6 +542,11 @@ export async function applyClawUpdatePlan(
         `${error instanceof Error ? error.message : String(error)}; ${rollbackFailures.join("; ")}`,
       );
     }
+    if (retainedRequirementMutation) {
+      throw partialMutation(
+        `${error instanceof Error ? error.message : String(error)}; successfully realized shared requirements were retained`,
+      );
+    }
     throw new ClawUpdateMutationError(
       "cron_update_failed",
       error instanceof Error ? error.message : String(error),
@@ -540,6 +599,11 @@ export async function applyClawUpdatePlan(
     if (rollbackFailures.length > 0) {
       throw partialMutation(
         `${error instanceof Error ? error.message : String(error)}; ${rollbackFailures.join("; ")}`,
+      );
+    }
+    if (retainedRequirementMutation) {
+      throw partialMutation(
+        `${error instanceof Error ? error.message : String(error)}; successfully realized shared requirements were retained`,
       );
     }
     throw new ClawUpdateMutationError(

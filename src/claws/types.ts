@@ -134,6 +134,8 @@ export type ClawPackagePreflightResult = {
   integrity?: string;
   installId?: string;
   warning?: string;
+  installedIntegrity?: string;
+  installedAt?: string;
   installedVersion?: string;
   code?: string;
   message?: string;
@@ -240,7 +242,7 @@ export type ClawReadResult =
 export type ClawAddPlanAction = {
   kind: "agent" | "workspace" | "bootstrap" | "workspaceFile" | "package" | "mcpServer" | "cronJob";
   id: string;
-  action: "create" | "write" | "install" | "configure" | "schedule";
+  action: "create" | "write" | "install" | "reuse" | "configure" | "schedule";
   target: string;
   source?: string;
   sourceKind?: "clawMarkdownBody";
@@ -255,6 +257,7 @@ export type ClawExtensionPlan = ClawOpenClawExtension & {
   integrity?: string;
   installId?: string;
   ownerAction?: "install" | "reuse";
+  requirementState: "satisfied" | "missing-installable" | "conflicting" | "setup-required";
   mapped: string[];
   unavailable: string[];
   adapterIdentity?: string;
@@ -265,7 +268,7 @@ export type ClawAddCapabilityChange = {
   kind: "agent" | "package" | "mcpServer" | "cronJob";
   id: string;
   path: string;
-  action: "create" | "install" | "configure" | "schedule";
+  action: "create" | "install" | "reuse" | "configure" | "schedule";
   classification: "escalation";
   requiresDistinctConsent: true;
   reason: string;

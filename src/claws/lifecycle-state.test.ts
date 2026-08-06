@@ -936,6 +936,14 @@ describe("Claw status and remove", () => {
       config,
       packageDeps,
     });
+    expect(plan.actions).toContainEqual(
+      expect.objectContaining({
+        kind: "packageRef",
+        action: "release",
+        reason: expect.stringContaining("Claw add introduced this shared requirement"),
+        details: expect.objectContaining({ introducedByClawAdd: true }),
+      }),
+    );
 
     await expect(
       applyClawRemovePlan(plan, {

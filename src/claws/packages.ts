@@ -21,6 +21,7 @@ import {
   type MaintainedClawPackageLifecycleLease,
 } from "../state/claw-package-lifecycle-lease.js";
 import type { OpenClawStateDatabaseOptions } from "../state/openclaw-state-db.js";
+import { findResumableIntroducedPluginRequirement } from "./package-resume.js";
 import {
   persistClawPackageRef,
   readClawPackageRefs,
@@ -295,6 +296,10 @@ export async function preflightClawPackage(
     action: result.action,
     integrity,
     installId: probe.pluginId,
+    ...(result.action === "reuse" && result.installedIntegrity
+      ? { installedIntegrity: result.installedIntegrity }
+      : {}),
+    ...(result.action === "reuse" && result.installedAt ? { installedAt: result.installedAt } : {}),
     ...(requirements.length > 0 ? { requirements } : {}),
     detectedFormat: probe.artifactInspection.format,
     mapped: probe.artifactInspection.mapped,
@@ -450,7 +455,24 @@ async function installClawPackagesUnlocked(
             : preflight.error,
         );
       }
-      if (preflight.action !== pkg.ownerAction) {
+      const resumableRequirement =
+        pkg.ownerAction === "install" && preflight.action === "reuse"
+          ? findResumableIntroducedPluginRequirement({
+              agentId: plan.agent.finalId,
+              pkg,
+              preflight,
+              expectedIntegrity: pkg.integrity,
+              refs: readPackageRefs({
+                ...options,
+                agentId: plan.agent.finalId,
+                kind: pkg.kind,
+                source: pkg.source,
+                ref: pkg.ref,
+                version: pkg.version,
+              }),
+            })
+          : undefined;
+      if (preflight.action !== pkg.ownerAction && !resumableRequirement) {
         throw new ClawPackageInstallError(
           "package_owner_state_changed",
           `Plugin ${pkg.ref}@${pkg.version} owner state changed from ${pkg.ownerAction} to ${preflight.action}; run add --dry-run again.`,
@@ -497,6 +519,18 @@ async function installClawPackagesUnlocked(
             `Plugin ${pkg.ref}@${pkg.version} identity changed after planning; run add --dry-run again.`,
             installedPackages,
           );
+        }
+        if (resumableRequirement) {
+          installedPackages.push(
+            persistPackageRef(plan, pkg, {
+              ...options,
+              status: "complete",
+              relationship: resumableRequirement.relationship,
+              origin: resumableRequirement.origin,
+              independentOwner: resumableRequirement.independentOwner,
+            }),
+          );
+          continue;
         }
         const existingRefs = readPackageRefs({
           ...options,

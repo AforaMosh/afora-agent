@@ -110,7 +110,7 @@ The conventional profile is limited to 256 KiB, must be JSON-compatible YAML, ma
 not use aliases, anchors, tags, or merge keys, and must be a regular,
 non-symlinked, non-hardlinked file inside the package.
 
-An OpenClaw profile may also bind harness-specific extension packages:
+An OpenClaw profile may also declare harness-specific extension requirements:
 
 ```yaml
 schemaVersion: 1
@@ -129,7 +129,8 @@ extensions:
 exact artifact and reports which components the current OpenClaw adapter maps
 and which remain unavailable. Missing identity, integrity, format detection, or
 adapter identity blocks apply. Extension-backed plugins use the existing
-plugin installer and ownership model; they are not a second package system.
+plugin installer and ownership model; they are shared host requirements, not
+Claw-owned members or a second package system.
 
 OpenClaw ignores foreign harness profiles during apply. Package integrity still
 covers every published package byte, while a development snapshot binds the
@@ -202,10 +203,13 @@ Skills and plugins use exact ClawHub versions:
 
 The dry run uses the existing skill and plugin preflight paths to resolve the
 exact artifact, integrity, and any ClawHub trust warning before consent. The
-warning remains visible in the integrity-bound plan. Apply installs missing artifacts
-or reuses matching ones and records whether the Claw introduced or referenced
-each resource. Plugins remain process-wide OpenClaw capabilities rather than
-per-agent installations.
+warning remains visible in the integrity-bound plan. Each requirement is shown
+as satisfied, missing-installable, conflicting, or setup-required. The exact
+plan consent approves missing installs; OpenClaw completes those canonical
+plugin actions before creating the agent or workspace. Apply reuses matching
+artifacts and records whether the Claw introduced or referenced each resource.
+Plugins remain process-wide OpenClaw capabilities rather than per-agent
+installations.
 
 Cron jobs declare scheduled work for the new agent:
 
@@ -282,11 +286,11 @@ defaults collide with local state. For disposable profiles and parallel validati
 pass an explicit `--workspace`; `OPENCLAW_STATE_DIR` relocates runtime state but
 does not change the default workspace location.
 
-Adding a Claw creates the new agent and workspace configuration, seeds optional
-first-run instructions, writes declared workspace assets, installs or reuses
-declared skill and plugin artifacts, and records package, MCP, and cron
-provenance. Existing files are not overwritten, and retries fail closed when
-owned content drifted.
+Adding a Claw first realizes consented shared plugin requirements, then creates
+the new agent and workspace configuration, seeds optional first-run
+instructions, writes declared workspace assets, realizes workspace skills, and
+records package, MCP, and cron provenance. Existing files are not overwritten,
+and retries fail closed when owned content drifted.
 
 ## Inspect installed state
 
@@ -369,8 +373,9 @@ The default removes eligible managed state and releases referenced state.
 Modified files and resources with another current owner are retained or
 blocked. Cleanup choices are part of the plan digest; `--yes` never broadens
 them. Globally installed plugins are retained while this Claw's reference is
-released; use the ordinary plugin lifecycle separately when you intend to
-uninstall a process-wide plugin.
+released. Removal reports which retained requirements Claw add introduced; use
+the ordinary plugin lifecycle separately when you intend to uninstall a
+process-wide plugin.
 
 To remove unchanged Claw-introduced references that have no other current
 owner, include `--remove-unused` in both preview and apply. To select exact

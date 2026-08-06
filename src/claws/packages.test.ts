@@ -368,6 +368,7 @@ describe("preflightClawPackage isolated plugin inspection", () => {
             installedId: "audit",
             installedVersion: "2.0.1",
             installedIntegrity: integrity,
+            installedAt: "2026-08-06T00:00:00.000Z",
           })),
           probePlugin: isolatedProbe,
           createProbeExtensionsDir: vi.fn(async () => "/tmp/claw-plugin-probe"),
@@ -378,6 +379,8 @@ describe("preflightClawPackage isolated plugin inspection", () => {
       ok: true,
       action: "reuse",
       installId: "audit",
+      installedIntegrity: integrity,
+      installedAt: "2026-08-06T00:00:00.000Z",
       detectedFormat: "openclaw",
       mapped: ["plugin"],
       unavailable: [],
@@ -500,6 +503,46 @@ describe("installClawPackages", () => {
       }),
       expect.objectContaining({
         status: "pending",
+        relationship: "referenced",
+        origin: "claw-introduced",
+        independentOwner: false,
+      }),
+    );
+  });
+
+  it("resumes an exact Claw-introduced plugin requirement without reinstalling", async () => {
+    probePlugin.mockClear();
+    const introduced = pluginPackageRef("@owner/audit", {
+      version: pluginPackage.version,
+      integrity,
+    });
+    const installPlugin = vi.fn();
+    const persistPackageRef = vi.fn().mockReturnValue(introduced);
+
+    const result = await installClawPackages(plan([pluginPackage]), {
+      deps: {
+        installPlugin,
+        probePlugin,
+        preflightPlugin: vi.fn().mockResolvedValue({
+          ok: true,
+          action: "reuse",
+          installedId: "audit",
+          installedIntegrity: integrity,
+        }),
+        persistPackageRef,
+        completePackageRef,
+        readPackageRefs: vi.fn().mockReturnValue([introduced]),
+        acquirePackageLease,
+      },
+    });
+
+    expect(result).toEqual([introduced]);
+    expect(installPlugin).not.toHaveBeenCalled();
+    expect(persistPackageRef).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({
+        status: "complete",
         relationship: "referenced",
         origin: "claw-introduced",
         independentOwner: false,
