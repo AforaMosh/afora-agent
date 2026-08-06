@@ -14,6 +14,7 @@ import {
   type ContextEngineTurnAttemptFacts,
 } from "../harness/context-engine-turn-attempt.js";
 import { ensureSelectedAgentHarnessPlugin } from "../harness/runtime-plugin.js";
+import { selectAgentHarness } from "../harness/selection.js";
 import type { ModelFallbackResultClassification } from "../model-fallback-attempt.js";
 import type { ModelFallbackStepFields } from "../model-fallback-observation.js";
 import { runWithModelFallback } from "../model-fallback-runner.js";
@@ -35,7 +36,6 @@ type RunEntryCandidateOptions = {
 };
 
 type RunEntryCandidate<T> = {
-  contextEngineLogicalTurnLease: ContextEngineLogicalTurnLease;
   result: T;
   turnAttempt?: ContextEngineTurnAttemptFacts;
 };
@@ -239,16 +239,11 @@ function buildTerminal(params: {
 export async function runEmbeddedAgentEntry<T extends EmbeddedAgentRunResult>(
   params: EmbeddedAgentRunEntryParams<T>,
 ): Promise<EmbeddedAgentRunEntryResult<T>> {
-  // Each fallback candidate may select a different harness. Keep its context-engine
-  // lease isolated so a started host contract cannot leak into the next candidate.
-  const candidateLeases = new Set<ContextEngineLogicalTurnLease>();
-  const candidateDisposals = new Set<Promise<void>>();
-  const disposeCandidateLease = (lease: ContextEngineLogicalTurnLease) => {
-    candidateLeases.delete(lease);
-    const disposal = lease.dispose();
-    candidateDisposals.add(disposal);
-    void disposal.finally(() => candidateDisposals.delete(disposal)).catch(() => {});
-  };
+  const contextEngineLogicalTurnLease = await createContextEngineLogicalTurnLease({
+    config: params.selection.cfg,
+    agentDir: params.selection.agentDir,
+    workspaceDir: params.harness.workspaceDir,
+  });
   let candidateIndex = 0;
   const committedSideEffect =
     params.behavior.kind === "command-rpc" ? params.behavior.hasCommittedSideEffect : undefined;
@@ -273,6 +268,38 @@ export async function runEmbeddedAgentEntry<T extends EmbeddedAgentRunResult>(
       ...params.identity,
       abortSignal: params.abortSignal,
       resolveAgentHarnessRuntimeOverride: params.harness.resolveRuntimeOverride,
+      prepareCandidateChain: (candidates) => {
+        for (const candidate of candidates) {
+          try {
+            const harness = selectAgentHarness({
+              provider: candidate.provider,
+              modelId: candidate.model,
+              config: params.selection.cfg,
+              agentId: params.identity.agentId,
+              sessionKey: params.harness.sessionKey,
+              agentHarnessRuntimeOverride: params.harness.resolveRuntimeOverride(
+                candidate.provider,
+                candidate.model,
+              ),
+            });
+            contextEngineLogicalTurnLease.selectForHost({
+              host: {
+                id: `agent-harness:${harness.id}`,
+                label: `agent harness "${harness.id}"`,
+                capabilities: harness.contextEngineHostCapabilities ?? [],
+              },
+              operation: "agent-run",
+              requiresDurableCommit: false,
+              hasAdmissionFence: false,
+            });
+          } catch {
+            contextEngineLogicalTurnLease.degradeBeforeStart(
+              "a model fallback candidate harness could not be validated before dispatch",
+            );
+            return;
+          }
+        }
+      },
       prepareAgentHarnessRuntime: async ({ provider, model, agentHarnessRuntimeOverride }) => {
         const prepare = () =>
           ensureSelectedAgentHarnessPlugin({
@@ -319,14 +346,9 @@ export async function runEmbeddedAgentEntry<T extends EmbeddedAgentRunResult>(
                 params.behavior.kind === "followup-delivery"
                   ? preserveFollowupResultForDelivery(classification)
                   : classification;
-              const finalClassification =
-                effectiveClassification && committedSideEffect?.()
-                  ? undefined
-                  : effectiveClassification;
-              if (finalClassification) {
-                disposeCandidateLease(candidate.contextEngineLogicalTurnLease);
-              }
-              return finalClassification;
+              return effectiveClassification && committedSideEffect?.()
+                ? undefined
+                : effectiveClassification;
             },
           }),
       ...(canFallbackAfterError ? { canFallbackAfterError } : {}),
@@ -340,7 +362,6 @@ export async function runEmbeddedAgentEntry<T extends EmbeddedAgentRunResult>(
               latestResult: RunEntryCandidate<T>;
               preferredResult: RunEntryCandidate<T>;
             }) => ({
-              contextEngineLogicalTurnLease: latestResult.contextEngineLogicalTurnLease,
               result: mergeEmbeddedAgentRunResultForModelFallbackExhaustion({
                 latestResult: latestResult.result,
                 preferredResult: preferredResult.result,
@@ -351,33 +372,17 @@ export async function runEmbeddedAgentEntry<T extends EmbeddedAgentRunResult>(
       run: async (provider, model, options) => {
         const isFallbackRetry = candidateIndex > 0;
         candidateIndex += 1;
-        const contextEngineLogicalTurnLease = await createContextEngineLogicalTurnLease({
-          config: params.selection.cfg,
-          agentDir: params.selection.agentDir,
-          workspaceDir: params.harness.workspaceDir,
-        });
-        candidateLeases.add(contextEngineLogicalTurnLease);
         let contextEngineTurnCandidate: ContextEngineTurnAttemptFacts | undefined;
-        try {
-          const result = await params.runCandidate(provider, model, {
-            allowTransientCooldownProbe: options?.allowTransientCooldownProbe,
-            isFinalFallbackAttempt: options?.isFinalFallbackAttempt,
-            isFallbackRetry,
-            contextEngineLogicalTurnLease,
-            onContextEngineTurnCandidate: (facts) => {
-              contextEngineTurnCandidate = facts;
-            },
-          });
-          return {
-            contextEngineLogicalTurnLease,
-            result,
-            turnAttempt: contextEngineTurnCandidate,
-          };
-        } catch (error) {
-          candidateLeases.delete(contextEngineLogicalTurnLease);
-          await contextEngineLogicalTurnLease.dispose();
-          throw error;
-        }
+        const result = await params.runCandidate(provider, model, {
+          allowTransientCooldownProbe: options?.allowTransientCooldownProbe,
+          isFinalFallbackAttempt: options?.isFinalFallbackAttempt,
+          isFallbackRetry,
+          contextEngineLogicalTurnLease,
+          onContextEngineTurnCandidate: (facts) => {
+            contextEngineTurnCandidate = facts;
+          },
+        });
+        return { result, turnAttempt: contextEngineTurnCandidate };
       },
     });
     const abortFields =
@@ -415,7 +420,7 @@ export async function runEmbeddedAgentEntry<T extends EmbeddedAgentRunResult>(
     ) {
       await finalizeAcceptedContextEngineTurn({
         facts: fallbackResult.result.turnAttempt,
-        lease: fallbackResult.result.contextEngineLogicalTurnLease,
+        lease: contextEngineLogicalTurnLease,
       });
     }
     let sessionOverrideSettled = false;
@@ -436,7 +441,6 @@ export async function runEmbeddedAgentEntry<T extends EmbeddedAgentRunResult>(
     };
     return { ...settledResult, terminal, settleSessionOverride };
   } finally {
-    await Promise.allSettled([...candidateLeases].map(async (lease) => await lease.dispose()));
-    await Promise.allSettled(candidateDisposals);
+    await contextEngineLogicalTurnLease.dispose();
   }
 }

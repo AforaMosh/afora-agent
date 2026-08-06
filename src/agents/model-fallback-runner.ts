@@ -70,7 +70,11 @@ import {
   logModelFallbackDecision,
   type ModelFallbackDecisionParams,
 } from "./model-fallback-observation.js";
-import type { FallbackAttempt, ModelFallbackRouteResolution } from "./model-fallback.types.js";
+import type {
+  FallbackAttempt,
+  ModelFallbackCandidate,
+  ModelFallbackRouteResolution,
+} from "./model-fallback.types.js";
 import type { ModelManifestNormalizationContext } from "./model-ref-shared.js";
 import {
   resolveSessionSuspensionReason,
@@ -116,6 +120,7 @@ type RunWithModelFallbackParams<T> = {
     model: string;
     agentHarnessRuntimeOverride?: string;
   }) => Promise<void> | void;
+  prepareCandidateChain?: (candidates: readonly ModelFallbackCandidate[]) => Promise<void> | void;
   lane?: string;
   agentDir?: string;
   /** Optional explicit fallbacks list; when provided (even empty), replaces agents.defaults.model.fallbacks. */
@@ -181,6 +186,7 @@ async function runWithModelFallbackInternal<T>(
     requestedRouteResolution: params.requestedRouteResolution,
     manifestPlugins: params.manifestPlugins,
   });
+  await params.prepareCandidateChain?.(candidates);
   const userLockedAuthProfileId = params.userLockedAuthProfileId?.trim() || undefined;
   const authRuntime =
     !params.skipAuthProfileRuntime && params.cfg && hasAnyAuthProfileStoreSource(params.agentDir)

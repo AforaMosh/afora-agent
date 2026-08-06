@@ -12,6 +12,14 @@ type CandidateOptions = {
 type FallbackRunnerParams = {
   provider: string;
   model: string;
+  prepareCandidateChain?: (
+    candidates: ReadonlyArray<{
+      provider: string;
+      model: string;
+      routeOrigin: "requested" | "configured-fallback";
+      routeResolution: "raw";
+    }>,
+  ) => Promise<void> | void;
   prepareAgentHarnessRuntime?: (params: {
     provider: string;
     model: string;
@@ -45,6 +53,10 @@ type FallbackRunnerParams = {
 const state = vi.hoisted(() => ({
   runWithModelFallback: vi.fn(),
   ensureSelectedAgentHarnessPlugin: vi.fn(async (_params: unknown) => undefined),
+  selectAgentHarness: vi.fn(({ provider }: { provider: string }) => ({
+    id: provider === "fallback-provider" ? "fallback-harness" : "primary-harness",
+    contextEngineHostCapabilities: [],
+  })),
   finalizedAttempts: [] as string[],
 }));
 
@@ -61,6 +73,10 @@ vi.mock("../model-fallback-runner.js", () => ({
 vi.mock("../harness/runtime-plugin.js", () => ({
   ensureSelectedAgentHarnessPlugin: (params: unknown) =>
     state.ensureSelectedAgentHarnessPlugin(params),
+}));
+
+vi.mock("../harness/selection.js", () => ({
+  selectAgentHarness: (params: unknown) => state.selectAgentHarness(params),
 }));
 
 function makeResult(params: {
@@ -130,9 +146,24 @@ describe("runEmbeddedAgentEntry", () => {
   beforeEach(() => {
     state.finalizedAttempts.length = 0;
     state.ensureSelectedAgentHarnessPlugin.mockClear();
+    state.selectAgentHarness.mockClear();
     state.runWithModelFallback
       .mockReset()
       .mockImplementation(async (params: FallbackRunnerParams) => {
+        await params.prepareCandidateChain?.([
+          {
+            provider: params.provider,
+            model: params.model,
+            routeOrigin: "requested",
+            routeResolution: "raw",
+          },
+          {
+            provider: "fallback-provider",
+            model: "fallback-model",
+            routeOrigin: "configured-fallback",
+            routeResolution: "raw",
+          },
+        ]);
         await params.prepareAgentHarnessRuntime?.({
           provider: params.provider,
           model: params.model,
@@ -240,7 +271,13 @@ describe("runEmbeddedAgentEntry", () => {
     expect(channel.result.model).toBe("fallback-model");
     expect(channel.result.attempts).toEqual(command.result.attempts);
     expect(channel.result.terminal).toEqual(command.result.terminal);
-    expect(channel.candidateLeases[0]).not.toBe(channel.candidateLeases[1]);
+    expect(channel.candidateLeases[0]).toBe(channel.candidateLeases[1]);
+    expect(state.selectAgentHarness).toHaveBeenCalledWith(
+      expect.objectContaining({
+        provider: "fallback-provider",
+        modelId: "fallback-model",
+      }),
+    );
     expect(channel.reconciled).toEqual(command.reconciled);
     expect(channel.reconciled).toEqual([
       { provider: "fallback-provider", model: "fallback-model" },
