@@ -278,7 +278,7 @@ export async function runPreparedEmbeddedLoop(
         }),
       { config: params.config },
     ));
-  const contextEngine = selectContextEngineForTranscriptHost({
+  selectContextEngineForTranscriptHost({
     lease: contextEngineLogicalTurnLease,
     host: {
       id: `agent-harness:${agentHarness.id}`,
@@ -287,12 +287,12 @@ export async function runPreparedEmbeddedLoop(
     },
     operation: "agent-run",
     recorder: params.userTurnTranscriptRecorder,
-  }).engine;
+  });
   await drainPendingContextEngineTurnsBeforeRun({
     admission: params.userTurnTranscriptRecorder?.getAdmissionReceipt(),
     lease: contextEngineLogicalTurnLease,
   });
-  contextEngineLogicalTurnLease.begin();
+  const contextEngine = contextEngineLogicalTurnLease.begin().engine;
   const resolveContextEnginePluginId = () =>
     contextEngineLogicalTurnLease.effectiveEnginePluginId ??
     resolveContextEngineOwnerPluginId(contextEngine);

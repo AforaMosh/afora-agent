@@ -35,6 +35,7 @@ import type { SystemAgentToolOptions } from "../tools/system-agent-tool.js";
 import { resolveAgentHarnessAutoSelectionHint } from "./auto-selection.js";
 import { createOpenClawAgentHarness } from "./builtin-openclaw.js";
 import { selectContextEngineForTranscriptHost } from "./context-engine-logical-turn.js";
+import { drainPendingContextEngineTurnsBeforeRun } from "./context-engine-turn-attempt.js";
 import { MissingAgentHarnessError } from "./errors.js";
 import {
   runAgentHarnessLifecycleAttempt,
@@ -506,7 +507,7 @@ async function runSelectedAgentHarnessAttempt(
   const selection = selectPreparedAgentHarness(params);
   const harness = selection.harness;
   if (internalParams.contextEngineLogicalTurnLease) {
-    const effective = selectContextEngineForTranscriptHost({
+    selectContextEngineForTranscriptHost({
       lease: internalParams.contextEngineLogicalTurnLease,
       host: {
         id: `agent-harness:${harness.id}`,
@@ -516,7 +517,11 @@ async function runSelectedAgentHarnessAttempt(
       operation: "agent-run",
       recorder: internalParams.userTurnTranscriptRecorder,
     });
-    internalParams.contextEngineLogicalTurnLease.begin();
+    await drainPendingContextEngineTurnsBeforeRun({
+      admission: internalParams.userTurnTranscriptRecorder?.getAdmissionReceipt(),
+      lease: internalParams.contextEngineLogicalTurnLease,
+    });
+    const effective = internalParams.contextEngineLogicalTurnLease.begin();
     internalParams = {
       ...internalParams,
       contextEngine: effective.engine.info.id === "legacy" ? undefined : effective.engine,

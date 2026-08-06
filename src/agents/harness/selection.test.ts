@@ -51,6 +51,9 @@ const compactAuthMocks = vi.hoisted(() => ({
 const providerOwnerMocks = vi.hoisted(() => ({
   resolveProviderRefOwnership: vi.fn(),
 }));
+const contextEngineTurnAttemptMocks = vi.hoisted(() => ({
+  drainPendingContextEngineTurnsBeforeRun: vi.fn(async () => {}),
+}));
 
 it("identifies harnesses that expose OpenClaw tools", () => {
   expect(agentHarnessBuildsOpenClawTools("openclaw")).toBe(false);
@@ -94,6 +97,10 @@ vi.mock("../runtime-plan/prepare-auth.js", async (importOriginal) => {
 vi.mock("../../plugins/providers.js", () => ({
   resolveProviderRefOwnership: providerOwnerMocks.resolveProviderRefOwnership,
 }));
+vi.mock("./context-engine-turn-attempt.js", () => ({
+  drainPendingContextEngineTurnsBeforeRun:
+    contextEngineTurnAttemptMocks.drainPendingContextEngineTurnsBeforeRun,
+}));
 
 const originalRuntime = process.env.OPENCLAW_AGENT_RUNTIME;
 
@@ -110,6 +117,9 @@ beforeEach(() => {
   compactAuthMocks.getApiKeyForModel.mockResolvedValue({ apiKey: "test-key" });
   providerOwnerMocks.resolveProviderRefOwnership.mockReset();
   providerOwnerMocks.resolveProviderRefOwnership.mockReturnValue({ status: "unowned" });
+  contextEngineTurnAttemptMocks.drainPendingContextEngineTurnsBeforeRun
+    .mockReset()
+    .mockResolvedValue(undefined);
   cliBackendsTesting.setDepsForTest({
     resolvePluginSetupRegistry: () => ({
       providers: [],
@@ -145,6 +155,7 @@ afterEach(() => {
   compactAuthMocks.ensureAuthProfileStore.mockReset();
   compactAuthMocks.ensureAuthProfileStoreWithoutExternalProfiles.mockReset();
   providerOwnerMocks.resolveProviderRefOwnership.mockReset();
+  contextEngineTurnAttemptMocks.drainPendingContextEngineTurnsBeforeRun.mockReset();
   if (originalRuntime == null) {
     delete process.env.OPENCLAW_AGENT_RUNTIME;
   } else {
@@ -576,6 +587,97 @@ describe("runAgentHarnessAttempt", () => {
       );
     },
   );
+
+  it("drains pending context-engine turns before pinning a plugin harness", async () => {
+    const order: string[] = [];
+    const configuredEngine = createContextEngineRequiringAssembly();
+    const fallbackEngine = {
+      ...configuredEngine,
+      info: { id: "legacy", name: "Legacy" },
+    } satisfies ContextEngine;
+    let effectiveEngine = configuredEngine;
+    let degradedReason: string | undefined;
+    const asEffective = (): ReturnType<ContextEngineLogicalTurnLease["begin"]> => ({
+      engine: effectiveEngine,
+      registeredId: effectiveEngine.info.id,
+      mode: degradedReason ? "legacy-degraded" : "configured",
+      ...(degradedReason ? { reason: degradedReason } : {}),
+    });
+    const lease = {
+      get engine() {
+        return effectiveEngine;
+      },
+      get effectiveEngine() {
+        return effectiveEngine;
+      },
+      get effectiveEngineId() {
+        return effectiveEngine.info.id;
+      },
+      get effectiveEnginePluginId() {
+        return undefined;
+      },
+      get degraded() {
+        return degradedReason !== undefined;
+      },
+      get degradedReason() {
+        return degradedReason;
+      },
+      selectForHost: vi.fn(() => asEffective()),
+      degradeBeforeStart: vi.fn((reason: string) => {
+        degradedReason = reason;
+        effectiveEngine = fallbackEngine;
+        return asEffective();
+      }),
+      begin: vi.fn(() => {
+        order.push("begin");
+        return asEffective();
+      }),
+      deferDisposalUntil: vi.fn(),
+      dispose: vi.fn(async () => {}),
+    } satisfies ContextEngineLogicalTurnLease;
+    contextEngineTurnAttemptMocks.drainPendingContextEngineTurnsBeforeRun.mockImplementationOnce(
+      async ({ lease: drainLease }) => {
+        order.push("drain");
+        drainLease.degradeBeforeStart("pending durable turn advancement is blocked");
+      },
+    );
+    const receivedContextEngines: Array<ContextEngine | undefined> = [];
+    registerAgentHarness(
+      {
+        id: "codex",
+        label: "Codex",
+        supports: () => ({ supported: true, priority: 100 }),
+        runAttempt: async (attemptParams) => {
+          order.push("run");
+          receivedContextEngines.push(attemptParams.contextEngine);
+          return createAttemptResult("session-1");
+        },
+      },
+      { ownerPluginId: "codex" },
+    );
+    const admission = {
+      ...createTranscriptAnchor("user-1", 1, 0),
+      logicalTurnId: "turn-1",
+      role: "user" as const,
+    };
+    const params = createAttemptParams(providerRuntimeConfig("codex", "codex"));
+    params.agentHarnessRuntimeOverride = "codex";
+    params.contextEngineLogicalTurnLease = lease;
+    params.userTurnTranscriptRecorder = {
+      message: { role: "user", content: "hello", timestamp: 1 } as never,
+      resolveMessage: async () => ({ role: "user", content: "hello", timestamp: 1 }) as never,
+      markRuntimePersisted() {},
+      getAdmissionReceipt: () => admission,
+    };
+
+    await runAgentHarnessAttempt(params);
+
+    expect(
+      contextEngineTurnAttemptMocks.drainPendingContextEngineTurnsBeforeRun,
+    ).toHaveBeenCalledWith({ admission, lease });
+    expect(order).toEqual(["drain", "begin", "run"]);
+    expect(receivedContextEngines).toEqual([undefined]);
+  });
 
   it.each([
     { name: "missing", toolsAllow: undefined },

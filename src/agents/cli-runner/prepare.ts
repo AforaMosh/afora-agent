@@ -1667,24 +1667,25 @@ export async function prepareCliRunContext(
       backendId: backendResolved.id,
       capabilities: backendResolved.contextEngineHostCapabilities,
     });
-    const resolvedContextEngine = params.contextEngineLogicalTurnLease
-      ? selectContextEngineForTranscriptHost({
-          lease: params.contextEngineLogicalTurnLease,
-          host: contextEngineHostSupport,
-          operation: "agent-run",
-          recorder: params.userTurnTranscriptRecorder,
-        }).engine
-      : await resolveContextEngine(contextEngineConfig, {
-          agentDir: contextEngineAgentDir,
-          workspaceDir,
-        });
+    let resolvedContextEngine;
     if (params.contextEngineLogicalTurnLease) {
+      selectContextEngineForTranscriptHost({
+        lease: params.contextEngineLogicalTurnLease,
+        host: contextEngineHostSupport,
+        operation: "agent-run",
+        recorder: params.userTurnTranscriptRecorder,
+      });
       await drainPendingContextEngineTurnsBeforeRun({
         admission: params.userTurnTranscriptRecorder?.getAdmissionReceipt(),
         lease: params.contextEngineLogicalTurnLease,
       });
+      resolvedContextEngine = params.contextEngineLogicalTurnLease.begin().engine;
+    } else {
+      resolvedContextEngine = await resolveContextEngine(contextEngineConfig, {
+        agentDir: contextEngineAgentDir,
+        workspaceDir,
+      });
     }
-    params.contextEngineLogicalTurnLease?.begin();
     const contextEngine =
       resolvedContextEngine.info.id !== "legacy" ? resolvedContextEngine : undefined;
     if (contextEngine) {
