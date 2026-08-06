@@ -14,6 +14,7 @@ import type { SessionBindingRecord } from "../../infra/outbound/session-binding-
 import { getReplyPayloadMetadata, setReplyPayloadMetadata } from "../reply-payload.js";
 import type { MsgContext } from "../templating.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
+import { ACTIVE_TURN_RECEIPT_TEXT } from "./dispatch-from-config.active-turn-receipt.js";
 import {
   createDispatcher,
   diagnosticMocks,
@@ -43,6 +44,14 @@ import { createReplyDispatcher } from "./reply-dispatcher.js";
 import { buildTestCtx } from "./test-ctx.js";
 
 beforeAll(globalBeforeAll0);
+
+function createDeferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  const promise = new Promise<T>((next) => {
+    resolve = next;
+  });
+  return { promise, resolve };
+}
 
 describe("dispatchReplyFromConfig", () => {
   beforeEach(() => {
@@ -1884,6 +1893,98 @@ describe("dispatchReplyFromConfig", () => {
     expect(
       vi.mocked(dispatcher.sendFinalReply).mock.calls.map(([payload]) => payload.text),
     ).toEqual(["Partial useful answer.", expect.stringContaining("Something went wrong")]);
+  });
+
+  it.each([
+    { name: "after the routed receipt settles", hangs: false },
+    { name: "after the routed receipt exceeds terminal containment", hangs: true },
+  ])("delivers resolver-failure fallback $name", async ({ hangs }) => {
+    vi.useFakeTimers();
+    try {
+      setNoAbort();
+      installCaptionedVoiceTestPlugin("telegram");
+      const rejectResolver = createDeferred<void>();
+      const releaseReceipt = createDeferred<void>();
+      const routedTexts: string[] = [];
+      let receiptInFlight = false;
+      let receiptAborted = false;
+      let fallbackRacedReceipt = false;
+      mocks.routeReply.mockImplementation(async (paramsUnknown: unknown) => {
+        const params = paramsUnknown as {
+          payload: ReplyPayload;
+          abortSignal?: AbortSignal;
+        };
+        const text = params.payload.text ?? "";
+        routedTexts.push(text);
+        if (text === ACTIVE_TURN_RECEIPT_TEXT) {
+          receiptInFlight = true;
+          if (hangs) {
+            await new Promise<void>((resolve) => {
+              const onAbort = () => {
+                receiptAborted = true;
+                receiptInFlight = false;
+                resolve();
+              };
+              if (params.abortSignal?.aborted) {
+                onAbort();
+              } else {
+                params.abortSignal?.addEventListener("abort", onAbort, { once: true });
+              }
+            });
+            return { ok: false, delivered: false, error: "aborted" };
+          }
+          await releaseReceipt.promise;
+          receiptInFlight = false;
+        } else if (text === "Partial useful answer.") {
+          fallbackRacedReceipt = receiptInFlight;
+        }
+        return { ok: true, delivered: true, messageId: "routed" };
+      });
+      const dispatcher = createDispatcher();
+      const ctx = buildTestCtx({
+        Provider: "webchat",
+        Surface: "webchat",
+        ChatType: "direct",
+        SessionKey: "agent:main:telegram:direct:receipt-ordering",
+        OriginatingChannel: "telegram",
+        OriginatingTo: "telegram:receipt-ordering",
+        ExplicitDeliverRoute: true,
+      });
+      const run = dispatchReplyFromConfig({
+        ctx,
+        cfg: emptyConfig,
+        dispatcher,
+        replyResolver: async (_ctx: MsgContext, opts?: GetReplyOptions) => {
+          await opts?.onBlockReply?.({ text: "Partial useful answer." });
+          await rejectResolver.promise;
+          throw new Error("provider unavailable");
+        },
+      });
+
+      await vi.advanceTimersByTimeAsync(30_000);
+      expect(routedTexts).toEqual([ACTIVE_TURN_RECEIPT_TEXT]);
+      rejectResolver.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(routedTexts).toEqual([ACTIVE_TURN_RECEIPT_TEXT]);
+
+      if (hangs) {
+        await vi.advanceTimersByTimeAsync(4_999);
+        expect(routedTexts).toEqual([ACTIVE_TURN_RECEIPT_TEXT]);
+        expect(receiptAborted).toBe(false);
+        await vi.advanceTimersByTimeAsync(1);
+        expect(receiptAborted).toBe(true);
+      } else {
+        releaseReceipt.resolve();
+        await vi.advanceTimersByTimeAsync(0);
+      }
+      await run;
+
+      expect(fallbackRacedReceipt).toBe(false);
+      expect(routedTexts[1]).toBe("Partial useful answer.");
+      expect(routedTexts[2]).toContain("Something went wrong");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it.each([

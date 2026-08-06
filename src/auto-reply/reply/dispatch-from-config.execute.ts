@@ -569,7 +569,17 @@ export async function executeDispatch(state: PrepareDispatchExecutionReadyState)
           ),
         trackDispatchLifecycleWork,
       ),
-  ).catch(async (error: unknown) => {
+  );
+  let replyResult!: Awaited<typeof replyResultPromise>;
+  let resolverFailure: { error: unknown } | undefined;
+  try {
+    replyResult = await replyResultPromise;
+  } catch (error) {
+    resolverFailure = { error };
+  } finally {
+    await state.activeTurnReceipt.settleBeforeTerminal();
+  }
+  if (resolverFailure) {
     try {
       await flushDeferredFinalText();
     } catch (fallbackError) {
@@ -582,20 +592,14 @@ export async function executeDispatch(state: PrepareDispatchExecutionReadyState)
       !didDeliverVisiblePartialReply ||
       isDispatchOperationAborted()
     ) {
-      throw error;
+      throw resolverFailure.error;
     }
-    failDispatchReplyOperation(error);
-    return buildTerminalAgentRunFailureReplyPayload({
+    failDispatchReplyOperation(resolverFailure.error);
+    replyResult = buildTerminalAgentRunFailureReplyPayload({
       visibleReplyDelivered: true,
       sessionCtx: ctx,
       cfg: replyConfig,
     });
-  });
-  let replyResult: Awaited<typeof replyResultPromise>;
-  try {
-    replyResult = await replyResultPromise;
-  } finally {
-    await state.activeTurnReceipt.settleBeforeTerminal();
   }
   if (isDispatchOperationAborted()) {
     try {
