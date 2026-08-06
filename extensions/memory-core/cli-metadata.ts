@@ -18,7 +18,7 @@ export default definePluginEntry({
         descriptors: [
           {
             name: "memory",
-            description: "Search, inspect, and reindex memory files",
+            description: "Search, inspect, reindex, and review scoped memory sharing",
             hasSubcommands: true,
           },
         ],

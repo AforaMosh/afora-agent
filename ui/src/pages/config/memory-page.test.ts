@@ -79,6 +79,7 @@ function createPage(params: {
   memoryStatus?: (agentId: string, probe: boolean) => Promise<unknown>;
   processInstanceIds?: Array<string | undefined>;
   scopes?: string[];
+  methods?: string[];
   lookupSchemaPath?: (call: number) => Promise<unknown>;
 }) {
   let listCalls = 0;
@@ -111,6 +112,12 @@ function createPage(params: {
       const processInstanceId = ids[Math.min(systemInfoCalls++, ids.length - 1)];
       return Promise.resolve({ processInstanceId });
     }
+    if (method === "memory.sharing.status") {
+      return Promise.resolve({ postboxMode: "off", projections: [], postboxItems: [] });
+    }
+    if (method === "memory.sharing.postbox.list") {
+      return Promise.resolve({ postboxItems: [] });
+    }
     return Promise.resolve({});
   });
   vi.mocked(setPluginEnabled).mockImplementation(
@@ -127,7 +134,9 @@ function createPage(params: {
       phase: "connected",
       hello: {
         auth: { role: "operator", scopes: params.scopes },
-        features: { methods: params.processInstanceIds ? ["system.info"] : [] },
+        features: {
+          methods: params.methods ?? (params.processInstanceIds ? ["system.info"] : []),
+        },
       },
     },
     subscribe: (notify: () => void) => {
@@ -527,6 +536,60 @@ describe("MemorySettingsPage catalog state", () => {
       expect(element.querySelector("a.memory-page__link")?.textContent).toContain("Open Plugins");
     } finally {
       element.remove();
+    }
+  });
+
+  it("shows reviewed sharing to Gateway writers after every sharing method is advertised", async () => {
+    const methods = [
+      "memory.sharing.status",
+      "memory.sharing.projection.preview",
+      "memory.sharing.projection.create",
+      "memory.sharing.projection.review",
+      "memory.sharing.projection.refresh",
+      "memory.sharing.projection.revoke",
+      "memory.sharing.projection.impact",
+      "memory.sharing.postbox.list",
+      "memory.sharing.postbox.inspect",
+      "memory.sharing.postbox.review",
+      "memory.sharing.postbox.purge",
+    ];
+    const { element } = createPage({
+      configObject: {},
+      scopes: ["operator.write"],
+      methods,
+    });
+    document.body.append(element);
+    try {
+      await waitForFast(() => expect(element.textContent).toContain("Sharing and postbox"));
+      expect(element.querySelector("openclaw-memory-sharing")).not.toBeNull();
+    } finally {
+      element.remove();
+    }
+
+    const { element: reader } = createPage({
+      configObject: {},
+      scopes: ["operator.read"],
+      methods,
+    });
+    document.body.append(reader);
+    try {
+      await reader.updateComplete;
+      expect(reader.querySelector("openclaw-memory-sharing")?.textContent).toBe("");
+    } finally {
+      reader.remove();
+    }
+
+    const { element: incompleteGateway } = createPage({
+      configObject: {},
+      scopes: ["operator.write"],
+      methods: methods.slice(1),
+    });
+    document.body.append(incompleteGateway);
+    try {
+      await incompleteGateway.updateComplete;
+      expect(incompleteGateway.querySelector("openclaw-memory-sharing")?.textContent).toBe("");
+    } finally {
+      incompleteGateway.remove();
     }
   });
 
