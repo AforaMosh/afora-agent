@@ -52,6 +52,7 @@ export const CONTEXT_ENGINE_HOST_PARAMS = new Set(
 type ResolvedContextEngineMetadata = {
   owner: string;
   engineId: string;
+  compatibilityFallback?: boolean;
 };
 
 const resolvedEngineMetadata = new WeakMap<ContextEngine, ResolvedContextEngineMetadata>();
@@ -71,7 +72,6 @@ function wrapResolvedContextEngine(
       : undefined;
   let fallbackEnginePromise: Promise<ContextEngine> | undefined;
   let resolvedFallbackEngine: ContextEngine | undefined;
-  let compatibilityFallback = false;
   const getFallbackEngine = fallback
     ? () =>
         (fallbackEnginePromise ??= resolveDefaultContextEngine(
@@ -101,7 +101,7 @@ function wrapResolvedContextEngine(
         if (property === "info") {
           if (
             !fallback ||
-            (!compatibilityFallback && !getContextEngineQuarantine(metadata.engineId))
+            (!metadata.compatibilityFallback && !getContextEngineQuarantine(metadata.engineId))
           ) {
             return engine.info;
           }
@@ -142,7 +142,7 @@ function wrapResolvedContextEngine(
           }
           const invokeFallback = () =>
             invokeFallbackContextEngineMethod({ getFallbackEngine, methodName, methodParams });
-          if (compatibilityFallback || getContextEngineQuarantine(metadata.engineId)) {
+          if (metadata.compatibilityFallback || getContextEngineQuarantine(metadata.engineId)) {
             // Runtime failures downgrade future guarded calls for this process.
             return await invokeFallback();
           }
@@ -155,7 +155,9 @@ function wrapResolvedContextEngine(
               throw error;
             }
             if (error instanceof SessionTranscriptReadFenceError) {
-              compatibilityFallback = true;
+              // Dispatch, metadata, and capability ownership must switch as one
+              // effective-engine state before any legacy fallback work begins.
+              metadata.compatibilityFallback = true;
               console.warn(
                 `[context-engine] Context engine "${sanitizeForLog(metadata.engineId)}" cannot honor the current-turn transcript fence: ${sanitizeForLog(error.message)}; using default engine "${fallback.defaultEngineId}" for the rest of this logical turn.`,
               );
@@ -371,9 +373,11 @@ export function resolveContextEngineOwnerPluginId(
   engine: ContextEngine | undefined | null,
 ): string | undefined {
   const metadata = engine ? resolvedEngineMetadata.get(engine) : undefined;
-  // Quarantined work belongs to its core-owned fallback, never the disabled plugin.
+  // Downgraded work belongs to its core-owned fallback, never the disabled plugin.
   const owner =
-    metadata && !getContextEngineQuarantine(metadata.engineId) ? metadata.owner : undefined;
+    metadata && !metadata.compatibilityFallback && !getContextEngineQuarantine(metadata.engineId)
+      ? metadata.owner
+      : undefined;
   if (!owner?.startsWith("plugin:")) {
     return undefined;
   }

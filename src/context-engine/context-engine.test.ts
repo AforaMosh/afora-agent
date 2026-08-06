@@ -5,6 +5,7 @@ import path from "node:path";
 import type { AgentMessage } from "openclaw/plugin-sdk/agent-core";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { upsertSessionEntry } from "../config/sessions/session-accessor.js";
+import { SessionTranscriptReadFenceError } from "../config/sessions/session-transcript-read-fence.js";
 import type { MemoryCitationsMode } from "../config/types.memory.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import {
@@ -1115,6 +1116,51 @@ describe("Invalid engine fallback", () => {
     expect(engine.info.ownsCompaction).toBeUndefined();
     expect(resolveContextEngineOwnerPluginId(engine)).toBeUndefined();
     expect(assemble).toHaveBeenCalledTimes(1);
+  });
+
+  it("switches ownership and dispatch together after transcript fence fallback", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const engineId = uniqueEngineId("transcript-fence-fallback");
+    const ingest = vi.fn(async () => ({ ingested: true }));
+    const assemble = vi.fn(async () => {
+      throw new SessionTranscriptReadFenceError("admitted user row is unavailable");
+    });
+    registerContextEngineForOwner(
+      engineId,
+      () => ({
+        info: {
+          id: "lcm",
+          name: "Lossless Context Manager",
+          ownsCompaction: true,
+        },
+        ingest,
+        assemble,
+        async compact() {
+          return { ok: true, compacted: false };
+        },
+      }),
+      "plugin:lossless-claw",
+      { allowSameOwnerRefresh: true },
+    );
+
+    const engine = await resolveContextEngine(configWithSlot(engineId));
+    expect(resolveContextEngineOwnerPluginId(engine)).toBe("lossless-claw");
+
+    const first = makeMockMessage("user", "first");
+    const second = makeMockMessage("user", "second");
+    await expect(engine.assemble({ sessionId: "s1", messages: [first] })).resolves.toMatchObject({
+      messages: [first],
+    });
+    await expect(engine.assemble({ sessionId: "s1", messages: [second] })).resolves.toMatchObject({
+      messages: [second],
+    });
+    await engine.ingest({ sessionId: "s1", message: second });
+
+    expect(engine.info.id).toBe("legacy");
+    expect(resolveContextEngineOwnerPluginId(engine)).toBeUndefined();
+    expect(listContextEngineQuarantines()).toEqual([]);
+    expect(assemble).toHaveBeenCalledTimes(1);
+    expect(ingest).not.toHaveBeenCalled();
   });
 
   it("quarantines compact failures without same-call legacy fallback", async () => {

@@ -106,9 +106,6 @@ export async function prepareCodexAttemptContext(
     ...hookContextWindowFields,
   };
   const hookRunner = getAgentHarnessHookRunner();
-  const activeContextEnginePluginId = activeContextEngine
-    ? resolveContextEngineOwnerPluginId(activeContextEngine)
-    : undefined;
   const buildActiveContextEngineRuntimeContext = () =>
     buildHarnessContextEngineRuntimeContext({
       attempt: buildActiveRunAttemptParams(),
@@ -116,7 +113,7 @@ export async function prepareCodexAttemptContext(
       cwd: effectiveCwd,
       agentDir,
       activeAgentId: sessionAgentId,
-      contextEnginePluginId: activeContextEnginePluginId,
+      contextEnginePluginId: resolveContextEngineOwnerPluginId(activeContextEngine),
       tokenBudget: effectiveContextTokenBudget,
     });
   if (activeContextEngine) {
