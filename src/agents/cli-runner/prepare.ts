@@ -103,6 +103,7 @@ import {
   resolveSandboxSkillRuntimeInputs,
 } from "../embedded-agent-runner/sandbox-skills.js";
 import { selectContextEngineForTranscriptHost } from "../harness/context-engine-logical-turn.js";
+import { drainPendingContextEngineTurnsBeforeRun } from "../harness/context-engine-turn-attempt.js";
 import { resolveHeartbeatPromptForSystemPrompt } from "../heartbeat-system-prompt.js";
 import type { ResolvedProviderAuth } from "../model-auth-runtime-shared.js";
 import { applyPluginTextReplacements } from "../plugin-text-transforms.js";
@@ -1677,6 +1678,12 @@ export async function prepareCliRunContext(
           agentDir: contextEngineAgentDir,
           workspaceDir,
         });
+    if (params.contextEngineLogicalTurnLease) {
+      await drainPendingContextEngineTurnsBeforeRun({
+        admission: params.userTurnTranscriptRecorder?.getAdmissionReceipt(),
+        lease: params.contextEngineLogicalTurnLease,
+      });
+    }
     params.contextEngineLogicalTurnLease?.begin();
     const contextEngine =
       resolvedContextEngine.info.id !== "legacy" ? resolvedContextEngine : undefined;

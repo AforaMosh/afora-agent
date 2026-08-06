@@ -45,6 +45,48 @@ export type ContextEngineTurnAttemptFacts = {
   isHeartbeat?: boolean;
 };
 
+export async function drainPendingContextEngineTurnsBeforeRun(params: {
+  admission: TranscriptTurnBoundary["admission"] | undefined;
+  lease: ContextEngineLogicalTurnLease;
+  warn?: (message: string) => void;
+}): Promise<void> {
+  if (
+    !params.admission ||
+    params.lease.degraded ||
+    params.lease.engine.info.transcriptSemantics?.turnAdvancementIdempotency !==
+      "atomic-idempotent-v1" ||
+    typeof params.lease.engine.commitTurn !== "function"
+  ) {
+    return;
+  }
+  const warn = params.warn ?? console.warn;
+  try {
+    const database = openOpenClawAgentDatabase({
+      agentId: params.admission.agentId,
+      path: params.admission.storePath,
+    });
+    const result = await drainContextEngineTurnOutbox({
+      database,
+      engine: params.lease.engine,
+      engineId: params.lease.effectiveEngineId,
+      ownerPluginId: params.lease.effectiveEnginePluginId,
+      sessionId: params.admission.sessionId,
+      warn,
+    });
+    if (result.pending) {
+      params.lease.degradeBeforeStart(
+        "pending durable turn advancement could not be completed before the next turn",
+      );
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    warn(`[context-engine] failed to retry pending turn advancement: ${message}`);
+    params.lease.degradeBeforeStart(
+      "pending durable turn advancement could not be checked before the next turn",
+    );
+  }
+}
+
 function assertAcceptedTranscriptTarget(facts: ContextEngineTurnAttemptFacts): void {
   const { admission, terminal } = facts.boundary;
   if (

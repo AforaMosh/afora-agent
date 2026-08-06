@@ -15,6 +15,7 @@ import {
   createContextEngineLogicalTurnLease,
   selectContextEngineForTranscriptHost,
 } from "../harness/context-engine-logical-turn.js";
+import { drainPendingContextEngineTurnsBeforeRun } from "../harness/context-engine-turn-attempt.js";
 import type { McpAppChannelView } from "../mcp-ui-resource.js";
 import { runAgentCleanupStep } from "../run-cleanup-timeout.js";
 import { resolveToolLoopDetectionConfig } from "../tool-loop-detection-config.js";
@@ -287,6 +288,10 @@ export async function runPreparedEmbeddedLoop(
     operation: "agent-run",
     recorder: params.userTurnTranscriptRecorder,
   }).engine;
+  await drainPendingContextEngineTurnsBeforeRun({
+    admission: params.userTurnTranscriptRecorder?.getAdmissionReceipt(),
+    lease: contextEngineLogicalTurnLease,
+  });
   contextEngineLogicalTurnLease.begin();
   const resolveContextEnginePluginId = () =>
     contextEngineLogicalTurnLease.effectiveEnginePluginId ??

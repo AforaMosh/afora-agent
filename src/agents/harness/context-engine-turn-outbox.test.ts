@@ -8,6 +8,8 @@ import {
   closeOpenClawAgentDatabasesForTest,
   openOpenClawAgentDatabase,
 } from "../../state/openclaw-agent-db.js";
+import type { ContextEngineLogicalTurnLease } from "./context-engine-logical-turn.js";
+import { drainPendingContextEngineTurnsBeforeRun } from "./context-engine-turn-attempt.js";
 import {
   drainContextEngineTurnOutbox,
   enqueueContextEngineTurnCommit,
@@ -154,5 +156,90 @@ describe("context-engine turn outbox", () => {
       "session-a:a-second",
       "session-a:3",
     ]);
+  });
+
+  it("retries the current session before the next run and degrades if it stays blocked", async () => {
+    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-context-outbox-retry-"));
+    tempDirs.push(stateDir);
+    const database = openOpenClawAgentDatabase({
+      agentId: "main",
+      env: { OPENCLAW_STATE_DIR: stateDir },
+    });
+    const payload = createPayload({
+      advancementKey: "session-a:retry",
+      databasePath: database.path,
+      sequence: 1,
+      sessionId: "session-a",
+    });
+    enqueueContextEngineTurnCommit({ database, engineId: "test", payload });
+
+    let blocked = true;
+    const commitTurn = vi.fn(async () => {
+      if (blocked) {
+        throw new Error("temporary failure");
+      }
+      return { status: "committed" as const };
+    });
+    const engine = {
+      info: {
+        id: "test",
+        name: "Test",
+        transcriptSemantics: {
+          currentTurnFence: "before-current-turn-entry-v1",
+          turnAdvancementIdempotency: "atomic-idempotent-v1",
+        },
+      },
+      ingest: async () => ({ ingested: true }),
+      assemble: async ({ messages }) => ({ messages, estimatedTokens: 0 }),
+      compact: async () => ({ ok: true, compacted: false }),
+      commitTurn,
+    } satisfies ContextEngine;
+    const degradeBeforeStart = vi.fn();
+    const lease = {
+      engine,
+      effectiveEngine: engine,
+      effectiveEngineId: "test",
+      effectiveEnginePluginId: undefined,
+      degraded: false,
+      degradedReason: undefined,
+      selectForHost: vi.fn(),
+      degradeBeforeStart,
+      begin: vi.fn(),
+      deferDisposalUntil: vi.fn(),
+      dispose: vi.fn(async () => undefined),
+    } satisfies ContextEngineLogicalTurnLease;
+    const warn = vi.fn();
+
+    await drainContextEngineTurnOutbox({ database, engine, engineId: "test", warn });
+    blocked = false;
+    await drainPendingContextEngineTurnsBeforeRun({
+      admission: payload.boundary.admission,
+      lease,
+      warn,
+    });
+
+    expect(commitTurn).toHaveBeenCalledTimes(2);
+    expect(degradeBeforeStart).not.toHaveBeenCalled();
+
+    enqueueContextEngineTurnCommit({
+      database,
+      engineId: "test",
+      payload: createPayload({
+        advancementKey: "session-a:blocked",
+        databasePath: database.path,
+        sequence: 3,
+        sessionId: "session-a",
+      }),
+    });
+    blocked = true;
+    await drainPendingContextEngineTurnsBeforeRun({
+      admission: payload.boundary.admission,
+      lease,
+      warn,
+    });
+
+    expect(degradeBeforeStart).toHaveBeenCalledWith(
+      "pending durable turn advancement could not be completed before the next turn",
+    );
   });
 });

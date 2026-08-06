@@ -86,28 +86,33 @@ export async function drainContextEngineTurnOutbox(params: {
   engine: ContextEngine;
   engineId: string;
   ownerPluginId?: string;
+  sessionId?: string;
   limit?: number;
   warn: (message: string) => void;
-}): Promise<void> {
+}): Promise<{ pending: boolean }> {
   const commitTurn = params.engine.commitTurn;
   if (typeof commitTurn !== "function") {
-    return;
+    return { pending: false };
   }
   let remaining = Math.max(0, params.limit ?? 16);
   if (remaining === 0) {
-    return;
+    return { pending: hasPendingContextEngineTurn(params) };
   }
   const db = outboxDb(params.database);
+  let pendingSessionsQuery = db
+    .selectFrom("context_engine_turn_outbox")
+    .select("session_id")
+    // SQLite rowid preserves enqueue order among surviving pending rows.
+    // Use it instead of wall-clock timestamps, which can collide.
+    .select(sql<number>`MIN(context_engine_turn_outbox.rowid)`.as("oldest_enqueue_sequence"))
+    .where("engine_id", "=", params.engineId)
+    .where("owner_plugin_id", params.ownerPluginId ? "=" : "is", params.ownerPluginId ?? null);
+  if (params.sessionId) {
+    pendingSessionsQuery = pendingSessionsQuery.where("session_id", "=", params.sessionId);
+  }
   const pendingSessions = executeSqliteQuerySync(
     params.database.db,
-    db
-      .selectFrom("context_engine_turn_outbox")
-      .select("session_id")
-      // SQLite rowid preserves enqueue order among surviving pending rows.
-      // Use it instead of wall-clock timestamps, which can collide.
-      .select(sql<number>`MIN(context_engine_turn_outbox.rowid)`.as("oldest_enqueue_sequence"))
-      .where("engine_id", "=", params.engineId)
-      .where("owner_plugin_id", params.ownerPluginId ? "=" : "is", params.ownerPluginId ?? null)
+    pendingSessionsQuery
       .groupBy("session_id")
       .orderBy("oldest_enqueue_sequence", "asc")
       .limit(remaining),
@@ -140,10 +145,29 @@ export async function drainContextEngineTurnOutbox(params: {
     }
     activeSessionIds = continuingSessionIds;
   }
+  return { pending: hasPendingContextEngineTurn(params) };
+}
+
+function hasPendingContextEngineTurn(
+  params: Pick<
+    Parameters<typeof drainContextEngineTurnOutbox>[0],
+    "database" | "engineId" | "ownerPluginId" | "sessionId"
+  >,
+): boolean {
+  const db = outboxDb(params.database);
+  let query = db
+    .selectFrom("context_engine_turn_outbox")
+    .select("advancement_key")
+    .where("engine_id", "=", params.engineId)
+    .where("owner_plugin_id", params.ownerPluginId ? "=" : "is", params.ownerPluginId ?? null);
+  if (params.sessionId) {
+    query = query.where("session_id", "=", params.sessionId);
+  }
+  return executeSqliteQueryTakeFirstSync(params.database.db, query.limit(1)) !== undefined;
 }
 
 async function commitPendingContextEngineTurn(
-  params: Omit<Parameters<typeof drainContextEngineTurnOutbox>[0], "limit"> & {
+  params: Omit<Parameters<typeof drainContextEngineTurnOutbox>[0], "limit" | "sessionId"> & {
     commitTurn: NonNullable<ContextEngine["commitTurn"]>;
     db: ReturnType<typeof outboxDb>;
     row: PendingContextEngineTurn;
