@@ -347,15 +347,29 @@ export async function withMatrixQaE2eeDriverAndObserver<T>(
   opts: { readyRoomIds?: string[] } = {},
 ) {
   const driver = await createMatrixQaE2eeDriverClient(context, scenarioId, opts);
+  let observer: MatrixQaE2eeScenarioClient;
   try {
-    const observer = await createMatrixQaE2eeObserverClient(context, scenarioId, opts.readyRoomIds);
+    observer = await createMatrixQaE2eeObserverClient(context, scenarioId, opts.readyRoomIds);
+  } catch (error) {
     try {
-      return await run({ driver, observer });
-    } finally {
-      await observer.stop();
+      await driver.stop();
+    } catch (cleanupError) {
+      throw new AggregateError(
+        [error, cleanupError],
+        "Matrix E2EE observer startup and driver cleanup both failed",
+        { cause: error },
+      );
     }
+    throw error;
+  }
+  try {
+    return await run({ driver, observer });
   } finally {
-    await driver.stop();
+    try {
+      await observer.stop();
+    } finally {
+      await driver.stop();
+    }
   }
 }
 

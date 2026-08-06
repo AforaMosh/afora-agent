@@ -89,21 +89,60 @@ describe("Matrix E2EE scenario readiness scope", () => {
     );
     expect(observer.stop).toHaveBeenCalledTimes(1);
     expect(driver.stop).toHaveBeenCalledTimes(1);
+    expect(observer.stop.mock.invocationCallOrder[0]).toBeLessThan(
+      driver.stop.mock.invocationCallOrder[0]!,
+    );
   });
 
-  it("stops the driver when observer construction fails", async () => {
+  it("preserves the observer construction failure when driver cleanup succeeds", async () => {
     const driver = createClient();
+    const startupError = new Error("observer setup failed");
     sharedScenarioMocks.createMatrixQaE2eeScenarioClient
       .mockResolvedValueOnce(driver.client)
-      .mockRejectedValueOnce(new Error("observer setup failed"));
+      .mockRejectedValueOnce(startupError);
     const run = vi.fn();
 
-    await expect(
-      withMatrixQaE2eeDriverAndObserver(createContext(), "matrix-e2ee-basic-reply", run, {
+    const failure = await withMatrixQaE2eeDriverAndObserver(
+      createContext(),
+      "matrix-e2ee-basic-reply",
+      run,
+      {
         readyRoomIds: ["!message:matrix-qa.test"],
-      }),
-    ).rejects.toThrow("observer setup failed");
+      },
+    ).catch((error: unknown) => error);
 
+    expect(failure).toBe(startupError);
+    expect(run).not.toHaveBeenCalled();
+    expect(driver.stop).toHaveBeenCalledTimes(1);
+  });
+
+  it("aggregates observer construction and driver cleanup failures without leaking details", async () => {
+    const driver = createClient();
+    const startupError = new Error("observer setup failed with observer-secret");
+    const cleanupError = new Error("driver cleanup failed with driver-secret");
+    driver.stop.mockRejectedValueOnce(cleanupError);
+    sharedScenarioMocks.createMatrixQaE2eeScenarioClient
+      .mockResolvedValueOnce(driver.client)
+      .mockRejectedValueOnce(startupError);
+    const run = vi.fn();
+
+    const failure = await withMatrixQaE2eeDriverAndObserver(
+      createContext(),
+      "matrix-e2ee-basic-reply",
+      run,
+      {
+        readyRoomIds: ["!message:matrix-qa.test"],
+      },
+    ).catch((error: unknown) => error);
+
+    expect(failure).toBeInstanceOf(AggregateError);
+    expect(failure).toMatchObject({
+      cause: startupError,
+      errors: [startupError, cleanupError],
+      message: "Matrix E2EE observer startup and driver cleanup both failed",
+    });
+    expect((failure as Error).message).not.toContain("observer-secret");
+    expect((failure as Error).message).not.toContain("driver-secret");
     expect(run).not.toHaveBeenCalled();
     expect(driver.stop).toHaveBeenCalledTimes(1);
   });
