@@ -620,6 +620,54 @@ describe("applyClawAddPlan", () => {
     await expect(access(plan.agent.workspace)).rejects.toThrow();
   });
 
+  it("preserves a config-committed phase when a resumed host requirement fails", async () => {
+    const { root, plan } = await makePlan(
+      {
+        schemaVersion: 1,
+        agent: { id: "worker" },
+        packages: [
+          {
+            kind: "plugin",
+            source: "clawhub",
+            ref: "@acme/audit",
+            version: "1.0.0",
+          },
+        ],
+      },
+      {
+        packagePreflight: async () => ({
+          ok: true,
+          action: "install",
+          integrity: `sha256:${"a".repeat(64)}`,
+          installId: "audit",
+        }),
+      },
+    );
+    await mkdir(plan.agent.workspace, { recursive: true });
+    persistClawInstallRecord(plan, {
+      env: stateEnv(root),
+      status: "config_committed",
+      nowMs: 1,
+    });
+
+    const result = await applyClawAddPlan(plan, {
+      consentPlanIntegrity: plan.planIntegrity,
+      env: stateEnv(root),
+      installPackages: async () => {
+        throw new ClawPackageInstallError("package_install_failed", "installer failed", []);
+      },
+    });
+
+    expect(result).toMatchObject({
+      status: "partial",
+      workspaceCreated: true,
+      configCommitted: true,
+      installRecord: { status: "config_committed" },
+      error: { code: "package_install_failed", message: "installer failed" },
+    });
+    expect(readInstallRow("worker", root)?.status).toBe("config_committed");
+  });
+
   it("appends one agent, preserves defaults and existing agents, and creates a new workspace", async () => {
     const { root, plan } = await makePlan(
       {

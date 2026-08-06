@@ -288,6 +288,13 @@ export async function applyClawAddPlan(
   let configCommitted = statusAtLeast(installRecord.status, "config_committed");
   const installPackages = options.installPackages ?? installClawPackages;
   let packages: PersistedClawPackageRef[] = [];
+  const preserveRecordedPhaseOrMarkPartial = (): ClawInstallStatus => {
+    if (workspacePhaseRecorded) {
+      return installRecord.status;
+    }
+    markInstallStatus(plan.agent.finalId, "partial", ["pending", "partial"], options);
+    return "partial";
+  };
 
   const hostRequirementPlan = planWithPackageActions(
     plan,
@@ -308,13 +315,14 @@ export async function applyClawAddPlan(
               error instanceof Error ? error.message : String(error),
               packages,
             );
-      markInstallStatus(plan.agent.finalId, "partial", ["pending", "partial"], options);
+      const installStatus = preserveRecordedPhaseOrMarkPartial();
       return partialResult({
         plan,
         installRecord,
-        workspaceCreated: false,
-        configCommitted: false,
+        workspaceCreated,
+        configCommitted,
         packages: packageError.installedPackages,
+        installStatus,
         error: { code: packageError.code, message: packageError.message },
         nowMs: options.nowMs,
       });
@@ -327,13 +335,14 @@ export async function applyClawAddPlan(
     assertWorkspacePathUnchanged(workspace);
   } catch (error) {
     if (packages.length > 0) {
-      markInstallStatus(plan.agent.finalId, "partial", ["pending", "partial"], options);
+      const installStatus = preserveRecordedPhaseOrMarkPartial();
       return partialResult({
         plan,
         installRecord,
-        workspaceCreated: false,
-        configCommitted: false,
+        workspaceCreated,
+        configCommitted,
         packages,
+        installStatus,
         error: {
           code: error instanceof ClawAddMutationError ? error.code : "workspace_parent_failed",
           message:
