@@ -315,18 +315,7 @@ async function runWithModelFallbackInternal<T>(
 
     let candidateAuthProfileIds: string[] | undefined;
     let userLockedAuthProfileEligible = false;
-    if (authRuntime && authStore && !candidateHarnessAuth.skipsProviderAuthCooldown) {
-      candidateAuthProfileIds = authRuntime.resolveAuthProfileOrder({
-        cfg: params.cfg,
-        store: authStore,
-        provider: candidate.provider,
-      });
-      authRuntime.maybeReprobeWhamBlockedProfiles({
-        store: authStore,
-        profileIds: candidateAuthProfileIds,
-        agentDir: params.agentDir,
-        forModel: candidate.model,
-      });
+    if (authRuntime && authStore) {
       userLockedAuthProfileEligible =
         userLockedAuthProfileId !== undefined &&
         authRuntime.resolveAuthProfileEligibility({
@@ -335,6 +324,19 @@ async function runWithModelFallbackInternal<T>(
           provider: candidate.provider,
           profileId: userLockedAuthProfileId,
         }).eligible;
+      if (!candidateHarnessAuth.skipsProviderAuthCooldown) {
+        candidateAuthProfileIds = authRuntime.resolveAuthProfileOrder({
+          cfg: params.cfg,
+          store: authStore,
+          provider: candidate.provider,
+        });
+        authRuntime.maybeReprobeWhamBlockedProfiles({
+          store: authStore,
+          profileIds: candidateAuthProfileIds,
+          agentDir: params.agentDir,
+          forModel: candidate.model,
+        });
+      }
     }
     const candidateAuthScope = resolveFallbackAuthScope({
       userLockedAuthProfileId: userLockedAuthProfileEligible ? userLockedAuthProfileId : undefined,
