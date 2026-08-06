@@ -86,21 +86,34 @@ export async function drainContextEngineTurnOutbox(params: {
     return;
   }
   const db = outboxDb(params.database);
-  const rows = executeSqliteQuerySync(
+  const pendingSessions = executeSqliteQuerySync(
     params.database.db,
     db
       .selectFrom("context_engine_turn_outbox")
-      .select(["advancement_key", "payload_json", "session_id"])
+      .select("session_id")
+      .select((expression) => expression.fn.min("created_at").as("oldest_created_at"))
       .where("engine_id", "=", params.engineId)
       .where("owner_plugin_id", params.ownerPluginId ? "=" : "is", params.ownerPluginId ?? null)
-      .orderBy("created_at", "asc")
+      .groupBy("session_id")
+      .orderBy("oldest_created_at", "asc")
       .limit(params.limit ?? 16),
   ).rows;
-  const blockedSessionIds = new Set<string>();
+  const rows = pendingSessions.flatMap(({ session_id }) => {
+    const row = executeSqliteQueryTakeFirstSync(
+      params.database.db,
+      db
+        .selectFrom("context_engine_turn_outbox")
+        .select(["advancement_key", "payload_json", "session_id"])
+        .where("engine_id", "=", params.engineId)
+        .where("owner_plugin_id", params.ownerPluginId ? "=" : "is", params.ownerPluginId ?? null)
+        .where("session_id", "=", session_id)
+        .orderBy("created_at", "asc")
+        .orderBy("advancement_key", "asc")
+        .limit(1),
+    );
+    return row ? [row] : [];
+  });
   for (const row of rows) {
-    if (blockedSessionIds.has(row.session_id)) {
-      continue;
-    }
     try {
       const payload = JSON.parse(row.payload_json) as ContextEngineTurnOutboxPayload;
       await params.engine.commitTurn({
@@ -126,9 +139,6 @@ export async function drainContextEngineTurnOutbox(params: {
           .where("advancement_key", "=", row.advancement_key),
       );
     } catch (error) {
-      // Turn advancement is ordered within a session. A failed earlier row must
-      // remain ahead of later rows until a future drain commits it successfully.
-      blockedSessionIds.add(row.session_id);
       const message = error instanceof Error ? error.message : String(error);
       executeSqliteQuerySync(
         params.database.db,

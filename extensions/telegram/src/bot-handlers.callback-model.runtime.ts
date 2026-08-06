@@ -291,29 +291,34 @@ export async function handleTelegramModelCallback(params: {
       currentModelRef && currentModelSeparator > 0
         ? currentModelRef.slice(currentModelSeparator + 1)
         : resolvedDefault.model;
-    const applied = await applySessionModelSelection({
-      cfg: runtimeCfg,
-      agentId: sessionState.agentId,
-      sessionKey: sessionState.sessionKey,
-      storePath,
-      sessionEntry,
-      sessionStore,
-      allowCreate: sessionEntryMissing,
-      defaultProvider: resolvedDefault.provider,
-      defaultModel: resolvedDefault.model,
-      currentProvider,
-      currentModel,
-      allowedModelKeys: new Set(modelCatalog.map((entry) => `${entry.provider}/${entry.id}`)),
-      modelCatalog,
-      canPersistStickyModelSelection: false,
-      request: {
-        provider: selection.provider,
-        model: selection.model,
-        isDefault: isDefaultSelection,
-        runtime: { kind: "unchanged" },
-      },
-      markLiveSwitchPending: true,
-    });
+    let applied: Awaited<ReturnType<typeof applySessionModelSelection>>;
+    try {
+      applied = await applySessionModelSelection({
+        cfg: runtimeCfg,
+        agentId: sessionState.agentId,
+        sessionKey: sessionState.sessionKey,
+        storePath,
+        sessionEntry,
+        sessionStore,
+        allowCreate: sessionEntryMissing,
+        defaultProvider: resolvedDefault.provider,
+        defaultModel: resolvedDefault.model,
+        currentProvider,
+        currentModel,
+        allowedModelKeys: new Set(modelCatalog.map((entry) => `${entry.provider}/${entry.id}`)),
+        modelCatalog,
+        canPersistStickyModelSelection: false,
+        request: {
+          provider: selection.provider,
+          model: selection.model,
+          isDefault: isDefaultSelection,
+          runtime: { kind: "unchanged" },
+        },
+        markLiveSwitchPending: true,
+      });
+    } catch (err) {
+      throw new TelegramRetryableCallbackError(err);
+    }
     if (applied.status !== "applied") {
       await editMessageWithButtons(`❌ ${applied.message}`, []);
       return true;

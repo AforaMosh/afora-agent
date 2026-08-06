@@ -651,14 +651,15 @@ function appendSqliteTranscriptMessageInTransaction<TMessage>(
       message: params.message,
     });
   const messagesMatchForIdempotentReplay = (stored: unknown, candidate: unknown): boolean => {
-    const withoutTimestamp = (message: unknown): unknown => {
+    const serializedShape = (message: unknown): unknown => {
       if (!isRecord(message)) {
         return message;
       }
       const { timestamp: _timestamp, ...stable } = message;
-      return stable;
+      const serialized = JSON.stringify(stable);
+      return serialized === undefined ? undefined : JSON.parse(serialized);
     };
-    return isDeepStrictEqual(withoutTimestamp(stored), withoutTimestamp(candidate));
+    return isDeepStrictEqual(serializedShape(stored), serializedShape(candidate));
   };
   // Idempotent replays return the stored row with its persisted parent so callers
   // adopt the durable tree instead of re-deriving one from a stale snapshot.

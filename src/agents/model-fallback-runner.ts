@@ -308,6 +308,7 @@ async function runWithModelFallbackInternal<T>(
       });
 
     let candidateAuthProfileIds: string[] | undefined;
+    let userLockedAuthProfileEligible = false;
     if (authRuntime && authStore && !candidateHarnessAuth.skipsProviderAuthCooldown) {
       candidateAuthProfileIds = authRuntime.resolveAuthProfileOrder({
         cfg: params.cfg,
@@ -320,9 +321,17 @@ async function runWithModelFallbackInternal<T>(
         agentDir: params.agentDir,
         forModel: candidate.model,
       });
+      userLockedAuthProfileEligible =
+        userLockedAuthProfileId !== undefined &&
+        authRuntime.resolveAuthProfileEligibility({
+          cfg: params.cfg,
+          store: authStore,
+          provider: candidate.provider,
+          profileId: userLockedAuthProfileId,
+        }).eligible;
     }
     const candidateAuthScope = resolveFallbackAuthScope({
-      userLockedAuthProfileId,
+      userLockedAuthProfileId: userLockedAuthProfileEligible ? userLockedAuthProfileId : undefined,
       profileIds: candidateAuthProfileIds,
     });
 
@@ -372,14 +381,6 @@ async function runWithModelFallbackInternal<T>(
       const isAnyProfileAvailable = profileIds.some(
         (id) => !authRuntime.isProfileInCooldown(authStore, id, undefined, candidate.model),
       );
-      const userLockedAuthProfileEligible =
-        userLockedAuthProfileId !== undefined &&
-        authRuntime.resolveAuthProfileEligibility({
-          cfg: params.cfg,
-          store: authStore,
-          provider: candidate.provider,
-          profileId: userLockedAuthProfileId,
-        }).eligible;
 
       if (profileIds.length > 0 && !isAnyProfileAvailable && !userLockedAuthProfileEligible) {
         // All profiles for this provider are in cooldown.

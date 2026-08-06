@@ -84,13 +84,14 @@ describe("context-engine turn outbox", () => {
         }),
       });
     enqueue("session-a:1", "session-a", 1);
-    enqueue("session-a:2", "session-a", 3);
+    for (let turn = 2; turn <= 17; turn += 1) {
+      enqueue(`session-a:${turn}`, "session-a", turn * 2 - 1);
+    }
     enqueue("session-b:1", "session-b", 1);
     database.db.exec(`
-      UPDATE context_engine_turn_outbox SET created_at = CASE advancement_key
-        WHEN 'session-a:1' THEN 1
-        WHEN 'session-a:2' THEN 2
-        ELSE 3
+      UPDATE context_engine_turn_outbox SET created_at = CASE
+        WHEN session_id = 'session-a' THEN CAST(SUBSTR(advancement_key, 11) AS INTEGER)
+        ELSE 100
       END;
     `);
 
@@ -122,6 +123,19 @@ describe("context-engine turn outbox", () => {
       "session-b:1",
     ]);
     failFirstTurn = false;
+
+    await drainContextEngineTurnOutbox({
+      database,
+      engine,
+      engineId: "test",
+      warn,
+    });
+
+    expect(commitTurn.mock.calls.map(([call]) => call.advancementKey)).toEqual([
+      "session-a:1",
+      "session-b:1",
+      "session-a:1",
+    ]);
 
     await drainContextEngineTurnOutbox({
       database,

@@ -1004,6 +1004,7 @@ describe("runWithModelFallback", () => {
     process.env.OPENCLAW_FALLBACK_SKIP_TTL_MS = "60000";
     try {
       const provider = `pooled-auth-skip-${crypto.randomUUID()}`;
+      const lockedProfile = "openai:locked";
       const profileA = `${provider}:a`;
       const profileB = `${provider}:b`;
       const cfg = makeCfg({
@@ -1019,6 +1020,7 @@ describe("runWithModelFallback", () => {
       const store: AuthProfileStore = {
         version: AUTH_STORE_VERSION,
         profiles: {
+          [lockedProfile]: { type: "api_key", provider: "openai", key: "key-locked" },
           [profileA]: { type: "api_key", provider, key: "key-a" },
         },
         order: { [provider]: [profileA] },
@@ -1049,6 +1051,7 @@ describe("runWithModelFallback", () => {
           model: "m1",
           sessionId: "session:pooled-auth-skip",
           agentDir,
+          userLockedAuthProfileId: lockedProfile,
           run,
         });
 

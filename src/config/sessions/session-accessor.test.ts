@@ -2967,6 +2967,7 @@ describe("session accessor seam", () => {
       message: {
         timestamp: 2,
         metadata: { second: 2, first: 1 },
+        optional: undefined,
         idempotencyKey: "reordered-replay:user",
         content: "same message",
         role: "user",
