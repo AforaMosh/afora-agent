@@ -9,6 +9,7 @@ import {
   acquireQaCredentialLease,
   startQaCredentialLeaseHeartbeat,
 } from "../shared/credential-lease.runtime.js";
+import { createTelegramQaScenarioEnvironment } from "./scenario-environment.js";
 import {
   buildTelegramQaConfig,
   callTelegramApi,
@@ -223,6 +224,56 @@ export async function createTelegramQaTransportAdapter(
       observerState.terminalError = error instanceof Error ? error : new Error("unknown error");
     }
   });
+  const resetTransport = () => {
+    logicalConversationId = runtimeEnv.groupId;
+    logicalConversationKind = "channel";
+    nativeMessageIds.clear();
+    busMessageIds.clear();
+    observerState.pollCount = 0;
+    observerState.updateCount = 0;
+    observerState.filteredCount = 0;
+    observerState.matchedCount = 0;
+    observerState.relevantUpdateKinds.clear();
+  };
+  const sendInbound: AdapterDefinition["sendInbound"] = async (input) => {
+    heartbeat.throwIfFailed();
+    logicalConversationId = input.conversation.id;
+    logicalConversationKind = input.conversation.kind;
+    const text = renderTelegramQaInboundText(input, sutUsername);
+    const nativeReplyToId = input.replyToId ? nativeMessageIds.get(input.replyToId) : undefined;
+    const sent = await callTelegramApi<{ message_id: number }>(
+      runtimeEnv.driverToken,
+      "sendMessage",
+      {
+        chat_id: runtimeEnv.groupId,
+        text,
+        disable_notification: true,
+        ...(nativeReplyToId
+          ? {
+              reply_parameters: {
+                message_id: nativeReplyToId,
+                allow_sending_without_reply: true,
+              },
+            }
+          : {}),
+      },
+    );
+    const message = await context.messages.addInboundMessage({
+      ...input,
+      accountId,
+      senderId: String(driverIdentity.id),
+      senderName: driverIdentity.username,
+    });
+    nativeMessageIds.set(message.id, sent.message_id);
+    busMessageIds.set(sent.message_id, message.id);
+    return message;
+  };
+  const scenarioEnvironment = createTelegramQaScenarioEnvironment({
+    accountId,
+    driverIdentity,
+    groupId: runtimeEnv.groupId,
+    sutIdentity,
+  });
   return {
     id: "telegram",
     label: "Telegram live",
@@ -236,50 +287,15 @@ export async function createTelegramQaTransportAdapter(
       heartbeat.throwIfFailed();
     },
     describeTransportState: () => describeTelegramQaObserverState(observerState),
-    async sendInbound(input) {
-      heartbeat.throwIfFailed();
-      logicalConversationId = input.conversation.id;
-      logicalConversationKind = input.conversation.kind;
-      const text = renderTelegramQaInboundText(input, sutUsername);
-      const nativeReplyToId = input.replyToId ? nativeMessageIds.get(input.replyToId) : undefined;
-      const sent = await callTelegramApi<{ message_id: number }>(
-        runtimeEnv.driverToken,
-        "sendMessage",
-        {
-          chat_id: runtimeEnv.groupId,
-          text,
-          disable_notification: true,
-          ...(nativeReplyToId
-            ? {
-                reply_parameters: {
-                  message_id: nativeReplyToId,
-                  allow_sending_without_reply: true,
-                },
-              }
-            : {}),
-        },
-      );
-      const message = await context.messages.addInboundMessage({
+    sendInbound,
+    sendNativeCommand: async ({ command, ...input }) => {
+      await sendInbound({
         ...input,
-        accountId,
-        senderId: String(driverIdentity.id),
-        senderName: driverIdentity.username,
+        text: `/${command}`,
+        nativeCommand: { name: command.split(/\s+/u, 1)[0] ?? command },
       });
-      nativeMessageIds.set(message.id, sent.message_id);
-      busMessageIds.set(sent.message_id, message.id);
-      return message;
     },
-    resetTransport: () => {
-      logicalConversationId = runtimeEnv.groupId;
-      logicalConversationKind = "channel";
-      nativeMessageIds.clear();
-      busMessageIds.clear();
-      observerState.pollCount = 0;
-      observerState.updateCount = 0;
-      observerState.filteredCount = 0;
-      observerState.matchedCount = 0;
-      observerState.relevantUpdateKinds.clear();
-    },
+    resetTransport,
     createGatewayConfig: () =>
       buildTelegramQaConfig({} as OpenClawConfig, {
         groupId: runtimeEnv.groupId,
@@ -300,6 +316,7 @@ export async function createTelegramQaTransportAdapter(
       replyChannel: "telegram",
       replyTo: runtimeEnv.groupId,
     }),
+    prepareFlow: scenarioEnvironment.prepareFlow,
     async handleAction() {
       throw new Error("Telegram live QA adapter does not implement transport actions");
     },
