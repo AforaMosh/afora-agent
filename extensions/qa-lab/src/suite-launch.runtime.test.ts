@@ -2590,7 +2590,16 @@ describe("qa suite runtime launcher", () => {
     expect(checkpoint.cells.every((cell) => cell.evidence)).toBe(true);
   });
 
-  it("does not retry or synthesize over terminal producer evidence", async () => {
+  it.each([
+    {
+      name: "finalizes unified terminal evidence once before rethrowing deterministic cleanup failure",
+      finalEvidenceFailures: 0,
+    },
+    {
+      name: "aggregates unified cleanup and finalization failures without losing the cleanup error",
+      finalEvidenceFailures: 1,
+    },
+  ])("$name", async ({ finalEvidenceFailures }) => {
     const repoRoot = await makeTempRepo("qa-suite-profile-terminal-producer-");
     const outputDir = path.join(repoRoot, ".artifacts", "qa-e2e", "profile-terminal-producer");
     const scenarioIds = ["dm-chat-baseline", "control-ui-chat-flow-playwright"];
@@ -2634,6 +2643,7 @@ describe("qa suite runtime launcher", () => {
       markHigherFailed();
       throw higherError;
     });
+    atomicState.finalEvidenceFailures = finalEvidenceFailures;
 
     const runPromise = runQaSuite({
       repoRoot,
@@ -2658,16 +2668,36 @@ describe("qa suite runtime launcher", () => {
     releaseLower();
     const thrown = await runPromise.catch((error: unknown) => error);
 
-    expect(thrown).toBe(lowerError);
+    if (finalEvidenceFailures > 0) {
+      expect(thrown).toBeInstanceOf(AggregateError);
+      expect((thrown as AggregateError).errors[0]).toBe(lowerError);
+      expect((thrown as AggregateError).errors[1]).toMatchObject({
+        message: "final evidence disk full",
+      });
+      expect((thrown as Error).cause).toBe(lowerError);
+    } else {
+      expect(thrown).toBe(lowerError);
+    }
     expect(attempts).toEqual(
       new Map([
         [scenarioIds[0], 1],
         [scenarioIds[1], 1],
       ]),
     );
-    await expect(fs.access(path.join(outputDir, "qa-evidence.json"))).rejects.toMatchObject({
-      code: "ENOENT",
-    });
+    const evidencePath = path.join(outputDir, "qa-evidence.json");
+    expect(atomicState.writes.filter((writtenPath) => writtenPath === evidencePath)).toHaveLength(
+      1,
+    );
+    if (finalEvidenceFailures > 0) {
+      await expect(fs.access(evidencePath)).rejects.toMatchObject({ code: "ENOENT" });
+    } else {
+      const finalized = validateQaEvidenceSummaryJson(
+        JSON.parse(await fs.readFile(evidencePath, "utf8")),
+      );
+      expect(finalized.entries.map((entry) => entry.test.id).sort()).toEqual(
+        [...scenarioIds].sort(),
+      );
+    }
     const checkpoint = JSON.parse(
       await fs.readFile(path.join(outputDir, "qa-profile-run-checkpoint.json"), "utf8"),
     ) as { cells: Array<{ evidence?: { path: string }; scenarioId: string }> };

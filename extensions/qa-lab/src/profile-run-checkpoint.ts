@@ -103,6 +103,63 @@ export async function createQaProfileRunCheckpoint(params: {
       });
       refs.set(cellKey, ref);
     });
+  const finalize = () =>
+    mutate(async () => {
+      const observed: Cell[] = [];
+      const summaries: QaEvidenceSummaryJson[] = [];
+      for (const [cellKey, cell] of cells) {
+        const ref = refs.get(cellKey);
+        if (!ref) {
+          continue;
+        }
+        const evidence = await read(ref, cell);
+        summaries.push(evidence);
+        observed.push(cell);
+      }
+      const latest = summaries.at(-1);
+      if (!latest) {
+        throw new Error("QA profile finalization requires terminal evidence");
+      }
+      const aggregateSummary = { ...latest, entries: summaries.flatMap((item) => item.entries) };
+      delete aggregateSummary.profileCell;
+      const aggregate = attachQaEvidenceScorecard({
+        summary: aggregateSummary,
+        evidenceMode: params.spec.evidenceMode,
+        profile: params.spec.profile,
+        profilePlan: plan(observed),
+        scorecard: buildQaProfileScorecardEvidence({
+          evidence: aggregateSummary,
+          filters: params.spec.filters,
+          categories: params.spec.categories,
+        }),
+      });
+      await params.retryPhase("profile finalization", () =>
+        writeJsonFileAtomically(path.join(params.outputDir, QA_EVIDENCE_FILENAME), aggregate),
+      );
+      return aggregate;
+    });
+  const finalizeRun = async <T>(run: (finalize: typeof finalize) => Promise<T>) => {
+    let finalization: ReturnType<typeof finalize> | undefined;
+    const finalizeOnce = () => (finalization ??= finalize());
+    try {
+      const result = await run(finalizeOnce);
+      await finalizeOnce();
+      return result;
+    } catch (originalError) {
+      if (!finalization && refs.size > 0) {
+        try {
+          await finalizeOnce();
+        } catch (finalizationError) {
+          throw new AggregateError(
+            [originalError, finalizationError],
+            "QA profile execution and finalization both failed",
+            { cause: originalError },
+          );
+        }
+      }
+      throw originalError;
+    }
+  };
   return {
     retryPhase: params.retryPhase,
     control(partitionCells: readonly Cell[]): QaProfileRunControl {
@@ -121,40 +178,7 @@ export async function createQaProfileRunCheckpoint(params: {
         retryPhase: params.retryPhase,
       };
     },
-    finalize: () =>
-      mutate(async () => {
-        const observed: Cell[] = [];
-        const summaries: QaEvidenceSummaryJson[] = [];
-        for (const [cellKey, cell] of cells) {
-          const ref = refs.get(cellKey);
-          if (!ref) {
-            continue;
-          }
-          const evidence = await read(ref, cell);
-          summaries.push(evidence);
-          observed.push(cell);
-        }
-        const latest = summaries.at(-1);
-        if (!latest) {
-          throw new Error("QA profile finalization requires terminal evidence");
-        }
-        const aggregateSummary = { ...latest, entries: summaries.flatMap((item) => item.entries) };
-        delete aggregateSummary.profileCell;
-        const aggregate = attachQaEvidenceScorecard({
-          summary: aggregateSummary,
-          evidenceMode: params.spec.evidenceMode,
-          profile: params.spec.profile,
-          profilePlan: plan(observed),
-          scorecard: buildQaProfileScorecardEvidence({
-            evidence: aggregateSummary,
-            filters: params.spec.filters,
-            categories: params.spec.categories,
-          }),
-        });
-        await params.retryPhase("profile finalization", () =>
-          writeJsonFileAtomically(path.join(params.outputDir, QA_EVIDENCE_FILENAME), aggregate),
-        );
-        return aggregate;
-      }),
+    finalize,
+    finalizeRun,
   };
 }

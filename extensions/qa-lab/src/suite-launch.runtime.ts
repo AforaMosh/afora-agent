@@ -734,6 +734,7 @@ async function writeUnifiedQaSuiteArtifacts(params: {
 }
 
 async function runUnifiedQaSuite(params: {
+  finalizeProfile?: QaProfileCheckpoint["finalize"];
   plan: Extract<QaSuiteExecutionPlan, { kind: "unified" }>;
   profileCheckpoint?: QaProfileCheckpoint;
   runParams: QaSuiteLaunchParams | undefined;
@@ -1320,8 +1321,8 @@ async function runUnifiedQaSuite(params: {
     evidenceSummaries.push(...partitionResult.evidenceSummaries);
   }
   const finishedAt = new Date();
-  const evidence = params.profileCheckpoint
-    ? await params.profileCheckpoint.finalize()
+  const evidence = params.finalizeProfile
+    ? await params.finalizeProfile()
     : mergeQaEvidenceSummaries({
         evidenceSummaries,
         generatedAt: finishedAt.toISOString(),
@@ -1429,11 +1430,11 @@ export async function runQaSuite(...args: [QaSuiteLaunchParams?]): Promise<QaSui
       })
     : undefined;
   if (plan.kind === "unified") {
-    const result = await runUnifiedQaSuite({
-      runParams,
-      plan,
-      profileCheckpoint,
-    });
+    const runUnified = (finalizeProfile?: QaProfileCheckpoint["finalize"]) =>
+      runUnifiedQaSuite({ runParams, plan, profileCheckpoint, finalizeProfile });
+    const result = profileCheckpoint
+      ? await profileCheckpoint.finalizeRun(runUnified)
+      : await runUnified();
     return {
       executionKind: "suite",
       result,
@@ -1445,35 +1446,21 @@ export async function runQaSuite(...args: [QaSuiteLaunchParams?]): Promise<QaSui
     profileRun,
     ...(profileCheckpoint ? { writeEvidenceFile: false } : {}),
   };
-  let result: QaSuiteResult;
-  try {
-    result = await runQaSuiteWithInfraRetry(
+  const runFlow = async (finalizeProfile?: QaProfileCheckpoint["finalize"]) => {
+    const result = await runQaSuiteWithInfraRetry(
       () => runQaFlowSuiteFromRuntime(flowRunParams),
       QA_SUITE_INFRA_RETRY_LIMIT,
       { shouldRetry: () => !profileRun?.hasTerminalEvidence() },
     );
-  } catch (originalError) {
-    if (!profileCheckpoint || !profileRun?.hasTerminalEvidence()) {
-      throw originalError;
+    if (finalizeProfile) {
+      result.evidence = await finalizeProfile();
     }
-    try {
-      await profileCheckpoint.finalize();
-    } catch (finalizationError) {
-      throw new AggregateError(
-        [originalError, finalizationError],
-        "QA profile execution and finalization both failed",
-        { cause: originalError },
-      );
-    }
-    throw originalError;
-  }
-  if (profileCheckpoint) {
-    result.evidence = await profileCheckpoint.finalize();
-  }
-  return {
-    executionKind: "flow",
-    result,
+    return {
+      executionKind: "flow" as const,
+      result,
+    };
   };
+  return profileCheckpoint ? await profileCheckpoint.finalizeRun(runFlow) : await runFlow();
 }
 
 export async function runQaFlowSuiteFromRuntime(
