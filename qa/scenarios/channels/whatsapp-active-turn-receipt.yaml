@@ -1,0 +1,21 @@
+title: WhatsApp emits one active-turn receipt before a delayed final
+scenario:
+  id: whatsapp-active-turn-receipt
+  surface: channels
+  coverage:
+    primary:
+      - channels.reply-message-actions
+  execution:
+    kind: flow
+    channel: whatsapp
+    timeoutMs: 120000
+    retryCount: 1
+    suiteIsolation: isolated
+    config:
+      requiredProviderMode: mock-openai
+flow:
+  module: ./live-transports/whatsapp/scenario-runtime.js
+  call: runWhatsAppScenario
+  args:
+    - { expr: whatsappScenarioContext }
+    - { moduleExport: whatsappQaActiveTurnReceiptScenario }

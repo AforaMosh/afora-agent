@@ -40,7 +40,10 @@ type ReplyTurnLedger = {
   hasForeignQueuedAdmissions: () => boolean;
 };
 
-export function createReplyTurnLedger(dispatcher: ReplyDispatcher): ReplyTurnLedger {
+export function createReplyTurnLedger(
+  dispatcher: ReplyDispatcher,
+  options?: { onVisibleDelivery?: () => void },
+): ReplyTurnLedger {
   let visibleDeliveries = 0;
   let queuedAdmissions = 0;
   const pendingOutcomes: Array<Promise<void>> = [];
@@ -71,6 +74,7 @@ export function createReplyTurnLedger(dispatcher: ReplyDispatcher): ReplyTurnLed
         // strongest visibility fact (legacy trust level).
         if (contentful) {
           visibleDeliveries += 1;
+          options?.onVisibleDelivery?.();
         }
         return { queued: true };
       }
@@ -82,6 +86,7 @@ export function createReplyTurnLedger(dispatcher: ReplyDispatcher): ReplyTurnLed
           // "failed-before-deliver") count as proven-invisible.
           if (contentful && outcome !== "cancelled" && outcome !== "failed-before-deliver") {
             visibleDeliveries += 1;
+            options?.onVisibleDelivery?.();
           }
         }),
       );
@@ -90,6 +95,7 @@ export function createReplyTurnLedger(dispatcher: ReplyDispatcher): ReplyTurnLed
     recordRoutedDelivery(payload, delivered) {
       if (delivered && hasOutboundReplyContent(payload, { trimText: true })) {
         visibleDeliveries += 1;
+        options?.onVisibleDelivery?.();
       }
     },
     async settleQueued(abortSignal) {

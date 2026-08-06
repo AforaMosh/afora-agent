@@ -222,6 +222,7 @@ export const QA_EMPTY_RESPONSE_SIDE_EFFECT_RECOVERY_PROMPT_RE =
   /empty response after write recovery qa check/i;
 export const QA_STREAMING_PROMPT_RE = /(?:partial|quiet) streaming qa check/i;
 export const QA_FINAL_ONLY_MARKER_STREAMING_PROMPT_RE = /final-only marker streaming qa check/i;
+export const QA_ACTIVE_TURN_RECEIPT_PROMPT_RE = /active-turn receipt qa check/i;
 export const QA_BLOCK_STREAMING_PROMPT_RE = /block streaming qa check/i;
 export const QA_TOOL_PROGRESS_ERROR_PROMPT_RE = /tool progress error qa check/i;
 export const QA_TOOL_PROGRESS_PROMPT_RE = /tool progress qa check/i;

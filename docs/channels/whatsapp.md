@@ -493,6 +493,14 @@ Set `messages.statusReactions.enabled: true` to let WhatsApp replace the ack rea
 
 Notes: `channels.whatsapp.ackReaction` still controls eligibility for direct messages and groups; the queued state uses the same effective emoji as plain ack reactions; WhatsApp has one bot reaction slot per message, so lifecycle updates replace the current reaction in place and restore the ack after the final done/error state.
 
+Status reactions are optional transport presentation. Even when they are
+disabled, a directed automatic WhatsApp turn that produces no confirmed visible
+reply or progress for 30 seconds receives the default one-shot status message;
+the final answer follows through normal delivery. Send-policy denial,
+message-tool-only delivery, ambient or unmentioned group activity, abort, and
+already-visible progress suppress that receipt. Enabling status reactions does
+not replace or reconfigure the shared fallback.
+
 ## Multi-account and credentials
 
 <AccordionGroup>

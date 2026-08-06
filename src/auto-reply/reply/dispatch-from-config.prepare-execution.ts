@@ -14,6 +14,11 @@ import { shouldCleanTtsDirectiveText } from "../../tts/tts-config.js";
 import { normalizeMessageChannel } from "../../utils/message-channel.js";
 import type { GetReplyOptions } from "../get-reply-options.types.js";
 import type { ReplyPayload } from "../reply-payload.js";
+import {
+  ACTIVE_TURN_RECEIPT_TEXT,
+  classifyActiveTurnReceiptDispatchOutcome,
+  type ActiveTurnReceiptDeliveryOutcome,
+} from "./dispatch-from-config.active-turn-receipt.js";
 import type { ChooseDispatchRouteReadyState } from "./dispatch-from-config.choose-route.js";
 import { extendPreparedDispatchState } from "./dispatch-from-config.phase-state.js";
 import { loadGetReplyFromConfigRuntime } from "./dispatch-from-config.runtime-loaders.js";
@@ -27,21 +32,26 @@ import { resolveRunTypingPolicy } from "./typing-policy.js";
 
 export async function prepareDispatchExecution(state: ChooseDispatchRouteReadyState) {
   const {
+    activeTurnReceipt,
     cfg,
     ctx,
     dispatcher,
     isDispatchOperationAborted,
+    isInternalWebchatTurn,
     markInboundDedupeReplayUnsafe,
     markProgress,
     noteCommentaryProgress,
     params,
     sendPayloadAsync,
     sendPolicyDenied,
+    noVisibleReplyFallbackDirected,
+    emptyFinalAllowedAsSilent,
     sessionKey,
     shouldEmitVerboseProgress,
     shouldRouteToOriginating,
     shouldSendToolSummaries,
     shouldSendVerboseProgressMessages,
+    sourceReplyDeliveryMode,
     suppressAutomaticSourceDelivery,
     suppressDelivery,
     turnLedger,
@@ -310,6 +320,7 @@ export async function prepareDispatchExecution(state: ChooseDispatchRouteReadySt
           if (result === false) {
             return result;
           }
+          activeTurnReceipt.noteVisible();
           await options?.onVisible?.(...args);
         }
         return undefined;
@@ -418,8 +429,48 @@ export async function prepareDispatchExecution(state: ChooseDispatchRouteReadySt
     : params.usePublishedModelRuntime || publishedRuntimeReplyConfig
       ? withPublishedRuntimeReplyConfig(runtimeReplyConfig)
       : withFullRuntimeReplyConfig(cfg);
+  const deliverActiveTurnReceipt = async (): Promise<ActiveTurnReceiptDeliveryOutcome> => {
+    const payload: ReplyPayload = {
+      text: ACTIVE_TURN_RECEIPT_TEXT,
+      isStatusNotice: true,
+    };
+    if (shouldRouteToOriginating) {
+      const result = await sendPayloadAsync(payload, undefined, false, "final");
+      if (!result) {
+        return "proven-unsent";
+      }
+      if (result.delivered) {
+        return result.ambiguous ? "maybe-visible" : "confirmed-visible";
+      }
+      return result.suppressed ? "maybe-visible" : "proven-unsent";
+    }
+    markInboundDedupeReplayUnsafe();
+    const send = turnLedger.sendQueued("final", payload);
+    if (!send.queued) {
+      return "proven-unsent";
+    }
+    if (!send.outcome) {
+      return "maybe-visible";
+    }
+    return classifyActiveTurnReceiptDispatchOutcome(await send.outcome);
+  };
+  const armActiveTurnReceipt = () => {
+    activeTurnReceipt.arm({
+      eligible:
+        noVisibleReplyFallbackDirected &&
+        !isInternalWebchatTurn &&
+        !emptyFinalAllowedAsSilent &&
+        !sendPolicyDenied &&
+        !suppressDelivery &&
+        sourceReplyDeliveryMode !== "message_tool_only" &&
+        params.replyOptions?.isHeartbeat !== true,
+      abortSignal: state.getDispatchAbortSignal(),
+      deliver: deliverActiveTurnReceipt,
+    });
+  };
   state.recordAgentDispatchStarted();
   const nextState = extendPreparedDispatchState(state, {
+    armActiveTurnReceipt,
     sendPlanUpdate,
     cleanBlockTtsDirectiveText,
     resolveToolDeliveryPayload,

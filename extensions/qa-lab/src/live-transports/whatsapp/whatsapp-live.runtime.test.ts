@@ -16,6 +16,7 @@ import { readQaScenarioById } from "../../scenario-catalog.js";
 import { requireFlowScenario } from "../../scenario-catalog.test-utils.js";
 import { applyQaMergePatch, collectQaSuiteGatewayConfigPatch } from "../../suite-planning.js";
 import { createWhatsAppQaScenarioEnvironment } from "./scenario-environment.js";
+import { whatsappQaActiveTurnReceiptScenario } from "./scenario-runtime.js";
 import { resolveWhatsAppQaScenarioIds } from "./scenario-selection.js";
 import { runWhatsAppApprovalScenario } from "./whatsapp-live.approvals.js";
 import { buildWhatsAppQaConfig, parseWhatsAppQaCredentialPayload } from "./whatsapp-live.config.js";
@@ -1679,6 +1680,19 @@ describe("WhatsApp QA live runtime", () => {
     ]);
     expect(run.expectedSutMessageCount).toBe(2);
     expect(run.settleMs).toBe(4_000);
+  });
+
+  it("defines the active-turn receipt as two ordered messages with status reactions disabled", () => {
+    const { run, scenario } = requireWhatsAppMessageScenario("whatsapp-active-turn-receipt", {
+      hooks: ["afterReply", "verify"],
+    });
+
+    expect(scenario.configOverrides?.statusReactions).toBe(false);
+    expect(run.input).toContain("Active-turn receipt QA check");
+    expect(run.input).toContain("Final-only marker streaming QA check");
+    expect(run.matchText).toBe("I’m still working on this. I’ll send the answer when it’s ready.");
+    expect(run.expectedSutMessageCount).toBe(2);
+    expect(whatsappQaActiveTurnReceiptScenario.buildRun).toBe(scenario.buildRun);
   });
 
   it("requires the long-reply delivery-shape tail marker in the second chunk", async () => {

@@ -19,13 +19,15 @@ function createUntrackedDispatcher(overrides: Partial<ReplyDispatcher> = {}): Re
 
 describe("createReplyTurnLedger", () => {
   it("counts a delivered contentful payload as visible after settlement", async () => {
+    const onVisibleDelivery = vi.fn();
     const dispatcher = createReplyDispatcher({ deliver: async () => {} });
-    const ledger = createReplyTurnLedger(dispatcher);
+    const ledger = createReplyTurnLedger(dispatcher, { onVisibleDelivery });
     const send = ledger.sendQueued("final", { text: "hello" });
     expect(send.queued).toBe(true);
     expect(send.outcome).toBeDefined();
     await ledger.settleQueued();
     expect(ledger.hasVisibleDelivery()).toBe(true);
+    expect(onVisibleDelivery).toHaveBeenCalledOnce();
     dispatcher.markComplete();
     await dispatcher.waitForIdle();
   });

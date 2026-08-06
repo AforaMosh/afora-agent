@@ -83,6 +83,42 @@ export const whatsappQaStreamFinalMessageAccountingScenario: WhatsAppQaScenarioI
   }),
 };
 
+export const whatsappQaActiveTurnReceiptScenario: WhatsAppQaScenarioImplementation = {
+  posture: "user-path",
+  configOverrides: {
+    statusReactions: false,
+  },
+  buildRun: () => {
+    const token = `WHATSAPP_QA_ACTIVE_TURN_FINAL_${randomUUID().slice(0, 8).toUpperCase()}`;
+    return {
+      afterReply: async (receipt, context) => {
+        const final = await waitForScenarioObservedMessage(context, {
+          observedAfter: new Date(receipt.observedAt),
+          timeoutMs: 60_000,
+          match: (message) => message.text === token,
+        });
+        return `active-turn receipt preceded final ${final.messageId ?? "<unknown>"}`;
+      },
+      configMode: "allowlist",
+      expectReply: true,
+      expectedJoinedSutTextIncludes: [
+        "I’m still working on this. I’ll send the answer when it’s ready.",
+        token,
+      ],
+      expectedSutMessageCount: 2,
+      input: `Active-turn receipt QA check. Final-only marker streaming QA check; reply exactly \`${token}\`.`,
+      matchText: "I’m still working on this. I’ll send the answer when it’s ready.",
+      settleMs: 4_000,
+      target: "dm",
+      verify: (receipt) => {
+        if (receipt.text !== "I’m still working on this. I’ll send the answer when it’s ready.") {
+          throw new Error("expected the generic active-turn receipt before the final answer");
+        }
+      },
+    };
+  },
+};
+
 export const whatsappQaApprovalExecDenyNativeScenario: WhatsAppQaScenarioImplementation = {
   posture: "native-approval",
   configOverrides: {

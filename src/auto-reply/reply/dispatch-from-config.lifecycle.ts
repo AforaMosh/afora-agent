@@ -9,6 +9,7 @@ import {
   createAbortAwareDispatcher,
   DispatchReplyOperationAbortedError,
 } from "./dispatch-from-config.abort.js";
+import { createActiveTurnReceiptCoordinator } from "./dispatch-from-config.active-turn-receipt.js";
 import type { InboundMessageAuditTerminalRecorder } from "./dispatch-from-config.audit.js";
 import { shouldLetSlackRoutedThreadBypassBusyReplyOperation } from "./dispatch-from-config.context.js";
 import { createReplyTurnLedger } from "./dispatch-from-config.turn-ledger.js";
@@ -370,12 +371,17 @@ export function createDispatchReplyOperationCoordinator(params: {
 
   const getQueuedFollowupAbortSignal = () =>
     dispatchReplyOperation?.abortSignal ?? params.replyOptions?.abortSignal;
+  const activeTurnReceipt = createActiveTurnReceiptCoordinator();
+  const turnLedger = createReplyTurnLedger(params.dispatcher, {
+    onVisibleDelivery: () => activeTurnReceipt.noteVisible(),
+  });
   let observedReplyDelivery = false;
   const markObservedReplyDelivery = async () => {
     if (observedReplyDelivery) {
       return;
     }
     observedReplyDelivery = true;
+    activeTurnReceipt.noteVisible();
     await params.replyOptions?.onObservedReplyDelivery?.();
   };
   const getReplyOptions = () => {
@@ -437,8 +443,8 @@ export function createDispatchReplyOperationCoordinator(params: {
     }
   };
 
-  const turnLedger = createReplyTurnLedger(params.dispatcher);
   return {
+    activeTurnReceipt,
     completeDispatchReplyOperation,
     // Hook-queued payloads must settle through the turn ledger too, or a
     // hook-delivered visible reply could trigger the no-visible-reply fallback.

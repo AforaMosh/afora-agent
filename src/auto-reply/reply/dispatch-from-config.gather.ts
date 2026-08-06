@@ -335,6 +335,7 @@ export async function gatherDispatchRequest(
     routeThreadId,
   });
   const {
+    activeTurnReceipt,
     completeDispatchReplyOperation,
     dispatchHookDispatcher,
     ensureDispatchReplyOperation,
@@ -447,6 +448,7 @@ export async function gatherDispatchRequest(
       };
     };
     const nextState = extendPreparedDispatchState(state, {
+      activeTurnReceipt,
       ctx,
       cfg,
       dispatcher,

@@ -95,7 +95,8 @@ export async function executeDispatch(state: PrepareDispatchExecutionReadyState)
     state.progressState.accumulatedBlockTtsText = "";
     return true;
   };
-  const replyResult = await runWithDispatchLifecycleAdmission(
+  state.armActiveTurnReceipt();
+  const replyResultPromise = runWithDispatchLifecycleAdmission(
     async () =>
       await runWithDispatchAbortSignal(
         getDispatchAbortSignal(),
@@ -111,9 +112,11 @@ export async function executeDispatch(state: PrepareDispatchExecutionReadyState)
                 ...({
                   onDeliberateSilentTerminalReply: () => {
                     deliberateSilentTerminalReply = true;
+                    state.activeTurnReceipt.cancel();
                   },
                   onPendingContinuation: () => {
                     pendingContinuation = true;
+                    state.activeTurnReceipt.cancel();
                   },
                   onSessionMetadataChanges: notifySessionMetadataChanges,
                   onSessionPrepared: state.notePreparedSession,
@@ -576,6 +579,12 @@ export async function executeDispatch(state: PrepareDispatchExecutionReadyState)
       cfg: replyConfig,
     });
   });
+  let replyResult: Awaited<typeof replyResultPromise>;
+  try {
+    replyResult = await replyResultPromise;
+  } finally {
+    await state.activeTurnReceipt.settleBeforeTerminal();
+  }
   if (isDispatchOperationAborted()) {
     try {
       await flushDeferredFinalText();

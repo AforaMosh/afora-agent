@@ -424,6 +424,24 @@ Channels without safe edit support fall back to typing indicators or
 final-only delivery. See [Streaming and chunking](/concepts/streaming) for the
 full runtime-behavior breakdown per channel.
 
+## Default long-turn receipt
+
+Progress drafts are optional channel presentation. Separately, every directed
+automatic chat turn has a built-in silence bound: if 30 seconds pass without a
+confirmed visible reply or progress update, OpenClaw sends one short status
+receipt and delivers the final answer normally when it is ready. This fallback
+is internal and has no configuration knob.
+
+The receipt does not appear for send-policy denials, message-tool-only turns,
+ambient group or room events, internal webchat work, or conversations where
+silence is explicitly allowed. A confirmed tool result, answer block,
+commentary/progress update, routed reply, final reply, abort, or terminal turn
+settlement cancels it. At most one receipt becomes visible for a turn.
+
+Progress drafts, transport-specific reactions, and this default receipt remain
+separate. Enabling a richer progress feature does not change the fallback's
+eligibility or turn-delivery policy.
+
 ## Finalization
 
 When the final answer is ready, OpenClaw tries to keep the chat clean:

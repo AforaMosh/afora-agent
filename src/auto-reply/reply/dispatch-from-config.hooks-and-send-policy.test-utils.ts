@@ -6,6 +6,7 @@ import type { PluginSubagentRequesterContext } from "../../plugins/runtime/subag
 import { setReplyPayloadMetadata } from "../reply-payload.js";
 import type { MsgContext } from "../templating.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
+import { ACTIVE_TURN_RECEIPT_TEXT } from "./dispatch-from-config.active-turn-receipt.js";
 import {
   NO_VISIBLE_REPLY_FALLBACK_TEXT,
   QUEUE_CAP_REJECTION_TEXT,
@@ -41,6 +42,16 @@ import { resolveReplyOperationRunState } from "./reply-operation-run-state.js";
 import { buildTestCtx } from "./test-ctx.js";
 
 beforeAll(globalBeforeAll0);
+
+const ACTIVE_TURN_RECEIPT_DELAY_MS = 30_000;
+
+function createDeferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  const promise = new Promise<T>((next) => {
+    resolve = next;
+  });
+  return { promise, resolve };
+}
 
 describe("before_dispatch hook", () => {
   beforeEach(describe1BeforeEach0);
@@ -489,6 +500,78 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
     expect(result.noVisibleReplyFallbackEligible).toBeUndefined();
   });
 
+  it("retries a proven pre-send receipt failure and preserves final ordering", async () => {
+    vi.useFakeTimers();
+    try {
+      setNoAbort();
+      const deliveredTexts: string[] = [];
+      let beforeDeliverCalls = 0;
+      const dispatcher = createReplyDispatcher({
+        beforeDeliver: async (payload) => {
+          beforeDeliverCalls += 1;
+          if (beforeDeliverCalls === 1) {
+            throw new Error("transport not ready");
+          }
+          return payload;
+        },
+        deliver: async (payload) => {
+          deliveredTexts.push(payload.text ?? "");
+        },
+      });
+      const terminal = createDeferred<ReplyPayload>();
+      const run = dispatchReplyFromConfig({
+        ctx: buildTestCtx({ ChatType: "direct", SessionKey: "receipt:retry" }),
+        cfg: emptyConfig,
+        dispatcher,
+        replyResolver: async () => await terminal.promise,
+      });
+      await vi.advanceTimersByTimeAsync(ACTIVE_TURN_RECEIPT_DELAY_MS);
+      expect(beforeDeliverCalls).toBe(2);
+      expect(deliveredTexts).toEqual([ACTIVE_TURN_RECEIPT_TEXT]);
+
+      terminal.resolve({ text: "final after retry" });
+      await run;
+      dispatcher.markComplete();
+      await dispatcher.waitForIdle();
+      expect(deliveredTexts).toEqual([ACTIVE_TURN_RECEIPT_TEXT, "final after retry"]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not replay a maybe-visible receipt after transport started", async () => {
+    vi.useFakeTimers();
+    try {
+      setNoAbort();
+      const attempts: string[] = [];
+      const dispatcher = createReplyDispatcher({
+        deliver: async (payload) => {
+          attempts.push(payload.text ?? "");
+          if (attempts.length === 1) {
+            throw new Error("delivery outcome unknown");
+          }
+        },
+      });
+      const terminal = createDeferred<ReplyPayload>();
+      const run = dispatchReplyFromConfig({
+        ctx: buildTestCtx({ ChatType: "direct", SessionKey: "receipt:ambiguous" }),
+        cfg: emptyConfig,
+        dispatcher,
+        replyResolver: async () => await terminal.promise,
+      });
+      await vi.advanceTimersByTimeAsync(ACTIVE_TURN_RECEIPT_DELAY_MS);
+      expect(attempts).toEqual([ACTIVE_TURN_RECEIPT_TEXT]);
+
+      terminal.resolve({ text: "final after ambiguity" });
+      await run;
+      dispatcher.markComplete();
+      await dispatcher.waitForIdle();
+      expect(attempts).toEqual([ACTIVE_TURN_RECEIPT_TEXT, "final after ambiguity"]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("does not infer terminal silence from a sibling NO_REPLY payload", async () => {
     setNoAbort();
     const deliveredTexts: string[] = [];
@@ -684,6 +767,127 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       queuedFinal: false,
       counts: { tool: 0, block: 0, final: 0 },
     });
+  });
+
+  it.each([
+    ["locally owned", false],
+    ["accepted by an active run", true],
+  ] as const)("sends one bounded receipt for %s pending work", async (_label, accepted) => {
+    vi.useFakeTimers();
+    try {
+      setNoAbort();
+      const deliveredTexts: string[] = [];
+      const dispatcher = createReplyDispatcher({
+        deliver: async (payload) => {
+          deliveredTexts.push(payload.text ?? "");
+        },
+      });
+      const terminal = createDeferred<ReplyPayload | undefined>();
+      const run = dispatchReplyFromConfig({
+        ctx: buildTestCtx({
+          ChatType: "direct",
+          Surface: "telegram",
+          Provider: "telegram",
+          SessionKey: `agent:main:telegram:direct:${accepted ? "accepted" : "owned"}`,
+        }),
+        cfg: emptyConfig,
+        dispatcher,
+        replyResolver: async (_ctx, opts) => {
+          if (accepted) {
+            const runState = resolveReplyOperationRunState(opts);
+            if (!runState) {
+              throw new Error("expected reply operation run state");
+            }
+            runState.admission = { status: "accepted", mode: "followup" };
+          }
+          return await terminal.promise;
+        },
+      });
+      await vi.advanceTimersByTimeAsync(ACTIVE_TURN_RECEIPT_DELAY_MS);
+      expect(deliveredTexts).toEqual([ACTIVE_TURN_RECEIPT_TEXT]);
+
+      terminal.resolve(accepted ? undefined : { text: "final answer" });
+      await run;
+      dispatcher.markComplete();
+      await dispatcher.waitForIdle();
+      expect(deliveredTexts).toEqual(
+        accepted ? [ACTIVE_TURN_RECEIPT_TEXT] : [ACTIVE_TURN_RECEIPT_TEXT, "final answer"],
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it.each([
+    {
+      label: "send-policy denial",
+      ctx: buildTestCtx({ ChatType: "direct", SessionKey: "receipt:send-policy" }),
+      cfg: { session: { sendPolicy: { default: "deny" } } } as OpenClawConfig,
+    },
+    {
+      label: "message-tool-only delivery",
+      ctx: buildTestCtx({ ChatType: "direct", SessionKey: "receipt:message-tool" }),
+      cfg: emptyConfig,
+      replyOptions: { sourceReplyDeliveryMode: "message_tool_only" as const },
+    },
+    {
+      label: "ambient group chatter",
+      ctx: buildTestCtx({ ChatType: "group", SessionKey: "receipt:ambient" }),
+      cfg: emptyConfig,
+    },
+    {
+      label: "room events",
+      ctx: buildTestCtx({
+        ChatType: "group",
+        InboundEventKind: "room_event",
+        SessionKey: "receipt:room",
+      }),
+      cfg: emptyConfig,
+    },
+    {
+      label: "internal webchat",
+      ctx: buildTestCtx({
+        ChatType: "direct",
+        Surface: "webchat",
+        Provider: "webchat",
+        SessionKey: "receipt:webchat",
+      }),
+      cfg: emptyConfig,
+    },
+    {
+      label: "sanctioned group silence",
+      ctx: buildTestCtx({
+        ChatType: "group",
+        WasMentioned: false,
+        SessionKey: "receipt:silent-group",
+      }),
+      cfg: {
+        agents: { defaults: { silentReply: { group: "allow" } } },
+      } as OpenClawConfig,
+    },
+  ])("suppresses the active receipt for $label", async ({ ctx, cfg, replyOptions }) => {
+    vi.useFakeTimers();
+    try {
+      setNoAbort();
+      const deliver = vi.fn(async () => {});
+      const dispatcher = createReplyDispatcher({ deliver });
+      const terminal = createDeferred<undefined>();
+      const run = dispatchReplyFromConfig({
+        ctx,
+        cfg,
+        dispatcher,
+        replyOptions,
+        replyResolver: async () => await terminal.promise,
+      });
+      await vi.advanceTimersByTimeAsync(ACTIVE_TURN_RECEIPT_DELAY_MS);
+      expect(deliver).not.toHaveBeenCalled();
+      terminal.resolve(undefined);
+      await run;
+      dispatcher.markComplete();
+      await dispatcher.waitForIdle();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("keeps room_event turns silent even when silence policy is disallow", async () => {

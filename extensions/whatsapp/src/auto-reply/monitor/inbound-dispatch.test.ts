@@ -6,6 +6,7 @@ let capturedDispatchParams: unknown;
 
 type CapturedReplyPayload = {
   text?: string;
+  isStatusNotice?: boolean;
   isReasoning?: boolean;
   isCompactionNotice?: boolean;
   isError?: boolean;
@@ -1749,6 +1750,38 @@ describe("whatsapp inbound dispatch", () => {
 
     expect(getCapturedReplyOptions()?.disableBlockStreaming).toBe(false);
     expect(getCapturedReplyOptions()?.sourceReplyDeliveryMode).toBeUndefined();
+  });
+
+  it("delivers the shared active-turn receipt when status reactions are disabled", async () => {
+    const deliverReply = vi.fn(async () => acceptedDeliveryResult());
+    deliverInboundReplyWithMessageSendContextMock.mockResolvedValueOnce({
+      status: "handled_visible",
+      delivery: { visibleReplySent: true },
+    });
+    await dispatchBufferedReply({
+      cfg: {
+        channels: { whatsapp: { streaming: { block: { enabled: true } } } },
+        messages: { statusReactions: { enabled: false } },
+      } as never,
+      deliverReply,
+    });
+
+    await getCapturedDeliver()?.(
+      {
+        text: "I’m still working on this. I’ll send the answer when it’s ready.",
+        isStatusNotice: true,
+      },
+      { kind: "final" },
+    );
+
+    expect(deliverInboundReplyWithMessageSendContextMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: expect.objectContaining({
+          text: "I’m still working on this. I’ll send the answer when it’s ready.",
+        }),
+      }),
+    );
+    expect(deliverReply).not.toHaveBeenCalled();
   });
 
   it("defaults WhatsApp group replies to message-tool-only and disables source streaming", async () => {

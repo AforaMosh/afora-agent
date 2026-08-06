@@ -40,6 +40,7 @@ import {
   QA_EMPTY_RESPONSE_SIDE_EFFECT_RECOVERY_PROMPT_RE,
   QA_STREAMING_PROMPT_RE,
   QA_FINAL_ONLY_MARKER_STREAMING_PROMPT_RE,
+  QA_ACTIVE_TURN_RECEIPT_PROMPT_RE,
   QA_BLOCK_STREAMING_PROMPT_RE,
   QA_TOOL_PROGRESS_ERROR_PROMPT_RE,
   QA_TOOL_PROGRESS_PROMPT_RE,
@@ -656,6 +657,18 @@ type TerminalRequesterSettleGate = {
   markSettled: (caseName: string, childSessionKey: string) => void;
   waitUntilSettled: (caseName: string, childSessionKey: string) => Promise<void>;
 };
+
+function resolveQaMockPreviewPauseMs(params: {
+  allInputText: string;
+  finalOnlyMarkerPauseMs: number;
+}) {
+  if (!QA_FINAL_ONLY_MARKER_STREAMING_PROMPT_RE.test(params.allInputText)) {
+    return undefined;
+  }
+  return QA_ACTIVE_TURN_RECEIPT_PROMPT_RE.test(params.allInputText)
+    ? 31_000
+    : params.finalOnlyMarkerPauseMs;
+}
 
 function createTerminalRequesterSettleGate(): TerminalRequesterSettleGate {
   const settledChildren = new Set<string>();
@@ -2533,6 +2546,10 @@ export async function startQaMockOpenAiServer(params?: {
       toolOutputCallId: extractToolOutputCallId(input) || undefined,
       ...(extractToolOutputStructuredError(input) ? { toolOutputStructuredError: true } : {}),
     });
+    const previewPauseMs = resolveQaMockPreviewPauseMs({
+      allInputText,
+      finalOnlyMarkerPauseMs,
+    });
     return {
       events,
       model,
@@ -2546,9 +2563,7 @@ export async function startQaMockOpenAiServer(params?: {
           }
         : {}),
       ...(failure ? { failure } : {}),
-      ...(QA_FINAL_ONLY_MARKER_STREAMING_PROMPT_RE.test(allInputText)
-        ? { previewPauseMs: finalOnlyMarkerPauseMs }
-        : {}),
+      ...(previewPauseMs !== undefined ? { previewPauseMs } : {}),
     };
   };
   const dispatchResponses = (request: Omit<QaMockProviderDispatchRequest, "route">) =>

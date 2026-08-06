@@ -4,6 +4,7 @@ import type { OpenClawConfig } from "../../config/config.js";
 import { normalizeSessionDeliveryState } from "../../utils/delivery-context.shared.js";
 import type { MsgContext } from "../templating.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
+import { ACTIVE_TURN_RECEIPT_TEXT } from "./dispatch-from-config.active-turn-receipt.js";
 import {
   askUserMocks,
   createDispatcher,
@@ -31,8 +32,49 @@ import { buildTestCtx } from "./test-ctx.js";
 
 beforeAll(globalBeforeAll0);
 
+const ACTIVE_TURN_RECEIPT_DELAY_MS = 30_000;
+
 describe("dispatchReplyFromConfig", () => {
   beforeEach(describe0BeforeEach0);
+
+  it("serializes a routed active receipt before the final reply", async () => {
+    vi.useFakeTimers();
+    try {
+      setNoAbort();
+      installThreadingTestPlugin({ id: "telegram" });
+      const routedTexts: string[] = [];
+      mocks.routeReply.mockImplementation(async (params) => {
+        routedTexts.push((params as { payload: ReplyPayload }).payload.text ?? "");
+        return { ok: true, delivered: true, messageId: `routed-${routedTexts.length}` };
+      });
+      let resolveTerminal!: (value: ReplyPayload) => void;
+      const terminal = new Promise<ReplyPayload>((resolve) => {
+        resolveTerminal = resolve;
+      });
+      const run = dispatchReplyFromConfig({
+        ctx: buildTestCtx({
+          ChatType: "direct",
+          Provider: "exec-event",
+          Surface: "exec-event",
+          OriginatingChannel: "telegram",
+          OriginatingTo: "telegram:999",
+          ExplicitDeliverRoute: true,
+          SessionKey: "agent:main:telegram:direct:routed-receipt",
+        }),
+        cfg: emptyConfig,
+        dispatcher: createDispatcher(),
+        replyResolver: async () => await terminal,
+      });
+
+      await vi.advanceTimersByTimeAsync(ACTIVE_TURN_RECEIPT_DELAY_MS);
+      expect(routedTexts).toEqual([ACTIVE_TURN_RECEIPT_TEXT]);
+      resolveTerminal({ text: "routed final" });
+      await run;
+      expect(routedTexts).toEqual([ACTIVE_TURN_RECEIPT_TEXT, "routed final"]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 
   it("honors sendPolicy deny for recovered exec-event delivery channel", async () => {
     setNoAbort();

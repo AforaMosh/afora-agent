@@ -48,6 +48,7 @@ export {
   whatsappQaTopLevelReplyShapeScenario,
 } from "./whatsapp-live.scenario-implementations.conversation.js";
 export {
+  whatsappQaActiveTurnReceiptScenario,
   whatsappQaApprovalExecDenyNativeScenario,
   whatsappQaApprovalExecGroupReactionNativeScenario,
   whatsappQaApprovalExecNativeScenario,
