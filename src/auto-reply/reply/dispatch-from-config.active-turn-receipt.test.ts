@@ -34,7 +34,7 @@ describe("createActiveTurnReceiptCoordinator", () => {
     }
   });
 
-  it("retries one proven-unsent attempt but never replays a maybe-visible outcome", async () => {
+  it("leaves proven-unsent recovery to the delivery owner and never replays maybe-visible", async () => {
     vi.useFakeTimers();
     try {
       const outcomes: ActiveTurnReceiptDeliveryOutcome[] = ["proven-unsent", "confirmed-visible"];
@@ -42,7 +42,7 @@ describe("createActiveTurnReceiptCoordinator", () => {
       const retryCoordinator = createActiveTurnReceiptCoordinator();
       retryCoordinator.arm({ eligible: true, deliver: retryDeliver });
       await vi.advanceTimersByTimeAsync(ACTIVE_TURN_RECEIPT_DELAY_MS);
-      expect(retryDeliver).toHaveBeenCalledTimes(2);
+      expect(retryDeliver).toHaveBeenCalledOnce();
 
       const ambiguousDeliver = vi.fn(async () => "maybe-visible" as const);
       const ambiguousCoordinator = createActiveTurnReceiptCoordinator();
@@ -107,6 +107,30 @@ describe("createActiveTurnReceiptCoordinator", () => {
       receipt.resolve("proven-unsent");
       await terminal;
       expect(events).toEqual(["receipt-start", "receipt-settled", "terminal"]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("bounds terminal settlement and aborts a hung receipt", async () => {
+    vi.useFakeTimers();
+    try {
+      let deliverySignal: AbortSignal | undefined;
+      const coordinator = createActiveTurnReceiptCoordinator();
+      coordinator.arm({
+        eligible: true,
+        deliver: async (signal) => {
+          deliverySignal = signal;
+          return await new Promise<ActiveTurnReceiptDeliveryOutcome>(() => {});
+        },
+      });
+      await vi.advanceTimersByTimeAsync(ACTIVE_TURN_RECEIPT_DELAY_MS);
+      const terminal = coordinator.settleBeforeTerminal();
+      await vi.advanceTimersByTimeAsync(4_999);
+      expect(deliverySignal?.aborted).toBe(false);
+      await vi.advanceTimersByTimeAsync(1);
+      await terminal;
+      expect(deliverySignal?.aborted).toBe(true);
     } finally {
       vi.useRealTimers();
     }

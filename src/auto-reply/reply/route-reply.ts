@@ -347,6 +347,7 @@ export async function routeReply(params: RouteReplyParams): Promise<RouteReplyRe
       replyToId: resolvedReplyToId ?? null,
       threadId: resolvedThreadId,
       session: outboundSession,
+      maxRetries: payloadMetadata?.activeTurnReceipt?.maxRetries,
       signal: abortSignal,
       mirror:
         params.mirror !== false && params.sessionKey

@@ -499,7 +499,9 @@ reply or progress for 30 seconds receives the default one-shot status message;
 the final answer follows through normal delivery. Send-policy denial,
 message-tool-only delivery, ambient or unmentioned group activity, abort, and
 already-visible progress suppress that receipt. Enabling status reactions does
-not replace or reconfigure the shared fallback.
+not replace or reconfigure the shared fallback. If WhatsApp reconnects after a
+proven pre-send disconnect, its durable delivery drain gets one recovery
+attempt for the retained receipt before normal queue ordering continues.
 
 ## Multi-account and credentials
 

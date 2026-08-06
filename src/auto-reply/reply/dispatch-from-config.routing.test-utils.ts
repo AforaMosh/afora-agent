@@ -76,6 +76,49 @@ describe("dispatchReplyFromConfig", () => {
     }
   });
 
+  it("lets a routed final proceed after a hung receipt exceeds its settle bound", async () => {
+    vi.useFakeTimers();
+    try {
+      setNoAbort();
+      installThreadingTestPlugin({ id: "telegram" });
+      const routedTexts: string[] = [];
+      mocks.routeReply.mockImplementation(async (params) => {
+        const text = (params as { payload: ReplyPayload }).payload.text ?? "";
+        if (text === ACTIVE_TURN_RECEIPT_TEXT) {
+          return await new Promise(() => {});
+        }
+        routedTexts.push(text);
+        return { ok: true, delivered: true, messageId: "routed-final" };
+      });
+      let resolveTerminal!: (value: ReplyPayload) => void;
+      const terminal = new Promise<ReplyPayload>((resolve) => {
+        resolveTerminal = resolve;
+      });
+      const run = dispatchReplyFromConfig({
+        ctx: buildTestCtx({
+          ChatType: "direct",
+          Provider: "exec-event",
+          Surface: "exec-event",
+          OriginatingChannel: "telegram",
+          OriginatingTo: "telegram:999",
+          ExplicitDeliverRoute: true,
+          SessionKey: "agent:main:telegram:direct:routed-hung-receipt",
+        }),
+        cfg: emptyConfig,
+        dispatcher: createDispatcher(),
+        replyResolver: async () => await terminal,
+      });
+
+      await vi.advanceTimersByTimeAsync(ACTIVE_TURN_RECEIPT_DELAY_MS);
+      resolveTerminal({ text: "routed final after hung receipt" });
+      await vi.advanceTimersByTimeAsync(5_000);
+      await run;
+      expect(routedTexts).toEqual(["routed final after hung receipt"]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("honors sendPolicy deny for recovered exec-event delivery channel", async () => {
     setNoAbort();
     mocks.routeReply.mockClear();

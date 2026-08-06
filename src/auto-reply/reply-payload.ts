@@ -247,6 +247,11 @@ export type ReplyPayloadMetadata = {
   finalDeliveryCapture?: object;
   /** Durable pending-final intent represented by this runtime payload. */
   pendingFinalDeliveryIntentId?: string;
+  /** Turn-owned liveness notice: one live attempt plus one durable recovery attempt. */
+  activeTurnReceipt?: {
+    abortSignal: AbortSignal;
+    maxRetries: number;
+  };
   /** Restart-safe text this payload contributes to its pending-final intent. */
   pendingFinalDeliveryRetryText?: string;
   /** replyToId existed before reply threading could inject an implicit target. */

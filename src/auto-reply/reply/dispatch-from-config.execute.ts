@@ -223,6 +223,9 @@ export async function executeDispatch(state: PrepareDispatchExecutionReadyState)
                     );
                     if (progressCallbackForwarded) {
                       await onToolResultFromReplyOptions?.(payload);
+                      if (onToolResultFromReplyOptions) {
+                        state.activeTurnReceipt.noteVisible();
+                      }
                     }
                     if (isDispatchOperationAborted()) {
                       return;
@@ -351,6 +354,9 @@ export async function executeDispatch(state: PrepareDispatchExecutionReadyState)
                     })
                   ) {
                     await state.onPlanUpdateFromReplyOptions?.(normalized);
+                    if (state.onPlanUpdateFromReplyOptions) {
+                      state.activeTurnReceipt.noteVisible();
+                    }
                   }
                   if (isDispatchOperationAborted()) {
                     return;
@@ -382,6 +388,9 @@ export async function executeDispatch(state: PrepareDispatchExecutionReadyState)
                     })
                   ) {
                     await state.onApprovalEventFromReplyOptions?.(payload);
+                    if (state.onApprovalEventFromReplyOptions) {
+                      state.activeTurnReceipt.noteVisible();
+                    }
                   }
                 },
                 onPatchSummary: async (payload) => {
@@ -403,6 +412,9 @@ export async function executeDispatch(state: PrepareDispatchExecutionReadyState)
                     })
                   ) {
                     await state.onPatchSummaryFromReplyOptions?.(payload);
+                    if (state.onPatchSummaryFromReplyOptions) {
+                      state.activeTurnReceipt.noteVisible();
+                    }
                   }
                 },
                 onBlockReply: (payload: ReplyPayload, context?: BlockReplyContext) => {

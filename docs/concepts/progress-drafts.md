@@ -437,6 +437,9 @@ ambient group or room events, internal webchat work, or conversations where
 silence is explicitly allowed. A confirmed tool result, answer block,
 commentary/progress update, routed reply, final reply, abort, or terminal turn
 settlement cancels it. At most one receipt becomes visible for a turn.
+If delivery is unavailable before any send begins, the channel's durable
+delivery owner keeps the same receipt eligible for one reconnect recovery.
+Receipt delivery cannot hold the final answer indefinitely.
 
 Progress drafts, transport-specific reactions, and this default receipt remain
 separate. Enabling a richer progress feature does not change the fallback's

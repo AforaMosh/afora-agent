@@ -500,17 +500,18 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
     expect(result.noVisibleReplyFallbackEligible).toBeUndefined();
   });
 
-  it("retries a proven pre-send receipt failure and preserves final ordering", async () => {
+  it("keeps the receipt pending through a disconnect window until readiness returns", async () => {
     vi.useFakeTimers();
     try {
       setNoAbort();
       const deliveredTexts: string[] = [];
       let beforeDeliverCalls = 0;
+      const ready = createDeferred<void>();
       const dispatcher = createReplyDispatcher({
         beforeDeliver: async (payload) => {
           beforeDeliverCalls += 1;
-          if (beforeDeliverCalls === 1) {
-            throw new Error("transport not ready");
+          if (payload.text === ACTIVE_TURN_RECEIPT_TEXT) {
+            await ready.promise;
           }
           return payload;
         },
@@ -526,7 +527,12 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
         replyResolver: async () => await terminal.promise,
       });
       await vi.advanceTimersByTimeAsync(ACTIVE_TURN_RECEIPT_DELAY_MS);
-      expect(beforeDeliverCalls).toBe(2);
+      expect(beforeDeliverCalls).toBe(1);
+      expect(deliveredTexts).toEqual([]);
+
+      await vi.advanceTimersByTimeAsync(2_000);
+      ready.resolve();
+      await vi.advanceTimersByTimeAsync(0);
       expect(deliveredTexts).toEqual([ACTIVE_TURN_RECEIPT_TEXT]);
 
       terminal.resolve({ text: "final after retry" });
@@ -534,6 +540,38 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       dispatcher.markComplete();
       await dispatcher.waitForIdle();
       expect(deliveredTexts).toEqual([ACTIVE_TURN_RECEIPT_TEXT, "final after retry"]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("lets a direct final proceed after a hung receipt exceeds its settle bound", async () => {
+    vi.useFakeTimers();
+    try {
+      setNoAbort();
+      const deliveredTexts: string[] = [];
+      const dispatcher = createReplyDispatcher({
+        deliver: async (payload) => {
+          if (payload.text === ACTIVE_TURN_RECEIPT_TEXT) {
+            return await new Promise<void>(() => {});
+          }
+          deliveredTexts.push(payload.text ?? "");
+        },
+      });
+      const terminal = createDeferred<ReplyPayload>();
+      const run = dispatchReplyFromConfig({
+        ctx: buildTestCtx({ ChatType: "direct", SessionKey: "receipt:hung-direct" }),
+        cfg: emptyConfig,
+        dispatcher,
+        replyResolver: async () => await terminal.promise,
+      });
+      await vi.advanceTimersByTimeAsync(ACTIVE_TURN_RECEIPT_DELAY_MS);
+      terminal.resolve({ text: "final after hung receipt" });
+      await vi.advanceTimersByTimeAsync(5_000);
+      await run;
+      dispatcher.markComplete();
+      await dispatcher.waitForIdle();
+      expect(deliveredTexts).toEqual(["final after hung receipt"]);
     } finally {
       vi.useRealTimers();
     }
@@ -2805,6 +2843,51 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
     expect(onToolResult).toHaveBeenCalledWith(payload);
     expect(dispatcher.sendToolResult).not.toHaveBeenCalled();
     expect(dispatcher.sendFinalReply).not.toHaveBeenCalled();
+  });
+
+  it("treats successful channel-owned plan and tool callbacks as visible progress", async () => {
+    vi.useFakeTimers();
+    try {
+      setNoAbort();
+      const deliveredTexts: string[] = [];
+      const dispatcher = createReplyDispatcher({
+        deliver: async (payload) => {
+          deliveredTexts.push(payload.text ?? "");
+        },
+      });
+      const terminal = createDeferred<ReplyPayload>();
+      const onPlanUpdate = vi.fn(async () => {});
+      const onToolResult = vi.fn(async () => {});
+      const run = dispatchReplyFromConfig({
+        ctx: buildTestCtx({ ChatType: "direct", SessionKey: "receipt:callback-progress" }),
+        cfg: emptyConfig,
+        dispatcher,
+        replyResolver: async (_ctx: MsgContext, opts?: GetReplyOptions) => {
+          await opts?.onPlanUpdate?.({ phase: "update", explanation: "Inspecting state" });
+          await opts?.onToolResult?.({ text: "🛠️ Inspect: running" });
+          return await terminal.promise;
+        },
+        replyOptions: {
+          suppressDefaultToolProgressMessages: true,
+          allowProgressCallbacksWhenSourceDeliverySuppressed: true,
+          onPlanUpdate,
+          onToolResult,
+        },
+      });
+
+      await vi.advanceTimersByTimeAsync(ACTIVE_TURN_RECEIPT_DELAY_MS);
+      expect(onPlanUpdate).toHaveBeenCalledOnce();
+      expect(onToolResult).toHaveBeenCalledOnce();
+      expect(deliveredTexts).not.toContain(ACTIVE_TURN_RECEIPT_TEXT);
+
+      terminal.resolve({ text: "callback-owned final" });
+      await run;
+      dispatcher.markComplete();
+      await dispatcher.waitForIdle();
+      expect(deliveredTexts).toEqual(["callback-owned final"]);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("forwards suppressed tool progress callbacks in message-tool-only mode", async () => {

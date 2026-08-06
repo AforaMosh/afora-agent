@@ -13,7 +13,7 @@ import { createTtsDirectiveTextStreamCleaner } from "../../tts/directives.js";
 import { shouldCleanTtsDirectiveText } from "../../tts/tts-config.js";
 import { normalizeMessageChannel } from "../../utils/message-channel.js";
 import type { GetReplyOptions } from "../get-reply-options.types.js";
-import type { ReplyPayload } from "../reply-payload.js";
+import { setReplyPayloadMetadata, type ReplyPayload } from "../reply-payload.js";
 import {
   ACTIVE_TURN_RECEIPT_TEXT,
   classifyActiveTurnReceiptDispatchOutcome,
@@ -429,13 +429,18 @@ export async function prepareDispatchExecution(state: ChooseDispatchRouteReadySt
     : params.usePublishedModelRuntime || publishedRuntimeReplyConfig
       ? withPublishedRuntimeReplyConfig(runtimeReplyConfig)
       : withFullRuntimeReplyConfig(cfg);
-  const deliverActiveTurnReceipt = async (): Promise<ActiveTurnReceiptDeliveryOutcome> => {
-    const payload: ReplyPayload = {
-      text: ACTIVE_TURN_RECEIPT_TEXT,
-      isStatusNotice: true,
-    };
+  const deliverActiveTurnReceipt = async (
+    abortSignal: AbortSignal,
+  ): Promise<ActiveTurnReceiptDeliveryOutcome> => {
+    const payload = setReplyPayloadMetadata<ReplyPayload>(
+      {
+        text: ACTIVE_TURN_RECEIPT_TEXT,
+        isStatusNotice: true,
+      },
+      { activeTurnReceipt: { abortSignal, maxRetries: 2 } },
+    );
     if (shouldRouteToOriginating) {
-      const result = await sendPayloadAsync(payload, undefined, false, "final");
+      const result = await sendPayloadAsync(payload, abortSignal, false, "final");
       if (!result) {
         return "proven-unsent";
       }

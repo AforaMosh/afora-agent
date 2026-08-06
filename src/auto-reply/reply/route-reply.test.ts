@@ -221,6 +221,24 @@ describe("routeReply", () => {
     setActivePluginRegistry(createTestRegistry());
   });
 
+  it("preserves the active-turn receipt recovery budget on routed delivery", async () => {
+    const controller = new AbortController();
+    const payload = setReplyPayloadMetadata(
+      { text: "still working", isStatusNotice: true },
+      { activeTurnReceipt: { abortSignal: controller.signal, maxRetries: 2 } },
+    );
+
+    await routeReply({
+      payload,
+      channel: "telegram",
+      to: "chat:1",
+      cfg: {} as never,
+      abortSignal: controller.signal,
+    });
+
+    expectLastDeliveryFields({ maxRetries: 2, abortSignal: controller.signal });
+  });
+
   it("skips sends when abort signal is already aborted", async () => {
     const controller = new AbortController();
     controller.abort();

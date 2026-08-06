@@ -22,6 +22,7 @@ vi.mock("../message/send.js", async (importOriginal) => {
   };
 });
 
+import { setReplyPayloadMetadata } from "../../auto-reply/reply-payload.js";
 import type { FinalizedMsgContext } from "../../auto-reply/templating.js";
 import { deliverInboundReplyWithMessageSendContext } from "./durable-delivery.js";
 
@@ -32,6 +33,8 @@ type SendDurableMessageBatchRequest = {
   threadId?: string | number | null;
   durability?: string;
   requireUnknownSendReconciliation?: boolean;
+  maxRetries?: number;
+  signal?: AbortSignal;
   gatewayClientScopes?: readonly string[];
 };
 
@@ -129,6 +132,28 @@ describe("durable inbound reply delivery", () => {
     expect(mocks.sendDurableMessageBatch).toHaveBeenCalledTimes(1);
     expect(latestSendDurableMessageBatchRequest().durability).toBe("best_effort");
     expect(latestSendDurableMessageBatchRequest().requireUnknownSendReconciliation).toBeUndefined();
+  });
+
+  it("gives an active-turn receipt one readiness-owned durable recovery attempt", async () => {
+    const controller = new AbortController();
+    const payload = setReplyPayloadMetadata(
+      { text: "still working", isStatusNotice: true },
+      { activeTurnReceipt: { abortSignal: controller.signal, maxRetries: 2 } },
+    );
+
+    await deliverInboundReplyWithMessageSendContext({
+      cfg: {},
+      channel: "telegram",
+      agentId: "main",
+      info: { kind: "final" },
+      payload,
+      ctxPayload: ctxPayload({ OriginatingTo: "chat-1" }),
+    });
+
+    expect(latestSendDurableMessageBatchRequest()).toMatchObject({
+      maxRetries: 2,
+      signal: controller.signal,
+    });
   });
 
   it("uses required durability when a caller explicitly requires unknown-send reconciliation", async () => {

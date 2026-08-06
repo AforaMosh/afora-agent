@@ -81,6 +81,34 @@ type ReplyDispatchDeliverer = (
   info: ReplyDispatchRuntimeInfo,
 ) => Promise<unknown>;
 
+async function deliverWithPayloadAbort(
+  deliver: ReplyDispatchDeliverer,
+  payload: ReplyPayload,
+  info: ReplyDispatchRuntimeInfo,
+): Promise<void> {
+  const signal = getReplyPayloadMetadata(payload)?.activeTurnReceipt?.abortSignal;
+  if (!signal) {
+    await deliver(payload, info);
+    return;
+  }
+  const abortError = () =>
+    signal.reason instanceof Error ? signal.reason : new Error("active turn receipt aborted");
+  if (signal.aborted) {
+    throw abortError();
+  }
+  let removeAbortListener: (() => void) | undefined;
+  const aborted = new Promise<never>((_, reject) => {
+    const onAbort = () => reject(abortError());
+    signal.addEventListener("abort", onAbort, { once: true });
+    removeAbortListener = () => signal.removeEventListener("abort", onAbort);
+  });
+  try {
+    await Promise.race([deliver(payload, info), aborted]);
+  } finally {
+    removeAbortListener?.();
+  }
+}
+
 export type { ReplyDispatchBeforeDeliver };
 
 const DEFAULT_HUMAN_DELAY_MIN_MS = 800;
@@ -464,7 +492,7 @@ export function createReplyDispatcher(options: ReplyDispatcherOptions): ReplyDis
         deliverPayload = copyReplyPayloadMetadata(payload, deliverPayload);
       }
       deliveryStarted = true;
-      await options.deliver(deliverPayload, info);
+      await deliverWithPayloadAbort(options.deliver, deliverPayload, info);
       return "delivered";
     } catch (error) {
       try {
