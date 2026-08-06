@@ -35,6 +35,7 @@ import {
   shellQuote,
   validateSnapshotRestoreMode,
   startHostServer,
+  startNpmRegistryServer,
   warn,
   withProgressOnStderr,
   writeJson,
@@ -42,6 +43,7 @@ import {
   type HostServer,
   type Mode,
   type PackageArtifact,
+  type NpmRegistryServer,
   type Provider,
   type ProviderAuth,
   type SnapshotInfo,
@@ -53,6 +55,7 @@ import { resolveMacosVmName, waitForVmStatus } from "./parallels-vm.ts";
 import { PhaseRunner } from "./phase-runner.ts";
 
 interface MacosOptions {
+  appBootstrap: boolean;
   vmName: string;
   vmNameExplicit: boolean;
   snapshotHint: string;
@@ -77,6 +80,11 @@ interface MacosOptions {
 }
 
 interface MacosSummary {
+  appBootstrap: {
+    matching: string;
+    mismatch: string;
+    status: string;
+  };
   vm: string;
   snapshotHint: string;
   snapshotId: string;
@@ -117,6 +125,7 @@ const guestNode = "node";
 const guestNpm = "npm";
 
 const defaultOptions = (): MacosOptions => ({
+  appBootstrap: false,
   discordChannelId: undefined,
   discordGuildId: undefined,
   discordTokenEnv: undefined,
@@ -143,6 +152,7 @@ function usage(): string {
   return `Usage: bash scripts/e2e/parallels-macos-smoke.sh [options]
 
 Options:
+  --app-bootstrap            Run packaged-app fresh bootstrap mismatch + matching lanes.
   --vm <name>                Parallels VM name. Default: "macOS Tahoe"
   --snapshot-hint <name>     Snapshot name substring/fuzzy match.
                              Default: "macOS 26.5 latest"
@@ -239,6 +249,9 @@ export function parseArgs(argv: string[]): MacosOptions {
       case "--skip-latest-ref-check":
         options.skipLatestRefCheck = true;
         break;
+      case "--app-bootstrap":
+        options.appBootstrap = true;
+        break;
       case "--keep-server":
         options.keepServer = true;
         break;
@@ -272,6 +285,14 @@ function stripLeadingPackageManagerSeparator(argv: string[]): string[] {
   return argv[0] === "--" ? argv.slice(1) : argv;
 }
 
+export function appBootstrapMismatchVersion(version: string): string {
+  const match = /^(\d+)\.(\d+)\.(\d+)/u.exec(version.trim());
+  if (!match) {
+    throw new Error(`cannot derive app bootstrap mismatch version from ${version}`);
+  }
+  return `${match[1]}.${match[2]}.${Number(match[3]) + 1}`;
+}
+
 class MacosSmoke {
   private agentTimeoutSeconds: number;
   private auth: ProviderAuth;
@@ -279,6 +300,7 @@ class MacosSmoke {
   private hostIp = "";
   private hostPort = 0;
   private server: HostServer | null = null;
+  private registryServer: NpmRegistryServer | null = null;
   private runDir = "";
   private tgzDir = "";
   private artifact: PackageArtifact | null = null;
@@ -294,8 +316,14 @@ class MacosSmoke {
   private modelTimeoutSeconds: number;
   private updateDevTimeoutSeconds: number;
   private devTargetCommit: string | undefined;
+  private appCandidateVersion = "";
+  private matchingAppZip = "";
+  private mismatchAppZip = "";
 
   private status = {
+    appBootstrap: "skip",
+    appBootstrapMatching: "skip",
+    appBootstrapMismatch: "skip",
     freshAgent: "skip",
     freshDashboard: "skip",
     freshDiscord: "skip",
@@ -345,6 +373,9 @@ class MacosSmoke {
     this.discord = this.createDiscordSmoke();
     this.tgzDir = await makeTempDir("openclaw-parallels-macos-tgz.");
     try {
+      if (this.options.appBootstrap && this.targetInstallsDirectly()) {
+        die("--app-bootstrap requires current main or a packable target package");
+      }
       validateSnapshotRestoreMode(this.options.mode, "macOS smoke");
       this.snapshot = shouldSkipSnapshotRestore()
         ? currentRunningSnapshotInfo(this.options.vmName)
@@ -402,6 +433,11 @@ class MacosSmoke {
         ).stdout.trim();
       }
 
+      if (this.options.appBootstrap) {
+        await this.prepareAppBootstrapArtifacts();
+        await this.runAppBootstrapProof();
+      }
+
       if (this.options.mode === "fresh" || this.options.mode === "both") {
         await this.runLane("fresh", async () => this.runFreshLane());
       }
@@ -415,11 +451,16 @@ class MacosSmoke {
       } else {
         this.printSummary(summaryPath);
       }
-      if (this.status.freshMain === "fail" || this.status.upgrade === "fail") {
+      if (
+        this.status.appBootstrap === "fail" ||
+        this.status.freshMain === "fail" ||
+        this.status.upgrade === "fail"
+      ) {
         process.exitCode = 1;
       }
     } finally {
       if (!this.options.keepServer) {
+        await this.registryServer?.stop().catch(() => undefined);
         await this.server?.stop().catch(() => undefined);
         await rm(this.tgzDir, { force: true, recursive: true }).catch(() => undefined);
       }
@@ -504,6 +545,97 @@ class MacosSmoke {
       this.status.freshMain = status;
     } else {
       this.status.upgrade = status;
+    }
+  }
+
+  private async prepareAppBootstrapArtifacts(): Promise<void> {
+    if (!this.artifact || !this.server) {
+      die("app bootstrap requires a hosted package artifact");
+    }
+    this.appCandidateVersion =
+      this.artifact.version || (await packageVersionFromTgz(this.artifact.path));
+    this.registryServer = await startNpmRegistryServer({
+      hostIp: this.hostIp,
+      packages: [
+        {
+          name: "openclaw",
+          tarballPath: this.artifact.path,
+          version: this.appCandidateVersion,
+        },
+      ],
+    });
+
+    run("bash", ["scripts/package-mac-app.sh"], {
+      env: {
+        ...process.env,
+        APP_VERSION: this.appCandidateVersion,
+        BUILD_CONFIG: "debug",
+        SKIP_PNPM_INSTALL: "1",
+      },
+    });
+    const packagedApp = path.resolve("dist/OpenClaw.app");
+    this.matchingAppZip = path.join(this.tgzDir, "OpenClaw-app-bootstrap-matching.zip");
+    run("ditto", ["-c", "-k", "--sequesterRsrc", "--keepParent", packagedApp, this.matchingAppZip]);
+
+    const mismatchRoot = path.join(this.tgzDir, "app-bootstrap-mismatch");
+    const mismatchApp = path.join(mismatchRoot, "OpenClaw.app");
+    run("mkdir", ["-p", mismatchRoot]);
+    run("ditto", [packagedApp, mismatchApp]);
+    const mismatchVersion = appBootstrapMismatchVersion(this.appCandidateVersion);
+    run("/usr/libexec/PlistBuddy", [
+      "-c",
+      `Set :CFBundleShortVersionString ${mismatchVersion}`,
+      path.join(mismatchApp, "Contents/Info.plist"),
+    ]);
+    run("codesign", ["--force", "--deep", "--sign", "-", mismatchApp]);
+    this.mismatchAppZip = path.join(this.tgzDir, "OpenClaw-app-bootstrap-mismatch.zip");
+    run("ditto", ["-c", "-k", "--sequesterRsrc", "--keepParent", mismatchApp, this.mismatchAppZip]);
+  }
+
+  private async runAppBootstrapProof(): Promise<void> {
+    this.status.appBootstrap = "fail";
+    try {
+      await this.phase("app-bootstrap.mismatch.restore-snapshot", 780, () =>
+        this.restoreSnapshot(),
+      );
+      await this.phase("app-bootstrap.mismatch.reset-state", 180, () =>
+        this.resetAppBootstrapState(),
+      );
+      await this.phase("app-bootstrap.mismatch.launch", 960, () =>
+        this.launchBootstrapApp(this.mismatchAppZip, "rejected"),
+      );
+      await this.phase("app-bootstrap.mismatch.verify-rejection", 180, () =>
+        this.verifyRejectedAppBootstrap(),
+      );
+      this.status.appBootstrapMismatch = "pass";
+
+      await this.phase("app-bootstrap.matching.restore-snapshot", 780, () =>
+        this.restoreSnapshot(),
+      );
+      await this.phase("app-bootstrap.matching.reset-state", 180, () =>
+        this.resetAppBootstrapState(),
+      );
+      await this.phase("app-bootstrap.matching.launch", 960, () =>
+        this.launchBootstrapApp(this.matchingAppZip, "installed"),
+      );
+      await this.phase("app-bootstrap.matching.verify-ready", 240, () =>
+        this.verifyReadyAppBootstrap(),
+      );
+      this.status.appBootstrapMatching = "pass";
+      this.status.appBootstrap = "pass";
+    } catch (error) {
+      warn(`app bootstrap lane failed: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      if (shouldSkipSnapshotRestore()) {
+        try {
+          await this.phase("app-bootstrap.cleanup", 180, () => this.resetAppBootstrapState());
+        } catch (error) {
+          this.status.appBootstrap = "fail";
+          warn(
+            `app bootstrap cleanup failed: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
+      }
     }
   }
 
@@ -818,6 +950,127 @@ rm -rf "$HOME/.openclaw"
 # Restored snapshots can contain corrupt optional-dependency tarballs that npm silently skips.
 rm -rf "$HOME/.npm/_cacache"
 rm -f /tmp/openclaw-parallels-macos-gateway.log`);
+  }
+
+  private resetAppBootstrapState(): void {
+    if (this.guestTransport !== "current-user") {
+      throw new Error("app bootstrap requires an active Parallels desktop-user session");
+    }
+    this.guestSh(String.raw`set -eu
+/usr/bin/pkill -x OpenClaw >/dev/null 2>&1 || true
+/usr/bin/pkill -f 'openclaw.*gateway run' >/dev/null 2>&1 || true
+/bin/launchctl bootout "gui/$(/usr/bin/id -u)/ai.openclaw.gateway" >/dev/null 2>&1 || true
+/bin/launchctl unsetenv NPM_CONFIG_REGISTRY >/dev/null 2>&1 || true
+/bin/launchctl unsetenv npm_config_registry >/dev/null 2>&1 || true
+/bin/rm -f "$HOME/Library/LaunchAgents/ai.openclaw.gateway.plist"
+/bin/rm -rf "$HOME/.openclaw" /tmp/openclaw-app-bootstrap /tmp/openclaw-app-bootstrap.zip
+/usr/bin/defaults delete ai.openclaw.mac.debug >/dev/null 2>&1 || true
+/usr/bin/defaults delete ai.openclaw.mac >/dev/null 2>&1 || true`);
+  }
+
+  private launchBootstrapApp(appZip: string, expected: "installed" | "rejected"): void {
+    if (!this.server || !this.registryServer) {
+      throw new Error("app bootstrap artifact servers are unavailable");
+    }
+    const appUrl = this.server.urlFor(appZip);
+    const registryUrl = this.registryServer.url;
+    this.guestSh(`set -eu
+curl -fsSL --connect-timeout 10 --max-time 120 --retry 2 --retry-delay 2 ${shellQuote(
+      appUrl,
+    )} -o /tmp/openclaw-app-bootstrap.zip
+rm -rf /tmp/openclaw-app-bootstrap
+mkdir -p /tmp/openclaw-app-bootstrap
+/usr/bin/ditto -x -k /tmp/openclaw-app-bootstrap.zip /tmp/openclaw-app-bootstrap
+app=/tmp/openclaw-app-bootstrap/OpenClaw.app
+test -x "$app/Contents/MacOS/OpenClaw"
+/usr/bin/xattr -dr com.apple.quarantine "$app" 2>/dev/null || true
+bundle_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Contents/Info.plist")"
+/usr/bin/defaults write "$bundle_id" openclaw.onboardingSeen -bool true
+/usr/bin/defaults write "$bundle_id" openclaw.onboardingVersion -int 8
+/usr/bin/defaults write "$bundle_id" openclaw.connectionMode -string local
+/usr/bin/defaults write "$bundle_id" openclaw.pauseEnabled -bool false
+/usr/bin/defaults write "$bundle_id" openclaw.showDockIcon -bool true
+/bin/launchctl setenv NPM_CONFIG_REGISTRY ${shellQuote(registryUrl)}
+/bin/launchctl setenv npm_config_registry ${shellQuote(registryUrl)}
+/usr/bin/open -n "$app" --args --e2e-cli-channel stable
+deadline=$((SECONDS + 900))
+while [ "$SECONDS" -lt "$deadline" ]; do
+  if [ ${shellQuote(expected)} = installed ]; then
+    if [ -x "$HOME/.openclaw/bin/openclaw" ]; then
+      exit 0
+    fi
+  elif [ -x "$HOME/.openclaw/tools/node/bin/node" ] &&
+    ! /usr/bin/pgrep -f 'Contents/Resources/[i]nstall-cli.sh' >/dev/null 2>&1; then
+    exit 0
+  fi
+  sleep 2
+done
+echo 'packaged app CLI bootstrap did not reach the expected terminal state' >&2
+exit 1`);
+  }
+
+  private verifyRejectedAppBootstrap(): void {
+    const mismatchVersion = appBootstrapMismatchVersion(this.appCandidateVersion);
+    this.guestSh(`set -eu
+test -x "$HOME/.openclaw/tools/node/bin/node"
+if [ -e "$HOME/.openclaw/bin/openclaw" ]; then
+  echo 'incompatible channel replaced the managed CLI before rejection' >&2
+  exit 1
+fi
+/usr/bin/python3 - ${shellQuote(mismatchVersion)} <<'PY'
+import json
+import pathlib
+import sys
+
+config_path = pathlib.Path.home() / ".openclaw" / "openclaw.json"
+if not config_path.is_file():
+    raise SystemExit("packaged app did not write openclaw.json")
+meta = json.loads(config_path.read_text()).get("meta", {})
+if meta.get("lastTouchedVersion") != sys.argv[1]:
+    raise SystemExit(f"unexpected lastTouchedVersion: {meta.get('lastTouchedVersion')!r}")
+if "lastTouchedAt" in meta:
+    raise SystemExit("packaged app wrote retired meta.lastTouchedAt")
+PY
+sleep 5
+if /bin/launchctl print "gui/$(/usr/bin/id -u)/ai.openclaw.gateway" >/dev/null 2>&1; then
+  echo 'older channel CLI reached LaunchAgent installation' >&2
+  exit 1
+fi
+if /usr/bin/nc -z 127.0.0.1 18789 >/dev/null 2>&1; then
+  echo 'older channel CLI unexpectedly opened port 18789' >&2
+  exit 1
+fi`);
+  }
+
+  private verifyReadyAppBootstrap(): void {
+    this.guestSh(`set -eu
+export PATH="$HOME/.openclaw/bin:$HOME/.openclaw/tools/node/bin:$PATH"
+deadline=$((SECONDS + 180))
+while [ "$SECONDS" -lt "$deadline" ]; do
+  if openclaw gateway status --deep --require-rpc --timeout 15000 >/dev/null 2>&1 &&
+    /usr/bin/nc -z 127.0.0.1 18789 >/dev/null 2>&1; then
+    break
+  fi
+  sleep 3
+done
+openclaw config validate
+/bin/launchctl print "gui/$(/usr/bin/id -u)/ai.openclaw.gateway" >/dev/null
+/usr/bin/nc -z 127.0.0.1 18789
+openclaw gateway status --deep --require-rpc --timeout 15000
+/usr/bin/python3 - ${shellQuote(this.appCandidateVersion)} <<'PY'
+import json
+import pathlib
+import sys
+
+config_path = pathlib.Path.home() / ".openclaw" / "openclaw.json"
+if not config_path.is_file():
+    raise SystemExit("packaged app did not write openclaw.json")
+meta = json.loads(config_path.read_text()).get("meta", {})
+if meta.get("lastTouchedVersion") != sys.argv[1]:
+    raise SystemExit(f"unexpected lastTouchedVersion: {meta.get('lastTouchedVersion')!r}")
+if "lastTouchedAt" in meta:
+    raise SystemExit("packaged app wrote retired meta.lastTouchedAt")
+PY`);
   }
 
   private installLatestRelease(): void {
@@ -1247,6 +1500,11 @@ fi`,
 
   private async writeSummary(): Promise<string> {
     const summary: MacosSummary = {
+      appBootstrap: {
+        matching: this.status.appBootstrapMatching,
+        mismatch: this.status.appBootstrapMismatch,
+        status: this.status.appBootstrap,
+      },
       currentHead:
         this.artifact?.buildCommitShort ||
         run("git", ["rev-parse", "--short", "HEAD"], { quiet: true }).stdout.trim(),
@@ -1285,6 +1543,7 @@ fi`,
       lines: [
         `- vm: ${summary.vm}`,
         `- target: ${summary.targetPackageSpec || "current main"}`,
+        `- app bootstrap mismatch/matching: ${summary.appBootstrap.mismatch}/${summary.appBootstrap.matching}`,
         `- fresh: ${summary.freshMain.status} ${summary.freshMain.version}`,
         `- fresh gateway/dashboard/agent: ${summary.freshMain.gateway}/${summary.freshMain.dashboard}/${summary.freshMain.agent}`,
         `- upgrade: ${summary.upgrade.status} ${summary.upgrade.mainVersion}`,
@@ -1304,6 +1563,9 @@ fi`,
     if (this.installVersion) {
       process.stdout.write(`  baseline-install-version: ${this.installVersion}\n`);
     }
+    process.stdout.write(
+      `  app-bootstrap: ${this.status.appBootstrap} mismatch=${this.status.appBootstrapMismatch} matching=${this.status.appBootstrapMatching}\n`,
+    );
     process.stdout.write(
       `  fresh-main: ${this.status.freshMain} (${this.status.freshVersion}) discord=${this.status.freshDiscord}\n`,
     );

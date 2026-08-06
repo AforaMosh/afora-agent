@@ -54,7 +54,10 @@ import {
 import { resolveHostCommandInvocation } from "../../scripts/e2e/parallels/host-command.ts";
 import { testing as hostServerTesting } from "../../scripts/e2e/parallels/host-server.ts";
 import { parseArgs as parseLinuxSmokeArgs } from "../../scripts/e2e/parallels/linux-smoke.ts";
-import { parseArgs as parseMacosSmokeArgs } from "../../scripts/e2e/parallels/macos-smoke.ts";
+import {
+  appBootstrapMismatchVersion,
+  parseArgs as parseMacosSmokeArgs,
+} from "../../scripts/e2e/parallels/macos-smoke.ts";
 import { parseArgs as parseNpmUpdateSmokeArgs } from "../../scripts/e2e/parallels/npm-update-smoke.ts";
 import { testing as packageArtifactTesting } from "../../scripts/e2e/parallels/package-artifact.ts";
 import { PhaseRunner } from "../../scripts/e2e/parallels/phase-runner.ts";
@@ -590,6 +593,8 @@ describe("Parallels smoke model selection", () => {
     expect(parseMacosSmokeArgs(["--", "--mode", "upgrade"]).mode).toBe("upgrade");
     expect(parseMacosSmokeArgs(["--mode", "fresh", "--", "--mode", "upgrade"]).mode).toBe("fresh");
     expect(parseMacosSmokeArgs([]).vmNameExplicit).toBe(false);
+    expect(parseMacosSmokeArgs([]).appBootstrap).toBe(false);
+    expect(parseMacosSmokeArgs(["--app-bootstrap"]).appBootstrap).toBe(true);
     expect(parseMacosSmokeArgs(["--vm", "macOS"]).vmNameExplicit).toBe(true);
     expect(parseMacosSmokeArgs(["--host-port", "65535"]).hostPort).toBe(65535);
     expect(parseLinuxSmokeArgs(["--host-port", "65535"]).hostPort).toBe(65535);
@@ -620,6 +625,14 @@ describe("Parallels smoke model selection", () => {
       parseWindowsSmokeArgs(["--mode", "fresh", "--", "--upgrade-from-packed-main"])
         .upgradeFromPackedMain,
     ).toBe(false);
+  });
+
+  it("derives an app version newer than the candidate for bootstrap rejection proof", () => {
+    expect(appBootstrapMismatchVersion("2026.7.2")).toBe("2026.7.3");
+    expect(appBootstrapMismatchVersion("2026.7.2-beta.7")).toBe("2026.7.3");
+    expect(() => appBootstrapMismatchVersion("main")).toThrow(
+      "cannot derive app bootstrap mismatch version from main",
+    );
   });
 
   it("rejects short flags as Parallels smoke option values", () => {
@@ -1350,9 +1363,27 @@ kill -TERM "$$"`,
     expect(macos).toContain('rm -rf "$HOME/.npm/_cacache"');
     expect(macos.match(/\.onboard-ref", 420/g)).toHaveLength(2);
     expect(macos).toContain('echo "npm install attempt $attempt failed; retrying in 5s"');
-    expect(macos.match(/curl -fsSL --connect-timeout 10 --max-time 120 --retry 2/g)).toHaveLength(
-      2,
+    expect(macos).toMatch(
+      /curl -fsSL --connect-timeout 10 --max-time 120 --retry 2 --retry-delay 2 \$\{shellQuote\(\s*this\.options\.installUrl,\s*\)\} -o \/tmp\/openclaw-install\.sh/u,
     );
+    expect(macos).toMatch(
+      /curl -fsSL --connect-timeout 10 --max-time 120 --retry 2 --retry-delay 2 \$\{shellQuote\(\s*tgzUrl,\s*\)\} -o \/tmp\/\$\{tempName\}/u,
+    );
+  });
+
+  it("bounds packaged macOS app bootstrap downloads and cleans no-restore runs", () => {
+    expect(macos).toMatch(
+      /curl -fsSL --connect-timeout 10 --max-time 120 --retry 2 --retry-delay 2 \$\{shellQuote\(\s*appUrl,\s*\)\} -o \/tmp\/openclaw-app-bootstrap\.zip/u,
+    );
+    expect(macos).toContain('await this.phase("app-bootstrap.cleanup", 180');
+    expect(macos).toContain(
+      '/bin/rm -rf "$HOME/.openclaw" /tmp/openclaw-app-bootstrap /tmp/openclaw-app-bootstrap.zip',
+    );
+    expect(macos).toContain(
+      "! /usr/bin/pgrep -f 'Contents/Resources/[i]nstall-cli.sh' >/dev/null 2>&1",
+    );
+    expect(macos).toContain('if [ -e "$HOME/.openclaw/bin/openclaw" ]; then');
+    expect(macos).toContain("incompatible channel replaced the managed CLI before rejection");
   });
 
   it("retries failed aggregate fresh lanes once from a restored snapshot", () => {

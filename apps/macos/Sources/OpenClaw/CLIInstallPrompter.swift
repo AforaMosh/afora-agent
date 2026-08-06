@@ -68,6 +68,11 @@ final class CLIInstallPrompter {
     }
 
     func installTargetForCurrentBuild(confirmStable: Bool = false) -> CLIInstaller.InstallTarget? {
+        #if DEBUG
+        if let channel = Self.testingChannel(arguments: CommandLine.arguments) {
+            return .channel(channel)
+        }
+        #endif
         let appVersion = Self.appVersion()
         if let target = CLIInstaller.automaticInstallTarget(
             appVersion: appVersion,
@@ -97,6 +102,17 @@ final class CLIInstallPrompter {
                 isDebug: CLIInstallBuild.isDebug))
             .map(CLIInstaller.InstallTarget.channel)
     }
+
+    #if DEBUG
+    static func testingChannel(arguments: [String]) -> CLIInstaller.Channel? {
+        guard let flagIndex = arguments.firstIndex(of: "--e2e-cli-channel"),
+              arguments.indices.contains(flagIndex + 1)
+        else {
+            return nil
+        }
+        return CLIInstaller.Channel(rawValue: arguments[flagIndex + 1])
+    }
+    #endif
 
     private func chooseChannel(suggested: CLIInstaller.Channel) -> CLIInstaller.Channel? {
         let channels = [suggested] + CLIInstaller.Channel.allCases.filter { $0 != suggested }

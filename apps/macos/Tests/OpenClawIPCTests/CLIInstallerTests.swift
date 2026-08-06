@@ -5,6 +5,20 @@ import Testing
 @Suite(.serialized)
 @MainActor
 struct CLIInstallerTests {
+    @Test func `app bootstrap e2e channel argument selects without UI`() {
+        #expect(CLIInstallPrompter.testingChannel(arguments: [
+            "OpenClaw",
+            "--e2e-cli-channel",
+            "stable",
+        ]) == .stable)
+        #expect(CLIInstallPrompter.testingChannel(arguments: [
+            "OpenClaw",
+            "--e2e-cli-channel",
+            "invalid",
+        ]) == nil)
+        #expect(CLIInstallPrompter.testingChannel(arguments: ["OpenClaw"]) == nil)
+    }
+
     @Test func `installed location finds executable`() throws {
         let fm = FileManager()
         let root = fm.temporaryDirectory.appendingPathComponent(
@@ -36,7 +50,8 @@ struct CLIInstallerTests {
         let command = CLIInstaller.installScriptCommand(
             target: .exact("2026.7.3-beta.1"),
             prefix: "/Users/Test User/.openclaw",
-            scriptPath: "/Applications/OpenClaw.app/Contents/Resources/install-cli.sh")
+            scriptPath: "/Applications/OpenClaw.app/Contents/Resources/install-cli.sh",
+            compatibleWith: "2026.7.4")
 
         #expect(command == [
             "/bin/bash",
@@ -49,17 +64,32 @@ struct CLIInstallerTests {
             "2026.7.3-beta.1",
         ])
         #expect(!command.contains("curl"))
+        #expect(!command.contains("--compatible-with"))
+    }
+
+    @Test func `channel installer checks compatibility before replacing the managed CLI`() {
+        let command = CLIInstaller.installScriptCommand(
+            target: .channel(.stable),
+            prefix: "/Users/Test User/.openclaw",
+            scriptPath: "/Applications/OpenClaw.app/Contents/Resources/install-cli.sh",
+            compatibleWith: "2026.7.3-beta.8")
+
+        #expect(command.suffix(3) == [
+            "latest",
+            "--compatible-with",
+            "2026.7.3-beta.8",
+        ])
     }
 
     @Test func `dev installer uses a managed git main checkout`() {
         let command = CLIInstaller.installScriptCommand(
             target: .channel(.dev),
             prefix: "/Users/Test User/.openclaw",
-            scriptPath: "/Applications/OpenClaw.app/Contents/Resources/install-cli.sh")
+            scriptPath: "/Applications/OpenClaw.app/Contents/Resources/install-cli.sh",
+            compatibleWith: "2026.7.3")
 
-        #expect(command.suffix(6) == [
-            "--version",
-            "main",
+        #expect(command.suffix(5) == [
+            "2026.7.3",
             "--install-method",
             "git",
             "--git-dir",
@@ -228,6 +258,27 @@ struct CLIInstallerTests {
             location: location,
             found: "2026.7.3-alpha.1",
             required: "2026.7.3"))
+    }
+
+    @Test func `channel install cannot bootstrap with an older config writer`() {
+        #expect(!CLIInstaller.channelInstallIsCompatible(
+            installedVersion: "2026.7.1-2",
+            appVersion: "2026.7.2"))
+        #expect(!CLIInstaller.channelInstallIsCompatible(
+            installedVersion: "2026.7.2-beta.6",
+            appVersion: "2026.7.2-beta.7"))
+        #expect(CLIInstaller.channelInstallIsCompatible(
+            installedVersion: "2026.7.2",
+            appVersion: "2026.7.2-beta.7"))
+        #expect(CLIInstaller.channelInstallIsCompatible(
+            installedVersion: "2026.7.2-beta.7",
+            appVersion: "2026.7.2"))
+        #expect(CLIInstaller.channelInstallIsCompatible(
+            installedVersion: "2026.7.2-1",
+            appVersion: "2026.7.2-2"))
+        #expect(CLIInstaller.channelInstallIsCompatible(
+            installedVersion: "2026.7.3-beta.1",
+            appVersion: "2026.7.2"))
     }
 
     @Test func `compatible external CLI satisfies setup`() async throws {
