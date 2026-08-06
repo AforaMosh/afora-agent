@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   releaseOpenAIQuicksilverSession,
   reserveOpenAIQuicksilverSession,
+  transferOpenAIQuicksilverSession,
 } from "./realtime-quicksilver-session-limit.js";
 
 describe("GPT-Live shared session limit", () => {
@@ -78,6 +79,33 @@ describe("GPT-Live shared session limit", () => {
       for (const owner of owners) {
         releaseOpenAIQuicksilverSession(owner);
       }
+    }
+  });
+
+  it("transfers a pending reservation without consuming another slot", () => {
+    const pending = Symbol("pending");
+    const active = Symbol("active");
+    const others = Array.from({ length: 7 }, () => Symbol("other"));
+    const now = 1_000_000;
+    vi.spyOn(Date, "now").mockReturnValue(now);
+    try {
+      reserveOpenAIQuicksilverSession(pending, { expiresAtMs: now + 1 });
+      for (const owner of others) {
+        reserveOpenAIQuicksilverSession(owner);
+      }
+
+      expect(() => transferOpenAIQuicksilverSession(pending, active)).not.toThrow();
+      vi.mocked(Date.now).mockReturnValue(now + 60_000);
+      expect(() => reserveOpenAIQuicksilverSession(Symbol("ninth"))).toThrow(
+        "Too many concurrent OpenAI GPT-Live sessions",
+      );
+    } finally {
+      releaseOpenAIQuicksilverSession(pending);
+      releaseOpenAIQuicksilverSession(active);
+      for (const owner of others) {
+        releaseOpenAIQuicksilverSession(owner);
+      }
+      vi.restoreAllMocks();
     }
   });
 });

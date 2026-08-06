@@ -61,7 +61,7 @@ export function ensureRelayVoiceSession(session: RelaySession): boolean {
     return false;
   }
   try {
-    createOrResumeClientVoiceSession({
+    void createOrResumeClientVoiceSession({
       agentId: resolveRelayAgentId(session, session.sessionKey),
       sessionKey: session.sessionKey,
       provider: session.provider,

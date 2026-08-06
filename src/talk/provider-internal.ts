@@ -15,6 +15,7 @@ import type {
 } from "./provider-types.js";
 
 const INTERNAL_REALTIME_VOICE_PROVIDER = Symbol.for("openclaw.internal.realtime-voice-provider.v1");
+const TERMINAL_HOOK = Symbol.for("openclaw.internal.realtime-voice-browser-session-terminal.v1");
 
 export type InternalRealtimeVoiceProviderCapabilities = RealtimeVoiceProviderCapabilities & {
   /** The provider owns agent delegation instead of exposing client-side function tools. */
@@ -30,6 +31,13 @@ export type InternalRealtimeVoiceBrowserSessionCreateRequest =
       text: string;
     }>;
   };
+
+export function bindInternalRealtimeVoiceBrowserSessionTerminal(
+  request: InternalRealtimeVoiceBrowserSessionCreateRequest,
+  onTerminal: (outcome: { outcome: "completed" | "error"; message?: string }) => void,
+): void {
+  Reflect.set(request, TERMINAL_HOOK, onTerminal);
+}
 
 type InternalRealtimeVoiceProviderApi = {
   isBrowserSessionConfigured: (ctx: {

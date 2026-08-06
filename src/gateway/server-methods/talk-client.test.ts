@@ -17,7 +17,6 @@ import { resetClientVoiceConfirmationStateForTest } from "../../talk/client-voic
 import {
   closeClientVoiceSession,
   createOrResumeClientVoiceSession,
-  ensureClientVoiceAgentSessionEntry,
 } from "../../talk/client-voice-session.js";
 import { clientVoiceSessionTesting } from "../../talk/client-voice-session.test-support.js";
 import { captureEnv, setTestEnvValue } from "../../test-utils/env.js";
@@ -76,7 +75,7 @@ describe("talk.client.transcript", () => {
       agentId: "main",
       sessionKey,
       origin: "client",
-    });
+    }).voiceSessionId;
     const params = {
       sessionKey,
       voiceSessionId,
@@ -103,26 +102,28 @@ describe("talk.client.transcript", () => {
 
   it("appends before the session has ever received a chat turn", async () => {
     const talkFirstSessionKey = "agent:main:talk-first";
-    await ensureClientVoiceAgentSessionEntry({
-      agentId: "main",
-      sessionKey: talkFirstSessionKey,
-    });
     const voiceSessionId = createOrResumeClientVoiceSession({
       agentId: "main",
       sessionKey: talkFirstSessionKey,
       provider: "google",
       origin: "client",
-    });
-
+    }).voiceSessionId;
     expect(
-      await invokeTranscript({
+      loadSessionEntry({
+        agentId: "main",
         sessionKey: talkFirstSessionKey,
-        voiceSessionId,
-        entryId: "1",
-        role: "user",
-        text: "heard before the first consult",
       }),
-    ).toHaveBeenCalledWith(true, { ok: true }, undefined);
+    ).toBeUndefined();
+
+    const transcript = {
+      sessionKey: talkFirstSessionKey,
+      voiceSessionId,
+      entryId: "1",
+      role: "user",
+      text: "heard before the first consult",
+    };
+    expect(await invokeTranscript(transcript)).toHaveBeenCalledWith(true, { ok: true }, undefined);
+    expect(await invokeTranscript(transcript)).toHaveBeenCalledWith(true, { ok: true }, undefined);
 
     const talkFirstEntry = loadSessionEntry({
       agentId: "main",
@@ -144,7 +145,7 @@ describe("talk.client.transcript", () => {
       agentId: "main",
       sessionKey,
       origin: "client",
-    });
+    }).voiceSessionId;
     await invokeTranscript({
       sessionKey,
       voiceSessionId,
@@ -183,7 +184,7 @@ describe("talk.client.transcript", () => {
       agentId: "main",
       sessionKey,
       origin: "client",
-    });
+    }).voiceSessionId;
     const params = { sessionKey, voiceSessionId };
 
     expect(await invokeClose(params)).toHaveBeenCalledWith(true, { ok: true }, undefined);
@@ -196,7 +197,7 @@ describe("talk.client.transcript", () => {
       sessionKey,
       provider: "google",
       origin: "client",
-    });
+    }).voiceSessionId;
     const respond = await invokeTranscript({
       sessionKey,
       voiceSessionId,
@@ -226,7 +227,7 @@ describe("talk.client.transcript", () => {
       agentId: "main",
       sessionKey,
       origin: "client",
-    });
+    }).voiceSessionId;
 
     expect(
       await invokeTranscript({

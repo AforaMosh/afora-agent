@@ -25,3 +25,10 @@ export function reserveOpenAIQuicksilverSession(
 export function releaseOpenAIQuicksilverSession(owner: unknown): void {
   reservations.delete(owner);
 }
+
+export function transferOpenAIQuicksilverSession(from: unknown, to: unknown): void {
+  if (!reservations.delete(from)) {
+    throw new Error("OpenAI GPT-Live session reservation expired");
+  }
+  reservations.set(to, undefined);
+}

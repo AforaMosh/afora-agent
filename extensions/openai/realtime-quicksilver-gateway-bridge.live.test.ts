@@ -1,8 +1,5 @@
 import { createHash } from "node:crypto";
-import {
-  readCodexCliCredentialsCached,
-  resolveProviderOAuthAccess,
-} from "openclaw/plugin-sdk/provider-auth";
+import { readCodexCliCredentialsCached } from "openclaw/plugin-sdk/provider-auth";
 import { describe, expect, it } from "vitest";
 import { resolveCodexAuthIdentity } from "./openai-chatgpt-auth-identity.js";
 import { OpenAIQuicksilverGatewayBridge } from "./realtime-quicksilver-gateway-bridge.js";
@@ -10,6 +7,7 @@ import {
   OpenAIQuicksilverAudioPeer,
   type OpenAIQuicksilverAudioPeerContract,
 } from "./realtime-quicksilver-peer.runtime.js";
+import { resolveOpenAIChatGptSubscriptionAuth } from "./realtime-quicksilver-session.js";
 import type { OpenAIQuicksilverAuth } from "./realtime-quicksilver-wire.js";
 import { buildOpenAISpeechProvider } from "./speech-provider.js";
 
@@ -32,6 +30,14 @@ type TestableAudioPeer = {
   };
 };
 
+function deferred(): { promise: Promise<void>; resolve: () => void } {
+  let resolve!: () => void;
+  const promise = new Promise<void>((accept) => {
+    resolve = accept;
+  });
+  return { promise, resolve };
+}
+
 async function waitForLiveCondition(
   predicate: () => boolean,
   describeFailure: () => string,
@@ -53,15 +59,9 @@ async function resolveLiveOAuthProfile(): Promise<
   Extract<OpenAIQuicksilverAuth, { type: "oauth" }> | undefined
 > {
   try {
-    const access = await resolveProviderOAuthAccess({
-      provider: "openai",
-      includeExternalCliAuth: false,
-    });
-    if (access) {
-      if (!access.accountId) {
-        throw new Error("The selected ChatGPT OAuth profile is missing its account id");
-      }
-      return { type: "oauth", token: access.accessToken, accountId: access.accountId };
+    const auth = await resolveOpenAIChatGptSubscriptionAuth({});
+    if (auth) {
+      return auth;
     }
   } catch (error) {
     if (!(error instanceof Error) || error.name !== "AuthProfileMigrationRequiredError") {
@@ -214,8 +214,8 @@ describeLive("OpenAI GPT-Live gateway WebRTC peer", () => {
         let offer: ReturnType<typeof describeSdp> | undefined;
         let answer: ReturnType<typeof describeSdp> | undefined;
         let peer: TestableAudioPeer | undefined;
-        const createdSignal = Promise.withResolvers<void>();
-        const adoption = Promise.withResolvers<void>();
+        const createdSignal = deferred();
+        const adoption = deferred();
         const bridge = new OpenAIQuicksilverGatewayBridge({
           providerConfig: {},
           model: "gpt-live-1-boulder-alpha",
@@ -273,7 +273,9 @@ describeLive("OpenAI GPT-Live gateway WebRTC peer", () => {
         const snapshot = (failure?: unknown) => {
           const sender = peer?.state.transceiver.sender;
           const dtls = sender?.dtlsTransport;
-          const pair = dtls?.iceTransport.getSelectedCandidatePair();
+          const candidatePair = dtls?.iceTransport.connection.candidatePairs.find(
+            (candidate) => candidate.nominated,
+          );
           const trace = { mode, timestamps, states, offer, answer, transportAtInjection };
           const observed = {
             queuedAtInjection,
@@ -289,11 +291,11 @@ describeLive("OpenAI GPT-Live gateway WebRTC peer", () => {
               ...egress,
               dtlsBytes: dtls?.bytesSent ?? 0,
               dtlsPackets: dtls?.packetsSent ?? 0,
-              candidateBytes: pair?.bytesSent ?? 0,
-              candidatePackets: pair?.packetsSent ?? 0,
+              candidateBytes: candidatePair?.bytesSent ?? 0,
+              candidatePackets: candidatePair?.packetsSent ?? 0,
               candidateRoute:
-                pair?.localCandidate && pair.remoteCandidate
-                  ? `${pair.localCandidate.protocol}:${pair.localCandidate.type}->${pair.remoteCandidate.protocol}:${pair.remoteCandidate.type}`
+                candidatePair?.localCandidate && candidatePair.remoteCandidate
+                  ? `${candidatePair.localCandidate.transport}:${candidatePair.localCandidate.type}->${candidatePair.remoteCandidate.transport}:${candidatePair.remoteCandidate.type}`
                   : undefined,
             },
             pendingAfter: (bridge as unknown as TestableGatewayBridge).pendingAudio.length,

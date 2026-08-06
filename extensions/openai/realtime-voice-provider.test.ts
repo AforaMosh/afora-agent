@@ -16,6 +16,12 @@ const EXPERIMENTAL_REALTIME_CONFIG = {
   talk: { realtime: { experimentalModels: true } },
 } as never;
 
+function createJwt(payload: Record<string, unknown>): string {
+  const header = Buffer.from(JSON.stringify({ alg: "none", typ: "JWT" })).toString("base64url");
+  const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  return `${header}.${body}.signature`;
+}
+
 function readInternalRealtimeVoiceProviderApi(provider: object) {
   return Reflect.get(provider, INTERNAL_REALTIME_VOICE_PROVIDER) as {
     isBrowserSessionConfigured: (ctx: {
@@ -1008,11 +1014,17 @@ describe("buildOpenAIRealtimeVoiceProvider", () => {
     expect(fetchWithSsrFGuardMock).not.toHaveBeenCalled();
   });
 
-  it("falls back to agent-scoped ChatGPT OAuth for gpt-live broker sessions", async () => {
-    resolveProviderOAuthAccessMock.mockResolvedValue({
-      accessToken: "oauth-token",
-      accountId: "account-123",
+  it("keeps GPT-Live OAuth readiness aligned with JWT-derived session auth", async () => {
+    const accessToken = createJwt({
+      "https://api.openai.com/auth": { chatgpt_account_id: "account-from-jwt" },
     });
+    resolveProviderOAuthAccessMock.mockResolvedValue({
+      accessToken,
+    });
+    isProviderAuthProfileConfiguredMock.mockImplementation(
+      ({ agentDir, profileTypes }: { agentDir?: string; profileTypes?: readonly string[] }) =>
+        agentDir === "/tmp/openclaw-agent-voice" && profileTypes?.includes("oauth") === true,
+    );
     const createBrowserSession = vi.fn(async () => ({
       provider: "openai",
       transport: "webrtc" as const,
@@ -1032,7 +1044,15 @@ describe("buildOpenAIRealtimeVoiceProvider", () => {
       },
       talk: { realtime: { experimentalModels: true } },
     } as never;
+    const providerConfig = { model: "gpt-live-1-boulder-alpha" };
+    const internalApi = readInternalRealtimeVoiceProviderApi(provider);
 
+    expect(internalApi.isBrowserSessionConfigured({ cfg, providerConfig, agentId: "voice" })).toBe(
+      true,
+    );
+    expect(internalApi.isGatewayRelayConfigured({ cfg, providerConfig, agentId: "voice" })).toBe(
+      true,
+    );
     await expect(
       provider.createBrowserSession?.({
         cfg,
@@ -1054,8 +1074,8 @@ describe("buildOpenAIRealtimeVoiceProvider", () => {
     });
     expect(createBrowserSession).toHaveBeenCalledWith(expect.any(Object), {
       type: "oauth",
-      token: "oauth-token",
-      accountId: "account-123",
+      token: accessToken,
+      accountId: "account-from-jwt",
     });
   });
 
