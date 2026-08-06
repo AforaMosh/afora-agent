@@ -37,8 +37,51 @@ describe("client voice session store", () => {
           consultRunIds: [],
           effects: [],
         }),
-      )?.transcriptFailureKeys,
-    ).toEqual([]);
+      ),
+    ).toMatchObject({
+      effects: [],
+      nextEffectRevision: 1,
+      digestDeliveredRevision: 0,
+      transcriptFailureKeys: [],
+    });
+  });
+
+  it("normalizes legacy effect order and delivered timestamp into revision watermarks", () => {
+    expect(
+      parseStoredVoiceSessionRecord(
+        JSON.stringify({
+          version: VOICE_SESSION_RECORD_VERSION,
+          voiceSessionId: "voice-1",
+          agentId: "main",
+          sessionKey: "agent:main:main",
+          origin: "client",
+          status: "closed",
+          createdAt: 1,
+          updatedAt: 3,
+          consultRunIds: [],
+          effects: [
+            {
+              runId: "run-1",
+              toolName: "message",
+              startedAt: 1,
+              status: "started",
+            },
+            {
+              runId: "run-2",
+              toolName: "write",
+              startedAt: 2,
+              status: "succeeded",
+            },
+          ],
+          digestDeliveredAt: 3,
+          transcriptFailureKeys: [],
+        }),
+      ),
+    ).toMatchObject({
+      effects: [{ revision: 1 }, { revision: 2 }],
+      nextEffectRevision: 3,
+      digestDeliveredRevision: 2,
+    });
   });
 
   it("rejects malformed, duplicate, or over-cap unresolved transcript failures", () => {
