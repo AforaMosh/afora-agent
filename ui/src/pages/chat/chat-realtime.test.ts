@@ -496,6 +496,37 @@ describe("chat realtime actions", () => {
     expect(state.realtimeTalkCameraError).toBe(false);
   });
 
+  it("clears session-owned state when the active session naturally becomes idle", async () => {
+    const state = createState();
+    await state.toggleRealtimeTalk();
+    const session = inspectSession(state);
+    session.callbacks.onStatus?.("listening");
+    session.callbacks.onVideoCapability?.(true);
+    session.callbacks.onInputLevel?.(0.8);
+    session.callbacks.onTranscript?.({ role: "user", text: "done", final: true });
+    session.callbacks.onVideoStream?.({} as MediaStream);
+    state.realtimeTalkCameraDevices = [{ deviceId: "camera", label: "Camera" }];
+    state.realtimeTalkVideoPending = true;
+    state.realtimeTalkCameraError = true;
+
+    session.callbacks.onStatus?.("idle");
+
+    expect(state.realtimeTalkSession).toBeNull();
+    expect(state.realtimeTalkActive).toBe(false);
+    expect(state.realtimeTalkStatus).toBe("idle");
+    expect(state.realtimeTalkDetail).toBeNull();
+    expect(state.realtimeTalkInputLevel.value).toBe(0);
+    expect(state.realtimeTalkConversation).toEqual([]);
+    expect(state.realtimeTalkVideoStream).toBeNull();
+    expect(state.realtimeTalkCameraDevices).toEqual([]);
+    expect(state.realtimeTalkVideoCapable).toBe(false);
+    expect(state.realtimeTalkVideoPending).toBe(false);
+    expect(state.realtimeTalkCameraError).toBe(false);
+
+    session.callbacks.onStatus?.("error", "stale");
+    expect(state.realtimeTalkStatus).toBe("idle");
+  });
+
   it("ignores a stopped session that rejects after its replacement starts", async () => {
     let rejectFirstStart: (error: Error) => void = () => undefined;
     startSpy.mockImplementationOnce(

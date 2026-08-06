@@ -1,7 +1,9 @@
-import { DEFAULT_GATEWAY_REQUEST_TIMEOUT_MS } from "@openclaw/gateway-client/browser";
 import type { BoundedSerialQueue } from "../../../../src/shared/bounded-serial-queue.js";
+import {
+  CLIENT_VOICE_CLOSE_REQUEST_BUDGET_MS,
+  CLIENT_VOICE_TRANSCRIPT_DRAIN_TIMEOUT_MS,
+} from "../../../../src/talk/voice-transcript.js";
 import type { GatewayBrowserClient } from "../../api/gateway.ts";
-import type { RealtimeTalkTransport } from "./realtime-talk-shared.ts";
 
 export type ClientVoiceSessionOwner = {
   signal: AbortSignal;
@@ -12,6 +14,7 @@ export type ClientVoiceSessionOwner = {
 
 export type DetachedVoiceSession = {
   voiceSessionId: string;
+  allocationId?: string;
   serverOwned: boolean;
   generation?: number;
   transcriptQueue: BoundedSerialQueue;
@@ -20,9 +23,8 @@ export type DetachedVoiceSession = {
 
 const MAX_CLIENT_VOICE_SESSION_OWNERS_PER_SESSION = 2;
 const MAX_CLIENT_VOICE_SESSION_OWNERS_PER_CLIENT = 16;
-const CLIENT_VOICE_TRANSCRIPT_DRAIN_TIMEOUT_MS = DEFAULT_GATEWAY_REQUEST_TIMEOUT_MS;
 const CLIENT_VOICE_SESSION_CLOSE_TIMEOUT_MS =
-  CLIENT_VOICE_TRANSCRIPT_DRAIN_TIMEOUT_MS + DEFAULT_GATEWAY_REQUEST_TIMEOUT_MS;
+  CLIENT_VOICE_TRANSCRIPT_DRAIN_TIMEOUT_MS + CLIENT_VOICE_CLOSE_REQUEST_BUDGET_MS;
 
 // One client may own multiple split-pane calls, but route churn must not create
 // unbounded detached drains. Transcript and close each get one request deadline.
@@ -90,25 +92,6 @@ export function reserveClientVoiceSessionOwner(
     },
     release,
   };
-}
-
-export function retireUncommittedRealtimeTalkTransport(params: {
-  nextTransport: RealtimeTalkTransport | null;
-  transport: string;
-  owner: ClientVoiceSessionOwner;
-  reusesExistingOwner: boolean;
-  closeVoiceSession: () => void;
-}): void {
-  params.nextTransport?.stop({ emitClosed: false });
-  if (params.reusesExistingOwner) {
-    return;
-  }
-  if (params.transport === "gateway-relay" && params.nextTransport) {
-    // The relay transport owns server close once constructed; release browser ownership.
-    params.owner.release();
-    return;
-  }
-  params.closeVoiceSession();
 }
 
 export function transcriptPersistenceAbortError(): Error {
