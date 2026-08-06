@@ -143,6 +143,30 @@ describe("ApiClient", () => {
     expect(release).toHaveBeenCalledTimes(1);
   });
 
+  it("adds credential guidance when QQ reports an expired token as HTTP 500", async () => {
+    const release = vi.fn(async () => {});
+    fetchWithSsrFGuardMock.mockResolvedValueOnce({
+      response: new Response('{"code":11244,"message":"token not exist or expire"}', {
+        status: 500,
+        headers: { "content-type": "application/json" },
+      }),
+      release,
+    });
+
+    const client = new ApiClient({ baseUrl: "https://qqbot.test" });
+    let error: unknown;
+    try {
+      await client.request("token-1", "GET", "/gateway");
+    } catch (caught) {
+      error = caught;
+    }
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({ httpStatus: 500, bizCode: 11244 });
+    expect((error as Error).message).toContain("QQBot account appId and clientSecret");
+    expect(release).toHaveBeenCalledTimes(1);
+  });
+
   it("keeps non-auth structured API guidance generic", async () => {
     const release = vi.fn(async () => {});
     fetchWithSsrFGuardMock.mockResolvedValueOnce({

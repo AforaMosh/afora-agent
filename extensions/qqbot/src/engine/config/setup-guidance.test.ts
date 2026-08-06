@@ -41,9 +41,11 @@ describe("QQBot setup guidance", () => {
     expect(message).not.toContain("clientSecret");
   });
 
-  it("uses credential guidance only for HTTP 401 API failures", () => {
+  it("uses credential guidance for HTTP and QQ business-code auth failures", () => {
     expect(qqbotApiGuidance(401)).toContain("appId and clientSecret");
+    expect(qqbotApiGuidance(500, 11244)).toContain("appId and clientSecret");
     expect(qqbotApiGuidance(403)).not.toContain("appId");
+    expect(qqbotApiGuidance(500, 40034025)).not.toContain("appId");
     expect(qqbotApiGuidance(429)).not.toContain("appId");
   });
 });

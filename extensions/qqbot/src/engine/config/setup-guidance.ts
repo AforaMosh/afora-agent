@@ -1,3 +1,4 @@
+import { isQQBotTokenAuthenticationFailure } from "../api/auth-errors.js";
 import { DEFAULT_ACCOUNT_ID } from "./resolve.js";
 
 const QQBOT_DOCS_URL = "https://docs.openclaw.ai/channels/qqbot";
@@ -11,8 +12,8 @@ export function qqbotNetworkGuidance(): string {
   return `Check network connectivity and DNS, and verify the server IP whitelist in QQ Open Platform at ${QQBOT_OPEN_PLATFORM_URL}. See ${QQBOT_DOCS_URL}`;
 }
 
-export function qqbotApiGuidance(httpStatus: number): string {
-  return httpStatus === 401
+export function qqbotApiGuidance(httpStatus: number, bizCode?: number): string {
+  return isQQBotTokenAuthenticationFailure(httpStatus, bizCode)
     ? qqbotAuthGuidance()
     : `See ${QQBOT_DOCS_URL} for QQBot API troubleshooting`;
 }

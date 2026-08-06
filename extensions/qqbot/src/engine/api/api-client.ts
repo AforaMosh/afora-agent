@@ -211,7 +211,7 @@ export class ApiClient {
           };
           const bizCode = error.code ?? error.err_code;
           throw new ApiError(
-            `API Error [${path}]: ${error.message ?? rawBody}. ${qqbotApiGuidance(res.status)}`,
+            `API Error [${path}]: ${error.message ?? rawBody}. ${qqbotApiGuidance(res.status, bizCode)}`,
             res.status,
             path,
             bizCode,
