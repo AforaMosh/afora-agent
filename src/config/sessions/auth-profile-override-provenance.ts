@@ -10,8 +10,6 @@ export function resolveSessionAuthProfileOverrideSource(
   if (!entry?.authProfileOverride?.trim()) {
     return undefined;
   }
-  if (entry.authProfileOverrideSource) {
-    return entry.authProfileOverrideSource;
-  }
-  return typeof entry.authProfileOverrideCompactionCount === "number" ? "auto" : "user";
+  const isAutomatic = typeof entry.authProfileOverrideCompactionCount === "number";
+  return entry.authProfileOverrideSource || (isAutomatic ? "auto" : "user");
 }
