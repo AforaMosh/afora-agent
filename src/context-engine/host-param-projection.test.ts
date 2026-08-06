@@ -122,9 +122,7 @@ describe("context-engine host parameter projection", () => {
     });
   });
 
-  it("uses the legacy parameter set for undeclared engines during the window", async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-07-29T12:00:00Z"));
+  it("uses the stable legacy parameter set for undeclared engines", async () => {
     const assembleCalls: Array<Record<string, unknown>> = [];
     const compactCalls: Array<Record<string, unknown>> = [];
     const engineId = registerProbeEngine({ assembleCalls, compactCalls });
@@ -143,15 +141,15 @@ describe("context-engine host parameter projection", () => {
     expect(compactCalls[0]).toHaveProperty("sessionId", "session-1");
   });
 
-  it("keeps the legacy parameter set for undeclared engines after the former window", async () => {
+  it("does not change undeclared projection with wall-clock time", async () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-07-29T12:00:00Z"));
+    vi.setSystemTime(new Date("2030-01-01T00:00:00Z"));
     const assembleCalls: Array<Record<string, unknown>> = [];
     const compactCalls: Array<Record<string, unknown>> = [];
     const engineId = registerProbeEngine({ assembleCalls, compactCalls });
     const engine = await resolveContextEngine({ plugins: { slots: { contextEngine: engineId } } });
 
-    vi.setSystemTime(new Date("2026-08-13T00:00:00Z"));
+    vi.setSystemTime(new Date("2040-01-01T00:00:00Z"));
     await invokeHostParamMethods(engine);
 
     for (const call of [...assembleCalls, ...compactCalls]) {

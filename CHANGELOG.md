@@ -64,6 +64,7 @@ Docs: https://docs.openclaw.ai
 
 ### Fixes
 
+- **Context-engine transcript fencing:** keep the admitted user turn out of pre-turn transcript reads across embedded and Codex runs, preserve exact same-text messages, advance engine state only after successful turns, and use turn-local legacy degradation for engines that cannot honor the fence without changing their configured slot.
 - **Control UI owner handoff:** give browsers opened by host-issued dashboard and graphical onboarding links durable administrator access, including same-browser recovery from a limited credential, while keeping generic, Telegram, mobile, and ordinary scope-upgrade paths bounded. Thanks @shakkernerd.
 - **Control UI agent and skill permissions:** gate Agents, Skills, Skill Workshop, and delayed mutation dispatches by the current Gateway method catalog and operator scopes while preserving read-only browsing and legacy Gateway compatibility. Fixes #119176. Thanks @shakkernerd.
 - **Guided onboarding skip-UI routing:** keep `openclaw onboard --skip-ui` and `openclaw setup --skip-ui` on guided onboarding while skipping both browser and terminal handoffs, instead of silently switching to the classic wizard. Thanks @shakkernerd.
