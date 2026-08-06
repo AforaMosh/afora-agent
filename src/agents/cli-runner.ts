@@ -422,11 +422,15 @@ async function persistCliAssistantTranscript(params: {
   terminalAnchor?: import("../config/sessions/session-accessor.js").TranscriptEntryAnchor;
 }> {
   const { runParams } = params;
+  if (runParams.currentInboundEventKind === "room_event") {
+    const admission = runParams.userTurnTranscriptRecorder?.getAdmissionReceipt();
+    return {
+      owned: true,
+      ...(admission ? { terminalAnchor: admission } : {}),
+    };
+  }
   if (!runParams.persistAssistantTranscript || !runParams.sessionKey || !params.text) {
     return { owned: false };
-  }
-  if (runParams.currentInboundEventKind === "room_event") {
-    return { owned: true };
   }
   try {
     const result = await appendExactAssistantMessageToSessionTranscript({

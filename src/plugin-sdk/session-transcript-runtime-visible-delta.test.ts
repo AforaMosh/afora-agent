@@ -287,8 +287,11 @@ describe("session transcript visible cursor SDK", () => {
       throw new Error("expected visible fence setup messages");
     }
 
+    if (!admitted.anchor) {
+      throw new Error("expected admitted transcript anchor");
+    }
     const fenced = await runWithSessionTranscriptReadFence(
-      { messageId: admitted.messageId, target: scope },
+      { ...admitted.anchor, logicalTurnId: "visible-delta-fence", role: "user" },
       async () =>
         await readSessionTranscriptVisibleMessageDelta({
           ...scope,

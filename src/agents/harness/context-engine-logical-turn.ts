@@ -83,6 +83,37 @@ export async function createContextEngineLogicalTurnLease(params: {
     return asEffective();
   };
 
+  const resolveSelectionIssue = (selection: {
+    host: ContextEngineHostSupport;
+    operation: ContextEngineOperation;
+    requiresDurableCommit: boolean;
+    hasAdmissionFence: boolean;
+  }): string | undefined => {
+    const support = evaluateContextEngineHostSupport({
+      contextEngineInfo: effective.engine.info,
+      operation: selection.operation,
+      host: selection.host,
+    });
+    if (!support.ok) {
+      return `host "${selection.host.id}" is missing ${support.missingCapabilities.join(", ")}`;
+    }
+    if (
+      selection.hasAdmissionFence &&
+      effective.engine.info.transcriptSemantics?.currentTurnFence !== "before-current-turn-entry-v1"
+    ) {
+      return "current-turn transcript fencing is not declared";
+    }
+    if (
+      selection.requiresDurableCommit &&
+      (effective.engine.info.transcriptSemantics?.turnAdvancementIdempotency !==
+        "atomic-idempotent-v1" ||
+        typeof effective.engine.commitTurn !== "function")
+    ) {
+      return "atomic idempotent turn advancement is not declared";
+    }
+    return undefined;
+  };
+
   if (resolution.configuredFailure) {
     degradeBeforeStart(resolution.configuredFailure);
   }
@@ -110,35 +141,21 @@ export async function createContextEngineLogicalTurnLease(params: {
       if (state === "disposed") {
         throw new Error("context-engine logical turn lease is already disposed");
       }
-      if (state === "started" || degradedReason) {
+      if (degradedReason) {
         return asEffective();
       }
-      const support = evaluateContextEngineHostSupport({
-        contextEngineInfo: effective.engine.info,
-        operation: selection.operation,
-        host: selection.host,
-      });
-      if (!support.ok) {
-        return degradeBeforeStart(
-          `host "${selection.host.id}" is missing ${support.missingCapabilities.join(", ")}`,
-        );
+      const issue = resolveSelectionIssue(selection);
+      if (issue) {
+        if (state === "started") {
+          throw new Error(
+            `context-engine logical turn cannot change to incompatible ${selection.host.label}: ${issue}`,
+          );
+        }
+        return degradeBeforeStart(issue);
       }
-      if (
-        selection.hasAdmissionFence &&
-        effective.engine.info.transcriptSemantics?.currentTurnFence !==
-          "before-current-turn-entry-v1"
-      ) {
-        return degradeBeforeStart("current-turn transcript fencing is not declared");
+      if (state === "unselected") {
+        state = "selected";
       }
-      if (
-        selection.requiresDurableCommit &&
-        (effective.engine.info.transcriptSemantics?.turnAdvancementIdempotency !==
-          "atomic-idempotent-v1" ||
-          typeof effective.engine.commitTurn !== "function")
-      ) {
-        return degradeBeforeStart("atomic idempotent turn advancement is not declared");
-      }
-      state = "selected";
       return asEffective();
     },
     degradeBeforeStart,

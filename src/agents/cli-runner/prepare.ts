@@ -1661,22 +1661,29 @@ export async function prepareCliRunContext(
     // Context remains session-owned. Trusted helper runs may borrow a different
     // agentDir only for model/auth execution.
     const contextEngineAgentDir = resolveAgentDir(contextEngineConfig, contextEngineSessionAgentId);
-    const resolvedContextEngine =
-      params.contextEngineLogicalTurnLease?.engine ??
-      (await resolveContextEngine(contextEngineConfig, {
-        agentDir: contextEngineAgentDir,
-        workspaceDir,
-      }));
+    const contextEngineHostSupport = buildGenericCliContextEngineHostSupport({
+      backendId: backendResolved.id,
+      capabilities: backendResolved.contextEngineHostCapabilities,
+    });
+    const resolvedContextEngine = params.contextEngineLogicalTurnLease
+      ? params.contextEngineLogicalTurnLease.selectForHost({
+          host: contextEngineHostSupport,
+          operation: "agent-run",
+          requiresDurableCommit: params.userTurnTranscriptRecorder !== undefined,
+          hasAdmissionFence: params.userTurnTranscriptRecorder !== undefined,
+        }).engine
+      : await resolveContextEngine(contextEngineConfig, {
+          agentDir: contextEngineAgentDir,
+          workspaceDir,
+        });
+    params.contextEngineLogicalTurnLease?.begin();
     const contextEngine =
       resolvedContextEngine.info.id !== "legacy" ? resolvedContextEngine : undefined;
     if (contextEngine) {
       assertContextEngineHostSupport({
         contextEngine,
         operation: "agent-run",
-        host: buildGenericCliContextEngineHostSupport({
-          backendId: backendResolved.id,
-          capabilities: backendResolved.contextEngineHostCapabilities,
-        }),
+        host: contextEngineHostSupport,
       });
     }
     const hadSessionFile = await hasCliSessionTranscript({

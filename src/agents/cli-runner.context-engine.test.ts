@@ -324,6 +324,51 @@ describe("runPreparedCliAgent context engine lifecycle", () => {
     expect(dispose).not.toHaveBeenCalled();
   });
 
+  it("uses the admitted user anchor as the terminal for transcriptless room events", async () => {
+    const context = buildPreparedContext(createContextEngine());
+    const admission = {
+      agentId: "main",
+      sessionId: "openclaw-session-1",
+      sessionKey: "agent:main:main",
+      storePath: "/tmp/openclaw-cli-context-engine-test/sessions.json",
+      generation: "generation-1",
+      entryId: "room-event-user",
+      rawSeq: 1,
+      effectiveParentId: null,
+      activeMessagePosition: 0,
+      logicalTurnId: "room-event-turn",
+      role: "user" as const,
+    };
+    const onContextEngineTurnCandidate = vi.fn();
+    context.params.currentInboundEventKind = "room_event";
+    context.params.persistAssistantTranscript = false;
+    context.params.onContextEngineTurnCandidate = onContextEngineTurnCandidate;
+    context.params.userTurnTranscriptRecorder = {
+      message: undefined,
+      resolveMessage: vi.fn(async () => undefined),
+      getAdmissionReceipt: () => admission,
+      markRuntimePersistencePending: vi.fn(),
+      markRuntimePersisted: vi.fn(),
+      markBlocked: vi.fn(),
+      hasPersisted: () => true,
+      isBlocked: () => false,
+      hasRuntimePersistencePending: () => false,
+      waitForRuntimePersistence: vi.fn(async () => {}),
+      persistApproved: vi.fn(async () => undefined),
+      persistBlocked: vi.fn(async () => undefined),
+    };
+
+    await runPreparedCliAgent(context);
+
+    expect(onContextEngineTurnCandidate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        boundary: { admission, terminal: admission },
+        sessionIdUsed: "openclaw-session-1",
+        sessionKey: "agent:main:main",
+      }),
+    );
+  });
+
   it("does not synthesize a context-engine user turn for empty transcript prompts", async () => {
     const afterTurn = vi.fn<NonNullable<ContextEngine["afterTurn"]>>(async () => {});
     const dispose = vi.fn(async () => {});

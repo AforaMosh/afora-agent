@@ -750,6 +750,67 @@ describe("Default engine selection", () => {
     expect(assemble).toHaveBeenCalledTimes(2);
     await second.dispose();
   });
+
+  it("rejects an incompatible fallback host after the logical turn starts", async () => {
+    const engineId = uniqueEngineId("logical-turn-host-transition");
+    registerTestContextEngine(engineId, () => ({
+      info: {
+        id: engineId,
+        name: "Host Transition",
+        hostRequirements: {
+          "agent-run": { requiredCapabilities: ["thread-bootstrap-projection"] },
+        },
+        transcriptSemantics: {
+          currentTurnFence: "before-current-turn-entry-v1",
+          turnAdvancementIdempotency: "atomic-idempotent-v1",
+        },
+      },
+      async ingest() {
+        return { ingested: true };
+      },
+      async assemble({ messages }) {
+        return { messages, estimatedTokens: 0 };
+      },
+      async compact() {
+        return { ok: true, compacted: false };
+      },
+      async commitTurn() {
+        return { status: "committed" };
+      },
+    }));
+    const lease = await createContextEngineLogicalTurnLease({
+      config: configWithSlot(engineId),
+    });
+
+    lease.selectForHost({
+      host: {
+        id: "agent-harness:first",
+        label: 'agent harness "first"',
+        capabilities: ["thread-bootstrap-projection"],
+      },
+      operation: "agent-run",
+      requiresDurableCommit: true,
+      hasAdmissionFence: true,
+    });
+    lease.begin();
+
+    expect(() =>
+      lease.selectForHost({
+        host: {
+          id: "agent-harness:fallback",
+          label: 'agent harness "fallback"',
+          capabilities: [],
+        },
+        operation: "agent-run",
+        requiresDurableCommit: true,
+        hasAdmissionFence: true,
+      }),
+    ).toThrow(
+      'context-engine logical turn cannot change to incompatible agent harness "fallback": host "agent-harness:fallback" is missing thread-bootstrap-projection',
+    );
+    expect(lease.engine.info.id).toBe(engineId);
+    await lease.dispose();
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════

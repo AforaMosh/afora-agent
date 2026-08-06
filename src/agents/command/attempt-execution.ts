@@ -946,6 +946,8 @@ export function runAgentAttempt(params: {
             trigger: "user",
             sessionFile: params.sessionFile,
             storePath: params.storePath,
+            persistAssistantTranscript:
+              params.storePath !== undefined && params.sessionStore !== undefined,
             workspaceDir: params.workspaceDir,
             cwd: params.cwd,
             config: params.cfg,

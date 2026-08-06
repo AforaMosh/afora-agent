@@ -527,6 +527,8 @@ function createCronPromptExecutor(params: {
                 jobId: params.job.id,
                 cleanupCliLiveSessionOnRunEnd: params.usesDetachedRunSession === true,
                 sessionFile,
+                storePath: params.cronSession.storePath,
+                persistAssistantTranscript: true,
                 workspaceDir: params.workspaceDir,
                 config: params.cfgWithAgentDefaults,
                 prompt: promptText,

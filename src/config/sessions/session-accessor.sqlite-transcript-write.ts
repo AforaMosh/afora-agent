@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { resolveTimestampMsToIsoString } from "@openclaw/normalization-core/number-coercion";
+import { isRecord } from "@openclaw/normalization-core/record-coerce";
 import {
   openOpenClawAgentDatabase,
   resolveOpenClawAgentSqlitePath,
@@ -638,32 +639,40 @@ function appendSqliteTranscriptMessageInTransaction<TMessage>(
   resolved: ResolvedTranscriptScope,
   options: TranscriptMessageAppendOptions<TMessage> & { messageAlreadyRedacted?: boolean },
 ): TranscriptMessageAppendResult<TMessage> | undefined {
-  const buildAnchor = (params: {
+  const readAnchor = (params: {
     message: unknown;
     messageId: string;
-  }): NonNullable<TranscriptMessageAppendResult<TMessage>["anchor"]> => {
-    const anchor = readActiveTranscriptEntryAnchorInTransaction({
+  }): TranscriptMessageAppendResult<TMessage>["anchor"] =>
+    readActiveTranscriptEntryAnchorInTransaction({
       database,
       resolved,
       entryId: params.messageId,
       message: params.message,
     });
-    if (!anchor) {
-      throw new Error(`SQLite transcript anchor is not an active message ${params.messageId}.`);
-    }
-    return anchor;
+  const messagesMatchForIdempotentReplay = (stored: unknown, candidate: unknown): boolean => {
+    const withoutTimestamp = (message: unknown): unknown => {
+      if (!isRecord(message)) {
+        return message;
+      }
+      const { timestamp: _timestamp, ...stable } = message;
+      return stable;
+    };
+    return JSON.stringify(withoutTimestamp(stored)) === JSON.stringify(withoutTimestamp(candidate));
   };
   // Idempotent replays return the stored row with its persisted parent so callers
   // adopt the durable tree instead of re-deriving one from a stale snapshot.
-  const existingAppendResult = (found: { message: unknown; messageId: string }) => ({
-    appended: false as const,
-    anchor: buildAnchor(found),
-    effectiveParentId:
-      readTranscriptIdentityByEventId(database, resolved.sessionId, found.messageId)?.parentId ??
-      null,
-    message: found.message as TMessage,
-    messageId: found.messageId,
-  });
+  const existingAppendResult = (found: { message: unknown; messageId: string }) => {
+    const anchor = readAnchor(found);
+    return {
+      appended: false as const,
+      ...(anchor ? { anchor } : {}),
+      effectiveParentId:
+        readTranscriptIdentityByEventId(database, resolved.sessionId, found.messageId)?.parentId ??
+        null,
+      message: found.message as TMessage,
+      messageId: found.messageId,
+    };
+  };
   const idempotencyKey = readMessageIdempotencyKey(options.message);
   if (idempotencyKey && options.idempotencyLookup !== "caller-checked") {
     const existing = readTranscriptMessageByScopedIdempotencyKey(
@@ -675,7 +684,7 @@ function appendSqliteTranscriptMessageInTransaction<TMessage>(
     if (existing) {
       if (
         !options.prepareMessageAfterIdempotencyCheck &&
-        JSON.stringify(existing.message) !== JSON.stringify(options.message)
+        !messagesMatchForIdempotentReplay(existing.message, options.message)
       ) {
         throw new TranscriptTurnAdmissionConflictError(idempotencyKey);
       }
@@ -719,7 +728,7 @@ function appendSqliteTranscriptMessageInTransaction<TMessage>(
     if (existing) {
       if (
         !options.prepareMessageAfterIdempotencyCheck &&
-        JSON.stringify(existing.message) !== JSON.stringify(finalMessage)
+        !messagesMatchForIdempotentReplay(existing.message, finalMessage)
       ) {
         throw new TranscriptTurnAdmissionConflictError(idempotencyKey);
       }
@@ -731,7 +740,7 @@ function appendSqliteTranscriptMessageInTransaction<TMessage>(
     if (existing) {
       if (
         !options.prepareMessageAfterIdempotencyCheck &&
-        JSON.stringify(existing.message) !== JSON.stringify(finalMessage)
+        !messagesMatchForIdempotentReplay(existing.message, finalMessage)
       ) {
         throw new TranscriptTurnAdmissionConflictError(idempotencyKey ?? `event:${messageId}`);
       }
@@ -741,9 +750,10 @@ function appendSqliteTranscriptMessageInTransaction<TMessage>(
   if (!appended) {
     throw new Error(`SQLite transcript append did not insert message ${messageId}.`);
   }
+  const anchor = readAnchor({ message: finalMessage, messageId });
   return {
     appended: true,
-    anchor: buildAnchor({ message: finalMessage, messageId }),
+    ...(anchor ? { anchor } : {}),
     effectiveParentId: parentId ?? null,
     message: finalMessage,
     messageId,

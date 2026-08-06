@@ -260,15 +260,26 @@ export async function runPreparedEmbeddedLoop(
     harnessOwnsTransport: () => preparedRuntime.snapshot().pluginHarnessOwnsTransport,
     getApiKeyInfo,
   });
-  // Resolve the context engine once and reuse across retries to avoid
-  // repeated initialization/connection overhead per attempt.
-  const contextEngine =
-    params.contextEngineLogicalTurnLease?.engine ??
+  // Pin the effective engine only after validating the first prepared host.
+  // Later fallback hosts revalidate against the started lease before dispatch.
+  const contextEngineLogicalTurnLease =
+    params.contextEngineLogicalTurnLease ??
     (() => {
       throw new Error("Embedded run is missing its logical-turn context-engine lease.");
     })();
+  const contextEngine = contextEngineLogicalTurnLease.selectForHost({
+    host: {
+      id: `agent-harness:${agentHarness.id}`,
+      label: `agent harness "${agentHarness.id}"`,
+      capabilities: agentHarness.contextEngineHostCapabilities ?? [],
+    },
+    operation: "agent-run",
+    requiresDurableCommit: params.userTurnTranscriptRecorder !== undefined,
+    hasAdmissionFence: params.userTurnTranscriptRecorder !== undefined,
+  }).engine;
+  contextEngineLogicalTurnLease.begin();
   const resolveContextEnginePluginId = () =>
-    params.contextEngineLogicalTurnLease?.effectiveEnginePluginId ??
+    contextEngineLogicalTurnLease.effectiveEnginePluginId ??
     resolveContextEngineOwnerPluginId(contextEngine);
   startupStages.mark("context-engine");
   notifyExecutionPhase("context_engine", { provider, model: modelId });

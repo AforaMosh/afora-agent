@@ -242,7 +242,14 @@ describe("session transcript runtime SDK", () => {
     if (!priorUser || !priorAssistant || !admitted) {
       throw new Error("expected fenced transcript setup messages");
     }
-    const receipt = { messageId: admitted.messageId, target: scope };
+    if (!admitted.anchor) {
+      throw new Error("expected admitted transcript anchor");
+    }
+    const receipt = {
+      ...admitted.anchor,
+      logicalTurnId: "fenced-raw-session",
+      role: "user" as const,
+    };
 
     const fenced = await runWithSessionTranscriptReadFence(receipt, async () => {
       const events = await readSessionTranscriptEvents(scope);
