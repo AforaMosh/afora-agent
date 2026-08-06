@@ -5,11 +5,13 @@ import {
   getExecutionIdentityAdmissionScope,
   parseExecutionIdentityAdmissionToken,
   runWithExecutionIdentityAdmissionScope,
+  runWithoutExecutionIdentityAdmissionScope,
   type ExecutionIdentityAdmissionFacts,
 } from "../audit/execution-identity-admission.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { captureAgentRunLifecycleGeneration } from "../infra/agent-events.js";
 import { reserveAgentRunAttribution } from "../infra/agent-run-registry.js";
+import { createSubsystemLogger } from "../logging/subsystem.js";
 import { createAgentExecutionAttribution } from "./agent-execution-attribution.js";
 import type { PreparedAgentCommandExecution } from "./command/prepare.js";
 import type { AgentCommandGatewayIngressOpts, AgentCommandOpts } from "./command/types.js";
@@ -21,6 +23,7 @@ const LOCAL_CLI_ADMISSION_INGRESS: AgentCommandAdmissionIngress = {
   boundary: "agent-command.local",
   state: "present",
 };
+const log = createSubsystemLogger("agents/agent-command");
 
 function systemIngress(boundary: string): AgentCommandAdmissionIngress {
   return { kind: "system", boundary, state: "present" };
@@ -132,24 +135,42 @@ async function runPreparedAgentCommandWithExecutionIdentity<TResult>(params: {
     resolvedOpts === params.prepared.opts
       ? params.prepared
       : { ...params.prepared, opts: resolvedOpts };
-  if (!isExecutionIdentityCollectionEnabled(prepared.cfg)) {
-    return await params.run(prepared);
-  }
-  const admission = resolved.attribution.executionIdentityAdmission;
-  const token = admission
-    ? parseExecutionIdentityAdmissionToken(admission.token)
-    : createExecutionIdentityAdmissionToken(prepared.runId, {
-        contextId: resolved.attribution.contextId,
-        executionId: resolved.attribution.executionId,
-        now: resolved.attribution.createdAt,
+  // Every prepared command is an independent admitted root. Detached A2A and
+  // in-process child dispatch can begin inside a parent's async chain.
+  return await runWithoutExecutionIdentityAdmissionScope(async () => {
+    if (!isExecutionIdentityCollectionEnabled(prepared.cfg)) {
+      return await params.run(prepared);
+    }
+    let scope:
+      | {
+          token: ReturnType<typeof parseExecutionIdentityAdmissionToken>;
+          retryOnly: boolean;
+        }
+      | undefined;
+    try {
+      const admission = resolved.attribution.executionIdentityAdmission;
+      const token = admission
+        ? parseExecutionIdentityAdmissionToken(admission.token)
+        : createExecutionIdentityAdmissionToken(prepared.runId, {
+            contextId: resolved.attribution.contextId,
+            executionId: resolved.attribution.executionId,
+            now: resolved.attribution.createdAt,
+          });
+      if (token.runId !== prepared.runId) {
+        throw new Error("execution identity admission token disagrees with the prepared run");
+      }
+      scope = { token, retryOnly: admission?.retryOnly === true };
+    } catch (error) {
+      // Correlation is audit evidence, not execution admission. Invalid public
+      // run identifiers or stale private retry tokens must not become run loss.
+      log.warn("execution identity unavailable; continuing agent run without correlation", {
+        error: error instanceof Error ? error.message : String(error),
       });
-  if (token.runId !== prepared.runId) {
-    throw new Error("execution identity admission token disagrees with the prepared run");
-  }
-  return await runWithExecutionIdentityAdmissionScope(
-    { token, retryOnly: admission?.retryOnly === true },
-    () => params.run(prepared),
-  );
+    }
+    return scope
+      ? await runWithExecutionIdentityAdmissionScope(scope, () => params.run(prepared))
+      : await params.run(prepared);
+  });
 }
 
 export const executionIdentity = {

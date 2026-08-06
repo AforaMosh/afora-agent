@@ -276,6 +276,56 @@ describe("prepared agent-command execution identity", () => {
     );
   });
 
+  it("derives the ambient token from canonical execution attribution", async () => {
+    const attribution = createAgentExecutionAttribution({
+      runId: "attributed-run",
+      lifecycleGeneration: "attributed-generation",
+    });
+
+    await expect(
+      executionIdentity.runPrepared({
+        prepared: prepared({ runId: "attributed-run", enabled: true, attribution }),
+        run: async () => getExecutionIdentityAdmissionScope(),
+      }),
+    ).resolves.toEqual({
+      retryOnly: false,
+      token: {
+        tokenVersion: 1,
+        runId: attribution.runId,
+        contextId: attribution.contextId,
+        executionId: attribution.executionId,
+        createdAt: attribution.createdAt,
+      },
+    });
+  });
+
+  it("isolates independent child roots from an inherited parent identity", async () => {
+    await executionIdentity.runPrepared({
+      prepared: prepared({ runId: "parent-run", enabled: true }),
+      run: async () => {
+        const parent = getExecutionIdentityAdmissionScope();
+        await Promise.resolve();
+        const child = await executionIdentity.runPrepared({
+          prepared: prepared({ runId: "child-run", enabled: true }),
+          run: async () => getExecutionIdentityAdmissionScope(),
+        });
+        expect(child?.token.runId).toBe("child-run");
+        expect(child?.token.executionId).not.toBe(parent?.token.executionId);
+        expect(getExecutionIdentityAdmissionScope()).toBe(parent);
+      },
+    });
+  });
+
+  it("keeps valid overlong public run identifiers nonblocking and unscoped", async () => {
+    const runId = "r".repeat(257);
+    await expect(
+      executionIdentity.runPrepared({
+        prepared: prepared({ runId, enabled: true }),
+        run: async () => ({ ran: true, scope: getExecutionIdentityAdmissionScope() }),
+      }),
+    ).resolves.toEqual({ ran: true, scope: undefined });
+  });
+
   it("retains canonical attribution without creating a scope while collection is disabled", async () => {
     const token = createExecutionIdentityAdmissionToken("disabled-run");
     const attribution = createAgentExecutionAttribution({
