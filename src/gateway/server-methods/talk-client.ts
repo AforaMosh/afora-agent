@@ -38,21 +38,6 @@ import { formatForLog } from "../ws-log.js";
 import { createTalkClientSession } from "./talk-client-create.js";
 import type { GatewayRequestHandlers } from "./types.js";
 import { assertValidParams } from "./validation.js";
-const LEGACY_VOICE_BINDING_TTL_MS = 6 * 60 * 60_000;
-const legacyVoiceSessionByClient = new Map<string, { voiceSessionId: string; expiresAt: number }>();
-
-function legacyVoiceBindingKey(connId: string, sessionKey: string): string {
-  return `${connId}\0${sessionKey}`;
-}
-
-function pruneLegacyVoiceBindings(now = Date.now()): void {
-  for (const [key, binding] of legacyVoiceSessionByClient) {
-    if (binding.expiresAt <= now) {
-      legacyVoiceSessionByClient.delete(key);
-    }
-  }
-}
-
 function resolveTalkClientAgentId(
   config: Parameters<typeof resolveTalkSessionAgentId>[0],
   key: string,
@@ -86,7 +71,6 @@ export const talkClientHandlers: GatewayRequestHandlers = {
     const agentId = resolveTalkClientAgentId(config, params.sessionKey);
     const relaySessionId = normalizeOptionalString(params.relaySessionId);
     const connId = normalizeOptionalString(request.client?.connId);
-    pruneLegacyVoiceBindings();
     const explicitVoiceSessionId = normalizeOptionalString(params.voiceSessionId);
     if (relaySessionId && explicitVoiceSessionId && explicitVoiceSessionId !== relaySessionId) {
       respond(
@@ -106,24 +90,18 @@ export const talkClientHandlers: GatewayRequestHandlers = {
         explicitVoiceSessionId ??
         relaySessionId ??
         (connId
-          ? legacyVoiceSessionByClient.get(legacyVoiceBindingKey(connId, params.sessionKey))
-              ?.voiceSessionId
+          ? browserSession.resolveLegacyVoiceBinding(connId, params.sessionKey)
           : undefined) ??
         resolveOpenClientVoiceSessionId({ agentId, sessionKey: params.sessionKey }) ??
         createOrResumeClientVoiceSession({
           agentId,
           sessionKey: params.sessionKey,
           origin: "client",
-        });
+        }).voiceSessionId;
       // Pin the resolved id to this connection so a legacy client's later consults
       // reuse one record instead of forking a new never-closed session each time.
       if (connId && !relaySessionId) {
-        const now = Date.now();
-        pruneLegacyVoiceBindings(now);
-        legacyVoiceSessionByClient.set(legacyVoiceBindingKey(connId, params.sessionKey), {
-          voiceSessionId,
-          expiresAt: now + LEGACY_VOICE_BINDING_TTL_MS,
-        });
+        browserSession.recordLegacyVoiceBinding(connId, params.sessionKey, voiceSessionId);
       }
       if (relaySessionId && connId) {
         // Initialize the canonical session row BEFORE binding: the bind drains the
@@ -244,10 +222,7 @@ export const talkClientHandlers: GatewayRequestHandlers = {
           config,
         });
         if (connId) {
-          const key = legacyVoiceBindingKey(connId, params.sessionKey);
-          if (legacyVoiceSessionByClient.get(key)?.voiceSessionId === params.voiceSessionId) {
-            legacyVoiceSessionByClient.delete(key);
-          }
+          browserSession.clearLegacyVoiceBinding(connId, params.sessionKey, params.voiceSessionId);
         }
         respond(true, { ok: true }, undefined);
         return;
@@ -264,10 +239,7 @@ export const talkClientHandlers: GatewayRequestHandlers = {
         config,
       });
       if (connId) {
-        const key = legacyVoiceBindingKey(connId, params.sessionKey);
-        if (legacyVoiceSessionByClient.get(key)?.voiceSessionId === params.voiceSessionId) {
-          legacyVoiceSessionByClient.delete(key);
-        }
+        browserSession.clearLegacyVoiceBinding(connId, params.sessionKey, params.voiceSessionId);
       }
       respond(true, { ok: true }, undefined);
     } catch (err) {

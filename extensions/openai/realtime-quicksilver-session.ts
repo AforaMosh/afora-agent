@@ -14,10 +14,12 @@ import {
   resolveAcceptedBrowserOrigin,
 } from "openclaw/plugin-sdk/webhook-request-guards";
 import WebSocket, { type RawData } from "ws";
+import { resolveCodexAuthIdentity } from "./openai-chatgpt-auth-identity.js";
 import { OpenAIQuicksilverDelegationController } from "./realtime-quicksilver-delegation-controller.js";
 import {
   releaseOpenAIQuicksilverSession,
   reserveOpenAIQuicksilverSession,
+  transferOpenAIQuicksilverSession,
 } from "./realtime-quicksilver-session-limit.js";
 import {
   connectOpenAIQuicksilverSideband,
@@ -46,6 +48,8 @@ const OPENAI_QUICKSILVER_SESSION_TTL_MS = 30 * 60_000;
 const OPENAI_QUICKSILVER_MAX_SDP_BYTES = 256 * 1024;
 const OPENAI_QUICKSILVER_UPSTREAM_TIMEOUT_MS = 30_000;
 const WEBSOCKET_OPEN = 1;
+const TERMINAL_HOOK = Symbol.for("openclaw.internal.realtime-voice-browser-session-terminal.v1");
+type TerminalOutcome = { outcome: "completed" | "error"; message?: string };
 
 type OpenAIQuicksilverSessionRequest = RealtimeVoiceBrowserSessionCreateRequest & {
   initialItems?: OpenAIQuicksilverInitialItem[];
@@ -63,11 +67,15 @@ type PendingOffer = {
   request: PreparedOpenAIQuicksilverSessionRequest;
 };
 
+type InFlightOffer = { abortController: AbortController };
+
 type ActiveSession = {
   abortController: AbortController;
   delegations: OpenAIQuicksilverDelegationController;
-  socket: OpenAIQuicksilverSocket;
-  timer: NodeJS.Timeout;
+  onTerminal?: (outcome: TerminalOutcome) => void;
+  ready: boolean;
+  socket?: OpenAIQuicksilverSocket;
+  timer?: NodeJS.Timeout;
   token: string;
 };
 
@@ -75,6 +83,7 @@ type ResponseDeliveryWaiter = {
   result: Promise<boolean>;
   cancel: () => void;
 };
+const clearTimer = (timer?: NodeJS.Timeout) => timer && clearTimeout(timer);
 
 function createResponseDeliveryWaiter(
   res: ServerResponse,
@@ -141,10 +150,12 @@ export async function resolveOpenAIChatGptSubscriptionAuth(params: {
   if (!access) {
     return undefined;
   }
-  if (!access.accountId) {
+  const accountId =
+    access.accountId ?? resolveCodexAuthIdentity({ accessToken: access.accessToken }).accountId;
+  if (!accountId) {
     throw new Error("The selected ChatGPT OAuth profile is missing its account id");
   }
-  return { type: "oauth", token: access.accessToken, accountId: access.accountId };
+  return { type: "oauth", token: access.accessToken, accountId };
 }
 
 export function createOpenAIQuicksilverBrowserSessionBroker(params: {
@@ -165,48 +176,57 @@ export function createOpenAIQuicksilverBrowserSessionBroker(params: {
   cleanup: () => Promise<void>;
 } {
   const pendingOffers = new Map<string, PendingOffer>();
-  const inFlightOffers = new Map<string, AbortController>();
+  const inFlightOffers = new Map<string, InFlightOffer>();
   const activeSessions = new Map<string, ActiveSession>();
-  const reservations = new Set<string>();
   const inFlightHandlers = new Set<Promise<boolean>>();
+  const inFlightSideband = new Set<Promise<void>>();
   const shutdownController = new AbortController();
   const createSocket = params.webSocketFactory ?? ((url, options) => new WebSocket(url, options));
   let cleanedUp = false;
 
-  const finalizeSession = (session: ActiveSession) => {
+  const finalizeSession = (
+    session: ActiveSession,
+    outcome?: TerminalOutcome,
+    reason = "closed",
+  ) => {
     if (activeSessions.get(session.token) !== session) {
       return false;
     }
     activeSessions.delete(session.token);
-    reservations.delete(session.token);
-    releaseOpenAIQuicksilverSession(session.token);
-    clearTimeout(session.timer);
-    session.delegations.stop(new Error("GPT-Live delegation stopped"));
-    session.abortController.abort(new Error("GPT-Live session closed"));
-    return true;
-  };
-
-  const closeSession = (session: ActiveSession) => {
-    if (!finalizeSession(session)) {
-      return;
-    }
-    if (session.socket.readyState === WEBSOCKET_OPEN) {
+    releaseOpenAIQuicksilverSession(session);
+    clearTimer(session.timer);
+    const socket = session.socket;
+    session.socket = undefined;
+    session.delegations.detach();
+    session.abortController.abort(new Error(outcome?.message ?? reason));
+    if (socket?.readyState === WEBSOCKET_OPEN) {
       try {
-        session.socket.send(JSON.stringify({ type: "session.close" }));
+        socket.send(JSON.stringify({ type: "session.close" }));
       } catch {
         // The peer may have closed between readyState and send.
       }
     }
-    try {
-      session.socket.close(1000, "session closed");
-    } catch {
-      // Socket teardown is best effort after ownership has been released.
+    if (socket) {
+      try {
+        socket.close(1000, reason);
+      } catch {
+        // Socket teardown is best effort after ownership has been released.
+      }
     }
+    if (outcome) {
+      session.onTerminal?.(outcome);
+    }
+    return true;
   };
+  const failSession = (session: ActiveSession, message: string, reason: string) =>
+    finalizeSession(session, { outcome: "error", message }, reason);
 
   const scheduleSessionExpiry = (session: ActiveSession, ttlMs: number) => {
-    clearTimeout(session.timer);
-    session.timer = setTimeout(() => closeSession(session), Math.max(0, ttlMs));
+    clearTimer(session.timer);
+    session.timer = setTimeout(
+      () => failSession(session, "OpenAI GPT-Live session expired", "session expired"),
+      Math.max(0, ttlMs),
+    );
     session.timer.unref?.();
   };
 
@@ -214,17 +234,68 @@ export function createOpenAIQuicksilverBrowserSessionBroker(params: {
     session.delegations.handleFrame(data, isBinary);
   };
 
-  const attachSidebandHandlers = (session: ActiveSession) => {
-    session.socket.on("message", (data: RawData, isBinary: boolean) => {
+  const closeOutcome = (session: ActiveSession, code: number): TerminalOutcome =>
+    session.ready && code === 1000
+      ? { outcome: "completed" }
+      : {
+          outcome: "error",
+          message: session.ready
+            ? `OpenAI GPT-Live sideband closed unexpectedly (${code || 1006})`
+            : "OpenAI GPT-Live sideband closed before session.started",
+        };
+
+  const attachSidebandHandlers = (session: ActiveSession, socket: OpenAIQuicksilverSocket) => {
+    socket.on("message", (data: RawData, isBinary: boolean) => {
       handleSidebandFrame(session, data, isBinary);
     });
-    session.socket.on("error", (error: Error) => {
+    socket.on("error", (error: Error) => {
       params.logger.warn(`OpenAI GPT-Live sideband socket failed: ${error.message}`);
-      closeSession(session);
+      finalizeSession(session, { outcome: "error", message: error.message }, "sideband failed");
     });
-    session.socket.on("close", () => {
-      finalizeSession(session);
+    socket.on("close", (code: number) => {
+      finalizeSession(session, closeOutcome(session, code), "sideband closed");
     });
+  };
+
+  const startSideband = (session: ActiveSession, offer: PendingOffer, url: string) => {
+    const task = (async () => {
+      try {
+        const connected = await connectOpenAIQuicksilverSideband({
+          auth: offer.auth,
+          createSocket,
+          requestIds: offer.requestIds,
+          signal: session.abortController.signal,
+          url,
+        });
+        if (activeSessions.get(session.token) !== session) {
+          connected.detachBuffer();
+          connected.socket.on("error", () => {});
+          connected.socket.close(1000, "stale sideband");
+          return;
+        }
+        session.socket = connected.socket;
+        attachSidebandHandlers(session, connected.socket);
+        const terminal = connected.detachBuffer();
+        for (const frame of connected.bufferedFrames) {
+          handleSidebandFrame(session, frame.data, frame.isBinary);
+        }
+        if (terminal?.kind === "error") {
+          params.logger.warn(`OpenAI GPT-Live sideband socket failed: ${terminal.error.message}`);
+          failSession(session, terminal.error.message, "sideband failed");
+        } else if (terminal) {
+          finalizeSession(session, closeOutcome(session, terminal.code), "sideband closed");
+        }
+      } catch (cause) {
+        if (activeSessions.get(session.token) !== session) {
+          return;
+        }
+        const error = cause instanceof Error ? cause : new Error("OpenAI GPT-Live sideband failed");
+        params.logger.warn(`OpenAI GPT-Live sideband connection failed: ${error.message}`);
+        failSession(session, error.message, "sideband connection failed");
+      }
+    })();
+    inFlightSideband.add(task);
+    void task.finally(() => inFlightSideband.delete(task));
   };
 
   const prunePendingOffers = () => {
@@ -232,7 +303,6 @@ export function createOpenAIQuicksilverBrowserSessionBroker(params: {
     for (const [token, offer] of pendingOffers) {
       if (offer.expiresAt <= now) {
         pendingOffers.delete(token);
-        reservations.delete(token);
         releaseOpenAIQuicksilverSession(token);
       }
     }
@@ -269,7 +339,6 @@ export function createOpenAIQuicksilverBrowserSessionBroker(params: {
         },
         request: { ...request, model, voice },
       });
-      reservations.add(token);
       return {
         provider: "openai",
         transport: "webrtc",
@@ -284,13 +353,13 @@ export function createOpenAIQuicksilverBrowserSessionBroker(params: {
       if (session.transport !== "webrtc") {
         return;
       }
-      pendingOffers.delete(session.clientSecret);
-      inFlightOffers.get(session.clientSecret)?.abort(new Error("GPT-Live session canceled"));
+      const pending = pendingOffers.delete(session.clientSecret);
+      const inFlight = inFlightOffers.get(session.clientSecret);
+      inFlight?.abortController.abort(new Error("GPT-Live session canceled"));
       const active = activeSessions.get(session.clientSecret);
       if (active) {
-        closeSession(active);
-      } else {
-        reservations.delete(session.clientSecret);
+        finalizeSession(active, undefined, "session canceled");
+      } else if (pending) {
         releaseOpenAIQuicksilverSession(session.clientSecret);
       }
     },
@@ -339,12 +408,13 @@ export function createOpenAIQuicksilverBrowserSessionBroker(params: {
     }
     // Offer credentials are single-use so a captured browser request cannot join twice.
     pendingOffers.delete(token);
-    const requestController = new AbortController();
+    const inFlight = { abortController: new AbortController() };
+    transferOpenAIQuicksilverSession(token, inFlight);
     let browserDisconnected = false;
-    inFlightOffers.set(token, requestController);
+    inFlightOffers.set(token, inFlight);
     const abortFromBrowser = () => {
       browserDisconnected = true;
-      requestController.abort(new Error("Browser GPT-Live offer request closed"));
+      inFlight.abortController.abort(new Error("Browser GPT-Live offer request closed"));
     };
     req.once("aborted", abortFromBrowser);
     res.once("close", abortFromBrowser);
@@ -352,7 +422,10 @@ export function createOpenAIQuicksilverBrowserSessionBroker(params: {
       req.removeListener("aborted", abortFromBrowser);
       res.removeListener("close", abortFromBrowser);
     };
-    const lifecycleSignal = AbortSignal.any([shutdownController.signal, requestController.signal]);
+    const lifecycleSignal = AbortSignal.any([
+      shutdownController.signal,
+      inFlight.abortController.signal,
+    ]);
     let session: ActiveSession | undefined;
     let reservationTransferred = false;
     let responseDeliveryWaiter: ResponseDeliveryWaiter | undefined;
@@ -382,6 +455,9 @@ export function createOpenAIQuicksilverBrowserSessionBroker(params: {
         signal: upstreamSignal,
         fetchImpl: params.fetchImpl,
       });
+      if (lifecycleSignal.aborted) {
+        throw lifecycleSignal.reason;
+      }
       if (call.kind === "ga-realtime") {
         res.statusCode = call.status;
         res.setHeader("cache-control", "no-store");
@@ -394,34 +470,19 @@ export function createOpenAIQuicksilverBrowserSessionBroker(params: {
       if (!runAgentConsult) {
         throw new Error("OpenAI GPT-Live requires the Gateway agent-consult runtime");
       }
-      const connected = await connectOpenAIQuicksilverSideband({
-        auth: offer.auth,
-        createSocket,
-        requestIds: offer.requestIds,
-        signal: lifecycleSignal,
-        url: call.sidebandUrl,
-      });
-      if (lifecycleSignal.aborted) {
-        connected.socket.close(1000, "session stopped");
-        throw lifecycleSignal.reason;
-      }
       const abortController = new AbortController();
-      const timer = setTimeout(() => {
-        const active = activeSessions.get(token);
-        if (active) {
-          closeSession(active);
-        }
-      }, OPENAI_QUICKSILVER_SESSION_TTL_MS);
-      timer.unref?.();
       const delegations = new OpenAIQuicksilverDelegationController({
-        getSocket: () => connected.socket,
+        getSocket: () => session?.socket,
         logger: params.logger,
-        onFatalError: () => {
+        onFatalError: (error) => {
           if (session) {
-            closeSession(session);
+            failSession(session, error.message, "fatal sideband error");
           }
         },
         onSessionStarted: (expiresAt) => {
+          if (session) {
+            session.ready = true;
+          }
           if (session && expiresAt !== undefined) {
             const upstreamTtlMs = expiresAt * 1000 - Date.now();
             scheduleSessionExpiry(
@@ -436,31 +497,14 @@ export function createOpenAIQuicksilverBrowserSessionBroker(params: {
       session = {
         abortController,
         delegations,
-        socket: connected.socket,
-        timer,
+        onTerminal: Reflect.get(offer.request, TERMINAL_HOOK) as ActiveSession["onTerminal"],
+        ready: false,
         token,
       };
       activeSessions.set(token, session);
-      reserveOpenAIQuicksilverSession(token);
+      transferOpenAIQuicksilverSession(inFlight, session);
       reservationTransferred = true;
-      attachSidebandHandlers(session);
-      const terminalEvent = connected.detachBuffer();
-      for (const frame of connected.bufferedFrames) {
-        handleSidebandFrame(session, frame.data, frame.isBinary);
-      }
-      if (terminalEvent && activeSessions.get(token) === session) {
-        if (terminalEvent.kind === "error") {
-          params.logger.warn(
-            `OpenAI GPT-Live sideband socket failed: ${terminalEvent.error.message}`,
-          );
-          closeSession(session);
-        } else {
-          finalizeSession(session);
-        }
-      }
-      if (activeSessions.get(token) !== session) {
-        throw new Error("OpenAI GPT-Live sideband failed during startup");
-      }
+      scheduleSessionExpiry(session, OPENAI_QUICKSILVER_SESSION_TTL_MS);
 
       responseDeliveryWaiter = createResponseDeliveryWaiter(res, detachBrowserAbort);
       res.statusCode = 200;
@@ -471,12 +515,14 @@ export function createOpenAIQuicksilverBrowserSessionBroker(params: {
       const delivered = await responseDeliveryWaiter.result;
       responseDeliveryWaiter = undefined;
       if (!delivered || lifecycleSignal.aborted) {
-        closeSession(session);
+        finalizeSession(session, undefined, "answer not delivered");
+        return true;
       }
+      startSideband(session, offer, call.sidebandUrl);
       return true;
     } catch (error) {
       if (session) {
-        closeSession(session);
+        finalizeSession(session, undefined, "session failed");
       }
       if (browserDisconnected) {
         return true;
@@ -492,8 +538,7 @@ export function createOpenAIQuicksilverBrowserSessionBroker(params: {
       detachBrowserAbort();
       inFlightOffers.delete(token);
       if (!reservationTransferred) {
-        reservations.delete(token);
-        releaseOpenAIQuicksilverSession(token);
+        releaseOpenAIQuicksilverSession(inFlight);
       }
     }
   };
@@ -510,18 +555,18 @@ export function createOpenAIQuicksilverBrowserSessionBroker(params: {
     }
     cleanedUp = true;
     shutdownController.abort(new Error("OpenAI GPT-Live broker stopped"));
-    pendingOffers.clear();
-    for (const controller of inFlightOffers.values()) {
-      controller.abort(new Error("OpenAI GPT-Live broker stopped"));
-    }
-    for (const session of activeSessions.values()) {
-      closeSession(session);
-    }
-    await Promise.allSettled(inFlightHandlers);
-    for (const token of reservations) {
+    for (const token of pendingOffers.keys()) {
       releaseOpenAIQuicksilverSession(token);
     }
-    reservations.clear();
+    pendingOffers.clear();
+    for (const inFlight of inFlightOffers.values()) {
+      inFlight.abortController.abort(new Error("OpenAI GPT-Live broker stopped"));
+    }
+    for (const session of activeSessions.values()) {
+      finalizeSession(session, undefined, "broker stopped");
+    }
+    await Promise.allSettled(inFlightHandlers);
+    await Promise.allSettled(inFlightSideband);
   };
 
   return { broker, handler, cleanup };

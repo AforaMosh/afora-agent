@@ -119,7 +119,7 @@ describe("client voice session digest retry", () => {
       agentId: "main",
       sessionKey: "agent:main:main",
       origin: "client",
-    });
+    }).voiceSessionId;
     for (const runId of ["run-1", "run-2"]) {
       registerClientVoiceConsultRun({
         agentId: "main",
@@ -189,7 +189,7 @@ describe("client voice session digest retry", () => {
       agentId: "main",
       sessionKey: "agent:main:main",
       origin: "client",
-    });
+    }).voiceSessionId;
     recordMutation(voiceSessionId, "run-first");
     await completeRun("run-first");
     const blockedSend = deferred<{ status: "sent" }>();
@@ -247,7 +247,7 @@ describe("client voice session digest retry", () => {
       agentId: "main",
       sessionKey: "agent:main:main",
       origin: "client",
-    });
+    }).voiceSessionId;
     registerClientVoiceConsultRun({
       agentId: "main",
       sessionKey: "agent:main:main",
@@ -301,7 +301,7 @@ describe("client voice session digest retry", () => {
       agentId: "main",
       sessionKey: "agent:main:main",
       origin: "client",
-    });
+    }).voiceSessionId;
     registerClientVoiceConsultRun({
       agentId: "main",
       sessionKey: "agent:main:main",
@@ -362,7 +362,7 @@ describe("client voice session digest retry", () => {
       agentId: "main",
       sessionKey: "agent:main:main",
       origin: "client",
-    });
+    }).voiceSessionId;
     registerClientVoiceConsultRun({
       agentId: "main",
       sessionKey: "agent:main:main",
@@ -417,7 +417,7 @@ describe("client voice session digest retry", () => {
       agentId: "main",
       sessionKey: "agent:main:main",
       origin: "client",
-    });
+    }).voiceSessionId;
     recordMutation(voiceSessionId);
     await completeRun(`run-${voiceSessionId}`);
     sendDurableMessageBatch.mockRejectedValueOnce(new Error("channel offline"));
@@ -458,7 +458,7 @@ describe("client voice session digest retry", () => {
       agentId: "main",
       sessionKey: "agent:main:main",
       origin: "client",
-    });
+    }).voiceSessionId;
     recordMutation(voiceSessionId);
     await completeRun(`run-${voiceSessionId}`);
     sendDurableMessageBatch.mockRejectedValueOnce(new Error("channel offline"));
@@ -512,7 +512,7 @@ describe("client voice session digest retry", () => {
       agentId: "main",
       sessionKey: "agent:main:main",
       origin: "client",
-    });
+    }).voiceSessionId;
     recordMutation(delivered);
     await completeRun(`run-${delivered}`);
     await closeClientVoiceSession({

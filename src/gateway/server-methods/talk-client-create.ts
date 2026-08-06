@@ -16,14 +16,15 @@ import { resolveAgentWorkspaceDir } from "../../agents/agent-scope.js";
 import { normalizeTalkSection } from "../../config/talk.js";
 import { createPluginRuntime } from "../../plugins/runtime/index.js";
 import { buildAgentMainSessionKey } from "../../routing/session-key.js";
+import { createDeferred } from "../../shared/deferred.js";
 import { consultRealtimeVoiceAgent } from "../../talk/agent-consult-runtime.js";
 import { REALTIME_VOICE_AGENT_CONSULT_TOOL } from "../../talk/agent-consult-tool.js";
 import { REALTIME_VOICE_AGENT_CONTROL_TOOL } from "../../talk/agent-run-control-shared.js";
 import { resolveTalkSessionAgentId } from "../../talk/agent-target.js";
 import {
+  allocateClientVoiceSessionId,
   closeStaleClientVoiceSessions,
-  createOrResumeClientVoiceSessionWithResult,
-  ensureClientVoiceAgentSessionEntry,
+  createOrResumeClientVoiceSession,
   preflightClientVoiceSessionResume,
   registerClientVoiceConsultRun,
   resolveClientVoiceAgentSessionId,
@@ -59,6 +60,61 @@ const REALTIME_VOICE_CONTEXT_MAX_ITEM_CHARS = 800;
 const REALTIME_VOICE_CONTEXT_MAX_UTF8_BYTES = 8_000;
 
 const REALTIME_VOICE_CLIENT_SESSION_MIN_TTL_MS = 5_000;
+
+function createRealtimeConsultStartupGate() {
+  let prepared = false;
+  let settled: string | Error | undefined;
+  let pending: ReturnType<typeof createDeferred<string | Error>> | undefined;
+  return {
+    prepare(): void {
+      prepared = true;
+    },
+    activate(nextVoiceSessionId: string): void {
+      if (settled instanceof Error) {
+        throw new Error("Realtime browser voice session retired during startup");
+      }
+      settled = nextVoiceSessionId;
+      pending?.resolve(nextVoiceSessionId);
+    },
+    retire(this: void): void {
+      if (!(settled instanceof Error)) {
+        settled = new Error("Realtime browser voice session retired before agent consult");
+        pending?.resolve(settled);
+      }
+    },
+    async admit(signal: AbortSignal): Promise<string> {
+      signal.throwIfAborted();
+      if (settled) {
+        if (settled instanceof Error) {
+          throw settled;
+        }
+        return settled;
+      }
+      if (!prepared || pending) {
+        const state = pending ? "already has a pending" : "is not ready for";
+        throw new Error(`Realtime browser voice session ${state} agent consult`);
+      }
+      const waiter = (pending = createDeferred<string | Error>());
+      const abort = () =>
+        waiter.resolve(
+          signal.reason instanceof Error ? signal.reason : new Error("agent consult aborted"),
+        );
+      signal.addEventListener("abort", abort, { once: true });
+      try {
+        const result = await waiter.promise;
+        if (result instanceof Error) {
+          throw result;
+        }
+        return result;
+      } finally {
+        if (pending === waiter) {
+          pending = undefined;
+        }
+        signal.removeEventListener("abort", abort);
+      }
+    },
+  };
+}
 
 export const createTalkClientSession: GatewayRequestHandler = async ({
   params,
@@ -241,10 +297,12 @@ export const createTalkClientSession: GatewayRequestHandler = async ({
           ? normalizeOptionalString(realtimeContext.instructions)
           : buildRealtimeInstructions(realtimeContext.instructions);
       let consultAgentRuntime: ReturnType<typeof createPluginRuntime>["agent"] | undefined;
-      let activeVoiceSessionId: string | undefined;
+      const consultGate = createRealtimeConsultStartupGate();
       const runAgentConsult: NonNullable<
         InternalRealtimeVoiceBrowserSessionCreateRequest["runAgentConsult"]
       > = async ({ prompt, signal }) => {
+        const consultSignal = signal ?? new AbortController().signal;
+        const voiceSessionId = await consultGate.admit(consultSignal);
         consultAgentRuntime ??= createPluginRuntime().agent;
         const talkConfig = normalizeTalkSection(runtimeConfig.talk);
         return await consultRealtimeVoiceAgent({
@@ -263,13 +321,8 @@ export const createTalkClientSession: GatewayRequestHandler = async ({
           questionSourceLabel: "user",
           thinkLevel: talkConfig?.consultThinkingLevel,
           fastMode: talkConfig?.consultFastMode,
-          abortSignal: signal,
+          abortSignal: consultSignal,
           onRunStarted: ({ runId, sessionId, timeoutMs }) => {
-            // Sideband delegation can start only after create returns the durable voice id.
-            const voiceSessionId = activeVoiceSessionId;
-            if (!voiceSessionId) {
-              throw new Error("Realtime browser voice session is not ready for agent consult");
-            }
             registerClientVoiceConsultRun({
               agentId,
               sessionKey,
@@ -309,9 +362,19 @@ export const createTalkClientSession: GatewayRequestHandler = async ({
         ...(tools.length > 0 ? { tools } : {}),
         ...launchOptions,
       };
-      const session = await resolution.provider.createBrowserSession(browserSessionRequest);
+      const terminal = browserSession.bindBrowserSessionTerminal(
+        browserSessionRequest,
+        consultGate.retire,
+      );
       let canceling: Promise<void> | undefined;
+      const session = await resolution.provider
+        .createBrowserSession(browserSessionRequest)
+        .catch((error: unknown) => {
+          consultGate.retire();
+          throw error;
+        });
       const cancelSession = () => {
+        consultGate.retire();
         canceling ??= cancelInternalRealtimeVoiceBrowserSession({
           provider: resolution.provider,
           request: browserSessionRequest,
@@ -323,19 +386,12 @@ export const createTalkClientSession: GatewayRequestHandler = async ({
       };
       try {
         creationLease?.assertActive();
-      } catch (error) {
-        await cancelSession();
-        throw error;
-      }
-      // Client-owned voice records are minted only for client-owned transports;
-      // relay sessions are created via talk.session.create and keyed by relaySessionId.
-      // Widening this guard would hand relay calls a mismatched voiceSessionId.
-      if (
-        (session.transport === "webrtc" || session.transport === "provider-websocket") &&
-        !isUnsupportedBrowserWebRtcSession(session) &&
-        (!transport || session.transport === transport)
-      ) {
-        try {
+        // Relay sessions are minted elsewhere; widening this guard miskeys their voiceSessionId.
+        if (
+          (session.transport === "webrtc" || session.transport === "provider-websocket") &&
+          !isUnsupportedBrowserWebRtcSession(session) &&
+          (!transport || session.transport === transport)
+        ) {
           const sessionEntryDeadlineAt =
             session.expiresAt === undefined
               ? undefined
@@ -343,13 +399,46 @@ export const createTalkClientSession: GatewayRequestHandler = async ({
           if (sessionEntryDeadlineAt !== undefined && Date.now() >= sessionEntryDeadlineAt) {
             throw new Error("Realtime browser session expired during startup; try again");
           }
-          // Defer persistence until the provider returns a usable transport. The write
-          // boundary rechecks its deadline so queued work cannot leave a phantom chat.
-          await ensureClientVoiceAgentSessionEntry({
+          const voiceSessionId = allocateClientVoiceSessionId(
+            normalizeOptionalString(typedParams.voiceSessionId),
+          );
+          consultGate.prepare();
+          const connId = ownerConnId;
+          const allocationId = connId ? browserSession.allocateBrowserAllocationId() : undefined;
+          const allocationParams = connId
+            ? {
+                agentId,
+                sessionKey,
+                voiceSessionId,
+                allocationId: allocationId!,
+                connId,
+                usesBrowserAllocations,
+                cancel: cancelSession,
+                activateEffects: () => consultGate.activate(voiceSessionId),
+                retireEffects: consultGate.retire,
+                config: runtimeConfig,
+                broadcast: context.broadcastToConnIds,
+                warn: (message: string) => context.logGateway.warn(message),
+              }
+            : undefined;
+          const terminalPreparation = terminal.prepareTerminal(allocationParams);
+          if (terminalPreparation) {
+            const terminalAllocation = await terminalPreparation;
+            creationLease?.assertActive();
+            respond(true, { ...session, ...terminalAllocation }, undefined);
+            return;
+          }
+          const voice = createOrResumeClientVoiceSession({
             agentId,
             sessionKey,
+            provider: resolution.provider.id,
+            origin: "client",
+            ...(allocationId ? { browserAllocationId: allocationId } : {}),
+            // Deployed clients sent sessionKey before transcripts existed, so capability
+            // must be negotiated explicitly; declaring it turns the confirmation gate on.
+            transcriptCapable: typedParams.capabilities?.includes("voice-transcript") === true,
+            voiceSessionId,
             ...(creationLease ? { assertCommitAllowed: creationLease.assertActive } : {}),
-            ...(sessionEntryDeadlineAt !== undefined ? { deadlineAt: sessionEntryDeadlineAt } : {}),
           });
           // Recovering 6h-abandoned calls (and retrying their digests) is not on the
           // start path; running it inline would delay use of time-sensitive provider
@@ -362,67 +451,47 @@ export const createTalkClientSession: GatewayRequestHandler = async ({
           }).catch((error: unknown) =>
             context.logGateway.warn(`talk voice session recovery failed: ${formatForLog(error)}`),
           );
-          const connId = ownerConnId;
-          const allocationId = connId ? browserSession.allocateBrowserAllocationId() : undefined;
-          const voice = createOrResumeClientVoiceSessionWithResult({
-            agentId,
-            sessionKey,
-            provider: resolution.provider.id,
-            origin: "client",
-            ...(allocationId ? { browserAllocationId: allocationId } : {}),
-            // Deployed clients sent sessionKey before transcripts existed, so capability
-            // must be negotiated explicitly; declaring it turns the confirmation gate on.
-            transcriptCapable: typedParams.capabilities?.includes("voice-transcript") === true,
-            voiceSessionId: normalizeOptionalString(typedParams.voiceSessionId),
-            ...(creationLease ? { assertCommitAllowed: creationLease.assertActive } : {}),
-          });
-          const voiceSessionId = voice.voiceSessionId;
-          activeVoiceSessionId = voiceSessionId;
-          if (connId) {
-            const identity = { agentId, sessionKey, voiceSessionId };
-            const allocation = await browserSession.prepareBrowserAllocationForClient({
-              ...identity,
-              allocationId: allocationId!,
-              expectedBrowserAllocationId: voice.created ? allocationId : voice.browserAllocationId,
-              connId,
-              durableState: voice.created ? "created" : "existing",
-              usesBrowserAllocations,
-              cancel: cancelSession,
-              config: runtimeConfig,
-              broadcast: context.broadcastToConnIds,
-              warn: (message) => context.logGateway.warn(message),
-            });
-            creationLease?.assertActive();
-            const now = Date.now();
-            pruneLegacyVoiceBindings(now);
-            legacyVoiceSessionByClient.set(
-              legacyVoiceBindingKey(connId, typedParams.sessionKey?.trim() || sessionKey),
-              { voiceSessionId, expiresAt: now + LEGACY_VOICE_BINDING_TTL_MS },
-            );
-            const allocationDetails = usesBrowserAllocations
-              ? { allocationId: allocation.allocationId }
-              : {};
-            respond(true, { ...session, voiceSessionId, ...allocationDetails }, undefined);
+          if (!allocationParams || !connId) {
+            consultGate.activate(voice.voiceSessionId);
+            respond(true, { ...session, voiceSessionId: voice.voiceSessionId }, undefined);
             return;
           }
-          respond(true, { ...session, voiceSessionId }, undefined);
+          const allocation = await terminal.prepare({
+            ...allocationParams,
+            expectedBrowserAllocationId: voice.created ? allocationId : voice.browserAllocationId,
+            durableState: voice.created ? "created" : "existing",
+          });
+          creationLease?.assertActive();
+          browserSession.recordLegacyVoiceBinding(
+            connId,
+            typedParams.sessionKey?.trim() || sessionKey,
+            voice.voiceSessionId,
+          );
+          const allocationDetails = usesBrowserAllocations
+            ? { allocationId: allocation.allocationId, terminal: terminal.outcome() }
+            : {};
+          respond(
+            true,
+            { ...session, voiceSessionId: voice.voiceSessionId, ...allocationDetails },
+            undefined,
+          );
           return;
-        } catch (error) {
-          await cancelSession();
-          throw error;
         }
-      }
-      await cancelSession();
-      if (transport) {
-        respond(
-          false,
-          undefined,
-          errorShape(
-            ErrorCodes.UNAVAILABLE,
-            `Realtime provider "${resolution.provider.id}" does not support requested browser transport "${transport}"`,
-          ),
-        );
-        return;
+        await cancelSession();
+        if (transport) {
+          respond(
+            false,
+            undefined,
+            errorShape(
+              ErrorCodes.UNAVAILABLE,
+              `Realtime provider "${resolution.provider.id}" does not support requested browser transport "${transport}"`,
+            ),
+          );
+          return;
+        }
+      } catch (error) {
+        await cancelSession();
+        throw error;
       }
     }
     respond(
