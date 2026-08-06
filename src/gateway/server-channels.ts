@@ -11,6 +11,7 @@ import {
   resolveChannelAccountState,
 } from "../channels/status/account-state.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { waitForAbortSignal } from "../infra/abort-signal.js";
 import { withGatewayNativeApprovalRuntime } from "../infra/approval-gateway-runtime-context.js";
 import type { GatewayNativeApprovalMethod } from "../infra/approval-gateway-runtime-methods.js";
 import type { GatewayNativeApprovalRuntime } from "../infra/approval-gateway-runtime.types.js";
@@ -234,19 +235,21 @@ type ChannelAccountStopState =
   | { status: "stopping"; attempt: Promise<ChannelAccountStopOutcome> }
   | Extract<ChannelAccountStopOutcome, { status: "rejected" }>;
 
-async function waitForDeferredAccountStart(
-  deferred: Promise<void>,
-  abortSignal: AbortSignal,
-): Promise<void> {
-  if (abortSignal.aborted) {
-    return;
+async function waitForChannelLifecycleGate(
+  gate: Promise<unknown>,
+  abortSignal?: AbortSignal,
+): Promise<boolean> {
+  if (!abortSignal) {
+    await gate;
+    return true;
   }
-  await Promise.race([
-    deferred,
-    new Promise<void>((resolve) => {
-      abortSignal.addEventListener("abort", () => resolve(), { once: true });
-    }),
-  ]);
+  const cleanup = new AbortController();
+  try {
+    await Promise.race([gate, waitForAbortSignal(AbortSignal.any([abortSignal, cleanup.signal]))]);
+    return !abortSignal.aborted;
+  } finally {
+    cleanup.abort();
+  }
 }
 
 export type ChannelManager = {
@@ -527,9 +530,26 @@ export function createChannelManager(opts: ChannelManagerOptions): ChannelManage
       limit: CHANNEL_STARTUP_CONCURRENCY,
       tasks: accountIds.map((id) => async () => {
         const rKey = restartKey(channelId, id);
+        const lifecycleAbortSignal = optsValue.lifecycleAbortSignal;
         // An in-flight or failed plugin teardown may still own resources. Only
         // the last queued attempt or a later successful stop clears this gate.
-        if (store.stops.has(id)) {
+        while (true) {
+          const predecessorStop = store.stops.get(id);
+          const predecessorGate =
+            predecessorStop?.status === "stopping"
+              ? predecessorStop.attempt
+              : store.starting.get(id);
+          if (!predecessorGate) {
+            if (predecessorStop) {
+              return;
+            }
+            break;
+          }
+          if (!(await waitForChannelLifecycleGate(predecessorGate, lifecycleAbortSignal))) {
+            return;
+          }
+        }
+        if (lifecycleAbortSignal?.aborted) {
           return;
         }
         if (store.tasks.has(id)) {
@@ -566,12 +586,6 @@ export function createChannelManager(opts: ChannelManagerOptions): ChannelManage
             return;
           }
         }
-        const existingStart = store.starting.get(id);
-        if (existingStart) {
-          await existingStart;
-          return;
-        }
-
         let resolveStart: (() => void) | undefined;
         const startGate = new Promise<void>((resolve) => {
           resolveStart = resolve;
@@ -582,6 +596,19 @@ export function createChannelManager(opts: ChannelManagerOptions): ChannelManage
         // cannot race into duplicate provider boots for the same account.
         const abort = new AbortController();
         store.aborts.set(id, abort);
+        let lifecycleStopRequested = false;
+        const stopForLifecycleAbort = () => {
+          if (!lifecycleStopRequested) {
+            lifecycleStopRequested = true;
+            // Generation cancellation asks the manager to stop this account.
+            // The plugin run keeps its distinct abort signal until stop owns teardown.
+            void stopChannel(channelId, id, { manual: false }).catch(() => {});
+          }
+        };
+        lifecycleAbortSignal?.addEventListener("abort", stopForLifecycleAbort, { once: true });
+        if (lifecycleAbortSignal?.aborted) {
+          stopForLifecycleAbort();
+        }
         let handedOffTask = false;
         const log = ensureChannelLog(channelId);
         const runtime = ensureChannelRuntime(channelId);
@@ -742,7 +769,7 @@ export function createChannelManager(opts: ChannelManagerOptions): ChannelManage
           });
           const task = Promise.resolve().then(async () => {
             if (optsValue.deferAccountStartUntil) {
-              await waitForDeferredAccountStart(optsValue.deferAccountStartUntil, abort.signal);
+              await waitForChannelLifecycleGate(optsValue.deferAccountStartUntil, abort.signal);
             } else if (startupTrace) {
               await waitForChannelStartupHandoff();
             }
@@ -921,6 +948,7 @@ export function createChannelManager(opts: ChannelManagerOptions): ChannelManage
                 try {
                   await startChannelInternal(channelId, id, {
                     preserveManualStop: true,
+                    lifecycleAbortSignal: optsValue.lifecycleAbortSignal,
                   });
                 } catch {
                   // abort or startup failure — runtime state was recorded by startChannelInternal
@@ -974,6 +1002,7 @@ export function createChannelManager(opts: ChannelManagerOptions): ChannelManage
                 await startChannelInternal(channelId, id, {
                   preserveRestartAttempts: true,
                   preserveManualStop: true,
+                  lifecycleAbortSignal: optsValue.lifecycleAbortSignal,
                 });
               } catch {
                 // abort or startup failure — next crash will retry
@@ -982,6 +1011,7 @@ export function createChannelManager(opts: ChannelManagerOptions): ChannelManage
               }
             })
             .finally(() => {
+              lifecycleAbortSignal?.removeEventListener("abort", stopForLifecycleAbort);
               if (store.tasks.get(id) === trackedPromise) {
                 store.tasks.delete(id);
               }
@@ -1011,6 +1041,7 @@ export function createChannelManager(opts: ChannelManagerOptions): ChannelManage
             store.starting.delete(id);
           }
           if (!handedOffTask) {
+            lifecycleAbortSignal?.removeEventListener("abort", stopForLifecycleAbort);
             await cleanupTaskScopedApprovalRuntime("channel startup cleanup failed");
           }
           if (!handedOffTask && store.aborts.get(id) === abort) {

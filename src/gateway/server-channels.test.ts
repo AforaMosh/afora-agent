@@ -433,16 +433,24 @@ describe("server-channels auto restart", () => {
     expect(manager.isAutoRestartScheduled("discord", DEFAULT_ACCOUNT_ID)).toBe(false);
   });
 
-  it("aborts the crashed task's signal before starting its replacement", async () => {
+  it("keeps automatic replacement owned by the original lifecycle generation", async () => {
     const signals: AbortSignal[] = [];
     const startAccount = vi.fn(async (ctx: ChannelGatewayContext<TestAccount>) => {
       signals.push(ctx.abortSignal);
-      throw new Error("crash");
+      if (signals.length === 1) {
+        throw new Error("crash");
+      }
+      await new Promise<void>((resolve) => {
+        ctx.abortSignal.addEventListener("abort", () => resolve(), { once: true });
+      });
     });
     installTestRegistry(createTestPlugin({ startAccount }));
     const manager = createManager();
+    const lifecycleAbort = new AbortController();
 
-    await manager.startChannels();
+    await manager.startChannel("discord", DEFAULT_ACCOUNT_ID, {
+      lifecycleAbortSignal: lifecycleAbort.signal,
+    });
     await advanceTimersUntil(
       () => startAccount.mock.calls.length >= 2,
       "expected a crash-loop restart",
@@ -453,6 +461,12 @@ describe("server-channels auto restart", () => {
     // (e.g. a reconnect loop). The replacement must never overlap that lifetime.
     expect(signals[0]?.aborted).toBe(true);
     expect(signals[1]?.aborted).toBe(false);
+
+    lifecycleAbort.abort();
+    await waitForMicrotaskCondition(
+      () => signals[1]?.aborted === true,
+      "expected the replacement to retain lifecycle generation ownership",
+    );
   });
 
   it.each(["resolve", "reject"] as const)(
@@ -748,11 +762,13 @@ describe("server-channels auto restart", () => {
 
     releaseTask.resolve();
     await flushMicrotasks();
-    await manager.startChannel("discord", DEFAULT_ACCOUNT_ID);
+    const replacementStart = manager.startChannel("discord", DEFAULT_ACCOUNT_ID);
+    await flushMicrotasks();
     expect(startAccount).toHaveBeenCalledTimes(1);
 
     releaseStopHook.resolve();
     await stopFailure;
+    await replacementStart;
     await manager.startChannel("discord", DEFAULT_ACCOUNT_ID);
     expect(startAccount).toHaveBeenCalledTimes(1);
     expect(
@@ -789,11 +805,13 @@ describe("server-channels auto restart", () => {
     await flushMicrotasks();
     expect(stopAccount).toHaveBeenCalledTimes(2);
 
-    await manager.startChannel("discord", DEFAULT_ACCOUNT_ID);
+    const replacementStart = manager.startChannel("discord", DEFAULT_ACCOUNT_ID);
+    await flushMicrotasks();
     expect(startAccount).toHaveBeenCalledTimes(1);
 
     stopHooks[1]?.resolve();
     await secondFailure;
+    await replacementStart;
     await manager.startChannel("discord", DEFAULT_ACCOUNT_ID);
     expect(startAccount).toHaveBeenCalledTimes(1);
     expect(
@@ -1201,21 +1219,29 @@ describe("server-channels auto restart", () => {
 
   it("does not poison auto-restart state when recovery stop times out", async () => {
     const releaseFirstTask = createDeferred();
-    const startAccount = vi.fn(
-      async ({ abortSignal }: { abortSignal: AbortSignal }) =>
+    const signals: AbortSignal[] = [];
+    const startAccount = vi.fn(async ({ abortSignal }: { abortSignal: AbortSignal }) => {
+      signals.push(abortSignal);
+      abortSignal.addEventListener("abort", () => {}, { once: true });
+      if (signals.length === 1) {
+        await releaseFirstTask.promise;
+      } else {
         await new Promise<void>((resolve) => {
-          abortSignal.addEventListener("abort", () => {}, { once: true });
-          void releaseFirstTask.promise.then(resolve);
-        }),
-    );
+          abortSignal.addEventListener("abort", () => resolve(), { once: true });
+        });
+      }
+    });
     installTestRegistry(
       createTestPlugin({
         startAccount,
       }),
     );
     const manager = createManager();
+    const lifecycleAbort = new AbortController();
 
-    await manager.startChannels();
+    await manager.startChannel("discord", DEFAULT_ACCOUNT_ID, {
+      lifecycleAbortSignal: lifecycleAbort.signal,
+    });
     const stopTask = manager.stopChannel("discord", DEFAULT_ACCOUNT_ID, { manual: false });
     await vi.advanceTimersByTimeAsync(5_000);
     await stopTask;
@@ -1238,6 +1264,12 @@ describe("server-channels auto restart", () => {
 
     expect(startAccount).toHaveBeenCalledTimes(2);
     expect(hoisted.sleepWithAbort).not.toHaveBeenCalled();
+
+    lifecycleAbort.abort();
+    await waitForMicrotaskCondition(
+      () => signals[1]?.aborted === true,
+      "expected timed-out-stop replacement to retain lifecycle generation ownership",
+    );
   });
 
   it("does not restart when a timed-out recovery stop settles as terminal", async () => {
@@ -2085,6 +2117,35 @@ describe("server-channels auto restart", () => {
     await Promise.all([startTask, stopTask]);
 
     expect(startAccount).not.toHaveBeenCalled();
+  });
+
+  it("starts a successor after an aborted predecessor hands off no task", async () => {
+    const startupGate = createDeferred();
+    const isConfigured = vi.fn(async () => {
+      if (isConfigured.mock.calls.length === 1) {
+        await startupGate.promise;
+      }
+      return true;
+    });
+    const startAccount = vi.fn(async () => await new Promise(() => {}));
+
+    installTestRegistry(createTestPlugin({ startAccount, isConfigured }));
+    const manager = createManager();
+    const predecessorLifecycle = new AbortController();
+
+    const predecessor = manager.startChannel("discord", DEFAULT_ACCOUNT_ID, {
+      lifecycleAbortSignal: predecessorLifecycle.signal,
+    });
+    await Promise.resolve();
+    const successor = manager.startChannel("discord", DEFAULT_ACCOUNT_ID);
+
+    predecessorLifecycle.abort();
+    startupGate.resolve();
+    await Promise.all([predecessor, successor]);
+
+    expect(isConfigured).toHaveBeenCalledTimes(2);
+    expect(startAccount).toHaveBeenCalledTimes(1);
+    expect(firstStartAccountContext(startAccount)?.abortSignal.aborted).toBe(false);
   });
 
   it("does not resolve channelRuntime until a channel starts", async () => {
