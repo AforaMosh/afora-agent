@@ -46,6 +46,26 @@ describe("client voice session store", () => {
     });
   });
 
+  it("accepts an absent or valid browser allocation claim and rejects malformed claims", () => {
+    expect(parseStoredVoiceSessionRecord(storedRecord([]))?.browserAllocationId).toBeUndefined();
+    expect(
+      parseStoredVoiceSessionRecord(
+        JSON.stringify({
+          ...JSON.parse(storedRecord([])),
+          browserAllocationId: " allocation-1 ",
+        }),
+      )?.browserAllocationId,
+    ).toBe("allocation-1");
+    expect(
+      parseStoredVoiceSessionRecord(
+        JSON.stringify({
+          ...JSON.parse(storedRecord([])),
+          browserAllocationId: " ",
+        }),
+      ),
+    ).toBeUndefined();
+  });
+
   it("normalizes legacy effect order and delivered timestamp into revision watermarks", () => {
     expect(
       parseStoredVoiceSessionRecord(

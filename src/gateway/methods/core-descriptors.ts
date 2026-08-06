@@ -104,6 +104,8 @@ const CORE_GATEWAY_METHOD_SPECS = [
   // Params-aware: reading redacted config needs read; includeSecrets also needs talk secrets.
   ["talk.config", "talk", "dynamic", "<=2026.7"],
   ["talk.client.create", "talk", "operator.talk", "<=2026.7"],
+  ["talk.client.commit", "talk", "operator.talk", "2026.7"],
+  ["talk.client.abort", "talk", "operator.talk", "2026.7"],
   ["talk.client.transcript", "talk", "operator.talk", "<=2026.7"],
   ["talk.client.close", "talk", "operator.talk", "<=2026.7"],
   ["talk.client.toolCall", "talk", "operator.talk", "<=2026.7"],

@@ -106,6 +106,7 @@ async function closeVoiceSessionOperationOwner(
 ): Promise<void> {
   await voiceSessionOperations.close(
     operationKey(params.agentId, params.voiceSessionId),
+    `${params.sessionKey}\0${params.transcriptFailurePolicy}\0${params.browserAllocationId ?? ""}`,
     async () => closeClientVoiceSessionInternal(params),
   );
 }
@@ -200,21 +201,40 @@ function ensureToolEffectSubscription(): void {
   });
 }
 
-/** Create a call record or resume the same open call across transport restarts. */
-export function createOrResumeClientVoiceSession(params: {
+type CreateOrResumeClientVoiceSessionParams = {
   agentId: string;
   sessionKey: string;
   provider?: string;
   origin: "client" | "relay";
+  browserAllocationId?: string;
   transcriptCapable?: boolean;
   voiceSessionId?: string;
   now?: number;
-}): string {
+  onCreated?: () => void;
+  assertCommitAllowed?: () => void;
+};
+
+export type ClientVoiceSessionCreateResult = {
+  voiceSessionId: string;
+  created: boolean;
+  browserAllocationId?: string;
+};
+
+/** Create a call record or resume the same open call across transport restarts. */
+export function createOrResumeClientVoiceSessionWithResult(
+  params: CreateOrResumeClientVoiceSessionParams,
+): ClientVoiceSessionCreateResult {
   const voiceSessionId = params.voiceSessionId?.trim() || randomUUID();
+  const browserAllocationId = params.browserAllocationId?.trim() || undefined;
+  if (browserAllocationId && params.origin !== "client") {
+    throw new Error("only client voice sessions may claim browser allocations");
+  }
   const provider = params.provider?.trim() || undefined;
   const now = params.now ?? Date.now();
+  let result: ClientVoiceSessionCreateResult | undefined;
   runOpenClawAgentWriteTransaction(
     (database) => {
+      params.assertCommitAllowed?.();
       const existing = readRecordInTransaction(database, voiceSessionId);
       if (existing) {
         assertClientVoiceSessionResumable(existing, params);
@@ -226,13 +246,22 @@ export function createOrResumeClientVoiceSession(params: {
         }
         existing.updatedAt = now;
         writeRecordInTransaction(database, existing);
+        result = {
+          voiceSessionId,
+          created: false,
+          ...(existing.browserAllocationId
+            ? { browserAllocationId: existing.browserAllocationId }
+            : {}),
+        };
         return;
       }
+      params.onCreated?.();
       writeRecordInTransaction(database, {
         version: RECORD_VERSION,
         voiceSessionId,
         agentId: params.agentId,
         sessionKey: params.sessionKey,
+        ...(browserAllocationId ? { browserAllocationId } : {}),
         ...(provider ? { provider } : {}),
         origin: params.origin,
         ...(params.transcriptCapable === true ? { transcriptCapable: true } : {}),
@@ -245,10 +274,63 @@ export function createOrResumeClientVoiceSession(params: {
         digestDeliveredRevision: 0,
         transcriptFailureKeys: [],
       });
+      result = {
+        voiceSessionId,
+        created: true,
+        ...(browserAllocationId ? { browserAllocationId } : {}),
+      };
     },
     { agentId: params.agentId },
   );
-  return voiceSessionId;
+  return result ?? { voiceSessionId, created: false };
+}
+
+export function createOrResumeClientVoiceSession(
+  params: CreateOrResumeClientVoiceSessionParams,
+): string {
+  return createOrResumeClientVoiceSessionWithResult(params).voiceSessionId;
+}
+
+/**
+ * Transfer a resumed durable session only when the claim observed during create
+ * is still authoritative. The transaction is the allocation publication point.
+ */
+export function claimClientVoiceBrowserAllocation(params: {
+  agentId: string;
+  sessionKey: string;
+  voiceSessionId: string;
+  browserAllocationId: string;
+  expectedBrowserAllocationId?: string;
+}): boolean {
+  let claimed = false;
+  runOpenClawAgentWriteTransaction(
+    (database) => {
+      const record = readRecordInTransaction(database, params.voiceSessionId);
+      if (!record) {
+        throw new Error("voice session not found");
+      }
+      assertOwnership(record, params);
+      if (record.origin !== "client") {
+        throw new Error("relay-owned voice sessions cannot claim browser allocations");
+      }
+      if (record.status !== "open") {
+        throw new Error("voice session is already closed");
+      }
+      if (record.browserAllocationId === params.browserAllocationId) {
+        claimed = true;
+        return;
+      }
+      if (record.browserAllocationId !== params.expectedBrowserAllocationId) {
+        return;
+      }
+      record.browserAllocationId = params.browserAllocationId;
+      record.updatedAt = Date.now();
+      writeRecordInTransaction(database, record);
+      claimed = true;
+    },
+    { agentId: params.agentId },
+  );
+  return claimed;
 }
 
 /**
@@ -286,15 +368,17 @@ export async function ensureClientVoiceAgentSessionEntry(params: {
   agentId: string;
   sessionKey: string;
   deadlineAt?: number;
+  assertCommitAllowed?: () => void;
 }): Promise<string> {
+  const assertCommitAllowed = () => {
+    params.assertCommitAllowed?.();
+    if (params.deadlineAt !== undefined && Date.now() >= params.deadlineAt) {
+      throw new Error("Realtime browser session expired during startup; try again");
+    }
+  };
   const created = await patchSessionEntry(
     params,
     (_entry, context) => {
-      // Browser credentials can be short-lived. Check at the authoritative
-      // write boundary so a queued write cannot create an unusable empty chat.
-      if (params.deadlineAt !== undefined && Date.now() >= params.deadlineAt) {
-        throw new Error("Realtime browser session expired during startup; try again");
-      }
       if (context.existingEntry?.sessionId) {
         return null;
       }
@@ -303,7 +387,10 @@ export async function ensureClientVoiceAgentSessionEntry(params: {
       }
       return buildSessionCreationStamp({ via: "talk", actor: { type: "human" } });
     },
-    { fallbackEntry: mergeSessionEntry(undefined, {}) },
+    {
+      assertCommitAllowed,
+      fallbackEntry: mergeSessionEntry(undefined, {}),
+    },
   );
   if (!created?.sessionId) {
     throw new Error(`agent session could not be initialized (${params.sessionKey})`);
@@ -614,21 +701,28 @@ async function closeClientVoiceSessionInternal(params: {
   voiceSessionId: string;
   config: OpenClawConfig;
   transcriptFailurePolicy: "require-success" | "retain-and-close";
+  browserAllocationId?: string;
   now?: number;
 }): Promise<void> {
-  const existing = readRecord(params.agentId, params.voiceSessionId);
-  if (!existing) {
-    throw new Error("voice session not found");
-  }
-  assertOwnership(existing, params);
   const now = params.now ?? Date.now();
-  runOpenClawAgentWriteTransaction(
+  const closed = runOpenClawAgentWriteTransaction(
     (database) => {
       const current = readRecordInTransaction(database, params.voiceSessionId);
       if (!current) {
-        throw new Error("voice session disappeared during close");
+        if (params.browserAllocationId) {
+          return undefined;
+        }
+        throw new Error("voice session not found");
       }
       assertOwnership(current, params);
+      if (params.browserAllocationId) {
+        if (current.origin === "relay") {
+          throw new Error("relay-owned voice sessions close through talk.session.close");
+        }
+        if (current.browserAllocationId !== params.browserAllocationId) {
+          return undefined;
+        }
+      }
       if (
         current.transcriptFailureKeys.length > 0 &&
         params.transcriptFailurePolicy === "require-success"
@@ -644,12 +738,12 @@ async function closeClientVoiceSessionInternal(params: {
         current.updatedAt = now;
         writeRecordInTransaction(database, current);
       }
+      return current;
     },
     { agentId: params.agentId },
   );
-  const closed = readRecord(params.agentId, params.voiceSessionId);
   if (!closed) {
-    throw new Error("voice session disappeared after close");
+    return;
   }
   // Transport close does not end consult runs: live bindings keep effect capture active,
   // approved grants stay valid for those runs, and the digest waits for the last run.completed.
@@ -667,11 +761,12 @@ async function closeClientVoiceSessionInternal(params: {
   });
 }
 
-/** Close a logical voice call after its accepted transcript prefix is durable. */
+/** Close a logical voice call, optionally fenced to its current browser allocation. */
 export async function closeClientVoiceSession(params: {
   agentId: string;
   sessionKey: string;
   voiceSessionId: string;
+  browserAllocationId?: string;
   config: OpenClawConfig;
   now?: number;
 }): Promise<void> {

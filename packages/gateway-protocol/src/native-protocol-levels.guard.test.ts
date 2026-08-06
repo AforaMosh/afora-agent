@@ -337,4 +337,35 @@ describe("native Gateway protocol levels", () => {
       "SessionApprovalEvent must decode terminal transitions.",
     );
   });
+
+  it("emits browser allocation mutation results as a discriminated Swift union", async () => {
+    const swiftGeneratedPath =
+      "apps/shared/OpenClawKit/Sources/OpenClawProtocol/GatewayModels.swift";
+    const swiftGenerated = await readRepoFile(swiftGeneratedPath);
+
+    assertPattern(
+      swiftGenerated,
+      swiftGeneratedPath,
+      /public enum TalkClientAllocationMutationResult: Codable, Sendable \{/,
+      "missing the generated TalkClientAllocationMutationResult union.",
+    );
+    assertPattern(
+      swiftGenerated,
+      swiftGeneratedPath,
+      /case committed\(TalkClientAllocationCommittedResult\)/,
+      "allocation results must decode committed transitions.",
+    );
+    assertPattern(
+      swiftGenerated,
+      swiftGeneratedPath,
+      /case aborted\(TalkClientAllocationAbortedResult\)/,
+      "allocation results must decode aborted transitions.",
+    );
+    assertPattern(
+      swiftGenerated,
+      swiftGeneratedPath,
+      /case terminal\(TalkClientAllocationTerminalResult\)/,
+      "allocation results must decode terminal transitions.",
+    );
+  });
 });

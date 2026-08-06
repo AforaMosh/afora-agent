@@ -15,6 +15,7 @@ import {
   runWithDiagnosticTraceContext,
 } from "../../../infra/diagnostic-trace-context.js";
 import { createLazyPromise } from "../../../shared/lazy-runtime.js";
+import { acquireTalkConnectionLease } from "../../talk-session-registry.js";
 import { formatForLog, logWs } from "../../ws-log.js";
 import type { GatewayWsClient } from "../ws-types.js";
 import type { GatewayWsMessageHandlerParams } from "./message-handler-types.js";
@@ -30,6 +31,7 @@ const DEVICE_CREDENTIAL_INVALIDATING_METHODS = new Set([
   "device.token.revoke",
   "node.pair.remove",
 ]);
+const TALK_START_METHODS = new Set(["talk.client.create", "talk.session.create"]);
 
 export function createGatewayAuthenticatedRequestDispatcher(params: {
   handler: GatewayWsMessageHandlerParams;
@@ -164,8 +166,13 @@ export function createGatewayAuthenticatedRequestDispatcher(params: {
       if (nodeInvocationController) {
         client.socket.once("close", cancelNodeInvocation);
       }
+      let talkAdmissionLease: ReturnType<typeof acquireTalkConnectionLease> | undefined;
       try {
+        talkAdmissionLease = TALK_START_METHODS.has(req.method)
+          ? acquireTalkConnectionLease(connId, "Talk connection closed before request startup")
+          : undefined;
         const { handleGatewayRequest } = await loadGatewayServerMethods();
+        talkAdmissionLease?.assertActive();
         await handleGatewayRequest({
           req,
           respond,
@@ -181,6 +188,7 @@ export function createGatewayAuthenticatedRequestDispatcher(params: {
         logGateway.error(`request handler failed: ${formatForLog(err)}`);
         respond(false, undefined, errorShape(ErrorCodes.UNAVAILABLE, formatForLog(err)));
       } finally {
+        talkAdmissionLease?.release();
         if (nodeInvocationController) {
           client.socket.off("close", cancelNodeInvocation);
         }

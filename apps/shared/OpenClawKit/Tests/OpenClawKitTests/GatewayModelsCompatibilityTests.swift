@@ -77,6 +77,40 @@ struct GatewayModelsCompatibilityTests {
     }
 
     @Test
+    func `talk allocation mutation results decode every terminal branch`() throws {
+        let decoder = JSONDecoder()
+        let payloads = [
+            #"{"state":"committed"}"#,
+            #"{"state":"aborted"}"#,
+            #"{"state":"terminal","terminal":{"outcome":"error","message":"sideband failed"}}"#,
+        ]
+        let decoded = try payloads.map {
+            try decoder.decode(TalkClientAllocationMutationResult.self, from: Data($0.utf8))
+        }
+        let encoded = try decoded.map { try JSONEncoder().encode($0) }
+        let encodedPayloads = try encoded.map {
+            try #require(JSONSerialization.jsonObject(with: $0) as? [String: Any])
+        }
+        let roundTripped = try encoded.map {
+            try decoder.decode(TalkClientAllocationMutationResult.self, from: $0)
+        }
+
+        #expect(encodedPayloads.compactMap { $0["state"] as? String } == [
+            "committed",
+            "aborted",
+            "terminal",
+        ])
+        guard case .committed = roundTripped[0],
+              case .aborted = roundTripped[1],
+              case let .terminal(value) = roundTripped[2]
+        else {
+            Issue.record("Expected committed, aborted, and terminal allocation branches")
+            return
+        }
+        #expect(value.terminal.message == "sideband failed")
+    }
+
+    @Test
     func `request frames round trip current payloads`() throws {
         let frame = try self.roundTripGatewayFrame(
             #"{"type":"req","id":"req-1","method":"sessions.list","params":{"limit":20}}"#)
