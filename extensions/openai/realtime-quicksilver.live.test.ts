@@ -1,9 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { createServer, type Server } from "node:http";
-import {
-  readCodexCliCredentialsCached,
-  resolveProviderOAuthAccess,
-} from "openclaw/plugin-sdk/provider-auth";
+import { readCodexCliCredentialsCached } from "openclaw/plugin-sdk/provider-auth";
 import type { Page } from "playwright";
 import { describe, expect, it } from "vitest";
 import WebSocket, { type RawData } from "ws";
@@ -12,6 +9,7 @@ import { OpenAIQuicksilverVoiceBridge } from "./realtime-quicksilver-bridge.js";
 import {
   createOpenAIQuicksilverBrowserSessionBroker,
   OPENAI_QUICKSILVER_OFFER_PATH,
+  resolveOpenAIChatGptSubscriptionAuth,
 } from "./realtime-quicksilver-session.js";
 import {
   buildOpenAIQuicksilverSession,
@@ -138,15 +136,9 @@ async function resolveLiveOAuthProfile(): Promise<
   Extract<OpenAIQuicksilverAuth, { type: "oauth" }> | undefined
 > {
   try {
-    const access = await resolveProviderOAuthAccess({
-      provider: "openai",
-      includeExternalCliAuth: false,
-    });
-    if (access) {
-      if (!access.accountId) {
-        throw new Error("The selected ChatGPT OAuth profile is missing its account id");
-      }
-      return { type: "oauth", token: access.accessToken, accountId: access.accountId };
+    const auth = await resolveOpenAIChatGptSubscriptionAuth({});
+    if (auth) {
+      return auth;
     }
   } catch (error) {
     if (!(error instanceof Error) || error.name !== "AuthProfileMigrationRequiredError") {
