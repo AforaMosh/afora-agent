@@ -266,7 +266,7 @@ describe("realtime voice agent consult runtime", () => {
       origin: "client",
       transcriptCapable: true,
       voiceSessionId: "voice-gpt-live",
-    });
+    }).voiceSessionId;
     let runId: string | undefined;
     runEmbeddedAgent.mockImplementationOnce(async (params?: RunEmbeddedAgentParams) => {
       if (!params) {

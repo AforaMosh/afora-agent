@@ -1,5 +1,5 @@
 import fs from "node:fs/promises";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import { loadSessionEntry } from "../config/sessions/session-accessor.js";
 import { closeOpenClawAgentDatabasesForTest } from "../state/openclaw-agent-db.js";
@@ -34,25 +34,23 @@ describe("client voice connection lifecycle", () => {
   });
 
   it("creates, resumes, and enforces ownership and open state", async () => {
-    const onCreated = vi.fn();
-    const voiceSessionId = createOrResumeClientVoiceSession({
+    const created = createOrResumeClientVoiceSession({
       agentId: "main",
       sessionKey: "agent:main:main",
       provider: "google",
       origin: "client",
       voiceSessionId: "voice-1",
-      onCreated,
     });
+    const { voiceSessionId } = created;
+    expect(created.created).toBe(true);
     expect(
       createOrResumeClientVoiceSession({
         agentId: "main",
         sessionKey: "agent:main:main",
         origin: "client",
         voiceSessionId,
-        onCreated,
       }),
-    ).toBe(voiceSessionId);
-    expect(onCreated).toHaveBeenCalledTimes(1);
+    ).toEqual({ voiceSessionId, created: false });
     expect(clientVoiceSessionTesting.readRecord("main", voiceSessionId)).toMatchObject({
       provider: "google",
     });
@@ -108,7 +106,7 @@ describe("client voice connection lifecycle", () => {
       provider: "openai",
       origin: "client",
       voiceSessionId: "voice-known",
-    });
+    }).voiceSessionId;
     expect(() =>
       preflightClientVoiceSessionResume({
         agentId: "main",

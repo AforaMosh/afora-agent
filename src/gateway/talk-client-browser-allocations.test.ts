@@ -24,17 +24,17 @@ function createAllocation(
   } = {},
 ) {
   const cancel = vi.fn<() => Promise<void>>(async () => undefined);
-  const claimDurable = vi.fn(() => true);
-  const closeDurable = vi.fn<() => Promise<void>>(async () => undefined);
   const activateEffects = vi.fn();
   const retireEffects = vi.fn();
+  const claimDurable = vi.fn(() => true);
+  const closeDurable = vi.fn<() => Promise<void>>(async () => undefined);
   const broadcast = vi.fn();
   return {
     cancel,
-    claimDurable,
-    closeDurable,
     activateEffects,
     retireEffects,
+    claimDurable,
+    closeDurable,
     broadcast,
     params: {
       agentId: overrides.agentId ?? "main",
@@ -206,11 +206,14 @@ describe("Talk client browser allocations", () => {
     const second = createAllocation({ connId: "conn-2" });
     const committed = await prepareBrowserAllocation(first.params);
     expect(commitBrowserAllocation(identity(committed))).toEqual({ state: "committed" });
+    expect(first.activateEffects).toHaveBeenCalledOnce();
     const candidate = await prepareBrowserAllocation(second.params);
 
     expect(commitBrowserAllocation(identity(candidate))).toEqual({ state: "committed" });
     expect(commitBrowserAllocation(identity(candidate))).toEqual({ state: "committed" });
+    expect(second.activateEffects).toHaveBeenCalledOnce();
     await vi.waitFor(() => expect(first.cancel).toHaveBeenCalledOnce());
+    expect(first.retireEffects).toHaveBeenCalledOnce();
     expect(first.closeDurable).not.toHaveBeenCalled();
     expect(second.cancel).not.toHaveBeenCalled();
   });

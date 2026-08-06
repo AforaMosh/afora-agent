@@ -21,6 +21,7 @@ import {
 } from "./client-voice-confirmation.js";
 import { resetClientVoiceConfirmationStateForTest } from "./client-voice-confirmation.test-support.js";
 import {
+  allocateClientVoiceSessionId,
   appendClientVoiceTranscript,
   appendRelayVoiceTranscript,
   claimClientVoiceBrowserAllocation,
@@ -28,7 +29,6 @@ import {
   closeRelayVoiceSessionRecord,
   closeStaleClientVoiceSessions,
   createOrResumeClientVoiceSession,
-  createOrResumeClientVoiceSessionWithResult,
   ensureClientVoiceAgentSessionEntry,
   isClientVoiceSessionConfirmable,
   registerClientVoiceConsultRun,
@@ -128,6 +128,11 @@ describe("client voice session", () => {
     }
   });
 
+  it("allocates a stable requested identity without persisting it", () => {
+    expect(allocateClientVoiceSessionId("  voice-requested  ")).toBe("voice-requested");
+    expect(clientVoiceSessionTesting.readRecord("main", "voice-requested")).toBeUndefined();
+  });
+
   afterEach(async () => {
     clientVoiceSessionTesting.reset();
     resetClientVoiceConfirmationStateForTest();
@@ -208,19 +213,19 @@ describe("client voice session", () => {
       origin: "client",
       transcriptCapable: true,
       voiceSessionId: "voice-capable",
-    });
+    }).voiceSessionId;
     const legacy = createOrResumeClientVoiceSession({
       agentId: "main",
       sessionKey: "agent:main:main",
       origin: "client",
       voiceSessionId: "voice-legacy",
-    });
+    }).voiceSessionId;
     const relay = createOrResumeClientVoiceSession({
       agentId: "main",
       sessionKey: "agent:main:main",
       origin: "relay",
       voiceSessionId: "voice-relay",
-    });
+    }).voiceSessionId;
     const binding = (voiceSessionId: string) => ({
       agentId: "main",
       sessionKey: "agent:main:main",
@@ -237,7 +242,7 @@ describe("client voice session", () => {
       sessionKey: "agent:main:main",
       origin: "client",
       now: 10,
-    });
+    }).voiceSessionId;
     await closeClientVoiceSession({
       agentId: "main",
       sessionKey: "agent:main:main",
@@ -269,7 +274,7 @@ describe("client voice session", () => {
       sessionKey: "agent:main:main",
       origin: "client",
       voiceSessionId: "voice-durable-close",
-    });
+    }).voiceSessionId;
     recordMutation(voiceSessionId);
     await completeRun(`run-${voiceSessionId}`);
 
@@ -364,7 +369,7 @@ describe("client voice session", () => {
       sessionKey: "agent:main:main",
       origin: "client",
       voiceSessionId: "voice-concurrent-close-failure",
-    });
+    }).voiceSessionId;
     const transcriptWrite = createDeferred();
     const failure = new Error("transcript write failed");
     sessionAccessorMocks.appendTranscriptMessage.mockImplementationOnce(async () => {
@@ -406,7 +411,7 @@ describe("client voice session", () => {
       sessionKey: "agent:main:main",
       origin: "client",
       voiceSessionId: "voice-close-after-failure",
-    });
+    }).voiceSessionId;
     const transcriptWrite = createDeferred();
     const failure = new Error("transcript write failed");
     const actualAppend = sessionAccessorMocks.actualAppendTranscriptMessage!;
@@ -476,7 +481,7 @@ describe("client voice session", () => {
       agentId: "main",
       sessionKey: "agent:main:main",
       origin: "relay",
-    });
+    }).voiceSessionId;
     sessionAccessorMocks.appendTranscriptMessage.mockRejectedValueOnce(
       new Error("transcript write failed"),
     );
@@ -516,7 +521,7 @@ describe("client voice session", () => {
       sessionKey: "agent:main:main",
       origin: "client",
       voiceSessionId: "voice-bounded",
-    });
+    }).voiceSessionId;
     const firstAppend = createDeferred();
     const actualAppend = sessionAccessorMocks.actualAppendTranscriptMessage;
     if (!actualAppend) {
@@ -605,7 +610,7 @@ describe("client voice session", () => {
       sessionKey: "agent:main:main",
       origin: "client",
       voiceSessionId: "voice-whitespace",
-    });
+    }).voiceSessionId;
 
     await Promise.all(
       Array.from({ length: 10_000 }, (_, index) =>
@@ -642,7 +647,7 @@ describe("client voice session", () => {
       sessionKey: "agent:main:main",
       origin: "client",
       voiceSessionId: "voice-write-failure",
-    });
+    }).voiceSessionId;
     sessionAccessorMocks.appendTranscriptMessage.mockRejectedValueOnce(
       new Error("transcript write failed"),
     );
@@ -682,7 +687,7 @@ describe("client voice session", () => {
       sessionKey: "agent:main:main",
       origin: "client",
       voiceSessionId: "voice-multiple-write-failures",
-    });
+    }).voiceSessionId;
     sessionAccessorMocks.appendTranscriptMessage
       .mockRejectedValueOnce(new Error("first transcript write failed"))
       .mockRejectedValueOnce(new Error("second transcript write failed"));
@@ -752,7 +757,7 @@ describe("client voice session", () => {
       sessionKey: "agent:main:main",
       origin: "client",
       voiceSessionId: "voice-write-failure-bound",
-    });
+    }).voiceSessionId;
     sessionAccessorMocks.appendTranscriptMessage.mockRejectedValue(
       new Error("transcript write failed"),
     );
@@ -825,13 +830,13 @@ describe("client voice session", () => {
       sessionKey: "agent:main:first",
       origin: "client",
       voiceSessionId: "voice-first",
-    });
+    }).voiceSessionId;
     const secondVoiceSessionId = createOrResumeClientVoiceSession({
       agentId: "main",
       sessionKey: "agent:main:second",
       origin: "client",
       voiceSessionId: "voice-second",
-    });
+    }).voiceSessionId;
     const firstAppend = createDeferred();
     const actualAppend = sessionAccessorMocks.actualAppendTranscriptMessage;
     if (!actualAppend) {
@@ -873,7 +878,7 @@ describe("client voice session", () => {
       agentId: "main",
       sessionKey: "agent:main:main",
       origin: "client",
-    });
+    }).voiceSessionId;
     registerClientVoiceConsultRun({
       agentId: "main",
       sessionKey: "agent:main:main",
@@ -896,7 +901,7 @@ describe("client voice session", () => {
       agentId: "main",
       sessionKey: "agent:main:main",
       origin: "client",
-    });
+    }).voiceSessionId;
 
     expect(
       resolveOpenClientVoiceSessionId({ agentId: "main", sessionKey: "agent:main:main" }),
@@ -915,7 +920,7 @@ describe("client voice session", () => {
   });
 
   it("claims new browser sessions immediately and transfers resumed sessions on commit", () => {
-    const created = createOrResumeClientVoiceSessionWithResult({
+    const created = createOrResumeClientVoiceSession({
       agentId: "main",
       sessionKey: "agent:main:main",
       origin: "client",
@@ -928,7 +933,7 @@ describe("client voice session", () => {
       browserAllocationId: "allocation-1",
     });
 
-    const resumed = createOrResumeClientVoiceSessionWithResult({
+    const resumed = createOrResumeClientVoiceSession({
       agentId: "main",
       sessionKey: "agent:main:main",
       origin: "client",
@@ -1050,7 +1055,7 @@ describe("client voice session", () => {
       agentId: "main",
       sessionKey: "agent:main:main",
       origin: "client",
-    });
+    }).voiceSessionId;
     for (const runId of ["run-1", "run-2"]) {
       registerClientVoiceConsultRun({
         agentId: "main",
@@ -1076,13 +1081,13 @@ describe("client voice session", () => {
       sessionKey: "agent:main:stale",
       origin: "client",
       now: 1,
-    });
+    }).voiceSessionId;
     const recent = createOrResumeClientVoiceSession({
       agentId: "main",
       sessionKey: "agent:main:recent",
       origin: "client",
       now: 6 * 60 * 60_000,
-    });
+    }).voiceSessionId;
 
     expect(
       await closeStaleClientVoiceSessions({
@@ -1100,7 +1105,7 @@ describe("client voice session", () => {
       agentId: "main",
       sessionKey: "agent:main:main",
       origin: "client",
-    });
+    }).voiceSessionId;
     registerClientVoiceConsultRun({
       agentId: "main",
       sessionKey: "agent:main:main",

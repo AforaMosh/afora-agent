@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { retryAsync } from "../infra/retry.js";
 import { CLIENT_VOICE_TERMINAL_ACK_GRACE_MS } from "../talk/voice-transcript.js";
 import type { GatewayBroadcastToConnIdsFn } from "./server-broadcast-types.js";
@@ -21,7 +20,7 @@ type BrowserAllocation = Identity & {
   connId: string;
   legacyAutoCommit?: true;
   cancel: () => Promise<void>;
-  activateEffects?: () => void;
+  activateEffects: () => void;
   retireEffects?: () => void;
   durableState: BrowserAllocationDurableState;
   claimDurable: () => boolean;
@@ -31,7 +30,6 @@ type BrowserAllocation = Identity & {
   released?: boolean;
   retirement?: Promise<void>;
   terminal?: BrowserAllocationTerminal;
-  effectsRetired?: boolean;
 };
 type Owner = Partial<Record<Slot, BrowserAllocation>> & {
   durableState: BrowserAllocationDurableState;
@@ -62,10 +60,9 @@ const warnCleanup = (allocation: BrowserAllocation, phase: string, error: unknow
 const cancel = (allocation: BrowserAllocation) =>
   allocation.cancel().catch((error: unknown) => warnCleanup(allocation, "allocation", error));
 function retireEffects(allocation: BrowserAllocation): void {
-  if (!allocation.effectsRetired) {
-    allocation.effectsRetired = true;
-    allocation.retireEffects?.();
-  }
+  const retire = allocation.retireEffects;
+  allocation.retireEffects = undefined;
+  retire?.();
 }
 function promoteDurableState(owner: Owner, allocation: BrowserAllocation, committed = false): void {
   if (durableStateRank[allocation.durableState] > durableStateRank[owner.durableState]) {
@@ -147,7 +144,6 @@ export function acquireBrowserCreationLease(connId: string) {
   ensureBrowserConnectionCleanup(connId);
   return acquireTalkConnectionLease(connId, "browser Talk connection closed during startup");
 }
-export const allocateBrowserAllocationId = randomUUID;
 async function release(key: string, owner: Owner, slot: Slot): Promise<void> {
   const allocation = owner[slot];
   if (!allocation) {
@@ -207,7 +203,7 @@ export function commitBrowserAllocation(params: Mutation): BrowserAllocationMuta
   if (!allocation.claimDurable()) {
     throw new Error("voice session browser allocation changed during startup");
   }
-  allocation.activateEffects?.();
+  allocation.activateEffects();
   const previous = owner.active;
   owner.active = allocation;
   owner.candidate = undefined;
