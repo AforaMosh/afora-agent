@@ -13,6 +13,7 @@ import { upsertSessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
 import {
   readSessionTranscriptEvents,
   type SessionTranscriptTargetParams,
+  type TranscriptTurnAdmission,
 } from "openclaw/plugin-sdk/session-transcript-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createAttemptTranscriptJournal } from "./attempt-transcript-journal.js";
@@ -79,20 +80,24 @@ async function createFixture(
   };
   let blocked = false;
   let persisted = false;
+  let admissionReceipt: TranscriptTurnAdmission | undefined;
   const recorder = {
     message: userMessage,
     resolveMessage: vi.fn(async () => userMessage),
     markRuntimePersistencePending: vi.fn(),
-    markRuntimePersisted: vi.fn(() => {
-      persisted = true;
-    }),
+    markRuntimePersisted: vi.fn(
+      (_message: Extract<AgentMessage, { role: "user" }>, admission?: TranscriptTurnAdmission) => {
+        persisted = true;
+        admissionReceipt = admission;
+      },
+    ),
     markBlocked: vi.fn(() => {
       blocked = true;
     }),
     hasPersisted: () => persisted,
     isBlocked: () => blocked,
     hasRuntimePersistencePending: () => false,
-    getAdmissionReceipt: () => undefined,
+    getAdmissionReceipt: () => admissionReceipt,
     waitForRuntimePersistence: vi.fn(async () => undefined),
     persistApproved: vi.fn(async () => undefined),
     persistBlocked: vi.fn(async () => undefined),
@@ -229,6 +234,16 @@ describe("Copilot attempt transcript journal", () => {
     expect(journal.snapshot().messagesSnapshot).toMatchObject([
       { role: "user", content: "resolved user" },
     ]);
+  });
+
+  it("publishes the exact storage admission object to the turn recorder", async () => {
+    const { journal, recorder } = await createFixture();
+
+    await journal.persistInitialUser();
+
+    const admission = recorder.markRuntimePersisted.mock.calls[0]?.[1];
+    expect(admission).toBeDefined();
+    expect(recorder.getAdmissionReceipt()).toBe(admission);
   });
 
   it("removes the originally staged user when its resolved replacement is blocked", async () => {

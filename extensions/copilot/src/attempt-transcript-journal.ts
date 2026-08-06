@@ -10,12 +10,18 @@ import {
   publishSessionTranscriptUpdateByIdentity,
   readVisibleSessionTranscriptMessageEntries,
   type SessionTranscriptTargetParams,
+  type TranscriptTurnAdmission,
 } from "openclaw/plugin-sdk/session-transcript-runtime";
 import type { AttemptParamsLike } from "./attempt-types.js";
 
 type TranscriptMessage = Extract<AgentMessage, { role: "user" | "assistant" | "toolResult" }>;
 type AppendResult =
-  | { appended: boolean; message: TranscriptMessage; messageId: string }
+  | {
+      admission: TranscriptTurnAdmission;
+      appended: boolean;
+      message: TranscriptMessage;
+      messageId: string;
+    }
   | undefined;
 type PendingWrite = { eventId?: string; message: TranscriptMessage };
 type ToolGroup = {

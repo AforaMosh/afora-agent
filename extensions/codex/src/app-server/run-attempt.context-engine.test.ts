@@ -2067,6 +2067,9 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
         yieldAborted: false,
       },
     });
+    expect(contextEngineTurnAttempt.facts?.admission).toBe(
+      params.userTurnTranscriptRecorder?.getAdmissionReceipt(),
+    );
   });
 
   it("reloads mirrored history after bootstrap mutates the session transcript", async () => {
