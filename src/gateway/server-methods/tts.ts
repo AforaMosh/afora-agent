@@ -36,25 +36,43 @@ import { inferSpeechMimeType } from "./speech-mime.js";
 import type { GatewayRequestHandlers } from "./types.js";
 import { assertValidParams } from "./validation.js";
 
+function yieldBeforeTtsStatusSetup(): Promise<void> {
+  return new Promise((resolve) => {
+    setImmediate(resolve);
+  });
+}
+
 /** Gateway request handlers for TTS status, preference mutation, and synthesis. */
 export const ttsHandlers: GatewayRequestHandlers = {
   "tts.status": async ({ respond, context }) => {
     try {
+      await yieldBeforeTtsStatusSetup();
       const cfg = context.getRuntimeConfig();
       const config = resolveTtsConfig(cfg);
       const prefsPath = resolveTtsPrefsPath(config);
       const provider = getTtsProvider(config, prefsPath);
       const persona = getTtsPersona(config, prefsPath);
       const autoMode = resolveTtsAutoMode({ config, prefsPath });
-      const fallbackProviders = resolveTtsProviderOrder(provider, cfg)
+      const speechProviders = listSpeechProviders(cfg);
+      const configuredByProvider = new Map(
+        speechProviders.map(
+          (candidate) => [candidate.id, isTtsProviderConfigured(config, candidate, cfg)] as const,
+        ),
+      );
+      const fallbackProviders = resolveTtsProviderOrder(provider, cfg, speechProviders)
         .slice(1)
-        .filter((candidate) => isTtsProviderConfigured(config, candidate, cfg));
+        .filter((candidate) => {
+          if (configuredByProvider.has(candidate)) {
+            return configuredByProvider.get(candidate) === true;
+          }
+          return isTtsProviderConfigured(config, candidate, cfg);
+        });
       // Report configured state per provider so the UI can explain why fallback
       // order differs from the complete provider registry.
-      const providerStates = listSpeechProviders(cfg).map((candidate) => ({
+      const providerStates = speechProviders.map((candidate) => ({
         id: candidate.id,
         label: candidate.label,
-        configured: isTtsProviderConfigured(config, candidate.id, cfg),
+        configured: configuredByProvider.get(candidate.id) === true,
       }));
       respond(true, {
         enabled: isTtsEnabled(config, prefsPath),

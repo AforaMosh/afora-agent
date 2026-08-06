@@ -6,6 +6,7 @@ import {
   createSpeechProviderRegistry,
   normalizeSpeechProviderId,
 } from "./provider-registry-core.js";
+import { resolveTtsProviderOrder } from "./tts-provider-resolution.js";
 
 function createSpeechProvider(id: string, aliases?: string[]): SpeechProviderPlugin {
   return {
@@ -69,6 +70,22 @@ describe("speech provider registry", () => {
 
     expect(normalizeSpeechProviderId("edge")).toBe("edge");
     expect(registry.canonicalizeSpeechProviderId("edge")).toBe("microsoft");
+  });
+
+  it("resolves fallback order and aliases from a supplied provider inventory", () => {
+    const inventory = [
+      { ...createSpeechProvider("openai", ["oai"]), autoSelectOrder: 5 },
+      { ...createSpeechProvider("google"), autoSelectOrder: 1 },
+      { ...createSpeechProvider("elevenlabs"), autoSelectOrder: 3 },
+    ];
+
+    expect(
+      resolveTtsProviderOrder(
+        " OAI " as Parameters<typeof resolveTtsProviderOrder>[0],
+        undefined,
+        inventory,
+      ),
+    ).toEqual(["openai", "google", "elevenlabs"]);
   });
 
   it("returns empty results when the capability runtime has no speech providers", () => {

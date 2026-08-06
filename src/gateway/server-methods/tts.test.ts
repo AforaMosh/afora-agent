@@ -10,7 +10,7 @@ import { expectGatewayErrorResponse } from "./gateway-response.test-helpers.js";
 
 const mocks = vi.hoisted(() => ({
   getRuntimeConfig: vi.fn(() => ({})),
-  isTtsProviderConfigured: vi.fn((_config: unknown, _provider: string) => true),
+  isTtsProviderConfigured: vi.fn((_config: unknown, _provider: string | { id: string }) => true),
   listSpeechProviders: vi.fn(
     (): Array<{
       id: string;
@@ -112,6 +112,88 @@ describe("ttsHandlers", () => {
     });
   });
 
+  it("yields before TTS status setup and reuses one configured-state pass", async () => {
+    const providers = [
+      { id: "openai", label: "OpenAI", isConfigured: vi.fn(() => true) },
+      { id: "google", label: "Google", isConfigured: vi.fn(() => true) },
+    ];
+    mocks.listSpeechProviders.mockReturnValue(providers);
+    mocks.resolveTtsProviderOrder.mockReturnValue(["openai", "google"]);
+
+    const { ttsHandlers } = await import("./tts.js");
+    const respond = vi.fn();
+    const statusPromise = expectDefined(
+      ttsHandlers["tts.status"],
+      'ttsHandlers["tts.status"] test invariant',
+    )({
+      params: {},
+      respond,
+      context: { getRuntimeConfig: mocks.getRuntimeConfig },
+    } as never);
+
+    expect(mocks.getRuntimeConfig).not.toHaveBeenCalled();
+    expect(mocks.listSpeechProviders).not.toHaveBeenCalled();
+
+    await statusPromise;
+
+    expect(mocks.listSpeechProviders).toHaveBeenCalledOnce();
+    expect(mocks.resolveTtsProviderOrder).toHaveBeenCalledWith("openai", {}, providers);
+    expect(mocks.isTtsProviderConfigured).toHaveBeenCalledTimes(2);
+    expect(mocks.isTtsProviderConfigured.mock.calls.map((call) => call[1])).toEqual(providers);
+    expect(respond).toHaveBeenCalledWith(
+      true,
+      expect.objectContaining({
+        fallbackProvider: "google",
+        fallbackProviders: ["google"],
+        providerStates: [
+          { id: "openai", label: "OpenAI", configured: true },
+          { id: "google", label: "Google", configured: true },
+        ],
+      }),
+    );
+  });
+
+  it("probes configured fallbacks missing from the prepared inventory", async () => {
+    const providers = [
+      { id: "openai", label: "OpenAI", isConfigured: vi.fn(() => true) },
+      { id: "google", label: "Google", isConfigured: vi.fn(() => false) },
+    ];
+    mocks.listSpeechProviders.mockReturnValue(providers);
+    mocks.resolveTtsProviderOrder.mockReturnValue(["openai", "google", "voice-model-only"]);
+    mocks.isTtsProviderConfigured.mockImplementation((_config, provider) => {
+      const providerId = typeof provider === "string" ? provider : provider.id;
+      return providerId !== "google";
+    });
+
+    const { ttsHandlers } = await import("./tts.js");
+    const respond = vi.fn();
+    await expectDefined(
+      ttsHandlers["tts.status"],
+      'ttsHandlers["tts.status"] test invariant',
+    )({
+      params: {},
+      respond,
+      context: { getRuntimeConfig: mocks.getRuntimeConfig },
+    } as never);
+
+    expect(mocks.isTtsProviderConfigured.mock.calls.map((call) => call[1])).toEqual([
+      providers[0],
+      providers[1],
+      "voice-model-only",
+    ]);
+    expect(respond).toHaveBeenCalledWith(
+      true,
+      expect.objectContaining({
+        fallbackProvider: "voice-model-only",
+        fallbackProviders: ["voice-model-only"],
+        providerStates: [
+          { id: "openai", label: "OpenAI", configured: true },
+          { id: "google", label: "Google", configured: false },
+        ],
+      }),
+    );
+  });
+
   it.each(["tts.status", "tts.providers"] as const)(
     "%s keeps invalid providers in the catalog as unconfigured",
     async (method) => {
@@ -124,9 +206,10 @@ describe("ttsHandlers", () => {
       };
       mocks.listSpeechProviders.mockReturnValue([invalidProvider]);
       mocks.resolveTtsProviderOrder.mockReturnValue(["openai", "gradium"]);
-      mocks.isTtsProviderConfigured.mockImplementation(
-        (_config, provider) => provider !== "gradium",
-      );
+      mocks.isTtsProviderConfigured.mockImplementation((_config, provider) => {
+        const providerId = typeof provider === "string" ? provider : provider.id;
+        return providerId !== "gradium";
+      });
       const { ttsHandlers } = await import("./tts.js");
       const respond = vi.fn();
 
