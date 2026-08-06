@@ -199,6 +199,7 @@ export async function handleClickClackInbound(params: {
           activity?.setProvenance(turnProvenance);
         },
         onItemEvent: activity.onItemEvent,
+        registerProgressVisibilityListener: activity.registerProgressVisibilityListener,
         commentaryProgressEnabled: true,
         // The durable activity rows are ClickClack's own progress
         // rendering, so item events must flow even when session verbose

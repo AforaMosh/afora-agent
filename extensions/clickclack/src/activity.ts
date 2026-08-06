@@ -139,7 +139,9 @@ type ToolRow = {
 
 /** Publisher wired into one agent turn via `replyOptions.onItemEvent`. */
 export type ClickClackActivityPublisher = {
-  onItemEvent: (payload: ClickClackItemEventPayload) => boolean;
+  onItemEvent: (payload: ClickClackItemEventPayload) => Promise<boolean>;
+  /** Registers the active-turn owner notified after ClickClack accepts a row. */
+  registerProgressVisibilityListener: (listener: () => void) => void;
   /**
    * Records the resolved model/thinking for this turn (from
    * `replyOptions.onModelSelected`); stamped onto subsequent activity rows.
@@ -166,12 +168,24 @@ export function createClickClackActivityPublisher(params: {
   let provenance: ClickClackMessageProvenance | undefined;
   // Single promise chain so POST/PATCH ordering matches frame arrival order.
   let chain: Promise<void> = Promise.resolve();
+  let visibilityListener: (() => void) | undefined;
 
-  const enqueue = (work: () => Promise<void>): Promise<void> => {
-    chain = chain.then(work).catch((error: unknown) => {
+  const reportVisible = () => {
+    try {
+      visibilityListener?.();
+    } catch (error) {
       params.onError?.(error);
+    }
+  };
+
+  const enqueue = (work: () => Promise<boolean>): Promise<boolean> => {
+    const result = chain.then(work).catch((error: unknown) => {
+      params.onError?.(error);
+      return false;
     });
-    return chain;
+    // A failed best-effort operation must not poison later activity or finalization.
+    chain = result.then(() => undefined);
+    return result;
   };
 
   const postRow = (kind: "agent_commentary" | "agent_tool", body: string) =>
@@ -184,27 +198,30 @@ export function createClickClackActivityPublisher(params: {
       provenance,
     });
 
-  const flushCommentary = (segmentKey: string): Promise<void> => {
+  const flushCommentary = (segmentKey: string): Promise<boolean> => {
     const segment = commentaryByItem.get(segmentKey);
     if (!segment) {
-      return Promise.resolve();
+      return Promise.resolve(false);
     }
     if (segment.timer) {
       clearTimeout(segment.timer);
       segment.timer = undefined;
     }
     if (!segment.dirty || !segment.body.trim()) {
-      return Promise.resolve();
+      return Promise.resolve(false);
     }
     segment.dirty = false;
     const body = segment.body;
     return enqueue(async () => {
       if (segment.messageId) {
         await params.client.updateMessageBody(segment.messageId, body);
-        return;
+        reportVisible();
+        return true;
       }
       const posted = await postRow("agent_commentary", body);
       segment.messageId = posted.id;
+      reportVisible();
+      return true;
     });
   };
 
@@ -239,7 +256,9 @@ export function createClickClackActivityPublisher(params: {
         void flushCommentary(key);
       }, flushMs);
     }
-    return true;
+    // Debounced work is not visible yet. Its eventual successful transport
+    // acknowledgement reports through registerProgressVisibilityListener.
+    return false;
   };
 
   const toolRowKey = (payload: ClickClackItemEventPayload): string => {
@@ -255,7 +274,7 @@ export function createClickClackActivityPublisher(params: {
     return itemId.replace(/^(tool|command):/, "");
   };
 
-  const handleDiscreteItem = (payload: ClickClackItemEventPayload): boolean => {
+  const handleDiscreteItem = async (payload: ClickClackItemEventPayload): Promise<boolean> => {
     const body = activityBody(payload);
     if (!body) {
       return false;
@@ -273,14 +292,15 @@ export function createClickClackActivityPublisher(params: {
       if (toolRowKey(payload)) {
         toolRows.set(key, row);
       }
-      void enqueue(async () => {
+      return await enqueue(async () => {
         // Late read is intentional: if the body was upgraded before this POST
         // ran, post the richer body directly and skip the follow-up PATCH.
         const posted = await postRow(kind, row.body);
         row.messageId = posted.id;
         row.sentBody = row.body;
+        reportVisible();
+        return true;
       });
-      return true;
     }
     // Only upgrade the row when the new frame says strictly more (longer
     // body), so a bare lane echo like "read" never clobbers a summary.
@@ -288,17 +308,28 @@ export function createClickClackActivityPublisher(params: {
       return false;
     }
     existing.body = body;
-    void enqueue(async () => {
-      if (existing.messageId && existing.body !== existing.sentBody) {
+    return await enqueue(async () => {
+      // A prior best-effort POST may have failed. Retry the authoritative row
+      // instead of treating the queued upgrade as visible without a message id.
+      if (!existing.messageId) {
+        const posted = await postRow(kind, existing.body);
+        existing.messageId = posted.id;
+        existing.sentBody = existing.body;
+        reportVisible();
+        return true;
+      }
+      if (existing.body !== existing.sentBody) {
         await params.client.updateMessageBody(existing.messageId, existing.body);
         existing.sentBody = existing.body;
+        reportVisible();
+        return true;
       }
+      return false;
     });
-    return true;
   };
 
   return {
-    onItemEvent: (payload) => {
+    onItemEvent: async (payload) => {
       const kind = normalizedItemKind(payload);
       if (STREAMING_COMMENTARY_ITEM_KINDS.has(kind)) {
         return handleCommentary(payload);
@@ -306,7 +337,10 @@ export function createClickClackActivityPublisher(params: {
       if (SKIPPED_ITEM_KINDS.has(kind)) {
         return false;
       }
-      return handleDiscreteItem(payload);
+      return await handleDiscreteItem(payload);
+    },
+    registerProgressVisibilityListener: (listener) => {
+      visibilityListener = listener;
     },
     setProvenance: (next) => {
       provenance = next;

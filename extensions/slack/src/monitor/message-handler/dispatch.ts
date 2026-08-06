@@ -403,6 +403,8 @@ export async function dispatchPreparedSlackMessage(prepared: PreparedSlackMessag
             ? true
             : undefined,
         allowToolLifecycleWhenProgressHidden: statusReactionsEnabled ? true : undefined,
+        registerProgressVisibilityListener: (listener) =>
+          progress.progressDraft.registerVisibilityListener(listener),
         onPartialReply: useStreaming
           ? undefined
           : !previewStreamingEnabled

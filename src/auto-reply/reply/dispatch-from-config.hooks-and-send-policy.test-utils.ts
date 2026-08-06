@@ -2943,6 +2943,53 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
     }
   });
 
+  it("cancels the active-turn receipt when a delayed channel render becomes visible", async () => {
+    vi.useFakeTimers();
+    try {
+      setNoAbort();
+      const deliveredTexts: string[] = [];
+      const dispatcher = createReplyDispatcher({
+        deliver: async (payload) => {
+          deliveredTexts.push(payload.text ?? "");
+        },
+      });
+      const terminal = createDeferred<ReplyPayload>();
+      let reportVisible: (() => void) | undefined;
+      const run = dispatchReplyFromConfig({
+        ctx: buildTestCtx({ ChatType: "direct", SessionKey: "receipt:delayed-progress" }),
+        cfg: emptyConfig,
+        dispatcher,
+        replyResolver: async (_ctx: MsgContext, opts?: GetReplyOptions) => {
+          expect(await opts?.onToolStart?.({ name: "inspect", phase: "start" })).toBe(false);
+          setTimeout(() => reportVisible?.(), 1_500);
+          return await terminal.promise;
+        },
+        replyOptions: {
+          suppressDefaultToolProgressMessages: true,
+          allowProgressCallbacksWhenSourceDeliverySuppressed: true,
+          registerProgressVisibilityListener: (listener) => {
+            reportVisible = listener;
+          },
+          onToolStart: async () => false,
+        },
+      });
+
+      await vi.advanceTimersByTimeAsync(1_499);
+      expect(deliveredTexts).toEqual([]);
+      await vi.advanceTimersByTimeAsync(1);
+      await vi.advanceTimersByTimeAsync(ACTIVE_TURN_RECEIPT_DELAY_MS);
+      expect(deliveredTexts).not.toContain(ACTIVE_TURN_RECEIPT_TEXT);
+
+      terminal.resolve({ text: "delayed-progress final" });
+      await run;
+      dispatcher.markComplete();
+      await dispatcher.waitForIdle();
+      expect(deliveredTexts).toEqual(["delayed-progress final"]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("forwards suppressed tool progress callbacks in message-tool-only mode", async () => {
     setNoAbort();
     sessionStoreMocks.currentEntry = {

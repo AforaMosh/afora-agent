@@ -221,6 +221,9 @@ export function createDiscordDraftPreviewController(params: {
     setProgressNarratorLifecycle(lifecycle: { beginTurn: () => void; stopTurn: () => void }) {
       progressNarratorLifecycle = lifecycle;
     },
+    registerProgressVisibilityListener(listener: () => void) {
+      progressDraft.registerVisibilityListener(listener);
+    },
     markFinalReplyStarted() {
       progressDraftStartedBeforeFinal ||= progressDraft.hasStarted;
       progressDraft.markFinalReplyStarted();

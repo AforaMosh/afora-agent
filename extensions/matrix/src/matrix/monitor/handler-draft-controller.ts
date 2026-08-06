@@ -100,12 +100,19 @@ export async function createMatrixDraftController(params: {
       input.event === "approval"
         ? formatChannelProgressDraftLine(input, options)
         : buildChannelProgressDraftLineForEntry(progressConfigEntry, input, options),
-    update: (text) => {
+    update: async (text, options) => {
       const previewText =
         !progressDraftStreaming && (previewPlan || previewPlanExplanation)
           ? renderPreviewPlan()
           : text.replace(/^• /gmu, "- ");
-      draftStream?.update(previewText);
+      if (!draftStream) {
+        return false;
+      }
+      draftStream.update(previewText);
+      if (options?.flush) {
+        await draftStream.flush();
+      }
+      return true;
     },
   });
 
@@ -128,6 +135,8 @@ export async function createMatrixDraftController(params: {
     }
     return {
       ...options,
+      registerProgressVisibilityListener: (listener) =>
+        progressDraft.registerVisibilityListener(listener),
       onToolStart: async (payload) => {
         return await progressDraft.pushToolEvent(payload);
       },

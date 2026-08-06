@@ -182,6 +182,7 @@ export type DispatchInboundParams = {
     progressPreambleEnabled?: boolean;
     narrationHideCommandText?: boolean;
     onVerboseProgressVisibility?: (isActive: () => boolean) => void;
+    registerProgressVisibilityListener?: (listener: () => void) => void;
     onPlanUpdate?: (payload: {
       phase?: string;
       explanation?: string;

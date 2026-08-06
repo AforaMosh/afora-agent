@@ -1,5 +1,5 @@
 // Discord message processing coverage split by cohesive behavior.
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   notifyDiscordActiveTurnThreadCreated,
   notifyDiscordActiveTurnThreadReplyDelivered,
@@ -24,6 +24,30 @@ import {
 registerDiscordProcessTestLifecycle();
 
 describe("processDiscordMessage draft streaming progress", () => {
+  it("reports a delayed Discord progress draft when it becomes visible", async () => {
+    const elapseProgressDraftStartDelay = useProgressDraftStartDelay();
+    const draftStream = createMockDraftStreamForTest();
+    const onVisible = vi.fn();
+    dispatchInboundMessage.mockImplementationOnce(async (params?: DispatchInboundParams) => {
+      params?.replyOptions?.registerProgressVisibilityListener?.(onVisible);
+      expect(await params?.replyOptions?.onToolStart?.({ name: "exec", phase: "start" })).toBe(
+        false,
+      );
+      expect(onVisible).not.toHaveBeenCalled();
+
+      await elapseProgressDraftStartDelay();
+      expect(onVisible).toHaveBeenCalledOnce();
+      return createNoQueuedDispatchResult();
+    });
+    const ctx = await createAutomaticSourceDeliveryContext({
+      discordConfig: { streaming: { mode: "progress", progress: { label: "Working" } } },
+    });
+
+    await runProcessDiscordMessage(ctx);
+
+    expect(draftStream.flush).toHaveBeenCalled();
+  });
+
   it("reports disabled Discord tool, item, and command progress as not rendered", async () => {
     const rendered: Array<boolean | void> = [];
     dispatchInboundMessage.mockImplementationOnce(async (params?: DispatchInboundParams) => {

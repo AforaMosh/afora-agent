@@ -39,8 +39,12 @@ describe("createClickClackActivityPublisher", () => {
       turnId: "msg_turn",
     });
 
-    publisher.onItemEvent({ itemId: "c1", kind: "preamble", progressText: "Looking at" });
-    publisher.onItemEvent({ itemId: "c1", kind: "preamble", progressText: "Looking at the repo" });
+    void publisher.onItemEvent({ itemId: "c1", kind: "preamble", progressText: "Looking at" });
+    void publisher.onItemEvent({
+      itemId: "c1",
+      kind: "preamble",
+      progressText: "Looking at the repo",
+    });
     await publisher.finalize();
 
     expect(createActivityMessage).toHaveBeenCalledTimes(1);
@@ -63,9 +67,13 @@ describe("createClickClackActivityPublisher", () => {
       flushMs: 10,
     });
 
-    publisher.onItemEvent({ itemId: "c1", kind: "preamble", progressText: "First" });
+    void publisher.onItemEvent({ itemId: "c1", kind: "preamble", progressText: "First" });
     await vi.advanceTimersByTimeAsync(20);
-    publisher.onItemEvent({ itemId: "c1", kind: "preamble", progressText: "First and second" });
+    void publisher.onItemEvent({
+      itemId: "c1",
+      kind: "preamble",
+      progressText: "First and second",
+    });
     await publisher.finalize();
 
     expect(createActivityMessage).toHaveBeenCalledTimes(1);
@@ -82,11 +90,19 @@ describe("createClickClackActivityPublisher", () => {
       flushMs: 10,
     });
 
-    publisher.onItemEvent({ itemId: "c1", kind: "preamble", progressText: "First and second" });
+    void publisher.onItemEvent({
+      itemId: "c1",
+      kind: "preamble",
+      progressText: "First and second",
+    });
     await vi.advanceTimersByTimeAsync(20);
     // Identical snapshot and a stale shorter frame must not queue new flushes.
-    publisher.onItemEvent({ itemId: "c1", kind: "preamble", progressText: "First and second" });
-    publisher.onItemEvent({ itemId: "c1", kind: "preamble", progressText: "First" });
+    void publisher.onItemEvent({
+      itemId: "c1",
+      kind: "preamble",
+      progressText: "First and second",
+    });
+    void publisher.onItemEvent({ itemId: "c1", kind: "preamble", progressText: "First" });
     await publisher.finalize();
 
     expect(createActivityMessage).toHaveBeenCalledTimes(1);
@@ -101,8 +117,8 @@ describe("createClickClackActivityPublisher", () => {
       turnId: "msg_turn",
     });
 
-    publisher.onItemEvent({ itemId: "c1", kind: "preamble", progressText: "before tool" });
-    publisher.onItemEvent({ itemId: "c2", kind: "preamble", progressText: "after tool" });
+    void publisher.onItemEvent({ itemId: "c1", kind: "preamble", progressText: "before tool" });
+    void publisher.onItemEvent({ itemId: "c2", kind: "preamble", progressText: "after tool" });
     await publisher.finalize();
 
     expect(createActivityMessage).toHaveBeenCalledTimes(2);
@@ -122,14 +138,14 @@ describe("createClickClackActivityPublisher", () => {
 
     // The runtime emits one opaque toolCallId across all frames of a call;
     // the lane prefix (tool:/command:) lives on itemId only.
-    publisher.onItemEvent({
+    void publisher.onItemEvent({
       itemId: "tool:toolu_1",
       toolCallId: "toolu_1",
       kind: "tool",
       name: "exec",
     });
     await publisher.finalize();
-    publisher.onItemEvent({
+    void publisher.onItemEvent({
       itemId: "command:toolu_1",
       toolCallId: "toolu_1",
       kind: "command",
@@ -137,7 +153,7 @@ describe("createClickClackActivityPublisher", () => {
       progressText: "ls -la",
     });
     // A shorter late echo must never clobber the richer body.
-    publisher.onItemEvent({ toolCallId: "toolu_1", kind: "tool", name: "exec" });
+    void publisher.onItemEvent({ toolCallId: "toolu_1", kind: "tool", name: "exec" });
     await publisher.finalize();
 
     expect(createActivityMessage).toHaveBeenCalledTimes(1);
@@ -157,8 +173,8 @@ describe("createClickClackActivityPublisher", () => {
       turnId: "msg_turn",
     });
 
-    publisher.onItemEvent({ toolCallId: "toolu_1", kind: "tool", name: "exec" });
-    publisher.onItemEvent({
+    void publisher.onItemEvent({ toolCallId: "toolu_1", kind: "tool", name: "exec" });
+    void publisher.onItemEvent({
       toolCallId: "toolu_1",
       kind: "tool",
       name: "exec",
@@ -182,8 +198,17 @@ describe("createClickClackActivityPublisher", () => {
       turnId: "msg_turn",
     });
 
-    publisher.onItemEvent({ itemId: "p1", kind: "plan", title: "Plan", summary: "step one" });
-    publisher.onItemEvent({ itemId: "life1", kind: "lifecycle", progressText: "internal state" });
+    void publisher.onItemEvent({
+      itemId: "p1",
+      kind: "plan",
+      title: "Plan",
+      summary: "step one",
+    });
+    void publisher.onItemEvent({
+      itemId: "life1",
+      kind: "lifecycle",
+      progressText: "internal state",
+    });
     await publisher.finalize();
 
     expect(createActivityMessage).toHaveBeenCalledTimes(1);
@@ -202,24 +227,24 @@ describe("createClickClackActivityPublisher", () => {
       flushMs: 10,
     });
 
-    publisher.onItemEvent({ itemId: "empty1", kind: "thinking", progressText: " " });
-    publisher.onItemEvent({
+    void publisher.onItemEvent({ itemId: "empty1", kind: "thinking", progressText: " " });
+    void publisher.onItemEvent({
       itemId: "think1",
       kind: "thinking",
       progressText: "Checking the runtime",
     });
     await vi.advanceTimersByTimeAsync(20);
-    publisher.onItemEvent({
+    void publisher.onItemEvent({
       itemId: "think1",
       kind: "thinking",
       progressText: "Checking the runtime and recent rows",
     });
-    publisher.onItemEvent({
+    void publisher.onItemEvent({
       itemId: "reason1",
       kind: "reasoning",
       progressText: "Comparing provider lanes",
     });
-    publisher.onItemEvent({
+    void publisher.onItemEvent({
       itemId: "analysis1",
       kind: "analysis",
       summary: "Mapping this to ClickClack",
@@ -261,9 +286,111 @@ describe("createClickClackActivityPublisher", () => {
       onError,
     });
 
-    publisher.onItemEvent({ itemId: "c1", kind: "preamble", progressText: "streaming" });
+    await expect(
+      publisher.onItemEvent({ itemId: "c1", kind: "preamble", progressText: "streaming" }),
+    ).resolves.toBe(false);
     await expect(publisher.finalize()).resolves.toBeUndefined();
     expect(onError).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports discrete activity visible only after ClickClack accepts the row", async () => {
+    const { client, createActivityMessage } = createClientMock();
+    const publisher = createClickClackActivityPublisher({
+      client,
+      target: { channelId: "chn_1" },
+      turnId: "msg_turn",
+    });
+    const onVisible = vi.fn();
+    publisher.registerProgressVisibilityListener(onVisible);
+
+    const pending = publisher.onItemEvent({
+      toolCallId: "toolu_1",
+      kind: "tool",
+      name: "exec",
+    });
+
+    expect(onVisible).not.toHaveBeenCalled();
+    await expect(pending).resolves.toBe(true);
+    expect(createActivityMessage).toHaveBeenCalledOnce();
+    expect(onVisible).toHaveBeenCalledOnce();
+  });
+
+  it("returns false and does not report visibility when activity creation fails", async () => {
+    const onError = vi.fn();
+    const onVisible = vi.fn();
+    const createActivityMessage = vi.fn(async () => {
+      throw new Error("create failed");
+    });
+    const publisher = createClickClackActivityPublisher({
+      client: {
+        createActivityMessage,
+        updateMessageBody: vi.fn(async () => ({}) as ClickClackMessage),
+      } as ActivityClient,
+      target: { channelId: "chn_1" },
+      turnId: "msg_turn",
+      onError,
+    });
+    publisher.registerProgressVisibilityListener(onVisible);
+
+    await expect(
+      publisher.onItemEvent({ toolCallId: "toolu_1", kind: "tool", name: "exec" }),
+    ).resolves.toBe(false);
+    await expect(publisher.finalize()).resolves.toBeUndefined();
+
+    expect(onError).toHaveBeenCalledOnce();
+    expect(onVisible).not.toHaveBeenCalled();
+  });
+
+  it("returns false when ClickClack rejects an activity update", async () => {
+    const onError = vi.fn();
+    const onVisible = vi.fn();
+    const { client, updateMessageBody } = createClientMock();
+    updateMessageBody.mockRejectedValueOnce(new Error("update failed"));
+    const publisher = createClickClackActivityPublisher({
+      client,
+      target: { channelId: "chn_1" },
+      turnId: "msg_turn",
+      onError,
+    });
+    publisher.registerProgressVisibilityListener(onVisible);
+
+    await expect(
+      publisher.onItemEvent({ toolCallId: "toolu_1", kind: "tool", name: "exec" }),
+    ).resolves.toBe(true);
+    await expect(
+      publisher.onItemEvent({
+        toolCallId: "toolu_1",
+        kind: "tool",
+        name: "exec",
+        progressText: "pnpm test",
+      }),
+    ).resolves.toBe(false);
+
+    expect(onVisible).toHaveBeenCalledOnce();
+    expect(onError).toHaveBeenCalledOnce();
+    await expect(publisher.finalize()).resolves.toBeUndefined();
+  });
+
+  it("keeps debounced commentary false until its accepted POST reports visibility", async () => {
+    const { client, createActivityMessage } = createClientMock();
+    const publisher = createClickClackActivityPublisher({
+      client,
+      target: { channelId: "chn_1" },
+      turnId: "msg_turn",
+      flushMs: 10,
+    });
+    const onVisible = vi.fn();
+    publisher.registerProgressVisibilityListener(onVisible);
+
+    await expect(
+      publisher.onItemEvent({ itemId: "c1", kind: "preamble", progressText: "Working" }),
+    ).resolves.toBe(false);
+    expect(onVisible).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(20);
+    await publisher.finalize();
+    expect(createActivityMessage).toHaveBeenCalledOnce();
+    expect(onVisible).toHaveBeenCalledOnce();
   });
 
   it("stamps resolved provenance onto rows posted after setProvenance", async () => {
@@ -275,7 +402,11 @@ describe("createClickClackActivityPublisher", () => {
     });
 
     publisher.setProvenance({ model: "anthropic/claude-opus-4-8", thinking: "low" });
-    publisher.onItemEvent({ itemId: "c1", kind: "preamble", progressText: "working on it" });
+    void publisher.onItemEvent({
+      itemId: "c1",
+      kind: "preamble",
+      progressText: "working on it",
+    });
     await publisher.finalize();
 
     expect(createActivityMessage).toHaveBeenCalledTimes(1);

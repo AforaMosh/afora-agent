@@ -178,6 +178,12 @@ export type GetReplyOptions = {
    * both lanes at once.
    */
   onVerboseProgressVisibility?: (isActive: () => boolean) => void;
+  /**
+   * Registers the core lifecycle observer that a channel calls only after
+   * asynchronously scheduled progress is confirmed visible. Immediate callback
+   * results still report visibility through their boolean return value.
+   */
+  registerProgressVisibilityListener?: (listener: () => void) => void;
   /** Preserve source-event callback start order for stateful channel progress renderers. */
   preserveProgressCallbackStartOrder?: boolean;
   onPartialReply?: (payload: PartialReplyPayload) => Promise<void> | void;

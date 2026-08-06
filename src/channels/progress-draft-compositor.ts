@@ -58,7 +58,10 @@ export function createChannelProgressDraftCompositor(params: {
   mode: ChannelProgressDraftMode;
   active: boolean;
   seed: string;
-  update: (text: string, options?: ChannelProgressDraftUpdateOptions) => Promise<void> | void;
+  update: (
+    text: string,
+    options?: ChannelProgressDraftUpdateOptions,
+  ) => Promise<boolean | void> | boolean | void;
   deleteCurrent?: () => Promise<void> | void;
   tryNativeUpdate?: (text: string) => Promise<boolean> | boolean;
   /** Publish when structured lines change even if the rendered text does not. */
@@ -126,6 +129,18 @@ export function createChannelProgressDraftCompositor(params: {
   let finalReplyStarted = false;
   let finalReplyDelivered = false;
   let preambleExpiryTimer: ReturnType<typeof setTimeout> | undefined;
+  let visibilityListener: (() => void) | undefined;
+  let lastStartRendered = false;
+
+  const reportVisible = () => {
+    try {
+      visibilityListener?.();
+    } catch (err) {
+      // Observation must never turn an already-confirmed channel render into a
+      // delivery failure.
+      console.warn(`[progress-draft] visibility observer failed: ${String(err)}`);
+    }
+  };
 
   const mergeReasoningProgress = (text?: string, options?: { snapshot?: boolean }): string => {
     if (!text) {
@@ -195,6 +210,7 @@ export function createChannelProgressDraftCompositor(params: {
     narrationText = "";
     planSteps = undefined;
     planExplanation = "";
+    lastStartRendered = false;
   };
 
   const publish = async (options?: { flush?: boolean }): Promise<boolean> => {
@@ -203,9 +219,15 @@ export function createChannelProgressDraftCompositor(params: {
     if (!text || (text === lastRenderedText && !linesChanged)) {
       return false;
     }
+    const updated = await params.update(text, { ...options, lines: [...lines] });
+    if (updated === false) {
+      return false;
+    }
+    // Commit the dedupe snapshot only after the channel accepted the render;
+    // failed/no-op updates must remain retryable and must not claim visibility.
     lastRenderedText = text;
     lastRenderedLines = lines;
-    await params.update(text, { ...options, lines: [...lines] });
+    reportVisible();
     return true;
   };
 
@@ -242,7 +264,7 @@ export function createChannelProgressDraftCompositor(params: {
 
   const gate = createChannelProgressDraftGate({
     onStart: async () => {
-      await render({ flush: true });
+      lastStartRendered = await render({ flush: true });
       schedulePreambleExpiryRefresh();
     },
     setTimeoutFn,
@@ -323,13 +345,15 @@ export function createChannelProgressDraftCompositor(params: {
           maxLines: resolveChannelProgressDraftMaxLines(params.entry),
         })
       : lines;
-    if (shouldStoreLine && nextLines === lines) {
+    const lineChanged = nextLines !== lines;
+    const hasUnconfirmedRender = formatDraftText(nextLines) !== lastRenderedText;
+    if (shouldStoreLine && !lineChanged && !hasUnconfirmedRender) {
       return false;
     }
     // A work line lands between reasoning bursts: commit the current thinking
     // line so the next thought appends as its own line, interleaved with tools
     // in arrival order, instead of replacing the prior thought.
-    if (shouldStoreLine) {
+    if (shouldStoreLine && lineChanged) {
       reasoningRawText = "";
       lastReasoningLine = undefined;
     }
@@ -341,6 +365,7 @@ export function createChannelProgressDraftCompositor(params: {
         lines = nextLines;
         lastRenderedText = text;
         lastRenderedLines = lines;
+        reportVisible();
         return true;
       }
     }
@@ -350,11 +375,14 @@ export function createChannelProgressDraftCompositor(params: {
     }
     if (options?.startImmediately || params.shouldStartNow?.(line)) {
       const alreadyStarted = gate.hasStarted;
+      if (!alreadyStarted) {
+        lastStartRendered = false;
+      }
       await gate.startNow();
       if (!gate.hasStarted) {
         return false;
       }
-      return alreadyStarted ? await render() : true;
+      return alreadyStarted ? await render() : lastStartRendered;
     }
     const alreadyStarted = gate.hasStarted;
     const progressActive = await gate.noteWork();
@@ -371,6 +399,9 @@ export function createChannelProgressDraftCompositor(params: {
   });
 
   return {
+    registerVisibilityListener(listener: () => void) {
+      visibilityListener = listener;
+    },
     get previewToolProgressEnabled() {
       return previewToolProgressEnabled;
     },
@@ -384,7 +415,7 @@ export function createChannelProgressDraftCompositor(params: {
       return gate.hasStarted;
     },
     get isVisible() {
-      return gate.hasStarted && !finalReplyStarted && !finalReplyDelivered;
+      return Boolean(lastRenderedText) && !finalReplyStarted && !finalReplyDelivered;
     },
     get hasStatusHeadline() {
       return Boolean(resolveStatusText());
@@ -444,8 +475,15 @@ export function createChannelProgressDraftCompositor(params: {
         return false;
       }
       if (options?.startImmediately) {
+        const alreadyStarted = gate.hasStarted;
+        if (!alreadyStarted) {
+          lastStartRendered = false;
+        }
         await gate.startNow();
-        return gate.hasStarted ? await render({ flush: true }) : false;
+        if (!gate.hasStarted) {
+          return false;
+        }
+        return alreadyStarted ? await render({ flush: true }) : lastStartRendered;
       }
       const alreadyStarted = gate.hasStarted;
       const progressActive = await gate.noteWork();
@@ -484,14 +522,14 @@ export function createChannelProgressDraftCompositor(params: {
         return true;
       }
       const alreadyStarted = gate.hasStarted;
+      if (!alreadyStarted) {
+        lastStartRendered = false;
+      }
       await gate.startNow();
       if (!gate.hasStarted) {
         return false;
       }
-      if (alreadyStarted) {
-        await render();
-      }
-      return true;
+      return alreadyStarted ? await render() : lastStartRendered;
     },
     async pushPreambleHeadline(text?: string, options?: { itemId?: string }) {
       if (!params.active || params.mode !== "progress" || progressSuppressed) {
@@ -656,16 +694,16 @@ export function createChannelProgressDraftCompositor(params: {
         lastIdLessCommentaryBare = bareNormalized;
       }
       const alreadyStarted = gate.hasStarted;
+      if (!alreadyStarted) {
+        lastStartRendered = false;
+      }
       await gate.startNow();
       if (!gate.hasStarted) {
         return false;
       }
-      if (alreadyStarted) {
-        await render();
-      }
-      // True means the sanitized commentary was accepted into the visible
-      // lane. A first item renders inside gate.onStart, not this call site.
-      return true;
+      // A first item renders inside gate.onStart; preserve its confirmed
+      // result instead of treating admission to the delayed lane as visibility.
+      return alreadyStarted ? await render() : lastStartRendered;
     },
   };
 }

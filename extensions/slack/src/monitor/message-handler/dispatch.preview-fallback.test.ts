@@ -46,6 +46,7 @@ let mockedSlackStreamingMode: "off" | "partial" | "block" | "progress" = "partia
 let mockedSlackDraftMode: "replace" | "status_final" | "append" = "append";
 let mockedPinnedMainDmOwner: string | undefined;
 let capturedReplyOptions: GetReplyOptions | undefined;
+let mockedProgressVisibilityObserver: (() => void) | undefined;
 let capturedStatusReactionOptions: { enabled?: boolean; initialEmoji?: string } | undefined;
 const statusReactionControllerMock = {
   setQueued: vi.fn(async () => {}),
@@ -151,6 +152,7 @@ let mockedReplyOptionEvents: Array<
   | { kind: "assistant_start" }
   | { kind: "reasoning"; text?: string; isReasoningSnapshot?: boolean }
   | { kind: "reasoning_end" }
+  | { kind: "advance_progress_delay" }
 > = [];
 
 function requireCapturedTyping() {
@@ -964,6 +966,9 @@ vi.mock("openclaw/plugin-sdk/channel-inbound", async (importOriginal) => {
     ...actual,
     dispatchChannelInboundTurn: async (params: DispatchParams) => {
       capturedReplyOptions = params.replyOptions as typeof capturedReplyOptions;
+      if (mockedProgressVisibilityObserver) {
+        params.replyOptions?.registerProgressVisibilityListener?.(mockedProgressVisibilityObserver);
+      }
       if (mockedReplyOptionEvents.length > 0) {
         for (const entry of mockedReplyOptionEvents) {
           if (entry.kind === "item") {
@@ -1031,6 +1036,8 @@ vi.mock("openclaw/plugin-sdk/channel-inbound", async (importOriginal) => {
             });
           } else if (entry.kind === "reasoning_end") {
             await params.replyOptions?.onReasoningEnd?.();
+          } else if (entry.kind === "advance_progress_delay") {
+            await vi.advanceTimersByTimeAsync(1_500);
           } else {
             await params.replyOptions?.onPartialReply?.({ text: entry.text });
           }
@@ -1122,6 +1129,7 @@ describe("dispatchPreparedSlackMessage preview fallback", () => {
     mockedSlackDraftMode = "append";
     mockedPinnedMainDmOwner = undefined;
     capturedReplyOptions = undefined;
+    mockedProgressVisibilityObserver = undefined;
     capturedStatusReactionOptions = undefined;
     capturedTyping = undefined;
     mockedReplyThreadTs = THREAD_TS;
@@ -3759,6 +3767,29 @@ describe("dispatchPreparedSlackMessage preview fallback", () => {
 
     expect(draftStream.update).toHaveBeenCalledWith("Shelling\n\n🛠️ Exec\n• done");
     expect(draftStream.update.mock.calls.flat().join("\n")).not.toContain("pnpm test");
+  });
+
+  it("reports a delayed Slack progress draft when its initial flush succeeds", async () => {
+    vi.useFakeTimers();
+    try {
+      const draftStream = createDraftStreamStub();
+      createSlackDraftStreamMock.mockReturnValueOnce(draftStream);
+      mockedSlackStreamingMode = "progress";
+      mockedSlackDraftMode = "status_final";
+      mockedDispatchSequence = [];
+      mockedProgressVisibilityObserver = vi.fn();
+      mockedReplyOptionEvents = [
+        { kind: "tool_start", name: "exec", phase: "start" },
+        { kind: "advance_progress_delay" },
+      ];
+
+      await dispatchPreparedSlackMessage(createPreparedSlackMessage({}));
+
+      expect(draftStream.flush).toHaveBeenCalledOnce();
+      expect(mockedProgressVisibilityObserver).toHaveBeenCalledOnce();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("suppresses standalone Slack tool progress when progress lines are disabled", async () => {

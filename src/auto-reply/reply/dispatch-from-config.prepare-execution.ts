@@ -56,6 +56,10 @@ export async function prepareDispatchExecution(state: ChooseDispatchRouteReadySt
     suppressDelivery,
     turnLedger,
   } = state;
+  // A channel draft can cross its delayed-start gate after the originating
+  // callback already returned false. Register the receipt owner at the producer
+  // boundary so only the later confirmed render cancels the pending receipt.
+  params.replyOptions?.registerProgressVisibilityListener?.(() => activeTurnReceipt.noteVisible());
   // When automatic source delivery is suppressed, still let the agent process
   // the inbound message (context, memory, tool calls) but suppress automatic
   // outbound source delivery.

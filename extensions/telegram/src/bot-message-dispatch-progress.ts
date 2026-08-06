@@ -362,6 +362,8 @@ export function createTelegramProgressController(params: {
     },
     progressPreambleEnabled:
       params.streamMode === "progress" && answerLane.stream ? true : undefined,
+    registerProgressVisibilityListener: (listener: () => void) =>
+      compositor.registerVisibilityListener(listener),
     pushReasoningProgress,
     pushThinkingTokenProgress,
     pushToolProgress,

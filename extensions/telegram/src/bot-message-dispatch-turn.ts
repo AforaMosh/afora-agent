@@ -236,6 +236,7 @@ export async function runTelegramDispatchTurn(params: {
             onVerboseProgressVisibility: (isActive) => {
               params.progress.setVerboseProgressActive(isActive);
             },
+            registerProgressVisibilityListener: params.progress.registerProgressVisibilityListener,
             commentaryProgressEnabled:
               params.streamMode === "progress"
                 ? params.progress.commentaryProgressEnabled

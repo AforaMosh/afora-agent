@@ -471,6 +471,8 @@ export async function dispatchMattermostInboundTurn(
             allowProgressCallbacksWhenSourceDeliverySuppressed: draftToolProgressEnabled
               ? true
               : undefined,
+            registerProgressVisibilityListener: (listener) =>
+              progressDraft.registerVisibilityListener(listener),
             preserveProgressCallbackStartOrder: draftPreviewEnabled ? true : undefined,
             onObservedReplyDelivery: draftToolProgressEnabled
               ? () => draftStream.clear()

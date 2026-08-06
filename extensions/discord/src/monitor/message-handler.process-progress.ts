@@ -88,6 +88,8 @@ export function createDiscordMessageProgressRuntime(params: {
   const buildProgressSummaryLine = () => `-# ${progressReceipt.buildSummaryLine()}`;
 
   const replyOptions: Partial<ReplyOptions> = {
+    registerProgressVisibilityListener: (listener) =>
+      draftPreview.registerProgressVisibilityListener(listener),
     onAssistantMessageStart: draftPreview.draftStream ? handleAssistantMessageBoundary : undefined,
     onReasoningEnd: draftPreview.draftStream
       ? () => {

@@ -2918,6 +2918,7 @@ describe("matrix monitor handler draft streaming", () => {
     info: { kind: string },
   ) => Promise<unknown>;
   type ReplyOpts = {
+    registerProgressVisibilityListener?: (listener: () => void) => void;
     onReplyStart?: () => Promise<void> | void;
     onPartialReply?: (payload: { text: string }) => void;
     onBlockReplyQueued?: (
@@ -3227,6 +3228,30 @@ describe("matrix monitor handler draft streaming", () => {
     expect(deliverMatrixRepliesMock).not.toHaveBeenCalled();
     expect(redactEventMock).not.toHaveBeenCalled();
     await finish();
+  });
+
+  it("reports delayed Matrix progress only after the initial draft flush", async () => {
+    vi.useFakeTimers();
+    let finish: (() => Promise<void>) | undefined;
+    try {
+      const harness = createStreamingHarness({
+        streaming: "progress",
+        previewToolProgressEnabled: true,
+      });
+      const turn = await harness.dispatch();
+      finish = turn.finish;
+      const onVisible = vi.fn();
+      turn.opts.registerProgressVisibilityListener?.(onVisible);
+
+      expect(await turn.opts.onToolStart?.({ name: "read_file", phase: "start" })).toBe(false);
+      await vi.advanceTimersByTimeAsync(PROGRESS_DRAFT_START_DELAY_MS - 1);
+      expect(onVisible).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(1);
+      expect(onVisible).toHaveBeenCalledOnce();
+    } finally {
+      await finish?.();
+      vi.useRealTimers();
+    }
   });
 
   it("reports filtered Matrix tool, item, and command progress as not rendered", async () => {
