@@ -39,6 +39,16 @@ function preserveMixedModelDirective(
   };
 }
 
+function isModelSelectionDirective(directives: InlineDirectives): boolean {
+  const rawModelDirective = directives.rawModelDirective?.trim().toLowerCase();
+  return (
+    directives.hasModelDirective &&
+    Boolean(rawModelDirective) &&
+    rawModelDirective !== "list" &&
+    rawModelDirective !== "status"
+  );
+}
+
 export function resolveReplyDirectiveRouting(params: {
   commandText: string;
   agentText: string;
@@ -99,7 +109,9 @@ export function resolveReplyDirectiveRouting(params: {
       noMentions.trim() &&
       parseInlineDirectives(noMentions, { modelAliases: params.modelAliases }).cleaned.trim()
     ) {
-      parsed = preserveMixedModelDirective(parsed, parsed.cleaned);
+      parsed = isModelSelectionDirective(parsed)
+        ? preserveMixedModelDirective(parsed, parsed.cleaned)
+        : clearInlineDirectives(parsed.cleaned);
     }
   }
 

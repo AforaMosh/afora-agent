@@ -425,7 +425,10 @@ describe("resolveReplyDirectives", () => {
       modelError: error,
     });
 
-    expect(result).toEqual({ kind: "reply", reply: { text: error.message } });
+    expect(result).toEqual({
+      kind: "reply",
+      reply: { text: error.message, isError: true },
+    });
     expect(typing.cleanup).toHaveBeenCalledOnce();
     expect(mocks.applyInlineDirectiveOverrides).not.toHaveBeenCalled();
   });
@@ -439,7 +442,7 @@ describe("resolveReplyDirectives", () => {
 
     expect(result).toEqual({
       kind: "reply",
-      reply: { text: MODEL_SELECTION_LOCKED_MESSAGE },
+      reply: { text: MODEL_SELECTION_LOCKED_MESSAGE, isError: true },
     });
     expect(typing.cleanup).toHaveBeenCalledOnce();
     expect(mocks.applyInlineDirectiveOverrides).not.toHaveBeenCalled();

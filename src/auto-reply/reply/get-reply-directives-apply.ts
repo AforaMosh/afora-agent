@@ -263,7 +263,10 @@ export async function applyInlineDirectiveOverrides(params: {
     });
     if (lockedModelResolution.modelSelection) {
       typing.cleanup();
-      return { kind: "reply", reply: { text: MODEL_SELECTION_LOCKED_MESSAGE } };
+      return {
+        kind: "reply",
+        reply: { text: MODEL_SELECTION_LOCKED_MESSAGE, isError: true },
+      };
     }
   }
 
@@ -365,7 +368,10 @@ export async function applyInlineDirectiveOverrides(params: {
       });
       if (modelResolution.errorText) {
         typing.cleanup();
-        return { kind: "reply", reply: { text: modelResolution.errorText } };
+        return {
+          kind: "reply",
+          reply: { text: modelResolution.errorText, isError: true },
+        };
       }
       const modelSelection = modelResolution.modelSelection;
       if (modelSelection) {
@@ -377,7 +383,10 @@ export async function applyInlineDirectiveOverrides(params: {
         });
         if (runtime.kind === "invalid") {
           typing.cleanup();
-          return { kind: "reply", reply: { text: runtime.errorText } };
+          return {
+            kind: "reply",
+            reply: { text: runtime.errorText, isError: true },
+          };
         }
         const applied = await (
           await loadDirectivePersist()
@@ -406,11 +415,11 @@ export async function applyInlineDirectiveOverrides(params: {
         });
         if (applied.status === "rejected") {
           typing.cleanup();
-          return { kind: "reply", reply: { text: applied.message } };
+          return { kind: "reply", reply: { text: applied.message, isError: true } };
         }
         if (applied.status === "conflict") {
           typing.cleanup();
-          return { kind: "reply", reply: { text: applied.message } };
+          return { kind: "reply", reply: { text: applied.message, isError: true } };
         }
         const label = `${modelSelection.provider}/${modelSelection.model}`;
         const labelWithAlias = modelSelection.alias ? `${modelSelection.alias} (${label})` : label;
@@ -490,7 +499,7 @@ export async function applyInlineDirectiveOverrides(params: {
       typing.cleanup();
       return {
         kind: "reply",
-        reply: { text: persistenceState.outcome.errorText },
+        reply: { text: persistenceState.outcome.errorText, isError: true },
       };
     }
     ({ provider, model } = persistenceState.outcome);

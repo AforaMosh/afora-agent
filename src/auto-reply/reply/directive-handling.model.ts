@@ -407,7 +407,7 @@ export async function maybeHandleModelDirectiveInfo(params: {
   }
 
   if (params.directives.rawModelProfile) {
-    return { text: "Auth profile override requires a model selection." };
+    return { text: "Auth profile override requires a model selection.", isError: true };
   }
 
   const pickerCatalog = buildModelPickerCatalog({

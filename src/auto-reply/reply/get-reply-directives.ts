@@ -458,13 +458,13 @@ export async function resolveReplyDirectives(params: {
   } catch (error) {
     if (error instanceof ModelSelectionLockedError) {
       typing.cleanup();
-      return { kind: "reply", reply: { text: error.message } };
+      return { kind: "reply", reply: { text: error.message, isError: true } };
     }
     if (!isSessionWorkStartInvalidatedError(error)) {
       throw error;
     }
     typing.cleanup();
-    return { kind: "reply", reply: { text: error.message } };
+    return { kind: "reply", reply: { text: error.message, isError: true } };
   }
   provider = modelState.provider;
   model = modelState.model;

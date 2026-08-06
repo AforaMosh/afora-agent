@@ -278,6 +278,27 @@ describe("reply directive aliases", () => {
     expect(sessionEntry).toEqual(createSessionEntry());
   });
 
+  it.each([
+    { label: "bare", body: "please reply /model" },
+    { label: "list", body: "please reply /model list" },
+    { label: "status", body: "please reply /model status" },
+  ])("does not preserve a mixed $label model info directive", async ({ body }) => {
+    const { result, sessionEntry } = await resolveModelDirective({ body });
+
+    expect(result.kind).toBe("continue");
+    if (result.kind !== "continue") {
+      throw new Error(`expected continue result, got ${result.kind}`);
+    }
+    expect(result.result.directives).toEqual(clearInlineDirectives("please reply"));
+    expect(result.result.cleanedBody).toBe("please reply");
+    expect(directiveApplyMocks.apply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        directives: clearInlineDirectives("please reply"),
+      }),
+    );
+    expect(sessionEntry).toEqual(createSessionEntry());
+  });
+
   it("parses configured alias session scope through the inline directive boundary", () => {
     const cfg = configWithModelAlias("fable");
     const parsed = parseInlineDirectives("/fable -s", {

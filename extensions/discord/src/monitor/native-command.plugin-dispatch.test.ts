@@ -15,6 +15,7 @@ import {
   createTestRegistry,
   setActivePluginRegistry,
 } from "openclaw/plugin-sdk/plugin-test-runtime";
+import { setReplyPayloadMetadata } from "openclaw/plugin-sdk/reply-payload-testing";
 import {
   clearRuntimeConfigSnapshot,
   setRuntimeConfigSnapshot,
@@ -1088,11 +1089,14 @@ describe("Discord native plugin command dispatch", () => {
     expect(interaction.deleteReply).toHaveBeenCalledTimes(1);
   });
 
-  it("returns a non-empty no-visible-result final without sending it to Discord", async () => {
+  it("preserves a hidden error final and its metadata without sending it to Discord", async () => {
     const cfg = createConfig();
     const interaction = createInteraction();
     interaction.responseState = "deferred";
-    const finalReply = { text: "scope-aware model selection result" };
+    const finalReply = setReplyPayloadMetadata(
+      { text: "scope-aware model selection result", isError: true },
+      { assistantMessageIndex: 3 },
+    );
     nativeCommandRuntime.dispatchChannelInboundTurn = async (plan) => {
       if (!("deliver" in plan.delivery) || !plan.delivery.deliver) {
         throw new Error("expected direct deliverer");
@@ -1131,6 +1135,7 @@ describe("Discord native plugin command dispatch", () => {
     });
 
     expect(result.hiddenFinalReply).toBe(finalReply);
+    expect(result.hiddenFinalReply?.isError).toBe(true);
     expect(interaction.followUp).not.toHaveBeenCalled();
     expect(interaction.reply).not.toHaveBeenCalled();
     expect(interaction.deleteReply).toHaveBeenCalledTimes(1);

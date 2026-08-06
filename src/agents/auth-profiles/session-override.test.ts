@@ -575,7 +575,7 @@ describe("resolveSessionAuthProfileOverride", () => {
     });
   });
 
-  it("re-resolves a stale user session override when the selected profile becomes unusable", async () => {
+  it("keeps a valid user override during cooldown when a healthy sibling exists", async () => {
     await withAuthState(async (state) => {
       const agentDir = state.agentDir();
       await fs.mkdir(agentDir, { recursive: true });
@@ -620,9 +620,9 @@ describe("resolveSessionAuthProfileOverride", () => {
         isNewSession: false,
       });
 
-      expect(resolved).toBe(TEST_SECONDARY_PROFILE_ID);
-      expect(sessionEntry.authProfileOverride).toBe(TEST_SECONDARY_PROFILE_ID);
-      expect(sessionEntry.authProfileOverrideSource).toBe("auto");
+      expect(resolved).toBe(TEST_PRIMARY_PROFILE_ID);
+      expect(sessionEntry.authProfileOverride).toBe(TEST_PRIMARY_PROFILE_ID);
+      expect(sessionEntry.authProfileOverrideSource).toBe("user");
     });
   });
 

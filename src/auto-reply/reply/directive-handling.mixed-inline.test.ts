@@ -8,9 +8,12 @@ import type { SessionEntry } from "../../config/sessions.js";
 import { triggerSessionPatchHook } from "../../gateway/session-patch-hooks.js";
 import { enqueueSystemEvent } from "../../infra/system-events.js";
 import { MODEL_SELECTION_LOCKED_MESSAGE } from "../../sessions/model-overrides.js";
+import type { InlineDirectives } from "./directive-handling.parse.js";
 import { parseInlineDirectives } from "./directive-handling.parse.js";
 import { applyInlineDirectiveOverrides } from "./get-reply-directives-apply.js";
+import { resolveReplyDirectiveRouting } from "./get-reply-directives-routing.js";
 import { refreshQueuedFollowupSession } from "./queue.js";
+import { buildTestCtx } from "./test-ctx.js";
 
 type PersistenceResult =
   | { status: "current"; entry: SessionEntry }
@@ -74,6 +77,7 @@ async function applyMixedDirectives(params: {
   aliasIndex?: ModelAliasIndex;
   senderIsOwner?: boolean;
   gatewayClientScopes?: string[];
+  directives?: InlineDirectives;
 }) {
   const cfg =
     params.cfg ?? ({ commands: { text: true }, agents: { defaults: {} } } as OpenClawConfig);
@@ -83,9 +87,11 @@ async function applyMixedDirectives(params: {
   const sessionKey = params.sessionKey ?? "agent:main:dm:1";
   const sessionEntry = params.sessionEntry ?? createSessionEntry();
   const sessionStore = { [sessionKey]: sessionEntry };
-  const directives = parseInlineDirectives(params.body, {
-    modelAliases: params.modelAliases,
-  });
+  const directives =
+    params.directives ??
+    parseInlineDirectives(params.body, {
+      modelAliases: params.modelAliases,
+    });
   const allowedModels = params.allowedModels ?? [];
   const aliasIndex = params.aliasIndex ?? { byAlias: new Map(), byKey: new Map() };
   const modelState: Parameters<typeof applyInlineDirectiveOverrides>[0]["modelState"] = {
@@ -248,6 +254,41 @@ describe("mixed inline directives", () => {
   });
 
   it.each([
+    { label: "bare", body: "please reply /model" },
+    { label: "list", body: "please reply /model list" },
+    { label: "status", body: "please reply /model status" },
+  ])("does not acknowledge or mutate a mixed $label model info directive", async ({ body }) => {
+    const cfg = { commands: { text: true }, agents: { defaults: {} } } as OpenClawConfig;
+    const directives = resolveReplyDirectiveRouting({
+      commandText: body,
+      agentText: body,
+      modelAliases: [],
+      canInterpretTextDirectives: true,
+      isAuthorizedSender: true,
+      isGroup: false,
+      wasMentioned: false,
+      ctx: buildTestCtx({ Body: body, CommandAuthorized: true }),
+      cfg,
+      agentId: "main",
+      resetTriggered: false,
+    }).directives;
+    const { result, sessionEntry } = await applyMixedDirectives({
+      body,
+      cfg,
+      directives,
+    });
+
+    expect(result).toMatchObject({
+      kind: "continue",
+      directives: { cleaned: "please reply", hasModelDirective: false },
+    });
+    expect(result).not.toHaveProperty("directiveAck");
+    expect(sessionEntry).toEqual(createSessionEntry());
+    expect(persistenceMocks.persist).not.toHaveBeenCalled();
+    expect(persistStickyModelSelectionBestEffort).not.toHaveBeenCalled();
+  });
+
+  it.each([
     { name: "directive-only", body: "/model openai/gpt-5.6-luna -s" },
     { name: "mixed-content", body: "please reply /model openai/gpt-5.6-luna -s" },
   ])("keeps an owner $name selection session-only", async ({ body }) => {
@@ -391,6 +432,9 @@ describe("mixed inline directives", () => {
       providerOverride: "openai",
       modelOverride: "gpt-5.6-luna",
       modelOverrideSource: "user",
+      authProfileOverride: "openai:work",
+      authProfileOverrideSource: "user",
+      authProfileOverrideCompactionCount: 2,
     });
     const { result } = await applyMixedDirectives({
       body: "/model default -s",
@@ -408,6 +452,9 @@ describe("mixed inline directives", () => {
     expect(sessionEntry.providerOverride).toBeUndefined();
     expect(sessionEntry.modelOverride).toBeUndefined();
     expect(sessionEntry.modelOverrideSource).toBeUndefined();
+    expect(sessionEntry.authProfileOverride).toBeUndefined();
+    expect(sessionEntry.authProfileOverrideSource).toBeUndefined();
+    expect(sessionEntry.authProfileOverrideCompactionCount).toBeUndefined();
     expect(persistStickyModelSelectionBestEffort).not.toHaveBeenCalled();
   });
 
@@ -613,7 +660,10 @@ describe("mixed inline directives", () => {
       senderIsOwner: true,
     });
 
-    expect(result).toEqual({ kind: "reply", reply: { text: MODEL_SELECTION_LOCKED_MESSAGE } });
+    expect(result).toEqual({
+      kind: "reply",
+      reply: { text: MODEL_SELECTION_LOCKED_MESSAGE, isError: true },
+    });
     expect(persistenceMocks.persist).toHaveBeenCalledWith(
       expect.objectContaining({ requireModelSelectionUnlocked: true }),
     );
@@ -641,7 +691,10 @@ describe("mixed inline directives", () => {
       gatewayClientScopes: [],
     });
 
-    expect(result).toEqual({ kind: "reply", reply: { text: MODEL_SELECTION_LOCKED_MESSAGE } });
+    expect(result).toEqual({
+      kind: "reply",
+      reply: { text: MODEL_SELECTION_LOCKED_MESSAGE, isError: true },
+    });
     expect(sessionEntry).toEqual(lockedEntry);
     expect(persistenceMocks.persist).toHaveBeenCalledOnce();
     expect(triggerSessionPatchHook).not.toHaveBeenCalled();

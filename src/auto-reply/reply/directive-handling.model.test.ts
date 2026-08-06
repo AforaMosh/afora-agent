@@ -854,6 +854,17 @@ describe("/model chat UX", () => {
     expect(reply?.text).toContain("Runtime: /model <provider/model> --runtime <runtime> -s");
   });
 
+  it("marks an auth profile without a model selection as an error", async () => {
+    const reply = await resolveModelInfoReply({
+      directives: parseInlineDirectives("/model list@work"),
+    });
+
+    expect(reply).toEqual({
+      text: "Auth profile override requires a model selection.",
+      isError: true,
+    });
+  });
+
   it("includes the thinking level in channel-specific model summaries", async () => {
     const registry = createEmptyPluginRegistry();
     registry.channels = [
@@ -2044,6 +2055,7 @@ describe("handleDirectiveOnly model persist behavior (fixes #1435)", () => {
     );
 
     expect(result?.text).toBe('Runtime "claude-cli" is not supported for openai.');
+    expect(result?.isError).toBe(true);
     expect(sessionEntry).toEqual(initialSessionEntry);
     expect(queueMocks.refreshQueuedFollowupSession).not.toHaveBeenCalled();
   });
@@ -2078,6 +2090,7 @@ describe("handleDirectiveOnly model persist behavior (fixes #1435)", () => {
     );
 
     expect(result?.text).toBe(MODEL_SELECTION_LOCKED_MESSAGE);
+    expect(result?.isError).toBe(true);
     expect(sessionEntry).toEqual(initialSessionEntry);
   });
 
@@ -2108,6 +2121,7 @@ describe("handleDirectiveOnly model persist behavior (fixes #1435)", () => {
       );
 
       expect(result?.text).toBe(MODEL_SELECTION_LOCKED_MESSAGE);
+      expect(result?.isError).toBe(true);
       expect(sessionEntry).toEqual(lockedEntry);
       expect(sessionStore[sessionKey]).toEqual(lockedEntry);
       expect(loadSessionEntry({ sessionKey, storePath })).toEqual(lockedEntry);
@@ -2301,6 +2315,7 @@ describe("handleDirectiveOnly model persist behavior (fixes #1435)", () => {
       );
 
       expect(result?.text).toContain("Model change was not applied");
+      expect(result?.isError).toBe(true);
       expect(persistenceState.outcome).toMatchObject({ kind: "rejected" });
       expect(queueMocks.refreshQueuedFollowupSession).not.toHaveBeenCalled();
       expect(enqueueSystemEvent).not.toHaveBeenCalledWith(
@@ -2346,6 +2361,7 @@ describe("handleDirectiveOnly model persist behavior (fixes #1435)", () => {
       );
 
       expect(result?.text).toContain("Session settings were not applied");
+      expect(result?.isError).toBe(true);
       expect(result?.text).not.toContain("Elevated mode disabled");
       expect(enqueueSystemEvent).not.toHaveBeenCalledWith(
         expect.stringContaining("Elevated"),
@@ -2382,6 +2398,7 @@ describe("handleDirectiveOnly model persist behavior (fixes #1435)", () => {
       );
 
       expect(result?.text).toContain("Session settings were not applied");
+      expect(result?.isError).toBe(true);
       expect(sessionEntry).toMatchObject({ sessionId: "s1", elevatedLevel: "full" });
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
@@ -2420,6 +2437,7 @@ describe("handleDirectiveOnly model persist behavior (fixes #1435)", () => {
       );
 
       expect(result?.text).toContain("Session settings were not applied");
+      expect(result?.isError).toBe(true);
       expect(sessionEntry).toMatchObject({ thinkingLevel: "low" });
       expect(sessionEntry.fastMode).toBeUndefined();
       expect(loadSessionEntry({ sessionKey, storePath })).toEqual(concurrentEntry);
@@ -2849,6 +2867,7 @@ describe("canonical session directive persistence policy", () => {
       );
 
       expect(result?.text).toContain("Model change was not applied");
+      expect(result?.isError).toBe(true);
       expect(sessionEntry).toMatchObject({
         providerOverride: "openai",
         modelOverride: "gpt-5.5",
@@ -2898,6 +2917,7 @@ describe("canonical session directive persistence policy", () => {
       );
 
       expect(result?.text).toContain("Model change was not applied");
+      expect(result?.isError).toBe(true);
       expect(enqueueSystemEvent).not.toHaveBeenCalledWith(
         expect.stringContaining("openai/gpt-4o"),
         expect.anything(),

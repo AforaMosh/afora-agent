@@ -228,9 +228,9 @@ plugins.
         | --- | --- | --- |
         | Request a configured-default change | `/model <model>` as owner/admin | Changes this session and starts a best-effort update of the agent's effective configured default. If the agent has no explicit primary, the target is the shared `agents.defaults.model` fallback |
         | Change only this session | `/model <model> -s` (or `--session`) | Changes this session; configured defaults remain unchanged |
-        | Use the configured default again | `/model default` (with or without `-s`) | Clears this session's selection so it inherits the current configured default |
+        | Use the configured default again | `/model default` (with or without `-s`) | Clears this session's model and auth-profile selection so it inherits the current configured default |
 
-        A non-owner `/model <model>` selection is also session-only because it cannot write configured defaults. Immutable configuration stays unchanged, and asynchronous write failures are logged without reverting the session selection. Resetting with `/model default` does not recover a configured default that an earlier owner/admin selection replaced.
+        A non-owner `/model <model>` selection is also session-only because it cannot write configured defaults. Immutable configuration stays unchanged, and asynchronous write failures are logged without reverting the session selection. Valid explicit user model/profile pins survive `/new`, `/reset`, session rollover, compaction, and cooldown windows; automatic profile pins may rotate or clear. Resetting with `/model default -s` clears the session model/profile pin but does not recover a configured default that an earlier owner/admin selection replaced.
 
         - If the agent is idle, the next run uses it right away.
         - If a run is active, the switch is marked pending and applied at the next clean retry point.
@@ -384,7 +384,7 @@ Direct owner/admin `/model <model>` requests **default scope**: it changes this 
 /model 3           # select by number from picker
 /model openai/gpt-5.4    # direct owner/admin: session + default update request
 /model openai/gpt-5.4 -s # this session only; configured default unchanged
-/model default -s        # clear this session's selection; use configured default
+/model default -s        # clear this session's model/profile selection; use configured default
 /model opus@anthropic:default -s # pin this profile for the current session
 /model default     # same reset; does not restore an older configured default
 /model status      # detailed view with endpoint and API mode

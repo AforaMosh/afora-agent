@@ -74,7 +74,7 @@ export async function applyDiscordModelPickerSelection(params: {
         noticeMessage: `❌ Failed to apply ${params.resolvedModelRef}. Try /model ${params.resolvedModelRef} directly.`,
       };
     }
-    const hiddenNoticeMessage = dispatchResult.hiddenFinalReply?.text?.trim();
+    const hiddenFinalReply = dispatchResult.hiddenFinalReply;
     const effectiveRoute = dispatchResult.effectiveRoute ?? params.route;
     if (params.settleMs > 0) {
       await new Promise((resolve) => {
@@ -84,6 +84,13 @@ export async function applyDiscordModelPickerSelection(params: {
 
     const effectiveModelRef = params.resolveCurrentModel(effectiveRoute);
     const effectiveRuntime = params.resolveCurrentRuntime(effectiveRoute);
+    const currentSelection = `Current selection: ${effectiveModelRef} with runtime ${effectiveRuntime}.`;
+    if (hiddenFinalReply?.isError) {
+      return {
+        status: "rejected",
+        noticeMessage: `${hiddenFinalReply.text?.trim()}\n${currentSelection}`,
+      };
+    }
     const expectedRuntime = normalizeExpectedRuntime(params.selectedRuntime);
     const verified =
       effectiveModelRef === params.resolvedModelRef &&
@@ -100,7 +107,8 @@ export async function applyDiscordModelPickerSelection(params: {
       ? {
           status: "success",
           effectiveModelRef,
-          noticeMessage: hiddenNoticeMessage || `✅ Model set to ${params.resolvedModelRef}.`,
+          noticeMessage:
+            hiddenFinalReply?.text?.trim() || `✅ Model set to ${params.resolvedModelRef}.`,
         }
       : {
           status: "mismatch",

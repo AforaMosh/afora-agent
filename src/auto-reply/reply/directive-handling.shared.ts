@@ -171,7 +171,7 @@ export function rejectSessionDirectiveTransaction(
   if (persistenceState) {
     persistenceState.outcome = { kind: "rejected", errorText };
   }
-  return { text: errorText };
+  return { text: errorText, isError: true };
 }
 
 /** Keeps the first informational/denied acknowledgement while committing valid siblings once. */

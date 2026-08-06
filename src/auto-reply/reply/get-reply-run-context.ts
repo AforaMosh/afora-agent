@@ -68,6 +68,7 @@ export async function prepareReplyRunContext(params: RunPreparedReplyParams) {
     sessionCfg,
     commandAuthorized,
     command,
+    allowTextCommands,
     defaultActivation,
     elevatedEnabled,
     elevatedAllowed,
@@ -238,10 +239,10 @@ export async function prepareReplyRunContext(params: RunPreparedReplyParams) {
     normalizedCommandBody === rawBodyTrimmed.toLowerCase();
   const isResetOrNewCommand = /^\/(new|reset)(?:\s|$)/i.test(normalizedCommandBody);
   const commandTurn = resolveCommandTurnContext(ctx);
-  const isExplicitCommandTurn =
-    isNativeCommandTurn(commandTurn) || isTextSlashCommandTurn(commandTurn);
+  const isActiveCommandTurn =
+    isNativeCommandTurn(commandTurn) || (allowTextCommands && isTextSlashCommandTurn(commandTurn));
   if (
-    isExplicitCommandTurn &&
+    isActiveCommandTurn &&
     (!commandAuthorized || !command.isAuthorizedSender) &&
     isWholeMessageCommand &&
     (hasControlCommand(rawBodyTrimmed, cfg) || isResetOrNewCommand)

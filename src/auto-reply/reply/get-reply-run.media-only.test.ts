@@ -999,28 +999,30 @@ describe("runPreparedReply media-only handling", () => {
   });
 
   it.each(["/model openai/gpt-5.5", "/reset examples"])(
-    "keeps suppressed normal command text in the model prompt: %s",
+    "keeps disabled text slash syntax in the model prompt: %s",
     async (body) => {
       vi.mocked(hasControlCommand).mockReturnValue(true);
       const result = await runPreparedReply(
         baseParams({
           ctx: {
-            ...createInboundTurn(body, "internal", "direct"),
+            ...createInboundTurn(body, "discord", "direct"),
+            CommandSource: "text",
             CommandAuthorized: false,
             CommandTurn: {
-              kind: "normal",
-              source: "message",
+              kind: "text-slash",
+              source: "text",
               authorized: false,
+              commandName: body.startsWith("/model") ? "model" : "reset",
               body,
             },
           },
           sessionCtx: {
-            ...createSessionTurn(body, "internal", "direct"),
+            ...createSessionTurn(body, "discord", "direct"),
           },
           commandAuthorized: false,
           command: {
-            surface: "internal",
-            channel: "internal",
+            surface: "discord",
+            channel: "discord",
             isAuthorizedSender: false,
             abortKey: "session-key",
             ownerList: [],
@@ -1028,6 +1030,7 @@ describe("runPreparedReply media-only handling", () => {
             rawBodyNormalized: body,
             commandBodyNormalized: body,
           } as never,
+          allowTextCommands: false,
           isNewSession: false,
         }),
       );
@@ -1042,7 +1045,7 @@ describe("runPreparedReply media-only handling", () => {
     vi.mocked(hasControlCommand).mockReturnValue(true);
     const params = baseParams({
       ctx: {
-        ...createInboundTurn(body, "internal", "direct"),
+        ...createInboundTurn(body, "discord", "direct"),
         CommandSource: "text",
         CommandAuthorized: false,
         CommandTurn: {
@@ -1054,12 +1057,12 @@ describe("runPreparedReply media-only handling", () => {
         },
       },
       sessionCtx: {
-        ...createSessionTurn(body, "internal", "direct"),
+        ...createSessionTurn(body, "discord", "direct"),
       },
       commandAuthorized: false,
       command: {
-        surface: "internal",
-        channel: "internal",
+        surface: "discord",
+        channel: "discord",
         isAuthorizedSender: false,
         abortKey: "session-key",
         ownerList: [],
@@ -1067,6 +1070,45 @@ describe("runPreparedReply media-only handling", () => {
         rawBodyNormalized: body,
         commandBodyNormalized: body,
       } as never,
+      isNewSession: false,
+    });
+
+    await expect(runPreparedReply(params)).resolves.toBeUndefined();
+    expect(runReplyAgent).not.toHaveBeenCalled();
+    expect(params.typing.cleanup).toHaveBeenCalledOnce();
+  });
+
+  it("silently drops an unauthorized native command even when text commands are disabled", async () => {
+    const body = "/model openai/gpt-5.5";
+    vi.mocked(hasControlCommand).mockReturnValue(true);
+    const params = baseParams({
+      ctx: {
+        ...createInboundTurn(body, "discord", "direct"),
+        CommandSource: "native",
+        CommandAuthorized: false,
+        CommandTurn: {
+          kind: "native",
+          source: "native",
+          authorized: false,
+          commandName: "model",
+          body,
+        },
+      },
+      sessionCtx: {
+        ...createSessionTurn(body, "discord", "direct"),
+      },
+      commandAuthorized: false,
+      command: {
+        surface: "discord",
+        channel: "discord",
+        isAuthorizedSender: false,
+        abortKey: "session-key",
+        ownerList: [],
+        senderIsOwner: false,
+        rawBodyNormalized: body,
+        commandBodyNormalized: body,
+      } as never,
+      allowTextCommands: false,
       isNewSession: false,
     });
 

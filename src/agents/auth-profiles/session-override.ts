@@ -301,8 +301,13 @@ export async function resolveSessionAuthProfileOverride(params: {
     current = undefined;
   }
 
-  // Explicit user picks should survive provider rotation order changes.
-  if (current && order.length > 0 && !order.includes(current) && source !== "user") {
+  // Explicit user pins are strict until the profile disappears or changes provider.
+  if (source === "user" && current) {
+    return current;
+  }
+
+  // Automatic pins must stay inside the currently configured rotation order.
+  if (current && order.length > 0 && !order.includes(current)) {
     await clearSessionAuthProfileOverride({ sessionEntry, sessionStore, sessionKey, storePath });
     current = undefined;
   }
@@ -311,10 +316,7 @@ export async function resolveSessionAuthProfileOverride(params: {
     return undefined;
   }
 
-  if (
-    (source !== "user" || !current) &&
-    order.every((profileId) => isProfileGloballyInCooldown(store, profileId))
-  ) {
+  if (order.every((profileId) => isProfileGloballyInCooldown(store, profileId))) {
     // An automatic pin must not trap later turns on an unavailable provider.
     if (current) {
       const latest = await persistSessionAuthProfileOverrideState({
@@ -376,13 +378,8 @@ export async function resolveSessionAuthProfileOverride(params: {
     current && isProfileInCooldown(store, current)
       ? order.find((profileId) => profileId !== current && !isProfileInCooldown(store, profileId))
       : undefined;
-  // User-pinned profiles persist unless unusable/mismatched. Auto-selected
-  // profiles rotate on new sessions or compaction boundaries.
   if (replacementForUnusableCurrent) {
     current = undefined;
-  }
-  if (source === "user" && current && !isNewSession) {
-    return current;
   }
 
   let next = current;

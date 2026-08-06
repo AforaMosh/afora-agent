@@ -205,7 +205,8 @@ function listDiscordModelPickerProviderModels(
   if (!modelSet) {
     return [];
   }
-  return [...modelSet].toSorted((left, right) => left.localeCompare(right));
+  // Legacy index callbacks depend on JavaScript's original UTF-16 code-unit ordering.
+  return [...modelSet].toSorted((left, right) => (left < right ? -1 : left > right ? 1 : 0));
 }
 
 function resolveDiscordModelPickerModelRefByToken(
