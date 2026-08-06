@@ -348,6 +348,7 @@ export const talkClientHandlers: GatewayRequestHandlers = {
           ...(tools.length > 0 ? { tools } : {}),
           ...launchOptions,
         };
+        const terminal = browserSession.bindBrowserSessionTerminal(browserSessionRequest);
         const session = await resolution.provider.createBrowserSession(browserSessionRequest);
         let canceling: Promise<void> | undefined;
         const cancelSession = () => {
@@ -420,7 +421,7 @@ export const talkClientHandlers: GatewayRequestHandlers = {
             const connId = ownerConnId;
             if (connId) {
               const identity = { agentId, sessionKey, voiceSessionId };
-              const allocation = await browserSession.prepareBrowserAllocationForClient({
+              const allocation = await terminal.prepare({
                 ...identity,
                 connId,
                 durableCreated,
@@ -438,7 +439,7 @@ export const talkClientHandlers: GatewayRequestHandlers = {
                 { voiceSessionId, expiresAt: now + LEGACY_VOICE_BINDING_TTL_MS },
               );
               const allocationDetails = usesBrowserAllocations
-                ? { allocationId: allocation.allocationId }
+                ? { allocationId: allocation.allocationId, terminal: terminal.outcome() }
                 : {};
               respond(true, { ...session, voiceSessionId, ...allocationDetails }, undefined);
               return;

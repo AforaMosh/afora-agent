@@ -12,6 +12,9 @@ import { REALTIME_VOICE_DESCRIBE_VIEW_TOOL_NAME } from "../../talk/describe-view
 import { buildTalkRealtimeConfig } from "./talk-shared.js";
 import { talkHandlers } from "./talk.js";
 
+const TERMINAL_HOOK = Symbol.for("openclaw.internal.realtime-voice-browser-session-terminal.v1");
+type TerminalOutcome = { outcome: "completed" | "error"; message?: string };
+
 const mocks = vi.hoisted(() => ({
   getRuntimeConfig: vi.fn<() => OpenClawConfig>(),
   readConfigFileSnapshot: vi.fn(),
@@ -105,9 +108,12 @@ const mocks = vi.hoisted(() => ({
     ...params,
     allocationId: "allocation-1",
   })),
-  commitBrowserAllocation: vi.fn(() => ({ state: "committed" as const })),
+  commitBrowserAllocation: vi.fn<
+    () => { state: "committed" } | { state: "terminal"; terminal: TerminalOutcome }
+  >(() => ({ state: "committed" })),
   abortBrowserAllocation: vi.fn(async () => ({ state: "aborted" as const })),
   closeBrowserAllocation: vi.fn(async () => false),
+  terminateBrowserAllocation: vi.fn(() => undefined),
   acquireBrowserCreationLease: vi.fn(),
   browserCreationLeaseAssertActive: vi.fn(),
   browserCreationLeaseRelease: vi.fn(),
@@ -225,6 +231,7 @@ vi.mock("../talk-client-browser-allocations.js", () => ({
   commitBrowserAllocation: mocks.commitBrowserAllocation,
   abortBrowserAllocation: mocks.abortBrowserAllocation,
   closeBrowserAllocation: mocks.closeBrowserAllocation,
+  terminateBrowserAllocation: mocks.terminateBrowserAllocation,
 }));
 
 vi.mock("../talk-realtime-relay.js", async (importOriginal) => {
@@ -3187,16 +3194,23 @@ describe("talk.client.create handler", () => {
   });
 
   it("prepares browser allocation ownership for capable clients", async () => {
+    const terminal = { outcome: "error" as const, message: "sideband failed" };
     mocks.resolveConfiguredRealtimeVoiceProvider.mockReturnValue({
       provider: {
         id: "openai",
         label: "OpenAI Realtime",
         isConfigured: () => true,
-        createBrowserSession: vi.fn(async () => ({
-          provider: "openai",
-          transport: "webrtc" as const,
-          clientSecret: "secret",
-        })),
+        createBrowserSession: vi.fn(async (input: unknown) => {
+          const onTerminal = Reflect.get(input as object, TERMINAL_HOOK) as (
+            outcome: TerminalOutcome,
+          ) => void;
+          onTerminal(terminal);
+          return {
+            provider: "openai",
+            transport: "webrtc" as const,
+            clientSecret: "secret",
+          };
+        }),
         createBridge: vi.fn(),
       },
       providerConfig: { apiKey: "openai-key" },
@@ -3216,7 +3230,12 @@ describe("talk.client.create handler", () => {
     expectRespondOk(respond, {
       voiceSessionId: "voice-test",
       allocationId: "allocation-1",
+      terminal,
     });
+    expect(mocks.terminateBrowserAllocation).toHaveBeenCalledWith(
+      expect.objectContaining({ allocationId: "allocation-1" }),
+      terminal,
+    );
     expect(mocks.commitBrowserAllocation).not.toHaveBeenCalled();
     expect(mocks.acquireBrowserCreationLease).toHaveBeenCalledWith("conn-1");
     expect(mocks.acquireBrowserCreationLease.mock.invocationCallOrder[0]).toBeLessThan(

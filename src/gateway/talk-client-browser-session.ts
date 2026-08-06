@@ -6,15 +6,20 @@ import {
 } from "../../packages/gateway-protocol/src/index.js";
 import { resolveTalkSessionAgentId } from "../talk/agent-target.js";
 import { closeClientVoiceSession } from "../talk/client-voice-session.js";
+import {
+  bindInternalRealtimeVoiceBrowserSessionTerminal,
+  type InternalRealtimeVoiceBrowserSessionCreateRequest,
+} from "../talk/provider-internal.js";
 import type { GatewayRequestHandlers } from "./server-methods/types.js";
 import { assertValidParams } from "./server-methods/validation.js";
 import * as browserAllocations from "./talk-client-browser-allocations.js";
 type PrepareAllocation = typeof browserAllocations.prepareBrowserAllocation;
 type BrowserAllocation = Parameters<PrepareAllocation>[0];
 type PreparedBrowserAllocation = Awaited<ReturnType<PrepareAllocation>>;
+type BrowserTerminal = Parameters<typeof browserAllocations.terminateBrowserAllocation>[1];
 type ClientConfig = { config: Parameters<typeof closeClientVoiceSession>[0]["config"] };
 type PrepareForClient = Omit<BrowserAllocation, "closeDurable"> &
-  ClientConfig & { usesBrowserAllocations: boolean };
+  ClientConfig & { usesBrowserAllocations: boolean; terminal?: BrowserTerminal };
 type CloseForClient = Parameters<typeof browserAllocations.closeBrowserAllocation>[0] &
   ClientConfig;
 
@@ -49,12 +54,15 @@ export async function mutateBrowserAllocationRequest(
 async function prepareBrowserAllocationForClient(
   params: PrepareForClient,
 ): Promise<PreparedBrowserAllocation> {
-  const { usesBrowserAllocations, config, ...runtime } = params;
+  const { usesBrowserAllocations, config, terminal, ...runtime } = params;
   const allocation = await browserAllocations.prepareBrowserAllocation({
     ...runtime,
     ...(!usesBrowserAllocations ? { legacyAutoCommit: true as const } : {}),
     closeDurable: () => closeClientVoiceSession({ ...runtime, config }),
   });
+  if (terminal) {
+    browserAllocations.terminateBrowserAllocation(allocation, terminal);
+  }
   if (usesBrowserAllocations) {
     return allocation;
   }
@@ -64,6 +72,32 @@ async function prepareBrowserAllocationForClient(
     throw new Error(result.terminal.message ?? "Realtime provider session ended during startup");
   }
   return allocation;
+}
+
+export function bindBrowserSessionTerminal(
+  request: InternalRealtimeVoiceBrowserSessionCreateRequest,
+) {
+  let active: PreparedBrowserAllocation | undefined;
+  let terminal: BrowserTerminal | undefined;
+  bindInternalRealtimeVoiceBrowserSessionTerminal(request, (outcome) => {
+    if (!terminal) {
+      terminal = outcome;
+      if (active) {
+        browserAllocations.terminateBrowserAllocation(active, outcome);
+      }
+    }
+  });
+  return {
+    prepare: async (params: Omit<PrepareForClient, "terminal">) => {
+      const allocation = await prepareBrowserAllocationForClient({ ...params, terminal });
+      active = allocation;
+      if (terminal) {
+        browserAllocations.terminateBrowserAllocation(allocation, terminal);
+      }
+      return allocation;
+    },
+    outcome: () => terminal,
+  };
 }
 
 export async function closeBrowserAllocationForClient(params: CloseForClient): Promise<void> {
