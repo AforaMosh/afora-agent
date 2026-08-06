@@ -10507,18 +10507,138 @@ public struct TalkClientCreateParams: Codable, Sendable {
 public struct TalkClientCloseParams: Codable, Sendable {
     public let sessionkey: String
     public let voicesessionid: String
+    public let allocationid: String?
 
     public init(
         sessionkey: String,
-        voicesessionid: String)
+        voicesessionid: String,
+        allocationid: String? = nil)
     {
         self.sessionkey = sessionkey
         self.voicesessionid = voicesessionid
+        self.allocationid = allocationid
     }
 
     private enum CodingKeys: String, CodingKey {
         case sessionkey = "sessionKey"
         case voicesessionid = "voiceSessionId"
+        case allocationid = "allocationId"
+    }
+}
+
+public struct TalkClientAllocationParams: Codable, Sendable {
+    public let sessionkey: String
+    public let voicesessionid: String
+    public let allocationid: String
+
+    public init(
+        sessionkey: String,
+        voicesessionid: String,
+        allocationid: String)
+    {
+        self.sessionkey = sessionkey
+        self.voicesessionid = voicesessionid
+        self.allocationid = allocationid
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case sessionkey = "sessionKey"
+        case voicesessionid = "voiceSessionId"
+        case allocationid = "allocationId"
+    }
+}
+
+public struct TalkClientTerminalPayload: Codable, Sendable {
+    public let outcome: AnyCodable
+    public let message: String?
+
+    public init(
+        outcome: AnyCodable,
+        message: String? = nil)
+    {
+        self.outcome = outcome
+        self.message = message
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case outcome
+        case message
+    }
+}
+
+public struct TalkClientAllocationTerminalEvent: Codable, Sendable {
+    public let sessionkey: String
+    public let voicesessionid: String
+    public let allocationid: String
+    public let outcome: AnyCodable
+    public let message: String?
+
+    public init(
+        sessionkey: String,
+        voicesessionid: String,
+        allocationid: String,
+        outcome: AnyCodable,
+        message: String? = nil)
+    {
+        self.sessionkey = sessionkey
+        self.voicesessionid = voicesessionid
+        self.allocationid = allocationid
+        self.outcome = outcome
+        self.message = message
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case sessionkey = "sessionKey"
+        case voicesessionid = "voiceSessionId"
+        case allocationid = "allocationId"
+        case outcome
+        case message
+    }
+}
+
+public struct TalkClientAllocationCommittedResult: Codable, Sendable {
+    public let state: String
+
+    public init(
+        state: String)
+    {
+        self.state = state
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case state
+    }
+}
+
+public struct TalkClientAllocationAbortedResult: Codable, Sendable {
+    public let state: String
+
+    public init(
+        state: String)
+    {
+        self.state = state
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case state
+    }
+}
+
+public struct TalkClientAllocationTerminalResult: Codable, Sendable {
+    public let state: String
+    public let terminal: TalkClientTerminalPayload
+
+    public init(
+        state: String,
+        terminal: TalkClientTerminalPayload)
+    {
+        self.state = state
+        self.terminal = terminal
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case state
+        case terminal
     }
 }
 
@@ -18413,6 +18533,40 @@ public enum AuditRunIdentityV1: Codable, Sendable {
         case .unknown(let value): try value.encode(to: encoder)
         case .unsupported(let value): try value.encode(to: encoder)
         case .ambiguous(let value): try value.encode(to: encoder)
+        }
+    }
+}
+
+public enum TalkClientAllocationMutationResult: Codable, Sendable {
+    case committed(TalkClientAllocationCommittedResult)
+    case aborted(TalkClientAllocationAbortedResult)
+    case terminal(TalkClientAllocationTerminalResult)
+
+    private enum CodingKeys: String, CodingKey {
+        case discriminator = "state"
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let discriminator = try container.decode(String.self, forKey: .discriminator)
+        switch discriminator {
+        case "committed": self = try .committed(TalkClientAllocationCommittedResult(from: decoder))
+        case "aborted": self = try .aborted(TalkClientAllocationAbortedResult(from: decoder))
+        case "terminal": self = try .terminal(TalkClientAllocationTerminalResult(from: decoder))
+        default:
+            throw DecodingError.dataCorruptedError(
+                forKey: .discriminator,
+                in: container,
+                debugDescription: "Unknown TalkClientAllocationMutationResult discriminator value"
+            )
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        switch self {
+        case .committed(let value): try value.encode(to: encoder)
+        case .aborted(let value): try value.encode(to: encoder)
+        case .terminal(let value): try value.encode(to: encoder)
         }
     }
 }

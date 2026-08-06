@@ -35,6 +35,34 @@ import {
 import { ADMIN_SCOPE } from "../operator-scopes.js";
 import type { TalkHandoffTurnResult } from "../talk-handoff.js";
 
+type RealtimeVoiceInitialItem = {
+  role: "user" | "assistant";
+  text: string;
+};
+
+export function boundRealtimeVoiceInitialItems(
+  items: readonly RealtimeVoiceInitialItem[],
+  maxUtf8Bytes: number,
+): RealtimeVoiceInitialItem[] {
+  // A UTF-8 byte ceiling is conservative across tokenizers while preserving
+  // the newest conversation turns for providers with bounded startup context.
+  let remainingBytes = maxUtf8Bytes;
+  const newestFirst: RealtimeVoiceInitialItem[] = [];
+  for (let index = items.length - 1; index >= 0; index -= 1) {
+    const item = items[index];
+    if (!item) {
+      continue;
+    }
+    const itemBytes = Buffer.byteLength(item.text, "utf8");
+    if (itemBytes > remainingBytes) {
+      break;
+    }
+    newestFirst.push(item);
+    remainingBytes -= itemBytes;
+  }
+  return newestFirst.toReversed();
+}
+
 /** Resolve the Talk session mode, defaulting managed-room transports to stt-tts. */
 export function normalizeTalkSessionMode(params: { mode?: string; transport?: string }): TalkMode {
   return (

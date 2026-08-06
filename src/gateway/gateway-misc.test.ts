@@ -523,11 +523,21 @@ describe("gateway broadcaster", () => {
       send: vi.fn(),
       close: vi.fn(),
     };
+    const talkSocket: TestSocket = {
+      bufferedAmount: 0,
+      send: vi.fn(),
+      close: vi.fn(),
+    };
 
     const clients = new Set<GatewayWsClient>([
       makeOperatorWsClient("c-approvals", approvalsSocket, ["operator.approvals"]),
       makeOperatorWsClient("c-pairing", pairingSocket, ["operator.pairing"]),
       makeOperatorWsClient("c-read", readSocket, ["operator.read"]),
+      makeGatewayWsClient("c-talk", talkSocket, {
+        role: "operator",
+        scopes: ["operator.talk"],
+        caps: [GATEWAY_CLIENT_CAPS.BROWSER_ALLOCATION_V1],
+      } as GatewayWsClient["connect"]),
     ]);
 
     const { broadcast, broadcastToConnIds } = createGatewayBroadcaster({ clients });
@@ -538,10 +548,18 @@ describe("gateway broadcaster", () => {
     expect(approvalsSocket.send).toHaveBeenCalledTimes(1);
     expect(pairingSocket.send).toHaveBeenCalledTimes(1);
     expect(readSocket.send).toHaveBeenCalledTimes(0);
+    expect(talkSocket.send).toHaveBeenCalledTimes(0);
 
     broadcastToConnIds("tick", { ts: 1 }, new Set(["c-read"]));
     broadcastToConnIds("talk.event", { type: "session.ready" }, new Set(["c-read"]));
+    broadcastToConnIds("talk.event", { type: "session.ready" }, new Set(["c-talk"]));
+    broadcastToConnIds(
+      "talk.client.allocation.terminal",
+      { allocationId: "allocation-1" },
+      new Set(["c-talk"]),
+    );
     expect(readSocket.send).toHaveBeenCalledTimes(2);
+    expect(talkSocket.send).toHaveBeenCalledTimes(1);
     expect(approvalsSocket.send).toHaveBeenCalledTimes(1);
     expect(pairingSocket.send).toHaveBeenCalledTimes(1);
   });

@@ -55,6 +55,7 @@ export const GATEWAY_EVENTS = [
   "tick",
   "talk.mode",
   "talk.event",
+  "talk.client.allocation.terminal",
   "shutdown",
   "health",
   "heartbeat",

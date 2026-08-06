@@ -1,7 +1,18 @@
 // Gateway Protocol tests cover channels.schema behavior.
 import { Compile } from "typebox/compile";
 import { describe, expect, it } from "vitest";
-import { ChannelsStatusResultSchema, WebLoginWaitParamsSchema } from "./schema/channels.js";
+import {
+  ChannelsStatusResultSchema,
+  TalkClientAllocationAbortedResultSchema,
+  TalkClientAllocationCommittedResultSchema,
+  TalkClientAllocationMutationResultSchema,
+  TalkClientAllocationTerminalResultSchema,
+  TalkClientAllocationTerminalEventSchema,
+  TalkClientAllocationParamsSchema,
+  TalkClientCreateResultSchema,
+  TalkClientMutationResultSchema,
+  WebLoginWaitParamsSchema,
+} from "./schema/channels.js";
 
 /**
  * Channel schema regressions for browser login and status diagnostics.
@@ -79,6 +90,80 @@ describe("ChannelsStatusResultSchema", () => {
           utilization: 0.98,
           cpuCoreRatio: 1.2,
         },
+      }),
+    ).toBe(true);
+  });
+});
+
+describe("Talk client browser allocations", () => {
+  const validateMutation = Compile(TalkClientAllocationParamsSchema);
+  const validateCreate = Compile(TalkClientCreateResultSchema);
+  const validateCommittedResult = Compile(TalkClientAllocationCommittedResultSchema);
+  const validateAbortedResult = Compile(TalkClientAllocationAbortedResultSchema);
+  const validateTerminalResult = Compile(TalkClientAllocationTerminalResultSchema);
+  const validateAllocationResult = Compile(TalkClientAllocationMutationResultSchema);
+  const validateMutationResult = Compile(TalkClientMutationResultSchema);
+  const validateTerminal = Compile(TalkClientAllocationTerminalEventSchema);
+
+  it("accepts bounded opaque allocation ids and lifecycle outcomes", () => {
+    expect(
+      validateMutation.Check({
+        sessionKey: "agent:main:main",
+        voiceSessionId: "voice-1",
+        allocationId: "allocation_1",
+      }),
+    ).toBe(true);
+    expect(
+      validateCreate.Check({
+        provider: "openai",
+        transport: "webrtc",
+        voiceSessionId: "voice-1",
+        allocationId: "allocation_1",
+        clientSecret: "secret",
+      }),
+    ).toBe(true);
+    expect(validateMutationResult.Check({ ok: true })).toBe(true);
+    expect(validateCommittedResult.Check({ state: "committed" })).toBe(true);
+    expect(validateAbortedResult.Check({ state: "aborted" })).toBe(true);
+    expect(
+      validateTerminalResult.Check({
+        state: "terminal",
+        terminal: { outcome: "error", message: "sideband failed" },
+      }),
+    ).toBe(true);
+    expect(validateAllocationResult.Check({ state: "committed" })).toBe(true);
+    expect(validateAllocationResult.Check({ state: "aborted" })).toBe(true);
+    expect(validateAllocationResult.Check({ ok: true })).toBe(false);
+    expect(
+      validateAllocationResult.Check({
+        state: "terminal",
+        terminal: { outcome: "error", message: "sideband failed" },
+      }),
+    ).toBe(true);
+    expect(
+      validateTerminal.Check({
+        sessionKey: "agent:main:main",
+        voiceSessionId: "voice-1",
+        allocationId: "allocation_1",
+        outcome: "error",
+        message: "sideband failed",
+      }),
+    ).toBe(true);
+    expect(
+      validateMutation.Check({
+        sessionKey: "agent:main:main",
+        voiceSessionId: "voice-1",
+        allocationId: "bad:id",
+      }),
+    ).toBe(false);
+    expect(
+      validateCreate.Check({
+        provider: "openai",
+        transport: "webrtc",
+        voiceSessionId: "voice-1",
+        allocationId: "allocation_1",
+        clientSecret: "secret",
+        terminal: { outcome: "error", message: "sideband failed" },
       }),
     ).toBe(true);
   });

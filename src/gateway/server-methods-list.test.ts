@@ -14,6 +14,7 @@ import { coreGatewayHandlers } from "./server-methods.js";
 describe("GATEWAY_EVENTS", () => {
   it("advertises Talk event streams in hello features", () => {
     expect(GATEWAY_EVENTS).toContain("talk.event");
+    expect(GATEWAY_EVENTS).toContain("talk.client.allocation.terminal");
     expect(GATEWAY_EVENTS).not.toContain("talk.realtime.relay");
     expect(GATEWAY_EVENTS).not.toContain("talk.transcription.relay");
   });
@@ -213,6 +214,8 @@ describe("listGatewayMethods", () => {
   it("advertises the versioned Talk session RPCs", () => {
     const methods = listGatewayMethods();
     expect(methods).toContain("talk.client.create");
+    expect(methods).toContain("talk.client.commit");
+    expect(methods).toContain("talk.client.abort");
     expect(methods).toContain("talk.client.transcript");
     expect(methods).toContain("talk.client.close");
     expect(methods).toContain("talk.client.toolCall");

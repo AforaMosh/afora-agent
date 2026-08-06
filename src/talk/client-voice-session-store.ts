@@ -24,6 +24,7 @@ export type ClientVoiceSessionRecord = {
   voiceSessionId: string;
   agentId: string;
   sessionKey: string;
+  browserAllocationId?: string;
   provider?: string;
   origin: "client" | "relay";
   status: "open" | "closed";
@@ -69,6 +70,8 @@ function parseVoiceSessionRecord(value: unknown): ClientVoiceSessionRecord | und
     typeof record.voiceSessionId !== "string" ||
     typeof record.agentId !== "string" ||
     typeof record.sessionKey !== "string" ||
+    (record.browserAllocationId !== undefined &&
+      (typeof record.browserAllocationId !== "string" || !record.browserAllocationId.trim())) ||
     (record.provider !== undefined &&
       (typeof record.provider !== "string" || !record.provider.trim())) ||
     (record.origin !== "client" && record.origin !== "relay") ||
@@ -150,9 +153,11 @@ function parseVoiceSessionRecord(value: unknown): ClientVoiceSessionRecord | und
   ) {
     return undefined;
   }
+  const browserAllocationId = record.browserAllocationId?.trim();
   const provider = record.provider?.trim();
   return {
     ...record,
+    ...(browserAllocationId ? { browserAllocationId } : {}),
     ...(provider ? { provider } : {}),
     consultRunIds,
     effects,

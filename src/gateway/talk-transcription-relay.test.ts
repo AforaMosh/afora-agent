@@ -498,7 +498,7 @@ describe("talk transcription gateway relay", () => {
       transcriptionSessionId: session.transcriptionSessionId,
       connId: "conn-1",
     });
-    cleanupTalkConnection("conn-1", logGateway);
+    await cleanupTalkConnection("conn-1", logGateway);
     await Promise.resolve();
 
     expect(
@@ -740,7 +740,7 @@ describe("talk transcription gateway relay", () => {
       transcriptionSessionId: unrelatedSession.transcriptionSessionId,
       connId: "conn-other",
     });
-    cleanupTalkConnection("conn-other", logGateway);
+    await cleanupTalkConnection("conn-other", logGateway);
     expect(unrelated.close).toHaveBeenCalledOnce();
   });
 

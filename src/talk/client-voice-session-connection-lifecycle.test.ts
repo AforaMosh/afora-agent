@@ -1,25 +1,28 @@
 import fs from "node:fs/promises";
-import os from "node:os";
-import path from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
+import { loadSessionEntry } from "../config/sessions/session-accessor.js";
 import { closeOpenClawAgentDatabasesForTest } from "../state/openclaw-agent-db.js";
 import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
 import { captureEnv, setTestEnvValue } from "../test-utils/env.js";
 import {
   closeClientVoiceSession,
   createOrResumeClientVoiceSession,
+  ensureClientVoiceAgentSessionEntry,
   preflightClientVoiceSessionResume,
 } from "./client-voice-session.js";
 import { clientVoiceSessionTesting } from "./client-voice-session.test-support.js";
 
 const envSnapshot = captureEnv(["OPENCLAW_STATE_DIR"]);
+const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 let tempDir: string;
+const assertConnectionClosed = () => {
+  throw new Error("browser Talk connection closed during startup");
+};
 
 describe("client voice connection lifecycle", () => {
   beforeEach(async () => {
-    tempDir = await fs.realpath(
-      await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-voice-connection-")),
-    );
+    tempDir = await fs.realpath(tempDirs.make("openclaw-voice-connection-"));
     setTestEnvValue("OPENCLAW_STATE_DIR", tempDir);
   });
 
@@ -28,17 +31,17 @@ describe("client voice connection lifecycle", () => {
     closeOpenClawAgentDatabasesForTest();
     closeOpenClawStateDatabaseForTest();
     envSnapshot.restore();
-    await fs.rm(tempDir, { recursive: true, force: true });
   });
 
   it("creates, resumes, and enforces ownership and open state", async () => {
+    const onCreated = vi.fn();
     const voiceSessionId = createOrResumeClientVoiceSession({
       agentId: "main",
       sessionKey: "agent:main:main",
       provider: "google",
       origin: "client",
       voiceSessionId: "voice-1",
-      now: 10,
+      onCreated,
     });
     expect(
       createOrResumeClientVoiceSession({
@@ -46,9 +49,10 @@ describe("client voice connection lifecycle", () => {
         sessionKey: "agent:main:main",
         origin: "client",
         voiceSessionId,
-        now: 20,
+        onCreated,
       }),
     ).toBe(voiceSessionId);
+    expect(onCreated).toHaveBeenCalledTimes(1);
     expect(clientVoiceSessionTesting.readRecord("main", voiceSessionId)).toMatchObject({
       provider: "google",
     });
@@ -148,5 +152,31 @@ describe("client voice connection lifecycle", () => {
         voiceSessionId,
       }),
     ).toThrow("already closed");
+  });
+
+  it("does not commit an agent session after its browser connection closes", async () => {
+    const sessionKey = "agent:main:talk:closed";
+    await expect(
+      ensureClientVoiceAgentSessionEntry({
+        agentId: "main",
+        sessionKey,
+        assertCommitAllowed: assertConnectionClosed,
+      }),
+    ).rejects.toThrow("connection closed during startup");
+    expect(loadSessionEntry({ agentId: "main", sessionKey })).toBeUndefined();
+  });
+
+  it("does not commit a voice record after its browser connection closes", () => {
+    expect(() =>
+      createOrResumeClientVoiceSession({
+        agentId: "main",
+        sessionKey: "agent:main:talk:closed",
+        provider: "openai",
+        origin: "client",
+        voiceSessionId: "voice-closed",
+        assertCommitAllowed: assertConnectionClosed,
+      }),
+    ).toThrow("connection closed during startup");
+    expect(clientVoiceSessionTesting.readRecord("main", "voice-closed")).toBeUndefined();
   });
 });

@@ -37,7 +37,7 @@ describe("VoiceTranscriptOperationRegistry", () => {
     expect(controlOperation).not.toHaveBeenCalled();
 
     const closeOperation = vi.fn();
-    await registry.close(key, async () => {
+    await registry.close(key, "", async () => {
       closeOperation();
     });
     expect(closeOperation).toHaveBeenCalledOnce();
@@ -45,5 +45,32 @@ describe("VoiceTranscriptOperationRegistry", () => {
       registry.run(key, controlOperation, { weight: 0, waitForCapacity: true }),
     ).resolves.toBeUndefined();
     expect(controlOperation).toHaveBeenCalledOnce();
+  });
+
+  it("dedupes identical close fences and serializes distinct failures", async () => {
+    const registry = createVoiceTranscriptOperationRegistry(VOICE_TRANSCRIPT_QUEUE_POLICY);
+    const gate = deferred();
+    const order: string[] = [];
+    const first = vi.fn(async () => {
+      order.push("a:start");
+      await gate.promise;
+      order.push("a:fail");
+      throw new Error("close A failed");
+    });
+    const second = vi.fn(async () => {
+      order.push("b");
+    });
+
+    const closeA = registry.close("agent\0voice-fenced", "allocation-a", first);
+    const duplicateA = registry.close("agent\0voice-fenced", "allocation-a", first);
+    const closeB = registry.close("agent\0voice-fenced", "allocation-b", second);
+    await vi.waitFor(() => expect(first).toHaveBeenCalledOnce());
+    expect(second).not.toHaveBeenCalled();
+
+    gate.resolve();
+    await expect(closeA).rejects.toThrow("close A failed");
+    await expect(duplicateA).rejects.toThrow("close A failed");
+    await expect(closeB).resolves.toBeUndefined();
+    expect(order).toEqual(["a:start", "a:fail", "b"]);
   });
 });
