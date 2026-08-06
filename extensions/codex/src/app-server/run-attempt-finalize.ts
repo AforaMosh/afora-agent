@@ -381,15 +381,13 @@ export async function finalizeCodexAttempt(
     const modelId = usesSupervisionConnection
       ? (resourceState.thread.model ?? effectiveRuntimeModelId)
       : params.modelId;
-    const settlement = params.contextEngineTurnSettlement;
     const finalizeTurn = async (transcript: {
       messagesSnapshot: Parameters<typeof finalizeHarnessContextEngineTurn>[0]["messagesSnapshot"];
       prePromptMessageCount: number;
       sessionManager?: unknown;
       withSessionManagerRewriteLock: <T>(operation: () => Promise<T> | T) => Promise<T>;
     }) => {
-      let deferredMaintenance: Promise<void> | undefined;
-      const finalization = await finalizeHarnessContextEngineTurn({
+      await finalizeHarnessContextEngineTurn({
         contextEngine: activeContextEngine,
         promptError: Boolean(finalPromptError),
         aborted: finalAborted,
@@ -413,31 +411,34 @@ export async function finalizeCodexAttempt(
           await runHarnessContextEngineMaintenance({
             ...maintenanceParams,
             withSessionManagerRewriteLock: transcript.withSessionManagerRewriteLock,
-            onDeferredMaintenance: (promise) => {
-              deferredMaintenance = promise;
-            },
           }),
         config: params.config,
         warn: (message) => embeddedAgentLog.warn(message),
         isHeartbeat,
       });
-      if (finalization.postTurnFinalizationSucceeded && deferredMaintenance) {
-        settlement?.holdDisposalUntil(deferredMaintenance);
-      }
     };
-    if (settlement) {
-      settlement.setFinalizer(async () => {
-        await settlement.withTranscript(
-          {
-            admissionReceipt: params.userTurnTranscriptRecorder?.getAdmissionReceipt(),
-            sessionFile: activeSessionFile,
-            fallbackMessagesSnapshot: finalMessages,
-            fallbackPrePromptMessageCount: promptState.prePromptMessageCount,
-            config: params.config,
-          },
-          finalizeTurn,
-        );
-      });
+    if (params.contextEngineTurnAttempt) {
+      params.contextEngineTurnAttempt.facts = {
+        admission: params.userTurnTranscriptRecorder?.getAdmissionReceipt(),
+        terminalIdempotencyKey: assistantTranscriptIdempotencyKey,
+        sessionIdUsed: activeSessionId,
+        sessionKey: contextSessionKey,
+        sessionTarget: params.sessionTarget,
+        sessionFile: activeSessionFile,
+        promptError: Boolean(finalPromptError),
+        aborted: finalAborted,
+        yieldAborted: Boolean(result.yieldDetected),
+        tokenBudget: effectiveContextTokenBudget,
+        runtimeContext,
+        contextEngineHostSupport: CODEX_APP_SERVER_CONTEXT_ENGINE_HOST,
+        providerId,
+        requestedModelId: usesSupervisionConnection ? undefined : params.requestedModelId,
+        modelId,
+        fallbackReason: usesSupervisionConnection ? undefined : params.fallbackReason,
+        degradedReason: usesSupervisionConnection ? undefined : params.degradedReason,
+        config: params.config,
+        isHeartbeat,
+      };
     } else {
       await finalizeTurn({
         messagesSnapshot: finalMessages,

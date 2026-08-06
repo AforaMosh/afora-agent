@@ -187,6 +187,7 @@ export async function runAgentFallbackCandidates(params: AgentFallbackCycleParam
             (turn.followupRun.run.suppressNextUserMessagePersistence ?? false) ||
             queuedUserMessagePersistedAcrossFallback,
           userTurnTranscriptRecorder,
+          contextEngineLogicalTurnLease: runOptions.contextEngineLogicalTurnLease,
           notifyUserMessagePersisted: () => {
             queuedUserMessagePersistedAcrossFallback = true;
           },

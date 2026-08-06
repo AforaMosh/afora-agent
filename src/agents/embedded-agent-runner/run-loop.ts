@@ -1,10 +1,6 @@
 /** Prepared embedded-agent loop and cleanup. */
 import { OPENCLAW_EMBEDDED_CONTEXT_ENGINE_HOST } from "../../context-engine/host-compat.js";
-import { ensureContextEnginesInitialized } from "../../context-engine/init.js";
-import {
-  resolveContextEngine,
-  resolveContextEngineOwnerPluginId,
-} from "../../context-engine/registry.js";
+import { resolveContextEngineOwnerPluginId } from "../../context-engine/registry.js";
 import { buildContextEngineRuntimeSettings } from "../../context-engine/runtime-settings.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import {
@@ -15,7 +11,6 @@ import { resolveSessionAgentIds } from "../agent-scope.js";
 import type { ToolOutcomeObservation } from "../agent-tools.before-tool-call.js";
 import type { FailoverReason } from "../embedded-agent-helpers.js";
 import { isStrictAgenticExecutionContractActive } from "../execution-contract.js";
-import { createContextEngineTurnSettlement } from "../harness/context-engine-turn-settlement.js";
 import type { McpAppChannelView } from "../mcp-ui-resource.js";
 import { runAgentCleanupStep } from "../run-cleanup-timeout.js";
 import { resolveToolLoopDetectionConfig } from "../tool-loop-detection-config.js";
@@ -267,41 +262,14 @@ export async function runPreparedEmbeddedLoop(
   });
   // Resolve the context engine once and reuse across retries to avoid
   // repeated initialization/connection overhead per attempt.
-  ensureContextEnginesInitialized();
-  const contextEngine = await measureEmbeddedAgentPreparation(
-    "context-engine",
-    () =>
-      resolveContextEngine(params.config, {
-        agentDir,
-        workspaceDir: resolvedWorkspace,
-      }),
-    { config: params.config },
-  );
-  const contextEngineTurnSettlement = params.registerContextEngineTurnSettlement
-    ? createContextEngineTurnSettlement({
-        dispose: async () => {
-          await runAgentCleanupStep({
-            runId: params.runId,
-            sessionId: params.sessionId,
-            step: "context-engine-dispose",
-            log,
-            cleanup: async () => {
-              await contextEngine.dispose?.();
-            },
-          });
-        },
-      })
-    : undefined;
-  if (contextEngineTurnSettlement) {
-    try {
-      params.registerContextEngineTurnSettlement?.(contextEngineTurnSettlement);
-      params.contextEngineTurnSettlement = contextEngineTurnSettlement;
-    } catch (error) {
-      await contextEngineTurnSettlement.dispose();
-      throw error;
-    }
-  }
-  const resolveContextEnginePluginId = () => resolveContextEngineOwnerPluginId(contextEngine);
+  const contextEngine =
+    params.contextEngineLogicalTurnLease?.engine ??
+    (() => {
+      throw new Error("Embedded run is missing its logical-turn context-engine lease.");
+    })();
+  const resolveContextEnginePluginId = () =>
+    params.contextEngineLogicalTurnLease?.effectiveEnginePluginId ??
+    resolveContextEngineOwnerPluginId(contextEngine);
   startupStages.mark("context-engine");
   notifyExecutionPhase("context_engine", { provider, model: modelId });
   try {
@@ -668,7 +636,7 @@ export async function runPreparedEmbeddedLoop(
     forgetPromptBuildDrainCacheForRun(params.runId);
     clearProviderPromptState(params.runId);
     stopRuntimeAuthRefreshTimer();
-    if (!contextEngineTurnSettlement) {
+    if (!params.contextEngineLogicalTurnLease) {
       await runAgentCleanupStep({
         runId: params.runId,
         sessionId: params.sessionId,

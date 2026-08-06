@@ -1661,10 +1661,12 @@ export async function prepareCliRunContext(
     // Context remains session-owned. Trusted helper runs may borrow a different
     // agentDir only for model/auth execution.
     const contextEngineAgentDir = resolveAgentDir(contextEngineConfig, contextEngineSessionAgentId);
-    const resolvedContextEngine = await resolveContextEngine(contextEngineConfig, {
-      agentDir: contextEngineAgentDir,
-      workspaceDir,
-    });
+    const resolvedContextEngine =
+      params.contextEngineLogicalTurnLease?.engine ??
+      (await resolveContextEngine(contextEngineConfig, {
+        agentDir: contextEngineAgentDir,
+        workspaceDir,
+      }));
     const contextEngine =
       resolvedContextEngine.info.id !== "legacy" ? resolvedContextEngine : undefined;
     if (contextEngine) {

@@ -41,7 +41,8 @@ import type {
   ToolResultFormat,
 } from "../../embedded-agent-subscribe.shared-types.js";
 import type { FastModeAutoProgressState } from "../../fast-mode.js";
-import type { ContextEngineTurnSettlement } from "../../harness/context-engine-turn-settlement.js";
+import type { ContextEngineLogicalTurnLease } from "../../harness/context-engine-logical-turn.js";
+import type { ContextEngineTurnAttemptHolder } from "../../harness/context-engine-turn-attempt.js";
 import type { ExpectedAgentHarnessRuntimeArtifact } from "../../harness/runtime-artifact.types.js";
 import type { AgentInternalEvent } from "../../internal-events.js";
 import type { AgentRunSessionTarget } from "../../run-session-target.js";
@@ -389,10 +390,10 @@ export type RunEmbeddedAgentParams = {
   suppressTranscriptOnlyAssistantPersistence?: boolean;
   suppressAssistantErrorPersistence?: boolean;
   userTurnTranscriptRecorder?: UserTurnTranscriptRecorder;
-  /** @internal Candidate-local settlement owned by the outer model fallback loop. */
-  registerContextEngineTurnSettlement?: (settlement: ContextEngineTurnSettlement) => void;
-  /** @internal Resolved settlement shared with the attempt finalizer. */
-  contextEngineTurnSettlement?: ContextEngineTurnSettlement;
+  /** Context engine resolved once by the outer logical-turn owner. */
+  contextEngineLogicalTurnLease?: ContextEngineLogicalTurnLease;
+  /** Attempt-local facts accepted or discarded by the outer logical-turn owner. */
+  contextEngineTurnAttempt?: ContextEngineTurnAttemptHolder;
   /** Keep an internal continuation prompt from being replaced by the original prepared turn. */
   skipPreparedUserTurnMessage?: boolean;
   onUserMessagePersisted?: (message: Extract<AgentMessage, { role: "user" }>) => void;

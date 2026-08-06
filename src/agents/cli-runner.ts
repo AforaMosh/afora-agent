@@ -78,7 +78,6 @@ import {
   finalizeHarnessContextEngineTurn,
   runHarnessContextEngineMaintenance,
 } from "./harness/context-engine-lifecycle.js";
-import { createContextEngineTurnSettlement } from "./harness/context-engine-turn-settlement.js";
 import { buildAgentHookContext } from "./harness/hook-context.js";
 import { runAgentHarnessBeforeMessageWriteHook } from "./harness/hook-helpers.js";
 import { buildAgentHookConversationMessages } from "./harness/hook-history.js";
@@ -418,13 +417,13 @@ async function persistCliAssistantTranscript(params: {
     cacheWrite?: number;
     total?: number;
   };
-}): Promise<boolean> {
+}): Promise<{ owned: boolean; terminalEntryId?: string }> {
   const { runParams } = params;
   if (!runParams.persistAssistantTranscript || !runParams.sessionKey || !params.text) {
-    return false;
+    return { owned: false };
   }
   if (runParams.currentInboundEventKind === "room_event") {
-    return true;
+    return { owned: true };
   }
   try {
     const result = await appendExactAssistantMessageToSessionTranscript({
@@ -454,12 +453,12 @@ async function persistCliAssistantTranscript(params: {
     });
     if (!result.ok) {
       log.warn(`CLI assistant transcript persistence skipped: ${result.reason}`);
-      return result.code === "blocked" || result.code === "session-rebound";
+      return { owned: result.code === "blocked" || result.code === "session-rebound" };
     }
-    return true;
+    return { owned: true, terminalEntryId: result.messageId };
   } catch (error) {
     log.warn(`CLI assistant transcript persistence failed: ${formatErrorMessage(error)}`);
-    return false;
+    return { owned: false };
   }
 }
 
@@ -479,6 +478,7 @@ async function finalizeCliContextEngineTurn(params: {
   context: PreparedCliRunContext;
   historyMessages: unknown[];
   assistantText: string;
+  terminalEntryId?: string;
   output: Awaited<
     ReturnType<typeof import("./cli-runner/execute.runtime.js").executePreparedCliRun>
   >;
@@ -508,7 +508,6 @@ async function finalizeCliContextEngineTurn(params: {
   const contextEngineHostSupport = buildGenericCliContextEngineHostSupport({
     backendId: context.backendResolved.id,
   });
-  const settlement = context.contextEngineTurnSettlement;
   const finalizeTurn = async (transcript: {
     messagesSnapshot: AgentMessage[];
     prePromptMessageCount: number;
@@ -544,22 +543,25 @@ async function finalizeCliContextEngineTurn(params: {
     });
     if (result.postTurnFinalizationSucceeded && deferredTurnMaintenance) {
       context.contextEngineDeferredTurnMaintenance = deferredTurnMaintenance;
-      settlement?.holdDisposalUntil(deferredTurnMaintenance);
     }
   };
-  if (settlement) {
-    settlement.setFinalizer(async () => {
-      await settlement.withTranscript(
-        {
-          admissionReceipt: runParams.userTurnTranscriptRecorder?.getAdmissionReceipt(),
-          sessionFile: runParams.sessionFile,
-          fallbackMessagesSnapshot: [...prePromptMessages, ...turnMessages],
-          fallbackPrePromptMessageCount: prePromptMessages.length,
-          config: context.contextEngineConfig,
-        },
-        finalizeTurn,
-      );
-    });
+  if (runParams.contextEngineTurnAttempt) {
+    runParams.contextEngineTurnAttempt.facts = {
+      admission: runParams.userTurnTranscriptRecorder?.getAdmissionReceipt(),
+      terminalEntryId: params.terminalEntryId,
+      sessionIdUsed: runParams.sessionId,
+      sessionKey: runParams.sessionKey,
+      sessionTarget: runParams.sessionTarget,
+      sessionFile: runParams.sessionFile,
+      promptError: false,
+      aborted: runParams.abortSignal?.aborted === true,
+      yieldAborted: false,
+      contextEngineHostSupport,
+      providerId: runParams.provider,
+      modelId: context.modelId,
+      config: context.contextEngineConfig,
+      isHeartbeat: isHeartbeatLifecycleRunKind(runParams.bootstrapContextRunKind),
+    };
   } else {
     await finalizeTurn({
       messagesSnapshot: [...prePromptMessages, ...turnMessages],
@@ -688,20 +690,6 @@ async function runCliAgentInternal(
       });
     }
     throw error;
-  }
-  if (context.contextEngine && params.registerContextEngineTurnSettlement) {
-    const settlement = createContextEngineTurnSettlement({
-      dispose: async () => {
-        await context.contextEngine?.dispose?.();
-      },
-    });
-    try {
-      params.registerContextEngineTurnSettlement(settlement);
-      context.contextEngineTurnSettlement = settlement;
-    } catch (error) {
-      await settlement.dispose();
-      throw error;
-    }
   }
   let result: EmbeddedAgentRunResult | undefined;
   let runError: unknown;
@@ -1500,19 +1488,20 @@ export async function runPreparedCliAgent(
       try {
         await assertSuccessfulCliRuntimeBindingCurrent(context);
         const effectiveCliSessionId = output.sessionId ?? fallbackCliSessionId;
-        await finalizeCliContextEngineTurn({
-          context,
-          historyMessages: context.contextEngine ? contextEngineHistoryMessages : historyMessages,
-          assistantText,
-          output,
-        });
-        const assistantTranscriptOwned = await persistCliAssistantTranscript({
+        const assistantTranscript = await persistCliAssistantTranscript({
           runParams: params,
           // Dispatch owns source-reply transcript mirrors and their idempotency keys.
           // Persisting them here would duplicate the same visible assistant reply.
           text: sourceReplyWasDelivered ? "" : assistantText,
           modelId: context.modelId,
           usage: output.usage,
+        });
+        await finalizeCliContextEngineTurn({
+          context,
+          historyMessages: context.contextEngine ? contextEngineHistoryMessages : historyMessages,
+          assistantText,
+          terminalEntryId: assistantTranscript.terminalEntryId,
+          output,
         });
         // A stateless backend may emit an id, but it never becomes continuity.
         // Managed stdio sessions own continuity in-process and write no native transcript.
@@ -1537,7 +1526,7 @@ export async function runPreparedCliAgent(
           output,
           effectiveCliSessionId,
           bindingFlushOk,
-          assistantTranscriptOwned,
+          assistantTranscriptOwned: assistantTranscript.owned,
           usedHistoryPrompt,
         });
       } catch (error) {

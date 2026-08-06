@@ -17,7 +17,6 @@ vi.mock("./attempt.async-tasks.js", () => ({
   waitForCompletionRequiredAsyncTasks: hoisted.waitForCompletionRequiredAsyncTasks,
 }));
 
-import { createContextEngineTurnSettlement } from "../../harness/context-engine-turn-settlement.js";
 import { completeEmbeddedAttemptAfterTurn } from "./attempt-after-turn.js";
 import { settleEmbeddedAttemptStream } from "./attempt-stream-settle.js";
 
@@ -293,14 +292,14 @@ describe("embedded attempt phase lifecycle state", () => {
     });
   });
 
-  it("defers embedded afterTurn until the outer fallback owner commits the candidate", async () => {
+  it("records embedded turn facts for the outer fallback owner", async () => {
     const afterTurn = vi.fn(async () => {});
     const maintain = vi.fn(async () => ({
       changed: false,
       bytesFreed: 0,
       rewrittenEntries: 0,
     }));
-    const settlement = createContextEngineTurnSettlement({ dispose: async () => {} });
+    const contextEngineTurnAttempt = {};
     await completeEmbeddedAttemptAfterTurn({
       attempt: {
         runId: "run-1",
@@ -310,7 +309,7 @@ describe("embedded attempt phase lifecycle state", () => {
         provider: "test",
         modelId: "model",
         model: { api: "openai-responses" },
-        contextEngineTurnSettlement: settlement,
+        contextEngineTurnAttempt,
       } as never,
       activeContextEngine: {
         info: { id: "test", name: "Test" },
@@ -321,7 +320,7 @@ describe("embedded attempt phase lifecycle state", () => {
         maintain,
       } as never,
       activeSession: {} as never,
-      sessionManager: { appendCustomEntry: vi.fn() } as never,
+      sessionManager: { appendCustomEntry: vi.fn(), getLeafId: vi.fn(() => "terminal") } as never,
       sessionLockController: {} as never,
       withOwnedSessionWriteLock: async (operation) => await operation(),
       state: {
@@ -357,11 +356,15 @@ describe("embedded attempt phase lifecycle state", () => {
 
     expect(afterTurn).not.toHaveBeenCalled();
     expect(maintain).not.toHaveBeenCalled();
-
-    await settlement.commit();
-
-    expect(afterTurn).toHaveBeenCalledTimes(1);
-    expect(maintain).toHaveBeenCalledTimes(1);
+    expect(contextEngineTurnAttempt).toMatchObject({
+      facts: {
+        sessionIdUsed: "session-1",
+        terminalEntryId: "terminal",
+        promptError: false,
+        aborted: false,
+        yieldAborted: false,
+      },
+    });
   });
 
   it("emits an abort-classified agent_end event when a teardown error races the abort", async () => {

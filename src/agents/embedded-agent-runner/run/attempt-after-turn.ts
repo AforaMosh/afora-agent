@@ -97,15 +97,13 @@ export async function completeEmbeddedAttemptAfterTurn(
       activeAgentId: runtime.sessionAgentId,
       contextEnginePluginId: runtime.resolveActiveContextEnginePluginId(),
     });
-    const settlement = attempt.contextEngineTurnSettlement;
     const finalizeTurn = async (transcript: {
       messagesSnapshot: AgentMessage[];
       prePromptMessageCount: number;
       sessionManager?: SessionManager;
       withSessionManagerRewriteLock: WithOwnedSessionWriteLock;
     }) => {
-      let deferredMaintenance: Promise<void> | undefined;
-      const result = await finalizeAttemptContextEngineTurn({
+      await finalizeAttemptContextEngineTurn({
         contextEngine: activeContextEngine,
         promptError: Boolean(state.promptError),
         aborted: lifecycleState.aborted,
@@ -132,33 +130,35 @@ export async function completeEmbeddedAttemptAfterTurn(
             withSessionManagerRewriteLock: transcript.withSessionManagerRewriteLock,
             config: attempt.config,
             agentId: runtime.sessionAgentId,
-            onDeferredMaintenance: (promise) => {
-              deferredMaintenance = promise;
-            },
           }),
         sessionManager: transcript.sessionManager,
         config: attempt.config,
         warn: (message) => log.warn(message),
         isHeartbeat: isHeartbeatLifecycleRunKind(attempt.bootstrapContextRunKind),
       });
-      if (result.postTurnFinalizationSucceeded && deferredMaintenance) {
-        settlement?.holdDisposalUntil(deferredMaintenance);
-      }
     };
-    if (settlement) {
-      settlement.setFinalizer(async () => {
-        await settlement.withTranscript(
-          {
-            admissionReceipt: attempt.userTurnTranscriptRecorder?.getAdmissionReceipt(),
-            sessionFile: attempt.sessionFile,
-            fallbackMessagesSnapshot: state.messagesSnapshot,
-            fallbackPrePromptMessageCount:
-              state.contextEngineAfterTurnCheckpoint ?? state.prePromptMessageCount,
-            config: attempt.config,
-          },
-          finalizeTurn,
-        );
-      });
+    if (attempt.contextEngineTurnAttempt) {
+      attempt.contextEngineTurnAttempt.facts = {
+        admission: attempt.userTurnTranscriptRecorder?.getAdmissionReceipt(),
+        terminalEntryId: sessionManager.getLeafId() ?? undefined,
+        sessionIdUsed,
+        sessionKey: attempt.sessionKey,
+        sessionTarget: attempt.sessionTarget,
+        sessionFile: attempt.sessionFile,
+        promptError: Boolean(state.promptError),
+        aborted: lifecycleState.aborted,
+        yieldAborted: state.yieldAborted,
+        tokenBudget: attempt.contextTokenBudget,
+        runtimeContext: afterTurnRuntimeContext,
+        contextEngineHostSupport: OPENCLAW_EMBEDDED_CONTEXT_ENGINE_HOST,
+        providerId: attempt.provider,
+        requestedModelId: attempt.requestedModelId,
+        modelId: attempt.modelId,
+        fallbackReason: attempt.fallbackReason,
+        degradedReason: attempt.degradedReason,
+        config: attempt.config,
+        isHeartbeat: isHeartbeatLifecycleRunKind(attempt.bootstrapContextRunKind),
+      };
     } else {
       await finalizeTurn({
         messagesSnapshot: state.messagesSnapshot,

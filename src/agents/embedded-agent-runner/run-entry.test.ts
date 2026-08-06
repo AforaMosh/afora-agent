@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
-import type { ContextEngineTurnSettlement } from "../harness/context-engine-turn-settlement.js";
+import type { ContextEngineTurnAttemptHolder } from "../harness/context-engine-turn-attempt.js";
 import type { EmbeddedAgentRunResult } from "./types.js";
 
 type CandidateOptions = {
   allowTransientCooldownProbe?: boolean;
   isFinalFallbackAttempt?: boolean;
-  registerContextEngineTurnSettlement: (settlement: ContextEngineTurnSettlement) => void;
+  contextEngineTurnAttempt: ContextEngineTurnAttemptHolder;
 };
 
 type FallbackRunnerParams = {
@@ -45,6 +45,13 @@ type FallbackRunnerParams = {
 const state = vi.hoisted(() => ({
   runWithModelFallback: vi.fn(),
   ensureSelectedAgentHarnessPlugin: vi.fn(async (_params: unknown) => undefined),
+  finalizedAttempts: [] as string[],
+}));
+
+vi.mock("../harness/context-engine-turn-attempt.js", () => ({
+  finalizeAcceptedContextEngineTurn: vi.fn(async ({ facts }) => {
+    state.finalizedAttempts.push(facts.sessionIdUsed);
+  }),
 }));
 
 vi.mock("../model-fallback-runner.js", () => ({
@@ -60,54 +67,39 @@ function makeResult(params: {
   provider: string;
   model: string;
   classification?: "empty";
+  meta?: Partial<EmbeddedAgentRunResult["meta"]>;
 }): EmbeddedAgentRunResult {
   return {
     payloads: params.classification ? [] : [{ text: "recovered" }],
     meta: {
       durationMs: 10,
       aborted: false,
-      yielded: true,
       providerStarted: true,
-      stopReason: "end_turn",
+      stopReason: "completed",
       agentHarnessResultClassification: params.classification,
       agentMeta: {
         sessionId: "session-1",
         provider: params.provider,
         model: params.model,
       },
+      ...params.meta,
     },
   };
 }
 
-function createTestSettlement(events: string[], label: string): ContextEngineTurnSettlement {
-  let finalizer: (() => Promise<void>) | undefined;
-  return {
-    setFinalizer(nextFinalizer) {
-      finalizer = nextFinalizer;
-    },
-    async commit() {
-      events.push(`${label}:commit`);
-      await finalizer?.();
-    },
-    discard() {
-      events.push(`${label}:discard`);
-    },
-    holdDisposalUntil() {},
-    async withTranscript(params, run) {
-      await run({
-        messagesSnapshot: params.fallbackMessagesSnapshot,
-        prePromptMessageCount: params.fallbackPrePromptMessageCount,
-        withSessionManagerRewriteLock: async (operation) => await operation(),
-      });
-    },
-    async dispose() {
-      events.push(`${label}:dispose`);
-    },
+function recordTurnAttempt(holder: ContextEngineTurnAttemptHolder, label: string): void {
+  holder.facts = {
+    sessionIdUsed: label,
+    sessionFile: `${label}.jsonl`,
+    promptError: false,
+    aborted: false,
+    yieldAborted: false,
   };
 }
 
 describe("runEmbeddedAgentEntry", () => {
   beforeEach(() => {
+    state.finalizedAttempts.length = 0;
     state.ensureSelectedAgentHarnessPlugin.mockClear();
     state.runWithModelFallback
       .mockReset()
@@ -253,8 +245,7 @@ describe("runEmbeddedAgentEntry", () => {
     expect(result.result.payloads).toEqual([{ text: "recovered" }]);
   });
 
-  it("settles only the accepted fallback candidate after its attempt releases ownership", async () => {
-    const events: string[] = [];
+  it("finalizes only the accepted fallback candidate after its attempt releases ownership", async () => {
     let primaryReleased = false;
     let fallbackReleased = false;
     const { runEmbeddedAgentEntry } = await import("./run-entry.js");
@@ -270,12 +261,7 @@ describe("runEmbeddedAgentEntry", () => {
       sessionOverride: { kind: "preserve" },
       runCandidate: async (provider, model, options) => {
         const label = provider === "primary-provider" ? "primary" : "fallback";
-        const settlement = createTestSettlement(events, label);
-        settlement.setFinalizer(async () => {
-          expect(label === "primary" ? primaryReleased : fallbackReleased).toBe(true);
-          events.push(`${label}:afterTurn`);
-        });
-        options.registerContextEngineTurnSettlement(settlement);
+        recordTurnAttempt(options.contextEngineTurnAttempt, label);
         if (label === "primary") {
           primaryReleased = true;
         } else {
@@ -289,13 +275,9 @@ describe("runEmbeddedAgentEntry", () => {
       },
     });
 
-    expect(events).toEqual([
-      "fallback:commit",
-      "fallback:afterTurn",
-      "primary:discard",
-      "primary:dispose",
-      "fallback:dispose",
-    ]);
+    expect(primaryReleased).toBe(true);
+    expect(fallbackReleased).toBe(true);
+    expect(state.finalizedAttempts).toEqual(["fallback"]);
   });
 
   it("accepts an empty result after a committed side effect and finalizes it once", async () => {
@@ -318,7 +300,6 @@ describe("runEmbeddedAgentEntry", () => {
         attempts: [],
       };
     });
-    const events: string[] = [];
     const { runEmbeddedAgentEntry } = await import("./run-entry.js");
     await runEmbeddedAgentEntry({
       selection: { cfg: {}, provider: "provider", model: "model" },
@@ -331,19 +312,15 @@ describe("runEmbeddedAgentEntry", () => {
       behavior: { kind: "command-rpc", hasCommittedSideEffect: () => true },
       sessionOverride: { kind: "preserve" },
       runCandidate: async (provider, model, options) => {
-        const settlement = createTestSettlement(events, "candidate");
-        settlement.setFinalizer(async () => {
-          events.push("candidate:afterTurn");
-        });
-        options.registerContextEngineTurnSettlement(settlement);
+        recordTurnAttempt(options.contextEngineTurnAttempt, "candidate");
         return makeResult({ provider, model, classification: "empty" });
       },
     });
 
-    expect(events).toEqual(["candidate:commit", "candidate:afterTurn", "candidate:dispose"]);
+    expect(state.finalizedAttempts).toEqual(["candidate"]);
   });
 
-  it("commits the surfaced exhaustion result and discards the rejected candidate", async () => {
+  it("does not finalize any candidate when fallback is exhausted", async () => {
     state.runWithModelFallback.mockImplementationOnce(async (params: FallbackRunnerParams) => {
       const preferredResult = await params.run(params.provider, params.model);
       const latestResult = await params.run("fallback-provider", "fallback-model");
@@ -355,7 +332,6 @@ describe("runEmbeddedAgentEntry", () => {
         attempts: [],
       };
     });
-    const events: string[] = [];
     const { runEmbeddedAgentEntry } = await import("./run-entry.js");
     await runEmbeddedAgentEntry({
       selection: { cfg: {}, provider: "provider", model: "model" },
@@ -368,25 +344,54 @@ describe("runEmbeddedAgentEntry", () => {
       behavior: { kind: "command-rpc", hasCommittedSideEffect: () => false },
       sessionOverride: { kind: "preserve" },
       runCandidate: async (provider, model, options) => {
-        const settlement = createTestSettlement(events, provider);
-        settlement.setFinalizer(async () => {
-          events.push(`${provider}:afterTurn`);
-        });
-        options.registerContextEngineTurnSettlement(settlement);
+        recordTurnAttempt(options.contextEngineTurnAttempt, provider);
         return makeResult({ provider, model, classification: "empty" });
       },
     });
 
-    expect(events).toEqual([
-      "fallback-provider:commit",
-      "fallback-provider:afterTurn",
-      "provider:discard",
-      "provider:dispose",
-      "fallback-provider:dispose",
-    ]);
+    expect(state.finalizedAttempts).toEqual([]);
   });
 
-  it("discards and disposes a candidate when classification throws", async () => {
+  it.each([
+    {
+      label: "yielded",
+      meta: { yielded: true, livenessState: "paused" as const, stopReason: "end_turn" },
+    },
+    { label: "aborted", meta: { aborted: true, stopReason: "error" } },
+    { label: "timed out", meta: { timeoutPhase: "provider" as const, stopReason: "timeout" } },
+    { label: "errored", meta: { error: new Error("provider failed"), stopReason: "error" } },
+  ])("does not finalize a $label candidate", async ({ meta }) => {
+    state.runWithModelFallback.mockImplementationOnce(async (params: FallbackRunnerParams) => {
+      const result = await params.run(params.provider, params.model);
+      return {
+        outcome: "completed" as const,
+        result,
+        provider: params.provider,
+        model: params.model,
+        attempts: [],
+      };
+    });
+    const { runEmbeddedAgentEntry } = await import("./run-entry.js");
+    await runEmbeddedAgentEntry({
+      selection: { cfg: {}, provider: "provider", model: "model" },
+      identity: { runId: "settle-non-terminal", agentId: "main", sessionId: "session-1" },
+      harness: {
+        workspaceDir: "/tmp/workspace",
+        preparation: { kind: "direct" },
+        resolveRuntimeOverride: () => undefined,
+      },
+      behavior: { kind: "command-rpc", hasCommittedSideEffect: () => true },
+      sessionOverride: { kind: "preserve" },
+      runCandidate: async (provider, model, options) => {
+        recordTurnAttempt(options.contextEngineTurnAttempt, "candidate");
+        return makeResult({ provider, model, meta });
+      },
+    });
+
+    expect(state.finalizedAttempts).toEqual([]);
+  });
+
+  it("does not finalize a candidate when classification throws", async () => {
     const classificationError = new Error("classification failed");
     state.runWithModelFallback.mockImplementationOnce(async (params: FallbackRunnerParams) => {
       const result = await params.run(params.provider, params.model);
@@ -399,7 +404,6 @@ describe("runEmbeddedAgentEntry", () => {
       });
       throw classificationError;
     });
-    const events: string[] = [];
     const { runEmbeddedAgentEntry } = await import("./run-entry.js");
     await expect(
       runEmbeddedAgentEntry({
@@ -418,17 +422,13 @@ describe("runEmbeddedAgentEntry", () => {
         },
         sessionOverride: { kind: "preserve" },
         runCandidate: async (provider, model, options) => {
-          const settlement = createTestSettlement(events, "candidate");
-          settlement.setFinalizer(async () => {
-            events.push("candidate:afterTurn");
-          });
-          options.registerContextEngineTurnSettlement(settlement);
+          recordTurnAttempt(options.contextEngineTurnAttempt, "candidate");
           return makeResult({ provider, model, classification: "empty" });
         },
       }),
     ).rejects.toBe(classificationError);
 
-    expect(events).toEqual(["candidate:discard", "candidate:dispose"]);
+    expect(state.finalizedAttempts).toEqual([]);
   });
 
   it("does not replay a thrown channel-delivery attempt that already delivered its reply (#113788)", async () => {

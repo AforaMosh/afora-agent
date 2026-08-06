@@ -2039,7 +2039,7 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
     },
   );
 
-  it("defers Codex afterTurn until the outer fallback owner commits the candidate", async () => {
+  it("records Codex turn facts for the outer fallback owner", async () => {
     const workspaceDir = path.join(tempDir, "workspace");
     const afterTurn = vi.fn(
       async (_params: Parameters<NonNullable<ContextEngine["afterTurn"]>>[0]) => undefined,
@@ -2049,40 +2049,8 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
     const harness = createStartedThreadHarness();
     const params = await createSqliteParams(workspaceDir, "deferred-after-turn");
     params.contextEngine = contextEngine;
-    let finalizer: (() => Promise<void>) | undefined;
-    const settlement = {
-      setFinalizer(nextFinalizer) {
-        finalizer = nextFinalizer;
-      },
-      async commit() {
-        await finalizer?.();
-      },
-      discard() {},
-      holdDisposalUntil() {},
-      async withTranscript(
-        transcriptParams: {
-          fallbackMessagesSnapshot: AgentMessage[];
-          fallbackPrePromptMessageCount: number;
-        },
-        run: (transcript: {
-          messagesSnapshot: AgentMessage[];
-          prePromptMessageCount: number;
-          withSessionManagerRewriteLock: <T>(operation: () => Promise<T> | T) => Promise<T>;
-        }) => Promise<void>,
-      ) {
-        await run({
-          messagesSnapshot: transcriptParams.fallbackMessagesSnapshot,
-          prePromptMessageCount: transcriptParams.fallbackPrePromptMessageCount,
-          withSessionManagerRewriteLock: async (operation) => await operation(),
-        });
-      },
-      async dispose() {},
-    };
-    (
-      params as typeof params & {
-        contextEngineTurnSettlement: typeof settlement;
-      }
-    ).contextEngineTurnSettlement = settlement;
+    const contextEngineTurnAttempt = {};
+    params.contextEngineTurnAttempt = contextEngineTurnAttempt;
 
     const run = runCodexAppServerAttempt(params);
     await harness.waitForMethod("turn/start");
@@ -2091,11 +2059,14 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
 
     expect(afterTurn).not.toHaveBeenCalled();
     expect(maintain).not.toHaveBeenCalled();
-
-    await settlement.commit();
-
-    expect(afterTurn).toHaveBeenCalledTimes(1);
-    expect(maintain).toHaveBeenCalledTimes(1);
+    expect(contextEngineTurnAttempt).toMatchObject({
+      facts: {
+        sessionIdUsed: params.sessionId,
+        promptError: false,
+        aborted: false,
+        yieldAborted: false,
+      },
+    });
   });
 
   it("reloads mirrored history after bootstrap mutates the session transcript", async () => {

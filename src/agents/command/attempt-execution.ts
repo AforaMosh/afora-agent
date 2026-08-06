@@ -75,7 +75,8 @@ import {
 import { resolveConversationCapabilityProfile } from "../conversation-capability-profile.js";
 import { resolveConversationToolPolicies } from "../conversation-tool-policy-pipeline.js";
 import { runEmbeddedAgent, type EmbeddedAgentRunResult } from "../embedded-agent.js";
-import type { ContextEngineTurnSettlement } from "../harness/context-engine-turn-settlement.js";
+import type { ContextEngineLogicalTurnLease } from "../harness/context-engine-logical-turn.js";
+import type { ContextEngineTurnAttemptHolder } from "../harness/context-engine-turn-attempt.js";
 import { runAgentHarnessBeforeMessageWriteHook } from "../harness/hook-helpers.js";
 import { resolveAvailableAgentHarnessPolicy } from "../harness/selection.js";
 import { resolveCliRuntimeExecutionProvider } from "../model-runtime-aliases.js";
@@ -568,9 +569,10 @@ export function runAgentAttempt(params: {
   fallbackRuntimeState?: { originRuntime?: "cli" | "embedded" };
   suppressPromptPersistenceOnRetry?: boolean;
   userTurnTranscriptRecorder?: UserTurnTranscriptRecorder;
+  contextEngineLogicalTurnLease?: ContextEngineLogicalTurnLease;
   onUserMessagePersisted?: (message: Extract<AgentMessage, { role: "user" }>) => void;
   onLifecycleGenerationChanged?: (lifecycleGeneration: string) => void;
-  registerContextEngineTurnSettlement?: (settlement: ContextEngineTurnSettlement) => void;
+  contextEngineTurnAttempt?: ContextEngineTurnAttemptHolder;
 }) {
   const sessionAuthProfileId = params.sessionEntry?.authProfileOverride?.trim();
   const sessionAuthProfileSource = resolveSessionAuthProfileOverrideSource(params.sessionEntry);
@@ -1041,7 +1043,8 @@ export function runAgentAttempt(params: {
             cleanupCliLiveSessionOnRunEnd: params.opts.cleanupCliLiveSessionOnRunEnd,
             oneShotCliRun: params.opts.oneShotCliRun,
             userTurnTranscriptRecorder: params.userTurnTranscriptRecorder,
-            registerContextEngineTurnSettlement: params.registerContextEngineTurnSettlement,
+            contextEngineLogicalTurnLease: params.contextEngineLogicalTurnLease,
+            contextEngineTurnAttempt: params.contextEngineTurnAttempt,
             suppressNextUserMessagePersistence: params.suppressPromptPersistenceOnRetry === true,
             disableTools,
             allowEmptyAssistantReplyAsSilent: isSubagentAnnounceHandoff,
@@ -1234,7 +1237,8 @@ export function runAgentAttempt(params: {
     deferTerminalLifecycle: params.deferTerminalLifecycle,
     suppressNextUserMessagePersistence: params.suppressPromptPersistenceOnRetry === true,
     userTurnTranscriptRecorder: params.userTurnTranscriptRecorder,
-    registerContextEngineTurnSettlement: params.registerContextEngineTurnSettlement,
+    contextEngineLogicalTurnLease: params.contextEngineLogicalTurnLease,
+    contextEngineTurnAttempt: params.contextEngineTurnAttempt,
     onUserMessagePersisted: params.onUserMessagePersisted,
     onExecutionStarted: (info) => {
       params.opts.onExecutionStarted?.();

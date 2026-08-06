@@ -1,6 +1,5 @@
 // Context-engine registry owns engine registration, resolution, compatibility, and quarantine.
 import { sanitizeForLog } from "../../packages/terminal-core/src/ansi.js";
-import { SessionTranscriptReadFenceError } from "../config/sessions/session-transcript-read-fence.js";
 import type { OpenClawConfig } from "../config/types.js";
 import { createAbortError } from "../infra/abort-signal.js";
 import type {
@@ -52,7 +51,6 @@ export const CONTEXT_ENGINE_HOST_PARAMS = new Set(
 type ResolvedContextEngineMetadata = {
   owner: string;
   engineId: string;
-  compatibilityFallback?: boolean;
 };
 
 const resolvedEngineMetadata = new WeakMap<ContextEngine, ResolvedContextEngineMetadata>();
@@ -99,10 +97,7 @@ function wrapResolvedContextEngine(
     {
       get(_target, property) {
         if (property === "info") {
-          if (
-            !fallback ||
-            (!metadata.compatibilityFallback && !getContextEngineQuarantine(metadata.engineId))
-          ) {
+          if (!fallback || !getContextEngineQuarantine(metadata.engineId)) {
             return engine.info;
           }
           return (
@@ -142,7 +137,7 @@ function wrapResolvedContextEngine(
           }
           const invokeFallback = () =>
             invokeFallbackContextEngineMethod({ getFallbackEngine, methodName, methodParams });
-          if (metadata.compatibilityFallback || getContextEngineQuarantine(metadata.engineId)) {
+          if (getContextEngineQuarantine(metadata.engineId)) {
             // Runtime failures downgrade future guarded calls for this process.
             return await invokeFallback();
           }
@@ -153,15 +148,6 @@ function wrapResolvedContextEngine(
             if (isContextEngineAbortRejection(error, abortSignal)) {
               // Abort is caller intent, not engine instability; never quarantine for it.
               throw error;
-            }
-            if (error instanceof SessionTranscriptReadFenceError) {
-              // Dispatch, metadata, and capability ownership must switch as one
-              // effective-engine state before any legacy fallback work begins.
-              metadata.compatibilityFallback = true;
-              console.warn(
-                `[context-engine] Context engine "${sanitizeForLog(metadata.engineId)}" cannot honor the current-turn transcript fence: ${sanitizeForLog(error.message)}; using default engine "${fallback.defaultEngineId}" for the rest of this logical turn.`,
-              );
-              return await invokeFallback();
             }
             recordContextEngineQuarantine({
               engineId: metadata.engineId,
@@ -375,9 +361,7 @@ export function resolveContextEngineOwnerPluginId(
   const metadata = engine ? resolvedEngineMetadata.get(engine) : undefined;
   // Downgraded work belongs to its core-owned fallback, never the disabled plugin.
   const owner =
-    metadata && !metadata.compatibilityFallback && !getContextEngineQuarantine(metadata.engineId)
-      ? metadata.owner
-      : undefined;
+    metadata && !getContextEngineQuarantine(metadata.engineId) ? metadata.owner : undefined;
   if (!owner?.startsWith("plugin:")) {
     return undefined;
   }
@@ -493,6 +477,75 @@ export type ResolveContextEngineOptions = {
   agentDir?: string;
   workspaceDir?: string;
 };
+
+export type LogicalTurnContextEngineResolution = {
+  configuredEngine: ContextEngine;
+  configuredEngineId: string;
+  configuredFailure?: string;
+  defaultEngine: ContextEngine;
+};
+
+/**
+ * Resolve fresh engines for one logical turn without consulting or mutating
+ * process quarantine. A failed configured engine is retried by the next turn.
+ */
+export async function resolveLogicalTurnContextEngines(
+  config?: OpenClawConfig,
+  options?: ResolveContextEngineOptions,
+): Promise<LogicalTurnContextEngineResolution> {
+  const defaultEngineId = defaultSlotIdForKey("contextEngine");
+  const slotValue = config?.plugins?.slots?.contextEngine;
+  const configuredEngineId =
+    typeof slotValue === "string" && slotValue.trim() ? slotValue.trim() : defaultEngineId;
+  const factoryCtx: ContextEngineFactoryContext = {
+    config,
+    agentDir: options?.agentDir,
+    workspaceDir: options?.workspaceDir,
+  };
+  const defaultEngine = await resolveDefaultContextEngine(defaultEngineId, factoryCtx);
+  if (configuredEngineId === defaultEngineId) {
+    return { configuredEngine: defaultEngine, configuredEngineId, defaultEngine };
+  }
+  const entry = getContextEngines().get(configuredEngineId);
+  if (!entry) {
+    return {
+      configuredEngine: defaultEngine,
+      configuredEngineId,
+      configuredFailure: `context engine "${configuredEngineId}" is not registered`,
+      defaultEngine,
+    };
+  }
+  if (entry.lifecycle === "readOnlyDiscovery") {
+    return {
+      configuredEngine: defaultEngine,
+      configuredEngineId,
+      configuredFailure: `context engine "${configuredEngineId}" is available for discovery only`,
+      defaultEngine,
+    };
+  }
+  try {
+    const engine = await entry.factory(factoryCtx);
+    const contractError = describeResolvedContextEngineContractError(configuredEngineId, engine);
+    if (contractError) {
+      throw new Error(contractError);
+    }
+    return {
+      configuredEngine: wrapResolvedContextEngine(engine, {
+        owner: entry.owner,
+        engineId: configuredEngineId,
+      }),
+      configuredEngineId,
+      defaultEngine,
+    };
+  } catch (error) {
+    return {
+      configuredEngine: defaultEngine,
+      configuredEngineId,
+      configuredFailure: error instanceof Error ? error.message : String(error),
+      defaultEngine,
+    };
+  }
+}
 
 /**
  * Resolve which ContextEngine to use based on plugin slot configuration.

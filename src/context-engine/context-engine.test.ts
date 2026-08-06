@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import type { AgentMessage } from "openclaw/plugin-sdk/agent-core";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { createContextEngineLogicalTurnLease } from "../agents/harness/context-engine-logical-turn.js";
 import { upsertSessionEntry } from "../config/sessions/session-accessor.js";
 import { SessionTranscriptReadFenceError } from "../config/sessions/session-transcript-read-fence.js";
 import type { MemoryCitationsMode } from "../config/types.memory.js";
@@ -703,6 +704,54 @@ describe("Default engine selection", () => {
     const engine = await resolveContextEngine(configWithSlot("test-engine"));
     expect(engine.info.id).toBe("test-engine");
   });
+
+  it("latches one failed configured engine to legacy for the turn and retries it next turn", async () => {
+    const engineId = uniqueEngineId("logical-turn-retry");
+    const assemble = vi
+      .fn<ContextEngine["assemble"]>()
+      .mockRejectedValueOnce(new Error("configured engine unavailable"))
+      .mockImplementation(async ({ messages }) => ({ messages, estimatedTokens: 0 }));
+    registerTestContextEngine(engineId, () => ({
+      info: { id: engineId, name: "Logical Turn Retry" },
+      async ingest() {
+        return { ingested: true };
+      },
+      assemble,
+      async compact() {
+        return { ok: true, compacted: false };
+      },
+    }));
+    const warn = vi.fn();
+    const first = await createContextEngineLogicalTurnLease({
+      config: configWithSlot(engineId),
+      warn,
+    });
+    const messages = [makeMockMessage()];
+
+    await expect(first.engine.assemble({ sessionId: "first", messages })).resolves.toMatchObject({
+      messages,
+    });
+    await expect(first.engine.assemble({ sessionId: "first", messages })).resolves.toMatchObject({
+      messages,
+    });
+    expect(first.degraded).toBe(true);
+    expect(first.engine.info.id).toBe("legacy");
+    expect(assemble).toHaveBeenCalledTimes(1);
+    expect(warn).toHaveBeenCalledTimes(1);
+    await first.dispose();
+
+    const second = await createContextEngineLogicalTurnLease({
+      config: configWithSlot(engineId),
+      warn,
+    });
+    await expect(second.engine.assemble({ sessionId: "second", messages })).resolves.toMatchObject({
+      messages,
+    });
+    expect(second.degraded).toBe(false);
+    expect(second.engine.info.id).toBe(engineId);
+    expect(assemble).toHaveBeenCalledTimes(2);
+    await second.dispose();
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1118,8 +1167,7 @@ describe("Invalid engine fallback", () => {
     expect(assemble).toHaveBeenCalledTimes(1);
   });
 
-  it("switches ownership and dispatch together after transcript fence fallback", async () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
+  it("routes legacy resolver fence failures through normal quarantine", async () => {
     const engineId = uniqueEngineId("transcript-fence-fallback");
     const ingest = vi.fn(async () => ({ ingested: true }));
     const assemble = vi.fn(async () => {
@@ -1158,7 +1206,13 @@ describe("Invalid engine fallback", () => {
 
     expect(engine.info.id).toBe("legacy");
     expect(resolveContextEngineOwnerPluginId(engine)).toBeUndefined();
-    expect(listContextEngineQuarantines()).toEqual([]);
+    expect(listContextEngineQuarantines()).toEqual([
+      expect.objectContaining({
+        engineId,
+        operation: "assemble",
+        reason: "admitted user row is unavailable",
+      }),
+    ]);
     expect(assemble).toHaveBeenCalledTimes(1);
     expect(ingest).not.toHaveBeenCalled();
   });
