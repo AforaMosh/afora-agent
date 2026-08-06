@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { OpenClawConfig } from "../config/types.js";
 import { withMockedPlatform } from "../test-utils/vitest-spies.js";
 import { resolvePluginDoctorContractArtifactPath } from "./doctor-contract-artifact.js";
 import { cleanupTrackedTempDirs, makeTrackedTempDir } from "./test-helpers/fs-fixtures.js";
@@ -545,12 +546,13 @@ describe("doctor-contract-registry module loader", () => {
       models: {
         providers: {
           "minimax-cn": {
+            baseUrl: "https://api.minimaxi.com/anthropic",
             api: "anthropic-messages",
-            models: [{ id: "MiniMax-M3", input: ["text", "image"] }],
+            models: [],
           },
         },
       },
-    };
+    } satisfies OpenClawConfig;
 
     const result = applyPluginDoctorCompatibilityMigrations(config, {
       config,
