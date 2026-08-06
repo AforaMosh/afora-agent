@@ -21,6 +21,7 @@ import {
   MAX_TIMER_TIMEOUT_SECONDS,
 } from "@openclaw/normalization-core/number-coercion";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { testing as macosAppBootstrapCiTesting } from "../../scripts/e2e/macos-app-bootstrap-ci.ts";
 import {
   extractLastOpenClawVersionFromLog,
   isLikelyMacosDesktopHome,
@@ -633,6 +634,39 @@ describe("Parallels smoke model selection", () => {
     expect(() => appBootstrapMismatchVersion("main")).toThrow(
       "cannot derive app bootstrap mismatch version from main",
     );
+  });
+
+  it("allows packaged app bootstrap state resets only in an explicit ephemeral macOS CI home", () => {
+    expect(() =>
+      macosAppBootstrapCiTesting.requireEphemeralCiHome({
+        allowReset: "1",
+        ci: "true",
+        home: "/Users/runner",
+        platform: "darwin",
+      }),
+    ).not.toThrow();
+    expect(() =>
+      macosAppBootstrapCiTesting.requireEphemeralCiHome({
+        allowReset: "1",
+        ci: "true",
+        home: "/Users/patrick/work",
+        platform: "darwin",
+      }),
+    ).toThrow("refusing unsafe CI home");
+    expect(() =>
+      macosAppBootstrapCiTesting.requireEphemeralCiHome({
+        allowReset: "1",
+        ci: "true",
+        home: "/Users/runner",
+        platform: "linux",
+      }),
+    ).toThrow("requires a Darwin runner");
+    expect(() =>
+      macosAppBootstrapCiTesting.requireEphemeralCiHome({
+        home: "/Users/runner",
+        platform: "darwin",
+      }),
+    ).toThrow("outside explicit CI");
   });
 
   it("rejects short flags as Parallels smoke option values", () => {
