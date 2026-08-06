@@ -566,6 +566,46 @@ describe("doctor-contract-registry module loader", () => {
     ]);
   });
 
+  it("does not load a plugin doctor contract for an unowned provider auth alias", () => {
+    const pluginRoot = makeTempDir();
+    fs.writeFileSync(path.join(pluginRoot, "doctor-contract-api.ts"), "export {};\n", "utf-8");
+    mocks.createJiti.mockImplementation(() => () => ({
+      normalizeCompatibilityConfig: () => {
+        throw new Error("unowned provider alias must not load this contract");
+      },
+    }));
+    mocks.loadPluginManifestRegistry.mockReturnValue({
+      plugins: [
+        {
+          id: "unrelated",
+          rootDir: pluginRoot,
+          channels: [],
+          providers: ["other"],
+          providerAuthAliases: { openai: "openai" },
+        },
+      ],
+      diagnostics: [],
+    });
+    const config = {
+      models: {
+        providers: {
+          openai: {
+            baseUrl: "https://api.openai.com/v1",
+            models: [],
+          },
+        },
+      },
+    } satisfies OpenClawConfig;
+
+    expect(
+      applyPluginDoctorCompatibilityMigrations(config, {
+        config,
+        env: {},
+        pluginIds: ["openai"],
+      }),
+    ).toEqual({ config, changes: [] });
+  });
+
   it("narrows touched-path doctor ids for scoped dry-run validation", () => {
     expect(
       collectRelevantDoctorPluginIdsForTouchedPaths({
