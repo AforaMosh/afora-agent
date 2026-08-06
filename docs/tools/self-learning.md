@@ -58,8 +58,10 @@ the live body of a writable skill. It drafts at most one pending proposal:
 preferring to revise a matching pending proposal, then to update the existing
 skill governing the work, and creating a new skill only when nothing covers the
 class. An update is refused unless the reviewer read that skill's live body in
-the same review and the body is unchanged since the read, so update drafts
-always derive from current content. Its
+the same review and the body is unchanged since the read. In `auto` mode an
+update applies only when its draft mechanically preserves every line of that
+read snapshot; a draft that drops or rewrites existing lines stays pending for
+operator review. Its
 one-mutation budget is shared across retries. Every mutation is a pending
 proposal — it never writes a live skill directly and cannot apply, reject,
 quarantine, message, or use general agent tools. The reviewed trajectory is
@@ -173,10 +175,12 @@ Experience review adds one bounded model run on the configured provider only
 after a substantial turn, not after every message. The review can make more
 than one provider request while it inspects or drafts its single proposal.
 
-The reviewer receives only the current turn beginning with its most recent user
-message. The rendered trajectory is limited to 60,000 characters. When the
-bundle is too large, OpenClaw keeps the first message and newest evidence and
-marks the omitted middle.
+A deep-turn review receives only the current turn beginning with its most
+recent user message. A review triggered by accumulated shallow turns instead
+receives the bounded message window of those same-sender turns (at most 40
+messages). Either way the rendered trajectory is limited to 60,000 characters;
+when the bundle is too large, OpenClaw keeps the first message and newest
+evidence and marks the omitted middle.
 
 The reviewer reuses the foreground provider, model, and available auth identity,
 with model fallbacks disabled. Provider pricing and data-handling terms apply to

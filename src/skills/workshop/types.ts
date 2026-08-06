@@ -75,6 +75,8 @@ export type SkillWorkshopProposalMutationBudget = {
   mutatedProposalIds?: Set<string>;
   /** Content hash per live skill read this run; updates require an unchanged target here. */
   readSkillHashes?: Map<string, string>;
+  /** Update proposals whose draft mechanically preserves every line of the read snapshot. */
+  preservingUpdateProposalIds?: Set<string>;
 };
 
 export type SkillWorkshopProposalReviewProgress = {

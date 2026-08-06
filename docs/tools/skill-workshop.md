@@ -307,7 +307,8 @@ most one pending proposal — a new skill, an update to an existing workspace sk
 of a pending proposal. It never writes a live skill directly and cannot apply, reject, or
 quarantine a proposal. Update proposals are refused unless the reviewer read the target skill's
 live body in the same review. In `auto` mode, the orchestrating capture pipeline applies the
-result afterward through the normal scanner-gated service.
+result afterward through the normal scanner-gated service; an update applies only when its draft
+mechanically preserves every line of the read snapshot, otherwise it stays pending.
 
 See [Self-learning](/tools/self-learning) for enablement, eligibility, privacy and cost details,
 the proposal threshold, and troubleshooting.
@@ -342,8 +343,9 @@ In `propose` and `auto` modes, an isolated run of the selected model decides whe
 completed trajectory clears the evidence-gated proposal bar. The foreground model is not prompted
 to learn before it replies. The background reviewer preserves the foreground run as proposal
 provenance, cannot access general agent tools, and cannot make lifecycle decisions. Update
-proposals require the reviewer to read the target skill's live body in the same review, so drafts
-preserve current content. In `auto` mode, the capture pipeline applies the resulting proposal
+proposals require the reviewer to read the target skill's live body in the same review; only
+drafts that mechanically preserve every line of that snapshot auto-apply, and rewrites stay
+pending. In `auto` mode, the capture pipeline applies the resulting proposal
 only after the isolated run completes. The review starts only when
 the foreground runtime reports its resolved model
 and that `skill_workshop` was actually available. Restrictive or unknown tool policy therefore

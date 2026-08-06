@@ -127,7 +127,7 @@ export function buildSkillExperienceReviewPrompt(
     "",
     SKILL_AUTHORING_STANDARDS_PROMPT,
     "",
-    "Choose the smallest mutation, in order: (1) revise a pending proposal on the same topic — use list/inspect to check; (2) update the existing workspace skill that governs this work — call read with its skill_name first, then submit the full body with its current content preserved and the learning added where it belongs; (3) create one new class-level skill only when no existing skill covers this class of work. Make at most one create/update/revise call. Every mutation is a pending proposal; nothing writes a live skill directly, and the tool cannot apply, reject, or quarantine. If nothing genuinely clears the bar, answer NOTHING_TO_LEARN.",
+    "Choose the smallest mutation, in order: (1) revise a pending proposal on the same topic — use list/inspect to check; (2) update the existing workspace skill that governs this work — call read with its skill_name first, then submit the full body keeping every existing line and adding the learning where it belongs (updates that drop or rewrite existing lines stay pending for the operator instead of applying); (3) create one new class-level skill only when no existing skill covers this class of work. Make at most one create/update/revise call. Every mutation is a pending proposal; nothing writes a live skill directly, and the tool cannot apply, reject, or quarantine. If nothing genuinely clears the bar, answer NOTHING_TO_LEARN.",
     "",
     candidate.turnAborted === true
       ? `Interrupted run (stopped before completion): ${candidate.ctx.runId ?? "unknown"}`

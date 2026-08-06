@@ -6,6 +6,7 @@
 import { Type } from "typebox";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import { sha256Hex } from "../../infra/crypto-digest.js";
+import { stripProposalFrontmatterForSkill } from "../../skills/workshop/frontmatter.js";
 import {
   applySkillProposal,
   evaluateSkillProposal,
@@ -94,6 +95,30 @@ function requireProposalContent(content: string | undefined): string {
     throw new ToolInputError("proposal_content required");
   }
   return content;
+}
+
+/** True when every non-empty snapshot line survives in the draft, in order. */
+function preservesSnapshotBody(draft: string, snapshotBody: string): boolean {
+  const draftLines = draft.split("\n").map((line) => line.trim());
+  let cursor = 0;
+  for (const line of snapshotBody
+    .split("\n")
+    .map((value) => value.trim())
+    .filter(Boolean)) {
+    let found = false;
+    while (cursor < draftLines.length) {
+      if (draftLines[cursor] === line) {
+        found = true;
+        cursor += 1;
+        break;
+      }
+      cursor += 1;
+    }
+    if (!found) {
+      return false;
+    }
+  }
+  return true;
 }
 
 function buildSkillWorkshopToolSchema(
@@ -410,6 +435,7 @@ export function createSkillWorkshopTool(options: SkillWorkshopToolOptions): AnyA
       const goal = readStringParam(params, "goal");
       const evidence = readStringParam(params, "evidence");
 
+      let updatePreservesSnapshot = false;
       if (action === "update" && options.updateProposals === true) {
         // Reviewer sessions have no file tools: an update drafted without the live body
         // would blind-replace operator-authored content. Refuse before spending budget,
@@ -431,6 +457,10 @@ export function createSkillWorkshopTool(options: SkillWorkshopToolOptions): AnyA
             `skill "${target.skillKey}" changed since it was read: call action=read again and redraft the update from the current content`,
           );
         }
+        updatePreservesSnapshot = preservesSnapshotBody(
+          requireProposalContent(proposalContent),
+          stripProposalFrontmatterForSkill(target.content),
+        );
       }
 
       const reservesMutation = SKILL_WORKSHOP_MUTATION_ACTIONS.has(action);
@@ -529,6 +559,13 @@ export function createSkillWorkshopTool(options: SkillWorkshopToolOptions): AnyA
             options.proposalMutationBudget.mutatedProposalIds ?? new Set<string>();
           mutatedProposalIds.add(proposal.record.id);
           options.proposalMutationBudget.mutatedProposalIds = mutatedProposalIds;
+          if (action === "update" && updatePreservesSnapshot) {
+            const preservingUpdateProposalIds =
+              options.proposalMutationBudget.preservingUpdateProposalIds ?? new Set<string>();
+            preservingUpdateProposalIds.add(proposal.record.id);
+            options.proposalMutationBudget.preservingUpdateProposalIds =
+              preservingUpdateProposalIds;
+          }
           options.proposalMutationBudget.completed = mutatedProposalIds.size;
           options.proposalMutationBudget.successfulMutations =
             (options.proposalMutationBudget.successfulMutations ?? 0) + 1;

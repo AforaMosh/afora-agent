@@ -210,7 +210,10 @@ export function createSkillExperienceReviewScheduler(deps: ExperienceReviewSched
   // alone; their iterations and messages accumulate per session until enough unreviewed
   // work exists. CLI events carry only the current turn, so the accumulated messages are
   // the sole record of the earlier corrections that qualify the eventual review.
-  const shallowBySession = new Map<string, { iterations: number; messages: unknown[] }>();
+  const shallowBySession = new Map<
+    string,
+    { senderScope: string; iterations: number; messages: unknown[]; aborted: boolean }
+  >();
   let reviewInFlight = false;
   const setTimer = deps.setTimer ?? ((callback, delayMs) => setTimeout(callback, delayMs));
   const clearTimer = deps.clearTimer ?? clearTimeout;
@@ -333,6 +336,7 @@ export function createSkillExperienceReviewScheduler(deps: ExperienceReviewSched
             : 0;
       let reviewIterations = modelIterations;
       let reviewMessages = turnMessages;
+      let reviewAborted = !params.event.success;
       if (modelIterations >= EXPERIENCE_REVIEW_MIN_MODEL_ITERATIONS) {
         shallowBySession.delete(sessionKey);
       } else {
@@ -342,7 +346,19 @@ export function createSkillExperienceReviewScheduler(deps: ExperienceReviewSched
           log.debug(`experience review skipped: reason=no-model-iterations session=${sessionKey}`);
           return;
         }
+        // Group sessions share one session key across senders with distinct tool
+        // policies; a sender change restarts accumulation so one participant's
+        // turns are never reviewed under another participant's authorization.
+        const senderScope = [
+          params.ctx.senderId ?? "",
+          params.ctx.senderUsername ?? "",
+          params.ctx.senderE164 ?? "",
+        ].join("|");
         let accumulator = shallowBySession.get(sessionKey);
+        if (accumulator && accumulator.senderScope !== senderScope) {
+          accumulator = undefined;
+          shallowBySession.delete(sessionKey);
+        }
         if (!accumulator) {
           if (shallowBySession.size >= EXPERIENCE_REVIEW_MAX_SHALLOW_SESSIONS) {
             const oldestKey = shallowBySession.keys().next().value;
@@ -350,10 +366,11 @@ export function createSkillExperienceReviewScheduler(deps: ExperienceReviewSched
               shallowBySession.delete(oldestKey);
             }
           }
-          accumulator = { iterations: 0, messages: [] };
+          accumulator = { senderScope, iterations: 0, messages: [], aborted: false };
           shallowBySession.set(sessionKey, accumulator);
         }
         accumulator.iterations += modelIterations;
+        accumulator.aborted = accumulator.aborted || !params.event.success;
         accumulator.messages = [...accumulator.messages, ...turnMessages].slice(
           -EXPERIENCE_REVIEW_MAX_SHALLOW_MESSAGES,
         );
@@ -366,6 +383,7 @@ export function createSkillExperienceReviewScheduler(deps: ExperienceReviewSched
         shallowBySession.delete(sessionKey);
         reviewIterations = accumulator.iterations;
         reviewMessages = accumulator.messages;
+        reviewAborted = accumulator.aborted;
       }
       {
         if (!existing && pendingBySession.size >= EXPERIENCE_REVIEW_MAX_PENDING) {
@@ -410,14 +428,14 @@ export function createSkillExperienceReviewScheduler(deps: ExperienceReviewSched
           ...(params.config ? { config: params.config } : {}),
           transcript: formatSkillExperienceReviewTranscript(reviewMessages),
           modelIterations: reviewIterations,
-          turnAborted: !params.event.success,
+          turnAborted: reviewAborted,
         };
         const pending = existing ?? { candidate, generation: 0 };
         pending.candidate = candidate;
         pendingBySession.set(sessionKey, pending);
         arm(sessionKey, pending, EXPERIENCE_REVIEW_IDLE_MS);
         log.debug(
-          `experience review scheduled: session=${sessionKey} iterations=${reviewIterations} aborted=${!params.event.success}`,
+          `experience review scheduled: session=${sessionKey} iterations=${reviewIterations} aborted=${reviewAborted}`,
         );
       }
     },
@@ -553,9 +571,19 @@ async function runSkillExperienceReviewInner(
     ) {
       continue;
     }
-    // Update proposals auto-apply like creates: the tool's read-before-write guard
-    // means the reviewer drafted the body from the live skill content it just read,
-    // and hash binding stales the proposal if the target changed since.
+    // Updates auto-apply only when the tool mechanically verified the draft preserves
+    // every line of the read snapshot (extensions). Rewrites that drop or edit existing
+    // content stay pending for operator review — the read guard proves the reviewer saw
+    // the body, not that its draft kept it.
+    if (
+      proposal.record.kind === "update" &&
+      proposalMutationBudget.preservingUpdateProposalIds?.has(proposalId) !== true
+    ) {
+      log.info(
+        `skill experience review left rewriting update proposal ${proposalId} pending for operator review`,
+      );
+      continue;
+    }
     await autoApplySkillProposal({
       workspaceDir,
       ...(candidate.ctx.agentId ? { agentId: candidate.ctx.agentId } : {}),

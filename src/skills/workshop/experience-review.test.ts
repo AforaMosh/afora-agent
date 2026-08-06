@@ -22,6 +22,7 @@ function completedRun(
     modelMetadata?: boolean;
     modelIterations?: number;
     userText?: string;
+    senderId?: string;
   } = {},
 ): SkillExperienceReviewParams {
   const iterations = options.iterations ?? 10;
@@ -61,6 +62,7 @@ function completedRun(
         ? {}
         : { modelIterations: options.modelIterations }),
       compacted: options.compacted,
+      ...(options.senderId === undefined ? {} : { senderId: options.senderId }),
       trigger: "user",
     },
     config: {
@@ -161,6 +163,41 @@ describe("skill experience review scheduler", () => {
     expect(transcript).toContain("Always deploy from main.");
     expect(transcript).toContain("Never skip the smoke test.");
     expect(transcript).toContain("Ship it.");
+    scheduler.clear();
+  });
+
+  it("restarts shallow accumulation when the sender changes mid-session", async () => {
+    vi.useFakeTimers();
+    const runReview = vi.fn().mockResolvedValue(undefined);
+    const scheduler = createSkillExperienceReviewScheduler({
+      isSystemActive: () => false,
+      runReview,
+    });
+
+    scheduler.schedule(completedRun({ modelIterations: 6, senderId: "alice" }));
+    scheduler.schedule(completedRun({ modelIterations: 6, senderId: "bob" }));
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(runReview).not.toHaveBeenCalled();
+
+    scheduler.schedule(completedRun({ modelIterations: 6, senderId: "bob" }));
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(runReview).toHaveBeenCalledWith(expect.objectContaining({ modelIterations: 12 }));
+    scheduler.clear();
+  });
+
+  it("marks an accumulated review aborted when any qualifying turn was aborted", async () => {
+    vi.useFakeTimers();
+    const runReview = vi.fn().mockResolvedValue(undefined);
+    const scheduler = createSkillExperienceReviewScheduler({
+      isSystemActive: () => false,
+      runReview,
+    });
+
+    scheduler.schedule(completedRun({ modelIterations: 6, success: false }));
+    scheduler.schedule(completedRun({ modelIterations: 6, success: true }));
+    await vi.advanceTimersByTimeAsync(30_000);
+
+    expect(runReview).toHaveBeenCalledWith(expect.objectContaining({ turnAborted: true }));
     scheduler.clear();
   });
 
