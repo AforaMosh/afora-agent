@@ -12,6 +12,7 @@ function createExtensionCodexAppServerAttemptExtraVitestConfig(
       "extensions/codex/src/app-server/run-attempt.context-engine.test.ts",
       "extensions/codex/src/app-server/run-attempt.dynamic-tools.test.ts",
       "extensions/codex/src/app-server/run-attempt.hooks.test.ts",
+      "extensions/codex/src/app-server/run-attempt.native-hook-relay-lifecycle.test.ts",
       "extensions/codex/src/app-server/run-attempt.native-hook-relay.test.ts",
       "extensions/codex/src/app-server/run-attempt-runtime.authority.test.ts",
       "extensions/codex/src/app-server/run-attempt.steering.test.ts",

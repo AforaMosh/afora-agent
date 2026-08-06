@@ -215,7 +215,7 @@ export async function startCodexAttemptRuntime(resources: CodexAttemptResources)
     const nativeHookRelay = state.nativeHookRelay;
     state.nativeHookRelay = undefined;
     await runCleanupStep("codex-start-failure-native-hook-relay", () =>
-      nativeHookRelay?.unregister(),
+      nativeHookRelay?.releaseParent(),
     );
     await runCleanupStep("codex-start-failure-sandbox-release", releaseSandboxExecEnvironment);
     await runCleanupStep(

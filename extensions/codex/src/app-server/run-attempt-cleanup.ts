@@ -8,7 +8,6 @@ import {
 } from "./attempt-client-cleanup.js";
 import { retainCodexAppServerLiveThread } from "./client-runtime.js";
 import { resolveCodexAppServerClientInstanceId } from "./client.js";
-import { scheduleCodexNativeHookRelayUnregister } from "./native-hook-relay.js";
 import type { CodexAttemptActiveTurn } from "./run-attempt-active-turn.js";
 import type { CodexAttemptLifecycleController } from "./run-attempt-lifecycle-controller.js";
 import type { CodexAttemptResources } from "./run-attempt-resources.js";
@@ -32,8 +31,7 @@ export async function cleanupCodexAttempt(
     runCleanupStep,
   } = resources;
   const { connection } = prompt.context.runtime;
-  const { params, options, runAbortController, terminalState, bindingStore, bindingIdentity } =
-    connection;
+  const { params, runAbortController, terminalState, bindingStore, bindingIdentity } = connection;
   const { state, steeringQueueRef, userInputBridgeRef, turnWatches } = turnRuntime;
   const {
     maybeEmitFastModeAutoResetBestEffort,
@@ -154,20 +152,9 @@ export async function cleanupCodexAttempt(
     );
     const nativeHookRelay = resourceState.nativeHookRelay;
     resourceState.nativeHookRelay = undefined;
-    await runCleanupStep("codex-native-hook-relay-release", () => {
-      if (!nativeHookRelay) {
-        return;
-      }
-      if (state.shouldDelayNativeHookRelayUnregister) {
-        // Native hook subprocesses can finish shortly after turn completion.
-        scheduleCodexNativeHookRelayUnregister({
-          relay: nativeHookRelay,
-          hookTimeoutSec: options.nativeHookRelay?.hookTimeoutSec,
-        });
-      } else {
-        nativeHookRelay.unregister();
-      }
-    });
+    await runCleanupStep("codex-native-hook-relay-release", () =>
+      nativeHookRelay?.releaseParent({ delay: state.shouldDelayNativeHookRelayUnregister }),
+    );
     await runCleanupStep("codex-sandbox-release", releaseSandboxExecEnvironment);
     await runCleanupStep("codex-scoped-mcp-dispose", () =>
       prompt.context.attemptTools.scopedMcpTools?.dispose(),

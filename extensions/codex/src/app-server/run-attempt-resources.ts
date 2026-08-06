@@ -2,7 +2,6 @@ import {
   embeddedAgentLog,
   runAgentCleanupStep,
   type AgentHarnessRuntimeArtifactBinding,
-  type NativeHookRelayRegistrationHandle,
 } from "openclaw/plugin-sdk/agent-harness-runtime";
 import { resolveCodexStartupTimeoutMs } from "./attempt-timeouts.js";
 import { protectCodexAppServerLiveThread } from "./client-runtime.js";
@@ -11,11 +10,13 @@ import { resolveCodexToolAbortTerminalReason } from "./dynamic-tool-execution.js
 import { CodexAppServerEventProjector } from "./event-projector.js";
 import { buildCodexHookRequester } from "./hook-requester.js";
 import {
-  buildCodexNativeHookRelayDisabledConfig,
   buildCodexNativeHookRelayConfig,
-  CODEX_NATIVE_HOOK_RELAY_TTL_GRACE_MS,
+  buildCodexNativeHookRelayDisabledConfig,
+} from "./native-hook-relay-config.js";
+import {
   createCodexNativeHookRelay,
   emitCodexNativePreToolUseFailureDiagnostic,
+  type CodexNativeHookRelayLease,
   type CodexNativePreToolUseFailure,
 } from "./native-hook-relay.js";
 import { codexNativeSubagentMonitorRuntime } from "./native-subagent-monitor.js";
@@ -68,7 +69,7 @@ export function prepareCodexAttemptResources(prompt: CodexAttemptPrompt) {
     routeActivated: false,
     detachRouteAbort: (() => undefined) as () => void,
     trajectoryEndRecorded: false,
-    nativeHookRelay: undefined as NativeHookRelayRegistrationHandle | undefined,
+    nativeHookRelay: undefined as CodexNativeHookRelayLease | undefined,
     nativeSubagentMonitor: undefined as
       | ReturnType<typeof codexNativeSubagentMonitorRuntime.register>
       | undefined,
@@ -184,6 +185,7 @@ export function prepareCodexAttemptResources(prompt: CodexAttemptPrompt) {
       retainClient: () => retainSharedCodexAppServerClientIfCurrent(state.client),
       retainParentThread: (protectedThreadId) =>
         protectCodexAppServerLiveThread(state.client, protectedThreadId),
+      nativeHookRelay: state.nativeHookRelay,
     });
   };
   const releaseCurrentRoute = () => {
@@ -203,7 +205,7 @@ export function prepareCodexAttemptResources(prompt: CodexAttemptPrompt) {
   const buildNativeHookRelayFinalConfigPatch = (
     decision: { action: "resume"; binding: CodexAppServerThreadBinding } | { action: "start" },
   ) => {
-    state.nativeHookRelay?.unregister();
+    state.nativeHookRelay?.releaseParent();
     if (params.pluginHarnessToolPolicyRestricted === true) {
       state.nativeHookRelay = undefined;
       return {
@@ -215,10 +217,6 @@ export function prepareCodexAttemptResources(prompt: CodexAttemptPrompt) {
       options: options.nativeHookRelay,
       generation:
         decision.action === "resume" ? decision.binding.nativeHookRelayGeneration : undefined,
-      generationMismatchGraceMs:
-        decision.action === "resume" && !decision.binding.nativeHookRelayGeneration
-          ? CODEX_NATIVE_HOOK_RELAY_TTL_GRACE_MS
-          : undefined,
       events: nativeHookRelayEvents,
       agentId: sessionAgentId,
       sessionId: params.sessionId,
@@ -260,9 +258,7 @@ export function prepareCodexAttemptResources(prompt: CodexAttemptPrompt) {
             hookTimeoutSec: options.nativeHookRelay?.hookTimeoutSec,
             loopDetectionPreToolUseRelay: appServer.loopDetectionPreToolUseRelay,
           })
-        : options.nativeHookRelay?.enabled === false
-          ? buildCodexNativeHookRelayDisabledConfig()
-          : undefined,
+        : buildCodexNativeHookRelayDisabledConfig(),
       nativeHookRelayGeneration: state.nativeHookRelay?.generation,
     };
   };
