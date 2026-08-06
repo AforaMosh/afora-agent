@@ -9,6 +9,7 @@ import {
   replaceTranscriptEvents,
   upsertSessionEntry,
 } from "../config/sessions/session-accessor.js";
+import { runWithSessionTranscriptReadFence } from "../config/sessions/session-transcript-read-fence.js";
 import * as transcriptEvents from "../sessions/transcript-events.js";
 import {
   appendAssistantMirrorMessageByIdentity,
@@ -205,6 +206,92 @@ describe("session transcript runtime SDK", () => {
         maxEvents: 2,
       }),
     ).resolves.toMatchObject({ kind: "reset", reason: "generation_mismatch" });
+  });
+
+  it("fences full and raw reads before the exact admitted row and resumes from its cursor", async () => {
+    const scope = {
+      agentId: "main",
+      sessionId: "fenced-raw-session",
+      sessionKey: "agent:main:fenced-raw",
+      storePath,
+    };
+    await upsertSessionEntry(scope, { sessionId: scope.sessionId, updatedAt: 10 });
+    const priorUser = await appendSessionTranscriptMessageByIdentity({
+      ...scope,
+      message: { role: "user", content: "same prompt" },
+      now: 1_000,
+    });
+    const priorAssistant = await appendSessionTranscriptMessageByIdentity({
+      ...scope,
+      message: { role: "assistant", content: "prior answer" },
+      parentId: priorUser?.messageId,
+      now: 2_000,
+    });
+    const admitted = await appendSessionTranscriptMessageByIdentity({
+      ...scope,
+      message: { role: "user", content: "same prompt" },
+      parentId: priorAssistant?.messageId,
+      now: 3_000,
+    });
+    await appendSessionTranscriptMessageByIdentity({
+      ...scope,
+      message: { role: "assistant", content: "current answer" },
+      parentId: admitted?.messageId,
+      now: 4_000,
+    });
+    if (!priorUser || !priorAssistant || !admitted) {
+      throw new Error("expected fenced transcript setup messages");
+    }
+    const receipt = { messageId: admitted.messageId, target: scope };
+
+    const fenced = await runWithSessionTranscriptReadFence(receipt, async () => {
+      const events = await readSessionTranscriptEvents(scope);
+      const visible = await readVisibleSessionTranscriptMessageEntries(scope);
+      const latest = await readLatestAssistantTextByIdentity(scope);
+      const page = await readSessionTranscriptRawDelta({
+        ...scope,
+        maxBytes: 100_000,
+        maxEvents: 100,
+      });
+      return { events, latest, page, visible };
+    });
+
+    expect(
+      fenced.events.flatMap((event) =>
+        event &&
+        typeof event === "object" &&
+        "type" in event &&
+        event.type === "message" &&
+        "id" in event
+          ? [event.id]
+          : [],
+      ),
+    ).toEqual([priorUser.messageId, priorAssistant.messageId]);
+    expect(fenced.visible.map((entry) => entry.entryId)).toEqual([
+      priorUser.messageId,
+      priorAssistant.messageId,
+    ]);
+    expect(fenced.latest).toMatchObject({ id: priorAssistant.messageId, text: "prior answer" });
+    expect(fenced.page).toMatchObject({ kind: "page", hasMore: false });
+    if (fenced.page.kind !== "page") {
+      throw new Error("expected fenced raw transcript page");
+    }
+
+    await expect(
+      readSessionTranscriptRawDelta({
+        ...scope,
+        cursor: fenced.page.cursor,
+        maxBytes: 100_000,
+        maxEvents: 100,
+      }),
+    ).resolves.toMatchObject({
+      kind: "page",
+      events: [
+        { event: { id: admitted.messageId, message: { content: "same prompt" } } },
+        { event: { message: { content: "current answer" } } },
+      ],
+      hasMore: false,
+    });
   });
 
   it("bounds raw pages before parsing an oversized event", async () => {

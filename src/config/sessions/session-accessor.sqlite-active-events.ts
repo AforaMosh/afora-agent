@@ -37,6 +37,10 @@ import {
 } from "./session-accessor.sqlite-visible-cursor.js";
 import type { SessionTranscriptProjectionState } from "./session-transcript-index.js";
 import { SessionTranscriptProjectionUnavailableError } from "./session-transcript-projection-error.js";
+import {
+  resolveSqliteSessionTranscriptReadFence,
+  SessionTranscriptReadFenceError,
+} from "./session-transcript-read-fence.js";
 import { startSessionTranscriptIndexReconcile } from "./session-transcript-reconcile.js";
 export { waitForSessionTranscriptProjection } from "./session-transcript-reconcile.js";
 export {
@@ -315,6 +319,10 @@ export function readSessionTranscriptVisibleMessageDelta(
   );
   return withCurrentProjectionSnapshot(scope, (projection) => {
     const db = getActiveTranscriptKysely(projection.database);
+    const beforeEventSeq = resolveSqliteSessionTranscriptReadFence({
+      database: projection.database,
+      ...projection.resolved,
+    });
     const generation = executeSqliteQueryTakeFirstSync(
       projection.database.db,
       db
@@ -351,6 +359,11 @@ export function readSessionTranscriptVisibleMessageDelta(
     }
     if (cursor.generation !== generation) {
       return reset("generation_mismatch");
+    }
+    if (beforeEventSeq !== undefined && cursor.lastEventSeq >= beforeEventSeq) {
+      throw new SessionTranscriptReadFenceError(
+        "Transcript read cursor has crossed the current-turn admission fence",
+      );
     }
 
     let startPosition = 0;
@@ -391,6 +404,9 @@ export function readSessionTranscriptVisibleMessageDelta(
         .where("active.session_id", "=", projection.resolved.sessionId)
         .where("active.message_position", "is not", null)
         .where("active.message_position", ">=", startPosition)
+        .$if(beforeEventSeq !== undefined, (query) =>
+          query.where("active.event_seq", "<", beforeEventSeq!),
+        )
         .orderBy("active.message_position", "asc")
         .limit(maxMessages + 1),
     ).rows;

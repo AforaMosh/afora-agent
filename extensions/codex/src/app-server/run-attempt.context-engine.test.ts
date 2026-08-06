@@ -153,6 +153,7 @@ async function createSqliteParams(
     message,
     resolveMessage: async () => message,
     markRuntimePersisted() {},
+    getAdmissionReceipt: () => undefined,
   } as EmbeddedRunAttemptParams["userTurnTranscriptRecorder"];
   return params;
 }
@@ -361,6 +362,9 @@ function createContextEngine(overrides: Partial<ContextEngine> = {}): ContextEng
       id: "lossless-claw",
       name: "Lossless Claw",
       ownsCompaction: true,
+      transcriptSemantics: {
+        currentTurnFence: "before-current-turn-entry-v1",
+      },
     },
     bootstrap: vi.fn(async () => ({ bootstrapped: true })),
     assemble: vi.fn(async ({ messages, prompt }) => ({
@@ -2109,7 +2113,7 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
     expect(String(details.error)).not.toContain("sk-abcdefghijklmnopqrstuv");
   });
 
-  it("falls back to ingestBatch and skips turn maintenance on prompt failure", async () => {
+  it("does not advance context-engine state on prompt failure", async () => {
     const workspaceDir = path.join(tempDir, "workspace");
     const ingestBatch = vi.fn(async () => ({ ingestedCount: 2 }));
     const maintain = vi.fn(async () => ({ changed: false, bytesFreed: 0, rewrittenEntries: 0 }));
@@ -2128,7 +2132,7 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
     await harness.completeTurn("failed");
     await run;
 
-    expect(ingestBatch).toHaveBeenCalledTimes(1);
+    expect(ingestBatch).not.toHaveBeenCalled();
     expect(maintain).not.toHaveBeenCalled();
   });
 });

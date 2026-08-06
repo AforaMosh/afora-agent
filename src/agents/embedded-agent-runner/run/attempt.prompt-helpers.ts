@@ -523,6 +523,7 @@ type AfterTurnRuntimeContextAttempt = Pick<
   | "authProfileId"
   | "authProfileIdSource"
   | "runtimePlan"
+  | "userTurnTranscriptRecorder"
 > & {
   sessionId?: EmbeddedRunAttemptParams["sessionId"];
 };
@@ -569,6 +570,7 @@ export function buildAfterTurnRuntimeContext(params: {
     attempt: params.attempt,
     activeAgentId: params.activeAgentId,
   });
+  const transcriptReadFence = params.attempt.userTurnTranscriptRecorder?.getAdmissionReceipt();
   return {
     ...buildEmbeddedCompactionRuntimeContext({
       sessionKey: params.attempt.sessionKey,
@@ -625,6 +627,7 @@ export function buildAfterTurnRuntimeContext(params: {
     ...(params.promptCache ? { promptCache: params.promptCache } : {}),
     transcriptStorage: { kind: "sqlite" },
     ...(sessionTarget ? { sessionTarget } : {}),
+    ...(transcriptReadFence ? { transcriptReadFence } : {}),
   };
 }
 

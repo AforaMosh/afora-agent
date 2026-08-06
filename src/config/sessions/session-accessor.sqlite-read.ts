@@ -24,6 +24,7 @@ import {
   resolveSqliteTranscriptReadScope,
   toDatabaseOptions,
 } from "./session-accessor.sqlite-scope.js";
+import { resolveSqliteSessionTranscriptReadFence } from "./session-transcript-read-fence.js";
 
 export type SqliteTranscriptSnapshotRow = {
   eventJson: string;
@@ -47,7 +48,8 @@ export function loadSqliteTranscriptEventsSync(
 ): TranscriptEvent[] {
   const resolved = resolveSqliteTranscriptReadScope(scope);
   const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
-  return loadSqliteTranscriptEventsFromDatabase(database, resolved.sessionId);
+  const beforeEventSeq = resolveSqliteSessionTranscriptReadFence({ database, ...resolved });
+  return loadSqliteTranscriptEventsFromDatabase(database, resolved.sessionId, beforeEventSeq);
 }
 
 /** Loads only the first transcript row for header metadata hot paths. */
@@ -142,6 +144,7 @@ export function readSqliteTranscriptEventAtSeqSync(
 export function loadSqliteTranscriptEventsFromDatabase(
   database: OpenClawAgentDatabase,
   sessionId: string,
+  beforeEventSeq?: number,
 ): TranscriptEvent[] {
   const db = getSessionKysely(database.db);
   const rows = executeSqliteQuerySync(
@@ -150,6 +153,7 @@ export function loadSqliteTranscriptEventsFromDatabase(
       .selectFrom("transcript_events")
       .select(["event_json"])
       .where("session_id", "=", sessionId)
+      .$if(beforeEventSeq !== undefined, (query) => query.where("seq", "<", beforeEventSeq!))
       .orderBy("seq", "asc"),
   ).rows;
   return rows.map((row) => JSON.parse(row.event_json) as TranscriptEvent);
@@ -270,6 +274,7 @@ export function loadLatestSqliteAssistantText(
   const resolved = resolveSqliteTranscriptReadScope(scope);
   const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
   const db = getSessionKysely(database.db);
+  const beforeEventSeq = resolveSqliteSessionTranscriptReadFence({ database, ...resolved });
   const rows = iterateSqliteQuerySync(
     database.db,
     db
@@ -280,6 +285,7 @@ export function loadLatestSqliteAssistantText(
       .select("te.event_json as event_json")
       .where("te.session_id", "=", resolved.sessionId)
       .where("ti.event_type", "=", "message")
+      .$if(beforeEventSeq !== undefined, (query) => query.where("ti.seq", "<", beforeEventSeq!))
       .orderBy("ti.seq", "desc"),
   );
   for (const row of rows) {

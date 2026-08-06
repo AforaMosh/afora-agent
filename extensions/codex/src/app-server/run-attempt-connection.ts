@@ -2,6 +2,7 @@ import {
   embeddedAgentLog,
   getBeforeToolCallPolicyDiagnosticState,
   isActiveHarnessContextEngine,
+  selectHarnessContextEngineForCurrentTurn,
   resolveSandboxContext,
   resolveSessionAgentIds,
   resolveUserPath,
@@ -128,9 +129,13 @@ export async function prepareCodexAttemptConnection({ params, options }: CodexRu
   });
   let bindingStore = options.bindingStore;
   preDynamicStartupStages.mark("session-agent");
-  let activeContextEngine = isActiveHarnessContextEngine(params.contextEngine)
-    ? params.contextEngine
-    : undefined;
+  let activeContextEngine = selectHarnessContextEngineForCurrentTurn({
+    contextEngine: isActiveHarnessContextEngine(params.contextEngine)
+      ? params.contextEngine
+      : undefined,
+    hasUserTurnRecorder: params.userTurnTranscriptRecorder !== undefined,
+    warn: (message) => embeddedAgentLog.warn(message),
+  });
   const isInactiveThreadBootstrapBinding = (binding: CodexAppServerThreadBinding | undefined) =>
     !activeContextEngine && binding?.contextEngine?.projection?.mode === "thread_bootstrap";
   // The public runner carries a resolved store target. Its durable row must

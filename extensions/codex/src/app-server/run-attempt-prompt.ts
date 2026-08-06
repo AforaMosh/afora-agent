@@ -44,6 +44,7 @@ export async function prepareCodexAttemptPrompt(context: CodexAttemptContext) {
     historyState,
     hookContext,
     workspaceBootstrapContext,
+    buildActiveContextEngineRuntimeContext,
     baseDeveloperInstructions,
     openClawPromptContext,
     skillsCollaborationInstructions,
@@ -108,6 +109,7 @@ export async function prepareCodexAttemptPrompt(context: CodexAttemptContext) {
       requestedModelId: usesSupervisionConnection ? undefined : params.requestedModelId,
       fallbackReason: usesSupervisionConnection ? undefined : params.fallbackReason,
       degradedReason: usesSupervisionConnection ? undefined : params.degradedReason,
+      runtimeContext: buildActiveContextEngineRuntimeContext(),
       prompt: params.prompt,
     });
     if (!assembled) {

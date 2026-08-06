@@ -1,8 +1,8 @@
 // Context-engine registry owns engine registration, resolution, compatibility, and quarantine.
 import { sanitizeForLog } from "../../packages/terminal-core/src/ansi.js";
+import { SessionTranscriptReadFenceError } from "../config/sessions/session-transcript-read-fence.js";
 import type { OpenClawConfig } from "../config/types.js";
 import { createAbortError } from "../infra/abort-signal.js";
-import { getPluginCompatRecord } from "../plugins/compat/registry.js";
 import type {
   ContextEngineFactory,
   ContextEngineFactoryContext,
@@ -62,7 +62,6 @@ function wrapResolvedContextEngine(
     factoryCtx?: ContextEngineFactoryContext;
   },
 ): ContextEngine {
-  const removeAfter = getPluginCompatRecord("context-engine-legacy-host-param-default").removeAfter;
   const accepted = engine.info.acceptedHostParams;
   const fallback =
     metadata.defaultEngineId &&
@@ -72,6 +71,7 @@ function wrapResolvedContextEngine(
       : undefined;
   let fallbackEnginePromise: Promise<ContextEngine> | undefined;
   let resolvedFallbackEngine: ContextEngine | undefined;
+  let compatibilityFallback = false;
   const getFallbackEngine = fallback
     ? () =>
         (fallbackEnginePromise ??= resolveDefaultContextEngine(
@@ -83,10 +83,7 @@ function wrapResolvedContextEngine(
         }))
     : undefined;
   const projectParams = (params: Record<string, unknown>) => {
-    // Removal(2026-08-12): undeclared engines get full params. Contract: context-engine-legacy-host-param-default.
-    const useLegacyDefault =
-      removeAfter !== undefined && new Date().toISOString().slice(0, 10) <= removeAfter;
-    const currentAccepted = accepted ?? (useLegacyDefault ? [] : undefined);
+    const currentAccepted = accepted ?? [];
     return currentAccepted
       ? Object.fromEntries(
           Object.entries(params).filter(
@@ -102,7 +99,10 @@ function wrapResolvedContextEngine(
     {
       get(_target, property) {
         if (property === "info") {
-          if (!fallback || !getContextEngineQuarantine(metadata.engineId)) {
+          if (
+            !fallback ||
+            (!compatibilityFallback && !getContextEngineQuarantine(metadata.engineId))
+          ) {
             return engine.info;
           }
           return (
@@ -142,7 +142,7 @@ function wrapResolvedContextEngine(
           }
           const invokeFallback = () =>
             invokeFallbackContextEngineMethod({ getFallbackEngine, methodName, methodParams });
-          if (getContextEngineQuarantine(metadata.engineId)) {
+          if (compatibilityFallback || getContextEngineQuarantine(metadata.engineId)) {
             // Runtime failures downgrade future guarded calls for this process.
             return await invokeFallback();
           }
@@ -153,6 +153,13 @@ function wrapResolvedContextEngine(
             if (isContextEngineAbortRejection(error, abortSignal)) {
               // Abort is caller intent, not engine instability; never quarantine for it.
               throw error;
+            }
+            if (error instanceof SessionTranscriptReadFenceError) {
+              compatibilityFallback = true;
+              console.warn(
+                `[context-engine] Context engine "${sanitizeForLog(metadata.engineId)}" cannot honor the current-turn transcript fence: ${sanitizeForLog(error.message)}; using default engine "${fallback.defaultEngineId}" for the rest of this logical turn.`,
+              );
+              return await invokeFallback();
             }
             recordContextEngineQuarantine({
               engineId: metadata.engineId,

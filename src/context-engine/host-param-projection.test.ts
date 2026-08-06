@@ -143,7 +143,7 @@ describe("context-engine host parameter projection", () => {
     expect(compactCalls[0]).toHaveProperty("sessionId", "session-1");
   });
 
-  it("passes full host parameters to undeclared engines after the window", async () => {
+  it("keeps the legacy parameter set for undeclared engines after the former window", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-07-29T12:00:00Z"));
     const assembleCalls: Array<Record<string, unknown>> = [];
@@ -154,9 +154,13 @@ describe("context-engine host parameter projection", () => {
     vi.setSystemTime(new Date("2026-08-13T00:00:00Z"));
     await invokeHostParamMethods(engine);
 
-    expect(assembleCalls[0]).toHaveProperty("sessionKey", "agent:main:session-1");
-    expect(assembleCalls[0]).toHaveProperty("prompt", "hello");
-    expect(compactCalls[0]).toHaveProperty("runtimeContext", { tokenBudget: 1000 });
+    for (const call of [...assembleCalls, ...compactCalls]) {
+      expect(call).not.toHaveProperty("sessionKey");
+      expect(call).not.toHaveProperty("runtimeSettings");
+    }
+    expect(assembleCalls[0]).not.toHaveProperty("prompt");
+    expect(compactCalls[0]).not.toHaveProperty("sessionTarget");
+    expect(compactCalls[0]).not.toHaveProperty("runtimeContext");
   });
 
   it("does not retry validator-shaped engine failures", async () => {

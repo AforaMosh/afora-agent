@@ -1,6 +1,7 @@
 // Context-engine public types define the pluggable context-management lifecycle.
 import type { AgentMessage } from "../agents/runtime/index.js";
 import type { MemoryCitationsMode } from "../config/types.memory.js";
+import type { UserTurnTranscriptAdmissionReceipt } from "../sessions/user-turn-transcript.types.js";
 
 // Result types
 
@@ -179,6 +180,9 @@ export type ContextEngineInfo = {
   name: string;
   version?: string;
   acceptedHostParams?: string[];
+  transcriptSemantics?: {
+    currentTurnFence?: "before-current-turn-entry-v1";
+  };
   /** True when the engine manages its own compaction lifecycle. */
   ownsCompaction?: boolean;
   /**
@@ -321,6 +325,8 @@ export type ContextEngineRuntimeContext = Record<string, unknown> & {
   transcriptStorage?: ContextEngineTranscriptStorageInfo;
   /** Storage-neutral runtime session target for compaction delegation. */
   sessionTarget?: ContextEngineSessionTarget;
+  /** Exact current-turn admission excluded from pre-turn transcript reads. */
+  transcriptReadFence?: UserTurnTranscriptAdmissionReceipt;
   /**
    * Safe transcript rewrite helper implemented by the runtime.
    *
@@ -443,6 +449,7 @@ export interface ContextEngine {
     /** The incoming user prompt for this turn (useful for retrieval-oriented engines). */
     prompt?: string;
     runtimeSettings?: ContextEngineRuntimeSettings;
+    runtimeContext?: ContextEngineRuntimeContext;
   }): Promise<AssembleResult>;
 
   /**

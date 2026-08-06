@@ -5,6 +5,7 @@ import {
   embeddedAgentLog,
   getAgentHarnessHookRunner,
   resolveContextEngineOwnerPluginId,
+  runWithHarnessContextEngineTranscriptFence,
   runHarnessContextEngineMaintenance,
 } from "openclaw/plugin-sdk/agent-harness-runtime";
 import {
@@ -66,11 +67,18 @@ export async function prepareCodexAttemptContext(
     sessionKey: contextSessionKey,
     sessionTarget: params.sessionTarget,
   };
+  const readFencedHistory = async () => {
+    const transcriptReadFence = params.userTurnTranscriptRecorder?.getAdmissionReceipt();
+    return await runWithHarnessContextEngineTranscriptFence(
+      transcriptReadFence ? { transcriptReadFence } : undefined,
+      async () => await readMirroredSessionHistoryMessages(activeTranscriptTarget),
+    );
+  };
   const historyState = {
     messages:
       !activeContextEngine && initialStartupBindingHadInactiveThreadBootstrap
         ? []
-        : ((await readMirroredSessionHistoryMessages(activeTranscriptTarget)) ?? []),
+        : ((await readFencedHistory()) ?? []),
   };
   const hadSessionTranscriptState = historyState.messages.length > 0;
   const hookContextWindowFields = {
@@ -130,8 +138,7 @@ export async function prepareCodexAttemptContext(
       config: params.config,
       warn: (message) => embeddedAgentLog.warn(message),
     });
-    historyState.messages =
-      (await readMirroredSessionHistoryMessages(activeTranscriptTarget)) ?? historyState.messages;
+    historyState.messages = (await readFencedHistory()) ?? historyState.messages;
   }
   const memoryToolNames = getCodexWorkspaceMemoryToolNames(toolBridge.availableSpecs);
   const workspaceBootstrapContext = await buildCodexWorkspaceBootstrapContext({

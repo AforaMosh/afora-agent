@@ -458,7 +458,9 @@ export {
   buildHarnessContextEngineRuntimeContextFromUsage,
   finalizeHarnessContextEngineTurn,
   isActiveHarnessContextEngine,
+  runWithHarnessContextEngineTranscriptFence,
   runHarnessContextEngineMaintenance,
+  selectHarnessContextEngineForCurrentTurn,
 } from "../agents/harness/context-engine-lifecycle.js";
 // Plugin-owned (`ownsCompaction`) compaction safety timeout. Exposed on the
 // agent-harness-runtime surface so plugin harnesses such as Codex bound their

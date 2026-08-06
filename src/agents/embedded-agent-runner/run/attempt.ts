@@ -14,6 +14,7 @@ import {
   type AgentRunAttemptTerminal,
 } from "../../agent-run-terminal-outcome.js";
 import { resolveAgentDir } from "../../agent-scope.js";
+import { selectHarnessContextEngineForCurrentTurn } from "../../harness/context-engine-lifecycle.js";
 import type { guardSessionManager } from "../../session-tool-result-guard-wrapper.js";
 import type { AgentSession } from "../../sessions/index.js";
 import {
@@ -178,7 +179,11 @@ export async function runEmbeddedAttempt(
         `raw model run enabled: modelRun=${params.modelRun === true} promptMode=${params.promptMode ?? "unset"}`,
       );
     }
-    const activeContextEngine = isRawModelRun ? undefined : params.contextEngine;
+    const activeContextEngine = selectHarnessContextEngineForCurrentTurn({
+      contextEngine: isRawModelRun ? undefined : params.contextEngine,
+      hasUserTurnRecorder: params.userTurnTranscriptRecorder !== undefined,
+      warn: (message) => log.warn(message),
+    });
     if (activeContextEngine && activeContextEngine.info.id !== "legacy") {
       assertContextEngineHostSupport({
         contextEngine: activeContextEngine,

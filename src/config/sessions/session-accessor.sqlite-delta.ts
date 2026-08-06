@@ -17,6 +17,10 @@ import {
   resolveSqliteTranscriptReadScope,
   toDatabaseOptions,
 } from "./session-accessor.sqlite-scope.js";
+import {
+  resolveSqliteSessionTranscriptReadFence,
+  SessionTranscriptReadFenceError,
+} from "./session-transcript-read-fence.js";
 
 const RAW_TRANSCRIPT_CURSOR_VERSION = 1;
 const DEFAULT_RAW_TRANSCRIPT_MAX_EVENTS = 1_000;
@@ -109,7 +113,17 @@ export function readSqliteTranscriptRawDelta(
   const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
   return runSqliteDeferredTransactionSync(
     database.db,
-    () => readRawDeltaInTransaction(database.db, resolved, limits.cursor, maxEvents, maxBytes),
+    () => {
+      const beforeEventSeq = resolveSqliteSessionTranscriptReadFence({ database, ...resolved });
+      return readRawDeltaInTransaction(
+        database.db,
+        resolved,
+        limits.cursor,
+        maxEvents,
+        maxBytes,
+        beforeEventSeq,
+      );
+    },
     {
       databaseLabel: database.path,
       operationLabel: "session transcript raw delta",
@@ -123,6 +137,7 @@ function readRawDeltaInTransaction(
   encodedCursor: string | undefined,
   maxEvents: number,
   maxBytes: number,
+  beforeEventSeq: number | undefined,
 ): SessionTranscriptRawDeltaResult {
   const db = getSessionKysely(database);
   const state = executeSqliteQueryTakeFirstSync(
@@ -164,9 +179,14 @@ function readRawDeltaInTransaction(
       .orderBy("seq", "desc")
       .limit(1),
   );
-  const maxSeq = frontier ? normalizeSqliteNumber(frontier.seq) : -1;
+  const maxSeq = Math.min(
+    frontier ? normalizeSqliteNumber(frontier.seq) : -1,
+    beforeEventSeq === undefined ? Number.POSITIVE_INFINITY : beforeEventSeq - 1,
+  );
   if (cursor.lastSeq > maxSeq) {
-    return reset("invalid_cursor");
+    throw new SessionTranscriptReadFenceError(
+      "Transcript read cursor has crossed the current-turn admission fence",
+    );
   }
 
   const metadata = executeSqliteQuerySync(
@@ -180,6 +200,7 @@ function readRawDeltaInTransaction(
       ])
       .where("session_id", "=", scope.sessionId)
       .where("seq", ">", cursor.lastSeq)
+      .$if(beforeEventSeq !== undefined, (query) => query.where("seq", "<", beforeEventSeq!))
       .orderBy("seq", "asc")
       .limit(maxEvents + 1),
   ).rows.map((row) => ({
