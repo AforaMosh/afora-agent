@@ -42,10 +42,16 @@ type RealtimeTalkAudioContract = {
   outputSampleRateHz: number;
 };
 
+export type RealtimeTalkTerminalPayload = {
+  outcome: "completed" | "error";
+  message?: string;
+};
+
 export type RealtimeTalkWebRtcSdpSessionResult = {
   provider: string;
   transport: "webrtc";
   voiceSessionId?: string;
+  allocationId?: string;
   clientSecret: string;
   offerUrl?: string;
   offerHeaders?: Record<string, string>;
@@ -54,12 +60,14 @@ export type RealtimeTalkWebRtcSdpSessionResult = {
   expiresAt?: number;
   consultThinkingLevel?: string;
   consultFastMode?: boolean;
+  terminal?: RealtimeTalkTerminalPayload;
 };
 
 export type RealtimeTalkJsonPcmWebSocketSessionResult = {
   provider: string;
   transport: "provider-websocket";
   voiceSessionId?: string;
+  allocationId?: string;
   protocol: string;
   clientSecret: string;
   websocketUrl: string;
@@ -70,6 +78,7 @@ export type RealtimeTalkJsonPcmWebSocketSessionResult = {
   expiresAt?: number;
   consultThinkingLevel?: string;
   consultFastMode?: boolean;
+  terminal?: RealtimeTalkTerminalPayload;
 };
 
 export type RealtimeTalkGatewayRelaySessionResult = {
@@ -120,6 +129,7 @@ export type RealtimeTalkTransportContext = {
   voiceSessionId?: string;
   flushTranscriptWrites?: () => Promise<void>;
   callbacks: RealtimeTalkCallbacks;
+  emitTalkEvent?: (input: RealtimeTalkEventInput) => void;
   inputDeviceId?: string;
   videoDeviceId?: string;
   consultThinkingLevel?: string;

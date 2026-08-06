@@ -1,3 +1,4 @@
+import { RealtimeTalkAdoptionGate } from "./realtime-talk-adoption-gate.ts";
 import {
   bytesToBase64,
   floatToPcm16,
@@ -33,6 +34,16 @@ const AUDIO_APPEND_TIMEOUT_MS = 8_000;
 const RELAY_CLOSE_TIMEOUT_MS = 8_000;
 const MAX_PENDING_ACTIVATION_EVENTS = 32;
 
+export const closeGatewayRelayRealtimeTalkSession = (
+  client: RealtimeTalkTransportContext["client"],
+  relaySessionId: string,
+): Promise<unknown> =>
+  client.request(
+    "talk.session.close",
+    { sessionId: relaySessionId },
+    { timeoutMs: RELAY_CLOSE_TIMEOUT_MS },
+  );
+
 export class GatewayRelayRealtimeTalkTransport implements RealtimeTalkTransport {
   private media: MediaStream | null = null;
   private inputContext: AudioContext | null = null;
@@ -57,9 +68,7 @@ export class GatewayRelayRealtimeTalkTransport implements RealtimeTalkTransport 
   private pendingOutputCancellations = 0;
   private speechFramesDuringPlayback = 0;
   private lastRelayError: string | undefined;
-  private activated = false;
-  private pendingActivationEvents: GatewayRelayEvent[] = [];
-  private pendingActivationEventBytes = 0;
+  private adoptionGate = this.createAdoptionGate();
   private startupError: Error | null = null;
 
   constructor(
@@ -78,9 +87,7 @@ export class GatewayRelayRealtimeTalkTransport implements RealtimeTalkTransport 
       throw new Error("Gateway-relay realtime Talk currently requires PCM16 audio");
     }
     this.closed = false;
-    this.activated = false;
-    this.pendingActivationEvents = [];
-    this.pendingActivationEventBytes = 0;
+    this.adoptionGate = this.createAdoptionGate();
     this.startupError = null;
     this.mediaSetupController?.abort();
     const mediaSetupController = new AbortController();
@@ -124,32 +131,31 @@ export class GatewayRelayRealtimeTalkTransport implements RealtimeTalkTransport 
     this.outputContext = new AudioContext({ sampleRate: this.session.audio.outputSampleRateHz });
     this.abortPendingAudioAppends();
     this.audioAppendAbortController = new AbortController();
-    if (this.ctx.callbacks.onInputLevel) {
-      this.inputMeter = new RealtimeTalkMediaStreamMeter(this.ctx.callbacks.onInputLevel);
-      this.inputMeter.start(this.media, this.inputContext);
-    }
-    this.startMicrophonePump();
     return "ready";
   }
 
   activate(): void {
-    if (this.closed || this.activated) {
+    const startupError = this.currentStartupError();
+    if (startupError) {
+      throw startupError;
+    }
+    if (this.closed || this.adoptionGate.currentState !== "pending") {
       return;
     }
-    this.activated = true;
-    const events = this.pendingActivationEvents;
-    this.pendingActivationEvents = [];
-    this.pendingActivationEventBytes = 0;
-    for (const event of events) {
-      try {
-        this.handleRelayEvent(event);
-      } catch (error) {
-        this.stop();
-        throw error;
+    try {
+      if (this.ctx.callbacks.onInputLevel && this.media && this.inputContext) {
+        this.inputMeter = new RealtimeTalkMediaStreamMeter(this.ctx.callbacks.onInputLevel);
+        this.inputMeter.start(this.media, this.inputContext);
       }
-      if (this.closed) {
-        return;
+      this.startMicrophonePump();
+      this.adoptionGate.adopt();
+      const activationError = this.currentStartupError();
+      if (activationError) {
+        throw activationError;
       }
+    } catch (error) {
+      this.stop();
+      throw error;
     }
   }
 
@@ -157,15 +163,9 @@ export class GatewayRelayRealtimeTalkTransport implements RealtimeTalkTransport 
     const wasClosed = this.closed;
     this.stopLocal();
     if (!wasClosed) {
-      void this.ctx.client
-        .request(
-          "talk.session.close",
-          {
-            sessionId: this.session.relaySessionId,
-          },
-          { timeoutMs: RELAY_CLOSE_TIMEOUT_MS },
-        )
-        .catch(() => undefined);
+      void closeGatewayRelayRealtimeTalkSession(this.ctx.client, this.session.relaySessionId).catch(
+        () => undefined,
+      );
     }
   }
 
@@ -173,9 +173,7 @@ export class GatewayRelayRealtimeTalkTransport implements RealtimeTalkTransport 
     this.closed = true;
     this.mediaSetupController?.abort();
     this.mediaSetupController = null;
-    this.activated = false;
-    this.pendingActivationEvents = [];
-    this.pendingActivationEventBytes = 0;
+    this.adoptionGate.discard();
     this.unsubscribe?.();
     this.unsubscribe = null;
     this.inputPump.stop();
@@ -264,8 +262,8 @@ export class GatewayRelayRealtimeTalkTransport implements RealtimeTalkTransport 
     if (event.relaySessionId !== this.session.relaySessionId || this.closed) {
       return;
     }
-    if (this.activated) {
-      this.handleRelayEvent(event);
+    if (this.adoptionGate.currentState === "adopted") {
+      this.adoptionGate.push(event);
       return;
     }
     if (event.type === "error") {
@@ -282,23 +280,24 @@ export class GatewayRelayRealtimeTalkTransport implements RealtimeTalkTransport 
       this.stopLocal();
       return;
     }
-    const eventBytes = estimateGatewayRelayEventBytes(event);
-    if (
-      this.pendingActivationEvents.length >= MAX_PENDING_ACTIVATION_EVENTS ||
-      eventBytes > MAX_PENDING_ACTIVATION_EVENT_BYTES - this.pendingActivationEventBytes
-    ) {
-      // The relay starts before browser media permission settles. Keep that provisional
-      // window bounded and fail the candidate instead of dropping authoritative events.
-      this.startupError = new Error(
-        "Realtime relay emitted too much data before browser setup completed",
-      );
-      // Overflow is locally terminal, so release the server relay immediately even
-      // if the browser's microphone permission prompt never settles.
-      this.stop();
-      return;
-    }
-    this.pendingActivationEvents.push(event);
-    this.pendingActivationEventBytes += eventBytes;
+    this.adoptionGate.push(event);
+  }
+
+  private createAdoptionGate(): RealtimeTalkAdoptionGate<GatewayRelayEvent> {
+    return new RealtimeTalkAdoptionGate({
+      maxCount: MAX_PENDING_ACTIVATION_EVENTS,
+      maxBytes: MAX_PENDING_ACTIVATION_EVENT_BYTES,
+      measure: estimateGatewayRelayEventBytes,
+      consume: (event) => this.handleRelayEvent(event),
+      onOverflow: () => {
+        // Relay startup precedes browser adoption. Overflow is terminal because
+        // dropping an authoritative provider event would corrupt the live turn.
+        this.startupError = new Error(
+          "Realtime relay emitted too much data before browser setup completed",
+        );
+        this.stop();
+      },
+    });
   }
 
   private handleRelayEvent(event: GatewayRelayEvent): void {

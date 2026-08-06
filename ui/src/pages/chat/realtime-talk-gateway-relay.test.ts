@@ -397,6 +397,23 @@ describe("GatewayRelayRealtimeTalkTransport", () => {
     expect(requestCallsFor(client, "talk.session.close")).toHaveLength(0);
   });
 
+  it("throws a relay close recorded after setup but before adoption", async () => {
+    const client = createClient();
+    const onStatus = vi.fn();
+    const transport = createTransport({ callbacks: { onStatus }, client });
+    await expect(transport.start()).resolves.toBe("ready");
+    emitTalkEvent({
+      relaySessionId: "relay-1",
+      type: "error",
+      message: "provider closed during commit",
+    });
+    emitTalkEvent({ relaySessionId: "relay-1", type: "close", reason: "error" });
+
+    expect(() => transport.activate()).toThrow("provider closed during commit");
+    expect(onStatus).not.toHaveBeenCalled();
+    expect(requestCallsFor(client, "talk.session.close")).toHaveLength(0);
+  });
+
   it("closes the relay when a provisional callback throws during activation", async () => {
     const client = createClient();
     const onStatus = vi.fn(() => {
@@ -844,6 +861,7 @@ describe("GatewayRelayRealtimeTalkTransport", () => {
     const oldTransport = createTransport({ callbacks: { onStatus: oldStatus }, client: oldClient });
 
     await oldTransport.start();
+    oldTransport.activate();
     pumpMicrophone(new Float32Array(4096));
     oldTransport.stop();
 
@@ -854,6 +872,7 @@ describe("GatewayRelayRealtimeTalkTransport", () => {
       client: replacementClient,
     });
     await replacement.start();
+    replacement.activate();
     pumpMicrophone(new Float32Array(4096));
     rejectOldAppend(new Error("late stale append failure"));
     await Promise.resolve();

@@ -18,6 +18,8 @@ import {
   type RealtimeTalkTransportStartResult,
 } from "./realtime-talk-shared.ts";
 import { captureRealtimeTalkVideoFrame } from "./realtime-talk-video.ts";
+import { createWebRtcAdoptionGate } from "./realtime-talk-webrtc-adoption.ts";
+import { attachRealtimeTalkRemoteAudio } from "./realtime-talk-webrtc-audio.ts";
 import {
   RealtimeTalkWebRtcOfferExchange,
   realtimeTalkDataChannelMaxMessageSize,
@@ -55,20 +57,22 @@ export class WebRtcSdpRealtimeTalkTransport implements RealtimeTalkTransport {
   private readonly camera: RealtimeTalkCameraController;
   private readonly consultAbortControllers = new Set<AbortController>();
   private readonly emitTalkEvent: ReturnType<typeof createRealtimeTalkEventEmitter>;
-  private starting = false;
   private startupError: Error | null = null;
+  private adoptionGate = this.createAdoptionGate();
 
   constructor(
     private readonly session: RealtimeTalkWebRtcSdpSessionResult,
     private readonly ctx: RealtimeTalkTransportContext,
   ) {
-    this.emitTalkEvent = createRealtimeTalkEventEmitter(ctx, session);
+    this.emitTalkEvent = ctx.emitTalkEvent ?? createRealtimeTalkEventEmitter(ctx, session);
     this.camera = new RealtimeTalkCameraController({
       acquire: (deviceId, signal) => openRealtimeTalkCamera(deviceId, { signal }),
       getDeviceId: () => this.ctx.videoDeviceId,
       setDeviceId: (deviceId) => (this.ctx.videoDeviceId = deviceId),
       isClosed: () => this.closed,
-      onStream: (stream) => this.ctx.callbacks.onVideoStream?.(stream),
+      onStream: (stream) => {
+        this.adoptionGate.push({ type: "camera-stream", stream });
+      },
     });
   }
 
@@ -77,39 +81,21 @@ export class WebRtcSdpRealtimeTalkTransport implements RealtimeTalkTransport {
       throw new Error("Realtime Talk requires browser WebRTC and microphone access");
     }
     this.closed = false;
-    this.starting = true;
     this.startupError = null;
+    this.adoptionGate = this.createAdoptionGate();
     this.mediaSetupController?.abort();
     const peer = new RTCPeerConnection();
     this.peer = peer;
     this.audio = document.createElement("audio");
-    this.audio.autoplay = true;
+    this.audio.autoplay = false;
     this.audio.muted = false;
     this.audio.setAttribute("playsinline", "");
     this.audio.style.display = "none";
     document.body.append(this.audio);
     peer.addEventListener("track", (event) => {
       const stream = event.streams[0];
-      if (this.audio && stream) {
-        this.audio.srcObject = stream;
-        const audio = this.audio;
-        const play = (reportError: boolean) => {
-          if (this.audio !== audio || this.closed) {
-            return;
-          }
-          void audio.play().catch((error: unknown) => {
-            if (reportError && this.audio === audio && !this.closed) {
-              this.ctx.callbacks.onStatus?.(
-                "error",
-                `Realtime audio playback failed: ${error instanceof Error ? error.message : String(error)}`,
-              );
-            }
-          });
-        };
-        play(!event.track.muted);
-        // iOS can deliver the remote track muted until media starts flowing.
-        // Retrying on unmute gives Safari a second chance to attach the live stream.
-        event.track.addEventListener("unmute", () => play(true), { once: true });
+      if (stream) {
+        this.adoptionGate.push({ type: "remote-track", stream, track: event.track });
       }
     });
     const mediaSetupController = new AbortController();
@@ -135,13 +121,10 @@ export class WebRtcSdpRealtimeTalkTransport implements RealtimeTalkTransport {
       return this.cancelledStart();
     }
     this.media = media;
-    if (this.ctx.callbacks.onInputLevel) {
-      this.inputMeter = new RealtimeTalkMediaStreamMeter(this.ctx.callbacks.onInputLevel);
-      this.inputMeter.start(media);
-    }
     // Camera frames travel only as explicit describe_view data-channel events.
     // Keeping video off the peer prevents unintended continuous camera upload.
     for (const track of media.getAudioTracks()) {
+      track.enabled = false;
       peer.addTrack(track, media);
     }
     const channel = peer.createDataChannel("oai-events");
@@ -151,10 +134,11 @@ export class WebRtcSdpRealtimeTalkTransport implements RealtimeTalkTransport {
     }
     this.channel = channel;
     channel.addEventListener("open", () => {
-      this.ctx.callbacks.onStatus?.("listening");
-      this.emitTalkEvent({ type: "session.ready" });
+      this.adoptionGate.push({ type: "channel-open" });
     });
-    channel.addEventListener("message", (event) => this.handleRealtimeEvent(event.data));
+    channel.addEventListener("message", (event) => {
+      this.adoptionGate.push({ type: "message", data: event.data });
+    });
     peer.addEventListener("connectionstatechange", () => {
       if (this.closed) {
         return;
@@ -200,8 +184,29 @@ export class WebRtcSdpRealtimeTalkTransport implements RealtimeTalkTransport {
     if (remoteDescriptionResult === cancelledSetup || !this.isCurrentPeer(peer)) {
       return this.cancelledStart();
     }
-    this.starting = false;
     return "ready";
+  }
+
+  activate(): void {
+    if (this.startupError) {
+      throw this.startupError;
+    }
+    if (this.closed || this.adoptionGate.currentState !== "pending") {
+      return;
+    }
+    try {
+      for (const track of this.media?.getAudioTracks() ?? []) {
+        track.enabled = true;
+      }
+      if (this.ctx.callbacks.onInputLevel && this.media) {
+        this.inputMeter = new RealtimeTalkMediaStreamMeter(this.ctx.callbacks.onInputLevel);
+        this.inputMeter.start(this.media);
+      }
+      this.adoptionGate.adopt();
+    } catch (error) {
+      this.stop({ emitClosed: false });
+      throw error;
+    }
   }
 
   async setVideoEnabled(enabled: boolean): Promise<void> {
@@ -255,9 +260,9 @@ export class WebRtcSdpRealtimeTalkTransport implements RealtimeTalkTransport {
   }
 
   private releaseResources(): void {
-    this.starting = false;
     this.mediaSetupController?.abort();
     this.mediaSetupController = null;
+    this.adoptionGate.discard();
     this.offerExchange.abort();
     this.channel?.close();
     this.channel = null;
@@ -284,21 +289,51 @@ export class WebRtcSdpRealtimeTalkTransport implements RealtimeTalkTransport {
     if (this.closed) {
       return;
     }
-    const wasStarting = this.starting;
+    const wasProvisional = this.adoptionGate.currentState !== "adopted";
     try {
-      if (!wasStarting) {
-        this.ctx.callbacks.onStatus?.("error", detail);
-      } else {
+      if (wasProvisional) {
         this.startupError = new Error(detail);
+      } else {
+        this.ctx.callbacks.onStatus?.("error", detail);
       }
     } finally {
       // A terminal peer failure still owns browser media if status delivery fails.
-      this.stop({ emitClosed: !wasStarting });
+      this.stop({ emitClosed: !wasProvisional });
     }
   }
 
+  private createAdoptionGate() {
+    return createWebRtcAdoptionGate({
+      consume: (event) => {
+        if (event.type === "channel-open") {
+          this.ctx.callbacks.onStatus?.("listening");
+          this.emitTalkEvent({ type: "session.ready" });
+        } else if (event.type === "message") {
+          this.handleRealtimeEvent(event.data);
+        } else if (event.type === "remote-track") {
+          const audio = this.audio;
+          if (audio) {
+            attachRealtimeTalkRemoteAudio({
+              audio,
+              stream: event.stream,
+              track: event.track,
+              callbacks: this.ctx.callbacks,
+              isCurrent: () => this.audio === audio && !this.closed,
+            });
+          }
+        } else {
+          this.ctx.callbacks.onVideoStream?.(event.stream);
+        }
+      },
+      onOverflow: () => {
+        this.startupError = new Error("Realtime provider event buffer limit exceeded");
+        this.stop({ emitClosed: false });
+      },
+    });
+  }
+
   private send(event: unknown): void {
-    if (this.channel?.readyState === "open") {
+    if (this.adoptionGate.currentState === "adopted" && this.channel?.readyState === "open") {
       this.channel.send(JSON.stringify(event));
     }
   }

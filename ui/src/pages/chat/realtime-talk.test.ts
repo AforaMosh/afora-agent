@@ -271,12 +271,12 @@ describe("RealtimeTalkSession", () => {
     expect(request).toHaveBeenCalledWith(
       "talk.session.close",
       { sessionId: "relay-stale" },
-      { timeoutMs: 30_000 },
+      { timeoutMs: 8_000 },
     );
     expect(relayInstances).toHaveLength(0);
   });
 
-  it("closes a superseded client-owned allocation without replacing the active call", async () => {
+  it("serializes starts and closes a superseded client-owned allocation", async () => {
     const creates: Array<ReturnType<typeof createDeferred<unknown>>> = [];
     const request = vi.fn((method: string) => {
       if (method === "talk.client.create") {
@@ -296,6 +296,14 @@ describe("RealtimeTalkSession", () => {
     await vi.waitFor(() => expect(creates).toHaveLength(1));
     session.stop();
     const secondStart = session.start();
+    expect(creates).toHaveLength(1);
+    creates[0]!.resolve({
+      provider: "openai",
+      transport: "webrtc",
+      voiceSessionId: "voice-stale",
+      clientSecret: "secret",
+    });
+    await firstStart;
     await vi.waitFor(() => expect(creates).toHaveLength(2));
     creates[1]!.resolve({
       provider: "openai",
@@ -304,18 +312,7 @@ describe("RealtimeTalkSession", () => {
       clientSecret: "secret",
     });
     await secondStart;
-    const blocked = new RealtimeTalkSession(client, "main");
-    await expect(blocked.start()).rejects.toThrow(
-      "Too many active or closing realtime Talk voice sessions",
-    );
     expect(creates).toHaveLength(2);
-    creates[0]!.resolve({
-      provider: "openai",
-      transport: "webrtc",
-      voiceSessionId: "voice-stale",
-      clientSecret: "secret",
-    });
-    await firstStart;
 
     await vi.waitFor(() =>
       expect(request).toHaveBeenCalledWith(
