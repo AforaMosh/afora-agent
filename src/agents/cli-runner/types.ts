@@ -48,6 +48,7 @@ import type {
 } from "../embedded-agent-runner/run/params.js";
 import type { ExecPolicyOverrides } from "../exec-defaults.js";
 import type { FastModeAutoProgressState } from "../fast-mode.js";
+import type { ContextEngineTurnSettlement } from "../harness/context-engine-turn-settlement.js";
 import type { ScheduledToolPolicyContext } from "../scheduled-tool-policy.js";
 import type { SessionManager } from "../sessions/index.js";
 import type { SilentReplyPromptMode } from "../system-prompt.types.js";
@@ -100,6 +101,8 @@ export type RunCliAgentParams = {
   storePath?: string;
   /** Canonical user-turn recorder shared with gateway/queue dispatch. */
   userTurnTranscriptRecorder?: UserTurnTranscriptRecorder;
+  /** @internal Candidate-local settlement owned by the outer model fallback loop. */
+  registerContextEngineTurnSettlement?: (settlement: ContextEngineTurnSettlement) => void;
   /** Skip current-turn user persistence when a retry/fallback already wrote it. */
   suppressNextUserMessagePersistence?: boolean;
   /** Notification fired after the current user turn has been accepted into the transcript. */
@@ -300,6 +303,7 @@ export type PreparedCliRunContext = {
   hadSessionFile: boolean;
   contextEngineConfig: OpenClawConfig;
   contextEngine?: ContextEngine;
+  contextEngineTurnSettlement?: ContextEngineTurnSettlement;
   contextEngineTurnPrompt?: string;
   contextEngineDeferredTurnMaintenance?: Promise<void>;
   modelId: string;

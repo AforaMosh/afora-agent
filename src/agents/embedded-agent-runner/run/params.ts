@@ -41,6 +41,7 @@ import type {
   ToolResultFormat,
 } from "../../embedded-agent-subscribe.shared-types.js";
 import type { FastModeAutoProgressState } from "../../fast-mode.js";
+import type { ContextEngineTurnSettlement } from "../../harness/context-engine-turn-settlement.js";
 import type { ExpectedAgentHarnessRuntimeArtifact } from "../../harness/runtime-artifact.types.js";
 import type { AgentInternalEvent } from "../../internal-events.js";
 import type { AgentRunSessionTarget } from "../../run-session-target.js";
@@ -387,6 +388,10 @@ export type RunEmbeddedAgentParams = {
   suppressTranscriptOnlyAssistantPersistence?: boolean;
   suppressAssistantErrorPersistence?: boolean;
   userTurnTranscriptRecorder?: UserTurnTranscriptRecorder;
+  /** @internal Candidate-local settlement owned by the outer model fallback loop. */
+  registerContextEngineTurnSettlement?: (settlement: ContextEngineTurnSettlement) => void;
+  /** @internal Resolved settlement shared with the attempt finalizer. */
+  contextEngineTurnSettlement?: ContextEngineTurnSettlement;
   /** Keep an internal continuation prompt from being replaced by the original prepared turn. */
   skipPreparedUserTurnMessage?: boolean;
   onUserMessagePersisted?: (message: Extract<AgentMessage, { role: "user" }>) => void;

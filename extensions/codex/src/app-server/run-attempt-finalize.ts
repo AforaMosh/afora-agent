@@ -364,44 +364,87 @@ export async function finalizeCodexAttempt(
     const finalMessages =
       (await readMirroredSessionHistoryMessages(activeTranscriptTarget)) ??
       historyState.messages.concat(result.messagesSnapshot);
-    await finalizeHarnessContextEngineTurn({
-      contextEngine: activeContextEngine,
-      promptError: Boolean(finalPromptError),
-      aborted: finalAborted,
-      yieldAborted: Boolean(result.yieldDetected),
-      sessionIdUsed: activeSessionId,
-      sessionKey: contextSessionKey,
-      sessionFile: activeSessionFile,
-      sessionTarget: params.sessionTarget,
-      messagesSnapshot: finalMessages,
-      prePromptMessageCount: promptState.prePromptMessageCount,
+    const runtimeContext = buildHarnessContextEngineRuntimeContextFromUsage({
+      attempt: buildActiveRunAttemptParams(),
+      workspaceDir: effectiveWorkspace,
+      cwd: effectiveCwd,
+      agentDir,
+      activeAgentId: sessionAgentId,
+      contextEnginePluginId,
       tokenBudget: effectiveContextTokenBudget,
-      runtimeContext: buildHarnessContextEngineRuntimeContextFromUsage({
-        attempt: buildActiveRunAttemptParams(),
-        workspaceDir: effectiveWorkspace,
-        cwd: effectiveCwd,
-        agentDir,
-        activeAgentId: sessionAgentId,
-        contextEnginePluginId,
-        tokenBudget: effectiveContextTokenBudget,
-        lastCallUsage: result.attemptUsage,
-        promptCache: result.promptCache,
-      }),
-      contextEngineHostSupport: CODEX_APP_SERVER_CONTEXT_ENGINE_HOST,
-      providerId: usesSupervisionConnection
-        ? (resourceState.thread.modelProvider ?? effectiveRuntimeProviderId)
-        : params.provider,
-      requestedModelId: usesSupervisionConnection ? undefined : params.requestedModelId,
-      modelId: usesSupervisionConnection
-        ? (resourceState.thread.model ?? effectiveRuntimeModelId)
-        : params.modelId,
-      fallbackReason: usesSupervisionConnection ? undefined : params.fallbackReason,
-      degradedReason: usesSupervisionConnection ? undefined : params.degradedReason,
-      runMaintenance: runHarnessContextEngineMaintenance,
-      config: params.config,
-      warn: (message) => embeddedAgentLog.warn(message),
-      isHeartbeat,
+      lastCallUsage: result.attemptUsage,
+      promptCache: result.promptCache,
     });
+    const providerId = usesSupervisionConnection
+      ? (resourceState.thread.modelProvider ?? effectiveRuntimeProviderId)
+      : params.provider;
+    const modelId = usesSupervisionConnection
+      ? (resourceState.thread.model ?? effectiveRuntimeModelId)
+      : params.modelId;
+    const settlement = params.contextEngineTurnSettlement;
+    const finalizeTurn = async (transcript: {
+      messagesSnapshot: Parameters<typeof finalizeHarnessContextEngineTurn>[0]["messagesSnapshot"];
+      prePromptMessageCount: number;
+      sessionManager?: unknown;
+      withSessionManagerRewriteLock: <T>(operation: () => Promise<T> | T) => Promise<T>;
+    }) => {
+      let deferredMaintenance: Promise<void> | undefined;
+      const finalization = await finalizeHarnessContextEngineTurn({
+        contextEngine: activeContextEngine,
+        promptError: Boolean(finalPromptError),
+        aborted: finalAborted,
+        yieldAborted: Boolean(result.yieldDetected),
+        sessionIdUsed: activeSessionId,
+        sessionKey: contextSessionKey,
+        sessionFile: activeSessionFile,
+        sessionTarget: params.sessionTarget,
+        messagesSnapshot: transcript.messagesSnapshot,
+        prePromptMessageCount: transcript.prePromptMessageCount,
+        sessionManager: transcript.sessionManager,
+        tokenBudget: effectiveContextTokenBudget,
+        runtimeContext,
+        contextEngineHostSupport: CODEX_APP_SERVER_CONTEXT_ENGINE_HOST,
+        providerId,
+        requestedModelId: usesSupervisionConnection ? undefined : params.requestedModelId,
+        modelId,
+        fallbackReason: usesSupervisionConnection ? undefined : params.fallbackReason,
+        degradedReason: usesSupervisionConnection ? undefined : params.degradedReason,
+        runMaintenance: async (maintenanceParams) =>
+          await runHarnessContextEngineMaintenance({
+            ...maintenanceParams,
+            withSessionManagerRewriteLock: transcript.withSessionManagerRewriteLock,
+            onDeferredMaintenance: (promise) => {
+              deferredMaintenance = promise;
+            },
+          }),
+        config: params.config,
+        warn: (message) => embeddedAgentLog.warn(message),
+        isHeartbeat,
+      });
+      if (finalization.postTurnFinalizationSucceeded && deferredMaintenance) {
+        settlement?.holdDisposalUntil(deferredMaintenance);
+      }
+    };
+    if (settlement) {
+      settlement.setFinalizer(async () => {
+        await settlement.withTranscript(
+          {
+            admissionReceipt: params.userTurnTranscriptRecorder?.getAdmissionReceipt(),
+            sessionFile: activeSessionFile,
+            fallbackMessagesSnapshot: finalMessages,
+            fallbackPrePromptMessageCount: promptState.prePromptMessageCount,
+            config: params.config,
+          },
+          finalizeTurn,
+        );
+      });
+    } else {
+      await finalizeTurn({
+        messagesSnapshot: finalMessages,
+        prePromptMessageCount: promptState.prePromptMessageCount,
+        withSessionManagerRewriteLock: async (operation) => await operation(),
+      });
+    }
   }
   runAgentHarnessLlmOutputHook({
     event: {

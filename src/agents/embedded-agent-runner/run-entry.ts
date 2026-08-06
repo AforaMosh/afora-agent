@@ -5,6 +5,7 @@ import {
   buildAgentRunTerminalReplySnapshot,
   normalizeAgentRunTerminalReplySnapshot,
 } from "../agent-run-terminal-reply.js";
+import type { ContextEngineTurnSettlement } from "../harness/context-engine-turn-settlement.js";
 import { ensureSelectedAgentHarnessPlugin } from "../harness/runtime-plugin.js";
 import type { ModelFallbackResultClassification } from "../model-fallback-attempt.js";
 import type { ModelFallbackStepFields } from "../model-fallback-observation.js";
@@ -22,6 +23,12 @@ type RunEntryCandidateOptions = {
   allowTransientCooldownProbe?: boolean;
   isFinalFallbackAttempt?: boolean;
   isFallbackRetry: boolean;
+  registerContextEngineTurnSettlement: (settlement: ContextEngineTurnSettlement) => void;
+};
+
+type RunEntryCandidate<T> = {
+  result: T;
+  settlement?: ContextEngineTurnSettlement;
 };
 
 type RunEntryHarnessPreparation =
@@ -206,6 +213,8 @@ export async function runEmbeddedAgentEntry<T extends EmbeddedAgentRunResult>(
   params: EmbeddedAgentRunEntryParams<T>,
 ): Promise<EmbeddedAgentRunEntryResult<T>> {
   let candidateIndex = 0;
+  const candidateSettlements = new Set<ContextEngineTurnSettlement>();
+  let selectedSettlement: ContextEngineTurnSettlement | undefined;
   const committedSideEffect =
     params.behavior.kind === "command-rpc" ? params.behavior.hasCommittedSideEffect : undefined;
   const readChannelDeliveryEvidence =
@@ -223,7 +232,7 @@ export async function runEmbeddedAgentEntry<T extends EmbeddedAgentRunResult>(
           return !evidence.hasDirectlySentBlockReply && !evidence.hasBlockReplyPipelineOutput;
         }
       : undefined;
-  const fallbackResult = await runWithModelFallback<T>({
+  const fallbackResult = await runWithModelFallback<RunEntryCandidate<T>>({
     ...params.selection,
     ...params.identity,
     abortSignal: params.abortSignal,
@@ -252,11 +261,11 @@ export async function runEmbeddedAgentEntry<T extends EmbeddedAgentRunResult>(
       ? {}
       : {
           classifyResult: ({
-            result,
+            result: candidate,
             provider,
             model,
           }: {
-            result: T;
+            result: RunEntryCandidate<T>;
             provider: string;
             model: string;
           }) => {
@@ -265,7 +274,7 @@ export async function runEmbeddedAgentEntry<T extends EmbeddedAgentRunResult>(
                 ? params.behavior.readDeliveryEvidence()
                 : undefined;
             const classification = classifyEmbeddedAgentRunResultForModelFallback({
-              result,
+              result: candidate.result,
               provider,
               model,
               ...deliveryEvidence,
@@ -287,24 +296,48 @@ export async function runEmbeddedAgentEntry<T extends EmbeddedAgentRunResult>(
             latestResult,
             preferredResult,
           }: {
-            latestResult: T;
-            preferredResult: T;
-          }) =>
-            mergeEmbeddedAgentRunResultForModelFallbackExhaustion({
-              latestResult,
-              preferredResult,
+            latestResult: RunEntryCandidate<T>;
+            preferredResult: RunEntryCandidate<T>;
+          }) => ({
+            result: mergeEmbeddedAgentRunResultForModelFallbackExhaustion({
+              latestResult: latestResult.result,
+              preferredResult: preferredResult.result,
             }) as T,
+            settlement: latestResult.settlement,
+          }),
         }),
     run: async (provider, model, options) => {
       const isFallbackRetry = candidateIndex > 0;
       candidateIndex += 1;
-      return params.runCandidate(provider, model, {
+      let settlement: ContextEngineTurnSettlement | undefined;
+      const result = await params.runCandidate(provider, model, {
         allowTransientCooldownProbe: options?.allowTransientCooldownProbe,
         isFinalFallbackAttempt: options?.isFinalFallbackAttempt,
         isFallbackRetry,
+        registerContextEngineTurnSettlement: (candidateSettlement) => {
+          if (settlement && settlement !== candidateSettlement) {
+            throw new Error("Model fallback candidate registered multiple context-engine turns");
+          }
+          settlement = candidateSettlement;
+          candidateSettlements.add(candidateSettlement);
+        },
       });
+      return { result, settlement };
     },
-  });
+  })
+    .then(async (result) => {
+      selectedSettlement = result.result.settlement;
+      await selectedSettlement?.commit();
+      return result;
+    })
+    .finally(async () => {
+      for (const settlement of candidateSettlements) {
+        if (settlement !== selectedSettlement) {
+          settlement.discard();
+        }
+        await settlement.dispose();
+      }
+    });
   const abortFields =
     params.behavior.kind === "command-rpc"
       ? resolveAgentRunAbortLifecycleFields(params.abortSignal)
@@ -312,13 +345,13 @@ export async function runEmbeddedAgentEntry<T extends EmbeddedAgentRunResult>(
   const result =
     abortFields.aborted === true
       ? ({
-          ...fallbackResult.result,
+          ...fallbackResult.result.result,
           meta: {
-            ...fallbackResult.result.meta,
+            ...fallbackResult.result.result.meta,
             ...abortFields,
           },
         } as T)
-      : fallbackResult.result;
+      : fallbackResult.result.result;
   const settledResult = {
     ...fallbackResult,
     outcome:

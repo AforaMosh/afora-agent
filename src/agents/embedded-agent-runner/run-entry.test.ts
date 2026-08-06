@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { ContextEngineTurnSettlement } from "../harness/context-engine-turn-settlement.js";
 import type { EmbeddedAgentRunResult } from "./types.js";
 
 type CandidateOptions = {
   allowTransientCooldownProbe?: boolean;
   isFinalFallbackAttempt?: boolean;
+  registerContextEngineTurnSettlement: (settlement: ContextEngineTurnSettlement) => void;
 };
 
 type FallbackRunnerParams = {
@@ -73,6 +75,33 @@ function makeResult(params: {
         provider: params.provider,
         model: params.model,
       },
+    },
+  };
+}
+
+function createTestSettlement(events: string[], label: string): ContextEngineTurnSettlement {
+  let finalizer: (() => Promise<void>) | undefined;
+  return {
+    setFinalizer(nextFinalizer) {
+      finalizer = nextFinalizer;
+    },
+    async commit() {
+      events.push(`${label}:commit`);
+      await finalizer?.();
+    },
+    discard() {
+      events.push(`${label}:discard`);
+    },
+    holdDisposalUntil() {},
+    async withTranscript(params, run) {
+      await run({
+        messagesSnapshot: params.fallbackMessagesSnapshot,
+        prePromptMessageCount: params.fallbackPrePromptMessageCount,
+        withSessionManagerRewriteLock: async (operation) => await operation(),
+      });
+    },
+    async dispose() {
+      events.push(`${label}:dispose`);
     },
   };
 }
@@ -222,6 +251,184 @@ describe("runEmbeddedAgentEntry", () => {
     });
 
     expect(result.result.payloads).toEqual([{ text: "recovered" }]);
+  });
+
+  it("settles only the accepted fallback candidate after its attempt releases ownership", async () => {
+    const events: string[] = [];
+    let primaryReleased = false;
+    let fallbackReleased = false;
+    const { runEmbeddedAgentEntry } = await import("./run-entry.js");
+    await runEmbeddedAgentEntry({
+      selection: { cfg: {}, provider: "primary-provider", model: "primary-model" },
+      identity: { runId: "settle-winner", agentId: "main", sessionId: "session-1" },
+      harness: {
+        workspaceDir: "/tmp/workspace",
+        preparation: { kind: "direct" },
+        resolveRuntimeOverride: () => undefined,
+      },
+      behavior: { kind: "command-rpc", hasCommittedSideEffect: () => false },
+      sessionOverride: { kind: "preserve" },
+      runCandidate: async (provider, model, options) => {
+        const label = provider === "primary-provider" ? "primary" : "fallback";
+        const settlement = createTestSettlement(events, label);
+        settlement.setFinalizer(async () => {
+          expect(label === "primary" ? primaryReleased : fallbackReleased).toBe(true);
+          events.push(`${label}:afterTurn`);
+        });
+        options.registerContextEngineTurnSettlement(settlement);
+        if (label === "primary") {
+          primaryReleased = true;
+        } else {
+          fallbackReleased = true;
+        }
+        return makeResult({
+          provider,
+          model,
+          classification: label === "primary" ? "empty" : undefined,
+        });
+      },
+    });
+
+    expect(events).toEqual([
+      "fallback:commit",
+      "fallback:afterTurn",
+      "primary:discard",
+      "primary:dispose",
+      "fallback:dispose",
+    ]);
+  });
+
+  it("accepts an empty result after a committed side effect and finalizes it once", async () => {
+    state.runWithModelFallback.mockImplementationOnce(async (params: FallbackRunnerParams) => {
+      const result = await params.run(params.provider, params.model);
+      expect(
+        params.classifyResult?.({
+          result,
+          provider: params.provider,
+          model: params.model,
+          attempt: 1,
+          total: 1,
+        }),
+      ).toBeUndefined();
+      return {
+        outcome: "completed" as const,
+        result,
+        provider: params.provider,
+        model: params.model,
+        attempts: [],
+      };
+    });
+    const events: string[] = [];
+    const { runEmbeddedAgentEntry } = await import("./run-entry.js");
+    await runEmbeddedAgentEntry({
+      selection: { cfg: {}, provider: "provider", model: "model" },
+      identity: { runId: "settle-side-effect", agentId: "main", sessionId: "session-1" },
+      harness: {
+        workspaceDir: "/tmp/workspace",
+        preparation: { kind: "direct" },
+        resolveRuntimeOverride: () => undefined,
+      },
+      behavior: { kind: "command-rpc", hasCommittedSideEffect: () => true },
+      sessionOverride: { kind: "preserve" },
+      runCandidate: async (provider, model, options) => {
+        const settlement = createTestSettlement(events, "candidate");
+        settlement.setFinalizer(async () => {
+          events.push("candidate:afterTurn");
+        });
+        options.registerContextEngineTurnSettlement(settlement);
+        return makeResult({ provider, model, classification: "empty" });
+      },
+    });
+
+    expect(events).toEqual(["candidate:commit", "candidate:afterTurn", "candidate:dispose"]);
+  });
+
+  it("commits the surfaced exhaustion result and discards the rejected candidate", async () => {
+    state.runWithModelFallback.mockImplementationOnce(async (params: FallbackRunnerParams) => {
+      const preferredResult = await params.run(params.provider, params.model);
+      const latestResult = await params.run("fallback-provider", "fallback-model");
+      return {
+        outcome: "exhausted" as const,
+        result: params.mergeExhaustedResult?.({ latestResult, preferredResult }) ?? latestResult,
+        provider: "fallback-provider",
+        model: "fallback-model",
+        attempts: [],
+      };
+    });
+    const events: string[] = [];
+    const { runEmbeddedAgentEntry } = await import("./run-entry.js");
+    await runEmbeddedAgentEntry({
+      selection: { cfg: {}, provider: "provider", model: "model" },
+      identity: { runId: "settle-exhausted", agentId: "main", sessionId: "session-1" },
+      harness: {
+        workspaceDir: "/tmp/workspace",
+        preparation: { kind: "direct" },
+        resolveRuntimeOverride: () => undefined,
+      },
+      behavior: { kind: "command-rpc", hasCommittedSideEffect: () => false },
+      sessionOverride: { kind: "preserve" },
+      runCandidate: async (provider, model, options) => {
+        const settlement = createTestSettlement(events, provider);
+        settlement.setFinalizer(async () => {
+          events.push(`${provider}:afterTurn`);
+        });
+        options.registerContextEngineTurnSettlement(settlement);
+        return makeResult({ provider, model, classification: "empty" });
+      },
+    });
+
+    expect(events).toEqual([
+      "fallback-provider:commit",
+      "fallback-provider:afterTurn",
+      "provider:discard",
+      "provider:dispose",
+      "fallback-provider:dispose",
+    ]);
+  });
+
+  it("discards and disposes a candidate when classification throws", async () => {
+    const classificationError = new Error("classification failed");
+    state.runWithModelFallback.mockImplementationOnce(async (params: FallbackRunnerParams) => {
+      const result = await params.run(params.provider, params.model);
+      params.classifyResult?.({
+        result,
+        provider: params.provider,
+        model: params.model,
+        attempt: 1,
+        total: 1,
+      });
+      throw classificationError;
+    });
+    const events: string[] = [];
+    const { runEmbeddedAgentEntry } = await import("./run-entry.js");
+    await expect(
+      runEmbeddedAgentEntry({
+        selection: { cfg: {}, provider: "provider", model: "model" },
+        identity: { runId: "settle-classifier-throw", agentId: "main", sessionId: "session-1" },
+        harness: {
+          workspaceDir: "/tmp/workspace",
+          preparation: { kind: "direct" },
+          resolveRuntimeOverride: () => undefined,
+        },
+        behavior: {
+          kind: "channel-delivery",
+          readDeliveryEvidence: () => {
+            throw classificationError;
+          },
+        },
+        sessionOverride: { kind: "preserve" },
+        runCandidate: async (provider, model, options) => {
+          const settlement = createTestSettlement(events, "candidate");
+          settlement.setFinalizer(async () => {
+            events.push("candidate:afterTurn");
+          });
+          options.registerContextEngineTurnSettlement(settlement);
+          return makeResult({ provider, model, classification: "empty" });
+        },
+      }),
+    ).rejects.toBe(classificationError);
+
+    expect(events).toEqual(["candidate:discard", "candidate:dispose"]);
   });
 
   it("does not replay a thrown channel-delivery attempt that already delivered its reply (#113788)", async () => {

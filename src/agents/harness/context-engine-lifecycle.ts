@@ -440,6 +440,7 @@ export async function runHarnessContextEngineMaintenance(params: {
   degradedReason?: string | null;
   executionMode?: "foreground" | "background";
   onDeferredMaintenance?: (promise: Promise<void>) => void;
+  withSessionManagerRewriteLock?: <T>(operation: () => Promise<T> | T) => Promise<T>;
   config?: SessionWriteLockAcquireTimeoutConfig;
 }) {
   const runtimeSettings = buildHarnessContextEngineRuntimeSettings(params);
@@ -453,6 +454,7 @@ export async function runHarnessContextEngineMaintenance(params: {
     sessionManager: params.sessionManager as Parameters<
       typeof runContextEngineMaintenance
     >[0]["sessionManager"],
+    withSessionManagerRewriteLock: params.withSessionManagerRewriteLock,
     runtimeContext: params.runtimeContext,
     runtimeSettings,
     executionMode: params.executionMode,

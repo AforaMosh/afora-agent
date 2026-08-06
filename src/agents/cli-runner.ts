@@ -69,6 +69,7 @@ import {
   finalizeHarnessContextEngineTurn,
   runHarnessContextEngineMaintenance,
 } from "./harness/context-engine-lifecycle.js";
+import { createContextEngineTurnSettlement } from "./harness/context-engine-turn-settlement.js";
 import { buildAgentHookContext } from "./harness/hook-context.js";
 import { runAgentHarnessBeforeMessageWriteHook } from "./harness/hook-helpers.js";
 import { buildAgentHookConversationMessages } from "./harness/hook-history.js";
@@ -438,36 +439,67 @@ async function finalizeCliContextEngineTurn(params: {
     );
   }
 
-  let deferredTurnMaintenance: Promise<void> | undefined;
   const contextEngineHostSupport = buildGenericCliContextEngineHostSupport({
     backendId: context.backendResolved.id,
   });
-  const result = await finalizeHarnessContextEngineTurn({
-    contextEngine: context.contextEngine,
-    promptError: false,
-    aborted: runParams.abortSignal?.aborted === true,
-    yieldAborted: false,
-    sessionIdUsed: runParams.sessionId,
-    sessionKey: runParams.sessionKey,
-    sessionFile: runParams.sessionFile,
-    isHeartbeat: isHeartbeatLifecycleRunKind(runParams.bootstrapContextRunKind),
-    messagesSnapshot: [...prePromptMessages, ...turnMessages],
-    prePromptMessageCount: prePromptMessages.length,
-    config: context.contextEngineConfig,
-    contextEngineHostSupport,
-    providerId: runParams.provider,
-    modelId: context.modelId,
-    runMaintenance: async (maintenanceParams) =>
-      await runHarnessContextEngineMaintenance({
-        ...maintenanceParams,
-        onDeferredMaintenance: (promise) => {
-          deferredTurnMaintenance = promise;
+  const settlement = context.contextEngineTurnSettlement;
+  const finalizeTurn = async (transcript: {
+    messagesSnapshot: AgentMessage[];
+    prePromptMessageCount: number;
+    sessionManager?: SessionManager;
+    withSessionManagerRewriteLock: <T>(operation: () => Promise<T> | T) => Promise<T>;
+  }) => {
+    let deferredTurnMaintenance: Promise<void> | undefined;
+    const result = await finalizeHarnessContextEngineTurn({
+      contextEngine: context.contextEngine,
+      promptError: false,
+      aborted: runParams.abortSignal?.aborted === true,
+      yieldAborted: false,
+      sessionIdUsed: runParams.sessionId,
+      sessionKey: runParams.sessionKey,
+      sessionFile: runParams.sessionFile,
+      isHeartbeat: isHeartbeatLifecycleRunKind(runParams.bootstrapContextRunKind),
+      messagesSnapshot: transcript.messagesSnapshot,
+      prePromptMessageCount: transcript.prePromptMessageCount,
+      sessionManager: transcript.sessionManager,
+      config: context.contextEngineConfig,
+      contextEngineHostSupport,
+      providerId: runParams.provider,
+      modelId: context.modelId,
+      runMaintenance: async (maintenanceParams) =>
+        await runHarnessContextEngineMaintenance({
+          ...maintenanceParams,
+          withSessionManagerRewriteLock: transcript.withSessionManagerRewriteLock,
+          onDeferredMaintenance: (promise) => {
+            deferredTurnMaintenance = promise;
+          },
+        }),
+      warn: (message) => log.warn(message),
+    });
+    if (result.postTurnFinalizationSucceeded && deferredTurnMaintenance) {
+      context.contextEngineDeferredTurnMaintenance = deferredTurnMaintenance;
+      settlement?.holdDisposalUntil(deferredTurnMaintenance);
+    }
+  };
+  if (settlement) {
+    settlement.setFinalizer(async () => {
+      await settlement.withTranscript(
+        {
+          admissionReceipt: runParams.userTurnTranscriptRecorder?.getAdmissionReceipt(),
+          sessionFile: runParams.sessionFile,
+          fallbackMessagesSnapshot: [...prePromptMessages, ...turnMessages],
+          fallbackPrePromptMessageCount: prePromptMessages.length,
+          config: context.contextEngineConfig,
         },
-      }),
-    warn: (message) => log.warn(message),
-  });
-  if (result.postTurnFinalizationSucceeded && deferredTurnMaintenance) {
-    context.contextEngineDeferredTurnMaintenance = deferredTurnMaintenance;
+        finalizeTurn,
+      );
+    });
+  } else {
+    await finalizeTurn({
+      messagesSnapshot: [...prePromptMessages, ...turnMessages],
+      prePromptMessageCount: prePromptMessages.length,
+      withSessionManagerRewriteLock: async (operation) => await operation(),
+    });
   }
 }
 
@@ -564,6 +596,20 @@ async function runCliAgentInternal(
   }
   const { prepareCliRunContext } = await import("./cli-runner/prepare.runtime.js");
   const context = await prepareCliRunContext(params);
+  if (context.contextEngine && params.registerContextEngineTurnSettlement) {
+    const settlement = createContextEngineTurnSettlement({
+      dispose: async () => {
+        await context.contextEngine?.dispose?.();
+      },
+    });
+    try {
+      params.registerContextEngineTurnSettlement(settlement);
+      context.contextEngineTurnSettlement = settlement;
+    } catch (error) {
+      await settlement.dispose();
+      throw error;
+    }
+  }
   let result: EmbeddedAgentRunResult | undefined;
   let runError: unknown;
   try {

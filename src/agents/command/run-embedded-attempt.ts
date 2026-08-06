@@ -497,6 +497,7 @@ export async function runEmbeddedAgentAttempt(params: {
               userTurnTranscriptRecorder.isBlocked() ||
               (runOptions.isFallbackRetry && attemptLifecycleState.currentTurnUserMessagePersisted),
             userTurnTranscriptRecorder,
+            registerContextEngineTurnSettlement: runOptions.registerContextEngineTurnSettlement,
             onUserMessagePersisted: attemptLifecycleCallbacks.onUserMessagePersisted,
             onLifecycleGenerationChanged: (nextLifecycleGeneration) => {
               lifecycleGeneration = nextLifecycleGeneration;

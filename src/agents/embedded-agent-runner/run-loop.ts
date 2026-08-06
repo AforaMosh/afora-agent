@@ -15,6 +15,7 @@ import { resolveSessionAgentIds } from "../agent-scope.js";
 import type { ToolOutcomeObservation } from "../agent-tools.before-tool-call.js";
 import type { FailoverReason } from "../embedded-agent-helpers.js";
 import { isStrictAgenticExecutionContractActive } from "../execution-contract.js";
+import { createContextEngineTurnSettlement } from "../harness/context-engine-turn-settlement.js";
 import type { McpAppChannelView } from "../mcp-ui-resource.js";
 import { runAgentCleanupStep } from "../run-cleanup-timeout.js";
 import { resolveToolLoopDetectionConfig } from "../tool-loop-detection-config.js";
@@ -276,6 +277,30 @@ export async function runPreparedEmbeddedLoop(
       }),
     { config: params.config },
   );
+  const contextEngineTurnSettlement = params.registerContextEngineTurnSettlement
+    ? createContextEngineTurnSettlement({
+        dispose: async () => {
+          await runAgentCleanupStep({
+            runId: params.runId,
+            sessionId: params.sessionId,
+            step: "context-engine-dispose",
+            log,
+            cleanup: async () => {
+              await contextEngine.dispose?.();
+            },
+          });
+        },
+      })
+    : undefined;
+  if (contextEngineTurnSettlement) {
+    try {
+      params.registerContextEngineTurnSettlement?.(contextEngineTurnSettlement);
+      params.contextEngineTurnSettlement = contextEngineTurnSettlement;
+    } catch (error) {
+      await contextEngineTurnSettlement.dispose();
+      throw error;
+    }
+  }
   const resolveContextEnginePluginId = () => resolveContextEngineOwnerPluginId(contextEngine);
   startupStages.mark("context-engine");
   notifyExecutionPhase("context_engine", { provider, model: modelId });
@@ -643,15 +668,17 @@ export async function runPreparedEmbeddedLoop(
     forgetPromptBuildDrainCacheForRun(params.runId);
     clearProviderPromptState(params.runId);
     stopRuntimeAuthRefreshTimer();
-    await runAgentCleanupStep({
-      runId: params.runId,
-      sessionId: params.sessionId,
-      step: "context-engine-dispose",
-      log,
-      cleanup: async () => {
-        await contextEngine.dispose?.();
-      },
-    });
+    if (!contextEngineTurnSettlement) {
+      await runAgentCleanupStep({
+        runId: params.runId,
+        sessionId: params.sessionId,
+        step: "context-engine-dispose",
+        log,
+        cleanup: async () => {
+          await contextEngine.dispose?.();
+        },
+      });
+    }
     if (params.cleanupBundleMcpOnRunEnd === true) {
       await runAgentCleanupStep({
         runId: params.runId,

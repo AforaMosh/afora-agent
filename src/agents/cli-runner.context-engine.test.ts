@@ -305,6 +305,37 @@ describe("runPreparedCliAgent context engine lifecycle", () => {
     expect(dispose).not.toHaveBeenCalled();
   });
 
+  it("defers CLI afterTurn until the outer fallback owner commits the candidate", async () => {
+    const afterTurn = vi.fn<NonNullable<ContextEngine["afterTurn"]>>(async () => {});
+    const maintain = vi.fn<NonNullable<ContextEngine["maintain"]>>(async () =>
+      createMaintenanceResult(),
+    );
+    const dispose = vi.fn(async () => {});
+    const context = buildPreparedContext(createContextEngine({ afterTurn, maintain, dispose }));
+    let settlement:
+      | Parameters<
+          NonNullable<PreparedCliRunContext["params"]["registerContextEngineTurnSettlement"]>
+        >[0]
+      | undefined;
+    context.params.registerContextEngineTurnSettlement = (candidateSettlement) => {
+      settlement = candidateSettlement;
+    };
+    prepareCliRunContextMock.mockResolvedValue(context);
+
+    await runCliAgent(context.params);
+
+    expect(settlement).toBeDefined();
+    expect(afterTurn).not.toHaveBeenCalled();
+    expect(maintain).toHaveBeenCalledTimes(1);
+
+    await settlement?.commit();
+
+    expect(afterTurn).toHaveBeenCalledTimes(1);
+    expect(maintain).toHaveBeenCalledTimes(2);
+    await settlement?.dispose();
+    expect(dispose).toHaveBeenCalledTimes(1);
+  });
+
   it("does not synthesize a context-engine user turn for empty transcript prompts", async () => {
     const afterTurn = vi.fn<NonNullable<ContextEngine["afterTurn"]>>(async () => {});
     const dispose = vi.fn(async () => {});

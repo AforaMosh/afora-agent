@@ -17,6 +17,7 @@ vi.mock("./attempt.async-tasks.js", () => ({
   waitForCompletionRequiredAsyncTasks: hoisted.waitForCompletionRequiredAsyncTasks,
 }));
 
+import { createContextEngineTurnSettlement } from "../../harness/context-engine-turn-settlement.js";
 import { completeEmbeddedAttemptAfterTurn } from "./attempt-after-turn.js";
 import { settleEmbeddedAttemptStream } from "./attempt-stream-settle.js";
 
@@ -290,6 +291,77 @@ describe("embedded attempt phase lifecycle state", () => {
       toolName: "read",
       isError: true,
     });
+  });
+
+  it("defers embedded afterTurn until the outer fallback owner commits the candidate", async () => {
+    const afterTurn = vi.fn(async () => {});
+    const maintain = vi.fn(async () => ({
+      changed: false,
+      bytesFreed: 0,
+      rewrittenEntries: 0,
+    }));
+    const settlement = createContextEngineTurnSettlement({ dispose: async () => {} });
+    await completeEmbeddedAttemptAfterTurn({
+      attempt: {
+        runId: "run-1",
+        sessionId: "session-1",
+        sessionKey: "agent:main:main",
+        sessionFile: "/tmp/session.jsonl",
+        provider: "test",
+        modelId: "model",
+        model: { api: "openai-responses" },
+        contextEngineTurnSettlement: settlement,
+      } as never,
+      activeContextEngine: {
+        info: { id: "test", name: "Test" },
+        assemble: vi.fn(),
+        compact: vi.fn(),
+        ingest: vi.fn(),
+        afterTurn,
+        maintain,
+      } as never,
+      activeSession: {} as never,
+      sessionManager: { appendCustomEntry: vi.fn() } as never,
+      sessionLockController: {} as never,
+      withOwnedSessionWriteLock: async (operation) => await operation(),
+      state: {
+        promptError: null,
+        yieldAborted: false,
+        sessionIdUsed: "session-1",
+        messagesSnapshot: [{ role: "assistant", content: "done" }] as never,
+        prePromptMessageCount: 0,
+        contextEngineAfterTurnCheckpoint: null,
+        compactionOccurredThisAttempt: false,
+      },
+      readLifecycleState: () => ({
+        aborted: false,
+        timedOut: false,
+        idleTimedOut: false,
+        timedOutDuringCompaction: false,
+      }),
+      runtime: {
+        effectiveWorkspace: "/tmp/workspace",
+        agentDir: "/tmp/agent",
+        sessionAgentId: "main",
+        resolveActiveContextEnginePluginId: () => "test",
+        shouldRecordCompletedBootstrapTurn: false,
+        cacheTrace: null,
+        anthropicPayloadLogger: null,
+        hookAgentId: "main",
+        diagnosticTrace: { traceId: "trace-1", spanId: "span-1" } as never,
+        skillWorkshopAvailable: false,
+        hookRunner: null,
+        promptStartedAt: Date.now(),
+      },
+    });
+
+    expect(afterTurn).not.toHaveBeenCalled();
+    expect(maintain).not.toHaveBeenCalled();
+
+    await settlement.commit();
+
+    expect(afterTurn).toHaveBeenCalledTimes(1);
+    expect(maintain).toHaveBeenCalledTimes(1);
   });
 
   it("emits an abort-classified agent_end event when a teardown error races the abort", async () => {
