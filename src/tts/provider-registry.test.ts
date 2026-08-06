@@ -1,5 +1,5 @@
 // TTS provider registry tests cover registration and provider resolution.
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { OpenClawConfig } from "../config/types.js";
 import type { SpeechProviderPlugin } from "../plugins/types.js";
 import {
@@ -7,6 +7,18 @@ import {
   normalizeSpeechProviderId,
 } from "./provider-registry-core.js";
 import { resolveTtsProviderOrder } from "./tts-provider-resolution.js";
+
+const mocks = vi.hoisted(() => ({
+  canonicalizeSpeechProviderId: vi.fn((providerId: string | undefined) => {
+    const normalized = providerId?.trim().toLowerCase();
+    return normalized === "edge" ? "microsoft" : normalized || undefined;
+  }),
+}));
+
+vi.mock("./provider-registry.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./provider-registry.js")>()),
+  canonicalizeSpeechProviderId: mocks.canonicalizeSpeechProviderId,
+}));
 
 function createSpeechProvider(id: string, aliases?: string[]): SpeechProviderPlugin {
   return {
@@ -31,6 +43,7 @@ describe("speech provider registry", () => {
   let registry: ReturnType<typeof createSpeechProviderRegistry>;
 
   beforeEach(() => {
+    mocks.canonicalizeSpeechProviderId.mockClear();
     providers = [];
     directProvider = undefined;
     getProviderCalls.length = 0;
@@ -95,6 +108,7 @@ describe("speech provider registry", () => {
     } as OpenClawConfig;
 
     expect(resolveTtsProviderOrder("openai", cfg, inventory)).toEqual(["openai", "microsoft"]);
+    expect(mocks.canonicalizeSpeechProviderId).toHaveBeenCalledWith("edge", expect.any(Object));
   });
 
   it("returns empty results when the capability runtime has no speech providers", () => {
