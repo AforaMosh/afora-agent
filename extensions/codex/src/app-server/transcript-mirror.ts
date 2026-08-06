@@ -38,10 +38,15 @@ export { buildCodexUserPromptMessage };
 
 type MirroredAgentMessage = Extract<AgentMessage, { role: "user" | "assistant" | "toolResult" }>;
 type MirroredUserMessage = Extract<AgentMessage, { role: "user" }>;
+type MirroredUserMessageReceipt = {
+  message: MirroredUserMessage;
+  messageId: string;
+};
 type CodexAppServerTranscriptMirrorResult = {
   assistantMirrorIdentitiesOwned: string[];
   messagesPresent: MirroredAgentMessage[];
   userMessagesPresent: MirroredUserMessage[];
+  userMessageReceipts: MirroredUserMessageReceipt[];
 };
 
 function isMirroredAgentMessage(message: AgentMessage): message is MirroredAgentMessage {
@@ -350,7 +355,10 @@ export async function importCodexThreadHistoryToTranscript(params: {
 async function mirrorBestEffort(params: {
   params: EmbeddedRunAttemptParams;
   agentId?: string;
-  notifyUserMessagePersisted: (message: Extract<AgentMessage, { role: "user" }>) => void;
+  notifyUserMessagePersisted: (
+    message: Extract<AgentMessage, { role: "user" }>,
+    messageId: string,
+  ) => void;
   result: EmbeddedRunAttemptResult;
   sessionKey?: string;
   cwd: string;
@@ -382,9 +390,9 @@ async function mirrorBestEffort(params: {
       idempotencyScope: `codex-app-server:${params.threadId}`,
       config: params.params.config,
     });
-    for (const message of mirrorResult.userMessagesPresent) {
+    for (const receipt of mirrorResult.userMessageReceipts) {
       try {
-        params.notifyUserMessagePersisted(message);
+        params.notifyUserMessagePersisted(receipt.message, receipt.messageId);
       } catch (error) {
         embeddedAgentLog.warn("failed to notify codex app-server user-message persistence", {
           error: formatErrorMessage(error),
@@ -458,14 +466,32 @@ async function resolveFinalCodexMirrorMessages(params: {
 
 export function createCodexAppServerUserMessagePersistenceNotifier(
   runParams: EmbeddedRunAttemptParams,
-): (message: Extract<AgentMessage, { role: "user" }>) => void {
+): (message: Extract<AgentMessage, { role: "user" }>, messageId: string) => void {
   let notified = false;
-  return (message) => {
+  return (message, messageId) => {
     if (notified) {
       return;
     }
     notified = true;
-    runParams.userTurnTranscriptRecorder?.markRuntimePersisted(message);
+    const target = runParams.sessionTarget;
+    const agentId = target?.agentId ?? runParams.agentId;
+    const sessionId = target?.sessionId ?? runParams.sessionId;
+    const sessionKey = target?.sessionKey ?? runParams.sessionKey;
+    runParams.userTurnTranscriptRecorder?.markRuntimePersisted(
+      message,
+      agentId && sessionId && sessionKey
+        ? {
+            messageId,
+            target: {
+              agentId,
+              sessionId,
+              sessionKey,
+              ...(target?.storePath ? { storePath: target.storePath } : {}),
+              ...(target?.threadId !== undefined ? { threadId: target.threadId } : {}),
+            },
+          }
+        : undefined,
+    );
     try {
       runParams.onUserMessagePersisted?.(message);
     } catch (error) {
@@ -479,7 +505,10 @@ export function createCodexAppServerUserMessagePersistenceNotifier(
 export async function mirrorPromptAtTurnStartBestEffort(params: {
   params: EmbeddedRunAttemptParams;
   agentId?: string;
-  notifyUserMessagePersisted: (message: Extract<AgentMessage, { role: "user" }>) => void;
+  notifyUserMessagePersisted: (
+    message: Extract<AgentMessage, { role: "user" }>,
+    messageId: string,
+  ) => void;
   sessionKey?: string;
   cwd: string;
   threadId: string;
@@ -511,8 +540,8 @@ export async function mirrorPromptAtTurnStartBestEffort(params: {
         idempotencyScope: `codex-app-server:${params.threadId}`,
         config: params.params.config,
       });
-      for (const message of mirrorResult.userMessagesPresent) {
-        params.notifyUserMessagePersisted(message);
+      for (const receipt of mirrorResult.userMessageReceipts) {
+        params.notifyUserMessagePersisted(receipt.message, receipt.messageId);
       }
     })();
     params.params.userTurnTranscriptRecorder?.markRuntimePersistencePending(mirrorPromise);
@@ -554,7 +583,12 @@ async function mirror(params: {
 }): Promise<CodexAppServerTranscriptMirrorResult> {
   const messages = params.messages.filter(isMirroredAgentMessage);
   if (messages.length === 0) {
-    return { assistantMirrorIdentitiesOwned: [], messagesPresent: [], userMessagesPresent: [] };
+    return {
+      assistantMirrorIdentitiesOwned: [],
+      messagesPresent: [],
+      userMessageReceipts: [],
+      userMessagesPresent: [],
+    };
   }
 
   const candidates = messages.map((message) => {
@@ -587,6 +621,7 @@ async function mirror(params: {
       }> = [];
       const nextAssistantMirrorIdentitiesOwned = new Set<string>();
       const nextMessagesPresent: MirroredAgentMessage[] = [];
+      const nextUserMessageReceipts: MirroredUserMessageReceipt[] = [];
       const nextUserMessagesPresent: MirroredUserMessage[] = [];
       const mirrorFacts = await transcript.readMessageFacts({
         idempotencyKeys: candidateIdempotencyKeys,
@@ -605,6 +640,16 @@ async function mirror(params: {
             nextMessagesPresent.push(persistedMessage);
             if (persistedMessage.role === "user") {
               nextUserMessagesPresent.push(persistedMessage);
+              const persistedMessageId =
+                idempotencyKey === undefined
+                  ? undefined
+                  : mirrorFacts.messageIdsByIdempotencyKey.get(idempotencyKey);
+              if (persistedMessageId) {
+                nextUserMessageReceipts.push({
+                  message: persistedMessage,
+                  messageId: persistedMessageId,
+                });
+              }
             }
           }
           if (message.role === "assistant") {
@@ -671,6 +716,7 @@ async function mirror(params: {
         }
         if (appendedMessage.role === "user") {
           nextUserMessagesPresent.push(appendedMessage);
+          nextUserMessageReceipts.push({ message: appendedMessage, messageId });
         }
         if (appended.appended) {
           nextAppendedUpdates.push({
@@ -687,12 +733,18 @@ async function mirror(params: {
         appendedUpdates: nextAppendedUpdates,
         assistantMirrorIdentitiesOwned: [...nextAssistantMirrorIdentitiesOwned],
         messagesPresent: nextMessagesPresent,
+        userMessageReceipts: nextUserMessageReceipts,
         userMessagesPresent: nextUserMessagesPresent,
       };
     },
   );
-  const { appendedUpdates, assistantMirrorIdentitiesOwned, messagesPresent, userMessagesPresent } =
-    mirrorBatch;
+  const {
+    appendedUpdates,
+    assistantMirrorIdentitiesOwned,
+    messagesPresent,
+    userMessageReceipts,
+    userMessagesPresent,
+  } = mirrorBatch;
 
   for (const update of appendedUpdates) {
     try {
@@ -715,7 +767,12 @@ async function mirror(params: {
     }
   }
 
-  return { assistantMirrorIdentitiesOwned, messagesPresent, userMessagesPresent };
+  return {
+    assistantMirrorIdentitiesOwned,
+    messagesPresent,
+    userMessageReceipts,
+    userMessagesPresent,
+  };
 }
 
 export const codexTranscriptMirrorRuntime = { mirror, mirrorBestEffort };

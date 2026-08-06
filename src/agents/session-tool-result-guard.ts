@@ -63,6 +63,13 @@ function resolveMaxToolResultChars(opts?: { maxToolResultChars?: number }): numb
 type UserAgentMessage = Extract<AgentMessage, { role: "user" }>;
 type AssistantAgentMessage = Extract<AgentMessage, { role: "assistant" }>;
 type AsyncMessageCallback<T extends AgentMessage> = (message: T) => void | Promise<void>;
+type UserMessagePersistedCallback = (
+  message: UserAgentMessage,
+  context: {
+    entryId: string;
+    sessionTarget?: ReturnType<SessionManager["getSessionTarget"]>;
+  },
+) => void | Promise<void>;
 type CompactionAppendValidator = (entryId: string, appendedText: string) => boolean;
 type AppendMessageOptions = Parameters<SessionManager["appendMessage"]>[1];
 
@@ -615,7 +622,7 @@ export function installSessionToolResultGuard(
     suppressNextUserMessagePersistence?: boolean;
     suppressTranscriptOnlyAssistantPersistence?: boolean;
     suppressAssistantErrorPersistence?: boolean;
-    onUserMessagePersisted?: AsyncMessageCallback<UserAgentMessage>;
+    onUserMessagePersisted?: UserMessagePersistedCallback;
     onUserMessagePersistenceSuppressed?: AsyncMessageCallback<UserAgentMessage>;
     onUserMessageBlocked?: (message: UserAgentMessage) => void;
     onMessagePersisted?: (message: AgentMessage) => void | Promise<void>;
@@ -906,7 +913,10 @@ export function installSessionToolResultGuard(
       pendingState.trackToolCalls(toolCalls);
     }
     if (isUserAgentMessage(finalMessage)) {
-      void opts?.onUserMessagePersisted?.(finalMessage);
+      void opts?.onUserMessagePersisted?.(finalMessage, {
+        entryId: result,
+        ...(sessionTarget ? { sessionTarget } : {}),
+      });
     }
     if (
       finalRole === "assistant" &&

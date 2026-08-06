@@ -20,6 +20,7 @@ import type {
   PersistedUserTurnMessage,
   UserTurnMessagePersistenceParams,
   UserTurnInput,
+  UserTurnTranscriptAdmissionReceipt,
   UserTurnTranscriptPersistResult,
   UserTurnTranscriptRecorder,
   UserTurnTranscriptTarget,
@@ -30,6 +31,7 @@ import type {
 export type {
   PersistedUserTurnMessage,
   UserTurnInput,
+  UserTurnTranscriptAdmissionReceipt,
   UserTurnTranscriptRecorder,
 } from "./user-turn-transcript.types.js";
 
@@ -421,6 +423,13 @@ async function persistUserTurnTranscript(
     ...appended,
     sessionEntry: turn.sessionEntry,
     sessionFile: params.sessionKey,
+    target: {
+      agentId: params.agentId,
+      sessionId: params.sessionId,
+      sessionKey: params.sessionKey,
+      ...(params.storePath ? { storePath: params.storePath } : {}),
+      ...(params.threadId !== undefined ? { threadId: params.threadId } : {}),
+    },
   };
 }
 
@@ -438,6 +447,8 @@ export function createUserTurnTranscriptRecorder(
   let persisted = false;
   let runtimePersisted = false;
   let persistedResult: UserTurnTranscriptPersistResult | undefined;
+  let admissionReceipt: UserTurnTranscriptAdmissionReceipt | undefined;
+  let admittedMessage: PersistedUserTurnMessage | undefined;
   let runtimePersistencePromise: Promise<void> | undefined;
   let selfPersistencePromise: Promise<UserTurnTranscriptPersistResult | undefined> | undefined;
   let resolvedMessagePromise: Promise<PersistedUserTurnMessage | undefined> | undefined;
@@ -507,6 +518,17 @@ export function createUserTurnTranscriptRecorder(
     } catch (error) {
       handlePersistenceError(error);
     }
+  };
+
+  const recordAdmission = (
+    receipt: UserTurnTranscriptAdmissionReceipt,
+    persistedMessage: PersistedUserTurnMessage,
+  ) => {
+    if (admissionReceipt) {
+      return;
+    }
+    admissionReceipt = receipt;
+    admittedMessage = persistedMessage;
   };
 
   const waitForRuntimePersistence = async () => {
@@ -602,6 +624,10 @@ export function createUserTurnTranscriptRecorder(
           if (admittedResult) {
             persisted = true;
             persistedResult = admittedResult;
+            recordAdmission(
+              { messageId: admittedResult.messageId, target: admittedResult.target },
+              admittedResult.message,
+            );
             notifyMessagePersisted(admittedResult.message);
           }
         }
@@ -622,6 +648,7 @@ export function createUserTurnTranscriptRecorder(
       if (result) {
         persisted = true;
         persistedResult = result;
+        recordAdmission({ messageId: result.messageId, target: result.target }, result.message);
         notifyMessagePersisted(result.message);
       }
       return result;
@@ -651,16 +678,21 @@ export function createUserTurnTranscriptRecorder(
       message = applyReplacementText(message);
       resolvedMessagePromise = undefined;
     },
-    getPersistedMessage: () => runtimePersistedMessage ?? persistedResult?.message,
+    getPersistedMessage: () =>
+      admittedMessage ?? runtimePersistedMessage ?? persistedResult?.message,
+    getAdmissionReceipt: () => admissionReceipt,
     markSentToProvider: () => {
       sentToProvider = true;
     },
     markRuntimePersistencePending: (pending) => {
       runtimePersistencePromise = pending;
     },
-    markRuntimePersisted: (persistedMessage) => {
+    markRuntimePersisted: (persistedMessage, receipt) => {
       runtimePersistedMessage = persistedMessage;
       runtimePersisted = true;
+      if (persistedMessage && receipt) {
+        recordAdmission(receipt, persistedMessage);
+      }
       if (persistedMessage && persistedResult) {
         persistedResult = {
           ...persistedResult,

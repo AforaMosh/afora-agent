@@ -93,6 +93,14 @@ type UserTurnTranscriptPersistenceTarget = {
 
 export type UserTurnTranscriptTarget = UserTurnTranscriptPersistenceTarget;
 
+export type UserTurnTranscriptAdmissionReceipt = Readonly<{
+  messageId: string;
+  target: Readonly<
+    Pick<UserTurnTranscriptTarget, "agentId" | "sessionId" | "sessionKey"> &
+      Partial<Pick<UserTurnTranscriptTarget, "storePath" | "threadId">>
+  >;
+}>;
+
 export type UserTurnTranscriptPersistResult = {
   /** True only when this call inserted the transcript message. */
   appended?: boolean;
@@ -100,6 +108,7 @@ export type UserTurnTranscriptPersistResult = {
   sessionEntry: UserTurnSessionEntry | undefined;
   messageId: string;
   message: PersistedUserTurnMessage;
+  target: UserTurnTranscriptAdmissionReceipt["target"];
 };
 
 export type UserTurnTranscriptTargetResolver =
@@ -147,9 +156,13 @@ export type UserTurnTranscriptRecorder = {
   /** Replaces generated current-turn text before runtime persistence/provider submission. */
   replaceTextBeforePersistence?: (text: string) => void;
   getPersistedMessage?: () => PersistedUserTurnMessage | undefined;
+  getAdmissionReceipt: () => UserTurnTranscriptAdmissionReceipt | undefined;
   markSentToProvider?: () => void;
   markRuntimePersistencePending: (pending: Promise<void>) => void;
-  markRuntimePersisted: (message?: PersistedUserTurnMessage) => void;
+  markRuntimePersisted: (
+    message?: PersistedUserTurnMessage,
+    receipt?: UserTurnTranscriptAdmissionReceipt,
+  ) => void;
   markBlocked: () => void;
   hasPersisted: () => boolean;
   isBlocked: () => boolean;

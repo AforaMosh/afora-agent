@@ -150,13 +150,19 @@ it("adopts a competing indexed user without duplicating writes or slowing assist
       idempotencyScope: "codex-app-server:thread-1",
     });
 
-    const messages = (await readSessionTranscriptEvents(target))
-      .filter((event): event is { type: "message"; message: AgentMessage } => {
+    const messageEvents = (await readSessionTranscriptEvents(target)).filter(
+      (event): event is { id: string; type: "message"; message: AgentMessage } => {
         return Boolean(
-          event && typeof event === "object" && "type" in event && event.type === "message",
+          event &&
+          typeof event === "object" &&
+          "id" in event &&
+          typeof event.id === "string" &&
+          "type" in event &&
+          event.type === "message",
         );
-      })
-      .map((event) => event.message);
+      },
+    );
+    const messages = messageEvents.map((event) => event.message);
 
     expect(messages.filter((message) => message.role === "user")).toHaveLength(1);
     expect(messages.filter((message) => message.role === "assistant")).toHaveLength(1);
@@ -170,6 +176,12 @@ it("adopts a competing indexed user without duplicating writes or slowing assist
           mirrorSourceFingerprint: userFingerprint,
         }),
       }),
+    ]);
+    expect(result.userMessageReceipts).toEqual([
+      {
+        message: result.userMessagesPresent[0],
+        messageId: messageEvents.find((event) => event.message.role === "user")?.id,
+      },
     ]);
     expect(result.assistantMirrorIdentitiesOwned).toEqual(["turn-1:assistant"]);
     expect(transcriptRace.lookups).toEqual(["scan", "scan"]);

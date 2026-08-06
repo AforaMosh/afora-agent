@@ -17,6 +17,7 @@ const TRANSCRIPT_MIRROR_KEY_QUERY_BATCH_SIZE = 900;
 
 type TranscriptMirrorFacts = {
   existingIdempotencyKeys: Set<string>;
+  messageIdsByIdempotencyKey: Map<string, string>;
   messagesByIdempotencyKey: Map<string, unknown>;
 };
 
@@ -87,6 +88,7 @@ function readTranscriptMirrorFactsInSnapshot(
   const db = getSessionKysely(database.db);
   const facts: TranscriptMirrorFacts = {
     existingIdempotencyKeys: new Set(),
+    messageIdsByIdempotencyKey: new Map(),
     messagesByIdempotencyKey: new Map(),
   };
   for (
@@ -104,7 +106,7 @@ function readTranscriptMirrorFactsInSnapshot(
             .onRef("event.session_id", "=", "identity.session_id")
             .onRef("event.seq", "=", "identity.seq"),
         )
-        .select(["identity.message_idempotency_key", "event.event_json"])
+        .select(["identity.event_id", "identity.message_idempotency_key", "event.event_json"])
         .where("identity.session_id", "=", sessionId)
         .where("identity.message_idempotency_key", "in", batch)
         .orderBy("identity.seq", "asc"),
@@ -115,6 +117,9 @@ function readTranscriptMirrorFactsInSnapshot(
         continue;
       }
       facts.existingIdempotencyKeys.add(idempotencyKey);
+      if (row.event_id) {
+        facts.messageIdsByIdempotencyKey.set(idempotencyKey, row.event_id);
+      }
       const message = readTranscriptEventMessage(JSON.parse(row.event_json) as TranscriptEvent);
       if (message !== undefined) {
         facts.messagesByIdempotencyKey.set(idempotencyKey, message);
@@ -131,6 +136,7 @@ function readMirrorFactsFromEvents(
 ): TranscriptMirrorFacts {
   const facts: TranscriptMirrorFacts = {
     existingIdempotencyKeys: new Set(),
+    messageIdsByIdempotencyKey: new Map(),
     messagesByIdempotencyKey: new Map(),
   };
   for (const event of events) {
@@ -140,6 +146,13 @@ function readMirrorFactsFromEvents(
       continue;
     }
     facts.existingIdempotencyKeys.add(idempotencyKey);
+    const eventId =
+      event && typeof event === "object" && "id" in event && typeof event.id === "string"
+        ? event.id
+        : undefined;
+    if (eventId) {
+      facts.messageIdsByIdempotencyKey.set(idempotencyKey, eventId);
+    }
     if (message !== undefined) {
       facts.messagesByIdempotencyKey.set(idempotencyKey, message);
     }
