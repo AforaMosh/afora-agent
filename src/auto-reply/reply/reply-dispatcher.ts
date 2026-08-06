@@ -117,7 +117,6 @@ const DEFAULT_BEFORE_DELIVER_TIMEOUT_MS = 15_000;
 const silentReplyLogger = createSubsystemLogger("silent-reply/dispatcher");
 const beforeDeliverCancelledHooks = new WeakMap<ReplyDispatcher, ReplyDispatchCancelHandler[]>();
 const deliveryOutcomeTrackers = new WeakMap<ReplyPayload, ReplyDispatchDeliveryOutcomeTracker>();
-const undeliveredFallbacks = new WeakMap<ReplyPayload, ReplyPayload>();
 
 type ReplyDispatchBeforeDeliverStage = {
   hook: ReplyDispatchBeforeDeliver;
@@ -273,14 +272,6 @@ export function captureReplyDispatchDeliveryOutcome(payload: ReplyPayload): {
   };
   deliveryOutcomeTrackers.set(payload, tracker);
   return { promise: tracker.promise, isTracked: () => tracker.tracked };
-}
-
-/** Attach a text alternative that is delivered only when the primary payload is proven unsent. */
-export function attachReplyDispatchUndeliveredFallback(
-  payload: ReplyPayload,
-  fallback: ReplyPayload,
-): void {
-  undeliveredFallbacks.set(payload, fallback);
 }
 
 function buildReplyDispatchRuntimeInfo(
@@ -505,10 +496,8 @@ export function createReplyDispatcher(options: ReplyDispatcherOptions): ReplyDis
   };
 
   const enqueue = (kind: ReplyDispatchKind, payload: ReplyPayload) => {
-    const fallback = undeliveredFallbacks.get(payload);
-    undeliveredFallbacks.delete(payload);
     const originalWasExactSilent = isSilentReplyText(payload.text, SILENT_REPLY_TOKEN);
-    const normalizedPrimary = normalizeReplyPayloadInternal(payload, {
+    const normalized = normalizeReplyPayloadInternal(payload, {
       responsePrefix: options.responsePrefix,
       responsePrefixContext: options.responsePrefixContext,
       responsePrefixContextProvider: options.responsePrefixContextProvider,
@@ -520,16 +509,6 @@ export function createReplyDispatcher(options: ReplyDispatcherOptions): ReplyDis
           reason,
         }),
     });
-    const normalizedFallback = fallback
-      ? normalizeReplyPayloadInternal(fallback, {
-          responsePrefix: options.responsePrefix,
-          responsePrefixContext: options.responsePrefixContext,
-          responsePrefixContextProvider: options.responsePrefixContextProvider,
-          transformReplyPayload: options.transformReplyPayload,
-          onHeartbeatStrip: options.onHeartbeatStrip,
-        })
-      : null;
-    const normalized = normalizedPrimary ?? normalizedFallback;
     if (!normalized) {
       if (kind === "final" && originalWasExactSilent) {
         silentReplyLogger.debug("exact NO_REPLY final payload was skipped before delivery", {
@@ -540,7 +519,6 @@ export function createReplyDispatcher(options: ReplyDispatcherOptions): ReplyDis
       }
       return false;
     }
-    const deliveryFallback = normalizedPrimary ? normalizedFallback : null;
     queuedCounts[kind] += 1;
     pending += 1;
     const deliveryOutcomeTracker = deliveryOutcomeTrackers.get(payload);
@@ -566,12 +544,6 @@ export function createReplyDispatcher(options: ReplyDispatcherOptions): ReplyDis
         }
         const dispatchInfo = buildReplyDispatchRuntimeInfo(normalized, kind);
         deliveryOutcome = await deliverOnce(normalized, dispatchInfo);
-        if (
-          deliveryFallback &&
-          (deliveryOutcome === "cancelled" || deliveryOutcome === "failed-before-deliver")
-        ) {
-          deliveryOutcome = await deliverOnce(deliveryFallback, dispatchInfo);
-        }
         if (deliveryOutcome === "cancelled") {
           cancelledCounts[kind] += 1;
         } else if (
