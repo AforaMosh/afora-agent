@@ -28,6 +28,32 @@ function blocker(code: string, path: string, message: string): ClawDiagnostic {
   return { level: "error", code, phase: "plan", path, message };
 }
 
+export function findClawExtensionPackageCollisions(params: {
+  packages: ClawPackage[];
+  extensions: ClawOpenClawExtension[];
+}): Array<{ index: number; diagnostic: ClawDiagnostic }> {
+  const declaredPackageIds = new Set(params.packages.map((pkg) => `${pkg.kind}:${pkg.ref}`));
+  const collisions: Array<{ index: number; diagnostic: ClawDiagnostic }> = [];
+
+  for (const [index, extension] of params.extensions.entries()) {
+    const packageId = `plugin:${extension.ref}`;
+    if (declaredPackageIds.has(packageId)) {
+      collisions.push({
+        index,
+        diagnostic: blocker(
+          "extension_package_collision",
+          `$.profiles.openclaw.extensions[${index}]`,
+          `Extension package ${JSON.stringify(packageId)} is already declared by the portable manifest or another profile extension.`,
+        ),
+      });
+      continue;
+    }
+    declaredPackageIds.add(packageId);
+  }
+
+  return collisions;
+}
+
 function extensionCapabilityChange(params: {
   extension: ClawOpenClawExtension;
   preflight: ClawPackagePreflightResult;

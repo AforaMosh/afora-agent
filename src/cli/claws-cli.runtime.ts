@@ -10,7 +10,10 @@ import {
   CLAW_ADD_RESULT_SCHEMA_VERSION,
   ClawAddMutationError,
 } from "../claws/add.js";
-import { planClawExtensions } from "../claws/application-plan.js";
+import {
+  findClawExtensionPackageCollisions,
+  planClawExtensions,
+} from "../claws/application-plan.js";
 import { assertExperimentalClawsEnabled } from "../claws/experimental.js";
 import {
   CLAW_EXPORT_RESULT_SCHEMA_VERSION,
@@ -220,8 +223,16 @@ export async function runClawsInspectCommand(
     workspace: result.source.packageRoot,
     packagePreflight: preflightClawPackage,
   });
-  const diagnostics = [...result.diagnostics, ...extensionPlan.blockers];
-  const valid = extensionPlan.blockers.length === 0;
+  const extensionCollisions = findClawExtensionPackageCollisions({
+    packages: result.manifest.packages,
+    extensions: result.openClawProfile?.extensions ?? [],
+  });
+  const diagnostics = [
+    ...result.diagnostics,
+    ...extensionPlan.blockers,
+    ...extensionCollisions.map(({ diagnostic }) => diagnostic),
+  ];
+  const valid = diagnostics.every((diagnostic) => diagnostic.level !== "error");
   const payload = {
     schemaVersion: CLAW_INSPECT_RESULT_SCHEMA_VERSION,
     stability: CLAW_OUTPUT_STABILITY,
@@ -252,7 +263,7 @@ export async function runClawsInspectCommand(
   runtime.log(`MCP servers: ${Object.keys(result.manifest.mcpServers).length}`);
   runtime.log(`Cron jobs: ${result.manifest.cronJobs.length}`);
   if (!valid) {
-    runtime.error(formatDiagnostics(extensionPlan.blockers));
+    runtime.error(formatDiagnostics(diagnostics));
     runtime.exit(1);
   }
 }

@@ -8,7 +8,7 @@ import { resolvePathViaExistingAncestorSync } from "../infra/boundary-path.js";
 import { assertNoSymlinkParents } from "../infra/fs-safe-advanced.js";
 import { FsSafeError, root as fsSafeRoot, type Root } from "../infra/fs-safe.js";
 import { resolveUserPath } from "../utils.js";
-import { planClawExtensions } from "./application-plan.js";
+import { findClawExtensionPackageCollisions, planClawExtensions } from "./application-plan.js";
 import { digestClawMcpServer } from "./mcp.js";
 import { clawManifestWorkspaceConflictsWithPath } from "./schema.js";
 import { MAX_MANAGED_FILE_BYTES, MAX_MANAGED_WORKSPACE_BYTES } from "./source-limits.js";
@@ -535,22 +535,17 @@ export async function buildClawAddPlan(params: {
     packagePreflight: context.packagePreflight,
   });
   const extensions = extensionPlan.extensions;
-  const existingPackageActionIds = new Set(
-    actions.filter((action) => action.kind === "package").map((action) => action.id),
-  );
+  const extensionCollisions = findClawExtensionPackageCollisions({
+    packages: params.manifest.packages,
+    extensions: params.openClawProfile?.extensions ?? [],
+  });
+  const collisionIndexes = new Set(extensionCollisions.map(({ index }) => index));
+  blockers.push(...extensionCollisions.map(({ diagnostic }) => diagnostic));
   for (const [index, action] of extensionPlan.actions.entries()) {
-    if (existingPackageActionIds.has(action.id)) {
-      blockers.push(
-        blocker(
-          "extension_package_collision",
-          `$.profiles.openclaw.extensions[${index}]`,
-          `Extension package ${JSON.stringify(action.id)} is already declared by the portable manifest.`,
-        ),
-      );
+    if (collisionIndexes.has(index)) {
       continue;
     }
     actions.push(action);
-    existingPackageActionIds.add(action.id);
   }
   capabilityChanges.push(...extensionPlan.capabilityChanges);
   readinessRequirements.push(...extensionPlan.requirements);
