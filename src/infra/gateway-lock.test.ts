@@ -70,10 +70,12 @@ function resolveLockPath(env: NodeJS.ProcessEnv) {
   const configPath = resolveConfigPath(env, stateDir);
   const configHash = createHash("sha256").update(configPath).digest("hex").slice(0, 8);
   const canonicalStateDir = fsSync.realpathSync.native(path.resolve(stateDir));
+  const stateHash = createHash("sha256").update(canonicalStateDir).digest("hex").slice(0, 8);
   const lockDir = resolveTestLockDir();
   return {
     lockPath: path.join(lockDir, `gateway.${configHash}.lock`),
     configPath,
+    legacyStateLockPath: path.join(lockDir, `gateway.state.${stateHash}.lock`),
     stateLockPath: path.join(canonicalStateDir, "locks", "gateway.lock"),
   };
 }
@@ -549,9 +551,9 @@ describe("gateway lock", () => {
 
   it("continues honoring the legacy lifetime coordinator", async () => {
     const env = await makeEnv();
-    const { stateLockPath } = resolveLockPath(env);
-    await fs.mkdir(path.dirname(stateLockPath), { recursive: true });
-    const coordinator = openNodeSqliteDatabase(`${stateLockPath}.sqlite`);
+    const { legacyStateLockPath } = resolveLockPath(env);
+    await fs.mkdir(path.dirname(legacyStateLockPath), { recursive: true });
+    const coordinator = openNodeSqliteDatabase(`${legacyStateLockPath}.sqlite`);
     coordinator.exec("PRAGMA busy_timeout = 0; BEGIN EXCLUSIVE;");
     try {
       await expect(acquireForTest(env, { timeoutMs: 15 })).rejects.toBeInstanceOf(GatewayLockError);
@@ -561,6 +563,19 @@ describe("gateway lock", () => {
     }
 
     await expectGatewayLock(await acquireForTest(env)).release();
+  });
+
+  it("keeps the legacy coordinator while the shared-state lock is held", async () => {
+    const env = await makeEnv();
+    const { legacyStateLockPath } = resolveLockPath(env);
+    const lock = expectGatewayLock(await acquireForTest(env));
+    const coordinator = openNodeSqliteDatabase(`${legacyStateLockPath}.sqlite`);
+    try {
+      expect(() => coordinator.exec("PRAGMA busy_timeout = 0; BEGIN EXCLUSIVE;")).toThrow();
+    } finally {
+      coordinator.close();
+      await lock.release();
+    }
   });
 
   it("preserves a fresh gateway lock that replaces the stale reclaim candidate", async () => {
@@ -965,6 +980,7 @@ describe("gateway lock", () => {
     vi.useRealTimers();
     const env = await makeEnv();
     const { stateLockPath } = resolveLockPath(env);
+    await fs.mkdir(path.dirname(stateLockPath), { recursive: true });
 
     const writeError = Object.assign(new Error("ENOSPC: no space left on device"), {
       code: "ENOSPC",

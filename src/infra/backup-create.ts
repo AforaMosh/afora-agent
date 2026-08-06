@@ -462,6 +462,9 @@ function classifyStateSqliteBackupSourcePath(
   if (!databasePath) {
     return undefined;
   }
+  if (isVolatileBackupPath(resolvedSourcePath, { stateDirs: [stateDir] })) {
+    return "excluded";
+  }
   return "sqlite";
 }
 
