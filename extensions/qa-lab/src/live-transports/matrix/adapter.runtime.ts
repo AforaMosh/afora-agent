@@ -176,6 +176,22 @@ async function waitForMatrixChannelReady(
   );
 }
 
+async function stopMatrixQaHarnessAfterStartupFailure(
+  harness: Awaited<ReturnType<typeof startMatrixQaHarness>>,
+  error: unknown,
+): Promise<never> {
+  try {
+    await harness.stop();
+  } catch (cleanupError) {
+    throw new AggregateError(
+      [error, cleanupError],
+      "Matrix QA adapter startup and cleanup both failed",
+      { cause: error },
+    );
+  }
+  throw error;
+}
+
 export async function createMatrixQaTransportAdapter(
   context: FactoryContext,
 ): Promise<AdapterDefinition> {
@@ -197,8 +213,7 @@ export async function createMatrixQaTransportAdapter(
       topology: resolveMatrixQaAdapterTopology(options.scenarioIds),
     });
   } catch (error) {
-    await harness.stop().catch(() => undefined);
-    throw error;
+    await stopMatrixQaHarnessAfterStartupFailure(harness, error);
   }
   const accountId = options.sutAccountId?.trim() || "sut";
   const observedEvents: MatrixQaObservedEvent[] = [];
@@ -217,8 +232,7 @@ export async function createMatrixQaTransportAdapter(
   try {
     await Promise.all(roomObservers.map(({ observer }) => observer.prime()));
   } catch (error) {
-    await harness.stop().catch(() => undefined);
-    throw error;
+    await stopMatrixQaHarnessAfterStartupFailure(harness, error);
   }
   const driverClient = createMatrixQaClient({
     accessToken: provisioning.driver.accessToken,

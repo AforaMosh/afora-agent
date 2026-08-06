@@ -366,7 +366,15 @@ export async function createMatrixQaE2eeScenarioClient(
       },
     });
   } catch (error) {
-    await lifecycle.stop().catch(() => undefined);
+    try {
+      await lifecycle.stop();
+    } catch (cleanupError) {
+      throw new AggregateError(
+        [error, cleanupError],
+        "Matrix E2EE client construction and cleanup both failed",
+        { cause: error },
+      );
+    }
     throw error;
   }
 

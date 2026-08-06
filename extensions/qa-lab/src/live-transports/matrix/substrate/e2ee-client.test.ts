@@ -425,27 +425,63 @@ describe("matrix qa e2ee client storage", () => {
   });
 
   it("cleans up when listener setup fails before startup", async () => {
+    const constructionError = new Error("listener setup failed");
     scenarioClientMocks.client.on
       .mockImplementationOnce(() => undefined)
       .mockImplementationOnce(() => {
-        throw new Error("listener setup failed");
+        throw constructionError;
       });
     const outputDir = await mkdtemp(path.join(os.tmpdir(), "matrix-qa-e2ee-listener-"));
 
     try {
-      await expect(
-        createMatrixQaE2eeScenarioClient({
-          accessToken: "driver-token",
-          actorId: "driver",
-          baseUrl: "https://matrix-qa.test",
-          observedEvents: [],
-          outputDir,
-          scenarioId: "matrix-e2ee-bootstrap-success",
-          timeoutMs: 1_000,
-          userId: "@driver:matrix-qa.test",
-        }),
-      ).rejects.toThrow("listener setup failed");
+      const failure = await createMatrixQaE2eeScenarioClient({
+        accessToken: "driver-token",
+        actorId: "driver",
+        baseUrl: "https://matrix-qa.test",
+        observedEvents: [],
+        outputDir,
+        scenarioId: "matrix-e2ee-bootstrap-success",
+        timeoutMs: 1_000,
+        userId: "@driver:matrix-qa.test",
+      }).catch((error: unknown) => error);
 
+      expect(failure).toBe(constructionError);
+      expect(scenarioClientMocks.client.stopAndPersist).toHaveBeenCalledTimes(1);
+      expect(scenarioClientMocks.client.off).toHaveBeenCalledTimes(2);
+    } finally {
+      await rm(outputDir, { force: true, recursive: true });
+    }
+  });
+
+  it("preserves construction and cleanup failures when both fail", async () => {
+    const constructionError = new Error("listener setup failed");
+    const cleanupError = new Error("crypto persistence cleanup failed");
+    scenarioClientMocks.client.on
+      .mockImplementationOnce(() => undefined)
+      .mockImplementationOnce(() => {
+        throw constructionError;
+      });
+    scenarioClientMocks.client.stopAndPersist.mockRejectedValueOnce(cleanupError);
+    const outputDir = await mkdtemp(path.join(os.tmpdir(), "matrix-qa-e2ee-dual-failure-"));
+
+    try {
+      const failure = await createMatrixQaE2eeScenarioClient({
+        accessToken: "driver-token",
+        actorId: "driver",
+        baseUrl: "https://matrix-qa.test",
+        observedEvents: [],
+        outputDir,
+        scenarioId: "matrix-e2ee-bootstrap-success",
+        timeoutMs: 1_000,
+        userId: "@driver:matrix-qa.test",
+      }).catch((error: unknown) => error);
+
+      expect(failure).toBeInstanceOf(AggregateError);
+      expect(failure).toMatchObject({
+        cause: constructionError,
+        errors: [constructionError, cleanupError],
+        message: "Matrix E2EE client construction and cleanup both failed",
+      });
       expect(scenarioClientMocks.client.stopAndPersist).toHaveBeenCalledTimes(1);
       expect(scenarioClientMocks.client.off).toHaveBeenCalledTimes(2);
     } finally {
