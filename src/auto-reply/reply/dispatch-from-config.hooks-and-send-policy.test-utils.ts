@@ -577,6 +577,52 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
     }
   });
 
+  it("lets a direct final proceed when the receipt hangs in beforeDeliver", async () => {
+    vi.useFakeTimers();
+    try {
+      setNoAbort();
+      const deliveredTexts: string[] = [];
+      const receiptHook = createDeferred<void>();
+      let receiptHookCalls = 0;
+      const dispatcher = createReplyDispatcher({
+        beforeDeliver: async (payload) => {
+          if (payload.text === ACTIVE_TURN_RECEIPT_TEXT) {
+            receiptHookCalls += 1;
+            await receiptHook.promise;
+          }
+          return payload;
+        },
+        deliver: async (payload) => {
+          deliveredTexts.push(payload.text ?? "");
+        },
+      });
+      const terminal = createDeferred<ReplyPayload>();
+      const run = dispatchReplyFromConfig({
+        ctx: buildTestCtx({ ChatType: "direct", SessionKey: "receipt:hung-before-deliver" }),
+        cfg: emptyConfig,
+        dispatcher,
+        replyResolver: async () => await terminal.promise,
+      });
+
+      await vi.advanceTimersByTimeAsync(ACTIVE_TURN_RECEIPT_DELAY_MS);
+      expect(receiptHookCalls).toBe(1);
+      terminal.resolve({ text: "final after hung receipt hook" });
+      await vi.advanceTimersByTimeAsync(4_999);
+      expect(deliveredTexts).toEqual([]);
+      await vi.advanceTimersByTimeAsync(1);
+      await run;
+      dispatcher.markComplete();
+      await dispatcher.waitForIdle();
+      expect(deliveredTexts).toEqual(["final after hung receipt hook"]);
+
+      receiptHook.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(deliveredTexts).toEqual(["final after hung receipt hook"]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("does not replay a maybe-visible receipt after transport started", async () => {
     vi.useFakeTimers();
     try {

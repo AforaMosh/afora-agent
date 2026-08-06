@@ -323,6 +323,9 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
   let streamingStartPromise: Promise<void> | null = null;
   let streamingGeneration = 0;
   let activeStreamingGeneration: number | undefined;
+  let progressVisibilityListener: (() => void) | undefined;
+  let progressVisibilityAccepted = false;
+  let progressVisibilityClosed = false;
   let inFlightStreamingClose:
     | { generation: number; content: string; promise: Promise<StreamingCloseOutcome> }
     | undefined;
@@ -346,6 +349,20 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
 
   const markVisibleReplySent = () => {
     visibleReplySent = true;
+  };
+
+  const notifyProgressVisible = () => {
+    if (progressVisibilityClosed || progressVisibilityAccepted) {
+      return;
+    }
+    progressVisibilityAccepted = true;
+    try {
+      progressVisibilityListener?.();
+    } catch (error) {
+      params.runtime.error?.(
+        `feishu[${account.accountId}] progress visibility listener failed: ${String(error)}`,
+      );
+    }
   };
 
   const formatReasoningPrefix = (thinking: string): string => {
@@ -480,6 +497,13 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
           header: cardHeader,
           note: cardNote,
         });
+        if (
+          streaming === session &&
+          activeStreamingGeneration === generation &&
+          session.isActive()
+        ) {
+          notifyProgressVisible();
+        }
         streamingStartBackoffUntilByAccount.delete(account.accountId);
       } catch (error) {
         rememberStreamingStartFailure(account.accountId);
@@ -498,6 +522,7 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
   };
 
   const resetStreamingState = () => {
+    progressVisibilityClosed = true;
     streaming = null;
     streamingStartPromise = null;
     activeStreamingGeneration = undefined;
@@ -711,7 +736,7 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
     }
     startStreaming();
     flushStreamingCardUpdate(buildCombinedStreamText(reasoningText, streamText));
-    return true;
+    return false;
   };
 
   const sendChunkedTextReply = async (paramsLocal: {
@@ -1215,6 +1240,8 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
         skippedFinalReason = null;
         skippedFinalAssistantMessageIndex = undefined;
         preparedDeliveryAssistantMessageIndex = undefined;
+        progressVisibilityAccepted = false;
+        progressVisibilityClosed = false;
       }
       if (previewStreamingEnabled && renderMode === "card") {
         startStreaming();
@@ -1223,6 +1250,7 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
     },
     onIdle: () => queueIdleSideEffects(),
     onCleanup: () => {
+      progressVisibilityClosed = true;
       typingCallbacks?.onCleanup?.();
     },
   };
@@ -1518,35 +1546,49 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
     dispatcherOptions,
     delivery,
     replyOptions: {
+      registerProgressVisibilityListener: (listener: () => void) => {
+        progressVisibilityListener = listener;
+        if (progressVisibilityAccepted && !progressVisibilityClosed) {
+          try {
+            listener();
+          } catch (error) {
+            params.runtime.error?.(
+              `feishu[${account.accountId}] progress visibility listener failed: ${String(error)}`,
+            );
+          }
+        }
+      },
       onModelSelected: prefixContext.onModelSelected,
       disableBlockStreaming:
         typeof blockStreamingEnabled === "boolean" ? !blockStreamingEnabled : true,
       onPartialReply: previewStreamingEnabled
         ? (payload: ReplyPayload) => {
             if (!payload.text) {
-              return;
+              return false;
             }
             const cleaned = stripReasoningTagsFromText(payload.text, {
               mode: "strict",
               trim: "both",
             });
             if (!cleaned) {
-              return;
+              return false;
             }
             startStreaming();
             queueStreamingUpdate(cleaned, {
               dedupeWithLastPartial: true,
               mode: "snapshot",
             });
+            return false;
           }
         : undefined,
       onReasoningStream: reasoningPreviewEnabled
         ? (payload: ReplyPayload) => {
             if (!payload.text) {
-              return;
+              return false;
             }
             startStreaming();
             queueReasoningUpdate(formatReasoningMessage(payload.text));
+            return false;
           }
         : undefined,
       onReasoningEnd: reasoningPreviewEnabled ? () => {} : undefined,

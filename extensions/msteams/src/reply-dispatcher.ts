@@ -565,13 +565,12 @@ export function createMSTeamsReplyDispatcher(params: {
         onReasoningStream: async (payload: PipelinePayload) => {
           const text = typeof payload?.text === "string" ? payload.text : undefined;
           if (!text) {
-            return;
+            return false;
           }
           if (payload?.isReasoningSnapshot !== true) {
-            await streamController.pushProgressLine(text);
-            return;
+            return await streamController.pushProgressLine(text);
           }
-          await streamController.pushProgressLine(
+          return await streamController.pushProgressLine(
             buildChannelProgressDraftLine({
               event: "item",
               itemId: "reasoning",
@@ -712,6 +711,8 @@ export function createMSTeamsReplyDispatcher(params: {
         ? {
             onPartialReply: (payload: { text?: string }) =>
               streamController.onPartialReply(payload),
+            registerProgressVisibilityListener: (listener: () => void) =>
+              streamController.registerProgressVisibilityListener(listener),
           }
         : {}),
       ...progressCallbacks,

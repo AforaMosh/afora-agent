@@ -30,6 +30,7 @@ const resolveReceiveIdTypeMock = vi.hoisted(() => vi.fn());
 const addTypingIndicatorMock = vi.hoisted(() => vi.fn(async () => ({ messageId: "om_msg" })));
 const removeTypingIndicatorMock = vi.hoisted(() => vi.fn(async () => {}));
 const streamingInstances = vi.hoisted((): StreamingSessionStub[] => []);
+const streamingStartGate = vi.hoisted((): { promise?: Promise<void> } => ({}));
 const shouldSuppressFeishuTextForVoiceMediaMock = vi.hoisted(
   () =>
     (params: {
@@ -131,6 +132,7 @@ vi.mock("./streaming-card.js", () => {
       active = false;
       credentials: unknown;
       start = vi.fn(async () => {
+        await streamingStartGate.promise;
         this.active = true;
       });
       update = vi.fn(async () => {});
@@ -182,6 +184,7 @@ describe("createFeishuReplyDispatcher streaming behavior", () => {
     ReplyDispatcherPlan["delivery"];
 
   beforeEach(() => {
+    streamingStartGate.promise = undefined;
     vi.clearAllMocks();
     streamingStartBackoffUntilByAccount.clear();
     streamingInstances.length = 0;
@@ -233,6 +236,28 @@ describe("createFeishuReplyDispatcher streaming behavior", () => {
       },
     });
   }
+
+  it("reports streaming progress only after Feishu accepts the starting card", async () => {
+    let releaseStart: (() => void) | undefined;
+    streamingStartGate.promise = new Promise<void>((resolve) => {
+      releaseStart = resolve;
+    });
+    const { result } = createDispatcherHarness();
+    const onVisible = vi.fn();
+    result.replyOptions.registerProgressVisibilityListener?.(onVisible);
+
+    expect(result.replyOptions.onPartialReply?.({ text: "queued preview" })).toBe(false);
+    expect(onVisible).not.toHaveBeenCalled();
+    releaseStart?.();
+    await streamingStartGate.promise;
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(onVisible).toHaveBeenCalledTimes(1);
+    const lateListener = vi.fn();
+    result.replyOptions.registerProgressVisibilityListener?.(lateListener);
+    expect(lateListener).toHaveBeenCalledTimes(1);
+  });
 
   it.each(["reply_payload_sending", "message_sending"])(
     "suppresses all pre-hook CardKit previews when %s is registered",

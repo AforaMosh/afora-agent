@@ -130,11 +130,43 @@ export function createTeamsReplyStreamController(params: {
   let failedSegmentFallbackPrepared = false;
   const streamEvents = (stream as { events?: TeamsStreamChunkEvents } | undefined)?.events;
   let streamChunkSubscription: number | undefined;
+  let progressVisibilityListener: (() => void) | undefined;
+  let progressVisibilityAccepted = false;
+  let progressVisibilityClosed = false;
+
+  const notifyProgressVisible = (): void => {
+    if (progressVisibilityClosed || progressVisibilityAccepted) {
+      return;
+    }
+    progressVisibilityAccepted = true;
+    try {
+      progressVisibilityListener?.();
+    } catch (error) {
+      params.log?.debug?.(
+        `progress visibility listener failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  };
 
   // The SDK emits `chunk` only after Teams acknowledges a cumulative typing
   // activity. Never infer delivered text from emit(), queued bytes, or errors.
   if (typeof streamEvents?.on === "function" && typeof streamEvents.off === "function") {
     streamChunkSubscription = streamEvents.on("chunk", (activity) => {
+      const streamType = activity.channelData?.streamType;
+      if (
+        activity.type !== "typing" ||
+        !activity.id ||
+        !activity.text ||
+        (streamType !== "streaming" && streamType !== "informative")
+      ) {
+        return;
+      }
+      if (streamType === "informative") {
+        if (activity.text === lastInformativeText) {
+          notifyProgressVisible();
+        }
+        return;
+      }
       const replacementAcknowledgementPending =
         replacementTextAwaitingAcknowledgement !== undefined;
       const replacementAcknowledgement =
@@ -142,10 +174,6 @@ export function createTeamsReplyStreamController(params: {
         replacementAcknowledgementPending &&
         activity.text === replacementTextAwaitingAcknowledgement;
       if (
-        activity.type !== "typing" ||
-        activity.channelData?.streamType !== "streaming" ||
-        !activity.id ||
-        !activity.text ||
         (acknowledgedStreamId !== undefined && activity.id !== acknowledgedStreamId) ||
         (replacementAcknowledgementPending
           ? !replacementAcknowledgement
@@ -159,6 +187,7 @@ export function createTeamsReplyStreamController(params: {
       if (activity.text === replacementTextAwaitingAcknowledgement) {
         replacementTextAwaitingAcknowledgement = undefined;
       }
+      notifyProgressVisible();
     });
   }
 
@@ -295,28 +324,41 @@ export function createTeamsReplyStreamController(params: {
   });
 
   return {
+    registerProgressVisibilityListener(listener: () => void): void {
+      progressVisibilityListener = listener;
+      if (progressVisibilityAccepted && !progressVisibilityClosed) {
+        try {
+          listener();
+        } catch (error) {
+          params.log?.debug?.(
+            `progress visibility listener failed: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
+      }
+    },
+
     async onReplyStart(): Promise<void> {
       // Starting a reply is not enough to decide that native streaming should
       // own delivery. Wait for text tokens or explicit progress work so
       // no-token replies keep the normal block-delivery path.
     },
 
-    onPartialReply(payload: { text?: string }): void {
+    onPartialReply(payload: { text?: string }): boolean {
       // Partial-token streaming only fires in "partial" mode. In "progress"
       // mode, openclaw's pipeline doesn't deliver tokens — the model output
       // arrives as a single payload at preparePayload time.
       if (!stream || !payload.text || wasCanceled() || streamMode !== "partial") {
-        return;
+        return false;
       }
       if (replacementSettlementPending && replacementFinalPending) {
         // Keep the newest partial as the replacement candidate until the
         // authoritative final payload arrives. Never append it into the SDK
         // accumulator that clearText() reset.
         pendingFinalPayload = { text: payload.text };
-        return;
+        return false;
       }
       if (streamFinalizationPending) {
-        return;
+        return false;
       }
       // Convert cumulative-text from the pipeline into deltas for the SDK's
       // appending sink. Without this, "Here's a" → "Here's a sonnet" → ...
@@ -334,7 +376,7 @@ export function createTeamsReplyStreamController(params: {
       const delta = fullText.slice(prefixLength);
       // Duplicate or prefix-only out-of-order snapshots produce no delta.
       if (!delta) {
-        return;
+        return false;
       }
       // Non-whitespace rewrites are not safe to append into Teams. Clear the
       // SDK's local accumulator, then replace the same streamed activity with
@@ -346,7 +388,7 @@ export function createTeamsReplyStreamController(params: {
           // segments to block delivery. Preserve the pending close cleanup,
           // but do not retry final text through a failed native stream.
           streamFinalizationPending = true;
-          return;
+          return false;
         }
         // The SDK can replace the same streamed activity after clearText().
         // Defer the authoritative final to preparePayload so this provider
@@ -355,7 +397,7 @@ export function createTeamsReplyStreamController(params: {
         replacementSettlementPending = true;
         pendingFinalPayload = { text: fullText };
         streamFinalizationPending = true;
-        return;
+        return false;
       }
       try {
         stream.emit(delta);
@@ -365,7 +407,7 @@ export function createTeamsReplyStreamController(params: {
       } catch (err) {
         if (isStreamCancelledError(err)) {
           canceledLocally = true;
-          return;
+          return false;
         }
         // Preserve full fallback unless the SDK has proved exactly which
         // cumulative prefix Teams accepted; failed emits prove no delivery.
@@ -374,6 +416,7 @@ export function createTeamsReplyStreamController(params: {
           `msteams stream emit failed, falling back to block delivery: ${err instanceof Error ? err.message : String(err)}`,
         );
       }
+      return false;
     },
 
     /**
@@ -434,7 +477,6 @@ export function createTeamsReplyStreamController(params: {
       const progressActive = await progressDraftGate.noteWork();
       if ((hadStarted || progressActive) && progressDraftGate.hasStarted) {
         renderInformativeUpdate();
-        return true;
       }
       return false;
     },
@@ -453,7 +495,7 @@ export function createTeamsReplyStreamController(params: {
       if (hadStarted && progressDraftGate.hasStarted) {
         renderInformativeUpdate();
       }
-      return progressDraftGate.hasStarted;
+      return false;
     },
 
     preparePayload(payload: ReplyPayload): Maybe<ReplyPayload> {
@@ -572,6 +614,7 @@ export function createTeamsReplyStreamController(params: {
       // The delay gate may still hold a pending start timer for fast turns;
       // stop it before closing so it cannot fire against the closed stream.
       progressDraftGate.cancel();
+      progressVisibilityClosed = true;
       if (!stream || !nativeDispatchStarted) {
         releaseStreamChunkSubscription();
         return { visibleReplySent: false };

@@ -103,7 +103,10 @@ type ReasoningProgressPayload = {
   progressTokens: number;
 };
 
-/** Return false when a channel keeps progress out of visible UI; true/void confirms rendering. */
+/**
+ * Return true only when this callback has confirmed operator-visible progress.
+ * Return false while work is merely queued; void preserves legacy synchronous renderers.
+ */
 type ProgressCallbackResult = boolean | void;
 
 /** Reply generation options shared by auto-reply, webchat, channels, and tests. */
@@ -179,15 +182,21 @@ export type GetReplyOptions = {
    */
   onVerboseProgressVisibility?: (isActive: () => boolean) => void;
   /**
-   * Registers the core lifecycle observer that a channel calls only after
-   * asynchronously scheduled progress is confirmed visible. Immediate callback
-   * results still report visibility through their boolean return value.
+   * Registers the core lifecycle observer that a channel calls once, only after
+   * asynchronously scheduled progress is accepted by its transport. Registration
+   * after acceptance must replay the latched notification synchronously.
    */
   registerProgressVisibilityListener?: (listener: () => void) => void;
   /** Preserve source-event callback start order for stateful channel progress renderers. */
   preserveProgressCallbackStartOrder?: boolean;
-  onPartialReply?: (payload: PartialReplyPayload) => Promise<void> | void;
-  onReasoningStream?: (payload: ReasoningStreamPayload) => Promise<void> | void;
+  /** Return false while the partial is queued; notify the listener after transport acceptance. */
+  onPartialReply?: (
+    payload: PartialReplyPayload,
+  ) => Promise<ProgressCallbackResult> | ProgressCallbackResult;
+  /** Return false while reasoning is queued; notify the listener after transport acceptance. */
+  onReasoningStream?: (
+    payload: ReasoningStreamPayload,
+  ) => Promise<ProgressCallbackResult> | ProgressCallbackResult;
   onReasoningProgress?: (payload: ReasoningProgressPayload) => Promise<void> | void;
   streamReasoningInNonStreamModes?: boolean;
   /** Called when a thinking/reasoning block ends. */

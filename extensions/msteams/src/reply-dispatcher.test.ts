@@ -57,7 +57,7 @@ type StreamMock = {
     on: ReturnType<typeof vi.fn>;
     off: ReturnType<typeof vi.fn>;
   };
-  acknowledge: (text: string) => void;
+  acknowledge: (text: string, streamType?: "streaming" | "informative") => void;
 };
 
 function createStreamMock(): StreamMock {
@@ -84,12 +84,12 @@ function createStreamMock(): StreamMock {
         chunkHandler = undefined;
       }),
     },
-    acknowledge: (text: string) => {
+    acknowledge: (text: string, streamType = "streaming") => {
       chunkHandler?.({
         id: "stream-acknowledged",
         type: "typing",
         text,
-        channelData: { streamType: "streaming" },
+        channelData: { streamType },
       });
     },
   };
@@ -427,6 +427,27 @@ describe("createMSTeamsReplyDispatcher", () => {
     expect(stream.update).toBeDefined();
   });
 
+  it("reports progress only after Teams acknowledges the queued activity", async () => {
+    vi.useFakeTimers();
+    const dispatcher = createDispatcher("personal", { streaming: { mode: "progress" } });
+    const stream = getStreamMock();
+    const onVisible = vi.fn();
+    dispatcher.replyOptions.registerProgressVisibilityListener?.(onVisible);
+
+    await expect(dispatcher.replyOptions.onToolStart?.({ name: "exec" })).resolves.toBe(false);
+    await vi.advanceTimersByTimeAsync(5_000);
+    const informativeText = stream.update.mock.calls.at(-1)?.[0];
+    expect(informativeText).toEqual(expect.any(String));
+    expect(onVisible).not.toHaveBeenCalled();
+
+    stream.acknowledge("different", "informative");
+    expect(onVisible).not.toHaveBeenCalled();
+    stream.acknowledge(informativeText, "informative");
+    expect(onVisible).toHaveBeenCalledTimes(1);
+    stream.acknowledge(informativeText, "informative");
+    expect(onVisible).toHaveBeenCalledTimes(1);
+  });
+
   it("forwards partial replies into the Teams stream via emit()", async () => {
     const dispatcher = createDispatcher("personal");
 
@@ -436,6 +457,18 @@ describe("createMSTeamsReplyDispatcher", () => {
     // TeamsHttpStream.update). The SDK's HttpStream accumulates the text
     // and flushes the closing activity at stream.close().
     expect(getStreamMock().emit).toHaveBeenCalledWith("partial response");
+  });
+
+  it("reports partial visibility only after the streaming acknowledgement", () => {
+    const dispatcher = createDispatcher("personal");
+    const stream = getStreamMock();
+    const onVisible = vi.fn();
+    dispatcher.replyOptions.registerProgressVisibilityListener?.(onVisible);
+
+    expect(dispatcher.replyOptions.onPartialReply?.({ text: "partial response" })).toBe(false);
+    expect(onVisible).not.toHaveBeenCalled();
+    stream.acknowledge("partial response");
+    expect(onVisible).toHaveBeenCalledTimes(1);
   });
 
   it("preserves partial and progress streams for observer-only hooks", async () => {

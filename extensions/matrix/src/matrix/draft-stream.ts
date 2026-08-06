@@ -59,6 +59,8 @@ export function createMatrixDraftStream(params: {
   /** When true, reset() restores the original replyToId instead of clearing it. */
   preserveReplyId?: boolean;
   accountId?: string;
+  /** Called after Matrix accepts a visible send or edit for this draft. */
+  onVisible?: () => void;
   log?: (message: string) => void;
 }): MatrixDraftStream {
   const { roomId, client, cfg, threadId, accountId, log } = params;
@@ -133,6 +135,7 @@ export function createMatrixDraftStream(params: {
         lastSentText = preparedText.trimmedText;
         lastSentContent = preparedText.convertedText;
       }
+      params.onVisible?.();
       return true;
     } catch (err) {
       log?.(`draft-stream: send/edit failed: ${String(err)}`);

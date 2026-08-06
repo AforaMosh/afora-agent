@@ -463,11 +463,13 @@ describe("createMatrixDraftStream", () => {
     sendMessageMock.mockRejectedValueOnce(new Error("network error"));
 
     const log = vi.fn();
+    const onVisible = vi.fn();
     const stream = createMatrixDraftStream({
       roomId: "!room:test",
       client,
       cfg: {} as import("../types.js").CoreConfig,
       log,
+      onVisible,
     });
 
     stream.update("Hello");
@@ -485,6 +487,24 @@ describe("createMatrixDraftStream", () => {
     // Only the initial failed attempt
     expect(sendMessageMock).toHaveBeenCalledTimes(1);
     expect(stream.eventId()).toBeUndefined();
+    expect(onVisible).not.toHaveBeenCalled();
+  });
+
+  it("notifies visibility after Matrix accepts the initial draft", async () => {
+    const onVisible = vi.fn();
+    const stream = createMatrixDraftStream({
+      roomId: "!room:test",
+      client,
+      cfg: {} as import("../types.js").CoreConfig,
+      onVisible,
+    });
+
+    stream.update("Hello");
+    expect(onVisible).not.toHaveBeenCalled();
+    await stream.flush();
+
+    expect(stream.eventId()).toBe("$evt1");
+    expect(onVisible).toHaveBeenCalledTimes(1);
   });
 
   it("skips empty/whitespace text", async () => {

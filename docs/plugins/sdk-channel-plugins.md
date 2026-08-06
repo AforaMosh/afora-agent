@@ -77,6 +77,21 @@ and `verifyChannelMessageLiveFinalizerProofs(...)` tests so native preview,
 progress, edit, fallback/retention, cleanup, and receipt behavior cannot drift
 silently.
 
+### Progress visibility acceptance
+
+Progress callbacks report what the operator can see, not what a plugin queued.
+Return `true` only after the transport has accepted a visible draft, update, or
+stream chunk. Return `false` while delivery is pending or after a proven send
+failure. Existing synchronous renderers may return `void`.
+
+For transports whose send settles after the callback returns, implement
+`registerProgressVisibilityListener`. Latch the first accepted visible update,
+notify the registered listener once, and replay that notification immediately
+when registration happens after acceptance. Do not notify for local queueing,
+malformed acknowledgements, failed initial sends, or activity after the turn's
+preview has finalized. A later edit failure does not erase an earlier accepted
+message ID.
+
 Inbound receivers that defer platform acknowledgements should declare
 `message.receive.defaultAckPolicy` and `supportedAckPolicies` instead of hiding
 ack timing in monitor-local state. Cover every declared policy with

@@ -38,6 +38,7 @@ function createDraftStreamHarness(
     eventScope?: DraftStreamParams["eventScope"];
     remove?: DraftRemoveFn;
     warn?: DraftWarnFn;
+    onMessageSent?: () => void;
   } = {},
 ) {
   const send = params.send ?? vi.fn<DraftSendFn>(async () => slackDraftSendResult("111.222"));
@@ -58,11 +59,43 @@ function createDraftStreamHarness(
     edit,
     remove,
     warn,
+    onMessageSent: params.onMessageSent,
   });
   return { stream, send, edit, remove, warn };
 }
 
 describe("createSlackDraftStream", () => {
+  it("notifies visibility only after the initial send returns identifiers", async () => {
+    const onMessageSent = vi.fn();
+    const send = vi.fn<DraftSendFn>().mockRejectedValueOnce(new Error("send failed"));
+    const failed = createDraftStreamHarness({ send, onMessageSent });
+
+    failed.stream.update("queued");
+    await failed.stream.flush();
+    expect(onMessageSent).not.toHaveBeenCalled();
+    expect(failed.stream.messageId()).toBeUndefined();
+
+    const accepted = createDraftStreamHarness({ onMessageSent });
+    accepted.stream.update("accepted");
+    await accepted.stream.flush();
+    expect(onMessageSent).toHaveBeenCalledTimes(1);
+  });
+
+  it("retains accepted identifiers when a later edit fails", async () => {
+    const edit = vi.fn<DraftEditFn>(async () => {
+      throw new Error("edit failed");
+    });
+    const { stream } = createDraftStreamHarness({ edit });
+
+    stream.update("accepted");
+    await stream.flush();
+    stream.update("failed edit");
+    await stream.flush();
+
+    expect(stream.messageId()).toBe("111.222");
+    expect(stream.channelId()).toBe("C123");
+  });
+
   it("sends the first update and edits subsequent updates", async () => {
     const { stream, send, edit } = createDraftStreamHarness();
 

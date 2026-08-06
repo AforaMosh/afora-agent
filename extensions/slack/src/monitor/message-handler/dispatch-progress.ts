@@ -72,6 +72,19 @@ export function createSlackProgressRuntime(runtimeParams: {
     useStreaming,
     previewStreamingEnabled,
   } = setup;
+  let progressVisibilityListener: (() => void) | undefined;
+  let progressVisibilityAccepted = false;
+  const notifyProgressVisible = () => {
+    if (progressVisibilityAccepted) {
+      return;
+    }
+    progressVisibilityAccepted = true;
+    try {
+      progressVisibilityListener?.();
+    } catch (error) {
+      logVerbose(`slack progress visibility listener failed: ${formatSlackError(error)}`);
+    }
+  };
   const draftStream = shouldUseDraftStream
     ? createSlackDraftStream({
         target: prepared.replyTarget,
@@ -92,6 +105,7 @@ export function createSlackProgressRuntime(runtimeParams: {
           }
           return ts;
         },
+        onMessageSent: notifyProgressVisible,
         log: logVerbose,
         warn: logVerbose,
       })
@@ -254,7 +268,7 @@ export function createSlackProgressRuntime(runtimeParams: {
     nativeProgressChunkKey = chunkKey;
   };
 
-  const updateNativeProgressStream = async () => {
+  const updateNativeProgressStream = async (): Promise<boolean> => {
     const snapshot = progressDraft.getSnapshot();
     const progressLines = resolveNativeProgressLines(snapshot);
     const hasRetirableNativeTasks = [...nativeTaskState.values()].some(
@@ -269,11 +283,11 @@ export function createSlackProgressRuntime(runtimeParams: {
         !explicitProgressTitle &&
         !hasRetirableNativeTasks)
     ) {
-      return;
+      return false;
     }
     const canContinue = await waitForNativeProgressStreamStart();
     if (!canContinue) {
-      return;
+      return false;
     }
     const reconciled = reconcileSlackNativeTaskChunks({
       previousTasks: nativeTaskState,
@@ -281,11 +295,11 @@ export function createSlackProgressRuntime(runtimeParams: {
     });
     const chunks = reconciled.chunks;
     if (!chunks?.length) {
-      return;
+      return false;
     }
     const chunkKey = JSON.stringify(chunks);
     if (chunkKey === nativeProgressChunkKey) {
-      return;
+      return false;
     }
     try {
       if (!delivery.streamSession) {
@@ -296,6 +310,7 @@ export function createSlackProgressRuntime(runtimeParams: {
       // Commit only after Slack accepted the chunks; a failed emit must retry
       // the same reconciliation against the previous snapshot.
       nativeTaskState = reconciled.tasks;
+      return Boolean(delivery.streamSession?.delivered);
     } catch (err) {
       runtime.error?.(
         danger(
@@ -303,6 +318,7 @@ export function createSlackProgressRuntime(runtimeParams: {
         ),
       );
       delivery.streamFailed = true;
+      return false;
     }
   };
 
@@ -335,11 +351,10 @@ export function createSlackProgressRuntime(runtimeParams: {
     updateOnLineChange: useNativeProgressStreaming || useRichProgressDraft,
     update: async (previewText, options) => {
       if (useNativeProgressStreaming) {
-        await updateNativeProgressStream();
-        return;
+        return await updateNativeProgressStream();
       }
       if (!draftStream) {
-        return;
+        return false;
       }
       const snapshot = progressDraft.getSnapshot();
       const structuredLines = resolveStructuredProgressLines(options?.lines ?? snapshot.lines);
@@ -365,8 +380,10 @@ export function createSlackProgressRuntime(runtimeParams: {
       if (options?.flush) {
         await draftStream.flush();
       }
+      return Boolean(draftStream.messageId() && draftStream.channelId());
     },
   });
+  progressDraft.registerVisibilityListener(notifyProgressVisible);
   const commentaryProgressEnabled = progressDraft.commentaryProgressEnabled;
 
   const buildNativeProgressCompletionChunks = (finalInProgressStatus: "complete" | "error") => {
@@ -449,7 +466,8 @@ export function createSlackProgressRuntime(runtimeParams: {
     if (text) {
       draftStream.update(text);
       hasStreamedMessage = true;
-      return true;
+      await draftStream.flush();
+      return Boolean(draftStream.messageId() && draftStream.channelId());
     }
     return false;
   };
@@ -459,30 +477,28 @@ export function createSlackProgressRuntime(runtimeParams: {
     options?: { toolName?: string },
   ) => {
     if (!draftStream && !useNativeProgressStreaming) {
-      return;
+      return false;
     }
     if (options?.toolName !== undefined && !isChannelProgressDraftWorkToolName(options.toolName)) {
-      return;
+      return false;
     }
     const normalized = line?.text.replace(/\s+/g, " ").trim();
     if (streamMode === "status_final") {
       if (!line || !normalized) {
-        await progressDraft.noteActivity();
-        return;
+        return await progressDraft.noteActivity();
       }
-      await progressDraft.pushToolProgress(line, options);
-      return;
+      return await progressDraft.pushToolProgress(line, options);
     }
     if (!line || !normalized || !draftStream || !previewToolProgressEnabled) {
-      return;
+      return false;
     }
-    await progressDraft.pushToolProgress(line, options);
+    return await progressDraft.pushToolProgress(line, options);
   };
 
-  const updateDraftFromPartial = (text?: string) => {
+  const updateDraftFromPartial = (text?: string): boolean => {
     const trimmed = text?.trimEnd();
     if (!trimmed) {
-      return;
+      return false;
     }
 
     if (streamMode === "append") {
@@ -496,28 +512,29 @@ export function createSlackProgressRuntime(runtimeParams: {
       appendRenderedText = next.rendered;
       appendSourceText = next.source;
       if (!next.changed) {
-        return;
+        return false;
       }
       draftStream?.update(next.rendered);
       hasStreamedMessage = true;
-      return;
+      return false;
     }
 
     if (streamMode === "status_final") {
-      return;
+      return false;
     }
 
     previewToolProgressSuppressed = true;
     progressDraft.suppress();
     draftStream?.update(trimmed);
     hasStreamedMessage = true;
+    return false;
   };
   const pushReasoningProgress = async (payload?: {
     text?: string;
     isReasoningSnapshot?: boolean;
   }) => {
     if (!payload?.text) {
-      return;
+      return false;
     }
     if (streamMode !== "status_final") {
       const normalized = progressDraft
@@ -527,9 +544,9 @@ export function createSlackProgressRuntime(runtimeParams: {
         .replace(/^_(.*)_$/su, "$1")
         .trim();
       if (!normalized) {
-        return;
+        return false;
       }
-      await pushPreviewProgress({
+      const visible = await pushPreviewProgress({
         id: "reasoning",
         kind: "item",
         text: normalized,
@@ -537,10 +554,10 @@ export function createSlackProgressRuntime(runtimeParams: {
       });
       // Tool admission closes reasoning bursts; restore this still-open preview lane.
       progressDraft.mergeReasoningProgress(normalized, { snapshot: true });
-      return;
+      return visible;
     }
     progressReceipt.noteReasoning();
-    await progressDraft.pushReasoningProgress(payload.text, {
+    return await progressDraft.pushReasoningProgress(payload.text, {
       snapshot: payload.isReasoningSnapshot === true,
     });
   };
@@ -650,6 +667,16 @@ export function createSlackProgressRuntime(runtimeParams: {
     pushPlanProgress,
     pushPreviewProgress,
     pushReasoningProgress,
+    registerProgressVisibilityListener: (listener: () => void) => {
+      progressVisibilityListener = listener;
+      if (progressVisibilityAccepted) {
+        try {
+          listener();
+        } catch (error) {
+          logVerbose(`slack progress visibility listener failed: ${formatSlackError(error)}`);
+        }
+      }
+    },
     updateDraftFromPartial,
     waitForNativeProgressStreamStart,
     setShouldYieldDraftProgress: (value: () => boolean) => {

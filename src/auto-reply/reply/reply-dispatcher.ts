@@ -81,18 +81,24 @@ type ReplyDispatchDeliverer = (
   info: ReplyDispatchRuntimeInfo,
 ) => Promise<unknown>;
 
-async function deliverWithPayloadAbort(
-  deliver: ReplyDispatchDeliverer,
+class ReplyDispatchPayloadAbortError extends Error {
+  constructor(reason: unknown) {
+    super(reason instanceof Error ? reason.message : "active turn receipt aborted", {
+      cause: reason,
+    });
+    this.name = "ReplyDispatchPayloadAbortError";
+  }
+}
+
+async function runWithPayloadAbort<T>(
   payload: ReplyPayload,
-  info: ReplyDispatchRuntimeInfo,
-): Promise<void> {
+  run: () => Promise<T> | T,
+): Promise<T> {
   const signal = getReplyPayloadMetadata(payload)?.activeTurnReceipt?.abortSignal;
   if (!signal) {
-    await deliver(payload, info);
-    return;
+    return await run();
   }
-  const abortError = () =>
-    signal.reason instanceof Error ? signal.reason : new Error("active turn receipt aborted");
+  const abortError = () => new ReplyDispatchPayloadAbortError(signal.reason);
   if (signal.aborted) {
     throw abortError();
   }
@@ -103,7 +109,10 @@ async function deliverWithPayloadAbort(
     removeAbortListener = () => signal.removeEventListener("abort", onAbort);
   });
   try {
-    await Promise.race([deliver(payload, info), aborted]);
+    // Invoke synchronously after the initial abort check. Transport callers use
+    // this boundary to distinguish proven-unsent work from an ambiguous abort.
+    const operation = Promise.resolve(run());
+    return await Promise.race([operation, aborted]);
   } finally {
     removeAbortListener?.();
   }
@@ -480,19 +489,25 @@ export function createReplyDispatcher(options: ReplyDispatcherOptions): ReplyDis
     try {
       if (beforeDeliver) {
         try {
-          deliverPayload = await beforeDeliver(payload, info);
+          deliverPayload = await runWithPayloadAbort(payload, () => beforeDeliver(payload, info));
         } catch (error) {
-          await notifyBeforeDeliverCancelled(payload, info);
+          // A receipt lifecycle abort is not a hook cancellation. Release the
+          // serialized queue immediately and keep late hook settlement observed.
+          if (!(error instanceof ReplyDispatchPayloadAbortError)) {
+            await runWithPayloadAbort(payload, () => notifyBeforeDeliverCancelled(payload, info));
+          }
           throw error;
         }
         if (!deliverPayload) {
-          await notifyBeforeDeliverCancelled(payload, info);
+          await runWithPayloadAbort(payload, () => notifyBeforeDeliverCancelled(payload, info));
           return "cancelled";
         }
         deliverPayload = copyReplyPayloadMetadata(payload, deliverPayload);
       }
-      deliveryStarted = true;
-      await deliverWithPayloadAbort(options.deliver, deliverPayload, info);
+      await runWithPayloadAbort(payload, async () => {
+        deliveryStarted = true;
+        await options.deliver(deliverPayload, info);
+      });
       return "delivered";
     } catch (error) {
       try {

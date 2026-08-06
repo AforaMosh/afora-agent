@@ -39,6 +39,19 @@ export async function createMatrixDraftController(params: {
     logVerboseMessage,
   } = params;
   let draftConsumed = false;
+  let progressVisibilityListener: (() => void) | undefined;
+  let progressVisibilityAccepted = false;
+  const notifyProgressVisible = () => {
+    if (progressVisibilityAccepted) {
+      return;
+    }
+    progressVisibilityAccepted = true;
+    try {
+      progressVisibilityListener?.();
+    } catch (error) {
+      logVerboseMessage(`matrix progress visibility listener failed: ${String(error)}`);
+    }
+  };
 
   const draftStreamingEnabled = streaming !== "off";
   const quietDraftStreaming = streaming === "quiet" || streaming === "progress";
@@ -55,6 +68,7 @@ export async function createMatrixDraftController(params: {
           replyToId: draftReplyToId,
           preserveReplyId: replyToMode === "all",
           accountId,
+          onVisible: notifyProgressVisible,
           log: logVerboseMessage,
         }),
       )
@@ -112,9 +126,10 @@ export async function createMatrixDraftController(params: {
       if (options?.flush) {
         await draftStream.flush();
       }
-      return true;
+      return Boolean(draftStream.eventId());
     },
   });
+  progressDraft.registerVisibilityListener(notifyProgressVisible);
 
   const resetPreviewToolProgress = () => {
     previewPlan = undefined;
@@ -135,8 +150,16 @@ export async function createMatrixDraftController(params: {
     }
     return {
       ...options,
-      registerProgressVisibilityListener: (listener) =>
-        progressDraft.registerVisibilityListener(listener),
+      registerProgressVisibilityListener: (listener) => {
+        progressVisibilityListener = listener;
+        if (progressVisibilityAccepted) {
+          try {
+            listener();
+          } catch (error) {
+            logVerboseMessage(`matrix progress visibility listener failed: ${String(error)}`);
+          }
+        }
+      },
       onToolStart: async (payload) => {
         return await progressDraft.pushToolEvent(payload);
       },
@@ -162,7 +185,8 @@ export async function createMatrixDraftController(params: {
         const text = renderPreviewPlan();
         if (text) {
           draftStream.update(text);
-          return true;
+          await draftStream.flush();
+          return Boolean(draftStream.eventId());
         }
         return false;
       },
@@ -277,7 +301,7 @@ export async function createMatrixDraftController(params: {
     },
     onPartialReply: (text: string) => {
       if (progressDraftStreaming) {
-        return;
+        return false;
       }
       latestDraftFullText = text;
       if (text.trim()) {
@@ -287,6 +311,7 @@ export async function createMatrixDraftController(params: {
         progressDraft.suppress();
       }
       updateDraftFromLatestFullText();
+      return false;
     },
   };
 }

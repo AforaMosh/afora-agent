@@ -92,6 +92,66 @@ describe("beforeDeliver in reply dispatcher", () => {
     expect(dispatcher.getFailedCounts().final).toBe(1);
   });
 
+  it("classifies active receipt aborts around the transport boundary", async () => {
+    let releaseHook: (() => void) | undefined;
+    const hookPending = new Promise<void>((resolve) => {
+      releaseHook = resolve;
+    });
+    const beforeTransportAbort = new AbortController();
+    const beforeTransportPayload = setReplyPayloadMetadata(
+      { text: "receipt before transport" },
+      { activeTurnReceipt: { abortSignal: beforeTransportAbort.signal, maxRetries: 1 } },
+    );
+    const beforeTransportOutcome = captureReplyDispatchDeliveryOutcome(beforeTransportPayload);
+    const delivered: string[] = [];
+    const beforeTransportDispatcher = createReplyDispatcher({
+      beforeDeliver: async (payload) => {
+        await hookPending;
+        return payload;
+      },
+      deliver: async (payload) => {
+        delivered.push(payload.text ?? "");
+      },
+    });
+
+    beforeTransportDispatcher.sendFinalReply(beforeTransportPayload);
+    await Promise.resolve();
+    beforeTransportAbort.abort(new Error("receipt deadline"));
+    beforeTransportDispatcher.markComplete();
+    await beforeTransportDispatcher.waitForIdle();
+
+    await expect(beforeTransportOutcome.promise).resolves.toBe("failed-before-deliver");
+    expect(delivered).toEqual([]);
+
+    releaseHook?.();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(delivered).toEqual([]);
+
+    let transportStarted = false;
+    const afterTransportAbort = new AbortController();
+    const afterTransportPayload = setReplyPayloadMetadata(
+      { text: "receipt after transport" },
+      { activeTurnReceipt: { abortSignal: afterTransportAbort.signal, maxRetries: 1 } },
+    );
+    const afterTransportOutcome = captureReplyDispatchDeliveryOutcome(afterTransportPayload);
+    const afterTransportDispatcher = createReplyDispatcher({
+      deliver: async () => {
+        transportStarted = true;
+        await new Promise<void>(() => {});
+      },
+    });
+
+    afterTransportDispatcher.sendFinalReply(afterTransportPayload);
+    await Promise.resolve();
+    expect(transportStarted).toBe(true);
+    afterTransportAbort.abort(new Error("receipt deadline"));
+    afterTransportDispatcher.markComplete();
+    await afterTransportDispatcher.waitForIdle();
+
+    await expect(afterTransportOutcome.promise).resolves.toBe("failed-deliver");
+  });
+
   it("cancels delivery before queueing when transformReplyPayload returns null", async () => {
     const delivered: string[] = [];
 

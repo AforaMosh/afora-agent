@@ -404,13 +404,13 @@ export async function dispatchPreparedSlackMessage(prepared: PreparedSlackMessag
             : undefined,
         allowToolLifecycleWhenProgressHidden: statusReactionsEnabled ? true : undefined,
         registerProgressVisibilityListener: (listener) =>
-          progress.progressDraft.registerVisibilityListener(listener),
+          progress.registerProgressVisibilityListener(listener),
         onPartialReply: useStreaming
           ? undefined
           : !previewStreamingEnabled
             ? undefined
             : async (payload) => {
-                progress.updateDraftFromPartial(payload.text);
+                return progress.updateDraftFromPartial(payload.text);
               },
         onAssistantMessageStart: progress.onDraftBoundary,
         onReasoningEnd: async () => {
@@ -421,11 +421,12 @@ export async function dispatchPreparedSlackMessage(prepared: PreparedSlackMessag
         onReasoningStream:
           statusReactionsEnabled || progress.previewToolProgressEnabled
             ? async (payload) => {
-                await progress.pushReasoningProgress(payload);
+                const visible = await progress.pushReasoningProgress(payload);
                 if (!statusReactionsEnabled) {
-                  return;
+                  return visible;
                 }
                 await statusReactions.setThinking();
+                return visible;
               }
             : undefined,
         onToolStart: async (payload) => {
