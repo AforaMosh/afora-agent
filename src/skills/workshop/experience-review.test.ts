@@ -156,7 +156,8 @@ describe("skill experience review scheduler", () => {
     await vi.advanceTimersByTimeAsync(30_000);
 
     expect(runReview).toHaveBeenCalledTimes(1);
-    const transcript = (runReview.mock.calls[0]?.[0] as { transcript: string }).transcript;
+    const [candidate] = runReview.mock.calls[0] as [{ transcript: string }];
+    const transcript = candidate.transcript;
     expect(transcript).toContain("Always deploy from main.");
     expect(transcript).toContain("Never skip the smoke test.");
     expect(transcript).toContain("Ship it.");
