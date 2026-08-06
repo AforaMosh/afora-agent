@@ -131,6 +131,24 @@ async function readCodexMirroredSessionEntries(
       ? readCodexSessionTranscriptEventsBeforeAdmission(transcriptTarget, admission)
       : readSessionTranscriptEvents(transcriptTarget))) as SessionEntry[];
   }
+  if (admission) {
+    if (
+      admission.sessionId !== target.sessionId ||
+      (target.agentId !== undefined && admission.agentId !== target.agentId) ||
+      (target.sessionKey !== undefined && admission.sessionKey !== target.sessionKey)
+    ) {
+      return [];
+    }
+    return (await readCodexSessionTranscriptEventsBeforeAdmission(
+      {
+        agentId: admission.agentId,
+        sessionId: admission.sessionId,
+        sessionKey: admission.sessionKey,
+        storePath: admission.storePath,
+      },
+      admission,
+    )) as SessionEntry[];
+  }
   return parseSessionEntries(await fs.readFile(target.sessionFile, "utf-8")) as SessionEntry[];
 }
 
