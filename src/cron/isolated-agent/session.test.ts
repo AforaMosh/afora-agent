@@ -521,7 +521,6 @@ describe("resolveCronSession", () => {
         },
         fresh: true,
         forceNew: true,
-        nowMs: NOW_MS,
       });
 
       expect(result.sessionEntry.authProfileOverride).toBe("work-profile");

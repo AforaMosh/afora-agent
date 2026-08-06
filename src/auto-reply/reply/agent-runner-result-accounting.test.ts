@@ -134,6 +134,7 @@ function createParams(
         kind: "settled",
         status: "ok",
         result: { payloads: [] },
+        meta: { durationMs: 0 },
         resolved: { provider: "openai", model: "gpt-4o" },
         fallback: {
           exhausted: false,
