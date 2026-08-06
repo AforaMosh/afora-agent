@@ -410,26 +410,21 @@ async function persistUserTurnTranscript(
   );
   const appended = turn.messages[0] as
     | {
+        admission?: UserTurnTranscriptAdmissionReceipt;
         appended: boolean;
         messageId: string;
         message: PersistedUserTurnMessage;
       }
     | undefined;
-  if (!appended) {
+  if (!appended?.admission) {
     return undefined;
   }
 
   return {
     ...appended,
+    admission: appended.admission,
     sessionEntry: turn.sessionEntry,
     sessionFile: params.sessionKey,
-    target: {
-      agentId: params.agentId,
-      sessionId: params.sessionId,
-      sessionKey: params.sessionKey,
-      ...(params.storePath ? { storePath: params.storePath } : {}),
-      ...(params.threadId !== undefined ? { threadId: params.threadId } : {}),
-    },
   };
 }
 
@@ -624,10 +619,7 @@ export function createUserTurnTranscriptRecorder(
           if (admittedResult) {
             persisted = true;
             persistedResult = admittedResult;
-            recordAdmission(
-              { messageId: admittedResult.messageId, target: admittedResult.target },
-              admittedResult.message,
-            );
+            recordAdmission(admittedResult.admission, admittedResult.message);
             notifyMessagePersisted(admittedResult.message);
           }
         }
@@ -648,7 +640,7 @@ export function createUserTurnTranscriptRecorder(
       if (result) {
         persisted = true;
         persistedResult = result;
-        recordAdmission({ messageId: result.messageId, target: result.target }, result.message);
+        recordAdmission(result.admission, result.message);
         notifyMessagePersisted(result.message);
       }
       return result;

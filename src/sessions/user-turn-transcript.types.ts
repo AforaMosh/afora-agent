@@ -4,6 +4,7 @@ import type {
   SessionTranscriptTurnExpectedState,
   SessionTranscriptTurnLifecyclePatch,
 } from "../config/sessions/session-transcript-turn-lifecycle.types.js";
+import type { TranscriptTurnAdmission } from "../config/sessions/transcript-turn-admission.js";
 import type { SessionEntry } from "../config/sessions/types.js";
 import type { MediaFactInput } from "../media/media-facts.js";
 import type { InputProvenance } from "./input-provenance.js";
@@ -93,13 +94,7 @@ type UserTurnTranscriptPersistenceTarget = {
 
 export type UserTurnTranscriptTarget = UserTurnTranscriptPersistenceTarget;
 
-export type UserTurnTranscriptAdmissionReceipt = Readonly<{
-  messageId: string;
-  target: Readonly<
-    Pick<UserTurnTranscriptTarget, "agentId" | "sessionId" | "sessionKey"> &
-      Partial<Pick<UserTurnTranscriptTarget, "storePath" | "threadId">>
-  >;
-}>;
+export type UserTurnTranscriptAdmissionReceipt = TranscriptTurnAdmission;
 
 export type UserTurnTranscriptPersistResult = {
   /** True only when this call inserted the transcript message. */
@@ -108,7 +103,7 @@ export type UserTurnTranscriptPersistResult = {
   sessionEntry: UserTurnSessionEntry | undefined;
   messageId: string;
   message: PersistedUserTurnMessage;
-  target: UserTurnTranscriptAdmissionReceipt["target"];
+  admission: UserTurnTranscriptAdmissionReceipt;
 };
 
 export type UserTurnTranscriptTargetResolver =

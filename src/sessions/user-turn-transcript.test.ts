@@ -548,14 +548,13 @@ describe("user turn transcript persistence", () => {
       const persisted = await recorder.persistApproved();
 
       expect(persisted).toBeDefined();
-      expect(recorder.getAdmissionReceipt()).toEqual({
-        messageId: persisted?.messageId,
-        target: {
-          agentId: target.agentId,
-          sessionId: target.sessionId,
-          sessionKey: target.sessionKey,
-          storePath: target.storePath,
-        },
+      expect(recorder.getAdmissionReceipt()).toBe(persisted?.admission);
+      expect(recorder.getAdmissionReceipt()).toMatchObject({
+        admittedEntryId: persisted?.messageId,
+        agentId: target.agentId,
+        sessionId: target.sessionId,
+        sessionKey: target.sessionKey,
+        logicalIdempotencyKey: "receipt:user",
       });
     });
 

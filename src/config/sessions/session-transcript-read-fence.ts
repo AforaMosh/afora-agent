@@ -25,8 +25,7 @@ function resolveSessionTranscriptReadFence(session: {
   sessionId: string;
 }): UserTurnTranscriptAdmissionReceipt | undefined {
   const receipt = transcriptReadFenceStorage.getStore();
-  return receipt?.target.agentId === session.agentId &&
-    receipt.target.sessionId === session.sessionId
+  return receipt?.agentId === session.agentId && receipt.sessionId === session.sessionId
     ? receipt
     : undefined;
 }
@@ -57,18 +56,18 @@ export function resolveSqliteSessionTranscriptReadFence(params: {
       )
       .select(["active.event_seq", "active.message_position", "event.event_json"])
       .where("identity.session_id", "=", params.sessionId)
-      .where("identity.event_id", "=", receipt.messageId)
+      .where("identity.event_id", "=", receipt.admittedEntryId)
       .limit(1),
   );
   if (boundary?.message_position === null || boundary?.message_position === undefined) {
     throw new SessionTranscriptReadFenceError(
-      `Current-turn transcript admission is no longer a visible message: ${receipt.messageId}`,
+      `Current-turn transcript admission is no longer a visible message: ${receipt.admittedEntryId}`,
     );
   }
   const event = JSON.parse(boundary.event_json) as { type?: unknown; message?: { role?: unknown } };
   if (event.type !== "message" || event.message?.role !== "user") {
     throw new SessionTranscriptReadFenceError(
-      `Current-turn transcript admission is not a user message: ${receipt.messageId}`,
+      `Current-turn transcript admission is not a user message: ${receipt.admittedEntryId}`,
     );
   }
   return boundary.event_seq;

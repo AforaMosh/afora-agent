@@ -12,6 +12,7 @@ import { withCodexSessionTranscriptMirrorWriteLock } from "openclaw/plugin-sdk/c
 import type { AssistantMessage, Usage } from "openclaw/plugin-sdk/llm";
 import {
   publishSessionTranscriptUpdateByIdentity,
+  type TranscriptTurnAdmission,
   type SessionTranscriptTargetParams,
   type SessionTranscriptWriteLockParams,
 } from "openclaw/plugin-sdk/session-transcript-runtime";
@@ -39,8 +40,8 @@ export { buildCodexUserPromptMessage };
 type MirroredAgentMessage = Extract<AgentMessage, { role: "user" | "assistant" | "toolResult" }>;
 type MirroredUserMessage = Extract<AgentMessage, { role: "user" }>;
 type MirroredUserMessageReceipt = {
+  admission: TranscriptTurnAdmission;
   message: MirroredUserMessage;
-  messageId: string;
 };
 type CodexAppServerTranscriptMirrorResult = {
   assistantMirrorIdentitiesOwned: string[];
@@ -357,7 +358,7 @@ async function mirrorBestEffort(params: {
   agentId?: string;
   notifyUserMessagePersisted: (
     message: Extract<AgentMessage, { role: "user" }>,
-    messageId: string,
+    admission: TranscriptTurnAdmission,
   ) => void;
   result: EmbeddedRunAttemptResult;
   sessionKey?: string;
@@ -392,7 +393,7 @@ async function mirrorBestEffort(params: {
     });
     for (const receipt of mirrorResult.userMessageReceipts) {
       try {
-        params.notifyUserMessagePersisted(receipt.message, receipt.messageId);
+        params.notifyUserMessagePersisted(receipt.message, receipt.admission);
       } catch (error) {
         embeddedAgentLog.warn("failed to notify codex app-server user-message persistence", {
           error: formatErrorMessage(error),
@@ -466,32 +467,14 @@ async function resolveFinalCodexMirrorMessages(params: {
 
 export function createCodexAppServerUserMessagePersistenceNotifier(
   runParams: EmbeddedRunAttemptParams,
-): (message: Extract<AgentMessage, { role: "user" }>, messageId: string) => void {
+): (message: Extract<AgentMessage, { role: "user" }>, admission: TranscriptTurnAdmission) => void {
   let notified = false;
-  return (message, messageId) => {
+  return (message, admission) => {
     if (notified) {
       return;
     }
     notified = true;
-    const target = runParams.sessionTarget;
-    const agentId = target?.agentId ?? runParams.agentId;
-    const sessionId = target?.sessionId ?? runParams.sessionId;
-    const sessionKey = target?.sessionKey ?? runParams.sessionKey;
-    runParams.userTurnTranscriptRecorder?.markRuntimePersisted(
-      message,
-      agentId && sessionId && sessionKey
-        ? {
-            messageId,
-            target: {
-              agentId,
-              sessionId,
-              sessionKey,
-              ...(target?.storePath ? { storePath: target.storePath } : {}),
-              ...(target?.threadId !== undefined ? { threadId: target.threadId } : {}),
-            },
-          }
-        : undefined,
-    );
+    runParams.userTurnTranscriptRecorder?.markRuntimePersisted(message, admission);
     try {
       runParams.onUserMessagePersisted?.(message);
     } catch (error) {
@@ -507,7 +490,7 @@ export async function mirrorPromptAtTurnStartBestEffort(params: {
   agentId?: string;
   notifyUserMessagePersisted: (
     message: Extract<AgentMessage, { role: "user" }>,
-    messageId: string,
+    admission: TranscriptTurnAdmission,
   ) => void;
   sessionKey?: string;
   cwd: string;
@@ -541,7 +524,7 @@ export async function mirrorPromptAtTurnStartBestEffort(params: {
         config: params.params.config,
       });
       for (const receipt of mirrorResult.userMessageReceipts) {
-        params.notifyUserMessagePersisted(receipt.message, receipt.messageId);
+        params.notifyUserMessagePersisted(receipt.message, receipt.admission);
       }
     })();
     params.params.userTurnTranscriptRecorder?.markRuntimePersistencePending(mirrorPromise);
@@ -714,9 +697,12 @@ async function mirror(params: {
         if (message.role === "assistant") {
           nextAssistantMirrorIdentitiesOwned.add(dedupeIdentity);
         }
-        if (appendedMessage.role === "user") {
+        if (appendedMessage.role === "user" && appended.admission) {
           nextUserMessagesPresent.push(appendedMessage);
-          nextUserMessageReceipts.push({ message: appendedMessage, messageId });
+          nextUserMessageReceipts.push({
+            admission: appended.admission,
+            message: appendedMessage,
+          });
         }
         if (appended.appended) {
           nextAppendedUpdates.push({

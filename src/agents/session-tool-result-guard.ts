@@ -8,6 +8,7 @@ import { isRecord } from "@openclaw/normalization-core/record-coerce";
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
 import { sliceUtf16Safe, truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
 import { publishTranscriptUpdate } from "../config/sessions/session-accessor.js";
+import type { TranscriptTurnAdmission } from "../config/sessions/transcript-turn-admission.js";
 import {
   boundedJsonUtf8Bytes,
   firstEnumerableOwnKeys,
@@ -66,6 +67,7 @@ type AsyncMessageCallback<T extends AgentMessage> = (message: T) => void | Promi
 type UserMessagePersistedCallback = (
   message: UserAgentMessage,
   context: {
+    admission?: TranscriptTurnAdmission;
     entryId: string;
     sessionTarget?: ReturnType<SessionManager["getSessionTarget"]>;
   },
@@ -914,6 +916,9 @@ export function installSessionToolResultGuard(
     }
     if (isUserAgentMessage(finalMessage)) {
       void opts?.onUserMessagePersisted?.(finalMessage, {
+        ...(sessionManager.getTranscriptAdmission(result)
+          ? { admission: sessionManager.getTranscriptAdmission(result) }
+          : {}),
         entryId: result,
         ...(sessionTarget ? { sessionTarget } : {}),
       });

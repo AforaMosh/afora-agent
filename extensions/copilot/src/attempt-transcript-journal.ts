@@ -398,7 +398,7 @@ export function createAttemptTranscriptJournal(params: {
         const persisted = outcome.message as Extract<AgentMessage, { role: "user" }>;
         accept(outcome);
         persistedInitialUser = persisted;
-        recorder.markRuntimePersisted(persisted);
+        recorder.markRuntimePersisted(persisted, outcome.admission);
         params.attempt.onUserMessagePersisted?.(persisted);
         await publish(outcome.appended);
       })();

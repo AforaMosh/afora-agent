@@ -20,6 +20,7 @@ import type {
   SessionTranscriptTurnLifecyclePatch,
 } from "./session-transcript-turn-lifecycle.types.js";
 import type { ResolvedSessionMaintenanceConfig } from "./store-maintenance.js";
+import type { TranscriptTurnAdmission } from "./transcript-turn-admission.js";
 import type { SessionCompactionCheckpoint, SessionEntry } from "./types.js";
 
 /**
@@ -317,6 +318,8 @@ export type TranscriptMessageAppendResult<TMessage> = {
   messageId: string;
   /** Parent id actually used by the durable transcript append. */
   effectiveParentId?: string | null;
+  /** Authoritative logical-turn admission issued by the append transaction. */
+  admission?: TranscriptTurnAdmission;
 };
 
 /** Transcript update fields supplied by callers; the target is resolved here. */

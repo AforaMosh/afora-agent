@@ -2,6 +2,7 @@ import {
   appendTranscriptEventSync,
   appendTranscriptMessageSync,
   ensureSessionEntrySync,
+  type TranscriptTurnAdmission,
 } from "../../config/sessions/session-accessor.js";
 import { isSessionTranscriptSideAppendEntry } from "../../config/sessions/transcript-tree.js";
 import {
@@ -21,6 +22,12 @@ import type {
 type PersistRecordResult = string | null | undefined | { adoptedMessageId: string };
 
 export class SessionManagerPersistence extends SessionManagerCore {
+  private readonly transcriptAdmissions = new Map<string, TranscriptTurnAdmission>();
+
+  getTranscriptAdmission(entryId: string): TranscriptTurnAdmission | undefined {
+    return this.transcriptAdmissions.get(entryId);
+  }
+
   removeTrailingEntries(
     predicate: (entry: SessionEntry) => boolean,
     options?: { preserveTrailing?: (entry: SessionEntry) => boolean },
@@ -212,11 +219,17 @@ export class SessionManagerPersistence extends SessionManagerCore {
           ? entry.message.idempotencyKey
           : undefined;
       if (idempotencyKey && options?.idempotencyLookup !== "caller-checked") {
+        if (result.admission) {
+          this.transcriptAdmissions.set(result.messageId, result.admission);
+        }
         // Ingress can commit the keyed user after this manager loaded. The
         // caller reloads and adopts only when that canonical row is still active.
         return { adoptedMessageId: result.messageId };
       }
       throw new Error(`Session transcript parent entry was not persisted: ${entry.id}`);
+    }
+    if (result.admission) {
+      this.transcriptAdmissions.set(entry.id, result.admission);
     }
     if (
       options?.idempotencyLookup === "caller-checked" &&

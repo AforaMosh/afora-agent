@@ -114,6 +114,7 @@ export type {
   SessionTranscriptTurnExpectedState,
   SessionTranscriptTurnLifecyclePatch,
 } from "./session-transcript-turn-lifecycle.types.js";
+export type { TranscriptTurnAdmission } from "./transcript-turn-admission.js";
 export type {
   RecordInboundSessionMetaParams,
   UpdateSessionLastRouteParams,

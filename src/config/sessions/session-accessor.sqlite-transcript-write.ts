@@ -47,7 +47,10 @@ import {
   readCommittedSqliteTranscriptMessageSequence,
   rememberCommittedSqliteTranscriptMessageSequencesInTransaction,
 } from "./session-accessor.sqlite-transcript-sequences.js";
-import { readTranscriptGenerationInTransaction } from "./session-accessor.sqlite-transcript-state.js";
+import {
+  ensureTranscriptGenerationInTransaction,
+  readTranscriptGenerationInTransaction,
+} from "./session-accessor.sqlite-transcript-state.js";
 import {
   appendTranscriptEventInTransaction,
   ensureTranscriptHeader,
@@ -78,6 +81,13 @@ class SqliteTranscriptMutationConflictError extends Error {
   constructor(sessionId: string) {
     super(`SQLite transcript changed while preparing rewrite for ${sessionId}`);
     this.name = "SqliteTranscriptMutationConflictError";
+  }
+}
+
+export class TranscriptTurnAdmissionConflictError extends Error {
+  constructor(idempotencyKey: string) {
+    super(`Transcript idempotency key "${idempotencyKey}" conflicts with the admitted message.`);
+    this.name = "TranscriptTurnAdmissionConflictError";
   }
 }
 
@@ -630,10 +640,37 @@ function appendSqliteTranscriptMessageInTransaction<TMessage>(
   resolved: ResolvedTranscriptScope,
   options: TranscriptMessageAppendOptions<TMessage> & { messageAlreadyRedacted?: boolean },
 ): TranscriptMessageAppendResult<TMessage> | undefined {
+  const buildAdmission = (params: {
+    message: unknown;
+    messageId: string;
+  }): TranscriptMessageAppendResult<TMessage>["admission"] => {
+    const logicalIdempotencyKey =
+      readMessageIdempotencyKey(params.message) ?? `event:${params.messageId}`;
+    const identity = readTranscriptIdentityByEventId(
+      database,
+      resolved.sessionId,
+      params.messageId,
+    );
+    if (!identity) {
+      throw new Error(`SQLite transcript admission is missing identity ${params.messageId}.`);
+    }
+    return Object.freeze({
+      agentId: database.agentId,
+      sessionId: resolved.sessionId,
+      sessionKey: resolved.sessionKey,
+      storePath: database.path,
+      generation: ensureTranscriptGenerationInTransaction(database, resolved.sessionId),
+      admittedEntryId: identity.eventId,
+      rawSeq: identity.seq,
+      effectiveParentId: identity.parentId,
+      logicalIdempotencyKey,
+    });
+  };
   // Idempotent replays return the stored row with its persisted parent so callers
   // adopt the durable tree instead of re-deriving one from a stale snapshot.
   const existingAppendResult = (found: { message: unknown; messageId: string }) => ({
     appended: false as const,
+    admission: buildAdmission(found),
     effectiveParentId:
       readTranscriptIdentityByEventId(database, resolved.sessionId, found.messageId)?.parentId ??
       null,
@@ -649,6 +686,12 @@ function appendSqliteTranscriptMessageInTransaction<TMessage>(
       options.idempotencyLookup,
     );
     if (existing) {
+      if (
+        !options.prepareMessageAfterIdempotencyCheck &&
+        JSON.stringify(existing.message) !== JSON.stringify(options.message)
+      ) {
+        throw new TranscriptTurnAdmissionConflictError(idempotencyKey);
+      }
       return existingAppendResult(existing);
     }
   }
@@ -687,12 +730,24 @@ function appendSqliteTranscriptMessageInTransaction<TMessage>(
       options.idempotencyLookup,
     );
     if (existing) {
+      if (
+        !options.prepareMessageAfterIdempotencyCheck &&
+        JSON.stringify(existing.message) !== JSON.stringify(finalMessage)
+      ) {
+        throw new TranscriptTurnAdmissionConflictError(idempotencyKey);
+      }
       return existingAppendResult(existing);
     }
   }
   if (!appended) {
     const existing = readTranscriptMessageByEventId(database, resolved, messageId);
     if (existing) {
+      if (
+        !options.prepareMessageAfterIdempotencyCheck &&
+        JSON.stringify(existing.message) !== JSON.stringify(finalMessage)
+      ) {
+        throw new TranscriptTurnAdmissionConflictError(idempotencyKey ?? `event:${messageId}`);
+      }
       return existingAppendResult(existing);
     }
   }
@@ -701,6 +756,7 @@ function appendSqliteTranscriptMessageInTransaction<TMessage>(
   }
   return {
     appended: true,
+    admission: buildAdmission({ message: finalMessage, messageId }),
     effectiveParentId: parentId ?? null,
     message: finalMessage,
     messageId,
