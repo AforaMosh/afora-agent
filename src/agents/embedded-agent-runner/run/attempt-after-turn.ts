@@ -1,3 +1,4 @@
+import { readActiveTranscriptEntryAnchor } from "../../../config/sessions/session-accessor.js";
 /**
  * Runs post-stream context-engine, transcript, cache, and lifecycle work.
  */
@@ -137,28 +138,41 @@ export async function completeEmbeddedAttemptAfterTurn(
         isHeartbeat: isHeartbeatLifecycleRunKind(attempt.bootstrapContextRunKind),
       });
     };
-    if (attempt.contextEngineTurnAttempt) {
-      attempt.contextEngineTurnAttempt.facts = {
-        admission: attempt.userTurnTranscriptRecorder?.getAdmissionReceipt(),
-        terminalEntryId: sessionManager.getLeafId() ?? undefined,
-        sessionIdUsed,
-        sessionKey: attempt.sessionKey,
-        sessionTarget: attempt.sessionTarget,
-        sessionFile: attempt.sessionFile,
-        promptError: Boolean(state.promptError),
-        aborted: lifecycleState.aborted,
-        yieldAborted: state.yieldAborted,
-        tokenBudget: attempt.contextTokenBudget,
-        runtimeContext: afterTurnRuntimeContext,
-        contextEngineHostSupport: OPENCLAW_EMBEDDED_CONTEXT_ENGINE_HOST,
-        providerId: attempt.provider,
-        requestedModelId: attempt.requestedModelId,
-        modelId: attempt.modelId,
-        fallbackReason: attempt.fallbackReason,
-        degradedReason: attempt.degradedReason,
-        config: attempt.config,
-        isHeartbeat: isHeartbeatLifecycleRunKind(attempt.bootstrapContextRunKind),
-      };
+    if (attempt.onContextEngineTurnCandidate) {
+      const admission = attempt.userTurnTranscriptRecorder?.getAdmissionReceipt();
+      const terminalEntryId = sessionManager.getLeafId() ?? undefined;
+      const terminal =
+        admission && terminalEntryId
+          ? readActiveTranscriptEntryAnchor({
+              agentId: admission.agentId,
+              sessionId: admission.sessionId,
+              sessionKey: admission.sessionKey,
+              storePath: admission.storePath,
+              entryId: terminalEntryId,
+            })
+          : undefined;
+      if (admission && terminal) {
+        attempt.onContextEngineTurnCandidate({
+          boundary: { admission, terminal },
+          sessionIdUsed,
+          sessionKey: attempt.sessionKey,
+          sessionTarget: attempt.sessionTarget,
+          sessionFile: attempt.sessionFile,
+          promptError: Boolean(state.promptError),
+          aborted: lifecycleState.aborted,
+          yieldAborted: state.yieldAborted,
+          tokenBudget: attempt.contextTokenBudget,
+          runtimeContext: afterTurnRuntimeContext,
+          contextEngineHostSupport: OPENCLAW_EMBEDDED_CONTEXT_ENGINE_HOST,
+          providerId: attempt.provider,
+          requestedModelId: attempt.requestedModelId,
+          modelId: attempt.modelId,
+          fallbackReason: attempt.fallbackReason,
+          degradedReason: attempt.degradedReason,
+          config: attempt.config,
+          isHeartbeat: isHeartbeatLifecycleRunKind(attempt.bootstrapContextRunKind),
+        });
+      }
     } else {
       await finalizeTurn({
         messagesSnapshot: state.messagesSnapshot,

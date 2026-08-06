@@ -1,34 +1,39 @@
 import { sanitizeForLog } from "../../../packages/terminal-core/src/ansi.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
-import { ensureContextEnginesInitialized } from "../../context-engine/init.js";
 import {
-  resolveContextEngineOwnerPluginId,
-  resolveLogicalTurnContextEngines,
-} from "../../context-engine/registry.js";
-import type { ContextEngine } from "../../context-engine/types.js";
+  evaluateContextEngineHostSupport,
+  type ContextEngineHostSupport,
+} from "../../context-engine/host-compat.js";
+import { ensureContextEnginesInitialized } from "../../context-engine/init.js";
+import { resolveLogicalTurnContextEngines } from "../../context-engine/registry.js";
+import type { ContextEngine, ContextEngineOperation } from "../../context-engine/types.js";
 
-const LOGICAL_TURN_ENGINE_METHODS = new Set<PropertyKey>(
-  "bootstrap maintain ingest ingestBatch afterTurn assemble compact prepareSubagentSpawn onSubagentEnded".split(
-    " ",
-  ),
-);
+type LogicalTurnSelectionState = "unselected" | "selected" | "started" | "disposed";
 
-function isAbortRejection(error: unknown, params: unknown): boolean {
-  const signal = (params as { abortSignal?: unknown } | null | undefined)?.abortSignal;
-  if (!signal || typeof signal !== "object" || !("aborted" in signal) || !signal.aborted) {
-    return false;
-  }
-  if (error === (signal as AbortSignal).reason) {
-    return true;
-  }
-  return error instanceof Error && error.name === "AbortError";
-}
+export type EffectiveContextEngineRef = Readonly<{
+  engine: ContextEngine;
+  registeredId: string;
+  ownerPluginId?: string;
+  mode: "configured" | "legacy-degraded";
+  reason?: string;
+}>;
 
 export type ContextEngineLogicalTurnLease = {
+  /** Compatibility getter for internal callers while the single context object is threaded. */
   readonly engine: ContextEngine;
   readonly effectiveEngine: ContextEngine;
+  readonly effectiveEngineId: string;
   readonly effectiveEnginePluginId?: string;
   readonly degraded: boolean;
+  readonly degradedReason?: string;
+  selectForHost: (params: {
+    host: ContextEngineHostSupport;
+    operation: ContextEngineOperation;
+    requiresDurableCommit: boolean;
+    hasAdmissionFence: boolean;
+  }) => EffectiveContextEngineRef;
+  degradeBeforeStart: (reason: string) => EffectiveContextEngineRef;
+  begin: () => EffectiveContextEngineRef;
   deferDisposalUntil: (promise: Promise<unknown>) => void;
   dispose: () => Promise<void>;
 };
@@ -44,11 +49,18 @@ export async function createContextEngineLogicalTurnLease(params: {
     agentDir: params.agentDir,
     workspaceDir: params.workspaceDir,
   });
-  let effectiveEngine = resolution.configuredEngine;
-  let degraded = Boolean(resolution.configuredFailure);
+  let state: LogicalTurnSelectionState = "unselected";
+  let effective = resolution.configured;
+  let degradedReason = resolution.configuredFailure;
   let warned = false;
-  let disposed = false;
   const disposalHolds = new Set<Promise<unknown>>();
+
+  const asEffective = (): EffectiveContextEngineRef =>
+    Object.freeze({
+      ...effective,
+      mode: degradedReason ? "legacy-degraded" : "configured",
+      ...(degradedReason ? { reason: degradedReason } : {}),
+    });
 
   const warnOnce = (reason: string) => {
     if (warned) {
@@ -56,88 +68,105 @@ export async function createContextEngineLogicalTurnLease(params: {
     }
     warned = true;
     (params.warn ?? console.warn)(
-      `[context-engine] Context engine "${sanitizeForLog(resolution.configuredEngineId)}" degraded to "${sanitizeForLog(resolution.defaultEngine.info.id)}" for this logical turn: ${sanitizeForLog(reason)}`,
+      `[context-engine] Context engine "${sanitizeForLog(resolution.configuredId)}" degraded to "${sanitizeForLog(resolution.fallback.registeredId)}" for this logical turn: ${sanitizeForLog(reason)}`,
     );
   };
+
+  const degradeBeforeStart = (reason: string): EffectiveContextEngineRef => {
+    if (state === "started" || state === "disposed") {
+      throw new Error("context-engine logical turn selection is already pinned");
+    }
+    degradedReason ??= reason;
+    effective = resolution.fallback;
+    state = "selected";
+    warnOnce(degradedReason);
+    return asEffective();
+  };
+
   if (resolution.configuredFailure) {
-    effectiveEngine = resolution.defaultEngine;
-    warnOnce(resolution.configuredFailure);
+    degradeBeforeStart(resolution.configuredFailure);
   }
 
-  const engine = new Proxy({} as ContextEngine, {
-    get(_target, property) {
-      if (property === "info") {
-        return effectiveEngine.info;
-      }
-      if (property === "dispose") {
-        return async () => await lease.dispose();
-      }
-      const value = Reflect.get(effectiveEngine, property, effectiveEngine);
-      if (typeof value !== "function") {
-        return value;
-      }
-      if (!LOGICAL_TURN_ENGINE_METHODS.has(property)) {
-        return value.bind(effectiveEngine);
-      }
-      return async (operationParams: unknown) => {
-        const selectedEngine = effectiveEngine;
-        const method = Reflect.get(selectedEngine, property, selectedEngine) as (
-          value: unknown,
-        ) => unknown;
-        try {
-          return await method.call(selectedEngine, operationParams);
-        } catch (error) {
-          if (
-            isAbortRejection(error, operationParams) ||
-            selectedEngine === resolution.defaultEngine
-          ) {
-            throw error;
-          }
-          degraded = true;
-          effectiveEngine = resolution.defaultEngine;
-          warnOnce(error instanceof Error ? error.message : String(error));
-          const fallbackMethod = Reflect.get(effectiveEngine, property, effectiveEngine) as
-            | ((value: unknown) => unknown)
-            | undefined;
-          if (typeof fallbackMethod !== "function") {
-            throw error;
-          }
-          return await fallbackMethod.call(effectiveEngine, operationParams);
-        }
-      };
-    },
-  });
-
   const lease: ContextEngineLogicalTurnLease = {
-    engine,
+    get engine() {
+      return effective.engine;
+    },
     get effectiveEngine() {
-      return effectiveEngine;
+      return effective.engine;
+    },
+    get effectiveEngineId() {
+      return effective.registeredId;
     },
     get effectiveEnginePluginId() {
-      return resolveContextEngineOwnerPluginId(effectiveEngine);
+      return effective.ownerPluginId;
     },
     get degraded() {
-      return degraded;
+      return degradedReason !== undefined;
+    },
+    get degradedReason() {
+      return degradedReason;
+    },
+    selectForHost(selection) {
+      if (state === "disposed") {
+        throw new Error("context-engine logical turn lease is already disposed");
+      }
+      if (state === "started" || degradedReason) {
+        return asEffective();
+      }
+      const support = evaluateContextEngineHostSupport({
+        contextEngineInfo: effective.engine.info,
+        operation: selection.operation,
+        host: selection.host,
+      });
+      if (!support.ok) {
+        return degradeBeforeStart(
+          `host "${selection.host.id}" is missing ${support.missingCapabilities.join(", ")}`,
+        );
+      }
+      if (
+        selection.hasAdmissionFence &&
+        effective.engine.info.transcriptSemantics?.currentTurnFence !==
+          "before-current-turn-entry-v1"
+      ) {
+        return degradeBeforeStart("current-turn transcript fencing is not declared");
+      }
+      if (
+        selection.requiresDurableCommit &&
+        (effective.engine.info.transcriptSemantics?.turnAdvancementIdempotency !==
+          "atomic-idempotent-v1" ||
+          typeof effective.engine.commitTurn !== "function")
+      ) {
+        return degradeBeforeStart("atomic idempotent turn advancement is not declared");
+      }
+      state = "selected";
+      return asEffective();
+    },
+    degradeBeforeStart,
+    begin() {
+      if (state === "disposed") {
+        throw new Error("context-engine logical turn lease is already disposed");
+      }
+      state = "started";
+      return asEffective();
     },
     deferDisposalUntil(promise) {
-      if (disposed) {
+      if (state === "disposed") {
         throw new Error("context-engine logical turn lease is already disposed");
       }
       disposalHolds.add(promise);
       void promise.finally(() => disposalHolds.delete(promise)).catch(() => {});
     },
     async dispose() {
-      if (disposed) {
+      if (state === "disposed") {
         return;
       }
-      disposed = true;
-      const engines = new Set([resolution.configuredEngine, resolution.defaultEngine]);
+      state = "disposed";
+      const engines = new Set<ContextEngine>([
+        resolution.configured.engine,
+        resolution.fallback.engine,
+      ]);
       const disposeEngines = async () => {
-        await Promise.allSettled(
-          [...engines].map(async (resolved) => {
-            await resolved.dispose?.();
-          }),
-        );
+        await Promise.allSettled([...engines].map(async (engine) => await engine.dispose?.()));
       };
       if (disposalHolds.size > 0) {
         void Promise.allSettled([...disposalHolds]).then(disposeEngines);

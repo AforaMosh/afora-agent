@@ -42,7 +42,7 @@ import type {
 } from "../../embedded-agent-subscribe.shared-types.js";
 import type { FastModeAutoProgressState } from "../../fast-mode.js";
 import type { ContextEngineLogicalTurnLease } from "../../harness/context-engine-logical-turn.js";
-import type { ContextEngineTurnAttemptHolder } from "../../harness/context-engine-turn-attempt.js";
+import type { ContextEngineTurnAttemptFacts } from "../../harness/context-engine-turn-attempt.js";
 import type { ExpectedAgentHarnessRuntimeArtifact } from "../../harness/runtime-artifact.types.js";
 import type { AgentInternalEvent } from "../../internal-events.js";
 import type { AgentRunSessionTarget } from "../../run-session-target.js";
@@ -392,8 +392,8 @@ export type RunEmbeddedAgentParams = {
   userTurnTranscriptRecorder?: UserTurnTranscriptRecorder;
   /** Context engine resolved once by the outer logical-turn owner. */
   contextEngineLogicalTurnLease?: ContextEngineLogicalTurnLease;
-  /** Attempt-local facts accepted or discarded by the outer logical-turn owner. */
-  contextEngineTurnAttempt?: ContextEngineTurnAttemptHolder;
+  /** Emits immutable attempt facts for selection by the outer logical-turn owner. */
+  onContextEngineTurnCandidate?: (facts: ContextEngineTurnAttemptFacts) => void;
   /** Keep an internal continuation prompt from being replaced by the original prepared turn. */
   skipPreparedUserTurnMessage?: boolean;
   onUserMessagePersisted?: (message: Extract<AgentMessage, { role: "user" }>) => void;

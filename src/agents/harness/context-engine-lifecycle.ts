@@ -17,6 +17,7 @@ import type {
 } from "../../context-engine/types.js";
 import { runWithPreparedMemoryPromptSection } from "../../plugins/memory-state.js";
 import { resolveAgentIdFromSessionKey } from "../../routing/session-key.js";
+import type { UserTurnTranscriptAdmissionReceipt } from "../../sessions/user-turn-transcript.types.js";
 import { runContextEngineMaintenance } from "../embedded-agent-runner/context-engine-maintenance.js";
 import {
   buildAfterTurnRuntimeContext,
@@ -31,18 +32,18 @@ type HarnessContextEngine = ContextEngine;
 function preparePreTurnRuntimeContext(
   runtimeContext: ContextEngineRuntimeContext | undefined,
 ): ContextEngineRuntimeContext | undefined {
-  if (!runtimeContext?.transcriptReadFence) {
+  if (!runtimeContext?.rewriteTranscriptEntries) {
     return runtimeContext;
   }
   const { rewriteTranscriptEntries: _rewriteTranscriptEntries, ...fenced } = runtimeContext;
   return fenced;
 }
 
-export function runWithHarnessContextEngineTranscriptFence<T>(
-  runtimeContext: ContextEngineRuntimeContext | undefined,
+function runWithHarnessContextEngineTranscriptFence<T>(
+  transcriptReadFence: UserTurnTranscriptAdmissionReceipt | undefined,
   run: () => T,
 ): T {
-  return runWithSessionTranscriptReadFence(runtimeContext?.transcriptReadFence, run);
+  return runWithSessionTranscriptReadFence(transcriptReadFence, run);
 }
 
 type HarnessRuntimeSettingsParams = {
@@ -103,6 +104,7 @@ export async function bootstrapHarnessContextEngine(params: {
   sessionFile: string;
   sessionManager?: unknown;
   runtimeContext?: ContextEngineRuntimeContext;
+  transcriptReadFence?: UserTurnTranscriptAdmissionReceipt;
   runtimeSettings?: ContextEngineRuntimeSettings;
   contextEngineHostSupport?: ContextEngineHostSupport;
   harnessId?: string | null;
@@ -126,7 +128,7 @@ export async function bootstrapHarnessContextEngine(params: {
   try {
     const runtimeSettings = buildHarnessContextEngineRuntimeSettings(params);
     const runtimeContext = preparePreTurnRuntimeContext(params.runtimeContext);
-    await runWithHarnessContextEngineTranscriptFence(runtimeContext, async () => {
+    await runWithHarnessContextEngineTranscriptFence(params.transcriptReadFence, async () => {
       if (typeof params.contextEngine?.bootstrap === "function") {
         await params.contextEngine.bootstrap({
           sessionId: params.sessionId,
@@ -180,6 +182,7 @@ export async function assembleHarnessContextEngine(params: {
   fallbackReason?: string | null;
   degradedReason?: string | null;
   runtimeContext?: ContextEngineRuntimeContext;
+  transcriptReadFence?: UserTurnTranscriptAdmissionReceipt;
 }) {
   if (!params.contextEngine) {
     return undefined;
@@ -201,19 +204,21 @@ export async function assembleHarnessContextEngine(params: {
       runtimeContext,
       ...(params.prompt !== undefined ? { prompt: params.prompt } : {}),
     });
-  const result = await runWithHarnessContextEngineTranscriptFence(runtimeContext, async () =>
-    contextEngine.info.id === "legacy"
-      ? await assemble()
-      : await runWithPreparedMemoryPromptSection(
-          {
-            availableTools: new Set(params.availableTools),
-            citationsMode: params.citationsMode,
-            agentId: resolveAgentIdFromSessionKey(params.sessionKey),
-            agentSessionKey: params.sessionKey,
-            sandboxed: params.sandboxed,
-          },
-          assemble,
-        ),
+  const result = await runWithHarnessContextEngineTranscriptFence(
+    params.transcriptReadFence,
+    async () =>
+      contextEngine.info.id === "legacy"
+        ? await assemble()
+        : await runWithPreparedMemoryPromptSection(
+            {
+              availableTools: new Set(params.availableTools),
+              citationsMode: params.citationsMode,
+              agentId: resolveAgentIdFromSessionKey(params.sessionKey),
+              agentSessionKey: params.sessionKey,
+              sandboxed: params.sandboxed,
+            },
+            assemble,
+          ),
   );
   return ensureAssembleResultShape(result, contextEngine.info.id);
 }
@@ -298,11 +303,7 @@ export async function finalizeHarnessContextEngineTurn(params: {
     prePromptMessageCount: params.prePromptMessageCount,
   });
   const runtimeSettings = buildHarnessContextEngineRuntimeSettings(params);
-  const runtimeContext = params.runtimeContext
-    ? (({ transcriptReadFence: _transcriptReadFence, ...context }) => context)(
-        params.runtimeContext,
-      )
-    : undefined;
+  const runtimeContext = params.runtimeContext;
   let postTurnFinalizationSucceeded = true;
 
   if (typeof params.contextEngine.afterTurn === "function") {
@@ -470,25 +471,4 @@ export function isActiveHarnessContextEngine(
   contextEngine: ContextEngine | undefined,
 ): contextEngine is ContextEngine {
   return Boolean(contextEngine && contextEngine.info.id !== "legacy");
-}
-
-export function selectHarnessContextEngineForCurrentTurn(params: {
-  contextEngine: ContextEngine | undefined;
-  hasUserTurnRecorder: boolean;
-  warn: (message: string) => void;
-}): ContextEngine | undefined {
-  const engine = params.contextEngine;
-  if (!engine || engine.info.id === "legacy") {
-    return undefined;
-  }
-  if (
-    !params.hasUserTurnRecorder ||
-    engine.info.transcriptSemantics?.currentTurnFence === "before-current-turn-entry-v1"
-  ) {
-    return engine;
-  }
-  params.warn(
-    `context engine "${engine.info.id}" does not declare current-turn transcript fencing; using the legacy context path for this logical turn`,
-  );
-  return undefined;
 }

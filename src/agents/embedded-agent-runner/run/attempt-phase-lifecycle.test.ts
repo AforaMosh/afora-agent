@@ -299,7 +299,7 @@ describe("embedded attempt phase lifecycle state", () => {
       bytesFreed: 0,
       rewrittenEntries: 0,
     }));
-    const contextEngineTurnAttempt = {};
+    const onContextEngineTurnCandidate = vi.fn();
     await completeEmbeddedAttemptAfterTurn({
       attempt: {
         runId: "run-1",
@@ -309,7 +309,7 @@ describe("embedded attempt phase lifecycle state", () => {
         provider: "test",
         modelId: "model",
         model: { api: "openai-responses" },
-        contextEngineTurnAttempt,
+        onContextEngineTurnCandidate,
       } as never,
       activeContextEngine: {
         info: { id: "test", name: "Test" },
@@ -356,15 +356,7 @@ describe("embedded attempt phase lifecycle state", () => {
 
     expect(afterTurn).not.toHaveBeenCalled();
     expect(maintain).not.toHaveBeenCalled();
-    expect(contextEngineTurnAttempt).toMatchObject({
-      facts: {
-        sessionIdUsed: "session-1",
-        terminalEntryId: "terminal",
-        promptError: false,
-        aborted: false,
-        yieldAborted: false,
-      },
-    });
+    expect(onContextEngineTurnCandidate).not.toHaveBeenCalled();
   });
 
   it("emits an abort-classified agent_end event when a teardown error races the abort", async () => {

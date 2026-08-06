@@ -109,7 +109,10 @@ export type {
   AgentHarnessUserInputQuestion,
 } from "../agents/harness/user-input-bridge.js";
 export type { AgentHarnessQuestionGatewayCall } from "../agents/harness/gateway-question.js";
-export type EmbeddedRunAttemptParams = Omit<CoreEmbeddedRunAttemptParams, "trajectoryRecorder">;
+export type EmbeddedRunAttemptParams = Omit<
+  CoreEmbeddedRunAttemptParams,
+  "contextEngineLogicalTurnLease" | "onContextEngineTurnCandidate" | "trajectoryRecorder"
+>;
 export type { EmbeddedRunAttemptResult };
 export type {
   ContextEngine as HarnessContextEngine,
@@ -458,9 +461,7 @@ export {
   buildHarnessContextEngineRuntimeContextFromUsage,
   finalizeHarnessContextEngineTurn,
   isActiveHarnessContextEngine,
-  runWithHarnessContextEngineTranscriptFence,
   runHarnessContextEngineMaintenance,
-  selectHarnessContextEngineForCurrentTurn,
 } from "../agents/harness/context-engine-lifecycle.js";
 // Plugin-owned (`ownsCompaction`) compaction safety timeout. Exposed on the
 // agent-harness-runtime surface so plugin harnesses such as Codex bound their

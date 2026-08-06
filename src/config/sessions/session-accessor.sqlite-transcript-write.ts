@@ -41,16 +41,14 @@ import {
   toDatabaseOptions,
   type ResolvedTranscriptScope,
 } from "./session-accessor.sqlite-scope.js";
+import { readActiveTranscriptEntryAnchorInTransaction } from "./session-accessor.sqlite-transcript-anchor.js";
 import { readTranscriptMirrorFacts } from "./session-accessor.sqlite-transcript-mirror.js";
 import { resolveTranscriptMessageAppendParent } from "./session-accessor.sqlite-transcript-parent.js";
 import {
   readCommittedSqliteTranscriptMessageSequence,
   rememberCommittedSqliteTranscriptMessageSequencesInTransaction,
 } from "./session-accessor.sqlite-transcript-sequences.js";
-import {
-  ensureTranscriptGenerationInTransaction,
-  readTranscriptGenerationInTransaction,
-} from "./session-accessor.sqlite-transcript-state.js";
+import { readTranscriptGenerationInTransaction } from "./session-accessor.sqlite-transcript-state.js";
 import {
   appendTranscriptEventInTransaction,
   ensureTranscriptHeader,
@@ -71,6 +69,7 @@ import {
   buildExpectedTranscriptTurnSessionPatch,
   sessionMatchesExpectedTranscriptTurn,
 } from "./session-transcript-turn-state.js";
+import type { TranscriptEntryAnchor } from "./transcript-entry-anchor.js";
 import { serializeJsonlLines } from "./transcript-jsonl.js";
 import type { SessionEntry } from "./types.js";
 import { mergeSessionEntry } from "./types.js";
@@ -109,6 +108,7 @@ type SqliteTranscriptWriteLockContext = {
     result: TranscriptMessageAppendResult<TMessage> | undefined;
   }>;
   readMessageFacts: (params: { idempotencyKeys: readonly string[] }) => Promise<{
+    anchorsByIdempotencyKey: Map<string, TranscriptEntryAnchor>;
     existingIdempotencyKeys: Set<string>;
     messagesByIdempotencyKey: Map<string, unknown>;
   }>;
@@ -514,8 +514,7 @@ export async function withSqliteTranscriptWriteLock<T>(
         transcriptSnapshot = { kind: "current", rows: snapshot.rows };
         return snapshot.events;
       },
-      readMessageFacts: async (params) =>
-        readTranscriptMirrorFacts(database, resolved.sessionId, params),
+      readMessageFacts: async (params) => readTranscriptMirrorFacts(database, resolved, params),
       replaceEvents: async (events) => {
         if (transcriptSnapshot?.kind === "stale") {
           throw new SqliteTranscriptMutationConflictError(resolved.sessionId);
@@ -639,37 +638,26 @@ function appendSqliteTranscriptMessageInTransaction<TMessage>(
   resolved: ResolvedTranscriptScope,
   options: TranscriptMessageAppendOptions<TMessage> & { messageAlreadyRedacted?: boolean },
 ): TranscriptMessageAppendResult<TMessage> | undefined {
-  const buildAdmission = (params: {
+  const buildAnchor = (params: {
     message: unknown;
     messageId: string;
-  }): TranscriptMessageAppendResult<TMessage>["admission"] => {
-    const logicalIdempotencyKey =
-      readMessageIdempotencyKey(params.message) ?? `event:${params.messageId}`;
-    const identity = readTranscriptIdentityByEventId(
+  }): NonNullable<TranscriptMessageAppendResult<TMessage>["anchor"]> => {
+    const anchor = readActiveTranscriptEntryAnchorInTransaction({
       database,
-      resolved.sessionId,
-      params.messageId,
-    );
-    if (!identity) {
-      throw new Error(`SQLite transcript admission is missing identity ${params.messageId}.`);
-    }
-    return Object.freeze({
-      agentId: database.agentId,
-      sessionId: resolved.sessionId,
-      sessionKey: resolved.sessionKey,
-      storePath: database.path,
-      generation: ensureTranscriptGenerationInTransaction(database, resolved.sessionId),
-      admittedEntryId: identity.eventId,
-      rawSeq: identity.seq,
-      effectiveParentId: identity.parentId,
-      logicalIdempotencyKey,
+      resolved,
+      entryId: params.messageId,
+      message: params.message,
     });
+    if (!anchor) {
+      throw new Error(`SQLite transcript anchor is not an active message ${params.messageId}.`);
+    }
+    return anchor;
   };
   // Idempotent replays return the stored row with its persisted parent so callers
   // adopt the durable tree instead of re-deriving one from a stale snapshot.
   const existingAppendResult = (found: { message: unknown; messageId: string }) => ({
     appended: false as const,
-    admission: buildAdmission(found),
+    anchor: buildAnchor(found),
     effectiveParentId:
       readTranscriptIdentityByEventId(database, resolved.sessionId, found.messageId)?.parentId ??
       null,
@@ -755,7 +743,7 @@ function appendSqliteTranscriptMessageInTransaction<TMessage>(
   }
   return {
     appended: true,
-    admission: buildAdmission({ message: finalMessage, messageId }),
+    anchor: buildAnchor({ message: finalMessage, messageId }),
     effectiveParentId: parentId ?? null,
     message: finalMessage,
     messageId,

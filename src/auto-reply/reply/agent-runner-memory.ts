@@ -1374,7 +1374,7 @@ export async function runMemoryFlushIfNeeded(params: {
           abortSignal: params.replyOperation.abortSignal,
           replyOperation: params.replyOperation,
           contextEngineLogicalTurnLease: runOptions.contextEngineLogicalTurnLease,
-          contextEngineTurnAttempt: runOptions.contextEngineTurnAttempt,
+          onContextEngineTurnCandidate: runOptions.onContextEngineTurnCandidate,
           onAgentEvent: (evt) => {
             if (evt.stream === "tool" && evt.data.name === "write") {
               if (evt.data.phase === "result" && evt.data.isError !== true) {

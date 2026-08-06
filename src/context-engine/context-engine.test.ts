@@ -705,7 +705,7 @@ describe("Default engine selection", () => {
     expect(engine.info.id).toBe("test-engine");
   });
 
-  it("latches one failed configured engine to legacy for the turn and retries it next turn", async () => {
+  it("does not replay a started engine operation and retries the configured engine next turn", async () => {
     const engineId = uniqueEngineId("logical-turn-retry");
     const assemble = vi
       .fn<ContextEngine["assemble"]>()
@@ -728,16 +728,14 @@ describe("Default engine selection", () => {
     });
     const messages = [makeMockMessage()];
 
-    await expect(first.engine.assemble({ sessionId: "first", messages })).resolves.toMatchObject({
-      messages,
-    });
-    await expect(first.engine.assemble({ sessionId: "first", messages })).resolves.toMatchObject({
-      messages,
-    });
-    expect(first.degraded).toBe(true);
-    expect(first.engine.info.id).toBe("legacy");
+    first.begin();
+    await expect(first.engine.assemble({ sessionId: "first", messages })).rejects.toThrow(
+      "configured engine unavailable",
+    );
+    expect(first.degraded).toBe(false);
+    expect(first.engine.info.id).toBe(engineId);
     expect(assemble).toHaveBeenCalledTimes(1);
-    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn).not.toHaveBeenCalled();
     await first.dispose();
 
     const second = await createContextEngineLogicalTurnLease({

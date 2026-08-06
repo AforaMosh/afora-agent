@@ -241,7 +241,7 @@ export async function prepareEmbeddedAttemptHistory(input: {
         requestedModelId: attempt.requestedModelId,
         fallbackReason: attempt.fallbackReason,
         degradedReason: attempt.degradedReason,
-        runtimeContext: transcriptReadFence ? { transcriptReadFence } : undefined,
+        transcriptReadFence,
         ...(attempt.prompt !== undefined ? { prompt } : {}),
       });
       if (!assembled) {

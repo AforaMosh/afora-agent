@@ -12,7 +12,7 @@ import { withCodexSessionTranscriptMirrorWriteLock } from "openclaw/plugin-sdk/c
 import type { AssistantMessage, Usage } from "openclaw/plugin-sdk/llm";
 import {
   publishSessionTranscriptUpdateByIdentity,
-  type TranscriptTurnAdmission,
+  type TranscriptEntryAnchor,
   type SessionTranscriptTargetParams,
   type SessionTranscriptWriteLockParams,
 } from "openclaw/plugin-sdk/session-transcript-runtime";
@@ -40,11 +40,12 @@ export { buildCodexUserPromptMessage };
 type MirroredAgentMessage = Extract<AgentMessage, { role: "user" | "assistant" | "toolResult" }>;
 type MirroredUserMessage = Extract<AgentMessage, { role: "user" }>;
 type MirroredUserMessageReceipt = {
-  admission: TranscriptTurnAdmission;
+  anchor: TranscriptEntryAnchor;
   message: MirroredUserMessage;
 };
 type CodexAppServerTranscriptMirrorResult = {
   assistantMirrorIdentitiesOwned: string[];
+  anchorsByMirrorIdentity: Map<string, TranscriptEntryAnchor>;
   messagesPresent: MirroredAgentMessage[];
   userMessagesPresent: MirroredUserMessage[];
   userMessageReceipts: MirroredUserMessageReceipt[];
@@ -358,7 +359,7 @@ async function mirrorBestEffort(params: {
   agentId?: string;
   notifyUserMessagePersisted: (
     message: Extract<AgentMessage, { role: "user" }>,
-    admission: TranscriptTurnAdmission,
+    anchor: TranscriptEntryAnchor,
   ) => void;
   result: EmbeddedRunAttemptResult;
   sessionKey?: string;
@@ -368,6 +369,7 @@ async function mirrorBestEffort(params: {
 }): Promise<{
   assistantTranscriptOwned: boolean;
   assistantTranscriptIdempotencyKey?: string;
+  terminalAnchor?: TranscriptEntryAnchor;
   mirroredMessages: MirroredAgentMessage[];
 }> {
   try {
@@ -393,7 +395,7 @@ async function mirrorBestEffort(params: {
     });
     for (const receipt of mirrorResult.userMessageReceipts) {
       try {
-        params.notifyUserMessagePersisted(receipt.message, receipt.admission);
+        params.notifyUserMessagePersisted(receipt.message, receipt.anchor);
       } catch (error) {
         embeddedAgentLog.warn("failed to notify codex app-server user-message persistence", {
           error: formatErrorMessage(error),
@@ -425,9 +427,11 @@ async function mirrorBestEffort(params: {
     const assistantTranscriptIdempotencyKey = normalizeOptionalString(
       (assistantTranscriptMessage as { idempotencyKey?: unknown } | undefined)?.idempotencyKey,
     );
+    const terminalAnchor = mirrorResult.anchorsByMirrorIdentity.get(assistantMirrorIdentity);
     return {
       assistantTranscriptOwned,
       ...(assistantTranscriptIdempotencyKey ? { assistantTranscriptIdempotencyKey } : {}),
+      ...(terminalAnchor ? { terminalAnchor } : {}),
       mirroredMessages,
     };
   } catch (error) {
@@ -467,14 +471,14 @@ async function resolveFinalCodexMirrorMessages(params: {
 
 export function createCodexAppServerUserMessagePersistenceNotifier(
   runParams: EmbeddedRunAttemptParams,
-): (message: Extract<AgentMessage, { role: "user" }>, admission: TranscriptTurnAdmission) => void {
+): (message: Extract<AgentMessage, { role: "user" }>, anchor: TranscriptEntryAnchor) => void {
   let notified = false;
-  return (message, admission) => {
+  return (message, anchor) => {
     if (notified) {
       return;
     }
     notified = true;
-    runParams.userTurnTranscriptRecorder?.markRuntimePersisted(message, admission);
+    runParams.userTurnTranscriptRecorder?.markRuntimePersisted(message, anchor);
     try {
       runParams.onUserMessagePersisted?.(message);
     } catch (error) {
@@ -490,7 +494,7 @@ export async function mirrorPromptAtTurnStartBestEffort(params: {
   agentId?: string;
   notifyUserMessagePersisted: (
     message: Extract<AgentMessage, { role: "user" }>,
-    admission: TranscriptTurnAdmission,
+    anchor: TranscriptEntryAnchor,
   ) => void;
   sessionKey?: string;
   cwd: string;
@@ -524,7 +528,7 @@ export async function mirrorPromptAtTurnStartBestEffort(params: {
         config: params.params.config,
       });
       for (const receipt of mirrorResult.userMessageReceipts) {
-        params.notifyUserMessagePersisted(receipt.message, receipt.admission);
+        params.notifyUserMessagePersisted(receipt.message, receipt.anchor);
       }
     })();
     params.params.userTurnTranscriptRecorder?.markRuntimePersistencePending(mirrorPromise);
@@ -568,6 +572,7 @@ async function mirror(params: {
   if (messages.length === 0) {
     return {
       assistantMirrorIdentitiesOwned: [],
+      anchorsByMirrorIdentity: new Map(),
       messagesPresent: [],
       userMessageReceipts: [],
       userMessagesPresent: [],
@@ -603,6 +608,7 @@ async function mirror(params: {
         messageSeq?: number;
       }> = [];
       const nextAssistantMirrorIdentitiesOwned = new Set<string>();
+      const nextAnchorsByMirrorIdentity = new Map<string, TranscriptEntryAnchor>();
       const nextMessagesPresent: MirroredAgentMessage[] = [];
       const nextUserMessageReceipts: MirroredUserMessageReceipt[] = [];
       const nextUserMessagesPresent: MirroredUserMessage[] = [];
@@ -619,22 +625,21 @@ async function mirror(params: {
         } as AgentMessage;
         if (idempotencyKey && mirrorFacts.existingIdempotencyKeys.has(idempotencyKey)) {
           const persistedMessage = mirrorFacts.messagesByIdempotencyKey.get(idempotencyKey);
+          const persistedAnchor = mirrorFacts.anchorsByIdempotencyKey.get(idempotencyKey);
           if (persistedMessage && isMirroredAgentMessage(persistedMessage)) {
             nextMessagesPresent.push(persistedMessage);
             if (persistedMessage.role === "user") {
               nextUserMessagesPresent.push(persistedMessage);
-              const { result: replayed } = await transcript.appendMessageWithMessageSequence({
-                message: persistedMessage,
-                idempotencyLookup: "scan",
-                cwd: params.cwd,
-              });
-              if (replayed?.admission) {
+              if (persistedAnchor) {
                 nextUserMessageReceipts.push({
-                  admission: replayed.admission,
+                  anchor: persistedAnchor,
                   message: persistedMessage,
                 });
               }
             }
+          }
+          if (persistedAnchor) {
+            nextAnchorsByMirrorIdentity.set(dedupeIdentity, persistedAnchor);
           }
           if (message.role === "assistant") {
             nextAssistantMirrorIdentitiesOwned.add(dedupeIdentity);
@@ -698,10 +703,13 @@ async function mirror(params: {
         if (message.role === "assistant") {
           nextAssistantMirrorIdentitiesOwned.add(dedupeIdentity);
         }
-        if (appendedMessage.role === "user" && appended.admission) {
+        if (appended.anchor) {
+          nextAnchorsByMirrorIdentity.set(dedupeIdentity, appended.anchor);
+        }
+        if (appendedMessage.role === "user" && appended.anchor) {
           nextUserMessagesPresent.push(appendedMessage);
           nextUserMessageReceipts.push({
-            admission: appended.admission,
+            anchor: appended.anchor,
             message: appendedMessage,
           });
         }
@@ -714,11 +722,15 @@ async function mirror(params: {
         }
         if (idempotencyKey) {
           mirrorFacts.existingIdempotencyKeys.add(idempotencyKey);
+          if (appended.anchor) {
+            mirrorFacts.anchorsByIdempotencyKey.set(idempotencyKey, appended.anchor);
+          }
         }
       }
       return {
         appendedUpdates: nextAppendedUpdates,
         assistantMirrorIdentitiesOwned: [...nextAssistantMirrorIdentitiesOwned],
+        anchorsByMirrorIdentity: nextAnchorsByMirrorIdentity,
         messagesPresent: nextMessagesPresent,
         userMessageReceipts: nextUserMessageReceipts,
         userMessagesPresent: nextUserMessagesPresent,
@@ -728,6 +740,7 @@ async function mirror(params: {
   const {
     appendedUpdates,
     assistantMirrorIdentitiesOwned,
+    anchorsByMirrorIdentity,
     messagesPresent,
     userMessageReceipts,
     userMessagesPresent,
@@ -756,6 +769,7 @@ async function mirror(params: {
 
   return {
     assistantMirrorIdentitiesOwned,
+    anchorsByMirrorIdentity,
     messagesPresent,
     userMessageReceipts,
     userMessagesPresent,

@@ -12,7 +12,6 @@ import {
 import {
   finalizeAcceptedContextEngineTurn,
   type ContextEngineTurnAttemptFacts,
-  type ContextEngineTurnAttemptHolder,
 } from "../harness/context-engine-turn-attempt.js";
 import { ensureSelectedAgentHarnessPlugin } from "../harness/runtime-plugin.js";
 import type { ModelFallbackResultClassification } from "../model-fallback-attempt.js";
@@ -32,7 +31,7 @@ type RunEntryCandidateOptions = {
   isFinalFallbackAttempt?: boolean;
   isFallbackRetry: boolean;
   contextEngineLogicalTurnLease: ContextEngineLogicalTurnLease;
-  contextEngineTurnAttempt: ContextEngineTurnAttemptHolder;
+  onContextEngineTurnCandidate: (facts: ContextEngineTurnAttemptFacts) => void;
 };
 
 type RunEntryCandidate<T> = {
@@ -340,15 +339,17 @@ export async function runEmbeddedAgentEntry<T extends EmbeddedAgentRunResult>(
       run: async (provider, model, options) => {
         const isFallbackRetry = candidateIndex > 0;
         candidateIndex += 1;
-        const contextEngineTurnAttempt: ContextEngineTurnAttemptHolder = {};
+        let contextEngineTurnCandidate: ContextEngineTurnAttemptFacts | undefined;
         const result = await params.runCandidate(provider, model, {
           allowTransientCooldownProbe: options?.allowTransientCooldownProbe,
           isFinalFallbackAttempt: options?.isFinalFallbackAttempt,
           isFallbackRetry,
           contextEngineLogicalTurnLease,
-          contextEngineTurnAttempt,
+          onContextEngineTurnCandidate: (facts) => {
+            contextEngineTurnCandidate = facts;
+          },
         });
-        return { result, turnAttempt: contextEngineTurnAttempt.facts };
+        return { result, turnAttempt: contextEngineTurnCandidate };
       },
     });
     const abortFields =

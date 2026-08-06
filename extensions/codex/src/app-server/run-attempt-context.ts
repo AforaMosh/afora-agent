@@ -5,7 +5,6 @@ import {
   embeddedAgentLog,
   getAgentHarnessHookRunner,
   resolveContextEngineOwnerPluginId,
-  runWithHarnessContextEngineTranscriptFence,
   runHarnessContextEngineMaintenance,
 } from "openclaw/plugin-sdk/agent-harness-runtime";
 import {
@@ -69,10 +68,10 @@ export async function prepareCodexAttemptContext(
   };
   const readFencedHistory = async () => {
     const transcriptReadFence = params.userTurnTranscriptRecorder?.getAdmissionReceipt();
-    return await runWithHarnessContextEngineTranscriptFence(
-      transcriptReadFence ? { transcriptReadFence } : undefined,
-      async () => await readMirroredSessionHistoryMessages(activeTranscriptTarget),
-    );
+    return await readMirroredSessionHistoryMessages({
+      ...activeTranscriptTarget,
+      ...(transcriptReadFence ? { admission: transcriptReadFence } : {}),
+    });
   };
   const historyState = {
     messages:
@@ -125,6 +124,7 @@ export async function prepareCodexAttemptContext(
       sessionFile: activeSessionFile,
       sessionTarget: params.sessionTarget,
       runtimeContext: buildActiveContextEngineRuntimeContext(),
+      transcriptReadFence: params.userTurnTranscriptRecorder?.getAdmissionReceipt(),
       contextEngineHostSupport: CODEX_APP_SERVER_CONTEXT_ENGINE_HOST,
       providerId: effectiveRuntimeProviderId,
       requestedModelId: usesSupervisionConnection ? undefined : params.requestedModelId,

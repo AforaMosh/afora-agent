@@ -8,7 +8,7 @@ import { isRecord } from "@openclaw/normalization-core/record-coerce";
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
 import { sliceUtf16Safe, truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
 import { publishTranscriptUpdate } from "../config/sessions/session-accessor.js";
-import type { TranscriptTurnAdmission } from "../config/sessions/transcript-turn-admission.js";
+import type { TranscriptEntryAnchor } from "../config/sessions/transcript-entry-anchor.js";
 import {
   boundedJsonUtf8Bytes,
   firstEnumerableOwnKeys,
@@ -67,7 +67,7 @@ type AsyncMessageCallback<T extends AgentMessage> = (message: T) => void | Promi
 type UserMessagePersistedCallback = (
   message: UserAgentMessage,
   context: {
-    admission?: TranscriptTurnAdmission;
+    anchor?: TranscriptEntryAnchor;
     entryId: string;
     sessionTarget?: ReturnType<SessionManager["getSessionTarget"]>;
   },
@@ -641,6 +641,8 @@ export function installSessionToolResultGuard(
   getPendingIds: () => string[];
 } {
   const originalAppend = getRawSessionAppendMessage(sessionManager);
+  const originalAppendWithTranscriptAnchor =
+    sessionManager.appendMessageWithTranscriptAnchor.bind(sessionManager);
   setRawSessionAppendMessage(sessionManager, originalAppend);
   const pendingState = createPendingToolCallState();
   const persistMessage = (message: AgentMessage) => {
@@ -669,23 +671,25 @@ export function installSessionToolResultGuard(
     message: AgentMessage,
     options?: AppendMessageOptions,
   ): {
+    anchor?: TranscriptEntryAnchor;
     entryId: string;
     messageSeq?: number;
     sessionTarget?: ReturnType<SessionManager["getSessionTarget"]>;
   } => {
     const parentEntryId = sessionManager.getLeafId();
     const appendParentEntryId = sessionManager.getAppendParentId();
-    const entryId = originalAppend(message as never, options);
+    const { entryId, anchor } = originalAppendWithTranscriptAnchor(message as never, options);
     if (sessionManager.getAppendParentId() === appendParentEntryId) {
-      return { entryId };
+      return { entryId, ...(anchor ? { anchor } : {}) };
     }
     void opts?.onMessagePersisted?.(message);
     const sessionTarget = sessionManager.getSessionTarget();
     if (!sessionTarget) {
-      return { entryId };
+      return { entryId, ...(anchor ? { anchor } : {}) };
     }
     return {
       entryId,
+      ...(anchor ? { anchor } : {}),
       sessionTarget,
       messageSeq: resolveAppendedMessageSeq({
         sessionManager,
@@ -896,6 +900,7 @@ export function installSessionToolResultGuard(
       return undefined;
     }
     const {
+      anchor,
       entryId: result,
       messageSeq,
       sessionTarget,
@@ -916,9 +921,7 @@ export function installSessionToolResultGuard(
     }
     if (isUserAgentMessage(finalMessage)) {
       void opts?.onUserMessagePersisted?.(finalMessage, {
-        ...(sessionManager.getTranscriptAdmission(result)
-          ? { admission: sessionManager.getTranscriptAdmission(result) }
-          : {}),
+        ...(anchor ? { anchor } : {}),
         entryId: result,
         ...(sessionTarget ? { sessionTarget } : {}),
       });

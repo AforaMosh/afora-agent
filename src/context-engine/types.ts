@@ -1,7 +1,6 @@
 // Context-engine public types define the pluggable context-management lifecycle.
 import type { AgentMessage } from "../agents/runtime/index.js";
 import type { MemoryCitationsMode } from "../config/types.memory.js";
-import type { UserTurnTranscriptAdmissionReceipt } from "../sessions/user-turn-transcript.types.js";
 
 // Result types
 
@@ -182,6 +181,7 @@ export type ContextEngineInfo = {
   acceptedHostParams?: string[];
   transcriptSemantics?: {
     currentTurnFence?: "before-current-turn-entry-v1";
+    turnAdvancementIdempotency?: "atomic-idempotent-v1";
   };
   /** True when the engine manages its own compaction lifecycle. */
   ownsCompaction?: boolean;
@@ -325,8 +325,6 @@ export type ContextEngineRuntimeContext = Record<string, unknown> & {
   transcriptStorage?: ContextEngineTranscriptStorageInfo;
   /** Storage-neutral runtime session target for compaction delegation. */
   sessionTarget?: ContextEngineSessionTarget;
-  /** Exact current-turn admission excluded from pre-turn transcript reads. */
-  transcriptReadFence?: UserTurnTranscriptAdmissionReceipt;
   /**
    * Safe transcript rewrite helper implemented by the runtime.
    *
@@ -429,6 +427,24 @@ export interface ContextEngine {
     runtimeSettings?: ContextEngineRuntimeSettings;
     runtimeContext?: ContextEngineRuntimeContext;
   }): Promise<void>;
+
+  /**
+   * Atomically and idempotently commit one accepted durable transcript turn.
+   * Hosts may retry the same advancement key after process or plugin failure.
+   */
+  commitTurn?(params: {
+    advancementKey: string;
+    admission: import("../config/sessions/transcript-entry-anchor.js").TranscriptTurnAdmission;
+    terminal: import("../config/sessions/transcript-entry-anchor.js").TranscriptEntryAnchor;
+    messages: AgentMessage[];
+    prePromptMessageCount: number;
+    sessionId: string;
+    sessionKey?: string;
+    sessionTarget?: ContextEngineSessionTarget;
+    runtimeSettings?: ContextEngineRuntimeSettings;
+    runtimeContext?: ContextEngineRuntimeContext;
+    isHeartbeat?: boolean;
+  }): Promise<{ status: "committed" | "duplicate" }>;
 
   /**
    * Assemble model context under a token budget.

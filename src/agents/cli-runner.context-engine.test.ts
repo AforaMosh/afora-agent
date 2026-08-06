@@ -305,26 +305,20 @@ describe("runPreparedCliAgent context engine lifecycle", () => {
     expect(dispose).not.toHaveBeenCalled();
   });
 
-  it("records CLI turn facts for the outer fallback owner", async () => {
+  it("does not emit CLI turn facts without a durable terminal anchor", async () => {
     const afterTurn = vi.fn<NonNullable<ContextEngine["afterTurn"]>>(async () => {});
     const maintain = vi.fn<NonNullable<ContextEngine["maintain"]>>(async () =>
       createMaintenanceResult(),
     );
     const dispose = vi.fn(async () => {});
     const context = buildPreparedContext(createContextEngine({ afterTurn, maintain, dispose }));
-    const contextEngineTurnAttempt = {};
-    context.params.contextEngineTurnAttempt = contextEngineTurnAttempt;
+    const onContextEngineTurnCandidate = vi.fn();
+    context.params.onContextEngineTurnCandidate = onContextEngineTurnCandidate;
     prepareCliRunContextMock.mockResolvedValue(context);
 
     await runCliAgent(context.params);
 
-    expect(contextEngineTurnAttempt).toMatchObject({
-      facts: {
-        sessionIdUsed: context.params.sessionId,
-        promptError: false,
-        aborted: false,
-      },
-    });
+    expect(onContextEngineTurnCandidate).not.toHaveBeenCalled();
     expect(afterTurn).not.toHaveBeenCalled();
     expect(maintain).toHaveBeenCalledTimes(1);
     expect(dispose).not.toHaveBeenCalled();

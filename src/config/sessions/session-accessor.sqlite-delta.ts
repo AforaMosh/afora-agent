@@ -114,7 +114,10 @@ export function readSqliteTranscriptRawDelta(
   return runSqliteDeferredTransactionSync(
     database.db,
     () => {
-      const beforeEventSeq = resolveSqliteSessionTranscriptReadFence({ database, ...resolved });
+      const beforeEventSeq = resolveSqliteSessionTranscriptReadFence({
+        database,
+        ...resolved,
+      })?.beforeRawSeq;
       return readRawDeltaInTransaction(
         database.db,
         resolved,

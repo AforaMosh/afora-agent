@@ -550,11 +550,13 @@ describe("user turn transcript persistence", () => {
       expect(persisted).toBeDefined();
       expect(recorder.getAdmissionReceipt()).toBe(persisted?.admission);
       expect(recorder.getAdmissionReceipt()).toMatchObject({
-        admittedEntryId: persisted?.messageId,
+        entryId: persisted?.messageId,
         agentId: target.agentId,
         sessionId: target.sessionId,
         sessionKey: target.sessionKey,
-        logicalIdempotencyKey: "receipt:user",
+        idempotencyKey: "receipt:user",
+        logicalTurnId: expect.any(String),
+        role: "user",
       });
     });
 

@@ -2,7 +2,7 @@ import {
   appendTranscriptEventSync,
   appendTranscriptMessageSync,
   ensureSessionEntrySync,
-  type TranscriptTurnAdmission,
+  type TranscriptEntryAnchor,
 } from "../../config/sessions/session-accessor.js";
 import { isSessionTranscriptSideAppendEntry } from "../../config/sessions/transcript-tree.js";
 import {
@@ -19,15 +19,17 @@ import type {
   SessionEntry,
 } from "./session-manager-types.js";
 
-type PersistRecordResult = string | null | undefined | { adoptedMessageId: string };
+type PersistRecordResult =
+  | string
+  | null
+  | undefined
+  | {
+      anchor: TranscriptEntryAnchor;
+      adoptedMessageId?: string;
+      effectiveParentId: string | null;
+    };
 
 export class SessionManagerPersistence extends SessionManagerCore {
-  private readonly transcriptAdmissions = new Map<string, TranscriptTurnAdmission>();
-
-  getTranscriptAdmission(entryId: string): TranscriptTurnAdmission | undefined {
-    return this.transcriptAdmissions.get(entryId);
-  }
-
   removeTrailingEntries(
     predicate: (entry: SessionEntry) => boolean,
     options?: { preserveTrailing?: (entry: SessionEntry) => boolean },
@@ -219,17 +221,18 @@ export class SessionManagerPersistence extends SessionManagerCore {
           ? entry.message.idempotencyKey
           : undefined;
       if (idempotencyKey && options?.idempotencyLookup !== "caller-checked") {
-        if (result.admission) {
-          this.transcriptAdmissions.set(result.messageId, result.admission);
-        }
         // Ingress can commit the keyed user after this manager loaded. The
         // caller reloads and adopts only when that canonical row is still active.
-        return { adoptedMessageId: result.messageId };
+        if (!result.anchor) {
+          throw new Error(`Session transcript anchor was not returned: ${result.messageId}`);
+        }
+        return {
+          adoptedMessageId: result.messageId,
+          anchor: result.anchor,
+          effectiveParentId: result.effectiveParentId ?? null,
+        };
       }
       throw new Error(`Session transcript parent entry was not persisted: ${entry.id}`);
-    }
-    if (result.admission) {
-      this.transcriptAdmissions.set(entry.id, result.admission);
     }
     if (
       options?.idempotencyLookup === "caller-checked" &&
@@ -240,7 +243,13 @@ export class SessionManagerPersistence extends SessionManagerCore {
     if (result.effectiveParentId === undefined) {
       throw new Error(`Session transcript append parent was not returned: ${entry.id}`);
     }
-    return result.effectiveParentId;
+    if (!result.anchor) {
+      throw new Error(`Session transcript anchor was not returned: ${entry.id}`);
+    }
+    return {
+      anchor: result.anchor,
+      effectiveParentId: result.effectiveParentId,
+    };
   }
 
   mergePromptReleasedSessionEntries(

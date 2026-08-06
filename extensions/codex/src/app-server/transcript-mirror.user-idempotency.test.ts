@@ -11,7 +11,7 @@ import { createMockPluginRegistry } from "openclaw/plugin-sdk/plugin-test-runtim
 import { upsertSessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
 import {
   readSessionTranscriptEvents,
-  type TranscriptTurnAdmission,
+  type TranscriptEntryAnchor,
 } from "openclaw/plugin-sdk/session-transcript-runtime";
 import {
   castAgentMessage,
@@ -30,7 +30,7 @@ const transcriptRace = vi.hoisted(() => ({
   competingMessage: undefined as unknown,
   lookups: [] as Array<string | undefined>,
   publish: vi.fn(),
-  userAdmission: undefined as TranscriptTurnAdmission | undefined,
+  userAnchor: undefined as TranscriptEntryAnchor | undefined,
 }));
 
 vi.mock("openclaw/plugin-sdk/session-transcript-runtime", async (importOriginal) => {
@@ -71,7 +71,7 @@ vi.mock("openclaw/plugin-sdk/codex-session-transcript-runtime", async (importOri
             transcriptRace.lookups.push(options.idempotencyLookup);
             const result = await locked.appendMessageWithMessageSequence(options);
             if (result.result?.message.role === "user") {
-              transcriptRace.userAdmission = result.result.admission;
+              transcriptRace.userAnchor = result.result.anchor;
             }
             return result;
           },
@@ -86,7 +86,7 @@ afterEach(() => {
   transcriptRace.competingMessage = undefined;
   transcriptRace.lookups.length = 0;
   transcriptRace.publish.mockReset();
-  transcriptRace.userAdmission = undefined;
+  transcriptRace.userAnchor = undefined;
 });
 
 it("adopts a competing indexed user without duplicating writes or slowing assistant mirrors", async () => {
@@ -188,8 +188,8 @@ it("adopts a competing indexed user without duplicating writes or slowing assist
     ]);
     expect(result.userMessageReceipts).toHaveLength(1);
     expect(result.userMessageReceipts[0]?.message).toBe(result.userMessagesPresent[0]);
-    expect(result.userMessageReceipts[0]?.admission).toBe(transcriptRace.userAdmission);
-    expect(result.userMessageReceipts[0]?.admission.admittedEntryId).toBe(
+    expect(result.userMessageReceipts[0]?.anchor).toBe(transcriptRace.userAnchor);
+    expect(result.userMessageReceipts[0]?.anchor.entryId).toBe(
       messageEvents.find((event) => event.message.role === "user")?.id,
     );
     expect(result.assistantMirrorIdentitiesOwned).toEqual(["turn-1:assistant"]);

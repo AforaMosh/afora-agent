@@ -222,13 +222,8 @@ export function guardSessionManager(
       const runtimeMessage = runtimeUserMessageByPersistedMessage.get(message);
       runtimeUserMessageByPersistedMessage.delete(message);
       const recorder = takeRuntimeUserTurnTranscriptRecorder(message);
-      const admission =
-        persistence.admission ??
-        (typeof recorder?.getAdmissionReceipt === "function"
-          ? recorder.getAdmissionReceipt()
-          : undefined);
-      if (admission) {
-        recorder?.markRuntimePersisted(message, admission);
+      if (persistence.anchor) {
+        recorder?.markRuntimePersisted(message, persistence.anchor);
       } else {
         recorder?.markRuntimePersisted(message);
       }

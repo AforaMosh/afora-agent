@@ -1,4 +1,7 @@
-import { getSessionKysely } from "../../config/sessions/session-accessor.sqlite-scope.js";
+import {
+  readClosedTranscriptTurn,
+  type TranscriptTurnBoundary,
+} from "../../config/sessions/session-accessor.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import type { ContextEngineHostSupport } from "../../context-engine/host-compat.js";
 import type {
@@ -6,26 +9,19 @@ import type {
   ContextEngineRuntimeSettings,
   ContextEngineSessionTarget,
 } from "../../context-engine/types.js";
-import { executeSqliteQueryTakeFirstSync } from "../../infra/kysely-sync.js";
-import type { UserTurnTranscriptAdmissionReceipt } from "../../sessions/user-turn-transcript.types.js";
 import { openOpenClawAgentDatabase } from "../../state/openclaw-agent-db.js";
-import {
-  acquireSessionWriteLock,
-  resolveSessionWriteLockOptions,
-  resolveSessionWriteLockTargetKey,
-  type SessionWriteLockAcquireTimeoutConfig,
-} from "../session-write-lock.js";
-import { buildSessionContext, SessionManager } from "../sessions/index.js";
-import {
-  finalizeHarnessContextEngineTurn,
-  runHarnessContextEngineMaintenance,
-} from "./context-engine-lifecycle.js";
+import type { SessionWriteLockAcquireTimeoutConfig } from "../session-write-lock.js";
 import type { ContextEngineLogicalTurnLease } from "./context-engine-logical-turn.js";
+import {
+  drainContextEngineTurnOutbox,
+  enqueueContextEngineTurnCommit,
+} from "./context-engine-turn-outbox.js";
+
+const ACCEPTED_TURN_MAX_EVENTS = 20_000;
+const ACCEPTED_TURN_MAX_BYTES = 8 * 1024 * 1024;
 
 export type ContextEngineTurnAttemptFacts = {
-  admission?: UserTurnTranscriptAdmissionReceipt;
-  terminalEntryId?: string;
-  terminalIdempotencyKey?: string;
+  boundary: TranscriptTurnBoundary;
   sessionIdUsed: string;
   sessionKey?: string;
   sessionTarget?: ContextEngineSessionTarget;
@@ -49,17 +45,14 @@ export type ContextEngineTurnAttemptFacts = {
   isHeartbeat?: boolean;
 };
 
-export type ContextEngineTurnAttemptHolder = {
-  facts?: ContextEngineTurnAttemptFacts;
-};
-
-function assertAcceptedTranscriptAdmission(facts: ContextEngineTurnAttemptFacts): void {
-  const admission = facts.admission;
-  if (!admission) {
-    throw new Error("accepted context-engine turn has no transcript admission");
-  }
+function assertAcceptedTranscriptTarget(facts: ContextEngineTurnAttemptFacts): void {
+  const { admission, terminal } = facts.boundary;
   if (
     facts.sessionIdUsed !== admission.sessionId ||
+    terminal.agentId !== admission.agentId ||
+    terminal.sessionId !== admission.sessionId ||
+    terminal.sessionKey !== admission.sessionKey ||
+    terminal.storePath !== admission.storePath ||
     (facts.sessionKey !== undefined && facts.sessionKey !== admission.sessionKey) ||
     (facts.sessionTarget?.agentId !== undefined &&
       facts.sessionTarget.agentId !== admission.agentId) ||
@@ -70,31 +63,6 @@ function assertAcceptedTranscriptAdmission(facts: ContextEngineTurnAttemptFacts)
   ) {
     throw new Error("accepted context-engine transcript target changed after admission");
   }
-  const database = openOpenClawAgentDatabase({
-    agentId: admission.agentId,
-    path: admission.storePath,
-  });
-  const db = getSessionKysely(database.db);
-  const current = executeSqliteQueryTakeFirstSync(
-    database.db,
-    db
-      .selectFrom("transcript_event_identities as identity")
-      .innerJoin("transcript_rewrite_watermarks as rewrite", (join) =>
-        join.onRef("rewrite.session_id", "=", "identity.session_id"),
-      )
-      .select(["identity.seq", "identity.parent_id", "rewrite.generation"])
-      .where("identity.session_id", "=", admission.sessionId)
-      .where("identity.event_id", "=", admission.admittedEntryId)
-      .limit(1),
-  );
-  if (
-    !current ||
-    current.seq !== admission.rawSeq ||
-    current.parent_id !== admission.effectiveParentId ||
-    current.generation !== admission.generation
-  ) {
-    throw new Error("accepted context-engine transcript admission is stale");
-  }
 }
 
 export async function finalizeAcceptedContextEngineTurn(params: {
@@ -102,91 +70,56 @@ export async function finalizeAcceptedContextEngineTurn(params: {
   lease: ContextEngineLogicalTurnLease;
   warn?: (message: string) => void;
 }): Promise<void> {
-  const admission = params.facts.admission;
-  if (!admission) {
-    (params.warn ?? console.warn)(
-      "[context-engine] skipped accepted turn advancement: accepted context-engine turn has no transcript admission",
-    );
+  if (params.facts.promptError || params.facts.aborted || params.facts.yieldAborted) {
     return;
   }
-  const target = {
-    agentId: admission.agentId,
-    sessionId: admission.sessionId,
-    sessionKey: admission.sessionKey,
-    storePath: admission.storePath,
-  };
-  let lock: Awaited<ReturnType<typeof acquireSessionWriteLock>> | undefined;
+  const warn = params.warn ?? console.warn;
   try {
-    lock = await acquireSessionWriteLock({
-      sessionFile: resolveSessionWriteLockTargetKey(target),
-      targetKind: "session-key",
-      ...resolveSessionWriteLockOptions(params.facts.config),
-    });
-    assertAcceptedTranscriptAdmission(params.facts);
-    const sessionManager = SessionManager.open(target);
-    const terminalEntryId =
-      params.facts.terminalEntryId ??
-      sessionManager
-        .getEntries()
-        .find(
-          (entry) =>
-            entry.type === "message" &&
-            (entry.message as { idempotencyKey?: unknown }).idempotencyKey ===
-              params.facts.terminalIdempotencyKey,
-        )?.id;
-    if (!terminalEntryId) {
-      throw new Error("accepted context-engine terminal entry is unavailable");
-    }
-    const admittedEntry = sessionManager.getEntry(admission.admittedEntryId);
-    const branchIds = new Set(sessionManager.getBranch(terminalEntryId).map((entry) => entry.id));
+    assertAcceptedTranscriptTarget(params.facts);
     if (
-      !admittedEntry ||
-      admittedEntry.type !== "message" ||
-      admittedEntry.message.role !== "user" ||
-      !sessionManager.getEntry(terminalEntryId) ||
-      !branchIds.has(admission.admittedEntryId)
+      params.lease.degraded ||
+      params.lease.engine.info.transcriptSemantics?.turnAdvancementIdempotency !==
+        "atomic-idempotent-v1" ||
+      typeof params.lease.engine.commitTurn !== "function"
     ) {
-      throw new Error("accepted context-engine transcript range is unavailable");
+      throw new Error("accepted context engine does not support durable turn advancement");
     }
-    const entries = sessionManager.getEntries();
-    await finalizeHarnessContextEngineTurn({
-      contextEngine: params.lease.engine,
-      promptError: params.facts.promptError,
-      aborted: params.facts.aborted,
-      yieldAborted: params.facts.yieldAborted,
-      sessionIdUsed: params.facts.sessionIdUsed,
-      sessionKey: params.facts.sessionKey,
-      sessionTarget: target,
-      sessionFile: params.facts.sessionFile,
-      messagesSnapshot: buildSessionContext(entries, terminalEntryId).messages,
-      prePromptMessageCount: buildSessionContext(entries, admittedEntry.parentId).messages.length,
-      tokenBudget: params.facts.tokenBudget,
-      runtimeContext: params.facts.runtimeContext,
-      runtimeSettings: params.facts.runtimeSettings,
-      contextEngineHostSupport: params.facts.contextEngineHostSupport,
-      harnessId: params.facts.harnessId,
-      runtimeId: params.facts.runtimeId,
-      providerId: params.facts.providerId,
-      requestedModelId: params.facts.requestedModelId,
-      modelId: params.facts.modelId,
-      maxOutputTokens: params.facts.maxOutputTokens,
-      fallbackReason: params.facts.fallbackReason,
-      degradedReason: params.facts.degradedReason,
-      sessionManager,
-      runMaintenance: async (maintenanceParams) =>
-        await runHarnessContextEngineMaintenance({
-          ...maintenanceParams,
-          onDeferredMaintenance: (promise) => params.lease.deferDisposalUntil(promise),
-        }),
-      config: params.facts.config,
-      warn: params.warn ?? console.warn,
-      isHeartbeat: params.facts.isHeartbeat,
+    const closedTurn = readClosedTranscriptTurn({
+      boundary: params.facts.boundary,
+      maxEvents: ACCEPTED_TURN_MAX_EVENTS,
+      maxBytes: ACCEPTED_TURN_MAX_BYTES,
+    });
+    if (closedTurn.kind !== "ok") {
+      throw new Error(`accepted context-engine transcript range is ${closedTurn.kind}`);
+    }
+    const admission = params.facts.boundary.admission;
+    const database = openOpenClawAgentDatabase({
+      agentId: admission.agentId,
+      path: admission.storePath,
+    });
+    enqueueContextEngineTurnCommit({
+      database,
+      engineId: params.lease.effectiveEngineId,
+      ownerPluginId: params.lease.effectiveEnginePluginId,
+      payload: {
+        boundary: params.facts.boundary,
+        isHeartbeat: params.facts.isHeartbeat === true,
+        messages: closedTurn.messages,
+        prePromptMessageCount: closedTurn.prePromptMessageCount,
+        sessionId: params.facts.sessionIdUsed,
+        ...(params.facts.sessionKey ? { sessionKey: params.facts.sessionKey } : {}),
+      },
+    });
+    await drainContextEngineTurnOutbox({
+      database,
+      engine: params.lease.engine,
+      engineId: params.lease.effectiveEngineId,
+      ownerPluginId: params.lease.effectiveEnginePluginId,
+      warn,
     });
   } catch (error) {
-    (params.warn ?? console.warn)(
+    warn(
       `[context-engine] skipped accepted turn advancement: ${error instanceof Error ? error.message : String(error)}`,
     );
-  } finally {
-    await lock?.release();
   }
 }

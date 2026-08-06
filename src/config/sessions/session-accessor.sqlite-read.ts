@@ -48,8 +48,8 @@ export function loadSqliteTranscriptEventsSync(
 ): TranscriptEvent[] {
   const resolved = resolveSqliteTranscriptReadScope(scope);
   const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
-  const beforeEventSeq = resolveSqliteSessionTranscriptReadFence({ database, ...resolved });
-  return loadSqliteTranscriptEventsFromDatabase(database, resolved.sessionId, beforeEventSeq);
+  const fence = resolveSqliteSessionTranscriptReadFence({ database, ...resolved });
+  return loadSqliteTranscriptEventsFromDatabase(database, resolved.sessionId, fence?.beforeRawSeq);
 }
 
 /** Loads only the first transcript row for header metadata hot paths. */
@@ -274,7 +274,10 @@ export function loadLatestSqliteAssistantText(
   const resolved = resolveSqliteTranscriptReadScope(scope);
   const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
   const db = getSessionKysely(database.db);
-  const beforeEventSeq = resolveSqliteSessionTranscriptReadFence({ database, ...resolved });
+  const beforeEventSeq = resolveSqliteSessionTranscriptReadFence({
+    database,
+    ...resolved,
+  })?.beforeRawSeq;
   const rows = iterateSqliteQuerySync(
     database.db,
     db

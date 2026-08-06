@@ -10,14 +10,14 @@ import {
   publishSessionTranscriptUpdateByIdentity,
   readVisibleSessionTranscriptMessageEntries,
   type SessionTranscriptTargetParams,
-  type TranscriptTurnAdmission,
+  type TranscriptEntryAnchor,
 } from "openclaw/plugin-sdk/session-transcript-runtime";
 import type { AttemptParamsLike } from "./attempt-types.js";
 
 type TranscriptMessage = Extract<AgentMessage, { role: "user" | "assistant" | "toolResult" }>;
 type AppendResult =
   | {
-      admission: TranscriptTurnAdmission;
+      anchor: TranscriptEntryAnchor;
       appended: boolean;
       message: TranscriptMessage;
       messageId: string;
@@ -134,6 +134,7 @@ export function createAttemptTranscriptJournal(params: {
   let latestAssistantKey: string | undefined;
   let assistantTranscriptOwned = false;
   let assistantTranscriptIdempotencyKey: string | undefined;
+  let terminalAnchor: TranscriptEntryAnchor | undefined;
 
   const captureFailure = (error: unknown) => {
     if (firstFailure) {
@@ -316,10 +317,11 @@ export function createAttemptTranscriptJournal(params: {
     }
     return result.appended;
   };
-  const ownAssistant = (key: string, persisted: boolean) => {
+  const ownAssistant = (key: string, persisted: boolean, anchor?: TranscriptEntryAnchor) => {
     if (latestAssistantKey === key) {
       assistantTranscriptOwned = true;
       assistantTranscriptIdempotencyKey = persisted ? key : undefined;
+      terminalAnchor = persisted ? anchor : undefined;
     }
   };
 
@@ -372,6 +374,7 @@ export function createAttemptTranscriptJournal(params: {
       latestAssistantKey = undefined;
       assistantTranscriptOwned = false;
       assistantTranscriptIdempotencyKey = undefined;
+      terminalAnchor = undefined;
     },
     async persistInitialUser() {
       const recorder = params.attempt.userTurnTranscriptRecorder;
@@ -404,7 +407,7 @@ export function createAttemptTranscriptJournal(params: {
         const persisted = outcome.message as Extract<AgentMessage, { role: "user" }>;
         accept(outcome);
         persistedInitialUser = persisted;
-        recorder.markRuntimePersisted(persisted, outcome.admission);
+        recorder.markRuntimePersisted(persisted, outcome.anchor);
         params.attempt.onUserMessagePersisted?.(persisted);
         await publish(outcome.appended);
       })();
@@ -469,6 +472,7 @@ export function createAttemptTranscriptJournal(params: {
       latestAssistantKey = key;
       assistantTranscriptOwned = false;
       assistantTranscriptIdempotencyKey = undefined;
+      terminalAnchor = undefined;
       schedule(async () => {
         if (pendingTools) {
           throw new Error("Copilot emitted an assistant message before tool results settled");
@@ -490,7 +494,7 @@ export function createAttemptTranscriptJournal(params: {
         if (!outcome) {
           replayInvalid = true;
         }
-        ownAssistant(key, Boolean(outcome));
+        ownAssistant(key, Boolean(outcome), outcome?.anchor);
         await publish(accept(outcome));
       });
     },
@@ -529,7 +533,7 @@ export function createAttemptTranscriptJournal(params: {
             const didAppend = accept(result as AppendResult);
             appended ||= didAppend;
           }
-          ownAssistant(group.assistantKey, true);
+          ownAssistant(group.assistantKey, true, results[0]?.anchor);
         }
         pendingTools = undefined;
         const deferredReceipts: PersistenceReceipt[] = [];
@@ -564,6 +568,7 @@ export function createAttemptTranscriptJournal(params: {
     snapshot: () => ({
       assistantTranscriptOwned,
       assistantTranscriptIdempotencyKey,
+      terminalAnchor,
       initialSdkUserValidated,
       messagesSnapshot: [...messagesSnapshot],
       replayInvalid,

@@ -478,12 +478,55 @@ export type ResolveContextEngineOptions = {
   workspaceDir?: string;
 };
 
+export type ResolvedContextEngineRef = Readonly<{
+  engine: ContextEngine;
+  registeredId: string;
+  ownerPluginId?: string;
+}>;
+
 export type LogicalTurnContextEngineResolution = {
-  configuredEngine: ContextEngine;
-  configuredEngineId: string;
+  configured: ResolvedContextEngineRef;
+  configuredId: string;
   configuredFailure?: string;
-  defaultEngine: ContextEngine;
+  fallback: ResolvedContextEngineRef;
 };
+
+function resolvedContextEngineRef(params: {
+  engine: ContextEngine;
+  registeredId: string;
+  owner: string;
+}): ResolvedContextEngineRef {
+  const pluginId = params.owner.startsWith("plugin:")
+    ? params.owner.slice("plugin:".length).trim()
+    : "";
+  return Object.freeze({
+    engine: params.engine,
+    registeredId: params.registeredId,
+    ...(pluginId ? { ownerPluginId: pluginId } : {}),
+  });
+}
+
+async function resolveRawContextEngineRef(
+  engineId: string,
+  factoryCtx: ContextEngineFactoryContext,
+): Promise<ResolvedContextEngineRef> {
+  const entry = getContextEngines().get(engineId);
+  if (!entry) {
+    throw new Error(
+      `Context engine "${engineId}" is not registered. ` +
+        `Available engines: ${listContextEngineIds().join(", ") || "(none)"}`,
+    );
+  }
+  const engine = await entry.factory(factoryCtx);
+  const contractError = describeResolvedContextEngineContractError(engineId, engine);
+  if (contractError) {
+    await Promise.resolve((engine as ContextEngine | undefined)?.dispose?.()).catch(
+      () => undefined,
+    );
+    throw new Error(contractError);
+  }
+  return resolvedContextEngineRef({ engine, registeredId: engineId, owner: entry.owner });
+}
 
 /**
  * Resolve fresh engines for one logical turn without consulting or mutating
@@ -502,47 +545,40 @@ export async function resolveLogicalTurnContextEngines(
     agentDir: options?.agentDir,
     workspaceDir: options?.workspaceDir,
   };
-  const defaultEngine = await resolveDefaultContextEngine(defaultEngineId, factoryCtx);
+  const fallback = await resolveRawContextEngineRef(defaultEngineId, factoryCtx);
   if (configuredEngineId === defaultEngineId) {
-    return { configuredEngine: defaultEngine, configuredEngineId, defaultEngine };
+    return { configured: fallback, configuredId: configuredEngineId, fallback };
   }
   const entry = getContextEngines().get(configuredEngineId);
   if (!entry) {
     return {
-      configuredEngine: defaultEngine,
-      configuredEngineId,
+      configured: fallback,
+      configuredId: configuredEngineId,
       configuredFailure: `context engine "${configuredEngineId}" is not registered`,
-      defaultEngine,
+      fallback,
     };
   }
   if (entry.lifecycle === "readOnlyDiscovery") {
     return {
-      configuredEngine: defaultEngine,
-      configuredEngineId,
+      configured: fallback,
+      configuredId: configuredEngineId,
       configuredFailure: `context engine "${configuredEngineId}" is available for discovery only`,
-      defaultEngine,
+      fallback,
     };
   }
   try {
-    const engine = await entry.factory(factoryCtx);
-    const contractError = describeResolvedContextEngineContractError(configuredEngineId, engine);
-    if (contractError) {
-      throw new Error(contractError);
-    }
+    const configured = await resolveRawContextEngineRef(configuredEngineId, factoryCtx);
     return {
-      configuredEngine: wrapResolvedContextEngine(engine, {
-        owner: entry.owner,
-        engineId: configuredEngineId,
-      }),
-      configuredEngineId,
-      defaultEngine,
+      configured,
+      configuredId: configuredEngineId,
+      fallback,
     };
   } catch (error) {
     return {
-      configuredEngine: defaultEngine,
-      configuredEngineId,
+      configured: fallback,
+      configuredId: configuredEngineId,
       configuredFailure: error instanceof Error ? error.message : String(error),
-      defaultEngine,
+      fallback,
     };
   }
 }

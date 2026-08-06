@@ -319,7 +319,7 @@ export function readSessionTranscriptVisibleMessageDelta(
   );
   return withCurrentProjectionSnapshot(scope, (projection) => {
     const db = getActiveTranscriptKysely(projection.database);
-    const beforeEventSeq = resolveSqliteSessionTranscriptReadFence({
+    const transcriptFence = resolveSqliteSessionTranscriptReadFence({
       database: projection.database,
       ...projection.resolved,
     });
@@ -360,7 +360,10 @@ export function readSessionTranscriptVisibleMessageDelta(
     if (cursor.generation !== generation) {
       return reset("generation_mismatch");
     }
-    if (beforeEventSeq !== undefined && cursor.lastEventSeq >= beforeEventSeq) {
+    if (
+      transcriptFence !== undefined &&
+      cursor.lastMessagePosition >= transcriptFence.beforeActiveMessagePosition
+    ) {
       throw new SessionTranscriptReadFenceError(
         "Transcript read cursor has crossed the current-turn admission fence",
       );
@@ -404,8 +407,8 @@ export function readSessionTranscriptVisibleMessageDelta(
         .where("active.session_id", "=", projection.resolved.sessionId)
         .where("active.message_position", "is not", null)
         .where("active.message_position", ">=", startPosition)
-        .$if(beforeEventSeq !== undefined, (query) =>
-          query.where("active.event_seq", "<", beforeEventSeq!),
+        .$if(transcriptFence !== undefined, (query) =>
+          query.where("active.message_position", "<", transcriptFence!.beforeActiveMessagePosition),
         )
         .orderBy("active.message_position", "asc")
         .limit(maxMessages + 1),

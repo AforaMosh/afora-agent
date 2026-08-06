@@ -1,10 +1,12 @@
 // User turn transcript helpers extract user-turn text from session transcripts.
+import { randomUUID } from "node:crypto";
 import { mimeTypeFromFilePath } from "@openclaw/media-core/mime";
 import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
 import type { AgentMessage } from "../../packages/agent-core/src/types.js";
 import {
   persistSessionTranscriptTurn,
+  type TranscriptEntryAnchor,
   type SessionTranscriptTurnPersistOptions,
 } from "../config/sessions/session-accessor.js";
 import { readPersistedMediaFacts, type MediaFact } from "../media/media-facts.js";
@@ -410,19 +412,23 @@ async function persistUserTurnTranscript(
   );
   const appended = turn.messages[0] as
     | {
-        admission?: UserTurnTranscriptAdmissionReceipt;
+        anchor?: Omit<UserTurnTranscriptAdmissionReceipt, "logicalTurnId" | "role">;
         appended: boolean;
         messageId: string;
         message: PersistedUserTurnMessage;
       }
     | undefined;
-  if (!appended?.admission) {
+  if (!appended?.anchor || appended.message.role !== "user") {
     return undefined;
   }
 
   return {
     ...appended,
-    admission: appended.admission,
+    admission: {
+      ...appended.anchor,
+      logicalTurnId: params.logicalTurnId ?? randomUUID(),
+      role: "user",
+    },
     sessionEntry: turn.sessionEntry,
     sessionFile: params.sessionKey,
   };
@@ -437,6 +443,7 @@ async function resolveUserTurnTranscriptTarget(
 export function createUserTurnTranscriptRecorder(
   params: CreateUserTurnTranscriptRecorderParams,
 ): UserTurnTranscriptRecorder {
+  const logicalTurnId = randomUUID();
   let message = resolvePersistedUserTurnMessage(params);
   let blocked = false;
   let persisted = false;
@@ -516,13 +523,20 @@ export function createUserTurnTranscriptRecorder(
   };
 
   const recordAdmission = (
-    receipt: UserTurnTranscriptAdmissionReceipt,
+    receipt: TranscriptEntryAnchor | UserTurnTranscriptAdmissionReceipt,
     persistedMessage: PersistedUserTurnMessage,
   ) => {
     if (admissionReceipt) {
       return;
     }
-    admissionReceipt = receipt;
+    admissionReceipt =
+      "logicalTurnId" in receipt
+        ? receipt
+        : {
+            ...receipt,
+            logicalTurnId,
+            role: "user",
+          };
     admittedMessage = persistedMessage;
   };
 
@@ -588,6 +602,7 @@ export function createUserTurnTranscriptRecorder(
       ) =>
         await persistUserTurnTranscript({
           ...resolvedTarget,
+          logicalTurnId,
           message: candidate,
           ...(options.expectedSessionId ? { expectedSessionId: options.expectedSessionId } : {}),
           ...((options.sessionLifecyclePatch ?? params.sessionLifecyclePatch)

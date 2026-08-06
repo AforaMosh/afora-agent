@@ -50,7 +50,7 @@ import type {
 import type { ExecPolicyOverrides } from "../exec-defaults.js";
 import type { FastModeAutoProgressState } from "../fast-mode.js";
 import type { ContextEngineLogicalTurnLease } from "../harness/context-engine-logical-turn.js";
-import type { ContextEngineTurnAttemptHolder } from "../harness/context-engine-turn-attempt.js";
+import type { ContextEngineTurnAttemptFacts } from "../harness/context-engine-turn-attempt.js";
 import type { ScheduledToolPolicyContext } from "../scheduled-tool-policy.js";
 import type { SessionManager } from "../sessions/index.js";
 import type { SilentReplyPromptMode } from "../system-prompt.types.js";
@@ -106,7 +106,7 @@ export type RunCliAgentParams = {
   /** Context engine resolved once by the outer logical-turn owner. */
   contextEngineLogicalTurnLease?: ContextEngineLogicalTurnLease;
   /** Attempt-local facts accepted or discarded by the outer logical-turn owner. */
-  contextEngineTurnAttempt?: ContextEngineTurnAttemptHolder;
+  onContextEngineTurnCandidate?: (facts: ContextEngineTurnAttemptFacts) => void;
   /** Skip current-turn user persistence when a retry/fallback already wrote it. */
   suppressNextUserMessagePersistence?: boolean;
   /** Notification fired after the current user turn has been accepted into the transcript. */

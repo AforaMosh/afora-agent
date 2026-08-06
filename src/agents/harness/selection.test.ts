@@ -2,6 +2,7 @@
 import type { Model } from "openclaw/plugin-sdk/llm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { OpenClawConfig } from "../../config/config.js";
+import type { TranscriptEntryAnchor } from "../../config/sessions/transcript-entry-anchor.js";
 import { OPENCLAW_EMBEDDED_CONTEXT_ENGINE_HOST } from "../../context-engine/host-compat.js";
 import type { ContextEngine } from "../../context-engine/types.js";
 import { createOpenClawCodingTools } from "../../plugin-sdk/agent-harness.js";
@@ -185,6 +186,24 @@ function createAttemptResult(sessionIdUsed: string): EmbeddedRunAttemptResult {
     cloudCodeAssistFormatError: false,
     replayMetadata: { hadPotentialSideEffects: false, replaySafe: true },
     itemLifecycle: { startedCount: 0, completedCount: 0, activeCount: 0 },
+  };
+}
+
+function createTranscriptAnchor(
+  entryId: string,
+  rawSeq: number,
+  activeMessagePosition: number,
+): TranscriptEntryAnchor {
+  return {
+    agentId: "main",
+    sessionId: "session-1",
+    sessionKey: "agent:main:session-1",
+    storePath: "/tmp/openclaw-agent.sqlite",
+    generation: "generation-1",
+    entryId,
+    effectiveParentId: rawSeq === 1 ? null : "user-1",
+    rawSeq,
+    activeMessagePosition,
   };
 }
 
@@ -504,6 +523,57 @@ describe("runAgentHarnessAttempt", () => {
       expect(hostScopeActive).toBe(true);
       expect(toolNames).toEqual(["openclaw"]);
       expect(isHostScopedAgentToolActive("openclaw")).toBe(false);
+    },
+  );
+
+  it.each(["heartbeat", "commitment-only"] as const)(
+    "records %s classification on the host-owned turn candidate",
+    async (bootstrapContextRunKind) => {
+      const admission = createTranscriptAnchor("user-1", 1, 0);
+      const terminal = createTranscriptAnchor("assistant-1", 2, 1);
+      const onContextEngineTurnCandidate = vi.fn();
+      registerAgentHarness(
+        {
+          id: "codex",
+          label: "Codex",
+          supports: () => ({ supported: true, priority: 100 }),
+          runAttempt: async () => ({
+            ...createAttemptResult("session-1"),
+            contextEngineTerminalAnchor: terminal,
+          }),
+        },
+        { ownerPluginId: "codex" },
+      );
+      const params = createAttemptParams(providerRuntimeConfig("codex", "codex"));
+      params.agentHarnessRuntimeOverride = "codex";
+      params.sessionKey = admission.sessionKey;
+      params.sessionTarget = {
+        agentId: admission.agentId,
+        sessionId: admission.sessionId,
+        sessionKey: admission.sessionKey,
+        storePath: admission.storePath,
+      };
+      params.bootstrapContextRunKind = bootstrapContextRunKind;
+      params.userTurnTranscriptRecorder = {
+        message: { role: "user", content: "hello", timestamp: 1 } as never,
+        resolveMessage: async () => ({ role: "user", content: "hello", timestamp: 1 }) as never,
+        markRuntimePersisted() {},
+        getAdmissionReceipt: () => admission,
+      };
+      params.onContextEngineTurnCandidate = onContextEngineTurnCandidate;
+
+      await runAgentHarnessAttempt(params);
+
+      expect(onContextEngineTurnCandidate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          boundary: { admission, terminal },
+          harnessId: "codex",
+          isHeartbeat: true,
+          promptError: false,
+          aborted: false,
+          yieldAborted: false,
+        }),
+      );
     },
   );
 
@@ -904,7 +974,7 @@ describe("runAgentHarnessAttempt", () => {
 
     const classifyCall = classify.mock.calls.at(0);
     expect(classifyCall?.[0].sessionIdUsed).toBe("codex");
-    expect(classifyCall?.[1]).toBe(params);
+    expect(classifyCall?.[1]).toStrictEqual(params);
     expect(result.agentHarnessId).toBe("codex");
     expect(result.agentHarnessResultClassification).toBe("empty");
   });

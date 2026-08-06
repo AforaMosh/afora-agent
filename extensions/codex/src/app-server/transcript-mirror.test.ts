@@ -926,8 +926,8 @@ describe("mirrorCodexAppServerTranscript", () => {
     expect(second.userMessagesPresent).toHaveLength(1);
     expect(first.userMessageReceipts).toHaveLength(1);
     expect(second.userMessageReceipts).toHaveLength(1);
-    expect(second.userMessageReceipts[0]?.admission.admittedEntryId).toBe(
-      first.userMessageReceipts[0]?.admission.admittedEntryId,
+    expect(second.userMessageReceipts[0]?.anchor.entryId).toBe(
+      first.userMessageReceipts[0]?.anchor.entryId,
     );
     expect(
       (await readMirrorMessages(target)).filter((message) => message.role === "user"),

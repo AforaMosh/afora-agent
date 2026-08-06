@@ -1136,12 +1136,13 @@ describe.each([publicAccessorAdapter, sqliteAdapter])(
       unsubscribe();
 
       expect(appended).toMatchObject({
-        admission: {
-          admittedEntryId: expect.any(String),
+        anchor: {
+          entryId: expect.any(String),
           agentId: "main",
+          activeMessagePosition: expect.any(Number),
           effectiveParentId: null,
           generation: expect.any(String),
-          logicalIdempotencyKey: "assistant-once",
+          idempotencyKey: "assistant-once",
           rawSeq: expect.any(Number),
           sessionId: scope.sessionId,
           sessionKey: scope.sessionKey,
@@ -1152,7 +1153,7 @@ describe.each([publicAccessorAdapter, sqliteAdapter])(
         messageId: expect.any(String),
       });
       expect(replayed).toMatchObject({
-        admission: appended?.admission,
+        anchor: appended?.anchor,
         appended: false,
         message: expect.objectContaining({
           content: "hello",
@@ -1160,8 +1161,8 @@ describe.each([publicAccessorAdapter, sqliteAdapter])(
         }),
         messageId: appended?.messageId,
       });
-      expect(replayed?.admission).toBeDefined();
-      expect(replayed?.admission).toEqual(appended?.admission);
+      expect(replayed?.anchor).toBeDefined();
+      expect(replayed?.anchor).toEqual(appended?.anchor);
       await expect(
         adapter.appendTranscriptMessage(scope, {
           cwd: paths.tempDir,

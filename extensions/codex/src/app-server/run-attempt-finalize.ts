@@ -1,14 +1,8 @@
 import {
-  buildHarnessContextEngineRuntimeContextFromUsage,
-  CODEX_APP_SERVER_CONTEXT_ENGINE_HOST,
   embeddedAgentLog,
-  finalizeHarnessContextEngineTurn,
   formatErrorMessage,
-  resolveContextEngineOwnerPluginId,
   runAgentHarnessLlmOutputHook,
-  runHarnessContextEngineMaintenance,
 } from "openclaw/plugin-sdk/agent-harness-runtime";
-import { readMirroredSessionHistoryMessages } from "./attempt-context.js";
 import { classifyCodexModelCallFailureKind } from "./attempt-diagnostics.js";
 import {
   buildCodexAppServerPromptTimeoutOutcome,
@@ -57,15 +51,10 @@ export async function finalizeCodexAttempt(
 ): Promise<EmbeddedRunAttemptResult> {
   const { prompt, state: resourceState, trajectoryRecorder, markTrajectoryEndRecorded } = resources;
   const { context, systemPromptReport } = prompt;
-  const { runtime, attemptTools, activeTranscriptTarget, historyState, hookContext } = context;
-  const { hookContextWindowFields, hookRunner, promptState } = context;
-  const { connection, preparedAuthBinding, activeSessionId, activeSessionFile } = runtime;
-  const {
-    buildActiveRunAttemptParams,
-    effectiveContextTokenBudget,
-    effectiveRuntimeProviderId,
-    effectiveRuntimeModelId,
-  } = runtime;
+  const { runtime, attemptTools, activeTranscriptTarget, hookContext } = context;
+  const { hookContextWindowFields, hookRunner } = context;
+  const { connection, preparedAuthBinding } = runtime;
+  const { effectiveRuntimeProviderId, effectiveRuntimeModelId } = runtime;
   const {
     params,
     terminalState,
@@ -78,8 +67,6 @@ export async function finalizeCodexAttempt(
     sessionAgentId,
     contextSessionKey,
     effectiveCwd,
-    effectiveWorkspace,
-    agentDir,
     attemptStartedAt,
     startupAuthProfileId,
   } = connection;
@@ -335,7 +322,8 @@ export async function finalizeCodexAttempt(
     threadId: resourceState.thread.threadId,
     turnId: activeTurnId,
   });
-  const { assistantTranscriptOwned, assistantTranscriptIdempotencyKey } = mirrorOutcome;
+  const { assistantTranscriptOwned, assistantTranscriptIdempotencyKey, terminalAnchor } =
+    mirrorOutcome;
   const shouldCaptureSettledTurnFinalizationContext =
     turnSucceeded &&
     result.assistantTexts.every((text) => !text.trim()) &&
@@ -355,97 +343,6 @@ export async function finalizeCodexAttempt(
       threadId: resourceState.thread.threadId,
       turnId: activeTurnId,
     });
-  }
-  if (activeContextEngine) {
-    const contextEnginePluginId = resolveContextEngineOwnerPluginId(activeContextEngine);
-    const isHeartbeat =
-      params.bootstrapContextRunKind === "heartbeat" ||
-      params.bootstrapContextRunKind === "commitment-only";
-    const finalMessages =
-      (await readMirroredSessionHistoryMessages(activeTranscriptTarget)) ??
-      historyState.messages.concat(result.messagesSnapshot);
-    const runtimeContext = buildHarnessContextEngineRuntimeContextFromUsage({
-      attempt: buildActiveRunAttemptParams(),
-      workspaceDir: effectiveWorkspace,
-      cwd: effectiveCwd,
-      agentDir,
-      activeAgentId: sessionAgentId,
-      contextEnginePluginId,
-      tokenBudget: effectiveContextTokenBudget,
-      lastCallUsage: result.attemptUsage,
-      promptCache: result.promptCache,
-    });
-    const providerId = usesSupervisionConnection
-      ? (resourceState.thread.modelProvider ?? effectiveRuntimeProviderId)
-      : params.provider;
-    const modelId = usesSupervisionConnection
-      ? (resourceState.thread.model ?? effectiveRuntimeModelId)
-      : params.modelId;
-    const finalizeTurn = async (transcript: {
-      messagesSnapshot: Parameters<typeof finalizeHarnessContextEngineTurn>[0]["messagesSnapshot"];
-      prePromptMessageCount: number;
-      sessionManager?: unknown;
-      withSessionManagerRewriteLock: <T>(operation: () => Promise<T> | T) => Promise<T>;
-    }) => {
-      await finalizeHarnessContextEngineTurn({
-        contextEngine: activeContextEngine,
-        promptError: Boolean(finalPromptError),
-        aborted: finalAborted,
-        yieldAborted: Boolean(result.yieldDetected),
-        sessionIdUsed: activeSessionId,
-        sessionKey: contextSessionKey,
-        sessionFile: activeSessionFile,
-        sessionTarget: params.sessionTarget,
-        messagesSnapshot: transcript.messagesSnapshot,
-        prePromptMessageCount: transcript.prePromptMessageCount,
-        sessionManager: transcript.sessionManager,
-        tokenBudget: effectiveContextTokenBudget,
-        runtimeContext,
-        contextEngineHostSupport: CODEX_APP_SERVER_CONTEXT_ENGINE_HOST,
-        providerId,
-        requestedModelId: usesSupervisionConnection ? undefined : params.requestedModelId,
-        modelId,
-        fallbackReason: usesSupervisionConnection ? undefined : params.fallbackReason,
-        degradedReason: usesSupervisionConnection ? undefined : params.degradedReason,
-        runMaintenance: async (maintenanceParams) =>
-          await runHarnessContextEngineMaintenance({
-            ...maintenanceParams,
-            withSessionManagerRewriteLock: transcript.withSessionManagerRewriteLock,
-          }),
-        config: params.config,
-        warn: (message) => embeddedAgentLog.warn(message),
-        isHeartbeat,
-      });
-    };
-    if (params.contextEngineTurnAttempt) {
-      params.contextEngineTurnAttempt.facts = {
-        admission: params.userTurnTranscriptRecorder?.getAdmissionReceipt(),
-        terminalIdempotencyKey: assistantTranscriptIdempotencyKey,
-        sessionIdUsed: activeSessionId,
-        sessionKey: contextSessionKey,
-        sessionTarget: params.sessionTarget,
-        sessionFile: activeSessionFile,
-        promptError: Boolean(finalPromptError),
-        aborted: finalAborted,
-        yieldAborted: Boolean(result.yieldDetected),
-        tokenBudget: effectiveContextTokenBudget,
-        runtimeContext,
-        contextEngineHostSupport: CODEX_APP_SERVER_CONTEXT_ENGINE_HOST,
-        providerId,
-        requestedModelId: usesSupervisionConnection ? undefined : params.requestedModelId,
-        modelId,
-        fallbackReason: usesSupervisionConnection ? undefined : params.fallbackReason,
-        degradedReason: usesSupervisionConnection ? undefined : params.degradedReason,
-        config: params.config,
-        isHeartbeat,
-      };
-    } else {
-      await finalizeTurn({
-        messagesSnapshot: finalMessages,
-        prePromptMessageCount: promptState.prePromptMessageCount,
-        withSessionManagerRewriteLock: async (operation) => await operation(),
-      });
-    }
   }
   runAgentHarnessLlmOutputHook({
     event: {
@@ -596,6 +493,7 @@ export async function finalizeCodexAttempt(
     ...(promptTimeoutOutcome ? { promptTimeoutOutcome } : {}),
     ...(assistantTranscriptOwned ? { assistantTranscriptOwned: true } : {}),
     ...(assistantTranscriptIdempotencyKey ? { assistantTranscriptIdempotencyKey } : {}),
+    ...(terminalAnchor ? { contextEngineTerminalAnchor: terminalAnchor } : {}),
     ...(settledTurnFinalizationContext ? { settledTurnFinalizationContext } : {}),
     ...(resourceState.runtimeArtifact ? { runtimeArtifact: resourceState.runtimeArtifact } : {}),
     ...(!finalAborted && !effectiveTimedOut && !finalPromptError && preparedAuthBinding

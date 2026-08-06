@@ -44,29 +44,45 @@ describe("accepted context-engine turn finalization", () => {
       parentId: admitted?.messageId,
       now: 3_000,
     });
-    if (!admitted?.admission || !terminal) {
+    if (!admitted?.anchor || !terminal?.anchor) {
       throw new Error("expected admitted turn transcript");
     }
 
-    const afterTurn = vi.fn(async () => undefined);
+    const commitTurn = vi.fn(async () => ({ status: "committed" as const }));
     const engine: ContextEngine = {
-      info: { id: "test", name: "Test" },
+      info: {
+        id: "test",
+        name: "Test",
+        transcriptSemantics: {
+          currentTurnFence: "before-current-turn-entry-v1",
+          turnAdvancementIdempotency: "atomic-idempotent-v1",
+        },
+      },
       ingest: async () => ({ ingested: true }),
       assemble: async ({ messages }) => ({ messages, estimatedTokens: 0 }),
       compact: async () => ({ ok: true, compacted: false }),
-      afterTurn,
+      commitTurn,
     };
     const lease = {
       engine,
       effectiveEngine: engine,
+      effectiveEngineId: "test",
       effectiveEnginePluginId: undefined,
       degraded: false,
+      degradedReason: undefined,
+      selectForHost: vi.fn(),
+      degradeBeforeStart: vi.fn(),
+      begin: vi.fn(),
       deferDisposalUntil: () => undefined,
       dispose: async () => undefined,
     } satisfies ContextEngineLogicalTurnLease;
+    const admission = {
+      ...admitted.anchor,
+      logicalTurnId: "logical-turn-1",
+      role: "user" as const,
+    };
     const baseFacts = {
-      admission: admitted.admission,
-      terminalEntryId: terminal.messageId,
+      boundary: { admission, terminal: terminal.anchor },
       sessionIdUsed: target.sessionId,
       sessionKey: target.sessionKey,
       sessionTarget: target,
@@ -78,27 +94,30 @@ describe("accepted context-engine turn finalization", () => {
 
     await finalizeAcceptedContextEngineTurn({ facts: baseFacts, lease });
 
-    expect(afterTurn).toHaveBeenCalledOnce();
-    expect(afterTurn.mock.calls[0]?.[0].messages.map(messageText)).toEqual([
+    expect(commitTurn).toHaveBeenCalledOnce();
+    expect(commitTurn.mock.calls[0]?.[0].messages.map(messageText)).toEqual([
       "prior",
       "current",
       "answer",
     ]);
-    expect(afterTurn.mock.calls[0]?.[0].prePromptMessageCount).toBe(1);
+    expect(commitTurn.mock.calls[0]?.[0].prePromptMessageCount).toBe(1);
 
     const warn = vi.fn();
     await finalizeAcceptedContextEngineTurn({
       facts: {
         ...baseFacts,
-        admission: { ...admitted.admission, rawSeq: admitted.admission.rawSeq + 1 },
+        boundary: {
+          ...baseFacts.boundary,
+          admission: { ...admission, rawSeq: admission.rawSeq + 1 },
+        },
       },
       lease,
       warn,
     });
 
-    expect(afterTurn).toHaveBeenCalledOnce();
+    expect(commitTurn).toHaveBeenCalledOnce();
     expect(warn).toHaveBeenCalledWith(
-      "[context-engine] skipped accepted turn advancement: accepted context-engine transcript admission is stale",
+      "[context-engine] skipped accepted turn advancement: accepted context-engine transcript range is stale",
     );
   });
 });

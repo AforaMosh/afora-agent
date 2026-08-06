@@ -1983,7 +1983,7 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
       bootstrapContextRunKind: "heartbeat",
     },
   ] as const)(
-    "keeps $name turns heartbeat-classified through afterTurn maintenance",
+    "returns an exact terminal anchor for $name turns without finalizing inside Codex",
     async (testCase) => {
       const workspaceDir = path.join(tempDir, "workspace");
       const afterTurn = vi.fn(
@@ -2007,39 +2007,18 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
       const run = runCodexAppServerAttempt(params);
       await harness.waitForMethod("turn/start");
       await harness.completeTurn();
-      await run;
+      const result = await run;
 
-      expect(afterTurn).toHaveBeenCalledTimes(1);
-      const afterTurnCall = requireFirstCallArg(afterTurn, "afterTurn") as Parameters<
-        NonNullable<ContextEngine["afterTurn"]>
-      >[0];
-      expect(afterTurnCall.sessionId).toBe("session-1");
-      expect(afterTurnCall.sessionKey).toBe("agent:main:session-1");
-      expect(afterTurnCall.prePromptMessageCount).toBe(0);
-      expect(afterTurnCall.tokenBudget).toBe(111);
-      expect(afterTurnCall.isHeartbeat).toBe(true);
-      expect(afterTurnCall.runtimeSettings).toMatchObject({
-        runtime: { mode: "degraded" },
-        model: {
-          requested: "gpt-5.4-codex-primary",
-          resolved: "gpt-5.4-codex",
-        },
-        diagnostics: {
-          fallbackReason: "provider_unavailable",
-          degradedReason: "context_overflow",
-        },
+      expect(result.contextEngineTerminalAnchor).toMatchObject({
+        sessionId: "session-1",
+        sessionKey: "agent:main:session-1",
       });
-      expect(afterTurnCall.messages.some((message) => message.role === "user")).toBe(true);
-      expect(afterTurnCall.messages.some((message) => message.role === "assistant")).toBe(true);
-      expect(maintain).toHaveBeenCalledTimes(1);
-      const maintainCall = requireFirstCallArg(maintain, "maintain") as Parameters<
-        NonNullable<ContextEngine["maintain"]>
-      >[0];
-      expect(maintainCall.runtimeSettings).toBe(afterTurnCall.runtimeSettings);
+      expect(afterTurn).not.toHaveBeenCalled();
+      expect(maintain).not.toHaveBeenCalled();
     },
   );
 
-  it("records Codex turn facts for the outer fallback owner", async () => {
+  it("returns the terminal anchor needed by the outer fallback owner", async () => {
     const workspaceDir = path.join(tempDir, "workspace");
     const afterTurn = vi.fn(
       async (_params: Parameters<NonNullable<ContextEngine["afterTurn"]>>[0]) => undefined,
@@ -2049,27 +2028,21 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
     const harness = createStartedThreadHarness();
     const params = await createSqliteParams(workspaceDir, "deferred-after-turn");
     params.contextEngine = contextEngine;
-    const contextEngineTurnAttempt = {};
-    params.contextEngineTurnAttempt = contextEngineTurnAttempt;
+    const onContextEngineTurnCandidate = vi.fn();
+    params.onContextEngineTurnCandidate = onContextEngineTurnCandidate;
 
     const run = runCodexAppServerAttempt(params);
     await harness.waitForMethod("turn/start");
     await harness.completeTurn();
-    await run;
+    const result = await run;
 
     expect(afterTurn).not.toHaveBeenCalled();
     expect(maintain).not.toHaveBeenCalled();
-    expect(contextEngineTurnAttempt).toMatchObject({
-      facts: {
-        sessionIdUsed: params.sessionId,
-        promptError: false,
-        aborted: false,
-        yieldAborted: false,
-      },
+    expect(onContextEngineTurnCandidate).not.toHaveBeenCalled();
+    expect(result.contextEngineTerminalAnchor).toMatchObject({
+      sessionId: params.sessionId,
+      sessionKey: params.sessionKey,
     });
-    expect(contextEngineTurnAttempt.facts?.admission).toBe(
-      params.userTurnTranscriptRecorder?.getAdmissionReceipt(),
-    );
   });
 
   it("reloads mirrored history after bootstrap mutates the session transcript", async () => {
@@ -2110,10 +2083,7 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
       "assistant",
       "assistant",
     ]);
-    const afterTurnParams = requireFirstCallArg(afterTurn, "afterTurn") as Parameters<
-      NonNullable<ContextEngine["afterTurn"]>
-    >[0];
-    expect(afterTurnParams.prePromptMessageCount).toBe(2);
+    expect(afterTurn).not.toHaveBeenCalled();
     expectRequestInputTextContains(harness, "bootstrap context");
   });
 

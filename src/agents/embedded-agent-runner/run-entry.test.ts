@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
-import type { ContextEngineTurnAttemptHolder } from "../harness/context-engine-turn-attempt.js";
+import type { ContextEngineTurnAttemptFacts } from "../harness/context-engine-turn-attempt.js";
 import type { EmbeddedAgentRunResult } from "./types.js";
 
 type CandidateOptions = {
   allowTransientCooldownProbe?: boolean;
   isFinalFallbackAttempt?: boolean;
-  contextEngineTurnAttempt: ContextEngineTurnAttemptHolder;
+  onContextEngineTurnCandidate: (facts: ContextEngineTurnAttemptFacts) => void;
 };
 
 type FallbackRunnerParams = {
@@ -87,14 +87,43 @@ function makeResult(params: {
   };
 }
 
-function recordTurnAttempt(holder: ContextEngineTurnAttemptHolder, label: string): void {
-  holder.facts = {
+function recordTurnAttempt(
+  record: (facts: ContextEngineTurnAttemptFacts) => void,
+  label: string,
+): void {
+  record({
+    boundary: {
+      admission: {
+        agentId: "main",
+        sessionId: label,
+        sessionKey: `agent:main:${label}`,
+        storePath: `/${label}.sqlite`,
+        generation: "generation-1",
+        entryId: `${label}-user`,
+        rawSeq: 1,
+        effectiveParentId: null,
+        activeMessagePosition: 0,
+        logicalTurnId: `${label}-turn`,
+        role: "user",
+      },
+      terminal: {
+        agentId: "main",
+        sessionId: label,
+        sessionKey: `agent:main:${label}`,
+        storePath: `/${label}.sqlite`,
+        generation: "generation-1",
+        entryId: `${label}-assistant`,
+        rawSeq: 2,
+        effectiveParentId: `${label}-user`,
+        activeMessagePosition: 1,
+      },
+    },
     sessionIdUsed: label,
     sessionFile: `${label}.jsonl`,
     promptError: false,
     aborted: false,
     yieldAborted: false,
-  };
+  });
 }
 
 describe("runEmbeddedAgentEntry", () => {
@@ -261,7 +290,7 @@ describe("runEmbeddedAgentEntry", () => {
       sessionOverride: { kind: "preserve" },
       runCandidate: async (provider, model, options) => {
         const label = provider === "primary-provider" ? "primary" : "fallback";
-        recordTurnAttempt(options.contextEngineTurnAttempt, label);
+        recordTurnAttempt(options.onContextEngineTurnCandidate, label);
         if (label === "primary") {
           primaryReleased = true;
         } else {
@@ -312,7 +341,7 @@ describe("runEmbeddedAgentEntry", () => {
       behavior: { kind: "command-rpc", hasCommittedSideEffect: () => true },
       sessionOverride: { kind: "preserve" },
       runCandidate: async (provider, model, options) => {
-        recordTurnAttempt(options.contextEngineTurnAttempt, "candidate");
+        recordTurnAttempt(options.onContextEngineTurnCandidate, "candidate");
         return makeResult({ provider, model, classification: "empty" });
       },
     });
@@ -344,7 +373,7 @@ describe("runEmbeddedAgentEntry", () => {
       behavior: { kind: "command-rpc", hasCommittedSideEffect: () => false },
       sessionOverride: { kind: "preserve" },
       runCandidate: async (provider, model, options) => {
-        recordTurnAttempt(options.contextEngineTurnAttempt, provider);
+        recordTurnAttempt(options.onContextEngineTurnCandidate, provider);
         return makeResult({ provider, model, classification: "empty" });
       },
     });
@@ -383,7 +412,7 @@ describe("runEmbeddedAgentEntry", () => {
       behavior: { kind: "command-rpc", hasCommittedSideEffect: () => true },
       sessionOverride: { kind: "preserve" },
       runCandidate: async (provider, model, options) => {
-        recordTurnAttempt(options.contextEngineTurnAttempt, "candidate");
+        recordTurnAttempt(options.onContextEngineTurnCandidate, "candidate");
         return makeResult({ provider, model, meta });
       },
     });
@@ -422,7 +451,7 @@ describe("runEmbeddedAgentEntry", () => {
         },
         sessionOverride: { kind: "preserve" },
         runCandidate: async (provider, model, options) => {
-          recordTurnAttempt(options.contextEngineTurnAttempt, "candidate");
+          recordTurnAttempt(options.onContextEngineTurnCandidate, "candidate");
           return makeResult({ provider, model, classification: "empty" });
         },
       }),

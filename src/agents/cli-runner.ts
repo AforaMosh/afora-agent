@@ -417,7 +417,10 @@ async function persistCliAssistantTranscript(params: {
     cacheWrite?: number;
     total?: number;
   };
-}): Promise<{ owned: boolean; terminalEntryId?: string }> {
+}): Promise<{
+  owned: boolean;
+  terminalAnchor?: import("../config/sessions/session-accessor.js").TranscriptEntryAnchor;
+}> {
   const { runParams } = params;
   if (!runParams.persistAssistantTranscript || !runParams.sessionKey || !params.text) {
     return { owned: false };
@@ -455,7 +458,7 @@ async function persistCliAssistantTranscript(params: {
       log.warn(`CLI assistant transcript persistence skipped: ${result.reason}`);
       return { owned: result.code === "blocked" || result.code === "session-rebound" };
     }
-    return { owned: true, terminalEntryId: result.messageId };
+    return { owned: true, ...(result.anchor ? { terminalAnchor: result.anchor } : {}) };
   } catch (error) {
     log.warn(`CLI assistant transcript persistence failed: ${formatErrorMessage(error)}`);
     return { owned: false };
@@ -478,7 +481,7 @@ async function finalizeCliContextEngineTurn(params: {
   context: PreparedCliRunContext;
   historyMessages: unknown[];
   assistantText: string;
-  terminalEntryId?: string;
+  terminalAnchor?: import("../config/sessions/session-accessor.js").TranscriptEntryAnchor;
   output: Awaited<
     ReturnType<typeof import("./cli-runner/execute.runtime.js").executePreparedCliRun>
   >;
@@ -545,23 +548,25 @@ async function finalizeCliContextEngineTurn(params: {
       context.contextEngineDeferredTurnMaintenance = deferredTurnMaintenance;
     }
   };
-  if (runParams.contextEngineTurnAttempt) {
-    runParams.contextEngineTurnAttempt.facts = {
-      admission: runParams.userTurnTranscriptRecorder?.getAdmissionReceipt(),
-      terminalEntryId: params.terminalEntryId,
-      sessionIdUsed: runParams.sessionId,
-      sessionKey: runParams.sessionKey,
-      sessionTarget: runParams.sessionTarget,
-      sessionFile: runParams.sessionFile,
-      promptError: false,
-      aborted: runParams.abortSignal?.aborted === true,
-      yieldAborted: false,
-      contextEngineHostSupport,
-      providerId: runParams.provider,
-      modelId: context.modelId,
-      config: context.contextEngineConfig,
-      isHeartbeat: isHeartbeatLifecycleRunKind(runParams.bootstrapContextRunKind),
-    };
+  const admission = runParams.userTurnTranscriptRecorder?.getAdmissionReceipt();
+  if (runParams.onContextEngineTurnCandidate) {
+    if (admission && params.terminalAnchor) {
+      runParams.onContextEngineTurnCandidate({
+        boundary: { admission, terminal: params.terminalAnchor },
+        sessionIdUsed: runParams.sessionId,
+        sessionKey: runParams.sessionKey,
+        sessionTarget: runParams.sessionTarget,
+        sessionFile: runParams.sessionFile,
+        promptError: false,
+        aborted: runParams.abortSignal?.aborted === true,
+        yieldAborted: false,
+        contextEngineHostSupport,
+        providerId: runParams.provider,
+        modelId: context.modelId,
+        config: context.contextEngineConfig,
+        isHeartbeat: isHeartbeatLifecycleRunKind(runParams.bootstrapContextRunKind),
+      });
+    }
   } else {
     await finalizeTurn({
       messagesSnapshot: [...prePromptMessages, ...turnMessages],
@@ -1500,7 +1505,7 @@ export async function runPreparedCliAgent(
           context,
           historyMessages: context.contextEngine ? contextEngineHistoryMessages : historyMessages,
           assistantText,
-          terminalEntryId: assistantTranscript.terminalEntryId,
+          terminalAnchor: assistantTranscript.terminalAnchor,
           output,
         });
         // A stateless backend may emit an id, but it never becomes continuity.

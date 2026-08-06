@@ -34,7 +34,10 @@ import type {
   SessionTranscriptUpdateMode,
 } from "../config/sessions/transcript.js";
 
-export type { TranscriptTurnAdmission } from "../config/sessions/session-accessor.js";
+export type {
+  TranscriptEntryAnchor,
+  TranscriptTurnAdmission,
+} from "../config/sessions/session-accessor.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import { extractAssistantVisibleText } from "../shared/chat-message-content.js";

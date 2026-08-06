@@ -10,6 +10,7 @@ import {
   migrateSessionEntries,
   parseSessionEntries,
 } from "openclaw/plugin-sdk/agent-sessions";
+import { readCodexSessionTranscriptEventsBeforeAdmission } from "openclaw/plugin-sdk/codex-session-transcript-runtime";
 import {
   getSessionEntry,
   parseSqliteSessionFileMarker,
@@ -18,6 +19,7 @@ import {
 } from "openclaw/plugin-sdk/session-store-runtime";
 import {
   readSessionTranscriptEvents,
+  type TranscriptTurnAdmission,
   type SessionTranscriptTargetParams,
 } from "openclaw/plugin-sdk/session-transcript-runtime";
 import { sanitizeCodexHistoryImagePayloads } from "./image-payload-sanitizer.js";
@@ -37,9 +39,10 @@ export type CodexMirroredSessionHistoryTarget = {
 /** Returns sanitized session-context messages for a Codex mirrored session file. */
 export async function readCodexMirroredSessionHistoryMessages(
   target: CodexMirroredSessionHistoryTarget,
+  admission?: TranscriptTurnAdmission,
 ): Promise<AgentMessage[] | undefined> {
   try {
-    const entries = await readCodexMirroredSessionEntries(target);
+    const entries = await readCodexMirroredSessionEntries(target, admission);
     if (entries.length === 0) {
       return [];
     }
@@ -81,6 +84,7 @@ export async function readCodexMirroredSessionHistoryMessages(
 
 async function readCodexMirroredSessionEntries(
   target: CodexMirroredSessionHistoryTarget,
+  admission?: TranscriptTurnAdmission,
 ): Promise<SessionEntry[]> {
   if (target.sessionTarget) {
     const { agentId, sessionId, sessionKey, storePath } = target.sessionTarget;
@@ -95,12 +99,15 @@ async function readCodexMirroredSessionEntries(
     ) {
       return [];
     }
-    return (await readSessionTranscriptEvents({
+    const transcriptTarget = {
       agentId,
       sessionId,
       sessionKey,
       storePath,
-    })) as SessionEntry[];
+    };
+    return (await (admission
+      ? readCodexSessionTranscriptEventsBeforeAdmission(transcriptTarget, admission)
+      : readSessionTranscriptEvents(transcriptTarget))) as SessionEntry[];
   }
   const sqliteMarker = parseSqliteSessionFileMarker(target.sessionFile);
   if (sqliteMarker) {
@@ -114,12 +121,15 @@ async function readCodexMirroredSessionEntries(
     if (!sessionKey) {
       return [];
     }
-    return (await readSessionTranscriptEvents({
+    const transcriptTarget = {
       agentId: sqliteMarker.agentId,
       sessionId: sqliteMarker.sessionId,
       sessionKey,
       storePath: sqliteMarker.storePath,
-    })) as SessionEntry[];
+    };
+    return (await (admission
+      ? readCodexSessionTranscriptEventsBeforeAdmission(transcriptTarget, admission)
+      : readSessionTranscriptEvents(transcriptTarget))) as SessionEntry[];
   }
   return parseSessionEntries(await fs.readFile(target.sessionFile, "utf-8")) as SessionEntry[];
 }

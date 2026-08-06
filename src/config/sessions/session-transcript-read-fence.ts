@@ -13,6 +13,12 @@ export class SessionTranscriptReadFenceError extends Error {
   }
 }
 
+export type SessionTranscriptReadFence = Readonly<{
+  admission: UserTurnTranscriptAdmissionReceipt;
+  beforeActiveMessagePosition: number;
+  beforeRawSeq: number;
+}>;
+
 export function runWithSessionTranscriptReadFence<T>(
   receipt: UserTurnTranscriptAdmissionReceipt | undefined,
   run: () => T,
@@ -34,7 +40,8 @@ export function resolveSqliteSessionTranscriptReadFence(params: {
   database: OpenClawAgentDatabase;
   agentId: string;
   sessionId: string;
-}): number | undefined {
+  sessionKey?: string;
+}): SessionTranscriptReadFence | undefined {
   const receipt = resolveSessionTranscriptReadFence(params);
   if (!receipt) {
     return undefined;
@@ -56,19 +63,28 @@ export function resolveSqliteSessionTranscriptReadFence(params: {
       )
       .select(["active.event_seq", "active.message_position", "event.event_json"])
       .where("identity.session_id", "=", params.sessionId)
-      .where("identity.event_id", "=", receipt.admittedEntryId)
+      .where("identity.event_id", "=", receipt.entryId)
       .limit(1),
   );
   if (boundary?.message_position === null || boundary?.message_position === undefined) {
     throw new SessionTranscriptReadFenceError(
-      `Current-turn transcript admission is no longer a visible message: ${receipt.admittedEntryId}`,
+      `Current-turn transcript admission is no longer a visible message: ${receipt.entryId}`,
     );
   }
   const event = JSON.parse(boundary.event_json) as { type?: unknown; message?: { role?: unknown } };
   if (event.type !== "message" || event.message?.role !== "user") {
     throw new SessionTranscriptReadFenceError(
-      `Current-turn transcript admission is not a user message: ${receipt.admittedEntryId}`,
+      `Current-turn transcript admission is not a user message: ${receipt.entryId}`,
     );
   }
-  return boundary.event_seq;
+  if (params.sessionKey !== undefined && params.sessionKey !== receipt.sessionKey) {
+    throw new SessionTranscriptReadFenceError(
+      "Current-turn transcript admission belongs to a different session key",
+    );
+  }
+  return {
+    admission: receipt,
+    beforeActiveMessagePosition: boundary.message_position,
+    beforeRawSeq: boundary.event_seq,
+  };
 }

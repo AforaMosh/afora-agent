@@ -27,7 +27,6 @@ import {
   assembleHarnessContextEngine,
   bootstrapHarnessContextEngine,
   finalizeHarnessContextEngineTurn,
-  selectHarnessContextEngineForCurrentTurn,
 } from "./context-engine-lifecycle.js";
 
 function registerTestContextEngine(
@@ -590,44 +589,6 @@ describe("harness context engine lifecycle", () => {
       const ingestParams = call[0] as { isHeartbeat?: boolean };
       expect(ingestParams.isHeartbeat).toBe(true);
     }
-  });
-
-  it("uses the legacy path before invoking an engine without current-turn fence semantics", async () => {
-    const warn = vi.fn();
-    const bootstrap = vi.fn(async () => ({ bootstrapped: true }));
-    const assemble = vi.fn(async (params: { messages: AgentMessage[] }) => ({
-      messages: params.messages,
-      estimatedTokens: 0,
-    }));
-    const engine = createContextEngine({ bootstrap, assemble });
-
-    const selected = selectHarnessContextEngineForCurrentTurn({
-      contextEngine: engine,
-      hasUserTurnRecorder: true,
-      warn,
-    });
-    await bootstrapHarnessContextEngine({
-      hadSessionFile: true,
-      contextEngine: selected,
-      sessionId: sessionParams.sessionId,
-      sessionKey: sessionParams.sessionKey,
-      sessionFile: sessionParams.sessionFile,
-      warn,
-    });
-    await assembleHarnessContextEngine({
-      contextEngine: selected,
-      sessionId: sessionParams.sessionId,
-      sessionKey: sessionParams.sessionKey,
-      messages: [],
-      modelId: "test-model",
-    });
-
-    expect(selected).toBeUndefined();
-    expect(bootstrap).not.toHaveBeenCalled();
-    expect(assemble).not.toHaveBeenCalled();
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining("using the legacy context path for this logical turn"),
-    );
   });
 
   it.each([

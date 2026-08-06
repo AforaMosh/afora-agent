@@ -4,6 +4,7 @@ import type {
   SessionTranscriptTurnExpectedState,
   SessionTranscriptTurnLifecyclePatch,
 } from "../config/sessions/session-transcript-turn-lifecycle.types.js";
+import type { TranscriptEntryAnchor } from "../config/sessions/transcript-entry-anchor.js";
 import type { TranscriptTurnAdmission } from "../config/sessions/transcript-turn-admission.js";
 import type { SessionEntry } from "../config/sessions/types.js";
 import type { MediaFactInput } from "../media/media-facts.js";
@@ -120,6 +121,7 @@ export type PersistUserTurnTranscriptParams = {
   sessionStore?: Record<string, UserTurnSessionEntry>;
   storePath?: string;
   agentId: string;
+  logicalTurnId?: string;
   threadId?: string | number;
   cwd?: string;
   config?: unknown;
@@ -156,7 +158,7 @@ export type UserTurnTranscriptRecorder = {
   markRuntimePersistencePending: (pending: Promise<void>) => void;
   markRuntimePersisted: (
     message?: PersistedUserTurnMessage,
-    receipt?: UserTurnTranscriptAdmissionReceipt,
+    anchor?: TranscriptEntryAnchor | UserTurnTranscriptAdmissionReceipt,
   ) => void;
   markBlocked: () => void;
   hasPersisted: () => boolean;

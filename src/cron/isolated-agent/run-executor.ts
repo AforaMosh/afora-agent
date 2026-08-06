@@ -7,7 +7,7 @@ import type { FastModeAutoProgressState } from "../../agents/fast-mode.js";
 import { createContextEngineLogicalTurnLease } from "../../agents/harness/context-engine-logical-turn.js";
 import {
   finalizeAcceptedContextEngineTurn,
-  type ContextEngineTurnAttemptHolder,
+  type ContextEngineTurnAttemptFacts,
 } from "../../agents/harness/context-engine-turn-attempt.js";
 import { runAgentHarnessBeforeMessageWriteHook } from "../../agents/harness/hook-helpers.js";
 import type { ModelCatalogEntry } from "../../agents/model-catalog.types.js";
@@ -365,7 +365,7 @@ function createCronPromptExecutor(params: {
       agentDir: params.agentDir,
       workspaceDir: params.workspaceDir,
     });
-    let acceptedContextEngineTurnAttempt: ContextEngineTurnAttemptHolder | undefined;
+    let acceptedContextEngineTurnCandidate: ContextEngineTurnAttemptFacts | undefined;
     const fallbackResult = await runWithModelFallback({
       cfg: params.cfgWithAgentDefaults,
       provider: params.liveSelection.provider,
@@ -412,8 +412,7 @@ function createCronPromptExecutor(params: {
       canFallbackAfterError: () => !currentAttemptCommittedMedia(),
       mergeExhaustedResult: mergeEmbeddedAgentRunResultForModelFallbackExhaustion,
       run: async (providerOverride, modelOverride, runOptions) => {
-        const contextEngineTurnAttempt: ContextEngineTurnAttemptHolder = {};
-        acceptedContextEngineTurnAttempt = contextEngineTurnAttempt;
+        let contextEngineTurnCandidate: ContextEngineTurnAttemptFacts | undefined;
         attemptMediaTaskIds = getGeneratedMediaTaskIdsForSessionKey(params.runSessionKey);
         if (params.abortSignal?.aborted) {
           throw new Error(params.abortReason());
@@ -566,7 +565,9 @@ function createCronPromptExecutor(params: {
                 fastModeAutoProgressState,
                 isFinalFallbackAttempt: runOptions?.isFinalFallbackAttempt,
                 contextEngineLogicalTurnLease,
-                contextEngineTurnAttempt,
+                onContextEngineTurnCandidate: (facts) => {
+                  contextEngineTurnCandidate = facts;
+                },
                 userTurnTranscriptRecorder,
                 suppressNextUserMessagePersistence:
                   userTurnTranscriptRecorder.hasPersisted() ||
@@ -576,6 +577,7 @@ function createCronPromptExecutor(params: {
           bootstrapPromptWarningSignaturesSeen = resolveBootstrapWarningSignaturesSeen(
             result.meta?.systemPromptReport,
           );
+          acceptedContextEngineTurnCandidate = contextEngineTurnCandidate;
           return result;
         }
         const { resolveFastModeState, runEmbeddedAgent } = await loadCronEmbeddedRuntime();
@@ -677,7 +679,9 @@ function createCronPromptExecutor(params: {
           forceMessageTool: sourceDelivery.messageTool.force,
           allowTransientCooldownProbe: runOptions?.allowTransientCooldownProbe,
           contextEngineLogicalTurnLease,
-          contextEngineTurnAttempt,
+          onContextEngineTurnCandidate: (facts) => {
+            contextEngineTurnCandidate = facts;
+          },
           abortSignal: params.abortSignal,
           onExecutionStarted: params.onExecutionStarted,
           onExecutionPhase: params.onExecutionPhase,
@@ -691,6 +695,7 @@ function createCronPromptExecutor(params: {
         bootstrapPromptWarningSignaturesSeen = resolveBootstrapWarningSignaturesSeen(
           result.meta?.systemPromptReport,
         );
+        acceptedContextEngineTurnCandidate = contextEngineTurnCandidate;
         return result;
       },
     }).catch(async (error) => {
@@ -699,14 +704,14 @@ function createCronPromptExecutor(params: {
     });
     try {
       if (
-        acceptedContextEngineTurnAttempt?.facts &&
+        acceptedContextEngineTurnCandidate &&
         shouldAdvanceCronContextEngineTurn({
           outcome: fallbackResult.outcome,
           result: fallbackResult.result,
         })
       ) {
         await finalizeAcceptedContextEngineTurn({
-          facts: acceptedContextEngineTurnAttempt.facts,
+          facts: acceptedContextEngineTurnCandidate,
           lease: contextEngineLogicalTurnLease,
         });
       }
