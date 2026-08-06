@@ -183,6 +183,7 @@ describe("runEmbeddedAgentEntry", () => {
         model: string;
         isFallbackRetry: boolean;
       }> = [];
+      const candidateLeases: object[] = [];
       const reconciled: Array<{ provider: string; model: string }> = [];
       const result = await runEmbeddedAgentEntry({
         selection: { cfg, provider: "primary-provider", model: "primary-model" },
@@ -217,6 +218,7 @@ describe("runEmbeddedAgentEntry", () => {
         },
         runCandidate: async (provider, model, options) => {
           candidateCalls.push({ provider, model, isFallbackRetry: options.isFallbackRetry });
+          candidateLeases.push(options.contextEngineLogicalTurnLease);
           return makeResult({
             provider,
             model,
@@ -226,7 +228,7 @@ describe("runEmbeddedAgentEntry", () => {
       });
       await result.settleSessionOverride();
       await result.settleSessionOverride();
-      return { result, candidateCalls, reconciled };
+      return { result, candidateCalls, candidateLeases, reconciled };
     };
 
     const channel = await runMode("channel-delivery");
@@ -238,6 +240,7 @@ describe("runEmbeddedAgentEntry", () => {
     expect(channel.result.model).toBe("fallback-model");
     expect(channel.result.attempts).toEqual(command.result.attempts);
     expect(channel.result.terminal).toEqual(command.result.terminal);
+    expect(channel.candidateLeases[0]).not.toBe(channel.candidateLeases[1]);
     expect(channel.reconciled).toEqual(command.reconciled);
     expect(channel.reconciled).toEqual([
       { provider: "fallback-provider", model: "fallback-model" },

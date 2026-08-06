@@ -221,6 +221,35 @@ describe("runCronIsolatedAgentTurn — LiveSessionModelSwitchError retry (#57206
     );
   });
 
+  it("keeps a resolved fallback profile automatic when it differs from the stored pin", async () => {
+    resolveSessionAuthProfileOverrideMock.mockResolvedValue("profile-b");
+    resolveCronSessionMock.mockReturnValue(
+      makeCronSession({
+        sessionEntry: makeCronSessionEntry({
+          authProfileOverride: "profile-a",
+        }),
+        isNewSession: false,
+      }),
+    );
+    runWithModelFallbackMock.mockImplementation(async ({ provider, model, run }) => ({
+      result: await run(provider, model),
+      provider,
+      model,
+      attempts: [],
+    }));
+
+    const result = await runCronIsolatedAgentTurn(makeParams());
+
+    expect(result.status).toBe("ok");
+    expect(requireEmbeddedAgentCall(0)).toMatchObject({
+      authProfileId: "profile-b",
+      authProfileIdSource: "auto",
+    });
+    expect(runWithModelFallbackMock).toHaveBeenCalledWith(
+      expect.objectContaining({ userLockedAuthProfileId: undefined }),
+    );
+  });
+
   it("retries with switched auth profile state from LiveSessionModelSwitchError", async () => {
     resolveSessionAuthProfileOverrideMock.mockResolvedValue("profile-a");
     const cronSession = makeCronSession({

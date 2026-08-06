@@ -128,19 +128,7 @@ describe("context-engine turn outbox", () => {
       database,
       engine,
       engineId: "test",
-      warn,
-    });
-
-    expect(commitTurn.mock.calls.map(([call]) => call.advancementKey)).toEqual([
-      "session-a:z-first",
-      "session-b:1",
-      "session-a:z-first",
-    ]);
-
-    await drainContextEngineTurnOutbox({
-      database,
-      engine,
-      engineId: "test",
+      limit: 2,
       warn,
     });
 
@@ -149,6 +137,22 @@ describe("context-engine turn outbox", () => {
       "session-b:1",
       "session-a:z-first",
       "session-a:a-second",
+    ]);
+
+    await drainContextEngineTurnOutbox({
+      database,
+      engine,
+      engineId: "test",
+      limit: 1,
+      warn,
+    });
+
+    expect(commitTurn.mock.calls.map(([call]) => call.advancementKey)).toEqual([
+      "session-a:z-first",
+      "session-b:1",
+      "session-a:z-first",
+      "session-a:a-second",
+      "session-a:3",
     ]);
   });
 });

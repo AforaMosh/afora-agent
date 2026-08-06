@@ -11,7 +11,10 @@ import { resolveSessionAgentIds } from "../agent-scope.js";
 import type { ToolOutcomeObservation } from "../agent-tools.before-tool-call.js";
 import type { FailoverReason } from "../embedded-agent-helpers.js";
 import { isStrictAgenticExecutionContractActive } from "../execution-contract.js";
-import { selectContextEngineForTranscriptHost } from "../harness/context-engine-logical-turn.js";
+import {
+  createContextEngineLogicalTurnLease,
+  selectContextEngineForTranscriptHost,
+} from "../harness/context-engine-logical-turn.js";
 import type { McpAppChannelView } from "../mcp-ui-resource.js";
 import { runAgentCleanupStep } from "../run-cleanup-timeout.js";
 import { resolveToolLoopDetectionConfig } from "../tool-loop-detection-config.js";
@@ -261,13 +264,19 @@ export async function runPreparedEmbeddedLoop(
     harnessOwnsTransport: () => preparedRuntime.snapshot().pluginHarnessOwnsTransport,
     getApiKeyInfo,
   });
-  // Pin the effective engine only after validating the first prepared host.
-  // Later fallback hosts revalidate against the started lease before dispatch.
+  const ownsContextEngineLogicalTurnLease = params.contextEngineLogicalTurnLease === undefined;
   const contextEngineLogicalTurnLease =
     params.contextEngineLogicalTurnLease ??
-    (() => {
-      throw new Error("Embedded run is missing its logical-turn context-engine lease.");
-    })();
+    (await measureEmbeddedAgentPreparation(
+      "context-engine",
+      () =>
+        createContextEngineLogicalTurnLease({
+          config: params.config,
+          agentDir,
+          workspaceDir: resolvedWorkspace,
+        }),
+      { config: params.config },
+    ));
   const contextEngine = selectContextEngineForTranscriptHost({
     lease: contextEngineLogicalTurnLease,
     host: {
@@ -648,14 +657,14 @@ export async function runPreparedEmbeddedLoop(
     forgetPromptBuildDrainCacheForRun(params.runId);
     clearProviderPromptState(params.runId);
     stopRuntimeAuthRefreshTimer();
-    if (!params.contextEngineLogicalTurnLease) {
+    if (ownsContextEngineLogicalTurnLease) {
       await runAgentCleanupStep({
         runId: params.runId,
         sessionId: params.sessionId,
         step: "context-engine-dispose",
         log,
         cleanup: async () => {
-          await contextEngine.dispose?.();
+          await contextEngineLogicalTurnLease.dispose();
         },
       });
     }

@@ -604,9 +604,8 @@ export async function prepareCronRunContext(params: {
       job: input.job,
       cronSession,
     });
-    const hasSessionAuthProfileOverride = Boolean(
-      cronSession.sessionEntry.authProfileOverride?.trim(),
-    );
+    const storedAuthProfileId = cronSession.sessionEntry.authProfileOverride?.trim();
+    const hasSessionAuthProfileOverride = Boolean(storedAuthProfileId);
     const authProfileId =
       !hasSessionAuthProfileOverride &&
       !hasConfiguredAuthProfiles(cfgWithAgentDefaults) &&
@@ -641,7 +640,9 @@ export async function prepareCronRunContext(params: {
       }),
       authProfileId,
       authProfileIdSource: authProfileId
-        ? resolveSessionAuthProfileOverrideSource(cronSession.sessionEntry)
+        ? authProfileId === storedAuthProfileId
+          ? resolveSessionAuthProfileOverrideSource(cronSession.sessionEntry)
+          : "auto"
         : undefined,
     };
     const runtimePluginCandidates =

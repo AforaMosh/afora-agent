@@ -16,6 +16,12 @@ type ContextEngineTurnOutboxDatabase = Pick<
   "context_engine_turn_outbox"
 >;
 
+type PendingContextEngineTurn = Readonly<{
+  advancement_key: string;
+  payload_json: string;
+  session_id: string;
+}>;
+
 export type ContextEngineTurnOutboxPayload = Readonly<{
   boundary: TranscriptTurnBoundary;
   isHeartbeat: boolean;
@@ -83,7 +89,12 @@ export async function drainContextEngineTurnOutbox(params: {
   limit?: number;
   warn: (message: string) => void;
 }): Promise<void> {
-  if (typeof params.engine.commitTurn !== "function") {
+  const commitTurn = params.engine.commitTurn;
+  if (typeof commitTurn !== "function") {
+    return;
+  }
+  let remaining = Math.max(0, params.limit ?? 16);
+  if (remaining === 0) {
     return;
   }
   const db = outboxDb(params.database);
@@ -99,63 +110,87 @@ export async function drainContextEngineTurnOutbox(params: {
       .where("owner_plugin_id", params.ownerPluginId ? "=" : "is", params.ownerPluginId ?? null)
       .groupBy("session_id")
       .orderBy("oldest_enqueue_sequence", "asc")
-      .limit(params.limit ?? 16),
+      .limit(remaining),
   ).rows;
-  const rows = pendingSessions.flatMap(({ session_id }) => {
-    const row = executeSqliteQueryTakeFirstSync(
-      params.database.db,
-      db
-        .selectFrom("context_engine_turn_outbox")
-        .select(["advancement_key", "payload_json", "session_id"])
-        .where("engine_id", "=", params.engineId)
-        .where("owner_plugin_id", params.ownerPluginId ? "=" : "is", params.ownerPluginId ?? null)
-        .where("session_id", "=", session_id)
-        .orderBy(sql<number>`context_engine_turn_outbox.rowid`, "asc")
-        .limit(1),
-    );
-    return row ? [row] : [];
-  });
-  for (const row of rows) {
-    try {
-      const payload = JSON.parse(row.payload_json) as ContextEngineTurnOutboxPayload;
-      await params.engine.commitTurn({
-        advancementKey: row.advancement_key,
-        admission: payload.boundary.admission,
-        terminal: payload.boundary.terminal,
-        messages: payload.messages,
-        prePromptMessageCount: payload.prePromptMessageCount,
-        sessionId: payload.sessionId,
-        sessionKey: payload.sessionKey,
-        sessionTarget: {
-          agentId: payload.boundary.admission.agentId,
-          sessionId: payload.boundary.admission.sessionId,
-          sessionKey: payload.boundary.admission.sessionKey,
-          storePath: payload.boundary.admission.storePath,
-        },
-        isHeartbeat: payload.isHeartbeat,
-      });
-      executeSqliteQuerySync(
+  let activeSessionIds = pendingSessions.map(({ session_id }) => session_id);
+  while (remaining > 0 && activeSessionIds.length > 0) {
+    const continuingSessionIds: string[] = [];
+    for (const sessionId of activeSessionIds) {
+      if (remaining === 0) {
+        break;
+      }
+      const row = executeSqliteQueryTakeFirstSync(
         params.database.db,
         db
-          .deleteFrom("context_engine_turn_outbox")
-          .where("advancement_key", "=", row.advancement_key),
+          .selectFrom("context_engine_turn_outbox")
+          .select(["advancement_key", "payload_json", "session_id"])
+          .where("engine_id", "=", params.engineId)
+          .where("owner_plugin_id", params.ownerPluginId ? "=" : "is", params.ownerPluginId ?? null)
+          .where("session_id", "=", sessionId)
+          .orderBy(sql<number>`context_engine_turn_outbox.rowid`, "asc")
+          .limit(1),
       );
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      executeSqliteQuerySync(
-        params.database.db,
-        db
-          .updateTable("context_engine_turn_outbox")
-          .set((eb) => ({
-            attempt_count: eb("attempt_count", "+", 1),
-            last_attempt_at: Date.now(),
-            last_error: message,
-          }))
-          .where("advancement_key", "=", row.advancement_key),
-      );
-      params.warn(
-        `[context-engine] durable turn advancement remains queued: ${row.advancement_key}: ${message}`,
-      );
+      if (!row) {
+        continue;
+      }
+      remaining -= 1;
+      if (await commitPendingContextEngineTurn({ ...params, commitTurn, db, row })) {
+        continuingSessionIds.push(sessionId);
+      }
     }
+    activeSessionIds = continuingSessionIds;
+  }
+}
+
+async function commitPendingContextEngineTurn(
+  params: Omit<Parameters<typeof drainContextEngineTurnOutbox>[0], "limit"> & {
+    commitTurn: NonNullable<ContextEngine["commitTurn"]>;
+    db: ReturnType<typeof outboxDb>;
+    row: PendingContextEngineTurn;
+  },
+): Promise<boolean> {
+  const { row } = params;
+  try {
+    const payload = JSON.parse(row.payload_json) as ContextEngineTurnOutboxPayload;
+    await params.commitTurn({
+      advancementKey: row.advancement_key,
+      admission: payload.boundary.admission,
+      terminal: payload.boundary.terminal,
+      messages: payload.messages,
+      prePromptMessageCount: payload.prePromptMessageCount,
+      sessionId: payload.sessionId,
+      sessionKey: payload.sessionKey,
+      sessionTarget: {
+        agentId: payload.boundary.admission.agentId,
+        sessionId: payload.boundary.admission.sessionId,
+        sessionKey: payload.boundary.admission.sessionKey,
+        storePath: payload.boundary.admission.storePath,
+      },
+      isHeartbeat: payload.isHeartbeat,
+    });
+    executeSqliteQuerySync(
+      params.database.db,
+      params.db
+        .deleteFrom("context_engine_turn_outbox")
+        .where("advancement_key", "=", row.advancement_key),
+    );
+    return true;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    executeSqliteQuerySync(
+      params.database.db,
+      params.db
+        .updateTable("context_engine_turn_outbox")
+        .set((eb) => ({
+          attempt_count: eb("attempt_count", "+", 1),
+          last_attempt_at: Date.now(),
+          last_error: message,
+        }))
+        .where("advancement_key", "=", row.advancement_key),
+    );
+    params.warn(
+      `[context-engine] durable turn advancement remains queued: ${row.advancement_key}: ${message}`,
+    );
+    return false;
   }
 }
