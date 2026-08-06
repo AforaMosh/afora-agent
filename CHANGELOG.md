@@ -66,6 +66,7 @@ Docs: https://docs.openclaw.ai
 
 - **Realtime Talk output ownership:** keep provider terminal and clear events bound to the output that produced them across the gateway relay, meeting engine, Android, and Apple clients, and wait for the authoritative relay clear before admitting replacement Apple audio so late canceled frames cannot restart playback.
 - **macOS Realtime Talk fallback ownership:** prevent a superseded relay startup failure from projecting fallback state or replacing a newer native recognition owner.
+- **Voice mutation digest continuity:** persist per-effect revisions and advance delivery watermarks only through the exact sent batch so late effects and terminal status updates remain deliverable.
 - **Control UI agent and skill permissions:** gate Agents, Skills, Skill Workshop, and delayed mutation dispatches by the current Gateway method catalog and operator scopes while preserving read-only browsing and legacy Gateway compatibility. Fixes #119176. Thanks @shakkernerd.
 - **Guided onboarding skip-UI routing:** keep `openclaw onboard --skip-ui` and `openclaw setup --skip-ui` on guided onboarding while skipping both browser and terminal handoffs, instead of silently switching to the classic wizard. Thanks @shakkernerd.
 - **Telegram durable ingress:** preserve pre-identity control-lane ownership during replay and attempt each drain snapshot row only once per pass, preventing targeted commands from spinning the spool and blocking polling shutdown.

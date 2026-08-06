@@ -101,6 +101,12 @@ function effectStatus(event: TrustedToolExecutionEvent): ClientVoiceToolEffect["
   return event.terminalReason === "cancelled" ? "cancelled" : "failed";
 }
 
+function allocateEffectRevision(record: ClientVoiceSessionRecord): number {
+  const revision = record.nextEffectRevision;
+  record.nextEffectRevision += 1;
+  return revision;
+}
+
 function recordClientVoiceToolEffect(event: TrustedToolExecutionEvent): void {
   const runId = event.runId;
   if (!runId) {
@@ -130,8 +136,13 @@ function recordClientVoiceToolEffect(event: TrustedToolExecutionEvent): void {
         return;
       }
       if (event.type !== "tool.execution.started" && existing) {
-        existing.status = effectStatus(event);
+        const status = effectStatus(event);
+        if (existing.status === status && existing.finishedAt !== undefined) {
+          return;
+        }
+        existing.status = status;
         existing.finishedAt = event.ts;
+        existing.revision = allocateEffectRevision(record);
       } else if (event.mutatingAction === true && (!event.toolCallId || !existing)) {
         record.effects.push({
           runId,
@@ -139,7 +150,10 @@ function recordClientVoiceToolEffect(event: TrustedToolExecutionEvent): void {
           toolName: event.toolName,
           startedAt: event.ts,
           status: "started",
+          revision: allocateEffectRevision(record),
         });
+      } else {
+        return;
       }
       record.updatedAt = Date.now();
       writeRecordInTransaction(database, record);
@@ -214,6 +228,8 @@ export function createOrResumeClientVoiceSession(params: {
         updatedAt: now,
         consultRunIds: [],
         effects: [],
+        nextEffectRevision: 1,
+        digestDeliveredRevision: 0,
         transcriptFailureKeys: [],
       });
     },
@@ -547,13 +563,12 @@ const mutationDigestDeliveryOwner = new ClientVoiceMutationDigestOwner<OpenClawC
   attempt: async ({ agentId, voiceSessionId, context: config, signal }) => {
     const record = readRecord(agentId, voiceSessionId);
     if (!record) {
-      return true;
+      return "complete";
     }
     if (record.status !== "closed" || hasLiveConsultRun(record)) {
-      return false;
+      return "deferred";
     }
-    await deliverClientVoiceMutationDigest(record, config, signal);
-    return true;
+    return await deliverClientVoiceMutationDigest(record, config, signal);
   },
   warn: (message) => console.warn(`[talk] deferred voice mutation digest failed: ${message}`),
 });
