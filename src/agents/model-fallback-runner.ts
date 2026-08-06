@@ -303,12 +303,14 @@ async function runWithModelFallbackInternal<T>(
       const skipped = isFallbackCandidateSkipped({
         sessionId: params.sessionId,
         ...candidateRef,
+        authScope: userLockedAuthProfileId,
       });
       if (skipped) {
         const skipReason =
           getFallbackCandidateSkipReason({
             sessionId: params.sessionId,
             ...candidateRef,
+            authScope: userLockedAuthProfileId,
           }) ?? "auth";
         const reauthCommand = buildProviderReauthCommand(candidate.provider);
         const reauthHint = reauthCommand
@@ -659,6 +661,7 @@ async function runWithModelFallbackInternal<T>(
       markFallbackCandidateSkipped({
         sessionId: params.sessionId,
         ...candidateRef,
+        authScope: userLockedAuthProfileId,
         reason: normalized.reason,
       });
     }
