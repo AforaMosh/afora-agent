@@ -533,7 +533,7 @@ export function createAttemptTranscriptJournal(params: {
             const didAppend = accept(result as AppendResult);
             appended ||= didAppend;
           }
-          ownAssistant(group.assistantKey, true, results[0]?.anchor);
+          ownAssistant(group.assistantKey, true, results.at(-1)?.anchor);
         }
         pendingTools = undefined;
         const deferredReceipts: PersistenceReceipt[] = [];

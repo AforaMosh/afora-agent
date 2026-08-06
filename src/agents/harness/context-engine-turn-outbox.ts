@@ -1,3 +1,4 @@
+import { sql } from "kysely";
 import type { AgentMessage } from "../../../packages/agent-core/src/types.js";
 import type { TranscriptTurnBoundary } from "../../config/sessions/transcript-entry-anchor.js";
 import type { ContextEngine } from "../../context-engine/types.js";
@@ -91,11 +92,13 @@ export async function drainContextEngineTurnOutbox(params: {
     db
       .selectFrom("context_engine_turn_outbox")
       .select("session_id")
-      .select((expression) => expression.fn.min("created_at").as("oldest_created_at"))
+      // SQLite rowid preserves enqueue order among surviving pending rows.
+      // Use it instead of wall-clock timestamps, which can collide.
+      .select(sql<number>`MIN(context_engine_turn_outbox.rowid)`.as("oldest_enqueue_sequence"))
       .where("engine_id", "=", params.engineId)
       .where("owner_plugin_id", params.ownerPluginId ? "=" : "is", params.ownerPluginId ?? null)
       .groupBy("session_id")
-      .orderBy("oldest_created_at", "asc")
+      .orderBy("oldest_enqueue_sequence", "asc")
       .limit(params.limit ?? 16),
   ).rows;
   const rows = pendingSessions.flatMap(({ session_id }) => {
@@ -107,8 +110,7 @@ export async function drainContextEngineTurnOutbox(params: {
         .where("engine_id", "=", params.engineId)
         .where("owner_plugin_id", params.ownerPluginId ? "=" : "is", params.ownerPluginId ?? null)
         .where("session_id", "=", session_id)
-        .orderBy("created_at", "asc")
-        .orderBy("advancement_key", "asc")
+        .orderBy(sql<number>`context_engine_turn_outbox.rowid`, "asc")
         .limit(1),
     );
     return row ? [row] : [];

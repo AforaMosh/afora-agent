@@ -427,7 +427,14 @@ async function mirrorBestEffort(params: {
     const assistantTranscriptIdempotencyKey = normalizeOptionalString(
       (assistantTranscriptMessage as { idempotencyKey?: unknown } | undefined)?.idempotencyKey,
     );
-    const terminalAnchor = mirrorResult.anchorsByMirrorIdentity.get(assistantMirrorIdentity);
+    const terminalMessage = mirroredMessages.at(-1);
+    const terminalMirrorIdentity = terminalMessage
+      ? readMirrorIdentity(terminalMessage)
+      : undefined;
+    const terminalAnchor =
+      assistantTranscriptOwned && terminalMirrorIdentity
+        ? mirrorResult.anchorsByMirrorIdentity.get(terminalMirrorIdentity)
+        : undefined;
     return {
       assistantTranscriptOwned,
       ...(assistantTranscriptIdempotencyKey ? { assistantTranscriptIdempotencyKey } : {}),

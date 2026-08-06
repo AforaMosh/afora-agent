@@ -11,6 +11,7 @@ import { resolveSessionAgentIds } from "../agent-scope.js";
 import type { ToolOutcomeObservation } from "../agent-tools.before-tool-call.js";
 import type { FailoverReason } from "../embedded-agent-helpers.js";
 import { isStrictAgenticExecutionContractActive } from "../execution-contract.js";
+import { selectContextEngineForTranscriptHost } from "../harness/context-engine-logical-turn.js";
 import type { McpAppChannelView } from "../mcp-ui-resource.js";
 import { runAgentCleanupStep } from "../run-cleanup-timeout.js";
 import { resolveToolLoopDetectionConfig } from "../tool-loop-detection-config.js";
@@ -267,15 +268,15 @@ export async function runPreparedEmbeddedLoop(
     (() => {
       throw new Error("Embedded run is missing its logical-turn context-engine lease.");
     })();
-  const contextEngine = contextEngineLogicalTurnLease.selectForHost({
+  const contextEngine = selectContextEngineForTranscriptHost({
+    lease: contextEngineLogicalTurnLease,
     host: {
       id: `agent-harness:${agentHarness.id}`,
       label: `agent harness "${agentHarness.id}"`,
       capabilities: agentHarness.contextEngineHostCapabilities ?? [],
     },
     operation: "agent-run",
-    requiresDurableCommit: params.userTurnTranscriptRecorder !== undefined,
-    hasAdmissionFence: params.userTurnTranscriptRecorder !== undefined,
+    recorder: params.userTurnTranscriptRecorder,
   }).engine;
   contextEngineLogicalTurnLease.begin();
   const resolveContextEnginePluginId = () =>

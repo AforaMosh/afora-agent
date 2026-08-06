@@ -4,7 +4,10 @@ import os from "node:os";
 import path from "node:path";
 import type { AgentMessage } from "openclaw/plugin-sdk/agent-core";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { createContextEngineLogicalTurnLease } from "../agents/harness/context-engine-logical-turn.js";
+import {
+  createContextEngineLogicalTurnLease,
+  selectContextEngineForTranscriptHost,
+} from "../agents/harness/context-engine-logical-turn.js";
 import { upsertSessionEntry } from "../config/sessions/session-accessor.js";
 import { SessionTranscriptReadFenceError } from "../config/sessions/session-transcript-read-fence.js";
 import type { MemoryCitationsMode } from "../config/types.memory.js";
@@ -809,6 +812,50 @@ describe("Default engine selection", () => {
       'context-engine logical turn cannot change to incompatible agent harness "fallback": host "agent-harness:fallback" is missing thread-bootstrap-projection',
     );
     expect(lease.engine.info.id).toBe(engineId);
+    await lease.dispose();
+  });
+
+  it("degrades before start when the current turn has no admission receipt", async () => {
+    const engineId = uniqueEngineId("logical-turn-admission");
+    registerTestContextEngine(engineId, () => ({
+      info: {
+        id: engineId,
+        name: "Admission Fence",
+        transcriptSemantics: {
+          currentTurnFence: "before-current-turn-entry-v1",
+          turnAdvancementIdempotency: "atomic-idempotent-v1",
+        },
+      },
+      async ingest() {
+        return { ingested: true };
+      },
+      async assemble({ messages }) {
+        return { messages, estimatedTokens: 0 };
+      },
+      async compact() {
+        return { ok: true, compacted: false };
+      },
+      async commitTurn() {
+        return { status: "committed" };
+      },
+    }));
+    const warn = vi.fn();
+    const lease = await createContextEngineLogicalTurnLease({
+      config: configWithSlot(engineId),
+      warn,
+    });
+
+    const selected = selectContextEngineForTranscriptHost({
+      lease,
+      host: { id: "agent-harness:test", label: "test harness", capabilities: [] },
+      operation: "agent-run",
+      recorder: { getAdmissionReceipt: () => undefined },
+    });
+    lease.begin();
+
+    expect(selected.engine.info.id).toBe("legacy");
+    expect(lease.degradedReason).toBe("current-turn transcript admission receipt is unavailable");
+    expect(warn).toHaveBeenCalledOnce();
     await lease.dispose();
   });
 });

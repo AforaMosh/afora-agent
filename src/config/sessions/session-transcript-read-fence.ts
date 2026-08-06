@@ -46,6 +46,21 @@ export function resolveSqliteSessionTranscriptReadFence(params: {
   if (!receipt) {
     return undefined;
   }
+  if (receipt.role !== "user") {
+    throw new SessionTranscriptReadFenceError(
+      `Current-turn transcript admission is not a user message: ${receipt.entryId}`,
+    );
+  }
+  if (params.database.path !== receipt.storePath) {
+    throw new SessionTranscriptReadFenceError(
+      "Current-turn transcript admission belongs to a different transcript store",
+    );
+  }
+  if (params.sessionKey !== undefined && params.sessionKey !== receipt.sessionKey) {
+    throw new SessionTranscriptReadFenceError(
+      "Current-turn transcript admission belongs to a different session key",
+    );
+  }
   const db = getSessionKysely(params.database.db);
   const boundary = executeSqliteQueryTakeFirstSync(
     params.database.db,
@@ -61,7 +76,16 @@ export function resolveSqliteSessionTranscriptReadFence(params: {
           .onRef("event.session_id", "=", "identity.session_id")
           .onRef("event.seq", "=", "identity.seq"),
       )
-      .select(["active.event_seq", "active.message_position", "event.event_json"])
+      .innerJoin("transcript_rewrite_watermarks as rewrite", (join) =>
+        join.onRef("rewrite.session_id", "=", "identity.session_id"),
+      )
+      .select([
+        "identity.seq",
+        "identity.parent_id",
+        "active.message_position",
+        "rewrite.generation",
+        "event.event_json",
+      ])
       .where("identity.session_id", "=", params.sessionId)
       .where("identity.event_id", "=", receipt.entryId)
       .limit(1),
@@ -71,20 +95,25 @@ export function resolveSqliteSessionTranscriptReadFence(params: {
       `Current-turn transcript admission is no longer a visible message: ${receipt.entryId}`,
     );
   }
+  if (
+    boundary.generation !== receipt.generation ||
+    boundary.seq !== receipt.rawSeq ||
+    boundary.parent_id !== receipt.effectiveParentId ||
+    boundary.message_position !== receipt.activeMessagePosition
+  ) {
+    throw new SessionTranscriptReadFenceError(
+      `Current-turn transcript admission identity changed: ${receipt.entryId}`,
+    );
+  }
   const event = JSON.parse(boundary.event_json) as { type?: unknown; message?: { role?: unknown } };
   if (event.type !== "message" || event.message?.role !== "user") {
     throw new SessionTranscriptReadFenceError(
       `Current-turn transcript admission is not a user message: ${receipt.entryId}`,
     );
   }
-  if (params.sessionKey !== undefined && params.sessionKey !== receipt.sessionKey) {
-    throw new SessionTranscriptReadFenceError(
-      "Current-turn transcript admission belongs to a different session key",
-    );
-  }
   return {
     admission: receipt,
     beforeActiveMessagePosition: boundary.message_position,
-    beforeRawSeq: boundary.event_seq,
+    beforeRawSeq: boundary.seq,
   };
 }

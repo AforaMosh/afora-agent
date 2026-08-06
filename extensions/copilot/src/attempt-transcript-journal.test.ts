@@ -703,6 +703,7 @@ describe("Copilot attempt transcript journal", () => {
       stopReason: "toolUse",
     });
     expect(rows[2]?.message).toMatchObject({ toolCallId: "call-a", toolName: "read" });
+    expect(journal.snapshot().terminalAnchor?.entryId).toBe(rows[2]?.id);
     expect(
       bridge.buildAssistantMessage({
         modelRef: { api: "openai-responses", id: "gpt-5", provider: "github-copilot" },

@@ -83,21 +83,21 @@ describe("context-engine turn outbox", () => {
           sessionId,
         }),
       });
-    enqueue("session-a:1", "session-a", 1);
+    enqueue("session-a:z-first", "session-a", 1);
     for (let turn = 2; turn <= 17; turn += 1) {
-      enqueue(`session-a:${turn}`, "session-a", turn * 2 - 1);
+      enqueue(turn === 2 ? "session-a:a-second" : `session-a:${turn}`, "session-a", turn * 2 - 1);
     }
     enqueue("session-b:1", "session-b", 1);
     database.db.exec(`
       UPDATE context_engine_turn_outbox SET created_at = CASE
-        WHEN session_id = 'session-a' THEN CAST(SUBSTR(advancement_key, 11) AS INTEGER)
+        WHEN session_id = 'session-a' THEN 1
         ELSE 100
       END;
     `);
 
     let failFirstTurn = true;
     const commitTurn = vi.fn(async ({ advancementKey }: { advancementKey: string }) => {
-      if (advancementKey === "session-a:1" && failFirstTurn) {
+      if (advancementKey === "session-a:z-first" && failFirstTurn) {
         throw new Error("temporary failure");
       }
       return { status: "committed" as const };
@@ -119,7 +119,7 @@ describe("context-engine turn outbox", () => {
     });
 
     expect(commitTurn.mock.calls.map(([call]) => call.advancementKey)).toEqual([
-      "session-a:1",
+      "session-a:z-first",
       "session-b:1",
     ]);
     failFirstTurn = false;
@@ -132,9 +132,9 @@ describe("context-engine turn outbox", () => {
     });
 
     expect(commitTurn.mock.calls.map(([call]) => call.advancementKey)).toEqual([
-      "session-a:1",
+      "session-a:z-first",
       "session-b:1",
-      "session-a:1",
+      "session-a:z-first",
     ]);
 
     await drainContextEngineTurnOutbox({
@@ -145,10 +145,10 @@ describe("context-engine turn outbox", () => {
     });
 
     expect(commitTurn.mock.calls.map(([call]) => call.advancementKey)).toEqual([
-      "session-a:1",
+      "session-a:z-first",
       "session-b:1",
-      "session-a:1",
-      "session-a:2",
+      "session-a:z-first",
+      "session-a:a-second",
     ]);
   });
 });

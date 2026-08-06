@@ -102,6 +102,7 @@ import {
   mapSandboxSkillEntriesForPrompt,
   resolveSandboxSkillRuntimeInputs,
 } from "../embedded-agent-runner/sandbox-skills.js";
+import { selectContextEngineForTranscriptHost } from "../harness/context-engine-logical-turn.js";
 import { resolveHeartbeatPromptForSystemPrompt } from "../heartbeat-system-prompt.js";
 import type { ResolvedProviderAuth } from "../model-auth-runtime-shared.js";
 import { applyPluginTextReplacements } from "../plugin-text-transforms.js";
@@ -1666,11 +1667,11 @@ export async function prepareCliRunContext(
       capabilities: backendResolved.contextEngineHostCapabilities,
     });
     const resolvedContextEngine = params.contextEngineLogicalTurnLease
-      ? params.contextEngineLogicalTurnLease.selectForHost({
+      ? selectContextEngineForTranscriptHost({
+          lease: params.contextEngineLogicalTurnLease,
           host: contextEngineHostSupport,
           operation: "agent-run",
-          requiresDurableCommit: params.userTurnTranscriptRecorder !== undefined,
-          hasAdmissionFence: params.userTurnTranscriptRecorder !== undefined,
+          recorder: params.userTurnTranscriptRecorder,
         }).engine
       : await resolveContextEngine(contextEngineConfig, {
           agentDir: contextEngineAgentDir,

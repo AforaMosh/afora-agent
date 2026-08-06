@@ -1397,6 +1397,58 @@ describe("mirrorCodexAppServerTranscript", () => {
     expect(JSON.stringify(mirrorOutcome.mirroredMessages)).not.toContain("sensitive answer");
   });
 
+  it("returns the final mirrored row as the terminal anchor", async () => {
+    const target = await createSqliteMirrorTarget("openclaw-codex-mirror-terminal-anchor-");
+    const assistantMessage = attachCodexMirrorIdentity(
+      makeAgentAssistantMessage({
+        content: [{ type: "toolCall", id: "call-1", name: "read", arguments: {} }],
+        timestamp: Date.now(),
+      }),
+      "turn-1:assistant",
+    );
+    const toolResultMessage = attachCodexMirrorIdentity(
+      castAgentMessage({
+        role: "toolResult",
+        toolCallId: "call-1",
+        toolName: "read",
+        content: [{ type: "toolResult", toolCallId: "call-1", content: "done" }],
+        timestamp: Date.now() + 1,
+      }),
+      "turn-1:tool-result:call-1",
+    );
+
+    const mirrorOutcome = await mirrorTranscriptBestEffort({
+      params: {
+        sessionId: target.sessionId,
+        sessionKey: target.sessionKey,
+        sessionTarget: target,
+        suppressNextUserMessagePersistence: true,
+      } as unknown as Parameters<typeof mirrorTranscriptBestEffort>[0]["params"],
+      result: {
+        messagesSnapshot: [assistantMessage, toolResultMessage],
+      } as Parameters<typeof mirrorTranscriptBestEffort>[0]["result"],
+      agentId: target.agentId,
+      sessionKey: target.sessionKey,
+      notifyUserMessagePersisted: () => undefined,
+      cwd: target.storePath,
+      threadId: "thread-1",
+      turnId: "turn-1",
+    });
+    const terminalEvent = (await readMirrorEvents(target)).find(
+      (event): event is { id: string; message: { role: string } } =>
+        Boolean(
+          event &&
+          typeof event === "object" &&
+          "id" in event &&
+          "message" in event &&
+          (event as { message?: { role?: unknown } }).message?.role === "toolResult",
+        ),
+    );
+
+    expect(mirrorOutcome.assistantTranscriptOwned).toBe(true);
+    expect(mirrorOutcome.terminalAnchor?.entryId).toBe(terminalEvent?.id);
+  });
+
   it("dedupes mirrored messages despite snapshot positional shifts", async () => {
     const target = await createSqliteMirrorTarget("openclaw-codex-mirror-shift-");
     const userMessage = attachCodexMirrorIdentity(

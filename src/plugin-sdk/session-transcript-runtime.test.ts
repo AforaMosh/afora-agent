@@ -9,7 +9,10 @@ import {
   replaceTranscriptEvents,
   upsertSessionEntry,
 } from "../config/sessions/session-accessor.js";
-import { runWithSessionTranscriptReadFence } from "../config/sessions/session-transcript-read-fence.js";
+import {
+  runWithSessionTranscriptReadFence,
+  SessionTranscriptReadFenceError,
+} from "../config/sessions/session-transcript-read-fence.js";
 import * as transcriptEvents from "../sessions/transcript-events.js";
 import {
   appendAssistantMirrorMessageByIdentity,
@@ -299,6 +302,47 @@ describe("session transcript runtime SDK", () => {
       ],
       hasMore: false,
     });
+  });
+
+  it("rejects a read fence when any immutable admission field changes", async () => {
+    const scope = {
+      agentId: "main",
+      sessionId: "fenced-anchor-session",
+      sessionKey: "agent:main:fenced-anchor",
+      storePath,
+    };
+    await upsertSessionEntry(scope, { sessionId: scope.sessionId, updatedAt: 10 });
+    const admitted = await appendSessionTranscriptMessageByIdentity({
+      ...scope,
+      message: { role: "user", content: "exact admission" },
+      now: 1_000,
+    });
+    if (!admitted?.anchor) {
+      throw new Error("expected admitted transcript anchor");
+    }
+    const receipt = {
+      ...admitted.anchor,
+      logicalTurnId: "fenced-anchor-turn",
+      role: "user" as const,
+    };
+    const invalidReceipts = [
+      { ...receipt, storePath: `${receipt.storePath}.other` },
+      { ...receipt, sessionKey: `${receipt.sessionKey}:other` },
+      { ...receipt, generation: `${receipt.generation}:other` },
+      { ...receipt, rawSeq: receipt.rawSeq + 1 },
+      { ...receipt, effectiveParentId: "other-parent" },
+      { ...receipt, activeMessagePosition: receipt.activeMessagePosition + 1 },
+      { ...receipt, role: "assistant" as const },
+    ];
+
+    for (const invalidReceipt of invalidReceipts) {
+      await expect(
+        runWithSessionTranscriptReadFence(
+          invalidReceipt as unknown as typeof receipt,
+          async () => await readSessionTranscriptEvents(scope),
+        ),
+      ).rejects.toBeInstanceOf(SessionTranscriptReadFenceError);
+    }
   });
 
   it("bounds raw pages before parsing an oversized event", async () => {

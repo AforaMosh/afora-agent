@@ -7,6 +7,7 @@ import {
 import { ensureContextEnginesInitialized } from "../../context-engine/init.js";
 import { resolveLogicalTurnContextEngines } from "../../context-engine/registry.js";
 import type { ContextEngine, ContextEngineOperation } from "../../context-engine/types.js";
+import type { UserTurnTranscriptRecorder } from "../../sessions/user-turn-transcript.types.js";
 
 type LogicalTurnSelectionState = "unselected" | "selected" | "started" | "disposed";
 
@@ -37,6 +38,26 @@ export type ContextEngineLogicalTurnLease = {
   deferDisposalUntil: (promise: Promise<unknown>) => void;
   dispose: () => Promise<void>;
 };
+
+export function selectContextEngineForTranscriptHost(params: {
+  lease: ContextEngineLogicalTurnLease;
+  host: ContextEngineHostSupport;
+  operation: ContextEngineOperation;
+  recorder: Pick<UserTurnTranscriptRecorder, "getAdmissionReceipt"> | undefined;
+}): EffectiveContextEngineRef {
+  const admission = params.recorder?.getAdmissionReceipt();
+  if (params.recorder && !admission) {
+    return params.lease.degradeBeforeStart(
+      "current-turn transcript admission receipt is unavailable",
+    );
+  }
+  return params.lease.selectForHost({
+    host: params.host,
+    operation: params.operation,
+    requiresDurableCommit: params.recorder !== undefined,
+    hasAdmissionFence: admission !== undefined,
+  });
+}
 
 export async function createContextEngineLogicalTurnLease(params: {
   config?: OpenClawConfig;
