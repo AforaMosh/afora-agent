@@ -213,7 +213,7 @@ export async function createMatrixQaTransportAdapter(
       topology: resolveMatrixQaAdapterTopology(options.scenarioIds),
     });
   } catch (error) {
-    await stopMatrixQaHarnessAfterStartupFailure(harness, error);
+    return await stopMatrixQaHarnessAfterStartupFailure(harness, error);
   }
   const accountId = options.sutAccountId?.trim() || "sut";
   const observedEvents: MatrixQaObservedEvent[] = [];
@@ -232,7 +232,7 @@ export async function createMatrixQaTransportAdapter(
   try {
     await Promise.all(roomObservers.map(({ observer }) => observer.prime()));
   } catch (error) {
-    await stopMatrixQaHarnessAfterStartupFailure(harness, error);
+    return await stopMatrixQaHarnessAfterStartupFailure(harness, error);
   }
   const driverClient = createMatrixQaClient({
     accessToken: provisioning.driver.accessToken,
