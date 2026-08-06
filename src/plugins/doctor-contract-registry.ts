@@ -407,7 +407,10 @@ function resolvePluginDoctorContracts(params?: {
       !(record.packageName && scopedPluginIds.has(record.packageName)) &&
       !record.legacyPluginIds?.some((pluginId) => scopedPluginIds.has(pluginId)) &&
       !record.channels.some((channelId) => scopedPluginIds.has(channelId)) &&
-      !record.providers.some((providerId) => scopedPluginIds.has(providerId))
+      !record.providers.some((providerId) => scopedPluginIds.has(providerId)) &&
+      !Object.keys(record.providerAuthAliases ?? {}).some((providerId) =>
+        scopedPluginIds.has(providerId),
+      )
     ) {
       continue;
     }

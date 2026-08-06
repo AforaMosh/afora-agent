@@ -18,7 +18,14 @@ describe("MiniMax doctor contract", () => {
             api: "anthropic-messages",
             models: [M3_IMAGE_CAPABLE_MODEL, { id: "custom", input: ["text", "image"] }],
           },
+          "minimax-cn": {
+            models: [{ ...M3_IMAGE_CAPABLE_MODEL }],
+          },
           "minimax-portal": {
+            models: [{ ...M3_IMAGE_CAPABLE_MODEL }],
+          },
+          "minimax-portal-cn": {
+            api: "anthropic-messages",
             models: [{ ...M3_IMAGE_CAPABLE_MODEL }],
           },
         },
@@ -27,19 +34,27 @@ describe("MiniMax doctor contract", () => {
 
     expect(
       legacyConfigRules.filter((rule) => rule.match(readPath(config, rule.path))),
-    ).toHaveLength(2);
+    ).toHaveLength(4);
 
     const result = normalizeCompatibilityConfig({ cfg: config });
 
     expect(result.changes).toEqual([
       "Removed the unsupported image input from models.providers.minimax.models MiniMax-M3.",
+      "Removed the unsupported image input from models.providers.minimax-cn.models MiniMax-M3.",
       "Removed the unsupported image input from models.providers.minimax-portal.models MiniMax-M3.",
+      "Removed the unsupported image input from models.providers.minimax-portal-cn.models MiniMax-M3.",
     ]);
     expect(result.config.models?.providers?.minimax?.models).toEqual([
       { ...M3_IMAGE_CAPABLE_MODEL, input: ["text"] },
       { id: "custom", input: ["text", "image"] },
     ]);
     expect(result.config.models?.providers?.["minimax-portal"]?.models).toEqual([
+      { ...M3_IMAGE_CAPABLE_MODEL, input: ["text"] },
+    ]);
+    expect(result.config.models?.providers?.["minimax-cn"]?.models).toEqual([
+      { ...M3_IMAGE_CAPABLE_MODEL, input: ["text"] },
+    ]);
+    expect(result.config.models?.providers?.["minimax-portal-cn"]?.models).toEqual([
       { ...M3_IMAGE_CAPABLE_MODEL, input: ["text"] },
     ]);
     expect(config.models?.providers?.minimax?.models?.[0]?.input).toEqual(["text", "image"]);

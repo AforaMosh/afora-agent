@@ -2,10 +2,17 @@
 import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
 import { asObjectRecord } from "openclaw/plugin-sdk/runtime-doctor";
 
-const MINIMAX_PROVIDER_IDS = ["minimax", "minimax-portal"] as const;
+// These aliases remain supported provider identities, so Doctor must repair
+// their persisted catalogs before the runtime decides to send native images.
+const MINIMAX_ANTHROPIC_PROVIDER_IDS = [
+  "minimax",
+  "minimax-cn",
+  "minimax-portal",
+  "minimax-portal-cn",
+] as const;
 const MINIMAX_M3_MODEL_ID = "MiniMax-M3";
 
-type MinimaxProviderId = (typeof MINIMAX_PROVIDER_IDS)[number];
+type MinimaxProviderId = (typeof MINIMAX_ANTHROPIC_PROVIDER_IDS)[number];
 
 function hasStaleM3ImageInput(value: unknown): boolean {
   const model = asObjectRecord(value);
@@ -65,7 +72,7 @@ function migrateProviderModels(
   };
 }
 
-export const legacyConfigRules = MINIMAX_PROVIDER_IDS.map((providerId) => ({
+export const legacyConfigRules = MINIMAX_ANTHROPIC_PROVIDER_IDS.map((providerId) => ({
   path: ["models", "providers", providerId],
   message: `models.providers.${providerId}.models lists ${MINIMAX_M3_MODEL_ID} as image-capable on the Anthropic-compatible route. Run "openclaw doctor --fix".`,
   match: hasStaleM3ImageCatalog,
@@ -77,7 +84,7 @@ export function normalizeCompatibilityConfig({ cfg }: { cfg: OpenClawConfig }): 
 } {
   let next = cfg;
   const changes: string[] = [];
-  for (const providerId of MINIMAX_PROVIDER_IDS) {
+  for (const providerId of MINIMAX_ANTHROPIC_PROVIDER_IDS) {
     const migration = migrateProviderModels(providerId, next);
     if (migration) {
       next = migration.config;

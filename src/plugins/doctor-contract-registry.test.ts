@@ -504,6 +504,66 @@ describe("doctor-contract-registry module loader", () => {
     });
   });
 
+  it("loads a plugin doctor contract when scoped by a provider auth alias", () => {
+    const pluginRoot = makeTempDir();
+    fs.writeFileSync(path.join(pluginRoot, "doctor-contract-api.ts"), "export {};\n", "utf-8");
+    mocks.createJiti.mockImplementation(() => () => ({
+      normalizeCompatibilityConfig: ({
+        cfg,
+      }: {
+        cfg: { models?: { providers?: Record<string, Record<string, unknown>> } };
+      }) => ({
+        config: {
+          ...cfg,
+          models: {
+            ...cfg.models,
+            providers: {
+              ...cfg.models?.providers,
+              "minimax-cn": {
+                ...cfg.models?.providers?.["minimax-cn"],
+                models: [{ id: "MiniMax-M3", input: ["text"] }],
+              },
+            },
+          },
+        },
+        changes: ["removed stale MiniMax M3 image metadata"],
+      }),
+    }));
+    mocks.loadPluginManifestRegistry.mockReturnValue({
+      plugins: [
+        {
+          id: "minimax",
+          rootDir: pluginRoot,
+          channels: [],
+          providers: ["minimax", "minimax-portal"],
+          providerAuthAliases: { "minimax-cn": "minimax" },
+        },
+      ],
+      diagnostics: [],
+    });
+    const config = {
+      models: {
+        providers: {
+          "minimax-cn": {
+            api: "anthropic-messages",
+            models: [{ id: "MiniMax-M3", input: ["text", "image"] }],
+          },
+        },
+      },
+    };
+
+    const result = applyPluginDoctorCompatibilityMigrations(config, {
+      config,
+      env: {},
+      pluginIds: ["minimax-cn"],
+    });
+
+    expect(result.changes).toEqual(["removed stale MiniMax M3 image metadata"]);
+    expect(result.config.models?.providers?.["minimax-cn"]?.models).toEqual([
+      { id: "MiniMax-M3", input: ["text"] },
+    ]);
+  });
+
   it("narrows touched-path doctor ids for scoped dry-run validation", () => {
     expect(
       collectRelevantDoctorPluginIdsForTouchedPaths({
