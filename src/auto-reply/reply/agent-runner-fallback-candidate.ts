@@ -64,6 +64,10 @@ export async function runAgentFallbackCandidates(params: AgentFallbackCycleParam
         requestedRouteResolution: selection.requestedRouteResolution,
         agentDir: selection.agentDir,
         fallbacksOverride: selection.fallbacksOverride,
+        userLockedAuthProfileId:
+          turn.followupRun.run.authProfileIdSource === "user"
+            ? turn.followupRun.run.authProfileId
+            : undefined,
       },
       identity: {
         runId: params.runId,

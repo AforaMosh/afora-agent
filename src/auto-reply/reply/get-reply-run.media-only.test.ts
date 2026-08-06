@@ -1002,6 +1002,7 @@ describe("runPreparedReply media-only handling", () => {
     "keeps disabled text slash syntax in the model prompt: %s",
     async (body) => {
       vi.mocked(hasControlCommand).mockReturnValue(true);
+      const onDeliberateSilentTerminalReply = vi.fn();
       const result = await runPreparedReply(
         baseParams({
           ctx: {
@@ -1032,16 +1033,61 @@ describe("runPreparedReply media-only handling", () => {
           } as never,
           allowTextCommands: false,
           isNewSession: false,
+          opts: { onDeliberateSilentTerminalReply },
         }),
       );
 
       expect(result).toEqual({ text: "ok" });
       expect(requireRunReplyAgentCall().followupRun.prompt).toBe(body);
+      expect(onDeliberateSilentTerminalReply).not.toHaveBeenCalled();
     },
   );
 
+  it("keeps explicitly suppressed command-shaped Gateway text in the model prompt", async () => {
+    const body = "/model openai/gpt-5.5";
+    const onDeliberateSilentTerminalReply = vi.fn();
+    vi.mocked(hasControlCommand).mockReturnValue(true);
+
+    const result = await runPreparedReply(
+      baseParams({
+        ctx: {
+          ...createInboundTurn(body, "webchat", "direct"),
+          CommandAuthorized: false,
+          CommandInterpretationSuppressed: true,
+          CommandTurn: {
+            kind: "normal",
+            source: "message",
+            authorized: false,
+            body,
+          },
+        },
+        sessionCtx: {
+          ...createSessionTurn(body, "webchat", "direct"),
+        },
+        commandAuthorized: false,
+        command: {
+          surface: "webchat",
+          channel: "webchat",
+          isAuthorizedSender: false,
+          abortKey: "session-key",
+          ownerList: [],
+          senderIsOwner: false,
+          rawBodyNormalized: body,
+          commandBodyNormalized: body,
+        } as never,
+        isNewSession: false,
+        opts: { onDeliberateSilentTerminalReply },
+      }),
+    );
+
+    expect(result).toEqual({ text: "ok" });
+    expect(requireRunReplyAgentCall().followupRun.prompt).toBe(body);
+    expect(onDeliberateSilentTerminalReply).not.toHaveBeenCalled();
+  });
+
   it("silently drops an explicit unauthorized whole-message text slash command", async () => {
     const body = "/model openai/gpt-5.5";
+    const onDeliberateSilentTerminalReply = vi.fn();
     vi.mocked(hasControlCommand).mockReturnValue(true);
     const params = baseParams({
       ctx: {
@@ -1071,15 +1117,51 @@ describe("runPreparedReply media-only handling", () => {
         commandBodyNormalized: body,
       } as never,
       isNewSession: false,
+      opts: { onDeliberateSilentTerminalReply },
     });
 
     await expect(runPreparedReply(params)).resolves.toBeUndefined();
     expect(runReplyAgent).not.toHaveBeenCalled();
+    expect(onDeliberateSilentTerminalReply).toHaveBeenCalledOnce();
+    expect(params.typing.cleanup).toHaveBeenCalledOnce();
+  });
+
+  it("silently drops a legacy unauthorized registered command without turn provenance", async () => {
+    const body = "/model openai/gpt-5.5";
+    const onDeliberateSilentTerminalReply = vi.fn();
+    vi.mocked(hasControlCommand).mockReturnValue(true);
+    const params = baseParams({
+      ctx: {
+        ...createInboundTurn(body, "slack", "direct"),
+        CommandAuthorized: false,
+      },
+      sessionCtx: {
+        ...createSessionTurn(body, "slack", "direct"),
+      },
+      commandAuthorized: false,
+      command: {
+        surface: "slack",
+        channel: "slack",
+        isAuthorizedSender: false,
+        abortKey: "session-key",
+        ownerList: [],
+        senderIsOwner: false,
+        rawBodyNormalized: body,
+        commandBodyNormalized: body,
+      } as never,
+      isNewSession: false,
+      opts: { onDeliberateSilentTerminalReply },
+    });
+
+    await expect(runPreparedReply(params)).resolves.toBeUndefined();
+    expect(runReplyAgent).not.toHaveBeenCalled();
+    expect(onDeliberateSilentTerminalReply).toHaveBeenCalledOnce();
     expect(params.typing.cleanup).toHaveBeenCalledOnce();
   });
 
   it("silently drops an unauthorized native command even when text commands are disabled", async () => {
     const body = "/model openai/gpt-5.5";
+    const onDeliberateSilentTerminalReply = vi.fn();
     vi.mocked(hasControlCommand).mockReturnValue(true);
     const params = baseParams({
       ctx: {
@@ -1110,10 +1192,12 @@ describe("runPreparedReply media-only handling", () => {
       } as never,
       allowTextCommands: false,
       isNewSession: false,
+      opts: { onDeliberateSilentTerminalReply },
     });
 
     await expect(runPreparedReply(params)).resolves.toBeUndefined();
     expect(runReplyAgent).not.toHaveBeenCalled();
+    expect(onDeliberateSilentTerminalReply).toHaveBeenCalledOnce();
     expect(params.typing.cleanup).toHaveBeenCalledOnce();
   });
 
@@ -2211,6 +2295,52 @@ describe("runPreparedReply media-only handling", () => {
         .mockReturnValue(undefined);
     }
   });
+
+  it.each([
+    {
+      name: "legacy source-less user",
+      authProfileOverride: "profile-legacy-user",
+      authProfileOverrideCompactionCount: undefined,
+      expectedSource: "user",
+    },
+    {
+      name: "legacy marker-backed automatic",
+      authProfileOverride: "profile-legacy-auto",
+      authProfileOverrideCompactionCount: 0,
+      expectedSource: "auto",
+    },
+  ] as const)(
+    "forwards $name auth provenance to the runner",
+    async ({ authProfileOverride, authProfileOverrideCompactionCount, expectedSource }) => {
+      const { resolveSessionAuthProfileOverride } =
+        await import("../../agents/auth-profiles/session-override.js");
+      const sessionEntry: SessionEntry = {
+        sessionId: `session-${authProfileOverride}`,
+        updatedAt: 1,
+        authProfileOverride,
+        ...(authProfileOverrideCompactionCount === undefined
+          ? {}
+          : { authProfileOverrideCompactionCount }),
+      };
+      vi.mocked(resolveSessionAuthProfileOverride).mockImplementationOnce(
+        async ({ sessionEntry: resolvedEntry }) => resolvedEntry?.authProfileOverride,
+      );
+
+      await runPreparedReply(
+        baseParams({
+          isNewSession: false,
+          sessionId: sessionEntry.sessionId,
+          sessionEntry,
+          sessionStore: { "session-key": sessionEntry },
+        }),
+      );
+
+      expect(requireLastRunReplyAgentCall().followupRun.run).toMatchObject({
+        authProfileId: authProfileOverride,
+        authProfileIdSource: expectedSource,
+      });
+    },
+  );
 
   it("re-resolves auth profile after waiting for a prior run", async () => {
     const { resolveSessionAuthProfileOverride } =

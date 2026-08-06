@@ -323,6 +323,39 @@ describe("mixed inline directives", () => {
     expect(persistStickyModelSelectionBestEffort).not.toHaveBeenCalled();
   });
 
+  it.each([
+    { name: "legacy user", marker: undefined, expectedSource: "user" as const },
+    { name: "marker-backed auto", marker: 0, expectedSource: "auto" as const },
+  ])(
+    "forwards a source-less $name auth profile canonically after /model",
+    async ({ marker, expectedSource }) => {
+      const sessionEntry = createSessionEntry({
+        providerOverride: "openai",
+        modelOverride: "gpt-5.6-sol",
+        authProfileOverride: "openai:work",
+        ...(marker === undefined ? {} : { authProfileOverrideCompactionCount: marker }),
+      });
+
+      await applyMixedDirectives({
+        body: "/model openai/gpt-5.6-luna -s",
+        senderIsOwner: true,
+        provider: "openai",
+        model: "gpt-5.6-sol",
+        sessionEntry,
+        allowedModels: [{ provider: "openai", id: "gpt-5.6-luna", name: "GPT-5.6-Luna" }],
+      });
+
+      expect(sessionEntry.authProfileOverrideSource).toBeUndefined();
+      expect(sessionEntry.authProfileOverrideCompactionCount).toBe(marker);
+      expect(refreshQueuedFollowupSession).toHaveBeenCalledWith(
+        expect.objectContaining({
+          nextAuthProfileId: "openai:work",
+          nextAuthProfileIdSource: expectedSource,
+        }),
+      );
+    },
+  );
+
   it("applies an owner alias session scope without continuing to the model", async () => {
     const aliasIndex: ModelAliasIndex = {
       byAlias: new Map([
@@ -427,7 +460,7 @@ describe("mixed inline directives", () => {
     expect(persistStickyModelSelectionBestEffort).toHaveBeenCalledOnce();
   });
 
-  it("clears the current session pin with /model default -s", async () => {
+  it("clears an incompatible auth pin with a cross-provider /model default -s", async () => {
     const sessionEntry = createSessionEntry({
       providerOverride: "openai",
       modelOverride: "gpt-5.6-luna",
@@ -455,6 +488,49 @@ describe("mixed inline directives", () => {
     expect(sessionEntry.authProfileOverride).toBeUndefined();
     expect(sessionEntry.authProfileOverrideSource).toBeUndefined();
     expect(sessionEntry.authProfileOverrideCompactionCount).toBeUndefined();
+    expect(refreshQueuedFollowupSession).toHaveBeenCalledWith(
+      expect.objectContaining({ nextModelOverrideSource: undefined }),
+    );
+    expect(persistStickyModelSelectionBestEffort).not.toHaveBeenCalled();
+  });
+
+  it("preserves a compatible auth pin with a same-provider /model default -s", async () => {
+    const sessionEntry = createSessionEntry({
+      providerOverride: "openai",
+      modelOverride: "gpt-5.6-sol",
+      modelOverrideSource: "user",
+      authProfileOverride: "openai:work",
+      authProfileOverrideSource: "user",
+      authProfileOverrideCompactionCount: 2,
+    });
+    const { result } = await applyMixedDirectives({
+      body: "/model default -s",
+      senderIsOwner: true,
+      provider: "openai",
+      model: "gpt-5.6-sol",
+      defaultProvider: "openai",
+      defaultModel: "gpt-5.6-luna",
+      sessionEntry,
+      allowedModels: [{ provider: "openai", id: "gpt-5.6-luna", name: "GPT-5.6-Luna" }],
+    });
+
+    expect(result).toMatchObject({
+      kind: "reply",
+      reply: {
+        text: "Session model reset to configured default (openai/gpt-5.6-luna).",
+      },
+    });
+    expect(sessionEntry.providerOverride).toBeUndefined();
+    expect(sessionEntry.modelOverride).toBeUndefined();
+    expect(sessionEntry.modelOverrideSource).toBeUndefined();
+    expect(sessionEntry).toMatchObject({
+      authProfileOverride: "openai:work",
+      authProfileOverrideSource: "user",
+      authProfileOverrideCompactionCount: 2,
+    });
+    expect(refreshQueuedFollowupSession).toHaveBeenCalledWith(
+      expect.objectContaining({ nextModelOverrideSource: undefined }),
+    );
     expect(persistStickyModelSelectionBestEffort).not.toHaveBeenCalled();
   });
 

@@ -145,10 +145,10 @@ OpenClaw **pins the automatically chosen auth profile per session** to keep prov
 - a compaction completes (compaction count increments)
 - the profile is in cooldown/disabled
 
-Manual selection via `/model …@<profileId> -s` sets a **user override**. A valid user pin survives `/new`, `/reset`, session rollover, compaction, and cooldown windows. OpenClaw clears it only when the profile disappears, no longer matches the selected provider, or the user runs `/model default -s`.
+Manual selection via `/model …@<profileId> -s` sets a **user override**. A valid user pin survives `/new`, `/reset`, session rollover, compaction, and cooldown windows. OpenClaw clears it when the profile disappears, no longer matches the selected provider, or the user selects another explicit profile. `/model default -s` clears the model override while retaining a compatible auth pin and clearing an incompatible one.
 
 <Note>
-Auto-pinned profiles (selected by the session router) are treated as a **preference**: they are tried first, but OpenClaw may rotate to another profile on rate limits/timeouts. When the original profile becomes available again, new runs can prefer it again without changing the selected model or runtime. User-pinned profiles stay locked to that profile; if it fails and model fallbacks are configured, OpenClaw moves to the next model instead of switching profiles.
+Auto-pinned profiles (selected by the session router) are treated as a **preference**: they are tried first, but OpenClaw may rotate to another profile on rate limits/timeouts. When the original profile becomes available again, new runs can prefer it again without changing the selected model or runtime. User-pinned profiles stay locked on eligible same-provider candidates. A retained pin on the configured default can still move through configured model fallbacks; an explicit user model selection remains strict and reports failure instead.
 </Note>
 
 ### OpenAI Codex subscription plus API-key backup

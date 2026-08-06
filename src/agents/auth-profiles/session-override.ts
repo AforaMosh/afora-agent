@@ -3,6 +3,7 @@
  * Keeps automatic profile choice stable within a session while still rotating
  * across new sessions, compactions, provider changes, and cooldowns.
  */
+import { resolveSessionAuthProfileOverrideSource } from "../../config/sessions/auth-profile-override-provenance.js";
 import type { SessionEntry } from "../../config/sessions/types.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import { createLazyImportLoader } from "../../shared/lazy-promise.js";
@@ -272,13 +273,7 @@ export async function resolveSessionAuthProfileOverride(params: {
     ),
   ];
   let current = sessionEntry.authProfileOverride?.trim();
-  const source =
-    sessionEntry.authProfileOverrideSource ??
-    (typeof sessionEntry.authProfileOverrideCompactionCount === "number"
-      ? "auto"
-      : current
-        ? "user"
-        : undefined);
+  const source = resolveSessionAuthProfileOverrideSource(sessionEntry);
 
   const currentProfileId = current;
   if (
@@ -337,13 +332,7 @@ export async function resolveSessionAuthProfileOverride(params: {
         },
       });
       const latestProfileId = latest?.authProfileOverride;
-      const latestSource =
-        latest?.authProfileOverrideSource ??
-        (typeof latest?.authProfileOverrideCompactionCount === "number"
-          ? "auto"
-          : latestProfileId
-            ? "user"
-            : undefined);
+      const latestSource = resolveSessionAuthProfileOverrideSource(latest);
       return latestProfileId &&
         latestSource === "user" &&
         isProfileForProvider({ cfg, providers, profileId: latestProfileId, store })

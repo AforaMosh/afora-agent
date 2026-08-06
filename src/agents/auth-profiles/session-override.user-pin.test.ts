@@ -129,13 +129,26 @@ describe("explicit auth-profile pin lifecycle", () => {
     },
   );
 
-  it("still rotates an automatic pin on a new session", async () => {
+  it("preserves a legacy source-less user pin on a new session", async () => {
     const sessionEntry: SessionEntry = {
       sessionId: "s1",
       updatedAt: 1,
       compactionCount: 0,
       authProfileOverride: PRIMARY_PROFILE_ID,
-      authProfileOverrideSource: "auto",
+    };
+
+    const resolved = await resolveSession({ sessionEntry, isNewSession: true });
+
+    expect(resolved).toBe(PRIMARY_PROFILE_ID);
+    expect(sessionEntry.authProfileOverride).toBe(PRIMARY_PROFILE_ID);
+  });
+
+  it("still rotates a legacy source-less automatic pin on a new session", async () => {
+    const sessionEntry: SessionEntry = {
+      sessionId: "s1",
+      updatedAt: 1,
+      compactionCount: 0,
+      authProfileOverride: PRIMARY_PROFILE_ID,
       authProfileOverrideCompactionCount: 0,
     };
 

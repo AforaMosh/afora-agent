@@ -5,7 +5,7 @@ import { emitFailoverEvent } from "../infra/diagnostic-events.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { createLazyImportLoader } from "../shared/lazy-promise.js";
-import { externalCliDiscoveryForProviders } from "./auth-profiles/external-cli-discovery.js";
+import { externalCliDiscoveryScoped } from "./auth-profiles/external-cli-discovery.js";
 import { resolveSubscriptionAuthModeForProfiles } from "./auth-profiles/profile-list.js";
 import { hasAnyAuthProfileStoreSource } from "./auth-profiles/source-check.js";
 import { isLikelyContextOverflowError } from "./embedded-agent-helpers/errors.js";
@@ -95,6 +95,7 @@ type RunWithModelFallbackParams<T> = {
   sessionId?: string;
   agentId?: string;
   sessionKey?: string;
+  userLockedAuthProfileId?: string;
   resolveAgentHarnessRuntimeOverride?: (provider: string, model: string) => string | undefined;
   prepareAgentHarnessRuntime?: (params: {
     provider: string;
@@ -166,15 +167,18 @@ async function runWithModelFallbackInternal<T>(
     requestedRouteResolution: params.requestedRouteResolution,
     manifestPlugins: params.manifestPlugins,
   });
+  const userLockedAuthProfileId = params.userLockedAuthProfileId?.trim() || undefined;
   const authRuntime =
     !params.skipAuthProfileRuntime && params.cfg && hasAnyAuthProfileStoreSource(params.agentDir)
       ? await loadModelFallbackAuthRuntime()
       : null;
   const authStore = authRuntime
     ? authRuntime.ensureAuthProfileStore(params.agentDir, {
-        externalCli: externalCliDiscoveryForProviders({
-          cfg: params.cfg,
-          providers: candidates.map((candidate) => candidate.provider),
+        externalCli: externalCliDiscoveryScoped({
+          config: params.cfg,
+          allowKeychainPrompt: false,
+          providerIds: candidates.map((candidate) => candidate.provider),
+          ...(userLockedAuthProfileId ? { profileIds: [userLockedAuthProfileId] } : {}),
         }),
       })
     : null;
@@ -338,8 +342,16 @@ async function runWithModelFallbackInternal<T>(
       const isAnyProfileAvailable = profileIds.some(
         (id) => !authRuntime.isProfileInCooldown(authStore, id, undefined, candidate.model),
       );
+      const userLockedAuthProfileEligible =
+        userLockedAuthProfileId !== undefined &&
+        authRuntime.resolveAuthProfileEligibility({
+          cfg: params.cfg,
+          store: authStore,
+          provider: candidate.provider,
+          profileId: userLockedAuthProfileId,
+        }).eligible;
 
-      if (profileIds.length > 0 && !isAnyProfileAvailable) {
+      if (profileIds.length > 0 && !isAnyProfileAvailable && !userLockedAuthProfileEligible) {
         // All profiles for this provider are in cooldown.
         const now = Date.now();
         const probeThrottleKey = resolveProbeThrottleKey(candidate.provider, params.agentDir);

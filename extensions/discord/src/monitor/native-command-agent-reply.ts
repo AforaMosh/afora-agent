@@ -143,7 +143,12 @@ export async function dispatchDiscordNativeAgentReply(params: {
     },
   });
 
-  if (!didReply && (params.suppressReplies || finalReplyOutcome === "suppressed")) {
+  if (
+    !didReply &&
+    (params.suppressReplies ||
+      finalReplyOutcome === "suppressed" ||
+      turnResult.dispatchResult?.deliberateSilentTerminalReply === true)
+  ) {
     await settleDiscordInteractionWithoutVisibleReply(params.interaction);
     return dispatchResult;
   }

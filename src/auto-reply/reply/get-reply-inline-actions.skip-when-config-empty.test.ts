@@ -311,7 +311,7 @@ describe("handleInlineActions", () => {
     const onBlockReply = vi.fn(async () => {});
     const directiveAck = setReplyPayloadMetadata(
       { text: "Model set to openai/gpt-5.5 for this session." },
-      { deliverDespiteSourceReplySuppression: true },
+      { assistantMessageIndex: 7 },
     );
 
     const result = await handleInlineActions(
@@ -334,6 +334,7 @@ describe("handleInlineActions", () => {
       isStatusNotice: true,
     });
     expect(getReplyPayloadMetadata(delivered as object)).toEqual({
+      assistantMessageIndex: 7,
       deliverDespiteSourceReplySuppression: true,
     });
   });

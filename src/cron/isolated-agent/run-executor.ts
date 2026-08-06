@@ -350,6 +350,10 @@ function createCronPromptExecutor(params: {
       agentDir: params.agentDir,
       agentId: params.agentId,
       sessionKey: params.runSessionKey,
+      userLockedAuthProfileId:
+        params.liveSelection.authProfileIdSource === "user"
+          ? params.liveSelection.authProfileId
+          : undefined,
       abortSignal: params.abortSignal,
       resolveAgentHarnessRuntimeOverride: (provider) =>
         resolveSessionRuntimeOverrideForProvider({

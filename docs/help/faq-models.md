@@ -92,7 +92,7 @@ troubleshooting, see the main [FAQ](/help/faq).
     best-effort configured-default update. See
     [Slash commands](/tools/slash-commands) for the
     full command list, including the numbered picker (`/model`, `/model
-    list`, `/model 3`), `/model default` to clear a session override, and
+    list`, `/model 3`), `/model default` to clear a session model override, and
     `/model status` for endpoint/API-mode detail.
 
     Force a specific auth profile per session with `@profile`:
@@ -104,7 +104,9 @@ troubleshooting, see the main [FAQ](/help/faq).
 
     A model selection without `@profile` preserves an existing compatible
     profile pin. Choose another explicit `@profile` suffix to replace it. Use
-    `/model status` to inspect the active auth profile.
+    `/model status` to inspect the active auth profile. `/model default` keeps
+    a compatible auth pin and clears one that does not match the configured
+    default provider.
 
   </Accordion>
 

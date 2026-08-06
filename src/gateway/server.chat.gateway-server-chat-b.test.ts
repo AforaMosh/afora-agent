@@ -3808,6 +3808,7 @@ describe("gateway server chat", () => {
         BodyForCommands: "/reset examples",
         CommandBody: "/reset examples",
         CommandAuthorized: false,
+        CommandInterpretationSuppressed: true,
         CommandTurn: {
           kind: "normal",
           source: "message",

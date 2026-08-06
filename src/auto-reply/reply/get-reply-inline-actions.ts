@@ -21,7 +21,11 @@ import {
 } from "../../skills/discovery/chat-commands.js";
 import type { SkillCommandSpec } from "../../skills/types.js";
 import { INTERNAL_MESSAGE_CHANNEL } from "../../utils/message-channel.js";
-import { copyReplyPayloadMetadata, markCommandReplyForDelivery } from "../reply-payload.js";
+import {
+  copyReplyPayloadMetadata,
+  markCommandReplyForDelivery,
+  markReplyPayloadForSourceSuppressionDelivery,
+} from "../reply-payload.js";
 import type { MsgContext, TemplateContext } from "../templating.js";
 import type {
   ElevatedLevel,
@@ -505,10 +509,12 @@ export async function handleInlineActions(params: {
       return;
     }
     await opts.onBlockReply(
-      copyReplyPayloadMetadata(reply, {
-        ...reply,
-        isStatusNotice: true,
-      }),
+      markReplyPayloadForSourceSuppressionDelivery(
+        copyReplyPayloadMetadata(reply, {
+          ...reply,
+          isStatusNotice: true,
+        }),
+      ),
     );
   };
 

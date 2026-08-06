@@ -1294,6 +1294,10 @@ export async function runMemoryFlushIfNeeded(params: {
         requestedRouteResolution: selection.requestedRouteResolution,
         agentDir: selection.agentDir,
         fallbacksOverride: selection.fallbacksOverride,
+        userLockedAuthProfileId:
+          params.followupRun.run.authProfileIdSource === "user"
+            ? params.followupRun.run.authProfileId
+            : undefined,
       },
       identity: {
         runId: flushRunId,

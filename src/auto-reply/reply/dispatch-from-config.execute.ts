@@ -19,6 +19,7 @@ import {
   type InternalReplyResolverOptions,
   createReplyDispatchEvent,
 } from "./dispatch-from-config.events.js";
+import { shouldDeliverDespiteSourceReplySuppression } from "./dispatch-from-config.payloads.js";
 import { extendPreparedDispatchState } from "./dispatch-from-config.phase-state.js";
 import type { PrepareDispatchExecutionReadyState } from "./dispatch-from-config.prepare-execution.js";
 import { waitForReplyDispatcherIdle } from "./reply-dispatcher.js";
@@ -388,7 +389,10 @@ export async function executeDispatch(state: PrepareDispatchExecutionReadyState)
                     }
                     // Buffered commentary preceded this block; deliver it first.
                     await flushPendingCommentaryProgress();
-                    if (state.suppressDelivery) {
+                    if (
+                      state.suppressDelivery &&
+                      !shouldDeliverDespiteSourceReplySuppression(payload, state)
+                    ) {
                       return;
                     }
                     // Durable reasoning is a channel-owned lane; generic channels

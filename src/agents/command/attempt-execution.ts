@@ -20,6 +20,7 @@ import {
 } from "../../auto-reply/reply/source-turn-id.js";
 import { messageToolOwnsVisibleReply } from "../../auto-reply/source-reply-delivery-mode.js";
 import type { ThinkLevel, VerboseLevel } from "../../auto-reply/thinking.js";
+import { resolveSessionAuthProfileOverrideSource } from "../../config/sessions/auth-profile-override-provenance.js";
 import { persistSessionTranscriptTurn } from "../../config/sessions/session-accessor.js";
 import { acquireOwnedSessionTranscriptWriteLock } from "../../config/sessions/transcript-write-context.js";
 import { readTailAssistantTextFromSessionTranscript } from "../../config/sessions/transcript.js";
@@ -570,7 +571,7 @@ export function runAgentAttempt(params: {
   onLifecycleGenerationChanged?: (lifecycleGeneration: string) => void;
 }) {
   const sessionAuthProfileId = params.sessionEntry?.authProfileOverride?.trim();
-  const sessionAuthProfileSource = params.sessionEntry?.authProfileOverrideSource;
+  const sessionAuthProfileSource = resolveSessionAuthProfileOverrideSource(params.sessionEntry);
   // An explicit session choice owns the conversation. Otherwise the profile
   // bound to the configured model replaces a stale automatic session choice.
   const selectedAuthProfile =

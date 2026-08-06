@@ -1,4 +1,5 @@
 import { sanitizeForLog } from "../../../packages/terminal-core/src/ansi.js";
+import { resolveSessionAuthProfileOverrideSource } from "../../config/sessions/auth-profile-override-provenance.js";
 import type { SessionEntry } from "../../config/sessions/types.js";
 import { emitAgentEvent } from "../../infra/agent-events.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
@@ -263,6 +264,10 @@ export async function runEmbeddedAgentAttempt(params: {
           requestedRouteResolution: params.modelSelection.requestedRouteResolution,
           agentDir,
           fallbacksOverride: effectiveFallbacksOverride,
+          userLockedAuthProfileId:
+            resolveSessionAuthProfileOverrideSource(sessionEntryForAttempt) === "user"
+              ? sessionEntryForAttempt?.authProfileOverride
+              : undefined,
           ...modelManifestContext,
         },
         identity: {

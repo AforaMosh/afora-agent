@@ -21,6 +21,7 @@ import { refreshQueuedFollowupSession } from "../auto-reply/reply/queue.js";
 import { persistReplySessionEntry } from "../auto-reply/reply/session-entry-persistence.js";
 import { isThinkingLevelSupported, resolveSupportedThinkingLevel } from "../auto-reply/thinking.js";
 import type { ThinkLevel } from "../auto-reply/thinking.shared.js";
+import { resolveSessionAuthProfileOverrideSource } from "../config/sessions/auth-profile-override-provenance.js";
 import {
   adoptPersistedSessionSnapshot,
   SESSION_MODEL_OVERRIDE_TRANSACTION_FIELDS,
@@ -333,9 +334,9 @@ export async function applySessionModelSelection(
       nextProvider: provider,
       nextModel: model,
       nextRouteResolution: "resolved",
-      nextModelOverrideSource: "user",
+      nextModelOverrideSource: request.isDefault ? undefined : "user",
       nextAuthProfileId: persistedEntry.authProfileOverride,
-      nextAuthProfileIdSource: persistedEntry.authProfileOverrideSource,
+      nextAuthProfileIdSource: resolveSessionAuthProfileOverrideSource(persistedEntry),
       nextThinking: {
         level: persistedEntry.thinkingLevel,
         catalog: [...thinkingCatalog],

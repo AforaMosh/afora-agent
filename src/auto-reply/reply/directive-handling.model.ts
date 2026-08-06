@@ -471,7 +471,7 @@ export async function maybeHandleModelDirectiveInfo(params: {
           thinkingLine,
           "",
           "Tap below to switch this session only, or use:",
-          "/model <provider/model> for a direct selection",
+          "/model <provider/model> for session + owner/admin default update",
           "/model <provider/model> -s for this session only",
           "/model <provider/model> --runtime <runtime> -s to switch harnesses",
           "/model status for details",

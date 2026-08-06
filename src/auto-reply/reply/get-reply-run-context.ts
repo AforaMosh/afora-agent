@@ -239,14 +239,19 @@ export async function prepareReplyRunContext(params: RunPreparedReplyParams) {
     normalizedCommandBody === rawBodyTrimmed.toLowerCase();
   const isResetOrNewCommand = /^\/(new|reset)(?:\s|$)/i.test(normalizedCommandBody);
   const commandTurn = resolveCommandTurnContext(ctx);
+  const isRegisteredWholeMessageCommand =
+    isWholeMessageCommand && (hasControlCommand(rawBodyTrimmed, cfg) || isResetOrNewCommand);
   const isActiveCommandTurn =
-    isNativeCommandTurn(commandTurn) || (allowTextCommands && isTextSlashCommandTurn(commandTurn));
+    isNativeCommandTurn(commandTurn) ||
+    (allowTextCommands &&
+      ctx.CommandInterpretationSuppressed !== true &&
+      (isTextSlashCommandTurn(commandTurn) || isRegisteredWholeMessageCommand));
   if (
     isActiveCommandTurn &&
     (!commandAuthorized || !command.isAuthorizedSender) &&
-    isWholeMessageCommand &&
-    (hasControlCommand(rawBodyTrimmed, cfg) || isResetOrNewCommand)
+    isRegisteredWholeMessageCommand
   ) {
+    opts?.onDeliberateSilentTerminalReply?.();
     typing.cleanup();
     return { kind: "reply", reply: undefined } as const;
   }
