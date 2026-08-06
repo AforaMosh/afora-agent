@@ -21,7 +21,6 @@ export type CodexSessionTranscriptMirrorWriteLockContext =
     }>;
     readMessageFacts: (params: { idempotencyKeys: readonly string[] }) => Promise<{
       existingIdempotencyKeys: Set<string>;
-      messageIdsByIdempotencyKey: Map<string, string>;
       messagesByIdempotencyKey: Map<string, AgentMessage>;
     }>;
   };

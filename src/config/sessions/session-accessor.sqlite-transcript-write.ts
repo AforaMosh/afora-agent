@@ -110,7 +110,6 @@ type SqliteTranscriptWriteLockContext = {
   }>;
   readMessageFacts: (params: { idempotencyKeys: readonly string[] }) => Promise<{
     existingIdempotencyKeys: Set<string>;
-    messageIdsByIdempotencyKey: Map<string, string>;
     messagesByIdempotencyKey: Map<string, unknown>;
   }>;
   readEvents: () => Promise<TranscriptEvent[]>;

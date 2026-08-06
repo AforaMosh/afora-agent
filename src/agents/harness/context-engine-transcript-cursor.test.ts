@@ -120,9 +120,10 @@ describe("context engine transcript cursor contract", () => {
         message: { role: "user", content: "third" },
         now: 3_000,
       });
-      if (!admitted) {
-        throw new Error("expected admitted user message");
+      if (!admitted?.admission) {
+        throw new Error("expected admitted user message with transcript admission");
       }
+      const admission = admitted.admission;
 
       await bootstrapHarnessContextEngine({
         hadSessionFile: true,
@@ -132,7 +133,7 @@ describe("context engine transcript cursor contract", () => {
         sessionTarget: target,
         sessionFile: "sqlite://context-engine-cursor",
         runtimeContext: {
-          transcriptReadFence: { messageId: admitted.messageId, target },
+          transcriptReadFence: admission,
         },
         runMaintenance: skipMaintenance,
         warn: () => {},
@@ -156,7 +157,7 @@ describe("context engine transcript cursor contract", () => {
         messagesSnapshot: [],
         prePromptMessageCount: 0,
         runtimeContext: {
-          transcriptReadFence: { messageId: admitted.messageId, target },
+          transcriptReadFence: admission,
         },
         runMaintenance: skipMaintenance,
         warn: () => {},

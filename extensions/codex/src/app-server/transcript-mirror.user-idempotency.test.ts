@@ -9,7 +9,10 @@ import {
 } from "openclaw/plugin-sdk/hook-runtime";
 import { createMockPluginRegistry } from "openclaw/plugin-sdk/plugin-test-runtime";
 import { upsertSessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
-import { readSessionTranscriptEvents } from "openclaw/plugin-sdk/session-transcript-runtime";
+import {
+  readSessionTranscriptEvents,
+  type TranscriptTurnAdmission,
+} from "openclaw/plugin-sdk/session-transcript-runtime";
 import {
   castAgentMessage,
   makeAgentAssistantMessage,
@@ -27,6 +30,7 @@ const transcriptRace = vi.hoisted(() => ({
   competingMessage: undefined as unknown,
   lookups: [] as Array<string | undefined>,
   publish: vi.fn(),
+  userAdmission: undefined as TranscriptTurnAdmission | undefined,
 }));
 
 vi.mock("openclaw/plugin-sdk/session-transcript-runtime", async (importOriginal) => {
@@ -65,7 +69,11 @@ vi.mock("openclaw/plugin-sdk/codex-session-transcript-runtime", async (importOri
           },
           appendMessageWithMessageSequence: async (options) => {
             transcriptRace.lookups.push(options.idempotencyLookup);
-            return await locked.appendMessageWithMessageSequence(options);
+            const result = await locked.appendMessageWithMessageSequence(options);
+            if (result.result?.message.role === "user") {
+              transcriptRace.userAdmission = result.result.admission;
+            }
+            return result;
           },
         };
         return await run(intercepted);
@@ -78,6 +86,7 @@ afterEach(() => {
   transcriptRace.competingMessage = undefined;
   transcriptRace.lookups.length = 0;
   transcriptRace.publish.mockReset();
+  transcriptRace.userAdmission = undefined;
 });
 
 it("adopts a competing indexed user without duplicating writes or slowing assistant mirrors", async () => {
@@ -177,12 +186,12 @@ it("adopts a competing indexed user without duplicating writes or slowing assist
         }),
       }),
     ]);
-    expect(result.userMessageReceipts).toEqual([
-      {
-        message: result.userMessagesPresent[0],
-        messageId: messageEvents.find((event) => event.message.role === "user")?.id,
-      },
-    ]);
+    expect(result.userMessageReceipts).toHaveLength(1);
+    expect(result.userMessageReceipts[0]?.message).toBe(result.userMessagesPresent[0]);
+    expect(result.userMessageReceipts[0]?.admission).toBe(transcriptRace.userAdmission);
+    expect(result.userMessageReceipts[0]?.admission.admittedEntryId).toBe(
+      messageEvents.find((event) => event.message.role === "user")?.id,
+    );
     expect(result.assistantMirrorIdentitiesOwned).toEqual(["turn-1:assistant"]);
     expect(transcriptRace.lookups).toEqual(["scan", "scan"]);
     expect(transcriptRace.publish).toHaveBeenCalledTimes(1);

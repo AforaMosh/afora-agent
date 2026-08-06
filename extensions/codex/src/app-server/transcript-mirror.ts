@@ -623,14 +623,15 @@ async function mirror(params: {
             nextMessagesPresent.push(persistedMessage);
             if (persistedMessage.role === "user") {
               nextUserMessagesPresent.push(persistedMessage);
-              const persistedMessageId =
-                idempotencyKey === undefined
-                  ? undefined
-                  : mirrorFacts.messageIdsByIdempotencyKey.get(idempotencyKey);
-              if (persistedMessageId) {
+              const { result: replayed } = await transcript.appendMessageWithMessageSequence({
+                message: persistedMessage,
+                idempotencyLookup: "scan",
+                cwd: params.cwd,
+              });
+              if (replayed?.admission) {
                 nextUserMessageReceipts.push({
+                  admission: replayed.admission,
                   message: persistedMessage,
-                  messageId: persistedMessageId,
                 });
               }
             }

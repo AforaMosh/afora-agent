@@ -924,6 +924,11 @@ describe("mirrorCodexAppServerTranscript", () => {
     expect(raw).not.toContain('"idempotencyKey":"codex-app-server:thread-1:');
     expect(first.userMessagesPresent).toHaveLength(1);
     expect(second.userMessagesPresent).toHaveLength(1);
+    expect(first.userMessageReceipts).toHaveLength(1);
+    expect(second.userMessageReceipts).toHaveLength(1);
+    expect(second.userMessageReceipts[0]?.admission.admittedEntryId).toBe(
+      first.userMessageReceipts[0]?.admission.admittedEntryId,
+    );
     expect(
       (await readMirrorMessages(target)).filter((message) => message.role === "user"),
     ).toHaveLength(1);
