@@ -17,7 +17,7 @@ type GatewayHandlerPrewarmItem = {
 };
 
 type GatewayHandlerPrewarmHandle = {
-  stop: () => void;
+  stop: () => Promise<void>;
 };
 
 async function prewarmGatewaySessionListData(cfg: OpenClawConfig, agentId: string): Promise<void> {
@@ -157,8 +157,9 @@ export function scheduleGatewayHandlerPrewarm(params: {
   return {
     stop: () => {
       stopped = true;
-      idleTask?.stop();
+      const activeIdleTask = idleTask;
       idleTask = undefined;
+      return activeIdleTask?.stop() ?? Promise.resolve();
     },
   };
 }

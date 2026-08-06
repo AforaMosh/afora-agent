@@ -364,8 +364,9 @@ function scheduleAgentRuntimePluginPrewarm(params: {
   return {
     stop: () => {
       stopped = true;
-      idleTask?.stop();
+      const activeIdleTask = idleTask;
       idleTask = undefined;
+      return activeIdleTask?.stop();
     },
   };
 }

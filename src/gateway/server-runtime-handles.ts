@@ -10,6 +10,7 @@ import {
   waitForMediaCleanupDrains,
 } from "./server-media-cleanup-lifecycle.js";
 import type { GatewayPostReadySidecarHandle } from "./server-startup-post-attach.js";
+import type { GatewayScheduledServicesLifecycleOwner } from "./server-startup-scheduled-services.js";
 
 // Mutable server handles track timers, sidecars, subscriptions, and service
 // cleanup hooks that shutdown/reload code must stop exactly once.
@@ -33,6 +34,7 @@ export type GatewayServerMutableState = {
   skillCuratorCleanup: () => void;
   heartbeatRunner: HeartbeatRunner;
   stopOutboundDeliveryRecovery: () => Promise<void>;
+  scheduledServices: GatewayScheduledServicesLifecycleOwner;
   stopGatewayUpdateCheck: () => void;
   tailscaleCleanup: (() => Promise<void>) | null;
   postReadySidecars: GatewayPostReadySidecarHandle[];
@@ -72,6 +74,7 @@ export function createGatewayServerMutableState(): GatewayServerMutableState {
       updateConfig: (_cfg: OpenClawConfig) => {},
     } satisfies HeartbeatRunner,
     stopOutboundDeliveryRecovery: async () => {},
+    scheduledServices: { stop: async () => {} },
     stopGatewayUpdateCheck: () => {},
     tailscaleCleanup: null as (() => Promise<void>) | null,
     postReadySidecars: [],

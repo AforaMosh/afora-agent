@@ -21,6 +21,7 @@ import {
 } from "./config-reload-recovery.js";
 import type { GatewayReloadPlan } from "./config-reload.js";
 import { commitHooksConfigReload, resolveHooksConfig } from "./hooks.js";
+import { startGatewayCronWithLogging } from "./server-cron-start.js";
 import { buildGatewayCronService } from "./server-cron.js";
 import { applyGatewayLaneConcurrency, resolveGatewayLaneConcurrency } from "./server-lanes.js";
 import { createGatewayActiveWorkTracker } from "./server-reload-active-work.js";
@@ -43,7 +44,6 @@ import {
   disposeMcpRuntimesWithTimeout,
   resetPreparedModelRuntimeStateForHotReload,
 } from "./server-reload-utils.js";
-import { startGatewayCronWithLogging } from "./server-runtime-services.js";
 import { resolveHookClientIpConfig } from "./server/hook-client-ip-config.js";
 
 const MCP_RUNTIME_RELOAD_DISPOSE_TIMEOUT_MS = 5_000;

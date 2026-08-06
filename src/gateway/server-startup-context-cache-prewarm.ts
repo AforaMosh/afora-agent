@@ -50,7 +50,7 @@ export function scheduleContextCachePrewarm(params: {
   return {
     stop: () => {
       stopped = true;
-      idleTask.stop();
+      return idleTask.stop();
     },
   };
 }

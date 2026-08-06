@@ -19,6 +19,7 @@ import {
 } from "../process/gateway-work-admission.js";
 import { startSessionUpstreamMonitor } from "../sessions/session-upstream-monitor.js";
 import type { GatewayCronReconciliation } from "./server-cron-reconciled.js";
+import { startGatewayCronWithLogging } from "./server-cron-start.js";
 import type { GatewayCronState } from "./server-cron.js";
 import type { startGatewayMaintenanceTimers } from "./server-maintenance.js";
 import {
@@ -31,6 +32,7 @@ export {
   startGatewayRuntimeServices,
   type GatewayChannelManager,
 } from "./server-runtime-startup-services.js";
+export { startGatewayCronWithLogging };
 
 type GatewayPostReadyLogger = {
   warn: (message: string) => void;
@@ -38,35 +40,9 @@ type GatewayPostReadyLogger = {
 export type GatewayMaintenanceHandles = NonNullable<
   Awaited<ReturnType<typeof startGatewayMaintenanceTimers>>
 >;
-
-/** Starts cron without making the surrounding startup or reload transaction wait. */
-export function startGatewayCronWithLogging(params: {
-  cronState: GatewayCronState;
-  cronReconciliation: GatewayCronReconciliation;
-  reason: "startup" | "reload";
-  config: OpenClawConfig;
-  afterStart?: () => Promise<void>;
-  onStartError?: (error: unknown) => void;
-  logCron: { error: (message: string) => void };
-}): void {
-  const reconciliation = params.cronReconciliation.arm({
-    reason: params.reason,
-    config: params.config,
-    cronState: params.cronState,
-  });
-  void runWithGatewayIndependentRootWorkAdmission(async () => {
-    try {
-      await params.cronState.cron.start();
-      await params.afterStart?.();
-      await reconciliation.complete();
-    } catch (err) {
-      params.logCron.error(`failed to start: ${String(err)}`);
-      // Recovery callbacks must run before this independent root releases its
-      // admission fence; restart and suspension cannot race past this point.
-      params.onStartError?.(err);
-    }
-  }).catch((err: unknown) => params.logCron.error(`failed to enter start root: ${String(err)}`));
-}
+export type GatewayPostReadyMaintenanceHandle = {
+  stop: () => Promise<void>;
+};
 
 async function clearGatewayMaintenanceHandles(
   maintenance: GatewayMaintenanceHandles | null,
@@ -118,7 +94,7 @@ export async function runGatewayPostReadyMaintenance(params: {
   params.recordPostReadyMemory();
 }
 
-/** Schedules post-ready maintenance and cancels/cleans handles if shutdown wins the race. */
+/** Schedules post-ready maintenance and joins it when shutdown wins the race. */
 export function scheduleGatewayPostReadyMaintenance(params: {
   delayMs: number;
   isClosing: () => boolean;
@@ -133,53 +109,78 @@ export function scheduleGatewayPostReadyMaintenance(params: {
   logCron: { error: (message: string) => void };
   log: GatewayPostReadyLogger;
   recordPostReadyMemory: () => void;
-}): ReturnType<typeof setTimeout> {
-  const timer = setTimeout(() => {
+}): GatewayPostReadyMaintenanceHandle {
+  let stopped = false;
+  let inFlight: Promise<void> | null = null;
+  let stopPromise: Promise<void> | null = null;
+  let timer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
+    timer = null;
     params.onStarted?.();
-    if (params.isClosing()) {
+    if (stopped || params.isClosing()) {
       return;
     }
-    void runWithGatewayIndependentRootWorkAdmission(async () =>
-      runGatewayPostReadyMaintenance({
-        startMaintenance: async () => {
-          if (params.isClosing()) {
-            return null;
-          }
-          const maintenance = await params.startMaintenance();
-          if (params.isClosing()) {
-            // Maintenance can allocate intervals before shutdown is observed; clear them here
-            // instead of handing live timers to a closing gateway.
-            await clearGatewayMaintenanceHandles(maintenance);
-            return null;
-          }
-          return maintenance;
-        },
-        applyMaintenance: async (maintenance) => {
-          if (params.isClosing()) {
-            await clearGatewayMaintenanceHandles(maintenance);
-            return;
-          }
-          await params.applyMaintenance(maintenance);
-        },
-        shouldStartCron: () => !params.isClosing() && params.shouldStartCron(),
-        markCronStartHandled: params.markCronStartHandled,
-        cronState: params.cronState,
-        cronReconciliation: params.cronReconciliation,
-        cronConfig: params.cronConfig,
-        logCron: params.logCron,
-        log: params.log,
-        recordPostReadyMemory: () => {
-          if (!params.isClosing()) {
-            params.recordPostReadyMemory();
-          }
-        },
-      }),
-    ).catch((err: unknown) =>
-      params.log.warn(`gateway post-ready maintenance deferred task failed: ${String(err)}`),
+    // Publish the join handle before child code can re-enter gateway shutdown.
+    const task = Promise.resolve().then(() =>
+      runWithGatewayIndependentRootWorkAdmission(async () =>
+        runGatewayPostReadyMaintenance({
+          startMaintenance: async () => {
+            if (stopped || params.isClosing()) {
+              return null;
+            }
+            const maintenance = await params.startMaintenance();
+            if (stopped || params.isClosing()) {
+              // Maintenance can allocate intervals before shutdown is observed; clear them here
+              // instead of handing live timers to a closing gateway.
+              await clearGatewayMaintenanceHandles(maintenance);
+              return null;
+            }
+            return maintenance;
+          },
+          applyMaintenance: async (maintenance) => {
+            if (stopped || params.isClosing()) {
+              await clearGatewayMaintenanceHandles(maintenance);
+              return;
+            }
+            await params.applyMaintenance(maintenance);
+          },
+          shouldStartCron: () => !stopped && !params.isClosing() && params.shouldStartCron(),
+          markCronStartHandled: params.markCronStartHandled,
+          cronState: params.cronState,
+          cronReconciliation: params.cronReconciliation,
+          cronConfig: params.cronConfig,
+          logCron: params.logCron,
+          log: params.log,
+          recordPostReadyMemory: () => {
+            if (!stopped && !params.isClosing()) {
+              params.recordPostReadyMemory();
+            }
+          },
+        }),
+      ),
     );
+    const settled = task
+      .catch((err: unknown) =>
+        params.log.warn(`gateway post-ready maintenance deferred task failed: ${String(err)}`),
+      )
+      .finally(() => {
+        if (inFlight === settled) {
+          inFlight = null;
+        }
+      });
+    inFlight = settled;
   }, params.delayMs);
   timer.unref?.();
-  return timer;
+  return {
+    stop: () => {
+      stopped = true;
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
+      }
+      stopPromise ??= inFlight ?? Promise.resolve();
+      return stopPromise;
+    },
+  };
 }
 
 const RECOVERY_SHUTDOWN_STILL_PENDING_WARN_MS = 5_000;

@@ -681,7 +681,7 @@ describe("server-runtime-services", () => {
     expect(recordPostReadyMemory).toHaveBeenCalledTimes(1);
   });
 
-  it("returns a cancellable post-ready maintenance timer", async () => {
+  it("returns a cancellable post-ready maintenance handle", async () => {
     vi.useFakeTimers();
     const startMaintenance = vi.fn(async () => null);
     const onStarted = vi.fn();
@@ -693,11 +693,47 @@ describe("server-runtime-services", () => {
       }),
     );
 
-    clearTimeout(handle);
+    await handle.stop();
     await vi.advanceTimersByTimeAsync(25);
 
     expect(onStarted).not.toHaveBeenCalled();
     expect(startMaintenance).not.toHaveBeenCalled();
+  });
+
+  it("keeps maintenance stop pending after the timer fires until child work settles", async () => {
+    vi.useFakeTimers();
+    let finishMaintenance: ((maintenance: null) => void) | undefined;
+    const startMaintenance = vi.fn(
+      () =>
+        new Promise<null>((resolve) => {
+          finishMaintenance = resolve;
+        }),
+    );
+    const handle = scheduleGatewayPostReadyMaintenance(
+      createPostReadyMaintenanceScheduleParams({
+        delayMs: 25,
+        startMaintenance,
+      }),
+    );
+
+    await vi.advanceTimersByTimeAsync(25);
+    await waitForFast(() => expect(startMaintenance).toHaveBeenCalledOnce());
+
+    let stopSettled = false;
+    const stop = handle.stop().then(() => {
+      stopSettled = true;
+    });
+    await Promise.resolve();
+    expect(stopSettled).toBe(false);
+    expect(getActiveGatewayRootWorkCount()).toBe(1);
+
+    if (!finishMaintenance) {
+      throw new Error("Expected maintenance resolver to be initialized");
+    }
+    finishMaintenance(null);
+    await stop;
+    expect(stopSettled).toBe(true);
+    expect(getActiveGatewayRootWorkCount()).toBe(0);
   });
 
   it("runs a scheduled idle task in an independent admitted root", async () => {
@@ -791,7 +827,7 @@ describe("server-runtime-services", () => {
       errorMessage: "idle task failed",
     });
 
-    handle.stop();
+    await handle.stop();
     await vi.advanceTimersByTimeAsync(25);
 
     expect(run).not.toHaveBeenCalled();

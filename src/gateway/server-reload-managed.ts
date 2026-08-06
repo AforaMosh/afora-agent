@@ -1,6 +1,8 @@
+import { setRuntimeConfigAppliedHash } from "../config/runtime-snapshot.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { runWithGatewayIndependentRootWorkAdmission } from "../process/gateway-work-admission.js";
 import { getActiveSecretsRuntimeSnapshotRevision } from "../secrets/runtime-state.js";
+import { createLazyPromiseLoader } from "../shared/lazy-runtime.js";
 import { invalidateConfigGetResponseCache } from "./config-get-response.js";
 import {
   startGatewayConfigReloader,
@@ -22,7 +24,6 @@ import {
   type ManagedGatewayConfigReloaderParams,
   type RuntimeSecretsPreflightParams,
 } from "./server-reload-contracts.js";
-import { createGatewayReloadHandlers } from "./server-reload-hot.js";
 import {
   createManagedReloadSecretHandlers,
   isRuntimeSecretsPreparationCurrent,
@@ -31,7 +32,7 @@ import {
   assertIrreversibleReloadPlanHasRecoveryOwner,
   restoreCanonicalSecretRefs,
 } from "./server-reload-utils.js";
-import { startGatewayChannelHealthMonitor } from "./server-runtime-services.js";
+import { startGatewayChannelHealthMonitor } from "./server-runtime-startup-services.js";
 import {
   captureSharedGatewaySessionGenerationOwnership,
   disconnectStaleSharedGatewayAuthClients,
@@ -39,6 +40,10 @@ import {
   setRequiredSharedGatewaySessionGenerationIfOwned,
   type SharedGatewaySessionGenerationOwnership,
 } from "./server-shared-auth-generation.js";
+
+type GatewayReloadHandlers = ReturnType<
+  typeof import("./server-reload-hot.js").createGatewayReloadHandlers
+>;
 
 export function startManagedGatewayConfigReloader(
   params: ManagedGatewayConfigReloaderParams,
@@ -110,50 +115,74 @@ export function startManagedGatewayConfigReloader(
     activeGmailRestartAbortController = abortController;
     return abortController;
   };
-  const {
-    applyHotReload,
-    acceptRestartConfig,
-    beginGatewayRestartLifecycle,
-    pauseGatewayRestartForConfigCandidate,
-    publishAppliedConfigHash,
-    publishAcceptedRestartTarget,
-    publishDeferredAppliedConfigHash,
-    recordAcceptedRestartTarget,
-    requestGatewayRestart,
-    restoreConservativeRestartDebt,
-    stopRestartRetries,
-  } = createGatewayReloadHandlers({
-    deps: params.deps,
-    broadcast: params.broadcast,
-    getState: params.getState,
-    setState: params.setState,
-    startChannel: params.startChannel,
-    stopChannel: params.stopChannel,
-    getChannelAutostartSuppression: params.getChannelAutostartSuppression,
-    stopPostReadySidecars: params.stopPostReadySidecars,
-    reloadPlugins: params.reloadPlugins,
-    logHooks: params.logHooks,
-    logChannels: params.logChannels,
-    logCron: params.logCron,
-    logReload: params.logReload,
-    cronReconciliation: params.cronReconciliation,
-    createGmailRestartAbortController,
-    clearGmailRestartAbortController: (abortController) => {
-      if (activeGmailRestartAbortController === abortController) {
-        activeGmailRestartAbortController = null;
+  let reloadHandlers: GatewayReloadHandlers | null = null;
+  let configCandidatePending = false;
+  let configCandidateGeneration = 0;
+  const reloadHandlersLoader = createLazyPromiseLoader(
+    async (): Promise<GatewayReloadHandlers> => {
+      const { createGatewayReloadHandlers } = await import("./server-reload-hot.js");
+      const handlers = createGatewayReloadHandlers({
+        deps: params.deps,
+        broadcast: params.broadcast,
+        getState: params.getState,
+        setState: params.setState,
+        startChannel: params.startChannel,
+        stopChannel: params.stopChannel,
+        getChannelAutostartSuppression: params.getChannelAutostartSuppression,
+        stopPostReadySidecars: params.stopPostReadySidecars,
+        reloadPlugins: params.reloadPlugins,
+        logHooks: params.logHooks,
+        logChannels: params.logChannels,
+        logCron: params.logCron,
+        logReload: params.logReload,
+        cronReconciliation: params.cronReconciliation,
+        createGmailRestartAbortController,
+        clearGmailRestartAbortController: (abortController) => {
+          if (activeGmailRestartAbortController === abortController) {
+            activeGmailRestartAbortController = null;
+          }
+        },
+        ...(params.onCronRestart ? { onCronRestart: params.onCronRestart } : {}),
+        ...(params.requestRecoveryRestart
+          ? { requestRecoveryRestart: params.requestRecoveryRestart }
+          : {}),
+        restartRecoveryAvailable,
+        createHealthMonitor: (config) =>
+          startGatewayChannelHealthMonitor({
+            cfg: config,
+            channelManager: params.channelManager,
+          }),
+      });
+      reloadHandlers = handlers;
+      if (stopped) {
+        handlers.stopRestartRetries();
+        abortPendingChannelReloads();
+      } else if (configCandidatePending) {
+        configCandidatePending = false;
+        handlers.pauseGatewayRestartForConfigCandidate();
       }
+      return handlers;
     },
-    ...(params.onCronRestart ? { onCronRestart: params.onCronRestart } : {}),
-    ...(params.requestRecoveryRestart
-      ? { requestRecoveryRestart: params.requestRecoveryRestart }
-      : {}),
-    restartRecoveryAvailable,
-    createHealthMonitor: (config) =>
-      startGatewayChannelHealthMonitor({
-        cfg: config,
-        channelManager: params.channelManager,
-      }),
-  });
+    { cacheRejections: true },
+  );
+  const loadReloadHandlers = async (): Promise<GatewayReloadHandlers> => {
+    if (stopped) {
+      throw new GatewayConfigReloadSupersededError();
+    }
+    let handlers: GatewayReloadHandlers;
+    try {
+      handlers = await reloadHandlersLoader.load();
+    } catch (error) {
+      if (stopped) {
+        throw new GatewayConfigReloadSupersededError();
+      }
+      throw error;
+    }
+    if (stopped) {
+      throw new GatewayConfigReloadSupersededError();
+    }
+    return handlers;
+  };
   const runManagedRestart = async (
     plan: GatewayReloadPlan,
     nextConfig: OpenClawConfig,
@@ -168,6 +197,8 @@ export function startManagedGatewayConfigReloader(
         throw new GatewayConfigReloadSupersededError();
       }
     };
+    assertCurrent();
+    const { beginGatewayRestartLifecycle, requestGatewayRestart } = await loadReloadHandlers();
     assertCurrent();
     const restartLifecycle = beginGatewayRestartLifecycle();
     let preparation:
@@ -305,7 +336,7 @@ export function startManagedGatewayConfigReloader(
       params,
       prepareRuntimeCandidate,
       tryPrepareRuntimeSecrets,
-      applyHotReload,
+      applyHotReload: async (...args) => (await loadReloadHandlers()).applyHotReload(...args),
     });
 
   const configReloader = startGatewayConfigReloader({
@@ -335,12 +366,37 @@ export function startManagedGatewayConfigReloader(
     readSnapshot: params.readSnapshot,
     promoteSnapshot: async (snapshot, _reason) => await params.promoteSnapshot(snapshot),
     subscribeToWrites: params.subscribeToWrites,
-    onConfigCandidateObserved: pauseGatewayRestartForConfigCandidate,
-    onConfigChange: (plan, nextConfig) => {
+    onConfigCandidateObserved: () => {
+      configCandidateGeneration += 1;
+      if (reloadHandlers) {
+        reloadHandlers.pauseGatewayRestartForConfigCandidate();
+        return;
+      }
+      // Invalid candidates should not load the hot graph. Carry the pause into
+      // the first accepted transaction, before any handler state is consumed.
+      configCandidatePending = true;
+    },
+    onConfigChange: async (plan, nextConfig) => {
+      const candidateGeneration = configCandidateGeneration;
       assertIrreversibleReloadPlanHasRecoveryOwner(plan, restartRecoveryAvailable);
+      await loadReloadHandlers();
+      if (candidateGeneration !== configCandidateGeneration) {
+        throw new GatewayConfigReloadSupersededError();
+      }
       params.prepareTerminalConfig(plan, applyRuntimeConfigOverrides(nextConfig));
     },
     onConfigAccepted: async (nextConfig, transactionOwnership, sourceConfig, acceptance) => {
+      const handlers = reloadHandlers;
+      if (!handlers) {
+        return await acceptance.publishSource?.();
+      }
+      const {
+        acceptRestartConfig,
+        publishAcceptedRestartTarget,
+        publishDeferredAppliedConfigHash,
+        recordAcceptedRestartTarget,
+        restoreConservativeRestartDebt,
+      } = handlers;
       const assertCurrent = () => {
         if (!transactionOwnership.isCurrent()) {
           throw new GatewayConfigReloadSupersededError();
@@ -438,7 +494,13 @@ export function startManagedGatewayConfigReloader(
       }
     },
     onConfigApplied: (_plan, nextConfig) => params.commitTerminalConfig(nextConfig),
-    onConfigRevisionApplied: publishAppliedConfigHash,
+    onConfigRevisionApplied: (hash) => {
+      if (reloadHandlers) {
+        reloadHandlers.publishAppliedConfigHash(hash);
+        return;
+      }
+      setRuntimeConfigAppliedHash(hash);
+    },
     onEffectiveConfigUnchanged,
     onNoopConfigCommit,
     onHotReload,
@@ -453,7 +515,7 @@ export function startManagedGatewayConfigReloader(
   return {
     stop: async () => {
       stopped = true;
-      stopRestartRetries();
+      reloadHandlers?.stopRestartRetries();
       // Release managed waiters before the base reloader joins every active transaction.
       abortPendingChannelReloads();
       abortActiveGmailRestart();

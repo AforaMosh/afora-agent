@@ -283,24 +283,10 @@ export async function prepareGatewayLifecycle(params: {
       }
     },
   });
-  const postReadyState: {
-    maintenanceTimer: ReturnType<typeof setTimeout> | null;
-    retainedPluginCleanupHandle: { stop: () => void } | null;
-  } = {
-    maintenanceTimer: null,
-    retainedPluginCleanupHandle: null,
-  };
-  const clearPostReadyMaintenanceTimer = () => {
-    if (!postReadyState.maintenanceTimer) {
-      return;
-    }
-    clearTimeout(postReadyState.maintenanceTimer);
-    postReadyState.maintenanceTimer = null;
-  };
-  let outboundDeliveryRecoveryStopPromise: Promise<void> | null = null;
-  const stopOutboundDeliveryRecoveryForClose = () => {
-    outboundDeliveryRecoveryStopPromise ??= runtimeState.stopOutboundDeliveryRecovery();
-    return outboundDeliveryRecoveryStopPromise;
+  let scheduledServicesStopPromise: Promise<void> | null = null;
+  const stopScheduledServicesForClose = () => {
+    scheduledServicesStopPromise ??= runtimeState.scheduledServices.stop();
+    return scheduledServicesStopPromise;
   };
   let mediaCleanupStopPromise: ReturnType<typeof runtimeState.stopMediaCleanup> | null = null;
   const stopMediaCleanupForClose = () => {
@@ -311,7 +297,7 @@ export async function prepareGatewayLifecycle(params: {
     lifecycle.closePreludeStarted = true;
     // Fence background owners before any awaited close step can tear down the
     // plugin/channel or shared-state runtime they still need.
-    void stopOutboundDeliveryRecoveryForClose();
+    void stopScheduledServicesForClose();
     void stopMediaCleanupForClose();
     runtimeState.controlUiSessionPullRequests?.stop();
     runtimeState.sessionViewerPresence?.stop();
@@ -319,9 +305,6 @@ export async function prepareGatewayLifecycle(params: {
     startupState.dispatchReady = false;
     gatewayInstanceRuntimeRef.current?.close();
     cronReconciliation.invalidate();
-    clearPostReadyMaintenanceTimer();
-    postReadyState.retainedPluginCleanupHandle?.stop();
-    postReadyState.retainedPluginCleanupHandle = null;
   };
   let configReloaderStopPromise: Promise<void> | null = null;
   const stopConfigReloaderForClose = () => {
@@ -334,7 +317,7 @@ export async function prepareGatewayLifecycle(params: {
     // Owners are fenced synchronously above. Join them before any runtime they
     // can publish into is torn down.
     await Promise.all([
-      stopOutboundDeliveryRecoveryForClose(),
+      stopScheduledServicesForClose(),
       stopMediaCleanupForClose(),
       stopConfigReloaderForClose().catch(() => {}),
     ]);
@@ -520,7 +503,6 @@ export async function prepareGatewayLifecycle(params: {
     runtimeState,
     pluginHostServices,
     lifecycle,
-    postReadyState,
     cronReconciliation,
     beginClosePrelude,
     runClosePrelude,

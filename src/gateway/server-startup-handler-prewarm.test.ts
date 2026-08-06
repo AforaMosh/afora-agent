@@ -110,7 +110,7 @@ describe("scheduleGatewayHandlerPrewarm", () => {
       agentIds: ["main", "research"],
       maxRows: 2_000,
     });
-    sidecar.stop();
+    await sidecar.stop();
   });
 
   it("waits for gateway readiness before warming handler data", async () => {
@@ -134,7 +134,7 @@ describe("scheduleGatewayHandlerPrewarm", () => {
     releaseGatewayReady();
     await vi.runAllTimersAsync();
     expect(load).toHaveBeenCalledOnce();
-    sidecar.stop();
+    await sidecar.stop();
   });
 
   it("waits for admitted request work before warming handler data", async () => {
@@ -158,7 +158,7 @@ describe("scheduleGatewayHandlerPrewarm", () => {
     expect(load).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1);
     await vi.waitFor(() => expect(load).toHaveBeenCalledOnce());
-    sidecar.stop();
+    await sidecar.stop();
   });
 
   it("stays stopped when readiness arrives after shutdown", async () => {
@@ -177,7 +177,7 @@ describe("scheduleGatewayHandlerPrewarm", () => {
     });
 
     await vi.advanceTimersToNextTimerAsync();
-    sidecar.stop();
+    await sidecar.stop();
     releaseGatewayReady();
     await vi.runAllTimersAsync();
 
@@ -259,8 +259,9 @@ describe("scheduleGatewayHandlerPrewarm", () => {
 
     await vi.advanceTimersToNextTimerAsync();
     expect(first).toHaveBeenCalledOnce();
-    sidecar.stop();
+    const stop = sidecar.stop();
     releaseFirst();
+    await stop;
     await vi.runAllTimersAsync();
 
     expect(second).not.toHaveBeenCalled();

@@ -89,20 +89,21 @@ describe("gateway startup import boundaries", () => {
 
   it("defers retained plugin generation cleanup to the post-ready idle scheduler", () => {
     const serverImpl = readServerImplementation();
+    const scheduledServices = readSource("src/gateway/server-startup-scheduled-services.ts");
     const cleanup = readSource("src/gateway/server-retained-plugin-cleanup.ts");
     const importBoundary = serverImpl.indexOf("type LoadGatewayModelCatalog");
-    const serverStart = serverImpl.indexOf("export async function startGatewayServer");
-    const postReadyStart = serverImpl.indexOf("scheduleGatewayPostReadyMaintenance({", serverStart);
-    const cleanupCall = serverImpl.lastIndexOf("cleanupRetainedPluginInstallGenerations(");
+    const postReadyStart = scheduledServices.indexOf("scheduleGatewayPostReadyMaintenance({");
+    const cleanupCall = scheduledServices.lastIndexOf("cleanupRetainedPluginInstallGenerations(");
 
     expect(importBoundary).toBeGreaterThan(-1);
     expect(serverImpl.slice(0, importBoundary)).not.toContain("managed-npm-retention");
     expect(serverImpl.slice(0, importBoundary)).not.toContain("installed-plugin-index-records");
+    expect(serverImpl).toContain('from "./server-startup-scheduled-services.js"');
     expect(cleanup).toContain('import("../plugins/managed-npm-retention.js")');
     expect(cleanup).toContain('import("../plugins/installed-plugin-index-records.js")');
-    expect(postReadyStart).toBeGreaterThan(serverStart);
+    expect(postReadyStart).toBeGreaterThan(-1);
     expect(cleanupCall).toBeGreaterThan(postReadyStart);
-    expect(serverImpl.slice(postReadyStart, cleanupCall + 300)).not.toContain(
+    expect(scheduledServices.slice(postReadyStart, cleanupCall + 300)).not.toContain(
       "startupConfigLoad.pluginMetadataSnapshot?.index.installRecords",
     );
     expect(cleanup).toContain("loadInstalledPluginIndexInstallRecordsSync()");
@@ -132,8 +133,31 @@ describe("gateway startup import boundaries", () => {
     expect(workerStartup.match(/loadWorkerEnvironmentRuntimeModule\(\)/gu)).toHaveLength(3);
   });
 
+  it("keeps the managed reload watcher separate from the hot-reload graph", () => {
+    const startupFinish = readSource("src/gateway/server-startup-finish.ts");
+    const managedReload = readSource("src/gateway/server-reload-managed.ts");
+    const hotReload = readSource("src/gateway/server-reload-hot.ts");
+    const reloadBarrel = readSource("src/gateway/server-reload-handlers.ts");
+
+    expect(startupFinish).toContain('import("./server-reload-managed.js")');
+    expect(startupFinish).not.toContain('import("./server-reload-handlers.js")');
+    expect(managedReload).toContain('import("./server-reload-hot.js")');
+    expect(managedReload).not.toContain('from "./server-reload-hot.js"');
+    expect(managedReload).toContain('from "./server-runtime-startup-services.js"');
+    expect(managedReload).not.toContain('from "./server-runtime-services.js"');
+    expect(hotReload).toContain('from "./server-cron-start.js"');
+    expect(hotReload).not.toContain('from "./server-runtime-services.js"');
+    expect(reloadBarrel).toContain(
+      'export { createGatewayReloadHandlers } from "./server-reload-hot.js"',
+    );
+    expect(reloadBarrel).toContain(
+      'export { startManagedGatewayConfigReloader } from "./server-reload-managed.js"',
+    );
+  });
+
   it("fences config reload before gateway teardown and gateway_stop hooks", () => {
     const serverImpl = readServerImplementation();
+    const scheduledServices = readSource("src/gateway/server-startup-scheduled-services.ts");
     const closeStart = /close:\s*async\s*\([^)]*\)\s*=>/u.exec(serverImpl)?.index ?? -1;
     const hookStart = serverImpl.indexOf("runGlobalGatewayStopSafely", closeStart);
     const reloadStopStart = serverImpl.indexOf("await beginClosePrelude();", closeStart);
@@ -142,9 +166,6 @@ describe("gateway startup import boundaries", () => {
     const markHelperEnd = serverImpl.indexOf("};", markHelperStart);
     const beginHelperStart = serverImpl.indexOf("const beginClosePrelude = async () => {");
     const beginHelperEnd = serverImpl.indexOf("};", beginHelperStart);
-    const postReadyStart = serverImpl.indexOf("scheduleGatewayPostReadyMaintenance({");
-    const postReadyEnd = serverImpl.indexOf("});", postReadyStart);
-    const postReadyBlock = serverImpl.slice(postReadyStart, postReadyEnd);
 
     expect(closeStart).toBeGreaterThan(-1);
     expect(reloadStopStart).toBeGreaterThan(closeStart);
@@ -152,13 +173,10 @@ describe("gateway startup import boundaries", () => {
     expect(reloadStopStart).toBeLessThan(hookStart);
     expect(markHelperStart).toBeGreaterThan(-1);
     expect(serverImpl.slice(markHelperStart, markHelperEnd)).toContain(
-      "clearPostReadyMaintenanceTimer();",
+      "void stopScheduledServicesForClose();",
     );
     expect(serverImpl.slice(markHelperStart, markHelperEnd)).toContain(
       "cronReconciliation.invalidate();",
-    );
-    expect(serverImpl.slice(markHelperStart, markHelperEnd)).toContain(
-      "void stopOutboundDeliveryRecoveryForClose();",
     );
     expect(beginHelperStart).toBeGreaterThan(-1);
     expect(serverImpl.slice(beginHelperStart, beginHelperEnd)).toContain(
@@ -168,13 +186,13 @@ describe("gateway startup import boundaries", () => {
       "stopConfigReloaderForClose().catch",
     );
     expect(serverImpl.slice(beginHelperStart, beginHelperEnd)).toContain(
-      "stopOutboundDeliveryRecoveryForClose(),",
+      "stopScheduledServicesForClose(),",
     );
-    expect(postReadyStart).toBeGreaterThan(-1);
-    expect(postReadyBlock).toContain("isClosing: () => lifecycle.closePreludeStarted");
-    expect(postReadyBlock).toContain("if (lifecycle.closePreludeStarted)");
-    expect(postReadyBlock).toContain(
-      "shouldStartCron: () => !lifecycle.closePreludeStarted && !cronStartState.handled",
+    expect(scheduledServices).toContain("scheduleGatewayPostReadyMaintenance({");
+    expect(scheduledServices).toContain("isClosing: () => stopped");
+    expect(scheduledServices).toContain("if (stopped)");
+    expect(scheduledServices).toContain(
+      "shouldStartCron: () => !stopped && params.shouldStartCron()",
     );
   });
 });
