@@ -334,7 +334,7 @@ const McpServerSchema = z
           )
           .min(1)
           .optional(),
-        defaultToolsApprovalMode: z.enum(["auto", "prompt", "approve"]).optional(),
+        defaultToolsApprovalMode: z.enum(["auto", "prompt", "writes", "approve"]).optional(),
       })
       .optional(),
   })

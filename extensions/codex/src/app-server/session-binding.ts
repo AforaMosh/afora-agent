@@ -247,10 +247,13 @@ const threadBindingSchema = z
     networkProxyConfigFingerprint: optionalStringSchema,
     dynamicToolsFingerprint: optionalStringSchema,
     dynamicToolsContainDeferred: optionalBooleanSchema,
-    webSearchThreadConfigFingerprint: optionalStringSchema,
-    nativeSkillIsolationFingerprint: optionalStringSchema,
+    // Shipped pre-dynamic-MCP bindings used these fingerprints to prove that
+    // OpenClaw-configured MCP was installed natively in the Codex thread.
+    // Lifecycle admission consumes their presence by rotating the thread once.
     userMcpServersFingerprint: optionalStringSchema,
     mcpServersFingerprint: optionalStringSchema,
+    webSearchThreadConfigFingerprint: optionalStringSchema,
+    nativeSkillIsolationFingerprint: optionalStringSchema,
     ringZeroConfigFingerprint: optionalStringSchema,
     ringZeroClientInstanceId: optionalStringSchema,
     nativeHookRelayGeneration: optionalNonBlankStringSchema,
@@ -450,7 +453,11 @@ function normalizeLegacyBindingFingerprints(
   // Shipped sidecars can contain unbounded canonical JSON fingerprints. Bound
   // them at the legacy encoder so plugin-state registration cannot reject the row.
   let normalized = record;
-  for (const key of ["dynamicToolsFingerprint", "userMcpServersFingerprint"] as const) {
+  for (const key of [
+    "dynamicToolsFingerprint",
+    "userMcpServersFingerprint",
+    "mcpServersFingerprint",
+  ] as const) {
     const value = record[key];
     const next = normalizeLegacyBindingFingerprint(value);
     if (next === value) {

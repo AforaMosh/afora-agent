@@ -28,7 +28,6 @@ import {
 import { isContextEngineBindingCompatible } from "./thread-context-engine.js";
 import {
   areDynamicToolFingerprintsCompatible,
-  areUserMcpServersFingerprintsCompatible,
   shouldStartTransientNoToolThread,
 } from "./thread-fingerprints.js";
 import { CodexThreadBindingConflictError } from "./thread-lifecycle-errors.js";
@@ -66,7 +65,6 @@ export async function startOrResumeThread(
       environmentSelectionFingerprint,
       hostSystemAgentActive,
       legacyDynamicToolsFingerprint,
-      legacyUserMcpServersFingerprint,
       lifecycleTiming,
       nativeSkillIsolation,
       nativeSkillIsolationFingerprint,
@@ -75,8 +73,6 @@ export async function startOrResumeThread(
       ringZeroClientInstanceId,
       ringZeroConfigFingerprint,
       ringZeroInheritedMcpServerNames,
-      userMcpServersConfigPatch,
-      userMcpServersFingerprint,
       webSearchThreadConfigFingerprint,
     } = await prepareCodexThreadLifecyclePreflight(params);
     let binding = await lifecycleTiming.measure("read-binding", () =>
@@ -134,7 +130,6 @@ export async function startOrResumeThread(
         applyCodexNativeSkillIsolation(
           mergeCodexThreadConfigs(
             params.config,
-            userMcpServersConfigPatch,
             pluginThreadConfig?.configPatch,
             finalConfigPatch.configPatch,
           ),
@@ -175,11 +170,6 @@ export async function startOrResumeThread(
           dynamicToolsContainDeferred,
           webSearchThreadConfigFingerprint,
           nativeSkillIsolationFingerprint,
-          userMcpServersFingerprint,
-          mcpServersFingerprint:
-            params.mcpServersFingerprintEvaluated === true
-              ? params.mcpServersFingerprint
-              : pendingBinding.mcpServersFingerprint,
           networkProxyProfileName: params.appServer.networkProxy?.profileName,
           networkProxyConfigFingerprint,
           nativeHookRelayGeneration: finalConfigPatch.nativeHookRelayGeneration,
@@ -211,6 +201,19 @@ export async function startOrResumeThread(
       }
       binding = undefined;
     };
+    if (
+      binding?.threadId &&
+      (binding.userMcpServersFingerprint !== undefined ||
+        binding.mcpServersFingerprint !== undefined)
+    ) {
+      // Loaded Codex threads ignore changed resume config. Never rejoin a
+      // shipped thread that may still own OpenClaw-configured native MCP.
+      embeddedAgentLog.debug(
+        "codex app-server legacy native MCP binding found; starting a new thread",
+        { threadId: binding.threadId },
+      );
+      await clearCurrentBinding("rotating a legacy native MCP thread binding");
+    }
     if (
       binding?.threadId &&
       binding.nativeSkillIsolationFingerprint !== nativeSkillIsolationFingerprint
@@ -300,38 +303,6 @@ export async function startOrResumeThread(
     const transientNativeToolRestriction =
       params.nativeCodeModeEnabled === false && !persistentWebSearchRestriction;
     const transientWebSearchRestriction = isTransientWebSearchRestriction(params);
-    const explicitTransientWebSearchRestriction =
-      params.webSearchAllowed === false &&
-      params.persistentWebSearchAllowed !== false &&
-      transientWebSearchRestriction;
-    const unknownProviderWebSearchSupport = params.nativeProviderWebSearchSupport === "unknown";
-    if (
-      binding?.threadId &&
-      params.mcpServersFingerprintEvaluated === true &&
-      binding.mcpServersFingerprint !== params.mcpServersFingerprint
-    ) {
-      assertCodexBindingMayBeReplaced(binding, "changing MCP configuration");
-      if (
-        !ringZeroActive &&
-        (transientNativeToolRestriction ||
-          (webSearchBindingChanged &&
-            (explicitTransientWebSearchRestriction || unknownProviderWebSearchSupport)))
-      ) {
-        embeddedAgentLog.debug(
-          "codex app-server MCP config changed during transient restricted turn; starting transient thread",
-          {
-            threadId: binding.threadId,
-          },
-        );
-        preserveExistingBinding = true;
-      } else {
-        embeddedAgentLog.debug("codex app-server MCP config changed; starting a new thread", {
-          threadId: binding.threadId,
-        });
-        await clearCurrentBinding("rotating a stale thread binding");
-      }
-      binding = undefined;
-    }
     // A transient native-tool restriction must not replace a legacy binding just
     // because that binding predates search fingerprints. Explicit persistent
     // search denial still rotates first so the restricted thread can persist.
@@ -410,20 +381,6 @@ export async function startOrResumeThread(
         binding = undefined;
         rotatedContextEngineBinding = true;
       }
-    }
-    if (
-      binding?.threadId &&
-      !areUserMcpServersFingerprintsCompatible({
-        previous: binding.userMcpServersFingerprint,
-        next: userMcpServersFingerprint,
-        nextLegacy: legacyUserMcpServersFingerprint,
-      })
-    ) {
-      embeddedAgentLog.debug("codex app-server user MCP config changed; starting a new thread", {
-        threadId: binding.threadId,
-      });
-      await clearCurrentBinding("rotating a stale thread binding");
-      binding = undefined;
     }
     if (
       binding?.threadId &&
@@ -581,7 +538,6 @@ export async function startOrResumeThread(
           startModelProvider,
           startModelSelection,
           throwIfAborted,
-          userMcpServersConfigPatch,
         });
         if (warmReuse.binding) {
           return warmReuse.binding;
@@ -594,12 +550,10 @@ export async function startOrResumeThread(
           bindingIdentity,
           startModelSelection,
           startModelProvider,
-          userMcpServersConfigPatch,
           dynamicToolsFingerprint,
           dynamicToolsContainDeferred,
           webSearchThreadConfigFingerprint,
           nativeSkillIsolationFingerprint,
-          userMcpServersFingerprint,
           ringZeroConfigFingerprint,
           ringZeroClientInstanceId,
           networkProxyConfigFingerprint,
@@ -628,12 +582,10 @@ export async function startOrResumeThread(
       bindingIdentity,
       startModelSelection,
       startModelProvider,
-      userMcpServersConfigPatch,
       dynamicToolsFingerprint,
       dynamicToolsContainDeferred,
       webSearchThreadConfigFingerprint,
       nativeSkillIsolationFingerprint,
-      userMcpServersFingerprint,
       ringZeroConfigFingerprint,
       ringZeroClientInstanceId,
       networkProxyConfigFingerprint,

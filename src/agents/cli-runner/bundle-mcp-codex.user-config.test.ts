@@ -4,6 +4,7 @@ import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import {
   buildCodexUserMcpServersThreadConfigPatch,
   buildCodexUserMcpServersThreadConfigPatchForRuntime,
+  resolveCodexMcpToolOverridesForAgent,
 } from "./bundle-mcp-codex.js";
 
 const authMocks = vi.hoisted(() => ({
@@ -29,6 +30,52 @@ describe("buildCodexUserMcpServersThreadConfigPatch", () => {
     authMocks.loadAuthProfileStoreForSecretsRuntime.mockReset();
     authMocks.resolveApiKeyForProfile.mockReset();
     authMocks.resolveMcpOAuthAccessToken.mockReset();
+  });
+
+  it("forces configured MCP servers outside codex.agents off without mutating overrides", () => {
+    const cfg = {
+      mcp: {
+        servers: {
+          atlasOnly: {
+            url: "https://atlas.example.com/mcp",
+            codex: { agents: ["atlas"] },
+          },
+          apolloOnly: {
+            url: "https://apollo.example.com/mcp",
+            codex: { agents: ["apollo"] },
+          },
+          global: { url: "https://global.example.com/mcp" },
+          invalidScope: {
+            url: "https://invalid.example.com/mcp",
+            codex: { agents: ["", "not a valid id"] },
+          },
+        },
+      },
+    } as unknown as OpenClawConfig;
+    const toolOverrides = {
+      mcpServers: { atlasOnly: true, apolloOnly: true, global: true },
+      mcpToolsDeny: { global: ["delete"] },
+    };
+
+    expect(resolveCodexMcpToolOverridesForAgent(cfg, { agentId: "atlas", toolOverrides })).toEqual({
+      mcpServers: {
+        atlasOnly: true,
+        apolloOnly: false,
+        global: true,
+        invalidScope: false,
+      },
+      mcpToolsDeny: { global: ["delete"] },
+    });
+    expect(toolOverrides.mcpServers.apolloOnly).toBe(true);
+    expect(resolveCodexMcpToolOverridesForAgent(cfg, { toolOverrides })).toEqual({
+      mcpServers: {
+        atlasOnly: false,
+        apolloOnly: false,
+        global: true,
+        invalidScope: false,
+      },
+      mcpToolsDeny: { global: ["delete"] },
+    });
   });
 
   it("returns undefined when cfg has no mcp.servers (regression: #80814)", () => {
@@ -130,29 +177,32 @@ describe("buildCodexUserMcpServersThreadConfigPatch", () => {
     });
   });
 
-  it("projects Codex-specific default tool approval mode", () => {
-    const patch = buildCodexUserMcpServersThreadConfigPatch({
-      mcp: {
-        servers: {
-          search: {
-            transport: "streamable-http",
-            url: "https://mcp.example.com/mcp",
-            codex: {
-              defaultToolsApprovalMode: "approve",
+  it.each(["auto", "prompt", "writes", "approve"] as const)(
+    "projects Codex-compatible %s tool approval mode",
+    (mode) => {
+      const patch = buildCodexUserMcpServersThreadConfigPatch({
+        mcp: {
+          servers: {
+            search: {
+              transport: "streamable-http",
+              url: "https://mcp.example.com/mcp",
+              codex: {
+                defaultToolsApprovalMode: mode,
+              },
             },
           },
         },
-      },
-    } as unknown as OpenClawConfig);
-    expect(patch).toStrictEqual({
-      mcp_servers: {
-        search: {
-          url: "https://mcp.example.com/mcp",
-          default_tools_approval_mode: "approve",
+      } as unknown as OpenClawConfig);
+      expect(patch).toStrictEqual({
+        mcp_servers: {
+          search: {
+            url: "https://mcp.example.com/mcp",
+            default_tools_approval_mode: mode,
+          },
         },
-      },
-    });
-  });
+      });
+    },
+  );
 
   it("projects exact OpenClaw MCP tool filters into Codex-native tool filters", () => {
     const patch = buildCodexUserMcpServersThreadConfigPatch({

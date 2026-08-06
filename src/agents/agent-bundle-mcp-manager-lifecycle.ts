@@ -135,6 +135,7 @@ function scopedCatalogToolsSignature(tools: readonly McpCatalogTool[]): string {
       tool.inputSchema,
       tool.uiResourceUri ?? "",
       tool.uiVisibility ?? null,
+      tool.codexApproval ?? null,
     ]),
   );
 }

@@ -32,6 +32,7 @@ import {
   projectRuntimeToolInputSchema,
   resolveToolExecutionErrorKind,
   resolveToolResultFailureKind,
+  rewrapToolWithBeforeToolCallHook,
   runAgentHarnessAfterToolCallHook,
   sanitizeToolResult,
   setBeforeToolCallDiagnosticsEnabled,
@@ -82,16 +83,11 @@ import {
 import { recordCodexSourceReplyDeliveryIntent } from "./source-reply-finality.js";
 import { resolveCodexToolAbortTerminalReason } from "./tool-abort-terminal-reason.js";
 
-type CodexDynamicToolHookContext = {
-  agentId?: string;
-  config?: EmbeddedRunAttemptParams["config"];
-  workspaceDir?: string;
+type CodexDynamicToolHookContext = NonNullable<
+  Parameters<typeof wrapToolWithBeforeToolCallHook>[1]
+> & {
   remoteWorkspaceRoot?: string;
   remoteWorkspaceRequestTimeoutMs?: number;
-  sessionId?: string;
-  sessionKey?: string;
-  runId?: string;
-  channelId?: string;
   currentChannelProvider?: string;
   contextWindowTokens?: number;
   currentChannelId?: string;
@@ -109,6 +105,9 @@ type CodexToolResultHookContext = Omit<CodexDynamicToolHookContext, "config">;
 
 type ProjectedCodexDynamicTool = {
   tool: AnyAgentTool;
+  /** Canonical OpenClaw policy/hook/telemetry identity. */
+  canonicalName: string;
+  /** Codex protocol identity, remapped only for upstream-reserved names. */
   name: string;
   description: string;
   inputSchema: JsonValue;
@@ -481,15 +480,25 @@ export function createCodexDynamicToolBridge(params: {
     availableProjection.tools,
     params.hookContext,
   );
-  const availableTools = wrappedAvailableProjection.tools;
   const quarantinedAvailableToolNames = new Set(
     [...availableProjection.quarantinedTools, ...wrappedAvailableProjection.quarantinedTools].map(
       (tool) => tool.tool,
     ),
   );
-  const registeredSpecTools = (
-    params.registeredTools ? registeredProjection.tools : availableTools
-  ).filter((entry) => !quarantinedAvailableToolNames.has(entry.name));
+  const canonicalRegisteredSpecTools = (
+    params.registeredTools ? registeredProjection.tools : wrappedAvailableProjection.tools
+  ).filter((entry) => !quarantinedAvailableToolNames.has(entry.canonicalName));
+  const protocolNames = buildCodexDynamicProtocolToolNames([
+    ...wrappedAvailableProjection.tools,
+    ...canonicalRegisteredSpecTools,
+  ]);
+  const remapProtocolNames = (entries: readonly ProjectedCodexDynamicTool[]) =>
+    entries.map((entry) => ({
+      ...entry,
+      name: protocolNames.get(entry.canonicalName) ?? entry.name,
+    }));
+  const availableTools = remapProtocolNames(wrappedAvailableProjection.tools);
+  const registeredSpecTools = remapProtocolNames(canonicalRegisteredSpecTools);
   const toolMap = new Map(availableTools.map((entry) => [entry.name, entry]));
   const registeredToolNames = new Set(registeredSpecTools.map((entry) => entry.name));
   const quarantinedTools = dedupeQuarantinedDynamicTools([
@@ -590,7 +599,7 @@ export function createCodexDynamicToolBridge(params: {
           executionStarted: false,
         });
       }
-      const { tool, name: toolName } = toolEntry;
+      const { tool, canonicalName: toolName } = toolEntry;
       const args = jsonObjectToRecord(call.arguments);
       const startedAt = Date.now();
       const signal = composeAbortSignals(params.signal, options?.signal);
@@ -973,8 +982,11 @@ function wrapProjectedCodexDynamicTools(
   for (const entry of tools) {
     try {
       if (isToolWrappedWithBeforeToolCallHook(entry.tool)) {
-        setBeforeToolCallDiagnosticsEnabled(entry.tool, false);
-        wrappedTools.push(entry);
+        const projectedTool = getPluginToolMeta(entry.tool)?.mcp?.codexApproval
+          ? rewrapToolWithBeforeToolCallHook(entry.tool, hookContext, { emitDiagnostics: false })
+          : entry.tool;
+        setBeforeToolCallDiagnosticsEnabled(projectedTool, false);
+        wrappedTools.push({ ...entry, tool: projectedTool });
         continue;
       }
       wrappedTools.push({
@@ -1009,7 +1021,7 @@ function createCodexDynamicToolSpecs(params: {
       : params.entries.toSorted((left, right) => left.name.localeCompare(right.name));
   for (const entry of entries) {
     const functionSpec = createCodexDynamicToolFunctionSpec({ entry });
-    if (entry.name === "openclaw" && params.directToolNames.has(entry.name)) {
+    if (entry.canonicalName === "openclaw" && params.directToolNames.has(entry.canonicalName)) {
       // OpenClaw is ring-zero and its whole turn surface. Keep its canonical
       // root name even though generic direct-only tools use a model namespace.
       specs.push(functionSpec);
@@ -1019,7 +1031,7 @@ function createCodexDynamicToolSpecs(params: {
       directOnlyNamespaceTools.push(functionSpec);
       continue;
     }
-    if (params.loading === "direct" || params.directToolNames.has(entry.name)) {
+    if (params.loading === "direct" || params.directToolNames.has(entry.canonicalName)) {
       specs.push(functionSpec);
       continue;
     }
@@ -1053,6 +1065,59 @@ function createCodexDynamicToolFunctionSpec(params: {
     description: params.entry.description,
     inputSchema: params.entry.inputSchema,
   };
+}
+
+const CODEX_RESERVED_DYNAMIC_TOOL_PREFIX = "mcp__";
+const CODEX_DYNAMIC_TOOL_NAME_MAX_LENGTH = 128;
+const CODEX_DYNAMIC_TOOL_NAME_PATTERN = /^[A-Za-z0-9_-]+$/;
+
+function isCodexReservedDynamicToolName(name: string): boolean {
+  return name === "mcp" || name.startsWith(CODEX_RESERVED_DYNAMIC_TOOL_PREFIX);
+}
+
+function isValidCodexDynamicProtocolToolName(name: string): boolean {
+  return (
+    name.length > 0 &&
+    name.length <= CODEX_DYNAMIC_TOOL_NAME_MAX_LENGTH &&
+    CODEX_DYNAMIC_TOOL_NAME_PATTERN.test(name)
+  );
+}
+
+/**
+ * Codex reserves mcp/mcp__* for its native MCP transport. Keep OpenClaw's
+ * canonical policy identity and remap only the protocol-facing name.
+ */
+function buildCodexDynamicProtocolToolNames(
+  entries: readonly ProjectedCodexDynamicTool[],
+): ReadonlyMap<string, string> {
+  const canonicalNames = new Set(entries.map((entry) => entry.canonicalName));
+  const used = new Set([...canonicalNames].filter((name) => !isCodexReservedDynamicToolName(name)));
+  const mapped = new Map<string, string>();
+  for (const canonicalName of [...canonicalNames].toSorted((left, right) =>
+    left.localeCompare(right),
+  )) {
+    if (!isCodexReservedDynamicToolName(canonicalName)) {
+      mapped.set(canonicalName, canonicalName);
+      continue;
+    }
+    const readable = `openclaw_${canonicalName}`;
+    let candidate = readable.slice(0, CODEX_DYNAMIC_TOOL_NAME_MAX_LENGTH);
+    let salt = 0;
+    while (
+      used.has(candidate) ||
+      isCodexReservedDynamicToolName(candidate) ||
+      !isValidCodexDynamicProtocolToolName(candidate)
+    ) {
+      const digest = createHash("sha256").update(`${canonicalName}:${salt}`).digest("hex");
+      const safeStem = canonicalName.replace(/[^A-Za-z0-9_-]/g, "_").slice(0, 58);
+      const prefix = `oc_${safeStem}_`;
+      candidate = `${prefix}${digest}`.slice(0, CODEX_DYNAMIC_TOOL_NAME_MAX_LENGTH);
+      salt += 1;
+    }
+    used.add(candidate);
+    mapped.set(canonicalName, candidate);
+  }
+  return mapped;
 }
 
 function projectCodexDynamicTools(tools: readonly AnyAgentTool[]): {
@@ -1102,6 +1167,7 @@ function projectCodexDynamicTools(tools: readonly AnyAgentTool[]): {
     }
     projectedTools.push({
       tool,
+      canonicalName: descriptor.name,
       name: descriptor.name,
       description: descriptor.description,
       inputSchema: projection.schema as JsonValue,

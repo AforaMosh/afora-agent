@@ -1,9 +1,9 @@
-// Private helper surface for the bundled Codex plugin. Mirrors the Codex CLI
-// runtime's user-mcp-server projection so the bundled Codex app-server harness
-// can attach the same user `mcp.servers` entries to its thread config without
-// deep-importing core helpers.
+// Private helper surface for the bundled Codex plugin. App-server uses only the
+// agent-scoping resolver; the thread-config builders remain for shipped
+// CLI/native compatibility without exposing core implementation paths.
 
 export {
   buildCodexUserMcpServersThreadConfigPatch,
   buildCodexUserMcpServersThreadConfigPatchForRuntime,
+  resolveCodexMcpToolOverridesForAgent,
 } from "../agents/cli-runner/bundle-mcp-codex.js";

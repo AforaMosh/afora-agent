@@ -14,6 +14,7 @@ import {
   tempDir,
   threadStartResult,
 } from "./run-attempt-test-harness.js";
+import { hashCodexAppServerBindingFingerprint } from "./session-binding.js";
 import {
   readCodexAppServerBinding,
   registerCodexTestSessionIdentity,
@@ -304,7 +305,6 @@ describe("Codex app-server thread lifecycle bindings", () => {
       cwd: workspaceDir,
       dynamicTools: [],
       appServer: createThreadLifecycleAppServerOptions(),
-      userMcpServersEnabled: false,
     };
 
     const started = await startOrResumeThread(common);
@@ -358,7 +358,6 @@ describe("Codex app-server thread lifecycle bindings", () => {
       cwd: workspaceDir,
       dynamicTools: [],
       appServer: createThreadLifecycleAppServerOptions(),
-      userMcpServersEnabled: false,
       buildFinalConfigPatch,
     };
 
@@ -443,7 +442,6 @@ describe("Codex app-server thread lifecycle bindings", () => {
       cwd: workspaceDir,
       dynamicTools: [],
       appServer: createThreadLifecycleAppServerOptions(),
-      userMcpServersEnabled: false,
     };
 
     const started = await startOrResumeThread(common);
@@ -496,7 +494,6 @@ describe("Codex app-server thread lifecycle bindings", () => {
       cwd: workspaceDir,
       dynamicTools: [],
       appServer: createThreadLifecycleAppServerOptions(),
-      userMcpServersEnabled: false,
     };
     const started = await startOrResumeThread(common);
     await retainCodexAppServerLiveThread(
@@ -557,7 +554,6 @@ describe("Codex app-server thread lifecycle bindings", () => {
       cwd: workspaceDir,
       dynamicTools: [],
       appServer: createThreadLifecycleAppServerOptions(),
-      userMcpServersEnabled: false,
     };
     const started = await startOrResumeThread(common);
     await expect(
@@ -615,7 +611,6 @@ describe("Codex app-server thread lifecycle bindings", () => {
       cwd: workspaceDir,
       dynamicTools: [],
       appServer: createThreadLifecycleAppServerOptions(),
-      userMcpServersEnabled: false,
     };
     const started = await startOrResumeThread({
       ...common,
@@ -672,7 +667,6 @@ describe("Codex app-server thread lifecycle bindings", () => {
       cwd: workspaceDir,
       dynamicTools: [],
       appServer: createThreadLifecycleAppServerOptions(),
-      userMcpServersEnabled: false,
     };
     const started = await startOrResumeThread(common);
     await retainCodexAppServerLiveThread(
@@ -724,7 +718,6 @@ describe("Codex app-server thread lifecycle bindings", () => {
       cwd: workspaceDir,
       dynamicTools: [],
       appServer: createThreadLifecycleAppServerOptions(),
-      userMcpServersEnabled: false,
     };
     const started = await startOrResumeThread(common);
     await retainCodexAppServerLiveThread(
@@ -777,7 +770,6 @@ describe("Codex app-server thread lifecycle bindings", () => {
       cwd: workspaceDir,
       dynamicTools: [],
       appServer,
-      userMcpServersEnabled: false,
     };
     const started = await startOrResumeThread(common);
     await retainCodexAppServerLiveThread(
@@ -831,7 +823,6 @@ describe("Codex app-server thread lifecycle bindings", () => {
       cwd: workspaceDir,
       dynamicTools: [],
       appServer: createThreadLifecycleAppServerOptions(),
-      userMcpServersEnabled: false,
     };
     const started = await startOrResumeThread(common);
     await expect(
@@ -881,7 +872,6 @@ describe("Codex app-server thread lifecycle bindings", () => {
       cwd: workspaceDir,
       dynamicTools: [],
       appServer: createThreadLifecycleAppServerOptions(),
-      userMcpServersEnabled: false,
     };
 
     const first = await startOrResumeThread(common);
@@ -947,7 +937,6 @@ describe("Codex app-server thread lifecycle bindings", () => {
       dynamicTools: [createNamedDynamicTool("openclaw")],
       appServer: createThreadLifecycleAppServerOptions(),
       nativeCodeModeEnabled: false,
-      userMcpServersEnabled: false,
       hostSystemAgentActive: true,
     };
 
@@ -982,6 +971,51 @@ describe("Codex app-server thread lifecycle bindings", () => {
     expect(binding?.ringZeroConfigFingerprint).toEqual(expect.any(String));
     expect(binding?.ringZeroClientInstanceId).toEqual(expect.any(String));
   });
+
+  it.each(["userMcpServersFingerprint", "mcpServersFingerprint"] as const)(
+    "rotates a loaded legacy native-MCP binding carrying %s",
+    async (legacyFingerprintField) => {
+      const sessionFile = path.join(tempDir, `${legacyFingerprintField}.jsonl`);
+      const workspaceDir = path.join(tempDir, `${legacyFingerprintField}-workspace`);
+      await writeCodexAppServerBinding(sessionFile, {
+        threadId: "thread-legacy-native-mcp",
+        cwd: workspaceDir,
+        model: "gpt-5.4-codex",
+        modelProvider: "openai",
+        dynamicToolsFingerprint: hashCodexAppServerBindingFingerprint(JSON.stringify([])),
+        [legacyFingerprintField]: "legacy-native-mcp",
+      });
+      const params = createParams(sessionFile, workspaceDir);
+      params.toolsAllow = [];
+      const request = vi.fn(async (method: string) => {
+        if (method === "thread/start") {
+          return threadStartResult("thread-dynamic-mcp");
+        }
+        if (method === "thread/resume") {
+          throw new Error("legacy native MCP thread must not resume");
+        }
+        throw new Error(`unexpected method: ${method}`);
+      });
+
+      const result = await startOrResumeThread({
+        client: { request } as never,
+        params,
+        cwd: workspaceDir,
+        dynamicTools: [],
+        appServer: createThreadLifecycleAppServerOptions(),
+        nativeCodeModeEnabled: false,
+      });
+
+      expect(result).toMatchObject({
+        threadId: "thread-dynamic-mcp",
+        lifecycle: { action: "started" },
+      });
+      expect(request.mock.calls.map(([method]) => method)).toEqual(["thread/start"]);
+      const canonical = await readCodexAppServerBinding(sessionFile);
+      expect(canonical?.userMcpServersFingerprint).toBeUndefined();
+      expect(canonical?.mcpServersFingerprint).toBeUndefined();
+    },
+  );
 
   it("isolates transient message-only completion threads without replacing the parent binding", async () => {
     const sessionFile = path.join(tempDir, "message-only-session.jsonl");
@@ -1054,7 +1088,6 @@ describe("Codex app-server thread lifecycle bindings", () => {
       },
       appServer: createThreadLifecycleAppServerOptions(),
       nativeCodeModeEnabled: false,
-      userMcpServersEnabled: false,
       hostSystemAgentActive: false,
     };
 
@@ -1173,7 +1206,6 @@ describe("Codex app-server thread lifecycle bindings", () => {
       dynamicTools: [createNamedDynamicTool("openclaw")],
       appServer: createThreadLifecycleAppServerOptions(),
       nativeCodeModeEnabled: false,
-      userMcpServersEnabled: false,
       hostSystemAgentActive: true,
     };
 
@@ -1226,7 +1258,6 @@ describe("Codex app-server thread lifecycle bindings", () => {
       dynamicTools: [createNamedDynamicTool("openclaw")],
       appServer: createThreadLifecycleAppServerOptions(),
       nativeCodeModeEnabled: false,
-      userMcpServersEnabled: false,
       hostSystemAgentActive: true,
     };
 
@@ -1277,7 +1308,6 @@ describe("Codex app-server thread lifecycle bindings", () => {
         dynamicTools: [createNamedDynamicTool("openclaw")],
         appServer: createThreadLifecycleAppServerOptions(),
         nativeCodeModeEnabled: false,
-        userMcpServersEnabled: false,
         hostSystemAgentActive: true,
       }),
     ).rejects.toThrow("config unavailable");
@@ -1310,7 +1340,6 @@ describe("Codex app-server thread lifecycle bindings", () => {
         dynamicTools: [createNamedDynamicTool("openclaw")],
         appServer: createThreadLifecycleAppServerOptions(),
         nativeCodeModeEnabled: false,
-        userMcpServersEnabled: false,
         hostSystemAgentActive: true,
       }),
     ).rejects.toThrow(/config layer|config layers/u);
@@ -1348,7 +1377,6 @@ describe("Codex app-server thread lifecycle bindings", () => {
           dynamicTools: [createNamedDynamicTool("openclaw")],
           appServer: createThreadLifecycleAppServerOptions(),
           nativeCodeModeEnabled: false,
-          userMcpServersEnabled: false,
           hostSystemAgentActive: true,
         }),
       ).rejects.toThrow("cannot override managed hooks");
@@ -1382,7 +1410,6 @@ describe("Codex app-server thread lifecycle bindings", () => {
         dynamicTools: [createNamedDynamicTool("openclaw")],
         appServer: createThreadLifecycleAppServerOptions(),
         nativeCodeModeEnabled: false,
-        userMcpServersEnabled: false,
         hostSystemAgentActive: true,
       }),
     ).rejects.toThrow("cannot override required feature hooks");
@@ -1437,7 +1464,6 @@ describe("Codex app-server thread lifecycle bindings", () => {
         dynamicTools: [createNamedDynamicTool("openclaw")],
         appServer: createThreadLifecycleAppServerOptions(),
         nativeCodeModeEnabled: false,
-        userMcpServersEnabled: false,
         hostSystemAgentActive: true,
       }),
     ).rejects.toThrow();

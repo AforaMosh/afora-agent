@@ -214,7 +214,7 @@ export const AGENT_FIELD_HELP: Record<string, string> = {
   "mcp.servers":
     "Named MCP server definitions. OpenClaw stores them in its own config and runtime adapters decide which transports are supported at execution time.",
   "mcp.servers.*.codex":
-    "OpenClaw projection metadata for Codex app-server threads only. It does not affect ACP sessions or generic Codex harness config. Omit this block to keep the server available to every Codex app-server agent with Codex's default MCP approval behavior.",
+    "OpenClaw-owned Codex harness selection and MCP approval metadata. OpenClaw retains transports and credentials; Codex receives policy-filtered dynamic tools.",
   "mcp.servers.*.toolFilter":
     "Per-server MCP tool selection. Use include to expose only selected MCP tool names, or exclude to hide selected MCP tool names. Entries accept exact names and simple '*' globs.",
   "mcp.servers.*.toolFilter.include":
@@ -224,9 +224,9 @@ export const AGENT_FIELD_HELP: Record<string, string> = {
   "mcp.servers.*.oauth.authProfileId":
     "Refresh-capable auth profile id used to inject the current bearer token into this remote MCP server. When set, OpenClaw resolves and refreshes the profile at runtime and does not project refresh material downstream.",
   "mcp.servers.*.codex.agents":
-    "Optional non-empty OpenClaw agent ids that should receive this MCP server in Codex app-server thread config. Empty, blank, or invalid lists fail closed; when omitted, the server is projected for all Codex app-server agents.",
+    "Optional non-empty OpenClaw agent ids allowed to materialize this MCP server through the Codex harness. Scoping is applied before transport or credential access; invalid lists fail closed.",
   "mcp.servers.*.codex.defaultToolsApprovalMode":
-    'Optional Codex MCP tool approval mode for this server: "auto", "prompt", or "approve". Use only for MCP servers you intentionally trust.',
+    'Optional Codex-compatible MCP approval mode: "auto", "prompt", "writes", or "approve". Writes skips approval only for readOnlyHint:true; use approve only for servers trusted to run unattended.',
   "mcp.servers.*.codex.default_tools_approval_mode":
-    "Codex-native spelling for the same per-server MCP tool approval mode. Prefer defaultToolsApprovalMode in OpenClaw config.",
+    "Retired Codex-native spelling. Use defaultToolsApprovalMode; Doctor/config validation rejects this alias in canonical OpenClaw config.",
 };

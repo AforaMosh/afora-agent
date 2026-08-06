@@ -8,6 +8,7 @@ import { compileGlobPatterns, matchesAnyGlobPattern } from "../agents/glob-patte
 import { DEFAULT_PLUGIN_TOOLS_ALLOWLIST_ENTRY, normalizeToolName } from "../agents/tool-policy.js";
 import type { AnyAgentTool } from "../agents/tools/common.js";
 import { normalizeConversationReadInvocationOrigin } from "../channels/plugins/conversation-read-origin.js";
+import type { McpCodexToolApprovalMode } from "../config/types.mcp.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { getLoadedRuntimePluginRegistry } from "./active-runtime-registry.js";
 import {
@@ -54,6 +55,16 @@ export type PluginToolMcpMeta = {
   toolName: string;
   operation: "tool" | "resources_list" | "resources_read" | "prompts_list" | "prompts_get";
   deniedBySession?: true;
+  /** Host-only approval facts for OpenClaw-projected Codex MCP tools. */
+  codexApproval?: {
+    mode: McpCodexToolApprovalMode;
+    annotations: {
+      readOnlyHint?: boolean;
+      destructiveHint?: boolean;
+      idempotentHint?: boolean;
+      openWorldHint?: boolean;
+    };
+  };
   node?: {
     id: string;
     displayName?: string;

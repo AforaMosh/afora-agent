@@ -123,7 +123,8 @@ const defaultPublicDeprecatedExportsByEntrypointBudget = Object.freeze({
   "text-runtime": 192,
   "agent-runtime": 2,
   "channel-secret-runtime": 23,
-  "agent-harness-runtime": 4,
+  // +1: shipped requester-scoped MCP helper retained through its deprecation window.
+  "agent-harness-runtime": 5,
   "agent-config-primitives": 2,
   "command-auth": 78,
   discord: 47,
@@ -222,7 +223,9 @@ export function readPluginSdkSurfaceBudgets(env = process.env) {
       // +1: auth-profile preservation decision for native model pickers.
       // +2: shared channel question-reaction store and preflight-audio factories.
       // +1: shared channel interactive dispatcher with canonical binding authorization.
-      4834,
+      // +1: requester-scoped MCP harness compatibility adapter.
+      // +1: metadata-preserving before-tool-call rewrap for native harness projections.
+      4836,
       env,
     ),
     publicFunctionExports: readPluginSdkSurfaceBudgetEnv(
@@ -272,7 +275,9 @@ export function readPluginSdkSurfaceBudgets(env = process.env) {
       // +1: auth-profile preservation decision for native model pickers.
       // +2: shared channel question-reaction store and preflight-audio factories.
       // +1: shared channel interactive dispatcher with canonical binding authorization.
-      2911,
+      // +1: requester-scoped MCP harness compatibility adapter.
+      // +1: metadata-preserving before-tool-call rewrap for native harness projections.
+      2913,
       env,
     ),
     publicDeprecatedExports: readPluginSdkSurfaceBudgetEnv(
@@ -284,7 +289,8 @@ export function readPluginSdkSurfaceBudgets(env = process.env) {
       // +1: flushLogger projected through the deprecated text-runtime barrel.
       // +1: shared ingress error factory projected through channel-message.
       // +1: shared ingress retention defaults projected through channel-message.
-      1703,
+      // +1: requester-scoped MCP harness compatibility adapter.
+      1704,
       env,
     ),
     publicWildcardReexports: readPluginSdkSurfaceBudgetEnv(

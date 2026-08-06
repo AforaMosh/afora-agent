@@ -350,6 +350,22 @@ describe("config schema", () => {
     ).toThrow();
   });
 
+  it("accepts the Codex 0.146.1 writes MCP approval mode", () => {
+    expect(() =>
+      OpenClawSchema.parse({
+        mcp: {
+          servers: {
+            scoped: {
+              url: "https://mcp.example.com/mcp",
+              transport: "streamable-http",
+              codex: { defaultToolsApprovalMode: "writes" },
+            },
+          },
+        },
+      }),
+    ).not.toThrow();
+  });
+
   it("validates MCP OAuth client metadata URLs against the SDK contract", () => {
     expect(() =>
       OpenClawSchema.parse({

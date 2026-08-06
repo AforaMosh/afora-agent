@@ -65,6 +65,7 @@ async function writeListToolsMcpServer(params: {
     description?: string;
     inputSchema?: unknown;
     _meta?: Record<string, unknown>;
+    annotations?: Record<string, unknown>;
   }>;
   capabilities?: Record<string, unknown>;
   databasePath?: string;
@@ -988,6 +989,58 @@ describe("session MCP runtime", () => {
         toolCount: 1,
       });
       await expect(fs.readFile(logPath, "utf8")).resolves.toContain("delay tools/list 100");
+    } finally {
+      await runtime.dispose();
+      await fs.rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("captures normalized Codex approval facts when listing MCP tools", async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "bundle-mcp-approval-facts-"));
+    const serverPath = path.join(tempDir, "approval-facts.mjs");
+    const logPath = path.join(tempDir, "server.log");
+    await writeListToolsMcpServer({
+      filePath: serverPath,
+      logPath,
+      tools: [
+        {
+          name: "mutate",
+          inputSchema: { type: "object", properties: {} },
+          annotations: {
+            readOnlyHint: false,
+            destructiveHint: true,
+            idempotentHint: false,
+            openWorldHint: false,
+          },
+        },
+      ],
+    });
+    const runtime = createSessionMcpRuntime({
+      sessionId: "session-approval-facts",
+      workspaceDir: tempDir,
+      cfg: {
+        mcp: {
+          servers: {
+            private: {
+              command: process.execPath,
+              args: [serverPath],
+              codex: { defaultToolsApprovalMode: "writes" },
+            },
+          },
+        },
+      },
+    });
+    try {
+      const approvalTool = (await runtime.getCatalog()).tools[0];
+      expect(approvalTool?.codexApproval).toEqual({
+        mode: "writes",
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: true,
+          idempotentHint: false,
+          openWorldHint: false,
+        },
+      });
     } finally {
       await runtime.dispose();
       await fs.rm(tempDir, { recursive: true, force: true });

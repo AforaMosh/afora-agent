@@ -13,6 +13,7 @@ import {
   type BundleMcpServerConfig,
 } from "../plugins/bundle-mcp.js";
 import { isRecord } from "../utils.js";
+import { shouldCreateBundleMcpRuntimeForAttempt } from "./agent-bundle-mcp-attempt-gate.js";
 import {
   decodeHeaderEnvPlaceholder,
   normalizeBundleMcpServerConfig,
@@ -23,43 +24,23 @@ import type {
   CodexMcpServersConfig,
   LoadCodexBundleMcpThreadConfigParams,
 } from "./codex-mcp-config.types.js";
-import { shouldCreateBundleMcpRuntimeForAttempt } from "./embedded-agent-runner/run/attempt-tool-construction-plan.js";
+import {
+  normalizeCodexMcpToolApprovalMode,
+  resolveEffectiveCodexMcpToolApprovalMode,
+} from "./mcp-codex-tool-approval.js";
 import { partitionMcpServersByConnectionScope } from "./mcp-connection-resolver.js";
-
-function isOpenClawLoopbackMcpServer(name: string, server: BundleMcpServerConfig): boolean {
-  return (
-    name === "openclaw" &&
-    typeof server.url === "string" &&
-    /^https?:\/\/(?:127\.0\.0\.1|localhost):\d+\/mcp(?:[?#].*)?$/.test(server.url)
-  );
-}
-
-type CodexMcpToolApprovalMode = "auto" | "prompt" | "approve";
-
-const CODEX_MCP_TOOL_APPROVAL_MODES = new Set<CodexMcpToolApprovalMode>([
-  "auto",
-  "prompt",
-  "approve",
-]);
 
 function readCodexProjectionConfig(server: BundleMcpServerConfig): Record<string, unknown> {
   return isRecord(server.codex) ? server.codex : {};
 }
 
-function normalizeCodexToolApprovalMode(value: unknown): CodexMcpToolApprovalMode | undefined {
-  return typeof value === "string" &&
-    CODEX_MCP_TOOL_APPROVAL_MODES.has(value as CodexMcpToolApprovalMode)
-    ? (value as CodexMcpToolApprovalMode)
-    : undefined;
-}
-
 function resolveCodexDefaultToolsApprovalMode(
   server: BundleMcpServerConfig,
-): CodexMcpToolApprovalMode | undefined {
+): ReturnType<typeof normalizeCodexMcpToolApprovalMode> {
   const codex = readCodexProjectionConfig(server);
   return (
-    normalizeCodexToolApprovalMode(codex.defaultToolsApprovalMode) ??
-    normalizeCodexToolApprovalMode(codex.default_tools_approval_mode)
+    normalizeCodexMcpToolApprovalMode(codex.defaultToolsApprovalMode) ??
+    normalizeCodexMcpToolApprovalMode(codex.default_tools_approval_mode)
   );
 }
 
@@ -140,10 +121,10 @@ export function normalizeCodexMcpServerConfig(
   const defaultToolsApprovalMode = resolveCodexDefaultToolsApprovalMode(server);
   if (defaultToolsApprovalMode) {
     next.default_tools_approval_mode = defaultToolsApprovalMode;
-  } else if (isOpenClawLoopbackMcpServer(name, server)) {
-    // OpenClaw's loopback MCP exposes local tools; Codex should ask for approval
-    // unless plugin metadata explicitly selected another approval mode.
-    next.default_tools_approval_mode = "approve";
+  } else if (resolveEffectiveCodexMcpToolApprovalMode(name, server) !== "auto") {
+    // Preserve the shipped loopback exception unless plugin metadata selected
+    // another mode; other omissions remain Codex's native `auto` default.
+    next.default_tools_approval_mode = resolveEffectiveCodexMcpToolApprovalMode(name, server);
   }
   const httpHeaders = normalizeStringRecord(server.headers);
   if (httpHeaders) {

@@ -9,6 +9,7 @@ import { freezeDiagnosticTraceContext } from "../infra/diagnostic-trace-context.
 import { getGlobalHookRunnerRegistry } from "../plugins/hook-runner-global-state.js";
 import { getGlobalHookRunner } from "../plugins/hook-runner-global.js";
 import { deriveToolParams } from "../plugins/host-tool-param-parsers.js";
+import type { PluginToolMcpMeta } from "../plugins/tools.js";
 import {
   getTrustedToolPolicyDiagnosticEntries,
   hasTrustedToolPolicies,
@@ -40,6 +41,7 @@ import {
   resolveToolErrorDiagnostic,
   unwrapErrorCause,
 } from "./agent-tools.before-tool-call.diagnostics.js";
+import { resolveCodexMcpApprovalPolicy } from "./agent-tools.before-tool-call.mcp.js";
 import { consumeBatchAdmittedToolCall } from "./agent-tools.before-tool-call.state.js";
 import type {
   BeforeToolCallPolicyDiagnosticState,
@@ -96,6 +98,7 @@ export async function runBeforeToolCallHook(args: {
   ctx?: HookContext;
   signal?: AbortSignal;
   approvalMode?: "request" | "report" | "deny" | "defer";
+  mcp?: PluginToolMcpMeta;
 }): Promise<HookOutcome> {
   const toolName = normalizeToolName(args.toolName || "tool");
   const params = args.params;
@@ -173,7 +176,36 @@ export async function runBeforeToolCallHook(args: {
         params,
       };
     }
-    if (!initialCorePolicyResult && !shouldRunTrustedPolicies && !hasBeforeToolCallHooks) {
+    const mcpPolicyResult = resolveCodexMcpApprovalPolicy({
+      mcp: args.mcp,
+      ctx: args.ctx,
+      toolParams: params,
+    });
+    if (mcpPolicyResult && "blocked" in mcpPolicyResult) {
+      return mcpPolicyResult;
+    }
+    let mcpApprovalResolution: PluginApprovalResolution | undefined;
+    if (mcpPolicyResult?.requireApproval) {
+      const approvalOutcome = await resolveBeforeToolCallApprovalOutcome({
+        result: mcpPolicyResult,
+        approvalMode: args.approvalMode,
+        toolName,
+        ...(args.toolCallId ? { toolCallId: args.toolCallId } : {}),
+        ...(args.ctx ? { ctx: args.ctx } : {}),
+        signal: args.signal,
+        baseParams: params,
+      });
+      if (approvalOutcome?.blocked || approvalOutcome?.deferredApproval) {
+        return approvalOutcome;
+      }
+      mcpApprovalResolution = approvalOutcome?.approvalResolution;
+    }
+    if (
+      !initialCorePolicyResult &&
+      !mcpPolicyResult &&
+      !shouldRunTrustedPolicies &&
+      !hasBeforeToolCallHooks
+    ) {
       return { blocked: false, params };
     }
     const deriveOptions =
@@ -308,8 +340,8 @@ export async function runBeforeToolCallHook(args: {
         blocked: false as const,
         params: policyAdjustedParams,
       };
-      if (trustedApprovalResolution) {
-        allowed.approvalResolution = trustedApprovalResolution;
+      if (trustedApprovalResolution ?? mcpApprovalResolution) {
+        allowed.approvalResolution = trustedApprovalResolution ?? mcpApprovalResolution;
       }
       return allowed;
     }
@@ -339,7 +371,7 @@ export async function runBeforeToolCallHook(args: {
     }
 
     let finalParams = policyAdjustedParams;
-    let finalApprovalResolution = trustedApprovalResolution;
+    let finalApprovalResolution = trustedApprovalResolution ?? mcpApprovalResolution;
     if (hookResult?.requireApproval) {
       const approvalOutcome = await resolveBeforeToolCallApprovalOutcome({
         result: hookResult,

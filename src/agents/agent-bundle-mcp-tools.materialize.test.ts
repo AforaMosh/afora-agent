@@ -95,6 +95,35 @@ describe("createBundleMcpToolRuntime", () => {
     mcpUiResourceTesting.clearViewStore();
   });
 
+  it("keeps Codex approval facts in collision-safe host metadata", async () => {
+    const runtime = await materializeBundleMcpToolsForRun({
+      runtime: makeToolRuntime({
+        tools: [
+          {
+            serverName: "server-a",
+            safeServerName: "server_a",
+            toolName: "write",
+            inputSchema: { type: "object", properties: {} },
+            fallbackDescription: "write",
+            codexApproval: {
+              mode: "writes",
+              annotations: { destructiveHint: true, idempotentHint: false },
+            },
+          },
+        ],
+      }),
+      reservedToolNames: ["server_a__write"],
+    });
+    const tool = expectDefined(runtime.tools[0], "runtime.tools[0] test invariant");
+    expect(tool.name).not.toBe("server_a__write");
+    expect(getPluginToolMeta(tool)?.mcp?.codexApproval).toEqual({
+      mode: "writes",
+      annotations: { destructiveHint: true, idempotentHint: false },
+    });
+    expect(JSON.stringify(tool)).not.toContain("codexApproval");
+    await runtime.dispose();
+  });
+
   it("keeps app-only MCP tools out of the model tool catalog", async () => {
     const runtime = await materializeBundleMcpToolsForRun({
       runtime: makeToolRuntime({
@@ -565,6 +594,33 @@ describe("createBundleMcpToolRuntime", () => {
     });
 
     expect(runtime.tools.map((tool) => tool.name)).toEqual(["knowledge__resources_list"]);
+
+    const excludedRuntime = await materializeBundleMcpToolsForRun({
+      runtime: {
+        ...base,
+        getCatalog: async () => ({
+          version: 1,
+          generatedAt: 0,
+          servers: {
+            knowledge: {
+              serverName: "knowledge",
+              safeServerName: "knowledge",
+              launchSummary: "knowledge",
+              toolCount: 0,
+              resources: { listChanged: false },
+              prompts: { listChanged: false },
+              toolFilter: { exclude: ["*"] },
+            },
+          },
+          tools: [],
+        }),
+        listResources: async () => [],
+        readResource: async () => ({ contents: [] }),
+        listPrompts: async () => [],
+        getPrompt: async () => ({ messages: [] }),
+      },
+    });
+    expect(excludedRuntime.tools).toEqual([]);
   });
 
   it("projects resource and prompt utility tools for inventory-only catalogs", async () => {

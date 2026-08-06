@@ -410,6 +410,7 @@ export function wrapToolWithBeforeToolCallHook(
           ctx,
           signal,
           approvalMode: hookOptions.approvalMode,
+          mcp: getPluginToolMeta(tool)?.mcp,
         });
       } catch (error) {
         recordPreExecutionError(error, hookParams, "before_tool_call");

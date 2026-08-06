@@ -1,9 +1,4 @@
-import {
-  embeddedAgentLog,
-  formatErrorMessage,
-  isHostScopedAgentToolActive,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
-import { buildCodexUserMcpServersThreadConfigPatchForRuntime } from "openclaw/plugin-sdk/codex-mcp-projection";
+import { isHostScopedAgentToolActive } from "openclaw/plugin-sdk/agent-harness-runtime";
 import { getCodexAppServerClientInstanceId } from "./client.js";
 import {
   isMessageOnlyCodexSourceReply,
@@ -18,8 +13,6 @@ import {
   codexLegacyDynamicToolsFingerprint as legacyFingerprintDynamicTools,
   fingerprintEnvironmentSelection,
   fingerprintJsonObject,
-  fingerprintUserMcpServersConfigPatch,
-  legacyFingerprintUserMcpServersConfigPatch,
 } from "./thread-fingerprints.js";
 import { createCodexThreadLifecycleTimingTracker } from "./thread-lifecycle-timing.js";
 import type { CodexStartOrResumeThreadParams } from "./thread-lifecycle-types.js";
@@ -62,20 +55,6 @@ export async function prepareCodexThreadLifecyclePreflight(params: CodexStartOrR
   const contextEngineBinding = lifecycleTiming.measureSync("context-engine-binding", () =>
     buildContextEngineBinding(params.params, params.contextEngineProjection),
   );
-  const userMcpServersConfigPatch =
-    params.userMcpServersEnabled === false
-      ? undefined
-      : await buildCodexUserMcpServersThreadConfigPatchForRuntime(params.params.config, {
-          agentId: params.agentId ?? params.params.agentId,
-          agentDir: params.params.agentDir,
-          allowLiteralOAuthProjection: params.appServer.connectionClass !== "remote",
-          toolOverrides: params.params.toolOverrides,
-          onServerUnavailable: (serverName, error) =>
-            embeddedAgentLog.warn("skipping unavailable MCP OAuth server", {
-              serverName,
-              error: formatErrorMessage(error),
-            }),
-        });
   const nativeSkillIsolation = await lifecycleTiming.measure("native-skill-isolation", () =>
     resolveCodexNativeSkillIsolation({
       client: params.client,
@@ -92,18 +71,15 @@ export async function prepareCodexThreadLifecyclePreflight(params: CodexStartOrR
         disabledUserSkillPaths: nativeSkillIsolation.disabledUserSkillPaths,
       })
     : undefined;
-  const legacyUserMcpServersFingerprint =
-    legacyFingerprintUserMcpServersConfigPatch(userMcpServersConfigPatch);
-  const userMcpServersFingerprint = fingerprintUserMcpServersConfigPatch(userMcpServersConfigPatch);
   const environmentSelectionFingerprint = fingerprintEnvironmentSelection(
     params.environmentSelection,
   );
   const hostSystemAgentActive =
     params.hostSystemAgentActive ?? isHostScopedAgentToolActive("openclaw");
-  const ringZeroActive =
+  const ringZeroToolSurfaceActive =
     hostSystemAgentActive && isSystemAgentOnlyCodexDynamicToolAllowlist(params.params.toolsAllow);
   const messageOnlySourceReply = isMessageOnlyCodexSourceReply(params.params);
-  const restrictedToolSurface = ringZeroActive || messageOnlySourceReply;
+  const restrictedToolSurface = ringZeroToolSurfaceActive || messageOnlySourceReply;
   if (restrictedToolSurface && params.nativeCodeModeEnabled !== false) {
     throw new Error("Codex restricted tool surfaces require native code mode to be disabled");
   }
@@ -117,7 +93,7 @@ export async function prepareCodexThreadLifecyclePreflight(params: CodexStartOrR
       assertCodexRingZeroHasNoManagedHooks(params.client, params.signal),
     );
   }
-  const ringZeroConfigFingerprint = ringZeroActive
+  const ringZeroConfigFingerprint = ringZeroToolSurfaceActive
     ? fingerprintJsonObject({
         version: 1,
         baseInstructions: CODEX_RING_ZERO_BASE_INSTRUCTIONS,
@@ -128,7 +104,7 @@ export async function prepareCodexThreadLifecyclePreflight(params: CodexStartOrR
         )!,
       })
     : undefined;
-  const ringZeroClientInstanceId = ringZeroActive
+  const ringZeroClientInstanceId = ringZeroToolSurfaceActive
     ? getCodexAppServerClientInstanceId(params.client)
     : undefined;
   return {
@@ -138,17 +114,14 @@ export async function prepareCodexThreadLifecyclePreflight(params: CodexStartOrR
     environmentSelectionFingerprint,
     hostSystemAgentActive,
     legacyDynamicToolsFingerprint,
-    legacyUserMcpServersFingerprint,
     lifecycleTiming,
     nativeSkillIsolation,
     nativeSkillIsolationFingerprint,
     networkProxyConfigFingerprint,
-    ringZeroActive,
+    ringZeroActive: ringZeroToolSurfaceActive,
     ringZeroClientInstanceId,
     ringZeroConfigFingerprint,
     ringZeroInheritedMcpServerNames,
-    userMcpServersConfigPatch,
-    userMcpServersFingerprint,
     webSearchThreadConfigFingerprint,
   };
 }

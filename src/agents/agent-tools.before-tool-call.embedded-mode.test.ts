@@ -201,6 +201,144 @@ describe("runBeforeToolCallHook — embedded mode approvals", () => {
     expect(mockCallGatewayTool).not.toHaveBeenCalled();
   });
 
+  it("fails headless Codex MCP approval before consulting any broker", async () => {
+    setEmbeddedMode(true);
+    const broker = new EmbeddedPluginApprovalBroker();
+    setEmbeddedPluginApprovalBroker(broker);
+
+    const result = await runBeforeToolCallHook({
+      toolName: "private__mutate",
+      params: { token: "must-not-leak" },
+      toolCallId: "call-mcp-cron",
+      mcp: {
+        serverName: "private",
+        safeServerName: "private",
+        toolName: "mutate",
+        operation: "tool",
+        codexApproval: { mode: "prompt", annotations: {} },
+      },
+      ctx: {
+        trigger: "cron",
+        codexMcpApprovalPolicy: { autoApprove: false },
+      },
+    });
+
+    expect(result).toMatchObject({
+      blocked: true,
+      deniedReason: "mcp-approval-unavailable",
+    });
+    if (!result.blocked) {
+      throw new Error("expected unattended MCP approval to fail closed");
+    }
+    expect(result.reason).toContain("private.mutate");
+    expect(result.reason).not.toContain("must-not-leak");
+    expect(broker.listPending()).toEqual([]);
+    expect(mockCallGatewayTool).not.toHaveBeenCalled();
+    expect(runBeforeToolCallMock).not.toHaveBeenCalled();
+  });
+
+  it("allows an MCP tool once and still lets later hooks veto", async () => {
+    setEmbeddedMode(true);
+    const broker = new EmbeddedPluginApprovalBroker();
+    setEmbeddedPluginApprovalBroker(broker);
+    runBeforeToolCallMock.mockResolvedValue({ block: true, blockReason: "owner veto" });
+
+    const resultPromise = runBeforeToolCallHook({
+      toolName: "private__mutate",
+      params: {},
+      toolCallId: "call-mcp-user",
+      mcp: {
+        serverName: "private",
+        safeServerName: "private",
+        toolName: "mutate",
+        operation: "tool",
+        codexApproval: { mode: "prompt", annotations: {} },
+      },
+      ctx: {
+        trigger: "user",
+        approvalReviewerDeviceId: "device-reviewer",
+        codexMcpApprovalPolicy: { autoApprove: false },
+      },
+    });
+    await vi.waitFor(() => expect(broker.listPending()).toHaveLength(1));
+    const pending = expectDefined(broker.listPending()[0], "pending MCP approval test invariant");
+    expect(pending.request.severity).toBe("warning");
+    expect(pending.request.allowedDecisions).toEqual(["allow-once", "deny"]);
+    expect(broker.resolve(pending.id, "allow-once")).toBe(true);
+
+    await expect(resultPromise).resolves.toMatchObject({
+      blocked: true,
+      reason: "owner veto",
+    });
+    expect(runBeforeToolCallMock).toHaveBeenCalledOnce();
+  });
+
+  it("honors an interactive MCP denial without executing later hooks", async () => {
+    setEmbeddedMode(true);
+    const broker = new EmbeddedPluginApprovalBroker();
+    setEmbeddedPluginApprovalBroker(broker);
+
+    const resultPromise = runBeforeToolCallHook({
+      toolName: "private__mutate",
+      params: {},
+      mcp: {
+        serverName: "private",
+        safeServerName: "private",
+        toolName: "mutate",
+        operation: "tool",
+        codexApproval: { mode: "auto", annotations: { destructiveHint: true } },
+      },
+      ctx: {
+        trigger: "user",
+        approvalReviewerDeviceId: "device-reviewer",
+        codexMcpApprovalPolicy: { autoApprove: false },
+      },
+    });
+    await vi.waitFor(() => expect(broker.listPending()).toHaveLength(1));
+    const pending = expectDefined(broker.listPending()[0], "pending MCP denial test invariant");
+    expect(broker.resolve(pending.id, "deny")).toBe(true);
+
+    await expect(resultPromise).resolves.toMatchObject({
+      blocked: true,
+      deniedReason: "plugin-approval",
+      reason: "Denied by user",
+    });
+    expect(runBeforeToolCallMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["a proven full-yolo boundary", "tool", true],
+    ["an MCP resource utility", "resources_read", false],
+  ] as const)("does not prompt for %s", async (_label, operation, autoApprove) => {
+    setEmbeddedMode(true);
+    const broker = new EmbeddedPluginApprovalBroker();
+    setEmbeddedPluginApprovalBroker(broker);
+    runBeforeToolCallMock.mockResolvedValue({});
+
+    const result = await runBeforeToolCallHook({
+      toolName: "private__entry",
+      params: {},
+      mcp: {
+        serverName: "private",
+        safeServerName: "private",
+        toolName: "entry",
+        operation,
+        ...(operation === "tool"
+          ? { codexApproval: { mode: "prompt" as const, annotations: {} } }
+          : {}),
+      },
+      ctx: {
+        trigger: "user",
+        approvalReviewerDeviceId: "device-reviewer",
+        codexMcpApprovalPolicy: { autoApprove },
+      },
+    });
+
+    expect(result.blocked).toBe(false);
+    expect(broker.listPending()).toEqual([]);
+    expect(runBeforeToolCallMock).toHaveBeenCalledOnce();
+  });
+
   it("does not allow embedded approvals when the broker stops", async () => {
     setEmbeddedMode(true);
     const broker = new EmbeddedPluginApprovalBroker();

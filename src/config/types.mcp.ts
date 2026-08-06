@@ -1,10 +1,10 @@
 // Defines MCP server and tool approval configuration types.
-export type McpCodexToolApprovalMode = "auto" | "prompt" | "approve";
+export type McpCodexToolApprovalMode = "auto" | "prompt" | "writes" | "approve";
 
 export type McpServerCodexConfig = {
-  /** OpenClaw agent ids that should receive this server in Codex app-server threads. */
+  /** OpenClaw agent ids that should receive this server through the Codex harness. */
   agents?: string[];
-  /** Codex MCP tool approval mode emitted as default_tools_approval_mode. */
+  /** Codex-compatible MCP tool approval mode enforced by the OpenClaw bridge. */
   defaultToolsApprovalMode?: McpCodexToolApprovalMode;
 };
 
@@ -60,7 +60,7 @@ export type McpServerConfig = {
   clientKey?: string;
   /** Optional per-server OpenClaw MCP tool selection. */
   toolFilter?: McpServerToolFilterConfig;
-  /** Codex-specific projection controls for Codex app-server/runtime config. */
+  /** Codex-harness selection and approval controls for OpenClaw-owned MCP tools. */
   codex?: McpServerCodexConfig;
   [key: string]: unknown;
 };

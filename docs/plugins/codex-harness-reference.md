@@ -353,9 +353,10 @@ but new configs should use `auto_review`.
 
 When an OpenClaw sandbox is active, the local Codex app-server process still
 runs on the Gateway host. OpenClaw therefore disables Codex native Code Mode,
-user MCP servers, and app-backed plugin execution for that turn instead of
+Codex-native MCP, and app-backed plugin execution for that turn instead of
 treating Codex host-side sandboxing as equivalent to the OpenClaw sandbox
-backend. Shell access is exposed through OpenClaw sandbox-backed dynamic tools
+backend. OpenClaw-configured `mcp.servers` remain policy-filtered OpenClaw
+dynamic tools. Shell access is exposed through OpenClaw sandbox-backed dynamic tools
 such as `sandbox_exec` and `sandbox_process` when the normal exec/process tools
 are available.
 

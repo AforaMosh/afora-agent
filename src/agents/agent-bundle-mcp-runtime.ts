@@ -54,6 +54,10 @@ import type {
   SessionMcpRuntime,
   SessionMcpRuntimeManager,
 } from "./agent-bundle-mcp-types.js";
+import {
+  normalizeMcpToolApprovalAnnotations,
+  resolveEffectiveCodexMcpToolApprovalMode,
+} from "./mcp-codex-tool-approval.js";
 import { isMcpConfigRecord } from "./mcp-config-shared.js";
 import {
   applyMcpConnectionOverride,
@@ -871,6 +875,10 @@ export function createSessionMcpRuntime(params: {
                     : {}),
                 };
                 const toolEntries: McpCatalogTool[] = [];
+                const codexApprovalMode = resolveEffectiveCodexMcpToolApprovalMode(
+                  serverName,
+                  rawServer,
+                );
                 for (const tool of policyEligibleTools) {
                   const toolName = tool.name.trim();
                   if (!toolName) {
@@ -895,6 +903,10 @@ export function createSessionMcpRuntime(params: {
                     description: sanitizeMcpMetadataText(tool.description),
                     inputSchema: tool.inputSchema,
                     fallbackDescription: `Provided by bundle MCP server "${serverName}" (${launchDescription}).`,
+                    codexApproval: {
+                      mode: codexApprovalMode,
+                      annotations: normalizeMcpToolApprovalAnnotations(tool.annotations),
+                    },
                     ...(uiResourceUri ? { uiResourceUri } : {}),
                     ...(uiVisibility ? { uiVisibility } : {}),
                     ...(deniedToolNames.has(toolName) ? { deniedBySession: true } : {}),

@@ -19,6 +19,7 @@ import {
   resolveOpenClawExecPolicyForCodexAppServer,
   resolveCodexPluginsPolicy,
   shouldAutoApproveCodexAppServerApprovals,
+  shouldAutoApproveCodexMcpToolApprovals,
   withMcpElicitationsApprovalPolicy,
 } from "./config.js";
 
@@ -93,6 +94,42 @@ describe("Codex app-server config", () => {
     ).toBe(false);
     expect(
       shouldAutoApproveCodexAppServerApprovals({
+        approvalPolicy: "never",
+        sandbox: "danger-full-access",
+        networkProxy: {
+          profileName: "openclaw-network",
+          configFingerprint: "network-proxy-v1",
+          configPatch: {
+            "features.network_proxy.enabled": true,
+            default_permissions: "openclaw-network",
+            permissions: {},
+          },
+        },
+      }),
+    ).toBe(false);
+  });
+
+  it("preserves Codex native MCP auto-approval under never plus full disk access", () => {
+    expect(
+      shouldAutoApproveCodexMcpToolApprovals({
+        approvalPolicy: "never",
+        sandbox: "danger-full-access",
+      }),
+    ).toBe(true);
+    expect(
+      shouldAutoApproveCodexMcpToolApprovals({
+        approvalPolicy: "never",
+        sandbox: "workspace-write",
+      }),
+    ).toBe(false);
+    expect(
+      shouldAutoApproveCodexMcpToolApprovals({
+        approvalPolicy: "on-request",
+        sandbox: "danger-full-access",
+      }),
+    ).toBe(false);
+    expect(
+      shouldAutoApproveCodexMcpToolApprovals({
         approvalPolicy: "never",
         sandbox: "danger-full-access",
         networkProxy: {

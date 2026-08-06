@@ -335,6 +335,82 @@ describe("createCodexDynamicToolBridge", () => {
     ]);
   });
 
+  it("remaps only Codex-reserved dynamic names deterministically across order and collisions", () => {
+    const tools = [
+      createTool({ name: "mcp" }),
+      createTool({ name: "mcp__search" }),
+      createTool({ name: "mcp__bad name.世界" }),
+      createTool({ name: "openclaw_mcp__search" }),
+      createTool({ name: "message" }),
+    ];
+    const createBridge = (orderedTools: AnyAgentTool[]) =>
+      createCodexDynamicToolBridge({
+        tools: orderedTools,
+        registeredTools: orderedTools,
+        signal: new AbortController().signal,
+      });
+    const forward = createBridge(tools);
+    const reversed = createBridge(tools.toReversed());
+    const names = specNames(forward.specs);
+
+    expect(forward.specs).toEqual(reversed.specs);
+    expect(names).toContain("message");
+    expect(names).toContain("openclaw_mcp__search");
+    expect(names).not.toContain("mcp");
+    expect(names).not.toContain("mcp__search");
+    expect(names).not.toContain("mcp__bad name.世界");
+    expect(names.some((name) => name.startsWith("openclaw_mcp"))).toBe(true);
+    expect(new Set(names).size).toBe(names.length);
+    expect(names.every((name) => name.length <= 128)).toBe(true);
+    expect(names.every((name) => /^[A-Za-z0-9_-]+$/.test(name))).toBe(true);
+  });
+
+  it("dispatches a reserved-name projection through the canonical OpenClaw identity", async () => {
+    const execute = vi.fn(async () => textToolResult("reserved tool result"));
+    const onAgentToolResult = vi.fn();
+    const onToolOutcome = vi.fn();
+    const direct = createCodexDynamicToolBridge({
+      tools: [createTool({ name: "mcp__search", execute })],
+      signal: new AbortController().signal,
+      directToolNames: ["mcp__search"],
+      hookContext: { runId: "run-reserved-name", onToolOutcome },
+    });
+    const projectedName = specNames(direct.specs)[0];
+    expect(projectedName).toBeDefined();
+    expect(projectedName).not.toBe("mcp__search");
+    expect(direct.resultContentSourceForTool(projectedName!)).toBeUndefined();
+    expectNoNamespace(flattenSpecsWithNamespace(direct.specs)[0]);
+
+    const result = await direct.handleToolCall(
+      {
+        threadId: "thread-1",
+        turnId: "turn-1",
+        callId: "call-reserved-name",
+        namespace: null,
+        tool: projectedName!,
+        arguments: { query: "status" },
+      },
+      { onAgentToolResult },
+    );
+
+    expect(result).toMatchObject(expectInputText("reserved tool result"));
+    expect(execute).toHaveBeenCalledOnce();
+    expect(onAgentToolResult).toHaveBeenCalledWith(
+      expect.objectContaining({ toolName: "mcp__search" }),
+    );
+    expect(onToolOutcome).toHaveBeenCalledWith(
+      expect.objectContaining({ toolName: "mcp__search" }),
+    );
+
+    const searchable = createCodexDynamicToolBridge({
+      tools: [createTool({ name: "mcp__search", execute })],
+      signal: new AbortController().signal,
+    });
+    expect(flattenSpecsWithNamespace(searchable.specs)[0]?.namespace).toBe(
+      CODEX_OPENCLAW_DYNAMIC_TOOL_NAMESPACE,
+    );
+  });
+
   it("can register a durable tool schema while denying execution for the current turn", async () => {
     const heartbeatExecute = vi.fn(async () => textToolResult("heartbeat recorded"));
     const onAgentToolResult = vi.fn();

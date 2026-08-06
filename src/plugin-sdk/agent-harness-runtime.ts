@@ -2,6 +2,7 @@
 // Keep heavyweight tool construction out of this module so harness imports can
 // register quickly inside gateway startup and Docker e2e runs.
 
+import { shouldCreateBundleMcpRuntimeForAttempt } from "../agents/agent-bundle-mcp-attempt-gate.js";
 import { shouldLoadRequesterScopedMcpHarnessRuntime } from "../agents/agent-bundle-mcp-runtime-shared.js";
 import {
   mergeAgentRunAttemptTerminal,
@@ -383,6 +384,9 @@ export async function prepareHarnessNativeMcpAppPreview(params: {
 /**
  * Materialize requester-scoped MCP tools for a harness run (dynamic tools, not
  * harness-native MCP config). Lazy-loaded so harness plugins avoid the MCP manager graph.
+ *
+ * @deprecated Use materializeConfiguredMcpToolsForHarnessRun. This compatibility
+ * adapter stays requester-only so existing harnesses keep static MCP harness-native.
  */
 export async function materializeRequesterScopedMcpToolsForHarnessRun(
   params: Parameters<
@@ -395,11 +399,39 @@ export async function materializeRequesterScopedMcpToolsForHarnessRun(
     >
   >
 > {
-  const shouldLoad = shouldLoadRequesterScopedMcpHarnessRuntime(params);
-  if (!shouldLoad) {
+  if (!shouldLoadRequesterScopedMcpHarnessRuntime(params)) {
     return undefined;
   }
   const { materializeRequesterScopedMcpToolsForHarnessRun: materialize } =
+    await import("../agents/agent-bundle-mcp-harness.js");
+  return materialize(params);
+}
+
+/**
+ * Materialize configured static and requester-scoped MCP tools for a harness run.
+ * Lazy-loaded so harness plugins avoid the MCP manager graph until a turn needs it.
+ */
+export async function materializeConfiguredMcpToolsForHarnessRun(
+  params: Parameters<
+    typeof import("../agents/agent-bundle-mcp-harness.js").materializeConfiguredMcpToolsForHarnessRun
+  >[0],
+): Promise<
+  Awaited<
+    ReturnType<
+      typeof import("../agents/agent-bundle-mcp-harness.js").materializeConfiguredMcpToolsForHarnessRun
+    >
+  >
+> {
+  if (
+    !shouldCreateBundleMcpRuntimeForAttempt({
+      toolsEnabled: params.toolsEnabled !== false,
+      disableTools: params.disableTools,
+      toolsAllow: params.toolsAllow,
+    })
+  ) {
+    return undefined;
+  }
+  const { materializeConfiguredMcpToolsForHarnessRun: materialize } =
     await import("../agents/agent-bundle-mcp-harness.js");
   return materialize(params);
 }
@@ -432,6 +464,7 @@ export {
   hasBeforeToolCallPolicy,
   isToolWrappedWithBeforeToolCallHook,
   requestDeferredPluginToolApproval,
+  rewrapToolWithBeforeToolCallHook,
   runBeforeToolCallHook,
   setBeforeToolCallDiagnosticsEnabled,
   wrapToolWithBeforeToolCallHook,

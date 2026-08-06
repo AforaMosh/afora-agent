@@ -6,8 +6,10 @@ import type {
 } from "@modelcontextprotocol/sdk/types.js";
 import type { TSchema } from "typebox";
 import type { SessionToolOverrides } from "../config/sessions/types.js";
+import type { McpCodexToolApprovalMode } from "../config/types.mcp.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import type { PluginManifestRegistry } from "../plugins/manifest-registry.js";
+import type { McpToolApprovalAnnotations } from "./mcp-codex-tool-approval.js";
 import type { AnyAgentTool } from "./tools/common.js";
 
 /** Materialized MCP tools plus diagnostics and cleanup handle for one run. */
@@ -57,6 +59,11 @@ export type McpCatalogTool = {
   uiResourceUri?: string;
   uiVisibility?: Array<"app" | "model">;
   deniedBySession?: true;
+  /** Host-only Codex approval facts; never projected into the model tool schema. */
+  codexApproval?: {
+    mode: McpCodexToolApprovalMode;
+    annotations: McpToolApprovalAnnotations;
+  };
 };
 
 /** Complete tool catalog for a session-scoped MCP runtime. */

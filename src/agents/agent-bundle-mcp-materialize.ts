@@ -80,6 +80,10 @@ function buildAppToolPolicyProjections(params: {
         safeServerName: tool.safeServerName,
         toolName: tool.toolName,
         operation: "tool",
+        codexApproval: {
+          mode: tool.codexApproval?.mode ?? "auto",
+          annotations: { ...tool.codexApproval?.annotations },
+        },
       },
     });
     tools.push(projection);
@@ -343,6 +347,10 @@ export function buildBundleMcpToolsFromCatalog(params: {
         safeServerName: tool.safeServerName,
         toolName: tool.toolName,
         operation: "tool",
+        codexApproval: {
+          mode: tool.codexApproval?.mode ?? "auto",
+          annotations: { ...tool.codexApproval?.annotations },
+        },
         ...(tool.deniedBySession ? { deniedBySession: true } : {}),
       },
     });

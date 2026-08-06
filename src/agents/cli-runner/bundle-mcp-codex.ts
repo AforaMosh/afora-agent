@@ -68,6 +68,31 @@ function isCodexMcpServerAllowedForAgent(
   return agentIds.includes(normalizeAgentId(options.agentId));
 }
 
+/**
+ * Applies Codex-only agent scoping before the shared MCP runtime resolves credentials or opens
+ * transports. A session override cannot widen a server beyond its configured `codex.agents` cap.
+ */
+export function resolveCodexMcpToolOverridesForAgent(
+  cfg: OpenClawConfig | undefined,
+  options: Pick<CodexUserMcpServersProjectionOptions, "agentId" | "toolOverrides">,
+): Pick<SessionToolOverrides, "mcpServers" | "mcpToolsDeny"> | undefined {
+  const userServers = normalizeConfiguredMcpServers(cfg?.mcp?.servers);
+  const deniedServerNames = Object.entries(userServers)
+    .filter(([, server]) => !isCodexMcpServerAllowedForAgent(server, options))
+    .map(([name]) => name);
+  if (deniedServerNames.length === 0) {
+    return options.toolOverrides;
+  }
+  const mcpServers = { ...options.toolOverrides?.mcpServers };
+  for (const serverName of deniedServerNames) {
+    mcpServers[serverName] = false;
+  }
+  return {
+    ...options.toolOverrides,
+    mcpServers,
+  };
+}
+
 function readSessionMcpServerOverride(
   options: CodexUserMcpServersProjectionOptions | undefined,
   name: string,
@@ -86,12 +111,9 @@ export function injectCodexMcpConfigArgs(
 }
 
 /**
- * Codex app-server runtime (extensions/codex) receives its thread config as a
- * JSON object through JSON-RPC `thread/start`/`thread/resume`, not as `-c` CLI
- * args. This returns a thread-config patch projecting user-configured
- * `cfg.mcp.servers` entries into Codex's `mcp_servers` table using the same
- * per-server normalization the CLI path uses, so app-server agents see the
- * same user MCP servers the CLI runtime exposes via `injectCodexMcpConfigArgs`.
+ * Shipped compatibility projection for CLI/native consumers that still accept
+ * Codex `mcp_servers` config. Codex app-server configured MCP now uses
+ * OpenClaw-owned dynamic tools and does not call this helper.
  *
  * Only user-configured servers (`cfg.mcp.servers`) are projected. Plugin-
  * curated app-server apps are already attached separately through the codex

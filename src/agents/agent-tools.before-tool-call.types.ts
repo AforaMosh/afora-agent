@@ -42,6 +42,8 @@ export type HookContext = {
   runId?: string;
   /** What initiated this run, used to reject approvals on unattended surfaces. */
   trigger?: string;
+  /** Enables Codex-equivalent approval for OpenClaw-projected MCP tools. */
+  codexMcpApprovalPolicy?: { autoApprove: boolean };
   /** Device-scoped operator session allowed to review approvals initiated by this run. */
   approvalReviewerDeviceId?: string;
   trace?: DiagnosticTraceContext;
@@ -98,6 +100,7 @@ export type HookBlockedReason =
   | "plugin-before-tool-call"
   | "plugin-approval"
   | "plugin-approval-unavailable"
+  | "mcp-approval-unavailable"
   | "tool-loop";
 
 type HookBlockedOutcome = {

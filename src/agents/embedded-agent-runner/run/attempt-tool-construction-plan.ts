@@ -45,10 +45,6 @@ function isBundleMcpAllowlistName(normalized: string): boolean {
   return normalized === "bundle-mcp" || normalized.includes(TOOL_NAME_SEPARATOR);
 }
 
-function isPluginGroupAllowlistName(normalized: string): boolean {
-  return normalized === "group:plugins";
-}
-
 function hasWildcardToolAllowlist(toolsAllow: string[]): boolean {
   return toolsAllow.some((entry) => normalizeToolName(entry) === "*");
 }
@@ -240,15 +236,7 @@ function shouldCreateBundleRuntimeForAttempt(
  * runtime creation follows explicit bundle/plugin allowlist names rather than
  * generic local tool names.
  */
-export function shouldCreateBundleMcpRuntimeForAttempt(params: {
-  toolsEnabled: boolean;
-  disableTools?: boolean;
-  toolsAllow?: string[];
-}): boolean {
-  return shouldCreateBundleRuntimeForAttempt(params, (normalized) => {
-    return isBundleMcpAllowlistName(normalized) || isPluginGroupAllowlistName(normalized);
-  });
-}
+export { shouldCreateBundleMcpRuntimeForAttempt } from "../../agent-bundle-mcp-attempt-gate.js";
 
 /**
  * Decides whether the bundled LSP runtime is needed for this attempt. LSP tools

@@ -37,6 +37,17 @@ export function shouldAutoApproveCodexAppServerApprovals(
   );
 }
 
+/** Mirrors Codex 0.146.1 native MCP prompt auto-approval without widening other approvals. */
+export function shouldAutoApproveCodexMcpToolApprovals(
+  appServer: Pick<CodexAppServerRuntimeOptions, "approvalPolicy" | "networkProxy" | "sandbox">,
+): boolean {
+  return (
+    appServer.networkProxy === undefined &&
+    appServer.approvalPolicy === "never" &&
+    appServer.sandbox === "danger-full-access"
+  );
+}
+
 export function resolveCodexAppServerNetworkProxy(
   config: CodexAppServerNetworkProxyConfig | undefined,
   sandbox: CodexAppServerSandboxMode,

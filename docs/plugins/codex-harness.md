@@ -609,8 +609,12 @@ posture: `approvalPolicy: "never"`, `approvalsReviewer: "user"`, and
 `sandbox: "danger-full-access"`. If local Codex requirements disallow that
 implicit YOLO posture, OpenClaw selects allowed guardian permissions
 instead. When an OpenClaw sandbox is active for the session, OpenClaw
-disables Codex native Code Mode, user MCP servers, and app-backed plugin
+disables Codex native Code Mode and Codex-native MCP/app-backed plugin
 execution for that turn instead of relying on Codex host-side sandboxing.
+OpenClaw-configured `mcp.servers` remain OpenClaw-owned dynamic tools and still
+pass through the effective OpenClaw tool policy, including sandbox tool-policy
+restrictions. The MCP transport itself does not execute inside the
+filesystem/process sandbox.
 Shell access instead goes through OpenClaw sandbox-backed dynamic tools such
 as `sandbox_exec` and `sandbox_process` when the normal exec/process tools
 are available.

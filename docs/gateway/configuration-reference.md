@@ -129,10 +129,10 @@ target server during config edits.
           include: ["search_*"],
           exclude: ["admin_*"],
         },
-        // Optional Codex app-server projection controls.
+        // Optional Codex-harness selection and approval controls.
         codex: {
           agents: ["main"],
-          defaultToolsApprovalMode: "approve", // auto | prompt | approve
+          defaultToolsApprovalMode: "approve", // auto | prompt | writes | approve
         },
       },
     },
@@ -163,17 +163,22 @@ target server during config edits.
   resources or prompts also generate utility tool names (`resources_list`,
   `resources_read`, `prompts_list`, `prompts_get`), and those names use the
   same filter.
-- `mcp.servers.<name>.codex`: optional Codex app-server projection controls.
-  This block is OpenClaw metadata for Codex app-server threads only; it does not
-  affect ACP sessions, generic Codex harness config, or other runtime adapters.
-  Non-empty `codex.agents` limits the server to the listed OpenClaw agent ids.
+- `mcp.servers.<name>.codex`: optional Codex-harness selection and approval controls.
+  OpenClaw retains the server transport and credentials and projects only
+  policy-filtered dynamic tool schemas into Codex app-server. Non-empty
+  `codex.agents` limits materialization to the listed OpenClaw agent ids before
+  the transport is opened.
   Empty, blank, or invalid scoped agent lists are rejected by config validation
   and omitted by the runtime projection path instead of becoming global.
-  `codex.defaultToolsApprovalMode` emits Codex's native
-  `default_tools_approval_mode` for that server. OpenClaw strips the `codex`
-  block before passing native `mcp_servers` config to Codex. Omit the block to
-  keep the server projected for every Codex app-server agent with Codex's
-  default MCP approval behavior.
+  `codex.defaultToolsApprovalMode` (`auto`, `prompt`, `writes`, or `approve`)
+  governs OpenClaw-configured MCP tools in Codex app-server and retained
+  CLI/native compatibility projection. `auto` follows MCP annotations;
+  `prompt` always requests approval; `writes` requests approval unless
+  `readOnlyHint` is exactly `true`; and `approve` skips this MCP approval.
+  Interactive bridge approvals are one-shot, so use explicit `approve` for
+  durable unattended authorization. Otherwise unattended runs fail before the
+  tool call. Omit `codex.agents` to expose the server to every Codex app-server
+  agent. Genuinely Codex-native MCP/apps/plugins remain native.
 - Session-scoped bundled MCP runtimes use a built-in 10-minute idle TTL.
   One-shot embedded runs request run-end cleanup; the TTL is the backstop for long-lived sessions and future callers.
 - Changes under `mcp.*` hot-apply by disposing cached session MCP runtimes.

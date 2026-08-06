@@ -45,6 +45,7 @@ export {
 export {
   assertCodexAppServerConnectionSecurity,
   shouldAutoApproveCodexAppServerApprovals,
+  shouldAutoApproveCodexMcpToolApprovals,
   withMcpElicitationsApprovalPolicy,
 } from "./config-security.js";
 export { isCodexFastServiceTier, normalizeCodexServiceTier } from "./config-utils.js";
