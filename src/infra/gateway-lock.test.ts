@@ -562,18 +562,12 @@ describe("gateway lock", () => {
       coordinator.close();
     }
 
-    await expectGatewayLock(await acquireForTest(env)).release();
-  });
-
-  it("keeps the legacy coordinator while the shared-state lock is held", async () => {
-    const env = await makeEnv();
-    const { legacyStateLockPath } = resolveLockPath(env);
     const lock = expectGatewayLock(await acquireForTest(env));
-    const coordinator = openNodeSqliteDatabase(`${legacyStateLockPath}.sqlite`);
+    const currentCoordinator = openNodeSqliteDatabase(`${legacyStateLockPath}.sqlite`);
     try {
-      expect(() => coordinator.exec("PRAGMA busy_timeout = 0; BEGIN EXCLUSIVE;")).toThrow();
+      expect(() => currentCoordinator.exec("PRAGMA busy_timeout = 0; BEGIN EXCLUSIVE;")).toThrow();
     } finally {
-      coordinator.close();
+      currentCoordinator.close();
       await lock.release();
     }
   });
