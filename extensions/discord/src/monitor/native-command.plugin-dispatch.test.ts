@@ -1018,6 +1018,40 @@ describe("Discord native plugin command dispatch", () => {
     expect(interaction.deleteReply).not.toHaveBeenCalled();
   });
 
+  it("warns when the inbound turn is dropped before dispatch", async () => {
+    const cfg = createConfig();
+    const interaction = createInteraction();
+    nativeCommandRuntime.dispatchChannelInboundTurn = async () => ({
+      admission: { kind: "drop", reason: "ingest-null" },
+      dispatched: false,
+    });
+
+    const result = await dispatchDiscordNativeAgentReply({
+      cfg,
+      discordConfig: cfg.channels?.discord ?? {},
+      accountId: "default",
+      interaction: interaction as never,
+      ctxPayload: { SessionKey: "agent:main:discord:dm:owner" } as never,
+      effectiveRoute: {
+        accountId: "default",
+        agentId: "main",
+        sessionKey: "agent:main:discord:dm:owner",
+      },
+      channelConfig: null,
+      mediaLocalRoots: [],
+      preferFollowUp: true,
+      log: { error: vi.fn() } as never,
+    });
+
+    expect(result.hiddenFinalReply).toBeUndefined();
+    expectFollowUpFields(interaction, {
+      content: "⚠️ Command produced no visible reply.",
+      ephemeral: true,
+    });
+    expect(interaction.reply).not.toHaveBeenCalled();
+    expect(interaction.deleteReply).not.toHaveBeenCalled();
+  });
+
   it("settles deliberate command silence without an empty warning", async () => {
     const cfg = createConfig();
     const interaction = createInteraction();
