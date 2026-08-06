@@ -1452,17 +1452,12 @@ function buildRenderedSkillsPrompt(params: {
   return [params.remoteNote, limitNote, catalog].filter(Boolean).join("\n");
 }
 
-type RenderedSkillsPrompts = {
-  prompt: string;
-  catalogPrompt: string;
-};
-
 function applySkillsPromptLimits(params: {
   skills: Skill[];
   config?: OpenClawConfig;
   agentId?: string;
   remoteNote?: string;
-}): RenderedSkillsPrompts {
+}): string {
   const limits = resolveSkillsLimits(params.config, params.agentId);
   const total = params.skills.length;
   const byCount = params.skills.slice(0, Math.max(0, limits.maxSkillsInPrompt));
@@ -1473,7 +1468,7 @@ function applySkillsPromptLimits(params: {
     skills: Skill[],
     format: SkillsPromptFormat,
     includeLimitNote = true,
-  ): RenderedSkillsPrompts | undefined => {
+  ): string | undefined => {
     // Optional context must disappear whole; clipping it could corrupt skill guidance or XML.
     const remoteNotes = params.remoteNote ? [params.remoteNote, undefined] : [undefined];
     for (const remoteNote of remoteNotes) {
@@ -1483,19 +1478,10 @@ function applySkillsPromptLimits(params: {
         total,
         format,
         includeLimitNote,
+        includeLoadInstruction: false,
       });
       if (prompt.length <= limits.maxSkillsPromptChars) {
-        return {
-          prompt,
-          catalogPrompt: buildRenderedSkillsPrompt({
-            remoteNote,
-            skills,
-            total,
-            format,
-            includeLimitNote,
-            includeLoadInstruction: false,
-          }),
-        };
+        return prompt;
       }
     }
     return undefined;
@@ -1575,30 +1561,21 @@ function applySkillsPromptLimits(params: {
         skillsForPrompt,
         { kind: "compact", descriptionMaxChars },
         includeLimitNote,
-      ) ?? { prompt: "", catalogPrompt: "" }
+      ) ?? ""
     );
   }
 
-  return (
-    renderWithinLimit(skillsForPrompt, { kind: "full" }) ?? {
-      prompt: "",
-      catalogPrompt: "",
-    }
-  );
+  return renderWithinLimit(skillsForPrompt, { kind: "full" }) ?? "";
 }
 
 export function buildWorkspaceSkillSnapshot(
   workspaceDir: string,
   opts?: WorkspaceSkillBuildOptions & { snapshotVersion?: number },
 ): SkillSnapshot {
-  const { eligible, prompt, catalogPrompt, resolvedSkills } = resolveWorkspaceSkillPromptState(
-    workspaceDir,
-    opts,
-  );
+  const { eligible, prompt, resolvedSkills } = resolveWorkspaceSkillPromptState(workspaceDir, opts);
   const skillFilter = resolveEffectiveWorkspaceSkillFilter(opts);
   return {
     prompt,
-    catalogPrompt,
     skills: eligible.map((entry) => ({
       name: entry.skill.name,
       skillKey: resolveSkillKey(entry.skill, entry),
@@ -1657,7 +1634,6 @@ function resolveWorkspaceSkillPromptState(
 ): {
   eligible: SkillEntry[];
   prompt: string;
-  catalogPrompt: string;
   resolvedSkills: Skill[];
 } {
   const effectiveSkillFilter = resolveEffectiveWorkspaceSkillFilter(opts);
@@ -1684,13 +1660,13 @@ function resolveWorkspaceSkillPromptState(
   const promptSkills = compactSkillPaths(resolvedSkills).toSorted((a, b) =>
     a.name.localeCompare(b.name, "en"),
   );
-  const renderedPrompts = applySkillsPromptLimits({
+  const prompt = applySkillsPromptLimits({
     skills: promptSkills,
     config: opts?.config,
     agentId: opts?.agentId,
     remoteNote,
   });
-  return { eligible, ...renderedPrompts, resolvedSkills };
+  return { eligible, prompt, resolvedSkills };
 }
 
 export function resolveSkillsPromptForRun(params: {

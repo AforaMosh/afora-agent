@@ -1660,7 +1660,12 @@ describe("runCodexAppServerAttempt", () => {
     expect(instructions).not.toContain("Unscoped structured command guidance.");
     expect(instructions).not.toContain("OpenClaw main command guidance.");
   });
-  it("passes OpenClaw skills as turn collaboration developer instructions", async () => {
+  it("passes OpenClaw skills to memory-flush turns through read-accessible collaboration instructions", async () => {
+    testing.setOpenClawCodingToolsFactoryForTests(() => [
+      createRuntimeDynamicTool("read"),
+      createRuntimeDynamicTool("write"),
+      createRuntimeDynamicTool("message"),
+    ]);
     const llmInput = vi.fn();
     initializeGlobalHookRunner(
       createMockPluginRegistry([{ hookName: "llm_input", handler: llmInput }]),
@@ -1682,10 +1687,14 @@ describe("runCodexAppServerAttempt", () => {
       },
     });
     params.skillsSnapshot = {
-      prompt: "EMBEDDED_ONLY_SKILLS_PROMPT",
-      catalogPrompt: "<available_skills><skill><name>demo</name></skill></available_skills>",
+      prompt: "<available_skills><skill><name>demo</name></skill></available_skills>",
       skills: [],
     };
+    params.disableTools = false;
+    params.runtimePlan = createCodexRuntimePlanFixture();
+    params.trigger = "memory";
+    params.memoryFlushWritePath = "memory/2026-08-06.md";
+    setCodexTestModelSupportsTools(params, true);
     const run = runCodexAppServerAttempt(params);
     await harness.waitForMethod("turn/start");
     await new Promise<void>((resolve) => {
@@ -1694,8 +1703,14 @@ describe("runCodexAppServerAttempt", () => {
     await harness.completeTurn({ threadId: "thread-1", turnId: "turn-1" });
     const result = await run;
     const threadStart = harness.requests.find((request) => request.method === "thread/start");
-    const threadStartParams = threadStart?.params as { developerInstructions?: string };
+    const threadStartParams = threadStart?.params as {
+      developerInstructions?: string;
+      dynamicTools?: CodexDynamicToolSpec[];
+      environments?: unknown[];
+    };
     expect(threadStartParams.developerInstructions).not.toContain("<available_skills>");
+    expect(specNames(threadStartParams.dynamicTools ?? [])).toEqual(["read", "write"]);
+    expect(threadStartParams.environments).toEqual([]);
     const turnStart = harness.requests.find((request) => request.method === "turn/start");
     const turnStartParams = turnStart?.params as {
       input?: Array<{ text?: string }>;
@@ -1709,10 +1724,11 @@ describe("runCodexAppServerAttempt", () => {
       turnStartParams.collaborationMode?.settings?.developer_instructions ?? "";
     expect(collaborationInstructions).toContain("## OpenClaw Skills");
     expect(collaborationInstructions).toContain("<available_skills>");
-    expect(collaborationInstructions).not.toContain("EMBEDDED_ONLY_SKILLS_PROMPT");
     expect(collaborationInstructions).toContain(
       "Open and read each matching skill's listed <location>",
     );
+    expect(collaborationInstructions).not.toContain("Use the read tool");
+    expect(collaborationInstructions).not.toContain("skills.read");
     const inputText = turnStartParams.input?.[0]?.text ?? "";
     expect(inputText).not.toContain("## OpenClaw Skills");
     expect(inputText).not.toContain("<available_skills>");
@@ -1725,13 +1741,46 @@ describe("runCodexAppServerAttempt", () => {
     expect(trajectoryEvents.find((event) => event.type === "prompt.submitted")?.data?.prompt).toBe(
       inputText,
     );
-    expect(params.skillsSnapshot.catalogPrompt).toBeTruthy();
-    expect(result.systemPromptReport?.skills.promptChars).toBe(
-      params.skillsSnapshot.catalogPrompt?.length,
-    );
+    expect(result.systemPromptReport?.skills.promptChars).toBe(params.skillsSnapshot.prompt.length);
     expect(result.systemPromptReport?.skills.entries).toEqual([
       { name: "demo", blockChars: "<skill><name>demo</name></skill>".length },
     ]);
+  });
+
+  it("omits OpenClaw skills when the turn has no viable file access", async () => {
+    const { sessionFile, workspaceDir } = createRunPaths();
+    const harness = createStartedThreadHarness();
+    const params = createParams(sessionFile, workspaceDir);
+    params.disableTools = true;
+    params.skillsSnapshot = {
+      prompt: "<available_skills><skill><name>demo</name></skill></available_skills>",
+      skills: [],
+    };
+
+    const run = runCodexAppServerAttempt(params);
+    await harness.waitForMethod("turn/start");
+    await harness.completeTurn({ threadId: "thread-1", turnId: "turn-1" });
+    const result = await run;
+    const threadStart = harness.requests.find((request) => request.method === "thread/start");
+    const threadStartParams = threadStart?.params as {
+      dynamicTools?: CodexDynamicToolSpec[];
+      environments?: unknown[];
+    };
+    expect(threadStartParams.dynamicTools).toEqual([]);
+    expect(threadStartParams.environments).toEqual([]);
+    const turnStart = harness.requests.find((request) => request.method === "turn/start");
+    const turnStartParams = turnStart?.params as {
+      input?: Array<{ text?: string }>;
+      collaborationMode?: {
+        settings?: { developer_instructions?: string | null };
+      };
+    };
+    const collaborationInstructions =
+      turnStartParams.collaborationMode?.settings?.developer_instructions ?? "";
+    expect(collaborationInstructions).not.toContain("## OpenClaw Skills");
+    expect(collaborationInstructions).not.toContain("<available_skills>");
+    expect(turnStartParams.input?.[0]?.text).not.toContain("<available_skills>");
+    expect(result.systemPromptReport?.skills).toMatchObject({ promptChars: 0, entries: [] });
   });
 
   it("emits TUI-compatible tool events for Codex dynamic tool calls", async () => {

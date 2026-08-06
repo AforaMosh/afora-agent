@@ -81,15 +81,14 @@ describe("formatSkillsCompact", () => {
     );
   });
 
-  it("renders a loader-free full catalog variant from the same snapshot", () => {
+  it("stores one loader-neutral full catalog in the snapshot", () => {
     const snapshot = buildWorkspaceSkillSnapshot("/fake", {
       entries: [makeEntry(makeSkill("weather", "Get weather data"))],
     });
 
-    expect(snapshot.prompt).toContain("Use the read tool");
-    expect(snapshot.catalogPrompt).not.toContain("Use the read tool");
-    expect(snapshot.catalogPrompt).toContain("<name>weather</name>");
-    expect(snapshot.catalogPrompt).toContain("<description>Get weather data</description>");
+    expect(snapshot.prompt).not.toContain("Use the read tool");
+    expect(snapshot.prompt).toContain("<name>weather</name>");
+    expect(snapshot.prompt).toContain("<description>Get weather data</description>");
     expect(snapshot.promptFormatVersion).toBe(4);
   });
 
@@ -230,7 +229,7 @@ describe("applySkillsPromptLimits (via buildWorkspaceSkillsPrompt)", () => {
     expect(prompt.match(/<skill>/g)?.length ?? 0).toBe(included);
   });
 
-  it("keeps the compact catalog variant on the embedded prompt's exact budget outcome", () => {
+  it("stores one loader-neutral compact catalog at the exact budget outcome", () => {
     const skills = Array.from({ length: 100 }, (_, i) => makeSkill(`skill-${i}`, "description"));
     const snapshot = buildWorkspaceSkillSnapshot("/fake", {
       entries: skills.map(makeEntry),
@@ -239,18 +238,12 @@ describe("applySkillsPromptLimits (via buildWorkspaceSkillsPrompt)", () => {
       } satisfies OpenClawConfig,
     });
 
-    expect(snapshot.prompt).toContain("Use the read tool");
-    expect(snapshot.catalogPrompt).not.toContain("Use the read tool");
-    expect(snapshot.catalogPrompt).toContain("compact format");
-    expect(requireIncludedCounts(snapshot.catalogPrompt ?? "")).toEqual(
-      requireIncludedCounts(snapshot.prompt),
-    );
-    expect(snapshot.catalogPrompt?.match(/<skill>/g)?.length).toBe(
-      snapshot.prompt.match(/<skill>/g)?.length,
-    );
-    expect(snapshot.catalogPrompt?.match(/<description>/g)?.length ?? 0).toBe(
-      snapshot.prompt.match(/<description>/g)?.length ?? 0,
-    );
+    expect(snapshot.prompt).not.toContain("Use the read tool");
+    expect(snapshot.prompt).toContain("compact format");
+    const [included, total] = requireIncludedCounts(snapshot.prompt);
+    expect(total).toBe(skills.length);
+    expect(snapshot.prompt.match(/<skill>/g)?.length).toBe(included);
+    expect(snapshot.prompt.match(/<description>/g)?.length ?? 0).toBe(0);
   });
 
   it("preserves every identity before allocating description budget", () => {

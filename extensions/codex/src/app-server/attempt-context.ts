@@ -574,7 +574,7 @@ export function renderCodexSkillsCollaborationInstructions(params: {
   );
   const canOpenSkillFiles =
     params.nativeToolSurfaceEnabled ||
-    ["exec", "node_exec", "sandbox_exec"].some((name) => dynamicToolNames.has(name));
+    ["read", "exec", "sandbox_exec"].some((name) => dynamicToolNames.has(name));
   if (!shouldInjectCodexOpenClawPromptContext(params.attempt) || !canOpenSkillFiles) {
     return undefined;
   }

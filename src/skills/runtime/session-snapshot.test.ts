@@ -10,7 +10,6 @@ const TEST_WORKSPACE_DIR = "/tmp/workspace";
 function strippedSnapshot(skillName = "test", version = 1): SkillSnapshot {
   return {
     prompt: "skills prompt",
-    catalogPrompt: "skills catalog",
     skills: [{ name: skillName }],
     version,
     promptFormatVersion: WORKSPACE_SKILLS_PROMPT_FORMAT_VERSION,
@@ -25,7 +24,6 @@ const {
 } = vi.hoisted(() => ({
   buildWorkspaceSkillSnapshotMock: vi.fn((..._args: unknown[]) => ({
     prompt: "",
-    catalogPrompt: "",
     skills: [] as unknown[],
     resolvedSkills: [] as unknown[],
   })),
@@ -56,12 +54,7 @@ describe("resolveReusableWorkspaceSkillSnapshot", () => {
     vi.resetModules();
     ({ resolveReusableWorkspaceSkillSnapshot } = await import("./session-snapshot.js"));
     vi.clearAllMocks();
-    buildWorkspaceSkillSnapshotMock.mockReturnValue({
-      prompt: "",
-      catalogPrompt: "",
-      skills: [],
-      resolvedSkills: [],
-    });
+    buildWorkspaceSkillSnapshotMock.mockReturnValue({ prompt: "", skills: [], resolvedSkills: [] });
     ensureSkillsWatcherMock.mockImplementation(() => undefined);
     getSkillsSnapshotVersionMock.mockReturnValue(1);
     shouldRefreshSnapshotForVersionMock.mockImplementation((cached = 0, next = 0) =>
@@ -198,7 +191,6 @@ describe("resolveReusableWorkspaceSkillSnapshot", () => {
       const config = (opts as { config?: { channels?: { discord?: { token?: string } } } }).config;
       return {
         prompt: "",
-        catalogPrompt: "",
         skills: [],
         resolvedSkills: config?.channels?.discord?.token ? [{ name: "discord" }] : [],
       };
@@ -228,7 +220,6 @@ describe("resolveReusableWorkspaceSkillSnapshot", () => {
   it("redacts secret values in the cache key while preserving eligibility presence", () => {
     buildWorkspaceSkillSnapshotMock.mockReturnValue({
       prompt: "",
-      catalogPrompt: "",
       skills: [],
       resolvedSkills: [{ name: "discord" }],
     });
@@ -280,30 +271,15 @@ describe("resolveReusableWorkspaceSkillSnapshot", () => {
     expect(snapshotParams.snapshotVersion).toBe(0);
   });
 
-  it("refreshes current-format snapshots missing the loader-neutral catalog", () => {
+  it("refreshes version-3 snapshots to loader-neutral format version 4", () => {
     shouldRefreshSnapshotForVersionMock.mockReturnValue(false);
+    expect(WORKSPACE_SKILLS_PROMPT_FORMAT_VERSION).toBe(4);
     const result = resolveReusableWorkspaceSkillSnapshot({
       workspaceDir: TEST_WORKSPACE_DIR,
       config: {},
       existingSnapshot: {
         ...strippedSnapshot(),
-        catalogPrompt: undefined,
-      },
-    });
-
-    expect(result.shouldRefresh).toBe(true);
-    expect(buildWorkspaceSkillSnapshotMock).toHaveBeenCalledTimes(1);
-    expect(result.snapshot.catalogPrompt).toBe("");
-  });
-
-  it("refreshes snapshots from before config-key skill identities", () => {
-    shouldRefreshSnapshotForVersionMock.mockReturnValue(false);
-    const result = resolveReusableWorkspaceSkillSnapshot({
-      workspaceDir: TEST_WORKSPACE_DIR,
-      config: {},
-      existingSnapshot: {
-        ...strippedSnapshot(),
-        promptFormatVersion: WORKSPACE_SKILLS_PROMPT_FORMAT_VERSION - 1,
+        promptFormatVersion: 3,
       },
     });
 

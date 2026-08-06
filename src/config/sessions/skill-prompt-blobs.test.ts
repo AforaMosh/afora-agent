@@ -14,11 +14,10 @@ function largePrompt(label: string): string {
 }
 
 describe("session skill prompt blobs", () => {
-  it("externalizes and hydrates both prompt variants byte-exactly", async () => {
+  it("externalizes and hydrates the persisted prompt byte-exactly", async () => {
     await withTempDir({ prefix: "openclaw-skill-prompt-blobs-" }, async (dir) => {
       const storePath = path.join(dir, "sessions.json");
-      const prompt = largePrompt("embedded");
-      const catalogPrompt = largePrompt("codex");
+      const prompt = largePrompt("catalog");
       const projection = projectSessionStoreForPersistence({
         storePath,
         store: {
@@ -27,7 +26,6 @@ describe("session skill prompt blobs", () => {
             updatedAt: 1,
             skillsSnapshot: {
               prompt,
-              catalogPrompt,
               promptFormatVersion: 4,
               skills: [{ name: "demo" }],
             },
@@ -37,10 +35,8 @@ describe("session skill prompt blobs", () => {
 
       const persistedSnapshot = projection.store.session?.skillsSnapshot;
       expect(persistedSnapshot?.prompt).toBeUndefined();
-      expect(persistedSnapshot?.catalogPrompt).toBeUndefined();
       expect(persistedSnapshot?.promptRef).toBeDefined();
-      expect(persistedSnapshot?.catalogPromptRef).toBeDefined();
-      expect(projection.promptBlobs.size).toBe(2);
+      expect(projection.promptBlobs.size).toBe(1);
 
       await ensureSessionStorePromptBlobsForPersistence({
         storePath,
@@ -50,13 +46,11 @@ describe("session skill prompt blobs", () => {
       expect(hydrateSessionStoreSkillPromptRefs({ storePath, store: hydratedStore })).toBe(true);
       const hydrated = (hydratedStore.session as SessionEntry).skillsSnapshot;
       expect(hydrated?.prompt).toBe(prompt);
-      expect(hydrated?.catalogPrompt).toBe(catalogPrompt);
       expect(hydrated?.promptRef).toBeUndefined();
-      expect(hydrated?.catalogPromptRef).toBeUndefined();
     });
   });
 
-  it("drops the snapshot when the referenced catalog blob is missing", async () => {
+  it("drops the snapshot when its referenced prompt blob is missing", async () => {
     await withTempDir({ prefix: "openclaw-skill-prompt-blobs-" }, async (dir) => {
       const storePath = path.join(dir, "sessions.json");
       const projection = projectSessionStoreForPersistence({
@@ -66,8 +60,7 @@ describe("session skill prompt blobs", () => {
             sessionId: "session",
             updatedAt: 1,
             skillsSnapshot: {
-              prompt: largePrompt("embedded"),
-              catalogPrompt: largePrompt("codex"),
+              prompt: largePrompt("catalog"),
               promptFormatVersion: 4,
               skills: [{ name: "demo" }],
             },
@@ -78,12 +71,12 @@ describe("session skill prompt blobs", () => {
         storePath,
         promptBlobs: projection.promptBlobs.values(),
       });
-      const catalogHash = projection.store.session?.skillsSnapshot?.catalogPromptRef?.hash;
-      if (!catalogHash) {
-        throw new Error("expected catalog prompt ref");
+      const promptHash = projection.store.session?.skillsSnapshot?.promptRef?.hash;
+      if (!promptHash) {
+        throw new Error("expected prompt ref");
       }
       await fs.rm(
-        path.join(dir, "skills-prompts", "sha256", catalogHash.slice(0, 2), `${catalogHash}.txt`),
+        path.join(dir, "skills-prompts", "sha256", promptHash.slice(0, 2), `${promptHash}.txt`),
       );
 
       const hydratedStore: Record<string, unknown> = { ...projection.store };

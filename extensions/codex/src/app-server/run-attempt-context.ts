@@ -159,7 +159,7 @@ export async function prepareCodexAttemptContext(
   });
   const skillsCollaborationInstructions = renderCodexSkillsCollaborationInstructions({
     attempt: runtimeParams,
-    skillsPrompt: params.skillsSnapshot?.catalogPrompt,
+    skillsPrompt: params.skillsSnapshot?.prompt,
     nativeToolSurfaceEnabled,
     dynamicTools: toolBridge.availableSpecs,
   });

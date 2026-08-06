@@ -470,9 +470,7 @@ export async function prepareCodexAttemptPrompt(context: CodexAttemptContext) {
     workspaceDir: effectiveWorkspace,
     developerInstructions: buildRenderedCodexDeveloperInstructions(),
     workspaceBootstrapContext,
-    skillsPrompt: skillsCollaborationInstructions
-      ? (params.skillsSnapshot?.catalogPrompt ?? "")
-      : "",
+    skillsPrompt: skillsCollaborationInstructions ? (params.skillsSnapshot?.prompt ?? "") : "",
     tools: toolBridge.availableSpecs,
   });
   return {
