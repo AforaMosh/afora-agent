@@ -409,6 +409,12 @@ export async function maybeHandleModelDirectiveInfo(params: {
   if (params.directives.rawModelProfile) {
     return { text: "Auth profile override requires a model selection.", isError: true };
   }
+  if (params.directives.rawModelRuntime) {
+    return { text: "Runtime override requires a model selection.", isError: true };
+  }
+  if (params.directives.modelSessionOnly) {
+    return { text: "Session-only scope requires a model selection.", isError: true };
+  }
 
   const pickerCatalog = buildModelPickerCatalog({
     cfg: params.cfg,

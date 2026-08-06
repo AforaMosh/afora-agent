@@ -865,6 +865,26 @@ describe("/model chat UX", () => {
     });
   });
 
+  it.each([
+    {
+      command: "/model status --runtime codex",
+      text: "Runtime override requires a model selection.",
+    },
+    {
+      command: "/model list -s",
+      text: "Session-only scope requires a model selection.",
+    },
+  ])(
+    "rejects action options on informational model commands: $command",
+    async ({ command, text }) => {
+      const reply = await resolveModelInfoReply({
+        directives: parseInlineDirectives(command),
+      });
+
+      expect(reply).toEqual({ text, isError: true });
+    },
+  );
+
   it("includes the thinking level in channel-specific model summaries", async () => {
     const registry = createEmptyPluginRegistry();
     registry.channels = [

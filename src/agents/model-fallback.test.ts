@@ -999,6 +999,88 @@ describe("runWithModelFallback", () => {
     }
   });
 
+  it("retries an auth-skipped candidate when its effective profile pool changes", async () => {
+    const previous = process.env.OPENCLAW_FALLBACK_SKIP_TTL_MS;
+    process.env.OPENCLAW_FALLBACK_SKIP_TTL_MS = "60000";
+    try {
+      const provider = `pooled-auth-skip-${crypto.randomUUID()}`;
+      const profileA = `${provider}:a`;
+      const profileB = `${provider}:b`;
+      const cfg = makeCfg({
+        agents: {
+          defaults: {
+            model: {
+              primary: "openai/m1",
+              fallbacks: [`${provider}/m1`, "fallback/ok-model"],
+            },
+          },
+        },
+      });
+      const store: AuthProfileStore = {
+        version: AUTH_STORE_VERSION,
+        profiles: {
+          [profileA]: { type: "api_key", provider, key: "key-a" },
+        },
+        order: { [provider]: [profileA] },
+      };
+      const agentDir = await makeAuthTempDir();
+      setAuthRuntimeStore(agentDir, store);
+      const run = vi.fn(async (candidateProvider: string, model: string) => {
+        if (candidateProvider === "openai") {
+          throw new FailoverError("primary rate limited", {
+            provider: candidateProvider,
+            model,
+            reason: "rate_limit",
+          });
+        }
+        if (candidateProvider === provider) {
+          throw new FailoverError("profile pool failed", {
+            provider: candidateProvider,
+            model,
+            reason: "auth",
+          });
+        }
+        return "ok";
+      });
+      const execute = () =>
+        runWithModelFallback({
+          cfg,
+          provider: "openai",
+          model: "m1",
+          sessionId: "session:pooled-auth-skip",
+          agentDir,
+          run,
+        });
+
+      await execute();
+      store.profiles[profileB] = { type: "api_key", provider, key: "key-b" };
+      store.order = { [provider]: [profileA, profileB] };
+      await execute();
+      const third = await execute();
+
+      expect(third.result).toBe("ok");
+      expect(run.mock.calls.map(([candidateProvider]) => candidateProvider)).toEqual([
+        "openai",
+        provider,
+        "fallback",
+        "openai",
+        provider,
+        "fallback",
+        "openai",
+        "fallback",
+      ]);
+      expect(third.attempts.find((attempt) => attempt.provider === provider)?.error).toContain(
+        "recent auth failure",
+      );
+    } finally {
+      if (previous === undefined) {
+        delete process.env.OPENCLAW_FALLBACK_SKIP_TTL_MS;
+      } else {
+        process.env.OPENCLAW_FALLBACK_SKIP_TTL_MS = previous;
+      }
+    }
+  });
+
   it("skips auth store bootstrap when no auth profile sources exist", async () => {
     authSourceCheckMock.hasAnyAuthProfileStoreSource.mockReturnValue(false);
     const run = vi.fn().mockResolvedValueOnce("ok");

@@ -1,14 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { buildCommandsMessagePaginated } from "openclaw/plugin-sdk/command-status";
 import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import {
-  applyModelOverrideWithAuthProfileCompatibility,
-  ModelSelectionLockedError,
-} from "openclaw/plugin-sdk/model-session-runtime";
+import { applySessionModelSelection } from "openclaw/plugin-sdk/model-session-runtime";
 import { formatModelsAvailableHeader } from "openclaw/plugin-sdk/models-provider-runtime";
 import { parseStrictPositiveInteger } from "openclaw/plugin-sdk/number-runtime";
 import { logVerbose } from "openclaw/plugin-sdk/runtime-env";
-import { patchSessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
+import { getSessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
 import {
   resolveAgentDir,
   resolveDefaultAgentId,
@@ -270,51 +267,64 @@ export async function handleTelegramModelCallback(params: {
     });
     const isDefaultSelection =
       selection.provider === resolvedDefault.provider && selection.model === resolvedDefault.model;
-    let defaultAuthProfileNotice: string | undefined;
-    try {
-      await patchSessionEntry({
-        storePath,
-        sessionKey: sessionState.sessionKey,
-        fallbackEntry: { sessionId: randomUUID(), updatedAt: Date.now() },
-        replaceEntry: true,
-        update: (entry) => {
-          const previousAuthProfileId = entry.authProfileOverride?.trim();
-          const currentProvider =
-            entry.providerOverride?.trim() ||
-            entry.modelProvider?.trim() ||
-            resolvedDefault.provider;
-          applyModelOverrideWithAuthProfileCompatibility({
-            cfg: runtimeCfg,
-            agentDir: resolveAgentDir(runtimeCfg, sessionState.agentId),
-            entry,
-            currentProvider,
-            selection: {
-              provider: selection.provider,
-              model: selection.model,
-              isDefault: isDefaultSelection,
-            },
-            markLiveSwitchPending: true,
-          });
-          if (isDefaultSelection && previousAuthProfileId) {
-            defaultAuthProfileNotice =
-              entry.authProfileOverride?.trim() === previousAuthProfileId
-                ? "Compatible auth profile retained."
-                : "Incompatible auth profile cleared.";
-          }
-          return entry;
-        },
-      });
-    } catch (err) {
-      if (err instanceof ModelSelectionLockedError) {
-        try {
-          await editMessageWithButtons(`❌ ${err.message}`, []);
-        } catch (editErr) {
-          throw new TelegramRetryableCallbackError(editErr);
-        }
-        return true;
-      }
-      throw new TelegramRetryableCallbackError(err);
+    const persistedSessionEntry =
+      sessionState.sessionEntry ??
+      telegramDeps.getSessionEntry?.({ storePath, sessionKey: sessionState.sessionKey }) ??
+      getSessionEntry({ storePath, sessionKey: sessionState.sessionKey });
+    const sessionEntryMissing = persistedSessionEntry === undefined;
+    const sessionEntry = persistedSessionEntry ?? {
+      sessionId: randomUUID(),
+      updatedAt: Date.now(),
+    };
+    const previousAuthProfileId = sessionEntry.authProfileOverride?.trim();
+    const sessionStore = { [sessionState.sessionKey]: sessionEntry };
+    const modelCatalog = [...byProvider.entries()].flatMap(([provider, models]) =>
+      [...models].map((model) => ({ provider, id: model, name: model })),
+    );
+    const currentModelRef = sessionState.model?.trim();
+    const currentModelSeparator = currentModelRef?.indexOf("/") ?? -1;
+    const currentProvider =
+      currentModelRef && currentModelSeparator > 0
+        ? currentModelRef.slice(0, currentModelSeparator)
+        : resolvedDefault.provider;
+    const currentModel =
+      currentModelRef && currentModelSeparator > 0
+        ? currentModelRef.slice(currentModelSeparator + 1)
+        : resolvedDefault.model;
+    const applied = await applySessionModelSelection({
+      cfg: runtimeCfg,
+      agentId: sessionState.agentId,
+      sessionKey: sessionState.sessionKey,
+      storePath,
+      sessionEntry,
+      sessionStore,
+      allowCreate: sessionEntryMissing,
+      defaultProvider: resolvedDefault.provider,
+      defaultModel: resolvedDefault.model,
+      currentProvider,
+      currentModel,
+      allowedModelKeys: new Set(modelCatalog.map((entry) => `${entry.provider}/${entry.id}`)),
+      modelCatalog,
+      canPersistStickyModelSelection: false,
+      request: {
+        provider: selection.provider,
+        model: selection.model,
+        isDefault: isDefaultSelection,
+        runtime: { kind: "unchanged" },
+      },
+      markLiveSwitchPending: true,
+    });
+    if (applied.status !== "applied") {
+      await editMessageWithButtons(`❌ ${applied.message}`, []);
+      return true;
     }
+    const defaultAuthProfileNotice =
+      isDefaultSelection && previousAuthProfileId
+        ? sessionStore[sessionState.sessionKey]?.authProfileOverride?.trim() ===
+          previousAuthProfileId
+          ? "Compatible auth profile retained."
+          : "Incompatible auth profile cleared."
+        : undefined;
     const escapeHtml = (text: string) =>
       text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     const actionText = isDefaultSelection

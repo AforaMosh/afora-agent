@@ -53,6 +53,7 @@ export type ApplySessionModelSelectionParams = {
   storePath?: string;
   sessionEntry: SessionEntry;
   sessionStore: Record<string, SessionEntry>;
+  allowCreate?: boolean;
   defaultProvider: string;
   defaultModel: string;
   currentProvider: string;
@@ -278,6 +279,7 @@ export async function applySessionModelSelection(
       sessionKey: params.sessionKey,
       initialEntry,
       entry: nextEntry,
+      allowCreate: params.allowCreate,
       reassertLiveModelSwitchPending: applied.changed && nextEntry.liveModelSwitchPending === true,
       requireModelSelectionUnlocked: true,
       touchedFields: SESSION_MODEL_OVERRIDE_TRANSACTION_FIELDS,

@@ -87,6 +87,20 @@ async function loadModelFallbackAuthRuntime() {
   return await modelFallbackAuthRuntimeLoader.load();
 }
 
+function resolveFallbackAuthScope(params: {
+  userLockedAuthProfileId?: string;
+  profileIds?: readonly string[];
+}): string | undefined {
+  if (params.userLockedAuthProfileId) {
+    return params.userLockedAuthProfileId;
+  }
+  const profileIds = params.profileIds
+    ?.map((id) => id.trim())
+    .filter(Boolean)
+    .toSorted();
+  return profileIds?.length ? `pool:${JSON.stringify(profileIds)}` : undefined;
+}
+
 type RunWithModelFallbackParams<T> = {
   cfg: OpenClawConfig | undefined;
   provider: string;
@@ -293,6 +307,25 @@ async function runWithModelFallbackInternal<T>(
         ...auth,
       });
 
+    let candidateAuthProfileIds: string[] | undefined;
+    if (authRuntime && authStore && !candidateHarnessAuth.skipsProviderAuthCooldown) {
+      candidateAuthProfileIds = authRuntime.resolveAuthProfileOrder({
+        cfg: params.cfg,
+        store: authStore,
+        provider: candidate.provider,
+      });
+      authRuntime.maybeReprobeWhamBlockedProfiles({
+        store: authStore,
+        profileIds: candidateAuthProfileIds,
+        agentDir: params.agentDir,
+        forModel: candidate.model,
+      });
+    }
+    const candidateAuthScope = resolveFallbackAuthScope({
+      userLockedAuthProfileId,
+      profileIds: candidateAuthProfileIds,
+    });
+
     // Skip-known-bad cache: when a previous turn in this session failed this
     // candidate with `auth` / `auth_permanent` (e.g. missing or expired
     // credentials), suppress repeat attempts for the cache TTL so we do not
@@ -303,14 +336,14 @@ async function runWithModelFallbackInternal<T>(
       const skipped = isFallbackCandidateSkipped({
         sessionId: params.sessionId,
         ...candidateRef,
-        authScope: userLockedAuthProfileId,
+        authScope: candidateAuthScope,
       });
       if (skipped) {
         const skipReason =
           getFallbackCandidateSkipReason({
             sessionId: params.sessionId,
             ...candidateRef,
-            authScope: userLockedAuthProfileId,
+            authScope: candidateAuthScope,
           }) ?? "auth";
         const reauthCommand = buildProviderReauthCommand(candidate.provider);
         const reauthHint = reauthCommand
@@ -329,18 +362,13 @@ async function runWithModelFallbackInternal<T>(
     let runOptions: ModelFallbackRunOptions | undefined;
     let attemptedDuringCooldown = false;
     let transientProbeProviderForAttempt: string | null = null;
-    if (authRuntime && authStore && !candidateHarnessAuth.skipsProviderAuthCooldown) {
-      const profileIds = authRuntime.resolveAuthProfileOrder({
-        cfg: params.cfg,
-        store: authStore,
-        provider: candidate.provider,
-      });
-      authRuntime.maybeReprobeWhamBlockedProfiles({
-        store: authStore,
-        profileIds,
-        agentDir: params.agentDir,
-        forModel: candidate.model,
-      });
+    if (
+      authRuntime &&
+      authStore &&
+      candidateAuthProfileIds &&
+      !candidateHarnessAuth.skipsProviderAuthCooldown
+    ) {
+      const profileIds = candidateAuthProfileIds;
       const isAnyProfileAvailable = profileIds.some(
         (id) => !authRuntime.isProfileInCooldown(authStore, id, undefined, candidate.model),
       );
@@ -661,7 +689,7 @@ async function runWithModelFallbackInternal<T>(
       markFallbackCandidateSkipped({
         sessionId: params.sessionId,
         ...candidateRef,
-        authScope: userLockedAuthProfileId,
+        authScope: candidateAuthScope,
         reason: normalized.reason,
       });
     }
