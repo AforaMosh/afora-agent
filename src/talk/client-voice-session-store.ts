@@ -16,6 +16,7 @@ export type ClientVoiceToolEffect = {
   startedAt: number;
   finishedAt?: number;
   status: "started" | "succeeded" | "failed" | "cancelled" | "blocked";
+  revision: number;
 };
 
 export type ClientVoiceSessionRecord = {
@@ -31,6 +32,8 @@ export type ClientVoiceSessionRecord = {
   closedAt?: number;
   consultRunIds: string[];
   effects: ClientVoiceToolEffect[];
+  nextEffectRevision: number;
+  digestDeliveredRevision: number;
   digestDeliveredAt?: number;
   /** Bounded hashes of transcript entries that must succeed before close can commit. */
   transcriptFailureKeys: string[];
@@ -47,6 +50,14 @@ export type ClientVoiceRunBinding = {
 };
 
 const TRANSCRIPT_FAILURE_KEY_PATTERN = /^[0-9a-f]{64}$/;
+
+function isNonNegativeSafeInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+}
+
+function isPositiveSafeInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value > 0;
+}
 
 function parseVoiceSessionRecord(value: unknown): ClientVoiceSessionRecord | undefined {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -70,7 +81,7 @@ function parseVoiceSessionRecord(value: unknown): ClientVoiceSessionRecord | und
   const consultRunIds = Array.isArray(record.consultRunIds)
     ? record.consultRunIds.filter((entry): entry is string => typeof entry === "string")
     : [];
-  const effects = Array.isArray(record.effects)
+  const parsedEffects = Array.isArray(record.effects)
     ? record.effects.filter((entry): entry is ClientVoiceToolEffect => {
         if (!entry || typeof entry !== "object") {
           return false;
@@ -88,6 +99,46 @@ function parseVoiceSessionRecord(value: unknown): ClientVoiceSessionRecord | und
         );
       })
     : [];
+  const legacyEffectRevisions = parsedEffects.every(
+    (effect) => (effect as Partial<ClientVoiceToolEffect>).revision === undefined,
+  );
+  if (
+    !legacyEffectRevisions &&
+    parsedEffects.some((effect) => !isPositiveSafeInteger(effect.revision))
+  ) {
+    return undefined;
+  }
+  const effects = parsedEffects.map((effect, index) => {
+    if (legacyEffectRevisions) {
+      effect.revision = index + 1;
+    }
+    return effect;
+  });
+  if (new Set(effects.map((effect) => effect.revision)).size !== effects.length) {
+    return undefined;
+  }
+  const maxEffectRevision = effects.reduce(
+    (maxRevision, effect) => Math.max(maxRevision, effect.revision),
+    0,
+  );
+  const nextEffectRevision =
+    record.nextEffectRevision === undefined ? maxEffectRevision + 1 : record.nextEffectRevision;
+  if (!isPositiveSafeInteger(nextEffectRevision) || nextEffectRevision <= maxEffectRevision) {
+    return undefined;
+  }
+  const digestDeliveredRevision =
+    record.digestDeliveredRevision === undefined
+      ? record.digestDeliveredAt === undefined
+        ? 0
+        : maxEffectRevision
+      : record.digestDeliveredRevision;
+  if (
+    !isNonNegativeSafeInteger(digestDeliveredRevision) ||
+    digestDeliveredRevision > maxEffectRevision ||
+    (record.digestDeliveredAt !== undefined && typeof record.digestDeliveredAt !== "number")
+  ) {
+    return undefined;
+  }
   const transcriptFailureKeys = record.transcriptFailureKeys ?? [];
   if (
     !Array.isArray(transcriptFailureKeys) ||
@@ -105,6 +156,8 @@ function parseVoiceSessionRecord(value: unknown): ClientVoiceSessionRecord | und
     ...(provider ? { provider } : {}),
     consultRunIds,
     effects,
+    nextEffectRevision,
+    digestDeliveredRevision,
     transcriptFailureKeys,
   } as ClientVoiceSessionRecord;
 }

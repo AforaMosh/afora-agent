@@ -19,33 +19,34 @@ export const CLIENT_VOICE_MUTATION_DIGEST_POLICY = {
   failureRetentionMs: 5 * 60_000,
 } as const;
 
+type ClientVoiceMutationDigestAttemptResult = "complete" | "deferred" | "retry";
+
 function formatMutationDigest(effects: ClientVoiceToolEffect[]): string | undefined {
   if (effects.length === 0) {
     return undefined;
   }
   return [
     "Voice call changes",
-    ...effects
-      .slice(0, 12)
-      .map(
-        (effect) =>
-          `- ${effect.toolName}: ${effect.status === "started" ? "outcome not confirmed" : effect.status}`,
-      ),
+    ...effects.map(
+      (effect) =>
+        `- ${effect.toolName}: ${effect.status === "started" ? "outcome not confirmed" : effect.status}`,
+    ),
   ].join("\n");
 }
 
-/** Deliver one point-in-time summary and mark the durable voice record after success. */
+/** Deliver the next point-in-time summary and advance only its durable revision watermark. */
 export async function deliverClientVoiceMutationDigest(
   record: ClientVoiceSessionRecord,
   config: OpenClawConfig,
   signal: AbortSignal,
-): Promise<void> {
-  if (record.digestDeliveredAt) {
-    return;
-  }
-  const text = formatMutationDigest(record.effects);
+): Promise<ClientVoiceMutationDigestAttemptResult> {
+  const effects = record.effects
+    .filter((effect) => effect.revision > record.digestDeliveredRevision)
+    .toSorted((left, right) => left.revision - right.revision)
+    .slice(0, 12);
+  const text = formatMutationDigest(effects);
   if (!text) {
-    return;
+    return "complete";
   }
   const entry = loadSessionEntryReadOnly({
     agentId: record.agentId,
@@ -53,7 +54,7 @@ export async function deliverClientVoiceMutationDigest(
   });
   const target = resolveSessionDeliveryTarget({ entry, requestedChannel: "last" });
   if (!target.channel || target.channel === "webchat" || !target.to) {
-    return;
+    return "complete";
   }
   const { sendDurableMessageBatch } = await import("../channels/message/runtime.js");
   const send = await sendDurableMessageBatch({
@@ -76,19 +77,26 @@ export async function deliverClientVoiceMutationDigest(
   if (send.status === "failed" || send.status === "partial_failed") {
     throw send.error;
   }
+  const deliveredRevision = Math.max(...effects.map((effect) => effect.revision));
   const deliveredAt = Date.now();
-  runOpenClawAgentWriteTransaction(
+  const hasMore = runOpenClawAgentWriteTransaction(
     (database) => {
       const current = readVoiceSessionRecordInTransaction(database, record.voiceSessionId);
-      if (!current || current.digestDeliveredAt) {
-        return;
+      if (!current) {
+        return false;
       }
+      current.digestDeliveredRevision = Math.max(
+        current.digestDeliveredRevision,
+        deliveredRevision,
+      );
       current.digestDeliveredAt = deliveredAt;
       current.updatedAt = deliveredAt;
       writeVoiceSessionRecordInTransaction(database, current);
+      return current.effects.some((effect) => effect.revision > current.digestDeliveredRevision);
     },
     { agentId: record.agentId },
   );
+  return hasMore ? "retry" : "complete";
 }
 
 type MutationDigestIntent<TContext> = {
@@ -96,15 +104,18 @@ type MutationDigestIntent<TContext> = {
   voiceSessionId: string;
   context: TContext;
   identityBytes: number;
+  revision: number;
   failedAttempts: number;
   failureExpiry?: ReturnType<typeof setTimeout>;
-  expireAfterActive?: boolean;
+  failureExpiryRevision?: number;
+  expireAfterActiveRevision?: number;
 };
 
 type MutationDigestAttempt<TContext> = {
   controller: AbortController;
   intent: MutationDigestIntent<TContext>;
   generation: number;
+  intentRevision: number;
 };
 
 type MutationDigestPolicy = {
@@ -119,7 +130,6 @@ type MutationDigestPolicy = {
 export class ClientVoiceMutationDigestOwner<TContext> {
   private readonly intents = new Map<string, MutationDigestIntent<TContext>>();
   private readonly pendingKeys = new Set<string>();
-  private readonly retryAfterActiveKeys = new Set<string>();
   private readonly activeAttempts = new Map<string, MutationDigestAttempt<TContext>>();
   private retainedIdentityBytes = 0;
   private generation = 0;
@@ -131,7 +141,7 @@ export class ClientVoiceMutationDigestOwner<TContext> {
         voiceSessionId: string;
         context: TContext;
         signal: AbortSignal;
-      }) => Promise<boolean>;
+      }) => Promise<ClientVoiceMutationDigestAttemptResult>;
       warn: (message: string) => void;
       policy?: MutationDigestPolicy;
     },
@@ -146,9 +156,9 @@ export class ClientVoiceMutationDigestOwner<TContext> {
     const existing = this.intents.get(key);
     if (existing) {
       existing.context = params.context;
-      if (this.activeAttempts.has(key)) {
-        this.retryAfterActiveKeys.add(key);
-      } else {
+      existing.revision += 1;
+      this.clearFailureState(existing);
+      if (!this.activeAttempts.has(key)) {
         this.pendingKeys.add(key);
       }
       this.pump();
@@ -169,7 +179,7 @@ export class ClientVoiceMutationDigestOwner<TContext> {
       this.options.warn("voice mutation digest retry owner is full");
       return;
     }
-    const intent = { ...params, identityBytes, failedAttempts: 0 };
+    const intent = { ...params, identityBytes, revision: 1, failedAttempts: 0 };
     this.intents.set(key, intent);
     this.retainedIdentityBytes += identityBytes;
     this.pendingKeys.add(key);
@@ -181,9 +191,12 @@ export class ClientVoiceMutationDigestOwner<TContext> {
     if (!this.intents.has(key)) {
       return;
     }
-    if (this.activeAttempts.has(key)) {
-      this.retryAfterActiveKeys.add(key);
-    } else {
+    const intent = this.intents.get(key);
+    if (!intent) {
+      return;
+    }
+    intent.revision += 1;
+    if (!this.activeAttempts.has(key)) {
       this.pendingKeys.add(key);
     }
     this.pump();
@@ -195,9 +208,8 @@ export class ClientVoiceMutationDigestOwner<TContext> {
         continue;
       }
       intent.context = context;
-      if (this.activeAttempts.has(key)) {
-        this.retryAfterActiveKeys.add(key);
-      } else {
+      intent.revision += 1;
+      if (!this.activeAttempts.has(key)) {
         this.pendingKeys.add(key);
       }
     }
@@ -230,7 +242,6 @@ export class ClientVoiceMutationDigestOwner<TContext> {
     this.generation += 1;
     this.intents.clear();
     this.pendingKeys.clear();
-    this.retryAfterActiveKeys.clear();
     this.activeAttempts.clear();
     this.retainedIdentityBytes = 0;
   }
@@ -239,14 +250,21 @@ export class ClientVoiceMutationDigestOwner<TContext> {
     return `${params.agentId}\0${params.voiceSessionId}`;
   }
 
-  private deleteIntent(key: string, expected?: MutationDigestIntent<TContext>): void {
+  private deleteIntent(
+    key: string,
+    expected?: MutationDigestIntent<TContext>,
+    expectedRevision?: number,
+  ): void {
     const current = this.intents.get(key);
-    if (!current || (expected && current !== expected)) {
+    if (
+      !current ||
+      (expected && current !== expected) ||
+      (expectedRevision !== undefined && current.revision !== expectedRevision)
+    ) {
       return;
     }
     this.intents.delete(key);
     this.pendingKeys.delete(key);
-    this.retryAfterActiveKeys.delete(key);
     if (current.failureExpiry) {
       clearTimeout(current.failureExpiry);
     }
@@ -257,15 +275,22 @@ export class ClientVoiceMutationDigestOwner<TContext> {
     if (intent.failureExpiry) {
       return;
     }
+    const failureRevision = intent.revision;
+    intent.failureExpiryRevision = failureRevision;
     intent.failureExpiry = setTimeout(() => {
-      if (this.intents.get(key) !== intent) {
+      if (this.intents.get(key) !== intent || intent.failureExpiryRevision !== failureRevision) {
+        return;
+      }
+      delete intent.failureExpiry;
+      delete intent.failureExpiryRevision;
+      if (intent.revision !== failureRevision) {
         return;
       }
       if (this.activeAttempts.has(key)) {
-        intent.expireAfterActive = true;
+        intent.expireAfterActiveRevision = failureRevision;
         return;
       }
-      this.deleteIntent(key, intent);
+      this.deleteIntent(key, intent, failureRevision);
       this.options.warn(
         `voice mutation digest dropped after retry retention expired (${intent.failedAttempts} failed attempts)`,
       );
@@ -278,7 +303,8 @@ export class ClientVoiceMutationDigestOwner<TContext> {
       clearTimeout(intent.failureExpiry);
       delete intent.failureExpiry;
     }
-    delete intent.expireAfterActive;
+    delete intent.failureExpiryRevision;
+    delete intent.expireAfterActiveRevision;
     intent.failedAttempts = 0;
   }
 
@@ -302,7 +328,12 @@ export class ClientVoiceMutationDigestOwner<TContext> {
 
   private startAttempt(key: string, intent: MutationDigestIntent<TContext>): void {
     const controller = new AbortController();
-    const attempt = { controller, intent, generation: this.generation };
+    const attempt = {
+      controller,
+      intent,
+      generation: this.generation,
+      intentRevision: intent.revision,
+    };
     this.activeAttempts.set(key, attempt);
     const timeout = setTimeout(
       () => controller.abort(new Error("voice mutation digest delivery abort requested")),
@@ -311,24 +342,43 @@ export class ClientVoiceMutationDigestOwner<TContext> {
     timeout.unref?.();
     // Abort is cooperative, not a wall-clock completion guarantee. An adapter
     // that ignores it keeps this exact slot so repeated retries cannot fan out.
-    let completion: Promise<boolean>;
+    let completion: Promise<ClientVoiceMutationDigestAttemptResult>;
     try {
-      completion = this.options.attempt({ ...intent, signal: controller.signal });
+      completion = this.options.attempt({
+        agentId: intent.agentId,
+        voiceSessionId: intent.voiceSessionId,
+        context: intent.context,
+        signal: controller.signal,
+      });
     } catch (error) {
       completion = Promise.reject(error instanceof Error ? error : new Error(String(error)));
     }
     void completion
-      .then((complete) => {
-        if (complete) {
-          this.deleteIntent(key, intent);
-        } else {
+      .then((result) => {
+        if (
+          attempt.generation !== this.generation ||
+          this.intents.get(key) !== intent ||
+          intent.revision !== attempt.intentRevision
+        ) {
+          return;
+        }
+        if (result === "complete") {
+          this.deleteIntent(key, intent, attempt.intentRevision);
+        } else if (result === "deferred") {
           // A live consult is a legitimate defer, not a delivery failure. Its
           // run-completion event owns the next retry and must not inherit expiry.
           this.clearFailureState(intent);
+        } else {
+          this.clearFailureState(intent);
+          this.pendingKeys.add(key);
         }
       })
       .catch((error: unknown) => {
-        if (attempt.generation !== this.generation) {
+        if (
+          attempt.generation !== this.generation ||
+          this.intents.get(key) !== intent ||
+          intent.revision !== attempt.intentRevision
+        ) {
           return;
         }
         intent.failedAttempts += 1;
@@ -351,15 +401,20 @@ export class ClientVoiceMutationDigestOwner<TContext> {
         if (this.activeAttempts.get(key) === attempt) {
           this.activeAttempts.delete(key);
         }
-        if (intent.expireAfterActive && this.intents.get(key) === intent) {
-          this.deleteIntent(key, intent);
+        if (
+          intent.expireAfterActiveRevision === attempt.intentRevision &&
+          this.intents.get(key) === intent &&
+          intent.revision === attempt.intentRevision
+        ) {
+          this.deleteIntent(key, intent, attempt.intentRevision);
           this.options.warn(
             `voice mutation digest dropped after retry retention expired (${intent.failedAttempts} failed attempts)`,
           );
           this.pump();
           return;
         }
-        if (this.retryAfterActiveKeys.delete(key) && this.intents.has(key)) {
+        delete intent.expireAfterActiveRevision;
+        if (this.intents.get(key) === intent && intent.revision !== attempt.intentRevision) {
           this.pendingKeys.add(key);
         }
         this.pump();

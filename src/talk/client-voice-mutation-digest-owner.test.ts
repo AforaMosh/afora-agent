@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import { ClientVoiceMutationDigestOwner } from "./client-voice-mutation-digest-owner.js";
 
+type DigestAttempt = ConstructorParameters<
+  typeof ClientVoiceMutationDigestOwner<unknown>
+>[0]["attempt"];
+type ClientVoiceMutationDigestAttemptResult = Awaited<ReturnType<DigestAttempt>>;
+
 function deferred<T>(): {
   promise: Promise<T>;
   resolve: (value: T) => void;
@@ -22,7 +27,10 @@ async function flushMicrotasks(): Promise<void> {
 
 describe("client voice mutation digest owner", () => {
   it("bounds retained identities, dedupes keys, and limits concurrency", async () => {
-    const attempts: Array<{ id: string; completion: ReturnType<typeof deferred<boolean>> }> = [];
+    const attempts: Array<{
+      id: string;
+      completion: ReturnType<typeof deferred<ClientVoiceMutationDigestAttemptResult>>;
+    }> = [];
     let active = 0;
     let maxActive = 0;
     const warn = vi.fn();
@@ -39,7 +47,7 @@ describe("client voice mutation digest owner", () => {
       attempt: async ({ voiceSessionId }) => {
         active += 1;
         maxActive = Math.max(maxActive, active);
-        const completion = deferred<boolean>();
+        const completion = deferred<ClientVoiceMutationDigestAttemptResult>();
         attempts.push({ id: voiceSessionId, completion });
         try {
           return await completion.promise;
@@ -52,7 +60,6 @@ describe("client voice mutation digest owner", () => {
     for (let index = 1; index <= 6; index += 1) {
       owner.record({ agentId: "a", voiceSessionId: `v${index}`, context: index });
     }
-    owner.record({ agentId: "a", voiceSessionId: "v1", context: 99 });
     expect(owner.snapshot()).toEqual({
       active: 2,
       pending: 2,
@@ -66,7 +73,7 @@ describe("client voice mutation digest owner", () => {
       const batch = attempts.slice(resolved);
       resolved += batch.length;
       for (const attempt of batch) {
-        attempt.completion.resolve(true);
+        attempt.completion.resolve("complete");
       }
     }
     await vi.waitFor(() =>
@@ -86,8 +93,40 @@ describe("client voice mutation digest owner", () => {
     expect(warn).toHaveBeenNthCalledWith(2, "voice mutation digest retry owner is full");
   });
 
+  it("keeps a newer record when the active attempt succeeds", async () => {
+    const attempts: Array<{
+      context: number;
+      completion: ReturnType<typeof deferred<ClientVoiceMutationDigestAttemptResult>>;
+    }> = [];
+    const owner = new ClientVoiceMutationDigestOwner<number>({
+      policy: {
+        maxRetainedIntents: 1,
+        maxRetainedIdentityBytes: 64,
+        maxConcurrentAttempts: 1,
+        maxAttemptFailures: 3,
+        attemptAbortAfterMs: 60_000,
+        failureRetentionMs: 60_000,
+      },
+      warn: vi.fn(),
+      attempt: async ({ context }) => {
+        const completion = deferred<ClientVoiceMutationDigestAttemptResult>();
+        attempts.push({ context, completion });
+        return await completion.promise;
+      },
+    });
+
+    owner.record({ agentId: "a", voiceSessionId: "v1", context: 1 });
+    owner.record({ agentId: "a", voiceSessionId: "v1", context: 2 });
+    attempts[0]?.completion.resolve("complete");
+
+    await vi.waitFor(() => expect(attempts).toHaveLength(2));
+    expect(attempts[1]?.context).toBe(2);
+    attempts[1]?.completion.resolve("complete");
+    await vi.waitFor(() => expect(owner.snapshot().retained).toBe(0));
+  });
+
   it("retries once when a duplicate intent arrives during a failed active attempt", async () => {
-    const attempts: Array<ReturnType<typeof deferred<boolean>>> = [];
+    const attempts: Array<ReturnType<typeof deferred<ClientVoiceMutationDigestAttemptResult>>> = [];
     const owner = new ClientVoiceMutationDigestOwner<number>({
       policy: {
         maxRetainedIntents: 2,
@@ -99,7 +138,7 @@ describe("client voice mutation digest owner", () => {
       },
       warn: vi.fn(),
       attempt: async () => {
-        const completion = deferred<boolean>();
+        const completion = deferred<ClientVoiceMutationDigestAttemptResult>();
         attempts.push(completion);
         return await completion.promise;
       },
@@ -109,13 +148,13 @@ describe("client voice mutation digest owner", () => {
     owner.record({ agentId: "a", voiceSessionId: "v1", context: 2 });
     attempts[0]?.reject(new Error("offline"));
     await vi.waitFor(() => expect(attempts).toHaveLength(2));
-    attempts[1]?.resolve(true);
+    attempts[1]?.resolve("complete");
     await vi.waitFor(() => expect(owner.snapshot().retained).toBe(0));
   });
 
   it("keeps an ignored abort request active until its real promise settles", async () => {
     const attempts: Array<{
-      completion: ReturnType<typeof deferred<boolean>>;
+      completion: ReturnType<typeof deferred<ClientVoiceMutationDigestAttemptResult>>;
       signal: AbortSignal;
     }> = [];
     const owner = new ClientVoiceMutationDigestOwner<number>({
@@ -129,7 +168,7 @@ describe("client voice mutation digest owner", () => {
       },
       warn: vi.fn(),
       attempt: async ({ signal }) => {
-        const completion = deferred<boolean>();
+        const completion = deferred<ClientVoiceMutationDigestAttemptResult>();
         attempts.push({ completion, signal });
         return await completion.promise;
       },
@@ -144,15 +183,15 @@ describe("client voice mutation digest owner", () => {
       expect(attempts[0]?.signal.aborted).toBe(true);
       expect(owner.snapshot()).toMatchObject({ active: 1, pending: 1, retained: 2 });
 
-      attempts[0]?.completion.resolve(true);
+      attempts[0]?.completion.resolve("complete");
       await vi.advanceTimersByTimeAsync(0);
       expect(attempts).toHaveLength(2);
-      attempts[1]?.completion.resolve(true);
+      attempts[1]?.completion.resolve("complete");
       await vi.advanceTimersByTimeAsync(0);
       expect(owner.snapshot().retained).toBe(0);
     } finally {
       for (const attempt of attempts) {
-        attempt.completion.resolve(true);
+        attempt.completion.resolve("complete");
       }
       owner.clear();
       vi.useRealTimers();
@@ -161,7 +200,7 @@ describe("client voice mutation digest owner", () => {
 
   it("rejects an oversized identity atomically", async () => {
     const warn = vi.fn();
-    const attempt = vi.fn(async () => true);
+    const attempt = vi.fn(async () => "complete" as const);
     const owner = new ClientVoiceMutationDigestOwner<number>({
       policy: {
         maxRetainedIntents: 2,
@@ -191,7 +230,10 @@ describe("client voice mutation digest owner", () => {
   });
 
   it("preserves older intents when aggregate identity bytes are full", async () => {
-    const attempts: Array<{ id: string; completion: ReturnType<typeof deferred<boolean>> }> = [];
+    const attempts: Array<{
+      id: string;
+      completion: ReturnType<typeof deferred<ClientVoiceMutationDigestAttemptResult>>;
+    }> = [];
     const warn = vi.fn();
     const owner = new ClientVoiceMutationDigestOwner<number>({
       policy: {
@@ -204,7 +246,7 @@ describe("client voice mutation digest owner", () => {
       },
       warn,
       attempt: async ({ voiceSessionId }) => {
-        const completion = deferred<boolean>();
+        const completion = deferred<ClientVoiceMutationDigestAttemptResult>();
         attempts.push({ id: voiceSessionId, completion });
         return await completion.promise;
       },
@@ -222,9 +264,9 @@ describe("client voice mutation digest owner", () => {
     });
     expect(warn).toHaveBeenCalledOnce();
 
-    attempts[0]?.completion.resolve(true);
+    attempts[0]?.completion.resolve("complete");
     await vi.waitFor(() => expect(attempts).toHaveLength(2));
-    attempts[1]?.completion.resolve(true);
+    attempts[1]?.completion.resolve("complete");
     await vi.waitFor(() => expect(owner.snapshot().retained).toBe(0));
     expect(attempts.map((attempt) => attempt.id)).toEqual(["v1", "v2"]);
   });
@@ -247,7 +289,7 @@ describe("client voice mutation digest owner", () => {
         if (agentId === "first") {
           throw new Error("permanent");
         }
-        return true;
+        return "complete";
       },
     });
 
@@ -312,7 +354,7 @@ describe("client voice mutation digest owner", () => {
         if (outcome === "fail") {
           throw new Error("offline");
         }
-        return outcome === "succeed";
+        return outcome === "succeed" ? "complete" : "deferred";
       });
       const owner = new ClientVoiceMutationDigestOwner<number>({
         policy: {
@@ -350,7 +392,7 @@ describe("client voice mutation digest owner", () => {
   it("ignores settlement from an attempt owned by a cleared generation", async () => {
     const attempts: Array<{
       context: number;
-      completion: ReturnType<typeof deferred<boolean>>;
+      completion: ReturnType<typeof deferred<ClientVoiceMutationDigestAttemptResult>>;
     }> = [];
     const owner = new ClientVoiceMutationDigestOwner<number>({
       policy: {
@@ -363,7 +405,7 @@ describe("client voice mutation digest owner", () => {
       },
       warn: vi.fn(),
       attempt: async ({ context }) => {
-        const completion = deferred<boolean>();
+        const completion = deferred<ClientVoiceMutationDigestAttemptResult>();
         attempts.push({ context, completion });
         return await completion.promise;
       },
@@ -375,10 +417,10 @@ describe("client voice mutation digest owner", () => {
     owner.record({ agentId: "a", voiceSessionId: "v1", context: 3 });
 
     attempts[0]?.completion.reject(new Error("old generation"));
-    attempts[1]?.completion.resolve(false);
+    attempts[1]?.completion.resolve("deferred");
     await vi.waitFor(() => expect(attempts).toHaveLength(3));
     expect(attempts[2]?.context).toBe(3);
-    attempts[2]?.completion.resolve(true);
+    attempts[2]?.completion.resolve("complete");
     await vi.waitFor(() => expect(owner.snapshot().retained).toBe(0));
   });
 });
