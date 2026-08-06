@@ -484,15 +484,7 @@ describe("user turn transcript persistence", () => {
         input: admittedInput,
       });
       expect(admitted).toBeDefined();
-      recorder.markRuntimePersisted(
-        recorder.message,
-        admitted
-          ? {
-              messageId: admitted.messageId,
-              target: admitted.target,
-            }
-          : undefined,
-      );
+      recorder.markRuntimePersisted(recorder.message, admitted?.admission);
       const admissionReceipt = recorder.getAdmissionReceipt();
       recorder.markSentToProvider?.();
       resolveMedia({

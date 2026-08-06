@@ -4,10 +4,14 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   appendTranscriptMessage,
+  readActiveTranscriptEntryAnchor,
   upsertSessionEntry,
 } from "../../config/sessions/session-accessor.js";
 import type { ContextEngine } from "../../context-engine/types.js";
-import { closeOpenClawAgentDatabasesForTest } from "../../state/openclaw-agent-db.js";
+import {
+  closeOpenClawAgentDatabasesForTest,
+  openOpenClawAgentDatabase,
+} from "../../state/openclaw-agent-db.js";
 import type { AgentMessage } from "../runtime/index.js";
 import type { ContextEngineLogicalTurnLease } from "./context-engine-logical-turn.js";
 import { finalizeAcceptedContextEngineTurn } from "./context-engine-turn-attempt.js";
@@ -118,6 +122,63 @@ describe("accepted context-engine turn finalization", () => {
     expect(commitTurn).toHaveBeenCalledOnce();
     expect(warn).toHaveBeenCalledWith(
       "[context-engine] skipped accepted turn advancement: accepted context-engine transcript range is stale",
+    );
+
+    const sibling = await appendTranscriptMessage(target, {
+      message: { role: "assistant", content: "sibling" },
+      parentId: prior?.messageId,
+      now: 4_000,
+    });
+    if (!sibling) {
+      throw new Error("expected sibling transcript");
+    }
+    const database = openOpenClawAgentDatabase({
+      agentId: target.agentId,
+      path: admission.storePath,
+    });
+    const siblingIdentity = database.db
+      .prepare("SELECT seq FROM transcript_event_identities WHERE session_id = ? AND event_id = ?")
+      .get(target.sessionId, sibling.messageId) as { seq?: number } | undefined;
+    if (siblingIdentity?.seq === undefined) {
+      throw new Error("expected sibling transcript identity");
+    }
+    // Model a stale/concurrent projection that assigns a later active position
+    // to a sibling. Position order alone must not make it an accepted descendant.
+    database.db
+      .prepare(
+        "INSERT INTO session_transcript_active_events (session_id, active_position, event_seq, message_position) VALUES (?, ?, ?, ?)",
+      )
+      .run(
+        target.sessionId,
+        terminal.anchor.activeMessagePosition + 1,
+        siblingIdentity.seq,
+        terminal.anchor.activeMessagePosition + 1,
+      );
+    database.db
+      .prepare(
+        "UPDATE session_transcript_index_state SET indexed_seq = ?, needs_rebuild = 0 WHERE session_id = ?",
+      )
+      .run(siblingIdentity.seq, target.sessionId);
+    const siblingAnchor = readActiveTranscriptEntryAnchor({
+      ...target,
+      entryId: sibling.messageId,
+    });
+    if (!siblingAnchor) {
+      throw new Error("expected projected sibling transcript anchor");
+    }
+    warn.mockClear();
+    await finalizeAcceptedContextEngineTurn({
+      facts: {
+        ...baseFacts,
+        boundary: { admission, terminal: siblingAnchor },
+      },
+      lease,
+      warn,
+    });
+
+    expect(commitTurn).toHaveBeenCalledOnce();
+    expect(warn).toHaveBeenCalledWith(
+      "[context-engine] skipped accepted turn advancement: accepted context-engine transcript range is non-descendant",
     );
   });
 });

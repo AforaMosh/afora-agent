@@ -55,6 +55,45 @@ function validateAnchorRow(
   );
 }
 
+function validateTerminalAncestry(params: {
+  database: Parameters<typeof getSessionKysely>[0];
+  sessionId: string;
+  admissionEntryId: string;
+  terminalEntryId: string;
+  terminalParentId: string | null;
+  maxDepth: number;
+}): "descendant" | "non-descendant" | "too-large" {
+  if (params.terminalEntryId === params.admissionEntryId) {
+    return "descendant";
+  }
+  const db = getSessionKysely(params.database);
+  const seen = new Set([params.terminalEntryId]);
+  let parentId = params.terminalParentId;
+  for (let depth = 0; depth < params.maxDepth; depth += 1) {
+    if (parentId === params.admissionEntryId) {
+      return "descendant";
+    }
+    if (parentId === null || seen.has(parentId)) {
+      return "non-descendant";
+    }
+    seen.add(parentId);
+    const row = executeSqliteQueryTakeFirstSync(
+      params.database,
+      db
+        .selectFrom("transcript_event_identities")
+        .select("parent_id")
+        .where("session_id", "=", params.sessionId)
+        .where("event_id", "=", parentId)
+        .limit(1),
+    );
+    if (!row) {
+      return "non-descendant";
+    }
+    parentId = row.parent_id;
+  }
+  return "too-large";
+}
+
 /** Reads one bounded accepted transcript range from a single SQLite snapshot. */
 export function readClosedTranscriptTurn(params: {
   boundary: TranscriptTurnBoundary;
@@ -156,11 +195,16 @@ export function readClosedTranscriptTurn(params: {
       if (admissionEvent.type !== "message" || admissionEvent.message?.role !== "user") {
         return { kind: "stale" } as const;
       }
-      if (
-        params.boundary.terminal.activeMessagePosition <
-        params.boundary.admission.activeMessagePosition
-      ) {
-        return { kind: "non-descendant" } as const;
+      const ancestry = validateTerminalAncestry({
+        database: database.db,
+        sessionId: target.sessionId,
+        admissionEntryId: params.boundary.admission.entryId,
+        terminalEntryId: params.boundary.terminal.entryId,
+        terminalParentId: terminalRow!.parent_id,
+        maxDepth: params.maxEvents,
+      });
+      if (ancestry !== "descendant") {
+        return { kind: ancestry } as const;
       }
       const rows = executeSqliteQuerySync(
         database.db,

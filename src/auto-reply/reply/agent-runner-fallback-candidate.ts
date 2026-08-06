@@ -188,6 +188,7 @@ export async function runAgentFallbackCandidates(params: AgentFallbackCycleParam
             queuedUserMessagePersistedAcrossFallback,
           userTurnTranscriptRecorder,
           contextEngineLogicalTurnLease: runOptions.contextEngineLogicalTurnLease,
+          onContextEngineTurnCandidate: runOptions.onContextEngineTurnCandidate,
           notifyUserMessagePersisted: () => {
             queuedUserMessagePersistedAcrossFallback = true;
           },
