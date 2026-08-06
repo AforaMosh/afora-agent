@@ -5,6 +5,7 @@
  */
 import { Type } from "typebox";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import { sha256Hex } from "../../infra/crypto-digest.js";
 import {
   applySkillProposal,
   evaluateSkillProposal,
@@ -273,9 +274,10 @@ export function createSkillWorkshopTool(options: SkillWorkshopToolOptions): AnyA
           { config: options.config, agentId: options.agentId },
         );
         if (options.proposalMutationBudget) {
-          const readSkillKeys = options.proposalMutationBudget.readSkillKeys ?? new Set<string>();
-          readSkillKeys.add(skill.skillKey);
-          options.proposalMutationBudget.readSkillKeys = readSkillKeys;
+          const readSkillHashes =
+            options.proposalMutationBudget.readSkillHashes ?? new Map<string, string>();
+          readSkillHashes.set(skill.skillKey, sha256Hex(skill.content));
+          options.proposalMutationBudget.readSkillHashes = readSkillHashes;
         }
         return {
           content: [{ type: "text", text: skill.content }],
@@ -410,15 +412,23 @@ export function createSkillWorkshopTool(options: SkillWorkshopToolOptions): AnyA
 
       if (action === "update" && options.updateProposals === true) {
         // Reviewer sessions have no file tools: an update drafted without the live body
-        // would blind-replace operator-authored content. Refuse before spending budget.
+        // would blind-replace operator-authored content. Refuse before spending budget,
+        // and refuse a stale read so the draft always derives from the current body.
         const target = await readWritableWorkspaceSkill(
           options.workspaceDir,
           readStringParam(params, "skill_name", { required: true, label: "skill_name" }),
           { config: options.config, agentId: options.agentId },
         );
-        if (!options.proposalMutationBudget?.readSkillKeys?.has(target.skillKey)) {
+        const readHash = options.proposalMutationBudget?.readSkillHashes?.get(target.skillKey);
+        if (!readHash) {
           throw new ToolInputError(
             `read the live skill first: call action=read with skill_name "${target.skillKey}", then draft the update from that returned content`,
+          );
+        }
+        if (readHash !== sha256Hex(target.content)) {
+          options.proposalMutationBudget?.readSkillHashes?.delete(target.skillKey);
+          throw new ToolInputError(
+            `skill "${target.skillKey}" changed since it was read: call action=read again and redraft the update from the current content`,
           );
         }
       }

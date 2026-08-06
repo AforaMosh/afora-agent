@@ -58,7 +58,8 @@ the live body of a writable skill. It drafts at most one pending proposal:
 preferring to revise a matching pending proposal, then to update the existing
 skill governing the work, and creating a new skill only when nothing covers the
 class. An update is refused unless the reviewer read that skill's live body in
-the same review, so update drafts always preserve current content. Its
+the same review and the body is unchanged since the read, so update drafts
+always derive from current content. Its
 one-mutation budget is shared across retries. Every mutation is a pending
 proposal — it never writes a live skill directly and cannot apply, reject,
 quarantine, message, or use general agent tools. The reviewed trajectory is

@@ -21,6 +21,7 @@ function completedRun(
     compacted?: boolean;
     modelMetadata?: boolean;
     modelIterations?: number;
+    userText?: string;
   } = {},
 ): SkillExperienceReviewParams {
   const iterations = options.iterations ?? 10;
@@ -29,7 +30,7 @@ function completedRun(
       success: options.success ?? true,
       ...(options.error === undefined ? {} : { error: options.error }),
       messages: [
-        { role: "user", content: "Diagnose and repair the workflow." },
+        { role: "user", content: options.userText ?? "Diagnose and repair the workflow." },
         ...Array.from({ length: iterations }, (_, index) => ({
           role: "assistant",
           content: [
@@ -136,6 +137,67 @@ describe("skill experience review scheduler", () => {
     scheduler.schedule(completedRun({ modelIterations: 4 }));
     await vi.advanceTimersByTimeAsync(30_000);
     expect(runReview).toHaveBeenCalledWith(expect.objectContaining({ modelIterations: 12 }));
+    scheduler.clear();
+  });
+
+  it("reviews accumulated shallow turns with their own transcripts, not just the last turn", async () => {
+    vi.useFakeTimers();
+    const runReview = vi.fn().mockResolvedValue(undefined);
+    const scheduler = createSkillExperienceReviewScheduler({
+      isSystemActive: () => false,
+      runReview,
+    });
+
+    scheduler.schedule(completedRun({ modelIterations: 4, userText: "Always deploy from main." }));
+    scheduler.schedule(
+      completedRun({ modelIterations: 4, userText: "Never skip the smoke test." }),
+    );
+    scheduler.schedule(completedRun({ modelIterations: 4, userText: "Ship it." }));
+    await vi.advanceTimersByTimeAsync(30_000);
+
+    expect(runReview).toHaveBeenCalledTimes(1);
+    const transcript = (runReview.mock.calls[0]?.[0] as { transcript: string }).transcript;
+    expect(transcript).toContain("Always deploy from main.");
+    expect(transcript).toContain("Never skip the smoke test.");
+    expect(transcript).toContain("Ship it.");
+    scheduler.clear();
+  });
+
+  it("never turns explicitly reported zero-iteration turns into review work", async () => {
+    vi.useFakeTimers();
+    const runReview = vi.fn().mockResolvedValue(undefined);
+    const scheduler = createSkillExperienceReviewScheduler({
+      isSystemActive: () => false,
+      runReview,
+    });
+
+    for (let index = 0; index < 12; index += 1) {
+      scheduler.schedule(completedRun({ modelIterations: 0 }));
+    }
+    await vi.advanceTimersByTimeAsync(30_000);
+
+    expect(runReview).not.toHaveBeenCalled();
+    scheduler.clear();
+  });
+
+  it("evicts the oldest shallow-session accumulator instead of growing unbounded", async () => {
+    vi.useFakeTimers();
+    const runReview = vi.fn().mockResolvedValue(undefined);
+    const scheduler = createSkillExperienceReviewScheduler({
+      isSystemActive: () => false,
+      runReview,
+    });
+
+    scheduler.schedule(completedRun({ modelIterations: 5, sessionKey: "agent:main:evicted" }));
+    for (let index = 0; index < 256; index += 1) {
+      scheduler.schedule(
+        completedRun({ modelIterations: 5, sessionKey: `agent:main:filler-${String(index)}` }),
+      );
+    }
+    scheduler.schedule(completedRun({ modelIterations: 5, sessionKey: "agent:main:evicted" }));
+    await vi.advanceTimersByTimeAsync(30_000);
+
+    expect(runReview).not.toHaveBeenCalled();
     scheduler.clear();
   });
 

@@ -271,12 +271,36 @@ describe("skill_workshop tool", () => {
     ).rejects.toThrow("read the live skill first");
     expect(proposalMutationBudget.remaining).toBe(1);
 
+    const staleRead = await reviewTool.execute("stale-read", {
+      action: "read",
+      skill_name: "weather-planner",
+    });
+    expect((staleRead.content[0] as { text: string }).text).toContain(
+      "Check weather before outdoor recommendations.",
+    );
+    const liveSkillFile = path.join(workspaceDir, "skills", "weather-planner", "SKILL.md");
+    await fs.writeFile(
+      liveSkillFile,
+      (await fs.readFile(liveSkillFile, "utf8")).replace(
+        "Check weather before outdoor recommendations.",
+        "Operator-edited steps after the read.",
+      ),
+    );
+    await expect(
+      reviewTool.execute("stale-update", {
+        action: "update",
+        skill_name: "weather-planner",
+        proposal_content: "# Weather Planner\n\nDrafted from the stale read.\n",
+      }),
+    ).rejects.toThrow("changed since it was read");
+    expect(proposalMutationBudget.remaining).toBe(1);
+
     const read = await reviewTool.execute("review-read", {
       action: "read",
       skill_name: "weather-planner",
     });
     expect((read.content[0] as { text: string }).text).toContain(
-      "Check weather before outdoor recommendations.",
+      "Operator-edited steps after the read.",
     );
 
     const update = await reviewTool.execute("review-update", {
