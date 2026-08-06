@@ -487,6 +487,128 @@ describeControlUiE2e("Control UI Appearance defaults mocked Gateway E2E", () => 
     }
   });
 
+  it("keeps every read-only preference surface browser-local across reload", async () => {
+    const context = await browser.newContext({
+      locale: "en-US",
+      serviceWorkers: "block",
+      viewport: { height: 900, width: 1440 },
+    });
+    const page = await context.newPage();
+    const gateway = await installMockGateway(page, {
+      operatorScopes: ["operator.read"],
+      methodResponses: {
+        "config.get": configResponse({ theme: "knot" }, "appearance-read-only-1"),
+      },
+    });
+
+    try {
+      const response = await page.goto(`${server.baseUrl}settings/appearance`);
+      expect(response?.status()).toBe(200);
+      await waitForControlUiSettingsTakeover(page);
+      await gateway.waitForRequest("config.get");
+
+      const themeSection = page.locator("#settings-appearance-theme");
+      const themeDescription = themeSection.locator(":scope > .settings-section__desc");
+      await themeSection.locator(".settings-theme-card--claw").click();
+
+      await expect
+        .poll(() => themeSection.locator(".settings-theme-card--claw").getAttribute("aria-pressed"))
+        .toBe("true");
+      await expect
+        .poll(() => themeDescription.textContent())
+        .toContain("Stored in this browser only");
+      await expect.poll(() => readPersistedSettings(page)).toMatchObject({ theme: "claw" });
+      await page.waitForTimeout(100);
+      expect(await gateway.getRequests("config.patch")).toHaveLength(0);
+
+      await page.reload();
+      await waitForControlUiSettingsTakeover(page);
+      await expect
+        .poll(() => themeSection.locator(".settings-theme-card--claw").getAttribute("aria-pressed"))
+        .toBe("true");
+      await expect
+        .poll(() => themeDescription.textContent())
+        .toContain("Stored in this browser only");
+      await expect.poll(() => readPersistedSettings(page)).toMatchObject({ theme: "claw" });
+      expect(await gateway.getRequests("config.patch")).toHaveLength(0);
+
+      await themeSection
+        .locator(":scope > .settings-section__header")
+        .locator("button.btn--icon")
+        .click();
+      await expect
+        .poll(() => themeSection.locator(".settings-theme-card--knot").getAttribute("aria-pressed"))
+        .toBe("true");
+      await expect.poll(() => themeDescription.textContent()).toContain("Default: Claw");
+      await expect
+        .poll(() => themeDescription.textContent())
+        .not.toContain("Stored in this browser only");
+      await page.waitForTimeout(100);
+      expect(await gateway.getRequests("config.patch")).toHaveLength(0);
+
+      await page.goto(`${server.baseUrl}chat`);
+      const viewMenuTrigger = page.locator(".chat-view-menu-trigger");
+      await viewMenuTrigger.click();
+      const viewMenu = page.locator("wa-dropdown.chat-view-menu");
+      await expect
+        .poll(() => viewMenu.locator(".chat-view-menu__provenance").textContent())
+        .toContain("Stored in this browser only");
+      const reasoning = viewMenu.getByRole("menuitemcheckbox", { name: "Reasoning" });
+      await reasoning.click();
+      await expect.poll(() => reasoning.getAttribute("aria-checked")).toBe("false");
+
+      const sidebar = page.locator("openclaw-app-sidebar");
+      await sidebar.locator(".sidebar-nav__head-action").click();
+      await sidebar
+        .locator("wa-dropdown.sidebar-more-menu")
+        .getByRole("menuitem", { name: "Edit pinned items" })
+        .click();
+      const customizeMenu = sidebar.locator(
+        "wa-dropdown.sidebar-customize-menu:not(.sidebar-more-menu):not(.sidebar-agent-menu)",
+      );
+      await expect
+        .poll(() => customizeMenu.locator(".sidebar-customize-menu__provenance").textContent())
+        .toContain("Stored in this browser only");
+      const tasks = customizeMenu.getByRole("menuitemcheckbox", { name: "Tasks" });
+      await tasks.click();
+      await expect.poll(() => tasks.getAttribute("aria-checked")).toBe("true");
+      await page.waitForTimeout(100);
+      expect(await gateway.getRequests("config.patch")).toHaveLength(0);
+
+      await page.reload();
+      await viewMenuTrigger.click();
+      await expect
+        .poll(() => viewMenu.locator(".chat-view-menu__provenance").textContent())
+        .toContain("Stored in this browser only");
+      await expect
+        .poll(() =>
+          viewMenu
+            .getByRole("menuitemcheckbox", { name: "Reasoning" })
+            .getAttribute("aria-checked"),
+        )
+        .toBe("false");
+
+      await sidebar.locator(".sidebar-nav__head-action").click();
+      await sidebar
+        .locator("wa-dropdown.sidebar-more-menu")
+        .getByRole("menuitem", { name: "Edit pinned items" })
+        .click();
+      await expect
+        .poll(() => customizeMenu.locator(".sidebar-customize-menu__provenance").textContent())
+        .toContain("Stored in this browser only");
+      await expect
+        .poll(() =>
+          customizeMenu
+            .getByRole("menuitemcheckbox", { name: "Tasks" })
+            .getAttribute("aria-checked"),
+        )
+        .toBe("true");
+      expect(await gateway.getRequests("config.patch")).toHaveLength(0);
+    } finally {
+      await context.close();
+    }
+  });
+
   it("keeps Clear authoritative after a delayed custom-theme replacement", async () => {
     const existingTheme = await importCustomThemeFromUrl(
       "existing",
