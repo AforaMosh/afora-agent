@@ -553,10 +553,12 @@ export function createSignalEventHandler(deps: SignalEventHandlerDeps) {
                   },
                   onCompactionStart: async () => {
                     await statusReactionController.setCompacting();
+                    return false;
                   },
                   onCompactionEnd: async () => {
                     statusReactionController.cancelPending();
                     await statusReactionController.setThinking();
+                    return false;
                   },
                 }
               : {}),

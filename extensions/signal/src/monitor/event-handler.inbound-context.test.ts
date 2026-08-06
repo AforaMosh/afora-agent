@@ -624,15 +624,16 @@ describe("signal createSignalEventHandler inbound context", () => {
   });
 
   it("runs Telegram-parity Signal status reactions when explicitly enabled", async () => {
+    const compactionVisibilityResults: Array<boolean | void> = [];
     dispatchInboundMessageMock.mockImplementationOnce(
       async (params: DispatchInboundMessageMockParams) => {
         capture.ctx = params.ctx;
         await nextTimerTick();
         await params.replyOptions?.onToolStart?.({ name: "exec" });
         await nextTimerTick();
-        await params.replyOptions?.onCompactionStart?.();
+        compactionVisibilityResults.push(await params.replyOptions?.onCompactionStart?.());
         await nextTimerTick();
-        await params.replyOptions?.onCompactionEnd?.();
+        compactionVisibilityResults.push(await params.replyOptions?.onCompactionEnd?.());
         await nextTimerTick();
         return { queuedFinal: false, counts: { tool: 0, block: 0, final: 1 } };
       },
@@ -647,6 +648,7 @@ describe("signal createSignalEventHandler inbound context", () => {
     }
 
     expect(dispatchInboundMessageMock).toHaveBeenCalledTimes(1);
+    expect(compactionVisibilityResults).toEqual([false, false]);
     const sentEmojis = sentReactionEmojis();
     expect(sentEmojis).toEqual(expect.arrayContaining(["👀", "🧠", "🛠️", "🗜️", "✅"]));
     expect(sentEmojis.at(-1)).toBe("👀");
