@@ -367,7 +367,7 @@ async function resolveSuiteExecutionPlan(
   params: QaSuiteLaunchParams | undefined,
 ): Promise<QaSuiteExecutionPlan> {
   const scenarioIds = params?.scenarioIds ?? [];
-  if (scenarioIds.length === 0) {
+  if (scenarioIds.length === 0 && !params?.profileRunSpec) {
     return { kind: "flow", expectedCells: [], scenarios: [] };
   }
   const selectedScenarios = resolveRequestedScenarios({
@@ -411,7 +411,7 @@ async function resolveSuiteExecutionPlan(
       (scenario) => scenario.execution.kind === "flow" && scenario.execution.runtime !== undefined,
     ) ||
     (flowScenarios.length > 1 && flowScenarios.some(scenarioRequiresIsolatedQaSuiteWorker));
-  if (testFileScenariosByKind.size === 0 && !requiresFlowPartitions) {
+  if (!params?.profileRunSpec && testFileScenariosByKind.size === 0 && !requiresFlowPartitions) {
     return { kind: "flow", expectedCells, scenarios: selectedScenarios };
   }
   return {
@@ -1440,27 +1440,10 @@ export async function runQaSuite(...args: [QaSuiteLaunchParams?]): Promise<QaSui
       result,
     };
   }
-  const profileRun = profileCheckpoint?.control(plan.expectedCells);
-  const flowRunParams = {
-    ...runParams,
-    profileRun,
-    ...(profileCheckpoint ? { writeEvidenceFile: false } : {}),
+  return {
+    executionKind: "flow",
+    result: await runQaSuiteWithInfraRetry(() => runQaFlowSuiteFromRuntime(runParams)),
   };
-  const runFlow = async (finalizeProfile?: QaProfileCheckpoint["finalize"]) => {
-    const result = await runQaSuiteWithInfraRetry(
-      () => runQaFlowSuiteFromRuntime(flowRunParams),
-      QA_SUITE_INFRA_RETRY_LIMIT,
-      { shouldRetry: () => !profileRun?.hasTerminalEvidence() },
-    );
-    if (finalizeProfile) {
-      result.evidence = await finalizeProfile();
-    }
-    return {
-      executionKind: "flow" as const,
-      result,
-    };
-  };
-  return profileCheckpoint ? await profileCheckpoint.finalizeRun(runFlow) : await runFlow();
 }
 
 export async function runQaFlowSuiteFromRuntime(

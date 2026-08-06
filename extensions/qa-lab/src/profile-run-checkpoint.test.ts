@@ -7,6 +7,7 @@ import { readQaScenarioById } from "./scenario-catalog.js";
 
 const atomicState = vi.hoisted(() => ({
   checkpointFailures: 0,
+  finalEvidenceFailures: 0,
   writes: [] as string[],
 }));
 const cryptoState = vi.hoisted(() => ({ fixedHash: false }));
@@ -40,6 +41,10 @@ vi.mock("openclaw/plugin-sdk/json-store", async (importOriginal) => {
       ) {
         atomicState.checkpointFailures -= 1;
         throw new Error("checkpoint disk full");
+      }
+      if (filePath.endsWith("qa-evidence.json") && atomicState.finalEvidenceFailures > 0) {
+        atomicState.finalEvidenceFailures -= 1;
+        throw new Error("final evidence disk full");
       }
       await actual.writeJsonFileAtomically(filePath, value);
     },
@@ -95,8 +100,8 @@ function emptyEvidence(): QaEvidenceSummaryJson {
 async function createCheckpoint(
   expectedCells: readonly (typeof cell)[] = [cell],
   selectedScenarios = [scenario],
+  outputDir = tempDirs.make("qa-profile-checkpoint-"),
 ) {
-  const outputDir = tempDirs.make("qa-profile-checkpoint-");
   const checkpoint = await createQaProfileRunCheckpoint({
     expectedCells,
     outputDir,
@@ -124,8 +129,44 @@ async function readCheckpoint(outputDir: string) {
 describe("QA profile run checkpoint", () => {
   beforeEach(() => {
     atomicState.checkpointFailures = 0;
+    atomicState.finalEvidenceFailures = 0;
     atomicState.writes.length = 0;
     cryptoState.fixedHash = false;
+  });
+
+  it("removes prior canonical evidence before checkpoint creation", async () => {
+    const outputDir = tempDirs.make("qa-profile-checkpoint-stale-");
+    const evidencePath = path.join(outputDir, "qa-evidence.json");
+    await fs.writeFile(evidencePath, `${JSON.stringify(evidence(), null, 2)}\n`, "utf8");
+
+    await createCheckpoint([cell], [scenario], outputDir);
+
+    await expect(fs.access(evidencePath)).rejects.toMatchObject({ code: "ENOENT" });
+    await expect(
+      fs.access(path.join(outputDir, "qa-profile-run-checkpoint.json")),
+    ).resolves.toBeUndefined();
+  });
+
+  it("aborts checkpoint creation when canonical evidence cannot be invalidated", async () => {
+    const outputDir = tempDirs.make("qa-profile-checkpoint-invalidation-");
+    await fs.mkdir(path.join(outputDir, "qa-evidence.json"));
+
+    await expect(createCheckpoint([cell], [scenario], outputDir)).rejects.toThrow();
+    await expect(
+      fs.access(path.join(outputDir, "qa-profile-run-checkpoint.json")),
+    ).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  it("does not expose prior canonical evidence when finalization persistence fails", async () => {
+    const outputDir = tempDirs.make("qa-profile-checkpoint-finalize-");
+    const evidencePath = path.join(outputDir, "qa-evidence.json");
+    await fs.writeFile(evidencePath, `${JSON.stringify(evidence(), null, 2)}\n`, "utf8");
+    const { checkpoint } = await createCheckpoint([cell], [scenario], outputDir);
+    await checkpoint.control([cell]).complete({ scenarioId: scenario.id, evidence: evidence() });
+    atomicState.finalEvidenceFailures = 1;
+
+    await expect(checkpoint.finalize()).rejects.toThrow("final evidence disk full");
+    await expect(fs.access(evidencePath)).rejects.toMatchObject({ code: "ENOENT" });
   });
 
   it("becomes terminal only after the checkpoint snapshot commits", async () => {

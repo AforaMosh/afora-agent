@@ -81,9 +81,10 @@ export async function createQaProfileRunCheckpoint(params: {
     queue = next.catch(() => undefined);
     return next;
   };
-  await params.retryPhase("checkpoint persistence", () =>
-    writeJsonFileAtomically(checkpointPath, snapshot()),
-  );
+  await params.retryPhase("checkpoint persistence", async () => {
+    await fs.rm(path.join(params.outputDir, QA_EVIDENCE_FILENAME), { force: true });
+    await writeJsonFileAtomically(checkpointPath, snapshot());
+  });
   const complete = (cell: Cell, input: QaEvidenceSummaryJson) =>
     mutate(async () => {
       const cellKey = key(cell);
@@ -138,7 +139,7 @@ export async function createQaProfileRunCheckpoint(params: {
       );
       return aggregate;
     });
-  const finalizeRun = async <T>(run: (finalize: typeof finalize) => Promise<T>) => {
+  const finalizeRun = async <T>(run: (finalizeProfile: typeof finalize) => Promise<T>) => {
     let finalization: ReturnType<typeof finalize> | undefined;
     const finalizeOnce = () => (finalization ??= finalize());
     try {
