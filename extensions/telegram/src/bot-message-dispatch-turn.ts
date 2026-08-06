@@ -256,14 +256,14 @@ export async function runTelegramDispatchTurn(params: {
                 startImmediately: true,
               });
               if (updatedDraft) {
-                return;
+                return true;
               }
               if (
                 isFastModeAutoProgressPayload(payload) &&
                 !params.progress.canPushToolProgress()
               ) {
                 await params.delivery.sendPayload(payload);
-                return;
+                return true;
               }
               return false;
             },
