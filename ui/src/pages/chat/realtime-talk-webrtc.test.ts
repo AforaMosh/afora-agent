@@ -144,6 +144,7 @@ async function startActiveConsult(
   });
 
   await transport.start();
+  transport.activate();
   const peer = FakePeerConnection.instances[0];
   dispatchConsultToolCall(peer);
   await waitForFast(() =>
@@ -226,6 +227,7 @@ describe("WebRtcSdpRealtimeTalkTransport", () => {
     const transport = createOpenAiTransport({}, { onInputLevel });
 
     await transport.start();
+    transport.activate();
     transport.stop();
 
     expect(onInputLevel.mock.calls.some(([level]) => level > 0)).toBe(true);
@@ -259,7 +261,8 @@ describe("WebRtcSdpRealtimeTalkTransport", () => {
     });
     const transport = createOpenAiTransport({}, { onInputLevel });
 
-    await expect(transport.start()).resolves.toBe("cancelled");
+    await expect(transport.start()).resolves.toBe("ready");
+    transport.activate();
     transport.stop();
     transport.stop();
     vi.advanceTimersByTime(1_000);
@@ -473,6 +476,7 @@ describe("WebRtcSdpRealtimeTalkTransport", () => {
     });
     const transport = createOpenAiTransport({}, { onStatus });
     await expect(transport.start()).resolves.toBe("ready");
+    transport.activate();
     const peer = FakePeerConnection.instances[0];
     if (!peer) {
       throw new Error("expected WebRTC peer");
@@ -493,6 +497,7 @@ describe("WebRtcSdpRealtimeTalkTransport", () => {
     });
     const transport = createOpenAiTransport({}, { onTalkEvent });
     await expect(transport.start()).resolves.toBe("ready");
+    transport.activate();
     const peer = FakePeerConnection.instances[0];
     if (!peer) {
       throw new Error("expected WebRTC peer");
@@ -543,6 +548,7 @@ describe("WebRtcSdpRealtimeTalkTransport", () => {
     );
 
     await transport.start();
+    transport.activate();
     const peer = FakePeerConnection.instances[0];
     peer?.channel.dispatchEvent(
       new MessageEvent("message", {
@@ -578,6 +584,7 @@ describe("WebRtcSdpRealtimeTalkTransport", () => {
     );
 
     await transport.start();
+    transport.activate();
     const peer = FakePeerConnection.instances[0];
     for (const type of [
       "input_audio_buffer.speech_started",
@@ -626,6 +633,7 @@ describe("WebRtcSdpRealtimeTalkTransport", () => {
     );
 
     await transport.start();
+    transport.activate();
     const peer = FakePeerConnection.instances[0];
     peer?.channel.dispatchEvent(
       new MessageEvent("message", {
@@ -677,6 +685,7 @@ describe("WebRtcSdpRealtimeTalkTransport", () => {
     const transport = createOpenAiTransport({}, { onTranscript, onTalkEvent });
 
     await transport.start();
+    transport.activate();
     dispatchTranscription(FakePeerConnection.instances[0], "overflow");
 
     expect(onTranscript).toHaveBeenCalledOnce();
@@ -703,6 +712,7 @@ describe("WebRtcSdpRealtimeTalkTransport", () => {
     );
 
     await transport.start();
+    transport.activate();
     const peer = FakePeerConnection.instances[0];
     for (const event of [
       { type: "input_transcript.added", item: { id: "user-live", text: "hel" } },
@@ -767,6 +777,7 @@ describe("WebRtcSdpRealtimeTalkTransport", () => {
       );
 
       await transport.start();
+      transport.activate();
       const peer = FakePeerConnection.instances[0];
       peer?.channel.dispatchEvent(
         new MessageEvent("message", {
@@ -839,6 +850,7 @@ describe("WebRtcSdpRealtimeTalkTransport", () => {
     );
 
     await transport.start();
+    transport.activate();
     const peer = FakePeerConnection.instances[0];
     dispatchConsultToolCall(peer);
     await waitForFast(() => expect(request).toHaveBeenCalledTimes(1));
@@ -1036,6 +1048,7 @@ describe("WebRtcSdpRealtimeTalkTransport", () => {
     );
 
     await transport.start();
+    transport.activate();
     const peer = FakePeerConnection.instances[0];
     dispatchConsultToolCall(peer);
     await waitForFast(() =>
