@@ -23,11 +23,6 @@ export type QaProfileRunSpec = Omit<
   categories: readonly QaScorecardCategoryCoverageReport[];
 };
 export type QaProfilePhaseRetry = <T>(phase: string, run: () => Promise<T>) => Promise<T>;
-export const runQaProfilePhase = <T>(
-  retryPhase: QaProfilePhaseRetry | undefined,
-  phase: string,
-  run: () => Promise<T>,
-) => (retryPhase ? retryPhase(phase, run) : run());
 export type QaProfileRunControl = {
   complete(input: { scenarioId: string; evidence: QaEvidenceSummaryJson }): Promise<void>;
   hasTerminalEvidence(): boolean;
@@ -36,6 +31,14 @@ export type QaProfileRunControl = {
 
 const hash = (value: string) => createHash("sha256").update(value).digest("hex");
 const key = (cell: Cell) => `${cell.scenarioId}\0${cell.executionKind}\0${cell.channel ?? ""}`;
+const validateProfileEvidence = (value: unknown, cell: Cell) => {
+  const evidence = validateQaEvidenceSummaryJson(value);
+  const bound = evidence.profileCell && key(evidence.profileCell) === key(cell);
+  if (!bound || evidence.entries.length === 0) {
+    throw new Error(`Invalid QA profile evidence for ${key(cell)}`);
+  }
+  return evidence;
+};
 
 export async function createQaProfileRunCheckpoint(params: {
   expectedCells: readonly Cell[];
@@ -58,12 +61,12 @@ export async function createQaProfileRunCheckpoint(params: {
       evidence: cellKey === next?.[0] ? next[1] : refs.get(cellKey),
     })),
   });
-  const read = async (ref: Ref) => {
+  const read = async (ref: Ref, cell: Cell) => {
     const payload = await fs.readFile(path.join(params.outputDir, ref.path), "utf8");
     if (hash(payload) !== ref.sha256) {
       throw new Error(`QA profile evidence digest mismatch: ${ref.path}`);
     }
-    return validateQaEvidenceSummaryJson(JSON.parse(payload));
+    return validateProfileEvidence(JSON.parse(payload), cell);
   };
   const getCell = (cell: Cell) => {
     const stored = cells.get(key(cell));
@@ -84,7 +87,7 @@ export async function createQaProfileRunCheckpoint(params: {
   const complete = (cell: Cell, input: QaEvidenceSummaryJson) =>
     mutate(async () => {
       const cellKey = key(cell);
-      const evidence = validateQaEvidenceSummaryJson({ ...input, profileCell: cell });
+      const evidence = validateProfileEvidence({ ...input, profileCell: cell }, cell);
       const sha256 = hash(`${JSON.stringify(evidence, null, 2)}\n`);
       const existing = refs.get(cellKey);
       if (existing?.sha256 === sha256) {
@@ -101,6 +104,7 @@ export async function createQaProfileRunCheckpoint(params: {
       refs.set(cellKey, ref);
     });
   return {
+    retryPhase: params.retryPhase,
     control(partitionCells: readonly Cell[]): QaProfileRunControl {
       const partition = new Map(
         partitionCells.map((cell) => [cell.scenarioId, getCell(cell)] as const),
@@ -117,29 +121,32 @@ export async function createQaProfileRunCheckpoint(params: {
         retryPhase: params.retryPhase,
       };
     },
-    finalize: (authoritativeEvidence: QaEvidenceSummaryJson) =>
+    finalize: () =>
       mutate(async () => {
-        const base = validateQaEvidenceSummaryJson(authoritativeEvidence);
         const observed: Cell[] = [];
+        const summaries: QaEvidenceSummaryJson[] = [];
         for (const [cellKey, cell] of cells) {
           const ref = refs.get(cellKey);
           if (!ref) {
             continue;
           }
-          const evidence = await read(ref);
-          if (!evidence.profileCell || key(evidence.profileCell) !== cellKey) {
-            throw new Error(`QA profile evidence ref is not bound to ${cellKey}`);
-          }
-          const { scenarioId, executionKind, channel } = cell;
-          observed.push({ scenarioId, executionKind, channel });
+          const evidence = await read(ref, cell);
+          summaries.push(evidence);
+          observed.push(cell);
         }
+        const latest = summaries.at(-1);
+        if (!latest) {
+          throw new Error("QA profile finalization requires terminal evidence");
+        }
+        const aggregateSummary = { ...latest, entries: summaries.flatMap((item) => item.entries) };
+        delete aggregateSummary.profileCell;
         const aggregate = attachQaEvidenceScorecard({
-          summary: base,
+          summary: aggregateSummary,
           evidenceMode: params.spec.evidenceMode,
           profile: params.spec.profile,
           profilePlan: plan(observed),
           scorecard: buildQaProfileScorecardEvidence({
-            evidence: base,
+            evidence: aggregateSummary,
             filters: params.spec.filters,
             categories: params.spec.categories,
           }),

@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
 import { validateQaEvidenceSummaryJson, type QaEvidenceSummaryJson } from "./evidence-summary.js";
 import { readQaScenarioById } from "./scenario-catalog.js";
 
@@ -9,6 +9,24 @@ const atomicState = vi.hoisted(() => ({
   checkpointFailures: 0,
   writes: [] as string[],
 }));
+const cryptoState = vi.hoisted(() => ({ fixedHash: false }));
+
+vi.mock("node:crypto", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:crypto")>();
+  return {
+    ...actual,
+    createHash: (...args: Parameters<typeof actual.createHash>) => {
+      if (!cryptoState.fixedHash) {
+        return actual.createHash(...args);
+      }
+      const fixed = {
+        update: () => fixed,
+        digest: () => "0".repeat(64),
+      };
+      return fixed as unknown as ReturnType<typeof actual.createHash>;
+    },
+  };
+});
 
 vi.mock("openclaw/plugin-sdk/json-store", async (importOriginal) => {
   const actual = await importOriginal<typeof import("openclaw/plugin-sdk/json-store")>();
@@ -30,15 +48,24 @@ vi.mock("openclaw/plugin-sdk/json-store", async (importOriginal) => {
 
 import { createQaProfileRunCheckpoint } from "./profile-run-checkpoint.js";
 
-const tempRoots: string[] = [];
+const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 const scenario = readQaScenarioById("channel-chat-baseline");
+const secondScenario = readQaScenarioById("dm-chat-baseline");
 const cell = {
   scenarioId: scenario.id,
   executionKind: "flow" as const,
   channel: "qa-channel",
 };
+const secondCell = {
+  scenarioId: secondScenario.id,
+  executionKind: "flow" as const,
+  channel: "qa-channel",
+};
 
-function evidence(generatedAt = "2026-08-06T00:00:00.000Z"): QaEvidenceSummaryJson {
+function evidence(
+  generatedAt = "2026-08-06T00:00:00.000Z",
+  testId = scenario.id,
+): QaEvidenceSummaryJson {
   return validateQaEvidenceSummaryJson({
     kind: "openclaw.qa.evidence-summary",
     schemaVersion: 2,
@@ -46,7 +73,7 @@ function evidence(generatedAt = "2026-08-06T00:00:00.000Z"): QaEvidenceSummaryJs
     evidenceMode: "full",
     entries: [
       {
-        test: { kind: "flow", id: scenario.id, title: scenario.title },
+        test: { kind: "flow", id: testId, title: testId },
         coverage: [],
         refs: [],
         result: { status: "pass" },
@@ -55,17 +82,29 @@ function evidence(generatedAt = "2026-08-06T00:00:00.000Z"): QaEvidenceSummaryJs
   });
 }
 
-async function createCheckpoint() {
-  const outputDir = await fs.mkdtemp(path.join(os.tmpdir(), "qa-profile-checkpoint-"));
-  tempRoots.push(outputDir);
+function emptyEvidence(): QaEvidenceSummaryJson {
+  return validateQaEvidenceSummaryJson({
+    kind: "openclaw.qa.evidence-summary",
+    schemaVersion: 2,
+    generatedAt: "2026-08-06T00:00:00.000Z",
+    evidenceMode: "full",
+    entries: [],
+  });
+}
+
+async function createCheckpoint(
+  expectedCells: readonly (typeof cell)[] = [cell],
+  selectedScenarios = [scenario],
+) {
+  const outputDir = tempDirs.make("qa-profile-checkpoint-");
   const checkpoint = await createQaProfileRunCheckpoint({
-    expectedCells: [cell],
+    expectedCells,
     outputDir,
     retryPhase: async (_phase, run) => await run(),
     spec: {
       profile: "release",
-      membershipScenarios: [scenario],
-      selectedScenarios: [scenario],
+      membershipScenarios: selectedScenarios,
+      selectedScenarios,
       excludedScenarios: [],
       filters: {},
       categories: [],
@@ -86,12 +125,7 @@ describe("QA profile run checkpoint", () => {
   beforeEach(() => {
     atomicState.checkpointFailures = 0;
     atomicState.writes.length = 0;
-  });
-
-  afterEach(async () => {
-    await Promise.all(
-      tempRoots.splice(0).map((root) => fs.rm(root, { recursive: true, force: true })),
-    );
+    cryptoState.fixedHash = false;
   });
 
   it("becomes terminal only after the checkpoint snapshot commits", async () => {
@@ -108,6 +142,18 @@ describe("QA profile run checkpoint", () => {
     await control.complete({ scenarioId: scenario.id, evidence: evidence() });
     expect(control.hasTerminalEvidence()).toBe(true);
     expect((await readCheckpoint(outputDir)).cells[0]?.evidence?.sha256).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  it("keeps generic empty summaries valid but rejects empty profile completion", async () => {
+    expect(validateQaEvidenceSummaryJson(emptyEvidence()).entries).toEqual([]);
+    const { checkpoint, outputDir } = await createCheckpoint();
+    const control = checkpoint.control([cell]);
+
+    await expect(
+      control.complete({ scenarioId: scenario.id, evidence: emptyEvidence() }),
+    ).rejects.toThrow("Invalid QA profile evidence");
+    expect(control.hasTerminalEvidence()).toBe(false);
+    expect((await readCheckpoint(outputDir)).cells[0]).not.toHaveProperty("evidence");
   });
 
   it("binds the canonical qa-channel cell and treats identical completion as idempotent", async () => {
@@ -150,17 +196,68 @@ describe("QA profile run checkpoint", () => {
     const ref = (await readCheckpoint(outputDir)).cells[0]?.evidence;
     await fs.writeFile(path.join(outputDir, ref!.path), "{}\n", "utf8");
 
-    await expect(checkpoint.finalize(evidence())).rejects.toThrow("evidence digest mismatch");
+    await expect(checkpoint.finalize()).rejects.toThrow("evidence digest mismatch");
   });
 
-  it("finalizes strict observed cells without changing authoritative entries", async () => {
+  it("rejects digest-valid empty refs during finalization", async () => {
+    cryptoState.fixedHash = true;
     const { checkpoint, outputDir } = await createCheckpoint();
     await checkpoint.control([cell]).complete({ scenarioId: scenario.id, evidence: evidence() });
-    const authoritative = evidence("2026-08-06T00:00:02.000Z");
+    const ref = (await readCheckpoint(outputDir)).cells[0]?.evidence;
+    const empty = validateQaEvidenceSummaryJson({ ...emptyEvidence(), profileCell: cell });
+    await fs.writeFile(path.join(outputDir, ref!.path), `${JSON.stringify(empty, null, 2)}\n`);
 
-    const finalized = await checkpoint.finalize(authoritative);
+    await expect(checkpoint.finalize()).rejects.toThrow("Invalid QA profile evidence");
+  });
 
-    expect(finalized.entries).toStrictEqual(authoritative.entries);
+  it("finalizes refs in canonical cell order and preserves producer-owned IDs", async () => {
+    const { checkpoint, outputDir } = await createCheckpoint(
+      [secondCell, cell],
+      [secondScenario, scenario],
+    );
+    await checkpoint.control([secondCell]).complete({
+      scenarioId: secondScenario.id,
+      evidence: evidence(undefined, "producer-second"),
+    });
+    await checkpoint
+      .control([cell])
+      .complete({ scenarioId: scenario.id, evidence: evidence(undefined, "producer-first") });
+
+    const finalized = await checkpoint.finalize();
+
+    expect(finalized.entries.map((entry) => entry.test.id)).toEqual([
+      "producer-first",
+      "producer-second",
+    ]);
+    expect(finalized.profileCell).toBeUndefined();
+    expect(finalized.profilePlan?.observedCells).toEqual([cell, secondCell]);
+    expect(
+      validateQaEvidenceSummaryJson(
+        JSON.parse(await fs.readFile(path.join(outputDir, "qa-evidence.json"), "utf8")),
+      ),
+    ).toStrictEqual(finalized);
+  });
+
+  it("projects missing cells from the refs-only aggregate", async () => {
+    const { checkpoint } = await createCheckpoint([cell, secondCell], [scenario, secondScenario]);
+    await checkpoint
+      .control([secondCell])
+      .complete({ scenarioId: secondScenario.id, evidence: evidence(undefined, "producer-owned") });
+
+    const finalized = await checkpoint.finalize();
+
+    expect(finalized.entries.map((entry) => entry.test.id)).toEqual(["producer-owned"]);
+    expect(finalized.profilePlan?.observedCells).toEqual([secondCell]);
+    expect(finalized.profilePlan?.missingCells).toEqual([cell]);
+  });
+
+  it("finalizes strict observed cells from refs", async () => {
+    const { checkpoint, outputDir } = await createCheckpoint();
+    await checkpoint.control([cell]).complete({ scenarioId: scenario.id, evidence: evidence() });
+
+    const finalized = await checkpoint.finalize();
+
+    expect(finalized.entries).toStrictEqual(evidence().entries);
     expect(finalized.profilePlan?.observedCells).toEqual([cell]);
     expect(Object.keys(finalized.profilePlan!.observedCells[0]!).toSorted()).toEqual([
       "channel",

@@ -9,11 +9,7 @@ import {
 } from "./crabline-artifacts.js";
 import { buildQaSuiteEvidenceSummary, QA_EVIDENCE_FILENAME } from "./evidence-summary.js";
 import type { QaProviderMode } from "./model-selection.js";
-import {
-  runQaProfilePhase,
-  type QaProfilePhaseRetry,
-  type QaProfileRunControl,
-} from "./profile-run-checkpoint.js";
+import type { QaProfilePhaseRetry, QaProfileRunControl } from "./profile-run-checkpoint.js";
 import type { QaTransportDriver } from "./qa-transport-registry.js";
 import type { QaTransportAdapter } from "./qa-transport.js";
 import { renderQaMarkdownReport, type QaReportScenario } from "./report.js";
@@ -325,6 +321,6 @@ export async function writeQaSuiteArtifacts(params: {
       await assertQaSuiteArtifactWritten("evidence", evidencePath);
     }
   };
-  await runQaProfilePhase(params.retryPhase, "suite artifact persistence", persistArtifacts);
+  await (params.retryPhase?.("suite artifact persistence", persistArtifacts) ?? persistArtifacts());
   return { evidence, evidencePath, report, reportPath, summaryPath };
 }

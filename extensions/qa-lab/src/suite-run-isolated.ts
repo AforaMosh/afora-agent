@@ -83,6 +83,7 @@ export async function runQaFlowSuiteIsolated(
   });
   const startedScenarioIds = new Set<string>();
   let artifactWriteQueue = Promise.resolve();
+  let artifactWriteFailure: { error: unknown } | undefined;
   const writePartialArtifacts = () => {
     const partialScenarios = completedScenarioResults.filter(
       (scenario): scenario is QaSuiteScenarioResult => scenario !== undefined,
@@ -130,6 +131,7 @@ export async function runQaFlowSuiteIsolated(
         } satisfies QaLabLatestReport);
       })
       .catch((error: unknown) => {
+        artifactWriteFailure ??= { error };
         writeQaSuiteProgress(
           progressEnabled,
           `partial artifact write failed: ${sanitizeQaSuiteProgressValue(formatErrorMessage(error))}`,
@@ -330,6 +332,15 @@ export async function runQaFlowSuiteIsolated(
   } catch (error) {
     isolatedRunFailed = true;
     isolatedRunError = error;
+    await artifactWriteQueue.catch(() => undefined);
+    if (artifactWriteFailure) {
+      isolatedRunError = new AggregateError(
+        [error, artifactWriteFailure.error],
+        "QA suite execution and partial artifact persistence both failed",
+        { cause: error },
+      );
+      throw isolatedRunError;
+    }
     throw error;
   } finally {
     const cleanupSteps = [

@@ -10,7 +10,7 @@ import { startQaGatewayChild } from "./gateway-child.js";
 import { discardIgnoredResponseBody } from "./ignored-response-body.js";
 import type { QaLabServerHandle } from "./lab-server.types.js";
 import { resolveQaLiveTurnTimeoutMs } from "./live-timeout.js";
-import { runQaProfilePhase, type QaProfilePhaseRetry } from "./profile-run-checkpoint.js";
+import type { QaProfilePhaseRetry } from "./profile-run-checkpoint.js";
 import {
   parseQaProgressBooleanEnv as parseQaSuiteBooleanEnv,
   sanitizeQaProgressValue as sanitizeQaSuiteProgressValue,
@@ -50,7 +50,6 @@ import type {
   QaSuiteEnvironment,
   QaSuiteResult,
   QaSuiteRunParams,
-  QaSuiteScenarioResult,
   QaSuiteStartLabFn,
 } from "./suite-types.js";
 
@@ -234,7 +233,7 @@ export async function runQaSuiteCleanupSteps(
   const failures: QaSuiteCleanupFailure[] = [];
   for (const step of steps) {
     try {
-      await runQaProfilePhase(retryPhase, `cleanup: ${step.phase}`, step.run);
+      await (retryPhase?.(`cleanup: ${step.phase}`, step.run) ?? step.run());
     } catch (error) {
       failures.push({ phase: step.phase, error });
     }

@@ -16,7 +16,7 @@ import {
   resolveQaEvidenceProfile,
   validateQaEvidenceSummaryJson,
 } from "./evidence-summary.js";
-import { runQaProfilePhase, type QaProfileRunControl } from "./profile-run-checkpoint.js";
+import type { QaProfileRunControl } from "./profile-run-checkpoint.js";
 import type { QaProviderMode } from "./providers/index.js";
 import type { QaSeedScenarioWithSource } from "./scenario-catalog.js";
 import type { QaScorecardEvidenceMode } from "./scorecard-taxonomy.js";
@@ -557,11 +557,7 @@ async function writeTestFileEvidenceFile(params: {
       await fs.writeFile(evidencePath, `${JSON.stringify(params.evidence, null, 2)}\n`, "utf8");
       await assertQaSuiteArtifactWritten("evidence", evidencePath);
     };
-    await runQaProfilePhase(
-      params.profileRun?.retryPhase,
-      "test-file artifact persistence",
-      persist,
-    );
+    await (params.profileRun?.retryPhase?.("test-file artifact persistence", persist) ?? persist());
   }
   return { evidencePath };
 }
