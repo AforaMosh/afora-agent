@@ -47,11 +47,11 @@ import { startQaLabServer } from "./lab-server.js";
 import { listLiveTransportQaAdapterFactories } from "./live-transports/cli.js";
 import { runQaManualLane } from "./manual-lane.runtime.js";
 import { runQaMultipass } from "./multipass.runtime.js";
-import { qaProfileEvidencePlan, type QaProfileEvidencePlan } from "./profile-evidence-plan.js";
 import {
   resolveQaRunProfileExecutionSelection,
   resolveQaRunProfileMembership,
 } from "./profile-planning.js";
+import type { QaProfileRunSpec } from "./profile-run-checkpoint.js";
 import { DEFAULT_QA_LIVE_PROVIDER_MODE, getQaProvider } from "./providers/index.js";
 import {
   QA_FRONTIER_PARITY_BASELINE_LABEL,
@@ -85,7 +85,6 @@ import {
   type QaRuntimePairLane,
 } from "./scenario-catalog.js";
 import { scenarioMatchesQaProviderLane } from "./scenario-lane.js";
-import { attachQaProfileScorecardEvidenceToFile } from "./scorecard-evidence.js";
 import {
   qaScorecardChannelDriverSchema,
   readQaScorecardTaxonomyReport,
@@ -168,6 +167,7 @@ export type QaSuiteCommandOptions = QaScenarioRunCommandOptions & {
   credentialSource?: string;
   credentialRole?: string;
   explicitScenarioSelection?: boolean;
+  profileRunSpec?: QaProfileRunSpec;
 };
 
 function normalizeQaSuiteChannelDriver(
@@ -702,8 +702,6 @@ export async function runQaProfileCommand(opts: QaProfileCommandOptions) {
     `QA run profile: ${profile}; categories: ${categories.length}; scenarios: ${scenarios.length}\n`,
   );
   let evidencePath: string | undefined;
-  let expectedCells: QaProfileEvidencePlan["expectedCells"] = [];
-  let observedCells: QaProfileEvidencePlan["observedCells"] = [];
   await withTemporaryQaProfileEnv(profile, async () => {
     const suiteResult = await runQaSuiteCommand({
       repoRoot,
@@ -721,34 +719,22 @@ export async function runQaProfileCommand(opts: QaProfileCommandOptions) {
       allowFailures: opts.allowFailures,
       channelDriver: profileReport.channelDriver,
       expandScenarioChannels: true,
+      profileRunSpec: {
+        profile,
+        membershipScenarios: taxonomyScenarios,
+        selectedScenarios: scenarios,
+        excludedScenarios: executionSelection.excludedScenarios,
+        evidenceMode: opts.evidenceMode,
+        filters: { surface: opts.surface, category: opts.category },
+        categories,
+      },
     });
     evidencePath =
       suiteResult && "evidencePath" in suiteResult ? suiteResult.evidencePath : undefined;
-    expectedCells = suiteResult && "expectedCells" in suiteResult ? suiteResult.expectedCells : [];
-    observedCells = suiteResult && "observedCells" in suiteResult ? suiteResult.observedCells : [];
   });
   if (!evidencePath) {
     throw new Error("qa run --qa-profile did not produce qa-evidence.json.");
   }
-  const profilePlan = qaProfileEvidencePlan.build({
-    profile,
-    membershipScenarios: taxonomyScenarios,
-    selectedScenarios: scenarios,
-    excludedScenarios: executionSelection.excludedScenarios,
-    expectedCells,
-    observedCells,
-  });
-  await attachQaProfileScorecardEvidenceToFile({
-    evidencePath,
-    evidenceMode: opts.evidenceMode,
-    profile,
-    profilePlan,
-    filters: {
-      surface: opts.surface,
-      category: opts.category,
-    },
-    categories,
-  });
   process.stdout.write(`QA profile scorecard: ${evidencePath}\n`);
 }
 
@@ -1049,6 +1035,7 @@ export async function runQaSuiteCommand(opts: QaSuiteCommandOptions) {
         ? { concurrency: parseQaPositiveIntegerOption("--concurrency", opts.concurrency) }
         : {}),
     ...(runtimePair ? { runtimePair } : {}),
+    ...(opts.profileRunSpec ? { profileRunSpec: opts.profileRunSpec } : {}),
   });
   switch (runtimeResult.executionKind) {
     case "suite": {
@@ -1069,11 +1056,7 @@ export async function runQaSuiteCommand(opts: QaSuiteCommandOptions) {
       if (!allowFailures && blockingScenarioCount > 0) {
         process.exitCode = 1;
       }
-      return {
-        ...result,
-        expectedCells: runtimeResult.expectedCells,
-        observedCells: runtimeResult.observedCells,
-      };
+      return result;
     }
     case "flow": {
       const result = runtimeResult.result;
@@ -1094,11 +1077,7 @@ export async function runQaSuiteCommand(opts: QaSuiteCommandOptions) {
       if (!allowFailures && blockingScenarioCount > 0) {
         process.exitCode = 1;
       }
-      return {
-        ...result,
-        expectedCells: runtimeResult.expectedCells,
-        observedCells: runtimeResult.observedCells,
-      };
+      return result;
     }
   }
   return undefined;

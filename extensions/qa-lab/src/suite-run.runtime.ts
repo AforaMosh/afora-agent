@@ -1,4 +1,5 @@
 import path from "node:path";
+import type { QaProfileRunControl } from "./profile-run-checkpoint.js";
 import {
   defaultQaSuiteConcurrencyForTransport,
   normalizeQaTransportId,
@@ -26,7 +27,9 @@ import {
   writeQaSuiteProgress,
 } from "./suite.js";
 
-export async function runQaFlowSuiteFromRuntime(params?: QaSuiteRunParams): Promise<QaSuiteResult> {
+export async function runQaFlowSuiteFromRuntime(
+  params?: QaSuiteRunParams & { profileRun?: QaProfileRunControl },
+): Promise<QaSuiteResult> {
   const startedAt = new Date();
   const repoRoot = path.resolve(params?.repoRoot ?? process.cwd());
   const catalog = readQaBootstrapScenarioCatalog();
@@ -149,6 +152,7 @@ export async function runQaFlowSuiteFromRuntime(params?: QaSuiteRunParams): Prom
       scenarioIds: params.scenarioIds,
       runtimePair: params.runtimePair,
       writeEvidenceFile: params.writeEvidenceFile,
+      profileRun: params.profileRun,
     });
   }
   return useIsolatedScenarioWorkers

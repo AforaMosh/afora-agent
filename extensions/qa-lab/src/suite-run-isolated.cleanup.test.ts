@@ -46,7 +46,8 @@ vi.mock("./gateway-child.js", () => ({
 vi.mock("./providers/server-runtime.js", () => ({
   startQaProviderServer: vi.fn(async () => undefined),
 }));
-vi.mock("./suite-artifacts.js", () => ({
+vi.mock("./suite-artifacts.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./suite-artifacts.js")>()),
   writeQaSuiteArtifacts: mocks.writeQaSuiteArtifacts,
 }));
 vi.mock("./suite-runtime-gateway.js", () => ({

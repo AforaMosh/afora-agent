@@ -3,7 +3,10 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { QaSuiteInfraError } from "./errors.js";
+import { validateQaEvidenceSummaryJson } from "./evidence-summary.js";
 import type { QaLabServerHandle } from "./lab-server.types.js";
+import type { QaProfileRunControl, QaProfileRunSpec } from "./profile-run-checkpoint.js";
+import { readQaScenarioById } from "./scenario-catalog.js";
 import type { QaSuiteScenarioResult } from "./suite.js";
 import { throwQaSuiteCleanupErrors } from "./suite.js";
 import type {
@@ -55,6 +58,29 @@ async function writeEvidence(pathLocal: string, writeFile = true) {
     await fs.writeFile(pathLocal, `${JSON.stringify(evidence, null, 2)}\n`, "utf8");
   }
   return evidence;
+}
+
+function profileRunSpec(scenarioIds: readonly string[]): QaProfileRunSpec {
+  const scenarios = scenarioIds.map(readQaScenarioById);
+  return {
+    profile: "release",
+    membershipScenarios: scenarios,
+    selectedScenarios: scenarios,
+    excludedScenarios: [],
+    filters: {},
+    categories: [],
+  };
+}
+
+async function completeProfileRun(
+  params: { profileRun?: QaProfileRunControl; scenarioIds?: string[] },
+  evidence: Awaited<ReturnType<typeof writeEvidence>>,
+) {
+  const scenarioId = params.scenarioIds?.[0];
+  if (!scenarioId || !params.profileRun) {
+    throw new Error("expected profile partition");
+  }
+  await params.profileRun.complete({ scenarioId, evidence });
 }
 
 function trackMaxActiveFlowRuns() {
@@ -188,12 +214,8 @@ describe("qa suite runtime launcher", () => {
       scenarioIds: ["channel-chat-baseline"],
     });
 
-    expect(result).toMatchObject({
-      executionKind: "flow",
-      result: {
-        summaryPath: "/tmp/qa-flow/qa-suite-summary.json",
-      },
-    });
+    expect(result.executionKind).toBe("flow");
+    expect(result.result.summaryPath).toMatch(/qa-suite-summary\.json$/);
     expect(runQaFlowSuite).toHaveBeenCalledTimes(1);
     expect(runQaFlowSuite).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -279,6 +301,147 @@ describe("qa suite runtime launcher", () => {
     } finally {
       stderrWrite.mockRestore();
     }
+  });
+
+  it("finalizes a flow profile with the default qa-channel cell", async () => {
+    const repoRoot = await makeTempRepo("qa-suite-profile-flow-");
+    const run = runQaFlowSuite.getMockImplementation();
+    if (!run) {
+      throw new Error("expected default QA flow suite mock implementation");
+    }
+    runQaFlowSuite.mockImplementation(async (params) => {
+      const result = await run(params);
+      await completeProfileRun(params, result.evidence);
+      return result;
+    });
+
+    const result = await runQaSuite({
+      repoRoot,
+      outputDir: ".artifacts/qa-e2e/profile-flow",
+      providerMode: "mock-openai",
+      scenarioIds: ["channel-chat-baseline"],
+      profileRunSpec: profileRunSpec(["channel-chat-baseline"]),
+    });
+
+    expect(result.executionKind).toBe("flow");
+    if (result.executionKind !== "flow") {
+      throw new Error("expected flow suite result");
+    }
+    expect(result.result.evidence?.profilePlan?.observedCells).toEqual([
+      {
+        scenarioId: "channel-chat-baseline",
+        executionKind: "flow",
+        channel: "qa-channel",
+      },
+    ]);
+  });
+
+  it("retries one preterminal profile partition after another partition completes", async () => {
+    const repoRoot = await makeTempRepo("qa-suite-profile-partition-retry-");
+    const scenarioIds = ["channel-chat-baseline", "matrix-allowlist-hot-reload"];
+    const run = runQaFlowSuite.getMockImplementation();
+    if (!run) {
+      throw new Error("expected default QA flow suite mock implementation");
+    }
+    const attempts = new Map<string, number>();
+    runQaFlowSuite.mockImplementation(async (params) => {
+      const scenarioId = params?.scenarioIds?.[0];
+      if (!scenarioId) {
+        throw new Error("expected one scenario per profile partition");
+      }
+      const attempt = (attempts.get(scenarioId) ?? 0) + 1;
+      attempts.set(scenarioId, attempt);
+      if (scenarioId === scenarioIds[1] && attempt === 1) {
+        throw new QaSuiteInfraError("agent_wait_failed", "second partition wait failed");
+      }
+      const result = await run(params);
+      await completeProfileRun(params, result.evidence);
+      return result;
+    });
+
+    const result = await runQaSuite({
+      repoRoot,
+      outputDir: ".artifacts/qa-e2e/profile-partition-retry",
+      providerMode: "mock-openai",
+      concurrency: 1,
+      runtimePair: ["openclaw", "codex"],
+      scenarioIds,
+      profileRunSpec: profileRunSpec(scenarioIds),
+    });
+
+    expect(attempts).toEqual(
+      new Map([
+        ["channel-chat-baseline", 1],
+        ["matrix-allowlist-hot-reload", 2],
+      ]),
+    );
+    expect(result.executionKind).toBe("suite");
+    if (result.executionKind !== "suite") {
+      throw new Error("expected unified suite result");
+    }
+    const evidence = validateQaEvidenceSummaryJson(
+      JSON.parse(await fs.readFile(result.result.evidencePath, "utf8")),
+    );
+    expect(evidence.profilePlan?.observedCells).toEqual([
+      {
+        scenarioId: "channel-chat-baseline",
+        executionKind: "flow",
+        channel: "qa-channel",
+      },
+      {
+        scenarioId: "matrix-allowlist-hot-reload",
+        executionKind: "flow",
+        channel: "qa-channel",
+      },
+    ]);
+  });
+
+  it("rethrows post-terminal cleanup failure without replay or synthetic evidence", async () => {
+    const repoRoot = await makeTempRepo("qa-suite-profile-post-terminal-");
+    const outputDir = path.join(repoRoot, ".artifacts", "qa-e2e", "profile-post-terminal");
+    const scenarioIds = ["channel-chat-baseline", "control-ui-chat-flow-playwright"];
+    const run = runQaFlowSuite.getMockImplementation();
+    if (!run) {
+      throw new Error("expected default QA flow suite mock implementation");
+    }
+    runQaFlowSuite.mockImplementation(async (params) => {
+      const result = await run(params);
+      await completeProfileRun(params, result.evidence);
+      const cleanupError = Object.assign(new Error("gateway cleanup reset"), {
+        code: "ECONNRESET",
+      });
+      throwQaSuiteCleanupErrors({
+        cleanupFailures: [{ phase: "gateway stop", error: cleanupError }],
+        runFailed: false,
+        runError: undefined,
+        result,
+        evidenceWritten: true,
+      });
+      return result;
+    });
+
+    await expect(
+      runQaSuite({
+        repoRoot,
+        outputDir: ".artifacts/qa-e2e/profile-post-terminal",
+        providerMode: "mock-openai",
+        scenarioIds,
+        profileRunSpec: profileRunSpec(scenarioIds),
+      }),
+    ).rejects.toThrow("cleanup failed");
+
+    expect(runQaFlowSuite).toHaveBeenCalledTimes(1);
+    await expect(fs.access(path.join(outputDir, "qa-evidence.json"))).rejects.toMatchObject({
+      code: "ENOENT",
+    });
+    const checkpoint = JSON.parse(
+      await fs.readFile(path.join(outputDir, "qa-profile-run-checkpoint.json"), "utf8"),
+    ) as { cells: Array<{ scenarioId: string; evidence?: { path: string } }> };
+    const terminal = checkpoint.cells.find((entry) => entry.scenarioId === "channel-chat-baseline");
+    const stored = validateQaEvidenceSummaryJson(
+      JSON.parse(await fs.readFile(path.join(outputDir, terminal!.evidence!.path), "utf8")),
+    );
+    expect(stored.entries).toEqual([]);
   });
 
   it("partitions flow-only suites that request isolated workers", async () => {
@@ -440,15 +603,6 @@ describe("qa suite runtime launcher", () => {
     expect(
       result.result.scenarios.find((scenario) => scenario.name === "thread-isolation [matrix]"),
     ).toMatchObject({ status: "fail" });
-    expect(result.observedCells).toEqual(
-      expect.arrayContaining([
-        { scenarioId: "channel-chat-baseline", executionKind: "flow", channel: null },
-        { scenarioId: "telegram-help-command", executionKind: "flow", channel: "telegram" },
-        { scenarioId: "matrix-restart-resume", executionKind: "flow", channel: "matrix" },
-        { scenarioId: "thread-isolation", executionKind: "flow", channel: "slack" },
-        { scenarioId: "thread-isolation", executionKind: "flow", channel: "matrix" },
-      ]),
-    );
   });
 
   it("uses one eligible channel outside profile execution", async () => {
@@ -699,7 +853,6 @@ describe("qa suite runtime launcher", () => {
     expect(evidence.entries).toMatchObject([
       { test: { id: "whatsapp-status-command" }, result: { status: "fail" } },
     ]);
-    expect(result.observedCells).toEqual([]);
     await expect(fs.access(result.result.reportPath)).resolves.toBeUndefined();
   });
 
@@ -2276,16 +2429,6 @@ describe("qa suite runtime launcher", () => {
       });
       expect(blocked?.execution?.channel?.driver).toBeUndefined();
     }
-    expect(result.observedCells).not.toEqual(
-      expect.arrayContaining([
-        { scenarioId: "whatsapp-status-command", executionKind: "flow", channel: "whatsapp" },
-        {
-          scenarioId: "whatsapp-access-control-dm-open",
-          executionKind: "flow",
-          channel: "whatsapp",
-        },
-      ]),
-    );
   });
 
   it("omits later credential failures after the first failed flow scenario", async () => {

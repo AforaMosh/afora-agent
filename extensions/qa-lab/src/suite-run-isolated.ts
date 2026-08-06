@@ -2,6 +2,7 @@ import path from "node:path";
 import { disposeRegisteredAgentHarnesses } from "openclaw/plugin-sdk/agent-harness";
 import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
 import type { QaLabLatestReport, QaLabScenarioOutcome } from "./lab-server.types.js";
+import type { QaProfileRunControl } from "./profile-run-checkpoint.js";
 import { sanitizeQaProgressValue as sanitizeQaSuiteProgressValue } from "./progress-format.js";
 import { writeQaSuiteArtifacts } from "./suite-artifacts.js";
 import { mapQaSuiteWithConcurrency, resolveQaSuiteWorkerStartStaggerMs } from "./suite-planning.js";
@@ -23,7 +24,7 @@ import {
 } from "./suite.js";
 
 export async function runQaFlowSuiteIsolated(
-  params: QaSuiteRunParams | undefined,
+  params: (QaSuiteRunParams & { profileRun?: QaProfileRunControl }) | undefined,
   context: QaSuiteResolvedRunContext,
   runQaFlowSuite: QaSuiteRunner,
 ): Promise<QaSuiteResult> {
@@ -116,6 +117,7 @@ export async function runQaFlowSuiteIsolated(
           channelDriverSelection: params?.channelDriverSelection,
           isolatedWorkers: true,
           writeEvidenceFile: params?.writeEvidenceFile,
+          retryPhase: params?.profileRun?.retryPhase,
           scenarioIds:
             params?.scenarioIds && params.scenarioIds.length > 0
               ? selectedScenarios.map((scenario) => scenario.id)
@@ -171,8 +173,8 @@ export async function runQaFlowSuiteIsolated(
         try {
           const scenarioOutputDir = path.join(outputDir, "scenarios", scenario.id);
           const childSuiteResult: QaSuiteResult = await runQaFlowSuite(
-            markQaSuiteNestedRun(
-              buildQaIsolatedScenarioWorkerParams({
+            markQaSuiteNestedRun({
+              ...buildQaIsolatedScenarioWorkerParams({
                 repoRoot,
                 outputDir: scenarioOutputDir,
                 providerMode,
@@ -186,7 +188,8 @@ export async function runQaFlowSuiteIsolated(
                 scenario,
                 input: params,
               }),
-            ),
+              profileRun: params?.profileRun,
+            } as QaSuiteRunParams),
           );
           for (const scenarioId of childSuiteResult.startedScenarioIds) {
             startedScenarioIds.add(scenarioId);
@@ -223,6 +226,9 @@ export async function runQaFlowSuiteIsolated(
           writePartialArtifacts();
           return scenarioResult;
         } catch (error) {
+          if (params?.profileRun) {
+            throw error;
+          }
           const details = formatErrorMessage(error);
           const scenarioResult = {
             name: scenario.title,
@@ -300,6 +306,7 @@ export async function runQaFlowSuiteIsolated(
           params?.scenarioIds && params.scenarioIds.length > 0
             ? selectedScenarios.map((scenario) => scenario.id)
             : undefined,
+        retryPhase: params?.profileRun?.retryPhase,
       },
     );
     lab.setLatestReport({
@@ -334,7 +341,10 @@ export async function runQaFlowSuiteIsolated(
     if (ownsLab) {
       cleanupSteps.push({ phase: "lab stop", run: () => lab.stop() });
     }
-    const cleanupFailures = await runQaSuiteCleanupSteps(cleanupSteps);
+    const cleanupFailures = await runQaSuiteCleanupSteps(
+      cleanupSteps,
+      params?.profileRun?.retryPhase,
+    );
     throwQaSuiteCleanupErrors({
       cleanupFailures,
       runFailed: isolatedRunFailed,
