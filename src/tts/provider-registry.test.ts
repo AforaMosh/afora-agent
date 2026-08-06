@@ -88,6 +88,15 @@ describe("speech provider registry", () => {
     ).toEqual(["openai", "google", "elevenlabs"]);
   });
 
+  it("canonicalizes a voice-model alias omitted from the supplied inventory", () => {
+    const inventory = [createSpeechProvider("openai")];
+    const cfg = {
+      agents: { defaults: { voiceModel: { primary: "edge/edge-tts" } } },
+    } as OpenClawConfig;
+
+    expect(resolveTtsProviderOrder("openai", cfg, inventory)).toEqual(["openai", "microsoft"]);
+  });
+
   it("returns empty results when the capability runtime has no speech providers", () => {
     expect(registry.listSpeechProviders()).toStrictEqual([]);
     expect(registry.getSpeechProvider("demo-speech")).toBeUndefined();

@@ -86,13 +86,14 @@ function canonicalizeSpeechProviderIdFromInventory(
   if (!providers) {
     return canonicalizeSpeechProviderId(providerId, cfg);
   }
-  return (
-    providers.find(
-      (provider) =>
-        normalizeSpeechProviderId(provider.id) === normalized ||
-        provider.aliases?.some((alias) => normalizeSpeechProviderId(alias) === normalized),
-    )?.id ?? normalized
+  const inventoryProvider = providers.find(
+    (provider) =>
+      normalizeSpeechProviderId(provider.id) === normalized ||
+      provider.aliases?.some((alias) => normalizeSpeechProviderId(alias) === normalized),
   );
+  // A prepared inventory can omit voice-model-only providers. Preserve the
+  // registry's public alias contract on misses instead of exposing an alias.
+  return inventoryProvider?.id ?? canonicalizeSpeechProviderId(providerId, cfg) ?? normalized;
 }
 
 function resolveConfiguredSpeechVoiceModelRefs(cfg: OpenClawConfig | undefined): VoiceModelRef[] {
