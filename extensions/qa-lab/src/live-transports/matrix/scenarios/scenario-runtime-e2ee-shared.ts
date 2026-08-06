@@ -297,7 +297,10 @@ export function isMatrixQaE2eeNoticeTriggeredSutReply(params: {
 export async function createMatrixQaE2eeDriverClient(
   context: MatrixQaScenarioContext,
   scenarioId: MatrixQaE2eeScenarioId,
-  opts: { actorId?: "driver" | `driver-${string}` } = {},
+  opts: {
+    actorId?: "driver" | `driver-${string}`;
+    readyRoomIds?: string[];
+  } = {},
 ) {
   return await createMatrixQaE2eeScenarioClient({
     accessToken: context.driverAccessToken,
@@ -307,6 +310,7 @@ export async function createMatrixQaE2eeDriverClient(
     observedEvents: context.observedEvents,
     outputDir: requireMatrixQaE2eeOutputDir(context),
     password: context.driverPassword,
+    ...(opts.readyRoomIds ? { readyRoomIds: opts.readyRoomIds } : {}),
     scenarioId,
     timeoutMs: context.timeoutMs,
     userId: context.driverUserId,
@@ -316,6 +320,7 @@ export async function createMatrixQaE2eeDriverClient(
 async function createMatrixQaE2eeObserverClient(
   context: MatrixQaScenarioContext,
   scenarioId: MatrixQaE2eeScenarioId,
+  readyRoomIds?: string[],
 ) {
   return await createMatrixQaE2eeScenarioClient({
     accessToken: context.observerAccessToken,
@@ -325,6 +330,7 @@ async function createMatrixQaE2eeObserverClient(
     observedEvents: context.observedEvents,
     outputDir: requireMatrixQaE2eeOutputDir(context),
     password: context.observerPassword,
+    ...(readyRoomIds ? { readyRoomIds } : {}),
     scenarioId,
     timeoutMs: context.timeoutMs,
     userId: context.observerUserId,
@@ -338,13 +344,18 @@ export async function withMatrixQaE2eeDriverAndObserver<T>(
     driver: MatrixQaE2eeScenarioClient;
     observer: MatrixQaE2eeScenarioClient;
   }) => Promise<T>,
+  opts: { readyRoomIds?: string[] } = {},
 ) {
-  const driver = await createMatrixQaE2eeDriverClient(context, scenarioId);
-  const observer = await createMatrixQaE2eeObserverClient(context, scenarioId);
+  const driver = await createMatrixQaE2eeDriverClient(context, scenarioId, opts);
   try {
-    return await run({ driver, observer });
+    const observer = await createMatrixQaE2eeObserverClient(context, scenarioId, opts.readyRoomIds);
+    try {
+      return await run({ driver, observer });
+    } finally {
+      await observer.stop();
+    }
   } finally {
-    await Promise.all([driver.stop(), observer.stop()]);
+    await driver.stop();
   }
 }
 

@@ -1,5 +1,5 @@
 // Qa Lab Matrix tests cover harness behavior.
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { access, mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { withTempDir } from "openclaw/plugin-sdk/test-env";
@@ -33,6 +33,7 @@ async function withStartedMatrixHarness(
   options?: { dynamicPort?: boolean },
 ) {
   const outputDir = await mkdtemp(path.join(os.tmpdir(), "matrix-qa-harness-"));
+  let result: MatrixQaHarnessResult | undefined;
 
   try {
     const startRecordingProxyImpl =
@@ -47,9 +48,8 @@ async function withStartedMatrixHarness(
           setTargetBaseUrl: vi.fn(),
           stop: vi.fn(async () => {}),
         }) as unknown as MatrixQaRecordingProxy);
-    const result = await startMatrixQaHarness(
+    result = await startMatrixQaHarness(
       {
-        outputDir,
         repoRoot: "/repo/openclaw",
         ...(options?.dynamicPort ? {} : { homeserverPort: 28008 }),
       },
@@ -57,6 +57,7 @@ async function withStartedMatrixHarness(
     );
     await verify({ outputDir, result });
   } finally {
+    await result?.stop();
     await rm(outputDir, { recursive: true, force: true });
   }
 }
@@ -90,11 +91,11 @@ function countMatching<T>(items: readonly T[], predicate: (item: T) => boolean):
 
 describe("matrix harness runtime", () => {
   it("writes a pinned Tuwunel compose file", async () => {
-    const outputDir = await mkdtemp(path.join(os.tmpdir(), "matrix-qa-harness-"));
+    const runtimeDir = await mkdtemp(path.join(os.tmpdir(), "matrix-qa-harness-"));
 
     try {
       const result = await testing.writeMatrixQaHarnessFiles({
-        outputDir,
+        runtimeDir,
         homeserverPort: 28008,
         registrationToken: "secret-token",
         serverName: "matrix-qa.test",
@@ -111,8 +112,41 @@ describe("matrix harness runtime", () => {
       expect(compose).toContain('TUWUNEL_SERVER_NAME: "matrix-qa.test"');
       expect(result.registrationToken).toBe("secret-token");
     } finally {
-      await rm(outputDir, { recursive: true, force: true });
+      await rm(runtimeDir, { recursive: true, force: true });
     }
+  });
+
+  it("keeps registration credentials and Tuwunel data out of publishable artifacts", async () => {
+    let runtimeDir: string | undefined;
+
+    await withStartedMatrixHarness(
+      {
+        async runCommand(_command, args) {
+          if (args.join(" ").includes("ps --format json")) {
+            return { stdout: '[{"State":"running"}]\n', stderr: "" };
+          }
+          return { stdout: "", stderr: "" };
+        },
+        fetchImpl: vi.fn(async () => ({ ok: true })),
+        sleepImpl: vi.fn(async () => {}),
+      },
+      async ({ outputDir, result }) => {
+        runtimeDir = path.dirname(result.composeFile);
+        expect(path.relative(outputDir, result.composeFile)).toMatch(/^\.\./);
+        expect(path.relative(outputDir, path.join(runtimeDir, "data"))).toMatch(/^\.\./);
+        expect(await readdir(outputDir)).toEqual([]);
+        await expect(
+          access(path.join(outputDir, "docker-compose.matrix-qa.yml")),
+        ).rejects.toMatchObject({ code: "ENOENT" });
+        await expect(access(path.join(outputDir, "data"))).rejects.toMatchObject({
+          code: "ENOENT",
+        });
+        expect(await readFile(result.composeFile, "utf8")).toContain(result.registrationToken);
+      },
+    );
+
+    expect(runtimeDir).toBeDefined();
+    await expect(access(runtimeDir as string)).rejects.toMatchObject({ code: "ENOENT" });
   });
 
   it("starts the harness, waits for versions, and exposes a stop command", async () => {
@@ -134,11 +168,11 @@ describe("matrix harness runtime", () => {
         }),
         sleepImpl: vi.fn(async () => {}),
       },
-      async ({ outputDir, result }) => {
+      async ({ result }) => {
         expect(calls).toEqual([
-          `docker compose -f ${outputDir}/docker-compose.matrix-qa.yml down --remove-orphans @/repo/openclaw`,
-          `docker compose -f ${outputDir}/docker-compose.matrix-qa.yml up -d @/repo/openclaw`,
-          `docker compose -f ${outputDir}/docker-compose.matrix-qa.yml ps --format json matrix-qa-homeserver @/repo/openclaw`,
+          `docker compose -f ${result.composeFile} down --remove-orphans @/repo/openclaw`,
+          `docker compose -f ${result.composeFile} up -d @/repo/openclaw`,
+          `docker compose -f ${result.composeFile} ps --format json matrix-qa-homeserver @/repo/openclaw`,
         ]);
         expect(fetchCalls).toEqual([
           "http://127.0.0.1:28008/_matrix/client/versions",
@@ -146,11 +180,11 @@ describe("matrix harness runtime", () => {
         ]);
         expect(result.baseUrl).toBe("http://127.0.0.1:28008/");
         expect(result.stopCommand).toBe(
-          `docker compose -f ${outputDir}/docker-compose.matrix-qa.yml down --remove-orphans`,
+          `docker compose -f ${result.composeFile} down --remove-orphans`,
         );
         await result.restartService();
         expect(calls).toContain(
-          `docker compose -f ${outputDir}/docker-compose.matrix-qa.yml restart matrix-qa-homeserver @/repo/openclaw`,
+          `docker compose -f ${result.composeFile} restart matrix-qa-homeserver @/repo/openclaw`,
         );
       },
     );
@@ -220,11 +254,11 @@ describe("matrix harness runtime", () => {
           stop: vi.fn(async () => {}),
         })),
       },
-      async ({ outputDir, result }) => {
+      async ({ result }) => {
         expect(result.homeserverPort).toBe(49152);
         expect(result.baseUrl).toBe("http://127.0.0.1:49152/");
         expect(calls).toContain(
-          `docker compose -f ${outputDir}/docker-compose.matrix-qa.yml port matrix-qa-homeserver 8008 @/repo/openclaw`,
+          `docker compose -f ${result.composeFile} port matrix-qa-homeserver 8008 @/repo/openclaw`,
         );
         const compose = await readFile(result.composeFile, "utf8");
         expect(compose).toContain("      - target: 8008\n        host_ip: 127.0.0.1");
@@ -237,10 +271,10 @@ describe("matrix harness runtime", () => {
 
   it("stops Tuwunel when recorder startup fails", async () => {
     const calls: string[] = [];
-    await withTempDir("matrix-qa-harness-", async (outputDir) => {
+    await withTempDir("matrix-qa-harness-", async (_outputDir) => {
       await expect(
         startMatrixQaHarness(
-          { outputDir, repoRoot: "/repo/openclaw", homeserverPort: 28008 },
+          { repoRoot: "/repo/openclaw", homeserverPort: 28008 },
           {
             async runCommand(command, args, cwd) {
               calls.push([command, ...args, `@${cwd}`].join(" "));
@@ -263,10 +297,10 @@ describe("matrix harness runtime", () => {
 
   it("stops Tuwunel when post-start health setup fails", async () => {
     const calls: string[] = [];
-    await withTempDir("matrix-qa-harness-", async (outputDir) => {
+    await withTempDir("matrix-qa-harness-", async (_outputDir) => {
       await expect(
         startMatrixQaHarness(
-          { outputDir, repoRoot: "/repo/openclaw", homeserverPort: 28008 },
+          { repoRoot: "/repo/openclaw", homeserverPort: 28008 },
           {
             async runCommand(command, args, cwd) {
               calls.push([command, ...args, `@${cwd}`].join(" "));
@@ -436,10 +470,10 @@ describe("matrix harness runtime", () => {
         })),
         sleepImpl: vi.fn(async () => {}),
       },
-      ({ outputDir, result }) => {
+      ({ result }) => {
         expect(result.baseUrl).toBe("http://172.18.0.10:8008/");
         expect(calls).toContain(
-          `docker compose -f ${outputDir}/docker-compose.matrix-qa.yml ps -q matrix-qa-homeserver @/repo/openclaw`,
+          `docker compose -f ${result.composeFile} ps -q matrix-qa-homeserver @/repo/openclaw`,
         );
         expect(calls).toContain(
           "docker inspect --format {{range .NetworkSettings.Networks}}{{println .IPAddress}}{{end}} container-123 @/repo/openclaw",

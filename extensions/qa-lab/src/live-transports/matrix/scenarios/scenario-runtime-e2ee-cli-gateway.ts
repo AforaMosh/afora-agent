@@ -310,6 +310,7 @@ export async function runMatrixQaE2eeCliSetupThenGatewayReplyScenario(
       observedEvents: context.observedEvents,
       outputDir: requireMatrixQaE2eeOutputDir(context),
       password: driverAccount.password,
+      readyRoomIds: [roomId],
       scenarioId,
       timeoutMs: context.timeoutMs,
       userId: driverAccount.userId,

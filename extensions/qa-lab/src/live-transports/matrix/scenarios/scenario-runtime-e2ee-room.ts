@@ -272,7 +272,10 @@ export async function withMatrixQaE2eeDriver<T>(
   context: MatrixQaScenarioContext,
   scenarioId: MatrixQaE2eeScenarioId,
   run: (client: MatrixQaE2eeScenarioClient) => Promise<T>,
-  opts: { actorId?: "driver" | `driver-${string}` } = {},
+  opts: {
+    actorId?: "driver" | `driver-${string}`;
+    readyRoomIds?: string[];
+  } = {},
 ) {
   const client = await createMatrixQaE2eeDriverClient(context, scenarioId, opts);
   try {
@@ -286,6 +289,7 @@ async function createMatrixQaE2eeRegisteredScenarioClient(params: {
   account: Awaited<ReturnType<typeof registerMatrixQaE2eeScenarioAccount>>;
   actorId: `driver-${string}`;
   context: MatrixQaScenarioContext;
+  roomId: string;
   scenarioId: MatrixQaE2eeScenarioId;
 }) {
   return await createMatrixQaE2eeScenarioClient({
@@ -296,6 +300,7 @@ async function createMatrixQaE2eeRegisteredScenarioClient(params: {
     observedEvents: params.context.observedEvents,
     outputDir: requireMatrixQaE2eeOutputDir(params.context),
     password: params.account.password,
+    readyRoomIds: [params.roomId],
     scenarioId: params.scenarioId,
     timeoutMs: params.context.timeoutMs,
     userId: params.account.userId,
@@ -394,6 +399,7 @@ export async function withMatrixQaIsolatedE2eeDriverRoom<T>(
       account: driverAccount,
       actorId,
       context,
+      roomId,
       scenarioId,
     });
     await Promise.all([
@@ -476,13 +482,18 @@ export async function runMatrixQaE2eeTopLevelScenario(
   },
 ) {
   const { roomId, roomKey } = resolveMatrixQaE2eeScenarioGroupRoom(context, params.scenarioId);
-  return await withMatrixQaE2eeDriver(context, params.scenarioId, async (client) => {
-    return await runMatrixQaE2eeTopLevelWithClient(context, {
-      client,
-      driverUserId: context.driverUserId,
-      roomId,
-      roomKey,
-      tokenPrefix: params.tokenPrefix,
-    });
-  });
+  return await withMatrixQaE2eeDriver(
+    context,
+    params.scenarioId,
+    async (client) => {
+      return await runMatrixQaE2eeTopLevelWithClient(context, {
+        client,
+        driverUserId: context.driverUserId,
+        roomId,
+        roomKey,
+        tokenPrefix: params.tokenPrefix,
+      });
+    },
+    { readyRoomIds: [roomId] },
+  );
 }

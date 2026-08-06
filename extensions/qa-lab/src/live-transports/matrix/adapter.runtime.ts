@@ -1,6 +1,5 @@
 // Qa Lab plugin module implements Matrix live transport adapter behavior.
 import { randomUUID } from "node:crypto";
-import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
 import { buildQaTarget } from "openclaw/plugin-sdk/qa-channel-protocol";
@@ -183,10 +182,7 @@ export async function createMatrixQaTransportAdapter(
   const options = context.adapterOptions ?? {};
   const repoRoot = options.repoRoot?.trim() || process.cwd();
   const suffix = randomUUID().slice(0, 8);
-  // Compose derives its default project name from this basename. Keep it unique so
-  // programmatic parallel suite workers cannot stop or replace another harness.
   const harness = await startMatrixQaHarness({
-    outputDir: path.join(context.outputDir, `matrix-harness-${suffix}`),
     repoRoot,
   });
   let provisioning: Awaited<ReturnType<typeof provisionMatrixQaRoom>>;

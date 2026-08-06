@@ -1,6 +1,8 @@
 // QA Lab Matrix module implements harness behavior.
+import fs from "node:fs/promises";
 import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
+import { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/temp-path";
 import {
   execCommand,
   fetchHealthUrl,
@@ -34,7 +36,6 @@ type MatrixQaHarness = MatrixQaHarnessFiles & {
 
 export async function startMatrixQaHarness(
   params: {
-    outputDir: string;
     repoRoot?: string;
     image?: string;
     homeserverPort?: number;
@@ -53,12 +54,23 @@ export async function startMatrixQaHarness(
   const sleepImpl = deps?.sleepImpl ?? sleep;
   const startRecordingProxyImpl = deps?.startRecordingProxyImpl ?? startMatrixQaRecordingProxy;
   const requestedHomeserverPort = params.homeserverPort ?? 0;
-  const files = await writeMatrixQaHarnessFiles({
-    outputDir: path.resolve(params.outputDir),
-    image: params.image,
-    homeserverPort: requestedHomeserverPort,
-    serverName: params.serverName,
-  });
+  const tempRoot = resolvePreferredOpenClawTmpDir();
+  await fs.mkdir(tempRoot, { recursive: true });
+  // The compose file embeds the registration token and the data directory holds
+  // live Tuwunel state, so neither belongs in the publishable QA artifact tree.
+  const runtimeDir = await fs.mkdtemp(path.join(tempRoot, "openclaw-qa-matrix-harness-"));
+  let files: MatrixQaHarnessFiles;
+  try {
+    files = await writeMatrixQaHarnessFiles({
+      runtimeDir,
+      image: params.image,
+      homeserverPort: requestedHomeserverPort,
+      serverName: params.serverName,
+    });
+  } catch (error) {
+    await fs.rm(runtimeDir, { force: true, recursive: true });
+    throw error;
+  }
 
   try {
     await runCommand(
@@ -186,6 +198,7 @@ export async function startMatrixQaHarness(
         if (failures.length > 0) {
           throw new AggregateError(failures, "Matrix QA harness cleanup failed");
         }
+        await fs.rm(runtimeDir, { force: true, recursive: true });
       },
       get upstreamBaseUrl() {
         return upstreamBaseUrl;
@@ -210,6 +223,7 @@ export async function startMatrixQaHarness(
       );
       throw combinedFailure;
     }
+    await fs.rm(runtimeDir, { force: true, recursive: true });
     throw error;
   }
 }

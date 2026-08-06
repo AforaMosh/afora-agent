@@ -311,6 +311,7 @@ async function createMatrixQaE2eeMatrixClient(params: MatrixQaE2eeClientParams) 
 export async function createMatrixQaE2eeScenarioClient(
   params: MatrixQaE2eeClientParams & {
     observedEvents: MatrixQaObservedEvent[];
+    readyRoomIds?: string[];
   },
 ): Promise<MatrixQaE2eeScenarioClient> {
   const client: MatrixClient = await createMatrixQaE2eeMatrixClient(params);
@@ -329,11 +330,9 @@ export async function createMatrixQaE2eeScenarioClient(
   const recordEvent = (roomId: string, event: MatrixRawEvent) => {
     observedEventRecorder.record(normalizeMatrixQaObservedEvent(roomId, event));
   };
-  client.on("room.message", recordEvent);
   const recordVerificationSummary = (summary: MatrixVerificationSummary) => {
     verificationSummaries.push(summary);
   };
-  client.on("verification.summary", recordVerificationSummary);
 
   const shutdownTimeoutMs = Math.max(1, Math.min(10_000, params.timeoutMs));
   const lifecycle = createMatrixQaE2eeClientLifecycle({
@@ -348,7 +347,24 @@ export async function createMatrixQaE2eeScenarioClient(
   });
 
   try {
-    await client.start({ readyTimeoutMs: Math.min(45_000, Math.max(15_000, params.timeoutMs)) });
+    client.on("room.message", recordEvent);
+    client.on("verification.summary", recordVerificationSummary);
+    await lifecycle.runOperation({
+      label: "Matrix E2EE client startup",
+      timeoutMs: params.timeoutMs,
+      run: async (abortSignal) => {
+        await client.start({
+          abortSignal,
+          readyTimeoutMs: Math.min(45_000, Math.max(15_000, params.timeoutMs)),
+        });
+        for (const roomId of new Set(params.readyRoomIds ?? [])) {
+          await client.waitForEncryptedRoomReady(roomId, {
+            abortSignal,
+            timeoutMs: params.timeoutMs,
+          });
+        }
+      },
+    });
   } catch (error) {
     await lifecycle.stop().catch(() => undefined);
     throw error;
