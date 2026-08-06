@@ -34,6 +34,21 @@ type MatrixQaHarness = MatrixQaHarnessFiles & {
   upstreamBaseUrl: string;
 };
 
+async function collectCleanupFailures(
+  tasks: ReadonlyArray<() => Promise<unknown>>,
+): Promise<unknown[]> {
+  const results = await Promise.allSettled(tasks.map(async (task) => await task()));
+  return results.flatMap((result) => (result.status === "rejected" ? [result.reason] : []));
+}
+
+function buildStartupCleanupError(error: unknown, cleanupFailures: unknown[]): AggregateError {
+  return new AggregateError(
+    [error, ...cleanupFailures],
+    "Matrix QA harness startup and cleanup both failed",
+    { cause: error },
+  );
+}
+
 export async function startMatrixQaHarness(
   params: {
     repoRoot?: string;
@@ -46,6 +61,7 @@ export async function startMatrixQaHarness(
     runCommand?: RunCommand;
     sleepImpl?: (ms: number) => Promise<unknown>;
     startRecordingProxyImpl?: typeof startMatrixQaRecordingProxy;
+    removeRuntimeDirImpl?: (runtimeDir: string) => Promise<void>;
   },
 ): Promise<MatrixQaHarness> {
   const repoRoot = path.resolve(params.repoRoot ?? process.cwd());
@@ -53,6 +69,11 @@ export async function startMatrixQaHarness(
   const fetchImpl = deps?.fetchImpl ?? fetchHealthUrl;
   const sleepImpl = deps?.sleepImpl ?? sleep;
   const startRecordingProxyImpl = deps?.startRecordingProxyImpl ?? startMatrixQaRecordingProxy;
+  const removeRuntimeDirImpl =
+    deps?.removeRuntimeDirImpl ??
+    (async (runtimeDir: string) => {
+      await fs.rm(runtimeDir, { force: true, recursive: true });
+    });
   const requestedHomeserverPort = params.homeserverPort ?? 0;
   const tempRoot = resolvePreferredOpenClawTmpDir();
   await fs.mkdir(tempRoot, { recursive: true });
@@ -68,7 +89,10 @@ export async function startMatrixQaHarness(
       serverName: params.serverName,
     });
   } catch (error) {
-    await fs.rm(runtimeDir, { force: true, recursive: true });
+    const cleanupFailures = await collectCleanupFailures([() => removeRuntimeDirImpl(runtimeDir)]);
+    if (cleanupFailures.length > 0) {
+      throw buildStartupCleanupError(error, cleanupFailures);
+    }
     throw error;
   }
 
@@ -180,50 +204,49 @@ export async function startMatrixQaHarness(
       },
       stopCommand: `docker compose -f ${files.composeFile} down --remove-orphans`,
       async stop() {
-        const results = await Promise.allSettled([
-          recording.stop(),
-          withMatrixQaHarnessTimeout(
-            "Matrix homeserver cleanup",
-            MATRIX_QA_CLEANUP_TIMEOUT_MS,
-            runCommand(
-              "docker",
-              ["compose", "-f", files.composeFile, "down", "--remove-orphans"],
-              repoRoot,
+        const failures = await collectCleanupFailures([
+          () => recording.stop(),
+          () =>
+            withMatrixQaHarnessTimeout(
+              "Matrix homeserver cleanup",
+              MATRIX_QA_CLEANUP_TIMEOUT_MS,
+              runCommand(
+                "docker",
+                ["compose", "-f", files.composeFile, "down", "--remove-orphans"],
+                repoRoot,
+              ),
             ),
-          ),
         ]);
-        const failures = results.flatMap((result) =>
-          result.status === "rejected" ? [result.reason] : [],
-        );
+        // Docker needs the compose file while stopping. Remove the token-bearing
+        // runtime tree after teardown settles, regardless of teardown success.
+        failures.push(...(await collectCleanupFailures([() => removeRuntimeDirImpl(runtimeDir)])));
         if (failures.length > 0) {
           throw new AggregateError(failures, "Matrix QA harness cleanup failed");
         }
-        await fs.rm(runtimeDir, { force: true, recursive: true });
       },
       get upstreamBaseUrl() {
         return upstreamBaseUrl;
       },
     };
   } catch (error) {
-    try {
-      await withMatrixQaHarnessTimeout(
-        "Matrix homeserver cleanup after startup failure",
-        MATRIX_QA_CLEANUP_TIMEOUT_MS,
-        runCommand(
-          "docker",
-          ["compose", "-f", files.composeFile, "down", "--remove-orphans"],
-          repoRoot,
+    const cleanupFailures = await collectCleanupFailures([
+      () =>
+        withMatrixQaHarnessTimeout(
+          "Matrix homeserver cleanup after startup failure",
+          MATRIX_QA_CLEANUP_TIMEOUT_MS,
+          runCommand(
+            "docker",
+            ["compose", "-f", files.composeFile, "down", "--remove-orphans"],
+            repoRoot,
+          ),
         ),
-      );
-    } catch (cleanupError) {
-      const combinedFailure = new AggregateError(
-        [error, cleanupError],
-        "Matrix QA harness startup and cleanup both failed",
-        { cause: cleanupError },
-      );
-      throw combinedFailure;
+    ]);
+    cleanupFailures.push(
+      ...(await collectCleanupFailures([() => removeRuntimeDirImpl(runtimeDir)])),
+    );
+    if (cleanupFailures.length > 0) {
+      throw buildStartupCleanupError(error, cleanupFailures);
     }
-    await fs.rm(runtimeDir, { force: true, recursive: true });
     throw error;
   }
 }

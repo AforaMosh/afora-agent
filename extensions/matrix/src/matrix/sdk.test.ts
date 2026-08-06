@@ -655,6 +655,95 @@ describe("MatrixClient request hardening", () => {
     expect(getJoinedRooms).toHaveBeenCalledTimes(2);
   });
 
+  it("awaits joined-room authority cancellation before readiness abort settles", async () => {
+    const roomId = "!room:example.org";
+    let authorityRequestActive = false;
+    let releaseAuthorityAbort: (() => void) | undefined;
+    matrixJsClient.getRoom.mockReturnValue({
+      getMyMembership: () => "join",
+      hasEncryptionStateEvent: () => true,
+    });
+    matrixJsClient.getCrypto.mockReturnValue({
+      isEncryptionEnabledInRoom: vi.fn(async () => true),
+    });
+    matrixJsClient.startClient.mockImplementation(() => {
+      queueMicrotask(() => {
+        matrixJsClient.emit("sync", SyncState.Prepared, null, { fromCache: true });
+      });
+    });
+    const fetchMock = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+        if (!requestUrl(input).endsWith("/_matrix/client/v3/joined_rooms")) {
+          return new Response("{}", {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          });
+        }
+        authorityRequestActive = true;
+        return await new Promise<Response>((_resolve, reject) => {
+          const signal = init?.signal ?? undefined;
+          if (!signal) {
+            reject(new Error("joined-room authority request signal missing"));
+            return;
+          }
+          const noteAbort = () => {
+            releaseAuthorityAbort = () => {
+              authorityRequestActive = false;
+              reject(
+                signal.reason instanceof Error
+                  ? signal.reason
+                  : new Error("joined-room authority request aborted", {
+                      cause: signal.reason,
+                    }),
+              );
+            };
+          };
+          if (signal.aborted) {
+            noteAbort();
+            return;
+          }
+          signal.addEventListener("abort", noteAbort, { once: true });
+        });
+      },
+    );
+    stubRuntimeFetch(fetchMock as typeof fetch);
+    const client = new MatrixClient("http://127.0.0.1:8008", "token", {
+      autoBootstrapCrypto: false,
+      encryption: true,
+      ssrfPolicy: { allowPrivateNetwork: true },
+    });
+    await client.start();
+    const controller = new AbortController();
+    const readiness = client.waitForEncryptedRoomReady(roomId, {
+      abortSignal: controller.signal,
+      timeoutMs: 1_000,
+    });
+    let readinessSettled = false;
+    void readiness
+      .finally(() => {
+        readinessSettled = true;
+      })
+      .catch(() => undefined);
+
+    matrixJsClient.emit("sync", SyncState.Syncing, SyncState.Prepared, { fromCache: false });
+    await vi.waitFor(() => expect(authorityRequestActive).toBe(true));
+    controller.abort();
+    await vi.waitFor(() => expect(releaseAuthorityAbort).toBeTypeOf("function"));
+    await Promise.resolve();
+
+    expect(readinessSettled).toBe(false);
+    expect(authorityRequestActive).toBe(true);
+
+    releaseAuthorityAbort?.();
+    const error = await readiness.catch((caught: unknown) => caught);
+
+    expectRecordFields(requireRecord(error, "readiness abort error"), {
+      message: `Matrix encrypted room readiness aborted for ${roomId}`,
+      name: "AbortError",
+    });
+    expect(authorityRequestActive).toBe(false);
+  });
+
   it("aborts encrypted-room readiness and removes its listeners and timeout", async () => {
     vi.useFakeTimers();
     const roomId = "!room:example.org";

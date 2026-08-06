@@ -27,6 +27,18 @@ const testing = {
 type MatrixQaHarnessDeps = Parameters<typeof startMatrixQaHarness>[1];
 type MatrixQaHarnessResult = Awaited<ReturnType<typeof startMatrixQaHarness>>;
 
+function createRecordingProxy(stop: () => Promise<void> = async () => {}): MatrixQaRecordingProxy {
+  return {
+    baseUrl: "http://127.0.0.1:28008/",
+    buildManifest: vi.fn(),
+    installFaultRule: vi.fn(() => ({ hits: () => [], remove: vi.fn() })),
+    records: () => [],
+    setScenarioId: vi.fn(),
+    setTargetBaseUrl: vi.fn(),
+    stop: vi.fn(stop),
+  } as unknown as MatrixQaRecordingProxy;
+}
+
 async function withStartedMatrixHarness(
   deps: MatrixQaHarnessDeps,
   verify: (params: { outputDir: string; result: MatrixQaHarnessResult }) => Promise<void> | void,
@@ -38,16 +50,10 @@ async function withStartedMatrixHarness(
   try {
     const startRecordingProxyImpl =
       deps?.startRecordingProxyImpl ??
-      (async ({ targetBaseUrl }: { targetBaseUrl: string }) =>
-        ({
-          baseUrl: targetBaseUrl,
-          buildManifest: vi.fn(),
-          installFaultRule: vi.fn(() => ({ hits: () => [], remove: vi.fn() })),
-          records: () => [],
-          setScenarioId: vi.fn(),
-          setTargetBaseUrl: vi.fn(),
-          stop: vi.fn(async () => {}),
-        }) as unknown as MatrixQaRecordingProxy);
+      (async ({ targetBaseUrl }: { targetBaseUrl: string }) => ({
+        ...createRecordingProxy(),
+        baseUrl: targetBaseUrl,
+      }));
     result = await startMatrixQaHarness(
       {
         repoRoot: "/repo/openclaw",
@@ -271,6 +277,7 @@ describe("matrix harness runtime", () => {
 
   it("stops Tuwunel when recorder startup fails", async () => {
     const calls: string[] = [];
+    let runtimeDir: string | undefined;
     await withTempDir("matrix-qa-harness-", async (_outputDir) => {
       await expect(
         startMatrixQaHarness(
@@ -288,11 +295,195 @@ describe("matrix harness runtime", () => {
             startRecordingProxyImpl: vi.fn(async () => {
               throw new Error("recorder startup failed");
             }),
+            removeRuntimeDirImpl: async (candidateRuntimeDir) => {
+              runtimeDir = candidateRuntimeDir;
+              await rm(candidateRuntimeDir, { force: true, recursive: true });
+            },
           },
         ),
       ).rejects.toThrow("recorder startup failed");
       expect(calls.filter((call) => call.includes("down --remove-orphans"))).toHaveLength(2);
+      expect(runtimeDir).toBeDefined();
+      await expect(access(runtimeDir as string)).rejects.toMatchObject({ code: "ENOENT" });
     });
+  });
+
+  it("removes the runtime directory when startup and Docker cleanup both fail", async () => {
+    const startupError = new Error("recorder startup failed");
+    const dockerError = new Error("docker cleanup failed");
+    let downCount = 0;
+    let runtimeDir: string | undefined;
+
+    const failure = await startMatrixQaHarness(
+      { repoRoot: "/repo/openclaw", homeserverPort: 28008 },
+      {
+        async runCommand(_command, args) {
+          const rendered = args.join(" ");
+          if (rendered.includes("down --remove-orphans")) {
+            downCount += 1;
+            if (downCount === 2) {
+              throw dockerError;
+            }
+          }
+          if (rendered.includes("ps --format json")) {
+            return { stdout: '[{"State":"running"}]\n', stderr: "" };
+          }
+          return { stdout: "", stderr: "" };
+        },
+        fetchImpl: vi.fn(async () => ({ ok: true })),
+        sleepImpl: vi.fn(async () => {}),
+        startRecordingProxyImpl: vi.fn(async () => {
+          throw startupError;
+        }),
+        removeRuntimeDirImpl: async (candidateRuntimeDir) => {
+          runtimeDir = candidateRuntimeDir;
+          await rm(candidateRuntimeDir, { force: true, recursive: true });
+        },
+      },
+    ).catch((error: unknown) => error);
+
+    expect(failure).toBeInstanceOf(AggregateError);
+    expect((failure as AggregateError).errors).toEqual([startupError, dockerError]);
+    expect(runtimeDir).toBeDefined();
+    await expect(access(runtimeDir as string)).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  it("removes the runtime directory when recorder teardown fails", async () => {
+    const recorderError = new Error("recorder cleanup failed");
+    const result = await startMatrixQaHarness(
+      { repoRoot: "/repo/openclaw", homeserverPort: 28008 },
+      {
+        runCommand: createContainerNetworkRunCommand(),
+        fetchImpl: vi.fn(async () => ({ ok: true })),
+        sleepImpl: vi.fn(async () => {}),
+        startRecordingProxyImpl: vi.fn(async () =>
+          createRecordingProxy(async () => {
+            throw recorderError;
+          }),
+        ),
+      },
+    );
+    const runtimeDir = path.dirname(result.composeFile);
+
+    const failure = await result.stop().catch((error: unknown) => error);
+
+    expect(failure).toBeInstanceOf(AggregateError);
+    expect((failure as AggregateError).errors).toEqual([recorderError]);
+    await expect(access(runtimeDir)).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  it("removes the runtime directory when Docker teardown rejects", async () => {
+    const dockerError = new Error("docker cleanup failed");
+    let downCount = 0;
+    const result = await startMatrixQaHarness(
+      { repoRoot: "/repo/openclaw", homeserverPort: 28008 },
+      {
+        async runCommand(_command, args) {
+          const rendered = args.join(" ");
+          if (rendered.includes("down --remove-orphans")) {
+            downCount += 1;
+            if (downCount === 2) {
+              throw dockerError;
+            }
+          }
+          if (rendered.includes("ps --format json")) {
+            return { stdout: '[{"State":"running"}]\n', stderr: "" };
+          }
+          return { stdout: "", stderr: "" };
+        },
+        fetchImpl: vi.fn(async () => ({ ok: true })),
+        sleepImpl: vi.fn(async () => {}),
+        startRecordingProxyImpl: vi.fn(async () => createRecordingProxy()),
+      },
+    );
+    const runtimeDir = path.dirname(result.composeFile);
+
+    const failure = await result.stop().catch((error: unknown) => error);
+
+    expect(failure).toBeInstanceOf(AggregateError);
+    expect((failure as AggregateError).errors).toEqual([dockerError]);
+    await expect(access(runtimeDir)).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  it("removes the runtime directory when Docker teardown times out", async () => {
+    vi.useFakeTimers();
+    let downCount = 0;
+    let runtimeDir: string | undefined;
+    try {
+      const result = await startMatrixQaHarness(
+        { repoRoot: "/repo/openclaw", homeserverPort: 28008 },
+        {
+          async runCommand(_command, args) {
+            const rendered = args.join(" ");
+            if (rendered.includes("down --remove-orphans")) {
+              downCount += 1;
+              if (downCount === 2) {
+                return await new Promise<never>(() => {});
+              }
+            }
+            if (rendered.includes("ps --format json")) {
+              return { stdout: '[{"State":"running"}]\n', stderr: "" };
+            }
+            return { stdout: "", stderr: "" };
+          },
+          fetchImpl: vi.fn(async () => ({ ok: true })),
+          sleepImpl: vi.fn(async () => {}),
+          startRecordingProxyImpl: vi.fn(async () => createRecordingProxy()),
+        },
+      );
+      runtimeDir = path.dirname(result.composeFile);
+      const stopping = result.stop();
+
+      await vi.advanceTimersByTimeAsync(MATRIX_QA_CLEANUP_TIMEOUT_MS);
+      const failure = await stopping.catch((error: unknown) => error);
+
+      expect(failure).toBeInstanceOf(AggregateError);
+      expect((failure as AggregateError).errors).toEqual([
+        expect.objectContaining({
+          message: `Matrix homeserver cleanup timed out after ${MATRIX_QA_CLEANUP_TIMEOUT_MS}ms`,
+        }),
+      ]);
+      await expect(access(runtimeDir)).rejects.toMatchObject({ code: "ENOENT" });
+    } finally {
+      vi.useRealTimers();
+      if (runtimeDir) {
+        await rm(runtimeDir, { force: true, recursive: true });
+      }
+    }
+  });
+
+  it("aggregates runtime removal failure after teardown failure", async () => {
+    const recorderError = new Error("recorder cleanup failed");
+    const removalError = new Error("runtime removal failed");
+    let runtimeDir: string | undefined;
+    try {
+      const result = await startMatrixQaHarness(
+        { repoRoot: "/repo/openclaw", homeserverPort: 28008 },
+        {
+          runCommand: createContainerNetworkRunCommand(),
+          fetchImpl: vi.fn(async () => ({ ok: true })),
+          sleepImpl: vi.fn(async () => {}),
+          startRecordingProxyImpl: vi.fn(async () =>
+            createRecordingProxy(async () => {
+              throw recorderError;
+            }),
+          ),
+          removeRuntimeDirImpl: async (candidateRuntimeDir) => {
+            runtimeDir = candidateRuntimeDir;
+            throw removalError;
+          },
+        },
+      );
+
+      const failure = await result.stop().catch((error: unknown) => error);
+
+      expect(failure).toBeInstanceOf(AggregateError);
+      expect((failure as AggregateError).errors).toEqual([recorderError, removalError]);
+    } finally {
+      if (runtimeDir) {
+        await rm(runtimeDir, { force: true, recursive: true });
+      }
+    }
   });
 
   it("stops Tuwunel when post-start health setup fails", async () => {

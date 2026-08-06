@@ -54,8 +54,16 @@ export abstract class MatrixClientCore extends MatrixClientBase {
     return resolved;
   }
 
-  async getJoinedRooms(): Promise<string[]> {
-    const joined = (await this.doRequest("GET", "/_matrix/client/v3/joined_rooms")) as {
+  async getJoinedRooms(opts: { abortSignal?: AbortSignal } = {}): Promise<string[]> {
+    const joined = (await this.doRequest(
+      "GET",
+      "/_matrix/client/v3/joined_rooms",
+      undefined,
+      undefined,
+      {
+        abortSignal: opts.abortSignal,
+      },
+    )) as {
       joined_rooms?: unknown;
     };
     return Array.isArray(joined.joined_rooms) ? joined.joined_rooms : [];
@@ -81,7 +89,7 @@ export abstract class MatrixClientCore extends MatrixClientBase {
         return error;
       },
       abortSignal: opts.abortSignal,
-      check: async () => {
+      check: async (abortSignal) => {
         if (isMatrixAccessTokenInvalidatedError(this.currentSyncError)) {
           throw this.currentSyncError instanceof Error
             ? this.currentSyncError
@@ -111,7 +119,7 @@ export abstract class MatrixClientCore extends MatrixClientBase {
         if (!(await crypto.isEncryptionEnabledInRoom(normalizedRoomId))) {
           return false;
         }
-        return (await this.getJoinedRooms()).includes(normalizedRoomId);
+        return (await this.getJoinedRooms({ abortSignal })).includes(normalizedRoomId);
       },
       timeoutMessage: `Matrix encrypted room ${normalizedRoomId} did not become ready within ${timeoutMs}ms`,
       timeoutMs,
@@ -410,7 +418,7 @@ export abstract class MatrixClientCore extends MatrixClientBase {
     endpoint: string,
     qs?: QueryParams,
     body?: unknown,
-    opts?: { allowAbsoluteEndpoint?: boolean },
+    opts?: { allowAbsoluteEndpoint?: boolean; abortSignal?: AbortSignal },
   ): Promise<unknown> {
     return await this.httpClient.requestJson({
       method,
@@ -419,6 +427,7 @@ export abstract class MatrixClientCore extends MatrixClientBase {
       body,
       timeoutMs: this.localTimeoutMs,
       allowAbsoluteEndpoint: opts?.allowAbsoluteEndpoint,
+      abortSignal: opts?.abortSignal,
     });
   }
 

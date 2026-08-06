@@ -94,7 +94,7 @@ export const loadMatrixCryptoRuntime = createLazyRuntimeModule(() =>
 
 export abstract class MatrixClientBase {
   abstract getUserId(): Promise<string>;
-  abstract getJoinedRooms(): Promise<string[]>;
+  abstract getJoinedRooms(opts?: { abortSignal?: AbortSignal }): Promise<string[]>;
   abstract listOwnDevices(): Promise<MatrixOwnDeviceInfo[]>;
   abstract getOwnDeviceVerificationStatus(): Promise<MatrixOwnDeviceVerificationStatus>;
   abstract getRoomStateEvent(
@@ -380,20 +380,25 @@ export abstract class MatrixClientBase {
   protected async waitForSyncCondition(params: {
     abortError: () => Error;
     abortSignal?: AbortSignal;
-    check: () => boolean | Promise<boolean>;
+    check: (abortSignal: AbortSignal) => boolean | Promise<boolean>;
     timeoutMessage: string;
     timeoutMs: number;
   }): Promise<void> {
     await new Promise<void>((resolve, reject) => {
       let checkRequested = false;
       let checking = false;
+      let pendingError: Error | undefined;
       let settled = false;
       let timeoutId: ReturnType<typeof setTimeout> | undefined;
       const abortSignal = params.abortSignal;
+      const checkAbortController = new AbortController();
+      const checkAbortSignal = abortSignal
+        ? AbortSignal.any([abortSignal, checkAbortController.signal])
+        : checkAbortController.signal;
 
       const cleanup = () => {
         this.off("sync.state", scheduleCheck);
-        this.off("sync.unexpected_error", settleReject);
+        this.off("sync.unexpected_error", requestReject);
         abortSignal?.removeEventListener("abort", onAbort);
         if (timeoutId) {
           clearTimeout(timeoutId);
@@ -408,16 +413,28 @@ export abstract class MatrixClientBase {
         cleanup();
         resolve();
       };
-      const settleReject = (error: unknown) => {
-        if (settled) {
+      const finishReject = () => {
+        const error = pendingError;
+        if (settled || !error) {
           return;
         }
         settled = true;
         cleanup();
-        reject(error instanceof Error ? error : new Error(String(error)));
+        reject(error);
+      };
+      const requestReject = (error: unknown) => {
+        if (settled || pendingError) {
+          return;
+        }
+        pendingError = error instanceof Error ? error : new Error(String(error));
+        cleanup();
+        checkAbortController.abort(pendingError);
+        if (!checking) {
+          finishReject();
+        }
       };
       const scheduleCheck = () => {
-        if (settled) {
+        if (settled || pendingError) {
           return;
         }
         checkRequested = true;
@@ -429,34 +446,40 @@ export abstract class MatrixClientBase {
           try {
             while (checkRequested) {
               checkRequested = false;
-              if (await params.check()) {
+              const ready = await params.check(checkAbortSignal);
+              if (pendingError) {
+                return;
+              }
+              if (ready) {
                 settleResolve();
                 return;
               }
             }
           } catch (error) {
-            settleReject(error);
+            requestReject(error);
           } finally {
             checking = false;
-            if (checkRequested && !settled) {
+            if (pendingError) {
+              finishReject();
+            } else if (checkRequested && !settled) {
               scheduleCheck();
             }
           }
         })();
       };
       const onAbort = () => {
-        settleReject(params.abortError());
+        requestReject(params.abortError());
       };
 
       this.on("sync.state", scheduleCheck);
-      this.on("sync.unexpected_error", settleReject);
+      this.on("sync.unexpected_error", requestReject);
       if (abortSignal?.aborted) {
         onAbort();
         return;
       }
       abortSignal?.addEventListener("abort", onAbort, { once: true });
       timeoutId = setTimeout(() => {
-        settleReject(new Error(params.timeoutMessage));
+        requestReject(new Error(params.timeoutMessage));
       }, params.timeoutMs);
       timeoutId.unref?.();
       scheduleCheck();

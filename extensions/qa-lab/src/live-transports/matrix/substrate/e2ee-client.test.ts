@@ -341,21 +341,35 @@ describe("matrix qa e2ee client storage", () => {
   it("aborts timed-out readiness and cleans up the partially constructed client", async () => {
     vi.useFakeTimers();
     const outputDir = await mkdtemp(path.join(os.tmpdir(), "matrix-qa-e2ee-timeout-"));
+    let authorityRequestActive = false;
+    let releaseAuthorityAbort: (() => void) | undefined;
     let readinessSignal: AbortSignal | undefined;
+    let markReadinessStarted: (() => void) | undefined;
+    const readinessStarted = new Promise<void>((resolve) => {
+      markReadinessStarted = resolve;
+    });
+    scenarioClientMocks.client.stopAndPersist.mockImplementationOnce(async () => {
+      expect(authorityRequestActive).toBe(false);
+    });
     scenarioClientMocks.client.waitForEncryptedRoomReady.mockImplementationOnce(
       async (_roomId, opts) =>
         await new Promise<never>((_resolve, reject) => {
           readinessSignal = opts?.abortSignal;
-          const rejectAborted = () => {
-            const error = new Error("readiness aborted");
-            error.name = "AbortError";
-            reject(error);
+          authorityRequestActive = true;
+          markReadinessStarted?.();
+          const noteAbort = () => {
+            releaseAuthorityAbort = () => {
+              authorityRequestActive = false;
+              const error = new Error("readiness aborted");
+              error.name = "AbortError";
+              reject(error);
+            };
           };
           if (readinessSignal?.aborted) {
-            rejectAborted();
+            noteAbort();
             return;
           }
-          readinessSignal?.addEventListener("abort", rejectAborted, { once: true });
+          readinessSignal?.addEventListener("abort", noteAbort, { once: true });
         }),
     );
 
@@ -371,16 +385,28 @@ describe("matrix qa e2ee client storage", () => {
         timeoutMs: 50,
         userId: "@driver:matrix-qa.test",
       });
-      const rejection = expect(pendingClient).rejects.toThrow(
-        "Matrix E2EE client startup timed out after 50ms",
-      );
-      await vi.waitFor(() => {
-        expect(scenarioClientMocks.client.waitForEncryptedRoomReady).toHaveBeenCalledOnce();
-      });
+      let clientSettled = false;
+      void pendingClient
+        .finally(() => {
+          clientSettled = true;
+        })
+        .catch(() => undefined);
+      const rejection = pendingClient.catch((error: unknown) => error);
+      await readinessStarted;
       await vi.advanceTimersByTimeAsync(50);
-      await rejection;
 
       expect(readinessSignal?.aborted).toBe(true);
+      expect(authorityRequestActive).toBe(true);
+      expect(clientSettled).toBe(false);
+      expect(scenarioClientMocks.client.stopAndPersist).not.toHaveBeenCalled();
+
+      releaseAuthorityAbort?.();
+      const error = await rejection;
+
+      expect(error).toMatchObject({
+        message: "Matrix E2EE client startup timed out after 50ms",
+      });
+      expect(authorityRequestActive).toBe(false);
       expect(scenarioClientMocks.client.off).toHaveBeenCalledWith(
         "room.message",
         expect.any(Function),
@@ -392,6 +418,7 @@ describe("matrix qa e2ee client storage", () => {
       expect(scenarioClientMocks.client.stopAndPersist).toHaveBeenCalledTimes(1);
       expect(scenarioClientMocks.client.stopWithoutPersist).not.toHaveBeenCalled();
     } finally {
+      releaseAuthorityAbort?.();
       vi.useRealTimers();
       await rm(outputDir, { force: true, recursive: true });
     }
