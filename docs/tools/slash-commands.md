@@ -42,6 +42,9 @@ command handling is enabled for the surface.
       persist to the session and reply with an acknowledgement.
     - In **normal chat** messages with other text, they act as inline hints and
       do **not** persist session settings.
+      Model selection is the exception: an authorized inline `/model` or
+      configured `/<alias>` persists the session selection, and an owner/admin
+      selection without `-s` may also request a configured-default update.
     - Directives only apply for **authorized senders**. If `commands.allowFrom`
       is set, it is the only allowlist used; otherwise authorization comes from
       channel allowlists, pairing, and always-on access-group enforcement. Unauthorized

@@ -335,14 +335,22 @@ export async function resolveReplyDirectives(params: {
         modelAliases: configuredAliases,
       });
       if (directiveOnlyCheck.cleaned.trim().length > 0) {
+        const modelDirective = {
+          hasModelDirective: parsedDirectives.hasModelDirective,
+          rawModelDirective: parsedDirectives.rawModelDirective,
+          rawModelProfile: parsedDirectives.rawModelProfile,
+          rawModelRuntime: parsedDirectives.rawModelRuntime,
+          modelSessionOnly: parsedDirectives.modelSessionOnly,
+        };
         const allowInlineStatus =
           parsedDirectives.hasStatusDirective && allowTextCommands && command.isAuthorizedSender;
-        parsedDirectives = allowInlineStatus
-          ? {
-              ...clearInlineDirectives(parsedDirectives.cleaned),
-              hasStatusDirective: true,
-            }
-          : clearInlineDirectives(parsedDirectives.cleaned);
+        // Model selection is a full-entry directive; generic mixed-text directives
+        // remain cleared, and the authorization gate below still owns access.
+        parsedDirectives = {
+          ...clearInlineDirectives(parsedDirectives.cleaned),
+          ...(allowInlineStatus ? { hasStatusDirective: true } : {}),
+          ...modelDirective,
+        };
       }
     }
   }

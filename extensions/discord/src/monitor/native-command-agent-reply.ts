@@ -34,7 +34,7 @@ type NativeCommandEffectiveRoute = {
   sessionKey: string;
 };
 
-export type DispatchDiscordNativeAgentReplyResult = {
+type DispatchDiscordNativeAgentReplyResult = {
   suppressedFinalReply?: ReplyPayload;
 };
 

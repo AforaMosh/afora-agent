@@ -223,9 +223,7 @@ export async function applyDiscordModelPickerSelection(params: {
       : {
           status: "mismatch",
           effectiveModelRef,
-          noticeMessage:
-            suppressedNoticeMessage ||
-            `⚠️ Tried to set ${params.resolvedModelRef}, but current model is ${effectiveModelRef}.`,
+          noticeMessage: `⚠️ Tried to set ${params.resolvedModelRef}, but current model is ${effectiveModelRef}.`,
         };
   } catch (error) {
     if (error instanceof ModelSelectionLockedError) {

@@ -26,6 +26,7 @@ import * as modelPickerPreferencesModule from "./model-picker-preferences.js";
 import * as modelPickerModule from "./model-picker.state.js";
 import { createModelsProviderData as createBaseModelsProviderData } from "./model-picker.test-utils.js";
 import type { DispatchDiscordCommandInteraction } from "./native-command-dispatch.js";
+import { applyDiscordModelPickerSelection } from "./native-command-model-picker-apply.js";
 import {
   createDiscordModelPickerFallbackButton,
   createDiscordModelPickerFallbackSelect,
@@ -515,6 +516,44 @@ describe("Discord model picker interactions", () => {
     expect(payload.components?.[0]?.components?.[0]?.content).toBe(
       suppressedText ?? "✅ Model set to openai/gpt-4o.",
     );
+  });
+
+  it("keeps the mismatch warning when the hidden reply looked successful", async () => {
+    const context = createModelPickerContext();
+    const interaction = createInteraction();
+    const result = await applyDiscordModelPickerSelection({
+      interaction: interaction as unknown as PickerButtonInteraction,
+      selectionCommand: {
+        prompt: "/model openai/gpt-4o",
+        command: createModelCommandDefinition(),
+      },
+      dispatchCommandInteraction: vi.fn<DispatchDiscordCommandInteraction>().mockResolvedValue({
+        accepted: true,
+        suppressedFinalReply: {
+          text: "Model set to openai/gpt-4o for this session. Configured default update requested.",
+        },
+      }),
+      cfg: context.cfg,
+      discordConfig: context.discordConfig,
+      accountId: context.accountId,
+      sessionPrefix: context.sessionPrefix,
+      threadBindings: context.threadBindings,
+      route: { agentId: "main", sessionKey: "agent:main:discord:dm:owner" } as never,
+      resolvedModelRef: "openai/gpt-4o",
+      selectedProvider: "openai",
+      selectedModel: "gpt-4o",
+      defaultProvider: "openai",
+      defaultModel: "gpt-4.1",
+      preferenceScope: { accountId: "default", userId: "owner" },
+      settleMs: 0,
+      resolveCurrentModel: () => "openai/gpt-4.1",
+    });
+
+    expect(result).toEqual({
+      status: "mismatch",
+      effectiveModelRef: "openai/gpt-4.1",
+      noticeMessage: "⚠️ Tried to set openai/gpt-4o, but current model is openai/gpt-4.1.",
+    });
   });
 
   it("keeps a pending model stable when hot reload reorders the catalog", async () => {

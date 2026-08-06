@@ -70,7 +70,9 @@ function makeTypingController() {
   };
 }
 
-async function resolveAliasDirective(body: string) {
+async function resolveModelDirective(params: { body: string; authorized?: boolean }) {
+  const authorized = params.authorized ?? true;
+  const { body } = params;
   const sessionKey = "agent:main:whatsapp:+2000";
   const sessionEntry = createSessionEntry();
   const sessionCtx = {
@@ -88,7 +90,7 @@ async function resolveAliasDirective(body: string) {
     ctx: buildTestCtx({
       Body: body,
       CommandBody: body,
-      CommandAuthorized: true,
+      CommandAuthorized: authorized,
     }),
     cfg: withFastReplyConfig(configWithModelAlias("fable")),
     agentId: "main",
@@ -104,7 +106,7 @@ async function resolveAliasDirective(body: string) {
     isGroup: false,
     triggerBodyNormalized: body,
     resetTriggered: false,
-    commandAuthorized: true,
+    commandAuthorized: authorized,
     defaultProvider: "anthropic",
     defaultModel: "claude-opus-4-6",
     aliasIndex: createAliasIndex(),
@@ -144,16 +146,40 @@ describe("reply directive aliases", () => {
       },
     },
     {
-      body: "please /fable -s",
+      body: "please /model anthropic/claude-opus-4-6 now",
       expected: {
-        cleaned: "please",
-        hasModelDirective: false,
-        rawModelDirective: undefined,
+        cleaned: "please now",
+        hasModelDirective: true,
+        rawModelDirective: "anthropic/claude-opus-4-6",
+        rawModelProfile: undefined,
+        rawModelRuntime: undefined,
         modelSessionOnly: false,
       },
     },
-  ])("routes configured alias scope at the reply boundary: $body", async ({ body, expected }) => {
-    const { result, sessionEntry, sessionCtx } = await resolveAliasDirective(body);
+    {
+      body: "please /fable now",
+      expected: {
+        cleaned: "please now",
+        hasModelDirective: true,
+        rawModelDirective: "fable",
+        rawModelProfile: undefined,
+        rawModelRuntime: undefined,
+        modelSessionOnly: false,
+      },
+    },
+    {
+      body: "please /model anthropic/claude-opus-4-6@work --runtime codex -s now",
+      expected: {
+        cleaned: "please now",
+        hasModelDirective: true,
+        rawModelDirective: "anthropic/claude-opus-4-6",
+        rawModelProfile: "work",
+        rawModelRuntime: "codex",
+        modelSessionOnly: true,
+      },
+    },
+  ])("routes model scope at the full reply boundary: $body", async ({ body, expected }) => {
+    const { result, sessionEntry, sessionCtx } = await resolveModelDirective({ body });
 
     expect(result.kind).toBe("continue");
     if (result.kind !== "continue") {
@@ -162,6 +188,29 @@ describe("reply directive aliases", () => {
     expect(result.result.directives).toMatchObject(expected);
     expect(result.result.cleanedBody).toBe(expected.cleaned);
     expect(sessionCtx.Body).toBe(expected.cleaned);
+    expect(sessionEntry).toEqual(createSessionEntry());
+  });
+
+  it("does not apply a model directive from unauthorized mixed input", async () => {
+    const { result, sessionEntry } = await resolveModelDirective({
+      body: "please /model anthropic/claude-opus-4-6 -s now",
+      authorized: false,
+    });
+
+    expect(result.kind).toBe("continue");
+    if (result.kind !== "continue") {
+      throw new Error(`expected continue result, got ${result.kind}`);
+    }
+    expect(result.result.directives.hasModelDirective).toBe(false);
+    expect(result.result.provider).toBe("anthropic");
+    expect(result.result.model).toBe("claude-opus-4-6");
+    expect(directiveApplyMocks.apply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        directives: expect.objectContaining({ hasModelDirective: false }),
+        provider: "anthropic",
+        model: "claude-opus-4-6",
+      }),
+    );
     expect(sessionEntry).toEqual(createSessionEntry());
   });
 
