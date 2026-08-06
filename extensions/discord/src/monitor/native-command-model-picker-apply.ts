@@ -132,6 +132,7 @@ export async function applyDiscordModelPickerSelection(params: {
         noticeMessage: `❌ Failed to apply ${params.resolvedModelRef}. Try /model ${params.resolvedModelRef} directly.`,
       };
     }
+    const suppressedNoticeMessage = dispatchResult.suppressedFinalReply?.text?.trim();
 
     const fallbackRoute = dispatchResult.effectiveRoute ?? params.route;
     if (params.settleMs > 0) {
@@ -217,12 +218,14 @@ export async function applyDiscordModelPickerSelection(params: {
       ? {
           status: "success",
           effectiveModelRef,
-          noticeMessage: `✅ Model set to ${params.resolvedModelRef}.`,
+          noticeMessage: suppressedNoticeMessage || `✅ Model set to ${params.resolvedModelRef}.`,
         }
       : {
           status: "mismatch",
           effectiveModelRef,
-          noticeMessage: `⚠️ Tried to set ${params.resolvedModelRef}, but current model is ${effectiveModelRef}.`,
+          noticeMessage:
+            suppressedNoticeMessage ||
+            `⚠️ Tried to set ${params.resolvedModelRef}, but current model is ${effectiveModelRef}.`,
         };
   } catch (error) {
     if (error instanceof ModelSelectionLockedError) {

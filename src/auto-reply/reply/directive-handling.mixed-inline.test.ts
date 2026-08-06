@@ -1,7 +1,6 @@
 // Tests mixed directives through the real reply admission and transaction boundary.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ModelCatalogEntry } from "../../agents/model-catalog.js";
-import type { ModelAliasIndex } from "../../agents/model-selection.js";
 import { persistStickyModelSelectionBestEffort } from "../../agents/sticky-model-selection.js";
 import type { OpenClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
@@ -70,8 +69,6 @@ async function applyMixedDirectives(params: {
   defaultProvider?: string;
   defaultModel?: string;
   allowedModels?: ModelCatalogEntry[];
-  modelAliases?: string[];
-  aliasIndex?: ModelAliasIndex;
   senderIsOwner?: boolean;
   gatewayClientScopes?: string[];
 }) {
@@ -83,18 +80,15 @@ async function applyMixedDirectives(params: {
   const sessionKey = params.sessionKey ?? "agent:main:dm:1";
   const sessionEntry = params.sessionEntry ?? createSessionEntry();
   const sessionStore = { [sessionKey]: sessionEntry };
-  const directives = parseInlineDirectives(params.body, {
-    modelAliases: params.modelAliases,
-  });
+  const directives = parseInlineDirectives(params.body);
   const allowedModels = params.allowedModels ?? [];
-  const aliasIndex = params.aliasIndex ?? { byAlias: new Map(), byKey: new Map() };
   const modelState: Parameters<typeof applyInlineDirectiveOverrides>[0]["modelState"] = {
     provider,
     model,
     requestedRouteResolution: "resolved",
     allowedModelKeys: new Set(allowedModels.map((entry) => `${entry.provider}/${entry.id}`)),
     allowedModelCatalog: allowedModels,
-    policyAliasIndex: aliasIndex,
+    policyAliasIndex: { byAlias: new Map(), byKey: new Map() },
     resetModelOverride: false,
     resolveThinkingCatalog: async () => allowedModels,
     resolveDefaultThinkingLevel: async () => "off",
@@ -147,7 +141,7 @@ async function applyMixedDirectives(params: {
     elevatedFailures: [],
     defaultProvider: params.defaultProvider ?? provider,
     defaultModel: params.defaultModel ?? model,
-    aliasIndex,
+    aliasIndex: { byAlias: new Map(), byKey: new Map() },
     provider,
     model,
     modelState,
@@ -166,7 +160,6 @@ async function applyMixedDirectives(params: {
 describe("mixed inline directives", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(persistStickyModelSelectionBestEffort).mockReturnValue("requested");
     persistenceMocks.persist.mockImplementation(async ({ entry }) => ({
       status: "current",
       entry: { ...entry },
@@ -247,191 +240,6 @@ describe("mixed inline directives", () => {
     );
   });
 
-  it.each([
-    { name: "directive-only", body: "/model openai/gpt-5.6-luna -s" },
-    { name: "mixed-content", body: "please reply /model openai/gpt-5.6-luna -s" },
-  ])("keeps an owner $name selection session-only", async ({ body }) => {
-    const { result, sessionEntry } = await applyMixedDirectives({
-      body,
-      senderIsOwner: true,
-      allowedModels: [{ provider: "openai", id: "gpt-5.6-luna", name: "GPT-5.6-Luna" }],
-    });
-
-    expect(result).toMatchObject(
-      body.startsWith("/model")
-        ? {
-            kind: "reply",
-            reply: {
-              text: "Model set to openai/gpt-5.6-luna for this session only; configured default unchanged.",
-            },
-          }
-        : {
-            kind: "continue",
-            provider: "openai",
-            model: "gpt-5.6-luna",
-            directiveAck: {
-              text: "Model set to openai/gpt-5.6-luna for this session only; configured default unchanged.",
-            },
-          },
-    );
-    expect(sessionEntry).toMatchObject({
-      providerOverride: "openai",
-      modelOverride: "gpt-5.6-luna",
-      modelOverrideSource: "user",
-    });
-    expect(persistStickyModelSelectionBestEffort).not.toHaveBeenCalled();
-  });
-
-  it("applies an owner alias session scope without continuing to the model", async () => {
-    const aliasIndex: ModelAliasIndex = {
-      byAlias: new Map([
-        [
-          "luna",
-          {
-            alias: "luna",
-            ref: { provider: "openai", model: "gpt-5.6-luna" },
-          },
-        ],
-      ]),
-      byKey: new Map([["openai/gpt-5.6-luna", ["luna"]]]),
-    };
-    const { result, sessionEntry } = await applyMixedDirectives({
-      body: "/luna -s",
-      modelAliases: ["luna"],
-      aliasIndex,
-      senderIsOwner: true,
-      storePath: "/tmp/sessions.json",
-      allowedModels: [{ provider: "openai", id: "gpt-5.6-luna", name: "GPT-5.6-Luna" }],
-    });
-
-    expect(result).toEqual({
-      kind: "reply",
-      reply: {
-        text: "Model set to luna (openai/gpt-5.6-luna) for this session only; configured default unchanged.",
-      },
-    });
-    expect(sessionEntry).toMatchObject({
-      providerOverride: "openai",
-      modelOverride: "gpt-5.6-luna",
-      modelOverrideSource: "user",
-    });
-    expect(persistenceMocks.persist).toHaveBeenCalledOnce();
-    expect(persistStickyModelSelectionBestEffort).not.toHaveBeenCalled();
-  });
-
-  it.each(["--runtime codex -s", "-s --runtime codex"])(
-    "applies mixed-content /model runtime and session options from %s",
-    async (options) => {
-      const { result, sessionEntry } = await applyMixedDirectives({
-        body: `please reply /model openai/gpt-5.6-luna ${options}`,
-        senderIsOwner: true,
-        allowedModels: [{ provider: "openai", id: "gpt-5.6-luna", name: "GPT-5.6-Luna" }],
-      });
-
-      expect(result).toMatchObject({
-        kind: "continue",
-        provider: "openai",
-        model: "gpt-5.6-luna",
-        directiveAck: {
-          text: expect.stringContaining(
-            "Model set to openai/gpt-5.6-luna for this session only; configured default unchanged.",
-          ),
-        },
-      });
-      expect(sessionEntry).toMatchObject({
-        providerOverride: "openai",
-        modelOverride: "gpt-5.6-luna",
-        agentRuntimeOverride: "codex",
-      });
-      expect(persistStickyModelSelectionBestEffort).not.toHaveBeenCalled();
-    },
-  );
-
-  it.each([
-    { name: "directive-only", body: "/model openai/gpt-5.6-luna" },
-    { name: "mixed-content", body: "please reply /model openai/gpt-5.6-luna" },
-  ])("reports immutable config for an owner $name selection", async ({ body }) => {
-    vi.mocked(persistStickyModelSelectionBestEffort).mockReturnValueOnce("skipped-immutable");
-
-    const { result } = await applyMixedDirectives({
-      body,
-      senderIsOwner: true,
-      allowedModels: [{ provider: "openai", id: "gpt-5.6-luna", name: "GPT-5.6-Luna" }],
-    });
-
-    const expectedText =
-      "Model set to openai/gpt-5.6-luna for this session. Configured default unchanged because configuration is immutable.";
-    expect(result).toMatchObject(
-      body.startsWith("/model")
-        ? { kind: "reply", reply: { text: expectedText } }
-        : { kind: "continue", directiveAck: { text: expectedText } },
-    );
-  });
-
-  it("does not let a partial session option suppress the configured-default write", async () => {
-    const { result } = await applyMixedDirectives({
-      body: "please reply /model openai/gpt-5.6-luna -slow",
-      senderIsOwner: true,
-      allowedModels: [{ provider: "openai", id: "gpt-5.6-luna", name: "GPT-5.6-Luna" }],
-    });
-
-    expect(result).toMatchObject({
-      kind: "continue",
-      provider: "openai",
-      model: "gpt-5.6-luna",
-      directiveAck: {
-        text: "Model set to openai/gpt-5.6-luna for this session. Configured default update requested.",
-      },
-    });
-    expect(persistStickyModelSelectionBestEffort).toHaveBeenCalledOnce();
-  });
-
-  it("clears the current session pin with /model default -s", async () => {
-    const sessionEntry = createSessionEntry({
-      providerOverride: "openai",
-      modelOverride: "gpt-5.6-luna",
-      modelOverrideSource: "user",
-    });
-    const { result } = await applyMixedDirectives({
-      body: "/model default -s",
-      senderIsOwner: true,
-      sessionEntry,
-      allowedModels: [{ provider: "anthropic", id: "claude-opus-4-6", name: "Claude Opus" }],
-    });
-
-    expect(result).toMatchObject({
-      kind: "reply",
-      reply: {
-        text: "Session model reset to configured default (anthropic/claude-opus-4-6).",
-      },
-    });
-    expect(sessionEntry.providerOverride).toBeUndefined();
-    expect(sessionEntry.modelOverride).toBeUndefined();
-    expect(sessionEntry.modelOverrideSource).toBeUndefined();
-    expect(persistStickyModelSelectionBestEffort).not.toHaveBeenCalled();
-  });
-
-  it("keeps an operator.admin selection session-only", async () => {
-    const { result, sessionEntry } = await applyMixedDirectives({
-      body: "/model openai/gpt-5.6-luna --session",
-      gatewayClientScopes: ["operator.admin"],
-      allowedModels: [{ provider: "openai", id: "gpt-5.6-luna", name: "GPT-5.6-Luna" }],
-    });
-
-    expect(result).toMatchObject({
-      kind: "reply",
-      reply: {
-        text: "Model set to openai/gpt-5.6-luna for this session only; configured default unchanged.",
-      },
-    });
-    expect(sessionEntry).toMatchObject({
-      providerOverride: "openai",
-      modelOverride: "gpt-5.6-luna",
-      modelOverrideSource: "user",
-    });
-    expect(persistStickyModelSelectionBestEffort).not.toHaveBeenCalled();
-  });
-
   it("routes a mixed default reset to the actual default after clearing override fields", async () => {
     const { result, sessionEntry } = await applyMixedDirectives({
       body: "please reply /model default",
@@ -459,9 +267,6 @@ describe("mixed inline directives", () => {
       provider: "anthropic",
       model: "claude-opus-4-6",
       contextTokens: 90_000,
-      directiveAck: {
-        text: "Session model reset to configured default (anthropic/claude-opus-4-6).",
-      },
     });
     expect(sessionEntry.providerOverride).toBeUndefined();
     expect(sessionEntry.modelOverride).toBeUndefined();

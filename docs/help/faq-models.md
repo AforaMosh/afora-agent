@@ -102,9 +102,9 @@ troubleshooting, see the main [FAQ](/help/faq).
     /model opus@anthropic:work -s
     ```
 
-    To unpin a profile set with `@profile`, re-run `/model` without the
-    suffix (e.g. `/model anthropic/claude-opus-4-6 -s`), or use `/model
-    default -s`. Use `/model status` to confirm the active auth profile.
+    A model selection without `@profile` preserves an existing compatible
+    profile pin. Choose another explicit `@profile` suffix to replace it. Use
+    `/model status` to inspect the active auth profile.
 
   </Accordion>
 

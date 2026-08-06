@@ -472,6 +472,51 @@ describe("Discord model picker interactions", () => {
     ).toContain("✅ Model set to openai/gpt-5.6-terra.");
   });
 
+  it.each([
+    {
+      label: "configured-default request",
+      suppressedText:
+        "Model set to openai/gpt-4o for this session. Configured default update requested.",
+    },
+    {
+      label: "immutable configured default",
+      suppressedText:
+        "Model set to openai/gpt-4o for this session. Configured default unchanged because configuration is immutable.",
+    },
+    {
+      label: "session-only selection",
+      suppressedText:
+        "Model set to openai/gpt-4o for this session only; configured default unchanged.",
+    },
+    {
+      label: "generic fallback",
+      suppressedText: undefined,
+    },
+  ])("renders the $label result from the hidden command reply", async ({ suppressedText }) => {
+    const context = createModelPickerContext();
+    vi.spyOn(modelPickerModule, "loadDiscordModelPickerData").mockResolvedValue(
+      createDefaultModelPickerData(),
+    );
+    mockModelCommandPipeline(createModelCommandDefinition());
+    const dispatchSpy = vi.fn<DispatchDiscordCommandInteraction>().mockResolvedValue({
+      accepted: true,
+      ...(suppressedText ? { suppressedFinalReply: { text: `\n ${suppressedText} \n` } } : {}),
+    });
+
+    const interaction = await runSubmitButton({
+      context,
+      data: createModelsViewSubmitData(),
+      dispatchCommandInteraction: dispatchSpy,
+    });
+
+    const payload = firstMockArg(interaction.followUp, "interaction.followUp") as {
+      components?: Array<{ components?: Array<{ content?: string }> }>;
+    };
+    expect(payload.components?.[0]?.components?.[0]?.content).toBe(
+      suppressedText ?? "✅ Model set to openai/gpt-4o.",
+    );
+  });
+
   it("keeps a pending model stable when hot reload reorders the catalog", async () => {
     const context = createModelPickerContext();
     const runtimeCfg = { ...context.cfg } as OpenClawConfig;
