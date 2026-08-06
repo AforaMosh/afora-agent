@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as mcpHttpFetch from "../agents/mcp-http-fetch.js";
 import { withTempHome } from "../config/home-env.test-harness.js";
 import { createDeferred } from "../shared/deferred.js";
+import { getFreePort } from "../test-utils/ports.js";
 import { registerMcpCli } from "./mcp-cli.js";
 
 type CreateSessionMcpRuntime =
@@ -668,6 +669,44 @@ describe("mcp cli", () => {
         requestTimeoutMs: 9_000,
         auth: "oauth",
       });
+    });
+  });
+
+  it("completes MCP OAuth from a validated loopback callback", async () => {
+    await withTempHome("openclaw-cli-mcp-home-", async () => {
+      const port = await getFreePort();
+      const redirectUri = `http://127.0.0.1:${port}/oauth/callback`;
+      const authorizationUrl = new URL(
+        `https://auth.example.com/authorize?redirect_uri=${encodeURIComponent(redirectUri)}&state=expected-state`,
+      );
+      vi.spyOn(process, "cwd").mockReturnValue(await createWorkspace());
+      runMcpOAuthLogin.mockImplementationOnce(async (params) => {
+        await params.onAuthorizationUrl?.(authorizationUrl);
+        return "redirect";
+      });
+      runMcpOAuthLogin.mockResolvedValueOnce("authorized");
+
+      await runMcpCommand([
+        "mcp",
+        "set",
+        "docs",
+        '{"url":"https://mcp.example.com","transport":"streamable-http","auth":"oauth"}',
+      ]);
+
+      const login = runMcpCommand(["mcp", "login", "docs"]);
+      await vi.waitFor(() => {
+        expect(mockLog).toHaveBeenCalledWith(`Waiting for OAuth callback on ${redirectUri}...`);
+      });
+
+      expect((await fetch(`${redirectUri}?code=secret-code&state=expected-state`)).status).toBe(
+        200,
+      );
+      await login;
+
+      expect(runMcpOAuthLogin.mock.calls[1]?.[0]?.authorizationCode).toBe("secret-code");
+      expect(mockLog.mock.calls.map(([line]) => String(line)).join("\n")).not.toContain(
+        "secret-code",
+      );
     });
   });
 

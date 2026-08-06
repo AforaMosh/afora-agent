@@ -35,6 +35,7 @@ import {
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { serveOpenClawChannelMcp } from "../mcp/channel-server.js";
+import { waitForLocalOAuthCallback } from "../plugin-sdk/provider-auth-runtime.js";
 import { defaultRuntime } from "../runtime.js";
 import { runTasksWithConcurrency } from "../utils/run-with-concurrency.js";
 import { formatCliCommand } from "./command-format.js";
@@ -187,6 +188,7 @@ type McpDoctorServerResult = {
 };
 
 const MCP_DOCTOR_CONCURRENCY = 4;
+const MCP_OAUTH_CALLBACK_TIMEOUT_MS = 5 * 60_000;
 
 const SENSITIVE_HEADER_NAMES = new Set([
   "authorization",
@@ -209,6 +211,43 @@ function hasSensitiveKey(name: string): boolean {
 
 function hasLiteralSensitiveValue(value: unknown): boolean {
   return typeof value === "string" && value.trim().length > 0 && !value.trim().startsWith("$");
+}
+
+function startMcpOAuthLoopbackCallback(authorizationUrl: URL, signal: AbortSignal) {
+  const redirectUriValue = authorizationUrl.searchParams.get("redirect_uri")?.trim();
+  const expectedState = authorizationUrl.searchParams.get("state")?.trim();
+  if (!redirectUriValue || !expectedState) {
+    return undefined;
+  }
+
+  let redirectUri: URL;
+  try {
+    redirectUri = new URL(redirectUriValue);
+  } catch {
+    return undefined;
+  }
+  if (
+    redirectUri.protocol !== "http:" ||
+    (redirectUri.hostname !== "localhost" && redirectUri.hostname !== "127.0.0.1")
+  ) {
+    return undefined;
+  }
+  const port = redirectUri.port ? Number.parseInt(redirectUri.port, 10) : 80;
+  if (!Number.isInteger(port) || port <= 0) {
+    return undefined;
+  }
+
+  return waitForLocalOAuthCallback({
+    expectedState,
+    timeoutMs: MCP_OAUTH_CALLBACK_TIMEOUT_MS,
+    port,
+    callbackPath: redirectUri.pathname,
+    redirectUri: redirectUri.toString(),
+    hostname: redirectUri.hostname,
+    successTitle: "OpenClaw MCP OAuth complete",
+    onProgress: (message) => defaultRuntime.log(message),
+    signal,
+  });
 }
 
 function resolveConfiguredPath(filePath: string, cwd: unknown): string {
@@ -1332,11 +1371,10 @@ export function registerMcpCli(program: Command) {
       if (!resolved || resolved.kind !== "http") {
         fail(`MCP server "${name}" needs a valid HTTP transport for OAuth login.`);
       }
-      const result = await runMcpOAuthLogin({
+      const loginParams = {
         serverName: name,
         serverUrl: resolved.url,
         config: server.oauth as Record<string, string> | undefined,
-        authorizationCode: opts.code,
         fetchFn: withSameOriginMcpHttpHeaders({
           fetchFn: buildMcpHttpFetch({
             sslVerify: resolved.sslVerify,
@@ -1348,16 +1386,50 @@ export function registerMcpCli(program: Command) {
           headers: withoutMcpAuthorizationHeader(resolved.headers),
           resourceUrl: resolved.url,
         }),
-        onAuthorizationUrl: (url) => {
-          defaultRuntime.log(`Open this URL to authorize "${name}":`);
-          defaultRuntime.log(url.toString());
-          defaultRuntime.log(
-            `After approval, run ${formatCliCommand(`openclaw mcp login ${name} --code <code>`)}.`,
-          );
-        },
-      });
-      if (result === "authorized") {
-        defaultRuntime.log(`MCP OAuth credentials saved for "${name}".`);
+      };
+      const manualLoginCommand = formatCliCommand(`openclaw mcp login ${name} --code <code>`);
+      let callbackController: AbortController | undefined;
+      let callbackPromise:
+        | Promise<Awaited<ReturnType<typeof waitForLocalOAuthCallback>> | undefined>
+        | undefined;
+      try {
+        let result = await runMcpOAuthLogin({
+          ...loginParams,
+          authorizationCode: opts.code,
+          onAuthorizationUrl: (url) => {
+            // Starting the listener without awaiting it lets the first OAuth run release its
+            // state lease before the callback code starts the completion run.
+            callbackController = new AbortController();
+            callbackPromise = startMcpOAuthLoopbackCallback(url, callbackController.signal)?.catch(
+              () => undefined,
+            );
+            defaultRuntime.log(`Open this URL to authorize "${name}":`);
+            defaultRuntime.log(url.toString());
+            defaultRuntime.log(
+              callbackPromise
+                ? `If needed, run ${manualLoginCommand}.`
+                : `After approval, run ${manualLoginCommand}.`,
+            );
+          },
+        });
+        if (result === "redirect" && callbackPromise) {
+          const callback = await callbackPromise;
+          if (!callback) {
+            defaultRuntime.log(
+              `Automatic OAuth callback did not complete. Run ${manualLoginCommand}.`,
+            );
+            return;
+          }
+          result = await runMcpOAuthLogin({
+            ...loginParams,
+            authorizationCode: callback.code,
+          });
+        }
+        if (result === "authorized") {
+          defaultRuntime.log(`MCP OAuth credentials saved for "${name}".`);
+        }
+      } finally {
+        callbackController?.abort();
       }
     });
 
