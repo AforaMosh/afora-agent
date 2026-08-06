@@ -496,6 +496,10 @@ describe("agentCommand", () => {
         expect(recordedAttribution?.contextId).not.toBe("inherited-context");
         expect(recordedAttribution?.contextId).not.toBe("forged-context");
         expect(recordedAttribution).not.toHaveProperty("executionIdentityAdmission");
+        expect(record.mock.calls[0]?.[0]).not.toHaveProperty("admission");
+        expect(observedContextId).toBe(recordedAttribution?.contextId);
+        expect(observedContextId).not.toBe("forged-context");
+        expect(observedContextId).not.toBe("inherited-context");
       } finally {
         record.mockRestore();
         if (priorDescriptor) {

@@ -1,12 +1,17 @@
 import { isExecutionIdentityCollectionEnabled } from "../audit/audit-config.js";
 import {
+  createExecutionIdentityAdmissionToken,
   enqueueExecutionIdentityContextAtAdmission,
+  getExecutionIdentityAdmissionScope,
+  parseExecutionIdentityAdmissionToken,
+  runWithExecutionIdentityAdmissionScope,
   type ExecutionIdentityAdmissionFacts,
 } from "../audit/execution-identity-admission.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { captureAgentRunLifecycleGeneration } from "../infra/agent-events.js";
 import { reserveAgentRunAttribution } from "../infra/agent-run-registry.js";
 import { createAgentExecutionAttribution } from "./agent-execution-attribution.js";
+import type { PreparedAgentCommandExecution } from "./command/prepare.js";
 import type { AgentCommandGatewayIngressOpts, AgentCommandOpts } from "./command/types.js";
 
 type AgentCommandAdmissionIngress = ExecutionIdentityAdmissionFacts["ingress"];
@@ -29,6 +34,10 @@ function recordAgentCommandExecutionIdentity(params: {
   runId: string;
   runtimeKind: ExecutionIdentityAdmissionFacts["runtime"]["kind"];
 }): void {
+  const admission = getExecutionIdentityAdmissionScope();
+  if (!admission || !isExecutionIdentityCollectionEnabled(params.cfg)) {
+    return;
+  }
   // Session work admission owns these facts. Queue acceptance is not persistence;
   // audit loss must never become run loss.
   enqueueExecutionIdentityContextAtAdmission(
@@ -39,19 +48,9 @@ function recordAgentCommandExecutionIdentity(params: {
       runtime: { kind: params.runtimeKind },
     },
     {
-      enabled: isExecutionIdentityCollectionEnabled(params.cfg),
-      ...(params.attribution
-        ? params.attribution.executionIdentityAdmission
-          ? {
-              token: params.attribution.executionIdentityAdmission.token,
-              retryOnly: params.attribution.executionIdentityAdmission.retryOnly,
-            }
-          : {
-              contextId: params.attribution.contextId,
-              executionId: params.attribution.executionId,
-              now: params.attribution.createdAt,
-            }
-        : {}),
+      enabled: true,
+      token: admission.token,
+      retryOnly: admission.retryOnly,
     },
   );
 }
@@ -120,11 +119,45 @@ function prepareAgentCommandIngress(
   };
 }
 
+async function runPreparedAgentCommandWithExecutionIdentity<TResult>(params: {
+  prepared: PreparedAgentCommandExecution;
+  run: (prepared: PreparedAgentCommandExecution) => Promise<TResult>;
+}): Promise<TResult> {
+  const resolved = resolveAgentCommandExecutionAttribution(params.prepared.opts, params.prepared);
+  const resolvedOpts = replaceAgentCommandExecutionAttribution(
+    params.prepared.opts,
+    resolved.attribution,
+  );
+  const prepared =
+    resolvedOpts === params.prepared.opts
+      ? params.prepared
+      : { ...params.prepared, opts: resolvedOpts };
+  if (!isExecutionIdentityCollectionEnabled(prepared.cfg)) {
+    return await params.run(prepared);
+  }
+  const admission = resolved.attribution.executionIdentityAdmission;
+  const token = admission
+    ? parseExecutionIdentityAdmissionToken(admission.token)
+    : createExecutionIdentityAdmissionToken(prepared.runId, {
+        contextId: resolved.attribution.contextId,
+        executionId: resolved.attribution.executionId,
+        now: resolved.attribution.createdAt,
+      });
+  if (token.runId !== prepared.runId) {
+    throw new Error("execution identity admission token disagrees with the prepared run");
+  }
+  return await runWithExecutionIdentityAdmissionScope(
+    { token, retryOnly: admission?.retryOnly === true },
+    () => params.run(prepared),
+  );
+}
+
 export const executionIdentity = {
   localIngress: LOCAL_CLI_ADMISSION_INGRESS,
   prepareIngress: prepareAgentCommandIngress,
   record: recordAgentCommandExecutionIdentity,
   replaceAttribution: replaceAgentCommandExecutionAttribution,
   resolveAttribution: resolveAgentCommandExecutionAttribution,
+  runPrepared: runPreparedAgentCommandWithExecutionIdentity,
   systemIngress,
 };
