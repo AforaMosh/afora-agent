@@ -289,7 +289,9 @@ export async function runEmbeddedFallbackCandidate(params: {
           }
           await params.presentation.startPresentationWhileTyping(
             turn.typingSignals.signalTextDelta(textForTyping),
-            () => turn.opts?.onPartialReply?.(partialPayload),
+            async () => {
+              await turn.opts?.onPartialReply?.(partialPayload);
+            },
           );
         },
         onAssistantMessageStart: async () => {
@@ -300,7 +302,9 @@ export async function runEmbeddedFallbackCandidate(params: {
           }
           await params.presentation.startPresentationWhileTyping(
             turn.typingSignals.signalMessageStart(),
-            () => turn.opts?.onAssistantMessageStart?.(),
+            async () => {
+              await turn.opts?.onAssistantMessageStart?.();
+            },
           );
         },
         onReasoningStream:
@@ -321,18 +325,23 @@ export async function runEmbeddedFallbackCandidate(params: {
                 }
                 await params.presentation.startPresentationWhileTyping(
                   turn.typingSignals.signalReasoningDelta(),
-                  () =>
-                    turn.opts?.onReasoningStream?.({
+                  async () => {
+                    await turn.opts?.onReasoningStream?.({
                       text: payload.text,
                       mediaUrls: payload.mediaUrls,
                       isReasoningSnapshot: payload.isReasoningSnapshot,
                       requiresReasoningProgressOptIn: payload.requiresReasoningProgressOptIn,
-                    }),
+                    });
+                  },
                 );
               }
             : undefined,
         streamReasoningInNonStreamModes: turn.opts?.streamReasoningInNonStreamModes,
-        onReasoningEnd: turn.opts?.onReasoningEnd,
+        onReasoningEnd: turn.opts?.onReasoningEnd
+          ? async () => {
+              await turn.opts?.onReasoningEnd?.();
+            }
+          : undefined,
         onAgentEvent: createAgentRunEventHandler({
           turn,
           lifecycleBackstop,

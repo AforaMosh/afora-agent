@@ -118,6 +118,13 @@ async function runWithPayloadAbort<T>(
   }
 }
 
+function throwIfReplyPayloadAborted(payload: ReplyPayload): void {
+  const signal = getReplyPayloadMetadata(payload)?.activeTurnReceipt?.abortSignal;
+  if (signal?.aborted) {
+    throw new ReplyDispatchPayloadAbortError(signal.reason);
+  }
+}
+
 export type { ReplyDispatchBeforeDeliver };
 
 const DEFAULT_HUMAN_DELAY_MIN_MS = 800;
@@ -237,7 +244,12 @@ export function composeReplyDispatchBeforeDeliver(
       if (!current) {
         return null;
       }
+      // The outer receipt race releases the serialized dispatcher, but cannot
+      // cancel a hook promise. Recheck between real stages so a late settlement
+      // cannot resume the abandoned chain and run later delivery side effects.
+      throwIfReplyPayloadAborted(current);
       const next = await runReplyDispatchBeforeDeliverStage(stage, current, info);
+      throwIfReplyPayloadAborted(current);
       current = next ? copyReplyPayloadMetadata(current, next) : null;
     }
     return current;
@@ -462,6 +474,7 @@ export function createReplyDispatcher(options: ReplyDispatcherOptions): ReplyDis
       ...appendedBeforeDeliverCancelledHooks,
     ];
     for (const observer of observers) {
+      throwIfReplyPayloadAborted(payload);
       try {
         await runReplyDispatchBeforeDeliverStage(
           {
@@ -477,6 +490,7 @@ export function createReplyDispatcher(options: ReplyDispatcherOptions): ReplyDis
       } catch (err: unknown) {
         reportObserverError(err, info);
       }
+      throwIfReplyPayloadAborted(payload);
     }
   };
 
@@ -487,9 +501,12 @@ export function createReplyDispatcher(options: ReplyDispatcherOptions): ReplyDis
     let deliverPayload: ReplyPayload | null = payload;
     let deliveryStarted = false;
     try {
-      if (beforeDeliver) {
+      const beforeDeliverHook = beforeDeliver;
+      if (beforeDeliverHook) {
         try {
-          deliverPayload = await runWithPayloadAbort(payload, () => beforeDeliver(payload, info));
+          deliverPayload = await runWithPayloadAbort(payload, () =>
+            beforeDeliverHook(payload, info),
+          );
         } catch (error) {
           // A receipt lifecycle abort is not a hook cancellation. Release the
           // serialized queue immediately and keep late hook settlement observed.
@@ -504,15 +521,22 @@ export function createReplyDispatcher(options: ReplyDispatcherOptions): ReplyDis
         }
         deliverPayload = copyReplyPayloadMetadata(payload, deliverPayload);
       }
+      const payloadToDeliver = deliverPayload;
       await runWithPayloadAbort(payload, async () => {
         deliveryStarted = true;
-        await options.deliver(deliverPayload, info);
+        await options.deliver(payloadToDeliver, info);
       });
       return "delivered";
     } catch (error) {
-      try {
-        await options.onError?.(error, info);
-      } catch {}
+      if (error instanceof ReplyDispatchPayloadAbortError) {
+        // Receipt expiry is an internal containment boundary. Report it without
+        // letting an arbitrary channel error observer retain the reply queue.
+        reportObserverError(error, info);
+      } else {
+        try {
+          await options.onError?.(error, info);
+        } catch {}
+      }
       return deliveryStarted && !isRetryableNoSendFailure(error)
         ? "failed-deliver"
         : "failed-before-deliver";

@@ -10,6 +10,12 @@ type ProgressCallback = GetReplyOptions[
   | "onApprovalEvent"
   | "onCommandOutput"
   | "onPatchSummary"];
+type ProgressBoundaryCallback = GetReplyOptions[
+  | "onReasoningEnd"
+  | "onAssistantMessageStart"
+  | "onBlockReplyQueued"
+  | "onCompactionStart"
+  | "onCompactionEnd"];
 
 describe("reply runtime public progress contracts", () => {
   it("exports acceptance-aware progress callback results", () => {
@@ -20,6 +26,9 @@ describe("reply runtime public progress contracts", () => {
       Promise<ProgressResult> | ProgressResult
     >();
     expectTypeOf<Exclude<GetReplyOptions["onReasoningStream"], undefined>>().returns.toEqualTypeOf<
+      Promise<ProgressResult> | ProgressResult
+    >();
+    expectTypeOf<Exclude<ProgressBoundaryCallback, undefined>>().returns.toEqualTypeOf<
       Promise<ProgressResult> | ProgressResult
     >();
   });

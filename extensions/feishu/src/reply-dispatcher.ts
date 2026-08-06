@@ -1591,7 +1591,7 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
             return false;
           }
         : undefined,
-      onReasoningEnd: reasoningPreviewEnabled ? () => {} : undefined,
+      onReasoningEnd: reasoningPreviewEnabled ? () => false : undefined,
       onToolStart: previewStreamingEnabled
         ? (payload: {
             name?: string;
@@ -1621,20 +1621,12 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
           }
         : undefined,
       onAssistantMessageStart: previewStreamingEnabled
-        ? () => {
-            updateStreamingStatusLine("", { startIfNeeded: false });
-          }
+        ? () => updateStreamingStatusLine("", { startIfNeeded: false })
         : undefined,
       onCompactionStart: previewStreamingEnabled
-        ? () => {
-            updateStreamingStatusLine("📦 **Compacting context...**");
-          }
+        ? () => updateStreamingStatusLine("📦 **Compacting context...**")
         : undefined,
-      onCompactionEnd: previewStreamingEnabled
-        ? () => {
-            updateStreamingStatusLine("");
-          }
-        : undefined,
+      onCompactionEnd: previewStreamingEnabled ? () => updateStreamingStatusLine("") : undefined,
     },
     ensureNoVisibleReplyFallback,
     getVisibleReplyState: () => ({

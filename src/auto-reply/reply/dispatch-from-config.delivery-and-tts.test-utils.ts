@@ -1650,7 +1650,9 @@ describe("dispatchReplyFromConfig", () => {
       toolProgressPromise = Promise.resolve(opts?.onToolStart?.({ name: "lookup" })).then(() => {
         toolProgressSettled = true;
       });
-      partialProgressPromise = Promise.resolve(opts?.onPartialReply?.({ text: "after tool" }));
+      partialProgressPromise = Promise.resolve(opts?.onPartialReply?.({ text: "after tool" })).then(
+        () => {},
+      );
       return { text: "final" };
     };
 

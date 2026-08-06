@@ -603,13 +603,14 @@ export function createSlackProgressRuntime(runtimeParams: {
       : async () => {
           if (streamMode === "status_final") {
             await beginNewProgressTurn();
-            return;
+            return false;
           }
           if (hasStreamedMessage) {
             draftStream?.forceNewMessage();
           }
           resetDraftDeliveryState();
           resetDraftProgressState();
+          return false;
         };
 
   const onQueuedFollowupAdmitted =

@@ -259,6 +259,21 @@ describe("createFeishuReplyDispatcher streaming behavior", () => {
     expect(lateListener).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps state-only streaming boundaries receipt-eligible without an ack", async () => {
+    streamingStartGate.promise = new Promise<void>(() => {});
+    const { result } = createDispatcherHarness({ allowReasoningPreview: true });
+    const onVisible = vi.fn();
+    result.replyOptions.registerProgressVisibilityListener?.(onVisible);
+
+    expect(result.replyOptions.onReasoningEnd?.()).toBe(false);
+    expect(result.replyOptions.onAssistantMessageStart?.()).toBe(false);
+    expect(result.replyOptions.onCompactionStart?.()).toBe(false);
+    expect(result.replyOptions.onCompactionEnd?.()).toBe(false);
+    await Promise.resolve();
+
+    expect(onVisible).not.toHaveBeenCalled();
+  });
+
   it.each(["reply_payload_sending", "message_sending"])(
     "suppresses all pre-hook CardKit previews when %s is registered",
     async (hookName) => {

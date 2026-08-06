@@ -448,6 +448,46 @@ describe("createMSTeamsReplyDispatcher", () => {
     expect(onVisible).toHaveBeenCalledTimes(1);
   });
 
+  it("accepts an earlier informative acknowledgement after a newer update is queued", async () => {
+    vi.useFakeTimers();
+    const dispatcher = createDispatcher("personal", { streaming: { mode: "progress" } });
+    const stream = getStreamMock();
+    const onVisible = vi.fn();
+    dispatcher.replyOptions.registerProgressVisibilityListener?.(onVisible);
+
+    await dispatcher.replyOptions.onToolStart?.({ name: "exec" });
+    await vi.advanceTimersByTimeAsync(5_000);
+    const firstText = String(stream.update.mock.calls.at(-1)?.[0]);
+    await dispatcher.replyOptions.onToolStart?.({ name: "web_search" });
+    const secondText = String(stream.update.mock.calls.at(-1)?.[0]);
+    expect(secondText).not.toBe(firstText);
+
+    stream.acknowledge(firstText, "informative");
+    expect(onVisible).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not let a failed newer informative update invalidate an earlier pending ack", async () => {
+    vi.useFakeTimers();
+    const dispatcher = createDispatcher("personal", { streaming: { mode: "progress" } });
+    const stream = getStreamMock();
+    const onVisible = vi.fn();
+    dispatcher.replyOptions.registerProgressVisibilityListener?.(onVisible);
+
+    await dispatcher.replyOptions.onToolStart?.({ name: "exec" });
+    await vi.advanceTimersByTimeAsync(5_000);
+    const firstText = String(stream.update.mock.calls.at(-1)?.[0]);
+    stream.update.mockImplementationOnce(() => {
+      throw new Error("newer update failed");
+    });
+    await dispatcher.replyOptions.onToolStart?.({ name: "web_search" });
+    const failedText = String(stream.update.mock.calls.at(-1)?.[0]);
+
+    stream.acknowledge(failedText, "informative");
+    expect(onVisible).not.toHaveBeenCalled();
+    stream.acknowledge(firstText, "informative");
+    expect(onVisible).toHaveBeenCalledTimes(1);
+  });
+
   it("forwards partial replies into the Teams stream via emit()", async () => {
     const dispatcher = createDispatcher("personal");
 

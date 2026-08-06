@@ -152,6 +152,47 @@ describe("beforeDeliver in reply dispatcher", () => {
     await expect(afterTransportOutcome.promise).resolves.toBe("failed-deliver");
   });
 
+  it("does not resume later beforeDeliver stages after an aborted stage settles late", async () => {
+    let releaseFirstStage: (() => void) | undefined;
+    const firstStagePending = new Promise<void>((resolve) => {
+      releaseFirstStage = resolve;
+    });
+    const abort = new AbortController();
+    const payload = setReplyPayloadMetadata(
+      { text: "receipt" },
+      { activeTurnReceipt: { abortSignal: abort.signal, maxRetries: 1 } },
+    );
+    const outcome = captureReplyDispatchDeliveryOutcome(payload);
+    let secondStageCalls = 0;
+    let deliveryCalls = 0;
+    const dispatcher = createReplyDispatcher({
+      beforeDeliver: async (current) => {
+        await firstStagePending;
+        return current;
+      },
+      deliver: async () => {
+        deliveryCalls += 1;
+      },
+    });
+    dispatcher.appendBeforeDeliver?.((current) => {
+      secondStageCalls += 1;
+      return current;
+    });
+
+    dispatcher.sendFinalReply(payload);
+    await Promise.resolve();
+    abort.abort(new Error("receipt deadline"));
+    dispatcher.markComplete();
+    await dispatcher.waitForIdle();
+    await expect(outcome.promise).resolves.toBe("failed-before-deliver");
+
+    releaseFirstStage?.();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(secondStageCalls).toBe(0);
+    expect(deliveryCalls).toBe(0);
+  });
+
   it("cancels delivery before queueing when transformReplyPayload returns null", async () => {
     const delivered: string[] = [];
 

@@ -1980,6 +1980,18 @@ describe("dispatchPreparedSlackMessage preview fallback", () => {
     expect(capturedReplyOptions?.suppressTyping).toBeUndefined();
   });
 
+  it("keeps state-only Slack draft boundaries receipt-eligible", async () => {
+    mockedDispatchSequence = [];
+    const onVisible = vi.fn();
+    mockedProgressVisibilityObserver = onVisible;
+
+    await dispatchPreparedSlackMessage(createPreparedSlackMessage());
+
+    await expect(capturedReplyOptions?.onAssistantMessageStart?.()).resolves.toBe(false);
+    await expect(capturedReplyOptions?.onReasoningEnd?.()).resolves.toBe(false);
+    expect(onVisible).not.toHaveBeenCalled();
+  });
+
   it("escapes Slack mrkdwn in tool progress preview labels", async () => {
     const draftStream = createDraftStreamStub();
     createSlackDraftStreamMock.mockReturnValueOnce(draftStream);

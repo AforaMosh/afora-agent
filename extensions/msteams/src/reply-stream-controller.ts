@@ -121,6 +121,8 @@ export function createTeamsReplyStreamController(params: {
   let emittedText = "";
   let acknowledgedText = "";
   let acknowledgedStreamId: string | undefined;
+  let acknowledgedInformativeStreamId: string | undefined;
+  const pendingInformativeTexts = new Set<string>();
   let replacementFinalPending = false;
   let replacementEmitFailed = false;
   let replacementSettlementPending = false;
@@ -162,9 +164,15 @@ export function createTeamsReplyStreamController(params: {
         return;
       }
       if (streamType === "informative") {
-        if (activity.text === lastInformativeText) {
-          notifyProgressVisible();
+        if (
+          (acknowledgedInformativeStreamId !== undefined &&
+            activity.id !== acknowledgedInformativeStreamId) ||
+          !pendingInformativeTexts.delete(activity.text)
+        ) {
+          return;
         }
+        acknowledgedInformativeStreamId = activity.id;
+        notifyProgressVisible();
         return;
       }
       const replacementAcknowledgementPending =
@@ -302,9 +310,11 @@ export function createTeamsReplyStreamController(params: {
       return;
     }
     lastInformativeText = informativeText;
+    pendingInformativeTexts.add(informativeText);
     try {
       stream.update(informativeText);
     } catch (err) {
+      pendingInformativeTexts.delete(informativeText);
       if (isStreamCancelledError(err)) {
         canceledLocally = true;
         return;
@@ -616,6 +626,7 @@ export function createTeamsReplyStreamController(params: {
       progressDraftGate.cancel();
       progressVisibilityClosed = true;
       if (!stream || !nativeDispatchStarted) {
+        pendingInformativeTexts.clear();
         releaseStreamChunkSubscription();
         return { visibleReplySent: false };
       }
@@ -744,6 +755,7 @@ export function createTeamsReplyStreamController(params: {
         replacementSettlementPending = false;
         replacementTextAwaitingAcknowledgement = undefined;
         deferredReplacementEntries = [];
+        pendingInformativeTexts.clear();
         releaseStreamChunkSubscription();
       }
     },

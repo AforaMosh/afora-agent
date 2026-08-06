@@ -577,6 +577,48 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
     }
   });
 
+  it("does not let a hung receipt error observer extend the settle bound", async () => {
+    vi.useFakeTimers();
+    try {
+      setNoAbort();
+      const deliveredTexts: string[] = [];
+      let onErrorCalls = 0;
+      const dispatcher = createReplyDispatcher({
+        deliver: async (payload) => {
+          if (payload.text === ACTIVE_TURN_RECEIPT_TEXT) {
+            return await new Promise<void>(() => {});
+          }
+          deliveredTexts.push(payload.text ?? "");
+        },
+        onError: async () => {
+          onErrorCalls += 1;
+          await new Promise<void>(() => {});
+        },
+      });
+      const terminal = createDeferred<ReplyPayload>();
+      const run = dispatchReplyFromConfig({
+        ctx: buildTestCtx({ ChatType: "direct", SessionKey: "receipt:hung-error-observer" }),
+        cfg: emptyConfig,
+        dispatcher,
+        replyResolver: async () => await terminal.promise,
+      });
+
+      await vi.advanceTimersByTimeAsync(ACTIVE_TURN_RECEIPT_DELAY_MS);
+      terminal.resolve({ text: "final after hung error observer" });
+      await vi.advanceTimersByTimeAsync(4_999);
+      expect(deliveredTexts).toEqual([]);
+      await vi.advanceTimersByTimeAsync(1);
+      await run;
+      dispatcher.markComplete();
+      await dispatcher.waitForIdle();
+
+      expect(onErrorCalls).toBe(1);
+      expect(deliveredTexts).toEqual(["final after hung error observer"]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("lets a direct final proceed when the receipt hangs in beforeDeliver", async () => {
     vi.useFakeTimers();
     try {

@@ -199,14 +199,18 @@ export type GetReplyOptions = {
   ) => Promise<ProgressCallbackResult> | ProgressCallbackResult;
   onReasoningProgress?: (payload: ReasoningProgressPayload) => Promise<void> | void;
   streamReasoningInNonStreamModes?: boolean;
-  /** Called when a thinking/reasoning block ends. */
-  onReasoningEnd?: () => Promise<void> | void;
-  /** Called when a new assistant message starts (e.g., after tool call or thinking block). */
-  onAssistantMessageStart?: () => Promise<void> | void;
+  /** Called when a reasoning block ends; return false for state-only boundary handling. */
+  onReasoningEnd?: () => Promise<ProgressCallbackResult> | ProgressCallbackResult;
+  /** Called when a new assistant message starts; return false for state-only boundary handling. */
+  onAssistantMessageStart?: () => Promise<ProgressCallbackResult> | ProgressCallbackResult;
   /** Called synchronously when a block reply is logically emitted, before async
    * delivery drains. Useful for channels that need to rotate preview state at
-   * block boundaries without waiting for transport acks. */
-  onBlockReplyQueued?: (payload: ReplyPayload, context?: BlockReplyContext) => Promise<void> | void;
+   * block boundaries without waiting for transport acks. Return false when the
+   * callback only updates that state and does not itself render progress. */
+  onBlockReplyQueued?: (
+    payload: ReplyPayload,
+    context?: BlockReplyContext,
+  ) => Promise<ProgressCallbackResult> | ProgressCallbackResult;
   onBlockReply?: (payload: ReplyPayload, context?: BlockReplyContext) => Promise<void> | void;
   /** Return false when the callback did not render operator-visible progress. */
   onToolResult?: (
@@ -316,10 +320,10 @@ export type GetReplyOptions = {
     deleted?: string[];
     summary?: string;
   }) => Promise<ProgressCallbackResult> | ProgressCallbackResult;
-  /** Called when context auto-compaction starts (allows UX feedback during the pause). */
-  onCompactionStart?: () => Promise<void> | void;
-  /** Called when context auto-compaction completes. */
-  onCompactionEnd?: () => Promise<void> | void;
+  /** Context compaction started; return false when the callback only updates local state. */
+  onCompactionStart?: () => Promise<ProgressCallbackResult> | ProgressCallbackResult;
+  /** Context compaction completed; return false when the callback only updates local state. */
+  onCompactionEnd?: () => Promise<ProgressCallbackResult> | ProgressCallbackResult;
   /** Called when the actual model is selected (including after fallback).
    * Use this to get model/provider/thinkLevel for responsePrefix template interpolation. */
   onModelSelected?: (ctx: ModelSelectedContext) => void;

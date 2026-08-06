@@ -228,16 +228,29 @@ export async function executeFollowupTurn(params: {
     onPatchSummary: wrapVisibility(sourceOpts?.onPatchSummary, shouldEmitToolResult),
     onCompactionStart: sourceOpts?.onCompactionStart
       ? () =>
-          enqueueProgress(() => (progressAllowed() ? sourceOpts.onCompactionStart?.() : undefined))
+          enqueueProgress(async () => {
+            if (progressAllowed()) {
+              await sourceOpts.onCompactionStart?.();
+            }
+          })
       : undefined,
     onCompactionEnd: sourceOpts?.onCompactionEnd
       ? () =>
-          enqueueProgress(() => (progressAllowed() ? sourceOpts.onCompactionEnd?.() : undefined))
+          enqueueProgress(async () => {
+            if (progressAllowed()) {
+              await sourceOpts.onCompactionEnd?.();
+            }
+          })
       : undefined,
     onReasoningStream: wrap(sourceOpts?.onReasoningStream),
     onReasoningProgress: wrap(sourceOpts?.onReasoningProgress),
     onReasoningEnd: sourceOpts?.onReasoningEnd
-      ? () => enqueueProgress(() => (progressAllowed() ? sourceOpts.onReasoningEnd?.() : undefined))
+      ? () =>
+          enqueueProgress(async () => {
+            if (progressAllowed()) {
+              await sourceOpts.onReasoningEnd?.();
+            }
+          })
       : undefined,
     shouldSuppressToolErrorWarnings: () => {
       const explicit = sourceOpts?.suppressToolErrorWarnings;

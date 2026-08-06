@@ -2920,15 +2920,15 @@ describe("matrix monitor handler draft streaming", () => {
   type ReplyOpts = {
     registerProgressVisibilityListener?: (listener: () => void) => void;
     onReplyStart?: () => Promise<void> | void;
-    onPartialReply?: (payload: { text: string }) => void;
+    onPartialReply?: (payload: { text: string }) => boolean | void;
     onBlockReplyQueued?: (
       payload: {
         text?: string;
         isCompactionNotice?: boolean;
       },
       context?: { assistantMessageIndex?: number },
-    ) => Promise<void> | void;
-    onAssistantMessageStart?: () => void;
+    ) => Promise<boolean | void> | boolean | void;
+    onAssistantMessageStart?: () => boolean | void;
     onQueuedFollowupAdmitted?: () => Promise<void> | void;
     suppressDefaultToolProgressMessages?: boolean;
     onToolStart?: (payload: {
@@ -3252,6 +3252,23 @@ describe("matrix monitor handler draft streaming", () => {
       await finish?.();
       vi.useRealTimers();
     }
+  });
+
+  it("keeps state-only Matrix draft boundaries receipt-eligible", async () => {
+    const harness = createStreamingHarness({
+      streaming: "progress",
+      previewToolProgressEnabled: true,
+    });
+    const turn = await harness.dispatch();
+    const onVisible = vi.fn();
+    turn.opts.registerProgressVisibilityListener?.(onVisible);
+
+    expect(turn.opts.onBlockReplyQueued?.({ text: "logical block" })).toBe(false);
+    expect(turn.opts.onAssistantMessageStart?.()).toBe(false);
+    expect(onVisible).not.toHaveBeenCalled();
+    expect(sendSingleTextMessageMatrixMock).not.toHaveBeenCalled();
+
+    await turn.finish();
   });
 
   it("reports filtered Matrix tool, item, and command progress as not rendered", async () => {

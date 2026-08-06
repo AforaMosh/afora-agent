@@ -416,6 +416,7 @@ export async function dispatchPreparedSlackMessage(prepared: PreparedSlackMessag
         onReasoningEnd: async () => {
           progress.progressReceipt.closeReasoning();
           await progress.onDraftBoundary?.();
+          return false;
         },
         onQueuedFollowupAdmitted: progress.onQueuedFollowupAdmitted,
         onReasoningStream:

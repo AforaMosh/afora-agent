@@ -227,7 +227,9 @@ export async function runCliFallbackCandidate(params: {
             // Assistant and tool CLI bridges drain independently. Stage presentation first.
             await params.presentation.startPresentationWhileTyping(
               turn.typingSignals.signalTextDelta(textForTyping),
-              () => turn.opts?.onPartialReply?.({ text: sanitized.text }),
+              async () => {
+                await turn.opts?.onPartialReply?.({ text: sanitized.text });
+              },
             );
           },
           onReasoningText: createCliReasoningStreamBridge(turn.opts?.onReasoningStream),
