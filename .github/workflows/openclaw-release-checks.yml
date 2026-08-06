@@ -75,6 +75,7 @@ on:
           - all
           - install-smoke
           - cross-os
+          - windows-node
           - live-e2e
           - package
           - qa
@@ -595,7 +596,7 @@ jobs:
   prepare_release_package:
     name: Prepare release package artifact
     needs: [resolve_target]
-    if: contains(fromJSON('["all","cross-os","package"]'), needs.resolve_target.outputs.rerun_group) || (needs.resolve_target.outputs.rerun_group == 'live-e2e' && needs.resolve_target.outputs.repo_live_suite_filter == '')
+    if: contains(fromJSON('["all","cross-os","package","windows-node"]'), needs.resolve_target.outputs.rerun_group) || (needs.resolve_target.outputs.rerun_group == 'live-e2e' && needs.resolve_target.outputs.repo_live_suite_filter == '')
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -784,7 +785,7 @@ jobs:
   resolve_windows_node_release_artifacts:
     name: Resolve Windows-node release artifacts
     needs: [resolve_target]
-    if: needs.resolve_target.outputs.rerun_group == 'all'
+    if: contains(fromJSON('["all","windows-node"]'), needs.resolve_target.outputs.rerun_group)
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -922,7 +923,7 @@ jobs:
   windows_node_prerelease_e2e:
     name: Run Windows-node prerelease E2E
     needs: [resolve_target, prepare_release_package, resolve_windows_node_release_artifacts]
-    if: needs.resolve_target.outputs.rerun_group == 'all'
+    if: contains(fromJSON('["all","windows-node"]'), needs.resolve_target.outputs.rerun_group)
     permissions:
       actions: read
       contents: read
@@ -940,7 +941,7 @@ jobs:
   windows_node_stable_e2e:
     name: Run Windows-node stable E2E
     needs: [resolve_target, prepare_release_package, resolve_windows_node_release_artifacts]
-    if: needs.resolve_target.outputs.rerun_group == 'all'
+    if: contains(fromJSON('["all","windows-node"]'), needs.resolve_target.outputs.rerun_group)
     permissions:
       actions: read
       contents: read
