@@ -597,7 +597,12 @@ export function createChannelManager(opts: ChannelManagerOptions): ChannelManage
         const abort = new AbortController();
         store.aborts.set(id, abort);
         let lifecycleStopRequested = false;
+        const disposeLifecycleListeners = () => {
+          lifecycleAbortSignal?.removeEventListener("abort", stopForLifecycleAbort);
+          abort.signal.removeEventListener("abort", disposeLifecycleListeners);
+        };
         const stopForLifecycleAbort = () => {
+          disposeLifecycleListeners();
           if (!lifecycleStopRequested) {
             lifecycleStopRequested = true;
             // Generation cancellation asks the manager to stop this account.
@@ -606,6 +611,7 @@ export function createChannelManager(opts: ChannelManagerOptions): ChannelManage
           }
         };
         lifecycleAbortSignal?.addEventListener("abort", stopForLifecycleAbort, { once: true });
+        abort.signal.addEventListener("abort", disposeLifecycleListeners, { once: true });
         if (lifecycleAbortSignal?.aborted) {
           stopForLifecycleAbort();
         }
@@ -1011,7 +1017,7 @@ export function createChannelManager(opts: ChannelManagerOptions): ChannelManage
               }
             })
             .finally(() => {
-              lifecycleAbortSignal?.removeEventListener("abort", stopForLifecycleAbort);
+              disposeLifecycleListeners();
               if (store.tasks.get(id) === trackedPromise) {
                 store.tasks.delete(id);
               }
@@ -1041,7 +1047,7 @@ export function createChannelManager(opts: ChannelManagerOptions): ChannelManage
             store.starting.delete(id);
           }
           if (!handedOffTask) {
-            lifecycleAbortSignal?.removeEventListener("abort", stopForLifecycleAbort);
+            disposeLifecycleListeners();
             await cleanupTaskScopedApprovalRuntime("channel startup cleanup failed");
           }
           if (!handedOffTask && store.aborts.get(id) === abort) {

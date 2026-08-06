@@ -1,6 +1,7 @@
 /**
  * Server channel lifecycle tests.
  */
+import { getEventListeners } from "node:events";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ChannelIngressUnavailableError } from "../channels/message/ingress-unavailable.js";
 import type {
@@ -1270,6 +1271,33 @@ describe("server-channels auto restart", () => {
       () => signals[1]?.aborted === true,
       "expected timed-out-stop replacement to retain lifecycle generation ownership",
     );
+  });
+
+  it("releases a timed-out predecessor generation listener before forced replacement", async () => {
+    const signals: AbortSignal[] = [];
+    const startAccount = vi.fn(async ({ abortSignal }: { abortSignal: AbortSignal }) => {
+      signals.push(abortSignal);
+      await new Promise<void>(() => {});
+    });
+    const stopAccount = vi.fn(async () => {});
+    installTestRegistry(createTestPlugin({ startAccount, stopAccount }));
+    const manager = createManager();
+    const lifecycleAbort = new AbortController();
+    const startOptions = { lifecycleAbortSignal: lifecycleAbort.signal };
+
+    await manager.startChannel("discord", DEFAULT_ACCOUNT_ID, startOptions);
+    const predecessorStop = manager.stopChannel("discord", DEFAULT_ACCOUNT_ID, { manual: false });
+    await vi.advanceTimersByTimeAsync(5_000);
+    await predecessorStop;
+    expect(getEventListeners(lifecycleAbort.signal, "abort")).toHaveLength(0);
+    await manager.startChannel("discord", DEFAULT_ACCOUNT_ID, startOptions);
+    await manager.startChannel("discord", DEFAULT_ACCOUNT_ID, startOptions);
+    expect(startAccount).toHaveBeenCalledTimes(2);
+    expect(getEventListeners(lifecycleAbort.signal, "abort")).toHaveLength(1);
+    lifecycleAbort.abort();
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(signals[1]?.aborted).toBe(true);
+    expect(stopAccount).toHaveBeenCalledTimes(2);
   });
 
   it("does not restart when a timed-out recovery stop settles as terminal", async () => {
