@@ -103,7 +103,7 @@ import {
   replaceWithEffectiveCronCreatorToolAllowlist,
   type CronCreatorToolAllowlistEntry,
 } from "./tools/cron-tool.js";
-import { wrapToolWithGatewayCallerIdentity } from "./tools/gateway-caller-context.js";
+import { createGatewayToolCallerWrapper } from "./tools/gateway-caller-context.js";
 
 const MEMORY_FLUSH_ALLOWED_TOOL_NAMES = new Set(["read", "write"]);
 
@@ -659,22 +659,18 @@ export function createOpenClawCodingToolsInternal(
   const cronCreatorToolAllowlist = options?.cronCreatorToolAllowlistRef ?? [];
   const gatewayCallerAccountId =
     options?.scheduledToolPolicy?.ownerAccountId ?? options?.agentAccountId;
+  const wrapGatewayCallerIdentity = createGatewayToolCallerWrapper(agentId, {
+    agentSessionKey: options?.sessionKey,
+    agentChannel: resolveGatewayMessageChannel(options?.messageChannel ?? options?.messageProvider),
+    agentAccountId: gatewayCallerAccountId,
+    agentTo: options?.messageTo,
+    agentThreadId: options?.messageThreadId,
+    currentChannelId: options?.currentChannelId,
+    currentMessagingTarget: options?.currentMessagingTarget,
+    currentThreadTs: options?.currentThreadTs,
+  });
   // Plugin-only plans bypass createOpenClawTools, so the capability gate must
   // apply here too or narrow allowlists leak gated tools onto capless surfaces.
-  const pluginToolCallerIdentity =
-    agentId && options?.sessionKey?.trim()
-      ? {
-          agentId,
-          sessionKey: options.sessionKey.trim(),
-          turnSourceChannel: resolveGatewayMessageChannel(
-            options.messageChannel ?? options.messageProvider,
-          ),
-          turnSourceTo:
-            options.currentMessagingTarget ?? options.currentChannelId ?? options.messageTo,
-          turnSourceAccountId: gatewayCallerAccountId,
-          turnSourceThreadId: options.currentThreadTs ?? options.messageThreadId,
-        }
-      : undefined;
   const pluginToolsOnly = filterToolsByClientCaps(
     includeOpenClawTools || !includePluginTools
       ? []
@@ -721,7 +717,7 @@ export function createOpenClawCodingToolsInternal(
           resolvedConfig: options?.config,
         }),
     options?.clientCaps,
-  ).map((tool) => wrapToolWithGatewayCallerIdentity(tool, pluginToolCallerIdentity));
+  );
   const ringZeroTools = includeOpenClawTools ? getActiveAgentRingZeroTools() : [];
   const toolSearchTools =
     toolSearchControlsEnabled && ringZeroTools.length === 0
@@ -815,6 +811,7 @@ export function createOpenClawCodingToolsInternal(
             enableHeartbeatTool,
             disablePluginTools: !includePluginTools,
             wrapBeforeToolCallHook: false,
+            deferGatewayCallerIdentity: true,
             ...(cronSelfRemoveOnlyJobId ? { cronSelfRemoveOnlyJobId } : {}),
             requesterAgentIdOverride: agentId,
             requesterSenderId: options?.senderId,
@@ -977,7 +974,7 @@ export function createOpenClawCodingToolsInternal(
     options?.attribution,
   );
   // NOTE: Keep canonical (lowercase) tool names here. Provider transports remap on the wire.
-  return finalizeAgentTools({
+  const finalizedTools = finalizeAgentTools({
     tools: authorizedTools,
     modelProvider: options?.modelProvider,
     modelId: options?.modelId,
@@ -990,6 +987,9 @@ export function createOpenClawCodingToolsInternal(
     agentId,
     recordToolPrepStage: options?.recordToolPrepStage,
   });
+  // Caller identity must enclose hooks as well as execution so approvals and
+  // the underlying tool observe one trusted, call-scoped identity.
+  return finalizedTools.map(wrapGatewayCallerIdentity);
 }
 
 /** Build the runtime tool list exposed through the public agent harness SDK. */
