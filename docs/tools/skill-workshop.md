@@ -305,9 +305,9 @@ In `propose` and `auto` modes, OpenClaw can also perform a conservative review a
 substantial work and after the whole agent system becomes idle. That isolated review can draft at
 most one pending proposal — a new skill, an update to an existing workspace skill, or a revision
 of a pending proposal. It never writes a live skill directly and cannot apply, reject, or
-quarantine a proposal. In `auto` mode, the orchestrating capture pipeline applies a new-skill
-result afterward through the normal scanner-gated service; update proposals always stay pending
-for operator review.
+quarantine a proposal. Update proposals are refused unless the reviewer read the target skill's
+live body in the same review. In `auto` mode, the orchestrating capture pipeline applies the
+result afterward through the normal scanner-gated service.
 
 See [Self-learning](/tools/self-learning) for enablement, eligibility, privacy and cost details,
 the proposal threshold, and troubleshooting.
@@ -339,12 +339,12 @@ the proposal threshold, and troubleshooting.
 | `maxSkillBytes`            | `40000`  | Caps proposal body size in bytes (1024-200000).                                                                                                                     |
 
 In `propose` and `auto` modes, an isolated run of the selected model decides whether the
-completed trajectory clears the conservative proposal bar. The foreground model is not prompted
+completed trajectory clears the evidence-gated proposal bar. The foreground model is not prompted
 to learn before it replies. The background reviewer preserves the foreground run as proposal
-provenance, cannot access general agent tools, and cannot make lifecycle decisions. In `auto`
-mode, the capture pipeline applies a resulting new-skill proposal only after the isolated run
-completes; update proposals targeting an existing skill always stay pending for operator review,
-because the reviewer drafts them without reading the live skill body. The review starts only when
+provenance, cannot access general agent tools, and cannot make lifecycle decisions. Update
+proposals require the reviewer to read the target skill's live body in the same review, so drafts
+preserve current content. In `auto` mode, the capture pipeline applies the resulting proposal
+only after the isolated run completes. The review starts only when
 the foreground runtime reports its resolved model
 and that `skill_workshop` was actually available. Restrictive or unknown tool policy therefore
 fails closed and creates no proposal.

@@ -204,6 +204,9 @@ export async function prepareSkillExperienceReviewCandidate(
 
 export function createSkillExperienceReviewScheduler(deps: ExperienceReviewSchedulerDeps) {
   const pendingBySession = new Map<string, PendingExperienceReview>();
+  // Shallow turns (quick corrections, short answers) never clear the per-turn depth bar
+  // alone; their iterations accumulate per session until enough unreviewed work exists.
+  const shallowIterationsBySession = new Map<string, number>();
   let reviewInFlight = false;
   const setTimer = deps.setTimer ?? ((callback, delayMs) => setTimeout(callback, delayMs));
   const clearTimer = deps.clearTimer ?? clearTimeout;
@@ -324,7 +327,27 @@ export function createSkillExperienceReviewScheduler(deps: ExperienceReviewSched
           : Number.isSafeInteger(reportedModelIterations) && reportedModelIterations >= 0
             ? reportedModelIterations
             : 0;
+      let reviewIterations = modelIterations;
+      let reviewMessages = turnMessages;
       if (modelIterations >= EXPERIENCE_REVIEW_MIN_MODEL_ITERATIONS) {
+        shallowIterationsBySession.delete(sessionKey);
+      } else {
+        const accumulated =
+          (shallowIterationsBySession.get(sessionKey) ?? 0) + Math.max(modelIterations, 1);
+        if (accumulated < EXPERIENCE_REVIEW_MIN_MODEL_ITERATIONS) {
+          shallowIterationsBySession.set(sessionKey, accumulated);
+          log.debug(
+            `experience review deferred: reason=below-depth-bar iterations=${modelIterations} accumulated=${accumulated} session=${sessionKey}`,
+          );
+          return;
+        }
+        shallowIterationsBySession.delete(sessionKey);
+        reviewIterations = accumulated;
+        // A shallow trigger turn lacks context on its own; review the whole session
+        // transcript (bounded by the formatter) so accumulated corrections stay legible.
+        reviewMessages = params.event.messages;
+      }
+      {
         if (!existing && pendingBySession.size >= EXPERIENCE_REVIEW_MAX_PENDING) {
           const oldest = pendingBySession.entries().next().value as
             | [string, PendingExperienceReview]
@@ -365,8 +388,8 @@ export function createSkillExperienceReviewScheduler(deps: ExperienceReviewSched
             senderIsOwner: params.ctx.senderIsOwner,
           },
           ...(params.config ? { config: params.config } : {}),
-          transcript: formatSkillExperienceReviewTranscript(turnMessages),
-          modelIterations,
+          transcript: formatSkillExperienceReviewTranscript(reviewMessages),
+          modelIterations: reviewIterations,
           turnAborted: !params.event.success,
         };
         const pending = existing ?? { candidate, generation: 0 };
@@ -374,11 +397,7 @@ export function createSkillExperienceReviewScheduler(deps: ExperienceReviewSched
         pendingBySession.set(sessionKey, pending);
         arm(sessionKey, pending, EXPERIENCE_REVIEW_IDLE_MS);
         log.debug(
-          `experience review scheduled: session=${sessionKey} iterations=${modelIterations} aborted=${!params.event.success}`,
-        );
-      } else {
-        log.debug(
-          `experience review skipped: reason=below-depth-bar iterations=${modelIterations} session=${sessionKey}`,
+          `experience review scheduled: session=${sessionKey} iterations=${reviewIterations} aborted=${!params.event.success}`,
         );
       }
     },
@@ -389,6 +408,7 @@ export function createSkillExperienceReviewScheduler(deps: ExperienceReviewSched
         }
       }
       pendingBySession.clear();
+      shallowIterationsBySession.clear();
     },
   };
 }
@@ -420,9 +440,12 @@ async function runSkillExperienceReviewInner(
   }
 
   const sessionId = randomUUID();
-  const proposalMutationBudget: SkillWorkshopProposalMutationBudget = { remaining: 1 };
+  const proposalMutationBudget: SkillWorkshopProposalMutationBudget = {
+    remaining: 1,
+    readSkillKeys: new Set(),
+  };
   const reviewSessionKey = `agent:${candidate.ctx.agentId ?? "main"}:${EXPERIENCE_REVIEW_SESSION_SEGMENT}:incognito-${sessionId}`;
-  const { listWritableWorkspaceSkillSummaries } = await import("./service.js");
+  const { listWritableWorkspaceSkillSummaries } = await import("./workspace-skill-read.js");
   const existingSkills = listWritableWorkspaceSkillSummaries(workspaceDir, {
     config: candidate.config,
     agentId: candidate.ctx.agentId,
@@ -510,15 +533,9 @@ async function runSkillExperienceReviewInner(
     ) {
       continue;
     }
-    // The reviewer drafts update bodies from name/description summaries without the live
-    // skill content, so applying one unseen would replace user-authored sections. Update
-    // proposals stay pending for operator review; only create proposals auto-apply.
-    if (proposal.record.kind === "update") {
-      log.info(
-        `skill experience review left update proposal ${proposalId} pending for operator review`,
-      );
-      continue;
-    }
+    // Update proposals auto-apply like creates: the tool's read-before-write guard
+    // means the reviewer drafted the body from the live skill content it just read,
+    // and hash binding stales the proposal if the target changed since.
     await autoApplySkillProposal({
       workspaceDir,
       ...(candidate.ctx.agentId ? { agentId: candidate.ctx.agentId } : {}),

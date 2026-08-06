@@ -24,6 +24,7 @@ import type {
   SkillWorkshopProposalMutationBudget,
   SkillWorkshopProposalReviewCompletion,
 } from "../../skills/workshop/types.js";
+import { readWritableWorkspaceSkill } from "../../skills/workshop/workspace-skill-read.js";
 import { stringEnum } from "../schema/typebox.js";
 import {
   asToolParamsRecord,
@@ -64,7 +65,7 @@ const SKILL_WORKSHOP_ACTIONS = [
 function resolveProposalOnlyActions(updateProposals: boolean, supportsCompletion: boolean) {
   return [
     "create",
-    ...(updateProposals ? ["update"] : []),
+    ...(updateProposals ? ["update", "read"] : []),
     "revise",
     "list",
     "inspect",
@@ -104,7 +105,7 @@ function buildSkillWorkshopToolSchema(
     {
       action: stringEnum(proposalOnly ? proposalActions : [...SKILL_WORKSHOP_ACTIONS], {
         description: proposalOnly
-          ? `create = new skill;${updateProposals ? " update = pending update proposal targeting an existing live skill;" : ""} revise = existing pending proposal; list/inspect discover pending proposals (not filesystem search).${supportsCompletion ? " complete = durably finish this review after all proposal work." : ""} Nothing writes a live skill directly; lifecycle actions are unavailable.`
+          ? `create = new skill;${updateProposals ? " read = current body of an existing live skill; update = pending update proposal for that skill (call read on it first — update is refused otherwise);" : ""} revise = existing pending proposal; list/inspect discover pending proposals (not filesystem search).${supportsCompletion ? " complete = durably finish this review after all proposal work." : ""} Nothing writes a live skill directly; lifecycle actions are unavailable.`
           : "create = new skill; update = existing live skill; revise = existing pending proposal; list/inspect discover pending proposals (not filesystem search); evaluate runs plugin evaluators for the exact draft; apply/reject/quarantine are explicit lifecycle actions.",
       }),
       proposal_id: Type.Optional(
@@ -140,7 +141,9 @@ function buildSkillWorkshopToolSchema(
         }),
       ),
       skill_name: Type.Optional(
-        Type.String({ description: "Existing skill name or key for action=update." }),
+        Type.String({
+          description: "Existing skill name or key for action=update or action=read.",
+        }),
       ),
       proposal_content: Type.Optional(
         Type.String({
@@ -252,11 +255,32 @@ export function createSkillWorkshopTool(options: SkillWorkshopToolOptions): AnyA
         }
         return await completeProposalReview(options.proposalReviewCompletion);
       }
+
       if (
         options.proposalReviewCompletion &&
         proposalReviewPhase(options.proposalReviewCompletion) !== "open"
       ) {
         throw new ToolInputError("this Skill Workshop review is already completing or complete");
+      }
+
+      if (action === "read") {
+        if (options.updateProposals !== true) {
+          throw new ToolInputError("this Skill Workshop session cannot read live skills");
+        }
+        const skill = await readWritableWorkspaceSkill(
+          options.workspaceDir,
+          readStringParam(params, "skill_name", { required: true, label: "skill_name" }),
+          { config: options.config, agentId: options.agentId },
+        );
+        if (options.proposalMutationBudget) {
+          const readSkillKeys = options.proposalMutationBudget.readSkillKeys ?? new Set<string>();
+          readSkillKeys.add(skill.skillKey);
+          options.proposalMutationBudget.readSkillKeys = readSkillKeys;
+        }
+        return {
+          content: [{ type: "text", text: skill.content }],
+          details: { skillKey: skill.skillKey },
+        };
       }
 
       if (action === "list") {
@@ -383,6 +407,21 @@ export function createSkillWorkshopTool(options: SkillWorkshopToolOptions): AnyA
       const supportFiles = readSupportFilesParam(params);
       const goal = readStringParam(params, "goal");
       const evidence = readStringParam(params, "evidence");
+
+      if (action === "update" && options.updateProposals === true) {
+        // Reviewer sessions have no file tools: an update drafted without the live body
+        // would blind-replace operator-authored content. Refuse before spending budget.
+        const target = await readWritableWorkspaceSkill(
+          options.workspaceDir,
+          readStringParam(params, "skill_name", { required: true, label: "skill_name" }),
+          { config: options.config, agentId: options.agentId },
+        );
+        if (!options.proposalMutationBudget?.readSkillKeys?.has(target.skillKey)) {
+          throw new ToolInputError(
+            `read the live skill first: call action=read with skill_name "${target.skillKey}", then draft the update from that returned content`,
+          );
+        }
+      }
 
       const reservesMutation = SKILL_WORKSHOP_MUTATION_ACTIONS.has(action);
       if (

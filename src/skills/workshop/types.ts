@@ -73,6 +73,8 @@ export type SkillWorkshopProposalMutationBudget = {
   failedMutations?: number;
   /** Run-local identity set used to keep idea counts distinct. */
   mutatedProposalIds?: Set<string>;
+  /** Live skills read this run; update proposals require their target here first. */
+  readSkillKeys?: Set<string>;
 };
 
 export type SkillWorkshopProposalReviewProgress = {

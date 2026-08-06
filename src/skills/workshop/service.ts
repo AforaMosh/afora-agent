@@ -1,11 +1,6 @@
-import path from "node:path";
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
-import {
-  buildWorkspaceSkillStatus,
-  resolveSkillStatusEntry,
-  type SkillStatusEntry,
-} from "../discovery/status.js";
+import { buildWorkspaceSkillStatus, resolveSkillStatusEntry } from "../discovery/status.js";
 import {
   assertInsideWorkspace,
   readWorkspaceSkillFile,
@@ -45,6 +40,7 @@ import {
   withSkillProposalTargetLock,
   type PreparedSkillProposalSupportFile,
 } from "./store.js";
+import { assertWritableSkillTarget } from "./workspace-skill-read.js";
 export {
   getSkillProposalRunProgress,
   inspectSkillProposal,
@@ -75,7 +71,6 @@ function proposalStoreOptions(env?: NodeJS.ProcessEnv) {
   return env ? { env } : {};
 }
 
-const WRITABLE_WORKSPACE_SOURCES = new Set(["openclaw-workspace", "agents-skills-project"]);
 const APPLY_TRANSITION_DEPENDENCIES = {
   assertExpectedRevisionHash,
   evaluateSkillProposal,
@@ -223,40 +218,6 @@ export async function proposeCreateSkill(
     });
   }
   return { record, revisionHash: hashSkillProposalRevision(record), content: proposalContent };
-}
-
-/** Summary of a workspace skill the workshop is allowed to write. */
-type WritableWorkspaceSkillSummary = {
-  name: string;
-  description?: string;
-  filePath: string;
-};
-
-/**
- * Lists the workspace skills the workshop can target with update proposals, using the same
- * status discovery as `proposeUpdateSkill` so callers that route learnings to existing
- * skills stay in lockstep with what an update can actually write.
- */
-export function listWritableWorkspaceSkillSummaries(
-  workspaceDir: string,
-  opts?: { config?: OpenClawConfig; agentId?: string },
-): WritableWorkspaceSkillSummary[] {
-  const status = buildWorkspaceSkillStatus(workspaceDir, {
-    config: opts?.config,
-    agentId: opts?.agentId,
-  });
-  const summaries: WritableWorkspaceSkillSummary[] = [];
-  for (const skill of status.skills) {
-    if (!WRITABLE_WORKSPACE_SOURCES.has(skill.source)) {
-      continue;
-    }
-    summaries.push(
-      skill.description
-        ? { name: skill.skillKey, description: skill.description, filePath: skill.filePath }
-        : { name: skill.skillKey, filePath: skill.filePath },
-    );
-  }
-  return summaries;
 }
 
 export async function proposeUpdateSkill(
@@ -695,17 +656,6 @@ async function assertSupportTargetsUnchanged(
       relativePath: file.path,
     });
     await assertSkillProposalSupportTargetUnchanged({ record, file, currentContent, input });
-  }
-}
-
-function assertWritableSkillTarget(workspaceDir: string, skill: SkillStatusEntry): void {
-  if (!WRITABLE_WORKSPACE_SOURCES.has(skill.source)) {
-    throw new Error(`Skill source is not writable by Skill Workshop: ${skill.source}`);
-  }
-  assertInsideWorkspace(workspaceDir, skill.filePath, "skill file");
-  assertInsideWorkspace(workspaceDir, skill.baseDir, "skill directory");
-  if (path.basename(skill.filePath) !== "SKILL.md") {
-    throw new Error("Skill Workshop can only update SKILL.md targets.");
   }
 }
 

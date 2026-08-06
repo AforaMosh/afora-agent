@@ -232,7 +232,7 @@ describe("skill_workshop tool", () => {
     ).rejects.toThrow("reached its proposal mutation limit");
   });
 
-  it("lets internal review runs draft update proposals for existing skills", async () => {
+  it("lets internal review runs draft update proposals after reading the live skill", async () => {
     const workspaceDir = await tempDirs.make("openclaw-skill-workshop-review-update-");
     const fullTool = createSkillWorkshopTool({
       workspaceDir,
@@ -257,6 +257,28 @@ describe("skill_workshop tool", () => {
       updateProposals: true,
       proposalMutationBudget,
     });
+    expect(
+      (reviewTool.parameters as { properties: { action: { enum: string[] } } }).properties.action
+        .enum,
+    ).toEqual(["create", "update", "read", "revise", "list", "inspect"]);
+
+    await expect(
+      reviewTool.execute("blind-update", {
+        action: "update",
+        skill_name: "weather-planner",
+        proposal_content: "# Weather Planner\n\nRewritten blind.\n",
+      }),
+    ).rejects.toThrow("read the live skill first");
+    expect(proposalMutationBudget.remaining).toBe(1);
+
+    const read = await reviewTool.execute("review-read", {
+      action: "read",
+      skill_name: "weather-planner",
+    });
+    expect((read.content[0] as { text: string }).text).toContain(
+      "Check weather before outdoor recommendations.",
+    );
+
     const update = await reviewTool.execute("review-update", {
       action: "update",
       skill_name: "weather-planner",
@@ -270,6 +292,18 @@ describe("skill_workshop tool", () => {
       skillKey: "weather-planner",
     });
     expect(proposalMutationBudget.remaining).toBe(0);
+  });
+
+  it("refuses live-skill reads outside update-enabled review sessions", async () => {
+    const workspaceDir = await tempDirs.make("openclaw-skill-workshop-review-read-");
+    const reviewTool = createSkillWorkshopTool({
+      workspaceDir,
+      proposalOnly: true,
+      proposalMutationBudget: { remaining: 1 },
+    });
+    await expect(
+      reviewTool.execute("read-denied", { action: "read", skill_name: "weather-planner" }),
+    ).rejects.toThrow("only inspect or draft proposals");
   });
 
   it("does not refund the review mutation budget after a failed mutation", async () => {

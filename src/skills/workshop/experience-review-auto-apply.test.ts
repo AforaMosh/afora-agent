@@ -91,7 +91,7 @@ describe("experience review auto apply", () => {
     );
   });
 
-  it("leaves reviewer update proposals pending instead of auto-applying them", async () => {
+  it("auto-applies reviewer update proposals drafted from the live skill body", async () => {
     const workspaceDir = await tempDirs.make("openclaw-experience-auto-apply-update-");
     const seedTool = createSkillWorkshopTool({
       workspaceDir,
@@ -121,10 +121,22 @@ describe("experience review auto apply", () => {
         autonomousCapture: params.skillWorkshopAutonomousCapture,
         proposalMutationBudget: params.skillWorkshopProposalMutationBudget,
       });
+      await expect(
+        tool.execute("blind-update", {
+          action: "update",
+          skill_name: "deployment-preflight",
+          proposal_content: "# Deployment Preflight\n\nRewritten blind.\n",
+        }),
+      ).rejects.toThrow("read the live skill first");
+      const read = await tool.execute("review-read", {
+        action: "read",
+        skill_name: "deployment-preflight",
+      });
+      const liveBody = (read.content[0] as { text: string }).text;
       await tool.execute("review-update", {
         action: "update",
         skill_name: "deployment-preflight",
-        proposal_content: "# Deployment Preflight\n\nReviewer-rewritten steps.\n",
+        proposal_content: `${liveBody.trimEnd()}\nCheck alerts and timing.\n`,
       });
       return {};
     });
@@ -150,11 +162,14 @@ describe("experience review auto apply", () => {
     const updateEntry = manifest.proposals.find((entry) => entry.kind === "update");
     expect(updateEntry).toMatchObject({
       skillKey: "deployment-preflight",
-      status: "pending",
+      status: "applied",
     });
-    await expect(
-      fs.readFile(`${workspaceDir}/skills/deployment-preflight/SKILL.md`, "utf8"),
-    ).resolves.toContain("Operator-authored preflight steps.");
+    const liveSkill = await fs.readFile(
+      `${workspaceDir}/skills/deployment-preflight/SKILL.md`,
+      "utf8",
+    );
+    expect(liveSkill).toContain("Operator-authored preflight steps.");
+    expect(liveSkill).toContain("Check alerts and timing.");
   });
 
   it("re-enters gateway admission when fired from a released request root", async () => {
