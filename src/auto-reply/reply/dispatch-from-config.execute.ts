@@ -509,12 +509,6 @@ export async function executeDispatch(state: PrepareDispatchExecutionReadyState)
                             assistantMessageIndex: payloadMetadata.assistantMessageIndex,
                           }
                         : context;
-                    if (!state.suppressAutomaticSourceDelivery) {
-                      await params.replyOptions?.onBlockReplyQueued?.(
-                        visiblePayload,
-                        queuedContext,
-                      );
-                    }
                     if (isDispatchOperationAborted()) {
                       return;
                     }
@@ -534,6 +528,7 @@ export async function executeDispatch(state: PrepareDispatchExecutionReadyState)
                     if (isDispatchOperationAborted()) {
                       return;
                     }
+                    let blockAdmitted = false;
                     if (shouldRouteToOriginating) {
                       const result = await sendPayloadAsync(
                         normalizedPayload,
@@ -542,12 +537,20 @@ export async function executeDispatch(state: PrepareDispatchExecutionReadyState)
                         "block",
                       );
                       state.recordRoutedBlockReplyDelivery(normalizedPayload, result);
+                      blockAdmitted = result?.delivered === true;
                     } else {
                       markInboundDedupeReplayUnsafe();
                       const delivered = state.sendTrackedBlockReply(normalizedPayload);
                       if (delivered) {
                         state.progressState.hasPendingDirectBlockReplyDelivery = true;
                       }
+                      blockAdmitted = delivered;
+                    }
+                    if (blockAdmitted && !state.suppressAutomaticSourceDelivery) {
+                      await params.replyOptions?.onBlockReplyQueued?.(
+                        visiblePayload,
+                        queuedContext,
+                      );
                     }
                   };
                   return run();
