@@ -37,8 +37,7 @@ function createContext(): MatrixQaScenarioContext {
   } as unknown as MatrixQaScenarioContext;
 }
 
-function createClient() {
-  const stop = vi.fn(async () => undefined);
+function createClient(stop = vi.fn(async () => undefined)) {
   return {
     client: { stop } as unknown as MatrixQaE2eeScenarioClient,
     stop,
@@ -60,38 +59,6 @@ describe("Matrix E2EE scenario readiness scope", () => {
     expect(
       sharedScenarioMocks.createMatrixQaE2eeScenarioClient.mock.calls[0]?.[0],
     ).not.toHaveProperty("readyRoomIds");
-  });
-
-  it("requires the explicit message room for both driver and observer", async () => {
-    const driver = createClient();
-    const observer = createClient();
-    sharedScenarioMocks.createMatrixQaE2eeScenarioClient
-      .mockResolvedValueOnce(driver.client)
-      .mockResolvedValueOnce(observer.client);
-    const roomId = "!message:matrix-qa.test";
-
-    await expect(
-      withMatrixQaE2eeDriverAndObserver(
-        createContext(),
-        "matrix-e2ee-basic-reply",
-        async (clients) => clients,
-        { readyRoomIds: [roomId] },
-      ),
-    ).resolves.toEqual({ driver: driver.client, observer: observer.client });
-
-    expect(sharedScenarioMocks.createMatrixQaE2eeScenarioClient).toHaveBeenNthCalledWith(
-      1,
-      expect.objectContaining({ actorId: "driver", readyRoomIds: [roomId] }),
-    );
-    expect(sharedScenarioMocks.createMatrixQaE2eeScenarioClient).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({ actorId: "observer", readyRoomIds: [roomId] }),
-    );
-    expect(observer.stop).toHaveBeenCalledTimes(1);
-    expect(driver.stop).toHaveBeenCalledTimes(1);
-    expect(observer.stop.mock.invocationCallOrder[0]).toBeLessThan(
-      driver.stop.mock.invocationCallOrder[0]!,
-    );
   });
 
   it("preserves the observer construction failure when driver cleanup succeeds", async () => {
@@ -145,5 +112,51 @@ describe("Matrix E2EE scenario readiness scope", () => {
     expect((failure as Error).message).not.toContain("driver-secret");
     expect(run).not.toHaveBeenCalled();
     expect(driver.stop).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(
+    Array.from({ length: 8 }, (_, row) => [Boolean(row & 4), Boolean(row & 2), Boolean(row & 1)]),
+  )("settles the post-construction lifecycle %#", async (runFails, observerFails, driverFails) => {
+    const order: string[] = [];
+    const errors = ["run", "observer", "driver"].map((name) => new Error(`${name}-secret`));
+    const step = (name: string, error?: Error, value?: string) =>
+      vi.fn(async () => {
+        order.push(name);
+        if (error) throw error;
+        return value;
+      });
+    const driver = createClient(step("driver", driverFails ? errors[2] : undefined));
+    const observer = createClient(step("observer", observerFails ? errors[1] : undefined));
+    sharedScenarioMocks.createMatrixQaE2eeScenarioClient
+      .mockResolvedValueOnce(driver.client)
+      .mockResolvedValueOnce(observer.client);
+    const outcome = await withMatrixQaE2eeDriverAndObserver(
+      createContext(),
+      "matrix-e2ee-basic-reply",
+      step("run", runFails ? errors[0] : undefined, "ok"),
+      { readyRoomIds: ["!message:matrix-qa.test"] },
+    ).catch((error: unknown) => error);
+    const expected = errors.filter((_, index) => [runFails, observerFails, driverFails][index]);
+
+    expect(order).toEqual(["run", "observer", "driver"]);
+    expect(
+      sharedScenarioMocks.createMatrixQaE2eeScenarioClient.mock.calls.map(([arg]) => ({
+        actorId: arg.actorId,
+        readyRoomIds: arg.readyRoomIds,
+      })),
+    ).toEqual([
+      { actorId: "driver", readyRoomIds: ["!message:matrix-qa.test"] },
+      { actorId: "observer", readyRoomIds: ["!message:matrix-qa.test"] },
+    ]);
+    if (!expected.length) expect(outcome).toBe("ok");
+    else if (expected.length === 1) expect(outcome).toBe(expected[0]);
+    else {
+      expect(outcome).toMatchObject({
+        cause: expected[0],
+        errors: expected,
+        message: "Matrix E2EE driver and observer lifecycle failed",
+      });
+      expect((outcome as Error).message).not.toMatch(/secret/u);
+    }
   });
 });

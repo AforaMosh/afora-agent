@@ -36,6 +36,23 @@ import type { MatrixQaRoomEventWaitResult } from "./sync.js";
 
 type MatrixQaE2eeRuntime = typeof import("@openclaw/matrix/test-api.js");
 
+async function runMatrixQaBootstrapLifecycle<T>(
+  run: () => Promise<T>,
+  stop: () => Promise<unknown>,
+): Promise<T> {
+  const errors: unknown[] = [];
+  const result = await run().catch((error: unknown) => errors.push(error));
+  await stop().catch((error: unknown) => errors.push(error));
+  if (errors.length === 0) {
+    return result as T;
+  }
+  throw errors.length === 1
+    ? errors[0]
+    : new AggregateError(errors, "Matrix E2EE bootstrap lifecycle failed", {
+        cause: errors[0],
+      });
+}
+
 type MatrixQaE2eeClientParams = {
   accessToken: string;
   actorId: MatrixQaE2eeActorId;
@@ -551,9 +568,8 @@ export async function runMatrixQaE2eeBootstrap(
 ): Promise<MatrixVerificationBootstrapResult> {
   const client: MatrixClient = await createMatrixQaE2eeMatrixClient(params);
 
-  try {
-    return await client.bootstrapOwnDeviceVerification();
-  } finally {
-    await client.stopAndPersist().catch(() => undefined);
-  }
+  return await runMatrixQaBootstrapLifecycle(
+    () => client.bootstrapOwnDeviceVerification(),
+    () => client.stopAndPersist(),
+  );
 }

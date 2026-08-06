@@ -9,11 +9,12 @@ import {
   createMatrixQaE2eeObservedEventRecorder,
   prepareMatrixQaE2eeStorage,
 } from "./e2ee-client-internals.js";
-import { createMatrixQaE2eeScenarioClient } from "./e2ee-client.js";
+import { createMatrixQaE2eeScenarioClient, runMatrixQaE2eeBootstrap } from "./e2ee-client.js";
 import { findMatrixQaObservedEventMatch, type MatrixQaObservedEvent } from "./events.js";
 
 const scenarioClientMocks = vi.hoisted(() => {
   const client = {
+    bootstrapOwnDeviceVerification: vi.fn(async () => ({ success: true })),
     drainPendingDecryptions: vi.fn(async () => undefined),
     off: vi.fn((_eventName: string, _listener: (...args: unknown[]) => void) => undefined),
     on: vi.fn((_eventName: string, _listener: (...args: unknown[]) => void) => undefined),
@@ -51,6 +52,9 @@ const testing = {
 };
 
 beforeEach(() => {
+  scenarioClientMocks.client.bootstrapOwnDeviceVerification.mockReset().mockResolvedValue({
+    success: true,
+  });
   scenarioClientMocks.setMatrixRuntime.mockReset();
   scenarioClientMocks.client.drainPendingDecryptions.mockReset().mockResolvedValue(undefined);
   scenarioClientMocks.client.off.mockReset();
@@ -316,27 +320,45 @@ describe("matrix qa e2ee client storage", () => {
     }
   });
 
-  it("does not require room readiness for control-plane scenarios", async () => {
-    const outputDir = await mkdtemp(path.join(os.tmpdir(), "matrix-qa-e2ee-control-plane-"));
+  it.each(Array.from({ length: 4 }, (_, row) => [Boolean(row & 2), Boolean(row & 1)]))(
+    "settles bootstrap lifecycle %#",
+    async (runFails, stopFails) => {
+      const runError = new Error("bootstrap-secret");
+      const stopError = new Error("persist-secret");
+      if (runFails) {
+        scenarioClientMocks.client.bootstrapOwnDeviceVerification.mockRejectedValueOnce(runError);
+      }
+      if (stopFails) {
+        scenarioClientMocks.client.stopAndPersist.mockRejectedValueOnce(stopError);
+      }
 
-    try {
-      const client = await createMatrixQaE2eeScenarioClient({
+      const outcome = await runMatrixQaE2eeBootstrap({
         accessToken: "driver-token",
         actorId: "driver",
         baseUrl: "https://matrix-qa.test",
-        observedEvents: [],
-        outputDir,
+        outputDir: os.tmpdir(),
         scenarioId: "matrix-e2ee-bootstrap-success",
         timeoutMs: 1_000,
         userId: "@driver:matrix-qa.test",
-      });
+      }).catch((error: unknown) => error);
+      const expected = [...(runFails ? [runError] : []), ...(stopFails ? [stopError] : [])];
 
+      if (expected.length === 0) {
+        expect(outcome).toEqual({ success: true });
+      } else if (expected.length === 1) {
+        expect(outcome).toBe(expected[0]);
+      } else {
+        expect(outcome).toMatchObject({
+          cause: runError,
+          errors: expected,
+          message: "Matrix E2EE bootstrap lifecycle failed",
+        });
+        expect((outcome as Error).message).not.toMatch(/secret/u);
+      }
+      expect(scenarioClientMocks.client.stopAndPersist).toHaveBeenCalledOnce();
       expect(scenarioClientMocks.client.waitForEncryptedRoomReady).not.toHaveBeenCalled();
-      await client.stop();
-    } finally {
-      await rm(outputDir, { force: true, recursive: true });
-    }
-  });
+    },
+  );
 
   it("aborts timed-out readiness and cleans up the partially constructed client", async () => {
     vi.useFakeTimers();

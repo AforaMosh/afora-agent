@@ -4,6 +4,7 @@ import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/temp-path";
 import {
+  execCleanupCommand,
   execCommand,
   fetchHealthUrl,
   resolveComposeServiceUrl,
@@ -37,8 +38,16 @@ type MatrixQaHarness = MatrixQaHarnessFiles & {
 async function collectCleanupFailures(
   tasks: ReadonlyArray<() => Promise<unknown>>,
 ): Promise<unknown[]> {
-  const results = await Promise.allSettled(tasks.map(async (task) => await task()));
-  return results.flatMap((result) => (result.status === "rejected" ? [result.reason] : []));
+  const failures: unknown[] = [];
+  for (const task of tasks) {
+    failures.push(
+      ...(await task().then(
+        () => [],
+        (error: unknown) => [error],
+      )),
+    );
+  }
+  return failures;
 }
 
 function buildStartupCleanupError(error: unknown, cleanupFailures: unknown[]): AggregateError {
@@ -66,6 +75,7 @@ export async function startMatrixQaHarness(
 ): Promise<MatrixQaHarness> {
   const repoRoot = path.resolve(params.repoRoot ?? process.cwd());
   const runCommand = deps?.runCommand ?? execCommand;
+  const cleanupRunCommand = deps?.runCommand ?? execCleanupCommand;
   const fetchImpl = deps?.fetchImpl ?? fetchHealthUrl;
   const sleepImpl = deps?.sleepImpl ?? sleep;
   const startRecordingProxyImpl = deps?.startRecordingProxyImpl ?? startMatrixQaRecordingProxy;
@@ -207,21 +217,20 @@ export async function startMatrixQaHarness(
         const failures = await collectCleanupFailures([
           () => recording.stop(),
           () =>
-            withMatrixQaHarnessTimeout(
-              "Matrix homeserver cleanup",
-              MATRIX_QA_CLEANUP_TIMEOUT_MS,
-              runCommand(
-                "docker",
-                ["compose", "-f", files.composeFile, "down", "--remove-orphans"],
-                repoRoot,
-              ),
+            cleanupRunCommand(
+              "docker",
+              ["compose", "-f", files.composeFile, "down", "--remove-orphans"],
+              repoRoot,
             ),
+          () => removeRuntimeDirImpl(runtimeDir),
         ]);
-        // Docker needs the compose file while stopping. Remove the token-bearing
-        // runtime tree after teardown settles, regardless of teardown success.
-        failures.push(...(await collectCleanupFailures([() => removeRuntimeDirImpl(runtimeDir)])));
-        if (failures.length > 0) {
-          throw new AggregateError(failures, "Matrix QA harness cleanup failed");
+        if (failures.length === 1) {
+          throw failures[0];
+        }
+        if (failures.length > 1) {
+          throw new AggregateError(failures, "Matrix QA harness cleanup failed", {
+            cause: failures[0],
+          });
         }
       },
       get upstreamBaseUrl() {
@@ -231,19 +240,13 @@ export async function startMatrixQaHarness(
   } catch (error) {
     const cleanupFailures = await collectCleanupFailures([
       () =>
-        withMatrixQaHarnessTimeout(
-          "Matrix homeserver cleanup after startup failure",
-          MATRIX_QA_CLEANUP_TIMEOUT_MS,
-          runCommand(
-            "docker",
-            ["compose", "-f", files.composeFile, "down", "--remove-orphans"],
-            repoRoot,
-          ),
+        cleanupRunCommand(
+          "docker",
+          ["compose", "-f", files.composeFile, "down", "--remove-orphans"],
+          repoRoot,
         ),
+      () => removeRuntimeDirImpl(runtimeDir),
     ]);
-    cleanupFailures.push(
-      ...(await collectCleanupFailures([() => removeRuntimeDirImpl(runtimeDir)])),
-    );
     if (cleanupFailures.length > 0) {
       throw buildStartupCleanupError(error, cleanupFailures);
     }

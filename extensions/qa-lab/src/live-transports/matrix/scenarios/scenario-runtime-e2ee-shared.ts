@@ -28,6 +28,25 @@ export const MATRIX_QA_SYNC_STATE_AFTER_PARAM = "org.matrix.msc4222.use_state_af
 
 type MatrixQaE2eeBootstrapResult = Awaited<ReturnType<typeof runMatrixQaE2eeBootstrap>>;
 
+async function runMatrixQaDriverObserverLifecycle<T>(
+  run: () => Promise<T>,
+  cleanups: ReadonlyArray<() => Promise<unknown>>,
+): Promise<T> {
+  const errors: unknown[] = [];
+  const result = await run().catch((error: unknown) => errors.push(error));
+  for (const cleanup of cleanups) {
+    await cleanup().catch((error: unknown) => errors.push(error));
+  }
+  if (errors.length === 0) {
+    return result as T;
+  }
+  throw errors.length === 1
+    ? errors[0]
+    : new AggregateError(errors, "Matrix E2EE driver and observer lifecycle failed", {
+        cause: errors[0],
+      });
+}
+
 export function requireMatrixQaE2eeOutputDir(context: MatrixQaScenarioContext) {
   if (!context.outputDir) {
     throw new Error("Matrix E2EE QA scenarios require an output directory");
@@ -362,15 +381,10 @@ export async function withMatrixQaE2eeDriverAndObserver<T>(
     }
     throw error;
   }
-  try {
-    return await run({ driver, observer });
-  } finally {
-    try {
-      await observer.stop();
-    } finally {
-      await driver.stop();
-    }
-  }
+  return await runMatrixQaDriverObserverLifecycle(
+    () => run({ driver, observer }),
+    [() => observer.stop(), () => driver.stop()],
+  );
 }
 
 export async function completeMatrixQaSasVerification(params: {
