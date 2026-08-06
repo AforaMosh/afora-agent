@@ -379,7 +379,9 @@ export async function withMatrixQaIsolatedE2eeDriverRoom<T>(
       requireMention: true,
     },
   };
-  const applyPatch = async (accountPatch: Record<string, unknown>) => {
+  let patchedGateway = false;
+  let client: MatrixQaE2eeScenarioClient | undefined;
+  const applyPatch = async (accountPatch: Record<string, unknown>, afterWrite?: () => void) => {
     await context.restartGatewayAfterStateMutation?.(
       async () => {
         await patchMatrixQaGatewayMatrixAccount({
@@ -387,6 +389,7 @@ export async function withMatrixQaIsolatedE2eeDriverRoom<T>(
           accountPatch,
           configPath,
         });
+        afterWrite?.();
       },
       {
         timeoutMs: context.timeoutMs,
@@ -395,16 +398,18 @@ export async function withMatrixQaIsolatedE2eeDriverRoom<T>(
     );
   };
 
-  let patchedGateway = false;
-  let client: MatrixQaE2eeScenarioClient | undefined;
   return await runMatrixQaRoomLifecycle(
     async () => {
-      await applyPatch({
-        groupAllowFrom: [driverAccount.userId],
-        groupPolicy: "allowlist",
-        groups: isolatedGroups,
-      });
-      patchedGateway = true;
+      await applyPatch(
+        {
+          groupAllowFrom: [driverAccount.userId],
+          groupPolicy: "allowlist",
+          groups: isolatedGroups,
+        },
+        () => {
+          patchedGateway = true;
+        },
+      );
       const actorId: `driver-${string}` = `driver-${scenarioId
         .replace(/^matrix-e2ee-/, "")
         .replace(/[^A-Za-z0-9_-]/g, "-")

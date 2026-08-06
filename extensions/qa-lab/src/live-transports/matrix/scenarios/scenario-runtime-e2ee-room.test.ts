@@ -122,4 +122,44 @@ describe("Matrix E2EE room lifecycles", () => {
     expectAggregate(outcome, errors, "Matrix E2EE isolated driver room lifecycle failed");
     expect(order).toEqual(["patch", "run", "client", "restore"]);
   });
+
+  it("restores an isolated gateway mutation when restart fails after the write", async () => {
+    const order: string[] = [];
+    const restartError = new Error("restart-secret");
+    const restorationError = new Error("restoration-secret");
+    mocks.readAccount.mockResolvedValueOnce({
+      groupAllowFrom: ["@original:test"],
+      groupPolicy: "open",
+    });
+    mocks.register.mockResolvedValueOnce({ accessToken: "x", deviceId: "x", userId: "x" });
+    mocks.matrixClient.createPrivateRoom.mockResolvedValueOnce("!room:test");
+    mocks.patchAccount
+      .mockImplementationOnce(action(order, "patch"))
+      .mockImplementationOnce(action(order, "restoration", restorationError));
+    const restartGatewayAfterStateMutation = vi.fn(
+      async (mutate: () => Promise<void>) => await mutate(),
+    );
+    restartGatewayAfterStateMutation.mockImplementationOnce(async (mutate) => {
+      await mutate();
+      order.push("restart");
+      throw restartError;
+    });
+
+    const outcome = await capture(
+      withMatrixQaIsolatedE2eeDriverRoom(
+        { ...context, restartGatewayAfterStateMutation },
+        scenarioId,
+        vi.fn(),
+      ),
+    );
+
+    expect(order).toEqual(["patch", "restart", "restoration"]);
+    expect(restartGatewayAfterStateMutation).toHaveBeenCalledTimes(2);
+    expectAggregate(
+      outcome,
+      [restartError, restorationError],
+      "Matrix E2EE isolated driver room lifecycle failed",
+    );
+    expect((outcome as Error).message).not.toMatch(/secret/u);
+  });
 });
