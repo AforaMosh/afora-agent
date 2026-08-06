@@ -11,7 +11,7 @@ import type { UserTurnTranscriptRecorder } from "../../sessions/user-turn-transc
 
 type LogicalTurnSelectionState = "unselected" | "selected" | "started" | "disposed";
 
-export type EffectiveContextEngineRef = Readonly<{
+type EffectiveContextEngineRef = Readonly<{
   engine: ContextEngine;
   registeredId: string;
   ownerPluginId?: string;

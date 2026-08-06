@@ -22,7 +22,7 @@ type PendingContextEngineTurn = Readonly<{
   session_id: string;
 }>;
 
-export type ContextEngineTurnOutboxPayload = Readonly<{
+type ContextEngineTurnOutboxPayload = Readonly<{
   boundary: TranscriptTurnBoundary;
   isHeartbeat: boolean;
   messages: AgentMessage[];

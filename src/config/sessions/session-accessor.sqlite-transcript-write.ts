@@ -85,7 +85,7 @@ class SqliteTranscriptMutationConflictError extends Error {
   }
 }
 
-export class TranscriptTurnAdmissionConflictError extends Error {
+class TranscriptTurnAdmissionConflictError extends Error {
   constructor(idempotencyKey: string) {
     super(`Transcript idempotency key "${idempotencyKey}" conflicts with the admitted message.`);
     this.name = "TranscriptTurnAdmissionConflictError";

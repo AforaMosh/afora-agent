@@ -33,7 +33,6 @@ import type {
 export type {
   PersistedUserTurnMessage,
   UserTurnInput,
-  UserTurnTranscriptAdmissionReceipt,
   UserTurnTranscriptRecorder,
 } from "./user-turn-transcript.types.js";
 

@@ -13,7 +13,7 @@ export class SessionTranscriptReadFenceError extends Error {
   }
 }
 
-export type SessionTranscriptReadFence = Readonly<{
+type SessionTranscriptReadFence = Readonly<{
   admission: UserTurnTranscriptAdmissionReceipt;
   beforeActiveMessagePosition: number;
   beforeRawSeq: number;

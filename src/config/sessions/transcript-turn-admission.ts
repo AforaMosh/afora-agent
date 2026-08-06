@@ -1,5 +1,1 @@
-export type {
-  TranscriptEntryAnchor,
-  TranscriptTurnAdmission,
-  TranscriptTurnBoundary,
-} from "./transcript-entry-anchor.js";
+export type { TranscriptTurnAdmission } from "./transcript-entry-anchor.js";
