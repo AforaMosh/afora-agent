@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { isDeepStrictEqual } from "node:util";
 import { resolveTimestampMsToIsoString } from "@openclaw/normalization-core/number-coercion";
 import { isRecord } from "@openclaw/normalization-core/record-coerce";
 import {
@@ -657,7 +658,7 @@ function appendSqliteTranscriptMessageInTransaction<TMessage>(
       const { timestamp: _timestamp, ...stable } = message;
       return stable;
     };
-    return JSON.stringify(withoutTimestamp(stored)) === JSON.stringify(withoutTimestamp(candidate));
+    return isDeepStrictEqual(withoutTimestamp(stored), withoutTimestamp(candidate));
   };
   // Idempotent replays return the stored row with its persisted parent so callers
   // adopt the durable tree instead of re-deriving one from a stale snapshot.

@@ -2941,6 +2941,45 @@ describe("session accessor seam", () => {
     ]);
   });
 
+  it("accepts idempotent transcript replays with reordered JSON fields", async () => {
+    const scope = {
+      agentId: "main",
+      sessionId: "session-reordered-replay",
+      sessionKey: "agent:main:reordered-replay",
+      storePath,
+    };
+    await upsertSessionEntry(scope, {
+      sessionId: scope.sessionId,
+      updatedAt: 10,
+    });
+    const first = await appendTranscriptMessage(scope, {
+      idempotencyLookup: "scan",
+      message: {
+        role: "user",
+        content: "same message",
+        idempotencyKey: "reordered-replay:user",
+        metadata: { first: 1, second: 2 },
+        timestamp: 1,
+      },
+    });
+    const replay = await appendTranscriptMessage(scope, {
+      idempotencyLookup: "scan",
+      message: {
+        timestamp: 2,
+        metadata: { second: 2, first: 1 },
+        idempotencyKey: "reordered-replay:user",
+        content: "same message",
+        role: "user",
+      },
+    });
+
+    expect(first?.appended).toBe(true);
+    expect(replay).toMatchObject({
+      appended: false,
+      messageId: first?.messageId,
+    });
+  });
+
   it("allows concurrent SQLite transcript turn and direct appends", async () => {
     const scope = {
       agentId: "main",
