@@ -7,6 +7,7 @@ import {
 } from "../commands/command-visibility.js";
 import { initCommands } from "../commands/slash-commands-impl.js";
 import { resolveGroupCommandLevelFromAccountConfig } from "../config/group.js";
+import { qqbotNotConfiguredMessage } from "../config/setup-guidance.js";
 import type { HistoryEntry } from "../group/history.js";
 import { claimMessageReply } from "../messaging/outbound-reply.js";
 import { setOutboundAudioPort } from "../messaging/outbound.js";
@@ -46,7 +47,7 @@ export async function startGateway(ctx: CoreGatewayContext): Promise<void> {
   initCommands(adapters.commands);
 
   if (!account.appId || !account.clientSecret) {
-    throw new Error("QQBot not configured (missing appId or clientSecret)");
+    throw new Error(qqbotNotConfiguredMessage(account.accountId));
   }
 
   const diag = await runDiagnostics();
