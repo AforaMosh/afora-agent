@@ -451,9 +451,116 @@ describe("scripts/test-live-shard", () => {
       }),
     ).toEqual({
       ok: false,
-      reason: `Vitest report selected live test files had no passing assertions: ${quicksilverFiles.join(", ")}`,
+      reason:
+        "Vitest report missing required GPT-Live assertion: extensions/openai/realtime-quicksilver.live.test.ts :: GPT-Live Platform WebSocket opens a Frameless Bidi session without a browser or WebRTC",
     });
   });
+
+  it("does not require named GPT-Live assertions while the opt-in is disabled", () => {
+    const file = "extensions/openai/realtime-quicksilver.live.test.ts";
+    const payload = {
+      numPassedTests: 1,
+      numTotalTests: 1,
+      testResults: [
+        {
+          name: path.join(process.cwd(), file),
+          assertionResults: [{ fullName: "arbitrary transport smoke", status: "passed" }],
+        },
+      ],
+    };
+
+    expect(validateLiveShardReportPayload(payload, [file], process.cwd(), {})).toEqual({
+      ok: true,
+    });
+  });
+
+  it("rejects arbitrary passing assertions when the GPT-Live opt-in is enabled", () => {
+    const file = "extensions/openai/realtime-quicksilver.live.test.ts";
+    const payload = {
+      numPassedTests: 1,
+      numTotalTests: 1,
+      testResults: [
+        {
+          name: path.join(process.cwd(), file),
+          assertionResults: [{ fullName: "arbitrary transport smoke", status: "passed" }],
+        },
+      ],
+    };
+
+    expect(
+      validateLiveShardReportPayload(payload, [file], process.cwd(), {
+        OPENCLAW_LIVE_GPT_LIVE: "1",
+      }),
+    ).toEqual({
+      ok: false,
+      reason:
+        "Vitest report missing required GPT-Live assertion: extensions/openai/realtime-quicksilver.live.test.ts :: GPT-Live Platform WebSocket opens a Frameless Bidi session without a browser or WebRTC",
+    });
+  });
+
+  it("accepts reports where every required GPT-Live assertion passes", () => {
+    const files = [
+      "extensions/openai/realtime-quicksilver.live.test.ts",
+      "extensions/openai/realtime-quicksilver-gateway-bridge.live.test.ts",
+    ];
+    const requiredTitles = [
+      "GPT-Live Platform WebSocket opens a Frameless Bidi session without a browser or WebRTC",
+      "OpenAI GPT-Live OAuth WebRTC creates a call and joins the authenticated sideband",
+      "OpenAI GPT-Live gateway WebRTC peer creates an OAuth call, joins sideband, and receives audio",
+      "OpenAI GPT-Live gateway WebRTC peer compares identical microphone speech before adoption and after media connection",
+    ];
+    const payload = {
+      numPassedTests: requiredTitles.length,
+      numTotalTests: requiredTitles.length,
+      testResults: files.map((file, index) => ({
+        name: path.join(process.cwd(), file),
+        assertionResults: requiredTitles
+          .slice(index * 2, index * 2 + 2)
+          .map((fullName) => ({ fullName, status: "passed" })),
+      })),
+    };
+
+    expect(
+      validateLiveShardReportPayload(payload, files, process.cwd(), {
+        OPENCLAW_LIVE_GPT_LIVE: "yes",
+      }),
+    ).toEqual({ ok: true });
+  });
+
+  it.each(["skipped", "failed"])(
+    "rejects a required GPT-Live assertion with %s status",
+    (status) => {
+      const file = "extensions/openai/realtime-quicksilver-gateway-bridge.live.test.ts";
+      const title =
+        "OpenAI GPT-Live gateway WebRTC peer compares identical microphone speech before adoption and after media connection";
+      const payload = {
+        numPassedTests: 1,
+        numTotalTests: 2,
+        testResults: [
+          {
+            name: path.join(process.cwd(), file),
+            assertionResults: [
+              {
+                fullName:
+                  "OpenAI GPT-Live gateway WebRTC peer creates an OAuth call, joins sideband, and receives audio",
+                status: "passed",
+              },
+              { fullName: title, status },
+            ],
+          },
+        ],
+      };
+
+      expect(
+        validateLiveShardReportPayload(payload, [file], process.cwd(), {
+          OPENCLAW_LIVE_GPT_LIVE: "on",
+        }),
+      ).toEqual({
+        ok: false,
+        reason: `Vitest report required GPT-Live assertion did not pass: ${file} :: ${title} (status: ${status})`,
+      });
+    },
+  );
 
   it("does not count disabled opt-in sentinel assertions as live shard proof", () => {
     const payload = {

@@ -46,6 +46,22 @@ const OPTIONAL_LIVE_SHARD_FILE_ENVS = new Map([
   ["src/infra/push-apns-http2.live.test.ts", ["OPENCLAW_LIVE_APNS_REACHABILITY"]],
   ["test/image-generation.infer-cli.live.test.ts", ["OPENCLAW_LIVE_INFER_CLI_TEST"]],
 ]);
+const REQUIRED_GPT_LIVE_ASSERTIONS = new Map([
+  [
+    "extensions/openai/realtime-quicksilver.live.test.ts",
+    [
+      "GPT-Live Platform WebSocket opens a Frameless Bidi session without a browser or WebRTC",
+      "OpenAI GPT-Live OAuth WebRTC creates a call and joins the authenticated sideband",
+    ],
+  ],
+  [
+    "extensions/openai/realtime-quicksilver-gateway-bridge.live.test.ts",
+    [
+      "OpenAI GPT-Live gateway WebRTC peer creates an OAuth call, joins sideband, and receives audio",
+      "OpenAI GPT-Live gateway WebRTC peer compares identical microphone speech before adoption and after media connection",
+    ],
+  ],
+]);
 const SKIPPED_ASSERTION_STATUSES = new Set(["disabled", "pending", "skipped", "todo"]);
 const QA_RUNTIME_LIVE_TEST = "extensions/qa-lab/src/matrix-channel-driver.lifecycle.live.test.ts";
 const QA_RUNTIME_ARTIFACT = "dist/extensions/qa-lab/runtime-api.js";
@@ -518,6 +534,56 @@ function collectReportedLiveTestFileEvidence(payload, repoRoot = process.cwd()) 
   return evidenceByFile;
 }
 
+function reportedAssertionNames(assertion) {
+  const fullName = typeof assertion?.fullName === "string" ? assertion.fullName.trim() : "";
+  const derivedName = [
+    ...(Array.isArray(assertion?.ancestorTitles) ? assertion.ancestorTitles : []),
+    assertion?.title,
+  ]
+    .filter((value) => typeof value === "string" && value.trim().length > 0)
+    .join(" ")
+    .trim();
+  return new Set([fullName, derivedName]);
+}
+
+function validateRequiredGptLiveAssertions(payload, expectedFiles, repoRoot, env) {
+  if (!isTruthyEnvValue(env.OPENCLAW_LIVE_GPT_LIVE)) {
+    return { ok: true };
+  }
+  const selectedFiles = new Set(
+    expectedFiles.map((file) => normalizeReportFilePath(file, repoRoot)),
+  );
+  for (const [file, requiredTitles] of REQUIRED_GPT_LIVE_ASSERTIONS) {
+    if (!selectedFiles.has(file)) {
+      continue;
+    }
+    const assertions = (payload.testResults ?? [])
+      .filter((result) => normalizeReportFilePath(result?.name, repoRoot) === file)
+      .flatMap((result) =>
+        Array.isArray(result?.assertionResults) ? result.assertionResults : [],
+      );
+    for (const title of requiredTitles) {
+      const matches = assertions.filter((assertion) =>
+        reportedAssertionNames(assertion).has(title),
+      );
+      if (matches.length === 0) {
+        return {
+          ok: false,
+          reason: `Vitest report missing required GPT-Live assertion: ${file} :: ${title}`,
+        };
+      }
+      if (!matches.some((assertion) => assertion?.status === "passed")) {
+        const statuses = matches.map((assertion) => assertion?.status ?? "unknown");
+        return {
+          ok: false,
+          reason: `Vitest report required GPT-Live assertion did not pass: ${file} :: ${title} (status: ${statuses.join(", ")})`,
+        };
+      }
+    }
+  }
+  return { ok: true };
+}
+
 function isDisabledOptionalLiveShardFile(file, evidence, env = process.env) {
   const requiredEnvNames = OPTIONAL_LIVE_SHARD_FILE_ENVS.get(file);
   if (!requiredEnvNames || requiredEnvNames.some((name) => isTruthyEnvValue(env[name]))) {
@@ -588,6 +654,15 @@ export function validateLiveShardReportPayload(
         ok: false,
         reason: `Vitest report missing selected live test file evidence: ${missingFiles.join(", ")}`,
       };
+    }
+    const requiredAssertions = validateRequiredGptLiveAssertions(
+      payload,
+      expectedFiles,
+      repoRoot,
+      env,
+    );
+    if (!requiredAssertions.ok) {
+      return requiredAssertions;
     }
     const enabledPassFiles = expectedFiles
       .map((file) => normalizeReportFilePath(file, repoRoot))

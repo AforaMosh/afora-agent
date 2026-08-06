@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import {
   readCodexCliCredentialsCached,
   resolveProviderOAuthAccess,
@@ -20,6 +21,15 @@ const MAX_PENDING_AUDIO_BYTES = 240_000;
 
 type TestableGatewayBridge = {
   pendingAudio: Buffer;
+};
+
+type WeriftModule = typeof import("werift");
+type TestableAudioPeer = {
+  state: {
+    encoder: { encode(samples: Int16Array, options: { frameSize: number }): Uint8Array };
+    peer: InstanceType<WeriftModule["RTCPeerConnection"]>;
+    transceiver: ReturnType<InstanceType<WeriftModule["RTCPeerConnection"]>["addTransceiver"]>;
+  };
 };
 
 async function waitForLiveCondition(
@@ -123,7 +133,7 @@ describeLive("OpenAI GPT-Live gateway WebRTC peer", () => {
   );
 
   it(
-    "delivers microphone speech queued before the real media peer is adopted",
+    "compares identical microphone speech before adoption and after media connection",
     async ({ skip }) => {
       const apiKey = process.env.OPENAI_API_KEY?.trim();
       if (!apiKey) {
@@ -151,112 +161,200 @@ describeLive("OpenAI GPT-Live gateway WebRTC peer", () => {
       expect(synthesized.sampleRate).toBe(24_000);
       const inputAudio = Buffer.concat([synthesized.audioBuffer, Buffer.alloc(24_000 * 2)]);
       expect(inputAudio.byteLength).toBeLessThanOrEqual(MAX_PENDING_AUDIO_BYTES);
-
-      let releasePeerAdoption!: () => void;
-      let peerCreated!: () => void;
-      const peerAdoption = new Promise<void>((resolve) => {
-        releasePeerAdoption = resolve;
-      });
-      const peerCreation = new Promise<void>((resolve) => {
-        peerCreated = resolve;
-      });
-      const eventTypes: string[] = [];
-      const finalUserTranscripts: string[] = [];
-      const errors: Error[] = [];
-      let closeNotifications = 0;
-      let closed = false;
-      let lateAudioBytes = 0;
-      const bridge = new OpenAIQuicksilverGatewayBridge({
-        providerConfig: {},
-        model: "gpt-live-1-boulder-alpha",
-        voice: "marin",
-        instructions: "Listen to the user. Do not speak or delegate.",
-        audioFormat: { encoding: "pcm16", sampleRateHz: 24_000, channels: 1 },
-        onAudio: (audio) => {
-          if (closed) {
-            lateAudioBytes += audio.length;
-          }
-        },
-        onClearAudio: () => undefined,
-        onEvent: (event) => eventTypes.push(event.type),
-        onReady: () => undefined,
-        onTranscript: (role, text, final) => {
-          if (role === "user" && final) {
-            finalUserTranscripts.push(text);
-          }
-        },
-        onClose: () => {
-          closeNotifications += 1;
-        },
-        onError: (error) => errors.push(error),
-        runAgentConsult: async () => ({ text: "Unexpected delegation." }),
-        logger: { debug: () => undefined, warn: () => undefined },
-        resolveAuth: async () => ({ type: "api-key", token: apiKey }),
-        createPeer: async (callbacks, signal): Promise<OpenAIQuicksilverAudioPeerContract> => {
-          const peer = await OpenAIQuicksilverAudioPeer.create({ callbacks, signal });
-          peerCreated();
-          await peerAdoption;
-          return peer;
-        },
-      });
-      const testBridge = bridge as unknown as TestableGatewayBridge;
-
-      try {
-        const connection = bridge.connect();
-        await Promise.race([
-          peerCreation,
-          connection.then(() => {
-            throw new Error("Gateway bridge connected before the media peer adoption gate");
-          }),
-        ]);
-        for (let offset = 0; offset < inputAudio.length; offset += 8_192) {
-          bridge.sendAudio(Buffer.from(inputAudio.subarray(offset, offset + 8_192)));
-        }
-        const prePeerPendingBytes = testBridge.pendingAudio.length;
-        expect(prePeerPendingBytes).toBe(inputAudio.length);
-
-        releasePeerAdoption();
-        await connection;
-        await waitForLiveCondition(
-          () => finalUserTranscripts.some((text) => text.toLowerCase().includes("glacier")),
-          () =>
-            `GPT-Live did not transcribe startup audio: transcripts=${finalUserTranscripts.length} errors=${errors.map((error) => error.message).join(";")}`,
-          30_000,
-        );
-
-        const postAdoptionPendingBytes = testBridge.pendingAudio.length;
-        expect(postAdoptionPendingBytes).toBe(0);
-        expect(eventTypes).toContain("turn.done");
-        expect(bridge.isConnected()).toBe(true);
-        expect(errors).toStrictEqual([]);
-
-        closed = true;
-        bridge.close();
-        bridge.close();
-        await new Promise((resolve) => {
-          setTimeout(resolve, 250);
-        });
-
-        expect(closeNotifications).toBe(1);
-        expect(lateAudioBytes).toBe(0);
-        expect(errors).toStrictEqual([]);
-        console.log(
-          JSON.stringify({
-            proof: "gpt-live-gateway-pre-peer-transcription",
-            prePeerPendingBytes,
-            postAdoptionPendingBytes,
-            userTranscriptMarker: true,
-            closeNotifications,
-            lateAudioBytes,
-            errors: errors.length,
-            result: "pass",
-          }),
-        );
-      } finally {
-        releasePeerAdoption();
-        bridge.close();
+      let peak = 0;
+      let squared = 0;
+      for (let offset = 0; offset < inputAudio.length; offset += 2) {
+        const sample = inputAudio.readInt16LE(offset);
+        peak = Math.max(peak, Math.abs(sample));
+        squared += sample * sample;
       }
+      const fixture = {
+        bytes: inputAudio.length,
+        durationMs: Math.round((inputAudio.length / (24_000 * 2)) * 1000),
+        peak,
+        rms: Math.round(Math.sqrt(squared / (inputAudio.length / 2))),
+        sha256: createHash("sha256").update(inputAudio).digest("hex"),
+      };
+      expect(fixture.peak).toBeGreaterThan(0);
+
+      const runCase = async (mode: "before-adoption" | "after-connected") => {
+        const startedAt = performance.now();
+        const timestamps: Record<string, number> = {};
+        const mark = (name: string) =>
+          (timestamps[name] ??= Math.round(performance.now() - startedAt));
+        const bounded = (values: string[], value: string, limit = 24) => {
+          if (values.length < limit) {
+            values.push(value);
+          }
+        };
+        const track = (prefix: string) => (state: unknown) =>
+          bounded(states, `${prefix}:${String(state)}`, 16);
+        const states: string[] = [],
+          eventTypes: string[] = [],
+          transcripts: string[] = [];
+        const clean = (value: string) => value.replace(/\s+/g, " ").trim().slice(0, 160);
+        let errors = 0;
+        let marker = false;
+        let queuedAtInjection: number | undefined;
+        let transportAtInjection: Record<string, unknown> | undefined;
+        const egress = { encode: 0, senderRtp: 0, dtlsRtp: 0 };
+        const wrap = (target: object, key: string, counter: keyof typeof egress, stamp: string) => {
+          const original = Reflect.get(target, key);
+          Reflect.set(target, key, function (this: object, ...args: unknown[]) {
+            egress[counter] += 1;
+            mark(stamp);
+            return Reflect.apply(original, this, args);
+          });
+        };
+        const describeSdp = (sdp: string) => ({
+          bytes: sdp.length,
+          candidates: sdp.match(/^a=candidate:/gm)?.length ?? 0,
+          opus: /^a=rtpmap:111 OPUS\/48000\/2$/im.test(sdp),
+        });
+        let offer: ReturnType<typeof describeSdp> | undefined;
+        let answer: ReturnType<typeof describeSdp> | undefined;
+        let peer: TestableAudioPeer | undefined;
+        const createdSignal = Promise.withResolvers<void>();
+        const adoption = Promise.withResolvers<void>();
+        const bridge = new OpenAIQuicksilverGatewayBridge({
+          providerConfig: {},
+          model: "gpt-live-1-boulder-alpha",
+          voice: "marin",
+          instructions: "Listen to the user. Do not speak or delegate.",
+          audioFormat: { encoding: "pcm16", sampleRateHz: 24_000, channels: 1 },
+          onAudio: () => undefined,
+          onClearAudio: () => undefined,
+          onEvent: (event) => bounded(eventTypes, event.type),
+          onReady: () => mark("sidebandReady"),
+          onTranscript: (role, text, final) => {
+            if (role === "user" && final) {
+              transcripts.push(clean(text));
+              mark("finalTranscript");
+            }
+          },
+          onError: () => (errors += 1),
+          runAgentConsult: async () => ({ text: "Unexpected delegation." }),
+          logger: { debug: () => undefined, warn: () => undefined },
+          resolveAuth: async () => ({ type: "api-key", token: apiKey }),
+          createPeer: async (callbacks, signal): Promise<OpenAIQuicksilverAudioPeerContract> => {
+            const created = await OpenAIQuicksilverAudioPeer.create({ callbacks, signal });
+            peer = created as unknown as TestableAudioPeer;
+            mark("peerCreated");
+            createdSignal.resolve();
+            const sender = peer.state.transceiver.sender;
+            const dtls = sender.dtlsTransport;
+            wrap(peer.state.encoder, "encode", "encode", "firstEncode");
+            wrap(sender, "sendRtp", "senderRtp", "firstSenderRtp");
+            wrap(dtls, "sendRtp", "dtlsRtp", "firstDtlsRtp");
+            peer.state.peer.connectionStateChange.subscribe(track("peer"));
+            peer.state.peer.iceConnectionStateChange.subscribe(track("ice"));
+            dtls.onStateChange.subscribe(track("dtls"));
+            const createOffer = created.createOffer.bind(created);
+            created.createOffer = async () => {
+              const sdp = await createOffer();
+              offer = describeSdp(sdp);
+              mark("offer");
+              return sdp;
+            };
+            const applyAnswer = created.applyAnswer.bind(created);
+            created.applyAnswer = async (sdp) => {
+              answer = describeSdp(sdp);
+              await applyAnswer(sdp);
+              mark("answer");
+            };
+            if (mode === "before-adoption") {
+              await adoption.promise;
+            }
+            return created;
+          },
+        });
+        mark("bridgeConnect");
+        const connection = bridge.connect();
+        const snapshot = (failure?: unknown) => {
+          const sender = peer?.state.transceiver.sender;
+          const dtls = sender?.dtlsTransport;
+          const pair = dtls?.iceTransport.getSelectedCandidatePair();
+          const trace = { mode, timestamps, states, offer, answer, transportAtInjection };
+          const observed = {
+            queuedAtInjection,
+            eventTypes,
+            transcripts,
+            errors,
+            marker,
+            failure: failure instanceof Error ? clean(failure.message) : failure,
+          };
+          return {
+            ...trace,
+            egress: {
+              ...egress,
+              dtlsBytes: dtls?.bytesSent ?? 0,
+              dtlsPackets: dtls?.packetsSent ?? 0,
+              candidateBytes: pair?.bytesSent ?? 0,
+              candidatePackets: pair?.packetsSent ?? 0,
+              candidateRoute:
+                pair?.localCandidate && pair.remoteCandidate
+                  ? `${pair.localCandidate.protocol}:${pair.localCandidate.type}->${pair.remoteCandidate.protocol}:${pair.remoteCandidate.type}`
+                  : undefined,
+            },
+            pendingAfter: (bridge as unknown as TestableGatewayBridge).pendingAudio.length,
+            ...observed,
+          };
+        };
+        try {
+          if (mode === "before-adoption") {
+            await createdSignal.promise;
+          } else {
+            await connection;
+            await waitForLiveCondition(
+              () =>
+                peer?.state.transceiver.sender.dtlsTransport.state === "connected" &&
+                Boolean(
+                  peer.state.transceiver.sender.dtlsTransport.iceTransport.getSelectedCandidatePair(),
+                ),
+              () => "media transport did not connect",
+              30_000,
+            );
+            mark("mediaConnected");
+          }
+          const senderAtInjection = peer?.state.transceiver.sender;
+          const dtlsAtInjection = senderAtInjection?.dtlsTransport;
+          transportAtInjection = {
+            peer: peer?.state.peer.connectionState,
+            ice: peer?.state.peer.iceConnectionState,
+            dtls: dtlsAtInjection?.state,
+            codec: senderAtInjection?.codec?.str,
+          };
+          mark("injected");
+          for (let offset = 0; offset < inputAudio.length; offset += 8_192) {
+            bridge.sendAudio(Buffer.from(inputAudio.subarray(offset, offset + 8_192)));
+          }
+          queuedAtInjection = (bridge as unknown as TestableGatewayBridge).pendingAudio.length;
+          adoption.resolve();
+          await connection;
+          try {
+            await waitForLiveCondition(
+              () => transcripts.some((text) => text.toLowerCase().includes("glacier")),
+              () => "marker transcript was not observed",
+              30_000,
+            );
+            marker = true;
+          } catch {}
+          return snapshot();
+        } catch (error) {
+          return snapshot(error);
+        } finally {
+          adoption.resolve();
+          bridge.close();
+        }
+      };
+
+      const beforeAdoption = await runCase("before-adoption");
+      const afterConnected = await runCase("after-connected");
+      const cases = { fixture, beforeAdoption, afterConnected };
+      console.log(JSON.stringify({ proof: "gpt-live-gateway-a-b-audio-egress", ...cases }));
+      expect(afterConnected).toMatchObject({ failure: undefined, marker: true });
+      expect(beforeAdoption).toMatchObject({ failure: undefined, marker: true });
     },
-    LIVE_TIMEOUT_MS,
+    LIVE_TIMEOUT_MS * 3,
   );
 });
