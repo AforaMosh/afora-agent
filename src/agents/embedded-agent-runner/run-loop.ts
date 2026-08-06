@@ -9,6 +9,7 @@ import {
 } from "../agent-bundle-mcp-tools.js";
 import { resolveSessionAgentIds } from "../agent-scope.js";
 import type { ToolOutcomeObservation } from "../agent-tools.before-tool-call.js";
+import { isHeartbeatLifecycleRunKind } from "../bootstrap-mode.js";
 import type { FailoverReason } from "../embedded-agent-helpers.js";
 import { isStrictAgenticExecutionContractActive } from "../execution-contract.js";
 import {
@@ -290,6 +291,7 @@ export async function runPreparedEmbeddedLoop(
   });
   await drainPendingContextEngineTurnsBeforeRun({
     admission: params.userTurnTranscriptRecorder?.getAdmissionReceipt(),
+    isHeartbeat: isHeartbeatLifecycleRunKind(params.bootstrapContextRunKind),
     lease: contextEngineLogicalTurnLease,
   });
   const contextEngine = contextEngineLogicalTurnLease.begin().engine;

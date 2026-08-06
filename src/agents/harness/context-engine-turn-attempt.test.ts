@@ -15,6 +15,7 @@ import {
 import type { AgentMessage } from "../runtime/index.js";
 import type { ContextEngineLogicalTurnLease } from "./context-engine-logical-turn.js";
 import { finalizeAcceptedContextEngineTurn } from "./context-engine-turn-attempt.js";
+import { enqueueContextEngineTurnIntent } from "./context-engine-turn-outbox.js";
 
 afterEach(() => {
   closeOpenClawAgentDatabasesForTest();
@@ -85,6 +86,16 @@ describe("accepted context-engine turn finalization", () => {
       logicalTurnId: "logical-turn-1",
       role: "user" as const,
     };
+    const database = openOpenClawAgentDatabase({
+      agentId: target.agentId,
+      path: admission.storePath,
+    });
+    enqueueContextEngineTurnIntent({
+      admission,
+      database,
+      engineId: "test",
+      isHeartbeat: false,
+    });
     const baseFacts = {
       boundary: { admission, terminal: terminal.anchor },
       sessionIdUsed: target.sessionId,
@@ -132,10 +143,6 @@ describe("accepted context-engine turn finalization", () => {
     if (!sibling) {
       throw new Error("expected sibling transcript");
     }
-    const database = openOpenClawAgentDatabase({
-      agentId: target.agentId,
-      path: admission.storePath,
-    });
     const siblingIdentity = database.db
       .prepare("SELECT seq FROM transcript_event_identities WHERE session_id = ? AND event_id = ?")
       .get(target.sessionId, sibling.messageId) as { seq?: number } | undefined;
@@ -180,5 +187,22 @@ describe("accepted context-engine turn finalization", () => {
     expect(warn).toHaveBeenCalledWith(
       "[context-engine] skipped accepted turn advancement: accepted context-engine transcript range is non-descendant",
     );
+
+    enqueueContextEngineTurnIntent({
+      admission,
+      database,
+      engineId: "test",
+      isHeartbeat: false,
+    });
+    await finalizeAcceptedContextEngineTurn({
+      facts: { ...baseFacts, aborted: true },
+      lease,
+      warn,
+    });
+    expect(
+      database.db
+        .prepare("SELECT 1 FROM context_engine_turn_outbox WHERE advancement_key = ?")
+        .get(admission.logicalTurnId),
+    ).toBeUndefined();
   });
 });

@@ -1,6 +1,11 @@
 import { sql } from "kysely";
 import type { AgentMessage } from "../../../packages/agent-core/src/types.js";
-import type { TranscriptTurnBoundary } from "../../config/sessions/transcript-entry-anchor.js";
+import {
+  readActiveTranscriptEntryAnchor,
+  readClosedTranscriptTurn,
+  type TranscriptTurnBoundary,
+} from "../../config/sessions/session-accessor.js";
+import type { TranscriptTurnAdmission } from "../../config/sessions/transcript-entry-anchor.js";
 import type { ContextEngine } from "../../context-engine/types.js";
 import {
   executeSqliteQuerySync,
@@ -22,28 +27,57 @@ type PendingContextEngineTurn = Readonly<{
   session_id: string;
 }>;
 
-type ContextEngineTurnOutboxPayload = Readonly<{
+type AdmittedContextEngineTurnOutboxPayload = Readonly<{
+  admission: TranscriptTurnAdmission;
+  isHeartbeat: boolean;
+  state: "admitted";
+}>;
+
+type ReadyContextEngineTurnOutboxPayload = Readonly<{
   boundary: TranscriptTurnBoundary;
   isHeartbeat: boolean;
   messages: AgentMessage[];
   prePromptMessageCount: number;
-  sessionId: string;
-  sessionKey?: string;
+  state: "ready";
 }>;
+
+type ContextEngineTurnOutboxPayload =
+  | AdmittedContextEngineTurnOutboxPayload
+  | ReadyContextEngineTurnOutboxPayload;
+
+const RECOVERED_TURN_MAX_EVENTS = 20_000;
+const RECOVERED_TURN_MAX_BYTES = 8 * 1024 * 1024;
 
 function outboxDb(database: OpenClawAgentDatabase) {
   ensureContextEngineTurnOutboxSchema(database.db);
   return getNodeSqliteKysely<ContextEngineTurnOutboxDatabase>(database.db);
 }
 
-export function enqueueContextEngineTurnCommit(params: {
+function assertMatchingOutboxOwner(
+  existing: { engine_id: string; owner_plugin_id: string | null },
+  params: { engineId: string; ownerPluginId?: string },
+  advancementKey: string,
+): void {
+  if (
+    existing.engine_id !== params.engineId ||
+    existing.owner_plugin_id !== (params.ownerPluginId ?? null)
+  ) {
+    throw new Error(`context-engine advancement key collision: ${advancementKey}`);
+  }
+}
+
+function writeContextEngineTurnOutboxPayload(params: {
   database: OpenClawAgentDatabase;
   engineId: string;
   ownerPluginId?: string;
   payload: ContextEngineTurnOutboxPayload;
 }): void {
   const db = outboxDb(params.database);
-  const advancementKey = params.payload.boundary.admission.logicalTurnId;
+  const admission =
+    params.payload.state === "admitted"
+      ? params.payload.admission
+      : params.payload.boundary.admission;
+  const advancementKey = admission.logicalTurnId;
   const payloadJson = JSON.stringify(params.payload);
   const existing = executeSqliteQueryTakeFirstSync(
     params.database.db,
@@ -52,15 +86,31 @@ export function enqueueContextEngineTurnCommit(params: {
       .select(["engine_id", "owner_plugin_id", "payload_json"])
       .where("advancement_key", "=", advancementKey),
   );
-  if (
-    existing &&
-    (existing.engine_id !== params.engineId ||
-      existing.owner_plugin_id !== (params.ownerPluginId ?? null) ||
-      existing.payload_json !== payloadJson)
-  ) {
-    throw new Error(`context-engine advancement key collision: ${advancementKey}`);
-  }
   if (existing) {
+    assertMatchingOutboxOwner(existing, params, advancementKey);
+    const existingPayload = JSON.parse(existing.payload_json) as ContextEngineTurnOutboxPayload;
+    if (
+      params.payload.state === "ready" &&
+      existingPayload.state === "admitted" &&
+      existingPayload.admission.entryId === admission.entryId
+    ) {
+      executeSqliteQuerySync(
+        params.database.db,
+        db
+          .updateTable("context_engine_turn_outbox")
+          .set({
+            attempt_count: 0,
+            last_attempt_at: null,
+            last_error: null,
+            payload_json: payloadJson,
+          })
+          .where("advancement_key", "=", advancementKey),
+      );
+      return;
+    }
+    if (existing.payload_json !== payloadJson) {
+      throw new Error(`context-engine advancement key collision: ${advancementKey}`);
+    }
     return;
   }
   executeSqliteQuerySync(
@@ -71,7 +121,7 @@ export function enqueueContextEngineTurnCommit(params: {
         advancement_key: advancementKey,
         engine_id: params.engineId,
         owner_plugin_id: params.ownerPluginId ?? null,
-        session_id: params.payload.sessionId,
+        session_id: admission.sessionId,
         payload_json: payloadJson,
         created_at: Date.now(),
         last_attempt_at: null,
@@ -79,6 +129,140 @@ export function enqueueContextEngineTurnCommit(params: {
       })
       .onConflict((conflict) => conflict.column("advancement_key").doNothing()),
   );
+}
+
+export function enqueueContextEngineTurnIntent(params: {
+  admission: TranscriptTurnAdmission;
+  database: OpenClawAgentDatabase;
+  engineId: string;
+  isHeartbeat: boolean;
+  ownerPluginId?: string;
+}): void {
+  writeContextEngineTurnOutboxPayload({
+    ...params,
+    payload: {
+      admission: params.admission,
+      isHeartbeat: params.isHeartbeat,
+      state: "admitted",
+    },
+  });
+}
+
+export function enqueueContextEngineTurnCommit(params: {
+  database: OpenClawAgentDatabase;
+  engineId: string;
+  ownerPluginId?: string;
+  payload: Omit<ReadyContextEngineTurnOutboxPayload, "state">;
+}): void {
+  writeContextEngineTurnOutboxPayload({
+    ...params,
+    payload: { ...params.payload, state: "ready" },
+  });
+}
+
+export function discardContextEngineTurnIntent(params: {
+  admission: TranscriptTurnAdmission;
+  database: OpenClawAgentDatabase;
+  engineId: string;
+  ownerPluginId?: string;
+}): void {
+  const db = outboxDb(params.database);
+  executeSqliteQuerySync(
+    params.database.db,
+    db
+      .deleteFrom("context_engine_turn_outbox")
+      .where("advancement_key", "=", params.admission.logicalTurnId)
+      .where("engine_id", "=", params.engineId)
+      .where("owner_plugin_id", params.ownerPluginId ? "=" : "is", params.ownerPluginId ?? null),
+  );
+}
+
+function readRecoveredTerminalAnchor(params: {
+  admission: TranscriptTurnAdmission;
+  currentAdmission: TranscriptTurnAdmission;
+}) {
+  const terminalEntryId = params.currentAdmission.effectiveParentId;
+  if (!terminalEntryId) {
+    return undefined;
+  }
+  const terminal = readActiveTranscriptEntryAnchor({
+    agentId: params.admission.agentId,
+    sessionId: params.admission.sessionId,
+    sessionKey: params.admission.sessionKey,
+    storePath: params.admission.storePath,
+    entryId: terminalEntryId,
+  });
+  return terminal &&
+    terminal.activeMessagePosition > params.admission.activeMessagePosition &&
+    terminal.activeMessagePosition < params.currentAdmission.activeMessagePosition
+    ? terminal
+    : undefined;
+}
+
+export function recoverContextEngineTurnOutbox(params: {
+  currentAdmission: TranscriptTurnAdmission;
+  database: OpenClawAgentDatabase;
+  engineId: string;
+  ownerPluginId?: string;
+  warn: (message: string) => void;
+}): void {
+  const db = outboxDb(params.database);
+  const rows = executeSqliteQuerySync(
+    params.database.db,
+    db
+      .selectFrom("context_engine_turn_outbox")
+      .select(["advancement_key", "payload_json"])
+      .where("engine_id", "=", params.engineId)
+      .where("owner_plugin_id", params.ownerPluginId ? "=" : "is", params.ownerPluginId ?? null)
+      .where("session_id", "=", params.currentAdmission.sessionId)
+      .orderBy(sql<number>`context_engine_turn_outbox.rowid`, "asc"),
+  ).rows;
+  for (const row of rows) {
+    const payload = JSON.parse(row.payload_json) as ContextEngineTurnOutboxPayload;
+    if (payload.state !== "admitted") {
+      continue;
+    }
+    const terminal =
+      payload.admission.entryId === params.currentAdmission.entryId
+        ? undefined
+        : readRecoveredTerminalAnchor({
+            admission: payload.admission,
+            currentAdmission: params.currentAdmission,
+          });
+    if (!terminal) {
+      // The next admitted turn proves no accepted terminal survived on this active branch.
+      discardContextEngineTurnIntent({
+        admission: payload.admission,
+        database: params.database,
+        engineId: params.engineId,
+        ownerPluginId: params.ownerPluginId,
+      });
+      continue;
+    }
+    const boundary = { admission: payload.admission, terminal };
+    const closedTurn = readClosedTranscriptTurn({
+      boundary,
+      maxEvents: RECOVERED_TURN_MAX_EVENTS,
+      maxBytes: RECOVERED_TURN_MAX_BYTES,
+    });
+    if (closedTurn.kind !== "ok") {
+      params.warn(
+        `[context-engine] durable turn recovery remains queued: ${row.advancement_key}: transcript range is ${closedTurn.kind}`,
+      );
+      continue;
+    }
+    enqueueContextEngineTurnCommit({
+      database: params.database,
+      engineId: params.engineId,
+      ownerPluginId: params.ownerPluginId,
+      payload: {
+        boundary,
+        isHeartbeat: payload.isHeartbeat,
+        messages: closedTurn.messages,
+        prePromptMessageCount: closedTurn.prePromptMessageCount,
+      },
+    });
+  }
 }
 
 export async function drainContextEngineTurnOutbox(params: {
@@ -176,14 +360,17 @@ async function commitPendingContextEngineTurn(
   const { row } = params;
   try {
     const payload = JSON.parse(row.payload_json) as ContextEngineTurnOutboxPayload;
-    await params.commitTurn({
+    if (payload.state !== "ready") {
+      return false;
+    }
+    const result = await params.commitTurn({
       advancementKey: row.advancement_key,
       admission: payload.boundary.admission,
       terminal: payload.boundary.terminal,
       messages: payload.messages,
       prePromptMessageCount: payload.prePromptMessageCount,
-      sessionId: payload.sessionId,
-      sessionKey: payload.sessionKey,
+      sessionId: payload.boundary.admission.sessionId,
+      sessionKey: payload.boundary.admission.sessionKey,
       sessionTarget: {
         agentId: payload.boundary.admission.agentId,
         sessionId: payload.boundary.admission.sessionId,
@@ -192,6 +379,9 @@ async function commitPendingContextEngineTurn(
       },
       isHeartbeat: payload.isHeartbeat,
     });
+    if (result.status !== "committed" && result.status !== "duplicate") {
+      throw new Error(`invalid commitTurn result status: ${String(result.status)}`);
+    }
     executeSqliteQuerySync(
       params.database.db,
       params.db

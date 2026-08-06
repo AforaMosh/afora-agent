@@ -519,6 +519,7 @@ async function runSelectedAgentHarnessAttempt(
     });
     await drainPendingContextEngineTurnsBeforeRun({
       admission: internalParams.userTurnTranscriptRecorder?.getAdmissionReceipt(),
+      isHeartbeat: isHeartbeatLifecycleRunKind(internalParams.bootstrapContextRunKind),
       lease: internalParams.contextEngineLogicalTurnLease,
     });
     const effective = internalParams.contextEngineLogicalTurnLease.begin();

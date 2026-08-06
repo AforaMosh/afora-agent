@@ -2,7 +2,14 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { TranscriptTurnBoundary } from "../../config/sessions/transcript-entry-anchor.js";
+import {
+  appendTranscriptMessage,
+  upsertSessionEntry,
+} from "../../config/sessions/session-accessor.js";
+import type {
+  TranscriptTurnAdmission,
+  TranscriptTurnBoundary,
+} from "../../config/sessions/transcript-entry-anchor.js";
 import type { ContextEngine } from "../../context-engine/types.js";
 import {
   closeOpenClawAgentDatabasesForTest,
@@ -13,6 +20,7 @@ import { drainPendingContextEngineTurnsBeforeRun } from "./context-engine-turn-a
 import {
   drainContextEngineTurnOutbox,
   enqueueContextEngineTurnCommit,
+  enqueueContextEngineTurnIntent,
 } from "./context-engine-turn-outbox.js";
 
 const tempDirs: string[] = [];
@@ -63,12 +71,170 @@ function createPayload(params: {
     isHeartbeat: false,
     messages: [],
     prePromptMessageCount: params.sequence,
-    sessionId: params.sessionId,
-    sessionKey: anchor.sessionKey,
   };
 }
 
 describe("context-engine turn outbox", () => {
+  it("retains a queued turn when commitTurn resolves outside its contract", async () => {
+    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-context-outbox-contract-"));
+    tempDirs.push(stateDir);
+    const database = openOpenClawAgentDatabase({
+      agentId: "main",
+      env: { OPENCLAW_STATE_DIR: stateDir },
+    });
+    const payload = createPayload({
+      advancementKey: "session-a:invalid-result",
+      databasePath: database.path,
+      sequence: 1,
+      sessionId: "session-a",
+    });
+    enqueueContextEngineTurnCommit({ database, engineId: "test", payload });
+    let valid = false;
+    const commitTurn = vi.fn(async () =>
+      valid ? { status: "committed" as const } : ({ status: "ignored" } as never),
+    );
+    const engine = {
+      info: { id: "test", name: "Test" },
+      ingest: async () => ({ ingested: true }),
+      assemble: async ({ messages }) => ({ messages, estimatedTokens: 0 }),
+      compact: async () => ({ ok: true, compacted: false }),
+      commitTurn,
+    } satisfies ContextEngine;
+    const warn = vi.fn();
+
+    await drainContextEngineTurnOutbox({ database, engine, engineId: "test", warn });
+
+    expect(
+      database.db
+        .prepare(
+          "SELECT attempt_count, last_error FROM context_engine_turn_outbox WHERE advancement_key = ?",
+        )
+        .get(payload.boundary.admission.logicalTurnId),
+    ).toEqual({
+      attempt_count: 1,
+      last_error: "invalid commitTurn result status: ignored",
+    });
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("durable turn advancement remains queued"),
+    );
+
+    valid = true;
+    await drainContextEngineTurnOutbox({ database, engine, engineId: "test", warn });
+
+    expect(
+      database.db
+        .prepare("SELECT 1 FROM context_engine_turn_outbox WHERE advancement_key = ?")
+        .get(payload.boundary.admission.logicalTurnId),
+    ).toBeUndefined();
+  });
+
+  it("recovers a terminal transcript written before finalization crashed", async () => {
+    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-context-outbox-recovery-"));
+    tempDirs.push(stateDir);
+    const target = {
+      agentId: "main",
+      sessionId: "recovered-turn",
+      sessionKey: "agent:main:recovered-turn",
+      storePath: path.join(stateDir, "sessions.json"),
+    };
+    await upsertSessionEntry(target, { sessionId: target.sessionId, updatedAt: 1 });
+    const admitted = await appendTranscriptMessage(target, {
+      message: { role: "user", content: "first" },
+      now: 1_000,
+    });
+    if (!admitted?.anchor) {
+      throw new Error("expected admitted transcript entry");
+    }
+    const admission = {
+      ...admitted.anchor,
+      logicalTurnId: "recovered-logical-turn",
+      role: "user" as const,
+    } satisfies TranscriptTurnAdmission;
+    const database = openOpenClawAgentDatabase({
+      agentId: target.agentId,
+      path: admission.storePath,
+    });
+    enqueueContextEngineTurnIntent({
+      admission,
+      database,
+      engineId: "test",
+      isHeartbeat: true,
+    });
+    const terminal = await appendTranscriptMessage(target, {
+      message: { role: "assistant", content: "first answer" },
+      parentId: admitted.messageId,
+      now: 2_000,
+    });
+    const current = await appendTranscriptMessage(target, {
+      message: { role: "user", content: "second" },
+      parentId: terminal?.messageId,
+      now: 3_000,
+    });
+    if (!current?.anchor) {
+      throw new Error("expected current transcript entry");
+    }
+    const currentAdmission = {
+      ...current.anchor,
+      logicalTurnId: "current-logical-turn",
+      role: "user" as const,
+    } satisfies TranscriptTurnAdmission;
+    const commitTurn = vi.fn(async () => ({ status: "committed" as const }));
+    const engine = {
+      info: {
+        id: "test",
+        name: "Test",
+        transcriptSemantics: {
+          currentTurnFence: "before-current-turn-entry-v1",
+          turnAdvancementIdempotency: "atomic-idempotent-v1",
+        },
+      },
+      ingest: async () => ({ ingested: true }),
+      assemble: async ({ messages }) => ({ messages, estimatedTokens: 0 }),
+      compact: async () => ({ ok: true, compacted: false }),
+      commitTurn,
+    } satisfies ContextEngine;
+    const lease = {
+      engine,
+      effectiveEngine: engine,
+      effectiveEngineId: "test",
+      effectiveEnginePluginId: undefined,
+      degraded: false,
+      degradedReason: undefined,
+      selectForHost: vi.fn(),
+      degradeBeforeStart: vi.fn(),
+      begin: vi.fn(),
+      deferDisposalUntil: vi.fn(),
+      dispose: vi.fn(async () => undefined),
+    } satisfies ContextEngineLogicalTurnLease;
+
+    await drainPendingContextEngineTurnsBeforeRun({
+      admission: currentAdmission,
+      isHeartbeat: false,
+      lease,
+    });
+
+    expect(commitTurn).toHaveBeenCalledOnce();
+    expect(commitTurn.mock.calls[0]?.[0]).toMatchObject({
+      advancementKey: admission.logicalTurnId,
+      isHeartbeat: true,
+      messages: [
+        { role: "user", content: "first" },
+        { role: "assistant", content: "first answer" },
+      ],
+      prePromptMessageCount: 0,
+    });
+    const queued = database.db
+      .prepare("SELECT advancement_key, payload_json FROM context_engine_turn_outbox")
+      .all() as Array<{ advancement_key: string; payload_json: string }>;
+    expect(queued).toHaveLength(1);
+    expect(queued[0]?.advancement_key).toBe(currentAdmission.logicalTurnId);
+    expect(JSON.parse(queued[0]?.payload_json ?? "{}")).toMatchObject({
+      state: "admitted",
+      isHeartbeat: false,
+    });
+    expect(lease.degradeBeforeStart).not.toHaveBeenCalled();
+  });
+
   it("does not let later same-session turns overtake a failed commit", async () => {
     const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-context-outbox-order-"));
     tempDirs.push(stateDir);

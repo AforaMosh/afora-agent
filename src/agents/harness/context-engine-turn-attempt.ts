@@ -13,8 +13,11 @@ import { openOpenClawAgentDatabase } from "../../state/openclaw-agent-db.js";
 import type { SessionWriteLockAcquireTimeoutConfig } from "../session-write-lock.js";
 import type { ContextEngineLogicalTurnLease } from "./context-engine-logical-turn.js";
 import {
+  discardContextEngineTurnIntent,
   drainContextEngineTurnOutbox,
   enqueueContextEngineTurnCommit,
+  enqueueContextEngineTurnIntent,
+  recoverContextEngineTurnOutbox,
 } from "./context-engine-turn-outbox.js";
 
 const ACCEPTED_TURN_MAX_EVENTS = 20_000;
@@ -47,6 +50,7 @@ export type ContextEngineTurnAttemptFacts = {
 
 export async function drainPendingContextEngineTurnsBeforeRun(params: {
   admission: TranscriptTurnBoundary["admission"] | undefined;
+  isHeartbeat?: boolean;
   lease: ContextEngineLogicalTurnLease;
   warn?: (message: string) => void;
 }): Promise<void> {
@@ -65,6 +69,13 @@ export async function drainPendingContextEngineTurnsBeforeRun(params: {
       agentId: params.admission.agentId,
       path: params.admission.storePath,
     });
+    recoverContextEngineTurnOutbox({
+      currentAdmission: params.admission,
+      database,
+      engineId: params.lease.effectiveEngineId,
+      ownerPluginId: params.lease.effectiveEnginePluginId,
+      warn,
+    });
     const result = await drainContextEngineTurnOutbox({
       database,
       engine: params.lease.engine,
@@ -77,12 +88,45 @@ export async function drainPendingContextEngineTurnsBeforeRun(params: {
       params.lease.degradeBeforeStart(
         "pending durable turn advancement could not be completed before the next turn",
       );
+      return;
     }
+    // Persist the admission before provider dispatch. A later run can recover an accepted
+    // transcript if this process dies before finalization updates the row.
+    enqueueContextEngineTurnIntent({
+      admission: params.admission,
+      database,
+      engineId: params.lease.effectiveEngineId,
+      isHeartbeat: params.isHeartbeat === true,
+      ownerPluginId: params.lease.effectiveEnginePluginId,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     warn(`[context-engine] failed to retry pending turn advancement: ${message}`);
     params.lease.degradeBeforeStart(
       "pending durable turn advancement could not be checked before the next turn",
+    );
+  }
+}
+
+function discardTurnIntentBestEffort(params: {
+  facts: ContextEngineTurnAttemptFacts;
+  lease: ContextEngineLogicalTurnLease;
+  warn: (message: string) => void;
+}): void {
+  try {
+    const admission = params.facts.boundary.admission;
+    discardContextEngineTurnIntent({
+      admission,
+      database: openOpenClawAgentDatabase({
+        agentId: admission.agentId,
+        path: admission.storePath,
+      }),
+      engineId: params.lease.effectiveEngineId,
+      ownerPluginId: params.lease.effectiveEnginePluginId,
+    });
+  } catch (error) {
+    params.warn(
+      `[context-engine] failed to discard unaccepted turn intent: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
 }
@@ -112,10 +156,11 @@ export async function finalizeAcceptedContextEngineTurn(params: {
   lease: ContextEngineLogicalTurnLease;
   warn?: (message: string) => void;
 }): Promise<void> {
+  const warn = params.warn ?? console.warn;
   if (params.facts.promptError || params.facts.aborted || params.facts.yieldAborted) {
+    discardTurnIntentBestEffort({ facts: params.facts, lease: params.lease, warn });
     return;
   }
-  const warn = params.warn ?? console.warn;
   try {
     assertAcceptedTranscriptTarget(params.facts);
     if (
@@ -148,8 +193,6 @@ export async function finalizeAcceptedContextEngineTurn(params: {
         isHeartbeat: params.facts.isHeartbeat === true,
         messages: closedTurn.messages,
         prePromptMessageCount: closedTurn.prePromptMessageCount,
-        sessionId: params.facts.sessionIdUsed,
-        ...(params.facts.sessionKey ? { sessionKey: params.facts.sessionKey } : {}),
       },
     });
     await drainContextEngineTurnOutbox({
