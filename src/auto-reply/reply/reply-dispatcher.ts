@@ -462,7 +462,11 @@ export function createReplyDispatcher(options: ReplyDispatcherOptions): ReplyDis
   });
 
   const reportObserverError = (err: unknown, info: ReplyDispatchRuntimeInfo) => {
-    void Promise.resolve(options.onError?.(err, info)).catch(() => undefined);
+    // Defer invocation as well as settlement: Promise.resolve(callback()) lets
+    // a synchronous observer throw escape before the rejection handler exists.
+    void Promise.resolve()
+      .then(() => options.onError?.(err, info))
+      .catch(() => undefined);
   };
 
   const notifyBeforeDeliverCancelled = async (

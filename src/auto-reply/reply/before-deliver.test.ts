@@ -193,6 +193,44 @@ describe("beforeDeliver in reply dispatcher", () => {
     expect(deliveryCalls).toBe(0);
   });
 
+  it("contains a synchronous receipt error observer and continues the delivery queue", async () => {
+    const abort = new AbortController();
+    const receipt = setReplyPayloadMetadata(
+      { text: "receipt" },
+      { activeTurnReceipt: { abortSignal: abort.signal, maxRetries: 1 } },
+    );
+    const outcome = captureReplyDispatchDeliveryOutcome(receipt);
+    let onErrorCalls = 0;
+    const delivered: string[] = [];
+    const dispatcher = createReplyDispatcher({
+      beforeDeliver: async (payload) => {
+        if (payload.text === "receipt") {
+          await new Promise<void>(() => {});
+        }
+        return payload;
+      },
+      deliver: async (payload) => {
+        delivered.push(payload.text ?? "");
+      },
+      onError: () => {
+        onErrorCalls += 1;
+        throw new Error("observer failed synchronously");
+      },
+    });
+
+    dispatcher.sendFinalReply(receipt);
+    await Promise.resolve();
+    abort.abort(new Error("receipt deadline"));
+    dispatcher.sendFinalReply({ text: "final" });
+    dispatcher.markComplete();
+    await expect(dispatcher.waitForIdle()).resolves.toBeUndefined();
+    await expect(outcome.promise).resolves.toBe("failed-before-deliver");
+    await Promise.resolve();
+
+    expect(onErrorCalls).toBe(1);
+    expect(delivered).toEqual(["final"]);
+  });
+
   it("cancels delivery before queueing when transformReplyPayload returns null", async () => {
     const delivered: string[] = [];
 
