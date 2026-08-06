@@ -267,14 +267,15 @@ export async function runCliFallbackCandidate(params: {
               summaryPromise,
               params.presentation.startPresentationWhileTyping(
                 turn.typingSignals.signalToolStart(),
-                () =>
-                  turn.opts?.onToolStart?.({
+                async () => {
+                  await turn.opts?.onToolStart?.({
                     ...(toolCallId ? { toolCallId } : {}),
                     name,
                     phase,
                     args,
                     detailMode: turn.toolProgressDetail,
-                  }),
+                  });
+                },
               ),
             ]);
           },

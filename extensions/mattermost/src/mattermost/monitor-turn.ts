@@ -519,7 +519,7 @@ export async function dispatchMattermostInboundTurn(
             },
             onToolStart: async (payloadValue) => {
               if (!draftToolProgressEnabled) {
-                return;
+                return false;
               }
               const boundarySettled = enterBlockPreviewActivity("tool");
               // Boundary detach and progress staging both happen synchronously before
@@ -540,11 +540,12 @@ export async function dispatchMattermostInboundTurn(
                 { startImmediately: true },
               );
               previewBoundaryController.noteUpdate();
-              await Promise.all([boundarySettled, progressSettled]);
+              const [, rendered] = await Promise.all([boundarySettled, progressSettled]);
+              return rendered;
             },
             onItemEvent: async (payloadLocal) => {
               if (!draftToolProgressEnabled) {
-                return;
+                return false;
               }
               const boundarySettled = enterBlockPreviewActivity("tool");
               const progressSettled = progressDraft.pushToolProgress(
@@ -563,7 +564,8 @@ export async function dispatchMattermostInboundTurn(
                 { startImmediately: true },
               );
               previewBoundaryController.noteUpdate();
-              await Promise.all([boundarySettled, progressSettled]);
+              const [, rendered] = await Promise.all([boundarySettled, progressSettled]);
+              return rendered;
             },
           },
         }),

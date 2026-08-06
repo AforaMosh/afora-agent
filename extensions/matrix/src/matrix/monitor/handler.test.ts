@@ -2937,7 +2937,7 @@ describe("matrix monitor handler draft streaming", () => {
       phase?: string;
       args?: Record<string, unknown>;
       detailMode?: "explain" | "raw";
-    }) => Promise<void>;
+    }) => Promise<boolean | void>;
     onItemEvent?: (payload: {
       itemId?: string;
       toolCallId?: string;
@@ -2948,13 +2948,13 @@ describe("matrix monitor handler draft streaming", () => {
       kind?: string;
       phase?: string;
       status?: string;
-    }) => Promise<void>;
+    }) => Promise<boolean | void>;
     onPlanUpdate?: (payload: {
       phase: string;
       explanation?: string;
       steps?: Array<{ step: string; status: "pending" | "in_progress" | "completed" }>;
-    }) => Promise<void>;
-    onApprovalEvent?: (payload: { phase?: string; command?: string }) => Promise<void>;
+    }) => Promise<boolean | void>;
+    onApprovalEvent?: (payload: { phase?: string; command?: string }) => Promise<boolean | void>;
     onCommandOutput?: (payload: {
       itemId?: string;
       toolCallId?: string;
@@ -2963,7 +2963,7 @@ describe("matrix monitor handler draft streaming", () => {
       exitCode?: number;
       status?: string;
       title?: string;
-    }) => Promise<void>;
+    }) => Promise<boolean | void>;
     onPatchSummary?: (payload: {
       itemId?: string;
       toolCallId?: string;
@@ -2974,7 +2974,7 @@ describe("matrix monitor handler draft streaming", () => {
       added?: string[];
       modified?: string[];
       deleted?: string[];
-    }) => Promise<void>;
+    }) => Promise<boolean | void>;
     disableBlockStreaming?: boolean;
   };
 
@@ -3226,6 +3226,24 @@ describe("matrix monitor handler draft streaming", () => {
     expectFinalizedPreviewEdit("$draft1", "Done");
     expect(deliverMatrixRepliesMock).not.toHaveBeenCalled();
     expect(redactEventMock).not.toHaveBeenCalled();
+    await finish();
+  });
+
+  it("reports filtered Matrix tool, item, and command progress as not rendered", async () => {
+    const { dispatch } = createStreamingHarness({
+      streaming: "progress",
+      previewToolProgressEnabled: true,
+    });
+    const { opts, finish } = await dispatch();
+
+    const rendered = await Promise.all([
+      opts.onToolStart?.({ name: "read_file", phase: "end" }),
+      opts.onItemEvent?.({ kind: "preamble", progressText: "   " }),
+      opts.onCommandOutput?.({ name: "exec", phase: "update" }),
+    ]);
+
+    expect(rendered).toEqual([false, false, false]);
+    expect(sendSingleTextMessageMatrixMock).not.toHaveBeenCalled();
     await finish();
   });
 

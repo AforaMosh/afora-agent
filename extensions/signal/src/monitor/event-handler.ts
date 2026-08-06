@@ -549,6 +549,7 @@ export function createSignalEventHandler(deps: SignalEventHandlerDeps) {
                     if (toolName) {
                       await statusReactionController.setTool(toolName);
                     }
+                    return false;
                   },
                   onCompactionStart: async () => {
                     await statusReactionController.setCompacting();

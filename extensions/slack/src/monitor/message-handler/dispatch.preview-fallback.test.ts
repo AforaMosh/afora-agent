@@ -3773,7 +3773,12 @@ describe("dispatchPreparedSlackMessage preview fallback", () => {
     );
 
     expect(capturedReplyOptions?.suppressDefaultToolProgressMessages).toBe(true);
-    await requireCapturedItemEventHandler()({ progressText: "hidden progress" });
+    const rendered = await Promise.all([
+      capturedReplyOptions?.onToolStart?.({ name: "exec", phase: "start" }),
+      requireCapturedItemEventHandler()({ progressText: "hidden progress" }),
+      capturedReplyOptions?.onCommandOutput?.({ name: "exec", phase: "update" }),
+    ]);
+    expect(rendered).toEqual([false, false, false]);
   });
 
   it("keeps only the latest Slack commentary when tool progress is disabled", async () => {

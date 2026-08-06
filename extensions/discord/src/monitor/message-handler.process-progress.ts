@@ -153,14 +153,14 @@ export function createDiscordMessageProgressRuntime(params: {
     streamReasoningInNonStreamModes: reasoningWindowEnabled,
     onToolStart: async (payload) => {
       if (isProcessAborted(abortSignal)) {
-        return;
+        return false;
       }
       await params.reactions.maybeBindToToolReaction(payload);
       await params.reactions.controller.setTool(payload.name);
       if (payload.phase === "start") {
         progressReceipt.noteToolCall(payload.name);
       }
-      await draftPreview.pushToolEvent(payload);
+      return await draftPreview.pushToolEvent(payload);
     },
     onItemEvent: async (payload) => {
       if (isFailedProgress(payload)) {
@@ -168,13 +168,13 @@ export function createDiscordMessageProgressRuntime(params: {
       }
       if (payload.kind === "preamble") {
         if (shouldYieldDraftCommentary()) {
-          return undefined;
+          return false;
         }
         return await draftPreview.pushPreambleItemEvent(payload, (itemId, text) => {
           progressReceipt.noteCommentary(itemId, text);
         });
       }
-      await draftPreview.pushItemEvent(payload);
+      return await draftPreview.pushItemEvent(payload);
     },
     onPlanUpdate: async (payload) => {
       if (payload.phase === "update") {
@@ -191,8 +191,7 @@ export function createDiscordMessageProgressRuntime(params: {
       if (isFailedProgress(payload)) {
         return false;
       }
-      await draftPreview.pushCommandOutputEvent(payload);
-      return undefined;
+      return await draftPreview.pushCommandOutputEvent(payload);
     },
     onPatchSummary: async (payload) => {
       return await draftPreview.pushPatchEvent(payload);

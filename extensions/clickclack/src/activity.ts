@@ -139,7 +139,7 @@ type ToolRow = {
 
 /** Publisher wired into one agent turn via `replyOptions.onItemEvent`. */
 export type ClickClackActivityPublisher = {
-  onItemEvent: (payload: ClickClackItemEventPayload) => void;
+  onItemEvent: (payload: ClickClackItemEventPayload) => boolean;
   /**
    * Records the resolved model/thinking for this turn (from
    * `replyOptions.onModelSelected`); stamped onto subsequent activity rows.
@@ -213,10 +213,10 @@ export function createClickClackActivityPublisher(params: {
     return Promise.all(flushes).then(() => undefined);
   };
 
-  const handleCommentary = (payload: ClickClackItemEventPayload): void => {
+  const handleCommentary = (payload: ClickClackItemEventPayload): boolean => {
     const body = commentaryBody(payload);
     if (!body.trim()) {
-      return;
+      return false;
     }
     const key = payload.itemId?.trim() || "turn";
     let segment = commentaryByItem.get(key);
@@ -229,7 +229,7 @@ export function createClickClackActivityPublisher(params: {
     // snapshots entirely so out-of-order frames cannot queue redundant
     // PATCHes.
     if (body.length < segment.body.length || body === segment.body) {
-      return;
+      return false;
     }
     segment.body = body;
     segment.dirty = true;
@@ -239,6 +239,7 @@ export function createClickClackActivityPublisher(params: {
         void flushCommentary(key);
       }, flushMs);
     }
+    return true;
   };
 
   const toolRowKey = (payload: ClickClackItemEventPayload): string => {
@@ -254,10 +255,10 @@ export function createClickClackActivityPublisher(params: {
     return itemId.replace(/^(tool|command):/, "");
   };
 
-  const handleDiscreteItem = (payload: ClickClackItemEventPayload): void => {
+  const handleDiscreteItem = (payload: ClickClackItemEventPayload): boolean => {
     const body = activityBody(payload);
     if (!body) {
-      return;
+      return false;
     }
     const kind = TOOL_ITEM_KINDS.has(payload.kind?.trim().toLowerCase() ?? "")
       ? ("agent_tool" as const)
@@ -279,12 +280,12 @@ export function createClickClackActivityPublisher(params: {
         row.messageId = posted.id;
         row.sentBody = row.body;
       });
-      return;
+      return true;
     }
     // Only upgrade the row when the new frame says strictly more (longer
     // body), so a bare lane echo like "read" never clobbers a summary.
     if (body.length <= existing.body.length) {
-      return;
+      return false;
     }
     existing.body = body;
     void enqueue(async () => {
@@ -293,19 +294,19 @@ export function createClickClackActivityPublisher(params: {
         existing.sentBody = existing.body;
       }
     });
+    return true;
   };
 
   return {
     onItemEvent: (payload) => {
       const kind = normalizedItemKind(payload);
       if (STREAMING_COMMENTARY_ITEM_KINDS.has(kind)) {
-        handleCommentary(payload);
-        return;
+        return handleCommentary(payload);
       }
       if (SKIPPED_ITEM_KINDS.has(kind)) {
-        return;
+        return false;
       }
-      handleDiscreteItem(payload);
+      return handleDiscreteItem(payload);
     },
     setProvenance: (next) => {
       provenance = next;

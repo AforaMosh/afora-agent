@@ -873,6 +873,7 @@ export function createWhatsAppReplyPlan(params: {
             if (toolName) {
               await statusReactionController.setTool(toolName);
             }
+            return false;
           },
           onCompactionStart: async () => {
             await statusReactionController.setCompacting();

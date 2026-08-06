@@ -104,6 +104,52 @@ describeTelegramDispatch("dispatchTelegramMessage progress-rendering", () => {
     expect(draftStream.updatePreview).not.toHaveBeenCalled();
   });
 
+  it("reports disabled tool, item, and command progress as not rendered", async () => {
+    const draftStream = createSequencedDraftStream(2001);
+    createTelegramDraftStream.mockReturnValue(draftStream);
+    const rendered: Array<boolean | void> = [];
+    dispatchReplyWithBufferedBlockDispatcher.mockImplementation(async ({ replyOptions }) => {
+      rendered.push(await replyOptions?.onToolStart?.({ name: "exec", phase: "start" }));
+      rendered.push(
+        await replyOptions?.onItemEvent?.({ kind: "tool", name: "exec", phase: "update" }),
+      );
+      rendered.push(
+        await replyOptions?.onCommandOutput?.({ name: "exec", phase: "end", status: "success" }),
+      );
+      return { queuedFinal: false };
+    });
+
+    await dispatchWithContext({
+      context: createContext(),
+      streamMode: "off",
+      telegramCfg: { streaming: { mode: "off" } },
+    });
+
+    expect(rendered).toEqual([false, false, false]);
+    expect(draftStream.updatePreview).not.toHaveBeenCalled();
+  });
+
+  it("reports filtered or empty tool, item, and command progress as not rendered", async () => {
+    const draftStream = createSequencedDraftStream(2001);
+    createTelegramDraftStream.mockReturnValue(draftStream);
+    const rendered: Array<boolean | void> = [];
+    dispatchReplyWithBufferedBlockDispatcher.mockImplementation(async ({ replyOptions }) => {
+      rendered.push(await replyOptions?.onToolStart?.({ name: "message", phase: "start" }));
+      rendered.push(await replyOptions?.onItemEvent?.({ kind: "preamble", progressText: "   " }));
+      rendered.push(await replyOptions?.onCommandOutput?.({ name: "exec", phase: "update" }));
+      return { queuedFinal: false };
+    });
+
+    await dispatchWithContext({
+      context: createContext(),
+      streamMode: "progress",
+      telegramCfg: { streaming: { mode: "progress", progress: { label: false } } },
+    });
+
+    expect(rendered).toEqual([false, false, false]);
+    expect(draftStream.updatePreview).not.toHaveBeenCalled();
+  });
+
   it("renders the headline immediately when the preamble arrives after tool progress", async () => {
     const draftStream = createSequencedDraftStream(2001);
     createTelegramDraftStream.mockReturnValue(draftStream);

@@ -24,6 +24,33 @@ import {
 registerDiscordProcessTestLifecycle();
 
 describe("processDiscordMessage draft streaming progress", () => {
+  it("reports disabled Discord tool, item, and command progress as not rendered", async () => {
+    const rendered: Array<boolean | void> = [];
+    dispatchInboundMessage.mockImplementationOnce(async (params?: DispatchInboundParams) => {
+      rendered.push(await params?.replyOptions?.onToolStart?.({ name: "exec", phase: "start" }));
+      rendered.push(
+        await params?.replyOptions?.onItemEvent?.({
+          kind: "tool",
+          name: "exec",
+          phase: "update",
+        }),
+      );
+      rendered.push(
+        await params?.replyOptions?.onCommandOutput?.({ name: "exec", phase: "update" }),
+      );
+      return createNoQueuedDispatchResult();
+    });
+    const ctx = await createAutomaticSourceDeliveryContext({
+      discordConfig: {
+        streaming: { mode: "progress", progress: { toolProgress: false } },
+      },
+    });
+
+    await runProcessDiscordMessage(ctx);
+
+    expect(rendered).toEqual([false, false, false]);
+  });
+
   it("moves progress and final delivery into a thread created from the source message", async () => {
     const draftStream = createMockDraftStreamForTest();
     dispatchInboundMessage.mockImplementationOnce(async (params?: DispatchInboundParams) => {

@@ -129,10 +129,10 @@ export async function createMatrixDraftController(params: {
     return {
       ...options,
       onToolStart: async (payload) => {
-        await progressDraft.pushToolEvent(payload);
+        return await progressDraft.pushToolEvent(payload);
       },
       onItemEvent: async (payload) => {
-        await progressDraft.pushItemEvent(payload);
+        return await progressDraft.pushItemEvent(payload);
       },
       onPlanUpdate: async (payload) => {
         if (payload.phase !== "update") {
@@ -161,7 +161,7 @@ export async function createMatrixDraftController(params: {
         return await progressDraft.pushApprovalEvent(payload);
       },
       onCommandOutput: async (payload) => {
-        await progressDraft.pushCommandOutputEvent(payload);
+        return await progressDraft.pushCommandOutputEvent(payload);
       },
       onPatchSummary: async (payload) => {
         return await progressDraft.pushPatchEvent(payload);

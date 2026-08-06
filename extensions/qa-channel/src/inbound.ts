@@ -475,17 +475,18 @@ export async function handleQaInbound(params: {
       },
       onToolStart: (payload) => {
         if (payload.phase && payload.phase !== "start") {
-          return;
+          return false;
         }
         const name = payload.name?.trim();
         if (!name) {
-          return;
+          return false;
         }
         const args = sanitizeQaBusToolCallArguments(payload.args);
         toolCalls.push({
           name,
           ...(args && Object.keys(args).length > 0 ? { arguments: args } : {}),
         });
+        return false;
       },
     },
     replyPipeline: {},

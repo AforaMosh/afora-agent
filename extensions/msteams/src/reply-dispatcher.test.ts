@@ -454,6 +454,19 @@ describe("createMSTeamsReplyDispatcher", () => {
     expect(getStreamMock().update).toHaveBeenCalled();
   });
 
+  it("reports filtered Teams tool, item, and command progress as not rendered", async () => {
+    const dispatcher = createDispatcher("personal", { streaming: { mode: "progress" } });
+
+    const rendered = await Promise.all([
+      dispatcher.replyOptions.onToolStart?.({ name: "message", phase: "start" }),
+      dispatcher.replyOptions.onItemEvent?.({ kind: "preamble", progressText: "   " }),
+      dispatcher.replyOptions.onCommandOutput?.({ name: "exec", phase: "update" }),
+    ]);
+
+    expect(rendered).toEqual([false, false, false]);
+    expect(getStreamMock().update).not.toHaveBeenCalled();
+  });
+
   it.each(
     [
       { label: "reply_payload_sending", hooks: ["reply_payload_sending"] },

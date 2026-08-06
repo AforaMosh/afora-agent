@@ -623,7 +623,7 @@ describe("executeFollowupTurn", () => {
       onCompactionNoticePayload: vi.fn(async () => {}),
     });
 
-    await expect(detachedProgress).resolves.toBeUndefined();
+    await expect(detachedProgress).resolves.toBe(false);
     await expect(result.progress.drain()).rejects.toBe(failure);
   });
 

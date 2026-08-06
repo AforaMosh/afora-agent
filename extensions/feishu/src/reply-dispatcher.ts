@@ -707,10 +707,11 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
     statusLine = nextStatusLine;
     const hasStreamingSession = Boolean(streaming?.isActive() || streamingStartPromise);
     if (!hasStreamingSession && (options?.startIfNeeded === false || renderMode !== "card")) {
-      return;
+      return false;
     }
     startStreaming();
     flushStreamingCardUpdate(buildCombinedStreamText(reasoningText, streamText));
+    return true;
   };
 
   const sendChunkedTextReply = async (paramsLocal: {
@@ -1557,7 +1558,7 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
             detailMode?: "explain" | "raw";
           }) => {
             if (!isChannelProgressDraftWorkToolName(payload.name)) {
-              return;
+              return false;
             }
             const statusLineLocal = formatChannelProgressDraftLineForEntry(
               account.config,
@@ -1572,8 +1573,9 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
               },
             );
             if (statusLineLocal) {
-              updateStreamingStatusLine(statusLineLocal);
+              return updateStreamingStatusLine(statusLineLocal);
             }
+            return false;
           }
         : undefined,
       onAssistantMessageStart: previewStreamingEnabled

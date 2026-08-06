@@ -2907,6 +2907,9 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
         cfg: emptyConfig,
         dispatcher,
         replyResolver: async (_ctx: MsgContext, opts?: GetReplyOptions) => {
+          await opts?.onToolStart?.({ name: "inspect", phase: "start" });
+          await opts?.onItemEvent?.({ kind: "tool", phase: "update", name: "inspect" });
+          await opts?.onCommandOutput?.({ phase: "update", name: "inspect" });
           await opts?.onPlanUpdate?.({ phase: "start" });
           await opts?.onApprovalEvent?.({ phase: "resolved" });
           await opts?.onPatchSummary?.({ phase: "start" });
@@ -2916,6 +2919,9 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
         replyOptions: {
           suppressDefaultToolProgressMessages: true,
           allowProgressCallbacksWhenSourceDeliverySuppressed: true,
+          onToolStart: notRendered,
+          onItemEvent: notRendered,
+          onCommandOutput: notRendered,
           onPlanUpdate: notRendered,
           onApprovalEvent: notRendered,
           onPatchSummary: notRendered,
@@ -2924,7 +2930,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       });
 
       await vi.advanceTimersByTimeAsync(ACTIVE_TURN_RECEIPT_DELAY_MS);
-      expect(notRendered).toHaveBeenCalledTimes(4);
+      expect(notRendered).toHaveBeenCalledTimes(7);
       expect(deliveredTexts).toContain(ACTIVE_TURN_RECEIPT_TEXT);
 
       terminal.resolve({ text: "callback-noop final" });

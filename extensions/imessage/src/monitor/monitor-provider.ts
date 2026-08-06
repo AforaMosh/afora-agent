@@ -1220,6 +1220,7 @@ export async function monitorIMessageProvider(opts: MonitorIMessageOpts = {}): P
             ? {
                 onToolStart: async () => {
                   await directTypingController?.startTypingLoop();
+                  return false;
                 },
               }
             : {}),

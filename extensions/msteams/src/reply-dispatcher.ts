@@ -585,7 +585,7 @@ export function createMSTeamsReplyDispatcher(params: {
           const name = typeof payload?.name === "string" ? payload.name : undefined;
           const detailMode =
             typeof payload?.detailMode === "string" ? payload.detailMode : undefined;
-          await streamController.pushProgressLine(
+          return await streamController.pushProgressLine(
             buildChannelProgressDraftLineForEntry(
               msteamsCfg,
               {
@@ -606,7 +606,7 @@ export function createMSTeamsReplyDispatcher(params: {
           );
         },
         onItemEvent: async (payload: PipelinePayload) => {
-          await streamController.pushProgressLine(
+          return await streamController.pushProgressLine(
             buildChannelProgressDraftLineForEntry(msteamsCfg, {
               event: "item",
               ...(typeof payload?.itemId === "string" ? { itemId: payload.itemId } : {}),
@@ -651,9 +651,9 @@ export function createMSTeamsReplyDispatcher(params: {
         },
         onCommandOutput: async (payload: PipelinePayload) => {
           if (payload?.phase !== "end") {
-            return;
+            return false;
           }
-          await streamController.pushProgressLine(
+          return await streamController.pushProgressLine(
             buildChannelProgressDraftLine({
               event: "command-output",
               ...(typeof payload?.itemId === "string" ? { itemId: payload.itemId } : {}),

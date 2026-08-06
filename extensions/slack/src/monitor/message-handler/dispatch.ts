@@ -433,14 +433,14 @@ export async function dispatchPreparedSlackMessage(prepared: PreparedSlackMessag
           if (payload.phase === "start") {
             progress.progressReceipt.noteToolCall(payload.name);
           }
-          await progress.progressDraft.pushToolEvent(payload);
+          return await progress.progressDraft.pushToolEvent(payload);
         },
         onItemEvent: async (payload) => {
           if (progress.streamMode === "status_final" && payload.kind === "preamble") {
             if (progress.shouldYieldDraftProgress()) {
-              return;
+              return false;
             }
-            await progress.progressDraft.pushPreambleHeadline(payload.progressText, {
+            let rendered = await progress.progressDraft.pushPreambleHeadline(payload.progressText, {
               itemId: payload.itemId,
             });
             if (progress.commentaryProgressEnabled) {
@@ -453,10 +453,11 @@ export async function dispatchPreparedSlackMessage(prepared: PreparedSlackMessag
               if (accepted) {
                 progress.progressReceipt.noteCommentary(payload.itemId, payload.progressText);
               }
+              rendered ||= accepted;
             }
-            return;
+            return rendered;
           }
-          await progress.progressDraft.pushItemEvent(payload);
+          return await progress.progressDraft.pushItemEvent(payload);
         },
         onPlanUpdate: async (payload) => {
           if (payload.phase !== "update") {
@@ -468,7 +469,7 @@ export async function dispatchPreparedSlackMessage(prepared: PreparedSlackMessag
           return await progress.progressDraft.pushApprovalEvent(payload);
         },
         onCommandOutput: async (payload) => {
-          await progress.progressDraft.pushCommandOutputEvent(payload);
+          return await progress.progressDraft.pushCommandOutputEvent(payload);
         },
         onPatchSummary: async (payload) => {
           return await progress.progressDraft.pushPatchEvent(payload);

@@ -235,15 +235,18 @@ export function createTelegramProgressController(params: {
     if (params.statusReactionController && toolName) {
       await params.statusReactionController.setTool(toolName);
     }
-    await progressPromise;
+    return await progressPromise;
   };
   const handleItemEvent = async (payload: CallbackPayload<"onItemEvent">) => {
     if (payload.kind === "preamble") {
       if (verboseProgressActive()) {
-        return;
+        return false;
       }
+      let rendered = false;
       if (params.streamMode === "progress") {
-        await compositor.pushPreambleHeadline(payload.progressText, { itemId: payload.itemId });
+        rendered = await compositor.pushPreambleHeadline(payload.progressText, {
+          itemId: payload.itemId,
+        });
       }
       if (params.streamMode === "progress" && compositor.commentaryProgressEnabled) {
         const accepted = await compositor.pushCommentaryProgress(payload.progressText, {
@@ -252,10 +255,11 @@ export function createTelegramProgressController(params: {
         if (accepted) {
           summary.noteCommentary(payload.itemId, payload.progressText);
         }
+        rendered ||= accepted;
       }
-      return;
+      return rendered;
     }
-    await pushToolProgress(
+    return await pushToolProgress(
       buildChannelProgressDraftLineForEntry(params.telegramCfg, {
         event: "item",
         itemId: payload.itemId,
@@ -296,7 +300,7 @@ export function createTelegramProgressController(params: {
   };
   const handleCommandOutput = async (payload: CallbackPayload<"onCommandOutput">) => {
     if (payload.phase === "end") {
-      await pushToolProgress(
+      return await pushToolProgress(
         buildChannelProgressDraftLineForEntry(params.telegramCfg, {
           event: "command-output",
           itemId: payload.itemId,
@@ -309,6 +313,7 @@ export function createTelegramProgressController(params: {
         }),
       );
     }
+    return false;
   };
   const handlePatchSummary = async (payload: CallbackPayload<"onPatchSummary">) => {
     if (payload.phase === "end") {
