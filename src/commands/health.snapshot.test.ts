@@ -1074,11 +1074,9 @@ describe("collectGatewayHealthSnapshot", () => {
     };
     testStore = {};
 
-    await getHealthSnapshot({ timeoutMs: 10, probe: false });
+    const snap = await getHealthSnapshot({ timeoutMs: 10, probe: false });
 
-    expect(listHealthSessionEntriesCalls).toEqual([
-      { agentId: "main", storePath: "/tmp/sessions.json" },
-      { agentId: "ops", storePath: "/tmp/sessions.json" },
-    ]);
+    expect(listHealthSessionEntriesCalls.map(({ agentId }) => agentId)).toEqual(["main", "ops"]);
+    expect(snap.sessions.path).toBe("/tmp/openclaw-agent.sqlite");
   });
 });

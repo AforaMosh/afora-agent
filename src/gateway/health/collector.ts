@@ -109,6 +109,8 @@ export function resolveHealthAgentOrder(cfg: OpenClawConfig) {
 
 export async function buildHealthSessionSummary(storePath: string, agentId?: string) {
   const { listSessionEntriesReadOnly } = await import("../../config/sessions/session-accessor.js");
+  const { resolveSqliteTargetFromSessionStorePath } =
+    await import("../../config/sessions/session-sqlite-target.js");
   const { isTransientSqliteError } = await import("../../infra/unhandled-rejections.js");
   let listed: ReturnType<typeof listSessionEntriesReadOnly>;
   try {
@@ -132,8 +134,13 @@ export async function buildHealthSessionSummary(storePath: string, agentId?: str
     updatedAt: session.updatedAt || null,
     age: session.updatedAt ? Date.now() - session.updatedAt : null,
   }));
+  // Session access still accepts migration-era locators; health reports the physical SQLite owner.
+  const databasePath = resolveSqliteTargetFromSessionStorePath(
+    storePath,
+    agentId ? { agentId } : {},
+  ).path;
   return {
-    path: storePath,
+    path: databasePath,
     count: sessions.length,
     recent,
   } satisfies HealthSummary["sessions"];

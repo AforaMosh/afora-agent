@@ -316,6 +316,7 @@ describe("healthCommand", () => {
   });
 
   it("prints the rich text summary and verbose gateway details", async () => {
+    const sessionDatabasePath = "/tmp/openclaw-state/agents/main/agent/openclaw-agent.sqlite";
     const recent = [
       { key: "main", updatedAt: Date.now() - 60_000, age: 60_000 },
       { key: "foo", updatedAt: null, age: null },
@@ -342,7 +343,7 @@ describe("healthCommand", () => {
         discord: "Discord",
       },
       sessions: {
-        path: "/tmp/sessions.json",
+        path: sessionDatabasePath,
         count: 2,
         recent,
       },
@@ -357,6 +358,7 @@ describe("healthCommand", () => {
     expect(runtime.exit).not.toHaveBeenCalled();
     const output = stripAnsi(runtime.log.mock.calls.map((c) => String(c[0])).join("\n"));
     expect(output).toMatch(/WhatsApp: linked/i);
+    expect(output).toContain(`Session store (main): ${sessionDatabasePath} (2 entries)`);
     expect(runtime.log.mock.calls.slice(0, 3)).toEqual([
       ["Gateway connection:"],
       ["  Gateway mode: local"],
