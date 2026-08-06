@@ -235,12 +235,49 @@ export const TalkClientTranscriptParamsSchema = closedObject({
 export const TalkClientCloseParamsSchema = closedObject({
   sessionKey: NonEmptyString,
   voiceSessionId: VoiceIdString,
+  allocationId: Type.Optional(VoiceIdString),
 });
 
-/** Result for client-owned transcript and close mutations. */
-export const TalkClientMutationResultSchema = closedObject({
-  ok: Type.Literal(true),
+/** Commits or aborts one prepared browser provider allocation. */
+export const TalkClientAllocationParamsSchema = closedObject({
+  sessionKey: NonEmptyString,
+  voiceSessionId: VoiceIdString,
+  allocationId: VoiceIdString,
 });
+
+export const TalkClientTerminalPayloadSchema = closedObject({
+  outcome: Type.Union([Type.Literal("completed"), Type.Literal("error")]),
+  message: Type.Optional(Type.String()),
+});
+
+export const TalkClientAllocationTerminalEventSchema = closedObject({
+  sessionKey: NonEmptyString,
+  voiceSessionId: VoiceIdString,
+  allocationId: VoiceIdString,
+  ...TalkClientTerminalPayloadSchema.properties,
+});
+
+/** Generic result for client-owned transcript and close mutations. */
+export const TalkClientMutationResultSchema = closedObject({ ok: Type.Literal(true) });
+
+/** Builds the exact committed and aborted allocation result branches. */
+const allocationMutationState = (state: "committed" | "aborted") =>
+  closedObject({ state: Type.Literal(state) });
+export const TalkClientAllocationCommittedResultSchema = allocationMutationState("committed");
+export const TalkClientAllocationAbortedResultSchema = allocationMutationState("aborted");
+
+/** Provider termination observed before an allocation mutation could complete. */
+export const TalkClientAllocationTerminalResultSchema = closedObject({
+  state: Type.Literal("terminal"),
+  terminal: TalkClientTerminalPayloadSchema,
+});
+
+/** Exact result for prepared allocation commit and abort mutations. */
+export const TalkClientAllocationMutationResultSchema = Type.Union([
+  TalkClientAllocationCommittedResultSchema,
+  TalkClientAllocationAbortedResultSchema,
+  TalkClientAllocationTerminalResultSchema,
+]);
 
 /** Agent run identity returned after accepting a Talk client tool call. */
 export const TalkClientToolCallResultSchema = closedObject({
@@ -489,12 +526,14 @@ const BrowserRealtimeWebRtcSdpSessionSchema = closedObject({
   provider: NonEmptyString,
   transport: Type.Literal("webrtc"),
   voiceSessionId: NonEmptyString,
+  allocationId: Type.Optional(VoiceIdString),
   clientSecret: NonEmptyString,
   offerUrl: Type.Optional(Type.String()),
   offerHeaders: Type.Optional(Type.Record(Type.String(), Type.String())),
   model: Type.Optional(Type.String()),
   voice: Type.Optional(Type.String()),
   expiresAt: Type.Optional(Type.Number()),
+  terminal: Type.Optional(TalkClientTerminalPayloadSchema),
 });
 
 /** Browser websocket setup payload with JSON/PCM audio contract. */
@@ -502,6 +541,7 @@ const BrowserRealtimeJsonPcmWebSocketSessionSchema = closedObject({
   provider: NonEmptyString,
   transport: Type.Literal("provider-websocket"),
   voiceSessionId: NonEmptyString,
+  allocationId: Type.Optional(VoiceIdString),
   protocol: NonEmptyString,
   clientSecret: NonEmptyString,
   websocketUrl: NonEmptyString,
@@ -510,6 +550,7 @@ const BrowserRealtimeJsonPcmWebSocketSessionSchema = closedObject({
   model: Type.Optional(Type.String()),
   voice: Type.Optional(Type.String()),
   expiresAt: Type.Optional(Type.Number()),
+  terminal: Type.Optional(TalkClientTerminalPayloadSchema),
 });
 
 /** Browser setup payload for gateway-relayed realtime audio. */
@@ -787,7 +828,14 @@ export type TalkClientToolCallParams = Static<typeof TalkClientToolCallParamsSch
 export type TalkClientToolCallResult = Static<typeof TalkClientToolCallResultSchema>;
 export type TalkClientTranscriptParams = Static<typeof TalkClientTranscriptParamsSchema>;
 export type TalkClientCloseParams = Static<typeof TalkClientCloseParamsSchema>;
+export type TalkClientAllocationParams = Static<typeof TalkClientAllocationParamsSchema>;
+export type TalkClientAllocationTerminalEvent = Static<
+  typeof TalkClientAllocationTerminalEventSchema
+>;
 export type TalkClientMutationResult = Static<typeof TalkClientMutationResultSchema>;
+export type TalkClientAllocationMutationResult = Static<
+  typeof TalkClientAllocationMutationResultSchema
+>;
 export type TalkSessionCreateParams = Static<typeof TalkSessionCreateParamsSchema>;
 export type TalkSessionCreateResult = Static<typeof TalkSessionCreateResultSchema>;
 export type TalkSessionJoinParams = Static<typeof TalkSessionJoinParamsSchema>;

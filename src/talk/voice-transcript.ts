@@ -4,6 +4,9 @@ import { BoundedSerialQueue } from "../shared/bounded-serial-queue.js";
 const VOICE_TRANSCRIPT_MAX_CHARS = 8_000;
 const VOICE_TRANSCRIPT_QUEUE_MAX_PENDING = 40;
 export const VOICE_TRANSCRIPT_MAX_UNRESOLVED = VOICE_TRANSCRIPT_QUEUE_MAX_PENDING + 1;
+export const CLIENT_VOICE_TRANSCRIPT_DRAIN_TIMEOUT_MS = 15_000;
+export const CLIENT_VOICE_CLOSE_REQUEST_BUDGET_MS = 30_000;
+export const CLIENT_VOICE_TERMINAL_ACK_GRACE_MS = 35_000;
 const VOICE_TRANSCRIPT_QUEUE_MAX_PENDING_CHARS =
   VOICE_TRANSCRIPT_QUEUE_MAX_PENDING * VOICE_TRANSCRIPT_MAX_CHARS;
 const VOICE_TRANSCRIPT_QUEUE_OVERFLOW_MESSAGE =
@@ -25,7 +28,7 @@ export const VOICE_TRANSCRIPT_QUEUE_POLICY = {
 
 type VoiceTranscriptOperationOwner = {
   queue: BoundedSerialQueue;
-  closePromise?: Promise<void>;
+  closing?: { fence: string; promise: Promise<void> };
 };
 
 class VoiceTranscriptOperationRegistry {
@@ -48,7 +51,7 @@ class VoiceTranscriptOperationRegistry {
   private cleanup(key: string, owner: VoiceTranscriptOperationOwner): void {
     if (
       this.owners.get(key) === owner &&
-      !owner.closePromise &&
+      !owner.closing &&
       owner.queue.isIdle &&
       !owner.queue.didOverflow
     ) {
@@ -63,12 +66,12 @@ class VoiceTranscriptOperationRegistry {
   ): Promise<T> {
     while (true) {
       const owner = this.getOrCreate(key);
-      if (owner.closePromise) {
+      if (owner.closing) {
         if (options.waitForCapacity !== true) {
           throw new Error("voice transcript persistence session is closing");
         }
         try {
-          await owner.closePromise;
+          await owner.closing.promise;
         } catch {
           // Control work retries on a fresh owner after a failed close releases this one.
         }
@@ -102,19 +105,28 @@ class VoiceTranscriptOperationRegistry {
     }
   }
 
-  async close(key: string, operation: () => Promise<void>): Promise<void> {
-    const owner = this.getOrCreate(key);
-    if (!owner.closePromise) {
-      // Seal synchronously so no transcript can enter behind the close barrier.
-      owner.queue.seal();
-      owner.closePromise = owner.queue.flush({ requireSuccess: true }).then(operation);
-    }
-    try {
-      await owner.closePromise;
-    } finally {
-      if (this.owners.get(key) === owner) {
-        this.owners.delete(key);
+  async close(key: string, fence: string, operation: () => Promise<void>): Promise<void> {
+    while (true) {
+      const owner = this.getOrCreate(key);
+      if (owner.closing) {
+        if (owner.closing.fence === fence) {
+          return await owner.closing.promise;
+        }
+        await owner.closing.promise.catch(() => undefined);
+        continue;
       }
+      owner.queue.seal();
+      const promise = owner.queue.flush({ requireSuccess: true }).then(operation);
+      owner.closing = { fence, promise };
+      try {
+        await promise;
+      } finally {
+        if (this.owners.get(key) === owner && owner.closing?.promise === promise) {
+          owner.closing = undefined;
+          this.owners.delete(key);
+        }
+      }
+      return;
     }
   }
 

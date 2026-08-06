@@ -281,7 +281,11 @@ export const validateTalkConfigResult = compile(S.TalkConfigResultSchema);
 export const validateTalkClientCreateParams = compile(S.TalkClientCreateParamsSchema);
 export const validateTalkClientCreateResult = compile(S.TalkClientCreateResultSchema);
 export const validateTalkClientCloseParams = compile(S.TalkClientCloseParamsSchema);
+export const validateTalkClientAllocationParams = compile(S.TalkClientAllocationParamsSchema);
 export const validateTalkClientMutationResult = compile(S.TalkClientMutationResultSchema);
+export const validateTalkClientAllocationMutationResult = compile(
+  S.TalkClientAllocationMutationResultSchema,
+);
 export const validateTalkClientToolCallParams = compile(S.TalkClientToolCallParamsSchema);
 export const validateTalkClientToolCallResult = compile(S.TalkClientToolCallResultSchema);
 export const validateTalkClientTranscriptParams = compile(S.TalkClientTranscriptParamsSchema);

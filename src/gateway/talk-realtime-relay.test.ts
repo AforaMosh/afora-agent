@@ -280,7 +280,7 @@ describe("talk realtime gateway relay", () => {
         relaySessionId: unrelated.relaySessionId,
         connId: "conn-other",
       });
-      cleanupTalkConnection("conn-other", logGateway);
+      await cleanupTalkConnection("conn-other", logGateway);
       expect(bridgeCloses[2]).toHaveBeenCalledOnce();
     } finally {
       clientVoiceSessionTesting.reset();
@@ -394,7 +394,7 @@ describe("talk realtime gateway relay", () => {
       status: "open",
       consultRunIds: [],
     });
-    closeTalkRealtimeRelaySessionsForConnection("conn-detached");
+    await cleanupTalkConnection("conn-detached", { warn: vi.fn() });
     activeRelaySessions.delete(session.relaySessionId);
     await relay.voiceSessionClose;
     expect(clientVoiceSessionTesting.readRecord("main", session.relaySessionId)).toMatchObject({

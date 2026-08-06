@@ -561,9 +561,10 @@ export function attachGatewayWsConnectionHandler(params: AttachGatewayWsConnecti
           `authenticated user disconnected code=${code} reason=${logReason || "n/a"} conn=${connId} user=${formatForLog(client.authenticatedUserId)}`,
         );
       }
+      let talkCleanup: Promise<void> | undefined;
       if (connectionKind === "gateway") {
         const context = buildRequestContext();
-        cleanupTalkConnection(connId, logGateway);
+        talkCleanup = cleanupTalkConnection(connId, logGateway);
         context.unsubscribeAllSessionEvents(connId);
         // Detach (or, with a zero grace period, kill) any PTY shells this
         // connection owned; detached sessions stay reattachable via
@@ -619,6 +620,7 @@ export function attachGatewayWsConnectionHandler(params: AttachGatewayWsConnecti
         endpoint,
       });
       close();
+      await talkCleanup;
     };
     socket.once("close", (code, reason) => {
       void handleSocketClose(code, reason).catch((error: unknown) => {

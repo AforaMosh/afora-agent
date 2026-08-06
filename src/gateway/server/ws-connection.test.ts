@@ -22,7 +22,7 @@ const {
   attachGatewayWsMessageHandlerMock: vi.fn(),
   attachWorkerWsMessageHandlerMock: vi.fn((_params: unknown) => vi.fn()),
   broadcastPresenceSnapshotMock: vi.fn(),
-  cleanupTalkConnectionMock: vi.fn(),
+  cleanupTalkConnectionMock: vi.fn<() => Promise<void>>(async () => undefined),
   touchPresenceMock: vi.fn(),
   upsertPresenceMock: vi.fn(),
 }));
@@ -97,6 +97,7 @@ describe("attachGatewayWsConnectionHandler", () => {
     attachWorkerWsMessageHandlerMock.mockClear();
     broadcastPresenceSnapshotMock.mockReset();
     cleanupTalkConnectionMock.mockReset();
+    cleanupTalkConnectionMock.mockResolvedValue(undefined);
     touchPresenceMock.mockReset();
     upsertPresenceMock.mockReset();
   });
@@ -290,6 +291,55 @@ describe("attachGatewayWsConnectionHandler", () => {
       handlerParams.connId,
       expect.objectContaining({ warn: expect.any(Function) }),
     );
+  });
+
+  it("starts a pending Talk drain before ordinary teardown closes the transport", async () => {
+    const events: string[] = [];
+    let finishCleanup!: () => void;
+    const pendingCleanup = new Promise<void>((resolve) => {
+      finishCleanup = resolve;
+    });
+    cleanupTalkConnectionMock.mockImplementationOnce(() => {
+      events.push("cleanup-start");
+      return pendingCleanup.then(() => {
+        events.push("cleanup-finished");
+      });
+    });
+    const unsubscribeAllSessionEvents = vi.fn(() => {
+      events.push("unsubscribe");
+    });
+    const socket = createGatewayWsTestSocket();
+    socket.close.mockImplementation(() => {
+      events.push("transport-close");
+    });
+    const { passed } = await connectTestWs({
+      socket,
+      options: {
+        buildRequestContext: () =>
+          ({
+            ...createGatewayWsTestRequestContext(),
+            unsubscribeAllSessionEvents,
+          }) as never,
+      },
+    });
+    const handlerParams = passed as {
+      connId: string;
+      setClient: (client: unknown) => boolean;
+    };
+    expect(
+      handlerParams.setClient({
+        socket,
+        connect: { client: { id: "openclaw-control-ui", mode: "webchat" } },
+        connId: handlerParams.connId,
+        usesSharedGatewayAuth: false,
+      }),
+    ).toBe(true);
+
+    socket.emit("close", 1000, Buffer.from("done"));
+
+    expect(events).toEqual(["cleanup-start", "unsubscribe", "transport-close"]);
+    finishCleanup();
+    await vi.waitFor(() => expect(events).toContain("cleanup-finished"));
   });
 
   it("continues protocol pings after pong and stops when the connection closes", async () => {

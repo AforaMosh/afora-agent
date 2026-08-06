@@ -23,10 +23,12 @@ import { resetClientVoiceConfirmationStateForTest } from "./client-voice-confirm
 import {
   appendClientVoiceTranscript,
   appendRelayVoiceTranscript,
+  claimClientVoiceBrowserAllocation,
   closeClientVoiceSession,
   closeRelayVoiceSessionRecord,
   closeStaleClientVoiceSessions,
   createOrResumeClientVoiceSession,
+  createOrResumeClientVoiceSessionWithResult,
   ensureClientVoiceAgentSessionEntry,
   isClientVoiceSessionConfirmable,
   registerClientVoiceConsultRun,
@@ -910,6 +912,137 @@ describe("client voice session", () => {
     expect(
       resolveOpenClientVoiceSessionId({ agentId: "main", sessionKey: "agent:main:main" }),
     ).toBeUndefined();
+  });
+
+  it("claims new browser sessions immediately and transfers resumed sessions on commit", () => {
+    const created = createOrResumeClientVoiceSessionWithResult({
+      agentId: "main",
+      sessionKey: "agent:main:main",
+      origin: "client",
+      voiceSessionId: "voice-browser",
+      browserAllocationId: "allocation-1",
+    });
+    expect(created).toEqual({
+      voiceSessionId: "voice-browser",
+      created: true,
+      browserAllocationId: "allocation-1",
+    });
+
+    const resumed = createOrResumeClientVoiceSessionWithResult({
+      agentId: "main",
+      sessionKey: "agent:main:main",
+      origin: "client",
+      voiceSessionId: "voice-browser",
+      browserAllocationId: "allocation-2",
+    });
+    expect(resumed).toEqual({
+      voiceSessionId: "voice-browser",
+      created: false,
+      browserAllocationId: "allocation-1",
+    });
+    expect(clientVoiceSessionTesting.readRecord("main", "voice-browser")?.browserAllocationId).toBe(
+      "allocation-1",
+    );
+
+    expect(
+      claimClientVoiceBrowserAllocation({
+        agentId: "main",
+        sessionKey: "agent:main:main",
+        voiceSessionId: "voice-browser",
+        browserAllocationId: "allocation-2",
+        expectedBrowserAllocationId: resumed.browserAllocationId,
+      }),
+    ).toBe(true);
+    expect(clientVoiceSessionTesting.readRecord("main", "voice-browser")?.browserAllocationId).toBe(
+      "allocation-2",
+    );
+    expect(
+      claimClientVoiceBrowserAllocation({
+        agentId: "main",
+        sessionKey: "agent:main:main",
+        voiceSessionId: "voice-browser",
+        browserAllocationId: "allocation-stale",
+        expectedBrowserAllocationId: "allocation-1",
+      }),
+    ).toBe(false);
+  });
+
+  it("settles exact browser close after restart without closing a replacement claim", async () => {
+    createOrResumeClientVoiceSession({
+      agentId: "main",
+      sessionKey: "agent:main:main",
+      origin: "client",
+      voiceSessionId: "voice-browser",
+      browserAllocationId: "allocation-2",
+    });
+    clientVoiceSessionTesting.reset();
+
+    await closeClientVoiceSession({
+      agentId: "main",
+      sessionKey: "agent:main:main",
+      voiceSessionId: "voice-browser",
+      browserAllocationId: "allocation-1",
+      config: {},
+    });
+    expect(clientVoiceSessionTesting.readRecord("main", "voice-browser")?.status).toBe("open");
+
+    await closeClientVoiceSession({
+      agentId: "main",
+      sessionKey: "agent:main:main",
+      voiceSessionId: "voice-browser",
+      browserAllocationId: "allocation-2",
+      config: {},
+      now: 10,
+    });
+    await closeClientVoiceSession({
+      agentId: "main",
+      sessionKey: "agent:main:main",
+      voiceSessionId: "voice-browser",
+      browserAllocationId: "allocation-2",
+      config: {},
+      now: 20,
+    });
+    expect(clientVoiceSessionTesting.readRecord("main", "voice-browser")).toMatchObject({
+      status: "closed",
+      closedAt: 10,
+      browserAllocationId: "allocation-2",
+    });
+
+    await expect(
+      closeClientVoiceSession({
+        agentId: "main",
+        sessionKey: "agent:main:main",
+        voiceSessionId: "missing",
+        browserAllocationId: "allocation-missing",
+        config: {},
+      }),
+    ).resolves.toBeUndefined();
+  });
+
+  it("rejects browser allocation claims and exact close for relay-owned sessions", async () => {
+    createOrResumeClientVoiceSession({
+      agentId: "main",
+      sessionKey: "agent:main:relay",
+      origin: "relay",
+      voiceSessionId: "voice-relay",
+    });
+    expect(() =>
+      claimClientVoiceBrowserAllocation({
+        agentId: "main",
+        sessionKey: "agent:main:relay",
+        voiceSessionId: "voice-relay",
+        browserAllocationId: "allocation-1",
+      }),
+    ).toThrow("relay-owned");
+    await expect(
+      closeClientVoiceSession({
+        agentId: "main",
+        sessionKey: "agent:main:relay",
+        voiceSessionId: "voice-relay",
+        browserAllocationId: "allocation-1",
+        config: {},
+      }),
+    ).rejects.toThrow("relay-owned");
   });
 
   it("keeps repeated tool-call ids separate across consult runs", () => {

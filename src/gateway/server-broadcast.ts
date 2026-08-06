@@ -55,6 +55,7 @@ const EVENT_SCOPE_GUARDS: Record<string, string[]> = {
   shutdown: [],
   tick: [],
   "talk.event": [READ_SCOPE],
+  "talk.client.allocation.terminal": [TALK_SCOPE],
   "talk.mode": [TALK_SCOPE],
   task: [READ_SCOPE],
   "task.suggestion": [READ_SCOPE],
@@ -264,6 +265,12 @@ export function createGatewayBroadcaster(params: {
         continue;
       }
       if (!hasEventScope(c, event, explicitPluginScope)) {
+        continue;
+      }
+      if (
+        event === "talk.client.allocation.terminal" &&
+        !hasGatewayClientCap(c.connect.caps, GATEWAY_CLIENT_CAPS.BROWSER_ALLOCATION_V1)
+      ) {
         continue;
       }
       if (
