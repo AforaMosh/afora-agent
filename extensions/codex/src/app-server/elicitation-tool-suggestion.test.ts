@@ -430,6 +430,88 @@ describe("Codex app-server tool-suggestion elicitations", () => {
     expect(appServerRequest.mock.calls.filter(([method]) => method === "app/list")).toHaveLength(2);
   });
 
+  it("declines after the bounded app inventory page limit with unique cursors", async () => {
+    mockCallGatewayTool
+      .mockResolvedValueOnce({ id: "plugin:install-bounded", status: "accepted" })
+      .mockResolvedValueOnce({ id: "plugin:install-bounded", decision: "allow-once" })
+      .mockResolvedValueOnce({ id: "plugin:authorize-bounded", status: "accepted" })
+      .mockResolvedValueOnce({ id: "plugin:authorize-bounded", decision: "allow-once" });
+    let appListCalls = 0;
+    const appServerRequest = vi.fn(async (method: string, requestParams?: unknown) => {
+      if (method === "plugin/list") {
+        if ((requestParams as { forceRefetch?: boolean } | undefined)?.forceRefetch) {
+          return { marketplaces: [], marketplaceLoadErrors: [], featuredPluginIds: [] };
+        }
+        return {
+          marketplaces: [
+            {
+              name: "openai-curated-remote",
+              path: null,
+              plugins: [
+                {
+                  id: "google-calendar@openai-curated-remote",
+                  remotePluginId: "plugin_connector_google_calendar",
+                  name: "Google Calendar",
+                  installed: false,
+                  enabled: false,
+                },
+              ],
+            },
+          ],
+          marketplaceLoadErrors: [],
+          featuredPluginIds: [],
+        };
+      }
+      if (method === "plugin/install") {
+        return {
+          authPolicy: "ON_INSTALL",
+          appsNeedingAuth: [
+            {
+              id: "connector_google_calendar",
+              name: "Google Calendar",
+              description: null,
+              installUrl: "https://chatgpt.com/apps/google-calendar/authorize",
+              category: null,
+            },
+          ],
+        };
+      }
+      if (method === "skills/list" || method === "hooks/list") {
+        return { data: [] };
+      }
+      if (method === "config/mcpServer/reload") {
+        return {};
+      }
+      if (method === "app/list") {
+        appListCalls += 1;
+        if (appListCalls > 100) {
+          throw new Error("app/list exceeded the expected bounded page limit");
+        }
+        const cursor = (requestParams as { cursor?: string } | undefined)?.cursor;
+        const page = cursor ? Number(cursor.slice("page-".length)) : 1;
+        return { data: [], nextCursor: `page-${page + 1}` };
+      }
+      throw new Error(`unexpected method: ${method}`);
+    });
+
+    const result = await handleCodexAppServerElicitationRequest({
+      requestParams: buildToolSuggestion(),
+      paramsForRun: createDiscordParams(),
+      appServerRequest,
+      ...codexTestTurnIds(),
+    });
+
+    expect(result).toEqual({ action: "decline", content: null, _meta: null });
+    expect(appServerRequest.mock.calls.filter(([method]) => method === "app/list")).toHaveLength(
+      100,
+    );
+    expect(appServerRequest).toHaveBeenLastCalledWith("app/list", {
+      threadId: codexTestTurnIds().threadId,
+      forceRefetch: true,
+      cursor: "page-100",
+    });
+  });
+
   it("surfaces but cannot accept a connector suggestion with an unsafe install URL", async () => {
     mockCallGatewayTool
       .mockResolvedValueOnce({ id: "connector:unsafe", status: "accepted" })

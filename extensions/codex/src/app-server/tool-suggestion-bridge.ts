@@ -23,6 +23,9 @@ const CODEX_APPS_SERVER_NAME = "codex_apps";
 const TOOL_SUGGESTION_KIND = "tool_suggestion";
 const INSTALL_SUGGESTION_TYPE = "install";
 const INSTALL_ALLOWED_DECISIONS = ["allow-once", "deny"] as const;
+// Match the extension's other Codex inventory scans: tolerate large catalogs while bounding
+// a malformed or adversarial stream of endlessly unique continuation cursors.
+const APP_LIST_MAX_PAGES = 100;
 
 type ToolSuggestion = {
   toolType: "plugin" | "connector";
@@ -230,7 +233,7 @@ async function verifyPluginAppsAccessible(params: {
   const accessibleIds = new Set<string>();
   const seenCursors = new Set<string>();
   let cursor: string | undefined;
-  while (true) {
+  for (let page = 0; page < APP_LIST_MAX_PAGES; page += 1) {
     const inventory = (await params.request("app/list", {
       threadId: params.threadId,
       forceRefetch: true,
@@ -251,6 +254,7 @@ async function verifyPluginAppsAccessible(params: {
     seenCursors.add(nextCursor);
     cursor = nextCursor;
   }
+  return false;
 }
 
 function pluginNameFromToolId(toolId: string): string | undefined {
