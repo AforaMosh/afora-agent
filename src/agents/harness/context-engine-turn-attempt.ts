@@ -10,7 +10,6 @@ import type {
   ContextEngineSessionTarget,
 } from "../../context-engine/types.js";
 import { openOpenClawAgentDatabase } from "../../state/openclaw-agent-db.js";
-import type { SessionWriteLockAcquireTimeoutConfig } from "../session-write-lock.js";
 import type { ContextEngineLogicalTurnLease } from "./context-engine-logical-turn.js";
 import {
   discardContextEngineTurnIntent,
@@ -44,7 +43,7 @@ export type ContextEngineTurnAttemptFacts = {
   maxOutputTokens?: number | null;
   fallbackReason?: string | null;
   degradedReason?: string | null;
-  config?: OpenClawConfig & SessionWriteLockAcquireTimeoutConfig;
+  config?: OpenClawConfig;
   isHeartbeat?: boolean;
 };
 

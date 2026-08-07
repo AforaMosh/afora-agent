@@ -41,114 +41,6 @@ function makeTypingController() {
   };
 }
 
-function parseInlineDirectivesForTest(body: string) {
-  const normalized = body.trim();
-  const modelDirective = normalized.match(/(?:^|\n)\/model\s+(\S+)/)?.[1];
-  if (modelDirective) {
-    return {
-      cleaned: normalized.replace(/(?:^|\n)\/model\s+\S+/, "").trim(),
-      hasThinkDirective: false,
-      hasVerboseDirective: false,
-      hasTraceDirective: false,
-      traceLevel: undefined,
-      rawTraceLevel: undefined,
-      hasFastDirective: false,
-      hasReasoningDirective: false,
-      hasElevatedDirective: false,
-      hasExecDirective: false,
-      hasModelDirective: true,
-      hasQueueDirective: false,
-      hasStatusDirective: false,
-      queueReset: false,
-      thinkLevel: undefined,
-      verboseLevel: undefined,
-      fastMode: undefined,
-      reasoningLevel: undefined,
-      elevatedLevel: undefined,
-      rawElevatedLevel: undefined,
-      rawModelDirective: modelDirective,
-      execSecurity: undefined,
-    };
-  }
-  if (normalized === "/reasoning stream") {
-    return {
-      cleaned: "",
-      hasThinkDirective: false,
-      hasVerboseDirective: false,
-      hasTraceDirective: false,
-      traceLevel: undefined,
-      rawTraceLevel: undefined,
-      hasFastDirective: false,
-      hasReasoningDirective: true,
-      reasoningLevel: "stream",
-      rawReasoningLevel: "stream",
-      hasElevatedDirective: false,
-      hasExecDirective: false,
-      hasModelDirective: false,
-      hasQueueDirective: false,
-      hasStatusDirective: false,
-      queueReset: false,
-      thinkLevel: undefined,
-      verboseLevel: undefined,
-      fastMode: undefined,
-      elevatedLevel: undefined,
-      rawElevatedLevel: undefined,
-      rawModelDirective: undefined,
-      execSecurity: undefined,
-    };
-  }
-  if (normalized === "/trace on") {
-    return {
-      cleaned: "",
-      hasThinkDirective: false,
-      hasVerboseDirective: false,
-      hasTraceDirective: true,
-      traceLevel: "on",
-      rawTraceLevel: "on",
-      hasFastDirective: false,
-      hasReasoningDirective: false,
-      hasElevatedDirective: false,
-      hasExecDirective: false,
-      hasModelDirective: false,
-      hasQueueDirective: false,
-      hasStatusDirective: false,
-      queueReset: false,
-      thinkLevel: undefined,
-      verboseLevel: undefined,
-      fastMode: undefined,
-      reasoningLevel: undefined,
-      elevatedLevel: undefined,
-      rawElevatedLevel: undefined,
-      rawModelDirective: undefined,
-      execSecurity: undefined,
-    };
-  }
-  return {
-    cleaned: body,
-    hasThinkDirective: false,
-    hasVerboseDirective: false,
-    hasTraceDirective: false,
-    traceLevel: undefined,
-    rawTraceLevel: undefined,
-    hasFastDirective: false,
-    hasReasoningDirective: false,
-    hasElevatedDirective: false,
-    hasExecDirective: false,
-    hasModelDirective: false,
-    hasQueueDirective: false,
-    hasStatusDirective: false,
-    queueReset: false,
-    thinkLevel: undefined,
-    verboseLevel: undefined,
-    fastMode: undefined,
-    reasoningLevel: undefined,
-    elevatedLevel: undefined,
-    rawElevatedLevel: undefined,
-    rawModelDirective: undefined,
-    execSecurity: undefined,
-  };
-}
-
 function mockCallInput(mock: { mock: { calls: unknown[][] } }, index = 0): Record<string, unknown> {
   const call = mock.mock.calls[index];
   if (!call) {
@@ -320,9 +212,13 @@ vi.mock("./commands-context.js", () => ({
   })),
 }));
 
-vi.mock("./directive-handling.parse.js", () => ({
-  parseInlineDirectives: vi.fn(parseInlineDirectivesForTest),
-}));
+vi.mock("./directive-handling.parse.js", async () => {
+  const { parseInlineDirectivesForTargetSessionTest } =
+    await import("./get-reply-directives.target-session.test-helpers.js");
+  return {
+    parseInlineDirectives: vi.fn(parseInlineDirectivesForTargetSessionTest),
+  };
+});
 
 vi.mock("./get-reply-directive-aliases.js", () => ({
   reserveSkillCommandNames: vi.fn(),

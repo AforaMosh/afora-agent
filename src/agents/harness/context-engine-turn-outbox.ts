@@ -286,7 +286,7 @@ export async function drainContextEngineTurnOutbox(params: {
   limit?: number;
   warn: (message: string) => void;
 }): Promise<{ pending: boolean }> {
-  const commitTurn = params.engine.commitTurn;
+  const commitTurn = params.engine.commitTurn?.bind(params.engine);
   if (typeof commitTurn !== "function") {
     return { pending: false };
   }

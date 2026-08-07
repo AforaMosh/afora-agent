@@ -207,7 +207,7 @@ export async function createContextEngineLogicalTurnLease(params: {
         await Promise.allSettled([...engines].map(async (engine) => await engine.dispose?.()));
       };
       if (disposalHolds.size > 0) {
-        void Promise.allSettled([...disposalHolds]).then(disposeEngines);
+        void Promise.allSettled(disposalHolds).then(disposeEngines);
         return;
       }
       await disposeEngines();

@@ -11,6 +11,7 @@ import {
 } from "../config/sessions/session-accessor.js";
 import { readPersistedMediaFacts, type MediaFact } from "../media/media-facts.js";
 import { applyInputProvenanceToUserMessage, normalizeInputProvenance } from "./input-provenance.js";
+import { resolveUserTurnTranscriptAdmission } from "./user-turn-transcript-admission.js";
 import {
   normalizeStructuredMediaEntryForTranscript,
   resolveTranscriptMediaPath,
@@ -528,14 +529,7 @@ export function createUserTurnTranscriptRecorder(
     if (admissionReceipt) {
       return;
     }
-    admissionReceipt =
-      "logicalTurnId" in receipt
-        ? receipt
-        : {
-            ...receipt,
-            logicalTurnId,
-            role: "user",
-          };
+    admissionReceipt = resolveUserTurnTranscriptAdmission({ logicalTurnId, receipt });
     admittedMessage = persistedMessage;
   };
 

@@ -700,7 +700,7 @@ function createCronPromptExecutor(params: {
         acceptedContextEngineTurnCandidate = contextEngineTurnCandidate;
         return result;
       },
-    }).catch(async (error) => {
+    }).catch(async (error: unknown) => {
       await contextEngineLogicalTurnLease.dispose();
       throw error;
     });

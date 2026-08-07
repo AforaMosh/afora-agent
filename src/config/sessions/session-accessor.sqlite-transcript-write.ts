@@ -1,7 +1,3 @@
-import { randomUUID } from "node:crypto";
-import { isDeepStrictEqual } from "node:util";
-import { resolveTimestampMsToIsoString } from "@openclaw/normalization-core/number-coercion";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
 import {
   openOpenClawAgentDatabase,
   resolveOpenClawAgentSqlitePath,
@@ -41,9 +37,8 @@ import {
   resolveSqliteTranscriptScope,
   runExclusiveSqliteSessionWrite,
   toDatabaseOptions,
-  type ResolvedTranscriptScope,
 } from "./session-accessor.sqlite-scope.js";
-import { readActiveTranscriptEntryAnchorInTransaction } from "./session-accessor.sqlite-transcript-anchor.js";
+import { appendSqliteTranscriptMessageInTransaction } from "./session-accessor.sqlite-transcript-message-append.js";
 import { readTranscriptMirrorFacts } from "./session-accessor.sqlite-transcript-mirror.js";
 import { resolveTranscriptMessageAppendParent } from "./session-accessor.sqlite-transcript-parent.js";
 import {
@@ -53,12 +48,6 @@ import {
 import { readTranscriptGenerationInTransaction } from "./session-accessor.sqlite-transcript-state.js";
 import {
   appendTranscriptEventInTransaction,
-  ensureTranscriptHeader,
-  readMessageIdempotencyKey,
-  readTranscriptIdentityByEventId,
-  readTranscriptMessageByEventId,
-  readTranscriptMessageByScopedIdempotencyKey,
-  redactTranscriptMessageForStorage,
   replaceSqliteTranscriptEventsInTransaction,
   rewriteSqliteTranscriptEventRowsInTransaction,
 } from "./session-accessor.sqlite-transcript-store.js";
@@ -82,13 +71,6 @@ class SqliteTranscriptMutationConflictError extends Error {
   constructor(sessionId: string) {
     super(`SQLite transcript changed while preparing rewrite for ${sessionId}`);
     this.name = "SqliteTranscriptMutationConflictError";
-  }
-}
-
-class TranscriptTurnAdmissionConflictError extends Error {
-  constructor(idempotencyKey: string) {
-    super(`Transcript idempotency key "${idempotencyKey}" conflicts with the admitted message.`);
-    this.name = "TranscriptTurnAdmissionConflictError";
   }
 }
 
@@ -633,133 +615,6 @@ function assertSqliteTranscriptSnapshotUnchanged(
   if (!isSqliteTranscriptSnapshotUnchanged(database, sessionId, expected)) {
     throw new SqliteTranscriptMutationConflictError(sessionId);
   }
-}
-
-function appendSqliteTranscriptMessageInTransaction<TMessage>(
-  database: OpenClawAgentDatabase,
-  resolved: ResolvedTranscriptScope,
-  options: TranscriptMessageAppendOptions<TMessage> & { messageAlreadyRedacted?: boolean },
-): TranscriptMessageAppendResult<TMessage> | undefined {
-  const readAnchor = (params: {
-    message: unknown;
-    messageId: string;
-  }): TranscriptMessageAppendResult<TMessage>["anchor"] =>
-    readActiveTranscriptEntryAnchorInTransaction({
-      database,
-      resolved,
-      entryId: params.messageId,
-      message: params.message,
-    });
-  const messagesMatchForIdempotentReplay = (stored: unknown, candidate: unknown): boolean => {
-    const serializedShape = (message: unknown): unknown => {
-      if (!isRecord(message)) {
-        return message;
-      }
-      const { timestamp: _timestamp, ...stable } = message;
-      const serialized = JSON.stringify(stable);
-      return serialized === undefined ? undefined : JSON.parse(serialized);
-    };
-    return isDeepStrictEqual(serializedShape(stored), serializedShape(candidate));
-  };
-  // Idempotent replays return the stored row with its persisted parent so callers
-  // adopt the durable tree instead of re-deriving one from a stale snapshot.
-  const existingAppendResult = (found: { message: unknown; messageId: string }) => {
-    const anchor = readAnchor(found);
-    return {
-      appended: false as const,
-      ...(anchor ? { anchor } : {}),
-      effectiveParentId:
-        readTranscriptIdentityByEventId(database, resolved.sessionId, found.messageId)?.parentId ??
-        null,
-      message: found.message as TMessage,
-      messageId: found.messageId,
-    };
-  };
-  const idempotencyKey = readMessageIdempotencyKey(options.message);
-  if (idempotencyKey && options.idempotencyLookup !== "caller-checked") {
-    const existing = readTranscriptMessageByScopedIdempotencyKey(
-      database,
-      resolved,
-      idempotencyKey,
-      options.idempotencyLookup,
-    );
-    if (existing) {
-      if (
-        !options.prepareMessageAfterIdempotencyCheck &&
-        !messagesMatchForIdempotentReplay(existing.message, options.message)
-      ) {
-        throw new TranscriptTurnAdmissionConflictError(idempotencyKey);
-      }
-      return existingAppendResult(existing);
-    }
-  }
-
-  const prepared = options.prepareMessageAfterIdempotencyCheck
-    ? options.prepareMessageAfterIdempotencyCheck(options.message)
-    : options.message;
-  if (prepared === undefined) {
-    return undefined;
-  }
-
-  const messageId = options.eventId ?? randomUUID();
-  const now = options.now ?? Date.now();
-  const finalMessage = options.messageAlreadyRedacted
-    ? prepared
-    : redactTranscriptMessageForStorage(prepared, options);
-  ensureTranscriptHeader(database, resolved, options.cwd, now);
-  const parentId = resolveTranscriptMessageAppendParent(database, resolved.sessionId, options);
-  const event = {
-    type: "message",
-    id: messageId,
-    parentId: parentId ?? null,
-    timestamp: resolveTimestampMsToIsoString(now),
-    message: finalMessage,
-  };
-  const appended = appendTranscriptEventInTransaction(database, resolved, event, {
-    dedupeByMessageIdempotency:
-      options.idempotencyLookup !== "caller-checked" &&
-      options.idempotencyLookup !== "scan-assistant",
-  });
-  if (!appended && idempotencyKey && options.idempotencyLookup !== "caller-checked") {
-    const existing = readTranscriptMessageByScopedIdempotencyKey(
-      database,
-      resolved,
-      idempotencyKey,
-      options.idempotencyLookup,
-    );
-    if (existing) {
-      if (
-        !options.prepareMessageAfterIdempotencyCheck &&
-        !messagesMatchForIdempotentReplay(existing.message, finalMessage)
-      ) {
-        throw new TranscriptTurnAdmissionConflictError(idempotencyKey);
-      }
-      return existingAppendResult(existing);
-    }
-  }
-  if (!appended) {
-    const existing = readTranscriptMessageByEventId(database, resolved, messageId);
-    if (existing) {
-      if (
-        !options.prepareMessageAfterIdempotencyCheck &&
-        !messagesMatchForIdempotentReplay(existing.message, finalMessage)
-      ) {
-        throw new TranscriptTurnAdmissionConflictError(idempotencyKey ?? `event:${messageId}`);
-      }
-      return existingAppendResult(existing);
-    }
-  }
-  if (!appended) {
-    throw new Error(`SQLite transcript append did not insert message ${messageId}.`);
-  }
-  const anchor = readAnchor({ message: finalMessage, messageId });
-  return {
-    appended: true,
-    ...(anchor ? { anchor } : {}),
-    effectiveParentId: parentId ?? null,
-    message: finalMessage,
-    messageId,
-  };
 }
 
 function assertNonMessageTranscriptEvent(event: TranscriptEvent): void {

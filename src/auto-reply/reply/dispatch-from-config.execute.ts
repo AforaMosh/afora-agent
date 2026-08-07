@@ -528,7 +528,7 @@ export async function executeDispatch(state: PrepareDispatchExecutionReadyState)
                     if (isDispatchOperationAborted()) {
                       return;
                     }
-                    let blockAdmitted = false;
+                    let blockAdmitted: boolean;
                     if (shouldRouteToOriginating) {
                       const result = await sendPayloadAsync(
                         normalizedPayload,
