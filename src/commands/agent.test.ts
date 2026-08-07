@@ -8,7 +8,6 @@ import { beforeEach, describe, expect, it, type MockInstance, vi } from "vitest"
 // Register shared mocks before imports bind their production exports.
 import "./agent-command.test-mocks.js";
 import { testing as acpManagerTesting } from "../acp/control-plane/manager.js";
-import { executionIdentity } from "../agents/agent-command-execution-identity.js";
 import * as authProfileStoreModule from "../agents/auth-profiles/store.js";
 import * as attemptExecutionRuntime from "../agents/command/attempt-execution.runtime.js";
 import { deliverAgentCommandResult } from "../agents/command/delivery.runtime.js";
@@ -18,6 +17,7 @@ import * as modelSelectionModule from "../agents/model-selection.js";
 import { loadPreparedModelCatalog } from "../agents/prepared-model-catalog.js";
 import { isAgentRunRestartAbortReason } from "../agents/run-termination.js";
 import { ensureAgentWorkspace } from "../agents/workspace.js";
+import { getExecutionIdentityAdmissionScope } from "../audit/execution-identity-admission.js";
 import { BASE_THINKING_LEVELS } from "../auto-reply/thinking.shared.js";
 import * as runtimeSnapshotModule from "../config/runtime-snapshot.js";
 import { parseSqliteSessionFileMarker } from "../config/sessions/legacy-sqlite-marker.js";
