@@ -234,11 +234,15 @@ export async function chooseDispatchRoute(state: PrepareDispatchOperationReadySt
   const deferFinalTtsText = shouldDeferFinalTtsText(captionedFinalTtsContext);
   const cleanDeferredFinalDirectives = shouldCleanTtsDirectiveText(captionedFinalTtsContext);
   const deliveredBlockContentKeys = new Set<string>();
+  const untrackedBlockAdmissions = new Set<string>();
   const blockDeliveryOutcomes = new Map<string, Array<Promise<ReplyDispatchDeliveryOutcome>>>();
   const sendTrackedBlockReply = (payload: ReplyPayload): boolean => {
     const contentKey = createBlockReplyContentKey(payload);
     const delivery = turnLedger.sendQueued("block", payload);
     if (!delivery.queued || !delivery.outcome) {
+      if (delivery.queued) {
+        untrackedBlockAdmissions.add(contentKey);
+      }
       return delivery.queued;
     }
     const outcomes = blockDeliveryOutcomes.get(contentKey);
@@ -263,6 +267,9 @@ export async function chooseDispatchRoute(state: PrepareDispatchOperationReadySt
   ): Promise<boolean> => {
     const contentKey = createBlockReplyContentKey(payload);
     if (deliveredBlockContentKeys.has(contentKey)) {
+      return true;
+    }
+    if (untrackedBlockAdmissions.delete(contentKey)) {
       return true;
     }
     const outcomes = blockDeliveryOutcomes.get(contentKey);

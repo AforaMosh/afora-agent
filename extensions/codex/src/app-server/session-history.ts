@@ -60,6 +60,9 @@ export async function readCodexMirroredSessionHistoryMessages(
       // not a foreign one — keep it on the warn path.
       return undefined;
     }
+    if (firstEntry.id !== target.sessionId) {
+      return [];
+    }
     migrateSessionEntries(entries);
     const sessionEntries = entries.filter((entry): entry is SessionEntry => {
       return (

@@ -938,11 +938,10 @@ describe("resolveSessionAuthProfileOverride", () => {
             : undefined,
           usageStats: { [TEST_PRIMARY_PROFILE_ID]: createStats(Date.now() + 60_000) },
         });
-        if (hasHealthySibling) {
-          authStoreMocks.isProfileInCooldown.mockImplementation(
-            (_store: AuthProfileStore, profileId: string) => profileId === TEST_PRIMARY_PROFILE_ID,
-          );
-        }
+        authStoreMocks.isProfileInCooldown.mockImplementation(
+          (_store: AuthProfileStore, profileId: string, _now?: number, forModel?: string) =>
+            profileId === TEST_PRIMARY_PROFILE_ID && forModel === "model-x",
+        );
 
         const sessionEntry = createAutomaticSessionEntry({
           model: "model-y",
@@ -952,11 +951,14 @@ describe("resolveSessionAuthProfileOverride", () => {
 
         const resolved = await resolveOpenAiSession({ agentDir, sessionEntry, sessionStore });
 
-        const expected = hasHealthySibling ? TEST_SECONDARY_PROFILE_ID : TEST_PRIMARY_PROFILE_ID;
-        expect(resolved).toBe(expected);
-        if (!hasHealthySibling) {
-          expect(sessionEntry.updatedAt).toBe(1);
-        }
+        expect(resolved).toBe(TEST_PRIMARY_PROFILE_ID);
+        expect(sessionEntry.updatedAt).toBe(1);
+        expect(authStoreMocks.isProfileInCooldown).toHaveBeenCalledWith(
+          expect.anything(),
+          TEST_PRIMARY_PROFILE_ID,
+          undefined,
+          "model-y",
+        );
       });
     },
   );

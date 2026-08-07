@@ -159,6 +159,24 @@ describe("readCodexMirroredSessionHistoryMessages", () => {
     ).resolves.toBeUndefined();
   });
 
+  it("rejects a legacy transcript whose session header belongs to another session", async () => {
+    const sessionFile = await writeSession([
+      messageEntry({
+        id: "foreign",
+        parentId: null,
+        role: "assistant",
+        content: "foreign answer",
+      }),
+    ]);
+
+    await expect(
+      readCodexMirroredSessionHistoryMessages({
+        sessionFile,
+        sessionId: "another-session",
+      }),
+    ).resolves.toEqual([]);
+  });
+
   it("replays SQLite marker history by session identity", async () => {
     const { marker, sessionKey } = await writeSqliteSession();
 

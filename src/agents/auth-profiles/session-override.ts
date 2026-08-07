@@ -342,8 +342,10 @@ export async function resolveSessionAuthProfileOverride(params: {
     return undefined;
   }
 
+  const isProfileUnavailableForSessionModel = (profileId: string) =>
+    isProfileInCooldown(store, profileId, undefined, sessionEntry.model);
   const pickFirstAvailable = () =>
-    order.find((profileId) => !isProfileInCooldown(store, profileId)) ?? order[0];
+    order.find((profileId) => !isProfileUnavailableForSessionModel(profileId)) ?? order[0];
   const pickNextAvailable = (active: string) => {
     const startIndex = order.indexOf(active);
     if (startIndex < 0) {
@@ -351,7 +353,7 @@ export async function resolveSessionAuthProfileOverride(params: {
     }
     for (let offset = 1; offset <= order.length; offset += 1) {
       const candidate = order[(startIndex + offset) % order.length];
-      if (candidate && !isProfileInCooldown(store, candidate)) {
+      if (candidate && !isProfileUnavailableForSessionModel(candidate)) {
         return candidate;
       }
     }
@@ -364,8 +366,10 @@ export async function resolveSessionAuthProfileOverride(params: {
       ? sessionEntry.authProfileOverrideCompactionCount
       : compactionCount;
   const replacementForUnusableCurrent =
-    current && isProfileInCooldown(store, current)
-      ? order.find((profileId) => profileId !== current && !isProfileInCooldown(store, profileId))
+    current && isProfileUnavailableForSessionModel(current)
+      ? order.find(
+          (profileId) => profileId !== current && !isProfileUnavailableForSessionModel(profileId),
+        )
       : undefined;
   if (replacementForUnusableCurrent) {
     current = undefined;
@@ -378,7 +382,7 @@ export async function resolveSessionAuthProfileOverride(params: {
     next = current ? pickNextAvailable(current) : pickFirstAvailable();
   } else if (current && compactionCount > storedCompaction) {
     next = pickNextAvailable(current);
-  } else if (!current || isProfileInCooldown(store, current)) {
+  } else if (!current || isProfileUnavailableForSessionModel(current)) {
     next = pickFirstAvailable();
   }
 

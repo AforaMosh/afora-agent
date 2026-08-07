@@ -68,6 +68,7 @@ export async function executeDispatch(state: PrepareDispatchExecutionReadyState)
     sourceReplyDeliveryMode,
     trackDispatchLifecycleWork,
     typing,
+    wasReplyDeliveredAsBlock,
     waitForPendingDirectBlockReplyDelivery,
     wrapProgressCallback,
   } = state;
@@ -528,7 +529,6 @@ export async function executeDispatch(state: PrepareDispatchExecutionReadyState)
                     if (isDispatchOperationAborted()) {
                       return;
                     }
-                    let blockAdmitted: boolean;
                     if (shouldRouteToOriginating) {
                       const result = await sendPayloadAsync(
                         normalizedPayload,
@@ -537,20 +537,38 @@ export async function executeDispatch(state: PrepareDispatchExecutionReadyState)
                         "block",
                       );
                       state.recordRoutedBlockReplyDelivery(normalizedPayload, result);
-                      blockAdmitted = result?.delivered === true;
+                      if (result?.delivered === true && !state.suppressAutomaticSourceDelivery) {
+                        await params.replyOptions?.onBlockReplyQueued?.(
+                          visiblePayload,
+                          queuedContext,
+                        );
+                      }
                     } else {
                       markInboundDedupeReplayUnsafe();
-                      const delivered = state.sendTrackedBlockReply(normalizedPayload);
-                      if (delivered) {
+                      const admitted = state.sendTrackedBlockReply(normalizedPayload);
+                      if (admitted) {
                         state.progressState.hasPendingDirectBlockReplyDelivery = true;
                       }
-                      blockAdmitted = delivered;
-                    }
-                    if (blockAdmitted && !state.suppressAutomaticSourceDelivery) {
-                      await params.replyOptions?.onBlockReplyQueued?.(
-                        visiblePayload,
-                        queuedContext,
-                      );
+                      if (
+                        admitted &&
+                        !state.suppressAutomaticSourceDelivery &&
+                        params.replyOptions?.onBlockReplyQueued
+                      ) {
+                        // Block callbacks are delivery facts, not queue-admission facts.
+                        // Resolve them after beforeDeliver hooks without stalling streaming.
+                        trackDispatchLifecycleWork(
+                          wasReplyDeliveredAsBlock(normalizedPayload, context?.abortSignal).then(
+                            async (delivered) => {
+                              if (delivered) {
+                                await params.replyOptions?.onBlockReplyQueued?.(
+                                  visiblePayload,
+                                  queuedContext,
+                                );
+                              }
+                            },
+                          ),
+                        );
+                      }
                     }
                   };
                   return run();

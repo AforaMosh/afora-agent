@@ -58,7 +58,7 @@ const RECOVERED_TURN_MAX_BYTES = 8 * 1024 * 1024;
 export function isRetryableContextEngineTurnReadFailure(
   kind: Exclude<ClosedTranscriptTurnReadResult, { kind: "ok" }>["kind"],
 ): boolean {
-  return kind === "projection-unavailable" || kind === "too-large";
+  return kind === "projection-unavailable";
 }
 
 function outboxDb(database: OpenClawAgentDatabase) {

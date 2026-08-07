@@ -77,9 +77,9 @@ function createPayload(params: {
 }
 
 describe("context-engine turn outbox", () => {
-  it("retains accepted turns when bounded replay cannot complete", () => {
+  it("retries only transcript failures that can make progress", () => {
     expect(isRetryableContextEngineTurnReadFailure("projection-unavailable")).toBe(true);
-    expect(isRetryableContextEngineTurnReadFailure("too-large")).toBe(true);
+    expect(isRetryableContextEngineTurnReadFailure("too-large")).toBe(false);
     expect(isRetryableContextEngineTurnReadFailure("stale")).toBe(false);
   });
 

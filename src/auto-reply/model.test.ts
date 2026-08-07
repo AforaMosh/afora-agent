@@ -48,12 +48,38 @@ describe("extractModelDirective", () => {
       expect(result.cleaned).toBe("please continue");
     });
 
-    it("does not reinterpret a leading -s as the session option", () => {
+    it("parses a leading -s as a model-less session option", () => {
       const result = extractModelDirective("/model -s opus");
       expect(result.hasDirective).toBe(true);
-      expect(result.rawModel).toBe("-s");
-      expect(result.sessionOnly).toBe(false);
+      expect(result.rawModel).toBeUndefined();
+      expect(result.sessionOnly).toBe(true);
       expect(result.cleaned).toBe("opus");
+    });
+
+    it.each(["-s", "--session"])("parses model-less session option %s", (option) => {
+      const result = extractModelDirective(`/model ${option}`);
+      expect(result.hasDirective).toBe(true);
+      expect(result.rawModel).toBeUndefined();
+      expect(result.sessionOnly).toBe(true);
+      expect(result.cleaned).toBe("");
+    });
+
+    it("parses a model-less runtime option", () => {
+      const result = extractModelDirective("/model --runtime codex");
+      expect(result.hasDirective).toBe(true);
+      expect(result.rawModel).toBeUndefined();
+      expect(result.rawRuntime).toBe("codex");
+      expect(result.sessionOnly).toBe(false);
+      expect(result.cleaned).toBe("");
+    });
+
+    it("does not consume a reserved option as a missing runtime value", () => {
+      const result = extractModelDirective("/model --runtime --session");
+      expect(result.hasDirective).toBe(true);
+      expect(result.rawModel).toBeUndefined();
+      expect(result.rawRuntime).toBeUndefined();
+      expect(result.sessionOnly).toBe(false);
+      expect(result.cleaned).toBe("--runtime --session");
     });
 
     it("does not treat /models as a /model directive", () => {
