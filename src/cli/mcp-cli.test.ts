@@ -137,13 +137,8 @@ async function runMcpCommand(args: string[]) {
   await sharedProgram.parseAsync(args, { from: "user" });
 }
 
-function lastLogLine(): string {
-  return lastRuntimeLine(mockLog);
-}
-
-function lastErrorLine(): string {
-  return lastRuntimeLine(mockError);
-}
+const lastLogLine = () => lastRuntimeLine(mockLog);
+const lastErrorLine = () => lastRuntimeLine(mockError);
 
 function lastRuntimeLine(mock: typeof mockLog): string {
   const call = mock.mock.calls[mock.mock.calls.length - 1];

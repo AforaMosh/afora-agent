@@ -1408,7 +1408,7 @@ export function registerMcpCli(program: Command) {
             // Await binding, not completion: the first OAuth run must release its state lease
             // before the callback code starts the completion run, without publishing a dead URL.
             callbackController = new AbortController();
-            const listenerReady = createDeferred<void>();
+            const listenerReady = createDeferred();
             let loopbackListening = false;
             callbackPromise = startMcpOAuthLoopbackCallback(url, callbackController.signal, () => {
               loopbackListening = true;
