@@ -185,6 +185,13 @@ describe("package scripts", () => {
     );
   });
 
+  it("runs Knip cleanup owner coverage exactly once in Windows CI", () => {
+    const ownerTest = "test/scripts/check-deadcode-unused-files.test.ts";
+    const windowsCiTokens = tokenizeCommand(readPackageJson().scripts["test:windows:ci"]);
+
+    expect(windowsCiTokens.filter((token) => token === ownerTest)).toHaveLength(1);
+  });
+
   it("runs direct-run entrypoint coverage in Windows CI", () => {
     expect(readPackageJson().scripts["test:windows:ci"]).toContain(
       "test/scripts/direct-run-entrypoints.test.ts",
