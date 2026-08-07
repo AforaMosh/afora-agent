@@ -64,14 +64,17 @@ describe("extractModelDirective", () => {
       expect(result.cleaned).toBe("");
     });
 
-    it("parses a model-less runtime option", () => {
-      const result = extractModelDirective("/model --runtime codex");
-      expect(result.hasDirective).toBe(true);
-      expect(result.rawModel).toBeUndefined();
-      expect(result.rawRuntime).toBe("codex");
-      expect(result.sessionOnly).toBe(false);
-      expect(result.cleaned).toBe("");
-    });
+    it.each(["--runtime codex", "runtime=codex", "harness=codex"])(
+      "parses model-less runtime option %s",
+      (option) => {
+        const result = extractModelDirective(`/model ${option}`);
+        expect(result.hasDirective).toBe(true);
+        expect(result.rawModel).toBeUndefined();
+        expect(result.rawRuntime).toBe("codex");
+        expect(result.sessionOnly).toBe(false);
+        expect(result.cleaned).toBe("");
+      },
+    );
 
     it("does not consume a reserved option as a missing runtime value", () => {
       const result = extractModelDirective("/model --runtime --session");
@@ -105,9 +108,13 @@ describe("extractModelDirective", () => {
       "--runtime claude-cli -s",
       "-s --runtime claude-cli",
       "runtime= claude-cli -s",
+      "runtime=claude-cli -s",
       "-s runtime= claude-cli",
+      "-s runtime=claude-cli",
       "harness= claude-cli -s",
+      "harness=claude-cli -s",
       "-s harness= claude-cli",
+      "-s harness=claude-cli",
     ])("extracts runtime and session options from %s", (options) => {
       const result = extractModelDirective(`/model anthropic/claude-opus-4-7 ${options}`);
       expect(result.hasDirective).toBe(true);
@@ -127,6 +134,13 @@ describe("extractModelDirective", () => {
       const session = extractModelDirective("/model openai/gpt-5.6-luna -s -s");
       expect(session.sessionOnly).toBe(true);
       expect(session.cleaned).toBe("-s");
+    });
+
+    it("keeps partial runtime option names as ordinary text", () => {
+      const result = extractModelDirective("/model openai/gpt-5.6-luna runtime-extra=codex");
+      expect(result.rawModel).toBe("openai/gpt-5.6-luna");
+      expect(result.rawRuntime).toBeUndefined();
+      expect(result.cleaned).toBe("runtime-extra=codex");
     });
 
     it("extracts /model with profile override", () => {
@@ -208,15 +222,18 @@ describe("extractModelDirective", () => {
       expect(result.cleaned).toBe("");
     });
 
-    it("applies a runtime-only alias option", () => {
-      const result = extractModelDirective("/gpt --runtime codex", {
-        aliases: ["gpt"],
-      });
-      expect(result.rawModel).toBe("gpt");
-      expect(result.rawRuntime).toBe("codex");
-      expect(result.sessionOnly).toBe(false);
-      expect(result.cleaned).toBe("");
-    });
+    it.each(["--runtime codex", "runtime=codex", "harness=codex"])(
+      "applies runtime-only alias option %s",
+      (option) => {
+        const result = extractModelDirective(`/gpt ${option}`, {
+          aliases: ["gpt"],
+        });
+        expect(result.rawModel).toBe("gpt");
+        expect(result.rawRuntime).toBe("codex");
+        expect(result.sessionOnly).toBe(false);
+        expect(result.cleaned).toBe("");
+      },
+    );
 
     it.each(["--runtime codex -s", "-s --runtime codex"])(
       "applies runtime and session alias options from %s",

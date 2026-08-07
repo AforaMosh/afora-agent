@@ -239,7 +239,7 @@ describe("directive parsing", () => {
     expect(model.nativeCommand).toEqual({ name: "model" });
   });
 
-  it.each(["--runtime codex -s", "-s --runtime codex"])(
+  it.each(["--runtime codex -s", "-s --runtime codex", "runtime=codex -s", "-s harness=codex"])(
     "parses /model runtime and session options from %s",
     (options) => {
       const model = parseInlineDirectives(`/model openai/gpt-4.1-mini ${options}`, {

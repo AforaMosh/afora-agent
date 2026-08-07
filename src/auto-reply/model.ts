@@ -5,7 +5,7 @@ import { escapeRegExp } from "../utils.js";
 
 const MODEL_REF_PATTERN = String.raw`[A-Za-z0-9_.:@-]+(?:\/[A-Za-z0-9_.:@-]+)*`;
 const MODEL_RUNTIME_VALUE_PATTERN = String.raw`[A-Za-z0-9_.:-]+`;
-const MODEL_OPTION_PATTERN = String.raw`(?:--session|-s|--runtime|runtime=|harness=)(?=$|\s)`;
+const MODEL_OPTION_PATTERN = String.raw`(?:(?:--session|-s|--runtime)(?=$|\s)|runtime=|harness=)`;
 const MODEL_SESSION_OPTION_PATTERN = String.raw`(?:--session|-s)(?=$|\s)`;
 const MODEL_RUNTIME_OPTION_PATTERN = String.raw`(?:--runtime|runtime=|harness=)\s*((?!${MODEL_OPTION_PATTERN})${MODEL_RUNTIME_VALUE_PATTERN})`;
 // Captures 2/3 are runtime-first; 4/5 are session-first so duplicates stay unconsumed.

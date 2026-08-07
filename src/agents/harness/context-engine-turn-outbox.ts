@@ -77,8 +77,8 @@ function oldestOutboxEnqueueSequence() {
 }
 
 export function isRetryableContextEngineTurnReadFailure(
-  kind: Exclude<ClosedTranscriptTurnReadResult, { kind: "ok" }>["kind"],
-): boolean {
+  kind: ContextEngineTurnReadFailureKind,
+): kind is "projection-unavailable" {
   return kind === "projection-unavailable";
 }
 
