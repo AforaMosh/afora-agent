@@ -100,7 +100,11 @@ import { readRecentCodexRateLimits } from "./rate-limit-cache.js";
 import { formatCodexUsageLimitErrorMessage } from "./rate-limits.js";
 import { readCodexSupportedReasoningEfforts } from "./reasoning-effort.js";
 import { resolveCodexNativeExecutionBlock } from "./sandbox-guard.js";
-import { sessionBindingIdentity, type CodexAppServerBindingStore } from "./session-binding.js";
+import {
+  hasLegacyCodexNativeMcpBinding,
+  sessionBindingIdentity,
+  type CodexAppServerBindingStore,
+} from "./session-binding.js";
 import {
   getLeasedSharedCodexAppServerClient,
   releaseCodexAppServerClientLease,
@@ -183,6 +187,11 @@ export async function runCodexAppServerSideQuestion(
   if (!binding?.threadId) {
     throw new Error(
       "Codex /btw needs an active Codex thread. Send a normal message first, then try /btw again.",
+    );
+  }
+  if (hasLegacyCodexNativeMcpBinding(binding)) {
+    throw new Error(
+      "Codex /btw is unavailable until this thread completes its configured MCP upgrade in a normal Codex turn.",
     );
   }
   const pluginConfig = readCodexPluginConfig(options.pluginConfig);

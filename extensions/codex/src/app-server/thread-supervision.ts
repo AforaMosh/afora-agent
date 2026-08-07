@@ -228,7 +228,7 @@ export async function materializePendingSupervisionBranch(
         });
         if (
           !finalCleanupConfirmed ||
-          !(await archiveSupervisionArtifact(params.client, probeThreadId))
+          !(await retireCodexSupervisionArtifact(params.client, probeThreadId))
         ) {
           provisionalCleanupSafe = false;
           throw new CodexAppServerUnsafeSubscriptionError(
@@ -251,7 +251,7 @@ export async function materializePendingSupervisionBranch(
       params.throwIfAborted();
     }
 
-    if (!(await archiveSupervisionArtifact(params.client, probeThreadId))) {
+    if (!(await retireCodexSupervisionArtifact(params.client, probeThreadId))) {
       throw new Error(`Failed to archive temporary Codex model probe: ${probeThreadId}`);
     }
     pending = await trackPendingSupervisionArtifacts(params, pending, [finalThreadId]);
@@ -516,7 +516,7 @@ function matchesMaterializedSupervisionBranch(
   );
 }
 
-function requireDistinctSupervisionThreadId(params: {
+export function requireDistinctSupervisionThreadId(params: {
   threadId: unknown;
   sourceThreadId: string;
   otherThreadId?: string;
@@ -539,7 +539,7 @@ function requireDistinctSupervisionThreadId(params: {
   return threadId;
 }
 
-function readSupervisionResponseThreadId(value: unknown): unknown {
+export function readSupervisionResponseThreadId(value: unknown): unknown {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return undefined;
   }
@@ -605,7 +605,7 @@ async function trackPendingSupervisionArtifacts(
   if (!updated) {
     const cleanupFailed: string[] = [];
     for (const threadId of cleanupThreadIds) {
-      if (!(await archiveSupervisionArtifact(params.client, threadId))) {
+      if (!(await retireCodexSupervisionArtifact(params.client, threadId))) {
         cleanupFailed.push(threadId);
       }
     }
@@ -642,14 +642,14 @@ async function cleanPendingSupervisionArtifacts(
 ): Promise<{ remaining: string[] }> {
   const remaining: string[] = [];
   for (const threadId of pending.cleanupThreadIds ?? []) {
-    if (!(await archiveSupervisionArtifact(client, threadId))) {
+    if (!(await retireCodexSupervisionArtifact(client, threadId))) {
       remaining.push(threadId);
     }
   }
   return { remaining };
 }
 
-async function archiveSupervisionArtifact(
+export async function retireCodexSupervisionArtifact(
   client: CodexAppServerClient,
   threadId: string,
 ): Promise<boolean> {
@@ -662,10 +662,17 @@ async function archiveSupervisionArtifact(
     return true;
   } catch (error) {
     const message = formatErrorMessage(error).toLowerCase();
+    if (message.includes("no rollout found for thread id")) {
+      return await discardUnattestedCodexPluginThread({
+        client,
+        threadId,
+        ephemeral: false,
+      });
+    }
     if (
-      message.includes("no rollout found for thread id") ||
       message.includes("thread not found") ||
-      message.includes("already archived")
+      message.includes("already archived") ||
+      message.includes(`thread ${threadId.toLowerCase()} is archived`)
     ) {
       return true;
     }

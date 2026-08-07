@@ -252,6 +252,9 @@ const threadBindingSchema = z
     // Lifecycle admission consumes their presence by rotating the thread once.
     userMcpServersFingerprint: optionalStringSchema,
     mcpServersFingerprint: optionalStringSchema,
+    // A replacement remains non-runnable until the shipped native-MCP thread
+    // has been archived. Crash recovery consumes this exact predecessor id.
+    legacyMcpRetirementThreadId: optionalStringSchema,
     webSearchThreadConfigFingerprint: optionalStringSchema,
     nativeSkillIsolationFingerprint: optionalStringSchema,
     ringZeroConfigFingerprint: optionalStringSchema,
@@ -268,6 +271,12 @@ const threadBindingSchema = z
     historyCoveredThrough: optionalTimestampSchema,
   })
   .superRefine((binding, context) => {
+    if (binding.legacyMcpRetirementThreadId === binding.threadId) {
+      context.addIssue({
+        code: "custom",
+        message: "legacy MCP retirement must name a predecessor thread",
+      });
+    }
     if (binding.connectionScope === "supervision") {
       if (!binding.supervisionSourceThreadId) {
         context.addIssue({
@@ -351,6 +360,27 @@ export function assertCodexBindingMayBeReplaced(
   if (binding?.connectionScope === "supervision") {
     throw new CodexSupervisionBindingReplacementError(binding.threadId, operation);
   }
+  if (binding?.legacyMcpRetirementThreadId) {
+    throw new Error(
+      `Refusing to replace Codex thread ${binding.threadId} while legacy MCP predecessor ${binding.legacyMcpRetirementThreadId} is still retiring; complete the configured MCP upgrade in a normal Codex turn, or explicitly archive the predecessor and retry the normal turn`,
+    );
+  }
+  if (binding && hasLegacyCodexNativeMcpBinding(binding)) {
+    throw new Error(
+      `Refusing to replace Codex thread ${binding.threadId} before its configured MCP upgrade completes in a normal Codex turn`,
+    );
+  }
+}
+
+/** Shipped bindings whose thread/start MCP surface cannot be replaced on resume. */
+export function hasLegacyCodexNativeMcpBinding(
+  binding: CodexAppServerThreadBinding | undefined,
+): boolean {
+  return (
+    binding?.userMcpServersFingerprint !== undefined ||
+    binding?.mcpServersFingerprint !== undefined ||
+    binding?.legacyMcpRetirementThreadId !== undefined
+  );
 }
 /** Context-engine state persisted with a Codex app-server thread binding. */
 export type CodexAppServerContextEngineBinding = z.infer<typeof contextEngineSchema>;
@@ -380,6 +410,22 @@ type CodexAppServerBindingMutation =
       expected: CodexAppServerPendingSupervisionBranch;
       threadId: string;
       patch: Partial<Omit<CodexAppServerThreadBinding, "threadId" | "pendingSupervisionBranch">>;
+    }
+  | {
+      kind: "replace-supervision-thread";
+      expectedThreadId: string;
+      expectedSupervisionSourceThreadId: string;
+      binding: CodexAppServerThreadBinding;
+    }
+  | {
+      kind: "replace-legacy-mcp-thread";
+      expectedThreadId: string;
+      binding: CodexAppServerThreadBinding;
+    }
+  | {
+      kind: "complete-legacy-mcp-retirement";
+      expectedThreadId: string;
+      expectedRetirementThreadId: string;
     }
   | {
       kind: "reclaim-generation";
@@ -425,6 +471,14 @@ const storedBindingSchema = z.discriminatedUnion("state", [
     lease: bindingLeaseSchema.optional().catch(undefined),
     retired: z.literal(true).optional().catch(undefined),
   }),
+  z.object({
+    version: z.literal(1),
+    state: z.literal("retired-legacy-mcp-thread"),
+    threadId: z.string().trim().min(1),
+    sessionId: z.undefined().optional(),
+    lease: z.undefined().optional(),
+    retired: z.undefined().optional(),
+  }),
 ]);
 
 // Session-key rows survive transcript/session-id rotation. The stored physical
@@ -433,6 +487,10 @@ export type StoredCodexAppServerBinding = z.infer<typeof storedBindingSchema>;
 
 export function hashCodexAppServerBindingFingerprint(canonical: string): string {
   return `sha256:${createHash("sha256").update(canonical).digest("hex")}`;
+}
+
+function legacyMcpRetirementStoreKey(threadId: string): string {
+  return `retired-legacy-mcp:${hashCodexAppServerBindingFingerprint(threadId)}`;
 }
 
 function normalizeLegacyBindingFingerprint(value: unknown): unknown {
@@ -540,7 +598,12 @@ type BindingStateStore = Pick<
 
 type BindingLeaseOwner = {
   token: string;
+  active: boolean;
   failure?: Error;
+};
+
+type BindingArchiveOwner = {
+  active: boolean;
 };
 
 function bindingLeaseLostError(key: string, cause?: unknown): Error {
@@ -549,10 +612,17 @@ function bindingLeaseLostError(key: string, cause?: unknown): Error {
 
 export type CodexAppServerBindingStore = {
   read(identity: CodexAppServerBindingIdentity): Promise<CodexAppServerThreadBinding | undefined>;
-  hasOtherThreadOwner(
+  hasLegacyMcpRetirementState(): Promise<boolean>;
+  inspectThreadOwnership(
     threadId: string,
-    currentIdentity?: CodexAppServerBindingIdentity,
-  ): Promise<boolean>;
+    allowedIdentities?: readonly CodexAppServerBindingIdentity[],
+    allowRetiredLegacyMcpThread?: boolean,
+  ): Promise<{
+    hasUnexpectedOwner: boolean;
+    hasLegacyNativeMcpOwner: boolean;
+    hasLegacyMigrationAlias?: true;
+  }>;
+  recordLegacyMcpThreadRetirement(threadId: string): Promise<boolean>;
   mutate(
     identity: CodexAppServerBindingIdentity,
     mutation: CodexAppServerBindingMutation,
@@ -570,6 +640,7 @@ export type CodexAppServerBindingStore = {
   retireSessionGeneration(
     identity: Extract<CodexAppServerBindingIdentity, { kind: "session" }>,
   ): Promise<CodexSessionGenerationRetirementResult>;
+  /** Serializes native ownership validation with resume, fork, transfer, and archive mutations. */
   withThreadArchiveFence<T>(run: () => Promise<T>): Promise<T>;
   withLease<T>(identity: CodexAppServerBindingIdentity, run: () => Promise<T>): Promise<T>;
 };
@@ -592,11 +663,15 @@ export function scopeCodexRunBindingStore(params: {
     identity.kind === "session" ? mapSessionIdentity(identity) : identity;
   return {
     read: (identity) => params.bindingStore.read(mapIdentity(identity)),
-    hasOtherThreadOwner: (threadId, identity) =>
-      params.bindingStore.hasOtherThreadOwner(
+    hasLegacyMcpRetirementState: () => params.bindingStore.hasLegacyMcpRetirementState(),
+    inspectThreadOwnership: (threadId, allowedIdentities, allowRetiredLegacyMcpThread) =>
+      params.bindingStore.inspectThreadOwnership(
         threadId,
-        identity ? mapIdentity(identity) : undefined,
+        allowedIdentities?.map(mapIdentity),
+        allowRetiredLegacyMcpThread,
       ),
+    recordLegacyMcpThreadRetirement: (threadId) =>
+      params.bindingStore.recordLegacyMcpThreadRetirement(threadId),
     mutate: (identity, mutation) => params.bindingStore.mutate(mapIdentity(identity), mutation),
     prepareSessionGenerationReclaim: (identity) =>
       params.bindingStore.prepareSessionGenerationReclaim(mapSessionIdentity(identity)),
@@ -664,45 +739,56 @@ export function createCodexAppServerBindingStore(
     throw new Error("Codex app-server bindings require atomic plugin-state updates");
   }
   const leaseContext = new AsyncLocalStorage<Map<string, BindingLeaseOwner>>();
-  const archiveContext = new AsyncLocalStorage<boolean>();
-  let activeBindingMutations = 0;
+  const archiveContext = new AsyncLocalStorage<BindingArchiveOwner>();
   let pendingArchives = 0;
   let archiveTail = Promise.resolve();
-  let bindingMutationsDrained: (() => void)[] = [];
 
-  const waitForBindingMutations = async (): Promise<void> => {
-    if (activeBindingMutations === 0) {
-      return;
-    }
-    await new Promise<void>((resolve) => {
-      bindingMutationsDrained.push(resolve);
-    });
+  const currentLeaseOwner = (key: string): BindingLeaseOwner | undefined => {
+    const owner = leaseContext.getStore()?.get(key);
+    return owner?.active ? owner : undefined;
   };
 
-  const runBindingMutation = async <T>(run: () => Promise<T>): Promise<T> => {
-    if (archiveContext.getStore() === true) {
+  const hasActiveArchiveOwner = (): boolean => archiveContext.getStore()?.active === true;
+
+  const runThreadArchiveFence = async <T>(run: () => Promise<T>): Promise<T> => {
+    if (hasActiveArchiveOwner()) {
       return await run();
     }
-    // Archive validates the complete native subtree against one stable ownership
-    // snapshot. Reject late mutations so a stale caller cannot attach after archive.
+    pendingArchives += 1;
+    const operation = archiveTail.then(async () => {
+      const owner: BindingArchiveOwner = { active: true };
+      try {
+        return await archiveContext.run(owner, run);
+      } finally {
+        // Async resources created inside the fence retain this context. Mark it
+        // inactive so deferred callbacks cannot impersonate released ownership.
+        owner.active = false;
+      }
+    });
+    archiveTail = operation.then(
+      () => undefined,
+      () => undefined,
+    );
+    try {
+      return await operation;
+    } finally {
+      pendingArchives -= 1;
+    }
+  };
+
+  const runTopologyMutation = async <T>(run: () => Promise<T>): Promise<T> => {
+    if (hasActiveArchiveOwner()) {
+      return await run();
+    }
+    // Ownership-changing callers must queue their complete validation/RPC/commit
+    // operation. Replaying only a previously authorized write could reattach an
+    // archived thread after the fence that invalidated its authorization.
     if (pendingArchives > 0) {
       throw new Error(
         "Codex binding mutation blocked while a native archive is in progress; retry",
       );
     }
-    activeBindingMutations += 1;
-    try {
-      return await run();
-    } finally {
-      activeBindingMutations -= 1;
-      if (activeBindingMutations === 0) {
-        const drained = bindingMutationsDrained;
-        bindingMutationsDrained = [];
-        for (const resolve of drained) {
-          resolve();
-        }
-      }
-    }
+    return await runThreadArchiveFence(run);
   };
 
   const renewLease = (key: string, owner: BindingLeaseOwner): void => {
@@ -751,7 +837,7 @@ export function createCodexAppServerBindingStore(
       let busy = false;
       let leaseLost = false;
       let result!: T;
-      const ownedLease = leaseContext.getStore()?.get(key);
+      const ownedLease = currentLeaseOwner(key);
       if (ownedLease?.failure) {
         throw ownedLease.failure;
       }
@@ -812,22 +898,113 @@ export function createCodexAppServerBindingStore(
         : undefined;
     },
 
-    async hasOtherThreadOwner(threadId, currentIdentity) {
-      const currentKey = currentIdentity ? bindingStoreKey(currentIdentity) : undefined;
-      return state.entries().some(({ key, value }) => {
+    async hasLegacyMcpRetirementState() {
+      for (const { key, value } of state.entries()) {
         const stored = readStoredCodexAppServerBinding(value);
         if (!stored) {
           throw new Error(`Invalid Codex app-server binding row: ${key}`);
         }
-        const isCurrentOwner =
-          currentIdentity !== undefined &&
-          key === currentKey &&
-          (currentIdentity.kind === "conversation" ||
-            stored.sessionId === currentIdentity.sessionId.trim());
-        if (stored.state !== "active" || stored.binding.threadId !== threadId || isCurrentOwner) {
+        if (
+          stored.state === "retired-legacy-mcp-thread" ||
+          (stored.state === "active" && hasLegacyCodexNativeMcpBinding(stored.binding))
+        ) {
+          return true;
+        }
+      }
+      return false;
+    },
+
+    async inspectThreadOwnership(
+      threadId,
+      allowedIdentities = [],
+      allowRetiredLegacyMcpThread = false,
+    ) {
+      let hasUnexpectedOwner = false;
+      let hasLegacyNativeMcpOwner = false;
+      let hasLegacyMigrationAlias = false;
+      for (const { key, value } of state.entries()) {
+        const stored = readStoredCodexAppServerBinding(value);
+        if (!stored) {
+          throw new Error(`Invalid Codex app-server binding row: ${key}`);
+        }
+        if (stored.state === "retired-legacy-mcp-thread") {
+          if (stored.threadId === threadId) {
+            hasLegacyNativeMcpOwner = true;
+            hasUnexpectedOwner ||= !allowRetiredLegacyMcpThread;
+          }
+          continue;
+        }
+        if (
+          stored.state !== "active" ||
+          (stored.binding.threadId !== threadId &&
+            stored.binding.legacyMcpRetirementThreadId !== threadId)
+        ) {
+          continue;
+        }
+        hasLegacyNativeMcpOwner ||=
+          stored.binding.legacyMcpRetirementThreadId === threadId ||
+          hasLegacyCodexNativeMcpBinding(stored.binding);
+        const isAllowedOwner = allowedIdentities.some(
+          (identity) =>
+            key === bindingStoreKey(identity) &&
+            (identity.kind === "conversation" || stored.sessionId === identity.sessionId.trim()),
+        );
+        if (!isAllowedOwner) {
+          hasLegacyMigrationAlias ||=
+            key.startsWith("conversation:legacy-") &&
+            stored.binding.threadId === threadId &&
+            stored.binding.legacyMcpRetirementThreadId === undefined &&
+            (stored.binding.userMcpServersFingerprint !== undefined ||
+              stored.binding.mcpServersFingerprint !== undefined);
+          hasUnexpectedOwner = true;
+        }
+      }
+      return {
+        hasUnexpectedOwner,
+        hasLegacyNativeMcpOwner,
+        ...(hasLegacyMigrationAlias ? { hasLegacyMigrationAlias: true as const } : {}),
+      };
+    },
+
+    async recordLegacyMcpThreadRetirement(threadId) {
+      const normalizedThreadId = threadId.trim();
+      if (!normalizedThreadId) {
+        return false;
+      }
+      return await runTopologyMutation(async () => {
+        let hasPendingRetirement = false;
+        for (const { key: candidateKey, value } of state.entries()) {
+          const candidate = readStoredCodexAppServerBinding(value);
+          if (!candidate) {
+            throw new Error(`Invalid Codex app-server binding row: ${candidateKey}`);
+          }
+          hasPendingRetirement ||=
+            candidate.state === "active" &&
+            candidate.binding.legacyMcpRetirementThreadId === normalizedThreadId;
+        }
+        if (!hasPendingRetirement) {
           return false;
         }
-        return true;
+        const key = legacyMcpRetirementStoreKey(normalizedThreadId);
+        let recorded = false;
+        update(key, (raw) => {
+          if (raw !== undefined) {
+            const existing = readStoredCodexAppServerBinding(raw);
+            if (
+              existing?.state !== "retired-legacy-mcp-thread" ||
+              existing.threadId !== normalizedThreadId
+            ) {
+              throw new Error(`Invalid Codex legacy MCP retirement row: ${key}`);
+            }
+          }
+          recorded = true;
+          return {
+            version: 1,
+            state: "retired-legacy-mcp-thread",
+            threadId: normalizedThreadId,
+          };
+        });
+        return recorded;
       });
     },
 
@@ -857,8 +1034,19 @@ export function createCodexAppServerBindingStore(
     },
 
     async mutate(identity, mutation) {
-      return await runBindingMutation(async () => {
+      const run = async () => {
         const key = bindingStoreKey(identity);
+        const exactRetirementRecorded =
+          mutation.kind === "complete-legacy-mcp-retirement" &&
+          (() => {
+            const recorded = readStoredCodexAppServerBinding(
+              state.lookup(legacyMcpRetirementStoreKey(mutation.expectedRetirementThreadId)),
+            );
+            return (
+              recorded?.state === "retired-legacy-mcp-thread" &&
+              recorded.threadId === mutation.expectedRetirementThreadId
+            );
+          })();
         // A retained legacy sidecar may be revisited by doctor after runtime
         // clear. Keep provenance so migration cannot resurrect its stale thread.
         const retainLegacyClear =
@@ -902,9 +1090,19 @@ export function createCodexAppServerBindingStore(
               if (current.sessionId !== mutation.expectedPreviousSessionId) {
                 return { result: false };
               }
-              // A stale physical generation must never turn private user-home ownership into
-              // an ordinary empty binding. Supervision adoption has an explicit generation
-              // transfer path; every other successor fails closed and preserves this owner.
+              // The session store has proved this stable-key successor authoritative. Preserve
+              // private or legacy ownership while moving its recovery work to the new generation;
+              // clearing here would erase the only retirement provenance.
+              if (current.state === "active" && hasLegacyCodexNativeMcpBinding(current.binding)) {
+                return {
+                  result: true,
+                  next: {
+                    ...current,
+                    sessionId: identity.sessionId,
+                    ...ownedLease,
+                  },
+                };
+              }
               if (current.state === "active" && current.binding.connectionScope === "supervision") {
                 return { result: false };
               }
@@ -934,7 +1132,34 @@ export function createCodexAppServerBindingStore(
                 mutation.threadId,
                 mutation.expectedPendingSupervisionBranch,
               );
+            const replacesSupervisionThread =
+              mutation.kind === "replace-supervision-thread" &&
+              matchesSupervisionThreadReplacement(active?.binding, mutation);
+            const replacesLegacyMcpThread =
+              mutation.kind === "replace-legacy-mcp-thread" &&
+              matchesLegacyMcpThreadReplacement(active?.binding, mutation);
+            const completesLegacyMcpRetirement =
+              mutation.kind === "complete-legacy-mcp-retirement" &&
+              exactRetirementRecorded &&
+              active?.binding.threadId === mutation.expectedThreadId &&
+              active.binding.legacyMcpRetirementThreadId === mutation.expectedRetirementThreadId;
+            const mutatesLegacyMcpBinding =
+              hasLegacyCodexNativeMcpBinding(active?.binding) &&
+              !(
+                (mutation.kind === "replace-legacy-mcp-thread" && replacesLegacyMcpThread) ||
+                (mutation.kind === "replace-supervision-thread" && replacesSupervisionThread) ||
+                (mutation.kind === "complete-legacy-mcp-retirement" &&
+                  completesLegacyMcpRetirement) ||
+                (mutation.kind === "patch" &&
+                  patchPreservesLegacyMcpBinding(active!.binding, mutation))
+              );
             if (
+              (mutation.kind === "set" && hasLegacyCodexNativeMcpBinding(mutation.binding)) ||
+              ((mutation.kind === "patch" ||
+                mutation.kind === "commit-pending-supervision-branch") &&
+                !hasLegacyCodexNativeMcpBinding(active?.binding) &&
+                patchIntroducesLegacyMcpBinding(mutation.patch)) ||
+              mutatesLegacyMcpBinding ||
               (mutation.kind === "set" &&
                 ((mutation.if?.kind === "absent" && storedActive) ||
                   (current !== undefined && !ownsGeneration) ||
@@ -945,6 +1170,10 @@ export function createCodexAppServerBindingStore(
               ((mutation.kind === "patch-pending-supervision-branch" ||
                 mutation.kind === "commit-pending-supervision-branch") &&
                 !matchesPendingSupervisionBranch(active?.binding, mutation.expected)) ||
+              (mutation.kind === "replace-supervision-thread" && !replacesSupervisionThread) ||
+              (mutation.kind === "replace-legacy-mcp-thread" && !replacesLegacyMcpThread) ||
+              (mutation.kind === "complete-legacy-mcp-retirement" &&
+                !completesLegacyMcpRetirement) ||
               (mutation.kind === "clear" &&
                 ((mutation.threadId !== undefined &&
                   active?.binding.threadId !== mutation.threadId) ||
@@ -969,7 +1198,11 @@ export function createCodexAppServerBindingStore(
               };
             }
             let binding: CodexAppServerThreadBinding;
-            if (mutation.kind === "set") {
+            if (
+              mutation.kind === "set" ||
+              mutation.kind === "replace-legacy-mcp-thread" ||
+              mutation.kind === "replace-supervision-thread"
+            ) {
               binding = validateBindingForWrite(mutation.binding);
             } else if (mutation.kind === "patch-pending-supervision-branch") {
               binding = validateBindingForWrite({
@@ -982,6 +1215,11 @@ export function createCodexAppServerBindingStore(
                 ...mutation.patch,
                 threadId: mutation.threadId,
                 pendingSupervisionBranch: undefined,
+              });
+            } else if (mutation.kind === "complete-legacy-mcp-retirement") {
+              binding = validateBindingForWrite({
+                ...active!.binding,
+                legacyMcpRetirementThreadId: undefined,
               });
             } else {
               binding = validateBindingForWrite({
@@ -1005,15 +1243,22 @@ export function createCodexAppServerBindingStore(
           // the key afterwards is fenced by ownsStoredSessionGeneration on read
           // and displaced via reclaim-generation; durable stable-key fences come
           // from retireSessionGeneration, not runtime clears.
-          mutation.kind === "clear" && !retainLegacyClear && !leaseContext.getStore()?.has(key)
+          mutation.kind === "clear" && !retainLegacyClear && !currentLeaseOwner(key)
             ? 1
             : undefined,
         );
-      });
+      };
+      return mutation.kind === "set" ||
+        mutation.kind === "commit-pending-supervision-branch" ||
+        mutation.kind === "replace-supervision-thread" ||
+        mutation.kind === "replace-legacy-mcp-thread" ||
+        mutation.kind === "reclaim-generation"
+        ? await runTopologyMutation(run)
+        : await run();
     },
 
     async adoptSessionGeneration(identity, expectedPreviousSessionId) {
-      return await runBindingMutation(async () => {
+      return await runTopologyMutation(async () => {
         const key = bindingStoreKey(identity);
         const expectedSessionId = expectedPreviousSessionId.trim();
         const targetSessionId = identity.sessionId.trim();
@@ -1042,93 +1287,82 @@ export function createCodexAppServerBindingStore(
     },
 
     async resetSessionGeneration(identity) {
-      return await runBindingMutation(async () => {
-        const key = bindingStoreKey(identity);
-        return await transactKey(
-          key,
-          (current, leaseToken) => {
-            if (!current) {
-              return { result: "absent" as const };
-            }
-            if (!ownsStoredSessionGeneration(identity, current)) {
-              return { result: "conflict" as const };
-            }
-            // A retired same-id row may be a deletion fence. Only the authoritative
-            // session-store reclaim path can prove it belongs to an in-place reset.
-            if (current.state === "cleared" && current.retired === true) {
-              return { result: "conflict" as const };
-            }
-            return {
-              result: "applied" as const,
-              next: {
-                version: 1,
-                state: "cleared",
-                ...storedSessionGeneration(identity, current),
-                ...(current.lease && current.lease.token === leaseToken
-                  ? { lease: current.lease }
-                  : {}),
-              },
-            };
-          },
-          leaseContext.getStore()?.has(key) ? undefined : 1,
-        );
-      });
+      const key = bindingStoreKey(identity);
+      return await transactKey(
+        key,
+        (current, leaseToken) => {
+          if (!current) {
+            return { result: "absent" as const };
+          }
+          if (!ownsStoredSessionGeneration(identity, current)) {
+            return { result: "conflict" as const };
+          }
+          // A retired same-id row may be a deletion fence. Only the authoritative
+          // session-store reclaim path can prove it belongs to an in-place reset.
+          if (current.state === "cleared" && current.retired === true) {
+            return { result: "conflict" as const };
+          }
+          if (current.state === "active" && hasLegacyCodexNativeMcpBinding(current.binding)) {
+            return { result: "conflict" as const };
+          }
+          return {
+            result: "applied" as const,
+            next: {
+              version: 1,
+              state: "cleared",
+              ...storedSessionGeneration(identity, current),
+              ...(current.lease && current.lease.token === leaseToken
+                ? { lease: current.lease }
+                : {}),
+            },
+          };
+        },
+        currentLeaseOwner(key) ? undefined : 1,
+      );
     },
 
     async retireSessionGeneration(identity) {
-      return await runBindingMutation(async () => {
-        const key = bindingStoreKey(identity);
-        return await transactKey(
-          key,
-          (current, leaseToken) => {
-            if (!current) {
-              return { result: "absent" as const };
-            }
-            if (!ownsStoredSessionGeneration(identity, current)) {
-              return { result: "conflict" as const };
-            }
-            if (current.state === "cleared" && current.retired === true) {
-              return { result: "applied" as const };
-            }
-            return {
-              result: "applied" as const,
-              next: {
-                version: 1,
-                state: "cleared",
-                retired: true,
-                ...storedSessionGeneration(identity, current),
-                ...(current.lease && current.lease.token === leaseToken
-                  ? { lease: current.lease }
-                  : {}),
-              },
-            };
-          },
-          identity.sessionKey?.trim() ? undefined : PHYSICAL_SESSION_RETIRE_TTL_MS,
-        );
-      });
+      const key = bindingStoreKey(identity);
+      return await transactKey(
+        key,
+        (current, leaseToken) => {
+          if (!current) {
+            return { result: "absent" as const };
+          }
+          if (!ownsStoredSessionGeneration(identity, current)) {
+            return { result: "conflict" as const };
+          }
+          if (current.state === "cleared" && current.retired === true) {
+            return { result: "applied" as const };
+          }
+          if (current.state === "active" && hasLegacyCodexNativeMcpBinding(current.binding)) {
+            return { result: "conflict" as const };
+          }
+          return {
+            result: "applied" as const,
+            next: {
+              version: 1,
+              state: "cleared",
+              retired: true,
+              ...storedSessionGeneration(identity, current),
+              ...(current.lease && current.lease.token === leaseToken
+                ? { lease: current.lease }
+                : {}),
+            },
+          };
+        },
+        identity.sessionKey?.trim() ? undefined : PHYSICAL_SESSION_RETIRE_TTL_MS,
+      );
     },
 
     async withThreadArchiveFence(run) {
-      pendingArchives += 1;
-      const operation = archiveTail.then(async () => {
-        await waitForBindingMutations();
-        return await archiveContext.run(true, run);
-      });
-      archiveTail = operation.then(
-        () => undefined,
-        () => undefined,
-      );
-      try {
-        return await operation;
-      } finally {
-        pendingArchives -= 1;
-      }
+      return await runThreadArchiveFence(run);
     },
 
     async withLease(identity, run) {
       const key = bindingStoreKey(identity);
       const owned = leaseContext.getStore();
-      const existingOwner = owned?.get(key);
+      const existingOwner = currentLeaseOwner(key);
       if (existingOwner) {
         const failureBeforeRun = existingOwner.failure;
         if (failureBeforeRun) {
@@ -1140,6 +1374,9 @@ export function createCodexAppServerBindingStore(
           throw failureAfterRun;
         }
         return result;
+      }
+      if (hasActiveArchiveOwner()) {
+        throw new Error(`Codex ownership fence cannot acquire a new binding lease: ${key}`);
       }
       const token = randomUUID();
       const acquired = await transactKey(key, (current) => {
@@ -1173,7 +1410,7 @@ export function createCodexAppServerBindingStore(
       if (!acquired) {
         throw new Error(`Codex binding generation was retired: ${key}`);
       }
-      const owner: BindingLeaseOwner = { token };
+      const owner: BindingLeaseOwner = { token, active: true };
       const nested = new Map(owned);
       nested.set(key, owner);
       // Long app-server RPCs can outlive the stale-owner window. Renew with an
@@ -1187,6 +1424,9 @@ export function createCodexAppServerBindingStore(
         }
         return result;
       } finally {
+        // Timers and other deferred work inherit AsyncLocalStorage. Expire the
+        // capability before releasing its persisted lease so they reacquire normally.
+        owner.active = false;
         clearInterval(heartbeat);
         try {
           const removeOwnedLease = (
@@ -1264,6 +1504,79 @@ function isSameSupervisionOwner(
     replacement.connectionScope === "supervision" &&
     replacement.threadId === current.threadId &&
     replacement.supervisionSourceThreadId === current.supervisionSourceThreadId
+  );
+}
+
+function patchPreservesLegacyMcpBinding(
+  current: CodexAppServerThreadBinding,
+  mutation: Extract<CodexAppServerBindingMutation, { kind: "patch" }>,
+): boolean {
+  if (current.legacyMcpRetirementThreadId !== undefined) {
+    return false;
+  }
+  return (
+    (!Object.hasOwn(mutation.patch, "userMcpServersFingerprint") ||
+      mutation.patch.userMcpServersFingerprint === current.userMcpServersFingerprint) &&
+    (!Object.hasOwn(mutation.patch, "mcpServersFingerprint") ||
+      mutation.patch.mcpServersFingerprint === current.mcpServersFingerprint)
+  );
+}
+
+function patchIntroducesLegacyMcpBinding(
+  patch: Partial<Omit<CodexAppServerThreadBinding, "threadId">>,
+): boolean {
+  return (
+    patch.userMcpServersFingerprint !== undefined ||
+    patch.mcpServersFingerprint !== undefined ||
+    patch.legacyMcpRetirementThreadId !== undefined
+  );
+}
+
+function matchesLegacyMcpThreadReplacement(
+  current: CodexAppServerThreadBinding | undefined,
+  mutation: Extract<CodexAppServerBindingMutation, { kind: "replace-legacy-mcp-thread" }>,
+): boolean {
+  const replacement = mutation.binding;
+  return (
+    current !== undefined &&
+    current.connectionScope !== "supervision" &&
+    current.threadId === mutation.expectedThreadId &&
+    current.legacyMcpRetirementThreadId === undefined &&
+    (current.userMcpServersFingerprint !== undefined ||
+      current.mcpServersFingerprint !== undefined) &&
+    replacement.connectionScope !== "supervision" &&
+    replacement.threadId !== current.threadId &&
+    replacement.dynamicToolsFingerprint !== undefined &&
+    replacement.legacyMcpRetirementThreadId === current.threadId &&
+    replacement.userMcpServersFingerprint === undefined &&
+    replacement.mcpServersFingerprint === undefined
+  );
+}
+
+function matchesSupervisionThreadReplacement(
+  current: CodexAppServerThreadBinding | undefined,
+  mutation: Extract<CodexAppServerBindingMutation, { kind: "replace-supervision-thread" }>,
+): boolean {
+  const replacement = mutation.binding;
+  return (
+    current?.connectionScope === "supervision" &&
+    current.threadId === mutation.expectedThreadId &&
+    current.supervisionSourceThreadId === mutation.expectedSupervisionSourceThreadId &&
+    (current.userMcpServersFingerprint !== undefined ||
+      current.mcpServersFingerprint !== undefined) &&
+    replacement.connectionScope === "supervision" &&
+    replacement.threadId !== current.threadId &&
+    replacement.supervisionSourceThreadId === current.supervisionSourceThreadId &&
+    replacement.model === current.model &&
+    replacement.modelProvider === current.modelProvider &&
+    replacement.preserveNativeModel === true &&
+    replacement.conversationSourceTransferComplete === true &&
+    replacement.pendingSupervisionBranch === undefined &&
+    replacement.legacyMcpRetirementThreadId === current.threadId &&
+    replacement.dynamicToolsFingerprint !== undefined &&
+    replacement.historyCoveredThrough === undefined &&
+    replacement.userMcpServersFingerprint === undefined &&
+    replacement.mcpServersFingerprint === undefined
   );
 }
 

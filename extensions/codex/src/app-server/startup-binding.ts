@@ -18,6 +18,7 @@ import type {
   CodexAppServerBindingStore,
   CodexAppServerThreadBinding,
 } from "./session-binding.js";
+import { hasLegacyCodexNativeMcpBinding } from "./session-binding.js";
 
 // Codex owns proactive auto-compaction, but OpenClaw must not resume a native
 // thread that is already too close to the server-side window for the next turn.
@@ -429,6 +430,11 @@ export async function rotateOversizedCodexAppServerStartupBinding(params: {
   // Native Codex owns compaction for supervised threads. Clearing this private
   // scope marker would silently move the next turn back to the agent runtime.
   if (binding.connectionScope === "supervision") {
+    return binding;
+  }
+  // Lifecycle admission must rotate shipped native-MCP authority before any size-based
+  // replacement can clear its only provenance.
+  if (hasLegacyCodexNativeMcpBinding(binding)) {
     return binding;
   }
   const sessionRecord = await readCodexSessionRecordForSessionFile(params.sessionFile);

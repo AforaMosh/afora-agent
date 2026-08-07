@@ -13,6 +13,7 @@ import {
 import type { CodexServiceTier, CodexThreadResumeResponse } from "./app-server/protocol.js";
 import {
   bindingStoreKey,
+  hasLegacyCodexNativeMcpBinding,
   isCodexAppServerNativeAuthProfile,
   normalizeCodexAppServerBindingModelProvider,
   type CodexAppServerAuthProfileLookup,
@@ -27,6 +28,10 @@ import {
   type CodexAppServerClientLease,
   type CodexAppServerClientOptions,
 } from "./app-server/shared-client.js";
+import {
+  assertCodexBindingMayExecuteNativeWork,
+  assertNoRetiredLegacyMcpThreadLineage,
+} from "./app-server/thread-legacy-lineage.js";
 import {
   resolveCodexAppServerRequestModelSelection,
   resolveCodexBindingModelProviderFallback,
@@ -140,46 +145,62 @@ export async function steerCodexConversationTurn(params: {
   if (!active) {
     return { steered: false, message: "No active Codex run to steer." };
   }
-  const lookup = buildBindingLookup(params);
-  const binding = await params.bindingStore.read(params.identity);
-  if (binding?.threadId !== active.threadId) {
-    return {
-      steered: false,
-      message: "The active Codex run no longer matches this session binding.",
-    };
-  }
-  const connection = resolveCodexBindingAppServerConnection({
-    binding,
-    authProfileId: binding?.authProfileId,
-    pluginConfig: params.pluginConfig,
-  });
-  const runtime = connection.appServer;
-  // Turn ids are connection-local. Prefer the exact live client; ID-only
-  // records must resolve the binding-owned connection before dispatch.
-  const client =
-    active.client ??
-    (await getLeasedSharedCodexAppServerClient({
-      startOptions: runtime.start,
-      timeoutMs: runtime.requestTimeoutMs,
-      authProfileId: connection.clientAuthProfileId,
-      ...lookup,
-    }));
-  try {
-    await client.request(
-      "turn/steer",
-      {
-        threadId: active.threadId,
-        expectedTurnId: active.turnId,
-        input: [{ type: "text", text, text_elements: [] }],
-      },
-      { timeoutMs: runtime.requestTimeoutMs },
-    );
-  } finally {
-    if (!active.client) {
-      releaseLeasedSharedCodexAppServerClient(client);
-    }
-  }
-  return { steered: true, message: "Sent steer message to Codex." };
+  return await params.bindingStore.withLease(params.identity, async () =>
+    params.bindingStore.withThreadArchiveFence(async () => {
+      const lookup = buildBindingLookup(params);
+      const binding = await params.bindingStore.read(params.identity);
+      if (binding?.threadId !== active.threadId) {
+        return {
+          steered: false,
+          message: "The active Codex run no longer matches this session binding.",
+        };
+      }
+      const connection = resolveCodexBindingAppServerConnection({
+        binding,
+        authProfileId: binding.authProfileId,
+        pluginConfig: params.pluginConfig,
+      });
+      const runtime = connection.appServer;
+      // Turn ids are connection-local. Prefer the exact live client; ID-only
+      // records must resolve the binding-owned connection before dispatch.
+      const client =
+        active.client ??
+        (await getLeasedSharedCodexAppServerClient({
+          startOptions: runtime.start,
+          timeoutMs: runtime.requestTimeoutMs,
+          authProfileId: connection.clientAuthProfileId,
+          ...lookup,
+        }));
+      try {
+        await assertCodexBindingMayExecuteNativeWork({
+          bindingStore: params.bindingStore,
+          binding,
+          readThread: async (threadId) =>
+            (
+              await client.request(
+                CODEX_CONTROL_METHODS.readThread,
+                { threadId, includeTurns: false },
+                { timeoutMs: runtime.requestTimeoutMs },
+              )
+            ).thread,
+        });
+        await client.request(
+          "turn/steer",
+          {
+            threadId: active.threadId,
+            expectedTurnId: active.turnId,
+            input: [{ type: "text", text, text_elements: [] }],
+          },
+          { timeoutMs: runtime.requestTimeoutMs },
+        );
+      } finally {
+        if (!active.client) {
+          releaseLeasedSharedCodexAppServerClient(client);
+        }
+      }
+      return { steered: true, message: "Sent steer message to Codex." };
+    }),
+  );
 }
 
 export async function setCodexConversationModel(params: {
@@ -198,6 +219,11 @@ export async function setCodexConversationModel(params: {
   const binding = await requireThreadBinding(params.bindingStore, params.identity);
   if (binding.connectionScope === "supervision") {
     throw new ModelSelectionLockedError();
+  }
+  if (hasLegacyCodexNativeMcpBinding(binding)) {
+    throw new Error(
+      "This Codex thread must complete its configured MCP upgrade in a normal Codex turn before its model can be changed.",
+    );
   }
   const reviewerPolicyContext = resolveCodexModelBackedReviewerPolicyContext({
     provider: "codex",
@@ -231,6 +257,7 @@ export async function setCodexConversationModel(params: {
   });
   const resumed = await resumeThreadWithOverrides({
     runtime,
+    bindingStore: params.bindingStore,
     threadId: binding.threadId,
     authProfileId: binding.authProfileId,
     ...lookup,
@@ -362,6 +389,7 @@ async function patchThreadBinding(
 
 async function resumeThreadWithOverrides(params: {
   runtime: ReturnType<typeof resolveCodexAppServerRuntimeOptions>;
+  bindingStore: CodexAppServerBindingStore;
   threadId: string;
   authProfileId?: string;
   agentDir?: string;
@@ -385,8 +413,20 @@ async function resumeThreadWithOverrides(params: {
     const response = await withLeasedCodexAppServerClientStartSelectionRetry({
       lease: clientLease,
       options: clientOptions,
-      run: async (requestClient, requestOptions) =>
-        await requestClient.request(
+      run: async (requestClient, requestOptions) => {
+        await assertNoRetiredLegacyMcpThreadLineage({
+          bindingStore: params.bindingStore,
+          threadId: params.threadId,
+          readThread: async (threadId) =>
+            (
+              await requestClient.request(
+                CODEX_CONTROL_METHODS.readThread,
+                { threadId, includeTurns: false },
+                requestOptions,
+              )
+            ).thread,
+        });
+        return await requestClient.request(
           CODEX_CONTROL_METHODS.resumeThread,
           {
             threadId: params.threadId,
@@ -398,7 +438,8 @@ async function resumeThreadWithOverrides(params: {
             ...(params.serviceTier ? { serviceTier: params.serviceTier } : {}),
           },
           requestOptions,
-        ),
+        );
+      },
       onClientChange: (nextClient) => {
         client = nextClient;
       },

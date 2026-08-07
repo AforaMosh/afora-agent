@@ -176,38 +176,6 @@ export async function runBeforeToolCallHook(args: {
         params,
       };
     }
-    const mcpPolicyResult = resolveCodexMcpApprovalPolicy({
-      mcp: args.mcp,
-      ctx: args.ctx,
-      toolParams: params,
-    });
-    if (mcpPolicyResult && "blocked" in mcpPolicyResult) {
-      return mcpPolicyResult;
-    }
-    let mcpApprovalResolution: PluginApprovalResolution | undefined;
-    if (mcpPolicyResult?.requireApproval) {
-      const approvalOutcome = await resolveBeforeToolCallApprovalOutcome({
-        result: mcpPolicyResult,
-        approvalMode: args.approvalMode,
-        toolName,
-        ...(args.toolCallId ? { toolCallId: args.toolCallId } : {}),
-        ...(args.ctx ? { ctx: args.ctx } : {}),
-        signal: args.signal,
-        baseParams: params,
-      });
-      if (approvalOutcome?.blocked || approvalOutcome?.deferredApproval) {
-        return approvalOutcome;
-      }
-      mcpApprovalResolution = approvalOutcome?.approvalResolution;
-    }
-    if (
-      !initialCorePolicyResult &&
-      !mcpPolicyResult &&
-      !shouldRunTrustedPolicies &&
-      !hasBeforeToolCallHooks
-    ) {
-      return { blocked: false, params };
-    }
     const deriveOptions =
       args.ctx?.cwd || args.ctx?.sandbox
         ? {
@@ -324,6 +292,41 @@ export async function runBeforeToolCallHook(args: {
       trustedPolicyResult?.params && isPlainObject(policyAdjustedParams)
         ? deriveToolParams(toolName, policyAdjustedParams, deriveOptions)
         : derivedToolParams;
+    // Host-trusted policy owns the authoritative call shape. Resolve MCP
+    // approval only after its vetoes and rewrites so one-shot authority is not
+    // consumed for a call that cannot execute or for stale parameters.
+    const mcpPolicyResult = resolveCodexMcpApprovalPolicy({
+      mcp: args.mcp,
+      ctx: args.ctx,
+      toolParams: policyAdjustedParams,
+    });
+    if (mcpPolicyResult && "blocked" in mcpPolicyResult) {
+      return mcpPolicyResult;
+    }
+    let mcpApprovalResolution: PluginApprovalResolution | undefined;
+    if (mcpPolicyResult?.requireApproval) {
+      const approvalOutcome = await resolveBeforeToolCallApprovalOutcome({
+        result: mcpPolicyResult,
+        approvalMode: args.approvalMode,
+        toolName,
+        ...(args.toolCallId ? { toolCallId: args.toolCallId } : {}),
+        ...(args.ctx ? { ctx: args.ctx } : {}),
+        signal: args.signal,
+        baseParams: policyAdjustedParams,
+      });
+      if (approvalOutcome?.blocked || approvalOutcome?.deferredApproval) {
+        return approvalOutcome;
+      }
+      mcpApprovalResolution = approvalOutcome?.approvalResolution;
+    }
+    if (
+      !initialCorePolicyResult &&
+      !mcpPolicyResult &&
+      !shouldRunTrustedPolicies &&
+      !hasBeforeToolCallHooks
+    ) {
+      return { blocked: false, params };
+    }
     if (!hasBeforeToolCallHooks) {
       const finalApprovalOutcome = await resolveSkillWorkshopApprovalForFinalParams({
         toolName,

@@ -154,6 +154,7 @@ export default definePluginEntry({
             context.config ??
             resolveCurrentConfig();
           return createCodexSupervisionTools({
+            bindingStore,
             getPluginConfig: () => resolvePluginConfig(resolveToolRuntimeConfig),
             getRuntimeConfig: resolveToolRuntimeConfig,
             senderIsOwner: context.senderIsOwner,

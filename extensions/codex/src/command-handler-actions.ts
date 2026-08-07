@@ -7,6 +7,10 @@ import {
   resolveCodexNativeExecutionBlock,
   resolveCodexNativeSandboxBlock,
 } from "./app-server/sandbox-guard.js";
+import {
+  assertCodexBindingMayExecuteNativeWork,
+  assertCodexThreadReadResult,
+} from "./app-server/thread-legacy-lineage.js";
 import { canMutateCodexHost } from "./command-authorization.js";
 import {
   formatCodexDisplayText,
@@ -239,6 +243,54 @@ export async function handleNativeGoal(
   if (requestedStatus && args.length > 1) {
     return `Usage: /codex goal ${action}`;
   }
+  if (isObjectiveUpdate || requestedStatus === "active") {
+    return await deps.bindingStore.withLease(target.identity, async () =>
+      deps.bindingStore.withThreadArchiveFence(async () => {
+        const currentBinding = await deps.bindingStore.read(target.identity);
+        if (!currentBinding?.threadId || currentBinding.threadId !== binding.threadId) {
+          throw new Error("The Codex thread binding changed before its goal could be updated.");
+        }
+        const currentConnection = resolveCodexBindingAppServerConnection({
+          binding: currentBinding,
+          authProfileId: currentBinding.authProfileId,
+          pluginConfig,
+        });
+        const currentRequestOptions: CodexControlRequestOptions = {
+          agentDir: target.agentDir,
+          authProfileId: currentConnection.clientAuthProfileId,
+          config: ctx.config,
+          ...(currentConnection.usesSupervisionConnection
+            ? { startOptions: currentConnection.appServer.start }
+            : {}),
+        };
+        await assertCodexBindingMayExecuteNativeWork({
+          bindingStore: deps.bindingStore,
+          binding: currentBinding,
+          readThread: async (threadId) =>
+            assertCodexThreadReadResult(
+              await deps.codexControlRequest(
+                pluginConfig,
+                CODEX_CONTROL_METHODS.readThread,
+                { threadId, includeTurns: false },
+                currentRequestOptions,
+              ),
+            ),
+        });
+        return formatNativeGoal(
+          await deps.codexControlRequest(
+            pluginConfig,
+            CODEX_CONTROL_METHODS.setThreadGoal,
+            {
+              threadId: currentBinding.threadId,
+              ...(objective ? { objective } : {}),
+              ...(requestedStatus ? { status: requestedStatus } : {}),
+            },
+            currentRequestOptions,
+          ),
+        );
+      }),
+    );
+  }
   const response = await deps.codexControlRequest(
     pluginConfig,
     CODEX_CONTROL_METHODS.setThreadGoal,
@@ -409,27 +461,47 @@ export async function startThreadAction(
   if (!target) {
     return `Cannot start Codex ${label} because this command did not include a stable binding identity.`;
   }
-  const binding = await deps.bindingStore.read(target.identity);
-  if (!binding?.threadId) {
-    return `No Codex thread is attached to this OpenClaw session yet.`;
-  }
-  const connection = resolveCodexBindingAppServerConnection({
-    binding,
-    authProfileId: binding.authProfileId,
-    pluginConfig,
-  });
-  await deps.codexControlRequest(
-    pluginConfig,
-    kind === "compact" ? CODEX_CONTROL_METHODS.compact : CODEX_CONTROL_METHODS.review,
-    kind === "review"
-      ? { threadId: binding.threadId, target: { type: "uncommittedChanges" } }
-      : { threadId: binding.threadId },
-    {
-      agentDir: target.agentDir,
-      authProfileId: connection.clientAuthProfileId,
-      config: ctx.config,
-      ...(connection.usesSupervisionConnection ? { startOptions: connection.appServer.start } : {}),
-    },
+  return await deps.bindingStore.withLease(target.identity, async () =>
+    deps.bindingStore.withThreadArchiveFence(async () => {
+      const binding = await deps.bindingStore.read(target.identity);
+      if (!binding?.threadId) {
+        return `No Codex thread is attached to this OpenClaw session yet.`;
+      }
+      const connection = resolveCodexBindingAppServerConnection({
+        binding,
+        authProfileId: binding.authProfileId,
+        pluginConfig,
+      });
+      const controlOptions: CodexControlRequestOptions = {
+        agentDir: target.agentDir,
+        authProfileId: connection.clientAuthProfileId,
+        config: ctx.config,
+        ...(connection.usesSupervisionConnection
+          ? { startOptions: connection.appServer.start }
+          : {}),
+      };
+      await assertCodexBindingMayExecuteNativeWork({
+        bindingStore: deps.bindingStore,
+        binding,
+        readThread: async (threadId) =>
+          assertCodexThreadReadResult(
+            await deps.codexControlRequest(
+              pluginConfig,
+              CODEX_CONTROL_METHODS.readThread,
+              { threadId, includeTurns: false },
+              controlOptions,
+            ),
+          ),
+      });
+      await deps.codexControlRequest(
+        pluginConfig,
+        kind === "compact" ? CODEX_CONTROL_METHODS.compact : CODEX_CONTROL_METHODS.review,
+        kind === "review"
+          ? { threadId: binding.threadId, target: { type: "uncommittedChanges" } }
+          : { threadId: binding.threadId },
+        controlOptions,
+      );
+      return `Started Codex ${label} for thread ${formatCodexDisplayText(binding.threadId)}.`;
+    }),
   );
-  return `Started Codex ${label} for thread ${formatCodexDisplayText(binding.threadId)}.`;
 }

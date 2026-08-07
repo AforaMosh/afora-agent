@@ -2036,9 +2036,10 @@ describe("Codex supervision actions", () => {
         lastTurnId: "turn-failed",
       },
     });
-    expect(control.readThread).toHaveBeenCalledTimes(2);
+    expect(control.readThread).toHaveBeenCalledTimes(3);
     expect(control.readThread).toHaveBeenNthCalledWith(1, "thread-1", true);
-    expect(control.readThread).toHaveBeenNthCalledWith(2, "thread-1", true);
+    expect(control.readThread).toHaveBeenNthCalledWith(2, "thread-1", false);
+    expect(control.readThread).toHaveBeenNthCalledWith(3, "thread-1", true);
     expect(commandRpcMocks.codexControlRequest).not.toHaveBeenCalled();
   });
 
@@ -2319,6 +2320,107 @@ describe("Codex supervision actions", () => {
       "cannot be archived until its OpenClaw branch starts",
     );
     expect(control.archiveThread).not.toHaveBeenCalled();
+  });
+
+  it("rejects Continue when another OpenClaw session already owns the source thread", async () => {
+    const { runtime, entries } = createRuntime();
+    const { api } = createGatewayApi(runtime);
+    const bindingStore = createCodexTestBindingStore();
+    const otherIdentity = sessionBindingIdentity({
+      sessionId: "other-owner",
+      sessionKey: "agent:main:other-owner",
+      config,
+    });
+    await bindingStore.mutate(otherIdentity, {
+      kind: "set",
+      binding: { threadId: "thread-1", cwd: "/workspace/project" },
+    });
+
+    await expect(
+      continueLocalCodexSession({
+        api,
+        bindingStore,
+        config,
+        control: createEligibleControl(),
+        threadId: "thread-1",
+      }),
+    ).rejects.toThrow("already bound to another OpenClaw session");
+    expect(entries).toEqual([]);
+    await expect(bindingStore.read(otherIdentity)).resolves.toMatchObject({
+      threadId: "thread-1",
+    });
+  });
+
+  it("rejects Continue for a descendant of retired configured MCP authority", async () => {
+    const { runtime, entries } = createRuntime();
+    const { api } = createGatewayApi(runtime);
+    const retirementIdentity = {
+      kind: "conversation" as const,
+      bindingId: "retired:thread-retired-root",
+    };
+    const bindingStore = createCodexTestBindingStore([
+      {
+        identity: retirementIdentity,
+        binding: {
+          threadId: "thread-successor",
+          cwd: "/test",
+          legacyMcpRetirementThreadId: "thread-retired-root",
+        },
+      },
+    ]);
+    await bindingStore.recordLegacyMcpThreadRetirement("thread-retired-root");
+    await bindingStore.mutate(retirementIdentity, {
+      kind: "complete-legacy-mcp-retirement",
+      expectedThreadId: "thread-successor",
+      expectedRetirementThreadId: "thread-retired-root",
+    });
+    const control = createEligibleControl();
+    vi.mocked(control.readThread).mockImplementation(async (threadId) => ({
+      id: threadId,
+      ...(threadId === "thread-1" ? { parentThreadId: "thread-retired-root" } : {}),
+      status: { type: "idle" },
+    }));
+
+    await expect(
+      continueLocalCodexSession({
+        api,
+        bindingStore,
+        config,
+        control,
+        threadId: "thread-1",
+      }),
+    ).rejects.toThrow("descends from retired configured MCP authority");
+    expect(entries).toEqual([]);
+  });
+
+  it("rechecks catalog eligibility inside the adoption fence", async () => {
+    const { runtime, entries } = createRuntime();
+    const { api } = createGatewayApi(runtime);
+    const bindingStore = createCodexTestBindingStore();
+    let lists = 0;
+    const control = createEligibleControl({
+      listPage: vi.fn(async () => {
+        lists += 1;
+        return {
+          sessions:
+            lists === 1
+              ? [{ threadId: "thread-1", status: "idle", source: "cli", archived: false as const }]
+              : [],
+        };
+      }),
+    });
+
+    await expect(
+      continueLocalCodexSession({
+        api,
+        bindingStore,
+        config,
+        control,
+        threadId: "thread-1",
+      }),
+    ).rejects.toThrow();
+    expect(lists).toBeGreaterThanOrEqual(2);
+    expect(entries).toEqual([]);
   });
 
   it("recovers the same pending session after a restart before binding commit", async () => {
@@ -3012,6 +3114,35 @@ describe("Codex supervision actions", () => {
     expect(readThread.mock.invocationCallOrder[0]).toBeLessThan(
       archiveThread.mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY,
     );
+  });
+
+  it("allows explicit catalog archive cleanup of a retired configured MCP predecessor", async () => {
+    const retirementIdentity = {
+      kind: "conversation" as const,
+      bindingId: "retired:thread-1",
+    };
+    const bindingStore = createCodexTestBindingStore([
+      {
+        identity: retirementIdentity,
+        binding: {
+          threadId: "thread-successor",
+          cwd: "/test",
+          legacyMcpRetirementThreadId: "thread-1",
+        },
+      },
+    ]);
+    await bindingStore.recordLegacyMcpThreadRetirement("thread-1");
+    await bindingStore.mutate(retirementIdentity, {
+      kind: "complete-legacy-mcp-retirement",
+      expectedThreadId: "thread-successor",
+      expectedRetirementThreadId: "thread-1",
+    });
+    const control = createEligibleControl();
+
+    await expect(archiveTestSession({ bindingStore, control })).resolves.toEqual({
+      archived: true,
+    });
+    expect(control.archiveThread).toHaveBeenCalledWith("thread-1");
   });
 
   it("pins one App Server connection while archive configuration changes live", async () => {

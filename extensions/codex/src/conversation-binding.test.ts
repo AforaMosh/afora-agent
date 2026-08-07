@@ -97,12 +97,15 @@ vi.mock("openclaw/plugin-sdk/exec-approvals-runtime", async (importOriginal) => 
 });
 vi.mock("openclaw/plugin-sdk/agent-runtime", () => agentRuntimeMocks);
 
+import { CODEX_CONTROL_METHODS } from "./app-server/capabilities.js";
 import { resolveCodexAppServerRuntimeOptions } from "./app-server/config.js";
 import type { JsonValue } from "./app-server/protocol.js";
 import {
   readCodexAppServerBinding,
   registerCodexTestSessionIdentity,
   resetCodexTestBindingStore,
+  seedCodexTestBindingForIdentity,
+  seedRetiredLegacyMcpThread,
   testCodexAppServerBindingStore,
   type CodexAppServerThreadBinding,
   writeCodexAppServerBinding,
@@ -512,6 +515,565 @@ describe("codex conversation binding", () => {
     expect(bindingAfterStart?.threadId).toBe("thread-new");
     expect(bindingAfterStart?.networkProxyProfileName).toBe(NETWORK_PROXY_PROFILE_NAME);
     expect(bindingAfterStart?.networkProxyConfigFingerprint).toBe(NETWORK_PROXY_CONFIG_FINGERPRINT);
+  });
+
+  it("refuses to bind an explicit thread owned by another OpenClaw session", async () => {
+    const sessionFile = path.join(tempDir, "session.jsonl");
+    await testCodexAppServerBindingStore.mutate(
+      { kind: "conversation", bindingId: "other-conversation" },
+      {
+        kind: "set",
+        binding: { threadId: "thread-owned", cwd: tempDir },
+      },
+    );
+    const request = vi.fn();
+    sharedClientMocks.getSharedCodexAppServerClient.mockResolvedValue({ request });
+
+    await expect(
+      startCodexConversationThread({
+        sessionFile,
+        threadId: "thread-owned",
+        workspaceDir: tempDir,
+      }),
+    ).rejects.toThrow("already bound to another OpenClaw session");
+
+    expect(request).not.toHaveBeenCalled();
+    await expect(readCodexAppServerBinding(sessionFile)).resolves.toBeUndefined();
+    await expect(
+      testCodexAppServerBindingStore.read({
+        kind: "conversation",
+        bindingId: "other-conversation",
+      }),
+    ).resolves.toMatchObject({ threadId: "thread-owned" });
+  });
+
+  it("refuses to erase legacy configured MCP provenance through explicit binding", async () => {
+    const sessionFile = path.join(tempDir, "legacy-session.jsonl");
+    await writeCodexAppServerBinding(sessionFile, {
+      threadId: "thread-legacy",
+      cwd: tempDir,
+      mcpServersFingerprint: "legacy-mcp",
+    });
+
+    await expect(
+      startCodexConversationThread({
+        sessionFile,
+        threadId: "thread-different",
+        workspaceDir: tempDir,
+      }),
+    ).rejects.toThrow("configured MCP upgrade completes");
+
+    expect(sharedClientMocks.getSharedCodexAppServerClient).not.toHaveBeenCalled();
+    await expect(readCodexAppServerBinding(sessionFile)).resolves.toMatchObject({
+      threadId: "thread-legacy",
+      mcpServersFingerprint: "legacy-mcp",
+    });
+  });
+
+  it("transfers an exact session source into its conversation owner", async () => {
+    const sessionFile = path.join(tempDir, "source-session.jsonl");
+    const requests: string[] = [];
+    let notificationHandler: ((notification: unknown) => void) | undefined;
+    sharedClientMocks.getSharedCodexAppServerClient.mockResolvedValue({
+      request: vi.fn(async (method: string) => {
+        requests.push(method);
+        if (method === "thread/start" || method === "thread/resume") {
+          return conversationThreadStartResult("thread-source");
+        }
+        if (method === "turn/start") {
+          setImmediate(() =>
+            notificationHandler?.({
+              method: "turn/completed",
+              params: {
+                threadId: "thread-source",
+                turn: {
+                  id: "turn-1",
+                  status: "completed",
+                  items: [{ type: "agentMessage", id: "item-1", text: "transferred" }],
+                },
+              },
+            }),
+          );
+          return { turn: { id: "turn-1" } };
+        }
+        throw new Error(`unexpected method: ${method}`);
+      }),
+      addNotificationHandler: vi.fn((handler: (notification: unknown) => void) => {
+        notificationHandler = handler;
+        return () => undefined;
+      }),
+      addRequestHandler: vi.fn(() => () => undefined),
+    });
+    const data = await startCodexConversationThread({
+      sessionFile,
+      workspaceDir: tempDir,
+    });
+
+    const result = await handleCodexConversationInboundClaim(
+      {
+        content: "continue",
+        channel: "telegram",
+        isGroup: false,
+        commandAuthorized: true,
+      },
+      {
+        channelId: "telegram",
+        pluginBinding: {
+          bindingId: "binding-1",
+          pluginId: "codex",
+          pluginRoot: tempDir,
+          channel: "telegram",
+          accountId: "default",
+          conversationId: "5185575566",
+          boundAt: Date.now(),
+          data,
+        },
+      },
+      { timeoutMs: 500 },
+    );
+
+    expect(result).toEqual({ handled: true, reply: { text: "transferred" } });
+    expect(requests).toEqual(["thread/start", "thread/resume", "turn/start"]);
+    await expect(
+      testCodexAppServerBindingStore.read({
+        kind: "session",
+        agentId: data.source?.agentId ?? "missing",
+        sessionId: data.source?.sessionId ?? "missing",
+      }),
+    ).resolves.toBeUndefined();
+    await expect(
+      testCodexAppServerBindingStore.read({ kind: "conversation", bindingId: data.bindingId }),
+    ).resolves.toMatchObject({
+      threadId: "thread-source",
+      conversationSourceTransferComplete: true,
+    });
+  });
+
+  it.each([
+    {
+      name: "distinct target and source still present",
+      sourcePresent: true,
+      targetThreadId: "thread-proxy-new",
+    },
+    {
+      name: "same target and source already cleared",
+      sourcePresent: false,
+      targetThreadId: "thread-source",
+    },
+  ])(
+    "recovers an incomplete conversation transfer with the $name",
+    async ({ sourcePresent, targetThreadId }) => {
+      const sourceIdentity = {
+        kind: "session" as const,
+        agentId: "main",
+        sessionId: "source-session",
+      };
+      const targetIdentity = { kind: "conversation" as const, bindingId: "target-binding" };
+      if (sourcePresent) {
+        await testCodexAppServerBindingStore.mutate(sourceIdentity, {
+          kind: "set",
+          binding: { threadId: "thread-source", cwd: tempDir },
+        });
+      }
+      await testCodexAppServerBindingStore.mutate(targetIdentity, {
+        kind: "set",
+        binding: { threadId: targetThreadId, clientId: "test-client", cwd: tempDir },
+      });
+      let notificationHandler: ((notification: unknown) => void) | undefined;
+      const request = vi.fn(async (method: string) => {
+        if (method !== "turn/start") {
+          throw new Error(`unexpected method: ${method}`);
+        }
+        setImmediate(() =>
+          notificationHandler?.({
+            method: "turn/completed",
+            params: {
+              threadId: targetThreadId,
+              turn: {
+                id: "turn-recovered",
+                status: "completed",
+                items: [{ type: "agentMessage", id: "item-1", text: "recovered" }],
+              },
+            },
+          }),
+        );
+        return { turn: { id: "turn-recovered" } };
+      });
+      sharedClientMocks.getSharedCodexAppServerClient.mockResolvedValue({
+        request,
+        addNotificationHandler: vi.fn((handler: (notification: unknown) => void) => {
+          notificationHandler = handler;
+          return () => undefined;
+        }),
+        addRequestHandler: vi.fn(() => () => undefined),
+      });
+      const data = {
+        kind: "codex-app-server-session" as const,
+        version: 2 as const,
+        bindingId: targetIdentity.bindingId,
+        workspaceDir: tempDir,
+        source: {
+          agentId: "main",
+          sessionId: sourceIdentity.sessionId,
+          threadId: "thread-source",
+        },
+      };
+
+      const result = await handleCodexConversationInboundClaim(
+        {
+          content: "continue",
+          channel: "telegram",
+          isGroup: false,
+          commandAuthorized: true,
+        },
+        {
+          channelId: "telegram",
+          pluginBinding: {
+            bindingId: "binding-1",
+            pluginId: "codex",
+            pluginRoot: tempDir,
+            channel: "telegram",
+            accountId: "default",
+            conversationId: "5185575566",
+            boundAt: Date.now(),
+            data,
+          },
+        },
+        { timeoutMs: 500 },
+      );
+
+      expect(result).toEqual({ handled: true, reply: { text: "recovered" } });
+      expect(request).toHaveBeenCalledTimes(1);
+      await expect(testCodexAppServerBindingStore.read(sourceIdentity)).resolves.toBeUndefined();
+      await expect(testCodexAppServerBindingStore.read(targetIdentity)).resolves.toMatchObject({
+        threadId: targetThreadId,
+        conversationSourceTransferComplete: true,
+      });
+    },
+  );
+
+  it.each([
+    { name: "deletes it", deleteFails: false },
+    { name: "retires the client when deletion fails", deleteFails: true },
+  ])("$name after proxy source clearing loses its CAS", async ({ deleteFails }) => {
+    const sourceIdentity = {
+      kind: "session" as const,
+      agentId: "main",
+      sessionId: "source-session",
+    };
+    await testCodexAppServerBindingStore.mutate(sourceIdentity, {
+      kind: "set",
+      binding: { threadId: "thread-source", cwd: tempDir },
+    });
+    const request = vi.fn(async (method: string) => {
+      if (method === "thread/start") {
+        return conversationThreadStartResult("thread-proxy-new");
+      }
+      if (method === "thread/delete") {
+        if (deleteFails) {
+          throw new Error("delete failed");
+        }
+        return {};
+      }
+      if (method === "thread/list") {
+        return { data: [], nextCursor: null };
+      }
+      if (method === "thread/unsubscribe") {
+        return {};
+      }
+      throw new Error(`unexpected method: ${method}`);
+    });
+    sharedClientMocks.getSharedCodexAppServerClient.mockResolvedValue({ request });
+    const bindingStore = {
+      ...testCodexAppServerBindingStore,
+      mutate: async (...args: Parameters<typeof testCodexAppServerBindingStore.mutate>) => {
+        const [identity, mutation] = args;
+        if (identity.kind === "session" && mutation.kind === "clear") {
+          return false;
+        }
+        return await testCodexAppServerBindingStore.mutate(...args);
+      },
+    };
+    const data = {
+      kind: "codex-app-server-session" as const,
+      version: 2 as const,
+      bindingId: "target-binding",
+      workspaceDir: tempDir,
+      source: {
+        agentId: "main",
+        sessionId: sourceIdentity.sessionId,
+        threadId: "thread-source",
+      },
+    };
+
+    const result = await handleCodexConversationInboundClaimImpl(
+      {
+        content: "continue",
+        channel: "telegram",
+        isGroup: false,
+        commandAuthorized: true,
+        senderIsOwner: true,
+      },
+      {
+        channelId: "telegram",
+        pluginBinding: {
+          bindingId: "binding-1",
+          pluginId: "codex",
+          pluginRoot: tempDir,
+          channel: "telegram",
+          accountId: "default",
+          conversationId: "5185575566",
+          boundAt: Date.now(),
+          data,
+        },
+      },
+      { bindingStore, pluginConfig: NETWORK_PROXY_PLUGIN_CONFIG, timeoutMs: 500 },
+    );
+
+    expect(result?.reply?.text).toContain("source binding changed before transfer commit");
+    expect(request.mock.calls.map(([method]) => method)).toEqual(
+      deleteFails
+        ? ["thread/start", "thread/list", "thread/list", "thread/delete", "thread/unsubscribe"]
+        : ["thread/start", "thread/list", "thread/list", "thread/delete"],
+    );
+    if (deleteFails) {
+      expect(sharedClientMocks.retireSharedCodexAppServerClientIfCurrent).toHaveBeenCalled();
+    }
+    await expect(testCodexAppServerBindingStore.read(sourceIdentity)).resolves.toMatchObject({
+      threadId: "thread-source",
+    });
+    await expect(
+      testCodexAppServerBindingStore.read({
+        kind: "conversation",
+        bindingId: data.bindingId,
+      }),
+    ).resolves.toBeUndefined();
+  });
+
+  it("recovers after source clear commits before the transfer marker", async () => {
+    const sourceIdentity = {
+      kind: "session" as const,
+      agentId: "main",
+      sessionId: "source-session",
+    };
+    const targetIdentity = { kind: "conversation" as const, bindingId: "target-binding" };
+    await testCodexAppServerBindingStore.mutate(sourceIdentity, {
+      kind: "set",
+      binding: { threadId: "thread-source", cwd: tempDir },
+    });
+    let notificationHandler: ((notification: unknown) => void) | undefined;
+    const request = vi.fn(async (method: string) => {
+      if (method === "thread/resume") {
+        return conversationThreadStartResult("thread-source");
+      }
+      if (method === "turn/start") {
+        setImmediate(() =>
+          notificationHandler?.({
+            method: "turn/completed",
+            params: {
+              threadId: "thread-source",
+              turn: {
+                id: "turn-recovered",
+                status: "completed",
+                items: [{ type: "agentMessage", id: "item-1", text: "recovered" }],
+              },
+            },
+          }),
+        );
+        return { turn: { id: "turn-recovered" } };
+      }
+      throw new Error(`unexpected method: ${method}`);
+    });
+    sharedClientMocks.getSharedCodexAppServerClient.mockResolvedValue({
+      request,
+      addNotificationHandler: vi.fn((handler: (notification: unknown) => void) => {
+        notificationHandler = handler;
+        return () => undefined;
+      }),
+      addRequestHandler: vi.fn(() => () => undefined),
+    });
+    let failTransferPatch = true;
+    const bindingStore = {
+      ...testCodexAppServerBindingStore,
+      mutate: async (...args: Parameters<typeof testCodexAppServerBindingStore.mutate>) => {
+        const [, mutation] = args;
+        if (
+          failTransferPatch &&
+          mutation.kind === "patch" &&
+          mutation.patch.conversationSourceTransferComplete === true
+        ) {
+          failTransferPatch = false;
+          return false;
+        }
+        return await testCodexAppServerBindingStore.mutate(...args);
+      },
+    };
+    const data = {
+      kind: "codex-app-server-session" as const,
+      version: 2 as const,
+      bindingId: targetIdentity.bindingId,
+      workspaceDir: tempDir,
+      source: {
+        agentId: "main",
+        sessionId: sourceIdentity.sessionId,
+        threadId: "thread-source",
+      },
+    };
+    const event = {
+      content: "continue",
+      channel: "telegram",
+      isGroup: false,
+      commandAuthorized: true,
+      senderIsOwner: true,
+    };
+    const ctx = {
+      channelId: "telegram",
+      pluginBinding: {
+        bindingId: "binding-1",
+        pluginId: "codex",
+        pluginRoot: tempDir,
+        channel: "telegram",
+        accountId: "default",
+        conversationId: "5185575566",
+        boundAt: Date.now(),
+        data,
+      },
+    };
+
+    const failed = await handleCodexConversationInboundClaimImpl(event, ctx, {
+      bindingStore,
+      timeoutMs: 500,
+    });
+    expect(failed?.reply?.text).toContain("before source transfer completed");
+    await expect(testCodexAppServerBindingStore.read(sourceIdentity)).resolves.toBeUndefined();
+    const incompleteTarget = await testCodexAppServerBindingStore.read(targetIdentity);
+    expect(incompleteTarget).toMatchObject({ threadId: "thread-source" });
+    expect(incompleteTarget).not.toHaveProperty("conversationSourceTransferComplete");
+
+    const recovered = await handleCodexConversationInboundClaimImpl(event, ctx, {
+      bindingStore,
+      timeoutMs: 500,
+    });
+    expect(recovered).toEqual({ handled: true, reply: { text: "recovered" } });
+    expect(request.mock.calls.map(([method]) => method)).toEqual(["thread/resume", "turn/start"]);
+    await expect(testCodexAppServerBindingStore.read(targetIdentity)).resolves.toMatchObject({
+      conversationSourceTransferComplete: true,
+    });
+  });
+
+  it("rejects a third owner during exact conversation source transfer", async () => {
+    const sourceIdentity = {
+      kind: "session" as const,
+      agentId: "main",
+      sessionId: "source-session",
+    };
+    await testCodexAppServerBindingStore.mutate(sourceIdentity, {
+      kind: "set",
+      binding: { threadId: "thread-source", cwd: tempDir },
+    });
+    await testCodexAppServerBindingStore.mutate(
+      { kind: "conversation", bindingId: "third-owner" },
+      { kind: "set", binding: { threadId: "thread-source", cwd: tempDir } },
+    );
+    const request = vi.fn();
+    sharedClientMocks.getSharedCodexAppServerClient.mockResolvedValue({ request });
+
+    const result = await handleCodexConversationInboundClaim(
+      { content: "continue", channel: "telegram", isGroup: false, commandAuthorized: true },
+      {
+        channelId: "telegram",
+        pluginBinding: {
+          bindingId: "binding-1",
+          pluginId: "codex",
+          pluginRoot: tempDir,
+          channel: "telegram",
+          accountId: "default",
+          conversationId: "5185575566",
+          boundAt: Date.now(),
+          data: {
+            kind: "codex-app-server-session",
+            version: 2,
+            bindingId: "target-binding",
+            workspaceDir: tempDir,
+            source: {
+              agentId: "main",
+              sessionId: sourceIdentity.sessionId,
+              threadId: "thread-source",
+            },
+          },
+        },
+      },
+      { timeoutMs: 500 },
+    );
+
+    expect(result?.reply?.text).toContain("conversation source has another OpenClaw owner");
+    expect(request).not.toHaveBeenCalled();
+    await expect(testCodexAppServerBindingStore.read(sourceIdentity)).resolves.toMatchObject({
+      threadId: "thread-source",
+    });
+  });
+
+  it.each([
+    { name: "initial transfer", targetPresent: false },
+    { name: "incomplete transfer recovery", targetPresent: true },
+  ])("rejects a legacy MCP source during $name", async ({ targetPresent }) => {
+    const sourceIdentity = {
+      kind: "session" as const,
+      agentId: "main",
+      sessionId: "source-session",
+    };
+    const targetIdentity = { kind: "conversation" as const, bindingId: "target-binding" };
+    seedCodexTestBindingForIdentity(sourceIdentity, {
+      threadId: "thread-source",
+      cwd: tempDir,
+      userMcpServersFingerprint: "legacy-mcp",
+    });
+    if (targetPresent) {
+      await testCodexAppServerBindingStore.mutate(targetIdentity, {
+        kind: "set",
+        binding: { threadId: "thread-source", cwd: tempDir },
+      });
+    }
+    const request = vi.fn();
+    sharedClientMocks.getSharedCodexAppServerClient.mockResolvedValue({ request });
+
+    const result = await handleCodexConversationInboundClaim(
+      { content: "continue", channel: "telegram", isGroup: false, commandAuthorized: true },
+      {
+        channelId: "telegram",
+        pluginBinding: {
+          bindingId: "binding-1",
+          pluginId: "codex",
+          pluginRoot: tempDir,
+          channel: "telegram",
+          accountId: "default",
+          conversationId: "5185575566",
+          boundAt: Date.now(),
+          data: {
+            kind: "codex-app-server-session",
+            version: 2,
+            bindingId: targetIdentity.bindingId,
+            workspaceDir: tempDir,
+            source: {
+              agentId: "main",
+              sessionId: sourceIdentity.sessionId,
+              threadId: "thread-source",
+            },
+          },
+        },
+      },
+      { timeoutMs: 500 },
+    );
+
+    expect(result?.reply?.text).toContain("configured MCP upgrade");
+    expect(request).not.toHaveBeenCalled();
+    await expect(testCodexAppServerBindingStore.read(sourceIdentity)).resolves.toMatchObject({
+      threadId: "thread-source",
+      userMcpServersFingerprint: "legacy-mcp",
+    });
+    await expect(testCodexAppServerBindingStore.read(targetIdentity)).resolves.toEqual(
+      targetPresent ? expect.objectContaining({ threadId: "thread-source" }) : undefined,
+    );
   });
 
   it("starts a new bind thread when no model override is provided", async () => {
@@ -1576,6 +2138,63 @@ describe("codex conversation binding", () => {
     });
   });
 
+  it("rejects initial attach to a descendant of retired configured MCP authority", async () => {
+    await seedRetiredLegacyMcpThread("thread-retired-root");
+    const request = vi.fn(async (method: string, requestParams: { threadId?: string }) => {
+      if (method !== CODEX_CONTROL_METHODS.readThread) {
+        throw new Error(`unexpected method: ${method}`);
+      }
+      return {
+        thread: {
+          id: requestParams.threadId,
+          parentThreadId: "thread-retired-root",
+          status: { type: "idle" },
+        },
+      };
+    });
+    sharedClientMocks.getSharedCodexAppServerClient.mockResolvedValue({ request });
+
+    const result = await handleCodexConversationInboundClaim(
+      {
+        content: "continue",
+        channel: "telegram",
+        isGroup: false,
+        commandAuthorized: true,
+      },
+      {
+        channelId: "telegram",
+        pluginBinding: {
+          bindingId: "binding-1",
+          pluginId: "codex",
+          pluginRoot: tempDir,
+          channel: "telegram",
+          accountId: "default",
+          conversationId: "5185575566",
+          boundAt: Date.now(),
+          data: {
+            kind: "codex-app-server-session",
+            version: 2,
+            bindingId: "retired-descendant-attach",
+            workspaceDir: tempDir,
+            start: { id: "start-child", threadId: "thread-child" },
+          },
+        },
+      },
+      { timeoutMs: 500 },
+    );
+
+    expect(result?.reply?.text).toContain("descends from retired configured MCP authority");
+    expect(request.mock.calls.map(([method]) => method)).toEqual([
+      CODEX_CONTROL_METHODS.readThread,
+    ]);
+    await expect(
+      testCodexAppServerBindingStore.read({
+        kind: "conversation",
+        bindingId: "retired-descendant-attach",
+      }),
+    ).resolves.toBeUndefined();
+  });
+
   it("recreates a missing bound thread with the stored binding agent runtime policy", async () => {
     const sessionFile = path.join(tempDir, "session.jsonl");
     await writeTestConversationBinding(sessionFile, {
@@ -2254,6 +2873,43 @@ describe("codex conversation binding", () => {
       handled: true,
       reply: { text: "authoritative answer" },
     });
+  });
+
+  it("blocks a bound turn descended from retired configured MCP authority", async () => {
+    const sessionFile = path.join(tempDir, "session.jsonl");
+    await writeTestConversationBinding(sessionFile, {
+      threadId: "thread-child",
+      cwd: tempDir,
+    });
+    await seedRetiredLegacyMcpThread("thread-retired-root");
+    const request = vi.fn(async (method: string, requestParams: { threadId?: string }) => {
+      if (method !== CODEX_CONTROL_METHODS.readThread) {
+        throw new Error(`unexpected method: ${method}`);
+      }
+      return {
+        thread: {
+          id: requestParams.threadId,
+          parentThreadId: "thread-retired-root",
+          status: { type: "idle" },
+        },
+      };
+    });
+    sharedClientMocks.getSharedCodexAppServerClient.mockResolvedValue({
+      request,
+      addNotificationHandler: vi.fn(() => () => undefined),
+      addRequestHandler: vi.fn(() => () => undefined),
+    });
+    const { event, ctx } = boundConversationClaim(sessionFile);
+
+    await expect(handleCodexConversationInboundClaim(event, ctx)).resolves.toEqual({
+      handled: true,
+      reply: {
+        text: expect.stringContaining("descends from retired configured MCP authority"),
+      },
+    });
+    expect(request.mock.calls.map(([method]) => method)).toEqual([
+      CODEX_CONTROL_METHODS.readThread,
+    ]);
   });
 
   it("reports an interrupted bound turn as cancellation instead of a partial reply", async () => {

@@ -17,10 +17,15 @@ import { CODEX_CONTROL_METHODS } from "./app-server/capabilities.js";
 import type { CodexComputerUseStatus } from "./app-server/computer-use.js";
 import type { CodexAppServerStartOptions } from "./app-server/config.js";
 import type { JsonValue } from "./app-server/protocol.js";
-import type { CodexAppServerThreadBinding } from "./app-server/session-binding.js";
+import {
+  hasLegacyCodexNativeMcpBinding,
+  type CodexAppServerThreadBinding,
+} from "./app-server/session-binding.js";
 import {
   buildCodexSupervisionTestConnectionFingerprint,
   resetCodexTestBindingStore,
+  seedCodexTestBindingForIdentity,
+  seedRetiredLegacyMcpThread,
   testCodexAppServerBindingStore,
 } from "./app-server/session-binding.test-helpers.js";
 import { resetSharedCodexAppServerClientForTests } from "./app-server/shared-client.js";
@@ -165,6 +170,10 @@ async function writeTestBinding(
   identity: Parameters<typeof testCodexAppServerBindingStore.mutate>[0],
   binding: CodexAppServerThreadBinding,
 ): Promise<void> {
+  if (hasLegacyCodexNativeMcpBinding(binding)) {
+    seedCodexTestBindingForIdentity(identity, binding);
+    return;
+  }
   await testCodexAppServerBindingStore.mutate(identity, { kind: "set", binding });
 }
 
@@ -502,6 +511,130 @@ describe("codex command", () => {
       historyCoveredThrough: expect.any(String),
     });
   });
+
+  it("refuses to attach a thread owned by another OpenClaw session", async () => {
+    await writeTestBinding(
+      { kind: "conversation", bindingId: "other-conversation" },
+      { threadId: "thread-123", cwd: "/repo" },
+    );
+    const codexControlRequest = vi.fn();
+
+    const result = await runCommand("resume thread-123", { codexControlRequest });
+
+    expectResultTextContains(result, "already bound to another OpenClaw session");
+    expect(codexControlRequest).not.toHaveBeenCalled();
+    await expect(
+      testCodexAppServerBindingStore.read({
+        kind: "conversation",
+        bindingId: "other-conversation",
+      }),
+    ).resolves.toMatchObject({ threadId: "thread-123" });
+  });
+
+  it("refuses to erase legacy configured MCP provenance through manual resume", async () => {
+    const identity = {
+      kind: "session" as const,
+      agentId: "main",
+      sessionId: "session-1",
+    };
+    await writeTestBinding(identity, {
+      threadId: "thread-legacy",
+      cwd: "/repo",
+      userMcpServersFingerprint: "legacy-mcp",
+    });
+    const codexControlRequest = vi.fn();
+
+    const result = await runCommand("resume thread-123", { codexControlRequest });
+
+    expectResultTextContains(result, "configured MCP upgrade completes");
+    expect(codexControlRequest).not.toHaveBeenCalled();
+    await expect(testCodexAppServerBindingStore.read(identity)).resolves.toMatchObject({
+      threadId: "thread-legacy",
+      userMcpServersFingerprint: "legacy-mcp",
+    });
+  });
+
+  it("refuses to resume a descendant of a retired configured MCP thread", async () => {
+    await seedRetiredLegacyMcpThread("thread-retired-root");
+    const codexControlRequest = vi.fn(
+      async (_pluginConfig: unknown, method: string, requestParamsValue: unknown) => {
+        if (method !== CODEX_CONTROL_METHODS.readThread) {
+          throw new Error(`unexpected method: ${method}`);
+        }
+        const lineageRequestParams = requestParamsValue as { threadId: string };
+        const response = createThreadResumeResponse({ threadId: lineageRequestParams.threadId });
+        return {
+          thread:
+            lineageRequestParams.threadId === "thread-child"
+              ? { ...response.thread, parentThreadId: "thread-retired-root" }
+              : response.thread,
+        };
+      },
+    );
+
+    const result = await runCommand("resume thread-child", { codexControlRequest });
+
+    expectResultTextContains(result, "descends from retired configured MCP authority");
+    expect(codexControlRequest.mock.calls.map(([, method]) => method)).toEqual([
+      CODEX_CONTROL_METHODS.readThread,
+    ]);
+  });
+
+  it.each(["goal set keep working", "goal resume", "compact", "review"])(
+    "blocks %s on a direct legacy configured MCP binding",
+    async (command) => {
+      const identity = {
+        kind: "session" as const,
+        agentId: "main",
+        sessionId: "session-1",
+      };
+      await writeTestBinding(identity, {
+        threadId: "thread-legacy",
+        cwd: "/repo",
+        userMcpServersFingerprint: "legacy-mcp",
+      });
+      const codexControlRequest = vi.fn();
+
+      const result = await runCommand(command, { codexControlRequest });
+
+      expectResultTextContains(result, "complete its configured MCP upgrade");
+      expect(codexControlRequest).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["goal set keep working", "goal resume", "compact", "review"])(
+    "blocks %s on a descendant of retired configured MCP authority",
+    async (command) => {
+      const identity = {
+        kind: "session" as const,
+        agentId: "main",
+        sessionId: "session-1",
+      };
+      await writeTestBinding(identity, { threadId: "thread-child", cwd: "/repo" });
+      await seedRetiredLegacyMcpThread("thread-retired-root");
+      const codexControlRequest = vi.fn(
+        async (_pluginConfig: unknown, method: string, requestParamsValue: unknown) => {
+          if (method !== CODEX_CONTROL_METHODS.readThread) {
+            throw new Error(`unexpected method: ${method}`);
+          }
+          const lineageRequestParams = requestParamsValue as { threadId: string };
+          return {
+            thread: {
+              ...createThreadResumeResponse({ threadId: lineageRequestParams.threadId }).thread,
+              parentThreadId: "thread-retired-root",
+            },
+          };
+        },
+      );
+
+      const result = await runCommand(command, { codexControlRequest });
+
+      expectResultTextContains(result, "descends from retired configured MCP authority");
+      expect(codexControlRequest.mock.calls.map(([, method]) => method)).toEqual([
+        CODEX_CONTROL_METHODS.readThread,
+      ]);
+    },
+  );
 
   it("serializes manual resume with other session binding owners", async () => {
     const identity = {

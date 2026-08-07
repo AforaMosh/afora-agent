@@ -9,6 +9,7 @@ import {
 } from "./attempt-client-cleanup.js";
 import type { CodexAppServerClient } from "./client.js";
 import type { v2 } from "./protocol.js";
+import { assertCodexThreadHasNoDescendants } from "./thread-archive-guard.js";
 
 class CodexPluginThreadAppAttestationError extends Error {
   constructor(message: string, options?: ErrorOptions) {
@@ -75,6 +76,13 @@ export async function discardUnattestedCodexPluginThread(params: {
   }
 
   try {
+    await assertCodexThreadHasNoDescendants({
+      threadId: params.threadId,
+      listPage: async (request) =>
+        await params.client.request("thread/list", request, {
+          timeoutMs: CODEX_APP_SERVER_UNSUBSCRIBE_TIMEOUT_MS,
+        }),
+    });
     await params.client.request(
       "thread/delete",
       { threadId: params.threadId },

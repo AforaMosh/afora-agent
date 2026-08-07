@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import {
   createPluginStateKeyedStoreForTests,
+  createPluginStateSyncKeyedStoreForTests,
   resetPluginStateStoreForTests,
 } from "openclaw/plugin-sdk/plugin-state-test-runtime";
 import type {
@@ -22,6 +23,7 @@ import {
   CODEX_APP_SERVER_BINDING_MAX_ENTRIES,
   CODEX_APP_SERVER_BINDING_NAMESPACE,
   createStoredCodexAppServerBinding,
+  createCodexAppServerBindingStore,
   hashCodexAppServerBindingFingerprint,
   type StoredCodexAppServerBinding,
 } from "./src/app-server/session-binding.js";
@@ -273,7 +275,7 @@ describe("codex doctor contract", () => {
           bindingId: legacyCodexConversationBindingId(fixture.transcriptPath),
         }),
       ),
-    ).resolves.toMatchObject({ state: "active", binding: { threadId: "thread-1" } });
+    ).resolves.toBeUndefined();
     await expect(fs.access(`${fixture.sidecarPath}.migrated`)).resolves.toBeUndefined();
     expect(
       getSessionEntry({
@@ -292,6 +294,99 @@ describe("codex doctor contract", () => {
 
     await fs.rm(fixture.stateDir, { recursive: true, force: true });
   });
+
+  it.each([
+    ["user", { userMcpServersFingerprint: "legacy-user-mcp" }],
+    ["bundled", { mcpServersFingerprint: "legacy-bundled-mcp" }],
+  ] as const)(
+    "hands a migrated %s MCP sidecar to the canonical runtime retirement flow",
+    async (name, marker) => {
+      const sessionKey = `agent:main:${name}-runtime-retirement`;
+      const sessionId = `${name}-runtime-retirement`;
+      const predecessorThreadId = `thread-${name}-predecessor`;
+      const successorThreadId = `thread-${name}-successor`;
+      const fixture = await createBindingMigrationFixture({
+        name,
+        sessionIndex: {
+          [sessionKey]: {
+            sessionId,
+            sessionFile: `${name}.jsonl`,
+          },
+        },
+        threadId: predecessorThreadId,
+        binding: marker,
+      });
+
+      await expect(fixture.migration.migrateLegacyState(fixture.params)).resolves.toMatchObject({
+        warnings: [],
+      });
+      const runtimeState = createPluginStateSyncKeyedStoreForTests<StoredCodexAppServerBinding>(
+        "codex",
+        {
+          namespace: CODEX_APP_SERVER_BINDING_NAMESPACE,
+          maxEntries: CODEX_APP_SERVER_BINDING_MAX_ENTRIES,
+          overflowPolicy: "reject-new",
+          env: fixture.env,
+        },
+      );
+      const runtimeStore = createCodexAppServerBindingStore(runtimeState);
+      const identity = {
+        kind: "session" as const,
+        agentId: "main",
+        sessionId,
+        sessionKey,
+      };
+      const migratedMarker =
+        "userMcpServersFingerprint" in marker
+          ? {
+              userMcpServersFingerprint: hashCodexAppServerBindingFingerprint(
+                marker.userMcpServersFingerprint,
+              ),
+            }
+          : {
+              mcpServersFingerprint: hashCodexAppServerBindingFingerprint(
+                marker.mcpServersFingerprint,
+              ),
+            };
+      await expect(runtimeStore.read(identity)).resolves.toMatchObject({
+        threadId: predecessorThreadId,
+        ...migratedMarker,
+      });
+      await expect(
+        runtimeStore.mutate(identity, {
+          kind: "replace-legacy-mcp-thread",
+          expectedThreadId: predecessorThreadId,
+          binding: {
+            threadId: successorThreadId,
+            cwd: "/repo",
+            dynamicToolsFingerprint: "dynamic-v2",
+            legacyMcpRetirementThreadId: predecessorThreadId,
+          },
+        }),
+      ).resolves.toBe(true);
+      await expect(runtimeStore.recordLegacyMcpThreadRetirement(predecessorThreadId)).resolves.toBe(
+        true,
+      );
+      await expect(
+        runtimeStore.mutate(identity, {
+          kind: "complete-legacy-mcp-retirement",
+          expectedThreadId: successorThreadId,
+          expectedRetirementThreadId: predecessorThreadId,
+        }),
+      ).resolves.toBe(true);
+      await expect(runtimeStore.read(identity)).resolves.toMatchObject({
+        threadId: successorThreadId,
+        dynamicToolsFingerprint: "dynamic-v2",
+      });
+      await expect(runtimeStore.inspectThreadOwnership(predecessorThreadId)).resolves.toMatchObject(
+        {
+          hasUnexpectedOwner: true,
+          hasLegacyNativeMcpOwner: true,
+        },
+      );
+      await fs.rm(fixture.stateDir, { recursive: true, force: true });
+    },
+  );
 
   it("bounds oversized legacy fingerprints before plugin-state import", async () => {
     const rawDynamicToolsFingerprint = JSON.stringify([
@@ -427,10 +522,7 @@ describe("codex doctor contract", () => {
     });
 
     const expectedFingerprint = hashCodexAppServerBindingFingerprint(rawFingerprint);
-    await expect(store.lookup(conversationKey)).resolves.toMatchObject({
-      state: "active",
-      binding: { dynamicToolsFingerprint: expectedFingerprint },
-    });
+    await expect(store.lookup(conversationKey)).resolves.toBeUndefined();
     await expect(store.lookup(sessionBindingKey)).resolves.toMatchObject({
       state: "active",
       sessionId,
@@ -499,10 +591,7 @@ describe("codex doctor contract", () => {
     });
 
     const expectedFingerprint = hashCodexAppServerBindingFingerprint(rawFingerprint);
-    await expect(store.lookup(conversationKey)).resolves.toMatchObject({
-      state: "active",
-      binding: { dynamicToolsFingerprint: expectedFingerprint },
-    });
+    await expect(store.lookup(conversationKey)).resolves.toBeUndefined();
     await expect(store.lookup(sessionBindingKey)).resolves.toMatchObject({
       state: "active",
       sessionId,
@@ -1149,6 +1238,154 @@ describe("codex doctor contract", () => {
       original.plugins.entries.codex.config.codexPlugins.plugins["google-calendar"]
         .allow_destructive_actions,
     ).toBe("on-request");
+  });
+
+  it("collapses an exact shipped legacy binding alias into its unique session owner", async () => {
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-codex-alias-doctor-"));
+    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    const store = openBindingStore(env);
+    const binding = {
+      threadId: "thread-legacy-alias",
+      cwd: "/repo",
+      userMcpServersFingerprint: "legacy-mcp",
+    };
+    const aliasKey = "conversation:legacy-exact";
+    const sessionKey = "session-key:main:exact";
+    await store.register(aliasKey, { version: 1, state: "active", binding });
+    await store.register(sessionKey, {
+      version: 1,
+      state: "active",
+      sessionId: "session-current",
+      binding,
+    });
+    const migration = stateMigrations.find(
+      (candidate) => candidate.id === "codex-app-server-collapse-legacy-binding-aliases",
+    );
+    if (!migration) {
+      throw new Error("missing binding alias migration");
+    }
+    const params = {
+      config: {},
+      env,
+      stateDir,
+      oauthDir: path.join(stateDir, "oauth"),
+      context: createDoctorContext(env),
+    };
+
+    await expect(migration.detectLegacyState(params)).resolves.toEqual({
+      preview: ["- Codex app-server bindings: collapse 1 duplicate file-keyed ownership alias(es)"],
+    });
+    await expect(migration.migrateLegacyState(params)).resolves.toEqual({
+      changes: [
+        "Collapsed 1 duplicate Codex app-server binding ownership alias(es) into their canonical session owners",
+      ],
+      warnings: [],
+    });
+    await expect(store.lookup(aliasKey)).resolves.toBeUndefined();
+    await expect(store.lookup(sessionKey)).resolves.toMatchObject({
+      state: "active",
+      binding: { threadId: binding.threadId },
+    });
+    await expect(migration.migrateLegacyState(params)).resolves.toEqual({
+      changes: [],
+      warnings: [],
+    });
+    await fs.rm(stateDir, { recursive: true, force: true });
+  });
+
+  it("keeps ambiguous shipped legacy binding aliases for operator review", async () => {
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-codex-alias-ambiguous-"));
+    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    const store = openBindingStore(env);
+    const binding = {
+      threadId: "thread-ambiguous-alias",
+      cwd: "/repo",
+      mcpServersFingerprint: "legacy-mcp",
+    };
+    await store.register("conversation:legacy-ambiguous", {
+      version: 1,
+      state: "active",
+      binding,
+    });
+    await store.register("session-key:main:first", {
+      version: 1,
+      state: "active",
+      sessionId: "session-first",
+      binding,
+    });
+    await store.register("session-key:main:second", {
+      version: 1,
+      state: "active",
+      sessionId: "session-second",
+      binding,
+    });
+    const migration = stateMigrations.find(
+      (candidate) => candidate.id === "codex-app-server-collapse-legacy-binding-aliases",
+    );
+    if (!migration) {
+      throw new Error("missing binding alias migration");
+    }
+    const params = {
+      config: {},
+      env,
+      stateDir,
+      oauthDir: path.join(stateDir, "oauth"),
+      context: createDoctorContext(env),
+    };
+
+    await expect(migration.migrateLegacyState(params)).resolves.toEqual({
+      changes: [],
+      warnings: [
+        "Kept 1 ambiguous Codex app-server binding alias(es); each matched multiple session owners",
+      ],
+    });
+    await expect(store.lookup("conversation:legacy-ambiguous")).resolves.toBeDefined();
+    await fs.rm(stateDir, { recursive: true, force: true });
+  });
+
+  it("keeps a leased shipped legacy binding alias for its runtime owner", async () => {
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-codex-alias-leased-"));
+    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    const store = openBindingStore(env);
+    const binding = {
+      threadId: "thread-leased-alias",
+      cwd: "/repo",
+      userMcpServersFingerprint: "legacy-mcp",
+    };
+    const aliasKey = "conversation:legacy-leased";
+    await store.register(aliasKey, {
+      version: 1,
+      state: "active",
+      binding,
+      lease: { token: "active-runtime", expiresAt: Date.now() + 60_000 },
+    });
+    await store.register("session-key:main:leased", {
+      version: 1,
+      state: "active",
+      sessionId: "session-current",
+      binding,
+    });
+    const migration = stateMigrations.find(
+      (candidate) => candidate.id === "codex-app-server-collapse-legacy-binding-aliases",
+    );
+    if (!migration) {
+      throw new Error("missing binding alias migration");
+    }
+
+    await expect(
+      migration.migrateLegacyState({
+        config: {},
+        env,
+        stateDir,
+        oauthDir: path.join(stateDir, "oauth"),
+        context: createDoctorContext(env),
+      }),
+    ).resolves.toEqual({
+      changes: [],
+      warnings: [`Kept leased Codex app-server binding alias ${aliasKey}`],
+    });
+    await expect(store.lookup(aliasKey)).resolves.toBeDefined();
+    await fs.rm(stateDir, { recursive: true, force: true });
   });
 
   it("renames the retired app-server on-failure approval policy", () => {

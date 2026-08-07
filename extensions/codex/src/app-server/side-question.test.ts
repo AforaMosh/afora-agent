@@ -526,6 +526,24 @@ describe("runCodexAppServerSideQuestion", () => {
     });
   });
 
+  it.each([
+    ["user MCP", { userMcpServersFingerprint: "legacy-user-mcp" }],
+    ["bundled MCP", { mcpServersFingerprint: "legacy-bundled-mcp" }],
+    ["pending retirement", { legacyMcpRetirementThreadId: "legacy-predecessor" }],
+  ] as const)("rejects /btw for a %s binding before acquiring a client", async (_name, legacy) => {
+    readCodexAppServerBindingMock.mockResolvedValue({
+      threadId: "parent-thread",
+      cwd: "/tmp/workspace",
+      model: "gpt-5.5",
+      ...legacy,
+    });
+
+    await expect(runCodexAppServerSideQuestion(sideParams())).rejects.toThrow(
+      "completes its configured MCP upgrade in a normal Codex turn",
+    );
+    expect(getSharedCodexAppServerClientMock).not.toHaveBeenCalled();
+  });
+
   afterEach(() => {
     nativeHookRelayTesting.clearNativeHookRelaysForTests();
     resetDiagnosticEventsForTest();

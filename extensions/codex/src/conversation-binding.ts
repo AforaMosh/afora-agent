@@ -36,6 +36,7 @@ import {
   type CodexAppServerSandboxMode,
   type OpenClawExecPolicyForCodexAppServer,
 } from "./app-server/config.js";
+import { discardUnattestedCodexPluginThread } from "./app-server/plugin-thread-attestation.js";
 import { assertCodexThreadStartResponse } from "./app-server/protocol-validators.js";
 import type {
   CodexServiceTier,
@@ -50,6 +51,7 @@ import {
 } from "./app-server/sandbox-guard.js";
 import {
   assertCodexBindingMayBeReplaced,
+  hasLegacyCodexNativeMcpBinding,
   isCodexAppServerNativeAuthProfile,
   normalizeCodexAppServerBindingModelProvider,
   sessionBindingIdentity,
@@ -64,6 +66,7 @@ import {
   type CodexAppServerClientLease,
   type CodexAppServerClientOptions,
 } from "./app-server/shared-client.js";
+import { assertNoRetiredLegacyMcpThreadLineage } from "./app-server/thread-legacy-lineage.js";
 import {
   CODEX_NATIVE_PERSONALITY_NONE,
   resolveCodexAppServerRequestModelSelection,
@@ -208,6 +211,11 @@ async function startCodexConversationThread(
   });
   const existingBinding = await params.bindingStore.read(identity);
   assertCodexBindingMayBeReplaced(existingBinding, "starting a conversation-bound Codex thread");
+  if (hasLegacyCodexNativeMcpBinding(existingBinding)) {
+    throw new Error(
+      "This Codex session must complete its configured MCP upgrade in a normal Codex turn before it can be bound to a conversation.",
+    );
+  }
   const authProfileId = resolveCodexAppServerAuthProfileIdForAgent({
     authProfileId: params.authProfileId ?? existingBinding?.authProfileId,
     ...agentLookup,
@@ -584,22 +592,92 @@ async function writeThreadBindingFromResponse(
 async function attachExistingThread(
   params: CodexThreadBindingParams & {
     threadId: string;
+    expectedSourceOwner?: {
+      identity: CodexAppServerBindingIdentity;
+      threadId: string;
+    };
   },
 ): Promise<void> {
   const current = await params.bindingStore.read(params.identity);
   assertCodexBindingMayBeReplaced(current, "attaching a conversation-bound Codex thread");
+  if (hasLegacyCodexNativeMcpBinding(current)) {
+    throw new Error(
+      "This Codex thread must complete its configured MCP upgrade in a normal Codex turn before it can be bound to a conversation.",
+    );
+  }
+  if (params.expectedSourceOwner && current) {
+    throw new Error("Codex conversation source transfer requires an empty target binding");
+  }
   const resolved = await resolveThreadBindingRuntime(params);
   try {
-    // Codex applies network-proxy permission profiles at thread/start. Resuming
-    // an arbitrary existing thread cannot prove that profile is active.
-    const response: CodexThreadResumeResponse | CodexThreadStartResponse = resolved.runtime
-      .networkProxy
-      ? await requestNewConversationBindingThread(params, resolved)
-      : await withLeasedCodexAppServerClientStartSelectionRetry({
+    const attach = async () => {
+      const sourceOwner = params.expectedSourceOwner;
+      if (sourceOwner) {
+        const source = await params.bindingStore.read(sourceOwner.identity);
+        if (!source || source.threadId !== sourceOwner.threadId) {
+          throw new Error("Codex conversation source binding changed before transfer");
+        }
+        assertCodexBindingMayBeReplaced(
+          source,
+          "transferring a session into a conversation-bound Codex thread",
+        );
+        if (hasLegacyCodexNativeMcpBinding(source)) {
+          throw new Error(
+            "The source Codex thread must complete its configured MCP upgrade before it can be transferred to a conversation.",
+          );
+        }
+        const sourceOwnership = await params.bindingStore.inspectThreadOwnership(
+          sourceOwner.threadId,
+          [sourceOwner.identity],
+        );
+        if (sourceOwnership.hasUnexpectedOwner) {
+          throw new Error("Codex conversation source has another OpenClaw owner");
+        }
+        if (sourceOwnership.hasLegacyNativeMcpOwner) {
+          throw new Error(
+            "The source Codex thread must complete its configured MCP upgrade before it can be transferred to a conversation.",
+          );
+        }
+      }
+      let response: CodexThreadResumeResponse | CodexThreadStartResponse;
+      // Codex applies network-proxy permission profiles at thread/start. Resuming
+      // an arbitrary existing thread cannot prove that profile is active.
+      if (resolved.runtime.networkProxy) {
+        response = await requestNewConversationBindingThread(params, resolved);
+      } else {
+        const allowedOwners = [
+          params.identity,
+          ...(sourceOwner?.threadId === params.threadId ? [sourceOwner.identity] : []),
+        ];
+        const ownership = await params.bindingStore.inspectThreadOwnership(
+          params.threadId,
+          allowedOwners,
+        );
+        if (ownership.hasUnexpectedOwner) {
+          throw new Error("Codex thread is already bound to another OpenClaw session");
+        }
+        if (ownership.hasLegacyNativeMcpOwner) {
+          throw new Error(
+            "This Codex thread must complete its configured MCP upgrade before it can be bound to a conversation.",
+          );
+        }
+        response = await withLeasedCodexAppServerClientStartSelectionRetry({
           lease: resolved.clientLease,
           options: resolved.clientOptions,
-          run: async (client, requestOptions) =>
-            await client.request(
+          run: async (client, requestOptions) => {
+            await assertNoRetiredLegacyMcpThreadLineage({
+              bindingStore: params.bindingStore,
+              threadId: params.threadId,
+              readThread: async (threadId) =>
+                (
+                  await client.request(
+                    CODEX_CONTROL_METHODS.readThread,
+                    { threadId, includeTurns: false },
+                    requestOptions,
+                  )
+                ).thread,
+            });
+            return await client.request(
               CODEX_CONTROL_METHODS.resumeThread,
               {
                 threadId: params.threadId,
@@ -609,12 +687,63 @@ async function attachExistingThread(
                 ...buildThreadRequestRuntimeOptions(params, resolved),
               },
               requestOptions,
-            ),
+            );
+          },
           onClientChange: (client) => {
             resolved.client = client;
           },
         });
-    await writeThreadBindingFromResponse(params, resolved, response);
+      }
+      await writeThreadBindingFromResponse(params, resolved, response);
+      if (!sourceOwner) {
+        return;
+      }
+      const sourceCleared = await params.bindingStore.mutate(sourceOwner.identity, {
+        kind: "clear",
+        threadId: sourceOwner.threadId,
+      });
+      if (!sourceCleared) {
+        const targetCleared = await params.bindingStore.mutate(params.identity, {
+          kind: "clear",
+          threadId: response.thread.id,
+        });
+        if (!targetCleared) {
+          throw new Error(
+            "Codex conversation source and target ownership could not be reconciled after transfer conflict",
+          );
+        }
+        if (resolved.runtime.networkProxy && response.thread.id !== sourceOwner.threadId) {
+          const cleaned = await discardUnattestedCodexPluginThread({
+            client: resolved.client,
+            threadId: response.thread.id,
+            ephemeral: isIncognitoSessionKey(params.sessionKey),
+          });
+          if (!cleaned) {
+            await retireUnsafeCodexTurnClientBestEffort(
+              resolved.client,
+              "conversation source transfer cleanup",
+            );
+          }
+        }
+        throw new Error("Codex conversation source binding changed before transfer commit");
+      }
+      const transferCompleted = await params.bindingStore.mutate(params.identity, {
+        kind: "patch",
+        threadId: response.thread.id,
+        patch: { conversationSourceTransferComplete: true },
+      });
+      if (!transferCompleted) {
+        throw new Error("Codex conversation binding changed before source transfer completed");
+      }
+    };
+
+    if (params.expectedSourceOwner) {
+      await params.bindingStore.withLease(params.expectedSourceOwner.identity, async () =>
+        params.bindingStore.withThreadArchiveFence(attach),
+      );
+    } else {
+      await params.bindingStore.withThreadArchiveFence(attach);
+    }
   } finally {
     releaseCodexAppServerClientLease(resolved.clientLease);
   }
@@ -625,8 +754,10 @@ async function createThread(params: CodexThreadBindingParams): Promise<void> {
   assertCodexBindingMayBeReplaced(current, "creating a conversation-bound Codex thread");
   const resolved = await resolveThreadBindingRuntime(params);
   try {
-    const response = await requestNewConversationBindingThread(params, resolved);
-    await writeThreadBindingFromResponse(params, resolved, response);
+    await params.bindingStore.withThreadArchiveFence(async () => {
+      const response = await requestNewConversationBindingThread(params, resolved);
+      await writeThreadBindingFromResponse(params, resolved, response);
+    });
   } finally {
     releaseCodexAppServerClientLease(resolved.clientLease);
   }
@@ -727,66 +858,88 @@ async function runBoundTurn(params: {
   let retiredUnsafeClient: CodexAppServerClient | undefined;
   let turnRoute: CodexThreadRouteReservation | undefined;
   try {
+    if (!networkProxyBindingChanged) {
+      await assertNoRetiredLegacyMcpThreadLineage({
+        bindingStore: params.bindingStore,
+        threadId,
+        readThread: async (targetThreadId) =>
+          (
+            await client.request(
+              CODEX_CONTROL_METHODS.readThread,
+              { threadId: targetThreadId, includeTurns: false },
+              { timeoutMs: runtime.requestTimeoutMs },
+            )
+          ).thread,
+      });
+    }
     if (networkProxyBindingChanged) {
-      const response = assertCodexThreadStartResponse(
-        await withLeasedCodexAppServerClientStartSelectionRetry({
-          lease: clientLease,
-          options: clientOptions,
-          run: async (requestClient, requestOptions) =>
-            await requestClient.request(
-              "thread/start",
-              {
-                cwd: workspaceDir,
-                ...(modelSelection?.model ? { model: modelSelection.model } : {}),
-                ...(modelSelection?.modelProvider
-                  ? { modelProvider: modelSelection.modelProvider }
-                  : {}),
-                personality: CODEX_NATIVE_PERSONALITY_NONE,
-                approvalPolicy,
-                approvalsReviewer: modelScopedRuntime.approvalsReviewer,
-                ...(modelScopedRuntime.networkProxy
-                  ? { config: modelScopedRuntime.networkProxy.configPatch }
-                  : { sandbox }),
-                ...(serviceTier ? { serviceTier } : {}),
-                developerInstructions: CODEX_CONVERSATION_THREAD_DEVELOPER_INSTRUCTIONS,
-                experimentalRawEvents: true,
-                ...(isIncognitoSessionKey(params.sessionKey) ? { ephemeral: true } : {}),
+      await params.bindingStore.withLease(identity, async () =>
+        params.bindingStore.withThreadArchiveFence(async () => {
+          const currentBinding = await params.bindingStore.read(identity);
+          if (currentBinding?.threadId !== binding.threadId) {
+            throw new Error("Codex conversation binding changed before rotating its thread.");
+          }
+          const response = assertCodexThreadStartResponse(
+            await withLeasedCodexAppServerClientStartSelectionRetry({
+              lease: clientLease,
+              options: clientOptions,
+              run: async (requestClient, requestOptions) =>
+                await requestClient.request(
+                  "thread/start",
+                  {
+                    cwd: workspaceDir,
+                    ...(modelSelection?.model ? { model: modelSelection.model } : {}),
+                    ...(modelSelection?.modelProvider
+                      ? { modelProvider: modelSelection.modelProvider }
+                      : {}),
+                    personality: CODEX_NATIVE_PERSONALITY_NONE,
+                    approvalPolicy,
+                    approvalsReviewer: modelScopedRuntime.approvalsReviewer,
+                    ...(modelScopedRuntime.networkProxy
+                      ? { config: modelScopedRuntime.networkProxy.configPatch }
+                      : { sandbox }),
+                    ...(serviceTier ? { serviceTier } : {}),
+                    developerInstructions: CODEX_CONVERSATION_THREAD_DEVELOPER_INSTRUCTIONS,
+                    experimentalRawEvents: true,
+                    ...(isIncognitoSessionKey(params.sessionKey) ? { ephemeral: true } : {}),
+                  },
+                  requestOptions,
+                ),
+              onClientChange: (nextClient) => {
+                client = nextClient;
               },
-              requestOptions,
-            ),
-          onClientChange: (nextClient) => {
-            client = nextClient;
-          },
+            }),
+          );
+          threadId = response.thread.id;
+          const committed = await params.bindingStore.mutate(identity, {
+            kind: "set",
+            binding: {
+              threadId,
+              clientId: client.getInstanceId(),
+              cwd: response.thread.cwd ?? workspaceDir,
+              authProfileId: binding.authProfileId,
+              model: response.model ?? modelSelection?.model ?? binding.model,
+              modelProvider: normalizeCodexAppServerBindingModelProvider({
+                authProfileId: binding.authProfileId,
+                modelProvider:
+                  response.modelProvider ?? modelSelection?.modelProvider ?? binding.modelProvider,
+                ...agentLookup,
+              }),
+              approvalPolicy: typeof approvalPolicy === "string" ? approvalPolicy : undefined,
+              sandbox,
+              serviceTier: serviceTier ?? undefined,
+              networkProxyProfileName: modelScopedRuntime.networkProxy?.profileName,
+              networkProxyConfigFingerprint: modelScopedRuntime.networkProxy?.configFingerprint,
+              conversationStartId: binding.conversationStartId,
+              conversationSourceTransferComplete: binding.conversationSourceTransferComplete,
+              historyCoveredThrough: binding.historyCoveredThrough,
+            },
+          });
+          if (!committed) {
+            throw new Error("Codex conversation binding changed while rotating its thread.");
+          }
         }),
       );
-      threadId = response.thread.id;
-      const committed = await params.bindingStore.mutate(identity, {
-        kind: "set",
-        binding: {
-          threadId,
-          clientId: client.getInstanceId(),
-          cwd: response.thread.cwd ?? workspaceDir,
-          authProfileId: binding.authProfileId,
-          model: response.model ?? modelSelection?.model ?? binding.model,
-          modelProvider: normalizeCodexAppServerBindingModelProvider({
-            authProfileId: binding.authProfileId,
-            modelProvider:
-              response.modelProvider ?? modelSelection?.modelProvider ?? binding.modelProvider,
-            ...agentLookup,
-          }),
-          approvalPolicy: typeof approvalPolicy === "string" ? approvalPolicy : undefined,
-          sandbox,
-          serviceTier: serviceTier ?? undefined,
-          networkProxyProfileName: modelScopedRuntime.networkProxy?.profileName,
-          networkProxyConfigFingerprint: modelScopedRuntime.networkProxy?.configFingerprint,
-          conversationStartId: binding.conversationStartId,
-          conversationSourceTransferComplete: binding.conversationSourceTransferComplete,
-          historyCoveredThrough: binding.historyCoveredThrough,
-        },
-      });
-      if (!committed) {
-        throw new Error("Codex conversation binding changed while rotating its thread.");
-      }
       useStickyNetworkProfile = modelScopedRuntime.networkProxy !== undefined;
     } else if (binding.clientId !== client.getInstanceId()) {
       const response = await withLeasedCodexAppServerClientStartSelectionRetry({
@@ -963,6 +1116,76 @@ async function runBoundTurnWithMissingThreadRecovery(params: {
   }
 }
 
+async function completePendingConversationSourceTransfer(params: {
+  bindingStore: CodexAppServerBindingStore;
+  targetIdentity: CodexAppServerBindingIdentity;
+  targetThreadId: string;
+  sourceIdentity: CodexAppServerBindingIdentity;
+  sourceThreadId: string;
+}): Promise<void> {
+  await params.bindingStore.withLease(params.sourceIdentity, async () => {
+    await params.bindingStore.withThreadArchiveFence(async () => {
+      const source = await params.bindingStore.read(params.sourceIdentity);
+      if (source && source.threadId !== params.sourceThreadId) {
+        throw new Error("Codex conversation source binding changed before transfer recovery");
+      }
+      if (source) {
+        assertCodexBindingMayBeReplaced(
+          source,
+          "recovering a session transfer into a conversation-bound Codex thread",
+        );
+        if (hasLegacyCodexNativeMcpBinding(source)) {
+          throw new Error(
+            "The source Codex thread must complete its configured MCP upgrade before its conversation transfer can be recovered.",
+          );
+        }
+      }
+      const targetOwnership = await params.bindingStore.inspectThreadOwnership(
+        params.targetThreadId,
+        [
+          params.targetIdentity,
+          ...(params.targetThreadId === params.sourceThreadId ? [params.sourceIdentity] : []),
+        ],
+      );
+      if (targetOwnership.hasUnexpectedOwner) {
+        throw new Error("Codex conversation transfer target has another OpenClaw owner");
+      }
+      if (targetOwnership.hasLegacyNativeMcpOwner) {
+        throw new Error(
+          "The Codex conversation transfer target still uses the legacy configured MCP transport.",
+        );
+      }
+      if (source) {
+        const sourceOwnership = await params.bindingStore.inspectThreadOwnership(
+          params.sourceThreadId,
+          [
+            params.sourceIdentity,
+            ...(params.targetThreadId === params.sourceThreadId ? [params.targetIdentity] : []),
+          ],
+        );
+        if (sourceOwnership.hasUnexpectedOwner) {
+          throw new Error("Codex conversation source has another OpenClaw owner");
+        }
+        const cleared = await params.bindingStore.mutate(params.sourceIdentity, {
+          kind: "clear",
+          threadId: params.sourceThreadId,
+        });
+        if (!cleared) {
+          throw new Error("Codex conversation source binding changed during transfer recovery");
+        }
+      }
+      const completed = await params.bindingStore.mutate(params.targetIdentity, {
+        kind: "patch",
+        threadId: params.targetThreadId,
+        patch: { conversationSourceTransferComplete: true },
+      });
+      if (!completed) {
+        throw new Error("Codex conversation binding changed during source transfer recovery");
+      }
+    });
+  });
+}
+
 async function prepareConversationBinding(
   params: {
     bindingStore: CodexAppServerBindingStore;
@@ -975,14 +1198,7 @@ async function prepareConversationBinding(
 ): Promise<void> {
   const identity = conversationBindingIdentity(params.data);
   await params.bindingStore.withLease(identity, async () => {
-    const current = await params.bindingStore.read(identity);
-    const requested =
-      params.data.start && current?.conversationStartId !== params.data.start.id
-        ? params.data.start
-        : undefined;
-    if (current && !requested && !options.forceNew) {
-      return;
-    }
+    let current = await params.bindingStore.read(identity);
     const sourceIdentity = params.data.source
       ? sessionBindingIdentity({
           agentId: params.data.source.agentId,
@@ -991,6 +1207,31 @@ async function prepareConversationBinding(
           config: params.config,
         })
       : undefined;
+    if (
+      current &&
+      sourceIdentity &&
+      params.data.source &&
+      current.conversationSourceTransferComplete !== true
+    ) {
+      await completePendingConversationSourceTransfer({
+        bindingStore: params.bindingStore,
+        targetIdentity: identity,
+        targetThreadId: current.threadId,
+        sourceIdentity,
+        sourceThreadId: params.data.source.threadId,
+      });
+      current = await params.bindingStore.read(identity);
+      if (!current) {
+        throw new Error("Codex conversation binding disappeared during source transfer recovery");
+      }
+    }
+    const requested =
+      params.data.start && current?.conversationStartId !== params.data.start.id
+        ? params.data.start
+        : undefined;
+    if (current && !requested && !options.forceNew) {
+      return;
+    }
     const sourceBinding = sourceIdentity
       ? await params.bindingStore.read(sourceIdentity)
       : undefined;
@@ -1026,7 +1267,14 @@ async function prepareConversationBinding(
     };
     const threadId = requested?.threadId ?? (!current ? params.data.source?.threadId : undefined);
     if (threadId && !options.forceNew) {
-      await attachExistingThread({ ...bindingParams, threadId });
+      const expectedSourceOwner =
+        !current && sourceIdentity && params.data.source
+          ? { identity: sourceIdentity, threadId: params.data.source.threadId }
+          : undefined;
+      if (expectedSourceOwner && sourceBinding?.threadId !== expectedSourceOwner.threadId) {
+        throw new Error("Codex conversation source binding is no longer available for transfer");
+      }
+      await attachExistingThread({ ...bindingParams, threadId, expectedSourceOwner });
     } else {
       await createThread(bindingParams);
     }
@@ -1034,24 +1282,10 @@ async function prepareConversationBinding(
     if (!stored) {
       throw new Error("Codex conversation binding disappeared while initializing its thread.");
     }
-    if (sourceIdentity && params.data.source && !current?.conversationSourceTransferComplete) {
-      await params.bindingStore.withLease(sourceIdentity, async () => {
-        const source = await params.bindingStore.read(sourceIdentity);
-        if (source && source.threadId === params.data.source?.threadId) {
-          await params.bindingStore.mutate(sourceIdentity, {
-            kind: "clear",
-            threadId: source.threadId,
-          });
-        }
-      });
-    }
     const patched = await params.bindingStore.mutate(identity, {
       kind: "patch",
       threadId: stored.threadId,
-      patch: {
-        ...(params.data.start ? { conversationStartId: params.data.start.id } : {}),
-        ...(sourceIdentity ? { conversationSourceTransferComplete: true } : {}),
-      },
+      patch: params.data.start ? { conversationStartId: params.data.start.id } : {},
     });
     if (!patched) {
       throw new Error("Codex conversation binding changed while initializing its thread.");

@@ -24,7 +24,10 @@ import {
   type CodexAppServerStartOptions,
   type CodexSupervisionEndpoint,
 } from "./app-server/config.js";
+import type { CodexThread } from "./app-server/protocol.js";
 import { requestCodexAppServerJson } from "./app-server/request.js";
+import type { CodexAppServerBindingStore } from "./app-server/session-binding.js";
+import { assertNoRetiredLegacyMcpThreadLineage } from "./app-server/thread-legacy-lineage.js";
 
 /** Legacy endpoint env retained for the shipped Supervisor tool contract. */
 const LEGACY_CODEX_SUPERVISOR_ENDPOINTS_ENV = "OPENCLAW_CODEX_SUPERVISOR_ENDPOINTS";
@@ -150,6 +153,7 @@ type CodexSupervisionToolsOptions = {
   getRuntimeConfig?: () => OpenClawConfig | undefined;
   /** Trusted owner bit supplied by the plugin tool context. */
   senderIsOwner: boolean;
+  bindingStore?: CodexAppServerBindingStore;
   env?: NodeJS.ProcessEnv;
   /** Test seam; production omits this to use the canonical shared client. */
   request?: EndpointRequest;
@@ -1144,38 +1148,58 @@ export function createCodexSupervisionTools(options: CodexSupervisionToolsOption
         if (mode === "start") {
           throw idleContinuationError(threadId);
         }
-        const endpoint = await resolveEndpointForThread({
-          endpoints,
-          request: writeRequest,
-          endpointId: readStringParam(params, "endpoint_id"),
-          threadId,
-        });
-        const thread = await readThread({
-          request: writeRequest,
-          endpoint,
-          threadId,
-          includeTurns: true,
-        });
-        requireCurrentEndpoint(options, "write-controls", endpoint);
-        if (statusType(thread) !== "active") {
-          throw idleContinuationError(threadId);
+        const bindingStore = options.bindingStore;
+        if (!bindingStore) {
+          throw new Error("Codex supervision authority validation is unavailable");
         }
-        const turnId = await resolveInProgressTurnId({
-          request: writeRequest,
-          endpoint,
-          thread,
-          threadId,
+        return await bindingStore.withThreadArchiveFence(async () => {
+          const endpoint = await resolveEndpointForThread({
+            endpoints,
+            request: writeRequest,
+            endpointId: readStringParam(params, "endpoint_id"),
+            threadId,
+          });
+          const thread = await readThread({
+            request: writeRequest,
+            endpoint,
+            threadId,
+            includeTurns: true,
+          });
+          requireCurrentEndpoint(options, "write-controls", endpoint);
+          if (statusType(thread) !== "active") {
+            throw idleContinuationError(threadId);
+          }
+          await assertNoRetiredLegacyMcpThreadLineage({
+            bindingStore,
+            threadId,
+            initialThread: thread as unknown as CodexThread,
+            readThread: async (ancestorThreadId) =>
+              (await readThread({
+                request: writeRequest,
+                endpoint,
+                threadId: ancestorThreadId,
+                includeTurns: false,
+              })) as unknown as CodexThread,
+          });
+          const turnId = await resolveInProgressTurnId({
+            request: writeRequest,
+            endpoint,
+            thread,
+            threadId,
+          });
+          if (!turnId) {
+            throw new Error(
+              `Codex thread ${threadId} is active but no in-progress turn is readable`,
+            );
+          }
+          await writeRequest(endpoint, "turn/steer", {
+            threadId,
+            expectedTurnId: turnId,
+            input: [{ type: "text", text, text_elements: [] }],
+          });
+          const result = { endpointId: endpoint.id, threadId, mode: "steer" as const, turnId };
+          return jsonResult({ summary: `codex steer: ${turnId}`, result });
         });
-        if (!turnId) {
-          throw new Error(`Codex thread ${threadId} is active but no in-progress turn is readable`);
-        }
-        await writeRequest(endpoint, "turn/steer", {
-          threadId,
-          expectedTurnId: turnId,
-          input: [{ type: "text", text, text_elements: [] }],
-        });
-        const result = { endpointId: endpoint.id, threadId, mode: "steer" as const, turnId };
-        return jsonResult({ summary: `codex steer: ${turnId}`, result });
       },
     },
     {

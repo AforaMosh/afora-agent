@@ -1593,6 +1593,265 @@ describe("runCodexAppServerAttempt", () => {
     expect(dispose).toHaveBeenCalled();
   });
 
+  it("rematerializes a shipped supervised MCP binding with visible continuity", async () => {
+    const configuredTool = createRuntimeDynamicTool("project-tracker__list");
+    agentHarnessRuntimeMocks.configuredMcpTools = {
+      tools: [configuredTool],
+      executableToolIdentities: [{ name: "project-tracker__list", pluginId: "bundle-mcp" }],
+      advertisedTools: [configuredTool],
+      appTools: [],
+      restrictAppTools: vi.fn(),
+      dispose: vi.fn(async () => undefined),
+    };
+    testing.setOpenClawCodingToolsFactoryForTests(() => []);
+    const { sessionFile, workspaceDir } = createRunPaths();
+    await writeExistingBinding(sessionFile, workspaceDir, {
+      connectionScope: "supervision",
+      supervisionSourceThreadId: "thread-native-source",
+      preserveNativeModel: true,
+      conversationSourceTransferComplete: true,
+      userMcpServersFingerprint: "legacy-native-mcp",
+    });
+    const sessionManager = openFileBackedSessionManagerForTest(sessionFile);
+    sessionManager.appendMessage(userMessage("prior supervised user context", Date.now() - 2_000));
+    sessionManager.appendMessage(
+      assistantMessage("prior supervised assistant context", Date.now() - 1_000),
+    );
+    const harness = createStartedThreadHarness(async (method) => {
+      if (method === "thread/read") {
+        return { thread: threadStartResult("thread-existing").thread };
+      }
+      if (method === "thread/start") {
+        return threadStartResult("thread-supervised-dynamic");
+      }
+      if (method === "thread/list") {
+        return { data: [], nextCursor: null };
+      }
+      if (method === "thread/archive") {
+        return {};
+      }
+      return undefined;
+    });
+    const params = createParams(sessionFile, workspaceDir);
+    params.prompt = "continue after the supervised MCP upgrade";
+    params.config = {
+      ...params.config,
+      mcp: {
+        servers: {
+          projectTracker: {
+            url: "https://project.example.test/mcp",
+            codex: { agents: ["main"] },
+          },
+        },
+      },
+    } as typeof params.config;
+    setCodexTestModelSupportsTools(params, true);
+    const run = runCodexAppServerAttempt(params, {
+      pluginConfig: { supervision: { enabled: true } },
+      clientFactory: vi.fn(async () => harness.client),
+    });
+
+    await harness.waitForMethod("turn/start");
+    await harness.completeTurn({ threadId: "thread-supervised-dynamic", turnId: "turn-1" });
+    await run;
+
+    expect(harness.requests.map((request) => request.method)).not.toContain("thread/resume");
+    const threadStart = harness.requests.find((request) => request.method === "thread/start");
+    const threadStartParams = threadStart?.params as
+      | { config?: { mcp_servers?: unknown }; dynamicTools?: CodexDynamicToolSpec[] }
+      | undefined;
+    expect(
+      flattenCodexDynamicToolFunctions(threadStartParams?.dynamicTools).map((tool) => tool.name),
+    ).toContain("project-tracker__list");
+    expect(threadStartParams?.config?.mcp_servers).toBeUndefined();
+    const turnStart = harness.requests.find((request) => request.method === "turn/start");
+    const inputText =
+      (turnStart?.params as { input?: Array<{ text?: string }> } | undefined)?.input?.[0]?.text ??
+      "";
+    expect(inputText).toContain("prior supervised user context");
+    expect(inputText).toContain("prior supervised assistant context");
+    expect(inputText).toContain("continue after the supervised MCP upgrade");
+    const binding = await readCodexAppServerBinding(sessionFile);
+    expect(binding).toMatchObject({
+      threadId: "thread-supervised-dynamic",
+      connectionScope: "supervision",
+      supervisionSourceThreadId: "thread-native-source",
+      preserveNativeModel: true,
+      conversationSourceTransferComplete: true,
+    });
+    expect(binding?.userMcpServersFingerprint).toBeUndefined();
+    expect(binding?.mcpServersFingerprint).toBeUndefined();
+  });
+
+  it("keeps a report-only supervised MCP successor transient until an unrestricted turn", async () => {
+    const configuredTool = createRuntimeDynamicTool("project-tracker__list");
+    agentHarnessRuntimeMocks.configuredMcpTools = {
+      tools: [configuredTool],
+      executableToolIdentities: [{ name: "project-tracker__list", pluginId: "bundle-mcp" }],
+      advertisedTools: [configuredTool],
+      appTools: [],
+      restrictAppTools: vi.fn(),
+      dispose: vi.fn(async () => undefined),
+    };
+    testing.setOpenClawCodingToolsFactoryForTests(() => []);
+    const { sessionFile, workspaceDir } = createRunPaths();
+    await writeExistingBinding(sessionFile, workspaceDir, {
+      connectionScope: "supervision",
+      supervisionSourceThreadId: "thread-native-source",
+      preserveNativeModel: true,
+      conversationSourceTransferComplete: true,
+      userMcpServersFingerprint: "legacy-native-mcp",
+    });
+    const params = createParams(sessionFile, workspaceDir);
+    params.delegationCapability = "report_only";
+    setCodexTestModelSupportsTools(params, true);
+    const createMigrationHarness = (successorThreadId: string) =>
+      createStartedThreadHarness(async (method) => {
+        if (method === "thread/read") {
+          return { thread: threadStartResult("thread-existing").thread };
+        }
+        if (method === "thread/start") {
+          return threadStartResult(successorThreadId);
+        }
+        if (method === "thread/list") {
+          return { data: [], nextCursor: null };
+        }
+        if (method === "thread/archive") {
+          return {};
+        }
+        return undefined;
+      });
+
+    const transientHarness = createMigrationHarness("thread-transient");
+    const transientRun = runCodexAppServerAttempt(params, {
+      pluginConfig: { supervision: { enabled: true } },
+      clientFactory: vi.fn(async () => transientHarness.client),
+    });
+    await transientHarness.waitForMethod("turn/start");
+    await transientHarness.completeTurn({ threadId: "thread-transient", turnId: "turn-1" });
+    await transientRun;
+
+    expect(transientHarness.requests.map((request) => request.method)).not.toContain(
+      "thread/resume",
+    );
+    await expect(readCodexAppServerBinding(sessionFile)).resolves.toMatchObject({
+      threadId: "thread-existing",
+      connectionScope: "supervision",
+      supervisionSourceThreadId: "thread-native-source",
+      userMcpServersFingerprint: "legacy-native-mcp",
+    });
+
+    params.delegationCapability = "full";
+    const canonicalHarness = createMigrationHarness("thread-canonical");
+    const canonicalRun = runCodexAppServerAttempt(params, {
+      pluginConfig: { supervision: { enabled: true } },
+      clientFactory: vi.fn(async () => canonicalHarness.client),
+    });
+    await canonicalHarness.waitForMethod("turn/start");
+    await canonicalHarness.completeTurn({ threadId: "thread-canonical", turnId: "turn-1" });
+    await canonicalRun;
+
+    const binding = await readCodexAppServerBinding(sessionFile);
+    expect(binding).toMatchObject({
+      threadId: "thread-canonical",
+      connectionScope: "supervision",
+      supervisionSourceThreadId: "thread-native-source",
+      preserveNativeModel: true,
+    });
+    expect(binding?.userMcpServersFingerprint).toBeUndefined();
+  });
+
+  it("replays visible continuity after a supervised MCP replacement fails before its first turn", async () => {
+    const configuredTool = createRuntimeDynamicTool("project-tracker__list");
+    agentHarnessRuntimeMocks.configuredMcpTools = {
+      tools: [configuredTool],
+      executableToolIdentities: [{ name: "project-tracker__list", pluginId: "bundle-mcp" }],
+      advertisedTools: [configuredTool],
+      appTools: [],
+      restrictAppTools: vi.fn(),
+      dispose: vi.fn(async () => undefined),
+    };
+    testing.setOpenClawCodingToolsFactoryForTests(() => []);
+    const { sessionFile, workspaceDir } = createRunPaths();
+    await writeExistingBinding(sessionFile, workspaceDir, {
+      connectionScope: "supervision",
+      supervisionSourceThreadId: "thread-native-source",
+      preserveNativeModel: true,
+      conversationSourceTransferComplete: true,
+      userMcpServersFingerprint: "legacy-native-mcp",
+    });
+    const sessionManager = openFileBackedSessionManagerForTest(sessionFile);
+    sessionManager.appendMessage(userMessage("continuity survives replacement retry", Date.now()));
+    sessionManager.appendMessage(
+      assistantMessage("retry the same supervised migration", Date.now() + 1),
+    );
+    const params = createParams(sessionFile, workspaceDir);
+    params.prompt = "finish after the interrupted migration";
+    setCodexTestModelSupportsTools(params, true);
+    const failedHarness = createStartedThreadHarness(async (method) => {
+      if (method === "thread/read") {
+        return { thread: threadStartResult("thread-existing").thread };
+      }
+      if (method === "thread/start") {
+        return threadStartResult("thread-supervised-dynamic");
+      }
+      if (method === "thread/list") {
+        return { data: [], nextCursor: null };
+      }
+      if (method === "thread/archive") {
+        return {};
+      }
+      if (method === "turn/start") {
+        throw new Error("synthetic failure before first successor turn");
+      }
+      return undefined;
+    });
+
+    await expect(
+      runCodexAppServerAttempt(params, {
+        pluginConfig: { supervision: { enabled: true } },
+        clientFactory: vi.fn(async () => failedHarness.client),
+      }),
+    ).rejects.toThrow("synthetic failure before first successor turn");
+    const interruptedBinding = await readCodexAppServerBinding(sessionFile);
+    expect(interruptedBinding).toMatchObject({
+      threadId: "thread-supervised-dynamic",
+      connectionScope: "supervision",
+      supervisionSourceThreadId: "thread-native-source",
+    });
+    expect(interruptedBinding?.historyCoveredThrough).toBeUndefined();
+
+    const retryHarness = createStartedThreadHarness(async (method, requestParams) => {
+      if (method === "thread/read") {
+        return { thread: threadStartResult("thread-supervised-dynamic").thread };
+      }
+      if (method === "thread/resume") {
+        return threadStartResult((requestParams as { threadId: string }).threadId);
+      }
+      return undefined;
+    });
+    const retryRun = runCodexAppServerAttempt(params, {
+      pluginConfig: { supervision: { enabled: true } },
+      clientFactory: vi.fn(async () => retryHarness.client),
+    });
+    await retryHarness.waitForMethod("turn/start");
+    await retryHarness.completeTurn({ threadId: "thread-supervised-dynamic", turnId: "turn-1" });
+    await retryRun;
+
+    expect(retryHarness.requests.map((request) => request.method)).not.toContain("thread/start");
+    expect(retryHarness.requests.map((request) => request.method)).toContain("thread/resume");
+    const turnStart = retryHarness.requests.find((request) => request.method === "turn/start");
+    const inputText =
+      (turnStart?.params as { input?: Array<{ text?: string }> } | undefined)?.input?.[0]?.text ??
+      "";
+    expect(inputText).toContain("continuity survives replacement retry");
+    expect(inputText).toContain("retry the same supervised migration");
+    expect(inputText).toContain("finish after the interrupted migration");
+    const completedBinding = await readCodexAppServerBinding(sessionFile);
+    expect(completedBinding?.threadId).toBe("thread-supervised-dynamic");
+    expect(completedBinding?.userMcpServersFingerprint).toBeUndefined();
+  });
+
   it("disposes configured MCP when Codex startup fails before the turn becomes active", async () => {
     testing.setOpenClawCodingToolsFactoryForTests(() => []);
     const configuredTool = createRuntimeDynamicTool("project-tracker__list");

@@ -118,7 +118,9 @@ describe("Codex plugin thread app attestation", () => {
 
 describe("unattested Codex plugin thread cleanup", () => {
   it("deletes a persistent thread before its first rollout", async () => {
-    const request = vi.fn(async () => ({}));
+    const request = vi.fn(async (method: string) =>
+      method === "thread/list" ? { data: [], nextCursor: null } : {},
+    );
 
     await expect(
       discardUnattestedCodexPluginThread({
@@ -128,7 +130,34 @@ describe("unattested Codex plugin thread cleanup", () => {
       }),
     ).resolves.toBe(true);
 
-    expect(request).toHaveBeenCalledExactlyOnceWith(
+    expect(request).toHaveBeenNthCalledWith(
+      1,
+      "thread/list",
+      {
+        ancestorThreadId: "thread-persistent",
+        archived: false,
+        limit: 100,
+        sortKey: "created_at",
+        sortDirection: "desc",
+        useStateDbOnly: true,
+      },
+      { timeoutMs: 5_000 },
+    );
+    expect(request).toHaveBeenNthCalledWith(
+      2,
+      "thread/list",
+      {
+        ancestorThreadId: "thread-persistent",
+        archived: true,
+        limit: 100,
+        sortKey: "created_at",
+        sortDirection: "desc",
+        useStateDbOnly: true,
+      },
+      { timeoutMs: 5_000 },
+    );
+    expect(request).toHaveBeenNthCalledWith(
+      3,
       "thread/delete",
       { threadId: "thread-persistent" },
       { timeoutMs: 5_000 },
@@ -155,6 +184,9 @@ describe("unattested Codex plugin thread cleanup", () => {
 
   it("does not treat unsubscribe as proof that a persistent thread was deleted", async () => {
     const request = vi.fn(async (method: string) => {
+      if (method === "thread/list") {
+        return { data: [], nextCursor: null };
+      }
       if (method === "thread/delete") {
         throw new Error("thread deletion unavailable");
       }
@@ -170,7 +202,52 @@ describe("unattested Codex plugin thread cleanup", () => {
     ).resolves.toBe(false);
 
     expect(request.mock.calls.map(([method]) => method)).toEqual([
+      "thread/list",
+      "thread/list",
       "thread/delete",
+      "thread/unsubscribe",
+    ]);
+  });
+
+  it("preserves a persistent thread when Codex reports a spawned descendant", async () => {
+    const request = vi.fn(async (method: string) =>
+      method === "thread/list" ? { data: [{ id: "thread-user-branch" }], nextCursor: null } : {},
+    );
+
+    await expect(
+      discardUnattestedCodexPluginThread({
+        client: { request } as never,
+        threadId: "thread-persistent",
+        ephemeral: false,
+      }),
+    ).resolves.toBe(false);
+
+    expect(request.mock.calls.map(([method]) => method)).toEqual([
+      "thread/list",
+      "thread/unsubscribe",
+    ]);
+  });
+
+  it("preserves a persistent thread when only an archived descendant remains", async () => {
+    const request = vi.fn(async (method: string, params?: { archived?: boolean }) =>
+      method === "thread/list"
+        ? params?.archived
+          ? { data: [{ id: "thread-archived-branch" }], nextCursor: null }
+          : { data: [], nextCursor: null }
+        : {},
+    );
+
+    await expect(
+      discardUnattestedCodexPluginThread({
+        client: { request } as never,
+        threadId: "thread-persistent",
+        ephemeral: false,
+      }),
+    ).resolves.toBe(false);
+
+    expect(request.mock.calls.map(([method]) => method)).toEqual([
+      "thread/list",
+      "thread/list",
       "thread/unsubscribe",
     ]);
   });

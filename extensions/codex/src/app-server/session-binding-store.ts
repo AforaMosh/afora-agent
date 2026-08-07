@@ -23,8 +23,15 @@ export function createLazyCodexAppServerBindingStore(
     ));
   return {
     read: async (identity) => (await store()).read(identity),
-    hasOtherThreadOwner: async (threadId, currentIdentity) =>
-      (await store()).hasOtherThreadOwner(threadId, currentIdentity),
+    hasLegacyMcpRetirementState: async () => (await store()).hasLegacyMcpRetirementState(),
+    inspectThreadOwnership: async (threadId, allowedIdentities, allowRetiredLegacyMcpThread) =>
+      (await store()).inspectThreadOwnership(
+        threadId,
+        allowedIdentities,
+        allowRetiredLegacyMcpThread,
+      ),
+    recordLegacyMcpThreadRetirement: async (threadId) =>
+      (await store()).recordLegacyMcpThreadRetirement(threadId),
     mutate: async (identity, mutation) => (await store()).mutate(identity, mutation),
     prepareSessionGenerationReclaim: async (identity) =>
       (await store()).prepareSessionGenerationReclaim(identity),

@@ -20,10 +20,12 @@ import type { CodexServerNotification } from "./protocol.js";
 import { sessionBindingIdentity } from "./session-binding.js";
 import {
   clearCodexAppServerBindingForThread,
+  createCodexTestBindingStore,
   readCodexAppServerBinding,
   registerCodexTestSessionIdentity,
   resetCodexTestBindingStore,
   seedCodexTestBinding,
+  seedRetiredLegacyMcpThread,
   testCodexAppServerBindingStore,
   writeCodexAppServerBinding,
 } from "./session-binding.test-helpers.js";
@@ -183,6 +185,57 @@ describe("maybeCompactCodexAppServerSession", () => {
   afterEach(async () => {
     resetCodexAppServerClientFactoryForTest();
     await fs.rm(tempDir, { recursive: true, force: true });
+  });
+
+  it.each([
+    ["user MCP", { userMcpServersFingerprint: "legacy-user-mcp" }],
+    ["bundled MCP", { mcpServersFingerprint: "legacy-bundled-mcp" }],
+    ["pending retirement", { legacyMcpRetirementThreadId: "thread-predecessor" }],
+  ] as const)("rejects native compaction for a %s binding before resume", async (_name, legacy) => {
+    const sessionFile = await writeTestBinding(legacy);
+    const clientFactory = vi.fn(async () => {
+      throw new Error("legacy compaction must not acquire a Codex client");
+    });
+    setCodexAppServerClientFactoryForTest(clientFactory);
+
+    const result = requireCompactResult(await startCompaction(sessionFile));
+
+    expect(result).toMatchObject({
+      ok: false,
+      compacted: false,
+      reason: expect.stringContaining(
+        "completes its configured MCP upgrade in a normal Codex turn",
+      ),
+    });
+    expect(clientFactory).not.toHaveBeenCalled();
+  });
+
+  it("rejects native compaction for a descendant of retired configured MCP authority", async () => {
+    const sessionFile = await writeTestBinding({ threadId: "thread-child" });
+    await seedRetiredLegacyMcpThread("thread-retired-root");
+    const fake = createFakeCodexClient({ retainedThreadId: "thread-child" });
+    fake.request.mockImplementation(async (method: string, params?: unknown) => {
+      if (method !== "thread/read") {
+        throw new Error(`unexpected method: ${method}`);
+      }
+      return {
+        thread: {
+          id: (params as { threadId: string }).threadId,
+          parentThreadId: "thread-retired-root",
+          status: { type: "idle" },
+        },
+      } as never;
+    });
+    setCodexAppServerClientFactoryForTest(async () => fake.client);
+
+    const result = requireCompactResult(await startCompaction(sessionFile));
+
+    expect(result).toMatchObject({
+      ok: false,
+      compacted: false,
+      reason: expect.stringContaining("descends from retired configured MCP authority"),
+    });
+    expect(fake.request.mock.calls.map(([method]) => method)).toEqual(["thread/read"]);
   });
 
   it("waits for native app-server compaction completion", async () => {
@@ -715,20 +768,31 @@ describe("maybeCompactCodexAppServerSession", () => {
     const externalWrite = (async () => {
       await externalWriteGate;
       externalWriteStarted = true;
-      await writeCodexAppServerBinding(sessionFile, {
-        threadId: "thread-2",
-        cwd: tempDir,
-        contextEngine: {
-          schemaVersion: 1,
-          engineId: "lossless-claw",
-          policyFingerprint: "policy-2",
-          projection: {
-            schemaVersion: 1,
-            mode: "thread_bootstrap",
-            epoch: "epoch-2",
-          },
-        },
+      const identity = sessionBindingIdentity({
+        sessionId: "session-1",
+        sessionKey: "agent:main:session-1",
       });
+      await testCodexAppServerBindingStore.withLease(identity, async () =>
+        testCodexAppServerBindingStore.withThreadArchiveFence(async () => {
+          await testCodexAppServerBindingStore.mutate(identity, {
+            kind: "set",
+            binding: {
+              threadId: "thread-2",
+              cwd: tempDir,
+              contextEngine: {
+                schemaVersion: 1,
+                engineId: "lossless-claw",
+                policyFingerprint: "policy-2",
+                projection: {
+                  schemaVersion: 1,
+                  mode: "thread_bootstrap",
+                  epoch: "epoch-2",
+                },
+              },
+            },
+          });
+        }),
+      );
       externalWriteFinished = true;
     })();
 
@@ -1599,10 +1663,29 @@ describe("maybeCompactCodexAppServerSession", () => {
     fake.request.mockRejectedValueOnce(new Error("thread/compact/start timed out"));
     fake.closeAndWait.mockResolvedValueOnce(false);
     setCodexAppServerClientFactoryForTest(async () => fake.client);
-    const sessionFile = await writeTestBinding({ threadId: "thread-stuck-stdio" });
+    const identity = sessionBindingIdentity({
+      sessionId: "session-1",
+      sessionKey: "agent:main:session-1",
+    });
+    const bindingStore = createCodexTestBindingStore([
+      {
+        identity,
+        binding: { threadId: "thread-stuck-stdio", cwd: tempDir },
+      },
+    ]);
+    const sessionFile = path.join(tempDir, "session.jsonl");
 
     const outcome = await Promise.race([
-      startCompaction(sessionFile).then(() => "settled" as const),
+      maybeCompactCodexAppServerSession(
+        {
+          sessionId: "session-1",
+          sessionKey: "agent:main:session-1",
+          sessionFile,
+          workspaceDir: tempDir,
+          trigger: "manual",
+        },
+        { bindingStore },
+      ).then(() => "settled" as const),
       new Promise<"pending">((resolve) => {
         setTimeout(() => resolve("pending"), 20);
       }),
@@ -1610,7 +1693,7 @@ describe("maybeCompactCodexAppServerSession", () => {
 
     expect(outcome).toBe("pending");
     expect(fake.closeAndWait).toHaveBeenCalledOnce();
-    await expect(readCodexAppServerBinding(sessionFile)).resolves.toBeDefined();
+    await expect(bindingStore.read(identity)).resolves.toBeDefined();
   });
 
   it("detaches a guarded remote start after releasing the binding lock", async () => {

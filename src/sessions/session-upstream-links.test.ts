@@ -135,4 +135,35 @@ describe("session upstream links", () => {
       }),
     );
   });
+
+  it("conditionally deletes only the expected upstream identity", () => {
+    const database = createDatabaseOptions();
+    const sessionKey = "agent:main:adopted:conditional-delete";
+    upsertLink(sessionKey, "codex", database);
+
+    expect(
+      deleteSessionUpstreamLink(sessionKey, "main", {
+        ...database,
+        expected: {
+          catalogId: "codex",
+          hostId: "gateway:local",
+          threadId: "thread-replaced",
+          upstreamKind: "codex-app-server",
+          upstreamRef: { source: sessionKey },
+        },
+      }),
+    ).toBe(false);
+    expect(
+      deleteSessionUpstreamLink(sessionKey, "main", {
+        ...database,
+        expected: {
+          catalogId: "codex",
+          hostId: "gateway:local",
+          threadId: `thread-${sessionKey}`,
+          upstreamKind: "codex-app-server",
+          upstreamRef: { source: sessionKey },
+        },
+      }),
+    ).toBe(true);
+  });
 });

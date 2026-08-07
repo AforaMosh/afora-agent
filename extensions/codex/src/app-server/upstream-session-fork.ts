@@ -16,11 +16,17 @@ import { assertCodexThreadForkResponse } from "./protocol-validators.js";
 import type { CodexThread, CodexThreadForkResponse } from "./protocol.js";
 import { sessionBindingIdentity, type CodexAppServerBindingStore } from "./session-binding.js";
 import { createImportedCodexSession } from "./session-history-import.js";
+import { assertCodexArchiveDescendantsUnowned } from "./thread-archive-guard.js";
+import { assertNoRetiredLegacyMcpThreadLineage } from "./thread-legacy-lineage.js";
 import {
   listCodexUpstreamTurns,
   precheckCodexUpstreamForkBoundary,
   resolveCodexUpstreamForkBoundary,
 } from "./upstream-fork-boundary.js";
+
+type SessionUpstreamLinkIdentity = NonNullable<
+  NonNullable<Parameters<typeof deleteSessionUpstreamLink>[2]>["expected"]
+>;
 
 function readConnectionFingerprint(ref: unknown): string | undefined {
   if (!isRecord(ref)) {
@@ -53,19 +59,73 @@ export async function forkCodexUpstreamSession(
         throw new Error("Incognito Codex forks require the live pinned app-server client");
       }
       let linked = false;
+      let linkedIdentity: SessionUpstreamLinkIdentity | undefined;
       let bindingIdentity: ReturnType<typeof sessionBindingIdentity> | undefined;
       const compensateFork = async (forkedThreadId: string) => {
-        if (bindingIdentity) {
-          await options.bindingStore
-            .mutate(bindingIdentity, { kind: "clear", threadId: forkedThreadId })
-            .catch(() => undefined);
-        }
-        if (linked) {
-          deleteSessionUpstreamLink(params.targetKey, params.source.agentId);
-        }
-        await control.archiveThread(forkedThreadId).catch(() => undefined);
+        await options.bindingStore.withThreadArchiveFence(async () => {
+          if (bindingIdentity) {
+            await options.bindingStore
+              .mutate(bindingIdentity, { kind: "clear", threadId: forkedThreadId })
+              .catch(() => undefined);
+            let targetBinding;
+            try {
+              targetBinding = await options.bindingStore.read(bindingIdentity);
+            } catch {
+              return;
+            }
+            if (targetBinding?.threadId === forkedThreadId) {
+              return;
+            }
+          }
+          let ownership: Awaited<ReturnType<CodexAppServerBindingStore["inspectThreadOwnership"]>>;
+          try {
+            ownership = await options.bindingStore.inspectThreadOwnership(forkedThreadId);
+          } catch {
+            return;
+          }
+          if (!ownership.hasUnexpectedOwner) {
+            try {
+              await assertCodexArchiveDescendantsUnowned({
+                bindingStore: options.bindingStore,
+                threadId: forkedThreadId,
+                listPage: (request) => control.listDescendantPage(request),
+                rejectAnyDescendant: true,
+                assertDescendantIdle: async (descendantThreadId) => {
+                  const descendant = await control.readThread(descendantThreadId, false);
+                  const status = descendant.status?.type;
+                  if (
+                    descendant.id !== descendantThreadId ||
+                    (status !== "idle" && status !== "notLoaded")
+                  ) {
+                    throw new Error(
+                      `Codex fork descendant is not safely idle: ${descendantThreadId}`,
+                    );
+                  }
+                },
+              });
+            } catch {
+              return;
+            }
+            if (linked) {
+              if (!linkedIdentity) {
+                return;
+              }
+              deleteSessionUpstreamLink(params.targetKey, params.source.agentId, {
+                expected: linkedIdentity,
+              });
+            }
+            await control.archiveThread(forkedThreadId).catch(() => undefined);
+          }
+        });
       };
       const sourceFingerprint = readConnectionFingerprint(params.upstream.ref);
+      const config = options.resolveConfig?.() ?? {};
+      const sourceIdentity = sessionBindingIdentity({
+        agentId: params.source.agentId,
+        sessionId: params.source.sessionId,
+        sessionKey: params.source.sessionKey,
+        config,
+      });
       if (
         params.upstream.kind !== "codex-app-server" ||
         !sourceFingerprint ||
@@ -95,27 +155,36 @@ export async function forkCodexUpstreamSession(
         return { status: "failed", code: precheck.code, message: precheck.message };
       }
       // beforeTurnId is experimental; the initialized shared client explicitly negotiates it.
-      const rawResponse = await control.forkThread({
-        threadId: params.upstream.threadId,
-        beforeTurnId: resolved.boundary.beforeTurnId,
-        ...(incognito ? { ephemeral: true } : {}),
-        excludeTurns: !incognito,
-      });
-      let response: CodexThreadForkResponse;
-      try {
-        response = assertCodexThreadForkResponse(rawResponse);
-      } catch (error) {
-        const orphanThreadId =
-          isRecord(rawResponse.thread) && typeof rawResponse.thread.id === "string"
-            ? rawResponse.thread.id.trim()
-            : "";
-        // A malformed response cannot be trusted to name a NEW thread; never archive an
-        // id that matches the source conversation.
-        if (orphanThreadId && orphanThreadId !== params.upstream.threadId) {
-          await control.archiveThread(orphanThreadId).catch(() => undefined);
+      const rawResponse = await options.bindingStore.withThreadArchiveFence(async () => {
+        const ownership = await options.bindingStore.inspectThreadOwnership(
+          params.upstream.threadId,
+          [sourceIdentity],
+        );
+        if (ownership.hasUnexpectedOwner) {
+          throw new Error("Codex upstream thread is already bound to an OpenClaw session");
         }
-        throw error;
-      }
+        if (ownership.hasLegacyNativeMcpOwner) {
+          throw new Error(
+            "The Codex upstream thread must complete its configured MCP upgrade before it can be forked.",
+          );
+        }
+        const sourceThread = await control.readThread(params.upstream.threadId, false);
+        await assertNoRetiredLegacyMcpThreadLineage({
+          bindingStore: options.bindingStore,
+          threadId: params.upstream.threadId,
+          initialThread: sourceThread,
+          readThread: async (threadId) => await control.readThread(threadId, false),
+        });
+        return await control.forkThread({
+          threadId: params.upstream.threadId,
+          beforeTurnId: resolved.boundary.beforeTurnId,
+          ...(incognito ? { ephemeral: true } : {}),
+          excludeTurns: !incognito,
+        });
+      });
+      // An invalid response cannot prove that its claimed id belongs to the new fork.
+      // Preserve an orphan rather than deleting an unrelated native thread.
+      const response: CodexThreadForkResponse = assertCodexThreadForkResponse(rawResponse);
       const threadId = response.thread.id.trim();
       if (!threadId) {
         throw new Error("Codex thread/fork response did not include a thread id");
@@ -150,7 +219,6 @@ export async function forkCodexUpstreamSession(
         const forkedThread: CodexThread = { ...response.thread, turns: forkedTurns };
         const throughTurnId = codexLastTerminalTurnId(forkedThread, normalizeTurnId) ?? null;
         const marker = codexUpstreamBaseline(forkedThread, normalizeTurnId);
-        const config = options.resolveConfig?.() ?? {};
         const created = await createImportedCodexSession({
           runtime: options.runtime,
           config,
@@ -169,35 +237,46 @@ export async function forkCodexUpstreamSession(
               sessionKey: entry.key,
               config,
             });
-            // Link BEFORE bind: a crash cannot expose a bound session to local-only
-            // rewind/switch while its canonical upstream ownership is missing.
-            linked = upsertSessionUpstreamLink({
-              sessionKey: entry.key,
-              agentId: entry.agentId,
-              catalogId: params.upstream.catalogId,
-              hostId: params.upstream.hostId,
-              threadId,
-              upstreamKind: params.upstream.kind,
-              upstreamRef: { connectionFingerprint, threadId },
-              marker,
-            });
-            if (!linked) {
-              throw new Error("Codex fork link could not be persisted");
-            }
-            const attached = await options.bindingStore.mutate(bindingIdentity, {
-              kind: "set",
-              binding: {
+            await options.bindingStore.withThreadArchiveFence(async () => {
+              const ownership = await options.bindingStore.inspectThreadOwnership(threadId, [
+                bindingIdentity!,
+              ]);
+              if (ownership.hasUnexpectedOwner) {
+                throw new Error("Codex fork was claimed by another OpenClaw session");
+              }
+              // Link BEFORE bind: a crash cannot expose a bound session to local-only
+              // rewind/switch while its canonical upstream ownership is missing.
+              linkedIdentity = {
+                catalogId: params.upstream.catalogId,
+                hostId: params.upstream.hostId,
                 threadId,
-                ...(incognito && clientId ? { clientId } : {}),
-                cwd: forkedThread.cwd ?? "",
-                model: response.model,
-                modelProvider: response.modelProvider ?? undefined,
-                historyCoveredThrough: new Date().toISOString(),
-              },
+                upstreamKind: params.upstream.kind,
+                upstreamRef: { connectionFingerprint, threadId },
+              };
+              linked = upsertSessionUpstreamLink({
+                sessionKey: entry.key,
+                agentId: entry.agentId,
+                ...linkedIdentity,
+                marker,
+              });
+              if (!linked) {
+                throw new Error("Codex fork link could not be persisted");
+              }
+              const attached = await options.bindingStore.mutate(bindingIdentity!, {
+                kind: "set",
+                binding: {
+                  threadId,
+                  ...(incognito && clientId ? { clientId } : {}),
+                  cwd: forkedThread.cwd ?? "",
+                  model: response.model,
+                  modelProvider: response.modelProvider ?? undefined,
+                  historyCoveredThrough: new Date().toISOString(),
+                },
+              });
+              if (!attached) {
+                throw new Error("Codex session binding changed before the fork could be attached");
+              }
             });
-            if (!attached) {
-              throw new Error("Codex session binding changed before the fork could be attached");
-            }
             return { pluginExtensions: entry.entry.pluginExtensions };
           },
         });

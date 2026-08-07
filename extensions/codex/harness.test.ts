@@ -388,6 +388,54 @@ describe("Codex agent harness reset()", () => {
       }),
     ).resolves.toBe(false);
   });
+
+  it.each(
+    (
+      [
+        ["user MCP", { userMcpServersFingerprint: "legacy-user-mcp" }],
+        ["bundled MCP", { mcpServersFingerprint: "legacy-bundled-mcp" }],
+        ["pending retirement", { legacyMcpRetirementThreadId: "thread-predecessor" }],
+      ] as const
+    ).flatMap(([markerName, marker]) =>
+      (["reset", "deleted"] as const).map((reason) => ({ markerName, marker, reason })),
+    ),
+  )(
+    "explains how to finish a $markerName configured MCP upgrade before $reason",
+    async ({ marker, reason }) => {
+      const identity = sessionBindingIdentity({
+        agentId: "worker",
+        sessionId: `session-pending-${reason}`,
+        sessionKey: `agent:worker:pending-${reason}`,
+      });
+      const bindingStore = createCodexTestBindingStore([
+        {
+          identity,
+          binding: {
+            threadId: "thread-successor",
+            cwd: "/repo",
+            dynamicToolsFingerprint: "dynamic-v2",
+            ...marker,
+          },
+        },
+      ]);
+      const harness = createCodexAppServerAgentHarness({ bindingStore });
+
+      await expect(
+        harness.reset?.({
+          agentId: identity.agentId,
+          sessionId: identity.sessionId,
+          sessionKey: identity.sessionKey,
+          reason,
+        }),
+      ).rejects.toThrow(
+        `must complete its configured MCP upgrade in a normal Codex turn before it can ${reason === "deleted" ? "be deleted" : "reset"}`,
+      );
+      await expect(bindingStore.read(identity)).resolves.toMatchObject({
+        threadId: "thread-successor",
+        ...marker,
+      });
+    },
+  );
 });
 
 describe("Codex agent harness dispose()", () => {

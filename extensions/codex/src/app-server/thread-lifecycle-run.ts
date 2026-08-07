@@ -12,6 +12,7 @@ import {
 import {
   assertCodexBindingMayBeReplaced,
   createCodexSessionGenerationSupersededError,
+  hasLegacyCodexNativeMcpBinding,
   normalizeCodexAppServerBindingModelProvider,
   reclaimCurrentCodexSessionGeneration,
   sessionBindingIdentity,
@@ -30,9 +31,12 @@ import {
   areDynamicToolFingerprintsCompatible,
   shouldStartTransientNoToolThread,
 } from "./thread-fingerprints.js";
+import { assertNoRetiredLegacyMcpThreadLineage } from "./thread-legacy-lineage.js";
+import { retireLegacyMcpPredecessor } from "./thread-legacy-mcp-retirement.js";
 import { CodexThreadBindingConflictError } from "./thread-lifecycle-errors.js";
-import { resumeExistingCodexThread, startFreshCodexThread } from "./thread-lifecycle-io.js";
+import { startFreshCodexThread } from "./thread-lifecycle-io.js";
 import { prepareCodexThreadLifecyclePreflight } from "./thread-lifecycle-preflight.js";
+import { resumeExistingCodexThread } from "./thread-lifecycle-resume.js";
 import type {
   CodexAppServerThreadLifecycleBinding,
   CodexStartOrResumeThreadParams,
@@ -78,7 +82,7 @@ export async function startOrResumeThread(
     let binding = await lifecycleTiming.measure("read-binding", () =>
       params.bindingStore.read(bindingIdentity),
     );
-    const initialBoundThreadId = binding?.threadId;
+    let initialBoundThreadId = binding?.threadId;
     const normalizeBindingModelProvider = (
       authProfileId: string | undefined,
       modelProvider: string | undefined,
@@ -111,6 +115,36 @@ export async function startOrResumeThread(
       if (!reclaimed) {
         throw createCodexSessionGenerationSupersededError(bindingIdentity.sessionId);
       }
+      binding = await lifecycleTiming.measure("read-reclaimed-binding", () =>
+        params.bindingStore.read(bindingIdentity),
+      );
+      initialBoundThreadId = binding?.threadId;
+    }
+    if (binding?.legacyMcpRetirementThreadId) {
+      const pendingRetirement = binding;
+      await params.bindingStore.withThreadArchiveFence(async () => {
+        await retireLegacyMcpPredecessor({
+          client: params.client,
+          bindingStore: params.bindingStore,
+          bindingIdentity,
+          threadId: pendingRetirement.legacyMcpRetirementThreadId!,
+          retirementMode:
+            pendingRetirement.connectionScope === "supervision" ? "archive" : "preserve",
+          signal: params.signal,
+        });
+        const completed = await params.bindingStore.mutate(bindingIdentity, {
+          kind: "complete-legacy-mcp-retirement",
+          expectedThreadId: pendingRetirement.threadId,
+          expectedRetirementThreadId: pendingRetirement.legacyMcpRetirementThreadId!,
+        });
+        if (!completed) {
+          throw new CodexThreadBindingConflictError(
+            pendingRetirement.threadId,
+            "recovering legacy MCP thread retirement",
+          );
+        }
+      });
+      binding = { ...pendingRetirement, legacyMcpRetirementThreadId: undefined };
     }
     if (binding?.pendingSupervisionBranch) {
       await releaseRetainedThread(binding.threadId);
@@ -136,55 +170,57 @@ export async function startOrResumeThread(
           nativeSkillIsolation,
         ),
       );
-      return await materializePendingSupervisionBranch({
-        client: params.client,
-        abandonClient:
-          params.abandonClient ?? (() => closeCodexStartupClientBestEffort(params.client)),
-        bindingStore: params.bindingStore,
-        bindingIdentity,
-        binding: pendingBinding,
-        attempt: params.params,
-        cwd: params.cwd,
-        dynamicTools: params.dynamicTools,
-        appServer: params.appServer,
-        developerInstructions: params.developerInstructions,
-        config,
-        nativeCodeModeEnabled: params.nativeCodeModeEnabled,
-        nativeProviderWebSearchSupport: params.nativeProviderWebSearchSupport,
-        nativeCodeModeOnlyEnabled: params.nativeCodeModeOnlyEnabled,
-        webSearchAllowed: params.webSearchAllowed,
-        environmentSelection: params.environmentSelection,
-        provisionalAppIds: pluginThreadConfig?.provisionalAppIds,
-        signal: params.signal,
-        throwIfAborted,
-        lifecycleTiming,
-        normalizeBindingModelProvider,
-        bindingPatch: {
+      return await params.bindingStore.withThreadArchiveFence(() =>
+        materializePendingSupervisionBranch({
+          client: params.client,
+          abandonClient:
+            params.abandonClient ?? (() => closeCodexStartupClientBestEffort(params.client)),
+          bindingStore: params.bindingStore,
+          bindingIdentity,
+          binding: pendingBinding,
+          attempt: params.params,
           cwd: params.cwd,
-          ...(clientId ? { clientId } : {}),
-          // Supervised threads stay on the native user-home connection. Never
-          // persist an outer OpenClaw auth profile onto that private ownership.
-          authProfileId: undefined,
-          preserveNativeModel: true,
-          dynamicToolsFingerprint,
-          dynamicToolsContainDeferred,
-          webSearchThreadConfigFingerprint,
-          nativeSkillIsolationFingerprint,
-          networkProxyProfileName: params.appServer.networkProxy?.profileName,
-          networkProxyConfigFingerprint,
-          nativeHookRelayGeneration: finalConfigPatch.nativeHookRelayGeneration,
-          appServerRuntimeFingerprint: buildCodexAppServerConnectionFingerprint(
-            params.appServer,
-            params.params.agentDir,
-          ),
-          pluginAppsFingerprint: pluginThreadConfig?.fingerprint,
-          pluginAppsInputFingerprint: pluginThreadConfig?.inputFingerprint,
-          pluginAppPolicyContext: pluginThreadConfig?.policyContext,
-          contextEngine: contextEngineBinding,
-          environmentSelectionFingerprint,
-          conversationSourceTransferComplete: true,
-        },
-      });
+          dynamicTools: params.dynamicTools,
+          appServer: params.appServer,
+          developerInstructions: params.developerInstructions,
+          config,
+          nativeCodeModeEnabled: params.nativeCodeModeEnabled,
+          nativeProviderWebSearchSupport: params.nativeProviderWebSearchSupport,
+          nativeCodeModeOnlyEnabled: params.nativeCodeModeOnlyEnabled,
+          webSearchAllowed: params.webSearchAllowed,
+          environmentSelection: params.environmentSelection,
+          provisionalAppIds: pluginThreadConfig?.provisionalAppIds,
+          signal: params.signal,
+          throwIfAborted,
+          lifecycleTiming,
+          normalizeBindingModelProvider,
+          bindingPatch: {
+            cwd: params.cwd,
+            ...(clientId ? { clientId } : {}),
+            // Supervised threads stay on the native user-home connection. Never
+            // persist an outer OpenClaw auth profile onto that private ownership.
+            authProfileId: undefined,
+            preserveNativeModel: true,
+            dynamicToolsFingerprint,
+            dynamicToolsContainDeferred,
+            webSearchThreadConfigFingerprint,
+            nativeSkillIsolationFingerprint,
+            networkProxyProfileName: params.appServer.networkProxy?.profileName,
+            networkProxyConfigFingerprint,
+            nativeHookRelayGeneration: finalConfigPatch.nativeHookRelayGeneration,
+            appServerRuntimeFingerprint: buildCodexAppServerConnectionFingerprint(
+              params.appServer,
+              params.params.agentDir,
+            ),
+            pluginAppsFingerprint: pluginThreadConfig?.fingerprint,
+            pluginAppsInputFingerprint: pluginThreadConfig?.inputFingerprint,
+            pluginAppPolicyContext: pluginThreadConfig?.policyContext,
+            contextEngine: contextEngineBinding,
+            environmentSelectionFingerprint,
+            conversationSourceTransferComplete: true,
+          },
+        }),
+      );
     }
     const clearCurrentBinding = async (operation: string) => {
       const current = binding;
@@ -201,18 +237,38 @@ export async function startOrResumeThread(
       }
       binding = undefined;
     };
-    if (
-      binding?.threadId &&
-      (binding.userMcpServersFingerprint !== undefined ||
-        binding.mcpServersFingerprint !== undefined)
-    ) {
-      // Loaded Codex threads ignore changed resume config. Never rejoin a
-      // shipped thread that may still own OpenClaw-configured native MCP.
-      embeddedAgentLog.debug(
-        "codex app-server legacy native MCP binding found; starting a new thread",
-        { threadId: binding.threadId },
-      );
-      await clearCurrentBinding("rotating a legacy native MCP thread binding");
+    let supervisionLegacyBinding: CodexAppServerThreadBinding | undefined;
+    let ordinaryLegacyBinding: CodexAppServerThreadBinding | undefined;
+    if (binding?.threadId && hasLegacyCodexNativeMcpBinding(binding)) {
+      if (binding.connectionScope === "supervision") {
+        // Resume cannot install dynamic tools, and this private owner cannot be
+        // cleared. Start a successor, then CAS only its bound thread id.
+        supervisionLegacyBinding = binding;
+        binding = undefined;
+      } else {
+        // Loaded Codex threads ignore changed resume config. Never rejoin a
+        // shipped thread that may still own OpenClaw-configured native MCP.
+        embeddedAgentLog.debug(
+          "codex app-server legacy native MCP binding found; starting a new thread",
+          { threadId: binding.threadId },
+        );
+        ordinaryLegacyBinding = binding;
+        binding = undefined;
+      }
+    }
+    if (binding?.threadId) {
+      await assertNoRetiredLegacyMcpThreadLineage({
+        bindingStore: params.bindingStore,
+        threadId: binding.threadId,
+        readThread: async (threadId) =>
+          (
+            await params.client.request(
+              "thread/read",
+              { threadId, includeTurns: false },
+              { signal: params.signal },
+            )
+          ).thread,
+      });
     }
     if (
       binding?.threadId &&
@@ -285,11 +341,40 @@ export async function startOrResumeThread(
       config: params.params.config,
     });
     const startModelProvider = startModelSelection.modelProvider;
+    const transientDelegationRestriction = params.params.delegationCapability === "report_only";
+    const persistentWebSearchRestriction =
+      params.webSearchAllowed === false && params.persistentWebSearchAllowed === false;
+    const transientNativeToolRestriction =
+      params.nativeCodeModeEnabled === false && !persistentWebSearchRestriction;
+    const transientWebSearchRestriction = isTransientWebSearchRestriction(params);
+    // Restricted or uncertain turns may use a safe successor, but must not
+    // make their reduced authority the canonical supervised session state.
+    const preserveLegacySupervisionBinding = Boolean(
+      supervisionLegacyBinding &&
+      (ringZeroActive ||
+        transientDelegationRestriction ||
+        (!ringZeroActive && params.nativeProviderWebSearchSupport === "unknown") ||
+        (!ringZeroActive && transientNativeToolRestriction) ||
+        (!ringZeroActive &&
+          supervisionLegacyBinding.webSearchThreadConfigFingerprint !==
+            webSearchThreadConfigFingerprint &&
+          transientWebSearchRestriction) ||
+        (supervisionLegacyBinding.dynamicToolsFingerprint &&
+          !areDynamicToolFingerprintsCompatible(
+            supervisionLegacyBinding.dynamicToolsFingerprint,
+            dynamicToolsFingerprint,
+            legacyDynamicToolsFingerprint,
+          ) &&
+          shouldStartTransientNoToolThread({
+            previous: supervisionLegacyBinding.dynamicToolsFingerprint,
+            nextHasDynamicTools: params.dynamicTools.length > 0,
+          }))),
+    );
     // Capability read failures use managed search for this turn but must not
     // create a binding that later looks like a confirmed provider-policy change.
-    const transientDelegationRestriction = params.params.delegationCapability === "report_only";
     let preserveExistingBinding =
       transientDelegationRestriction ||
+      preserveLegacySupervisionBinding ||
       (!ringZeroActive &&
         params.nativeProviderWebSearchSupport === "unknown" &&
         !binding?.threadId);
@@ -298,11 +383,6 @@ export async function startOrResumeThread(
     const webSearchBindingChanged =
       binding?.threadId &&
       binding.webSearchThreadConfigFingerprint !== webSearchThreadConfigFingerprint;
-    const persistentWebSearchRestriction =
-      params.webSearchAllowed === false && params.persistentWebSearchAllowed === false;
-    const transientNativeToolRestriction =
-      params.nativeCodeModeEnabled === false && !persistentWebSearchRestriction;
-    const transientWebSearchRestriction = isTransientWebSearchRestriction(params);
     // A transient native-tool restriction must not replace a legacy binding just
     // because that binding predates search fingerprints. Explicit persistent
     // search denial still rotates first so the restricted thread can persist.
@@ -575,10 +655,7 @@ export async function startOrResumeThread(
       }
     }
 
-    if (initialBoundThreadId) {
-      await releaseRetainedThread(initialBoundThreadId);
-    }
-    return await startFreshCodexThread(params, {
+    const startContext = {
       bindingIdentity,
       startModelSelection,
       startModelProvider,
@@ -601,6 +678,42 @@ export async function startOrResumeThread(
       prebuiltPluginThreadConfig,
       preserveExistingBinding,
       rotatedContextEngineBinding,
-    });
+      supervisionLegacyBinding,
+      ordinaryLegacyBinding,
+    };
+    if (supervisionLegacyBinding) {
+      // Reserve through status verification and the successor CAS. Release it
+      // before startup reserves the new thread returned below.
+      const reservation = params.reserveResumeThread?.(supervisionLegacyBinding.threadId);
+      try {
+        const response = await params.client.request(
+          "thread/read",
+          { threadId: supervisionLegacyBinding.threadId, includeTurns: false },
+          { signal: params.signal },
+        );
+        if (response.thread.id !== supervisionLegacyBinding.threadId) {
+          throw new Error("Codex returned a different supervised thread during MCP migration");
+        }
+        const status = response.thread.status?.type;
+        if (status !== "idle" && status !== "notLoaded") {
+          throw new Error(
+            status === "active"
+              ? "Codex supervised thread is active; wait for its turn to finish, then retry"
+              : "Codex supervised thread is unavailable for the configured MCP upgrade; retry after it becomes idle",
+          );
+        }
+        throwIfAborted();
+        if (initialBoundThreadId) {
+          await releaseRetainedThread(initialBoundThreadId);
+        }
+        return await startFreshCodexThread(params, startContext);
+      } finally {
+        reservation?.release();
+      }
+    }
+    if (initialBoundThreadId) {
+      await releaseRetainedThread(initialBoundThreadId);
+    }
+    return await startFreshCodexThread(params, startContext);
   });
 }

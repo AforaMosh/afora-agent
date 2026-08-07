@@ -243,8 +243,11 @@ export function createCodexAppServerAgentHarness(options: {
     },
     reset: async (params) => {
       if (params.sessionId) {
-        const { reclaimCurrentCodexSessionGeneration, sessionBindingIdentity } =
-          await import("./src/app-server/session-binding.js");
+        const {
+          hasLegacyCodexNativeMcpBinding,
+          reclaimCurrentCodexSessionGeneration,
+          sessionBindingIdentity,
+        } = await import("./src/app-server/session-binding.js");
         const identity = sessionBindingIdentity({
           agentId: params.agentId,
           sessionId: params.sessionId,
@@ -266,6 +269,12 @@ export function createCodexAppServerAgentHarness(options: {
           }
         }
         if (reset === "conflict") {
+          const current = await options.bindingStore.read(identity);
+          if (hasLegacyCodexNativeMcpBinding(current)) {
+            throw new Error(
+              `Codex session ${params.sessionId} must complete its configured MCP upgrade in a normal Codex turn before it can ${params.reason === "deleted" ? "be deleted" : "reset"}`,
+            );
+          }
           throw new Error(
             `Codex binding generation changed before session ${params.sessionId} could reset`,
           );

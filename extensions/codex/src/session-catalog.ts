@@ -45,6 +45,7 @@ import {
   releaseLeasedSharedCodexAppServerClient,
 } from "./app-server/shared-client.js";
 import { assertCodexArchiveDescendantsUnowned } from "./app-server/thread-archive-guard.js";
+import { assertNoRetiredLegacyMcpThreadLineage } from "./app-server/thread-legacy-lineage.js";
 import { codexControlRequest } from "./command-rpc.js";
 import { resolveCodexCatalogCreateSession } from "./session-catalog-create.js";
 import {
@@ -1058,6 +1059,7 @@ async function createOrReuseAdoptedSession(params: {
   api: OpenClawPluginApi;
   bindingStore: CodexAppServerBindingStore;
   config: OpenClawConfig;
+  control: CodexSessionCatalogControl;
   sourceThread: CodexThread;
   connectionFingerprint: string;
 }): Promise<AdoptedSessionEntry> {
@@ -1098,24 +1100,52 @@ async function createOrReuseAdoptedSession(params: {
         },
       },
       afterImport: async (entry) => {
-        createdBindingIdentity = sessionBindingIdentity({
+        const adoptionIdentity = sessionBindingIdentity({
           sessionId: entry.sessionId,
           sessionKey: entry.key,
           config: params.config,
         });
+        createdBindingIdentity = adoptionIdentity;
         createdPendingBinding = {
           sourceThreadId: params.sourceThread.id,
           connectionFingerprint: params.connectionFingerprint,
           ...(pendingLastTurnId ? { lastTurnId: pendingLastTurnId } : {}),
         };
-        await ensurePendingAdoptionBinding({
-          bindingStore: params.bindingStore,
-          config: params.config,
-          identity: createdBindingIdentity,
-          sourceThreadId: params.sourceThread.id,
-          connectionFingerprint: params.connectionFingerprint,
-          cwd: spawnedCwd ?? "",
-          ...(pendingLastTurnId ? { lastTurnId: pendingLastTurnId } : {}),
+        await params.bindingStore.withThreadArchiveFence(async () => {
+          await requireCatalogEligibleThread(params.control, params.sourceThread.id);
+          const currentSource = await params.control.readThread(params.sourceThread.id, false);
+          if (currentSource.id !== params.sourceThread.id) {
+            throw new Error("Codex app-server returned a different thread than requested");
+          }
+          if (currentSource.status?.type !== "notLoaded") {
+            requireIdleThread(currentSource, "continue");
+          }
+          await assertNoRetiredLegacyMcpThreadLineage({
+            bindingStore: params.bindingStore,
+            threadId: currentSource.id,
+            initialThread: currentSource,
+            readThread: async (threadId) => await params.control.readThread(threadId, false),
+          });
+          if (
+            (
+              await params.bindingStore.inspectThreadOwnership(params.sourceThread.id, [
+                adoptionIdentity,
+              ])
+            ).hasUnexpectedOwner
+          ) {
+            throw new CatalogParamsError(
+              "Codex thread is already bound to another OpenClaw session.",
+            );
+          }
+          await ensurePendingAdoptionBinding({
+            bindingStore: params.bindingStore,
+            config: params.config,
+            identity: adoptionIdentity,
+            sourceThreadId: params.sourceThread.id,
+            connectionFingerprint: params.connectionFingerprint,
+            cwd: spawnedCwd ?? "",
+            ...(pendingLastTurnId ? { lastTurnId: pendingLastTurnId } : {}),
+          });
         });
         return {
           pluginExtensions: {
@@ -1235,6 +1265,7 @@ async function continueLocalCodexSessionInner(params: {
     api: params.api,
     bindingStore: params.bindingStore,
     config: params.config,
+    control: params.control,
     sourceThread,
     connectionFingerprint,
   });
@@ -1342,7 +1373,10 @@ async function archiveLocalCodexSession(params: {
             throw new Error("Codex app-server returned a different thread than requested");
           }
           requireIdleThread(thread, "archive");
-          if (await params.bindingStore.hasOtherThreadOwner(params.threadId)) {
+          if (
+            (await params.bindingStore.inspectThreadOwnership(params.threadId, [], true))
+              .hasUnexpectedOwner
+          ) {
             throw new CatalogParamsError(
               "Codex session cannot be archived while it is attached to an OpenClaw session",
             );

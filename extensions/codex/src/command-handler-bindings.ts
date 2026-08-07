@@ -11,10 +11,15 @@ import { assertCodexThreadResumeResponse } from "./app-server/protocol-validator
 import {
   assertCodexBindingMayBeReplaced,
   createCodexSessionGenerationSupersededError,
+  hasLegacyCodexNativeMcpBinding,
   normalizeCodexAppServerBindingModelProvider,
   reclaimCurrentCodexSessionGeneration,
   sessionBindingIdentity,
 } from "./app-server/session-binding.js";
+import {
+  assertCodexThreadReadResult,
+  assertNoRetiredLegacyMcpThreadLineage,
+} from "./app-server/thread-legacy-lineage.js";
 import { formatCodexDisplayText, formatThreads } from "./command-formatters.js";
 import {
   parseBindArgs,
@@ -277,63 +282,90 @@ export async function resumeThread(
     }
     const currentBinding = await deps.bindingStore.read(identity);
     assertCodexBindingMayBeReplaced(currentBinding, "attaching a different resumed thread");
-    const authProfileId = resolveCodexAppServerAuthProfileIdForAgent({
-      authProfileId: currentBinding?.authProfileId,
-      agentDir: scope.agentDir,
-      config: ctx.config,
-    });
-    const response = assertCodexThreadResumeResponse(
-      await deps.codexControlRequest(
-        pluginConfig,
-        CODEX_CONTROL_METHODS.resumeThread,
-        {
-          threadId: normalizedThreadId,
-          excludeTurns: true,
-        },
-        {
-          config: ctx.config,
-          agentDir: scope.agentDir,
-          authProfileId,
-          sessionKey: ctx.sessionKey,
-          sessionId: ctx.sessionId,
-        },
-      ),
-    );
-    const effectiveThreadId = response.thread.id;
-    if (effectiveThreadId !== normalizedThreadId) {
-      throw new Error(
-        `Codex thread/resume returned ${effectiveThreadId} for ${normalizedThreadId}`,
-      );
-    }
-    const resumedCwd = response.thread.cwd;
-    if (typeof resumedCwd !== "string") {
-      throw new Error(`Codex thread/resume returned no cwd for ${normalizedThreadId}`);
-    }
-    const modelProvider = normalizeCodexAppServerBindingModelProvider({
-      authProfileId,
-      modelProvider: response.modelProvider ?? undefined,
-      agentDir: scope.agentDir,
-      config: ctx.config,
-    });
-    const bindingBeforeCommit = await deps.bindingStore.read(identity);
-    assertCodexBindingMayBeReplaced(bindingBeforeCommit, "committing a different resumed thread");
-    const committed = await deps.bindingStore.mutate(identity, {
-      kind: "set",
-      binding: {
-        threadId: effectiveThreadId,
-        cwd: resumedCwd,
+    return await deps.bindingStore.withThreadArchiveFence(async () => {
+      const ownership = await deps.bindingStore.inspectThreadOwnership(normalizedThreadId, [
+        identity,
+      ]);
+      if (ownership.hasUnexpectedOwner) {
+        throw new Error("Codex thread is already bound to another OpenClaw session");
+      }
+      if (hasLegacyCodexNativeMcpBinding(currentBinding)) {
+        throw new Error(
+          "This Codex thread must complete its configured MCP upgrade in a normal Codex turn before it can be resumed manually.",
+        );
+      }
+      const authProfileId = resolveCodexAppServerAuthProfileIdForAgent({
+        authProfileId: currentBinding?.authProfileId,
+        agentDir: scope.agentDir,
+        config: ctx.config,
+      });
+      const controlOptions = {
+        config: ctx.config,
+        agentDir: scope.agentDir,
         authProfileId,
-        model: response.model,
-        modelProvider,
-        historyCoveredThrough: new Date().toISOString(),
-      },
+        sessionKey: ctx.sessionKey,
+        sessionId: ctx.sessionId,
+      };
+      await assertNoRetiredLegacyMcpThreadLineage({
+        bindingStore: deps.bindingStore,
+        threadId: normalizedThreadId,
+        readThread: async (threadId) =>
+          assertCodexThreadReadResult(
+            await deps.codexControlRequest(
+              pluginConfig,
+              CODEX_CONTROL_METHODS.readThread,
+              { threadId, includeTurns: false },
+              controlOptions,
+            ),
+          ),
+      });
+      const response = assertCodexThreadResumeResponse(
+        await deps.codexControlRequest(
+          pluginConfig,
+          CODEX_CONTROL_METHODS.resumeThread,
+          {
+            threadId: normalizedThreadId,
+            excludeTurns: true,
+          },
+          controlOptions,
+        ),
+      );
+      const effectiveThreadId = response.thread.id;
+      if (effectiveThreadId !== normalizedThreadId) {
+        throw new Error(
+          `Codex thread/resume returned ${effectiveThreadId} for ${normalizedThreadId}`,
+        );
+      }
+      const resumedCwd = response.thread.cwd;
+      if (typeof resumedCwd !== "string") {
+        throw new Error(`Codex thread/resume returned no cwd for ${normalizedThreadId}`);
+      }
+      const modelProvider = normalizeCodexAppServerBindingModelProvider({
+        authProfileId,
+        modelProvider: response.modelProvider ?? undefined,
+        agentDir: scope.agentDir,
+        config: ctx.config,
+      });
+      const bindingBeforeCommit = await deps.bindingStore.read(identity);
+      assertCodexBindingMayBeReplaced(bindingBeforeCommit, "committing a different resumed thread");
+      const committed = await deps.bindingStore.mutate(identity, {
+        kind: "set",
+        binding: {
+          threadId: effectiveThreadId,
+          cwd: resumedCwd,
+          authProfileId,
+          model: response.model,
+          modelProvider,
+          historyCoveredThrough: new Date().toISOString(),
+        },
+      });
+      if (!committed) {
+        throw new Error("Codex thread binding changed while attaching the resumed thread.");
+      }
+      return `Attached this OpenClaw session to Codex thread ${formatCodexDisplayText(
+        effectiveThreadId,
+      )}.`;
     });
-    if (!committed) {
-      throw new Error("Codex thread binding changed while attaching the resumed thread.");
-    }
-    return `Attached this OpenClaw session to Codex thread ${formatCodexDisplayText(
-      effectiveThreadId,
-    )}.`;
   });
 }
 

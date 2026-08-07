@@ -10,6 +10,7 @@ import {
   buildCodexSupervisionTestConnectionFingerprint,
   readCodexAppServerBinding,
   resetCodexTestBindingStore,
+  seedRetiredLegacyMcpThread,
   testCodexAppServerBindingStore,
   writeCodexAppServerBinding,
 } from "./app-server/session-binding.test-helpers.js";
@@ -182,6 +183,69 @@ describe("codex conversation controls", () => {
     );
   });
 
+  it("blocks active-turn steering on a direct legacy configured MCP binding", async () => {
+    const sessionFile = path.join(tempDir, "legacy-steer.jsonl");
+    const target = controlTarget(sessionFile);
+    await writeCodexAppServerBinding(sessionFile, {
+      threadId: "thread-legacy",
+      cwd: tempDir,
+      userMcpServersFingerprint: "legacy-mcp",
+    });
+    const request = vi.fn();
+    const stopTracking = trackCodexConversationActiveTurn({
+      identity: target.identity,
+      client: controlClient(request) as never,
+      threadId: "thread-legacy",
+      turnId: "turn-1",
+    });
+
+    try {
+      await expect(
+        steerCodexConversationTurn({ ...target, message: "keep working" }),
+      ).rejects.toThrow("complete its configured MCP upgrade");
+      expect(request).not.toHaveBeenCalled();
+    } finally {
+      stopTracking();
+    }
+  });
+
+  it("blocks active-turn steering on a descendant of retired configured MCP authority", async () => {
+    const sessionFile = path.join(tempDir, "retired-descendant-steer.jsonl");
+    const target = controlTarget(sessionFile);
+    await writeCodexAppServerBinding(sessionFile, {
+      threadId: "thread-child",
+      cwd: tempDir,
+    });
+    await seedRetiredLegacyMcpThread("thread-retired-root");
+    const request = vi.fn(async (method: string, params: { threadId: string }) => {
+      if (method !== "thread/read") {
+        throw new Error(`unexpected method: ${method}`);
+      }
+      return {
+        thread: {
+          id: params.threadId,
+          parentThreadId: "thread-retired-root",
+          status: { type: "active" },
+        },
+      };
+    });
+    const stopTracking = trackCodexConversationActiveTurn({
+      identity: target.identity,
+      client: controlClient(request) as never,
+      threadId: "thread-child",
+      turnId: "turn-1",
+    });
+
+    try {
+      await expect(
+        steerCodexConversationTurn({ ...target, message: "keep working" }),
+      ).rejects.toThrow("descends from retired configured MCP authority");
+      expect(request.mock.calls.map(([method]) => method)).toEqual(["thread/read"]);
+    } finally {
+      stopTracking();
+    }
+  });
+
   it("refuses to stop or steer when the active turn no longer matches the private binding", async () => {
     const sessionFile = path.join(tempDir, "session.jsonl");
     const target = controlTarget(sessionFile);
@@ -245,6 +309,59 @@ describe("codex conversation controls", () => {
       }),
     ).rejects.toThrow(MODEL_SELECTION_LOCKED_MESSAGE);
     expect(sharedClientMocks.getSharedCodexAppServerClient).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["user MCP", { userMcpServersFingerprint: "legacy-user-mcp" }],
+    ["bundled MCP", { mcpServersFingerprint: "legacy-bundled-mcp" }],
+    ["pending retirement", { legacyMcpRetirementThreadId: "thread-predecessor" }],
+  ] as const)("rejects model changes for a %s binding before any resume", async (_name, legacy) => {
+    const sessionFile = path.join(tempDir, `legacy-${_name.replaceAll(" ", "-")}.jsonl`);
+    await writeCodexAppServerBinding(sessionFile, {
+      threadId: "thread-successor",
+      cwd: tempDir,
+      model: "gpt-5.4",
+      modelProvider: "openai",
+      ...legacy,
+    });
+
+    await expect(setCodexConversationModel({ sessionFile, model: "gpt-5.5" })).rejects.toThrow(
+      "complete its configured MCP upgrade in a normal Codex turn",
+    );
+    expect(sharedClientMocks.getSharedCodexAppServerClient).not.toHaveBeenCalled();
+  });
+
+  it("rejects model changes for a descendant of retired configured MCP authority", async () => {
+    const sessionFile = path.join(tempDir, "retired-descendant.jsonl");
+    await writeCodexAppServerBinding(sessionFile, {
+      threadId: "thread-child",
+      cwd: tempDir,
+      model: "gpt-5.4",
+      modelProvider: "openai",
+    });
+    await seedRetiredLegacyMcpThread("thread-retired-root");
+    const request = vi.fn(async (method: string, params: { threadId: string }) => {
+      if (method !== "thread/read") {
+        throw new Error(`unexpected method: ${method}`);
+      }
+      return {
+        thread: {
+          id: params.threadId,
+          parentThreadId: "thread-retired-root",
+          status: { type: "idle" },
+        },
+      };
+    });
+    sharedClientMocks.getSharedCodexAppServerClient.mockResolvedValue(controlClient(request));
+
+    await expect(setCodexConversationModel({ sessionFile, model: "gpt-5.5" })).rejects.toThrow(
+      "descends from retired configured MCP authority",
+    );
+    expect(request.mock.calls.map(([method]) => method)).toEqual(["thread/read"]);
+    await expect(readCodexAppServerBinding(sessionFile)).resolves.toMatchObject({
+      threadId: "thread-child",
+      model: "gpt-5.4",
+    });
   });
 
   it("does not persist public OpenAI provider after model changes on native auth bindings", async () => {

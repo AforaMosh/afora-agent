@@ -32,6 +32,11 @@ export type SessionUpstreamLink = {
   updatedAt: number;
 };
 
+type SessionUpstreamLinkIdentity = Pick<
+  SessionUpstreamLink,
+  "catalogId" | "hostId" | "threadId" | "upstreamKind" | "upstreamRef"
+>;
+
 const log = createSubsystemLogger("sessions/upstream-links");
 
 function getSessionUpstreamKysely(db: DatabaseSync) {
@@ -206,20 +211,29 @@ export function updateSessionUpstreamLinkMarker(
 export function deleteSessionUpstreamLink(
   sessionKey: string,
   agentId: string,
-  options: OpenClawStateDatabaseOptions = {},
-): void {
+  options: OpenClawStateDatabaseOptions & { expected?: SessionUpstreamLinkIdentity } = {},
+): boolean {
   try {
+    let deleted = false;
     runOpenClawStateWriteTransaction(({ db }) => {
-      executeSqliteQuerySync(
-        db,
-        getSessionUpstreamKysely(db)
-          .deleteFrom("session_upstream_links")
-          .where("session_key", "=", sessionKey)
-          .where("agent_id", "=", agentId),
-      );
+      let query = getSessionUpstreamKysely(db)
+        .deleteFrom("session_upstream_links")
+        .where("session_key", "=", sessionKey)
+        .where("agent_id", "=", agentId);
+      if (options.expected) {
+        query = query
+          .where("catalog_id", "=", options.expected.catalogId)
+          .where("host_id", "=", options.expected.hostId)
+          .where("thread_id", "=", options.expected.threadId)
+          .where("upstream_kind", "=", options.expected.upstreamKind)
+          .where("upstream_ref_json", "=", JSON.stringify(options.expected.upstreamRef));
+      }
+      deleted = executeSqliteQuerySync(db, query).numAffectedRows === 1n;
     }, options);
+    return deleted;
   } catch (error) {
     log.warn(`failed to delete session upstream link: ${String(error)}`);
+    return false;
   }
 }
 

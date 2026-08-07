@@ -6,6 +6,7 @@ import openAIPlugin from "../openai/index.js";
 import { createCodexAppServerAgentHarness } from "./harness.js";
 import plugin from "./index.js";
 import {
+  bindingStoreKey,
   createCodexAppServerBindingStore,
   sessionBindingIdentity,
 } from "./src/app-server/session-binding.js";
@@ -716,6 +717,61 @@ describe("codex plugin", () => {
       { agentId: "worker", sessionId: "keyless-1" },
     );
     await expect(bindingStore.read(keyless)).resolves.toBeUndefined();
+  });
+
+  it("preserves configured MCP upgrade provenance across terminal session_end hooks", async () => {
+    const stateStore = createCodexTestBindingStateStore();
+    const bindingStore = createCodexAppServerBindingStore(stateStore);
+    const on = vi.fn();
+    plugin.register(
+      createTestPluginApi({
+        id: "codex",
+        name: "Codex",
+        source: "test",
+        config: {},
+        pluginConfig: {},
+        runtime: createCodexTestRuntime(undefined, stateStore),
+        on,
+      }),
+    );
+    const sessionEnd = on.mock.calls.find(([name]) => name === "session_end")?.[1] as
+      | ((
+          event: { sessionId: string; sessionKey?: string; reason?: string },
+          ctx: { agentId?: string; sessionId: string; sessionKey?: string },
+        ) => Promise<void>)
+      | undefined;
+    if (!sessionEnd) {
+      throw new Error("missing Codex session_end hook");
+    }
+    const markers = [
+      { userMcpServersFingerprint: "legacy-user-mcp" },
+      { mcpServersFingerprint: "legacy-bundled-mcp" },
+      { legacyMcpRetirementThreadId: "thread-predecessor" },
+    ];
+
+    for (const [markerIndex, marker] of markers.entries()) {
+      for (const reason of ["idle", "daily", "deleted"] as const) {
+        const sessionId = `session-${markerIndex}-${reason}`;
+        const sessionKey = `agent:worker:${sessionId}`;
+        const identity = sessionBindingIdentity({ agentId: "worker", sessionId, sessionKey });
+        stateStore.register(bindingStoreKey(identity), {
+          version: 1,
+          state: "active",
+          sessionId,
+          binding: { threadId: `thread-${markerIndex}-${reason}`, cwd: "/repo", ...marker },
+        });
+
+        await sessionEnd(
+          { sessionId, sessionKey, reason },
+          { agentId: "worker", sessionId, sessionKey },
+        );
+
+        await expect(bindingStore.read(identity)).resolves.toMatchObject({
+          threadId: `thread-${markerIndex}-${reason}`,
+          ...marker,
+        });
+      }
+    }
   });
 
   it("adopts compaction successors before delayed lifecycle cleanup", async () => {

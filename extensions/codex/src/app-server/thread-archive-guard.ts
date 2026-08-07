@@ -33,6 +33,53 @@ export async function assertCodexArchiveDescendantsUnowned(params: {
   threadId: string;
   listPage: (request: CodexThreadListParams) => Promise<unknown>;
   assertDescendantIdle: (threadId: string) => Promise<void>;
+  rejectAnyDescendant?: boolean;
+}): Promise<void> {
+  await visitCodexThreadDescendants({
+    threadId: params.threadId,
+    listPage: params.listPage,
+    archived: false,
+    visit: async (descendantThreadId) => {
+      if (params.rejectAnyDescendant) {
+        throw new Error(
+          `cannot automatically retire a Codex thread with spawned descendant ${descendantThreadId}; archive that descendant and any other descendants first, then retry the normal Codex turn`,
+        );
+      }
+      await params.assertDescendantIdle(descendantThreadId);
+      if (
+        (await params.bindingStore.inspectThreadOwnership(descendantThreadId)).hasUnexpectedOwner
+      ) {
+        throw new Error(
+          "cannot archive a Codex thread while a spawned descendant is owned by an OpenClaw session",
+        );
+      }
+    },
+  });
+}
+
+/** Prevents a cascading Codex delete from removing a user-created child thread. */
+export async function assertCodexThreadHasNoDescendants(params: {
+  threadId: string;
+  listPage: (request: CodexThreadListParams) => Promise<unknown>;
+}): Promise<void> {
+  for (const archived of [false, true]) {
+    await visitCodexThreadDescendants({
+      ...params,
+      archived,
+      visit: async (descendantThreadId) => {
+        throw new Error(
+          `cannot automatically delete a Codex thread with spawned descendant ${descendantThreadId}`,
+        );
+      },
+    });
+  }
+}
+
+async function visitCodexThreadDescendants(params: {
+  threadId: string;
+  listPage: (request: CodexThreadListParams) => Promise<unknown>;
+  archived: boolean;
+  visit: (threadId: string) => Promise<void>;
 }): Promise<void> {
   const ancestorThreadId = readBoundedId(params.threadId);
   if (!ancestorThreadId) {
@@ -46,7 +93,7 @@ export async function assertCodexArchiveDescendantsUnowned(params: {
   for (let pageIndex = 0; pageIndex < MAX_DESCENDANT_PAGES; pageIndex += 1) {
     const response = await params.listPage({
       ancestorThreadId,
-      archived: false,
+      archived: params.archived,
       limit: DESCENDANT_PAGE_LIMIT,
       sortKey: "created_at",
       sortDirection: "desc",
@@ -72,12 +119,7 @@ export async function assertCodexArchiveDescendantsUnowned(params: {
         throw new Error("Codex app-server returned a cyclic descendant thread list");
       }
       seenThreadIds.add(descendantThreadId);
-      await params.assertDescendantIdle(descendantThreadId);
-      if (await params.bindingStore.hasOtherThreadOwner(descendantThreadId)) {
-        throw new Error(
-          "cannot archive a Codex thread while a spawned descendant is owned by an OpenClaw session",
-        );
-      }
+      await params.visit(descendantThreadId);
     }
 
     const nextCursor = readNextCursor(response.nextCursor);

@@ -81,6 +81,30 @@ change that persisted pair, and the initial snapshot can produce Codex's normal
 model-difference warning; the outer OpenClaw model and fallback chain never
 substitute for either.
 
+### Configured MCP ownership upgrades
+
+OpenClaw now owns configured MCP servers for Codex harness turns and exposes
+their allowed tools as OpenClaw dynamic tools. A thread created by an older
+OpenClaw release may still contain the retired Codex-native MCP configuration.
+On its next normal turn, OpenClaw starts a replacement thread with the current
+dynamic tool surface before it retires the old binding.
+
+For an ordinary user-home Codex thread, OpenClaw preserves the old native
+thread and its history. The replacement becomes the OpenClaw session thread,
+while the predecessor is marked retired and is not resumed, forked, or
+unarchived by OpenClaw. Spawned descendants inherit the same restriction. You
+may explicitly archive the predecessor after verifying that you no longer need
+it. For a supervised thread, OpenClaw archives the predecessor automatically
+only after a fresh idle check proves that it has no spawned descendants.
+
+If retirement cannot finish, OpenClaw keeps the safe replacement and retries
+retirement on the next normal turn. Reset and delete remain blocked until that
+retry completes, and the error explains the required recovery. If the error
+says that the thread has a duplicate file-keyed ownership alias, run
+`openclaw doctor --fix`, then retry the normal turn. Doctor removes an alias
+only when it exactly matches one unambiguous canonical session owner; ambiguous
+rows are preserved for operator review.
+
 ## Supervision and safe continuation
 
 Codex supervision is an opt-in capability of the same `codex` plugin. It discovers

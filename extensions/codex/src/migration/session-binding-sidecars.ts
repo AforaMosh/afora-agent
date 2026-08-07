@@ -96,6 +96,14 @@ type MigratedBindingRow =
       retired?: true;
     };
 
+type MigratedBindingNamespaceRow =
+  | MigratedBindingRow
+  | {
+      version: 1;
+      state: "retired-legacy-mcp-thread";
+      threadId: string;
+    };
+
 async function collectSessionSurfaces(params: MigrationEnvironment): Promise<SessionSurface[]> {
   const surfaces = new Map<string, SessionSurface>();
   const stateRoot = await canonicalPathFromExistingAncestor(params.stateDir);
@@ -440,7 +448,7 @@ async function migrateSource(
   source: LegacyBindingSource,
   candidates: LegacyBindingOwner[],
   params: MigrationParams,
-  store: PluginStateKeyedStore<MigratedBindingRow>,
+  store: PluginStateKeyedStore<MigratedBindingNamespaceRow>,
 ): Promise<SourceMigrationResult> {
   let importedKeys = 0;
   const retain = (reason: string): SourceMigrationResult => ({
@@ -515,14 +523,14 @@ async function migrateSource(
       );
       const normalizeStoredRow = async (
         key: string,
-        current: MigratedBindingRow,
+        current: MigratedBindingNamespaceRow,
       ): Promise<{ value?: MigratedBindingRow; warning?: string }> => {
         const parsed = readStoredCodexAppServerBinding(current);
-        if (!parsed) {
+        if (!parsed || parsed.state === "retired-legacy-mcp-thread") {
           return { warning: `canonical plugin state is invalid at ${key}` };
         }
         const normalized = normalizeStoredCodexAppServerBindingFingerprints(parsed);
-        if (!normalized) {
+        if (!normalized || normalized.state === "retired-legacy-mcp-thread") {
           return { warning: `canonical plugin state is invalid at ${key}` };
         }
         if (isDeepStrictEqual(parsed, normalized)) {
@@ -570,13 +578,20 @@ async function migrateSource(
             sessionKey: owner.sessionKey,
           })
         : undefined;
-      const conversationEntries = conversationKeys.map((key) => ({ key, value: stored }));
+      // A uniquely owned session has one canonical runtime key. File-keyed
+      // conversation aliases were a shipped migration artifact, not a second owner.
+      const conversationEntries = owner
+        ? []
+        : conversationKeys.map((key) => ({ key, value: stored }));
       const sessionEntry =
         owner && sessionKey
           ? { key: sessionKey, value: copyBindingForSession(stored, owner.sessionId) }
           : undefined;
       const entries = [...conversationEntries, ...(sessionEntry ? [sessionEntry] : [])];
-      const hasExpected = (value: MigratedBindingRow | undefined, target: MigratedBindingRow) => {
+      const hasExpected = (
+        value: MigratedBindingNamespaceRow | undefined,
+        target: MigratedBindingRow,
+      ) => {
         const parsed = readStoredCodexAppServerBinding(value);
         if (!parsed) {
           return false;
@@ -646,6 +661,28 @@ async function migrateSource(
         for (const entry of entries) {
           if (!hasExpected(await store.lookup(entry.key), entry.value)) {
             return retain(`canonical plugin state changed at ${entry.key}`);
+          }
+        }
+        const deleteIf = store.deleteIf;
+        if (!deleteIf) {
+          return retain("its duplicate file-keyed ownership aliases could not be removed");
+        }
+        for (const key of conversationKeys) {
+          const current = await store.lookup(key);
+          if (current === undefined) {
+            continue;
+          }
+          const parsed = readStoredCodexAppServerBinding(current);
+          if (
+            !parsed ||
+            !hasExpected(parsed, stored) ||
+            (parsed.lease && parsed.lease.expiresAt > Date.now())
+          ) {
+            return retain(`canonical plugin state changed at ${key}`);
+          }
+          await deleteIf(key, (candidate) => isDeepStrictEqual(candidate, current));
+          if ((await store.lookup(key)) !== undefined) {
+            return retain(`canonical plugin state changed at ${key}`);
           }
         }
       }
@@ -818,7 +855,7 @@ export const stateMigrations: PluginDoctorStateMigration[] = [
         );
         return { changes, warnings };
       }
-      const store = params.context.openPluginStateKeyedStore<MigratedBindingRow>({
+      const store = params.context.openPluginStateKeyedStore<MigratedBindingNamespaceRow>({
         namespace: CODEX_APP_SERVER_BINDING_NAMESPACE,
         maxEntries: CODEX_APP_SERVER_BINDING_MAX_ENTRIES,
         overflowPolicy: "reject-new",
@@ -860,5 +897,116 @@ export const stateMigrations: PluginDoctorStateMigration[] = [
       };
     },
   },
+  {
+    id: "codex-app-server-collapse-legacy-binding-aliases",
+    label: "Codex app-server binding ownership aliases",
+    async detectLegacyState(params) {
+      const store = params.context.openPluginStateKeyedStore<MigratedBindingNamespaceRow>({
+        namespace: CODEX_APP_SERVER_BINDING_NAMESPACE,
+        maxEntries: CODEX_APP_SERVER_BINDING_MAX_ENTRIES,
+        overflowPolicy: "reject-new",
+      });
+      const analysis = analyzeLegacyBindingAliases(await store.entries());
+      return analysis.repairable.length > 0 || analysis.ambiguous > 0
+        ? {
+            preview: [
+              `- Codex app-server bindings: collapse ${analysis.repairable.length} duplicate file-keyed ownership alias(es)`,
+            ],
+          }
+        : null;
+    },
+    async migrateLegacyState(params) {
+      const changes: string[] = [];
+      const warnings: string[] = [];
+      const store = params.context.openPluginStateKeyedStore<MigratedBindingNamespaceRow>({
+        namespace: CODEX_APP_SERVER_BINDING_NAMESPACE,
+        maxEntries: CODEX_APP_SERVER_BINDING_MAX_ENTRIES,
+        overflowPolicy: "reject-new",
+      });
+      const analysis = analyzeLegacyBindingAliases(await store.entries());
+      if (analysis.ambiguous > 0) {
+        warnings.push(
+          `Kept ${analysis.ambiguous} ambiguous Codex app-server binding alias(es); each matched multiple session owners`,
+        );
+      }
+      const deleteIf = store.deleteIf;
+      if (!deleteIf && analysis.repairable.length > 0) {
+        warnings.push("Codex app-server binding aliases could not be removed atomically");
+        return { changes, warnings };
+      }
+      let repaired = 0;
+      for (const alias of analysis.repairable) {
+        const aliasRecord: unknown = alias.value;
+        const lease =
+          isRecord(aliasRecord) && isRecord(aliasRecord.lease) ? aliasRecord.lease : undefined;
+        if (
+          lease &&
+          typeof lease.expiresAt === "number" &&
+          Number.isFinite(lease.expiresAt) &&
+          lease.expiresAt > Date.now()
+        ) {
+          warnings.push(`Kept leased Codex app-server binding alias ${alias.key}`);
+          continue;
+        }
+        await deleteIf?.(alias.key, (current) => isDeepStrictEqual(current, alias.value));
+        const persisted = await store.lookup(alias.key);
+        if (persisted === undefined) {
+          repaired++;
+        } else {
+          warnings.push(`Kept concurrently changed Codex app-server binding alias ${alias.key}`);
+        }
+      }
+      if (repaired > 0) {
+        changes.push(
+          `Collapsed ${repaired} duplicate Codex app-server binding ownership alias(es) into their canonical session owners`,
+        );
+      }
+      return { changes, warnings };
+    },
+  },
 ];
+
+function analyzeLegacyBindingAliases(
+  entries: readonly { key: string; value: MigratedBindingNamespaceRow }[],
+): {
+  repairable: { key: string; value: MigratedBindingNamespaceRow }[];
+  ambiguous: number;
+} {
+  const sessions = entries.filter(
+    (entry) =>
+      (entry.key.startsWith("session:") || entry.key.startsWith("session-key:")) &&
+      isActiveLegacyBindingRow(entry.value),
+  );
+  const repairable: { key: string; value: MigratedBindingNamespaceRow }[] = [];
+  let ambiguous = 0;
+  for (const alias of entries) {
+    if (!alias.key.startsWith("conversation:legacy-") || !isActiveLegacyBindingRow(alias.value)) {
+      continue;
+    }
+    const aliasBinding = alias.value.binding;
+    const matches = sessions.filter(
+      (session) =>
+        isActiveLegacyBindingRow(session.value) &&
+        isDeepStrictEqual(session.value.binding, aliasBinding),
+    );
+    if (matches.length === 1) {
+      repairable.push(alias);
+    } else if (matches.length > 1) {
+      ambiguous++;
+    }
+  }
+  return { repairable, ambiguous };
+}
+
+function isActiveLegacyBindingRow(
+  value: MigratedBindingNamespaceRow,
+): value is Extract<MigratedBindingRow, { state: "active" }> {
+  if (value.state !== "active" || !isRecord(value.binding)) {
+    return false;
+  }
+  return (
+    typeof value.binding.userMcpServersFingerprint === "string" ||
+    typeof value.binding.mcpServersFingerprint === "string"
+  );
+}
 /* oxlint-disable max-lines -- TODO: split this grandfathered oversized file. */

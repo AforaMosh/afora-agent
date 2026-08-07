@@ -2196,6 +2196,9 @@ describe("Codex thread-effective app attestation", () => {
         if (method === "app/installed") {
           return { apps };
         }
+        if (method === "thread/list") {
+          return { data: [], nextCursor: null };
+        }
         if (method === "thread/delete") {
           return {};
         }
@@ -2218,10 +2221,12 @@ describe("Codex thread-effective app attestation", () => {
     expect(request.mock.calls.map(([method]) => method)).toEqual([
       "thread/start",
       "app/installed",
+      "thread/list",
+      "thread/list",
       "thread/delete",
     ]);
-    expect(request.mock.calls[2]?.[1]).toEqual({ threadId: "thread-linear-blocked" });
-    expect(request.mock.calls[2]?.[2]).toEqual({ timeoutMs: 5_000 });
+    expect(request.mock.calls[4]?.[1]).toEqual({ threadId: "thread-linear-blocked" });
+    expect(request.mock.calls[4]?.[2]).toEqual({ timeoutMs: 5_000 });
     expect(abandonClient).not.toHaveBeenCalled();
     await expect(
       testCodexAppServerBindingStore.read(
@@ -2284,6 +2289,9 @@ describe("Codex thread-effective app attestation", () => {
             apps: [{ id: "global-ready-app", runtimeName: "Global App", enabled, callable }],
           };
         }
+        if (method === "thread/list") {
+          return { data: [], nextCursor: null };
+        }
         if (method === "thread/delete") {
           return {};
         }
@@ -2305,6 +2313,8 @@ describe("Codex thread-effective app attestation", () => {
       expect(request.mock.calls.map(([method]) => method)).toEqual([
         "thread/start",
         "app/installed",
+        "thread/list",
+        "thread/list",
         "thread/delete",
       ]);
       expect(abandonClient).not.toHaveBeenCalled();
@@ -2332,6 +2342,9 @@ describe("Codex thread-effective app attestation", () => {
       if (method === "app/installed") {
         return { apps: [] };
       }
+      if (method === "thread/list") {
+        return { data: [], nextCursor: null };
+      }
       if (method === "thread/delete") {
         throw new Error("delete unavailable");
       }
@@ -2356,6 +2369,8 @@ describe("Codex thread-effective app attestation", () => {
     expect(request.mock.calls.map(([method]) => method)).toEqual([
       "thread/start",
       "app/installed",
+      "thread/list",
+      "thread/list",
       "thread/delete",
       "thread/unsubscribe",
     ]);
@@ -2372,6 +2387,9 @@ describe("Codex thread-effective app attestation", () => {
       }
       if (method === "app/installed") {
         throw new Error("committed app snapshot unavailable");
+      }
+      if (method === "thread/list") {
+        return { data: [], nextCursor: null };
       }
       if (method === "thread/delete") {
         return {};
@@ -2397,6 +2415,8 @@ describe("Codex thread-effective app attestation", () => {
     expect(request.mock.calls.map(([method]) => method)).toEqual([
       "thread/start",
       "app/installed",
+      "thread/list",
+      "thread/list",
       "thread/delete",
     ]);
     expect(abandonClient).not.toHaveBeenCalled();
@@ -2941,6 +2961,9 @@ describe("Codex app-server supervised branch lifecycle", () => {
           expect(requestParams).toEqual({ threadId: finalThreadId, forceRefresh: false });
           return { apps };
         }
+        if (method === "thread/list") {
+          return { data: [], nextCursor: null };
+        }
         if (method === "thread/delete" || method === "thread/archive") {
           return {};
         }
@@ -2964,11 +2987,13 @@ describe("Codex app-server supervised branch lifecycle", () => {
         "thread/fork",
         "thread/start",
         "app/installed",
+        "thread/list",
+        "thread/list",
         "thread/delete",
         "thread/archive",
       ]);
-      expect(request.mock.calls[4]?.[1]).toEqual({ threadId: finalThreadId });
-      expect(request.mock.calls[5]?.[1]).toEqual({ threadId: probeThreadId });
+      expect(request.mock.calls[6]?.[1]).toEqual({ threadId: finalThreadId });
+      expect(request.mock.calls[7]?.[1]).toEqual({ threadId: probeThreadId });
       expect(abandonClient).not.toHaveBeenCalled();
       await expect(testCodexAppServerBindingStore.read(identity)).resolves.toMatchObject({
         pendingSupervisionBranch: { sourceThreadId },
@@ -3005,6 +3030,9 @@ describe("Codex app-server supervised branch lifecycle", () => {
       if (method === "app/installed") {
         return { apps: [] };
       }
+      if (method === "thread/list") {
+        return { data: [], nextCursor: null };
+      }
       if (method === "thread/delete") {
         throw new Error("delete unavailable");
       }
@@ -3031,6 +3059,8 @@ describe("Codex app-server supervised branch lifecycle", () => {
       "thread/fork",
       "thread/start",
       "app/installed",
+      "thread/list",
+      "thread/list",
       "thread/delete",
       "thread/unsubscribe",
     ]);

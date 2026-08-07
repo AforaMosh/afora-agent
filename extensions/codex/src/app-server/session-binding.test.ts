@@ -17,6 +17,8 @@ import {
   hashCodexAppServerBindingFingerprint,
   readCodexAppServerThreadBinding,
   reclaimCurrentCodexSessionGeneration,
+  type CodexAppServerBindingIdentity,
+  type CodexAppServerThreadBinding,
   type StoredCodexAppServerBinding,
 } from "./session-binding.js";
 
@@ -52,6 +54,19 @@ function createStateStore() {
     clear: () => values.clear(),
   };
   return { state, values };
+}
+
+function seedStoredBinding(
+  values: Map<string, StoredCodexAppServerBinding>,
+  identity: CodexAppServerBindingIdentity,
+  binding: CodexAppServerThreadBinding,
+): void {
+  values.set(bindingStoreKey(identity), {
+    version: 1,
+    state: "active",
+    binding,
+    ...(identity.kind === "session" ? { sessionId: identity.sessionId } : {}),
+  });
 }
 
 afterEach(() => {
@@ -110,7 +125,12 @@ describe("Codex app-server binding store", () => {
       binding: { threadId: "thread-session", cwd: "/repo" },
     });
 
-    await expect(store.hasOtherThreadOwner("thread-session", sessionIdentity)).resolves.toBe(false);
+    await expect(
+      store.inspectThreadOwnership("thread-session", [sessionIdentity]),
+    ).resolves.toEqual({
+      hasUnexpectedOwner: false,
+      hasLegacyNativeMcpOwner: false,
+    });
 
     const conversationIdentity = { kind: "conversation" as const, bindingId: "conversation-1" };
     await store.mutate(conversationIdentity, {
@@ -118,8 +138,11 @@ describe("Codex app-server binding store", () => {
       binding: { threadId: "thread-conversation", cwd: "/repo" },
     });
     await expect(
-      store.hasOtherThreadOwner("thread-conversation", conversationIdentity),
-    ).resolves.toBe(false);
+      store.inspectThreadOwnership("thread-conversation", [conversationIdentity]),
+    ).resolves.toEqual({
+      hasUnexpectedOwner: false,
+      hasLegacyNativeMcpOwner: false,
+    });
   });
 
   it("reports a different valid active binding owner", async () => {
@@ -138,7 +161,40 @@ describe("Codex app-server binding store", () => {
       },
     );
 
-    await expect(store.hasOtherThreadOwner("thread-owned", currentIdentity)).resolves.toBe(true);
+    await expect(
+      store.inspectThreadOwnership("thread-owned", [currentIdentity]),
+    ).resolves.toMatchObject({ hasUnexpectedOwner: true });
+  });
+
+  it("allows an exact two-owner transfer snapshot but detects a third owner", async () => {
+    const { state } = createStateStore();
+    const store = createCodexAppServerBindingStore(state);
+    const sourceIdentity = {
+      kind: "session" as const,
+      agentId: "main",
+      sessionId: "source-session",
+    };
+    const targetIdentity = { kind: "conversation" as const, bindingId: "target-conversation" };
+    await store.mutate(sourceIdentity, {
+      kind: "set",
+      binding: { threadId: "thread-transfer", cwd: "/repo" },
+    });
+    await store.mutate(targetIdentity, {
+      kind: "set",
+      binding: { threadId: "thread-transfer", cwd: "/repo" },
+    });
+
+    await expect(
+      store.inspectThreadOwnership("thread-transfer", [sourceIdentity, targetIdentity]),
+    ).resolves.toMatchObject({ hasUnexpectedOwner: false });
+
+    await store.mutate(
+      { kind: "conversation", bindingId: "third-conversation" },
+      { kind: "set", binding: { threadId: "thread-transfer", cwd: "/repo" } },
+    );
+    await expect(
+      store.inspectThreadOwnership("thread-transfer", [sourceIdentity, targetIdentity]),
+    ).resolves.toMatchObject({ hasUnexpectedOwner: true });
   });
 
   it.each([
@@ -161,8 +217,8 @@ describe("Codex app-server binding store", () => {
     });
 
     await expect(
-      store.hasOtherThreadOwner("thread-stale-generation", currentIdentity),
-    ).resolves.toBe(true);
+      store.inspectThreadOwnership("thread-stale-generation", [currentIdentity]),
+    ).resolves.toMatchObject({ hasUnexpectedOwner: true });
   });
 
   it("fails closed on a malformed row during reverse ownership scans", async () => {
@@ -179,7 +235,7 @@ describe("Codex app-server binding store", () => {
       binding: { threadId: "", cwd: "/repo" },
     } as never);
 
-    await expect(store.hasOtherThreadOwner("thread-unowned", currentIdentity)).rejects.toThrow(
+    await expect(store.inspectThreadOwnership("thread-unowned", [currentIdentity])).rejects.toThrow(
       "Invalid Codex app-server binding row: conversation:invalid",
     );
   });
@@ -199,7 +255,259 @@ describe("Codex app-server binding store", () => {
       binding: { threadId: "thread-unowned", cwd: "/repo" },
     } as never);
 
-    await expect(store.hasOtherThreadOwner("thread-unowned", currentIdentity)).resolves.toBe(false);
+    await expect(
+      store.inspectThreadOwnership("thread-unowned", [currentIdentity]),
+    ).resolves.toMatchObject({ hasUnexpectedOwner: false });
+  });
+
+  it("reports legacy configured MCP ownership even when that owner is allowed", async () => {
+    const { state, values } = createStateStore();
+    const store = createCodexAppServerBindingStore(state);
+    const identity = { kind: "conversation" as const, bindingId: "legacy-owner" };
+    seedStoredBinding(values, identity, {
+      threadId: "thread-legacy",
+      cwd: "/repo",
+      userMcpServersFingerprint: "legacy-mcp",
+    });
+
+    await expect(store.inspectThreadOwnership("thread-legacy", [identity])).resolves.toEqual({
+      hasUnexpectedOwner: false,
+      hasLegacyNativeMcpOwner: true,
+    });
+  });
+
+  it("allows only the named exact transition out of an ordinary legacy MCP binding", async () => {
+    const { state, values } = createStateStore();
+    const store = createCodexAppServerBindingStore(state);
+    const identity = {
+      kind: "session" as const,
+      agentId: "main",
+      sessionId: "session-legacy-transition",
+    };
+    const legacy = {
+      threadId: "thread-legacy",
+      cwd: "/repo",
+      model: "gpt-5.4",
+      userMcpServersFingerprint: "legacy-mcp",
+    };
+    await expect(store.mutate(identity, { kind: "set", binding: legacy })).resolves.toBe(false);
+    seedStoredBinding(values, identity, legacy);
+    const replacement = {
+      threadId: "thread-successor",
+      cwd: "/repo",
+      model: "gpt-5.5",
+      dynamicToolsFingerprint: "dynamic-v2",
+      legacyMcpRetirementThreadId: "thread-legacy",
+    };
+
+    await expect(store.mutate(identity, { kind: "set", binding: replacement })).resolves.toBe(
+      false,
+    );
+    await expect(
+      store.mutate(identity, { kind: "clear", threadId: "thread-legacy" }),
+    ).resolves.toBe(false);
+    await expect(
+      store.mutate(identity, {
+        kind: "patch",
+        threadId: "thread-legacy",
+        patch: { model: "gpt-5.5" },
+      }),
+    ).resolves.toBe(true);
+    await expect(
+      store.mutate(identity, {
+        kind: "patch",
+        threadId: "thread-legacy",
+        patch: { userMcpServersFingerprint: undefined },
+      }),
+    ).resolves.toBe(false);
+    await expect(store.resetSessionGeneration(identity)).resolves.toBe("conflict");
+    await expect(store.retireSessionGeneration(identity)).resolves.toBe("conflict");
+    await expect(
+      store.mutate(identity, {
+        kind: "replace-legacy-mcp-thread",
+        expectedThreadId: "thread-other",
+        binding: replacement,
+      }),
+    ).resolves.toBe(false);
+    await expect(
+      store.mutate(identity, {
+        kind: "replace-legacy-mcp-thread",
+        expectedThreadId: "thread-legacy",
+        binding: { ...replacement, legacyMcpRetirementThreadId: undefined },
+      }),
+    ).resolves.toBe(false);
+    await expect(
+      store.mutate(identity, {
+        kind: "replace-legacy-mcp-thread",
+        expectedThreadId: "thread-legacy",
+        binding: replacement,
+      }),
+    ).resolves.toBe(true);
+    await expect(store.read(identity)).resolves.toMatchObject(replacement);
+  });
+
+  it("rejects generic mutations that introduce legacy MCP provenance", async () => {
+    const { state, values } = createStateStore();
+    const store = createCodexAppServerBindingStore(state);
+    const ordinaryIdentity = {
+      kind: "session" as const,
+      agentId: "main",
+      sessionId: "session-no-new-legacy",
+    };
+    await expect(
+      store.mutate(ordinaryIdentity, {
+        kind: "set",
+        binding: {
+          threadId: "thread-forbidden-legacy",
+          cwd: "/repo",
+          userMcpServersFingerprint: "legacy-mcp",
+        },
+      }),
+    ).resolves.toBe(false);
+    await expect(
+      store.mutate(ordinaryIdentity, {
+        kind: "set",
+        binding: { threadId: "thread-current", cwd: "/repo" },
+      }),
+    ).resolves.toBe(true);
+    await expect(
+      store.mutate(ordinaryIdentity, {
+        kind: "patch",
+        threadId: "thread-current",
+        patch: { legacyMcpRetirementThreadId: "thread-arbitrary" },
+      }),
+    ).resolves.toBe(false);
+
+    const supervisionIdentity = {
+      kind: "session" as const,
+      agentId: "main",
+      sessionId: "session-pending-no-new-legacy",
+    };
+    const pending = {
+      sourceThreadId: "thread-source",
+      cleanupThreadIds: ["thread-probe"],
+    };
+    seedStoredBinding(values, supervisionIdentity, {
+      threadId: "thread-source",
+      cwd: "/repo",
+      connectionScope: "supervision",
+      supervisionSourceThreadId: "thread-source",
+      preserveNativeModel: true,
+      conversationSourceTransferComplete: true,
+      pendingSupervisionBranch: pending,
+    });
+    await expect(
+      store.mutate(supervisionIdentity, {
+        kind: "commit-pending-supervision-branch",
+        expected: pending,
+        threadId: "thread-final",
+        patch: {
+          model: "native-model",
+          modelProvider: "native-provider",
+          mcpServersFingerprint: "legacy-mcp",
+        },
+      }),
+    ).resolves.toBe(false);
+  });
+
+  it("reserves a pending legacy MCP predecessor until exact retirement completion", async () => {
+    const { state, values } = createStateStore();
+    const store = createCodexAppServerBindingStore(state);
+    const identity = {
+      kind: "session" as const,
+      agentId: "main",
+      sessionId: "session-pending-retirement",
+    };
+    const pending = {
+      threadId: "thread-successor",
+      cwd: "/repo",
+      dynamicToolsFingerprint: "dynamic-v2",
+      legacyMcpRetirementThreadId: "thread-predecessor",
+    };
+    seedStoredBinding(values, identity, pending);
+
+    await expect(store.inspectThreadOwnership("thread-predecessor", [identity])).resolves.toEqual({
+      hasUnexpectedOwner: false,
+      hasLegacyNativeMcpOwner: true,
+    });
+    await expect(store.inspectThreadOwnership("thread-predecessor")).resolves.toEqual({
+      hasUnexpectedOwner: true,
+      hasLegacyNativeMcpOwner: true,
+    });
+    await expect(
+      store.mutate(identity, { kind: "set", binding: { ...pending, model: "changed" } }),
+    ).resolves.toBe(false);
+    await expect(
+      store.mutate(identity, {
+        kind: "patch",
+        threadId: "thread-successor",
+        patch: { model: "changed" },
+      }),
+    ).resolves.toBe(false);
+    await expect(
+      store.mutate(identity, { kind: "clear", threadId: "thread-successor" }),
+    ).resolves.toBe(false);
+    await expect(store.resetSessionGeneration(identity)).resolves.toBe("conflict");
+    await expect(store.retireSessionGeneration(identity)).resolves.toBe("conflict");
+    await expect(
+      store.mutate(identity, {
+        kind: "complete-legacy-mcp-retirement",
+        expectedThreadId: "thread-successor",
+        expectedRetirementThreadId: "thread-other",
+      }),
+    ).resolves.toBe(false);
+    await expect(
+      store.mutate(identity, {
+        kind: "complete-legacy-mcp-retirement",
+        expectedThreadId: "thread-successor",
+        expectedRetirementThreadId: "thread-predecessor",
+      }),
+    ).resolves.toBe(false);
+    await expect(store.recordLegacyMcpThreadRetirement("thread-predecessor")).resolves.toBe(true);
+    await expect(
+      store.mutate(identity, {
+        kind: "complete-legacy-mcp-retirement",
+        expectedThreadId: "thread-successor",
+        expectedRetirementThreadId: "thread-predecessor",
+      }),
+    ).resolves.toBe(true);
+    await expect(store.read(identity)).resolves.toEqual({
+      threadId: "thread-successor",
+      cwd: "/repo",
+      dynamicToolsFingerprint: "dynamic-v2",
+    });
+  });
+
+  it("persists retired legacy MCP provenance as an idempotent ownership tombstone", async () => {
+    const { state, values } = createStateStore();
+    const store = createCodexAppServerBindingStore(state);
+    const identity = { kind: "conversation" as const, bindingId: "pending-retirement" };
+    seedStoredBinding(values, identity, {
+      threadId: "thread-successor",
+      cwd: "/repo",
+      dynamicToolsFingerprint: "dynamic-v2",
+      legacyMcpRetirementThreadId: "thread-retired",
+    });
+
+    await expect(store.recordLegacyMcpThreadRetirement(" thread-retired ")).resolves.toBe(true);
+    await expect(store.recordLegacyMcpThreadRetirement("thread-retired")).resolves.toBe(true);
+    await expect(store.recordLegacyMcpThreadRetirement("thread-unrelated")).resolves.toBe(false);
+    await expect(store.recordLegacyMcpThreadRetirement(" ")).resolves.toBe(false);
+    await expect(
+      store.mutate(identity, {
+        kind: "complete-legacy-mcp-retirement",
+        expectedThreadId: "thread-successor",
+        expectedRetirementThreadId: "thread-retired",
+      }),
+    ).resolves.toBe(true);
+    await expect(store.inspectThreadOwnership("thread-retired")).resolves.toEqual({
+      hasUnexpectedOwner: true,
+      hasLegacyNativeMcpOwner: true,
+    });
+    await expect(store.inspectThreadOwnership("thread-retired", [], true)).resolves.toEqual({
+      hasUnexpectedOwner: false,
+      hasLegacyNativeMcpOwner: true,
+    });
   });
 
   it("fails closed on malformed pending supervision state", async () => {
@@ -348,6 +656,120 @@ describe("Codex app-server binding store", () => {
       model: "native-model",
       modelProvider: "native-provider",
     });
+  });
+
+  it("replaces only the exact supervised thread while preserving its owner", async () => {
+    const { state, values } = createStateStore();
+    const store = createCodexAppServerBindingStore(state);
+    const identity = {
+      kind: "session" as const,
+      agentId: "main",
+      sessionId: "session-supervision-replacement",
+    };
+    const current = {
+      threadId: "thread-legacy",
+      cwd: "/repo",
+      connectionScope: "supervision" as const,
+      supervisionSourceThreadId: "thread-native-source",
+      preserveNativeModel: true as const,
+      conversationSourceTransferComplete: true as const,
+      model: "native-model",
+      modelProvider: "native-provider",
+      userMcpServersFingerprint: "legacy-mcp",
+    };
+    seedStoredBinding(values, identity, current);
+    const replacement = {
+      ...current,
+      threadId: "thread-dynamic",
+      userMcpServersFingerprint: undefined,
+      dynamicToolsFingerprint: "dynamic-v2",
+      legacyMcpRetirementThreadId: "thread-legacy",
+    };
+
+    await expect(
+      store.mutate(identity, {
+        kind: "replace-supervision-thread",
+        expectedThreadId: "thread-other",
+        expectedSupervisionSourceThreadId: "thread-native-source",
+        binding: replacement,
+      }),
+    ).resolves.toBe(false);
+    await expect(
+      store.mutate(identity, {
+        kind: "replace-supervision-thread",
+        expectedThreadId: "thread-legacy",
+        expectedSupervisionSourceThreadId: "thread-other-source",
+        binding: replacement,
+      }),
+    ).resolves.toBe(false);
+    await expect(
+      store.mutate(identity, {
+        kind: "replace-supervision-thread",
+        expectedThreadId: "thread-legacy",
+        expectedSupervisionSourceThreadId: "thread-native-source",
+        binding: { ...replacement, supervisionSourceThreadId: "thread-other-source" },
+      }),
+    ).resolves.toBe(false);
+    await expect(
+      store.mutate(identity, {
+        kind: "replace-supervision-thread",
+        expectedThreadId: "thread-legacy",
+        expectedSupervisionSourceThreadId: "thread-native-source",
+        binding: { ...replacement, model: "other-model" },
+      }),
+    ).resolves.toBe(false);
+    await expect(
+      store.mutate(identity, {
+        kind: "replace-supervision-thread",
+        expectedThreadId: "thread-legacy",
+        expectedSupervisionSourceThreadId: "thread-native-source",
+        binding: { ...replacement, dynamicToolsFingerprint: undefined },
+      }),
+    ).resolves.toBe(false);
+    await expect(
+      store.mutate(identity, {
+        kind: "replace-supervision-thread",
+        expectedThreadId: "thread-legacy",
+        expectedSupervisionSourceThreadId: "thread-native-source",
+        binding: { ...replacement, userMcpServersFingerprint: "legacy-mcp" },
+      }),
+    ).resolves.toBe(false);
+    await expect(
+      store.mutate(identity, {
+        kind: "replace-supervision-thread",
+        expectedThreadId: "thread-legacy",
+        expectedSupervisionSourceThreadId: "thread-native-source",
+        binding: { ...replacement, historyCoveredThrough: "2026-01-01T00:00:00.000Z" },
+      }),
+    ).resolves.toBe(false);
+    await expect(
+      store.mutate(identity, {
+        kind: "replace-supervision-thread",
+        expectedThreadId: "thread-legacy",
+        expectedSupervisionSourceThreadId: "thread-native-source",
+        binding: { ...replacement, legacyMcpRetirementThreadId: undefined },
+      }),
+    ).resolves.toBe(false);
+    await expect(
+      store.mutate(identity, {
+        kind: "replace-supervision-thread",
+        expectedThreadId: "thread-legacy",
+        expectedSupervisionSourceThreadId: "thread-native-source",
+        binding: replacement,
+      }),
+    ).resolves.toBe(true);
+    await expect(store.read(identity)).resolves.toEqual({
+      ...replacement,
+      userMcpServersFingerprint: undefined,
+    });
+    await expect(
+      store.mutate(identity, {
+        kind: "replace-supervision-thread",
+        expectedThreadId: "thread-dynamic",
+        expectedSupervisionSourceThreadId: "thread-native-source",
+        binding: { ...replacement, threadId: "thread-dynamic-2" },
+      }),
+    ).resolves.toBe(false);
   });
 
   it("round-trips account app policy context", async () => {
@@ -648,6 +1070,75 @@ describe("Codex app-server binding store", () => {
       }),
     ).resolves.toBe(false);
     await expect(store.read(third)).resolves.toMatchObject({ threadId: "thread-1" });
+  });
+
+  it("moves legacy retirement recovery to the authoritative stable-key generation", async () => {
+    const { state, values } = createStateStore();
+    const store = createCodexAppServerBindingStore(state);
+    const previous = {
+      kind: "session" as const,
+      agentId: "main",
+      sessionId: "session-previous",
+      sessionKey: "agent:main:stable-legacy",
+    };
+    const current = { ...previous, sessionId: "session-current" };
+    seedStoredBinding(values, previous, {
+      threadId: "thread-successor",
+      cwd: "/repo",
+      dynamicToolsFingerprint: "dynamic-v2",
+      legacyMcpRetirementThreadId: "thread-predecessor",
+    });
+
+    const plan = await store.prepareSessionGenerationReclaim(current);
+    expect(plan).toEqual({ kind: "verify", expectedPreviousSessionId: previous.sessionId });
+    if (plan.kind !== "verify") {
+      throw new Error("expected stale session generation");
+    }
+    await expect(
+      store.mutate(current, {
+        kind: "reclaim-generation",
+        expectedPreviousSessionId: plan.expectedPreviousSessionId,
+      }),
+    ).resolves.toBe(true);
+    await expect(store.read(previous)).resolves.toBeUndefined();
+    await expect(store.read(current)).resolves.toMatchObject({
+      threadId: "thread-successor",
+      legacyMcpRetirementThreadId: "thread-predecessor",
+    });
+  });
+
+  it("does not carry nonlegacy supervision ownership into a fresh stable-key generation", async () => {
+    const { state } = createStateStore();
+    const store = createCodexAppServerBindingStore(state);
+    const previous = {
+      kind: "session" as const,
+      agentId: "main",
+      sessionId: "session-private-previous",
+      sessionKey: "agent:main:stable-private",
+    };
+    const current = { ...previous, sessionId: "session-private-current" };
+    await store.mutate(previous, {
+      kind: "set",
+      binding: {
+        threadId: "thread-private",
+        cwd: "/repo",
+        connectionScope: "supervision",
+        supervisionSourceThreadId: "thread-source",
+        preserveNativeModel: true,
+        conversationSourceTransferComplete: true,
+        model: "gpt-5.5",
+        modelProvider: "openai",
+      },
+    });
+
+    await expect(
+      store.mutate(current, {
+        kind: "reclaim-generation",
+        expectedPreviousSessionId: previous.sessionId,
+      }),
+    ).resolves.toBe(false);
+    await expect(store.read(previous)).resolves.toMatchObject({ threadId: "thread-private" });
+    await expect(store.read(current)).resolves.toBeUndefined();
   });
 
   it("falls back to physical session identity when no stable session key exists", () => {
@@ -1075,57 +1566,106 @@ describe("Codex app-server binding store", () => {
     }
   });
 
-  it("drains an in-flight ownership mutation and rejects late attachment during archive", async () => {
-    const fixture = createStateStore();
-    const stateUpdate = fixture.state.update;
-    if (!stateUpdate) {
-      throw new Error("test state store must support atomic updates");
-    }
-    const originalUpdate = stateUpdate.bind(fixture.state);
-    let startArchive: (() => void) | undefined;
-    fixture.state.update = (...args) => {
-      startArchive?.();
-      startArchive = undefined;
-      return originalUpdate(...args);
-    };
-    const store = createCodexAppServerBindingStore(fixture.state);
-    const firstIdentity = { kind: "conversation" as const, bindingId: "first" };
+  it("keeps neutral writes live while rejecting stale owner attachment during archive", async () => {
+    const store = createCodexAppServerBindingStore(createStateStore().state);
+    const neutralIdentity = { kind: "conversation" as const, bindingId: "neutral" };
     const lateIdentity = { kind: "conversation" as const, bindingId: "late" };
+    await store.mutate(neutralIdentity, {
+      kind: "set",
+      binding: { threadId: "thread-neutral", cwd: "/repo" },
+    });
     let releaseArchive!: () => void;
     const archiveReleased = new Promise<void>((resolve) => {
       releaseArchive = resolve;
     });
-    let archive!: Promise<void>;
-    startArchive = () => {
-      archive = store.withThreadArchiveFence(async () => {
-        await expect(
-          store.mutate(firstIdentity, {
-            kind: "patch",
-            threadId: "thread-before-archive",
-            patch: { cwd: "/updated" },
-          }),
-        ).resolves.toBe(true);
-        await archiveReleased;
-      });
-    };
+    let archiveStarted!: () => void;
+    const started = new Promise<void>((resolve) => {
+      archiveStarted = resolve;
+    });
+    const archive = store.withThreadArchiveFence(async () => {
+      await store.withThreadArchiveFence(async () => undefined);
+      archiveStarted();
+      await archiveReleased;
+    });
+    await started;
 
     await expect(
-      store.mutate(firstIdentity, {
-        kind: "set",
-        binding: { threadId: "thread-before-archive", cwd: "/repo" },
+      store.mutate(neutralIdentity, {
+        kind: "patch",
+        threadId: "thread-neutral",
+        patch: { cwd: "/updated" },
       }),
     ).resolves.toBe(true);
-    await Promise.resolve();
     await expect(
       store.mutate(lateIdentity, {
         kind: "set",
         binding: { threadId: "thread-late", cwd: "/repo" },
       }),
     ).rejects.toThrow("native archive is in progress");
+
     releaseArchive();
     await expect(archive).resolves.toBeUndefined();
-    await expect(store.read(firstIdentity)).resolves.toMatchObject({ cwd: "/updated" });
+    await expect(store.read(neutralIdentity)).resolves.toMatchObject({ cwd: "/updated" });
     await expect(store.read(lateIdentity)).resolves.toBeUndefined();
+  });
+
+  it("releases the ownership queue after a failed fence", async () => {
+    const store = createCodexAppServerBindingStore(createStateStore().state);
+
+    await expect(
+      store.withThreadArchiveFence(async () => {
+        throw new Error("archive failed");
+      }),
+    ).rejects.toThrow("archive failed");
+    await expect(
+      store.mutate(
+        { kind: "conversation", bindingId: "after-failure" },
+        {
+          kind: "set",
+          binding: { threadId: "thread-after-failure", cwd: "/repo" },
+        },
+      ),
+    ).resolves.toBe(true);
+  });
+
+  it("does not let deferred work retain a released ownership fence", async () => {
+    const store = createCodexAppServerBindingStore(createStateStore().state);
+    const identity = { kind: "conversation" as const, bindingId: "deferred-fence" };
+    let releaseDeferred!: () => void;
+    const deferredGate = new Promise<void>((resolve) => {
+      releaseDeferred = resolve;
+    });
+    let deferredWrite!: Promise<boolean>;
+
+    await store.withThreadArchiveFence(async () => {
+      deferredWrite = (async () => {
+        await deferredGate;
+        return await store.mutate(identity, {
+          kind: "set",
+          binding: { threadId: "thread-deferred", cwd: "/repo" },
+        });
+      })();
+    });
+
+    let releaseActiveFence!: () => void;
+    const activeFenceGate = new Promise<void>((resolve) => {
+      releaseActiveFence = resolve;
+    });
+    let activeFenceStarted!: () => void;
+    const activeFenceStart = new Promise<void>((resolve) => {
+      activeFenceStarted = resolve;
+    });
+    const activeFence = store.withThreadArchiveFence(async () => {
+      activeFenceStarted();
+      await activeFenceGate;
+    });
+    await activeFenceStart;
+
+    releaseDeferred();
+    await expect(deferredWrite).rejects.toThrow("native archive is in progress");
+    releaseActiveFence();
+    await activeFence;
+    await expect(store.read(identity)).resolves.toBeUndefined();
   });
 
   it("hashes stable session keys and keeps agent ownership distinct", () => {
@@ -1418,6 +1958,35 @@ describe("Codex app-server binding store", () => {
     ).resolves.toBe(true);
   });
 
+  it("does not let deferred work retain a released binding lease", async () => {
+    const store = createCodexAppServerBindingStore(createStateStore().state);
+    const identity = { kind: "conversation" as const, bindingId: "deferred-lease" };
+    await store.mutate(identity, {
+      kind: "set",
+      binding: { threadId: "thread-owner", cwd: "/repo" },
+    });
+    let releaseDeferred!: () => void;
+    const deferredGate = new Promise<void>((resolve) => {
+      releaseDeferred = resolve;
+    });
+    let deferredPatch!: Promise<boolean>;
+
+    await store.withLease(identity, async () => {
+      deferredPatch = (async () => {
+        await deferredGate;
+        return await store.mutate(identity, {
+          kind: "patch",
+          threadId: "thread-owner",
+          patch: { serviceTier: "priority" },
+        });
+      })();
+    });
+
+    releaseDeferred();
+    await expect(deferredPatch).resolves.toBe(true);
+    await expect(store.read(identity)).resolves.toMatchObject({ serviceTier: "priority" });
+  });
+
   it("renews a live lease across a long app-server request", async () => {
     vi.useFakeTimers();
     const { state } = createStateStore();
@@ -1522,6 +2091,9 @@ describe("Codex app-server binding store", () => {
     await ownerStarted;
     const key = bindingStoreKey(identity);
     const current = values.get(key)!;
+    if (current.state === "retired-legacy-mcp-thread") {
+      throw new Error("expected an active binding lease owner");
+    }
     values.set(key, {
       ...current,
       lease: { token: "peer-owner", expiresAt: Date.now() + 120_000 },

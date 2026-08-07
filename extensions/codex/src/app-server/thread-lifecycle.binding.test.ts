@@ -14,13 +14,19 @@ import {
   tempDir,
   threadStartResult,
 } from "./run-attempt-test-harness.js";
-import { hashCodexAppServerBindingFingerprint } from "./session-binding.js";
+import {
+  hashCodexAppServerBindingFingerprint,
+  type CodexAppServerBindingStore,
+} from "./session-binding.js";
 import {
   readCodexAppServerBinding,
   registerCodexTestSessionIdentity,
+  seedCodexTestBindingForIdentity,
+  seedRetiredLegacyMcpThread,
   testCodexAppServerBindingStore,
   writeCodexAppServerBinding as writeRawCodexAppServerBinding,
 } from "./session-binding.test-helpers.js";
+import { retireLegacyMcpPredecessor } from "./thread-legacy-mcp-retirement.js";
 import {
   buildThreadResumeParams,
   startOrResumeThread as startOrResumeThreadImpl,
@@ -331,6 +337,42 @@ describe("Codex app-server thread lifecycle bindings", () => {
     });
   });
 
+  it("rejects ordinary resume for a descendant of retired configured MCP authority", async () => {
+    const sessionFile = path.join(tempDir, "retired-descendant-session.jsonl");
+    const workspaceDir = path.join(tempDir, "retired-descendant-workspace");
+    const params = createParams(sessionFile, workspaceDir);
+    const request = vi.fn(async (method: string, requestParams?: { threadId?: string }) => {
+      if (method === "thread/start") {
+        return threadStartResult("thread-child");
+      }
+      if (method === "thread/read") {
+        return {
+          thread: {
+            id: requestParams?.threadId,
+            parentThreadId: "thread-retired-root",
+            status: { type: "idle" },
+          },
+        };
+      }
+      throw new Error(`unexpected method: ${method}`);
+    });
+    const common = {
+      client: { getInstanceId: () => "retired-descendant-client", request } as never,
+      params,
+      cwd: workspaceDir,
+      dynamicTools: [],
+      appServer: createThreadLifecycleAppServerOptions(),
+    };
+
+    await startOrResumeThread(common);
+    await seedRetiredLegacyMcpThread("thread-retired-root");
+
+    await expect(startOrResumeThread(common)).rejects.toThrow(
+      "descends from retired configured MCP authority",
+    );
+    expect(request.mock.calls.map(([method]) => method)).toEqual(["thread/start", "thread/read"]);
+  });
+
   it("reuses only an explicitly retained subscription on the original client", async () => {
     const sessionFile = path.join(tempDir, "warm-session.jsonl");
     const workspaceDir = path.join(tempDir, "warm-workspace");
@@ -463,7 +505,7 @@ describe("Codex app-server thread lifecycle bindings", () => {
     expect(startRequest).toMatchObject({
       config: {
         "skills.include_instructions": false,
-        "skills.config": [{ path: personalSkillRealPath, enabled: false }],
+        "skills.config": expect.arrayContaining([{ path: personalSkillRealPath, enabled: false }]),
       },
     });
   });
@@ -973,7 +1015,7 @@ describe("Codex app-server thread lifecycle bindings", () => {
   });
 
   it.each(["userMcpServersFingerprint", "mcpServersFingerprint"] as const)(
-    "rotates a loaded legacy native-MCP binding carrying %s",
+    "rotates a loaded legacy native-MCP binding carrying %s without mutating its predecessor",
     async (legacyFingerprintField) => {
       const sessionFile = path.join(tempDir, `${legacyFingerprintField}.jsonl`);
       const workspaceDir = path.join(tempDir, `${legacyFingerprintField}-workspace`);
@@ -1014,8 +1056,1594 @@ describe("Codex app-server thread lifecycle bindings", () => {
       const canonical = await readCodexAppServerBinding(sessionFile);
       expect(canonical?.userMcpServersFingerprint).toBeUndefined();
       expect(canonical?.mcpServersFingerprint).toBeUndefined();
+      await expect(
+        testCodexAppServerBindingStore.inspectThreadOwnership("thread-legacy-native-mcp"),
+      ).resolves.toEqual({ hasUnexpectedOwner: true, hasLegacyNativeMcpOwner: true });
     },
   );
+
+  it("preserves both owners when an ordinary legacy predecessor has another owner", async () => {
+    const sessionFile = path.join(tempDir, "ordinary-legacy-other-owner.jsonl");
+    const workspaceDir = path.join(tempDir, "ordinary-legacy-other-owner");
+    await writeCodexAppServerBinding(sessionFile, {
+      threadId: "thread-legacy",
+      cwd: workspaceDir,
+      dynamicToolsFingerprint: hashCodexAppServerBindingFingerprint(JSON.stringify([])),
+      userMcpServersFingerprint: "legacy-mcp",
+    });
+    const otherIdentity = { kind: "conversation" as const, bindingId: "ordinary-other-owner" };
+    await testCodexAppServerBindingStore.mutate(otherIdentity, {
+      kind: "set",
+      binding: { threadId: "thread-legacy", cwd: workspaceDir },
+    });
+    const params = createParams(sessionFile, workspaceDir);
+    params.toolsAllow = [];
+    const request = vi.fn(async (method: string, requestParams?: unknown) => {
+      if (method === "thread/start") {
+        return threadStartResult("thread-successor");
+      }
+      if (method === "thread/list") {
+        return { data: [], nextCursor: null };
+      }
+      if (method === "thread/unsubscribe") {
+        return { status: "unsubscribed" };
+      }
+      if (method === "thread/delete") {
+        expect(requestParams).toEqual({ threadId: "thread-successor" });
+        return {};
+      }
+      throw new Error(`unexpected method: ${method}`);
+    });
+
+    await expect(
+      startOrResumeThread({
+        client: { request } as never,
+        params,
+        cwd: workspaceDir,
+        dynamicTools: [],
+        appServer: createThreadLifecycleAppServerOptions(),
+        nativeCodeModeEnabled: false,
+      }),
+    ).rejects.toThrow("owned by another session");
+
+    expect(request.mock.calls.map(([method]) => method)).toEqual([
+      "thread/start",
+      "thread/list",
+      "thread/list",
+      "thread/delete",
+    ]);
+    expect(
+      request.mock.calls
+        .filter(([method]) => method === "thread/list")
+        .map(([, requestParams]) => (requestParams as { archived: boolean }).archived),
+    ).toEqual([false, true]);
+    await expect(readCodexAppServerBinding(sessionFile)).resolves.toMatchObject({
+      threadId: "thread-legacy",
+      userMcpServersFingerprint: "legacy-mcp",
+    });
+    await expect(testCodexAppServerBindingStore.read(otherIdentity)).resolves.toMatchObject({
+      threadId: "thread-legacy",
+    });
+  });
+
+  it("discards an ordinary successor when legacy ownership cannot be inspected", async () => {
+    const sessionFile = path.join(tempDir, "ordinary-legacy-owner-scan-error.jsonl");
+    const workspaceDir = path.join(tempDir, "ordinary-legacy-owner-scan-error");
+    await writeCodexAppServerBinding(sessionFile, {
+      threadId: "thread-legacy",
+      cwd: workspaceDir,
+      dynamicToolsFingerprint: hashCodexAppServerBindingFingerprint(JSON.stringify([])),
+      userMcpServersFingerprint: "legacy-mcp",
+    });
+    const params = createParams(sessionFile, workspaceDir);
+    params.toolsAllow = [];
+    const bindingStore: CodexAppServerBindingStore = {
+      ...testCodexAppServerBindingStore,
+      inspectThreadOwnership: async () => {
+        throw new Error("ownership scan unavailable");
+      },
+    };
+    const request = vi.fn(async (method: string, requestParams?: unknown) => {
+      if (method === "thread/start") {
+        return threadStartResult("thread-successor");
+      }
+      if (method === "thread/list") {
+        return { data: [], nextCursor: null };
+      }
+      if (method === "thread/unsubscribe") {
+        return { status: "unsubscribed" };
+      }
+      if (method === "thread/delete") {
+        expect(requestParams).toEqual({ threadId: "thread-successor" });
+        return {};
+      }
+      throw new Error(`unexpected method: ${method}`);
+    });
+
+    await expect(
+      startOrResumeThreadImpl({
+        client: { request } as never,
+        bindingStore,
+        params,
+        cwd: workspaceDir,
+        dynamicTools: [],
+        appServer: createThreadLifecycleAppServerOptions(),
+        nativeCodeModeEnabled: false,
+      }),
+    ).rejects.toThrow("ownership scan unavailable");
+    expect(request.mock.calls.map(([method]) => method)).toEqual([
+      "thread/start",
+      "thread/list",
+      "thread/list",
+      "thread/delete",
+    ]);
+  });
+
+  it("finishes a crash-pending ordinary legacy retirement before resuming", async () => {
+    const sessionFile = path.join(tempDir, "ordinary-legacy-retirement-recovery.jsonl");
+    const workspaceDir = path.join(tempDir, "ordinary-legacy-retirement-recovery");
+    const params = createParams(sessionFile, workspaceDir);
+    params.toolsAllow = [];
+    const request = vi.fn(async (method: string, requestParams?: unknown) => {
+      if (method === "thread/start") {
+        return threadStartResult("thread-successor");
+      }
+      if (method === "thread/read") {
+        const threadId = (requestParams as { threadId: string }).threadId;
+        return { thread: { id: threadId, status: { type: "idle" } } };
+      }
+      if (method === "thread/resume") {
+        return threadStartResult("thread-successor");
+      }
+      throw new Error(`unexpected method: ${method}`);
+    });
+    const common = {
+      client: { request } as never,
+      params,
+      cwd: workspaceDir,
+      dynamicTools: [],
+      appServer: createThreadLifecycleAppServerOptions(),
+      nativeCodeModeEnabled: false,
+    };
+    await startOrResumeThread(common);
+    const startedBinding = await readCodexAppServerBinding(sessionFile);
+    if (!startedBinding) {
+      throw new Error("expected initial binding");
+    }
+    await writeCodexAppServerBinding(sessionFile, {
+      ...startedBinding,
+      legacyMcpRetirementThreadId: "thread-legacy",
+    });
+    request.mockClear();
+
+    await expect(startOrResumeThread(common)).resolves.toMatchObject({
+      threadId: "thread-successor",
+      lifecycle: { action: "started" },
+    });
+
+    expect(request.mock.calls.map(([method]) => method)).toEqual(["thread/read", "thread/start"]);
+    const binding = await readCodexAppServerBinding(sessionFile);
+    expect(binding?.legacyMcpRetirementThreadId).toBeUndefined();
+  });
+
+  it.each([
+    { name: "owned", status: "idle" as const, addOwner: true },
+    { name: "active", status: "active" as const, addOwner: false },
+    { name: "unbound", status: "idle" as const, addOwner: false },
+  ])("refuses to retire a legacy predecessor with an $name descendant", async (testCase) => {
+    const bindingIdentity = {
+      kind: "session" as const,
+      agentId: "main",
+      sessionId: `descendant-${testCase.name}`,
+    };
+    seedCodexTestBindingForIdentity(bindingIdentity, {
+      threadId: "thread-successor",
+      cwd: "/repo",
+      dynamicToolsFingerprint: "dynamic-v2",
+      legacyMcpRetirementThreadId: "thread-predecessor",
+    });
+    if (testCase.addOwner) {
+      await testCodexAppServerBindingStore.mutate(
+        { kind: "conversation", bindingId: "descendant-owner" },
+        { kind: "set", binding: { threadId: "thread-descendant", cwd: "/repo" } },
+      );
+    }
+    const request = vi.fn(async (method: string, requestParams?: unknown) => {
+      const threadId = (requestParams as { threadId?: string } | undefined)?.threadId;
+      if (method === "thread/read") {
+        return {
+          thread: {
+            id: threadId,
+            status: { type: threadId === "thread-descendant" ? testCase.status : "idle" },
+          },
+        };
+      }
+      if (method === "thread/list") {
+        return { data: [{ id: "thread-descendant" }], nextCursor: null };
+      }
+      throw new Error(`unexpected method: ${method}`);
+    });
+
+    await expect(
+      retireLegacyMcpPredecessor({
+        client: { request } as never,
+        bindingStore: testCodexAppServerBindingStore,
+        bindingIdentity,
+        threadId: "thread-predecessor",
+        retirementMode: "archive",
+      }),
+    ).rejects.toThrow(
+      "archive that descendant and any other descendants first, then retry the normal Codex turn",
+    );
+    expect(request).not.toHaveBeenCalledWith(
+      "thread/archive",
+      { threadId: "thread-predecessor" },
+      expect.anything(),
+    );
+  });
+
+  it("records retirement when Codex reports the predecessor is already archived", async () => {
+    const bindingIdentity = {
+      kind: "session" as const,
+      agentId: "main",
+      sessionId: "already-archived-retirement",
+    };
+    seedCodexTestBindingForIdentity(bindingIdentity, {
+      threadId: "thread-successor",
+      cwd: "/repo",
+      dynamicToolsFingerprint: "dynamic-v2",
+      legacyMcpRetirementThreadId: "thread-predecessor",
+    });
+    const request = vi.fn(async (method: string) => {
+      if (method === "thread/read") {
+        throw new Error("thread thread-predecessor is archived");
+      }
+      throw new Error(`unexpected method: ${method}`);
+    });
+
+    await expect(
+      retireLegacyMcpPredecessor({
+        client: { request } as never,
+        bindingStore: testCodexAppServerBindingStore,
+        bindingIdentity,
+        threadId: "thread-predecessor",
+        retirementMode: "archive",
+      }),
+    ).resolves.toBeUndefined();
+    await expect(
+      testCodexAppServerBindingStore.inspectThreadOwnership("thread-predecessor"),
+    ).resolves.toEqual({ hasUnexpectedOwner: true, hasLegacyNativeMcpOwner: true });
+  });
+
+  it("keeps an ordinary successor when its legacy predecessor is already missing", async () => {
+    const sessionFile = path.join(tempDir, "ordinary-missing-legacy-predecessor.jsonl");
+    const workspaceDir = path.join(tempDir, "ordinary-missing-legacy-predecessor");
+    await writeCodexAppServerBinding(sessionFile, {
+      threadId: "thread-legacy-missing",
+      cwd: workspaceDir,
+      dynamicToolsFingerprint: hashCodexAppServerBindingFingerprint(JSON.stringify([])),
+      userMcpServersFingerprint: "legacy-mcp",
+    });
+    const params = createParams(sessionFile, workspaceDir);
+    params.toolsAllow = [];
+    const request = vi.fn(async (method: string) => {
+      if (method === "thread/start") {
+        return threadStartResult("thread-successor");
+      }
+      if (method === "thread/read") {
+        throw new Error("no rollout found for thread id thread-legacy-missing");
+      }
+      throw new Error(`unexpected method: ${method}`);
+    });
+
+    await expect(
+      startOrResumeThread({
+        client: { request } as never,
+        params,
+        cwd: workspaceDir,
+        dynamicTools: [],
+        appServer: createThreadLifecycleAppServerOptions(),
+        nativeCodeModeEnabled: false,
+      }),
+    ).resolves.toMatchObject({ threadId: "thread-successor", lifecycle: { action: "started" } });
+    expect(request.mock.calls.map(([method]) => method)).toEqual(["thread/start"]);
+    const binding = await readCodexAppServerBinding(sessionFile);
+    expect(binding).toMatchObject({ threadId: "thread-successor" });
+    expect(binding).not.toHaveProperty("legacyMcpRetirementThreadId");
+  });
+
+  it("keeps a supervised successor when its legacy predecessor disappears after preflight", async () => {
+    const sessionFile = path.join(tempDir, "supervised-missing-legacy-predecessor.jsonl");
+    const workspaceDir = path.join(tempDir, "supervised-missing-legacy-predecessor");
+    await writeCodexAppServerBinding(sessionFile, {
+      threadId: "thread-supervised-missing",
+      cwd: workspaceDir,
+      model: "gpt-5.4-codex",
+      modelProvider: "openai",
+      preserveNativeModel: true,
+      connectionScope: "supervision",
+      supervisionSourceThreadId: "thread-native-source",
+      conversationSourceTransferComplete: true,
+      dynamicToolsFingerprint: hashCodexAppServerBindingFingerprint(JSON.stringify([])),
+      userMcpServersFingerprint: "legacy-mcp",
+    });
+    let reads = 0;
+    const request = vi.fn(async (method: string) => {
+      if (method === "thread/read") {
+        reads += 1;
+        if (reads === 1) {
+          return { thread: threadStartResult("thread-supervised-missing").thread };
+        }
+        throw new Error("thread not loaded: thread-supervised-missing");
+      }
+      if (method === "thread/start") {
+        return threadStartResult("thread-supervised-successor");
+      }
+      throw new Error(`unexpected method: ${method}`);
+    });
+
+    await expect(
+      startOrResumeThread({
+        client: { request } as never,
+        params: createParams(sessionFile, workspaceDir),
+        cwd: workspaceDir,
+        dynamicTools: [createNamedDynamicTool("project__list")],
+        appServer: createThreadLifecycleAppServerOptions(),
+      }),
+    ).resolves.toMatchObject({
+      threadId: "thread-supervised-successor",
+      connectionScope: "supervision",
+      lifecycle: { action: "started" },
+    });
+    expect(request.mock.calls.map(([method]) => method)).toEqual([
+      "thread/read",
+      "thread/start",
+      "thread/read",
+    ]);
+  });
+
+  it("keeps a pending successor when retirement provenance cannot be recorded", async () => {
+    const bindingIdentity = {
+      kind: "session" as const,
+      agentId: "main",
+      sessionId: "retirement-record-failure",
+    };
+    seedCodexTestBindingForIdentity(bindingIdentity, {
+      threadId: "thread-successor",
+      cwd: "/repo",
+      dynamicToolsFingerprint: "dynamic-v2",
+      legacyMcpRetirementThreadId: "thread-predecessor",
+    });
+    const bindingStore: CodexAppServerBindingStore = {
+      ...testCodexAppServerBindingStore,
+      recordLegacyMcpThreadRetirement: async () => {
+        throw new Error("state capacity reached");
+      },
+    };
+    const request = vi.fn(async (method: string, requestParams?: unknown) => {
+      if (method === "thread/read") {
+        return { thread: { id: "thread-predecessor", status: { type: "idle" } } };
+      }
+      if (method === "thread/list") {
+        return { data: [], nextCursor: null };
+      }
+      if (method === "thread/archive") {
+        expect(requestParams).toEqual({ threadId: "thread-predecessor" });
+        return {};
+      }
+      throw new Error(`unexpected method: ${method}`);
+    });
+
+    await expect(
+      retireLegacyMcpPredecessor({
+        client: { request } as never,
+        bindingStore,
+        bindingIdentity,
+        threadId: "thread-predecessor",
+        retirementMode: "archive",
+      }),
+    ).rejects.toThrow("retirement could not be recorded");
+    await expect(testCodexAppServerBindingStore.read(bindingIdentity)).resolves.toMatchObject({
+      threadId: "thread-successor",
+      legacyMcpRetirementThreadId: "thread-predecessor",
+    });
+  });
+
+  it.each([
+    ["user MCP", { userMcpServersFingerprint: "legacy-user-mcp" }],
+    ["bundled MCP", { mcpServersFingerprint: "legacy-bundled-mcp" }],
+    [
+      "user and bundled MCP",
+      {
+        userMcpServersFingerprint: "legacy-user-mcp",
+        mcpServersFingerprint: "legacy-bundled-mcp",
+      },
+    ],
+  ] as const)("replaces a supervised legacy %s binding once", async (_label, legacyMarkers) => {
+    const sessionFile = path.join(tempDir, `supervised-${_label.replaceAll(" ", "-")}.jsonl`);
+    const workspaceDir = path.join(tempDir, `supervised-${_label.replaceAll(" ", "-")}`);
+    await writeCodexAppServerBinding(sessionFile, {
+      threadId: "thread-supervised-legacy",
+      cwd: workspaceDir,
+      model: "gpt-5.4-codex",
+      modelProvider: "openai",
+      preserveNativeModel: true,
+      connectionScope: "supervision",
+      supervisionSourceThreadId: "thread-native-source",
+      conversationSourceTransferComplete: true,
+      dynamicToolsFingerprint: hashCodexAppServerBindingFingerprint(JSON.stringify([])),
+      ...legacyMarkers,
+    });
+    const params = createParams(sessionFile, workspaceDir);
+    params.toolsAllow = [];
+    const dynamicTools = [createNamedDynamicTool("project__list")];
+    const request = vi.fn(async (method: string, requestParams?: unknown) => {
+      if (method === "thread/read") {
+        const threadId = (requestParams as { threadId: string }).threadId;
+        const thread = threadStartResult(threadId).thread;
+        if (_label === "bundled MCP") {
+          thread.status = { type: "notLoaded" };
+        }
+        return { thread };
+      }
+      if (method === "thread/start") {
+        return threadStartResult("thread-supervised-dynamic");
+      }
+      if (method === "thread/list") {
+        return { data: [], nextCursor: null };
+      }
+      if (method === "thread/archive") {
+        expect(requestParams).toEqual({ threadId: "thread-supervised-legacy" });
+        return {};
+      }
+      if (method === "thread/resume") {
+        return threadStartResult("thread-supervised-dynamic");
+      }
+      throw new Error(`unexpected method: ${method}`);
+    });
+    const releaseReservation = vi.fn();
+    const common = {
+      client: { request } as never,
+      reserveResumeThread: vi.fn(() => ({ release: releaseReservation })),
+      params,
+      cwd: workspaceDir,
+      dynamicTools,
+      appServer: createThreadLifecycleAppServerOptions(),
+    };
+
+    const replaced = await startOrResumeThread(common);
+    const resumed = await startOrResumeThread(common);
+
+    expect(replaced).toMatchObject({
+      threadId: "thread-supervised-dynamic",
+      connectionScope: "supervision",
+      supervisionSourceThreadId: "thread-native-source",
+      preserveNativeModel: true,
+      conversationSourceTransferComplete: true,
+      lifecycle: { action: "started" },
+    });
+    expect(resumed).toMatchObject({
+      threadId: "thread-supervised-dynamic",
+      connectionScope: "supervision",
+      supervisionSourceThreadId: "thread-native-source",
+      lifecycle: { action: "resumed" },
+    });
+    expect(request.mock.calls.map(([method]) => method)).toEqual([
+      "thread/read",
+      "thread/start",
+      "thread/read",
+      "thread/list",
+      "thread/archive",
+      "thread/read",
+      "thread/read",
+      "thread/resume",
+    ]);
+    const startParams = request.mock.calls[1]?.[1];
+    expect(startParams).toMatchObject({
+      model: "gpt-5.4-codex",
+      modelProvider: "openai",
+      dynamicTools,
+    });
+    expect(startParams).not.toHaveProperty("config.mcp_servers");
+    const canonical = await readCodexAppServerBinding(sessionFile);
+    expect(canonical).toMatchObject({
+      threadId: "thread-supervised-dynamic",
+      connectionScope: "supervision",
+      supervisionSourceThreadId: "thread-native-source",
+      preserveNativeModel: true,
+      conversationSourceTransferComplete: true,
+      dynamicToolsFingerprint: expect.any(String),
+    });
+    expect(canonical?.userMcpServersFingerprint).toBeUndefined();
+    expect(canonical?.mcpServersFingerprint).toBeUndefined();
+    expect(canonical?.historyCoveredThrough).toBeUndefined();
+  });
+
+  it("defers a supervised legacy MCP replacement during a report-only turn", async () => {
+    const sessionFile = path.join(tempDir, "supervised-report-only-legacy.jsonl");
+    const workspaceDir = path.join(tempDir, "supervised-report-only-legacy");
+    const legacyCoveredThrough = "2026-01-01T00:00:00.000Z";
+    await writeCodexAppServerBinding(sessionFile, {
+      threadId: "thread-supervised-legacy",
+      cwd: workspaceDir,
+      model: "gpt-5.4-codex",
+      modelProvider: "openai",
+      preserveNativeModel: true,
+      connectionScope: "supervision",
+      supervisionSourceThreadId: "thread-native-source",
+      conversationSourceTransferComplete: true,
+      historyCoveredThrough: legacyCoveredThrough,
+      userMcpServersFingerprint: "legacy-user-mcp",
+    });
+    const params = createParams(sessionFile, workspaceDir);
+    params.delegationCapability = "report_only";
+    let starts = 0;
+    const request = vi.fn(async (method: string, requestParams?: unknown) => {
+      if (method === "thread/read") {
+        return {
+          thread: threadStartResult((requestParams as { threadId: string }).threadId).thread,
+        };
+      }
+      if (method === "thread/start") {
+        starts += 1;
+        return threadStartResult(starts === 1 ? "thread-transient" : "thread-canonical");
+      }
+      if (method === "thread/list") {
+        return { data: [], nextCursor: null };
+      }
+      if (method === "thread/archive") {
+        expect(requestParams).toEqual({ threadId: "thread-supervised-legacy" });
+        return {};
+      }
+      throw new Error(`unexpected method: ${method}`);
+    });
+    const releaseReportOnlyReservation = vi.fn();
+    const common = {
+      client: { request } as never,
+      reserveResumeThread: vi.fn(() => ({ release: releaseReportOnlyReservation })),
+      params,
+      cwd: workspaceDir,
+      dynamicTools: [createNamedDynamicTool("project__list")],
+      appServer: createThreadLifecycleAppServerOptions(),
+    };
+
+    const transient = await startOrResumeThread(common);
+    const afterTransient = await readCodexAppServerBinding(sessionFile);
+    params.delegationCapability = "full";
+    const canonical = await startOrResumeThread(common);
+
+    expect(transient).toMatchObject({
+      threadId: "thread-transient",
+      connectionScope: "supervision",
+      supervisionSourceThreadId: "thread-native-source",
+      preserveNativeModel: true,
+      conversationSourceTransferComplete: true,
+      lifecycle: { action: "started" },
+    });
+    expect(transient).not.toHaveProperty("liveThreadConfigFingerprint");
+    expect(afterTransient).toMatchObject({
+      threadId: "thread-supervised-legacy",
+      supervisionSourceThreadId: "thread-native-source",
+      userMcpServersFingerprint: "legacy-user-mcp",
+      historyCoveredThrough: legacyCoveredThrough,
+    });
+    expect(canonical).toMatchObject({
+      threadId: "thread-canonical",
+      connectionScope: "supervision",
+      supervisionSourceThreadId: "thread-native-source",
+      lifecycle: { action: "started" },
+    });
+    expect(request.mock.calls.map(([method]) => method)).toEqual([
+      "thread/read",
+      "thread/start",
+      "thread/read",
+      "thread/start",
+      "thread/read",
+      "thread/list",
+      "thread/archive",
+    ]);
+    expect(releaseReportOnlyReservation).toHaveBeenCalledTimes(2);
+    const committed = await readCodexAppServerBinding(sessionFile);
+    expect(committed?.threadId).toBe("thread-canonical");
+    expect(committed?.userMcpServersFingerprint).toBeUndefined();
+    expect(committed?.historyCoveredThrough).toBeUndefined();
+  });
+
+  it("stops a supervised MCP migration when the legacy thread is already reserved", async () => {
+    const sessionFile = path.join(tempDir, "supervised-reserved-legacy.jsonl");
+    const workspaceDir = path.join(tempDir, "supervised-reserved-legacy");
+    await writeCodexAppServerBinding(sessionFile, {
+      threadId: "thread-supervised-legacy",
+      cwd: workspaceDir,
+      model: "gpt-5.4-codex",
+      modelProvider: "openai",
+      preserveNativeModel: true,
+      connectionScope: "supervision",
+      supervisionSourceThreadId: "thread-native-source",
+      conversationSourceTransferComplete: true,
+      userMcpServersFingerprint: "legacy-user-mcp",
+    });
+    const request = vi.fn(async () => {
+      throw new Error("migration must stop before contacting Codex");
+    });
+    const reserveResumeThread = vi.fn(() => {
+      throw new Error("thread already has an active route");
+    });
+
+    await expect(
+      startOrResumeThread({
+        client: { request } as never,
+        reserveResumeThread,
+        params: createParams(sessionFile, workspaceDir),
+        cwd: workspaceDir,
+        dynamicTools: [createNamedDynamicTool("project__list")],
+        appServer: createThreadLifecycleAppServerOptions(),
+      }),
+    ).rejects.toThrow("thread already has an active route");
+    expect(reserveResumeThread).toHaveBeenCalledWith("thread-supervised-legacy");
+    expect(request).not.toHaveBeenCalled();
+    await expect(readCodexAppServerBinding(sessionFile)).resolves.toMatchObject({
+      threadId: "thread-supervised-legacy",
+      userMcpServersFingerprint: "legacy-user-mcp",
+    });
+  });
+
+  it("fences late binding adoption until the legacy supervised thread is retired", async () => {
+    const sessionFile = path.join(tempDir, "supervised-retirement-fence.jsonl");
+    const workspaceDir = path.join(tempDir, "supervised-retirement-fence");
+    await writeCodexAppServerBinding(sessionFile, {
+      threadId: "thread-supervised-legacy",
+      cwd: workspaceDir,
+      model: "gpt-5.4-codex",
+      modelProvider: "openai",
+      preserveNativeModel: true,
+      connectionScope: "supervision",
+      supervisionSourceThreadId: "thread-native-source",
+      conversationSourceTransferComplete: true,
+      userMcpServersFingerprint: "legacy-user-mcp",
+    });
+    const lateIdentity = {
+      kind: "session" as const,
+      agentId: "main",
+      sessionId: "late-catalog-adoption",
+    };
+    const originalFence = testCodexAppServerBindingStore.withThreadArchiveFence.bind(
+      testCodexAppServerBindingStore,
+    );
+    let lateMutationError: unknown;
+    const bindingStore: CodexAppServerBindingStore = {
+      ...testCodexAppServerBindingStore,
+      withThreadArchiveFence: async (run) => {
+        const operation = originalFence(run);
+        try {
+          await testCodexAppServerBindingStore.mutate(lateIdentity, {
+            kind: "set",
+            binding: {
+              threadId: "thread-supervised-legacy",
+              cwd: workspaceDir,
+            },
+          });
+        } catch (error) {
+          lateMutationError = error;
+        }
+        return await operation;
+      },
+    };
+    const request = vi.fn(async (method: string) => {
+      if (method === "thread/read") {
+        return { thread: threadStartResult("thread-supervised-legacy").thread };
+      }
+      if (method === "thread/start") {
+        return threadStartResult("thread-fenced-successor");
+      }
+      if (method === "thread/list") {
+        return { data: [], nextCursor: null };
+      }
+      if (method === "thread/archive") {
+        return {};
+      }
+      throw new Error(`unexpected method: ${method}`);
+    });
+
+    await expect(
+      startOrResumeThreadImpl({
+        client: { request } as never,
+        bindingStore,
+        params: createParams(sessionFile, workspaceDir),
+        cwd: workspaceDir,
+        dynamicTools: [createNamedDynamicTool("project__list")],
+        appServer: createThreadLifecycleAppServerOptions(),
+      }),
+    ).resolves.toMatchObject({ threadId: "thread-fenced-successor" });
+    expect(lateMutationError).toMatchObject({
+      message: "Codex binding mutation blocked while a native archive is in progress; retry",
+    });
+    await expect(testCodexAppServerBindingStore.read(lateIdentity)).resolves.toBeUndefined();
+  });
+
+  it("rejects retirement when another session already owns the legacy supervised thread", async () => {
+    const sessionFile = path.join(tempDir, "supervised-existing-other-owner.jsonl");
+    const workspaceDir = path.join(tempDir, "supervised-existing-other-owner");
+    await writeCodexAppServerBinding(sessionFile, {
+      threadId: "thread-supervised-legacy",
+      cwd: workspaceDir,
+      model: "gpt-5.4-codex",
+      modelProvider: "openai",
+      preserveNativeModel: true,
+      connectionScope: "supervision",
+      supervisionSourceThreadId: "thread-native-source",
+      conversationSourceTransferComplete: true,
+      userMcpServersFingerprint: "legacy-user-mcp",
+    });
+    const otherIdentity = {
+      kind: "session" as const,
+      agentId: "main",
+      sessionId: "existing-other-owner",
+    };
+    await testCodexAppServerBindingStore.mutate(otherIdentity, {
+      kind: "set",
+      binding: { threadId: "thread-supervised-legacy", cwd: workspaceDir },
+    });
+    const request = vi.fn(async (method: string) => {
+      if (method === "thread/read") {
+        return { thread: threadStartResult("thread-supervised-legacy").thread };
+      }
+      if (method === "thread/start") {
+        return threadStartResult("thread-other-owner-successor");
+      }
+      if (method === "thread/list") {
+        return { data: [], nextCursor: null };
+      }
+      if (method === "thread/delete") {
+        return {};
+      }
+      throw new Error(`unexpected method: ${method}`);
+    });
+
+    await expect(
+      startOrResumeThread({
+        client: { request } as never,
+        params: createParams(sessionFile, workspaceDir),
+        cwd: workspaceDir,
+        dynamicTools: [createNamedDynamicTool("project__list")],
+        appServer: createThreadLifecycleAppServerOptions(),
+      }),
+    ).rejects.toThrow("owned by another session");
+    expect(request.mock.calls.map(([method]) => method)).toEqual([
+      "thread/read",
+      "thread/start",
+      "thread/list",
+      "thread/list",
+      "thread/delete",
+    ]);
+    await expect(readCodexAppServerBinding(sessionFile)).resolves.toMatchObject({
+      threadId: "thread-supervised-legacy",
+      userMcpServersFingerprint: "legacy-user-mcp",
+    });
+    await expect(testCodexAppServerBindingStore.read(otherIdentity)).resolves.toMatchObject({
+      threadId: "thread-supervised-legacy",
+    });
+  });
+
+  it("deletes the successor when legacy ownership cannot be rechecked", async () => {
+    const sessionFile = path.join(tempDir, "supervised-owner-recheck-error.jsonl");
+    const workspaceDir = path.join(tempDir, "supervised-owner-recheck-error");
+    await writeCodexAppServerBinding(sessionFile, {
+      threadId: "thread-supervised-legacy",
+      cwd: workspaceDir,
+      model: "gpt-5.4-codex",
+      modelProvider: "openai",
+      preserveNativeModel: true,
+      connectionScope: "supervision",
+      supervisionSourceThreadId: "thread-native-source",
+      conversationSourceTransferComplete: true,
+      userMcpServersFingerprint: "legacy-user-mcp",
+    });
+    const bindingStore: CodexAppServerBindingStore = {
+      ...testCodexAppServerBindingStore,
+      inspectThreadOwnership: async () => {
+        throw new Error("ownership store unavailable");
+      },
+    };
+    const request = vi.fn(async (method: string) => {
+      if (method === "thread/read") {
+        return { thread: threadStartResult("thread-supervised-legacy").thread };
+      }
+      if (method === "thread/start") {
+        return threadStartResult("thread-owner-recheck-successor");
+      }
+      if (method === "thread/list") {
+        return { data: [], nextCursor: null };
+      }
+      if (method === "thread/delete") {
+        return {};
+      }
+      throw new Error(`unexpected method: ${method}`);
+    });
+
+    await expect(
+      startOrResumeThreadImpl({
+        client: { request } as never,
+        bindingStore,
+        params: createParams(sessionFile, workspaceDir),
+        cwd: workspaceDir,
+        dynamicTools: [createNamedDynamicTool("project__list")],
+        appServer: createThreadLifecycleAppServerOptions(),
+      }),
+    ).rejects.toThrow("ownership store unavailable");
+    expect(request.mock.calls.map(([method]) => method)).toEqual([
+      "thread/read",
+      "thread/start",
+      "thread/list",
+      "thread/list",
+      "thread/delete",
+    ]);
+  });
+
+  it.each(["read-error", "became-active", "changed-id"] as const)(
+    "keeps the successor pending when the legacy thread %s during fenced retirement",
+    async (outcome) => {
+      const sessionFile = path.join(tempDir, `supervised-status-recheck-${outcome}.jsonl`);
+      const workspaceDir = path.join(tempDir, `supervised-status-recheck-${outcome}`);
+      await writeCodexAppServerBinding(sessionFile, {
+        threadId: "thread-supervised-legacy",
+        cwd: workspaceDir,
+        model: "gpt-5.4-codex",
+        modelProvider: "openai",
+        preserveNativeModel: true,
+        connectionScope: "supervision",
+        supervisionSourceThreadId: "thread-native-source",
+        conversationSourceTransferComplete: true,
+        userMcpServersFingerprint: "legacy-user-mcp",
+      });
+      let reads = 0;
+      const request = vi.fn(async (method: string) => {
+        if (method === "thread/read") {
+          reads += 1;
+          if (reads === 2 && outcome === "read-error") {
+            throw new Error("status recheck unavailable");
+          }
+          const thread = threadStartResult(
+            reads === 2 && outcome === "changed-id" ? "thread-other" : "thread-supervised-legacy",
+          ).thread;
+          if (reads === 2 && outcome === "became-active") {
+            thread.status = { type: "active" };
+          }
+          return { thread };
+        }
+        if (method === "thread/start") {
+          return threadStartResult("thread-status-recheck-successor");
+        }
+        if (method === "thread/list") {
+          return { data: [], nextCursor: null };
+        }
+        if (method === "thread/delete") {
+          return {};
+        }
+        throw new Error(`unexpected method: ${method}`);
+      });
+
+      await expect(
+        startOrResumeThread({
+          client: { request } as never,
+          params: createParams(sessionFile, workspaceDir),
+          cwd: workspaceDir,
+          dynamicTools: [createNamedDynamicTool("project__list")],
+          appServer: createThreadLifecycleAppServerOptions(),
+        }),
+      ).rejects.toThrow();
+      expect(request.mock.calls.map(([method]) => method)).toEqual([
+        "thread/read",
+        "thread/start",
+        "thread/read",
+      ]);
+      await expect(readCodexAppServerBinding(sessionFile)).resolves.toMatchObject({
+        threadId: "thread-status-recheck-successor",
+        legacyMcpRetirementThreadId: "thread-supervised-legacy",
+      });
+    },
+  );
+
+  it.each([
+    ["canonical", "thread-supervised-legacy"],
+    ["source", "thread-native-source"],
+  ] as const)(
+    "rejects a supervised MCP successor that reuses the %s thread id",
+    async (_role, id) => {
+      const sessionFile = path.join(tempDir, `supervised-reused-${_role}.jsonl`);
+      const workspaceDir = path.join(tempDir, `supervised-reused-${_role}`);
+      await writeCodexAppServerBinding(sessionFile, {
+        threadId: "thread-supervised-legacy",
+        cwd: workspaceDir,
+        model: "gpt-5.4-codex",
+        modelProvider: "openai",
+        preserveNativeModel: true,
+        connectionScope: "supervision",
+        supervisionSourceThreadId: "thread-native-source",
+        conversationSourceTransferComplete: true,
+        userMcpServersFingerprint: "legacy-user-mcp",
+      });
+      const request = vi.fn(async (method: string) => {
+        if (method === "thread/read") {
+          return { thread: threadStartResult("thread-supervised-legacy").thread };
+        }
+        if (method === "thread/start") {
+          return threadStartResult(id);
+        }
+        throw new Error(`unexpected method: ${method}`);
+      });
+      const abandonClient = vi.fn(async () => undefined);
+
+      await expect(
+        startOrResumeThread({
+          client: { request } as never,
+          abandonClient,
+          params: createParams(sessionFile, workspaceDir),
+          cwd: workspaceDir,
+          dynamicTools: [createNamedDynamicTool("project__list")],
+          appServer: createThreadLifecycleAppServerOptions(),
+        }),
+      ).rejects.toThrow(`reused an existing thread: ${id}`);
+      expect(request.mock.calls.map(([method]) => method)).toEqual(["thread/read", "thread/start"]);
+      expect(abandonClient).toHaveBeenCalledOnce();
+      await expect(readCodexAppServerBinding(sessionFile)).resolves.toMatchObject({
+        threadId: "thread-supervised-legacy",
+        supervisionSourceThreadId: "thread-native-source",
+        userMcpServersFingerprint: "legacy-user-mcp",
+      });
+    },
+  );
+
+  it.each(["model", "provider"] as const)(
+    "archives a supervised MCP successor that changes its native %s",
+    async (field) => {
+      const sessionFile = path.join(tempDir, `supervised-changed-${field}.jsonl`);
+      const workspaceDir = path.join(tempDir, `supervised-changed-${field}`);
+      await writeCodexAppServerBinding(sessionFile, {
+        threadId: "thread-supervised-legacy",
+        cwd: workspaceDir,
+        model: "gpt-5.4-codex",
+        modelProvider: "openai",
+        preserveNativeModel: true,
+        connectionScope: "supervision",
+        supervisionSourceThreadId: "thread-native-source",
+        conversationSourceTransferComplete: true,
+        userMcpServersFingerprint: "legacy-user-mcp",
+      });
+      const request = vi.fn(async (method: string) => {
+        if (method === "thread/read") {
+          return { thread: threadStartResult("thread-supervised-legacy").thread };
+        }
+        if (method === "thread/start") {
+          const response = threadStartResult("thread-changed-selection");
+          if (field === "model") {
+            response.model = "other-model";
+          } else {
+            response.modelProvider = "other-provider";
+          }
+          return response;
+        }
+        if (method === "thread/list") {
+          return { data: [], nextCursor: null };
+        }
+        if (method === "thread/delete") {
+          return {};
+        }
+        throw new Error(`unexpected method: ${method}`);
+      });
+
+      await expect(
+        startOrResumeThread({
+          client: { request } as never,
+          params: createParams(sessionFile, workspaceDir),
+          cwd: workspaceDir,
+          dynamicTools: [createNamedDynamicTool("project__list")],
+          appServer: createThreadLifecycleAppServerOptions(),
+        }),
+      ).rejects.toThrow("changed its native model or provider");
+      expect(request.mock.calls.map(([method]) => method)).toEqual([
+        "thread/read",
+        "thread/start",
+        "thread/list",
+        "thread/list",
+        "thread/delete",
+      ]);
+      await expect(readCodexAppServerBinding(sessionFile)).resolves.toMatchObject({
+        threadId: "thread-supervised-legacy",
+        userMcpServersFingerprint: "legacy-user-mcp",
+      });
+    },
+  );
+
+  it("archives a supervised MCP successor with a malformed start response", async () => {
+    const sessionFile = path.join(tempDir, "supervised-malformed-successor.jsonl");
+    const workspaceDir = path.join(tempDir, "supervised-malformed-successor");
+    await writeCodexAppServerBinding(sessionFile, {
+      threadId: "thread-supervised-legacy",
+      cwd: workspaceDir,
+      model: "gpt-5.4-codex",
+      modelProvider: "openai",
+      preserveNativeModel: true,
+      connectionScope: "supervision",
+      supervisionSourceThreadId: "thread-native-source",
+      conversationSourceTransferComplete: true,
+      userMcpServersFingerprint: "legacy-user-mcp",
+    });
+    const request = vi.fn(async (method: string) => {
+      if (method === "thread/read") {
+        return { thread: threadStartResult("thread-supervised-legacy").thread };
+      }
+      if (method === "thread/start") {
+        return { thread: { id: "thread-malformed" } };
+      }
+      if (method === "thread/list") {
+        return { data: [], nextCursor: null };
+      }
+      if (method === "thread/delete") {
+        return {};
+      }
+      throw new Error(`unexpected method: ${method}`);
+    });
+
+    await expect(
+      startOrResumeThread({
+        client: { request } as never,
+        params: createParams(sessionFile, workspaceDir),
+        cwd: workspaceDir,
+        dynamicTools: [createNamedDynamicTool("project__list")],
+        appServer: createThreadLifecycleAppServerOptions(),
+      }),
+    ).rejects.toThrow();
+    expect(request.mock.calls.map(([method]) => method)).toEqual([
+      "thread/read",
+      "thread/start",
+      "thread/list",
+      "thread/list",
+      "thread/delete",
+    ]);
+    await expect(readCodexAppServerBinding(sessionFile)).resolves.toMatchObject({
+      threadId: "thread-supervised-legacy",
+      userMcpServersFingerprint: "legacy-user-mcp",
+    });
+  });
+
+  it("archives a supervised MCP successor when startup aborts after thread creation", async () => {
+    const sessionFile = path.join(tempDir, "supervised-aborted-successor.jsonl");
+    const workspaceDir = path.join(tempDir, "supervised-aborted-successor");
+    await writeCodexAppServerBinding(sessionFile, {
+      threadId: "thread-supervised-legacy",
+      cwd: workspaceDir,
+      model: "gpt-5.4-codex",
+      modelProvider: "openai",
+      preserveNativeModel: true,
+      connectionScope: "supervision",
+      supervisionSourceThreadId: "thread-native-source",
+      conversationSourceTransferComplete: true,
+      userMcpServersFingerprint: "legacy-user-mcp",
+    });
+    const abort = new AbortController();
+    const request = vi.fn(async (method: string) => {
+      if (method === "thread/read") {
+        return { thread: threadStartResult("thread-supervised-legacy").thread };
+      }
+      if (method === "thread/start") {
+        abort.abort();
+        return threadStartResult("thread-aborted-successor");
+      }
+      if (method === "thread/list") {
+        return { data: [], nextCursor: null };
+      }
+      if (method === "thread/delete") {
+        return {};
+      }
+      throw new Error(`unexpected method: ${method}`);
+    });
+
+    await expect(
+      startOrResumeThread({
+        client: { request } as never,
+        params: createParams(sessionFile, workspaceDir),
+        cwd: workspaceDir,
+        dynamicTools: [createNamedDynamicTool("project__list")],
+        appServer: createThreadLifecycleAppServerOptions(),
+        signal: abort.signal,
+      }),
+    ).rejects.toThrow();
+    expect(request.mock.calls.map(([method]) => method)).toEqual([
+      "thread/read",
+      "thread/start",
+      "thread/list",
+      "thread/list",
+      "thread/delete",
+    ]);
+    await expect(readCodexAppServerBinding(sessionFile)).resolves.toMatchObject({
+      threadId: "thread-supervised-legacy",
+      userMcpServersFingerprint: "legacy-user-mcp",
+    });
+  });
+
+  it("abandons an indeterminate supervised MCP start without mutating its owner", async () => {
+    const sessionFile = path.join(tempDir, "supervised-indeterminate-start.jsonl");
+    const workspaceDir = path.join(tempDir, "supervised-indeterminate-start");
+    await writeCodexAppServerBinding(sessionFile, {
+      threadId: "thread-supervised-legacy",
+      cwd: workspaceDir,
+      model: "gpt-5.4-codex",
+      modelProvider: "openai",
+      preserveNativeModel: true,
+      connectionScope: "supervision",
+      supervisionSourceThreadId: "thread-native-source",
+      conversationSourceTransferComplete: true,
+      userMcpServersFingerprint: "legacy-user-mcp",
+    });
+    const request = vi.fn(async (method: string) => {
+      if (method === "thread/read") {
+        return { thread: threadStartResult("thread-supervised-legacy").thread };
+      }
+      if (method === "thread/start") {
+        throw new Error("connection lost after write");
+      }
+      throw new Error(`unexpected method: ${method}`);
+    });
+    const abandonClient = vi.fn(async () => undefined);
+    const releaseReservation = vi.fn();
+
+    await expect(
+      startOrResumeThread({
+        client: { request } as never,
+        abandonClient,
+        reserveResumeThread: () => ({ release: releaseReservation }),
+        params: createParams(sessionFile, workspaceDir),
+        cwd: workspaceDir,
+        dynamicTools: [createNamedDynamicTool("project__list")],
+        appServer: createThreadLifecycleAppServerOptions(),
+      }),
+    ).rejects.toThrow("may have started without a response");
+    expect(request.mock.calls.map(([method]) => method)).toEqual(["thread/read", "thread/start"]);
+    expect(abandonClient).toHaveBeenCalledOnce();
+    expect(releaseReservation).toHaveBeenCalledOnce();
+    await expect(readCodexAppServerBinding(sessionFile)).resolves.toMatchObject({
+      threadId: "thread-supervised-legacy",
+      userMcpServersFingerprint: "legacy-user-mcp",
+    });
+  });
+
+  it.each([
+    ["active", "wait for its turn to finish"],
+    ["systemError", "unavailable for the configured MCP upgrade"],
+  ] as const)("preserves an unavailable %s supervised legacy binding", async (status, message) => {
+    const sessionFile = path.join(tempDir, `supervised-${status}.jsonl`);
+    const workspaceDir = path.join(tempDir, `supervised-${status}`);
+    await writeCodexAppServerBinding(sessionFile, {
+      threadId: "thread-supervised-legacy",
+      cwd: workspaceDir,
+      model: "gpt-5.4-codex",
+      modelProvider: "openai",
+      preserveNativeModel: true,
+      connectionScope: "supervision",
+      supervisionSourceThreadId: "thread-native-source",
+      conversationSourceTransferComplete: true,
+      userMcpServersFingerprint: "legacy-user-mcp",
+    });
+    const params = createParams(sessionFile, workspaceDir);
+    const request = vi.fn(async (method: string) => {
+      if (method === "thread/read") {
+        const thread = threadStartResult("thread-supervised-legacy").thread;
+        thread.status = { type: status };
+        return { thread };
+      }
+      throw new Error(`unexpected method: ${method}`);
+    });
+
+    await expect(
+      startOrResumeThread({
+        client: { request } as never,
+        params,
+        cwd: workspaceDir,
+        dynamicTools: [createNamedDynamicTool("project__list")],
+        appServer: createThreadLifecycleAppServerOptions(),
+      }),
+    ).rejects.toThrow(message);
+    expect(request.mock.calls.map(([method]) => method)).toEqual(["thread/read"]);
+    await expect(readCodexAppServerBinding(sessionFile)).resolves.toMatchObject({
+      threadId: "thread-supervised-legacy",
+      connectionScope: "supervision",
+      supervisionSourceThreadId: "thread-native-source",
+      userMcpServersFingerprint: expect.any(String),
+    });
+  });
+
+  it("archives an uncommitted supervised MCP successor after a CAS conflict", async () => {
+    const sessionFile = path.join(tempDir, "supervised-cas-conflict.jsonl");
+    const workspaceDir = path.join(tempDir, "supervised-cas-conflict");
+    await writeCodexAppServerBinding(sessionFile, {
+      threadId: "thread-supervised-legacy",
+      cwd: workspaceDir,
+      model: "gpt-5.4-codex",
+      modelProvider: "openai",
+      preserveNativeModel: true,
+      connectionScope: "supervision",
+      supervisionSourceThreadId: "thread-native-source",
+      conversationSourceTransferComplete: true,
+      userMcpServersFingerprint: "legacy-user-mcp",
+    });
+    const originalMutate = testCodexAppServerBindingStore.mutate.bind(
+      testCodexAppServerBindingStore,
+    );
+    vi.spyOn(testCodexAppServerBindingStore, "mutate").mockImplementation(
+      async (identity, mutation) =>
+        mutation.kind === "replace-supervision-thread"
+          ? false
+          : await originalMutate(identity, mutation),
+    );
+    const request = vi.fn(async (method: string, requestParams?: unknown) => {
+      if (method === "thread/read") {
+        return { thread: threadStartResult("thread-supervised-legacy").thread };
+      }
+      if (method === "thread/start") {
+        return threadStartResult("thread-uncommitted-successor");
+      }
+      if (method === "thread/list") {
+        return { data: [], nextCursor: null };
+      }
+      if (method === "thread/delete") {
+        expect(requestParams).toEqual({ threadId: "thread-uncommitted-successor" });
+        return {};
+      }
+      throw new Error(`unexpected method: ${method}`);
+    });
+
+    await expect(
+      startOrResumeThread({
+        client: { request } as never,
+        params: createParams(sessionFile, workspaceDir),
+        cwd: workspaceDir,
+        dynamicTools: [createNamedDynamicTool("project__list")],
+        appServer: createThreadLifecycleAppServerOptions(),
+      }),
+    ).rejects.toThrow("committing a supervised configured MCP replacement");
+    expect(request.mock.calls.map(([method]) => method)).toEqual([
+      "thread/read",
+      "thread/start",
+      "thread/list",
+      "thread/list",
+      "thread/delete",
+    ]);
+    await expect(readCodexAppServerBinding(sessionFile)).resolves.toMatchObject({
+      threadId: "thread-supervised-legacy",
+      userMcpServersFingerprint: expect.any(String),
+    });
+  });
+
+  it("abandons the client when a conflicted supervised MCP successor cannot be archived", async () => {
+    const sessionFile = path.join(tempDir, "supervised-cas-cleanup-failure.jsonl");
+    const workspaceDir = path.join(tempDir, "supervised-cas-cleanup-failure");
+    await writeCodexAppServerBinding(sessionFile, {
+      threadId: "thread-supervised-legacy",
+      cwd: workspaceDir,
+      model: "gpt-5.4-codex",
+      modelProvider: "openai",
+      preserveNativeModel: true,
+      connectionScope: "supervision",
+      supervisionSourceThreadId: "thread-native-source",
+      conversationSourceTransferComplete: true,
+      userMcpServersFingerprint: "legacy-user-mcp",
+    });
+    const originalMutate = testCodexAppServerBindingStore.mutate.bind(
+      testCodexAppServerBindingStore,
+    );
+    vi.spyOn(testCodexAppServerBindingStore, "mutate").mockImplementation(
+      async (identity, mutation) =>
+        mutation.kind === "replace-supervision-thread"
+          ? false
+          : await originalMutate(identity, mutation),
+    );
+    const request = vi.fn(async (method: string) => {
+      if (method === "thread/read") {
+        return { thread: threadStartResult("thread-supervised-legacy").thread };
+      }
+      if (method === "thread/start") {
+        return threadStartResult("thread-unrecoverable-successor");
+      }
+      if (method === "thread/list") {
+        return { data: [], nextCursor: null };
+      }
+      if (method === "thread/delete") {
+        throw new Error("archive unavailable");
+      }
+      if (method === "thread/unsubscribe") {
+        return { status: "unsubscribed" };
+      }
+      throw new Error(`unexpected method: ${method}`);
+    });
+    const abandonClient = vi.fn(async () => undefined);
+
+    await expect(
+      startOrResumeThread({
+        client: { request } as never,
+        abandonClient,
+        params: createParams(sessionFile, workspaceDir),
+        cwd: workspaceDir,
+        dynamicTools: [createNamedDynamicTool("project__list")],
+        appServer: createThreadLifecycleAppServerOptions(),
+      }),
+    ).rejects.toThrow("supervised replacement cleanup failed");
+    expect(request.mock.calls.map(([method]) => method)).toEqual([
+      "thread/read",
+      "thread/start",
+      "thread/list",
+      "thread/list",
+      "thread/delete",
+      "thread/unsubscribe",
+    ]);
+    expect(abandonClient).toHaveBeenCalledOnce();
+    await expect(readCodexAppServerBinding(sessionFile)).resolves.toMatchObject({
+      threadId: "thread-supervised-legacy",
+      userMcpServersFingerprint: "legacy-user-mcp",
+    });
+  });
+
+  it("abandons an uncertain supervised MCP commit when its binding cannot be verified", async () => {
+    const sessionFile = path.join(tempDir, "supervised-cas-verification-failure.jsonl");
+    const workspaceDir = path.join(tempDir, "supervised-cas-verification-failure");
+    await writeCodexAppServerBinding(sessionFile, {
+      threadId: "thread-supervised-legacy",
+      cwd: workspaceDir,
+      model: "gpt-5.4-codex",
+      modelProvider: "openai",
+      preserveNativeModel: true,
+      connectionScope: "supervision",
+      supervisionSourceThreadId: "thread-native-source",
+      conversationSourceTransferComplete: true,
+      userMcpServersFingerprint: "legacy-user-mcp",
+    });
+    const originalMutate = testCodexAppServerBindingStore.mutate.bind(
+      testCodexAppServerBindingStore,
+    );
+    let verificationRead = false;
+    vi.spyOn(testCodexAppServerBindingStore, "mutate").mockImplementation(
+      async (identity, mutation) => {
+        if (mutation.kind === "replace-supervision-thread") {
+          verificationRead = true;
+          throw new Error("write outcome unknown");
+        }
+        return await originalMutate(identity, mutation);
+      },
+    );
+    const originalRead = testCodexAppServerBindingStore.read.bind(testCodexAppServerBindingStore);
+    const readSpy = vi
+      .spyOn(testCodexAppServerBindingStore, "read")
+      .mockImplementation(async (identity) => {
+        if (verificationRead) {
+          throw new Error("binding store unavailable");
+        }
+        return await originalRead(identity);
+      });
+    const request = vi.fn(async (method: string) => {
+      if (method === "thread/read") {
+        return { thread: threadStartResult("thread-supervised-legacy").thread };
+      }
+      if (method === "thread/start") {
+        return threadStartResult("thread-uncertain-successor");
+      }
+      throw new Error(`unexpected method: ${method}`);
+    });
+    const abandonClient = vi.fn(async () => undefined);
+
+    await expect(
+      startOrResumeThread({
+        client: { request } as never,
+        abandonClient,
+        params: createParams(sessionFile, workspaceDir),
+        cwd: workspaceDir,
+        dynamicTools: [createNamedDynamicTool("project__list")],
+        appServer: createThreadLifecycleAppServerOptions(),
+      }),
+    ).rejects.toThrow("binding could not be verified");
+    expect(request.mock.calls.map(([method]) => method)).toEqual(["thread/read", "thread/start"]);
+    expect(abandonClient).toHaveBeenCalledOnce();
+    verificationRead = false;
+    readSpy.mockRestore();
+    await expect(readCodexAppServerBinding(sessionFile)).resolves.toMatchObject({
+      threadId: "thread-supervised-legacy",
+      userMcpServersFingerprint: "legacy-user-mcp",
+    });
+  });
+
+  it("deletes a retired supervised MCP thread when it has no rollout to archive", async () => {
+    const sessionFile = path.join(tempDir, "supervised-retirement-without-rollout.jsonl");
+    const workspaceDir = path.join(tempDir, "supervised-retirement-without-rollout");
+    await writeCodexAppServerBinding(sessionFile, {
+      threadId: "thread-supervised-legacy",
+      cwd: workspaceDir,
+      model: "gpt-5.4-codex",
+      modelProvider: "openai",
+      preserveNativeModel: true,
+      connectionScope: "supervision",
+      supervisionSourceThreadId: "thread-native-source",
+      conversationSourceTransferComplete: true,
+      userMcpServersFingerprint: "legacy-user-mcp",
+    });
+    const request = vi.fn(async (method: string, requestParams?: unknown) => {
+      if (method === "thread/read") {
+        return { thread: threadStartResult("thread-supervised-legacy").thread };
+      }
+      if (method === "thread/start") {
+        return threadStartResult("thread-canonical-successor");
+      }
+      if (method === "thread/list") {
+        return { data: [], nextCursor: null };
+      }
+      if (method === "thread/archive") {
+        throw new Error("no rollout found for thread id");
+      }
+      if (method === "thread/delete") {
+        expect(requestParams).toEqual({ threadId: "thread-supervised-legacy" });
+        return {};
+      }
+      throw new Error(`unexpected method: ${method}`);
+    });
+
+    await expect(
+      startOrResumeThread({
+        client: { request } as never,
+        params: createParams(sessionFile, workspaceDir),
+        cwd: workspaceDir,
+        dynamicTools: [createNamedDynamicTool("project__list")],
+        appServer: createThreadLifecycleAppServerOptions(),
+      }),
+    ).resolves.toMatchObject({ threadId: "thread-canonical-successor" });
+    expect(request.mock.calls.map(([method]) => method)).toEqual([
+      "thread/read",
+      "thread/start",
+      "thread/read",
+      "thread/list",
+      "thread/archive",
+      "thread/list",
+      "thread/list",
+      "thread/delete",
+    ]);
+    const binding = await readCodexAppServerBinding(sessionFile);
+    expect(binding?.threadId).toBe("thread-canonical-successor");
+    expect(binding?.userMcpServersFingerprint).toBeUndefined();
+  });
+
+  it("keeps a supervised successor pending when no-rollout legacy deletion fails", async () => {
+    const sessionFile = path.join(tempDir, "supervised-retirement-rollback.jsonl");
+    const workspaceDir = path.join(tempDir, "supervised-retirement-rollback");
+    await writeCodexAppServerBinding(sessionFile, {
+      threadId: "thread-supervised-legacy",
+      cwd: workspaceDir,
+      model: "gpt-5.4-codex",
+      modelProvider: "openai",
+      preserveNativeModel: true,
+      connectionScope: "supervision",
+      supervisionSourceThreadId: "thread-native-source",
+      conversationSourceTransferComplete: true,
+      userMcpServersFingerprint: "legacy-user-mcp",
+    });
+    const request = vi.fn(async (method: string, requestParams?: unknown) => {
+      if (method === "thread/read") {
+        return { thread: threadStartResult("thread-supervised-legacy").thread };
+      }
+      if (method === "thread/start") {
+        return threadStartResult("thread-rolled-back-successor");
+      }
+      if (method === "thread/list") {
+        return { data: [], nextCursor: null };
+      }
+      if (method === "thread/archive") {
+        throw new Error("no rollout found for thread id");
+      }
+      if (method === "thread/unsubscribe") {
+        return { status: "unsubscribed" };
+      }
+      if (method === "thread/delete") {
+        if ((requestParams as { threadId?: string }).threadId === "thread-supervised-legacy") {
+          throw new Error("legacy delete unavailable");
+        }
+        throw new Error(`unexpected deletion: ${JSON.stringify(requestParams)}`);
+      }
+      throw new Error(`unexpected method: ${method}`);
+    });
+
+    await expect(
+      startOrResumeThread({
+        client: { request } as never,
+        params: createParams(sessionFile, workspaceDir),
+        cwd: workspaceDir,
+        dynamicTools: [createNamedDynamicTool("project__list")],
+        appServer: createThreadLifecycleAppServerOptions(),
+      }),
+    ).rejects.toThrow("could not be archived");
+    expect(request.mock.calls.map(([method]) => method)).toEqual([
+      "thread/read",
+      "thread/start",
+      "thread/read",
+      "thread/list",
+      "thread/archive",
+      "thread/list",
+      "thread/list",
+      "thread/delete",
+      "thread/unsubscribe",
+    ]);
+    await expect(readCodexAppServerBinding(sessionFile)).resolves.toMatchObject({
+      threadId: "thread-rolled-back-successor",
+      supervisionSourceThreadId: "thread-native-source",
+      legacyMcpRetirementThreadId: "thread-supervised-legacy",
+    });
+  });
+
+  it("accepts a supervised MCP replacement committed before an uncertain write error", async () => {
+    const sessionFile = path.join(tempDir, "supervised-cas-uncertain.jsonl");
+    const workspaceDir = path.join(tempDir, "supervised-cas-uncertain");
+    await writeCodexAppServerBinding(sessionFile, {
+      threadId: "thread-supervised-legacy",
+      cwd: workspaceDir,
+      model: "gpt-5.4-codex",
+      modelProvider: "openai",
+      preserveNativeModel: true,
+      connectionScope: "supervision",
+      supervisionSourceThreadId: "thread-native-source",
+      conversationSourceTransferComplete: true,
+      userMcpServersFingerprint: "legacy-user-mcp",
+    });
+    const originalMutate = testCodexAppServerBindingStore.mutate.bind(
+      testCodexAppServerBindingStore,
+    );
+    vi.spyOn(testCodexAppServerBindingStore, "mutate").mockImplementation(
+      async (identity, mutation) => {
+        const committed = await originalMutate(identity, mutation);
+        if (mutation.kind === "replace-supervision-thread" && committed) {
+          throw new Error("write acknowledgement lost");
+        }
+        return committed;
+      },
+    );
+    const request = vi.fn(async (method: string) => {
+      if (method === "thread/read") {
+        return { thread: threadStartResult("thread-supervised-legacy").thread };
+      }
+      if (method === "thread/start") {
+        return threadStartResult("thread-committed-successor");
+      }
+      if (method === "thread/list") {
+        return { data: [], nextCursor: null };
+      }
+      if (method === "thread/archive") {
+        return {};
+      }
+      throw new Error(`unexpected method: ${method}`);
+    });
+
+    await expect(
+      startOrResumeThread({
+        client: { request } as never,
+        params: createParams(sessionFile, workspaceDir),
+        cwd: workspaceDir,
+        dynamicTools: [createNamedDynamicTool("project__list")],
+        appServer: createThreadLifecycleAppServerOptions(),
+      }),
+    ).resolves.toMatchObject({
+      threadId: "thread-committed-successor",
+      connectionScope: "supervision",
+      supervisionSourceThreadId: "thread-native-source",
+      lifecycle: { action: "started" },
+    });
+    expect(request.mock.calls.map(([method]) => method)).toEqual([
+      "thread/read",
+      "thread/start",
+      "thread/read",
+      "thread/list",
+      "thread/archive",
+    ]);
+    const canonical = await readCodexAppServerBinding(sessionFile);
+    expect(canonical).toMatchObject({
+      threadId: "thread-committed-successor",
+      supervisionSourceThreadId: "thread-native-source",
+    });
+    expect(canonical?.userMcpServersFingerprint).toBeUndefined();
+  });
 
   it("isolates transient message-only completion threads without replacing the parent binding", async () => {
     const sessionFile = path.join(tempDir, "message-only-session.jsonl");
