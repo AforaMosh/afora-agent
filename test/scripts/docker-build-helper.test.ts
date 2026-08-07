@@ -94,6 +94,7 @@ const RELEASE_TYPED_ONBOARDING_SCENARIO_PATH =
 const RELEASE_USER_JOURNEY_DOCKER_E2E_PATH = "scripts/e2e/release-user-journey-docker.sh";
 const RELEASE_USER_JOURNEY_SCENARIO_PATH = "scripts/e2e/lib/release-user-journey/scenario.sh";
 const UPGRADE_SURVIVOR_RUN_SCRIPT = "scripts/e2e/lib/upgrade-survivor/run.sh";
+const UPGRADE_SURVIVOR_GATEWAY_START_PATH = "scripts/e2e/lib/upgrade-survivor/gateway-start.sh";
 const UPGRADE_SURVIVOR_UPDATE_RESTART_AUTH_PATH =
   "scripts/e2e/lib/upgrade-survivor/update-restart-auth.sh";
 const GATEWAY_NETWORK_DOCKER_E2E_PATH = "scripts/e2e/gateway-network-docker.sh";
@@ -2423,6 +2424,7 @@ docker_e2e_docker_run_cmd run demo
     expect(upgradeSurvivor).toContain(
       'ROOT_DIR="$(cd "${OPENCLAW_DOCKER_E2E_REPO_ROOT:-$HARNESS_ROOT_DIR}" && pwd)"',
     );
+    expect(upgradeSurvivor).toContain('DOCKER_E2E_HARNESS_ROOT_DIR="$HARNESS_ROOT_DIR"');
     expect(upgradeSurvivor).toContain(
       '-v "$HARNESS_ROOT_DIR/scripts/e2e/lib/upgrade-survivor/run.sh:/tmp/openclaw-upgrade-survivor-run.sh:ro"',
     );
@@ -2506,10 +2508,12 @@ fi
   it("bounds upgrade survivor foreground OpenClaw CLI calls", () => {
     const runner = readFileSync(UPGRADE_SURVIVOR_DOCKER_E2E_PATH, "utf8");
     const publishedRunner = readFileSync(UPGRADE_SURVIVOR_RUN_SCRIPT, "utf8");
+    const gatewayStart = readFileSync(UPGRADE_SURVIVOR_GATEWAY_START_PATH, "utf8");
     const updateRestartAuth = readFileSync(UPGRADE_SURVIVOR_UPDATE_RESTART_AUTH_PATH, "utf8");
 
     expectTextToIncludeAll(runner, [
       'source "$HARNESS_ROOT_DIR/scripts/lib/openclaw-e2e-instance.sh"',
+      "source scripts/e2e/lib/upgrade-survivor/gateway-start.sh",
       'START_BUDGET_SECONDS="$(openclaw_e2e_read_positive_int_env OPENCLAW_UPGRADE_SURVIVOR_START_BUDGET_SECONDS 90)"',
       'STATUS_BUDGET_SECONDS="$(openclaw_e2e_read_positive_int_env OPENCLAW_UPGRADE_SURVIVOR_STATUS_BUDGET_SECONDS 30)"',
       '-e OPENCLAW_UPGRADE_SURVIVOR_START_BUDGET_SECONDS="$START_BUDGET_SECONDS"',
@@ -2523,7 +2527,7 @@ fi
       'openclaw_e2e_maybe_timeout "$command_timeout" openclaw doctor --fix --non-interactive',
       'openclaw_e2e_maybe_timeout "$command_timeout" openclaw config validate',
       'openclaw_e2e_maybe_timeout "$command_timeout" openclaw gateway status',
-      'openclaw gateway --port "$PORT" --bind loopback --allow-unconfigured',
+      "upgrade_survivor_start_direct_gateway",
       'PROBE_TIMEOUT_MS="$(openclaw_e2e_read_nonnegative_int_env OPENCLAW_UPGRADE_SURVIVOR_PROBE_TIMEOUT_MS 60000)"',
       "openclaw_e2e_read_positive_int_env OPENCLAW_UPGRADE_SURVIVOR_PROBE_ATTEMPT_TIMEOUT_MS 5000",
       "openclaw_e2e_read_positive_int_env OPENCLAW_UPGRADE_SURVIVOR_PROBE_MAX_BODY_BYTES 1048576",
@@ -2571,11 +2575,9 @@ fi
     expect(publishedRunner).toContain(
       'openclaw_e2e_maybe_timeout "$COMMAND_TIMEOUT" openclaw gateway status',
     );
-    expect(publishedRunner).toContain('openclaw gateway --port "$port" --bind loopback');
+    expect(publishedRunner).toContain("upgrade_survivor_start_direct_gateway");
     expect(publishedRunner).toContain("start_gateway legacy-ready-log-ok");
-    expect(publishedRunner).toContain(
-      'openclaw_e2e_wait_gateway_ready "$gateway_pid" "$GATEWAY_LOG" 360 "$port" "${1:-strict}"',
-    );
+    expect(publishedRunner).toContain("source scripts/e2e/lib/upgrade-survivor/gateway-start.sh");
 
     expect(updateRestartAuth).toContain(
       'command_timeout="${OPENCLAW_UPGRADE_SURVIVOR_COMMAND_TIMEOUT:-900s}"',
@@ -2583,10 +2585,15 @@ fi
     expect(updateRestartAuth).toContain(
       'openclaw_e2e_maybe_timeout "$command_timeout" env -u OPENCLAW_GATEWAY_TOKEN',
     );
-    expect(updateRestartAuth).toContain('openclaw gateway --port "$port" --bind loopback');
-    expect(updateRestartAuth).toContain(
-      'openclaw_e2e_wait_gateway_ready "$gateway_pid" "$log_file" 360 "$port"',
-    );
+    expect(updateRestartAuth).toContain("upgrade_survivor_start_direct_gateway");
+    expect(updateRestartAuth).toContain("source scripts/e2e/lib/upgrade-survivor/gateway-start.sh");
+    expectTextToIncludeAll(gatewayStart, [
+      'UPGRADE_SURVIVOR_GATEWAY_MIGRATION_REFUSAL="OpenClaw plugin migration inputs changed during startup convergence; refusing to report the gateway ready. Restart OpenClaw so state migrations run against the final config and plugin inventory."',
+      "for attempt in 1 2; do",
+      '[ "${OPENCLAW_E2E_GATEWAY_EXIT_STATUS:-}" = "1" ]',
+      'upgrade_survivor_attempt_log_has_migration_refusal "$log_path" "$launch_offset"',
+      'OPENCLAW_E2E_GATEWAY_PID="$gateway_pid"',
+    ]);
   });
 
   it("keeps upgrade survivor auto-auth success summary set -u safe", () => {
@@ -3723,10 +3730,11 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
     const helper = readFileSync(DOCKER_E2E_PACKAGE_HELPER_PATH, "utf8");
     expectTextToIncludeAll(helper, [
       "--allow-unreleased-changelog",
-      '-v "$ROOT_DIR/scripts/windows-cmd-helpers.mjs:/app/scripts/windows-cmd-helpers.mjs:ro"',
-      '-v "$ROOT_DIR/packages/normalization-core/src:/app/packages/normalization-core/src:ro"',
-      '-v "$ROOT_DIR/test/e2e/qa-lab:/app/test/e2e/qa-lab:ro"',
-      '-v "$ROOT_DIR/test/helpers:/app/test/helpers:ro"',
+      'local harness_root="${DOCKER_E2E_HARNESS_ROOT_DIR:-$ROOT_DIR}"',
+      '-v "$harness_root/scripts/windows-cmd-helpers.mjs:/app/scripts/windows-cmd-helpers.mjs:ro"',
+      '-v "$harness_root/packages/normalization-core/src:/app/packages/normalization-core/src:ro"',
+      '-v "$harness_root/test/e2e/qa-lab:/app/test/e2e/qa-lab:ro"',
+      '-v "$harness_root/test/helpers:/app/test/helpers:ro"',
     ]);
   });
 

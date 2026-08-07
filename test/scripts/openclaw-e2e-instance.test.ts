@@ -355,6 +355,31 @@ describe("scripts/lib/openclaw-e2e-instance.sh", () => {
     });
   });
 
+  it("reports the reaped gateway status and ignores ready logs before the launch offset", () => {
+    withTempDir("openclaw-e2e-ready-offset-", (tempDir) => {
+      const logPath = path.join(tempDir, "gateway.log");
+      const result = runBashWithHelper(
+        [
+          "openclaw_e2e_probe_http() { return 0; }",
+          `printf '[gateway] ready ws://127.0.0.1:23456\\n' >${shellQuote(logPath)}`,
+          `launch_offset="$(wc -c <${shellQuote(logPath)})"`,
+          `(sleep 0.1; printf 'current launch failed\\n' >>${shellQuote(logPath)}; exit 1) &`,
+          'gateway_pid="$!"',
+          `if openclaw_e2e_wait_gateway_ready "$gateway_pid" ${shellQuote(logPath)} 4 23456 strict "$launch_offset"; then`,
+          '  echo "stale ready log satisfied current launch" >&2',
+          "  exit 1",
+          "fi",
+          '[ "$OPENCLAW_E2E_GATEWAY_EXIT_STATUS" = "1" ]',
+        ],
+        {},
+        5_000,
+      );
+
+      expectShellSuccess(result);
+      expect(result.stdout).toContain("Gateway exited before becoming ready");
+    });
+  });
+
   it("wraps package installs with the configured timeout", () => {
     withTempDir("openclaw-e2e-instance-", (tempDir) => {
       const fixture = createPackageInstallFixture(tempDir);

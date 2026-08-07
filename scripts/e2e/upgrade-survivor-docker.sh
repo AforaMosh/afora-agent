@@ -6,6 +6,7 @@ set -euo pipefail
 
 HARNESS_ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 ROOT_DIR="$(cd "${OPENCLAW_DOCKER_E2E_REPO_ROOT:-$HARNESS_ROOT_DIR}" && pwd)"
+DOCKER_E2E_HARNESS_ROOT_DIR="$HARNESS_ROOT_DIR"
 source "$HARNESS_ROOT_DIR/scripts/lib/docker-e2e-image.sh"
 source "$HARNESS_ROOT_DIR/scripts/lib/docker-e2e-package.sh"
 source "$HARNESS_ROOT_DIR/scripts/lib/openclaw-e2e-instance.sh"
@@ -213,6 +214,7 @@ docker_e2e_run_with_harness \
   "$IMAGE_NAME" \
   timeout --kill-after=30s "$DOCKER_RUN_TIMEOUT" bash -lc 'set -euo pipefail
 source scripts/lib/openclaw-e2e-instance.sh
+source scripts/e2e/lib/upgrade-survivor/gateway-start.sh
 
 export npm_config_loglevel=error
 export npm_config_fund=false
@@ -268,9 +270,14 @@ cleanup() {
   if [ -n "${plugin_registry_pid:-}" ]; then
     kill "$plugin_registry_pid" >/dev/null 2>&1 || true
   fi
+  if [ -s "$SYSTEMCTL_SHIM_PID_FILE.supervisor.pid" ] || [ -s "$SYSTEMCTL_SHIM_PID_FILE" ]; then
+    systemctl --user stop openclaw-gateway.service >/dev/null 2>&1 || true
+  fi
   openclaw_e2e_terminate_gateways "${gateway_pid:-}"
-  if [ -s "$SYSTEMCTL_SHIM_PID_FILE" ]; then
-    openclaw_e2e_terminate_gateways "$(cat "$SYSTEMCTL_SHIM_PID_FILE" 2>/dev/null || true)"
+  if [ -s "$SYSTEMCTL_SHIM_PID_FILE.supervisor.pid" ]; then
+    openclaw_e2e_terminate_gateways "$(
+      cat "$SYSTEMCTL_SHIM_PID_FILE.supervisor.pid" 2>/dev/null || true
+    )"
   fi
 }
 trap cleanup EXIT
@@ -435,6 +442,8 @@ if [ "$update_status" -ne 0 ]; then
   echo "openclaw update failed" >&2
   openclaw_e2e_print_log /tmp/openclaw-upgrade-survivor-update.err >&2
   openclaw_e2e_print_log /tmp/openclaw-upgrade-survivor-update.json >&2
+  openclaw_e2e_print_log "$SYSTEMCTL_SHIM_LOG" >&2
+  openclaw_e2e_print_log "$SYSTEMCTL_SHIM_DAEMON_LOG" >&2
   exit "$update_status"
 fi
 
@@ -464,9 +473,13 @@ if [ "$UPDATE_RESTART_MODE" = "auto-auth" ]; then
 else
   echo "Starting gateway from upgraded state..."
   start_epoch="$(node -e "process.stdout.write(String(Date.now()))")"
-  openclaw gateway --port "$PORT" --bind loopback --allow-unconfigured >"$GATEWAY_LOG" 2>&1 &
-  gateway_pid="$!"
-  openclaw_e2e_wait_gateway_ready "$gateway_pid" "$GATEWAY_LOG" 360 "$PORT"
+  upgrade_survivor_start_direct_gateway \
+    "$GATEWAY_LOG" \
+    360 \
+    "$PORT" \
+    strict \
+    -- \
+    openclaw gateway --port "$PORT" --bind loopback --allow-unconfigured
   ready_epoch="$(node -e "process.stdout.write(String(Date.now()))")"
   start_seconds=$(((ready_epoch - start_epoch + 999) / 1000))
   if [ "$start_seconds" -gt "$START_BUDGET" ]; then

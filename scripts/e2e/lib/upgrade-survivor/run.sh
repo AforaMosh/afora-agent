@@ -2,6 +2,10 @@
 set -Eeuo pipefail
 
 source scripts/lib/openclaw-e2e-instance.sh
+# shellcheck disable=SC1091
+source scripts/e2e/lib/upgrade-survivor/gateway-start.sh
+# shellcheck disable=SC1091
+source scripts/e2e/lib/upgrade-survivor/systemctl-shim.sh
 
 SCENARIO="${OPENCLAW_UPGRADE_SURVIVOR_SCENARIO:-base}"
 
@@ -230,10 +234,13 @@ cleanup() {
   if [ -n "${plugin_registry_pid:-}" ]; then
     kill "$plugin_registry_pid" >/dev/null 2>&1 || true
   fi
+  if [ -s "$SYSTEMCTL_SHIM_PID_FILE.supervisor.pid" ] || [ -s "$SYSTEMCTL_SHIM_PID_FILE" ]; then
+    systemctl --user stop openclaw-gateway.service >/dev/null 2>&1 || true
+  fi
   openclaw_e2e_terminate_gateways "${gateway_pid:-}"
-  if [ -s "$SYSTEMCTL_SHIM_PID_FILE" ]; then
+  if [ -s "$SYSTEMCTL_SHIM_PID_FILE.supervisor.pid" ]; then
     local shim_pid
-    shim_pid="$(cat "$SYSTEMCTL_SHIM_PID_FILE" 2>/dev/null || true)"
+    shim_pid="$(cat "$SYSTEMCTL_SHIM_PID_FILE.supervisor.pid" 2>/dev/null || true)"
     if [[ "$shim_pid" =~ ^[0-9]+$ ]] && [ "$shim_pid" -gt 1 ]; then
       openclaw_e2e_terminate_gateways "$shim_pid"
     fi
@@ -693,7 +700,11 @@ rm_rf_retry() {
 
 reset_run_state() {
   rm_rf_retry "$npm_config_prefix" "$TMPDIR" "$OPENCLAW_TEST_STATE_TMPDIR" "$STATE_HOME_ROOT"
-  rm -f "$SYSTEMCTL_SHIM_PID_FILE" "$SYSTEMCTL_SHIM_DAEMON_LOG"
+  rm -f \
+    "$SYSTEMCTL_SHIM_PID_FILE" \
+    "$SYSTEMCTL_SHIM_PID_FILE.supervisor.pid" \
+    "$SYSTEMCTL_SHIM_PID_FILE.supervisor.mjs" \
+    "$SYSTEMCTL_SHIM_DAEMON_LOG"
   mkdir -p "$npm_config_prefix" "$npm_config_cache" "$TMPDIR" "$OPENCLAW_TEST_STATE_TMPDIR"
 }
 
@@ -772,172 +783,6 @@ validate_baseline_config() {
     openclaw_e2e_print_log "$BASELINE_CONFIG_VALIDATE_LOG" >&2
     return 1
   fi
-}
-
-install_update_restart_systemctl_shim() {
-  local shim_dir="$npm_config_prefix/bin"
-  mkdir -p "$shim_dir"
-  cat >"$shim_dir/systemctl" <<'SHIM'
-#!/usr/bin/env bash
-set -euo pipefail
-
-log_file="${OPENCLAW_UPGRADE_SURVIVOR_SYSTEMCTL_SHIM_LOG:-/tmp/openclaw-systemctl-shim.log}"
-pid_file="${OPENCLAW_UPGRADE_SURVIVOR_SYSTEMCTL_SHIM_PID_FILE:-/tmp/openclaw-systemctl-shim.pid}"
-daemon_log="${OPENCLAW_UPGRADE_SURVIVOR_SYSTEMCTL_SHIM_DAEMON_LOG:-/tmp/openclaw-systemctl-shim-gateway.log}"
-printf '%s\n' "$*" >>"$log_file"
-
-filtered=()
-system_scope=1
-property=""
-for ((i = 1; i <= $#; i++)); do
-  arg="${!i}"
-  case "$arg" in
-    --user)
-      system_scope=0
-      ;;
-    --quiet | --no-page | --now | --value)
-      ;;
-    --property)
-      i=$((i + 1))
-      property="${!i}"
-      ;;
-    --property=*)
-      property="${arg#--property=}"
-      ;;
-    *)
-      filtered+=("$arg")
-      ;;
-  esac
-done
-
-command="${filtered[0]:-status}"
-
-is_running() {
-  [ -s "$pid_file" ] || return 1
-  local pid
-  pid="$(cat "$pid_file" 2>/dev/null || true)"
-  [ -n "$pid" ] || return 1
-  kill -0 "$pid" >/dev/null 2>&1
-}
-
-stop_gateway() {
-  [ -s "$pid_file" ] || return 0
-  local pid
-  pid="$(cat "$pid_file" 2>/dev/null || true)"
-  if [[ "$pid" =~ ^[0-9]+$ ]] && [ "$pid" -gt 1 ] && kill -0 "$pid" >/dev/null 2>&1; then
-    kill "$pid" >/dev/null 2>&1 || true
-    for _ in $(seq 1 100); do
-      kill -0 "$pid" >/dev/null 2>&1 || break
-      sleep 0.1
-    done
-    kill -9 "$pid" >/dev/null 2>&1 || true
-  fi
-  rm -f "$pid_file"
-}
-
-unit_path() {
-  printf '%s/.config/systemd/user/openclaw-gateway.service\n' "${HOME:?missing HOME}"
-}
-
-load_unit_environment() {
-  local unit="$1"
-  while IFS= read -r line; do
-    case "$line" in
-      EnvironmentFile=*)
-        local spec="${line#EnvironmentFile=}"
-        for token in $spec; do
-          local file="${token#-}"
-          [ -f "$file" ] || continue
-          set -a
-          # shellcheck disable=SC1090
-          . "$file"
-          set +a
-        done
-        ;;
-      Environment=*)
-        local assignment="${line#Environment=}"
-        assignment="${assignment#\"}"
-        assignment="${assignment%\"}"
-        export "$assignment"
-        ;;
-    esac
-  done <"$unit"
-}
-
-start_gateway() {
-  local unit
-  local exec_start
-  unit="$(unit_path)"
-  exec_start="$(sed -n 's/^ExecStart=//p' "$unit" | tail -n 1)"
-  [ -n "$exec_start" ] || {
-    echo "systemctl shim could not find ExecStart in $unit" >&2
-    return 1
-  }
-  (
-    load_unit_environment "$unit"
-    nohup bash -lc "exec $exec_start" >>"$daemon_log" 2>&1 &
-    printf '%s\n' "$!" >"$pid_file"
-  )
-}
-
-case "$command" in
-  daemon-reload | enable | disable)
-    exit 0
-    ;;
-  status)
-    is_running && exit 0
-    exit 0
-    ;;
-  stop)
-    stop_gateway
-    exit 0
-    ;;
-  restart | start)
-    stop_gateway
-    start_gateway
-    exit 0
-    ;;
-  is-enabled)
-    exit 0
-    ;;
-  is-active)
-    is_running && exit 0
-    exit 3
-    ;;
-  show)
-    if [ "$system_scope" = "1" ]; then
-      case "$property" in
-        LoadState)
-          printf 'not-found\n'
-          ;;
-        UnitPath)
-          printf '/etc/systemd/system /usr/lib/systemd/system\n'
-          ;;
-        *)
-          echo "systemctl shim unsupported system-scope show: $*" >&2
-          exit 1
-          ;;
-      esac
-      exit 0
-    fi
-    if is_running; then
-      printf 'ActiveState=active\nSubState=running\nMainPID=%s\nExecMainStatus=0\nExecMainCode=0\n' "$(cat "$pid_file")"
-    else
-      printf 'ActiveState=inactive\nSubState=dead\nMainPID=0\nExecMainStatus=0\nExecMainCode=0\n'
-    fi
-    exit 0
-    ;;
-  *)
-    echo "systemctl shim unsupported command: $*" >&2
-    exit 1
-    ;;
-esac
-SHIM
-  chmod +x "$shim_dir/systemctl"
-  export OPENCLAW_UPGRADE_SURVIVOR_SYSTEMCTL_SHIM_LOG="$SYSTEMCTL_SHIM_LOG"
-  export OPENCLAW_UPGRADE_SURVIVOR_SYSTEMCTL_SHIM_PID_FILE="$SYSTEMCTL_SHIM_PID_FILE"
-  export OPENCLAW_UPGRADE_SURVIVOR_SYSTEMCTL_SHIM_DAEMON_LOG="$SYSTEMCTL_SHIM_DAEMON_LOG"
-  export PATH="$shim_dir:$PATH"
 }
 
 install_update_restart_service_unit() {
@@ -1247,12 +1092,17 @@ start_gateway() {
   local start_epoch
   local ready_epoch
   start_epoch="$(node -e "process.stdout.write(String(Date.now()))")"
-  env -u OPENCLAW_GATEWAY_TOKEN -u OPENCLAW_GATEWAY_PASSWORD openclaw gateway --port "$port" --bind loopback --allow-unconfigured >"$GATEWAY_LOG" 2>&1 &
-  gateway_pid="$!"
+  upgrade_survivor_start_direct_gateway \
+    "$GATEWAY_LOG" \
+    360 \
+    "$port" \
+    "${1:-strict}" \
+    -- \
+    env -u OPENCLAW_GATEWAY_TOKEN -u OPENCLAW_GATEWAY_PASSWORD \
+    openclaw gateway --port "$port" --bind loopback --allow-unconfigured
   if [ "$UPDATE_RESTART_MODE" = "auto-auth" ]; then
     printf '%s\n' "$gateway_pid" >"$SYSTEMCTL_SHIM_PID_FILE"
   fi
-  openclaw_e2e_wait_gateway_ready "$gateway_pid" "$GATEWAY_LOG" 360 "$port" "${1:-strict}"
   ready_epoch="$(node -e "process.stdout.write(String(Date.now()))")"
   start_seconds=$(((ready_epoch - start_epoch + 999) / 1000))
   if [ "$start_seconds" -gt "$budget" ]; then

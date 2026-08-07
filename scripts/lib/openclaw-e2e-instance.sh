@@ -393,11 +393,16 @@ openclaw_e2e_gateway_log_port_from_text() {
 }
 openclaw_e2e_wait_gateway_ready() {
   local pid="$1" log="$2" attempts="${3:-300}" ready_port="${4:-}" readiness_mode="${5:-strict}" _ saw_ready_log=false
-  local ready_scan_offset=0 ready_scan_carry="" ready_scan_carry_chars=256
+  local ready_scan_offset="${6:-0}" ready_scan_carry="" ready_scan_carry_chars=256
+  OPENCLAW_E2E_GATEWAY_EXIT_STATUS=""
   for _ in $(seq 1 "$attempts"); do
     ! kill -0 "$pid" >/dev/null 2>&1 && {
       echo "Gateway exited before becoming ready"
-      wait "$pid" || true
+      if wait "$pid"; then
+        OPENCLAW_E2E_GATEWAY_EXIT_STATUS=0
+      else
+        OPENCLAW_E2E_GATEWAY_EXIT_STATUS=$?
+      fi
       tail -n 120 "$log" 2>/dev/null || true
       return 1
     }
