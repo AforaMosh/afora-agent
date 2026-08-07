@@ -1,6 +1,16 @@
 // Projects additive Claw provenance columns that only writable opens can ensure.
 import type { DatabaseSync } from "node:sqlite";
 
+function canSelect(db: DatabaseSync, table: string, projection: string): boolean {
+  try {
+    db /* sqlite-allow-raw: capability probe for lazily added Claw provenance columns. */
+      .prepare(`SELECT ${projection} FROM ${table} LIMIT 0`);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Read-only opens never run the additive column migration, so a same-version
  * database written before a column existed must still answer planning reads.
@@ -12,12 +22,11 @@ export function legacySafeColumnProjection(
   table: "claw_installs" | "claw_package_refs",
   columns: readonly string[],
 ): string {
-  const present = new Set(
-    (
-      db /* sqlite-allow-raw: schema probe for lazily added Claw provenance columns. */
-        .prepare(`PRAGMA table_info(${table})`)
-        .all() as Array<{ name?: unknown }>
-    ).map((column) => String(column.name)),
-  );
-  return columns.map((column) => (present.has(column) ? column : `NULL AS ${column}`)).join(", ");
+  const full = columns.join(", ");
+  if (canSelect(db, table, full)) {
+    return full;
+  }
+  return columns
+    .map((column) => (canSelect(db, table, column) ? column : `NULL AS ${column}`))
+    .join(", ");
 }
