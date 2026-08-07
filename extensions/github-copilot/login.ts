@@ -13,10 +13,12 @@ import {
   ensureAuthProfileStore,
   upsertAuthProfileWithLock,
 } from "openclaw/plugin-sdk/provider-auth";
+import { readProviderJsonResponse } from "openclaw/plugin-sdk/provider-http";
 import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime";
 import { fetchWithSsrFGuard, type SsrFPolicy } from "openclaw/plugin-sdk/ssrf-runtime";
 
 const CLIENT_ID = "Iv1.b507a08c87ecfe98";
+const GITHUB_DEVICE_FLOW_REQUEST_TIMEOUT_MS = 30_000;
 const DEVICE_CODE_URL = "https://github.com/login/device/code";
 const ACCESS_TOKEN_URL = "https://github.com/login/oauth/access_token";
 const GITHUB_DEVICE_VERIFICATION_URL = "https://github.com/login/device";
@@ -142,12 +144,15 @@ async function postGitHubDeviceFlowForm(params: {
     requireHttps: true,
     policy: GITHUB_AUTH_SSRF_POLICY,
     auditContext: "github-copilot-device-flow",
+    timeoutMs: GITHUB_DEVICE_FLOW_REQUEST_TIMEOUT_MS,
   });
   try {
     if (!response.ok) {
       throw new Error(`${params.failureLabel}: HTTP ${response.status}`);
     }
-    return parseJsonResponse(await response.json());
+    return parseJsonResponse(
+      await readProviderJsonResponse(response, "github-copilot.device-flow"),
+    );
   } finally {
     await release();
   }

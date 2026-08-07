@@ -2,6 +2,7 @@
 import { resolveExpiresAtMsFromEpochSeconds } from "openclaw/plugin-sdk/number-runtime";
 import {
   createProviderHttpError,
+  readProviderJsonResponse,
   resolveProviderRequestHeaders,
 } from "openclaw/plugin-sdk/provider-http";
 import { captureWsEvent } from "openclaw/plugin-sdk/proxy-capture";
@@ -14,6 +15,8 @@ import {
 
 export const trimToUndefined = normalizeOptionalString;
 export { asFiniteNumber, asObjectRecord };
+
+const OPENAI_REALTIME_CLIENT_SECRET_REQUEST_TIMEOUT_MS = 30_000;
 
 export function readRealtimeErrorDetail(error: unknown): string {
   if (typeof error === "string" && error) {
@@ -104,6 +107,7 @@ async function createOpenAIRealtimeSecret(
       },
       body: JSON.stringify(params.body),
     },
+    timeoutMs: OPENAI_REALTIME_CLIENT_SECRET_REQUEST_TIMEOUT_MS,
     auditContext: params.auditContext,
   });
   const payload = await (async () => {
@@ -115,7 +119,7 @@ async function createOpenAIRealtimeSecret(
         }
         throw error;
       }
-      return (await response.json()) as unknown;
+      return await readProviderJsonResponse<unknown>(response, "openai.realtime-session");
     } finally {
       await release();
     }

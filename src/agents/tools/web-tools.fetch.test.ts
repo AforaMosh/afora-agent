@@ -5,7 +5,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { LookupFn } from "../../infra/net/ssrf.js";
 import { resolveRequestUrl } from "../../plugin-sdk/request-url.js";
 import { withFetchPreconnect } from "../../test-utils/fetch-mock.js";
-import { makeFetchHeaders } from "./web-fetch.test-harness.js";
 const { extractReadableContentMock, resolveWebFetchDefinitionMock } = vi.hoisted(() => ({
   extractReadableContentMock: vi.fn(),
   resolveWebFetchDefinitionMock: vi.fn(),
@@ -27,37 +26,36 @@ import { createWebFetchTool } from "./web-fetch.js";
 
 const lookupMock = vi.fn();
 
-type MockResponse = {
-  ok: boolean;
-  status: number;
-  url?: string;
-  headers?: { get: (key: string) => string | null };
-  text?: () => Promise<string>;
-  json?: () => Promise<unknown>;
-};
+function responseWithUrl(body: BodyInit, init: ResponseInit, url: string): Response {
+  const response = new Response(body, init);
+  Object.defineProperty(response, "url", { value: url });
+  return response;
+}
 
-function htmlResponse(html: string, url = "https://example.com/"): MockResponse {
-  return {
-    ok: true,
-    status: 200,
+function htmlResponse(html: string, url = "https://example.com/"): Response {
+  return responseWithUrl(
+    html,
+    {
+      status: 200,
+      headers: { "content-type": "text/html; charset=utf-8" },
+    },
     url,
-    headers: makeFetchHeaders({ "content-type": "text/html; charset=utf-8" }),
-    text: async () => html,
-  };
+  );
 }
 
 function textResponse(
   text: string,
   url = "https://example.com/",
   contentType = "text/plain; charset=utf-8",
-): MockResponse {
-  return {
-    ok: true,
-    status: 200,
+): Response {
+  return responseWithUrl(
+    text,
+    {
+      status: 200,
+      headers: { "content-type": contentType },
+    },
     url,
-    headers: makeFetchHeaders({ "content-type": contentType }),
-    text: async () => text,
-  };
+  );
 }
 
 function errorHtmlResponse(
@@ -65,14 +63,16 @@ function errorHtmlResponse(
   status = 404,
   url = "https://example.com/",
   contentType: string | null = "text/html; charset=utf-8",
-): MockResponse {
-  return {
-    ok: false,
-    status,
+): Response {
+  const body = contentType ? html : new TextEncoder().encode(html);
+  return responseWithUrl(
+    body,
+    {
+      status,
+      headers: contentType ? { "content-type": contentType } : undefined,
+    },
     url,
-    headers: contentType ? makeFetchHeaders({ "content-type": contentType }) : makeFetchHeaders({}),
-    text: async () => html,
-  };
+  );
 }
 function installMockFetch(
   impl: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
@@ -109,13 +109,7 @@ function createFetchTool(fetchOverrides: Record<string, unknown> = {}) {
 
 function installPlainTextFetch(text: string) {
   installMockFetch((input: RequestInfo | URL) =>
-    Promise.resolve({
-      ok: true,
-      status: 200,
-      headers: makeFetchHeaders({ "content-type": "text/plain" }),
-      text: async () => text,
-      url: resolveRequestUrl(input),
-    } as Response),
+    Promise.resolve(textResponse(text, resolveRequestUrl(input))),
   );
 }
 
@@ -206,7 +200,7 @@ describe("web_fetch extraction fallbacks", () => {
         await new Promise<void>((resolve) => {
           setTimeout(resolve, 6000);
         });
-        return textResponse("Loaded page", resolveRequestUrl(input)) as Response;
+        return textResponse("Loaded page", resolveRequestUrl(input));
       });
       const updates: unknown[] = [];
       const tool = createFetchTool({ firecrawl: { enabled: false } });
@@ -283,7 +277,7 @@ describe("web_fetch extraction fallbacks", () => {
             { once: true },
           );
           setTimeout(() => {
-            resolve(textResponse("Loaded page") as Response);
+            resolve(textResponse("Loaded page"));
           }, 6000);
         });
       });
@@ -384,7 +378,7 @@ describe("web_fetch extraction fallbacks", () => {
         await new Promise<void>((resolve) => {
           setTimeout(resolve, 6000);
         });
-        return textResponse("Loaded page", resolveRequestUrl(input)) as Response;
+        return textResponse("Loaded page", resolveRequestUrl(input));
       });
       const tool = createFetchTool({ firecrawl: { enabled: false } });
       const onUpdate = vi.fn(() => {
@@ -409,13 +403,7 @@ describe("web_fetch extraction fallbacks", () => {
   it("enforces maxChars after wrapping", async () => {
     const longText = "x".repeat(5_000);
     installMockFetch((input: RequestInfo | URL) =>
-      Promise.resolve({
-        ok: true,
-        status: 200,
-        headers: makeFetchHeaders({ "content-type": "text/plain" }),
-        text: async () => longText,
-        url: resolveRequestUrl(input),
-      } as Response),
+      Promise.resolve(textResponse(longText, resolveRequestUrl(input))),
     );
 
     const tool = createFetchTool({
@@ -542,19 +530,47 @@ describe("web_fetch extraction fallbacks", () => {
     });
     const result = await tool?.execute?.("call", { url: "https://example.com/stream" });
     const details = result?.details as { warning?: string } | undefined;
-    expect(details?.warning).toContain("Response body truncated");
+    expect(details?.warning).toContain("Response body incomplete after 32000 bytes");
+  });
+
+  it("reports the retained byte count when a response stream fails", async () => {
+    const chunk = new TextEncoder().encode("partial");
+    let sentChunk = false;
+    const stream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        if (!sentChunk) {
+          sentChunk = true;
+          controller.enqueue(chunk);
+          return;
+        }
+        controller.error(new Error("stream reset"));
+      },
+    });
+    installMockFetch((input: RequestInfo | URL) =>
+      Promise.resolve(
+        responseWithUrl(
+          stream,
+          { status: 200, headers: { "content-type": "text/plain; charset=utf-8" } },
+          resolveRequestUrl(input),
+        ),
+      ),
+    );
+
+    const tool = createFetchTool({
+      maxResponseBytes: 64,
+      firecrawl: { enabled: false },
+    });
+    const result = await tool?.execute?.("call", { url: "https://example.com/reset" });
+    const details = result?.details as { text?: string; warning?: string } | undefined;
+
+    expect(details?.text).toContain("partial");
+    expect(details?.warning).toContain("Response body incomplete after 7 bytes");
   });
 
   it("keeps DNS pinning for web_fetch by default even when HTTP_PROXY is configured", async () => {
     vi.stubEnv("HTTP_PROXY", "http://127.0.0.1:7890");
     const mockFetch = installMockFetch((input: RequestInfo | URL) =>
-      Promise.resolve({
-        ok: true,
-        status: 200,
-        headers: makeFetchHeaders({ "content-type": "text/plain" }),
-        text: async () => "proxy body",
-        url: resolveRequestUrl(input),
-      } as Response),
+      Promise.resolve(textResponse("proxy body", resolveRequestUrl(input))),
     );
     const tool = createFetchTool({ firecrawl: { enabled: false } });
 
@@ -571,13 +587,7 @@ describe("web_fetch extraction fallbacks", () => {
   it("uses env proxy dispatch for web_fetch when trusted env proxy is explicitly enabled", async () => {
     vi.stubEnv("HTTP_PROXY", "http://127.0.0.1:7890");
     const mockFetch = installMockFetch((input: RequestInfo | URL) =>
-      Promise.resolve({
-        ok: true,
-        status: 200,
-        headers: makeFetchHeaders({ "content-type": "text/plain" }),
-        text: async () => "proxy body",
-        url: resolveRequestUrl(input),
-      } as Response),
+      Promise.resolve(textResponse("proxy body", resolveRequestUrl(input))),
     );
     const tool = createFetchTool({
       firecrawl: { enabled: false },
@@ -602,7 +612,7 @@ describe("web_fetch extraction fallbacks", () => {
       const url = resolveRequestUrl(input);
       return Promise.resolve(
         htmlResponse("<!doctype html><html><head></head><body></body></html>", url),
-      ) as Promise<Response>;
+      );
     });
 
     resolveWebFetchDefinitionMock.mockReturnValue({
@@ -625,11 +635,8 @@ describe("web_fetch extraction fallbacks", () => {
   });
 
   it("throws when readability is disabled and firecrawl is unavailable", async () => {
-    installMockFetch(
-      (input: RequestInfo | URL) =>
-        Promise.resolve(
-          htmlResponse("<html><body>hi</body></html>", resolveRequestUrl(input)),
-        ) as Promise<Response>,
+    installMockFetch((input: RequestInfo | URL) =>
+      Promise.resolve(htmlResponse("<html><body>hi</body></html>", resolveRequestUrl(input))),
     );
 
     const tool = createFetchTool({
@@ -643,14 +650,13 @@ describe("web_fetch extraction fallbacks", () => {
   });
 
   it("throws when readability is empty and the provider fallback yields no content", async () => {
-    installMockFetch(
-      (input: RequestInfo | URL) =>
-        Promise.resolve(
-          htmlResponse(
-            "<!doctype html><html><head></head><body></body></html>",
-            resolveRequestUrl(input),
-          ),
-        ) as Promise<Response>,
+    installMockFetch((input: RequestInfo | URL) =>
+      Promise.resolve(
+        htmlResponse(
+          "<!doctype html><html><head></head><body></body></html>",
+          resolveRequestUrl(input),
+        ),
+      ),
     );
 
     resolveWebFetchDefinitionMock.mockReturnValue({
@@ -671,14 +677,13 @@ describe("web_fetch extraction fallbacks", () => {
   });
 
   it("falls back to basic HTML cleanup after readability and before giving up", async () => {
-    installMockFetch(
-      (input: RequestInfo | URL) =>
-        Promise.resolve(
-          htmlResponse(
-            "<!doctype html><html><head><title>Shell App</title></head><body><div id='app'></div></body></html>",
-            resolveRequestUrl(input),
-          ),
-        ) as Promise<Response>,
+    installMockFetch((input: RequestInfo | URL) =>
+      Promise.resolve(
+        htmlResponse(
+          "<!doctype html><html><head><title>Shell App</title></head><body><div id='app'></div></body></html>",
+          resolveRequestUrl(input),
+        ),
+      ),
     );
 
     const tool = createFetchTool({
@@ -693,13 +698,14 @@ describe("web_fetch extraction fallbacks", () => {
   });
 
   it("uses the provider fallback when direct fetch fails", async () => {
-    installMockFetch((_input: RequestInfo | URL) => {
-      return Promise.resolve({
-        ok: false,
-        status: 403,
-        headers: makeFetchHeaders({ "content-type": "text/html" }),
-        text: async () => "blocked",
-      } as Response);
+    installMockFetch((input: RequestInfo | URL) => {
+      return Promise.resolve(
+        responseWithUrl(
+          "blocked",
+          { status: 403, headers: { "content-type": "text/html" } },
+          resolveRequestUrl(input),
+        ),
+      );
     });
 
     resolveWebFetchDefinitionMock.mockReturnValue({
@@ -723,9 +729,8 @@ describe("web_fetch extraction fallbacks", () => {
 
   it("wraps external content and clamps oversized maxChars", async () => {
     const large = "a".repeat(80_000);
-    installMockFetch(
-      (input: RequestInfo | URL) =>
-        Promise.resolve(textResponse(large, resolveRequestUrl(input))) as Promise<Response>,
+    installMockFetch((input: RequestInfo | URL) =>
+      Promise.resolve(textResponse(large, resolveRequestUrl(input))),
     );
 
     const tool = createFetchTool({
@@ -745,9 +750,8 @@ describe("web_fetch extraction fallbacks", () => {
   });
 
   it("rejects fractional maxChars before fetching", async () => {
-    const fetchMock = installMockFetch(
-      (input: RequestInfo | URL) =>
-        Promise.resolve(textResponse("unused", resolveRequestUrl(input))) as Promise<Response>,
+    const fetchMock = installMockFetch((input: RequestInfo | URL) =>
+      Promise.resolve(textResponse("unused", resolveRequestUrl(input))),
     );
 
     const tool = createFetchTool({ firecrawl: { enabled: false } });
@@ -767,11 +771,10 @@ describe("web_fetch extraction fallbacks", () => {
       "<!doctype html><html><head><title>Not Found</title></head><body><h1>Not Found</h1><p>" +
       long +
       "</p></body></html>";
-    installMockFetch(
-      (input: RequestInfo | URL) =>
-        Promise.resolve(
-          errorHtmlResponse(html, 404, resolveRequestUrl(input), "Text/HTML; charset=utf-8"),
-        ) as Promise<Response>,
+    installMockFetch((input: RequestInfo | URL) =>
+      Promise.resolve(
+        errorHtmlResponse(html, 404, resolveRequestUrl(input), "Text/HTML; charset=utf-8"),
+      ),
     );
 
     const tool = createFetchTool({ firecrawl: { enabled: false } });
@@ -791,11 +794,8 @@ describe("web_fetch extraction fallbacks", () => {
   it("strips HTML errors when content-type is missing", async () => {
     const html =
       "<!DOCTYPE HTML><html><head><title>Oops</title></head><body><h1>Oops</h1></body></html>";
-    installMockFetch(
-      (input: RequestInfo | URL) =>
-        Promise.resolve(
-          errorHtmlResponse(html, 500, resolveRequestUrl(input), null),
-        ) as Promise<Response>,
+    installMockFetch((input: RequestInfo | URL) =>
+      Promise.resolve(errorHtmlResponse(html, 500, resolveRequestUrl(input), null)),
     );
 
     const tool = createFetchTool({ firecrawl: { enabled: false } });

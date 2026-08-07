@@ -1,6 +1,7 @@
 // Synology Chat tests cover client plugin behavior.
 import { EventEmitter } from "node:events";
 import type { ClientRequest, IncomingMessage, RequestOptions } from "node:http";
+import { PassThrough } from "node:stream";
 import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from "vitest";
 
 const ssrfMocks = {
@@ -47,6 +48,7 @@ type MockHttpCall = [
   RequestOptions & { rejectUnauthorized?: boolean },
   RequestCallback?,
 ];
+type MockIncomingMessage = IncomingMessage & Pick<PassThrough, "end">;
 
 function firstHttpsRequestCall(label = "Synology Chat HTTPS request"): MockHttpCall {
   const call = vi.mocked(https.request).mock.calls[0];
@@ -64,10 +66,10 @@ function firstHttpsGetCall(label = "Synology Chat HTTPS get"): MockHttpCall {
   return call as MockHttpCall;
 }
 
-function createMockResponseEmitter(statusCode: number): IncomingMessage {
-  const res = new EventEmitter() as Partial<IncomingMessage>;
+function createMockResponseEmitter(statusCode: number): MockIncomingMessage {
+  const res = new PassThrough() as PassThrough & Partial<IncomingMessage>;
   res.statusCode = statusCode;
-  return res as unknown as IncomingMessage;
+  return res as unknown as MockIncomingMessage;
 }
 
 function createMockRequestEmitter(): ClientRequest {
@@ -91,8 +93,7 @@ function mockResponse(statusCode: number, body: string) {
     const res = createMockResponseEmitter(statusCode);
     process.nextTick(() => {
       callback?.(res);
-      res.emit("data", Buffer.from(body));
-      res.emit("end");
+      res.end(Buffer.from(body));
     });
     return createMockRequestEmitter();
   }) as MockRequestHandler);
@@ -299,8 +300,7 @@ function mockUserListResponseImpl(users: Array<Record<string, unknown>>, once: b
     const res = createMockResponseEmitter(200);
     process.nextTick(() => {
       callback?.(res);
-      res.emit("data", Buffer.from(JSON.stringify({ success: true, data: { users } })));
-      res.emit("end");
+      res.end(Buffer.from(JSON.stringify({ success: true, data: { users } })));
     });
     return createMockRequestEmitter();
   };
@@ -430,6 +430,36 @@ describe("fetchChatUsers", () => {
     );
 
     expect(users).toEqual([{ user_id: 4, username: "jmn67", nickname: "jmn" }]);
+  });
+
+  it("falls back when the user_list body exceeds the byte cap", async () => {
+    const httpsGet = vi.mocked(https.get);
+    const warns: string[] = [];
+    // Single oversized Buffer: over 1 MiB cap without multi-write/destroy races.
+    const oversized = Buffer.alloc(1 * 1024 * 1024 + 1, 0x78);
+    const overflowUrl =
+      "https://overflow-nas.example.com/webapi/entry.cgi?api=SYNO.Chat.External&method=chatbot&version=2";
+    httpsGet.mockImplementation(((_url, _opts, callback) => {
+      const res = createMockResponseEmitter(200);
+      process.nextTick(() => {
+        callback?.(res);
+        res.end(oversized);
+      });
+      return createMockRequestEmitter();
+    }) as MockRequestHandler);
+
+    const userId = await resolveLegacyWebhookNameToChatUserId({
+      incomingUrl: overflowUrl,
+      mutableWebhookUsername: "anyone",
+      log: {
+        warn: (...args: unknown[]) => {
+          warns.push(args.map(String).join(" "));
+        },
+      },
+    });
+
+    expect(userId).toBeUndefined();
+    expect(warns.some((line) => line.includes("exceeded"))).toBe(true);
   });
 
   it("verifies TLS by default for user_list lookups", async () => {

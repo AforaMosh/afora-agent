@@ -2,7 +2,10 @@
  * Thin ClickClack REST/websocket client used by gateway, resolver, and outbound
  * delivery code.
  */
-import { readResponseTextLimited } from "openclaw/plugin-sdk/provider-http";
+import {
+  readProviderJsonResponse,
+  readResponseTextLimited,
+} from "openclaw/plugin-sdk/provider-http";
 import { WebSocket } from "ws";
 import type {
   ClickClackChannel,
@@ -19,6 +22,13 @@ type ClientOptions = {
 };
 
 const CLICKCLACK_ERROR_BODY_LIMIT_BYTES = 8 * 1024;
+// A gateway event may exceed ws's 1 MiB default after ClickClack wraps a
+// valid payload, but response frames must still have a finite allocation cap.
+const CLICKCLACK_WEBSOCKET_MAX_PAYLOAD_BYTES = 16 * 1024 * 1024;
+// Match Slack relay / Mattermost / Signal channel gateway handshake floors.
+// Without this, gateway.ts waits forever for close/error when TCP accepts but
+// never upgrades, pinning the monitor reconnect loop.
+const CLICKCLACK_WEBSOCKET_HANDSHAKE_TIMEOUT_MS = 30_000;
 
 /**
  * Creates a typed client for the ClickClack API using bearer-token auth.
@@ -44,7 +54,7 @@ export function createClickClackClient(options: ClientOptions) {
       const detail = await readResponseTextLimited(response, CLICKCLACK_ERROR_BODY_LIMIT_BYTES);
       throw new Error(`ClickClack ${response.status}: ${detail}`);
     }
-    return (await response.json()) as T;
+    return await readProviderJsonResponse<T>(response, "ClickClack response");
   }
 
   return {
@@ -88,10 +98,20 @@ export function createClickClackClient(options: ClientOptions) {
       await request<{ root: ClickClackMessage; replies: ClickClackMessage[] }>(
         `/api/messages/${encodeURIComponent(messageId)}/thread`,
       ),
-    createChannelMessage: async (channelId: string, body: string): Promise<ClickClackMessage> => {
+    createChannelMessage: async (
+      channelId: string,
+      body: string,
+      opts?: { quotedMessageId?: string },
+    ): Promise<ClickClackMessage> => {
       const data = await request<{ message: ClickClackMessage }>(
         `/api/channels/${encodeURIComponent(channelId)}/messages`,
-        { method: "POST", body: JSON.stringify({ body }) },
+        {
+          method: "POST",
+          body: JSON.stringify({
+            body,
+            ...(opts?.quotedMessageId ? { quoted_message_id: opts.quotedMessageId } : {}),
+          }),
+        },
       );
       return data.message;
     },
@@ -115,10 +135,17 @@ export function createClickClackClient(options: ClientOptions) {
     createDirectMessage: async (
       conversationId: string,
       body: string,
+      opts?: { quotedMessageId?: string },
     ): Promise<ClickClackMessage> => {
       const data = await request<{ message: ClickClackMessage }>(
         `/api/dms/${encodeURIComponent(conversationId)}/messages`,
-        { method: "POST", body: JSON.stringify({ body }) },
+        {
+          method: "POST",
+          body: JSON.stringify({
+            body,
+            ...(opts?.quotedMessageId ? { quoted_message_id: opts.quotedMessageId } : {}),
+          }),
+        },
       );
       return data.message;
     },
@@ -143,6 +170,8 @@ export function createClickClackClient(options: ClientOptions) {
         headers: {
           Authorization: `Bearer ${options.token}`,
         },
+        handshakeTimeout: CLICKCLACK_WEBSOCKET_HANDSHAKE_TIMEOUT_MS,
+        maxPayload: CLICKCLACK_WEBSOCKET_MAX_PAYLOAD_BYTES,
       });
     },
   };
