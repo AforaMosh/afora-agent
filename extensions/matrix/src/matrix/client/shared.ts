@@ -4,7 +4,6 @@ import { createDeferred } from "openclaw/plugin-sdk/extension-shared";
 import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
 import type { CoreConfig } from "../../types.js";
 import type { MatrixClient } from "../sdk.js";
-import { LogService } from "../sdk/logger.js";
 import { awaitMatrixStartupWithAbort } from "../startup-abort.js";
 import { resolveMatrixAuth, resolveMatrixAuthContext } from "./config.js";
 import type { MatrixAuth } from "./types.js";
@@ -50,7 +49,6 @@ type SharedMatrixClientState = {
   client: MatrixClient;
   key: string;
   started: boolean;
-  cryptoReady: boolean;
   startPromise: Promise<void> | null;
   phase: SharedMatrixClientPhase;
   leases: Set<SharedMatrixClientLeaseState>;
@@ -74,6 +72,7 @@ type SharedMatrixClientParams = {
 
 const sharedClientStates = new Map<string, SharedMatrixClientState>();
 const sharedClientPromises = new Map<string, Promise<SharedMatrixClientState>>();
+const replaceAfterRetirement = new WeakSet<SharedMatrixClientState>();
 
 function buildSharedClientKey(auth: MatrixAuth): string {
   // Serialize the tuple as a whole: Matrix URLs and credentials may contain `|`,
@@ -113,7 +112,6 @@ async function createSharedMatrixClient(params: {
     client,
     key: buildSharedClientKey(params.auth),
     started: false,
-    cryptoReady: false,
     startPromise: null,
     phase: "open",
     leases: new Set(),
@@ -145,21 +143,21 @@ async function ensureSharedClientStarted(
   }
 
   const startPromise = (async () => {
-    if (state.auth.encryption && !state.cryptoReady) {
-      try {
-        const joinedRooms = await state.client.getJoinedRooms();
-        if (state.client.crypto) {
-          await state.client.crypto.prepare(joinedRooms);
-          state.cryptoReady = true;
-        }
-      } catch (err) {
-        LogService.warn("MatrixClientLite", "Failed to prepare crypto:", err);
-      }
+    if (state.phase !== "open" || sharedClientStates.get(state.key) !== state) {
+      throw new Error("Matrix client generation is retiring");
     }
-
     await awaitMatrixStartupWithAbort(state.client.start({ abortSignal }), abortSignal);
+    if (state.phase !== "open" || sharedClientStates.get(state.key) !== state) {
+      throw new Error("Matrix client generation retired during startup");
+    }
     state.started = true;
-  })();
+  })().catch((error: unknown) => {
+    if (state.phase === "open") {
+      state.poisonError = toRetirementError(error);
+      replaceAfterRetirement.add(state);
+    }
+    throw error;
+  });
   const guardedStart = startPromise.finally(() => {
     if (state.startPromise === guardedStart) {
       state.startPromise = null;
@@ -204,15 +202,27 @@ async function resolveOpenSharedMatrixClientState(
 
   while (true) {
     const existing = sharedClientStates.get(key);
+    if (existing?.poisonError && !replaceAfterRetirement.has(existing)) {
+      throw existing.poisonError;
+    }
+    if (existing?.poisonError && !existing.retirementPromise) {
+      void beginGenerationRetirement({ state: existing }).catch(() => undefined);
+    }
+    if (existing?.retirementPromise) {
+      try {
+        await awaitMatrixStartupWithAbort(existing.retirementPromise, params.abortSignal);
+      } catch (error) {
+        if (!replaceAfterRetirement.has(existing)) {
+          throw error;
+        }
+      }
+      continue;
+    }
     if (existing?.poisonError) {
       throw existing.poisonError;
     }
     if (existing?.phase === "open") {
       return existing;
-    }
-    if (existing?.retirementPromise) {
-      await awaitMatrixStartupWithAbort(existing.retirementPromise, params.abortSignal);
-      continue;
     }
 
     const pending = sharedClientPromises.get(key);
@@ -348,8 +358,9 @@ function beginGenerationRetirement(params: {
   }
   state.phase = "quiescing";
   state.retirementPromise = Promise.resolve().then(async () => {
+    const deadlineMs = Date.now() + 10_000;
     try {
-      await state.client.quiesceSync();
+      await state.client.quiesceSync({ deadlineMs });
       state.started = false;
       await state.client.drainPendingDecryptions("matrix monitor sync quiesce");
     } catch (error) {
@@ -375,6 +386,9 @@ function beginGenerationRetirement(params: {
         .drainPendingDecryptions("matrix poisoned client shutdown")
         .catch(() => undefined);
       state.client.stopWithoutPersist();
+      if (replaceAfterRetirement.has(state)) {
+        deleteSharedClientState(state);
+      }
       throw state.poisonError;
     }
 
@@ -391,11 +405,13 @@ function beginGenerationRetirement(params: {
     }
     try {
       if (state.releaseMode === "persist") {
-        await state.client.stopAndPersist();
+        await state.client.stopAndPersist({ deadlineMs });
       } else if (state.releaseMode === "discard") {
         state.client.stopWithoutPersist();
       } else {
-        await state.client.stopAndPersist().catch(() => state.client.stopWithoutPersist());
+        await state.client
+          .stopAndPersist({ deadlineMs })
+          .catch(() => state.client.stopWithoutPersist());
       }
     } finally {
       deleteSharedClientState(state);

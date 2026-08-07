@@ -32,6 +32,30 @@ function isUnsupportedAuthenticatedMediaEndpointError(err: unknown): boolean {
 }
 
 export abstract class MatrixClientCore extends MatrixClientBase {
+  async waitForEncryptedRoomReady(
+    roomId: string,
+    params: { abortSignal?: AbortSignal; timeoutMs?: number } = {},
+  ): Promise<void> {
+    const generation = this.lifecycleGeneration;
+    await this.waitForSyncCondition({
+      abortSignal: params.abortSignal,
+      generation,
+      check: async () => {
+        const state = this.client.getSyncState();
+        const room = this.client.getRoom(roomId);
+        return Boolean(
+          this.client.getSyncStateData()?.fromCache !== true &&
+          (state === "PREPARED" || state === "SYNCING") &&
+          room?.getMyMembership() === "join" &&
+          room.hasEncryptionStateEvent() &&
+          (await this.client.getCrypto()?.isEncryptionEnabledInRoom(roomId)),
+        );
+      },
+      timeoutMessage: `Matrix encrypted room ${roomId} did not become ready within ${params.timeoutMs ?? 30_000}ms`,
+      timeoutMs: params.timeoutMs ?? 30_000,
+    });
+  }
+
   async getUserId(): Promise<string> {
     const fromClient = this.client.getUserId();
     if (fromClient) {

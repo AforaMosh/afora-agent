@@ -19,9 +19,18 @@ const testing = {
   prepareMatrixQaE2eeStorage,
 };
 
+function createDeferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  const promise = new Promise<T>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve };
+}
+
 describe("matrix qa e2ee client storage", () => {
   function createLifecycleFixture(options?: {
     drain?: () => Promise<void>;
+    persist?: () => Promise<void>;
     shutdownTimeoutMs?: number;
   }) {
     const calls: string[] = [];
@@ -34,6 +43,7 @@ describe("matrix qa e2ee client storage", () => {
       shutdownTimeoutMs: options?.shutdownTimeoutMs ?? 500,
       stopAndPersist: vi.fn(async () => {
         calls.push("stop-and-persist");
+        await options?.persist?.();
       }),
       stopWithoutPersist: vi.fn(() => calls.push("stop-and-discard")),
     });
@@ -47,7 +57,6 @@ describe("matrix qa e2ee client storage", () => {
 
     expect(calls).toEqual(["detach", "drain", "stop-and-persist"]);
   });
-
   it("shares one stop promise across concurrent and repeated shutdown requests", async () => {
     const { calls, lifecycle } = createLifecycleFixture();
 
@@ -168,11 +177,59 @@ describe("matrix qa e2ee client storage", () => {
       );
 
       await vi.advanceTimersByTimeAsync(50);
-
-      await rejection;
       expect(calls).toEqual(["operation", "detach"]);
       await vi.advanceTimersByTimeAsync(100);
+      await rejection;
       expect(calls).toEqual(["operation", "detach", "stop-and-discard"]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("aborts the tracked encrypt and upload operation before timeout settles", async () => {
+    vi.useFakeTimers();
+    try {
+      const { calls, lifecycle } = createLifecycleFixture();
+      const encrypt = createDeferred<void>();
+      const operation = lifecycle.runOperation({
+        label: "Matrix E2EE image send",
+        timeoutMs: 50,
+        run: async (abortSignal) => {
+          calls.push("encrypt");
+          await encrypt.promise;
+          abortSignal.throwIfAborted();
+          calls.push("upload");
+        },
+      });
+      const rejection = expect(operation).rejects.toThrow(
+        "Matrix E2EE image send timed out after 50ms",
+      );
+
+      await vi.advanceTimersByTimeAsync(50);
+      expect(calls).toEqual(["encrypt", "detach"]);
+      encrypt.resolve();
+      await rejection;
+      expect(calls).toEqual(["encrypt", "detach", "drain", "stop-and-persist"]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("bounds persistence with the same shutdown deadline", async () => {
+    vi.useFakeTimers();
+    try {
+      const { calls, lifecycle } = createLifecycleFixture({
+        persist: () => new Promise<void>(() => {}),
+        shutdownTimeoutMs: 100,
+      });
+      const stop = lifecycle.stop();
+      const rejection = expect(stop).rejects.toThrow(
+        "shutdown failed while persisting Matrix state",
+      );
+
+      await vi.advanceTimersByTimeAsync(100);
+      await rejection;
+      expect(calls).toEqual(["detach", "drain", "stop-and-persist", "stop-and-discard"]);
     } finally {
       vi.useRealTimers();
     }

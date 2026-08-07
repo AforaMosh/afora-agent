@@ -147,6 +147,7 @@ export abstract class MatrixClientBase {
   protected transactionScopePromise: Promise<string> | null = null;
   private readonly messageWireDispatchGuards = new Map<string, MatrixMessageWireDispatchGuard>();
   private sdkStopped = false;
+  protected lifecycleGeneration = 0;
 
   readonly dms = {
     update: async (): Promise<boolean> => {
@@ -376,101 +377,84 @@ export abstract class MatrixClientBase {
     });
   }
 
-  protected async waitForInitialSyncReady(
-    params: {
-      timeoutMs?: number;
-      abortSignal?: AbortSignal;
-    } = {},
-  ): Promise<void> {
-    const timeoutMs = params.timeoutMs ?? 30_000;
-    if (isMatrixReadySyncState(this.currentSyncState)) {
-      return;
-    }
-    if (isMatrixAccessTokenInvalidatedError(this.currentSyncError)) {
-      throw this.currentSyncError instanceof Error
-        ? this.currentSyncError
-        : new Error("Matrix access token invalidated", { cause: this.currentSyncError });
-    }
-    if (isMatrixTerminalSyncState(this.currentSyncState)) {
-      throw new Error(`Matrix sync entered ${this.currentSyncState} during startup`);
-    }
-
-    await new Promise<void>((resolve, reject) => {
-      let settled = false;
-      let timeoutId: ReturnType<typeof setTimeout> | undefined;
-      const abortSignal = params.abortSignal;
-
-      const cleanup = () => {
-        this.off("sync.state", onSyncState);
-        this.off("sync.unexpected_error", onUnexpectedError);
-        abortSignal?.removeEventListener("abort", onAbort);
-        if (timeoutId) {
-          clearTimeout(timeoutId);
-          timeoutId = undefined;
+  protected async waitForSyncCondition(params: {
+    abortSignal?: AbortSignal;
+    check: () => boolean | Promise<boolean>;
+    generation: number;
+    timeoutMessage: string;
+    timeoutMs: number;
+  }): Promise<void> {
+    let revision = 0;
+    let pendingError: Error | undefined;
+    let wake = () => {};
+    const onSync = () => {
+      revision += 1;
+      wake();
+    };
+    const reject = (error: unknown) => {
+      pendingError = error instanceof Error ? error : new Error(String(error));
+      wake();
+    };
+    const onAbort = () => reject(createMatrixStartupAbortError());
+    const timeout = setTimeout(() => reject(new Error(params.timeoutMessage)), params.timeoutMs);
+    timeout.unref?.();
+    this.on("sync.state", onSync);
+    this.on("sync.unexpected_error", reject);
+    this.on("lifecycle.invalidated", onAbort);
+    params.abortSignal?.addEventListener("abort", onAbort, { once: true });
+    try {
+      while (true) {
+        this.assertLifecycleGeneration(params.generation, params.abortSignal);
+        if (pendingError) {
+          throw pendingError;
         }
-      };
-
-      const settleResolve = () => {
-        if (settled) {
+        const checkedRevision = revision;
+        if ((await params.check()) && checkedRevision === revision) {
+          this.assertLifecycleGeneration(params.generation, params.abortSignal);
           return;
         }
-        settled = true;
-        cleanup();
-        resolve();
-      };
-
-      const settleReject = (error: Error) => {
-        if (settled) {
-          return;
+        if (checkedRevision !== revision) {
+          continue;
         }
-        settled = true;
-        cleanup();
-        reject(error);
-      };
-
-      const onSyncState = (state: MatrixSyncState, _prevState: string | null, error?: unknown) => {
-        if (isMatrixReadySyncState(state)) {
-          settleResolve();
-          return;
-        }
-        if (isMatrixAccessTokenInvalidatedError(error)) {
-          settleReject(
-            error instanceof Error ? error : new Error("Matrix access token invalidated"),
-          );
-          return;
-        }
-        if (isMatrixTerminalSyncState(state)) {
-          settleReject(
-            new Error(
-              error instanceof Error && error.message
-                ? error.message
-                : `Matrix sync entered ${state} during startup`,
-            ),
-          );
-        }
-      };
-
-      const onUnexpectedError = (error: Error) => {
-        settleReject(error);
-      };
-
-      const onAbort = () => {
-        settleReject(createMatrixStartupAbortError());
-      };
-
-      this.on("sync.state", onSyncState);
-      this.on("sync.unexpected_error", onUnexpectedError);
-      if (abortSignal?.aborted) {
-        onAbort();
-        return;
+        await new Promise<void>((resolve) => {
+          wake = resolve;
+        });
+        wake = () => {};
       }
-      abortSignal?.addEventListener("abort", onAbort, { once: true });
-      timeoutId = setTimeout(() => {
-        settleReject(
-          new Error(`Matrix client did not reach a ready sync state within ${timeoutMs}ms`),
-        );
-      }, timeoutMs);
-      timeoutId.unref?.();
+    } finally {
+      clearTimeout(timeout);
+      this.off("sync.state", onSync);
+      this.off("sync.unexpected_error", reject);
+      this.off("lifecycle.invalidated", onAbort);
+      params.abortSignal?.removeEventListener("abort", onAbort);
+    }
+  }
+
+  protected async waitForInitialSyncReady(params: {
+    generation: number;
+    timeoutMs?: number;
+    abortSignal?: AbortSignal;
+  }): Promise<void> {
+    const timeoutMs = params.timeoutMs ?? 30_000;
+    await this.waitForSyncCondition({
+      abortSignal: params.abortSignal,
+      generation: params.generation,
+      check: () => {
+        if (isMatrixReadySyncState(this.currentSyncState)) {
+          return true;
+        }
+        if (isMatrixAccessTokenInvalidatedError(this.currentSyncError)) {
+          throw this.currentSyncError instanceof Error
+            ? this.currentSyncError
+            : new Error("Matrix access token invalidated", { cause: this.currentSyncError });
+        }
+        if (isMatrixTerminalSyncState(this.currentSyncState)) {
+          throw new Error(`Matrix sync entered ${this.currentSyncState} during startup`);
+        }
+        return false;
+      },
+      timeoutMessage: `Matrix client did not reach a ready sync state within ${timeoutMs}ms`,
+      timeoutMs,
     });
   }
 
@@ -488,28 +472,39 @@ export abstract class MatrixClientBase {
       );
     }
 
-    throwIfMatrixStartupAborted(opts.abortSignal);
-    await this.ensureCryptoSupportInitialized();
-    throwIfMatrixStartupAborted(opts.abortSignal);
-    this.registerBridge();
-    await this.initializeCryptoIfNeeded(opts.abortSignal);
-
-    await this.client.startClient({
-      initialSyncLimit: this.initialSyncLimit,
-      ...(this.syncFilter ? { filter: Filter.fromJson(this.selfUserId, "", this.syncFilter) } : {}),
-    });
-    await this.waitForInitialSyncReady({
-      abortSignal: opts.abortSignal,
-      timeoutMs: opts.readyTimeoutMs,
-    });
-    throwIfMatrixStartupAborted(opts.abortSignal);
-    if (opts.bootstrapCrypto && this.autoBootstrapCrypto) {
-      await this.bootstrapCryptoIfNeeded(opts.abortSignal);
+    const generation = ++this.lifecycleGeneration;
+    try {
+      this.assertLifecycleGeneration(generation, opts.abortSignal);
+      await this.ensureCryptoSupportInitialized();
+      this.assertLifecycleGeneration(generation, opts.abortSignal);
+      this.registerBridge();
+      await this.initializeCryptoIfNeeded(opts.abortSignal, generation);
+      this.assertLifecycleGeneration(generation, opts.abortSignal);
+      await this.client.startClient({
+        initialSyncLimit: this.initialSyncLimit,
+        ...(this.syncFilter
+          ? { filter: Filter.fromJson(this.selfUserId, "", this.syncFilter) }
+          : {}),
+      });
+      this.assertLifecycleGeneration(generation, opts.abortSignal);
+      await this.waitForInitialSyncReady({
+        generation,
+        abortSignal: opts.abortSignal,
+        timeoutMs: opts.readyTimeoutMs,
+      });
+      this.assertLifecycleGeneration(generation, opts.abortSignal);
+      if (opts.bootstrapCrypto && this.autoBootstrapCrypto) {
+        await this.bootstrapCryptoIfNeeded(opts.abortSignal);
+      }
+      this.assertLifecycleGeneration(generation, opts.abortSignal);
+      this.started = true;
+      this.emitOutstandingInviteEvents();
+      await this.refreshDmCache().catch(noop);
+      this.assertLifecycleGeneration(generation, opts.abortSignal);
+    } catch (error) {
+      this.stopWithoutPersist();
+      throw error;
     }
-    throwIfMatrixStartupAborted(opts.abortSignal);
-    this.started = true;
-    this.emitOutstandingInviteEvents();
-    await this.refreshDmCache().catch(noop);
   }
 
   async prepareForOneOff(): Promise<void> {
@@ -552,14 +547,17 @@ export abstract class MatrixClientBase {
     }
     this.currentSyncState = null;
     this.currentSyncError = undefined;
+    this.lifecycleGeneration += 1;
+    this.emitter.emit("lifecycle.invalidated");
     this.client.stopClient();
     this.sdkStopped = true;
     this.started = false;
   }
 
-  async quiesceSync(): Promise<void> {
+  async quiesceSync(params: { deadlineMs?: number } = {}): Promise<void> {
     await quiesceMatrixClientSync({
       client: this.client,
+      deadlineMs: params.deadlineMs,
       emitter: this.emitter,
       markStopped: () => {
         this.started = false;
@@ -579,23 +577,49 @@ export abstract class MatrixClientBase {
       .catch(noop);
   }
 
-  async stopAndPersist(): Promise<void> {
+  async stopAndPersist(params: { deadlineMs?: number } = {}): Promise<void> {
     if (this.stopPersistPromise) {
       await this.stopPersistPromise;
       return;
     }
+    const deadlineMs = params.deadlineMs ?? Date.now() + 10_000;
+    const withinDeadline = async <T>(promise: Promise<T>, phase: string): Promise<T> => {
+      let timeout!: ReturnType<typeof setTimeout>;
+      try {
+        return await Promise.race([
+          promise,
+          new Promise<never>((_, reject) => {
+            timeout = setTimeout(
+              () => {
+                this.syncStore?.discardPendingSyncCursorPersistence();
+                reject(new Error(`Matrix client shutdown deadline expired while ${phase}`));
+              },
+              Math.max(0, deadlineMs - Date.now()),
+            );
+            timeout.unref?.();
+          }),
+        ]);
+      } finally {
+        clearTimeout(timeout);
+      }
+    };
     this.stopPersistPromise = (async () => {
-      await this.quiesceSync();
+      await this.quiesceSync({ deadlineMs });
       this.stopSdkClient();
       this.decryptBridge?.stop();
-      const runtime = loadedMatrixCryptoRuntime ?? (await loadMatrixCryptoRuntime());
-      await runtime.persistIdbToDisk({
-        snapshotPath: this.idbSnapshotPath,
-        databasePrefix: this.cryptoDatabasePrefix,
-        strict: true,
-      });
+      const runtime =
+        loadedMatrixCryptoRuntime ??
+        (await withinDeadline(loadMatrixCryptoRuntime(), "loading crypto persistence"));
+      await withinDeadline(
+        runtime.persistIdbToDisk({
+          snapshotPath: this.idbSnapshotPath,
+          databasePrefix: this.cryptoDatabasePrefix,
+          strict: true,
+        }),
+        "persisting crypto state",
+      );
       this.syncStore?.markCleanShutdown();
-      await this.syncStore?.flush();
+      await withinDeadline(this.syncStore?.flush() ?? Promise.resolve(), "flushing sync state");
     })();
     await this.stopPersistPromise;
   }
@@ -660,30 +684,34 @@ export abstract class MatrixClientBase {
     this.cryptoBootstrapped = true;
   }
 
-  protected async initializeCryptoIfNeeded(abortSignal?: AbortSignal): Promise<void> {
+  protected async initializeCryptoIfNeeded(
+    abortSignal?: AbortSignal,
+    generation = this.lifecycleGeneration,
+  ): Promise<void> {
     if (!this.encryptionEnabled || this.cryptoInitialized) {
       return;
     }
     throwIfMatrixStartupAborted(abortSignal);
     const { persistIdbToDisk, restoreIdbFromDisk } = await loadMatrixCryptoRuntime();
+    this.assertLifecycleGeneration(generation, abortSignal);
 
     // Restore persisted IndexedDB crypto store before initializing WASM crypto.
     await restoreIdbFromDisk(this.idbSnapshotPath);
-    throwIfMatrixStartupAborted(abortSignal);
+    this.assertLifecycleGeneration(generation, abortSignal);
 
     try {
       await this.client.initRustCrypto({
         cryptoDatabasePrefix: this.cryptoDatabasePrefix,
       });
+      this.assertLifecycleGeneration(generation, abortSignal);
       this.cryptoInitialized = true;
-      throwIfMatrixStartupAborted(abortSignal);
 
       // Persist the crypto store after successful init (captures fresh keys on first run).
       await persistIdbToDisk({
         snapshotPath: this.idbSnapshotPath,
         databasePrefix: this.cryptoDatabasePrefix,
       });
-      throwIfMatrixStartupAborted(abortSignal);
+      this.assertLifecycleGeneration(generation, abortSignal);
 
       // Periodically persist to capture new Olm sessions and room keys.
       this.idbPersistTimer = setInterval(() => {
@@ -694,7 +722,15 @@ export abstract class MatrixClientBase {
       }, MATRIX_IDB_PERSIST_INTERVAL_MS);
       this.idbPersistTimer.unref?.();
     } catch (err) {
+      this.assertLifecycleGeneration(generation, abortSignal);
       LogService.warn("MatrixClientLite", "Failed to initialize rust crypto:", err);
+    }
+  }
+
+  protected assertLifecycleGeneration(generation: number, abortSignal?: AbortSignal): void {
+    throwIfMatrixStartupAborted(abortSignal);
+    if (this.sdkStopped || generation !== this.lifecycleGeneration) {
+      throw createMatrixStartupAbortError();
     }
   }
 }
