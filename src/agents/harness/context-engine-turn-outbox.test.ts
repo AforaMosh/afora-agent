@@ -18,6 +18,7 @@ import {
 import type { ContextEngineLogicalTurnLease } from "./context-engine-logical-turn.js";
 import { drainPendingContextEngineTurnsBeforeRun } from "./context-engine-turn-attempt.js";
 import {
+  acceptContextEngineTurnIntent,
   drainContextEngineTurnOutbox,
   enqueueContextEngineTurnCommit,
   enqueueContextEngineTurnIntent,
@@ -128,7 +129,7 @@ describe("context-engine turn outbox", () => {
     ).toBeUndefined();
   });
 
-  it("recovers a terminal transcript written before finalization crashed", async () => {
+  it("recovers an accepted terminal transcript when finalization crashed", async () => {
     const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-context-outbox-recovery-"));
     tempDirs.push(stateDir);
     const target = {
@@ -165,9 +166,21 @@ describe("context-engine turn outbox", () => {
       parentId: admitted.messageId,
       now: 2_000,
     });
+    if (!terminal?.anchor) {
+      throw new Error("expected terminal transcript entry");
+    }
+    acceptContextEngineTurnIntent({
+      boundary: {
+        admission,
+        terminal: terminal.anchor,
+      },
+      database,
+      engineId: "test",
+      isHeartbeat: true,
+    });
     const current = await appendTranscriptMessage(target, {
       message: { role: "user", content: "second" },
-      parentId: terminal?.messageId,
+      parentId: terminal.messageId,
       now: 3_000,
     });
     if (!current?.anchor) {
@@ -235,6 +248,103 @@ describe("context-engine turn outbox", () => {
       isHeartbeat: false,
     });
     expect(lease.degradeBeforeStart).not.toHaveBeenCalled();
+  });
+
+  it("discards admission-only recovery even when the transcript has descendants", async () => {
+    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-context-outbox-unaccepted-"));
+    tempDirs.push(stateDir);
+    const target = {
+      agentId: "main",
+      sessionId: "unaccepted-turn",
+      sessionKey: "agent:main:unaccepted-turn",
+      storePath: path.join(stateDir, "sessions.json"),
+    };
+    await upsertSessionEntry(target, { sessionId: target.sessionId, updatedAt: 1 });
+    const admitted = await appendTranscriptMessage(target, {
+      message: { role: "user", content: "first" },
+      now: 1_000,
+    });
+    if (!admitted?.anchor) {
+      throw new Error("expected admitted transcript entry");
+    }
+    const admission = {
+      ...admitted.anchor,
+      logicalTurnId: "unaccepted-logical-turn",
+      role: "user" as const,
+    } satisfies TranscriptTurnAdmission;
+    const database = openOpenClawAgentDatabase({
+      agentId: target.agentId,
+      path: admission.storePath,
+    });
+    enqueueContextEngineTurnIntent({
+      admission,
+      database,
+      engineId: "test",
+      isHeartbeat: false,
+    });
+    const rejected = await appendTranscriptMessage(target, {
+      message: { role: "assistant", content: "rejected fallback" },
+      parentId: admitted.messageId,
+      now: 2_000,
+    });
+    const current = await appendTranscriptMessage(target, {
+      message: { role: "user", content: "second" },
+      parentId: rejected?.messageId,
+      now: 3_000,
+    });
+    if (!current?.anchor) {
+      throw new Error("expected current transcript entry");
+    }
+    const currentAdmission = {
+      ...current.anchor,
+      logicalTurnId: "current-logical-turn",
+      role: "user" as const,
+    } satisfies TranscriptTurnAdmission;
+    const commitTurn = vi.fn(async () => ({ status: "committed" as const }));
+    const engine = {
+      info: {
+        id: "test",
+        name: "Test",
+        transcriptSemantics: {
+          currentTurnFence: "before-current-turn-entry-v1",
+          turnAdvancementIdempotency: "atomic-idempotent-v1",
+        },
+      },
+      ingest: async () => ({ ingested: true }),
+      assemble: async ({ messages }) => ({ messages, estimatedTokens: 0 }),
+      compact: async () => ({ ok: true, compacted: false }),
+      commitTurn,
+    } satisfies ContextEngine;
+    const lease = {
+      engine,
+      effectiveEngine: engine,
+      effectiveEngineId: "test",
+      effectiveEnginePluginId: undefined,
+      degraded: false,
+      degradedReason: undefined,
+      selectForHost: vi.fn(),
+      degradeBeforeStart: vi.fn(),
+      begin: vi.fn(),
+      deferDisposalUntil: vi.fn(),
+      dispose: vi.fn(async () => undefined),
+    } satisfies ContextEngineLogicalTurnLease;
+
+    await drainPendingContextEngineTurnsBeforeRun({
+      admission: currentAdmission,
+      isHeartbeat: false,
+      lease,
+    });
+
+    expect(commitTurn).not.toHaveBeenCalled();
+    const queued = database.db
+      .prepare("SELECT advancement_key, payload_json FROM context_engine_turn_outbox")
+      .all() as Array<{ advancement_key: string; payload_json: string }>;
+    expect(queued).toHaveLength(1);
+    expect(queued[0]?.advancement_key).toBe(currentAdmission.logicalTurnId);
+    expect(JSON.parse(queued[0]?.payload_json ?? "{}")).toMatchObject({
+      state: "admitted",
+      isHeartbeat: false,
+    });
   });
 
   it("does not let later same-session turns overtake a failed commit", async () => {

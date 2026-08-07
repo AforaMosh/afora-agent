@@ -44,6 +44,8 @@ export function appendSqliteTranscriptMessageInTransaction<TMessage>(
   resolved: ResolvedTranscriptScope,
   options: TranscriptMessageAppendOptions<TMessage> & { messageAlreadyRedacted?: boolean },
 ): TranscriptMessageAppendResult<TMessage> | undefined {
+  const serializeForStorage = (message: TMessage): TMessage =>
+    options.messageAlreadyRedacted ? message : redactTranscriptMessageForStorage(message, options);
   const readAnchor = (params: {
     message: unknown;
     messageId: string;
@@ -77,7 +79,7 @@ export function appendSqliteTranscriptMessageInTransaction<TMessage>(
     if (existing) {
       if (
         !options.prepareMessageAfterIdempotencyCheck &&
-        !messagesMatchForIdempotentReplay(existing.message, options.message)
+        !messagesMatchForIdempotentReplay(existing.message, serializeForStorage(options.message))
       ) {
         throw new TranscriptTurnAdmissionConflictError(idempotencyKey);
       }
@@ -94,9 +96,7 @@ export function appendSqliteTranscriptMessageInTransaction<TMessage>(
 
   const messageId = options.eventId ?? randomUUID();
   const now = options.now ?? Date.now();
-  const finalMessage = options.messageAlreadyRedacted
-    ? prepared
-    : redactTranscriptMessageForStorage(prepared, options);
+  const finalMessage = serializeForStorage(prepared);
   ensureTranscriptHeader(database, resolved, options.cwd, now);
   const parentId = resolveTranscriptMessageAppendParent(database, resolved.sessionId, options);
   const event = {

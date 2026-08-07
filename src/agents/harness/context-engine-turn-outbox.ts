@@ -1,7 +1,6 @@
 import { sql } from "kysely";
 import type { AgentMessage } from "../../../packages/agent-core/src/types.js";
 import {
-  readActiveTranscriptEntryAnchor,
   readClosedTranscriptTurn,
   type TranscriptTurnBoundary,
 } from "../../config/sessions/session-accessor.js";
@@ -33,6 +32,12 @@ type AdmittedContextEngineTurnOutboxPayload = Readonly<{
   state: "admitted";
 }>;
 
+type AcceptedContextEngineTurnOutboxPayload = Readonly<{
+  boundary: TranscriptTurnBoundary;
+  isHeartbeat: boolean;
+  state: "accepted";
+}>;
+
 type ReadyContextEngineTurnOutboxPayload = Readonly<{
   boundary: TranscriptTurnBoundary;
   isHeartbeat: boolean;
@@ -43,6 +48,7 @@ type ReadyContextEngineTurnOutboxPayload = Readonly<{
 
 type ContextEngineTurnOutboxPayload =
   | AdmittedContextEngineTurnOutboxPayload
+  | AcceptedContextEngineTurnOutboxPayload
   | ReadyContextEngineTurnOutboxPayload;
 
 const RECOVERED_TURN_MAX_EVENTS = 20_000;
@@ -89,11 +95,15 @@ function writeContextEngineTurnOutboxPayload(params: {
   if (existing) {
     assertMatchingOutboxOwner(existing, params, advancementKey);
     const existingPayload = JSON.parse(existing.payload_json) as ContextEngineTurnOutboxPayload;
-    if (
-      params.payload.state === "ready" &&
-      existingPayload.state === "admitted" &&
-      existingPayload.admission.entryId === admission.entryId
-    ) {
+    const transitionMatches =
+      (params.payload.state === "accepted" &&
+        existingPayload.state === "admitted" &&
+        existingPayload.admission.entryId === admission.entryId) ||
+      (params.payload.state === "ready" &&
+        existingPayload.state === "accepted" &&
+        existingPayload.boundary.admission.entryId === admission.entryId &&
+        existingPayload.boundary.terminal.entryId === params.payload.boundary.terminal.entryId);
+    if (transitionMatches) {
       executeSqliteQuerySync(
         params.database.db,
         db
@@ -148,6 +158,23 @@ export function enqueueContextEngineTurnIntent(params: {
   });
 }
 
+export function acceptContextEngineTurnIntent(params: {
+  boundary: TranscriptTurnBoundary;
+  database: OpenClawAgentDatabase;
+  engineId: string;
+  isHeartbeat: boolean;
+  ownerPluginId?: string;
+}): void {
+  writeContextEngineTurnOutboxPayload({
+    ...params,
+    payload: {
+      boundary: params.boundary,
+      isHeartbeat: params.isHeartbeat,
+      state: "accepted",
+    },
+  });
+}
+
 export function enqueueContextEngineTurnCommit(params: {
   database: OpenClawAgentDatabase;
   engineId: string;
@@ -177,28 +204,6 @@ export function discardContextEngineTurnIntent(params: {
   );
 }
 
-function readRecoveredTerminalAnchor(params: {
-  admission: TranscriptTurnAdmission;
-  currentAdmission: TranscriptTurnAdmission;
-}) {
-  const terminalEntryId = params.currentAdmission.effectiveParentId;
-  if (!terminalEntryId) {
-    return undefined;
-  }
-  const terminal = readActiveTranscriptEntryAnchor({
-    agentId: params.admission.agentId,
-    sessionId: params.admission.sessionId,
-    sessionKey: params.admission.sessionKey,
-    storePath: params.admission.storePath,
-    entryId: terminalEntryId,
-  });
-  return terminal &&
-    terminal.activeMessagePosition > params.admission.activeMessagePosition &&
-    terminal.activeMessagePosition < params.currentAdmission.activeMessagePosition
-    ? terminal
-    : undefined;
-}
-
 export function recoverContextEngineTurnOutbox(params: {
   currentAdmission: TranscriptTurnAdmission;
   database: OpenClawAgentDatabase;
@@ -219,18 +224,12 @@ export function recoverContextEngineTurnOutbox(params: {
   ).rows;
   for (const row of rows) {
     const payload = JSON.parse(row.payload_json) as ContextEngineTurnOutboxPayload;
-    if (payload.state !== "admitted") {
+    if (payload.state === "ready") {
       continue;
     }
-    const terminal =
-      payload.admission.entryId === params.currentAdmission.entryId
-        ? undefined
-        : readRecoveredTerminalAnchor({
-            admission: payload.admission,
-            currentAdmission: params.currentAdmission,
-          });
-    if (!terminal) {
-      // The next admitted turn proves no accepted terminal survived on this active branch.
+    if (payload.state === "admitted") {
+      // Admission proves provider dispatch only. Without the host-owned accepted
+      // transition, later descendants may belong to a rejected fallback attempt.
       discardContextEngineTurnIntent({
         admission: payload.admission,
         database: params.database,
@@ -239,9 +238,8 @@ export function recoverContextEngineTurnOutbox(params: {
       });
       continue;
     }
-    const boundary = { admission: payload.admission, terminal };
     const closedTurn = readClosedTranscriptTurn({
-      boundary,
+      boundary: payload.boundary,
       maxEvents: RECOVERED_TURN_MAX_EVENTS,
       maxBytes: RECOVERED_TURN_MAX_BYTES,
     });
@@ -256,7 +254,7 @@ export function recoverContextEngineTurnOutbox(params: {
         `[context-engine] discarded unrecoverable turn advancement: ${row.advancement_key}: transcript range is ${closedTurn.kind}`,
       );
       discardContextEngineTurnIntent({
-        admission: payload.admission,
+        admission: payload.boundary.admission,
         database: params.database,
         engineId: params.engineId,
         ownerPluginId: params.ownerPluginId,
@@ -268,7 +266,7 @@ export function recoverContextEngineTurnOutbox(params: {
       engineId: params.engineId,
       ownerPluginId: params.ownerPluginId,
       payload: {
-        boundary,
+        boundary: payload.boundary,
         isHeartbeat: payload.isHeartbeat,
         messages: closedTurn.messages,
         prePromptMessageCount: closedTurn.prePromptMessageCount,

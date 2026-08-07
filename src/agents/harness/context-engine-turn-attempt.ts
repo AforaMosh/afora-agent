@@ -12,6 +12,7 @@ import type {
 import { openOpenClawAgentDatabase } from "../../state/openclaw-agent-db.js";
 import type { ContextEngineLogicalTurnLease } from "./context-engine-logical-turn.js";
 import {
+  acceptContextEngineTurnIntent,
   discardContextEngineTurnIntent,
   drainContextEngineTurnOutbox,
   enqueueContextEngineTurnCommit,
@@ -171,19 +172,34 @@ export async function finalizeAcceptedContextEngineTurn(params: {
     ) {
       throw new Error("accepted context engine does not support durable turn advancement");
     }
+    const admission = params.facts.boundary.admission;
+    const database = openOpenClawAgentDatabase({
+      agentId: admission.agentId,
+      path: admission.storePath,
+    });
+    acceptContextEngineTurnIntent({
+      boundary: params.facts.boundary,
+      database,
+      engineId: params.lease.effectiveEngineId,
+      isHeartbeat: params.facts.isHeartbeat === true,
+      ownerPluginId: params.lease.effectiveEnginePluginId,
+    });
     const closedTurn = readClosedTranscriptTurn({
       boundary: params.facts.boundary,
       maxEvents: ACCEPTED_TURN_MAX_EVENTS,
       maxBytes: ACCEPTED_TURN_MAX_BYTES,
     });
     if (closedTurn.kind !== "ok") {
+      if (closedTurn.kind !== "projection-unavailable") {
+        discardContextEngineTurnIntent({
+          admission,
+          database,
+          engineId: params.lease.effectiveEngineId,
+          ownerPluginId: params.lease.effectiveEnginePluginId,
+        });
+      }
       throw new Error(`accepted context-engine transcript range is ${closedTurn.kind}`);
     }
-    const admission = params.facts.boundary.admission;
-    const database = openOpenClawAgentDatabase({
-      agentId: admission.agentId,
-      path: admission.storePath,
-    });
     enqueueContextEngineTurnCommit({
       database,
       engineId: params.lease.effectiveEngineId,
