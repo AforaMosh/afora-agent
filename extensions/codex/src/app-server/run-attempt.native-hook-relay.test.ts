@@ -829,7 +829,7 @@ describe("runCodexAppServerAttempt native hook relay", () => {
       cwd: workspaceDir,
       model: "gpt-5.4-codex",
       modelProvider: "openai",
-      dynamicToolsFingerprint: "stale-dynamic-tools-fingerprint",
+      userMcpServersFingerprint: "stale-user-mcp-fingerprint",
       nativeHookRelayGeneration: "generation-from-stale-thread",
     });
     const harness = createStartedThreadHarness();
