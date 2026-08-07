@@ -63,12 +63,17 @@ concise handoff with evidence.
 ```
 
 OpenClaw automatically discovers the optional `profiles/openclaw.yml` file.
-There is no manifest pointer. Other harnesses may discover their own
+No manifest pointer is required. Other harnesses may discover their own
 conventional profile, such as `profiles/codex.yml`, without changing the
 portable manifest.
 
-Experimental packages that used `metadata.openclaw.config` must move that file
-to `profiles/openclaw.yml` and remove the metadata entry.
+The older `metadata.openclaw.config` pointer is deprecated but still read, so
+packages published against it keep working. Reading one reports a
+`deprecated_openclaw_profile_pointer` warning; move that file to
+`profiles/openclaw.yml` and remove the metadata entry. A pointer that is not a
+package-relative `.yml`/`.yaml` path is rejected, and a pointer that references
+a different file while `profiles/openclaw.yml` also exists is rejected as a
+conflict.
 
 ```yaml
 schemaVersion: 1
