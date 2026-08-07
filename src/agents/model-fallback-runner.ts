@@ -98,11 +98,8 @@ function resolveFallbackAuthScope(params: {
   if (params.userLockedAuthProfileId) {
     return params.userLockedAuthProfileId;
   }
-  const profileIds = params.profileIds
-    ?.map((id) => id.trim())
-    .filter(Boolean)
-    .toSorted();
-  return profileIds?.length ? `pool:${JSON.stringify(profileIds)}` : undefined;
+  // resolveAuthProfileOrder places the profile selected for this model first.
+  return params.profileIds?.find((id) => id.trim())?.trim();
 }
 
 type RunWithModelFallbackParams<T> = {
@@ -329,6 +326,7 @@ async function runWithModelFallbackInternal<T>(
           cfg: params.cfg,
           store: authStore,
           provider: candidate.provider,
+          forModel: candidate.model,
         });
         authRuntime.maybeReprobeWhamBlockedProfiles({
           store: authStore,
@@ -698,7 +696,9 @@ async function runWithModelFallbackInternal<T>(
       markFallbackCandidateSkipped({
         sessionId: params.sessionId,
         ...candidateRef,
-        authScope: candidateAuthScope,
+        // The inner runner records the profile that actually failed. Prefer
+        // that fact because automatic routing can advance before the next turn.
+        authScope: normalized.profileId?.trim() || candidateAuthScope,
         reason: normalized.reason,
       });
     }

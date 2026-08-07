@@ -1006,14 +1006,15 @@ describe("runWithModelFallback", () => {
     },
   );
 
-  it("retries an auth-skipped candidate when its effective profile pool changes", async () => {
+  it("scopes automatic auth skips to the selected profile", async () => {
     const previous = process.env.OPENCLAW_FALLBACK_SKIP_TTL_MS;
     process.env.OPENCLAW_FALLBACK_SKIP_TTL_MS = "60000";
     try {
-      const provider = `pooled-auth-skip-${crypto.randomUUID()}`;
+      const provider = `automatic-auth-skip-${crypto.randomUUID()}`;
       const lockedProfile = "openai:locked";
       const profileA = `${provider}:a`;
       const profileB = `${provider}:b`;
+      let selectedProfile = profileA;
       const cfg = makeCfg({
         agents: {
           defaults: {
@@ -1029,8 +1030,9 @@ describe("runWithModelFallback", () => {
         profiles: {
           [lockedProfile]: { type: "api_key", provider: "openai", key: "key-locked" },
           [profileA]: { type: "api_key", provider, key: "key-a" },
+          [profileB]: { type: "api_key", provider, key: "key-b" },
         },
-        order: { [provider]: [profileA] },
+        order: { [provider]: [profileA, profileB] },
       };
       const agentDir = await makeAuthTempDir();
       setAuthRuntimeStore(agentDir, store);
@@ -1043,10 +1045,11 @@ describe("runWithModelFallback", () => {
           });
         }
         if (candidateProvider === provider) {
-          throw new FailoverError("profile pool failed", {
+          throw new FailoverError("automatic profile failed", {
             provider: candidateProvider,
             model,
             reason: "auth",
+            profileId: selectedProfile,
           });
         }
         return "ok";
@@ -1063,8 +1066,8 @@ describe("runWithModelFallback", () => {
         });
 
       await execute();
-      store.profiles[profileB] = { type: "api_key", provider, key: "key-b" };
-      store.order = { [provider]: [profileA, profileB] };
+      selectedProfile = profileB;
+      store.order = { [provider]: [profileB, profileA] };
       await execute();
       const third = await execute();
 
