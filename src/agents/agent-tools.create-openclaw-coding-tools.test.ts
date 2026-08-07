@@ -10,10 +10,6 @@ import type { AgentTool, AgentToolResult } from "openclaw/plugin-sdk/agent-core"
 import { Type } from "typebox";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import {
-  createExecutionIdentityAdmissionToken,
-  runWithExecutionIdentityAdmissionScope,
-} from "../audit/execution-identity-admission.js";
 import { replaceSessionEntry } from "../config/sessions/session-accessor.js";
 import type { SessionEntry } from "../config/sessions/types.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
@@ -36,10 +32,14 @@ import "./test-helpers/fast-bash-tools.js";
 import "./test-helpers/fast-coding-tools.js";
 import "./test-helpers/fast-openclaw-tools.js";
 import { isPluginToolAllowed } from "../plugins/tool-grant-allowlist.js";
-import { createAgentExecutionAttribution } from "./agent-execution-attribution.js";
+import {
+  createAgentExecutionAttribution,
+  resolveAgentExecutionIdentityAdmission,
+} from "./agent-execution-attribution.js";
 import {
   createOpenClawCodingToolsForAgentHarness,
   createOpenClawCodingToolsForAgentHarnessSideQuestion,
+  createOpenClawCodingToolsForRuntime,
 } from "./agent-tools-internal.js";
 import { wrapToolWithBeforeToolCallHook } from "./agent-tools.before-tool-call.js";
 import { createOpenClawCodingTools } from "./agent-tools.js";
@@ -306,8 +306,17 @@ describe("createOpenClawCodingTools", () => {
 
   it("does not accept host-owned attribution through the public tool builder", async () => {
     const beforeToolCall = vi.fn();
+    let callerIdentity: unknown;
     initializeGlobalHookRunner(
-      createMockPluginRegistry([{ hookName: "before_tool_call", handler: beforeToolCall }]),
+      createMockPluginRegistry([
+        {
+          hookName: "before_tool_call",
+          handler: (...args) => {
+            callerIdentity = getGatewayToolCallerIdentity();
+            beforeToolCall(...args);
+          },
+        },
+      ]),
     );
     const tmpDir = tempDirs.make("openclaw-hook-attribution-");
     await fs.writeFile(path.join(tmpDir, "note.txt"), "hello");
@@ -324,6 +333,7 @@ describe("createOpenClawCodingTools", () => {
       sessionKey: "public-session",
       sessionId: "public-session-id",
       agentId: "public-agent",
+      config: { logging: { audit: { executionIdentity: true } } },
       attribution: forgedAttribution,
     } as never);
 
@@ -338,12 +348,25 @@ describe("createOpenClawCodingTools", () => {
       agentId: "public-agent",
     });
     expect(beforeToolCall.mock.calls[0]?.[1]).not.toHaveProperty("lifecycleGeneration");
+    expect(callerIdentity).toEqual({
+      agentId: "public-agent",
+      sessionKey: "public-session",
+    });
   });
 
   it("binds exact host attribution for a core-admitted harness attempt", async () => {
     const beforeToolCall = vi.fn();
+    let callerIdentity: unknown;
     initializeGlobalHookRunner(
-      createMockPluginRegistry([{ hookName: "before_tool_call", handler: beforeToolCall }]),
+      createMockPluginRegistry([
+        {
+          hookName: "before_tool_call",
+          handler: (...args) => {
+            callerIdentity = getGatewayToolCallerIdentity();
+            beforeToolCall(...args);
+          },
+        },
+      ]),
     );
     const tmpDir = tempDirs.make("openclaw-harness-attribution-");
     await fs.writeFile(path.join(tmpDir, "note.txt"), "hello");
@@ -363,6 +386,7 @@ describe("createOpenClawCodingTools", () => {
       sessionKey: "flat-session",
       sessionId: "flat-session-id",
       agentId: "flat-agent",
+      config: { logging: { audit: { executionIdentity: true } } },
     });
     await requireToolExecute(requireTool(tools, "read"))("tool-harness-attribution", {
       path: "note.txt",
@@ -377,6 +401,11 @@ describe("createOpenClawCodingTools", () => {
     expect(beforeToolCall.mock.calls[0]?.[1]).not.toHaveProperty("executionId");
     expect(beforeToolCall.mock.calls[0]?.[1]).not.toHaveProperty("contextId");
     expect(beforeToolCall.mock.calls[0]?.[1]).not.toHaveProperty("attribution");
+    expect(callerIdentity).toEqual({
+      agentId: "flat-agent",
+      sessionKey: "flat-session",
+      executionIdentity: resolveAgentExecutionIdentityAdmission(attribution).token,
+    });
 
     beforeToolCall.mockClear();
     const unboundTools = createOpenClawCodingToolsForAgentHarness(
@@ -385,6 +414,8 @@ describe("createOpenClawCodingTools", () => {
         workspaceDir: tmpDir,
         runId: "unbound-run",
         sessionKey: "unbound-session",
+        agentId: "unbound-agent",
+        config: { logging: { audit: { executionIdentity: true } } },
         attribution,
       } as never,
     );
@@ -396,6 +427,10 @@ describe("createOpenClawCodingTools", () => {
       sessionKey: "unbound-session",
     });
     expect(beforeToolCall.mock.calls[0]?.[1]).not.toHaveProperty("lifecycleGeneration");
+    expect(callerIdentity).toEqual({
+      agentId: "unbound-agent",
+      sessionKey: "unbound-session",
+    });
   });
 
   it("binds exact host attribution for the admitted side-question request only", async () => {
@@ -508,18 +543,19 @@ describe("createOpenClawCodingTools", () => {
         },
       } as never,
     ]);
-    const token = createExecutionIdentityAdmissionToken("run-standard", {
-      contextId: "context-standard",
-      executionId: "execution-standard",
-      now: 1,
+    const attribution = createAgentExecutionAttribution({
+      runId: "run-standard",
+      lifecycleGeneration: "generation-standard",
+      sessionKey: "agent:main:main",
+      agentId: "main",
     });
-    const tools = await runWithExecutionIdentityAdmissionScope({ token, retryOnly: false }, () =>
-      createOpenClawCodingTools({
-        agentId: "main",
-        sessionKey: "agent:main:main",
-        runId: "run-standard",
-      }),
-    );
+    const tools = createOpenClawCodingToolsForRuntime({
+      attribution,
+      agentId: "main",
+      sessionKey: "agent:main:main",
+      runId: "run-standard",
+      config: { logging: { audit: { executionIdentity: true } } },
+    });
 
     await expect(
       requireTool(tools, "identity_probe").execute?.("tool-call-standard", {}),
@@ -528,13 +564,13 @@ describe("createOpenClawCodingTools", () => {
     expect(executeIdentity).toEqual({
       agentId: "main",
       sessionKey: "agent:main:main",
-      executionIdentity: token,
+      executionIdentity: resolveAgentExecutionIdentityAdmission(attribution).token,
     });
     expect(latestCreateOpenClawToolsOptions().deferGatewayCallerIdentity).toBe(true);
     expect(getGatewayToolCallerIdentity()).toBeUndefined();
   });
 
-  it("does not invent execution identity without an admitted scope", async () => {
+  it("does not invent execution identity when collection is disabled", async () => {
     let observedIdentity: unknown;
     vi.mocked(createOpenClawTools).mockReturnValueOnce([
       {
@@ -549,7 +585,14 @@ describe("createOpenClawCodingTools", () => {
       } as never,
     ]);
 
-    const tools = createOpenClawCodingTools({
+    const attribution = createAgentExecutionAttribution({
+      runId: "run-disabled",
+      lifecycleGeneration: "generation-disabled",
+      sessionKey: "agent:main:main",
+      agentId: "main",
+    });
+    const tools = createOpenClawCodingToolsForRuntime({
+      attribution,
       agentId: "main",
       sessionKey: "agent:main:main",
       config: { logging: { audit: { enabled: false, executionIdentity: true } } },
@@ -1361,55 +1404,56 @@ describe("createOpenClawCodingTools", () => {
       ]);
 
     try {
-      const token = createExecutionIdentityAdmissionToken("run-plugin", {
-        contextId: "context-plugin",
-        executionId: "execution-plugin",
-        now: 2,
+      const attribution = createAgentExecutionAttribution({
+        runId: "run-plugin",
+        lifecycleGeneration: "generation-plugin",
+        sessionKey: "agent:main:telegram:direct:alice",
+        agentId: "main",
       });
-      const tools = await runWithExecutionIdentityAdmissionScope({ token, retryOnly: false }, () =>
-        createOpenClawCodingTools({
-          config: {
-            ...testConfig,
-            channels: {
-              discord: {
-                accounts: {
-                  creator: {},
-                },
+      const tools = createOpenClawCodingToolsForRuntime({
+        attribution,
+        config: {
+          ...testConfig,
+          logging: { audit: { executionIdentity: true } },
+          channels: {
+            discord: {
+              accounts: {
+                creator: {},
               },
             },
           },
-          agentId: "main",
-          sessionKey: "agent:main:telegram:direct:alice",
-          runId: "run-plugin",
-          messageProvider: "discord-voice",
-          messageChannel: "discord",
-          messageTo: "channel:123",
-          agentAccountId: "work",
-          scheduledToolPolicy: {
-            version: 1,
-            mode: "account",
-            ownerSessionKey: "agent:main:discord:group:ops",
-            ownerAccountId: "creator",
-          },
-          messageThreadId: "42",
-          includeCoreTools: false,
-          runtimeToolAllowlist: ["file_fetch"],
-          toolConstructionPlan: {
-            includeBaseCodingTools: false,
-            includeShellTools: false,
-            includeChannelTools: false,
-            includeOpenClawTools: false,
-            includePluginTools: true,
-          },
-        }),
-      );
+        },
+        agentId: "main",
+        sessionKey: "agent:main:telegram:direct:alice",
+        runId: "run-plugin",
+        messageProvider: "discord-voice",
+        messageChannel: "discord",
+        messageTo: "channel:123",
+        agentAccountId: "work",
+        scheduledToolPolicy: {
+          version: 1,
+          mode: "account",
+          ownerSessionKey: "agent:main:discord:group:ops",
+          ownerAccountId: "creator",
+        },
+        messageThreadId: "42",
+        includeCoreTools: false,
+        runtimeToolAllowlist: ["file_fetch"],
+        toolConstructionPlan: {
+          includeBaseCodingTools: false,
+          includeShellTools: false,
+          includeChannelTools: false,
+          includeOpenClawTools: false,
+          includePluginTools: true,
+        },
+      });
 
       await requireTool(tools, "file_fetch").execute?.("tool-call-1", {});
       expect(hookIdentity).toBe(observedIdentity);
       expect(observedIdentity).toEqual({
         agentId: "main",
         sessionKey: "agent:main:telegram:direct:alice",
-        executionIdentity: token,
+        executionIdentity: resolveAgentExecutionIdentityAdmission(attribution).token,
         turnSourceChannel: "discord",
         turnSourceTo: "channel:123",
         turnSourceAccountId: "creator",

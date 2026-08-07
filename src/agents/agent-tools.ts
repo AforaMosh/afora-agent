@@ -3,6 +3,7 @@
  * Assembles core, shell, channel, OpenClaw, plugin, and Tool Search tools, then
  * applies sandbox, profile, provider, sender, group, and sub-agent policy.
  */
+import { isExecutionIdentityCollectionEnabled } from "../audit/audit-config.js";
 import type {
   SourceReplyDeliveryMode,
   TaskSuggestionDeliveryMode,
@@ -659,16 +660,25 @@ export function createOpenClawCodingToolsInternal(
   const cronCreatorToolAllowlist = options?.cronCreatorToolAllowlistRef ?? [];
   const gatewayCallerAccountId =
     options?.scheduledToolPolicy?.ownerAccountId ?? options?.agentAccountId;
-  const wrapGatewayCallerIdentity = createGatewayToolCallerWrapper(agentId, {
-    agentSessionKey: options?.sessionKey,
-    agentChannel: resolveGatewayMessageChannel(options?.messageChannel ?? options?.messageProvider),
-    agentAccountId: gatewayCallerAccountId,
-    agentTo: options?.messageTo,
-    agentThreadId: options?.messageThreadId,
-    currentChannelId: options?.currentChannelId,
-    currentMessagingTarget: options?.currentMessagingTarget,
-    currentThreadTs: options?.currentThreadTs,
-  });
+  const wrapGatewayCallerIdentity = createGatewayToolCallerWrapper(
+    agentId,
+    {
+      agentSessionKey: options?.sessionKey,
+      agentChannel: resolveGatewayMessageChannel(
+        options?.messageChannel ?? options?.messageProvider,
+      ),
+      agentAccountId: gatewayCallerAccountId,
+      agentTo: options?.messageTo,
+      agentThreadId: options?.messageThreadId,
+      currentChannelId: options?.currentChannelId,
+      currentMessagingTarget: options?.currentMessagingTarget,
+      currentThreadTs: options?.currentThreadTs,
+    },
+    {
+      attribution: options?.attribution,
+      executionIdentityEnabled: isExecutionIdentityCollectionEnabled(options?.config),
+    },
+  );
   // Plugin-only plans bypass createOpenClawTools, so the capability gate must
   // apply here too or narrow allowlists leak gated tools onto capless surfaces.
   const pluginToolsOnly = filterToolsByClientCaps(

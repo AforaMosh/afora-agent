@@ -459,9 +459,9 @@ describe("agentCommand", () => {
       cfg.logging = { audit: { enabled: true, executionIdentity: true } };
       let observedContextId: string | undefined;
       let canonicalContextId: string | undefined;
-      vi.mocked(runEmbeddedAgent).mockImplementationOnce(async (params) => {
+      vi.mocked(attemptExecutionRuntime.runAgentAttempt).mockImplementationOnce(async (params) => {
         observedContextId = getExecutionIdentityAdmissionScope()?.token.contextId;
-        canonicalContextId = params.attribution?.contextId;
+        canonicalContextId = params.opts.executionAttribution?.contextId;
         return createDefaultAgentResult();
       });
       const inheritedAttribution = {

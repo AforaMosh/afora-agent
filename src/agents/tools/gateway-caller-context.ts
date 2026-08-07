@@ -1,10 +1,13 @@
 // Ambient trusted caller context for model-mediated Gateway tool calls.
 import { AsyncLocalStorage } from "node:async_hooks";
 import {
-  getExecutionIdentityAdmissionScope,
   parseExecutionIdentityAdmissionToken,
   type ExecutionIdentityAdmissionToken,
 } from "../../audit/execution-identity-admission.js";
+import {
+  resolveAgentExecutionIdentityAdmission,
+  type AgentExecutionAttribution,
+} from "../agent-execution-attribution.js";
 import { copyAgentToolMetadata } from "../agent-tool-metadata.js";
 import type { AnyAgentTool } from "./common.js";
 
@@ -32,13 +35,22 @@ type GatewayToolCallerSource = {
   agentThreadId?: string | number;
 };
 
+type GatewayToolCallerAuthority = {
+  attribution?: AgentExecutionAttribution;
+  executionIdentityEnabled?: boolean;
+};
+
 const gatewayToolCallerStorage = new AsyncLocalStorage<GatewayToolCallerIdentity>();
 
 export function captureGatewayToolCallerIdentity(
   agentId: string | undefined,
   source: GatewayToolCallerSource | undefined,
+  authority?: GatewayToolCallerAuthority,
 ): GatewayToolCallerIdentity | undefined {
-  const executionIdentity = getExecutionIdentityAdmissionScope()?.token;
+  const executionIdentity =
+    authority?.executionIdentityEnabled && authority.attribution
+      ? resolveAgentExecutionIdentityAdmission(authority.attribution).token
+      : undefined;
   return agentId && source?.agentSessionKey?.trim()
     ? {
         agentId,
@@ -106,7 +118,8 @@ function wrapToolWithGatewayCallerIdentity(
 export function createGatewayToolCallerWrapper(
   agentId: string | undefined,
   source: GatewayToolCallerSource | undefined,
+  authority?: GatewayToolCallerAuthority,
 ): (tool: AnyAgentTool) => AnyAgentTool {
-  const identity = captureGatewayToolCallerIdentity(agentId, source);
+  const identity = captureGatewayToolCallerIdentity(agentId, source, authority);
   return (tool) => wrapToolWithGatewayCallerIdentity(tool, identity);
 }

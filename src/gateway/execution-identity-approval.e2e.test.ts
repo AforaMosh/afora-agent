@@ -10,11 +10,12 @@ import {
   createAgentExecutionAttribution,
   type AgentExecutionAttribution,
 } from "../agents/agent-execution-attribution.js";
-import { createOpenClawCodingTools } from "../agents/agent-tools.js";
+import { createOpenClawCodingToolsForRuntime } from "../agents/agent-tools-internal.js";
 import type { PreparedAgentCommandExecution } from "../agents/command/prepare.js";
 import type { AnyAgentTool } from "../agents/tools/common.js";
 import { createGatewayToolCallerWrapper } from "../agents/tools/gateway-caller-context.js";
 import { callGatewayTool } from "../agents/tools/gateway.js";
+import { isExecutionIdentityCollectionEnabled } from "../audit/audit-config.js";
 import {
   createExecutionIdentityAdmissionToken,
   getExecutionIdentityAdmissionScope,
@@ -229,7 +230,7 @@ describe("execution identity approval Gateway e2e", () => {
     }) =>
       await executionIdentity.runPrepared({
         prepared: prepared({ cfg: enabledConfig, runId: params.runId }),
-        run: async () => {
+        run: async (scopedPrepared) => {
           const scope = getExecutionIdentityAdmissionScope();
           executionIdentity.record({
             agentId: "main",
@@ -238,7 +239,8 @@ describe("execution identity approval Gateway e2e", () => {
             runId: params.runId,
             runtimeKind: "embedded",
           });
-          const tools = createOpenClawCodingTools({
+          const tools = createOpenClawCodingToolsForRuntime({
+            attribution: scopedPrepared.opts.executionAttribution,
             agentId: "main",
             sessionKey: "agent:main:main",
             runSessionKey: "agent:main:main",
@@ -306,9 +308,14 @@ describe("execution identity approval Gateway e2e", () => {
             runId: params.preparedRunId,
             runtimeKind: "embedded",
           });
-          const wrap = createGatewayToolCallerWrapper("main", {
-            agentSessionKey: "agent:main:main",
-          });
+          const wrap = createGatewayToolCallerWrapper(
+            "main",
+            { agentSessionKey: "agent:main:main" },
+            {
+              attribution: scopedPrepared.opts.executionAttribution,
+              executionIdentityEnabled: isExecutionIdentityCollectionEnabled(params.cfg),
+            },
+          );
           const tool = wrap({
             name: "approval_identity_e2e",
             label: "Approval identity E2E",

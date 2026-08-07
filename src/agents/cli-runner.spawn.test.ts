@@ -6,10 +6,7 @@ import { SYSTEM_PROMPT_CACHE_BOUNDARY } from "@openclaw/ai/internal/shared";
 import { expectDefined } from "@openclaw/normalization-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import {
-  createExecutionIdentityAdmissionToken,
-  runWithExecutionIdentityAdmissionScope,
-} from "../audit/execution-identity-admission.js";
+import { createExecutionIdentityAdmissionToken } from "../audit/execution-identity-admission.js";
 import { createReplyOperation, replyRunRegistry } from "../auto-reply/reply/reply-run-registry.js";
 import { testing as replyRunTesting } from "../auto-reply/reply/reply-run-registry.test-support.js";
 import {
@@ -33,6 +30,7 @@ import {
 } from "../logging/diagnostic-run-activity.js";
 import type { getProcessSupervisor } from "../process/supervisor/index.js";
 import type { RunExit } from "../process/supervisor/types.js";
+import { createAgentExecutionAttribution } from "./agent-execution-attribution.js";
 import {
   registerExecApprovalRequestForHostOrThrow,
   resolveRegisteredExecApprovalDecision,
@@ -3714,28 +3712,37 @@ describe("runCliAgent spawn path", () => {
       executionId: "execution-identity-2",
       now: 2,
     });
-    const buildTurnContext = (token: typeof firstToken) =>
+    const buildTurnContext = (token: typeof firstToken, withAttribution = true) =>
       buildClaudeLiveRunContext({
+        attribution: withAttribution
+          ? createAgentExecutionAttribution({
+              runId: token.runId,
+              lifecycleGeneration: `generation-${token.executionId}`,
+              sessionKey: "agent:main:identity",
+              sessionId: "openclaw-identity-session",
+              agentId: "main",
+              executionIdentityAdmission: { token, retryOnly: false },
+            })
+          : undefined,
         runId: token.runId,
         sessionId: "openclaw-identity-session",
         sessionKey: "agent:main:identity",
         agentId: "main",
         backend,
-        config: { tools: { exec: { security: "allowlist", ask: "on-miss" } } },
+        config: {
+          logging: { audit: { executionIdentity: true } },
+          tools: { exec: { security: "allowlist", ask: "on-miss" } },
+        },
       });
     const runTurn = async (token: typeof firstToken, resumeSessionId?: string): Promise<void> => {
-      const context = buildTurnContext(token);
-      await runWithExecutionIdentityAdmissionScope(
-        { token, retryOnly: false },
-        async () => await executePreparedCliRun(context, resumeSessionId),
-      );
+      await executePreparedCliRun(buildTurnContext(token), resumeSessionId);
     };
 
     await runTurn(firstToken);
     await vi.waitFor(() => expect(observed).toHaveLength(2));
     await runTurn(secondToken, "live-control-identity");
     await vi.waitFor(() => expect(observed).toHaveLength(4));
-    await executePreparedCliRun(buildTurnContext(secondToken), "live-control-identity");
+    await executePreparedCliRun(buildTurnContext(secondToken, false), "live-control-identity");
     await vi.waitFor(() => expect(observed).toHaveLength(6));
 
     expect(supervisorSpawnMock).toHaveBeenCalledOnce();

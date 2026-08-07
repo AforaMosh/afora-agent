@@ -1,14 +1,11 @@
 import { Type } from "typebox";
 import { describe, expect, it, vi } from "vitest";
 import {
-  createExecutionIdentityAdmissionToken,
-  runWithExecutionIdentityAdmissionScope,
-} from "../../audit/execution-identity-admission.js";
-import {
   onInternalDiagnosticEvent,
   waitForDiagnosticEventsDrained,
 } from "../../infra/diagnostic-events.js";
 import { getPluginToolMeta, setPluginToolMeta } from "../../plugins/tools.js";
+import { createAgentExecutionAttribution } from "../agent-execution-attribution.js";
 import {
   isToolWrappedWithBeforeToolCallHook,
   setBeforeToolCallDiagnosticsEnabled,
@@ -27,7 +24,7 @@ import {
 } from "./gateway-caller-context.js";
 
 describe("gateway caller context wrapper", () => {
-  it("captures admitted identity once and stays unbound without a scope", async () => {
+  it("captures explicit host attribution once and stays unbound without authority", () => {
     expect(
       captureGatewayToolCallerIdentity("agent-a", {
         agentSessionKey: " agent-a:session ",
@@ -37,24 +34,36 @@ describe("gateway caller context wrapper", () => {
       sessionKey: "agent-a:session",
     });
 
-    const token = createExecutionIdentityAdmissionToken("run-a", {
-      contextId: "context-a",
-      executionId: "execution-a",
-      now: 1,
+    const attribution = createAgentExecutionAttribution({
+      runId: "run-a",
+      lifecycleGeneration: "generation-a",
+      sessionKey: "agent-a:session",
+      agentId: "agent-a",
     });
-    const captured = await runWithExecutionIdentityAdmissionScope(
-      { token, retryOnly: false },
-      async () =>
-        captureGatewayToolCallerIdentity("agent-a", {
-          agentSessionKey: "agent-a:session",
-        }),
+    const captured = captureGatewayToolCallerIdentity(
+      "agent-a",
+      { agentSessionKey: "agent-a:session" },
+      { attribution, executionIdentityEnabled: true },
     );
 
     expect(captured).toEqual({
       agentId: "agent-a",
       sessionKey: "agent-a:session",
-      executionIdentity: token,
+      executionIdentity: {
+        tokenVersion: 1,
+        runId: attribution.runId,
+        contextId: attribution.contextId,
+        executionId: attribution.executionId,
+        createdAt: attribution.createdAt,
+      },
     });
+    expect(
+      captureGatewayToolCallerIdentity(
+        "agent-a",
+        { agentSessionKey: "agent-a:session" },
+        { attribution, executionIdentityEnabled: false },
+      ),
+    ).toEqual({ agentId: "agent-a", sessionKey: "agent-a:session" });
     expect(captureGatewayToolCallerIdentity("agent-a", undefined)).toBeUndefined();
   });
 

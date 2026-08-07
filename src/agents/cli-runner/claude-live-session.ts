@@ -7,6 +7,7 @@ import {
   stripSystemPromptCacheBoundary,
 } from "@openclaw/ai/internal/shared";
 import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isExecutionIdentityCollectionEnabled } from "../../audit/audit-config.js";
 import type { ReplyBackendHandle } from "../../auto-reply/reply/reply-run-registry.js";
 import { createAbortError as createNamedAbortError } from "../../infra/abort-signal.js";
 import {
@@ -1700,13 +1701,22 @@ function createTurn(params: {
       ...(params.context.params.sessionKey ? { sessionKey: params.context.params.sessionKey } : {}),
       ...(params.context.params.agentId ? { agentId: params.context.params.agentId } : {}),
     },
-    gatewayCallerIdentity: captureGatewayToolCallerIdentity(params.context.params.agentId, {
-      agentSessionKey: params.context.params.sessionKey,
-      agentChannel: params.context.params.messageChannel ?? params.context.params.messageProvider,
-      currentChannelId: params.context.params.currentChannelId,
-      agentAccountId: params.context.params.agentAccountId,
-      currentThreadTs: params.context.params.currentThreadTs,
-    }),
+    gatewayCallerIdentity: captureGatewayToolCallerIdentity(
+      params.context.params.agentId,
+      {
+        agentSessionKey: params.context.params.sessionKey,
+        agentChannel: params.context.params.messageChannel ?? params.context.params.messageProvider,
+        currentChannelId: params.context.params.currentChannelId,
+        agentAccountId: params.context.params.agentAccountId,
+        currentThreadTs: params.context.params.currentThreadTs,
+      },
+      {
+        attribution: params.context.params.attribution,
+        executionIdentityEnabled: isExecutionIdentityCollectionEnabled(
+          params.context.params.config,
+        ),
+      },
+    ),
     abortSignal: params.context.params.abortSignal,
     outputLimits: resolveCliStreamJsonOutputLimits(params.context.preparedBackend.backend),
     startedAtMs: Date.now(),

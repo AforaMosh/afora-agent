@@ -58,7 +58,6 @@ describe("agent command execution identity", () => {
       prepared: prepared({ runId: attribution.runId, enabled: true, attribution }),
       run: async (scopedPrepared) => {
         executionIdentity.record({
-          attribution: scopedPrepared.opts.executionAttribution,
           agentId: "main",
           cfg: scopedPrepared.cfg,
           ingress: executionIdentity.localIngress,

@@ -1,9 +1,7 @@
 import { isExecutionIdentityCollectionEnabled } from "../audit/audit-config.js";
 import {
-  createExecutionIdentityAdmissionToken,
   enqueueExecutionIdentityContextAtAdmission,
   getExecutionIdentityAdmissionScope,
-  parseExecutionIdentityAdmissionToken,
   runWithExecutionIdentityAdmissionScope,
   runWithoutExecutionIdentityAdmissionScope,
   type ExecutionIdentityAdmissionFacts,
@@ -12,7 +10,10 @@ import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { captureAgentRunLifecycleGeneration } from "../infra/agent-events.js";
 import { reserveAgentRunAttribution } from "../infra/agent-run-registry.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
-import { createAgentExecutionAttribution } from "./agent-execution-attribution.js";
+import {
+  createAgentExecutionAttribution,
+  resolveAgentExecutionIdentityAdmission,
+} from "./agent-execution-attribution.js";
 import type { PreparedAgentCommandExecution } from "./command/prepare.js";
 import type { AgentCommandGatewayIngressOpts, AgentCommandOpts } from "./command/types.js";
 
@@ -140,25 +141,13 @@ async function runPreparedAgentCommandWithExecutionIdentity<TResult>(params: {
     if (!isExecutionIdentityCollectionEnabled(prepared.cfg)) {
       return await params.run(prepared);
     }
-    let scope:
-      | {
-          token: ReturnType<typeof parseExecutionIdentityAdmissionToken>;
-          retryOnly: boolean;
-        }
-      | undefined;
+    let scope: ReturnType<typeof resolveAgentExecutionIdentityAdmission> | undefined;
     try {
-      const admission = resolved.attribution.executionIdentityAdmission;
-      const token = admission
-        ? parseExecutionIdentityAdmissionToken(admission.token)
-        : createExecutionIdentityAdmissionToken(prepared.runId, {
-            contextId: resolved.attribution.contextId,
-            executionId: resolved.attribution.executionId,
-            now: resolved.attribution.createdAt,
-          });
-      if (token.runId !== prepared.runId) {
+      const admission = resolveAgentExecutionIdentityAdmission(resolved.attribution);
+      if (admission.token.runId !== prepared.runId) {
         throw new Error("execution identity admission token disagrees with the prepared run");
       }
-      scope = { token, retryOnly: admission?.retryOnly === true };
+      scope = admission;
     } catch (error) {
       // Correlation is audit evidence, not execution admission. Invalid public
       // run identifiers or stale private retry tokens must not become run loss.
