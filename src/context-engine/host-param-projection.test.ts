@@ -21,6 +21,7 @@ function registerProbeEngine(params: {
   acceptedHostParams?: string[];
   assembleCalls: Array<Record<string, unknown>>;
   compactCalls: Array<Record<string, unknown>>;
+  commitTurnCalls?: Array<Record<string, unknown>>;
   rejectAssemble?: boolean;
 }): string {
   const engineId = `host-param-probe-${++engineCounter}`;
@@ -46,6 +47,10 @@ function registerProbeEngine(params: {
         async compact(callParams) {
           params.compactCalls.push({ ...callParams });
           return { ok: true, compacted: false };
+        },
+        async commitTurn(callParams) {
+          params.commitTurnCalls?.push({ ...callParams });
+          return { status: "committed" };
         },
       }) satisfies ContextEngine,
     `test:${engineId}`,
@@ -164,6 +169,66 @@ describe("context-engine host parameter projection", () => {
     expect(compactCalls[0]).toMatchObject({ sessionId: "session-1", runtimeSettings });
     expect(compactCalls[0]).not.toHaveProperty("sessionTarget");
     expect(compactCalls[0]).not.toHaveProperty("runtimeContext");
+    await Promise.allSettled([
+      resolution.configured.engine.dispose?.(),
+      resolution.fallback.engine.dispose?.(),
+    ]);
+  });
+
+  it("projects declared host parameters for commitTurn", async () => {
+    const commitTurnCalls: Array<Record<string, unknown>> = [];
+    const engineId = registerProbeEngine({
+      acceptedHostParams: ["runtimeSettings"],
+      assembleCalls: [],
+      compactCalls: [],
+      commitTurnCalls,
+    });
+    const resolution = await resolveLogicalTurnContextEngines({
+      plugins: { slots: { contextEngine: engineId } },
+    });
+    const admission = {
+      agentId: "main",
+      sessionId: "session-1",
+      sessionKey: "agent:main:session-1",
+      storePath: "/tmp/openclaw-agent.sqlite",
+      generation: "generation-1",
+      entryId: "user-1",
+      rawSeq: 1,
+      effectiveParentId: null,
+      activeMessagePosition: 0,
+      logicalTurnId: "turn-1",
+      role: "user" as const,
+    };
+
+    await resolution.configured.engine.commitTurn?.({
+      advancementKey: "turn-1",
+      admission,
+      terminal: {
+        ...admission,
+        entryId: "assistant-1",
+        rawSeq: 2,
+        effectiveParentId: "user-1",
+        activeMessagePosition: 1,
+      },
+      messages: [message],
+      prePromptMessageCount: 1,
+      sessionId: "session-1",
+      sessionKey: "agent:main:session-1",
+      sessionTarget: { agentId: "main", sessionId: "session-1" },
+      runtimeSettings,
+      runtimeContext: { tokenBudget: 1000 },
+    });
+
+    expect(commitTurnCalls).toEqual([
+      expect.objectContaining({
+        advancementKey: "turn-1",
+        sessionId: "session-1",
+        runtimeSettings,
+      }),
+    ]);
+    expect(commitTurnCalls[0]).not.toHaveProperty("sessionKey");
+    expect(commitTurnCalls[0]).not.toHaveProperty("sessionTarget");
+    expect(commitTurnCalls[0]).not.toHaveProperty("runtimeContext");
     await Promise.allSettled([
       resolution.configured.engine.dispose?.(),
       resolution.fallback.engine.dispose?.(),
