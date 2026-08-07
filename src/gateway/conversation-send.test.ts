@@ -176,6 +176,31 @@ describe("runGatewayConversationSend", () => {
     });
   });
 
+  it("rejects a list-derived address that changed before delivery", async () => {
+    const deps = createDeps();
+
+    await expect(
+      runGatewayConversationSend(
+        {
+          config: {},
+          agentId: "main",
+          senderIsOwner: true,
+          operationId: "send-stale",
+          conversationRef: conversation.conversationRef,
+          expectedAddress: {
+            channel: conversation.channel,
+            accountId: conversation.accountId,
+            kind: conversation.kind,
+            target: "reef:old-target",
+          },
+          message: "hello molty",
+        },
+        deps,
+      ),
+    ).rejects.toThrow("changed after conversations_list");
+    expect(deps.runMessageAction).not.toHaveBeenCalled();
+  });
+
   it("returns durable completed state without recipient-visible I/O", async () => {
     const deps = createDeps();
     deps.operations.set("send-replayed", {

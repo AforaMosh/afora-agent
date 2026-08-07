@@ -171,6 +171,15 @@ export const ConversationListItemSchema = closedObject({
 
 export const ConversationListResultSchema = closedObject({
   conversations: Type.Array(ConversationListItemSchema),
+  complete: Type.Optional(Type.Boolean()),
+});
+
+const ConversationAddressClaimSchema = closedObject({
+  channel: NonEmptyString,
+  accountId: NonEmptyString,
+  kind: Type.Union([Type.Literal("direct"), Type.Literal("group"), Type.Literal("channel")]),
+  target: NonEmptyString,
+  threadId: Type.Optional(NonEmptyString),
 });
 
 /** Gateway-owned request that sends to one durable external conversation. */
@@ -179,6 +188,7 @@ export const ConversationSendParamsSchema = closedObject({
   sourceSessionKey: Type.Optional(NonEmptyString),
   operationId: NonEmptyString,
   conversationRef: Type.String({ pattern: CONVERSATION_REF_PATTERN }),
+  expectedAddress: Type.Optional(ConversationAddressClaimSchema),
   message: NonEmptyString,
 });
 
@@ -201,6 +211,7 @@ export const ConversationTurnParamsSchema = closedObject({
   sourceSessionKey: Type.Optional(NonEmptyString),
   turnId: NonEmptyString,
   conversationRef: Type.String({ pattern: CONVERSATION_REF_PATTERN }),
+  expectedAddress: Type.Optional(ConversationAddressClaimSchema),
   message: NonEmptyString,
   timeoutMs: Type.Integer({ minimum: 1, maximum: 300_000 }),
 });

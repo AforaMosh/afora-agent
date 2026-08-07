@@ -3,9 +3,11 @@ import {
   isFutureDateTimestampMs,
   resolveExpiresAtMsFromDurationSeconds,
 } from "@openclaw/normalization-core/number-coercion";
-import { runBridgeRequest } from "./code-mode-bridge.js";
+import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { CODE_MODE_CONVERSATIONS_LIST_TOOL_ID, runBridgeRequest } from "./code-mode-bridge.js";
 import { CODE_MODE_EXEC_TOOL_NAME, CODE_MODE_WAIT_TOOL_NAME } from "./code-mode-control-tools.js";
 import type { CodeModeNamespaceRuntime } from "./code-mode-namespaces.js";
+import { CodeModePrivateAuthority } from "./code-mode-private-authority.js";
 import {
   enforceSnapshotPayloadLimits,
   type CodeModeConfig,
@@ -18,6 +20,7 @@ import { ToolSearchRuntime, type ToolSearchToolContext } from "./tool-search.js"
 import { ToolInputError } from "./tools/common.js";
 
 export type PendingBridgeState = PendingBridgeRequest & {
+  conversationList: boolean;
   promise: Promise<SettledBridgeRequest>;
   settled?: SettledBridgeRequest;
   settledSequence?: number;
@@ -30,6 +33,7 @@ type CodeModeRunState = {
   parentToolCallId: string;
   ctx: ToolSearchToolContext;
   config: CodeModeConfig;
+  privateAuthority: CodeModePrivateAuthority;
   snapshotBytes: Uint8Array;
   pending: PendingBridgeState[];
   settlementMode: CodeModeSettlementMode;
@@ -102,6 +106,7 @@ export function removeExpiredRuns(now = Date.now()): void {
 
 export function disposeCodeModeRun(runId: string): void {
   const state = activeRuns.get(runId);
+  state?.privateAuthority?.revoke();
   cancelPendingBridgeStates(state?.pending ?? []);
   activeRuns.delete(runId);
   resumingRunIds.delete(runId);
@@ -110,7 +115,10 @@ export function disposeCodeModeRun(runId: string): void {
 
 /** Cancel suspended bridge work before its Gateway-owned runtimes disappear. */
 export function disposeAllCodeModeRuns(): void {
-  activeRuns.forEach((state) => cancelPendingBridgeStates(state.pending));
+  activeRuns.forEach((state) => {
+    state.privateAuthority?.revoke();
+    cancelPendingBridgeStates(state.pending);
+  });
   activeRuns.clear();
   resumingRunIds.clear();
   scheduleActiveRunExpiry();
@@ -135,11 +143,31 @@ export function cancelPendingBridgeStates(pending: readonly PendingBridgeState[]
 /** Deliver bridge responses in actual settlement order, not request order. */
 export function settledBridgeRequestsInCompletionOrder(
   pending: readonly PendingBridgeState[],
+  privateAuthority?: CodeModePrivateAuthority,
 ): SettledBridgeRequest[] {
-  return pending
+  const delivered = pending
     .filter((entry) => entry.settled !== undefined)
-    .toSorted((left, right) => (left.settledSequence ?? 0) - (right.settledSequence ?? 0))
-    .flatMap((entry) => (entry.settled ? [entry.settled] : []));
+    .toSorted((left, right) => (left.settledSequence ?? 0) - (right.settledSequence ?? 0));
+  privateAuthority?.deliverBridgeSettlements(
+    delivered.map((entry) => ({
+      id: entry.id,
+      ...(entry.conversationList
+        ? {
+            conversationListResult:
+              entry.settled?.ok === true
+                ? entry.method === "callValue"
+                  ? entry.settled.value
+                  : isRecord(entry.settled.value) &&
+                      isRecord(entry.settled.value.result) &&
+                      "details" in entry.settled.value.result
+                    ? entry.settled.value.result.details
+                    : undefined
+                : undefined,
+          }
+        : {}),
+    })),
+  );
+  return delivered.flatMap((entry) => (entry.settled ? [entry.settled] : []));
 }
 
 /** Keep every dispatched bridge call required until its guest has received the result. */
@@ -215,6 +243,7 @@ export function snapshotState(params: {
   config: CodeModeConfig;
   runtime: ToolSearchRuntime;
   namespaceRuntime: CodeModeNamespaceRuntime;
+  privateAuthority: CodeModePrivateAuthority;
   output: unknown[];
   deliveredOutputCount?: number;
   reservedActiveRunSlot?: boolean;
@@ -290,10 +319,41 @@ export function createPendingBridgeStates(params: {
   codeModeRunId: string;
   activeRunId?: string;
   ctx: ToolSearchToolContext;
+  privateAuthority: CodeModePrivateAuthority;
   signal?: AbortSignal;
   onUpdate?: AgentToolUpdateCallback;
 }): PendingBridgeState[] {
-  return params.pendingRequests.map((request) => {
+  const prepared = params.pendingRequests.map((request) => {
+    const rawTarget =
+      request.method === "call" || request.method === "callValue" ? request.args[0] : null;
+    let resolvedTarget: string | undefined;
+    if (typeof rawTarget === "string") {
+      try {
+        resolvedTarget = params.runtime.resolveCallTargetId(rawTarget, {
+          includeMcp: false,
+          recoverySurface: "tools",
+        });
+      } catch {
+        // The real call retains lookup-error ownership; this pass only classifies authority.
+      }
+    }
+    return {
+      request,
+      conversationListIntent:
+        rawTarget === "conversations_list" ||
+        rawTarget === CODE_MODE_CONVERSATIONS_LIST_TOOL_ID ||
+        resolvedTarget === CODE_MODE_CONVERSATIONS_LIST_TOOL_ID,
+      conversationListEligible: resolvedTarget === CODE_MODE_CONVERSATIONS_LIST_TOOL_ID,
+    };
+  });
+  params.privateAuthority.beginBridgeFrontier(
+    prepared.map(({ request, conversationListIntent, conversationListEligible }) => ({
+      id: request.id,
+      conversationListIntent,
+      conversationListEligible,
+    })),
+  );
+  return prepared.map(({ request, conversationListEligible }) => {
     // Bridge calls start immediately while the VM snapshot is stored. Their
     // settled values are later replayed into QuickJS by the wait tool.
     const abortController = new AbortController();
@@ -302,6 +362,7 @@ export function createPendingBridgeStates(params: {
       : abortController.signal;
     const state: PendingBridgeState = {
       ...request,
+      conversationList: conversationListEligible,
       promise: runBridgeRequest({
         runtime: params.runtime,
         namespaceRuntime: params.namespaceRuntime,
@@ -309,6 +370,7 @@ export function createPendingBridgeStates(params: {
         codeModeRunId: params.codeModeRunId,
         ctx: params.ctx,
         request,
+        privateAuthority: params.privateAuthority,
         signal,
         onUpdate: params.onUpdate,
       }).then((settled) => {
@@ -348,6 +410,7 @@ export function storeSnapshotState(params: {
   config: CodeModeConfig;
   runtime: ToolSearchRuntime;
   namespaceRuntime: CodeModeNamespaceRuntime;
+  privateAuthority: CodeModePrivateAuthority;
   output: unknown[];
   deliveredOutputCount?: number;
 }) {
@@ -371,6 +434,7 @@ export function storeSnapshotState(params: {
     parentToolCallId: params.parentToolCallId,
     ctx: params.ctx,
     config: params.config,
+    privateAuthority: params.privateAuthority,
     snapshotBytes: params.snapshotBytes,
     pending: params.pending,
     settlementMode: params.settlementMode,

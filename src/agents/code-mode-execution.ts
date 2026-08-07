@@ -5,6 +5,7 @@ import {
   createCodeModeNamespaceRuntime,
   type CodeModeNamespaceRuntime,
 } from "./code-mode-namespaces.js";
+import { CodeModePrivateAuthority } from "./code-mode-private-authority.js";
 import {
   CODE_MODE_WORKER_WATCHDOG_GRACE_MS,
   codeModeFailureCode,
@@ -112,6 +113,7 @@ export async function runExec(params: {
   );
   const namespaceRuntime = createCodeModeNamespaceRuntime(namespaceCatalog);
   const apiFiles = createCodeModeApiFilesForRun(namespaceRuntime, swarmEnabled);
+  const privateAuthority = new CodeModePrivateAuthority();
   try {
     const source = await awaitCodeModeDeadline({
       operation: () => prepareSource({ code: params.code, language: params.language, config }),
@@ -152,11 +154,13 @@ export async function runExec(params: {
       config,
       runtime,
       namespaceRuntime,
+      privateAuthority,
       bridgeDispatch,
       signal: params.signal,
       onUpdate: params.onUpdate,
     });
   } catch (error) {
+    privateAuthority.revoke();
     const code = params.signal?.aborted ? ("aborted" as const) : codeModeFailureCode(error);
     return {
       status: "failed" as const,
@@ -242,6 +246,7 @@ async function settleCodeModeResult(params: {
   config: CodeModeConfig;
   runtime: ToolSearchRuntime;
   namespaceRuntime: CodeModeNamespaceRuntime;
+  privateAuthority: CodeModePrivateAuthority;
   deadlineMs: number;
   deliveredOutputCount?: number;
   pending?: PendingBridgeState[];
@@ -263,16 +268,19 @@ async function settleCodeModeResult(params: {
   // rounds; maxPendingToolCalls stays a per-frontier admission cap enforced in
   // the worker.
   const settleDeadline = params.deadlineMs;
-  const abortedResult = () => ({
-    status: "failed" as const,
-    error: "code mode execution aborted",
-    code: "aborted" as const,
-    failurePhase: params.bridgeDispatch.started ? ("bridge" as const) : ("host" as const),
-    bridgeDispatchStarted: params.bridgeDispatch.started,
-    output: output.slice(deliveredOutputCount),
-    replaySafe: params.replaySafety.safe,
-    telemetry: telemetry(params.runtime),
-  });
+  const abortedResult = () => {
+    params.privateAuthority.revoke();
+    return {
+      status: "failed" as const,
+      error: "code mode execution aborted",
+      code: "aborted" as const,
+      failurePhase: params.bridgeDispatch.started ? ("bridge" as const) : ("host" as const),
+      bridgeDispatchStarted: params.bridgeDispatch.started,
+      output: output.slice(deliveredOutputCount),
+      replaySafe: params.replaySafety.safe,
+      telemetry: telemetry(params.runtime),
+    };
+  };
   // Bridge tool calls (search/describe/call/namespace) run through the same
   // policy-checked executor whether the model awaits them one at a time or in a
   // batch, so resolve them inline within the exec deadline and resume the VM
@@ -293,6 +301,7 @@ async function settleCodeModeResult(params: {
       // dispatch; safe work falls through to a persisted checkpoint.
       if (result.pendingRequests.every((request) => request.method === "namespace")) {
         cancelPendingBridgeStates(pending);
+        params.privateAuthority.revoke();
         return {
           status: "failed" as const,
           error: "restart-safe code mode cannot call namespace tools.",
@@ -306,6 +315,7 @@ async function settleCodeModeResult(params: {
       }
       if (!pendingReplaySafe) {
         cancelPendingBridgeStates(pending);
+        params.privateAuthority.revoke();
         return {
           status: "failed" as const,
           error: restartRecoveryRejectedRequestError(result.pendingRequests),
@@ -356,6 +366,7 @@ async function settleCodeModeResult(params: {
           codeModeRunId: params.codeModeReplayId,
           activeRunId,
           ctx: params.ctx,
+          privateAuthority: params.privateAuthority,
           signal: params.signal,
           onUpdate: params.onUpdate,
         }),
@@ -392,14 +403,17 @@ async function settleCodeModeResult(params: {
           config: params.config,
           runtime: params.runtime,
           namespaceRuntime: params.namespaceRuntime,
+          privateAuthority: params.privateAuthority,
           output,
           deliveredOutputCount,
         });
       }
       // Deliver the settled frontier only. Unresolved sibling promises remain
       // attached to their original bridge ids across the restored snapshot.
-      const settledRequests: SettledBridgeRequest[] =
-        settledBridgeRequestsInCompletionOrder(pending);
+      const settledRequests: SettledBridgeRequest[] = settledBridgeRequestsInCompletionOrder(
+        pending,
+        params.privateAuthority,
+      );
       pending = pending.filter((entry) => !entry.settled);
       // The resumed guest inherits only the remaining shared budget as its
       // QuickJS interrupt deadline; the extra host margin is watchdog grace,
@@ -446,6 +460,7 @@ async function settleCodeModeResult(params: {
     );
     if (params.enforceReplaySafeTools && !pendingReplaySafe) {
       cancelPendingBridgeStates(pending);
+      params.privateAuthority.revoke();
       return {
         status: "failed" as const,
         error: restartRecoveryRejectedRequestError(result.pendingRequests),
@@ -491,6 +506,7 @@ async function settleCodeModeResult(params: {
             codeModeRunId: params.codeModeReplayId,
             activeRunId,
             ctx: params.ctx,
+            privateAuthority: params.privateAuthority,
             signal: params.signal,
             onUpdate: params.onUpdate,
           }),
@@ -508,6 +524,7 @@ async function settleCodeModeResult(params: {
           config: params.config,
           runtime: params.runtime,
           namespaceRuntime: params.namespaceRuntime,
+          privateAuthority: params.privateAuthority,
           output,
           deliveredOutputCount,
         });
@@ -530,6 +547,7 @@ async function settleCodeModeResult(params: {
       config: params.config,
       runtime: params.runtime,
       namespaceRuntime: params.namespaceRuntime,
+      privateAuthority: params.privateAuthority,
       output,
       deliveredOutputCount,
       reservedActiveRunSlot: params.reservedActiveRunSlot,
@@ -543,6 +561,7 @@ async function settleCodeModeResult(params: {
   // Defensive cleanup covers aborts or terminal failures; successful runs have
   // already drained every dispatched call before releasing their snapshot.
   cancelPendingBridgeStates(pending);
+  params.privateAuthority.revoke();
   enforceResultLimit({
     output,
     value: result.status === "completed" ? result.value : undefined,
@@ -636,6 +655,7 @@ export async function runWait(params: {
 
     const settledRequests: SettledBridgeRequest[] = settledBridgeRequestsInCompletionOrder(
       state.pending,
+      state.privateAuthority,
     );
     const pending = state.pending.filter((entry) => !entry.settled);
     // Keep the run's existing slot reserved while its live sibling calls and
@@ -679,6 +699,7 @@ export async function runWait(params: {
       config: state.config,
       runtime: state.runtime,
       namespaceRuntime: state.namespaceRuntime,
+      privateAuthority: state.privateAuthority,
       bridgeDispatch: { started: true },
       deliveredOutputCount: state.deliveredOutputCount,
       pending,
@@ -691,6 +712,7 @@ export async function runWait(params: {
     // After ownership leaves activeRuns, worker/limit failures must cancel
     // every transferred loser; there is no parked snapshot left to own it.
     if (!activeRuns.has(state.runId)) {
+      state.privateAuthority.revoke();
       cancelPendingBridgeStates(state.pending);
     }
     return {

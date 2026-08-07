@@ -53,7 +53,10 @@ describe("runGatewayConversationList", () => {
     expect(listPeers).toHaveBeenCalledWith(
       expect.objectContaining({ accountId: "default", query: "@molty", limit: 50 }),
     );
-    expect(deps.listConversations).toHaveBeenCalledWith({ agentId: "main" }, { channel: "reef" });
+    expect(deps.listConversations).toHaveBeenCalledWith(
+      { agentId: "main" },
+      { channel: "reef", query: "@molty", limit: 51 },
+    );
     expect(resolveOutboundSessionRoute).toHaveBeenCalledWith(
       expect.objectContaining({
         channel: "reef",
@@ -80,6 +83,44 @@ describe("runGatewayConversationList", () => {
       }),
     ]);
     expect(result.conversations[0]).not.toHaveProperty("sessionId");
+    expect(result.complete).toBe(false);
+  });
+
+  it("reports completeness only when the persisted owner snapshot is unsliced", async () => {
+    const rows = [0, 1, 2].map((index) => ({
+      conversationRef: `conv_${index.toString(16).padStart(32, "0")}`,
+      channel: "reef",
+      accountId: "default",
+      kind: "direct" as const,
+      target: `reef:peer-${index}`,
+      firstSeenAt: 100,
+      lastSeenAt: 200 - index,
+    }));
+    const listConversations = vi.fn((_scope, options: { limit?: number }) =>
+      rows.slice(0, options.limit),
+    );
+    const deps = {
+      listConversations,
+      registerConversationAddresses: vi.fn(),
+      resolveOutboundChannelPlugin: vi.fn(),
+      resolveOutboundSessionRoute: vi.fn(),
+    };
+
+    const sliced = await runGatewayConversationList(
+      { config: {}, agentId: "main", limit: 2 },
+      deps as never,
+    );
+    expect(listConversations).toHaveBeenCalledWith({ agentId: "main" }, { limit: 3 });
+    expect(sliced.conversations).toHaveLength(2);
+    expect(sliced.complete).toBe(false);
+
+    listConversations.mockImplementationOnce(() => rows.slice(0, 2));
+    const complete = await runGatewayConversationList(
+      { config: {}, agentId: "main", limit: 2 },
+      deps as never,
+    );
+    expect(complete.conversations).toHaveLength(2);
+    expect(complete.complete).toBe(true);
   });
 
   it("keeps route identity separate from its delivery address", async () => {

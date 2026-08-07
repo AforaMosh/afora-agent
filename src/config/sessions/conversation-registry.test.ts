@@ -111,6 +111,54 @@ describe("conversation registry", () => {
     );
   });
 
+  it("applies query and channel filters before the result bound", () => {
+    const identities = [
+      buildConversationIdentity({
+        channel: "reef",
+        accountId: "default",
+        kind: "direct",
+        peerId: "reef:unrelated",
+        deliveryTarget: "reef:unrelated",
+        label: "@unrelated",
+      }),
+      buildConversationIdentity({
+        channel: "reef",
+        accountId: "default",
+        kind: "direct",
+        peerId: "reef:build-a",
+        deliveryTarget: "reef:build-a",
+        label: "@build-a",
+      }),
+      buildConversationIdentity({
+        channel: "reef",
+        accountId: "default",
+        kind: "direct",
+        peerId: "reef:build-b",
+        deliveryTarget: "reef:build-b",
+        label: "@build-b",
+      }),
+      buildConversationIdentity({
+        channel: "other",
+        accountId: "default",
+        kind: "direct",
+        peerId: "other:build-c",
+        deliveryTarget: "other:build-c",
+        label: "@build-c",
+      }),
+    ];
+    expect(identities.every(Boolean)).toBe(true);
+    identities.forEach((identity, index) => {
+      registerConversationAddresses({ agentId: "main", storePath }, [identity!], 400 - index);
+    });
+
+    expect(
+      listConversations(
+        { agentId: "main", storePath },
+        { channel: "reef", query: "build", limit: 2 },
+      ).map((entry) => entry.target),
+    ).toEqual(["reef:build-a", "reef:build-b"]);
+  });
+
   it("orders fresh directory addresses with session-backed conversation activity", async () => {
     await upsertSessionEntry(
       { agentId: "main", sessionKey: "agent:main:reef:direct:peer-a", storePath },

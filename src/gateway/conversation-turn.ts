@@ -1,4 +1,7 @@
-import type { ConversationTurnResult } from "../../packages/gateway-protocol/src/schema/agent.js";
+import type {
+  ConversationTurnParams,
+  ConversationTurnResult,
+} from "../../packages/gateway-protocol/src/schema/agent.js";
 import type { ChannelId } from "../channels/plugins/types.public.js";
 import { ConversationDeliveryInputError } from "../config/sessions/conversation-delivery-store.js";
 import {
@@ -20,6 +23,7 @@ import {
   resolveOutboundSessionRoute,
 } from "../infra/outbound/outbound-session.js";
 import { registerPendingConversationTurn } from "../sessions/conversation-turns.js";
+import { assertConversationAddressClaim } from "./conversation-address-claim.js";
 import {
   ConversationInputError,
   ConversationOperationConflictError,
@@ -209,6 +213,7 @@ export async function runGatewayConversationTurn(
     sourceSessionKey?: string;
     turnId: string;
     conversationRef: string;
+    expectedAddress?: ConversationTurnParams["expectedAddress"];
     message: string;
     timeoutMs: number;
   },
@@ -245,6 +250,7 @@ export async function runGatewayConversationTurn(
       `Conversation not found: ${params.conversationRef} (use conversations_list)`,
     );
   }
+  assertConversationAddressClaim(discoveredConversation, params.expectedAddress);
   const plugin = deps.resolveOutboundChannelPlugin({
     channel: discoveredConversation.channel,
     cfg: params.config,
@@ -298,6 +304,15 @@ export async function runGatewayConversationTurn(
     throw new ConversationInputError(
       `Conversation turn ${params.turnId} is missing its prepared message id`,
     );
+  }
+  if (params.expectedAddress) {
+    const liveConversation = deps.resolveConversation(scope, params.conversationRef);
+    if (!liveConversation) {
+      throw new ConversationInputError(
+        `Conversation ${params.conversationRef} changed after conversations_list; list again before sending`,
+      );
+    }
+    assertConversationAddressClaim(liveConversation, params.expectedAddress);
   }
 
   const pending = deps.registerPendingConversationTurn({

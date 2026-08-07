@@ -165,6 +165,7 @@ describe("Conversation schemas", () => {
     ).toBe(true);
     expect(
       Value.Check(ConversationListResultSchema, {
+        complete: true,
         conversations: [
           {
             conversationRef: "conv_0123456789abcdef0123456789abcdef",
@@ -188,6 +189,12 @@ describe("Conversation schemas", () => {
         sourceSessionKey: "agent:main:telegram:direct:operator",
         operationId: "conversation-send-1",
         conversationRef: "conv_0123456789abcdef0123456789abcdef",
+        expectedAddress: {
+          channel: "reef",
+          accountId: "default",
+          kind: "direct",
+          target: "reef:molty",
+        },
         message: "hello",
       }),
     ).toBe(true);
@@ -209,6 +216,12 @@ describe("Conversation schemas", () => {
         sourceSessionKey: "agent:main:telegram:direct:operator",
         turnId: "conversation-turn-1",
         conversationRef: "conv_0123456789abcdef0123456789abcdef",
+        expectedAddress: {
+          channel: "reef",
+          accountId: "default",
+          kind: "direct",
+          target: "reef:molty",
+        },
         message: "hello",
         timeoutMs: 30_000,
       }),
@@ -229,6 +242,29 @@ describe("Conversation schemas", () => {
         },
       }),
     ).toBe(true);
+  });
+
+  it("rejects malformed conversation completeness and address claims", () => {
+    expect(
+      Value.Check(ConversationListResultSchema, {
+        conversations: [],
+        complete: "yes",
+      }),
+    ).toBe(false);
+    expect(
+      Value.Check(ConversationSendParamsSchema, {
+        agentId: "main",
+        operationId: "conversation-send-invalid",
+        conversationRef: "conv_0123456789abcdef0123456789abcdef",
+        expectedAddress: {
+          channel: "reef",
+          accountId: "default",
+          kind: "unknown",
+          target: "reef:molty",
+        },
+        message: "hello",
+      }),
+    ).toBe(false);
   });
 
   it("accepts explicit cancellation for an abandoned Gateway-owned turn", () => {

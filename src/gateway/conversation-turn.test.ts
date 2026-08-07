@@ -161,6 +161,67 @@ function persistIntent(input: Record<string, unknown>): void {
 }
 
 describe("runGatewayConversationTurn", () => {
+  it("rejects an address claim that is already stale before turn setup", async () => {
+    const deps = createDeps();
+
+    await expect(
+      runGatewayConversationTurn(
+        {
+          config: {},
+          agentId: "main",
+          senderIsOwner: true,
+          turnId: "turn-stale-on-entry",
+          conversationRef: conversation.conversationRef,
+          expectedAddress: {
+            channel: conversation.channel,
+            accountId: conversation.accountId,
+            kind: conversation.kind,
+            target: "reef:old-target",
+          },
+          message: "hello molty",
+          timeoutMs: 1,
+        },
+        deps,
+      ),
+    ).rejects.toThrow("changed after conversations_list");
+    expect(deps.resolveOutboundChannelPlugin).not.toHaveBeenCalled();
+    expect(deps.resolveOutboundSessionRoute).not.toHaveBeenCalled();
+    expect(deps.bindOutboundSessionEntry).not.toHaveBeenCalled();
+    expect(deps.registerPendingConversationTurn).not.toHaveBeenCalled();
+    expect(deps.runMessageAction).not.toHaveBeenCalled();
+  });
+
+  it("revalidates a list-derived address after async turn setup and before delivery", async () => {
+    const deps = createDeps();
+    deps.resolveConversation
+      .mockReturnValueOnce(conversation)
+      .mockReturnValueOnce({ ...conversation, target: "reef:changed-target" });
+
+    await expect(
+      runGatewayConversationTurn(
+        {
+          config: {},
+          agentId: "main",
+          senderIsOwner: true,
+          turnId: "turn-stale",
+          conversationRef: conversation.conversationRef,
+          expectedAddress: {
+            channel: conversation.channel,
+            accountId: conversation.accountId,
+            kind: conversation.kind,
+            target: conversation.target,
+          },
+          message: "hello molty",
+          timeoutMs: 1,
+        },
+        deps,
+      ),
+    ).rejects.toThrow("changed after conversations_list");
+    expect(deps.resolveConversation).toHaveBeenCalledTimes(2);
+    expect(deps.registerPendingConversationTurn).not.toHaveBeenCalled();
+    expect(deps.runMessageAction).not.toHaveBeenCalled();
+  });
+
   it("creates a context binding only when a discovered address starts a turn", async () => {
     const deps = createDeps();
     const {

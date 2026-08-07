@@ -67,6 +67,7 @@ function bindConversationOperationIdentity(
     agentId: string;
     sourceSessionKey?: string;
     conversationRef: string;
+    expectedAddress?: ConversationSendParams["expectedAddress"];
     message: string;
     timeoutMs?: number;
   },
@@ -77,6 +78,7 @@ function bindConversationOperationIdentity(
         request.agentId,
         request.sourceSessionKey ?? null,
         request.conversationRef,
+        request.expectedAddress ?? null,
         request.message,
         request.timeoutMs ?? null,
       ]),
@@ -243,6 +245,7 @@ export function createConversationHandlers(
         agentId: request.agentId,
         ...(request.sourceSessionKey ? { sourceSessionKey: request.sourceSessionKey } : {}),
         conversationRef: request.conversationRef,
+        ...(request.expectedAddress ? { expectedAddress: request.expectedAddress } : {}),
         message: request.message,
       });
       if (!requestIdentity) {
@@ -274,6 +277,7 @@ export function createConversationHandlers(
             ...(request.sourceSessionKey ? { sourceSessionKey: request.sourceSessionKey } : {}),
             operationId: request.operationId,
             conversationRef: request.conversationRef,
+            ...(request.expectedAddress ? { expectedAddress: request.expectedAddress } : {}),
             message: request.message,
           }),
       });
@@ -314,6 +318,7 @@ export function createConversationHandlers(
         agentId: request.agentId,
         ...(request.sourceSessionKey ? { sourceSessionKey: request.sourceSessionKey } : {}),
         conversationRef: request.conversationRef,
+        ...(request.expectedAddress ? { expectedAddress: request.expectedAddress } : {}),
         message: request.message,
         timeoutMs: request.timeoutMs,
       });
@@ -346,6 +351,7 @@ export function createConversationHandlers(
             ...(request.sourceSessionKey ? { sourceSessionKey: request.sourceSessionKey } : {}),
             turnId: request.turnId,
             conversationRef: request.conversationRef,
+            ...(request.expectedAddress ? { expectedAddress: request.expectedAddress } : {}),
             message: request.message,
             timeoutMs: request.timeoutMs,
           }),

@@ -1,4 +1,5 @@
 import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { sql } from "kysely";
 import { executeSqliteQuerySync } from "../../infra/kysely-sync.js";
 import { openOpenClawAgentDatabase } from "../../state/openclaw-agent-db.js";
 import type { OpenClawConfig } from "../types.openclaw.js";
@@ -118,7 +119,7 @@ function mapConversationRow(row: {
 
 function selectConversationRows(
   scope: ConversationRegistryScope,
-  options: { channel?: string; conversationRef?: string; limit?: number } = {},
+  options: { channel?: string; conversationRef?: string; query?: string; limit?: number } = {},
 ): ConversationRecord[] {
   const resolved = resolveSqliteReadScope({
     agentId: scope.agentId,
@@ -127,6 +128,39 @@ function selectConversationRows(
   });
   const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
   const db = getSessionKysely(database.db);
+  const channel = normalizeOptionalLowercaseString(options.channel);
+  const normalizedQuery = options.query?.trim().toLowerCase();
+  let candidateConversationRefs: string[] | undefined;
+  if (normalizedQuery && options.limit !== undefined) {
+    const terms = (
+      normalizedQuery.startsWith("@")
+        ? [normalizedQuery, normalizedQuery.slice(1)]
+        : [normalizedQuery]
+    ).filter(Boolean);
+    let candidateQuery = db
+      .selectFrom("conversations as c")
+      .select("c.conversation_id")
+      .where((eb) =>
+        eb.or(
+          terms.flatMap((term) => [
+            sql<boolean>`instr(lower(${eb.ref("c.conversation_id")}), ${term}) > 0`,
+            sql<boolean>`instr(lower(${eb.ref("c.delivery_target")}), ${term}) > 0`,
+            sql<boolean>`instr(lower(coalesce(${eb.ref("c.label")}, '')), ${term}) > 0`,
+          ]),
+        ),
+      );
+    if (channel) {
+      candidateQuery = candidateQuery.where("c.channel", "=", channel);
+    }
+    const candidates = executeSqliteQuerySync(
+      database.db,
+      candidateQuery.orderBy("c.updated_at", "desc").limit(options.limit),
+    ).rows;
+    candidateConversationRefs = candidates.map((row) => row.conversation_id);
+    if (candidateConversationRefs.length === 0) {
+      return [];
+    }
+  }
   let query = db
     .selectFrom("conversations as c")
     .leftJoin("session_conversations as sc", "sc.conversation_id", "c.conversation_id")
@@ -155,7 +189,6 @@ function selectConversationRows(
       "sn.entry_json as current_entry_json",
       "sn.session_key as current_session_key",
     ]);
-  const channel = normalizeOptionalLowercaseString(options.channel);
   if (channel) {
     query = query.where("c.channel", "=", channel);
   }
@@ -165,6 +198,9 @@ function selectConversationRows(
       "=",
       normalizeConversationRef(options.conversationRef),
     );
+  }
+  if (candidateConversationRefs) {
+    query = query.where("c.conversation_id", "in", candidateConversationRefs);
   }
   const rows = executeSqliteQuerySync(
     database.db,
@@ -221,7 +257,7 @@ export function registerConversationAddresses(
 /** Lists stable external addresses for one agent, newest activity first. */
 export function listConversations(
   scope: ConversationRegistryScope,
-  options: { channel?: string; limit?: number } = {},
+  options: { channel?: string; query?: string; limit?: number } = {},
 ): ConversationRecord[] {
   return selectConversationRows(scope, options);
 }

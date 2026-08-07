@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createCodeModeNamespaceRuntime } from "./code-mode-namespaces.js";
+import { CodeModePrivateAuthority } from "./code-mode-private-authority.js";
 import { resolveCodeModeConfig, toToolSearchConfig } from "./code-mode-runtime.js";
 import {
   activeRuns,
@@ -37,6 +38,7 @@ function parkExpiringRun(
     id: `bridge:${method}:1`,
     method,
     args: method === "agentWait" ? ["collector-1"] : ["openclaw:core:slow", {}],
+    conversationList: false,
     promise: new Promise(() => {}),
     cancel,
   };
@@ -54,6 +56,7 @@ function parkExpiringRun(
     config,
     runtime,
     namespaceRuntime: createCodeModeNamespaceRuntime(),
+    privateAuthority: new CodeModePrivateAuthority(),
     output: [],
   });
   return cancel;

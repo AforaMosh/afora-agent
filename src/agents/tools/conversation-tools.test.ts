@@ -9,6 +9,10 @@ import {
   DEFAULT_GATEWAY_HTTP_TOOL_DENY,
   GATEWAY_OWNER_ONLY_CORE_TOOLS,
 } from "../../security/dangerous-tools.js";
+import {
+  CodeModePrivateAuthority,
+  runWithCodeModeConversationAuthority,
+} from "../code-mode-private-authority.js";
 import { compactToolOutputHint } from "../tool-schema-hints.js";
 import {
   createConversationsListTool,
@@ -53,6 +57,7 @@ function createDeps() {
               lastSeenAt: conversation.lastSeenAt,
             },
           ],
+          complete: true,
         }
       : input.method === "conversations.send"
         ? {
@@ -106,7 +111,7 @@ describe("conversation tools", () => {
     expect(Value.Check(send.outputSchema!, sendResult.details)).toBe(true);
     expect(Value.Check(turn.outputSchema!, turnResult.details)).toBe(true);
     expect(compactToolOutputHint(list.outputSchema)).toBe(
-      '{ conversations: Array<{ accountId: string; channel: string; conversationRef: string; firstSeenAt: number; kind: "direct" | "group" | "channel"; lastSeenAt: number; target: string; label?: string; threadId?: string }> }',
+      '{ conversations: Array<{ accountId: string; channel: string; conversationRef: string; firstSeenAt: number; kind: "direct" | "group" | "channel"; lastSeenAt: number; target: string; label?: string; threadId?: string }>; complete?: boolean }',
     );
     expect(compactToolOutputHint(send.outputSchema)).toBe(
       '{ channel: string; conversationRef: string; status: "sent" | "queued" | "suppressed" | "unknown"; messageId?: string; queueId?: string }',
@@ -128,6 +133,7 @@ describe("conversation tools", () => {
       params: { agentId: "main", channel: "reef", query: "@peer-agent", limit: 50 },
     });
     expect(result.details).toEqual({
+      complete: true,
       conversations: [
         {
           conversationRef: conversation.conversationRef,
@@ -224,6 +230,54 @@ describe("conversation tools", () => {
     const first = deps.callGatewayMock.mock.calls[0]![0];
     const second = deps.callGatewayMock.mock.calls[1]![0];
     expect(second.params.operationId).toBe(first.params.operationId);
+  });
+
+  it("passes the private listed tuple and consumes it before Gateway failure", async () => {
+    const deps = createDeps();
+    deps.callGatewayMock.mockRejectedValueOnce(new Error("gateway unavailable"));
+    const authority = new CodeModePrivateAuthority();
+    authority.beginBridgeFrontier([
+      {
+        id: "list-1",
+        conversationListIntent: true,
+        conversationListEligible: true,
+      },
+    ]);
+    authority.deliverBridgeSettlements([
+      {
+        id: "list-1",
+        conversationListResult: {
+          complete: true,
+          conversations: [conversation],
+        },
+      },
+    ]);
+    const tool = createConversationsSendTool({ agentId: "main", config: {} }, deps);
+    const args = {
+      conversationRef: conversation.conversationRef,
+      message: "one shot",
+    };
+
+    await expect(
+      runWithCodeModeConversationAuthority(authority, () => tool.execute("code-mode-send", args)),
+    ).rejects.toThrow("gateway unavailable");
+    expect(deps.callGatewayMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: "conversations.send",
+        params: expect.objectContaining({
+          expectedAddress: {
+            channel: conversation.channel,
+            accountId: conversation.accountId,
+            kind: conversation.kind,
+            target: conversation.target,
+          },
+        }),
+      }),
+    );
+    await expect(
+      runWithCodeModeConversationAuthority(authority, () => tool.execute("code-mode-send", args)),
+    ).rejects.toThrow("requires one unique exact address");
+    expect(deps.callGatewayMock).toHaveBeenCalledTimes(1);
   });
 
   it("uses a stable operation id for correlated turns and cancels on abort", async () => {

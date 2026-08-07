@@ -1,4 +1,7 @@
-import type { ConversationSendResult } from "../../packages/gateway-protocol/src/schema/agent.js";
+import type {
+  ConversationSendParams,
+  ConversationSendResult,
+} from "../../packages/gateway-protocol/src/schema/agent.js";
 import {
   ConversationDeliveryInputError,
   type ConversationDeliveryRecord,
@@ -14,6 +17,7 @@ import {
   sendGatewayConversationMessage,
   type ConversationDeliveryDeps,
 } from "../infra/outbound/conversation-delivery.js";
+import { assertConversationAddressClaim } from "./conversation-address-claim.js";
 import {
   ConversationInputError,
   ConversationOperationConflictError,
@@ -75,6 +79,7 @@ export async function runGatewayConversationSend(
     sourceSessionKey?: string;
     operationId: string;
     conversationRef: string;
+    expectedAddress?: ConversationSendParams["expectedAddress"];
     message: string;
     signal?: AbortSignal;
   },
@@ -104,6 +109,7 @@ export async function runGatewayConversationSend(
         `Conversation not found: ${params.conversationRef} (use conversations_list)`,
       );
     }
+    assertConversationAddressClaim(conversation, params.expectedAddress);
     const sent = await sendGatewayConversationMessage({
       deps,
       context: {

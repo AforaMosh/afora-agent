@@ -30,6 +30,10 @@ type ConversationListDeps = {
   resolveOutboundSessionRoute: typeof resolveOutboundSessionRoute;
 };
 
+export type CompleteConversationListResult = ConversationListResult & {
+  complete: boolean;
+};
+
 const defaultDeps: ConversationListDeps = {
   listConversations,
   registerConversationAddresses,
@@ -219,7 +223,7 @@ export async function runGatewayConversationList(
     limit: number;
   },
   deps: ConversationListDeps = defaultDeps,
-): Promise<ConversationListResult> {
+): Promise<CompleteConversationListResult> {
   const scope = resolveConversationRegistryScope(params);
   const query = params.query?.trim() || undefined;
   const discovery = params.channel
@@ -234,17 +238,21 @@ export async function runGatewayConversationList(
       })
     : undefined;
   const conversations = deps.listConversations(scope, {
-    ...(query ? {} : { limit: params.limit }),
+    // The sentinel row proves whether the persisted owner snapshot was sliced.
+    ...(query ? { query } : {}),
+    limit: params.limit + 1,
     ...(discovery ? { channel: discovery.channel } : {}),
   });
-  const selected = query
-    ? conversations
-        .filter(
-          (entry) =>
-            discovery?.discoveredConversationRefs.has(entry.conversationRef) === true ||
-            matchesConversationQuery(entry, query),
-        )
-        .slice(0, params.limit)
+  const matched = query
+    ? conversations.filter(
+        (entry) =>
+          discovery?.discoveredConversationRefs.has(entry.conversationRef) === true ||
+          matchesConversationQuery(entry, query),
+      )
     : conversations;
-  return { conversations: selected.map(presentConversation) };
+  return {
+    conversations: matched.slice(0, params.limit).map(presentConversation),
+    // Directory discovery has no authoritative saturation/cursor fact.
+    complete: discovery === undefined && matched.length <= params.limit,
+  };
 }
