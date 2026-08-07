@@ -17,6 +17,7 @@ import {
   type PersistedClawPackageRef,
 } from "./package-extension-provenance.js";
 import { clawBootstrapProvenanceFromRow } from "./provenance-bootstrap.js";
+import { legacySafeColumnProjection } from "./provenance-legacy-columns.js";
 import type { ClawAddPlan, ClawPackage, ResolvedClawPackage } from "./types.js";
 export {
   CLAW_PACKAGE_REF_SCHEMA_VERSION,
@@ -191,12 +192,16 @@ export function clawInstallRecordMatchesPlan(
 }
 
 function selectClawInstallRow(db: DatabaseSync, agentId: string): ClawInstallRow | undefined {
+  const bootstrapColumns = legacySafeColumnProjection(db, "claw_installs", [
+    "bootstrap_source_path",
+    "bootstrap_content_digest",
+  ]);
   return db /* sqlite-allow-raw: this Claw prototype state-table read is scoped to one owned row. */
     .prepare(
       `SELECT agent_id, schema_version, source_kind, claw_name, claw_version,
               package_root, manifest_path, integrity_kind, integrity, source_byte_length,
               manifest_schema_version, plan_integrity, workspace, agent_config_digest,
-              agent_owned_paths_json, bootstrap_source_path, bootstrap_content_digest,
+              agent_owned_paths_json, ${bootstrapColumns},
               status, added_at_ms, updated_at_ms
          FROM claw_installs
         WHERE agent_id = ?`,
@@ -363,14 +368,18 @@ export function readClawInstallRecords(
 ): PersistedClawInstall[] {
   const database = openOpenClawStateDatabase(options);
   // sqlite-allow-raw: read-only Claw install inventory ordered by stable agent id.
+  const bootstrapColumns = legacySafeColumnProjection(database.db, "claw_installs", [
+    "bootstrap_source_path",
+    "bootstrap_content_digest",
+  ]);
   const rows =
     database.db /* sqlite-allow-raw: read-only Claw install inventory ordered by stable agent id. */
       .prepare(
         `SELECT schema_version, source_kind, claw_name, claw_version, package_root,
               manifest_path, integrity_kind, integrity, source_byte_length,
               manifest_schema_version, plan_integrity, agent_id, workspace,
-              agent_config_digest, agent_owned_paths_json, bootstrap_source_path,
-              bootstrap_content_digest, status, added_at_ms,
+              agent_config_digest, agent_owned_paths_json, ${bootstrapColumns},
+              status, added_at_ms,
               updated_at_ms
          FROM claw_installs
         ORDER BY agent_id`,
@@ -697,13 +706,20 @@ export function readClawPackageRefs(
     }
   }
   const where = conditions.length > 0 ? ` WHERE ${conditions.join(" AND ")}` : "";
+  const extensionColumns = legacySafeColumnProjection(database.db, "claw_package_refs", [
+    "extension_id",
+    "extension_format",
+    "extension_detected_format",
+    "extension_mapped_json",
+    "extension_unavailable_json",
+    "extension_adapter_identity",
+  ]);
   const rows =
     database.db /* sqlite-allow-raw: read-only Claw package reference lookup with closed column filters. */
       .prepare(
         `SELECT schema_version, agent_id, claw_name, package_kind, package_source,
               package_ref, package_version, package_integrity, package_status, relationship, origin,
-              independent_owner, extension_id, extension_format, extension_detected_format,
-              extension_mapped_json, extension_unavailable_json, extension_adapter_identity,
+              independent_owner, ${extensionColumns},
               installed_at_ms,
               updated_at_ms
          FROM claw_package_refs${where}
