@@ -105,15 +105,16 @@ const QA_INBOUND_VOICE_SCENARIO = resolve(
 const QA_LIVE_TRANSPORTS_WORKFLOW = ".github/workflows/qa-live-transports-convex.yml";
 const QA_LIVE_RUNTIME_PAIR_IF =
   "(github.event_name == 'schedule' && github.workflow_ref == format('{0}/.github/workflows/qa-live-transports-convex.yml@{1}', github.repository, github.ref)) || inputs.run_live_runtime_pair";
-const QA_LIVE_RUNTIME_PAIR_JOBS = [
+const QA_LIVE_RUNTIME_SELECTOR_JOBS = [
   "run_live_runtime_token_efficiency",
   "run_live_gateway_restart_runtime_pair",
+  "run_live_inbound_voice_talkback",
 ] as const;
 const QA_LIVE_SELECTED_REF_EXPRESSION =
   "${{ (github.event_name == 'schedule' && github.workflow_ref == format('{0}/.github/workflows/qa-live-transports-convex.yml@{1}', github.repository, github.ref)) && github.sha || inputs.ref }}";
 const QA_LIVE_LANE_JOBS = [
   "run_mock_parity",
-  ...QA_LIVE_RUNTIME_PAIR_JOBS,
+  ...QA_LIVE_RUNTIME_SELECTOR_JOBS,
   "run_live_buzz",
   "run_live_matrix",
   "run_live_telegram",
@@ -3598,7 +3599,12 @@ describe("package artifact reuse", () => {
     expect(validateScript).toContain('"${selected_revision,,}" != "$expected_sha"');
     expect(validateScript).toContain('if [[ -n "$expected_sha" ]]; then');
 
-    for (const jobName of QA_LIVE_RUNTIME_PAIR_JOBS) {
+    expect(QA_LIVE_RUNTIME_SELECTOR_JOBS).toEqual([
+      "run_live_runtime_token_efficiency",
+      "run_live_gateway_restart_runtime_pair",
+      "run_live_inbound_voice_talkback",
+    ]);
+    for (const jobName of QA_LIVE_RUNTIME_SELECTOR_JOBS) {
       expect(workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, jobName).if).toBe(QA_LIVE_RUNTIME_PAIR_IF);
     }
     expect(workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, "run_mock_parity").if).toBe(
@@ -3662,7 +3668,7 @@ describe("package artifact reuse", () => {
       },
     ];
     for (const testCase of runtimePairCases) {
-      for (const jobName of QA_LIVE_RUNTIME_PAIR_JOBS) {
+      for (const jobName of QA_LIVE_RUNTIME_SELECTOR_JOBS) {
         expect(
           evaluateQaLiveJobCondition(jobName, testCase.context),
           `${testCase.name} ${jobName}`,
@@ -3758,7 +3764,7 @@ describe("package artifact reuse", () => {
           inputs: { run_live_runtime_pair: true },
         }),
       ),
-    ).toEqual([...QA_LIVE_RUNTIME_PAIR_JOBS]);
+    ).toEqual([...QA_LIVE_RUNTIME_SELECTOR_JOBS]);
     expect(
       enabledJobs(
         makeContext({
@@ -4129,6 +4135,11 @@ describe("package artifact reuse", () => {
         "Upload live gateway restart runtime-pair artifacts",
         "always() && steps.run_lane.outputs.output_dir != ''",
       ],
+      [
+        "run_live_inbound_voice_talkback",
+        "Upload live inbound voice talkback artifacts",
+        "always() && steps.run_lane.outputs.output_dir != ''",
+      ],
       ["run_live_matrix", "Upload Matrix QA artifacts", "always()"],
       ["run_live_buzz", "Upload Buzz QA artifacts", "always()"],
       ["run_live_telegram", "Upload Telegram QA artifacts", "always()"],
@@ -4161,6 +4172,7 @@ describe("package artifact reuse", () => {
     expect(runStep.run).toContain("--allow-failures");
     expect(reportStep.if).toBe("steps.run_lane.outcome == 'success'");
     expect(stepNames).not.toContain("Run pinned GPT-5.4 gateway restart runtime pair");
+    expect(stepNames).not.toContain("Run pinned GPT-5.4 inbound voice talkback");
   });
 
   it("runs the blocking gateway restart pair independently on its pinned live model", () => {
@@ -4245,6 +4257,95 @@ describe("package artifact reuse", () => {
     expect(uploadStep.with?.name).not.toBe(
       workflowStep(broadJob, "Upload live runtime token-efficiency artifacts").with?.name,
     );
+  });
+
+  it("runs pinned inbound voice as an independent blocking job", () => {
+    const broadJob = workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, "run_live_runtime_token_efficiency");
+    const restartJob = workflowJob(
+      QA_LIVE_TRANSPORTS_WORKFLOW,
+      "run_live_gateway_restart_runtime_pair",
+    );
+    const voiceJob = workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, "run_live_inbound_voice_talkback");
+    const broadCredentialStep = workflowStep(broadJob, "Validate required QA credential env");
+    const voiceCredentialStep = workflowStep(voiceJob, "Validate required QA credential env");
+    const runStep = workflowStep(voiceJob, "Run pinned GPT-5.4 inbound voice talkback");
+    const uploadStep = workflowStep(voiceJob, "Upload live inbound voice talkback artifacts");
+    const voiceScenario = readFileSync(QA_INBOUND_VOICE_SCENARIO, "utf8");
+    const voiceStepNames = voiceJob.steps?.map((step) => step.name) ?? [];
+    const qaCommand = (runStep.run ?? "")
+      .split("\n")
+      .map((line) => line.trim().replace(/ \\$/u, ""))
+      .filter((line) => line === "pnpm openclaw qa suite" || line.startsWith("--"));
+
+    expect(voiceJob.needs).toEqual(["authorize_actor", "validate_selected_ref"]);
+    expect(voiceJob.needs).toEqual(broadJob.needs);
+    expect(voiceJob.needs).toEqual(restartJob.needs);
+    expect(voiceJob.needs).not.toContain("run_live_runtime_token_efficiency");
+    expect(voiceJob.needs).not.toContain("run_live_gateway_restart_runtime_pair");
+    expect(voiceJob.if).toBe(broadJob.if);
+    expect(voiceJob.if).toBe(restartJob.if);
+    expect(voiceJob["runs-on"]).toBe(broadJob["runs-on"]);
+    expect(voiceJob.environment).toBe(broadJob.environment);
+    expect(voiceJob["timeout-minutes"]).toBe(45);
+    expect(voiceJob["continue-on-error"]).toBeUndefined();
+    expect(workflowStep(voiceJob, "Checkout selected ref").with?.ref).toBe(
+      workflowStep(broadJob, "Checkout selected ref").with?.ref,
+    );
+    expect(workflowStep(voiceJob, "Setup Node environment")).toEqual(
+      workflowStep(broadJob, "Setup Node environment"),
+    );
+    expect(voiceCredentialStep.run).toBe(broadCredentialStep.run);
+    expect(voiceCredentialStep.run).toContain('if [[ -z "${OPENAI_API_KEY:-}" ]]');
+    expect(workflowStep(voiceJob, "Build private QA runtime")).toEqual(
+      workflowStep(broadJob, "Build private QA runtime"),
+    );
+    expect(voiceJob.env).toBeUndefined();
+    expect(runStep.env).toMatchObject({
+      OPENCLAW_QA_REDACT_PUBLIC_METADATA: "1",
+      OPENCLAW_QA_TRANSPORT_READY_TIMEOUT_MS: "180000",
+    });
+    expect(qaCommand).toEqual([
+      "pnpm openclaw qa suite",
+      "--repo-root .",
+      "--provider-mode live-frontier",
+      "--scenario inbound-voice-talkback-live",
+      "--concurrency 1",
+      "--model openai/gpt-5.4",
+      "--alt-model openai/gpt-5.4",
+      "--fast",
+      '--output-dir "${output_dir}/inbound-voice-talkback-live"',
+    ]);
+    expect(runStep.run).toContain(
+      'output_dir=".artifacts/qa-e2e/inbound-voice-talkback-live-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"',
+    );
+    expect(runStep.run).toContain(
+      "printf 'Inbound voice talkback lane started.\\n' > \"${output_dir}/inbound-voice-talkback-started.txt\"",
+    );
+    expect(runStep.run?.match(/pnpm openclaw qa suite/gu)).toHaveLength(1);
+    expect(runStep.run).not.toContain("--runtime-pair");
+    expect(runStep.run).not.toContain("OPENCLAW_QA_LIVE_");
+    expect(runStep.run).not.toContain("--allow-failures");
+    expect(voiceScenario).toContain("requiredModel: gpt-5.4");
+    expect(voiceStepNames).toEqual([
+      "Checkout selected ref",
+      "Setup Node environment",
+      "Validate required QA credential env",
+      "Build private QA runtime",
+      "Run pinned GPT-5.4 inbound voice talkback",
+      "Upload live inbound voice talkback artifacts",
+    ]);
+    expect(uploadStep.if).toBe("always() && steps.run_lane.outputs.output_dir != ''");
+    expect(uploadStep.with?.name).toBe(
+      "qa-live-inbound-voice-talkback-${{ github.run_id }}-${{ github.run_attempt }}",
+    );
+    expect(uploadStep.with?.path).toBe("${{ steps.run_lane.outputs.output_dir }}");
+    expect(uploadStep.with?.["if-no-files-found"]).toBe("error");
+    for (const siblingUploadStep of [
+      workflowStep(broadJob, "Upload live runtime token-efficiency artifacts"),
+      workflowStep(restartJob, "Upload live gateway restart runtime-pair artifacts"),
+    ]) {
+      expect(uploadStep.with?.name).not.toBe(siblingUploadStep.with?.name);
+    }
   });
 
   it("requires release-check QA evidence artifacts when lanes run", () => {
@@ -4939,6 +5040,7 @@ describe("package artifact reuse", () => {
       "run_live_slack",
       "run_live_runtime_token_efficiency",
       "run_live_gateway_restart_runtime_pair",
+      "run_live_inbound_voice_talkback",
     ]) {
       expect(workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, jobName)["runs-on"]).toBe(
         "blacksmith-16vcpu-ubuntu-2404",

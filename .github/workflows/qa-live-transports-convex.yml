@@ -486,6 +486,54 @@ jobs:
           retention-days: 14
           if-no-files-found: error
 
+  run_live_inbound_voice_talkback:
+    name: Run live inbound voice talkback
+    needs: [authorize_actor, validate_selected_ref]
+    if: (github.event_name == 'schedule' && github.workflow_ref == format('{0}/.github/workflows/qa-live-transports-convex.yml@{1}', github.repository, github.ref)) || inputs.run_live_runtime_pair
+    runs-on: blacksmith-16vcpu-ubuntu-2404
+    timeout-minutes: 45
+    environment: qa-live-shared
+    steps:
+      - *qa_live_runtime_checkout
+      - *qa_live_runtime_setup
+      - *qa_live_runtime_required_credentials
+      - *qa_live_runtime_build
+
+      - name: Run pinned GPT-5.4 inbound voice talkback
+        id: run_lane
+        shell: bash
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENCLAW_LIVE_OPENAI_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENCLAW_QA_TRANSPORT_READY_TIMEOUT_MS: "180000"
+          OPENCLAW_QA_REDACT_PUBLIC_METADATA: "1"
+        run: |
+          set -euo pipefail
+
+          output_dir=".artifacts/qa-e2e/inbound-voice-talkback-live-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          echo "output_dir=${output_dir}" >> "$GITHUB_OUTPUT"
+          mkdir -p "${output_dir}"
+          printf 'Inbound voice talkback lane started.\n' > "${output_dir}/inbound-voice-talkback-started.txt"
+
+          pnpm openclaw qa suite \
+            --repo-root . \
+            --provider-mode live-frontier \
+            --scenario inbound-voice-talkback-live \
+            --concurrency 1 \
+            --model openai/gpt-5.4 \
+            --alt-model openai/gpt-5.4 \
+            --fast \
+            --output-dir "${output_dir}/inbound-voice-talkback-live"
+
+      - name: Upload live inbound voice talkback artifacts
+        if: always() && steps.run_lane.outputs.output_dir != ''
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: qa-live-inbound-voice-talkback-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.run_lane.outputs.output_dir }}
+          retention-days: 14
+          if-no-files-found: error
+
   run_live_matrix:
     name: Run Matrix live QA lane
     needs: [authorize_actor, validate_selected_ref]
