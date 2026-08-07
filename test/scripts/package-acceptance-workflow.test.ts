@@ -243,6 +243,61 @@ function expectTextToIncludeAll(text: string | undefined, snippets: string[]): v
   }
 }
 
+function runDiscordQaSelection(inputScenario: string) {
+  const runStep = workflowStep(
+    workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, "run_live_discord"),
+    "Run Discord live lane",
+  );
+  if (!runStep.run) {
+    throw new Error("Expected Discord live QA command");
+  }
+
+  const workdir = tempDirs.make("discord-provider-mode-");
+  const callsPath = resolve(workdir, "pnpm-calls.jsonl");
+  const pnpmPath = resolve(workdir, "pnpm");
+  writeFileSync(callsPath, "");
+  writeFileSync(
+    pnpmPath,
+    `#!${process.execPath}
+require("node:fs").appendFileSync(
+  process.env.PNPM_CALLS,
+  JSON.stringify(process.argv.slice(2)) + "\\n",
+);
+`,
+  );
+  chmodSync(pnpmPath, 0o755);
+
+  const result = spawnSync("bash", ["--noprofile", "--norc", "-c", runStep.run], {
+    cwd: workdir,
+    encoding: "utf8",
+    env: {
+      GITHUB_OUTPUT: resolve(workdir, "github-output"),
+      GITHUB_RUN_ATTEMPT: "1",
+      GITHUB_RUN_ID: "123",
+      INPUT_SCENARIO: inputScenario,
+      OPENCLAW_QA_LIVE_ALT_MODEL: "openai/gpt-5.4",
+      OPENCLAW_QA_LIVE_MODEL: "openai/gpt-5.6-luna",
+      PATH: `${workdir}:${process.env.PATH}`,
+      PNPM_CALLS: callsPath,
+    },
+  });
+  const calls = readFileSync(callsPath, "utf8")
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => JSON.parse(line) as string[]);
+  return { calls, result };
+}
+
+function expectCommandOptions(command: string[], options: Record<string, string | true>): void {
+  for (const [option, value] of Object.entries(options)) {
+    const optionIndex = command.indexOf(option);
+    expect(optionIndex, option).toBeGreaterThanOrEqual(0);
+    if (value !== true) {
+      expect(command[optionIndex + 1], option).toBe(value);
+    }
+  }
+}
+
 function runFullReleaseChildDispatch(
   child: (typeof FULL_RELEASE_CHILD_DISPATCHES)[number],
   overrides: Record<string, string> = {},
@@ -3519,7 +3574,6 @@ describe("package artifact reuse", () => {
     const releaseWorkflowText = readFileSync(RELEASE_CHECKS_WORKFLOW, "utf8");
     const qaSkill = readFileSync(QA_TESTING_SKILL, "utf8");
     const qaPrompt = readFileSync(QA_TESTING_OPENAI_PROMPT, "utf8");
-    const restartScenario = readFileSync(QA_GATEWAY_RESTART_SCENARIO, "utf8");
     const voiceScenario = readFileSync(QA_INBOUND_VOICE_SCENARIO, "utf8");
     const liveModelArgs = [
       '--model "${OPENCLAW_QA_LIVE_MODEL}"',
@@ -3530,22 +3584,37 @@ describe("package artifact reuse", () => {
       OPENCLAW_QA_MOCK_ALT_MODEL: "openai/gpt-5.6-luna-alt",
       OPENCLAW_QA_MOCK_MODEL: "openai/gpt-5.6-luna",
     };
-
-    expect(qaWorkflow.env).toMatchObject({
+    const liveModelPolicy = {
       OPENCLAW_QA_LIVE_ALT_MODEL: "openai/gpt-5.4",
       OPENCLAW_QA_LIVE_MODEL: "openai/gpt-5.6-luna",
-    });
+    };
+
+    expect(qaWorkflow.env).not.toHaveProperty("OPENCLAW_QA_LIVE_MODEL");
+    expect(qaWorkflow.env).not.toHaveProperty("OPENCLAW_QA_LIVE_ALT_MODEL");
+    expect(qaWorkflowText.match(/env: &qa_live_model_policy/gu)).toHaveLength(1);
+    expect(qaWorkflowText.match(/env: \*qa_live_model_policy/gu)).toHaveLength(4);
+    expect(qaWorkflowText).not.toContain("<<:");
     expect(qaWorkflowText).not.toContain("vars.OPENCLAW_CI_OPENAI_MODEL");
     expect(releaseWorkflowText).not.toContain("vars.OPENCLAW_CI_OPENAI_MODEL");
 
-    const broadLiveSteps = [
+    const broadLiveJobs = [
+      "run_live_runtime_token_efficiency",
+      "run_live_telegram",
+      "run_live_discord",
+      "run_live_whatsapp",
+      "run_live_slack",
+    ] as const;
+    for (const jobName of broadLiveJobs) {
+      expect(workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, jobName).env).toEqual(liveModelPolicy);
+    }
+
+    const staticBroadLiveSteps = [
       ["run_live_runtime_token_efficiency", "Run live core runtime-pair lane"],
       ["run_live_telegram", "Run Telegram live lane"],
-      ["run_live_discord", "Run Discord live lane"],
       ["run_live_whatsapp", "Run WhatsApp live lane"],
       ["run_live_slack", "Run Slack live lane"],
     ] as const;
-    for (const [jobName, stepName] of broadLiveSteps) {
+    for (const [jobName, stepName] of staticBroadLiveSteps) {
       expectTextToIncludeAll(
         workflowStep(workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, jobName), stepName).run ?? "",
         liveModelArgs,
@@ -3558,6 +3627,7 @@ describe("package artifact reuse", () => {
     ] as const) {
       const run =
         workflowStep(workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, jobName), stepName).run ?? "";
+      expect(workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, jobName).env).toBeUndefined();
       expect(run).not.toContain("OPENCLAW_QA_LIVE_MODEL");
       expect(run).not.toContain("OPENCLAW_QA_LIVE_ALT_MODEL");
     }
@@ -3572,18 +3642,6 @@ describe("package artifact reuse", () => {
       '--candidate-label "${OPENCLAW_QA_MOCK_MODEL}"',
     );
 
-    const restartRun = workflowStep(
-      workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, "run_live_runtime_token_efficiency"),
-      "Run pinned GPT-5.4 gateway restart runtime pair",
-    ).run;
-    expectTextToIncludeAll(restartRun ?? "", [
-      "--scenario gateway-restart-multi-live",
-      "--model openai/gpt-5.4",
-      "--alt-model openai/gpt-5.4",
-      "--fast",
-    ]);
-    expect(restartRun).not.toContain("OPENCLAW_QA_LIVE_");
-    expect(restartRun).not.toContain("--allow-failures");
     expectTextToIncludeAll(voiceScenario, [
       "--model openai/gpt-5.4",
       "--alt-model openai/gpt-5.4",
@@ -3658,21 +3716,54 @@ describe("package artifact reuse", () => {
       "inbound-voice-talkback-live",
       "fast mode",
     ]);
-    expect(restartScenario).toContain("requiredModel: gpt-5.4");
+  });
 
-    // #114466 splits real Discord transport coverage from the direct release mock lane.
-    expect(
-      workflowStep(
-        workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, "run_live_discord"),
-        "Run Discord live lane",
-      ).run,
-    ).toContain("--provider-mode live-frontier");
-    expect(
-      workflowStep(
-        workflowJob(RELEASE_CHECKS_WORKFLOW, "qa_live_discord_release_checks"),
-        "Run Discord live lane",
-      ).run,
-    ).toContain("--provider-mode mock-openai");
+  it("selects one Discord provider mode before invoking QA", () => {
+    const defaultLive = runDiscordQaSelection("");
+    expect(defaultLive.result.status, defaultLive.result.stderr).toBe(0);
+    expect(defaultLive.calls).toHaveLength(1);
+    expectCommandOptions(defaultLive.calls[0], {
+      "--alt-model": "openai/gpt-5.4",
+      "--fast": true,
+      "--model": "openai/gpt-5.6-luna",
+      "--provider-mode": "live-frontier",
+    });
+    expect(defaultLive.calls[0]).not.toContain("--scenario");
+
+    const mockOnly = runDiscordQaSelection("discord-runtime-context-redaction");
+    expect(mockOnly.result.status, mockOnly.result.stderr).toBe(0);
+    expect(mockOnly.calls).toHaveLength(1);
+    expectCommandOptions(mockOnly.calls[0], {
+      "--alt-model": "mock-openai/gpt-5.6-luna-alt",
+      "--fast": true,
+      "--model": "mock-openai/gpt-5.6-luna",
+      "--provider-mode": "mock-openai",
+      "--scenario": "discord-runtime-context-redaction",
+    });
+
+    const liveOnly = runDiscordQaSelection("discord-canary");
+    expect(liveOnly.result.status, liveOnly.result.stderr).toBe(0);
+    expect(liveOnly.calls).toHaveLength(1);
+    expectCommandOptions(liveOnly.calls[0], {
+      "--alt-model": "openai/gpt-5.4",
+      "--fast": true,
+      "--model": "openai/gpt-5.6-luna",
+      "--provider-mode": "live-frontier",
+      "--scenario": "discord-canary",
+    });
+  });
+
+  it.each([
+    "discord-canary, discord-runtime-context-redaction",
+    "discord-runtime-context-redaction, discord-canary",
+  ])("rejects mixed Discord provider modes before invoking QA: %s", (inputScenario) => {
+    const mixed = runDiscordQaSelection(inputScenario);
+
+    expect(mixed.result.status).toBe(1);
+    expect(mixed.result.stderr).toContain(
+      "Discord scenario selection cannot combine mock-provider and live-provider scenarios",
+    );
+    expect(mixed.calls).toEqual([]);
   });
 
   it("requires QA live evidence artifacts when lanes run", () => {
@@ -3714,20 +3805,40 @@ describe("package artifact reuse", () => {
   it("runs the core gateway restart pair on its pinned live model", () => {
     const job = workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, "run_live_runtime_token_efficiency");
     const credentialStep = workflowStep(job, "Validate required QA credential env");
+    const primaryRunStep = workflowStep(job, "Run live core runtime-pair lane");
     const runStep = workflowStep(job, "Run pinned GPT-5.4 gateway restart runtime pair");
+    const restartScenario = readFileSync(QA_GATEWAY_RESTART_SCENARIO, "utf8");
     const stepNames = job.steps?.map((step) => step.name) ?? [];
 
     expect(credentialStep.run).toContain('if [[ -z "${OPENAI_API_KEY:-}" ]]');
     expect(credentialStep.run).toContain("exit 1");
-    expect(runStep.run).toContain("--provider-mode live-frontier");
-    expect(runStep.run).toContain("--scenario gateway-restart-multi-live");
-    expect(runStep.run).toContain("--model openai/gpt-5.4");
-    expect(runStep.run).toContain("--alt-model openai/gpt-5.4");
-    expect(runStep.run).toContain("--runtime-pair openclaw,codex");
+    expect(job.env).toEqual({
+      OPENCLAW_QA_LIVE_ALT_MODEL: "openai/gpt-5.4",
+      OPENCLAW_QA_LIVE_MODEL: "openai/gpt-5.6-luna",
+    });
+    expect(primaryRunStep.env).toMatchObject({
+      OPENCLAW_QA_REDACT_PUBLIC_METADATA: "1",
+      OPENCLAW_QA_TRANSPORT_READY_TIMEOUT_MS: "180000",
+      QA_PARITY_CONCURRENCY: "1",
+    });
+    expect(runStep.env).toMatchObject({
+      OPENCLAW_QA_REDACT_PUBLIC_METADATA: "1",
+      OPENCLAW_QA_TRANSPORT_READY_TIMEOUT_MS: "180000",
+    });
+    expectTextToIncludeAll(runStep.run, [
+      "--provider-mode live-frontier",
+      "--scenario gateway-restart-multi-live",
+      "--model openai/gpt-5.4",
+      "--alt-model openai/gpt-5.4",
+      "--runtime-pair openclaw,codex",
+      "--fast",
+    ]);
     expect(runStep.run).toContain(
       "steps.run_lane.outputs.output_dir }}/gateway-restart-gpt-5.4-runtime-pair",
     );
+    expect(runStep.run).not.toContain("OPENCLAW_QA_LIVE_");
     expect(runStep.run).not.toContain("--allow-failures");
+    expect(restartScenario).toContain("requiredModel: gpt-5.4");
     expect(stepNames.indexOf("Run pinned GPT-5.4 gateway restart runtime pair")).toBeLessThan(
       stepNames.indexOf("Generate live runtime token-efficiency report"),
     );
