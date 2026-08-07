@@ -8,6 +8,7 @@ import { hasGlobalHooks } from "../../plugins/hook-runner-global.js";
 import { getToolHookMatcherScope } from "../../plugins/hooks.js";
 import { mergePluginToolMatcherScopes } from "../../plugins/tool-hook-matcher.js";
 import { getTrustedToolPolicyMatcherScope } from "../../plugins/trusted-tool-policy.js";
+import type { AgentHarnessBeforeToolCallApprovalRequest } from "../agent-harness-approval-authority.js";
 import {
   cancelDeferredPluginToolApproval,
   hasBeforeToolCallPolicy,
@@ -125,7 +126,7 @@ async function runNativeHookRelayPreToolUse(params: {
   const toolInput = params.adapter.readToolInput(params.invocation.rawPayload);
   const originalToolInputFingerprint = stableStringify(toolInput);
   const approvalMode = readNativeHookRelayApprovalMode(params.invocation.rawPayload);
-  const approvalRequest = {
+  const approvalRequest: AgentHarnessBeforeToolCallApprovalRequest = {
     toolName,
     params: toolInput,
     ...(params.invocation.toolUseId ? { toolCallId: params.invocation.toolUseId } : {}),

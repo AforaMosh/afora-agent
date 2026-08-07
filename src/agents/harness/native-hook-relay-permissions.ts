@@ -9,6 +9,10 @@ import { toErrorObject } from "../../infra/errors.js";
 import { pruneMapToMaxSize } from "../../infra/map-size.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { PluginApprovalResolutions } from "../../plugins/types.js";
+import type {
+  AgentHarnessPluginApprovalResult,
+  NativeHookRelayApprovalAuthority,
+} from "../agent-harness-approval-authority.js";
 import {
   cancelDeferredPluginToolApproval,
   requestDeferredPluginToolApproval,
@@ -495,7 +499,7 @@ export function removeNativeHookRelayPermissionState(relayId: string): void {
 
 async function requestNativeHookRelayPermissionApproval(
   request: NativeHookRelayPermissionApprovalRequest,
-  approvalAuthority?: import("../agent-harness-approval-authority.js").AgentHarnessApprovalAuthority,
+  approvalAuthority?: NativeHookRelayApprovalAuthority,
 ): Promise<NativeHookRelayPermissionApprovalResult> {
   const timeoutMs = DEFAULT_PERMISSION_TIMEOUT_MS;
   const requestPayload = {
@@ -520,9 +524,9 @@ async function requestNativeHookRelayPermissionApproval(
     gatewayTimeoutMs: timeoutMs + 10_000,
   };
   const { gatewayTimeoutMs, ...gatewayPayload } = requestPayload;
-  const requestResult: { id?: string; decision?: string | null } = approvalAuthority
+  const requestResult: AgentHarnessPluginApprovalResult | undefined = approvalAuthority
     ? await approvalAuthority.requestPluginApproval(requestPayload)
-    : await callGatewayTool(
+    : await callGatewayTool<AgentHarnessPluginApprovalResult | undefined>(
         "plugin.approval.request",
         { timeoutMs: gatewayTimeoutMs },
         {
@@ -538,7 +542,7 @@ async function requestNativeHookRelayPermissionApproval(
     return "defer";
   }
   let decision: string | null | undefined;
-  if (Object.hasOwn(requestResult ?? {}, "decision")) {
+  if (requestResult && Object.hasOwn(requestResult, "decision")) {
     decision = requestResult.decision;
   } else {
     const waitResult = await waitForNativeHookRelayApprovalDecision({
@@ -564,28 +568,30 @@ async function requestNativeHookRelayPermissionApproval(
 }
 
 async function waitForNativeHookRelayApprovalDecision(params: {
-  approvalAuthority?: import("../agent-harness-approval-authority.js").AgentHarnessApprovalAuthority;
+  approvalAuthority?: NativeHookRelayApprovalAuthority;
   approvalId: string;
   signal?: AbortSignal;
   timeoutMs: number;
-}): Promise<{ id?: string; decision?: string | null } | undefined> {
-  const waitPromise: Promise<{ id?: string; decision?: string | null } | undefined> = (
+}): Promise<AgentHarnessPluginApprovalResult | undefined> {
+  const waitPromise: Promise<AgentHarnessPluginApprovalResult | undefined> = (
     params.approvalAuthority
       ? params.approvalAuthority.waitForPluginApprovalDecision({
           approvalId: params.approvalId,
           gatewayTimeoutMs: params.timeoutMs + 10_000,
         })
-      : callGatewayTool(
+      : callGatewayTool<AgentHarnessPluginApprovalResult | undefined>(
           "plugin.approval.waitDecision",
           { timeoutMs: params.timeoutMs + 10_000 },
           { id: params.approvalId },
         )
-  ).catch((error: unknown) => {
-    if (isApprovalNotFoundError(error)) {
-      return undefined;
-    }
-    throw error;
-  });
+  )
+    .then((result) => result ?? undefined)
+    .catch((error: unknown) => {
+      if (isApprovalNotFoundError(error)) {
+        return undefined;
+      }
+      throw error;
+    });
   if (!params.signal) {
     return waitPromise;
   }

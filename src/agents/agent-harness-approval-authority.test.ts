@@ -3,7 +3,8 @@ import {
   initializeGlobalHookRunner,
   resetGlobalHookRunner,
 } from "../plugins/hook-runner-global.js";
-import { createMockPluginRegistry } from "../plugins/hooks.test-fixtures.js";
+import type { PluginHookHandlerMap } from "../plugins/hook-types.js";
+import { addTestHook, createMockPluginRegistry } from "../plugins/hooks.test-fixtures.js";
 import {
   createAgentExecutionAttribution,
   resolveAgentExecutionIdentityAdmission,
@@ -114,16 +115,17 @@ describe("agent harness approval authority", () => {
       identity: ReturnType<typeof getGatewayToolCallerIdentity>;
       runId?: string;
     }> = [];
-    initializeGlobalHookRunner(
-      createMockPluginRegistry([
-        {
-          hookName: "before_tool_call",
-          handler: async (_event, ctx) => {
-            hookObserved.push({ identity: getGatewayToolCallerIdentity(), runId: ctx.runId });
-          },
-        },
-      ]),
-    );
+    const beforeToolCall: PluginHookHandlerMap["before_tool_call"] = async (_event, ctx) => {
+      hookObserved.push({ identity: getGatewayToolCallerIdentity(), runId: ctx.runId });
+    };
+    const registry = createMockPluginRegistry([]);
+    addTestHook({
+      registry,
+      pluginId: "approval-authority-test",
+      hookName: "before_tool_call",
+      handler: beforeToolCall,
+    });
+    initializeGlobalHookRunner(registry);
     const hookRequest = {
       toolName: "read",
       params: { path: "README.md" },
