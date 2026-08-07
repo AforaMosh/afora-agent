@@ -231,7 +231,6 @@ async function agentCommandInternal(
     });
     return await sessionWorkAdmission.run(async () => {
       executionIdentity.record({
-        attribution: executionAttribution,
         agentId: sessionAgentId,
         cfg,
         ingress: admissionIngress,

@@ -159,6 +159,7 @@ vi.mock("../agents/command/attempt-execution.runtime.js", () => {
         verboseLevel: params.resolvedVerboseLevel,
         timeoutMs: params.timeoutMs,
         runId: params.runId,
+        attribution: opts.executionAttribution,
         lane: opts.lane,
         abortSignal: opts.abortSignal,
         extraSystemPrompt: opts.extraSystemPrompt,
@@ -454,8 +455,15 @@ describe("agentCommand", () => {
   it("replaces private execution attribution on runtime-shaped public ingress", async () => {
     await withTempHome(async (home) => {
       const store = path.join(home, "sessions.json");
-      mockConfig(home, store);
-      const record = vi.spyOn(executionIdentity, "record").mockImplementation(() => undefined);
+      const cfg = mockConfig(home, store);
+      cfg.logging = { audit: { enabled: true, executionIdentity: true } };
+      let observedContextId: string | undefined;
+      let canonicalContextId: string | undefined;
+      vi.mocked(runEmbeddedAgent).mockImplementationOnce(async (params) => {
+        observedContextId = getExecutionIdentityAdmissionScope()?.token.contextId;
+        canonicalContextId = params.attribution?.contextId;
+        return createDefaultAgentResult();
+      });
       const inheritedAttribution = {
         runId: "public-ingress-run",
         contextId: "inherited-context",
@@ -491,17 +499,11 @@ describe("agentCommand", () => {
           runtime,
         );
 
-        const recordedAttribution = record.mock.calls[0]?.[0].attribution;
-        expect(recordedAttribution).toMatchObject({ runId: "public-ingress-run" });
-        expect(recordedAttribution?.contextId).not.toBe("inherited-context");
-        expect(recordedAttribution?.contextId).not.toBe("forged-context");
-        expect(recordedAttribution).not.toHaveProperty("executionIdentityAdmission");
-        expect(record.mock.calls[0]?.[0]).not.toHaveProperty("admission");
-        expect(observedContextId).toBe(recordedAttribution?.contextId);
+        expect(observedContextId).toBeTruthy();
+        expect(canonicalContextId).toBe(observedContextId);
         expect(observedContextId).not.toBe("forged-context");
         expect(observedContextId).not.toBe("inherited-context");
       } finally {
-        record.mockRestore();
         if (priorDescriptor) {
           // oxlint-disable-next-line no-extend-native -- Restore the exact pre-test prototype descriptor.
           Object.defineProperty(Object.prototype, "executionAttribution", priorDescriptor);

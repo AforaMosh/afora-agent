@@ -6,6 +6,10 @@ import { Type } from "typebox";
 import { afterEach, describe, expect, it } from "vitest";
 import { GATEWAY_CLIENT_CAPS } from "../../packages/gateway-protocol/src/client-info.js";
 import { executionIdentity } from "../agents/agent-command-execution-identity.js";
+import {
+  createAgentExecutionAttribution,
+  type AgentExecutionAttribution,
+} from "../agents/agent-execution-attribution.js";
 import { createOpenClawCodingTools } from "../agents/agent-tools.js";
 import type { PreparedAgentCommandExecution } from "../agents/command/prepare.js";
 import type { AnyAgentTool } from "../agents/tools/common.js";
@@ -58,7 +62,7 @@ type Cleanup = () => Promise<void> | void;
 function prepared(params: {
   cfg: OpenClawConfig;
   runId: string;
-  incidentalToken?: ReturnType<typeof createExecutionIdentityAdmissionToken>;
+  executionAttribution?: AgentExecutionAttribution;
 }): PreparedAgentCommandExecution {
   return {
     cfg: params.cfg,
@@ -66,14 +70,7 @@ function prepared(params: {
     opts: {
       message: "approval identity e2e",
       runId: params.runId,
-      ...(params.incidentalToken
-        ? {
-            executionIdentityAdmission: {
-              token: params.incidentalToken,
-              retryOnly: true,
-            },
-          }
-        : {}),
+      ...(params.executionAttribution ? { executionAttribution: params.executionAttribution } : {}),
     },
   } as PreparedAgentCommandExecution;
 }
@@ -292,15 +289,15 @@ describe("execution identity approval Gateway e2e", () => {
       preparedRunId: string;
       requestRunId: string;
       cfg: OpenClawConfig;
-      incidentalToken?: ReturnType<typeof createExecutionIdentityAdmissionToken>;
+      executionAttribution?: AgentExecutionAttribution;
     }) =>
       await executionIdentity.runPrepared({
         prepared: prepared({
           cfg: params.cfg,
           runId: params.preparedRunId,
-          incidentalToken: params.incidentalToken,
+          executionAttribution: params.executionAttribution,
         }),
-        run: async () => {
+        run: async (scopedPrepared) => {
           const scope = getExecutionIdentityAdmissionScope();
           executionIdentity.record({
             agentId: "main",
@@ -336,6 +333,7 @@ describe("execution identity approval Gateway e2e", () => {
           } as AnyAgentTool);
           await tool.execute?.("approval-call", {});
           return {
+            attribution: scopedPrepared.opts.executionAttribution,
             token: scope?.token,
             transported: scope !== undefined,
           };
@@ -353,10 +351,11 @@ describe("execution identity approval Gateway e2e", () => {
       preparedRunId: "shared-run",
       requestRunId: "shared-run",
       cfg: enabledConfig,
+      executionAttribution: first.attribution,
     });
     expect(first.token).toBeDefined();
     expect(second.token).toBeDefined();
-    expect(first.token?.executionId).not.toBe(second.token?.executionId);
+    expect(second.token).toEqual(first.token);
 
     const mismatch = await requestFromRun({
       id: "trusted-mismatch",
@@ -395,15 +394,24 @@ describe("execution identity approval Gateway e2e", () => {
       ...enabledConfig,
       logging: { audit: { enabled: true, executionIdentity: false } },
     };
+    const disabledAttribution = createAgentExecutionAttribution({
+      runId: "disabled-run",
+      lifecycleGeneration: "disabled-generation",
+      executionIdentityAdmission: { token: incidentalToken, retryOnly: true },
+    });
     setRuntimeConfigSnapshot(disabledConfig, disabledConfig);
     const disabled = await requestFromRun({
       id: "disabled",
       preparedRunId: "disabled-run",
       requestRunId: "disabled-run",
       cfg: disabledConfig,
-      incidentalToken,
+      executionAttribution: disabledAttribution,
     });
-    expect(disabled).toEqual({ token: undefined, transported: false });
+    expect(disabled).toEqual({
+      attribution: disabledAttribution,
+      token: undefined,
+      transported: false,
+    });
 
     await server.close();
     const databaseOptions = { env: { ...process.env, OPENCLAW_STATE_DIR: stateDir } };
@@ -465,11 +473,7 @@ describe("execution identity approval Gateway e2e", () => {
           "SELECT execution_id FROM execution_identity_contexts WHERE run_id = ? ORDER BY execution_id",
         )
         .all("shared-run"),
-    ).toEqual(
-      [first.token!.executionId, second.token!.executionId]
-        .toSorted((left, right) => left.localeCompare(right))
-        .map((executionId) => ({ execution_id: executionId })),
-    );
+    ).toEqual([{ execution_id: first.token!.executionId }]);
     expect(
       stateDb
         .prepare(

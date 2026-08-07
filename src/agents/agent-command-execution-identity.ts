@@ -30,7 +30,6 @@ function systemIngress(boundary: string): AgentCommandAdmissionIngress {
 }
 
 function recordAgentCommandExecutionIdentity(params: {
-  attribution?: AgentCommandOpts["executionAttribution"];
   agentId: string;
   cfg: OpenClawConfig;
   ingress: AgentCommandAdmissionIngress;
