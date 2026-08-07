@@ -884,7 +884,7 @@ export function createPluginRuntimeResolver(state: PluginRegistryState) {
     if (record) {
       // Bind authorization to this exact host-created proxy. A plugin-supplied id or
       // structurally similar object must never inherit loader provenance.
-      registerPluginRuntimeAuthorization(runtime, record);
+      registerPluginRuntimeAuthorization(runtime, record, registry);
     }
     pluginRuntimeById.set(pluginId, runtime);
     return runtime;

@@ -1,12 +1,15 @@
 // Host-owned authorization facts for plugin runtime capabilities.
 import type { PluginOrigin } from "./plugin-origin.types.js";
+import { isPluginRegistryRetired } from "./registry-lifecycle.js";
 import type { PluginRecord } from "./registry-types.js";
+import type { PluginRegistry } from "./registry-types.js";
 import type { PluginRuntime } from "./runtime/types.js";
 
 type PluginRuntimeAuthorization = Readonly<{
   pluginId: string;
   origin: PluginOrigin;
   privilegedRuntimeCapabilities: ReadonlySet<string>;
+  registry: PluginRegistry;
 }>;
 
 const authorizationByRuntime = new WeakMap<PluginRuntime, PluginRuntimeAuthorization>();
@@ -15,6 +18,7 @@ const authorizationByRuntime = new WeakMap<PluginRuntime, PluginRuntimeAuthoriza
 export function registerPluginRuntimeAuthorization(
   runtime: PluginRuntime,
   record: Pick<PluginRecord, "contracts" | "id" | "origin">,
+  registry: PluginRegistry,
 ): void {
   authorizationByRuntime.set(
     runtime,
@@ -22,6 +26,7 @@ export function registerPluginRuntimeAuthorization(
       pluginId: record.id,
       origin: record.origin,
       privilegedRuntimeCapabilities: new Set(record.contracts?.privilegedRuntimeCapabilities ?? []),
+      registry,
     }),
   );
 }
@@ -34,6 +39,11 @@ export function assertBundledPluginRuntimeCapability(
   const authorization = authorizationByRuntime.get(runtime);
   if (!authorization) {
     throw new Error("Bundled plugin runtime required; the runtime was not issued by OpenClaw");
+  }
+  if (isPluginRegistryRetired(authorization.registry)) {
+    throw new Error(
+      `Plugin "${authorization.pluginId}" runtime authorization belongs to a retired registry`,
+    );
   }
   if (authorization.origin !== "bundled") {
     throw new Error(

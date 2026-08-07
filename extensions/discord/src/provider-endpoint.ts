@@ -186,17 +186,19 @@ export function setDiscordProviderEndpointDescriptor(
   runtime: PluginRuntime,
   descriptor: DiscordProviderEndpointDescriptor | undefined,
 ): void {
-  assertBundledPluginRuntimeCapability(runtime, DISCORD_PROVIDER_ENDPOINT_RUNTIME_CAPABILITY);
   if (!descriptor) {
     // Registry replacement can leave an older authorized runtime alive. Its cleanup
     // must not clear a newer runtime's credential-routing descriptor.
     if (activeProviderEndpointOwner !== runtime) {
       return;
     }
+    // Identity is sufficient for cleanup: the issuing registry is retired before its
+    // lifecycle hooks run, so requiring active authorization here would strand the slot.
     clearProviderEndpointRuntime();
     activeProviderEndpointOwner = undefined;
     return;
   }
+  assertBundledPluginRuntimeCapability(runtime, DISCORD_PROVIDER_ENDPOINT_RUNTIME_CAPABILITY);
   const normalized = normalizeDescriptor(descriptor);
   setProviderEndpointRuntime({
     descriptor: normalized,
