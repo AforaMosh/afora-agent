@@ -1,4 +1,4 @@
-import type { NativeHookRelayApprovalAuthority } from "../agent-harness-approval-authority.js";
+import type { NativeHookRelayApprovalAuthority } from "../agent-harness-approval-authority.types.js";
 import type { NativeHookRelayRegistration } from "./native-hook-relay-types.js";
 
 const approvalAuthorityByRegistration = new WeakMap<

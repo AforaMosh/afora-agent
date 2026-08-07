@@ -12,7 +12,7 @@ import { PluginApprovalResolutions } from "../../plugins/types.js";
 import type {
   AgentHarnessPluginApprovalResult,
   NativeHookRelayApprovalAuthority,
-} from "../agent-harness-approval-authority.js";
+} from "../agent-harness-approval-authority.types.js";
 import {
   cancelDeferredPluginToolApproval,
   requestDeferredPluginToolApproval,

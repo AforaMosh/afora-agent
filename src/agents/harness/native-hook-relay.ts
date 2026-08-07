@@ -5,7 +5,7 @@ import { randomUUID } from "node:crypto";
 import { resolveExpiresAtMsFromDurationMs } from "@openclaw/normalization-core/number-coercion";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { resolveOpenClawStateSqlitePath } from "../../state/openclaw-state-db.paths.js";
-import type { NativeHookRelayApprovalAuthority } from "../agent-harness-approval-authority.js";
+import type { NativeHookRelayApprovalAuthority } from "../agent-harness-approval-authority.types.js";
 import { bindNativeHookRelayApprovalAuthority } from "./native-hook-relay-approval-authority.js";
 import {
   clearNativeHookRelayBridgesForTests,

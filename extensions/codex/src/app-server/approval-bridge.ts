@@ -1,4 +1,7 @@
-import type { AgentHarnessApprovalAuthority } from "openclaw/plugin-sdk/agent-harness-approval-authority-runtime";
+import type {
+  AgentHarnessApprovalAuthority,
+  AgentHarnessBeforeToolCallApprovalRequest,
+} from "openclaw/plugin-sdk/agent-harness-approval-authority-runtime";
 /**
  * Bridges Codex app-server approval requests into OpenClaw policy hooks and
  * plugin approval UX.
@@ -453,7 +456,7 @@ async function runOpenClawToolPolicyForApprovalRequest(params: {
     messageTo: params.paramsForRun.messageTo,
   }).channelId;
   const requester = buildCodexHookRequester(params.paramsForRun);
-  const approvalRequest = {
+  const approvalRequest: AgentHarnessBeforeToolCallApprovalRequest = {
     toolName: policyRequest.toolName,
     params: policyRequest.params,
     ...(params.context.approvalId ? { toolCallId: params.context.approvalId } : {}),

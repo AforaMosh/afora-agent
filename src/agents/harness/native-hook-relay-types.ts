@@ -1,7 +1,7 @@
 import type { Server } from "node:http";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import type { PluginHookToolRequesterContext } from "../../plugins/hook-types.js";
-import type { NativeHookRelayApprovalAuthority } from "../agent-harness-approval-authority.js";
+import type { NativeHookRelayApprovalAuthority } from "../agent-harness-approval-authority.types.js";
 import type {
   BeforeToolCallFailureDisposition,
   DeferredPluginToolApproval,

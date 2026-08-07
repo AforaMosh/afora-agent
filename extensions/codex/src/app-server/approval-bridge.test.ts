@@ -16,6 +16,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { handleCodexAppServerApprovalRequest } from "./approval-bridge.js";
 import { codexTestTurnIds } from "./codex-app-server.test-fixtures.js";
 import {
+  mapExecDecisionToOutcome,
   requestPluginApproval,
   waitForPluginApprovalDecision,
 } from "./plugin-approval-roundtrip.js";
@@ -374,8 +375,8 @@ describe("Codex app-server approval bridge", () => {
     ["item/fileChange/requestApproval", { reason: "write authority.txt" }],
     ["item/permissions/requestApproval", { permissions: { network: true } }],
   ])("uses host approval authority for %s", async (method, requestFields) => {
-    const requestPluginApproval = vi.fn(async () => ({ id: "plugin:authority" }));
-    const waitForPluginApprovalDecision = vi.fn(async () => ({
+    const requestPluginApprovalViaAuthority = vi.fn(async () => ({ id: "plugin:authority" }));
+    const waitForPluginApprovalDecisionViaAuthority = vi.fn(async () => ({
       id: "plugin:authority",
       decision: "allow-once" as const,
     }));
@@ -386,8 +387,8 @@ describe("Codex app-server approval bridge", () => {
 
     await handleCodexAppServerApprovalRequest({
       approvalAuthority: {
-        requestPluginApproval,
-        waitForPluginApprovalDecision,
+        requestPluginApproval: requestPluginApprovalViaAuthority,
+        waitForPluginApprovalDecision: waitForPluginApprovalDecisionViaAuthority,
         runBeforeToolCallApproval,
         registerNativeHookRelay: vi.fn(),
       } as never,
@@ -402,10 +403,14 @@ describe("Codex app-server approval bridge", () => {
     });
 
     expect(runBeforeToolCallApproval).toHaveBeenCalledTimes(1);
-    expect(requestPluginApproval).toHaveBeenCalledTimes(1);
-    expect(waitForPluginApprovalDecision).toHaveBeenCalledTimes(1);
+    expect(requestPluginApprovalViaAuthority).toHaveBeenCalledTimes(1);
+    expect(waitForPluginApprovalDecisionViaAuthority).toHaveBeenCalledTimes(1);
     expect(mockCallGatewayTool).not.toHaveBeenCalled();
     expect(mockRunBeforeToolCallHook).not.toHaveBeenCalled();
+  });
+
+  it("preserves host approval cancellation as a cancelled Codex outcome", () => {
+    expect(mapExecDecisionToOutcome("cancelled")).toBe("cancelled");
   });
 
   it("keeps configured exec auto-review on the human approval route", async () => {

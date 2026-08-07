@@ -1,10 +1,12 @@
 import { isExecutionIdentityCollectionEnabled } from "../audit/audit-config.js";
-import type { PluginApprovalResolution } from "../plugins/hook-before-tool-call-result.js";
+import type {
+  AgentHarnessApprovalOperations,
+  AgentHarnessPluginApprovalResult,
+  NativeHookRelayApprovalAuthority,
+} from "./agent-harness-approval-authority.types.js";
 import {
   requestDeferredPluginToolApproval,
   runBeforeToolCallHook,
-  type DeferredPluginToolApproval,
-  type HookContext,
 } from "./agent-tools.before-tool-call.js";
 import { resolveEmbeddedAttemptExecutionAttribution } from "./embedded-agent-runner/run/attempt-execution-attribution.js";
 import type { EmbeddedRunAttemptParams } from "./embedded-agent-runner/run/types.js";
@@ -22,58 +24,18 @@ import {
 } from "./tools/gateway-caller-context.js";
 import { callGatewayTool } from "./tools/gateway.js";
 
-export type AgentHarnessPluginApprovalResult = {
-  id?: string;
-  decision?: PluginApprovalResolution | null;
-};
-
-export type AgentHarnessPluginApprovalRequest = {
-  pluginId: string;
-  title: string;
-  description: string;
-  severity: "info" | "warning";
-  toolName: string;
-  toolCallId?: string;
-  timeoutMs: number;
-  gatewayTimeoutMs: number;
-  allowedDecisions?: PluginApprovalResolution[];
-};
-
-export type AgentHarnessBeforeToolCallApprovalRequest = {
-  toolName: string;
-  params: Record<string, unknown>;
-  toolCallId?: string;
-  approvalMode?: "request" | "defer" | "report";
-  signal?: AbortSignal;
-  ctx: HookContext;
-};
-
 /** Structured approval operations available only to a host-admitted harness request. */
-export type AgentHarnessApprovalAuthority = {
-  requestPluginApproval: (
-    request: AgentHarnessPluginApprovalRequest,
-  ) => Promise<AgentHarnessPluginApprovalResult | undefined>;
-  waitForPluginApprovalDecision: (request: {
-    approvalId: string;
-    gatewayTimeoutMs: number;
-  }) => Promise<AgentHarnessPluginApprovalResult | null | undefined>;
-  runBeforeToolCallApproval: (
-    request: AgentHarnessBeforeToolCallApprovalRequest,
-  ) => ReturnType<typeof runBeforeToolCallHook>;
+export type AgentHarnessApprovalAuthority = AgentHarnessApprovalOperations & {
   registerNativeHookRelay: (
     request: RegisterNativeHookRelayParams,
   ) => NativeHookRelayRegistrationHandle;
 };
 
-export type NativeHookRelayApprovalAuthority = Pick<
-  AgentHarnessApprovalAuthority,
-  "requestPluginApproval" | "runBeforeToolCallApproval" | "waitForPluginApprovalDecision"
-> & {
-  resolveDeferredToolApproval: (request: {
-    deferredApproval: DeferredPluginToolApproval;
-    signal?: AbortSignal;
-  }) => ReturnType<typeof requestDeferredPluginToolApproval>;
-};
+export type {
+  AgentHarnessBeforeToolCallApprovalRequest,
+  AgentHarnessPluginApprovalRequest,
+  AgentHarnessPluginApprovalResult,
+} from "./agent-harness-approval-authority.types.js";
 
 type ApprovalCaller = {
   agentId?: string;

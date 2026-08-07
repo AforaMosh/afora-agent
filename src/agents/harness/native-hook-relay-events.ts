@@ -8,7 +8,7 @@ import { hasGlobalHooks } from "../../plugins/hook-runner-global.js";
 import { getToolHookMatcherScope } from "../../plugins/hooks.js";
 import { mergePluginToolMatcherScopes } from "../../plugins/tool-hook-matcher.js";
 import { getTrustedToolPolicyMatcherScope } from "../../plugins/trusted-tool-policy.js";
-import type { AgentHarnessBeforeToolCallApprovalRequest } from "../agent-harness-approval-authority.js";
+import type { AgentHarnessBeforeToolCallApprovalRequest } from "../agent-harness-approval-authority.types.js";
 import {
   cancelDeferredPluginToolApproval,
   hasBeforeToolCallPolicy,
