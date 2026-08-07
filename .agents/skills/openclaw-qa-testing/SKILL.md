@@ -12,15 +12,19 @@ Use this skill for `qa-lab` / `qa-channel` work. Repo-local QA only.
 - `docs/concepts/qa-e2e-automation.md`
 - `docs/help/testing.md`
 - `docs/channels/qa-channel.md`
-- `qa/README.md`
 - `qa/scenarios/index.yaml`
 - `extensions/qa-lab/src/suite.ts`
 - `extensions/qa-lab/src/character-eval.ts`
 
 ## Model policy
 
-- Live OpenAI lane: `openai/gpt-5.4`
-- Fast mode: on
+- Broad live OpenAI primary: `openai/gpt-5.6-luna`
+- Broad live OpenAI alternate: `openai/gpt-5.4`
+- Fast mode: explicit `--fast`
+- Pinned exceptions use `openai/gpt-5.4` for both primary and alternate with
+  explicit `--fast`:
+  - `gateway-restart-multi-live`
+  - `inbound-voice-talkback-live`
 - Do not use:
   - `openai/gpt-5.4-pro`
   - `openai/gpt-5.4-mini`
@@ -38,8 +42,9 @@ Use this skill for `qa-lab` / `qa-channel` work. Repo-local QA only.
 OPENCLAW_LIVE_OPENAI_KEY="${OPENAI_API_KEY}" \
 pnpm openclaw qa suite \
   --provider-mode live-frontier \
-  --model openai/gpt-5.4 \
+  --model openai/gpt-5.6-luna \
   --alt-model openai/gpt-5.4 \
+  --fast \
   --output-dir .artifacts/qa-e2e/run-all-live-frontier-<tag>
 ```
 

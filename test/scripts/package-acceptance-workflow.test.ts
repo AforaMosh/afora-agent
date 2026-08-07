@@ -89,6 +89,19 @@ const RELEASE_MAINTAINER_SKILL = resolve(
   REPO_ROOT,
   ".agents/skills/release-openclaw-maintainer/SKILL.md",
 );
+const QA_TESTING_SKILL = resolve(REPO_ROOT, ".agents/skills/openclaw-qa-testing/SKILL.md");
+const QA_TESTING_OPENAI_PROMPT = resolve(
+  REPO_ROOT,
+  ".agents/skills/openclaw-qa-testing/agents/openai.yaml",
+);
+const QA_GATEWAY_RESTART_SCENARIO = resolve(
+  REPO_ROOT,
+  "qa/scenarios/runtime/gateway-restart-multi-live.yaml",
+);
+const QA_INBOUND_VOICE_SCENARIO = resolve(
+  REPO_ROOT,
+  "qa/scenarios/media/inbound-voice-talkback-live.yaml",
+);
 const QA_LIVE_TRANSPORTS_WORKFLOW = ".github/workflows/qa-live-transports-convex.yml";
 const UPDATE_MIGRATION_WORKFLOW = ".github/workflows/update-migration.yml";
 const CI_CHECK_TESTBOX_WORKFLOW = ".github/workflows/ci-check-testbox.yml";
@@ -163,6 +176,9 @@ type Workflow = {
   jobs?: Record<string, WorkflowJob>;
   on?: {
     workflow_call?: {
+      inputs?: Record<string, unknown>;
+    };
+    workflow_dispatch?: {
       inputs?: Record<string, unknown>;
     };
   };
@@ -3494,6 +3510,169 @@ describe("package artifact reuse", () => {
       );
       expect(qaWorkflow).not.toContain(`OPENCLAW_QA_${channel}_LIVE_CI_ENABLED`);
     }
+  });
+
+  it("pins broad live, mock release, and model-specific QA policy", () => {
+    const qaWorkflow = readWorkflow(QA_LIVE_TRANSPORTS_WORKFLOW);
+    const qaWorkflowText = readFileSync(QA_LIVE_TRANSPORTS_WORKFLOW, "utf8");
+    const releaseWorkflow = readWorkflow(RELEASE_CHECKS_WORKFLOW);
+    const releaseWorkflowText = readFileSync(RELEASE_CHECKS_WORKFLOW, "utf8");
+    const qaSkill = readFileSync(QA_TESTING_SKILL, "utf8");
+    const qaPrompt = readFileSync(QA_TESTING_OPENAI_PROMPT, "utf8");
+    const restartScenario = readFileSync(QA_GATEWAY_RESTART_SCENARIO, "utf8");
+    const voiceScenario = readFileSync(QA_INBOUND_VOICE_SCENARIO, "utf8");
+    const liveModelArgs = [
+      '--model "${OPENCLAW_QA_LIVE_MODEL}"',
+      '--alt-model "${OPENCLAW_QA_LIVE_ALT_MODEL}"',
+      "--fast",
+    ];
+    const mockModelEnv = {
+      OPENCLAW_QA_MOCK_ALT_MODEL: "openai/gpt-5.6-luna-alt",
+      OPENCLAW_QA_MOCK_MODEL: "openai/gpt-5.6-luna",
+    };
+
+    expect(qaWorkflow.env).toMatchObject({
+      OPENCLAW_QA_LIVE_ALT_MODEL: "openai/gpt-5.4",
+      OPENCLAW_QA_LIVE_MODEL: "openai/gpt-5.6-luna",
+    });
+    expect(qaWorkflowText).not.toContain("vars.OPENCLAW_CI_OPENAI_MODEL");
+    expect(releaseWorkflowText).not.toContain("vars.OPENCLAW_CI_OPENAI_MODEL");
+
+    const broadLiveSteps = [
+      ["run_live_runtime_token_efficiency", "Run live core runtime-pair lane"],
+      ["run_live_telegram", "Run Telegram live lane"],
+      ["run_live_discord", "Run Discord live lane"],
+      ["run_live_whatsapp", "Run WhatsApp live lane"],
+      ["run_live_slack", "Run Slack live lane"],
+    ] as const;
+    for (const [jobName, stepName] of broadLiveSteps) {
+      expectTextToIncludeAll(
+        workflowStep(workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, jobName), stepName).run ?? "",
+        liveModelArgs,
+      );
+    }
+
+    for (const [jobName, stepName] of [
+      ["run_live_matrix", "Run Matrix live lane"],
+      ["run_live_buzz", "Run Buzz live lane"],
+    ] as const) {
+      const run =
+        workflowStep(workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, jobName), stepName).run ?? "";
+      expect(run).not.toContain("OPENCLAW_QA_LIVE_MODEL");
+      expect(run).not.toContain("OPENCLAW_QA_LIVE_ALT_MODEL");
+    }
+
+    const mockParityJob = workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, "run_mock_parity");
+    expect(mockParityJob.env).toMatchObject(mockModelEnv);
+    expectTextToIncludeAll(workflowStep(mockParityJob, "Run OpenAI candidate lane").run ?? "", [
+      '--model "${OPENCLAW_QA_MOCK_MODEL}"',
+      '--alt-model "${OPENCLAW_QA_MOCK_ALT_MODEL}"',
+    ]);
+    expect(workflowStep(mockParityJob, "Generate parity report").run).toContain(
+      '--candidate-label "${OPENCLAW_QA_MOCK_MODEL}"',
+    );
+
+    const restartRun = workflowStep(
+      workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, "run_live_runtime_token_efficiency"),
+      "Run pinned GPT-5.4 gateway restart runtime pair",
+    ).run;
+    expectTextToIncludeAll(restartRun ?? "", [
+      "--scenario gateway-restart-multi-live",
+      "--model openai/gpt-5.4",
+      "--alt-model openai/gpt-5.4",
+      "--fast",
+    ]);
+    expect(restartRun).not.toContain("OPENCLAW_QA_LIVE_");
+    expect(restartRun).not.toContain("--allow-failures");
+    expectTextToIncludeAll(voiceScenario, [
+      "--model openai/gpt-5.4",
+      "--alt-model openai/gpt-5.4",
+      "--fast",
+      "--scenario inbound-voice-talkback-live",
+    ]);
+    expect(voiceScenario).not.toContain("OPENCLAW_QA_LIVE_");
+
+    for (const jobName of [
+      "qa_lab_parity_lane_release_checks",
+      "qa_lab_parity_report_release_checks",
+      "qa_lab_runtime_pair_lane_release_checks",
+    ]) {
+      expect(workflowJob(RELEASE_CHECKS_WORKFLOW, jobName).env).toMatchObject(mockModelEnv);
+    }
+    expectTextToIncludeAll(
+      workflowStep(
+        workflowJob(RELEASE_CHECKS_WORKFLOW, "qa_lab_parity_lane_release_checks"),
+        "Run parity lane",
+      ).run ?? "",
+      ['model="${OPENCLAW_QA_MOCK_MODEL}"', 'alt_model="${OPENCLAW_QA_MOCK_ALT_MODEL}"'],
+    );
+    expect(
+      workflowStep(
+        workflowJob(RELEASE_CHECKS_WORKFLOW, "qa_lab_parity_report_release_checks"),
+        "Generate parity report",
+      ).run,
+    ).toContain('--candidate-label "${OPENCLAW_QA_MOCK_MODEL}"');
+    for (const stepName of ["Run runtime-pair lane", "Run OpenClaw core restart proof"]) {
+      expectTextToIncludeAll(
+        workflowStep(
+          workflowJob(RELEASE_CHECKS_WORKFLOW, "qa_lab_runtime_pair_lane_release_checks"),
+          stepName,
+        ).run ?? "",
+        ['--model "${OPENCLAW_QA_MOCK_MODEL}"', '--alt-model "${OPENCLAW_QA_MOCK_ALT_MODEL}"'],
+      );
+    }
+
+    for (const [jobName, stepName, command] of [
+      ["qa_live_discord_release_checks", "Run Discord live lane", "qa discord"],
+      ["qa_live_whatsapp_release_checks", "Run WhatsApp live lane", "qa whatsapp"],
+      ["qa_live_slack_release_checks", "Run Slack live lane", "qa slack"],
+    ] as const) {
+      expectTextToIncludeAll(
+        workflowStep(workflowJob(RELEASE_CHECKS_WORKFLOW, jobName), stepName).run ?? "",
+        [
+          command,
+          "--provider-mode mock-openai",
+          "--model mock-openai/gpt-5.6-luna",
+          "--alt-model mock-openai/gpt-5.6-luna-alt",
+        ],
+      );
+    }
+
+    const releaseDispatchInputs = Object.keys(releaseWorkflow.on?.workflow_dispatch?.inputs ?? {});
+    const qaDispatchInputs = Object.keys(qaWorkflow.on?.workflow_dispatch?.inputs ?? {});
+    expect(
+      [...releaseDispatchInputs, ...qaDispatchInputs].filter((input) => /model/iu.test(input)),
+    ).toEqual([]);
+    expect(qaSkill).not.toContain("qa/README.md");
+    expectTextToIncludeAll(qaSkill, [
+      "Broad live OpenAI primary: `openai/gpt-5.6-luna`",
+      "Broad live OpenAI alternate: `openai/gpt-5.4`",
+      "Fast mode: explicit `--fast`",
+      "`gateway-restart-multi-live`",
+      "`inbound-voice-talkback-live`",
+    ]);
+    expectTextToIncludeAll(qaPrompt, [
+      "openai/gpt-5.6-luna",
+      "openai/gpt-5.4",
+      "gateway-restart-multi-live",
+      "inbound-voice-talkback-live",
+      "fast mode",
+    ]);
+    expect(restartScenario).toContain("requiredModel: gpt-5.4");
+
+    // #114466 splits real Discord transport coverage from the direct release mock lane.
+    expect(
+      workflowStep(
+        workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, "run_live_discord"),
+        "Run Discord live lane",
+      ).run,
+    ).toContain("--provider-mode live-frontier");
+    expect(
+      workflowStep(
+        workflowJob(RELEASE_CHECKS_WORKFLOW, "qa_live_discord_release_checks"),
+        "Run Discord live lane",
+      ).run,
+    ).toContain("--provider-mode mock-openai");
   });
 
   it("requires QA live evidence artifacts when lanes run", () => {
