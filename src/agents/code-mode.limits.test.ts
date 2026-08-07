@@ -7,6 +7,7 @@ import { applyCodeModeCatalog, createCodeModeTools, resolveCodeModeConfig } from
 import {
   resetCodeModeTestState,
   pluginTool,
+  pluginToolWithExecute,
   mcpTool,
   resultDetails,
   createCodeModeHarness,
@@ -14,6 +15,10 @@ import {
 } from "./code-mode.test-support.js";
 import { createToolSearchCatalogRef } from "./tool-search.js";
 import { jsonResult } from "./tools/common.js";
+
+const BRIDGE_ARGUMENT_BYTE_LIMIT = 8 * 1024 * 1024;
+const BRIDGE_ARGUMENT_BYTES_ERROR =
+  "code mode bridge arguments exceeded 8388608 bytes; pass references or split the work into smaller batches.";
 
 describe("Code Mode runtime and output limits", () => {
   beforeEach(() => {
@@ -258,6 +263,312 @@ describe("Code Mode runtime and output limits", () => {
     expect(result).toMatchObject({
       code: "snapshot_limit_exceeded",
       error: "code mode snapshot limit exceeded",
+    });
+  });
+
+  it("accepts a pending frontier at the configured limit", async () => {
+    const config = resolveCodeModeConfig({
+      tools: { codeMode: { enabled: true, maxPendingToolCalls: 3 } },
+    } as never);
+
+    const result = await testing.runCodeModeWorker(
+      {
+        kind: "exec",
+        source: `return await Promise.all(
+          Array.from({ length: 3 }, (_, index) =>
+            tools.callValue("fake_backlog", { index }),
+          ),
+        );`,
+        config,
+        catalog: [],
+      },
+      10_000,
+    );
+
+    expect(result.status).toBe("waiting");
+    if (result.status !== "waiting") {
+      return;
+    }
+    expect(result.pendingRequests).toHaveLength(3);
+  });
+
+  it("rejects one bridge registration above the configured pending limit", async () => {
+    const config = {
+      tools: { codeMode: { enabled: true, maxPendingToolCalls: 3 } },
+    } as never;
+    const catalogRef = createToolSearchCatalogRef();
+    const tools = createCodeModeTools({
+      config,
+      runtimeConfig: config,
+      sessionId: "session-code-mode",
+      sessionKey: "agent:main:main",
+      runId: "run-code-mode",
+      catalogRef,
+    });
+    const executed: number[] = [];
+    const target = pluginToolWithExecute(
+      "fake_backlog",
+      "Backlog limit helper",
+      async (_toolCallId, input) => {
+        executed.push((input as { index: number }).index);
+        return jsonResult(input);
+      },
+    );
+    applyCodeModeCatalog({
+      tools: [...tools, target],
+      config,
+      sessionId: "session-code-mode",
+      sessionKey: "agent:main:main",
+      runId: "run-code-mode",
+      catalogRef,
+    });
+
+    const details = resultDetails(
+      await expectDefined(tools[0], "Code Mode exec test invariant").execute(
+        "code-call-backlog-overflow",
+        {
+          code: `return await Promise.all(
+            Array.from({ length: 4 }, (_, index) =>
+              tools.callValue("fake_backlog", { index }),
+            ),
+          );`,
+        },
+      ),
+    );
+
+    expect(details).toMatchObject({
+      status: "failed",
+      code: "internal_error",
+      error: "Error: too many pending code mode tool calls",
+      bridgeDispatchStarted: true,
+    });
+    expect(target.execute).toHaveBeenCalledTimes(3);
+    expect(executed).toEqual([0, 1, 2]);
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    expect(target.execute).toHaveBeenCalledTimes(3);
+    expect(executed).toEqual([0, 1, 2]);
+    expect(testing.activeRuns.size).toBe(0);
+  });
+
+  it("counts UTF-8 argument bytes before normal bridge dispatch", async () => {
+    const catalogRef = createToolSearchCatalogRef();
+    const config = {
+      tools: {
+        codeMode: {
+          enabled: true,
+          timeoutMs: 30_000,
+          memoryLimitBytes: 128 * 1024 * 1024,
+          maxPendingToolCalls: 128,
+        },
+      },
+    } as never;
+    const ctx = {
+      config,
+      runtimeConfig: config,
+      sessionId: "session-code-mode",
+      sessionKey: "agent:main:main",
+      runId: "run-code-mode",
+      catalogRef,
+    };
+    const tools = createCodeModeTools(ctx);
+    const target = pluginTool("fake_argument_budget", "Argument budget helper");
+    applyCodeModeCatalog({
+      tools: [...tools, target],
+      config,
+      sessionId: "session-code-mode",
+      sessionKey: "agent:main:main",
+      runId: "run-code-mode",
+      catalogRef,
+    });
+
+    const details = resultDetails(
+      await expectDefined(tools[0], "Code Mode exec test invariant").execute(
+        "code-call-argument-bytes",
+        {
+          // The string has half as many UTF-16 code units as the byte ceiling,
+          // but its UTF-8 encoding fills the entire budget before JSON framing.
+          code: `const payload = "é".repeat(${BRIDGE_ARGUMENT_BYTE_LIMIT / 2});
+            return await tools.callValue("fake_argument_budget", { payload });`,
+        },
+      ),
+    );
+
+    expect(details).toMatchObject({
+      status: "failed",
+      code: "invalid_input",
+      error: BRIDGE_ARGUMENT_BYTES_ERROR,
+      bridgeDispatchStarted: false,
+    });
+    expect(target.execute).not.toHaveBeenCalled();
+    expect(testing.activeRuns.size).toBe(0);
+  });
+
+  it("accepts a serialized bridge argument payload exactly at 8 MiB", async () => {
+    const catalogRef = createToolSearchCatalogRef();
+    const config = {
+      tools: {
+        codeMode: {
+          enabled: true,
+          timeoutMs: 30_000,
+          memoryLimitBytes: 128 * 1024 * 1024,
+          maxSnapshotBytes: 64 * 1024 * 1024,
+        },
+      },
+    } as never;
+    const ctx = {
+      config,
+      runtimeConfig: config,
+      sessionId: "session-code-mode",
+      sessionKey: "agent:main:main",
+      runId: "run-code-mode",
+      catalogRef,
+    };
+    const tools = createCodeModeTools(ctx);
+    const toolId = "fake_argument_boundary";
+    const target = pluginToolWithExecute(toolId, "Argument boundary helper", async () =>
+      jsonResult({ accepted: true }),
+    );
+    applyCodeModeCatalog({
+      tools: [...tools, target],
+      config,
+      sessionId: "session-code-mode",
+      sessionKey: "agent:main:main",
+      runId: "run-code-mode",
+      catalogRef,
+    });
+    const framingBytes = Buffer.byteLength(JSON.stringify([toolId, { payload: "" }]), "utf8");
+    const payloadBytes = BRIDGE_ARGUMENT_BYTE_LIMIT - framingBytes;
+
+    const details = resultDetails(
+      await expectDefined(tools[0], "Code Mode exec test invariant").execute(
+        "code-call-argument-boundary",
+        {
+          code: `return await tools.callValue(${JSON.stringify(toolId)}, {
+            payload: "x".repeat(${payloadBytes}),
+          });`,
+        },
+      ),
+    );
+
+    expect(details).toMatchObject({
+      status: "completed",
+      value: { accepted: true },
+    });
+    expect(target.execute).toHaveBeenCalledOnce();
+    expect(testing.activeRuns.size).toBe(0);
+  });
+
+  it("rejects cumulative small bridge arguments before dispatch", async () => {
+    const catalogRef = createToolSearchCatalogRef();
+    const config = {
+      tools: {
+        codeMode: {
+          enabled: true,
+          timeoutMs: 30_000,
+          memoryLimitBytes: 128 * 1024 * 1024,
+          maxPendingToolCalls: 128,
+        },
+      },
+    } as never;
+    const ctx = {
+      config,
+      runtimeConfig: config,
+      sessionId: "session-code-mode",
+      sessionKey: "agent:main:main",
+      runId: "run-code-mode",
+      catalogRef,
+    };
+    const tools = createCodeModeTools(ctx);
+    const target = pluginTool("fake_argument_batch", "Argument batch helper");
+    applyCodeModeCatalog({
+      tools: [...tools, target],
+      config,
+      sessionId: "session-code-mode",
+      sessionKey: "agent:main:main",
+      runId: "run-code-mode",
+      catalogRef,
+    });
+
+    const details = resultDetails(
+      await expectDefined(tools[0], "Code Mode exec test invariant").execute(
+        "code-call-argument-batch",
+        {
+          code: `const payload = "x".repeat(64 * 1024);
+            return await Promise.all(
+              Array.from({ length: 128 }, (_, index) =>
+                tools.callValue("fake_argument_batch", { index, payload }),
+              ),
+            );`,
+        },
+      ),
+    );
+
+    expect(details).toMatchObject({
+      status: "failed",
+      code: "invalid_input",
+      error: BRIDGE_ARGUMENT_BYTES_ERROR,
+      bridgeDispatchStarted: false,
+    });
+    expect(target.execute).not.toHaveBeenCalled();
+    expect(testing.activeRuns.size).toBe(0);
+  });
+
+  it("counts carried argument bytes when enforcing a resumed frontier", async () => {
+    const config = resolveCodeModeConfig({
+      tools: {
+        codeMode: {
+          enabled: true,
+          timeoutMs: 30_000,
+          memoryLimitBytes: 128 * 1024 * 1024,
+          maxSnapshotBytes: 64 * 1024 * 1024,
+        },
+      },
+    } as never);
+    const first = await testing.runCodeModeWorker(
+      {
+        kind: "exec",
+        source: `
+          const carried = tools.callValue("fake_argument_budget", {
+            payload: "x".repeat(6 * 1024 * 1024),
+          });
+          await tools.callValue("fake_gate", {});
+          void tools.callValue("fake_argument_budget", {
+            payload: "y".repeat(3 * 1024 * 1024),
+          });
+          return await carried;
+        `,
+        config,
+        catalog: [],
+      },
+      30_000,
+    );
+    expect(first.status).toBe("waiting");
+    if (first.status !== "waiting") {
+      return;
+    }
+    expect(first.pendingRequests).toHaveLength(2);
+    const gate = first.pendingRequests.at(-1);
+    expect(gate).toBeDefined();
+    if (!gate) {
+      return;
+    }
+
+    const resumed = await testing.runCodeModeWorker(
+      {
+        kind: "resume",
+        snapshotBytes: first.snapshotBytes,
+        config,
+        settledRequests: [{ id: gate.id, ok: true, value: {} }],
+        pendingRequests: first.pendingRequests.slice(0, -1),
+      },
+      30_000,
+    );
+
+    expect(resumed).toMatchObject({
+      status: "failed",
+      code: "invalid_input",
+      error: BRIDGE_ARGUMENT_BYTES_ERROR,
+      bridgeDispatchStarted: false,
     });
   });
 

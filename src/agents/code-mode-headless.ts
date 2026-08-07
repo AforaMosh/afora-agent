@@ -327,7 +327,12 @@ export async function runCodeModeScriptHeadless(params: {
             kind: "resume",
             snapshotBytes: result.snapshotBytes,
             settledRequests,
-            pendingRequests: pending.map(({ id, method, args }) => ({ id, method, args })),
+            pendingRequests: pending.map(({ id, method, args, argumentBytes }) => ({
+              id,
+              method,
+              args,
+              argumentBytes,
+            })),
           },
           config,
           deadline,

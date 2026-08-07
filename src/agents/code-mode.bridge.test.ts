@@ -85,8 +85,7 @@ describe("Code Mode bridge settlement and cancellation", () => {
 
   it("resolves sequential bridge tool calls inline within one exec instead of a wait per call", async () => {
     const catalogRef = createToolSearchCatalogRef();
-    // maxPendingToolCalls stays a per-batch concurrency cap; five sequential
-    // awaits must drain inline even with a cap of 2.
+    // The configured cap applies to one pending frontier, not the run lifetime.
     const config = {
       tools: { codeMode: { enabled: true, maxPendingToolCalls: 2 } },
     } as never;
@@ -131,6 +130,65 @@ describe("Code Mode bridge settlement and cancellation", () => {
     expect(details.status).toBe("completed");
     expect(details.value).toEqual([0, 1, 2, 3, 4]);
     expect(ticket.execute).toHaveBeenCalledTimes(5);
+    expect(testing.activeRuns.size).toBe(0);
+  });
+
+  it("rejects calls above the configured pending frontier without dispatching them later", async () => {
+    const catalogRef = createToolSearchCatalogRef();
+    const config = {
+      tools: { codeMode: { enabled: true, maxPendingToolCalls: 2 } },
+    } as never;
+    const ctx = {
+      config,
+      runtimeConfig: config,
+      sessionId: "session-code-mode",
+      sessionKey: "agent:main:main",
+      runId: "run-code-mode",
+      catalogRef,
+    };
+    const codeModeTools = createCodeModeTools(ctx);
+    const executed: number[] = [];
+    const bounded = pluginToolWithExecute(
+      "fake_bounded",
+      "Bounded admission helper",
+      async (_toolCallId, input) => {
+        executed.push((input as { index: number }).index);
+        return jsonResult(input);
+      },
+    );
+    applyCodeModeCatalog({
+      tools: [...codeModeTools, bounded],
+      config,
+      sessionId: "session-code-mode",
+      sessionKey: "agent:main:main",
+      runId: "run-code-mode",
+      catalogRef,
+    });
+
+    const details = resultDetails(
+      await expectDefined(codeModeTools[0], "Code Mode exec test invariant").execute(
+        "code-call-bounded",
+        {
+          code: `return await Promise.all(
+            Array.from({ length: 5 }, (_, index) =>
+              tools.callValue("fake_bounded", { index }),
+            ),
+          );`,
+        },
+      ),
+    );
+
+    expect(details).toMatchObject({
+      status: "failed",
+      code: "internal_error",
+      error: "Error: too many pending code mode tool calls",
+      bridgeDispatchStarted: true,
+    });
+    expect(bounded.execute).toHaveBeenCalledTimes(2);
+    expect(executed).toEqual([0, 1]);
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    expect(bounded.execute).toHaveBeenCalledTimes(2);
+    expect(executed).toEqual([0, 1]);
     expect(testing.activeRuns.size).toBe(0);
   });
 

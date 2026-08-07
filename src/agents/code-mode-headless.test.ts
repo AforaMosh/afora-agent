@@ -96,6 +96,65 @@ describe("headless Code Mode", () => {
     expect(second.execute).toHaveBeenCalledOnce();
   });
 
+  it("rejects headless calls above the configured pending frontier", async () => {
+    const executed: number[] = [];
+    const bounded = fakeTool("headless_bounded", async (_toolCallId, input) => {
+      executed.push((input as { index: number }).index);
+      return jsonResult(input);
+    });
+
+    const result = expectFailed(
+      await runCodeModeScriptHeadless({
+        ctx: createHeadlessHarness([bounded]),
+        code: `return await Promise.all(
+          Array.from({ length: 3 }, (_, index) =>
+            tools.callValue("openclaw:core:headless_bounded", { index }),
+          ),
+        );`,
+        overrides: { maxPendingToolCalls: 2 },
+        wallClockMs: 5_000,
+      }),
+    );
+
+    expect(result).toMatchObject({
+      code: "internal_error",
+      error: "Error: too many pending code mode tool calls",
+      toolCallCount: 2,
+    });
+    expect(bounded.execute).toHaveBeenCalledTimes(2);
+    expect(executed).toEqual([0, 1]);
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    expect(bounded.execute).toHaveBeenCalledTimes(2);
+    expect(executed).toEqual([0, 1]);
+    expect(testing.activeRuns.size).toBe(0);
+  });
+
+  it("rejects aggregate bridge arguments above 8 MiB without running headless tools", async () => {
+    const target = fakeTool("headless_argument_budget", async () =>
+      jsonResult({ unexpected: true }),
+    );
+
+    const result = expectFailed(
+      await runCodeModeScriptHeadless({
+        ctx: createHeadlessHarness([target]),
+        code: `return await tools.callValue("openclaw:core:headless_argument_budget", {
+          payload: "x".repeat(8 * 1024 * 1024),
+        });`,
+        overrides: { memoryLimitBytes: 128 * 1024 * 1024 },
+        wallClockMs: 30_000,
+      }),
+    );
+
+    expect(result).toMatchObject({
+      code: "invalid_input",
+      error:
+        "code mode bridge arguments exceeded 8388608 bytes; pass references or split the work into smaller batches.",
+      toolCallCount: 0,
+    });
+    expect(target.execute).not.toHaveBeenCalled();
+    expect(testing.activeRuns.size).toBe(0);
+  });
+
   it("keeps the headless race winner when the later-started tool settles first", async () => {
     let firstAborted = false;
     const first = fakeTool("headless_first_race", async (_toolCallId, _input, signal) => {

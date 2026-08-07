@@ -260,6 +260,11 @@ enable the feature on its own.
 | `searchDefaultLimit`  | `8`                            | clamped to `maxSearchLimit`                     |
 | `maxSearchLimit`      | `50`                           | `1`-`50`                                        |
 
+`maxPendingToolCalls` limits outstanding nested calls in one VM frontier.
+Calls above the configured limit are rejected before host dispatch; await a
+batch before starting more work. Serialized bridge arguments have a separate
+fixed 8 MiB aggregate ceiling per frontier.
+
 If code mode is enabled but QuickJS-WASI cannot load, OpenClaw fails closed
 for that run; it does not silently expose normal tools as a fallback. This
 holds for `true` and for `"auto"` runs where the model resolves as preferred:
@@ -885,7 +890,8 @@ Nested calls project into the transcript as real tool calls so support
 bundles show what happened, with the projection identifying the parent
 code-mode tool call and the nested tool id.
 
-Parallel nested calls are allowed up to `maxPendingToolCalls`.
+Parallel nested calls are allowed up to `maxPendingToolCalls` in one frontier.
+Await a batch before starting more calls.
 
 ## Run and snapshot lifecycle
 
@@ -964,7 +970,7 @@ Model code is hostile. The runtime uses defense in depth:
   or host global objects in the guest
 - uses QuickJS memory and interrupt limits plus a parent-process wall-clock
   timeout
-- enforces output, snapshot, log, and pending-call caps
+- enforces output, snapshot, log, argument-byte, and pending-call caps
 - serializes host bridge values through a narrow JSON adapter
 - converts host errors into plain guest errors, never host realm objects
 - drops snapshots on timeout, abort, session end, or expiry

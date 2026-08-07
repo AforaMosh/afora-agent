@@ -260,7 +260,7 @@ async function settleCodeModeResult(params: {
   // worker run and this inline settle phase, so auto-draining bridge calls
   // cannot stack a second full `timeoutMs` budget on top of the run that
   // produced them. The deadline is also the only bound on sequential drain
-  // rounds; maxPendingToolCalls stays a per-batch concurrency cap enforced in
+  // rounds; maxPendingToolCalls stays a per-frontier admission cap enforced in
   // the worker.
   const settleDeadline = params.deadlineMs;
   const abortedResult = () => ({
@@ -414,7 +414,12 @@ async function settleCodeModeResult(params: {
               timeoutMs: resumeBudgetMs,
             },
             settledRequests,
-            pendingRequests: pending.map(({ id, method, args }) => ({ id, method, args })),
+            pendingRequests: pending.map(({ id, method, args, argumentBytes }) => ({
+              id,
+              method,
+              args,
+              argumentBytes,
+            })),
           },
           resumeBudgetMs + CODE_MODE_WORKER_WATCHDOG_GRACE_MS,
           undefined,
@@ -648,7 +653,12 @@ export async function runWait(params: {
             timeoutMs: resumeBudgetMs,
           },
           settledRequests,
-          pendingRequests: pending.map(({ id, method, args }) => ({ id, method, args })),
+          pendingRequests: pending.map(({ id, method, args, argumentBytes }) => ({
+            id,
+            method,
+            args,
+            argumentBytes,
+          })),
         },
         resumeBudgetMs + CODE_MODE_WORKER_WATCHDOG_GRACE_MS,
         undefined,
