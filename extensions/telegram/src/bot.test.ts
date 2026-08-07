@@ -2590,6 +2590,66 @@ describe("createTelegramBot", () => {
     },
   );
 
+  it("reports when selecting the default clears an incompatible runtime", async () => {
+    const storePath = createTelegramTestStorePath("model-default-runtime");
+    const config = {
+      agents: {
+        defaults: {
+          model: "anthropic/claude-opus-4-6",
+          models: {
+            "anthropic/claude-opus-4-6": {},
+            "openai/gpt-5.4": {},
+          },
+        },
+      },
+      channels: { telegram: { dmPolicy: "open", allowFrom: ["*"] } },
+      session: { store: storePath },
+    } satisfies OpenClawConfig;
+    const route = resolveTelegramConversationRoute({
+      cfg: config,
+      accountId: "default",
+      chatId: 1234,
+      isGroup: false,
+      senderId: 9,
+    }).route;
+    const sessionKey = resolveTelegramConversationBaseSessionKey({
+      cfg: config,
+      route,
+      chatId: 1234,
+      isGroup: false,
+      senderId: 9,
+    });
+    await upsertSessionEntry({
+      storePath,
+      sessionKey,
+      entry: {
+        sessionId: "model-default-runtime",
+        updatedAt: 1,
+        providerOverride: "openai",
+        modelOverride: "gpt-5.4",
+        modelOverrideSource: "user",
+        agentRuntimeOverride: "codex",
+      },
+    });
+
+    loadConfig.mockReturnValue(config);
+    createTelegramBot({ token: "tok", config });
+    await getTelegramCallbackHandlerForTests()(
+      createTelegramCallbackContext({
+        id: "cbq-model-default-runtime",
+        data: "mdl_sel_anthropic/claude-opus-4-6",
+      }),
+    );
+
+    const entry = readOnlySessionEntry(storePath);
+    expect(entry?.providerOverride).toBeUndefined();
+    expect(entry?.modelOverride).toBeUndefined();
+    expect(entry?.agentRuntimeOverride).toBeUndefined();
+    expect(String(firstEditMessageTextArg(2))).toBe(
+      `${CHECK_MARK_EMOJI} Model reset to default\n\nSession model selection cleared. Runtime reset to configured policy. New replies use the agent's configured default.`,
+    );
+  });
+
   describe("model picker auth profile compatibility", () => {
     it.each([
       {
