@@ -29,6 +29,7 @@ import {
   createOrResumeClientVoiceSession,
   ensureClientVoiceAgentSessionEntry,
   isClientVoiceSessionConfirmable,
+  preflightClientVoiceSessionResume,
   registerClientVoiceConsultRun,
   resolveClientVoiceAgentSessionId,
   resolveClientVoiceRunBinding,
@@ -185,6 +186,69 @@ describe("client voice session", () => {
       createOrResumeClientVoiceSession({
         agentId: "main",
         sessionKey: "agent:main:main",
+        origin: "client",
+        voiceSessionId,
+      }),
+    ).toThrow("already closed");
+  });
+
+  it("preflights known resume ids without rejecting first-use ids", async () => {
+    expect(() =>
+      preflightClientVoiceSessionResume({
+        agentId: "main",
+        sessionKey: "agent:main:main",
+        provider: "openai",
+        origin: "client",
+        voiceSessionId: "voice-first-use",
+      }),
+    ).not.toThrow();
+
+    const voiceSessionId = createOrResumeClientVoiceSession({
+      agentId: "main",
+      sessionKey: "agent:main:main",
+      provider: "openai",
+      origin: "client",
+      voiceSessionId: "voice-known",
+    });
+    expect(() =>
+      preflightClientVoiceSessionResume({
+        agentId: "main",
+        sessionKey: "agent:main:main",
+        provider: "openai",
+        origin: "client",
+        voiceSessionId,
+      }),
+    ).not.toThrow();
+    expect(() =>
+      preflightClientVoiceSessionResume({
+        agentId: "main",
+        sessionKey: "agent:main:other",
+        provider: "openai",
+        origin: "client",
+        voiceSessionId,
+      }),
+    ).toThrow("does not belong");
+    expect(() =>
+      preflightClientVoiceSessionResume({
+        agentId: "main",
+        sessionKey: "agent:main:main",
+        provider: "google",
+        origin: "client",
+        voiceSessionId,
+      }),
+    ).toThrow("provider does not match");
+
+    await closeClientVoiceSession({
+      agentId: "main",
+      sessionKey: "agent:main:main",
+      voiceSessionId,
+      config: {},
+    });
+    expect(() =>
+      preflightClientVoiceSessionResume({
+        agentId: "main",
+        sessionKey: "agent:main:main",
+        provider: "openai",
         origin: "client",
         voiceSessionId,
       }),
