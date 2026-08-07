@@ -51,6 +51,7 @@ import {
 } from "../../tasks/task-status-access.js";
 import { resolveUserPath } from "../../utils.js";
 import { resolveMessageChannel } from "../../utils/message-channel.js";
+import type { AgentExecutionAttribution } from "../agent-execution-attribution.js";
 import type { AgentRunTerminalReplySnapshot } from "../agent-run-terminal-reply.js";
 import { resolveAuthProfileOrder } from "../auth-profiles/order.js";
 import { ensureAuthProfileStore } from "../auth-profiles/store.js";
@@ -74,7 +75,12 @@ import {
 } from "../cli-session.js";
 import { resolveConversationCapabilityProfile } from "../conversation-capability-profile.js";
 import { resolveConversationToolPolicies } from "../conversation-tool-policy-pipeline.js";
-import { runEmbeddedAgent, type EmbeddedAgentRunResult } from "../embedded-agent.js";
+import { runEmbeddedAgentInternal } from "../embedded-agent-runner/run-orchestrator.js";
+import type {
+  AgentExecutionAttributionInfo,
+  RunEmbeddedAgentInternalParams,
+} from "../embedded-agent-runner/run/internal-params.js";
+import type { EmbeddedAgentRunResult } from "../embedded-agent.js";
 import type { ContextEngineLogicalTurnLease } from "../harness/context-engine-logical-turn.js";
 import type { ContextEngineTurnAttemptFacts } from "../harness/context-engine-turn-attempt.js";
 import { runAgentHarnessBeforeMessageWriteHook } from "../harness/hook-helpers.js";
@@ -572,8 +578,11 @@ export function runAgentAttempt(params: {
   userTurnTranscriptRecorder?: UserTurnTranscriptRecorder;
   contextEngineLogicalTurnLease?: ContextEngineLogicalTurnLease;
   onUserMessagePersisted?: (message: Extract<AgentMessage, { role: "user" }>) => void;
-  onLifecycleGenerationChanged?: (lifecycleGeneration: string) => void;
   onContextEngineTurnCandidate?: (facts: ContextEngineTurnAttemptFacts) => void;
+  onLifecycleGenerationChanged?: (
+    lifecycleGeneration: string,
+    attribution?: AgentExecutionAttribution,
+  ) => void;
 }) {
   const sessionAuthProfileId = params.sessionEntry?.authProfileOverride?.trim();
   const sessionAuthProfileSource = resolveSessionAuthProfileOverrideSource(params.sessionEntry);
@@ -963,6 +972,9 @@ export function runAgentAttempt(params: {
             runId: params.runId,
             lifecycleGeneration: params.lifecycleGeneration,
             onExecutionStarted: params.opts.onExecutionStarted,
+            ...(params.opts.executionAttribution
+              ? { attribution: params.opts.executionAttribution }
+              : {}),
             lane: params.opts.lane,
             extraSystemPrompt: params.opts.extraSystemPrompt,
             inputProvenance: params.opts.inputProvenance,
@@ -1143,7 +1155,7 @@ export function runAgentAttempt(params: {
     });
   }
 
-  const embeddedRunParams: Parameters<typeof runEmbeddedAgent>[0] = {
+  const embeddedRunParams: RunEmbeddedAgentInternalParams = {
     sessionId: params.sessionId,
     sessionKey: params.sessionKey,
     chatType: params.sessionEntry?.chatType,
@@ -1204,6 +1216,7 @@ export function runAgentAttempt(params: {
     runTimeoutOverrideMs: params.runTimeoutOverrideMs,
     runId: params.runId,
     lifecycleGeneration: params.lifecycleGeneration,
+    ...(params.opts.executionAttribution ? { attribution: params.opts.executionAttribution } : {}),
     lane: params.opts.lane,
     // Hidden internal runs lack an event consumer; visible lanes still feed UI and parent relays.
     suppressLiveStreamOutput: shouldSuppressEmbeddedLiveStreamOutput(params),
@@ -1243,10 +1256,12 @@ export function runAgentAttempt(params: {
     contextEngineLogicalTurnLease: params.contextEngineLogicalTurnLease,
     onContextEngineTurnCandidate: params.onContextEngineTurnCandidate,
     onUserMessagePersisted: params.onUserMessagePersisted,
-    onExecutionStarted: (info) => {
+    onExecutionStarted: () => {
       params.opts.onExecutionStarted?.();
+    },
+    onExecutionAttributionChanged: (info: AgentExecutionAttributionInfo) => {
       if (info?.lifecycleGeneration) {
-        params.onLifecycleGenerationChanged?.(info.lifecycleGeneration);
+        params.onLifecycleGenerationChanged?.(info.lifecycleGeneration, info.attribution);
       }
     },
     onSessionIdChanged: params.opts.onSessionIdChanged,
@@ -1258,7 +1273,7 @@ export function runAgentAttempt(params: {
     embeddedRunParams,
     readChannelSourceTurnSameThreadRequired(params.runContext),
   );
-  return runEmbeddedAgent(embeddedRunParams);
+  return runEmbeddedAgentInternal(embeddedRunParams);
 }
 
 export function buildAcpResult(params: {
