@@ -1043,7 +1043,7 @@ describe("Discord native plugin command dispatch", () => {
       log: { error: vi.fn() } as never,
     });
 
-    expect(result.hiddenFinalReply).toBeUndefined();
+    expect(result).toEqual({ dispatched: false });
     expectFollowUpFields(interaction, {
       content: "⚠️ Command produced no visible reply.",
       ephemeral: true,

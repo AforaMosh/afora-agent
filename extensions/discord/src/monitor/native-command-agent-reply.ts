@@ -35,6 +35,7 @@ type NativeCommandEffectiveRoute = {
 };
 
 type DispatchDiscordNativeAgentReplyResult = {
+  dispatched: boolean;
   hiddenFinalReply?: ReplyPayload;
 };
 
@@ -56,7 +57,7 @@ export async function dispatchDiscordNativeAgentReply(params: {
 
   let didReply = false;
   let finalReplyOutcome: "accepted" | "failed" | "suppressed" | undefined;
-  const dispatchResult: DispatchDiscordNativeAgentReplyResult = {};
+  let hiddenFinalReply: ReplyPayload | undefined;
   const turnResult = await nativeCommandRuntime.dispatchChannelInboundTurn({
     cfg: params.cfg,
     channel: "discord",
@@ -106,7 +107,7 @@ export async function dispatchDiscordNativeAgentReply(params: {
           result?.suppression?.reason === "no_visible_result" &&
           payload.text?.trim()
         ) {
-          dispatchResult.hiddenFinalReply = payload;
+          hiddenFinalReply = payload;
         }
         // A failed final outweighs later suppression until Discord accepts a final.
         if (
@@ -144,6 +145,10 @@ export async function dispatchDiscordNativeAgentReply(params: {
   });
   const deliberateSilentTerminalReply =
     turnResult.dispatched && turnResult.dispatchResult.deliberateSilentTerminalReply === true;
+  const dispatchResult = {
+    dispatched: turnResult.dispatched,
+    ...(hiddenFinalReply ? { hiddenFinalReply } : {}),
+  };
 
   if (
     !didReply &&
