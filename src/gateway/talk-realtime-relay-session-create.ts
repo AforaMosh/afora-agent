@@ -45,7 +45,7 @@ import {
   RELAY_TRANSCRIPT_ECHO_LOOKBACK_MS,
   adoptRelayProviderToolCallId,
   broadcastRelayTurnStarted,
-  broadcastToOwner,
+  publishTalkRealtimeRelayEvent,
   ensureRelayTurn,
   relaySessions,
   type CreateTalkRealtimeRelaySessionParams,
@@ -102,8 +102,13 @@ export function createTalkRealtimeRelaySession(
     transcriptLookbackMs: RELAY_TRANSCRIPT_ECHO_LOOKBACK_MS,
     captureBridgeEvents: false,
   });
+  const owner = {
+    context: params.context,
+    connId: params.connId,
+    ...(params.eventSink ? { eventSink: params.eventSink } : {}),
+  };
   const broadcastEvent = (event: TalkRealtimeRelayEventPayload, talkEvent?: TalkEvent) =>
-    broadcastToOwner(params.context, params.connId, {
+    publishTalkRealtimeRelayEvent(owner, {
       ...event,
       ...(talkEvent ? { talkEvent } : {}),
     });
@@ -266,7 +271,7 @@ export function createTalkRealtimeRelaySession(
           return;
         }
         const clearEvent = { relaySessionId, type: "clear" as const };
-        broadcastToOwner(params.context, params.connId, {
+        publishTalkRealtimeRelayEvent(owner, {
           ...clearEvent,
           ...(talkEvent ? { talkEvent } : {}),
         });
@@ -286,7 +291,7 @@ export function createTalkRealtimeRelaySession(
             type: "toolCallCancelled" as const,
             callId: relayCallId,
           };
-          broadcastToOwner(params.context, params.connId, cancelledEvent);
+          publishTalkRealtimeRelayEvent(owner, cancelledEvent);
         }
         return;
       }
@@ -554,6 +559,7 @@ export function createTalkRealtimeRelaySession(
     id: relaySessionId,
     connId: params.connId,
     context: params.context,
+    ...(params.eventSink ? { eventSink: params.eventSink } : {}),
     bridge,
     harness,
     sessionKey: initialSessionKey,

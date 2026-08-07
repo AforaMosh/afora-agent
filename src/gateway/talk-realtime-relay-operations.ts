@@ -27,7 +27,7 @@ import {
   MAX_RELAY_SESSIONS_GLOBAL,
   MAX_RELAY_SESSIONS_PER_CONN,
   broadcastRelayTurnStarted,
-  broadcastToOwner,
+  publishTalkRealtimeRelayEvent,
   drainingRelaySessions,
   ensureRelayTurn,
   noFallbackRelayOutputFlush,
@@ -105,7 +105,7 @@ export function closeRelaySession(session: RelaySession, reason: "completed" | "
     // Provider teardown may throw, but the relay must still reach its durable
     // voice and owner-visible terminal state before that error is surfaced.
     void closeRelayVoiceSession(session);
-    broadcastToOwner(session.context, session.connId, {
+    publishTalkRealtimeRelayEvent(session, {
       relaySessionId: session.id,
       type: "close",
       reason,
@@ -192,7 +192,7 @@ export function sendTalkRealtimeRelayAudio(params: {
     return;
   }
   broadcastRelayTurnStarted(session, recorded.turn.event);
-  broadcastToOwner(session.context, session.connId, {
+  publishTalkRealtimeRelayEvent(session, {
     relaySessionId: session.id,
     type: "inputAudio",
     byteLength: audio.byteLength,
@@ -479,7 +479,7 @@ export async function steerTalkRealtimeRelayAgentRun(params: {
   if (relaySessions.get(session.id) !== session) {
     return finalResult;
   }
-  broadcastToOwner(session.context, session.connId, {
+  publishTalkRealtimeRelayEvent(session, {
     relaySessionId: session.id,
     type: "toolProgress",
     result: finalResult,
@@ -532,7 +532,7 @@ export function cancelTalkRealtimeRelayTurn(params: {
     turnId,
     payload: { reason },
   });
-  broadcastToOwner(session.context, session.connId, {
+  publishTalkRealtimeRelayEvent(session, {
     relaySessionId: session.id,
     type: "clear",
     talkEvent: cancelled.ok ? cancelled.event : undefined,

@@ -100,6 +100,44 @@ describe("talk realtime gateway relay", () => {
     };
   }
 
+  it("delivers owner events to the local sink and Gateway connection", () => {
+    const eventSink = vi.fn();
+    const broadcastToConnIds = vi.fn();
+    const session = createTalkRealtimeRelaySession({
+      context: {
+        broadcastToConnIds,
+        getRuntimeConfig: () => ({}),
+        logGateway: { warn: vi.fn() },
+      } as never,
+      connId: "conn-local-sink",
+      eventSink,
+      provider: createIdleRelayProvider(),
+      providerConfig: {},
+      instructions: "brief",
+      tools: [],
+    });
+
+    sendTalkRealtimeRelayAudio({
+      relaySessionId: session.relaySessionId,
+      connId: "conn-local-sink",
+      audioBase64: Buffer.from([1, 2]).toString("base64"),
+    });
+
+    expect(eventSink).toHaveBeenCalledWith(
+      expect.objectContaining({
+        relaySessionId: session.relaySessionId,
+        type: "inputAudio",
+        byteLength: 2,
+      }),
+    );
+    expect(broadcastToConnIds).toHaveBeenCalledWith(
+      "talk.event",
+      expect.objectContaining({ relaySessionId: session.relaySessionId, type: "inputAudio" }),
+      new Set(["conn-local-sink"]),
+      { dropIfSlow: true },
+    );
+  });
+
   it("closes only realtime relays owned by the disconnected connection", async () => {
     const envSnapshot = captureEnv(["OPENCLAW_STATE_DIR"]);
     const tempDir = await fs.realpath(tempDirs.make("openclaw-relay-disconnect-"));
