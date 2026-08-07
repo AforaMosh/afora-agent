@@ -1,4 +1,6 @@
 // Channel catalog contract tests cover bundled and registry-backed channel catalog invariants.
+import whatsappPackageJson from "../../../../extensions/whatsapp/package.json" with { type: "json" };
+import { isPrereleaseSemverVersion } from "../../../infra/npm-registry-spec.js";
 import {
   describeBundledMetadataOnlyChannelCatalogContract,
   describeChannelCatalogEntryContract,
@@ -20,6 +22,14 @@ const whatsappMeta = {
   blurb: "works with your own number; recommend a separate phone + eSIM.",
 };
 
+const whatsappOfficialFallbackNpmSpec =
+  whatsappPackageJson.openclaw.install.npmSpec ?? whatsappPackageJson.name;
+const expectedWhatsappOfficialFallbackNpmSpec = isPrereleaseSemverVersion(
+  whatsappPackageJson.version,
+)
+  ? `${whatsappOfficialFallbackNpmSpec}@${whatsappPackageJson.version}`
+  : whatsappOfficialFallbackNpmSpec;
+
 describeBundledMetadataOnlyChannelCatalogContract({
   pluginId: "whatsapp",
   packageName: "@openclaw/whatsapp",
@@ -30,7 +40,7 @@ describeBundledMetadataOnlyChannelCatalogContract({
 
 describeOfficialFallbackChannelCatalogContract({
   channelId: "whatsapp",
-  npmSpec: "@openclaw/whatsapp",
+  npmSpec: expectedWhatsappOfficialFallbackNpmSpec,
   meta: whatsappMeta,
   packageName: "@openclaw/whatsapp",
   pluginId: "whatsapp",
