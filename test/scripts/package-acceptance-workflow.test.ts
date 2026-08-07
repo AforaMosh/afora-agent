@@ -298,6 +298,15 @@ function expectCommandOptions(command: string[], options: Record<string, string 
   }
 }
 
+function expectSingleCommand(calls: string[][]): string[] {
+  expect(calls).toHaveLength(1);
+  const command = calls[0];
+  if (!command) {
+    throw new Error("Expected exactly one command");
+  }
+  return command;
+}
+
 function runFullReleaseChildDispatch(
   child: (typeof FULL_RELEASE_CHILD_DISPATCHES)[number],
   overrides: Record<string, string> = {},
@@ -3721,19 +3730,19 @@ describe("package artifact reuse", () => {
   it("selects one Discord provider mode before invoking QA", () => {
     const defaultLive = runDiscordQaSelection("");
     expect(defaultLive.result.status, defaultLive.result.stderr).toBe(0);
-    expect(defaultLive.calls).toHaveLength(1);
-    expectCommandOptions(defaultLive.calls[0], {
+    const defaultLiveCommand = expectSingleCommand(defaultLive.calls);
+    expectCommandOptions(defaultLiveCommand, {
       "--alt-model": "openai/gpt-5.4",
       "--fast": true,
       "--model": "openai/gpt-5.6-luna",
       "--provider-mode": "live-frontier",
     });
-    expect(defaultLive.calls[0]).not.toContain("--scenario");
+    expect(defaultLiveCommand).not.toContain("--scenario");
 
     const mockOnly = runDiscordQaSelection("discord-runtime-context-redaction");
     expect(mockOnly.result.status, mockOnly.result.stderr).toBe(0);
-    expect(mockOnly.calls).toHaveLength(1);
-    expectCommandOptions(mockOnly.calls[0], {
+    const mockOnlyCommand = expectSingleCommand(mockOnly.calls);
+    expectCommandOptions(mockOnlyCommand, {
       "--alt-model": "mock-openai/gpt-5.6-luna-alt",
       "--fast": true,
       "--model": "mock-openai/gpt-5.6-luna",
@@ -3743,8 +3752,8 @@ describe("package artifact reuse", () => {
 
     const liveOnly = runDiscordQaSelection("discord-canary");
     expect(liveOnly.result.status, liveOnly.result.stderr).toBe(0);
-    expect(liveOnly.calls).toHaveLength(1);
-    expectCommandOptions(liveOnly.calls[0], {
+    const liveOnlyCommand = expectSingleCommand(liveOnly.calls);
+    expectCommandOptions(liveOnlyCommand, {
       "--alt-model": "openai/gpt-5.4",
       "--fast": true,
       "--model": "openai/gpt-5.6-luna",
