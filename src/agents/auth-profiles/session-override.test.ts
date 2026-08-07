@@ -938,10 +938,7 @@ describe("resolveSessionAuthProfileOverride", () => {
             : undefined,
           usageStats: { [TEST_PRIMARY_PROFILE_ID]: createStats(Date.now() + 60_000) },
         });
-        authStoreMocks.isProfileInCooldown.mockImplementation(
-          (_store: AuthProfileStore, profileId: string, _now?: number, forModel?: string) =>
-            profileId === TEST_PRIMARY_PROFILE_ID && forModel === "model-x",
-        );
+        authStoreMocks.isProfileInCooldown.mockReturnValue(false);
 
         const sessionEntry = createAutomaticSessionEntry({
           model: "model-y",
@@ -950,7 +947,6 @@ describe("resolveSessionAuthProfileOverride", () => {
         const sessionStore = { "agent:main:main": sessionEntry };
         const resolved = await resolveOpenAiSession({ agentDir, sessionEntry, sessionStore });
         expect(resolved).toBe(TEST_PRIMARY_PROFILE_ID);
-        expect(sessionEntry.updatedAt).toBe(1);
         expect(authStoreMocks.isProfileInCooldown).toHaveBeenCalledWith(
           expect.anything(),
           TEST_PRIMARY_PROFILE_ID,

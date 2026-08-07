@@ -429,7 +429,14 @@ async function persistCliAssistantTranscript(params: {
       ...(admission ? { terminalAnchor: admission } : {}),
     };
   }
-  if (!runParams.persistAssistantTranscript || !runParams.sessionKey || !params.text) {
+  if (!params.text) {
+    const admission = runParams.userTurnTranscriptRecorder?.getAdmissionReceipt();
+    return {
+      owned: false,
+      ...(admission ? { terminalAnchor: admission } : {}),
+    };
+  }
+  if (!runParams.persistAssistantTranscript || !runParams.sessionKey) {
     return { owned: false };
   }
   try {

@@ -54,6 +54,46 @@ type ResolvedContextEngineMetadata = {
 };
 
 const resolvedEngineMetadata = new WeakMap<ContextEngine, ResolvedContextEngineMetadata>();
+
+function projectContextEngineHostParams(
+  engine: ContextEngine,
+  params: Record<string, unknown>,
+): Record<string, unknown> {
+  const accepted = engine.info.acceptedHostParams ?? [];
+  return Object.fromEntries(
+    Object.entries(params).filter(
+      ([key]) => accepted.includes(key) || !CONTEXT_ENGINE_HOST_PARAMS.has(key),
+    ),
+  );
+}
+
+function wrapContextEngineHostParamProjection(
+  engine: ContextEngine,
+  metadata: ResolvedContextEngineMetadata,
+): ContextEngine {
+  const wrapped = new Proxy(
+    Object.create(engine, { info: { get: () => engine.info } }) as ContextEngine,
+    {
+      get(_target, property) {
+        if (property === "info") {
+          return engine.info;
+        }
+        const method = Reflect.get(engine, property, engine);
+        if (typeof method !== "function") {
+          return method;
+        }
+        if (!GUARDED_CONTEXT_ENGINE_METHODS.has(property)) {
+          return method.bind(engine);
+        }
+        return (params: Record<string, unknown>) =>
+          method.call(engine, projectContextEngineHostParams(engine, params));
+      },
+    },
+  );
+  resolvedEngineMetadata.set(wrapped, metadata);
+  return wrapped;
+}
+
 function wrapResolvedContextEngine(
   engine: ContextEngine,
   metadata: ResolvedContextEngineMetadata & {
@@ -61,7 +101,6 @@ function wrapResolvedContextEngine(
     factoryCtx?: ContextEngineFactoryContext;
   },
 ): ContextEngine {
-  const accepted = engine.info.acceptedHostParams;
   const fallback =
     metadata.defaultEngineId &&
     metadata.factoryCtx &&
@@ -80,17 +119,6 @@ function wrapResolvedContextEngine(
           return resolved;
         }))
     : undefined;
-  const projectParams = (params: Record<string, unknown>) => {
-    const currentAccepted = accepted ?? [];
-    return currentAccepted
-      ? Object.fromEntries(
-          Object.entries(params).filter(
-            ([key]) => currentAccepted.includes(key) || !CONTEXT_ENGINE_HOST_PARAMS.has(key),
-          ),
-        )
-      : params;
-  };
-
   // A fresh target keeps Proxy invariants compatible with frozen engines and private getters.
   const wrapped = new Proxy(
     Object.create(engine, { info: { get: () => engine.info } }) as ContextEngine,
@@ -119,7 +147,8 @@ function wrapResolvedContextEngine(
           return method.bind(engine);
         }
         if (!fallback || !getFallbackEngine) {
-          return (params: Record<string, unknown>) => method.call(engine, projectParams(params));
+          return (params: Record<string, unknown>) =>
+            method.call(engine, projectContextEngineHostParams(engine, params));
         }
 
         const methodName = property as GuardedContextEngineMethodName;
@@ -143,7 +172,7 @@ function wrapResolvedContextEngine(
           }
 
           try {
-            return await method.call(engine, projectParams(methodParams));
+            return await method.call(engine, projectContextEngineHostParams(engine, methodParams));
           } catch (error) {
             if (isContextEngineAbortRejection(error, abortSignal)) {
               // Abort is caller intent, not engine instability; never quarantine for it.
@@ -525,7 +554,15 @@ async function resolveRawContextEngineRef(
     );
     throw new Error(contractError);
   }
-  return resolvedContextEngineRef({ engine, registeredId: engineId, owner: entry.owner });
+  const projectedEngine = wrapContextEngineHostParamProjection(engine, {
+    engineId,
+    owner: entry.owner,
+  });
+  return resolvedContextEngineRef({
+    engine: projectedEngine,
+    registeredId: engineId,
+    owner: entry.owner,
+  });
 }
 
 /**

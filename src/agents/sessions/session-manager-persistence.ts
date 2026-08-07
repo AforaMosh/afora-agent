@@ -24,7 +24,7 @@ type PersistRecordResult =
   | null
   | undefined
   | {
-      anchor: TranscriptEntryAnchor;
+      anchor?: TranscriptEntryAnchor;
       adoptedMessageId?: string;
       effectiveParentId: string | null;
     };
@@ -258,11 +258,8 @@ export class SessionManagerPersistence extends SessionManagerCore {
     if (result.effectiveParentId === undefined) {
       throw new Error(`Session transcript append parent was not returned: ${entry.id}`);
     }
-    if (!result.anchor) {
-      throw new Error(`Session transcript anchor was not returned: ${entry.id}`);
-    }
     return {
-      anchor: result.anchor,
+      ...(result.anchor ? { anchor: result.anchor } : {}),
       effectiveParentId: result.effectiveParentId,
     };
   }

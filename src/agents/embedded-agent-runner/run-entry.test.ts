@@ -294,6 +294,38 @@ describe("runEmbeddedAgentEntry", () => {
     ]);
   });
 
+  it("preflights caller-resolved CLI hosts instead of the model harness", async () => {
+    const resolveContextEngineHost = vi.fn((provider: string) => ({
+      id: `cli:${provider}`,
+      label: `CLI backend "${provider}"`,
+      capabilities: [],
+    }));
+    const { runEmbeddedAgentEntry } = await import("./run-entry.js");
+
+    await runEmbeddedAgentEntry({
+      selection: { cfg: {}, provider: "primary-provider", model: "primary-model" },
+      identity: { runId: "cli-host-preflight", agentId: "main", sessionId: "session-1" },
+      harness: {
+        workspaceDir: "/tmp/workspace",
+        preparation: { kind: "direct" },
+        resolveRuntimeOverride: () => undefined,
+        resolveContextEngineHost,
+      },
+      behavior: { kind: "command-rpc", hasCommittedSideEffect: () => false },
+      sessionOverride: { kind: "preserve" },
+      runCandidate: async (provider, model) =>
+        makeResult({
+          provider,
+          model,
+          classification: provider === "primary-provider" ? "empty" : undefined,
+        }),
+    });
+
+    expect(resolveContextEngineHost).toHaveBeenCalledWith("primary-provider", "primary-model");
+    expect(resolveContextEngineHost).toHaveBeenCalledWith("fallback-provider", "fallback-model");
+    expect(state.selectAgentHarness).not.toHaveBeenCalled();
+  });
+
   it("leaves maintenance fallback classification to thrown candidate errors", async () => {
     state.runWithModelFallback.mockImplementationOnce(async (params: FallbackRunnerParams) => {
       expect(params.classifyResult).toBeUndefined();

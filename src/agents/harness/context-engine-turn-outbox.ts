@@ -55,6 +55,14 @@ type ContextEngineTurnOutboxPayload =
 const RECOVERED_TURN_MAX_EVENTS = 20_000;
 const RECOVERED_TURN_MAX_BYTES = 8 * 1024 * 1024;
 
+function outboxEnqueueSequence() {
+  return /* kysely-allow-raw: SQLite's implicit rowid is the durable enqueue sequence for this table. */ sql<number>`context_engine_turn_outbox.rowid`;
+}
+
+function oldestOutboxEnqueueSequence() {
+  return /* kysely-allow-raw: Aggregate the closed implicit-rowid expression used for enqueue order. */ sql<number>`MIN(context_engine_turn_outbox.rowid)`;
+}
+
 export function isRetryableContextEngineTurnReadFailure(
   kind: Exclude<ClosedTranscriptTurnReadResult, { kind: "ok" }>["kind"],
 ): boolean {
@@ -227,7 +235,7 @@ export function recoverContextEngineTurnOutbox(params: {
       .where("engine_id", "=", params.engineId)
       .where("owner_plugin_id", params.ownerPluginId ? "=" : "is", params.ownerPluginId ?? null)
       .where("session_id", "=", params.currentAdmission.sessionId)
-      .orderBy(sql<number>`context_engine_turn_outbox.rowid`, "asc"),
+      .orderBy(outboxEnqueueSequence(), "asc"),
   ).rows;
   for (const row of rows) {
     const payload = JSON.parse(row.payload_json) as ContextEngineTurnOutboxPayload;
@@ -305,7 +313,7 @@ export async function drainContextEngineTurnOutbox(params: {
     .select("session_id")
     // SQLite rowid preserves enqueue order among surviving pending rows.
     // Use it instead of wall-clock timestamps, which can collide.
-    .select(sql<number>`MIN(context_engine_turn_outbox.rowid)`.as("oldest_enqueue_sequence"))
+    .select(oldestOutboxEnqueueSequence().as("oldest_enqueue_sequence"))
     .where("engine_id", "=", params.engineId)
     .where("owner_plugin_id", params.ownerPluginId ? "=" : "is", params.ownerPluginId ?? null);
   if (params.sessionId) {
@@ -333,7 +341,7 @@ export async function drainContextEngineTurnOutbox(params: {
           .where("engine_id", "=", params.engineId)
           .where("owner_plugin_id", params.ownerPluginId ? "=" : "is", params.ownerPluginId ?? null)
           .where("session_id", "=", sessionId)
-          .orderBy(sql<number>`context_engine_turn_outbox.rowid`, "asc")
+          .orderBy(outboxEnqueueSequence(), "asc")
           .limit(1),
       );
       if (!row) {

@@ -5,6 +5,7 @@ import {
   listContextEngineQuarantines,
   registerContextEngineForOwner,
   resolveContextEngine,
+  resolveLogicalTurnContextEngines,
 } from "./registry.js";
 import {
   captureContextEngineRegistryStateForTests,
@@ -139,6 +140,32 @@ describe("context-engine host parameter projection", () => {
     expect(compactCalls[0]).not.toHaveProperty("sessionTarget");
     expect(compactCalls[0]).not.toHaveProperty("runtimeContext");
     expect(compactCalls[0]).toHaveProperty("sessionId", "session-1");
+  });
+
+  it("projects host parameters on fresh logical-turn engines", async () => {
+    const assembleCalls: Array<Record<string, unknown>> = [];
+    const compactCalls: Array<Record<string, unknown>> = [];
+    const engineId = registerProbeEngine({
+      acceptedHostParams: ["runtimeSettings"],
+      assembleCalls,
+      compactCalls,
+    });
+    const resolution = await resolveLogicalTurnContextEngines({
+      plugins: { slots: { contextEngine: engineId } },
+    });
+
+    await invokeHostParamMethods(resolution.configured.engine);
+
+    expect(assembleCalls[0]).toMatchObject({ sessionId: "session-1", runtimeSettings });
+    expect(assembleCalls[0]).not.toHaveProperty("sessionKey");
+    expect(assembleCalls[0]).not.toHaveProperty("prompt");
+    expect(compactCalls[0]).toMatchObject({ sessionId: "session-1", runtimeSettings });
+    expect(compactCalls[0]).not.toHaveProperty("sessionTarget");
+    expect(compactCalls[0]).not.toHaveProperty("runtimeContext");
+    await Promise.allSettled([
+      resolution.configured.engine.dispose?.(),
+      resolution.fallback.engine.dispose?.(),
+    ]);
   });
 
   it("does not change undeclared projection with wall-clock time", async () => {

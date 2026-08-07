@@ -1,4 +1,5 @@
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { ContextEngineHostSupport } from "../../context-engine/host-compat.js";
 import { requireActivePluginRegistry } from "../../plugins/runtime.js";
 import { buildAgentRunTerminalOutcome } from "../agent-run-terminal-outcome.js";
 import {
@@ -109,6 +110,10 @@ type EmbeddedAgentRunEntryParams<T extends EmbeddedAgentRunResult> = {
     sessionKey?: string;
     preparation: RunEntryHarnessPreparation;
     resolveRuntimeOverride: (provider: string, model: string) => string | undefined;
+    resolveContextEngineHost?: (
+      provider: string,
+      model: string,
+    ) => ContextEngineHostSupport | undefined;
   };
   behavior: RunEntryBehavior;
   sessionOverride: RunEntrySessionOverride;
@@ -273,23 +278,32 @@ export async function runEmbeddedAgentEntry<T extends EmbeddedAgentRunResult>(
       prepareCandidateChain: (candidates) => {
         for (const candidate of candidates) {
           try {
-            const harness = selectAgentHarness({
-              provider: candidate.provider,
-              modelId: candidate.model,
-              config: params.selection.cfg,
-              agentId: params.identity.agentId,
-              sessionKey: params.harness.sessionKey,
-              agentHarnessRuntimeOverride: params.harness.resolveRuntimeOverride(
-                candidate.provider,
-                candidate.model,
-              ),
-            });
+            const resolvedHost = params.harness.resolveContextEngineHost?.(
+              candidate.provider,
+              candidate.model,
+            );
+            const host =
+              resolvedHost ??
+              (() => {
+                const harness = selectAgentHarness({
+                  provider: candidate.provider,
+                  modelId: candidate.model,
+                  config: params.selection.cfg,
+                  agentId: params.identity.agentId,
+                  sessionKey: params.harness.sessionKey,
+                  agentHarnessRuntimeOverride: params.harness.resolveRuntimeOverride(
+                    candidate.provider,
+                    candidate.model,
+                  ),
+                });
+                return {
+                  id: `agent-harness:${harness.id}`,
+                  label: `agent harness "${harness.id}"`,
+                  capabilities: harness.contextEngineHostCapabilities ?? [],
+                };
+              })();
             contextEngineLogicalTurnLease.selectForHost({
-              host: {
-                id: `agent-harness:${harness.id}`,
-                label: `agent harness "${harness.id}"`,
-                capabilities: harness.contextEngineHostCapabilities ?? [],
-              },
+              host,
               operation: "agent-run",
               requiresDurableCommit: false,
               hasAdmissionFence: false,

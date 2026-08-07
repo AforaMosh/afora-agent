@@ -1,5 +1,4 @@
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import type { SessionEvent } from "@github/copilot-sdk";
 import type { AgentMessage } from "openclaw/plugin-sdk/agent-harness-runtime";
@@ -9,6 +8,7 @@ import type {
   SessionTranscriptTargetParams,
   TranscriptTurnAdmission,
 } from "openclaw/plugin-sdk/session-transcript-runtime";
+import { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/temp-path";
 import { vi } from "vitest";
 import { createAttemptTranscriptJournal } from "./attempt-transcript-journal.js";
 import type { AttemptParamsLike } from "./attempt-types.js";
@@ -59,7 +59,9 @@ export async function createFixture(
   trigger?: string,
   resultContentSourceByToolName?: ReadonlyMap<string, "network">,
 ) {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-copilot-journal-"));
+  const tempDir = await fs.mkdtemp(
+    path.join(resolvePreferredOpenClawTmpDir(), "openclaw-copilot-journal-"),
+  );
   tempDirs.push(tempDir);
   const target: SessionTranscriptTargetParams = {
     agentId: "main",
