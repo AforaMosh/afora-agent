@@ -16,7 +16,7 @@ import { attachEventBridge, type SessionLike } from "./event-bridge.js";
 
 const tempDirs: string[] = [];
 
-export type FakeSession = SessionLike & {
+type FakeSession = SessionLike & {
   emit: (event: SessionEvent) => void;
 };
 
