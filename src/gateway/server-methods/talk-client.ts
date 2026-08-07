@@ -38,6 +38,7 @@ import {
   closeStaleClientVoiceSessions,
   createOrResumeClientVoiceSession,
   ensureClientVoiceAgentSessionEntry,
+  preflightClientVoiceSessionResume,
   registerClientVoiceConsultRun,
   resolveClientVoiceAgentSessionId,
   resolveClientVoiceSessionOrigin,
@@ -253,6 +254,13 @@ export const talkClientHandlers: GatewayRequestHandlers = {
       });
       const { agentId, requestedSessionKey } = realtimeContext;
       const sessionKey = requestedSessionKey ?? buildAgentMainSessionKey({ agentId });
+      preflightClientVoiceSessionResume({
+        agentId,
+        sessionKey,
+        provider: resolution.provider.id,
+        origin: "client",
+        voiceSessionId: normalizeOptionalString(typedParams.voiceSessionId),
+      });
       if (resolution.provider.createBrowserSession && transport !== "gateway-relay") {
         const agentSessionId = resolveClientVoiceAgentSessionId({ agentId, sessionKey });
         const initialItems = agentSessionId

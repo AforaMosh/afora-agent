@@ -55,6 +55,28 @@ const voiceSessionOperations = createVoiceTranscriptOperationRegistry(
 let unsubscribeToolEffects: (() => void) | undefined;
 let unsubscribeRunCompletion: (() => void) | undefined;
 
+function assertClientVoiceSessionResumable(
+  record: ClientVoiceSessionRecord,
+  params: {
+    agentId: string;
+    sessionKey: string;
+    provider?: string;
+    origin: "client" | "relay";
+  },
+): void {
+  assertOwnership(record, params);
+  if (record.origin !== params.origin) {
+    throw new Error("voice session origin does not match");
+  }
+  if (record.status !== "open") {
+    throw new Error("voice session is already closed");
+  }
+  const provider = params.provider?.trim() || undefined;
+  if (record.provider && provider && record.provider !== provider) {
+    throw new Error("voice session provider does not match");
+  }
+}
+
 function hasLiveConsultRun(record: ClientVoiceSessionRecord): boolean {
   return record.consultRunIds.some((runId) => {
     const binding = voiceSessionByRunId.get(runId);
@@ -181,16 +203,7 @@ export function createOrResumeClientVoiceSession(params: {
     (database) => {
       const existing = readRecordInTransaction(database, voiceSessionId);
       if (existing) {
-        assertOwnership(existing, params);
-        if (existing.origin !== params.origin) {
-          throw new Error("voice session origin does not match");
-        }
-        if (existing.status !== "open") {
-          throw new Error("voice session is already closed");
-        }
-        if (existing.provider && provider && existing.provider !== provider) {
-          throw new Error("voice session provider does not match");
-        }
+        assertClientVoiceSessionResumable(existing, params);
         if (!existing.provider && provider) {
           existing.provider = provider;
         }
@@ -220,6 +233,28 @@ export function createOrResumeClientVoiceSession(params: {
     { agentId: params.agentId },
   );
   return voiceSessionId;
+}
+
+/**
+ * Reject an invalid known resume id before provider credentials or chat state
+ * are created. Unknown supplied ids remain valid first-use identities.
+ */
+export function preflightClientVoiceSessionResume(params: {
+  agentId: string;
+  sessionKey: string;
+  provider?: string;
+  origin: "client" | "relay";
+  voiceSessionId?: string;
+}): void {
+  const voiceSessionId = params.voiceSessionId?.trim();
+  if (!voiceSessionId) {
+    return;
+  }
+  const existing = readRecord(params.agentId, voiceSessionId);
+  if (!existing) {
+    return;
+  }
+  assertClientVoiceSessionResumable(existing, params);
 }
 
 /** Read the canonical agent-session id without creating state during provider startup. */

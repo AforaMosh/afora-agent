@@ -77,6 +77,7 @@ const mocks = vi.hoisted(() => ({
   closeStaleClientVoiceSessions: vi.fn(async () => 0),
   createOrResumeClientVoiceSession: vi.fn(() => "voice-test"),
   ensureClientVoiceAgentSessionEntry: vi.fn(async () => "session-main"),
+  preflightClientVoiceSessionResume: vi.fn(),
   resolveClientVoiceAgentSessionId: vi.fn<() => string | undefined>(() => "session-main"),
   assertClientVoiceSessionOpen: vi.fn(),
   registerClientVoiceConsultRun: vi.fn(),
@@ -172,6 +173,7 @@ vi.mock("../../talk/client-voice-session.js", async (importOriginal) => {
     closeStaleClientVoiceSessions: mocks.closeStaleClientVoiceSessions,
     createOrResumeClientVoiceSession: mocks.createOrResumeClientVoiceSession,
     ensureClientVoiceAgentSessionEntry: mocks.ensureClientVoiceAgentSessionEntry,
+    preflightClientVoiceSessionResume: mocks.preflightClientVoiceSessionResume,
     registerClientVoiceConsultRun: mocks.registerClientVoiceConsultRun,
     resolveClientVoiceAgentSessionId: mocks.resolveClientVoiceAgentSessionId,
     resolveOpenClientVoiceSessionId: mocks.resolveOpenClientVoiceSessionId,
@@ -3345,6 +3347,51 @@ describe("talk.client.create handler", () => {
     expect(mocks.ensureClientVoiceAgentSessionEntry).not.toHaveBeenCalled();
     expect(mocks.createOrResumeClientVoiceSession).not.toHaveBeenCalled();
     expectRespondError(respond, { message: "Error: provider startup failed" });
+  });
+
+  it("rejects an invalid known voice session before provider or chat creation", async () => {
+    const createBrowserSession = vi.fn(async () => ({
+      provider: "openai",
+      transport: "webrtc" as const,
+      clientSecret: "secret",
+    }));
+    mocks.resolveConfiguredRealtimeVoiceProvider.mockReturnValue({
+      provider: {
+        id: "openai",
+        label: "OpenAI Realtime",
+        isConfigured: () => true,
+        createBrowserSession,
+        createBridge: vi.fn(),
+      },
+      providerConfig: {},
+    });
+    mocks.preflightClientVoiceSessionResume.mockImplementationOnce(() => {
+      throw new Error("voice session is already closed");
+    });
+    const respond = vi.fn();
+
+    await callTalkHandler("talk.client.create", {
+      params: {
+        sessionKey: "main",
+        transport: "webrtc",
+        voiceSessionId: "voice-closed",
+      },
+      id: "invalid-resume",
+      respond,
+      context: { getRuntimeConfig: () => ({}) as OpenClawConfig },
+    });
+
+    expect(mocks.preflightClientVoiceSessionResume).toHaveBeenCalledWith({
+      agentId: "main",
+      sessionKey: "main",
+      provider: "openai",
+      origin: "client",
+      voiceSessionId: "voice-closed",
+    });
+    expect(createBrowserSession).not.toHaveBeenCalled();
+    expect(mocks.ensureClientVoiceAgentSessionEntry).not.toHaveBeenCalled();
+    expect(mocks.createOrResumeClientVoiceSession).not.toHaveBeenCalled();
+    expectRespondError(respond, { message: "Error: voice session is already closed" });
   });
 
   it("cancels a minted browser session when chat persistence fails", async () => {

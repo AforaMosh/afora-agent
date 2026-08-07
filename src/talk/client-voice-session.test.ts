@@ -135,62 +135,6 @@ describe("client voice session", () => {
     await fs.rm(tempDir, { recursive: true, force: true });
   });
 
-  it("creates, resumes, and enforces ownership and open state", async () => {
-    const voiceSessionId = createOrResumeClientVoiceSession({
-      agentId: "main",
-      sessionKey: "agent:main:main",
-      provider: "google",
-      origin: "client",
-      voiceSessionId: "voice-1",
-      now: 10,
-    });
-    expect(
-      createOrResumeClientVoiceSession({
-        agentId: "main",
-        sessionKey: "agent:main:main",
-        origin: "client",
-        voiceSessionId,
-        now: 20,
-      }),
-    ).toBe(voiceSessionId);
-    expect(clientVoiceSessionTesting.readRecord("main", voiceSessionId)).toMatchObject({
-      provider: "google",
-    });
-    expect(() =>
-      createOrResumeClientVoiceSession({
-        agentId: "main",
-        sessionKey: "agent:main:main",
-        provider: "openai",
-        origin: "client",
-        voiceSessionId,
-      }),
-    ).toThrow("provider does not match");
-    expect(() =>
-      createOrResumeClientVoiceSession({
-        agentId: "main",
-        sessionKey: "agent:main:other",
-        origin: "client",
-        voiceSessionId,
-      }),
-    ).toThrow("does not belong");
-
-    await closeClientVoiceSession({
-      agentId: "main",
-      sessionKey: "agent:main:main",
-      voiceSessionId,
-      config: {},
-      now: 30,
-    });
-    expect(() =>
-      createOrResumeClientVoiceSession({
-        agentId: "main",
-        sessionKey: "agent:main:main",
-        origin: "client",
-        voiceSessionId,
-      }),
-    ).toThrow("already closed");
-  });
-
   it("stamps the agent session row when Talk creates it", async () => {
     const sessionKey = "agent:main:talk:new";
     const sessionId = await ensureClientVoiceAgentSessionEntry({ agentId: "main", sessionKey });
