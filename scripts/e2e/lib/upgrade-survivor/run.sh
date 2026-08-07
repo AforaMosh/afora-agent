@@ -470,7 +470,7 @@ NODE
 
   mkdir -p "$fixture_root"
   OPENCLAW_NPM_REGISTRY_UPSTREAM=https://registry.npmjs.org \
-    node scripts/e2e/lib/plugins/npm-registry-server.mjs \
+    node "${OPENCLAW_UPGRADE_SURVIVOR_REGISTRY_SERVER:?missing OPENCLAW_UPGRADE_SURVIVOR_REGISTRY_SERVER}" \
     "$port_file" \
     "${registry_args[@]}" \
     >"$log_file" 2>&1 &
