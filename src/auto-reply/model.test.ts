@@ -7,6 +7,7 @@ describe("extractModelDirective", () => {
     it("extracts /model with argument", () => {
       const result = extractModelDirective("/model gpt-5");
       expect(result.hasDirective).toBe(true);
+      expect(result.source).toBe("model");
       expect(result.rawModel).toBe("gpt-5");
       expect(result.sessionOnly).toBe(false);
       expect(result.cleaned).toBe("");
@@ -164,6 +165,7 @@ describe("extractModelDirective", () => {
         aliases: ["gpt", "sonnet", "opus"],
       });
       expect(result.hasDirective).toBe(true);
+      expect(result.source).toBe("alias");
       expect(result.rawModel).toBe("gpt");
       expect(result.rawRuntime).toBeUndefined();
       expect(result.sessionOnly).toBe(false);

@@ -399,9 +399,10 @@ export async function maybeHandleModelDirectiveInfo(params: {
 
   const rawDirective = normalizeOptionalString(params.directives.rawModelDirective);
   const directive = rawDirective ? normalizeLowercaseStringOrEmpty(rawDirective) : undefined;
-  const wantsStatus = directive === "status";
-  const wantsSummary = !rawDirective;
-  const wantsLegacyList = directive === "list";
+  const isLiteralModelDirective = params.directives.modelDirectiveSource !== "alias";
+  const wantsStatus = isLiteralModelDirective && directive === "status";
+  const wantsSummary = isLiteralModelDirective && !rawDirective;
+  const wantsLegacyList = isLiteralModelDirective && directive === "list";
   if (!wantsSummary && !wantsStatus && !wantsLegacyList) {
     return undefined;
   }

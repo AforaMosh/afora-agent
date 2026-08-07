@@ -484,12 +484,13 @@ export async function resolveReplyDirectives(params: {
   const initialModelLabel = `${provider}/${model}`;
   const formatModelSwitchEvent = (label: string, alias?: string) =>
     alias ? `Model switched to ${alias} (${label}).` : `Model switched to ${label}.`;
-  const isModelListAlias =
+  const isModelInfoDirective =
     directives.hasModelDirective &&
+    directives.modelDirectiveSource !== "alias" &&
     ["status", "list"].includes(
       normalizeLowercaseStringOrEmpty(normalizeOptionalString(directives.rawModelDirective)),
     );
-  const effectiveModelDirective = isModelListAlias ? undefined : directives.rawModelDirective;
+  const effectiveModelDirective = isModelInfoDirective ? undefined : directives.rawModelDirective;
 
   const inlineStatusRequested = hasInlineStatus && canInterpretTextDirectives;
 

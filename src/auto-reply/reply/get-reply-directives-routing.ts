@@ -35,6 +35,7 @@ function preserveMixedModelDirective(
     rawModelDirective: directives.rawModelDirective,
     rawModelProfile: directives.rawModelProfile,
     rawModelRuntime: directives.rawModelRuntime,
+    modelDirectiveSource: directives.modelDirectiveSource,
     modelSessionOnly: directives.modelSessionOnly,
   };
 }
@@ -44,8 +45,8 @@ function isModelSelectionDirective(directives: InlineDirectives): boolean {
   return (
     directives.hasModelDirective &&
     Boolean(rawModelDirective) &&
-    rawModelDirective !== "list" &&
-    rawModelDirective !== "status"
+    (directives.modelDirectiveSource === "alias" ||
+      (rawModelDirective !== "list" && rawModelDirective !== "status"))
   );
 }
 

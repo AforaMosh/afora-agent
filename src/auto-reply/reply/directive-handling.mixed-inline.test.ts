@@ -393,6 +393,62 @@ describe("mixed inline directives", () => {
     expect(persistStickyModelSelectionBestEffort).not.toHaveBeenCalled();
   });
 
+  it("preserves a mixed alias named list as a model selection", async () => {
+    const body = "please reply /list -s";
+    const cfg = { commands: { text: true }, agents: { defaults: {} } } as OpenClawConfig;
+    const aliasIndex: ModelAliasIndex = {
+      byAlias: new Map([
+        [
+          "list",
+          {
+            alias: "list",
+            ref: { provider: "openai", model: "gpt-5.6-luna" },
+          },
+        ],
+      ]),
+      byKey: new Map([["openai/gpt-5.6-luna", ["list"]]]),
+    };
+    const directives = resolveReplyDirectiveRouting({
+      commandText: body,
+      agentText: body,
+      modelAliases: ["list"],
+      canInterpretTextDirectives: true,
+      isAuthorizedSender: true,
+      isGroup: false,
+      wasMentioned: false,
+      ctx: buildTestCtx({ Body: body, CommandAuthorized: true }),
+      cfg,
+      agentId: "main",
+      resetTriggered: false,
+    }).directives;
+    const { result, sessionEntry } = await applyMixedDirectives({
+      body,
+      cfg,
+      directives,
+      modelAliases: ["list"],
+      aliasIndex,
+      senderIsOwner: true,
+      allowedModels: [{ provider: "openai", id: "gpt-5.6-luna", name: "GPT-5.6-Luna" }],
+    });
+
+    expect(directives).toMatchObject({
+      cleaned: "please reply",
+      hasModelDirective: true,
+      modelDirectiveSource: "alias",
+      rawModelDirective: "list",
+    });
+    expect(result).toMatchObject({
+      kind: "continue",
+      provider: "openai",
+      model: "gpt-5.6-luna",
+    });
+    expect(sessionEntry).toMatchObject({
+      providerOverride: "openai",
+      modelOverride: "gpt-5.6-luna",
+      modelOverrideSource: "user",
+    });
+  });
+
   it.each(["--runtime codex -s", "-s --runtime codex"])(
     "applies mixed-content /model runtime and session options from %s",
     async (options) => {

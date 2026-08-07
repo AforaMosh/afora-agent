@@ -49,6 +49,7 @@ export function clearInlineDirectives(cleaned: string): InlineDirectives {
     rawModelDirective: undefined,
     rawModelProfile: undefined,
     rawModelRuntime: undefined,
+    modelDirectiveSource: undefined,
     modelSessionOnly: false,
     hasQueueDirective: false,
     queueMode: undefined,

@@ -2,6 +2,7 @@ import { sql } from "kysely";
 import type { AgentMessage } from "../../../packages/agent-core/src/types.js";
 import {
   readClosedTranscriptTurn,
+  type ClosedTranscriptTurnReadResult,
   type TranscriptTurnBoundary,
 } from "../../config/sessions/session-accessor.js";
 import type { TranscriptTurnAdmission } from "../../config/sessions/transcript-entry-anchor.js";
@@ -53,6 +54,12 @@ type ContextEngineTurnOutboxPayload =
 
 const RECOVERED_TURN_MAX_EVENTS = 20_000;
 const RECOVERED_TURN_MAX_BYTES = 8 * 1024 * 1024;
+
+export function isRetryableContextEngineTurnReadFailure(
+  kind: Exclude<ClosedTranscriptTurnReadResult, { kind: "ok" }>["kind"],
+): boolean {
+  return kind === "projection-unavailable" || kind === "too-large";
+}
 
 function outboxDb(database: OpenClawAgentDatabase) {
   ensureContextEngineTurnOutboxSchema(database.db);
@@ -244,7 +251,7 @@ export function recoverContextEngineTurnOutbox(params: {
       maxBytes: RECOVERED_TURN_MAX_BYTES,
     });
     if (closedTurn.kind !== "ok") {
-      if (closedTurn.kind === "projection-unavailable") {
+      if (isRetryableContextEngineTurnReadFailure(closedTurn.kind)) {
         params.warn(
           `[context-engine] durable turn recovery remains queued: ${row.advancement_key}: transcript range is ${closedTurn.kind}`,
         );

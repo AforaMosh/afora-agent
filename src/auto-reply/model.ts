@@ -31,6 +31,7 @@ export function extractModelDirective(
   rawRuntime?: string;
   sessionOnly: boolean;
   hasDirective: boolean;
+  source?: "alias" | "model";
 } {
   if (!body) {
     return { cleaned: "", sessionOnly: false, hasDirective: false };
@@ -69,5 +70,6 @@ export function extractModelDirective(
     rawRuntime,
     sessionOnly,
     hasDirective: Boolean(match),
+    ...(match ? { source: aliasMatch ? ("alias" as const) : ("model" as const) } : {}),
   };
 }

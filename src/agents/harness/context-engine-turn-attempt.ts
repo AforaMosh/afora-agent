@@ -17,6 +17,7 @@ import {
   drainContextEngineTurnOutbox,
   enqueueContextEngineTurnCommit,
   enqueueContextEngineTurnIntent,
+  isRetryableContextEngineTurnReadFailure,
   recoverContextEngineTurnOutbox,
 } from "./context-engine-turn-outbox.js";
 
@@ -190,7 +191,7 @@ export async function finalizeAcceptedContextEngineTurn(params: {
       maxBytes: ACCEPTED_TURN_MAX_BYTES,
     });
     if (closedTurn.kind !== "ok") {
-      if (closedTurn.kind !== "projection-unavailable") {
+      if (!isRetryableContextEngineTurnReadFailure(closedTurn.kind)) {
         discardContextEngineTurnIntent({
           admission,
           database,

@@ -22,6 +22,7 @@ import {
   drainContextEngineTurnOutbox,
   enqueueContextEngineTurnCommit,
   enqueueContextEngineTurnIntent,
+  isRetryableContextEngineTurnReadFailure,
 } from "./context-engine-turn-outbox.js";
 
 const tempDirs: string[] = [];
@@ -76,6 +77,12 @@ function createPayload(params: {
 }
 
 describe("context-engine turn outbox", () => {
+  it("retains accepted turns when bounded replay cannot complete", () => {
+    expect(isRetryableContextEngineTurnReadFailure("projection-unavailable")).toBe(true);
+    expect(isRetryableContextEngineTurnReadFailure("too-large")).toBe(true);
+    expect(isRetryableContextEngineTurnReadFailure("stale")).toBe(false);
+  });
+
   it("retains a queued turn when commitTurn resolves outside its contract", async () => {
     const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-context-outbox-contract-"));
     tempDirs.push(stateDir);
