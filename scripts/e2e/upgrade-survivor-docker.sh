@@ -57,6 +57,13 @@ LANE_ARTIFACT_SUFFIX="${LANE_ARTIFACT_SUFFIX//[^A-Za-z0-9_.-]/_}"
 ARTIFACT_DIR="${OPENCLAW_UPGRADE_SURVIVOR_ARTIFACT_DIR:-$ROOT_DIR/.artifacts/upgrade-survivor/$LANE_ARTIFACT_SUFFIX}"
 DOCKER_RUN_USER_ARGS=()
 PREPUBLISH_PLUGIN_REGISTRY_ARGS=()
+TRUSTED_REGISTRY_ROOT=/tmp/openclaw-upgrade-survivor-harness
+TRUSTED_REGISTRY_SERVER="$TRUSTED_REGISTRY_ROOT/scripts/e2e/lib/plugins/npm-registry-server.mjs"
+TRUSTED_REGISTRY_ARGS=(
+  -e OPENCLAW_UPGRADE_SURVIVOR_REGISTRY_SERVER="$TRUSTED_REGISTRY_SERVER"
+  -v "$HARNESS_ROOT_DIR/scripts/e2e/lib/plugins/npm-registry-server.mjs:$TRUSTED_REGISTRY_SERVER:ro"
+  -v "$HARNESS_ROOT_DIR/scripts/lib/bounded-response.mjs:$TRUSTED_REGISTRY_ROOT/scripts/lib/bounded-response.mjs:ro"
+)
 PROBE_ENV_ARGS=(
   -e OPENCLAW_UPGRADE_SURVIVOR_PROBE_TIMEOUT_MS="$PROBE_TIMEOUT_MS"
   -e OPENCLAW_UPGRADE_SURVIVOR_PROBE_ATTEMPT_TIMEOUT_MS="$PROBE_ATTEMPT_TIMEOUT_MS"
@@ -178,6 +185,7 @@ if [ "${OPENCLAW_UPGRADE_SURVIVOR_PUBLISHED_BASELINE:-0}" = "1" ]; then
     "${PROBE_ENV_ARGS[@]}" \
     -v "$ARTIFACT_DIR:/tmp/openclaw-upgrade-survivor-artifacts" \
     -v "$HARNESS_ROOT_DIR/scripts/e2e/lib/upgrade-survivor/run.sh:/tmp/openclaw-upgrade-survivor-run.sh:ro" \
+    "${TRUSTED_REGISTRY_ARGS[@]}" \
     "${PREPUBLISH_PLUGIN_REGISTRY_ARGS[@]}" \
     "${DOCKER_E2E_PACKAGE_ARGS[@]}" \
     "${DOCKER_RUN_USER_ARGS[@]}" \
@@ -207,6 +215,7 @@ docker_e2e_run_with_harness \
   -e OPENCLAW_UPGRADE_SURVIVOR_STATUS_BUDGET_SECONDS="$STATUS_BUDGET_SECONDS" \
   "${PROBE_ENV_ARGS[@]}" \
   -v "$ARTIFACT_DIR:/tmp/openclaw-upgrade-survivor-artifacts" \
+  "${TRUSTED_REGISTRY_ARGS[@]}" \
   "${PREPUBLISH_PLUGIN_REGISTRY_ARGS[@]}" \
   "${DOCKER_E2E_PACKAGE_ARGS[@]}" \
   "${DOCKER_RUN_USER_ARGS[@]}" \
@@ -377,7 +386,7 @@ NODE
 
   mkdir -p "$fixture_root"
   OPENCLAW_NPM_REGISTRY_UPSTREAM=https://registry.npmjs.org \
-    node scripts/e2e/lib/plugins/npm-registry-server.mjs \
+    node "${OPENCLAW_UPGRADE_SURVIVOR_REGISTRY_SERVER:?missing OPENCLAW_UPGRADE_SURVIVOR_REGISTRY_SERVER}" \
     "$port_file" \
     "${registry_args[@]}" \
     >"$log_file" 2>&1 &

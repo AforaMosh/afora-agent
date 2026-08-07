@@ -2223,14 +2223,26 @@ docker_e2e_docker_run_cmd run demo
     }
   });
 
-  it("lets upgrade survivor fixture registries resolve transitive public packages", () => {
+  it("runs upgrade survivor fixture registries from the trusted harness", () => {
     const runner = readFileSync(UPGRADE_SURVIVOR_DOCKER_E2E_PATH, "utf8");
     const publishedRunner = readFileSync(UPGRADE_SURVIVOR_RUN_SCRIPT, "utf8");
+    const trustedRoot = "/tmp/openclaw-upgrade-survivor-harness";
 
     for (const script of [runner, publishedRunner]) {
       expect(script).toContain("OPENCLAW_NPM_REGISTRY_UPSTREAM=https://registry.npmjs.org");
-      expect(script).toContain("node scripts/e2e/lib/plugins/npm-registry-server.mjs");
+      expect(script).toContain(
+        'node "${OPENCLAW_UPGRADE_SURVIVOR_REGISTRY_SERVER:?missing OPENCLAW_UPGRADE_SURVIVOR_REGISTRY_SERVER}"',
+      );
+      expect(script).not.toContain("node scripts/e2e/lib/plugins/npm-registry-server.mjs");
     }
+    expect(runner.match(/"\$\{TRUSTED_REGISTRY_ARGS\[@\]\}"/gu)).toHaveLength(2);
+    expectTextToIncludeAll(runner, [
+      `TRUSTED_REGISTRY_SERVER="$TRUSTED_REGISTRY_ROOT/scripts/e2e/lib/plugins/npm-registry-server.mjs"`,
+      `-e OPENCLAW_UPGRADE_SURVIVOR_REGISTRY_SERVER="$TRUSTED_REGISTRY_SERVER"`,
+      `-v "$HARNESS_ROOT_DIR/scripts/e2e/lib/plugins/npm-registry-server.mjs:$TRUSTED_REGISTRY_SERVER:ro"`,
+      `-v "$HARNESS_ROOT_DIR/scripts/lib/bounded-response.mjs:$TRUSTED_REGISTRY_ROOT/scripts/lib/bounded-response.mjs:ro"`,
+      trustedRoot,
+    ]);
   });
 
   it("starts the upgrade survivor plugin registry before updates without ambient Feishu config", () => {
