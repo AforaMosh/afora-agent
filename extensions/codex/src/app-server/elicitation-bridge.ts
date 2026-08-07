@@ -76,6 +76,7 @@ export async function handleCodexAppServerElicitationRequest(params: {
   turnId: string;
   pluginAppPolicyContext?: PluginAppPolicyContext;
   appServerRequest?: CodexPluginRuntimeRequest;
+  pluginAppCacheKey?: string;
   computerUseMcpServerName?: string;
   signal?: AbortSignal;
 }): Promise<JsonValue | undefined> {
@@ -92,6 +93,7 @@ export async function handleCodexAppServerElicitationRequest(params: {
     paramsForRun: params.paramsForRun,
     activeTurnId: params.turnId,
     appServerRequest: params.appServerRequest,
+    pluginAppCacheKey: params.pluginAppCacheKey,
     signal: params.signal,
   });
   if (toolSuggestionResponse) {

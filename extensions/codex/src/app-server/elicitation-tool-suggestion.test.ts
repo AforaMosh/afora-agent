@@ -56,8 +56,15 @@ describe("Codex app-server tool-suggestion elicitations", () => {
     mockCallGatewayTool
       .mockResolvedValueOnce({ id: "plugin:install-1", status: "accepted" })
       .mockResolvedValueOnce({ id: "plugin:install-1", decision: "allow-once" });
-    const appServerRequest = vi.fn(async (method: string) => {
+    const appServerRequest = vi.fn(async (method: string, requestParams?: unknown) => {
       if (method === "plugin/list") {
+        if ((requestParams as { forceRefetch?: boolean } | undefined)?.forceRefetch) {
+          return {
+            marketplaces: [],
+            marketplaceLoadErrors: [],
+            featuredPluginIds: [],
+          };
+        }
         return {
           marketplaces: [
             {
@@ -80,6 +87,12 @@ describe("Codex app-server tool-suggestion elicitations", () => {
       }
       if (method === "plugin/install") {
         return { authPolicy: "none", appsNeedingAuth: [] };
+      }
+      if (method === "skills/list" || method === "hooks/list") {
+        return { data: [] };
+      }
+      if (method === "config/mcpServer/reload") {
+        return {};
       }
       throw new Error(`unexpected method: ${method}`);
     });
@@ -108,6 +121,13 @@ describe("Codex app-server tool-suggestion elicitations", () => {
       remoteMarketplaceName: "openai-curated-remote",
       pluginName: "plugin_connector_google_calendar",
     });
+    expect(appServerRequest).toHaveBeenNthCalledWith(3, "plugin/list", { forceRefetch: true });
+    expect(appServerRequest).toHaveBeenNthCalledWith(4, "skills/list", {
+      cwds: [],
+      forceReload: true,
+    });
+    expect(appServerRequest).toHaveBeenNthCalledWith(5, "hooks/list", { cwds: [] });
+    expect(appServerRequest).toHaveBeenNthCalledWith(6, "config/mcpServer/reload", undefined);
   });
 
   it("relays a connector install URL and waits for explicit channel confirmation", async () => {
@@ -177,6 +197,52 @@ describe("Codex app-server tool-suggestion elicitations", () => {
     expect(appServerRequest).not.toHaveBeenCalled();
   });
 
+  it("does not refresh plugin runtime state when installation fails", async () => {
+    mockCallGatewayTool
+      .mockResolvedValueOnce({ id: "plugin:install-failed", status: "accepted" })
+      .mockResolvedValueOnce({ id: "plugin:install-failed", decision: "allow-once" });
+    const appServerRequest = vi.fn(async (method: string) => {
+      if (method === "plugin/list") {
+        return {
+          marketplaces: [
+            {
+              name: "openai-curated-remote",
+              path: null,
+              plugins: [
+                {
+                  id: "google-calendar@openai-curated-remote",
+                  remotePluginId: "plugin_connector_google_calendar",
+                  name: "Google Calendar",
+                  installed: false,
+                  enabled: false,
+                },
+              ],
+            },
+          ],
+          marketplaceLoadErrors: [],
+          featuredPluginIds: [],
+        };
+      }
+      if (method === "plugin/install") {
+        throw new Error("install failed");
+      }
+      throw new Error(`unexpected refresh after failed install: ${method}`);
+    });
+
+    const result = await handleCodexAppServerElicitationRequest({
+      requestParams: buildToolSuggestion(),
+      paramsForRun: createDiscordParams(),
+      appServerRequest,
+      ...codexTestTurnIds(),
+    });
+
+    expect(result).toEqual({ action: "decline", content: null, _meta: null });
+    expect(appServerRequest.mock.calls.map(([method]) => method)).toEqual([
+      "plugin/list",
+      "plugin/install",
+    ]);
+  });
+
   it("does not install when the gateway returns a decision the prompt did not advertise", async () => {
     mockCallGatewayTool
       .mockResolvedValueOnce({ id: "plugin:install-unadvertised", status: "accepted" })
@@ -204,8 +270,15 @@ describe("Codex app-server tool-suggestion elicitations", () => {
       .mockResolvedValueOnce({ id: "plugin:authorize-app", status: "accepted" })
       .mockResolvedValueOnce({ id: "plugin:authorize-app", decision: "allow-once" });
     const authorizationUrl = "https://chatgpt.com/apps/google-calendar/authorize";
-    const appServerRequest = vi.fn(async (method: string) => {
+    const appServerRequest = vi.fn(async (method: string, requestParams?: unknown) => {
       if (method === "plugin/list") {
+        if ((requestParams as { forceRefetch?: boolean } | undefined)?.forceRefetch) {
+          return {
+            marketplaces: [],
+            marketplaceLoadErrors: [],
+            featuredPluginIds: [],
+          };
+        }
         return {
           marketplaces: [
             {
@@ -240,7 +313,19 @@ describe("Codex app-server tool-suggestion elicitations", () => {
           ],
         };
       }
+      if (method === "skills/list" || method === "hooks/list") {
+        return { data: [] };
+      }
+      if (method === "config/mcpServer/reload") {
+        return {};
+      }
       if (method === "app/list") {
+        if (!(requestParams as { cursor?: string } | undefined)?.cursor) {
+          return {
+            data: [{ id: "some_other_app", isAccessible: true }],
+            nextCursor: "page-2",
+          };
+        }
         return {
           data: [{ id: "connector_google_calendar", isAccessible: true }],
           nextCursor: null,
@@ -263,10 +348,86 @@ describe("Codex app-server tool-suggestion elicitations", () => {
       turnSourceChannel: "discord",
       turnSourceTo: "channel:123456789",
     });
-    expect(appServerRequest).toHaveBeenLastCalledWith("app/list", {
+    expect(appServerRequest).toHaveBeenNthCalledWith(7, "app/list", {
       threadId: codexTestTurnIds().threadId,
       forceRefetch: true,
     });
+    expect(appServerRequest).toHaveBeenLastCalledWith("app/list", {
+      threadId: codexTestTurnIds().threadId,
+      forceRefetch: true,
+      cursor: "page-2",
+    });
+  });
+
+  it("declines when app inventory repeats a pagination cursor", async () => {
+    mockCallGatewayTool
+      .mockResolvedValueOnce({ id: "plugin:install-loop", status: "accepted" })
+      .mockResolvedValueOnce({ id: "plugin:install-loop", decision: "allow-once" })
+      .mockResolvedValueOnce({ id: "plugin:authorize-loop", status: "accepted" })
+      .mockResolvedValueOnce({ id: "plugin:authorize-loop", decision: "allow-once" });
+    const appServerRequest = vi.fn(async (method: string, requestParams?: unknown) => {
+      if (method === "plugin/list") {
+        if ((requestParams as { forceRefetch?: boolean } | undefined)?.forceRefetch) {
+          return { marketplaces: [], marketplaceLoadErrors: [], featuredPluginIds: [] };
+        }
+        return {
+          marketplaces: [
+            {
+              name: "openai-curated-remote",
+              path: null,
+              plugins: [
+                {
+                  id: "google-calendar@openai-curated-remote",
+                  remotePluginId: "plugin_connector_google_calendar",
+                  name: "Google Calendar",
+                  installed: false,
+                  enabled: false,
+                },
+              ],
+            },
+          ],
+          marketplaceLoadErrors: [],
+          featuredPluginIds: [],
+        };
+      }
+      if (method === "plugin/install") {
+        return {
+          authPolicy: "ON_INSTALL",
+          appsNeedingAuth: [
+            {
+              id: "connector_google_calendar",
+              name: "Google Calendar",
+              description: null,
+              installUrl: "https://chatgpt.com/apps/google-calendar/authorize",
+              category: null,
+            },
+          ],
+        };
+      }
+      if (method === "skills/list" || method === "hooks/list") {
+        return { data: [] };
+      }
+      if (method === "config/mcpServer/reload") {
+        return {};
+      }
+      if (method === "app/list") {
+        return {
+          data: [],
+          nextCursor: (requestParams as { cursor?: string } | undefined)?.cursor ?? "same-cursor",
+        };
+      }
+      throw new Error(`unexpected method: ${method}`);
+    });
+
+    const result = await handleCodexAppServerElicitationRequest({
+      requestParams: buildToolSuggestion(),
+      paramsForRun: createDiscordParams(),
+      appServerRequest,
+      ...codexTestTurnIds(),
+    });
+
+    expect(result).toEqual({ action: "decline", content: null, _meta: null });
+    expect(appServerRequest.mock.calls.filter(([method]) => method === "app/list")).toHaveLength(2);
   });
 
   it("surfaces but cannot accept a connector suggestion with an unsafe install URL", async () => {

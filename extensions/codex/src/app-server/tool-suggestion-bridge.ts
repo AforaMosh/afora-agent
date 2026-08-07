@@ -2,6 +2,11 @@ import {
   embeddedAgentLog,
   type EmbeddedRunAttemptParams,
 } from "openclaw/plugin-sdk/agent-harness-runtime";
+import { defaultCodexAppInventoryCache } from "./app-inventory-cache.js";
+import {
+  refreshCodexPluginAppInventoryState,
+  refreshCodexPluginRuntimeState,
+} from "./plugin-activation.js";
 import {
   requestPluginApprovalOutcome,
   sanitizeCodexApprovalVisibleText,
@@ -11,6 +16,7 @@ import {
   pluginReadParams,
   type CodexPluginRuntimeRequest,
 } from "./plugin-inventory.js";
+import { defaultCodexPluginMetadataCache } from "./plugin-metadata-cache.js";
 import { isJsonObject, type JsonObject, type JsonValue, type v2 } from "./protocol.js";
 
 const CODEX_APPS_SERVER_NAME = "codex_apps";
@@ -32,6 +38,7 @@ export async function handleCodexAppServerToolSuggestion(params: {
   paramsForRun: EmbeddedRunAttemptParams;
   activeTurnId: string;
   appServerRequest?: CodexPluginRuntimeRequest;
+  pluginAppCacheKey?: string;
   signal?: AbortSignal;
 }): Promise<JsonValue | undefined> {
   const suggestion = readToolSuggestion(params.requestParams, params.activeTurnId);
@@ -74,6 +81,13 @@ export async function handleCodexAppServerToolSuggestion(params: {
 
   try {
     const installed = await installSuggestedPlugin(params.appServerRequest, suggestion.toolId);
+    await refreshCodexPluginRuntimeState({
+      request: params.appServerRequest,
+      appCache: defaultCodexAppInventoryCache,
+      appCacheKey: params.pluginAppCacheKey,
+      metadataCache: defaultCodexPluginMetadataCache,
+      deferAppInventoryRefresh: installed.appsNeedingAuth.length > 0,
+    });
     const authorized = await authorizePluginApps({
       apps: installed.appsNeedingAuth,
       paramsForRun: params.paramsForRun,
@@ -81,6 +95,13 @@ export async function handleCodexAppServerToolSuggestion(params: {
       threadId: suggestion.threadId,
       signal: params.signal,
     });
+    if (authorized && installed.appsNeedingAuth.length > 0) {
+      await refreshCodexPluginAppInventoryState({
+        request: params.appServerRequest,
+        appCache: defaultCodexAppInventoryCache,
+        appCacheKey: params.pluginAppCacheKey,
+      });
+    }
     return authorized ? acceptResponse() : declineResponse();
   } catch (error) {
     embeddedAgentLog.warn("codex suggested plugin install failed", {
@@ -193,14 +214,43 @@ async function authorizePluginApps(params: {
       return false;
     }
   }
-  const inventory = (await params.request("app/list", {
+  return await verifyPluginAppsAccessible({
+    apps: params.apps,
+    request: params.request,
     threadId: params.threadId,
-    forceRefetch: true,
-  })) as { data?: v2.AppInfo[] };
-  const accessibleIds = new Set(
-    inventory.data?.filter((app) => app.isAccessible).map((app) => app.id) ?? [],
-  );
-  return params.apps.every((app) => accessibleIds.has(app.id));
+  });
+}
+
+async function verifyPluginAppsAccessible(params: {
+  apps: readonly v2.AppSummary[];
+  request: CodexPluginRuntimeRequest;
+  threadId: string;
+}): Promise<boolean> {
+  const expectedIds = new Set(params.apps.map((app) => app.id));
+  const accessibleIds = new Set<string>();
+  const seenCursors = new Set<string>();
+  let cursor: string | undefined;
+  while (true) {
+    const inventory = (await params.request("app/list", {
+      threadId: params.threadId,
+      forceRefetch: true,
+      ...(cursor ? { cursor } : {}),
+    })) as { data?: v2.AppInfo[]; nextCursor?: string | null };
+    for (const app of inventory.data ?? []) {
+      if (app.isAccessible && expectedIds.has(app.id)) {
+        accessibleIds.add(app.id);
+      }
+    }
+    if (accessibleIds.size === expectedIds.size) {
+      return true;
+    }
+    const nextCursor = inventory.nextCursor?.trim();
+    if (!nextCursor || seenCursors.has(nextCursor)) {
+      return false;
+    }
+    seenCursors.add(nextCursor);
+    cursor = nextCursor;
+  }
 }
 
 function pluginNameFromToolId(toolId: string): string | undefined {

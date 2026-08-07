@@ -34,6 +34,7 @@ const refreshCodexAppServerAuthTokensMock = vi.fn();
 const createOpenClawCodingToolsMock = vi.fn();
 const toolExecuteMock = vi.fn();
 const handleCodexAppServerApprovalRequestMock = vi.fn();
+const handleCodexAppServerElicitationRequestMock = vi.fn();
 const resolveCodexProviderWebSearchSupportForClientMock = vi.fn();
 type SelectionRetryParams = {
   lease: { client?: unknown };
@@ -88,6 +89,11 @@ vi.mock("./auth-bridge.js", async (importOriginal) => ({
 vi.mock("./approval-bridge.js", () => ({
   handleCodexAppServerApprovalRequest: (...args: unknown[]) =>
     handleCodexAppServerApprovalRequestMock(...args),
+}));
+
+vi.mock("./elicitation-bridge.js", () => ({
+  handleCodexAppServerElicitationRequest: (...args: unknown[]) =>
+    handleCodexAppServerElicitationRequestMock(...args),
 }));
 
 vi.mock("./provider-capabilities.js", () => ({
@@ -476,6 +482,12 @@ describe("runCodexAppServerSideQuestion", () => {
     createOpenClawCodingToolsMock.mockReset();
     toolExecuteMock.mockReset();
     handleCodexAppServerApprovalRequestMock.mockReset();
+    handleCodexAppServerElicitationRequestMock.mockReset();
+    handleCodexAppServerElicitationRequestMock.mockResolvedValue({
+      action: "decline",
+      content: null,
+      _meta: null,
+    });
     resolveCodexProviderWebSearchSupportForClientMock.mockReset();
     withLeasedCodexAppServerClientStartSelectionRetryMock.mockReset();
     withLeasedCodexAppServerClientStartSelectionRetryMock.mockImplementation(
@@ -691,6 +703,65 @@ describe("runCodexAppServerSideQuestion", () => {
       messageActionTurnCapability: "turn-capability-1",
     });
     expect(toolOptions).toHaveProperty("requireExplicitMessageTarget", true);
+  });
+
+  it("gives side-thread tool suggestions a signal-bound app-server request adapter", async () => {
+    const client = createFakeClient();
+    let elicitationResponse: unknown;
+    client.request.mockImplementation(async (method: string, requestParams: unknown) => {
+      if (method === "thread/fork") {
+        return threadResult("side-thread");
+      }
+      if (method === "thread/inject_items") {
+        return {};
+      }
+      if (method === "turn/start") {
+        setTimeout(() => {
+          void (async () => {
+            elicitationResponse = await client.handleRequest({
+              id: 43,
+              method: "mcpServer/elicitation/request",
+              params: {
+                ...codexTestTurnIds("side-thread"),
+                serverName: "codex_apps",
+                mode: "form",
+                requestedSchema: { type: "object", properties: {} },
+              },
+            });
+            client.emit(turnCompleted("side-thread", "turn-1", "Side answer."));
+          })();
+        }, 0);
+        return turnStartResult("turn-1");
+      }
+      if (method === "plugin/list") {
+        return { marketplaces: [], marketplaceLoadErrors: [], featuredPluginIds: [] };
+      }
+      if (method === "thread/unsubscribe" || method === "turn/interrupt") {
+        return {};
+      }
+      throw new Error(`unexpected request: ${method} ${JSON.stringify(requestParams)}`);
+    });
+    getSharedCodexAppServerClientMock.mockResolvedValue(client);
+
+    await expect(runCodexAppServerSideQuestion(sideParams())).resolves.toEqual({
+      text: "Side answer.",
+    });
+
+    expect(elicitationResponse).toEqual({ action: "decline", content: null, _meta: null });
+    const bridgeParams = handleCodexAppServerElicitationRequestMock.mock.calls[0]?.[0] as
+      | {
+          appServerRequest?: (method: string, params: Record<string, unknown>) => Promise<unknown>;
+          pluginAppCacheKey?: string;
+        }
+      | undefined;
+    expect(bridgeParams?.appServerRequest).toBeTypeOf("function");
+    expect(bridgeParams?.pluginAppCacheKey).toBeTypeOf("string");
+    await bridgeParams?.appServerRequest?.("plugin/list", { forceRefetch: true });
+    expect(client.request).toHaveBeenCalledWith(
+      "plugin/list",
+      { forceRefetch: true },
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
   });
 
   it("rebinds side-question handlers when selection retry replaces the client", async () => {
