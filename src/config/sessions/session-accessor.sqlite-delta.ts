@@ -187,9 +187,12 @@ function readRawDeltaInTransaction(
     beforeEventSeq === undefined ? Number.POSITIVE_INFINITY : beforeEventSeq - 1,
   );
   if (cursor.lastSeq > maxSeq) {
-    throw new SessionTranscriptReadFenceError(
-      "Transcript read cursor has crossed the current-turn admission fence",
-    );
+    if (beforeEventSeq !== undefined) {
+      throw new SessionTranscriptReadFenceError(
+        "Transcript read cursor has crossed the current-turn admission fence",
+      );
+    }
+    return reset("invalid_cursor");
   }
 
   const metadata = executeSqliteQuerySync(

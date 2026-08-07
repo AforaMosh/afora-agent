@@ -287,6 +287,16 @@ describe("extractModelDirective", () => {
       expect(result.rawModel).toBe("haiku");
     });
 
+    it("attributes a literal /model directive when alias text follows it", () => {
+      const result = extractModelDirective("/model status /gpt", {
+        aliases: ["gpt"],
+      });
+      expect(result.hasDirective).toBe(true);
+      expect(result.source).toBe("model");
+      expect(result.rawModel).toBe("status");
+      expect(result.cleaned).toBe("/gpt");
+    });
+
     it("handles empty aliases array", () => {
       const result = extractModelDirective("/gpt", { aliases: [] });
       expect(result.hasDirective).toBe(false);

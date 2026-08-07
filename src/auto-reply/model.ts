@@ -70,6 +70,6 @@ export function extractModelDirective(
     rawRuntime,
     sessionOnly,
     hasDirective: Boolean(match),
-    ...(match ? { source: aliasMatch ? ("alias" as const) : ("model" as const) } : {}),
+    ...(match ? { source: modelMatch ? ("model" as const) : ("alias" as const) } : {}),
   };
 }

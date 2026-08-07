@@ -16,6 +16,7 @@ import {
   createFakeSession,
   createFixture,
   event,
+  type FakeSession,
   transcriptMessages,
 } from "./attempt-transcript-journal.test-helpers.js";
 import { attachEventBridge } from "./event-bridge.js";
