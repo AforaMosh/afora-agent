@@ -37,6 +37,7 @@ import { formatErrorMessage } from "../infra/errors.js";
 import { serveOpenClawChannelMcp } from "../mcp/channel-server.js";
 import { waitForLocalOAuthCallback } from "../plugin-sdk/provider-auth-runtime.js";
 import { defaultRuntime } from "../runtime.js";
+import { createDeferred } from "../shared/deferred.js";
 import { runTasksWithConcurrency } from "../utils/run-with-concurrency.js";
 import { formatCliCommand } from "./command-format.js";
 import { resolveGatewayAuthOptions } from "./gateway-secret-options.js";
@@ -213,7 +214,11 @@ function hasLiteralSensitiveValue(value: unknown): boolean {
   return typeof value === "string" && value.trim().length > 0 && !value.trim().startsWith("$");
 }
 
-function startMcpOAuthLoopbackCallback(authorizationUrl: URL, signal: AbortSignal) {
+function startMcpOAuthLoopbackCallback(
+  authorizationUrl: URL,
+  signal: AbortSignal,
+  onListening: () => void,
+) {
   const redirectUriValue = authorizationUrl.searchParams.get("redirect_uri")?.trim();
   const expectedState = authorizationUrl.searchParams.get("state")?.trim();
   if (!redirectUriValue || !expectedState) {
@@ -245,7 +250,10 @@ function startMcpOAuthLoopbackCallback(authorizationUrl: URL, signal: AbortSigna
     redirectUri: redirectUri.toString(),
     hostname: redirectUri.hostname,
     successTitle: "OpenClaw MCP OAuth complete",
-    onProgress: (message) => defaultRuntime.log(message),
+    onProgress: (message) => {
+      defaultRuntime.log(message);
+      onListening();
+    },
     signal,
   });
 }
@@ -1396,17 +1404,26 @@ export function registerMcpCli(program: Command) {
         let result = await runMcpOAuthLogin({
           ...loginParams,
           authorizationCode: opts.code,
-          onAuthorizationUrl: (url) => {
-            // Starting the listener without awaiting it lets the first OAuth run release its
-            // state lease before the callback code starts the completion run.
+          onAuthorizationUrl: async (url) => {
+            // Await binding, not completion: the first OAuth run must release its state lease
+            // before the callback code starts the completion run, without publishing a dead URL.
             callbackController = new AbortController();
-            callbackPromise = startMcpOAuthLoopbackCallback(url, callbackController.signal)?.catch(
-              () => undefined,
-            );
+            const listenerReady = createDeferred<void>();
+            let loopbackListening = false;
+            callbackPromise = startMcpOAuthLoopbackCallback(url, callbackController.signal, () => {
+              loopbackListening = true;
+              listenerReady.resolve();
+            })?.catch(() => {
+              listenerReady.resolve();
+              return undefined;
+            });
+            if (callbackPromise) {
+              await listenerReady.promise;
+            }
             defaultRuntime.log(`Open this URL to authorize "${name}":`);
             defaultRuntime.log(url.toString());
             defaultRuntime.log(
-              callbackPromise
+              loopbackListening
                 ? `If needed, run ${manualLoginCommand}.`
                 : `After approval, run ${manualLoginCommand}.`,
             );

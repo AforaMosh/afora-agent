@@ -697,6 +697,10 @@ describe("mcp cli", () => {
       await vi.waitFor(() => {
         expect(mockLog).toHaveBeenCalledWith(`Waiting for OAuth callback on ${redirectUri}...`);
       });
+      const logs = mockLog.mock.calls.map(([line]) => String(line));
+      expect(logs.indexOf(`Waiting for OAuth callback on ${redirectUri}...`)).toBeLessThan(
+        logs.indexOf(authorizationUrl.toString()),
+      );
 
       expect((await fetch(`${redirectUri}?code=secret-code&state=expected-state`)).status).toBe(
         200,
