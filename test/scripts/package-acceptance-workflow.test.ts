@@ -105,11 +105,15 @@ const QA_INBOUND_VOICE_SCENARIO = resolve(
 const QA_LIVE_TRANSPORTS_WORKFLOW = ".github/workflows/qa-live-transports-convex.yml";
 const QA_LIVE_RUNTIME_PAIR_IF =
   "(github.event_name == 'schedule' && github.workflow_ref == format('{0}/.github/workflows/qa-live-transports-convex.yml@{1}', github.repository, github.ref)) || inputs.run_live_runtime_pair";
+const QA_LIVE_RUNTIME_PAIR_JOBS = [
+  "run_live_runtime_token_efficiency",
+  "run_live_gateway_restart_runtime_pair",
+] as const;
 const QA_LIVE_SELECTED_REF_EXPRESSION =
   "${{ (github.event_name == 'schedule' && github.workflow_ref == format('{0}/.github/workflows/qa-live-transports-convex.yml@{1}', github.repository, github.ref)) && github.sha || inputs.ref }}";
 const QA_LIVE_LANE_JOBS = [
   "run_mock_parity",
-  "run_live_runtime_token_efficiency",
+  ...QA_LIVE_RUNTIME_PAIR_JOBS,
   "run_live_buzz",
   "run_live_matrix",
   "run_live_telegram",
@@ -3594,9 +3598,9 @@ describe("package artifact reuse", () => {
     expect(validateScript).toContain('"${selected_revision,,}" != "$expected_sha"');
     expect(validateScript).toContain('if [[ -n "$expected_sha" ]]; then');
 
-    expect(workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, "run_live_runtime_token_efficiency").if).toBe(
-      QA_LIVE_RUNTIME_PAIR_IF,
-    );
+    for (const jobName of QA_LIVE_RUNTIME_PAIR_JOBS) {
+      expect(workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, jobName).if).toBe(QA_LIVE_RUNTIME_PAIR_IF);
+    }
     expect(workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, "run_mock_parity").if).toBe(
       "inputs.expected_sha == '' || inputs.run_mock_parity",
     );
@@ -3658,10 +3662,12 @@ describe("package artifact reuse", () => {
       },
     ];
     for (const testCase of runtimePairCases) {
-      expect(
-        evaluateQaLiveJobCondition("run_live_runtime_token_efficiency", testCase.context),
-        testCase.name,
-      ).toBe(testCase.expected);
+      for (const jobName of QA_LIVE_RUNTIME_PAIR_JOBS) {
+        expect(
+          evaluateQaLiveJobCondition(jobName, testCase.context),
+          `${testCase.name} ${jobName}`,
+        ).toBe(testCase.expected);
+      }
     }
 
     const qaWorkflow = readWorkflow(QA_LIVE_TRANSPORTS_WORKFLOW);
@@ -3745,6 +3751,14 @@ describe("package artifact reuse", () => {
 
     const exactShaManual = makeContext({ expectedSha: exactSha });
     expect(enabledJobs(exactShaManual)).toEqual([]);
+    expect(
+      enabledJobs(
+        makeContext({
+          expectedSha: exactSha,
+          inputs: { run_live_runtime_pair: true },
+        }),
+      ),
+    ).toEqual([...QA_LIVE_RUNTIME_PAIR_JOBS]);
     expect(
       enabledJobs(
         makeContext({
@@ -4110,6 +4124,11 @@ describe("package artifact reuse", () => {
         "Upload live runtime token-efficiency artifacts",
         "always() && steps.run_lane.outputs.output_dir != ''",
       ],
+      [
+        "run_live_gateway_restart_runtime_pair",
+        "Upload live gateway restart runtime-pair artifacts",
+        "always() && steps.run_lane.outputs.output_dir != ''",
+      ],
       ["run_live_matrix", "Upload Matrix QA artifacts", "always()"],
       ["run_live_buzz", "Upload Buzz QA artifacts", "always()"],
       ["run_live_telegram", "Upload Telegram QA artifacts", "always()"],
@@ -4126,37 +4145,63 @@ describe("package artifact reuse", () => {
     }
   });
 
-  it("preserves the primary runtime token-efficiency failure", () => {
+  it("keeps broad runtime token-efficiency advisory and independently reported", () => {
     const job = workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, "run_live_runtime_token_efficiency");
     const runStep = workflowStep(job, "Run live core runtime-pair lane");
     const reportStep = workflowStep(job, "Generate live runtime token-efficiency report");
+    const stepNames = job.steps?.map((step) => step.name) ?? [];
 
+    expect(job["continue-on-error"]).toBe(true);
+    expect(job["timeout-minutes"]).toBe(45);
+    expect(job.needs).toEqual(["authorize_actor", "validate_selected_ref"]);
     expect(runStep.run).toContain('mkdir -p "${output_dir}"');
     expect(runStep.run).toContain(
       "printf 'Runtime token-efficiency lane started.\\n' > \"${output_dir}/runtime-lane-started.txt\"",
     );
+    expect(runStep.run).toContain("--allow-failures");
     expect(reportStep.if).toBe("steps.run_lane.outcome == 'success'");
+    expect(stepNames).not.toContain("Run pinned GPT-5.4 gateway restart runtime pair");
   });
 
-  it("runs the core gateway restart pair on its pinned live model", () => {
-    const job = workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, "run_live_runtime_token_efficiency");
-    const credentialStep = workflowStep(job, "Validate required QA credential env");
-    const primaryRunStep = workflowStep(job, "Run live core runtime-pair lane");
-    const runStep = workflowStep(job, "Run pinned GPT-5.4 gateway restart runtime pair");
+  it("runs the blocking gateway restart pair independently on its pinned live model", () => {
+    const broadJob = workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, "run_live_runtime_token_efficiency");
+    const restartJob = workflowJob(
+      QA_LIVE_TRANSPORTS_WORKFLOW,
+      "run_live_gateway_restart_runtime_pair",
+    );
+    const broadCredentialStep = workflowStep(broadJob, "Validate required QA credential env");
+    const restartCredentialStep = workflowStep(restartJob, "Validate required QA credential env");
+    const runStep = workflowStep(restartJob, "Run pinned GPT-5.4 gateway restart runtime pair");
+    const uploadStep = workflowStep(
+      restartJob,
+      "Upload live gateway restart runtime-pair artifacts",
+    );
     const restartScenario = readFileSync(QA_GATEWAY_RESTART_SCENARIO, "utf8");
-    const stepNames = job.steps?.map((step) => step.name) ?? [];
+    const restartStepNames = restartJob.steps?.map((step) => step.name) ?? [];
 
-    expect(credentialStep.run).toContain('if [[ -z "${OPENAI_API_KEY:-}" ]]');
-    expect(credentialStep.run).toContain("exit 1");
-    expect(job.env).toEqual({
-      OPENCLAW_QA_LIVE_ALT_MODEL: "openai/gpt-5.4",
-      OPENCLAW_QA_LIVE_MODEL: "openai/gpt-5.6-luna",
-    });
-    expect(primaryRunStep.env).toMatchObject({
-      OPENCLAW_QA_REDACT_PUBLIC_METADATA: "1",
-      OPENCLAW_QA_TRANSPORT_READY_TIMEOUT_MS: "180000",
-      QA_PARITY_CONCURRENCY: "1",
-    });
+    expect(restartJob.needs).toEqual(["authorize_actor", "validate_selected_ref"]);
+    expect(restartJob.needs).toEqual(broadJob.needs);
+    expect(restartJob.needs).not.toContain("run_live_runtime_token_efficiency");
+    expect(restartJob.if).toBe(broadJob.if);
+    expect(restartJob["runs-on"]).toBe(broadJob["runs-on"]);
+    expect(restartJob.environment).toBe(broadJob.environment);
+    expect(restartJob["timeout-minutes"]).toBe(45);
+    expect(broadJob["timeout-minutes"]).toBe(45);
+    expect(restartJob["continue-on-error"]).toBeUndefined();
+    expect(broadJob["continue-on-error"]).toBe(true);
+    expect(workflowStep(restartJob, "Checkout selected ref").with?.ref).toBe(
+      workflowStep(broadJob, "Checkout selected ref").with?.ref,
+    );
+    expect(workflowStep(restartJob, "Setup Node environment")).toEqual(
+      workflowStep(broadJob, "Setup Node environment"),
+    );
+    expect(restartCredentialStep.run).toBe(broadCredentialStep.run);
+    expect(restartCredentialStep.run).toContain('if [[ -z "${OPENAI_API_KEY:-}" ]]');
+    expect(restartCredentialStep.run).toContain("exit 1");
+    expect(workflowStep(restartJob, "Build private QA runtime")).toEqual(
+      workflowStep(broadJob, "Build private QA runtime"),
+    );
+    expect(restartJob.env).toBeUndefined();
     expect(runStep.env).toMatchObject({
       OPENCLAW_QA_REDACT_PUBLIC_METADATA: "1",
       OPENCLAW_QA_TRANSPORT_READY_TIMEOUT_MS: "180000",
@@ -4170,13 +4215,35 @@ describe("package artifact reuse", () => {
       "--fast",
     ]);
     expect(runStep.run).toContain(
-      "steps.run_lane.outputs.output_dir }}/gateway-restart-gpt-5.4-runtime-pair",
+      'output_dir=".artifacts/qa-e2e/gateway-restart-runtime-pair-live-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"',
     );
+    expect(runStep.run).toContain(
+      "printf 'Gateway restart runtime-pair lane started.\\n' > \"${output_dir}/gateway-restart-runtime-pair-started.txt\"",
+    );
+    expect(runStep.run).toContain(
+      '--output-dir "${output_dir}/gateway-restart-gpt-5.4-runtime-pair"',
+    );
+    expect(runStep.run?.match(/pnpm openclaw qa suite/gu)).toHaveLength(1);
+    expect(runStep.run).not.toContain("--runtime-pair-lane core");
+    expect(runStep.run).not.toContain("parity-report");
     expect(runStep.run).not.toContain("OPENCLAW_QA_LIVE_");
     expect(runStep.run).not.toContain("--allow-failures");
     expect(restartScenario).toContain("requiredModel: gpt-5.4");
-    expect(stepNames.indexOf("Run pinned GPT-5.4 gateway restart runtime pair")).toBeLessThan(
-      stepNames.indexOf("Generate live runtime token-efficiency report"),
+    expect(restartStepNames).toEqual([
+      "Checkout selected ref",
+      "Setup Node environment",
+      "Validate required QA credential env",
+      "Build private QA runtime",
+      "Run pinned GPT-5.4 gateway restart runtime pair",
+      "Upload live gateway restart runtime-pair artifacts",
+    ]);
+    expect(uploadStep.if).toBe("always() && steps.run_lane.outputs.output_dir != ''");
+    expect(uploadStep.with?.name).toBe(
+      "qa-live-gateway-restart-runtime-pair-${{ github.run_id }}-${{ github.run_attempt }}",
+    );
+    expect(uploadStep.with?.path).toBe("${{ steps.run_lane.outputs.output_dir }}");
+    expect(uploadStep.with?.name).not.toBe(
+      workflowStep(broadJob, "Upload live runtime token-efficiency artifacts").with?.name,
     );
   });
 
@@ -4871,6 +4938,7 @@ describe("package artifact reuse", () => {
       "run_live_whatsapp",
       "run_live_slack",
       "run_live_runtime_token_efficiency",
+      "run_live_gateway_restart_runtime_pair",
     ]) {
       expect(workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, jobName)["runs-on"]).toBe(
         "blacksmith-16vcpu-ubuntu-2404",
