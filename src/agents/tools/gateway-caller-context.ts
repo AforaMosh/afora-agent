@@ -8,7 +8,7 @@ import {
 import { copyAgentToolMetadata } from "../agent-tool-metadata.js";
 import type { AnyAgentTool } from "./common.js";
 
-type GatewayToolCallerIdentity = {
+export type GatewayToolCallerIdentity = {
   agentId: string;
   sessionKey: string;
   executionIdentity?: ExecutionIdentityAdmissionToken;
@@ -33,6 +33,24 @@ type GatewayToolCallerSource = {
 };
 
 const gatewayToolCallerStorage = new AsyncLocalStorage<GatewayToolCallerIdentity>();
+
+export function captureGatewayToolCallerIdentity(
+  agentId: string | undefined,
+  source: GatewayToolCallerSource | undefined,
+): GatewayToolCallerIdentity | undefined {
+  const executionIdentity = getExecutionIdentityAdmissionScope()?.token;
+  return agentId && source?.agentSessionKey?.trim()
+    ? {
+        agentId,
+        sessionKey: source.agentSessionKey.trim(),
+        ...(executionIdentity ? { executionIdentity } : {}),
+        turnSourceChannel: source.agentChannel,
+        turnSourceTo: source.currentMessagingTarget ?? source.currentChannelId ?? source.agentTo,
+        turnSourceAccountId: source.agentAccountId,
+        turnSourceThreadId: source.currentThreadTs ?? source.agentThreadId,
+      }
+    : undefined;
+}
 
 export function getGatewayToolCallerIdentity(): GatewayToolCallerIdentity | undefined {
   return gatewayToolCallerStorage.getStore();
@@ -89,18 +107,6 @@ export function createGatewayToolCallerWrapper(
   agentId: string | undefined,
   source: GatewayToolCallerSource | undefined,
 ): (tool: AnyAgentTool) => AnyAgentTool {
-  const executionIdentity = getExecutionIdentityAdmissionScope()?.token;
-  const identity =
-    agentId && source?.agentSessionKey?.trim()
-      ? {
-          agentId,
-          sessionKey: source.agentSessionKey.trim(),
-          ...(executionIdentity ? { executionIdentity } : {}),
-          turnSourceChannel: source.agentChannel,
-          turnSourceTo: source.currentMessagingTarget ?? source.currentChannelId ?? source.agentTo,
-          turnSourceAccountId: source.agentAccountId,
-          turnSourceThreadId: source.currentThreadTs ?? source.agentThreadId,
-        }
-      : undefined;
+  const identity = captureGatewayToolCallerIdentity(agentId, source);
   return (tool) => wrapToolWithGatewayCallerIdentity(tool, identity);
 }

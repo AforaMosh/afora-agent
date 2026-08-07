@@ -1,6 +1,10 @@
 import { Type } from "typebox";
 import { describe, expect, it, vi } from "vitest";
 import {
+  createExecutionIdentityAdmissionToken,
+  runWithExecutionIdentityAdmissionScope,
+} from "../../audit/execution-identity-admission.js";
+import {
   onInternalDiagnosticEvent,
   waitForDiagnosticEventsDrained,
 } from "../../infra/diagnostic-events.js";
@@ -17,9 +21,43 @@ import {
   setToolTerminalPresentation,
 } from "../tool-terminal-presentation.js";
 import type { AnyAgentTool } from "./common.js";
-import { createGatewayToolCallerWrapper } from "./gateway-caller-context.js";
+import {
+  captureGatewayToolCallerIdentity,
+  createGatewayToolCallerWrapper,
+} from "./gateway-caller-context.js";
 
 describe("gateway caller context wrapper", () => {
+  it("captures admitted identity once and stays unbound without a scope", async () => {
+    expect(
+      captureGatewayToolCallerIdentity("agent-a", {
+        agentSessionKey: " agent-a:session ",
+      }),
+    ).toEqual({
+      agentId: "agent-a",
+      sessionKey: "agent-a:session",
+    });
+
+    const token = createExecutionIdentityAdmissionToken("run-a", {
+      contextId: "context-a",
+      executionId: "execution-a",
+      now: 1,
+    });
+    const captured = await runWithExecutionIdentityAdmissionScope(
+      { token, retryOnly: false },
+      async () =>
+        captureGatewayToolCallerIdentity("agent-a", {
+          agentSessionKey: "agent-a:session",
+        }),
+    );
+
+    expect(captured).toEqual({
+      agentId: "agent-a",
+      sessionKey: "agent-a:session",
+      executionIdentity: token,
+    });
+    expect(captureGatewayToolCallerIdentity("agent-a", undefined)).toBeUndefined();
+  });
+
   it("preserves tool metadata used by policy and presentation layers", () => {
     const tool: AnyAgentTool = {
       name: "plugin_tool",
