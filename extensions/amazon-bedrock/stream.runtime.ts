@@ -83,7 +83,11 @@ function usesClaudeFable5BedrockContract(model: Model<"bedrock-converse-stream">
 }
 
 function usesClaudeOpus5BedrockContract(model: Model<"bedrock-converse-stream">): boolean {
-  return resolveClaudeOpus5ModelIdentity(model) !== undefined;
+  return (
+    resolveClaudeOpus5ModelIdentity(model) !== undefined ||
+    resolveClaudeOpus5ModelIdentity({ id: resolveClaudeProfileNameModelId(model.name) }) !==
+      undefined
+  );
 }
 
 function usesClaudeSonnet5BedrockContract(model: Model<"bedrock-converse-stream">): boolean {

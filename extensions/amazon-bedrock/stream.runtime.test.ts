@@ -516,6 +516,15 @@ describe("Bedrock thinking effort mapping", () => {
       inferenceConfig: { maxTokens: 32_000 },
     },
     {
+      label: "an Opus 5 application inference profile",
+      model: {
+        id: "arn:aws:bedrock:us-east-1:123456789012:application-inference-profile/profile-abc",
+        name: "Claude Opus 5",
+        maxTokens: 32_000,
+      },
+      inferenceConfig: { maxTokens: 32_000 },
+    },
+    {
       label: "a non-Opus model",
       model: { id: "amazon.nova-pro-v1:0", name: "Nova Pro", maxTokens: 32_000 },
       inferenceConfig: {},
