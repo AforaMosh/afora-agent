@@ -8,6 +8,7 @@ import {
   resolveTimestampMsToIsoString,
 } from "@openclaw/normalization-core/number-coercion";
 import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeToolName } from "../agents/tool-policy-shared.js";
 import { runExec } from "../process/exec.js";
 
 const LIVE_CRON_PROBE_DELAY_SECONDS = 7 * 24 * 60 * 60;
@@ -273,22 +274,33 @@ export function assertCronJobDefaultToolAuthority(params: {
   const toolsAllow = Array.isArray(rawToolsAllow)
     ? rawToolsAllow.filter((tool): tool is string => typeof tool === "string")
     : [];
+  const expectedCanonicalTool = normalizeToolName(params.expectedTool);
   if (
-    toolsAllow.includes(params.expectedTool) &&
+    toolsAllow.includes(expectedCanonicalTool) &&
     params.job.payload?.toolsAllowIsDefault === true
   ) {
     return;
   }
-  const visibleTools = toolsAllow.slice(0, 32).map((tool) => tool.slice(0, 160));
-  const omittedToolCount = Math.max(0, toolsAllow.length - visibleTools.length);
+  const boundedTools = toolsAllow.map((tool) => tool.slice(0, 160));
+  const visibleToolsHead = boundedTools.slice(0, 16);
+  const visibleToolsTail = boundedTools.slice(-16);
+  const omittedToolCount = Math.max(
+    0,
+    boundedTools.length - visibleToolsHead.length - visibleToolsTail.length,
+  );
   const jobRef = (params.job.id ?? params.job.name ?? "<unknown>").slice(0, 160);
   const expectedToolDiagnostic = params.expectedTool.slice(0, 160);
+  const expectedCanonicalToolDiagnostic = expectedCanonicalTool.slice(0, 160);
   throw new Error(
     [
       `cron job ${jobRef} did not persist the expected creator-default tool authority before force-run`,
       `expectedTool=${JSON.stringify(expectedToolDiagnostic)}`,
+      `expectedCanonicalTool=${JSON.stringify(expectedCanonicalToolDiagnostic)}`,
       `toolsAllowIsDefault=${String(params.job.payload?.toolsAllowIsDefault)}`,
-      `toolsAllow=${JSON.stringify(visibleTools)}`,
+      boundedTools.length <= 32
+        ? `toolsAllow=${JSON.stringify(boundedTools)}`
+        : `toolsAllowHead=${JSON.stringify(visibleToolsHead)}`,
+      boundedTools.length <= 32 ? undefined : `toolsAllowTail=${JSON.stringify(visibleToolsTail)}`,
       omittedToolCount > 0 ? `omittedToolCount=${omittedToolCount}` : undefined,
       `inspect job=${JSON.stringify(jobRef)} with openclaw automations show <job-id> --json; explicitly reauthorize exact tools or recreate the job`,
     ]

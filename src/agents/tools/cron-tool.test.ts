@@ -1442,6 +1442,53 @@ describe("cron tool", () => {
     });
   });
 
+  it("canonicalizes a mixed-case MCP creator identity in the default cap", async () => {
+    const tool = createTestCronTool({
+      agentSessionKey: "agent:main:telegram:group:restricted-room",
+      creatorToolAllowlist: [
+        "read",
+        { name: "cronCleanupProbe__cleanup_probe", pluginId: "Bundle-MCP" },
+      ],
+    });
+
+    await tool.execute("call-default-capped-add-mixed-case-mcp", {
+      action: "add",
+      job: buildReminderAgentTurnJob(),
+    });
+
+    const params = expectSingleGatewayCallMethod("cron.add") as
+      | { payload?: { toolsAllow?: string[]; toolsAllowIsDefault?: boolean } }
+      | undefined;
+    expect(params?.payload).toMatchObject({
+      toolsAllow: ["read", "croncleanupprobe__cleanup_probe"],
+      toolsAllowIsDefault: true,
+    });
+  });
+
+  it("matches a mixed-case explicit request against its canonical creator identity", async () => {
+    const tool = createTestCronTool({
+      agentSessionKey: "agent:main:telegram:group:restricted-room",
+      creatorToolAllowlist: [{ name: "cronCleanupProbe__cleanup_probe", pluginId: "Bundle-MCP" }],
+    });
+
+    await tool.execute("call-explicit-capped-add-mixed-case-mcp", {
+      action: "add",
+      job: buildReminderAgentTurnJob({
+        payload: {
+          kind: "agentTurn",
+          message: "hello",
+          toolsAllow: ["cronCleanupProbe__cleanup_probe"],
+        },
+      }),
+    });
+
+    const params = expectSingleGatewayCallMethod("cron.add") as
+      | { payload?: { toolsAllow?: string[]; toolsAllowIsDefault?: boolean } }
+      | undefined;
+    expect(params?.payload?.toolsAllow).toEqual(["croncleanupprobe__cleanup_probe"]);
+    expect(params?.payload?.toolsAllowIsDefault).toBeUndefined();
+  });
+
   it("caps trigger-script systemEvent adds to the creator tool surface", async () => {
     const tool = createTestCronTool({
       agentSessionKey: "agent:main:telegram:group:restricted-room",

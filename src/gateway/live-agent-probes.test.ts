@@ -163,7 +163,7 @@ describe("live-agent-probes", () => {
           payload: {
             kind: "agentTurn",
             message: "scheduled probe",
-            toolsAllow: ["read", "cronCleanupProbe__cleanup_probe"],
+            toolsAllow: ["read", "croncleanupprobe__cleanup_probe"],
             toolsAllowIsDefault: true,
           },
         },
@@ -179,7 +179,7 @@ describe("live-agent-probes", () => {
     },
     {
       label: "default marker is absent",
-      payload: { toolsAllow: ["read", "cronCleanupProbe__cleanup_probe"] },
+      payload: { toolsAllow: ["read", "croncleanupprobe__cleanup_probe"] },
     },
   ])("reports bounded recovery diagnostics when $label", ({ payload }) => {
     expect(() =>
@@ -191,7 +191,27 @@ describe("live-agent-probes", () => {
         expectedTool: "cronCleanupProbe__cleanup_probe",
       }),
     ).toThrow(
-      /did not persist.*expectedTool="cronCleanupProbe__cleanup_probe".*toolsAllowIsDefault=.*inspect job="job-mcp-proof" with openclaw automations show <job-id> --json/u,
+      /did not persist.*expectedTool="cronCleanupProbe__cleanup_probe".*expectedCanonicalTool="croncleanupprobe__cleanup_probe".*toolsAllowIsDefault=.*inspect job="job-mcp-proof" with openclaw automations show <job-id> --json/u,
+    );
+  });
+
+  it("keeps the relevant canonical authority tail in bounded diagnostics", () => {
+    const toolsAllow = Array.from({ length: 40 }, (_, index) => `tool_${index}`);
+    toolsAllow.push("other_server__cleanup_probe");
+    expect(() =>
+      assertCronJobDefaultToolAuthority({
+        job: {
+          id: "job-mcp-proof",
+          payload: {
+            kind: "agentTurn",
+            toolsAllow,
+            toolsAllowIsDefault: true,
+          },
+        },
+        expectedTool: "cronCleanupProbe__cleanup_probe",
+      }),
+    ).toThrow(
+      /expectedCanonicalTool="croncleanupprobe__cleanup_probe".*toolsAllowHead=.*toolsAllowTail=.*other_server__cleanup_probe.*omittedToolCount=9/u,
     );
   });
 });
