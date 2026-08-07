@@ -841,10 +841,12 @@ describe("scripts/crabbox-wrapper", () => {
         "--timing-json",
         "--",
         "env",
+        "-u",
+        "PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN",
         "OPENCLAW_CHECK_CHANGED_REMOTE_CHILD=1",
         "OPENCLAW_CHANGED_LANES_RAW_SYNC=1",
         "CI=1",
-        "PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false",
+        "pnpm_config_verify_deps_before_run=install",
         "corepack",
         "pnpm",
         "check:changed",
@@ -3278,9 +3280,12 @@ describe("scripts/crabbox-wrapper", () => {
         "aws",
         "--",
         "env",
+        "-u",
+        "PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN",
         "OPENCLAW_CHECK_CHANGED_REMOTE_CHILD=1",
         "OPENCLAW_CHANGED_LANES_RAW_SYNC=1",
         "CI=1",
+        "pnpm_config_verify_deps_before_run=install",
         "corepack",
         "pnpm",
         "check:changed",
@@ -3291,7 +3296,7 @@ describe("scripts/crabbox-wrapper", () => {
     expect(output.args).toContain("--shell");
     expect(remoteCommand).toContain(remoteChangedGateFetch);
     expect(remoteCommand).toMatch(
-      /&& env OPENCLAW_CHECK_CHANGED_REMOTE_CHILD=1 OPENCLAW_CHANGED_LANES_RAW_SYNC=1 CI=1 corepack pnpm check:changed$/u,
+      /&& env -u PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN OPENCLAW_CHECK_CHANGED_REMOTE_CHILD=1 OPENCLAW_CHANGED_LANES_RAW_SYNC=1 CI=1 pnpm_config_verify_deps_before_run=install corepack pnpm check:changed$/u,
     );
   });
 
