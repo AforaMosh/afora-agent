@@ -613,19 +613,20 @@ function assertHostReadMediaAllowed(params: {
 
 // Queue custody preserves artifact paths; outbound image metadata must still match encoded bytes.
 function reconcileImageFileName(media: WebMediaResult): WebMediaResult {
-  const contentType = normalizeMimeType(media.contentType);
-  if (
-    media.kind !== "image" ||
-    !media.fileName ||
-    !contentType ||
-    mimeTypeFromFilePath(media.fileName) === contentType
-  ) {
+  if (media.kind !== "image" || !media.fileName) {
     return media;
   }
   const fileName = basenameFromAnyPath(media.fileName.trim());
-  const extension = extensionForMime(contentType);
-  if (!fileName || !extension) {
+  if (!fileName) {
     return media;
+  }
+  const contentType = normalizeMimeType(media.contentType);
+  if (!contentType || mimeTypeFromFilePath(fileName) === contentType) {
+    return fileName === media.fileName ? media : { ...media, fileName };
+  }
+  const extension = extensionForMime(contentType);
+  if (!extension) {
+    return fileName === media.fileName ? media : { ...media, fileName };
   }
   const parsed = path.parse(fileName);
   return {
@@ -972,12 +973,12 @@ export async function optimizeImageBufferForWebMedia(params: {
       throw new Error(formatCapLimit("GIF", cap, params.buffer.length));
     }
     assertImageSatisfiesHardDimensionPolicy(params.buffer, params.imageCompression);
-    return {
+    return reconcileImageFileName({
       buffer: params.buffer,
       contentType: params.contentType,
       kind: "image",
       fileName: params.fileName,
-    };
+    });
   }
   const meta = { contentType: params.contentType, fileName: params.fileName };
   const originalContentType = resolvePreservableOriginalImageContentType({
@@ -988,12 +989,12 @@ export async function optimizeImageBufferForWebMedia(params: {
     policy: params.imageCompression,
   });
   if (originalContentType) {
-    return {
+    return reconcileImageFileName({
       buffer: params.buffer,
       contentType: originalContentType,
       kind: "image",
       fileName: params.fileName,
-    };
+    });
   }
   const optimized = await optimizeImageWithFallback({
     buffer: params.buffer,

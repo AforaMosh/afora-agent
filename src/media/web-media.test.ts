@@ -596,6 +596,22 @@ describe("loadWebMedia", () => {
     expect(unknownImage.fileName).toBe("portrait.mystery");
   });
 
+  it("strips matching image filename paths without changing equivalent extensions", async () => {
+    const { optimizeImageBufferForWebMedia } = await import("./web-media.js");
+    const sourceJpeg = createTinyJpegBuffer();
+
+    const result = await optimizeImageBufferForWebMedia({
+      buffer: sourceJpeg,
+      contentType: "image/jpeg",
+      fileName: String.raw`C:\Users\alice\portrait.JpEg`,
+      maxBytes: 1024 * 1024,
+    });
+
+    expect(result.contentType).toBe("image/jpeg");
+    expect(result.fileName).toBe("portrait.JpEg");
+    expect(result.buffer).toBe(sourceJpeg);
+  });
+
   it("applies model image maxBytes to the effective image cap", async () => {
     await expect(
       loadWebMediaRaw(tinyPngFile, {
