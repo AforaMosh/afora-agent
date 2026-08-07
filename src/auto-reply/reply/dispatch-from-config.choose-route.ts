@@ -234,24 +234,21 @@ export async function chooseDispatchRoute(state: PrepareDispatchOperationReadySt
   const deferFinalTtsText = shouldDeferFinalTtsText(captionedFinalTtsContext);
   const cleanDeferredFinalDirectives = shouldCleanTtsDirectiveText(captionedFinalTtsContext);
   const deliveredBlockContentKeys = new Set<string>();
-  const untrackedBlockAdmissions = new Set<string>();
   const blockDeliveryOutcomes = new Map<string, Array<Promise<ReplyDispatchDeliveryOutcome>>>();
   const sendTrackedBlockReply = (payload: ReplyPayload): boolean => {
     const contentKey = createBlockReplyContentKey(payload);
     const delivery = turnLedger.sendQueued("block", payload);
-    if (!delivery.queued || !delivery.outcome) {
-      if (delivery.queued) {
-        untrackedBlockAdmissions.add(contentKey);
-      }
-      return delivery.queued;
+    if (!delivery.queued) {
+      return false;
     }
+    const outcome = delivery.outcome ?? Promise.resolve("delivered" as const);
     const outcomes = blockDeliveryOutcomes.get(contentKey);
     if (outcomes) {
-      outcomes.push(delivery.outcome);
+      outcomes.push(outcome);
     } else {
-      blockDeliveryOutcomes.set(contentKey, [delivery.outcome]);
+      blockDeliveryOutcomes.set(contentKey, [outcome]);
     }
-    return delivery.queued;
+    return true;
   };
   const recordRoutedBlockReplyDelivery = (
     payload: ReplyPayload,
@@ -267,9 +264,6 @@ export async function chooseDispatchRoute(state: PrepareDispatchOperationReadySt
   ): Promise<boolean> => {
     const contentKey = createBlockReplyContentKey(payload);
     if (deliveredBlockContentKeys.has(contentKey)) {
-      return true;
-    }
-    if (untrackedBlockAdmissions.delete(contentKey)) {
       return true;
     }
     const outcomes = blockDeliveryOutcomes.get(contentKey);

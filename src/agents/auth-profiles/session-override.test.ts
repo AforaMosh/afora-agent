@@ -948,9 +948,7 @@ describe("resolveSessionAuthProfileOverride", () => {
           authProfileOverrideCompactionCount: 0,
         });
         const sessionStore = { "agent:main:main": sessionEntry };
-
         const resolved = await resolveOpenAiSession({ agentDir, sessionEntry, sessionStore });
-
         expect(resolved).toBe(TEST_PRIMARY_PROFILE_ID);
         expect(sessionEntry.updatedAt).toBe(1);
         expect(authStoreMocks.isProfileInCooldown).toHaveBeenCalledWith(
