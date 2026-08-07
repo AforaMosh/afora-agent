@@ -356,6 +356,7 @@ describe("runPreparedCliAgent context engine lifecycle", () => {
       waitForRuntimePersistence: vi.fn(async () => {}),
       persistApproved: vi.fn(async () => undefined),
       persistBlocked: vi.fn(async () => undefined),
+      persistFallback: vi.fn(async () => undefined),
     };
 
     await runPreparedCliAgent(context);

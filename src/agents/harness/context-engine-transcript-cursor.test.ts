@@ -13,6 +13,7 @@ import {
   upsertSessionEntry,
 } from "../../config/sessions/session-accessor.js";
 import type { ContextEngine, ContextEngineSessionTarget } from "../../context-engine/types.js";
+import { createUserTurnTranscriptRecorder } from "../../sessions/user-turn-transcript.js";
 import {
   bootstrapHarnessContextEngine,
   finalizeHarnessContextEngineTurn,
@@ -51,6 +52,7 @@ describe("context engine transcript cursor contract", () => {
       agentId: "main",
       sessionId: "context-engine-cursor",
       sessionKey: "agent:main:context-engine-cursor",
+      sessionEntry: { sessionId: "context-engine-cursor", updatedAt: 10 },
       storePath,
     };
     const projectedMessages: AgentMessage[] = [];
@@ -116,11 +118,12 @@ describe("context engine transcript cursor contract", () => {
         parentId: first?.messageId,
         now: 2_000,
       });
-      const admitted = await appendTranscriptMessage(target, {
-        message: { role: "user", content: "third" },
-        now: 3_000,
-      });
-      if (!admitted?.admission) {
+      const admitted = await createUserTurnTranscriptRecorder({
+        message: { role: "user", content: "third", timestamp: 3_000 },
+        target,
+        updateMode: "none",
+      }).persistApproved();
+      if (!admitted) {
         throw new Error("expected admitted user message with transcript admission");
       }
       const admission = admitted.admission;
@@ -132,9 +135,7 @@ describe("context engine transcript cursor contract", () => {
         sessionKey: target.sessionKey,
         sessionTarget: target,
         sessionFile: "sqlite://context-engine-cursor",
-        runtimeContext: {
-          transcriptReadFence: admission,
-        },
+        transcriptReadFence: admission,
         runMaintenance: skipMaintenance,
         warn: () => {},
       });
@@ -156,9 +157,6 @@ describe("context engine transcript cursor contract", () => {
         sessionFile: "sqlite://context-engine-cursor",
         messagesSnapshot: [],
         prePromptMessageCount: 0,
-        runtimeContext: {
-          transcriptReadFence: admission,
-        },
         runMaintenance: skipMaintenance,
         warn: () => {},
       });

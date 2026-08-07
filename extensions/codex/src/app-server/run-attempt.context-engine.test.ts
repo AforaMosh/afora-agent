@@ -2028,8 +2028,6 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
     const harness = createStartedThreadHarness();
     const params = await createSqliteParams(workspaceDir, "deferred-after-turn");
     params.contextEngine = contextEngine;
-    const onContextEngineTurnCandidate = vi.fn();
-    params.onContextEngineTurnCandidate = onContextEngineTurnCandidate;
 
     const run = runCodexAppServerAttempt(params);
     await harness.waitForMethod("turn/start");
@@ -2038,7 +2036,6 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
 
     expect(afterTurn).not.toHaveBeenCalled();
     expect(maintain).not.toHaveBeenCalled();
-    expect(onContextEngineTurnCandidate).not.toHaveBeenCalled();
     expect(result.contextEngineTerminalAnchor).toMatchObject({
       sessionId: params.sessionId,
       sessionKey: params.sessionKey,

@@ -12,7 +12,6 @@ import {
   closeOpenClawAgentDatabasesForTest,
   openOpenClawAgentDatabase,
 } from "../../state/openclaw-agent-db.js";
-import type { AgentMessage } from "../runtime/index.js";
 import type { ContextEngineLogicalTurnLease } from "./context-engine-logical-turn.js";
 import { finalizeAcceptedContextEngineTurn } from "./context-engine-turn-attempt.js";
 import { enqueueContextEngineTurnIntent } from "./context-engine-turn-outbox.js";
@@ -20,10 +19,6 @@ import { enqueueContextEngineTurnIntent } from "./context-engine-turn-outbox.js"
 afterEach(() => {
   closeOpenClawAgentDatabasesForTest();
 });
-
-function messageText(message: AgentMessage): unknown {
-  return "content" in message ? message.content : undefined;
-}
 
 describe("accepted context-engine turn finalization", () => {
   it("advances only the admitted durable range and rejects stale admission facts", async () => {
@@ -110,12 +105,16 @@ describe("accepted context-engine turn finalization", () => {
     await finalizeAcceptedContextEngineTurn({ facts: baseFacts, lease });
 
     expect(commitTurn).toHaveBeenCalledOnce();
-    expect(commitTurn.mock.calls[0]?.[0].messages.map(messageText)).toEqual([
-      "prior",
-      "current",
-      "answer",
-    ]);
-    expect(commitTurn.mock.calls[0]?.[0].prePromptMessageCount).toBe(1);
+    expect(commitTurn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messages: expect.arrayContaining([
+          expect.objectContaining({ content: "prior" }),
+          expect.objectContaining({ content: "current" }),
+          expect.objectContaining({ content: "answer" }),
+        ]),
+        prePromptMessageCount: 1,
+      }),
+    );
 
     const warn = vi.fn();
     await finalizeAcceptedContextEngineTurn({

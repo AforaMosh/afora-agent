@@ -246,9 +246,21 @@ export function recoverContextEngineTurnOutbox(params: {
       maxBytes: RECOVERED_TURN_MAX_BYTES,
     });
     if (closedTurn.kind !== "ok") {
+      if (closedTurn.kind === "projection-unavailable") {
+        params.warn(
+          `[context-engine] durable turn recovery remains queued: ${row.advancement_key}: transcript range is ${closedTurn.kind}`,
+        );
+        continue;
+      }
       params.warn(
-        `[context-engine] durable turn recovery remains queued: ${row.advancement_key}: transcript range is ${closedTurn.kind}`,
+        `[context-engine] discarded unrecoverable turn advancement: ${row.advancement_key}: transcript range is ${closedTurn.kind}`,
       );
+      discardContextEngineTurnIntent({
+        admission: payload.admission,
+        database: params.database,
+        engineId: params.engineId,
+        ownerPluginId: params.ownerPluginId,
+      });
       continue;
     }
     enqueueContextEngineTurnCommit({

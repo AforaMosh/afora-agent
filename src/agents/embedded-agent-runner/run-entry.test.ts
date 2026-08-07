@@ -6,7 +6,7 @@ import type { EmbeddedAgentRunResult } from "./types.js";
 type CandidateOptions = {
   allowTransientCooldownProbe?: boolean;
   isFinalFallbackAttempt?: boolean;
-  onContextEngineTurnCandidate: (facts: ContextEngineTurnAttemptFacts) => void;
+  onContextEngineTurnCandidate?: (facts: ContextEngineTurnAttemptFacts) => void;
 };
 
 type FallbackRunnerParams = {
@@ -57,10 +57,16 @@ const state = vi.hoisted(() => ({
     id: provider === "fallback-provider" ? "fallback-harness" : "primary-harness",
     contextEngineHostCapabilities: [],
   })),
+  discardedAttempts: [] as string[],
   finalizedAttempts: [] as string[],
 }));
 
 vi.mock("../harness/context-engine-turn-attempt.js", () => ({
+  discardContextEngineTurnAttemptIntent: vi.fn(
+    ({ facts }: { facts: ContextEngineTurnAttemptFacts }) => {
+      state.discardedAttempts.push(facts.sessionIdUsed);
+    },
+  ),
   finalizeAcceptedContextEngineTurn: vi.fn(async ({ facts }) => {
     state.finalizedAttempts.push(facts.sessionIdUsed);
   }),
@@ -76,7 +82,7 @@ vi.mock("../harness/runtime-plugin.js", () => ({
 }));
 
 vi.mock("../harness/selection.js", () => ({
-  selectAgentHarness: (params: unknown) => state.selectAgentHarness(params),
+  selectAgentHarness: (params: { provider: string }) => state.selectAgentHarness(params),
 }));
 
 function makeResult(params: {
@@ -104,9 +110,12 @@ function makeResult(params: {
 }
 
 function recordTurnAttempt(
-  record: (facts: ContextEngineTurnAttemptFacts) => void,
+  record: ((facts: ContextEngineTurnAttemptFacts) => void) | undefined,
   label: string,
 ): void {
+  if (!record) {
+    throw new Error("expected context-engine turn candidate callback");
+  }
   record({
     boundary: {
       admission: {
@@ -144,6 +153,7 @@ function recordTurnAttempt(
 
 describe("runEmbeddedAgentEntry", () => {
   beforeEach(() => {
+    state.discardedAttempts.length = 0;
     state.finalizedAttempts.length = 0;
     state.ensureSelectedAgentHarnessPlugin.mockClear();
     state.selectAgentHarness.mockClear();
@@ -419,6 +429,7 @@ describe("runEmbeddedAgentEntry", () => {
     });
 
     expect(state.finalizedAttempts).toEqual([]);
+    expect(state.discardedAttempts).toEqual(["fallback-provider"]);
   });
 
   it.each([
@@ -428,7 +439,13 @@ describe("runEmbeddedAgentEntry", () => {
     },
     { label: "aborted", meta: { aborted: true, stopReason: "error" } },
     { label: "timed out", meta: { timeoutPhase: "provider" as const, stopReason: "timeout" } },
-    { label: "errored", meta: { error: new Error("provider failed"), stopReason: "error" } },
+    {
+      label: "errored",
+      meta: {
+        error: { kind: "retry_limit" as const, message: "provider failed" },
+        stopReason: "error",
+      },
+    },
   ])("does not finalize a $label candidate", async ({ meta }) => {
     state.runWithModelFallback.mockImplementationOnce(async (params: FallbackRunnerParams) => {
       const result = await params.run(params.provider, params.model);
@@ -458,6 +475,7 @@ describe("runEmbeddedAgentEntry", () => {
     });
 
     expect(state.finalizedAttempts).toEqual([]);
+    expect(state.discardedAttempts).toEqual(["candidate"]);
   });
 
   it("does not finalize a candidate when classification throws", async () => {
@@ -498,6 +516,7 @@ describe("runEmbeddedAgentEntry", () => {
     ).rejects.toBe(classificationError);
 
     expect(state.finalizedAttempts).toEqual([]);
+    expect(state.discardedAttempts).toEqual(["candidate"]);
   });
 
   it("does not replay a thrown channel-delivery attempt that already delivered its reply (#113788)", async () => {

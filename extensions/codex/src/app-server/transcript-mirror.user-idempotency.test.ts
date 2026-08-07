@@ -70,8 +70,10 @@ vi.mock("openclaw/plugin-sdk/codex-session-transcript-runtime", async (importOri
           appendMessageWithMessageSequence: async (options) => {
             transcriptRace.lookups.push(options.idempotencyLookup);
             const result = await locked.appendMessageWithMessageSequence(options);
-            if (result.result?.message.role === "user") {
-              transcriptRace.userAnchor = result.result.anchor;
+            const appended = result.result;
+            const message = appended?.message as AgentMessage | undefined;
+            if (appended && message?.role === "user") {
+              transcriptRace.userAnchor = appended.anchor;
             }
             return result;
           },

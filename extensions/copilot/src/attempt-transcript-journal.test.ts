@@ -12,6 +12,7 @@ import { createMockPluginRegistry } from "openclaw/plugin-sdk/plugin-test-runtim
 import { upsertSessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
 import {
   readSessionTranscriptEvents,
+  type TranscriptEntryAnchor,
   type SessionTranscriptTargetParams,
   type TranscriptTurnAdmission,
 } from "openclaw/plugin-sdk/session-transcript-runtime";
@@ -86,9 +87,17 @@ async function createFixture(
     resolveMessage: vi.fn(async () => userMessage),
     markRuntimePersistencePending: vi.fn(),
     markRuntimePersisted: vi.fn(
-      (_message: Extract<AgentMessage, { role: "user" }>, admission?: TranscriptTurnAdmission) => {
+      (
+        _message?: Extract<AgentMessage, { role: "user" }>,
+        anchor?: TranscriptEntryAnchor | TranscriptTurnAdmission,
+      ) => {
         persisted = true;
-        admissionReceipt = admission;
+        admissionReceipt =
+          anchor && "logicalTurnId" in anchor
+            ? anchor
+            : anchor
+              ? { ...anchor, logicalTurnId: "logical-turn-1", role: "user" }
+              : undefined;
       },
     ),
     markBlocked: vi.fn(() => {
@@ -236,14 +245,18 @@ describe("Copilot attempt transcript journal", () => {
     ]);
   });
 
-  it("publishes the exact storage admission object to the turn recorder", async () => {
+  it("publishes the exact storage anchor for the recorder admission", async () => {
     const { journal, recorder } = await createFixture();
 
     await journal.persistInitialUser();
 
-    const admission = recorder.markRuntimePersisted.mock.calls[0]?.[1];
-    expect(admission).toBeDefined();
-    expect(recorder.getAdmissionReceipt()).toBe(admission);
+    const anchor = recorder.markRuntimePersisted.mock.calls[0]?.[1];
+    expect(anchor).toBeDefined();
+    expect(recorder.getAdmissionReceipt()).toEqual({
+      ...anchor,
+      logicalTurnId: "logical-turn-1",
+      role: "user",
+    });
   });
 
   it("removes the originally staged user when its resolved replacement is blocked", async () => {

@@ -108,11 +108,12 @@ export async function drainPendingContextEngineTurnsBeforeRun(params: {
   }
 }
 
-function discardTurnIntentBestEffort(params: {
+export function discardContextEngineTurnAttemptIntent(params: {
   facts: ContextEngineTurnAttemptFacts;
   lease: ContextEngineLogicalTurnLease;
-  warn: (message: string) => void;
+  warn?: (message: string) => void;
 }): void {
+  const warn = params.warn ?? console.warn;
   try {
     const admission = params.facts.boundary.admission;
     discardContextEngineTurnIntent({
@@ -125,7 +126,7 @@ function discardTurnIntentBestEffort(params: {
       ownerPluginId: params.lease.effectiveEnginePluginId,
     });
   } catch (error) {
-    params.warn(
+    warn(
       `[context-engine] failed to discard unaccepted turn intent: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
@@ -158,7 +159,7 @@ export async function finalizeAcceptedContextEngineTurn(params: {
 }): Promise<void> {
   const warn = params.warn ?? console.warn;
   if (params.facts.promptError || params.facts.aborted || params.facts.yieldAborted) {
-    discardTurnIntentBestEffort({ facts: params.facts, lease: params.lease, warn });
+    discardContextEngineTurnAttemptIntent({ facts: params.facts, lease: params.lease, warn });
     return;
   }
   try {

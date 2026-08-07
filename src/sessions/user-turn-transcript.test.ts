@@ -495,7 +495,7 @@ describe("user turn transcript persistence", () => {
       await persistence;
 
       expect(recorder.getAdmissionReceipt()).toEqual(admissionReceipt);
-      expect(recorder.getPersistedMessage()).toMatchObject({
+      expect(recorder.getPersistedMessage?.()).toMatchObject({
         content: "describe this",
         idempotencyKey: "chat-run-late:user",
       });

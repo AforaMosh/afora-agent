@@ -300,7 +300,7 @@ vi.mock("../../routing/session-key.js", () => ({
 }));
 
 vi.mock("../commands-text-routing.js", () => ({
-  shouldHandleTextCommands: (...args: unknown[]) => mocks.shouldHandleTextCommands(...args),
+  shouldHandleTextCommands: () => mocks.shouldHandleTextCommands(),
 }));
 
 vi.mock("./commands-context.js", () => ({

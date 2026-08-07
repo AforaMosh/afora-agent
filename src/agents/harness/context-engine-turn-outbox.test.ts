@@ -214,15 +214,17 @@ describe("context-engine turn outbox", () => {
     });
 
     expect(commitTurn).toHaveBeenCalledOnce();
-    expect(commitTurn.mock.calls[0]?.[0]).toMatchObject({
-      advancementKey: admission.logicalTurnId,
-      isHeartbeat: true,
-      messages: [
-        { role: "user", content: "first" },
-        { role: "assistant", content: "first answer" },
-      ],
-      prePromptMessageCount: 0,
-    });
+    expect(commitTurn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        advancementKey: admission.logicalTurnId,
+        isHeartbeat: true,
+        messages: [
+          { role: "user", content: "first" },
+          { role: "assistant", content: "first answer" },
+        ],
+        prePromptMessageCount: 0,
+      }),
+    );
     const queued = database.db
       .prepare("SELECT advancement_key, payload_json FROM context_engine_turn_outbox")
       .all() as Array<{ advancement_key: string; payload_json: string }>;

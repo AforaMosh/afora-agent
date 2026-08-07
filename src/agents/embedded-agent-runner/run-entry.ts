@@ -10,6 +10,7 @@ import {
   type ContextEngineLogicalTurnLease,
 } from "../harness/context-engine-logical-turn.js";
 import {
+  discardContextEngineTurnAttemptIntent,
   finalizeAcceptedContextEngineTurn,
   type ContextEngineTurnAttemptFacts,
 } from "../harness/context-engine-turn-attempt.js";
@@ -244,6 +245,7 @@ export async function runEmbeddedAgentEntry<T extends EmbeddedAgentRunResult>(
     agentDir: params.selection.agentDir,
     workspaceDir: params.harness.workspaceDir,
   });
+  let unsettledContextEngineTurnAttempt: ContextEngineTurnAttemptFacts | undefined;
   let candidateIndex = 0;
   const committedSideEffect =
     params.behavior.kind === "command-rpc" ? params.behavior.hasCommittedSideEffect : undefined;
@@ -380,6 +382,7 @@ export async function runEmbeddedAgentEntry<T extends EmbeddedAgentRunResult>(
           contextEngineLogicalTurnLease,
           onContextEngineTurnCandidate: (facts) => {
             contextEngineTurnCandidate = facts;
+            unsettledContextEngineTurnAttempt = facts;
           },
         });
         return { result, turnAttempt: contextEngineTurnCandidate };
@@ -410,18 +413,25 @@ export async function runEmbeddedAgentEntry<T extends EmbeddedAgentRunResult>(
       fallbackExhausted: settledResult.outcome === "exhausted",
       behavior: params.behavior,
     });
-    if (
-      fallbackResult.result.turnAttempt &&
-      canAdvanceContextEngineTurn({
-        result,
-        fallbackOutcome: settledResult.outcome,
-        terminal,
-      })
-    ) {
-      await finalizeAcceptedContextEngineTurn({
-        facts: fallbackResult.result.turnAttempt,
-        lease: contextEngineLogicalTurnLease,
-      });
+    if (fallbackResult.result.turnAttempt) {
+      if (
+        canAdvanceContextEngineTurn({
+          result,
+          fallbackOutcome: settledResult.outcome,
+          terminal,
+        })
+      ) {
+        await finalizeAcceptedContextEngineTurn({
+          facts: fallbackResult.result.turnAttempt,
+          lease: contextEngineLogicalTurnLease,
+        });
+      } else {
+        discardContextEngineTurnAttemptIntent({
+          facts: fallbackResult.result.turnAttempt,
+          lease: contextEngineLogicalTurnLease,
+        });
+      }
+      unsettledContextEngineTurnAttempt = undefined;
     }
     let sessionOverrideSettled = false;
     const settleSessionOverride = async () => {
@@ -441,6 +451,12 @@ export async function runEmbeddedAgentEntry<T extends EmbeddedAgentRunResult>(
     };
     return { ...settledResult, terminal, settleSessionOverride };
   } finally {
+    if (unsettledContextEngineTurnAttempt) {
+      discardContextEngineTurnAttemptIntent({
+        facts: unsettledContextEngineTurnAttempt,
+        lease: contextEngineLogicalTurnLease,
+      });
+    }
     await contextEngineLogicalTurnLease.dispose();
   }
 }

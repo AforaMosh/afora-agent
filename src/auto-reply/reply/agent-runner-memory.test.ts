@@ -305,6 +305,8 @@ describe("runMemoryFlushIfNeeded", () => {
                 allowTransientCooldownProbe: options?.allowTransientCooldownProbe,
                 isFinalFallbackAttempt: options?.isFinalFallbackAttempt,
                 isFallbackRetry: false,
+                contextEngineLogicalTurnLease: {} as never,
+                onContextEngineTurnCandidate: () => {},
               }),
           })) as {
             outcome?: "completed" | "exhausted";

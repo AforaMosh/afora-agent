@@ -7,6 +7,7 @@ import { OPENCLAW_EMBEDDED_CONTEXT_ENGINE_HOST } from "../../context-engine/host
 import type { ContextEngine } from "../../context-engine/types.js";
 import { createOpenClawCodingTools } from "../../plugin-sdk/agent-harness.js";
 import { mintSecretSentinel } from "../../secrets/sentinel.js";
+import type { UserTurnTranscriptRecorder } from "../../sessions/user-turn-transcript.types.js";
 import { isHostScopedAgentToolActive } from "../agent-tools.ring-zero-context.js";
 import { testing as cliBackendsTesting } from "../cli-backends.test-support.js";
 import type {
@@ -15,6 +16,7 @@ import type {
 } from "../embedded-agent-runner/run/types.js";
 import type { SystemAgentToolOptions } from "../tools/system-agent-tool.js";
 import { maybeCompactAgentHarnessSession } from "./compaction.js";
+import type { ContextEngineLogicalTurnLease } from "./context-engine-logical-turn.js";
 import { clearAgentHarnesses, registerAgentHarness } from "./registry.js";
 import {
   agentHarnessBuildsOpenClawTools,
@@ -52,8 +54,32 @@ const providerOwnerMocks = vi.hoisted(() => ({
   resolveProviderRefOwnership: vi.fn(),
 }));
 const contextEngineTurnAttemptMocks = vi.hoisted(() => ({
-  drainPendingContextEngineTurnsBeforeRun: vi.fn(async () => {}),
+  drainPendingContextEngineTurnsBeforeRun: vi.fn(async (_params: unknown) => {}),
 }));
+
+function createTranscriptRecorder(
+  admission: ReturnType<typeof createTranscriptAnchor> & {
+    logicalTurnId: string;
+    role: "user";
+  },
+): UserTurnTranscriptRecorder {
+  const message = { role: "user" as const, content: "hello", timestamp: 1 };
+  return {
+    message,
+    resolveMessage: async () => message,
+    getAdmissionReceipt: () => admission,
+    markRuntimePersistencePending: () => {},
+    markRuntimePersisted: () => {},
+    markBlocked: () => {},
+    hasPersisted: () => true,
+    isBlocked: () => false,
+    hasRuntimePersistencePending: () => false,
+    waitForRuntimePersistence: async () => {},
+    persistApproved: async () => undefined,
+    persistBlocked: async () => undefined,
+    persistFallback: async () => undefined,
+  };
+}
 
 it("identifies harnesses that expose OpenClaw tools", () => {
   expect(agentHarnessBuildsOpenClawTools("openclaw")).toBe(false);
@@ -540,7 +566,11 @@ describe("runAgentHarnessAttempt", () => {
   it.each(["heartbeat", "commitment-only"] as const)(
     "records %s classification on the host-owned turn candidate",
     async (bootstrapContextRunKind) => {
-      const admission = createTranscriptAnchor("user-1", 1, 0);
+      const admission = {
+        ...createTranscriptAnchor("user-1", 1, 0),
+        logicalTurnId: "heartbeat-turn",
+        role: "user" as const,
+      };
       const terminal = createTranscriptAnchor("assistant-1", 2, 1);
       const onContextEngineTurnCandidate = vi.fn();
       registerAgentHarness(
@@ -565,12 +595,7 @@ describe("runAgentHarnessAttempt", () => {
         storePath: admission.storePath,
       };
       params.bootstrapContextRunKind = bootstrapContextRunKind;
-      params.userTurnTranscriptRecorder = {
-        message: { role: "user", content: "hello", timestamp: 1 } as never,
-        resolveMessage: async () => ({ role: "user", content: "hello", timestamp: 1 }) as never,
-        markRuntimePersisted() {},
-        getAdmissionReceipt: () => admission,
-      };
+      params.userTurnTranscriptRecorder = createTranscriptRecorder(admission);
       params.onContextEngineTurnCandidate = onContextEngineTurnCandidate;
 
       await runAgentHarnessAttempt(params);
@@ -636,7 +661,8 @@ describe("runAgentHarnessAttempt", () => {
       dispose: vi.fn(async () => {}),
     } satisfies ContextEngineLogicalTurnLease;
     contextEngineTurnAttemptMocks.drainPendingContextEngineTurnsBeforeRun.mockImplementationOnce(
-      async ({ lease: drainLease }) => {
+      async (params) => {
+        const { lease: drainLease } = params as { lease: ContextEngineLogicalTurnLease };
         order.push("drain");
         drainLease.degradeBeforeStart("pending durable turn advancement is blocked");
       },
@@ -663,12 +689,7 @@ describe("runAgentHarnessAttempt", () => {
     const params = createAttemptParams(providerRuntimeConfig("codex", "codex"));
     params.agentHarnessRuntimeOverride = "codex";
     params.contextEngineLogicalTurnLease = lease;
-    params.userTurnTranscriptRecorder = {
-      message: { role: "user", content: "hello", timestamp: 1 } as never,
-      resolveMessage: async () => ({ role: "user", content: "hello", timestamp: 1 }) as never,
-      markRuntimePersisted() {},
-      getAdmissionReceipt: () => admission,
-    };
+    params.userTurnTranscriptRecorder = createTranscriptRecorder(admission);
 
     await runAgentHarnessAttempt(params);
 
