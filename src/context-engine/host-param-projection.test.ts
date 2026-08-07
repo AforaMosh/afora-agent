@@ -123,7 +123,9 @@ describe("context-engine host parameter projection", () => {
     });
   });
 
-  it("uses the stable legacy parameter set for undeclared engines", async () => {
+  it("uses the legacy parameter set for undeclared engines during the window", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-29T12:00:00Z"));
     const assembleCalls: Array<Record<string, unknown>> = [];
     const compactCalls: Array<Record<string, unknown>> = [];
     const engineId = registerProbeEngine({ assembleCalls, compactCalls });
@@ -168,24 +170,61 @@ describe("context-engine host parameter projection", () => {
     ]);
   });
 
-  it("does not change undeclared projection with wall-clock time", async () => {
+  it("passes every host parameter to fresh undeclared engines after the window", async () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2030-01-01T00:00:00Z"));
+    vi.setSystemTime(new Date("2026-08-13T00:00:00Z"));
+    const assembleCalls: Array<Record<string, unknown>> = [];
+    const compactCalls: Array<Record<string, unknown>> = [];
+    const engineId = registerProbeEngine({ assembleCalls, compactCalls });
+    const resolution = await resolveLogicalTurnContextEngines({
+      plugins: { slots: { contextEngine: engineId } },
+    });
+
+    await invokeHostParamMethods(resolution.configured.engine);
+
+    expect(assembleCalls[0]).toMatchObject({
+      sessionId: "session-1",
+      sessionKey: "agent:main:session-1",
+      prompt: "hello",
+      runtimeSettings,
+    });
+    expect(compactCalls[0]).toMatchObject({
+      sessionId: "session-1",
+      sessionKey: "agent:main:session-1",
+      sessionTarget: { agentId: "main", sessionId: "session-1" },
+      runtimeSettings,
+      runtimeContext: { tokenBudget: 1000 },
+    });
+    await Promise.allSettled([
+      resolution.configured.engine.dispose?.(),
+      resolution.fallback.engine.dispose?.(),
+    ]);
+  });
+
+  it("switches undeclared engines to full parameters after the window", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-29T12:00:00Z"));
     const assembleCalls: Array<Record<string, unknown>> = [];
     const compactCalls: Array<Record<string, unknown>> = [];
     const engineId = registerProbeEngine({ assembleCalls, compactCalls });
     const engine = await resolveContextEngine({ plugins: { slots: { contextEngine: engineId } } });
 
-    vi.setSystemTime(new Date("2040-01-01T00:00:00Z"));
+    vi.setSystemTime(new Date("2026-08-13T00:00:00Z"));
     await invokeHostParamMethods(engine);
 
-    for (const call of [...assembleCalls, ...compactCalls]) {
-      expect(call).not.toHaveProperty("sessionKey");
-      expect(call).not.toHaveProperty("runtimeSettings");
-    }
-    expect(assembleCalls[0]).not.toHaveProperty("prompt");
-    expect(compactCalls[0]).not.toHaveProperty("sessionTarget");
-    expect(compactCalls[0]).not.toHaveProperty("runtimeContext");
+    expect(assembleCalls[0]).toMatchObject({
+      sessionId: "session-1",
+      sessionKey: "agent:main:session-1",
+      prompt: "hello",
+      runtimeSettings,
+    });
+    expect(compactCalls[0]).toMatchObject({
+      sessionId: "session-1",
+      sessionKey: "agent:main:session-1",
+      sessionTarget: { agentId: "main", sessionId: "session-1" },
+      runtimeSettings,
+      runtimeContext: { tokenBudget: 1000 },
+    });
   });
 
   it("does not retry validator-shaped engine failures", async () => {

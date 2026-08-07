@@ -218,9 +218,9 @@ Set `info.acceptedHostParams` to the host-added lifecycle fields the engine
 accepts. Current keys are `sessionKey`, `prompt`, `runtimeSettings`,
 `sessionTarget`, and `runtimeContext`. OpenClaw intersects the declaration with
 the fields available for each lifecycle method, so undeclared or unknown keys
-are never injected. Engines without this declaration always receive the
-pre-host-field legacy parameter set. This projection is stable and does not
-expand based on the date.
+are never injected. Engines without this declaration receive the pre-host-field
+legacy parameter set through 2026-08-12; after that date, undeclared engines
+receive every current host field.
 
 For durable admitted turns, declare both transcript semantics:
 
@@ -306,7 +306,8 @@ rendered directly to users and does not create a dedicated reporting surface.
 
 Fields that can be unknown are represented as `null`; discriminator fields such
 as runtime mode and selection source remain non-nullable. Engines that accept
-`runtimeSettings` must include it in `info.acceptedHostParams`.
+`runtimeSettings` must include it in `info.acceptedHostParams` during the
+compatibility window.
 
 ### Host requirements
 

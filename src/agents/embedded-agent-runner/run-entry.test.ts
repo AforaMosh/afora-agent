@@ -12,6 +12,7 @@ type CandidateOptions = {
 type FallbackRunnerParams = {
   provider: string;
   model: string;
+  resolveAgentHarnessRuntimeOverride?: (provider: string, model: string) => string | undefined;
   prepareCandidateChain?: (
     candidates: ReadonlyArray<{
       provider: string;

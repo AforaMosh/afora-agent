@@ -110,6 +110,7 @@ describe("Copilot attempt transcript journal", () => {
 
     const anchor = recorder.markRuntimePersisted.mock.calls[0]?.[1];
     expect(anchor).toBeDefined();
+    expect(journal.snapshot().terminalAnchor).toEqual(anchor);
     expect(recorder.getAdmissionReceipt()).toEqual({
       ...anchor,
       logicalTurnId: "logical-turn-1",
