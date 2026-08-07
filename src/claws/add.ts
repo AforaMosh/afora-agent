@@ -407,6 +407,40 @@ export async function applyClawAddPlan(
     }
   }
 
+  // Seed and attest the consented package bootstrap while the workspace is still
+  // private. Committing the agent config first makes the agent routable, so a
+  // concurrent `sessions.create` can stock-seed BOOTSTRAP.md and strand the add at
+  // `config_committed` with a seed conflict that no retry can clear.
+  try {
+    await (options.seedPackageBootstrap ?? seedClawPackageBootstrap)(plan, {
+      ...options,
+      ...(options.nowMs !== undefined ? { nowMs: options.nowMs } : {}),
+    });
+  } catch (error) {
+    const installStatus: ClawInstallStatus = configCommitted
+      ? "config_committed"
+      : "workspace_ready";
+    markInstallStatus(
+      plan.agent.finalId,
+      installStatus,
+      configCommitted ? ["config_committed"] : ["workspace_ready", "config_committed"],
+      options,
+    );
+    return partialResult({
+      plan,
+      installRecord,
+      workspaceCreated,
+      configCommitted,
+      packages,
+      installStatus,
+      error: {
+        code: error instanceof ClawBootstrapWriteError ? error.code : "bootstrap_write_failed",
+        message: error instanceof Error ? error.message : String(error),
+      },
+      nowMs: options.nowMs,
+    });
+  }
+
   try {
     const commit: ConfigCommit =
       options.commitConfig ??
@@ -489,28 +523,6 @@ export async function applyClawAddPlan(
       installStatus,
       error: {
         code: error instanceof ClawAddMutationError ? error.code : "config_commit_failed",
-        message: error instanceof Error ? error.message : String(error),
-      },
-      nowMs: options.nowMs,
-    });
-  }
-
-  try {
-    await (options.seedPackageBootstrap ?? seedClawPackageBootstrap)(plan, {
-      ...options,
-      ...(options.nowMs !== undefined ? { nowMs: options.nowMs } : {}),
-    });
-  } catch (error) {
-    markInstallStatus(plan.agent.finalId, "config_committed", ["config_committed"], options);
-    return partialResult({
-      plan,
-      installRecord,
-      workspaceCreated,
-      configCommitted,
-      packages,
-      installStatus: "config_committed",
-      error: {
-        code: error instanceof ClawBootstrapWriteError ? error.code : "bootstrap_write_failed",
         message: error instanceof Error ? error.message : String(error),
       },
       nowMs: options.nowMs,
