@@ -904,13 +904,22 @@ session.`.
 - A run's snapshot is removed from the map as soon as it settles to
   `completed` or `failed`, or is dropped on Gateway shutdown (nothing
   survives a restart: this is transient runtime state).
-- For read-only work, `exec` can set `restartSafe: true`. OpenClaw then rejects
-  side-effecting catalog and namespace tool calls before execution and
-  marks suspended results as replay-safe. If a restart interrupts `wait`,
-  [restart recovery](/gateway/restart-recovery) reconstructs the turn from the
-  transcript instead of restoring the process-local snapshot. The recovery
-  turn itself remains limited to audited read-only core tools and explicitly
-  replay-safe plugin tools.
+- OpenClaw records replay safety from the nested calls the host actually
+  observes. Read-only catalog calls and yields preserve a replay-safe
+  checkpoint; an unsafe or namespace call clears that fact for the rest of the
+  run. The model-facing `exec` schema exposes no replay-safety flag, so raw
+  model input cannot change the recorded fact or recovery policy.
+- Restart recovery invokes Code Mode under a separate host-owned enforcement
+  policy. It rejects unsafe and namespace calls before execution while allowing
+  audited read-only core tools and explicitly replay-safe plugin tools. If a
+  restart interrupts `wait`, [restart recovery](/gateway/restart-recovery)
+  reconstructs the turn from the transcript instead of restoring the
+  process-local snapshot.
+- Cold reconstruction cannot authenticate an earlier `agents.run` collector:
+  the recovery run and provider response identities are new. It therefore
+  rejects `agents.run` before bridge dispatch rather than starting replacement
+  child/provider work. Ordinary live-process `agentWait` observation and
+  exact-tuple collector replay remain unchanged.
 - OpenClaw caps the number of concurrently suspended runs per process (64) and
   rejects new suspensions past that cap with `too many suspended code mode
 runs.`.

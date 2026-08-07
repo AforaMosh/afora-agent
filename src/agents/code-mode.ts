@@ -156,6 +156,10 @@ function createCodeModeExecDescription(
   const swarmGuidance = swarmEnabled
     ? " Swarm globals `agents.run`, `phase`, and `log` are available; read `agents.d.ts` for types and orchestration idioms."
     : "";
+  const restartRecoveryGuidance =
+    swarmEnabled && ctx.forceRestartSafeTools
+      ? " Restart recovery cannot resume `agents.run`. Do not call it: cold recovery cannot reattach a prior collector or launch a replacement."
+      : "";
   const nodesGuidance =
     "\n- nodes: paired Gateway nodes; nodes.list(), (await nodes.get(id)).invoke(command, params)\n";
   const skillsGuidance = ctx.codeModeSkills?.length
@@ -167,6 +171,7 @@ function createCodeModeExecDescription(
     apiGuidance +
     mcpGuidance +
     swarmGuidance +
+    restartRecoveryGuidance +
     nodesGuidance +
     skillsGuidance +
     ' The `language` field accepts only "javascript" or "typescript"; do not pass "bash", "shell", or other values.' +
@@ -193,12 +198,6 @@ export function createCodeModeTools(ctx: CodeModeToolContext): AnyAgentTool[] {
         description:
           'Source language. Must be "javascript" or "typescript". Defaults to javascript.',
       }),
-      restartSafe: Type.Optional(
-        Type.Boolean({
-          description:
-            "Set true only when every catalog call is explicitly replay-safe and OpenClaw may reconstruct the work after a gateway restart. Leave unset for ordinary calls; true rejects unmarked, side-effecting, or namespace tool calls.",
-        }),
-      ),
     }),
     execute: async (
       toolCallId: string,
@@ -218,7 +217,7 @@ export function createCodeModeTools(ctx: CodeModeToolContext): AnyAgentTool[] {
             executionContext?.assistantMessage.responseId?.trim() ||
             executionContext?.assistantMessage.turnId?.trim(),
           language: input.language,
-          restartSafe: ctx.forceRestartSafeTools === true || input.restartSafe,
+          enforceReplaySafeTools: ctx.forceRestartSafeTools === true,
           signal,
           onUpdate,
           onRuntime: (value) => {

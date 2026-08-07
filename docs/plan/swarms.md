@@ -178,10 +178,13 @@ agents_wait({ ids: string[], timeoutSeconds?: number })
   - `phase(title)`, `log(message)` — fire-and-forget bridge notifications →
     swarm progress events.
 - Bridge methods added to `CodeModeBridgeMethod` (`code-mode.ts:91`):
-  `agentSpawn`, `agentWait`, `swarmNote`. `agentSpawn`/`agentWait` are
-  replay-safe **by construction**: idempotency key `(codeModeRunId, bridgeId)`
-  stored on the registry record; restart re-settles from persisted completions
-  and never double-spawns.
+  `agentSpawn`, `agentWait`, `swarmNote`. Within one live/warm replay identity,
+  `agentSpawn`/`agentWait` are replay-safe by construction: idempotency key
+  `(codeModeRunId, bridgeId)` is stored on the registry record and exact replay
+  re-settles from persisted completions without double-spawning. Cold
+  main-session reconstruction uses new run/provider-response identity, so
+  forced recovery rejects `agents.run` before bridge dispatch instead of
+  launching a replacement.
 - Pending `agentWait` bridge calls extend the run's snapshot TTL (pending
   agent set is the signal; no flag).
 - `API.read("agents.d.ts")` virtual file documents the typed surface + the

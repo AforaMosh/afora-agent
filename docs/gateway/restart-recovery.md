@@ -142,6 +142,9 @@ model omits or clears that flag. The host filters the entire reconstructed
 turn to audited read-only core tools and explicitly replay-safe plugin tools,
 including when Code Mode is disabled after the restart. Side-effecting work
 remains guarded by the resend notice rather than risking a duplicate write.
+Cold recovery also rejects `agents.run` before bridge dispatch. A reconstructed
+turn has new run and provider-response identity, so it cannot authenticate the
+prior collector and must not launch replacement child/provider work.
 
 ### Subagents
 
