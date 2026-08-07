@@ -18,6 +18,11 @@ on:
         required: false
         default: false
         type: boolean
+      run_live_runtime_pair:
+        description: Run the live OpenClaw/Codex runtime-pair lane
+        required: false
+        default: false
+        type: boolean
       run_buzz:
         description: Run the Buzz live lane
         required: false
@@ -75,6 +80,16 @@ on:
         required: true
         default: main
         type: string
+      expected_sha:
+        description: Optional full SHA that ref must resolve to
+        required: false
+        default: ""
+        type: string
+      run_live_runtime_pair:
+        description: Run the live OpenClaw/Codex runtime-pair lane
+        required: false
+        default: false
+        type: boolean
       run_buzz:
         description: Run the Buzz live lane (requires a pooled Buzz credential)
         required: false
@@ -125,11 +140,21 @@ jobs:
         id: permission
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
-          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          WORKFLOW_REF: ${{ github.workflow_ref }}
         with:
           script: |
-            if (context.eventName === "schedule" || (process.env.EXPECTED_SHA ?? "") !== "") {
-              core.info("Trusted scheduled or reusable QA run; actor permission check is only required for manual dispatch.");
+            if (context.eventName !== "workflow_dispatch") {
+              core.info(`Skipping manual actor permission check for ${context.eventName}.`);
+              core.setOutput("authorized", "true");
+              return;
+            }
+            // Reusable jobs keep the caller's workflow_ref, so only this workflow's
+            // direct dispatch reaches the actor permission check.
+            const isDirectManualDispatch = (process.env.WORKFLOW_REF ?? "").includes(
+              "/.github/workflows/qa-live-transports-convex.yml@",
+            );
+            if (!isDirectManualDispatch) {
+              core.info("Skipping manual actor permission check for a reusable workflow call.");
               core.setOutput("authorized", "true");
               return;
             }
@@ -170,23 +195,33 @@ jobs:
       - name: Validate selected ref
         id: validate
         env:
+          EVENT_NAME: ${{ github.event_name }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           GH_TOKEN: ${{ github.token }}
           INPUT_REF: ${{ github.event_name != 'schedule' && inputs.ref || github.sha }}
+          RUN_LIVE_RUNTIME_PAIR: ${{ inputs.run_live_runtime_pair }}
         shell: bash
         run: |
           set -euo pipefail
           selected_revision="$(git rev-parse HEAD)"
+          expected_sha="${EXPECTED_SHA,,}"
           trusted_reason=""
 
-          if [[ -n "${EXPECTED_SHA}" && "${selected_revision}" != "${EXPECTED_SHA}" ]]; then
+          if [[ "${EVENT_NAME}" == "workflow_dispatch" && "${RUN_LIVE_RUNTIME_PAIR}" == "true" ]]; then
+            if [[ ! "$expected_sha" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "Manual runtime-pair dispatch requires expected_sha to be a full 40-character SHA." >&2
+              exit 1
+            fi
+          fi
+
+          if [[ -n "$expected_sha" && "${selected_revision,,}" != "$expected_sha" ]]; then
             echo "Ref '${INPUT_REF}' resolved to ${selected_revision}, expected ${EXPECTED_SHA}." >&2
             exit 1
           fi
 
           git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
 
-          if [[ -n "${EXPECTED_SHA}" ]]; then
+          if [[ -n "$expected_sha" ]]; then
             git fetch --no-tags origin '+refs/heads/*:refs/remotes/origin/*'
             git fetch --tags origin '+refs/tags/*:refs/tags/*'
             if git tag --points-at "$selected_revision" | grep -Eq '^v'; then
@@ -308,7 +343,7 @@ jobs:
   run_live_runtime_token_efficiency:
     name: Run live runtime token-efficiency lane
     needs: [authorize_actor, validate_selected_ref]
-    if: github.event_name == 'schedule'
+    if: (github.event_name == 'schedule' && github.workflow_ref == format('{0}/.github/workflows/qa-live-transports-convex.yml@{1}', github.repository, github.ref)) || inputs.run_live_runtime_pair
     runs-on: blacksmith-16vcpu-ubuntu-2404
     timeout-minutes: 45
     environment: qa-live-shared

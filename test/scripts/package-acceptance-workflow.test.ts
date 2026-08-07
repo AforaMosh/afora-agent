@@ -103,6 +103,18 @@ const QA_INBOUND_VOICE_SCENARIO = resolve(
   "qa/scenarios/media/inbound-voice-talkback-live.yaml",
 );
 const QA_LIVE_TRANSPORTS_WORKFLOW = ".github/workflows/qa-live-transports-convex.yml";
+const QA_LIVE_RUNTIME_PAIR_IF =
+  "(github.event_name == 'schedule' && github.workflow_ref == format('{0}/.github/workflows/qa-live-transports-convex.yml@{1}', github.repository, github.ref)) || inputs.run_live_runtime_pair";
+const QA_LIVE_LANE_JOBS = [
+  "run_mock_parity",
+  "run_live_runtime_token_efficiency",
+  "run_live_buzz",
+  "run_live_matrix",
+  "run_live_telegram",
+  "run_live_discord",
+  "run_live_whatsapp",
+  "run_live_slack",
+] as const;
 const UPDATE_MIGRATION_WORKFLOW = ".github/workflows/update-migration.yml";
 const CI_CHECK_TESTBOX_WORKFLOW = ".github/workflows/ci-check-testbox.yml";
 const CI_CHECK_ARM_TESTBOX_WORKFLOW = ".github/workflows/ci-check-arm-testbox.yml";
@@ -184,6 +196,15 @@ type Workflow = {
   };
 };
 
+type QaLiveWorkflowContext = {
+  eventName: string;
+  expectedSha: string;
+  inputs: Record<string, boolean>;
+  ref: string;
+  repository: string;
+  workflowRef: string;
+};
+
 function readWorkflow(path: string): Workflow {
   return parse(readFileSync(path, "utf8")) as Workflow;
 }
@@ -208,6 +229,62 @@ function workflowStep(job: WorkflowJob, stepName: string): WorkflowStep {
     throw new Error(`Expected workflow step ${stepName}`);
   }
   return step;
+}
+
+function evaluateQaLiveJobCondition(
+  jobName: (typeof QA_LIVE_LANE_JOBS)[number],
+  context: QaLiveWorkflowContext,
+): boolean {
+  const condition = workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, jobName).if;
+  if (condition === QA_LIVE_RUNTIME_PAIR_IF) {
+    const directWorkflowRef = `${context.repository}/.github/workflows/qa-live-transports-convex.yml@${context.ref}`;
+    return (
+      (context.eventName === "schedule" && context.workflowRef === directWorkflowRef) ||
+      context.inputs.run_live_runtime_pair === true
+    );
+  }
+
+  const exactShaSelector = /^inputs\.expected_sha == '' \|\| inputs\.(run_[a-z_]+)$/u.exec(
+    condition ?? "",
+  );
+  if (exactShaSelector) {
+    return context.expectedSha === "" || context.inputs[exactShaSelector[1]] === true;
+  }
+
+  const selector = /^inputs\.(run_[a-z_]+)$/u.exec(condition ?? "");
+  if (selector) {
+    return context.inputs[selector[1]] === true;
+  }
+
+  throw new Error(`Unsupported QA live job condition for ${jobName}: ${condition}`);
+}
+
+function runQaSelectedRefGuard(params: {
+  eventName: string;
+  expectedSha: string;
+  runLiveRuntimePair: boolean;
+}) {
+  const validateScript =
+    workflowStep(
+      workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, "validate_selected_ref"),
+      "Validate selected ref",
+    ).run ?? "";
+  const guardEnd = validateScript.indexOf("\ngit fetch --no-tags origin");
+  if (guardEnd < 0) {
+    throw new Error("Expected selected-ref trust fetch after the local validation guard");
+  }
+
+  return spawnSync("bash", ["-c", validateScript.slice(0, guardEnd)], {
+    cwd: REPO_ROOT,
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      EVENT_NAME: params.eventName,
+      EXPECTED_SHA: params.expectedSha,
+      INPUT_REF: "fixture-ref",
+      RUN_LIVE_RUNTIME_PAIR: String(params.runLiveRuntimePair),
+    },
+  });
 }
 
 function shellFunctionSource(source: string, functionName: string): string {
@@ -3434,6 +3511,192 @@ describe("package artifact reuse", () => {
     }
   });
 
+  it("gates exact-SHA live runtime-pair dispatch independently", () => {
+    const qaWorkflow = readWorkflow(QA_LIVE_TRANSPORTS_WORKFLOW);
+    const callInputs = qaWorkflow.on?.workflow_call?.inputs ?? {};
+    const dispatchInputs = qaWorkflow.on?.workflow_dispatch?.inputs ?? {};
+
+    expect(callInputs.run_live_runtime_pair).toEqual({
+      description: "Run the live OpenClaw/Codex runtime-pair lane",
+      required: false,
+      default: false,
+      type: "boolean",
+    });
+    expect(dispatchInputs.expected_sha).toEqual({
+      description: "Optional full SHA that ref must resolve to",
+      required: false,
+      default: "",
+      type: "string",
+    });
+    expect(dispatchInputs.run_live_runtime_pair).toEqual({
+      description: "Run the live OpenClaw/Codex runtime-pair lane",
+      required: false,
+      default: false,
+      type: "boolean",
+    });
+
+    const permissionStep = workflowStep(
+      workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, "authorize_actor"),
+      "Require maintainer-level repository access",
+    );
+    expect(permissionStep.env).toEqual({
+      WORKFLOW_REF: "${{ github.workflow_ref }}",
+    });
+    const permissionScript = permissionStep.with?.script ?? "";
+    expect(permissionScript).toContain('context.eventName !== "workflow_dispatch"');
+    expect(permissionScript).toContain('"/.github/workflows/qa-live-transports-convex.yml@"');
+    expect(permissionScript).toContain("if (!isDirectManualDispatch)");
+    expect(permissionScript).not.toContain("EXPECTED_SHA");
+    expect(permissionScript).not.toContain('context.actor === "github-actions[bot]"');
+    const permissionLookupIndex = permissionScript.indexOf(
+      "github.rest.repos.getCollaboratorPermissionLevel",
+    );
+    expect(permissionScript.indexOf('context.eventName !== "workflow_dispatch"')).toBeLessThan(
+      permissionLookupIndex,
+    );
+    expect(permissionScript.indexOf("if (!isDirectManualDispatch)")).toBeLessThan(
+      permissionLookupIndex,
+    );
+
+    const validateStep = workflowStep(
+      workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, "validate_selected_ref"),
+      "Validate selected ref",
+    );
+    expect(validateStep.env).toMatchObject({
+      EVENT_NAME: "${{ github.event_name }}",
+      EXPECTED_SHA: "${{ inputs.expected_sha }}",
+      RUN_LIVE_RUNTIME_PAIR: "${{ inputs.run_live_runtime_pair }}",
+    });
+    const validateScript = validateStep.run ?? "";
+    expect(validateScript).toContain(
+      '[[ "${EVENT_NAME}" == "workflow_dispatch" && "${RUN_LIVE_RUNTIME_PAIR}" == "true" ]]',
+    );
+    expect(validateScript).toContain('[[ ! "$expected_sha" =~ ^[0-9a-f]{40}$ ]]');
+    expect(validateScript).toContain(
+      "Manual runtime-pair dispatch requires expected_sha to be a full 40-character SHA.",
+    );
+    expect(validateScript).toContain('"${selected_revision,,}" != "$expected_sha"');
+    expect(validateScript).toContain('if [[ -n "$expected_sha" ]]; then');
+
+    expect(workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, "run_live_runtime_token_efficiency").if).toBe(
+      QA_LIVE_RUNTIME_PAIR_IF,
+    );
+    expect(workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, "run_mock_parity").if).toBe(
+      "inputs.expected_sha == '' || inputs.run_mock_parity",
+    );
+    expect(workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, "run_live_buzz").if).toBe("inputs.run_buzz");
+    expect(workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, "run_live_matrix").if).toBe(
+      "inputs.expected_sha == '' || inputs.run_matrix",
+    );
+    for (const channel of ["telegram", "discord", "whatsapp", "slack"]) {
+      expect(workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, `run_live_${channel}`).if).toBe(
+        `inputs.expected_sha == '' || inputs.run_${channel}`,
+      );
+    }
+  });
+
+  it("evaluates the live runtime-pair event and lane truth table", () => {
+    const repository = "openclaw/openclaw";
+    const ref = "refs/heads/main";
+    const directWorkflowRef = `${repository}/.github/workflows/qa-live-transports-convex.yml@${ref}`;
+    const reusableWorkflowRef = `${repository}/.github/workflows/openclaw-release-checks.yml@${ref}`;
+    const makeContext = (overrides: Partial<QaLiveWorkflowContext> = {}): QaLiveWorkflowContext => {
+      const { inputs = {}, ...contextOverrides } = overrides;
+      return {
+        eventName: "workflow_dispatch",
+        expectedSha: "",
+        ref,
+        repository,
+        workflowRef: directWorkflowRef,
+        ...contextOverrides,
+        inputs,
+      };
+    };
+
+    const runtimePairCases = [
+      {
+        context: makeContext({ eventName: "schedule" }),
+        expected: true,
+        name: "direct schedule",
+      },
+      {
+        context: makeContext({ eventName: "schedule", workflowRef: reusableWorkflowRef }),
+        expected: false,
+        name: "scheduled reusable call without selector",
+      },
+      {
+        context: makeContext({
+          eventName: "schedule",
+          inputs: { run_live_runtime_pair: true },
+          workflowRef: reusableWorkflowRef,
+        }),
+        expected: true,
+        name: "scheduled reusable call with selector",
+      },
+      {
+        context: makeContext(),
+        expected: false,
+        name: "direct manual dispatch without selector",
+      },
+    ];
+    for (const testCase of runtimePairCases) {
+      expect(
+        evaluateQaLiveJobCondition("run_live_runtime_token_efficiency", testCase.context),
+        testCase.name,
+      ).toBe(testCase.expected);
+    }
+
+    for (const expectedSha of ["", "not-a-full-sha"]) {
+      const result = runQaSelectedRefGuard({
+        eventName: "workflow_dispatch",
+        expectedSha,
+        runLiveRuntimePair: true,
+      });
+      expect(result.status, result.stderr).toBe(1);
+      expect(result.stderr).toContain(
+        "Manual runtime-pair dispatch requires expected_sha to be a full 40-character SHA.",
+      );
+    }
+
+    const exactSha = execFileSync("git", ["rev-parse", "HEAD"], {
+      cwd: REPO_ROOT,
+      encoding: "utf8",
+    }).trim();
+    const validExactSha = runQaSelectedRefGuard({
+      eventName: "workflow_dispatch",
+      expectedSha: exactSha,
+      runLiveRuntimePair: true,
+    });
+    expect(validExactSha.status, validExactSha.stderr).toBe(0);
+
+    const enabledJobs = (context: QaLiveWorkflowContext) =>
+      QA_LIVE_LANE_JOBS.filter((jobName) => evaluateQaLiveJobCondition(jobName, context));
+
+    const exactShaManual = makeContext({ expectedSha: exactSha });
+    expect(enabledJobs(exactShaManual)).toEqual([]);
+    expect(
+      enabledJobs(
+        makeContext({
+          expectedSha: exactSha,
+          inputs: { run_buzz: true },
+        }),
+      ),
+    ).toEqual(["run_live_buzz"]);
+
+    const exactShaReusable = makeContext({
+      eventName: "schedule",
+      expectedSha: exactSha,
+      workflowRef: reusableWorkflowRef,
+    });
+    expect(enabledJobs(exactShaReusable)).toEqual([]);
+    expect(
+      enabledJobs({
+        ...exactShaReusable,
+        inputs: { run_matrix: true },
+      }),
+    ).toEqual(["run_live_matrix"]);
+  });
+
   it("routes release Matrix through the QA Lab selector", () => {
     const releaseWorkflow = readFileSync(RELEASE_CHECKS_WORKFLOW, "utf8");
     const releaseTelegramWorkflow = readFileSync(RELEASE_TELEGRAM_QA_WORKFLOW, "utf8");
@@ -3473,17 +3736,10 @@ describe("package artifact reuse", () => {
     expect(qaWorkflow).toContain("pnpm openclaw qa matrix");
     expect(qaWorkflow).toContain('if [[ "$FAIL_FAST" == "true" ]]');
     expect(qaWorkflow).toContain('trusted_reason="repository-branch"');
-    expect(qaWorkflow).toContain('"${selected_revision}" != "${EXPECTED_SHA}"');
+    expect(qaWorkflow).toContain('"${selected_revision,,}" != "$expected_sha"');
     expect(qaWorkflow).toContain("EXPECTED_SHA: ${{ inputs.expected_sha }}");
-    expect(
-      workflowStep(
-        workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, "authorize_actor"),
-        "Require maintainer-level repository access",
-      ).env?.EXPECTED_SHA,
-    ).toBe("${{ inputs.expected_sha }}");
-    expect(qaWorkflow).toContain('(process.env.EXPECTED_SHA ?? "") !== ""');
     expect(qaWorkflow).not.toContain('"${{ inputs.expected_sha }}" !== ""');
-    expect(qaWorkflow).toContain('if [[ -n "${EXPECTED_SHA}" ]]; then');
+    expect(qaWorkflow).toContain('if [[ -n "$expected_sha" ]]; then');
     const matrixJob = workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, "run_live_matrix");
     expect(matrixJob["timeout-minutes"]).toBe(90);
     expect(workflowStep(matrixJob, "Run Matrix live lane").run).toContain(
