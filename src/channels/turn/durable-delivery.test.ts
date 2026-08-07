@@ -1,5 +1,6 @@
 // Durable delivery tests cover persisted channel turn delivery attempts and recovery.
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { bindActiveTurnReceiptSignals } from "../../auto-reply/reply/active-turn-receipt-signals.js";
 
 const mocks = vi.hoisted(() => ({
   resolveOutboundDurableFinalDeliverySupport: vi.fn(),
@@ -135,10 +136,19 @@ describe("durable inbound reply delivery", () => {
   });
 
   it("gives an active-turn receipt one readiness-owned durable recovery attempt", async () => {
-    const controller = new AbortController();
+    const preTransportController = new AbortController();
+    const terminalController = new AbortController();
     const payload = setReplyPayloadMetadata(
       { text: "still working", isStatusNotice: true },
-      { activeTurnReceipt: { abortSignal: controller.signal, maxRetries: 1 } },
+      {
+        activeTurnReceipt: {
+          abortSignal: bindActiveTurnReceiptSignals({
+            preTransport: preTransportController.signal,
+            terminal: terminalController.signal,
+          }),
+          maxRetries: 1,
+        },
+      },
     );
 
     await deliverInboundReplyWithMessageSendContext({
@@ -152,8 +162,38 @@ describe("durable inbound reply delivery", () => {
 
     expect(latestSendDurableMessageBatchRequest()).toMatchObject({
       maxRetries: 1,
-      signal: controller.signal,
+      signal: terminalController.signal,
     });
+  });
+
+  it("does not send a durable receipt cancelled before transport", async () => {
+    const preTransport = new AbortController();
+    const terminal = new AbortController();
+    const payload = setReplyPayloadMetadata(
+      { text: "still working", isStatusNotice: true },
+      {
+        activeTurnReceipt: {
+          abortSignal: bindActiveTurnReceiptSignals({
+            preTransport: preTransport.signal,
+            terminal: terminal.signal,
+          }),
+          maxRetries: 1,
+        },
+      },
+    );
+    preTransport.abort();
+
+    await expect(
+      deliverInboundReplyWithMessageSendContext({
+        cfg: {},
+        channel: "telegram",
+        agentId: "main",
+        info: { kind: "final" },
+        payload,
+        ctxPayload: ctxPayload({ OriginatingTo: "chat-1" }),
+      }),
+    ).rejects.toThrow("cancelled before transport");
+    expect(mocks.sendDurableMessageBatch).not.toHaveBeenCalled();
   });
 
   it("uses required durability when a caller explicitly requires unknown-send reconciliation", async () => {

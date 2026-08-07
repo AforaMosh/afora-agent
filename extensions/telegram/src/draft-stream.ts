@@ -253,6 +253,8 @@ export function createTelegramDraftStream(params: {
   validateProviderMessage?: (message: Message) => Promise<void> | void;
   /** Called with Telegram's response after a new preview message becomes durable. */
   onProviderMessage?: (message: Message) => Promise<void> | void;
+  /** Called immediately when the current generation's send or edit is accepted. */
+  onTransportAccepted?: () => void;
   log?: (message: string) => void;
   warn?: (message: string) => void;
 }): TelegramDraftStream {
@@ -495,6 +497,7 @@ export function createTelegramDraftStream(params: {
       }
       if (sendGeneration === generation && streamMessageId === targetMessageId) {
         streamMessageSnapshot = acceptedSnapshot;
+        params.onTransportAccepted?.();
       }
       return true;
     }
@@ -566,6 +569,7 @@ export function createTelegramDraftStream(params: {
     streamMessageSnapshot = sent.snapshot;
     streamProviderMessage = sent.message;
     streamVisibleSinceMs = visibleSinceMs;
+    params.onTransportAccepted?.();
     return true;
   };
   const sendOrEditPlannedPage = async (page: PlannedTelegramDraftPage): Promise<boolean> => {
@@ -606,6 +610,9 @@ export function createTelegramDraftStream(params: {
         // Telegram already shows exactly this text; count the edit as delivered.
         consecutivePreviewFailures = 0;
         streamMessageSnapshot = page;
+        if (sendGeneration === generation) {
+          params.onTransportAccepted?.();
+        }
         return true;
       }
       // Roll back the dedupe snapshot so the retried tick is not skipped as a no-op.

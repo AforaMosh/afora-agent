@@ -115,6 +115,15 @@ export async function dispatchMattermostInboundTurn(
     draftPreviewEnabled && shouldUpdateMattermostDraftToolProgress(account);
   const suppressDefaultToolProgressMessages =
     draftPreviewEnabled && shouldSuppressMattermostDefaultToolProgressMessages(account);
+  let progressVisible = false;
+  let progressVisibilityListener: (() => void) | undefined;
+  const reportProgressVisible = () => {
+    if (progressVisible) {
+      return;
+    }
+    progressVisible = true;
+    progressVisibilityListener?.();
+  };
   const draftStream = draftPreviewEnabled
     ? createMattermostDraftStream({
         client,
@@ -129,6 +138,7 @@ export async function dispatchMattermostInboundTurn(
           ),
         log: monitor.logVerboseMessage,
         warn: monitor.logVerboseMessage,
+        onVisible: reportProgressVisible,
       })
     : createDisabledMattermostDraftStream();
   const previewBoundaryController = createMattermostDraftPreviewBoundaryController({
@@ -153,8 +163,10 @@ export async function dispatchMattermostInboundTurn(
       if (options?.flush) {
         await draftStream.flush();
       }
+      return Boolean(draftStream.postId());
     },
   });
+  progressDraft.registerVisibilityListener(reportProgressVisible);
   const enterBlockPreviewActivity = (activity: "reasoning" | "text" | "tool") => {
     if (account.streamingMode !== "block") {
       return undefined;
@@ -253,14 +265,14 @@ export async function dispatchMattermostInboundTurn(
   const updateDraftFromPartial = (text?: string) => {
     const cleaned = text?.trim();
     if (!cleaned || cleaned === lastPartialText) {
-      return undefined;
+      return Boolean(draftStream.postId());
     }
     if (
       lastPartialText &&
       lastPartialText.startsWith(cleaned) &&
       cleaned.length < lastPartialText.length
     ) {
-      return undefined;
+      return Boolean(draftStream.postId());
     }
     const boundarySettled = enterBlockPreviewActivity("text");
     lastPartialText = cleaned;
@@ -277,7 +289,9 @@ export async function dispatchMattermostInboundTurn(
         : cleaned;
     draftStream.updateAssistantText(previewText);
     previewBoundaryController.noteUpdate();
-    return boundarySettled;
+    return boundarySettled
+      ? boundarySettled.then(() => Boolean(draftStream.postId()))
+      : Boolean(draftStream.postId());
   };
 
   const dispatcherOptions: NonNullable<ChannelInboundTurnPlan["dispatcherOptions"]> = {
@@ -471,8 +485,12 @@ export async function dispatchMattermostInboundTurn(
             allowProgressCallbacksWhenSourceDeliverySuppressed: draftToolProgressEnabled
               ? true
               : undefined,
-            registerProgressVisibilityListener: (listener) =>
-              progressDraft.registerVisibilityListener(listener),
+            registerProgressVisibilityListener: (listener) => {
+              progressVisibilityListener = listener;
+              if (progressVisible) {
+                listener();
+              }
+            },
             preserveProgressCallbackStartOrder: draftPreviewEnabled ? true : undefined,
             onObservedReplyDelivery: draftToolProgressEnabled
               ? () => draftStream.clear()
@@ -484,18 +502,19 @@ export async function dispatchMattermostInboundTurn(
             onModelSelected,
             onPartialReply: (payloadResult) =>
               account.streamingMode === "progress"
-                ? undefined
+                ? false
                 : updateDraftFromPartial(payloadResult.text),
             onAssistantMessageStart: () => {
               lastPartialText = "";
               progressDraft.resetReasoningProgress();
               if (account.streamingMode === "block") {
                 blockPreviewAssistantMessagePending = true;
-                return;
+                return false;
               }
               if (account.streamingMode !== "progress") {
                 progressDraft.reset();
               }
+              return false;
             },
             onReasoningEnd: () => {
               // Hidden reasoning has no boundary; only rendered text, reasoning, or tools rotate preview posts.
@@ -504,13 +523,16 @@ export async function dispatchMattermostInboundTurn(
               if (account.streamingMode !== "block" && account.streamingMode !== "progress") {
                 progressDraft.reset();
               }
+              return false;
             },
             onReasoningStream: async (payloadResult) => {
               if (account.streamingMode === "progress") {
-                await progressDraft.pushReasoningProgress(payloadResult.text || "Thinking…", {
-                  snapshot: payloadResult.isReasoningSnapshot === true,
-                });
-                return;
+                return await progressDraft.pushReasoningProgress(
+                  payloadResult.text || "Thinking…",
+                  {
+                    snapshot: payloadResult.isReasoningSnapshot === true,
+                  },
+                );
               }
               if (!lastPartialText) {
                 const boundarySettled = enterBlockPreviewActivity("reasoning");
@@ -518,6 +540,7 @@ export async function dispatchMattermostInboundTurn(
                 previewBoundaryController.noteUpdate();
                 await boundarySettled;
               }
+              return Boolean(draftStream.postId());
             },
             onToolStart: async (payloadValue) => {
               if (!draftToolProgressEnabled) {

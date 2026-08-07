@@ -42,6 +42,7 @@ export function createDiscordDraftStream(params: {
   suppressEmbeds?: boolean;
   log?: (message: string) => void;
   warn?: (message: string) => void;
+  onVisible?: () => void;
 }): DiscordDraftStream {
   const maxChars = Math.min(params.maxChars ?? DISCORD_STREAM_MAX_CHARS, DISCORD_STREAM_MAX_CHARS);
   const throttleMs = Math.max(250, params.throttleMs ?? DEFAULT_THROTTLE_MS);
@@ -101,6 +102,7 @@ export function createDiscordDraftStream(params: {
             ...(flags ? { flags } : {}),
           },
         });
+        params.onVisible?.();
         return true;
       }
       // Send new message
@@ -139,6 +141,7 @@ export function createDiscordDraftStream(params: {
         return false;
       }
       streamMessageId = sentMessageId;
+      params.onVisible?.();
       return true;
     } catch (err) {
       if (activeCreateGeneration === generation) {

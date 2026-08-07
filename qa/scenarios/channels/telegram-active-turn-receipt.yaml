@@ -1,0 +1,61 @@
+title: Telegram emits one active-turn receipt before a delayed final
+scenario:
+  id: telegram-active-turn-receipt
+  surface: channels
+  category: channels.conversation-routing-and-delivery
+  coverage:
+    primary:
+      - telegram.conversation-routing-and-delivery
+  objective: Verify streaming-off Telegram turns expose one receipt before a delayed final.
+  execution:
+    kind: flow
+    channel: telegram
+    timeoutMs: 120000
+    retryCount: 1
+    suiteIsolation: isolated
+    config:
+      requiredProviderMode: mock-openai
+flow:
+  steps:
+    - name: delivers the receipt before the final
+      actions:
+        - call: restartGatewayWithConfigPatch
+          args:
+            - env: { ref: env }
+              patch:
+                channels:
+                  telegram:
+                    streaming: { mode: off }
+                messages:
+                  statusReactions: { enabled: false }
+        - call: waitForGatewayHealthy
+          args: [{ ref: env }, 180000]
+        - call: waitForTransportReady
+          args: [{ ref: env }, 180000]
+        - resetTransport: true
+        - set: outboundStartIndex
+          value:
+            expr: "state.getSnapshot().messages.filter((message) => message.direction === 'outbound').length"
+        - sendInbound:
+            conversation: { id: telegram-active-turn-receipt-room, kind: channel }
+            senderId: qa-receipt-operator
+            senderName: QA Receipt Operator
+            text: "@openclaw Active-turn receipt QA check. Final-only marker streaming QA check; reply exactly `QA-TELEGRAM-RECEIPT-FINAL-OK`."
+        - waitForOutbound:
+            conversation: { id: telegram-active-turn-receipt-room, kind: channel }
+            sinceIndex: { ref: outboundStartIndex }
+            textIncludes: "I’m still working on this. I’ll send the answer when it’s ready."
+            timeoutMs: 45000
+        - waitForOutbound:
+            conversation: { id: telegram-active-turn-receipt-room, kind: channel }
+            sinceIndex: { ref: outboundStartIndex }
+            textIncludes: QA-TELEGRAM-RECEIPT-FINAL-OK
+            timeoutMs: 75000
+        - set: outbound
+          value:
+            expr: "state.getSnapshot().messages.filter((message) => message.direction === 'outbound').slice(outboundStartIndex)"
+        - assert:
+            expr: "outbound.length === 2 && outbound[0].text === 'I’m still working on this. I’ll send the answer when it’s ready.' && outbound[1].text === 'QA-TELEGRAM-RECEIPT-FINAL-OK' && outbound.every((message) => !message.text.includes('QA streaming preview in progress'))"
+            message:
+              expr: "`expected exactly receipt then final; saw ${JSON.stringify(outbound)}`"
+      detailsExpr: "outbound.map((message) => message.text).join(' | ')"

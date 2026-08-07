@@ -103,6 +103,7 @@ export function createTelegramProgressController(params: {
       if (options?.flush) {
         await answerLane.stream?.flush();
       }
+      return typeof answerLane.stream?.messageId() === "number";
     },
   });
 

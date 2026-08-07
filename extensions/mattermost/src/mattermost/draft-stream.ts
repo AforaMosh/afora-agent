@@ -113,6 +113,7 @@ export function createMattermostDraftStream(params: {
   chunkText?: (text: string) => string[];
   log?: (message: string) => void;
   warn?: (message: string) => void;
+  onVisible?: () => void;
 }): MattermostDraftStream {
   const maxChars = Math.min(
     params.maxChars ?? MATTERMOST_STREAM_MAX_CHARS,
@@ -169,6 +170,7 @@ export function createMattermostDraftStream(params: {
         const updated = await updateMattermostPost(params.client, target.postId, {
           message: normalized,
         });
+        params.onVisible?.();
         target.lastProviderText = updated.message ?? normalized;
       } else {
         const sent = await createMattermostPost(params.client, {
@@ -176,6 +178,7 @@ export function createMattermostDraftStream(params: {
           message: normalized,
           rootId: params.rootId,
         });
+        params.onVisible?.();
         target.postId = sent.id;
         target.lastProviderText = sent.message ?? normalized;
       }
@@ -282,6 +285,7 @@ export function createMattermostDraftStream(params: {
             const updated = await updateMattermostPost(params.client, sealed.postId, {
               message: firstChunk,
             });
+            params.onVisible?.();
             providerFirstChunk = updated.message ?? firstChunk;
           }
           if (assistantText) {
@@ -302,6 +306,7 @@ export function createMattermostDraftStream(params: {
             message: firstChunk,
             rootId: params.rootId,
           });
+          params.onVisible?.();
           if (assistantText) {
             const publishedContent = firstPost.message ?? firstChunk;
             trackPublishedAssistantPart({
@@ -322,6 +327,7 @@ export function createMattermostDraftStream(params: {
             message: chunk,
             rootId: params.rootId,
           });
+          params.onVisible?.();
           if (assistantText) {
             const publishedContent = post.message ?? chunk;
             trackPublishedAssistantPart({ messageId: post.id, content: publishedContent });

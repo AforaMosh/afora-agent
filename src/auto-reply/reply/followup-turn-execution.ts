@@ -1,3 +1,4 @@
+import { settleProgressVisibilityCallbackResult } from "../../channels/progress-visibility.js";
 import { loadSessionEntryReadOnly } from "../../config/sessions/session-accessor.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import type { TemplateContext } from "../templating.js";
@@ -155,7 +156,7 @@ export async function executeFollowupTurn(params: {
             if (!allowed()) {
               return false;
             }
-            return await callback(value);
+            return (await settleProgressVisibilityCallbackResult(callback(value))).visible;
           })
       : undefined;
   const baseTypingSignals = createTypingSignaler({
@@ -192,8 +193,9 @@ export async function executeFollowupTurn(params: {
             if (!shouldEmitToolResult()) {
               return false;
             }
-            const result = await sourceOpts.onCommandOutput?.(output);
-            const visible = result !== false;
+            const visible = (
+              await settleProgressVisibilityCallbackResult(sourceOpts.onCommandOutput!(output))
+            ).visible;
             if (
               visible &&
               (output.status === "failed" ||
@@ -202,7 +204,7 @@ export async function executeFollowupTurn(params: {
             ) {
               visibleToolError = true;
             }
-            return result;
+            return visible;
           })
       : undefined,
     onItemEvent: sourceOpts?.onItemEvent
@@ -211,15 +213,16 @@ export async function executeFollowupTurn(params: {
             if (!shouldEmitToolResult()) {
               return false;
             }
-            const result = await sourceOpts.onItemEvent?.(item);
-            const visible = result !== false;
+            const visible = (
+              await settleProgressVisibilityCallbackResult(sourceOpts.onItemEvent!(item))
+            ).visible;
             if (
               visible &&
               (item.phase === "error" || item.status === "failed" || item.status === "error")
             ) {
               visibleToolError = true;
             }
-            return result;
+            return visible;
           })
       : undefined,
     onNarrationUpdate: wrap(sourceOpts?.onNarrationUpdate),
@@ -228,28 +231,34 @@ export async function executeFollowupTurn(params: {
     onPatchSummary: wrapVisibility(sourceOpts?.onPatchSummary, shouldEmitToolResult),
     onCompactionStart: sourceOpts?.onCompactionStart
       ? () =>
-          enqueueProgress(async () => {
+          enqueueProgressResult(async () => {
             if (progressAllowed()) {
-              await sourceOpts.onCompactionStart?.();
+              return (await settleProgressVisibilityCallbackResult(sourceOpts.onCompactionStart!()))
+                .visible;
             }
+            return false;
           })
       : undefined,
     onCompactionEnd: sourceOpts?.onCompactionEnd
       ? () =>
-          enqueueProgress(async () => {
+          enqueueProgressResult(async () => {
             if (progressAllowed()) {
-              await sourceOpts.onCompactionEnd?.();
+              return (await settleProgressVisibilityCallbackResult(sourceOpts.onCompactionEnd!()))
+                .visible;
             }
+            return false;
           })
       : undefined,
-    onReasoningStream: wrap(sourceOpts?.onReasoningStream),
+    onReasoningStream: wrapVisibility(sourceOpts?.onReasoningStream),
     onReasoningProgress: wrap(sourceOpts?.onReasoningProgress),
     onReasoningEnd: sourceOpts?.onReasoningEnd
       ? () =>
-          enqueueProgress(async () => {
+          enqueueProgressResult(async () => {
             if (progressAllowed()) {
-              await sourceOpts.onReasoningEnd?.();
+              return (await settleProgressVisibilityCallbackResult(sourceOpts.onReasoningEnd!()))
+                .visible;
             }
+            return false;
           })
       : undefined,
     shouldSuppressToolErrorWarnings: () => {
@@ -278,13 +287,12 @@ export async function executeFollowupTurn(params: {
         ) {
           return false;
         }
-        let result: boolean | void = undefined;
-        if (channelToolResultProgress && !verboseToolResult) {
-          result = await channelToolResultProgress(payload);
-        } else {
-          await params.onToolResult(payload, { runId: turn.runId });
-        }
-        if (result !== false && payload.isError === true) {
+        const result =
+          channelToolResultProgress && !verboseToolResult
+            ? (await settleProgressVisibilityCallbackResult(channelToolResultProgress(payload)))
+                .visible
+            : await params.onToolResult(payload, { runId: turn.runId }).then(() => true);
+        if (result && payload.isError === true) {
           visibleToolError = true;
         }
         return result;

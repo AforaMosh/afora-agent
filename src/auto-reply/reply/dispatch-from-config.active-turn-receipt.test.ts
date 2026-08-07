@@ -82,6 +82,47 @@ describe("createActiveTurnReceiptCoordinator", () => {
     }
   });
 
+  it.each([
+    [
+      "confirmed visibility",
+      (coordinator: ReturnType<typeof createActiveTurnReceiptCoordinator>) =>
+        coordinator.noteVisible(),
+    ],
+    [
+      "lifecycle cancellation",
+      (coordinator: ReturnType<typeof createActiveTurnReceiptCoordinator>) => coordinator.cancel(),
+    ],
+  ])("aborts pre-transport work after the timer fires for %s", async (_label, cancel) => {
+    vi.useFakeTimers();
+    try {
+      let preTransportSignal: AbortSignal | undefined;
+      let terminalSignal: AbortSignal | undefined;
+      const coordinator = createActiveTurnReceiptCoordinator();
+      coordinator.arm({
+        eligible: true,
+        deliver: async (signals) => {
+          preTransportSignal = signals.preTransportAbortSignal;
+          terminalSignal = signals.terminalAbortSignal;
+          await new Promise<void>((resolve) => {
+            signals.preTransportAbortSignal.addEventListener("abort", () => resolve(), {
+              once: true,
+            });
+          });
+          return "proven-unsent";
+        },
+      });
+
+      await vi.advanceTimersByTimeAsync(ACTIVE_TURN_RECEIPT_DELAY_MS);
+      expect(preTransportSignal?.aborted).toBe(false);
+      cancel(coordinator);
+      expect(preTransportSignal?.aborted).toBe(true);
+      expect(terminalSignal?.aborted).toBe(false);
+      await coordinator.settleBeforeTerminal();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("settles an in-flight receipt before terminal delivery proceeds", async () => {
     vi.useFakeTimers();
     try {
@@ -115,22 +156,25 @@ describe("createActiveTurnReceiptCoordinator", () => {
   it("bounds terminal settlement and aborts a hung receipt", async () => {
     vi.useFakeTimers();
     try {
-      let deliverySignal: AbortSignal | undefined;
+      let preTransportSignal: AbortSignal | undefined;
+      let terminalSignal: AbortSignal | undefined;
       const coordinator = createActiveTurnReceiptCoordinator();
       coordinator.arm({
         eligible: true,
-        deliver: async (signal) => {
-          deliverySignal = signal;
+        deliver: async (signals) => {
+          preTransportSignal = signals.preTransportAbortSignal;
+          terminalSignal = signals.terminalAbortSignal;
           return await new Promise<ActiveTurnReceiptDeliveryOutcome>(() => {});
         },
       });
       await vi.advanceTimersByTimeAsync(ACTIVE_TURN_RECEIPT_DELAY_MS);
       const terminal = coordinator.settleBeforeTerminal();
       await vi.advanceTimersByTimeAsync(4_999);
-      expect(deliverySignal?.aborted).toBe(false);
+      expect(preTransportSignal?.aborted).toBe(true);
+      expect(terminalSignal?.aborted).toBe(false);
       await vi.advanceTimersByTimeAsync(1);
       await terminal;
-      expect(deliverySignal?.aborted).toBe(true);
+      expect(terminalSignal?.aborted).toBe(true);
     } finally {
       vi.useRealTimers();
     }

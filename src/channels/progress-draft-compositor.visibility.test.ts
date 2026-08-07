@@ -57,4 +57,44 @@ describe("progress draft visibility", () => {
     expect(onVisible).toHaveBeenCalledOnce();
     warn.mockRestore();
   });
+
+  it("preserves synchronous void as a visible legacy render", async () => {
+    vi.useFakeTimers();
+    const onVisible = vi.fn();
+    const progress = createChannelProgressDraftCompositor({
+      entry: { streaming: { mode: "progress", progress: { label: "Shelling" } } },
+      mode: "progress",
+      active: true,
+      seed: "test",
+      update: () => undefined,
+    });
+    progress.registerVisibilityListener(onVisible);
+
+    expect(await progress.pushToolProgress("🛠️ Exec")).toBe(false);
+    await vi.advanceTimersByTimeAsync(DEFAULT_PROGRESS_DRAFT_INITIAL_DELAY_MS);
+    expect(onVisible).toHaveBeenCalledOnce();
+  });
+
+  it("requires async renderers to confirm visibility explicitly", async () => {
+    vi.useFakeTimers();
+    const onVisible = vi.fn();
+    const update = vi
+      .fn<() => Promise<boolean>>()
+      .mockImplementationOnce(async () => undefined as unknown as boolean)
+      .mockResolvedValueOnce(true);
+    const progress = createChannelProgressDraftCompositor({
+      entry: { streaming: { mode: "progress", progress: { label: "Shelling" } } },
+      mode: "progress",
+      active: true,
+      seed: "test",
+      update,
+    });
+    progress.registerVisibilityListener(onVisible);
+
+    expect(await progress.pushToolProgress("🛠️ Exec")).toBe(false);
+    await vi.advanceTimersByTimeAsync(DEFAULT_PROGRESS_DRAFT_INITIAL_DELAY_MS);
+    expect(onVisible).not.toHaveBeenCalled();
+    expect(await progress.pushToolProgress("🛠️ Exec")).toBe(true);
+    expect(onVisible).toHaveBeenCalledOnce();
+  });
 });

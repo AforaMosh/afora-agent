@@ -12,6 +12,7 @@ import {
   normalizeReasoningProgressLine,
   sanitizeProgressStatusText,
 } from "./progress-draft-status-text.js";
+import { settleProgressVisibilityCallbackResult } from "./progress-visibility.js";
 import {
   createChannelProgressDraftGate,
   type AgentPlanStep,
@@ -219,8 +220,9 @@ export function createChannelProgressDraftCompositor(params: {
     if (!text || (text === lastRenderedText && !linesChanged)) {
       return false;
     }
-    const updated = await params.update(text, { ...options, lines: [...lines] });
-    if (updated === false) {
+    const updateResult = params.update(text, { ...options, lines: [...lines] });
+    const observed = await settleProgressVisibilityCallbackResult(updateResult);
+    if (!observed.visible) {
       return false;
     }
     // Commit the dedupe snapshot only after the channel accepted the render;

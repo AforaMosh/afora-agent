@@ -4,6 +4,7 @@ import {
   resolveSendableOutboundReplyParts,
 } from "openclaw/plugin-sdk/reply-payload";
 import { shouldSuppressLocalExecApprovalPrompt } from "../../channels/plugins/exec-approval-local.js";
+import { settleProgressVisibilityCallbackResult } from "../../channels/progress-visibility.js";
 import { type AgentPlanStep, formatPlanChecklistLines } from "../../channels/streaming.js";
 import { getRuntimeConfigSnapshot } from "../../config/config.js";
 import { applyMergePatch } from "../../config/merge-patch.js";
@@ -14,6 +15,7 @@ import { shouldCleanTtsDirectiveText } from "../../tts/tts-config.js";
 import { normalizeMessageChannel } from "../../utils/message-channel.js";
 import type { GetReplyOptions } from "../get-reply-options.types.js";
 import { setReplyPayloadMetadata, type ReplyPayload } from "../reply-payload.js";
+import { bindActiveTurnReceiptSignals } from "./active-turn-receipt-signals.js";
 import {
   ACTIVE_TURN_RECEIPT_TEXT,
   classifyActiveTurnReceiptDispatchOutcome,
@@ -279,8 +281,17 @@ export async function prepareDispatchExecution(state: ChooseDispatchRouteReadySt
       releaseStart: () => releaseStart?.(),
     };
   };
-  const wrapProgressCallback = <Args extends unknown[], Result extends boolean | void>(
-    callback: ((...args: Args) => Promise<Result> | Result) | undefined,
+  const observeProgressCallbackResult = async (
+    callbackResult: boolean | void | Promise<boolean | void>,
+  ): Promise<{ result: boolean | void; visible: boolean }> => {
+    const observed = await settleProgressVisibilityCallbackResult(callbackResult);
+    if (observed.visible) {
+      activeTurnReceipt.noteVisible();
+    }
+    return observed;
+  };
+  const wrapProgressCallback = <Args extends unknown[]>(
+    callback: ((...args: Args) => boolean | void | Promise<boolean | void>) | undefined,
     options?: {
       allowWhenToolSummariesHidden?: boolean;
       forwardWhenSourceDeliverySuppressed?: boolean;
@@ -289,14 +300,14 @@ export async function prepareDispatchExecution(state: ChooseDispatchRouteReadySt
       onVisible?: (...args: Args) => Promise<void> | void;
       waitForDirectBlockReplyDelivery?: boolean;
     },
-  ): ((...args: Args) => Promise<Result | undefined>) | undefined => {
+  ): ((...args: Args) => Promise<boolean | void>) | undefined => {
     if (!callback) {
       return undefined;
     }
     const runProgressCallback = async (
       args: Args,
       noteCallbackStarted: () => void,
-    ): Promise<Result | undefined> => {
+    ): Promise<boolean | void> => {
       try {
         if (isDispatchOperationAborted()) {
           return undefined;
@@ -320,11 +331,10 @@ export async function prepareDispatchExecution(state: ChooseDispatchRouteReadySt
           }
           const callbackResult = callback(...args);
           noteCallbackStarted();
-          const result = await callbackResult;
-          if (result === false) {
-            return result;
+          const observed = await observeProgressCallbackResult(callbackResult);
+          if (!observed.visible) {
+            return observed.result;
           }
-          activeTurnReceipt.noteVisible();
           await options?.onVisible?.(...args);
         }
         return undefined;
@@ -433,18 +443,27 @@ export async function prepareDispatchExecution(state: ChooseDispatchRouteReadySt
     : params.usePublishedModelRuntime || publishedRuntimeReplyConfig
       ? withPublishedRuntimeReplyConfig(runtimeReplyConfig)
       : withFullRuntimeReplyConfig(cfg);
-  const deliverActiveTurnReceipt = async (
-    abortSignal: AbortSignal,
-  ): Promise<ActiveTurnReceiptDeliveryOutcome> => {
+  const deliverActiveTurnReceipt = async (signals: {
+    preTransportAbortSignal: AbortSignal;
+    terminalAbortSignal: AbortSignal;
+  }): Promise<ActiveTurnReceiptDeliveryOutcome> => {
     const payload = setReplyPayloadMetadata<ReplyPayload>(
       {
         text: ACTIVE_TURN_RECEIPT_TEXT,
         isStatusNotice: true,
       },
-      { activeTurnReceipt: { abortSignal, maxRetries: 1 } },
+      {
+        activeTurnReceipt: {
+          abortSignal: bindActiveTurnReceiptSignals({
+            preTransport: signals.preTransportAbortSignal,
+            terminal: signals.terminalAbortSignal,
+          }),
+          maxRetries: 1,
+        },
+      },
     );
     if (shouldRouteToOriginating) {
-      const result = await sendPayloadAsync(payload, abortSignal, false, "final");
+      const result = await sendPayloadAsync(payload, signals.terminalAbortSignal, false, "final");
       if (!result) {
         return "proven-unsent";
       }
@@ -498,6 +517,7 @@ export async function prepareDispatchExecution(state: ChooseDispatchRouteReadySt
     shouldForwardProgressCallback,
     preserveProgressCallbackStartOrder,
     wrapProgressCallback,
+    observeProgressCallbackResult,
     deliverStandaloneCommentaryProgress,
     canForwardSuppressedSourceItemEvents,
     onItemEvent,

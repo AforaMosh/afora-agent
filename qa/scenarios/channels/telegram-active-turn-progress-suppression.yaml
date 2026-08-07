@@ -1,0 +1,66 @@
+title: Telegram accepted partial preview suppresses the active-turn receipt
+scenario:
+  id: telegram-active-turn-progress-suppression
+  surface: channels
+  category: channels.conversation-routing-and-delivery
+  coverage:
+    primary:
+      - telegram.conversation-routing-and-delivery
+  objective: Verify an accepted Telegram partial preview stays one edited message without a receipt.
+  execution:
+    kind: flow
+    channel: telegram
+    timeoutMs: 120000
+    retryCount: 1
+    suiteIsolation: isolated
+    config:
+      requiredProviderMode: mock-openai
+flow:
+  steps:
+    - name: suppresses the receipt after preview acceptance
+      actions:
+        - call: restartGatewayWithConfigPatch
+          args:
+            - env: { ref: env }
+              patch:
+                channels:
+                  telegram:
+                    streaming: { mode: partial }
+                messages:
+                  statusReactions: { enabled: false }
+        - call: waitForGatewayHealthy
+          args: [{ ref: env }, 180000]
+        - call: waitForTransportReady
+          args: [{ ref: env }, 180000]
+        - resetTransport: true
+        - set: outboundStartIndex
+          value:
+            expr: "state.getSnapshot().messages.filter((message) => message.direction === 'outbound').length"
+        - sendInbound:
+            conversation: { id: telegram-active-turn-progress-room, kind: channel }
+            senderId: qa-progress-operator
+            senderName: QA Progress Operator
+            text: "@openclaw Active-turn receipt QA check. Final-only marker streaming QA check; reply exactly `QA-TELEGRAM-PROGRESS-FINAL-OK`."
+        - waitForOutbound:
+            conversation: { id: telegram-active-turn-progress-room, kind: channel }
+            sinceIndex: { ref: outboundStartIndex }
+            textIncludes: QA streaming preview in progress
+            timeoutMs: 25000
+        - set: previewMessage
+          value:
+            expr: "state.getSnapshot().messages.filter((message) => message.direction === 'outbound').slice(outboundStartIndex)[0]"
+        - call: sleep
+          args: [33000]
+        - waitForOutbound:
+            conversation: { id: telegram-active-turn-progress-room, kind: channel }
+            sinceIndex: { ref: outboundStartIndex }
+            textIncludes: QA-TELEGRAM-PROGRESS-FINAL-OK
+            timeoutMs: 30000
+        - set: outbound
+          value:
+            expr: "state.getSnapshot().messages.filter((message) => message.direction === 'outbound').slice(outboundStartIndex)"
+        - assert:
+            expr: "outbound.length === 1 && outbound[0].id === previewMessage.id && outbound[0].text === 'QA-TELEGRAM-PROGRESS-FINAL-OK' && outbound.every((message) => !message.text.includes('I’m still working on this'))"
+            message:
+              expr: "`expected one preview edited to final with no receipt; preview=${JSON.stringify(previewMessage)} outbound=${JSON.stringify(outbound)}`"
+      detailsExpr: outbound[0].text

@@ -2,6 +2,7 @@
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
 import type { ReplyPayload } from "../../auto-reply/reply-payload.js";
 import { getReplyPayloadMetadata } from "../../auto-reply/reply-payload.js";
+import { claimActiveTurnReceiptTransport } from "../../auto-reply/reply/active-turn-receipt-signals.js";
 import type { FinalizedMsgContext } from "../../auto-reply/templating.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import { normalizeDeliverableOutboundChannel } from "../../infra/outbound/channel-resolution.js";
@@ -206,6 +207,10 @@ export async function deliverInboundReplyWithMessageSendContext(
     requesterSenderE164: params.ctxPayload.SenderE164,
   });
 
+  const activeTurnReceipt = getReplyPayloadMetadata(params.payload)?.activeTurnReceipt;
+  if (activeTurnReceipt) {
+    claimActiveTurnReceiptTransport(activeTurnReceipt.abortSignal);
+  }
   const send = await sendDurableMessageBatch({
     cfg: params.cfg,
     channel,
@@ -221,8 +226,8 @@ export async function deliverInboundReplyWithMessageSendContext(
     mediaAccess: params.mediaAccess,
     silent: params.silent,
     durability,
-    maxRetries: getReplyPayloadMetadata(params.payload)?.activeTurnReceipt?.maxRetries,
-    signal: getReplyPayloadMetadata(params.payload)?.activeTurnReceipt?.abortSignal,
+    maxRetries: activeTurnReceipt?.maxRetries,
+    signal: activeTurnReceipt?.abortSignal,
     ...(durability === "required" ? { requireUnknownSendReconciliation: true } : {}),
     session,
     gatewayClientScopes: params.ctxPayload.GatewayClientScopes ?? [],

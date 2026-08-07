@@ -66,6 +66,15 @@ export function createDiscordDraftPreviewController(params: {
     blockStreamingDefault: params.cfg.agents?.defaults?.blockStreamingDefault,
   });
   const canStreamDraft = previewAvailable && !accountBlockStreamingEnabled;
+  let progressVisible = false;
+  let progressVisibilityListener: (() => void) | undefined;
+  const reportProgressVisible = () => {
+    if (progressVisible) {
+      return;
+    }
+    progressVisible = true;
+    progressVisibilityListener?.();
+  };
   const draftStream = canStreamDraft
     ? createDiscordDraftStream({
         rest: params.deliveryRest,
@@ -77,6 +86,7 @@ export function createDiscordDraftPreviewController(params: {
         throttleMs: 1200,
         log: params.log,
         warn: params.log,
+        onVisible: reportProgressVisible,
       })
     : undefined;
   const draftChunking =
@@ -137,6 +147,7 @@ export function createDiscordDraftPreviewController(params: {
       if (options?.flush) {
         await draftStream?.flush();
       }
+      return Boolean(draftStream?.messageId());
     },
     deleteCurrent: async () => {
       lastPartialText = "";
@@ -149,6 +160,7 @@ export function createDiscordDraftPreviewController(params: {
     isEmptyLine: isEmptyDiscordProgressLine,
     shouldStartNow: shouldStartDiscordProgressDraftNow,
   });
+  progressDraft.registerVisibilityListener(reportProgressVisible);
 
   const resetProgressState = () => {
     lastPartialText = "";
@@ -222,7 +234,10 @@ export function createDiscordDraftPreviewController(params: {
       progressNarratorLifecycle = lifecycle;
     },
     registerProgressVisibilityListener(listener: () => void) {
-      progressDraft.registerVisibilityListener(listener);
+      progressVisibilityListener = listener;
+      if (progressVisible) {
+        listener();
+      }
     },
     markFinalReplyStarted() {
       progressDraftStartedBeforeFinal ||= progressDraft.hasStarted;
@@ -271,16 +286,16 @@ export function createDiscordDraftPreviewController(params: {
       line?: string | ChannelProgressDraftLine,
       options?: { toolName?: string },
     ) {
-      await progressDraft.pushToolProgress(line, options);
+      return await progressDraft.pushToolProgress(line, options);
     },
     async pushPlanProgress(steps?: AgentPlanStep[], options?: { explanation?: string }) {
       return await progressDraft.pushPlanProgress(steps, options);
     },
     async pushReasoningProgress(text?: string, options?: { snapshot?: boolean }) {
-      await progressDraft.pushReasoningProgress(text, options);
+      return await progressDraft.pushReasoningProgress(text, options);
     },
     async pushNarrationProgress(text?: string) {
-      await progressDraft.pushNarrationProgress(text);
+      return await progressDraft.pushNarrationProgress(text);
     },
     pushPreambleHeadline,
     async pushPreambleItemEvent(
@@ -300,7 +315,7 @@ export function createDiscordDraftPreviewController(params: {
       }
     },
     async pushCommentaryProgress(text?: string, options?: { itemId?: string }) {
-      await progressDraft.pushCommentaryProgress(text, options);
+      return await progressDraft.pushCommentaryProgress(text, options);
     },
     resolvePreviewFinalText(text?: string) {
       if (typeof text !== "string") {
@@ -337,19 +352,19 @@ export function createDiscordDraftPreviewController(params: {
     },
     updateFromPartial(text?: string) {
       if (!draftStream || !text) {
-        return;
+        return false;
       }
       const cleaned = stripInlineDirectiveTagsForDelivery(
         stripReasoningTagsFromText(text, { mode: "strict", trim: "both" }),
       ).text;
       if (!cleaned || cleaned.startsWith("Reasoning:\n")) {
-        return;
+        return false;
       }
       if (cleaned === lastPartialText) {
-        return;
+        return Boolean(draftStream.messageId());
       }
       if (discordStreamMode === "progress") {
-        return;
+        return false;
       }
       progressDraft.suppress();
       hasStreamedMessage = true;
@@ -359,11 +374,11 @@ export function createDiscordDraftPreviewController(params: {
           lastPartialText.startsWith(cleaned) &&
           cleaned.length < lastPartialText.length
         ) {
-          return;
+          return false;
         }
         lastPartialText = cleaned;
         draftStream.update(cleaned);
-        return;
+        return Boolean(draftStream.messageId());
       }
 
       let delta = cleaned;
@@ -375,12 +390,12 @@ export function createDiscordDraftPreviewController(params: {
       }
       lastPartialText = cleaned;
       if (!delta) {
-        return;
+        return Boolean(draftStream.messageId());
       }
       if (!draftChunker) {
         draftText = cleaned;
         draftStream.update(draftText);
-        return;
+        return Boolean(draftStream.messageId());
       }
       draftChunker.append(delta);
       draftChunker.drain({
@@ -390,6 +405,7 @@ export function createDiscordDraftPreviewController(params: {
           draftStream.update(draftText);
         },
       });
+      return Boolean(draftStream.messageId());
     },
     handleAssistantMessageBoundary() {
       // Queued/followup turns need a fresh progress draft after the primary final.

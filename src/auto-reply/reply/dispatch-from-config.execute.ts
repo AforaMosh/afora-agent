@@ -49,6 +49,7 @@ export async function executeDispatch(state: PrepareDispatchExecutionReadyState)
     maybeApplyTtsWithFinalizationLease,
     normalizeReplyMediaPayload,
     notifySessionMetadataChanges,
+    observeProgressCallbackResult,
     onToolResultFromReplyOptions,
     params,
     reasoningPayloadsEnabled,
@@ -222,9 +223,8 @@ export async function executeDispatch(state: PrepareDispatchExecutionReadyState)
                       isFastModeAutoProgress,
                     );
                     if (progressCallbackForwarded) {
-                      const rendered = await onToolResultFromReplyOptions?.(payload);
-                      if (onToolResultFromReplyOptions && rendered !== false) {
-                        state.activeTurnReceipt.noteVisible();
+                      if (onToolResultFromReplyOptions) {
+                        await observeProgressCallbackResult(onToolResultFromReplyOptions(payload));
                       }
                     }
                     if (isDispatchOperationAborted()) {
@@ -353,9 +353,10 @@ export async function executeDispatch(state: PrepareDispatchExecutionReadyState)
                       requiresToolSummaryVisibility: true,
                     })
                   ) {
-                    const rendered = await state.onPlanUpdateFromReplyOptions?.(normalized);
-                    if (state.onPlanUpdateFromReplyOptions && rendered !== false) {
-                      state.activeTurnReceipt.noteVisible();
+                    if (state.onPlanUpdateFromReplyOptions) {
+                      await observeProgressCallbackResult(
+                        state.onPlanUpdateFromReplyOptions(normalized),
+                      );
                     }
                   }
                   if (isDispatchOperationAborted()) {
@@ -387,9 +388,10 @@ export async function executeDispatch(state: PrepareDispatchExecutionReadyState)
                       requiresToolSummaryVisibility: true,
                     })
                   ) {
-                    const rendered = await state.onApprovalEventFromReplyOptions?.(payload);
-                    if (state.onApprovalEventFromReplyOptions && rendered !== false) {
-                      state.activeTurnReceipt.noteVisible();
+                    if (state.onApprovalEventFromReplyOptions) {
+                      await observeProgressCallbackResult(
+                        state.onApprovalEventFromReplyOptions(payload),
+                      );
                     }
                   }
                 },
@@ -411,9 +413,10 @@ export async function executeDispatch(state: PrepareDispatchExecutionReadyState)
                       requiresToolSummaryVisibility: true,
                     })
                   ) {
-                    const rendered = await state.onPatchSummaryFromReplyOptions?.(payload);
-                    if (state.onPatchSummaryFromReplyOptions && rendered !== false) {
-                      state.activeTurnReceipt.noteVisible();
+                    if (state.onPatchSummaryFromReplyOptions) {
+                      await observeProgressCallbackResult(
+                        state.onPatchSummaryFromReplyOptions(payload),
+                      );
                     }
                   }
                 },
@@ -521,10 +524,12 @@ export async function executeDispatch(state: PrepareDispatchExecutionReadyState)
                           }
                         : context;
                     if (!state.suppressAutomaticSourceDelivery) {
-                      await params.replyOptions?.onBlockReplyQueued?.(
-                        visiblePayload,
-                        queuedContext,
-                      );
+                      const onBlockReplyQueued = params.replyOptions?.onBlockReplyQueued;
+                      if (onBlockReplyQueued) {
+                        await observeProgressCallbackResult(
+                          onBlockReplyQueued(visiblePayload, queuedContext),
+                        );
+                      }
                     }
                     if (isDispatchOperationAborted()) {
                       return;

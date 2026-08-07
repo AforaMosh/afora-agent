@@ -1,5 +1,9 @@
 import { dispatchInboundMessageWithRoutedChannelDispatcher } from "../../auto-reply/dispatch.js";
-import type { ReplyPayload } from "../../auto-reply/reply-payload.js";
+import { getReplyPayloadMetadata, type ReplyPayload } from "../../auto-reply/reply-payload.js";
+import {
+  ActiveTurnReceiptTransportCancelledError,
+  claimActiveTurnReceiptTransport,
+} from "../../auto-reply/reply/active-turn-receipt-signals.js";
 import type { DispatchFromConfigResult } from "../../auto-reply/reply/dispatch-from-config.types.js";
 import type { ReplyDispatchKind } from "../../auto-reply/reply/reply-dispatcher.types.js";
 import { runWithSessionInitConflictRetry } from "../../auto-reply/reply/session-init-conflict-retry.js";
@@ -530,6 +534,11 @@ async function dispatchChannelTurnWithDeliveryOwner(
                         "deliverWithProviderMessageSending" in delivery &&
                         delivery.deliverWithProviderMessageSending
                       ) {
+                        const receipt =
+                          getReplyPayloadMetadata(effectivePayload)?.activeTurnReceipt;
+                        if (receipt) {
+                          claimActiveTurnReceiptTransport(receipt.abortSignal);
+                        }
                         result = await delivery.deliverWithProviderMessageSending(
                           effectivePayload,
                           info,
@@ -554,10 +563,18 @@ async function dispatchChannelTurnWithDeliveryOwner(
                               "channel delivery adapter is missing a direct deliverer",
                             );
                           }
+                          const receipt =
+                            getReplyPayloadMetadata(effectivePayload)?.activeTurnReceipt;
+                          if (receipt) {
+                            claimActiveTurnReceiptTransport(receipt.abortSignal);
+                          }
                           result = await delivery.deliver(effectivePayload, info);
                         }
                       }
                     } catch (error: unknown) {
+                      if (error instanceof ActiveTurnReceiptTransportCancelledError) {
+                        throw error;
+                      }
                       if (delivery.observeMessageSent) {
                         await settleChannelDeliveryAttempt({
                           attempt: { payload: effectivePayload, info, error },

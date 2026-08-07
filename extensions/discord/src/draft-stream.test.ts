@@ -4,6 +4,36 @@ import { describe, expect, it, vi } from "vitest";
 import { createDiscordDraftStream } from "./draft-stream.js";
 
 describe("createDiscordDraftStream", () => {
+  it("reports visibility only after Discord accepts the preview", async () => {
+    const onVisible = vi.fn();
+    let acceptSend: ((value: { id: string }) => void) | undefined;
+    const rest = {
+      post: vi.fn(
+        async () =>
+          await new Promise<{ id: string }>((resolve) => {
+            acceptSend = resolve;
+          }),
+      ),
+      patch: vi.fn(async () => undefined),
+      delete: vi.fn(async () => undefined),
+    };
+    const stream = createDiscordDraftStream({
+      rest: rest as never,
+      channelId: "c1",
+      throttleMs: 250,
+      onVisible,
+    });
+
+    stream.update("working");
+    const flushing = stream.flush();
+    await vi.waitFor(() => expect(rest.post).toHaveBeenCalledOnce());
+    expect(onVisible).not.toHaveBeenCalled();
+    acceptSend?.({ id: "m1" });
+    await flushing;
+
+    expect(onVisible).toHaveBeenCalledOnce();
+  });
+
   it("moves the visible draft to a newly adopted thread", async () => {
     const rest = {
       post: vi

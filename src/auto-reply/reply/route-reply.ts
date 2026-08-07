@@ -25,6 +25,10 @@ import { INTERNAL_MESSAGE_CHANNEL, normalizeMessageChannel } from "../../utils/m
 import { getReplyPayloadMetadata, type ReplyDeliveryContext } from "../reply-payload.js";
 import type { OriginatingChannelType } from "../templating.js";
 import type { ReplyPayload } from "../types.js";
+import {
+  claimActiveTurnReceiptTransport,
+  resolveActiveTurnReceiptPreTransportSignal,
+} from "./active-turn-receipt-signals.js";
 import { normalizeReplyPayload } from "./normalize-reply.js";
 import type { ReplyDispatchKind } from "./reply-dispatcher.types.js";
 import {
@@ -264,11 +268,18 @@ export async function routeReply(params: RouteReplyParams): Promise<RouteReplyRe
   if (!channelId) {
     return { ok: false, delivered: false, error: `Unknown channel: ${String(channel)}` };
   }
+  const payloadMetadata = getReplyPayloadMetadata(normalized);
+  const activeTurnReceipt = payloadMetadata?.activeTurnReceipt;
+  const preTransportAbortSignal = activeTurnReceipt
+    ? resolveActiveTurnReceiptPreTransportSignal(activeTurnReceipt.abortSignal)
+    : undefined;
   if (abortSignal?.aborted) {
     return { ok: false, delivered: false, error: "Reply routing aborted" };
   }
+  if (preTransportAbortSignal?.aborted) {
+    return { ok: false, delivered: false, error: "Reply routing cancelled before transport" };
+  }
 
-  const payloadMetadata = getReplyPayloadMetadata(normalized);
   const payloadReplyDelivery = payloadMetadata?.replyDelivery;
   const payloadPolicyMatchesRoute =
     payloadReplyDelivery && params.replyDelivery && payloadMetadata.replyDeliverySource
@@ -311,6 +322,9 @@ export async function routeReply(params: RouteReplyParams): Promise<RouteReplyRe
     // Provider docking: this is an execution boundary (we're about to send).
     // Keep the module cheap to import by loading outbound plumbing lazily.
     const { sendDurableMessageBatch } = await loadDeliverRuntime();
+    if (preTransportAbortSignal?.aborted) {
+      return { ok: false, delivered: false, error: "Reply routing cancelled before transport" };
+    }
     const outboundSession = buildOutboundSessionContext({
       cfg,
       agentId: resolvedAgentId,
@@ -324,6 +338,9 @@ export async function routeReply(params: RouteReplyParams): Promise<RouteReplyRe
       requesterSenderUsername: params.requesterSenderUsername,
       requesterSenderE164: params.requesterSenderE164,
     });
+    if (activeTurnReceipt) {
+      claimActiveTurnReceiptTransport(activeTurnReceipt.abortSignal);
+    }
     const send = await sendDurableMessageBatch({
       cfg,
       channel: channelId,
@@ -348,7 +365,7 @@ export async function routeReply(params: RouteReplyParams): Promise<RouteReplyRe
       threadId: resolvedThreadId,
       session: outboundSession,
       maxRetries: payloadMetadata?.activeTurnReceipt?.maxRetries,
-      signal: abortSignal,
+      signal: activeTurnReceipt?.abortSignal ?? abortSignal,
       mirror:
         params.mirror !== false && params.sessionKey
           ? {

@@ -83,6 +83,8 @@ Progress callbacks report what the operator can see, not what a plugin queued.
 Return `true` only after the transport has accepted a visible draft, update, or
 stream chunk. Return `false` while delivery is pending or after a proven send
 failure. Existing synchronous renderers may return `void`.
+An asynchronous callback that resolves without a boolean remains source-compatible,
+but it does not confirm visibility; return `true` explicitly after provider acceptance.
 
 For transports whose send settles after the callback returns, implement
 `registerProgressVisibilityListener`. Latch the first accepted visible update,

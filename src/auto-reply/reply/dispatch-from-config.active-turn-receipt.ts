@@ -10,6 +10,11 @@ export type ActiveTurnReceiptDeliveryOutcome =
   | "proven-unsent"
   | "maybe-visible";
 
+type ActiveTurnReceiptDeliverySignals = {
+  preTransportAbortSignal: AbortSignal;
+  terminalAbortSignal: AbortSignal;
+};
+
 export function classifyActiveTurnReceiptDispatchOutcome(
   outcome: ReplyDispatchDeliveryOutcome,
 ): ActiveTurnReceiptDeliveryOutcome {
@@ -27,7 +32,8 @@ export function createActiveTurnReceiptCoordinator() {
   let stopped = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let inFlight: Promise<void> | undefined;
-  let deliveryAbortController: AbortController | undefined;
+  let preTransportAbortController: AbortController | undefined;
+  let terminalAbortController: AbortController | undefined;
   let removeAbortListener: (() => void) | undefined;
 
   const clearTimer = () => {
@@ -36,9 +42,10 @@ export function createActiveTurnReceiptCoordinator() {
       timer = undefined;
     }
   };
-  const stop = () => {
+  const stop = (reason = new Error("active turn receipt cancelled before transport")) => {
     stopped = true;
     clearTimer();
+    preTransportAbortController?.abort(reason);
     removeAbortListener?.();
     removeAbortListener = undefined;
   };
@@ -49,25 +56,31 @@ export function createActiveTurnReceiptCoordinator() {
     arm(options: {
       eligible: boolean;
       abortSignal?: AbortSignal;
-      deliver: (abortSignal: AbortSignal) => Promise<ActiveTurnReceiptDeliveryOutcome>;
+      deliver: (
+        signals: ActiveTurnReceiptDeliverySignals,
+      ) => Promise<ActiveTurnReceiptDeliveryOutcome>;
     }) {
       if (!options.eligible || stopped || timer || inFlight) {
         return;
       }
       if (options.abortSignal) {
-        const onAbort = () => stop();
+        const onAbort = () => stop(options.abortSignal?.reason);
         options.abortSignal.addEventListener("abort", onAbort, { once: true });
         removeAbortListener = () => options.abortSignal?.removeEventListener("abort", onAbort);
       }
       timer = setTimeout(() => {
         timer = undefined;
-        deliveryAbortController = new AbortController();
+        preTransportAbortController = new AbortController();
+        terminalAbortController = new AbortController();
         inFlight = (async () => {
           if (shouldStop(options.abortSignal)) {
             return;
           }
           try {
-            const outcome = await options.deliver(deliveryAbortController!.signal);
+            const outcome = await options.deliver({
+              preTransportAbortSignal: preTransportAbortController!.signal,
+              terminalAbortSignal: terminalAbortController!.signal,
+            });
             if (outcome === "confirmed-visible") {
               visible = true;
             }
@@ -76,14 +89,15 @@ export function createActiveTurnReceiptCoordinator() {
           }
         })().finally(() => {
           inFlight = undefined;
-          deliveryAbortController = undefined;
+          preTransportAbortController = undefined;
+          terminalAbortController = undefined;
         });
       }, ACTIVE_TURN_RECEIPT_DELAY_MS);
       timer.unref?.();
     },
     noteVisible() {
       visible = true;
-      clearTimer();
+      stop(new Error("active turn receipt cancelled by confirmed visibility"));
     },
     cancel: stop,
     async settleBeforeTerminal(): Promise<void> {
@@ -105,7 +119,7 @@ export function createActiveTurnReceiptCoordinator() {
         clearTimeout(terminalSettleTimer);
       }
       if (settled === "deadline") {
-        deliveryAbortController?.abort(new Error("active turn receipt terminal settle timed out"));
+        terminalAbortController?.abort(new Error("active turn receipt terminal settle timed out"));
       }
     },
   };

@@ -13,6 +13,7 @@ import {
 } from "../../test-utils/channel-plugins.js";
 import { setReplyPayloadMetadata } from "../reply-payload.js";
 import { SILENT_REPLY_TOKEN } from "../tokens.js";
+import { bindActiveTurnReceiptSignals } from "./active-turn-receipt-signals.js";
 
 const mocks = vi.hoisted(() => ({
   deliverOutboundPayloads: vi.fn(),
@@ -222,10 +223,19 @@ describe("routeReply", () => {
   });
 
   it("preserves the active-turn receipt recovery budget on routed delivery", async () => {
-    const controller = new AbortController();
+    const preTransportController = new AbortController();
+    const terminalController = new AbortController();
     const payload = setReplyPayloadMetadata(
       { text: "still working", isStatusNotice: true },
-      { activeTurnReceipt: { abortSignal: controller.signal, maxRetries: 1 } },
+      {
+        activeTurnReceipt: {
+          abortSignal: bindActiveTurnReceiptSignals({
+            preTransport: preTransportController.signal,
+            terminal: terminalController.signal,
+          }),
+          maxRetries: 1,
+        },
+      },
     );
 
     await routeReply({
@@ -233,10 +243,38 @@ describe("routeReply", () => {
       channel: "telegram",
       to: "chat:1",
       cfg: {} as never,
-      abortSignal: controller.signal,
+      abortSignal: terminalController.signal,
     });
 
-    expectLastDeliveryFields({ maxRetries: 1, abortSignal: controller.signal });
+    expectLastDeliveryFields({ maxRetries: 1, abortSignal: terminalController.signal });
+  });
+
+  it("does not route an active-turn receipt cancelled before transport", async () => {
+    const preTransport = new AbortController();
+    const terminal = new AbortController();
+    const payload = setReplyPayloadMetadata(
+      { text: "still working", isStatusNotice: true },
+      {
+        activeTurnReceipt: {
+          abortSignal: bindActiveTurnReceiptSignals({
+            preTransport: preTransport.signal,
+            terminal: terminal.signal,
+          }),
+          maxRetries: 1,
+        },
+      },
+    );
+    preTransport.abort();
+
+    const result = await routeReply({
+      payload,
+      channel: "telegram",
+      to: "chat:1",
+      cfg: {} as never,
+    });
+
+    expect(result.delivered).toBe(false);
+    expect(mocks.deliverOutboundPayloads).not.toHaveBeenCalled();
   });
 
   it("skips sends when abort signal is already aborted", async () => {

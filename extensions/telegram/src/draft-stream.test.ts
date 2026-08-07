@@ -122,6 +122,27 @@ function createForceNewMessageHarness(params: { throttleMs?: number } = {}) {
 }
 
 describe("createTelegramDraftStream", () => {
+  it("reports transport acceptance when the first preview send resolves", async () => {
+    const onTransportAccepted = vi.fn();
+    let acceptSend: ((message: MockSentMessage) => void) | undefined;
+    const api = createMockDraftApi(
+      async () =>
+        await new Promise<MockSentMessage>((resolve) => {
+          acceptSend = resolve;
+        }),
+    );
+    const stream = createDraftStream(api, { onTransportAccepted });
+
+    stream.update("Working");
+    const flushing = stream.flush();
+    await vi.waitFor(() => expect(api.sendMessage).toHaveBeenCalledOnce());
+    expect(onTransportAccepted).not.toHaveBeenCalled();
+    acceptSend?.({ message_id: 17 });
+    await flushing;
+
+    expect(onTransportAccepted).toHaveBeenCalledOnce();
+  });
+
   it("materializes only the newest lazy partial in a throttle window", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(0);

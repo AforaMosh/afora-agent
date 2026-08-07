@@ -1,7 +1,11 @@
 // Tests before-deliver hook ordering and payload mutation behavior.
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { getReplyPayloadMetadata, setReplyPayloadMetadata } from "../reply-payload.js";
 import type { ReplyPayload } from "../types.js";
+import {
+  bindActiveTurnReceiptSignals,
+  claimActiveTurnReceiptTransport,
+} from "./active-turn-receipt-signals.js";
 import {
   appendReplyDispatcherBeforeDeliverCancelled,
   attachReplyDispatchUndeliveredFallback,
@@ -98,9 +102,18 @@ describe("beforeDeliver in reply dispatcher", () => {
       releaseHook = resolve;
     });
     const beforeTransportAbort = new AbortController();
+    const beforeTransportTerminalAbort = new AbortController();
     const beforeTransportPayload = setReplyPayloadMetadata(
       { text: "receipt before transport" },
-      { activeTurnReceipt: { abortSignal: beforeTransportAbort.signal, maxRetries: 1 } },
+      {
+        activeTurnReceipt: {
+          abortSignal: bindActiveTurnReceiptSignals({
+            preTransport: beforeTransportAbort.signal,
+            terminal: beforeTransportTerminalAbort.signal,
+          }),
+          maxRetries: 1,
+        },
+      },
     );
     const beforeTransportOutcome = captureReplyDispatchDeliveryOutcome(beforeTransportPayload);
     const delivered: string[] = [];
@@ -130,13 +143,23 @@ describe("beforeDeliver in reply dispatcher", () => {
 
     let transportStarted = false;
     const afterTransportAbort = new AbortController();
+    const afterTransportTerminalAbort = new AbortController();
     const afterTransportPayload = setReplyPayloadMetadata(
       { text: "receipt after transport" },
-      { activeTurnReceipt: { abortSignal: afterTransportAbort.signal, maxRetries: 1 } },
+      {
+        activeTurnReceipt: {
+          abortSignal: bindActiveTurnReceiptSignals({
+            preTransport: afterTransportAbort.signal,
+            terminal: afterTransportTerminalAbort.signal,
+          }),
+          maxRetries: 1,
+        },
+      },
     );
     const afterTransportOutcome = captureReplyDispatchDeliveryOutcome(afterTransportPayload);
     const afterTransportDispatcher = createReplyDispatcher({
       deliver: async () => {
+        claimActiveTurnReceiptTransport(afterTransportTerminalAbort.signal);
         transportStarted = true;
         await new Promise<void>(() => {});
       },
@@ -146,10 +169,98 @@ describe("beforeDeliver in reply dispatcher", () => {
     await Promise.resolve();
     expect(transportStarted).toBe(true);
     afterTransportAbort.abort(new Error("receipt deadline"));
+    let transportOutcomeSettled = false;
+    void afterTransportOutcome.promise.then(() => {
+      transportOutcomeSettled = true;
+    });
+    await Promise.resolve();
+    expect(transportOutcomeSettled).toBe(false);
+    afterTransportTerminalAbort.abort(new Error("receipt terminal deadline"));
     afterTransportDispatcher.markComplete();
     await afterTransportDispatcher.waitForIdle();
 
     await expect(afterTransportOutcome.promise).resolves.toBe("failed-deliver");
+  });
+
+  it("cancels receipt delivery while channel payload preparation is still blocked", async () => {
+    const preTransport = new AbortController();
+    const terminal = new AbortController();
+    const payload = setReplyPayloadMetadata(
+      { text: "receipt during preparation" },
+      {
+        activeTurnReceipt: {
+          abortSignal: bindActiveTurnReceiptSignals({
+            preTransport: preTransport.signal,
+            terminal: terminal.signal,
+          }),
+          maxRetries: 1,
+        },
+      },
+    );
+    const outcome = captureReplyDispatchDeliveryOutcome(payload);
+    const onError = vi.fn();
+    let preparationStarted = false;
+    let releasePreparation: (() => void) | undefined;
+    const preparation = new Promise<void>((resolve) => {
+      releasePreparation = resolve;
+    });
+    const delivered: string[] = [];
+    const dispatcher = createReplyDispatcher({
+      onError,
+      deliver: async () => {
+        preparationStarted = true;
+        await preparation;
+        claimActiveTurnReceiptTransport(terminal.signal);
+        delivered.push("receipt during preparation");
+      },
+    });
+
+    dispatcher.sendFinalReply(payload);
+    await Promise.resolve();
+    expect(preparationStarted).toBe(true);
+    preTransport.abort(new Error("visible progress arrived during preparation"));
+    dispatcher.markComplete();
+    await dispatcher.waitForIdle();
+
+    await expect(outcome.promise).resolves.toBe("failed-before-deliver");
+    expect(terminal.signal.aborted).toBe(false);
+    releasePreparation?.();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(delivered).toEqual([]);
+    expect(onError).not.toHaveBeenCalled();
+    terminal.abort(new Error("terminal cleanup after late preparation settled"));
+  });
+
+  it("classifies a terminal abort in the same turn as the transport claim", async () => {
+    const preTransport = new AbortController();
+    const terminal = new AbortController();
+    const payload = setReplyPayloadMetadata(
+      { text: "claimed receipt" },
+      {
+        activeTurnReceipt: {
+          abortSignal: bindActiveTurnReceiptSignals({
+            preTransport: preTransport.signal,
+            terminal: terminal.signal,
+          }),
+          maxRetries: 1,
+        },
+      },
+    );
+    const outcome = captureReplyDispatchDeliveryOutcome(payload);
+    const dispatcher = createReplyDispatcher({
+      deliver: async () => {
+        claimActiveTurnReceiptTransport(terminal.signal);
+        terminal.abort(new Error("terminal containment"));
+        await new Promise<void>(() => {});
+      },
+    });
+
+    dispatcher.sendFinalReply(payload);
+    dispatcher.markComplete();
+    await dispatcher.waitForIdle();
+
+    await expect(outcome.promise).resolves.toBe("failed-deliver");
   });
 
   it("does not resume later beforeDeliver stages after an aborted stage settles late", async () => {
@@ -158,9 +269,18 @@ describe("beforeDeliver in reply dispatcher", () => {
       releaseFirstStage = resolve;
     });
     const abort = new AbortController();
+    const terminalAbort = new AbortController();
     const payload = setReplyPayloadMetadata(
       { text: "receipt" },
-      { activeTurnReceipt: { abortSignal: abort.signal, maxRetries: 1 } },
+      {
+        activeTurnReceipt: {
+          abortSignal: bindActiveTurnReceiptSignals({
+            preTransport: abort.signal,
+            terminal: terminalAbort.signal,
+          }),
+          maxRetries: 1,
+        },
+      },
     );
     const outcome = captureReplyDispatchDeliveryOutcome(payload);
     let secondStageCalls = 0;
@@ -193,11 +313,20 @@ describe("beforeDeliver in reply dispatcher", () => {
     expect(deliveryCalls).toBe(0);
   });
 
-  it("contains a synchronous receipt error observer and continues the delivery queue", async () => {
+  it("skips channel error observers for internal receipt cancellation", async () => {
     const abort = new AbortController();
+    const terminalAbort = new AbortController();
     const receipt = setReplyPayloadMetadata(
       { text: "receipt" },
-      { activeTurnReceipt: { abortSignal: abort.signal, maxRetries: 1 } },
+      {
+        activeTurnReceipt: {
+          abortSignal: bindActiveTurnReceiptSignals({
+            preTransport: abort.signal,
+            terminal: terminalAbort.signal,
+          }),
+          maxRetries: 1,
+        },
+      },
     );
     const outcome = captureReplyDispatchDeliveryOutcome(receipt);
     let onErrorCalls = 0;
@@ -227,7 +356,7 @@ describe("beforeDeliver in reply dispatcher", () => {
     await expect(outcome.promise).resolves.toBe("failed-before-deliver");
     await Promise.resolve();
 
-    expect(onErrorCalls).toBe(1);
+    expect(onErrorCalls).toBe(0);
     expect(delivered).toEqual(["final"]);
   });
 

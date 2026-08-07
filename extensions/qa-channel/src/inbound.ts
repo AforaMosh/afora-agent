@@ -164,7 +164,7 @@ function createQaReplyPreview(params: {
 
   const write = (text: string) => {
     if (!text.trim() || text === currentText) {
-      return pending;
+      return pending.then(() => messageId !== null);
     }
     pending = pending.then(async () => {
       if (messageId) {
@@ -190,7 +190,7 @@ function createQaReplyPreview(params: {
       }
       currentText = text;
     });
-    return pending;
+    return pending.then(() => messageId !== null);
   };
 
   const clear = async () => {
@@ -471,7 +471,7 @@ export async function handleQaInbound(params: {
     replyOptions: {
       allowToolLifecycleWhenProgressHidden: true,
       onPartialReply: async (payload) => {
-        await preview.update(payload.text ?? "");
+        return await preview.update(payload.text ?? "");
       },
       onToolStart: (payload) => {
         if (payload.phase && payload.phase !== "start") {

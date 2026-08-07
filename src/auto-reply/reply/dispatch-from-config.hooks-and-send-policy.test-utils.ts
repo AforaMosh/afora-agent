@@ -3,9 +3,10 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { OpenClawConfig } from "../../config/config.js";
 import type { SessionBindingRecord } from "../../infra/outbound/session-binding-service.js";
 import type { PluginSubagentRequesterContext } from "../../plugins/runtime/subagent-requester-context.js";
-import { setReplyPayloadMetadata } from "../reply-payload.js";
+import { getReplyPayloadMetadata, setReplyPayloadMetadata } from "../reply-payload.js";
 import type { MsgContext } from "../templating.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
+import { claimActiveTurnReceiptTransport } from "./active-turn-receipt-signals.js";
 import { ACTIVE_TURN_RECEIPT_TEXT } from "./dispatch-from-config.active-turn-receipt.js";
 import {
   NO_VISIBLE_REPLY_FALLBACK_TEXT,
@@ -553,6 +554,10 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       const dispatcher = createReplyDispatcher({
         deliver: async (payload) => {
           if (payload.text === ACTIVE_TURN_RECEIPT_TEXT) {
+            const receipt = getReplyPayloadMetadata(payload)?.activeTurnReceipt;
+            if (receipt) {
+              claimActiveTurnReceiptTransport(receipt.abortSignal);
+            }
             return await new Promise<void>(() => {});
           }
           deliveredTexts.push(payload.text ?? "");
@@ -583,9 +588,15 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       setNoAbort();
       const deliveredTexts: string[] = [];
       let onErrorCalls = 0;
+      let receiptTransportStarted = false;
       const dispatcher = createReplyDispatcher({
         deliver: async (payload) => {
           if (payload.text === ACTIVE_TURN_RECEIPT_TEXT) {
+            const receipt = getReplyPayloadMetadata(payload)?.activeTurnReceipt;
+            if (receipt) {
+              claimActiveTurnReceiptTransport(receipt.abortSignal);
+            }
+            receiptTransportStarted = true;
             return await new Promise<void>(() => {});
           }
           deliveredTexts.push(payload.text ?? "");
@@ -604,6 +615,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       });
 
       await vi.advanceTimersByTimeAsync(ACTIVE_TURN_RECEIPT_DELAY_MS);
+      await vi.waitFor(() => expect(receiptTransportStarted).toBe(true));
       terminal.resolve({ text: "final after hung error observer" });
       await vi.advanceTimersByTimeAsync(4_999);
       expect(deliveredTexts).toEqual([]);
@@ -612,14 +624,14 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       dispatcher.markComplete();
       await dispatcher.waitForIdle();
 
-      expect(onErrorCalls).toBe(1);
+      expect(onErrorCalls).toBe(0);
       expect(deliveredTexts).toEqual(["final after hung error observer"]);
     } finally {
       vi.useRealTimers();
     }
   });
 
-  it("lets a direct final proceed when the receipt hangs in beforeDeliver", async () => {
+  it("cancels a hung receipt beforeDeliver hook before sending the direct final", async () => {
     vi.useFakeTimers();
     try {
       setNoAbort();
@@ -649,9 +661,6 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       await vi.advanceTimersByTimeAsync(ACTIVE_TURN_RECEIPT_DELAY_MS);
       expect(receiptHookCalls).toBe(1);
       terminal.resolve({ text: "final after hung receipt hook" });
-      await vi.advanceTimersByTimeAsync(4_999);
-      expect(deliveredTexts).toEqual([]);
-      await vi.advanceTimersByTimeAsync(1);
       await run;
       dispatcher.markComplete();
       await dispatcher.waitForIdle();
@@ -2933,7 +2942,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
     expect(dispatcher.sendFinalReply).not.toHaveBeenCalled();
   });
 
-  it("treats successful channel-owned plan and tool callbacks as visible progress", async () => {
+  it("treats explicit generic and direct callback acceptance as visible progress", async () => {
     vi.useFakeTimers();
     try {
       setNoAbort();
@@ -2944,28 +2953,32 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
         },
       });
       const terminal = createDeferred<ReplyPayload>();
-      const onPlanUpdate = vi.fn(async () => {});
-      const onToolResult = vi.fn(async () => {});
+      const accepted = vi.fn(async () => true as const);
       const run = dispatchReplyFromConfig({
         ctx: buildTestCtx({ ChatType: "direct", SessionKey: "receipt:callback-progress" }),
         cfg: emptyConfig,
         dispatcher,
         replyResolver: async (_ctx: MsgContext, opts?: GetReplyOptions) => {
+          await opts?.onPartialReply?.({ text: "Inspecting state" });
           await opts?.onPlanUpdate?.({ phase: "update", explanation: "Inspecting state" });
+          await opts?.onApprovalEvent?.({ phase: "requested" });
+          await opts?.onPatchSummary?.({ phase: "end" });
           await opts?.onToolResult?.({ text: "🛠️ Inspect: running" });
           return await terminal.promise;
         },
         replyOptions: {
           suppressDefaultToolProgressMessages: true,
           allowProgressCallbacksWhenSourceDeliverySuppressed: true,
-          onPlanUpdate,
-          onToolResult,
+          onPartialReply: accepted,
+          onPlanUpdate: accepted,
+          onApprovalEvent: accepted,
+          onPatchSummary: accepted,
+          onToolResult: accepted,
         },
       });
 
       await vi.advanceTimersByTimeAsync(ACTIVE_TURN_RECEIPT_DELAY_MS);
-      expect(onPlanUpdate).toHaveBeenCalledOnce();
-      expect(onToolResult).toHaveBeenCalledOnce();
+      expect(accepted).toHaveBeenCalledTimes(5);
       expect(deliveredTexts).not.toContain(ACTIVE_TURN_RECEIPT_TEXT);
 
       terminal.resolve({ text: "callback-owned final" });
@@ -2973,6 +2986,92 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       dispatcher.markComplete();
       await dispatcher.waitForIdle();
       expect(deliveredTexts).toEqual(["callback-owned final"]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("keeps the receipt eligible for generic and direct callbacks that resolve void", async () => {
+    vi.useFakeTimers();
+    try {
+      setNoAbort();
+      const deliveredTexts: string[] = [];
+      const dispatcher = createReplyDispatcher({
+        deliver: async (payload) => {
+          deliveredTexts.push(payload.text ?? "");
+        },
+      });
+      const terminal = createDeferred<ReplyPayload>();
+      const asyncVoid = vi.fn(async () => undefined);
+      const run = dispatchReplyFromConfig({
+        ctx: buildTestCtx({ ChatType: "direct", SessionKey: "receipt:async-void-progress" }),
+        cfg: emptyConfig,
+        dispatcher,
+        replyResolver: async (_ctx: MsgContext, opts?: GetReplyOptions) => {
+          await opts?.onPartialReply?.({ text: "queued partial" });
+          await opts?.onPlanUpdate?.({ phase: "update" });
+          await opts?.onApprovalEvent?.({ phase: "requested" });
+          await opts?.onPatchSummary?.({ phase: "end" });
+          await opts?.onToolResult?.({ text: "🛠️ Inspect: queued" });
+          return await terminal.promise;
+        },
+        replyOptions: {
+          suppressDefaultToolProgressMessages: true,
+          allowProgressCallbacksWhenSourceDeliverySuppressed: true,
+          // Promise<void> remains a supported source contract, but queued async
+          // work does not prove that the transport accepted visible progress.
+          onPartialReply: asyncVoid,
+          onPlanUpdate: asyncVoid,
+          onApprovalEvent: asyncVoid,
+          onPatchSummary: asyncVoid,
+          onToolResult: asyncVoid,
+        },
+      });
+
+      await vi.advanceTimersByTimeAsync(ACTIVE_TURN_RECEIPT_DELAY_MS);
+      expect(asyncVoid).toHaveBeenCalledTimes(5);
+      expect(deliveredTexts).toEqual([ACTIVE_TURN_RECEIPT_TEXT]);
+
+      terminal.resolve({ text: "async-void final" });
+      await run;
+      dispatcher.markComplete();
+      await dispatcher.waitForIdle();
+      expect(deliveredTexts).toEqual([ACTIVE_TURN_RECEIPT_TEXT, "async-void final"]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("preserves synchronous void as legacy visible progress", async () => {
+    vi.useFakeTimers();
+    try {
+      setNoAbort();
+      const deliveredTexts: string[] = [];
+      const dispatcher = createReplyDispatcher({
+        deliver: async (payload) => {
+          deliveredTexts.push(payload.text ?? "");
+        },
+      });
+      const terminal = createDeferred<ReplyPayload>();
+      const run = dispatchReplyFromConfig({
+        ctx: buildTestCtx({ ChatType: "direct", SessionKey: "receipt:sync-void-progress" }),
+        cfg: emptyConfig,
+        dispatcher,
+        replyResolver: async (_ctx: MsgContext, opts?: GetReplyOptions) => {
+          await opts?.onPartialReply?.({ text: "synchronous render" });
+          return await terminal.promise;
+        },
+        replyOptions: { onPartialReply: () => undefined },
+      });
+
+      await vi.advanceTimersByTimeAsync(ACTIVE_TURN_RECEIPT_DELAY_MS);
+      expect(deliveredTexts).toEqual([]);
+
+      terminal.resolve({ text: "sync-void final" });
+      await run;
+      dispatcher.markComplete();
+      await dispatcher.waitForIdle();
+      expect(deliveredTexts).toEqual(["sync-void final"]);
     } finally {
       vi.useRealTimers();
     }

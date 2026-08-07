@@ -84,6 +84,7 @@ export function createDiscordMessageProgressRuntime(params: {
       resetTurnState();
       params.onTurnReset();
     }
+    return false;
   };
   const buildProgressSummaryLine = () => `-# ${progressReceipt.buildSummaryLine()}`;
 
@@ -95,6 +96,7 @@ export function createDiscordMessageProgressRuntime(params: {
       ? () => {
           progressReceipt.closeReasoning();
           handleAssistantMessageBoundary();
+          return false;
         }
       : undefined,
     onQueuedFollowupAdmitted: draftPreview.draftStream
@@ -142,13 +144,13 @@ export function createDiscordMessageProgressRuntime(params: {
     narrationHideCommandText: draftPreview.narrationHideCommandText ? true : undefined,
     onReasoningStream: async (payload) => {
       if (payload?.requiresReasoningProgressOptIn === true && !reasoningWindowEnabled) {
-        return;
+        return false;
       }
       if (payload?.text) {
         progressReceipt.noteReasoning();
       }
       await params.reactions.controller.setThinking();
-      await draftPreview.pushReasoningProgress(payload?.text, {
+      return await draftPreview.pushReasoningProgress(payload?.text, {
         snapshot: payload?.isReasoningSnapshot === true,
       });
     },
@@ -202,12 +204,14 @@ export function createDiscordMessageProgressRuntime(params: {
       if (!isProcessAborted(abortSignal)) {
         await params.reactions.controller.setCompacting();
       }
+      return false;
     },
     onCompactionEnd: async () => {
       if (!isProcessAborted(abortSignal)) {
         params.reactions.controller.cancelPending();
         await params.reactions.controller.setThinking();
       }
+      return false;
     },
   };
 

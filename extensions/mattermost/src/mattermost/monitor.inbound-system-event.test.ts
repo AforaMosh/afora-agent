@@ -8,6 +8,7 @@ import { createTestInboundDebounceFlush } from "openclaw/plugin-sdk/channel-test
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { WebSocketServer } from "ws";
 import type { MattermostPost } from "./client.js";
+import type { createMattermostDraftStream } from "./draft-stream.js";
 import type { MattermostEventPayload } from "./monitor-websocket.js";
 import { monitorMattermostProvider } from "./monitor.js";
 import type { OpenClawConfig, ReplyPayload, RuntimeEnv } from "./runtime-api.js";
@@ -1824,6 +1825,72 @@ describe("mattermost inbound user posts", () => {
     const replyOptions = mockState.dispatchInboundMessage.mock.calls.at(0)?.[0].replyOptions;
     expect(replyOptions?.disableBlockStreaming).toBe(true);
     expect(replyOptions?.preserveProgressCallbackStartOrder).toBe(true);
+  });
+
+  it("keeps the first partial unconfirmed until Mattermost accepts the preview", async () => {
+    const partialConfig: OpenClawConfig = {
+      channels: {
+        mattermost: {
+          ...testConfig.channels?.mattermost,
+          streaming: { mode: "partial" },
+        },
+      },
+    };
+    mockState.runtimeCore = createRuntimeCore(partialConfig);
+    let draftParams: Parameters<typeof createMattermostDraftStream>[0] | undefined;
+    let postId: string | undefined;
+    mockState.createMattermostDraftStream.mockImplementation((params) => {
+      draftParams = params;
+      return {
+        update: vi.fn(),
+        updateAssistantText: vi.fn(),
+        flush: vi.fn(async () => {}),
+        postId: () => postId,
+        clear: vi.fn(async () => {}),
+        discardPending: vi.fn(async () => {}),
+        seal: vi.fn(async () => {}),
+        stop: vi.fn(async () => {}),
+        forceNewMessage: vi.fn(async () => {}),
+        settleBoundaries: vi.fn(async () => {}),
+        resolveFinalText: (text: string) => ({
+          kind: "full" as const,
+          text,
+          publishedParts: [],
+        }),
+      };
+    });
+    const onVisible = vi.fn();
+    let firstPartialResult: boolean | void = undefined;
+    mockState.dispatchInboundMessage.mockImplementation(async (params) => {
+      params.replyOptions?.registerProgressVisibilityListener?.(onVisible);
+      firstPartialResult = await params.replyOptions?.onPartialReply?.({ text: "Working" });
+      expect(onVisible).not.toHaveBeenCalled();
+
+      postId = "preview-1";
+      draftParams?.onVisible?.();
+      expect(onVisible).toHaveBeenCalledOnce();
+      mockState.abortController?.abort();
+    });
+
+    const socket = new FakeWebSocket();
+    const abortController = new AbortController();
+    mockState.abortController = abortController;
+    const monitor = monitorMattermostProvider({
+      config: partialConfig,
+      runtime: testRuntime(),
+      abortSignal: abortController.signal,
+      webSocketFactory: () => socket,
+    });
+    await vi.waitFor(() => expect(socket.openListenerCount).toBeGreaterThan(0));
+    socket.emitOpen();
+    await emitMattermostChannelPost(socket, {
+      id: "post-partial-visibility",
+      message: "show progress",
+    });
+    socket.emitClose(1000);
+    await monitor;
+
+    expect(firstPartialResult).toBe(false);
   });
 
   it.each([

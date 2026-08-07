@@ -128,6 +128,16 @@ export function createTelegramDraftController(params: {
           markdownSource: { text, tableMode: params.tableMode },
         };
 
+  let progressVisible = false;
+  let progressVisibilityListener: (() => void) | undefined;
+  const reportProgressVisible = () => {
+    if (progressVisible) {
+      return;
+    }
+    progressVisible = true;
+    progressVisibilityListener?.();
+  };
+
   const createDraftLane = (laneName: LaneName, enabled: boolean): DraftLaneState => {
     const stream = enabled
       ? (params.telegramDeps.createTelegramDraftStream ?? createTelegramDraftStream)({
@@ -179,6 +189,7 @@ export function createTelegramDraftController(params: {
               successfulSendThread: params.threadSpec,
             });
           },
+          onTransportAccepted: reportProgressVisible,
           log: logVerbose,
           // Draft delivery failures must stay operator-visible: verbose-only
           // logging hid preview send/edit/cleanup errors, so a dead progress
@@ -535,6 +546,7 @@ export function createTelegramDraftController(params: {
     reasoningLane,
     lanes,
     beginQueuedFollowup: () => {
+      progressVisible = false;
       for (const lane of [answerLane, reasoningLane]) {
         if (!lane.stream) {
           continue;
@@ -571,6 +583,12 @@ export function createTelegramDraftController(params: {
     prepareAnswerLaneForText,
     prepareAnswerLaneForToolProgress,
     prepareQueuedAnswerBlock,
+    registerProgressVisibilityListener: (listener: () => void) => {
+      progressVisibilityListener = listener;
+      if (progressVisible) {
+        listener();
+      }
+    },
     dropQueuedAnswerBlockRotation,
     takeQueuedAnswerBlockRotation,
     renderStreamText,

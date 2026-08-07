@@ -30,6 +30,27 @@ import {
 import type { TelegramMessageContext } from "./bot-message-dispatch.test-harness.js";
 
 describeTelegramDispatch("dispatchTelegramMessage progress-rendering", () => {
+  it("reports draft visibility only after Telegram accepts a provider message", async () => {
+    const draftStream = createSequencedDraftStream(2001);
+    const onVisible = vi.fn();
+    createTelegramDraftStream.mockReturnValue(draftStream);
+    dispatchReplyWithBufferedBlockDispatcher.mockImplementation(async ({ replyOptions }) => {
+      replyOptions?.registerProgressVisibilityListener?.(onVisible);
+      expect(onVisible).not.toHaveBeenCalled();
+
+      const draftParams = mockCallArg(createTelegramDraftStream);
+      draftParams.onTransportAccepted?.();
+      expect(onVisible).toHaveBeenCalledOnce();
+      return { queuedFinal: false };
+    });
+
+    await dispatchWithContext({
+      context: createContext(),
+      streamMode: "progress",
+      telegramCfg: { streaming: { mode: "progress" } },
+    });
+  });
+
   it("renders typed plan updates as a live checklist", async () => {
     const draftStream = createSequencedDraftStream(2001);
     createTelegramDraftStream.mockReturnValue(draftStream);

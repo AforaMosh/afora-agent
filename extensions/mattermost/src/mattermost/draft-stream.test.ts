@@ -70,6 +70,27 @@ function parseRequestJson(init: RequestInit | undefined): Record<string, unknown
 }
 
 describe("createMattermostDraftStream", () => {
+  it("reports visibility only after Mattermost accepts the preview", async () => {
+    const onVisible = vi.fn();
+    let acceptSend: ((value: unknown) => void) | undefined;
+    const { stream, requestMock } = createDraftStreamFixture({
+      onVisible,
+      request: async <T>() =>
+        await new Promise<T>((resolve) => {
+          acceptSend = resolve as (value: unknown) => void;
+        }),
+    });
+
+    stream.update("Working...");
+    const flushing = stream.flush();
+    await vi.waitFor(() => expect(requestMock).toHaveBeenCalledOnce());
+    expect(onVisible).not.toHaveBeenCalled();
+    acceptSend?.({ id: "post-1" });
+    await flushing;
+
+    expect(onVisible).toHaveBeenCalledOnce();
+  });
+
   it("creates a preview post and updates it on later changes", async () => {
     const { calls, stream } = createDraftStreamFixture({ rootId: "root-1" });
 

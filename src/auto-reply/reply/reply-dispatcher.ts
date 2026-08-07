@@ -15,6 +15,13 @@ import { sleep } from "../../utils.js";
 import { copyReplyPayloadMetadata, getReplyPayloadMetadata } from "../reply-payload.js";
 import { isSilentReplyText, SILENT_REPLY_TOKEN } from "../tokens.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
+import {
+  ActiveTurnReceiptTransportCancelledError,
+  assertActiveTurnReceiptNotAborted,
+  hasActiveTurnReceiptTransportStarted,
+  runActiveTurnReceiptDelivery,
+  runActiveTurnReceiptPreparation,
+} from "./active-turn-receipt-signals.js";
 import { registerDispatcher } from "./dispatcher-registry.js";
 import { normalizeReplyPayload, type NormalizeReplySkipReason } from "./normalize-reply.js";
 import type {
@@ -80,50 +87,6 @@ type ReplyDispatchDeliverer = (
   payload: ReplyPayload,
   info: ReplyDispatchRuntimeInfo,
 ) => Promise<unknown>;
-
-class ReplyDispatchPayloadAbortError extends Error {
-  constructor(reason: unknown) {
-    super(reason instanceof Error ? reason.message : "active turn receipt aborted", {
-      cause: reason,
-    });
-    this.name = "ReplyDispatchPayloadAbortError";
-  }
-}
-
-async function runWithPayloadAbort<T>(
-  payload: ReplyPayload,
-  run: () => Promise<T> | T,
-): Promise<T> {
-  const signal = getReplyPayloadMetadata(payload)?.activeTurnReceipt?.abortSignal;
-  if (!signal) {
-    return await run();
-  }
-  const abortError = () => new ReplyDispatchPayloadAbortError(signal.reason);
-  if (signal.aborted) {
-    throw abortError();
-  }
-  let removeAbortListener: (() => void) | undefined;
-  const aborted = new Promise<never>((_, reject) => {
-    const onAbort = () => reject(abortError());
-    signal.addEventListener("abort", onAbort, { once: true });
-    removeAbortListener = () => signal.removeEventListener("abort", onAbort);
-  });
-  try {
-    // Invoke synchronously after the initial abort check. Transport callers use
-    // this boundary to distinguish proven-unsent work from an ambiguous abort.
-    const operation = Promise.resolve(run());
-    return await Promise.race([operation, aborted]);
-  } finally {
-    removeAbortListener?.();
-  }
-}
-
-function throwIfReplyPayloadAborted(payload: ReplyPayload): void {
-  const signal = getReplyPayloadMetadata(payload)?.activeTurnReceipt?.abortSignal;
-  if (signal?.aborted) {
-    throw new ReplyDispatchPayloadAbortError(signal.reason);
-  }
-}
 
 export type { ReplyDispatchBeforeDeliver };
 
@@ -247,9 +210,13 @@ export function composeReplyDispatchBeforeDeliver(
       // The outer receipt race releases the serialized dispatcher, but cannot
       // cancel a hook promise. Recheck between real stages so a late settlement
       // cannot resume the abandoned chain and run later delivery side effects.
-      throwIfReplyPayloadAborted(current);
+      assertActiveTurnReceiptNotAborted(
+        getReplyPayloadMetadata(current)?.activeTurnReceipt?.abortSignal,
+      );
       const next = await runReplyDispatchBeforeDeliverStage(stage, current, info);
-      throwIfReplyPayloadAborted(current);
+      assertActiveTurnReceiptNotAborted(
+        getReplyPayloadMetadata(current)?.activeTurnReceipt?.abortSignal,
+      );
       current = next ? copyReplyPayloadMetadata(current, next) : null;
     }
     return current;
@@ -478,7 +445,9 @@ export function createReplyDispatcher(options: ReplyDispatcherOptions): ReplyDis
       ...appendedBeforeDeliverCancelledHooks,
     ];
     for (const observer of observers) {
-      throwIfReplyPayloadAborted(payload);
+      assertActiveTurnReceiptNotAborted(
+        getReplyPayloadMetadata(payload)?.activeTurnReceipt?.abortSignal,
+      );
       try {
         await runReplyDispatchBeforeDeliverStage(
           {
@@ -494,7 +463,9 @@ export function createReplyDispatcher(options: ReplyDispatcherOptions): ReplyDis
       } catch (err: unknown) {
         reportObserverError(err, info);
       }
-      throwIfReplyPayloadAborted(payload);
+      assertActiveTurnReceiptNotAborted(
+        getReplyPayloadMetadata(payload)?.activeTurnReceipt?.abortSignal,
+      );
     }
   };
 
@@ -508,34 +479,52 @@ export function createReplyDispatcher(options: ReplyDispatcherOptions): ReplyDis
       const beforeDeliverHook = beforeDeliver;
       if (beforeDeliverHook) {
         try {
-          deliverPayload = await runWithPayloadAbort(payload, () =>
-            beforeDeliverHook(payload, info),
+          deliverPayload = await runActiveTurnReceiptPreparation(
+            getReplyPayloadMetadata(payload)?.activeTurnReceipt?.abortSignal,
+            () => beforeDeliverHook(payload, info),
           );
         } catch (error) {
           // A receipt lifecycle abort is not a hook cancellation. Release the
           // serialized queue immediately and keep late hook settlement observed.
-          if (!(error instanceof ReplyDispatchPayloadAbortError)) {
-            await runWithPayloadAbort(payload, () => notifyBeforeDeliverCancelled(payload, info));
+          if (!(error instanceof ActiveTurnReceiptTransportCancelledError)) {
+            await runActiveTurnReceiptPreparation(
+              getReplyPayloadMetadata(payload)?.activeTurnReceipt?.abortSignal,
+              () => notifyBeforeDeliverCancelled(payload, info),
+            );
           }
           throw error;
         }
         if (!deliverPayload) {
-          await runWithPayloadAbort(payload, () => notifyBeforeDeliverCancelled(payload, info));
+          await runActiveTurnReceiptPreparation(
+            getReplyPayloadMetadata(payload)?.activeTurnReceipt?.abortSignal,
+            () => notifyBeforeDeliverCancelled(payload, info),
+          );
           return "cancelled";
         }
         deliverPayload = copyReplyPayloadMetadata(payload, deliverPayload);
       }
       const payloadToDeliver = deliverPayload;
-      await runWithPayloadAbort(payload, async () => {
+      assertActiveTurnReceiptNotAborted(
+        getReplyPayloadMetadata(payload)?.activeTurnReceipt?.abortSignal,
+      );
+      if (!getReplyPayloadMetadata(payload)?.activeTurnReceipt) {
         deliveryStarted = true;
-        await options.deliver(payloadToDeliver, info);
-      });
+      }
+      const receipt = getReplyPayloadMetadata(payload)?.activeTurnReceipt;
+      await (receipt
+        ? runActiveTurnReceiptDelivery(receipt.abortSignal, () =>
+            options.deliver(payloadToDeliver, info),
+          )
+        : options.deliver(payloadToDeliver, info));
+      deliveryStarted = true;
       return "delivered";
     } catch (error) {
-      if (error instanceof ReplyDispatchPayloadAbortError) {
-        // Receipt expiry is an internal containment boundary. Report it without
-        // letting an arbitrary channel error observer retain the reply queue.
-        reportObserverError(error, info);
+      const receipt = getReplyPayloadMetadata(payload)?.activeTurnReceipt;
+      deliveryStarted ||=
+        receipt !== undefined && hasActiveTurnReceiptTransportStarted(receipt.abortSignal);
+      if (error instanceof ActiveTurnReceiptTransportCancelledError) {
+        // Internal receipt cancellation is proven pre-provider state, not a
+        // channel delivery failure; do not emit provider-facing error signals.
       } else {
         try {
           await options.onError?.(error, info);
