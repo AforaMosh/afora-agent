@@ -155,8 +155,13 @@ describe("runEmbeddedAgentEntry", () => {
   beforeEach(() => {
     state.discardedAttempts.length = 0;
     state.finalizedAttempts.length = 0;
-    state.ensureSelectedAgentHarnessPlugin.mockClear();
-    state.selectAgentHarness.mockClear();
+    state.ensureSelectedAgentHarnessPlugin.mockReset().mockResolvedValue(undefined);
+    state.selectAgentHarness
+      .mockReset()
+      .mockImplementation(({ provider }: { provider: string }) => ({
+        id: provider === "fallback-provider" ? "fallback-harness" : "primary-harness",
+        contextEngineHostCapabilities: [],
+      }));
     state.runWithModelFallback
       .mockReset()
       .mockImplementation(async (params: FallbackRunnerParams) => {
@@ -177,6 +182,10 @@ describe("runEmbeddedAgentEntry", () => {
         await params.prepareAgentHarnessRuntime?.({
           provider: params.provider,
           model: params.model,
+          agentHarnessRuntimeOverride: params.resolveAgentHarnessRuntimeOverride?.(
+            params.provider,
+            params.model,
+          ),
         });
         const primaryResult = await params.run(params.provider, params.model, {
           allowTransientCooldownProbe: true,
@@ -194,6 +203,10 @@ describe("runEmbeddedAgentEntry", () => {
         await params.prepareAgentHarnessRuntime?.({
           provider: fallbackProvider,
           model: fallbackModel,
+          agentHarnessRuntimeOverride: params.resolveAgentHarnessRuntimeOverride?.(
+            fallbackProvider,
+            fallbackModel,
+          ),
         });
         const result = await params.run(fallbackProvider, fallbackModel, {
           isFinalFallbackAttempt: true,
@@ -324,6 +337,46 @@ describe("runEmbeddedAgentEntry", () => {
     expect(resolveContextEngineHost).toHaveBeenCalledWith("primary-provider", "primary-model");
     expect(resolveContextEngineHost).toHaveBeenCalledWith("fallback-provider", "fallback-model");
     expect(state.selectAgentHarness).not.toHaveBeenCalled();
+  });
+
+  it("registers lazy harness plugins before selecting preflight hosts", async () => {
+    const events: string[] = [];
+    state.ensureSelectedAgentHarnessPlugin.mockImplementation(async (params: unknown) => {
+      events.push(`ensure:${(params as { provider: string }).provider}`);
+    });
+    state.selectAgentHarness.mockImplementation(({ provider }: { provider: string }) => {
+      events.push(`select:${provider}`);
+      return {
+        id: `${provider}-harness`,
+        contextEngineHostCapabilities: [],
+      };
+    });
+    const { runEmbeddedAgentEntry } = await import("./run-entry.js");
+
+    await runEmbeddedAgentEntry({
+      selection: { cfg: {}, provider: "primary-provider", model: "primary-model" },
+      identity: { runId: "lazy-plugin-preflight", agentId: "main", sessionId: "session-1" },
+      harness: {
+        workspaceDir: "/tmp/workspace",
+        preparation: { kind: "direct" },
+        resolveRuntimeOverride: (provider) => `${provider}-harness`,
+      },
+      behavior: { kind: "command-rpc", hasCommittedSideEffect: () => false },
+      sessionOverride: { kind: "preserve" },
+      runCandidate: async (provider, model) =>
+        makeResult({
+          provider,
+          model,
+          classification: provider === "primary-provider" ? "empty" : undefined,
+        }),
+    });
+
+    expect(events).toEqual([
+      "ensure:primary-provider",
+      "select:primary-provider",
+      "ensure:fallback-provider",
+      "select:fallback-provider",
+    ]);
   });
 
   it("leaves maintenance fallback classification to thrown candidate errors", async () => {

@@ -172,9 +172,9 @@ async function mirrorBestEffort(params: {
       ? readMirrorIdentity(terminalMessage)
       : undefined;
     const terminalAnchor =
-      assistantTranscriptOwned && terminalMirrorIdentity
+      (terminalMirrorIdentity
         ? mirrorResult.anchorsByMirrorIdentity.get(terminalMirrorIdentity)
-        : undefined;
+        : undefined) ?? params.params.userTurnTranscriptRecorder?.getAdmissionReceipt();
     return {
       assistantTranscriptOwned,
       ...(assistantTranscriptIdempotencyKey ? { assistantTranscriptIdempotencyKey } : {}),

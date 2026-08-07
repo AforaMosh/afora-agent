@@ -1449,6 +1449,48 @@ describe("mirrorCodexAppServerTranscript", () => {
     expect(mirrorOutcome.terminalAnchor?.entryId).toBe(terminalEvent?.id);
   });
 
+  it("returns the user anchor for a turn without an assistant row", async () => {
+    const target = await createSqliteMirrorTarget("openclaw-codex-mirror-user-terminal-");
+    const userMessage = attachCodexMirrorIdentity(
+      makeAgentUserMessage({
+        content: [{ type: "text", text: "run silently" }],
+        timestamp: Date.now(),
+      }),
+      "turn-1:prompt",
+    );
+
+    const mirrorOutcome = await mirrorTranscriptBestEffort({
+      params: {
+        sessionId: target.sessionId,
+        sessionKey: target.sessionKey,
+        sessionTarget: target,
+        suppressNextUserMessagePersistence: true,
+      } as unknown as Parameters<typeof mirrorTranscriptBestEffort>[0]["params"],
+      result: {
+        messagesSnapshot: [userMessage],
+      } as Parameters<typeof mirrorTranscriptBestEffort>[0]["result"],
+      agentId: target.agentId,
+      sessionKey: target.sessionKey,
+      notifyUserMessagePersisted: () => undefined,
+      cwd: target.storePath,
+      threadId: "thread-1",
+      turnId: "turn-1",
+    });
+    const terminalEvent = (await readMirrorEvents(target)).find(
+      (event): event is { id: string; message: { role: string } } =>
+        Boolean(
+          event &&
+          typeof event === "object" &&
+          "id" in event &&
+          "message" in event &&
+          (event as { message?: { role?: unknown } }).message?.role === "user",
+        ),
+    );
+
+    expect(mirrorOutcome.assistantTranscriptOwned).toBe(false);
+    expect(mirrorOutcome.terminalAnchor?.entryId).toBe(terminalEvent?.id);
+  });
+
   it("dedupes mirrored messages despite snapshot positional shifts", async () => {
     const target = await createSqliteMirrorTarget("openclaw-codex-mirror-shift-");
     const userMessage = attachCodexMirrorIdentity(

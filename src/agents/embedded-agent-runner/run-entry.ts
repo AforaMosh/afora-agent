@@ -256,6 +256,39 @@ export async function runEmbeddedAgentEntry<T extends EmbeddedAgentRunResult>(
     params.behavior.kind === "command-rpc" ? params.behavior.hasCommittedSideEffect : undefined;
   const readChannelDeliveryEvidence =
     params.behavior.kind === "channel-delivery" ? params.behavior.readDeliveryEvidence : undefined;
+  const preparedHarnessRuntimes = new Set<string>();
+  const prepareHarnessRuntime = async (candidate: {
+    provider: string;
+    model: string;
+    agentHarnessRuntimeOverride?: string;
+  }) => {
+    const key = [
+      candidate.provider,
+      candidate.model,
+      candidate.agentHarnessRuntimeOverride ?? "",
+    ].join("\0");
+    if (preparedHarnessRuntimes.has(key)) {
+      return;
+    }
+    const prepare = () =>
+      ensureSelectedAgentHarnessPlugin({
+        config: params.selection.cfg,
+        provider: candidate.provider,
+        modelId: candidate.model,
+        agentId: params.identity.agentId,
+        sessionKey: params.harness.sessionKey,
+        agentHarnessId: candidate.agentHarnessRuntimeOverride,
+        agentHarnessRuntimeOverride: candidate.agentHarnessRuntimeOverride,
+        workspaceDir: params.harness.workspaceDir,
+        pluginRegistry: requireActivePluginRegistry(),
+      });
+    if (params.harness.preparation.kind === "measured") {
+      await params.harness.preparation.run(prepare);
+    } else {
+      await prepare();
+    }
+    preparedHarnessRuntimes.add(key);
+  };
   // Thrown candidate errors skip result classification, so without an error-path
   // backstop the loop advances to the next candidate even when the attempt already
   // delivered its reply, producing a duplicate visible answer (#113788). Consult the
@@ -275,9 +308,18 @@ export async function runEmbeddedAgentEntry<T extends EmbeddedAgentRunResult>(
       ...params.identity,
       abortSignal: params.abortSignal,
       resolveAgentHarnessRuntimeOverride: params.harness.resolveRuntimeOverride,
-      prepareCandidateChain: (candidates) => {
+      prepareCandidateChain: async (candidates) => {
         for (const candidate of candidates) {
           try {
+            const agentHarnessRuntimeOverride = params.harness.resolveRuntimeOverride(
+              candidate.provider,
+              candidate.model,
+            );
+            await prepareHarnessRuntime({
+              provider: candidate.provider,
+              model: candidate.model,
+              ...(agentHarnessRuntimeOverride ? { agentHarnessRuntimeOverride } : {}),
+            });
             const resolvedHost = params.harness.resolveContextEngineHost?.(
               candidate.provider,
               candidate.model,
@@ -291,10 +333,7 @@ export async function runEmbeddedAgentEntry<T extends EmbeddedAgentRunResult>(
                   config: params.selection.cfg,
                   agentId: params.identity.agentId,
                   sessionKey: params.harness.sessionKey,
-                  agentHarnessRuntimeOverride: params.harness.resolveRuntimeOverride(
-                    candidate.provider,
-                    candidate.model,
-                  ),
+                  agentHarnessRuntimeOverride,
                 });
                 return {
                   id: `agent-harness:${harness.id}`,
@@ -316,25 +355,7 @@ export async function runEmbeddedAgentEntry<T extends EmbeddedAgentRunResult>(
           }
         }
       },
-      prepareAgentHarnessRuntime: async ({ provider, model, agentHarnessRuntimeOverride }) => {
-        const prepare = () =>
-          ensureSelectedAgentHarnessPlugin({
-            config: params.selection.cfg,
-            provider,
-            modelId: model,
-            agentId: params.identity.agentId,
-            sessionKey: params.harness.sessionKey,
-            agentHarnessId: agentHarnessRuntimeOverride,
-            agentHarnessRuntimeOverride,
-            workspaceDir: params.harness.workspaceDir,
-            pluginRegistry: requireActivePluginRegistry(),
-          });
-        if (params.harness.preparation.kind === "measured") {
-          await params.harness.preparation.run(prepare);
-        } else {
-          await prepare();
-        }
-      },
+      prepareAgentHarnessRuntime: prepareHarnessRuntime,
       onFallbackStep: params.onFallbackStep,
       ...(params.behavior.kind === "maintenance"
         ? {}
