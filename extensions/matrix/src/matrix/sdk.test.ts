@@ -564,6 +564,58 @@ describe("MatrixClient request hardening", () => {
     await expectAbortError(readiness);
   });
 
+  it("rejects terminal sync failure while an async readiness probe is pending", async () => {
+    const roomId = "!room:example.org";
+    const encryption = createDeferred<boolean>();
+    const isEncryptionEnabledInRoom = vi.fn(() => encryption.promise);
+    matrixJsClient.getRoom.mockReturnValue({
+      getMyMembership: () => "join",
+      hasEncryptionStateEvent: () => true,
+    });
+    matrixJsClient.getCrypto.mockReturnValue({ isEncryptionEnabledInRoom });
+    const client = new MatrixClient("https://matrix.example.org", "token", {
+      autoBootstrapCrypto: false,
+      encryption: true,
+    });
+    await client.start();
+
+    const readiness = client.waitForEncryptedRoomReady(roomId);
+    await vi.waitFor(() => expect(isEncryptionEnabledInRoom).toHaveBeenCalledTimes(1));
+    const failure = new Error("terminal sync failure");
+    matrixJsClient.emit("sync.unexpectedError", failure);
+    encryption.resolve(true);
+
+    await expect(readiness).rejects.toBe(failure);
+  });
+
+  it("times out readiness when the async probe never settles", async () => {
+    vi.useFakeTimers();
+    try {
+      const roomId = "!room:example.org";
+      const isEncryptionEnabledInRoom = vi.fn(() => new Promise<boolean>(() => {}));
+      matrixJsClient.getRoom.mockReturnValue({
+        getMyMembership: () => "join",
+        hasEncryptionStateEvent: () => true,
+      });
+      matrixJsClient.getCrypto.mockReturnValue({ isEncryptionEnabledInRoom });
+      const client = new MatrixClient("https://matrix.example.org", "token", {
+        autoBootstrapCrypto: false,
+        encryption: true,
+      });
+      await client.start();
+
+      const readiness = client.waitForEncryptedRoomReady(roomId, { timeoutMs: 100 });
+      const rejection = expect(readiness).rejects.toThrow(
+        `Matrix encrypted room ${roomId} did not become ready within 100ms`,
+      );
+      await vi.waitFor(() => expect(isEncryptionEnabledInRoom).toHaveBeenCalledTimes(1));
+      await vi.advanceTimersByTimeAsync(100);
+      await rejection;
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("rechecks readiness when a newer sync arrives during the crypto check", async () => {
     const roomId = "!room:example.org";
     const firstCheck = createDeferred<boolean>();
@@ -1064,6 +1116,46 @@ describe("MatrixClient request hardening", () => {
     await expect(fetchFn("http://127.0.0.1/_matrix/client/v3/account/whoami")).rejects.toThrow(
       /private|blocked|not allowed/i,
     );
+  });
+
+  it("aborts an active upload through the matrix-js-sdk upload controller", async () => {
+    const uploadStarted = createDeferred<void>();
+    matrixJsClient.uploadContent.mockImplementation(
+      async (_file: unknown, opts?: { abortController?: AbortController }) =>
+        await new Promise<never>((_resolve, reject) => {
+          const signal = opts?.abortController?.signal;
+          if (!signal) {
+            reject(new Error("missing upload abort controller"));
+            return;
+          }
+          uploadStarted.resolve();
+          signal.addEventListener(
+            "abort",
+            () => reject(new DOMException("Aborted", "AbortError")),
+            { once: true },
+          );
+        }),
+    );
+    const client = new MatrixClient("https://matrix.example.org", "token");
+    const abortController = new AbortController();
+    const upload = client.uploadContent(
+      Buffer.from("image"),
+      "application/octet-stream",
+      "image.bin",
+      abortController,
+    );
+
+    await uploadStarted.promise;
+    abortController.abort();
+
+    await expect(upload).rejects.toMatchObject({ name: "AbortError" });
+    expect(
+      (
+        matrixJsClient.uploadContent.mock.calls[0]?.[1] as
+          | { abortController?: AbortController }
+          | undefined
+      )?.abortController?.signal.aborted,
+    ).toBe(true);
   });
 
   it("prefers authenticated client media downloads", async () => {
@@ -2636,7 +2728,7 @@ describe("MatrixClient event bridge", () => {
 
     await expectAbortError(startup);
     expect(matrixJsClient.startClient).not.toHaveBeenCalled();
-    expect(matrixJsClient.stopClient).toHaveBeenCalledTimes(1);
+    expect(matrixJsClient.stopClient).toHaveBeenCalledTimes(2);
   });
 
   it("replays outstanding invite rooms at startup", async () => {

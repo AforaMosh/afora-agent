@@ -72,7 +72,6 @@ type SharedMatrixClientParams = {
 
 const sharedClientStates = new Map<string, SharedMatrixClientState>();
 const sharedClientPromises = new Map<string, Promise<SharedMatrixClientState>>();
-const replaceAfterRetirement = new WeakSet<SharedMatrixClientState>();
 
 function buildSharedClientKey(auth: MatrixAuth): string {
   // Serialize the tuple as a whole: Matrix URLs and credentials may contain `|`,
@@ -154,7 +153,7 @@ async function ensureSharedClientStarted(
   })().catch((error: unknown) => {
     if (state.phase === "open") {
       state.poisonError = toRetirementError(error);
-      replaceAfterRetirement.add(state);
+      deleteSharedClientState(state);
     }
     throw error;
   });
@@ -202,27 +201,15 @@ async function resolveOpenSharedMatrixClientState(
 
   while (true) {
     const existing = sharedClientStates.get(key);
-    if (existing?.poisonError && !replaceAfterRetirement.has(existing)) {
-      throw existing.poisonError;
-    }
-    if (existing?.poisonError && !existing.retirementPromise) {
-      void beginGenerationRetirement({ state: existing }).catch(() => undefined);
-    }
-    if (existing?.retirementPromise) {
-      try {
-        await awaitMatrixStartupWithAbort(existing.retirementPromise, params.abortSignal);
-      } catch (error) {
-        if (!replaceAfterRetirement.has(existing)) {
-          throw error;
-        }
-      }
-      continue;
-    }
     if (existing?.poisonError) {
       throw existing.poisonError;
     }
     if (existing?.phase === "open") {
       return existing;
+    }
+    if (existing?.retirementPromise) {
+      await awaitMatrixStartupWithAbort(existing.retirementPromise, params.abortSignal);
+      continue;
     }
 
     const pending = sharedClientPromises.get(key);
@@ -386,9 +373,6 @@ function beginGenerationRetirement(params: {
         .drainPendingDecryptions("matrix poisoned client shutdown")
         .catch(() => undefined);
       state.client.stopWithoutPersist();
-      if (replaceAfterRetirement.has(state)) {
-        deleteSharedClientState(state);
-      }
       throw state.poisonError;
     }
 
