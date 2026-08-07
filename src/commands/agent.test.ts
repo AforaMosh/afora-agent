@@ -420,16 +420,18 @@ describe("agentCommand", () => {
         runtime,
       );
 
-      expect(agentHarnessPluginMocks.ensureSelectedAgentHarnessPlugin).toHaveBeenCalledOnce();
-      expect(agentHarnessPluginMocks.ensureSelectedAgentHarnessPlugin).toHaveBeenCalledWith(
-        expect.objectContaining({
-          config: cfg,
-          provider: "openai",
-          modelId: "gpt-5.2",
-          agentId: "main",
-          workspaceDir: path.join(home, "openclaw"),
-        }),
-      );
+      expect(agentHarnessPluginMocks.ensureSelectedAgentHarnessPlugin).toHaveBeenCalledTimes(2);
+      for (const [call] of agentHarnessPluginMocks.ensureSelectedAgentHarnessPlugin.mock.calls) {
+        expect(call).toEqual(
+          expect.objectContaining({
+            config: cfg,
+            provider: "openai",
+            modelId: "gpt-5.2",
+            agentId: "main",
+            workspaceDir: path.join(home, "openclaw"),
+          }),
+        );
+      }
       expectLastRunProviderModel("openai", "gpt-5.2");
     });
   });
