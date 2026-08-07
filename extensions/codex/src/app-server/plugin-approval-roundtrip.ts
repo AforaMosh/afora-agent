@@ -1,3 +1,4 @@
+import type { AgentHarnessApprovalAuthority } from "openclaw/plugin-sdk/agent-harness-approval-authority-runtime";
 /**
  * Routes Codex app-server plugin approval prompts through OpenClaw's gateway
  * approval tool and maps gateway decisions back to Codex outcomes.
@@ -47,6 +48,7 @@ type ApprovalRequestResult = {
 
 /** Starts a two-phase plugin approval request through the OpenClaw gateway. */
 export async function requestPluginApproval(params: {
+  approvalAuthority?: AgentHarnessApprovalAuthority;
   paramsForRun: EmbeddedRunAttemptParams;
   title: string;
   description: string;
@@ -56,6 +58,22 @@ export async function requestPluginApproval(params: {
   allowedDecisions?: ExecApprovalDecision[];
 }): Promise<ApprovalRequestResult | undefined> {
   const timeoutMs = DEFAULT_CODEX_APPROVAL_TIMEOUT_MS;
+  if (params.approvalAuthority) {
+    return params.approvalAuthority.requestPluginApproval({
+      pluginId: "openclaw-codex-app-server",
+      title: truncateCodexApprovalDisplayText(params.title, MAX_PLUGIN_APPROVAL_TITLE_LENGTH),
+      description: truncateCodexApprovalDisplayText(
+        params.description,
+        MAX_PLUGIN_APPROVAL_DESCRIPTION_LENGTH,
+      ),
+      severity: params.severity,
+      toolName: params.toolName,
+      toolCallId: params.toolCallId,
+      timeoutMs,
+      gatewayTimeoutMs: resolveCodexGatewayTimeoutWithGraceMs(timeoutMs),
+      ...(params.allowedDecisions ? { allowedDecisions: params.allowedDecisions } : {}),
+    });
+  }
   return callGatewayTool(
     "plugin.approval.request",
     { timeoutMs: resolveCodexGatewayTimeoutWithGraceMs(timeoutMs) },
@@ -99,14 +117,22 @@ export function approvalRequestExplicitlyUnavailable(result: unknown): boolean {
 
 /** Waits for the gateway's final approval decision, respecting turn aborts. */
 export async function waitForPluginApprovalDecision(params: {
+  approvalAuthority?: AgentHarnessApprovalAuthority;
   approvalId: string;
   signal?: AbortSignal;
 }): Promise<ExecApprovalDecision | null | undefined> {
   const timeoutMs = DEFAULT_CODEX_APPROVAL_TIMEOUT_MS;
-  const waitPromise: Promise<ApprovalRequestResult | null | undefined> = callGatewayTool(
-    "plugin.approval.waitDecision",
-    { timeoutMs: resolveCodexGatewayTimeoutWithGraceMs(timeoutMs) },
-    { id: params.approvalId },
+  const waitPromise: Promise<ApprovalRequestResult | null | undefined> = (
+    params.approvalAuthority
+      ? params.approvalAuthority.waitForPluginApprovalDecision({
+          approvalId: params.approvalId,
+          gatewayTimeoutMs: resolveCodexGatewayTimeoutWithGraceMs(timeoutMs),
+        })
+      : callGatewayTool(
+          "plugin.approval.waitDecision",
+          { timeoutMs: resolveCodexGatewayTimeoutWithGraceMs(timeoutMs) },
+          { id: params.approvalId },
+        )
   ).catch((error: unknown) => {
     if (isApprovalNotFoundError(error)) {
       return null;

@@ -10,8 +10,15 @@ import {
   createAgentExecutionAttribution,
   type AgentExecutionAttribution,
 } from "../agents/agent-execution-attribution.js";
+import { createApprovalAuthorityForAgentHarnessAttempt } from "../agents/agent-harness-approval-authority.js";
 import { createOpenClawCodingToolsForRuntime } from "../agents/agent-tools-internal.js";
 import type { PreparedAgentCommandExecution } from "../agents/command/prepare.js";
+import { bindEmbeddedAttemptExecutionAttribution } from "../agents/embedded-agent-runner/run/attempt-execution-attribution.js";
+import type { EmbeddedRunAttemptParams } from "../agents/embedded-agent-runner/run/types.js";
+import {
+  invokeNativeHookRelay,
+  resolveNativeHookRelayDeferredToolApproval,
+} from "../agents/harness/native-hook-relay.js";
 import type { AnyAgentTool } from "../agents/tools/common.js";
 import { createGatewayToolCallerWrapper } from "../agents/tools/gateway-caller-context.js";
 import { callGatewayTool } from "../agents/tools/gateway.js";
@@ -128,7 +135,7 @@ describe("execution identity approval Gateway e2e", () => {
       },
     });
     api.on("before_tool_call", (event) => {
-      if (event.toolName !== "read" && event.toolName !== ${JSON.stringify(APPROVAL_PLUGIN_TOOL_NAME)}) {
+      if (event.toolName !== "read" && event.toolName !== "exec" && event.toolName !== ${JSON.stringify(APPROVAL_PLUGIN_TOOL_NAME)}) {
         return;
       }
       return {
@@ -184,6 +191,9 @@ describe("execution identity approval Gateway e2e", () => {
     });
     const url = `ws://127.0.0.1:${port}`;
     const approvalIds = new Map<string, string>();
+    const nativeApprovalIds: string[] = [];
+    const nativeApprovalRequests: Array<{ pluginId: unknown; toolName: string }> = [];
+    let collectNativeApprovals = false;
     const approvalResolutions: Promise<unknown>[] = [];
     const approvalDeviceIdentity = loadOrCreateDeviceIdentity({
       path: path.join(stateDir, "approval-resolver.sqlite"),
@@ -209,14 +219,18 @@ describe("execution identity approval Gateway e2e", () => {
         const payload = event.payload as
           | { id?: unknown; request?: { pluginId?: unknown; toolName?: unknown } }
           | undefined;
-        if (
-          typeof payload?.id !== "string" ||
-          payload.request?.pluginId !== APPROVAL_PLUGIN_ID ||
-          typeof payload.request.toolName !== "string"
-        ) {
+        if (typeof payload?.id !== "string" || typeof payload.request?.toolName !== "string") {
+          return;
+        }
+        const pluginId = payload.request.pluginId;
+        if (pluginId !== APPROVAL_PLUGIN_ID && pluginId !== "openclaw-native-hook-relay-codex") {
           return;
         }
         approvalIds.set(payload.request.toolName, payload.id);
+        if (collectNativeApprovals) {
+          nativeApprovalIds.push(payload.id);
+          nativeApprovalRequests.push({ pluginId, toolName: payload.request.toolName });
+        }
         approvalResolutions.push(resolveApprovalRequest(payload.id));
       },
     });
@@ -285,6 +299,59 @@ describe("execution identity approval Gateway e2e", () => {
     expect(pluginToken).toBeDefined();
     expect(approvalIds.get("read")).toBeDefined();
     expect(approvalIds.get(APPROVAL_PLUGIN_TOOL_NAME)).toBeDefined();
+
+    const nativeAttribution = createAgentExecutionAttribution({
+      runId: "composed-plugin-run",
+      lifecycleGeneration: "native-deferred-generation",
+      agentId: "main",
+      sessionKey: "agent:main:main",
+      executionIdentityAdmission: { token: pluginToken!, retryOnly: true },
+    });
+    const nativeAttempt = {
+      agentId: "main",
+      sessionId: "native-deferred-session",
+      sessionKey: "agent:main:main",
+      config: enabledConfig,
+    } as EmbeddedRunAttemptParams;
+    bindEmbeddedAttemptExecutionAttribution(nativeAttempt, nativeAttribution);
+    const nativeRelay = createApprovalAuthorityForAgentHarnessAttempt(
+      nativeAttempt,
+    ).registerNativeHookRelay({
+      provider: "codex",
+      sessionId: nativeAttempt.sessionId,
+      sessionKey: nativeAttempt.sessionKey,
+      agentId: nativeAttempt.agentId,
+      runId: "composed-plugin-run",
+      allowedEvents: ["pre_tool_use"],
+      approvalContext: {
+        approvalReviewerDeviceId: approvalDeviceIdentity.deviceId,
+      },
+    });
+    collectNativeApprovals = true;
+    try {
+      await invokeNativeHookRelay({
+        provider: "codex",
+        relayId: nativeRelay.relayId,
+        event: "pre_tool_use",
+        rawPayload: {
+          hook_event_name: "PreToolUse",
+          openclaw_approval_mode: "report",
+          tool_name: "exec_command",
+          tool_use_id: "native-deferred",
+          tool_input: { command: "printf deferred" },
+        },
+      });
+      const deferredOutcome = await resolveNativeHookRelayDeferredToolApproval({
+        relayId: nativeRelay.relayId,
+        toolUseId: "native-deferred",
+      });
+      expect(deferredOutcome).toEqual({ handled: true, outcome: "approved-once" });
+    } finally {
+      nativeRelay.unregister();
+    }
+    collectNativeApprovals = false;
+    await Promise.all(approvalResolutions);
+    expect(nativeApprovalIds, JSON.stringify(nativeApprovalRequests)).toHaveLength(1);
 
     const requestFromRun = async (params: {
       id: string;
@@ -466,6 +533,13 @@ describe("execution identity approval Gateway e2e", () => {
       contextId: pluginToken?.contextId,
       executionId: pluginToken?.executionId,
     });
+    expect(owner(nativeApprovalIds[0]!)).toMatchObject({
+      agentId: "main",
+      sessionKey: "agent:main:main",
+      runId: "composed-plugin-run",
+      contextId: pluginToken?.contextId,
+      executionId: pluginToken?.executionId,
+    });
     const stateDb = openOpenClawStateDatabase(databaseOptions).db;
     expect(
       stateDb
@@ -499,6 +573,10 @@ describe("execution identity approval Gateway e2e", () => {
           approval_id: approvalIds.get(APPROVAL_PLUGIN_TOOL_NAME)!,
           source_execution_id: pluginToken!.executionId,
         },
+        ...nativeApprovalIds.map((approvalId) => ({
+          approval_id: approvalId,
+          source_execution_id: pluginToken!.executionId,
+        })),
       ].toSorted((left, right) => left.approval_id.localeCompare(right.approval_id)),
     );
 

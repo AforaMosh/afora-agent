@@ -369,6 +369,45 @@ describe("Codex app-server approval bridge", () => {
     findApprovalEvent(params, { status: "approved", approvalId: "plugin:approval-1" });
   });
 
+  it.each([
+    ["item/commandExecution/requestApproval", { command: "printf authority" }],
+    ["item/fileChange/requestApproval", { reason: "write authority.txt" }],
+    ["item/permissions/requestApproval", { permissions: { network: true } }],
+  ])("uses host approval authority for %s", async (method, requestFields) => {
+    const requestPluginApproval = vi.fn(async () => ({ id: "plugin:authority" }));
+    const waitForPluginApprovalDecision = vi.fn(async () => ({
+      id: "plugin:authority",
+      decision: "allow-once" as const,
+    }));
+    const runBeforeToolCallApproval = vi.fn(async ({ params }: { params: unknown }) => ({
+      blocked: false as const,
+      params,
+    }));
+
+    await handleCodexAppServerApprovalRequest({
+      approvalAuthority: {
+        requestPluginApproval,
+        waitForPluginApprovalDecision,
+        runBeforeToolCallApproval,
+        registerNativeHookRelay: vi.fn(),
+      } as never,
+      method,
+      requestParams: {
+        ...codexTestTurnIds(),
+        itemId: `authority-${method}`,
+        ...requestFields,
+      },
+      paramsForRun: createParams(),
+      ...codexTestTurnIds(),
+    });
+
+    expect(runBeforeToolCallApproval).toHaveBeenCalledTimes(1);
+    expect(requestPluginApproval).toHaveBeenCalledTimes(1);
+    expect(waitForPluginApprovalDecision).toHaveBeenCalledTimes(1);
+    expect(mockCallGatewayTool).not.toHaveBeenCalled();
+    expect(mockRunBeforeToolCallHook).not.toHaveBeenCalled();
+  });
+
   it("keeps configured exec auto-review on the human approval route", async () => {
     const params = createParams();
     params.config = {
