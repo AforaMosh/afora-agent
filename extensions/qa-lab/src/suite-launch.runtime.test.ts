@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createQaSmokeCiPart } from "./ci-smoke-plan.js";
 import { QaSuiteInfraError } from "./errors.js";
 import type { QaLabServerHandle } from "./lab-server.types.js";
 import type { QaSuiteScenarioResult } from "./suite.js";
@@ -1323,14 +1324,12 @@ describe("qa suite runtime launcher", () => {
   it("shares exclusive profile flows while retaining isolated singleton results", async () => {
     const repoRoot = await makeTempRepo("qa-suite-crabline-isolated-");
     const maxActive = trackMaxActiveFlowRuns();
-    const scenarioIds = [
-      "group-visible-reply-tool",
-      "memory-dreaming-sweep",
-      "personal-task-followthrough-status",
-      "subagent-completion-direct-fallback",
-      "telegram-help-command",
-      "telegram-tools-compact-command",
-    ];
+    const scenarioIds = createQaSmokeCiPart("profile-2").runs.find(
+      (run) => run.slug === "primary",
+    )?.scenario_ids;
+    if (!scenarioIds) {
+      throw new Error("expected profile-2 primary smoke run");
+    }
 
     const result = await runQaSuite({
       repoRoot,
