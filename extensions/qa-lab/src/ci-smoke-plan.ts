@@ -4,6 +4,7 @@ import { resolveQaProfileScenarios } from "./profile-planning.js";
 import { readQaScenarioPack } from "./scenario-catalog.js";
 import { describeQaProviderLaneMismatches } from "./scenario-lane.js";
 import { readQaScorecardTaxonomyReport } from "./scorecard-taxonomy.js";
+import { scenarioRequiresIsolatedQaSuiteWorker } from "./suite-planning.js";
 
 const QA_SMOKE_PROFILE = "smoke-ci";
 // Four parts keep each smoke job near the fixed setup cost (~1min) instead of
@@ -37,7 +38,7 @@ function estimateScenarioCost(scenario: QaSmokeCiScenario) {
   if (scenario.execution.kind === "playwright") {
     return 6;
   }
-  return scenario.execution.kind === "flow" && scenario.execution.isolationReason ? 4 : 1;
+  return scenarioRequiresIsolatedQaSuiteWorker(scenario) ? 4 : 1;
 }
 
 function listQaSmokeCiDeclaredChannels(scenario: QaSmokeCiScenario): readonly string[] {

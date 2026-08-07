@@ -5,6 +5,7 @@ import { createQaSmokeCiPart, selectQaSmokeCiEligibilityChannel } from "./ci-smo
 import { resolveQaProfileScenarios } from "./profile-planning.js";
 import { readQaScenarioPack } from "./scenario-catalog.js";
 import { readQaScorecardTaxonomyReport } from "./scorecard-taxonomy.js";
+import { scenarioRequiresIsolatedQaSuiteWorker } from "./suite-planning.js";
 
 const smokeProfileMock = vi.hoisted(() => ({
   mode: "actual" as "actual" | "empty" | "ineligible" | "missing-coverage" | "unsupported",
@@ -62,7 +63,7 @@ function estimateScenarioCost(scenario: QaScenario | undefined): number {
   if (scenario.execution.kind === "playwright") {
     return 6;
   }
-  return scenario.execution.kind === "flow" && scenario.execution.isolationReason ? 4 : 1;
+  return scenarioRequiresIsolatedQaSuiteWorker(scenario) ? 4 : 1;
 }
 
 describe("createQaSmokeCiPart", () => {
@@ -88,6 +89,16 @@ describe("createQaSmokeCiPart", () => {
     const scenarioById = new Map(
       scenarioPack.scenarios.map((scenario) => [scenario.id, scenario] as const),
     );
+    const canonicalIsolatedWithoutReason = expectDefined(
+      scenarioPack.scenarios.find(
+        (scenario) =>
+          scenario.id === "memory-dreaming-sweep" &&
+          scenario.execution.kind === "flow" &&
+          !scenario.execution.isolationReason,
+      ),
+      "canonical isolated smoke scenario without isolationReason",
+    );
+    expect(scenarioRequiresIsolatedQaSuiteWorker(canonicalIsolatedWithoutReason)).toBe(true);
     const smokeSelection = resolveQaProfileScenarios({
       profile: "smoke-ci",
       providerMode: "mock-openai",
