@@ -65,6 +65,7 @@ Docs: https://docs.openclaw.ai
 
 ### Fixes
 
+- **Filesystem publication ownership:** fence published file fingerprints before accepting no-clobber writes or removing moved sources, preventing Windows file-identity reuse from accepting a replacement pathname.
 - **Control UI debug diagnostics:** keep last-good status, health, model, and heartbeat snapshots visible when refreshes fail, show the failure inside Snapshots, isolate it from Manual RPC state, and prevent older manual calls from overwriting newer ones. Thanks @shakkernerd.
 - **Control UI read-only preferences:** keep personal preference edits browser-local without attempting unauthorized config writes or claiming server sync, preserve offline intent for a later authorized reconnect, and restore the current server value on local reset. Thanks @shakkernerd.
 - **Control UI owner handoff:** give browsers opened by host-issued dashboard and graphical onboarding links durable administrator access, including same-browser recovery from a limited credential, while keeping generic, Telegram, mobile, and ordinary scope-upgrade paths bounded. Thanks @shakkernerd.
