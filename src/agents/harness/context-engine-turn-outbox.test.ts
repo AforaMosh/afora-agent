@@ -23,6 +23,7 @@ import {
   enqueueContextEngineTurnCommit,
   enqueueContextEngineTurnIntent,
   isRetryableContextEngineTurnReadFailure,
+  recoverContextEngineTurnOutbox,
 } from "./context-engine-turn-outbox.js";
 
 const tempDirs: string[] = [];
@@ -352,6 +353,97 @@ describe("context-engine turn outbox", () => {
       state: "admitted",
       isHeartbeat: false,
     });
+  });
+
+  it("retains unrecoverable accepted recovery as a blocking marker", async () => {
+    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-context-outbox-blocked-"));
+    tempDirs.push(stateDir);
+    const database = openOpenClawAgentDatabase({
+      agentId: "main",
+      env: { OPENCLAW_STATE_DIR: stateDir },
+    });
+    const payload = createPayload({
+      advancementKey: "session-a:unrecoverable",
+      databasePath: database.path,
+      sequence: 1,
+      sessionId: "session-a",
+    });
+    enqueueContextEngineTurnIntent({
+      admission: payload.boundary.admission,
+      database,
+      engineId: "test",
+      isHeartbeat: false,
+    });
+    acceptContextEngineTurnIntent({
+      boundary: payload.boundary,
+      database,
+      engineId: "test",
+      isHeartbeat: false,
+    });
+    const warn = vi.fn();
+
+    recoverContextEngineTurnOutbox({
+      currentAdmission: payload.boundary.admission,
+      database,
+      engineId: "test",
+      warn,
+    });
+
+    const queued = database.db
+      .prepare("SELECT payload_json FROM context_engine_turn_outbox WHERE advancement_key = ?")
+      .get(payload.boundary.admission.logicalTurnId) as { payload_json: string };
+    expect(JSON.parse(queued.payload_json)).toMatchObject({
+      state: "blocked",
+      failure: "session-rebound",
+    });
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("blocked unrecoverable turn advancement"),
+    );
+
+    const engine = {
+      info: {
+        id: "test",
+        name: "Test",
+        transcriptSemantics: {
+          currentTurnFence: "before-current-turn-entry-v1",
+          turnAdvancementIdempotency: "atomic-idempotent-v1",
+        },
+      },
+      ingest: async () => ({ ingested: true }),
+      assemble: async ({ messages }) => ({ messages, estimatedTokens: 0 }),
+      compact: async () => ({ ok: true, compacted: false }),
+      commitTurn: vi.fn(async () => ({ status: "committed" as const })),
+    } satisfies ContextEngine;
+    const degradeBeforeStart = vi.fn();
+    const lease = {
+      engine,
+      effectiveEngine: engine,
+      effectiveEngineId: "test",
+      effectiveEnginePluginId: undefined,
+      degraded: false,
+      degradedReason: undefined,
+      selectForHost: vi.fn(),
+      degradeBeforeStart,
+      begin: vi.fn(),
+      deferDisposalUntil: vi.fn(),
+      dispose: vi.fn(async () => undefined),
+    } satisfies ContextEngineLogicalTurnLease;
+
+    await drainPendingContextEngineTurnsBeforeRun({
+      admission: payload.boundary.admission,
+      lease,
+      warn,
+    });
+
+    expect(engine.commitTurn).not.toHaveBeenCalled();
+    expect(degradeBeforeStart).toHaveBeenCalledWith(
+      "pending durable turn advancement could not be completed before the next turn",
+    );
+    expect(
+      database.db
+        .prepare("SELECT 1 FROM context_engine_turn_outbox WHERE advancement_key = ?")
+        .get(payload.boundary.admission.logicalTurnId),
+    ).toBeDefined();
   });
 
   it("does not let later same-session turns overtake a failed commit", async () => {

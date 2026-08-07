@@ -13,7 +13,10 @@ import {
   openOpenClawAgentDatabase,
 } from "../../state/openclaw-agent-db.js";
 import type { ContextEngineLogicalTurnLease } from "./context-engine-logical-turn.js";
-import { finalizeAcceptedContextEngineTurn } from "./context-engine-turn-attempt.js";
+import {
+  drainPendingContextEngineTurnsBeforeRun,
+  finalizeAcceptedContextEngineTurn,
+} from "./context-engine-turn-attempt.js";
 import { enqueueContextEngineTurnIntent } from "./context-engine-turn-outbox.js";
 
 afterEach(() => {
@@ -133,6 +136,26 @@ describe("accepted context-engine turn finalization", () => {
     expect(warn).toHaveBeenCalledWith(
       "[context-engine] skipped accepted turn advancement: accepted context-engine transcript range is stale",
     );
+    expect(
+      JSON.parse(
+        (
+          database.db
+            .prepare(
+              "SELECT payload_json FROM context_engine_turn_outbox WHERE advancement_key = ?",
+            )
+            .get(admission.logicalTurnId) as { payload_json: string }
+        ).payload_json,
+      ),
+    ).toMatchObject({ state: "blocked", failure: "stale" });
+
+    await drainPendingContextEngineTurnsBeforeRun({
+      admission,
+      lease,
+      warn,
+    });
+    expect(lease.degradeBeforeStart).toHaveBeenCalledWith(
+      "pending durable turn advancement could not be completed before the next turn",
+    );
 
     const sibling = await appendTranscriptMessage(target, {
       message: { role: "assistant", content: "sibling" },
@@ -172,11 +195,21 @@ describe("accepted context-engine turn finalization", () => {
     if (!siblingAnchor) {
       throw new Error("expected projected sibling transcript anchor");
     }
+    const siblingAdmission = {
+      ...admission,
+      logicalTurnId: "logical-turn-2",
+    };
+    enqueueContextEngineTurnIntent({
+      admission: siblingAdmission,
+      database,
+      engineId: "test",
+      isHeartbeat: false,
+    });
     warn.mockClear();
     await finalizeAcceptedContextEngineTurn({
       facts: {
         ...baseFacts,
-        boundary: { admission, terminal: siblingAnchor },
+        boundary: { admission: siblingAdmission, terminal: siblingAnchor },
       },
       lease,
       warn,
@@ -186,22 +219,41 @@ describe("accepted context-engine turn finalization", () => {
     expect(warn).toHaveBeenCalledWith(
       "[context-engine] skipped accepted turn advancement: accepted context-engine transcript range is non-descendant",
     );
+    expect(
+      JSON.parse(
+        (
+          database.db
+            .prepare(
+              "SELECT payload_json FROM context_engine_turn_outbox WHERE advancement_key = ?",
+            )
+            .get(siblingAdmission.logicalTurnId) as { payload_json: string }
+        ).payload_json,
+      ),
+    ).toMatchObject({ state: "blocked", failure: "non-descendant" });
 
+    const abortedAdmission = {
+      ...admission,
+      logicalTurnId: "logical-turn-3",
+    };
     enqueueContextEngineTurnIntent({
-      admission,
+      admission: abortedAdmission,
       database,
       engineId: "test",
       isHeartbeat: false,
     });
     await finalizeAcceptedContextEngineTurn({
-      facts: { ...baseFacts, aborted: true },
+      facts: {
+        ...baseFacts,
+        aborted: true,
+        boundary: { ...baseFacts.boundary, admission: abortedAdmission },
+      },
       lease,
       warn,
     });
     expect(
       database.db
         .prepare("SELECT 1 FROM context_engine_turn_outbox WHERE advancement_key = ?")
-        .get(admission.logicalTurnId),
+        .get(abortedAdmission.logicalTurnId),
     ).toBeUndefined();
   });
 });

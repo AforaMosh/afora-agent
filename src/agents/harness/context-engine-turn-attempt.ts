@@ -13,6 +13,7 @@ import { openOpenClawAgentDatabase } from "../../state/openclaw-agent-db.js";
 import type { ContextEngineLogicalTurnLease } from "./context-engine-logical-turn.js";
 import {
   acceptContextEngineTurnIntent,
+  blockContextEngineTurnIntent,
   discardContextEngineTurnIntent,
   drainContextEngineTurnOutbox,
   enqueueContextEngineTurnCommit,
@@ -192,10 +193,12 @@ export async function finalizeAcceptedContextEngineTurn(params: {
     });
     if (closedTurn.kind !== "ok") {
       if (!isRetryableContextEngineTurnReadFailure(closedTurn.kind)) {
-        discardContextEngineTurnIntent({
-          admission,
+        blockContextEngineTurnIntent({
+          boundary: params.facts.boundary,
           database,
           engineId: params.lease.effectiveEngineId,
+          failure: closedTurn.kind,
+          isHeartbeat: params.facts.isHeartbeat === true,
           ownerPluginId: params.lease.effectiveEnginePluginId,
         });
       }

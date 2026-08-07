@@ -47,9 +47,22 @@ type ReadyContextEngineTurnOutboxPayload = Readonly<{
   state: "ready";
 }>;
 
+type ContextEngineTurnReadFailureKind = Exclude<
+  ClosedTranscriptTurnReadResult,
+  { kind: "ok" }
+>["kind"];
+
+type BlockedContextEngineTurnOutboxPayload = Readonly<{
+  boundary: TranscriptTurnBoundary;
+  failure: Exclude<ContextEngineTurnReadFailureKind, "projection-unavailable">;
+  isHeartbeat: boolean;
+  state: "blocked";
+}>;
+
 type ContextEngineTurnOutboxPayload =
   | AdmittedContextEngineTurnOutboxPayload
   | AcceptedContextEngineTurnOutboxPayload
+  | BlockedContextEngineTurnOutboxPayload
   | ReadyContextEngineTurnOutboxPayload;
 
 const RECOVERED_TURN_MAX_EVENTS = 20_000;
@@ -114,6 +127,10 @@ function writeContextEngineTurnOutboxPayload(params: {
       (params.payload.state === "accepted" &&
         existingPayload.state === "admitted" &&
         existingPayload.admission.entryId === admission.entryId) ||
+      (params.payload.state === "blocked" &&
+        existingPayload.state === "accepted" &&
+        existingPayload.boundary.admission.entryId === admission.entryId &&
+        existingPayload.boundary.terminal.entryId === params.payload.boundary.terminal.entryId) ||
       (params.payload.state === "ready" &&
         existingPayload.state === "accepted" &&
         existingPayload.boundary.admission.entryId === admission.entryId &&
@@ -202,6 +219,25 @@ export function enqueueContextEngineTurnCommit(params: {
   });
 }
 
+export function blockContextEngineTurnIntent(params: {
+  boundary: TranscriptTurnBoundary;
+  database: OpenClawAgentDatabase;
+  engineId: string;
+  failure: BlockedContextEngineTurnOutboxPayload["failure"];
+  isHeartbeat: boolean;
+  ownerPluginId?: string;
+}): void {
+  writeContextEngineTurnOutboxPayload({
+    ...params,
+    payload: {
+      boundary: params.boundary,
+      failure: params.failure,
+      isHeartbeat: params.isHeartbeat,
+      state: "blocked",
+    },
+  });
+}
+
 export function discardContextEngineTurnIntent(params: {
   admission: TranscriptTurnAdmission;
   database: OpenClawAgentDatabase;
@@ -242,6 +278,12 @@ export function recoverContextEngineTurnOutbox(params: {
     if (payload.state === "ready") {
       continue;
     }
+    if (payload.state === "blocked") {
+      params.warn(
+        `[context-engine] durable turn advancement is blocked: ${row.advancement_key}: transcript range is ${payload.failure}`,
+      );
+      continue;
+    }
     if (payload.state === "admitted") {
       // Admission proves provider dispatch only. Without the host-owned accepted
       // transition, later descendants may belong to a rejected fallback attempt.
@@ -266,12 +308,14 @@ export function recoverContextEngineTurnOutbox(params: {
         continue;
       }
       params.warn(
-        `[context-engine] discarded unrecoverable turn advancement: ${row.advancement_key}: transcript range is ${closedTurn.kind}`,
+        `[context-engine] blocked unrecoverable turn advancement: ${row.advancement_key}: transcript range is ${closedTurn.kind}`,
       );
-      discardContextEngineTurnIntent({
-        admission: payload.boundary.admission,
+      blockContextEngineTurnIntent({
+        boundary: payload.boundary,
         database: params.database,
         engineId: params.engineId,
+        failure: closedTurn.kind,
+        isHeartbeat: payload.isHeartbeat,
         ownerPluginId: params.ownerPluginId,
       });
       continue;
