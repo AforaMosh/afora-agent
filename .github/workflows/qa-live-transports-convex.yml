@@ -120,7 +120,7 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: qa-lab-all-lanes-${{ github.event_name != 'schedule' && inputs.ref || github.sha }}
+  group: qa-lab-all-lanes-${{ (github.event_name == 'schedule' && github.workflow_ref == format('{0}/.github/workflows/qa-live-transports-convex.yml@{1}', github.repository, github.ref)) && github.sha || inputs.ref }}
   cancel-in-progress: false
 
 env:
@@ -189,7 +189,7 @@ jobs:
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
-          ref: ${{ github.event_name != 'schedule' && inputs.ref || github.sha }}
+          ref: ${{ (github.event_name == 'schedule' && github.workflow_ref == format('{0}/.github/workflows/qa-live-transports-convex.yml@{1}', github.repository, github.ref)) && github.sha || inputs.ref }}
           fetch-depth: 0
 
       - name: Validate selected ref
@@ -198,7 +198,7 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           GH_TOKEN: ${{ github.token }}
-          INPUT_REF: ${{ github.event_name != 'schedule' && inputs.ref || github.sha }}
+          INPUT_REF: ${{ (github.event_name == 'schedule' && github.workflow_ref == format('{0}/.github/workflows/qa-live-transports-convex.yml@{1}', github.repository, github.ref)) && github.sha || inputs.ref }}
           RUN_LIVE_RUNTIME_PAIR: ${{ inputs.run_live_runtime_pair }}
         shell: bash
         run: |

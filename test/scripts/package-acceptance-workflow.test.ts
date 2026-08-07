@@ -105,6 +105,8 @@ const QA_INBOUND_VOICE_SCENARIO = resolve(
 const QA_LIVE_TRANSPORTS_WORKFLOW = ".github/workflows/qa-live-transports-convex.yml";
 const QA_LIVE_RUNTIME_PAIR_IF =
   "(github.event_name == 'schedule' && github.workflow_ref == format('{0}/.github/workflows/qa-live-transports-convex.yml@{1}', github.repository, github.ref)) || inputs.run_live_runtime_pair";
+const QA_LIVE_SELECTED_REF_EXPRESSION =
+  "${{ (github.event_name == 'schedule' && github.workflow_ref == format('{0}/.github/workflows/qa-live-transports-convex.yml@{1}', github.repository, github.ref)) && github.sha || inputs.ref }}";
 const QA_LIVE_LANE_JOBS = [
   "run_mock_parity",
   "run_live_runtime_token_efficiency",
@@ -184,6 +186,10 @@ type WorkflowJob = {
 };
 
 type Workflow = {
+  concurrency?: {
+    group?: string;
+    "cancel-in-progress"?: boolean | string;
+  };
   env?: Record<string, string>;
   jobs?: Record<string, WorkflowJob>;
   on?: {
@@ -199,6 +205,8 @@ type Workflow = {
 type QaLiveWorkflowContext = {
   eventName: string;
   expectedSha: string;
+  githubSha: string;
+  inputRef: string;
   inputs: Record<string, boolean>;
   ref: string;
   repository: string;
@@ -231,17 +239,18 @@ function workflowStep(job: WorkflowJob, stepName: string): WorkflowStep {
   return step;
 }
 
+function isQaLiveDirectSchedule(context: QaLiveWorkflowContext): boolean {
+  const directWorkflowRef = `${context.repository}/.github/workflows/qa-live-transports-convex.yml@${context.ref}`;
+  return context.eventName === "schedule" && context.workflowRef === directWorkflowRef;
+}
+
 function evaluateQaLiveJobCondition(
   jobName: (typeof QA_LIVE_LANE_JOBS)[number],
   context: QaLiveWorkflowContext,
 ): boolean {
   const condition = workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, jobName).if;
   if (condition === QA_LIVE_RUNTIME_PAIR_IF) {
-    const directWorkflowRef = `${context.repository}/.github/workflows/qa-live-transports-convex.yml@${context.ref}`;
-    return (
-      (context.eventName === "schedule" && context.workflowRef === directWorkflowRef) ||
-      context.inputs.run_live_runtime_pair === true
-    );
+    return isQaLiveDirectSchedule(context) || context.inputs.run_live_runtime_pair === true;
   }
 
   const exactShaSelector = /^inputs\.expected_sha == '' \|\| inputs\.(run_[a-z_]+)$/u.exec(
@@ -257,6 +266,13 @@ function evaluateQaLiveJobCondition(
   }
 
   throw new Error(`Unsupported QA live job condition for ${jobName}: ${condition}`);
+}
+
+function evaluateQaLiveSelectedRef(expression: string, context: QaLiveWorkflowContext): string {
+  if (expression !== QA_LIVE_SELECTED_REF_EXPRESSION) {
+    throw new Error(`Unexpected QA live selected-ref expression: ${expression}`);
+  }
+  return isQaLiveDirectSchedule(context) ? context.githubSha : context.inputRef;
 }
 
 function runQaSelectedRefGuard(params: {
@@ -3605,6 +3621,8 @@ describe("package artifact reuse", () => {
       return {
         eventName: "workflow_dispatch",
         expectedSha: "",
+        githubSha: "caller-sha",
+        inputRef: "requested-ref",
         ref,
         repository,
         workflowRef: directWorkflowRef,
@@ -3644,6 +3662,59 @@ describe("package artifact reuse", () => {
         evaluateQaLiveJobCondition("run_live_runtime_token_efficiency", testCase.context),
         testCase.name,
       ).toBe(testCase.expected);
+    }
+
+    const qaWorkflow = readWorkflow(QA_LIVE_TRANSPORTS_WORKFLOW);
+    const validateJob = workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, "validate_selected_ref");
+    const checkoutRef = workflowStep(validateJob, "Checkout selected ref").with?.ref ?? "";
+    const inputRef = workflowStep(validateJob, "Validate selected ref").env?.INPUT_REF ?? "";
+    const concurrencyPrefix = "qa-lab-all-lanes-";
+    const concurrencyGroup = qaWorkflow.concurrency?.group ?? "";
+    expect(concurrencyGroup.startsWith(concurrencyPrefix)).toBe(true);
+    const concurrencyRef = concurrencyGroup.slice(concurrencyPrefix.length);
+    const selectedRefCases = [
+      {
+        context: makeContext({
+          eventName: "schedule",
+          githubSha: "direct-schedule-sha",
+          inputRef: "ignored-ref",
+        }),
+        expected: "direct-schedule-sha",
+        name: "direct schedule",
+      },
+      {
+        context: makeContext({
+          eventName: "schedule",
+          githubSha: "caller-schedule-sha",
+          inputRef: "requested-exact-sha",
+          workflowRef: reusableWorkflowRef,
+        }),
+        expected: "requested-exact-sha",
+        name: "scheduled reusable call",
+      },
+      {
+        context: makeContext({
+          githubSha: "manual-caller-sha",
+          inputRef: "manual-selected-ref",
+        }),
+        expected: "manual-selected-ref",
+        name: "direct manual dispatch",
+      },
+    ];
+    for (const testCase of selectedRefCases) {
+      for (const [site, expression] of [
+        ["checkout", checkoutRef],
+        ["input env", inputRef],
+      ] as const) {
+        expect(
+          evaluateQaLiveSelectedRef(expression, testCase.context),
+          `${testCase.name} ${site}`,
+        ).toBe(testCase.expected);
+      }
+      expect(
+        `${concurrencyPrefix}${evaluateQaLiveSelectedRef(concurrencyRef, testCase.context)}`,
+        `${testCase.name} concurrency`,
+      ).toBe(`${concurrencyPrefix}${testCase.expected}`);
     }
 
     for (const expectedSha of ["", "not-a-full-sha"]) {
