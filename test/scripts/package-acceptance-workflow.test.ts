@@ -3753,6 +3753,8 @@ describe("package artifact reuse", () => {
     const manualCases = [
       ["unselected branch name", "main", false, 0, "main-ancestor", mainTrustCalls],
       ["selected non-full ref", "main", true, 1, undefined, [revParse]],
+      ["lowercase short SHA", exactSha.slice(0, 12), true, 1, undefined, [revParse]],
+      ["uppercase 40-character SHA", exactSha.toUpperCase(), true, 1, undefined, [revParse]],
       ["different full SHA", "0".repeat(40), true, 1, undefined, [revParse]],
       ["checked-out full SHA", exactSha, true, 0, "main-ancestor", mainTrustCalls],
     ] as const;
@@ -3855,6 +3857,11 @@ describe("package artifact reuse", () => {
     const workflow = readWorkflow(QA_LIVE_TRANSPORTS_WORKFLOW);
     const callInputs = workflow.on?.workflow_call?.inputs ?? {};
     const dispatchInputs = workflow.on?.workflow_dispatch?.inputs ?? {};
+    const job = workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, "run_live_runtime_token_efficiency");
+    const validateStep = workflowStep(
+      workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, "validate_selected_ref"),
+      "Validate selected ref",
+    );
     expect(workflow.on?.schedule).toEqual([{ cron: "41 4 * * *" }]);
     expect(dispatchInputs.run_live_runtime_proof).toEqual({
       description: "Run the blocking live runtime release proof",
@@ -3864,9 +3871,14 @@ describe("package artifact reuse", () => {
     });
     expect(callInputs.run_live_runtime_proof).toBeUndefined();
     expect(dispatchInputs.expected_sha).toBeUndefined();
-    expect(workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, "run_live_runtime_token_efficiency").if).toBe(
-      QA_LIVE_RUNTIME_PROOF_IF,
-    );
+    expect(job.needs).toEqual(["authorize_actor", "validate_selected_ref"]);
+    expect(job.if).toBe(QA_LIVE_RUNTIME_PROOF_IF);
+    expect(validateStep.env).toMatchObject({
+      EVENT_NAME: "${{ github.event_name }}",
+      EXPECTED_SHA: "${{ inputs.expected_sha }}",
+      INPUT_REF: "${{ github.event_name != 'schedule' && inputs.ref || github.sha }}",
+      RUN_LIVE_RUNTIME_PROOF: "${{ inputs.run_live_runtime_proof }}",
+    });
   });
 
   it("routes release Matrix through the QA Lab selector", () => {
