@@ -13,11 +13,11 @@ export {
   listCronJobs,
   readDoctorMemoryStatus,
   runAgentPrompt,
-  runQaCli,
   startAgentRun,
   waitForAgentHistoryReply,
   waitForAgentRun,
 } from "./suite-runtime-agent-process.js";
+export { runQaCli } from "./suite-runtime-agent-cli.js";
 export {
   ensureImageGenerationConfigured,
   extractMediaPathFromText,

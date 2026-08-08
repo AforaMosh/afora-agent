@@ -247,6 +247,7 @@ describe("forkSessionEntryFromParent", () => {
         sessionId: "parent-session",
         totalTokens: 150_000,
         totalTokensFresh: true,
+        totalTokensVersion: 1,
         updatedAt: 1,
       },
     );
@@ -369,10 +370,8 @@ describe("forkSessionEntryFromParent", () => {
       ],
     );
 
-    await expect(resolveParentForkDecision({ parentEntry, storePath })).resolves.toMatchObject({
-      status: "fork",
-      parentTokens: 4_567,
-    });
+    const decision = await resolveParentForkDecision({ parentEntry, storePath });
+    expect(decision).toMatchObject({ status: "fork", parentTokens: 67 });
   });
 
   it("uses exact SQLite context usage instead of stale cached totals", async () => {
