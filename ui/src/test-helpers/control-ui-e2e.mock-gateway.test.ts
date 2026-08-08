@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { createControlUiMockGatewayInitScript } from "./control-ui-e2e.ts";
 
 type ResponseFrame = {
+  error?: Record<string, unknown>;
   event?: string;
   id?: string;
   type?: string;
@@ -22,6 +23,218 @@ function waitForMockCycle(): Promise<void> {
     setTimeout(resolve, 300);
   });
 }
+
+type DeferredGateway = {
+  deferNext: (method: string) => void;
+  findRequests: (
+    method?: string,
+    afterRequestId?: string,
+  ) => Array<{
+    id: string;
+    method: string;
+    params?: unknown;
+  }>;
+  rejectDeferredById: (
+    requestId: string,
+    error?: { code?: string; message?: string; details?: unknown; retryable?: boolean },
+  ) => void;
+  resolveDeferred: (method: string, payload?: unknown) => void;
+  resolveDeferredById: (requestId: string, payload?: unknown) => void;
+};
+
+function deferredGateway(): DeferredGateway {
+  const gateway = (
+    window as unknown as {
+      openclawControlUiE2eGateway?: DeferredGateway;
+    }
+  ).openclawControlUiE2eGateway;
+  if (!gateway) {
+    throw new Error("Mock Gateway was not installed");
+  }
+  return gateway;
+}
+
+function collectResponseFrames(socket: WebSocket): ResponseFrame[] {
+  const frames: ResponseFrame[] = [];
+  socket.addEventListener("message", (event) => {
+    frames.push(JSON.parse(String((event as MessageEvent).data)) as ResponseFrame);
+  });
+  return frames;
+}
+
+describe("mock gateway request-scoped deferrals", () => {
+  it("filters stale request logs from an exact prior request", async () => {
+    window.sessionStorage.clear();
+    // oxlint-disable-next-line typescript/no-implied-eval -- Executes the serialized mock exactly as the browser does.
+    new Function(createControlUiMockGatewayInitScript({}))();
+    const socket = new WebSocket("ws://mock-gateway");
+    await flushMockTimers();
+
+    socket.send(JSON.stringify({ type: "req", id: "list-old", method: "sessions.list" }));
+    socket.send(JSON.stringify({ type: "req", id: "health-1", method: "health" }));
+    socket.send(JSON.stringify({ type: "req", id: "list-new", method: "sessions.list" }));
+    await flushMockTimers();
+
+    expect(deferredGateway().findRequests("sessions.list", "list-old")).toEqual([
+      expect.objectContaining({ id: "list-new", method: "sessions.list" }),
+    ]);
+    socket.close();
+  });
+
+  it("settles two same-method requests by exact id and out of order", async () => {
+    window.sessionStorage.clear();
+    // oxlint-disable-next-line typescript/no-implied-eval -- Executes the serialized mock exactly as the browser does.
+    new Function(createControlUiMockGatewayInitScript({}))();
+    const socket = new WebSocket("ws://mock-gateway");
+    const frames = collectResponseFrames(socket);
+    await flushMockTimers();
+    const gateway = deferredGateway();
+
+    gateway.deferNext("sessions.list");
+    gateway.deferNext("sessions.list");
+    socket.send(JSON.stringify({ type: "req", id: "list-first", method: "sessions.list" }));
+    socket.send(JSON.stringify({ type: "req", id: "list-second", method: "sessions.list" }));
+    await flushMockTimers();
+
+    gateway.resolveDeferredById("list-second", { order: 2 });
+    gateway.rejectDeferredById("list-first", { code: "FIRST_REJECTED", message: "first rejected" });
+    await flushMockTimers();
+
+    expect(frames.filter((frame) => frame.type === "res")).toMatchObject([
+      { id: "list-second", payload: { order: 2 } },
+      {
+        id: "list-first",
+        error: { code: "FIRST_REJECTED", message: "first rejected" },
+      },
+    ]);
+    socket.close();
+  });
+
+  it("rejects duplicate exact-id settlement", async () => {
+    window.sessionStorage.clear();
+    // oxlint-disable-next-line typescript/no-implied-eval -- Executes the serialized mock exactly as the browser does.
+    new Function(createControlUiMockGatewayInitScript({ deferredMethods: ["sessions.list"] }))();
+    const socket = new WebSocket("ws://mock-gateway");
+    await flushMockTimers();
+    socket.send(JSON.stringify({ type: "req", id: "list-once", method: "sessions.list" }));
+    await flushMockTimers();
+
+    const gateway = deferredGateway();
+    gateway.resolveDeferredById("list-once", { ok: true });
+    expect(() => gateway.resolveDeferredById("list-once", { ok: false })).toThrow(
+      "No deferred mock Gateway response for request list-once",
+    );
+    socket.close();
+  });
+
+  it("removes a closed socket's pending response and keeps pre-armed deferrals", async () => {
+    window.sessionStorage.clear();
+    // oxlint-disable-next-line typescript/no-implied-eval -- Executes the serialized mock exactly as the browser does.
+    new Function(createControlUiMockGatewayInitScript({}))();
+    const gateway = deferredGateway();
+    gateway.deferNext("sessions.list");
+    gateway.deferNext("sessions.list");
+    const firstSocket = new WebSocket("ws://mock-gateway");
+    await flushMockTimers();
+    firstSocket.send(JSON.stringify({ type: "req", id: "closed-list", method: "sessions.list" }));
+    await flushMockTimers();
+    firstSocket.close();
+
+    expect(() => gateway.resolveDeferredById("closed-list")).toThrow("belongs to a closed socket");
+
+    const reconnectSocket = new WebSocket("ws://mock-gateway");
+    const frames = collectResponseFrames(reconnectSocket);
+    await flushMockTimers();
+    reconnectSocket.send(
+      JSON.stringify({ type: "req", id: "reconnect-list", method: "sessions.list" }),
+    );
+    await flushMockTimers();
+    gateway.resolveDeferred("sessions.list", { reconnected: true });
+    await flushMockTimers();
+    expect(frames.find((frame) => frame.id === "reconnect-list")?.payload).toEqual({
+      reconnected: true,
+    });
+    reconnectSocket.close();
+  });
+
+  it("retains the newest 100 closed request tombstones", async () => {
+    window.sessionStorage.clear();
+    const requestCount = 102;
+    // oxlint-disable-next-line typescript/no-implied-eval -- Executes the serialized mock exactly as the browser does.
+    new Function(
+      createControlUiMockGatewayInitScript({
+        deferredMethods: Array.from({ length: requestCount }, () => "sessions.list"),
+      }),
+    )();
+    const gateway = deferredGateway();
+    const socket = new WebSocket("ws://mock-gateway");
+    await flushMockTimers();
+
+    for (let index = 0; index < requestCount; index += 1) {
+      socket.send(
+        JSON.stringify({
+          type: "req",
+          id: `closed-list-${index}`,
+          method: "sessions.list",
+        }),
+      );
+    }
+    await flushMockTimers();
+    socket.close();
+
+    expect(() => gateway.resolveDeferredById("closed-list-0")).toThrow(
+      "No deferred mock Gateway response for request closed-list-0",
+    );
+    expect(() => gateway.resolveDeferredById("closed-list-1")).toThrow(
+      "No deferred mock Gateway response for request closed-list-1",
+    );
+    expect(() => gateway.resolveDeferredById("closed-list-2")).toThrow(
+      "Deferred mock Gateway response for request closed-list-2 belongs to a closed socket",
+    );
+    expect(() => gateway.resolveDeferredById("closed-list-101")).toThrow(
+      "Deferred mock Gateway response for request closed-list-101 belongs to a closed socket",
+    );
+  });
+
+  it("clears pending responses, closed ids, and pre-armed deferrals on pagehide", async () => {
+    window.sessionStorage.clear();
+    // oxlint-disable-next-line typescript/no-implied-eval -- Executes the serialized mock exactly as the browser does.
+    new Function(createControlUiMockGatewayInitScript({}))();
+    const gateway = deferredGateway();
+    gateway.deferNext("sessions.list");
+    gateway.deferNext("health");
+    gateway.deferNext("models.list");
+    const socket = new WebSocket("ws://mock-gateway");
+    await flushMockTimers();
+    socket.send(JSON.stringify({ type: "req", id: "closed-list", method: "sessions.list" }));
+    await flushMockTimers();
+    socket.close();
+
+    const pendingSocket = new WebSocket("ws://mock-gateway");
+    await flushMockTimers();
+    pendingSocket.send(JSON.stringify({ type: "req", id: "pending-health", method: "health" }));
+    await flushMockTimers();
+    window.dispatchEvent(new Event("pagehide"));
+
+    expect(() => gateway.resolveDeferredById("closed-list")).toThrow(
+      "No deferred mock Gateway response for request closed-list",
+    );
+    expect(() => gateway.resolveDeferredById("pending-health")).toThrow(
+      "No deferred mock Gateway response for request pending-health",
+    );
+
+    const nextSocket = new WebSocket("ws://mock-gateway");
+    const frames = collectResponseFrames(nextSocket);
+    await flushMockTimers();
+    nextSocket.send(JSON.stringify({ type: "req", id: "models-next", method: "models.list" }));
+    await flushMockTimers();
+    expect(frames.find((frame) => frame.id === "models-next")?.payload).toEqual({
+      models: [{ id: "gpt-5.5", name: "gpt-5.5", provider: "openai" }],
+    });
+    pendingSocket.close();
+    nextSocket.close();
+  });
+});
 
 describe("mock gateway stateful config", () => {
   it("round-trips config.set through config.get with an advancing hash", async () => {
