@@ -244,6 +244,7 @@ function runFullReleaseChildDispatch(
   const ghPath = resolve(workdir, "gh");
   const sleepPath = resolve(workdir, "sleep");
   const callsPath = resolve(workdir, "gh-calls.jsonl");
+  const metadataPath = resolve(workdir, "metadata-polls");
   const statusPath = resolve(workdir, "status-polls");
   writeFileSync(callsPath, "");
   writeFileSync(
@@ -266,6 +267,14 @@ function nextStatus() {
   try { index = Number(fs.readFileSync(env.MOCK_GH_STATUS_POLLS, "utf8")); } catch {}
   fs.writeFileSync(env.MOCK_GH_STATUS_POLLS, String(index + 1));
   return statuses[Math.min(index, statuses.length - 1)];
+}
+function nextRunMetadata() {
+  const metadata = JSON.parse(env.MOCK_GH_RUN_METADATA_SEQUENCE);
+  if (metadata.length === 0) return {};
+  let index = 0;
+  try { index = Number(fs.readFileSync(env.MOCK_GH_METADATA_POLLS, "utf8")); } catch {}
+  fs.writeFileSync(env.MOCK_GH_METADATA_POLLS, String(index + 1));
+  return metadata[Math.min(index, metadata.length - 1)];
 }
 if (args[0] === "workflow" && args[1] === "run") {
   if (env.MOCK_GH_DISPATCH_ERROR) {
@@ -290,17 +299,18 @@ if (args[0] === "workflow" && args[1] === "run") {
     console.error(env.MOCK_GH_STATUS_ERROR);
     process.exit(1);
   }
+  const runMetadata = nextRunMetadata();
   console.log(JSON.stringify({
     conclusion,
-    display_title: env.MOCK_GH_RUN_TITLE,
-    event: env.MOCK_GH_RUN_EVENT,
-    head_branch: env.MOCK_GH_RUN_HEAD_BRANCH,
-    head_sha: env.MOCK_GH_CHILD_SHA,
+    display_title: runMetadata.display_title ?? env.MOCK_GH_RUN_TITLE,
+    event: runMetadata.event ?? env.MOCK_GH_RUN_EVENT,
+    head_branch: runMetadata.head_branch ?? env.MOCK_GH_RUN_HEAD_BRANCH,
+    head_sha: runMetadata.head_sha ?? env.MOCK_GH_CHILD_SHA,
     html_url: url,
-    id: Number(env.MOCK_GH_RUN_ID),
-    path: env.MOCK_GH_RUN_PATH,
+    id: Number(runMetadata.id ?? env.MOCK_GH_RUN_ID),
+    path: runMetadata.path ?? env.MOCK_GH_RUN_PATH,
     status: nextStatus(),
-    workflow_id: Number(env.MOCK_GH_RUN_WORKFLOW_ID),
+    workflow_id: Number(runMetadata.workflow_id ?? env.MOCK_GH_RUN_WORKFLOW_ID),
   }));
 } else if (args[0] === "run" && args[1] === "view") {
   const field = args[args.indexOf("--json") + 1];
@@ -401,12 +411,14 @@ if (args[0] === "workflow" && args[1] === "run") {
       MOCK_GH_DISPATCH_OUTPUT: "Created workflow_dispatch event.",
       MOCK_GH_JOBS: JSON.stringify(defaultJobs),
       MOCK_GH_MATCHES: "[101]",
+      MOCK_GH_METADATA_POLLS: metadataPath,
       MOCK_GH_RUN_EVENT: "workflow_dispatch",
       MOCK_GH_RUN_HEAD_BRANCH:
         overrides.MOCK_GH_RUN_HEAD_BRANCH ??
         overrides.CHILD_WORKFLOW_REF ??
         stepEnv.CHILD_WORKFLOW_REF,
       MOCK_GH_RUN_ID: "101",
+      MOCK_GH_RUN_METADATA_SEQUENCE: "[]",
       MOCK_GH_RUN_PATH: `.github/workflows/${child.workflow}`,
       MOCK_GH_RUN_TITLE: `${child.runName} full-release-validation-77-2${child.nonceSuffix}`,
       MOCK_GH_RUN_WORKFLOW_ID: "789",
@@ -1950,6 +1962,27 @@ describe("package acceptance workflow", () => {
     },
   );
 
+  it("waits for returned child metadata to settle before adopting the run", () => {
+    const child = FULL_RELEASE_CHILD_DISPATCHES[4];
+    const { calls, result } = runFullReleaseChildDispatch(child, {
+      MOCK_GH_DISPATCH_OUTPUT: "https://github.com/openclaw/openclaw/actions/runs/101",
+      MOCK_GH_RUN_METADATA_SEQUENCE: JSON.stringify([{ workflow_id: 790 }, {}]),
+    });
+
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    expect(result.stderr).toContain("identity metadata has not settled (attempt 1/12)");
+    expect(calls.filter(({ args }) => args[0] === "workflow")).toHaveLength(1);
+    expect(
+      calls.filter(({ args }) => args.some((value) => value.endsWith("/actions/runs/101"))),
+    ).toHaveLength(2);
+    expect(
+      calls.filter(({ args }) =>
+        args.some((value) => value.endsWith(`/actions/workflows/${child.workflow}/runs`)),
+      ),
+    ).toHaveLength(0);
+    expect(calls.filter(({ args }) => args[0] === "run" && args[1] === "cancel")).toHaveLength(0);
+  });
+
   it("recovers by exact name when a successful dispatch returns no run URL", () => {
     const { calls, result } = runFullReleaseChildDispatch(FULL_RELEASE_CHILD_DISPATCHES[0], {
       MOCK_GH_DISPATCH_OUTPUT: "",
@@ -1969,14 +2002,20 @@ describe("package acceptance workflow", () => {
     ["title", { MOCK_GH_RUN_TITLE: "Unrelated workflow run" }],
     ["head branch", { MOCK_GH_RUN_HEAD_BRANCH: "other" }],
     ["event", { MOCK_GH_RUN_EVENT: "push" }],
-  ] as const)("refuses a returned run URL with the wrong %s", (_label, overrides) => {
+  ] as const)("refuses a returned run URL with persistently wrong %s", (_label, overrides) => {
     const { calls, result } = runFullReleaseChildDispatch(FULL_RELEASE_CHILD_DISPATCHES[0], {
       MOCK_GH_DISPATCH_OUTPUT: "https://github.com/openclaw/openclaw/actions/runs/101",
       ...overrides,
     });
 
     expect(result.status).toBe(1);
-    expect(result.stderr).toContain("Refusing to adopt unvalidated ci.yml run 101");
+    expect(result.stderr).toContain(
+      "Refusing to adopt unvalidated ci.yml run 101 after 12 metadata reads",
+    );
+    expect(calls.filter(({ args }) => args[0] === "workflow")).toHaveLength(1);
+    expect(
+      calls.filter(({ args }) => args.some((value) => value.endsWith("/actions/runs/101"))),
+    ).toHaveLength(12);
     expect(
       calls.some(({ args }) =>
         args.some((value) => value.includes("/actions/workflows/") && value.endsWith("/runs")),
@@ -1993,9 +2032,10 @@ describe("package acceptance workflow", () => {
 
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("Refusing to adopt invalid ci.yml run ID not-a-run-id");
-    expect(
-      calls.some(({ args }) => args.some((value) => value.endsWith("/actions/runs/not-a-run-id"))),
-    ).toBe(false);
+    expect(calls.filter(({ args }) => args[0] === "workflow")).toHaveLength(1);
+    expect(calls.some(({ args }) => args.some((value) => value.includes("/actions/runs/")))).toBe(
+      false,
+    );
     expect(calls.filter(({ args }) => args[0] === "run" && args[1] === "cancel")).toHaveLength(0);
   });
 
@@ -2071,15 +2111,24 @@ describe("package acceptance workflow", () => {
   );
 
   it.each(FULL_RELEASE_CHILD_DISPATCHES)(
-    "cancels exactly the identified $jobName child when its workflow SHA differs",
+    "cancels exactly the identified $jobName child when its workflow SHA differs after identity settlement",
     (child) => {
       const { calls, result } = runFullReleaseChildDispatch(child, {
         MOCK_GH_CHILD_SHA: "c".repeat(40),
         MOCK_GH_DISPATCH_OUTPUT: "https://github.com/openclaw/openclaw/actions/runs/101",
+        MOCK_GH_RUN_METADATA_SEQUENCE: JSON.stringify([
+          { display_title: "Pending workflow metadata" },
+          {},
+        ]),
       });
 
       expect(result.status).toBe(1);
+      expect(result.stderr).toContain("identity metadata has not settled (attempt 1/12)");
       expect(result.stderr).toContain("expected parent workflow SHA");
+      expect(calls.filter(({ args }) => args[0] === "workflow")).toHaveLength(1);
+      expect(
+        calls.filter(({ args }) => args.some((value) => value.endsWith("/actions/runs/101"))),
+      ).toHaveLength(2);
       expect(calls.filter(({ args }) => args[0] === "run" && args[1] === "cancel")).toEqual([
         expect.objectContaining({ args: ["run", "cancel", "101"] }),
       ]);
