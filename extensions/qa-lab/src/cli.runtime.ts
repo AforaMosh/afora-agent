@@ -628,8 +628,7 @@ export async function runQaLabSelfCheckCommand(opts: QaLabSelfCheckCommandOption
 }
 
 export async function runQaProfileCommand(opts: QaProfileCommandOptions) {
-  const evidencePath = await runQaSuiteEvidenceLifecycle(opts, async (resolved) => {
-    const { repoRoot, outputDir, target } = resolved;
+  await runQaSuiteEvidenceLifecycle(opts, async ({ repoRoot, outputDir }) => {
     const scenarioPack = readQaScenarioPack();
     const scorecardReport = readQaScorecardTaxonomyReport(scenarioPack.scenarios);
     const profile = normalizeQaRunProfile(
@@ -720,10 +719,10 @@ export async function runQaProfileCommand(opts: QaProfileCommandOptions) {
     process.stdout.write(
       `QA run profile: ${profile}; categories: ${categories.length}; scenarios: ${scenarios.length}\n`,
     );
-    let expectedCells: QaProfileEvidencePlan["expectedCells"] = [];
-    let observedCells: QaProfileEvidencePlan["observedCells"] = [];
-    await withTemporaryQaProfileEnv(profile, async () => {
-      const suiteResult = await runQaSuiteCommandCore(
+    let suiteCompletion: Awaited<ReturnType<typeof runQaSuiteCore>> | undefined;
+    let commandCompletion: (() => Promise<void>) | undefined;
+    const suiteResult = await withTemporaryQaProfileEnv(profile, async () =>
+      runQaSuiteCommandCore(
         {
           repoRoot,
           outputDir: opts.outputDir,
@@ -741,35 +740,50 @@ export async function runQaProfileCommand(opts: QaProfileCommandOptions) {
           channelDriver: profileReport.channelDriver,
           expandScenarioChannels: true,
         },
-        (params) => runQaSuiteCore({ ...params, outputDir }, target),
-      );
-      expectedCells =
-        suiteResult && "expectedCells" in suiteResult ? suiteResult.expectedCells : [];
-      observedCells =
-        suiteResult && "observedCells" in suiteResult ? suiteResult.observedCells : [];
-    });
+        async (params) => {
+          suiteCompletion = await runQaSuiteCore({ ...params, repoRoot, outputDir });
+          return suiteCompletion.result;
+        },
+        (complete) => {
+          commandCompletion = complete;
+        },
+      ),
+    );
     const profilePlan = qaProfileEvidencePlan.build({
       profile,
       membershipScenarios: taxonomyScenarios,
       selectedScenarios: scenarios,
       excludedScenarios: executionSelection.excludedScenarios,
-      expectedCells,
-      observedCells,
+      expectedCells: suiteResult?.expectedCells ?? [],
+      observedCells: suiteResult?.observedCells ?? [],
     });
-    await attachQaProfileScorecardEvidenceToFile({
-      evidencePath: target.stagedPath,
-      evidenceMode: opts.evidenceMode,
-      profile,
-      profilePlan,
-      filters: {
-        surface: opts.surface,
-        category: opts.category,
+    const completion = suiteCompletion;
+    const completeCommand = commandCompletion;
+    if (!completion || !completeCommand) {
+      throw new Error("QA profile suite completed without deferred publication state");
+    }
+    return Object.freeze({
+      evidence: completion.evidence,
+      result: undefined,
+      transformStagedEvidence: (stagedPath) =>
+        attachQaProfileScorecardEvidenceToFile({
+          evidencePath: stagedPath,
+          evidenceMode: opts.evidenceMode,
+          profile,
+          profilePlan,
+          filters: {
+            surface: opts.surface,
+            category: opts.category,
+          },
+          categories,
+        }),
+      complete: async () => {
+        await completion.complete();
+        await completeCommand();
+        process.stdout.write(`QA profile scorecard: ${path.join(outputDir, "qa-evidence.json")}\n`);
       },
-      categories,
     });
-    return target.canonicalPath;
   });
-  process.stdout.write(`QA profile scorecard: ${evidencePath}\n`);
 }
 
 function selectQaScenarioDefinitionsForChannelResolution(params: {
@@ -863,6 +877,7 @@ async function runQaSuiteCommandCore(
   runSuite: (
     params: NonNullable<Parameters<typeof runQaSuite>[0]>,
   ) => ReturnType<typeof runQaSuite>,
+  deferCompletion?: (complete: () => Promise<void>) => void,
 ) {
   const repoRoot = path.resolve(opts.repoRoot ?? process.cwd());
   const transportId = normalizeQaTransportId(opts.transportId);
@@ -1086,58 +1101,38 @@ async function runQaSuiteCommandCore(
         : {}),
     ...(runtimePair ? { runtimePair } : {}),
   });
-  switch (runtimeResult.executionKind) {
-    case "suite": {
-      const result = runtimeResult.result;
-      process.stdout.write(`QA suite report: ${result.reportPath}\n`);
-      process.stdout.write(`QA suite evidence: ${result.evidencePath}\n`);
-      process.stdout.write(`QA suite summary: ${result.summaryPath}\n`);
-      const blockingScenarioCount = await readQaSuiteFailedOrSkippedScenarioCountFromFile(
-        result.summaryPath,
-        {
-          optionalScenarioNames: resolveQaReportOnlyOptionalScenarioNames({
-            scenarioIds,
-            explicitScenarioSelection: opts.explicitScenarioSelection,
-          }),
-          requireExecutedScenario: allowFailures,
-        },
-      );
-      if (!allowFailures && blockingScenarioCount > 0) {
-        process.exitCode = 1;
-      }
-      return {
-        ...result,
-        expectedCells: runtimeResult.expectedCells,
-        observedCells: runtimeResult.observedCells,
-      };
+  const result = runtimeResult.result;
+  const complete = async () => {
+    if (runtimeResult.executionKind === "flow") {
+      process.stdout.write(`QA suite watch: ${runtimeResult.result.watchUrl}\n`);
     }
-    case "flow": {
-      const result = runtimeResult.result;
-      process.stdout.write(`QA suite watch: ${result.watchUrl}\n`);
-      process.stdout.write(`QA suite report: ${result.reportPath}\n`);
-      process.stdout.write(`QA suite evidence: ${result.evidencePath}\n`);
-      process.stdout.write(`QA suite summary: ${result.summaryPath}\n`);
-      const blockingScenarioCount = await readQaSuiteFailedOrSkippedScenarioCountFromFile(
-        result.summaryPath,
-        {
-          optionalScenarioNames: resolveQaReportOnlyOptionalScenarioNames({
-            scenarioIds,
-            explicitScenarioSelection: opts.explicitScenarioSelection,
-          }),
-          requireExecutedScenario: allowFailures,
-        },
-      );
-      if (!allowFailures && blockingScenarioCount > 0) {
-        process.exitCode = 1;
-      }
-      return {
-        ...result,
-        expectedCells: runtimeResult.expectedCells,
-        observedCells: runtimeResult.observedCells,
-      };
+    process.stdout.write(`QA suite report: ${result.reportPath}\n`);
+    process.stdout.write(`QA suite evidence: ${result.evidencePath}\n`);
+    process.stdout.write(`QA suite summary: ${result.summaryPath}\n`);
+    const blockingScenarioCount = await readQaSuiteFailedOrSkippedScenarioCountFromFile(
+      result.summaryPath,
+      {
+        optionalScenarioNames: resolveQaReportOnlyOptionalScenarioNames({
+          scenarioIds,
+          explicitScenarioSelection: opts.explicitScenarioSelection,
+        }),
+        requireExecutedScenario: allowFailures,
+      },
+    );
+    if (!allowFailures && blockingScenarioCount > 0) {
+      process.exitCode = 1;
     }
+  };
+  if (deferCompletion) {
+    deferCompletion(complete);
+  } else {
+    await complete();
   }
-  return undefined;
+  return {
+    ...result,
+    expectedCells: runtimeResult.expectedCells,
+    observedCells: runtimeResult.observedCells,
+  };
 }
 
 export async function runQaSuiteCommand(opts: QaSuiteCommandOptions) {

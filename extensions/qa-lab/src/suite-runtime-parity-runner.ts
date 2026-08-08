@@ -18,7 +18,7 @@ import {
 import { readQaBootstrapScenarioCatalog } from "./scenario-catalog.js";
 import type { QaScorecardChannelDriver, QaScorecardEvidenceMode } from "./scorecard-taxonomy.js";
 import { writeQaSuiteArtifacts } from "./suite-artifacts.js";
-import type { QaSuiteEvidenceTarget } from "./suite-evidence-lifecycle.js";
+import type { QaSuiteDeferredCompletion } from "./suite-evidence-lifecycle.js";
 import {
   collectQaSuiteTransportPolicy,
   mapQaSuiteWithConcurrency,
@@ -29,7 +29,6 @@ import { buildRuntimeParityScenarioResult } from "./suite-runtime-parity-result.
 import { remapModelRefForForcedRuntime } from "./suite-support.js";
 import type {
   QaSuiteRunParams,
-  QaSuiteRunner,
   QaSuiteScenarioResult,
   QaSuiteStartLabFn,
   QaSuiteResult,
@@ -43,7 +42,7 @@ import {
 } from "./suite.js";
 
 export async function runQaRuntimeParitySuite(params: {
-  runQaFlowSuite: QaSuiteRunner;
+  runQaFlowSuite: (params?: QaSuiteRunParams) => Promise<QaSuiteDeferredCompletion<QaSuiteResult>>;
   adapterOptions?: QaSuiteRunParams["adapterOptions"];
   adapterFactories?: readonly QaTransportAdapterFactory[];
   channelId?: string;
@@ -69,8 +68,7 @@ export async function runQaRuntimeParitySuite(params: {
   progressEnabled: boolean;
   scenarioIds?: readonly string[];
   runtimePair: [RuntimeId, RuntimeId];
-  evidenceTarget?: QaSuiteEvidenceTarget;
-}) {
+}): Promise<QaSuiteDeferredCompletion<QaSuiteResult>> {
   const ownsLab = !params.lab;
   const startLab = requireQaSuiteStartLab(params.startLab);
   const lab =
@@ -110,6 +108,8 @@ export async function runQaRuntimeParitySuite(params: {
   let runError: unknown;
   let parentTransportCleaned = false;
   let result: QaSuiteResult | undefined;
+  let complete: (() => void | Promise<void>) | undefined;
+  const childCompletions: QaSuiteDeferredCompletion<QaSuiteResult>["complete"][] = [];
   const startedScenarioIds = new Set<string>();
   try {
     if (params.channelDriver === "live") {
@@ -152,7 +152,7 @@ export async function runQaRuntimeParitySuite(params: {
               runtime,
             );
             const cellStartedAt = Date.now();
-            const cellResult = await params.runQaFlowSuite({
+            const cellCompletion = await params.runQaFlowSuite({
               adapterFactories: params.adapterFactories,
               channelId: params.channelId,
               adapterOptions: params.adapterOptions,
@@ -184,6 +184,8 @@ export async function runQaRuntimeParitySuite(params: {
               captureRuntimeParityCell: true,
               writeEvidenceFile: false,
             });
+            childCompletions.push(cellCompletion.complete);
+            const cellResult = cellCompletion.result;
             for (const startedScenarioId of cellResult.startedScenarioIds) {
               startedScenarioIds.add(startedScenarioId);
             }
@@ -277,22 +279,25 @@ export async function runQaRuntimeParitySuite(params: {
             ? params.selectedScenarios.map((scenario) => scenario.id)
             : undefined,
         runtimePair: params.runtimePair,
-        writeEvidenceFile: params.evidenceTarget !== undefined,
-        evidenceTarget: params.evidenceTarget,
+        writeEvidenceFile: false,
       },
     );
-    lab.setLatestReport({
-      outputPath: reportPath,
-      markdown: report,
-      generatedAt: finishedAt.toISOString(),
-    } satisfies QaLabLatestReport);
-    lab.setScenarioRun({
-      kind: "suite",
-      status: "completed",
-      startedAt: params.startedAt.toISOString(),
-      finishedAt: finishedAt.toISOString(),
-      scenarios: [...liveScenarioOutcomes],
-    });
+    complete = async () => {
+      await Promise.all(childCompletions.map((run) => run()));
+      lab.setLatestReport({
+        outputPath: reportPath,
+        markdown: report,
+        generatedAt: finishedAt.toISOString(),
+      } satisfies QaLabLatestReport);
+      lab.setScenarioRun({
+        kind: "suite",
+        status: "completed",
+        startedAt: params.startedAt.toISOString(),
+        finishedAt: finishedAt.toISOString(),
+        scenarios: [...liveScenarioOutcomes],
+      });
+      writeQaSuiteProgress(params.progressEnabled, "run complete");
+    };
     result = {
       outputDir: params.outputDir,
       evidence,
@@ -319,9 +324,12 @@ export async function runQaRuntimeParitySuite(params: {
     ]);
     throwQaSuiteCleanupErrors({ cleanupFailures, runFailed, runError, result });
   }
-  if (!result) {
+  if (!result?.evidence || !complete) {
     throw new Error("QA runtime parity suite completed without a result");
   }
-  writeQaSuiteProgress(params.progressEnabled, "run complete");
-  return result;
+  return Object.freeze({
+    evidence: result.evidence,
+    result,
+    complete,
+  });
 }

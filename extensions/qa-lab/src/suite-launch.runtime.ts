@@ -5,6 +5,7 @@ import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
 import { isRepoRootRelativeRef, toRepoRelativePath } from "./cli-paths.js";
 import { QaSuiteArtifactError, QaSuiteInfraError } from "./errors.js";
 import {
+  QA_EVIDENCE_FILENAME,
   QA_EVIDENCE_SUMMARY_KIND,
   QA_EVIDENCE_SUMMARY_SCHEMA_VERSION,
   buildQaSuiteEvidenceSummary,
@@ -27,8 +28,9 @@ import {
 } from "./scenario-catalog.js";
 import { expandQaScenarioExecutionCells, type QaScenarioExecutionCell } from "./scenario-lane.js";
 import {
+  completeQaSuiteWithoutEvidence,
   runQaSuiteEvidenceLifecycle,
-  type QaSuiteEvidenceTarget,
+  type QaSuiteDeferredCompletion,
 } from "./suite-evidence-lifecycle.js";
 import {
   mapQaSuiteWithConcurrency,
@@ -221,14 +223,11 @@ async function loadQaFlowSuiteRuntime() {
     import("./suite-run.runtime.js"),
     loadQaLabServerRuntime(),
   ]);
-  return async (params: QaSuiteRunParams | undefined, target?: QaSuiteEvidenceTarget) =>
-    await runQaFlowSuiteFromRuntimeCore(
-      {
-        ...params,
-        startLab: params?.startLab ?? startLab,
-      },
-      target,
-    );
+  return async (params: QaSuiteRunParams | undefined) =>
+    await runQaFlowSuiteFromRuntimeCore({
+      ...params,
+      startLab: params?.startLab ?? startLab,
+    });
 }
 
 function resolveRequestedScenarios(params: {
@@ -703,10 +702,9 @@ async function writeUnifiedQaSuiteArtifacts(params: {
   scenarioIds: readonly string[];
   scenarios: readonly QaSuiteScenarioResult[];
   startedAt: Date;
-  target: QaSuiteEvidenceTarget;
 }) {
   await fs.mkdir(params.outputDir, { recursive: true });
-  const evidencePath = params.target.canonicalPath;
+  const evidencePath = path.join(params.outputDir, QA_EVIDENCE_FILENAME);
   const reportPath = path.join(params.outputDir, "qa-suite-report.md");
   const summaryPath = path.join(params.outputDir, "qa-suite-summary.json");
   const report = renderUnifiedQaSuiteReport({
@@ -729,11 +727,6 @@ async function writeUnifiedQaSuiteArtifacts(params: {
     scenarios: [...params.scenarios],
     startedAt: params.startedAt,
   }) satisfies QaSuiteSummaryJson;
-  await fs.writeFile(
-    params.target.stagedPath,
-    `${JSON.stringify(params.evidence, null, 2)}\n`,
-    "utf8",
-  );
   await fs.writeFile(reportPath, report, "utf8");
   await fs.writeFile(summaryPath, `${JSON.stringify(summary, null, 2)}\n`, "utf8");
   return {
@@ -749,14 +742,13 @@ async function writeUnifiedQaSuiteArtifacts(params: {
 async function runUnifiedQaSuite(params: {
   plan: Extract<QaSuiteExecutionPlan, { kind: "unified" }>;
   runParams: QaSuiteRunParams | undefined;
-  target: QaSuiteEvidenceTarget;
-}): Promise<QaUnifiedSuiteResult & { observedCells: QaScenarioExecutionCell[] }> {
+}) {
   if (params.plan.testFileScenariosByKind.size > 0) {
     rejectFlowOnlySuiteOptionsForUnifiedRun(params.runParams);
   }
   const startedAt = new Date();
-  const repoRoot = params.runParams!.repoRoot!;
-  const outputDir = params.runParams!.outputDir!;
+  const repoRoot = path.resolve(params.runParams?.repoRoot ?? process.cwd());
+  const outputDir = await resolveQaSuiteOutputDir(repoRoot, params.runParams?.outputDir);
   // Only an explicitly selected single flow may replace the unified suite's mock default.
   const [selectedScenario] = params.plan.scenarios;
   const selectedProviderMode =
@@ -799,6 +791,7 @@ async function runUnifiedQaSuite(params: {
         defaultConcurrency,
       );
   const evidenceSummaries: QaEvidenceSummaryJson[] = [];
+  const childCompletions: QaSuiteDeferredCompletion<unknown>["complete"][] = [];
   const scenarioResultsById = new Map<string, QaSuiteScenarioResult[]>();
   const observedCellsByKey = new Map<string, QaScenarioExecutionCell>();
   const recordObservedScenarios = (
@@ -971,7 +964,7 @@ async function runUnifiedQaSuite(params: {
             if (unavailableDetails) {
               return buildCredentialUnavailableResult(unavailableDetails);
             }
-            const result = await runFlowSuite({
+            const child = await runFlowSuite({
               ...params.runParams,
               ...(progress
                 ? {
@@ -1017,9 +1010,11 @@ async function runUnifiedQaSuite(params: {
               }
               return buildCredentialUnavailableResult(details);
             });
-            if ("evidenceSummaries" in result) {
-              return result;
+            if ("evidenceSummaries" in child) {
+              return child;
             }
+            childCompletions.push(child.complete);
+            const result = child.result;
             const startedScenarioIdSet = new Set(result.startedScenarioIds);
             recordObservedScenarios(
               partition.scenarios.filter((scenario) => startedScenarioIdSet.has(scenario.id)),
@@ -1368,7 +1363,6 @@ async function runUnifiedQaSuite(params: {
     scenarioIds: params.plan.scenarios.map((scenario) => scenario.id),
     scenarios,
     startedAt,
-    target: params.target,
   });
   const progressResults = params.plan.scenarios.flatMap((scenario) => {
     const results = scenarioResultsById.get(scenario.id);
@@ -1406,61 +1400,76 @@ async function runUnifiedQaSuite(params: {
       },
     ];
   });
-  progress?.complete(progressResults, finishedAt.toISOString());
-  params.runParams?.lab?.setLatestReport({
-    outputPath: unifiedResult.reportPath,
-    markdown: unifiedResult.report,
-    generatedAt: finishedAt.toISOString(),
+  return Object.freeze({
+    evidence,
+    result: {
+      ...unifiedResult,
+      observedCells: [...observedCellsByKey.values()].toSorted((left, right) =>
+        JSON.stringify(left).localeCompare(JSON.stringify(right)),
+      ),
+    },
+    complete: async () => {
+      await Promise.all(childCompletions.map((run) => run()));
+      progress?.complete(progressResults, finishedAt.toISOString());
+      params.runParams?.lab?.setLatestReport({
+        outputPath: unifiedResult.reportPath,
+        markdown: unifiedResult.report,
+        generatedAt: finishedAt.toISOString(),
+      });
+    },
   });
-  return {
-    ...unifiedResult,
-    observedCells: [...observedCellsByKey.values()].toSorted((left, right) =>
-      JSON.stringify(left).localeCompare(JSON.stringify(right)),
-    ),
-  };
 }
 
 export async function runQaSuite(...args: [QaSuiteRunParams?]): Promise<QaSuiteRuntimeResult> {
-  return await runQaSuiteEvidenceLifecycle(args[0], ({ repoRoot, outputDir, target }) =>
-    runQaSuiteCore({ ...args[0], repoRoot, outputDir }, target),
-  );
+  return args[0]?.writeEvidenceFile === false
+    ? await completeQaSuiteWithoutEvidence(() => runQaSuiteCore(args[0]))
+    : await runQaSuiteEvidenceLifecycle(args[0], ({ repoRoot, outputDir }) =>
+        runQaSuiteCore({ ...args[0], repoRoot, outputDir }),
+      );
 }
 
 export async function runQaSuiteCore(
-  runParams: QaSuiteRunParams,
-  target: QaSuiteEvidenceTarget,
-): Promise<QaSuiteRuntimeResult> {
+  runParams: QaSuiteRunParams | undefined,
+): Promise<QaSuiteDeferredCompletion<QaSuiteRuntimeResult>> {
   const plan = await resolveSuiteExecutionPlan(runParams);
   if (plan.kind === "unified") {
-    const { observedCells, ...result } = await runUnifiedQaSuite({
+    const completion = await runUnifiedQaSuite({
       runParams,
       plan,
-      target,
     });
-    return {
-      executionKind: "suite",
-      expectedCells: plan.expectedCells,
-      observedCells,
-      result,
-    };
+    const { observedCells, ...result } = completion.result;
+    return Object.freeze({
+      ...completion,
+      result: {
+        executionKind: "suite",
+        expectedCells: plan.expectedCells,
+        observedCells,
+        result,
+      },
+    });
   }
   const runQaFlowSuite = await loadQaFlowSuiteRuntime();
-  const result = await runQaSuiteWithInfraRetry(() => runQaFlowSuite(runParams, target));
-  const startedScenarioIds = new Set(result.startedScenarioIds);
-  return {
-    executionKind: "flow",
-    expectedCells: plan.expectedCells,
-    observedCells: plan.expectedCells.filter((cell) => startedScenarioIds.has(cell.scenarioId)),
-    result,
-  };
+  const completion = await runQaSuiteWithInfraRetry(() => runQaFlowSuite(runParams));
+  const startedScenarioIds = new Set(completion.result.startedScenarioIds);
+  return Object.freeze({
+    ...completion,
+    result: {
+      executionKind: "flow",
+      expectedCells: plan.expectedCells,
+      observedCells: plan.expectedCells.filter((cell) => startedScenarioIds.has(cell.scenarioId)),
+      result: completion.result,
+    },
+  });
 }
 
 export async function runQaFlowSuiteFromRuntime(
   ...args: [QaSuiteRunParams?]
 ): Promise<QaSuiteResult> {
   const runQaFlowSuite = await loadQaFlowSuiteRuntime();
-  return await runQaSuiteEvidenceLifecycle(args[0], ({ repoRoot, outputDir, target }) =>
-    runQaFlowSuite({ ...args[0], repoRoot, outputDir }, target),
-  );
+  return args[0]?.writeEvidenceFile === false
+    ? await completeQaSuiteWithoutEvidence(() => runQaFlowSuite(args[0]))
+    : await runQaSuiteEvidenceLifecycle(args[0], ({ repoRoot, outputDir }) =>
+        runQaFlowSuite({ ...args[0], repoRoot, outputDir }),
+      );
 }
 /* oxlint-disable max-lines -- TODO: split this grandfathered oversized file. */

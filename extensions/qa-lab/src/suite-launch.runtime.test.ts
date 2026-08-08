@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { acquireFileLock } from "openclaw/plugin-sdk/file-lock";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { QaSuiteInfraError } from "./errors.js";
 import type { QaLabServerHandle } from "./lab-server.types.js";
@@ -11,19 +12,13 @@ import type {
   QaTestFileScenarioRunResult,
 } from "./test-file-scenario-runner.js";
 
-const {
-  crablineRuntimeLoads,
-  evidenceTargets,
-  generatedOutputDirs,
-  runQaFlowSuite,
-  runQaTestFileScenarios,
-} = vi.hoisted(() => ({
-  crablineRuntimeLoads: vi.fn(),
-  evidenceTargets: new WeakMap<object, { stagedPath: string }>(),
-  generatedOutputDirs: new Set<string>(),
-  runQaFlowSuite: vi.fn(),
-  runQaTestFileScenarios: vi.fn(),
-}));
+const { crablineRuntimeLoads, generatedOutputDirs, runQaFlowSuite, runQaTestFileScenarios } =
+  vi.hoisted(() => ({
+    crablineRuntimeLoads: vi.fn(),
+    generatedOutputDirs: new Set<string>(),
+    runQaFlowSuite: vi.fn(),
+    runQaTestFileScenarios: vi.fn(),
+  }));
 
 vi.mock("@openclaw/crabline", async (importOriginal) => {
   crablineRuntimeLoads();
@@ -31,21 +26,9 @@ vi.mock("@openclaw/crabline", async (importOriginal) => {
 });
 
 vi.mock("./suite-run.runtime.js", () => ({
-  runQaFlowSuiteFromRuntimeCore: async (
-    params: object | undefined,
-    target?: { canonicalPath: string; stagedPath: string },
-  ) => {
-    if (params && target) {
-      evidenceTargets.set(params, target);
-      generatedOutputDirs.add(path.dirname(target.canonicalPath));
-    }
-    try {
-      return await runQaFlowSuite(params);
-    } finally {
-      if (params) {
-        evidenceTargets.delete(params);
-      }
-    }
+  runQaFlowSuiteFromRuntimeCore: async (params: object | undefined) => {
+    const result = await runQaFlowSuite(params);
+    return Object.freeze({ result, evidence: result.evidence, complete: vi.fn() });
   },
 }));
 
@@ -135,11 +118,7 @@ describe("qa suite runtime launcher", () => {
       ) => {
         const outputDir = params?.outputDir ?? "/tmp/qa-flow";
         const evidencePath = path.join(outputDir, "qa-evidence.json");
-        const target = params ? evidenceTargets.get(params) : undefined;
-        const evidence = await writeEvidence(
-          target?.stagedPath ?? evidencePath,
-          params?.writeEvidenceFile,
-        );
+        const evidence = await writeEvidence(evidencePath, params?.writeEvidenceFile);
         const scenarioIds = params?.scenarioIds ?? ["channel-chat-baseline"];
         return {
           evidence,
@@ -259,29 +238,41 @@ describe("qa suite runtime launcher", () => {
   });
 
   it("retries a flow-only suite once for retryable infrastructure failures", async () => {
-    const attempts = mockFlowPartitionFailures(
-      new Map([
-        [
-          "channel-chat-baseline",
-          [new QaSuiteInfraError("agent_wait_failed", "agent.wait failed")],
-        ],
-      ]),
-    );
+    const repoRoot = await makeTempRepo("qa-suite-retry-lock-");
+    const outputDir = path.join(repoRoot, "output");
+    const defaultFlowImplementation = runQaFlowSuite.getMockImplementation()!;
+    let attempts = 0;
+    runQaFlowSuite.mockImplementation(async (params) => {
+      attempts += 1;
+      await expect(
+        acquireFileLock(outputDir, {
+          retries: { retries: 0, factor: 1, minTimeout: 1, maxTimeout: 1 },
+        }),
+      ).rejects.toMatchObject({ code: "file_lock_timeout" });
+      if (attempts === 1) {
+        throw new QaSuiteInfraError("agent_wait_failed", "agent.wait failed");
+      }
+      return await defaultFlowImplementation(params);
+    });
+    const rename = vi.spyOn(fs, "rename");
     const stderrWrite = vi.spyOn(process.stderr, "write").mockReturnValue(true);
 
     try {
       const result = await runQaSuite({
-        repoRoot: process.cwd(),
+        repoRoot,
+        outputDir,
         providerMode: "mock-openai",
         scenarioIds: ["channel-chat-baseline"],
       });
 
       expect(result.executionKind).toBe("flow");
-      expect(attempts.get("channel-chat-baseline")).toBe(2);
+      expect(attempts).toBe(2);
+      expect(rename).toHaveBeenCalledOnce();
       expect(stderrWrite.mock.calls.flat().join("")).toContain(
         "[qa-suite] infra retry 1/1: agent.wait failed",
       );
     } finally {
+      rename.mockRestore();
       stderrWrite.mockRestore();
     }
   });
@@ -1285,6 +1276,29 @@ describe("qa suite runtime launcher", () => {
     expect(summary.scenarios?.[1]?.details).toContain(
       "log=.artifacts/qa-e2e/mixed/playwright/control-ui-chat-flow-playwright.log",
     );
+  });
+
+  it("leaves unified publication state untouched when evidence writing is disabled", async () => {
+    const repoRoot = await makeTempRepo("qa-suite-unified-no-evidence-");
+    const outputDir = path.join(repoRoot, "output");
+    const canonicalPath = path.join(outputDir, "qa-evidence.json");
+    const lockPath = `${canonicalPath}.lock`;
+    const stagedPath = path.join(outputDir, ".qa-evidence.json.preseed.staged");
+    await fs.mkdir(outputDir, { recursive: true });
+    await fs.writeFile(canonicalPath, "canonical\n", "utf8");
+    await fs.writeFile(lockPath, "lock\n", "utf8");
+    await fs.writeFile(stagedPath, "staged\n", "utf8");
+
+    await runQaSuite({
+      repoRoot,
+      outputDir,
+      writeEvidenceFile: false,
+      scenarioIds: ["channel-chat-baseline", "control-ui-chat-flow-playwright"],
+    });
+
+    await expect(fs.readFile(canonicalPath, "utf8")).resolves.toBe("canonical\n");
+    await expect(fs.readFile(lockPath, "utf8")).resolves.toBe("lock\n");
+    await expect(fs.readFile(stagedPath, "utf8")).resolves.toBe("staged\n");
   });
 
   it("aggregates mixed-kind progress through the parent lab", async () => {

@@ -17,28 +17,32 @@ vi.mock("openclaw/plugin-sdk/file-lock", async (importOriginal) => {
 });
 
 import { drainFileLockStateForTest } from "openclaw/plugin-sdk/file-lock";
+import {
+  QA_EVIDENCE_SUMMARY_KIND,
+  QA_EVIDENCE_SUMMARY_SCHEMA_VERSION,
+  type QaEvidenceSummaryJson,
+} from "./evidence-summary.js";
 import { runQaSuiteEvidenceLifecycle } from "./suite-evidence-lifecycle.js";
 
 const tempRoots: string[] = [];
 
-async function makeTempRepo(label: string) {
-  const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), label));
+async function makeOutputDir(label: string) {
+  const repoRoot = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), label)));
+  const outputDir = path.join(repoRoot, "output");
   tempRoots.push(repoRoot);
-  return repoRoot;
-}
-
-async function makeOutputDir(repoRoot: string, name = "output") {
-  const outputDir = path.join(repoRoot, name);
   await fs.mkdir(outputDir, { recursive: true });
-  return outputDir;
+  return { outputDir, repoRoot };
 }
 
-function deferred() {
-  let resolve!: () => void;
-  const promise = new Promise<void>((resolvePromise) => {
-    resolve = resolvePromise;
-  });
-  return { promise, resolve };
+function makeEvidence(profile: string): QaEvidenceSummaryJson {
+  return {
+    kind: QA_EVIDENCE_SUMMARY_KIND,
+    schemaVersion: QA_EVIDENCE_SUMMARY_SCHEMA_VERSION,
+    generatedAt: "2026-08-08T00:00:00.000Z",
+    evidenceMode: "full",
+    entries: [],
+    profile,
+  };
 }
 
 beforeEach(() => {
@@ -58,79 +62,11 @@ afterEach(async () => {
 });
 
 describe("QA suite evidence lifecycle", () => {
-  it("rejects a same-output loser before its callback can mutate evidence", async () => {
-    const repoRoot = await makeTempRepo("qa-evidence-lock-same-");
-    const outputDir = await makeOutputDir(repoRoot);
-    const firstEntered = deferred();
-    const releaseFirst = deferred();
-    const loserRun = vi.fn();
-    const firstRun = runQaSuiteEvidenceLifecycle({ repoRoot, outputDir }, async ({ target }) => {
-      await fs.writeFile(target.stagedPath, "first\n", "utf8");
-      firstEntered.resolve();
-      await releaseFirst.promise;
-      return target.canonicalPath;
-    });
-    await firstEntered.promise;
-
-    await expect(
-      runQaSuiteEvidenceLifecycle({ repoRoot, outputDir }, loserRun),
-    ).rejects.toMatchObject({ code: "file_lock_timeout" });
-    expect(loserRun).not.toHaveBeenCalled();
-
-    releaseFirst.resolve();
-    await expect(firstRun).resolves.toBe(path.join(outputDir, "qa-evidence.json"));
-    await expect(fs.readFile(path.join(outputDir, "qa-evidence.json"), "utf8")).resolves.toBe(
-      "first\n",
-    );
-  });
-
-  it("allows different output directories to stage concurrently", async () => {
-    const repoRoot = await makeTempRepo("qa-evidence-lock-different-");
-    const outputDirs = await Promise.all([
-      makeOutputDir(repoRoot, "one"),
-      makeOutputDir(repoRoot, "two"),
-    ]);
-    const bothEntered = deferred();
-    let entered = 0;
-    const run = (outputDir: string, value: string) =>
-      runQaSuiteEvidenceLifecycle({ repoRoot, outputDir }, async ({ target }) => {
-        await fs.writeFile(target.stagedPath, value, "utf8");
-        entered += 1;
-        if (entered === 2) {
-          bothEntered.resolve();
-        }
-        await bothEntered.promise;
-      });
-
-    await Promise.all([run(outputDirs[0]!, "one"), run(outputDirs[1]!, "two")]);
-    await expect(fs.readFile(path.join(outputDirs[0]!, "qa-evidence.json"), "utf8")).resolves.toBe(
-      "one",
-    );
-    await expect(fs.readFile(path.join(outputDirs[1]!, "qa-evidence.json"), "utf8")).resolves.toBe(
-      "two",
-    );
-  });
-
-  it("invalidates stale canonical evidence before planning", async () => {
-    const repoRoot = await makeTempRepo("qa-evidence-stale-");
-    const outputDir = await makeOutputDir(repoRoot);
+  it("holds one canonical lock through publication and completes after release", async () => {
+    const { outputDir, repoRoot } = await makeOutputDir("qa-evidence-publish-");
     const canonicalPath = path.join(outputDir, "qa-evidence.json");
-    await fs.writeFile(canonicalPath, "stale\n", "utf8");
-    const planningError = new Error("planning failed");
-
-    await expect(
-      runQaSuiteEvidenceLifecycle({ repoRoot, outputDir }, async () => {
-        await expect(fs.access(canonicalPath)).rejects.toMatchObject({ code: "ENOENT" });
-        throw planningError;
-      }),
-    ).rejects.toBe(planningError);
-    await expect(fs.access(canonicalPath)).rejects.toMatchObject({ code: "ENOENT" });
-  });
-
-  it("publishes staged evidence before releasing the lifecycle lock", async () => {
-    const repoRoot = await makeTempRepo("qa-evidence-publish-");
-    const outputDir = await makeOutputDir(repoRoot);
     const events: string[] = [];
+    await fs.writeFile(canonicalPath, "stale\n", "utf8");
     const rename = fs.rename.bind(fs);
     vi.spyOn(fs, "rename").mockImplementation(async (...args) => {
       events.push("publish");
@@ -138,7 +74,16 @@ describe("QA suite evidence lifecycle", () => {
     });
     const actualAcquire = fileLockMocks.actualAcquire!;
     fileLockMocks.acquire.mockImplementationOnce(async (...args) => {
+      events.push("acquire");
+      expect(args[0]).toBe(outputDir);
+      expect(args[1]?.retries).toEqual({
+        retries: 0,
+        factor: 1,
+        minTimeout: 1,
+        maxTimeout: 1,
+      });
       const lock = await actualAcquire(...args);
+      expect(lock.lockPath).toBe(`${outputDir}.lock`);
       return {
         ...lock,
         release: async () => {
@@ -148,17 +93,27 @@ describe("QA suite evidence lifecycle", () => {
       };
     });
 
-    await runQaSuiteEvidenceLifecycle({ repoRoot, outputDir }, async ({ target }) => {
-      events.push("stage");
-      await fs.writeFile(target.stagedPath, "candidate\n", "utf8");
+    const result = await runQaSuiteEvidenceLifecycle({ repoRoot, outputDir }, async () => {
+      events.push("run");
+      await expect(fs.access(`${outputDir}.lock`)).resolves.toBeUndefined();
+      await expect(fs.access(canonicalPath)).rejects.toMatchObject({ code: "ENOENT" });
+      return Object.freeze({
+        evidence: makeEvidence("winner"),
+        result: "result",
+        complete: () => events.push("complete"),
+      });
     });
 
-    expect(events).toEqual(["stage", "publish", "release"]);
+    expect(result).toBe("result");
+    expect(events).toEqual(["acquire", "run", "publish", "release", "complete"]);
+    await expect(fs.access(`${outputDir}.lock`)).rejects.toMatchObject({ code: "ENOENT" });
+    expect(JSON.parse(await fs.readFile(canonicalPath, "utf8"))).toMatchObject({
+      profile: "winner",
+    });
   });
 
   it("keeps the run failure primary when discard and release also fail", async () => {
-    const repoRoot = await makeTempRepo("qa-evidence-errors-");
-    const outputDir = await makeOutputDir(repoRoot);
+    const { outputDir, repoRoot } = await makeOutputDir("qa-evidence-errors-");
     const runError = new Error("run failed");
     const discardError = new Error("discard failed");
     const releaseError = new Error("release failed");
@@ -181,13 +136,9 @@ describe("QA suite evidence lifecycle", () => {
       };
     });
 
-    const thrown = await runQaSuiteEvidenceLifecycle(
-      { repoRoot, outputDir },
-      async ({ target }) => {
-        await fs.writeFile(target.stagedPath, "candidate\n", "utf8");
-        throw runError;
-      },
-    ).catch((error: unknown) => error);
+    const thrown = await runQaSuiteEvidenceLifecycle({ repoRoot, outputDir }, async () => {
+      throw runError;
+    }).catch((error: unknown) => error);
 
     expect(thrown).toMatchObject({
       cause: runError,
@@ -195,12 +146,37 @@ describe("QA suite evidence lifecycle", () => {
     });
   });
 
-  it("discards after publish failure and releases last", async () => {
-    const repoRoot = await makeTempRepo("qa-evidence-publish-failure-");
-    const outputDir = await makeOutputDir(repoRoot);
+  it("suppresses completion when the staged profile transform fails", async () => {
+    const { outputDir, repoRoot } = await makeOutputDir("qa-evidence-transform-");
+    const canonicalPath = path.join(outputDir, "qa-evidence.json");
+    const diagnosticPath = path.join(outputDir, "qa-suite-report.md");
+    const transformError = new Error("profile transform failed");
+    const complete = vi.fn();
+
+    await expect(
+      runQaSuiteEvidenceLifecycle({ repoRoot, outputDir }, async () => {
+        await fs.writeFile(diagnosticPath, "diagnostic\n", "utf8");
+        return Object.freeze({
+          evidence: makeEvidence("profile"),
+          result: undefined,
+          complete,
+          transformStagedEvidence: async () => {
+            throw transformError;
+          },
+        });
+      }),
+    ).rejects.toBe(transformError);
+
+    expect(complete).not.toHaveBeenCalled();
+    await expect(fs.access(canonicalPath)).rejects.toMatchObject({ code: "ENOENT" });
+    await expect(fs.readFile(diagnosticPath, "utf8")).resolves.toBe("diagnostic\n");
+  });
+
+  it("discards after rename failure, releases last, and emits no completion", async () => {
+    const { outputDir, repoRoot } = await makeOutputDir("qa-evidence-rename-");
     const publishError = new Error("publish failed");
-    const releaseError = new Error("release failed");
     const events: string[] = [];
+    const complete = vi.fn();
     vi.spyOn(fs, "rename").mockImplementation(async () => {
       events.push("publish");
       throw publishError;
@@ -220,23 +196,25 @@ describe("QA suite evidence lifecycle", () => {
         release: async () => {
           events.push("release");
           await lock.release();
-          throw releaseError;
         },
       };
     });
 
-    const thrown = await runQaSuiteEvidenceLifecycle({ repoRoot, outputDir }, async ({ target }) =>
-      fs.writeFile(target.stagedPath, "candidate\n", "utf8"),
-    ).catch((error: unknown) => error);
+    await expect(
+      runQaSuiteEvidenceLifecycle({ repoRoot, outputDir }, async () =>
+        Object.freeze({ evidence: makeEvidence("rename"), result: undefined, complete }),
+      ),
+    ).rejects.toBe(publishError);
 
     expect(events).toEqual(["publish", "discard", "release"]);
-    expect(thrown).toMatchObject({ cause: publishError, errors: [publishError, releaseError] });
+    expect(complete).not.toHaveBeenCalled();
   });
 
-  it("keeps published canonical evidence when post-publish release fails", async () => {
-    const repoRoot = await makeTempRepo("qa-evidence-release-failure-");
-    const outputDir = await makeOutputDir(repoRoot);
+  it("keeps published canonical evidence and emits no completion when release fails", async () => {
+    const { outputDir, repoRoot } = await makeOutputDir("qa-evidence-release-");
+    const canonicalPath = path.join(outputDir, "qa-evidence.json");
     const releaseError = new Error("release failed after publish");
+    const complete = vi.fn();
     const actualAcquire = fileLockMocks.actualAcquire!;
     fileLockMocks.acquire.mockImplementationOnce(async (...args) => {
       const lock = await actualAcquire(...args);
@@ -250,12 +228,14 @@ describe("QA suite evidence lifecycle", () => {
     });
 
     await expect(
-      runQaSuiteEvidenceLifecycle({ repoRoot, outputDir }, async ({ target }) => {
-        await fs.writeFile(target.stagedPath, "published\n", "utf8");
-      }),
+      runQaSuiteEvidenceLifecycle({ repoRoot, outputDir }, async () =>
+        Object.freeze({ evidence: makeEvidence("published"), result: undefined, complete }),
+      ),
     ).rejects.toBe(releaseError);
-    await expect(fs.readFile(path.join(outputDir, "qa-evidence.json"), "utf8")).resolves.toBe(
-      "published\n",
-    );
+
+    expect(complete).not.toHaveBeenCalled();
+    expect(JSON.parse(await fs.readFile(canonicalPath, "utf8"))).toMatchObject({
+      profile: "published",
+    });
   });
 });

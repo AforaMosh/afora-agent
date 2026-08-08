@@ -43,29 +43,20 @@ vi.mock("./suite-launch.runtime.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./suite-launch.runtime.js")>()),
   runQaFlowSuiteFromRuntime,
   runQaSuite,
-  runQaSuiteCore: async (
-    params: QaSuiteRunParams,
-    target: { canonicalPath: string; stagedPath: string },
-  ) => {
+  runQaSuiteCore: async (params: QaSuiteRunParams) => {
     const result = await runQaSuite(params);
     const evidencePath = result?.result.evidencePath;
-    await fs.mkdir(path.dirname(target.stagedPath), { recursive: true });
+    let evidence = makeQaEvidence();
     if (evidencePath) {
       try {
-        if (evidencePath === target.canonicalPath) {
-          await fs.rename(evidencePath, target.stagedPath);
-        } else {
-          await fs.copyFile(evidencePath, target.stagedPath);
-        }
-        return result;
+        evidence = JSON.parse(await fs.readFile(evidencePath, "utf8"));
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
           throw error;
         }
       }
     }
-    await fs.writeFile(target.stagedPath, `${JSON.stringify(makeQaEvidence(), null, 2)}\n`, "utf8");
-    return result;
+    return Object.freeze({ result, evidence, complete: vi.fn() });
   },
 }));
 
@@ -1106,6 +1097,8 @@ describe("qa cli runtime", () => {
     expect(
       (await fs.readdir(profileArtifactsDir)).filter((entry) => entry.endsWith(".staged")),
     ).toEqual([]);
+    expect(stdoutWrite.mock.calls.flat().join("")).not.toContain("QA profile scorecard:");
+    expect(stdoutWrite.mock.calls.flat().join("")).not.toContain("QA suite evidence:");
   });
 
   it("resolves suite repo-root-relative paths before dispatching", async () => {
