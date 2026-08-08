@@ -41,6 +41,7 @@ import {
 } from "./client-delivery.js";
 import { createSlackReadClient, createSlackTokenCacheKey, getSlackWriteClient } from "./client.js";
 import { assertSlackDirectSendAllowed } from "./direct-send-admission.js";
+import { formatSlackError } from "./errors.js";
 import { chunkSlackMrkdwnText, markdownToSlackMrkdwnChunks } from "./format.js";
 import { SLACK_EDIT_TEXT_MAX_BYTES, SLACK_TEXT_LIMIT } from "./limits.js";
 import type { SlackEventScope } from "./monitor/event-scope.js";
@@ -466,7 +467,7 @@ function assertSlackPostMessageResponse(
   throw new Error(
     response.ok
       ? "Slack chat.postMessage returned no message timestamp"
-      : `Slack chat.postMessage failed: ${String(response.error ?? "unknown error")}`,
+      : `Slack chat.postMessage failed: ${formatSlackError(response.error, "unknown error")}`,
   );
 }
 
