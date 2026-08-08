@@ -38,6 +38,10 @@ const GATEWAY_GID = 65532;
 const NODE_UID = 65533;
 const NODE_GID = 65533;
 const CLI_OUTPUT_LIMIT_BYTES = 1024 * 1024;
+const CLI_FAILURE_SUMMARY_LIMIT = 512;
+const CHILD_STOP_GRACE_MS = 5_000;
+const CHILD_KILL_WAIT_MS = 5_000;
+const childExitPromises = new WeakMap<ChildProcess, Promise<number>>();
 const SYSTEM_WHICH_OPERATION = {
   command: "system.which",
   params: { bins: ["node"] },
@@ -131,17 +135,26 @@ async function main() {
     try {
       let operation: unknown = null;
       if (input.outcome === "passed") {
-        operation = await approveAndInvoke({
+        let latestCliFailure: string | null = null;
+        await approveAndInvoke({
           caseId: input.caseId,
-          cli: (args) =>
-            cliJson(
+          cli: async (args) => {
+            const result = await cliJson(
               gateway.cli,
               gatewayCliArgs(args, `ws://127.0.0.1:${GATEWAY_PORT}`, token),
               gatewayEnv,
-            ),
+            );
+            // Polling may fail transiently; retain the latest bounded failure for a terminal error.
+            if (result.failure) {
+              latestCliFailure = result.failure;
+            }
+            return result.value;
+          },
+          cliFailureSummary: () => latestCliFailure,
           nodeChild: startNode(),
           startNode,
         });
+        operation = observer.readOperation();
       } else {
         const disjointHome = prepareRuntimeHome({
           root: runtimeRoot,
@@ -181,11 +194,11 @@ async function main() {
       await observer.close();
     }
   } finally {
-    for (const child of children) {
-      child.kill("SIGTERM");
+    try {
+      await Promise.all([...children].map((child) => stopChild(child)));
+    } finally {
+      rmSync(runtimeRoot, { recursive: true, force: true });
     }
-    await Promise.all([...children].map(waitForExit));
-    rmSync(runtimeRoot, { recursive: true, force: true });
   }
 }
 
@@ -276,6 +289,7 @@ function start(
     gid,
   });
   children.add(child);
+  void waitForExit(child);
   child.once("close", () => children.delete(child));
   return child;
 }
@@ -283,7 +297,7 @@ function start(
 async function waitForPort(port: number, child: ChildProcess) {
   const deadline = Date.now() + 30_000;
   while (Date.now() < deadline) {
-    if (child.exitCode !== null) {
+    if (isChildTerminal(child)) {
       throw new Error(`Gateway exited before opening port ${port}.`);
     }
     const connected = await new Promise<boolean>((resolvePromise) => {
@@ -310,6 +324,7 @@ async function waitForPort(port: number, child: ChildProcess) {
 export async function approveAndInvoke(params: {
   caseId: string;
   cli: (args: string[]) => Promise<unknown>;
+  cliFailureSummary?: () => string | null;
   nodeChild: ChildProcess;
   startNode: () => ChildProcess;
   stopNode?: (child: ChildProcess) => Promise<void>;
@@ -324,13 +339,17 @@ export async function approveAndInvoke(params: {
   const approvedDeviceRequests = new Set<string>();
   const approvedNodeRequests = new Set<string>();
   let nodeChild = params.nodeChild;
+  const failure = (message: string) => {
+    const summary = params.cliFailureSummary?.();
+    return new Error(summary ? `${message} Last CLI failure: ${summary}` : message);
+  };
   const matchesNode = (entry: unknown) =>
     isRecord(entry) &&
     entry.displayName === params.caseId &&
     (entry.role === "node" || (Array.isArray(entry.roles) && entry.roles.includes("node")));
   while (now() < deadline) {
-    if (nodeChild.exitCode !== null) {
-      throw new Error("Node exited before invocation.");
+    if (isChildTerminal(nodeChild)) {
+      throw failure("Node exited before invocation.");
     }
 
     const devices = await params.cli(["devices", "list"]);
@@ -430,7 +449,7 @@ export async function approveAndInvoke(params: {
       JSON.stringify(operation.params),
     ]);
     if (!isRecord(result) || result.ok !== true || result.command !== operation.command) {
-      throw new Error(`Approved node operation failed for ${params.caseId}.`);
+      throw failure(`Approved node operation failed for ${params.caseId}.`);
     }
     const payload = isRecord(result.payload) ? result.payload : {};
     const bins = isRecord(payload.bins) ? payload.bins : {};
@@ -445,7 +464,7 @@ export async function approveAndInvoke(params: {
       result: { bins: { node: bins.node } },
     };
   }
-  throw new Error(`Timed out invoking ${params.caseId}.`);
+  throw failure(`Timed out invoking ${params.caseId}.`);
 }
 
 export function resolveApprovedNodeOperation(node: unknown) {
@@ -461,15 +480,60 @@ export function resolveApprovedNodeOperation(node: unknown) {
   return commands.includes(SYSTEM_WHICH_OPERATION.command) ? SYSTEM_WHICH_OPERATION : null;
 }
 
+export function buildObservedNodeOperation(requestPayload: unknown, resultParams: unknown) {
+  const request = isRecord(requestPayload) ? requestPayload : {};
+  const result = isRecord(resultParams) ? resultParams : {};
+  const requestParams =
+    typeof request.paramsJSON === "string" ? JSON.parse(request.paramsJSON) : undefined;
+  const resultPayload =
+    typeof result.payloadJSON === "string" ? JSON.parse(result.payloadJSON) : result.payload;
+  if (
+    typeof request.id !== "string" ||
+    typeof request.nodeId !== "string" ||
+    request.command !== SYSTEM_WHICH_OPERATION.command ||
+    !isDeepStrictEqual(requestParams, SYSTEM_WHICH_OPERATION.params) ||
+    result.id !== request.id ||
+    result.nodeId !== request.nodeId ||
+    result.ok !== true ||
+    !isRecord(resultPayload) ||
+    !isRecord(resultPayload.bins) ||
+    typeof resultPayload.bins.node !== "string" ||
+    !resultPayload.bins.node
+  ) {
+    throw new Error("Observer did not capture one matching successful node invocation.");
+  }
+  return {
+    method: "node.invoke",
+    command: request.command,
+    params: requestParams,
+    ok: true,
+    result: { bins: { node: resultPayload.bins.node } },
+  };
+}
+
 function gatewayCliArgs(args: string[], url: string, token: string) {
   return [...args, "--json", "--url", url, "--token", token];
 }
 
-async function stopChild(child: ChildProcess) {
-  if (child.exitCode === null) {
+export function isChildTerminal(child: Pick<ChildProcess, "exitCode" | "signalCode">): boolean {
+  return child.exitCode != null || child.signalCode != null;
+}
+
+export async function stopChild(
+  child: ChildProcess,
+  options: { graceMs?: number; killWaitMs?: number } = {},
+) {
+  const exit = waitForExit(child);
+  if (!isChildTerminal(child)) {
     child.kill("SIGTERM");
   }
-  await waitForExit(child);
+  if (await waitForExitWithin(exit, options.graceMs ?? CHILD_STOP_GRACE_MS)) {
+    return;
+  }
+  child.kill("SIGKILL");
+  if (!(await waitForExitWithin(exit, options.killWaitMs ?? CHILD_KILL_WAIT_MS))) {
+    throw new Error("Child process did not exit after SIGKILL.");
+  }
 }
 
 async function cliJson(command: string, args: string[], env: NodeJS.ProcessEnv) {
@@ -479,6 +543,7 @@ async function cliJson(command: string, args: string[], env: NodeJS.ProcessEnv) 
     uid: GATEWAY_UID,
     gid: GATEWAY_GID,
   });
+  const exit = waitForExit(child);
   const stdout: Buffer[] = [];
   const stderr: Buffer[] = [];
   let capturedBytes = 0;
@@ -497,15 +562,96 @@ async function cliJson(command: string, args: string[], env: NodeJS.ProcessEnv) 
   };
   child.stdout.on("data", capture(stdout));
   child.stderr.on("data", capture(stderr));
-  const status = await waitForExit(child);
+  const status: number = await exit;
   if (exceededLimit) {
     throw new Error(`CLI output exceeded ${CLI_OUTPUT_LIMIT_BYTES} bytes.`);
   }
   if (status !== 0) {
-    return null;
+    return {
+      value: null,
+      failure: formatCliFailureDiagnostic({
+        args,
+        status,
+        stderr: Buffer.concat(stderr).toString("utf8"),
+      }),
+    };
   }
   const text = Buffer.concat(stdout).toString("utf8").trim();
-  return text ? (JSON.parse(text) as unknown) : null;
+  return {
+    value: text ? (JSON.parse(text) as unknown) : null,
+    failure: null,
+  };
+}
+
+export function formatCliFailureDiagnostic(params: {
+  args: string[];
+  status: number;
+  stderr: string;
+}) {
+  let stderr = stripTerminalSequences(params.stderr);
+  for (let index = 0; index < params.args.length; index += 1) {
+    if (params.args[index] === "--token") {
+      const secret = params.args[index + 1];
+      if (secret) {
+        stderr = stderr.replaceAll(secret, "[redacted]");
+      }
+    }
+  }
+  const sanitized = stderr.replace(/\s+/gu, " ").trim() || "(no stderr)";
+  const bounded =
+    sanitized.length <= CLI_FAILURE_SUMMARY_LIMIT
+      ? sanitized
+      : `${sanitized.slice(0, CLI_FAILURE_SUMMARY_LIMIT - 3)}...`;
+  return `exit ${params.status}: ${bounded}`;
+}
+
+function stripTerminalSequences(value: string) {
+  let result = "";
+  for (let index = 0; index < value.length;) {
+    const codePoint = value.codePointAt(index) ?? 0;
+    const width = codePoint > 0xffff ? 2 : 1;
+    const nextCodeUnit = value.charCodeAt(index + width);
+    if ((codePoint === 0x1b && nextCodeUnit === 0x5b) || codePoint === 0x9b) {
+      index += codePoint === 0x1b ? 2 : 1;
+      while (index < value.length) {
+        const codeUnit = value.charCodeAt(index++);
+        if (codeUnit >= 0x40 && codeUnit <= 0x7e) {
+          break;
+        }
+      }
+      continue;
+    }
+    if ((codePoint === 0x1b && nextCodeUnit === 0x5d) || codePoint === 0x9d) {
+      index += codePoint === 0x1b ? 2 : 1;
+      while (index < value.length) {
+        const codeUnit = value.charCodeAt(index++);
+        if (codeUnit === 0x07) {
+          break;
+        }
+        if (codeUnit === 0x1b && value.charCodeAt(index) === 0x5c) {
+          index += 1;
+          break;
+        }
+      }
+      continue;
+    }
+    if (codePoint === 0x1b) {
+      index += Math.min(2, value.length - index);
+      continue;
+    }
+    if (
+      codePoint <= 0x1f ||
+      (codePoint >= 0x7f && codePoint <= 0x9f) ||
+      codePoint === 0x2028 ||
+      codePoint === 0x2029
+    ) {
+      result += " ";
+    } else {
+      result += String.fromCodePoint(codePoint);
+    }
+    index += width;
+  }
+  return result;
 }
 
 async function runDisjointClient(
@@ -734,6 +880,8 @@ async function startObserver(gatewayToken: string) {
   let expectedDevice: ObserverDeviceIdentity | undefined;
   let upstreamUrl = "";
   let observation: Observation | undefined;
+  let invocationRequest: unknown;
+  let invocationResult: unknown;
   let inconsistent = false;
   let pendingDisjointCredential: string | undefined;
   let resolveBootstrap: (() => void) | undefined;
@@ -838,6 +986,13 @@ async function startObserver(gatewayToken: string) {
         downstream.terminate();
         return;
       }
+      if (frame.method === "node.invoke.result") {
+        if (invocationResult !== undefined) {
+          inconsistent = true;
+        } else {
+          invocationResult = frame.params;
+        }
+      }
       if (upstream.readyState === WebSocket.OPEN) {
         upstream.send(data, { binary: isBinary });
       } else {
@@ -854,6 +1009,12 @@ async function startObserver(gatewayToken: string) {
       if (frame.event === "connect.challenge") {
         const payload = isRecord(frame.payload) ? frame.payload : {};
         nonce = typeof payload.nonce === "string" ? payload.nonce : "";
+      } else if (frame.event === "node.invoke.request") {
+        if (invocationRequest !== undefined) {
+          inconsistent = true;
+        } else {
+          invocationRequest = frame.payload;
+        }
       } else if (observation && frame.id === connectId) {
         const payload = isRecord(frame.payload) ? frame.payload : {};
         if (payload.type === "hello-ok" && Number.isSafeInteger(payload.protocol)) {
@@ -878,15 +1039,10 @@ async function startObserver(gatewayToken: string) {
   });
   return {
     async captureExpectedIdentity(child: ChildProcess) {
-      await Promise.race([
+      await captureExpectedIdentity({
         bootstrap,
-        waitForExit(child).then((status) => {
-          throw new Error(`Node identity bootstrap exited with status ${status}.`);
-        }),
-        delay(30_000).then(() => {
-          throw new Error("Timed out capturing the intended node device identity.");
-        }),
-      ]);
+        childExit: waitForExit(child),
+      });
     },
     activate(value: string) {
       if (!expectedDevice || !value) {
@@ -907,6 +1063,12 @@ async function startObserver(gatewayToken: string) {
       }
       return observation;
     },
+    readOperation() {
+      if (inconsistent) {
+        throw new Error("Observer did not capture one consistent node invocation.");
+      }
+      return buildObservedNodeOperation(invocationRequest, invocationResult);
+    },
     close: async () => {
       for (const socket of server.clients) {
         socket.terminate();
@@ -926,6 +1088,31 @@ async function startObserver(gatewayToken: string) {
 
 function normalizeDeviceMetadata(value: unknown) {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
+}
+
+export async function captureExpectedIdentity(params: {
+  bootstrap: Promise<void>;
+  childExit: Promise<number>;
+  timeoutMs?: number;
+}) {
+  let timeout: NodeJS.Timeout | undefined;
+  const timeoutPromise = new Promise<never>((_resolve, reject) => {
+    timeout = setTimeout(() => {
+      reject(new Error("Timed out capturing the intended node device identity."));
+    }, params.timeoutMs ?? 30_000);
+    timeout.unref();
+  });
+  try {
+    await Promise.race([
+      params.bootstrap,
+      params.childExit.then((status) => {
+        throw new Error(`Node identity bootstrap exited with status ${status}.`);
+      }),
+      timeoutPromise,
+    ]);
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export function normalizeMismatch(observation: Observation, legacyVersion?: string) {
@@ -994,12 +1181,30 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-function waitForExit(child: ChildProcess) {
+function waitForExit(child: ChildProcess): Promise<number> {
+  const observed = childExitPromises.get(child);
+  if (observed) {
+    return observed;
+  }
   if (child.exitCode !== null) {
     return Promise.resolve(child.exitCode);
   }
-  return new Promise<number>((resolvePromise) => {
+  const exit = new Promise<number>((resolvePromise) => {
     child.once("close", (status) => resolvePromise(status ?? 1));
     child.once("error", () => resolvePromise(1));
+  });
+  childExitPromises.set(child, exit);
+  return exit;
+}
+
+async function waitForExitWithin(exit: Promise<number>, timeoutMs: number) {
+  return new Promise<boolean>((resolvePromise) => {
+    const finish = (exited: boolean) => {
+      clearTimeout(timer);
+      resolvePromise(exited);
+    };
+    const timer = setTimeout(() => finish(false), timeoutMs);
+    timer.unref();
+    void exit.then(() => finish(true));
   });
 }

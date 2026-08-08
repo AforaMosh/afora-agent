@@ -28,10 +28,18 @@ import {
 import type { ParsedArgs } from "./config.ts";
 import { readInstalledMetadata } from "./install.ts";
 import { runManagedContainer } from "./managed-container.ts";
+import { trimForSummary } from "./shared.ts";
 
 const NODE_IMAGE =
   "node:24-bookworm-slim@sha256:6f7b03f7c2c8e2e784dcf9295400527b9b1270fd37b7e9a7285cf83b6951452d";
 const WORKFLOW_PATH = ".github/workflows/openclaw-cross-os-release-checks-reusable.yml";
+// Jobs API names gain caller prefixes, while called-workflow step names stay stable.
+// The two publication steps identify this producer without caller-owned literals.
+const PRODUCER_ARTIFACT_STEP_NAMES = [
+  "Upload candidate artifact",
+  "Upload Gateway compatibility baseline",
+] as const;
+const PRODUCER_FAILURE_SCHEMA = "openclaw.gateway-node-compat-producer-failure/v1";
 const ACTIONS_JOBS_PAGE_LIMIT = 10;
 const ACTIONS_JOBS_PER_PAGE = 100;
 const CASE_RUNNER_PATH = resolve(
@@ -71,28 +79,39 @@ type CompatCase = {
 };
 
 export async function runGatewayNodeCompatProducer(args: ParsedArgs, env = process.env) {
+  const outputDir = resolveRequiredPath(args, "gateway-node-compat-output-dir");
+  const logsDir = join(outputDir, "logs");
+  mkdirSync(logsDir, { recursive: true });
+  try {
+    await produceGatewayNodeCompatEvidence(args, env, outputDir, logsDir);
+  } catch (error) {
+    writeGatewayNodeCompatFailureDiagnostic(outputDir, error);
+    throw error;
+  }
+}
+
+async function produceGatewayNodeCompatEvidence(
+  args: ParsedArgs,
+  env: NodeJS.ProcessEnv,
+  outputDir: string,
+  logsDir: string,
+) {
   const architecture = resolveArchitecture(process.arch);
   if (env.GATEWAY_NODE_COMPAT_EXPECTED_ARCH !== architecture) {
     throw new Error("Gateway/node compatibility runner architecture does not match its matrix.");
   }
-  const outputDir = resolveRequiredPath(args, "gateway-node-compat-output-dir");
-  mkdirSync(outputDir, { recursive: true });
   const candidate = readPackageSelection(args, "candidate");
   const baseline = readPackageSelection(args, "compat-baseline");
   if (baseline.version !== "2026.5.7") {
     throw new Error("Gateway/node compatibility baseline must be openclaw@2026.5.7.");
   }
   const producer = readProducer(env);
-  const producerJobName = resolveGatewayNodeCompatProducerJobName(
-    args["gateway-node-compat-producer-job-name"],
-  );
-  validateCurrentRunArtifact(candidate, args, "candidate", producer, producerJobName);
-  validateCurrentRunArtifact(baseline, args, "compat-baseline", producer, producerJobName);
+  validateCurrentRunArtifact(candidate, args, "candidate", producer);
+  validateCurrentRunArtifact(baseline, args, "compat-baseline", producer);
 
   const workDir = mkdtempSync(join(tmpdir(), "openclaw-gateway-node-compat-"));
   const preparedDir = join(workDir, "prepared");
   const casesDir = join(workDir, "cases");
-  const logsDir = join(outputDir, "logs");
   mkdirSync(preparedDir, { recursive: true });
   try {
     await prepareRuntimes({
@@ -120,13 +139,12 @@ export async function runGatewayNodeCompatProducer(args: ParsedArgs, env = proce
         timeoutMs: 5 * 60_000,
         args: buildCaseContainerArgs({ architecture, caseDir, inputPath, preparedDir }),
       });
-      const result = parseCaseResult(
-        readBoundedRegularFile(resultPath, {
-          label: `${compatCase.caseId} result`,
-          maxBytes: 64 * 1024,
-        }),
-        architecture,
-      );
+      const resultBytes = readBoundedRegularFile(resultPath, {
+        label: `${compatCase.caseId} result`,
+        maxBytes: 64 * 1024,
+      });
+      writeGatewayNodeCompatRawResultDiagnostic(outputDir, compatCase.caseId, resultBytes);
+      const result = parseCaseResult(resultBytes, architecture);
       validateCaseProtocolContract(compatCase, result, {
         gateway: runtimes[compatCase.gateway].protocol,
         node: runtimes[compatCase.node].protocol,
@@ -138,15 +156,68 @@ export async function runGatewayNodeCompatProducer(args: ParsedArgs, env = proce
         producer,
         result,
       });
-      const serialized = canonicalizeGatewayNodeCompatEvidence(evidence);
+      const serialized = canonicalizeProducedGatewayNodeCompatEvidence(
+        evidence,
+        candidate,
+        baseline,
+      );
       const destination = join(outputDir, `${compatCase.caseId}.json`);
-      const temporary = `${destination}.tmp-${randomBytes(8).toString("hex")}`;
-      writeFileSync(temporary, serialized, { encoding: "utf8", mode: 0o600 });
-      renameSync(temporary, destination);
+      writeAtomicFile(destination, serialized);
     }
   } finally {
     rmSync(workDir, { recursive: true, force: true });
   }
+}
+
+export function canonicalizeProducedGatewayNodeCompatEvidence(
+  evidence: unknown,
+  candidate: Pick<PackageSelection, "sha256">,
+  baseline: Pick<PackageSelection, "sha256">,
+) {
+  return canonicalizeGatewayNodeCompatEvidence(evidence, {
+    candidatePackageSha256: candidate.sha256,
+    baselinePackageSha256: baseline.sha256,
+  });
+}
+
+export function writeGatewayNodeCompatFailureDiagnostic(
+  outputDir: string,
+  error: unknown,
+  completedAt = new Date(),
+) {
+  const diagnosticsDir = join(outputDir, "diagnostics");
+  mkdirSync(diagnosticsDir, { recursive: true });
+  const errorName =
+    error instanceof Error && error.name.trim() ? trimForSummary(error.name) : "Error";
+  const errorMessage =
+    trimForSummary(error instanceof Error ? error.message : String(error)) ||
+    "Unknown Gateway/node compatibility producer failure.";
+  writeAtomicFile(
+    join(diagnosticsDir, "producer-failure.json"),
+    `${JSON.stringify(
+      {
+        schema: PRODUCER_FAILURE_SCHEMA,
+        status: "failed",
+        completedAt: completedAt.toISOString(),
+        error: {
+          name: errorName,
+          message: errorMessage,
+        },
+      },
+      null,
+      2,
+    )}\n`,
+  );
+}
+
+export function writeGatewayNodeCompatRawResultDiagnostic(
+  outputDir: string,
+  caseId: string,
+  result: Buffer,
+) {
+  const rawDir = join(outputDir, "diagnostics", "raw");
+  mkdirSync(rawDir, { recursive: true });
+  writeAtomicFile(join(rawDir, `${caseId}.json`), result);
 }
 
 export function buildCases(
@@ -249,7 +320,6 @@ function validateCurrentRunArtifact(
   args: ParsedArgs,
   prefix: string,
   producer: ReturnType<typeof readProducer>,
-  producerJobName: string,
 ) {
   if (!isSameRunArtifact(selection.actionsArtifact, producer)) {
     throw new Error(`${prefix} artifact must come from this workflow run, not a future attempt.`);
@@ -261,6 +331,7 @@ function validateCurrentRunArtifact(
   const workflowJobs = readWorkflowJobsMetadata(
     resolveRequiredPath(args, `${prefix}-workflow-jobs-metadata`),
   );
+  const producerJobName = resolveGatewayNodeCompatProducerJobName(workflowJobs);
   const expected: ArtifactBinding = {
     artifactDigest: `sha256:${requirePattern(
       args[`${prefix}-artifact-digest`],
@@ -290,7 +361,31 @@ function validateCurrentRunArtifact(
 }
 
 export function resolveGatewayNodeCompatProducerJobName(value: unknown) {
-  return requireString(value, "gateway-node-compat-producer-job-name");
+  if (!isRecord(value) || !Array.isArray(value.jobs)) {
+    throw new Error("Actions workflow jobs response must be an object.");
+  }
+  const matches = value.jobs.filter((job) => {
+    if (!isRecord(job) || !Array.isArray(job.steps)) {
+      return false;
+    }
+    const steps = job.steps;
+    return PRODUCER_ARTIFACT_STEP_NAMES.every(
+      (requiredName) =>
+        steps.filter(
+          (step) =>
+            isRecord(step) &&
+            step.name === requiredName &&
+            step.status === "completed" &&
+            step.conclusion === "success",
+        ).length === 1,
+    );
+  });
+  if (matches.length !== 1) {
+    throw new Error(
+      "Actions workflow jobs must contain one unique compatibility artifact producer.",
+    );
+  }
+  return requireString(matches[0]!.name, "Gateway/node compatibility artifact producer job name");
 }
 
 async function prepareRuntimes(params: {
@@ -529,9 +624,6 @@ function buildEvidence(params: {
     ? params.result.mismatch
     : {};
   const gatewayProtocolVersion = passed ? observation.helloProtocol : mismatch.expectedProtocol;
-  if (!Number.isSafeInteger(gatewayProtocolVersion)) {
-    throw new Error(`${params.compatCase.caseId} did not observe a Gateway protocol.`);
-  }
   return {
     schema: "openclaw.gateway-node-compat/v1",
     caseId: params.compatCase.caseId,
@@ -544,13 +636,13 @@ function buildEvidence(params: {
       protocolClientId: "node-host",
       ...params.runtimes[params.compatCase.node].binding,
     },
-    protocol: {
+    protocol: buildGatewayNodeCompatProtocolEvidence({
+      caseId: params.compatCase.caseId,
       gatewayProtocolVersion,
-      gatewayAcceptedNodeMin: 3,
-      protocolClientAdvertisedMin: observation.clientMin,
-      protocolClientAdvertisedMax: observation.clientMax,
-      helloProtocol: passed ? observation.helloProtocol : null,
-    },
+      gatewayRuntime: params.runtimes[params.compatCase.gateway].protocol,
+      observation,
+      passed,
+    }),
     operation: passed ? params.result.operation : null,
     result: passed
       ? {
@@ -573,6 +665,25 @@ function buildEvidence(params: {
       runAttempt: params.producer.runAttempt,
       job: params.producer.job,
     },
+  };
+}
+
+export function buildGatewayNodeCompatProtocolEvidence(params: {
+  caseId: string;
+  gatewayProtocolVersion: unknown;
+  gatewayRuntime: RuntimeProtocolContract;
+  observation: Record<string, unknown>;
+  passed: boolean;
+}) {
+  if (!Number.isSafeInteger(params.gatewayProtocolVersion)) {
+    throw new Error(`${params.caseId} did not observe a Gateway protocol.`);
+  }
+  return {
+    gatewayProtocolVersion: params.gatewayProtocolVersion,
+    gatewayAcceptedNodeMin: params.gatewayRuntime.nodeMinProtocol,
+    protocolClientAdvertisedMin: params.observation.clientMin,
+    protocolClientAdvertisedMax: params.observation.clientMax,
+    helloProtocol: params.passed ? params.observation.helloProtocol : null,
   };
 }
 
@@ -645,6 +756,16 @@ export function mergeActionsWorkflowJobPages(pages: unknown[]) {
 
 function sha256File(path: string) {
   return createHash("sha256").update(readFileSync(path)).digest("hex");
+}
+
+function writeAtomicFile(destination: string, contents: string | Uint8Array) {
+  const temporary = `${destination}.tmp-${randomBytes(8).toString("hex")}`;
+  try {
+    writeFileSync(temporary, contents, { encoding: "utf8", mode: 0o600 });
+    renameSync(temporary, destination);
+  } finally {
+    rmSync(temporary, { force: true });
+  }
 }
 
 export function sha256RuntimeTree(root: string) {

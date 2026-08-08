@@ -2734,6 +2734,9 @@ function resolveToolingTestTargets(changedPath, cwd = process.cwd()) {
       ? [
           "test/scripts/openclaw-cross-os-release-checks.test.ts",
           "test/scripts/gateway-node-linux-compat.test.ts",
+          ...(implementationPath === "scripts/lib/cross-os-release-checks/gateway-node-compat.ts"
+            ? ["test/scripts/gateway-node-compat-evidence.test.ts"]
+            : []),
         ]
       : null;
   const explicitTargets =

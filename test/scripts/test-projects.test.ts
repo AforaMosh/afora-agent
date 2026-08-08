@@ -1285,7 +1285,6 @@ describe("scripts/test-projects changed-target routing", () => {
     );
     for (const source of [
       "scripts/openclaw-cross-os-release-checks.ts",
-      "scripts/lib/cross-os-release-checks/gateway-node-compat.ts",
       "scripts/lib/cross-os-release-checks/managed-container.ts",
     ]) {
       expectChangedTargets(
@@ -1296,6 +1295,14 @@ describe("scripts/test-projects changed-target routing", () => {
         ],
       );
     }
+    expectChangedTargets(
+      ["scripts/lib/cross-os-release-checks/gateway-node-compat.ts"],
+      [
+        "test/scripts/openclaw-cross-os-release-checks.test.ts",
+        "test/scripts/gateway-node-linux-compat.test.ts",
+        "test/scripts/gateway-node-compat-evidence.test.ts",
+      ],
+    );
     expectChangedTargets(
       [".github/workflows/openclaw-cross-os-release-checks-reusable.yml"],
       [

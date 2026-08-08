@@ -1,5 +1,6 @@
-import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import { runManagedCommand } from "../managed-child-process.mjs";
 
 function appendTail(current: string, chunk: unknown) {
@@ -43,24 +44,47 @@ export async function runManagedContainer(params: {
     });
   let status = 1;
   let failure: unknown;
-  let cleanupFailed: boolean;
+  let cleanupFailed = false;
+  const ownershipDir = mkdtempSync(join(tmpdir(), "openclaw-managed-container-"));
+  const cidfile = join(ownershipDir, "container.cid");
   try {
     status = await run(
-      ["run", "--name", params.name, "--rm", "--log-driver", "none", ...params.args],
+      [
+        "run",
+        "--cidfile",
+        cidfile,
+        "--name",
+        params.name,
+        "--rm",
+        "--log-driver",
+        "none",
+        ...params.args,
+      ],
       params.timeoutMs,
       true,
     );
   } catch (error) {
     failure = error;
   } finally {
-    await run(["rm", "--force", params.name], 30_000).catch(() => undefined);
-    const probeStatus = await run(
-      ["ps", "--all", "--quiet", "--filter", `name=^/${params.name}$`],
-      30_000,
-      true,
-      true,
-    ).catch(() => -1);
-    cleanupFailed = probeStatus !== 0 || probeOutput.trim() !== "";
+    // A name collision must never let this invocation remove another owner's container.
+    const ownedContainerId = (() => {
+      try {
+        return readFileSync(cidfile, "utf8").trim();
+      } catch {
+        return "";
+      }
+    })();
+    if (ownedContainerId) {
+      await run(["rm", "--force", ownedContainerId], 30_000).catch(() => undefined);
+      const probeStatus = await run(
+        ["ps", "--all", "--quiet", "--filter", `id=${ownedContainerId}`],
+        30_000,
+        true,
+        true,
+      ).catch(() => -1);
+      cleanupFailed = probeStatus !== 0 || probeOutput.trim() !== "";
+    }
+    rmSync(ownershipDir, { recursive: true, force: true });
   }
   mkdirSync(dirname(params.logPath), { recursive: true });
   const redacted = diagnostic

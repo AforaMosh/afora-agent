@@ -1441,6 +1441,16 @@ describe("scripts/openclaw-cross-os-release-checks", () => {
     );
   });
 
+  it("rejects a mixed filter when its cross-OS suite is unavailable in the selected mode", () => {
+    expect(() =>
+      resolveCrossOsReleaseSelection({
+        mode: "fresh",
+        ref: "main",
+        suiteFilter: "packaged-upgrade,gateway-node-compat",
+      }),
+    ).toThrow(/did not match any fresh suite/u);
+  });
+
   it("can rebuild the Windows PATH with or without current-process entries", () => {
     expect(buildWindowsPathBootstrapScript()).toContain("@($env:Path, $userPath, $machinePath)");
     const persistedOnlyScript = buildWindowsPathBootstrapScript({

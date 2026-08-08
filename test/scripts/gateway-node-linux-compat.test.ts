@@ -5,6 +5,7 @@ import {
   lstatSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   statSync,
@@ -15,14 +16,19 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { pathToFileURL } from "node:url";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { parse } from "yaml";
 import {
   approveAndInvoke,
+  buildObservedNodeOperation,
+  captureExpectedIdentity,
   consumeOneTimeObserverCredential,
+  formatCliFailureDiagnostic,
+  isChildTerminal,
   normalizeMismatch,
   prepareRuntimeHome,
   resolveApprovedNodeOperation,
+  stopChild,
   validateDisjointObserverConnect,
   validateObserverConnectCredential,
   validateObservedIdentity,
@@ -30,6 +36,7 @@ import {
 import {
   buildCaseContainerArgs,
   buildCases,
+  buildGatewayNodeCompatProtocolEvidence,
   isSameRunArtifact,
   mergeActionsWorkflowJobPages,
   parseCaseResult,
@@ -37,8 +44,11 @@ import {
   resolveGatewayNodeCompatProducerJobName,
   sha256RuntimeTree,
   validateCaseProtocolContract,
+  writeGatewayNodeCompatFailureDiagnostic,
+  writeGatewayNodeCompatRawResultDiagnostic,
 } from "../../scripts/lib/cross-os-release-checks/gateway-node-compat.ts";
 import { runManagedContainer } from "../../scripts/lib/cross-os-release-checks/managed-container.ts";
+import { useAutoCleanupTempDirTracker } from "../helpers/temp-dir.js";
 
 const validObservation = {
   clientMin: 1,
@@ -52,6 +62,7 @@ const validObservation = {
   },
   protocolError: null,
 };
+const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 describe("Gateway/node Linux compatibility producer", () => {
   it.each(["x64", "arm64"] as const)("defines all six %s contracts", (architecture) => {
@@ -77,17 +88,85 @@ describe("Gateway/node Linux compatibility producer", () => {
     expect(isSameRunArtifact({ runId: "123", runAttempt: 3 }, producer)).toBe(false);
   });
 
-  it("accepts any exact producer job identity supplied by workflow provenance", () => {
-    expect(resolveGatewayNodeCompatProducerJobName("prepare")).toBe("prepare");
-    expect(resolveGatewayNodeCompatProducerJobName("cross_os_release_checks / prepare")).toBe(
+  it("derives the artifact producer name without caller-owned literals", () => {
+    const producerSteps = [
+      {
+        name: "Upload candidate artifact",
+        status: "completed",
+        conclusion: "success",
+      },
+      {
+        name: "Upload Gateway compatibility baseline",
+        status: "completed",
+        conclusion: "success",
+      },
+    ];
+    for (const name of [
+      "prepare",
       "cross_os_release_checks / prepare",
-    );
-    expect(resolveGatewayNodeCompatProducerJobName("release / arbitrary reusable job")).toBe(
-      "release / arbitrary reusable job",
-    );
-    for (const value of ["", " prepare", "cross_os_release_checks / prepare "]) {
-      expect(() => resolveGatewayNodeCompatProducerJobName(value)).toThrow();
+      "release / cross_os_release_checks / prepare",
+    ]) {
+      expect(
+        resolveGatewayNodeCompatProducerJobName({
+          total_count: 2,
+          jobs: [
+            { id: 1, name: "unrelated / prepare", steps: [] },
+            { id: 2, name, steps: producerSteps },
+          ],
+        }),
+      ).toBe(name);
     }
+    expect(() =>
+      resolveGatewayNodeCompatProducerJobName({
+        total_count: 2,
+        jobs: [
+          { id: 1, name: "prepare", steps: producerSteps },
+          { id: 2, name: "other / prepare", steps: producerSteps },
+        ],
+      }),
+    ).toThrow(/one unique compatibility artifact producer/u);
+    expect(() =>
+      resolveGatewayNodeCompatProducerJobName({
+        total_count: 1,
+        jobs: [{ id: 1, name: "cross_os_release_checks / prepare", steps: [] }],
+      }),
+    ).toThrow(/one unique compatibility artifact producer/u);
+  });
+
+  it("writes one atomic bounded producer failure diagnostic", () => {
+    const root = tempDirs.make("gateway-node-producer-failure-");
+    try {
+      writeGatewayNodeCompatFailureDiagnostic(
+        root,
+        new Error(`canonicalization failed ${"x".repeat(1_000)}`),
+        new Date("2026-08-08T12:00:00.000Z"),
+      );
+      const diagnosticsDir = join(root, "diagnostics");
+      expect(readdirSync(diagnosticsDir)).toEqual(["producer-failure.json"]);
+      expect(
+        JSON.parse(readFileSync(join(diagnosticsDir, "producer-failure.json"), "utf8")),
+      ).toEqual({
+        schema: "openclaw.gateway-node-compat-producer-failure/v1",
+        status: "failed",
+        completedAt: "2026-08-08T12:00:00.000Z",
+        error: {
+          name: "Error",
+          message: expect.stringMatching(/^canonicalization failed x+\.\.\.$/u),
+        },
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("preserves bounded raw case output before validation", () => {
+    const root = tempDirs.make("gateway-node-raw-result-");
+    const result = Buffer.from('{"observation":{"helloProtocol":99}}\n');
+    writeGatewayNodeCompatRawResultDiagnostic(root, "linux-x64-candidate-node", result);
+
+    expect(readFileSync(join(root, "diagnostics", "raw", "linux-x64-candidate-node.json"))).toEqual(
+      result,
+    );
   });
 
   it("derives gateway and node protocol contracts from installed runtime metadata", () => {
@@ -110,6 +189,31 @@ describe("Gateway/node Linux compatibility producer", () => {
       nodeMaxProtocol: 4,
     });
     expect(parseRuntimeProtocolContract("const OTHER_VERSION = 4;\n")).toBeNull();
+  });
+
+  it.each([
+    { gatewayProtocol: 5, nodeMinProtocol: 4, nodeMaxProtocol: 5 },
+    { gatewayProtocol: 5, nodeMinProtocol: 5, nodeMaxProtocol: 5 },
+  ])("records the parsed Gateway node floor for $nodeMinProtocol..5", (gatewayRuntime) => {
+    expect(
+      buildGatewayNodeCompatProtocolEvidence({
+        caseId: "linux-x64-candidate-gateway-candidate-node",
+        gatewayProtocolVersion: 5,
+        gatewayRuntime,
+        observation: {
+          clientMin: gatewayRuntime.nodeMinProtocol,
+          clientMax: 5,
+          helloProtocol: 5,
+        },
+        passed: true,
+      }),
+    ).toEqual({
+      gatewayProtocolVersion: 5,
+      gatewayAcceptedNodeMin: gatewayRuntime.nodeMinProtocol,
+      protocolClientAdvertisedMin: gatewayRuntime.nodeMinProtocol,
+      protocolClientAdvertisedMax: 5,
+      helloProtocol: 5,
+    });
   });
 
   it("builds an unprivileged isolated case container with read-only runtimes", () => {
@@ -529,6 +633,96 @@ describe("Gateway/node Linux compatibility producer", () => {
     ]);
   });
 
+  it("attaches bounded redacted CLI failure context to terminal errors", async () => {
+    const secret = "gateway-secret";
+    const escapedSecret = "gateway-\u001b[31msecret";
+    const summary = formatCliFailureDiagnostic({
+      args: ["nodes", "status", "--token", secret],
+      status: 7,
+      stderr: `\u001b[31mauth failed for ${escapedSecret}${"x".repeat(600)}\u0007`,
+    });
+    expect(summary).toContain("exit 7: auth failed for [redacted]");
+    expect(summary).not.toContain(secret);
+    expect(
+      Array.from(summary).every((character) => {
+        const codePoint = character.codePointAt(0)!;
+        return codePoint > 0x1f && (codePoint < 0x7f || codePoint > 0x9f);
+      }),
+    ).toBe(true);
+    expect(summary.length).toBeLessThanOrEqual(520);
+
+    let tick = 0;
+    await expect(
+      approveAndInvoke({
+        caseId: "compat-case",
+        cli: async () => null,
+        cliFailureSummary: () => summary,
+        nodeChild: { exitCode: null, signalCode: null } as ChildProcess,
+        startNode: () => ({ exitCode: null, signalCode: null }) as ChildProcess,
+        now: () => tick++,
+        wait: async () => {},
+        timeoutMs: 2,
+      }),
+    ).rejects.toThrow(`Timed out invoking compat-case. Last CLI failure: ${summary}`);
+  });
+
+  it("derives operation evidence only from correlated observer frames", () => {
+    const request = {
+      id: "invoke-1",
+      nodeId: "node-device",
+      command: "system.which",
+      paramsJSON: '{"bins":["node"]}',
+    };
+    const result = {
+      id: "invoke-1",
+      nodeId: "node-device",
+      ok: true,
+      payloadJSON: '{"bins":{"node":"/usr/bin/node"}}',
+    };
+    expect(buildObservedNodeOperation(request, result)).toEqual({
+      method: "node.invoke",
+      command: "system.which",
+      params: { bins: ["node"] },
+      ok: true,
+      result: { bins: { node: "/usr/bin/node" } },
+    });
+    expect(() => buildObservedNodeOperation(request, { ...result, id: "forged" })).toThrow(
+      /matching successful node invocation/u,
+    );
+    expect(() => buildObservedNodeOperation(undefined, result)).toThrow(
+      /matching successful node invocation/u,
+    );
+  });
+
+  it("treats signal exits as terminal and bounds child shutdown", async () => {
+    expect(isChildTerminal({ exitCode: null, signalCode: "SIGTERM" })).toBe(true);
+    if (process.platform === "win32") {
+      return;
+    }
+    const child = spawn(
+      process.execPath,
+      ["-e", "process.on('SIGTERM', () => {}); console.log('ready'); setInterval(() => {}, 1000);"],
+      { stdio: ["ignore", "pipe", "ignore"] },
+    );
+    let closed = false;
+    child.once("close", () => {
+      closed = true;
+    });
+    try {
+      await new Promise<void>((resolvePromise, rejectPromise) => {
+        child.stdout?.once("data", () => resolvePromise());
+        child.once("error", rejectPromise);
+      });
+      await stopChild(child, { graceMs: 25, killWaitMs: 1_000 });
+      expect(child.signalCode).toBe("SIGKILL");
+      expect(closed).toBe(true);
+    } finally {
+      if (!isChildTerminal(child)) {
+        child.kill("SIGKILL");
+      }
+    }
+  });
+
   it("derives only the cross-version system.which operation from approved capabilities", () => {
     expect(
       resolveApprovedNodeOperation({
@@ -702,6 +896,8 @@ describe("Gateway/node Linux compatibility producer", () => {
       runCommand: async ({ args }) => {
         calls.push(args ?? []);
         if (args?.[0] === "run") {
+          const cidfile = args[args.indexOf("--cidfile") + 1];
+          writeFileSync(cidfile!, `owned-${runStatus}\n`);
           return runStatus;
         }
         return 0;
@@ -711,8 +907,10 @@ describe("Gateway/node Linux compatibility producer", () => {
         throw error;
       }
     });
-    expect(calls.find((args) => args[0] === "run")?.slice(0, 7)).toEqual([
+    expect(calls.find((args) => args[0] === "run")?.slice(0, 9)).toEqual([
       "run",
+      "--cidfile",
+      expect.any(String),
       "--name",
       `openclaw-managed-test-${runStatus}`,
       "--rm",
@@ -721,7 +919,26 @@ describe("Gateway/node Linux compatibility producer", () => {
       "image",
     ]);
     expect(calls.some((args) => args[0] === "rm" && args[1] === "--force")).toBe(true);
-    expect(calls.some((args) => args[0] === "ps" && args.includes("--quiet"))).toBe(true);
+    expect(calls.some((args) => args[0] === "ps" && args.includes("id=owned-" + runStatus))).toBe(
+      true,
+    );
+  });
+
+  it("does not remove a same-name container when docker run never creates the requested one", async () => {
+    const calls: string[][] = [];
+    await expect(
+      runManagedContainer({
+        args: ["image", "true"],
+        logPath: join(process.cwd(), ".local", "managed-container-name-conflict.log"),
+        name: "openclaw-managed-test-name-conflict",
+        timeoutMs: 1_000,
+        runCommand: async ({ args }) => {
+          calls.push(args ?? []);
+          return args?.[0] === "run" ? 125 : 0;
+        },
+      }),
+    ).rejects.toThrow(/failed/u);
+    expect(calls.map((args) => args[0])).toEqual(["run"]);
   });
 
   it("removes the managed container after a real runner SIGTERM", async () => {
@@ -743,6 +960,15 @@ describe("Gateway/node Linux compatibility producer", () => {
 set -eu
 case "$1" in
   run)
+    cidfile=""
+    while [ "$#" -gt 0 ]; do
+      if [ "$1" = "--cidfile" ]; then
+        cidfile="$2"
+        break
+      fi
+      shift
+    done
+    echo owned-sigterm >"$cidfile"
     echo ready >"$OPENCLAW_TEST_READY"
     trap 'exit 143' TERM INT HUP
     while :; do sleep 1; done
@@ -805,6 +1031,19 @@ await runManagedContainer({
     }
   });
 
+  it("clears the node identity bootstrap timeout after a quick capture", async () => {
+    vi.useFakeTimers();
+    try {
+      await captureExpectedIdentity({
+        bootstrap: Promise.resolve(),
+        childExit: new Promise<number>(() => {}),
+      });
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("removes the managed container after timeout", async () => {
     const calls: string[][] = [];
     await expect(
@@ -822,7 +1061,7 @@ await runManagedContainer({
         },
       }),
     ).rejects.toThrow(/failed/u);
-    expect(calls.some((args) => args[0] === "rm" && args[1] === "--force")).toBe(true);
+    expect(calls.map((args) => args[0])).toEqual(["run"]);
   });
 
   it("fails when container cleanup cannot be verified", async () => {
@@ -832,7 +1071,13 @@ await runManagedContainer({
         logPath: join(process.cwd(), ".local", "managed-container-probe.log"),
         name: "openclaw-managed-test-probe",
         timeoutMs: 1_000,
-        runCommand: async ({ args }) => (args?.[0] === "ps" ? 125 : 0),
+        runCommand: async ({ args }) => {
+          if (args?.[0] === "run") {
+            const cidfile = args[args.indexOf("--cidfile") + 1];
+            writeFileSync(cidfile!, "owned-probe\n");
+          }
+          return args?.[0] === "ps" ? 125 : 0;
+        },
       }),
     ).rejects.toThrow(/cleanup could not be verified/u);
   });
@@ -840,6 +1085,7 @@ await runManagedContainer({
   it("consumes current-run artifacts without repacking or re-uploading them", () => {
     type WorkflowStep = Record<string, unknown> & {
       env?: Record<string, unknown>;
+      id?: string;
       if?: string;
       name?: string;
       run?: string;
@@ -852,11 +1098,14 @@ await runManagedContainer({
       outputs?: Record<string, unknown>;
       "runs-on"?: string;
       steps: WorkflowStep[];
-      strategy?: { matrix: { architecture: string[] } };
+      strategy?: {
+        matrix: { include: Array<{ architecture: string; runner: string }> };
+      };
     };
     const workflow = parse(
       readFileSync(".github/workflows/openclaw-cross-os-release-checks-reusable.yml", "utf8"),
     ) as {
+      concurrency: { "cancel-in-progress": string; group: string };
       on: {
         workflow_call: { inputs: Record<string, Record<string, unknown>> };
         workflow_dispatch: { inputs: Record<string, Record<string, unknown>> };
@@ -865,17 +1114,29 @@ await runManagedContainer({
         cross_os_release_checks: WorkflowJob;
         gateway_node_linux_compat: WorkflowJob & {
           "runs-on": string;
-          strategy: { matrix: { architecture: string[] } };
+          strategy: {
+            matrix: { include: Array<{ architecture: string; runner: string }> };
+          };
         };
         prepare: WorkflowJob & { outputs: Record<string, unknown> };
       };
     };
     const job = workflow.jobs.gateway_node_linux_compat;
     const prepare = workflow.jobs.prepare;
+    expect(workflow.concurrency).toEqual({
+      group:
+        "openclaw-cross-os-release-checks-${{ inputs.ref }}-${{ inputs.provider }}-${{ inputs.mode }}-${{ inputs.suite_filter || 'all' }}",
+      "cancel-in-progress": "${{ inputs.ref == 'main' }}",
+    });
     expect(job.if).toBe("needs.prepare.outputs.gateway_node_compat_enabled == 'true'");
     expect(job["continue-on-error"]).toBe("${{ inputs.advisory }}");
-    expect(job.strategy.matrix.architecture).toEqual(["x64", "arm64"]);
-    expect(job["runs-on"]).toContain("ubuntu-24.04-arm");
+    expect(job.strategy.matrix).toEqual({
+      include: [
+        { architecture: "x64", runner: "ubuntu-24.04" },
+        { architecture: "arm64", runner: "ubuntu-24.04-arm" },
+      ],
+    });
+    expect(job["runs-on"]).toBe("${{ matrix.runner }}");
     const installIndex = job.steps.findIndex(
       (step) => step.name === "Install trusted observer dependencies",
     );
@@ -897,16 +1158,14 @@ await runManagedContainer({
     const producer = job.steps.find(
       (step) => step.name === "Produce six canonical compatibility cases",
     );
+    expect(producer?.id).toBe("produce_compat");
     expect(producer?.run).not.toContain("${{ needs.prepare.outputs");
     expect(producer?.env).not.toHaveProperty("GH_TOKEN");
     expect(producer?.env).toHaveProperty(
       "GATEWAY_NODE_COMPAT_EXPECTED_ARCH",
       "${{ matrix.architecture }}",
     );
-    expect(producer?.env).toHaveProperty(
-      "GATEWAY_NODE_COMPAT_PRODUCER_JOB_NAME",
-      "${{ needs.prepare.outputs.gateway_node_compat_producer_job_name }}",
-    );
+    expect(producer?.env).not.toHaveProperty("GATEWAY_NODE_COMPAT_PRODUCER_JOB_NAME");
     expect(producer?.env).toHaveProperty(
       "CANDIDATE_ARTIFACT_RUN_ATTEMPT",
       "${{ needs.prepare.outputs.candidate_artifact_run_attempt }}",
@@ -915,9 +1174,7 @@ await runManagedContainer({
       "BASELINE_ARTIFACT_RUN_ATTEMPT",
       "${{ needs.prepare.outputs.compat_baseline_artifact_run_attempt }}",
     );
-    expect(producer?.run).toContain(
-      '--gateway-node-compat-producer-job-name "$GATEWAY_NODE_COMPAT_PRODUCER_JOB_NAME"',
-    );
+    expect(producer?.run).not.toContain("--gateway-node-compat-producer-job-name");
     expect(producer?.run).toContain('--candidate-workflow-jobs-metadata "$ROOT/metadata/jobs"');
     const provenance = job.steps.find(
       (step) => step.name === "Capture current-run artifact provenance",
@@ -941,9 +1198,7 @@ await runManagedContainer({
     expect(prepare.outputs.gateway_node_compat_producer_run_attempt).toBe(
       "${{ github.run_attempt }}",
     );
-    expect(prepare.outputs.gateway_node_compat_producer_job_name).toBe(
-      "${{ inputs.gateway_node_compat_producer_job_name }}",
-    );
+    expect(prepare.outputs).not.toHaveProperty("gateway_node_compat_producer_job_name");
     const matrixIndex = prepare.steps.indexOf(matrix);
     for (const name of [
       "Validate provider secret availability",
@@ -990,15 +1245,19 @@ await runManagedContainer({
       "needs.prepare.outputs.cross_os_release_checks_enabled == 'true'",
     );
     for (const trigger of ["workflow_call", "workflow_dispatch"] as const) {
-      expect(workflow.on[trigger].inputs.gateway_node_compat_producer_job_name).toMatchObject({
-        default: "prepare",
-        type: "string",
-      });
+      expect(workflow.on[trigger].inputs).not.toHaveProperty(
+        "gateway_node_compat_producer_job_name",
+      );
     }
     const diagnostics = job.steps.find(
       (step) => step.name === "Upload Gateway/node compatibility diagnostics",
     );
-    expect(diagnostics?.if).toBe("${{ failure() }}");
+    expect(diagnostics?.if).toBe("${{ failure() && steps.produce_compat.outcome != 'skipped' }}");
+    expect(diagnostics?.with?.path).toContain("diagnostics/producer-failure.json");
+    expect(diagnostics?.with?.path).toContain("diagnostics/raw/*.json");
+    expect(diagnostics?.with?.path).toContain("evidence/*.json");
+    expect(diagnostics?.with?.path).toContain("logs/*.log");
+    expect(diagnostics?.with?.["if-no-files-found"]).toBe("error");
     const evidenceUpload = job.steps.find(
       (step) => step.name === "Upload Gateway/node compatibility evidence",
     );
@@ -1022,9 +1281,9 @@ await runManagedContainer({
         cross_os_release_checks: { with?: Record<string, unknown> };
       };
     };
-    expect(
-      releaseWorkflow.jobs.cross_os_release_checks.with?.gateway_node_compat_producer_job_name,
-    ).toBe("cross_os_release_checks / prepare");
+    expect(releaseWorkflow.jobs.cross_os_release_checks.with).not.toHaveProperty(
+      "gateway_node_compat_producer_job_name",
+    );
   });
 
   it("does not load Gateway compatibility dependencies for non-compat modes", () => {

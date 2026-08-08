@@ -410,7 +410,7 @@ export function resolveRunnerMatrix(params: {
         }),
       ),
   );
-  if (include.length === 0 && !suiteFilter.matchesGatewayNodeCompat) {
+  if (include.length === 0 && suiteFilter.requestsCrossOsSuites) {
     throw new Error(
       `cross_os_suite_filter ${JSON.stringify(params.suiteFilter ?? "")} did not match any ${params.mode} suite.`,
     );
@@ -454,6 +454,7 @@ export function parseCrossOsSuiteFilter(rawFilter: string) {
     return {
       matches: () => true,
       matchesGatewayNodeCompat: true,
+      requestsCrossOsSuites: true,
       tokens,
     };
   }
@@ -497,6 +498,7 @@ export function parseCrossOsSuiteFilter(rawFilter: string) {
         return osMatches && suiteMatches;
       }),
     matchesGatewayNodeCompat: matchers.some((matcher) => matcher.gatewayNodeCompat),
+    requestsCrossOsSuites: matchers.some((matcher) => !matcher.gatewayNodeCompat),
     tokens,
   };
 }

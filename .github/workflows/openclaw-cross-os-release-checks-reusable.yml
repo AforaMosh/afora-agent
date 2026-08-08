@@ -101,11 +101,6 @@ on:
         required: false
         default: ""
         type: string
-      gateway_node_compat_producer_job_name:
-        description: Exact Actions job name that uploads the compatibility input artifacts
-        required: false
-        default: prepare
-        type: string
       openai_model:
         description: OpenAI model for release cross-OS agent-turn smoke
         required: false
@@ -210,11 +205,6 @@ on:
         required: false
         default: ""
         type: string
-      gateway_node_compat_producer_job_name:
-        description: Exact Actions job name that uploads the compatibility input artifacts
-        required: false
-        default: prepare
-        type: string
       openai_model:
         description: OpenAI model for release cross-OS agent-turn smoke
         required: false
@@ -237,7 +227,7 @@ on:
 permissions: read-all
 
 concurrency:
-  group: openclaw-cross-os-release-checks-${{ inputs.ref }}-${{ inputs.provider }}-${{ inputs.mode }}
+  group: openclaw-cross-os-release-checks-${{ inputs.ref }}-${{ inputs.provider }}-${{ inputs.mode }}-${{ inputs.suite_filter || 'all' }}
   cancel-in-progress: ${{ inputs.ref == 'main' }}
 
 env:
@@ -274,7 +264,6 @@ jobs:
       candidate_preparation_enabled: ${{ steps.matrix.outputs.candidate_preparation_enabled }}
       cross_os_release_checks_enabled: ${{ steps.matrix.outputs.cross_os_release_checks_enabled }}
       gateway_node_compat_enabled: ${{ steps.matrix.outputs.gateway_node_compat_enabled }}
-      gateway_node_compat_producer_job_name: ${{ inputs.gateway_node_compat_producer_job_name }}
       gateway_node_compat_producer_run_attempt: ${{ github.run_attempt }}
       matrix: ${{ steps.matrix.outputs.value }}
       packaged_upgrade_enabled: ${{ steps.matrix.outputs.packaged_upgrade_enabled }}
@@ -1110,8 +1099,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        architecture: [x64, arm64]
-    runs-on: ${{ matrix.architecture == 'arm64' && 'ubuntu-24.04-arm' || inputs.ubuntu_runner || vars.OPENCLAW_RELEASE_CHECKS_UBUNTU_RUNNER || 'ubuntu-24.04' }}
+        include:
+          - architecture: x64
+            runner: ubuntu-24.04
+          - architecture: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 75
     steps:
       - name: Checkout workflow repo
@@ -1189,6 +1182,7 @@ jobs:
           }
 
       - name: Produce six canonical compatibility cases
+        id: produce_compat
         working-directory: workflow
         env:
           BASELINE_ARTIFACT_DIGEST: ${{ needs.prepare.outputs.compat_baseline_artifact_digest }}
@@ -1204,7 +1198,6 @@ jobs:
           BASELINE_ARTIFACT_RUN_ID: ${{ needs.prepare.outputs.compat_baseline_artifact_run_id }}
           CANDIDATE_ARTIFACT_RUN_ATTEMPT: ${{ needs.prepare.outputs.candidate_artifact_run_attempt }}
           CANDIDATE_ARTIFACT_RUN_ID: ${{ needs.prepare.outputs.candidate_artifact_run_id }}
-          GATEWAY_NODE_COMPAT_PRODUCER_JOB_NAME: ${{ needs.prepare.outputs.gateway_node_compat_producer_job_name }}
           GATEWAY_NODE_COMPAT_RUN_WORKFLOW_REF: ${{ github.workflow_ref }}
           GATEWAY_NODE_COMPAT_WORKFLOW_SHA: ${{ needs.prepare.outputs.workflow_ref }}
           OUTPUT_DIR: ${{ runner.temp }}/gateway-node-compat/evidence
@@ -1213,7 +1206,6 @@ jobs:
           node scripts/openclaw-cross-os-release-checks.ts \
             --gateway-node-compat true \
             --gateway-node-compat-output-dir "$OUTPUT_DIR" \
-            --gateway-node-compat-producer-job-name "$GATEWAY_NODE_COMPAT_PRODUCER_JOB_NAME" \
             --candidate-tgz "$ROOT/candidate/$CANDIDATE_FILE_NAME" \
             --candidate-version "$CANDIDATE_VERSION" \
             --candidate-source-sha "$CANDIDATE_SOURCE_SHA" \
@@ -1243,9 +1235,13 @@ jobs:
           if-no-files-found: error
 
       - name: Upload Gateway/node compatibility diagnostics
-        if: ${{ failure() }}
+        if: ${{ failure() && steps.produce_compat.outcome != 'skipped' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: openclaw-gateway-node-linux-compat-diagnostics-${{ matrix.architecture }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/gateway-node-compat/evidence/logs/*.log
-          if-no-files-found: ignore
+          path: |
+            ${{ runner.temp }}/gateway-node-compat/evidence/diagnostics/producer-failure.json
+            ${{ runner.temp }}/gateway-node-compat/evidence/diagnostics/raw/*.json
+            ${{ runner.temp }}/gateway-node-compat/evidence/*.json
+            ${{ runner.temp }}/gateway-node-compat/evidence/logs/*.log
+          if-no-files-found: error
