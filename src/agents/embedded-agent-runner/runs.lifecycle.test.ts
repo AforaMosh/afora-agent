@@ -22,42 +22,7 @@ import {
   waitForActiveEmbeddedRuns,
   waitForEmbeddedAgentRunEnd,
 } from "./runs.js";
-import { testing } from "./runs.test-support.js";
-
-type RunHandle = Parameters<typeof setActiveEmbeddedRun>[1];
-
-function createRunHandle(
-  overrides: {
-    abort?: () => void;
-    isAbortable?: boolean;
-    isCompacting?: boolean;
-    isStreaming?: boolean;
-    isStopped?: () => boolean;
-    messageInjection?: RunHandle["messageInjection"];
-    runId?: string;
-    queueMessage?: RunHandle["queueMessage"];
-    supportsQueueMessageImages?: boolean;
-    supportsTranscriptCommitWait?: boolean;
-  } = {},
-): RunHandle {
-  // Minimal handle fixture with overrideable lifecycle probes for registry
-  // behavior; individual tests supply queue/abort behavior when needed.
-  const abort = overrides.abort ?? (() => {});
-  return {
-    runId: overrides.runId,
-    queueMessage: overrides.queueMessage ?? (async () => {}),
-    ...(overrides.messageInjection ? { messageInjection: overrides.messageInjection } : {}),
-    isStreaming: () => overrides.isStreaming ?? true,
-    ...(overrides.isStopped ? { isStopped: overrides.isStopped } : {}),
-    ...(overrides.isAbortable !== undefined
-      ? { isAbortable: () => overrides.isAbortable !== false }
-      : {}),
-    isCompacting: () => overrides.isCompacting ?? false,
-    supportsQueueMessageImages: overrides.supportsQueueMessageImages,
-    supportsTranscriptCommitWait: overrides.supportsTranscriptCommitWait,
-    abort,
-  };
-}
+import { createRunHandle, testing } from "./runs.test-support.js";
 
 describe("embedded-agent runner run lifecycle", () => {
   afterEach(() => {

@@ -1,5 +1,7 @@
 import "./runs.js";
 
+type RunHandle = Parameters<(typeof import("./runs.js"))["setActiveEmbeddedRun"]>[1];
+
 type EmbeddedRunsTestApi = {
   persistForceClearedEmbeddedRunTerminalState(params: {
     sessionId: string;
@@ -22,3 +24,36 @@ function getTestApi(): EmbeddedRunsTestApi {
 }
 
 export const testing = getTestApi();
+
+export function createRunHandle(
+  overrides: {
+    abort?: () => void;
+    isAbortable?: boolean;
+    isCompacting?: boolean;
+    isStreaming?: boolean;
+    isStopped?: () => boolean;
+    messageInjection?: RunHandle["messageInjection"];
+    runId?: string;
+    queueMessage?: RunHandle["queueMessage"];
+    supportsQueueMessageImages?: boolean;
+    supportsTranscriptCommitWait?: boolean;
+  } = {},
+): RunHandle {
+  // Minimal handle fixture with overrideable lifecycle probes for registry
+  // behavior; individual tests supply queue/abort behavior when needed.
+  const abort = overrides.abort ?? (() => {});
+  return {
+    runId: overrides.runId,
+    queueMessage: overrides.queueMessage ?? (async () => {}),
+    ...(overrides.messageInjection ? { messageInjection: overrides.messageInjection } : {}),
+    isStreaming: () => overrides.isStreaming ?? true,
+    ...(overrides.isStopped ? { isStopped: overrides.isStopped } : {}),
+    ...(overrides.isAbortable !== undefined
+      ? { isAbortable: () => overrides.isAbortable !== false }
+      : {}),
+    isCompacting: () => overrides.isCompacting ?? false,
+    supportsQueueMessageImages: overrides.supportsQueueMessageImages,
+    supportsTranscriptCommitWait: overrides.supportsTranscriptCommitWait,
+    abort,
+  };
+}
