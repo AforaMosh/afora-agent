@@ -3,69 +3,19 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const CONTRACT_PATH = "qa/contracts/gateway-node-platform-topologies.json";
-const PLATFORM_ORDER = ["macos", "ios", "watchos", "android", "wearos", "windows"] as const;
+const PLATFORM_ORDER = [
+  "macos",
+  "ios",
+  "watchos",
+  "android",
+  "wearos",
+  "windows",
+  "linux",
+] as const;
 const MAX_STRING_LENGTH = 180;
+const SHA_PATTERN = /^[0-9a-f]{40}$/;
 
 type JsonRecord = Record<string, unknown>;
-type Platform = (typeof PLATFORM_ORDER)[number];
-type ImplementationOwner = {
-  repository: "openclaw/openclaw" | "openclaw/openclaw-windows-node";
-  path: string | null;
-};
-
-const EXPECTED_IMPLEMENTATION_OWNERS: Record<Platform, readonly ImplementationOwner[]> = {
-  macos: [
-    {
-      repository: "openclaw/openclaw",
-      path: "apps/macos/Sources/OpenClaw/NodeMode/MacNodeModeCoordinator.swift",
-    },
-    {
-      repository: "openclaw/openclaw",
-      path: "apps/shared/OpenClawKit/Sources/OpenClawKit/GatewayChannel.swift",
-    },
-  ],
-  ios: [
-    {
-      repository: "openclaw/openclaw",
-      path: "apps/ios/Sources/Model/NodeAppModel.swift",
-    },
-    {
-      repository: "openclaw/openclaw",
-      path: "apps/shared/OpenClawKit/Sources/OpenClawKit/GatewayChannel.swift",
-    },
-  ],
-  watchos: [
-    {
-      repository: "openclaw/openclaw",
-      path: "apps/ios/WatchApp/Sources/WatchDirectNode.swift",
-    },
-    {
-      repository: "openclaw/openclaw",
-      path: "src/gateway/watch-node-http.ts",
-    },
-  ],
-  android: [
-    {
-      repository: "openclaw/openclaw",
-      path: "apps/android/app/src/main/java/ai/openclaw/app/gateway/GatewaySession.kt",
-    },
-  ],
-  wearos: [
-    {
-      repository: "openclaw/openclaw",
-      path: "apps/android/wear/src/main/java/ai/openclaw/wear/WearProxyClient.kt",
-    },
-    {
-      repository: "openclaw/openclaw",
-      path: "apps/android/app/src/main/java/ai/openclaw/app/wear/WearProxyBridge.kt",
-    },
-    {
-      repository: "openclaw/openclaw",
-      path: "apps/android/app/src/main/java/ai/openclaw/app/gateway/GatewaySession.kt",
-    },
-  ],
-  windows: [{ repository: "openclaw/openclaw-windows-node", path: null }],
-};
 
 function asRecord(value: unknown, label: string): JsonRecord {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -89,22 +39,49 @@ function assertBoundedString(value: unknown, label: string): asserts value is st
   }
 }
 
-function assertOwner(value: unknown, label: string): void {
-  const owner = asRecord(value, label);
-  assertExactKeys(owner, ["repository", "path"], label);
-  assertBoundedString(owner.repository, `${label}.repository`);
-  expect(["openclaw/openclaw", "openclaw/openclaw-windows-node"]).toContain(owner.repository);
-  if (owner.repository === "openclaw/openclaw-windows-node") {
-    expect(owner.path).toBeNull();
-    return;
+function assertRepositoryPath(value: unknown, label: string): asserts value is string {
+  assertBoundedString(value, label);
+  expect(value.startsWith("/")).toBe(false);
+  expect(value.includes("\\")).toBe(false);
+  expect(value.split("/")).not.toContain("");
+  expect(value.split("/")).not.toContain(".");
+  expect(value.split("/")).not.toContain("..");
+}
+
+function assertSourceAnchor(value: unknown, label: string, platform: string): string {
+  const anchor = asRecord(value, label);
+  expect(anchor.platform).toBe(platform);
+  assertBoundedString(anchor.repository, `${label}.repository`);
+  expect(["openclaw/openclaw", "openclaw/openclaw-windows-node"]).toContain(anchor.repository);
+  assertRepositoryPath(anchor.path, `${label}.path`);
+  expect(Array.isArray(anchor.symbols)).toBe(true);
+  const symbols = anchor.symbols as unknown[];
+  expect(symbols.length).toBeGreaterThan(0);
+  for (const [symbolIndex, symbol] of symbols.entries()) {
+    assertBoundedString(symbol, `${label}.symbols[${symbolIndex}]`);
   }
-  assertBoundedString(owner.path, `${label}.path`);
-  expect(owner.path.startsWith("/")).toBe(false);
-  expect(owner.path.includes("\\")).toBe(false);
-  expect(owner.path.split("/")).not.toContain("");
-  expect(owner.path.split("/")).not.toContain(".");
-  expect(owner.path.split("/")).not.toContain("..");
-  expect(() => execFileSync("git", ["cat-file", "-e", `HEAD:${owner.path}`])).not.toThrow();
+
+  if (anchor.repository === "openclaw/openclaw") {
+    assertExactKeys(anchor, ["platform", "repository", "verification", "path", "symbols"], label);
+    expect(anchor.verification).toBe("tracked-source-markers");
+    expect(() =>
+      execFileSync("git", ["ls-files", "--error-unmatch", "--", anchor.path], { stdio: "ignore" }),
+    ).not.toThrow();
+    const source = readFileSync(anchor.path, "utf8");
+    for (const symbol of symbols as string[]) {
+      expect(source, `${label} source anchor ${symbol}`).toContain(symbol);
+    }
+    return `${anchor.repository}:${anchor.path}`;
+  }
+
+  assertExactKeys(
+    anchor,
+    ["platform", "repository", "verification", "path", "revision", "symbols"],
+    label,
+  );
+  expect(anchor.verification).toBe("unverified-external-reference");
+  expect(anchor.revision).toMatch(SHA_PATTERN);
+  return `${anchor.repository}@${anchor.revision}:${anchor.path}`;
 }
 
 function expectedTopology(platform: string): JsonRecord {
@@ -132,6 +109,11 @@ function expectedTopology(platform: string): JsonRecord {
           transport: "wear-message-api-data-layer",
         },
         {
+          from: "wearos",
+          to: "android-phone",
+          transport: "wear-channel-api-data-layer",
+        },
+        {
           from: "android-phone",
           to: "gateway",
           transport: "websocket",
@@ -148,8 +130,15 @@ function expectedTopology(platform: string): JsonRecord {
 
 function validateInventory(value: unknown): JsonRecord {
   const inventory = asRecord(value, "platform topology inventory");
-  assertExactKeys(inventory, ["kind", "platforms"], "platform topology inventory");
-  expect(inventory.kind).toBe("openclaw.gateway-node-platform-topology-inventory");
+  assertExactKeys(
+    inventory,
+    ["kind", "scope", "releaseEvidence", "consumers", "platforms"],
+    "platform topology inventory",
+  );
+  expect(inventory.kind).toBe("openclaw.gateway-node-platform-topology-reference");
+  expect(inventory.scope).toBe("advisory-source-topology");
+  expect(inventory.releaseEvidence).toBe("none");
+  expect(inventory.consumers).toEqual([]);
   expect(Array.isArray(inventory.platforms)).toBe(true);
   const platforms = inventory.platforms as unknown[];
   expect(platforms).toHaveLength(PLATFORM_ORDER.length);
@@ -157,7 +146,7 @@ function validateInventory(value: unknown): JsonRecord {
   const seenPlatforms = new Set<string>();
   platforms.forEach((rowValue, index) => {
     const row = asRecord(rowValue, `platforms[${index}]`);
-    assertExactKeys(row, ["platform", "topology", "implementationOwners"], `platforms[${index}]`);
+    assertExactKeys(row, ["platform", "topology", "sourceAnchors"], `platforms[${index}]`);
     const platform = PLATFORM_ORDER[index];
     expect(row.platform).toBe(platform);
     assertBoundedString(row.platform, `platforms[${index}].platform`);
@@ -168,12 +157,13 @@ function validateInventory(value: unknown): JsonRecord {
     assertExactKeys(topology, ["kind", "gatewayNegotiator", "edges"], `${row.platform}.topology`);
     expect(topology).toEqual(expectedTopology(platform));
 
-    expect(Array.isArray(row.implementationOwners)).toBe(true);
-    const owners = row.implementationOwners as unknown[];
-    owners.forEach((owner, ownerIndex) =>
-      assertOwner(owner, `${row.platform}.implementationOwners[${ownerIndex}]`),
+    expect(Array.isArray(row.sourceAnchors)).toBe(true);
+    const anchors = row.sourceAnchors as unknown[];
+    expect(anchors.length).toBeGreaterThan(0);
+    const identities = anchors.map((anchor, anchorIndex) =>
+      assertSourceAnchor(anchor, `${row.platform}.sourceAnchors[${anchorIndex}]`, platform),
     );
-    expect(owners).toEqual(EXPECTED_IMPLEMENTATION_OWNERS[platform]);
+    expect(new Set(identities).size).toBe(identities.length);
   });
 
   return inventory;
@@ -189,14 +179,25 @@ function cloneInventory(): JsonRecord {
   return structuredClone(readInventory().value);
 }
 
+function windowsExternalAnchor(value: JsonRecord): JsonRecord {
+  const windows = (value.platforms as JsonRecord[]).find((row) => row.platform === "windows");
+  const anchor = (windows?.sourceAnchors as JsonRecord[] | undefined)?.find(
+    (candidate) => candidate.repository === "openclaw/openclaw-windows-node",
+  );
+  if (!anchor) {
+    throw new Error("Windows external source anchor is missing.");
+  }
+  return anchor;
+}
+
 describe("Gateway/node platform topology inventory", () => {
-  it("is canonical JSON with the exact six validated platform rows", () => {
+  it("is canonical advisory JSON with the exact seven validated platform rows", () => {
     const { raw, value } = readInventory();
     expect(raw).toBe(`${JSON.stringify(value, null, 2)}\n`);
     expect(validateInventory(value)).toBe(value);
   });
 
-  it("encodes direct, watch HTTP, and Wear two-hop topology truth", () => {
+  it("encodes direct, watch HTTP, and Wear two-hop source topology", () => {
     const { platforms } = validateInventory(readInventory().value);
     const rows = platforms as JsonRecord[];
     expect(rows.map((row) => ({ platform: row.platform, topology: row.topology }))).toEqual(
@@ -206,9 +207,15 @@ describe("Gateway/node platform topology inventory", () => {
 
   it.each([
     [
-      "unknown inventory field",
+      "release evidence field",
       (value: JsonRecord) => {
-        value.proof = true;
+        value.currentRunEvidence = [];
+      },
+    ],
+    [
+      "release evidence consumer",
+      (value: JsonRecord) => {
+        value.consumers = ["scripts/release-ci-summary.mjs"];
       },
     ],
     [
@@ -231,35 +238,49 @@ describe("Gateway/node platform topology inventory", () => {
       },
     ],
     [
-      "core-owned Windows implementation",
+      "unpinned external source",
       (value: JsonRecord) => {
-        (value.platforms as JsonRecord[])[5].implementationOwners = [
-          { repository: "openclaw/openclaw", path: "src/node-host/runner.ts" },
-        ];
+        delete windowsExternalAnchor(value).revision;
       },
     ],
     [
-      "duplicate implementation owner",
+      "external source claiming local verification",
       (value: JsonRecord) => {
-        const owners = (value.platforms as JsonRecord[])[0].implementationOwners as JsonRecord[];
-        owners.push(structuredClone(owners[0]));
+        windowsExternalAnchor(value).verification = "tracked-source-markers";
       },
     ],
     [
-      "unrelated existing implementation owner",
+      "local source claiming external verification",
       (value: JsonRecord) => {
-        const owners = (value.platforms as JsonRecord[])[0].implementationOwners as JsonRecord[];
-        owners[0] = {
-          repository: "openclaw/openclaw",
-          path: "apps/ios/Sources/Model/NodeAppModel.swift",
-        };
+        const anchor = ((value.platforms as JsonRecord[])[0].sourceAnchors as JsonRecord[])[0];
+        anchor.verification = "unverified-external-reference";
       },
     ],
     [
-      "reordered implementation owners",
+      "missing local source anchor",
       (value: JsonRecord) => {
-        const owners = (value.platforms as JsonRecord[])[0].implementationOwners as JsonRecord[];
-        owners.reverse();
+        const anchor = ((value.platforms as JsonRecord[])[0].sourceAnchors as JsonRecord[])[0];
+        anchor.path = "apps/macos/Sources/OpenClaw/NodeMode/DoesNotExist.swift";
+      },
+    ],
+    [
+      "stale local source symbol",
+      (value: JsonRecord) => {
+        const anchor = ((value.platforms as JsonRecord[])[0].sourceAnchors as JsonRecord[])[0];
+        anchor.symbols = ["RemovedMacNodeTransport"];
+      },
+    ],
+    [
+      "cross-platform source anchors",
+      (value: JsonRecord) => {
+        const rows = value.platforms as JsonRecord[];
+        rows[1].sourceAnchors = structuredClone(rows[0].sourceAnchors);
+      },
+    ],
+    [
+      "release coverage row field",
+      (value: JsonRecord) => {
+        (value.platforms as JsonRecord[])[0].coverage = [];
       },
     ],
     [
