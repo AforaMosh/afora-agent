@@ -1647,6 +1647,7 @@
     "mobile:release:resolve": "node --import tsx scripts/mobile-release-ref.ts resolve",
     "openclaw": "node scripts/run-node.mjs",
     "openclaw:rpc": "node scripts/run-node.mjs agent --mode rpc --json",
+    "perf:memory-authorization-shadow": "node --import tsx scripts/bench-memory-authorization-shadow.ts",
     "perf:web-fetch": "node --import tsx scripts/bench-web-fetch.ts",
     "perf:kova:summary": "node scripts/kova-ci-summary.mjs",
     "perf:source:summary": "node scripts/openclaw-performance-source-summary.mjs",
