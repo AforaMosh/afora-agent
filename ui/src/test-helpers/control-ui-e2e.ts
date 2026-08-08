@@ -1847,8 +1847,11 @@ function installControlUiMockGateway(
     },
     closeLatestWithDeferredNext(methods, code, reason) {
       const socket = MockWebSocket.latest;
+      if (!socket || socket.readyState >= MockWebSocket.CLOSING) {
+        throw new Error("No live mock Gateway socket is available to close");
+      }
       deferredMethods.push(...methods);
-      socket?.close(code ?? 1006, reason ?? "mock close");
+      socket.close(code ?? 1006, reason ?? "mock close");
     },
     deliverLatest(frame) {
       MockWebSocket.latest?.deliver(frame);

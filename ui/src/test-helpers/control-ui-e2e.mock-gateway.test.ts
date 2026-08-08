@@ -164,6 +164,27 @@ describe("mock gateway request-scoped deferrals", () => {
     reconnectSocket.close();
   });
 
+  it("does not arm future requests when no live socket can be closed", async () => {
+    window.sessionStorage.clear();
+    // oxlint-disable-next-line typescript/no-implied-eval -- Executes the serialized mock exactly as the browser does.
+    new Function(createControlUiMockGatewayInitScript({}))();
+    const gateway = deferredGateway();
+
+    expect(() => gateway.closeLatestWithDeferredNext(["sessions.list"])).toThrow(
+      "No live mock Gateway socket is available to close",
+    );
+
+    const socket = new WebSocket("ws://mock-gateway");
+    const frames = collectResponseFrames(socket);
+    await flushMockTimers();
+    socket.send(
+      JSON.stringify({ type: "req", id: "list-after-failed-close", method: "sessions.list" }),
+    );
+    await flushMockTimers();
+    expect(frames.find((frame) => frame.id === "list-after-failed-close")?.payload).toBeDefined();
+    socket.close();
+  });
+
   it("retains the newest 100 closed request tombstones", async () => {
     window.sessionStorage.clear();
     const requestCount = 102;
