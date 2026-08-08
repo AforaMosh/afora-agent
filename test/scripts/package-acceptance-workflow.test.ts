@@ -3434,7 +3434,7 @@ describe("package artifact reuse", () => {
       "live_suite_filter: ${{ needs.resolve_target.outputs.repo_live_suite_filter }}",
     );
     expect(workflow).toContain(
-      'if: needs.resolve_target.outputs.cross_os_scheduled == \'true\' || needs.resolve_target.outputs.docker_release_scheduled == \'true\' || contains(fromJSON(\'["package","windows-node"]\'), needs.resolve_target.outputs.rerun_group)',
+      "if: needs.resolve_target.outputs.cross_os_scheduled == 'true' || needs.resolve_target.outputs.docker_release_scheduled == 'true' || contains(fromJSON('[\"package\",\"windows-node\"]'), needs.resolve_target.outputs.rerun_group)",
     );
     expect(workflow).toContain(
       "if: needs.resolve_target.outputs.docker_release_scheduled == 'true'",
@@ -3489,9 +3489,7 @@ describe("package artifact reuse", () => {
       prerelease_asset_sha256: "${{ steps.resolve.outputs.prerelease_asset_sha256 }}",
     });
     expect(workflow).toContain('release_sha="$(resolve_tag_sha "$tag")"');
-    expect(workflow).toContain(
-      'echo "${channel}_release_sha=${release_sha}" >> "$GITHUB_OUTPUT"',
-    );
+    expect(workflow).toContain('echo "${channel}_release_sha=${release_sha}" >> "$GITHUB_OUTPUT"');
     expect(workflow).not.toContain(
       'echo "${channel}_release_sha=$(resolve_tag_sha "$tag")" >> "$GITHUB_OUTPUT"',
     );
