@@ -2,6 +2,7 @@
 set -Eeuo pipefail
 
 source scripts/lib/openclaw-e2e-instance.sh
+source scripts/e2e/lib/upgrade-survivor/gateway-start.sh
 
 SCENARIO="${OPENCLAW_UPGRADE_SURVIVOR_SCENARIO:-base}"
 
@@ -1459,13 +1460,16 @@ start_gateway() {
   budget="$(openclaw_e2e_read_positive_int_env OPENCLAW_UPGRADE_SURVIVOR_START_BUDGET_SECONDS 90)"
   local start_epoch
   local ready_epoch
+  local absolute_deadline
   start_epoch="$(node -e "process.stdout.write(String(Date.now()))")"
-  env -u OPENCLAW_GATEWAY_TOKEN -u OPENCLAW_GATEWAY_PASSWORD openclaw gateway --port "$port" --bind loopback --allow-unconfigured >"$GATEWAY_LOG" 2>&1 &
-  gateway_pid="$!"
+  absolute_deadline=$((SECONDS + budget))
+  upgrade_survivor_start_gateway_with_convergence_retry \
+    gateway_pid "$GATEWAY_LOG" 360 "$port" "${1:-strict}" "$absolute_deadline" -- \
+    env -u OPENCLAW_GATEWAY_TOKEN -u OPENCLAW_GATEWAY_PASSWORD \
+    openclaw gateway --port "$port" --bind loopback --allow-unconfigured
   if [ "$UPDATE_RESTART_MODE" = "auto-auth" ]; then
     printf '%s\n' "$gateway_pid" >"$SYSTEMCTL_SHIM_PID_FILE"
   fi
-  openclaw_e2e_wait_gateway_ready "$gateway_pid" "$GATEWAY_LOG" 360 "$port" "${1:-strict}"
   ready_epoch="$(node -e "process.stdout.write(String(Date.now()))")"
   start_seconds=$(((ready_epoch - start_epoch + 999) / 1000))
   if [ "$start_seconds" -gt "$budget" ]; then

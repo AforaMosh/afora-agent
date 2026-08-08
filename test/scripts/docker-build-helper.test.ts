@@ -96,6 +96,8 @@ const RELEASE_USER_JOURNEY_SCENARIO_PATH = "scripts/e2e/lib/release-user-journey
 const UPGRADE_SURVIVOR_RUN_SCRIPT = "scripts/e2e/lib/upgrade-survivor/run.sh";
 const UPGRADE_SURVIVOR_UPDATE_RESTART_AUTH_PATH =
   "scripts/e2e/lib/upgrade-survivor/update-restart-auth.sh";
+const UPGRADE_SURVIVOR_PACKAGE_SELF_UPGRADE_PATH =
+  "scripts/e2e/lib/upgrade-survivor/update-run-package-self-upgrade.sh";
 const GATEWAY_NETWORK_DOCKER_E2E_PATH = "scripts/e2e/gateway-network-docker.sh";
 const BROWSER_CDP_SNAPSHOT_DOCKER_E2E_PATH = "scripts/e2e/browser-cdp-snapshot-docker.sh";
 const SANDBOX_BROWSER_SIDECAR_DOCKER_E2E_PATH = "scripts/e2e/sandbox-browser-sidecar-docker.sh";
@@ -2758,7 +2760,11 @@ fi
     expect(publishedRunner).toContain('openclaw gateway --port "$port" --bind loopback');
     expect(publishedRunner).toContain("start_gateway legacy-ready-log-ok");
     expect(publishedRunner).toContain(
-      'openclaw_e2e_wait_gateway_ready "$gateway_pid" "$GATEWAY_LOG" 360 "$port" "${1:-strict}"',
+      'gateway_pid "$GATEWAY_LOG" 360 "$port" "${1:-strict}" "$absolute_deadline" --',
+    );
+    expect(publishedRunner).toContain("upgrade_survivor_start_gateway_with_convergence_retry");
+    expect(publishedRunner).toContain(
+      'openclaw gateway --port "$port" --bind loopback --allow-unconfigured',
     );
 
     expect(updateRestartAuth).toContain(
@@ -2769,8 +2775,77 @@ fi
     );
     expect(updateRestartAuth).toContain('openclaw gateway --port "$port" --bind loopback');
     expect(updateRestartAuth).toContain(
-      'openclaw_e2e_wait_gateway_ready "$gateway_pid" "$log_file" 360 "$port"',
+      'gateway_pid "$log_file" 360 "$port" strict "$absolute_deadline" --',
     );
+    expect(updateRestartAuth).toContain("upgrade_survivor_start_gateway_with_convergence_retry");
+    expect(updateRestartAuth).toContain(
+      'openclaw gateway --port "$port" --bind loopback --allow-unconfigured',
+    );
+    expect(runner).toContain(
+      'gateway_pid "$GATEWAY_LOG" 360 "$PORT" strict "$absolute_deadline" --',
+    );
+    expect(runner).toContain("upgrade_survivor_start_gateway_with_convergence_retry");
+    expect(runner).toContain(
+      'openclaw gateway --port "$PORT" --bind loopback --allow-unconfigured',
+    );
+  });
+
+  it("keeps upgrade survivor convergence ownership structural", () => {
+    const wrapper = readFileSync(UPGRADE_SURVIVOR_DOCKER_E2E_PATH, "utf8");
+    const inlinePayload = extractUpgradeSurvivorPayload(wrapper);
+    const publishedRunner = readFileSync(UPGRADE_SURVIVOR_RUN_SCRIPT, "utf8");
+    const updateRestartAuth = readFileSync(UPGRADE_SURVIVOR_UPDATE_RESTART_AUTH_PATH, "utf8");
+    const packageSelfUpgrade = readFileSync(UPGRADE_SURVIVOR_PACKAGE_SELF_UPGRADE_PATH, "utf8");
+    const convergenceCall = /upgrade_survivor_start_gateway_with_convergence_retry/gu;
+    const instanceMount =
+      '-v "$HARNESS_ROOT_DIR/scripts/lib/openclaw-e2e-instance.sh:/app/scripts/lib/openclaw-e2e-instance.sh:ro"';
+    const gatewayStartMount =
+      '-v "$HARNESS_ROOT_DIR/scripts/e2e/lib/upgrade-survivor/gateway-start.sh:/app/scripts/e2e/lib/upgrade-survivor/gateway-start.sh:ro"';
+
+    expect(publishedRunner.indexOf("source scripts/lib/openclaw-e2e-instance.sh")).toBeLessThan(
+      publishedRunner.indexOf("source scripts/e2e/lib/upgrade-survivor/gateway-start.sh"),
+    );
+    expectTextToIncludeAll(inlinePayload, [
+      "source scripts/lib/openclaw-e2e-instance.sh",
+      "source scripts/e2e/lib/upgrade-survivor/gateway-start.sh",
+    ]);
+    expect(
+      wrapper.match(new RegExp(instanceMount.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"), "gu")),
+    ).toHaveLength(1);
+    expect(
+      wrapper.match(new RegExp(gatewayStartMount.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"), "gu")),
+    ).toHaveLength(1);
+    expect(wrapper).not.toContain("OPENCLAW_UPGRADE_SURVIVOR_GATEWAY_START");
+
+    const directConvergenceCalls = [publishedRunner, updateRestartAuth, inlinePayload].flatMap(
+      (script) => script.match(convergenceCall) ?? [],
+    );
+    expect(directConvergenceCalls).toHaveLength(3);
+    expect(updateRestartAuth).not.toContain(
+      "source scripts/e2e/lib/upgrade-survivor/gateway-start.sh",
+    );
+    expect(
+      updateRestartAuth.indexOf("upgrade_survivor_start_gateway_with_convergence_retry"),
+    ).toBeLessThan(
+      updateRestartAuth.indexOf(
+        'printf \'%s\\n\' "$gateway_pid" >"$OPENCLAW_UPGRADE_SURVIVOR_SYSTEMCTL_SHIM_PID_FILE"',
+      ),
+    );
+
+    expect(packageSelfUpgrade).toContain(
+      "source scripts/e2e/lib/upgrade-survivor/update-restart-auth.sh",
+    );
+    expect(packageSelfUpgrade).not.toContain(
+      "source scripts/e2e/lib/upgrade-survivor/gateway-start.sh",
+    );
+    expect(packageSelfUpgrade).not.toContain(
+      "upgrade_survivor_start_gateway_with_convergence_retry",
+    );
+    expectTextToIncludeAll(packageSelfUpgrade, [
+      "restart mode: update process respawn (supervisor restart)",
+      "OPENCLAW_SYSTEMD_UNIT=openclaw-gateway.service",
+      'SUPERVISOR_MONITOR_LOG="$ARTIFACT_DIR/supervisor-monitor.log"',
+    ]);
   });
 
   it("keeps upgrade survivor auto-auth success summary set -u safe", () => {
