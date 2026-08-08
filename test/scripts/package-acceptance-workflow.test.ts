@@ -371,19 +371,25 @@ if (cli === "git") {
   };
 }
 
-function simulateWorkflowSteps(job: WorkflowJob, failedStepName: string) {
-  type Outcome = "failure" | "skipped" | "success";
+function simulateWorkflowSteps(
+  job: WorkflowJob,
+  injectedStep?: { name: string; outcome: "cancelled" | "failure" },
+) {
+  type Outcome = "cancelled" | "failure" | "skipped" | "success";
   const outcomes = new Map<string, Outcome>();
   const stepOutcomes = new Map<string, Outcome>();
   const outputs = new Set<string>();
+  const eligibleSteps = new Set<string>();
+  let jobCancelled = false;
   let jobFailed = false;
   const conditionAllows = (condition?: string) => {
-    if (!condition) return !jobFailed;
+    if (!condition) return !jobFailed && !jobCancelled;
     return condition
       .replace(/^\$\{\{\s*|\s*\}\}$/gu, "")
       .split(/\s*&&\s*/u)
       .every((term) => {
-        if (term === "always()" || term === "!cancelled()") return true;
+        if (term === "always()") return true;
+        if (term === "!cancelled()") return !jobCancelled;
         const outcome = term.match(/^steps\.([^.]+)\.outcome == '([^']+)'$/u);
         if (outcome) return stepOutcomes.get(outcome[1] ?? "") === outcome[2];
         const output = term.match(/^steps\.([^.]+)\.outputs\.([^. ]+) != ''$/u);
@@ -397,15 +403,17 @@ function simulateWorkflowSteps(job: WorkflowJob, failedStepName: string) {
       outcomes.set(name, "skipped");
       continue;
     }
+    eligibleSteps.add(name);
 
-    const outcome: Outcome = name === failedStepName ? "failure" : "success";
+    const outcome: Outcome = name === injectedStep?.name ? injectedStep.outcome : "success";
     outcomes.set(name, outcome);
     if (step.id) stepOutcomes.set(step.id, outcome);
     if (step.id === "run_lane") outputs.add("run_lane.output_dir");
     if (outcome === "failure" && step["continue-on-error"] !== true) jobFailed = true;
+    if (outcome === "cancelled") jobCancelled = true;
   }
 
-  return { jobFailed, outcomes };
+  return { eligibleSteps, jobCancelled, jobFailed, outcomes };
 }
 
 function shellFunctionSource(source: string, functionName: string): string {
@@ -3857,7 +3865,6 @@ describe("package artifact reuse", () => {
     const workflow = readWorkflow(QA_LIVE_TRANSPORTS_WORKFLOW);
     const callInputs = workflow.on?.workflow_call?.inputs ?? {};
     const dispatchInputs = workflow.on?.workflow_dispatch?.inputs ?? {};
-    const job = workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, "run_live_runtime_token_efficiency");
     const validateStep = workflowStep(
       workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, "validate_selected_ref"),
       "Validate selected ref",
@@ -3871,8 +3878,15 @@ describe("package artifact reuse", () => {
     });
     expect(callInputs.run_live_runtime_proof).toBeUndefined();
     expect(dispatchInputs.expected_sha).toBeUndefined();
-    expect(job.needs).toEqual(["authorize_actor", "validate_selected_ref"]);
-    expect(job.if).toBe(QA_LIVE_RUNTIME_PROOF_IF);
+    for (const jobName of [
+      "run_live_runtime_token_efficiency",
+      "run_live_gateway_restart_runtime_pair",
+      "run_live_inbound_voice_talkback",
+    ]) {
+      const job = workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, jobName);
+      expect(job.needs, jobName).toEqual(["authorize_actor", "validate_selected_ref"]);
+      expect(job.if, jobName).toBe(QA_LIVE_RUNTIME_PROOF_IF);
+    }
     expect(validateStep.env).toMatchObject({
       EVENT_NAME: "${{ github.event_name }}",
       EXPECTED_SHA: "${{ inputs.expected_sha }}",
@@ -4031,6 +4045,16 @@ describe("package artifact reuse", () => {
         "Upload live runtime token-efficiency artifacts",
         "always() && steps.run_lane.outputs.output_dir != ''",
       ],
+      [
+        "run_live_gateway_restart_runtime_pair",
+        "Upload live gateway restart runtime-pair artifacts",
+        "always() && steps.run_lane.outputs.output_dir != ''",
+      ],
+      [
+        "run_live_inbound_voice_talkback",
+        "Upload live inbound voice talkback artifacts",
+        "always() && steps.run_lane.outputs.output_dir != ''",
+      ],
       ["run_live_matrix", "Upload Matrix QA artifacts", "always()"],
       ["run_live_buzz", "Upload Buzz QA artifacts", "always()"],
       ["run_live_telegram", "Upload Telegram QA artifacts", "always()"],
@@ -4047,85 +4071,230 @@ describe("package artifact reuse", () => {
     }
   });
 
-  it("keeps blocking runtime proofs observable after sibling failures", () => {
-    const job = workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, "run_live_runtime_token_efficiency");
-    const credentialStep = workflowStep(job, "Validate required QA credential env");
-    const runStep = workflowStep(job, "Run live core runtime-pair lane");
-    const restartStep = workflowStep(job, "Run pinned GPT-5.4 gateway restart runtime pair");
-    const voiceStep = workflowStep(job, "Run pinned GPT-5.4 inbound voice talkback");
-    const reportStep = workflowStep(job, "Generate live runtime token-efficiency report");
-    const uploadStep = workflowStep(job, "Upload live runtime token-efficiency artifacts");
-    const stepNames = job.steps?.map((step) => step.name) ?? [];
-    const voiceCommand = (voiceStep.run ?? "")
-      .split("\n")
-      .map((line) => line.trim().replace(/ \\$/u, ""))
-      .filter((line) => line === "pnpm openclaw qa suite" || line.startsWith("--"));
+  it("runs blocking live runtime proofs as independent jobs", () => {
+    const sharedEnv = {
+      QA_PARITY_CONCURRENCY: "1",
+      OPENCLAW_QA_REDACT_PUBLIC_METADATA: "1",
+      OPENCLAW_QA_TRANSPORT_READY_TIMEOUT_MS: "180000",
+    };
+    const cases = [
+      {
+        artifactName:
+          "qa-live-runtime-token-efficiency-${{ github.run_id }}-${{ github.run_attempt }}",
+        forbiddenFlags: [] as string[],
+        jobName: "run_live_runtime_token_efficiency",
+        marker:
+          "printf 'Runtime token-efficiency lane started.\\n' > \"${output_dir}/runtime-lane-started.txt\"",
+        outputDir:
+          'output_dir=".artifacts/qa-e2e/runtime-token-efficiency-live-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"',
+        runStepName: "Run live core runtime-pair lane",
+        command: [
+          "pnpm openclaw qa suite",
+          "--repo-root .",
+          "--provider-mode live-frontier",
+          "--runtime-pair-lane core",
+          '--concurrency "${QA_PARITY_CONCURRENCY}"',
+          '--model "${OPENCLAW_CI_OPENAI_MODEL}"',
+          '--alt-model "${OPENCLAW_CI_OPENAI_FALLBACK_MODEL}"',
+          "--runtime-pair openclaw,codex",
+          "--fast",
+          "--allow-failures",
+          '--output-dir "${output_dir}/runtime-suite"',
+        ],
+        uploadStepName: "Upload live runtime token-efficiency artifacts",
+      },
+      {
+        artifactName:
+          "qa-live-gateway-restart-runtime-pair-${{ github.run_id }}-${{ github.run_attempt }}",
+        forbiddenFlags: ["--allow-failures"],
+        jobName: "run_live_gateway_restart_runtime_pair",
+        marker:
+          "printf 'Gateway restart runtime-pair lane started.\\n' > \"${output_dir}/gateway-restart-runtime-pair-lane-started.txt\"",
+        outputDir:
+          'output_dir=".artifacts/qa-e2e/gateway-restart-runtime-pair-live-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"',
+        runStepName: "Run pinned GPT-5.4 gateway restart runtime pair",
+        command: [
+          "pnpm openclaw qa suite",
+          "--repo-root .",
+          "--provider-mode live-frontier",
+          "--scenario gateway-restart-multi-live",
+          "--concurrency 1",
+          "--model openai/gpt-5.4",
+          "--alt-model openai/gpt-5.4",
+          "--runtime-pair openclaw,codex",
+          "--fast",
+          '--output-dir "${output_dir}/gateway-restart-gpt-5.4-runtime-pair"',
+        ],
+        uploadStepName: "Upload live gateway restart runtime-pair artifacts",
+      },
+      {
+        artifactName:
+          "qa-live-inbound-voice-talkback-${{ github.run_id }}-${{ github.run_attempt }}",
+        forbiddenFlags: ["--runtime-pair", "--runtime-pair-lane", "--allow-failures"],
+        jobName: "run_live_inbound_voice_talkback",
+        marker:
+          "printf 'Inbound voice talkback lane started.\\n' > \"${output_dir}/inbound-voice-talkback-lane-started.txt\"",
+        outputDir:
+          'output_dir=".artifacts/qa-e2e/inbound-voice-talkback-live-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"',
+        runStepName: "Run pinned GPT-5.4 inbound voice talkback",
+        command: [
+          "pnpm openclaw qa suite",
+          "--repo-root .",
+          "--provider-mode live-frontier",
+          "--scenario inbound-voice-talkback-live",
+          "--concurrency 1",
+          "--model openai/gpt-5.4",
+          "--alt-model openai/gpt-5.4",
+          "--fast",
+          '--output-dir "${output_dir}/inbound-voice-talkback-live-gpt-5.4"',
+        ],
+        uploadStepName: "Upload live inbound voice talkback artifacts",
+      },
+    ] as const;
 
-    expect(credentialStep.run).toContain('if [[ -z "${OPENAI_API_KEY:-}" ]]');
-    expect(credentialStep.run).toContain("exit 1");
-    expect(runStep.run).toContain('mkdir -p "${output_dir}"');
-    expect(runStep.run).toContain(
-      "printf 'Runtime token-efficiency lane started.\\n' > \"${output_dir}/runtime-lane-started.txt\"",
-    );
-    expect(restartStep.run).toContain("--provider-mode live-frontier");
-    expect(restartStep.run).toContain("--scenario gateway-restart-multi-live");
-    expect(restartStep.run).toContain("--model openai/gpt-5.4");
-    expect(restartStep.run).toContain("--alt-model openai/gpt-5.4");
-    expect(restartStep.run).toContain("--runtime-pair openclaw,codex");
-    expect(restartStep.run).toContain(
-      "steps.run_lane.outputs.output_dir }}/gateway-restart-gpt-5.4-runtime-pair",
-    );
-    expect(restartStep.run).not.toContain("--allow-failures");
-    expect(voiceCommand).toEqual([
-      "pnpm openclaw qa suite",
-      "--repo-root .",
-      "--provider-mode live-frontier",
-      "--scenario inbound-voice-talkback-live",
-      "--concurrency 1",
-      "--model openai/gpt-5.4",
-      "--alt-model openai/gpt-5.4",
-      "--fast",
-      '--output-dir "${{ steps.run_lane.outputs.output_dir }}/inbound-voice-talkback-live-gpt-5.4"',
-    ]);
-    for (const forbiddenFlag of ["--runtime-pair", "--runtime-pair-lane", "--allow-failures"]) {
-      expect(voiceStep.run).not.toContain(forbiddenFlag);
+    for (const testCase of cases) {
+      const job = workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, testCase.jobName);
+      const checkoutStep = workflowStep(job, "Checkout selected ref");
+      const setupStep = workflowStep(job, "Setup Node environment");
+      const credentialStep = workflowStep(job, "Validate required QA credential env");
+      const buildStep = workflowStep(job, "Build private QA runtime");
+      const runStep = workflowStep(job, testCase.runStepName);
+      const uploadStep = workflowStep(job, testCase.uploadStepName);
+      const command = (runStep.run ?? "")
+        .split("\n")
+        .map((line) => line.trim().replace(/ \\$/u, ""))
+        .filter((line) => line === "pnpm openclaw qa suite" || line.startsWith("--"));
+
+      expect(job.needs, testCase.jobName).toEqual(["authorize_actor", "validate_selected_ref"]);
+      expect(job.if, testCase.jobName).toBe(QA_LIVE_RUNTIME_PROOF_IF);
+      expect(job["runs-on"], testCase.jobName).toBe("blacksmith-16vcpu-ubuntu-2404");
+      expect(job["timeout-minutes"], testCase.jobName).toBe(45);
+      expect(job.environment, testCase.jobName).toBe("qa-live-shared");
+      expect(job.env, testCase.jobName).toEqual(sharedEnv);
+      expect(job.outputs, testCase.jobName).toBeUndefined();
+      expect(job.concurrency, testCase.jobName).toBeUndefined();
+      expect(checkoutStep.with, testCase.jobName).toMatchObject({
+        "persist-credentials": false,
+        ref: "${{ needs.validate_selected_ref.outputs.selected_revision }}",
+        "fetch-depth": 1,
+      });
+      expect(setupStep.uses, testCase.jobName).toBe("./.github/actions/setup-node-env");
+      expect(setupStep.with, testCase.jobName).toEqual({
+        "node-version": "${{ env.NODE_VERSION }}",
+        "install-bun": "true",
+      });
+      expect(credentialStep.run, testCase.jobName).toContain(
+        'if [[ -z "${OPENAI_API_KEY:-}" ]]',
+      );
+      expect(credentialStep.run, testCase.jobName).toContain("exit 1");
+      expect(buildStep.run, testCase.jobName).toBe("pnpm build");
+      expect(runStep.id, testCase.jobName).toBe("run_lane");
+      expect(runStep.run, testCase.jobName).toContain(testCase.outputDir);
+      expect(runStep.run, testCase.jobName).toContain(
+        'echo "output_dir=${output_dir}" >> "$GITHUB_OUTPUT"',
+      );
+      expect(runStep.run, testCase.jobName).toContain('mkdir -p "${output_dir}"');
+      expect(runStep.run, testCase.jobName).toContain(testCase.marker);
+      expect(runStep.run, testCase.jobName).not.toMatch(
+        /^\s*(?:for|while|until)\b[^\n]*\b(?:attempt|retry)\w*\b/imu,
+      );
+      expect(command, testCase.jobName).toEqual(testCase.command);
+      for (const forbiddenFlag of testCase.forbiddenFlags) {
+        expect(runStep.run, `${testCase.jobName}: ${forbiddenFlag}`).not.toContain(forbiddenFlag);
+      }
+      expect(uploadStep.if, testCase.jobName).toBe(
+        "always() && steps.run_lane.outputs.output_dir != ''",
+      );
+      expect(uploadStep.with?.name, testCase.jobName).toBe(testCase.artifactName);
+      expect(uploadStep.with?.path, testCase.jobName).toBe(
+        "${{ steps.run_lane.outputs.output_dir }}",
+      );
+      expect(job.steps?.filter((step) => step.uses === UPLOAD_ARTIFACT_V7)).toHaveLength(1);
+      for (const blockingSurface of [job, ...(job.steps ?? [])]) {
+        expect(blockingSurface["continue-on-error"], testCase.jobName).toBeUndefined();
+      }
+      expect(job.needs, testCase.jobName).not.toContain("run_live_runtime_token_efficiency");
+      expect(job.needs, testCase.jobName).not.toContain("run_live_gateway_restart_runtime_pair");
+      expect(job.needs, testCase.jobName).not.toContain("run_live_inbound_voice_talkback");
     }
+
+    const broadJob = workflowJob(
+      QA_LIVE_TRANSPORTS_WORKFLOW,
+      "run_live_runtime_token_efficiency",
+    );
+    const reportStep = workflowStep(broadJob, "Generate live runtime token-efficiency report");
     expectTextToIncludeAll(reportStep.run, [
       '--summary "${{ steps.run_lane.outputs.output_dir }}/runtime-suite/qa-suite-summary.json"',
       '--output-dir "${{ steps.run_lane.outputs.output_dir }}/runtime-report"',
     ]);
-
-    const postLaneCondition = "${{ !cancelled() && steps.run_lane.outcome == 'success' }}";
-    expect(restartStep.if).toBeUndefined();
-    expect(voiceStep.if).toBe(postLaneCondition);
-    expect(reportStep.if).toBe(postLaneCondition);
-    for (const blockingSurface of [job, runStep, restartStep, voiceStep, reportStep, uploadStep]) {
-      expect(blockingSurface["continue-on-error"]).toBeUndefined();
+    expect(reportStep.if).toBe(
+      "${{ !cancelled() && steps.run_lane.outcome == 'success' }}",
+    );
+    expect(reportStep["continue-on-error"]).toBeUndefined();
+    for (const jobName of [
+      "run_live_gateway_restart_runtime_pair",
+      "run_live_inbound_voice_talkback",
+    ]) {
+      expect(
+        workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, jobName).steps?.some((step) =>
+          step.name?.includes("token-efficiency report"),
+        ),
+      ).toBe(false);
     }
-    expect(stepNames.indexOf(restartStep.name ?? "")).toBeLessThan(
-      stepNames.indexOf(voiceStep.name ?? ""),
-    );
-    expect(stepNames.indexOf(voiceStep.name ?? "")).toBeLessThan(
-      stepNames.indexOf(reportStep.name ?? ""),
-    );
-    expect(stepNames.indexOf(reportStep.name ?? "")).toBeLessThan(
-      stepNames.indexOf(uploadStep.name ?? ""),
-    );
-    expect(job.steps?.filter((step) => step.uses === UPLOAD_ARTIFACT_V7)).toHaveLength(1);
-    expect(uploadStep.with?.path).toBe("${{ steps.run_lane.outputs.output_dir }}");
+  });
 
-    const failureCases = [
-      [restartStep.name ?? "", [voiceStep.name ?? "", reportStep.name ?? ""]],
-      [voiceStep.name ?? "", [reportStep.name ?? ""]],
-      [reportStep.name ?? "", []],
-    ] as const;
-    for (const [failedStep, stillRuns] of failureCases) {
-      const simulation = simulateWorkflowSteps(job, failedStep);
-      for (const stepName of stillRuns) {
-        expect(simulation.outcomes.get(stepName), `${failedStep} -> ${stepName}`).toBe("success");
-      }
-      expect(simulation.outcomes.get(uploadStep.name ?? ""), failedStep).toBe("success");
-      expect(simulation.jobFailed, failedStep).toBe(true);
+  it("keeps published-output artifact conditions eligible after failure or cancellation", () => {
+    for (const [jobName, runStepName, uploadStepName] of [
+      [
+        "run_live_runtime_token_efficiency",
+        "Run live core runtime-pair lane",
+        "Upload live runtime token-efficiency artifacts",
+      ],
+      [
+        "run_live_gateway_restart_runtime_pair",
+        "Run pinned GPT-5.4 gateway restart runtime pair",
+        "Upload live gateway restart runtime-pair artifacts",
+      ],
+      [
+        "run_live_inbound_voice_talkback",
+        "Run pinned GPT-5.4 inbound voice talkback",
+        "Upload live inbound voice talkback artifacts",
+      ],
+    ] as const) {
+      const job = workflowJob(QA_LIVE_TRANSPORTS_WORKFLOW, jobName);
+      const failure = simulateWorkflowSteps(job, {
+        name: runStepName,
+        outcome: "failure",
+      });
+      const cancellation = simulateWorkflowSteps(job, {
+        name: runStepName,
+        outcome: "cancelled",
+      });
+
+      expect(failure.jobFailed, jobName).toBe(true);
+      expect(failure.jobCancelled, jobName).toBe(false);
+      expect(failure.eligibleSteps.has(uploadStepName), jobName).toBe(true);
+      expect(cancellation.jobFailed, jobName).toBe(false);
+      expect(cancellation.jobCancelled, jobName).toBe(true);
+      expect(cancellation.eligibleSteps.has(uploadStepName), jobName).toBe(true);
+    }
+
+    const broadJob = workflowJob(
+      QA_LIVE_TRANSPORTS_WORKFLOW,
+      "run_live_runtime_token_efficiency",
+    );
+    for (const outcome of ["failure", "cancelled"] as const) {
+      const simulation = simulateWorkflowSteps(broadJob, {
+        name: "Validate required QA credential env",
+        outcome,
+      });
+
+      expect(simulation.outcomes.get("Build private QA runtime"), outcome).toBe("skipped");
+      expect(simulation.outcomes.get("Run live core runtime-pair lane"), outcome).toBe("skipped");
+      expect(
+        simulation.eligibleSteps.has("Upload live runtime token-efficiency artifacts"),
+        outcome,
+      ).toBe(false);
     }
   });
 
