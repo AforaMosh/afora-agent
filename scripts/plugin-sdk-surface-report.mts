@@ -252,7 +252,8 @@ export function readPluginSdkSurfaceBudgets(env: NodeJS.ProcessEnv = process.env
       // +3: session-catalog terminal-start provider request and Gateway params/result contracts.
       // +1: worker desktop endpoint contract for desktop-capable worker leases.
       // +45: multiplayer-memory authorization shapes, runtime contract, and conformance types.
-      4893,
+      // +4: current principal and selected-membership evidence references and facts.
+      4897,
       env,
     ),
     publicFunctionExports: readPluginSdkSurfaceBudgetEnv(
