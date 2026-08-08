@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { OpenClawConfig } from "../config/types.js";
+import { formatErrorMessage } from "../infra/errors.js";
 import type { RealtimeVoiceProviderPlugin } from "../plugins/types.js";
 import type { BoundedSerialQueue } from "../shared/bounded-serial-queue.js";
 import type { RealtimeVoiceAgentControlResult } from "../talk/agent-run-control.js";
@@ -193,7 +194,11 @@ export function publishTalkRealtimeRelayEvent(
   // Classify the materialized Talk event so final results cannot be mistaken
   // for transient tool progress by individual provider callback paths.
   const delivery = relayEventDeliveryOptions(event, event.talkEvent);
-  owner.eventSink?.(event);
+  try {
+    owner.eventSink?.(event);
+  } catch (error) {
+    owner.context.logGateway.warn(`talk realtime event sink failed: ${formatErrorMessage(error)}`);
+  }
   owner.context.broadcastToConnIds(RELAY_EVENT, event, new Set([owner.connId]), delivery);
 }
 

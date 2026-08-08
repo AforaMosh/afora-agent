@@ -138,6 +138,53 @@ describe("talk realtime gateway relay", () => {
     );
   });
 
+  it("keeps Gateway and provider delivery alive when the local sink throws", () => {
+    const sendAudio = vi.fn();
+    const provider = createIdleRelayProvider();
+    provider.createBridge = () => ({
+      connect: vi.fn(async () => undefined),
+      sendAudio,
+      setMediaTimestamp: vi.fn(),
+      handleBargeIn: vi.fn(),
+      submitToolResult: vi.fn(),
+      acknowledgeMark: vi.fn(),
+      close: vi.fn(),
+      isConnected: vi.fn(() => true),
+    });
+    const broadcastToConnIds = vi.fn();
+    const warn = vi.fn();
+    const session = createTalkRealtimeRelaySession({
+      context: {
+        broadcastToConnIds,
+        getRuntimeConfig: () => ({}),
+        logGateway: { warn },
+      } as never,
+      connId: "conn-throwing-sink",
+      eventSink: () => {
+        throw new Error("renderer gone");
+      },
+      provider,
+      providerConfig: {},
+      instructions: "brief",
+      tools: [],
+    });
+
+    sendTalkRealtimeRelayAudio({
+      relaySessionId: session.relaySessionId,
+      connId: "conn-throwing-sink",
+      audioBase64: Buffer.from([1, 2]).toString("base64"),
+    });
+
+    expect(warn).toHaveBeenCalledWith("talk realtime event sink failed: renderer gone");
+    expect(broadcastToConnIds).toHaveBeenCalledWith(
+      "talk.event",
+      expect.objectContaining({ relaySessionId: session.relaySessionId, type: "inputAudio" }),
+      new Set(["conn-throwing-sink"]),
+      { dropIfSlow: true },
+    );
+    expect(sendAudio).toHaveBeenCalledWith(Buffer.from([1, 2]));
+  });
+
   it("closes only realtime relays owned by the disconnected connection", async () => {
     const envSnapshot = captureEnv(["OPENCLAW_STATE_DIR"]);
     const tempDir = await fs.realpath(tempDirs.make("openclaw-relay-disconnect-"));
