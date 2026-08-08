@@ -410,13 +410,19 @@ describe("scripts/lib/openclaw-e2e-instance.sh", () => {
   it("reports numeric child statuses for exited and signaled gateways", () => {
     withTempDir("openclaw-e2e-readyz-child-status-", (tempDir) => {
       const logPath = path.join(tempDir, "gateway.log");
+      const signalReadyPath = path.join(tempDir, "signal-ready");
       const result = runBashWithHelper(
         [
           `: >${shellQuote(logPath)}`,
-          "(sleep 0.05; exit 7) &",
+          "wait_for_job_exit() {",
+          '  local pid="$1"',
+          "  # Observe Bash job completion without consuming the status the helper must read.",
+          '  while [[ " $(jobs -rp) " == *" $pid "* ]]; do :; done',
+          "}",
+          "(exit 7) &",
           'gateway_pid="$!"',
           'trap \'kill "$gateway_pid" >/dev/null 2>&1 || true; wait "$gateway_pid" 2>/dev/null || true\' EXIT',
-          "sleep 0.1",
+          'wait_for_job_exit "$gateway_pid"',
           'child_status=""',
           "set +e",
           `openclaw_e2e_wait_gateway_ready "$gateway_pid" ${shellQuote(logPath)} 2 "" strict child_status "$((SECONDS + 2))" 0`,
@@ -424,10 +430,13 @@ describe("scripts/lib/openclaw-e2e-instance.sh", () => {
           "set -e",
           '[ "$readiness_status" -eq 1 ]',
           '[ "$child_status" -eq 7 ]',
-          "sleep 30 &",
+          `${shellQuote(process.execPath)} -e ${shellQuote(
+            'require("node:fs").writeFileSync(process.argv[1], "ready"); setInterval(() => {}, 1_000);',
+          )} ${shellQuote(signalReadyPath)} &`,
           'gateway_pid="$!"',
+          `until [ -f ${shellQuote(signalReadyPath)} ]; do :; done`,
           'kill -TERM "$gateway_pid"',
-          "sleep 0.05",
+          'wait_for_job_exit "$gateway_pid"',
           'child_status=""',
           "set +e",
           `openclaw_e2e_wait_gateway_ready "$gateway_pid" ${shellQuote(logPath)} 2 "" strict child_status "$((SECONDS + 2))" 0`,
