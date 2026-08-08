@@ -164,7 +164,8 @@ export function readPluginSdkSurfaceBudgets(env = process.env) {
       // +1: pinned secret reads and first-writer-wins creation.
       // +2: restore the documented session-catalog and tool-results plugin contracts.
       // +1: focused inbound-event delivery correlation for channel plugins.
-      149,
+      // +1: versioned multiplayer-memory authorization contract and conformance suite.
+      150,
       env,
     ),
     publicExports: readPluginSdkSurfaceBudgetEnv(
@@ -223,7 +224,8 @@ export function readPluginSdkSurfaceBudgets(env = process.env) {
       // +2: shared channel question-reaction store and preflight-audio factories.
       // +1: shared channel interactive dispatcher with canonical binding authorization.
       // +1: simple channel secret contract factory replacing repeated collectors.
-      4835,
+      // +45: multiplayer-memory authorization shapes, runtime contract, and conformance types.
+      4880,
       env,
     ),
     publicFunctionExports: readPluginSdkSurfaceBudgetEnv(
@@ -274,7 +276,8 @@ export function readPluginSdkSurfaceBudgets(env = process.env) {
       // +2: shared channel question-reaction store and preflight-audio factories.
       // +1: shared channel interactive dispatcher with canonical binding authorization.
       // +1: simple channel secret contract factory replacing repeated collectors.
-      2912,
+      // +6: memory capability guards, runtime admission helpers, and conformance evaluators.
+      2918,
       env,
     ),
     publicDeprecatedExports: readPluginSdkSurfaceBudgetEnv(
@@ -293,7 +296,8 @@ export function readPluginSdkSurfaceBudgets(env = process.env) {
       "OPENCLAW_PLUGIN_SDK_MAX_PUBLIC_WILDCARD_REEXPORTS",
       // -1: text-runtime now names its global-singleton exports explicitly.
       // -1: infra-runtime now names its error exports explicitly.
-      80,
+      // +2: serializable memory authorization contract and pure conformance suite.
+      82,
       env,
     ),
   };
