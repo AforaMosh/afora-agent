@@ -86,6 +86,7 @@ function createAttemptResult(): EmbeddedRunAttemptResult {
     assistantTexts: ["ok"],
     toolMetas: [],
     lastAssistant: undefined,
+    currentAttemptAssistant: undefined,
     didSendViaMessagingTool: false,
     messagingToolSentTexts: [],
     messagingToolSentMediaUrls: [],
@@ -172,6 +173,39 @@ describe("AgentHarness lifecycle runner", () => {
 
     expect(attemptResult).toEqual({ ...result, agentHarnessId: "codex" });
     expect(runAttempt).toHaveBeenCalledWith(params);
+  });
+
+  it("backfills the current attempt assistant for legacy harness results", async () => {
+    const result = createAttemptResult();
+    const assistant = createFinalAssistant();
+    result.lastAssistant = assistant;
+    delete result.currentAttemptAssistant;
+    const harness: AgentHarness = {
+      id: "codex",
+      label: "Codex",
+      supports: () => ({ supported: true }),
+      runAttempt: async () => result,
+    };
+
+    const attemptResult = await runAgentHarnessLifecycleAttempt(harness, createAttemptParams());
+
+    expect(attemptResult.currentAttemptAssistant).toBe(assistant);
+  });
+
+  it("preserves explicit evidence that the current attempt produced no assistant", async () => {
+    const result = createAttemptResult();
+    result.lastAssistant = createFinalAssistant();
+    result.currentAttemptAssistant = undefined;
+    const harness: AgentHarness = {
+      id: "codex",
+      label: "Codex",
+      supports: () => ({ supported: true }),
+      runAttempt: async () => result,
+    };
+
+    const attemptResult = await runAgentHarnessLifecycleAttempt(harness, createAttemptParams());
+
+    expect(attemptResult.currentAttemptAssistant).toBeUndefined();
   });
 
   it("records the selected harness for harness-scoped preflight failures", async () => {

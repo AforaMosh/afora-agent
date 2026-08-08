@@ -13,6 +13,7 @@ function makeTimedOutAttempt(
     assistantTexts: [],
     toolMetas: [],
     lastAssistant: undefined,
+    currentAttemptAssistant: undefined,
     didSendViaMessagingTool: false,
     messagingToolSentTexts: [],
     messagingToolSentMediaUrls: [],
@@ -38,7 +39,7 @@ function makeTimeoutInput(
     payloadsWithToolMedia: undefined,
     terminalState: resolveEmbeddedRunAttemptTerminalState({
       attempt,
-      assistant: attempt.lastAssistant,
+      assistant: attempt.currentAttemptAssistant,
     }),
     resolveReplayInvalid: vi.fn(() => false),
     setTerminalLifecycleMeta: vi.fn(),
@@ -61,6 +62,44 @@ describe("resolveEmbeddedRunTerminalTimeout", () => {
     expect(result?.payloads).toEqual([
       { text: expect.stringContaining("timed out"), isError: true },
     ]);
+  });
+
+  it("keeps stale transcript usage out of a no-response timeout", () => {
+    const carriedUsage = { input: 42_000, output: 1_000, total: 43_000 };
+    const attempt = makeTimedOutAttempt({
+      lastAssistant: {
+        role: "assistant",
+        api: "cli",
+        provider: "openai",
+        model: "gpt-5.6-luna",
+        content: [{ type: "text", text: "stale reply" }],
+        usage: {
+          input: 128_814,
+          output: 3_000,
+          cacheRead: 992_953,
+          totalTokens: 1_124_767,
+        },
+        stopReason: "stop",
+        timestamp: 1,
+      } as NonNullable<EmbeddedRunAttemptResult["lastAssistant"]>,
+      currentAttemptAssistant: undefined,
+    });
+
+    const result = resolveEmbeddedRunTerminalTimeout(
+      makeTimeoutInput(attempt, {
+        agentMeta: {
+          sessionId: "session-1",
+          provider: "openai",
+          model: "gpt-5.6-luna",
+          lastCallUsage: carriedUsage,
+        },
+      }),
+    );
+
+    expect(result?.payloads).toEqual([
+      { text: expect.stringContaining("timed out"), isError: true },
+    ]);
+    expect(result?.meta.agentMeta?.lastCallUsage).toEqual(carriedUsage);
   });
 
   it("prefers harness timeout metadata while retaining terminal attribution", () => {

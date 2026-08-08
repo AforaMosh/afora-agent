@@ -20,6 +20,7 @@ import {
   runIncompleteTurnOwnerHarness,
 } from "./run.incomplete-turn.test-support.js";
 import { makeAttemptResult } from "./run.overflow-compaction.fixture.js";
+import { buildEmbeddedRunRecoveryErrorAgentMeta } from "./run/attempt-recovery.js";
 import {
   buildAttemptReplayMetadata,
   DEFAULT_EMPTY_RESPONSE_RETRY_LIMIT,
@@ -38,6 +39,7 @@ import {
 } from "./run/incomplete-turn.js";
 import { normalizeEmbeddedRunAttemptResult } from "./run/run-attempt-result.js";
 import type { EmbeddedRunAttemptResult } from "./run/types.js";
+import { createUsageAccumulator } from "./usage-accumulator.js";
 
 const REASONING_ONLY_RETRY_INSTRUCTION =
   "The previous assistant turn recorded reasoning but did not produce a user-visible answer. Continue from that partial turn and produce the visible answer now. Do not restate the reasoning or restart from scratch.";
@@ -56,6 +58,7 @@ type LastAssistantFixture = Omit<LastAssistant, "content" | "stopReason" | "usag
   stopReason: LastAssistant["stopReason"] | "end_turn";
   usage: Partial<LastAssistant["usage"]> & { total?: number };
 };
+const CARRIED_RETRY_USAGE = { input: 42_000, output: 1_000, total: 43_000 };
 
 function makeLastAssistant(overrides: Partial<LastAssistantFixture> = {}): LastAssistant {
   return {
@@ -263,6 +266,38 @@ describe("runEmbeddedAgent incomplete-turn safety", () => {
     });
     expect(result.meta?.livenessState).toBe("blocked");
   });
+
+  it.each(["overflow", "hook block", "prompt error"])(
+    "keeps carried usage ahead of transcript history on %s exits",
+    () => {
+      const historicalAssistant = makeLastAssistant({
+        api: "cli",
+        usage: {
+          input: 128_814,
+          output: 3_000,
+          cacheRead: 992_953,
+          totalTokens: 1_124_767,
+        },
+      });
+      const normalizedAttempt = {
+        sessionIdUsed: "test-session",
+        currentAttemptAssistant: undefined,
+        attemptAssistant: historicalAssistant,
+      } as never;
+
+      const agentMeta = buildEmbeddedRunRecoveryErrorAgentMeta({
+        normalizedAttempt,
+        sessionFile: "/tmp/session.jsonl",
+        provider: "openai",
+        model: "gpt-5.5",
+        outerContextTokenMeta: {},
+        usageAccumulator: createUsageAccumulator(),
+        lastRunPromptUsage: CARRIED_RETRY_USAGE,
+      });
+
+      expect(agentMeta.lastCallUsage).toEqual(CARRIED_RETRY_USAGE);
+    },
+  );
 
   it("warns before retrying when an incomplete turn already sent a message", async () => {
     // Delivery evidence means retrying could duplicate user-visible output, so

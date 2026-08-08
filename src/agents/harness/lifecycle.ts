@@ -110,8 +110,13 @@ function normalizeAgentHarnessAttemptResult(
     timedOutDuringToolExecution,
     ...canonical
   } = result;
-  if ("terminal" in canonical) {
-    return canonical;
+  // Older harnesses use lastAssistant for the current response. An explicit
+  // undefined currentAttemptAssistant proves this attempt produced no response.
+  const normalized = Object.hasOwn(canonical, "currentAttemptAssistant")
+    ? canonical
+    : { ...canonical, currentAttemptAssistant: canonical.lastAssistant };
+  if ("terminal" in normalized) {
+    return normalized;
   }
   const terminal = normalizeAgentRunAttemptTerminal({
     aborted,
@@ -124,7 +129,7 @@ function normalizeAgentHarnessAttemptResult(
     timedOutDuringCompaction,
     timedOutDuringToolExecution,
   });
-  return { ...canonical, terminal };
+  return { ...normalized, terminal };
 }
 
 function agentHarnessRunOutcome(

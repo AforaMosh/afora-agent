@@ -7,7 +7,7 @@ import { shouldSwitchToLiveModel, clearLiveModelSwitchPending } from "../../live
 import type { normalizeUsage } from "../../usage.js";
 import { log } from "../logger.js";
 import { getEmbeddedSessionPromptState } from "../session-prompt-state.js";
-import type { EmbeddedAgentRunResult, TraceAttempt } from "../types.js";
+import type { EmbeddedAgentMeta, EmbeddedAgentRunResult, TraceAttempt } from "../types.js";
 import type { createUsageAccumulator } from "../usage-accumulator.js";
 import type { prepareAndDispatchEmbeddedRunAttempt } from "./attempt-dispatch-preparation.js";
 import type { normalizeEmbeddedRunAttempt } from "./attempt-normalization.js";
@@ -35,6 +35,29 @@ type Dispatch = Awaited<ReturnType<typeof prepareAndDispatchEmbeddedRunAttempt>>
 type SessionPromptState = ReturnType<typeof createEmbeddedRunSessionPromptState>;
 type FailoverRetryController = ReturnType<typeof createEmbeddedRunFailoverRetryController>;
 type CompactionRuntime = ReturnType<typeof createEmbeddedRunCompactionRuntime>;
+
+// Error exits must not infer current usage from a transcript fallback. When no
+// current response exists, the carried snapshot remains the newest known fact.
+export function buildEmbeddedRunRecoveryErrorAgentMeta(input: {
+  normalizedAttempt: Pick<NormalizedAttempt, "currentAttemptAssistant" | "sessionIdUsed">;
+  sessionFile?: string;
+  provider: string;
+  model: string;
+  outerContextTokenMeta: { contextTokens?: number };
+  usageAccumulator: ReturnType<typeof createUsageAccumulator>;
+  lastRunPromptUsage: ReturnType<typeof normalizeUsage> | undefined;
+}): EmbeddedAgentMeta {
+  return buildErrorAgentMeta({
+    sessionId: input.normalizedAttempt.sessionIdUsed,
+    sessionFile: input.sessionFile,
+    provider: input.provider,
+    model: input.model,
+    ...input.outerContextTokenMeta,
+    usageAccumulator: input.usageAccumulator,
+    lastRunPromptUsage: input.lastRunPromptUsage,
+    currentAttemptAssistant: input.normalizedAttempt.currentAttemptAssistant,
+  });
+}
 
 export async function recoverEmbeddedRunAttempt(input: {
   runInput: PreparedEmbeddedRunInput;
@@ -198,6 +221,16 @@ export async function recoverEmbeddedRunAttempt(input: {
     }),
     armPostCompactionGuard: input.armPostCompactionGuard,
   };
+  const buildRecoveryErrorAgentMeta = () =>
+    buildEmbeddedRunRecoveryErrorAgentMeta({
+      normalizedAttempt,
+      sessionFile: sessionPromptState.sessionFile,
+      provider: preparedRuntime.provider,
+      model: preparedRuntime.model.id,
+      outerContextTokenMeta: runtime.outerContextTokenMeta,
+      usageAccumulator: input.usageAccumulator,
+      lastRunPromptUsage: input.lastRunPromptUsage,
+    });
   if (
     await recoverEmbeddedRunTimeout({
       ...commonRecoveryInput,
@@ -235,16 +268,7 @@ export async function recoverEmbeddedRunAttempt(input: {
         errorKind: overflowRecovery.kind,
         errorMessage: overflowRecovery.errorText,
         durationMs: Date.now() - runInput.startedAtMs,
-        agentMeta: buildErrorAgentMeta({
-          sessionId: sessionIdUsed,
-          sessionFile: sessionPromptState.sessionFile,
-          provider: preparedRuntime.provider,
-          model: preparedRuntime.model.id,
-          ...runtime.outerContextTokenMeta,
-          usageAccumulator: input.usageAccumulator,
-          lastRunPromptUsage: input.lastRunPromptUsage,
-          lastAssistant: attemptAssistant,
-        }),
+        agentMeta: buildRecoveryErrorAgentMeta(),
         attempt,
         replayInvalid,
         finalPromptText: attempt.finalPromptText,
@@ -262,16 +286,7 @@ export async function recoverEmbeddedRunAttempt(input: {
         errorKind: "hook_block",
         errorMessage: errorText,
         durationMs: Date.now() - runInput.startedAtMs,
-        agentMeta: buildErrorAgentMeta({
-          sessionId: sessionIdUsed,
-          sessionFile: sessionPromptState.sessionFile,
-          provider: preparedRuntime.provider,
-          model: preparedRuntime.model.id,
-          ...runtime.outerContextTokenMeta,
-          usageAccumulator: input.usageAccumulator,
-          lastRunPromptUsage: input.lastRunPromptUsage,
-          lastAssistant: attemptAssistant,
-        }),
+        agentMeta: buildRecoveryErrorAgentMeta(),
         attempt,
         replayInvalid,
       }),
@@ -332,17 +347,7 @@ export async function recoverEmbeddedRunAttempt(input: {
       suspendForFailure: runInput.suspendForFailure,
       resolveReplayInvalid: resolveReplayInvalidForAttempt,
       setTerminalLifecycleMeta,
-      buildErrorAgentMeta: () =>
-        buildErrorAgentMeta({
-          sessionId: sessionIdUsed,
-          sessionFile: sessionPromptState.sessionFile,
-          provider: preparedRuntime.provider,
-          model: preparedRuntime.model.id,
-          ...runtime.outerContextTokenMeta,
-          usageAccumulator: input.usageAccumulator,
-          lastRunPromptUsage: input.lastRunPromptUsage,
-          lastAssistant: attemptAssistant,
-        }),
+      buildErrorAgentMeta: buildRecoveryErrorAgentMeta,
       startedAtMs: runInput.startedAtMs,
       fallbackConfigured: runInput.fallbackConfigured,
       aborted,

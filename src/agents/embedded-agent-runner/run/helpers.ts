@@ -189,15 +189,20 @@ export function resolveReportedModelRef(params: {
 
 export function resolveLatestCallUsage(params: {
   currentAttemptCandidates: readonly (NormalizedUsage | undefined)[];
-  carriedCandidates: readonly (NormalizedUsage | undefined)[];
+  carriedUsage: NormalizedUsage | undefined;
+  transcriptFallback: NormalizedUsage | undefined;
 }): {
   currentAttempt: NormalizedUsage | undefined;
   latest: NormalizedUsage | undefined;
 } {
   const currentAttempt = params.currentAttemptCandidates.find(hasNonzeroUsage);
+  const carriedUsage = hasNonzeroUsage(params.carriedUsage) ? params.carriedUsage : undefined;
+  const transcriptFallback = hasNonzeroUsage(params.transcriptFallback)
+    ? params.transcriptFallback
+    : undefined;
   return {
     currentAttempt,
-    latest: currentAttempt ?? params.carriedCandidates.find(hasNonzeroUsage),
+    latest: currentAttempt ?? carriedUsage ?? transcriptFallback,
   };
 }
 
@@ -252,11 +257,11 @@ export function buildErrorAgentMeta(params: {
   contextTokens?: number;
   usageAccumulator: UsageAccumulator;
   lastRunPromptUsage: UsageSnapshot | undefined;
-  lastAssistant?: { api?: string; usage?: unknown } | null;
+  currentAttemptAssistant?: { api?: string; usage?: unknown } | null;
 }): EmbeddedAgentMeta {
   const usageMeta = buildUsageAgentMetaFields({
     usageAccumulator: params.usageAccumulator,
-    lastAssistantUsage: normalizeAssistantUsageForContext(params.lastAssistant),
+    lastAssistantUsage: normalizeAssistantUsageForContext(params.currentAttemptAssistant),
     lastRunPromptUsage: params.lastRunPromptUsage,
   });
   return {
