@@ -83,7 +83,7 @@
       }
     },
     {
-      "name": "@tencent-connect/openclaw-qqbot",
+      "name": "@cxyhhhhh/openclaw-qqbot",
       "description": "OpenClaw QQ Bot channel plugin by the Tencent Connect team.",
       "source": "external",
       "kind": "channel",
@@ -238,9 +238,9 @@
           }
         },
         "install": {
-          "npmSpec": "@tencent-connect/openclaw-qqbot@2.0.0",
+          "npmSpec": "@cxyhhhhh/openclaw-qqbot@2.0.1-dev.202608081457",
           "defaultChoice": "npm",
-          "expectedIntegrity": "sha512-8/M8S+PSms7F3ojgcgCZY72nfA5Gzqujo8JhNI4bwNAXSLsvi5qh03RF4qtso+67MN+rM482Cn7G3ZPhqOP78A=="
+          "expectedIntegrity": "sha512-obgvoeoLmlYQVr65oAZnoVYvBuyw3M2kYmex/WSV7iDh8CRMv30DkHIyx6RW8LjBs1jDhG99487gDmxDivz3Fg=="
         }
       }
     },

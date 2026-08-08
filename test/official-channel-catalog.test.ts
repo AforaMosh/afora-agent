@@ -350,10 +350,10 @@ describe("buildOfficialChannelCatalog", () => {
     });
     expect(
       summarizeCatalogEntry(
-        findCatalogEntry(entries, (entry) => entry.name === "@tencent-connect/openclaw-qqbot"),
+        findCatalogEntry(entries, (entry) => entry.name === "@cxyhhhhh/openclaw-qqbot"),
       ),
     ).toMatchObject({
-      name: "@tencent-connect/openclaw-qqbot",
+      name: "@cxyhhhhh/openclaw-qqbot",
       source: "external",
       plugin: {
         id: "openclaw-qqbot",
@@ -368,10 +368,10 @@ describe("buildOfficialChannelCatalog", () => {
         approvalFlags: ["native"],
       },
       install: {
-        npmSpec: "@tencent-connect/openclaw-qqbot@2.0.0",
+        npmSpec: "@cxyhhhhh/openclaw-qqbot@2.0.1-dev.202608081457",
         defaultChoice: "npm",
         expectedIntegrity:
-          "sha512-8/M8S+PSms7F3ojgcgCZY72nfA5Gzqujo8JhNI4bwNAXSLsvi5qh03RF4qtso+67MN+rM482Cn7G3ZPhqOP78A==",
+          "sha512-obgvoeoLmlYQVr65oAZnoVYvBuyw3M2kYmex/WSV7iDh8CRMv30DkHIyx6RW8LjBs1jDhG99487gDmxDivz3Fg==",
       },
     });
     expect(entries.some((entry) => entry.openclaw?.channel?.id === "local-only")).toBe(false);

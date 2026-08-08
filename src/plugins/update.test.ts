@@ -4943,7 +4943,7 @@ describe("syncPluginsForUpdateChannel", () => {
       createSuccessfulNpmUpdateResult({
         pluginId: "openclaw-qqbot",
         targetDir: "/tmp/openclaw-plugins/openclaw-qqbot",
-        version: "2.0.0",
+        version: "2.0.1-dev.202608081457",
       }),
     );
 
@@ -4953,7 +4953,7 @@ describe("syncPluginsForUpdateChannel", () => {
         {
           bundledPluginId: "qqbot",
           pluginId: "openclaw-qqbot",
-          npmSpec: "@tencent-connect/openclaw-qqbot@2.0.0",
+          npmSpec: "@cxyhhhhh/openclaw-qqbot@2.0.1-dev.202608081457",
           channelIds: ["qqbot"],
         },
       ],
@@ -4980,9 +4980,9 @@ describe("syncPluginsForUpdateChannel", () => {
     expect(result.config.plugins?.installs?.qqbot).toBeUndefined();
     expectRecordFields(result.config.plugins?.installs?.["openclaw-qqbot"], {
       source: "npm",
-      spec: "@tencent-connect/openclaw-qqbot@2.0.0",
+      spec: "@cxyhhhhh/openclaw-qqbot@2.0.1-dev.202608081457",
       installPath: "/tmp/openclaw-plugins/openclaw-qqbot",
-      version: "2.0.0",
+      version: "2.0.1-dev.202608081457",
     });
   });
 

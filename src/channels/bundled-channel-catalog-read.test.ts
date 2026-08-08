@@ -224,7 +224,7 @@ describe("listBundledChannelCatalogEntries", () => {
       label: "Telegram",
     });
     seedGeneratedChannelCatalog(root, {
-      packageName: "@tencent-connect/openclaw-qqbot",
+      packageName: "@cxyhhhhh/openclaw-qqbot",
       id: "qqbot",
       label: "QQ Bot",
       docsPath: "/channels/qqbot",
@@ -241,7 +241,7 @@ describe("listBundledChannelCatalogEntries", () => {
   it("uses bundled external channel metadata before a dist catalog exists", () => {
     seedRoot("bcr-bundled-external-");
     bundledOfficialExternalCatalogEntriesMock.push({
-      name: "@tencent-connect/openclaw-qqbot",
+      name: "@cxyhhhhh/openclaw-qqbot",
       openclaw: {
         channel: {
           id: "qqbot",
