@@ -247,7 +247,9 @@ describe("downloadSlackFile", () => {
       maxBytes: 1024,
     });
 
-    expect(createSlackLookupClientMock).toHaveBeenCalledWith("xoxb-from-cfg");
+    expect(createSlackLookupClientMock).toHaveBeenCalledWith("xoxb-from-cfg", {
+      teamId: undefined,
+    });
     expect(resolveSlackMedia).toHaveBeenCalledWith({
       files: [
         {

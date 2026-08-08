@@ -17,7 +17,7 @@ let slackListenerUploadCompletionClientCache = new WeakMap<
   { teamId: string; client: WebClient }
 >();
 
-type SlackWriteClientCacheOptions = Pick<WebClientOptions, "slackApiUrl">;
+type SlackWriteClientCacheOptions = Pick<WebClientOptions, "slackApiUrl" | "teamId">;
 
 export {
   resolveSlackWebClientOptions,
@@ -61,7 +61,9 @@ export function createSlackTokenCacheKey(token: string): string {
 
 function slackWriteClientCacheKey(token: string, options: SlackWriteClientCacheOptions): string {
   const tokenKey = createSlackTokenCacheKey(token);
-  return options.slackApiUrl ? `${tokenKey}:api:${options.slackApiUrl}` : tokenKey;
+  const apiScope = options.slackApiUrl ? `:api:${options.slackApiUrl}` : "";
+  const teamScope = options.teamId ? `:team:${options.teamId.trim().toLowerCase()}` : "";
+  return `${tokenKey}${apiScope}${teamScope}`;
 }
 
 export function getSlackWriteClient(
