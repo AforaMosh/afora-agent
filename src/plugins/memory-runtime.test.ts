@@ -1,6 +1,10 @@
 /** Covers non-activating memory registry handles and requesting-agent workspace ownership. */
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { MemorySearchResult } from "../memory-host-sdk/host/types.js";
+import type {
+  MemorySearchManager,
+  MemorySearchResult,
+  MemorySource,
+} from "../memory-host-sdk/host/types.js";
 import type { MemoryPluginRuntime } from "./registry-contribution-types.js";
 import { createEmptyPluginRegistry } from "./registry-empty.js";
 import { getPluginRuntimeGatewayRequestScope } from "./runtime/gateway-request-scope.js";
@@ -13,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   loadPluginRegistryHandle: vi.fn(),
   resolvePluginRegistryLoadCacheKey: vi.fn((options: unknown) => JSON.stringify(options)),
   resolveAgentWorkspaceDir: vi.fn(),
+  shadowResults: [] as unknown[],
 }));
 
 vi.mock("../agents/agent-scope.js", () => ({
@@ -24,10 +29,20 @@ vi.mock("./loader.js", () => ({
   resolvePluginRegistryLoadCacheKey: mocks.resolvePluginRegistryLoadCacheKey,
 }));
 
-vi.mock("./memory-authorization-shadow.js", () => ({
-  emitMemoryAuthorizationShadowSurfaceInspection:
-    mocks.emitMemoryAuthorizationShadowSurfaceInspection,
-}));
+vi.mock("./memory-authorization-shadow.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./memory-authorization-shadow.js")>();
+  return {
+    ...actual,
+    emitMemoryAuthorizationShadowSurfaceInspection: (
+      ...args: Parameters<typeof actual.emitMemoryAuthorizationShadowSurfaceInspection>
+    ) => {
+      const result = actual.emitMemoryAuthorizationShadowSurfaceInspection(...args);
+      mocks.shadowResults.push(result);
+      mocks.emitMemoryAuthorizationShadowSurfaceInspection(...args);
+      return result;
+    },
+  };
+});
 
 vi.mock("./memory-state.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./memory-state.js")>();
@@ -80,6 +95,7 @@ describe("memory runtime handles", () => {
     mocks.getMemoryRuntime.mockReset().mockReturnValue(undefined);
     mocks.loadPluginRegistryHandle.mockReset();
     mocks.resolvePluginRegistryLoadCacheKey.mockClear();
+    mocks.shadowResults.length = 0;
     mocks.resolveAgentWorkspaceDir
       .mockReset()
       .mockImplementation((_cfg, agentId: string) =>
@@ -126,6 +142,81 @@ describe("memory runtime handles", () => {
 
     expect(mocks.emitMemoryAuthorizationShadowSurfaceInspection).toHaveBeenCalledOnce();
     expect(mocks.emitMemoryAuthorizationShadowSurfaceInspection).toHaveBeenCalledWith(runtime);
+  });
+
+  it("preserves direct manager results across default, status, and CLI bridge acquisition", async () => {
+    const allHits: MemorySearchResult[] = [
+      {
+        source: "memory",
+        path: "MEMORY.md",
+        startLine: 1,
+        endLine: 1,
+        score: 1,
+        snippet: "personal memory",
+      },
+      {
+        source: "sessions",
+        path: "sessions/2026-07-29.jsonl",
+        startLine: 1,
+        endLine: 1,
+        score: 0.9,
+        snippet: "session memory",
+      },
+    ];
+    const manager = {
+      search: vi.fn(async (_query: string, options?: { sources?: MemorySource[] }) => {
+        const sources = options?.sources ?? ["memory", "sessions"];
+        return allHits.filter((hit) => sources.includes(hit.source));
+      }),
+      readFile: vi.fn(async () => ({ text: "", path: "MEMORY.md" })),
+      status: vi.fn(() => ({ backend: "builtin" as const, provider: "fixture" })),
+      probeEmbeddingAvailability: vi.fn(async () => ({ ok: true })),
+      probeVectorAvailability: vi.fn(async () => true),
+    } satisfies MemorySearchManager;
+    const runtime = {
+      ...createRuntime(),
+      getMemorySearchManager: vi.fn(
+        async (_params: Parameters<MemoryPluginRuntime["getMemorySearchManager"]>[0]) => ({
+          manager,
+        }),
+      ),
+    } satisfies MemoryPluginRuntime;
+    const { registry } = createRegistry(runtime);
+    mocks.loadPluginRegistryHandle.mockReturnValue(registry);
+    const acquisitions = [
+      { cfg: memoryConfig, agentId: "main", purpose: "default" },
+      { cfg: memoryConfig, agentId: "main", purpose: "status" },
+      { cfg: memoryConfig, agentId: "main", purpose: "cli" },
+    ] as const;
+    const sourceSets: readonly (readonly MemorySource[])[] = [
+      ["memory"],
+      ["sessions"],
+      ["memory", "sessions"],
+    ];
+
+    for (const params of acquisitions) {
+      const direct = await runtime.getMemorySearchManager(params);
+      const bridged = await getActiveMemorySearchManager(params);
+
+      expect(bridged).toEqual(direct);
+      expect(bridged.manager).toBe(direct.manager);
+      for (const sources of sourceSets) {
+        const directHits = await direct.manager.search("same query", { sources: [...sources] });
+        const bridgedHits = await bridged.manager?.search("same query", { sources: [...sources] });
+
+        expect(bridgedHits).toEqual(directHits);
+        expect(bridgedHits).toEqual(allHits.filter((hit) => sources.includes(hit.source)));
+      }
+    }
+
+    expect(runtime.getMemorySearchManager).toHaveBeenCalledTimes(acquisitions.length * 2);
+    expect(runtime.getMemorySearchManager.mock.calls).toEqual(
+      acquisitions.flatMap((params) => [[params], [params]]),
+    );
+    expect(mocks.emitMemoryAuthorizationShadowSurfaceInspection).toHaveBeenCalledTimes(
+      acquisitions.length,
+    );
+    expect(mocks.shadowResults.filter((result) => result !== undefined)).toHaveLength(1);
   });
 
   it("tracks standalone managers without activating config-only lookups and rearms reused handles", async () => {

@@ -1,4 +1,4 @@
-import { stableStringify } from "../agents/stable-stringify.js";
+import { stableStringify } from "@openclaw/normalization-core";
 import { sha256Hex } from "../infra/crypto-digest.js";
 import type {
   AudienceRef,

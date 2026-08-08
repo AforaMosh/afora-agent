@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import ts from "typescript";
 import { describe, expect, it } from "vitest";
 import { listGitTrackedFiles } from "../test-utils/repo-files.js";
 import {
@@ -78,6 +79,61 @@ function isProductionTypeScript(file: string): boolean {
   );
 }
 
+const MEMORY_MANAGER_CALL_NAMES = new Set([
+  "getActiveMemorySearchManager",
+  "getMemorySearchManager",
+]);
+
+function listContextFreeMemoryManagerCalls(file: string, sourceText: string): string[] {
+  const source = ts.createSourceFile(file, sourceText, ts.ScriptTarget.Latest, true);
+  const callableBindings = new Set(MEMORY_MANAGER_CALL_NAMES);
+
+  for (const statement of source.statements) {
+    if (!ts.isImportDeclaration(statement)) {
+      continue;
+    }
+    const importClause = statement.importClause;
+    const namedBindings = importClause?.namedBindings;
+    if (!importClause || !namedBindings || importClause.isTypeOnly) {
+      continue;
+    }
+    if (ts.isNamespaceImport(namedBindings)) {
+      continue;
+    }
+    for (const element of namedBindings.elements) {
+      const importedName = element.propertyName?.text ?? element.name.text;
+      if (!element.isTypeOnly && MEMORY_MANAGER_CALL_NAMES.has(importedName)) {
+        callableBindings.add(element.name.text);
+      }
+    }
+  }
+
+  const calls: string[] = [];
+  const visit = (node: ts.Node) => {
+    if (ts.isCallExpression(node)) {
+      const expression = node.expression;
+      const isCallableBinding =
+        ts.isIdentifier(expression) && callableBindings.has(expression.text);
+      const isMemoryRuntimeMethod =
+        ts.isPropertyAccessExpression(expression) &&
+        MEMORY_MANAGER_CALL_NAMES.has(expression.name.text);
+      if (isCallableBinding || isMemoryRuntimeMethod) {
+        calls.push(expression.getText(source));
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  ts.forEachChild(source, visit);
+  return calls;
+}
+
+function callsContextFreeMemoryManager(file: string): boolean {
+  return (
+    listContextFreeMemoryManagerCalls(file, fs.readFileSync(path.join(REPO_ROOT, file), "utf8"))
+      .length > 0
+  );
+}
+
 describe("memory authorization path inventory", () => {
   const inventory: readonly MemoryAuthorizationPathInventoryEntry[] =
     MEMORY_AUTHORIZATION_PATH_INVENTORY;
@@ -113,17 +169,50 @@ describe("memory authorization path inventory", () => {
     expect(missing).toEqual([]);
   });
 
+  it("finds direct and aliased manager acquisition calls without mistaking type members for calls", () => {
+    const calls = listContextFreeMemoryManagerCalls(
+      "inventory-fixture.ts",
+      `
+        import { getActiveMemorySearchManager as acquireActive } from "./memory-runtime.js";
+        import { getMemorySearchManager as acquireManager } from "./manager.js";
+        import * as memoryRuntime from "./memory-runtime.js";
+        import type { getActiveMemorySearchManager as TypeOnlyAcquire } from "./memory-runtime.js";
+
+        interface MemoryRuntime {
+          getMemorySearchManager(params: unknown): Promise<unknown>;
+        }
+        type MemoryRuntimeMethods = {
+          getMemorySearchManager(params: unknown): Promise<unknown>;
+        };
+
+        async function acquire(runtime: MemoryRuntime) {
+          await acquireActive({});
+          await acquireManager({});
+          await memoryRuntime.getActiveMemorySearchManager({});
+          await runtime.getMemorySearchManager({});
+        }
+      `,
+    );
+
+    expect(calls).toEqual([
+      "acquireActive",
+      "acquireManager",
+      "memoryRuntime.getActiveMemorySearchManager",
+      "runtime.getMemorySearchManager",
+    ]);
+  });
+
   it("classifies every production context-free manager call site", () => {
-    const tracked =
-      listGitTrackedFiles({
-        repoRoot: REPO_ROOT,
-        pathspecs: ["src", "extensions", "packages"],
-      }) ?? [];
-    const callPattern =
-      /\bgetActiveMemorySearchManager\s*\(|\bgetMemorySearchManager\s*\(|\.getMemorySearchManager\s*\(/u;
+    const tracked = listGitTrackedFiles({
+      repoRoot: REPO_ROOT,
+      pathspecs: ["src", "extensions", "packages"],
+    });
+    if (!tracked) {
+      throw new Error("could not list tracked files for the authorization-path inventory");
+    }
     const directCallSurfaces = tracked
       .filter(isProductionTypeScript)
-      .filter((file) => callPattern.test(fs.readFileSync(path.join(REPO_ROOT, file), "utf8")));
+      .filter(callsContextFreeMemoryManager);
     const inventoriedSurfaces = new Set<string>(inventory.flatMap((entry) => entry.surfaces));
 
     expect(directCallSurfaces.filter((surface) => !inventoriedSurfaces.has(surface))).toEqual([]);
