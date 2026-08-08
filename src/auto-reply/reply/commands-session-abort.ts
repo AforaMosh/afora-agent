@@ -9,7 +9,7 @@ import {
   type AbortCutoff,
 } from "./abort-cutoff.js";
 import {
-  abortSessionRunTargetWithOutcome,
+  abortSessionRunTarget,
   formatAbortReplyText,
   isAbortTrigger,
   setAbortMemory,
@@ -89,10 +89,16 @@ async function applyAbortTarget(params: {
   abortCutoff?: AbortCutoff;
 }) {
   const { abortTarget } = params;
-  const abortOutcome = abortSessionRunTargetWithOutcome({
+  const abortOutcome = await abortSessionRunTarget({
     key: abortTarget.key,
     sessionId: abortTarget.sessionId,
   });
+  if (abortOutcome.recovery && abortTarget.entry) {
+    Object.assign(abortTarget.entry, abortOutcome.recovery.entry);
+    if (params.sessionStore) {
+      params.sessionStore[abortOutcome.recovery.sessionKey] = abortTarget.entry;
+    }
+  }
   if (abortOutcome.active && !abortOutcome.aborted) {
     return abortOutcome;
   }

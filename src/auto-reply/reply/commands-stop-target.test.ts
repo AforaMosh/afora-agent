@@ -24,8 +24,8 @@ const resolveSessionIdMock = vi.hoisted(() => vi.fn(() => undefined));
 const stopSubagentsForRequesterMock = vi.hoisted(() =>
   vi.fn(async () => ({ stopped: 0, failed: 0 })),
 );
-const abortSessionRunTargetWithOutcomeMock = vi.hoisted(() =>
-  vi.fn(() => ({ active: false, aborted: false })),
+const abortSessionRunTargetMock = vi.hoisted(() =>
+  vi.fn(async () => ({ active: false, aborted: false })),
 );
 const formatAbortReplyTextMock = vi.hoisted(() => vi.fn(() => "⚙️ Agent was aborted."));
 
@@ -48,7 +48,7 @@ vi.mock("./abort-cutoff.js", () => ({
 }));
 
 vi.mock("./abort.js", () => ({
-  abortSessionRunTargetWithOutcome: abortSessionRunTargetWithOutcomeMock,
+  abortSessionRunTarget: abortSessionRunTargetMock,
   formatAbortReplyText: formatAbortReplyTextMock,
   isAbortTrigger: vi.fn(() => false),
   setAbortMemory: vi.fn(),
@@ -142,7 +142,7 @@ describe("handleStopCommand target fallback", () => {
   beforeEach(() => {
     previousPluginRegistry = getActivePluginRegistry();
     vi.clearAllMocks();
-    abortSessionRunTargetWithOutcomeMock.mockReturnValue({ active: false, aborted: false });
+    abortSessionRunTargetMock.mockResolvedValue({ active: false, aborted: false });
     persistAbortTargetEntryMock.mockResolvedValue(true);
   });
 
@@ -163,7 +163,7 @@ describe("handleStopCommand target fallback", () => {
       shouldContinue: false,
       reply: { text: "⚙️ Agent was aborted." },
     });
-    expect(abortSessionRunTargetWithOutcomeMock).toHaveBeenCalledWith({
+    expect(abortSessionRunTargetMock).toHaveBeenCalledWith({
       key: "agent:target:telegram:direct:123",
       sessionId: undefined,
     });
@@ -212,7 +212,7 @@ describe("handleStopCommand target fallback", () => {
 
   it("reports a finalizing target without persisting abort state", async () => {
     const params = buildStopParams();
-    abortSessionRunTargetWithOutcomeMock.mockReturnValue({ active: true, aborted: false });
+    abortSessionRunTargetMock.mockResolvedValue({ active: true, aborted: false });
     formatAbortReplyTextMock.mockReturnValue(
       "Agent reply is already finalizing and can no longer be aborted.",
     );
@@ -282,7 +282,7 @@ describe("handleStopCommand target fallback", () => {
       shouldContinue: false,
       reply: { text: "You are not authorized to use this command." },
     });
-    expect(abortSessionRunTargetWithOutcomeMock).not.toHaveBeenCalled();
+    expect(abortSessionRunTargetMock).not.toHaveBeenCalled();
     expect(persistAbortTargetEntryMock).not.toHaveBeenCalled();
     expect(createInternalHookEventMock).not.toHaveBeenCalled();
     expect(stopSubagentsForRequesterMock).not.toHaveBeenCalled();

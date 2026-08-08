@@ -71,7 +71,9 @@ export async function commitMainSessionRecovery(params: {
       : undefined;
   const ownerClaim = params.command.kind === "claim_foreground" ? params.command : undefined;
   const exactOwnerClaim =
-    params.command.kind === "validate_foreground" || params.command.kind === "release_foreground"
+    params.command.kind === "validate_foreground" ||
+    params.command.kind === "release_foreground" ||
+    params.command.kind === "abort_foreground"
       ? params.command.claim
       : undefined;
   const scansAliases = Boolean(
@@ -198,6 +200,27 @@ export async function refreshMainSessionRecoveryOwner(
         sessionKey: result.sessionKey,
       }
     : undefined;
+}
+
+export async function abortMainSessionRecoveryOwner(
+  lease: MainSessionRecoveryOwnerLease,
+  runId?: string,
+): Promise<
+  { kind: "applied"; entry: SessionEntry; sessionKey: string } | { kind: "owner_changed" }
+> {
+  const result = await commitMainSessionRecovery({
+    command: {
+      kind: "abort_foreground",
+      claim: lease,
+      now: Date.now(),
+      ...(runId ? { runId } : {}),
+    },
+    requireWriteSuccess: true,
+    target: lease,
+  });
+  return result.transition.kind === "applied" && result.entry && result.sessionKey
+    ? { kind: "applied", entry: result.entry, sessionKey: result.sessionKey }
+    : { kind: "owner_changed" };
 }
 
 export async function claimMainSessionRecoveryOwner(params: {

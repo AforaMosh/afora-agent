@@ -453,6 +453,10 @@ function getAttachedBackend(operation: ReplyOperation): ReplyBackendHandle | und
   return attachedBackendByOperation.get(operation);
 }
 
+export function resolveReplyOperationRunId(operation: ReplyOperation): string | undefined {
+  return normalizeOptionalString(getAttachedBackend(operation)?.runId);
+}
+
 function isReplyOperationAbortable(operation: ReplyOperation): boolean {
   if (operation.result || abortFrozenOperations.has(operation)) {
     return false;

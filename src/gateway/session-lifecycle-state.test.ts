@@ -2,6 +2,7 @@
  * Session lifecycle state derivation tests.
  */
 import { describe, expect, it, vi } from "vitest";
+import { transitionMainSessionRecovery } from "../agents/main-session-recovery-state.js";
 import type { InternalSessionEntry as SessionEntry } from "../config/sessions.js";
 import { getAgentEventLifecycleGeneration } from "../infra/agent-events.js";
 
@@ -228,6 +229,83 @@ describe("session lifecycle state", () => {
       runtimeMs: 1_100,
     });
     expect(completed.lifecycleRunId).toBeUndefined();
+  });
+
+  it("does not reopen a run already terminalized by accepted cancellation", async () => {
+    const terminalized: SessionEntry = {
+      sessionId: "session-id",
+      updatedAt: 2_000,
+      status: "killed",
+      abortedLastRun: true,
+      lifecycleRunId: "run-a",
+      restartRecoveryTerminalRunIds: ["run-a"],
+    };
+
+    const afterLateStart = await persistLifecycle(terminalized, {
+      ts: 3_000,
+      sessionId: "session-id",
+      runId: "run-a",
+      data: { phase: "start", startedAt: 3_000 },
+    });
+
+    expect(afterLateStart).toEqual(terminalized);
+  });
+
+  it("does not reopen a released sibling run terminalized by the final owner abort", async () => {
+    const terminalized: SessionEntry = {
+      sessionId: "session-id",
+      updatedAt: 1_000,
+      status: "running",
+      abortedLastRun: true,
+      lifecycleRunId: "run-b",
+      restartRecoveryRuns: [{ runId: "run-b", lifecycleGeneration: "generation-1" }],
+      mainRestartRecovery: {
+        cycleId: "cycle-1",
+        revision: 1,
+        chargedAttempts: 0,
+        foregroundClaims: {
+          lifecycleGeneration: "generation-1",
+          tokens: ["owner-a", "owner-b"],
+          runIdsByClaimId: { "owner-b": "run-b" },
+        },
+      },
+    };
+    expect(
+      transitionMainSessionRecovery(terminalized, {
+        kind: "release_foreground",
+        claim: {
+          cycleId: "cycle-1",
+          lifecycleGeneration: "generation-1",
+          claimId: "owner-b",
+          sessionId: "session-id",
+          sessionKey: "agent:main:main",
+          runId: "run-b",
+        },
+      }),
+    ).toEqual({ kind: "applied" });
+    expect(
+      transitionMainSessionRecovery(terminalized, {
+        kind: "abort_foreground",
+        claim: {
+          cycleId: "cycle-1",
+          lifecycleGeneration: "generation-1",
+          claimId: "owner-a",
+          sessionId: "session-id",
+          sessionKey: "agent:main:main",
+        },
+        now: 2_000,
+      }),
+    ).toEqual({ kind: "applied" });
+    expect(terminalized.restartRecoveryTerminalRunIds).toEqual(["run-b"]);
+
+    const afterLateStart = await persistLifecycle(terminalized, {
+      ts: 3_000,
+      sessionId: "session-id",
+      runId: "run-b",
+      data: { phase: "start", startedAt: 3_000 },
+    });
+
+    expect(afterLateStart).toEqual(terminalized);
   });
 
   it("clears inherited run ownership when a start event has no run id", async () => {

@@ -7,7 +7,10 @@ import type {
   MainRestartRecoveryState,
   RestartRecoveryRun,
 } from "../config/sessions.js";
-import { buildRestartRecoveryClaimCleanupPatch } from "../config/sessions/restart-recovery-state.js";
+import {
+  buildRestartRecoveryClaimCleanupPatch,
+  mergeRestartRecoveryTerminalRunIds,
+} from "../config/sessions/restart-recovery-state.js";
 import { isAcpSessionKey, isCronSessionKey, isSubagentSessionKey } from "../routing/session-key.js";
 import { buildMainSessionRecoveryClearPatch } from "./main-session-recovery-clear.js";
 import type {
@@ -78,6 +81,18 @@ function ownsForegroundClaim(
     state.foregroundClaims?.lifecycleGeneration === claim.lifecycleGeneration &&
     state.foregroundClaims.tokens.includes(claim.claimId)
   );
+}
+
+function removeForegroundClaim(
+  claims: NonNullable<MainRestartRecoveryState["foregroundClaims"]>,
+  claimId: string,
+) {
+  const tokens = claims.tokens.filter((token) => token !== claimId);
+  const ownedRunId = claims.runIdsByClaimId?.[claimId];
+  const runIdsByClaimId = Object.fromEntries(
+    Object.entries(claims.runIdsByClaimId ?? {}).filter(([token]) => token !== claimId),
+  );
+  return { tokens, ownedRunId, runIdsByClaimId };
 }
 
 function validateRecoveryAdmission(
@@ -555,18 +570,71 @@ export function transitionMainSessionRecovery(
         ? { kind: "foreground_validated" }
         : { kind: "no_change" };
     }
+    case "abort_foreground": {
+      const state = entry.mainRestartRecovery;
+      const claims = state?.foregroundClaims;
+      if (
+        !state ||
+        !claims ||
+        entry.sessionId !== command.claim.sessionId ||
+        !ownsForegroundClaim(state, command.claim)
+      ) {
+        return { kind: "no_change" };
+      }
+      const { tokens, ownedRunId, runIdsByClaimId } = removeForegroundClaim(
+        claims,
+        command.claim.claimId,
+      );
+      const runId = command.runId?.trim() || command.claim.runId?.trim() || ownedRunId?.trim();
+      const terminalRunIds =
+        tokens.length === 0
+          ? [
+              ...(entry.restartRecoveryRuns?.map((run) => run.runId) ?? []),
+              ...(runId ? [runId] : []),
+            ]
+          : runId
+            ? [runId]
+            : [];
+      if (terminalRunIds.length > 0) {
+        entry.restartRecoveryTerminalRunIds = mergeRestartRecoveryTerminalRunIds(
+          entry.restartRecoveryTerminalRunIds,
+          terminalRunIds,
+        );
+      }
+      if (tokens.length > 0) {
+        updateRecoveryState(entry, state, {
+          foregroundClaims: {
+            lifecycleGeneration: claims.lifecycleGeneration,
+            tokens,
+            ...(Object.keys(runIdsByClaimId).length > 0 ? { runIdsByClaimId } : {}),
+          },
+        });
+        if (runId) {
+          const remainingRuns = entry.restartRecoveryRuns?.filter(
+            (run) =>
+              run.lifecycleGeneration !== command.claim.lifecycleGeneration || run.runId !== runId,
+          );
+          entry.restartRecoveryRuns = remainingRuns?.length ? remainingRuns : undefined;
+        }
+        return { kind: "applied" };
+      }
+      entry.status = "killed";
+      entry.abortedLastRun = true;
+      entry.lifecycleRunId = runId;
+      entry.endedAt = command.now;
+      entry.runtimeMs = Math.max(0, command.now - (entry.startedAt ?? command.now));
+      entry.updatedAt = command.now;
+      entry.restartRecoveryRuns = undefined;
+      entry.mainRestartRecovery = undefined;
+      return { kind: "applied" };
+    }
     case "release_foreground": {
       const state = entry.mainRestartRecovery;
       const claims = state?.foregroundClaims;
       if (!state || !claims || !ownsForegroundClaim(state, command.claim)) {
         return { kind: "no_change" };
       }
-      const tokens = claims.tokens.filter((token) => token !== command.claim.claimId);
-      const runIdsByClaimId = Object.fromEntries(
-        Object.entries(claims.runIdsByClaimId ?? {}).filter(
-          ([token]) => token !== command.claim.claimId,
-        ),
-      );
+      const { tokens, runIdsByClaimId } = removeForegroundClaim(claims, command.claim.claimId);
       if (tokens.length === 0 && entry.abortedLastRun !== true) {
         Object.assign(entry, buildMainSessionRecoveryClearPatch(entry));
         return { kind: "applied" };

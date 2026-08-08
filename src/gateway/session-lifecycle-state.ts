@@ -14,6 +14,7 @@ import {
   projectMainSessionRecoveryLifecycle,
 } from "../agents/main-session-recovery-lifecycle.js";
 import type { InternalSessionEntry as SessionEntry } from "../config/sessions.js";
+import { hasRestartRecoveryTerminalRun } from "../config/sessions/restart-recovery-state.js";
 import { updateSessionEntry } from "../config/sessions/session-accessor.js";
 import { getAgentEventLifecycleGeneration, type AgentEventPayload } from "../infra/agent-events.js";
 import { parseCronRunScopeSuffix } from "../sessions/session-key-utils.js";
@@ -337,6 +338,12 @@ export async function persistGatewaySessionLifecycleEvent(params: {
       ) {
         // Exact cron rows transfer lifecycle ownership from the initial run to
         // one claimed continuation. Ready or replaced claims reject late events.
+        return null;
+      }
+      const eventRunId = normalizeLifecycleRunId(params.event.runId);
+      if (phase === "start" && eventRunId && hasRestartRecoveryTerminalRun(entry, eventRunId)) {
+        // An accepted cancellation may commit before the producer's delayed
+        // start event. The exact run tombstone keeps that run terminal.
         return null;
       }
       if (

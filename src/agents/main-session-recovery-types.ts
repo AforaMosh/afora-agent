@@ -121,6 +121,12 @@ export type MainSessionRecoveryCommand =
   | { kind: "validate_foreground"; claim: MainSessionRecoveryOwnerClaim }
   | { kind: "release_foreground"; claim: MainSessionRecoveryOwnerClaim }
   | {
+      kind: "abort_foreground";
+      claim: MainSessionRecoveryOwnerClaim;
+      now: number;
+      runId?: string;
+    }
+  | {
       kind: "tombstone";
       now: number;
       observation: MainSessionRecoveryObservation;

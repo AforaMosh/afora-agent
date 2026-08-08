@@ -22,6 +22,11 @@ import {
   type SessionWorkAdmissionLease,
 } from "../../sessions/session-lifecycle-admission.js";
 import {
+  clearReplyRecoveryOwner,
+  setReplyRecoveryOwner,
+  waitForReplyRecoveryAbortPersistence,
+} from "./reply-recovery-owner.js";
+import {
   createReplyOperation,
   expireStaleReplyOperation,
   isReplyRunEvidenceStale,
@@ -56,7 +61,11 @@ const lifecycleAdmissionByOperation = new WeakMap<ReplyOperation, SessionWorkAdm
 
 async function releaseReplyRecoveryOwner(
   lease: MainSessionRecoveryOwnerLease | undefined,
+  operation?: ReplyOperation,
 ): Promise<MainSessionRecoveryPendingTarget | undefined> {
+  if (operation) {
+    await waitForReplyRecoveryAbortPersistence(operation);
+  }
   try {
     return await releaseMainSessionRecoveryOwner(lease);
   } catch (error) {
@@ -303,6 +312,7 @@ async function admitReplyTurnWithWaitSignal(
               params.kind === "queued_followup" || params.kind === "heartbeat",
           });
         }
+        setReplyRecoveryOwner(operation, recoveryOwnerLease);
       } catch (error) {
         const pendingRecovery = recoveryOwnerLease
           ? await releaseReplyRecoveryOwner(recoveryOwnerLease)
@@ -338,7 +348,10 @@ async function admitReplyTurnWithWaitSignal(
         runAfterReplyOperationClear(operation, () => {
           lifecycleAdmissionByOperation.delete(operation);
           // Keep reset/delete behind durable owner release and its writer lock.
-          void releaseReplyRecoveryOwner(recoveryOwnerLease).then((pendingTarget) => {
+          void releaseReplyRecoveryOwner(recoveryOwnerLease, operation).then((pendingTarget) => {
+            if (recoveryOwnerLease) {
+              clearReplyRecoveryOwner(operation, recoveryOwnerLease);
+            }
             admission.release();
             scheduleMainSessionRecoveryPendingTarget(pendingTarget);
           });
