@@ -45,7 +45,11 @@ import {
 } from "./pending-final-delivery.js";
 import { type FollowupRun, type QueueSettings, scheduleFollowupDrain } from "./queue.js";
 import { normalizeReplyPayloadDirectives } from "./reply-delivery.js";
-import { type ReplyOperation, runAfterReplyOperationClear } from "./reply-run-registry.js";
+import {
+  type ReplyOperation,
+  replyRunRegistry,
+  runAfterReplyOperationClear,
+} from "./reply-run-registry.js";
 import { resolveSourceReplyVisibilityPolicy } from "./source-reply-delivery-mode.js";
 import type { TypingController } from "./typing.js";
 export const BLOCK_REPLY_SEND_TIMEOUT_MS = 15_000;
@@ -71,6 +75,19 @@ export function scheduleFollowupDrainAfterReplyOperationClear(params: {
             );
     scheduleFollowupDrain(params.queueKey, runFollowupAfterClear);
   });
+}
+
+/** Schedules a queued follow-up after the current owner clears, closing the enqueue/clear race. */
+export function scheduleFollowupDrainForCurrentOwner(params: {
+  queueKey: string;
+  runFollowup: (run: FollowupRun) => Promise<void>;
+}): void {
+  const operation = replyRunRegistry.get(params.queueKey);
+  if (operation) {
+    scheduleFollowupDrainAfterReplyOperationClear({ operation, ...params });
+  } else {
+    scheduleFollowupDrain(params.queueKey, params.runFollowup);
+  }
 }
 
 export function markBeforeAgentRunBlockedPayloads(payloads: ReplyPayload[]): ReplyPayload[] {

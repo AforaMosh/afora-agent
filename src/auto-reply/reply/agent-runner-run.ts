@@ -1,5 +1,3 @@
-import { expectDefined } from "@openclaw/normalization-core";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
 import { resolveDefaultAgentId } from "../../agents/agent-scope-config.js";
 import {
   formatEmbeddedAgentQueueFailureSummary,
@@ -21,7 +19,7 @@ import {
   refreshSessionEntryFromStore,
   resolveAdmittedRunSessionFile,
   type RunReplyAgentParams,
-  scheduleFollowupDrainAfterReplyOperationClear,
+  scheduleFollowupDrainForCurrentOwner,
 } from "./agent-runner-core.js";
 import {
   createReplyAgentRestartRecoveryController,
@@ -33,7 +31,7 @@ import {
   isAudioPayload,
 } from "./agent-runner-helpers.js";
 import { resetReplyRunSession } from "./agent-runner-session-reset.js";
-import { finalizeAcceptedSteer } from "./agent-runner-steer-adoption.js";
+import { finalizeAcceptedSteer, resolveSteeredTurnId } from "./agent-runner-steer-adoption.js";
 import { resolveQueuedReplyExecutionConfig } from "./agent-runner-utils.js";
 import { createAudioAsVoiceBuffer, createBlockReplyPipeline } from "./block-reply-pipeline.js";
 import { resolveEffectiveBlockStreamingConfig } from "./block-streaming.js";
@@ -51,7 +49,6 @@ import {
   enqueueFollowupRun,
   parkSteerCandidate,
   resolveFollowupAbortSignal,
-  scheduleFollowupDrain,
 } from "./queue.js";
 import { REPLY_ADMISSION_TICKET } from "./reply-admission-ticket.js";
 import { createReplyMediaContext } from "./reply-media-paths.js";
@@ -65,7 +62,7 @@ import {
   retireTerminalRestartRecoverySourceClaim,
 } from "./restart-recovery-claim.js";
 import { resolveRoutedDeliveryThreadId } from "./routed-delivery-thread.js";
-import { buildChannelSourceTurnId, readChannelSourceTurnId } from "./source-turn-id.js";
+import { readChannelSourceTurnId } from "./source-turn-id.js";
 import { createTypingSignaler } from "./typing-mode.js";
 export async function runReplyAgent(
   params: RunReplyAgentParams,
@@ -252,19 +249,7 @@ export async function runReplyAgent(
       typing.cleanup();
       return undefined;
     }
-    const scheduleParkedFallback = () => {
-      const owner = replyRunRegistry.get(queueKey);
-      if (owner) {
-        scheduleFollowupDrainAfterReplyOperationClear({
-          operation: owner,
-          queueKey,
-          runFollowup: queuedRunFollowupTurn,
-        });
-      } else {
-        scheduleFollowupDrain(queueKey, queuedRunFollowupTurn);
-      }
-    };
-    scheduleParkedFallback();
+    scheduleFollowupDrainForCurrentOwner({ queueKey, runFollowup: queuedRunFollowupTurn });
     releaseAdmissionTicket();
     try {
       const admission = await parked.admit();
@@ -282,29 +267,13 @@ export async function runReplyAgent(
         typing.cleanup();
         return undefined;
       }
-      // Channel dispatch normally stamps the route-scoped source id. Internal
-      // callers can derive the same per-message identity from the prepared turn.
-      const steerRunId = expectDefined(
-        restartRecoverySourceTurnId ??
-          buildChannelSourceTurnId({
-            provider:
-              followupRun.originatingChannel ??
-              followupRun.run.messageProvider ??
-              sessionCtx.Provider,
-            accountId:
-              followupRun.originatingAccountId ??
-              followupRun.run.agentAccountId ??
-              sessionCtx.AccountId,
-            conversationId:
-              followupRun.originatingTo ??
-              followupRun.originatingChatId ??
-              sessionKey ??
-              followupRun.run.sessionKey,
-            messageId: followupRun.messageId ?? sessionCtx.MessageSidFull ?? sessionCtx.MessageSid,
-          }) ??
-          normalizeOptionalString(opts?.runId),
-        "steered turn id",
-      );
+      const steerRunId = resolveSteeredTurnId({
+        followupRun,
+        restartRecoverySourceTurnId,
+        runId: opts?.runId,
+        sessionCtx,
+        sessionKey,
+      });
       const steerOutcome = await queueEmbeddedAgentMessageWithOutcomeAsync(
         steerSessionId,
         followupRun.prompt,
@@ -421,18 +390,7 @@ export async function runReplyAgent(
     if (replyOperationRunState) {
       replyOperationRunState.admission = { status: "accepted", mode: "followup" };
     }
-    // The queue must stay dormant while the active owner can still collect
-    // messages. Registering after enqueue closes the owner-clear race.
-    const activeReplyOperation = replyRunRegistry.get(queueKey);
-    if (activeReplyOperation) {
-      scheduleFollowupDrainAfterReplyOperationClear({
-        operation: activeReplyOperation,
-        queueKey,
-        runFollowup: queuedRunFollowupTurn,
-      });
-    } else {
-      scheduleFollowupDrain(queueKey, queuedRunFollowupTurn);
-    }
+    scheduleFollowupDrainForCurrentOwner({ queueKey, runFollowup: queuedRunFollowupTurn });
     releaseAdmissionTicket();
     const queuedBehindActiveRun = isRunActive?.() === true;
     await touchActiveSessionEntry();

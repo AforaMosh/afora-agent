@@ -1,7 +1,46 @@
+import { expectDefined } from "@openclaw/normalization-core";
+import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
 import { isIngressAdoptionLostError } from "../../channels/message/ingress-drain.js";
 import { logVerbose } from "../../globals.js";
+import type { TemplateContext } from "../templating.js";
+import type { FollowupRun } from "./queue.js";
 import type { ReplyOperationRunState } from "./reply-operation-run-state.js";
 import { type ReplyOperation, replyRunRegistry } from "./reply-run-registry.js";
+import { buildChannelSourceTurnId } from "./source-turn-id.js";
+
+/** Resolves the route-scoped source id, including prepared internal turns without a channel stamp. */
+export function resolveSteeredTurnId(params: {
+  followupRun: FollowupRun;
+  restartRecoverySourceTurnId: string | undefined;
+  runId: unknown;
+  sessionCtx: TemplateContext;
+  sessionKey: string | undefined;
+}): string {
+  return expectDefined(
+    params.restartRecoverySourceTurnId ??
+      buildChannelSourceTurnId({
+        provider:
+          params.followupRun.originatingChannel ??
+          params.followupRun.run.messageProvider ??
+          params.sessionCtx.Provider,
+        accountId:
+          params.followupRun.originatingAccountId ??
+          params.followupRun.run.agentAccountId ??
+          params.sessionCtx.AccountId,
+        conversationId:
+          params.followupRun.originatingTo ??
+          params.followupRun.originatingChatId ??
+          params.sessionKey ??
+          params.followupRun.run.sessionKey,
+        messageId:
+          params.followupRun.messageId ??
+          params.sessionCtx.MessageSidFull ??
+          params.sessionCtx.MessageSid,
+      }) ??
+      normalizeOptionalString(params.runId),
+    "steered turn id",
+  );
+}
 
 export async function finalizeAcceptedSteer(params: {
   activeReplyOperation: ReplyOperation | undefined;
