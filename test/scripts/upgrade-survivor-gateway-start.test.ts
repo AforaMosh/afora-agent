@@ -14,6 +14,7 @@ function quote(value: string): string {
 
 type ScenarioOptions = {
   initialLog?: string;
+  initialOwnership?: string;
   initialPid?: string;
   platform?: "Darwin" | "Linux";
   readinessStatus?: number;
@@ -102,12 +103,14 @@ openclaw_e2e_wait_gateway_ready() {
   }
 }
 gateway_pid=${quote(options.initialPid ?? "")}
+gateway_ownership=${quote(options.initialOwnership ?? "")}
 export FAKE_COUNT=${quote(count)} FAKE_TRACE=${quote(trace)} FAKE_SEQUENCE=${quote(sequence)}
 upgrade_survivor_start_gateway_with_convergence_retry \
   gateway_pid ${quote(log)} 8 24567 legacy-ready-log-ok "$((SECONDS+${options.deadlineOffset ?? 5}))" \
-  -- ${quote(executable)} args
+  gateway_ownership -- ${quote(executable)} args
 status=$?
 printf 'gateway_pid=%s\n' "$gateway_pid"
+printf 'gateway_ownership=%s\n' "$gateway_ownership"
 if [ "$status" -eq 0 ] && [ -n "$gateway_pid" ]; then
   openclaw_e2e_stop_process "$gateway_pid"
 fi
@@ -134,11 +137,13 @@ describe("upgrade survivor gateway convergence launcher", () => {
     const { result, traceText, logText } = runScenario("success", {
       ...options,
       initialLog: "keep-log\n",
+      initialOwnership: "keep-ownership",
       initialPid: "keep-pid",
     });
 
     expect(result.status).toBe(2);
     expect(result.stdout).toContain("gateway_pid=keep-pid");
+    expect(result.stdout).toContain("gateway_ownership=keep-ownership");
     expect(logText).toBe("keep-log\n");
     expect(traceText).toBe("");
   });
@@ -154,6 +159,7 @@ describe("upgrade survivor gateway convergence launcher", () => {
     expect(returnedPid).toMatch(/^\d+$/u);
     expect(executablePid).toMatch(/^\d+$/u);
     expect(returnedPid).not.toBe(executablePid);
+    expect(result.stdout).toContain("gateway_ownership=process-group");
   });
 
   it("retries one exact-prefix stderr refusal with an arbitrary suffix", () => {

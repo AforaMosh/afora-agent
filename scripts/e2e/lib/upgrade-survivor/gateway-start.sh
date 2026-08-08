@@ -1,5 +1,71 @@
 #!/usr/bin/env bash
 
+upgrade_survivor_append_systemctl_process_helpers() {
+  cat >>"$1" <<'SHIM'
+read_ownership() {
+  local ownership="pid"
+  [ ! -e "$ownership_file" ] || ownership="$(cat "$ownership_file" 2>/dev/null || true)"
+  case "$ownership" in
+    pid | process-group) printf '%s\n' "$ownership" ;;
+    *) echo "systemctl shim invalid process ownership: $ownership" >&2; return 2 ;;
+  esac
+}
+
+owned_process_running() {
+  local pid="$1" ownership="$2"
+  if [ "$ownership" = "process-group" ]; then
+    # The PGID remains authoritative after its leader exits while descendants still own the port.
+    kill -0 -- "-$pid" >/dev/null 2>&1
+    return
+  fi
+  kill -0 "$pid" >/dev/null 2>&1 || return 1
+  [ "$(awk '{ print $3 }' "/proc/$pid/stat" 2>/dev/null || true)" != "Z" ]
+}
+
+is_running() {
+  local pid ownership
+  [ -s "$pid_file" ] || return 1
+  pid="$(cat "$pid_file" 2>/dev/null || true)"
+  [[ "$pid" =~ ^[0-9]+$ ]] && [ "$pid" -gt 1 ] || return 2
+  ownership="$(read_ownership)" || return $?
+  owned_process_running "$pid" "$ownership"
+}
+
+stop_gateway() {
+  local pid ownership target stop_deadline kill_deadline
+  [ -s "$pid_file" ] || {
+    rm -f "$ownership_file" "$supervisor_script"
+    return 0
+  }
+  pid="$(cat "$pid_file" 2>/dev/null || true)"
+  [[ "$pid" =~ ^[0-9]+$ ]] && [ "$pid" -gt 1 ] || {
+    echo "systemctl shim invalid pid: $pid" >&2
+    return 2
+  }
+  ownership="$(read_ownership)" || return $?
+  target="$pid"
+  [ "$ownership" = "pid" ] || target="-$pid"
+  stop_deadline=$((SECONDS + 35))
+  kill_deadline=$((stop_deadline - 5))
+  kill -TERM -- "$target" >/dev/null 2>&1 || true
+  while owned_process_running "$pid" "$ownership" && [ "$SECONDS" -lt "$kill_deadline" ]; do
+    sleep 0.1
+  done
+  owned_process_running "$pid" "$ownership" &&
+    kill -KILL -- "$target" >/dev/null 2>&1 || true
+  while owned_process_running "$pid" "$ownership" && [ "$SECONDS" -lt "$stop_deadline" ]; do
+    sleep 0.1
+  done
+  if owned_process_running "$pid" "$ownership"; then
+    echo "systemctl shim could not stop $ownership $pid" >&2
+    return 1
+  fi
+  rm -f "$pid_file" "$ownership_file" "$supervisor_script"
+}
+
+SHIM
+}
+
 upgrade_survivor_start_gateway_with_convergence_retry() {
   if [ "$#" -lt 8 ]; then
     return 2
@@ -11,13 +77,19 @@ upgrade_survivor_start_gateway_with_convergence_retry() {
   local port="$4"
   local readiness_mode="$5"
   local absolute_deadline="$6"
+  local ownership_var=""
   shift 6
+  if [ "$1" != "--" ]; then
+    ownership_var="$1"
+    shift
+  fi
   if [ "$1" != "--" ]; then
     return 2
   fi
   shift
 
   if ! [[ "$output_var" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] ||
+    { [ -n "$ownership_var" ] && { ! [[ "$ownership_var" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || [ "$ownership_var" = "$output_var" ]; }; } ||
     [ -z "$log_file" ] ||
     ! [[ "$readiness_attempts" =~ ^[0-9]+$ ]] ||
     [ "$readiness_attempts" -lt 1 ] ||
@@ -31,6 +103,7 @@ upgrade_survivor_start_gateway_with_convergence_retry() {
   fi
 
   printf -v "$output_var" '%s' ""
+  [ -z "$ownership_var" ] || printf -v "$ownership_var" '%s' ""
   local launch_attempt leader child_status offset stderr_file wait_status
   local retry_prefix="OpenClaw plugin migration inputs changed during startup convergence;"
 
@@ -73,6 +146,7 @@ upgrade_survivor_start_gateway_with_convergence_retry() {
     if [ "$wait_status" -eq 0 ]; then
       rm -f "$stderr_file"
       printf -v "$output_var" '%s' "$leader"
+      [ -z "$ownership_var" ] || printf -v "$ownership_var" '%s' "process-group"
       return 0
     fi
 
