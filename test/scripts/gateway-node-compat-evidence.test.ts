@@ -26,11 +26,19 @@ import type {
 } from "../../scripts/gateway-node-compat-evidence.mjs";
 
 const SCRIPT_PATH = "scripts/gateway-node-compat-evidence.mjs";
-const CANDIDATE_PACKAGE_SHA256 = "b".repeat(64);
-const BASELINE_PACKAGE_SHA256 = "d".repeat(64);
+const GATEWAY_CANDIDATE_PACKAGE_SHA256 = "b".repeat(64);
+const GATEWAY_BASELINE_PACKAGE_SHA256 = "d".repeat(64);
+const NODE_CANDIDATE_PACKAGE_SHA256 = "f".repeat(64);
+const NODE_BASELINE_PACKAGE_SHA256 = "9".repeat(64);
 const ARTIFACT_IDENTITIES: GatewayNodeCompatArtifactIdentities = {
-  candidatePackageSha256: CANDIDATE_PACKAGE_SHA256,
-  baselinePackageSha256: BASELINE_PACKAGE_SHA256,
+  gateway: {
+    candidatePackageSha256: GATEWAY_CANDIDATE_PACKAGE_SHA256,
+    baselinePackageSha256: GATEWAY_BASELINE_PACKAGE_SHA256,
+  },
+  node: {
+    candidatePackageSha256: NODE_CANDIDATE_PACKAGE_SHA256,
+    baselinePackageSha256: NODE_BASELINE_PACKAGE_SHA256,
+  },
 };
 const tempRoots: string[] = [];
 
@@ -40,6 +48,23 @@ function validateGatewayNodeCompatEvidence(value: unknown) {
 
 function canonicalizeGatewayNodeCompatEvidence(value: unknown) {
   return canonicalizeGatewayNodeCompatEvidenceWithIdentities(value, ARTIFACT_IDENTITIES);
+}
+
+function hasUnsafeDiagnosticCharacter(value: string): boolean {
+  return Array.from(value).some((character) => {
+    const codePoint = character.codePointAt(0) ?? 0;
+    return (
+      codePoint <= 0x1f ||
+      (codePoint >= 0x7f && codePoint <= 0x9f) ||
+      codePoint === 0x2028 ||
+      codePoint === 0x2029 ||
+      codePoint === 0x061c ||
+      codePoint === 0x200e ||
+      codePoint === 0x200f ||
+      (codePoint >= 0x202a && codePoint <= 0x202e) ||
+      (codePoint >= 0x2066 && codePoint <= 0x2069)
+    );
+  });
 }
 
 function makeTempRoot(): string {
@@ -98,14 +123,14 @@ function validPassEvidence(): Record<string, any> {
       packagedArtifact: packagedArtifact(
         gatewayVersion,
         gatewaySourceSha,
-        "openclaw-candidate.tgz",
-        CANDIDATE_PACKAGE_SHA256,
+        "openclaw-gateway-candidate.tgz",
+        GATEWAY_CANDIDATE_PACKAGE_SHA256,
         "1",
       ),
       installedRuntime: installedRuntime(
         gatewayVersion,
         gatewaySourceSha,
-        CANDIDATE_PACKAGE_SHA256,
+        GATEWAY_CANDIDATE_PACKAGE_SHA256,
         "2".repeat(64),
       ),
     },
@@ -116,14 +141,14 @@ function validPassEvidence(): Record<string, any> {
       packagedArtifact: packagedArtifact(
         nodeVersion,
         nodeSourceSha,
-        "openclaw-baseline.tgz",
-        BASELINE_PACKAGE_SHA256,
+        "openclaw-node-baseline.tgz",
+        NODE_BASELINE_PACKAGE_SHA256,
         "3",
       ),
       installedRuntime: installedRuntime(
         nodeVersion,
         nodeSourceSha,
-        BASELINE_PACKAGE_SHA256,
+        NODE_BASELINE_PACKAGE_SHA256,
         "4".repeat(64),
       ),
     },
@@ -192,7 +217,7 @@ function setNodeKind(
 
 function validMismatchEvidence(): Record<string, any> {
   const evidence = validPassEvidence();
-  const candidateRuntime = runtimeBindingForRole("candidate");
+  const candidateRuntime = runtimeBindingForRole("node", "candidate");
   evidence.caseId = "linux-x64-candidate-gateway-disjoint-node";
   evidence.direction = "candidate-gateway-disjoint-node";
   evidence.node.packagedArtifact = candidateRuntime.packagedArtifact;
@@ -213,7 +238,7 @@ function validMismatchEvidence(): Record<string, any> {
 
 function validBaselineMismatchEvidence(): Record<string, any> {
   const evidence = validMismatchEvidence();
-  const baselineRuntime = runtimeBindingForRole("baseline");
+  const baselineRuntime = runtimeBindingForRole("gateway", "baseline");
   evidence.caseId = "linux-x64-baseline-gateway-disjoint-node";
   evidence.direction = "baseline-gateway-disjoint-node";
   evidence.gateway = baselineRuntime;
@@ -224,14 +249,37 @@ function validBaselineMismatchEvidence(): Record<string, any> {
   return evidence;
 }
 
-function runtimeBindingForRole(role: "baseline" | "candidate") {
+function runtimeBindingForRole(
+  owner: "gateway" | "node",
+  role: "baseline" | "candidate",
+): Record<string, any> {
   const identityFixture = validPassEvidence();
-  return role === "candidate"
-    ? clone(identityFixture.gateway)
-    : {
-        packagedArtifact: clone(identityFixture.node.packagedArtifact),
-        installedRuntime: clone(identityFixture.node.installedRuntime),
-      };
+  const roleFixture = role === "candidate" ? identityFixture.gateway : identityFixture.node;
+  const packageSha256 =
+    ARTIFACT_IDENTITIES[owner][
+      role === "candidate" ? "candidatePackageSha256" : "baselinePackageSha256"
+    ];
+  const seed = (
+    {
+      gateway: { baseline: "5", candidate: "1" },
+      node: { baseline: "3", candidate: "6" },
+    } as const
+  )[owner][role];
+  return {
+    packagedArtifact: packagedArtifact(
+      roleFixture.packagedArtifact.version,
+      roleFixture.packagedArtifact.sourceSha,
+      `openclaw-${owner}-${role}.tgz`,
+      packageSha256,
+      seed,
+    ),
+    installedRuntime: installedRuntime(
+      roleFixture.installedRuntime.version,
+      roleFixture.installedRuntime.sourceSha,
+      packageSha256,
+      `${Number(seed) + 1}`.repeat(64),
+    ),
+  };
 }
 
 function validEvidenceForContract(contract: GatewayNodeCompatCaseContract): Record<string, any> {
@@ -241,8 +289,8 @@ function validEvidenceForContract(contract: GatewayNodeCompatCaseContract): Reco
       : contract.outcome === "protocol-mismatch"
         ? validMismatchEvidence()
         : validPassEvidence();
-  evidence.gateway = runtimeBindingForRole(contract.gatewayArtifactRole);
-  const nodeRuntime = runtimeBindingForRole(contract.nodeArtifactRole);
+  evidence.gateway = runtimeBindingForRole("gateway", contract.gatewayArtifactRole);
+  const nodeRuntime = runtimeBindingForRole("node", contract.nodeArtifactRole);
   evidence.node.packagedArtifact = nodeRuntime.packagedArtifact;
   evidence.node.installedRuntime = nodeRuntime.installedRuntime;
   evidence.direction = contract.direction;
@@ -280,10 +328,14 @@ function runCli(args: string[], timeout?: number) {
     [
       SCRIPT_PATH,
       ...args,
-      "--candidate-package-sha256",
-      CANDIDATE_PACKAGE_SHA256,
-      "--baseline-package-sha256",
-      BASELINE_PACKAGE_SHA256,
+      "--gateway-candidate-package-sha256",
+      GATEWAY_CANDIDATE_PACKAGE_SHA256,
+      "--gateway-baseline-package-sha256",
+      GATEWAY_BASELINE_PACKAGE_SHA256,
+      "--node-candidate-package-sha256",
+      NODE_CANDIDATE_PACKAGE_SHA256,
+      "--node-baseline-package-sha256",
+      NODE_BASELINE_PACKAGE_SHA256,
     ],
     {
       cwd: process.cwd(),
@@ -328,6 +380,31 @@ describe("gateway node compatibility evidence", () => {
     expect(validateGatewayNodeCompatEvidence(evidence)).toBe(evidence);
   });
 
+  it("rejects bidi controls from canonical evidence values", () => {
+    for (const control of [
+      "\u061c",
+      "\u200e",
+      "\u200f",
+      "\u2028",
+      "\u2029",
+      "\u202a",
+      "\u202b",
+      "\u202c",
+      "\u202d",
+      "\u202e",
+      "\u2066",
+      "\u2067",
+      "\u2068",
+      "\u2069",
+    ]) {
+      const evidence = validPassEvidence();
+      evidence.producer.job = `gateway${control}job`;
+      expect(() => validateGatewayNodeCompatEvidence(evidence)).toThrow(
+        /producer.job must be a bounded non-control string/u,
+      );
+    }
+  });
+
   it.each(GATEWAY_NODE_COMPAT_CASE_CONTRACTS)(
     "accepts the $direction case contract",
     (contract) => {
@@ -348,7 +425,7 @@ describe("gateway node compatibility evidence", () => {
       const expectedRole =
         subject === "gateway" ? contract.gatewayArtifactRole : contract.nodeArtifactRole;
       const oppositeRole = expectedRole === "candidate" ? "baseline" : "candidate";
-      const oppositeRuntime = runtimeBindingForRole(oppositeRole);
+      const oppositeRuntime = runtimeBindingForRole(subject, oppositeRole);
       if (subject === "gateway") {
         evidence.gateway = oppositeRuntime;
       } else {
@@ -358,6 +435,44 @@ describe("gateway node compatibility evidence", () => {
 
       expect(() => validateGatewayNodeCompatEvidence(evidence)).toThrow(
         new RegExp(`${subject} artifact identity must match the ${expectedRole} package`, "u"),
+      );
+    },
+  );
+
+  it("binds independently packaged Gateway and node candidate artifacts", () => {
+    const contract = GATEWAY_NODE_COMPAT_CASE_CONTRACTS.find(
+      ({ direction }) => direction === "candidate-gateway-candidate-node",
+    );
+    expect(contract).toBeDefined();
+    const evidence = validEvidenceForContract(contract!);
+
+    expect(evidence.gateway.packagedArtifact.sha256).toBe(GATEWAY_CANDIDATE_PACKAGE_SHA256);
+    expect(evidence.node.packagedArtifact.sha256).toBe(NODE_CANDIDATE_PACKAGE_SHA256);
+    expect(evidence.gateway.packagedArtifact.sha256).not.toBe(
+      evidence.node.packagedArtifact.sha256,
+    );
+    expect(validateGatewayNodeCompatEvidence(evidence)).toBe(evidence);
+
+    evidence.node.packagedArtifact.sha256 = GATEWAY_CANDIDATE_PACKAGE_SHA256;
+    evidence.node.installedRuntime.packageSha256 = GATEWAY_CANDIDATE_PACKAGE_SHA256;
+    expect(() => validateGatewayNodeCompatEvidence(evidence)).toThrow(
+      /node artifact identity must match the candidate package/u,
+    );
+  });
+
+  it.each(["gateway", "node"] as const)(
+    "requires distinct candidate and baseline %s identities",
+    (owner) => {
+      const identities = clone(ARTIFACT_IDENTITIES);
+      identities[owner].baselinePackageSha256 = identities[owner].candidatePackageSha256;
+
+      expect(() =>
+        validateGatewayNodeCompatEvidenceWithIdentities(validPassEvidence(), identities),
+      ).toThrow(
+        new RegExp(
+          `artifact identities\\.${owner} candidate and baseline package identities must differ`,
+          "u",
+        ),
       );
     },
   );
@@ -495,6 +610,53 @@ describe("gateway node compatibility evidence", () => {
     mutate(evidence);
 
     expect(() => validateGatewayNodeCompatEvidence(evidence)).toThrow(/not allowed/u);
+  });
+
+  it("sanitizes hostile unknown keys in imported validation errors", () => {
+    const evidence = validPassEvidence();
+    evidence[
+      "owned\u001b]0;gateway evidence\u0007\u009b31m\u007f\u2028\u2029\u061c\u200e\u200f\u202a\u202b\u202c\u202d\u202e\u2066\u2067\u2068\u2069"
+    ] = true;
+
+    let error: unknown;
+    try {
+      validateGatewayNodeCompatEvidence(evidence);
+    } catch (caught) {
+      error = caught;
+    }
+
+    expect(error).toBeInstanceOf(Error);
+    const message = error instanceof Error ? error.message : "";
+    expect(message).toContain("gateway-node compatibility evidence.owned");
+    expect(message).toContain("gateway evidence");
+    expect(message).toContain("is not allowed");
+    expect(message.length).toBeLessThanOrEqual(200);
+    expect(hasUnsafeDiagnosticCharacter(message)).toBe(false);
+  });
+
+  it("sanitizes hostile keys in early JSON-tree validation errors", () => {
+    for (const key of [
+      "owned\u001b]0;tree\u0007\u2028\u2029\u202e",
+      Symbol("owned\u001b]0;tree\u0007\u2028\u2029\u202e"),
+    ]) {
+      const evidence = validPassEvidence();
+      Object.defineProperty(evidence, key, {
+        enumerable: true,
+        value: typeof key === "string" ? Number.POSITIVE_INFINITY : true,
+      });
+
+      let error: unknown;
+      try {
+        validateGatewayNodeCompatEvidence(evidence);
+      } catch (caught) {
+        error = caught;
+      }
+
+      expect(error).toBeInstanceOf(Error);
+      const message = error instanceof Error ? error.message : "";
+      expect(message).toContain("owned ]0;tree");
+      expect(hasUnsafeDiagnosticCharacter(message)).toBe(false);
+    }
   });
 
   it.each([
@@ -814,6 +976,26 @@ describe("gateway node compatibility evidence", () => {
     }
   });
 
+  it("sanitizes hostile result keys in imported validation errors", () => {
+    const evidence = validPassEvidence();
+    evidence.operation.result.bins = {};
+    evidence.operation.result.bins[
+      "node\u001b]0;gateway result\u0007\u009b31m\u007f\u2028\u2029\u061c\u200e\u200f\u202a\u202b\u202c\u202d\u202e\u2066\u2067\u2068\u2069"
+    ] = "/usr/bin/node";
+
+    let error: unknown;
+    try {
+      validateGatewayNodeCompatEvidence(evidence);
+    } catch (caught) {
+      error = caught;
+    }
+
+    expect(error).toBeInstanceOf(Error);
+    const message = error instanceof Error ? error.message : "";
+    expect(message).toBe("operation.result.bins key must be a bounded non-control string");
+    expect(hasUnsafeDiagnosticCharacter(message)).toBe(false);
+  });
+
   it.each([
     ["android", "openclaw-android"],
     ["ios", "openclaw-ios"],
@@ -943,6 +1125,7 @@ describe("gateway node compatibility evidence", () => {
       ".github/workflows//release.yml",
       ".github/workflows/./release.yml",
       ".github/workflows/../release.yml",
+      ".github/workflows/nested/release.yml",
       ".github\\workflows\\release.yml",
       ".github/workflows/release.json",
     ]) {
@@ -991,12 +1174,12 @@ describe("gateway node compatibility evidence", () => {
       "actionsArtifact": {
         "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
         "id": 1111,
-        "name": "openclaw-candidate.tgz-input",
+        "name": "openclaw-gateway-candidate.tgz-input",
         "runAttempt": 2,
         "runId": "111111111",
         "sizeBytes": 4096
       },
-      "name": "openclaw-candidate.tgz",
+      "name": "openclaw-gateway-candidate.tgz",
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       "sourceSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       "version": "v2026.8.6"
@@ -1006,7 +1189,7 @@ describe("gateway node compatibility evidence", () => {
     "architecture": "x64",
     "installedRuntime": {
       "identitySha256": "4444444444444444444444444444444444444444444444444444444444444444",
-      "packageSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "packageSha256": "9999999999999999999999999999999999999999999999999999999999999999",
       "sourceSha": "cccccccccccccccccccccccccccccccccccccccc",
       "version": "v2026.5.7"
     },
@@ -1015,13 +1198,13 @@ describe("gateway node compatibility evidence", () => {
       "actionsArtifact": {
         "digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
         "id": 3333,
-        "name": "openclaw-baseline.tgz-input",
+        "name": "openclaw-node-baseline.tgz-input",
         "runAttempt": 2,
         "runId": "333333333",
         "sizeBytes": 4096
       },
-      "name": "openclaw-baseline.tgz",
-      "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "name": "openclaw-node-baseline.tgz",
+      "sha256": "9999999999999999999999999999999999999999999999999999999999999999",
       "sourceSha": "cccccccccccccccccccccccccccccccccccccccc",
       "version": "v2026.5.7"
     },
@@ -1281,6 +1464,15 @@ describe("gateway node compatibility evidence", () => {
     );
   });
 
+  it("prints mandatory artifact identity flags in CLI usage", () => {
+    const result = runCli(["unsupported"]);
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain(
+      "validate <file> --gateway-candidate-package-sha256 <sha256> --gateway-baseline-package-sha256 <sha256> --node-candidate-package-sha256 <sha256> --node-baseline-package-sha256 <sha256>",
+    );
+  });
+
   it("rejects malformed UTF-8 bytes during CLI validation", () => {
     const inputPath = writeMalformedUtf8Evidence(makeTempRoot());
 
@@ -1394,16 +1586,20 @@ describe("gateway node compatibility evidence", () => {
     expect(result.stderr).toContain("exceeds 65536 bytes");
   });
 
-  it("prints one stack-free error line for CLI failures", () => {
+  it("prints a fixed stack-free error and the standard failure trailer", () => {
     const root = makeTempRoot();
     const inputPath = path.join(root, "invalid.json");
-    writeFileSync(inputPath, "{\nnot-json\n", "utf8");
+    writeFileSync(inputPath, '{"privatePath":"/internal/secret"} trailing', "utf8");
 
     const result = runCli(["validate", inputPath]);
     const lines = result.stderr.trimEnd().split("\n");
 
     expect(result.status).not.toBe(0);
-    expect(lines).toHaveLength(1);
+    expect(lines).toEqual([
+      "gateway-node compatibility evidence must be valid JSON",
+      "[gateway-node-compat-evidence] FAILED (exit 1)",
+    ]);
+    expect(result.stderr).not.toContain("/internal/secret");
     expect(result.stderr).not.toContain("\n    at ");
   });
 
@@ -1411,26 +1607,19 @@ describe("gateway node compatibility evidence", () => {
     const root = makeTempRoot();
     const inputPath = path.join(root, "invalid.json");
     const invalid = validPassEvidence();
-    invalid["owned\u001b]0;gateway evidence\u0007\u009b31m\u007f\u2028\u2029"] = true;
+    invalid[
+      "owned\u001b]0;gateway evidence\u0007\u009b31m\u007f\u2028\u2029\u061c\u200e\u200f\u202a\u202b\u202c\u202d\u202e\u2066\u2067\u2068\u2069"
+    ] = true;
     writeFileSync(inputPath, JSON.stringify(invalid), "utf8");
 
     const result = runCli(["validate", inputPath]);
-    const errorLine = result.stderr.trimEnd();
+    const lines = result.stderr.trimEnd().split("\n");
+    const errorLine = lines[0] ?? "";
 
     expect(result.status).not.toBe(0);
-    expect(result.stderr).toBe(`${errorLine}\n`);
+    expect(lines.at(-1)).toBe("[gateway-node-compat-evidence] FAILED (exit 1)");
     expect(errorLine.length).toBeLessThanOrEqual(512);
-    expect(
-      Array.from(errorLine).some((character) => {
-        const codePoint = character.codePointAt(0) ?? 0;
-        return (
-          codePoint <= 0x1f ||
-          (codePoint >= 0x7f && codePoint <= 0x9f) ||
-          codePoint === 0x2028 ||
-          codePoint === 0x2029
-        );
-      }),
-    ).toBe(false);
+    expect(hasUnsafeDiagnosticCharacter(errorLine)).toBe(false);
     expect(errorLine).toContain("gateway evidence");
   });
 
@@ -1438,7 +1627,7 @@ describe("gateway node compatibility evidence", () => {
     const declaration = readFileSync("scripts/gateway-node-compat-evidence.d.mts", "utf8");
     const declaredValueExports = Array.from(
       declaration.matchAll(/export (?:declare )?(?:const|function) ([A-Za-z0-9_]+)/gu),
-      (match) => match[1],
+      (match) => match[1] ?? "",
     ).toSorted(compareStrings);
 
     expect(Object.keys(evidenceModule).toSorted(compareStrings)).toEqual(declaredValueExports);

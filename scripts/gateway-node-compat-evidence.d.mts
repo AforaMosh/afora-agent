@@ -16,6 +16,16 @@ export type GatewayNodeCompatDirection =
   | "candidate-gateway-candidate-node"
   | "candidate-gateway-disjoint-node";
 
+export type GatewayNodeCompatPassedDirection = Exclude<
+  GatewayNodeCompatDirection,
+  "baseline-gateway-disjoint-node" | "candidate-gateway-disjoint-node"
+>;
+
+export type GatewayNodeCompatMismatchDirection = Extract<
+  GatewayNodeCompatDirection,
+  "baseline-gateway-disjoint-node" | "candidate-gateway-disjoint-node"
+>;
+
 export type GatewayNodeCompatCaseContract = Readonly<{
   direction: GatewayNodeCompatDirection;
   outcome: GatewayNodeCompatOutcome;
@@ -25,9 +35,14 @@ export type GatewayNodeCompatCaseContract = Readonly<{
 
 export const GATEWAY_NODE_COMPAT_CASE_CONTRACTS: readonly GatewayNodeCompatCaseContract[];
 
-export type GatewayNodeCompatArtifactIdentities = {
+export type GatewayNodeCompatArtifactIdentityPair = {
   candidatePackageSha256: string;
   baselinePackageSha256: string;
+};
+
+export type GatewayNodeCompatArtifactIdentities = {
+  gateway: GatewayNodeCompatArtifactIdentityPair;
+  node: GatewayNodeCompatArtifactIdentityPair;
 };
 
 export type GatewayNodeCompatActionsArtifact = {
@@ -133,10 +148,13 @@ export type GatewayNodeCompatProducer = {
   job: string;
 };
 
-type GatewayNodeCompatBase<TNode extends GatewayNodeCompatNode = GatewayNodeCompatNode> = {
+type GatewayNodeCompatBase<
+  TNode extends GatewayNodeCompatNode = GatewayNodeCompatNode,
+  TDirection extends GatewayNodeCompatDirection = GatewayNodeCompatDirection,
+> = {
   schema: typeof GATEWAY_NODE_COMPAT_SCHEMA;
   caseId: string;
-  direction: GatewayNodeCompatDirection;
+  direction: TDirection;
   connection: {
     transport: "gateway-websocket";
     role: "node";
@@ -158,16 +176,19 @@ type GatewayNodeCompatPassedFields = {
 };
 
 export type GatewayNodeCompatPassedEvidence =
-  | (GatewayNodeCompatBase<GatewayNodeCompatMobileNode> &
+  | (GatewayNodeCompatBase<GatewayNodeCompatMobileNode, GatewayNodeCompatPassedDirection> &
       GatewayNodeCompatPassedFields & {
         operation: GatewayNodeCompatDeviceInfoOperation;
       })
-  | (GatewayNodeCompatBase<GatewayNodeCompatDesktopNode> &
+  | (GatewayNodeCompatBase<GatewayNodeCompatDesktopNode, GatewayNodeCompatPassedDirection> &
       GatewayNodeCompatPassedFields & {
         operation: GatewayNodeCompatSystemWhichOperation;
       });
 
-export type GatewayNodeCompatMismatchEvidence = GatewayNodeCompatBase & {
+export type GatewayNodeCompatMismatchEvidence = GatewayNodeCompatBase<
+  GatewayNodeCompatNode,
+  GatewayNodeCompatMismatchDirection
+> & {
   protocol: GatewayNodeCompatProtocol & {
     helloProtocol: null;
   };

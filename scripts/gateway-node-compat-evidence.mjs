@@ -17,15 +17,19 @@ import path from "node:path";
 import process from "node:process";
 import { TextDecoder, types as utilTypes } from "node:util";
 import { isDirectRunUrl } from "./lib/direct-run.mjs";
+import { writeFailedTrailer } from "./lib/failed-trailer.mjs";
 
 export const GATEWAY_NODE_COMPAT_SCHEMA = "openclaw.gateway-node-compat/v1";
 
+const CLI_TOOL = "gateway-node-compat-evidence";
 const MAX_INPUT_BYTES = 64 * 1024;
 const SOURCE_SHA_PATTERN = /^[a-f0-9]{40}$/u;
 const SHA256_PATTERN = /^[a-f0-9]{64}$/u;
 const ACTIONS_DIGEST_PATTERN = /^sha256:[a-f0-9]{64}$/u;
 const POSITIVE_DECIMAL_PATTERN = /^[1-9][0-9]*$/u;
 const PATH_SEGMENT_PATTERN = /^[A-Za-z0-9_.-]+$/u;
+const WORKFLOW_PATH_PATTERN = /^\.github\/workflows\/[A-Za-z0-9][A-Za-z0-9_.-]*\.ya?ml$/u;
+const BIDI_CONTROL_PATTERN = /[\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]/u;
 
 const NODE_KINDS = new Set(["android", "ios", "linux", "macos", "windows"]);
 const MOBILE_NODE_KINDS = new Set(["android", "ios"]);
@@ -61,8 +65,38 @@ const DEVICE_INFO_SYSTEM_NAMES = new Map([
 function hasControlCharacter(value) {
   return Array.from(value).some((character) => {
     const codePoint = character.codePointAt(0) ?? 0;
-    return codePoint <= 0x1f || (codePoint >= 0x7f && codePoint <= 0x9f);
+    return (
+      codePoint <= 0x1f ||
+      (codePoint >= 0x7f && codePoint <= 0x9f) ||
+      codePoint === 0x2028 ||
+      codePoint === 0x2029 ||
+      BIDI_CONTROL_PATTERN.test(character)
+    );
   });
+}
+
+function sanitizeDiagnosticText(value, maxLength) {
+  let formatted = "";
+  for (const character of String(value)) {
+    const codePoint = character.codePointAt(0) ?? 0;
+    const replacement =
+      codePoint <= 0x1f ||
+      (codePoint >= 0x7f && codePoint <= 0x9f) ||
+      codePoint === 0x2028 ||
+      codePoint === 0x2029 ||
+      BIDI_CONTROL_PATTERN.test(character)
+        ? " "
+        : character;
+    if (formatted.length + replacement.length > maxLength) {
+      break;
+    }
+    formatted += replacement;
+  }
+  return formatted;
+}
+
+function appendDiagnosticPath(label, key) {
+  return sanitizeDiagnosticText(`${label}.${String(key)}`, 512);
 }
 
 function requireObject(value, label) {
@@ -96,7 +130,7 @@ function assertExactKeys(value, label, requiredKeys) {
   }
   for (const key of Reflect.ownKeys(value)) {
     if (typeof key !== "string" || !allowedKeys.has(key)) {
-      throw new Error(`${label}.${String(key)} is not allowed`);
+      throw new Error(`${label}.${sanitizeDiagnosticText(key, 128)} is not allowed`);
     }
   }
 }
@@ -170,20 +204,8 @@ function requireRepository(value) {
 
 function requireWorkflowPath(value) {
   const workflowPath = requireString(value, "producer.workflowPath", 255);
-  if (workflowPath.includes("\\")) {
+  if (!WORKFLOW_PATH_PATTERN.test(workflowPath)) {
     throw new Error("producer.workflowPath is invalid");
-  }
-  const segments = workflowPath.split("/");
-  if (
-    segments.length < 3 ||
-    segments[0] !== ".github" ||
-    segments[1] !== "workflows" ||
-    !/\.ya?ml$/u.test(segments.at(-1) ?? "")
-  ) {
-    throw new Error("producer.workflowPath is invalid");
-  }
-  for (let index = 2; index < segments.length; index += 1) {
-    requirePathSegment(segments[index], `producer.workflowPath segment ${index - 1}`, 128);
   }
   return workflowPath;
 }
@@ -251,24 +273,25 @@ function assertJsonDataTree(value, label, seen = new WeakSet()) {
     if (arrayLength !== undefined && key === "length") {
       continue;
     }
+    const entryLabel = appendDiagnosticPath(label, key);
     if (typeof key !== "string") {
-      throw new Error(`${label}.${String(key)} must be a JSON data property`);
+      throw new Error(`${entryLabel} must be a JSON data property`);
     }
     const descriptor = Object.getOwnPropertyDescriptor(value, key);
     if (!descriptor?.enumerable) {
-      throw new Error(`${label}.${key} must be enumerable`);
+      throw new Error(`${entryLabel} must be enumerable`);
     }
     if (!("value" in descriptor)) {
-      throw new Error(`${label}.${key} must be a JSON data property`);
+      throw new Error(`${entryLabel} must be a JSON data property`);
     }
     if (arrayKeys) {
       const index = Number(key);
       if (!Number.isInteger(index) || index < 0 || index >= arrayLength || String(index) !== key) {
-        throw new Error(`${label}.${key} is not a valid array entry`);
+        throw new Error(`${entryLabel} is not a valid array entry`);
       }
       arrayKeys.add(index);
     }
-    assertJsonDataTree(descriptor.value, `${label}.${key}`, seen);
+    assertJsonDataTree(descriptor.value, entryLabel, seen);
   }
   if (arrayKeys && arrayKeys.size !== arrayLength) {
     throw new Error(`${label} must not contain sparse entries`);
@@ -336,28 +359,34 @@ function validateRuntimeBinding(value, label) {
   }
 }
 
-function validateArtifactIdentities(value) {
-  const identities = requireObject(value, "artifact identities");
-  assertExactKeys(identities, "artifact identities", [
-    "candidatePackageSha256",
-    "baselinePackageSha256",
-  ]);
+function validateArtifactIdentityPair(value, label) {
+  const identities = requireObject(value, label);
+  assertExactKeys(identities, label, ["candidatePackageSha256", "baselinePackageSha256"]);
   const candidatePackageSha256 = requirePattern(
     identities.candidatePackageSha256,
-    "artifact identities.candidatePackageSha256",
+    `${label}.candidatePackageSha256`,
     SHA256_PATTERN,
     64,
   );
   const baselinePackageSha256 = requirePattern(
     identities.baselinePackageSha256,
-    "artifact identities.baselinePackageSha256",
+    `${label}.baselinePackageSha256`,
     SHA256_PATTERN,
     64,
   );
   if (candidatePackageSha256 === baselinePackageSha256) {
-    throw new Error("candidate and baseline package identities must differ");
+    throw new Error(`${label} candidate and baseline package identities must differ`);
   }
   return { baselinePackageSha256, candidatePackageSha256 };
+}
+
+function validateArtifactIdentities(value) {
+  const identities = requireObject(value, "artifact identities");
+  assertExactKeys(identities, "artifact identities", ["gateway", "node"]);
+  return {
+    gateway: validateArtifactIdentityPair(identities.gateway, "artifact identities.gateway"),
+    node: validateArtifactIdentityPair(identities.node, "artifact identities.node"),
+  };
 }
 
 function validateRuntimeArtifactRole(value, label, role, artifactIdentities) {
@@ -484,11 +513,11 @@ function validateSystemWhichResult(value, requestedBins) {
     throw new Error("operation.result.bins must contain 1 to 32 resolved binaries");
   }
   for (const [bin, resolvedPath] of entries) {
-    requirePathSegment(bin, `operation.result.bins.${bin}`, 128);
-    if (!requestedBins.has(bin)) {
-      throw new Error(`operation.result.bins.${bin} was not requested`);
+    const normalizedBin = requirePathSegment(bin, "operation.result.bins key", 128);
+    if (!requestedBins.has(normalizedBin)) {
+      throw new Error(`operation.result.bins.${normalizedBin} was not requested`);
     }
-    requireString(resolvedPath, `operation.result.bins.${bin}`, 4096);
+    requireString(resolvedPath, `operation.result.bins.${normalizedBin}`, 4096);
   }
 }
 
@@ -606,9 +635,14 @@ function validateCaseArtifactRoles(evidence, contract, artifactIdentities) {
     evidence.gateway,
     "gateway",
     contract.gatewayArtifactRole,
-    artifactIdentities,
+    artifactIdentities.gateway,
   );
-  validateRuntimeArtifactRole(evidence.node, "node", contract.nodeArtifactRole, artifactIdentities);
+  validateRuntimeArtifactRole(
+    evidence.node,
+    "node",
+    contract.nodeArtifactRole,
+    artifactIdentities.node,
+  );
 }
 
 function validateOutcomeCoupling(evidence, protocol, outcome, nodeKind) {
@@ -761,7 +795,11 @@ function readEvidenceFile(filePath) {
     if (!Buffer.from(decoded, "utf8").equals(input)) {
       throw new Error("gateway-node compatibility evidence must be canonical UTF-8");
     }
-    return JSON.parse(decoded);
+    try {
+      return JSON.parse(decoded);
+    } catch {
+      throw new Error("gateway-node compatibility evidence must be valid JSON");
+    }
   } finally {
     closeSync(descriptor);
   }
@@ -809,26 +847,58 @@ function parseCanonicalizeArgs(args) {
 }
 
 function parseArtifactIdentityArgs(args) {
-  let candidatePackageSha256;
-  let baselinePackageSha256;
+  let gatewayCandidatePackageSha256;
+  let gatewayBaselinePackageSha256;
+  let nodeCandidatePackageSha256;
+  let nodeBaselinePackageSha256;
   const remaining = [];
   for (let index = 0; index < args.length; index += 1) {
     const argument = args[index];
-    if (argument === "--candidate-package-sha256" && candidatePackageSha256 === undefined) {
-      candidatePackageSha256 = args[++index];
-    } else if (argument === "--baseline-package-sha256" && baselinePackageSha256 === undefined) {
-      baselinePackageSha256 = args[++index];
+    if (
+      argument === "--gateway-candidate-package-sha256" &&
+      gatewayCandidatePackageSha256 === undefined
+    ) {
+      gatewayCandidatePackageSha256 = args[++index];
+    } else if (
+      argument === "--gateway-baseline-package-sha256" &&
+      gatewayBaselinePackageSha256 === undefined
+    ) {
+      gatewayBaselinePackageSha256 = args[++index];
+    } else if (
+      argument === "--node-candidate-package-sha256" &&
+      nodeCandidatePackageSha256 === undefined
+    ) {
+      nodeCandidatePackageSha256 = args[++index];
+    } else if (
+      argument === "--node-baseline-package-sha256" &&
+      nodeBaselinePackageSha256 === undefined
+    ) {
+      nodeBaselinePackageSha256 = args[++index];
     } else {
       remaining.push(argument);
     }
   }
-  if (!candidatePackageSha256 || !baselinePackageSha256) {
+  if (
+    !gatewayCandidatePackageSha256 ||
+    !gatewayBaselinePackageSha256 ||
+    !nodeCandidatePackageSha256 ||
+    !nodeBaselinePackageSha256
+  ) {
     throw new Error(
-      "candidate and baseline package SHA-256 identities are required for evidence validation",
+      "Gateway and node candidate and baseline package SHA-256 identities are required for evidence validation",
     );
   }
   return {
-    artifactIdentities: { baselinePackageSha256, candidatePackageSha256 },
+    artifactIdentities: {
+      gateway: {
+        baselinePackageSha256: gatewayBaselinePackageSha256,
+        candidatePackageSha256: gatewayCandidatePackageSha256,
+      },
+      node: {
+        baselinePackageSha256: nodeBaselinePackageSha256,
+        candidatePackageSha256: nodeCandidatePackageSha256,
+      },
+    },
     remaining,
   };
 }
@@ -849,34 +919,20 @@ async function main(args) {
     return;
   }
   throw new Error(
-    "usage: gateway-node-compat-evidence.mjs validate <file> | canonicalize --input <file> --output <file> --candidate-package-sha256 <sha256> --baseline-package-sha256 <sha256>",
+    "usage: gateway-node-compat-evidence.mjs validate <file> --gateway-candidate-package-sha256 <sha256> --gateway-baseline-package-sha256 <sha256> --node-candidate-package-sha256 <sha256> --node-baseline-package-sha256 <sha256> | canonicalize --input <file> --output <file> --gateway-candidate-package-sha256 <sha256> --gateway-baseline-package-sha256 <sha256> --node-candidate-package-sha256 <sha256> --node-baseline-package-sha256 <sha256>",
   );
 }
 
 function formatCliError(error) {
   const message = error instanceof Error ? error.message : String(error);
-  let formatted = "";
-  // Validation errors can echo hostile JSON keys, so strip terminal controls before stderr.
-  for (const character of message) {
-    const codePoint = character.codePointAt(0) ?? 0;
-    const replacement =
-      codePoint <= 0x1f ||
-      (codePoint >= 0x7f && codePoint <= 0x9f) ||
-      codePoint === 0x2028 ||
-      codePoint === 0x2029
-        ? " "
-        : character;
-    if (formatted.length + replacement.length > 512) {
-      break;
-    }
-    formatted += replacement;
-  }
-  return formatted;
+  // Validation errors can echo hostile JSON keys, so strip terminal and bidi controls.
+  return sanitizeDiagnosticText(message, 512);
 }
 
 if (isDirectRunUrl(process.argv[1], import.meta.url)) {
   await main(process.argv.slice(2)).catch((/** @type {unknown} */ error) => {
     console.error(formatCliError(error));
     process.exitCode = 1;
+    writeFailedTrailer(CLI_TOOL, process.exitCode);
   });
 }
