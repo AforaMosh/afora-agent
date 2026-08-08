@@ -40,27 +40,3 @@ export function createResourceLoader(
     reload: async () => {},
   };
 }
-
-export function createCompactionHandlers() {
-  return new Map<string, Array<(...args: unknown[]) => Promise<unknown>>>([
-    [
-      "session_before_compact",
-      [
-        async (event: unknown) => {
-          const preparation = (
-            event as {
-              preparation: { firstKeptEntryId: string; tokensBefore: number };
-            }
-          ).preparation;
-          return {
-            compaction: {
-              summary: "condensed history",
-              firstKeptEntryId: preparation.firstKeptEntryId,
-              tokensBefore: preparation.tokensBefore,
-            },
-          };
-        },
-      ],
-    ],
-  ]);
-}

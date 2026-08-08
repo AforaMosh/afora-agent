@@ -82,32 +82,6 @@ export function createAssistantResultStream(message: AssistantMessage) {
   return stream;
 }
 
-export const createOverflowAssistant = (activeModel: Model) => ({
-  ...createAssistant(activeModel, [{ type: "text", text: "truncated answer" }], "length", 100),
-  usage: { ...createUsage(100), output: 0 },
-});
-
-export const createAutoCompactionSettings = () =>
-  SettingsManager.inMemory({
-    compaction: { enabled: true, reserveTokens: 0, keepRecentTokens: 1 },
-    retry: { enabled: false },
-  });
-
-export function mockInvalidThenTextSummary(recoveredText: string) {
-  let requests = 0;
-  streamMocks.streamSimple.mockImplementation((activeModel: Model) => {
-    return createAssistantResultStream(
-      createAssistant(
-        activeModel,
-        ++requests === 1
-          ? [{ type: "thinking", thinking: "internal summary reasoning" }]
-          : [{ type: "text", text: recoveredText }],
-      ),
-    );
-  });
-  return () => requests;
-}
-
 export async function createTestSession(
   options: {
     model?: Model;
@@ -149,11 +123,6 @@ export async function createTestSession(
     : await createAgentSession(sessionOptions);
   sessions.push(result.session);
   return { ...result, settingsManager, sessionManager };
-}
-
-export function appendHistory(sessionManager: SessionManager, assistant: AssistantMessage): void {
-  sessionManager.appendMessage({ role: "user", content: "old prompt", timestamp: Date.now() - 2 });
-  sessionManager.appendMessage({ ...assistant, timestamp: Date.now() - 1 });
 }
 
 export function registerAgentSessionLoopTestLifecycle(): void {
