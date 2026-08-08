@@ -1105,57 +1105,6 @@ describe("slackPlugin outbound", () => {
     expect(result).toEqual({ channel: "slack", messageId: "m-enterprise" });
   });
 
-  it("encodes the trusted current workspace into a bare Enterprise target", async () => {
-    const sendSlack = vi.fn().mockResolvedValue({ messageId: "m-enterprise-current" });
-    const sendText = requireSlackSendText();
-
-    const result = await sendText({
-      cfg: { channels: { slack: { enterpriseOrgInstall: true } } },
-      to: "channel:C456",
-      spaceId: "T123",
-      text: "hello",
-      accountId: "default",
-      deps: { sendSlack },
-    });
-
-    expect(requireMockCallArgValue(sendSlack, 0, 0)).toBe("team:T123:channel:C456");
-    expect(result).toEqual({ channel: "slack", messageId: "m-enterprise-current" });
-  });
-
-  it("ignores ambient workspace context for ordinary Slack installations", async () => {
-    const sendSlack = vi.fn().mockResolvedValue({ messageId: "m-workspace" });
-    const sendText = requireSlackSendText();
-
-    const result = await sendText({
-      cfg,
-      to: "channel:C456",
-      spaceId: "T123",
-      text: "hello",
-      accountId: "default",
-      deps: { sendSlack },
-    });
-
-    expect(requireMockCallArgValue(sendSlack, 0, 0)).toBe("channel:C456");
-    expect(result).toEqual({ channel: "slack", messageId: "m-workspace" });
-  });
-
-  it("rejects a qualified Enterprise target that conflicts with the current workspace", async () => {
-    const sendSlack = vi.fn().mockResolvedValue({ messageId: "should-not-send" });
-    const sendText = requireSlackSendText();
-
-    await expect(
-      sendText({
-        cfg: { channels: { slack: { enterpriseOrgInstall: true } } },
-        to: "team:T456:channel:C789",
-        spaceId: "T123",
-        text: "hello",
-        accountId: "default",
-        deps: { sendSlack },
-      }),
-    ).rejects.toThrow("conflicting_enterprise_slack_workspace");
-    expect(sendSlack).not.toHaveBeenCalled();
-  });
-
   it("rejects workspace-qualified targets for ordinary Slack installations", async () => {
     const sendSlack = vi.fn().mockResolvedValue({ messageId: "should-not-send" });
 
@@ -1565,14 +1514,13 @@ describe("slackPlugin outbound", () => {
     expect(result).toEqual({ channel: "slack", messageId: "m-media-local" });
   });
 
-  it("workspace-qualifies media delivery from the current Enterprise turn", async () => {
+  it("preserves workspace-qualified Enterprise media delivery", async () => {
     const sendSlack = vi.fn().mockResolvedValue({ messageId: "m-grid-media" });
     const sendMedia = requireSlackSendMedia();
 
     const result = await sendMedia({
       cfg: { channels: { slack: { enterpriseOrgInstall: true } } },
-      to: "channel:C999",
-      spaceId: "T123",
+      to: "team:T123:channel:C999",
       text: "attachment",
       mediaUrl: "/tmp/workspace/report.txt",
       mediaLocalRoots: ["/tmp/workspace"],
