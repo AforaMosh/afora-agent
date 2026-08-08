@@ -22,12 +22,14 @@ export function reserveReplyAdmissionTicket(
         .map(normalizeOptionalString)
         .filter((key): key is string => typeof key === "string"),
     ),
-  ].sort();
+  ].toSorted();
   if (keys.length === 0) {
     return undefined;
   }
   let finish = () => {};
-  const completed = new Promise<void>((resolve) => (finish = resolve));
+  const completed = new Promise<void>((resolve) => {
+    finish = resolve;
+  });
   const predecessors = keys.map((key) => tails.get(key) ?? Promise.resolve());
   const owned = keys.map((key, index) => {
     const tail = predecessors[index]!.then(() => completed);
@@ -41,7 +43,9 @@ export function reserveReplyAdmissionTicket(
         return false;
       }
       const ready = Promise.all(predecessors).then(() => true);
-      if (!signal) return await ready;
+      if (!signal) {
+        return await ready;
+      }
       return await new Promise<boolean>((resolve) => {
         const abort = () => resolve(false);
         signal.addEventListener("abort", abort, { once: true });
@@ -52,7 +56,9 @@ export function reserveReplyAdmissionTicket(
       });
     },
     release() {
-      if (released) return;
+      if (released) {
+        return;
+      }
       released = true;
       finish();
       for (const { key, tail } of owned) {
