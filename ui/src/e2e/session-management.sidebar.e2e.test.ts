@@ -439,8 +439,7 @@ suite.define(() => {
         throw new Error("Initial sessions.list request was not recorded");
       }
 
-      await gateway.deferNext("sessions.list");
-      await gateway.closeLatest(1006, "disconnect proof");
+      await gateway.closeLatestWithDeferredNext(["sessions.list"], 1006, "disconnect proof");
       await sidebarRow.waitFor({ state: "visible" });
       await captureUiProof(page, "sidebar-sessions-during-reconnect.png");
 
@@ -507,9 +506,11 @@ suite.define(() => {
       const initialObserverCount = (await gateway.getRequests("sessions.subscribe")).length;
       const initialListCount = (await gateway.getRequests("sessions.list")).length;
 
-      await gateway.deferNext("sessions.subscribe");
-      await gateway.deferNext("sessions.list");
-      await gateway.closeLatest(1006, "session route reconnect");
+      await gateway.closeLatestWithDeferredNext(
+        ["sessions.subscribe", "sessions.list"],
+        1006,
+        "session route reconnect",
+      );
       await expect.poll(() => gateway.getSocketCount(), { timeout: 15_000 }).toBeGreaterThan(1);
       await expect
         .poll(async () => (await gateway.getRequests("sessions.subscribe")).length, {

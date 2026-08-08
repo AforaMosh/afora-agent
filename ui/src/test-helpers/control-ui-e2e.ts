@@ -292,6 +292,7 @@ export function setSharedControlUiE2eServerBaseUrl(baseUrl: string | null): void
 
 export type MockGatewayControls = {
   closeLatest: (code?: number, reason?: string) => Promise<void>;
+  closeLatestWithDeferredNext: (methods: string[], code?: number, reason?: string) => Promise<void>;
   deliverLatest: (frame: unknown) => Promise<void>;
   deferNext: (method: string) => Promise<void>;
   emitChatFinal: (params: { runId: string; sessionKey?: string; text: string }) => Promise<void>;
@@ -725,6 +726,7 @@ function installControlUiMockGateway(
   };
   type ExposedGateway = {
     closeLatest: (code?: number, reason?: string) => void;
+    closeLatestWithDeferredNext: (methods: string[], code?: number, reason?: string) => void;
     deliverLatest: (frame: unknown) => void;
     deferNext: (method: string) => void;
     emit: (event: string, payload?: unknown) => void;
@@ -1637,9 +1639,18 @@ function installControlUiMockGateway(
   }
 
   function takeDeferredResponseByMethod(method: string): DeferredResponse {
-    const response = deferredResponses.find((candidate) => candidate.method === method);
-    if (!response) {
+    const matches = deferredResponses.filter((candidate) => candidate.method === method);
+    if (matches.length === 0) {
       throw new Error(`No deferred mock Gateway response for ${method}`);
+    }
+    if (matches.length > 1) {
+      throw new Error(
+        `Ambiguous deferred mock Gateway response for ${method}; use resolveDeferredById or rejectDeferredById`,
+      );
+    }
+    const response = matches[0];
+    if (!response) {
+      throw new Error(`Deferred mock Gateway response disappeared for ${method}`);
     }
     return takeDeferredResponseById(response.id);
   }
@@ -1834,6 +1845,11 @@ function installControlUiMockGateway(
     closeLatest(code, reason) {
       MockWebSocket.latest?.close(code ?? 1006, reason ?? "mock close");
     },
+    closeLatestWithDeferredNext(methods, code, reason) {
+      const socket = MockWebSocket.latest;
+      deferredMethods.push(...methods);
+      socket?.close(code ?? 1006, reason ?? "mock close");
+    },
     deliverLatest(frame) {
       MockWebSocket.latest?.deliver(frame);
     },
@@ -1925,15 +1941,6 @@ function installControlUiMockGateway(
 
   (window as unknown as WindowWithGateway).openclawControlUiE2eGateway = exposed;
   window.WebSocket = MockWebSocket as unknown as typeof WebSocket;
-  window.addEventListener("pagehide", () => {
-    // Navigation retires the whole mock lifecycle; logs and socket counts stay
-    // append-only, while no deferred work may leak into the next document.
-    deferredMethods.length = 0;
-    deferredResponses.length = 0;
-    closedDeferredResponseIds.length = 0;
-    sessionMessageSubscriptions.clear();
-    stopRepeatingSessionEvents();
-  });
 }
 
 export async function installMockGateway(
@@ -2020,6 +2027,28 @@ function createMockGatewayControls(page: Page, defaultSessionKey: string): MockG
           gateway.closeLatest(closeCode, closeReason);
         },
         { closeCode: code, closeReason: reason },
+      );
+    },
+    async closeLatestWithDeferredNext(methods, code, reason) {
+      await page.evaluate(
+        ({ closeCode, closeReason, deferredMethods }) => {
+          const gateway = (
+            window as Window & {
+              openclawControlUiE2eGateway?: {
+                closeLatestWithDeferredNext: (
+                  methods: string[],
+                  code?: number,
+                  reason?: string,
+                ) => void;
+              };
+            }
+          ).openclawControlUiE2eGateway;
+          if (!gateway) {
+            throw new Error("Mock Gateway is not installed");
+          }
+          gateway.closeLatestWithDeferredNext(deferredMethods, closeCode, closeReason);
+        },
+        { closeCode: code, closeReason: reason, deferredMethods: methods },
       );
     },
     deliverLatest,
