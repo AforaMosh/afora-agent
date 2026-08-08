@@ -42,6 +42,16 @@ export type LegacyStateDetection = {
     legacyDir: string;
     targetDir: string;
     hasLegacy: boolean;
+    migrationBlockedReason?: string;
+    relocation?:
+      | { kind: "directory"; ownerAgentId: string; sourcePath: string; targetPath: string }
+      | {
+          kind: "database";
+          ownerAgentId: string;
+          sourcePath: string;
+          targetPath: string;
+          sourceHasDataSidecars: boolean;
+        };
   };
   pluginPlans?: {
     hasLegacy: boolean;
