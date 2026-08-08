@@ -57,7 +57,7 @@ export const BLOCK_REPLY_SEND_TIMEOUT_MS = 15_000;
 const RESTART_LIFECYCLE_REPLY_TEXT =
   "⚠️ Gateway is restarting. Please wait a few seconds and try again.";
 
-export function scheduleFollowupDrainAfterReplyOperationClear(params: {
+function scheduleFollowupDrainAfterReplyOperationClear(params: {
   operation: ReplyOperation;
   queueKey: string;
   runFollowup: (run: FollowupRun) => Promise<void>;
