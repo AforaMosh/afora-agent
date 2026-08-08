@@ -184,9 +184,6 @@ export async function requestPluginApprovalOutcome(params: {
     const decision = approvalRequestExplicitlyUnavailable(requestResult)
       ? null
       : await waitForPluginApprovalDecision({ approvalId, signal: params.signal });
-    if (decision && params.allowedDecisions && !params.allowedDecisions.includes(decision)) {
-      return "denied";
-    }
     return mapExecDecisionToOutcome(decision);
   } catch {
     return params.signal?.aborted ? "cancelled" : "denied";

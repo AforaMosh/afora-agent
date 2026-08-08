@@ -1,5 +1,6 @@
 // Codex tests cover side question plugin behavior.
 import {
+  callGatewayTool,
   nativeHookRelayTesting,
   type NativeHookRelayRegistrationHandle,
 } from "openclaw/plugin-sdk/agent-harness-runtime";
@@ -20,6 +21,7 @@ import {
 } from "./codex-app-server.test-fixtures.js";
 import { resolveCodexSupervisionAppServerRuntimeOptions } from "./config.js";
 import { buildCodexAppServerConnectionFingerprint } from "./plugin-app-cache-key.js";
+import { requestPluginApproval } from "./plugin-approval-roundtrip.js";
 import type { CodexServerNotification, JsonObject, JsonValue } from "./protocol.js";
 import {
   createCodexTestBindingStore,
@@ -67,6 +69,11 @@ vi.mock("./session-binding.js", async (importOriginal) => ({
     isCodexAppServerNativeAuthProfileMock(...args),
 }));
 
+vi.mock("openclaw/plugin-sdk/agent-harness-runtime", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("openclaw/plugin-sdk/agent-harness-runtime")>()),
+  callGatewayTool: vi.fn(),
+}));
+
 vi.mock("./shared-client.js", () => ({
   getSharedCodexAppServerClient: (...args: unknown[]) => getSharedCodexAppServerClientMock(...args),
   getLeasedSharedCodexAppServerClient: (...args: unknown[]) =>
@@ -107,6 +114,7 @@ vi.mock("openclaw/plugin-sdk/agent-harness", () => ({
 
 const { runCodexAppServerSideQuestion: runCodexAppServerSideQuestionImpl } =
   await import("./side-question.js");
+const mockCallGatewayTool = vi.mocked(callGatewayTool);
 const baseBindingStore = createCodexTestBindingStore();
 const bindingStore: CodexAppServerBindingStore = {
   ...baseBindingStore,
@@ -488,6 +496,7 @@ describe("runCodexAppServerSideQuestion", () => {
       content: null,
       _meta: null,
     });
+    mockCallGatewayTool.mockReset();
     resolveCodexProviderWebSearchSupportForClientMock.mockReset();
     withLeasedCodexAppServerClientStartSelectionRetryMock.mockReset();
     withLeasedCodexAppServerClientStartSelectionRetryMock.mockImplementation(
@@ -743,14 +752,25 @@ describe("runCodexAppServerSideQuestion", () => {
     });
     getSharedCodexAppServerClientMock.mockResolvedValue(client);
 
-    await expect(runCodexAppServerSideQuestion(sideParams())).resolves.toEqual({
-      text: "Side answer.",
-    });
+    await expect(
+      runCodexAppServerSideQuestion(
+        sideParams({
+          messageChannel: "discord",
+          messageProvider: "discord",
+          chatType: "direct",
+          sessionKey: "agent:main:discord:direct:user-1",
+          agentAccountId: "discord-account-1",
+          messageTo: "user:user-1",
+          messageThreadId: "thread-42",
+        }),
+      ),
+    ).resolves.toEqual({ text: "Side answer." });
 
     expect(elicitationResponse).toEqual({ action: "decline", content: null, _meta: null });
     const bridgeParams = handleCodexAppServerElicitationRequestMock.mock.calls[0]?.[0] as
       | {
           appServerRequest?: (method: string, params: Record<string, unknown>) => Promise<unknown>;
+          paramsForRun?: Parameters<typeof requestPluginApproval>[0]["paramsForRun"];
           pluginAppCacheKey?: string;
         }
       | undefined;
@@ -761,6 +781,28 @@ describe("runCodexAppServerSideQuestion", () => {
       "plugin/list",
       { forceRefetch: true },
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+
+    mockCallGatewayTool.mockResolvedValueOnce({ id: "plugin:side-question-route" });
+    await requestPluginApproval({
+      paramsForRun: bridgeParams!.paramsForRun!,
+      title: "Install calendar connector",
+      description: "Install the suggested connector",
+      severity: "warning",
+      toolName: "request_plugin_install",
+    });
+    expect(mockCallGatewayTool).toHaveBeenCalledWith(
+      "plugin.approval.request",
+      expect.any(Object),
+      expect.objectContaining({
+        sessionKey: "agent:main:discord:direct:user-1",
+        turnSourceChannel: "discord",
+        turnSourceTo: "user:user-1",
+        turnSourceAccountId: "discord-account-1",
+        turnSourceThreadId: "thread-42",
+        twoPhase: true,
+      }),
+      { expectFinal: false },
     );
   });
 

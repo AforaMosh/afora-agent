@@ -913,8 +913,15 @@ function buildSideRunAttemptParams(
     ...(params.messageProvider ? { messageProvider: params.messageProvider } : {}),
     ...(params.chatType ? { chatType: params.chatType } : {}),
     ...(params.agentAccountId ? { agentAccountId: params.agentAccountId } : {}),
-    ...(params.messageTo ? { messageTo: params.messageTo } : {}),
-    ...(params.messageThreadId !== undefined ? { messageThreadId: params.messageThreadId } : {}),
+    ...(params.messageTo
+      ? { messageTo: params.messageTo, currentMessagingTarget: params.messageTo }
+      : {}),
+    ...(params.messageThreadId !== undefined
+      ? {
+          messageThreadId: params.messageThreadId,
+          currentThreadTs: String(params.messageThreadId),
+        }
+      : {}),
     ...(params.chatId ? { chatId: params.chatId } : {}),
     ...(params.messageActionTurnCapability
       ? { messageActionTurnCapability: params.messageActionTurnCapability }

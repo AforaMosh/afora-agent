@@ -72,7 +72,7 @@ export async function handleCodexAppServerToolSuggestion(params: {
   if (outcome === "cancelled") {
     return cancelResponse();
   }
-  if (outcome !== "approved-once" && outcome !== "approved-session") {
+  if (outcome !== "approved-once") {
     return declineResponse();
   }
   if (suggestion.toolType === "connector") {
@@ -213,7 +213,7 @@ async function authorizePluginApps(params: {
       allowedDecisions: [...INSTALL_ALLOWED_DECISIONS],
       signal: params.signal,
     });
-    if (outcome !== "approved-once" && outcome !== "approved-session") {
+    if (outcome !== "approved-once") {
       return false;
     }
   }
