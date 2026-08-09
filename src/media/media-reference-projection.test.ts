@@ -16,7 +16,7 @@ describe("normalizeDurableMediaReference", () => {
     );
     expect(
       normalizeDurableMediaReference(
-        "https://user" + ":password@example.test/clip.mp4?signature=private#preview",
+        ["https://user", ":password@example.test/clip.mp4?signature=private#preview"].join(""),
       ),
     ).toBe("https://example.test/clip.mp4");
     expect(normalizeDurableMediaReference(" /tmp/clip.mp4 ")).toBe("/tmp/clip.mp4");
@@ -26,8 +26,10 @@ describe("normalizeDurableMediaReference", () => {
   });
 
   it("rejects malformed HTTP references instead of retaining their secrets", () => {
-    const malformed =
-      "https://user" + ":private-password@cdn.example.test:not-a-port/clip.mp4?token=private-query";
+    const malformed = [
+      "https://user",
+      ":private-password@cdn.example.test:not-a-port/clip.mp4?token=private-query",
+    ].join("");
     expect(sanitizeMediaReferenceForProjection(malformed)).toBe("");
     expect(normalizeDurableMediaReference(malformed)).toBeUndefined();
   });
@@ -48,7 +50,7 @@ describe("sanitizeDurableMediaPayload", () => {
     const value = {
       safe,
       nested: {
-        url: "https://user" + ":password@example.test/clip.mp4?token=private",
+        url: ["https://user", ":password@example.test/clip.mp4?token=private"].join(""),
       },
     };
     const projected = sanitizeDurableMediaPayload(value) as typeof value;
@@ -114,7 +116,9 @@ describe("sanitizeDurableMediaPayload", () => {
         type: "video",
         source: {
           type: "url",
-          url: "https://user" + ":password@example.test/video.mp4?signature=private#preview",
+          url: ["https://user", ":password@example.test/video.mp4?signature=private#preview"].join(
+            "",
+          ),
         },
         label: "keep",
       }),
@@ -283,7 +287,9 @@ describe("sanitizeDurableMediaPayload", () => {
 
     expect(Object.getPrototypeOf(projected)).toBe(Object.prototype);
     expect(Object.hasOwn(projected, "__proto__")).toBe(true);
-    expect(projected.__proto__).toBe("[video data omitted]");
+    expect(Object.getOwnPropertyDescriptor(projected, "__proto__")?.value).toBe(
+      "[video data omitted]",
+    );
     expect(projected.constructor).toBe("preserved constructor data");
     expect(Object.hasOwn(projected, "toJSON")).toBe(false);
     expect(Object.keys(projected)).toEqual(["__proto__", "constructor", "label"]);
@@ -340,7 +346,10 @@ describe("sanitizeDurableMediaPayload", () => {
 
 describe("sanitizeModelVisibleMediaPayload", () => {
   it("owns a distinct safe plain-object snapshot", () => {
-    const value = { nested: { text: "safe" }, items: [1, 2] };
+    const value = {
+      nested: { type: "metadata", data: "safe non-media data", text: "safe" },
+      items: [1, 2],
+    };
     const projected = sanitizeModelVisibleMediaPayload(value) as typeof value;
     expect(projected).toEqual(value);
     expect(projected).not.toBe(value);
@@ -381,6 +390,116 @@ describe("sanitizeModelVisibleMediaPayload", () => {
     expect(projected).not.toBe(value);
     expect(projected.self).toBe("[Circular]");
     expect(projected.nested).toBe("[media data omitted]");
+    expect(JSON.stringify(projected)).not.toContain(payload);
+  });
+
+  it.each([
+    {
+      name: "image source",
+      value: {
+        type: "image",
+        source: { type: "base64", data: "private-image-bytes" },
+        caption: "keep image caption",
+      },
+      expected: {
+        type: "image",
+        source: "[media data omitted]",
+        caption: "keep image caption",
+      },
+      payload: "private-image-bytes",
+    },
+    {
+      name: "audio source",
+      value: {
+        type: "audio",
+        source: { type: "base64", data: "private-audio-bytes" },
+        transcript: "keep audio transcript",
+      },
+      expected: {
+        type: "audio",
+        source: "[media data omitted]",
+        transcript: "keep audio transcript",
+      },
+      payload: "private-audio-bytes",
+    },
+    {
+      name: "video source relying on outer context",
+      value: {
+        type: "video",
+        source: { data: "private-video-bytes" },
+        duration: 12,
+      },
+      expected: {
+        type: "video",
+        source: "[media data omitted]",
+        duration: 12,
+      },
+      payload: "private-video-bytes",
+    },
+    {
+      name: "PDF document source",
+      value: {
+        type: "document",
+        mimeType: "application/pdf",
+        source: { type: "base64", data: "private-document-bytes" },
+        title: "keep document title",
+      },
+      expected: {
+        type: "document",
+        mimeType: "application/pdf",
+        source: "[media data omitted]",
+        title: "keep document title",
+      },
+      payload: "private-document-bytes",
+    },
+    {
+      name: "array nested under media context",
+      value: {
+        type: "input_image",
+        parts: [{ data: "private-array-image-bytes" }, { label: "keep safe metadata" }],
+      },
+      expected: {
+        type: "input_image",
+        parts: ["[media data omitted]", { label: "keep safe metadata" }],
+      },
+      payload: "private-array-image-bytes",
+    },
+  ])("redacts nested $name payloads", ({ value, expected, payload }) => {
+    const projected = sanitizeModelVisibleMediaPayload(value);
+
+    expect(projected).toEqual(expected);
+    expect(JSON.stringify(projected)).not.toContain(payload);
+  });
+
+  it("reads stateful nested media context getters once", () => {
+    const payload = "private-stateful-nested-image";
+    const value = { caption: "keep" } as Record<string, unknown>;
+    let typeReads = 0;
+    let sourceReads = 0;
+    Object.defineProperty(value, "type", {
+      enumerable: true,
+      get() {
+        typeReads += 1;
+        return typeReads === 1 ? "image" : "text";
+      },
+    });
+    Object.defineProperty(value, "source", {
+      enumerable: true,
+      get() {
+        sourceReads += 1;
+        return sourceReads === 1 ? { data: payload } : { note: "safe replacement" };
+      },
+    });
+
+    const projected = sanitizeModelVisibleMediaPayload(value);
+
+    expect(projected).toEqual({
+      caption: "keep",
+      type: "image",
+      source: "[media data omitted]",
+    });
+    expect(typeReads).toBe(1);
+    expect(sourceReads).toBe(1);
     expect(JSON.stringify(projected)).not.toContain(payload);
   });
 });
@@ -562,7 +681,7 @@ describe.each([
 
     expect(Object.getPrototypeOf(projected)).toBe(Object.prototype);
     expect(Object.hasOwn(projected, "__proto__")).toBe(true);
-    expect(projected.__proto__).toBe(mediaOmission);
+    expect(Object.getOwnPropertyDescriptor(projected, "__proto__")?.value).toBe(mediaOmission);
     expect(projected.constructor).toBe("preserved constructor data");
     expect(Object.keys(projected)).toEqual(["__proto__", "constructor", "label"]);
     expect(calls).toBe(0);

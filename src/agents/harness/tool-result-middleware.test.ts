@@ -211,6 +211,41 @@ describe("createAgentToolResultMiddlewareRunner", () => {
     });
   });
 
+  it("redacts nested source bytes before and after a no-op middleware", async () => {
+    const payload = "private-nested-image-bytes";
+    let observedDetails: unknown;
+    const runner = createAgentToolResultMiddlewareRunner({ runtime: "openclaw" }, [
+      (event) => {
+        observedDetails = event.result.details;
+        return undefined;
+      },
+    ]);
+
+    const result = await runner.applyToolResultMiddleware({
+      toolCallId: "call-media",
+      toolName: "inspect",
+      args: {},
+      result: {
+        content: [{ type: "text", text: "image inspected" }],
+        details: {
+          type: "image",
+          source: { type: "base64", data: payload },
+          status: "ok",
+        },
+      },
+    });
+
+    const expectedDetails = {
+      type: "image",
+      source: "[media data omitted]",
+      status: "ok",
+    };
+    expect(observedDetails).toEqual(expectedDetails);
+    expect(result.details).toEqual(expectedDetails);
+    expect(JSON.stringify(observedDetails)).not.toContain(payload);
+    expect(JSON.stringify(result)).not.toContain(payload);
+  });
+
   it("truncates oversized incoming text before a no-op middleware", async () => {
     let observedText = "";
     const runner = createAgentToolResultMiddlewareRunner({ runtime: "openclaw" }, [
