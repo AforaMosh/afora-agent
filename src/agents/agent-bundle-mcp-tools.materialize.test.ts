@@ -474,6 +474,78 @@ describe("createBundleMcpToolRuntime", () => {
     });
   });
 
+  it("redacts structured content type aliases and line-wrapped data URLs", async () => {
+    const mediaPayloads = Object.fromEntries(
+      [
+        ["contentTypeImage", "contentType", "image/png"],
+        ["contentTypeAudio", "contentType", "audio/mpeg"],
+        ["contentTypeVideo", "contentType", "video/mp4"],
+        ["contentTypeSnakeImage", "content_type", "image/jpeg"],
+        ["contentTypeSnakeAudio", "content_type", "audio/wav"],
+        ["contentTypeSnakeVideo", "content_type", "video/webm"],
+      ].map(([name, alias, mimeType]) => [
+        name,
+        {
+          [alias]: mimeType,
+          data: Buffer.from(`PRIVATE_${name}`).toString("base64"),
+        },
+      ]),
+    );
+    const wrappedPayload = Buffer.from("PRIVATE_LINE_WRAPPED_MCP_DATA_URL".repeat(8)).toString(
+      "base64",
+    );
+    const wrappedFragments = [
+      wrappedPayload.slice(0, 32),
+      wrappedPayload.slice(32, 64),
+      wrappedPayload.slice(64),
+    ];
+    const wrappedDataUrl =
+      `safe prefix data:video/mp4;base64,${wrappedFragments[0]} \t` +
+      `${wrappedFragments[1]}\n${wrappedFragments[2]} safe suffix`;
+    const runtime = await materializeBundleMcpToolsForRun({
+      runtime: makeToolRuntime({
+        result: {
+          content: [{ type: "text", text: wrappedDataUrl }],
+          structuredContent: { mediaPayloads, wrappedDataUrl },
+        },
+      }),
+    });
+
+    const result = await expectDefined(runtime.tools[0], "runtime.tools[0] test invariant").execute(
+      "call-bundle-probe",
+      {},
+      undefined,
+      undefined,
+    );
+    const contentText = result.content
+      .map((block) => (block.type === "text" ? block.text : ""))
+      .join("\n");
+    const detailsText = JSON.stringify(result.details);
+    const serialized = JSON.stringify(result);
+    const projectedMediaPayloads = (
+      result.details as {
+        structuredContent: { mediaPayloads: Record<string, { data: string }> };
+      }
+    ).structuredContent.mediaPayloads;
+
+    for (const [name, payload] of Object.entries(mediaPayloads)) {
+      expect(contentText).toContain(`"${name}"`);
+      expect(projectedMediaPayloads[name]?.data).toBe("[binary omitted]");
+      for (const projection of [contentText, detailsText, serialized]) {
+        expect(projection).not.toContain(payload.data);
+      }
+    }
+    for (const fragment of wrappedFragments) {
+      expect(contentText).not.toContain(fragment);
+      expect(detailsText).not.toContain(fragment);
+      expect(serialized).not.toContain(fragment);
+    }
+    expect(contentText.match(/"data": "\[binary omitted\]"/gu)).toHaveLength(6);
+    expect(contentText).toContain("safe prefix [data URL omitted]");
+    expect(detailsText).toContain("safe prefix [data URL omitted]");
+    expect(serialized).not.toContain("safe suffix");
+  });
+
   it("disambiguates bundle MCP tools that collide with existing tool names", async () => {
     const runtime = await materializeBundleMcpToolsForRun({
       runtime: makeToolRuntime(),

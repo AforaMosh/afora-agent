@@ -20,7 +20,7 @@ const MCP_VALUE_COUNT_MARKER = "[MCP values omitted: count limit exceeded]";
 const MCP_BINARY_PLACEHOLDER = "[binary omitted]";
 const MCP_DATA_URL_PLACEHOLDER = "[data URL omitted]";
 const MCP_LOCAL_URI_PLACEHOLDER = "[local resource URI omitted]";
-const MCP_EMBEDDED_DATA_URL_RE = /data:[^,\s]+,[^\s"']+/giu;
+const MCP_EMBEDDED_DATA_URL_RE = /data:[^,\s]+,[\s\S]*$/iu;
 const MCP_STRING_TRUNCATION_MARKER = "[truncated: MCP string exceeded 64,000 characters]";
 
 function isInlineDataUrl(value: string): boolean {
@@ -63,6 +63,8 @@ function mediaMimeType(record: Record<string, unknown>): string | undefined {
   for (const candidate of [
     record.mimeType,
     record.mime_type,
+    record.contentType,
+    record.content_type,
     record.mediaType,
     record.media_type,
   ]) {

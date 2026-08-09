@@ -75,6 +75,10 @@ describe("mcp.tools.call.v1", () => {
 
   it("redacts legal MCP resource and structured video envelopes", async () => {
     const videoData = Buffer.from("PRIVATE_VIDEO_BYTES".repeat(1_024)).toString("base64");
+    const wrappedFragments = [videoData.slice(0, 64), videoData.slice(64)];
+    const wrappedDataUrl =
+      `safe prefix data:video/mp4;base64,${wrappedFragments[0]} \t\n` +
+      `${wrappedFragments[1]} safe suffix`;
     const result = await invokeMcp(
       managerWith(async () => ({
         content: [
@@ -92,7 +96,10 @@ describe("mcp.tools.call.v1", () => {
         ],
         structuredContent: {
           clip: { mimeType: "video/mp4", blob: videoData },
+          clipByContentType: { contentType: "video/mp4", data: videoData },
+          audioByContentType: { content_type: "audio/wav", data: videoData },
           replay: `data:video/mp4;base64,${videoData}`,
+          wrappedReplay: wrappedDataUrl,
         },
       })),
       { server: "docs", tool: "mixed-media" },
@@ -110,11 +117,18 @@ describe("mcp.tools.call.v1", () => {
       ],
       structuredContent: {
         clip: { mimeType: "video/mp4", blob: "[binary omitted]" },
+        clipByContentType: { contentType: "video/mp4", data: "[binary omitted]" },
+        audioByContentType: { content_type: "audio/wav", data: "[binary omitted]" },
         replay: "[data URL omitted]",
+        wrappedReplay: "safe prefix [data URL omitted]",
       },
     });
-    expect(JSON.stringify(result)).not.toContain(videoData);
-    expect(JSON.stringify(result)).not.toContain("data:video");
+    const serialized = JSON.stringify(result);
+    for (const fragment of wrappedFragments) {
+      expect(serialized).not.toContain(fragment);
+    }
+    expect(serialized).not.toContain("data:video");
+    expect(serialized).not.toContain("safe suffix");
   });
 
   it("does not interpolate invalid MCP resource MIME metadata", async () => {
