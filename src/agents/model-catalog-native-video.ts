@@ -70,7 +70,11 @@ export async function qualifyPreparedModelCatalogNativeVideoRoutes(params: {
           modelId: route.id,
           model: runtimeModel,
         },
-      }).then((normalized) => supportsNativeVideoInput(normalized ?? runtimeModel));
+      }).then(
+        (normalized) => supportsNativeVideoInput(normalized ?? runtimeModel),
+        // Capability discovery is optional; one broken route must not block catalog publication.
+        () => false,
+      );
       supportByRoute.set(routeKey, support);
     }
     return (await support) ? { ...route, supportsNativeVideo: true } : route;

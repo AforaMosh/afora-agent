@@ -198,6 +198,54 @@ describe("prepared model catalog builder", () => {
     expect(mocks.normalizeProviderResolvedModelWithPlugin).toHaveBeenCalledTimes(7);
   });
 
+  it("isolates native-video qualification failures to one physical route", async () => {
+    const nativeVideoInput = {
+      wireFamily: "google-inline-data" as const,
+      mimeTypes: { "video/mp4": "video/mp4" },
+      maxDecodedBytesPerItem: 1,
+      maxItems: 1,
+      maxAggregateDecodedBytes: 1,
+      aggregateScope: "video" as const,
+      maxSerializedRequestBytesExclusive: 100,
+    };
+    mocks.normalizeProviderResolvedModelWithPlugin.mockImplementation(async ({ context }) => {
+      if (context.provider === "broken") {
+        throw new Error("synthetic provider normalization failure");
+      }
+      return context.provider === "google" ? { ...context.model, nativeVideoInput } : context.model;
+    });
+
+    const snapshot = await build({
+      entries: [
+        {
+          id: "gemini-3.5-flash",
+          name: "Gemini",
+          provider: "google",
+          api: "google-generative-ai",
+          baseUrl: "https://generativelanguage.googleapis.com/v1beta",
+          input: ["text", "video"],
+        },
+        {
+          id: "throws",
+          name: "Broken route",
+          provider: "broken",
+          api: "openai-completions",
+          baseUrl: "https://broken.example.test/v1",
+          input: ["text", "video"],
+          supportsNativeVideo: true,
+        },
+      ],
+    });
+
+    expect(snapshot.entries.find((entry) => entry.provider === "google")).toMatchObject({
+      supportsNativeVideo: true,
+    });
+    expect(snapshot.entries.find((entry) => entry.provider === "broken")).not.toHaveProperty(
+      "supportsNativeVideo",
+    );
+    expect(mocks.normalizeProviderResolvedModelWithPlugin).toHaveBeenCalledTimes(2);
+  });
+
   it("does not promote configured OpenAI-compatible video metadata", async () => {
     const snapshot = await build({
       config: {
