@@ -148,13 +148,10 @@ function noteStateMigrationResult(result: {
 }
 
 function formatStartupMigrationFailure(params: { warnings: string[]; blockers: string[] }): string {
-  const details = [
-    ...params.warnings.map((warning) => `- ${warning}`),
-    ...params.blockers.map((blocker) => `- ${blocker}`),
-  ];
   return [
     "OpenClaw startup migrations did not complete cleanly; refusing to report the gateway ready.",
-    ...details,
+    ...params.warnings.map((warning) => `- ${warning}`),
+    ...params.blockers.map((blocker) => `- ${blocker}`),
     'Run "openclaw doctor --fix" against the same state/config, then restart the gateway.',
   ].join("\n");
 }
@@ -680,19 +677,15 @@ export async function runDoctorConfigPreflight(
         }
       }
       if (snapshot.valid) {
-        const { detectLegacyPluginModelCatalogs, formatLegacyPluginModelCatalogStartupRefusal } =
-          await measurePreflightStep(
-            "legacy-plugin-model-catalog-detection-import",
-            () => import("./doctor-plugin-model-catalog-detection.js"),
-          );
-        const legacyPluginModelCatalogs = await measurePreflightStep(
-          "legacy-plugin-model-catalog-detection",
-          () => detectLegacyPluginModelCatalogs({ cfg: baseConfig, env: process.env }),
+        const detector = await measurePreflightStep(
+          "legacy-plugin-model-catalog-detection-import",
+          () => import("./doctor-plugin-model-catalog-detection.js"),
         );
-        if (legacyPluginModelCatalogs.detected.length > 0) {
-          throwStartupMigrationRefusal(
-            formatLegacyPluginModelCatalogStartupRefusal(legacyPluginModelCatalogs.detected),
-          );
+        const refusal = await measurePreflightStep("legacy-plugin-model-catalog-detection", () =>
+          detector.findLegacyPluginCatalogStartupRefusal({ cfg: baseConfig, env: process.env }),
+        );
+        if (refusal) {
+          throwStartupMigrationRefusal(refusal);
         }
       }
       // This state is established before the first Gateway plugin load and remains

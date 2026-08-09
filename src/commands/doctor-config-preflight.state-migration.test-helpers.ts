@@ -38,6 +38,7 @@ export function mockLegacyPluginModelCatalogDetection(): void {
       migrations: [],
       warnings: [],
     })),
+    findLegacyPluginCatalogStartupRefusal: vi.fn(async () => undefined),
     formatLegacyPluginModelCatalogStartupRefusal: vi.fn(),
   }));
 }

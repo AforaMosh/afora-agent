@@ -62,6 +62,16 @@ export function formatLegacyPluginModelCatalogCommandRefusal(
   ].join("\n");
 }
 
+export async function findLegacyPluginCatalogStartupRefusal(params: {
+  cfg: OpenClawConfig;
+  env?: NodeJS.ProcessEnv;
+}): Promise<string | undefined> {
+  const detection = await detectLegacyPluginModelCatalogs(params);
+  return detection.detected.length > 0
+    ? formatLegacyPluginModelCatalogStartupRefusal(detection.detected)
+    : undefined;
+}
+
 function resolveDetectionAgentDirs(params: {
   cfg: OpenClawConfig;
   env?: NodeJS.ProcessEnv;
