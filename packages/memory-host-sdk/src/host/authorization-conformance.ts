@@ -6,6 +6,7 @@ import {
   resolveActiveConformancePrincipalIds,
 } from "./authorization-conformance-evidence.js";
 import { createMemoryAuthorizationConformanceScenarios } from "./authorization-conformance-scenarios.js";
+import { MEMORY_AUTHORIZATION_OPERATION_REQUIREMENTS } from "./authorization-operation-requirements.js";
 import {
   MEMORY_AUTHORIZATION_CONTRACT_VERSION,
   type AuthorizedResourceHandle,
@@ -197,23 +198,6 @@ export type MemoryAuthorizationConformanceReport = Readonly<{
   }>[];
 }>;
 
-const OPERATION_REQUIREMENTS: Readonly<Record<MemoryOperation, readonly MemoryOperation[]>> = {
-  retrieve: ["retrieve"],
-  read: ["retrieve", "read"],
-  append: ["append"],
-  replace: ["append", "replace"],
-  derive: ["retrieve", "read", "derive"],
-  deposit: ["deposit"],
-  project: ["project"],
-  publish: ["publish"],
-  import: ["import"],
-  export: ["export"],
-  delete: ["delete"],
-  sync: ["sync"],
-  status: ["status"],
-  "policy-admin": ["policy-admin"],
-};
-
 function audienceKey(audience: AudienceRef): string {
   return `${audience.kind}\0${audience.id}`;
 }
@@ -336,7 +320,7 @@ export function evaluateMemoryAuthorizationConformanceScenario(params: {
     store.agentId !== scenario.context.agentId ||
     resource.agentId !== scenario.context.agentId ||
     mount.agentId !== scenario.context.agentId ||
-    !OPERATION_REQUIREMENTS[scenario.context.operation].every((operation) =>
+    !MEMORY_AUTHORIZATION_OPERATION_REQUIREMENTS[scenario.context.operation].every((operation) =>
       mount.capabilities.includes(operation),
     )
   ) {
@@ -383,7 +367,8 @@ export function evaluateMemoryAuthorizationConformanceScenario(params: {
     return { allowed: false, reasonCode: "lineage-deny" };
   }
 
-  const requiredOperations = OPERATION_REQUIREMENTS[scenario.context.operation];
+  const requiredOperations =
+    MEMORY_AUTHORIZATION_OPERATION_REQUIREMENTS[scenario.context.operation];
   for (const operation of requiredOperations) {
     if (
       scenario.policyEntries.some(

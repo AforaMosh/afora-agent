@@ -242,7 +242,6 @@ function resolveMemoryToolOptions(
 
 function createLazyMemoryRuntime(host: MemoryCoreRuntimeHost): MemoryPluginRuntime {
   return {
-    authorization: MEMORY_CORE_AUTHORIZATION_CAPABILITIES,
     async getMemorySearchManager(params) {
       const { createMemoryRuntime } = await loadRuntimeProviderModule();
       return await createMemoryRuntime(host).getMemorySearchManager(params);
@@ -285,6 +284,7 @@ export default definePluginEntry({
     registerShortTermPromotionDreaming(api);
     registerSessionBackfillGatewayMethods(api);
     api.registerMemoryCapability({
+      authorization: MEMORY_CORE_AUTHORIZATION_CAPABILITIES,
       promptBuilder: buildPromptSection,
       flushPlanResolver: buildMemoryFlushPlan,
       runtime: memoryRuntime,

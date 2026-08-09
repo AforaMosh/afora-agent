@@ -4,6 +4,7 @@ import {
   LEGACY_MEMORY_AUTHORIZATION_CAPABILITIES,
   MEMORY_AUTHORIZATION_CAPABILITY_NAMES,
   MEMORY_AUTHORIZATION_CONTRACT_VERSION,
+  MEMORY_OPERATIONS,
   createMemoryAuthorizationConformanceCases,
   evaluateMemoryAuthorizationConformanceScenario,
   hasCompleteMemoryAuthorizationCapabilities,
@@ -25,7 +26,10 @@ import {
   type MemoryAuthorizationConformanceDecision,
 } from "../../plugin-sdk/memory-authorization.js";
 import * as memoryAuthorizationSdk from "../../plugin-sdk/memory-authorization.js";
-import type { MemoryPluginRuntime } from "../registry-contribution-types.js";
+import type {
+  MemoryPluginCapability,
+  MemoryPluginRuntime,
+} from "../registry-contribution-types.js";
 
 type AuthorizedMutationForOperation<Operation extends AuthorizedMemoryMutation["kind"]> =
   AuthorizedMemoryMutation & Readonly<{ kind: Operation }>;
@@ -341,9 +345,8 @@ describe("memory authorization SDK contract", () => {
     expectTypeOf(assertActionOperationContract).toBeFunction();
   });
 
-  it("extends the selected memory runtime with the versioned authorized surface", () => {
+  it("declares authorization on the selected capability and methods on its optional runtime", () => {
     type SelectedAuthorizationMembers =
-      | "authorization"
       | "authorize"
       | "searchAuthorized"
       | "readAuthorized"
@@ -358,8 +361,10 @@ describe("memory authorization SDK contract", () => {
     >;
 
     expectTypeOf<MissingSelectedAuthorizationMembers>().toEqualTypeOf<never>();
+    expectTypeOf<Extract<"authorization", keyof MemoryPluginRuntime>>().toEqualTypeOf<never>();
+    expectTypeOf<Extract<"authorization", keyof AuthorizedMemoryRuntime>>().toEqualTypeOf<never>();
     expectTypeOf<
-      NonNullable<MemoryPluginRuntime["authorization"]>
+      NonNullable<MemoryPluginCapability["authorization"]>
     >().toEqualTypeOf<MemoryAuthorizationCapabilities>();
     expectTypeOf<NonNullable<MemoryPluginRuntime["authorize"]>>().toEqualTypeOf<
       AuthorizedMemoryRuntime["authorize"]
@@ -409,6 +414,14 @@ describe("memory authorization conformance suite", () => {
 
   it("generates every Phase 0 policy invariant", () => {
     const cases = createMemoryAuthorizationConformanceCases();
+    const operationCaseIds = MEMORY_OPERATIONS.flatMap((operation) => [
+      `operation-${operation}-permission-complete`,
+      `operation-${operation}-permission-missing-${operation}`,
+      `operation-${operation}-explicit-deny`,
+      `operation-${operation}-context-policy-revision`,
+      `operation-${operation}-delivery-audience-intersection`,
+      `operation-${operation}-delegation-intersection`,
+    ]);
     expect(cases.map((entry) => entry.id)).toEqual([
       "deny-precedence",
       "permission-implication",
@@ -421,6 +434,7 @@ describe("memory authorization conformance suite", () => {
       "replace-permission-complete",
       "replace-permission-missing-append",
       "replace-permission-missing-replace",
+      ...operationCaseIds,
       "principal-revoked-retains-context-ref",
       "principal-expired",
       "principal-expiry-missing",
@@ -544,6 +558,34 @@ describe("memory authorization conformance suite", () => {
       "lineage-requirements": { allowed: false, reasonCode: "lineage-deny" },
       "prefilter-superset": { allowed: true, reasonCode: "allowed" },
     });
+    const operationDecisions = Object.fromEntries(
+      cases.map((entry) => [entry.id, entry.expected["resource-a"]]),
+    );
+    for (const operation of MEMORY_OPERATIONS) {
+      expect(operationDecisions).toMatchObject({
+        [`operation-${operation}-permission-complete`]: { allowed: true, reasonCode: "allowed" },
+        [`operation-${operation}-permission-missing-${operation}`]: {
+          allowed: false,
+          reasonCode: "default-deny",
+        },
+        [`operation-${operation}-explicit-deny`]: {
+          allowed: false,
+          reasonCode: "explicit-deny",
+        },
+        [`operation-${operation}-context-policy-revision`]: {
+          allowed: false,
+          reasonCode: "revision-stale",
+        },
+        [`operation-${operation}-delivery-audience-intersection`]: {
+          allowed: false,
+          reasonCode: "outside-view",
+        },
+        [`operation-${operation}-delegation-intersection`]: {
+          allowed: false,
+          reasonCode: "default-deny",
+        },
+      });
+    }
     expect(cases.at(-1)?.expected["resource-denied"]).toEqual({
       allowed: false,
       reasonCode: "outside-view",

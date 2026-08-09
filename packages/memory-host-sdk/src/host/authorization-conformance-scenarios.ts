@@ -1,5 +1,6 @@
 import type { MemoryAuthorizationConformanceScenario } from "./authorization-conformance.js";
-import type { MemoryOperation } from "./authorization.js";
+import { MEMORY_AUTHORIZATION_OPERATION_REQUIREMENTS } from "./authorization-operation-requirements.js";
+import { MEMORY_OPERATIONS, type MemoryOperation } from "./authorization.js";
 
 function baseScenario(
   id: string,
@@ -7,6 +8,7 @@ function baseScenario(
 ): MemoryAuthorizationConformanceScenario {
   const now = "2026-07-29T12:00:00.000Z";
   const userAudience = { kind: "user", id: "principal-owner" } as const;
+  const requiredOperations = MEMORY_AUTHORIZATION_OPERATION_REQUIREMENTS.read;
   const context = {
     contextFingerprint: "context-revision-1",
     runId: "run-1",
@@ -32,7 +34,7 @@ function baseScenario(
     {
       storeId: "store-a",
       agentId: context.agentId,
-      capabilities: ["retrieve", "read"] as const,
+      capabilities: requiredOperations,
       audienceRevision: "audience-revision-1",
     },
   ];
@@ -64,20 +66,12 @@ function baseScenario(
         audiences: [userAudience],
       },
     ],
-    policyEntries: [
-      {
-        effect: "allow",
-        principalId: "principal-owner",
-        resourceId: "resource-a",
-        operation: "retrieve",
-      },
-      {
-        effect: "allow",
-        principalId: "principal-owner",
-        resourceId: "resource-a",
-        operation: "read",
-      },
-    ],
+    policyEntries: requiredOperations.map((operation) => ({
+      effect: "allow",
+      principalId: "principal-owner",
+      resourceId: "resource-a",
+      operation,
+    })),
     viewMounts,
     context,
     plan: {
@@ -118,9 +112,9 @@ function withoutConformancePlanId<T extends object>(value: T): T {
 function operationScenario(params: {
   id: string;
   operation: MemoryOperation;
-  requiredOperations: readonly MemoryOperation[];
 }): MemoryAuthorizationConformanceScenario {
-  const { id, operation, requiredOperations } = params;
+  const { id, operation } = params;
+  const requiredOperations = MEMORY_AUTHORIZATION_OPERATION_REQUIREMENTS[operation];
   const scenario = baseScenario(id);
   const context = { ...scenario.context, operation };
   const viewMounts = scenario.viewMounts.map((mount) => ({
@@ -162,7 +156,6 @@ export function createMemoryAuthorizationConformanceScenarios(): MemoryAuthoriza
   const permissionImplication = operationScenario({
     id: "permission-implication",
     operation: "read",
-    requiredOperations: ["retrieve", "read"],
   });
   cases.push({
     ...permissionImplication,
@@ -175,7 +168,6 @@ export function createMemoryAuthorizationConformanceScenarios(): MemoryAuthoriza
     operationScenario({
       id: "permission-complete",
       operation: "read",
-      requiredOperations: ["retrieve", "read"],
     }),
   );
 
@@ -183,17 +175,15 @@ export function createMemoryAuthorizationConformanceScenarios(): MemoryAuthoriza
     operationScenario({
       id: "retrieve-permission-complete",
       operation: "retrieve",
-      requiredOperations: ["retrieve"],
     }),
   );
 
   const derivePermission = operationScenario({
     id: "derive-permission-complete",
     operation: "derive",
-    requiredOperations: ["retrieve", "read", "derive"],
   });
   cases.push(derivePermission);
-  for (const requiredOperation of ["retrieve", "read", "derive"] as const) {
+  for (const requiredOperation of MEMORY_AUTHORIZATION_OPERATION_REQUIREMENTS.derive) {
     cases.push({
       ...derivePermission,
       id: `derive-permission-missing-${requiredOperation}`,
@@ -206,16 +196,76 @@ export function createMemoryAuthorizationConformanceScenarios(): MemoryAuthoriza
   const replacePermission = operationScenario({
     id: "replace-permission-complete",
     operation: "replace",
-    requiredOperations: ["append", "replace"],
   });
   cases.push(replacePermission);
-  for (const requiredOperation of ["append", "replace"] as const) {
+  for (const requiredOperation of MEMORY_AUTHORIZATION_OPERATION_REQUIREMENTS.replace) {
     cases.push({
       ...replacePermission,
       id: `replace-permission-missing-${requiredOperation}`,
       policyEntries: replacePermission.policyEntries.filter(
         (entry) => entry.operation !== requiredOperation,
       ),
+    });
+  }
+
+  for (const operation of MEMORY_OPERATIONS) {
+    const complete = operationScenario({
+      id: `operation-${operation}-permission-complete`,
+      operation,
+    });
+    cases.push(complete);
+    cases.push({
+      ...complete,
+      id: `operation-${operation}-permission-missing-${operation}`,
+      policyEntries: complete.policyEntries.filter((entry) => entry.operation !== operation),
+    });
+    cases.push({
+      ...complete,
+      id: `operation-${operation}-explicit-deny`,
+      policyEntries: [
+        ...complete.policyEntries,
+        {
+          effect: "deny",
+          principalId: "principal-owner",
+          resourceId: "resource-a",
+          operation,
+        },
+      ],
+    });
+    cases.push({
+      ...complete,
+      id: `operation-${operation}-context-policy-revision`,
+      context: {
+        ...complete.context,
+        policyRevision: "policy-revision-2",
+      },
+    });
+    const deniedDeliveryAudiences = [
+      { kind: "conversation", id: `conversation-denied-${operation}` },
+    ] as const;
+    cases.push({
+      ...complete,
+      id: `operation-${operation}-delivery-audience-intersection`,
+      context: {
+        ...complete.context,
+        deliveryAudiences: deniedDeliveryAudiences,
+      },
+      plan: {
+        ...complete.plan,
+        allowedEgressAudiences: deniedDeliveryAudiences,
+      },
+    });
+    const delegatedOperation: MemoryOperation = operation === "retrieve" ? "read" : "retrieve";
+    cases.push({
+      ...complete,
+      id: `operation-${operation}-delegation-intersection`,
+      context: {
+        ...complete.context,
+        delegation: {
+          allowedOperations: [delegatedOperation],
+          maximumAudiences: complete.context.deliveryAudiences,
+        },
+      },
     });
   }
 

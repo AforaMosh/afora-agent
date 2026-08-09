@@ -1,5 +1,6 @@
 // Covers plugin-backed memory state registration and reset behavior.
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { LEGACY_MEMORY_AUTHORIZATION_CAPABILITIES } from "../plugin-sdk/memory-authorization.js";
 import {
   buildMemoryPromptSection,
   clearMemoryPluginState,
@@ -235,15 +236,17 @@ describe("memory plugin state", () => {
     await expect(listActiveMemoryPublicArtifacts({ cfg: {} as never })).resolves.toEqual([]);
   });
 
-  it("preserves sidecar runtime fields when a memory plugin adds public artifacts only", async () => {
+  it("preserves the core runtime when LanceDB adds its declared capability and artifacts", async () => {
     const runtime = createMemoryRuntime();
     const flushPlanResolver = () => createMemoryFlushPlan("memory/sidecar.md");
 
     registerMemoryCapability("memory-core", {
+      authorization: LEGACY_MEMORY_AUTHORIZATION_CAPABILITIES,
       flushPlanResolver,
       runtime,
     });
     registerMemoryCapability("memory-lancedb", {
+      authorization: LEGACY_MEMORY_AUTHORIZATION_CAPABILITIES,
       publicArtifacts: {
         async listArtifacts() {
           return [
@@ -263,6 +266,10 @@ describe("memory plugin state", () => {
     expect(resolveMemoryFlushPlan({})?.relativePath).toBe("memory/sidecar.md");
     expect(getMemoryRuntime()).toBe(runtime);
     expect(getMemoryCapabilityRegistration()?.pluginId).toBe("memory-lancedb");
+    expect(getMemoryCapabilityRegistration()?.capability.authorization).toBe(
+      LEGACY_MEMORY_AUTHORIZATION_CAPABILITIES,
+    );
+    expect(getMemoryCapabilityRegistration()?.capability.runtime).toBe(runtime);
     await expect(listActiveMemoryPublicArtifacts({ cfg: {} as never })).resolves.toEqual([
       {
         kind: "memory-root",

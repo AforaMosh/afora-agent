@@ -261,8 +261,6 @@ export type RegisteredMemorySearchManager = MemorySearchManager;
 type MemoryRuntimeBackendConfig = { backend: "builtin" };
 
 export type MemoryPluginRuntime = {
-  /** Additive during shadow rollout; mandatory and complete in enforced mode. */
-  readonly authorization?: MemoryAuthorizationCapabilities;
   authorize?: AuthorizedMemoryRuntime["authorize"];
   searchAuthorized?: AuthorizedMemoryRuntime["searchAuthorized"];
   readAuthorized?: AuthorizedMemoryRuntime["readAuthorized"];
@@ -316,6 +314,8 @@ export type MemoryPluginPublicArtifactsProvider = {
 };
 
 export type MemoryPluginCapability = {
+  /** Declares the selected backend's authorization support even when it has no runtime. */
+  authorization?: MemoryAuthorizationCapabilities;
   promptBuilder?: MemoryPromptSectionBuilder;
   flushPlanResolver?: MemoryFlushPlanResolver;
   runtime?: MemoryPluginRuntime;

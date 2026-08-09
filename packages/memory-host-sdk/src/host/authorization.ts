@@ -475,7 +475,6 @@ export type MemoryExportResult = DeepReadonly<{
 }>;
 
 export interface AuthorizedMemoryRuntime {
-  readonly authorization: MemoryAuthorizationCapabilities;
   authorize<Context extends MemoryAccessContext>(
     context: Context,
   ): Promise<AuthorizedMemoryPlanForContext<Context>>;

@@ -5,6 +5,7 @@ import {
   registerVirtualTestPlugin,
 } from "openclaw/plugin-sdk/plugin-test-contracts";
 import { describe, expect, it } from "vitest";
+import { LEGACY_MEMORY_AUTHORIZATION_CAPABILITIES } from "../plugin-sdk/memory-authorization.js";
 import { resolveMemoryCapabilityRegistration } from "./memory-state.js";
 import { createPluginRecord } from "./status.test-fixtures.js";
 
@@ -201,7 +202,11 @@ describe("dual-kind memory registration gate", () => {
       config,
       record,
       register(api) {
-        api.registerMemoryCapability({ runtime, flushPlanResolver });
+        api.registerMemoryCapability({
+          authorization: LEGACY_MEMORY_AUTHORIZATION_CAPABILITIES,
+          runtime,
+          flushPlanResolver,
+        });
         api.registerMemoryCapability({ publicArtifacts: { listArtifacts: async () => [] } });
       },
     });
@@ -209,6 +214,7 @@ describe("dual-kind memory registration gate", () => {
     expect(resolveMemoryCapabilityRegistration(registry.registry.memoryCapabilities)).toEqual({
       pluginId: "memory-core",
       capability: {
+        authorization: LEGACY_MEMORY_AUTHORIZATION_CAPABILITIES,
         runtime,
         flushPlanResolver,
         publicArtifacts: expect.any(Object),
