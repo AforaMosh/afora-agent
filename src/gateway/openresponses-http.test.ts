@@ -1777,6 +1777,47 @@ describe("OpenResponses HTTP API (e2e)", () => {
     },
   );
 
+  it("keeps one created_at across all response lifecycle resources", async () => {
+    let now = 1_700_000_000_000;
+    const nowSpy = vi.spyOn(Date, "now").mockImplementation(() => {
+      now += 1_000;
+      return now;
+    });
+    try {
+      agentCommand.mockClear();
+      agentCommand.mockImplementationOnce((async (opts: unknown) =>
+        buildAssistantDeltaResult({
+          opts,
+          emit: emitAgentEvent,
+          deltas: ["hello"],
+          text: "hello",
+        })) as never);
+
+      const res = await postResponses(enabledPort, {
+        stream: true,
+        model: "openclaw",
+        input: "hi",
+      });
+      expect(res.status).toBe(200);
+
+      const createdAt = parseSseEvents(await res.text())
+        .filter((event) =>
+          ["response.created", "response.in_progress", "response.completed"].includes(
+            event.event ?? "",
+          ),
+        )
+        .map(
+          (event) =>
+            (parseSseData(event) as { response?: { created_at?: number } }).response?.created_at,
+        );
+      expect(createdAt).toHaveLength(3);
+      expect(createdAt.every((value) => typeof value === "number")).toBe(true);
+      expect(new Set(createdAt)).toEqual(new Set([createdAt[0]]));
+    } finally {
+      nowSpy.mockRestore();
+    }
+  });
+
   it("preserves declared owner identity for streaming and non-streaming private callers", async () => {
     const port = enabledPort;
     for (const stream of [false, true]) {

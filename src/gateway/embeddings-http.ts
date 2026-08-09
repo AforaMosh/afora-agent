@@ -221,6 +221,25 @@ function validateInputTexts(texts: string[]): string | undefined {
   return undefined;
 }
 
+function validateEmbeddingOptions(payload: EmbeddingsRequest): string | undefined {
+  if (
+    payload.encoding_format !== undefined &&
+    payload.encoding_format !== "float" &&
+    payload.encoding_format !== "base64"
+  ) {
+    return "`encoding_format` must be `float` or `base64`.";
+  }
+  if (
+    payload.dimensions !== undefined &&
+    (typeof payload.dimensions !== "number" ||
+      !Number.isSafeInteger(payload.dimensions) ||
+      payload.dimensions <= 0)
+  ) {
+    return "`dimensions` must be a positive integer.";
+  }
+  return undefined;
+}
+
 function resolveEmbeddingProviderRemoteConfig(remote: MemorySearchEmbeddingConfig["remote"]) {
   return remote
     ? {
@@ -370,6 +389,13 @@ export async function handleOpenAiEmbeddingsHttpRequest(
     });
     return true;
   }
+  const optionsError = validateEmbeddingOptions(payload);
+  if (optionsError) {
+    sendJson(res, 400, {
+      error: { message: optionsError, type: "invalid_request_error" },
+    });
+    return true;
+  }
 
   let agentId: string;
   try {
@@ -428,8 +454,8 @@ export async function handleOpenAiEmbeddingsHttpRequest(
             ? {
                 ...memorySearch,
                 outputDimensionality:
-                  typeof payload.dimensions === "number" && payload.dimensions > 0
-                    ? Math.floor(payload.dimensions)
+                  typeof payload.dimensions === "number"
+                    ? payload.dimensions
                     : memorySearch.outputDimensionality,
               }
             : undefined,

@@ -1,6 +1,6 @@
 // Gateway webhook helpers for external hook dispatch into agents and wake flows.
 import { randomUUID } from "node:crypto";
-import type { IncomingMessage } from "node:http";
+import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Result } from "@openclaw/normalization-core/result";
 import {
   normalizeLowercaseStringOrEmpty,
@@ -10,6 +10,7 @@ import { listAgentIds, resolveDefaultAgentId } from "../agents/agent-scope-confi
 import { listChannelPlugins } from "../channels/plugins/index.js";
 import type { HookSessionMode } from "../config/types.hooks.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { REQUEST_BODY_RESPONSE_OWNER } from "../infra/http-body-response-owner.js";
 import { readJsonBodyWithLimit, requestBodyErrorToText } from "../infra/http-body.js";
 import { normalizeAgentId, parseAgentSessionKey } from "../routing/session-key.js";
 import type { HookExternalContentSource } from "../security/external-content.js";
@@ -176,8 +177,15 @@ export function extractHookToken(req: IncomingMessage): string | undefined {
 export async function readJsonBody(
   req: IncomingMessage,
   maxBytes: number,
+  options?: { responseOwner?: ServerResponse },
 ): Promise<Result<unknown, string>> {
-  const result = await readJsonBodyWithLimit(req, { maxBytes, emptyObjectOnEmpty: true });
+  const result = await readJsonBodyWithLimit(req, {
+    maxBytes,
+    emptyObjectOnEmpty: true,
+    ...(options?.responseOwner
+      ? { [REQUEST_BODY_RESPONSE_OWNER]: options.responseOwner }
+      : undefined),
+  });
   if (result.ok) {
     return result;
   }

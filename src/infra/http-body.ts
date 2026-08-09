@@ -5,6 +5,7 @@ import { decodeTextPrefix } from "@openclaw/normalization-core";
 import { resolveTimerTimeoutMs } from "@openclaw/normalization-core/number-coercion";
 import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
 import { formatErrorMessage } from "./errors.js";
+import { REQUEST_BODY_RESPONSE_OWNER } from "./http-body-response-owner.js";
 import { readChunkWithIdleTimeout, withResponseBodyTimeout } from "./http-response-body-timeout.js";
 import { parseStrictNonNegativeInteger } from "./parse-finite-number.js";
 
@@ -94,6 +95,10 @@ export type ReadRequestBodyOptions = {
   maxBytes: number;
   timeoutMs?: number;
   encoding?: BufferEncoding;
+};
+
+type InternalReadRequestBodyOptions = ReadRequestBodyOptions & {
+  [REQUEST_BODY_RESPONSE_OWNER]?: ServerResponse;
 };
 
 type RequestBodyLimitValues = {
@@ -336,21 +341,45 @@ export async function readResponseTextSnippet(
   return prefix.truncated ? `${collapsed}…` : collapsed;
 }
 
+function closeRequestAfterOwnedResponse(req: IncomingMessage, res: ServerResponse): void {
+  req.pause();
+  if (!res.headersSent) {
+    res.setHeader("Connection", "close");
+  }
+  const destroyRequest = () => {
+    if (!req.destroyed) {
+      req.destroy();
+    }
+  };
+  if (res.writableFinished) {
+    destroyRequest();
+    return;
+  }
+  // Expected limit errors must flush before an incomplete upload socket closes.
+  res.once("finish", destroyRequest);
+  res.once("close", destroyRequest);
+}
+
 export async function readRequestBodyWithLimit(
   req: IncomingMessage,
   options: ReadRequestBodyOptions,
 ): Promise<string> {
   const { maxBytes, timeoutMs } = resolveRequestBodyLimitValues(options);
   const encoding = options.encoding ?? "utf-8";
+  const responseOwner = (options as InternalReadRequestBodyOptions)[REQUEST_BODY_RESPONSE_OWNER];
+  const closeLimitedRequest = () => {
+    if (responseOwner) {
+      closeRequestAfterOwnedResponse(req, responseOwner);
+    } else if (!req.destroyed) {
+      req.destroy();
+    }
+  };
 
   const declaredLength = parseContentLengthHeader(req);
   if (declaredLength !== null && declaredLength > maxBytes) {
     const error = new RequestBodyLimitError({ code: "PAYLOAD_TOO_LARGE" });
-    if (!req.destroyed) {
-      // Limit violations are expected user input; destroying with an Error causes
-      // an async 'error' event which can crash the process if no listener remains.
-      req.destroy();
-    }
+    // Never destroy with an Error: listeners have already been removed when it emits.
+    closeLimitedRequest();
     throw error;
   }
 
@@ -383,9 +412,7 @@ export async function readRequestBodyWithLimit(
 
     const timer = setNodeTimeout(() => {
       const error = new RequestBodyLimitError({ code: "REQUEST_BODY_TIMEOUT" });
-      if (!req.destroyed) {
-        req.destroy();
-      }
+      closeLimitedRequest();
       fail(error);
     }, timeoutMs);
 
@@ -397,9 +424,7 @@ export async function readRequestBodyWithLimit(
       totalBytes = progress.totalBytes;
       if (progress.exceeded) {
         const error = new RequestBodyLimitError({ code: "PAYLOAD_TOO_LARGE" });
-        if (!req.destroyed) {
-          req.destroy();
-        }
+        closeLimitedRequest();
         fail(error);
         return;
       }

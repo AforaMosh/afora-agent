@@ -358,6 +358,7 @@ function resolveStopReasonAndPendingToolCalls(meta: unknown): {
 
 function createResponseResource(params: {
   id: string;
+  createdAt: number;
   model: string;
   status: ResponseResource["status"];
   output: OutputItem[];
@@ -367,7 +368,7 @@ function createResponseResource(params: {
   return {
     id: params.id,
     object: "response",
-    created_at: Math.floor(Date.now() / 1000),
+    created_at: params.createdAt,
     status: params.status,
     model: params.model,
     output: params.output,
@@ -657,6 +658,7 @@ export async function handleOpenResponsesHttpRequest(
   }
 
   const responseId = `resp_${randomUUID()}`;
+  const responseIdentity = { id: responseId, createdAt: Math.floor(Date.now() / 1000) };
   const rememberResponseSession = () =>
     storeResponseSession(responseId, sessionKey, responseSessionScope);
   const outputItemId = `msg_${randomUUID()}`;
@@ -711,7 +713,7 @@ export async function handleOpenResponsesHttpRequest(
         !isToolChoiceConstraintSatisfied({ constraint: toolChoiceConstraint, pendingToolCalls })
       ) {
         const failed = createResponseResource({
-          id: responseId,
+          ...responseIdentity,
           model,
           status: "failed",
           output: [],
@@ -763,7 +765,7 @@ export async function handleOpenResponsesHttpRequest(
         }
 
         const response = createResponseResource({
-          id: responseId,
+          ...responseIdentity,
           model,
           status: "completed",
           output,
@@ -783,7 +785,7 @@ export async function handleOpenResponsesHttpRequest(
           : "No response from OpenClaw.";
 
       const response = createResponseResource({
-        id: responseId,
+        ...responseIdentity,
         model,
         status: "completed",
         output: [
@@ -806,7 +808,7 @@ export async function handleOpenResponsesHttpRequest(
       logWarn(`openresponses: non-stream response failed: ${String(err)}`);
       if (isClientToolNameConflictError(err)) {
         const response = createResponseResource({
-          id: responseId,
+          ...responseIdentity,
           model,
           status: "failed",
           output: [],
@@ -816,7 +818,7 @@ export async function handleOpenResponsesHttpRequest(
         return true;
       }
       const response = createResponseResource({
-        id: responseId,
+        ...responseIdentity,
         model,
         status: "failed",
         output: [],
@@ -825,7 +827,7 @@ export async function handleOpenResponsesHttpRequest(
       const mapped = resolveOpenAiCompatError(err);
       if (mapped) {
         const mappedResponse = createResponseResource({
-          id: responseId,
+          ...responseIdentity,
           model,
           status: "failed",
           output: [],
@@ -926,7 +928,7 @@ export async function handleOpenResponsesHttpRequest(
       });
 
       const finalResponse = createResponseResource({
-        id: responseId,
+        ...responseIdentity,
         model,
         status: finalizeRequested.status,
         output: [completedItem],
@@ -986,7 +988,7 @@ export async function handleOpenResponsesHttpRequest(
     rememberResponseSession();
     finalizeFailedResponse(
       createResponseResource({
-        id: responseId,
+        ...responseIdentity,
         model,
         status: "failed",
         output: [],
@@ -1001,7 +1003,7 @@ export async function handleOpenResponsesHttpRequest(
 
   // Send initial events
   const initialResponse = createResponseResource({
-    id: responseId,
+    ...responseIdentity,
     model,
     status: "in_progress",
     output: [],
@@ -1185,7 +1187,7 @@ export async function handleOpenResponsesHttpRequest(
         !isToolChoiceConstraintSatisfied({ constraint: toolChoiceConstraint, pendingToolCalls })
       ) {
         const failed = createResponseResource({
-          id: responseId,
+          ...responseIdentity,
           model,
           status: "failed",
           output: [],
@@ -1291,7 +1293,7 @@ export async function handleOpenResponsesHttpRequest(
         }
 
         const completedResponse = createResponseResource({
-          id: responseId,
+          ...responseIdentity,
           model,
           status: "completed",
           output: [completedItem, ...functionCallItems],
@@ -1338,7 +1340,7 @@ export async function handleOpenResponsesHttpRequest(
       finalUsage = finalUsage ?? createEmptyUsage();
       if (isClientToolNameConflictError(err)) {
         const errorResponse = createResponseResource({
-          id: responseId,
+          ...responseIdentity,
           model,
           status: "failed",
           output: [],
@@ -1350,7 +1352,7 @@ export async function handleOpenResponsesHttpRequest(
         return;
       }
       const errorResponse = createResponseResource({
-        id: responseId,
+        ...responseIdentity,
         model,
         status: "failed",
         output: [],
@@ -1361,7 +1363,7 @@ export async function handleOpenResponsesHttpRequest(
       const mapped = resolveOpenAiCompatError(err);
       if (mapped) {
         const mappedResponse = createResponseResource({
-          id: responseId,
+          ...responseIdentity,
           model,
           status: "failed",
           output: [],

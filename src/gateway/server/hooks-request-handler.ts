@@ -284,7 +284,7 @@ export function createHooksRequestHandler(
       return true;
     }
 
-    const body = await readJsonBody(req, hooksConfig.maxBodyBytes);
+    const body = await readJsonBody(req, hooksConfig.maxBodyBytes, { responseOwner: res });
     if (!body.ok) {
       const status =
         body.error === "payload too large"

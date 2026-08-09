@@ -48,6 +48,7 @@ describe("createHooksRequestHandler timeout status mapping", () => {
     expect(handled).toBe(true);
     expect(res.statusCode).toBe(408);
     expect(end).toHaveBeenCalledWith(JSON.stringify({ ok: false, error: "request body timeout" }));
+    expect(readJsonBodyMock).toHaveBeenCalledWith(req, 1024, { responseOwner: res });
     expect(dispatchWakeHook).not.toHaveBeenCalled();
     expect(dispatchAgentHook).not.toHaveBeenCalled();
   });
