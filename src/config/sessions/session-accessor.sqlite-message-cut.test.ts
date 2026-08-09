@@ -1,4 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  CHAT_ATTACHMENT_MAX_DECODED_BYTES_PER_ITEM,
+  CHAT_ATTACHMENT_MAX_ITEMS,
+  encodedBase64Length,
+} from "../../../packages/gateway-protocol/src/chat-attachment-limits.js";
 import { trackSqliteStatementExecutions } from "../../../test/helpers/sqlite-statement-execution-counter.js";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
 import {
@@ -25,7 +30,10 @@ import {
   updateSessionEntry,
   upsertSessionEntry,
 } from "./session-accessor.js";
-import { listSqliteSessionBranches } from "./session-accessor.sqlite.js";
+import {
+  extractEditorAttachments,
+  listSqliteSessionBranches,
+} from "./session-accessor.sqlite-message-cut.js";
 import type { InternalSessionEntry } from "./types.js";
 
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
@@ -573,6 +581,64 @@ describe("SQLite session message cuts", () => {
         sessionKey,
       }),
     ).resolves.toMatchObject({ status });
+  });
+
+  it("preserves one inline attachment at the exact decoded-size limit", async () => {
+    const data = Buffer.alloc(CHAT_ATTACHMENT_MAX_DECODED_BYTES_PER_ITEM, 1).toString("base64");
+    const attachments = extractEditorAttachments([{ type: "image", mimeType: "image/png", data }]);
+
+    expect(attachments).toHaveLength(1);
+    expect(attachments?.[0]?.mimeType).toBe("image/png");
+    expect(attachments?.[0]?.data.length).toBe(data.length);
+    expect(attachments?.[0]?.data.endsWith("=")).toBe(true);
+  });
+
+  it("bounds inline attachment count while preserving a validator overflow signal", async () => {
+    const unreadOverflow = { type: "image" } as Record<string, unknown>;
+    Object.defineProperties(unreadOverflow, {
+      data: { get: () => expect.unreachable("overflow data must not be read") },
+      mimeType: { get: () => expect.unreachable("overflow MIME must not be read") },
+    });
+    const retained = Array.from({ length: CHAT_ATTACHMENT_MAX_ITEMS }, (_, index) => ({
+      type: "image",
+      mimeType: "image/png",
+      data: Buffer.from(`image-${index}`).toString("base64"),
+    }));
+    const content = [
+      ...retained,
+      unreadOverflow,
+      ...Array.from({ length: 100 }, () => ({
+        type: "image",
+        mimeType: "image/png",
+        data: "ignored",
+      })),
+    ];
+
+    expect(extractEditorAttachments(content)).toEqual([
+      ...retained.map(({ mimeType, data }) => ({
+        mimeType,
+        data,
+      })),
+      { mimeType: "image/png", data: "AA==" },
+    ]);
+  });
+
+  it("replaces oversized attachment strings with a bounded invalid signal", async () => {
+    const oversizedData = "A".repeat(
+      encodedBase64Length(CHAT_ATTACHMENT_MAX_DECODED_BYTES_PER_ITEM) + 1,
+    );
+
+    expect(
+      extractEditorAttachments([{ type: "image", mimeType: "image/png", data: oversizedData }]),
+    ).toEqual([{ mimeType: "image/png", data: "!" }]);
+  });
+
+  it("preserves bounded malformed inline attachment fields for Gateway validation", async () => {
+    expect(
+      extractEditorAttachments([
+        { type: "image", mimeType: "image/png;invalid", data: "not-base64" },
+      ]),
+    ).toEqual([{ mimeType: "image/png;invalid", data: "not-base64" }]);
   });
 
   it("rewinds by repointing the active leaf and returns inline images plus durable media", async () => {

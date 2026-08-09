@@ -1,6 +1,11 @@
 import { expectDefined } from "@openclaw/normalization-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ErrorCodes } from "../../../packages/gateway-protocol/src/index.js";
+import {
+  CHAT_ATTACHMENT_MAX_DECODED_BYTES_PER_ITEM,
+  CHAT_ATTACHMENT_MAX_ITEMS,
+  encodedBase64Length,
+  ErrorCodes,
+} from "../../../packages/gateway-protocol/src/index.js";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
 import { resolveEmbeddedSessionLane } from "../../agents/embedded-agent-runner/lanes.js";
 import {
@@ -209,6 +214,30 @@ async function appendMediaMessage(params: {
       role: "user",
       content: params.text ?? "edit this clip",
       __openclaw: { media: Array.isArray(params.media) ? params.media : [params.media] },
+    },
+  });
+  await appendTranscriptEvent(scope, {
+    type: "leaf",
+    id: `${params.entryId}-leaf`,
+    parentId: "assistant-entry",
+    targetId: params.entryId,
+  });
+}
+
+async function appendInlineImageMessage(params: {
+  entryId: string;
+  images: readonly { data: string; mimeType: string }[];
+}): Promise<void> {
+  const scope = { agentId: "main", sessionId: sourceSessionId, sessionKey };
+  await appendTranscriptMessage(scope, {
+    eventId: params.entryId,
+    parentId: "assistant-entry",
+    message: {
+      role: "user",
+      content: [
+        { type: "text", text: "edit these images" },
+        ...params.images.map((image) => ({ type: "image", ...image })),
+      ],
     },
   });
   await appendTranscriptEvent(scope, {
@@ -529,6 +558,100 @@ describe("session message-cut methods", () => {
     expect(payload?.editorAttachments?.[0]).toMatchObject({ mimeType: "video/mp4" });
     expect(payload?.editorAttachments?.[0]?.data.length).toBe((6 * 1024 * 1024 * 4) / 3);
     expect(mocks.readMediaBuffer).toHaveBeenCalledWith(storedVideoId, "inbound", 8 * 1024 * 1024);
+  });
+
+  it("accepts an inline attachment at the exact decoded-size limit", async () => {
+    const data = Buffer.alloc(CHAT_ATTACHMENT_MAX_DECODED_BYTES_PER_ITEM, 1).toString("base64");
+    mocks.preflightSessionMessageCut.mockResolvedValueOnce({
+      status: "ready",
+      editorText: "edit max image",
+      editorAttachments: [{ mimeType: "image/png", data }],
+    });
+
+    const respond = await invoke("sessions.rewind", "user-entry");
+
+    expect(respond).toHaveBeenCalledWith(true, expect.any(Object), undefined);
+    const payload = respond.mock.calls[0]?.[1] as
+      | { editorAttachments?: Array<{ data: string; mimeType: string }> }
+      | undefined;
+    expect(payload?.editorAttachments).toHaveLength(1);
+    expect(payload?.editorAttachments?.[0]?.mimeType).toBe("image/png");
+    expect(payload?.editorAttachments?.[0]?.data.length).toBe(data.length);
+    expect(loadSessionEntry({ agentId: "main", sessionKey })?.sessionId).not.toBe(sourceSessionId);
+  });
+
+  it("rejects inline attachment count overflow before rewind mutation", async () => {
+    await appendInlineImageMessage({
+      entryId: "too-many-inline-images",
+      images: [
+        ...Array.from({ length: CHAT_ATTACHMENT_MAX_ITEMS }, (_, index) => ({
+          mimeType: "image/png",
+          data: Buffer.from(`image-${index}`).toString("base64"),
+        })),
+        { mimeType: "image/png;invalid", data: "not-base64" },
+        ...Array.from({ length: 20 }, () => ({ mimeType: "image/png", data: "ignored" })),
+      ],
+    });
+    const sourceBefore = loadSessionEntry({ agentId: "main", sessionKey })?.sessionId;
+
+    const respond = await invoke("sessions.rewind", "too-many-inline-images");
+
+    expect(respond).toHaveBeenCalledWith(
+      false,
+      undefined,
+      expect.objectContaining({
+        code: ErrorCodes.INVALID_REQUEST,
+        message: expect.stringContaining("attachments exceed the editor limits"),
+      }),
+    );
+    expect(loadSessionEntry({ agentId: "main", sessionKey })?.sessionId).toBe(sourceBefore);
+  });
+
+  it("rejects an oversized inline payload before creating a fork", async () => {
+    await appendInlineImageMessage({
+      entryId: "oversized-inline-image",
+      images: [
+        {
+          mimeType: "image/png",
+          data: "A".repeat(encodedBase64Length(CHAT_ATTACHMENT_MAX_DECODED_BYTES_PER_ITEM) + 1),
+        },
+      ],
+    });
+    const sourceBefore = loadSessionEntry({ agentId: "main", sessionKey })?.sessionId;
+    const entryCountBefore = listSessionEntries({ agentId: "main" }).length;
+
+    const respond = await invoke("sessions.fork", "oversized-inline-image");
+
+    expect(respond).toHaveBeenCalledWith(
+      false,
+      undefined,
+      expect.objectContaining({
+        code: ErrorCodes.INVALID_REQUEST,
+        message: expect.stringContaining("unsafe or invalid attachment reference"),
+      }),
+    );
+    expect(loadSessionEntry({ agentId: "main", sessionKey })?.sessionId).toBe(sourceBefore);
+    expect(listSessionEntries({ agentId: "main" })).toHaveLength(entryCountBefore);
+  });
+
+  it("routes a bounded malformed inline attachment through validation without rewind mutation", async () => {
+    await appendInlineImageMessage({
+      entryId: "malformed-inline-image",
+      images: [{ mimeType: "image/png;invalid", data: "not-base64" }],
+    });
+    const sourceBefore = loadSessionEntry({ agentId: "main", sessionKey })?.sessionId;
+
+    const respond = await invoke("sessions.rewind", "malformed-inline-image");
+
+    expect(respond).toHaveBeenCalledWith(
+      false,
+      undefined,
+      expect.objectContaining({
+        code: ErrorCodes.INVALID_REQUEST,
+        message: expect.stringContaining("unsafe or invalid attachment reference"),
+      }),
+    );
+    expect(loadSessionEntry({ agentId: "main", sessionKey })?.sessionId).toBe(sourceBefore);
   });
 
   it.each(["sessions.rewind", "sessions.fork"] as const)(

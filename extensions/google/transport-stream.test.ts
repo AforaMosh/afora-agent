@@ -2909,6 +2909,13 @@ describe("google transport stream", () => {
 });
 
 describe("google provider-owned native video request limits", () => {
+  type MutableGoogleTestPart = {
+    inlineData?: { data: string; mimeType: string };
+    text?: string;
+  };
+  type MutableGoogleTestRequest = {
+    contents: Array<{ parts: MutableGoogleTestPart[]; role?: string }>;
+  };
   const oldVideoData = "b2xkISE=";
   const currentVideoData = "bmV3ISE=";
   const nativeModel = () =>
@@ -2916,6 +2923,32 @@ describe("google provider-owned native video request limits", () => {
       input: ["text", "image", "video"],
       nativeVideoInput: GOOGLE_TEST_VIDEO_CONTRACT,
     });
+
+  async function captureHookedNativeRequest(params: {
+    context: Record<string, unknown>;
+    model?: Model<"google-generative-ai">;
+    onPayload: (request: MutableGoogleTestRequest) => unknown;
+  }): Promise<{ contents: Array<{ role: string; parts: Array<Record<string, unknown>> }> }> {
+    guardedFetchMock
+      .mockReset()
+      .mockResolvedValueOnce(buildSseResponse([{ candidates: [{ finishReason: "STOP" }] }]));
+    const streamFn = createGoogleGenerativeAiTransportStreamFn();
+    const stream = await Promise.resolve(
+      streamFn(
+        params.model ?? nativeModel(),
+        params.context as Parameters<typeof streamFn>[1],
+        {
+          apiKey: "gemini-api-key",
+          onPayload: (request) => params.onPayload(request as MutableGoogleTestRequest),
+        } as Parameters<typeof streamFn>[2],
+      ),
+    );
+    await stream.result();
+    const guardedCall = requireMockCall(guardedFetchMock, 0, "guarded fetch");
+    return parseRequestJsonBody(requireRequestInit(guardedCall, "guarded fetch")) as {
+      contents: Array<{ role: string; parts: Array<Record<string, unknown>> }>;
+    };
+  }
 
   it("omits budget-exhausting historical images so the current video survives", () => {
     const params = buildGoogleGenerativeAiParams(
@@ -3300,6 +3333,201 @@ describe("google provider-owned native video request limits", () => {
     expect(params.contents[1]?.parts).toEqual([
       { inlineData: { mimeType: "video/mp4", data: currentVideoData } },
     ]);
+  });
+
+  it.each([
+    {
+      replacement: "structuredClone",
+      clone: (request: unknown) => structuredClone(request),
+    },
+    {
+      replacement: "JSON roundtrip",
+      clone: (request: unknown) => JSON.parse(JSON.stringify(request)) as unknown,
+    },
+  ])("preserves ordinary-user video across a $replacement replacement", async ({ clone }) => {
+    const params = await captureHookedNativeRequest({
+      context: {
+        messages: [
+          {
+            role: "user",
+            content: [{ type: "video", mimeType: "video/mp4", data: currentVideoData }],
+            timestamp: 0,
+          },
+        ],
+      },
+      onPayload: clone,
+    });
+
+    expect(params.contents[0]?.parts).toEqual([
+      { inlineData: { mimeType: "video/mp4", data: currentVideoData } },
+    ]);
+  });
+
+  it("preserves cloned original video while omitting an injected video", async () => {
+    const injectedVideoData = "aG9vaw==";
+    const params = await captureHookedNativeRequest({
+      context: {
+        messages: [
+          {
+            role: "user",
+            content: [{ type: "video", mimeType: "video/mp4", data: currentVideoData }],
+            timestamp: 0,
+          },
+        ],
+      },
+      model: buildGeminiModel({
+        input: ["text", "image", "video"],
+        nativeVideoInput: {
+          ...GOOGLE_TEST_VIDEO_CONTRACT,
+          maxItems: 2,
+          maxAggregateDecodedBytes: 16,
+        },
+      }),
+      onPayload: (request) => {
+        const replacement = structuredClone(request);
+        replacement.contents[0].parts.push({
+          inlineData: { mimeType: "video/mp4", data: injectedVideoData },
+        });
+        return replacement;
+      },
+    });
+
+    expect(params.contents[0]?.parts).toEqual([
+      { inlineData: { mimeType: "video/mp4", data: currentVideoData } },
+      { text: "(video omitted: unsupported or exceeds provider limits)" },
+    ]);
+    expect(JSON.stringify(params)).not.toContain(injectedVideoData);
+  });
+
+  it("matches repeated cloned original media by bounded occurrence", async () => {
+    const params = await captureHookedNativeRequest({
+      context: {
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "video", mimeType: "video/mp4", data: currentVideoData },
+              { type: "video", mimeType: "video/mp4", data: currentVideoData },
+            ],
+            timestamp: 0,
+          },
+        ],
+      },
+      model: buildGeminiModel({
+        input: ["text", "image", "video"],
+        nativeVideoInput: {
+          ...GOOGLE_TEST_VIDEO_CONTRACT,
+          maxItems: 3,
+          maxAggregateDecodedBytes: 20,
+        },
+      }),
+      onPayload: (request) => {
+        const replacement = JSON.parse(JSON.stringify(request)) as MutableGoogleTestRequest;
+        replacement.contents[0].parts.push(structuredClone(replacement.contents[0].parts[0]));
+        return replacement;
+      },
+    });
+
+    expect(params.contents[0]?.parts).toEqual([
+      { inlineData: { mimeType: "video/mp4", data: currentVideoData } },
+      { inlineData: { mimeType: "video/mp4", data: currentVideoData } },
+      { text: "(video omitted: unsupported or exceeds provider limits)" },
+    ]);
+  });
+
+  it("keeps original priority tiers when a hook reorders identity-preserved turns", async () => {
+    const params = await captureHookedNativeRequest({
+      context: {
+        messages: [
+          {
+            role: "user",
+            content: [{ type: "video", mimeType: "video/mp4", data: oldVideoData }],
+            timestamp: 0,
+          },
+          {
+            role: "user",
+            content: [{ type: "video", mimeType: "video/mp4", data: currentVideoData }],
+            timestamp: 1,
+          },
+        ],
+      },
+      onPayload: (request) => {
+        request.contents.reverse();
+        return request;
+      },
+    });
+
+    expect(params.contents).toEqual([
+      {
+        role: "user",
+        parts: [{ inlineData: { mimeType: "video/mp4", data: currentVideoData } }],
+      },
+      {
+        role: "user",
+        parts: [{ text: "(video omitted: unsupported or exceeds provider limits)" }],
+      },
+    ]);
+  });
+
+  it.each([
+    {
+      mutation: "reorders cloned media",
+      apply: (request: MutableGoogleTestRequest) => request.contents[0].parts.reverse(),
+      expected: [
+        { text: "(video omitted: unsupported or exceeds provider limits)" },
+        { text: "(video omitted: unsupported or exceeds provider limits)" },
+      ],
+    },
+    {
+      mutation: "modifies cloned media",
+      apply: (request: MutableGoogleTestRequest) => {
+        request.contents[0].parts[0].inlineData!.data = "bW9kaWZpZWQ=";
+      },
+      expected: [
+        { text: "(video omitted: unsupported or exceeds provider limits)" },
+        { inlineData: { mimeType: "video/mp4", data: oldVideoData } },
+      ],
+    },
+    {
+      mutation: "moves cloned media to a model turn",
+      apply: (request: MutableGoogleTestRequest) => {
+        request.contents[0]!.role = "model";
+      },
+      expected: [
+        { text: "(video omitted: unsupported or exceeds provider limits)" },
+        { text: "(video omitted: unsupported or exceeds provider limits)" },
+      ],
+    },
+  ])("fails closed when a replacement $mutation", async ({ apply, expected }) => {
+    const params = await captureHookedNativeRequest({
+      context: {
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "video", mimeType: "video/mp4", data: currentVideoData },
+              { type: "video", mimeType: "video/mp4", data: oldVideoData },
+            ],
+            timestamp: 0,
+          },
+        ],
+      },
+      model: buildGeminiModel({
+        input: ["text", "image", "video"],
+        nativeVideoInput: {
+          ...GOOGLE_TEST_VIDEO_CONTRACT,
+          maxItems: 2,
+          maxAggregateDecodedBytes: 10,
+        },
+      }),
+      onPayload: (request) => {
+        const replacement = structuredClone(request);
+        apply(replacement);
+        return replacement;
+      },
+    });
+
+    expect(params.contents[0]?.parts).toEqual(expected);
   });
 
   it("omits hook video and evicts tool images before current media", async () => {

@@ -117,7 +117,11 @@ function resolveEditorMediaId(ref: SessionEditorMediaRef): { id: string; mimeTyp
 async function materializeEditorAttachments(
   preflight: Extract<SessionMessageCutPreflightResult, { status: "ready" }>,
 ): Promise<EditorAttachment[]> {
-  const existing = (preflight.editorAttachments ?? []).map((attachment) => ({
+  const inlineAttachments = preflight.editorAttachments ?? [];
+  if (inlineAttachments.length > CHAT_ATTACHMENT_MAX_ITEMS) {
+    throw new EditorAttachmentRestoreError("limit");
+  }
+  const existing = inlineAttachments.map((attachment) => ({
     attachment,
     decodedBytes: attachmentDecodedBytes(attachment),
   }));

@@ -213,7 +213,128 @@ function getTextContent(result: unknown, index = 0): string {
   return expectDefined(record.content[index], "record.content[index] test invariant").text;
 }
 
+const ALIASED_MEDIA_SHAPES: ReadonlyArray<Record<string, string>> = [
+  { type: "input_video" },
+  { type: "video_url" },
+  { type: "input_image" },
+  { type: "image_url" },
+  { type: "audio" },
+  { type: "input_audio" },
+  { type: "output_audio" },
+  { mimeType: "video/mp4" },
+  { mime_type: "video/webm" },
+  { mediaType: "video/quicktime" },
+  { media_type: "video/x-msvideo" },
+  { contentType: "video/mp4" },
+  { content_type: "video/webm" },
+];
+
+function expectAliasedMediaPayloadsOmitted(sanitize: (value: unknown) => unknown): void {
+  const fixtures = ALIASED_MEDIA_SHAPES.map((shape, index) => {
+    const rawText = `private-aliased-media-${index}`;
+    const payload = Buffer.from(rawText).toString("base64");
+    return {
+      bytes: Buffer.byteLength(rawText),
+      marker: `media-${index}`,
+      payload,
+      record: {
+        ...shape,
+        marker: `media-${index}`,
+        ...(index % 2 === 0 ? { data: payload } : { blob: payload }),
+      },
+    };
+  });
+  const videoUrl = "data:video/mp4;base64,cmVmZXJlbmNlLW9ubHk=";
+  const sanitized = sanitize({
+    nested: [
+      fixtures.slice(0, 7).map((fixture) => fixture.record),
+      fixtures.slice(7).map((fixture) => fixture.record),
+    ],
+    reference: { type: "video_url", video_url: { url: videoUrl } },
+  }) as {
+    nested: Array<Array<Record<string, unknown>>>;
+    reference: Record<string, unknown>;
+  };
+
+  const projected = sanitized.nested.flat();
+  const serialized = JSON.stringify(sanitized);
+  for (const fixture of fixtures) {
+    const item = expectDefined(
+      projected.find((entry) => entry.marker === fixture.marker),
+      `sanitized ${fixture.marker} test invariant`,
+    );
+    expect(item).toMatchObject({ bytes: fixture.bytes, omitted: true });
+    expect(item).not.toHaveProperty("data");
+    expect(item).not.toHaveProperty("blob");
+    expect(serialized).not.toContain(fixture.payload);
+    expect(serialized).not.toContain(fixture.payload.slice(0, 12));
+    expect(serialized).not.toContain(fixture.payload.slice(-12));
+  }
+  expect(sanitized.reference).toEqual({
+    type: "video_url",
+    video_url: { url: `[inline data URI: ${videoUrl.length} chars]` },
+  });
+}
+
+function expectNestedAudioPayloadsOmitted(sanitize: (value: unknown) => unknown): void {
+  const inputPayload = Buffer.from("private nested input audio").toString("base64");
+  const outputPayload = Buffer.from("private nested output audio").toString("base64");
+  const deepPayload = Buffer.from("private nested audio blob").toString("base64");
+  const unrelatedData = "ordinary application data";
+  const sanitized = sanitize({
+    content: [
+      {
+        type: "input_audio",
+        input_audio: { data: inputPayload, format: "wav" },
+      },
+      {
+        type: "output_audio",
+        audio: [{ data: outputPayload, format: "mp3" }, { nested: [{ blob: deepPayload }] }],
+      },
+    ],
+    metadata: { data: unrelatedData },
+  }) as {
+    content: [{ input_audio: Record<string, unknown> }, { audio: Array<Record<string, unknown>> }];
+    metadata: { data: string };
+  };
+
+  expect(sanitized.content[0].input_audio).toEqual({
+    bytes: Buffer.byteLength("private nested input audio"),
+    format: "wav",
+    omitted: true,
+  });
+  expect(sanitized.content[1].audio[0]).toEqual({
+    bytes: Buffer.byteLength("private nested output audio"),
+    format: "mp3",
+    omitted: true,
+  });
+  expect(sanitized.content[1].audio[1]).toEqual({
+    nested: [
+      {
+        bytes: Buffer.byteLength("private nested audio blob"),
+        omitted: true,
+      },
+    ],
+  });
+  expect(sanitized.metadata.data).toBe(unrelatedData);
+
+  const serialized = JSON.stringify(sanitized);
+  for (const payload of [inputPayload, outputPayload, deepPayload]) {
+    expect(serialized).not.toContain(payload);
+    expect(serialized).not.toContain(payload.slice(0, 12));
+    expect(serialized).not.toContain(payload.slice(-12));
+  }
+}
+
 describe("sanitizeToolResult", () => {
+  it("omits aliased media data and blobs from nested result arrays", () => {
+    expectAliasedMediaPayloadsOmitted(sanitizeToolResult);
+  });
+
+  it("inherits audio context into nested result containers", () => {
+    expectNestedAudioPayloadsOmitted(sanitizeToolResult);
+  });
+
   it("redacts JSON-style apiKey fields in text content blocks", () => {
     const result = {
       content: [
@@ -489,6 +610,14 @@ describe("sanitizeToolResult", () => {
 });
 
 describe("sanitizeToolArgs", () => {
+  it("omits aliased media data and blobs from nested argument arrays", () => {
+    expectAliasedMediaPayloadsOmitted(sanitizeToolArgs);
+  });
+
+  it("inherits audio context into nested argument containers", () => {
+    expectNestedAudioPayloadsOmitted(sanitizeToolArgs);
+  });
+
   it("redacts string-valued credentials nested anywhere in args", () => {
     const args = {
       apiKey: "sk-1234567890abcdefXYZ",
@@ -725,6 +854,25 @@ describe("extractToolResultText", () => {
     expect(text).not.toContain("nested-video-base64-secret");
     expect(text).toContain('"durationSeconds":12');
     expect(text).not.toContain("sk-structured-secret-1234567890");
+  });
+
+  it("omits aliased media data from structured fallback output", () => {
+    const fixtures = ALIASED_MEDIA_SHAPES.map((shape, index) => ({
+      ...shape,
+      data: `private-structured-media-${index}`,
+    }));
+
+    const text = extractToolResultText({
+      content: [{ type: "json", nested: [fixtures.slice(0, 7), fixtures.slice(7)] }],
+    });
+
+    expect(text).toContain("[binary omitted:");
+    for (const [index] of fixtures.entries()) {
+      const payload = `private-structured-media-${index}`;
+      expect(text).not.toContain(payload);
+      expect(text).not.toContain(payload.slice(0, 12));
+      expect(text).not.toContain(payload.slice(-12));
+    }
   });
 
   it("redacts structured headers and omits opaque CLI payloads before the output cap", () => {

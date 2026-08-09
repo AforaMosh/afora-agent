@@ -51,6 +51,26 @@ const SENSITIVE_STRUCTURED_HEADER_FIELDS = new Set([
   "x-api-key",
   "x-auth-token",
 ]);
+const BINARY_CONTENT_TYPES = new Set([
+  "audio",
+  "image",
+  "video",
+  "base64",
+  "input_audio",
+  "input_image",
+  "input_video",
+  "output_audio",
+  "image_url",
+  "video_url",
+]);
+const MIME_TYPE_FIELDS = [
+  "mimeType",
+  "mime_type",
+  "mediaType",
+  "media_type",
+  "contentType",
+  "content_type",
+] as const;
 
 function truncateToolText(text: string): string {
   if (text.length <= TOOL_RESULT_MAX_CHARS) {
@@ -233,7 +253,11 @@ function extractAggregatedErrorField(value: unknown): string | undefined {
   return readErrorCandidate(record.aggregated);
 }
 
-function stripInlineMediaPayloads(value: unknown, seen = new WeakSet<object>()): unknown {
+function stripInlineMediaPayloads(
+  value: unknown,
+  parentCarriesBinaryData = false,
+  seen = new WeakSet<object>(),
+): unknown {
   if (typeof value === "string") {
     return redactInlineDataUriValue(value);
   }
@@ -245,33 +269,32 @@ function stripInlineMediaPayloads(value: unknown, seen = new WeakSet<object>()):
   }
   seen.add(value);
   if (Array.isArray(value)) {
-    const sanitized = value.map((entry) => stripInlineMediaPayloads(entry, seen));
+    const sanitized = value.map((entry) =>
+      stripInlineMediaPayloads(entry, parentCarriesBinaryData, seen),
+    );
     seen.delete(value);
     return sanitized;
   }
 
   const record = value as Record<string, unknown>;
-  const type = normalizeOptionalLowercaseString(record.type);
-  const mimeType = normalizeOptionalLowercaseString(
-    record.media_type ?? record.mimeType ?? record.mime_type,
-  );
   const data = readStringValue(record.data);
-  const carriesInlineMedia =
-    type === "image" ||
-    type === "video" ||
-    mimeType?.startsWith("image/") === true ||
-    mimeType?.startsWith("video/") === true;
-  // Preserve the established image event shape; video references without bytes remain untouched.
-  const omitData = type === "image" || (carriesInlineMedia && data !== undefined);
+  const blob = readStringValue(record.blob);
+  const encodedPayload = data ?? blob;
+  const hasRawPayload = Object.hasOwn(record, "data") || Object.hasOwn(record, "blob");
+  const type = normalizeOptionalLowercaseString(record.type);
+  const binaryContext = parentCarriesBinaryData || carriesBinaryData(record);
+  // Preserve the established image event shape; reference-only media remains untouched.
+  const omitData = type === "image" || (binaryContext && hasRawPayload);
   const sanitized: Record<string, unknown> = {};
   for (const [key, child] of Object.entries(record)) {
-    if (!(omitData && key === "data")) {
-      sanitized[key] = stripInlineMediaPayloads(child, seen);
+    if (!(omitData && (key === "data" || key === "blob"))) {
+      sanitized[key] = stripInlineMediaPayloads(child, binaryContext, seen);
     }
   }
   if (omitData) {
     const existingBytes = typeof record.bytes === "number" ? record.bytes : undefined;
-    sanitized.bytes = data === undefined ? existingBytes : estimateBase64DecodedBytes(data);
+    sanitized.bytes =
+      encodedPayload === undefined ? existingBytes : estimateBase64DecodedBytes(encodedPayload);
     sanitized.omitted = true;
   }
   seen.delete(value);
@@ -355,16 +378,18 @@ function redactInlineDataUriValue(value: string): string {
 
 function carriesBinaryData(record: Record<string, unknown>): boolean {
   const type = normalizeOptionalLowercaseString(record.type);
-  if (type === "audio" || type === "image" || type === "video" || type === "base64") {
+  if (type && BINARY_CONTENT_TYPES.has(type)) {
     return true;
   }
-  const mediaType = normalizeOptionalLowercaseString(record.media_type ?? record.mimeType);
-  return (
-    mediaType?.startsWith("image/") === true ||
-    mediaType?.startsWith("audio/") === true ||
-    mediaType?.startsWith("video/") === true ||
-    mediaType === "application/pdf"
-  );
+  return MIME_TYPE_FIELDS.some((field) => {
+    const mediaType = normalizeOptionalLowercaseString(record[field]);
+    return (
+      mediaType?.startsWith("image/") === true ||
+      mediaType?.startsWith("audio/") === true ||
+      mediaType?.startsWith("video/") === true ||
+      mediaType === "application/pdf"
+    );
+  });
 }
 
 function sanitizeStructuredToolResultValue(

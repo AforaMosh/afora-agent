@@ -1,4 +1,5 @@
 // Google plugin module implements transport stream behavior.
+import { createHash } from "node:crypto";
 import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
 import {
   calculateCost,
@@ -538,7 +539,6 @@ function normalizeGoogleThinkingConfig(
 type MutableGooglePart = Record<string, unknown>;
 
 const GOOGLE_INLINE_MEDIA_OMISSION = "(media omitted: exceeds provider limits)";
-const GOOGLE_INLINE_MEDIA_METADATA = Symbol("google-inline-media-metadata");
 
 type GoogleInlineMediaPartData = {
   kind: "image" | "video";
@@ -546,9 +546,20 @@ type GoogleInlineMediaPartData = {
   data: string;
 };
 type GoogleInlineMediaPriorityTier = "current-user" | "historical";
-type GoogleInlineMediaMetadata = {
+type GoogleInlineMediaProvenanceEntry = {
+  contentIndex: number;
+  dataLength: number;
+  fingerprint: string;
   kind: "image" | "video";
-  ordinaryUserInput: true;
+  mimeType: string;
+  occurrence: number;
+  partIndex: number;
+  priorityTier: GoogleInlineMediaPriorityTier;
+};
+type GoogleInlineMediaProvenance = {
+  byFingerprint: Map<string, GoogleInlineMediaProvenanceEntry[]>;
+  byIdentity: WeakMap<Record<string, unknown>, GoogleInlineMediaProvenanceEntry>;
+  byLocation: Map<string, { fingerprint: string; occurrence: number }>;
 };
 type GoogleInlineMediaAdmissionCandidate = GoogleInlineMediaPartData & {
   inlineData: Record<string, unknown>;
@@ -571,35 +582,27 @@ function inlineDataFromGooglePart(part: MutableGooglePart) {
   return isRecord(part.inlineData) ? part.inlineData : undefined;
 }
 
-function taggedGoogleInlineMediaPart(candidate: GoogleInlineMediaPartData) {
-  const inlineData: Record<string | symbol, unknown> = {
-    mimeType: candidate.mimeType,
-    data: candidate.data,
-  };
-  Object.defineProperty(inlineData, GOOGLE_INLINE_MEDIA_METADATA, {
-    value: { kind: candidate.kind, ordinaryUserInput: true } satisfies GoogleInlineMediaMetadata,
-    enumerable: false,
-  });
+function taggedGoogleInlineMediaPart(
+  candidate: GoogleInlineMediaPartData,
+  originalKinds: WeakMap<Record<string, unknown>, "image" | "video">,
+) {
+  const inlineData = { mimeType: candidate.mimeType, data: candidate.data };
+  originalKinds.set(inlineData, candidate.kind);
   return { inlineData };
 }
 
-function googleInlineMediaMetadata(
-  inlineData: Record<string, unknown>,
-): GoogleInlineMediaMetadata | undefined {
-  const metadata = (inlineData as Record<string | symbol, unknown>)[GOOGLE_INLINE_MEDIA_METADATA];
-  return isRecord(metadata) &&
-    (metadata.kind === "video" || metadata.kind === "image") &&
-    metadata.ordinaryUserInput === true
-    ? (metadata as GoogleInlineMediaMetadata)
-    : undefined;
+function googleInlineMediaKind(mimeType: string): "image" | "video" {
+  return mimeType.toLowerCase().startsWith("video/") ? "video" : "image";
 }
 
-function googleInlineMediaKind(
-  inlineData: Record<string, unknown>,
-  mimeType: string,
-): "image" | "video" {
-  const metadata = googleInlineMediaMetadata(inlineData);
-  return metadata ? metadata.kind : mimeType.toLowerCase().startsWith("video/") ? "video" : "image";
+function googleInlineMediaFingerprint(candidate: GoogleInlineMediaPartData): string {
+  return createHash("sha256")
+    .update(candidate.kind)
+    .update("\0")
+    .update(candidate.mimeType)
+    .update("\0")
+    .update(candidate.data)
+    .digest("hex");
 }
 
 function isGoogleToolResultMediaTurn(parts: readonly MutableGooglePart[]): boolean {
@@ -608,6 +611,150 @@ function isGoogleToolResultMediaTurn(parts: readonly MutableGooglePart[]): boole
   }
   // Gemini < 3 carries deferred tool images in this exact transport-owned turn.
   return parts.length > 1 && parts[0]?.text === "Tool result image:";
+}
+
+function collectGoogleContentPartLists(request: GoogleGenerateContentRequest) {
+  const contentPartLists: Array<{
+    contentIndex: number;
+    parts: MutableGooglePart[];
+    role: unknown;
+  }> = [];
+  for (let contentIndex = 0; contentIndex < request.contents.length; contentIndex += 1) {
+    const content = request.contents[contentIndex];
+    const parts = content?.parts;
+    if (Array.isArray(parts)) {
+      contentPartLists.push({
+        contentIndex,
+        parts: parts as MutableGooglePart[],
+        role: content.role,
+      });
+    }
+  }
+  return contentPartLists;
+}
+
+function googleInlineMediaLocationKey(contentIndex: number, partIndex: number): string {
+  return `${contentIndex}:${partIndex}`;
+}
+
+function resolveCurrentOrdinaryUserContentIndex(
+  contentPartLists: ReturnType<typeof collectGoogleContentPartLists>,
+  toolResultContentIndexes: ReadonlySet<number>,
+): number {
+  return contentPartLists.reduce(
+    (latest, { contentIndex, parts, role }) =>
+      role === "user" &&
+      !toolResultContentIndexes.has(contentIndex) &&
+      parts.some((part) => inlineDataFromGooglePart(part) !== undefined)
+        ? contentIndex
+        : latest,
+    -1,
+  );
+}
+
+/** Captures only transport-produced ordinary-user media before payload hooks can replace it. */
+function captureGoogleInlineMediaProvenance(
+  request: GoogleGenerateContentRequest,
+  currentOrdinaryUserContentIndex: number,
+): GoogleInlineMediaProvenance {
+  const byFingerprint = new Map<string, GoogleInlineMediaProvenanceEntry[]>();
+  const byIdentity = new WeakMap<Record<string, unknown>, GoogleInlineMediaProvenanceEntry>();
+  const byLocation = new Map<string, { fingerprint: string; occurrence: number }>();
+  const contentPartLists = collectGoogleContentPartLists(request);
+  const toolResultContentIndexes = new Set(
+    contentPartLists
+      .filter(({ parts }) => isGoogleToolResultMediaTurn(parts))
+      .map(({ contentIndex }) => contentIndex),
+  );
+  for (const { contentIndex, parts, role } of contentPartLists) {
+    if (role !== "user" || toolResultContentIndexes.has(contentIndex)) {
+      continue;
+    }
+    for (let partIndex = 0; partIndex < parts.length; partIndex += 1) {
+      const inlineData = inlineDataFromGooglePart(parts[partIndex] ?? {});
+      if (!inlineData) {
+        continue;
+      }
+      const mimeType = typeof inlineData.mimeType === "string" ? inlineData.mimeType : "";
+      const candidate = {
+        kind: googleInlineMediaKind(mimeType),
+        mimeType,
+        data: typeof inlineData.data === "string" ? inlineData.data : "",
+      } satisfies GoogleInlineMediaPartData;
+      const fingerprint = googleInlineMediaFingerprint(candidate);
+      const entries = byFingerprint.get(fingerprint) ?? [];
+      const occurrence = entries.length;
+      const entry: GoogleInlineMediaProvenanceEntry = {
+        contentIndex,
+        dataLength: candidate.data.length,
+        fingerprint,
+        kind: candidate.kind,
+        mimeType: candidate.mimeType,
+        occurrence,
+        partIndex,
+        priorityTier:
+          contentIndex === currentOrdinaryUserContentIndex ? "current-user" : "historical",
+      };
+      entries.push(entry);
+      byFingerprint.set(fingerprint, entries);
+      byIdentity.set(inlineData, entry);
+      byLocation.set(googleInlineMediaLocationKey(contentIndex, partIndex), {
+        fingerprint,
+        occurrence,
+      });
+    }
+  }
+  return { byFingerprint, byIdentity, byLocation };
+}
+
+function googleInlineMediaMatchesProvenanceEntry(
+  candidate: GoogleInlineMediaPartData,
+  entry: GoogleInlineMediaProvenanceEntry,
+): boolean {
+  return (
+    candidate.kind === entry.kind &&
+    candidate.mimeType === entry.mimeType &&
+    candidate.data.length === entry.dataLength &&
+    googleInlineMediaFingerprint(candidate) === entry.fingerprint
+  );
+}
+
+function matchGoogleInlineMediaProvenance(params: {
+  candidate: GoogleInlineMediaPartData;
+  contentIndex: number;
+  inlineData: Record<string, unknown>;
+  partIndex: number;
+  provenance: GoogleInlineMediaProvenance;
+  role: unknown;
+  used: Set<GoogleInlineMediaProvenanceEntry>;
+}): GoogleInlineMediaProvenanceEntry | undefined {
+  if (params.role !== "user") {
+    return undefined;
+  }
+  const identityEntry = params.provenance.byIdentity.get(params.inlineData);
+  if (
+    identityEntry &&
+    googleInlineMediaMatchesProvenanceEntry(params.candidate, identityEntry) &&
+    !params.used.has(identityEntry)
+  ) {
+    params.used.add(identityEntry);
+    return identityEntry;
+  }
+  const replacementSlot = params.provenance.byLocation.get(
+    googleInlineMediaLocationKey(params.contentIndex, params.partIndex),
+  );
+  const replacementEntry = replacementSlot
+    ? params.provenance.byFingerprint.get(replacementSlot.fingerprint)?.[replacementSlot.occurrence]
+    : undefined;
+  if (
+    replacementEntry &&
+    !params.used.has(replacementEntry) &&
+    googleInlineMediaMatchesProvenanceEntry(params.candidate, replacementEntry)
+  ) {
+    params.used.add(replacementEntry);
+    return replacementEntry;
+  }
+  return undefined;
 }
 
 function serializedGoogleRequestBytes(value: unknown): number {
@@ -673,67 +820,78 @@ function planGoogleInlineMediaAdmission(
 function enforceGoogleNativeVideoRequestLimits(
   model: GoogleTransportModel,
   request: GoogleGenerateContentRequest,
+  provenance?: GoogleInlineMediaProvenance,
+  originalKinds?: WeakMap<Record<string, unknown>, "image" | "video">,
 ): GoogleGenerateContentRequest {
   const contract = resolveNativeVideoInputContract(model);
-  const contentPartLists: Array<{ contentIndex: number; parts: MutableGooglePart[] }> = [];
-  for (let contentIndex = 0; contentIndex < request.contents.length; contentIndex += 1) {
-    const parts = request.contents[contentIndex]?.parts;
-    if (Array.isArray(parts)) {
-      contentPartLists.push({ contentIndex, parts: parts as MutableGooglePart[] });
-    }
-  }
+  const contentPartLists = collectGoogleContentPartLists(request);
   const toolResultContentIndexes = new Set(
     contentPartLists
       .filter(({ parts }) => isGoogleToolResultMediaTurn(parts))
       .map(({ contentIndex }) => contentIndex),
   );
-  let currentOrdinaryUserContentIndex = -1;
-  for (const { contentIndex, parts } of contentPartLists) {
-    if (
-      !toolResultContentIndexes.has(contentIndex) &&
-      parts.some((part) => {
-        const inlineData = inlineDataFromGooglePart(part);
-        return inlineData ? googleInlineMediaMetadata(inlineData) !== undefined : false;
-      })
-    ) {
-      currentOrdinaryUserContentIndex = contentIndex;
-    }
-  }
-
+  const initialCurrentOrdinaryUserContentIndex = provenance
+    ? -1
+    : resolveCurrentOrdinaryUserContentIndex(contentPartLists, toolResultContentIndexes);
   const candidates: GoogleInlineMediaAdmissionCandidate[] = [];
+  const usedProvenance = new Set<GoogleInlineMediaProvenanceEntry>();
   let wireOrder = 0;
   const appendCandidate = (params: {
     inlineData: Record<string, unknown>;
     parts: MutableGooglePart[];
     partIndex: number;
     contentIndex: number;
+    role: unknown;
     topLevel: boolean;
   }) => {
     const mimeType =
       typeof params.inlineData.mimeType === "string" ? params.inlineData.mimeType : "";
-    const metadata = params.topLevel ? googleInlineMediaMetadata(params.inlineData) : undefined;
-    candidates.push({
-      kind: googleInlineMediaKind(params.inlineData, mimeType),
+    const candidateData = {
+      kind: originalKinds?.get(params.inlineData) ?? googleInlineMediaKind(mimeType),
       mimeType,
       data: typeof params.inlineData.data === "string" ? params.inlineData.data : "",
+    } satisfies GoogleInlineMediaPartData;
+    const provenanceEntry =
+      params.topLevel && provenance
+        ? matchGoogleInlineMediaProvenance({
+            candidate: candidateData,
+            contentIndex: params.contentIndex,
+            inlineData: params.inlineData,
+            partIndex: params.partIndex,
+            provenance,
+            role: params.role,
+            used: usedProvenance,
+          })
+        : undefined;
+    const ordinaryUserInput = provenance
+      ? provenanceEntry !== undefined
+      : params.topLevel &&
+        params.role === "user" &&
+        !toolResultContentIndexes.has(params.contentIndex);
+    candidates.push({
+      ...candidateData,
       inlineData: params.inlineData,
       parts: params.parts,
       partIndex: params.partIndex,
       contentIndex: params.contentIndex,
       wireOrder: wireOrder++,
-      videoAdmissible: metadata !== undefined && !toolResultContentIndexes.has(params.contentIndex),
+      videoAdmissible:
+        ordinaryUserInput &&
+        candidateData.kind === "video" &&
+        !toolResultContentIndexes.has(params.contentIndex),
       priorityTier:
-        metadata && params.contentIndex === currentOrdinaryUserContentIndex
+        provenanceEntry?.priorityTier ??
+        (ordinaryUserInput && params.contentIndex === initialCurrentOrdinaryUserContentIndex
           ? "current-user"
-          : "historical",
+          : "historical"),
     });
   };
-  for (const { contentIndex, parts } of contentPartLists) {
+  for (const { contentIndex, parts, role } of contentPartLists) {
     for (let partIndex = 0; partIndex < parts.length; partIndex += 1) {
       const part = parts[partIndex] ?? {};
       const inlineData = inlineDataFromGooglePart(part);
       if (inlineData) {
-        appendCandidate({ inlineData, parts, partIndex, contentIndex, topLevel: true });
+        appendCandidate({ inlineData, parts, partIndex, contentIndex, role, topLevel: true });
       }
       const functionResponse = isRecord(part.functionResponse) ? part.functionResponse : undefined;
       const nestedParts = Array.isArray(functionResponse?.parts)
@@ -747,6 +905,7 @@ function enforceGoogleNativeVideoRequestLimits(
             parts: nestedParts,
             partIndex: nestedIndex,
             contentIndex,
+            role,
             topLevel: false,
           });
         }
@@ -809,7 +968,11 @@ function enforceGoogleNativeVideoRequestLimits(
   return request;
 }
 
-function convertGoogleMessages(model: GoogleTransportModel, context: Context) {
+function convertGoogleMessages(
+  model: GoogleTransportModel,
+  context: Context,
+  originalKinds: WeakMap<Record<string, unknown>, "image" | "video">,
+) {
   const contents: Array<Record<string, unknown>> = [];
   const replayToolCallThoughtSignatures = new Map<string, string>();
   const shouldReplayToolCallThoughtSignature = requiresToolCallThoughtSignature(model.id);
@@ -854,22 +1017,28 @@ function convertGoogleMessages(model: GoogleTransportModel, context: Context) {
         }
         if (item.type === "video") {
           return [
-            taggedGoogleInlineMediaPart({
-              kind: "video",
-              mimeType: item.mimeType,
-              data: item.data,
-            }),
+            taggedGoogleInlineMediaPart(
+              {
+                kind: "video",
+                mimeType: item.mimeType,
+                data: item.data,
+              },
+              originalKinds,
+            ),
           ];
         }
         if (item.type === "image" && !model.input.includes("image")) {
           return [];
         }
         return [
-          taggedGoogleInlineMediaPart({
-            kind: "image",
-            mimeType: item.mimeType,
-            data: item.data,
-          }),
+          taggedGoogleInlineMediaPart(
+            {
+              kind: "image",
+              mimeType: item.mimeType,
+              data: item.data,
+            },
+            originalKinds,
+          ),
         ];
       });
       if (parts.length === 0) {
@@ -1026,11 +1195,12 @@ function convertGoogleTools(tools: NonNullable<Context["tools"]>) {
   ];
 }
 
-export function buildGoogleGenerativeAiParams(
+function buildGoogleGenerativeAiRequest(
   model: GoogleTransportModel,
   context: Context,
   options?: GoogleTransportOptions,
-): GoogleGenerateContentRequest {
+): { currentOrdinaryUserContentIndex: number; params: GoogleGenerateContentRequest } {
+  const originalKinds = new WeakMap<Record<string, unknown>, "image" | "video">();
   const generationConfig: Record<string, unknown> = {};
   if (typeof options?.temperature === "number") {
     generationConfig.temperature = options.temperature;
@@ -1047,7 +1217,7 @@ export function buildGoogleGenerativeAiParams(
   }
 
   const params: GoogleGenerateContentRequest = {
-    contents: convertGoogleMessages(model, context),
+    contents: convertGoogleMessages(model, context, originalKinds),
   };
   const cachedContent =
     typeof options?.cachedContent === "string" ? options.cachedContent.trim() : "";
@@ -1075,7 +1245,44 @@ export function buildGoogleGenerativeAiParams(
       };
     }
   }
-  return enforceGoogleNativeVideoRequestLimits(model, params);
+  const contentPartLists = collectGoogleContentPartLists(params);
+  const toolResultContentIndexes = new Set(
+    contentPartLists
+      .filter(({ parts }) => isGoogleToolResultMediaTurn(parts))
+      .map(({ contentIndex }) => contentIndex),
+  );
+  const currentOrdinaryUserContentIndex = resolveCurrentOrdinaryUserContentIndex(
+    contentPartLists,
+    toolResultContentIndexes,
+  );
+  enforceGoogleNativeVideoRequestLimits(model, params, undefined, originalKinds);
+  return { currentOrdinaryUserContentIndex, params };
+}
+
+export function buildGoogleGenerativeAiParams(
+  model: GoogleTransportModel,
+  context: Context,
+  options?: GoogleTransportOptions,
+): GoogleGenerateContentRequest {
+  return buildGoogleGenerativeAiRequest(model, context, options).params;
+}
+
+function buildGoogleGenerativeAiParamsWithProvenance(
+  model: GoogleTransportModel,
+  context: Context,
+  options?: GoogleTransportOptions,
+): {
+  params: GoogleGenerateContentRequest;
+  provenance: GoogleInlineMediaProvenance;
+} {
+  const prepared = buildGoogleGenerativeAiRequest(model, context, options);
+  return {
+    params: prepared.params,
+    provenance: captureGoogleInlineMediaProvenance(
+      prepared.params,
+      prepared.currentOrdinaryUserContentIndex,
+    ),
+  };
 }
 
 function buildGoogleHeaders(
@@ -1612,12 +1819,17 @@ function createGoogleTransportStreamFn(kind: CanonicalGoogleTransportApi): Strea
       try {
         const apiKey = options?.apiKey ?? getEnvApiKey(model.provider) ?? undefined;
         const guardedFetch = buildGuardedModelFetch(model);
-        let params = buildGoogleGenerativeAiParams(model, context, options);
+        const preparedRequest = buildGoogleGenerativeAiParamsWithProvenance(
+          model,
+          context,
+          options,
+        );
+        let params = preparedRequest.params;
         const nextParams = await options?.onPayload?.(params, model);
         if (nextParams !== undefined) {
           params = nextParams as GoogleGenerateContentRequest;
         }
-        enforceGoogleNativeVideoRequestLimits(model, params);
+        enforceGoogleNativeVideoRequestLimits(model, params, preparedRequest.provenance);
         const requestUrl = buildGoogleTransportRequestUrl(kind, model, options);
         const fetchImpl = (options as { fetch?: typeof fetch } | undefined)?.fetch;
         const openSse = async (apiKeyForRequest: string | undefined) => {
