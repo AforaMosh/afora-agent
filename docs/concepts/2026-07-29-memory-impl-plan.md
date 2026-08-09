@@ -1,10 +1,20 @@
+---
+doc-schema-version: 1
+summary: "Phased implementation plan for identity-aware private, shared, and scoped OpenClaw memory"
+title: "Multiplayer memory implementation plan"
+sidebarTitle: "Multiplayer memory implementation plan"
+read_when:
+  - You are implementing staged multiplayer memory authorization
+  - You need the rollout, ownership, or verification requirements for multiplayer memory
+---
+
 # OpenClaw Multiplayer Memory Implementation Plan
 
 Date: 2026-07-29
 
 Status: planning document; no behavior described here is shipped
 
-Canonical design: `docs/concepts/memory-multiplayer.md`
+Canonical design: [Multiplayer memory design](/concepts/memory-multiplayer)
 
 ## 1. Outcome
 
