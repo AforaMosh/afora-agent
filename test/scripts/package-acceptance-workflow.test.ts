@@ -1768,7 +1768,7 @@ describe("package acceptance workflow", () => {
       OPENCLAW_BUILD_PRIVATE_QA: "1",
     });
     expectTextToIncludeAll(buildPrivateQa.run, [
-      "node --import tsx scripts/build-all.mts qaRuntime",
+      "pnpm build qaRuntime",
       "test -f dist/plugin-sdk/qa-runtime.js",
       "test -f dist/extensions/qa-lab/runtime-api.js",
     ]);

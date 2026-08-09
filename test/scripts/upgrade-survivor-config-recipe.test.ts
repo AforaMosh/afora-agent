@@ -16,8 +16,20 @@ import {
 } from "../../scripts/e2e/lib/upgrade-survivor/config-recipe.mts";
 
 const RECIPE_PATH = "scripts/e2e/lib/upgrade-survivor/config-recipe.mts";
+const RUN_PATH = "scripts/e2e/lib/upgrade-survivor/run.sh";
 
 describe("upgrade survivor config recipe command resolution", () => {
+  it("uses the candidate source or compiled config recipe entrypoint", () => {
+    const runner = readFileSync(RUN_PATH, "utf8");
+    expect(runner).toContain(
+      "recipe_runner=(node --import tsx scripts/e2e/lib/upgrade-survivor/config-recipe.mts)",
+    );
+    expect(runner).toContain(
+      "recipe_runner=(node scripts/e2e/lib/upgrade-survivor/config-recipe.mjs)",
+    );
+    expect(runner).toContain('"${recipe_runner[@]}" apply');
+  });
+
   it("compares baseline versions with the shared release parser", () => {
     expect(isReleaseBefore("2026.3.31", "2026.4.0")).toBe(true);
     expect(isReleaseBefore("2026.3.31-beta.1", "2026.4.0")).toBe(true);
