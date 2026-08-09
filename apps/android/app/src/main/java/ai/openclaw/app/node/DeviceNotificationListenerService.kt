@@ -32,18 +32,6 @@ internal fun sanitizeNotificationText(value: CharSequence?): String? {
 }
 
 /**
- * Keeps app-owned notifications outside the gateway list/action trust boundary.
- */
-internal fun isGatewayVisibleNotification(
-  appPackageName: String,
-  notificationPackageName: String?,
-): Boolean {
-  val appPackage = appPackageName.trim()
-  val notificationPackage = notificationPackageName?.trim().orEmpty()
-  return appPackage.isNotEmpty() && notificationPackage.isNotEmpty() && notificationPackage != appPackage
-}
-
-/**
  * Stable notification snapshot entry exposed through the Android notifications command.
  */
 data class DeviceNotificationEntry(
@@ -150,16 +138,10 @@ private object DeviceNotificationStore {
     }
   }
 
-  fun snapshot(
-    enabled: Boolean,
-    appPackageName: String,
-  ): DeviceNotificationSnapshot {
+  fun snapshot(enabled: Boolean): DeviceNotificationSnapshot {
     val (isConnected, entries) =
       synchronized(lock) {
-        connected to
-          byKey.values
-            .filter { isGatewayVisibleNotification(appPackageName, it.packageName) }
-            .sortedByDescending { it.postTimeMs }
+        connected to byKey.values.sortedByDescending { it.postTimeMs }
       }
     return DeviceNotificationSnapshot(
       enabled = enabled,
@@ -200,11 +182,12 @@ class DeviceNotificationListenerService : NotificationListenerService() {
 
   override fun onNotificationPosted(sbn: StatusBarNotification?) {
     super.onNotificationPosted(sbn)
-    val posted = sbn ?: return
-    if (!isGatewayVisibleNotification(packageName, posted.packageName)) return
-    val entry = posted.toEntry()
+    val entry = sbn?.toEntry() ?: return
     DeviceNotificationStore.upsert(entry)
     rememberRecentPackage(entry.packageName)
+    if (entry.packageName == packageName) {
+      return
+    }
     val payload = notificationChangedPayload(entry) ?: return
     emitNotificationsChanged(payload)
   }
@@ -294,10 +277,7 @@ class DeviceNotificationListenerService : NotificationListenerService() {
     val entries =
       runCatching {
         activeNotifications
-          ?.asSequence()
-          ?.filter { isGatewayVisibleNotification(packageName, it.packageName) }
           ?.mapNotNull { it.toEntry() }
-          ?.toList()
           ?: emptyList()
       }.getOrElse { emptyList() }
     DeviceNotificationStore.replace(entries)
@@ -380,11 +360,7 @@ class DeviceNotificationListenerService : NotificationListenerService() {
     fun snapshot(
       context: Context,
       enabled: Boolean = isAccessEnabled(context),
-    ): DeviceNotificationSnapshot =
-      DeviceNotificationStore.snapshot(
-        enabled = enabled,
-        appPackageName = context.packageName,
-      )
+    ): DeviceNotificationSnapshot = DeviceNotificationStore.snapshot(enabled = enabled)
 
     /** Asks Android to rebind the listener after settings grant access but callbacks have not arrived. */
     fun requestServiceRebind(context: Context) {
@@ -444,10 +420,7 @@ class DeviceNotificationListenerService : NotificationListenerService() {
   private fun executeActionInternal(request: NotificationActionRequest): NotificationActionResult {
     val sbn =
       activeNotifications
-        ?.firstOrNull {
-          it.key == request.key &&
-            isGatewayVisibleNotification(packageName, it.packageName)
-        }
+        ?.firstOrNull { it.key == request.key }
         ?: return NotificationActionResult(
           ok = false,
           code = "NOTIFICATION_NOT_FOUND",
