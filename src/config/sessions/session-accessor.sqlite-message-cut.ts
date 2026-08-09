@@ -38,6 +38,7 @@ import type {
 } from "./session-accessor.types.js";
 import { buildSessionCreationStamp } from "./session-entry-provenance.js";
 import { inheritSessionSelection } from "./session-entry-selection.js";
+import { prepareCurrentSessionMemorySubjectLineageSeedInTransaction } from "./session-memory-subject.js";
 import { reconcileSessionTranscriptIndexInTransaction } from "./session-transcript-index.js";
 import { createSessionTranscriptHeader } from "./transcript-header.js";
 import {
@@ -257,6 +258,10 @@ function mutateSqliteSessionAtMessageInTransaction(
   if (!currentEntry?.sessionId) {
     return { status: "missing-session" };
   }
+  const lineageSeed = prepareCurrentSessionMemorySubjectLineageSeedInTransaction(
+    database,
+    params.sourceKey,
+  );
   const events = loadSqliteTranscriptEventsFromDatabase(database, currentEntry.sessionId);
   const cut = params.mode === "switch" ? undefined : resolveMessageCut(events, params.entryId);
   if (cut && "status" in cut) {
@@ -293,11 +298,6 @@ function mutateSqliteSessionAtMessageInTransaction(
             targetId: params.mode === "switch" ? params.entryId : (cut?.parentId ?? null),
           },
         ];
-  appendTranscriptEventsInTransaction(database, targetScope, nextEvents);
-  if (params.mode !== "fork") {
-    reconcileSessionTranscriptIndexInTransaction(database.db, nextSessionId);
-  }
-
   // Rotating transcript identity fences stale live managers: later snapshot-replace writes
   // target the old session and cannot erase this leaf repoint from the active session.
   const nextEntry = {
@@ -318,7 +318,15 @@ function mutateSqliteSessionAtMessageInTransaction(
       ? buildSessionCreationStamp(params.creation)
       : {}),
   };
-  writeSessionEntry(database, params.targetKey, nextEntry);
+  writeSessionEntry(database, params.targetKey, nextEntry, {
+    ...(lineageSeed ? { memorySubjectSeed: lineageSeed } : {}),
+  });
+  // The child/root entry owns the immutable subject before transcript rows can
+  // materialize a window, preserving exact same-database lineage.
+  appendTranscriptEventsInTransaction(database, targetScope, nextEvents);
+  if (params.mode !== "fork") {
+    reconcileSessionTranscriptIndexInTransaction(database.db, nextSessionId);
+  }
   return {
     status: "created",
     key: params.targetKey,

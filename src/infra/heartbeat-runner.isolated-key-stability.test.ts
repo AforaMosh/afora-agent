@@ -3,6 +3,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import * as replyModule from "../auto-reply/reply.js";
 import type { OpenClawConfig } from "../config/config.js";
 import { resolveMainSessionKey } from "../config/sessions.js";
+import { readCurrentSessionMemorySubject } from "../config/sessions/session-memory-subject-access.js";
+import { prepareAutonomousAgentSessionMemorySubjectSeed } from "../config/sessions/session-memory-subject.js";
 import { runHeartbeatOnce } from "./heartbeat-runner.js";
 import {
   readSessionStoreForTest,
@@ -160,6 +162,13 @@ describe("runHeartbeatOnce – isolated session key stability (#59493)", () => {
       });
 
       expect(ctx?.SessionKey).toBe(`${baseSessionKey}:heartbeat`);
+      expect(
+        readCurrentSessionMemorySubject({
+          agentId: "main",
+          sessionKey: `${baseSessionKey}:heartbeat`,
+          storePath,
+        })?.subject,
+      ).toEqual(prepareAutonomousAgentSessionMemorySubjectSeed("main").subject);
     });
   });
 

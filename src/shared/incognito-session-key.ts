@@ -1,4 +1,5 @@
-const INCOGNITO_SESSION_RE = /^(?:dashboard|subagent|internal-session-effects):incognito-[^:]+$/u;
+const INCOGNITO_SESSION_RE =
+  /^(?:acp|dashboard|subagent|internal-session-effects):incognito-[^:]+$/u;
 
 /** Classifies process-only agent session keys without consulting runtime registry state. */
 export function isIncognitoSessionKey(sessionKey: string | undefined | null): boolean {

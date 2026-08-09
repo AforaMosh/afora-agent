@@ -335,6 +335,26 @@ export async function loadSubagentSpawnModuleForTest(params: {
       });
       return updated ?? null;
     },
+    upsertSessionEntryWithTrustedMemorySubject: async (
+      scope: { storePath?: string; sessionKey: string },
+      patch: Record<string, unknown>,
+    ) => {
+      const updateSessionStore =
+        params.updateSessionStoreMock ??
+        (async (_storePath: string, mutator: SessionStoreMutator) => {
+          const store: SessionStore = {};
+          await mutator(store);
+          return store;
+        });
+      let updated: Record<string, unknown> | undefined;
+      const storePath =
+        scope.storePath ?? params.sessionStorePath ?? "/tmp/subagent-spawn-model-session.json";
+      await updateSessionStore(storePath, (store: SessionStore) => {
+        updated = Object.assign({}, store[scope.sessionKey], patch);
+        store[scope.sessionKey] = updated;
+      });
+      return updated ?? null;
+    },
     getSessionBindingService:
       params.getSessionBindingService ??
       (() => ({

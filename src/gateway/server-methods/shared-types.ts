@@ -105,6 +105,8 @@ export type GatewayClient = {
     approvalRuntime?: boolean;
     cronRunContinuation?: boolean;
     agentRuntimeIdentity?: AgentRuntimeIdentity;
+    /** Closed server-only marker used exclusively by Gateway recovery dispatch. */
+    autonomousMemorySubject?: "gateway-recovery";
     pluginRuntimeOwnerId?: string;
     agentRunTracking?: "plugin_subagent";
     /** Host-captured requester lineage for opt-in plugin subagent completion delivery. */

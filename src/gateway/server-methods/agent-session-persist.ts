@@ -16,7 +16,9 @@ import {
   patchSessionEntryTarget,
   type SessionEntryPatchOptions,
 } from "../../config/sessions/session-accessor.js";
+import { patchSqliteSessionEntryTargetWithTrustedMemorySubject } from "../../config/sessions/session-accessor.sqlite-entry.js";
 import { buildSessionCreationStamp } from "../../config/sessions/session-entry-provenance.js";
+import type { TrustedSessionMemorySubjectIssuer } from "../../config/sessions/session-memory-subject.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import { normalizeCronScheduledToolPolicy } from "../../cron/scheduled-tool-policy.js";
 import { assertAgentRunLifecycleGenerationCurrent } from "../../infra/agent-events.js";
@@ -79,6 +81,7 @@ export async function persistAgentSessionPhase(params: {
   sessionAgentId: string;
   mainSessionKey: string;
   creation: TrustedSessionCreation;
+  memorySubjectIssuer?: TrustedSessionMemorySubjectIssuer;
   lifecycleGeneration: string;
   isRestartRecoveryResumeRun: boolean;
   runId: string;
@@ -122,6 +125,19 @@ export async function persistAgentSessionPhase(params: {
   let mainRestartRecoveryOwnerLease: MainSessionRecoveryOwnerLease | undefined;
   let skipAgentInitialSessionTouch = false;
   let createdNewEntry = false;
+  const patchTarget = (
+    scope: Parameters<typeof patchSessionEntryTarget>[0],
+    update: Parameters<typeof patchSessionEntryTarget>[1],
+    options: SessionEntryPatchOptions,
+  ) =>
+    params.memorySubjectIssuer
+      ? patchSqliteSessionEntryTargetWithTrustedMemorySubject(
+          scope,
+          update,
+          params.memorySubjectIssuer,
+          options,
+        )
+      : patchSessionEntryTarget(scope, update, options);
   const recoveredSessionStartedAt =
     !patchBuild.isNewSession &&
     params.entry !== undefined &&
@@ -152,7 +168,7 @@ export async function persistAgentSessionPhase(params: {
     let restartRecoveryReservationConflict: string | undefined;
     try {
       persisted =
-        (await patchSessionEntryTarget(
+        (await patchTarget(
           {
             agentId: params.sessionAgentId,
             storePath: params.storePath,

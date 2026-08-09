@@ -1,12 +1,19 @@
 // Persistent cron session tests cover lifecycle admission and mutation races.
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import path from "node:path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createDeferred } from "../../../test/helpers/promise.js";
+import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
 import type { SessionEntry } from "../../config/sessions.js";
+import { readCurrentSessionMemorySubject } from "../../config/sessions/session-memory-subject-access.js";
+import { prepareAutonomousAgentSessionMemorySubjectSeed } from "../../config/sessions/session-memory-subject.js";
 import {
   interruptSessionWorkAdmissions,
   isSessionWorkAdmissionActive,
   runExclusiveSessionLifecycleMutation,
 } from "../../sessions/session-lifecycle-admission.js";
+import { closeOpenClawAgentDatabasesForTest } from "../../state/openclaw-agent-db.js";
+import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
+import { withEnvAsync } from "../../test-utils/env.js";
 import { makeIsolatedAgentJobFixture, makeIsolatedAgentParamsFixture } from "./job-fixtures.js";
 import {
   dispatchCronDeliveryMock,
@@ -25,6 +32,12 @@ import {
 
 const runCronIsolatedAgentTurn = await loadRunCronIsolatedAgentTurn();
 const inMemoryStorePath = "/tmp/store.json";
+const tempDirectories = useAutoCleanupTempDirTracker(afterEach);
+
+afterEach(() => {
+  closeOpenClawAgentDatabasesForTest();
+  closeOpenClawStateDatabaseForTest();
+});
 
 function makePersistentCronParams(sessionKey: string) {
   return makeIsolatedAgentParamsFixture({
@@ -164,6 +177,98 @@ describe("runCronIsolatedAgentTurn session lifecycle", () => {
         fallbackEntry: expect.objectContaining({ sessionId: "isolated-session" }),
       }),
     );
+  });
+
+  it("persists the autonomous subject for an isolated cron session", async () => {
+    const agentId = "worker";
+    const sessionKey = "cron:memory-subject";
+    const canonicalSessionKey = `agent:${agentId}:${sessionKey}`;
+    const stateDir = tempDirectories.make("openclaw-cron-memory-subject-");
+    const storePath = path.join(stateDir, "agents", agentId, "sessions", "sessions.json");
+
+    await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () => {
+      resolveCronSessionMock.mockReturnValue(
+        makeCronSession({
+          storePath,
+          initialSessionEntry: undefined,
+          isNewSession: true,
+          sessionEntry: makeCronSessionEntry({ sessionId: "cron-memory-subject-session" }),
+        }),
+      );
+
+      await expect(
+        runCronIsolatedAgentTurn(
+          makeIsolatedAgentParamsFixture({
+            agentId,
+            sessionKey,
+            job: makeIsolatedAgentJobFixture({
+              sessionTarget: "isolated",
+              delivery: { mode: "none" },
+            }),
+          }),
+        ),
+      ).resolves.toMatchObject({ status: "ok" });
+
+      expect(
+        readCurrentSessionMemorySubject({
+          agentId,
+          sessionKey: canonicalSessionKey,
+          storePath,
+        })?.subject,
+      ).toEqual(prepareAutonomousAgentSessionMemorySubjectSeed(agentId).subject);
+    });
+  });
+
+  it("persists the service subject for a webhook-shaped cron session", async () => {
+    const agentId = "worker";
+    const hookSessionKey = "hook:webhook:ticket-42";
+    const canonicalSessionKey = `agent:${agentId}:${hookSessionKey}`;
+    const stateDir = tempDirectories.make("openclaw-cron-webhook-memory-subject-");
+    const storePath = path.join(stateDir, "agents", agentId, "sessions", "sessions.json");
+
+    await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () => {
+      resolveCronSessionMock.mockReturnValue(
+        makeCronSession({
+          storePath,
+          initialSessionEntry: undefined,
+          isNewSession: true,
+          sessionEntry: makeCronSessionEntry({ sessionId: "webhook-memory-subject-session" }),
+        }),
+      );
+
+      await expect(
+        runCronIsolatedAgentTurn(
+          makeIsolatedAgentParamsFixture({
+            agentId,
+            sessionKey: hookSessionKey,
+            job: makeIsolatedAgentJobFixture({
+              sessionTarget: `session:${hookSessionKey}`,
+              payload: {
+                kind: "agentTurn",
+                message: "externally sourced hook payload",
+                externalContentSource: "webhook",
+              },
+              delivery: { mode: "none" },
+            }),
+          }),
+        ),
+      ).resolves.toMatchObject({ status: "ok" });
+
+      expect(resolveCronSessionMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          agentId,
+          sessionKey: canonicalSessionKey,
+          hookExternalContentSource: "webhook",
+        }),
+      );
+      expect(
+        readCurrentSessionMemorySubject({
+          agentId,
+          sessionKey: canonicalSessionKey,
+          storePath,
+        })?.subject,
+      ).toEqual(prepareAutonomousAgentSessionMemorySubjectSeed(agentId).subject);
+    });
   });
 
   it("does not recreate a persistent session deleted during async setup", async () => {

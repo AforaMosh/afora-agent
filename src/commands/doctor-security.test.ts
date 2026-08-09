@@ -271,13 +271,13 @@ describe("noteSecurityWarnings gateway exposure", () => {
     expect(note).not.toHaveBeenCalled();
   });
 
-  it("shows explicit dmScope config command for multi-user DMs", async () => {
+  function installMultiUserDmPlugin(accountIds: string[]) {
     pluginRegistry.list = [
       {
         id: "test-channel",
         meta: { label: "Test Channel" },
         config: {
-          listAccountIds: () => ["default"],
+          listAccountIds: () => accountIds,
           inspectAccount: () => ({ enabled: true, configured: true }),
           resolveAccount: () => ({}),
           isEnabled: () => true,
@@ -293,7 +293,13 @@ describe("noteSecurityWarnings gateway exposure", () => {
         },
       },
     ];
-    const cfg = { session: { dmScope: "main" } } as OpenClawConfig;
+  }
+
+  it("prescribes per-channel-peer for a single-account multi-user DM without rewriting dmScope", async () => {
+    installMultiUserDmPlugin(["default"]);
+    const cfg = Object.freeze({
+      session: Object.freeze({ dmScope: "main" as const }),
+    }) as OpenClawConfig;
     await noteSecurityWarnings(cfg);
     expect(listReadOnlyChannelPluginsForConfigMock).toHaveBeenCalledWith(cfg, {
       includePersistedAuthState: true,
@@ -301,6 +307,21 @@ describe("noteSecurityWarnings gateway exposure", () => {
     });
     const message = lastMessage();
     expect(message).toContain('config set session.dmScope "per-channel-peer"');
+    expect(message).not.toContain("per-account-channel-peer");
+    expect(cfg.session?.dmScope).toBe("main");
+  });
+
+  it("prescribes per-account-channel-peer for a multi-account multi-user DM without rewriting dmScope", async () => {
+    installMultiUserDmPlugin(["primary", "secondary"]);
+    const cfg = Object.freeze({
+      session: Object.freeze({ dmScope: "main" as const }),
+    }) as OpenClawConfig;
+    await noteSecurityWarnings(cfg);
+
+    const message = lastMessage();
+    expect(message).toContain('config set session.dmScope "per-account-channel-peer"');
+    expect(message).not.toContain('session.dmScope "per-channel-peer"');
+    expect(cfg.session?.dmScope).toBe("main");
   });
 
   it("clarifies approvals.exec forwarding-only behavior", async () => {

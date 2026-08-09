@@ -3,9 +3,10 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import type { AssistantMessage } from "openclaw/plugin-sdk/llm";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { SessionManager } from "../../agents/sessions/session-manager.js";
 import { parseSqliteSessionFileMarker } from "./legacy-sqlite-marker.js";
+import { createSessionEntryWithTrustedMemorySubject } from "./session-accessor.entry-mutation.js";
 import {
   forkSessionEntryFromParentTarget,
   forkSessionFromParentTranscript,
@@ -14,6 +15,33 @@ import {
   replaceSessionEntry,
   replaceTranscriptEvents,
 } from "./session-accessor.js";
+import { readCurrentSessionMemorySubject } from "./session-memory-subject-access.js";
+import {
+  createTrustedSessionMemorySubjectIssuer,
+  createTrustedSessionMemorySubjectSeed,
+} from "./session-memory-subject-trust.js";
+
+const sourceReadProbe = vi.hoisted(() => ({
+  active: false,
+  transactionStates: [] as boolean[],
+}));
+
+vi.mock("./session-accessor.sqlite-read.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./session-accessor.sqlite-read.js")>();
+  return {
+    ...actual,
+    loadSqliteTranscriptEventsFromDatabase: (
+      database: Parameters<typeof actual.loadSqliteTranscriptEventsFromDatabase>[0],
+      sessionId: Parameters<typeof actual.loadSqliteTranscriptEventsFromDatabase>[1],
+      beforeEventSeq?: Parameters<typeof actual.loadSqliteTranscriptEventsFromDatabase>[2],
+    ) => {
+      if (sourceReadProbe.active) {
+        sourceReadProbe.transactionStates.push(database.db.isTransaction);
+      }
+      return actual.loadSqliteTranscriptEventsFromDatabase(database, sessionId, beforeEventSeq);
+    },
+  };
+});
 
 const roots: string[] = [];
 
@@ -68,10 +96,81 @@ function openForkedChildSession(storePath: string, sessionId: string): SessionMa
 }
 
 afterEach(async () => {
+  sourceReadProbe.active = false;
+  sourceReadProbe.transactionStates.length = 0;
   await Promise.all(roots.splice(0).map((root) => fs.rm(root, { recursive: true, force: true })));
 });
 
 describe("forkSessionFromParentTranscript", () => {
+  it("captures a cross-store transcript and subject under one source transaction", async () => {
+    const root = await makeRoot("openclaw-parent-fork-cross-store-snapshot-");
+    const sourceStorePath = path.join(root, "main", "sessions.json");
+    const targetStorePath = path.join(root, "worker", "sessions.json");
+    await Promise.all([
+      fs.mkdir(path.dirname(sourceStorePath), { recursive: true }),
+      fs.mkdir(path.dirname(targetStorePath), { recursive: true }),
+    ]);
+    const parentSessionId = "cross-store-parent";
+    const parentSessionKey = "agent:main:main";
+    const childSessionKey = "agent:worker:child";
+    const seed = createTrustedSessionMemorySubjectSeed({
+      subject: { version: 1, kind: "service", principalId: "cross-store-source" },
+      subjectRevision: "cross-store-source-revision",
+    });
+    const createdParent = await createSessionEntryWithTrustedMemorySubject(
+      { agentId: "main", sessionKey: parentSessionKey, storePath: sourceStorePath },
+      () => ({ ok: true as const, entry: { sessionId: parentSessionId, updatedAt: 1 } }),
+      createTrustedSessionMemorySubjectIssuer(() => seed),
+    );
+    expect(createdParent.ok).toBe(true);
+    await seedParentTranscript({
+      storePath: sourceStorePath,
+      parentSessionId,
+      events: [
+        { type: "session", version: 3, id: parentSessionId, timestamp: "2026-08-09T00:00:00Z" },
+        {
+          type: "message",
+          id: "source-message",
+          parentId: null,
+          message: { role: "user", content: "copy this source snapshot" },
+        },
+      ],
+    });
+
+    sourceReadProbe.active = true;
+    let forked: Awaited<ReturnType<typeof forkSessionFromParentTranscript>> | undefined;
+    try {
+      forked = await forkSessionFromParentTranscript({
+        parentEntry: { sessionId: parentSessionId, updatedAt: 1 },
+        agentId: "main",
+        parentSessionKey,
+        sessionKey: childSessionKey,
+        storePath: sourceStorePath,
+        targetStorePath,
+      });
+    } finally {
+      sourceReadProbe.active = false;
+    }
+
+    expect(forked?.status).toBe("created");
+    // The pre-fix path read the transcript before entering the source transaction,
+    // allowing a reset/rebind to mix generations before it copied the subject.
+    expect(sourceReadProbe.transactionStates).toEqual([true]);
+    if (forked?.status !== "created") {
+      throw new Error("expected cross-store fork");
+    }
+    expect(
+      readCurrentSessionMemorySubject({
+        agentId: "worker",
+        sessionKey: childSessionKey,
+        storePath: targetStorePath,
+      }),
+    ).toMatchObject({
+      subject: seed.subject,
+      subjectRevision: seed.subjectRevision,
+    });
+  });
+
   it("forks the active branch without synchronously opening the session manager", async () => {
     const root = await makeRoot("openclaw-parent-fork-");
     const sessionsDir = path.join(root, "sessions");

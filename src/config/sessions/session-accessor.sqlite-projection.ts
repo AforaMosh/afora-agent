@@ -55,6 +55,7 @@ import type {
   SqliteProjectedLifecycleMutation,
   SqliteSessionEntryMaintenancePlan,
   SqliteSessionEntryRemovalPlan,
+  TrustedSqliteSessionEntryLifecycleUpsert,
 } from "./session-accessor.sqlite-lifecycle-types.js";
 import {
   applySqliteSessionEntryMaintenance,
@@ -214,12 +215,11 @@ function readProjectedRemovalEntry(
   return projected.expectedEntry;
 }
 
-/** Applies exact lifecycle removals/upserts using SQLite session rows. */
-export async function applySqliteSessionEntryLifecycleMutation(params: {
+type SqliteSessionEntryLifecycleMutationParams<TUpsert extends SessionEntryLifecycleUpsert> = {
   agentId?: string;
   storePath: string;
   removals?: Iterable<SessionEntryLifecycleRemoval>;
-  upserts?: Iterable<SessionEntryLifecycleUpsert>;
+  upserts?: Iterable<TUpsert>;
   activeSessionKey?: string;
   maintenanceOverride?: Partial<ResolvedSessionMaintenanceConfig>;
   skipMaintenance?: boolean;
@@ -232,7 +232,22 @@ export async function applySqliteSessionEntryLifecycleMutation(params: {
   allowCanonicalRepair?: boolean;
   /** Doctor-only synchronous state transfer that commits with the destination entry. */
   afterUpsertsInTransaction?: (database: OpenClawAgentDatabase) => void;
-}): Promise<SessionEntryLifecycleMutationResult> {
+};
+
+/** Applies exact public lifecycle removals/upserts using SQLite session rows. */
+export async function applySqliteSessionEntryLifecycleMutation(
+  params: SqliteSessionEntryLifecycleMutationParams<SessionEntryLifecycleUpsert>,
+): Promise<SessionEntryLifecycleMutationResult> {
+  return await applySqliteSessionEntryLifecycleMutationWithTrustedMemorySubjects(params);
+}
+
+/**
+ * Core-only lifecycle writer. The branded issuer stays in process until the
+ * synchronous entry commit; it never crosses the public accessor contract.
+ */
+export async function applySqliteSessionEntryLifecycleMutationWithTrustedMemorySubjects(
+  params: SqliteSessionEntryLifecycleMutationParams<TrustedSqliteSessionEntryLifecycleUpsert>,
+): Promise<SessionEntryLifecycleMutationResult> {
   const resolved = resolveSqliteScope({
     ...(params.agentId ? { agentId: params.agentId } : {}),
     sessionKey: "",
@@ -308,9 +323,11 @@ export async function applySqliteSessionEntryLifecycleMutation(params: {
         { canonicalKey: string; rehomeMembers: boolean }
       >();
       for (const {
+        deferMemorySubjectPersistence,
         sessionKey,
         entry,
         expectedEntry,
+        memorySubjectIssuer,
         resetBoundaryPlan,
       } of projected.upsertedEntries) {
         const sameKeyRemoval = validatedRemovals.find(
@@ -348,17 +365,20 @@ export async function applySqliteSessionEntryLifecycleMutation(params: {
             throw new Error(`Failed to append reset boundary for ${sessionKey}`);
           }
         }
-        writeSessionEntry(transactionDb, sessionKey, entry, {
-          allowStoredAliases: params.allowCanonicalRepair === true,
-          preserveNodeSuggestions: params.allowCanonicalRepair === true,
-          previousEntry: expectedCurrentEntry ?? null,
-        });
         const relatedRemovalKeys = validatedRemovals.flatMap((removal) => {
           const removedSessionId = removal.expectedEntry.sessionId;
           return removal.sessionKey !== sessionKey &&
             (removedSessionId === entry.sessionId || removedSessionId === entry.previousSessionId)
             ? [removal.sessionKey]
             : [];
+        });
+        writeSessionEntry(transactionDb, sessionKey, entry, {
+          allowStoredAliases: params.allowCanonicalRepair === true,
+          ...(deferMemorySubjectPersistence ? { deferMemorySubjectPersistence } : {}),
+          preserveNodeSuggestions: params.allowCanonicalRepair === true,
+          previousEntry: expectedCurrentEntry ?? null,
+          ...(memorySubjectIssuer ? { memorySubjectIssuer } : {}),
+          memorySubjectAliasSourceKeys: relatedRemovalKeys,
         });
         rehomeSqliteSessionWindows(transactionDb, sessionKey, relatedRemovalKeys);
         for (const legacyKey of relatedRemovalKeys) {

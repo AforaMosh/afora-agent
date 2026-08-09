@@ -14,7 +14,6 @@ import {
 } from "./session-accessor.sqlite-entry-store.js";
 import { emitCommittedSessionIdentityDiff } from "./session-accessor.sqlite-identity.js";
 import {
-  formatSqliteSessionReferenceForScope,
   getSessionKysely,
   normalizeSqliteSessionKey,
   resolveSqliteScope,
@@ -26,6 +25,7 @@ import {
   appendTranscriptEventsInTransaction,
   readTranscriptIdentityByEventId,
 } from "./session-accessor.sqlite-transcript-store.js";
+import { prepareCurrentSessionMemorySubjectLineageSeedInTransaction } from "./session-memory-subject.js";
 import { createSessionTranscriptHeader } from "./transcript-header.js";
 import {
   SESSION_TOTAL_TOKENS_VERSION,
@@ -46,6 +46,13 @@ type SqliteCompactionCheckpointLegacySource = {
   events: TranscriptEvent[];
   sessionFile: string;
   sourceLeafId?: string;
+  totalTokens?: number;
+};
+
+type SqliteCheckpointTranscriptFork = {
+  cwd?: string;
+  events: TranscriptEvent[];
+  sessionId: string;
   totalTokens?: number;
 };
 
@@ -183,15 +190,18 @@ function branchSqliteCompactionCheckpointSessionInTransaction(
   if (!checkpoint) {
     return { status: "missing-checkpoint" };
   }
-  const forked = forkSqliteCheckpointTranscriptInTransaction(database, params.resolved, {
+  const forked = prepareSqliteCheckpointTranscriptForkInTransaction(database, {
     checkpoint,
     legacySource: params.legacySource,
-    targetSessionKey: params.targetKey,
   });
   if (forked.status !== "created") {
     return forked;
   }
 
+  const lineageSeed = prepareCurrentSessionMemorySubjectLineageSeedInTransaction(
+    database,
+    params.sourceKey,
+  );
   const label = currentEntry.label?.trim()
     ? `${currentEntry.label.trim()} (checkpoint)`
     : "Checkpoint branch";
@@ -202,7 +212,17 @@ function branchSqliteCompactionCheckpointSessionInTransaction(
     parentSessionKey: params.parentSessionKey,
     totalTokens: forked.totalTokens,
   });
-  writeSessionEntry(database, params.targetKey, nextEntry);
+  // The child header materializes its root when no entry exists. Persist the
+  // lineage-seeded entry first so it cannot capture an unbound subject.
+  writeSessionEntry(database, params.targetKey, nextEntry, {
+    ...(lineageSeed ? { memorySubjectSeed: lineageSeed } : {}),
+  });
+  appendSqliteCheckpointTranscriptForkInTransaction(
+    database,
+    params.resolved,
+    params.targetKey,
+    forked,
+  );
   return {
     status: "created",
     key: params.targetKey,
@@ -232,22 +252,35 @@ function restoreSqliteCompactionCheckpointSessionInTransaction(
   if (!checkpoint) {
     return { status: "missing-checkpoint" };
   }
-  const restored = forkSqliteCheckpointTranscriptInTransaction(database, params.resolved, {
+  const restored = prepareSqliteCheckpointTranscriptForkInTransaction(database, {
     checkpoint,
     legacySource: params.legacySource,
-    targetSessionKey: params.targetKey,
   });
   if (restored.status !== "created") {
     return restored;
   }
 
+  const lineageSeed = prepareCurrentSessionMemorySubjectLineageSeedInTransaction(
+    database,
+    params.sourceKey,
+  );
   const nextEntry = cloneSqliteCheckpointSessionEntry({
     currentEntry,
     nextSessionId: restored.sessionId,
     preserveCompactionCheckpoints: true,
     totalTokens: restored.totalTokens,
   });
-  writeSessionEntry(database, params.targetKey, nextEntry);
+  // A restore replaces its source node, so capture lineage before the write and
+  // persist the child entry before its header establishes a transcript root.
+  writeSessionEntry(database, params.targetKey, nextEntry, {
+    ...(lineageSeed ? { memorySubjectSeed: lineageSeed } : {}),
+  });
+  appendSqliteCheckpointTranscriptForkInTransaction(
+    database,
+    params.resolved,
+    params.targetKey,
+    restored,
+  );
   return {
     status: "created",
     key: params.targetKey,
@@ -256,21 +289,14 @@ function restoreSqliteCompactionCheckpointSessionInTransaction(
   };
 }
 
-function forkSqliteCheckpointTranscriptInTransaction(
+function prepareSqliteCheckpointTranscriptForkInTransaction(
   database: OpenClawAgentDatabase,
-  resolved: ResolvedSqliteScope,
   params: {
     checkpoint: SessionCompactionCheckpoint;
     legacySource?: SqliteCompactionCheckpointLegacySource;
-    targetSessionKey: string;
   },
 ):
-  | {
-      status: "created";
-      sessionId: string;
-      sessionFile: string;
-      totalTokens?: number;
-    }
+  | ({ status: "created" } & SqliteCheckpointTranscriptFork)
   | { status: "missing-boundary" }
   | { status: "failed" } {
   const sources = resolveSqliteCheckpointTranscriptForkSources(params.checkpoint);
@@ -302,27 +328,35 @@ function forkSqliteCheckpointTranscriptInTransaction(
   }
 
   const sessionId = randomUUID();
-  const targetScope = {
-    ...resolved,
-    sessionId,
-    sessionKey: params.targetSessionKey,
-  };
-  const sessionFile = formatSqliteSessionReferenceForScope(targetScope);
   const selectedEvents = selected?.rows ?? legacySource?.events ?? [];
   const totalTokens = selected?.source.totalTokens ?? legacySource?.totalTokens;
-  appendTranscriptEventsInTransaction(database, targetScope, [
-    createSessionTranscriptHeader({
-      cwd: readTranscriptHeaderCwd(selectedEvents),
-      sessionId,
-    }),
-    ...selectedEvents.filter((event) => !isSessionTranscriptHeader(event)),
-  ]);
   return {
     status: "created",
+    cwd: readTranscriptHeaderCwd(selectedEvents),
+    events: selectedEvents.filter((event) => !isSessionTranscriptHeader(event)),
     sessionId,
-    sessionFile,
     ...(typeof totalTokens === "number" ? { totalTokens } : {}),
   };
+}
+
+function appendSqliteCheckpointTranscriptForkInTransaction(
+  database: OpenClawAgentDatabase,
+  resolved: ResolvedSqliteScope,
+  targetSessionKey: string,
+  forked: SqliteCheckpointTranscriptFork,
+): void {
+  appendTranscriptEventsInTransaction(
+    database,
+    {
+      ...resolved,
+      sessionId: forked.sessionId,
+      sessionKey: targetSessionKey,
+    },
+    [
+      createSessionTranscriptHeader({ cwd: forked.cwd, sessionId: forked.sessionId }),
+      ...forked.events,
+    ],
+  );
 }
 
 function resolvePreparedLegacyCheckpointSource(

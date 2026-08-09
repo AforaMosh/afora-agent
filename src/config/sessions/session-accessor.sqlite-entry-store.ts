@@ -42,6 +42,13 @@ import {
   canonicalSessionKeyMigrationRequiredError,
 } from "./session-canonical-key.js";
 import { parseSqliteSessionEntryRecord } from "./session-entry-json.js";
+import {
+  persistSessionMemorySubjectInTransaction,
+  rehomeSessionMemorySubjectAliases,
+  tryRehomeSessionMemorySubjectSnapshot,
+  type TrustedSessionMemorySubjectIssuer,
+  type TrustedSessionMemorySubjectSeed,
+} from "./session-memory-subject.js";
 import { projectCanonicalSessionEntryShape } from "./store-entry-shape.js";
 import {
   collectSessionEntryLookupKeys,
@@ -376,13 +383,25 @@ export function deleteSqliteSessionEntryRows(
         : false;
     });
     if (survivingNode) {
-      executeSqliteQuerySync(
-        database.db,
-        db
-          .updateTable("session_windows")
-          .set({ session_key: survivingNode.session_key })
-          .where("session_id", "=", window.session_id),
-      );
+      // A retained transcript window may only follow a new logical key when
+      // both immutable subjects match. Otherwise preserve its source tombstone
+      // rather than letting deletion turn a cross-key reference into lineage.
+      if (
+        tryRehomeSessionMemorySubjectSnapshot({
+          database,
+          sessionId: window.session_id,
+          sourceSessionKey: sessionKey,
+          targetSessionKey: survivingNode.session_key,
+        })
+      ) {
+        executeSqliteQuerySync(
+          database.db,
+          db
+            .updateTable("session_windows")
+            .set({ session_key: survivingNode.session_key })
+            .where("session_id", "=", window.session_id),
+        );
+      }
     }
   }
   if (options.deleteOwnedWindows) {
@@ -538,6 +557,9 @@ export function deleteLegacySessionEntryRows(
   if (legacyKeys.length === 0) {
     return;
   }
+  // Subject snapshots reference the logical key independently from transcript
+  // windows, so move immutable provenance before alias deletion can cascade it.
+  rehomeSessionMemorySubjectAliases(database, sessionKey, legacyKeys);
   const db = getSessionKysely(database.db);
   for (const legacyKey of legacyKeys) {
     if (legacyKey === sessionKey) {
@@ -575,13 +597,75 @@ export function rehomeSqliteSessionWindows(
   );
 }
 
+function hasExistingLogicalSessionIdentity(params: {
+  database: OpenClawAgentDatabase;
+  entry: SessionEntry;
+  sessionKey: string;
+  aliasSourceSessionKeys?: Iterable<string>;
+}): boolean {
+  const { database, entry, sessionKey } = params;
+  const db = getSessionKysely(database.db);
+  const sessionKeys = uniqueStrings(
+    [
+      ...collectSessionEntryLookupKeys(database, sessionKey),
+      ...(params.aliasSourceSessionKeys ?? []),
+    ].map((key) => key.trim()),
+  ).filter(Boolean);
+  const sessionIds = uniqueStrings(
+    [entry.sessionId, entry.previousSessionId]
+      .map((value) => value?.trim())
+      .filter((value): value is string => Boolean(value)),
+  );
+
+  // A node or window can outlive its parsed entry during repair, alias migration, or
+  // transcript adoption. An issuer may mint authority only for a truly new logical session.
+  return Boolean(
+    executeSqliteQueryTakeFirstSync(
+      database.db,
+      db
+        .selectFrom("session_nodes")
+        .select("session_key")
+        .where("session_key", "in", sessionKeys)
+        .limit(1),
+    ) ??
+    executeSqliteQueryTakeFirstSync(
+      database.db,
+      db
+        .selectFrom("session_nodes")
+        .select("session_key")
+        .where("current_session_id", "in", sessionIds)
+        .limit(1),
+    ) ??
+    executeSqliteQueryTakeFirstSync(
+      database.db,
+      db
+        .selectFrom("session_windows")
+        .select("session_id")
+        .where("session_key", "in", sessionKeys)
+        .limit(1),
+    ) ??
+    executeSqliteQueryTakeFirstSync(
+      database.db,
+      db
+        .selectFrom("session_windows")
+        .select("session_id")
+        .where("session_id", "in", sessionIds)
+        .limit(1),
+    ),
+  );
+}
+
 export function writeSessionEntry(
   database: OpenClawAgentDatabase,
   sessionKey: string,
   entry: SessionEntry,
   options: {
     allowStoredAliases?: boolean;
+    deferMemorySubjectPersistence?: true;
     preserveNodeSuggestions?: boolean;
+    memorySubjectIssuer?: TrustedSessionMemorySubjectIssuer;
+    memorySubjectSeed?: TrustedSessionMemorySubjectSeed;
+    memorySubjectAliasSourceKeys?: Iterable<string>;
     previousEntry?: SessionEntry | null;
   } = {},
 ): void {
@@ -642,6 +726,16 @@ export function writeSessionEntry(
     entry: normalizedEntry,
     sessionScope: boundSessionRoot.session_scope,
   });
+  const memorySubjectIssuer =
+    options.memorySubjectIssuer &&
+    !hasExistingLogicalSessionIdentity({
+      database,
+      entry: normalizedEntry,
+      sessionKey,
+      aliasSourceSessionKeys: options.memorySubjectAliasSourceKeys,
+    })
+      ? options.memorySubjectIssuer
+      : undefined;
   if (conversation) {
     upsertConversationIdentity(database, conversation.identity, updatedAt);
   }
@@ -738,6 +832,20 @@ export function writeSessionEntry(
       sessionId: sessionRow.session_id,
       conversation,
       updatedAt,
+    });
+  }
+  if (!options.deferMemorySubjectPersistence) {
+    persistSessionMemorySubjectInTransaction({
+      database,
+      sessionKey,
+      sessionId: sessionRow.session_id,
+      sessionScope: boundSessionRoot.session_scope,
+      ...(memorySubjectIssuer ? { issuer: memorySubjectIssuer } : {}),
+      ...(options.memorySubjectSeed ? { seed: options.memorySubjectSeed } : {}),
+      ...(options.memorySubjectAliasSourceKeys
+        ? { aliasSourceSessionKeys: options.memorySubjectAliasSourceKeys }
+        : {}),
+      now: updatedAt,
     });
   }
   publishSqliteSessionEntryCacheInvalidation(database, sessionNode);

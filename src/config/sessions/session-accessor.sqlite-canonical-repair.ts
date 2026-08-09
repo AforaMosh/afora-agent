@@ -29,6 +29,7 @@ import { bindSqliteSessionWindowEntryProjection } from "./session-accessor.sqlit
 import { parseSqliteSessionEntryJson } from "./session-accessor.sqlite-status.js";
 import type { SessionEntryListScope } from "./session-accessor.types.js";
 import { canonicalSessionKeyMigrationRequiredError } from "./session-canonical-key.js";
+import { copySessionMemorySubjectStateForCanonicalRepair } from "./session-memory-subject-persistence.js";
 import {
   deleteSessionTranscriptIndexInTransaction,
   reconcileSessionTranscriptIndexInTransaction,
@@ -553,6 +554,17 @@ function copySqliteSessionOwnedStateForRepair(params: {
           conflict.column("session_id").doUpdateSet({ session_key: params.canonicalKey }),
         ),
     );
+  }
+  const sourceSubjectKey =
+    params.preferredSessionKey ?? (sourceKeys.length === 1 ? sourceKeys[0] : undefined);
+  if (sourceSubjectKey) {
+    copySessionMemorySubjectStateForCanonicalRepair({
+      canonicalKey: params.canonicalKey,
+      destination: params.destination,
+      sessionIds,
+      source: params.source,
+      sourceSessionKey: sourceSubjectKey,
+    });
   }
   for (const link of sessionLinks) {
     executeSqliteQuerySync(

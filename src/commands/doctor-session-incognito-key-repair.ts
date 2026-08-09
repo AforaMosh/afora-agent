@@ -12,6 +12,7 @@ import {
   type OpenClawAgentDatabase,
   runOpenClawAgentWriteTransaction,
 } from "../state/openclaw-agent-db.js";
+import { tableExists } from "../state/openclaw-state-db-schema-helpers.js";
 import {
   openOpenClawStateDatabase,
   runOpenClawStateWriteTransaction,
@@ -173,9 +174,74 @@ function applyReservedIncognitoKeyRenames(
   // Board widget foreign keys are immediate; defer them so every key-bearing row renames atomically.
   database.db.exec("PRAGMA defer_foreign_keys = ON;"); // sqlite-allow-raw -- transaction-local FK deferral.
   for (const rename of renames) {
+    rehomeSessionMemorySubjectForReservedKeyRename(database.db, rename);
     updateSessionKeyColumns(database.db, rename);
   }
   rewriteSessionEntryJsonReferences(database, new Map(renames.map((item) => [item.from, item.to])));
+}
+
+function rehomeSessionMemorySubjectForReservedKeyRename(
+  database: DatabaseSync,
+  rename: ReservedKeyRename,
+): void {
+  // Subjects are an additive lazy surface. Doctor must not create it while
+  // repairing an unrelated key in a valid older agent database.
+  if (!tableExists(database, "session_memory_subjects")) {
+    return;
+  }
+  const db = getNodeSqliteKysely<OpenClawAgentKyselyDatabase>(database);
+  const subject = executeSqliteQuerySync(
+    database,
+    db.selectFrom("session_memory_subjects").selectAll().where("session_key", "=", rename.from),
+  ).rows[0];
+  if (!subject) {
+    return;
+  }
+  const target = executeSqliteQuerySync(
+    database,
+    db
+      .selectFrom("session_memory_subjects")
+      .select("session_key")
+      .where("session_key", "=", rename.to),
+  ).rows[0];
+  if (target) {
+    throw new Error(
+      `Cannot rehome immutable session memory subject because ${rename.to} already exists`,
+    );
+  }
+
+  // Subject rows reject updates. Copy the exact audit record before moving its
+  // snapshots, then delete the old row while this transaction defers foreign keys.
+  executeSqliteQuerySync(
+    database,
+    db.insertInto("session_memory_subjects").values({ ...subject, session_key: rename.to }),
+  );
+  const snapshots = tableExists(database, "session_memory_subject_snapshots")
+    ? executeSqliteQuerySync(
+        database,
+        db
+          .selectFrom("session_memory_subject_snapshots")
+          .selectAll()
+          .where("session_key", "=", rename.from),
+      ).rows
+    : [];
+  for (const snapshot of snapshots) {
+    if (snapshot.subject_revision !== subject.subject_revision) {
+      throw new Error(`Cannot rehome session memory subject snapshot for ${snapshot.session_id}`);
+    }
+    executeSqliteQuerySync(
+      database,
+      db
+        .updateTable("session_memory_subject_snapshots")
+        .set({ session_key: rename.to })
+        .where("session_id", "=", snapshot.session_id)
+        .where("session_key", "=", rename.from),
+    );
+  }
+  executeSqliteQuerySync(
+    database,
+    db.deleteFrom("session_memory_subjects").where("session_key", "=", rename.from),
+  );
 }
 
 function legacyIncognitoSessionKey(sessionKey: string): string {

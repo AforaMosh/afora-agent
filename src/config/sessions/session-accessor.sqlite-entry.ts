@@ -73,6 +73,7 @@ import {
 import { preserveSqliteSameKeySessionRolloverLineage } from "./session-entry-lineage.js";
 import { buildSessionCreationStamp } from "./session-entry-provenance.js";
 import { kickSessionHistoryDiskBudgetMaintenance } from "./session-history-eviction.js";
+import type { TrustedSessionMemorySubjectIssuer } from "./session-memory-subject.js";
 import { resolveSessionStorePathForScope } from "./session-store-path.js";
 import { resolveDeliveryProvenCanonicalSessionKey } from "./store-entry.js";
 import type { GroupKeyResolution, SessionEntry } from "./types.js";
@@ -81,6 +82,7 @@ import { mergeSessionEntry, mergeSessionEntryPreserveActivity } from "./types.js
 // Public entry API. Async preparation precedes BEGIN; commit revalidates repository snapshots.
 
 type SqliteSessionEntryPatchOptions = SessionEntryPatchOptions & {
+  memorySubjectIssuer?: TrustedSessionMemorySubjectIssuer;
   skipMaintenance?: boolean;
 };
 
@@ -419,6 +421,18 @@ export async function upsertSqliteSessionEntry(
   });
 }
 
+/** Core-only first-writer path; the issuer is never part of stable accessor options. */
+export async function upsertSqliteSessionEntryWithTrustedMemorySubject(
+  scope: SessionAccessScope,
+  patch: Partial<SessionEntry>,
+  memorySubjectIssuer: TrustedSessionMemorySubjectIssuer,
+): Promise<SessionEntry | null> {
+  return await patchSqliteSessionEntryWithOptions(scope, () => patch, {
+    fallbackEntry: createFallbackSessionEntry(patch),
+    memorySubjectIssuer,
+  });
+}
+
 /** Replaces one entry in the additive SQLite session store. */
 export async function replaceSqliteSessionEntry(
   scope: SessionAccessScope,
@@ -484,6 +498,17 @@ export async function patchSqliteSessionEntry(
     entry: SessionEntry,
     context: SessionEntryPatchContext,
   ) => Promise<Partial<SessionEntry> | null> | Partial<SessionEntry> | null,
+  options: SessionEntryPatchOptions = {},
+): Promise<SessionEntry | null> {
+  return await patchSqliteSessionEntryWithOptions(scope, update, options);
+}
+
+async function patchSqliteSessionEntryWithOptions(
+  scope: SessionAccessScope,
+  update: (
+    entry: SessionEntry,
+    context: SessionEntryPatchContext,
+  ) => Promise<Partial<SessionEntry> | null> | Partial<SessionEntry> | null,
   options: SqliteSessionEntryPatchOptions = {},
 ): Promise<SessionEntry | null> {
   const resolved = resolveSqliteScope(scope);
@@ -512,6 +537,33 @@ export async function patchSqliteSessionEntry(
 
 /** Patches one logical entry selected from a canonical key and alias set. */
 export async function patchSqliteSessionEntryTarget(
+  scope: SessionEntryTargetPatchScope,
+  update: (
+    entry: SessionEntry,
+    context: SessionEntryPatchContext,
+  ) => Promise<Partial<SessionEntry> | null> | Partial<SessionEntry> | null,
+  options: SessionEntryPatchOptions = {},
+): Promise<SessionEntry | null> {
+  return await patchSqliteSessionEntryTargetWithOptions(scope, update, options);
+}
+
+/** Core-only target patch path; the issuer is intentionally separate from public options. */
+export async function patchSqliteSessionEntryTargetWithTrustedMemorySubject(
+  scope: SessionEntryTargetPatchScope,
+  update: (
+    entry: SessionEntry,
+    context: SessionEntryPatchContext,
+  ) => Promise<Partial<SessionEntry> | null> | Partial<SessionEntry> | null,
+  memorySubjectIssuer: TrustedSessionMemorySubjectIssuer,
+  options: SessionEntryPatchOptions = {},
+): Promise<SessionEntry | null> {
+  return await patchSqliteSessionEntryTargetWithOptions(scope, update, {
+    ...options,
+    memorySubjectIssuer,
+  });
+}
+
+async function patchSqliteSessionEntryTargetWithOptions(
   scope: SessionEntryTargetPatchScope,
   update: (
     entry: SessionEntry,
@@ -610,6 +662,10 @@ async function patchSqliteSessionEntrySnapshot<TSnapshot>(
       const selectedPreviousEntry = params.existingEntry(fresh) ?? writeBase;
       writeSessionEntry(writeDatabase, sessionKey, next, {
         previousEntry: selectedPreviousEntry,
+        ...(options.memorySubjectIssuer
+          ? { memorySubjectIssuer: options.memorySubjectIssuer }
+          : {}),
+        memorySubjectAliasSourceKeys: legacyKeys,
       });
       if (params.rehomeWindows) {
         rehomeSqliteSessionWindows(writeDatabase, sessionKey, legacyKeys);
@@ -655,8 +711,35 @@ export async function recordSqliteInboundSessionMeta(params: {
   groupResolution?: GroupKeyResolution | null;
   createIfMissing?: boolean;
 }): Promise<SessionEntry | null> {
+  return await recordSqliteInboundSessionMetaWithOptions(params);
+}
+
+/** Core-only inbound first-writer path; do not expose this issuer through accessor options. */
+export async function recordSqliteInboundSessionMetaWithTrustedMemorySubject(
+  params: {
+    storePath: string;
+    sessionKey: string;
+    ctx: MsgContext;
+    groupResolution?: GroupKeyResolution | null;
+    createIfMissing?: boolean;
+  },
+  memorySubjectIssuer: TrustedSessionMemorySubjectIssuer,
+): Promise<SessionEntry | null> {
+  return await recordSqliteInboundSessionMetaWithOptions(params, memorySubjectIssuer);
+}
+
+async function recordSqliteInboundSessionMetaWithOptions(
+  params: {
+    storePath: string;
+    sessionKey: string;
+    ctx: MsgContext;
+    groupResolution?: GroupKeyResolution | null;
+    createIfMissing?: boolean;
+  },
+  memorySubjectIssuer?: TrustedSessionMemorySubjectIssuer,
+): Promise<SessionEntry | null> {
   const createIfMissing = params.createIfMissing ?? true;
-  return await patchSqliteSessionEntry(
+  return await patchSqliteSessionEntryWithOptions(
     { sessionKey: params.sessionKey, storePath: params.storePath },
     (_entry, context) => {
       const metadataPatch = deriveSessionMetaPatch({
@@ -683,6 +766,7 @@ export async function recordSqliteInboundSessionMeta(params: {
       // Inbound metadata must not refresh activity timestamps; idle reset
       // evaluation relies on updatedAt from actual session turns.
       preserveActivity: true,
+      ...(memorySubjectIssuer ? { memorySubjectIssuer } : {}),
       ...(createIfMissing ? { fallbackEntry: mergeSessionEntry(undefined, {}) } : {}),
     },
   );

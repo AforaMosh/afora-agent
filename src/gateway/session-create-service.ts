@@ -35,10 +35,13 @@ import {
 import type { SessionEntry } from "../config/sessions.js";
 import { resolveAgentMainSessionKey } from "../config/sessions/main-session.js";
 import { resolveStorePath } from "../config/sessions/paths.js";
+import { createSessionEntryWithTrustedMemorySubject } from "../config/sessions/session-accessor.entry-mutation.js";
 import {
   createSessionEntryWithTranscript,
   listSessionEntriesReadOnly,
   resolveSessionEntryAccessTarget,
+  type SessionEntryCreateWithTranscriptContext,
+  type SessionEntryCreateWithTranscriptPrepareResult,
 } from "../config/sessions/session-accessor.js";
 import {
   buildSessionCreationStamp,
@@ -46,6 +49,7 @@ import {
   type SessionCreatedVia,
 } from "../config/sessions/session-entry-provenance.js";
 import { inheritSessionSelection } from "../config/sessions/session-entry-selection.js";
+import type { TrustedSessionMemorySubjectIssuer } from "../config/sessions/session-memory-subject.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import {
   createInternalHookEvent,
@@ -276,6 +280,8 @@ export async function createGatewaySession(params: {
   requestingOperatorScopes?: readonly string[];
   /** Trusted in-process creation provenance; never populated from public Gateway params. */
   creation?: { via: SessionCreatedVia; actor?: SessionCreatedActor };
+  /** Core-only issuer for a durable first-write memory subject. */
+  memorySubjectIssuer?: TrustedSessionMemorySubjectIssuer;
   /** Exact harness namespace authorized by the scoped plugin runtime. */
   authorizedAgentHarnessId?: string;
   /** Exact plugin namespace authorized by the scoped plugin runtime. */
@@ -521,6 +527,9 @@ export async function createGatewaySession(params: {
   const parentIncognito =
     parentSessionEntry?.incognito === true || isIncognitoSessionKey(canonicalParentSessionKey);
   const incognito = params.incognito === true || parentIncognito;
+  // Incognito sessions deliberately have no durable identity. Do not allow a
+  // server-attested issuer to escape its storage boundary through this writer.
+  const memorySubjectIssuer = incognito ? undefined : params.memorySubjectIssuer;
   if (
     incognito &&
     params.requestingOperatorScopes !== undefined &&
@@ -775,348 +784,357 @@ export async function createGatewaySession(params: {
     }
 
     const target = creationTarget;
-    const created = await createSessionEntryWithTranscript<ErrorShape>(
-      {
-        agentId: target.agentId,
-        sessionKey: target.canonicalKey,
-        storePath: target.storePath,
-      },
-      async ({ existingEntry, sessionEntries }) => {
-        // This callback owns generated and explicit keys alike; no existing row
-        // is the canonical signal that this request will actually create one.
-        const existingOwnershipError = resolvePluginSessionOwnershipError({
-          action: "adopt",
-          entry: existingEntry,
-          key: target.canonicalKey,
-          pluginOwnerId: params.authorizedPluginId,
-        });
-        if (existingOwnershipError) {
-          return { ok: false, error: existingOwnershipError };
-        }
-        if (
-          isAgentHarnessSessionKey(target.canonicalKey) &&
-          !authorizedHarnessCreation &&
-          (!existingEntry || existingEntry.modelSelectionLocked === true)
-        ) {
-          return {
-            ok: false,
-            error: errorShape(
-              ErrorCodes.INVALID_REQUEST,
-              AGENT_HARNESS_SESSION_KEY_RESERVED_MESSAGE,
-            ),
-          };
-        }
-        if (!params.initialEntry && existingEntry?.initializationPending === true) {
-          return {
-            ok: false,
-            error: errorShape(
-              ErrorCodes.UNAVAILABLE,
-              `Session ${target.canonicalKey} is still initializing; retry creation later.`,
-            ),
-          };
-        }
-        if (params.initialEntry && existingEntry !== undefined) {
-          return {
-            ok: false,
-            error: errorShape(
-              ErrorCodes.INVALID_REQUEST,
-              "trusted initial session state requires a new session",
-            ),
-          };
-        }
-        if (params.catalogTarget && existingEntry !== undefined) {
-          return {
-            ok: false,
-            error: errorShape(
-              ErrorCodes.INVALID_REQUEST,
-              "catalog session target requires a new session",
-            ),
-          };
-        }
-        if (spawnToolPolicy && existingEntry !== undefined) {
-          return {
-            ok: false,
-            error: errorShape(
-              ErrorCodes.INVALID_REQUEST,
-              "spawn tool policy requires a new session",
-            ),
-          };
-        }
-        if (
-          params.visibility &&
-          existingEntry === undefined &&
-          !isSessionVisibilityAllowed(params.cfg, params.visibility)
-        ) {
-          return {
-            ok: false,
-            error: errorShape(
-              ErrorCodes.INVALID_REQUEST,
-              `session visibility is disabled: ${params.visibility}`,
-              { details: { code: "SESSION_VISIBILITY_DISABLED", visibility: params.visibility } },
-            ),
-          };
-        }
-        if (
-          params.visibility &&
-          existingEntry !== undefined &&
-          resolveSessionVisibility(existingEntry) !== params.visibility
-        ) {
-          return {
-            ok: false,
-            error: errorShape(
-              ErrorCodes.INVALID_REQUEST,
-              "sessions.create visibility requires a new session",
-            ),
-          };
-        }
-        // Adoption of an existing key must not stamp provenance or emit a
-        // `created` event; only a genuinely new row is a node creation.
-        createdNewEntry = existingEntry === undefined;
-        const requestedModel = normalizeOptionalString(params.model);
-        const requestedThinkingLevel = normalizeOptionalString(params.thinkingLevel);
-        if (existingEntry?.sessionId && params.allowExistingModelSelection !== true) {
-          const gateDefaultModel = resolveDefaultModelForAgent({
-            cfg: params.cfg,
-            agentId: target.agentId,
-          });
-          const modelSelectionWouldChange = await existingModelSelectionWouldChange({
-            agentId: target.agentId,
-            cfg: params.cfg,
-            catalogModel,
-            defaultModel: gateDefaultModel.model,
-            defaultProvider: gateDefaultModel.provider,
-            existingEntry,
-            loadGatewayModelCatalog: params.loadGatewayModelCatalog,
-            requestedModel,
-            requestedThinkingLevel,
-            subagentModelHint: isSubagentSessionKey(target.canonicalKey)
-              ? resolveSubagentConfiguredModelSelection({
-                  cfg: params.cfg,
-                  agentId: target.agentId,
-                })
-              : undefined,
-          });
-          if (modelSelectionWouldChange) {
-            return {
-              ok: false,
-              error: missingScopeErrorShape({
-                missingScope: ADMIN_SCOPE,
-                requiredScopes: [ADMIN_SCOPE],
-              }),
-            };
-          }
-        }
-        const patched = await projectSessionsPatchEntry({
-          cfg: params.cfg,
-          existingEntry: sessionEntries[target.canonicalKey],
-          isLabelInUse: (label) =>
-            Object.entries(sessionEntries).some(
-              ([sessionKey, entry]) => sessionKey !== target.canonicalKey && entry.label === label,
-            ),
-          storeKey: target.canonicalKey,
-          agentId: target.agentId,
-          patch: {
-            key: target.canonicalKey,
-            label: normalizeOptionalString(params.label),
-            model: catalogModel ?? requestedModel,
-            thinkingLevel: requestedThinkingLevel,
-          },
-          loadGatewayModelCatalog: params.loadGatewayModelCatalog,
-          authorizedAgentHarnessId: params.authorizedAgentHarnessId,
-        });
-        if (!patched.ok) {
-          return patched;
-        }
-        sessionEntries[target.canonicalKey] = patched.entry;
-        const spawnedCwd = normalizeOptionalString(params.spawnedCwd);
-        const execNode = normalizeOptionalString(params.execNode);
-        const execCwd = normalizeOptionalString(params.execCwd);
-        const initialAgentHarnessId = params.initialEntry
-          ? normalizeOptionalString(params.initialEntry.agentHarnessId)
-          : undefined;
-        if (params.initialEntry && !initialAgentHarnessId && !authorizedPluginCreation) {
-          return {
-            ok: false,
-            error: errorShape(
-              ErrorCodes.INVALID_REQUEST,
-              params.initialEntry?.agentHarnessId !== undefined
-                ? "initial agentHarnessId must be non-empty"
-                : "trusted initial session state requires an authorized owner",
-            ),
-          };
-        }
-        if (
-          params.initialEntry?.modelSelectionLocked !== undefined &&
-          !params.initialEntry.modelSelectionLocked
-        ) {
-          return {
-            ok: false,
-            error: errorShape(
-              ErrorCodes.INVALID_REQUEST,
-              "initial modelSelectionLocked must be true when provided",
-            ),
-          };
-        }
-        const catalogResolvedModel = params.catalogTarget
-          ? resolveSessionModelRef(params.cfg, patched.entry, target.agentId)
-          : undefined;
-        const initializedEntry: SessionEntry = {
-          ...patched.entry,
-          // New rows must expose the same canonical delivery shape to callbacks
-          // that the SQLite writer persists, or guarded finalization sees its own write as drift.
-          ...(existingEntry === undefined && patched.entry.delivery === undefined
-            ? { delivery: normalizeSessionDeliveryState() }
-            : {}),
-          // Stamp provenance only for genuinely new rows: adopting an existing key
-          // must not restamp write-once node facts (this direct store write bypasses
-          // the merge-level write-once guard), and legacy rows stay "unknown".
-          ...(params.creation && createdNewEntry ? buildSessionCreationStamp(params.creation) : {}),
-          ...(params.visibility && createdNewEntry ? { visibility: params.visibility } : {}),
-          ...(generatedDisplayName && createdNewEntry ? { displayName: generatedDisplayName } : {}),
-          ...(catalogResolvedModel && catalogAgentRuntime
-            ? {
-                providerOverride: catalogResolvedModel.provider,
-                modelOverride: catalogResolvedModel.model,
-                modelOverrideSource: "user" as const,
-                modelOverrideRouteResolution: "resolved" as const,
-                agentRuntimeOverride: catalogAgentRuntime,
-                modelSelectionLocked: true,
-                pluginOwnerId: catalogPluginOwnerId,
-              }
-            : {}),
-          // Session worktrees adopt cwd only during admin-gated creation; public patching stays
-          // restricted to spawned subagent and ACP lineage.
-          ...(spawnedCwd ? { spawnedCwd } : {}),
-          ...(params.worktree ? { worktree: params.worktree } : {}),
-          ...(execNode ? { execHost: "node", execNode, ...(execCwd ? { execCwd } : {}) } : {}),
-          ...(initialAgentHarnessId ? { agentHarnessId: initialAgentHarnessId } : {}),
-          ...(createdNewEntry && params.authorizedPluginId && !params.catalogTarget
-            ? { pluginOwnerId: params.authorizedPluginId }
-            : {}),
-          ...(authorizedPluginCreation && params.initialEntry?.providerOverride
-            ? { providerOverride: params.initialEntry.providerOverride }
-            : {}),
-          ...(authorizedPluginCreation && params.initialEntry?.modelOverride
-            ? { modelOverride: params.initialEntry.modelOverride }
-            : {}),
-          ...(authorizedPluginCreation && params.initialEntry?.modelOverrideRouteResolution
-            ? { modelOverrideRouteResolution: params.initialEntry.modelOverrideRouteResolution }
-            : {}),
-          // Seeded CLI bindings ride only the plugin-authorized creation path;
-          // harness creations must never smuggle pre-bound CLI session ids.
-          ...(authorizedPluginCreation && params.initialEntry?.cliSessionBindings
-            ? { cliSessionBindings: structuredClone(params.initialEntry.cliSessionBindings) }
-            : {}),
-          ...(params.initialEntry?.initializationPending === true
-            ? { initializationPending: true }
-            : {}),
-          ...(params.initialEntry?.modelSelectionLocked === true
-            ? { modelSelectionLocked: true }
-            : {}),
-          ...(params.initialEntry?.pluginExtensions !== undefined
-            ? { pluginExtensions: structuredClone(params.initialEntry.pluginExtensions) }
-            : {}),
-          // Spawn lineage is declared, never inferred: spawn-owned creations pass
-          // spawnDepth explicitly; everything else (operator chats, forks, harness
-          // and plugin sessions) persists as a depth-0 root. Reused entries keep
-          // their stored depth.
-          ...(existingEntry === undefined ? { spawnDepth: params.spawnDepth ?? 0 } : {}),
-          ...(existingEntry === undefined && spawnToolPolicy
-            ? {
-                spawnedBy: spawnToolPolicy.parentSessionKey,
-                ...(spawnToolPolicy.completionOwnerSessionKey
-                  ? { completionOwnerSessionKey: spawnToolPolicy.completionOwnerSessionKey }
-                  : {}),
-                inheritedToolPolicyVersion: 1 as const,
-                ...(spawnToolPolicy.allow.length > 0
-                  ? { inheritedToolAllow: spawnToolPolicy.allow }
-                  : {}),
-                ...(spawnToolPolicy.deny.length > 0
-                  ? { inheritedToolDeny: spawnToolPolicy.deny }
-                  : {}),
-              }
-            : {}),
-          ...(existingEntry === undefined && incognito ? { incognito: true as const } : {}),
-        };
-        sessionEntries[target.canonicalKey] = initializedEntry;
-        const initialized = { ...patched, entry: initializedEntry };
-        const explicitParentSessionKey =
-          canonicalParentSessionKey ?? normalizeOptionalString(initializedEntry.parentSessionKey);
-        const storedParentSessionKey = explicitParentSessionKey ?? dashboardParentSessionKey;
-        if (!storedParentSessionKey) {
-          return initialized;
-        }
-        const inheritedSelection =
-          !canonicalParentSessionKey || catalogModel || normalizeOptionalString(params.model)
-            ? {}
-            : inheritSessionSelection(currentParentSessionEntry);
-        const entry: SessionEntry = {
-          ...initializedEntry,
-          ...inheritedSelection,
-          parentSessionKey: storedParentSessionKey,
-        };
-        if (params.fork !== true) {
-          return { ...initialized, entry };
-        }
-        const forkParentSessionKey = canonicalParentSessionKey;
-        if (!forkParentSessionKey || !currentParentSessionEntry || !parentSessionTarget) {
-          return {
-            ok: false,
-            error: errorShape(ErrorCodes.UNAVAILABLE, "failed to resolve parent session for fork"),
-          };
-        }
-        // Operator forks honor the same oversized-parent cap as subagent forks;
-        // an explicit fork of an unusable parent fails loudly instead of
-        // silently producing an empty child.
-        const forkDecision = await resolveParentForkDecision({
-          parentEntry: currentParentSessionEntry,
-          agentId: parentSessionTarget.agentId,
-          storePath: parentSessionTarget.storePath,
-        });
-        if (forkDecision.status === "skip") {
-          return {
-            ok: false,
-            error: errorShape(
-              ErrorCodes.INVALID_REQUEST,
-              `parent session is too large to fork (${forkDecision.parentTokens}/${forkDecision.maxTokens} tokens)`,
-            ),
-          };
-        }
-        const fork = await forkSessionFromParent({
-          parentEntry: currentParentSessionEntry,
-          agentId: parentSessionTarget.agentId,
-          parentSessionKey: forkParentSessionKey,
-          sessionKey: target.canonicalKey,
-          storePath: parentSessionTarget.storePath,
-          // Keep the fork transcript owned by the child store across agent boundaries.
-          targetStorePath: target.storePath,
-        });
-        if (!fork) {
-          return {
-            ok: false,
-            error: errorShape(ErrorCodes.UNAVAILABLE, "failed to fork parent session transcript"),
-          };
-        }
+    const sessionEntryScope = {
+      agentId: target.agentId,
+      sessionKey: target.canonicalKey,
+      storePath: target.storePath,
+    };
+    const prepareEntry = async ({
+      existingEntry,
+      sessionEntries,
+    }: SessionEntryCreateWithTranscriptContext): Promise<
+      SessionEntryCreateWithTranscriptPrepareResult<ErrorShape>
+    > => {
+      // This callback owns generated and explicit keys alike; no existing row
+      // is the canonical signal that this request will actually create one.
+      const existingOwnershipError = resolvePluginSessionOwnershipError({
+        action: "adopt",
+        entry: existingEntry,
+        key: target.canonicalKey,
+        pluginOwnerId: params.authorizedPluginId,
+      });
+      if (existingOwnershipError) {
+        return { ok: false, error: existingOwnershipError };
+      }
+      if (
+        isAgentHarnessSessionKey(target.canonicalKey) &&
+        !authorizedHarnessCreation &&
+        (!existingEntry || existingEntry.modelSelectionLocked === true)
+      ) {
         return {
-          ...initialized,
-          entry: buildForkedGatewaySessionEntry(
-            entry,
-            fork,
-            {
-              sessionKey: forkParentSessionKey,
-              sessionId: currentParentSessionEntry.sessionId,
-            },
-            existingEntry,
+          ok: false,
+          error: errorShape(ErrorCodes.INVALID_REQUEST, AGENT_HARNESS_SESSION_KEY_RESERVED_MESSAGE),
+        };
+      }
+      if (!params.initialEntry && existingEntry?.initializationPending === true) {
+        return {
+          ok: false,
+          error: errorShape(
+            ErrorCodes.UNAVAILABLE,
+            `Session ${target.canonicalKey} is still initializing; retry creation later.`,
           ),
         };
-      },
-      params.initialEntry
-        ? {
-            activeSessionKey: target.canonicalKey,
-            requireWriteSuccess: true,
-          }
-        : undefined,
-    );
+      }
+      if (params.initialEntry && existingEntry !== undefined) {
+        return {
+          ok: false,
+          error: errorShape(
+            ErrorCodes.INVALID_REQUEST,
+            "trusted initial session state requires a new session",
+          ),
+        };
+      }
+      if (params.catalogTarget && existingEntry !== undefined) {
+        return {
+          ok: false,
+          error: errorShape(
+            ErrorCodes.INVALID_REQUEST,
+            "catalog session target requires a new session",
+          ),
+        };
+      }
+      if (spawnToolPolicy && existingEntry !== undefined) {
+        return {
+          ok: false,
+          error: errorShape(ErrorCodes.INVALID_REQUEST, "spawn tool policy requires a new session"),
+        };
+      }
+      if (
+        params.visibility &&
+        existingEntry === undefined &&
+        !isSessionVisibilityAllowed(params.cfg, params.visibility)
+      ) {
+        return {
+          ok: false,
+          error: errorShape(
+            ErrorCodes.INVALID_REQUEST,
+            `session visibility is disabled: ${params.visibility}`,
+            { details: { code: "SESSION_VISIBILITY_DISABLED", visibility: params.visibility } },
+          ),
+        };
+      }
+      if (
+        params.visibility &&
+        existingEntry !== undefined &&
+        resolveSessionVisibility(existingEntry) !== params.visibility
+      ) {
+        return {
+          ok: false,
+          error: errorShape(
+            ErrorCodes.INVALID_REQUEST,
+            "sessions.create visibility requires a new session",
+          ),
+        };
+      }
+      // Adoption of an existing key must not stamp provenance or emit a
+      // `created` event; only a genuinely new row is a node creation.
+      createdNewEntry = existingEntry === undefined;
+      const requestedModel = normalizeOptionalString(params.model);
+      const requestedThinkingLevel = normalizeOptionalString(params.thinkingLevel);
+      if (existingEntry?.sessionId && params.allowExistingModelSelection !== true) {
+        const gateDefaultModel = resolveDefaultModelForAgent({
+          cfg: params.cfg,
+          agentId: target.agentId,
+        });
+        const modelSelectionWouldChange = await existingModelSelectionWouldChange({
+          agentId: target.agentId,
+          cfg: params.cfg,
+          catalogModel,
+          defaultModel: gateDefaultModel.model,
+          defaultProvider: gateDefaultModel.provider,
+          existingEntry,
+          loadGatewayModelCatalog: params.loadGatewayModelCatalog,
+          requestedModel,
+          requestedThinkingLevel,
+          subagentModelHint: isSubagentSessionKey(target.canonicalKey)
+            ? resolveSubagentConfiguredModelSelection({
+                cfg: params.cfg,
+                agentId: target.agentId,
+              })
+            : undefined,
+        });
+        if (modelSelectionWouldChange) {
+          return {
+            ok: false,
+            error: missingScopeErrorShape({
+              missingScope: ADMIN_SCOPE,
+              requiredScopes: [ADMIN_SCOPE],
+            }),
+          };
+        }
+      }
+      const patched = await projectSessionsPatchEntry({
+        cfg: params.cfg,
+        existingEntry: sessionEntries[target.canonicalKey],
+        isLabelInUse: (label) =>
+          Object.entries(sessionEntries).some(
+            ([sessionKey, entry]) => sessionKey !== target.canonicalKey && entry.label === label,
+          ),
+        storeKey: target.canonicalKey,
+        agentId: target.agentId,
+        patch: {
+          key: target.canonicalKey,
+          label: normalizeOptionalString(params.label),
+          model: catalogModel ?? requestedModel,
+          thinkingLevel: requestedThinkingLevel,
+        },
+        loadGatewayModelCatalog: params.loadGatewayModelCatalog,
+        authorizedAgentHarnessId: params.authorizedAgentHarnessId,
+      });
+      if (!patched.ok) {
+        return patched;
+      }
+      sessionEntries[target.canonicalKey] = patched.entry;
+      const spawnedCwd = normalizeOptionalString(params.spawnedCwd);
+      const execNode = normalizeOptionalString(params.execNode);
+      const execCwd = normalizeOptionalString(params.execCwd);
+      const initialAgentHarnessId = params.initialEntry
+        ? normalizeOptionalString(params.initialEntry.agentHarnessId)
+        : undefined;
+      if (params.initialEntry && !initialAgentHarnessId && !authorizedPluginCreation) {
+        return {
+          ok: false,
+          error: errorShape(
+            ErrorCodes.INVALID_REQUEST,
+            params.initialEntry?.agentHarnessId !== undefined
+              ? "initial agentHarnessId must be non-empty"
+              : "trusted initial session state requires an authorized owner",
+          ),
+        };
+      }
+      if (
+        params.initialEntry?.modelSelectionLocked !== undefined &&
+        !params.initialEntry.modelSelectionLocked
+      ) {
+        return {
+          ok: false,
+          error: errorShape(
+            ErrorCodes.INVALID_REQUEST,
+            "initial modelSelectionLocked must be true when provided",
+          ),
+        };
+      }
+      const catalogResolvedModel = params.catalogTarget
+        ? resolveSessionModelRef(params.cfg, patched.entry, target.agentId)
+        : undefined;
+      const initializedEntry: SessionEntry = {
+        ...patched.entry,
+        // New rows must expose the same canonical delivery shape to callbacks
+        // that the SQLite writer persists, or guarded finalization sees its own write as drift.
+        ...(existingEntry === undefined && patched.entry.delivery === undefined
+          ? { delivery: normalizeSessionDeliveryState() }
+          : {}),
+        // Stamp provenance only for genuinely new rows: adopting an existing key
+        // must not restamp write-once node facts (this direct store write bypasses
+        // the merge-level write-once guard), and legacy rows stay "unknown".
+        ...(params.creation && createdNewEntry ? buildSessionCreationStamp(params.creation) : {}),
+        ...(params.visibility && createdNewEntry ? { visibility: params.visibility } : {}),
+        ...(generatedDisplayName && createdNewEntry ? { displayName: generatedDisplayName } : {}),
+        ...(catalogResolvedModel && catalogAgentRuntime
+          ? {
+              providerOverride: catalogResolvedModel.provider,
+              modelOverride: catalogResolvedModel.model,
+              modelOverrideSource: "user" as const,
+              modelOverrideRouteResolution: "resolved" as const,
+              agentRuntimeOverride: catalogAgentRuntime,
+              modelSelectionLocked: true,
+              pluginOwnerId: catalogPluginOwnerId,
+            }
+          : {}),
+        // Session worktrees adopt cwd only during admin-gated creation; public patching stays
+        // restricted to spawned subagent and ACP lineage.
+        ...(spawnedCwd ? { spawnedCwd } : {}),
+        ...(params.worktree ? { worktree: params.worktree } : {}),
+        ...(execNode ? { execHost: "node", execNode, ...(execCwd ? { execCwd } : {}) } : {}),
+        ...(initialAgentHarnessId ? { agentHarnessId: initialAgentHarnessId } : {}),
+        ...(createdNewEntry && params.authorizedPluginId && !params.catalogTarget
+          ? { pluginOwnerId: params.authorizedPluginId }
+          : {}),
+        ...(authorizedPluginCreation && params.initialEntry?.providerOverride
+          ? { providerOverride: params.initialEntry.providerOverride }
+          : {}),
+        ...(authorizedPluginCreation && params.initialEntry?.modelOverride
+          ? { modelOverride: params.initialEntry.modelOverride }
+          : {}),
+        ...(authorizedPluginCreation && params.initialEntry?.modelOverrideRouteResolution
+          ? { modelOverrideRouteResolution: params.initialEntry.modelOverrideRouteResolution }
+          : {}),
+        // Seeded CLI bindings ride only the plugin-authorized creation path;
+        // harness creations must never smuggle pre-bound CLI session ids.
+        ...(authorizedPluginCreation && params.initialEntry?.cliSessionBindings
+          ? { cliSessionBindings: structuredClone(params.initialEntry.cliSessionBindings) }
+          : {}),
+        ...(params.initialEntry?.initializationPending === true
+          ? { initializationPending: true }
+          : {}),
+        ...(params.initialEntry?.modelSelectionLocked === true
+          ? { modelSelectionLocked: true }
+          : {}),
+        ...(params.initialEntry?.pluginExtensions !== undefined
+          ? { pluginExtensions: structuredClone(params.initialEntry.pluginExtensions) }
+          : {}),
+        // Spawn lineage is declared, never inferred: spawn-owned creations pass
+        // spawnDepth explicitly; everything else (operator chats, forks, harness
+        // and plugin sessions) persists as a depth-0 root. Reused entries keep
+        // their stored depth.
+        ...(existingEntry === undefined ? { spawnDepth: params.spawnDepth ?? 0 } : {}),
+        ...(existingEntry === undefined && spawnToolPolicy
+          ? {
+              spawnedBy: spawnToolPolicy.parentSessionKey,
+              ...(spawnToolPolicy.completionOwnerSessionKey
+                ? { completionOwnerSessionKey: spawnToolPolicy.completionOwnerSessionKey }
+                : {}),
+              inheritedToolPolicyVersion: 1 as const,
+              ...(spawnToolPolicy.allow.length > 0
+                ? { inheritedToolAllow: spawnToolPolicy.allow }
+                : {}),
+              ...(spawnToolPolicy.deny.length > 0
+                ? { inheritedToolDeny: spawnToolPolicy.deny }
+                : {}),
+            }
+          : {}),
+        ...(existingEntry === undefined && incognito ? { incognito: true as const } : {}),
+      };
+      sessionEntries[target.canonicalKey] = initializedEntry;
+      const initialized = { ...patched, entry: initializedEntry };
+      const explicitParentSessionKey =
+        canonicalParentSessionKey ?? normalizeOptionalString(initializedEntry.parentSessionKey);
+      const storedParentSessionKey = explicitParentSessionKey ?? dashboardParentSessionKey;
+      if (!storedParentSessionKey) {
+        return initialized;
+      }
+      const inheritedSelection =
+        !canonicalParentSessionKey || catalogModel || normalizeOptionalString(params.model)
+          ? {}
+          : inheritSessionSelection(currentParentSessionEntry);
+      const entry: SessionEntry = {
+        ...initializedEntry,
+        ...inheritedSelection,
+        parentSessionKey: storedParentSessionKey,
+      };
+      if (params.fork !== true) {
+        return { ...initialized, entry };
+      }
+      const forkParentSessionKey = canonicalParentSessionKey;
+      if (!forkParentSessionKey || !currentParentSessionEntry || !parentSessionTarget) {
+        return {
+          ok: false,
+          error: errorShape(ErrorCodes.UNAVAILABLE, "failed to resolve parent session for fork"),
+        };
+      }
+      // Operator forks honor the same oversized-parent cap as subagent forks;
+      // an explicit fork of an unusable parent fails loudly instead of
+      // silently producing an empty child.
+      const forkDecision = await resolveParentForkDecision({
+        parentEntry: currentParentSessionEntry,
+        agentId: parentSessionTarget.agentId,
+        storePath: parentSessionTarget.storePath,
+      });
+      if (forkDecision.status === "skip") {
+        return {
+          ok: false,
+          error: errorShape(
+            ErrorCodes.INVALID_REQUEST,
+            `parent session is too large to fork (${forkDecision.parentTokens}/${forkDecision.maxTokens} tokens)`,
+          ),
+        };
+      }
+      const fork = await forkSessionFromParent({
+        parentEntry: currentParentSessionEntry,
+        agentId: parentSessionTarget.agentId,
+        parentSessionKey: forkParentSessionKey,
+        sessionKey: target.canonicalKey,
+        storePath: parentSessionTarget.storePath,
+        // Keep the fork transcript owned by the child store across agent boundaries.
+        targetStorePath: target.storePath,
+      });
+      if (!fork) {
+        return {
+          ok: false,
+          error: errorShape(ErrorCodes.UNAVAILABLE, "failed to fork parent session transcript"),
+        };
+      }
+      return {
+        ...initialized,
+        entry: buildForkedGatewaySessionEntry(
+          entry,
+          fork,
+          {
+            sessionKey: forkParentSessionKey,
+            sessionId: currentParentSessionEntry.sessionId,
+          },
+          existingEntry,
+        ),
+      };
+    };
+    const createOptions = params.initialEntry
+      ? {
+          activeSessionKey: target.canonicalKey,
+          requireWriteSuccess: true,
+        }
+      : undefined;
+    const created = memorySubjectIssuer
+      ? await createSessionEntryWithTrustedMemorySubject<ErrorShape>(
+          sessionEntryScope,
+          prepareEntry,
+          memorySubjectIssuer,
+          createOptions,
+        )
+      : await createSessionEntryWithTranscript<ErrorShape>(
+          sessionEntryScope,
+          prepareEntry,
+          createOptions,
+        );
     if (!created.ok) {
       return {
         ok: false,

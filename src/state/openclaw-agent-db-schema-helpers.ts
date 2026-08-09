@@ -49,6 +49,8 @@ const AGENT_SCHEMA_COMPATIBILITY = {
     MEMORY_INDEX_CHUNK_PROVENANCE_TABLE,
     MEMORY_INDEX_CHUNK_RECALL_METADATA_TABLE,
     CONTEXT_ENGINE_TURN_OUTBOX_TABLE,
+    "session_memory_subject_snapshots",
+    "session_memory_subjects",
     STANDING_INTENTS_TABLE,
     STANDING_INTENTS_FTS_TABLE,
     ...STANDING_INTENTS_FTS_SHADOW_TABLES,
@@ -58,6 +60,24 @@ const AGENT_SCHEMA_COMPATIBILITY = {
     "conversations.delivery_target": ["delivery_target TEXT NOT NULL DEFAULT ''"],
   },
   optionalCanonicalTriggerGroups: [
+    {
+      // Session-memory subjects are an additive lazy surface. Older current
+      // databases may lack this trigger until their first memory operation;
+      // the owner ensure installs it before any subject read or write.
+      tableName: "session_memory_subjects",
+      triggers: [
+        {
+          name: "session_memory_subjects_reject_update",
+          sql: `
+            CREATE TRIGGER session_memory_subjects_reject_update
+            BEFORE UPDATE ON session_memory_subjects
+            BEGIN
+              SELECT RAISE(ABORT, 'session memory subject is immutable');
+            END
+          `,
+        },
+      ],
+    },
     {
       tableName: MEMORY_INDEX_SOURCES_TABLE,
       triggers: MEMORY_PATH_FTS_TRIGGER_DEFINITIONS,

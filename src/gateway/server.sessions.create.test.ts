@@ -22,6 +22,7 @@ import {
   loadTranscriptEvents,
   upsertSessionEntry,
 } from "../config/sessions/session-accessor.js";
+import { readCurrentSessionMemorySubject } from "../config/sessions/session-memory-subject-access.js";
 import { resolveSqliteTargetFromSessionStorePath } from "../config/sessions/session-sqlite-target.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { createEmptyPluginRegistry } from "../plugins/registry-empty.js";
@@ -34,6 +35,7 @@ import {
   resolveIncognitoOpenClawAgentSqlitePath,
 } from "../state/openclaw-agent-db.js";
 import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { ensureProfileForEmail } from "../state/user-profiles.js";
 import { createOpenClawTestState } from "../test-utils/openclaw-test-state.js";
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../utils/message-channel.js";
 import { resolveGatewaySessionStoreTarget } from "./session-utils.js";
@@ -2502,6 +2504,61 @@ test("sessions.create stamps trusted operator provenance and records created", a
     createdVia: "spawn",
     createdActor: { type: "agent", id: "agent:main:main" },
   });
+});
+
+test("sessions.create persists Gateway memory subjects only for durable authenticated sessions", async () => {
+  const { storePath } = await createSessionStoreDir();
+  const profile = ensureProfileForEmail("memory-session-creator@example.test");
+  const authenticatedClient = {
+    connect: { scopes: ["operator.write"] },
+    authenticatedUserProfile: {
+      profileId: profile.id,
+      displayName: "Memory Session Creator",
+      hasAvatar: false,
+      updatedAt: 1,
+    },
+  };
+
+  const durable = await directSessionReq<{ key?: string }>(
+    "sessions.create",
+    { agentId: "main" },
+    { client: authenticatedClient as never },
+  );
+  expect(durable.ok).toBe(true);
+  const durableKey = requireNonEmptyString(durable.payload?.key, "durable session key");
+  expect(
+    readCurrentSessionMemorySubject({ agentId: "main", sessionKey: durableKey, storePath }),
+  ).toMatchObject({
+    subject: {
+      kind: "user",
+      creationEvidence: { kind: "gateway-profile" },
+    },
+  });
+
+  const profileless = await directSessionReq<{ key?: string }>("sessions.create", {
+    agentId: "main",
+  });
+  expect(profileless.ok).toBe(true);
+  const profilelessKey = requireNonEmptyString(profileless.payload?.key, "profileless session key");
+  expect(
+    readCurrentSessionMemorySubject({ agentId: "main", sessionKey: profilelessKey, storePath }),
+  ).toMatchObject({ subject: { kind: "ambiguous", reason: "unbound" } });
+
+  const incognito = await directSessionReq<{ key?: string }>(
+    "sessions.create",
+    { agentId: "main", incognito: true },
+    {
+      client: {
+        ...authenticatedClient,
+        connect: { scopes: ["operator.admin"] },
+      } as never,
+    },
+  );
+  expect(incognito.ok).toBe(true);
+  const incognitoKey = requireNonEmptyString(incognito.payload?.key, "incognito session key");
+  expect(
+    readCurrentSessionMemorySubject({ agentId: "main", sessionKey: incognitoKey, storePath }),
+  ).toMatchObject({ subject: { kind: "ambiguous", reason: "unbound" } });
 });
 
 test("sessions.create reset-in-place preserves the node creation stamp", async () => {

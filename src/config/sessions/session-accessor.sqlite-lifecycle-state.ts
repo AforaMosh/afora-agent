@@ -15,7 +15,6 @@ import {
 } from "./session-accessor.sqlite-archive.js";
 import type {
   SessionEntryLifecycleRemoval,
-  SessionEntryLifecycleUpsert,
   SessionLifecycleArchivedTranscript,
 } from "./session-accessor.sqlite-contract.js";
 import { readSqliteSessionStateDeleteSnapshot } from "./session-accessor.sqlite-delete-snapshot.js";
@@ -30,6 +29,7 @@ import type {
   SqliteLifecycleArtifactCleanupPlan,
   SqliteProjectedLifecycleMutation,
   SqliteSessionEntryRemovalPlan,
+  TrustedSqliteSessionEntryLifecycleUpsert,
 } from "./session-accessor.sqlite-lifecycle-types.js";
 import { normalizeSqliteNumber } from "./session-accessor.sqlite-normalize.js";
 import { loadSqliteTranscriptEventsFromDatabase } from "./session-accessor.sqlite-read.js";
@@ -308,7 +308,7 @@ export async function projectSqliteSessionEntryLifecycleMutation(
     allowCanonicalRepair?: boolean;
     archiveDirectory: string;
     removals: readonly SessionEntryLifecycleRemoval[];
-    upserts: readonly SessionEntryLifecycleUpsert[];
+    upserts: readonly TrustedSqliteSessionEntryLifecycleUpsert[];
   },
 ): Promise<SqliteProjectedLifecycleMutation> {
   const store = readSqliteSessionEntryStore(database, {
@@ -385,6 +385,10 @@ export async function projectSqliteSessionEntryLifecycleMutation(
       expectedEntry,
       sessionKey,
       entry: cloned,
+      ...(upsert.deferMemorySubjectPersistence
+        ? { deferMemorySubjectPersistence: true as const }
+        : {}),
+      ...(upsert.memorySubjectIssuer ? { memorySubjectIssuer: upsert.memorySubjectIssuer } : {}),
       ...(resetBoundaryPlan ? { resetBoundaryPlan } : {}),
     });
   }

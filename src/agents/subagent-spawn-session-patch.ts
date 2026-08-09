@@ -1,6 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
 import { buildSessionCreationStamp } from "../config/sessions/session-entry-provenance.js";
+import {
+  createTrustedSessionMemorySubjectIssuer,
+  prepareAutonomousAgentSessionMemorySubjectSeed,
+} from "../config/sessions/session-memory-subject.js";
 import type { SessionEntry } from "../config/sessions/types.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { resolveIncognitoOpenClawAgentSqlitePath } from "../state/openclaw-agent-db.js";
@@ -12,7 +16,11 @@ import {
 } from "./inherited-tool-deny.js";
 import { getSubagentSpawnDeps } from "./subagent-spawn-deps.js";
 import { splitModelRef } from "./subagent-spawn-plan.js";
-import { resolveGatewaySessionStoreTarget, upsertSessionEntry } from "./subagent-spawn.runtime.js";
+import {
+  resolveGatewaySessionStoreTarget,
+  upsertSessionEntry,
+  upsertSessionEntryWithTrustedMemorySubject,
+} from "./subagent-spawn.runtime.js";
 
 function buildDirectChildSessionPatch(patch: Record<string, unknown>): Partial<SessionEntry> {
   const entry: Partial<SessionEntry> = {};
@@ -154,20 +162,31 @@ export async function createInitialSubagentSession(params: {
           cfg: params.cfg,
           key: params.childSessionKey,
         });
-    const entry = await upsertSessionEntry(
-      {
-        storePath: target.storePath,
-        sessionKey: target.canonicalKey,
-      },
-      {
-        ...buildDirectChildSessionPatch(initialChildSessionPatch),
-        ...childSessionIdentity,
-        ...buildSessionCreationStamp({
-          via: "spawn",
-          actor: { type: "agent", id: params.requesterInternalKey },
-        }),
-      },
-    );
+    const initialEntryPatch = {
+      ...buildDirectChildSessionPatch(initialChildSessionPatch),
+      ...childSessionIdentity,
+      ...buildSessionCreationStamp({
+        via: "spawn",
+        actor: { type: "agent", id: params.requesterInternalKey },
+      }),
+    };
+    const scope = {
+      agentId: target.agentId,
+      storePath: target.storePath,
+      sessionKey: target.canonicalKey,
+    };
+    // This is the direct child row's first writer. The target agent is resolved
+    // by the validated spawn plan; requester/session fields describe lineage,
+    // never the child memory principal. Incognito remains deliberately unbound.
+    const entry = params.incognito
+      ? await upsertSessionEntry(scope, initialEntryPatch)
+      : await upsertSessionEntryWithTrustedMemorySubject(
+          scope,
+          initialEntryPatch,
+          createTrustedSessionMemorySubjectIssuer(() =>
+            prepareAutonomousAgentSessionMemorySubjectSeed(params.targetAgentId),
+          ),
+        );
     return { status: "ok", entry: entry ?? undefined };
   } catch (err) {
     const message = err instanceof Error ? err.message : typeof err === "string" ? err : "error";

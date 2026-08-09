@@ -196,6 +196,9 @@ export {
   persistSessionResetLifecycle,
   SessionInitializationAgentScopeMismatchError,
 } from "./session-accessor.reset.js";
+// Memory-subject issuance is deliberately absent from this stable accessor
+// barrel. Only core-owned ingress and lifecycle modules may import the
+// internal factories, so serializable/plugin-facing callers cannot mint provenance.
 export {
   appendTranscriptEvent,
   appendTranscriptEventSync,

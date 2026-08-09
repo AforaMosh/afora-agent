@@ -5,6 +5,12 @@ import path from "node:path";
 import { expectDefined } from "@openclaw/normalization-core";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AcpInitializeSessionInput } from "../acp/control-plane/manager.types.js";
+import {
+  resolveSqliteScope,
+  toDatabaseOptions,
+} from "../config/sessions/session-accessor.sqlite-scope.js";
+import { readCurrentSessionMemorySubject } from "../config/sessions/session-memory-subject-access.js";
+import { prepareAutonomousAgentSessionMemorySubjectSeed } from "../config/sessions/session-memory-subject.js";
 import type { SessionEntry } from "../config/sessions/types.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import type { CallGatewayOptions } from "../gateway/call.js";
@@ -17,6 +23,12 @@ import {
   type SessionBindingPlacement,
   type SessionBindingRecord,
 } from "../infra/outbound/session-binding-service.js";
+import {
+  closeOpenClawAgentDatabasesForTest,
+  openOpenClawAgentDatabase,
+  resolveIncognitoOpenClawAgentSqlitePath,
+} from "../state/openclaw-agent-db.js";
+import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
 import { normalizeSessionDeliveryState } from "../utils/delivery-context.shared.js";
 import type { AgentRunTerminalReplySnapshot } from "./agent-run-terminal-reply.js";
 import { reserveChildAdmissionSlot } from "./child-admission.js";
@@ -90,6 +102,7 @@ const hoisted = vi.hoisted(() => {
   const getSubagentRunByChildSessionKeyMock = vi.fn();
   const listTasksForOwnerKeyMock = vi.fn();
   const upsertSessionEntryMock = vi.fn();
+  const upsertSessionEntryWithTrustedMemorySubjectMock = vi.fn();
   const createSessionAccessorMock = () => {
     const resolveMockStorePath = (scope: {
       agentId?: string;
@@ -184,6 +197,7 @@ const hoisted = vi.hoisted(() => {
     getSubagentRunByChildSessionKeyMock,
     listTasksForOwnerKeyMock,
     upsertSessionEntryMock,
+    upsertSessionEntryWithTrustedMemorySubjectMock,
     createSessionAccessorMock,
     state,
   };
@@ -220,6 +234,12 @@ vi.mock("../config/sessions/paths.js", () => ({
 vi.mock("../config/sessions/session-accessor.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../config/sessions/session-accessor.js")>()),
   ...hoisted.createSessionAccessorMock(),
+}));
+
+vi.mock("../config/sessions/session-accessor.sqlite-entry.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../config/sessions/session-accessor.sqlite-entry.js")>()),
+  upsertSqliteSessionEntryWithTrustedMemorySubject: async (...args: unknown[]) =>
+    await hoisted.upsertSessionEntryWithTrustedMemorySubjectMock(...args),
 }));
 
 vi.mock("../config/sessions.js", () => ({
@@ -784,6 +804,12 @@ describe("spawnAcpDirect", () => {
         sessionId: patch.sessionId ?? "sess-123",
         updatedAt: patch.updatedAt ?? Date.now(),
       }));
+    hoisted.upsertSessionEntryWithTrustedMemorySubjectMock
+      .mockReset()
+      .mockImplementation(
+        async (scope: unknown, patch: Partial<SessionEntry>) =>
+          await hoisted.upsertSessionEntryMock(scope, patch),
+      );
 
     hoisted.callGatewayMock.mockReset();
     hoisted.callGatewayMock.mockImplementation(async (argsUnknown: unknown) => {
@@ -917,7 +943,102 @@ describe("spawnAcpDirect", () => {
   });
 
   afterEach(() => {
+    vi.unstubAllEnvs();
     sessionBindingServiceTesting.resetSessionBindingAdaptersForTests();
+    closeOpenClawAgentDatabasesForTest();
+    closeOpenClawStateDatabaseForTest();
+  });
+
+  it("issues the durable ACP child subject for the target agent at its first write", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-acp-memory-subject-"));
+    try {
+      vi.stubEnv("OPENCLAW_STATE_DIR", root);
+      const storePath = path.join(root, "agents", "codex", "sessions", "sessions.json");
+      const { upsertSqliteSessionEntryWithTrustedMemorySubject } = await vi.importActual<
+        typeof import("../config/sessions/session-accessor.sqlite-entry.js")
+      >("../config/sessions/session-accessor.sqlite-entry.js");
+      hoisted.upsertSessionEntryWithTrustedMemorySubjectMock.mockImplementation(
+        upsertSqliteSessionEntryWithTrustedMemorySubject,
+      );
+      hoisted.resolveStorePathMock.mockReturnValue(storePath);
+
+      const result = await spawnAcpDirect(
+        { task: "Persist the target-owned ACP subject", agentId: "codex" },
+        { agentSessionKey: "agent:main:main" },
+      );
+      const accepted = expectAcceptedSpawn(result);
+      const snapshot = readCurrentSessionMemorySubject({
+        agentId: "codex",
+        sessionKey: accepted.childSessionKey,
+        storePath,
+      });
+
+      expect(snapshot?.subject).toEqual(
+        prepareAutonomousAgentSessionMemorySubjectSeed("codex").subject,
+      );
+      expect(snapshot?.subject).not.toEqual(
+        prepareAutonomousAgentSessionMemorySubjectSeed("main").subject,
+      );
+    } finally {
+      closeOpenClawAgentDatabasesForTest();
+      closeOpenClawStateDatabaseForTest();
+      await fs.rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps an ACP child of an incognito requester unbound and out of the durable target store", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-acp-incognito-memory-subject-"));
+    try {
+      vi.stubEnv("OPENCLAW_STATE_DIR", root);
+      const targetAgentId = "codex";
+      const durableStorePath = path.join(
+        root,
+        "agents",
+        targetAgentId,
+        "sessions",
+        "sessions.json",
+      );
+      const { upsertSqliteSessionEntry } = await vi.importActual<
+        typeof import("../config/sessions/session-accessor.sqlite-entry.js")
+      >("../config/sessions/session-accessor.sqlite-entry.js");
+      hoisted.upsertSessionEntryMock.mockImplementation(upsertSqliteSessionEntry);
+      hoisted.resolveStorePathMock.mockReturnValue(durableStorePath);
+
+      const result = await spawnAcpDirect(
+        { task: "Keep this ACP child incognito", agentId: targetAgentId },
+        { agentSessionKey: "agent:main:dashboard:incognito-parent" },
+      );
+      const accepted = expectAcceptedSpawn(result);
+      expect(accepted.childSessionKey).toMatch(/^agent:codex:acp:incognito-/u);
+      expect(hoisted.upsertSessionEntryWithTrustedMemorySubjectMock).not.toHaveBeenCalled();
+
+      expect(
+        readCurrentSessionMemorySubject({
+          agentId: targetAgentId,
+          sessionKey: accepted.childSessionKey,
+          storePath: resolveIncognitoOpenClawAgentSqlitePath({ agentId: targetAgentId }),
+        })?.subject,
+      ).toEqual({ version: 1, kind: "ambiguous", reason: "unbound" });
+
+      const durableDatabase = openOpenClawAgentDatabase(
+        toDatabaseOptions(
+          resolveSqliteScope({
+            agentId: targetAgentId,
+            sessionKey: "agent:codex:acp:durable-probe",
+            storePath: durableStorePath,
+          }),
+        ),
+      );
+      expect(
+        durableDatabase.db
+          .prepare("SELECT session_key FROM session_nodes WHERE session_key = ?")
+          .get(accepted.childSessionKey),
+      ).toBeUndefined();
+    } finally {
+      closeOpenClawAgentDatabasesForTest();
+      closeOpenClawStateDatabaseForTest();
+      await fs.rm(root, { recursive: true, force: true });
+    }
   });
 
   it("spawns ACP session, binds a new thread, and dispatches initial task", async () => {

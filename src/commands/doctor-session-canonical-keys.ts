@@ -2,7 +2,6 @@ import fs from "node:fs";
 import { resolveAgentMainSessionKey } from "../config/sessions/main-session.js";
 import { resolveStorePath } from "../config/sessions/paths.js";
 import {
-  applySessionEntryLifecycleMutation,
   copySessionOwnedStateForCanonicalRepair,
   listSessionEntriesForCanonicalRepair,
   listSessionGenerationIdsForCanonicalRepair,
@@ -16,6 +15,7 @@ import {
   copySessionNodeArtifactsForRepair,
   deleteSessionMembersForRepair,
 } from "../config/sessions/session-accessor.sqlite-node-artifacts.js";
+import { applySqliteSessionEntryLifecycleMutationWithTrustedMemorySubjects as applySessionEntryLifecycleMutation } from "../config/sessions/session-accessor.sqlite-projection.js";
 import { collectSqliteSessionStateIdsForEntry } from "../config/sessions/session-accessor.sqlite-references.js";
 import { resolveSqliteTranscriptArchiveDirectory } from "../config/sessions/session-accessor.sqlite-scope.js";
 import { setCanonicalSqliteSessionMainKey } from "../config/sessions/session-canonical-key.js";
@@ -597,7 +597,15 @@ async function repairCanonicalSessionGroup(
     removals: createCanonicalDestinationRemovals(destinationStore, selected),
     skipMaintenance: true,
     storePath: destination.storePath,
-    upserts: [{ entry: selected.entry, sessionKey: winner.canonicalKey }],
+    upserts: [
+      {
+        entry: selected.entry,
+        sessionKey: winner.canonicalKey,
+        ...(winner.sqlitePath !== destination.sqlitePath
+          ? { deferMemorySubjectPersistence: true as const }
+          : {}),
+      },
+    ],
   });
   const archivedDirectories = new Set([
     ...preArchivedDirectories,

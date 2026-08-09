@@ -41,7 +41,10 @@ import {
   resolveSessionCreateInitialTurn,
   shouldAttachPendingMessageSeq,
 } from "./session-create-initial-turn.js";
-import { resolveOperatorSessionCreation } from "./session-creation-provenance.js";
+import {
+  createGatewayProfileSessionMemorySubjectIssuer,
+  resolveOperatorSessionCreation,
+} from "./session-creation-provenance.js";
 import { sessionLog } from "./sessions-shared.js";
 import type { GatewayRequestHandlers } from "./types.js";
 import { assertValidParams } from "./validation.js";
@@ -454,6 +457,7 @@ export const sessionCreateHandlers: GatewayRequestHandlers = {
         );
       }
     };
+    const memorySubjectIssuer = createGatewayProfileSessionMemorySubjectIssuer(client);
     const created = await createGatewaySession({
       cfg,
       key: sessionKey,
@@ -496,6 +500,7 @@ export const sessionCreateHandlers: GatewayRequestHandlers = {
       resetMainWhenUnspecified: !hasInitialTurn,
       commandSource: "webchat",
       creation: sessionCreation,
+      ...(memorySubjectIssuer ? { memorySubjectIssuer } : {}),
       authorizedPluginId: normalizeOptionalString(client?.internal?.pluginRuntimeOwnerId),
       loadGatewayModelCatalog: () =>
         context.loadGatewayModelCatalog({ agentId: modelCatalogAgentId }),

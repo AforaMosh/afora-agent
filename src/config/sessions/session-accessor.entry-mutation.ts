@@ -11,9 +11,11 @@ import {
   patchSessionEntry,
   resolveSessionEntryFromStore,
 } from "./session-accessor.entry.js";
-import { applySessionEntryLifecycleMutation } from "./session-accessor.lifecycle.js";
+import { recordSqliteInboundSessionMetaWithTrustedMemorySubject } from "./session-accessor.sqlite-entry.js";
+import { applySqliteSessionEntryLifecycleMutationWithTrustedMemorySubjects } from "./session-accessor.sqlite-projection.js";
+import { resolveSqliteScope } from "./session-accessor.sqlite-scope.js";
+import { appendTranscriptEventInTransaction } from "./session-accessor.sqlite-transcript-store.js";
 import {
-  appendSqliteTranscriptEvent,
   forkSqliteSessionEntryFromParentTarget,
   forkSqliteSessionTranscriptFromParent,
   recordSqliteInboundSessionMeta,
@@ -38,10 +40,18 @@ import type {
   SessionEntryCreateWithTranscriptPrepareResult,
   SessionEntryCreateWithTranscriptOptions,
 } from "./session-accessor.types.js";
+import type { TrustedSessionMemorySubjectIssuer } from "./session-memory-subject.js";
 import { projectSessionStoreForPersistence } from "./skill-prompt-blobs.js";
 import { normalizeStoreSessionKey } from "./store-entry.js";
 import { createSessionTranscriptHeader } from "./transcript-header.js";
 import type { GroupKeyResolution, SessionEntry } from "./types.js";
+
+class SessionTranscriptInitializationError extends Error {
+  constructor(cause: unknown) {
+    super(formatErrorMessage(cause));
+    this.name = "SessionTranscriptInitializationError";
+  }
+}
 
 function projectSessionEntryForPersistenceRevision(params: {
   storePath: string;
@@ -100,6 +110,41 @@ export async function createSessionEntryWithTranscript<TError = string>(
     | SessionEntryCreateWithTranscriptPrepareResult<TError>,
   options: SessionEntryCreateWithTranscriptOptions = {},
 ): Promise<SessionEntryCreateWithTranscriptResult<TError>> {
+  return await createSessionEntryWithTranscriptInternal(scope, createEntry, options);
+}
+
+/**
+ * Core-only creation path. The issuer remains a branded in-memory capability
+ * until the entry transaction creates its immutable subject snapshot.
+ */
+export async function createSessionEntryWithTrustedMemorySubject<TError = string>(
+  scope: SessionAccessScope,
+  createEntry: (
+    context: SessionEntryCreateWithTranscriptContext,
+  ) =>
+    | Promise<SessionEntryCreateWithTranscriptPrepareResult<TError>>
+    | SessionEntryCreateWithTranscriptPrepareResult<TError>,
+  memorySubjectIssuer: TrustedSessionMemorySubjectIssuer,
+  options: SessionEntryCreateWithTranscriptOptions = {},
+): Promise<SessionEntryCreateWithTranscriptResult<TError>> {
+  return await createSessionEntryWithTranscriptInternal(
+    scope,
+    createEntry,
+    options,
+    memorySubjectIssuer,
+  );
+}
+
+async function createSessionEntryWithTranscriptInternal<TError>(
+  scope: SessionAccessScope,
+  createEntry: (
+    context: SessionEntryCreateWithTranscriptContext,
+  ) =>
+    | Promise<SessionEntryCreateWithTranscriptPrepareResult<TError>>
+    | SessionEntryCreateWithTranscriptPrepareResult<TError>,
+  options: SessionEntryCreateWithTranscriptOptions,
+  memorySubjectIssuer?: TrustedSessionMemorySubjectIssuer,
+): Promise<SessionEntryCreateWithTranscriptResult<TError>> {
   const storePath = resolveAccessStorePath(scope);
   const agentId = scope.agentId ?? resolveAgentIdFromSessionKey(scope.sessionKey);
   const store = Object.fromEntries(
@@ -114,32 +159,56 @@ export async function createSessionEntryWithTranscript<TError = string>(
     return { ok: false, error: created.error, phase: "entry" };
   }
 
+  const entry = created.entry;
+  // Issuers attest the first logical owner only. An adopted legacy row must
+  // backfill ambiguous instead of binding its missing snapshot to this caller.
+  const firstWriteMemorySubjectIssuer = resolved.existing ? undefined : memorySubjectIssuer;
+  const transcriptScope = {
+    ...resolveSqliteScope({
+      agentId,
+      ...(scope.env ? { env: scope.env } : {}),
+      sessionKey: resolved.normalizedKey,
+      storePath,
+    }),
+    sessionId: entry.sessionId,
+  };
   try {
-    await appendSqliteTranscriptEvent(
-      {
-        agentId,
-        sessionId: created.entry.sessionId,
-        sessionKey: resolved.normalizedKey,
-        storePath,
+    await applySqliteSessionEntryLifecycleMutationWithTrustedMemorySubjects({
+      agentId,
+      storePath,
+      removals: resolved.legacyKeys.map((sessionKey) => ({ sessionKey })),
+      upserts: [
+        {
+          sessionKey: resolved.normalizedKey,
+          entry,
+          ...(firstWriteMemorySubjectIssuer
+            ? { memorySubjectIssuer: firstWriteMemorySubjectIssuer }
+            : {}),
+        },
+      ],
+      skipMaintenance: true,
+      afterUpsertsInTransaction: (database) => {
+        try {
+          appendTranscriptEventInTransaction(
+            database,
+            transcriptScope,
+            createSessionTranscriptHeader({ cwd: options.cwd, sessionId: entry.sessionId }),
+          );
+        } catch (error) {
+          throw new SessionTranscriptInitializationError(error);
+        }
       },
-      createSessionTranscriptHeader({ cwd: options.cwd, sessionId: created.entry.sessionId }),
-    );
+    });
   } catch (err) {
+    if (!(err instanceof SessionTranscriptInitializationError)) {
+      throw err;
+    }
     return {
       ok: false,
       error: formatErrorMessage(err),
       phase: "transcript",
     };
   }
-
-  const entry = created.entry;
-  await applySessionEntryLifecycleMutation({
-    agentId,
-    storePath,
-    removals: resolved.legacyKeys.map((sessionKey) => ({ sessionKey })),
-    upserts: [{ sessionKey: resolved.normalizedKey, entry }],
-    skipMaintenance: true,
-  });
   return { ok: true, entry, sessionFile: resolved.normalizedKey };
 }
 
@@ -323,6 +392,14 @@ export async function recordInboundSessionMeta(
   params: RecordInboundSessionMetaParams,
 ): Promise<SessionEntry | null> {
   return await recordSqliteInboundSessionMeta(params);
+}
+
+/** Core-only inbound metadata writer carrying a non-serializable subject issuer. */
+export async function recordInboundSessionMetaWithTrustedMemorySubject(
+  params: RecordInboundSessionMetaParams,
+  memorySubjectIssuer: TrustedSessionMemorySubjectIssuer,
+): Promise<SessionEntry | null> {
+  return await recordSqliteInboundSessionMetaWithTrustedMemorySubject(params, memorySubjectIssuer);
 }
 
 /**

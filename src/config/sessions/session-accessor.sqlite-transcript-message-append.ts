@@ -10,6 +10,7 @@ import type {
 import type { ResolvedTranscriptScope } from "./session-accessor.sqlite-scope.js";
 import { readActiveTranscriptEntryAnchorInTransaction } from "./session-accessor.sqlite-transcript-anchor.js";
 import { resolveTranscriptMessageAppendParent } from "./session-accessor.sqlite-transcript-parent.js";
+import type { TranscriptMemorySubjectRootOptions } from "./session-accessor.sqlite-transcript-state.js";
 import {
   appendTranscriptEventInTransaction,
   ensureTranscriptHeader,
@@ -97,7 +98,8 @@ export function appendSqliteTranscriptMessageInTransaction<TMessage>(
   const messageId = options.eventId ?? randomUUID();
   const now = options.now ?? Date.now();
   const finalMessage = serializeForStorage(prepared);
-  ensureTranscriptHeader(database, resolved, options.cwd, now);
+  const rootOptions: TranscriptMemorySubjectRootOptions = options;
+  ensureTranscriptHeader(database, resolved, options.cwd, now, rootOptions);
   const parentId = resolveTranscriptMessageAppendParent(database, resolved.sessionId, options);
   const event = {
     type: "message",
@@ -107,6 +109,7 @@ export function appendSqliteTranscriptMessageInTransaction<TMessage>(
     message: finalMessage,
   };
   const appended = appendTranscriptEventInTransaction(database, resolved, event, {
+    ...rootOptions,
     dedupeByMessageIdempotency:
       options.idempotencyLookup !== "caller-checked" &&
       options.idempotencyLookup !== "scan-assistant",

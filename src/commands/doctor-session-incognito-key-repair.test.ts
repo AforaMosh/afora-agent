@@ -2,6 +2,7 @@ import fs from "node:fs";
 import { afterEach, describe, expect, it } from "vitest";
 import { createTempDirTracker } from "../../test/helpers/temp-dir.js";
 import { listSessionEntries } from "../config/sessions/session-accessor.js";
+import { readCurrentSessionMemorySubject } from "../config/sessions/session-memory-subject-access.js";
 import {
   closeOpenClawAgentDatabasesForTest,
   openOpenClawAgentDatabase,
@@ -21,6 +22,136 @@ afterEach(() => {
 });
 
 describe("doctor reserved incognito session key repair", () => {
+  it("repairs an old database without lazily creating memory subject tables", () => {
+    const stateDir = fs.realpathSync(tempDirs.make("openclaw-doctor-incognito-old-schema-"));
+    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    const sqlitePath = resolveOpenClawAgentSqlitePath({ agentId: "main", env });
+    const database = openOpenClawAgentDatabase({ agentId: "main", env, path: sqlitePath });
+    const oldKey = "agent:main:dashboard:incognito-old-schema";
+    const newKey = "agent:main:dashboard:legacy-incognito-old-schema";
+    try {
+      database.db
+        .prepare(
+          "INSERT INTO session_nodes (session_key, current_session_id, entry_json, updated_at) VALUES (?, 'old-schema-session', ?, 1)",
+        )
+        .run(oldKey, JSON.stringify({ sessionId: "old-schema-session", updatedAt: 1 }));
+      database.db
+        .prepare(
+          "INSERT INTO session_windows (session_id, session_key, session_scope, created_at, updated_at) VALUES ('old-schema-session', ?, 'conversation', 1, 1)",
+        )
+        .run(oldKey);
+      database.db.exec(`
+        DROP TRIGGER IF EXISTS session_memory_subjects_reject_update;
+        DROP TABLE session_memory_subject_snapshots;
+        DROP TABLE session_memory_subjects;
+      `);
+      closeOpenClawAgentDatabasesForTest();
+
+      expect(repairReservedIncognitoSessionKeys({ apply: true, cfg: {}, env })).toEqual({
+        found: 1,
+        repaired: 1,
+      });
+
+      const reopened = openOpenClawAgentDatabase({ agentId: "main", env, path: sqlitePath });
+      expect(reopened.db.prepare("SELECT session_key FROM session_nodes").get()).toEqual({
+        session_key: newKey,
+      });
+      expect(
+        reopened.db
+          .prepare("SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = ?")
+          .get("session_memory_subjects"),
+      ).toBeUndefined();
+      expect(
+        reopened.db
+          .prepare("SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = ?")
+          .get("session_memory_subject_snapshots"),
+      ).toBeUndefined();
+    } finally {
+      closeOpenClawAgentDatabasesForTest();
+    }
+  });
+
+  it("rehomes immutable memory subject records with the renamed session", () => {
+    const stateDir = fs.realpathSync(tempDirs.make("openclaw-doctor-incognito-subject-"));
+    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    const sqlitePath = resolveOpenClawAgentSqlitePath({ agentId: "main", env });
+    const database = openOpenClawAgentDatabase({ agentId: "main", env, path: sqlitePath });
+    const oldKey = "agent:main:dashboard:incognito-subject";
+    const newKey = "agent:main:dashboard:legacy-incognito-subject";
+    const subjectRevision = "subject-revision";
+    const sessionIdentityRevision = "session-identity-revision";
+    try {
+      database.db
+        .prepare(
+          "INSERT INTO session_nodes (session_key, current_session_id, entry_json, updated_at) VALUES (?, 'subject-session', ?, 1)",
+        )
+        .run(oldKey, JSON.stringify({ sessionId: "subject-session", updatedAt: 1 }));
+      database.db
+        .prepare(
+          "INSERT INTO session_windows (session_id, session_key, session_scope, created_at, updated_at) VALUES ('subject-session', ?, 'conversation', 1, 1)",
+        )
+        .run(oldKey);
+      database.db
+        .prepare(
+          `INSERT INTO session_memory_subjects (
+            session_key, subject_revision, subject_kind, principal_id,
+            conversation_principal_id, channel, account_id, ambiguous_reason,
+            creation_evidence_kind, creation_evidence_revision, creation_binding_id,
+            canonical_conversation_ref, created_at
+          ) VALUES (?, ?, 'agent', 'agent:main', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 123)`,
+        )
+        .run(oldKey, subjectRevision);
+      database.db
+        .prepare(
+          "INSERT INTO session_memory_subject_snapshots (session_id, session_key, subject_revision, session_identity_revision, created_at) VALUES ('subject-session', ?, ?, ?, 456)",
+        )
+        .run(oldKey, subjectRevision, sessionIdentityRevision);
+
+      expect(repairReservedIncognitoSessionKeys({ apply: true, cfg: {}, env })).toEqual({
+        found: 1,
+        repaired: 1,
+      });
+      expect(
+        database.db
+          .prepare(
+            "SELECT session_key, subject_revision, subject_kind, principal_id, created_at FROM session_memory_subjects",
+          )
+          .get(),
+      ).toEqual({
+        session_key: newKey,
+        subject_revision: subjectRevision,
+        subject_kind: "agent",
+        principal_id: "agent:main",
+        created_at: 123,
+      });
+      expect(
+        database.db
+          .prepare(
+            "SELECT session_key, subject_revision, session_identity_revision, created_at FROM session_memory_subject_snapshots WHERE session_id = 'subject-session'",
+          )
+          .get(),
+      ).toEqual({
+        session_key: newKey,
+        subject_revision: subjectRevision,
+        session_identity_revision: sessionIdentityRevision,
+        created_at: 456,
+      });
+
+      closeOpenClawAgentDatabasesForTest();
+      expect(
+        readCurrentSessionMemorySubject({ agentId: "main", env, sessionKey: newKey }),
+      ).toMatchObject({
+        sessionId: "subject-session",
+        sessionKey: newKey,
+        subjectRevision,
+        sessionIdentityRevision,
+        subject: { version: 1, kind: "agent", principalId: "agent:main" },
+      });
+    } finally {
+      closeOpenClawAgentDatabasesForTest();
+    }
+  });
+
   it("renames durable collisions and every key-bearing linkage idempotently", () => {
     const stateDir = fs.realpathSync(tempDirs.make("openclaw-doctor-incognito-key-"));
     const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };

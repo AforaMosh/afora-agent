@@ -47,7 +47,10 @@ import {
   readCommittedSqliteTranscriptMessageSequence,
   rememberCommittedSqliteTranscriptMessageSequencesInTransaction,
 } from "./session-accessor.sqlite-transcript-sequences.js";
-import { readTranscriptGenerationInTransaction } from "./session-accessor.sqlite-transcript-state.js";
+import {
+  readTranscriptGenerationInTransaction,
+  type TranscriptMemorySubjectRootOptions,
+} from "./session-accessor.sqlite-transcript-state.js";
 import {
   appendTranscriptEventInTransaction,
   replaceSqliteTranscriptEventsInTransaction,
@@ -109,11 +112,12 @@ type SqliteTranscriptSnapshotState =
 export async function replaceSqliteTranscriptEvents(
   scope: SessionTranscriptAccessScope,
   events: TranscriptEvent[],
+  options: TranscriptMemorySubjectRootOptions = {},
 ): Promise<void> {
   const resolved = resolveSqliteTranscriptScope(scope);
   await runExclusiveSqliteSessionWrite(resolved, async () => {
     runOpenClawAgentWriteTransaction((database) => {
-      replaceSqliteTranscriptEventsInTransaction(database, resolved, events);
+      replaceSqliteTranscriptEventsInTransaction(database, resolved, events, options);
     }, toDatabaseOptions(resolved));
   });
 }
@@ -155,6 +159,7 @@ export async function rewriteSqliteTranscriptEventRowsExact(
 export function replaceSqliteTranscriptEventsSync(
   scope: SessionTranscriptAccessScope,
   events: TranscriptEvent[],
+  options: TranscriptMemorySubjectRootOptions = {},
 ): boolean {
   const resolved = resolveSqliteTranscriptScope(scope);
   let replaced = false;
@@ -163,7 +168,7 @@ export function replaceSqliteTranscriptEventsSync(
     if (!fresh || fresh.entry.sessionId !== resolved.sessionId) {
       return;
     }
-    replaceSqliteTranscriptEventsInTransaction(database, resolved, events);
+    replaceSqliteTranscriptEventsInTransaction(database, resolved, events, options);
     replaced = true;
   }, toDatabaseOptions(resolved));
   return replaced;

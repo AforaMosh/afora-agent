@@ -48,6 +48,10 @@ import {
 } from "./session-accessor.sqlite-scope.js";
 import { appendTranscriptEventsInTransaction } from "./session-accessor.sqlite-transcript-store.js";
 import { preserveSqliteSameKeySessionRolloverLineage } from "./session-entry-lineage.js";
+import {
+  prepareCurrentSessionMemorySubjectLineageSeedInTransaction,
+  type SessionMemoryScope,
+} from "./session-memory-subject.js";
 import type { InternalSessionEntry, SessionEntry } from "./types.js";
 import { mergeSessionEntry, resolveFreshSessionTotalTokens } from "./types.js";
 
@@ -70,12 +74,25 @@ export async function forkSqliteSessionTranscriptFromParent(
     return await runExclusiveSqliteSessionWrite(resolved, async () => {
       let result: ForkSessionFromParentTranscriptResult = { status: "failed" };
       runOpenClawAgentWriteTransaction((database) => {
-        result = forkSqliteParentTranscriptInTransaction(database, resolved, {
+        const fork = prepareSqliteParentTranscriptForkInTransaction(database, resolved, {
           parentEntry: params.parentEntry,
           parentSessionKey: params.parentSessionKey,
           targetSessionId: params.targetSessionId,
           targetSessionKey: params.sessionKey,
         });
+        if (fork.status !== "created") {
+          result = fork;
+          return;
+        }
+        // The forked transcript materializes its root before the caller later
+        // writes the child entry. Carry the parent's immutable subject now, or
+        // that first root write permanently freezes the child as unbound.
+        const memorySubjectSeed = prepareCurrentSessionMemorySubjectLineageSeedInTransaction(
+          database,
+          params.parentSessionKey,
+        );
+        writeSqliteForkedChildTranscriptInTransaction(database, fork, memorySubjectSeed);
+        result = { status: "created", transcript: fork.transcript };
       }, toDatabaseOptions(resolved));
       return result;
     });
@@ -88,13 +105,28 @@ export async function forkSqliteSessionTranscriptFromParent(
   if (!params.parentEntry.sessionId) {
     return { status: "missing-parent" };
   }
-  const sourceDatabase = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
-  const source = resolveSqliteParentForkSourceTranscript(
-    loadSqliteTranscriptEventsFromDatabase(sourceDatabase, params.parentEntry.sessionId),
-  );
-  if (!source) {
+  // Cross-store writes cannot commit atomically, but their source facts must
+  // still come from one source transaction. Otherwise a reset can pair an old
+  // transcript with a newer immutable subject before the child is written.
+  const sourceSnapshot = runOpenClawAgentWriteTransaction((database) => {
+    const source = resolveSqliteParentForkSourceTranscript(
+      loadSqliteTranscriptEventsFromDatabase(database, params.parentEntry.sessionId),
+    );
+    if (!source) {
+      return undefined;
+    }
+    return {
+      source,
+      memorySubjectSeed: prepareCurrentSessionMemorySubjectLineageSeedInTransaction(
+        database,
+        params.parentSessionKey,
+      ),
+    };
+  }, toDatabaseOptions(resolved));
+  if (!sourceSnapshot) {
     return { status: "failed" };
   }
+  const { source, memorySubjectSeed } = sourceSnapshot;
   const parentSessionFile = formatLegacySqliteSessionMarkerForScope({
     ...resolved,
     sessionId: params.parentEntry.sessionId,
@@ -109,10 +141,17 @@ export async function forkSqliteSessionTranscriptFromParent(
     };
     const sessionFile = formatSqliteSessionReferenceForScope(targetScope);
     runOpenClawAgentWriteTransaction((database) => {
-      writeSqliteForkedChildTranscriptInTransaction(database, targetScope, {
-        parentSessionFile,
-        source,
-      });
+      writeSqliteForkedChildTranscriptInTransaction(
+        database,
+        {
+          status: "created",
+          parentSessionFile,
+          source,
+          targetScope,
+          transcript: { sessionFile, sessionId },
+        },
+        memorySubjectSeed,
+      );
     }, toDatabaseOptions(target));
     return { status: "created", transcript: { sessionFile, sessionId } };
   });
@@ -191,20 +230,21 @@ export async function forkSqliteSessionEntryFromParentTarget(
     let previousIdentity = new Map<string, SessionEntry>();
     let currentIdentity = new Map<string, SessionEntry>();
     runOpenClawAgentWriteTransaction((writeDatabase) => {
-      const freshParent = resolveSqliteLifecyclePrimaryEntry(writeDatabase, parentTarget)?.entry;
-      if (!freshParent?.sessionId) {
+      const freshParentResult = resolveSqliteLifecyclePrimaryEntry(writeDatabase, parentTarget);
+      if (!freshParentResult?.entry.sessionId) {
         result = { status: "missing-parent" };
         return;
       }
+      const freshParent = freshParentResult.entry;
       const freshExisting = resolveSqliteLifecyclePrimaryEntry(writeDatabase, sessionTarget);
       const freshBase = freshExisting?.entry ?? params.fallbackEntry;
       if (!freshBase) {
         result = { status: "missing-entry" };
         return;
       }
-      const fork = forkSqliteParentTranscriptInTransaction(writeDatabase, resolved, {
+      const fork = prepareSqliteParentTranscriptForkInTransaction(writeDatabase, resolved, {
         parentEntry: freshParent,
-        parentSessionKey: parentTarget.canonicalKey,
+        parentSessionKey: freshParentResult.key,
         targetSessionKey: sessionTarget.canonicalKey,
       });
       if (fork.status !== "created") {
@@ -221,7 +261,7 @@ export async function forkSqliteSessionEntryFromParentTarget(
       const forkIdentityPatch: Partial<InternalSessionEntry> = {
         ...patch,
         forkSource: {
-          sessionKey: parentTarget.canonicalKey,
+          sessionKey: freshParentResult.key,
           sessionId: freshParent.sessionId,
         },
         forkedFromParent: true,
@@ -232,10 +272,18 @@ export async function forkSqliteSessionEntryFromParentTarget(
         totalTokensVersion: undefined,
       };
       const next = mergeSessionEntry(freshBase, forkIdentityPatch);
+      const lineageSeed = prepareCurrentSessionMemorySubjectLineageSeedInTransaction(
+        writeDatabase,
+        freshParentResult.key,
+      );
       previousIdentity = readSqliteSessionIdentitySnapshot(writeDatabase, sessionTarget.storeKeys);
       writeSessionEntry(writeDatabase, sessionTarget.canonicalKey, next, {
         previousEntry: freshBase,
+        ...(lineageSeed ? { memorySubjectSeed: lineageSeed } : {}),
       });
+      // A child transcript must observe the entry-owned immutable subject, not
+      // create its own unbound root before the lineage write becomes visible.
+      writeSqliteForkedChildTranscriptInTransaction(writeDatabase, fork);
       rehomeSqliteSessionWindows(
         writeDatabase,
         sessionTarget.canonicalKey,
@@ -344,7 +392,28 @@ export async function resolveSqliteSessionParentForkDecision(params: {
   );
 }
 
-function forkSqliteParentTranscriptInTransaction(
+type PreparedSqliteParentTranscriptFork =
+  | {
+      status: "created";
+      parentSessionFile: string;
+      source: SqliteParentForkSourceTranscript;
+      targetScope: ResolvedTranscriptScope;
+      transcript: { sessionFile: string; sessionId: string };
+    }
+  | { status: "missing-parent" }
+  | { status: "failed" };
+
+function resolveForkedTranscriptMemorySubjectScope(sessionKey: string): SessionMemoryScope {
+  const normalizedKey = sessionKey.trim().toLowerCase();
+  // Generic forks materialize a transcript before their caller owns an entry.
+  // A `main` target can later be a shared direct session, so quarantine it now
+  // instead of freezing copied private authority onto a shared root.
+  return normalizedKey === "main" || normalizedKey.endsWith(":main")
+    ? "shared-main"
+    : "conversation";
+}
+
+function prepareSqliteParentTranscriptForkInTransaction(
   database: OpenClawAgentDatabase,
   resolved: ResolvedSqliteScope,
   params: {
@@ -353,7 +422,7 @@ function forkSqliteParentTranscriptInTransaction(
     targetSessionId?: string;
     targetSessionKey: string;
   },
-): ForkSessionFromParentTranscriptResult {
+): PreparedSqliteParentTranscriptFork {
   if (!params.parentEntry.sessionId) {
     return { status: "missing-parent" };
   }
@@ -375,12 +444,11 @@ function forkSqliteParentTranscriptInTransaction(
     sessionKey: normalizeSqliteSessionKey(params.parentSessionKey),
   });
   const sessionFile = formatSqliteSessionReferenceForScope(targetScope);
-  writeSqliteForkedChildTranscriptInTransaction(database, targetScope, {
-    parentSessionFile,
-    source,
-  });
   return {
     status: "created",
+    parentSessionFile,
+    source,
+    targetScope,
     transcript: {
       sessionFile,
       sessionId,
@@ -390,19 +458,23 @@ function forkSqliteParentTranscriptInTransaction(
 
 function writeSqliteForkedChildTranscriptInTransaction(
   database: OpenClawAgentDatabase,
-  targetScope: ResolvedTranscriptScope,
-  params: {
-    parentSessionFile: string;
-    source: SqliteParentForkSourceTranscript;
-  },
+  fork: Extract<PreparedSqliteParentTranscriptFork, { status: "created" }>,
+  memorySubjectSeed?: ReturnType<typeof prepareCurrentSessionMemorySubjectLineageSeedInTransaction>,
 ): void {
+  const memorySubjectRoot = memorySubjectSeed
+    ? {
+        memorySubjectSeed,
+        memorySubjectScope: resolveForkedTranscriptMemorySubjectScope(fork.targetScope.sessionKey),
+      }
+    : {};
   appendTranscriptEventsInTransaction(
     database,
-    targetScope,
+    fork.targetScope,
     buildSqliteForkedChildTranscriptEvents({
-      parentSessionFile: params.parentSessionFile,
-      source: params.source,
-      targetSessionId: targetScope.sessionId,
+      parentSessionFile: fork.parentSessionFile,
+      source: fork.source,
+      targetSessionId: fork.targetScope.sessionId,
     }),
+    memorySubjectRoot,
   );
 }

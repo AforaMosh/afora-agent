@@ -41,9 +41,22 @@ export type WithRunSession = (
   result: Omit<RunCronAgentTurnResult, "sessionId" | "sessionKey">,
 ) => RunCronAgentTurnResult;
 
-const sessionAccessorRuntimeLoader = createLazyImportLoader(
-  () => import("../../config/sessions/session-accessor.js"),
-);
+const cronSessionMemoryRuntimeLoader = createLazyImportLoader(async () => {
+  const [entry, projection, subject] = await Promise.all([
+    import("../../config/sessions/session-accessor.sqlite-entry.js"),
+    import("../../config/sessions/session-accessor.sqlite-projection.js"),
+    import("../../config/sessions/session-memory-subject.js"),
+  ]);
+  return {
+    applySqliteSessionEntryLifecycleMutationWithTrustedMemorySubjects:
+      projection.applySqliteSessionEntryLifecycleMutationWithTrustedMemorySubjects,
+    createTrustedSessionMemorySubjectIssuer: subject.createTrustedSessionMemorySubjectIssuer,
+    patchSqliteSessionEntryTargetWithTrustedMemorySubject:
+      entry.patchSqliteSessionEntryTargetWithTrustedMemorySubject,
+    prepareAutonomousAgentSessionMemorySubjectSeed:
+      subject.prepareAutonomousAgentSessionMemorySubjectSeed,
+  };
+});
 const cronExternalContentRuntimeLoader = createLazyImportLoader(
   () => import("./run-external-content.runtime.js"),
 );
@@ -53,8 +66,8 @@ const cronAuthProfileRuntimeLoader = createLazyImportLoader(
 const cronModelPreflightRuntimeLoader = createLazyImportLoader(
   () => import("./model-preflight.runtime.js"),
 );
-export async function loadSessionAccessorRuntime() {
-  return await sessionAccessorRuntimeLoader.load();
+export async function loadCronSessionMemoryRuntime() {
+  return await cronSessionMemoryRuntimeLoader.load();
 }
 
 export async function loadCronExternalContentRuntime() {

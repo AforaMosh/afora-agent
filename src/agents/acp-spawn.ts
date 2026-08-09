@@ -13,7 +13,12 @@ import {
   loadSessionEntryReadOnly,
   upsertSessionEntry,
 } from "../config/sessions/session-accessor.js";
+import { upsertSqliteSessionEntryWithTrustedMemorySubject as upsertSessionEntryWithTrustedMemorySubject } from "../config/sessions/session-accessor.sqlite-entry.js";
 import { buildSessionCreationStamp } from "../config/sessions/session-entry-provenance.js";
+import {
+  createTrustedSessionMemorySubjectIssuer,
+  prepareAutonomousAgentSessionMemorySubjectSeed,
+} from "../config/sessions/session-memory-subject.js";
 import type { SessionEntry } from "../config/sessions/types.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { callGateway } from "../gateway/call.js";
@@ -30,8 +35,10 @@ import {
   normalizeOptionalAgentId,
   parseAgentSessionKey,
   resolveAgentIdFromSessionKey,
+  isIncognitoSessionKey,
 } from "../routing/session-key.js";
 import { recordSessionCreated, recordSubagentSpawned } from "../sessions/session-state-events.js";
+import { resolveIncognitoOpenClawAgentSqlitePath } from "../state/openclaw-agent-db.js";
 import { deliveryContextFromSession } from "../utils/delivery-context.shared.js";
 import { countUntrackedActiveAcpRunsForOwner } from "./acp-spawn-admission.js";
 import {
@@ -405,7 +412,11 @@ export async function spawnAcpDirect(
     requester: requesterState,
   });
 
-  const sessionKey = mintSpawnSessionKey({ targetAgentId, backend: "acp" });
+  const incognito = isIncognitoSessionKey(requesterInternalKey);
+  const mintedSessionKey = mintSpawnSessionKey({ targetAgentId, backend: "acp" });
+  const sessionKey = incognito
+    ? mintedSessionKey.replace(":acp:", ":acp:incognito-")
+    : mintedSessionKey;
   const runtimeMode = resolveAcpSessionMode(spawnMode);
   const resolvedCwd = resolveSpawnedWorkspaceInheritance({
     config: cfg,
@@ -501,7 +512,9 @@ export async function spawnAcpDirect(
         via: "spawn",
         actor: { type: "agent", id: requesterInternalKey },
       });
-      const storePath = resolveStorePath(cfg.session?.store, { agentId: targetAgentId });
+      const storePath = incognito
+        ? resolveIncognitoOpenClawAgentSqlitePath({ agentId: targetAgentId })
+        : resolveStorePath(cfg.session?.store, { agentId: targetAgentId });
       const childSessionPatch = admission.childSessionPatch
         ? {
             spawnDepth: admission.childSessionPatch.spawnDepth,
@@ -511,23 +524,32 @@ export async function spawnAcpDirect(
             subagentControlScope: admission.childSessionPatch.subagentControlScope,
           }
         : {};
+      const childEntryPatch = {
+        ...creationStamp,
+        spawnedBy: requesterInternalKey,
+        completionOwnerSessionKey: ownership.completionRequesterSessionKey,
+        // Navigation parent is stamped at creation so the durable tree edge
+        // does not depend on the control-lineage field.
+        parentSessionKey: requesterInternalKey,
+        ...childSessionPatch,
+        inheritedToolPolicyVersion: 1,
+        ...inheritedToolAllowPatch(ctx.inheritedToolAllowlist),
+        ...inheritedToolDenyPatch(ctx.inheritedToolDenylist),
+        ...(params.label ? { label: params.label } : {}),
+        ...(incognito ? { incognito: true as const } : {}),
+      };
       childCreationEntry =
-        (await upsertSessionEntry(
-          { storePath, sessionKey },
-          {
-            ...creationStamp,
-            spawnedBy: requesterInternalKey,
-            completionOwnerSessionKey: ownership.completionRequesterSessionKey,
-            // Navigation parent is stamped at creation so the durable tree edge
-            // does not depend on the control-lineage field.
-            parentSessionKey: requesterInternalKey,
-            ...childSessionPatch,
-            inheritedToolPolicyVersion: 1,
-            ...inheritedToolAllowPatch(ctx.inheritedToolAllowlist),
-            ...inheritedToolDenyPatch(ctx.inheritedToolDenylist),
-            ...(params.label ? { label: params.label } : {}),
-          },
-        )) ?? undefined;
+        (incognito
+          ? await upsertSessionEntry({ storePath, sessionKey }, childEntryPatch)
+          : await upsertSessionEntryWithTrustedMemorySubject(
+              { storePath, sessionKey },
+              childEntryPatch,
+              // ACP has no requester-derived memory subject: the validated target
+              // agent owns its durable autonomous child from its first write.
+              createTrustedSessionMemorySubjectIssuer(() =>
+                prepareAutonomousAgentSessionMemorySubjectSeed(targetAgentId),
+              ),
+            )) ?? undefined;
       sessionCreated = true;
       const initializedSession = await initializeAcpSpawnRuntime({
         cfg,

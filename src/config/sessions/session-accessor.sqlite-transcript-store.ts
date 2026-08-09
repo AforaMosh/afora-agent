@@ -28,6 +28,7 @@ import {
   readNextTranscriptSeq,
   rotateTranscriptGenerationInTransaction,
   touchTranscriptMutationInTransaction,
+  type TranscriptMemorySubjectRootOptions,
 } from "./session-accessor.sqlite-transcript-state.js";
 import {
   deleteSessionTranscriptIndexInTransaction,
@@ -46,7 +47,7 @@ export function appendTranscriptEventInTransaction(
   database: OpenClawAgentDatabase,
   scope: ResolvedTranscriptScope,
   event: TranscriptEvent,
-  options: {
+  options: TranscriptMemorySubjectRootOptions & {
     allowStoredAlias?: boolean;
     dedupeByMessageIdempotency?: boolean;
     onProjectionReconcileNeeded?: () => void;
@@ -57,9 +58,7 @@ export function appendTranscriptEventInTransaction(
   const persistedEvent = canonicalizeTranscriptEventMedia(event);
   const db = getSessionKysely(database.db);
   const createdAt = readEventTimestamp(persistedEvent) ?? Date.now();
-  ensureTranscriptSessionRoot(database, scope, createdAt, {
-    allowStoredAlias: options.allowStoredAlias === true,
-  });
+  ensureTranscriptSessionRoot(database, scope, createdAt, options);
   ensureTranscriptGenerationInTransaction(database, scope.sessionId);
   const identity = readTranscriptEventIdentity(persistedEvent);
   if (identity && readTranscriptIdentityByEventId(database, scope.sessionId, identity.eventId)) {
@@ -156,12 +155,14 @@ export function appendTranscriptEventsInTransaction(
   database: OpenClawAgentDatabase,
   scope: ResolvedTranscriptScope,
   events: readonly TranscriptEvent[],
+  options: TranscriptMemorySubjectRootOptions = {},
 ): number {
   let appended = 0;
   let projectionNeedsRebuild = false;
   for (const event of events) {
     if (
       appendTranscriptEventInTransaction(database, scope, event, {
+        ...options,
         onProjectionReconcileNeeded: () => {
           projectionNeedsRebuild = true;
         },
@@ -242,6 +243,7 @@ export function ensureTranscriptHeader(
   scope: ResolvedTranscriptScope,
   cwd: string | undefined,
   now: number,
+  options: TranscriptMemorySubjectRootOptions = {},
 ): void {
   const db = getSessionKysely(database.db);
   const existing = executeSqliteQueryTakeFirstSync(
@@ -259,8 +261,9 @@ export function ensureTranscriptHeader(
     database,
     scope,
     createSessionTranscriptHeader({ cwd, sessionId: scope.sessionId }),
+    options,
   );
-  ensureTranscriptSessionRoot(database, scope, now);
+  ensureTranscriptSessionRoot(database, scope, now, options);
 }
 
 export function readActiveTranscriptAppendParentId(
@@ -323,7 +326,7 @@ export function replaceSqliteTranscriptEventsInTransaction(
   database: OpenClawAgentDatabase,
   resolved: ResolvedTranscriptScope,
   events: readonly TranscriptEvent[],
-  options: {
+  options: TranscriptMemorySubjectRootOptions & {
     createdAtByIndex?: readonly number[];
     /** Keep maintenance rewrites at their existing recency while invalidating stale projections. */
     preserveSessionWindowRecency?: boolean;
@@ -347,7 +350,12 @@ export function replaceSqliteTranscriptEventsInTransaction(
     return;
   }
   if (!deleted || options.preserveSessionWindowRecency !== true) {
-    ensureTranscriptSessionRoot(database, resolved, readEventTimestamp(events[0]) ?? Date.now());
+    ensureTranscriptSessionRoot(
+      database,
+      resolved,
+      readEventTimestamp(events[0]) ?? Date.now(),
+      options,
+    );
   }
   if (deleted || previousGeneration) {
     rotateTranscriptGenerationInTransaction(database, resolved.sessionId);

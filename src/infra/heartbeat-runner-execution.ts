@@ -28,10 +28,14 @@ import { createReplyPrefixContext } from "../channels/reply-prefix.js";
 import { getRuntimeConfig } from "../config/config.js";
 import { resolveStorePath } from "../config/sessions/paths.js";
 import {
-  applySessionEntryLifecycleMutation,
   loadExactSessionEntry,
   type SessionEntryLifecycleRemoval,
 } from "../config/sessions/session-accessor.js";
+import { applySqliteSessionEntryLifecycleMutationWithTrustedMemorySubjects } from "../config/sessions/session-accessor.sqlite-projection.js";
+import {
+  createTrustedSessionMemorySubjectIssuer,
+  prepareAutonomousAgentSessionMemorySubjectSeed,
+} from "../config/sessions/session-memory-subject.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import {
   hasActiveCronJobs,
@@ -572,33 +576,39 @@ export async function prepareHeartbeatRunStage(wake: ReadyHeartbeatWake) {
           },
         ]
       : [];
-    const lifecycleResult = await applySessionEntryLifecycleMutation({
-      activeSessionKey: isolatedSessionKey,
-      storePath: isolatedStorePath,
-      removals,
-      upserts: [
-        {
-          sessionKey: isolatedSessionKey,
-          buildEntry: ({ store }) => {
-            const cronSession = resolveCronSession({
-              cfg,
-              sessionKey: isolatedSessionKey,
-              agentId,
-              nowMs: startedAt,
-              forceNew: true,
-              store,
-            });
-            const nextEntry = {
-              ...cronSession.sessionEntry,
-              heartbeatIsolatedBaseSessionKey: isolatedBaseSessionKey,
-            };
-            runSessionEntry = nextEntry;
-            return nextEntry;
+    const memorySubjectIssuer = createTrustedSessionMemorySubjectIssuer(() =>
+      prepareAutonomousAgentSessionMemorySubjectSeed(agentId),
+    );
+    const lifecycleResult = await applySqliteSessionEntryLifecycleMutationWithTrustedMemorySubjects(
+      {
+        activeSessionKey: isolatedSessionKey,
+        storePath: isolatedStorePath,
+        removals,
+        upserts: [
+          {
+            sessionKey: isolatedSessionKey,
+            memorySubjectIssuer,
+            buildEntry: ({ store }) => {
+              const cronSession = resolveCronSession({
+                cfg,
+                sessionKey: isolatedSessionKey,
+                agentId,
+                nowMs: startedAt,
+                forceNew: true,
+                store,
+              });
+              const nextEntry = {
+                ...cronSession.sessionEntry,
+                heartbeatIsolatedBaseSessionKey: isolatedBaseSessionKey,
+              };
+              runSessionEntry = nextEntry;
+              return nextEntry;
+            },
           },
-        },
-      ],
-      captureArtifactCleanupError: true,
-    });
+        ],
+        captureArtifactCleanupError: true,
+      },
+    );
     if (lifecycleResult.artifactCleanupError) {
       log.warn("heartbeat: failed to archive stale isolated session transcript", {
         err: formatErrorMessage(lifecycleResult.artifactCleanupError),

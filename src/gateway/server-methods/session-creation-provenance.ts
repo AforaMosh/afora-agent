@@ -2,6 +2,14 @@ import type {
   SessionCreatedActor,
   SessionCreatedVia,
 } from "../../config/sessions/session-entry-provenance.js";
+import {
+  createTrustedSessionMemorySubjectIssuer,
+  prepareAutonomousAgentSessionMemorySubjectSeed,
+  prepareAmbiguousSessionMemorySubjectSeed,
+  prepareExplicitSessionMemorySubjectSeed,
+  prepareGatewayProfileSessionMemorySubjectSeed,
+  type TrustedSessionMemorySubjectIssuer,
+} from "../../config/sessions/session-memory-subject.js";
 import type { AgentRuntimeIdentity } from "../agent-runtime-identity-token.js";
 
 export type TrustedSessionCreation = {
@@ -27,8 +35,58 @@ type SessionCreationClient = {
     syntheticClient?: true;
     sessionCreation?: TrustedSessionCreation;
     agentRuntimeIdentity?: AgentRuntimeIdentity;
+    /** Closed server-only principal for Gateway restart recovery dispatch. */
+    autonomousMemorySubject?: "gateway-recovery";
   };
 };
+
+/**
+ * Gateway profile IDs are server-attested at connection time. Resolve the
+ * durable principal only in the entry transaction so stale profile state fails
+ * closed to an immutable ambiguous subject instead of being captured early.
+ */
+export function createGatewayProfileSessionMemorySubjectIssuer(
+  client: SessionCreationClient | null | undefined,
+): TrustedSessionMemorySubjectIssuer | undefined {
+  const profileId = client?.authenticatedUserProfile?.profileId;
+  if (!profileId) {
+    return undefined;
+  }
+  return createTrustedSessionMemorySubjectIssuer(
+    () =>
+      prepareGatewayProfileSessionMemorySubjectSeed(profileId) ??
+      prepareAmbiguousSessionMemorySubjectSeed("unbound"),
+  );
+}
+
+/**
+ * Selects only server-attested autonomous principals for Gateway agent runs.
+ * Request fields, session keys, and generic synthetic clients never influence
+ * the immutable subject issued by the first SQLite write.
+ */
+export function createAgentRunSessionMemorySubjectIssuer(
+  client: SessionCreationClient | null | undefined,
+): TrustedSessionMemorySubjectIssuer | undefined {
+  const profileIssuer = createGatewayProfileSessionMemorySubjectIssuer(client);
+  if (profileIssuer) {
+    return profileIssuer;
+  }
+  const agentId = client?.internal?.agentRuntimeIdentity?.agentId;
+  if (agentId) {
+    return createTrustedSessionMemorySubjectIssuer(() =>
+      prepareAutonomousAgentSessionMemorySubjectSeed(agentId),
+    );
+  }
+  if (client?.internal?.autonomousMemorySubject === "gateway-recovery") {
+    return createTrustedSessionMemorySubjectIssuer(() =>
+      prepareExplicitSessionMemorySubjectSeed({
+        kind: "system",
+        stableSubjectId: "gateway-recovery",
+      }),
+    );
+  }
+  return undefined;
+}
 
 export function resolveOperatorSessionCreation(
   client: SessionCreationClient | null | undefined,

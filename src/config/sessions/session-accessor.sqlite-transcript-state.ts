@@ -14,6 +14,11 @@ import {
   assertCanonicalSessionKeyWriteMatchesDatabase,
   canonicalSessionKeyMigrationRequiredError,
 } from "./session-canonical-key.js";
+import {
+  persistSessionMemorySubjectInTransaction,
+  type SessionMemoryScope,
+  type TrustedSessionMemorySubjectSeed,
+} from "./session-memory-subject.js";
 import { deleteSessionTranscriptIndexInTransaction } from "./session-transcript-index.js";
 import {
   foldedSessionKeyAliasCandidates,
@@ -23,6 +28,42 @@ import {
 
 function createTranscriptGeneration(): string {
   return randomUUID().replaceAll("-", "");
+}
+
+export type TranscriptMemorySubjectRootOptions =
+  | {
+      /** No trusted provenance: the persistence owner materializes an ambiguous subject. */
+      memorySubjectSeed?: undefined;
+      /** Existing window scope remains authoritative on later writes. */
+      memorySubjectScope?: SessionMemoryScope;
+    }
+  | {
+      /** Host-trusted provenance for a newly materialized transcript root. */
+      memorySubjectSeed: TrustedSessionMemorySubjectSeed;
+      /** A seeded root must state its audience scope explicitly. */
+      memorySubjectScope: SessionMemoryScope;
+    };
+
+function resolveTranscriptMemorySubjectScope(
+  database: OpenClawAgentDatabase,
+  sessionId: string,
+): SessionMemoryScope {
+  const sessionScope = executeSqliteQueryTakeFirstSync(
+    database.db,
+    getSessionKysely(database.db)
+      .selectFrom("session_windows")
+      .select("session_scope")
+      .where("session_id", "=", sessionId),
+  )?.session_scope;
+  switch (sessionScope) {
+    case "conversation":
+    case "shared-main":
+    case "group":
+    case "channel":
+      return sessionScope;
+    default:
+      throw new Error(`missing or invalid transcript session scope for ${sessionId}`);
+  }
 }
 
 /** Read the current raw transcript generation inside the caller's transaction. */
@@ -80,8 +121,11 @@ export function ensureTranscriptSessionRoot(
   database: OpenClawAgentDatabase,
   scope: ResolvedTranscriptScope,
   updatedAt: number,
-  options: { allowStoredAlias?: boolean } = {},
+  options: TranscriptMemorySubjectRootOptions & { allowStoredAlias?: boolean } = {},
 ): void {
+  if (options.memorySubjectSeed && !options.memorySubjectScope) {
+    throw new Error("memorySubjectScope is required when creating a transcript root with a seed");
+  }
   if (!options.allowStoredAlias) {
     assertCanonicalSqliteSessionKeysCurrent(database);
     assertCanonicalSessionKeyWriteMatchesDatabase(database, scope.sessionKey);
@@ -148,6 +192,9 @@ export function ensureTranscriptSessionRoot(
     }
   }
   const db = getSessionKysely(database.db);
+  // Transcript-only legacy callers have no trusted subject or route classifier.
+  // Their root remains an ambiguous subject; this scope only preserves the legacy window shape.
+  const initialSessionScope = options.memorySubjectScope ?? "conversation";
   const insertedNode = executeSqliteQuerySync(
     database.db,
     db
@@ -180,7 +227,7 @@ export function ensureTranscriptSessionRoot(
         session_key: scope.sessionKey,
         previous_session_id: null,
         reason: null,
-        session_scope: "conversation",
+        session_scope: initialSessionScope,
         created_at: updatedAt,
         updated_at: updatedAt,
       })
@@ -191,6 +238,14 @@ export function ensureTranscriptSessionRoot(
         }),
       ),
   );
+  persistSessionMemorySubjectInTransaction({
+    database,
+    sessionKey: scope.sessionKey,
+    sessionId: scope.sessionId,
+    sessionScope: resolveTranscriptMemorySubjectScope(database, scope.sessionId),
+    ...(options.memorySubjectSeed ? { seed: options.memorySubjectSeed } : {}),
+    now: updatedAt,
+  });
 }
 
 export function readNextTranscriptSeq(database: OpenClawAgentDatabase, sessionId: string): number {

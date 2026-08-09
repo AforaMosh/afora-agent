@@ -70,7 +70,10 @@ export function createGatewayInstanceRuntime(
     });
   };
 
-  const recoveryClient = createSyntheticPluginRuntimeClient({ scopes: [WRITE_SCOPE] });
+  const recoveryClient = createSyntheticPluginRuntimeClient({
+    scopes: [WRITE_SCOPE],
+    autonomousMemorySubject: "gateway-recovery",
+  });
   const recoveryMethods = new Set(["agent", "agent.wait"]);
   const approvalClient = createSyntheticPluginRuntimeClient({ scopes: [APPROVALS_SCOPE] });
   const approvalMethods = new Set<GatewayNativeApprovalMethod>(GATEWAY_NATIVE_APPROVAL_METHODS);

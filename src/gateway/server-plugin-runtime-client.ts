@@ -24,6 +24,7 @@ export function createSyntheticPluginRuntimeClient(params?: {
   pluginSubagentRequester?: PluginSubagentRequesterContext;
   runtimePluginToolGrant?: RuntimePluginToolGrant;
   delegatedToolPolicyHandoffId?: string;
+  autonomousMemorySubject?: "gateway-recovery";
   sessionCreation?: TrustedSessionCreation;
   scopes?: string[];
 }): NonNullable<GatewayRequestOptions["client"]> {
@@ -50,6 +51,9 @@ export function createSyntheticPluginRuntimeClient(params?: {
       allowModelOverride: params?.allowModelOverride === true,
       ...(params?.agentRunTracking ? { agentRunTracking: params.agentRunTracking } : {}),
       ...(params?.cronRunContinuation === true ? { cronRunContinuation: true } : {}),
+      ...(params?.autonomousMemorySubject === "gateway-recovery"
+        ? { autonomousMemorySubject: "gateway-recovery" }
+        : {}),
       ...(params?.internalDeliveryMediaUrls
         ? { internalDeliveryMediaUrls: [...params.internalDeliveryMediaUrls] }
         : {}),

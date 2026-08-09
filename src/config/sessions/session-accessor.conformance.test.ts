@@ -13,6 +13,7 @@ import type { DB as OpenClawAgentKyselyDatabase } from "../../state/openclaw-age
 import {
   closeOpenClawAgentDatabasesForTest,
   openOpenClawAgentDatabase,
+  runOpenClawAgentWriteTransaction,
 } from "../../state/openclaw-agent-db.js";
 import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
 import { appendSqliteTrajectoryRuntimeEvents } from "../../trajectory/runtime-store.sqlite.js";
@@ -45,6 +46,7 @@ import {
   type TranscriptMessageAppendResult,
   type TranscriptUpdatePayload,
 } from "./session-accessor.js";
+import { writeSessionEntry } from "./session-accessor.sqlite-entry-store.js";
 import {
   appendSqliteTranscriptEvent,
   appendSqliteTranscriptMessage,
@@ -66,6 +68,8 @@ import {
   upsertSqliteSessionEntry,
 } from "./session-accessor.sqlite.js";
 import { setCanonicalSqliteSessionMainKey } from "./session-canonical-key.js";
+import { readCurrentSessionMemorySubject } from "./session-memory-subject-access.js";
+import { createTrustedSessionMemorySubjectSeed } from "./session-memory-subject-trust.js";
 import type { InternalSessionEntry, SessionCompactionCheckpoint, SessionEntry } from "./types.js";
 
 // Keep accessor conformance independent of any real openclaw.json on the machine.
@@ -2079,11 +2083,12 @@ describe("sqlite session normalization", () => {
 
   it("branches a checkpoint by copying SQLite rows and creating the entry transactionally", async () => {
     const env = { ...process.env, OPENCLAW_STATE_DIR: paths.stateDir };
+    const sourceKey = "agent:main:checkpoint-source";
     const sourceScope = {
       agentId: "main",
       env,
       sessionId: "source-session",
-      sessionKey: "agent:main:main",
+      sessionKey: sourceKey,
       storePath: paths.sqlitePath,
     };
     const preCompactionScope = {
@@ -2093,7 +2098,7 @@ describe("sqlite session normalization", () => {
     const sourceEntryScope = {
       agentId: "main",
       env,
-      sessionKey: "agent:main:main",
+      sessionKey: sourceKey,
       storePath: paths.sqlitePath,
     };
     const branchKey = "agent:main:checkpoint-branch";
@@ -2116,6 +2121,32 @@ describe("sqlite session normalization", () => {
       },
     };
 
+    const sourceEntry: InternalSessionEntry = {
+      label: "Source",
+      lifecycleRunId: "source-run",
+      sessionId: "source-session",
+      updatedAt: 10,
+      compactionCheckpoints: [checkpoint],
+    };
+    const sourceSeed = createTrustedSessionMemorySubjectSeed({
+      subject: {
+        version: 1,
+        kind: "user",
+        principalId: "checkpoint-source-principal",
+        creationEvidence: { kind: "channel-binding", revision: "checkpoint-binding-revision" },
+      },
+      subjectRevision: "checkpoint-source-subject-revision",
+      creationBindingId: "checkpoint-source-binding-id",
+    });
+    runOpenClawAgentWriteTransaction(
+      (database) => {
+        writeSessionEntry(database, sourceEntryScope.sessionKey, sourceEntry, {
+          memorySubjectSeed: sourceSeed,
+        });
+      },
+      { agentId: "main", env, path: paths.sqlitePath },
+    );
+
     await replaceSqliteTranscriptEvents(preCompactionScope, [
       { type: "session", id: "pre-compaction-session", cwd: paths.tempDir },
       { type: "message", id: "pre-msg", parentId: null, message: { content: "pre" } },
@@ -2130,14 +2161,6 @@ describe("sqlite session normalization", () => {
         message: { content: "post-two" },
       },
     ]);
-    const sourceEntry: InternalSessionEntry = {
-      label: "Source",
-      lifecycleRunId: "source-run",
-      sessionId: "source-session",
-      updatedAt: 10,
-      compactionCheckpoints: [checkpoint],
-    };
-    await upsertSqliteSessionEntry(sourceEntryScope, sourceEntry);
 
     const notify = vi.fn();
     const unsubscribe = onSessionIdentityMutation(notify);
@@ -2177,6 +2200,16 @@ describe("sqlite session normalization", () => {
       }),
     );
     expect((result.entry as InternalSessionEntry).lifecycleRunId).toBeUndefined();
+    const sourceSubject = readCurrentSessionMemorySubject(sourceEntryScope);
+    if (!sourceSubject) {
+      throw new Error("expected source memory subject");
+    }
+    expect(
+      readCurrentSessionMemorySubject({ ...sourceEntryScope, sessionKey: branchKey }),
+    ).toMatchObject({
+      subjectRevision: sourceSubject.subjectRevision,
+      creationBindingId: sourceSubject.creationBindingId,
+    });
     await expect(loadSqliteTranscriptEvents(branchScope)).resolves.toEqual([
       expect.objectContaining({ type: "session", id: result.entry.sessionId }),
       expect.objectContaining({ id: "pre-msg", type: "message" }),
@@ -2257,11 +2290,12 @@ describe("sqlite session normalization", () => {
 
   it("restores a checkpoint by copying SQLite rows and replacing the entry transactionally", async () => {
     const env = { ...process.env, OPENCLAW_STATE_DIR: paths.stateDir };
+    const sourceKey = "agent:main:checkpoint-restore-source";
     const sourceScope = {
       agentId: "main",
       env,
       sessionId: "source-session",
-      sessionKey: "agent:main:main",
+      sessionKey: sourceKey,
       storePath: paths.sqlitePath,
     };
     const preCompactionScope = {
@@ -2271,7 +2305,7 @@ describe("sqlite session normalization", () => {
     const sourceEntryScope = {
       agentId: "main",
       env,
-      sessionKey: "agent:main:main",
+      sessionKey: sourceKey,
       storePath: paths.sqlitePath,
     };
     const checkpoint: SessionCompactionCheckpoint = {
@@ -2293,6 +2327,31 @@ describe("sqlite session normalization", () => {
       },
     };
 
+    const sourceEntry: InternalSessionEntry = {
+      label: "Current",
+      sessionId: "current-session",
+      updatedAt: 10,
+      compactionCheckpoints: [checkpoint],
+    };
+    const sourceSeed = createTrustedSessionMemorySubjectSeed({
+      subject: {
+        version: 1,
+        kind: "user",
+        principalId: "checkpoint-restore-principal",
+        creationEvidence: { kind: "channel-binding", revision: "checkpoint-restore-revision" },
+      },
+      subjectRevision: "checkpoint-restore-subject-revision",
+      creationBindingId: "checkpoint-restore-binding-id",
+    });
+    runOpenClawAgentWriteTransaction(
+      (database) => {
+        writeSessionEntry(database, sourceEntryScope.sessionKey, sourceEntry, {
+          memorySubjectSeed: sourceSeed,
+        });
+      },
+      { agentId: "main", env, path: paths.sqlitePath },
+    );
+
     await replaceSqliteTranscriptEvents(preCompactionScope, [
       { type: "session", id: "pre-compaction-session", cwd: paths.tempDir },
       { type: "message", id: "pre-msg", parentId: null, message: { content: "restore" } },
@@ -2302,12 +2361,6 @@ describe("sqlite session normalization", () => {
       { type: "message", id: "post-msg-1", parentId: null, message: { content: "skip" } },
       { type: "message", id: "post-msg-2", parentId: "post-msg-1", message: { content: "skip" } },
     ]);
-    await upsertSqliteSessionEntry(sourceEntryScope, {
-      label: "Current",
-      sessionId: "current-session",
-      updatedAt: 10,
-      compactionCheckpoints: [checkpoint],
-    });
 
     const result = await restoreSqliteCompactionCheckpointSession({
       agentId: "main",
@@ -2334,6 +2387,14 @@ describe("sqlite session normalization", () => {
         totalTokensVersion: 1,
       }),
     );
+    const sourceSubject = readCurrentSessionMemorySubject(sourceEntryScope);
+    if (!sourceSubject) {
+      throw new Error("expected restored source memory subject");
+    }
+    expect(sourceSubject).toMatchObject({
+      subjectRevision: sourceSeed.subjectRevision,
+      creationBindingId: sourceSeed.creationBindingId,
+    });
     await expect(loadSqliteTranscriptEvents(restoredScope)).resolves.toEqual([
       expect.objectContaining({ type: "session", id: result.entry.sessionId }),
       expect.objectContaining({ id: "pre-msg", type: "message" }),

@@ -8,6 +8,7 @@ export {
   loadSessionEntryReadOnly as loadSessionEntry,
   upsertSessionEntry,
 } from "../config/sessions/session-accessor.js";
+export { upsertSqliteSessionEntryWithTrustedMemorySubject as upsertSessionEntryWithTrustedMemorySubject } from "../config/sessions/session-accessor.sqlite-entry.js";
 export { forkSessionEntryFromParent } from "../auto-reply/reply/session-fork.js";
 export { ensureContextEnginesInitialized } from "../context-engine/init.js";
 export { resolveContextEngine } from "../context-engine/registry.js";

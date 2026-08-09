@@ -48,7 +48,7 @@ import {
   loadCronAuthProfileRuntime,
   loadCronExternalContentRuntime,
   loadCronModelPreflightRuntime,
-  loadSessionAccessorRuntime,
+  loadCronSessionMemoryRuntime,
   resolveCronAgentTurnMessage,
   retireRolledCronSessionMcpRuntime,
   type RunCronAgentTurnParams,
@@ -272,6 +272,10 @@ export async function prepareCronRunContext(params: {
   });
 
   try {
+    const memoryRuntime = await loadCronSessionMemoryRuntime();
+    const memorySubjectIssuer = memoryRuntime.createTrustedSessionMemorySubjectIssuer(() =>
+      memoryRuntime.prepareAutonomousAgentSessionMemorySubjectSeed(agentId),
+    );
     const persistCronSessionRow = async ({
       storePath,
       sessionKey,
@@ -285,10 +289,8 @@ export async function prepareCronRunContext(params: {
       resetBoundaryReason?: "cron-stale";
       update: (entry: SessionEntry | undefined) => SessionEntry;
     }) => {
-      const { applySessionEntryLifecycleMutation, patchSessionEntry } =
-        await loadSessionAccessorRuntime();
       if (resetBoundaryReason) {
-        await applySessionEntryLifecycleMutation({
+        await memoryRuntime.applySqliteSessionEntryLifecycleMutationWithTrustedMemorySubjects({
           activeSessionKey: sessionKey,
           agentId,
           storePath,
@@ -296,6 +298,7 @@ export async function prepareCronRunContext(params: {
             {
               sessionKey,
               resetBoundaryReason,
+              memorySubjectIssuer,
               buildEntry: ({ currentEntry }) => update(currentEntry),
             },
           ],
@@ -304,9 +307,14 @@ export async function prepareCronRunContext(params: {
         return;
       }
       // Guarded replace reads the freshest row so lifecycle claims reject stale owners.
-      await patchSessionEntry(
-        { storePath, sessionKey, agentId },
+      await memoryRuntime.patchSqliteSessionEntryTargetWithTrustedMemorySubject(
+        {
+          agentId,
+          storePath,
+          target: { canonicalKey: sessionKey, storeKeys: [sessionKey] },
+        },
         (_entry, context) => update(context.existingEntry),
+        memorySubjectIssuer,
         { fallbackEntry, replaceEntry: true },
       );
     };

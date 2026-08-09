@@ -5,6 +5,7 @@ describe("isIncognitoSessionKey", () => {
   it.each([
     "agent:main:dashboard:incognito-1234",
     "agent:worker:subagent:incognito-5678",
+    "agent:worker:acp:incognito-5678",
     "agent:main:internal-session-effects:incognito-run-1",
   ])("recognizes %s", (sessionKey) => {
     expect(isIncognitoSessionKey(sessionKey)).toBe(true);

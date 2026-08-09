@@ -24,6 +24,8 @@ import {
   getSessionBindingService,
   type SessionBindingRecord,
 } from "../infra/outbound/session-binding-service.js";
+import { isIncognitoSessionKey } from "../routing/session-key.js";
+import { resolveIncognitoOpenClawAgentSqlitePath } from "../state/openclaw-agent-db.js";
 import { persistAcpSpawnSessionFileBestEffort } from "./acp-spawn-requester.js";
 import { resolveAgentConfig } from "./agent-scope.js";
 import {
@@ -151,7 +153,9 @@ export async function initializeAcpSpawnRuntime(params: {
   modelExplicit?: boolean;
   cwd?: string;
 }): Promise<AcpSpawnInitializedRuntime> {
-  const storePath = resolveStorePath(params.cfg.session?.store, { agentId: params.targetAgentId });
+  const storePath = isIncognitoSessionKey(params.sessionKey)
+    ? resolveIncognitoOpenClawAgentSqlitePath({ agentId: params.targetAgentId })
+    : resolveStorePath(params.cfg.session?.store, { agentId: params.targetAgentId });
   let sessionEntry = loadSessionEntry({
     storePath,
     sessionKey: params.sessionKey,

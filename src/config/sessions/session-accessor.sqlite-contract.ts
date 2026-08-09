@@ -14,6 +14,8 @@ import type {
   SessionLifecycleArtifactCleanupResult,
   SessionLifecycleStoreTarget,
 } from "./session-accessor.lifecycle-types.js";
+import type { TranscriptMemorySubjectRootOptions } from "./session-accessor.sqlite-transcript-state.js";
+import type { TrustedSessionMemorySubjectSeed } from "./session-memory-subject-trust.js";
 import type { ResolvedSessionMaintenanceConfig } from "./store-maintenance.js";
 import type { TranscriptEntryAnchor } from "./transcript-entry-anchor.js";
 import type { SessionEntry } from "./types.js";
@@ -121,7 +123,7 @@ export type {
   SessionTranscriptVisibleMessageDeltaResult,
 } from "./session-accessor.types.js";
 
-export type TranscriptMessageAppendOptions<TMessage> = {
+export type TranscriptMessageAppendOptions<TMessage> = TranscriptMemorySubjectRootOptions & {
   appendIntent?: "active-branch";
   config?: OpenClawConfig;
   cwd?: string;
@@ -175,6 +177,8 @@ export type SessionEntryPatchOptions = {
   replaceEntry?: boolean;
   skipMaintenance?: boolean;
   takeCacheOwnership?: boolean;
+  /** Host-branded provenance used only when this mutation creates a logical session. */
+  memorySubjectSeed?: TrustedSessionMemorySubjectSeed;
 };
 
 export type SessionEntryPatchContext = {
