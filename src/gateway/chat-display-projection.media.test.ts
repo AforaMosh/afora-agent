@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createNoisyPngBuffer } from "../../test/helpers/image-fixtures.js";
 import { projectChatDisplayMessages } from "./chat-display-projection.js";
+import { sanitizeChatHistoryMediaContentBlock } from "./chat-display-projection.media.js";
 import {
   CHAT_HISTORY_MAX_SINGLE_MESSAGE_BYTES,
   replaceOversizedChatHistoryMessages,
@@ -270,6 +271,15 @@ describe("oversized multimodal chat history", () => {
           type: "video",
           openUrl: credentialBearingUrl("cdn.example.test/video.mp4?token=private#preview"),
           file: credentialBearingUrl("cdn.example.test/download.mp4?signature=private"),
+          source: {
+            file: "file:///Users/operator/private-source.mp4",
+            openUrl: credentialBearingUrl("cdn.example.test/source.mp4?token=private"),
+            video_url: [
+              credentialBearingUrl("cdn.example.test/nested.mp4?signature=private"),
+              "media://inbound/managed.mp4",
+              "/Users/operator/private-array.mp4",
+            ],
+          },
           label: "keep video metadata",
         },
         {
@@ -293,6 +303,10 @@ describe("oversized multimodal chat history", () => {
         type: "video",
         openUrl: "https://cdn.example.test/video.mp4",
         file: "https://cdn.example.test/download.mp4",
+        source: {
+          openUrl: "https://cdn.example.test/source.mp4",
+          video_url: ["https://cdn.example.test/nested.mp4", "media://inbound/managed.mp4"],
+        },
         label: "keep video metadata",
       },
       {
@@ -309,6 +323,34 @@ describe("oversized multimodal chat history", () => {
         /(?:password|token=|signature=|Users\/operator)/u,
       );
     }
+  });
+
+  it("bounds cyclic and accessor-bearing native media sources", () => {
+    const source = {
+      url: credentialBearingUrl("cdn.example.test/cyclic.mp4?token=private#preview"),
+    } as Record<string, unknown>;
+    source.self = source;
+    Object.defineProperty(source, "hidden", {
+      enumerable: true,
+      get() {
+        throw new Error("synthetic source getter failure");
+      },
+    });
+
+    const projected = sanitizeChatHistoryMediaContentBlock({ type: "video", source });
+
+    expect(projected).toEqual({
+      changed: true,
+      block: {
+        type: "video",
+        source: {
+          url: "https://cdn.example.test/cyclic.mp4",
+          self: "[Circular]",
+          hidden: "[media details omitted: unreadable property]",
+        },
+      },
+    });
+    expect(JSON.stringify(projected)).not.toMatch(/(?:password|token=|#preview)/u);
   });
 
   it("sanitizes provider media wrapper references in WebSocket and SSE history", () => {

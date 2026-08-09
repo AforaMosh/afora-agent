@@ -31,6 +31,10 @@ function projectStringMediaReference(entry: Record<string, unknown>, key: string
   if (typeof reference !== "string" || isManagedChatMediaRoute(reference)) {
     return false;
   }
+  if (isPrivateLocalMediaReference(reference)) {
+    delete entry[key];
+    return true;
+  }
   const projected = projectChatHistoryMediaReference(reference);
   if (projected === undefined) {
     delete entry[key];
@@ -73,9 +77,9 @@ function isInlineOrLocalAudioReference(value: unknown): boolean {
   );
 }
 
-// Call only on the bounded detached snapshot. Once a reference field opens a
-// subtree, inspect nested objects while treating direct array strings as refs.
-function stripPrivateLocalMediaReferences(
+// Call only on a bounded detached snapshot. Once a reference field opens a subtree,
+// inspect nested objects while treating direct array strings as references.
+function projectNestedMediaReferences(
   value: unknown,
   insideReference = false,
   directReference = false,
@@ -83,12 +87,24 @@ function stripPrivateLocalMediaReferences(
   if (Array.isArray(value)) {
     for (let index = value.length - 1; index >= 0; index -= 1) {
       const item = value[index];
-      if (directReference && isPrivateLocalMediaReference(item)) {
-        value.splice(index, 1);
+      if (directReference && typeof item === "string") {
+        if (isManagedChatMediaRoute(item)) {
+          continue;
+        }
+        if (isPrivateLocalMediaReference(item)) {
+          value.splice(index, 1);
+          continue;
+        }
+        const projected = projectChatHistoryMediaReference(item);
+        if (projected === undefined) {
+          value.splice(index, 1);
+        } else {
+          value[index] = projected;
+        }
         continue;
       }
       if (item && typeof item === "object") {
-        stripPrivateLocalMediaReferences(item, insideReference);
+        projectNestedMediaReferences(item, insideReference);
       }
     }
     return;
@@ -99,12 +115,12 @@ function stripPrivateLocalMediaReferences(
   }
   for (const [key, child] of Object.entries(record)) {
     const referenceField = isMediaReferenceField(key);
-    if (referenceField && isPrivateLocalMediaReference(child)) {
-      delete record[key];
+    if (referenceField && typeof child === "string") {
+      projectStringMediaReference(record, key);
       continue;
     }
     if ((insideReference || referenceField) && child && typeof child === "object") {
-      stripPrivateLocalMediaReferences(child, true, referenceField && Array.isArray(child));
+      projectNestedMediaReferences(child, true, referenceField && Array.isArray(child));
     }
   }
 }
@@ -166,7 +182,7 @@ export function sanitizeChatHistoryMediaContentBlock(
     }
     const bounded = sanitizeModelVisibleMediaPayload(durable);
     const projected = readRecord(bounded) ?? { type, omitted: true };
-    stripPrivateLocalMediaReferences(projected);
+    projectNestedMediaReferences(projected);
     return { block: projected, changed: true };
   }
   const inlineVideoOmission = projectInlineVideoContentBlock(entry);
@@ -243,7 +259,9 @@ export function sanitizeChatHistoryMediaContentBlock(
     }
     changed = true;
   } else if (source) {
-    const projectedSource = { ...(readRecord(entry.source) ?? source) };
+    const durableSource = sanitizeDurableMediaPayload(entry.source);
+    const boundedSource = sanitizeModelVisibleMediaPayload(durableSource);
+    const projectedSource = readRecord(boundedSource) ?? { omitted: true };
     const sourceManagedUri =
       normalizeCanonicalInboundMediaUri(projectedSource.url) ??
       normalizeCanonicalInboundMediaUri(projectedSource.path);
@@ -260,6 +278,7 @@ export function sanitizeChatHistoryMediaContentBlock(
         projectedSource.url = sanitizeMediaReferenceForProjection(projectedSource.url);
       }
     }
+    projectNestedMediaReferences(projectedSource, true);
     entry.source = projectedSource;
     changed = true;
   }

@@ -148,6 +148,8 @@ function sanitizeMiddlewareText(value: string): string {
 }
 
 function projectToolResultMedia(result: OpenClawAgentToolResult): OpenClawAgentToolResult {
+  // This serializer-free projector bounds depth, values, strings, binary views, and accessors
+  // before the plain detached snapshot reaches middleware detail validation.
   const details = sanitizeModelVisibleMediaPayload(result.details);
   let changed = details !== result.details;
   const content = result.content.map((block) => {
