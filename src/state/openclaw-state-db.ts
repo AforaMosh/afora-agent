@@ -238,10 +238,9 @@ function assertOpenClawStateDatabaseOpenAllowed(
   }
 }
 
-/** Reject a fresh shared-state open after known corruption until repair clears it. */
-export function assertOpenClawStateDatabaseFreshOpenAllowed(
-  options: OpenClawStateDatabaseOptions = {},
-  pathname = resolveStateDatabaseIdentityPath(options),
+function assertOpenClawStateDatabaseFreshOpenAllowedAtPath(
+  options: OpenClawStateDatabaseOptions,
+  pathname: string,
 ): void {
   assertOpenClawStateDatabaseOpenAllowed(options, pathname);
   const env = options.env ?? process.env;
@@ -262,6 +261,16 @@ export function assertOpenClawStateDatabaseFreshOpenAllowed(
   if (quarantineFailure) {
     throw quarantineFailure;
   }
+}
+
+/** Reject a fresh shared-state open after known corruption until repair clears it. */
+export function assertOpenClawStateDatabaseFreshOpenAllowed(
+  options: OpenClawStateDatabaseOptions = {},
+): void {
+  assertOpenClawStateDatabaseFreshOpenAllowedAtPath(
+    options,
+    resolveStateDatabaseIdentityPath(options),
+  );
 }
 
 type OpenClawStateMetadataDatabase = Pick<OpenClawStateKyselyDatabase, "schema_meta">;
@@ -690,7 +699,7 @@ export function openOpenClawStateDatabase(
     clearNodeSqliteKyselyCacheForDatabase(cached.db);
     cachedDatabases.delete(pathname);
   }
-  assertOpenClawStateDatabaseFreshOpenAllowed(options, pathname);
+  assertOpenClawStateDatabaseFreshOpenAllowedAtPath(options, pathname);
   ensureOpenClawStatePermissions(pathname, env);
   const db = openNodeSqliteDatabase(pathname);
   enableNodeSqliteKyselyStatementCache(db);
