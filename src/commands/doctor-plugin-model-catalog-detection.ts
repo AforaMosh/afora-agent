@@ -34,15 +34,31 @@ export type LegacyPluginModelCatalogDetectionResult = {
   warnings: string[];
 };
 
+function formatLegacyPluginModelCatalogPaths(
+  catalogs: readonly LegacyPluginModelCatalogDetection[],
+): string[] {
+  return catalogs.map(
+    (catalog) => `- ${shortenHomePath(path.join(catalog.agentDir, catalog.relativePath))}`,
+  );
+}
+
 export function formatLegacyPluginModelCatalogStartupRefusal(
   catalogs: readonly LegacyPluginModelCatalogDetection[],
 ): string {
   return [
     "OpenClaw found released legacy plugin model catalogs; refusing to report the gateway ready because runtime model discovery reads canonical SQLite state only.",
-    ...catalogs.map(
-      (catalog) => `- ${shortenHomePath(path.join(catalog.agentDir, catalog.relativePath))}`,
-    ),
+    ...formatLegacyPluginModelCatalogPaths(catalogs),
     'Run "openclaw doctor --fix" against the same state/config, then restart the gateway.',
+  ].join("\n");
+}
+
+export function formatLegacyPluginModelCatalogCommandRefusal(
+  catalogs: readonly LegacyPluginModelCatalogDetection[],
+): string {
+  return [
+    "OpenClaw found released legacy plugin model catalogs; refusing to report incomplete model results because runtime model discovery reads canonical SQLite state only.",
+    ...formatLegacyPluginModelCatalogPaths(catalogs),
+    'Run "openclaw doctor --fix" against the same state/config, then rerun the command.',
   ].join("\n");
 }
 

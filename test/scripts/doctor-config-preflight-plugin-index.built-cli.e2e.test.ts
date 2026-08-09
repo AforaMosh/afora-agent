@@ -180,6 +180,19 @@ describe("Doctor plugin index persistence built CLI proof", () => {
     expect(fs.readFileSync(sourcePath, "utf8")).toBe(contents);
     expect(fs.existsSync(path.join(agentDir, "openclaw-agent.sqlite"))).toBe(false);
 
+    for (const command of [
+      ["models", "list", "--provider", "zai", "--json"],
+      ["models", "status", "--agent", "main", "--json"],
+    ]) {
+      const blocked = await instance.cli(command, { timeoutMs: 90_000 });
+      const output = `${blocked.stderr}\n${blocked.stdout}`;
+      expect(blocked.code, output).not.toBe(0);
+      expect(output).toContain("openclaw doctor --fix");
+      expect(output).toContain("plugins/zai/catalog.json");
+      expect(fs.readFileSync(sourcePath, "utf8")).toBe(contents);
+      expect(fs.existsSync(path.join(agentDir, "openclaw-agent.sqlite"))).toBe(false);
+    }
+
     const legacyConfig = {
       ...canonicalConfig,
       agents: {
@@ -246,5 +259,11 @@ describe("Doctor plugin index persistence built CLI proof", () => {
         name: "GLM-5.2",
       }),
     );
+
+    const status = await instance.cli(["models", "status", "--agent", "main", "--json"], {
+      timeoutMs: 90_000,
+    });
+    expect(status.code, `${status.stderr}\n${status.stdout}`).toBe(0);
+    expect(JSON.parse(status.stdout)).toMatchObject({ resolvedDefault: "zai/glm-5.2" });
   }, 180_000);
 });
