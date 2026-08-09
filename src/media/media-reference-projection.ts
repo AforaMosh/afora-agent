@@ -85,7 +85,7 @@ const INLINE_VIDEO_CARRIER_FIELDS = [
   "url",
 ] as const;
 const VIDEO_PAYLOAD_TYPES = new Set(["video", "input_video", "video_url"]);
-const MODEL_VISIBLE_MEDIA_PAYLOAD_TYPES = new Set([
+const MEDIA_PAYLOAD_CONTAINER_KEYS = new Set([
   "base64",
   "image",
   "input_image",
@@ -99,6 +99,12 @@ const MODEL_VISIBLE_MEDIA_PAYLOAD_TYPES = new Set([
   "audio_url",
   "document",
 ]);
+
+/** Recognizes the closed set of common named media payload carriers. */
+export function isMediaPayloadContainerKey(key: string): boolean {
+  return MEDIA_PAYLOAD_CONTAINER_KEYS.has(key.trim().toLowerCase());
+}
+
 const MEDIA_MIME_FIELDS = [
   "mimeType",
   "mime_type",
@@ -141,7 +147,7 @@ function hasVideoPayloadTypeOrMime(record: Record<string, unknown>): boolean {
 function hasModelVisibleMediaTypeOrMime(record: Record<string, unknown>): boolean {
   const type = typeof record.type === "string" ? record.type.trim().toLowerCase() : "";
   return (
-    MODEL_VISIBLE_MEDIA_PAYLOAD_TYPES.has(type) ||
+    isMediaPayloadContainerKey(type) ||
     MEDIA_MIME_FIELDS.some((field) => {
       const value = record[field];
       return (
@@ -407,7 +413,7 @@ function projectMediaPayload(
           depth + 1,
           mode,
           carrierField && depth < INLINE_VIDEO_PAYLOAD_MAX_NESTING ? videoContext : false,
-          modelVisibleMediaContext,
+          modelVisibleMediaContext || isMediaPayloadContainerKey(propertyKey),
         )
       : MEDIA_PAYLOAD_UNREADABLE_OMISSION;
     if (projectedValue === INLINE_VIDEO_PAYLOAD) {

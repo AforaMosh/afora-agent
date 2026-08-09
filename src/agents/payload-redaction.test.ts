@@ -251,6 +251,53 @@ describe("sanitizeDiagnosticPayload", () => {
     expect(serialized).not.toContain(pdfBlob);
   });
 
+  it.each([
+    {
+      name: "diagnostic",
+      sanitize: sanitizeDiagnosticPayload,
+      expectedPath: "/private/media/video.mp4",
+    },
+    {
+      name: "model-visible",
+      sanitize: sanitizeModelVisibleMediaPayload,
+      expectedPath: "<redacted-media-reference>",
+    },
+  ])(
+    "redacts alias-only media bytes and references in the $name projection",
+    ({ sanitize, expectedPath }) => {
+      const nestedAudio = Buffer.from("alias-only nested audio").toString("base64");
+      const sanitized = sanitize({
+        video: {
+          data: mediaData,
+          path: "/private/media/video.mp4",
+          durationSeconds: 12,
+        },
+        input_audio: [{ format: "wav", nested: [{ blob: nestedAudio }] }],
+        metadata: { data: "ordinary application data" },
+      }) as {
+        video: Record<string, unknown>;
+        input_audio: Array<{ nested: Array<Record<string, unknown>> }>;
+        metadata: { data: string };
+      };
+
+      expect(sanitized.video).toMatchObject({
+        data: "<redacted>",
+        path: expectedPath,
+        durationSeconds: 12,
+        bytes: 11,
+        sha256: mediaDigest,
+      });
+      expect(sanitized.input_audio[0]?.nested[0]).toMatchObject({
+        blob: "<redacted>",
+        bytes: Buffer.byteLength("alias-only nested audio"),
+      });
+      expect(sanitized.metadata.data).toBe("ordinary application data");
+      const serialized = JSON.stringify(sanitized);
+      expect(serialized).not.toContain(mediaData);
+      expect(serialized).not.toContain(nestedAudio);
+    },
+  );
+
   it("projects model-visible media without bytes, data URLs, or local references", () => {
     const localPath = "/private/var/openclaw/media/secret-clip.mp4";
     const dataUrl = `data:video/mp4;base64,${mediaData}`;

@@ -6,6 +6,7 @@
 import crypto from "node:crypto";
 import { estimateBase64DecodedBytes } from "@openclaw/media-core/base64";
 import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { isMediaPayloadContainerKey } from "../media/media-reference-projection.js";
 
 const REDACTED_MEDIA_DATA = "<redacted>";
 const REDACTED_MEDIA_REFERENCE = "<redacted-media-reference>";
@@ -238,7 +239,10 @@ function visitDiagnosticPayload(
         out[key] = REDACTED_MEDIA_REFERENCE;
         continue;
       }
-      out[key] = redactValueField && key === "value" ? "<redacted>" : visit(val, mediaContext);
+      out[key] =
+        redactValueField && key === "value"
+          ? "<redacted>"
+          : visit(val, mediaContext || isMediaPayloadContainerKey(key));
     }
 
     redactInlineMediaFields(record, out, mediaContext);

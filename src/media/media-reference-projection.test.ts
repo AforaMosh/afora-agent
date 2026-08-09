@@ -1,11 +1,38 @@
 import { describe, expect, it } from "vitest";
 import {
+  isMediaPayloadContainerKey,
   normalizeDurableMediaReference,
   sanitizeDurableMediaContentBlock,
   sanitizeDurableMediaPayload,
   sanitizeMediaReferenceForProjection,
   sanitizeModelVisibleMediaPayload,
 } from "./media-reference-projection.js";
+
+describe("isMediaPayloadContainerKey", () => {
+  it.each([
+    "base64",
+    "document",
+    "image",
+    "input_image",
+    "image_url",
+    "video",
+    "input_video",
+    "video_url",
+    "audio",
+    "input_audio",
+    "output_audio",
+    "audio_url",
+  ])("recognizes the closed media carrier alias %s", (key) => {
+    expect(isMediaPayloadContainerKey(`  ${key.toUpperCase()}  `)).toBe(true);
+  });
+
+  it.each(["data", "blob", "source", "media", "attachment", "metadata"])(
+    "does not promote generic key %s",
+    (key) => {
+      expect(isMediaPayloadContainerKey(key)).toBe(false);
+    },
+  );
+});
 
 describe("normalizeDurableMediaReference", () => {
   it("rejects inline data while preserving managed, remote, and local references", () => {
@@ -378,6 +405,46 @@ describe("sanitizeModelVisibleMediaPayload", () => {
       expect(projected).not.toContain(fragment);
     }
   });
+
+  it.each([
+    {
+      name: "video data",
+      carrier: " VIDEO ",
+      value: { data: "private-alias-video", durationSeconds: 12 },
+      expected: "[media data omitted]",
+      payload: "private-alias-video",
+    },
+    {
+      name: "input-audio array with a deep blob",
+      carrier: " InPuT_AuDiO ",
+      value: [
+        { format: "wav", nested: [{ blob: "private-deep-alias-audio" }] },
+        { label: "keep safe media metadata" },
+      ],
+      expected: [
+        { format: "wav", nested: ["[media data omitted]"] },
+        { label: "keep safe media metadata" },
+      ],
+      payload: "private-deep-alias-audio",
+    },
+  ])(
+    "redacts alias-only $name while preserving safe siblings",
+    ({ carrier, value, expected, payload }) => {
+      const ordinaryMetadata = { data: "ordinary application data", label: "keep" };
+      const projected = sanitizeModelVisibleMediaPayload({
+        [carrier]: value,
+        metadata: ordinaryMetadata,
+        status: "safe",
+      });
+
+      expect(projected).toEqual({
+        [carrier]: expected,
+        metadata: ordinaryMetadata,
+        status: "safe",
+      });
+      expect(JSON.stringify(projected)).not.toContain(payload);
+    },
+  );
 
   it("breaks cycles without retaining unsanitized media branches", () => {
     const payload = "c3ludGhldGljLXByaXZhdGUtdmlkZW8=";

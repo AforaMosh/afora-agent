@@ -284,11 +284,9 @@ function expectNestedAudioPayloadsOmitted(sanitize: (value: unknown) => unknown)
   const sanitized = sanitize({
     content: [
       {
-        type: "input_audio",
         input_audio: { data: inputPayload, format: "wav" },
       },
       {
-        type: "output_audio",
         audio: [{ data: outputPayload, format: "mp3" }, { nested: [{ blob: deepPayload }] }],
       },
     ],
@@ -857,10 +855,9 @@ describe("extractToolResultText", () => {
   });
 
   it("omits aliased media data from structured fallback output", () => {
-    const fixtures = ALIASED_MEDIA_SHAPES.map((shape, index) => ({
-      ...shape,
-      data: `private-structured-media-${index}`,
-    }));
+    const fixtures = ALIASED_MEDIA_SHAPES.map((shape, index) =>
+      Object.assign({}, shape, { data: `private-structured-media-${index}` }),
+    );
 
     const text = extractToolResultText({
       content: [{ type: "json", nested: [fixtures.slice(0, 7), fixtures.slice(7)] }],

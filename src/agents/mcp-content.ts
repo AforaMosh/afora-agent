@@ -1,6 +1,9 @@
 import { isRecord } from "@openclaw/normalization-core/record-coerce";
 import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
-import { sanitizeMediaReferenceForProjection } from "../media/media-reference-projection.js";
+import {
+  isMediaPayloadContainerKey,
+  sanitizeMediaReferenceForProjection,
+} from "../media/media-reference-projection.js";
 import { truncateUtf8Prefix } from "../utils/utf8-truncate.js";
 import type { AgentToolResult } from "./runtime/index.js";
 
@@ -22,19 +25,6 @@ const MCP_DATA_URL_PLACEHOLDER = "[data URL omitted]";
 const MCP_LOCAL_URI_PLACEHOLDER = "[local resource URI omitted]";
 const MCP_EMBEDDED_DATA_URL_RE = /data:[^,\s]+,[\s\S]*$/iu;
 const MCP_STRING_TRUNCATION_MARKER = "[truncated: MCP string exceeded 64,000 characters]";
-const MCP_MEDIA_CONTAINER_ALIASES = new Set([
-  "audio",
-  "audio_url",
-  "image",
-  "image_url",
-  "input_audio",
-  "input_image",
-  "input_video",
-  "output_audio",
-  "video",
-  "video_url",
-]);
-
 function isInlineDataUrl(value: string): boolean {
   return /^\s*data:/iu.test(value);
 }
@@ -94,9 +84,7 @@ function recordCarriesStructuredMedia(
 ): boolean {
   const type = typeof record.type === "string" ? record.type.trim().toLowerCase() : "";
   return (
-    inheritedMediaContext ||
-    MCP_MEDIA_CONTAINER_ALIASES.has(type) ||
-    mediaMimeType(record) !== undefined
+    inheritedMediaContext || isMediaPayloadContainerKey(type) || mediaMimeType(record) !== undefined
   );
 }
 
@@ -157,7 +145,7 @@ function projectMcpJsonValueInner(
       projected[key] = sanitizeMcpResourceUri(entry) ?? "[resource URI omitted]";
       continue;
     }
-    const aliasMediaContext = MCP_MEDIA_CONTAINER_ALIASES.has(key.toLowerCase());
+    const aliasMediaContext = isMediaPayloadContainerKey(key);
     projected[key] = projectMcpJsonValueInner(
       entry,
       state,

@@ -21,6 +21,7 @@ import {
   redactSensitiveFieldValue,
   redactToolPayloadText,
 } from "../logging/redact.js";
+import { isMediaPayloadContainerKey } from "../media/media-reference-projection.js";
 import { truncateUtf16Safe } from "../utils.js";
 import { collectTextContentBlocks } from "./content-blocks.js";
 import { isMessagingToolTargetEvidenceAction } from "./embedded-agent-messaging.js";
@@ -288,7 +289,11 @@ function stripInlineMediaPayloads(
   const sanitized: Record<string, unknown> = {};
   for (const [key, child] of Object.entries(record)) {
     if (!(omitData && (key === "data" || key === "blob"))) {
-      sanitized[key] = stripInlineMediaPayloads(child, binaryContext, seen);
+      sanitized[key] = stripInlineMediaPayloads(
+        child,
+        binaryContext || isMediaPayloadContainerKey(key),
+        seen,
+      );
     }
   }
   if (omitData) {
