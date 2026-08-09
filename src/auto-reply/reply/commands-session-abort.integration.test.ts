@@ -1,5 +1,6 @@
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createDeferred } from "../../../test/helpers/promise.js";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
 import {
   setActiveEmbeddedRun,
@@ -48,7 +49,7 @@ afterEach(() => {
 });
 
 describe("session abort command integration", () => {
-  it("keeps a recovery-owned Telegram /stop terminal through owner release and restart", async () => {
+  it("keeps a recovery-owned Codex App Server /stop terminal through delayed completion and restart", async () => {
     const sessionKey = "agent:main:telegram:topic:command-recovery-abort";
     const sessionId = "session-command-recovery-abort";
     const runId = "run-command-recovery-abort";
@@ -80,7 +81,13 @@ describe("session abort command integration", () => {
     if (admission.status !== "owned") {
       throw new Error("expected recovery-owned reply admission");
     }
-    const cancelBackend = vi.fn();
+    const appServerTurnCompleted = createDeferred();
+    let appServerTurnCompletionObserved = false;
+    const cancelBackend = vi.fn(() => {
+      void appServerTurnCompleted.promise.then(() => {
+        appServerTurnCompletionObserved = true;
+      });
+    });
     admission.operation.attachBackend({
       kind: "embedded",
       runId,
@@ -124,6 +131,7 @@ describe("session abort command integration", () => {
       phase: "aborted",
       result: { kind: "aborted", code: "aborted_by_user" },
     });
+    expect(appServerTurnCompletionObserved).toBe(false);
 
     const cancelledEntry = loadSessionEntry({ storePath, sessionKey });
     expect(cancelledEntry).toMatchObject({
@@ -147,7 +155,10 @@ describe("session abort command integration", () => {
       },
     });
     expect(loadSessionEntry({ storePath, sessionKey })).toStrictEqual(cancelledEntry);
+    expect(appServerTurnCompletionObserved).toBe(false);
 
+    appServerTurnCompleted.resolve();
+    await vi.waitFor(() => expect(appServerTurnCompletionObserved).toBe(true));
     admission.operation.complete();
     await runExclusiveSessionLifecycleMutation({
       scope: storePath,
@@ -206,6 +217,11 @@ describe("session abort command integration", () => {
         runId: "run-command-abort-successor",
         data: { phase: "start", startedAt: 300 },
       },
+    });
+    expect(loadSessionEntry({ storePath, sessionKey })).toMatchObject({
+      lifecycleRunId: "run-command-abort-successor",
+      sessionId,
+      status: "running",
     });
     await persistGatewaySessionLifecycleEvent({
       agentId: "main",
