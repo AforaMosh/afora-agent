@@ -283,7 +283,6 @@ export function resolveCronPayloadOutcome(params: {
   const fallbackOutputText = pickLastNonEmptyTextFromPayloads(params.payloads);
   const deliveryPayload = pickLastDeliverablePayload(params.payloads);
   const selectedDeliveryPayloads = pickDeliverablePayloads(params.payloads);
-  const deliveryPayloadHasStructuredContent = payloadHasStructuredDeliveryContent(deliveryPayload);
   const hasErrorPayload = params.payloads.some((payload) => payload?.isError === true);
   const lastErrorPayloadIndex = params.payloads.findLastIndex(
     (payload) => payload?.isError === true,
@@ -398,9 +397,7 @@ export function resolveCronPayloadOutcome(params: {
     deliveryPayload: fatalDeliveryPayload ?? deliveryPayload,
     deliveryPayloads: delivery.deliveryPayloads,
     deliveryDisposition: delivery.deliveryDisposition,
-    deliveryPayloadHasStructuredContent: fatalDeliveryPayload
-      ? false
-      : deliveryPayloadHasStructuredContent,
+    deliveryPayloadHasStructuredContent: !fatalDeliveryPayload && hasStructuredDeliveryPayloads,
     hasFatalErrorPayload,
     hasFatalStructuredErrorPayload,
     embeddedRunError: structuredErrorText

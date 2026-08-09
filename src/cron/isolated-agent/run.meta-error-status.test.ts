@@ -1,9 +1,10 @@
 // Run meta error tests cover status reporting when cron run metadata fails.
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { makeIsolatedAgentJobFixture, makeIsolatedAgentParamsFixture } from "./job-fixtures.js";
 import { setupRunCronIsolatedAgentTurnSuite } from "./run.suite-helpers.js";
 import {
   cleanupDirectCronSessionMock,
+  countActiveDescendantRunsMock,
   dispatchCronDeliveryMock,
   loadRunCronIsolatedAgentTurn,
   resolveCronDeliveryPlanMock,
@@ -245,6 +246,94 @@ describe("runCronIsolatedAgentTurn - meta.error status propagation", () => {
     expect(result.delivered).toBe(false);
   });
 
+  it.each(["on it", "pulling everything together", "working on it, give me a few minutes"])(
+    "hands interim parent reply %s to the accepted child without erasing its original text",
+    async (parentReply) => {
+      const interimPayload = { text: parentReply };
+      countActiveDescendantRunsMock.mockReturnValue(1);
+      mockAgentRun({
+        payloads: [interimPayload],
+        usage: { input: 10, output: 1 },
+        acceptedSessionSpawns: [{ runId: "run-child", childSessionKey: "agent:default:child" }],
+      });
+      mockAnnounceOutcome({
+        summary: parentReply,
+        outputText: parentReply,
+        synthesizedText: parentReply,
+        deliveryPayload: interimPayload,
+        deliveryPayloads: [interimPayload],
+      });
+
+      const result = await runCronIsolatedAgentTurn(makeIsolatedAgentParamsFixture());
+
+      expect(dispatchCronDeliveryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          spawnOnlyHandoff: true,
+          skipHeartbeatDelivery: false,
+          deliveryPayloads: [interimPayload],
+          synthesizedText: parentReply,
+        }),
+      );
+      expect(result.status).toBe("ok");
+    },
+  );
+
+  it("preserves an interim-only accepted child handoff failure as a cron error", async () => {
+    const parentReply = "on it, pulling everything together";
+    const interimPayload = { text: parentReply };
+    const error = "cron child-session handoff timed out before producing a final assistant payload";
+    countActiveDescendantRunsMock.mockReturnValue(1);
+    mockAgentRun({
+      payloads: [interimPayload],
+      acceptedSessionSpawns: [{ runId: "run-child", childSessionKey: "agent:default:child" }],
+    });
+    mockAnnounceOutcome({
+      summary: parentReply,
+      outputText: parentReply,
+      synthesizedText: parentReply,
+      deliveryPayload: interimPayload,
+      deliveryPayloads: [interimPayload],
+    });
+    mockDeliveryFailure(error);
+
+    const result = await runCronIsolatedAgentTurn(
+      makeIsolatedAgentParamsFixture({
+        job: makeIsolatedAgentJobFixture({ deleteAfterRun: true }),
+      }),
+    );
+
+    expect(result.status).toBe("error");
+    expect(result.error).toBe(error);
+    expect(result.delivered).toBe(false);
+  });
+
+  it("preserves a substantive parent payload before an interim sibling", async () => {
+    const substantivePayload = { text: "Completed the report and attached the source data." };
+    const interimPayload = { text: "on it, pulling everything together" };
+    countActiveDescendantRunsMock.mockReturnValue(1);
+    mockAgentRun({
+      payloads: [substantivePayload, interimPayload],
+      acceptedSessionSpawns: [{ runId: "run-child", childSessionKey: "agent:default:child" }],
+    });
+    mockAnnounceOutcome({
+      summary: interimPayload.text,
+      outputText: interimPayload.text,
+      synthesizedText: interimPayload.text,
+      deliveryPayload: interimPayload,
+      deliveryPayloads: [substantivePayload, interimPayload],
+    });
+
+    const result = await runCronIsolatedAgentTurn(makeIsolatedAgentParamsFixture());
+
+    expect(dispatchCronDeliveryMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        spawnOnlyHandoff: false,
+        deliveryPayloads: [substantivePayload, interimPayload],
+      }),
+    );
+    expect(result.status).toBe("ok");
+  });
+
   it.each([
     "HEARTBEAT_OK",
     "**HEARTBEAT_OK**",
@@ -383,6 +472,31 @@ describe("runCronIsolatedAgentTurn - meta.error status propagation", () => {
     );
     expect(result.status).toBe("ok");
     expect(result.deliveryError).toBe(error);
+  });
+
+  it("preserves a structured parent batch when its final sibling is an interim reply", async () => {
+    const mediaPayload = { mediaUrl: "https://example.invalid/chart.png" };
+    const interimPayload = { text: "on it, pulling everything together" };
+    mockAgentRun({
+      payloads: [mediaPayload, interimPayload],
+      usage: { input: 10, output: 1 },
+      acceptedSessionSpawns: [{ runId: "run-child", childSessionKey: "agent:default:child" }],
+    });
+    mockAnnounceOutcome();
+    const { resolveCronPayloadOutcome } =
+      await vi.importActual<typeof import("./helpers.js")>("./helpers.js");
+    resolveCronPayloadOutcomeMock.mockImplementation(resolveCronPayloadOutcome);
+
+    const result = await runCronIsolatedAgentTurn(makeIsolatedAgentParamsFixture());
+
+    expect(dispatchCronDeliveryMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        spawnOnlyHandoff: false,
+        deliveryPayloadHasStructuredContent: true,
+        deliveryPayloads: [mediaPayload, interimPayload],
+      }),
+    );
+    expect(result.status).toBe("ok");
   });
 
   it("does not mark empty successful cron-add completions as cron errors", async () => {

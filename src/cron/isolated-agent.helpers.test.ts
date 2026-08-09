@@ -313,7 +313,7 @@ describe("resolveCronPayloadOutcome", () => {
     expect(result.deliveryPayload).toEqual({ text: "section 2" });
   });
 
-  it("keeps structured-content detection scoped to the last delivery payload", () => {
+  it("detects structured content anywhere in the selected delivery batch", () => {
     const result = resolveCronPayloadOutcome({
       payloads: [{ mediaUrl: "https://example.com/report.png" }, { text: "final text" }],
       finalAssistantVisibleText: "full final report",
@@ -326,7 +326,7 @@ describe("resolveCronPayloadOutcome", () => {
     ]);
     expect(result.outputText).toBe("final text");
     expect(result.synthesizedText).toBe("final text");
-    expect(result.deliveryPayloadHasStructuredContent).toBe(false);
+    expect(result.deliveryPayloadHasStructuredContent).toBe(true);
   });
 
   it("keeps presentation-only delivery payloads instead of collapsing to final text", () => {

@@ -14,6 +14,16 @@ import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SILENT_REPLY_TOKEN } from "../../auto-reply/tokens.js";
 import * as deliveryQueueSqlite from "../../infra/delivery-queue-sqlite.js";
+import {
+  captureActivePluginRegistrySnapshot,
+  restoreActivePluginRegistrySnapshot,
+  setActivePluginRegistry,
+} from "../../plugins/runtime.js";
+import {
+  createDirectOutboundTestAdapter,
+  createOutboundTestPlugin,
+  createTestRegistry,
+} from "../../test-utils/channel-plugins.js";
 
 const directCronCompletionRetention = {
   idPrefix: "cron-direct-delivery:v1:",
@@ -1172,6 +1182,130 @@ describe("dispatchCronDelivery — double-announce guard", () => {
     },
   );
 
+  it.each([
+    {
+      name: "active Telegram topic",
+      channel: "telegram",
+      to: "123456",
+      threadId: 42,
+      activeDescendants: true,
+      deliveryBestEffort: false,
+    },
+    {
+      name: "completed Telegram topic",
+      channel: "telegram",
+      to: "123456",
+      threadId: "42",
+      activeDescendants: false,
+      deliveryBestEffort: false,
+    },
+    {
+      name: "active Discord thread",
+      channel: "discord",
+      to: "123456789012345678",
+      threadId: "123456789012345679",
+      activeDescendants: true,
+      deliveryBestEffort: false,
+    },
+    {
+      name: "completed Slack thread",
+      channel: "slack",
+      to: "C1234567890",
+      threadId: "1712345678.123456",
+      activeDescendants: false,
+      deliveryBestEffort: false,
+    },
+    {
+      name: "active Matrix thread",
+      channel: "matrix",
+      to: "!room:example.org",
+      threadId: "$event:example.org",
+      activeDescendants: true,
+      deliveryBestEffort: false,
+    },
+    {
+      name: "completed Microsoft Teams thread",
+      channel: "msteams",
+      to: "19:team-channel@thread.tacv2",
+      threadId: "1712345678901",
+      activeDescendants: false,
+      deliveryBestEffort: false,
+    },
+    {
+      name: "active best-effort Slack thread",
+      channel: "slack",
+      to: "C1234567890",
+      threadId: "1712345678.654321",
+      activeDescendants: true,
+      deliveryBestEffort: true,
+    },
+  ])(
+    "delivers the child result instead of an interim parent reply to an $name",
+    async ({ activeDescendants, channel, deliveryBestEffort, threadId, to }) => {
+      const parentReply = "on it, pulling everything together";
+      const childReply = "Completed child result visible to the user.";
+      vi.mocked(isLikelyInterimCronMessage).mockImplementation((text) => text === parentReply);
+      if (activeDescendants) {
+        vi.mocked(countActiveDescendantRuns).mockReturnValueOnce(1).mockReturnValueOnce(0);
+        vi.mocked(waitForDescendantSubagentSummary).mockResolvedValue(childReply);
+      } else {
+        vi.mocked(countActiveDescendantRuns).mockReturnValue(0);
+        vi.mocked(readDescendantSubagentFallbackReply).mockResolvedValue(childReply);
+      }
+
+      const params = makeBaseParams({
+        spawnOnlyHandoff: true,
+        synthesizedText: parentReply,
+        deliveryBestEffort,
+      });
+      params.agentSessionKey = "agent:main:cron:test-job";
+      params.runSessionKey = "agent:main:cron:test-job:run:test-session-id";
+      params.job.deleteAfterRun = true;
+      params.resolvedDelivery = makeResolvedDelivery({ channel, to, threadId });
+      const normalizeTarget = vi.fn((raw: string) => raw.trim());
+      const previousPluginRegistry = captureActivePluginRegistrySnapshot();
+      let state: Awaited<ReturnType<typeof dispatchCronDelivery>>;
+      try {
+        setActivePluginRegistry(
+          createTestRegistry([
+            {
+              pluginId: channel,
+              source: "test",
+              plugin: createOutboundTestPlugin({
+                id: channel,
+                outbound: createDirectOutboundTestAdapter({ channel }),
+                messaging: { normalizeTarget },
+              }),
+            },
+          ]),
+        );
+        state = await dispatchCronDelivery(params);
+      } finally {
+        restoreActivePluginRegistrySnapshot(previousPluginRegistry);
+      }
+
+      expect(waitForDescendantSubagentSummary).toHaveBeenCalledTimes(activeDescendants ? 1 : 0);
+      if (activeDescendants) {
+        expect(waitForDescendantSubagentSummary).toHaveBeenCalledWith(
+          expect.objectContaining({ initialReply: parentReply }),
+        );
+      }
+      expect(deliverOutboundPayloads).toHaveBeenCalledTimes(1);
+      expectDeliveryCall(0, {
+        channel,
+        to,
+        threadId,
+        payloads: [{ text: childReply }],
+      });
+      expect(normalizeTarget).toHaveBeenCalledWith(to);
+      expect(state.delivered).toBe(true);
+      expect(state.cronRunSessionCleanupAttempted).toBe(true);
+      expect(callGateway).toHaveBeenCalledWith(
+        expect.objectContaining({ method: "sessions.delete" }),
+      );
+    },
+  );
+
   it("preserves a substantive parent synthesis after an accepted child has completed", async () => {
     const parentReply = "Combined parent summary already includes every child result.";
     vi.mocked(countActiveDescendantRuns).mockReturnValue(0);
@@ -1199,35 +1333,88 @@ describe("dispatchCronDelivery — double-announce guard", () => {
     expect(state.delivered).toBe(true);
   });
 
-  it.each([
-    {
-      name: "active child times out",
-      activeDescendants: 1,
-      error: "cron child-session handoff timed out before producing a final assistant payload",
-    },
-    {
-      name: "completed child has no output",
-      activeDescendants: 0,
-      error: "cron child-session handoff completed without a final assistant payload",
-    },
-  ])("fails an accepted spawn-only handoff when $name", async ({ activeDescendants, error }) => {
-    vi.mocked(countActiveDescendantRuns).mockReturnValue(activeDescendants);
-    const params = makeBaseParams({ spawnOnlyHandoff: true, synthesizedText: "" });
-    params.synthesizedText = undefined;
-    params.deliveryPayloads = [];
-    params.summary = undefined;
-    params.outputText = undefined;
+  it("preserves structured parent output followed by an interim threaded reply", async () => {
+    const mediaPayload = { mediaUrl: "https://example.invalid/chart.png" };
+    const interimPayload = { text: "on it, pulling everything together" };
+    vi.mocked(countActiveDescendantRuns).mockReturnValue(1);
+    vi.mocked(isLikelyInterimCronMessage).mockReturnValue(true);
+    const params = makeBaseParams({
+      spawnOnlyHandoff: false,
+      synthesizedText: interimPayload.text,
+    });
+    params.deliveryPayloadHasStructuredContent = true;
+    params.deliveryPayloads = [mediaPayload, interimPayload];
+    params.resolvedDelivery = makeResolvedDelivery({ threadId: "42" });
 
     const state = await dispatchCronDelivery(params);
 
-    expectResultFields(state.result, {
-      status: "error",
-      error,
-      delivered: false,
-      deliveryAttempted: true,
+    expect(waitForDescendantSubagentSummary).not.toHaveBeenCalled();
+    expect(deliverOutboundPayloads).toHaveBeenCalledOnce();
+    expectDeliveryCall(0, {
+      threadId: "42",
+      payloads: [mediaPayload, interimPayload],
     });
-    expect(deliverOutboundPayloads).not.toHaveBeenCalled();
+    expect(state.delivered).toBe(true);
   });
+
+  it.each([
+    {
+      name: "active child with no parent text times out",
+      activeDescendants: 1,
+      parentReply: undefined,
+      error: "cron child-session handoff timed out before producing a final assistant payload",
+    },
+    {
+      name: "completed child with no parent text has no output",
+      activeDescendants: 0,
+      parentReply: undefined,
+      error: "cron child-session handoff completed without a final assistant payload",
+    },
+    {
+      name: "active child leaves only the interim parent reply",
+      activeDescendants: 1,
+      parentReply: "on it, pulling everything together",
+      error: "cron child-session handoff timed out before producing a final assistant payload",
+    },
+    {
+      name: "completed child leaves only the interim parent reply",
+      activeDescendants: 0,
+      parentReply: "on it, pulling everything together",
+      error: "cron child-session handoff completed without a final assistant payload",
+    },
+  ])(
+    "keeps a one-shot child-owned handoff when $name",
+    async ({ activeDescendants, error, parentReply }) => {
+      vi.mocked(countActiveDescendantRuns).mockReturnValue(activeDescendants);
+      vi.mocked(isLikelyInterimCronMessage).mockImplementation((text) => text === parentReply);
+      const params = makeBaseParams({
+        spawnOnlyHandoff: true,
+        synthesizedText: parentReply ?? "",
+      });
+      params.agentSessionKey = "agent:main:cron:test-job";
+      params.job.deleteAfterRun = true;
+      params.resolvedDelivery = makeResolvedDelivery({ threadId: "42" });
+      if (!parentReply) {
+        params.synthesizedText = undefined;
+        params.deliveryPayloads = [];
+        params.summary = undefined;
+        params.outputText = undefined;
+      }
+
+      const state = await dispatchCronDelivery(params);
+
+      expectResultFields(state.result, {
+        status: "error",
+        error,
+        delivered: false,
+        deliveryAttempted: true,
+      });
+      expect(state.synthesizedText).toBeUndefined();
+      expect(state.deliveryPayloads).toEqual([]);
+      expect(deliverOutboundPayloads).not.toHaveBeenCalled();
+      expect(callGateway).not.toHaveBeenCalled();
+    },
+  );
 
   it("preserves abort precedence when an accepted child handoff is interrupted", async () => {
     const abortReason = "scheduled run aborted while waiting for its child";

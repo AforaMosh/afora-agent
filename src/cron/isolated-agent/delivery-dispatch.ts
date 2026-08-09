@@ -70,17 +70,6 @@ const deliveryOutboundRuntimeLoader = createLazyImportLoader(
 const subagentFollowupRuntimeLoader = createLazyImportLoader(
   () => import("./subagent-followup.runtime.js"),
 );
-async function loadDeliveryOutboundRuntime(): Promise<
-  typeof import("./delivery-outbound.runtime.js")
-> {
-  return await deliveryOutboundRuntimeLoader.load();
-}
-
-async function loadSubagentFollowupRuntime(): Promise<
-  typeof import("./subagent-followup.runtime.js")
-> {
-  return await subagentFollowupRuntimeLoader.load();
-}
 
 export {
   cleanupDirectCronSession,
@@ -201,7 +190,7 @@ export async function dispatchCronDelivery(
       createOutboundSendDeps,
       resolveAgentOutboundIdentity,
       sendDurableMessageBatch,
-    } = await loadDeliveryOutboundRuntime();
+    } = await deliveryOutboundRuntimeLoader.load();
     const identity = resolveAgentOutboundIdentity(params.cfgWithAgentDefaults, params.agentId);
     try {
       const summaryFallbackText = resolveDirectCronSummaryFallbackText({
@@ -590,7 +579,7 @@ export async function dispatchCronDelivery(
     const needsSubagentFollowupRuntime =
       shouldCheckCompletedDescendants || activeSubagentRuns > 0 || expectedSubagentFollowup;
     const subagentFollowupRuntime = needsSubagentFollowupRuntime
-      ? await loadSubagentFollowupRuntime()
+      ? await subagentFollowupRuntimeLoader.load()
       : undefined;
     // Also check for already-completed descendants. If the subagent finished
     // before delivery-dispatch runs, activeSubagentRuns is 0 and
@@ -604,11 +593,13 @@ export async function dispatchCronDelivery(
         })
       : undefined;
     const hadDescendants = activeSubagentRuns > 0 || Boolean(completedDescendantReply);
+    // Already-finished and awaited children share the same final-output owner.
+    let finalReply = completedDescendantReply;
     if (
       (!params.deliveryBestEffort || spawnOnlyHandoff) &&
       (activeSubagentRuns > 0 || expectedSubagentFollowup)
     ) {
-      let finalReply = await subagentFollowupRuntime?.waitForDescendantSubagentSummary({
+      finalReply = await subagentFollowupRuntime?.waitForDescendantSubagentSummary({
         sessionKey: subagentFollowupSessionKey,
         initialReply: initialSynthesizedText,
         timeoutMs: params.timeoutMs,
@@ -623,23 +614,23 @@ export async function dispatchCronDelivery(
           runStartedAt: params.runStartedAt,
         });
       }
-      if (finalReply && activeSubagentRuns === 0) {
-        outputText = finalReply;
-        summary = pickSummaryFromOutput(finalReply) ?? summary;
-        synthesizedText = finalReply;
-        deliveryPayloads = [{ text: finalReply }];
-      }
-    } else if (completedDescendantReply) {
-      // Descendants already finished before we got here. Use their output
-      // directly instead of the cron agent's interim text.
-      outputText = completedDescendantReply;
-      summary = pickSummaryFromOutput(completedDescendantReply) ?? summary;
-      synthesizedText = completedDescendantReply;
-      deliveryPayloads = [{ text: completedDescendantReply }];
     }
-    if (spawnOnlyHandoff && !synthesizedText?.trim()) {
+    if (finalReply && activeSubagentRuns === 0) {
+      outputText = finalReply;
+      summary = pickSummaryFromOutput(finalReply) ?? summary;
+      synthesizedText = finalReply;
+      deliveryPayloads = [{ text: finalReply }];
+    }
+    const unchangedInterimHandoff =
+      synthesizedText?.trim() === initialSynthesizedText &&
+      isLikelyInterimCronMessage(initialSynthesizedText);
+    if (spawnOnlyHandoff && (!synthesizedText?.trim() || unchangedInterimHandoff)) {
       // An accepted spawn is the turn's only completion; retiring it without
       // child output permanently loses one-shot scheduled work.
+      synthesizedText = undefined;
+      outputText = undefined;
+      summary = undefined;
+      deliveryPayloads = [];
       const error = params.isAborted()
         ? params.abortReason()
         : activeSubagentRuns > 0
@@ -669,8 +660,7 @@ export async function dispatchCronDelivery(
     }
     if (
       hadDescendants &&
-      synthesizedText?.trim() === initialSynthesizedText &&
-      isLikelyInterimCronMessage(initialSynthesizedText) &&
+      unchangedInterimHandoff &&
       !isSilentReplyText(initialSynthesizedText, SILENT_REPLY_TOKEN)
     ) {
       // Descendants existed but no post-orchestration synthesis arrived AND
@@ -739,16 +729,11 @@ export async function dispatchCronDelivery(
     const useDirectDelivery =
       params.deliveryPayloadHasStructuredContent ||
       (params.resolvedDelivery.threadId != null && !params.spawnOnlyHandoff);
-    if (useDirectDelivery) {
-      const directResult = await deliverViaDirectAndCleanup(params.resolvedDelivery);
-      if (directResult) {
-        return buildDeliveryState(directResult);
-      }
-    } else {
-      const finalizedTextResult = await finalizeTextDelivery(params.resolvedDelivery);
-      if (finalizedTextResult) {
-        return buildDeliveryState(finalizedTextResult);
-      }
+    const deliveryResult = useDirectDelivery
+      ? await deliverViaDirectAndCleanup(params.resolvedDelivery)
+      : await finalizeTextDelivery(params.resolvedDelivery);
+    if (deliveryResult) {
+      return buildDeliveryState(deliveryResult);
     }
   }
 

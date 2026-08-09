@@ -32,6 +32,7 @@ import {
   setSessionRuntimeModel,
 } from "./run.runtime.js";
 import type { RunCronAgentTurnResult } from "./run.types.js";
+import { isLikelyInterimCronMessage } from "./subagent-followup-hints.js";
 
 type CronExecutionRuntime = typeof import("./run-executor.runtime.js");
 type CronExecutionResult = Awaited<ReturnType<CronExecutionRuntime["executeCronRun"]>>;
@@ -356,9 +357,14 @@ export async function finalizeCronRun(params: {
     heartbeatOnlyResponse &&
     (deliveryDisposition.kind === "empty" ||
       (deliveryDisposition.kind === "heartbeat" && deliveryDisposition.controlOnly));
+  const interimOnlyResponse =
+    !deliveryPayloadHasStructuredContent &&
+    isLikelyInterimCronMessage(synthesizedText ?? "") &&
+    deliveryPayloads.every((payload) => isLikelyInterimCronMessage(payload.text ?? ""));
   const spawnOnlyHandoff =
     acceptedSessionSpawn &&
     (heartbeatControlOnlyResponse ||
+      interimOnlyResponse ||
       (deliveryPayloads.length === 0 && normalizeOptionalString(synthesizedText) === undefined));
   if (spawnOnlyHandoff && heartbeatControlOnlyResponse) {
     // Parent heartbeat acknowledgments cannot fulfill child delivery; one-shot
