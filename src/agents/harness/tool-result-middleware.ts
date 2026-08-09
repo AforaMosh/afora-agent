@@ -122,7 +122,7 @@ function isValidMiddlewareToolResult(value: unknown): value is OpenClawAgentTool
   if (!isRecord(value) || !Array.isArray(value.content)) {
     return false;
   }
-  if (value.content.length === 0 || value.content.length > MAX_MIDDLEWARE_CONTENT_BLOCKS) {
+  if (value.content.length > MAX_MIDDLEWARE_CONTENT_BLOCKS) {
     return false;
   }
   let aggregateMediaBytes = 0;
@@ -387,7 +387,11 @@ function coerceMiddlewareToolResult(
  * cannot be represented at all (top-level function/symbol/undefined).
  */
 function sanitizeMiddlewareDetailsValue(value: unknown): unknown {
-  const serialized = serializeMiddlewareValue(sanitizeDurableMediaPayload(value));
+  const normalized = serializeMiddlewareValue(value);
+  if (normalized === undefined) {
+    return null;
+  }
+  const serialized = serializeMiddlewareValue(sanitizeDurableMediaPayload(JSON.parse(normalized)));
   if (serialized === undefined) {
     return null;
   }
@@ -526,6 +530,9 @@ export function createAgentToolResultMiddlewareRunner(
         );
       }
       let current = sanitizeToolResultForMiddleware(event.result);
+      // Empty content is valid, but this fallback represents invalid non-empty input
+      // until middleware supplies content that passed the hostile-shape checks.
+      let requiresRecoveredContent = current === undefined && event.result.content.length > 0;
       if (!current) {
         current = {
           content: [],
@@ -540,8 +547,12 @@ export function createAgentToolResultMiddlewareRunner(
           // cannot bypass the same shape and size bounds as returned results.
           const candidate = next?.result ?? current;
           const coercedCandidate = coerceMiddlewareToolResult(candidate);
-          if (coercedCandidate) {
+          if (
+            coercedCandidate &&
+            (!requiresRecoveredContent || coercedCandidate.content.length > 0)
+          ) {
             current = projectToolResultVideos(coercedCandidate);
+            requiresRecoveredContent = false;
           } else {
             log.warn(
               `[${ctx.runtime}] discarded invalid tool result middleware output for ${truncateUtf16Safe(

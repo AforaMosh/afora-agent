@@ -38,6 +38,19 @@ const testModel: Model = {
 };
 const image: ImageContent = { type: "image", data: "aW1hZ2U=", mimeType: "image/png" };
 const video: VideoContent = { type: "video", data: "dmlkZW8=", mimeType: "video/mp4" };
+const noContractModel: Model = {
+  ...testModel,
+  id: "test-video-model-no-contract",
+  nativeVideoInput: undefined,
+};
+const routeLimitedModel: Model = {
+  ...testModel,
+  id: "test-video-model-route-limited",
+  nativeVideoInput: {
+    ...testModel.nativeVideoInput!,
+    maxAggregateDecodedBytes: 8,
+  },
+};
 
 function createNativeMediaResourceLoader(
   handlers: Map<string, Array<(...args: unknown[]) => Promise<unknown>>>,
@@ -78,17 +91,19 @@ function createNativeMediaResourceLoader(
 async function createNativeMediaSession(options?: {
   handlers?: Map<string, Array<(...args: unknown[]) => Promise<unknown>>>;
   settingsManager?: SettingsManager;
+  model?: Model;
 }) {
+  const model = options?.model ?? testModel;
   const authStorage = AuthStorage.inMemory();
-  authStorage.setRuntimeApiKey(testModel.provider, "test-api-key");
+  authStorage.setRuntimeApiKey(model.provider, "test-api-key");
   const modelRegistry = ModelRegistry.inMemory(authStorage);
-  modelRegistry.registerProvider(testModel.provider, {
-    api: testModel.api,
+  modelRegistry.registerProvider(model.provider, {
+    api: model.api,
     streamSimple: vi.fn(),
   });
   return await createAgentSession({
     authStorage,
-    model: testModel,
+    model,
     resourceLoader: createNativeMediaResourceLoader(options?.handlers ?? new Map()),
     sessionManager: SessionManager.inMemory(),
     settingsManager: options?.settingsManager ?? SettingsManager.inMemory(),
@@ -309,6 +324,24 @@ describe("AgentSession native media", () => {
     session.dispose();
   });
 
+  it("projects direct steer video to an omission when the route has no native contract", async () => {
+    const { session } = await createNativeMediaSession({ model: noContractModel });
+    const steer = vi.spyOn(session.agent, "steer").mockImplementation(() => undefined);
+
+    await session.steer("unsupported attachment", [video]);
+
+    const queued = steer.mock.calls[0]?.[0];
+    expect(queued).toMatchObject({
+      role: "user",
+      content: [
+        { type: "text", text: "unsupported attachment" },
+        { type: "text", text: "(video omitted: model does not support videos)" },
+      ],
+    });
+    expect(JSON.stringify(queued)).not.toContain(video.data);
+    session.dispose();
+  });
+
   it("keeps native video attachments in queued follow-up turns", async () => {
     const { session } = await createNativeMediaSession();
     const followUp = vi.spyOn(session.agent, "followUp").mockImplementation(() => undefined);
@@ -321,6 +354,25 @@ describe("AgentSession native media", () => {
         content: [{ type: "text", text: "watch this" }, video],
       }),
     );
+    session.dispose();
+  });
+
+  it("projects direct follow-up video to an omission when route aggregate limits reject it", async () => {
+    const { session } = await createNativeMediaSession({ model: routeLimitedModel });
+    const followUp = vi.spyOn(session.agent, "followUp").mockImplementation(() => undefined);
+
+    await session.followUp("bounded attachment", [image, video]);
+
+    const queued = followUp.mock.calls[0]?.[0];
+    expect(queued).toMatchObject({
+      role: "user",
+      content: [
+        { type: "text", text: "bounded attachment" },
+        image,
+        { type: "text", text: "(video omitted: total video size exceeds the limit)" },
+      ],
+    });
+    expect(JSON.stringify(queued)).not.toContain(video.data);
     session.dispose();
   });
 

@@ -83,6 +83,45 @@ describe("worker video downgrade boundaries", () => {
     expect(projected && isWorkerTranscriptMessageFrameSafe(projected)).toBe(true);
   });
 
+  it("preserves interleaved captions and media while replacing video in place", () => {
+    const imageA = { type: "image" as const, data: "aW1hZ2UtYQ==", mimeType: "image/png" };
+    const imageB = { type: "image" as const, data: "aW1hZ2UtYg==", mimeType: "image/jpeg" };
+    const video = { ...tinyVideo, data: "cHJpdmF0ZS12aWRlbw==" };
+    const message = {
+      role: "user" as const,
+      content: [
+        { type: "text" as const, text: "caption A" },
+        imageA,
+        { type: "text" as const, text: "caption B" },
+        video,
+        { type: "text" as const, text: "caption C" },
+        imageB,
+      ],
+      timestamp: 1,
+      __openclaw: {
+        media: [
+          { kind: "image" as const, sourceIndex: 0 },
+          { kind: "video" as const, sourceIndex: 1 },
+          { kind: "image" as const, sourceIndex: 2 },
+        ],
+        mediaBlockFactIndexes: [0, 1, 2],
+      },
+    };
+
+    const projected = projectMessage(message);
+
+    expect(projected.content).toEqual([
+      { type: "text", text: "caption A" },
+      imageA,
+      { type: "text", text: "caption B" },
+      { type: "text", text: "(video omitted: attachment is unavailable to the cloud worker)" },
+      { type: "text", text: "caption C" },
+      imageB,
+    ]);
+    expect(projectContext({ messages: [message] }).messages[0]).toEqual(projected);
+    expect(JSON.stringify(projected)).not.toContain(video.data);
+  });
+
   it("makes durable-reference-only video visible without trusting worker media metadata", () => {
     const message = {
       role: "user" as const,
@@ -106,7 +145,7 @@ describe("worker video downgrade boundaries", () => {
     });
   });
 
-  it("keeps reference-only video omissions ahead of later inline images", () => {
+  it("appends reference-only video omissions without disturbing inline content", () => {
     const image = { type: "image" as const, data: "aW1hZ2U=", mimeType: "image/png" };
     const message = {
       role: "user" as const,
@@ -130,14 +169,12 @@ describe("worker video downgrade boundaries", () => {
       role: "user",
       content: [
         { type: "text", text: "compare" },
-        { type: "text", text: "(video omitted: attachment is unavailable to the cloud worker)" },
         image,
+        { type: "text", text: "(video omitted: attachment is unavailable to the cloud worker)" },
       ],
       timestamp: 1,
     });
-    expect(projectContext({ messages: [message] }).messages[0]).toEqual(
-      projectMessage(message),
-    );
+    expect(projectContext({ messages: [message] }).messages[0]).toEqual(projectMessage(message));
   });
 
   it("emits one omission for every reference-only clip", () => {

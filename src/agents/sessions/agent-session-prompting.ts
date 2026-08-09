@@ -444,6 +444,7 @@ export abstract class AgentSessionPrompting extends AgentSessionBase {
     let expandedText = this.expandSkillCommand(text);
     expandedText = expandPromptTemplate(expandedText, [...this.promptTemplates]);
 
+    const finalMedia = finalizePreparedPromptMedia({ media: inputMedia, model: this.model });
     const preparedMessage = await userTurnTranscriptRecorder?.resolveMessage();
     // Transcript preparation may outlive the captured attempt. Recheck its owner
     // fence immediately before enqueue so a successor cannot inherit this steer.
@@ -452,13 +453,14 @@ export abstract class AgentSessionPrompting extends AgentSessionBase {
     }
     await this.queueSteer(
       expandedText,
-      inputMedia,
+      finalMedia.media,
       preparedMessage && userTurnTranscriptRecorder
         ? { message: preparedMessage, recorder: userTurnTranscriptRecorder }
         : undefined,
       mediaFacts,
       imageOrder,
       queueIdentity,
+      finalMedia.preparedContent,
     );
   }
 
@@ -479,7 +481,8 @@ export abstract class AgentSessionPrompting extends AgentSessionBase {
     let expandedText = this.expandSkillCommand(text);
     expandedText = expandPromptTemplate(expandedText, [...this.promptTemplates]);
 
-    await this.queueFollowUp(expandedText, media);
+    const finalMedia = finalizePreparedPromptMedia({ media, model: this.model });
+    await this.queueFollowUp(expandedText, finalMedia.media, finalMedia.preparedContent);
   }
 
   /**

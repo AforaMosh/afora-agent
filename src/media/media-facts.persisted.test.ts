@@ -202,6 +202,49 @@ describe("canonical persisted media", () => {
     expect(result.message).not.toHaveProperty("media");
     expect(readPersistedMediaFacts(result.message)?.[0]).toMatchObject(canonicalFact);
   });
+
+  it("removes secrets and inline data when canonicalizing runtime facts for persistence", () => {
+    const inlinePayload = "cHJpdmF0ZS1tZWRpYQ==";
+    const result = canonicalizePersistedUserMessageMedia({
+      __openclaw: {
+        media: [
+          { path: `data:image/png;base64,${inlinePayload}`, contentType: "image/png" },
+          {
+            url: "https://user" + ":password@cdn.example.test/clip.mp4?signature=private#preview",
+            contentType: "video/mp4",
+          },
+        ],
+      },
+    });
+
+    const media = readPersistedMediaFacts(result.message);
+    expect(media?.[0]?.path).toBeUndefined();
+    expect(media?.[1]?.url).toBe("https://cdn.example.test/clip.mp4");
+    expect(JSON.stringify(result.message)).not.toContain("data:");
+    expect(JSON.stringify(result.message)).not.toContain(inlinePayload);
+    expect(JSON.stringify(result.message)).not.toContain("password");
+    expect(JSON.stringify(result.message)).not.toContain("signature");
+  });
+});
+
+describe("runtime media facts", () => {
+  it("preserves trimmed authenticated runtime references needed for fetching", () => {
+    const authenticatedReference =
+      "https://user" + ":password@cdn.example.test/clip.mp4?signature=private#preview";
+
+    expect(
+      normalizeMediaFacts([
+        {
+          path: ` ${authenticatedReference} `,
+          url: ` ${authenticatedReference} `,
+          contentType: "video/mp4",
+        },
+      ])[0],
+    ).toMatchObject({
+      path: authenticatedReference,
+      url: authenticatedReference,
+    });
+  });
 });
 
 describe("canonical image media facts", () => {

@@ -140,6 +140,33 @@ describe("createAgentToolResultMiddlewareRunner", () => {
     expect(result).toBe(original);
   });
 
+  it("preserves empty content while malformed content still fails visibly without middleware", async () => {
+    const runner = createAgentToolResultMiddlewareRunner({ runtime: "openclaw" }, []);
+    const empty = { content: [], details: { ok: true } };
+
+    const emptyResult = await runner.applyToolResultMiddleware({
+      toolCallId: "call-empty",
+      toolName: "inspect",
+      args: {},
+      result: empty,
+    });
+    const malformedResult = await runner.applyToolResultMiddleware({
+      toolCallId: "call-malformed",
+      toolName: "inspect",
+      args: {},
+      result: {
+        content: [{ type: "unknown", payload: "raw" } as never],
+        details: { ok: true },
+      },
+    });
+
+    expect(emptyResult).toBe(empty);
+    expect(malformedResult).toEqual({
+      content: [{ type: "text", text: "Tool output unavailable due to post-processing error." }],
+      details: { status: "error", middlewareError: true },
+    });
+  });
+
   it("sanitizes incoming cyclic details so a no-op middleware does not fail closed", async () => {
     // The bug class behind silent Discord delivery in 2026.5.5: any plugin
     // that registers a tool-result middleware (e.g. bundled tokenjuice)

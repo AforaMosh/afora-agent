@@ -240,56 +240,35 @@ export function toWorkerTranscriptMessage(
         ? persistedMediaBlockFactIndexes
         : [];
     const representedVideoFacts = new Set<number>();
-    const textContent: Extract<WorkerTranscriptMessage, { role: "user" }>["content"] = [];
-    const mediaContent: Array<{
-      order: number;
-      sequence: number;
-      part: Extract<WorkerTranscriptMessage, { role: "user" }>["content"][number];
-    }> = [];
+    const content: Extract<WorkerTranscriptMessage, { role: "user" }>["content"] = [];
     let mediaBlockIndex = 0;
-    let sequence = 0;
     if (Array.isArray(message.content)) {
       for (const part of message.content) {
         if (part.type === "text") {
-          textContent.push(cloneTextContent(part));
+          content.push(cloneTextContent(part));
           continue;
         }
         if (part.type !== "image" && part.type !== "video") {
           continue;
         }
         const factIndex = mediaBlockFactIndexes[mediaBlockIndex++];
-        const fact = typeof factIndex === "number" ? facts[factIndex] : undefined;
-        const order = fact?.sourceIndex ?? mediaBlockIndex - 1;
         if (part.type === "video" && typeof factIndex === "number") {
           representedVideoFacts.add(factIndex);
         }
-        mediaContent.push({
-          order,
-          sequence: sequence++,
-          part:
-            part.type === "video"
-              ? { type: "text", text: WORKER_VIDEO_UNAVAILABLE_TEXT }
-              : cloneImageContent(part),
-        });
+        content.push(
+          part.type === "video"
+            ? { type: "text", text: WORKER_VIDEO_UNAVAILABLE_TEXT }
+            : cloneImageContent(part),
+        );
       }
     } else {
-      textContent.push({ type: "text", text: message.content });
+      content.push({ type: "text", text: message.content });
     }
     for (const [factIndex, fact] of facts.entries()) {
       if (!representedVideoFacts.has(factIndex) && isVideoMediaFact(fact)) {
-        mediaContent.push({
-          order: fact.sourceIndex ?? factIndex,
-          sequence: sequence++,
-          part: { type: "text", text: WORKER_VIDEO_UNAVAILABLE_TEXT },
-        });
+        content.push({ type: "text", text: WORKER_VIDEO_UNAVAILABLE_TEXT });
       }
     }
-    const content = [
-      ...textContent,
-      ...mediaContent
-        .toSorted((left, right) => left.order - right.order || left.sequence - right.sequence)
-        .map((entry) => entry.part),
-    ];
     return {
       kind: "complete",
       message: { role: "user", content, timestamp: message.timestamp },

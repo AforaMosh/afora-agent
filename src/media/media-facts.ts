@@ -10,10 +10,7 @@ import {
   asPositiveSafeInteger as normalizePositiveInteger,
 } from "@openclaw/normalization-core/number-coercion";
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import {
-  normalizeDurableMediaReference,
-  sanitizeMediaReferenceForProjection,
-} from "./media-reference-projection.js";
+import { normalizeDurableMediaReference } from "./media-reference-projection.js";
 import type { PromptImageOrderEntry } from "./prompt-image-order.js";
 
 /** One ordered runtime attachment with producer-owned source identity. */
@@ -417,8 +414,8 @@ function normalizeMediaFact<TInput extends MediaFactInput>(
   const normalized: MediaFact = {
     sourceId: normalizeOptionalString(media.sourceId),
     sourceIndex: normalizeNonNegativeInteger(media.sourceIndex),
-    path: mediaPath ? sanitizeMediaReferenceForProjection(mediaPath) : undefined,
-    url: mediaUrl ? sanitizeMediaReferenceForProjection(mediaUrl) : undefined,
+    path: mediaPath,
+    url: mediaUrl,
     contentType,
     kind:
       media.kind ??
