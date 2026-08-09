@@ -348,7 +348,7 @@ describe("private transcript metadata projection", () => {
             contentType: "image/png",
           },
         ],
-        MediaPaths: ["/tmp/local.png", "", "", "relative.png"],
+        MediaPaths: ["", "", "", "relative.png"],
         MediaUrls: ["", "https://cdn.example.test/legacy.mp4"],
         MediaTypes: ["image/png"],
         __openclaw: {
@@ -368,6 +368,97 @@ describe("private transcript metadata projection", () => {
     expect(JSON.stringify(projected)).not.toContain(inlinePayload);
     expect(JSON.stringify(projected)).not.toContain("password");
     expect(JSON.stringify(projected)).not.toContain("signature");
+  });
+
+  it.each(
+    ["MediaPath", "MediaUrl"].flatMap((key) => [
+      { key, kind: "POSIX", value: "/Users/operator/.openclaw/media/inbound/clip.mp4" },
+      { key, kind: "Windows", value: "C:\\Users\\operator\\clip.mp4" },
+      { key, kind: "file URI", value: "file:///Users/operator/clip.mp4" },
+    ]),
+  )("drops $kind storage paths from legacy scalar $key", ({ key, value }) => {
+    const [projected] = projectChatDisplayMessages([
+      { role: "user", content: "Inspect legacy media.", [key]: value },
+    ]);
+
+    expect(projected).not.toHaveProperty(key);
+    expect(JSON.stringify(projected)).not.toContain(value);
+  });
+
+  it("sanitizes legacy parallel media arrays without changing their positions", () => {
+    const projected = projectChatDisplayMessages([
+      {
+        role: "user",
+        content: "Inspect legacy media.",
+        MediaPaths: [
+          "/Users/operator/.openclaw/media/inbound/clip.mp4",
+          "C:\\Users\\operator\\clip.mp4",
+          "file:///Users/operator/clip.mp4",
+          "relative/preview.png",
+          "media://inbound/clip---00000000-0000-4000-8000-000000000000.mp4",
+        ],
+        MediaUrls: [
+          "https://user" + ":password@cdn.example.test/clip.mp4?signature=private#preview",
+          "/var/lib/openclaw/media/clip.mp4",
+          "file:///var/lib/openclaw/media/clip.mp4",
+          "relative/preview.png",
+          "media://inbound/clip---00000000-0000-4000-8000-000000000000.mp4",
+        ],
+        MediaTypes: ["video/mp4", "video/mp4", "video/mp4", "image/png", "video/mp4"],
+      },
+    ]);
+
+    expect(projected).toEqual([
+      {
+        role: "user",
+        content: "Inspect legacy media.",
+        MediaPaths: [
+          "",
+          "",
+          "",
+          "relative/preview.png",
+          "media://inbound/clip---00000000-0000-4000-8000-000000000000.mp4",
+        ],
+        MediaUrls: [
+          "https://cdn.example.test/clip.mp4",
+          "",
+          "",
+          "relative/preview.png",
+          "media://inbound/clip---00000000-0000-4000-8000-000000000000.mp4",
+        ],
+        MediaTypes: ["video/mp4", "video/mp4", "video/mp4", "image/png", "video/mp4"],
+      },
+    ]);
+    expect(JSON.stringify(projected)).not.toMatch(
+      /(?:Users[\\/]operator|var[\\/]lib[\\/]openclaw|file:|password|signature)/u,
+    );
+  });
+
+  it("compacts rejected legacy array paths when no parallel carrier needs their positions", () => {
+    expect(
+      projectChatDisplayMessages([
+        {
+          role: "user",
+          content: "Inspect legacy media.",
+          MediaPaths: [
+            "/Users/operator/clip.mp4",
+            "relative/preview.png",
+            "C:\\Users\\operator\\clip.mp4",
+            "file:///Users/operator/clip.mp4",
+            "media://inbound/clip---00000000-0000-4000-8000-000000000000.mp4",
+          ],
+        },
+      ]),
+    ).toEqual([
+      {
+        role: "user",
+        content: "Inspect legacy media.",
+        MediaPaths: [
+          "relative/preview.png",
+          "media://inbound/clip---00000000-0000-4000-8000-000000000000.mp4",
+        ],
+      },
+    ]);
   });
 
   it("keeps visible text while omitting oversized upstream prompt metadata", () => {

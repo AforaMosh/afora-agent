@@ -545,7 +545,8 @@ type GoogleInlineMediaPartData = {
   mimeType: string;
   data: string;
 };
-type GoogleInlineMediaPriorityTier = "current-user" | "historical";
+type GoogleInlineMediaPriorityTier = "current-user" | "historical" | "tool-result";
+type GoogleInlineMediaProvenanceSource = "ordinary-user" | "tool-result-image";
 type GoogleInlineMediaProvenanceEntry = {
   contentIndex: number;
   dataLength: number;
@@ -555,6 +556,7 @@ type GoogleInlineMediaProvenanceEntry = {
   occurrence: number;
   partIndex: number;
   priorityTier: GoogleInlineMediaPriorityTier;
+  source: GoogleInlineMediaProvenanceSource;
 };
 type GoogleInlineMediaProvenance = {
   byFingerprint: Map<string, GoogleInlineMediaProvenanceEntry[]>;
@@ -574,6 +576,10 @@ type GoogleInlineMediaAdmissionCandidate = GoogleInlineMediaPartData & {
 type GoogleInlineMediaAdmissionDecision =
   | { accepted: true; wireMimeType: string }
   | { accepted: false };
+
+function googleInlineMediaPriorityValue(tier: GoogleInlineMediaPriorityTier): number {
+  return tier === "current-user" ? 2 : tier === "historical" ? 1 : 0;
+}
 
 function googleInlineMediaOmission(kind: "image" | "video") {
   return { text: kind === "video" ? NATIVE_VIDEO_OMISSION : GOOGLE_INLINE_MEDIA_OMISSION };
@@ -637,15 +643,17 @@ function collectGoogleContentPartLists(request: GoogleGenerateContentRequest) {
 function collectGoogleRequestPartLists(request: GoogleGenerateContentRequest) {
   const partLists: Array<{
     contentIndex: number;
+    locationPrefix: string;
     parts: MutableGooglePart[];
-    provenanceEligible: boolean;
+    provenanceSource?: GoogleInlineMediaProvenanceSource;
     role: unknown;
   }> = [];
   const activePartLists = new WeakSet<object>();
   const visitPartList = (params: {
     contentIndex: number;
+    locationPrefix: string;
     parts: MutableGooglePart[];
-    provenanceEligible: boolean;
+    provenanceSource?: GoogleInlineMediaProvenanceSource;
     role: unknown;
   }) => {
     if (activePartLists.has(params.parts)) {
@@ -653,7 +661,8 @@ function collectGoogleRequestPartLists(request: GoogleGenerateContentRequest) {
     }
     activePartLists.add(params.parts);
     partLists.push(params);
-    for (const part of params.parts) {
+    for (let partIndex = 0; partIndex < params.parts.length; partIndex += 1) {
+      const part = params.parts[partIndex];
       const functionResponse = isRecord(part?.functionResponse) ? part.functionResponse : undefined;
       const nestedParts = Array.isArray(functionResponse?.parts)
         ? (functionResponse.parts as MutableGooglePart[])
@@ -661,8 +670,9 @@ function collectGoogleRequestPartLists(request: GoogleGenerateContentRequest) {
       if (nestedParts) {
         visitPartList({
           contentIndex: params.contentIndex,
+          locationPrefix: `${params.locationPrefix}.${partIndex}.functionResponse.parts`,
           parts: nestedParts,
-          provenanceEligible: false,
+          provenanceSource: params.role === "user" ? "tool-result-image" : params.provenanceSource,
           role: params.role,
         });
       }
@@ -670,22 +680,32 @@ function collectGoogleRequestPartLists(request: GoogleGenerateContentRequest) {
     activePartLists.delete(params.parts);
   };
   for (const content of collectGoogleContentPartLists(request)) {
-    visitPartList({ ...content, provenanceEligible: true });
+    const provenanceSource =
+      content.role === "user"
+        ? isGoogleToolResultMediaTurn(content.parts)
+          ? "tool-result-image"
+          : "ordinary-user"
+        : undefined;
+    visitPartList({
+      ...content,
+      locationPrefix: `contents.${content.contentIndex}.parts`,
+      provenanceSource,
+    });
   }
   const systemParts = isRecord(request.systemInstruction) && request.systemInstruction.parts;
   if (Array.isArray(systemParts)) {
     visitPartList({
       contentIndex: -1,
+      locationPrefix: "systemInstruction.parts",
       parts: systemParts as MutableGooglePart[],
-      provenanceEligible: false,
       role: "system",
     });
   }
   return partLists;
 }
 
-function googleInlineMediaLocationKey(contentIndex: number, partIndex: number): string {
-  return `${contentIndex}:${partIndex}`;
+function googleInlineMediaLocationKey(locationPrefix: string, partIndex: number): string {
+  return `${locationPrefix}.${partIndex}`;
 }
 
 function resolveCurrentOrdinaryUserContentIndex(
@@ -703,7 +723,7 @@ function resolveCurrentOrdinaryUserContentIndex(
   );
 }
 
-/** Captures only transport-produced ordinary-user media before payload hooks can replace it. */
+/** Captures transport-produced input media before payload hooks can replace it. */
 function captureGoogleInlineMediaProvenance(
   request: GoogleGenerateContentRequest,
   currentOrdinaryUserContentIndex: number,
@@ -711,14 +731,13 @@ function captureGoogleInlineMediaProvenance(
   const byFingerprint = new Map<string, GoogleInlineMediaProvenanceEntry[]>();
   const byIdentity = new WeakMap<Record<string, unknown>, GoogleInlineMediaProvenanceEntry>();
   const byLocation = new Map<string, { fingerprint: string; occurrence: number }>();
-  const contentPartLists = collectGoogleContentPartLists(request);
-  const toolResultContentIndexes = new Set(
-    contentPartLists
-      .filter(({ parts }) => isGoogleToolResultMediaTurn(parts))
-      .map(({ contentIndex }) => contentIndex),
-  );
-  for (const { contentIndex, parts, role } of contentPartLists) {
-    if (role !== "user" || toolResultContentIndexes.has(contentIndex)) {
+  for (const {
+    contentIndex,
+    locationPrefix,
+    parts,
+    provenanceSource,
+  } of collectGoogleRequestPartLists(request)) {
+    if (!provenanceSource) {
       continue;
     }
     for (let partIndex = 0; partIndex < parts.length; partIndex += 1) {
@@ -732,6 +751,11 @@ function captureGoogleInlineMediaProvenance(
         mimeType,
         data: typeof inlineData.data === "string" ? inlineData.data : "",
       } satisfies GoogleInlineMediaPartData;
+      // Function responses may carry images, but no tool/model/hook-produced
+      // video is valid native video input.
+      if (provenanceSource === "tool-result-image" && candidate.kind !== "image") {
+        continue;
+      }
       const fingerprint = googleInlineMediaFingerprint(candidate);
       const entries = byFingerprint.get(fingerprint) ?? [];
       const occurrence = entries.length;
@@ -744,12 +768,17 @@ function captureGoogleInlineMediaProvenance(
         occurrence,
         partIndex,
         priorityTier:
-          contentIndex === currentOrdinaryUserContentIndex ? "current-user" : "historical",
+          provenanceSource === "tool-result-image"
+            ? "tool-result"
+            : contentIndex === currentOrdinaryUserContentIndex
+              ? "current-user"
+              : "historical",
+        source: provenanceSource,
       };
       entries.push(entry);
       byFingerprint.set(fingerprint, entries);
       byIdentity.set(inlineData, entry);
-      byLocation.set(googleInlineMediaLocationKey(contentIndex, partIndex), {
+      byLocation.set(googleInlineMediaLocationKey(locationPrefix, partIndex), {
         fingerprint,
         occurrence,
       });
@@ -772,19 +801,20 @@ function googleInlineMediaMatchesProvenanceEntry(
 
 function matchGoogleInlineMediaProvenance(params: {
   candidate: GoogleInlineMediaPartData;
-  contentIndex: number;
   inlineData: Record<string, unknown>;
+  locationPrefix: string;
   partIndex: number;
   provenance: GoogleInlineMediaProvenance;
-  role: unknown;
+  provenanceSource?: GoogleInlineMediaProvenanceSource;
   used: Set<GoogleInlineMediaProvenanceEntry>;
 }): GoogleInlineMediaProvenanceEntry | undefined {
-  if (params.role !== "user") {
+  if (!params.provenanceSource) {
     return undefined;
   }
   const identityEntry = params.provenance.byIdentity.get(params.inlineData);
   if (
     identityEntry &&
+    identityEntry.source === params.provenanceSource &&
     googleInlineMediaMatchesProvenanceEntry(params.candidate, identityEntry) &&
     !params.used.has(identityEntry)
   ) {
@@ -792,13 +822,14 @@ function matchGoogleInlineMediaProvenance(params: {
     return identityEntry;
   }
   const replacementSlot = params.provenance.byLocation.get(
-    googleInlineMediaLocationKey(params.contentIndex, params.partIndex),
+    googleInlineMediaLocationKey(params.locationPrefix, params.partIndex),
   );
   const replacementEntry = replacementSlot
     ? params.provenance.byFingerprint.get(replacementSlot.fingerprint)?.[replacementSlot.occurrence]
     : undefined;
   if (
     replacementEntry &&
+    replacementEntry.source === params.provenanceSource &&
     !params.used.has(replacementEntry) &&
     googleInlineMediaMatchesProvenanceEntry(params.candidate, replacementEntry)
   ) {
@@ -825,7 +856,8 @@ function planGoogleInlineMediaAdmission(
     const left = candidates[leftIndex]!;
     const right = candidates[rightIndex]!;
     const tierOrder =
-      Number(right.priorityTier === "current-user") - Number(left.priorityTier === "current-user");
+      googleInlineMediaPriorityValue(right.priorityTier) -
+      googleInlineMediaPriorityValue(left.priorityTier);
     return tierOrder || right.contentIndex - left.contentIndex || left.wireOrder - right.wireOrder;
   });
   // Current input spends the budget first; lower-priority media then fills the remainder.
@@ -893,8 +925,8 @@ function enforceGoogleNativeVideoRequestLimits(
     parts: MutableGooglePart[];
     partIndex: number;
     contentIndex: number;
-    role: unknown;
-    provenanceEligible: boolean;
+    locationPrefix: string;
+    provenanceSource?: GoogleInlineMediaProvenanceSource;
   }) => {
     const mimeType =
       typeof params.inlineData.mimeType === "string" ? params.inlineData.mimeType : "";
@@ -904,22 +936,20 @@ function enforceGoogleNativeVideoRequestLimits(
       data: typeof params.inlineData.data === "string" ? params.inlineData.data : "",
     } satisfies GoogleInlineMediaPartData;
     const provenanceEntry =
-      params.provenanceEligible && provenance
+      params.provenanceSource && provenance
         ? matchGoogleInlineMediaProvenance({
             candidate: candidateData,
-            contentIndex: params.contentIndex,
             inlineData: params.inlineData,
+            locationPrefix: params.locationPrefix,
             partIndex: params.partIndex,
             provenance,
-            role: params.role,
+            provenanceSource: params.provenanceSource,
             used: usedProvenance,
           })
         : undefined;
     const ordinaryUserInput = provenance
-      ? provenanceEntry !== undefined
-      : params.provenanceEligible &&
-        params.role === "user" &&
-        !toolResultContentIndexes.has(params.contentIndex);
+      ? provenanceEntry?.source === "ordinary-user"
+      : params.provenanceSource === "ordinary-user";
     candidates.push({
       ...candidateData,
       inlineData: params.inlineData,
@@ -927,23 +957,28 @@ function enforceGoogleNativeVideoRequestLimits(
       partIndex: params.partIndex,
       contentIndex: params.contentIndex,
       wireOrder: wireOrder++,
-      // The pre-hook builder retains supported tool-result images. The final
-      // provenance guard admits bytes only from captured ordinary-user input.
-      inputAdmissible: provenance ? ordinaryUserInput : true,
+      // The final guard admits only captured ordinary-user media and
+      // transport-produced tool-result images.
+      inputAdmissible: provenance ? provenanceEntry !== undefined : true,
       videoAdmissible:
         ordinaryUserInput &&
         candidateData.kind === "video" &&
         !toolResultContentIndexes.has(params.contentIndex),
       priorityTier:
         provenanceEntry?.priorityTier ??
-        (ordinaryUserInput && params.contentIndex === initialCurrentOrdinaryUserContentIndex
-          ? "current-user"
-          : "historical"),
+        (params.provenanceSource === "tool-result-image"
+          ? "tool-result"
+          : ordinaryUserInput && params.contentIndex === initialCurrentOrdinaryUserContentIndex
+            ? "current-user"
+            : "historical"),
     });
   };
-  for (const { contentIndex, parts, provenanceEligible, role } of collectGoogleRequestPartLists(
-    request,
-  )) {
+  for (const {
+    contentIndex,
+    locationPrefix,
+    parts,
+    provenanceSource,
+  } of collectGoogleRequestPartLists(request)) {
     for (let partIndex = 0; partIndex < parts.length; partIndex += 1) {
       const part = parts[partIndex] ?? {};
       const inlineData = inlineDataFromGooglePart(part);
@@ -953,8 +988,8 @@ function enforceGoogleNativeVideoRequestLimits(
           parts,
           partIndex,
           contentIndex,
-          role,
-          provenanceEligible,
+          locationPrefix,
+          provenanceSource,
         });
       }
     }
@@ -987,8 +1022,8 @@ function enforceGoogleNativeVideoRequestLimits(
   if (contract) {
     accepted.sort((left, right) => {
       const tierOrder =
-        Number(left.candidate.priorityTier === "current-user") -
-        Number(right.candidate.priorityTier === "current-user");
+        googleInlineMediaPriorityValue(left.candidate.priorityTier) -
+        googleInlineMediaPriorityValue(right.candidate.priorityTier);
       return (
         tierOrder ||
         left.candidate.contentIndex - right.candidate.contentIndex ||

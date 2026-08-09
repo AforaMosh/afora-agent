@@ -2934,7 +2934,7 @@ describe("google provider-owned native video request limits", () => {
   async function captureHookedNativeRequest(params: {
     context: Record<string, unknown>;
     model?: Model<"google-generative-ai">;
-    onPayload: (request: MutableGoogleTestRequest) => unknown;
+    onPayload?: (request: MutableGoogleTestRequest) => unknown;
   }): Promise<MutableGoogleTestRequest> {
     guardedFetchMock
       .mockReset()
@@ -2946,7 +2946,12 @@ describe("google provider-owned native video request limits", () => {
         params.context as Parameters<typeof streamFn>[1],
         {
           apiKey: "gemini-api-key",
-          onPayload: (request) => params.onPayload(request as MutableGoogleTestRequest),
+          ...(params.onPayload
+            ? {
+                onPayload: (request: unknown) =>
+                  params.onPayload?.(request as MutableGoogleTestRequest),
+              }
+            : {}),
         } as Parameters<typeof streamFn>[2],
       ),
     );
@@ -2956,6 +2961,186 @@ describe("google provider-owned native video request limits", () => {
       requireRequestInit(guardedCall, "guarded fetch"),
     ) as MutableGoogleTestRequest;
   }
+
+  function toolImageContext(model: string, data: string, currentImageData?: string) {
+    return {
+      messages: [
+        { role: "user", content: "Take a screenshot.", timestamp: 0 },
+        googleToolCallAssistantTurn({
+          timestamp: 1,
+          model,
+          name: "screenshot",
+          args: {},
+        }),
+        {
+          role: "toolResult",
+          toolCallId: "call_1",
+          toolName: "screenshot",
+          content: [{ type: "image", mimeType: "image/png", data }],
+          isError: false,
+          timestamp: 2,
+        },
+        ...(currentImageData
+          ? [
+              {
+                role: "user",
+                content: [{ type: "image", mimeType: "image/jpeg", data: currentImageData }],
+                timestamp: 3,
+              },
+            ]
+          : []),
+      ],
+    };
+  }
+
+  function toolImageModel(
+    id: string,
+    nativeVideoInput: Partial<{
+      maxAggregateDecodedBytes: number;
+      maxDecodedBytesPerItem: number;
+      maxItems: number;
+      maxSerializedRequestBytesExclusive: number;
+    }> = {},
+  ) {
+    return buildGeminiModel({
+      id,
+      input: ["text", "image", "video"],
+      nativeVideoInput: {
+        ...GOOGLE_TEST_VIDEO_CONTRACT,
+        maxAggregateDecodedBytes: 64,
+        ...nativeVideoInput,
+      },
+    });
+  }
+
+  it.each([
+    ["nested function response", "gemini-3.1-pro-preview"],
+    ["deferred tool image turn", "gemini-2.5-flash"],
+  ])("preserves an existing %s without a payload hook", async (_shape, modelId) => {
+    const toolImageData = "dG9vbA==";
+    const params = await captureHookedNativeRequest({
+      context: toolImageContext(modelId, toolImageData),
+      model: toolImageModel(modelId),
+    });
+
+    expect(JSON.stringify(params)).toContain(toolImageData);
+  });
+
+  it.each([
+    [
+      "nested function response",
+      "gemini-3.1-pro-preview",
+      "structured clone",
+      (request: unknown) => structuredClone(request),
+    ],
+    [
+      "nested function response",
+      "gemini-3.1-pro-preview",
+      "JSON roundtrip",
+      (request: unknown) => JSON.parse(JSON.stringify(request)) as unknown,
+    ],
+    [
+      "deferred tool image turn",
+      "gemini-2.5-flash",
+      "structured clone",
+      (request: unknown) => structuredClone(request),
+    ],
+    [
+      "deferred tool image turn",
+      "gemini-2.5-flash",
+      "JSON roundtrip",
+      (request: unknown) => JSON.parse(JSON.stringify(request)) as unknown,
+    ],
+  ])(
+    "preserves a %s for %s across a %s hook replacement",
+    async (_shape, modelId, _clone, clone) => {
+      const toolImageData = "dG9vbA==";
+      const params = await captureHookedNativeRequest({
+        context: toolImageContext(modelId, toolImageData),
+        model: toolImageModel(modelId),
+        onPayload: clone,
+      });
+
+      expect(JSON.stringify(params)).toContain(toolImageData);
+    },
+  );
+
+  it("rejects injected tool media while preserving the captured tool image", async () => {
+    const toolImageData = "dG9vbA==";
+    const injectedImageData = "aG9vaw==";
+    const injectedVideoData = "dmlkZW8=";
+    const params = await captureHookedNativeRequest({
+      context: toolImageContext("gemini-3.1-pro-preview", toolImageData),
+      model: toolImageModel("gemini-3.1-pro-preview"),
+      onPayload: (request) => {
+        const replacement = structuredClone(request);
+        const responsePart = replacement.contents
+          .flatMap((content) => content.parts)
+          .find((part) => part.functionResponse)?.functionResponse;
+        if (!responsePart?.parts) {
+          throw new Error("Expected nested Google function-response media");
+        }
+        responsePart.parts.push(
+          { inlineData: { mimeType: "image/png", data: injectedImageData } },
+          { inlineData: { mimeType: "video/mp4", data: injectedVideoData } },
+        );
+        return replacement;
+      },
+    });
+
+    const serialized = JSON.stringify(params);
+    expect(serialized).toContain(toolImageData);
+    expect(serialized).not.toContain(injectedImageData);
+    expect(serialized).not.toContain(injectedVideoData);
+    expect(serialized).toContain("video omitted");
+  });
+
+  it("spends aggregate media budget on current user media before tool images", async () => {
+    const toolImageData = "dG9vbA==";
+    const currentImageData = "dXNlcg==";
+    const params = await captureHookedNativeRequest({
+      context: toolImageContext("gemini-3.1-pro-preview", toolImageData, currentImageData),
+      model: toolImageModel("gemini-3.1-pro-preview", { maxAggregateDecodedBytes: 4 }),
+      onPayload: (request) => JSON.parse(JSON.stringify(request)) as unknown,
+    });
+
+    const serialized = JSON.stringify(params);
+    expect(serialized).toContain(currentImageData);
+    expect(serialized).not.toContain(toolImageData);
+  });
+
+  it("evicts a tool image before current user media at the serialized request cap", async () => {
+    const modelId = "gemini-3.1-pro-preview";
+    const toolImageData = "dG9vbA==";
+    const currentImageData = "dXNlcg==";
+    const context = toolImageContext(modelId, toolImageData, currentImageData);
+    const unconstrained = buildGoogleGenerativeAiParams(
+      toolImageModel(modelId),
+      context as never,
+    ) as MutableGoogleTestRequest;
+    const toolOmitted = structuredClone(unconstrained);
+    const responsePart = toolOmitted.contents
+      .flatMap((content) => content.parts)
+      .find((part) => part.functionResponse)?.functionResponse;
+    if (!responsePart?.parts) {
+      throw new Error("Expected nested Google function-response media");
+    }
+    responsePart.parts[0] = { text: "(media omitted: exceeds provider limits)" };
+    const serializedCap = new TextEncoder().encode(JSON.stringify(toolOmitted)).byteLength + 1;
+
+    const params = await captureHookedNativeRequest({
+      context,
+      model: toolImageModel(modelId, {
+        maxSerializedRequestBytesExclusive: serializedCap,
+      }),
+      onPayload: (request) => JSON.parse(JSON.stringify(request)) as unknown,
+    });
+
+    const serialized = JSON.stringify(params);
+    expect(serialized).toContain(currentImageData);
+    expect(serialized).not.toContain(toolImageData);
+    expect(new TextEncoder().encode(serialized).byteLength).toBeLessThan(serializedCap);
+  });
 
   it("omits budget-exhausting historical images so the current video survives", () => {
     const params = buildGoogleGenerativeAiParams(

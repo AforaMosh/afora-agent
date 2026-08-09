@@ -1,9 +1,11 @@
 /**
  * Resolves hook-selected model state and pre-model attachments for a run.
  */
+import { decodedBase64Bytes } from "@openclaw/llm-core";
 import type { SessionEntry } from "../../../config/sessions/types.js";
 import type { OpenClawConfig } from "../../../config/types.openclaw.js";
 import { isImageMediaFact, isVideoMediaFact, type MediaFact } from "../../../media/media-facts.js";
+import { readRuntimePromptImageFactIndexes } from "../../../media/runtime-prompt-image-provenance.js";
 import type { ProviderRuntimeModel } from "../../../plugins/provider-runtime-model.types.js";
 import type {
   PluginHookBeforeModelResolveAttachment,
@@ -142,35 +144,63 @@ export async function resolveHookModelSelection(params: {
 }
 
 /**
- * Converts ordered attachment facts into the minimal shape exposed to
- * before-model-resolve hooks. Empty lists stay undefined so hook payloads
- * do not grow a meaningless attachments field.
+ * Converts ordered attachment facts and prehydrated blocks into the minimal
+ * shape exposed to before-model-resolve hooks. Canonical fact order wins;
+ * genuinely unowned blocks follow in their existing order.
  */
 export function buildBeforeModelResolveAttachments(
-  inputMedia: readonly { type?: "image" | "video"; mimeType?: string }[] | undefined,
+  inputMedia: readonly { type?: "image" | "video"; mimeType?: string; data?: string }[] | undefined,
   mediaFacts?: readonly MediaFact[],
 ): PluginHookBeforeModelResolveAttachment[] | undefined {
-  if (mediaFacts?.length) {
-    return mediaFacts.map((fact) => {
-      const kind = isVideoMediaFact(fact)
-        ? "video"
-        : isImageMediaFact(fact)
-          ? "image"
-          : fact.kind === "audio" || fact.contentType?.startsWith("audio/")
-            ? "audio"
-            : fact.kind === "document"
-              ? "document"
-              : "other";
-      return { kind, mimeType: fact.contentType };
+  const attachments = (mediaFacts ?? []).map((fact) => {
+    const kind = isVideoMediaFact(fact)
+      ? "video"
+      : isImageMediaFact(fact)
+        ? "image"
+        : fact.kind === "audio" || fact.contentType?.startsWith("audio/")
+          ? "audio"
+          : fact.kind === "document"
+            ? "document"
+            : "other";
+    return {
+      kind,
+      ...(fact.contentType ? { mimeType: fact.contentType } : {}),
+      ...(fact.sizeBytes !== undefined ? { sizeBytes: fact.sizeBytes } : {}),
+      ...(fact.sourceId ? { sourceId: fact.sourceId } : {}),
+      ...(fact.sourceIndex !== undefined ? { sourceIndex: fact.sourceIndex } : {}),
+    } satisfies PluginHookBeforeModelResolveAttachment;
+  });
+  const factIndexes = readRuntimePromptImageFactIndexes(inputMedia);
+  for (const [mediaIndex, media] of (inputMedia ?? []).entries()) {
+    const inputSizeBytes =
+      typeof media.data === "string" ? decodedBase64Bytes(media.data) : undefined;
+    const provenanceFactIndex = factIndexes?.[mediaIndex];
+    const factIndex =
+      typeof provenanceFactIndex === "number" && attachments[provenanceFactIndex]
+        ? provenanceFactIndex
+        : undefined;
+    if (factIndex !== undefined) {
+      const factAttachment = attachments[factIndex];
+      const mimeType = media.mimeType ?? factAttachment.mimeType;
+      const sizeBytes = factAttachment.sizeBytes ?? inputSizeBytes;
+      attachments[factIndex] = {
+        ...factAttachment,
+        kind: media.type ?? factAttachment.kind,
+        ...(mimeType ? { mimeType } : {}),
+        ...(sizeBytes !== undefined ? { sizeBytes } : {}),
+      };
+      continue;
+    }
+    attachments.push({
+      kind: media.type ?? "image",
+      ...(media.mimeType ? { mimeType: media.mimeType } : {}),
+      ...(inputSizeBytes !== undefined ? { sizeBytes: inputSizeBytes } : {}),
     });
   }
-  if (!inputMedia?.length) {
+  if (attachments.length === 0) {
     return undefined;
   }
-  return inputMedia.map((media) => ({
-    kind: media.type ?? "image",
-    mimeType: media.mimeType,
-  }));
+  return attachments;
 }
 
 /** Resolves a pinned non-default harness that owns native model selection. */

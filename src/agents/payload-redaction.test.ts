@@ -10,43 +10,67 @@ describe("sanitizeDiagnosticPayload", () => {
   const mediaDigest = createHash("sha256").update(mediaData).digest("hex");
 
   it.each([
-    { type: "image", mimeType: "image/png" },
-    { type: "video", mimeType: "video/mp4" },
-    { type: "video", label: "native video without MIME metadata" },
-    { type: "base64", mimeType: "video/webm" },
-    { type: "base64", media_type: "video/mp4" },
-    { type: "base64", mime_type: "video/quicktime" },
-  ])("redacts inline image and video data while preserving metadata: %j", (metadata) => {
-    const redacted = sanitizeDiagnosticPayload({
-      messages: [{ role: "user", content: [{ ...metadata, data: mediaData }] }],
-    });
+    { metadata: { type: "audio" }, field: "data" },
+    { metadata: { type: "audio_url" }, field: "blob" },
+    { metadata: { type: "base64" }, field: "data" },
+    { metadata: { type: "image" }, field: "blob" },
+    { metadata: { type: "image_url" }, field: "data" },
+    { metadata: { type: "input_audio" }, field: "blob" },
+    { metadata: { type: "input_image" }, field: "data" },
+    { metadata: { type: "input_video" }, field: "blob" },
+    { metadata: { type: "output_audio" }, field: "data" },
+    { metadata: { type: "video" }, field: "blob" },
+    { metadata: { type: "video_url" }, field: "data" },
+    { metadata: { mimeType: "image/png" }, field: "data" },
+    { metadata: { mime_type: "video/quicktime" }, field: "blob" },
+    { metadata: { mediaType: "audio/mpeg" }, field: "data" },
+    { metadata: { media_type: "application/pdf" }, field: "blob" },
+    { metadata: { contentType: "video/mp4" }, field: "data" },
+    { metadata: { content_type: "image/webp" }, field: "blob" },
+  ] as const)(
+    "redacts inline media fields while preserving metadata: %j",
+    ({ metadata, field }) => {
+      const redacted = sanitizeDiagnosticPayload({
+        messages: [{ role: "user", content: [{ ...metadata, [field]: mediaData }] }],
+      });
 
-    expect(redacted).toEqual({
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              ...metadata,
-              data: "<redacted>",
-              bytes: 11,
-              sha256: mediaDigest,
-            },
-          ],
-        },
-      ],
-    });
-    expect(JSON.stringify(redacted)).not.toContain(mediaData);
-  });
+      expect(redacted).toEqual({
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                ...metadata,
+                [field]: "<redacted>",
+                bytes: 11,
+                sha256: mediaDigest,
+              },
+            ],
+          },
+        ],
+      });
+      expect(JSON.stringify(redacted)).not.toContain(mediaData);
+    },
+  );
 
-  it("redacts nested video sources without dropping surrounding metadata", () => {
+  it("redacts nested media sources without dropping surrounding metadata", () => {
+    const nestedAudio = Buffer.from("nested audio").toString("base64");
+    const nestedImage = Buffer.from("nested image").toString("base64");
     const redacted = sanitizeDiagnosticPayload({
       type: "video",
-      source: { type: "base64", media_type: "video/mp4", data: mediaData },
+      source: {
+        type: "base64",
+        media_type: "video/mp4",
+        data: mediaData,
+        alternatives: [
+          { contentType: "audio/mpeg", blob: nestedAudio },
+          { nested: { content_type: "image/png", data: nestedImage } },
+        ],
+      },
       durationSeconds: 12,
     });
 
-    expect(redacted).toEqual({
+    expect(redacted).toMatchObject({
       type: "video",
       source: {
         type: "base64",
@@ -54,10 +78,19 @@ describe("sanitizeDiagnosticPayload", () => {
         data: "<redacted>",
         bytes: 11,
         sha256: mediaDigest,
+        alternatives: [
+          { contentType: "audio/mpeg", blob: "<redacted>" },
+          { nested: { content_type: "image/png", data: "<redacted>" } },
+        ],
       },
       durationSeconds: 12,
     });
-    expect(JSON.stringify(redacted)).not.toContain(mediaData);
+    const serialized = JSON.stringify(redacted);
+    for (const payload of [mediaData, nestedAudio, nestedImage]) {
+      expect(serialized).not.toContain(payload);
+      expect(serialized).not.toContain(payload.slice(0, 8));
+      expect(serialized).not.toContain(payload.slice(-8));
+    }
   });
 
   it.each([
@@ -134,10 +167,33 @@ describe("sanitizeDiagnosticPayload", () => {
     expect(sanitizeDiagnosticPayload(payload)).toEqual(payload);
   });
 
-  it("preserves non-media data fields", () => {
-    const document = { type: "document", mimeType: "application/pdf", data: mediaData };
+  it("redacts PDF data while preserving unrelated data and blob fields", () => {
+    const pdfBlob = Buffer.from("alternate PDF bytes").toString("base64");
+    const payload = {
+      document: {
+        type: "document",
+        mimeType: "application/pdf",
+        data: mediaData,
+        blob: pdfBlob,
+      },
+      metadata: { data: "ordinary application data", blob: "ordinary opaque identifier" },
+    };
 
-    expect(sanitizeDiagnosticPayload(document)).toEqual(document);
+    const sanitized = sanitizeDiagnosticPayload(payload);
+    expect(sanitized).toEqual({
+      document: {
+        type: "document",
+        mimeType: "application/pdf",
+        data: "<redacted>",
+        blob: "<redacted>",
+        bytes: 11,
+        sha256: mediaDigest,
+      },
+      metadata: payload.metadata,
+    });
+    const serialized = JSON.stringify(sanitized);
+    expect(serialized).not.toContain(mediaData);
+    expect(serialized).not.toContain(pdfBlob);
   });
 
   it("projects model-visible media without bytes, data URLs, or local references", () => {

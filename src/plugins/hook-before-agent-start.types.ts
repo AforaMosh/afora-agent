@@ -2,6 +2,12 @@
 export type PluginHookBeforeModelResolveAttachment = {
   kind: "image" | "video" | "audio" | "document" | "other";
   mimeType?: string;
+  /** Decoded/file size when the attachment producer recorded it. */
+  sizeBytes?: number;
+  /** Stable producer identity for this attachment within its source turn. */
+  sourceId?: string;
+  /** Original source-turn position before media-specific projection. */
+  sourceIndex?: number;
 };
 
 export type PluginHookBeforeModelResolveEvent = {

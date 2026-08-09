@@ -23,6 +23,27 @@ const MEDIA_REFERENCE_FIELDS = new Set([
   "url",
   "video_url",
 ]);
+const INLINE_MEDIA_TYPES = new Set([
+  "audio",
+  "audio_url",
+  "base64",
+  "image",
+  "image_url",
+  "input_audio",
+  "input_image",
+  "input_video",
+  "output_audio",
+  "video",
+  "video_url",
+]);
+const INLINE_MEDIA_MIME_FIELDS = [
+  "mimeType",
+  "mime_type",
+  "mediaType",
+  "media_type",
+  "contentType",
+  "content_type",
+] as const;
 
 const NON_CREDENTIAL_FIELD_NAMES = new Set([
   "passwordfile",
@@ -80,35 +101,20 @@ function hasSensitiveNameValuePair(record: Record<string, unknown>): boolean {
 }
 
 function hasInlineMediaMime(record: Record<string, unknown>): boolean {
-  const candidates = [
-    normalizeLowercaseStringOrEmpty(record.mimeType),
-    normalizeLowercaseStringOrEmpty(record.media_type),
-    normalizeLowercaseStringOrEmpty(record.mime_type),
-  ];
-  return candidates.some((value) => value.startsWith("image/") || value.startsWith("video/"));
-}
-
-function shouldRedactInlineMediaData(
-  record: Record<string, unknown>,
-): record is Record<string, string> {
-  if (typeof record.data !== "string") {
-    return false;
-  }
-  const type = normalizeLowercaseStringOrEmpty(record.type);
-  return type === "image" || type === "video" || hasInlineMediaMime(record);
+  return INLINE_MEDIA_MIME_FIELDS.some((field) => {
+    const value = normalizeLowercaseStringOrEmpty(record[field]);
+    return (
+      value.startsWith("image/") ||
+      value.startsWith("audio/") ||
+      value.startsWith("video/") ||
+      value === "application/pdf"
+    );
+  });
 }
 
 function isMediaProjectionRecord(record: Record<string, unknown>): boolean {
   const type = normalizeLowercaseStringOrEmpty(record.type);
-  return (
-    type === "image" ||
-    type === "video" ||
-    type === "image_url" ||
-    type === "video_url" ||
-    type === "input_image" ||
-    type === "input_video" ||
-    hasInlineMediaMime(record)
-  );
+  return INLINE_MEDIA_TYPES.has(type) || hasInlineMediaMime(record);
 }
 
 function digestBase64Payload(data: string): string {
@@ -127,6 +133,26 @@ function redactInlineMediaData(
   }
   record.bytes = estimateBase64DecodedBytes(data);
   record.sha256 = digestBase64Payload(data);
+}
+
+function redactInlineMediaFields(
+  record: Record<string, unknown>,
+  out: Record<string, unknown>,
+  mediaContext: boolean,
+): void {
+  if (!mediaContext) {
+    return;
+  }
+  const field = typeof record.data === "string" ? "data" : "blob";
+  const data = record[field];
+  if (typeof data !== "string") {
+    return;
+  }
+  redactInlineMediaData(out, field, data);
+  const otherField = field === "data" ? "blob" : "data";
+  if (typeof record[otherField] === "string") {
+    out[otherField] = REDACTED_MEDIA_DATA;
+  }
 }
 
 function redactInlineMediaDataUrl(
@@ -215,13 +241,7 @@ function visitDiagnosticPayload(
       out[key] = redactValueField && key === "value" ? "<redacted>" : visit(val, mediaContext);
     }
 
-    if (shouldRedactInlineMediaData(record)) {
-      const mediaData = record.data;
-      if (typeof mediaData !== "string") {
-        return out;
-      }
-      redactInlineMediaData(out, "data", mediaData);
-    }
+    redactInlineMediaFields(record, out, mediaContext);
     redactInlineMediaDataUrl(record, out);
     return out;
   };

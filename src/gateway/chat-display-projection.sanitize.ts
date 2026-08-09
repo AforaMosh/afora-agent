@@ -93,6 +93,11 @@ function isAbsoluteStoragePath(value: unknown): value is string {
   );
 }
 
+function projectChatHistoryMediaReference(value: unknown): string | undefined {
+  const normalized = normalizeDurableMediaReference(value);
+  return normalized && !isAbsoluteStoragePath(normalized) ? normalized : undefined;
+}
+
 function projectChatHistoryMediaFacts(value: unknown): unknown[] | undefined {
   if (!Array.isArray(value)) {
     return undefined;
@@ -109,19 +114,14 @@ function projectChatHistoryMediaFacts(value: unknown): unknown[] | undefined {
     if (managedUri) {
       projected.url = managedUri;
       delete projected.path;
-    } else if (isAbsoluteStoragePath(projected.path)) {
-      delete projected.path;
     }
     for (const key of ["path", "url"] as const) {
-      const normalized = normalizeDurableMediaReference(projected[key]);
+      const normalized = projectChatHistoryMediaReference(projected[key]);
       if (normalized) {
         projected[key] = normalized;
       } else {
         delete projected[key];
       }
-    }
-    if (isAbsoluteStoragePath(projected.url)) {
-      delete projected.url;
     }
     delete projected.workspaceDir;
     return [projected];
@@ -144,7 +144,7 @@ function projectLegacyChatHistoryMediaCarriers(entry: Record<string, unknown>): 
     if (typeof value !== "string") {
       continue;
     }
-    const normalized = normalizeDurableMediaReference(value);
+    const normalized = projectChatHistoryMediaReference(value);
     if (normalized) {
       entry[key] = normalized;
     } else {
@@ -157,11 +157,36 @@ function projectLegacyChatHistoryMediaCarriers(entry: Record<string, unknown>): 
     if (!Array.isArray(value)) {
       continue;
     }
-    const projected = value.map((reference) =>
-      typeof reference === "string" ? (normalizeDurableMediaReference(reference) ?? "") : reference,
-    );
-    if (projected.some((reference, index) => reference !== value[index])) {
-      entry[key] = projected;
+    const persistedMedia = readRecord(entry["__openclaw"])?.media;
+    // Legacy arrays share indexes with type and canonical facts. Retain a blank
+    // rejected slot only while another carrier still owns that position.
+    const hasParallelPositions =
+      value.some((reference) => typeof reference !== "string" || !reference.trim()) ||
+      typeof entry.MediaPath === "string" ||
+      typeof entry.MediaUrl === "string" ||
+      typeof entry.MediaType === "string" ||
+      (Array.isArray(entry.MediaTranscribedIndexes) && entry.MediaTranscribedIndexes.length > 0) ||
+      (Array.isArray(persistedMedia) && persistedMedia.length > 0) ||
+      ["media", "MediaPaths", "MediaUrls", "MediaTypes"].some((carrier) => {
+        const parallel = entry[carrier];
+        return carrier !== key && Array.isArray(parallel) && parallel.length > 0;
+      });
+    const projected = value.flatMap((reference) => {
+      if (typeof reference !== "string") {
+        return [reference];
+      }
+      const normalized = projectChatHistoryMediaReference(reference);
+      return normalized ? [normalized] : hasParallelPositions ? [""] : [];
+    });
+    if (
+      projected.length !== value.length ||
+      projected.some((reference, index) => reference !== value[index])
+    ) {
+      if (projected.length > 0) {
+        entry[key] = projected;
+      } else {
+        delete entry[key];
+      }
       changed = true;
     }
   }

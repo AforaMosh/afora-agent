@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { SessionEntry } from "../../../config/sessions/types.js";
 import type { ModelDefinitionConfig } from "../../../config/types.models.js";
 import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import { finalizeRuntimePromptImages } from "../../../media/runtime-prompt-image-provenance.js";
 import type { ProviderRuntimeModel } from "../../../plugins/provider-runtime-model.types.js";
 import { AGENT_HARNESS_SESSION_ID_LOCKED_MESSAGE } from "../../../sessions/agent-harness-session-key.js";
 import {
@@ -153,6 +154,110 @@ describe("buildBeforeModelResolveAttachments", () => {
     ).toEqual([
       { kind: "video", mimeType: "video/mp4" },
       { kind: "image", mimeType: "image/png" },
+    ]);
+  });
+
+  it("unions separate facts with prehydrated video for native-video routing", async () => {
+    const attachments = buildBeforeModelResolveAttachments(
+      [{ type: "video", data: "dmlkZW8=", mimeType: "video/mp4" }],
+      [
+        {
+          kind: "image",
+          contentType: "image/png",
+          path: "/tmp/frame.png",
+          sizeBytes: 123,
+          sourceId: "frame-source",
+          sourceIndex: 4,
+        },
+      ],
+    );
+    const hookRunner = {
+      hasHooks: vi.fn((hookName: string) => hookName === "before_model_resolve"),
+      runBeforeModelResolve: vi.fn(async (event: { attachments?: typeof attachments }) =>
+        event.attachments?.some((attachment) => attachment.kind === "video")
+          ? { providerOverride: "google", modelOverride: "native-video-model" }
+          : undefined,
+      ),
+    };
+
+    const result = await resolveHookModelSelection({
+      prompt: "compare these",
+      attachments,
+      provider: "default-provider",
+      modelId: "default-model",
+      hookRunner,
+      hookContext,
+    });
+
+    expect(attachments).toEqual([
+      {
+        kind: "image",
+        mimeType: "image/png",
+        sizeBytes: 123,
+        sourceId: "frame-source",
+        sourceIndex: 4,
+      },
+      { kind: "video", mimeType: "video/mp4", sizeBytes: 5 },
+    ]);
+    expect(result).toEqual({ provider: "google", modelId: "native-video-model" });
+  });
+
+  it("merges indexed input blocks into their canonical fact", () => {
+    const image = { type: "image" as const, data: "aW1hZ2U=", mimeType: "image/png" };
+    const inputMedia = finalizeRuntimePromptImages([{ image, factIndex: 0 }]).images;
+
+    expect(
+      buildBeforeModelResolveAttachments(inputMedia, [
+        {
+          kind: "image",
+          contentType: "image/png",
+          path: "/tmp/image.png",
+          sizeBytes: 9,
+          sourceId: "image-source",
+          sourceIndex: 2,
+        },
+      ]),
+    ).toEqual([
+      {
+        kind: "image",
+        mimeType: "image/png",
+        sizeBytes: 9,
+        sourceId: "image-source",
+        sourceIndex: 2,
+      },
+    ]);
+  });
+
+  it("keeps same-type unowned media distinct without a provenance carrier", () => {
+    expect(
+      buildBeforeModelResolveAttachments(
+        [{ type: "video", data: "dmlkZW8=", mimeType: "video/mp4" }],
+        [
+          {
+            kind: "video",
+            contentType: "video/mp4",
+            path: "/tmp/video.mp4",
+            sourceIndex: 0,
+          },
+        ],
+      ),
+    ).toEqual([
+      { kind: "video", mimeType: "video/mp4", sourceIndex: 0 },
+      { kind: "video", mimeType: "video/mp4", sizeBytes: 5 },
+    ]);
+  });
+
+  it("keeps explicitly unowned input media after canonical facts", () => {
+    const image = { type: "image" as const, data: "aW1hZ2U=", mimeType: "image/png" };
+    const inputMedia = finalizeRuntimePromptImages([{ image, factIndex: null }]).images;
+
+    expect(
+      buildBeforeModelResolveAttachments(inputMedia, [
+        { kind: "image", contentType: "image/png", path: "/tmp/other.png" },
+      ]),
+    ).toEqual([
+      { kind: "image", mimeType: "image/png" },
+      { kind: "image", mimeType: "image/png", sizeBytes: 5 },
     ]);
   });
 });
