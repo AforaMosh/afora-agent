@@ -556,6 +556,17 @@ async function writeTestFileEvidenceFile(params: {
   return { evidencePath };
 }
 
+function adoptDockerBatchPackage(env: NodeJS.ProcessEnv, packageTgz: string | undefined) {
+  if (!packageTgz) {
+    return;
+  }
+  // The scheduler package is authoritative for every later producer, regardless
+  // of whether the caller batches all lanes or preserves fail-fast ordering.
+  env.OPENCLAW_CURRENT_PACKAGE_TGZ = packageTgz;
+  env.OPENCLAW_BUNDLED_CHANNEL_HOST_BUILD = "0";
+  env.OPENCLAW_NPM_ONBOARD_HOST_BUILD = "0";
+}
+
 export async function runQaTestFileScenarios(
   params: QaTestFileScenarioRunParams,
 ): Promise<QaTestFileScenarioRunResult> {
@@ -575,10 +586,9 @@ export async function runQaTestFileScenarios(
     ...params.env,
   };
   const results: QaTestFileScenarioResult[] = [];
-  const dockerBatchScenarios =
-    kind === "script" && !params.failFast ? scenarios.filter(isDockerE2eScenario) : [];
+  const dockerBatchScenarios = kind === "script" ? scenarios.filter(isDockerE2eScenario) : [];
   const dockerBatchGroups = new Map<number, typeof dockerBatchScenarios>();
-  for (const scenario of dockerBatchScenarios) {
+  for (const scenario of params.failFast ? [] : dockerBatchScenarios) {
     const scenarioTimeoutMs = resolvePositiveTimerTimeoutMs(
       scenario.execution.timeoutMs,
       commandTimeoutMs,
@@ -590,20 +600,42 @@ export async function runQaTestFileScenarios(
   for (const [scenarioTimeoutMs, group] of dockerBatchGroups) {
     // A scheduler invocation shares one fallback lane timeout, so timeout overrides
     // stay in separate batches instead of borrowing another scenario's budget.
-    results.push(
-      ...(await runDockerE2eBatch({
-        commandTimeoutMs: scenarioTimeoutMs,
+    const batch = await runDockerE2eBatch({
+      commandTimeoutMs: scenarioTimeoutMs,
+      env,
+      outputDir: params.outputDir,
+      repoRoot: params.repoRoot,
+      runCommand,
+      scenarios: group,
+    });
+    results.push(...batch.results);
+    adoptDockerBatchPackage(env, batch.packageTgz);
+  }
+  const dockerBatchScenarioIds = new Set(dockerBatchScenarios.map((scenario) => scenario.id));
+  for (const scenario of scenarios) {
+    if (!params.failFast && dockerBatchScenarioIds.has(scenario.id)) {
+      continue;
+    }
+    if (params.failFast && isDockerE2eScenario(scenario)) {
+      const batch = await runDockerE2eBatch({
+        commandTimeoutMs: resolvePositiveTimerTimeoutMs(
+          scenario.execution.timeoutMs,
+          commandTimeoutMs,
+        ),
         env,
         outputDir: params.outputDir,
         repoRoot: params.repoRoot,
         runCommand,
-        scenarios: group,
-      })),
-    );
-  }
-  const dockerBatchScenarioIds = new Set(dockerBatchScenarios.map((scenario) => scenario.id));
-  for (const scenario of scenarios) {
-    if (dockerBatchScenarioIds.has(scenario.id)) {
+        scenarios: [scenario],
+      });
+      adoptDockerBatchPackage(env, batch.packageTgz);
+      const [result] = batch.results;
+      if (result) {
+        results.push(result);
+      }
+      if (result?.status !== "pass") {
+        break;
+      }
       continue;
     }
     const result = await runQaTestFileScenario({
