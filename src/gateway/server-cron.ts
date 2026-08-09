@@ -76,7 +76,12 @@ import {
 } from "../routing/session-key.js";
 import { defaultRuntime } from "../runtime.js";
 import { parseAgentSessionKey } from "../sessions/session-key-utils.js";
-import { createCronExitWatchers, type CronExitResult } from "./cron-exit-watchers.js";
+import {
+  createCronExitWatchers,
+  type CronExitResult,
+  type CronExitWatcherHandlers,
+  type CronExitWatchers,
+} from "./cron-exit-watchers.js";
 import {
   createCronStreamWatchers,
   type CronStreamFireDisposition,
@@ -102,11 +107,18 @@ export type GatewayCronState = {
   cron: GatewayCronServiceContract;
   storePath: string;
   cronEnabled: boolean;
+  prepareExitWatcherHandoff?: () => Promise<GatewayCronExitWatcherHandoff | undefined>;
   reconcileExitWatchers?: () => Promise<void>;
   stopExitWatchers?: () => void;
   reconcileStreamWatchers?: () => Promise<void>;
   stopStreamWatchers?: () => Promise<void>;
   reconcileHeartbeatJobs?: (cfg?: OpenClawConfig) => Promise<void>;
+};
+
+export type GatewayCronExitWatcherHandoff = {
+  current: () => CronExitWatchers;
+  adopt: (watchers: CronExitWatchers) => void | Promise<void>;
+  stopOwner: () => Promise<void>;
 };
 
 function classifyCronScriptFailure(code: CronTriggerFailureCode): CronRunErrorClassification {
@@ -456,7 +468,10 @@ export function buildGatewayCronService(params: {
   } = { current: undefined };
   let exitWatcherReconciliations = 0;
   let streamWatcherReconciliations = 0;
-  const terminalExitCompletionTokens = new Map<string, object>();
+  const terminalExitCompletionTokens = new Map<
+    string,
+    Parameters<CronService["updateWithPrecondition"]>[2]
+  >();
   let exitWatcherGeneration = 0;
   let exitWatcherMutationRevision = 0;
   let exitWatchersStopped = false;
@@ -1113,10 +1128,14 @@ export function buildGatewayCronService(params: {
     },
   });
 
-  exitWatchersRef.current = createCronExitWatchers({
+  const exitWatcherHandlers = {
     getProcessSupervisor,
     persistCompletion: async (job) => {
-      const completionToken = {};
+      const completionToken: Parameters<CronService["updateWithPrecondition"]>[2] = (current) => {
+        if (!current.enabled || current.updatedAtMs !== job.updatedAtMs) {
+          throw new Error("cron on-exit job changed before completion");
+        }
+      };
       terminalExitCompletionTokens.set(job.id, completionToken);
       const releaseCompletionToken = () => {
         if (terminalExitCompletionTokens.get(job.id) === completionToken) {
@@ -1125,11 +1144,7 @@ export function buildGatewayCronService(params: {
       };
       try {
         await runWithGatewayIndependentRootWorkAdmission(async () => {
-          await cron.updateWithPrecondition(job.id, { enabled: false }, (current) => {
-            if (!current.enabled || current.updatedAtMs !== job.updatedAtMs) {
-              throw new Error("cron on-exit job changed before completion");
-            }
-          });
+          await cron.updateWithPrecondition(job.id, { enabled: false }, completionToken);
         });
         return () => {
           releaseCompletionToken();
@@ -1168,7 +1183,8 @@ export function buildGatewayCronService(params: {
         }
       }),
     logger: cronLogger,
-  });
+  } satisfies CronExitWatcherHandlers;
+  exitWatchersRef.current = createCronExitWatchers(exitWatcherHandlers);
   const updateCron = cron.update.bind(cron);
   streamWatchersRef.current = createCronStreamWatchers({
     getProcessSupervisor,
@@ -1247,10 +1263,22 @@ export function buildGatewayCronService(params: {
       patch.schedule !== undefined ? "schedule-update" : "disabled",
     );
   };
+  const cancelDisabledExitWatcher = (job: CronJob) => {
+    if (job.enabled || job.schedule.kind !== "on-exit") {
+      return;
+    }
+    // Explicit disables must win even while terminal persistence is retaining
+    // the shared watcher across a scheduler handoff.
+    exitWatcherMutationRevision += 1;
+    exitWatchersRef.current?.cancel(job.id);
+  };
   const addCron = cron.add.bind(cron);
   cron.add = async (input, options) => {
     const result = await addCron(input, options);
     const addedJob = "job" in result ? result.job : result;
+    if (options?.enabledExplicit && !input.enabled) {
+      cancelDisabledExitWatcher(addedJob);
+    }
     await routeCurrentStreamJob(addedJob.id, addedJob, "added");
     return result;
   };
@@ -1290,6 +1318,9 @@ export function buildGatewayCronService(params: {
       const result = await updateCronWithPrecondition(jobId, patch, (current, nowMs) => {
         lifecycleStop = queueStreamStopAfterValidation(current, patch, nowMs);
       });
+      if (patch.enabled === false) {
+        cancelDisabledExitWatcher(result);
+      }
       await settleStopAfterCommittedUpdate(jobId, lifecycleStop);
       await routeLiveStreamJobLogged(jobId);
       return result;
@@ -1308,6 +1339,9 @@ export function buildGatewayCronService(params: {
         await precondition(current, nowMs);
         lifecycleStop = queueStreamStopAfterValidation(current, patch, nowMs);
       });
+      if (patch.enabled === false && terminalExitCompletionTokens.get(jobId) !== precondition) {
+        cancelDisabledExitWatcher(result);
+      }
       await settleStopAfterCommittedUpdate(jobId, lifecycleStop);
       await routeLiveStreamJobLogged(jobId);
       return result;
@@ -1380,10 +1414,17 @@ export function buildGatewayCronService(params: {
   };
   const automationEpoch = claimSessionAutomationEpoch();
   const stopCron = cron.stop.bind(cron);
-  cron.stop = () => {
+  const stopCronLifecycle = (preserveExitWatchers = false) => {
     try {
       stopCron();
-      stopExitWatchers();
+      if (preserveExitWatchers) {
+        // The committed replacement owns this manager now. Fence callbacks
+        // from the retiring scheduler without cancelling adopted children.
+        exitWatchersStopped = true;
+        exitWatcherGeneration += 1;
+      } else {
+        stopExitWatchers();
+      }
       stopHeartbeatReconcileRetry();
       void stopStreamWatchers().catch((err: unknown) => {
         cronLogger.warn(
@@ -1397,8 +1438,11 @@ export function buildGatewayCronService(params: {
       unregisterSessionAutomationSource(automationSource);
     }
   };
-  cron.stopAndDrain = async () => {
-    cron.stop();
+  cron.stop = () => {
+    stopCronLifecycle();
+  };
+  const stopAndDrainCron = async (preserveExitWatchers = false) => {
+    stopCronLifecycle(preserveExitWatchers);
     const streamWatchersStop = stopStreamWatchers().then(
       () => ({ ok: true as const }),
       (error: unknown) => ({ ok: false as const, error }),
@@ -1417,6 +1461,9 @@ export function buildGatewayCronService(params: {
     if (!streamWatchersResult.ok) {
       throw streamWatchersResult.error;
     }
+  };
+  cron.stopAndDrain = async () => {
+    await stopAndDrainCron();
   };
   // Reconciliations serialize on one tail and only the latest requested epoch
   // executes, so an older reload's convergence can never clobber a newer one.
@@ -1498,6 +1545,16 @@ export function buildGatewayCronService(params: {
     cron,
     storePath,
     cronEnabled,
+    prepareExitWatcherHandoff: async () => ({
+      current: () => exitWatchersRef.current!,
+      adopt: (watchers) => {
+        exitWatchersRef.current = watchers;
+        return watchers.updateHandlers(exitWatcherHandlers);
+      },
+      stopOwner: async () => {
+        await stopAndDrainCron(true);
+      },
+    }),
     reconcileExitWatchers,
     stopExitWatchers,
     reconcileStreamWatchers,

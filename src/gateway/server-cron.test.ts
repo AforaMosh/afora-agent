@@ -654,6 +654,120 @@ describe("buildGatewayCronService", () => {
     }
   });
 
+  it.each(["update", "updateWithPrecondition", "add"] as const)(
+    "honors an explicit %s disable while terminal persistence is settling",
+    async (mutation) => {
+      const commandExit = createDeferred<{
+        reason: "exit";
+        exitCode: number;
+        exitSignal: null;
+        durationMs: number;
+        stdout: string;
+        stderr: string;
+        timedOut: false;
+        noOutputTimedOut: false;
+      }>();
+      const completionPersistCommitted = createDeferred();
+      const allowCompletionPersist = createDeferred();
+      const cancel = vi.fn();
+      const cancelScope = vi.fn();
+      const spawn = vi.fn(async () => ({
+        runId: "run-on-exit-explicit-disable",
+        startedAtMs: Date.now(),
+        cancel,
+        wait: () => commandExit.promise,
+      }));
+      getProcessSupervisorMock.mockReturnValue({ spawn, cancelScope });
+      const cfg = createCronConfig(`server-cron-on-exit-explicit-disable-${mutation}`);
+      loadConfigMock.mockReturnValue(cfg);
+      const state = buildGatewayCronService({
+        cfg,
+        deps: {} as CliDeps,
+        broadcast: () => {},
+      });
+      const originalUpdateWithPrecondition = state.cron.updateWithPrecondition.bind(state.cron);
+      let gateTerminalCompletion = true;
+      vi.spyOn(state.cron, "updateWithPrecondition").mockImplementation(async (...args) => {
+        if (!gateTerminalCompletion) {
+          return await originalUpdateWithPrecondition(...args);
+        }
+        gateTerminalCompletion = false;
+        const result = await originalUpdateWithPrecondition(...args);
+        completionPersistCommitted.resolve();
+        await allowCompletionPersist.promise;
+        return result;
+      });
+      const run = vi.spyOn(state.cron, "run");
+
+      try {
+        const job = await state.cron.add({
+          name: "watch and honor explicit disable",
+          declarationKey: "agent:main:watch-and-honor-explicit-disable",
+          enabled: true,
+          schedule: { kind: "on-exit", command: "true" },
+          payload: { kind: "systemEvent", text: "must not fire" },
+          sessionTarget: "main",
+          wakeMode: "now",
+        });
+        await state.reconcileExitWatchers?.();
+        await vi.waitFor(() => expect(spawn).toHaveBeenCalledOnce());
+
+        commandExit.resolve({
+          reason: "exit",
+          exitCode: 0,
+          exitSignal: null,
+          durationMs: 1,
+          stdout: "",
+          stderr: "",
+          timedOut: false,
+          noOutputTimedOut: false,
+        });
+        await completionPersistCommitted.promise;
+
+        if (mutation === "updateWithPrecondition") {
+          await state.cron.updateWithPrecondition(job.id, { enabled: false }, () => {});
+        } else if (mutation === "add") {
+          await state.cron.add(
+            {
+              name: "watch and honor explicit disable",
+              declarationKey: "agent:main:watch-and-honor-explicit-disable",
+              enabled: false,
+              schedule: { kind: "on-exit", command: "true" },
+              payload: { kind: "systemEvent", text: "must not fire" },
+              sessionTarget: "main",
+              wakeMode: "now",
+            },
+            { enabledExplicit: true },
+          );
+        } else {
+          await state.cron.update(job.id, { enabled: false });
+        }
+        expect(cancel).toHaveBeenCalledWith("manual-cancel");
+        expect(cancelScope).toHaveBeenCalledWith(`cron-exit:${job.id}`, "manual-cancel");
+        allowCompletionPersist.resolve();
+
+        await vi.waitFor(async () => {
+          const handoff = await state.prepareExitWatcherHandoff?.();
+          expect(handoff?.current().activeJobIds()).toEqual([]);
+        });
+        expect(run).not.toHaveBeenCalled();
+      } finally {
+        allowCompletionPersist.resolve();
+        commandExit.resolve({
+          reason: "exit",
+          exitCode: 0,
+          exitSignal: null,
+          durationMs: 1,
+          stdout: "",
+          stderr: "",
+          timedOut: false,
+          noOutputTimedOut: false,
+        });
+        await state.cron.stopAndDrain?.();
+      }
+    },
+  );
+
   it("aborts and drains active cron runs during shutdown", async () => {
     const controller = new AbortController();
     const coreRun = new Promise<void>((resolve) => {
