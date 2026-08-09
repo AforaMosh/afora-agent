@@ -35,6 +35,7 @@ import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
 import { DiscordError, RateLimitError, type RequestClient } from "./internal/discord.js";
 import { readDiscordMessage, readRetryAfter } from "./internal/rest-errors.js";
 import { DISCORD_ATTACHMENT_TOTAL_TIMEOUT_MS } from "./monitor/timeouts.js";
+import { DISCORD_DEFAULT_REST_API_BASE_URL } from "./provider-endpoint.constants.js";
 import {
   getDiscordProviderEndpointRuntime,
   resolveDiscordProviderAttachmentUploadGuard,
@@ -78,7 +79,7 @@ function createRateLimitError(
 ): RateLimitError {
   const fallbackRequest =
     request ??
-    new Request("https://discord.com/api/v10/channels/voice/messages", {
+    new Request(`${DISCORD_DEFAULT_REST_API_BASE_URL}/channels/voice/messages`, {
       method: "POST",
     });
   const RateLimitErrorCtor = RateLimitError as unknown as new (
