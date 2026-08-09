@@ -2,6 +2,7 @@ import * as auditActivity from "./audit-activity.js";
 import * as auditRun from "./audit-run.js";
 import * as audit from "./audit.js";
 import * as config from "./config.js";
+import * as memoryIdentity from "./memory-identity.js";
 import * as openclaw from "./openclaw.js";
 import * as taskSuggestions from "./task-suggestions.js";
 import * as tasks from "./tasks.js";
@@ -55,6 +56,8 @@ export const OperationsProtocolSchemas = {
   ConfigSchemaLookupParams: config.ConfigSchemaLookupParamsSchema,
   ConfigSchemaResponse: config.ConfigSchemaResponseSchema,
   ConfigSchemaLookupResult: config.ConfigSchemaLookupResultSchema,
+  MemoryIdentityBindingRevokeParams: memoryIdentity.MemoryIdentityBindingRevokeParamsSchema,
+  MemoryIdentityBindingRevokeResult: memoryIdentity.MemoryIdentityBindingRevokeResultSchema,
   SystemAgentChatParams: openclaw.SystemAgentChatParamsSchema,
   SystemAgentChatResult: openclaw.SystemAgentChatResultSchema,
   SystemAgentChatHistoryParams: openclaw.SystemAgentChatHistoryParamsSchema,

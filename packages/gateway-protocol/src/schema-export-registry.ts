@@ -389,6 +389,8 @@ export {
   ChannelsPairingApproveResultSchema,
   ChannelsPairingDismissParamsSchema,
   ChannelsPairingDismissResultSchema,
+  MemoryIdentityBindingRevokeParamsSchema,
+  MemoryIdentityBindingRevokeResultSchema,
   ChannelsStartParamsSchema,
   ChannelsStopParamsSchema,
   ChannelsLogoutParamsSchema,

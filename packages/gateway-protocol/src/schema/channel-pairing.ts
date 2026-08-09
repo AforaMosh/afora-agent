@@ -50,6 +50,8 @@ export const ChannelsPairingApproveParamsSchema = closedObject({
   requestId: NonEmptyString,
   notify: Type.Optional(Type.Boolean()),
   bootstrapCommandOwner: Type.Optional(Type.Boolean()),
+  /** Explicit operator attestation; ordinary pairing never creates private-memory identity. */
+  linkMemoryProfileId: Type.Optional(NonEmptyString),
 });
 
 export const ChannelsPairingApproveResultSchema = closedObject({
@@ -59,6 +61,9 @@ export const ChannelsPairingApproveResultSchema = closedObject({
   commandOwnerBootstrap: Type.String({
     enum: ["not-requested", "configured", "already-configured", "unavailable"],
   }),
+  // Older Gateways do not return Phase 1A's optional identity-link result.
+  memoryBinding: Type.Optional(Type.String({ enum: ["not-requested", "created"] })),
+  memoryBindingId: Type.Optional(NonEmptyString),
 });
 
 /** Dismisses one pending request without permanently blocking the sender. */

@@ -112,6 +112,7 @@ describe("method scope resolution", () => {
     ["talk.session.close", ["operator.talk"]],
     ["update.status", ["operator.admin"]],
     ["update.hold", ["operator.admin"]],
+    ["memory.identityBinding.revoke", ["operator.admin"]],
     ["config.schema", ["operator.admin"]],
     ["config.patch", ["operator.admin"]],
     ["nativeHook.invoke", ["operator.admin"]],
@@ -205,7 +206,7 @@ describe("method scope resolution", () => {
     });
   });
 
-  it("requires admin only when DM pairing approval bootstraps a command owner", () => {
+  it("requires admin when DM pairing approval bootstraps a command owner or links private memory", () => {
     expect(resolveLeastPrivilegeOperatorScopesForMethod("channels.pairing.approve", {})).toEqual([
       "operator.pairing",
     ]);
@@ -224,6 +225,23 @@ describe("method scope resolution", () => {
         "channels.pairing.approve",
         ["operator.pairing", "operator.admin"],
         { bootstrapCommandOwner: true },
+      ),
+    ).toEqual({ allowed: true });
+    expect(
+      resolveLeastPrivilegeOperatorScopesForMethod("channels.pairing.approve", {
+        linkMemoryProfileId: "profile-1",
+      }),
+    ).toEqual(["operator.pairing", "operator.admin"]);
+    expect(
+      authorizeOperatorScopesForMethod("channels.pairing.approve", ["operator.pairing"], {
+        linkMemoryProfileId: "profile-1",
+      }),
+    ).toEqual({ allowed: false, missingScope: "operator.admin" });
+    expect(
+      authorizeOperatorScopesForMethod(
+        "channels.pairing.approve",
+        ["operator.pairing", "operator.admin"],
+        { linkMemoryProfileId: "profile-1" },
       ),
     ).toEqual({ allowed: true });
   });

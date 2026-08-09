@@ -6,10 +6,18 @@ import {
   normalizeOptionalString,
   normalizeStringifiedOptionalString,
 } from "@openclaw/normalization-core/string-coerce";
+import { clearAuditIdentityKeyCacheForDatabase } from "../audit/audit-identity.js";
 import { getPairingAdapter } from "../channels/plugins/pairing.js";
 import type { ChannelPairingAdapter } from "../channels/plugins/pairing.types.js";
 import { DEFAULT_ACCOUNT_ID } from "../routing/session-key.js";
-import { runOpenClawStateWriteTransaction } from "../state/openclaw-state-db.js";
+import {
+  runOpenClawStateWriteTransaction,
+  type OpenClawStateDatabase,
+} from "../state/openclaw-state-db.js";
+import {
+  mintConsumedChannelPairingMemoryIdentityApproval,
+  type ConsumedChannelPairingMemoryIdentityApproval,
+} from "./memory-identity-approval.js";
 import { resolveAllowFromAccountId } from "./pairing-store-keys.js";
 import {
   readChannelPairingState,
@@ -354,60 +362,97 @@ type ResolvePairingRequestParams = {
   pairingAdapter?: ChannelPairingAdapter;
   matches: (request: PairingRequest) => boolean;
   approve: boolean;
+  /**
+   * Commits owner-bound side effects with the consumed request and allowlist
+   * update. Throwing rolls every approval side effect back so an operator can retry.
+   */
+  onApproved?: (params: {
+    database: OpenClawStateDatabase;
+    approval: ConsumedChannelPairingMemoryIdentityApproval;
+  }) => void;
 };
 
 async function resolveChannelPairingRequest(
   params: ResolvePairingRequestParams,
 ): Promise<{ id: string; entry: PairingRequest } | null> {
   const env = params.env ?? process.env;
-  return runOpenClawStateWriteTransaction((database) => {
-    const state = readChannelPairingStateFromDatabase(database, params.channel);
-    const pruned = pruneExpiredRequests(state.requests, Date.now());
-    const accountId = normalizePairingAccountId(params.accountId);
-    const index = pruned.requests.findIndex(
-      (request) => requestMatchesAccountId(request, accountId) && params.matches(request),
-    );
-    if (index < 0) {
-      if (pruned.removed) {
-        state.requests = pruned.requests;
-        writeChannelPairingStateToDatabase(database, params.channel, state);
-      }
-      return null;
-    }
-    const entry = pruned.requests[index];
-    if (!entry) {
-      return null;
-    }
-    pruned.requests.splice(index, 1);
-    state.requests = pruned.requests;
-
-    if (params.approve) {
-      const allowAccountId = resolveAllowFromAccountId(
-        normalizeOptionalString(params.accountId) ?? normalizeOptionalString(entry.meta?.accountId),
+  let transactionDatabase: OpenClawStateDatabase | undefined;
+  try {
+    return runOpenClawStateWriteTransaction((database) => {
+      transactionDatabase = database;
+      const state = readChannelPairingStateFromDatabase(database, params.channel);
+      const pruned = pruneExpiredRequests(state.requests, Date.now());
+      const accountId = normalizePairingAccountId(params.accountId);
+      const index = pruned.requests.findIndex(
+        (request) => requestMatchesAccountId(request, accountId) && params.matches(request),
       );
-      const currentAllow = state.allowFrom?.[allowAccountId] ?? [];
-      const adapter = resolvePairingAdapter(params.channel, params.pairingAdapter);
-      // Channels with key-bound handoffs can persist an opaque approval token
-      // derived from request metadata instead of a durable sender allowlist id.
-      const approvalEntry = adapter?.resolveApprovalStoreEntry
-        ? adapter.resolveApprovalStoreEntry({
-            id: entry.id,
-            ...(entry.meta ? { meta: entry.meta } : {}),
-          })
-        : entry.id;
-      const normalizedAllow =
-        approvalEntry == null
-          ? ""
-          : normalizeAllowFromInput(params.channel, approvalEntry, adapter);
-      if (normalizedAllow && !currentAllow.includes(normalizedAllow)) {
-        state.allowFrom ??= {};
-        state.allowFrom[allowAccountId] = [...currentAllow, normalizedAllow];
+      if (index < 0) {
+        if (pruned.removed) {
+          state.requests = pruned.requests;
+          writeChannelPairingStateToDatabase(database, params.channel, state);
+        }
+        return null;
       }
-    }
+      const entry = pruned.requests[index];
+      if (!entry) {
+        return null;
+      }
+      pruned.requests.splice(index, 1);
+      state.requests = pruned.requests;
 
-    writeChannelPairingStateToDatabase(database, params.channel, state);
-    return { id: entry.id, entry };
-  }, sqliteOptionsForEnv(env));
+      if (params.approve) {
+        const allowAccountId = resolveAllowFromAccountId(
+          normalizeOptionalString(params.accountId) ??
+            normalizeOptionalString(entry.meta?.accountId),
+        );
+        const currentAllow = state.allowFrom?.[allowAccountId] ?? [];
+        const adapter = resolvePairingAdapter(params.channel, params.pairingAdapter);
+        // Channels with key-bound handoffs can persist an opaque approval token
+        // derived from request metadata instead of a durable sender allowlist id.
+        const approvalEntry = adapter?.resolveApprovalStoreEntry
+          ? adapter.resolveApprovalStoreEntry({
+              id: entry.id,
+              ...(entry.meta ? { meta: entry.meta } : {}),
+            })
+          : entry.id;
+        const normalizedAllow =
+          approvalEntry == null
+            ? ""
+            : normalizeAllowFromInput(params.channel, approvalEntry, adapter);
+        if (normalizedAllow && !currentAllow.includes(normalizedAllow)) {
+          state.allowFrom ??= {};
+          state.allowFrom[allowAccountId] = [...currentAllow, normalizedAllow];
+        }
+        // Persist the consumed request before minting the one-shot proof. A
+        // binding write therefore cannot observe or reuse pending evidence.
+        writeChannelPairingStateToDatabase(database, params.channel, state);
+        if (params.onApproved) {
+          params.onApproved({
+            database,
+            approval: mintConsumedChannelPairingMemoryIdentityApproval({
+              database,
+              channel: params.channel,
+              accountId: resolvePairingRequestAccountId(entry),
+              // Recompute from the consumed row, never from a caller-supplied id.
+              requestId: resolveChannelPairingRequestId(params.channel, entry),
+              stableSenderId: entry.id,
+            }),
+          });
+        }
+        return { id: entry.id, entry };
+      }
+
+      writeChannelPairingStateToDatabase(database, params.channel, state);
+      return { id: entry.id, entry };
+    }, sqliteOptionsForEnv(env));
+  } catch (error) {
+    // An approval hook may create the audit HMAC inside this transaction. Do not
+    // retain that key if a later pairing write or commit rolls the transaction back.
+    if (transactionDatabase) {
+      clearAuditIdentityKeyCacheForDatabase(transactionDatabase.db);
+    }
+    throw error;
+  }
 }
 
 export async function approveChannelPairingCode(params: {
@@ -435,6 +480,7 @@ export async function approveChannelPairingRequest(params: {
   accountId: string;
   env?: NodeJS.ProcessEnv;
   pairingAdapter?: ChannelPairingAdapter;
+  onApproved?: ResolvePairingRequestParams["onApproved"];
 }): Promise<{ id: string; entry: PairingRequest } | null> {
   const requestId = normalizeOptionalString(params.requestId);
   if (!requestId) {

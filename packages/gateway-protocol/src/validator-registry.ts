@@ -309,6 +309,12 @@ export const validateChannelsStatusParams = compile(S.ChannelsStatusParamsSchema
 export const validateChannelsPairingListParams = compile(S.ChannelsPairingListParamsSchema);
 export const validateChannelsPairingApproveParams = compile(S.ChannelsPairingApproveParamsSchema);
 export const validateChannelsPairingDismissParams = compile(S.ChannelsPairingDismissParamsSchema);
+export const validateMemoryIdentityBindingRevokeParams = compile(
+  S.MemoryIdentityBindingRevokeParamsSchema,
+);
+export const validateMemoryIdentityBindingRevokeResult = compile(
+  S.MemoryIdentityBindingRevokeResultSchema,
+);
 export const validateChannelsStartParams = compile(S.ChannelsStartParamsSchema);
 export const validateChannelsStopParams = compile(S.ChannelsStopParamsSchema);
 export const validateChannelsLogoutParams = compile(S.ChannelsLogoutParamsSchema);

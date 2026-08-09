@@ -7,8 +7,19 @@ export const OPENCLAW_STATE_SCHEMA_VERSION = 6;
 export const OPENCLAW_STATE_STRICT_SCHEMA_VERSION = 3;
 // Privacy-sensitive feature tables remain absent even in fresh databases until
 // their feature-local first write. The canonical SQL still owns their shape.
-export const FIRST_USE_STATE_TABLES = ["execution_identity_contexts"] as const;
-export const FIRST_USE_STATE_INDEXES = ["execution_identity_contexts_run_created_idx"] as const;
+export const FIRST_USE_STATE_TABLES = [
+  "execution_identity_contexts",
+  "memory_principals",
+  "memory_identity_bindings",
+] as const;
+export const FIRST_USE_STATE_INDEXES = [
+  "execution_identity_contexts_run_created_idx",
+  "idx_memory_principals_user_profile",
+  "idx_memory_principals_opaque_subject",
+  "idx_memory_principals_merge_head",
+  "idx_memory_identity_bindings_lookup",
+  "idx_memory_identity_bindings_principal",
+] as const;
 // Added after v6 shipped. These tables stay optional until their feature-local
 // lazy ensures run; fold them into the next natural schema-version bump.
 export const LAZY_ADDITIVE_STATE_TABLES = [

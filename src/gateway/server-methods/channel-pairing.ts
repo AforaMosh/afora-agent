@@ -28,6 +28,12 @@ import {
   listChannelPairingRequests,
   resolveChannelPairingRequestId,
 } from "../../pairing/pairing-store.js";
+import {
+  ensureMemoryIdentitySchema,
+  memoryIdentityLifecycle,
+} from "../../state/memory-identity.js";
+import { resolveUserProfileId } from "../../state/user-profiles.js";
+import { ADMIN_SCOPE } from "../operator-scopes.js";
 import { resolveGatewayPluginConfig } from "../runtime-plugin-config.js";
 import { formatForLog } from "../ws-log.js";
 import type { GatewayRequestHandlers, RespondFn } from "./types.js";
@@ -240,7 +246,7 @@ export const channelPairingHandlers: GatewayRequestHandlers = {
     }
   },
 
-  "channels.pairing.approve": async ({ params, respond, context }) => {
+  "channels.pairing.approve": async ({ params, respond, context, client }) => {
     if (
       !assertValidParams(
         params,
@@ -269,12 +275,110 @@ export const channelPairingHandlers: GatewayRequestHandlers = {
       invalidPairingAccount(respond, parsed.channel, parsed.accountId);
       return;
     }
+
+    let memoryLink:
+      | {
+          targetProfileId: string;
+          creatorProfileId: string;
+        }
+      | undefined;
+    if (parsed.linkMemoryProfileId) {
+      const scopes = Array.isArray(client?.connect.scopes) ? client.connect.scopes : [];
+      if (!scopes.includes(ADMIN_SCOPE)) {
+        respond(
+          false,
+          undefined,
+          errorShape(
+            ErrorCodes.FORBIDDEN,
+            `linkMemoryProfileId requires gateway scope: ${ADMIN_SCOPE}`,
+          ),
+        );
+        return;
+      }
+      const creatorProfileId = client?.authenticatedUserProfile?.profileId;
+      if (!creatorProfileId) {
+        respond(
+          false,
+          undefined,
+          errorShape(
+            ErrorCodes.FORBIDDEN,
+            "linkMemoryProfileId requires an authenticated Gateway profile",
+          ),
+        );
+        return;
+      }
+
+      try {
+        const targetProfileId = resolveUserProfileId(parsed.linkMemoryProfileId);
+        if (!targetProfileId) {
+          respond(
+            false,
+            undefined,
+            errorShape(
+              ErrorCodes.INVALID_REQUEST,
+              "linkMemoryProfileId references no Gateway profile",
+            ),
+          );
+          return;
+        }
+        const resolvedCreatorProfileId = resolveUserProfileId(creatorProfileId);
+        if (!resolvedCreatorProfileId) {
+          // The authenticated profile was removed or merged away after connection.
+          // Do not let a stale socket attribute durable verification evidence.
+          respond(
+            false,
+            undefined,
+            errorShape(
+              ErrorCodes.UNAVAILABLE,
+              "authenticated Gateway profile is no longer available",
+            ),
+          );
+          return;
+        }
+        // The schema is additive and can safely exist before approval. The
+        // principal and binding themselves are created only after consuming it.
+        ensureMemoryIdentitySchema();
+        memoryLink = {
+          targetProfileId: parsed.linkMemoryProfileId,
+          creatorProfileId,
+        };
+      } catch (error) {
+        respond(false, undefined, errorShape(ErrorCodes.UNAVAILABLE, formatForLog(error)));
+        return;
+      }
+    }
     try {
+      const bindingLink = memoryLink;
+      let memoryBinding: ChannelsPairingApproveResult["memoryBinding"] = "not-requested";
+      let memoryBindingId: string | undefined;
       const approved = await approveChannelPairingRequest({
         channel: account.plugin.id,
         accountId: account.accountId,
         requestId: parsed.requestId,
         pairingAdapter: account.plugin.pairing,
+        ...(bindingLink
+          ? {
+              onApproved: ({ database, approval }) => {
+                const principal =
+                  memoryIdentityLifecycle.ensureGatewayProfileMemoryPrincipalInTransaction({
+                    database,
+                    profileId: bindingLink.targetProfileId,
+                  });
+                if (!principal) {
+                  throw new Error("linked Gateway profile is no longer available");
+                }
+                const binding =
+                  memoryIdentityLifecycle.createMemoryIdentityBindingFromApprovedChannelPairing({
+                    database,
+                    approval,
+                    principalId: principal.principalId,
+                    creatorProfileId: bindingLink.creatorProfileId,
+                  });
+                memoryBinding = "created";
+                memoryBindingId = binding.bindingId;
+              },
+            }
+          : {}),
       });
       if (!approved) {
         respond(
@@ -333,6 +437,8 @@ export const channelPairingHandlers: GatewayRequestHandlers = {
           senderId: approved.id,
           notification,
           commandOwnerBootstrap,
+          memoryBinding,
+          ...(memoryBindingId ? { memoryBindingId } : {}),
         },
         undefined,
       );

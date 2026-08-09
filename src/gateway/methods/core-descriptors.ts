@@ -492,6 +492,9 @@ const CORE_GATEWAY_METHOD_SPECS = [
   // Additive catalog terminal start appends so older advertised indices stay stable.
   ["sessions.catalog.startTerminal", "session-catalog", "operator.admin", "2026.8"],
   ["worker.desktop.observe", "environments", "operator.admin", "2026.8", { startup: true }],
+  // Emergency privacy revocation stays admin-only but must not be throttled behind
+  // unrelated control-plane writes that could delay disabling a private-memory binding.
+  ["memory.identityBinding.revoke", "memory-identity", "operator.admin", "2026.8"],
 ] as const satisfies readonly CoreGatewayMethodSpecRow[];
 
 export type CoreGatewayHandlerFamily = Exclude<(typeof CORE_GATEWAY_METHOD_SPECS)[number][1], null>;

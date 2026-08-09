@@ -13,6 +13,7 @@ import { runSqliteDeferredTransactionSync } from "../infra/sqlite-transaction.js
 import {
   openOpenClawStateDatabase,
   runOpenClawStateWriteTransaction,
+  type OpenClawStateDatabase,
   type OpenClawStateDatabaseOptions,
 } from "./openclaw-state-db.js";
 import { USER_PROFILES_SCHEMA_SQL } from "./user-profiles-schema.js";
@@ -244,6 +245,17 @@ export function resolveUserProfileId(
   ensureUserProfilesSchema(options);
   const { db } = openOpenClawStateDatabase(options);
   return selectResolvedProfileById(db, profileId)?.id;
+}
+
+/** Resolves a durable profile reference through the caller's active state transaction. */
+export function resolveUserProfileIdInTransaction(params: {
+  database: OpenClawStateDatabase;
+  profileId: string;
+}): string | undefined {
+  if (!params.database.db.isTransaction) {
+    throw new Error("user profile resolution requires an active state transaction");
+  }
+  return selectResolvedProfileById(params.database.db, params.profileId)?.id;
 }
 
 /** Reads a profile's protocol-facing representation through its merge head. */

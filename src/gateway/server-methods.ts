@@ -100,6 +100,8 @@ const CORE_GATEWAY_HANDLER_MODULES = {
   logs: () => import("./server-methods/logs.js").then((module) => module.logsHandlers),
   "memory-search": () =>
     import("./server-methods/memory-search.js").then((module) => module.memorySearchHandlers),
+  "memory-identity": () =>
+    import("./server-methods/memory-identity.js").then((module) => module.memoryIdentityHandlers),
   terminal: () => import("./server-methods/terminal.js").then((module) => module.terminalHandlers),
   "ui-command": () =>
     import("./server-methods/ui-command.js").then((module) => module.uiCommandHandlers),

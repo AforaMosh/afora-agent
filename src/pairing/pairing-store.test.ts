@@ -6,11 +6,13 @@ import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { executeSqliteQuerySync, getNodeSqliteKysely } from "../infra/kysely-sync.js";
 import { DEFAULT_ACCOUNT_ID } from "../routing/session-key.js";
+import { ensureMemoryIdentitySchema, memoryIdentityLifecycle } from "../state/memory-identity.js";
 import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
 import {
   closeOpenClawStateDatabaseForTest,
   openOpenClawStateDatabase,
 } from "../state/openclaw-state-db.js";
+import { ensureProfileForEmail } from "../state/user-profiles.js";
 
 const pairingMocks = vi.hoisted(() => ({
   getPairingAdapter: vi.fn<
@@ -28,6 +30,7 @@ import {
 } from "./pairing-store-sqlite.test-helpers.js";
 import {
   addChannelAllowFromStoreEntry,
+  CHANNEL_PAIRING_PENDING_TTL_MS,
   approveChannelPairingCode,
   approveChannelPairingRequest,
   dismissChannelPairingRequest,
@@ -248,6 +251,42 @@ describe("pairing store", () => {
     ).resolves.toEqual({ code: "", created: false });
   });
 
+  it("does not invoke the binding owner for an expired pending request", async () => {
+    const { env } = createTestEnv();
+    await upsertChannelPairingRequest({
+      channel: "telegram",
+      accountId: "primary",
+      id: "expired-sender",
+      env,
+    });
+    const request = requireFirstPairingRequest(
+      await listChannelPairingRequests("telegram", env, "primary"),
+    );
+    const requestId = resolveChannelPairingRequestId("telegram", request);
+    const state = readChannelPairingStateSnapshot("telegram", env);
+    const expiredAt = new Date(Date.now() - CHANNEL_PAIRING_PENDING_TTL_MS - 1).toISOString();
+    state.requests = state.requests.map((entry) => ({
+      ...entry,
+      createdAt: expiredAt,
+      lastSeenAt: expiredAt,
+    }));
+    writeChannelPairingStateSnapshot("telegram", state, env);
+
+    const onApproved = vi.fn();
+    await expect(
+      approveChannelPairingRequest({
+        channel: "telegram",
+        accountId: "primary",
+        requestId,
+        env,
+        onApproved,
+      }),
+    ).resolves.toBeNull();
+
+    expect(onApproved).not.toHaveBeenCalled();
+    await expect(listChannelPairingRequests("telegram", env, "primary")).resolves.toEqual([]);
+  });
+
   it("persists a channel-derived approval entry from request metadata", async () => {
     const { env } = createTestEnv();
     const request = await upsertChannelPairingRequest({
@@ -330,6 +369,112 @@ describe("pairing store", () => {
     ).resolves.toMatchObject({ id: "shared-sender" });
     await expect(readChannelAllowFromStore("telegram", env, "beta")).resolves.toEqual([]);
     await expect(listChannelPairingRequests("telegram", env)).resolves.toEqual([]);
+  });
+
+  it("rolls back the consumed request, principal, and binding when an approval callback fails", async () => {
+    const { env } = createTestEnv();
+    const options = { env };
+    const target = ensureProfileForEmail("target@example.test", options);
+    const creator = ensureProfileForEmail("creator@example.test", options);
+    ensureMemoryIdentitySchema(options);
+    await upsertChannelPairingRequest({
+      channel: "telegram",
+      accountId: "primary",
+      id: "sender-1",
+      env,
+    });
+    const request = requireFirstPairingRequest(
+      await listChannelPairingRequests("telegram", env, "primary"),
+    );
+    const requestId = resolveChannelPairingRequestId("telegram", request);
+    let principalId: string | undefined;
+    let bindingId: string | undefined;
+
+    await expect(
+      approveChannelPairingRequest({
+        channel: "telegram",
+        accountId: "primary",
+        requestId,
+        env,
+        onApproved: ({ database, approval }) => {
+          const principal =
+            memoryIdentityLifecycle.ensureGatewayProfileMemoryPrincipalInTransaction({
+              database,
+              profileId: target.id,
+              now: 100,
+            });
+          expect(principal).toBeDefined();
+          if (!principal) {
+            throw new Error("test invariant: profile principal must exist");
+          }
+          principalId = principal.principalId;
+          const binding =
+            memoryIdentityLifecycle.createMemoryIdentityBindingFromApprovedChannelPairing({
+              database,
+              approval,
+              principalId: principal.principalId,
+              creatorProfileId: creator.id,
+              now: 100,
+            });
+          bindingId = binding.bindingId;
+          throw new Error("forced approval callback failure");
+        },
+      }),
+    ).rejects.toThrow("forced approval callback failure");
+
+    expect(principalId).toBeDefined();
+    expect(bindingId).toBeDefined();
+    expect(memoryIdentityLifecycle.resolveMemoryPrincipal(principalId!, options)).toEqual({
+      kind: "missing",
+    });
+    expect(
+      memoryIdentityLifecycle.resolveMemoryIdentityBinding({
+        channel: "telegram",
+        accountId: "primary",
+        stableSenderId: "sender-1",
+        options,
+      }),
+    ).toEqual({ kind: "unbound" });
+    await expect(readChannelAllowFromStore("telegram", env, "primary")).resolves.toEqual([]);
+    await expect(listChannelPairingRequests("telegram", env, "primary")).resolves.toEqual([
+      request,
+    ]);
+
+    const retried = await approveChannelPairingRequest({
+      channel: "telegram",
+      accountId: "primary",
+      requestId,
+      env,
+      onApproved: ({ database, approval }) => {
+        const principal = memoryIdentityLifecycle.ensureGatewayProfileMemoryPrincipalInTransaction({
+          database,
+          profileId: target.id,
+          now: 101,
+        });
+        if (!principal) {
+          throw new Error("test invariant: profile principal must exist");
+        }
+        memoryIdentityLifecycle.createMemoryIdentityBindingFromApprovedChannelPairing({
+          database,
+          approval,
+          principalId: principal.principalId,
+          creatorProfileId: creator.id,
+          now: 101,
+        });
+      },
+    });
+    expect(retried).toMatchObject({ id: "sender-1" });
+
+    // A new database handle must derive the same lookup key from persisted state.
+    closeOpenClawStateDatabaseForTest();
+    expect(
+      memoryIdentityLifecycle.resolveMemoryIdentityBinding({
+        channel: "telegram",
+        accountId: "primary",
+        stableSenderId: "sender-1",
+        options,
+      }),
+    ).toMatchObject({ kind: "verified" });
   });
 
   it("regenerates colliding codes and reports exhaustion without leaking codes", async () => {

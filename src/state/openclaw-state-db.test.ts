@@ -1135,6 +1135,40 @@ describe("openclaw state database", () => {
     ).toThrow();
   });
 
+  it("opens a v6 database without materializing lazy memory identity schema", () => {
+    const stateDir = createTempStateDir();
+    const options = { env: { OPENCLAW_STATE_DIR: stateDir } };
+    const databasePath = materializeCurrentStateDatabase(stateDir);
+    const { DatabaseSync } = requireNodeSqlite();
+    const listMemoryIdentitySchemaObjects = (database: DatabaseSync) =>
+      database
+        .prepare(
+          `SELECT name
+             FROM sqlite_schema
+            WHERE name IN (
+              'memory_principals',
+              'memory_identity_bindings',
+              'idx_memory_principals_user_profile',
+              'idx_memory_principals_opaque_subject',
+              'idx_memory_principals_merge_head',
+              'idx_memory_identity_bindings_lookup',
+              'idx_memory_identity_bindings_principal'
+            )`,
+        )
+        .all();
+
+    const shipped = new DatabaseSync(databasePath);
+    try {
+      expect(readSqliteNumberPragma(shipped, "user_version")).toBe(OPENCLAW_STATE_SCHEMA_VERSION);
+      expect(listMemoryIdentitySchemaObjects(shipped)).toEqual([]);
+    } finally {
+      shipped.close();
+    }
+
+    const reopened = openOpenClawStateDatabase(options);
+    expect(listMemoryIdentitySchemaObjects(reopened.db)).toEqual([]);
+  });
+
   it("keeps the additive worker SSH fallback table compatible with older v6 containment", () => {
     const database = openMaterializedCurrentStateDatabase();
     try {
