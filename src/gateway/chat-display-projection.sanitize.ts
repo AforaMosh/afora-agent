@@ -263,11 +263,15 @@ export function sanitizeChatHistoryContentBlock(
   if (type === "image" || type === "video") {
     let mediaData = typeof entry.data === "string" ? entry.data : undefined;
     const source = readRecord(entry.source);
-    if (source?.type === "base64" && typeof source.data === "string") {
-      mediaData ??= source.data;
+    if (source && Object.hasOwn(source, "data")) {
+      if (typeof source.data === "string") {
+        mediaData ??= source.data;
+      }
       const projectedSource = { ...source };
       delete projectedSource.data;
       entry.source = projectedSource;
+      entry.omitted = true;
+      changed = true;
     }
     if (mediaData !== undefined) {
       delete entry.data;

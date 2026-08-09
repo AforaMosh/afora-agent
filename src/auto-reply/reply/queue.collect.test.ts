@@ -8,6 +8,10 @@ import {
   loadTranscriptEvents,
   replaceSessionEntry,
 } from "../../config/sessions/session-accessor.js";
+import {
+  finalizeRuntimePromptImages,
+  readRuntimePromptImageFactIndexes,
+} from "../../media/runtime-prompt-image-provenance.js";
 import { createUserTurnTranscriptRecorder } from "../../sessions/user-turn-transcript.js";
 import { createTestUserTurnTranscriptTarget } from "../../sessions/user-turn-transcript.test-support.js";
 import type { FollowupRun, QueueSettings } from "./queue.js";
@@ -2015,6 +2019,83 @@ describe("followup queue collect routing", () => {
 
     expect(calls[0]?.images).toEqual([firstImage, secondImage]);
     expect(calls[0]?.imageOrder).toEqual(["inline", "inline"]);
+  });
+
+  it("offsets collected media fact ownership without inferring source indexes", async () => {
+    const key = `test-collect-media-carriers-${Date.now()}`;
+    const { calls, done, runFollowup } = createDrainRecorder();
+    const settings = createQueueSettings();
+    const firstVideo = { type: "video" as const, data: "Zmlyc3Q=", mimeType: "video/mp4" };
+    const secondVideo = { type: "video" as const, data: "c2Vjb25k", mimeType: "video/mp4" };
+    const secondImage = { type: "image" as const, data: "aW1hZ2U=", mimeType: "image/png" };
+
+    const first = createRun({
+      prompt: "first",
+      originatingChannel: "slack",
+      originatingTo: "channel:A",
+    });
+    first.inputMedia = [firstVideo];
+    first.media = [
+      { sourceIndex: 0, path: "/tmp/first.pdf", kind: "document", contentType: "application/pdf" },
+      {
+        sourceId: "first-video",
+        sourceIndex: 1,
+        path: "/tmp/first.mp4",
+        kind: "video",
+        contentType: "video/mp4",
+      },
+    ];
+    first.handledVideoSourceIds = ["first-video"];
+    first.handledVideoSourceIndexes = [1];
+    enqueueFollowupRun(key, first, settings);
+
+    const second = createRun({
+      prompt: "second",
+      originatingChannel: "slack",
+      originatingTo: "channel:A",
+    });
+    second.images = [secondImage];
+    second.inputMedia = finalizeRuntimePromptImages<typeof secondVideo | typeof secondImage>([
+      { image: secondVideo, factIndex: 2 },
+      { image: secondImage, factIndex: null },
+    ]).images;
+    second.imageOrder = ["inline"];
+    second.media = [
+      {
+        sourceIndex: 0,
+        path: "/tmp/second.pdf",
+        kind: "document",
+        contentType: "application/pdf",
+      },
+      {
+        sourceIndex: 1,
+        path: "/tmp/second.png",
+        kind: "image",
+        contentType: "image/png",
+      },
+      {
+        sourceId: "second-video",
+        sourceIndex: 8,
+        path: "/tmp/second.mp4",
+        kind: "video",
+        contentType: "video/mp4",
+      },
+    ];
+    second.handledVideoSourceIds = ["second-video"];
+    second.handledVideoSourceIndexes = [8];
+    enqueueFollowupRun(key, second, settings);
+
+    scheduleFollowupDrain(key, runFollowup);
+    await done.promise;
+
+    const collected = calls[0];
+    expect(collected?.inputMedia).toEqual([firstVideo, secondVideo, secondImage]);
+    expect(readRuntimePromptImageFactIndexes(collected?.inputMedia)).toEqual([null, 4, null]);
+    expect(collected?.images).toEqual([secondImage]);
+    expect(collected?.imageOrder).toEqual(["inline"]);
+    expect(collected?.media?.map((fact) => fact.sourceIndex)).toEqual([0, 1, 2, 3, 10]);
+    expect(collected?.handledVideoSourceIds).toEqual(["first-video", "second-video"]);
+    expect(collected?.handledVideoSourceIndexes).toEqual([1, 10]);
   });
 
   it("splits collect batches when sender authorization changes", async () => {

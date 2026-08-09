@@ -6,6 +6,10 @@ import { runAgentHarnessBeforeMessageWriteHook } from "../../../agents/harness/h
 import { normalizeChatType } from "../../../channels/chat-type.js";
 import { resolveStorePath } from "../../../config/sessions.js";
 import { loadSessionEntryReadOnly } from "../../../config/sessions/session-accessor.js";
+import {
+  finalizeRuntimePromptImages,
+  readRuntimePromptImageFactIndexes,
+} from "../../../media/runtime-prompt-image-provenance.js";
 // Drains queued follow-up runs while preserving route and session identity.
 import {
   channelRouteCompactKey,
@@ -301,7 +305,10 @@ function collectQueuedPromptMedia(
   | "media"
 > {
   const images: NonNullable<FollowupRun["images"]> = [];
-  const inputMedia: NonNullable<FollowupRun["inputMedia"]> = [];
+  const inputMediaEntries: Array<{
+    image: NonNullable<FollowupRun["inputMedia"]>[number];
+    factIndex: number | null;
+  }> = [];
   const imageOrder: NonNullable<FollowupRun["imageOrder"]> = [];
   const media: NonNullable<FollowupRun["media"]> = [];
   const handledVideoSourceIds: string[] = [];
@@ -313,7 +320,14 @@ function collectQueuedPromptMedia(
     }
     const itemInputMedia = item.inputMedia ?? item.images;
     if (itemInputMedia) {
-      inputMedia.push(...itemInputMedia);
+      const itemFactIndexes = readRuntimePromptImageFactIndexes(itemInputMedia);
+      for (const [index, mediaBlock] of itemInputMedia.entries()) {
+        const itemFactIndex = itemFactIndexes?.[index];
+        inputMediaEntries.push({
+          image: mediaBlock,
+          factIndex: typeof itemFactIndex === "number" ? mediaOffset + itemFactIndex : null,
+        });
+      }
     }
     if (item.imageOrder) {
       imageOrder.push(...item.imageOrder);
@@ -335,6 +349,7 @@ function collectQueuedPromptMedia(
       );
     }
   }
+  const inputMedia = finalizeRuntimePromptImages(inputMediaEntries).images;
   return {
     ...(images.length > 0 ? { images } : {}),
     ...(inputMedia.length > 0 ? { inputMedia } : {}),

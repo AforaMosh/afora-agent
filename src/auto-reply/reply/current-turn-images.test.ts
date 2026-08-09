@@ -2,7 +2,12 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { detectAndLoadPromptMedia } from "../../agents/embedded-agent-runner/run/images.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import {
+  finalizeRuntimePromptImages,
+  readRuntimePromptImageFactIndexes,
+} from "../../media/runtime-prompt-image-provenance.js";
 import { withTempDir } from "../../test-helpers/temp-dir.js";
 import { deleteTestEnvValue, setTestEnvValue } from "../../test-utils/env.js";
 import type { MsgContext } from "../templating.js";
@@ -16,6 +21,7 @@ const PNG_IMAGE_BYTES = Buffer.from(
 const JPEG_IMAGE_BYTES = Buffer.from("ffd8ffe000104a46494600010100000100010000ffd9", "hex");
 const PDF_BYTES = Buffer.from("%PDF-1.7\n1 0 obj\n<< /Type /Catalog >>\nendobj\n");
 const ZIP_BYTES = Buffer.from("504b0506000000000000000000000000000000000000", "hex");
+const MP4_BYTES = Buffer.from("0000001c6674797069736f6d0000000069736f6d0000000000000000", "hex");
 
 function restoreProcessState() {
   if (originalStateDirEnv === undefined) {
@@ -386,6 +392,103 @@ describe("resolveCurrentTurnInputMedia", () => {
       images: [image],
       imageOrder: ["inline"],
     });
+  });
+
+  it("preserves prehydrated video ownership through merge and avoids a second hydration", async () => {
+    await withTempDir({ prefix: "openclaw-current-turn-video-carrier-" }, async (base) => {
+      const videoPath = path.join(base, "clip.mp4");
+      await fs.writeFile(videoPath, MP4_BYTES);
+      const video = {
+        type: "video" as const,
+        data: MP4_BYTES.toString("base64"),
+        mimeType: "video/mp4",
+      };
+      const pdfPage = {
+        type: "image" as const,
+        data: PNG_IMAGE_BYTES.toString("base64"),
+        mimeType: "image/png",
+        attachmentIndex: 0,
+      };
+      const media = [
+        { kind: "document" as const, contentType: "application/pdf", path: "/missing/scan.pdf" },
+        { kind: "video" as const, contentType: "video/mp4", path: videoPath },
+      ];
+      const preparedMedia = finalizeRuntimePromptImages([{ image: video, factIndex: 1 }]).images;
+
+      const result = await resolveCurrentTurnInputMedia({
+        ctx: { Body: "compare these", media } satisfies MsgContext,
+        cfg: {} as OpenClawConfig,
+        inputMedia: preparedMedia,
+        extractedFileImages: [pdfPage],
+      });
+
+      expect(result.inputMedia).toEqual([
+        video,
+        { type: "image", data: pdfPage.data, mimeType: "image/png" },
+      ]);
+      expect(readRuntimePromptImageFactIndexes(result.inputMedia)).toEqual([1, null]);
+      expect(result.images).toEqual([{ type: "image", data: pdfPage.data, mimeType: "image/png" }]);
+      expect(result.imageOrder).toEqual(["inline"]);
+      expect(result.imageSourceIndexes).toEqual([0]);
+
+      const hydrated = await detectAndLoadPromptMedia({
+        prompt: "compare these",
+        media,
+        existingMedia: result.inputMedia,
+        workspaceDir: base,
+        workspaceOnly: true,
+        model: {
+          input: ["text", "image", "video"],
+          nativeVideoInput: {
+            wireFamily: "google-inline-data",
+            mimeTypes: { "video/mp4": "video/mp4" },
+            maxDecodedBytesPerItem: 1024,
+            maxItems: 4,
+            maxAggregateDecodedBytes: 4096,
+            aggregateScope: "video",
+            maxSerializedRequestBytesExclusive: 8192,
+          },
+        },
+      });
+      expect(hydrated.failedMediaCount).toBe(0);
+      expect(hydrated.loadedCount).toBe(0);
+      expect(hydrated.media.filter((entry) => entry.type === "video")).toEqual([video]);
+    });
+  });
+
+  it("aligns prepared image ownership with newly merged factless images", async () => {
+    const preparedImages = ["first", "second"].map((data) => ({
+      type: "image" as const,
+      data: Buffer.from(data).toString("base64"),
+      mimeType: "image/png",
+    }));
+    const extractedImage = {
+      type: "image" as const,
+      data: Buffer.from("extracted").toString("base64"),
+      mimeType: "image/png",
+      attachmentIndex: 3,
+    };
+    const preparedMedia = finalizeRuntimePromptImages([
+      { image: preparedImages[0]!, factIndex: 2 },
+      { image: preparedImages[1]!, factIndex: null },
+    ]).images;
+
+    const result = await resolveCurrentTurnInputMedia({
+      ctx: { Body: "compare these" } satisfies MsgContext,
+      cfg: {} as OpenClawConfig,
+      inputMedia: preparedMedia,
+      imageOrder: ["inline", "inline"],
+      extractedFileImages: [extractedImage],
+    });
+
+    expect(result.inputMedia).toEqual([
+      ...preparedImages,
+      { type: "image", data: extractedImage.data, mimeType: "image/png" },
+    ]);
+    expect(readRuntimePromptImageFactIndexes(result.inputMedia)).toEqual([2, null, null]);
+    expect(result.images).toEqual(result.inputMedia);
+    expect(result.imageOrder).toEqual(["inline", "inline", "inline"]);
+    expect(result.imageSourceIndexes).toEqual([undefined, undefined, 3]);
   });
 
   it("retains video-only native input without manufacturing an image projection", async () => {

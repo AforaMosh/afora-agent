@@ -157,20 +157,26 @@ describe("buildBeforeModelResolveAttachments", () => {
     ]);
   });
 
-  it("unions separate facts with prehydrated video for native-video routing", async () => {
-    const attachments = buildBeforeModelResolveAttachments(
-      [{ type: "video", data: "dmlkZW8=", mimeType: "video/mp4" }],
-      [
-        {
-          kind: "image",
-          contentType: "image/png",
-          path: "/tmp/frame.png",
-          sizeBytes: 123,
-          sourceId: "frame-source",
-          sourceIndex: 4,
-        },
-      ],
-    );
+  it("dedupes a matching prehydrated video while unioning separate facts", async () => {
+    const video = { type: "video" as const, data: "dmlkZW8=", mimeType: "video/mp4" };
+    const inputMedia = finalizeRuntimePromptImages([{ image: video, factIndex: 1 }]).images;
+    const attachments = buildBeforeModelResolveAttachments(inputMedia, [
+      {
+        kind: "image",
+        contentType: "image/png",
+        path: "/tmp/frame.png",
+        sizeBytes: 123,
+        sourceId: "frame-source",
+        sourceIndex: 4,
+      },
+      {
+        kind: "video",
+        contentType: "video/mp4",
+        path: "/tmp/video.mp4",
+        sourceId: "video-source",
+        sourceIndex: 5,
+      },
+    ]);
     const hookRunner = {
       hasHooks: vi.fn((hookName: string) => hookName === "before_model_resolve"),
       runBeforeModelResolve: vi.fn(async (event: { attachments?: typeof attachments }) =>
@@ -197,7 +203,13 @@ describe("buildBeforeModelResolveAttachments", () => {
         sourceId: "frame-source",
         sourceIndex: 4,
       },
-      { kind: "video", mimeType: "video/mp4", sizeBytes: 5 },
+      {
+        kind: "video",
+        mimeType: "video/mp4",
+        sizeBytes: 5,
+        sourceId: "video-source",
+        sourceIndex: 5,
+      },
     ]);
     expect(result).toEqual({ provider: "google", modelId: "native-video-model" });
   });

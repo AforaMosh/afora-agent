@@ -203,6 +203,143 @@ describe("oversized multimodal chat history", () => {
     });
     expect(JSON.stringify(appended?.message)).not.toContain(encoded);
   });
+
+  it.each([
+    {
+      mediaType: "image",
+      source: { type: "url", url: "https://example.invalid/image.png" },
+    },
+    { mediaType: "video", source: { type: "unknown" } },
+    {
+      mediaType: "image",
+      source: {
+        type: "custom",
+        url: "media://inbound/image---00000000-0000-4000-8000-000000000000.png",
+        path: "/Users/operator/private.png",
+      },
+    },
+  ])("omits inline data from $source.type $mediaType sources", ({ mediaType, source }) => {
+    const payload = Buffer.from(`private-${source.type}-${mediaType}`);
+    const encoded = payload.toString("base64");
+    const projected = projectChatDisplayMessages([
+      { role: "user", content: [{ type: mediaType, source: { ...source, data: encoded } }] },
+    ]);
+    const expectedSource: Record<string, unknown> = { ...source };
+    delete expectedSource.path;
+
+    expect(projected).toEqual([
+      {
+        role: "user",
+        content: [
+          {
+            type: mediaType,
+            source: expectedSource,
+            omitted: true,
+            bytes: payload.length,
+          },
+        ],
+      },
+    ]);
+    expect(JSON.stringify(projected)).not.toContain(encoded);
+    expect(JSON.stringify(projected)).not.toContain("/Users/operator");
+  });
+
+  it.each([
+    {
+      name: "number array",
+      mediaType: "image",
+      createData: () => Array.from({ length: 16_384 }, (_, index) => index % 256),
+    },
+    {
+      name: "structured object",
+      mediaType: "video",
+      createData: () => ({ payload: "private-structured-payload".repeat(1024) }),
+    },
+    {
+      name: "Uint8Array",
+      mediaType: "image",
+      createData: () => new Uint8Array(16_384).fill(137),
+    },
+    {
+      name: "Buffer-like JSON",
+      mediaType: "video",
+      createData: () => Buffer.alloc(16_384, 137).toJSON(),
+    },
+  ])("removes non-string $name source data", ({ mediaType, createData }) => {
+    const url = "https://cdn.example.test/media.bin";
+    const projected = projectChatDisplayMessages([
+      {
+        role: "user",
+        content: [
+          {
+            type: mediaType,
+            source: { type: "custom", url, data: createData() },
+          },
+        ],
+      },
+    ]);
+
+    expect(projected).toEqual([
+      {
+        role: "user",
+        content: [
+          {
+            type: mediaType,
+            source: { type: "custom", url },
+            omitted: true,
+          },
+        ],
+      },
+    ]);
+    const serialized = JSON.stringify(projected);
+    expect(serialized).not.toContain('"data"');
+    expect(serialized).not.toContain('"payload"');
+    expect(serialized).not.toContain("private-structured-payload");
+    expect(Buffer.byteLength(serialized)).toBeLessThan(512);
+  });
+
+  it("uses top-level media data for bytes while removing every inline carrier", () => {
+    const topLevelData = Buffer.from("authoritative-top-level-payload").toString("base64");
+    const sourceData = Buffer.from("different-nested-source-payload-with-more-bytes").toString(
+      "base64",
+    );
+    const projected = projectChatDisplayMessages([
+      {
+        role: "user",
+        content: [
+          {
+            type: "video",
+            data: topLevelData,
+            source: {
+              type: "url",
+              url: "media://inbound/clip---00000000-0000-4000-8000-000000000000.mp4",
+              data: sourceData,
+            },
+          },
+        ],
+      },
+    ]);
+
+    expect(projected).toEqual([
+      {
+        role: "user",
+        content: [
+          {
+            type: "video",
+            source: {
+              type: "url",
+              url: "media://inbound/clip---00000000-0000-4000-8000-000000000000.mp4",
+            },
+            omitted: true,
+            bytes: Buffer.from(topLevelData, "base64").length,
+          },
+        ],
+      },
+    ]);
+    const serialized = JSON.stringify(projected);
+    expect(serialized).not.toContain(topLevelData);
+    expect(serialized).not.toContain(sourceData);
+  });
 });
 
 describe("private transcript metadata projection", () => {

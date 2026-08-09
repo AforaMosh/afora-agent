@@ -14,7 +14,10 @@ import {
 } from "../../media-understanding/extracted-file-images.js";
 import type { MediaAttachment } from "../../media-understanding/types.js";
 import type { PromptImageOrderEntry } from "../../media/prompt-image-order.js";
-import { readRuntimePromptImageFactIndexes } from "../../media/runtime-prompt-image-provenance.js";
+import {
+  finalizeRuntimePromptImages,
+  readRuntimePromptImageFactIndexes,
+} from "../../media/runtime-prompt-image-provenance.js";
 import type { RuntimeMsgContext as MsgContext } from "../templating.js";
 import { resolveAgentTurnAttachments } from "./agent-turn-attachments.js";
 
@@ -22,6 +25,7 @@ type CurrentImageAttachment = MediaAttachment & { path: string };
 
 type OrderedTurnMedia = {
   media: MediaContent;
+  factIndex: number | null;
   sourceIndex?: number;
   sequence: number;
 };
@@ -78,6 +82,7 @@ function appendOrderedImages(params: {
     for (const image of images) {
       params.mediaEntries.push({
         media: image,
+        factIndex: null,
         sourceIndex: params.sourceIndex,
         sequence: params.mediaEntries.length,
       });
@@ -96,6 +101,7 @@ function appendOrderedImages(params: {
     if (image) {
       params.mediaEntries.push({
         media: image,
+        factIndex: null,
         sourceIndex: params.sourceIndex,
         sequence: params.mediaEntries.length,
       });
@@ -113,6 +119,7 @@ function appendOrderedImages(params: {
     }
     params.mediaEntries.push({
       media: image,
+      factIndex: null,
       sourceIndex: params.sourceIndex,
       sequence: params.mediaEntries.length,
     });
@@ -144,7 +151,9 @@ function resolveMergedTurnInputMedia(
     }
     return left.sequence - right.sequence;
   });
-  const inputMedia = merged.map((entry) => entry.media);
+  const inputMedia = finalizeRuntimePromptImages(
+    merged.map((entry) => ({ image: entry.media, factIndex: entry.factIndex })),
+  ).images;
   const images = inputMedia.filter((media): media is ImageContent => media.type === "image");
   const orderedImageSlots = imageSlots.toSorted((left, right) => {
     if (left.sourceIndex !== undefined && right.sourceIndex !== undefined) {
@@ -197,7 +206,7 @@ export async function resolveCurrentTurnInputMedia(params: {
   for (const [index, media] of (preparedMedia ?? []).entries()) {
     mediaEntries.push({
       media,
-      sourceIndex: preparedFactIndexes?.[index] ?? undefined,
+      factIndex: preparedFactIndexes?.[index] ?? null,
       sequence: mediaEntries.length,
     });
   }
