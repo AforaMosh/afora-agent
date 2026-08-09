@@ -244,7 +244,7 @@ describe("ensureOnboardingPluginInstalled", () => {
           pluginId: "openclaw-qqbot",
           label: "QQ Bot",
           install: {
-            npmSpec: "@cxyhhhhh/openclaw-qqbot@2.0.1-dev.202608081457",
+            npmSpec: "@cxyhhhhh/openclaw-qqbot@2.0.1-dev.202608090106",
           },
         },
         prompter: {
@@ -260,7 +260,7 @@ describe("ensureOnboardingPluginInstalled", () => {
       expect(captured?.options).toEqual([
         {
           value: "npm",
-          label: "从 npm 下载（@cxyhhhhh/openclaw-qqbot@2.0.1-dev.202608081457）",
+          label: "从 npm 下载（@cxyhhhhh/openclaw-qqbot@2.0.1-dev.202608090106）",
         },
         { value: "skip", label: "暂时跳过" },
       ]);
