@@ -1,8 +1,5 @@
 import { logTypingFailure } from "openclaw/plugin-sdk/channel-feedback";
-import {
-  runChannelInboundEvent,
-  type ChannelInboundTurnPlan,
-} from "openclaw/plugin-sdk/channel-inbound";
+import type { ChannelInboundTurnPlan } from "openclaw/plugin-sdk/channel-inbound";
 // Telegram plugin module wires inbound turn execution to Telegram delivery controllers.
 import {
   createChannelMessageReplyPipeline,
@@ -11,7 +8,7 @@ import {
 import type { OpenClawConfig, TelegramAccountConfig } from "openclaw/plugin-sdk/config-contracts";
 import { isFastModeAutoProgressPayload } from "openclaw/plugin-sdk/reply-payload";
 import { logVerbose } from "openclaw/plugin-sdk/runtime-env";
-import type { TelegramBotDeps } from "./bot-deps.js";
+import { defaultTelegramBotDeps, type TelegramBotDeps } from "./bot-deps.js";
 import type { TelegramMessageContext } from "./bot-message-context.js";
 import type { TelegramDeliveryController } from "./bot-message-dispatch-delivery.js";
 import type { TelegramDraftController } from "./bot-message-dispatch-draft.js";
@@ -93,6 +90,8 @@ export async function runTelegramDispatchTurn(params: {
         logVerbose(`telegram reply error callback failed: ${String(callbackError)}`);
       });
     };
+    const runChannelInboundEvent =
+      params.telegramDeps.runChannelInboundEvent ?? defaultTelegramBotDeps.runChannelInboundEvent;
     const turnResult = await runChannelInboundEvent({
       channel: "telegram",
       accountId: context.route.accountId,

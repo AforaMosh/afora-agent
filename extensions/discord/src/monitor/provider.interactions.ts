@@ -21,6 +21,7 @@ import {
   createDiscordExecApprovalButtonContext,
   createExecApprovalButton,
 } from "./exec-approvals.js";
+import type { DiscordInboundRuntimeResolver } from "./inbound-runtime.js";
 import {
   createDiscordCommandArgFallbackButton,
   createDiscordModelPickerFallbackButton,
@@ -52,6 +53,7 @@ export function createDiscordProviderInteractionSurface(params: {
   dmPolicy: NonNullable<DiscordAccountConfig["dmPolicy"]>;
   runtime: RuntimeEnv;
   channelRuntime?: ChannelRuntimeSurface;
+  inbound: DiscordInboundRuntimeResolver;
   abortSignal?: AbortSignal;
   createNativeCommand?: typeof createDiscordNativeCommand;
 }): {
@@ -69,6 +71,7 @@ export function createDiscordProviderInteractionSurface(params: {
       sessionPrefix: params.sessionPrefix,
       ephemeralDefault: params.ephemeralDefault,
       threadBindings: params.threadBindings,
+      inbound: params.inbound,
     }),
   );
   if (params.nativeEnabled && params.voiceEnabled) {
@@ -132,6 +135,7 @@ export function createDiscordProviderInteractionSurface(params: {
       accountId: params.accountId,
       sessionPrefix: params.sessionPrefix,
       threadBindings: params.threadBindings,
+      inbound: params.inbound,
     }),
     createDiscordModelPickerFallbackButton({
       cfg: params.cfg,
@@ -139,6 +143,7 @@ export function createDiscordProviderInteractionSurface(params: {
       accountId: params.accountId,
       sessionPrefix: params.sessionPrefix,
       threadBindings: params.threadBindings,
+      inbound: params.inbound,
     }),
     createDiscordModelPickerFallbackSelect({
       cfg: params.cfg,
@@ -146,6 +151,7 @@ export function createDiscordProviderInteractionSurface(params: {
       accountId: params.accountId,
       sessionPrefix: params.sessionPrefix,
       threadBindings: params.threadBindings,
+      inbound: params.inbound,
     }),
   ];
   const activityButton = createDiscordActivityButton(
@@ -189,6 +195,7 @@ export function createDiscordProviderInteractionSurface(params: {
       dmPolicy: params.dmPolicy,
       runtime: params.runtime,
       token: params.token,
+      inbound: params.inbound,
     };
     components.push(...createAgentComponentControls.map((create) => create(componentContext)));
     components.push(...createDiscordComponentControls.map((create) => create(componentContext)));

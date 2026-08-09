@@ -5,6 +5,7 @@ import type { SessionBindingRecord } from "openclaw/plugin-sdk/conversation-runt
 import type { resolveAgentRoute } from "openclaw/plugin-sdk/routing";
 import type { ChannelType, Client, User } from "../internal/discord.js";
 import type { DiscordChannelConfigResolved, DiscordGuildEntryResolved } from "./allow-list.js";
+import type { DiscordInboundRuntime } from "./inbound-runtime.js";
 import type { DiscordIngressLifecycle } from "./ingress.js";
 import type { DiscordHistoryEntry } from "./message-handler.history.js";
 import type { DiscordChannelInfo, DiscordMediaInfo } from "./message-utils.js";
@@ -36,6 +37,8 @@ type DiscordMessagePreflightSharedFields = {
   replyToMode: ReplyToMode;
   ackReactionScope: "all" | "direct" | "group-all" | "group-mentions" | "off" | "none";
   groupPolicy: "open" | "disabled" | "allowlist";
+  /** Captured at receipt time so builder and dispatcher retain one paired facade. */
+  inbound?: DiscordInboundRuntime;
   turnAdoptionLifecycle?: DiscordIngressLifecycle;
 };
 

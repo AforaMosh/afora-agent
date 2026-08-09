@@ -1,13 +1,15 @@
+import { buildChannelInboundEventContext } from "openclaw/plugin-sdk/channel-inbound";
 // Discord plugin module implements native command context behavior.
 import type { CommandArgs } from "openclaw/plugin-sdk/command-auth-native";
-import { finalizeInboundContext } from "openclaw/plugin-sdk/reply-dispatch-runtime";
 import { resolveDiscordConversationIdentity } from "../conversation-identity.js";
 import type { DiscordChannelConfigResolved, DiscordGuildEntryResolved } from "./allow-list.js";
 import { buildDiscordInboundAccessContext } from "./inbound-context.js";
+import type { DiscordInboundRuntime } from "./inbound-runtime.js";
 
 type BuildDiscordNativeCommandContextParams = {
   prompt: string;
   commandArgs: CommandArgs;
+  agentId: string;
   sessionKey: string;
   commandTargetSessionKey: string;
   accountId?: string | null;
@@ -37,9 +39,13 @@ type BuildDiscordNativeCommandContextParams = {
     tag?: string;
   };
   timestampMs?: number;
+  /** Supplied by live native ingress; omitted only by detached context tests. */
+  inbound?: DiscordInboundRuntime;
 };
 
-export function buildDiscordNativeCommandContext(params: BuildDiscordNativeCommandContextParams) {
+export async function buildDiscordNativeCommandContext(
+  params: BuildDiscordNativeCommandContextParams,
+) {
   const conversationLabel = params.isDirectMessage
     ? (params.user.globalName ?? params.user.username)
     : params.channelId;
@@ -53,59 +59,79 @@ export function buildDiscordNativeCommandContext(params: BuildDiscordNativeComma
       channelTopic: params.channelTopic,
     });
 
-  return finalizeInboundContext({
-    Body: params.prompt,
-    BodyForAgent: params.prompt,
-    RawBody: params.prompt,
-    CommandBody: params.prompt,
-    CommandArgs: params.commandArgs,
-    From: params.isDirectMessage
-      ? `discord:${params.user.id}`
-      : params.isGroupDm
-        ? `discord:group:${params.channelId}`
-        : `discord:channel:${params.channelId}`,
-    To: `slash:${params.user.id}`,
-    SessionKey: params.sessionKey,
-    CommandTargetSessionKey: params.commandTargetSessionKey,
-    AccountId: params.accountId ?? undefined,
-    ChatType: params.isDirectMessage ? "direct" : params.isGroupDm ? "group" : "channel",
-    ConversationLabel: conversationLabel,
-    GroupSubject: params.isGuild ? params.guildName : undefined,
-    GroupSpace: params.isGuild
-      ? (params.guildInfo?.id ?? params.guildInfo?.slug ?? params.guildId)
-      : undefined,
-    MemberRoleIds: params.memberRoleIds,
-    GroupSystemPrompt: groupSystemPrompt,
-    ChannelStructuredContext: channelStructuredContext,
-    OwnerAllowFrom: ownerAllowFrom,
-    SenderName: params.user.globalName ?? params.user.username,
-    SenderId: params.user.id,
-    SenderUsername: params.user.username,
-    SenderTag: params.sender.tag,
-    Provider: "discord" as const,
-    Surface: "discord" as const,
-    WasMentioned: true,
-    MessageSid: params.interactionId,
-    MessageThreadId: params.isThreadChannel ? params.channelId : undefined,
-    Timestamp: params.timestampMs ?? Date.now(),
-    CommandAuthorized: params.commandAuthorized,
-    CommandTurn: {
-      kind: "native" as const,
-      source: "native" as const,
-      authorized: params.commandAuthorized,
-      body: params.prompt,
+  const chatType = params.isDirectMessage ? "direct" : params.isGroupDm ? "group" : "channel";
+  const from = params.isDirectMessage
+    ? `discord:${params.user.id}`
+    : params.isGroupDm
+      ? `discord:group:${params.channelId}`
+      : `discord:channel:${params.channelId}`;
+  // Detached unit callers keep the public builder only to exercise context
+  // projection. Live slash ingress receives the paired facade from its command.
+  const buildContext = params.inbound?.buildContext ?? buildChannelInboundEventContext;
+  return await buildContext({
+    channel: "discord",
+    accountId: params.accountId ?? undefined,
+    messageId: params.interactionId,
+    timestamp: params.timestampMs ?? Date.now(),
+    from,
+    sender: {
+      id: params.user.id,
+      name: params.user.globalName ?? params.user.username,
+      username: params.user.username,
+      tag: params.sender.tag,
+      roles: params.memberRoleIds,
     },
-    CommandSource: "native" as const,
-    // Native slash contexts use To=slash:<user> for interaction routing.
-    // For follow-up delivery (for example subagent completion announces),
-    // preserve the real Discord target separately.
-    OriginatingChannel: "discord" as const,
-    OriginatingTo:
-      resolveDiscordConversationIdentity({
-        isDirectMessage: params.isDirectMessage,
-        userId: params.user.id,
-        channelId: params.channelId,
-      }) ?? (params.isDirectMessage ? `user:${params.user.id}` : `channel:${params.channelId}`),
-    ThreadParentId: params.isThreadChannel ? params.threadParentId : undefined,
+    conversation: {
+      kind: chatType,
+      id: params.channelId,
+      label: conversationLabel,
+      spaceId: params.isGuild
+        ? (params.guildInfo?.id ?? params.guildInfo?.slug ?? params.guildId)
+        : undefined,
+      parentId: params.isThreadChannel ? params.threadParentId : undefined,
+      threadId: params.isThreadChannel ? params.channelId : undefined,
+      nativeChannelId: params.channelId,
+    },
+    route: {
+      agentId: params.agentId,
+      accountId: params.accountId ?? undefined,
+      routeSessionKey: params.sessionKey,
+      dispatchSessionKey: params.sessionKey,
+    },
+    reply: {
+      to: `slash:${params.user.id}`,
+      originatingTo:
+        resolveDiscordConversationIdentity({
+          isDirectMessage: params.isDirectMessage,
+          userId: params.user.id,
+          channelId: params.channelId,
+        }) ?? (params.isDirectMessage ? `user:${params.user.id}` : `channel:${params.channelId}`),
+      nativeChannelId: params.channelId,
+      messageThreadId: params.isThreadChannel ? params.channelId : undefined,
+      threadParentId: params.isThreadChannel ? params.threadParentId : undefined,
+    },
+    message: {
+      body: params.prompt,
+      bodyForAgent: params.prompt,
+      rawBody: params.prompt,
+      commandBody: params.prompt,
+    },
+    access: {
+      mentions: { canDetectMention: true, wasMentioned: true },
+      commands: { authorized: params.commandAuthorized },
+    },
+    command: {
+      kind: "native",
+      body: params.prompt,
+      authorized: params.commandAuthorized,
+    },
+    supplemental: { groupSystemPrompt },
+    extra: {
+      CommandArgs: params.commandArgs,
+      CommandTargetSessionKey: params.commandTargetSessionKey,
+      GroupSubject: params.isGuild ? params.guildName : undefined,
+      ChannelStructuredContext: channelStructuredContext,
+      OwnerAllowFrom: ownerAllowFrom,
+    },
   });
 }

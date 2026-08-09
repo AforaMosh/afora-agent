@@ -7,6 +7,7 @@ import {
   setRuntimeConfigSnapshot,
 } from "openclaw/plugin-sdk/runtime-config-snapshot";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { createDiscordTestInboundRuntimeResolver } from "./inbound-runtime.test-support.js";
 import { nativeCommandRuntime } from "./native-command.runtime.js";
 
 const { loadModelCatalogMock, logVerboseMock } = vi.hoisted(() => ({
@@ -81,6 +82,7 @@ function createNativeCommand(
     sessionPrefix: "discord:slash",
     ephemeralDefault: true,
     threadBindings: createNoopThreadBindingManager("default"),
+    inbound: createDiscordTestInboundRuntimeResolver(),
   });
 }
 
@@ -477,6 +479,7 @@ describe("createDiscordNativeCommand option wiring", () => {
         sessionPrefix: "discord:slash",
         ephemeralDefault: true,
         threadBindings: createNoopThreadBindingManager("default"),
+        inbound: createDiscordTestInboundRuntimeResolver(),
       });
       const mode = requireOption(command, "mode");
       const autocomplete = requireAutocomplete(
@@ -551,6 +554,7 @@ describe("createDiscordNativeCommand option wiring", () => {
         sessionPrefix: "discord:slash",
         ephemeralDefault: true,
         threadBindings: createNoopThreadBindingManager("default"),
+        inbound: createDiscordTestInboundRuntimeResolver(),
       });
       const value = requireOption(command, "value");
       const autocomplete = requireAutocomplete(
@@ -675,6 +679,7 @@ describe("createDiscordNativeCommand option wiring", () => {
       sessionPrefix: "discord:slash",
       ephemeralDefault: true,
       threadBindings: createNoopThreadBindingManager("default"),
+      inbound: createDiscordTestInboundRuntimeResolver(),
     });
 
     expect(command.description).toBe("x".repeat(99));
@@ -699,6 +704,7 @@ describe("createDiscordNativeCommand option wiring", () => {
       sessionPrefix: "discord:slash",
       ephemeralDefault: true,
       threadBindings: createNoopThreadBindingManager("default"),
+      inbound: createDiscordTestInboundRuntimeResolver(),
     });
 
     expect(command.descriptionLocalizations).toEqual({

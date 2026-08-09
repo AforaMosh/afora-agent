@@ -24,6 +24,7 @@ import { resolveDiscordSlashCommandConfig } from "./commands.js";
 import type { MutableDiscordGateway } from "./gateway-handle.js";
 import { createDiscordGatewayPlugin } from "./gateway-plugin.js";
 import { createDiscordGatewaySupervisor } from "./gateway-supervisor.js";
+import { resolveDiscordInboundRuntime } from "./inbound-runtime.js";
 import { registerDiscordListener } from "./listeners.js";
 import { discordProviderRuntime } from "./provider-runtime.js";
 import { probeDiscordAcpBindingHealth } from "./provider.acp.js";
@@ -83,6 +84,9 @@ function isDiscordDisallowedIntentsError(err: unknown): boolean {
 export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
   const startupStartedAt = Date.now();
   const cfg = opts.config ?? getRuntimeConfig();
+  // Resolve only at event ingress. Startup probes and component registration
+  // intentionally remain usable in tests that provide no channel runtime.
+  const inbound = () => resolveDiscordInboundRuntime(opts.channelRuntime);
   const account = discordProviderRuntime.resolveDiscordAccount({
     cfg,
     accountId: opts.accountId,
@@ -324,6 +328,7 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
       dmPolicy,
       runtime,
       channelRuntime: opts.channelRuntime,
+      inbound,
       abortSignal: opts.abortSignal,
       createNativeCommand: discordProviderRuntime.createDiscordNativeCommand,
     });
@@ -453,6 +458,7 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
       guildEntries,
       threadBindings,
       discordRestFetch,
+      inbound,
     });
     deactivateMessageHandler = messageHandler.deactivate;
     const trackInboundEvent = opts.setStatus

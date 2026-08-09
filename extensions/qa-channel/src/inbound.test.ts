@@ -463,8 +463,10 @@ describe("handleQaInbound", () => {
       }),
     );
 
+    expect(runtime.channel.inbound.buildContext).toHaveBeenCalledTimes(1);
     expect(runtime.channel.inbound.dispatch).toHaveBeenCalledTimes(1);
     const ctxPayload = firstRunAssembledParams(runtime).ctxPayload;
+    expect(ctxPayload).toBe(vi.mocked(runtime.channel.inbound.buildContext).mock.results[0]?.value);
     expect(ctxPayload?.CommandAuthorized).toBe(true);
     expect(ctxPayload?.SenderId).toBe("alice");
   });

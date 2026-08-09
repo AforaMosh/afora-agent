@@ -71,7 +71,7 @@ function buildRuntime(
         resolveStorePath: vi.fn(() => ""),
         recordInboundSession: vi.fn(async () => undefined),
       },
-      inbound: { run: vi.fn(async () => undefined) },
+      inbound: { buildContext: vi.fn(), run: vi.fn(async () => undefined) },
       text: { chunkMarkdownText: vi.fn(() => []) },
     },
     tts: { textToSpeech: vi.fn() },

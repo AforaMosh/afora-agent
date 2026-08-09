@@ -1,10 +1,7 @@
 // Discord plugin module implements message handler.process behavior.
 import type { APIAllowedMentions } from "discord-api-types/v10";
 import { resolveAgentConfig, resolveHumanDelayConfig } from "openclaw/plugin-sdk/agent-runtime";
-import {
-  dispatchChannelInboundTurn,
-  hasFinalInboundReplyDispatch,
-} from "openclaw/plugin-sdk/channel-inbound";
+import { hasFinalInboundReplyDispatch } from "openclaw/plugin-sdk/channel-inbound";
 import {
   bindIngressLifecycleToReplyOptions,
   defineFinalizableLivePreviewAdapter,
@@ -111,6 +108,10 @@ async function processDiscordMessageInner(
   } = ctx;
   if (isProcessAborted(abortSignal)) {
     return;
+  }
+  const inbound = ctx.inbound;
+  if (!inbound) {
+    throw new Error("Discord inbound context was not built by the paired runtime facade.");
   }
   const text = messageText;
   if (!text && mediaList.length === 0) {
@@ -608,7 +609,7 @@ async function processDiscordMessageInner(
       dispatchAborted = true;
       return;
     }
-    const preparedResult = await dispatchChannelInboundTurn({
+    const preparedResult = await inbound.dispatch({
       cfg,
       channel: "discord",
       accountId: route.accountId,

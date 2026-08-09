@@ -18,6 +18,7 @@ import {
   resolveConfiguredBindingRoute,
   resolveRuntimeConversationBindingRoute,
 } from "openclaw/plugin-sdk/conversation-runtime";
+import type { PluginRuntime } from "openclaw/plugin-sdk/core";
 import type { HistoryEntry } from "openclaw/plugin-sdk/reply-history";
 import { resolveAgentRoute, resolveInboundLastRouteSessionKey } from "openclaw/plugin-sdk/routing";
 import { logVerbose, shouldLogVerbose } from "openclaw/plugin-sdk/runtime-env";
@@ -37,6 +38,8 @@ interface MediaRef {
   contentType?: string;
 }
 
+export type LineInboundRuntime = Pick<PluginRuntime["channel"]["inbound"], "buildContext" | "run">;
+
 interface BuildLineMessageContextParams {
   event: MessageEvent;
   allMedia: MediaRef[];
@@ -45,6 +48,8 @@ interface BuildLineMessageContextParams {
   account: ResolvedLineAccount;
   commandAuthorized: boolean;
   inboundHistory?: HistoryEntry[];
+  /** The plugin-scoped paired facade for a real webhook ingress turn. */
+  inbound?: LineInboundRuntime;
 }
 
 type LineSourceInfo = {
@@ -262,6 +267,7 @@ async function finalizeLineInboundContext(params: {
   locationContext?: ReturnType<typeof toLocationContext>;
   verboseLog: { kind: "inbound" | "postback"; mediaCount?: number };
   inboundHistory?: Pick<HistoryEntry, "sender" | "body" | "timestamp">[];
+  inbound?: LineInboundRuntime;
 }) {
   const senderId = params.source.userId ?? "unknown";
   const senderLabel = params.source.userId ? `user:${params.source.userId}` : "unknown";
@@ -299,7 +305,9 @@ async function finalizeLineInboundContext(params: {
     envelope: envelopeOptions,
   });
 
-  const ctxPayload = buildChannelInboundEventContext({
+  // Unit callers without the runtime facade deliberately use the public builder,
+  // which remains unprivileged. A live webhook receives its paired facade below.
+  const ctxPayload = (params.inbound?.buildContext ?? buildChannelInboundEventContext)({
     channel: "line",
     accountId: params.route.accountId,
     messageId: params.messageSid,
@@ -409,8 +417,16 @@ async function finalizeLineInboundContext(params: {
 }
 
 export async function buildLineMessageContext(params: BuildLineMessageContextParams) {
-  const { event, allMedia, mediaUnavailable, cfg, account, commandAuthorized, inboundHistory } =
-    params;
+  const {
+    event,
+    allMedia,
+    mediaUnavailable,
+    cfg,
+    account,
+    commandAuthorized,
+    inboundHistory,
+    inbound,
+  } = params;
 
   const source = event.source;
   const { userId, groupId, roomId, isGroup, peerId, route } = await resolveLineInboundRoute({
@@ -469,6 +485,7 @@ export async function buildLineMessageContext(params: BuildLineMessageContextPar
     locationContext,
     verboseLog: { kind: "inbound", mediaCount: allMedia.length },
     inboundHistory,
+    inbound,
   });
 
   return {
@@ -482,6 +499,7 @@ export async function buildLineMessageContext(params: BuildLineMessageContextPar
     route,
     replyToken: event.replyToken,
     accountId: account.accountId,
+    ...(inbound ? { inbound } : {}),
   };
 }
 
@@ -490,8 +508,9 @@ export async function buildLinePostbackContext(params: {
   cfg: OpenClawConfig;
   account: ResolvedLineAccount;
   commandAuthorized: boolean;
+  inbound?: LineInboundRuntime;
 }) {
-  const { event, cfg, account, commandAuthorized } = params;
+  const { event, cfg, account, commandAuthorized, inbound } = params;
 
   const source = event.source;
   const { userId, groupId, roomId, isGroup, peerId, route } = await resolveLineInboundRoute({
@@ -526,6 +545,7 @@ export async function buildLinePostbackContext(params: {
     commandAuthorized,
     media: [],
     verboseLog: { kind: "postback" },
+    inbound,
   });
 
   return {
@@ -539,6 +559,7 @@ export async function buildLinePostbackContext(params: {
     route,
     replyToken: event.replyToken,
     accountId: account.accountId,
+    ...(inbound ? { inbound } : {}),
   };
 }
 

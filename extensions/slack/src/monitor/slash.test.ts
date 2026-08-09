@@ -905,6 +905,18 @@ describe("Slack native command argument menus", () => {
     expect(dispatchMock).toHaveBeenCalledTimes(1);
     const call = firstDispatchArg() as { ctx?: { Body?: string } };
     expect(call.ctx?.Body).toBe("/tools compact");
+    const { buildContextMock, inboundDispatchMock } = getSlackSlashMocks();
+    const builderInput = buildContextMock.mock.calls[0]?.[0] as
+      | { route?: { routeSessionKey?: string } }
+      | undefined;
+    const built = buildContextMock.mock.results[0]?.value as { SessionKey?: string } | undefined;
+    const inboundPlan = inboundDispatchMock.mock.calls[0]?.[0] as
+      | { ctxPayload?: unknown; route?: { sessionKey?: string } }
+      | undefined;
+    expect(built).toBeDefined();
+    expect(inboundPlan?.ctxPayload).toBe(built);
+    expect(builderInput?.route?.routeSessionKey).toBe(built?.SessionKey);
+    expect(inboundPlan?.route?.sessionKey).toBe(built?.SessionKey);
   });
 
   it("does not apply the response_url call cap to Web API action replies", async () => {

@@ -360,7 +360,10 @@ export async function buildDiscordMessageProcessContext(params: {
           sessionKey: effectiveSessionKey,
         });
 
-  const ctxPayload = await buildChannelInboundEventContext({
+  // Direct context tests intentionally have no trusted facade. Live messages
+  // always carry the receipt-time facade captured by the dispatcher above.
+  const buildContext = ctx.inbound?.buildContext ?? buildChannelInboundEventContext;
+  const ctxPayload = await buildContext({
     channel: "discord",
     resolveSupplementalMedia: true,
     contextVisibility: contextVisibilityMode,

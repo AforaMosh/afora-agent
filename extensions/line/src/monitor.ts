@@ -155,6 +155,7 @@ export async function monitorLineProvider(
     accountId,
     runtime,
     config,
+    inbound: () => getLineRuntime().channel.inbound,
     onMessage: async (ctx, deliveryControl) => {
       if (!ctx) {
         return;
@@ -184,8 +185,11 @@ export async function monitorLineProvider(
 
       try {
         const textLimit = 5000;
-        const core = getLineRuntime();
-        const turnResult = await core.channel.inbound.run({
+        const inbound = ctx.inbound;
+        if (!inbound) {
+          throw new Error("LINE inbound context was not built by the plugin-scoped facade.");
+        }
+        const turnResult = await inbound.run({
           channel: "line",
           accountId: route.accountId,
           raw: ctx,

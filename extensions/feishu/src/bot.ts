@@ -1,5 +1,4 @@
 import {
-  buildChannelInboundEventContext,
   formatAgentEnvelope,
   formatInboundMediaUnavailableText,
   recordChannelBotPairLoopAndCheckSuppression,
@@ -1368,7 +1367,7 @@ export async function handleFeishuMessage(params: {
     ) => {
       const groupName = await resolveGroupNameForLabel();
       const threadContext = await resolveThreadContextForAgent(agentId, agentSessionKey, groupName);
-      return buildChannelInboundEventContext({
+      return core.channel.inbound.buildContext({
         channel: "feishu",
         supplemental: {
           quote: quotedContent ? { id: ctx.parentId, body: quotedContent } : undefined,

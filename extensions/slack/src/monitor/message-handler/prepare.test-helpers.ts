@@ -4,10 +4,12 @@ import path from "node:path";
 import type { App } from "@slack/bolt";
 import type { ChannelRuntimeSurface } from "openclaw/plugin-sdk/channel-contract";
 import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { PluginRuntime } from "openclaw/plugin-sdk/core";
 import { createPluginRuntimeMock } from "openclaw/plugin-sdk/plugin-test-runtime";
 import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
 import { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/temp-path";
 import type { ResolvedSlackAccount } from "../../accounts.js";
+import { setSlackRuntime } from "../../runtime.js";
 import type { SlackChannelConfigEntries } from "../channel-config.js";
 import { createSlackMonitorContext } from "../context.js";
 
@@ -23,13 +25,27 @@ export function createInboundSlackTestContext(params: {
   groupPolicy?: "open" | "disabled" | "allowlist";
   channelRuntime?: ChannelRuntimeSurface;
 }) {
+  const runtime = createPluginRuntimeMock();
+  const suppliedChannelRuntime = params.channelRuntime as
+    | Partial<PluginRuntime["channel"]>
+    | undefined;
+  const channelRuntime = {
+    ...runtime.channel,
+    ...suppliedChannelRuntime,
+    inbound: {
+      ...runtime.channel.inbound,
+      ...suppliedChannelRuntime?.inbound,
+    },
+  } satisfies PluginRuntime["channel"];
+  setSlackRuntime({ ...runtime, channel: channelRuntime });
+
   return createSlackMonitorContext({
     cfg: params.cfg,
     accountId: "default",
     botToken: "token",
     app: params.app ?? ({ client: params.appClient ?? {} } as App),
     runtime: {} as RuntimeEnv,
-    channelRuntime: params.channelRuntime ?? createPluginRuntimeMock().channel,
+    channelRuntime,
     botUserId: "B1",
     botId: "B1",
     identityHealth: { lifecycle: "ready", lastError: null },

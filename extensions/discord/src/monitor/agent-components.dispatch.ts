@@ -3,7 +3,6 @@ import { resolveHumanDelayConfig } from "openclaw/plugin-sdk/agent-runtime";
 import {
   formatInboundEnvelope,
   resolveEnvelopeFormatOptions,
-  runChannelInboundEvent,
 } from "openclaw/plugin-sdk/channel-inbound";
 import { isDangerousNameMatchingEnabled } from "openclaw/plugin-sdk/dangerous-name-runtime";
 import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
@@ -93,6 +92,10 @@ export async function dispatchDiscordComponentEvent(params: {
 }): Promise<void> {
   const { ctx, interaction, interactionCtx, channelCtx, guildInfo, eventText } = params;
   const runtime = ctx.runtime ?? createNonExitingRuntime();
+  const inbound = ctx.inbound?.();
+  if (!inbound) {
+    throw new Error("Discord component ingress requires the paired inbound runtime facade.");
+  }
   const route = resolveAgentComponentRoute({
     ctx,
     rawGuildId: interactionCtx.rawGuildId,
@@ -176,62 +179,87 @@ export async function dispatchDiscordComponentEvent(params: {
     envelope: envelopeOptions,
   });
 
-  const {
-    createReplyReferencePlanner,
-    finalizeInboundContext,
-    resolveChunkMode,
-    resolveTextChunkLimit,
-  } = await (async () => {
-    const conversationRuntime = await loadConversationRuntime();
-    return {
-      ...conversationRuntime,
-    };
-  })();
+  const { createReplyReferencePlanner, resolveChunkMode, resolveTextChunkLimit } =
+    await (async () => {
+      const conversationRuntime = await loadConversationRuntime();
+      return {
+        ...conversationRuntime,
+      };
+    })();
 
-  const ctxPayload = finalizeInboundContext({
-    Body: combinedBody,
-    BodyForAgent: eventText,
-    RawBody: eventText,
-    CommandBody: eventText,
-    From: interactionCtx.isDirectMessage
-      ? `discord:${interactionCtx.userId}`
-      : interactionCtx.isGroupDm
-        ? `discord:group:${interactionCtx.channelId}`
-        : `discord:channel:${interactionCtx.channelId}`,
-    To: `channel:${interactionCtx.channelId}`,
-    SessionKey: sessionKey,
-    AccountId: accountId,
-    ChatType: chatType,
-    ConversationLabel: fromLabel,
-    SenderName: senderName,
-    SenderId: interactionCtx.userId,
-    SenderUsername: senderUsername,
-    SenderTag: senderTag,
-    GroupSubject: groupSubject,
-    GroupChannel: groupChannel,
-    MemberRoleIds: interactionCtx.memberRoleIds,
-    GroupSystemPrompt: interactionCtx.isDirectMessage ? undefined : groupSystemPrompt,
-    GroupSpace: guildInfo?.id ?? guildInfo?.slug ?? interactionCtx.rawGuildId ?? undefined,
-    OwnerAllowFrom: ownerAllowFrom,
-    Provider: "discord" as const,
-    Surface: "discord" as const,
-    WasMentioned: true,
-    CommandAuthorized: commandAuthorized,
-    CommandTurn: {
+  const deliverTarget = `channel:${interactionCtx.channelId}`;
+  const from = interactionCtx.isDirectMessage
+    ? `discord:${interactionCtx.userId}`
+    : interactionCtx.isGroupDm
+      ? `discord:group:${interactionCtx.channelId}`
+      : `discord:channel:${interactionCtx.channelId}`;
+  const ctxPayload = await inbound.buildContext({
+    channel: "discord",
+    accountId,
+    messageId: interaction.rawData.id,
+    timestamp,
+    from,
+    sender: {
+      id: interactionCtx.userId,
+      name: senderName,
+      username: senderUsername,
+      tag: senderTag,
+      roles: interactionCtx.memberRoleIds,
+    },
+    conversation: {
+      kind: chatType,
+      id: interactionCtx.channelId,
+      label: fromLabel,
+      spaceId: guildInfo?.id ?? guildInfo?.slug ?? interactionCtx.rawGuildId ?? undefined,
+      parentId: channelCtx.parentId,
+      threadId: channelCtx.isThread ? interactionCtx.channelId : undefined,
+      nativeChannelId: interactionCtx.channelId,
+    },
+    route: {
+      agentId,
+      dmScope: route.dmScope,
+      accountId,
+      routeSessionKey: route.sessionKey,
+      dispatchSessionKey: sessionKey,
+    },
+    reply: {
+      to: deliverTarget,
+      originatingTo:
+        resolveDiscordComponentOriginatingTo(interactionCtx) ??
+        `channel:${interactionCtx.channelId}`,
+      nativeChannelId: interactionCtx.channelId,
+      messageThreadId: channelCtx.isThread ? interactionCtx.channelId : undefined,
+      threadParentId: channelCtx.parentId,
+    },
+    message: {
+      body: combinedBody,
+      bodyForAgent: eventText,
+      rawBody: eventText,
+      commandBody: eventText,
+    },
+    access: {
+      mentions: {
+        canDetectMention: !interactionCtx.isDirectMessage,
+        wasMentioned: true,
+      },
+      commands: { authorized: commandAuthorized },
+    },
+    commandTurn: {
       kind: "text-slash" as const,
       source: "text" as const,
       authorized: commandAuthorized,
       body: eventText,
     },
-    CommandSource: "text" as const,
-    MessageSid: interaction.rawData.id,
-    Timestamp: timestamp,
-    OriginatingChannel: "discord" as const,
-    OriginatingTo:
-      resolveDiscordComponentOriginatingTo(interactionCtx) ?? `channel:${interactionCtx.channelId}`,
+    supplemental: {
+      groupSystemPrompt: interactionCtx.isDirectMessage ? undefined : groupSystemPrompt,
+    },
+    extra: {
+      GroupSubject: groupSubject,
+      GroupChannel: groupChannel,
+      OwnerAllowFrom: ownerAllowFrom,
+    },
   });
 
-  const deliverTarget = `channel:${interactionCtx.channelId}`;
   const typingChannelId = interactionCtx.channelId;
   const tableMode = resolveMarkdownTableMode({
     cfg: ctx.cfg,
@@ -255,7 +283,7 @@ export async function dispatchDiscordComponentEvent(params: {
     startId: params.replyToId,
   });
 
-  await runChannelInboundEvent({
+  await inbound.run({
     channel: "discord",
     accountId,
     raw: interaction,

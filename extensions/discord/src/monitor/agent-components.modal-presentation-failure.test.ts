@@ -17,6 +17,7 @@ import {
 } from "../internal/test-builders.test-support.js";
 import { resetDiscordComponentRuntimeMocks } from "../test-support/component-runtime.js";
 import { createDiscordComponentControls } from "./agent-components.js";
+import { createDiscordTestInboundRuntimeResolver } from "./inbound-runtime.test-support.js";
 
 describe("Discord modal presentation failures", () => {
   beforeEach(() => {
@@ -73,6 +74,7 @@ describe("Discord modal presentation failures", () => {
         allowFrom: ["123456789"],
         discordConfig: { replyToMode: "first" },
         token: "token",
+        inbound: createDiscordTestInboundRuntimeResolver(),
       });
       const post = vi.fn().mockRejectedValueOnce(new Error("Discord rejected the modal"));
       if (replyRejects) {

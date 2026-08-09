@@ -1,5 +1,4 @@
 // Feishu plugin module implements comment handler behavior.
-import { buildChannelInboundEventContext } from "openclaw/plugin-sdk/channel-inbound";
 import { bindIngressLifecycleToReplyOptions } from "openclaw/plugin-sdk/channel-outbound";
 import { parseStrictNonNegativeInteger } from "openclaw/plugin-sdk/number-runtime";
 import type { ResolvedAgentRoute } from "openclaw/plugin-sdk/routing";
@@ -222,7 +221,7 @@ export async function handleFeishuCommentEvent(
   const conversationLabel = turn.documentTitle
     ? `Feishu comment · ${turn.documentTitle}`
     : "Feishu comment";
-  const ctxPayload = buildChannelInboundEventContext({
+  const ctxPayload = core.channel.inbound.buildContext({
     channel: "feishu",
     accountId: route.accountId,
     surface: "feishu-comment",

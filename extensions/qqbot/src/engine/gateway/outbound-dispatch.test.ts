@@ -121,6 +121,41 @@ function makeInboundRuntime(
   onResolvedTurn?: (turn: Record<string, unknown>) => void,
 ): GatewayPluginRuntime["channel"]["inbound"] {
   return {
+    buildContext: vi.fn((rawParams: unknown) => {
+      const params = rawParams as {
+        channel: string;
+        accountId?: string;
+        from: string;
+        sender: { id: string; name?: string };
+        conversation: { kind: string };
+        route: { accountId?: string; dispatchSessionKey?: string; routeSessionKey?: string };
+        reply: { to: string };
+        message: { body?: string; bodyForAgent?: string; rawBody: string; commandBody?: string };
+        access?: { commands?: { authorized?: boolean } };
+        command?: { kind: string };
+        media?: unknown;
+        extra?: Record<string, unknown>;
+      };
+      return {
+        Body: params.message.body ?? params.message.rawBody,
+        BodyForAgent: params.message.bodyForAgent ?? params.message.rawBody,
+        RawBody: params.message.rawBody,
+        CommandBody: params.message.commandBody ?? params.message.rawBody,
+        From: params.from,
+        To: params.reply.to,
+        SessionKey: params.route.dispatchSessionKey ?? params.route.routeSessionKey,
+        AccountId: params.route.accountId ?? params.accountId,
+        ChatType: params.conversation.kind,
+        SenderId: params.sender.id,
+        SenderName: params.sender.name,
+        Provider: params.channel,
+        Surface: params.channel,
+        CommandAuthorized: params.access?.commands?.authorized ?? false,
+        ...(params.command?.kind === "text-slash" ? { CommandSource: "text" } : {}),
+        ...(params.media ? { media: params.media } : {}),
+        ...params.extra,
+      };
+    }) as GatewayPluginRuntime["channel"]["inbound"]["buildContext"],
     run: vi.fn(async (rawParams: unknown) => {
       const params = rawParams as {
         raw: unknown;
@@ -1017,6 +1052,7 @@ describe("dispatchOutbound", () => {
       { runtime, cfg: { commands: { text: true } }, account },
     );
 
+    expect(runtime.channel.inbound.buildContext).toHaveBeenCalledTimes(1);
     expect(finalized?.CommandBody).toBe("/models");
     expect(finalized?.CommandAuthorized).toBe(true);
     expect(finalized?.CommandSource).toBe("text");

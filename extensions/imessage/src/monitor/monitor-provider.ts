@@ -6,7 +6,6 @@ import {
   createChannelInboundDebouncer,
   formatInboundMediaUnavailableText,
   resolveEnvelopeFormatOptions,
-  runChannelInboundEvent,
   shouldDebounceTextInbound,
   type ChannelInboundTurnPlan,
   type ChannelInboundMediaInput,
@@ -72,6 +71,7 @@ import {
   maybeResolveIMessageQuestionReaction,
 } from "../question-reactions.js";
 import { resolveIMessageRemoteHost } from "../remote-host.js";
+import { getIMessageRuntime } from "../runtime.js";
 import { sendMessageIMessage } from "../send.js";
 import { normalizeIMessageHandle } from "../targets.js";
 import { attachIMessageMonitorAbortHandler } from "./abort-handler.js";
@@ -349,6 +349,8 @@ async function waitForWatchSubscribeRetryDelay(params: {
 export async function monitorIMessageProvider(opts: MonitorIMessageOpts = {}): Promise<void> {
   const runtime = resolveRuntime(opts);
   const cfg = opts.config ?? getRuntimeConfig();
+  // Capture one trusted facade so the builder and runner carry the same ingress capability.
+  const inbound = getIMessageRuntime().channel.inbound;
   const accountInfo = resolveIMessageAccount({
     cfg,
     accountId: opts.accountId,
@@ -1049,6 +1051,7 @@ export async function monitorIMessageProvider(opts: MonitorIMessageOpts = {}): P
       cfg,
       decision: contextDecision,
       message,
+      buildContext: inbound.buildContext,
       previousTimestamp,
       remoteHost,
       historyLimit,
@@ -1226,7 +1229,7 @@ export async function monitorIMessageProvider(opts: MonitorIMessageOpts = {}): P
       sessionKey: decision.route.sessionKey,
     });
 
-    await runChannelInboundEvent({
+    await inbound.run({
       channel: "imessage",
       accountId: decision.route.accountId,
       raw: decision,

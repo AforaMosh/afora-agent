@@ -3,10 +3,11 @@ import { describe, expect, it } from "vitest";
 import { buildDiscordNativeCommandContext } from "./native-command-context.js";
 
 describe("buildDiscordNativeCommandContext", () => {
-  it("builds direct-message slash command context", () => {
-    const ctx = buildDiscordNativeCommandContext({
+  it("builds direct-message slash command context", async () => {
+    const ctx = await buildDiscordNativeCommandContext({
       prompt: "/status",
       commandArgs: {},
+      agentId: "codex",
       sessionKey: "agent:codex:discord:slash:user-1",
       commandTargetSessionKey: "agent:codex:discord:direct:user-1",
       accountId: "default",
@@ -42,10 +43,11 @@ describe("buildDiscordNativeCommandContext", () => {
     expect(ctx.Timestamp).toBe(123);
   });
 
-  it("builds guild slash command context with owner allowlist and channel metadata", () => {
-    const ctx = buildDiscordNativeCommandContext({
+  it("builds guild slash command context with owner allowlist and channel metadata", async () => {
+    const ctx = await buildDiscordNativeCommandContext({
       prompt: "/status",
       commandArgs: { values: { model: "gpt-5.2" } },
+      agentId: "codex",
       sessionKey: "agent:codex:discord:slash:user-1",
       commandTargetSessionKey: "agent:codex:discord:channel:chan-1",
       accountId: "default",

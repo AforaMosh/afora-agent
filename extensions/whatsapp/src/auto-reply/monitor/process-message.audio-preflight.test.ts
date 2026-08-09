@@ -1,10 +1,17 @@
+import {
+  buildChannelInboundEventContext,
+  runChannelInboundEvent,
+} from "openclaw/plugin-sdk/channel-inbound";
 // Whatsapp tests cover process message.audio preflight plugin behavior.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createTestWebAudioInboundMessage } from "../../inbound/test-message.test-helper.js";
+import { setWhatsAppRuntime } from "../../runtime.js";
 
 // Mock the lazy-loaded audio preflight runtime boundary
 const transcribeFirstAudioMock = vi.fn();
 const maybeSendAckReactionMock = vi.fn();
+const runtimeInboundBuildContextMock = vi.fn();
+const runtimeInboundRunMock = vi.fn();
 
 vi.mock("./audio-preflight.runtime.js", () => ({
   transcribeFirstAudio: (...args: unknown[]) => transcribeFirstAudioMock(...args),
@@ -265,6 +272,24 @@ describe("processMessage audio preflight transcription", () => {
     shouldComputeCommandResult = false;
     shouldComputeCommandBodies = [];
     vi.mocked(createWhatsAppReplyPlan).mockClear();
+    runtimeInboundBuildContextMock.mockReset();
+    runtimeInboundBuildContextMock.mockImplementation(
+      (params: Parameters<typeof buildChannelInboundEventContext>[0]) =>
+        buildChannelInboundEventContext(params),
+    );
+    runtimeInboundRunMock.mockReset();
+    runtimeInboundRunMock.mockImplementation(
+      async (params: Parameters<typeof runChannelInboundEvent>[0]) =>
+        await runChannelInboundEvent(params),
+    );
+    setWhatsAppRuntime({
+      channel: {
+        inbound: {
+          buildContext: runtimeInboundBuildContextMock as never,
+          run: runtimeInboundRunMock as never,
+        },
+      },
+    } as never);
   });
 
   it("replaces an empty audio caption with the transcript when transcription succeeds", async () => {

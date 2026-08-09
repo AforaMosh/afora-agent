@@ -6,6 +6,7 @@ import type {
   GroupPolicy,
   SignalReactionNotificationMode,
 } from "openclaw/plugin-sdk/config-contracts";
+import type { PluginRuntime } from "openclaw/plugin-sdk/core";
 import type { HistoryEntry } from "openclaw/plugin-sdk/reply-history";
 import type { ReplyPayload } from "openclaw/plugin-sdk/reply-runtime";
 import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
@@ -90,7 +91,15 @@ export type SignalNativeReplyContext = {
   };
 };
 
+/** The gateway injects this paired capability for Signal's trusted inbound path. */
+export type SignalInboundCore = {
+  channel: {
+    inbound: Pick<PluginRuntime["channel"]["inbound"], "buildContext" | "run">;
+  };
+};
+
 export type SignalEventHandlerDeps = {
+  core?: SignalInboundCore;
   runtime: RuntimeEnv;
   statusReactionTiming?: Required<StatusReactionTiming>;
   abortSignal?: AbortSignal;

@@ -381,6 +381,7 @@ export function buildWhatsAppInboundTransportContext(
 }
 
 export async function prepareWhatsAppInboundContext(params: {
+  buildContext: Parameters<typeof projectPreparedChannelInbound>[0]["buildContext"];
   bodyForAgent?: string;
   combinedBody: string;
   command?: NonNullable<PreparedChannelInbound["command"]>;
@@ -511,7 +512,11 @@ export async function prepareWhatsAppInboundContext(params: {
       location: params.msg.payload.location,
     },
   };
-  const projected = projectPreparedChannelInbound({ inbound, control });
+  const projected = projectPreparedChannelInbound({
+    buildContext: params.buildContext,
+    inbound,
+    control,
+  });
   return {
     inbound,
     control,

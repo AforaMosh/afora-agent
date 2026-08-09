@@ -379,6 +379,47 @@ describe("monitorDiscordProvider", () => {
     ).not.toThrow();
   });
 
+  it("defers a missing inbound runtime failure until message ingress resolves it", async () => {
+    await monitorDiscordProvider({
+      config: baseConfig(),
+      runtime: baseRuntime(),
+    });
+
+    expect(monitorLifecycleMock).toHaveBeenCalledTimes(1);
+    const params = getFirstDiscordMessageHandlerParams<{ inbound?: () => unknown }>();
+    if (typeof params?.inbound !== "function") {
+      throw new Error("message handler did not receive an inbound runtime resolver");
+    }
+
+    expect(() => params.inbound()).toThrow(
+      "Discord inbound runtime is unavailable for a live ingress event.",
+    );
+  });
+
+  it("defers an incomplete inbound runtime failure until message ingress resolves it", async () => {
+    const channelRuntime = createTestChannelRuntime();
+    channelRuntime.inbound = {
+      buildContext: vi.fn(),
+      run: vi.fn(),
+    };
+
+    await monitorDiscordProvider({
+      config: baseConfig(),
+      runtime: baseRuntime(),
+      channelRuntime,
+    });
+
+    expect(monitorLifecycleMock).toHaveBeenCalledTimes(1);
+    const params = getFirstDiscordMessageHandlerParams<{ inbound?: () => unknown }>();
+    if (typeof params?.inbound !== "function") {
+      throw new Error("message handler did not receive an inbound runtime resolver");
+    }
+
+    expect(() => params.inbound()).toThrow(
+      "Discord inbound runtime is unavailable for a live ingress event.",
+    );
+  });
+
   it("fails closed before lifecycle when Discord bot identity fetch rejects", async () => {
     const runtime = baseRuntime();
     clientFetchUserMock.mockRejectedValueOnce(new Error("identity offline"));

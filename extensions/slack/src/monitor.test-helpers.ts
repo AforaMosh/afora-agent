@@ -1,12 +1,17 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { ChannelRuntimeSurface } from "openclaw/plugin-sdk/channel-contract";
+import {
+  buildChannelInboundEventContext,
+  dispatchChannelInboundTurn,
+} from "openclaw/plugin-sdk/channel-inbound";
 // Slack helper module supports monitor helpers behavior.
 import type { PluginRuntime } from "openclaw/plugin-sdk/core";
 import {
   closeOpenClawStateDatabaseForTest,
   createChannelIngressQueueForTests,
 } from "openclaw/plugin-sdk/plugin-state-test-runtime";
+import { createPluginRuntimeMock } from "openclaw/plugin-sdk/plugin-test-runtime";
 import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
 import { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/temp-path";
 import { vi } from "vitest";
@@ -33,6 +38,9 @@ type SlackRunOnceOptions = {
   appToken?: string;
   awaitDispatch?: boolean;
 };
+
+type InboundDispatchPlan = Parameters<PluginRuntime["channel"]["inbound"]["dispatch"]>[0];
+type ReplyResolver = NonNullable<InboundDispatchPlan["replyResolver"]>;
 
 function withSlackDispatchLifecycle(args: unknown): Record<string, unknown> {
   if (!args || typeof args !== "object" || Array.isArray(args)) {
@@ -236,7 +244,7 @@ export function startSlackMonitor(
     appToken: opts?.appToken ?? "app-token",
     abortSignal: controller.signal,
     config: slackTestState.config,
-    channelRuntime: opts?.channelRuntime,
+    channelRuntime: opts?.channelRuntime ?? slackTestChannelRuntime,
     runtime: opts?.runtime,
     setStatus: opts?.setStatus,
   });
@@ -307,6 +315,39 @@ export const defaultSlackTestConfig = () => ({
 });
 
 let lastSlackTestStateDir: string | undefined;
+let slackTestChannelRuntime: PluginRuntime["channel"] | undefined;
+
+function resetSlackTestRuntime(stateDir: string): void {
+  const runtime = createPluginRuntimeMock();
+  const replyResolver: ReplyResolver = (...args) =>
+    slackTestState.replyMock(...args) as ReturnType<ReplyResolver>;
+  const channel = {
+    ...runtime.channel,
+    inbound: {
+      ...runtime.channel.inbound,
+      buildContext: buildChannelInboundEventContext,
+      dispatch: (params: InboundDispatchPlan) =>
+        dispatchChannelInboundTurn({ ...params, replyResolver }),
+    },
+  } satisfies PluginRuntime["channel"];
+  slackTestChannelRuntime = channel;
+  setSlackRuntime({
+    ...runtime,
+    channel,
+    state: {
+      ...runtime.state,
+      openChannelIngressQueue: (
+        options?: Omit<Parameters<typeof createChannelIngressQueueForTests>[0], "channelId">,
+      ) =>
+        createChannelIngressQueueForTests({
+          ...options,
+          channelId: "slack",
+          stateDir: options?.stateDir ?? stateDir,
+        }),
+      resolveStateDir: () => stateDir,
+    },
+  });
+}
 
 export function resetSlackTestState(config: Record<string, unknown> = defaultSlackTestConfig()) {
   // Fresh persistent state per test: the dispatch-dedupe guard writes logical
@@ -327,19 +368,7 @@ export function resetSlackTestState(config: Record<string, unknown> = defaultSla
   );
   lastSlackTestStateDir = stateDir;
   process.env.OPENCLAW_STATE_DIR = stateDir;
-  setSlackRuntime({
-    state: {
-      openChannelIngressQueue: (
-        options?: Omit<Parameters<typeof createChannelIngressQueueForTests>[0], "channelId">,
-      ) =>
-        createChannelIngressQueueForTests({
-          ...options,
-          channelId: "slack",
-          stateDir: options?.stateDir ?? stateDir,
-        }),
-      resolveStateDir: () => stateDir,
-    },
-  } as unknown as PluginRuntime);
+  resetSlackTestRuntime(stateDir);
   slackTestState.config = config;
   slackTestState.appConstructorArgs = undefined;
   slackTestState.socketModeLogger = undefined;
@@ -395,19 +424,6 @@ vi.mock("./monitor/config.runtime.js", async () => {
     recordSessionMetaFromInbound: vi.fn().mockResolvedValue(undefined),
     resolveStorePath: vi.fn(() => "/tmp/openclaw-sessions.json"),
     updateLastRoute: (...args: unknown[]) => slackTestState.updateLastRouteMock(...args),
-  };
-});
-
-vi.mock("openclaw/plugin-sdk/channel-inbound", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/channel-inbound")>();
-  type DispatchParams = Parameters<typeof actual.dispatchChannelInboundTurn>[0];
-  type ReplyResolver = NonNullable<DispatchParams["replyResolver"]>;
-  const replyResolver: ReplyResolver = (...args) =>
-    slackTestState.replyMock(...args) as ReturnType<ReplyResolver>;
-  return {
-    ...actual,
-    dispatchChannelInboundTurn: (params: DispatchParams) =>
-      actual.dispatchChannelInboundTurn({ ...params, replyResolver }),
   };
 });
 

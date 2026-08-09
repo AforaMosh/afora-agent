@@ -1,7 +1,12 @@
+import {
+  buildChannelInboundEventContext,
+  runChannelInboundEvent,
+} from "openclaw/plugin-sdk/channel-inbound";
 // Whatsapp tests cover process message plugin behavior.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createAcceptedWhatsAppSendResult } from "../../inbound/send-result.test-helper.js";
 import { createTestWebInboundMessage } from "../../inbound/test-message.test-helper.js";
+import { setWhatsAppRuntime } from "../../runtime.js";
 
 // Hoisted mocks used across tests so vi.mock factories can reference them.
 const {
@@ -10,7 +15,8 @@ const {
   isControlCommandMessageMock,
   dispatchBufferedReplyMock,
   replyPlanParamsMock,
-  runChannelInboundEventParamsMock,
+  runtimeInboundBuildContextMock,
+  runtimeInboundRunMock,
   runMessageReceivedMock,
   shouldComputeCommandAuthorizedMock,
   trackBackgroundTaskMock,
@@ -23,22 +29,12 @@ const {
     counts: { tool: 0, block: 0, final: 0 },
   })),
   replyPlanParamsMock: vi.fn(),
-  runChannelInboundEventParamsMock: vi.fn(),
+  runtimeInboundBuildContextMock: vi.fn(),
+  runtimeInboundRunMock: vi.fn(),
   runMessageReceivedMock: vi.fn(async () => undefined),
   shouldComputeCommandAuthorizedMock: vi.fn(() => false),
   trackBackgroundTaskMock: vi.fn(),
 }));
-
-vi.mock("openclaw/plugin-sdk/channel-inbound", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/channel-inbound")>();
-  return {
-    ...actual,
-    runChannelInboundEvent: async (params: Parameters<typeof actual.runChannelInboundEvent>[0]) => {
-      runChannelInboundEventParamsMock(params);
-      return await actual.runChannelInboundEvent(params);
-    },
-  };
-});
 
 vi.mock("../../inbound-policy.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../inbound-policy.js")>();
@@ -308,7 +304,24 @@ describe("processMessage group system prompt wiring", () => {
     isControlCommandMessageMock.mockReturnValue(false);
     resolvePolicyMock.mockReset();
     replyPlanParamsMock.mockClear();
-    runChannelInboundEventParamsMock.mockClear();
+    runtimeInboundBuildContextMock.mockReset();
+    runtimeInboundBuildContextMock.mockImplementation(
+      (params: Parameters<typeof buildChannelInboundEventContext>[0]) =>
+        buildChannelInboundEventContext(params),
+    );
+    runtimeInboundRunMock.mockReset();
+    runtimeInboundRunMock.mockImplementation(
+      async (params: Parameters<typeof runChannelInboundEvent>[0]) =>
+        await runChannelInboundEvent(params),
+    );
+    setWhatsAppRuntime({
+      channel: {
+        inbound: {
+          buildContext: runtimeInboundBuildContextMock as never,
+          run: runtimeInboundRunMock as never,
+        },
+      },
+    } as never);
     runMessageReceivedMock.mockClear();
     shouldComputeCommandAuthorizedMock.mockReset();
     shouldComputeCommandAuthorizedMock.mockReturnValue(false);
@@ -600,7 +613,7 @@ describe("processMessage group system prompt wiring", () => {
 
     await callProcessMessage({ msg });
 
-    const runParams = mockCallArg(runChannelInboundEventParamsMock, "runChannelInboundEvent") as {
+    const runParams = mockCallArg(runtimeInboundRunMock, "runtime inbound run") as {
       raw?: unknown;
       turnAdoptionLifecycle?: unknown;
     };
@@ -608,6 +621,8 @@ describe("processMessage group system prompt wiring", () => {
       turnAdoptionLifecycle?: unknown;
     };
     expect(runParams.turnAdoptionLifecycle).toBe(replyPlanParams.turnAdoptionLifecycle);
+    expect(runtimeInboundBuildContextMock).toHaveBeenCalledOnce();
+    expect(runtimeInboundRunMock).toHaveBeenCalledOnce();
     expect(runParams.raw).not.toHaveProperty("platform");
     expect(runParams.raw).not.toHaveProperty("admission");
   });

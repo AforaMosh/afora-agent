@@ -1,3 +1,4 @@
+import { buildChannelInboundEventContext } from "openclaw/plugin-sdk/channel-inbound";
 // Whatsapp tests cover inbound dispatch plugin behavior.
 import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
 import { describe, expect, it, vi, beforeEach } from "vitest";
@@ -211,6 +212,7 @@ function collectNonPortablePaths(
 }
 
 type PrepareWhatsAppInboundParams = Parameters<typeof prepareWhatsAppInboundContext>[0];
+const testInboundContextBuilder = buildChannelInboundEventContext;
 type LegacyTestCommand = Omit<
   NonNullable<PrepareWhatsAppInboundParams["command"]>,
   "authorization"
@@ -220,7 +222,7 @@ type LegacyTestCommand = Omit<
 };
 
 async function buildWhatsAppInboundContext(
-  params: Omit<PrepareWhatsAppInboundParams, "command"> & {
+  params: Omit<PrepareWhatsAppInboundParams, "buildContext" | "command"> & {
     command?: LegacyTestCommand;
   },
 ) {
@@ -238,11 +240,17 @@ async function buildWhatsAppInboundContext(
       }
     : undefined;
   if (!command) {
-    return (await prepareWhatsAppInboundContext(preparedParams)).ctxPayload;
+    return (
+      await prepareWhatsAppInboundContext({
+        buildContext: testInboundContextBuilder,
+        ...preparedParams,
+      })
+    ).ctxPayload;
   }
   const { authorized: _legacyAuthorized, ...preparedCommand } = command;
   return (
     await prepareWhatsAppInboundContext({
+      buildContext: testInboundContextBuilder,
       ...preparedParams,
       command: preparedCommand,
     })
@@ -297,6 +305,7 @@ describe("prepared WhatsApp inbound boundary", () => {
       },
     });
     const prepared = await prepareWhatsAppInboundContext({
+      buildContext: testInboundContextBuilder,
       bodyForAgent: "agent body",
       combinedBody: "formatted agent body",
       command: {
@@ -392,6 +401,7 @@ describe("prepared WhatsApp inbound boundary", () => {
       event: { id: undefined, timestamp: 1_710_000_000 },
     });
     const params = {
+      buildContext: testInboundContextBuilder,
       combinedBody: "hi",
       msg,
       route: makeRoute(),

@@ -1,6 +1,6 @@
 // Discord tests cover native command.plugin dispatch plugin behavior.
 import { ChannelType } from "discord-api-types/v10";
-import { dispatchChannelInboundTurn } from "openclaw/plugin-sdk/channel-inbound";
+import type { dispatchChannelInboundTurn } from "openclaw/plugin-sdk/channel-inbound";
 import type { NativeCommandSpec } from "openclaw/plugin-sdk/command-auth-native";
 import { resolveDirectStatusReplyForSession } from "openclaw/plugin-sdk/command-status-runtime";
 import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
@@ -23,6 +23,8 @@ import {
 import { getSessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { defineThrowingDiscordChannelGetter } from "../test-support/partial-channel.js";
+import type { DiscordInboundRuntime } from "./inbound-runtime.js";
+import { createDiscordTestInboundRuntime } from "./inbound-runtime.test-support.js";
 import { dispatchDiscordNativeAgentReply } from "./native-command-agent-reply.js";
 import { resolveDiscordNativeInteractionRouteState } from "./native-command-route.js";
 import { nativeCommandRuntime } from "./native-command.runtime.js";
@@ -60,6 +62,10 @@ const dispatchChannelInboundTurnForTest: typeof dispatchChannelInboundTurn = asy
     dispatchResult,
   };
 };
+
+let dispatchInboundForTest: typeof dispatchChannelInboundTurn = dispatchChannelInboundTurnForTest;
+const resolveTestInbound = () =>
+  createDiscordTestInboundRuntime({ dispatch: dispatchInboundForTest });
 
 function createConfig(): OpenClawConfig {
   return {
@@ -156,6 +162,7 @@ async function createNativeCommand(cfg: OpenClawConfig, commandSpec: NativeComma
     sessionPrefix: "discord:slash",
     ephemeralDefault: true,
     threadBindings: createNoopThreadBindingManager("default"),
+    inbound: resolveTestInbound,
   });
 }
 
@@ -310,6 +317,7 @@ async function createPluginCommand(params: { cfg: OpenClawConfig; name: string }
     sessionPrefix: "discord:slash",
     ephemeralDefault: true,
     threadBindings: createNoopThreadBindingManager("default"),
+    inbound: resolveTestInbound,
   });
 }
 
@@ -433,7 +441,6 @@ describe("Discord native plugin command dispatch", () => {
     setActivePluginRegistry(createTestRegistry());
     nativeCommandRuntime.matchPluginCommand = matchPluginCommand;
     nativeCommandRuntime.executePluginCommand = executePluginCommand;
-    nativeCommandRuntime.dispatchChannelInboundTurn = dispatchChannelInboundTurn;
     nativeCommandRuntime.resolveDirectStatusReplyForSession = resolveDirectStatusReplyForSession;
     nativeCommandRuntime.resolveDiscordNativeInteractionRouteState =
       resolveDiscordNativeInteractionRouteState;
@@ -467,7 +474,7 @@ describe("Discord native plugin command dispatch", () => {
       runtimeModuleMocks.matchPluginCommand as typeof import("openclaw/plugin-sdk/plugin-runtime").matchPluginCommand;
     nativeCommandRuntime.executePluginCommand =
       runtimeModuleMocks.executePluginCommand as typeof import("openclaw/plugin-sdk/plugin-runtime").executePluginCommand;
-    nativeCommandRuntime.dispatchChannelInboundTurn = dispatchChannelInboundTurnForTest;
+    dispatchInboundForTest = dispatchChannelInboundTurnForTest;
     nativeCommandRuntime.resolveDirectStatusReplyForSession =
       runtimeModuleMocks.resolveDirectStatusReplyForSession as typeof resolveDirectStatusReplyForSession;
     nativeCommandRuntime.resolveDiscordNativeInteractionRouteState = async (params) =>
@@ -994,6 +1001,70 @@ describe("Discord native plugin command dispatch", () => {
     expect(interaction.deleteReply).not.toHaveBeenCalled();
   });
 
+  it("uses one captured facade to build and dispatch a native slash command", async () => {
+    const cfg = createConfig();
+    const interaction = createInteraction();
+    const builtByInboundFacade = {
+      SessionKey: "agent:main:discord:slash:owner",
+      CommandTargetSessionKey: "agent:main:discord:direct:owner",
+    };
+    const buildContext = vi.fn().mockResolvedValue(builtByInboundFacade);
+    const dispatch = vi.fn(async (plan: Parameters<typeof dispatchChannelInboundTurn>[0]) => {
+      expect(plan.ctxPayload).toBe(builtByInboundFacade);
+      return {
+        admission: { kind: "dispatch" },
+        dispatched: true,
+        ctxPayload: plan.ctxPayload,
+        routeSessionKey: plan.route.sessionKey,
+        dispatchResult: {
+          counts: { final: 1, block: 0, tool: 0 },
+          queuedFinal: false,
+        },
+      } as never;
+    });
+    const firstFacade = {
+      buildContext,
+      run: vi.fn(),
+      dispatch,
+    } as unknown as DiscordInboundRuntime;
+    const secondBuildContext = vi.fn();
+    const secondDispatch = vi.fn();
+    const secondFacade = {
+      buildContext: secondBuildContext,
+      run: vi.fn(),
+      dispatch: secondDispatch,
+    } as unknown as DiscordInboundRuntime;
+    const inbound = vi
+      .fn<() => DiscordInboundRuntime>()
+      .mockReturnValueOnce(firstFacade)
+      .mockReturnValue(secondFacade);
+    const command = await createDiscordNativeCommand({
+      command: {
+        name: "new",
+        description: "Start a new session.",
+        acceptsArgs: true,
+      },
+      cfg,
+      discordConfig: cfg.channels?.discord ?? {},
+      accountId: "default",
+      sessionPrefix: "discord:slash",
+      ephemeralDefault: true,
+      threadBindings: createNoopThreadBindingManager("default"),
+      inbound,
+    });
+
+    await (command as { run: (interaction: unknown) => Promise<void> }).run(interaction as unknown);
+
+    expect(inbound).toHaveBeenCalledTimes(1);
+    expect(buildContext).toHaveBeenCalledTimes(1);
+    expect(dispatch).toHaveBeenCalledTimes(1);
+    expect(secondBuildContext).not.toHaveBeenCalled();
+    expect(secondDispatch).not.toHaveBeenCalled();
+    expect(interaction.followUp).not.toHaveBeenCalledWith(
+      expect.objectContaining({ content: "⚠️ Command produced no visible reply." }),
+    );
+  });
+
   it("returns an explicit warning instead of success when dispatch produces zero visible replies", async () => {
     const cfg = createConfig();
     const interaction = createInteraction();
@@ -1021,7 +1092,7 @@ describe("Discord native plugin command dispatch", () => {
   it("warns when the inbound turn is dropped before dispatch", async () => {
     const cfg = createConfig();
     const interaction = createInteraction();
-    nativeCommandRuntime.dispatchChannelInboundTurn = async () => ({
+    dispatchInboundForTest = async () => ({
       admission: { kind: "drop", reason: "ingest-null" },
       dispatched: false,
     });
@@ -1032,6 +1103,7 @@ describe("Discord native plugin command dispatch", () => {
       accountId: "default",
       interaction: interaction as never,
       ctxPayload: { SessionKey: "agent:main:discord:dm:owner" } as never,
+      dispatch: dispatchInboundForTest,
       effectiveRoute: {
         accountId: "default",
         agentId: "main",
@@ -1078,7 +1150,7 @@ describe("Discord native plugin command dispatch", () => {
     const cfg = createConfig();
     const interaction = createInteraction();
     runtimeModuleMocks.matchPluginCommand.mockReturnValue(null);
-    nativeCommandRuntime.dispatchChannelInboundTurn = async (plan) => {
+    dispatchInboundForTest = async (plan) => {
       await plan.delivery.onDelivered?.({ text: "unreported" }, { kind: "final" }, undefined);
       return {
         admission: { kind: "dispatch" },
@@ -1111,7 +1183,7 @@ describe("Discord native plugin command dispatch", () => {
     const cfg = createConfig();
     const interaction = createInteraction();
     runtimeModuleMocks.matchPluginCommand.mockReturnValue(null);
-    nativeCommandRuntime.dispatchChannelInboundTurn = async (plan) => {
+    dispatchInboundForTest = async (plan) => {
       for (let index = 0; index < count; index += 1) {
         await plan.delivery.onDelivered?.(
           { text: "cancelled" },
@@ -1154,7 +1226,7 @@ describe("Discord native plugin command dispatch", () => {
       { text: "scope-aware model selection result", isError: true },
       { assistantMessageIndex: 3 },
     );
-    nativeCommandRuntime.dispatchChannelInboundTurn = async (plan) => {
+    dispatchInboundForTest = async (plan) => {
       if (!("deliver" in plan.delivery) || !plan.delivery.deliver) {
         throw new Error("expected direct deliverer");
       }
@@ -1179,6 +1251,7 @@ describe("Discord native plugin command dispatch", () => {
       accountId: "default",
       interaction: interaction as never,
       ctxPayload: { SessionKey: "agent:main:discord:dm:owner" } as never,
+      dispatch: dispatchInboundForTest,
       effectiveRoute: {
         accountId: "default",
         agentId: "main",
@@ -1213,7 +1286,7 @@ describe("Discord native plugin command dispatch", () => {
     const cfg = createConfig();
     const interaction = createInteraction();
     interaction.responseState = "deferred";
-    nativeCommandRuntime.dispatchChannelInboundTurn = async (plan) => {
+    dispatchInboundForTest = async (plan) => {
       await plan.delivery.onDelivered?.(
         payload,
         { kind: "final" },
@@ -1240,6 +1313,7 @@ describe("Discord native plugin command dispatch", () => {
       accountId: "default",
       interaction: interaction as never,
       ctxPayload: { SessionKey: "agent:main:discord:dm:owner" } as never,
+      dispatch: dispatchInboundForTest,
       effectiveRoute: {
         accountId: "default",
         agentId: "main",
@@ -1316,7 +1390,7 @@ describe("Discord native plugin command dispatch", () => {
       message: "Unknown interaction",
     });
     runtimeModuleMocks.matchPluginCommand.mockReturnValue(null);
-    nativeCommandRuntime.dispatchChannelInboundTurn = async (plan) => {
+    dispatchInboundForTest = async (plan) => {
       const reportSuppressed = (suppressedKind: "block" | "final" | "tool") =>
         plan.delivery.onDelivered?.(
           { text: "cancelled intermediate reply" },
@@ -1394,7 +1468,7 @@ describe("Discord native plugin command dispatch", () => {
         interaction.followUp.mockRejectedValueOnce(new Error("provider connection failed"));
       }
     }
-    nativeCommandRuntime.dispatchChannelInboundTurn = async (plan) => {
+    dispatchInboundForTest = async (plan) => {
       if (!("deliver" in plan.delivery) || !plan.delivery.deliver) {
         throw new Error("expected direct delivery adapter");
       }

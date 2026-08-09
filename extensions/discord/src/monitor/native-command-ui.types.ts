@@ -1,5 +1,6 @@
 // Discord type declarations define plugin contracts.
 import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { DiscordInboundRuntimeResolver } from "./inbound-runtime.js";
 import type { ThreadBindingManager } from "./thread-bindings.js";
 
 type DiscordConfig = NonNullable<OpenClawConfig["channels"]>["discord"];
@@ -10,6 +11,8 @@ export type DiscordCommandArgContext = {
   accountId: string;
   sessionPrefix: string;
   threadBindings: ThreadBindingManager;
+  /** Each deferred control resolves its own facade when the user clicks it. */
+  inbound: DiscordInboundRuntimeResolver;
   postApplySettleMs?: number;
 };
 

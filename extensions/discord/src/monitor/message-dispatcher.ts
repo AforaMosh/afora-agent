@@ -9,6 +9,7 @@ import { danger } from "openclaw/plugin-sdk/runtime-env";
 import { resolveOpenProviderRuntimeGroupPolicy } from "openclaw/plugin-sdk/runtime-group-policy";
 import type { Client } from "../internal/discord.js";
 import { buildDiscordInboundJob } from "./inbound-job.js";
+import type { DiscordInboundRuntime } from "./inbound-runtime.js";
 import type {
   createDiscordIngressMonitor,
   DiscordIngressDispatchResult,
@@ -33,8 +34,9 @@ type PreflightDiscordMessage =
 
 type DiscordMessageHandlerParams = Omit<
   DiscordMessagePreflightParams,
-  "ackReactionScope" | "groupPolicy" | "data" | "client"
+  "ackReactionScope" | "groupPolicy" | "inbound" | "data" | "client"
 > & {
+  inbound: () => DiscordInboundRuntime;
   setStatus?: DiscordMonitorStatusSink;
   abortSignal?: AbortSignal;
   testing?: DiscordMessageHandlerTestingHooks;
@@ -87,6 +89,7 @@ export function createDiscordMessageDispatcher(
   type DiscordDebounceEntry = {
     data: DiscordMessageEvent;
     client: Client;
+    inbound: DiscordInboundRuntime;
     abortSignal?: AbortSignal;
     turnAdoptionLifecycle?: DiscordIngressLifecycle;
     debounceKey?: string;
@@ -154,6 +157,7 @@ export function createDiscordMessageDispatcher(
                 abortSignal,
                 data: last.data,
                 client: last.client,
+                inbound: last.inbound,
                 turnAdoptionLifecycle: admissionLifecycle,
               });
               if (abortSignal?.aborted) {
@@ -208,6 +212,7 @@ export function createDiscordMessageDispatcher(
               abortSignal,
               data: syntheticData,
               client: last.client,
+              inbound: last.inbound,
               turnAdoptionLifecycle: admissionLifecycle,
             });
             if (abortSignal?.aborted) {
@@ -285,9 +290,13 @@ export function createDiscordMessageDispatcher(
       const abortSignal = options?.abortSignal
         ? AbortSignal.any([options.abortSignal, dispatcherShutdown.signal])
         : dispatcherShutdown.signal;
+      // Capture the paired facade once while receiving this event. A delayed
+      // debounce flush must not construct with one facade and dispatch with another.
+      const inbound = params.inbound();
       const entry: DiscordDebounceEntry = {
         data,
         client,
+        inbound,
         abortSignal,
         turnAdoptionLifecycle: options?.turnAdoptionLifecycle,
       };

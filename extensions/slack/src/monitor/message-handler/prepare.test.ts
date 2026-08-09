@@ -10,6 +10,7 @@ import {
   type SessionBindingAdapter,
   type SessionBindingRecord,
 } from "openclaw/plugin-sdk/conversation-runtime";
+import { createPluginRuntimeMock } from "openclaw/plugin-sdk/plugin-test-runtime";
 import { resolveAgentRoute } from "openclaw/plugin-sdk/routing";
 import { resolveThreadSessionKeys } from "openclaw/plugin-sdk/routing";
 import { upsertSessionEntry, type SessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
@@ -166,6 +167,30 @@ describe("slack prepareSlackMessage inbound contract", () => {
       ...overrides,
     } as SlackMessageEvent;
   }
+
+  it("builds ordinary inbound context through the injected runtime facade", async () => {
+    const runtime = createPluginRuntimeMock();
+    const buildContext = vi.mocked(runtime.channel.inbound.buildContext);
+    const ctx = createInboundSlackCtx({
+      cfg: { channels: { slack: { enabled: true } } } as OpenClawConfig,
+      channelRuntime: runtime.channel,
+    });
+    ctx.resolveUserName = async () => ({ name: "Alice" });
+
+    const prepared = await prepareSlackMessage({
+      ctx,
+      account: defaultAccount,
+      message: createSlackMessage({}),
+      opts: { source: "message" },
+    });
+
+    assertPrepared(prepared);
+    expect(buildContext).toHaveBeenCalledOnce();
+    expect(buildContext.mock.results[0]?.value).toBe(prepared.ctxPayload);
+    expect(buildContext.mock.calls[0]?.[0]?.route.routeSessionKey).toBe(
+      prepared.ctxPayload.SessionKey,
+    );
+  });
 
   function createBotRoomMessage(overrides: Partial<SlackMessageEvent> = {}): SlackMessageEvent {
     return createSlackMessage({
@@ -3142,7 +3167,10 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
       messages: [{ text: "starter", user: "U2", ts: "250.000" }],
     });
     const slackCtx = createThreadSlackCtx({ cfg, replies });
-    slackCtx.channelRuntime = undefined;
+    slackCtx.channelRuntime = {
+      ...slackCtx.channelRuntime,
+      session: undefined,
+    };
     slackCtx.resolveUserName = async () => ({ name: "Alice" });
     slackCtx.resolveChannelName = async () => ({ name: "general", type: "channel" });
 

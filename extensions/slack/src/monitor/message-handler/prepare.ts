@@ -5,7 +5,6 @@ import {
   type AckReactionScope,
 } from "openclaw/plugin-sdk/channel-feedback";
 import {
-  buildChannelInboundEventContext,
   buildMentionRegexes,
   classifyChannelInboundEvent,
   formatInboundEnvelope,
@@ -44,6 +43,7 @@ import { reactSlackMessage } from "../../actions.js";
 import { normalizeSlackAppContextEntities, isSlackAppContext } from "../../agent-context.js";
 import { formatSlackError } from "../../errors.js";
 import { formatSlackFileReference } from "../../file-reference.js";
+import { getSlackRuntime } from "../../runtime.js";
 import type { SlackSendIdentity } from "../../send.js";
 import { hasSlackThreadParticipationWithPersistence } from "../../sent-thread-cache.js";
 import { formatSlackTarget } from "../../target-parsing.js";
@@ -1639,7 +1639,7 @@ export async function prepareSlackMessage(params: {
     ? normalizeSlackAppContextEntities(message.app_context)
     : [];
 
-  const ctxPayload = buildChannelInboundEventContext({
+  const ctxPayload = getSlackRuntime().channel.inbound.buildContext({
     channel: "slack",
     accountId: route.accountId,
     messageId: threadContext.messageTs,

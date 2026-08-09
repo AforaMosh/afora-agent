@@ -1,4 +1,4 @@
-import type { dispatchInboundDirectDm as DispatchInboundDirectDm } from "openclaw/plugin-sdk/channel-inbound";
+import type { dispatchInboundDirectDmWithRuntime as DispatchInboundDirectDmWithRuntime } from "openclaw/plugin-sdk/channel-inbound";
 // Nostr tests cover channel.inbound plugin behavior.
 import { createStartAccountContext } from "openclaw/plugin-sdk/channel-test-helpers";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
@@ -9,7 +9,7 @@ import { setNostrRuntime } from "./runtime.js";
 import { buildResolvedNostrAccount } from "./test-fixtures.js";
 
 const mocks = vi.hoisted(() => ({
-  dispatchInboundDirectDm: vi.fn(),
+  dispatchInboundDirectDmWithRuntime: vi.fn(),
   normalizePubkey: vi.fn((value: string) =>
     value
       .trim()
@@ -21,7 +21,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("openclaw/plugin-sdk/channel-inbound", async (importOriginal) => ({
   ...(await importOriginal<typeof import("openclaw/plugin-sdk/channel-inbound")>()),
-  dispatchInboundDirectDm: mocks.dispatchInboundDirectDm,
+  dispatchInboundDirectDmWithRuntime: mocks.dispatchInboundDirectDmWithRuntime,
 }));
 vi.mock("./nostr-bus.js", () => ({
   DEFAULT_RELAYS: ["wss://relay.example.com"],
@@ -136,7 +136,7 @@ function mockCallArg(mock: ReturnType<typeof vi.fn>, callIndex = 0, argIndex = 0
 
 describe("nostr inbound gateway path", () => {
   afterEach(() => {
-    mocks.dispatchInboundDirectDm.mockReset();
+    mocks.dispatchInboundDirectDmWithRuntime.mockReset();
     mocks.normalizePubkey.mockClear();
     mocks.startNostrBus.mockReset();
   });
@@ -169,8 +169,8 @@ describe("nostr inbound gateway path", () => {
   });
 
   it("routes allowed DMs through the standard reply pipeline", async () => {
-    mocks.dispatchInboundDirectDm.mockImplementationOnce(
-      async (params: Parameters<typeof DispatchInboundDirectDm>[0]) => {
+    mocks.dispatchInboundDirectDmWithRuntime.mockImplementationOnce(
+      async (params: Parameters<typeof DispatchInboundDirectDmWithRuntime>[0]) => {
         await params.deliver({ text: "**Table:** [docs](https://example.com)" });
         await params.deliver({ text: "***" });
       },
@@ -212,8 +212,9 @@ describe("nostr inbound gateway path", () => {
       lifecycle,
     );
 
-    expect(mocks.dispatchInboundDirectDm).toHaveBeenCalledWith(
+    expect(mocks.dispatchInboundDirectDmWithRuntime).toHaveBeenCalledWith(
       expect.objectContaining({
+        runtime: harness.runtime,
         channel: "nostr",
         accountId: "default",
         peer: { kind: "direct", id: "sender-pubkey" },
@@ -263,8 +264,8 @@ describe("nostr inbound gateway path", () => {
       expected: "The relay has two active subscriptions.",
     },
   ])("$name before sending an inbound Nostr DM reply", async ({ text, expected }) => {
-    mocks.dispatchInboundDirectDm.mockImplementationOnce(
-      async (params: Parameters<typeof DispatchInboundDirectDm>[0]) => {
+    mocks.dispatchInboundDirectDmWithRuntime.mockImplementationOnce(
+      async (params: Parameters<typeof DispatchInboundDirectDmWithRuntime>[0]) => {
         await params.deliver({ text });
       },
     );

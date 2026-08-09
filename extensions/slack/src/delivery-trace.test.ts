@@ -20,10 +20,12 @@ import {
   type TraceNormalizer,
 } from "openclaw/plugin-sdk/channel-contract-testing";
 import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { PluginRuntime } from "openclaw/plugin-sdk/core";
 import { createDeferred } from "openclaw/plugin-sdk/extension-shared";
 import type { ReplyDispatchKind, ReplyPayload } from "openclaw/plugin-sdk/reply-runtime";
 import { afterAll, afterEach, describe, it, vi } from "vitest";
 import type { PreparedSlackMessage } from "./monitor/message-handler/types.js";
+import { setSlackRuntime } from "./runtime.js";
 
 type RecordedWireCall = {
   method: string;
@@ -79,38 +81,40 @@ const traceState = vi.hoisted(
   }),
 );
 
-// Replace only the core agent turn. Everything downstream of the captured
-// deliver/typing/replyOptions wiring (dedupe, thread plan, native stream ladder,
-// draft preview, preview finalize, deliverReplies chunking, sendMessageSlack)
-// stays the real production code.
-vi.mock("openclaw/plugin-sdk/channel-inbound", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/channel-inbound")>();
-  type DispatchParams = Parameters<typeof actual.dispatchChannelInboundTurn>[0];
-  return {
-    ...actual,
-    dispatchChannelInboundTurn: async (params: DispatchParams) => {
-      traceState.turn = {
-        options: {
-          ...params.dispatcherOptions,
-          deliver: params.delivery.deliver,
-          onError: params.delivery.onError,
-        } as CapturedDispatcherOptions,
-        replyOptions: (params.replyOptions ?? {}) as CapturedReplyOptions,
-      };
-      traceState.turnStarted?.resolve();
-      if (!traceState.turnOutcome) {
-        throw new Error("trace turn outcome gate not initialized");
-      }
-      return {
-        admission: { kind: "dispatch" },
-        dispatched: true,
-        ctxPayload: params.ctxPayload,
-        routeSessionKey: params.route.sessionKey,
-        dispatchResult: await traceState.turnOutcome.promise,
-      };
+type InboundDispatchPlan = Parameters<PluginRuntime["channel"]["inbound"]["dispatch"]>[0];
+
+// Replace only the core agent turn through the injected inbound facade.
+// Everything downstream of the captured deliver/typing/replyOptions wiring
+// stays real production code.
+function installSlackTraceInboundFacade() {
+  setSlackRuntime({
+    channel: {
+      inbound: {
+        dispatch: async (params: InboundDispatchPlan) => {
+          traceState.turn = {
+            options: {
+              ...params.dispatcherOptions,
+              deliver: params.delivery.deliver,
+              onError: params.delivery.onError,
+            } as CapturedDispatcherOptions,
+            replyOptions: (params.replyOptions ?? {}) as CapturedReplyOptions,
+          };
+          traceState.turnStarted?.resolve();
+          if (!traceState.turnOutcome) {
+            throw new Error("trace turn outcome gate not initialized");
+          }
+          return {
+            admission: { kind: "dispatch" },
+            dispatched: true,
+            ctxPayload: params.ctxPayload,
+            routeSessionKey: params.route.sessionKey,
+            dispatchResult: await traceState.turnOutcome.promise,
+          };
+        },
+      },
     },
-  };
-});
+  } as unknown as PluginRuntime);
+}
 
 // send.ts/actions.ts build their own WebClient from tokens; route every client
 // resolution to the scenario's recording client so all wire calls are captured.
@@ -134,7 +138,6 @@ vi.mock("./client.js", async (importOriginal) => {
 import { dispatchPreparedSlackMessage } from "./monitor/message-handler/dispatch.js";
 
 afterAll(() => {
-  vi.doUnmock("openclaw/plugin-sdk/channel-inbound");
   vi.doUnmock("./client.js");
   vi.resetModules();
 });
@@ -522,6 +525,7 @@ async function setupSlackTrace(
       ? "method_not_supported_for_channel_type"
       : undefined;
   traceState.client = createRecordingSlackClient();
+  installSlackTraceInboundFacade();
 
   const dispatchDone = dispatchPreparedSlackMessage(createPreparedTraceMessage(scenario));
   traceState.dispatchDone = dispatchDone;

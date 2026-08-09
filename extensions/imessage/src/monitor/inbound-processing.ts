@@ -882,6 +882,8 @@ export async function buildIMessageInboundContext(params: {
   cfg: OpenClawConfig;
   decision: IMessageInboundDispatchDecision;
   message: IMessagePayload;
+  /** Trusted monitor ingress supplies its paired runtime builder. */
+  buildContext?: typeof buildChannelInboundEventContext;
   envelopeOptions?: EnvelopeFormatOptions;
   previousTimestamp?: number;
   remoteHost?: string;
@@ -996,7 +998,7 @@ export async function buildIMessageInboundContext(params: {
   const media = await toInboundMediaFactsWithMetadata(
     params.media?.facts?.map((entry) => ({ ...entry, url: entry.url ?? entry.path })),
   );
-  const ctxPayload = buildChannelInboundEventContext({
+  const ctxPayload = (params.buildContext ?? buildChannelInboundEventContext)({
     channel: "imessage",
     supplemental: {
       quote: decision.replyContext

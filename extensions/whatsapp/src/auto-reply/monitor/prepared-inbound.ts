@@ -1,5 +1,4 @@
 import {
-  buildChannelInboundEventContext,
   toLocationContext,
   type BuildChannelInboundEventContextParams,
   type BuiltChannelInboundEventContext,
@@ -8,6 +7,7 @@ import {
   type SupplementalContextFacts,
 } from "openclaw/plugin-sdk/channel-inbound";
 import { resolveChannelMessageSourceReplyDeliveryMode } from "openclaw/plugin-sdk/channel-outbound";
+import type { PluginRuntime } from "openclaw/plugin-sdk/core";
 import type { ReplyThreadingPolicy } from "openclaw/plugin-sdk/reply-reference";
 
 type PreparedChannelInboundCommandAuthorization =
@@ -60,6 +60,8 @@ type PreparedChannelInboundControl = {
   messageReceivedHooks: "channel" | "core";
 };
 
+type ChannelInboundContextBuilder = PluginRuntime["channel"]["inbound"]["buildContext"];
+
 function resolvePreparedCommandFacts(
   command: PreparedChannelInboundCommand | undefined,
 ): CommandFacts | undefined {
@@ -76,6 +78,7 @@ function resolvePreparedCommandFacts(
 }
 
 export function projectPreparedChannelInbound(params: {
+  buildContext: ChannelInboundContextBuilder;
   inbound: PreparedChannelInbound;
   control: PreparedChannelInboundControl;
 }): {
@@ -105,7 +108,7 @@ export function projectPreparedChannelInbound(params: {
       textForCommands: inbound.message.commandBody,
       raw: inbound,
     },
-    context: buildChannelInboundEventContext({
+    context: params.buildContext({
       ...inbound,
       messageId: inbound.event.id,
       messageIdFull: inbound.event.fullId,

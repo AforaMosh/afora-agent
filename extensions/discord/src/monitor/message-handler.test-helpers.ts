@@ -1,6 +1,7 @@
 // Discord helper module supports message handler helpers behavior.
 import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
 import { vi } from "vitest";
+import { createDiscordTestInboundRuntimeResolver } from "./inbound-runtime.test-support.js";
 import type { createDiscordMessageDispatcher } from "./message-dispatcher.js";
 import { createNoopThreadBindingManager } from "./thread-bindings.js";
 
@@ -38,6 +39,7 @@ export function createDiscordHandlerParams(overrides?: {
       },
     },
     botUserId: overrides?.botUserId ?? DEFAULT_DISCORD_BOT_USER_ID,
+    inbound: createDiscordTestInboundRuntimeResolver(),
     guildHistories: new Map(),
     historyLimit: 0,
     mediaMaxBytes: 10_000,

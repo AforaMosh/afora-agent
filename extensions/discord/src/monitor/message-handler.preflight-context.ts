@@ -19,6 +19,7 @@ type SharedPreflightFields =
   | "replyToMode"
   | "ackReactionScope"
   | "groupPolicy"
+  | "inbound"
   | "turnAdoptionLifecycle"
   | "threadBindings"
   | "discordRestFetch";
@@ -49,6 +50,7 @@ export function buildDiscordMessagePreflightContext({
     replyToMode: preflightParams.replyToMode,
     ackReactionScope: preflightParams.ackReactionScope,
     groupPolicy: preflightParams.groupPolicy,
+    inbound: preflightParams.inbound,
     turnAdoptionLifecycle: preflightParams.turnAdoptionLifecycle,
     ...fields,
     threadBindings: preflightParams.threadBindings,

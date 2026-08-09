@@ -38,6 +38,7 @@ import {
   buildLinePostbackContext,
   getLineSourceInfo,
   type LineInboundContext,
+  type LineInboundRuntime,
 } from "./bot-message-context.js";
 import { downloadLineMedia, isRetryableLineInboundMediaError } from "./download.js";
 import { reserveLineGroupHistory } from "./group-history.js";
@@ -77,6 +78,7 @@ interface LineHandlerContext {
   account: ResolvedLineAccount;
   runtime: RuntimeEnv;
   mediaMaxBytes: number;
+  inbound?: LineInboundRuntime;
   processMessage: (
     ctx: LineInboundContext,
     control: { turnAdoptionLifecycle?: LineWebhookTurnAdoptionLifecycle },
@@ -448,6 +450,7 @@ async function handleMessageEvent(event: MessageEvent, context: LineHandlerConte
       account,
       commandAuthorized: decision.commandAccess.authorized,
       inboundHistory: historyReservation.inboundHistory,
+      ...(context.inbound ? { inbound: context.inbound } : {}),
     });
 
     if (!messageContext) {
@@ -505,6 +508,7 @@ async function handlePostbackEvent(
     cfg: context.cfg,
     account: context.account,
     commandAuthorized: decision.commandAccess.authorized,
+    ...(context.inbound ? { inbound: context.inbound } : {}),
   });
   if (!postbackContext) {
     return;

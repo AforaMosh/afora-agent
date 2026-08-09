@@ -1,5 +1,4 @@
 import {
-  buildChannelInboundEventContext,
   resolveChannelInboundRouteEnvelope,
   toInboundMediaFactsWithMetadata,
 } from "openclaw/plugin-sdk/channel-inbound";
@@ -357,7 +356,7 @@ export async function handleQaInbound(params: {
       })
     : undefined;
   const sessionKey = commandTargets?.sessionKey ?? route.sessionKey;
-  const ctxPayload = buildChannelInboundEventContext({
+  const ctxPayload = runtime.channel.inbound.buildContext({
     channel: params.channelId,
     accountId: route.accountId ?? params.account.accountId,
     messageId: inbound.id,

@@ -18,6 +18,7 @@ import type {
   StringSelectMenuInteraction,
 } from "../internal/discord.js";
 import type { DiscordChannelConfigResolved } from "./allow-list.js";
+import type { DiscordInboundRuntime } from "./inbound-runtime.js";
 import type { buildDiscordNativeCommandContext } from "./native-command-context.js";
 import {
   DISCORD_EMPTY_VISIBLE_REPLY_WARNING,
@@ -25,7 +26,6 @@ import {
   safeDiscordInteractionCall,
   settleDiscordInteractionWithoutVisibleReply,
 } from "./native-command-reply.js";
-import { nativeCommandRuntime } from "./native-command.runtime.js";
 import type { DiscordConfig } from "./native-command.types.js";
 
 type NativeCommandEffectiveRoute = {
@@ -44,7 +44,8 @@ export async function dispatchDiscordNativeAgentReply(params: {
   discordConfig: DiscordConfig;
   accountId: string;
   interaction: CommandInteraction | ButtonInteraction | StringSelectMenuInteraction;
-  ctxPayload: ReturnType<typeof buildDiscordNativeCommandContext>;
+  ctxPayload: Awaited<ReturnType<typeof buildDiscordNativeCommandContext>>;
+  dispatch: DiscordInboundRuntime["dispatch"];
   effectiveRoute: NativeCommandEffectiveRoute;
   channelConfig: DiscordChannelConfigResolved | null;
   mediaLocalRoots: ReturnType<typeof getAgentScopedMediaLocalRoots>;
@@ -58,7 +59,7 @@ export async function dispatchDiscordNativeAgentReply(params: {
   let didReply = false;
   let finalReplyOutcome: "accepted" | "failed" | "suppressed" | undefined;
   let hiddenFinalReply: ReplyPayload | undefined;
-  const turnResult = await nativeCommandRuntime.dispatchChannelInboundTurn({
+  const turnResult = await params.dispatch({
     cfg: params.cfg,
     channel: "discord",
     accountId: params.effectiveRoute.accountId,

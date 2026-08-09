@@ -31,6 +31,8 @@ import {
   resolveStorePathMock,
 } from "../test-support/component-runtime.js";
 import type { DiscordGuildEntryResolved } from "./allow-list.js";
+import type { DiscordInboundRuntime } from "./inbound-runtime.js";
+import { createDiscordTestInboundRuntimeResolver } from "./inbound-runtime.test-support.js";
 
 type CreateDiscordComponentButton =
   (typeof import("./agent-components.js").createDiscordComponentControls)[number];
@@ -139,6 +141,7 @@ describe("discord component interactions", () => {
       allowFrom: ["123456789"],
       discordConfig: createDiscordConfig(),
       token: "token",
+      inbound: createDiscordTestInboundRuntimeResolver(),
       ...overrides,
     }) as ComponentContext;
 
@@ -423,6 +426,98 @@ describe("discord component interactions", () => {
     expect(typeof dispatchParams?.dispatcherOptions.responsePrefixContextProvider).toBe("function");
     expect(typeof dispatchParams?.replyOptions?.onModelSelected).toBe("function");
     await expect(resolveDiscordComponentEntryWithPersistence({ id: "btn_1" })).resolves.toBeNull();
+  });
+
+  it("uses the receipt-time facade for component context construction and execution", async () => {
+    registerDiscordComponentEntries({
+      entries: [createButtonEntry()],
+      modals: [],
+    });
+    const builtByFirstFacade = {
+      SessionKey: "agent:agent-1:discord:component:btn_1",
+      RawBody: "clicked",
+      BodyForAgent: "clicked",
+      CommandBody: "clicked",
+    };
+    const firstBuildContext = vi.fn().mockResolvedValue(builtByFirstFacade);
+    const firstRun = vi.fn(
+      async (params: { adapter: { resolveTurn: () => { ctxPayload: unknown } } }) => {
+        expect(params.adapter.resolveTurn().ctxPayload).toBe(builtByFirstFacade);
+      },
+    );
+    const secondBuildContext = vi.fn();
+    const secondRun = vi.fn();
+    const firstFacade = {
+      buildContext: firstBuildContext,
+      run: firstRun,
+      dispatch: vi.fn(),
+    } as unknown as DiscordInboundRuntime;
+    const secondFacade = {
+      buildContext: secondBuildContext,
+      run: secondRun,
+      dispatch: vi.fn(),
+    } as unknown as DiscordInboundRuntime;
+    const inbound = vi
+      .fn<() => DiscordInboundRuntime>()
+      .mockReturnValueOnce(firstFacade)
+      .mockReturnValue(secondFacade);
+    const button = createDiscordComponentButton(createComponentContext({ inbound }));
+    const { interaction } = createComponentButtonInteraction();
+
+    await button.run(interaction, { cid: "btn_1" } as ComponentData);
+
+    expect(inbound).toHaveBeenCalledTimes(1);
+    expect(firstBuildContext).toHaveBeenCalledTimes(1);
+    expect(firstRun).toHaveBeenCalledTimes(1);
+    expect(secondBuildContext).not.toHaveBeenCalled();
+    expect(secondRun).not.toHaveBeenCalled();
+    expect(dispatchReplyMock).not.toHaveBeenCalled();
+  });
+
+  it("uses the receipt-time facade for modal context construction and execution", async () => {
+    registerDiscordComponentEntries({
+      entries: [],
+      modals: [createModalEntry()],
+    });
+    const builtByFirstFacade = {
+      SessionKey: "agent:agent-2:discord:modal:mdl_1",
+      RawBody: "submitted",
+      BodyForAgent: "submitted",
+      CommandBody: "submitted",
+    };
+    const firstBuildContext = vi.fn().mockResolvedValue(builtByFirstFacade);
+    const firstRun = vi.fn(
+      async (params: { adapter: { resolveTurn: () => { ctxPayload: unknown } } }) => {
+        expect(params.adapter.resolveTurn().ctxPayload).toBe(builtByFirstFacade);
+      },
+    );
+    const secondBuildContext = vi.fn();
+    const secondRun = vi.fn();
+    const firstFacade = {
+      buildContext: firstBuildContext,
+      run: firstRun,
+      dispatch: vi.fn(),
+    } as unknown as DiscordInboundRuntime;
+    const secondFacade = {
+      buildContext: secondBuildContext,
+      run: secondRun,
+      dispatch: vi.fn(),
+    } as unknown as DiscordInboundRuntime;
+    const inbound = vi
+      .fn<() => DiscordInboundRuntime>()
+      .mockReturnValueOnce(firstFacade)
+      .mockReturnValue(secondFacade);
+    const modal = createDiscordComponentModal(createComponentContext({ inbound }));
+    const { interaction } = createModalInteraction();
+
+    await modal.run(interaction, { mid: "mdl_1" } as ComponentData);
+
+    expect(inbound).toHaveBeenCalledTimes(1);
+    expect(firstBuildContext).toHaveBeenCalledTimes(1);
+    expect(firstRun).toHaveBeenCalledTimes(1);
+    expect(secondBuildContext).not.toHaveBeenCalled();
+    expect(secondRun).not.toHaveBeenCalled();
+    expect(dispatchReplyMock).not.toHaveBeenCalled();
   });
 
   it("records DM component interactions with user originating targets", async () => {

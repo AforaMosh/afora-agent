@@ -181,6 +181,10 @@ async function finalizeSignalStatusReaction(params: {
 export function createSignalEventHandler(deps: SignalEventHandlerDeps) {
   const statusReactionTiming = deps.statusReactionTiming ?? DEFAULT_TIMING;
   const activeEnqueueEntries = new WeakSet<SignalInboundEntry>();
+  // The opaque core capability recognizes the exact context object it built.
+  // Keep this builder and runner from one injected facade or fall back to public,
+  // unprivileged helpers.
+  const inbound = deps.core?.channel.inbound;
 
   async function handleSignalInboundMessage(entry: SignalInboundEntry) {
     const fromLabel = formatInboundFromLabel({
@@ -259,7 +263,7 @@ export function createSignalEventHandler(deps: SignalEventHandlerDeps) {
       entry.isBatched === true,
     );
     const media = await toInboundMediaFactsWithMetadata(entry.media);
-    const ctxPayload = buildChannelInboundEventContext({
+    const ctxPayload = (inbound?.buildContext ?? buildChannelInboundEventContext)({
       channel: "signal",
       supplemental: {
         quote: entry.replyToBody
@@ -466,7 +470,7 @@ export function createSignalEventHandler(deps: SignalEventHandlerDeps) {
       sessionKey: route.sessionKey,
     });
 
-    await runChannelInboundEvent({
+    await (inbound?.run ?? runChannelInboundEvent)({
       channel: "signal",
       accountId: route.accountId,
       raw: entry,

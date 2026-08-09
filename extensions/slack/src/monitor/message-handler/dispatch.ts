@@ -1,10 +1,9 @@
 // Slack plugin module implements dispatch behavior.
 import { resolveHumanDelayConfig } from "openclaw/plugin-sdk/agent-runtime";
 import {
-  dispatchChannelInboundTurn,
+  hasVisibleInboundReplyDispatch,
   type InboundReplyRecordOptions,
 } from "openclaw/plugin-sdk/channel-inbound";
-import { hasVisibleInboundReplyDispatch } from "openclaw/plugin-sdk/channel-inbound";
 import {
   defineFinalizableLivePreviewAdapter,
   deliverWithFinalizableLivePreviewAdapter,
@@ -23,6 +22,7 @@ import { normalizeSlackOutboundText } from "../../format.js";
 import { SLACK_EDIT_TEXT_MAX_BYTES } from "../../limits.js";
 import { emitSlackMessageSentHooks } from "../../message-sent-hook.js";
 import { resolveSlackReplyRenderPlan } from "../../reply-blocks.js";
+import { getSlackRuntime } from "../../runtime.js";
 import { recordSlackThreadParticipation } from "../../sent-thread-cache.js";
 import {
   SlackStreamNotDeliveredError,
@@ -357,7 +357,7 @@ export async function dispatchPreparedSlackMessage(prepared: PreparedSlackMessag
   let queuedFinal = false;
   let counts: Partial<Record<ReplyDispatchKind, number>> = {};
   try {
-    const turnResult = await dispatchChannelInboundTurn({
+    const turnResult = await getSlackRuntime().channel.inbound.dispatch({
       cfg,
       channel: "slack",
       accountId: route.accountId,

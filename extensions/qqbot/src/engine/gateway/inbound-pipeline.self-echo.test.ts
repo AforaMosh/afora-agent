@@ -173,6 +173,7 @@ function makeRuntime(): GatewayPluginRuntime {
         recordInboundSession: vi.fn(async () => undefined),
       },
       inbound: {
+        buildContext: vi.fn(),
         run: vi.fn(async (rawParams: unknown) => {
           const params = rawParams as {
             raw: unknown;

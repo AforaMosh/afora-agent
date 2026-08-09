@@ -1,7 +1,9 @@
-import type { GetReplyOptions, ReplyPayload } from "openclaw/plugin-sdk/reply-runtime";
 // Slack tests cover dispatch.preview fallback plugin behavior.
+import type { PluginRuntime } from "openclaw/plugin-sdk/core";
+import type { GetReplyOptions, ReplyPayload } from "openclaw/plugin-sdk/reply-runtime";
 import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { setSlackRuntime } from "../../runtime.js";
 
 const FINAL_REPLY_TEXT = "final answer";
 const THREAD_TS = "thread-1";
@@ -947,134 +949,137 @@ vi.mock("../replies.js", () => ({
   resolveSlackThreadTs: () => mockedReplyThreadTs,
 }));
 
-vi.mock("openclaw/plugin-sdk/channel-inbound", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/channel-inbound")>();
-  type DispatchParams = Parameters<typeof actual.dispatchChannelInboundTurn>[0];
-  return {
-    ...actual,
-    dispatchChannelInboundTurn: async (params: DispatchParams) => {
-      capturedReplyOptions = params.replyOptions as typeof capturedReplyOptions;
-      if (mockedReplyOptionEvents.length > 0) {
-        for (const entry of mockedReplyOptionEvents) {
-          if (entry.kind === "item") {
-            await params.replyOptions?.onItemEvent?.({
-              kind: entry.itemKind,
-              itemId: entry.itemId,
-              toolCallId: entry.toolCallId,
-              progressText: entry.progressText,
-              summary: entry.summary,
-              title: entry.title,
-              name: entry.name,
-              phase: entry.phase,
-              status: entry.status,
-              meta: entry.meta,
-            });
-          } else if (entry.kind === "command_output") {
-            await params.replyOptions?.onCommandOutput?.({
-              itemId: entry.itemId,
-              toolCallId: entry.toolCallId,
-              phase: entry.phase,
-              title: entry.title,
-              name: entry.name,
-              status: entry.status,
-              exitCode: entry.exitCode,
-            });
-          } else if (entry.kind === "tool_start") {
-            await params.replyOptions?.onToolStart?.({
-              itemId: entry.itemId,
-              toolCallId: entry.toolCallId,
-              name: entry.name,
-              phase: entry.phase,
-              args: entry.args,
-              detailMode: entry.detailMode,
-            });
-          } else if (entry.kind === "patch") {
-            await params.replyOptions?.onPatchSummary?.({
-              itemId: entry.itemId,
-              toolCallId: entry.toolCallId,
-              phase: entry.phase,
-              title: entry.title,
-              name: entry.name,
-              added: entry.added,
-              modified: entry.modified,
-              deleted: entry.deleted,
-              summary: entry.summary,
-            });
-          } else if (entry.kind === "plan") {
-            await params.replyOptions?.onPlanUpdate?.({
-              phase: entry.phase,
-              explanation: entry.explanation,
-              steps: entry.steps,
-            });
-          } else if (entry.kind === "concurrent_items") {
-            await Promise.all(
-              entry.progressTexts.map((progressText) =>
-                Promise.resolve(params.replyOptions?.onItemEvent?.({ progressText })),
-              ),
-            );
-          } else if (entry.kind === "assistant_start") {
-            await params.replyOptions?.onAssistantMessageStart?.();
-          } else if (entry.kind === "reasoning") {
-            await params.replyOptions?.onReasoningStream?.({
-              text: entry.text,
-              isReasoningSnapshot: entry.isReasoningSnapshot,
-            });
-          } else if (entry.kind === "reasoning_end") {
-            await params.replyOptions?.onReasoningEnd?.();
+type InboundDispatchPlan = Parameters<PluginRuntime["channel"]["inbound"]["dispatch"]>[0];
+
+function installSlackInboundDispatchFixture() {
+  setSlackRuntime({
+    channel: {
+      inbound: {
+        dispatch: async (params: InboundDispatchPlan) => {
+          capturedReplyOptions = params.replyOptions as typeof capturedReplyOptions;
+          if (mockedReplyOptionEvents.length > 0) {
+            for (const entry of mockedReplyOptionEvents) {
+              if (entry.kind === "item") {
+                await params.replyOptions?.onItemEvent?.({
+                  kind: entry.itemKind,
+                  itemId: entry.itemId,
+                  toolCallId: entry.toolCallId,
+                  progressText: entry.progressText,
+                  summary: entry.summary,
+                  title: entry.title,
+                  name: entry.name,
+                  phase: entry.phase,
+                  status: entry.status,
+                  meta: entry.meta,
+                });
+              } else if (entry.kind === "command_output") {
+                await params.replyOptions?.onCommandOutput?.({
+                  itemId: entry.itemId,
+                  toolCallId: entry.toolCallId,
+                  phase: entry.phase,
+                  title: entry.title,
+                  name: entry.name,
+                  status: entry.status,
+                  exitCode: entry.exitCode,
+                });
+              } else if (entry.kind === "tool_start") {
+                await params.replyOptions?.onToolStart?.({
+                  itemId: entry.itemId,
+                  toolCallId: entry.toolCallId,
+                  name: entry.name,
+                  phase: entry.phase,
+                  args: entry.args,
+                  detailMode: entry.detailMode,
+                });
+              } else if (entry.kind === "patch") {
+                await params.replyOptions?.onPatchSummary?.({
+                  itemId: entry.itemId,
+                  toolCallId: entry.toolCallId,
+                  phase: entry.phase,
+                  title: entry.title,
+                  name: entry.name,
+                  added: entry.added,
+                  modified: entry.modified,
+                  deleted: entry.deleted,
+                  summary: entry.summary,
+                });
+              } else if (entry.kind === "plan") {
+                await params.replyOptions?.onPlanUpdate?.({
+                  phase: entry.phase,
+                  explanation: entry.explanation,
+                  steps: entry.steps,
+                });
+              } else if (entry.kind === "concurrent_items") {
+                await Promise.all(
+                  entry.progressTexts.map((progressText) =>
+                    Promise.resolve(params.replyOptions?.onItemEvent?.({ progressText })),
+                  ),
+                );
+              } else if (entry.kind === "assistant_start") {
+                await params.replyOptions?.onAssistantMessageStart?.();
+              } else if (entry.kind === "reasoning") {
+                await params.replyOptions?.onReasoningStream?.({
+                  text: entry.text,
+                  isReasoningSnapshot: entry.isReasoningSnapshot,
+                });
+              } else if (entry.kind === "reasoning_end") {
+                await params.replyOptions?.onReasoningEnd?.();
+              } else {
+                await params.replyOptions?.onPartialReply?.({ text: entry.text });
+              }
+            }
           } else {
-            await params.replyOptions?.onPartialReply?.({ text: entry.text });
+            for (const progressText of mockedProgressEvents) {
+              await params.replyOptions?.onItemEvent?.({ progressText });
+            }
           }
-        }
-      } else {
-        for (const progressText of mockedProgressEvents) {
-          await params.replyOptions?.onItemEvent?.({ progressText });
-        }
-      }
-      for (const entry of mockedDispatchSequence) {
-        if (entry.kind === "queued_followup") {
-          await params.replyOptions?.onQueuedFollowupAdmitted?.();
-          continue;
-        }
-        if (entry.kind === "item") {
-          await params.replyOptions?.onItemEvent?.({ progressText: entry.progressText });
-          continue;
-        }
-        const payload = entry.payload as ReplyPayload;
-        const transformed = params.dispatcherOptions?.transformReplyPayload
-          ? params.dispatcherOptions.transformReplyPayload(payload)
-          : payload;
-        if (!transformed) {
-          continue;
-        }
-        const deliverPayload = params.dispatcherOptions?.beforeDeliver
-          ? await params.dispatcherOptions.beforeDeliver(transformed, { kind: entry.kind })
-          : transformed;
-        if (!deliverPayload) {
-          continue;
-        }
-        mockedQueuedDispatchCounts[entry.kind] += 1;
-        try {
-          await params.delivery.deliver(deliverPayload, { kind: entry.kind });
-        } catch (error) {
-          if (!mockedDispatcherCapturesDeliveryErrors) {
-            throw error;
+          for (const entry of mockedDispatchSequence) {
+            if (entry.kind === "queued_followup") {
+              await params.replyOptions?.onQueuedFollowupAdmitted?.();
+              continue;
+            }
+            if (entry.kind === "item") {
+              await params.replyOptions?.onItemEvent?.({ progressText: entry.progressText });
+              continue;
+            }
+            const payload = entry.payload as ReplyPayload;
+            const transformed = params.dispatcherOptions?.transformReplyPayload
+              ? params.dispatcherOptions.transformReplyPayload(payload)
+              : payload;
+            if (!transformed) {
+              continue;
+            }
+            const deliverPayload = params.dispatcherOptions?.beforeDeliver
+              ? await params.dispatcherOptions.beforeDeliver(transformed, { kind: entry.kind })
+              : transformed;
+            if (!deliverPayload) {
+              continue;
+            }
+            mockedQueuedDispatchCounts[entry.kind] += 1;
+            try {
+              await params.delivery.deliver(deliverPayload, { kind: entry.kind });
+            } catch (error) {
+              if (!mockedDispatcherCapturesDeliveryErrors) {
+                throw error;
+              }
+              mockedQueuedDispatchCounts[entry.kind] -= 1;
+            }
           }
-          mockedQueuedDispatchCounts[entry.kind] -= 1;
-        }
-      }
-      return {
-        admission: { kind: "dispatch" } as const,
-        dispatched: true as const,
-        ctxPayload: params.ctxPayload,
-        routeSessionKey: params.route.sessionKey,
-        dispatchResult: {
-          queuedFinal: false,
-          counts: { ...mockedQueuedDispatchCounts },
+          return {
+            admission: { kind: "dispatch" } as const,
+            dispatched: true as const,
+            ctxPayload: params.ctxPayload,
+            routeSessionKey: params.route.sessionKey,
+            dispatchResult: {
+              queuedFinal: false,
+              counts: { ...mockedQueuedDispatchCounts },
+            },
+          };
         },
-      };
+      },
     },
-  };
-});
+  } as unknown as PluginRuntime);
+}
 
 vi.mock("./preview-finalize.js", () => ({
   finalizeSlackPreviewEdit: finalizeSlackPreviewEditMock,
@@ -1137,6 +1142,7 @@ describe("dispatchPreparedSlackMessage preview fallback", () => {
     appendSlackStreamMock.mockResolvedValue(undefined);
     stopSlackStreamMock.mockResolvedValue({});
     emitSlackMessageSentHooksMock.mockClear();
+    installSlackInboundDispatchFixture();
   });
 
   it("forwards durable ingress ownership into reply options", async () => {

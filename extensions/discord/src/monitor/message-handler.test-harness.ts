@@ -2,6 +2,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { createDiscordTestInboundRuntime } from "./inbound-runtime.test-support.js";
 import type { DiscordMessagePreflightContext } from "./message-handler.preflight.js";
 import { createNoopThreadBindingManager } from "./thread-bindings.js";
 
@@ -25,6 +26,7 @@ export async function createBaseDiscordMessageContext(
     replyToMode: "off",
     ackReactionScope: "group-mentions",
     groupPolicy: "open",
+    inbound: createDiscordTestInboundRuntime(),
     data: { guild: { id: "g1", name: "Guild" } },
     client: { rest: {} },
     message: {

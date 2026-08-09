@@ -1,22 +1,12 @@
 // Slack plugin module implements slash dispatch behavior.
-import {
-  dispatchChannelInboundTurn as dispatchChannelInboundTurnImpl,
-  isChannelPartialDeliveryError as isChannelPartialDeliveryErrorImpl,
-} from "openclaw/plugin-sdk/channel-inbound";
+import { isChannelPartialDeliveryError as isChannelPartialDeliveryErrorImpl } from "openclaw/plugin-sdk/channel-inbound";
 import { resolveConversationLabel as resolveConversationLabelImpl } from "openclaw/plugin-sdk/conversation-runtime";
 import { resolveMarkdownTableMode as resolveMarkdownTableModeImpl } from "openclaw/plugin-sdk/markdown-table-runtime";
-import {
-  finalizeInboundContext as finalizeInboundContextImpl,
-  resolveChunkMode as resolveChunkModeImpl,
-} from "openclaw/plugin-sdk/reply-runtime";
+import { resolveChunkMode as resolveChunkModeImpl } from "openclaw/plugin-sdk/reply-runtime";
 import { resolveAgentRoute as resolveAgentRouteImpl } from "openclaw/plugin-sdk/routing";
 import { deliverSlackSlashReplies as deliverSlackSlashRepliesImpl } from "./replies.js";
 
 type ResolveChunkMode = typeof import("openclaw/plugin-sdk/reply-runtime").resolveChunkMode;
-type FinalizeInboundContext =
-  typeof import("openclaw/plugin-sdk/reply-runtime").finalizeInboundContext;
-type DispatchChannelInboundTurn =
-  typeof import("openclaw/plugin-sdk/channel-inbound").dispatchChannelInboundTurn;
 type IsChannelPartialDeliveryError =
   typeof import("openclaw/plugin-sdk/channel-inbound").isChannelPartialDeliveryError;
 type ResolveConversationLabel =
@@ -30,18 +20,6 @@ export function resolveChunkMode(
   ...args: Parameters<ResolveChunkMode>
 ): ReturnType<ResolveChunkMode> {
   return resolveChunkModeImpl(...args);
-}
-
-export function finalizeInboundContext(
-  ...args: Parameters<FinalizeInboundContext>
-): ReturnType<FinalizeInboundContext> {
-  return finalizeInboundContextImpl(...args);
-}
-
-export function dispatchChannelInboundTurn(
-  ...args: Parameters<DispatchChannelInboundTurn>
-): ReturnType<DispatchChannelInboundTurn> {
-  return dispatchChannelInboundTurnImpl(...args);
 }
 
 export function isChannelPartialDeliveryError(

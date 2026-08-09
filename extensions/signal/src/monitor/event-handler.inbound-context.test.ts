@@ -414,6 +414,27 @@ describe("signal createSignalEventHandler inbound context", () => {
     expect(contextWithBody.Body ?? "").not.toContain("[from:");
   });
 
+  it("uses one injected core facade to build and run a normal inbound turn", async () => {
+    const inbound = await import("openclaw/plugin-sdk/channel-inbound");
+    const buildContext = vi.fn(inbound.buildChannelInboundEventContext);
+    const run = vi.fn(inbound.runChannelInboundEvent);
+    const handler = createTestHandler({
+      core: {
+        channel: {
+          inbound: {
+            buildContext: buildContext as typeof inbound.buildChannelInboundEventContext,
+            run: run as typeof inbound.runChannelInboundEvent,
+          },
+        },
+      },
+    });
+
+    await receiveDirectMessage(handler, { dataMessage: { message: "paired ingress" } });
+
+    expect(buildContext).toHaveBeenCalledOnce();
+    expect(run).toHaveBeenCalledOnce();
+  });
+
   it("normalizes direct chat To/OriginatingTo targets to canonical Signal ids", async () => {
     const handler = createTestHandler({
       cfg: { messages: { inbound: { debounceMs: 0 } } } as OpenClawConfig,

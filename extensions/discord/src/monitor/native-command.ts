@@ -41,6 +41,7 @@ import {
 import { resolveDiscordChannelTopicSafe } from "./channel-access.js";
 import { resolveDiscordDmCommandAccess } from "./dm-command-auth.js";
 import { handleDiscordDmCommandDecision } from "./dm-command-decision.js";
+import type { DiscordInboundRuntimeResolver } from "./inbound-runtime.js";
 import { dispatchDiscordNativeAgentReply } from "./native-command-agent-reply.js";
 import {
   resolveDiscordGuildNativeCommandAuthorized,
@@ -95,6 +96,7 @@ export function createDiscordNativeCommand(params: {
   sessionPrefix: string;
   ephemeralDefault: boolean;
   threadBindings: ThreadBindingManager;
+  inbound: DiscordInboundRuntimeResolver;
 }): Command {
   const {
     command,
@@ -104,6 +106,7 @@ export function createDiscordNativeCommand(params: {
     sessionPrefix,
     ephemeralDefault,
     threadBindings,
+    inbound,
   } = params;
   const fallbackCommandDefinition = createNativeCommandDefinition(command);
   const pluginCommandMatch = nativeCommandRuntime.matchPluginCommand(`/${command.name}`);
@@ -194,6 +197,7 @@ export function createDiscordNativeCommand(params: {
         // follow-up/edit semantics instead of the initial reply endpoint.
         preferFollowUp: true,
         threadBindings,
+        inbound,
         responseEphemeral: ephemeralDefault,
       });
     }
@@ -211,6 +215,7 @@ async function dispatchDiscordCommandInteraction(params: {
   sessionPrefix: string;
   preferFollowUp: boolean;
   threadBindings: ThreadBindingManager;
+  inbound: DiscordInboundRuntimeResolver;
   responseEphemeral?: boolean;
   suppressReplies?: boolean;
 }): Promise<DispatchDiscordCommandInteractionResult> {
@@ -225,10 +230,14 @@ async function dispatchDiscordCommandInteraction(params: {
     sessionPrefix,
     preferFollowUp,
     threadBindings,
+    inbound: inboundResolver,
     responseEphemeral,
     suppressReplies,
   } = params;
   const cfg = getRuntimeConfigSnapshot() ?? inputConfig;
+  // Pair the builder and dispatcher for this exact native interaction. Follow-up
+  // controls keep the resolver and capture their own facade when clicked.
+  const inbound = inboundResolver();
   const commandName = command.nativeName ?? command.key;
   const respond = async (content: string, options?: { ephemeral?: boolean }) => {
     const ephemeral = options?.ephemeral ?? responseEphemeral;
@@ -521,9 +530,11 @@ async function dispatchDiscordCommandInteraction(params: {
         accountId,
         sessionPrefix,
         threadBindings,
+        inbound: inboundResolver,
       },
       safeInteractionCall: safeDiscordInteractionCall,
-      dispatchCommandInteraction: dispatchDiscordCommandInteraction,
+      dispatchCommandInteraction: (nextParams) =>
+        dispatchDiscordCommandInteraction({ ...nextParams, inbound: inboundResolver }),
     });
     if (preferFollowUp) {
       await safeDiscordInteractionCall("interaction follow-up", () =>
@@ -647,9 +658,10 @@ async function dispatchDiscordCommandInteraction(params: {
     boundSessionKey,
   });
   const mediaLocalRoots = getAgentScopedMediaLocalRoots(cfg, effectiveRoute.agentId);
-  const ctxPayload = buildDiscordNativeCommandContext({
+  const ctxPayload = await buildDiscordNativeCommandContext({
     prompt,
     commandArgs: commandArgs ?? {},
+    agentId: effectiveRoute.agentId,
     sessionKey,
     commandTargetSessionKey,
     accountId: effectiveRoute.accountId,
@@ -674,6 +686,7 @@ async function dispatchDiscordCommandInteraction(params: {
       globalName: user.globalName,
     },
     sender: { id: sender.id, name: sender.name, tag: sender.tag },
+    inbound,
   });
 
   const directStatusResult = await maybeDeliverDiscordDirectStatus({
@@ -709,6 +722,7 @@ async function dispatchDiscordCommandInteraction(params: {
     accountId,
     interaction,
     ctxPayload,
+    dispatch: inbound.dispatch,
     effectiveRoute,
     channelConfig,
     mediaLocalRoots,
@@ -725,7 +739,8 @@ export function createDiscordCommandArgFallbackButton(params: DiscordCommandArgC
   return createDiscordCommandArgFallbackButtonUi({
     ctx: params,
     safeInteractionCall: safeDiscordInteractionCall,
-    dispatchCommandInteraction: dispatchDiscordCommandInteraction,
+    dispatchCommandInteraction: (nextParams) =>
+      dispatchDiscordCommandInteraction({ ...nextParams, inbound: params.inbound }),
   });
 }
 
@@ -733,7 +748,8 @@ export function createDiscordModelPickerFallbackButton(params: DiscordModelPicke
   return createDiscordModelPickerFallbackButtonUi({
     ctx: params,
     safeInteractionCall: safeDiscordInteractionCall,
-    dispatchCommandInteraction: dispatchDiscordCommandInteraction,
+    dispatchCommandInteraction: (nextParams) =>
+      dispatchDiscordCommandInteraction({ ...nextParams, inbound: params.inbound }),
   });
 }
 
@@ -743,7 +759,8 @@ export function createDiscordModelPickerFallbackSelect(
   return createDiscordModelPickerFallbackSelectUi({
     ctx: params,
     safeInteractionCall: safeDiscordInteractionCall,
-    dispatchCommandInteraction: dispatchDiscordCommandInteraction,
+    dispatchCommandInteraction: (nextParams) =>
+      dispatchDiscordCommandInteraction({ ...nextParams, inbound: params.inbound }),
   });
 }
 /* oxlint-disable max-lines -- TODO: split this grandfathered oversized file. */

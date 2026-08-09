@@ -1,2 +1,2 @@
-// Nostr plugin module implements inbound direct dm runtime behavior.
-export { dispatchInboundDirectDm } from "openclaw/plugin-sdk/channel-inbound";
+// Nostr plugin module implements trusted inbound direct-DM runtime behavior.
+export { dispatchInboundDirectDmWithRuntime } from "openclaw/plugin-sdk/channel-inbound";

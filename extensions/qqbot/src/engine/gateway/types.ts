@@ -1,3 +1,7 @@
+import type {
+  BuildChannelInboundEventContextParams,
+  BuiltChannelInboundEventContext,
+} from "openclaw/plugin-sdk/channel-inbound";
 import type { ChannelIngressQueue } from "openclaw/plugin-sdk/channel-outbound";
 // Qqbot type declarations define plugin contracts.
 import type { OpenClawConfig } from "openclaw/plugin-sdk/core";
@@ -52,6 +56,9 @@ export interface GatewayPluginRuntime {
       recordInboundSession: (params: unknown) => Promise<unknown>;
     };
     inbound: {
+      buildContext: (
+        params: BuildChannelInboundEventContextParams,
+      ) => BuiltChannelInboundEventContext;
       run: (params: unknown) => Promise<unknown>;
     };
     text: {

@@ -5,7 +5,10 @@ import {
 } from "openclaw/plugin-sdk/approval-gateway-runtime";
 import type { ExecApprovalReplyDecision } from "openclaw/plugin-sdk/approval-reply-runtime";
 import { recordChannelActivity } from "openclaw/plugin-sdk/channel-activity-runtime";
-import { buildChannelInboundEventContext } from "openclaw/plugin-sdk/channel-inbound";
+import {
+  buildChannelInboundEventContext,
+  runChannelInboundEvent,
+} from "openclaw/plugin-sdk/channel-inbound";
 import {
   createChannelMessageReplyPipeline,
   deliverInboundReplyWithMessageSendContext,
@@ -35,6 +38,7 @@ import { syncTelegramMenuCommands } from "./bot-native-command-menu.js";
 import { deliverReplies, emitTelegramMessageSentHooks } from "./bot/delivery.js";
 import { createTelegramDraftStream } from "./draft-stream.js";
 import { recordOutboundMessageForPromptContext } from "./outbound-message-context.js";
+import { getOptionalTelegramRuntime } from "./runtime.js";
 import { editMessageTelegram } from "./send.js";
 import { wasSentByBot } from "./sent-message-cache.js";
 
@@ -66,6 +70,7 @@ export type TelegramBotDeps = {
   resolveInboundLastRouteSessionKey?: typeof resolveInboundLastRouteSessionKey;
   resolvePinnedMainDmOwnerFromAllowlist?: typeof resolvePinnedMainDmOwnerFromAllowlist;
   buildChannelInboundEventContext?: typeof buildChannelInboundEventContext;
+  runChannelInboundEvent?: typeof runChannelInboundEvent;
   readChannelAllowFromStore: typeof readChannelAllowFromStore;
   upsertChannelPairingRequest: typeof upsertChannelPairingRequest;
   enqueueSystemEvent: typeof enqueueSystemEvent;
@@ -85,7 +90,9 @@ export type TelegramBotDeps = {
   createChannelMessageReplyPipeline?: typeof createChannelMessageReplyPipeline;
 };
 
-export const defaultTelegramBotDeps: TelegramBotDeps = {
+export const defaultTelegramBotDeps: TelegramBotDeps & {
+  runChannelInboundEvent: typeof runChannelInboundEvent;
+} = {
   get getRuntimeConfig() {
     return getRuntimeConfig;
   },
@@ -120,7 +127,13 @@ export const defaultTelegramBotDeps: TelegramBotDeps = {
     return resolvePinnedMainDmOwnerFromAllowlist;
   },
   get buildChannelInboundEventContext() {
-    return buildChannelInboundEventContext;
+    return (
+      getOptionalTelegramRuntime()?.channel?.inbound?.buildContext ??
+      buildChannelInboundEventContext
+    );
+  },
+  get runChannelInboundEvent() {
+    return getOptionalTelegramRuntime()?.channel?.inbound?.run ?? runChannelInboundEvent;
   },
   get upsertChannelPairingRequest() {
     return upsertChannelPairingRequest;

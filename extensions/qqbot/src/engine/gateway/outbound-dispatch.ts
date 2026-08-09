@@ -11,7 +11,6 @@
  */
 
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "openclaw/plugin-sdk/agent-runtime";
-import { buildChannelInboundEventContext } from "openclaw/plugin-sdk/channel-inbound";
 import { bindIngressLifecycleToReplyOptions } from "openclaw/plugin-sdk/channel-outbound";
 import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
 import { isSilentReplyPayloadText, SILENT_REPLY_TOKEN } from "openclaw/plugin-sdk/reply-chunking";
@@ -794,7 +793,7 @@ async function buildCtxPayload(
     })),
     ...inbound.remoteMediaUrls.map((url) => ({ url, kind: "image" as const })),
   ];
-  return buildChannelInboundEventContext({
+  return runtime.channel.inbound.buildContext({
     channel: "qqbot",
     accountId: inbound.route.accountId,
     messageId: event.messageId,

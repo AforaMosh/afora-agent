@@ -11,6 +11,7 @@ import type {
 } from "../internal/discord.js";
 import type { DiscordGuildEntryResolved } from "./allow-list.js";
 import type { formatDiscordUserTag } from "./format.js";
+import type { DiscordInboundRuntimeResolver } from "./inbound-runtime.js";
 
 export type DiscordUser = Parameters<typeof formatDiscordUserTag>[0];
 
@@ -44,6 +45,8 @@ export type AgentComponentContext = {
   guildEntries?: Record<string, DiscordGuildEntryResolved>;
   allowFrom?: string[];
   dmPolicy?: "open" | "pairing" | "allowlist" | "disabled";
+  /** Present for live controls; detached authorization-only tests do not need ingress. */
+  inbound?: DiscordInboundRuntimeResolver;
 };
 
 export type ComponentInteractionContext = {

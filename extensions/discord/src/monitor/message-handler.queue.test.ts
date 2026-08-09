@@ -3,6 +3,7 @@ import { getEventListeners } from "node:events";
 import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
 import { createDeferred } from "openclaw/plugin-sdk/extension-shared";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { DiscordInboundRuntime } from "./inbound-runtime.js";
 import type { DiscordIngressLifecycle } from "./ingress.js";
 import { createDiscordMessageHandler as createDurableDiscordMessageHandler } from "./message-handler.js";
 import {
@@ -257,6 +258,60 @@ describe("createDiscordMessageHandler queue behavior", () => {
     await vi.waitFor(() => expect(processDiscordMessageMock).toHaveBeenCalledTimes(1));
     expect(first.onAdopted).toHaveBeenCalledTimes(1);
     expect(second.onAdopted).toHaveBeenCalledTimes(1);
+  });
+
+  it("retains the receipt-time facade through a delayed message build and dispatch", async () => {
+    preflightDiscordMessageMock.mockReset();
+    processDiscordMessageMock.mockReset();
+
+    const builtByFirstFacade = { marker: "first-facade" };
+    const firstBuildContext = vi.fn().mockResolvedValue(builtByFirstFacade);
+    const firstDispatch = vi.fn().mockResolvedValue({});
+    const secondBuildContext = vi.fn().mockResolvedValue({ marker: "second-facade" });
+    const secondDispatch = vi.fn().mockResolvedValue({});
+    const firstFacade = {
+      buildContext: firstBuildContext,
+      run: vi.fn(),
+      dispatch: firstDispatch,
+    } as unknown as DiscordInboundRuntime;
+    const secondFacade = {
+      buildContext: secondBuildContext,
+      run: vi.fn(),
+      dispatch: secondDispatch,
+    } as unknown as DiscordInboundRuntime;
+    let resolvedFacade = firstFacade;
+    const params = createDiscordHandlerParams();
+    params.cfg.messages = { inbound: { debounceMs: 20 } };
+    params.inbound = vi.fn(() => resolvedFacade);
+    preflightDiscordMessageMock.mockImplementation(
+      async (preflightParams: {
+        data: { channel_id: string };
+        inbound?: DiscordInboundRuntime;
+      }) => ({
+        ...createPreflightContext(preflightParams.data.channel_id),
+        inbound: preflightParams.inbound,
+      }),
+    );
+    processDiscordMessageMock.mockImplementation(
+      async (ctx: { inbound?: DiscordInboundRuntime }) => {
+        if (!ctx.inbound) {
+          throw new Error("expected the receipt-time inbound facade");
+        }
+        const ctxPayload = await ctx.inbound.buildContext({} as never);
+        await ctx.inbound.dispatch({ ctxPayload } as never);
+      },
+    );
+    const handler = createDiscordMessageHandler(params);
+
+    await handler(createTextMessageData("m-facade") as never, {} as never);
+    resolvedFacade = secondFacade;
+
+    await vi.waitFor(() => expect(processDiscordMessageMock).toHaveBeenCalledTimes(1));
+    expect(params.inbound).toHaveBeenCalledTimes(1);
+    expect(firstBuildContext).toHaveBeenCalledTimes(1);
+    expect(firstDispatch).toHaveBeenCalledWith({ ctxPayload: builtByFirstFacade });
+    expect(secondBuildContext).not.toHaveBeenCalled();
+    expect(secondDispatch).not.toHaveBeenCalled();
   });
 
   it("completes every debounced ingress claim when preflight gates the merged turn", async () => {

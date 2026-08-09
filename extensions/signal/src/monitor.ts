@@ -54,6 +54,7 @@ import { isSignalSenderAllowed, type resolveSignalSender } from "./identity.js";
 import { createSignalEventHandler } from "./monitor/event-handler.js";
 import type {
   SignalAttachment,
+  SignalInboundCore,
   SignalNativeReplyContext,
   SignalReactionMessage,
   SignalReactionTarget,
@@ -93,6 +94,27 @@ export type MonitorSignalOpts = {
   waitForTransportReady?: typeof waitForTransportReady;
   statusSink?: SignalStatusSink;
 };
+
+function hasSignalInboundCoreFacade(
+  value: unknown,
+): value is SignalInboundCore["channel"]["inbound"] {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as { buildContext?: unknown }).buildContext === "function" &&
+    typeof (value as { run?: unknown }).run === "function"
+  );
+}
+
+function resolveSignalInboundCore(
+  channelRuntime: ChannelRuntimeSurface | undefined,
+): SignalInboundCore | undefined {
+  // Gateway startup supplies the full plugin channel runtime, while this public
+  // option intentionally exposes only its compatibility surface. Keep just the
+  // paired ingress capability; direct monitor callers retain unprivileged helpers.
+  const inbound = (channelRuntime as { inbound?: unknown } | undefined)?.inbound;
+  return hasSignalInboundCoreFacade(inbound) ? { channel: { inbound } } : undefined;
+}
 
 function createSignalMonitorTaskRunner(runtime: RuntimeEnv) {
   const inFlight = new Set<Promise<void>>();
@@ -501,6 +523,7 @@ function createSignalNativeReplyResolver(params: {
 
 export async function monitorSignalProvider(opts: MonitorSignalOpts = {}): Promise<void> {
   const runtime = opts.runtime ?? createNonExitingRuntime();
+  const core = resolveSignalInboundCore(opts.channelRuntime);
   const cfg = opts.config ?? getRuntimeConfig();
   const accountInfo = resolveSignalAccount({
     cfg,
@@ -623,6 +646,7 @@ export async function monitorSignalProvider(opts: MonitorSignalOpts = {}): Promi
     });
 
     const handleEvent = createSignalEventHandler({
+      ...(core ? { core } : {}),
       runtime,
       abortSignal: daemonLifecycle.abortSignal,
       runTrackedTask: (task) => {

@@ -10,7 +10,7 @@ import {
 } from "openclaw/plugin-sdk/runtime-env";
 import { resolveLineAccount } from "./accounts.js";
 import { handleLineWebhookEvents } from "./bot-handlers.js";
-import type { LineInboundContext } from "./bot-message-context.js";
+import type { LineInboundContext, LineInboundRuntime } from "./bot-message-context.js";
 import type { ResolvedLineAccount } from "./types.js";
 import { createLineWebhookSpool, type LineWebhookTurnAdoptionLifecycle } from "./webhook-spool.js";
 
@@ -21,6 +21,8 @@ interface LineBotOptions {
   runtime?: RuntimeEnv;
   config?: OpenClawConfig;
   mediaMaxMb?: number;
+  /** Resolves the plugin-scoped facade only while processing a durable webhook event. */
+  inbound: () => LineInboundRuntime;
   onMessage?: (
     ctx: LineInboundContext,
     control: { turnAdoptionLifecycle?: LineWebhookTurnAdoptionLifecycle },
@@ -53,19 +55,22 @@ export function createLineBot(opts: LineBotOptions): LineBot {
   const spool = createLineWebhookSpool({
     accountId: account.accountId,
     runtime,
-    deliver: async (event, _destination, control) =>
+    deliver: async (event, _destination, control) => {
+      const inbound = opts.inbound();
       await handleLineWebhookEvents([event], {
         cfg,
         account,
         runtime,
         mediaMaxBytes,
+        inbound,
         processMessage,
         ...(control.turnAdoptionLifecycle
           ? { turnAdoptionLifecycle: control.turnAdoptionLifecycle }
           : {}),
         groupHistories,
         historyLimit: cfg.messages?.groupChat?.historyLimit ?? DEFAULT_GROUP_HISTORY_LIMIT,
-      }),
+      });
+    },
   });
   spool.start();
 

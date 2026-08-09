@@ -245,6 +245,7 @@ function createTestMessageEvent(params: {
 
 function createLineWebhookTestContext(params: {
   processMessage: LineWebhookContext["processMessage"];
+  inbound?: LineWebhookContext["inbound"];
   groupPolicy?: LineAccountConfig["groupPolicy"];
   dmPolicy?: LineAccountConfig["dmPolicy"];
   allowFrom?: LineAccountConfig["allowFrom"];
@@ -281,6 +282,7 @@ function createLineWebhookTestContext(params: {
     runtime: createRuntime(),
     mediaMaxBytes: 1,
     processMessage: params.processMessage,
+    ...(params.inbound ? { inbound: params.inbound } : {}),
     ...(params.groupHistories ? { groupHistories: params.groupHistories } : {}),
   };
 }
@@ -352,6 +354,53 @@ describe("handleLineWebhookEvents", () => {
       throw new Error("downloadLineMedia should not be called from bot-handlers tests");
     });
   });
+
+  it("threads one supplied facade into both message and postback context builders", async () => {
+    const processMessage = vi.fn();
+    const inbound = {
+      buildContext: vi.fn(),
+      run: vi.fn(),
+    } as LineWebhookContext["inbound"];
+    const context = createLineWebhookTestContext({
+      processMessage,
+      inbound,
+      groupPolicy: "open",
+      requireMention: false,
+    });
+    const postback = {
+      type: "postback",
+      postback: { data: "action=select" },
+      replyToken: "postback-token",
+      timestamp: Date.now(),
+      source: { type: "group", groupId: "group-1", userId: "user-1" },
+      mode: "active",
+      webhookEventId: "postback-facade",
+      deliveryContext: { isRedelivery: false },
+    } as webhook.PostbackEvent;
+    buildLinePostbackContextMock.mockResolvedValueOnce({
+      ctxPayload: { From: "line:group:group-1" },
+      replyToken: "postback-token",
+      route: { agentId: "default" },
+      isGroup: true,
+      accountId: "default",
+    });
+
+    await handleLineWebhookEvents(
+      [
+        createTestMessageEvent({
+          message: { id: "facade-message", type: "text", text: "hi", quoteToken: "q" },
+          source: { type: "group", groupId: "group-1", userId: "user-1" },
+          webhookEventId: "message-facade",
+        }),
+        postback,
+      ],
+      context,
+    );
+
+    expect(buildLineMessageContextMock).toHaveBeenCalledWith(expect.objectContaining({ inbound }));
+    expect(buildLinePostbackContextMock).toHaveBeenCalledWith(expect.objectContaining({ inbound }));
+  });
+
   it("blocks group messages when groupPolicy is disabled", async () => {
     const processMessage = vi.fn();
     const event = {

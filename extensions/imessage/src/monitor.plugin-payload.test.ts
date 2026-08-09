@@ -16,7 +16,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { createIMessageRpcClient } from "./client.js";
 import { monitorIMessageProvider } from "./monitor.js";
 import { setCachedIMessagePrivateApiStatus } from "./private-api-status.js";
-import { getIMessageRuntime } from "./runtime.js";
+import { getIMessageRuntime, setIMessageRuntime } from "./runtime.js";
 import { installIMessageStateRuntimeForTest } from "./test-support/runtime.js";
 
 const waitForTransportReadyMock = vi.hoisted(() =>
@@ -199,6 +199,17 @@ describe("iMessage plugin payload attachments", () => {
           },
         }),
       );
+      const pluginRuntime = getIMessageRuntime();
+      const inbound = pluginRuntime.channel.inbound;
+      const buildContext = vi.fn(inbound.buildContext);
+      const run = vi.fn(inbound.run);
+      setIMessageRuntime({
+        ...pluginRuntime,
+        channel: {
+          ...pluginRuntime.channel,
+          inbound: { ...inbound, buildContext, run },
+        },
+      });
 
       const nativeClient = {
         request: vi.fn(async (method: string) => {
@@ -255,6 +266,14 @@ describe("iMessage plugin payload attachments", () => {
         } as never,
         runtime: { error: vi.fn(), exit: vi.fn(), log: vi.fn() },
       });
+
+      expect(buildContext).toHaveBeenCalledWith(expect.objectContaining({ channel: "imessage" }));
+      expect(run).toHaveBeenCalledWith(
+        expect.objectContaining({
+          channel: "imessage",
+          raw: expect.objectContaining({ kind: "dispatch" }),
+        }),
+      );
 
       if (!visible) {
         expect(nativeClient.request).not.toHaveBeenCalled();

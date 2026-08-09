@@ -1,6 +1,7 @@
 // Imessage plugin module implements runtime behavior.
 import fs from "node:fs";
 import path from "node:path";
+import * as channelInbound from "openclaw/plugin-sdk/channel-inbound";
 import type {
   OpenKeyedStoreOptions,
   PluginStateSyncKeyedStore,
@@ -25,6 +26,15 @@ function createIMessageTestEnv(): NodeJS.ProcessEnv & { OPENCLAW_STATE_DIR: stri
 }
 
 let imessageTestEnv = createIMessageTestEnv();
+
+function createIMessageInboundRuntimeForTest() {
+  return {
+    buildContext: (...args: Parameters<PluginRuntime["channel"]["inbound"]["buildContext"]>) =>
+      channelInbound.buildChannelInboundEventContext(...args),
+    run: (...args: Parameters<PluginRuntime["channel"]["inbound"]["run"]>) =>
+      channelInbound.runChannelInboundEvent(...args),
+  };
+}
 
 export function createIMessagePluginStateSyncStoreForTest<T>(
   options: OpenKeyedStoreOptions,
@@ -60,7 +70,7 @@ export function installIMessageStateRuntimeForTest(): void {
           options,
         )) as PluginRuntime["state"]["openSyncKeyedStore"],
     },
-    channel: {},
+    channel: { inbound: createIMessageInboundRuntimeForTest() },
   } as PluginRuntime);
   createIMessagePluginStateSyncStoreForTest({
     namespace: "imessage.reply-cache",
@@ -103,7 +113,7 @@ export async function loadFreshIMessageReplyCacheForTest(options?: {
           storeOptions,
         )) as PluginRuntime["state"]["openSyncKeyedStore"],
     },
-    channel: {},
+    channel: { inbound: createIMessageInboundRuntimeForTest() },
   } as PluginRuntime);
   createIMessagePluginStateSyncStoreForTest({
     namespace: "imessage.reply-cache",
@@ -137,6 +147,6 @@ export function installIMessageFailingStateRuntimeForTest(): void {
         throw new Error("test plugin-state failure");
       }) as PluginRuntime["state"]["openSyncKeyedStore"],
     },
-    channel: {},
+    channel: { inbound: createIMessageInboundRuntimeForTest() },
   } as PluginRuntime);
 }

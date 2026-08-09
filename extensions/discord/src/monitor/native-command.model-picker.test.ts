@@ -16,6 +16,7 @@ import * as commandTextModule from "openclaw/plugin-sdk/text-utility-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { defineThrowingDiscordChannelGetter } from "../test-support/partial-channel.js";
 import { resolveDiscordChannelContext } from "./agent-components-context.js";
+import { createDiscordTestInboundRuntimeResolver } from "./inbound-runtime.test-support.js";
 import * as modelPickerPreferencesModule from "./model-picker-preferences.js";
 import * as modelPickerModule from "./model-picker.state.js";
 import { createModelsProviderData as createBaseModelsProviderData } from "./model-picker.test-utils.js";
@@ -93,6 +94,7 @@ function createModelPickerContext(): ModelPickerContext {
     accountId: "default",
     sessionPrefix: "discord:slash",
     threadBindings: createNoopThreadBindingManager("default"),
+    inbound: createDiscordTestInboundRuntimeResolver(),
     postApplySettleMs: 0,
   };
 }

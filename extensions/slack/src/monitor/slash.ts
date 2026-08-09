@@ -36,6 +36,7 @@ import { chunkItems } from "openclaw/plugin-sdk/text-chunking";
 import type { ResolvedSlackAccount } from "../accounts.js";
 import { SLACK_MAX_BLOCKS } from "../blocks-input.js";
 import { formatSlackError } from "../errors.js";
+import { getSlackRuntime } from "../runtime.js";
 import { truncateSlackText } from "../truncate.js";
 import { resolveSlackCommandIngress, resolveSlackEffectiveAllowFrom } from "./auth.js";
 import { resolveSlackChannelConfig, type SlackChannelConfigResolved } from "./channel-config.js";
@@ -667,8 +668,6 @@ export async function registerSlackMonitorSlashCommands(params: {
       const roomLabel = channelName ? `#${channelName}` : `#${command.channel_id}`;
       const {
         deliverSlackSlashReplies,
-        dispatchChannelInboundTurn,
-        finalizeInboundContext,
         isChannelPartialDeliveryError,
         resolveAgentRoute,
         resolveChunkMode,
@@ -706,48 +705,72 @@ export async function registerSlackMonitorSlashCommands(params: {
         !slashCommand.ephemeral && isRoomish
           ? `channel:${command.channel_id}`
           : `user:${command.user_id}`;
-      const ctxPayload = finalizeInboundContext({
-        Body: prompt,
-        BodyForAgent: prompt,
-        RawBody: prompt,
-        CommandBody: prompt,
-        CommandArgs: commandArgs,
-        From: isDirectMessage
-          ? `slack:${command.user_id}`
-          : isRoom
-            ? `slack:channel:${command.channel_id}`
-            : `slack:group:${command.channel_id}`,
-        To: `slash:${command.user_id}`,
-        ChatType: chatType,
-        ConversationLabel:
-          resolveConversationLabel({
-            ChatType: chatType,
-            SenderName: senderName,
-            GroupSubject: isRoomish ? roomLabel : undefined,
-            From: isDirectMessage
-              ? `slack:${command.user_id}`
-              : isRoom
-                ? `slack:channel:${command.channel_id}`
-                : `slack:group:${command.channel_id}`,
-          }) ?? (isDirectMessage ? senderName : roomLabel),
-        GroupSubject: isRoomish ? roomLabel : undefined,
-        GroupSpace: ctx.teamId || undefined,
-        GroupSystemPrompt: groupSystemPrompt,
-        ChannelPromptContext: channelMetadata ? [channelMetadata] : undefined,
-        SenderName: senderName,
-        SenderId: command.user_id,
-        Provider: "slack" as const,
-        Surface: "slack" as const,
-        WasMentioned: true,
-        MessageSid: command.trigger_id,
-        Timestamp: Date.now(),
-        SessionKey: sessionKey,
-        CommandTargetSessionKey: commandTargetSessionKey,
-        AccountId: route.accountId,
-        CommandSource: "native" as const,
-        CommandAuthorized: commandAuthorized,
-        OriginatingChannel: "slack" as const,
-        OriginatingTo: slashReplyTarget,
+      const slackFrom = isDirectMessage
+        ? `slack:${command.user_id}`
+        : isRoom
+          ? `slack:channel:${command.channel_id}`
+          : `slack:group:${command.channel_id}`;
+      const conversationLabel =
+        resolveConversationLabel({
+          ChatType: chatType,
+          SenderName: senderName,
+          GroupSubject: isRoomish ? roomLabel : undefined,
+          From: slackFrom,
+        }) ?? (isDirectMessage ? senderName : roomLabel);
+      const ctxPayload = getSlackRuntime().channel.inbound.buildContext({
+        channel: "slack",
+        accountId: route.accountId,
+        messageId: command.trigger_id,
+        timestamp: Date.now(),
+        from: slackFrom,
+        sender: {
+          id: command.user_id,
+          name: senderName,
+          displayLabel: senderName,
+        },
+        conversation: {
+          kind: chatType,
+          id: command.channel_id,
+          label: conversationLabel,
+          spaceId: ctx.teamId || undefined,
+          nativeChannelId: command.channel_id,
+        },
+        route: {
+          agentId: route.agentId,
+          dmScope: route.dmScope,
+          accountId: route.accountId,
+          routeSessionKey: sessionKey,
+        },
+        reply: {
+          to: `slash:${command.user_id}`,
+          originatingTo: slashReplyTarget,
+          nativeChannelId: command.channel_id,
+        },
+        message: {
+          body: prompt,
+          bodyForAgent: prompt,
+          rawBody: prompt,
+          commandBody: prompt,
+        },
+        access: {
+          mentions: { canDetectMention: isRoomish, wasMentioned: true },
+          commands: { authorized: commandAuthorized },
+        },
+        command: {
+          kind: "native",
+          body: prompt,
+          name: commandDefinition?.key,
+          authorized: commandAuthorized,
+        },
+        supplemental: {
+          groupSystemPrompt,
+        },
+        extra: {
+          CommandArgs: commandArgs,
+          CommandTargetSessionKey: commandTargetSessionKey,
+          GroupSubject: isRoomish ? roomLabel : undefined,
+          ChannelPromptContext: channelMetadata ? [channelMetadata] : undefined,
+        },
       });
 
       const messageSentHookTarget = ctxPayload.OriginatingTo ?? ctxPayload.To ?? slashReplyTarget;
@@ -762,7 +785,7 @@ export async function registerSlackMonitorSlashCommands(params: {
           textLimit: ctx.textLimit,
           messageSentHookTarget,
           accountId: route.accountId,
-          sessionKeyForInternalHooks: ctxPayload.SessionKey ?? route.sessionKey,
+          sessionKeyForInternalHooks: sessionKey,
           isGroup: isRoomish,
           groupId: isRoomish ? command.channel_id : undefined,
           chunkMode: resolveChunkMode(cfg, "slack", route.accountId),
@@ -781,13 +804,13 @@ export async function registerSlackMonitorSlashCommands(params: {
       }> = [];
       const shouldDeliverBlockImmediately = commandDefinition?.key === "login";
 
-      await dispatchChannelInboundTurn({
+      await getSlackRuntime().channel.inbound.dispatch({
         cfg,
         channel: "slack",
         accountId: route.accountId,
         route: {
           agentId: route.agentId,
-          sessionKey: ctxPayload.SessionKey ?? route.sessionKey,
+          sessionKey,
         },
         ctxPayload,
         replyPipeline: {

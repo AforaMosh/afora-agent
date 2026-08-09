@@ -1,7 +1,4 @@
-import {
-  buildChannelInboundEventContext,
-  resolveChannelInboundRouteEnvelope,
-} from "openclaw/plugin-sdk/channel-inbound";
+import { resolveChannelInboundRouteEnvelope } from "openclaw/plugin-sdk/channel-inbound";
 import { resolveStableChannelMessageIngress } from "openclaw/plugin-sdk/channel-ingress-runtime";
 import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
 import { createSubsystemLogger } from "openclaw/plugin-sdk/logging-core";
@@ -87,7 +84,7 @@ export async function handleBuzzInbound(params: {
     timestamp: new Date(message.createdAt * 1000),
     body: textForAgent,
   });
-  const ctxPayload = buildChannelInboundEventContext({
+  const ctxPayload = runtime.channel.inbound.buildContext({
     channel: "buzz",
     accountId: route.accountId ?? account.accountId,
     messageId: message.id,

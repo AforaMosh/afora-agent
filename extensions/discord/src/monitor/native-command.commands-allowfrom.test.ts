@@ -11,7 +11,7 @@ import { defineThrowingDiscordChannelGetter } from "../test-support/partial-chan
 import { createDiscordNativeCommand } from "./native-command.js";
 
 vi.mock("openclaw/plugin-sdk/plugin-runtime", { spy: true });
-import { nativeCommandRuntime } from "./native-command.runtime.js";
+import { createDiscordTestInboundRuntime } from "./inbound-runtime.test-support.js";
 import {
   createMockCommandInteraction,
   type MockCommandInteraction,
@@ -70,6 +70,7 @@ function createCommand(cfg: OpenClawConfig, discordConfig?: DiscordAccountConfig
     sessionPrefix: "discord:slash",
     ephemeralDefault: true,
     threadBindings: createNoopThreadBindingManager("default"),
+    inbound: resolveTestInbound,
   });
 }
 
@@ -81,7 +82,7 @@ function createDispatchSpy() {
       tool: 0,
     },
   } as never);
-  nativeCommandRuntime.dispatchChannelInboundTurn = dispatchChannelInboundTurnForTest;
+  dispatchInboundForTest = dispatchChannelInboundTurnForTest;
   return dispatchSpy;
 }
 
@@ -109,6 +110,10 @@ const dispatchChannelInboundTurnForTest: typeof dispatchChannelInboundTurn = asy
     dispatchResult,
   };
 };
+
+let dispatchInboundForTest: typeof dispatchChannelInboundTurn = dispatchChannelInboundTurnForTest;
+const resolveTestInbound = () =>
+  createDiscordTestInboundRuntime({ dispatch: dispatchInboundForTest });
 
 function firstDispatchReplyCall(): Parameters<
   typeof dispatcherModule.dispatchReplyWithDispatcher
@@ -167,7 +172,7 @@ function expectChannelNotAllowedReply(interaction: MockCommandInteraction) {
 describe("Discord native slash commands with commands.allowFrom", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
-    nativeCommandRuntime.dispatchChannelInboundTurn = dispatchChannelInboundTurnForTest;
+    dispatchInboundForTest = dispatchChannelInboundTurnForTest;
   });
 
   it("authorizes guild slash commands when commands.allowFrom.discord matches the sender", async () => {

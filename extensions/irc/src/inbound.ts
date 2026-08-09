@@ -1,6 +1,5 @@
 // Irc plugin module implements inbound behavior.
 import {
-  buildChannelInboundEventContext,
   logInboundDrop,
   resolveChannelInboundRouteEnvelope,
 } from "openclaw/plugin-sdk/channel-inbound";
@@ -442,7 +441,7 @@ export async function handleIrcInbound(params: {
   const groupSystemPrompt = normalizeOptionalString(groupMatch.groupConfig?.systemPrompt);
   const blockStreamingEnabled = resolveChannelStreamingBlockEnabled(account.config);
 
-  const ctxPayload = buildChannelInboundEventContext({
+  const ctxPayload = core.channel.inbound.buildContext({
     channel: CHANNEL_ID,
     accountId: route.accountId,
     messageId: message.messageId,

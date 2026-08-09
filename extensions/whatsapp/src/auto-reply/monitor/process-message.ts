@@ -4,10 +4,7 @@ import {
   removeAckReactionHandleAfterReply,
   type AckReactionHandle,
 } from "openclaw/plugin-sdk/channel-feedback";
-import {
-  formatMediaPlaceholderText,
-  runChannelInboundEvent,
-} from "openclaw/plugin-sdk/channel-inbound";
+import { formatMediaPlaceholderText } from "openclaw/plugin-sdk/channel-inbound";
 import { bindIngressLifecycleToReplyOptions } from "openclaw/plugin-sdk/channel-outbound";
 import {
   createInternalHookEvent,
@@ -29,6 +26,7 @@ import { requireWhatsAppInboundAdmission } from "../../inbound/admission.js";
 import { resolveWhatsAppIngressLifecycle } from "../../inbound/ingress-lifecycle.js";
 import type { AdmittedWebInboundMessage } from "../../inbound/types.js";
 import { newConnectionId } from "../../reconnect.js";
+import { getWhatsAppRuntime } from "../../runtime.js";
 import { formatError } from "../../session.js";
 import {
   resolveWhatsAppDirectSystemPrompt,
@@ -221,6 +219,7 @@ export async function processMessage(params: {
   if (admission.ingress.admission !== "dispatch" && admission.ingress.admission !== "observe") {
     return false;
   }
+  const inboundFacade = getWhatsAppRuntime().channel.inbound;
   const conversationId = admission.conversation.id;
   const conversationKind = admission.conversation.kind;
   const self = getSelfIdentity(params.msg);
@@ -480,6 +479,7 @@ export async function processMessage(params: {
         ? ({ kind: "authorized" } as const)
         : ({ kind: "denied" } as const);
   const prepared = await prepareWhatsAppInboundContext({
+    buildContext: inboundFacade.buildContext,
     bodyForAgent: msgForAgent.payload.body,
     combinedBody,
     command: {
@@ -534,7 +534,7 @@ export async function processMessage(params: {
   });
   let finalizeReply: ReturnType<typeof createWhatsAppReplyPlan>["finalize"] | undefined;
 
-  const turnResult = await runChannelInboundEvent({
+  const turnResult = await inboundFacade.run({
     channel: "whatsapp",
     accountId: params.route.accountId,
     raw: inbound,

@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import type { webhook } from "@line/bot-sdk";
+import { buildChannelInboundEventContext } from "openclaw/plugin-sdk/channel-inbound";
 import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
 import { getSessionBindingService } from "openclaw/plugin-sdk/conversation-runtime";
 import { testing as sessionBindingTesting } from "openclaw/plugin-sdk/conversation-runtime";
@@ -12,7 +13,11 @@ import {
 } from "openclaw/plugin-sdk/plugin-test-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { lineBindingsAdapter } from "./bindings.js";
-import { buildLineMessageContext, buildLinePostbackContext } from "./bot-message-context.js";
+import {
+  buildLineMessageContext,
+  buildLinePostbackContext,
+  type LineInboundRuntime,
+} from "./bot-message-context.js";
 import type { ResolvedLineAccount } from "./types.js";
 
 const logVerboseMock = vi.hoisted(() => vi.fn());
@@ -125,6 +130,26 @@ describe("buildLineMessageContext", () => {
 
     expect(context?.ctxPayload.OriginatingTo).toBe("line:group:group-1");
     expect(context?.ctxPayload.To).toBe("line:group:group-1");
+  });
+
+  it("uses and preserves the injected inbound facade for a message", async () => {
+    const inbound = {
+      buildContext: vi.fn(buildChannelInboundEventContext),
+      run: vi.fn(),
+    } as unknown as LineInboundRuntime;
+    const context = await buildLineMessageContext({
+      event: createMessageEvent({ type: "user", userId: "user-facade" }),
+      allMedia: [],
+      cfg,
+      account,
+      commandAuthorized: true,
+      inbound,
+    });
+
+    expect(inbound.buildContext).toHaveBeenCalledWith(
+      expect.objectContaining({ channel: "line", messageId: "1" }),
+    );
+    expect(context?.inbound).toBe(inbound);
   });
 
   it("passes the caller-provided inbound history through to the context payload", async () => {
@@ -251,6 +276,25 @@ describe("buildLineMessageContext", () => {
 
     expect(context?.ctxPayload.OriginatingTo).toBe("line:group:group-2");
     expect(context?.ctxPayload.To).toBe("line:group:group-2");
+  });
+
+  it("uses and preserves the injected inbound facade for a postback", async () => {
+    const inbound = {
+      buildContext: vi.fn(buildChannelInboundEventContext),
+      run: vi.fn(),
+    } as unknown as LineInboundRuntime;
+    const context = await buildLinePostbackContext({
+      event: createPostbackEvent({ type: "user", userId: "user-facade" }),
+      cfg,
+      account,
+      commandAuthorized: true,
+      inbound,
+    });
+
+    expect(inbound.buildContext).toHaveBeenCalledWith(
+      expect.objectContaining({ channel: "line", messageId: "postback:reply-token" }),
+    );
+    expect(context?.inbound).toBe(inbound);
   });
 
   it("routes room postback replies to the room id", async () => {
