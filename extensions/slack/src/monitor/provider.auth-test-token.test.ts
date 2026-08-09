@@ -311,7 +311,6 @@ describe("auth.test boot call", () => {
     resetSlackTestState({
       channels: {
         slack: {
-          enterpriseOrgInstall: true,
           dmPolicy: "disabled",
           groupPolicy: "open",
         },
@@ -331,10 +330,12 @@ describe("auth.test boot call", () => {
   it("rejects enterprise startup with the default pairing DM policy", async () => {
     resetSlackTestState({
       channels: {
-        slack: {
-          enterpriseOrgInstall: true,
-        },
+        slack: {},
       },
+    });
+    getSlackClient().auth.test.mockResolvedValueOnce({
+      enterprise_id: "E1",
+      is_enterprise_install: true,
     });
 
     const monitor = startSlackMonitor(monitorSlackProvider);
@@ -681,7 +682,6 @@ describe("connected identity health", () => {
       config: {
         channels: {
           slack: {
-            enterpriseOrgInstall: true,
             dmPolicy: "disabled",
             groupPolicy: "open",
           },
