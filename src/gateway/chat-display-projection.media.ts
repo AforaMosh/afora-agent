@@ -2,13 +2,17 @@ import path from "node:path";
 import { estimateBase64DecodedBytes } from "@openclaw/media-core/base64";
 import { asOptionalRecord as readRecord } from "@openclaw/normalization-core/record-coerce";
 import {
+  isMediaPayloadContainerKey,
   normalizeCanonicalInboundMediaUri,
   normalizeDurableMediaReference,
   projectInlineVideoContentBlock,
+  sanitizeDurableMediaPayload,
   sanitizeMediaReferenceForProjection,
+  sanitizeModelVisibleMediaPayload,
 } from "../media/media-reference-projection.js";
 
 const AUDIO_LOCAL_PATH_FIELDS = ["path", "file", "filePath", "localPath"] as const;
+const MEDIA_REFERENCE_FIELDS = new Set(["url", "path", "filePath", "localPath", "source"]);
 
 function isAbsoluteStoragePath(value: unknown): value is string {
   return (
@@ -22,21 +26,71 @@ export function projectChatHistoryMediaReference(value: unknown): string | undef
   return normalized && !isAbsoluteStoragePath(normalized) ? normalized : undefined;
 }
 
-function isInlineOrLocalAudioReference(value: unknown): boolean {
+function isMediaReferenceField(key: string): boolean {
+  const normalized = key.trim();
+  return (
+    MEDIA_REFERENCE_FIELDS.has(normalized) ||
+    (normalized.toLowerCase().endsWith("_url") && isMediaPayloadContainerKey(normalized))
+  );
+}
+
+function isPrivateLocalMediaReference(value: unknown): value is string {
   if (typeof value !== "string") {
     return false;
   }
   const reference = value.trim();
   const isManagedRoute = /^\/(?:api\/chat\/media\/outgoing|media|__openclaw__)\//u.test(reference);
   return (
-    /^data:audio\//iu.test(reference) ||
     /^file:/iu.test(reference) ||
     /^~[\\/]/u.test(reference) ||
     (!isManagedRoute &&
-      (reference.startsWith("/") ||
-        /^[A-Za-z]:[\\/]/u.test(reference) ||
+      (path.isAbsolute(reference) ||
+        path.win32.isAbsolute(reference) ||
         reference.startsWith("\\\\")))
   );
+}
+
+function isInlineOrLocalAudioReference(value: unknown): boolean {
+  return (
+    (typeof value === "string" && /^data:audio\//iu.test(value.trim())) ||
+    isPrivateLocalMediaReference(value)
+  );
+}
+
+// Call only on the bounded detached snapshot. Once a reference field opens a
+// subtree, inspect nested objects while treating direct array strings as refs.
+function stripPrivateLocalMediaReferences(
+  value: unknown,
+  insideReference = false,
+  directReference = false,
+): void {
+  if (Array.isArray(value)) {
+    for (let index = value.length - 1; index >= 0; index -= 1) {
+      const item = value[index];
+      if (directReference && isPrivateLocalMediaReference(item)) {
+        value.splice(index, 1);
+        continue;
+      }
+      if (item && typeof item === "object") {
+        stripPrivateLocalMediaReferences(item, insideReference);
+      }
+    }
+    return;
+  }
+  const record = readRecord(value);
+  if (!record) {
+    return;
+  }
+  for (const [key, child] of Object.entries(record)) {
+    const referenceField = isMediaReferenceField(key);
+    if (referenceField && isPrivateLocalMediaReference(child)) {
+      delete record[key];
+      continue;
+    }
+    if ((insideReference || referenceField) && child && typeof child === "object") {
+      stripPrivateLocalMediaReferences(child, true, referenceField && Array.isArray(child));
+    }
+  }
 }
 
 function omitAudioHistoryContent(
@@ -73,11 +127,27 @@ function omitAudioHistoryContent(
 export function sanitizeChatHistoryMediaContentBlock(
   entry: Record<string, unknown>,
 ): { block: Record<string, unknown>; changed: boolean } | undefined {
+  const type = typeof entry.type === "string" ? entry.type : "";
+  if (
+    type !== "audio" &&
+    type !== "image" &&
+    type !== "video" &&
+    isMediaPayloadContainerKey(type)
+  ) {
+    const durable = sanitizeDurableMediaPayload(entry);
+    const inlineVideoOmission = projectInlineVideoContentBlock(durable);
+    if (inlineVideoOmission) {
+      return { block: inlineVideoOmission, changed: true };
+    }
+    const bounded = sanitizeModelVisibleMediaPayload(durable);
+    const projected = readRecord(bounded) ?? { type, omitted: true };
+    stripPrivateLocalMediaReferences(projected);
+    return { block: projected, changed: true };
+  }
   const inlineVideoOmission = projectInlineVideoContentBlock(entry);
   if (entry.type !== "video" && inlineVideoOmission) {
     return { block: inlineVideoOmission, changed: true };
   }
-  const type = typeof entry.type === "string" ? entry.type : "";
   if (type === "audio") {
     let changed = omitAudioHistoryContent(entry, ["url", "openUrl", "audio_url"]);
     const source = readRecord(entry.source);
@@ -93,7 +163,6 @@ export function sanitizeChatHistoryMediaContentBlock(
   if (type !== "image" && type !== "video") {
     return undefined;
   }
-
   let changed = false;
   let mediaData: string | undefined;
   for (const key of ["data", "blob"] as const) {

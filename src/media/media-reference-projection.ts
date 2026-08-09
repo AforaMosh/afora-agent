@@ -144,7 +144,7 @@ function hasVideoPayloadTypeOrMime(record: Record<string, unknown>): boolean {
   );
 }
 
-function hasModelVisibleMediaTypeOrMime(record: Record<string, unknown>): boolean {
+function hasMediaPayloadTypeOrMime(record: Record<string, unknown>): boolean {
   const type = typeof record.type === "string" ? record.type.trim().toLowerCase() : "";
   return (
     isMediaPayloadContainerKey(type) ||
@@ -280,7 +280,7 @@ function projectMediaPayload(
   depth = 0,
   mode: "durable-video" | "model-visible-media" = "durable-video",
   enclosingVideo = false,
-  enclosingModelVisibleMedia = false,
+  enclosingMedia = false,
 ): unknown {
   state.values += 1;
   if (depth > MEDIA_PAYLOAD_MAX_DEPTH || state.values > MEDIA_PAYLOAD_MAX_VALUES) {
@@ -296,10 +296,14 @@ function projectMediaPayload(
     );
     const withoutInlineData =
       dataUrlIndex < 0 ? value : `${value.slice(0, dataUrlIndex)}${REDACTED_INLINE_MEDIA}`;
+    const normalizedKey = key?.trim().toLowerCase();
+    const remoteReferenceKey =
+      normalizedKey === "url" ||
+      normalizedKey === "path" ||
+      (normalizedKey === "source" && enclosingMedia) ||
+      (normalizedKey?.endsWith("_url") === true && isMediaPayloadContainerKey(normalizedKey));
     const projected =
-      withoutInlineData === value &&
-      (key === "url" || key === "video_url" || key === "path") &&
-      /^https?:\/\//iu.test(value)
+      withoutInlineData === value && remoteReferenceKey && /^https?:\/\//iu.test(value.trimStart())
         ? sanitizeMediaReferenceForProjection(value)
         : withoutInlineData;
     return projected;
@@ -358,7 +362,7 @@ function projectMediaPayload(
         depth + 1,
         mode,
         false,
-        enclosingModelVisibleMedia,
+        enclosingMedia,
       );
       projected[index] = item === INLINE_VIDEO_PAYLOAD ? REDACTED_INLINE_VIDEO : item;
     }
@@ -381,9 +385,7 @@ function projectMediaPayload(
   }
   const mediaClassificationRecord = Object.fromEntries(mediaClassificationEntries);
   const videoContext = enclosingVideo || hasVideoPayloadTypeOrMime(mediaClassificationRecord);
-  const modelVisibleMediaContext =
-    mode === "model-visible-media" &&
-    (enclosingModelVisibleMedia || hasModelVisibleMediaTypeOrMime(mediaClassificationRecord));
+  const mediaContext = enclosingMedia || hasMediaPayloadTypeOrMime(mediaClassificationRecord);
   for (const propertyKey of ownProperties.enumerableKeys) {
     if (propertyKey === "toJSON") {
       continue;
@@ -413,7 +415,7 @@ function projectMediaPayload(
           depth + 1,
           mode,
           carrierField && depth < INLINE_VIDEO_PAYLOAD_MAX_NESTING ? videoContext : false,
-          modelVisibleMediaContext || isMediaPayloadContainerKey(propertyKey),
+          mediaContext || isMediaPayloadContainerKey(propertyKey),
         )
       : MEDIA_PAYLOAD_UNREADABLE_OMISSION;
     if (projectedValue === INLINE_VIDEO_PAYLOAD) {
@@ -427,7 +429,8 @@ function projectMediaPayload(
     projectedEntries.push([propertyKey, projectedValue]);
   }
   if (
-    modelVisibleMediaContext &&
+    mode === "model-visible-media" &&
+    mediaContext &&
     (ownProperties.enumerableKeys.includes("data") || ownProperties.enumerableKeys.includes("blob"))
   ) {
     state.seen.delete(value);

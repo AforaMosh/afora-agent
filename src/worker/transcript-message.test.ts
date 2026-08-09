@@ -132,6 +132,14 @@ describe("worker transcript durable media projection", () => {
       content: [{ type: "text", text: "captured" }],
       details: {
         uri: `captured clip: data:video/mp4;base64,${fragments.join(" \t\n")}`,
+        remote: {
+          type: "video",
+          source: [
+            "https://user",
+            ":password@cdn.example.test/worker.mp4?signature=private#preview",
+          ].join(""),
+          label: "keep",
+        },
       },
       isError: false,
       timestamp: 1,
@@ -140,9 +148,20 @@ describe("worker transcript durable media projection", () => {
     const result = toWorkerTranscriptMessage(message, "inference");
     expect(result).toMatchObject({
       kind: "complete",
-      message: { details: { uri: "captured clip: [media data omitted]" } },
+      message: {
+        details: {
+          uri: "captured clip: [media data omitted]",
+          remote: {
+            type: "video",
+            source: "https://cdn.example.test/worker.mp4",
+            label: "keep",
+          },
+        },
+      },
     });
     const serialized = JSON.stringify(result);
+    expect(serialized).not.toContain("user:password");
+    expect(serialized).not.toContain("signature=private");
     for (const fragment of fragments) {
       expect(serialized).not.toContain(fragment);
     }

@@ -16,6 +16,10 @@ import {
 } from "./session-accessor.sqlite-transcript-store.js";
 
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
+
+function credentialBearingUrl(target: string, password = "password"): string {
+  return ["https://user", `:${password}@${target}`].join("");
+}
 const videoPayload = Buffer.concat([
   Buffer.from("000000186674797069736f6d00000200", "hex"),
   Buffer.from("secret-video".repeat(8_192)),
@@ -137,7 +141,7 @@ describe("SQLite transcript native video claim checks", () => {
       { type: "text", text: "after" },
       videoOmission,
     ]);
-    expect(readStoredRow().event.message.__openclaw?.mediaBlockFactIndexes).toEqual([0]);
+    expect(readStoredRow().event.message["__openclaw"]?.mediaBlockFactIndexes).toEqual([0]);
     expect(readStoredRow().event_json).not.toContain('"type":"video"');
     expect(message.content).toHaveLength(5);
   });
@@ -157,7 +161,7 @@ describe("SQLite transcript native video claim checks", () => {
       videoOmission,
       { type: "text", text: "between" },
     ]);
-    expect(stored.event.message.__openclaw?.mediaBlockFactIndexes).toBeUndefined();
+    expect(stored.event.message["__openclaw"]?.mediaBlockFactIndexes).toBeUndefined();
     expect(stored.event_json).not.toContain(pluginVideo.data);
     expect(stored.event_json).not.toContain(videoPayload);
     expect(stored.event_json).not.toContain('"type":"video"');
@@ -490,14 +494,35 @@ describe("SQLite transcript native video claim checks", () => {
       details: {
         nested: { type: "video", mimeType: "video/mp4", data: privateData },
         uri: `captured clip: data:video/mp4;base64,${wrappedFragments.join(" \t\n")}`,
+        remote: {
+          type: "video",
+          source: [
+            "https://user",
+            ":password@cdn.example.test/tool.mp4?signature=private#preview",
+          ].join(""),
+          label: "keep",
+        },
       },
       isError: false,
     });
 
     const storedDetails = readStoredRow().event_json;
     expect(storedDetails).not.toContain(privateData);
-    expect(storedDetails).not.toContain('"type":"video"');
     expect(storedDetails).not.toContain("data:video/");
+    expect(JSON.parse(storedDetails)).toMatchObject({
+      message: {
+        details: {
+          nested: { type: "text", text: "[video data omitted]" },
+          remote: {
+            type: "video",
+            source: "https://cdn.example.test/tool.mp4",
+            label: "keep",
+          },
+        },
+      },
+    });
+    expect(storedDetails).not.toContain("user:password");
+    expect(storedDetails).not.toContain("signature=private");
     for (const fragment of wrappedFragments) {
       expect(storedDetails).not.toContain(fragment);
     }
@@ -512,7 +537,7 @@ describe("SQLite transcript native video claim checks", () => {
               sourceId: "remote",
               sourceIndex: 0,
               kind: "video",
-              url: "https://user" + ":password@cdn.example.test/clip.mp4?signature=private#preview",
+              url: credentialBearingUrl("cdn.example.test/clip.mp4?signature=private#preview"),
             },
           ],
         },
@@ -557,7 +582,7 @@ describe("SQLite transcript native video claim checks", () => {
             {
               sourceId: "remote-video",
               sourceIndex: 3,
-              url: "https://user" + ":password@cdn.example.test/clip.mp4?signature=private",
+              url: credentialBearingUrl("cdn.example.test/clip.mp4?signature=private"),
               contentType: "video/mp4",
               kind: "video",
             },
@@ -571,9 +596,10 @@ describe("SQLite transcript native video claim checks", () => {
             {
               sourceId: "malformed-remote-video",
               sourceIndex: 5,
-              url:
-                "https://user" +
-                ":private-password@cdn.example.test:not-a-port/clip.mp4?signature=private-query",
+              url: credentialBearingUrl(
+                "cdn.example.test:not-a-port/clip.mp4?signature=private-query",
+                "private-password",
+              ),
               contentType: "video/mp4",
               kind: "video",
             },
@@ -593,7 +619,7 @@ describe("SQLite transcript native video claim checks", () => {
       expect(serialized).not.toContain("private-password");
       expect(serialized).not.toContain("private-query");
     }
-    expect(stored.event.message.__openclaw?.media).toEqual([
+    expect(stored.event.message["__openclaw"]?.media).toEqual([
       {
         sourceId: "inline-video",
         sourceIndex: 0,

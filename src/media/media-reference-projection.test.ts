@@ -8,6 +8,10 @@ import {
   sanitizeModelVisibleMediaPayload,
 } from "./media-reference-projection.js";
 
+function credentialBearingUrl(target: string): string {
+  return ["https://user", `:password@${target}`].join("");
+}
+
 describe("isMediaPayloadContainerKey", () => {
   it.each([
     "base64",
@@ -153,6 +157,90 @@ describe("sanitizeDurableMediaPayload", () => {
       type: "video",
       source: { type: "url", url: "https://example.test/video.mp4" },
       label: "keep",
+    });
+  });
+
+  it.each([
+    {
+      name: "video source string",
+      value: {
+        type: "video",
+        source: credentialBearingUrl("cdn.example.test/media/clip.mp4?token=private#preview"),
+        label: "keep source metadata",
+      },
+      expected: {
+        type: "video",
+        source: "https://cdn.example.test/media/clip.mp4",
+        label: "keep source metadata",
+      },
+    },
+    {
+      name: "image_url alias",
+      value: {
+        image_url: credentialBearingUrl("cdn.example.test/media/image.png?token=private#preview"),
+        caption: "keep image metadata",
+      },
+      expected: {
+        image_url: "https://cdn.example.test/media/image.png",
+        caption: "keep image metadata",
+      },
+    },
+    {
+      name: "audio_url alias",
+      value: {
+        audio_url: credentialBearingUrl("cdn.example.test/media/audio.wav?token=private#preview"),
+        transcript: "keep audio metadata",
+      },
+      expected: {
+        audio_url: "https://cdn.example.test/media/audio.wav",
+        transcript: "keep audio metadata",
+      },
+    },
+    {
+      name: "nested video_url object",
+      value: {
+        type: "video_url",
+        video_url: {
+          source: credentialBearingUrl("cdn.example.test/media/nested.mp4?token=private#preview"),
+          label: "keep nested metadata",
+        },
+      },
+      expected: {
+        type: "video_url",
+        video_url: {
+          source: "https://cdn.example.test/media/nested.mp4",
+          label: "keep nested metadata",
+        },
+      },
+    },
+    {
+      name: "non-media metadata source",
+      value: {
+        metadata: {
+          source: credentialBearingUrl("metadata.example.test/events?id=keep-private#keep-private"),
+        },
+      },
+      expected: {
+        metadata: {
+          source: credentialBearingUrl("metadata.example.test/events?id=keep-private#keep-private"),
+        },
+      },
+    },
+  ])("sanitizes $name only in durable media context", ({ value, expected }) => {
+    expect(sanitizeDurableMediaPayload(value)).toEqual(expected);
+  });
+
+  it("sanitizes source references in model-visible media context", () => {
+    expect(
+      sanitizeModelVisibleMediaPayload({
+        type: "image",
+        source: credentialBearingUrl("cdn.example.test/media/image.png?token=private#preview"),
+        caption: "keep",
+      }),
+    ).toEqual({
+      type: "image",
+      source: "https://cdn.example.test/media/image.png",
+      caption: "keep",
     });
   });
 

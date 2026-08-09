@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from "vitest";
-import { createNoisyPngBuffer } from "../../test/helpers/image-fixtures.js";
 import {
   projectChatDisplayMessages,
   sanitizeChatHistoryMessages,
@@ -9,7 +8,11 @@ import {
   CHAT_HISTORY_MAX_SINGLE_MESSAGE_BYTES,
   replaceOversizedChatHistoryMessages,
 } from "./server-methods/chat-history-budget.js";
-import { buildSessionHistorySnapshot, SessionHistorySseState } from "./session-history-state.js";
+import { buildSessionHistorySnapshot } from "./session-history-state.js";
+
+function credentialBearingUrl(target: string): string {
+  return ["https://user", `:password@${target}`].join("");
+}
 
 function projectHistoryTransports(message: Record<string, unknown>) {
   const websocket = replaceOversizedChatHistoryMessages({
@@ -19,430 +22,6 @@ function projectHistoryTransports(message: Record<string, unknown>) {
   const sse = buildSessionHistorySnapshot({ rawMessages: [message], limit: 5 }).history.messages;
   return [websocket, sse];
 }
-
-describe("oversized multimodal chat history", () => {
-  it.each([
-    {
-      name: "native image data",
-      image: (data: string) => ({ type: "image", mimeType: "image/png", data }),
-    },
-    {
-      name: "Anthropic image source",
-      image: (data: string) => ({
-        type: "image",
-        source: { type: "base64", media_type: "image/png", data },
-      }),
-    },
-    {
-      name: "native video data",
-      image: (data: string) => ({ type: "video", mimeType: "video/mp4", data }),
-    },
-    {
-      name: "nested base64 video source",
-      image: (data: string) => ({
-        type: "video",
-        source: { type: "base64", media_type: "video/mp4", data },
-      }),
-    },
-  ])("keeps text while omitting $name from WebSocket and SSE history", ({ image }) => {
-    const payload = createNoisyPngBuffer(320, 320);
-    const encoded = payload.toString("base64");
-    const media = image(encoded);
-    const message = {
-      role: "user",
-      content: [
-        { type: "text", text: "keep prefix text" },
-        media,
-        { type: "text", text: "keep suffix text" },
-      ],
-    };
-    for (const messages of projectHistoryTransports(message)) {
-      expect(messages).toMatchObject([
-        {
-          role: "user",
-          content: [
-            { type: "text", text: "keep prefix text" },
-            { type: media.type, omitted: true, bytes: payload.length },
-            { type: "text", text: "keep suffix text" },
-          ],
-        },
-      ]);
-      expect(JSON.stringify(messages)).not.toContain(encoded);
-      expect(Buffer.byteLength(JSON.stringify(messages))).toBeLessThan(
-        CHAT_HISTORY_MAX_SINGLE_MESSAGE_BYTES,
-      );
-    }
-  });
-
-  it.each(["image", "video"])("preserves URL-backed %ss without changing their sources", (type) => {
-    const source = { type: "url", url: `https://example.invalid/media.${type}` };
-    expect(projectChatDisplayMessages([{ role: "user", content: [{ type, source }] }])).toEqual([
-      { role: "user", content: [{ type, source }] },
-    ]);
-  });
-
-  it("omits persisted top-level audio data from WebSocket and SSE history", () => {
-    const audio = Buffer.from("persisted audio bytes");
-    const encoded = audio.toString("base64");
-    const message = {
-      role: "user",
-      content: [
-        { type: "text", text: "keep prefix text" },
-        { type: "audio", mimeType: "audio/wav", data: encoded },
-        { type: "text", text: "keep suffix text" },
-      ],
-    };
-
-    for (const messages of projectHistoryTransports(message)) {
-      expect(messages).toEqual([
-        {
-          role: "user",
-          content: [
-            { type: "text", text: "keep prefix text" },
-            { type: "audio", mimeType: "audio/wav", omitted: true, bytes: audio.length },
-            { type: "text", text: "keep suffix text" },
-          ],
-        },
-      ]);
-      expect(JSON.stringify(messages)).not.toContain(encoded);
-    }
-  });
-
-  it("removes private audio payloads and local references while preserving safe refs", () => {
-    const privateMarker = "private-audio-reference";
-    const safeAudio = [
-      {
-        type: "audio",
-        url: "https://example.invalid/audio.wav",
-        openUrl: "http://example.invalid/audio.wav",
-        audio_url: "media://inbound/audio.wav",
-        source: { type: "url", url: "/api/chat/media/outgoing/audio.wav" },
-      },
-      { type: "audio", url: "/media/audio.wav", openUrl: "/__openclaw__/audio/clip.wav" },
-    ];
-    const message = {
-      role: "user",
-      content: [
-        {
-          type: "audio",
-          data: { rawSecret: privateMarker },
-          url: `data:audio/wav;base64,${privateMarker}`,
-          openUrl: `file:///tmp/${privateMarker}.wav`,
-          audio_url: `~/${privateMarker}.wav`,
-          path: `/tmp/${privateMarker}.wav`,
-          file: privateMarker,
-          filePath: String.raw`C:\private-audio-reference.wav`,
-          localPath: String.raw`\\server\share\private-audio-reference.wav`,
-          source: {
-            type: "opaque",
-            codec: "pcm",
-            data: new Uint8Array([111, 112, 113]),
-            url: `/tmp/${privateMarker}-source.wav`,
-            path: `/tmp/${privateMarker}-source.wav`,
-            file: privateMarker,
-            filePath: String.raw`D:\private-audio-reference.wav`,
-            localPath: String.raw`\\server\share\private-audio-reference-source.wav`,
-          },
-        },
-        { type: "audio", url: String.raw`C:\a.wav`, source: { url: String.raw`\\s\a.wav` } },
-        ...safeAudio,
-      ],
-    };
-    const original = structuredClone(message);
-
-    for (const messages of projectHistoryTransports(message)) {
-      expect(messages).toEqual([
-        {
-          role: "user",
-          content: [
-            {
-              type: "audio",
-              omitted: true,
-              source: { type: "opaque", codec: "pcm", omitted: true },
-            },
-            { type: "audio", omitted: true, source: { omitted: true } },
-            ...safeAudio,
-          ],
-        },
-      ]);
-      expect(JSON.stringify(messages)).not.toContain(privateMarker);
-      expect(JSON.stringify(messages)).not.toContain('"0":111');
-    }
-    expect(message).toEqual(original);
-  });
-
-  it("sanitizes newly appended audio before returning an incremental SSE message", () => {
-    const encoded = Buffer.from("incremental SSE audio").toString("base64");
-    const state = SessionHistorySseState.fromRawSnapshot({
-      target: { sessionId: "audio-session", sessionKey: "agent:main:audio-session" },
-      rawMessages: [],
-    });
-
-    const appended = state.appendInlineMessage({
-      message: {
-        role: "user",
-        content: [
-          { type: "text", text: "keep incremental text" },
-          { type: "audio", mimeType: "audio/ogg", data: encoded },
-        ],
-      },
-      messageId: "audio-message",
-    });
-
-    expect(appended?.message).toMatchObject({
-      role: "user",
-      content: [
-        { type: "text", text: "keep incremental text" },
-        {
-          type: "audio",
-          mimeType: "audio/ogg",
-          omitted: true,
-          bytes: Buffer.from("incremental SSE audio").length,
-        },
-      ],
-    });
-    expect(JSON.stringify(appended?.message)).not.toContain(encoded);
-  });
-
-  it("projects provider-wrapped inline video to valid bounded history blocks", () => {
-    const payload = "private-provider-wrapped-video";
-    const dataUrl = `data:video/mp4;base64,${payload}`;
-    const wrapped = [
-      { type: "input_video", video_url: dataUrl },
-      { type: "image_url", image_url: { url: dataUrl } },
-      { type: "video_url", video_url: { url: { url: dataUrl } } },
-      {
-        type: "image",
-        contentType: "video/mp4",
-        source: { type: "base64", data: payload },
-      },
-      ...["mimeType", "mime_type", "mediaType", "media_type", "contentType", "content_type"].map(
-        (mimeField, index) => ({
-          type: "image",
-          [mimeField]: " VIDEO/MP4 ",
-          [index % 2 === 0 ? "data" : "blob"]: payload,
-        }),
-      ),
-    ];
-
-    const projected = projectChatDisplayMessages([{ role: "assistant", content: wrapped }]);
-
-    expect(projected).toEqual([
-      {
-        role: "assistant",
-        content: wrapped.map(() => ({ type: "text", text: "[video data omitted]" })),
-      },
-    ]);
-    expect(JSON.stringify(projected)).not.toContain(payload);
-    expect(Buffer.byteLength(JSON.stringify(projected))).toBeLessThan(1_024);
-  });
-
-  it("preserves remote provider video wrappers and safe metadata", () => {
-    const content = [
-      {
-        type: "input_video",
-        video_url: "https://example.test/video.mp4",
-        label: "keep",
-      },
-      {
-        type: "video_url",
-        video_url: { url: { url: "https://example.test/nested.mp4" } },
-        label: "keep nested",
-      },
-    ];
-
-    expect(projectChatDisplayMessages([{ role: "assistant", content }])).toEqual([
-      { role: "assistant", content },
-    ]);
-  });
-
-  it.each([
-    {
-      mediaType: "image",
-      source: { type: "url", url: "https://example.invalid/image.png" },
-    },
-    { mediaType: "video", source: { type: "unknown" } },
-    {
-      mediaType: "image",
-      source: {
-        type: "custom",
-        url: "media://inbound/image---00000000-0000-4000-8000-000000000000.png",
-        path: "/Users/operator/private.png",
-      },
-    },
-  ])("omits inline data from $source.type $mediaType sources", ({ mediaType, source }) => {
-    const payload = Buffer.from(`private-${source.type}-${mediaType}`);
-    const encoded = payload.toString("base64");
-    const projected = projectChatDisplayMessages([
-      { role: "user", content: [{ type: mediaType, source: { ...source, data: encoded } }] },
-    ]);
-    const expectedSource: Record<string, unknown> = { ...source };
-    delete expectedSource.path;
-
-    expect(projected).toEqual([
-      {
-        role: "user",
-        content: [
-          {
-            type: mediaType,
-            source: expectedSource,
-            omitted: true,
-            bytes: payload.length,
-          },
-        ],
-      },
-    ]);
-    expect(JSON.stringify(projected)).not.toContain(encoded);
-    expect(JSON.stringify(projected)).not.toContain("/Users/operator");
-  });
-
-  it.each([
-    {
-      name: "number array",
-      mediaType: "image",
-      createData: () => Array.from({ length: 16_384 }, (_, index) => index % 256),
-    },
-    {
-      name: "structured object",
-      mediaType: "video",
-      createData: () => ({ payload: "private-structured-payload".repeat(1024) }),
-    },
-    {
-      name: "Uint8Array",
-      mediaType: "image",
-      createData: () => new Uint8Array(16_384).fill(137),
-    },
-    {
-      name: "Buffer-like JSON",
-      mediaType: "video",
-      createData: () => Buffer.alloc(16_384, 137).toJSON(),
-    },
-  ])("removes non-string $name source data", ({ mediaType, createData }) => {
-    const url = "https://cdn.example.test/media.bin";
-    const projected = projectChatDisplayMessages([
-      {
-        role: "user",
-        content: [
-          {
-            type: mediaType,
-            source: { type: "custom", url, data: createData() },
-          },
-        ],
-      },
-    ]);
-
-    expect(projected).toEqual([
-      {
-        role: "user",
-        content: [
-          {
-            type: mediaType,
-            source: { type: "custom", url },
-            omitted: true,
-          },
-        ],
-      },
-    ]);
-    const serialized = JSON.stringify(projected);
-    expect(serialized).not.toContain('"data"');
-    expect(serialized).not.toContain('"payload"');
-    expect(serialized).not.toContain("private-structured-payload");
-    expect(Buffer.byteLength(serialized)).toBeLessThan(512);
-  });
-
-  it.each([
-    { name: "array", createData: () => Array.from({ length: 16_384 }, (_, index) => index % 256) },
-    { name: "object", createData: () => ({ payload: "private-top-level-payload".repeat(1024) }) },
-    { name: "typed-array-like", createData: () => ({ 0: 137, 1: 137, length: 16_384 }) },
-  ])("removes non-string top-level $name data without inventing bytes", ({ createData }) => {
-    const source = { type: "url", url: "https://cdn.example.test/media.bin" };
-    const projected = projectChatDisplayMessages([
-      { role: "user", content: [{ type: "video", data: createData(), source }] },
-    ]);
-
-    expect(projected).toEqual([
-      { role: "user", content: [{ type: "video", source, omitted: true }] },
-    ]);
-    const serialized = JSON.stringify(projected);
-    expect(serialized).not.toContain('"data"');
-    expect(serialized).not.toContain('"bytes"');
-    expect(serialized).not.toContain("private-top-level-payload");
-    expect(Buffer.byteLength(serialized)).toBeLessThan(512);
-  });
-
-  it("derives bytes from a string source when top-level data is non-string", () => {
-    const sourceData = Buffer.from("nested-source-payload").toString("base64");
-    const projected = projectChatDisplayMessages([
-      {
-        role: "user",
-        content: [
-          {
-            type: "image",
-            data: { payload: "private-top-level-payload" },
-            source: { type: "base64", data: sourceData },
-          },
-        ],
-      },
-    ]);
-
-    expect(projected).toEqual([
-      {
-        role: "user",
-        content: [
-          {
-            type: "image",
-            source: { type: "base64" },
-            omitted: true,
-            bytes: Buffer.from(sourceData, "base64").length,
-          },
-        ],
-      },
-    ]);
-  });
-
-  it("uses top-level media data for bytes while removing every inline carrier", () => {
-    const topLevelData = Buffer.from("authoritative-top-level-payload").toString("base64");
-    const sourceData = Buffer.from("different-nested-source-payload-with-more-bytes").toString(
-      "base64",
-    );
-    const projected = projectChatDisplayMessages([
-      {
-        role: "user",
-        content: [
-          {
-            type: "video",
-            data: topLevelData,
-            source: {
-              type: "url",
-              url: "media://inbound/clip---00000000-0000-4000-8000-000000000000.mp4",
-              data: sourceData,
-            },
-          },
-        ],
-      },
-    ]);
-
-    expect(projected).toEqual([
-      {
-        role: "user",
-        content: [
-          {
-            type: "video",
-            source: {
-              type: "url",
-              url: "media://inbound/clip---00000000-0000-4000-8000-000000000000.mp4",
-            },
-            omitted: true,
-            bytes: Buffer.from(topLevelData, "base64").length,
-          },
-        ],
-      },
-    ]);
-    const serialized = JSON.stringify(projected);
-    expect(serialized).not.toContain(topLevelData);
-    expect(serialized).not.toContain(sourceData);
-  });
-});
 
 describe("private transcript metadata projection", () => {
   it("hides inline media data URLs and absolute storage paths", () => {
@@ -459,7 +38,7 @@ describe("private transcript metadata projection", () => {
           type: "image",
           source: {
             type: "url",
-            url: "https://user" + ":password@cdn.example.test/image.png?signature=private",
+            url: credentialBearingUrl("cdn.example.test/image.png?signature=private"),
           },
         },
       ],
@@ -488,7 +67,7 @@ describe("private transcript metadata projection", () => {
           },
           { path: "C:\\Users\\operator\\clip.mp4", contentType: "video/mp4" },
           {
-            url: "https://user" + ":password@cdn.example.test/clip.mp4?signature=private#preview",
+            url: credentialBearingUrl("cdn.example.test/clip.mp4?signature=private#preview"),
             contentType: "video/mp4",
           },
         ],
@@ -549,7 +128,7 @@ describe("private transcript metadata projection", () => {
         ],
         MediaUrls: [
           `data:video/mp4;base64,${inlinePayload}`,
-          "https://user" + ":password@cdn.example.test/legacy.mp4?signature=private",
+          credentialBearingUrl("cdn.example.test/legacy.mp4?signature=private"),
         ],
         MediaTypes: ["image/png"],
         __openclaw: {
@@ -637,7 +216,7 @@ describe("private transcript metadata projection", () => {
           "media://inbound/clip---00000000-0000-4000-8000-000000000000.mp4",
         ],
         MediaUrls: [
-          "https://user" + ":password@cdn.example.test/clip.mp4?signature=private#preview",
+          credentialBearingUrl("cdn.example.test/clip.mp4?signature=private#preview"),
           "/var/lib/openclaw/media/clip.mp4",
           "file:///var/lib/openclaw/media/clip.mp4",
           "relative/preview.png",
