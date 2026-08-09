@@ -4,6 +4,7 @@ import type { MsgContext } from "../auto-reply/templating.js";
 import type { GroupKeyResolution } from "../config/sessions/types.js";
 import { normalizeSessionKeyPreservingOpaquePeerIds } from "../sessions/session-key-utils.js";
 import { createLazyRuntimeModule } from "../shared/lazy-runtime.js";
+import { getBoundChannelInboundMemorySubjectIssuer } from "./inbound-event/memory-subject-attestation.js";
 import type { InboundLastRouteUpdate } from "./session.types.js";
 
 // Keep session persistence lazy so channel SDK type paths do not load disk writers.
@@ -40,21 +41,32 @@ export async function recordInboundSession(params: {
   const { storePath, sessionKey, ctx, groupResolution, createIfMissing } = params;
   const canonicalSessionKey = normalizeSessionKeyPreservingOpaquePeerIds(sessionKey);
   const runtime = await loadInboundSessionRuntime();
-  const metaTask = runtime
-    .recordInboundSessionMeta({
-      storePath,
-      sessionKey: canonicalSessionKey,
-      ctx,
-      groupResolution,
-      createIfMissing,
-    })
-    .catch(async (err: unknown) => {
-      try {
-        await Promise.resolve(params.onRecordError(err));
-      } catch {
-        // Error reporting must not reject the detached metadata task.
-      }
-    });
+  const memorySubjectIssuer = getBoundChannelInboundMemorySubjectIssuer(ctx, canonicalSessionKey);
+  const metadataTask = memorySubjectIssuer
+    ? runtime.recordInboundSessionMetaWithTrustedMemorySubject(
+        {
+          storePath,
+          sessionKey: canonicalSessionKey,
+          ctx,
+          groupResolution,
+          createIfMissing,
+        },
+        memorySubjectIssuer,
+      )
+    : runtime.recordInboundSessionMeta({
+        storePath,
+        sessionKey: canonicalSessionKey,
+        ctx,
+        groupResolution,
+        createIfMissing,
+      });
+  const metaTask = metadataTask.catch(async (err: unknown) => {
+    try {
+      await Promise.resolve(params.onRecordError(err));
+    } catch {
+      // Error reporting must not reject the detached metadata task.
+    }
+  });
   params.trackSessionMetaTask?.(metaTask);
   void metaTask;
 

@@ -63,9 +63,10 @@ function buildDirectDmContext(
   params: DispatchInboundDirectDmParams,
   route: DirectDmRoute,
   body: string,
-): FinalizedMsgContext {
+  buildContext: typeof buildChannelInboundEventContext = buildChannelInboundEventContext,
+): FinalizedMsgContext | Promise<FinalizedMsgContext> {
   const accountId = route.accountId ?? params.accountId;
-  return buildChannelInboundEventContext({
+  return buildContext({
     channel: params.channel,
     accountId,
     provider: params.provider,
@@ -96,6 +97,7 @@ function buildDirectDmContext(
     extra: {
       NativeDirectUserId: params.peer.id,
       OriginatingChannel: params.originatingChannel ?? params.channel,
+      ...(params.inboundAccessAuthorized === true ? { InboundAccessAuthorized: true } : {}),
       ...params.extraContext,
     },
   });
@@ -111,7 +113,7 @@ export async function dispatchInboundDirectDm(params: DispatchInboundDirectDmPar
     accountId: params.accountId,
     peer: params.peer,
   });
-  const ctxPayload = buildDirectDmContext(
+  const ctxPayload = await buildDirectDmContext(
     params,
     route,
     buildEnvelope({
@@ -182,30 +184,12 @@ export async function dispatchInboundDirectDmWithRuntime(
     body: params.rawBody,
     timestamp: params.timestamp,
   });
-  const ctxPayload = params.runtime.channel.reply.finalizeInboundContext({
-    Body: body,
-    BodyForAgent: params.bodyForAgent ?? params.rawBody,
-    RawBody: params.rawBody,
-    CommandBody: params.commandBody ?? params.rawBody,
-    From: params.senderAddress,
-    To: params.recipientAddress,
-    SessionKey: route.sessionKey,
-    AccountId: route.accountId ?? params.accountId,
-    ChatType: "direct",
-    ConversationLabel: params.conversationLabel,
-    SenderId: params.senderId,
-    Provider: params.provider ?? params.channel,
-    Surface: params.surface ?? params.channel,
-    MessageSid: params.messageId,
-    MessageSidFull: params.messageId,
-    Timestamp: params.timestamp,
-    CommandAuthorized: params.commandAuthorized,
-    ...(params.inboundAccessAuthorized === true ? { InboundAccessAuthorized: true } : {}),
-    OriginatingChannel: params.originatingChannel ?? params.channel,
-    OriginatingTo: params.originatingTo ?? params.recipientAddress,
-    NativeDirectUserId: params.peer.id,
-    ...params.extraContext,
-  });
+  const ctxPayload = await buildDirectDmContext(
+    params,
+    route,
+    body,
+    params.runtime.channel.inbound.buildContext,
+  );
   const plan = buildDirectDmTurnPlan(params, route, ctxPayload);
   await params.runtime.channel.inbound.run({
     channel: params.channel,

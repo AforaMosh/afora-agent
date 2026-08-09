@@ -13,6 +13,7 @@ import {
   type ChannelTurnDispatchResultLike,
   type ChannelTurnVisibleDeliverySignals,
 } from "./dispatch-result.js";
+import { resolveRecordSessionKey } from "./record-session-key.js";
 import type {
   ChannelTurnAdmission,
   ChannelTurnHistoryFinalizeOptions,
@@ -62,23 +63,6 @@ function isSystemChannelTurn(ctx: FinalizedMsgContext): boolean {
   return (
     ctx.Provider === "heartbeat" || ctx.Provider === "cron-event" || ctx.Provider === "exec-event"
   );
-}
-
-function resolveRecordSessionKey<TDispatchResult>(
-  params: PreparedChannelTurn<TDispatchResult>,
-): string {
-  const explicitSessionKey = params.record?.sessionKey;
-  if (explicitSessionKey === undefined) {
-    return params.ctxPayload.SessionKey ?? params.routeSessionKey;
-  }
-  const normalizedSessionKey = explicitSessionKey.trim();
-  if (!normalizedSessionKey) {
-    throw new Error("Channel turn record.sessionKey must be non-empty.");
-  }
-  if (normalizedSessionKey !== explicitSessionKey) {
-    throw new Error("Channel turn record.sessionKey must not include surrounding whitespace.");
-  }
-  return explicitSessionKey;
 }
 
 function maybeWarnZeroCountVisibleDispatch<TDispatchResult>(

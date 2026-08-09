@@ -1,11 +1,18 @@
 import { recordChannelHistoryEntryWithMedia } from "../../auto-reply/reply/history.js";
 import { toHistoryMediaEntries } from "../inbound-event/media.js";
 import {
+  attestCoreChannelInboundMemorySubjectContext,
+  bindAttestedChannelInboundMemorySubject,
+  clearBoundChannelInboundMemorySubject,
+} from "../inbound-event/memory-subject-attestation.js";
+import {
   assembleResolvedChannelTurn,
   dispatchAssembledChannelTurn as dispatchAssembledChannelTurnImpl,
+  dispatchAssembledRoutedChannelTurn as dispatchAssembledRoutedChannelTurnImpl,
   dispatchRoutedChannelTurn as dispatchRoutedChannelTurnImpl,
   runPreparedInboundReply as runPreparedInboundReplyImpl,
 } from "./lifecycle.js";
+import { resolveRecordSessionKey } from "./record-session-key.js";
 
 export { recordChannelBotPairLoopAndCheckSuppression } from "./bot-loop-protection.js";
 
@@ -59,6 +66,38 @@ export function dispatchChannelInboundTurn(
   plan: ChannelTurnPlan<ChannelTurnDeliveryAdapter>,
 ): Promise<ChannelTurnResult> {
   return dispatchRoutedChannelTurnImpl(plan);
+}
+
+/**
+ * Internal-only paired dispatch entrypoint for a facade-built context.
+ *
+ * Direct `dispatch` users arrive after adapter resolution, so they bypass the
+ * raw-event runner that normally attests, assembles, and binds the issuer.
+ * Keep that lifecycle here rather than granting authority to public dispatch.
+ */
+export async function dispatchChannelInboundTurnWithCoreIngress(
+  plan: ChannelTurnPlan<ChannelTurnDeliveryAdapter>,
+  coreIngress: object,
+): Promise<ChannelTurnResult> {
+  attestCoreChannelInboundMemorySubjectContext({
+    ctx: plan.ctxPayload,
+    ingress: coreIngress,
+    runChannel: plan.channel,
+  });
+  const assembled = assembleResolvedChannelTurn(plan);
+  try {
+    await bindAttestedChannelInboundMemorySubject(
+      assembled.ctxPayload,
+      resolveRecordSessionKey(assembled),
+    );
+    return await dispatchAssembledRoutedChannelTurnImpl(
+      assembled as Parameters<typeof dispatchAssembledRoutedChannelTurnImpl>[0],
+    );
+  } finally {
+    // An exact context/issuer pair is single-turn authority even when dispatch
+    // exits before session recording. Never leave it reusable by a later call.
+    clearBoundChannelInboundMemorySubject(assembled.ctxPayload);
+  }
 }
 
 export const runPreparedInboundReply = runPreparedInboundReplyImpl;
@@ -202,6 +241,14 @@ async function runChannelTurn<
   TDispatchResult = DispatchedChannelTurnResult["dispatchResult"],
 >(
   params: RunChannelTurnParams<TRaw, TDispatchResult, ChannelTurnDeliveryAdapter>,
+  coreIngress?: object,
+): Promise<ChannelTurnResult<TDispatchResult>>;
+async function runChannelTurn<
+  TRaw,
+  TDispatchResult = DispatchedChannelTurnResult["dispatchResult"],
+>(
+  params: RunChannelTurnParams<TRaw, TDispatchResult, ChannelTurnDeliveryAdapter>,
+  coreIngress?: object,
 ): Promise<ChannelTurnResult<TDispatchResult>> {
   emit({
     ...params,
@@ -271,111 +318,178 @@ async function runChannelTurn<
   }
 
   const unresolved = await params.adapter.resolveTurn(input, eventClass, preflight);
+  // Public runner calls have no ingress token. A core-injected paired facade must provide the
+  // exact opaque capability that registered this context before any facts become authority.
+  attestCoreChannelInboundMemorySubjectContext({
+    ctx: unresolved.ctxPayload,
+    ingress: coreIngress,
+    runChannel: params.channel,
+  });
   const isRoutedTurn = "route" in unresolved && !("runDispatch" in unresolved);
   const resolved = assembleResolvedChannelTurn(unresolved);
-  emit({
-    ...params,
-    accountId: resolved.accountId ?? params.accountId,
-    event: {
-      stage: "assemble",
-      event: "done",
-      messageId: input.id,
-      sessionKey: resolved.routeSessionKey,
-      admission: resolved.admission?.kind ?? "dispatch",
-    },
-  });
-
-  const admission = resolved.admission ?? preflightAdmission ?? ({ kind: "dispatch" } as const);
-  let result: ChannelTurnResult<TDispatchResult>;
   try {
-    if ("runDispatch" in resolved) {
-      assertPreparedDispatchLifecycle(resolved, params.turnAdoptionLifecycle);
-    }
-    const dispatchResult = (
-      "runDispatch" in resolved
-        ? await runPreparedInboundReply({
-            ...resolved,
-            admission,
-            log: params.log,
-            messageId: input.id,
-          })
-        : isRoutedTurn
-          ? await dispatchRoutedChannelTurnImpl({
-              ...(unresolved as ChannelTurnPlan<ChannelTurnDeliveryAdapter>),
-              admission,
-              log: params.log,
-              messageId: input.id,
-              ...(params.turnAdoptionLifecycle
-                ? { turnAdoptionLifecycle: params.turnAdoptionLifecycle }
-                : {}),
-            })
-          : await dispatchAssembledChannelTurn({
-              ...(resolved as AssembledChannelTurn),
-              admission,
-              log: params.log,
-              messageId: input.id,
-              ...(params.turnAdoptionLifecycle
-                ? { turnAdoptionLifecycle: params.turnAdoptionLifecycle }
-                : {}),
-            })
-    ) as ChannelTurnResult<TDispatchResult>;
-    result = dispatchResult.dispatched ? { ...dispatchResult, admission } : dispatchResult;
-  } catch (err) {
-    const failedResult: ChannelTurnResult<TDispatchResult> = {
-      admission,
-      dispatched: false,
-      ctxPayload: resolved.ctxPayload,
-      routeSessionKey: resolved.routeSessionKey,
-    };
+    await bindAttestedChannelInboundMemorySubject(
+      resolved.ctxPayload,
+      resolveRecordSessionKey(resolved),
+    );
+    emit({
+      ...params,
+      accountId: resolved.accountId ?? params.accountId,
+      event: {
+        stage: "assemble",
+        event: "done",
+        messageId: input.id,
+        sessionKey: resolved.routeSessionKey,
+        admission: resolved.admission?.kind ?? "dispatch",
+      },
+    });
+
+    const admission = resolved.admission ?? preflightAdmission ?? ({ kind: "dispatch" } as const);
+    let result: ChannelTurnResult<TDispatchResult>;
     try {
-      await params.adapter.onFinalize?.(failedResult);
-    } catch {
-      // Preserve the original dispatch error.
+      if ("runDispatch" in resolved) {
+        assertPreparedDispatchLifecycle(resolved, params.turnAdoptionLifecycle);
+      }
+      const dispatchResult = (
+        "runDispatch" in resolved
+          ? await runPreparedInboundReply({
+              ...resolved,
+              admission,
+              log: params.log,
+              messageId: input.id,
+            })
+          : isRoutedTurn
+            ? await dispatchAssembledRoutedChannelTurnImpl({
+                ...(resolved as Parameters<typeof dispatchAssembledRoutedChannelTurnImpl>[0]),
+                admission,
+                log: params.log,
+                messageId: input.id,
+                ...(params.turnAdoptionLifecycle
+                  ? { turnAdoptionLifecycle: params.turnAdoptionLifecycle }
+                  : {}),
+              })
+            : await dispatchAssembledChannelTurn({
+                ...(resolved as AssembledChannelTurn),
+                admission,
+                log: params.log,
+                messageId: input.id,
+                ...(params.turnAdoptionLifecycle
+                  ? { turnAdoptionLifecycle: params.turnAdoptionLifecycle }
+                  : {}),
+              })
+      ) as ChannelTurnResult<TDispatchResult>;
+      result = dispatchResult.dispatched ? { ...dispatchResult, admission } : dispatchResult;
+    } catch (err) {
+      const failedResult: ChannelTurnResult<TDispatchResult> = {
+        admission,
+        dispatched: false,
+        ctxPayload: resolved.ctxPayload,
+        routeSessionKey: resolved.routeSessionKey,
+      };
+      try {
+        await params.adapter.onFinalize?.(failedResult);
+      } catch {
+        // Preserve the original dispatch error.
+      }
+      emit({
+        ...params,
+        accountId: resolved.accountId ?? params.accountId,
+        event: {
+          stage: "finalize",
+          event: "done",
+          messageId: input.id,
+          sessionKey: resolved.routeSessionKey,
+          admission: admission.kind,
+        },
+      });
+      throw err;
     }
-    emit({
-      ...params,
-      accountId: resolved.accountId ?? params.accountId,
-      event: {
-        stage: "finalize",
-        event: "done",
-        messageId: input.id,
-        sessionKey: resolved.routeSessionKey,
-        admission: admission.kind,
-      },
-    });
-    throw err;
-  }
 
-  try {
-    await params.adapter.onFinalize?.(result);
-    emit({
-      ...params,
-      accountId: resolved.accountId ?? params.accountId,
-      event: {
-        stage: "finalize",
-        event: "done",
-        messageId: input.id,
-        sessionKey: resolved.routeSessionKey,
-        admission: admission.kind,
-      },
-    });
-  } catch (err) {
-    emit({
-      ...params,
-      accountId: resolved.accountId ?? params.accountId,
-      event: {
-        stage: "finalize",
-        event: "error",
-        messageId: input.id,
-        sessionKey: resolved.routeSessionKey,
-        admission: admission.kind,
-        error: err,
-      },
-    });
-    throw err;
-  }
+    try {
+      await params.adapter.onFinalize?.(result);
+      emit({
+        ...params,
+        accountId: resolved.accountId ?? params.accountId,
+        event: {
+          stage: "finalize",
+          event: "done",
+          messageId: input.id,
+          sessionKey: resolved.routeSessionKey,
+          admission: admission.kind,
+        },
+      });
+    } catch (err) {
+      emit({
+        ...params,
+        accountId: resolved.accountId ?? params.accountId,
+        event: {
+          stage: "finalize",
+          event: "error",
+          messageId: input.id,
+          sessionKey: resolved.routeSessionKey,
+          admission: admission.kind,
+          error: err,
+        },
+      });
+      throw err;
+    }
 
-  return result;
+    return result;
+  } finally {
+    // A bound issuer is exact-turn authority. Clear it even when dispatch
+    // short-circuits before session recording, so a context cannot be replayed.
+    clearBoundChannelInboundMemorySubject(resolved.ctxPayload);
+  }
 }
 
-export const runChannelInboundEvent = runChannelTurn;
+export function runChannelInboundEvent<
+  TRaw,
+  TDispatchResult = DispatchedChannelTurnResult["dispatchResult"],
+>(
+  params: RunChannelTurnParams<
+    TRaw,
+    TDispatchResult,
+    ChannelProviderOwnedMessageSendingDeliveryAdapter
+  >,
+): Promise<ChannelTurnResult<TDispatchResult>>;
+export function runChannelInboundEvent<
+  TRaw,
+  TDispatchResult = DispatchedChannelTurnResult["dispatchResult"],
+>(params: RunChannelTurnParams<TRaw, TDispatchResult>): Promise<ChannelTurnResult<TDispatchResult>>;
+export function runChannelInboundEvent<
+  TRaw,
+  TDispatchResult = DispatchedChannelTurnResult["dispatchResult"],
+>(
+  params: RunChannelTurnParams<TRaw, TDispatchResult, ChannelTurnDeliveryAdapter>,
+): Promise<ChannelTurnResult<TDispatchResult>> {
+  return runChannelTurn(params);
+}
+
+/** Internal-only entrypoint used by the trusted paired runtime facade. */
+export function runChannelInboundEventWithCoreIngress<
+  TRaw,
+  TDispatchResult = DispatchedChannelTurnResult["dispatchResult"],
+>(
+  params: RunChannelTurnParams<
+    TRaw,
+    TDispatchResult,
+    ChannelProviderOwnedMessageSendingDeliveryAdapter
+  >,
+  coreIngress: object,
+): Promise<ChannelTurnResult<TDispatchResult>>;
+export function runChannelInboundEventWithCoreIngress<
+  TRaw,
+  TDispatchResult = DispatchedChannelTurnResult["dispatchResult"],
+>(
+  params: RunChannelTurnParams<TRaw, TDispatchResult>,
+  coreIngress: object,
+): Promise<ChannelTurnResult<TDispatchResult>>;
+export function runChannelInboundEventWithCoreIngress<
+  TRaw,
+  TDispatchResult = DispatchedChannelTurnResult["dispatchResult"],
+>(
+  params: RunChannelTurnParams<TRaw, TDispatchResult, ChannelTurnDeliveryAdapter>,
+  coreIngress: object,
+): Promise<ChannelTurnResult<TDispatchResult>> {
+  return runChannelTurn(params, coreIngress);
+}

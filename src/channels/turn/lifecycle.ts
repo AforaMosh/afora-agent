@@ -15,6 +15,7 @@ import { isPlatformMessageNotDispatchedError } from "../../infra/outbound/delive
 import { createMessageSentEmitter } from "../../infra/outbound/message-sent-hook.js";
 import { summarizeOutboundPayloadForTransport } from "../../infra/outbound/payloads.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
+import { transferChannelInboundMemorySubjectMarker } from "../inbound-event/memory-subject-attestation.js";
 import { resolveMessageReceiptPrimaryId } from "../message/receipt.js";
 import { createChannelReplyPipeline } from "../message/reply-pipeline.js";
 import { recordInboundSession } from "../session.js";
@@ -55,6 +56,24 @@ type PendingChannelDeliveryAttempt = {
   error?: unknown;
 };
 
+function applyRouteContext<T extends AssembledChannelTurn["ctxPayload"]>(
+  ctxPayload: T,
+  route: { agentId: string; dmScope: string | undefined },
+): T {
+  if (!route.dmScope && ctxPayload.AgentId === route.agentId) {
+    return ctxPayload;
+  }
+  // The routed agent owns the store path. Keep the final context aligned so
+  // attested first-write authority cannot cross an agent boundary in transit.
+  const routedContext = {
+    ...ctxPayload,
+    ...(route.dmScope ? { DmScope: route.dmScope } : {}),
+    AgentId: route.agentId,
+  } as T;
+  transferChannelInboundMemorySubjectMarker(ctxPayload, routedContext);
+  return routedContext;
+}
+
 function resolvePartialChannelDeliveryResult(
   error: unknown,
 ): (ChannelDeliveryOutcome & { visibleReplySent: true }) | undefined {
@@ -74,7 +93,7 @@ export function assembleResolvedChannelTurn<
     const { cfg, route, ...turn } = value;
     return {
       ...turn,
-      ctxPayload: route.dmScope ? { ...turn.ctxPayload, DmScope: route.dmScope } : turn.ctxPayload,
+      ctxPayload: applyRouteContext(turn.ctxPayload, route),
       routeSessionKey: route.sessionKey,
       storePath: resolveStorePath(cfg.session?.store, { agentId: route.agentId }),
       recordInboundSession,
@@ -83,7 +102,7 @@ export function assembleResolvedChannelTurn<
   const { cfg, route, ...turn } = value;
   const assembled: RoutedAssembledChannelTurn = {
     ...turn,
-    ctxPayload: route.dmScope ? { ...turn.ctxPayload, DmScope: route.dmScope } : turn.ctxPayload,
+    ctxPayload: applyRouteContext(turn.ctxPayload, route),
     cfg,
     agentId: route.agentId,
     routeSessionKey: route.sessionKey,
@@ -647,6 +666,13 @@ export async function dispatchAssembledChannelTurn(
   params: AssembledChannelTurn,
 ): Promise<ChannelTurnResult> {
   return await dispatchChannelTurnWithDeliveryOwner(params, "legacy-dispatcher");
+}
+
+/** Keeps the exact assembled context that the kernel attested through routed dispatch. */
+export async function dispatchAssembledRoutedChannelTurn(
+  params: RoutedAssembledChannelTurn,
+): Promise<ChannelTurnResult> {
+  return await dispatchChannelTurnWithDeliveryOwner(params, "routed-delivery");
 }
 
 export async function dispatchRoutedChannelTurn(

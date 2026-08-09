@@ -1,6 +1,10 @@
 import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import {
+  normalizeOptionalLowercaseString,
+  normalizeOptionalString,
+} from "@openclaw/normalization-core/string-coerce";
 import { normalizeOptionalAgentRuntimeId } from "../agents/agent-runtime-id.js";
+import { createCoreChannelInboundEventFacade } from "../channels/inbound-event/core-ingress.js";
 import { createChannelIngressDrain } from "../channels/message/ingress-drain.js";
 import { createChannelIngressQueue } from "../channels/message/ingress-queue.js";
 import {
@@ -31,6 +35,7 @@ import {
   isAgentHarnessSessionKey,
   isAgentHarnessSessionKeyOwnedBy,
 } from "../sessions/agent-harness-session-key.js";
+import { isPluginRegistryActivated, isPluginRegistryRetired } from "./registry-lifecycle.js";
 import type { PluginRegistryState } from "./registry-state.js";
 import type { PluginRecord } from "./registry-types.js";
 import {
@@ -544,6 +549,7 @@ export function createPluginRuntimeResolver(state: PluginRegistryState) {
       }
     };
     let scopedAgentRuntime: PluginRuntime["agent"] | undefined;
+    let scopedChannelRuntime: PluginRuntime["channel"] | undefined;
     const runtime = new Proxy(registryParams.runtime, {
       get(target, prop, receiver) {
         const runWithPluginScope = <T>(run: () => T): T => {
@@ -699,6 +705,45 @@ export function createPluginRuntimeResolver(state: PluginRegistryState) {
             list: (params) => runWithPluginScope(() => nodes.list(params)),
             invoke: (params) => runWithPluginScope(() => nodes.invoke(params)),
           } satisfies PluginRuntime["nodes"];
+        }
+        if (prop === "channel") {
+          if (scopedChannelRuntime) {
+            return scopedChannelRuntime;
+          }
+          const channel: PluginRuntime["channel"] = getRuntimeProperty();
+          const isLiveTrustedOwnedChannel = (channelId: unknown): boolean => {
+            // The facade can outlive a plugin runtime object. Consult the live
+            // registry record so disable, unload, or removal revokes ingress.
+            const record = registry.plugins.find((entry) => entry.id === pluginId);
+            const normalizedChannelId = normalizeOptionalLowercaseString(channelId);
+            if (
+              !isPluginRegistryActivated(registry) ||
+              isPluginRegistryRetired(registry) ||
+              !record ||
+              record.enabled !== true ||
+              record.status !== "loaded" ||
+              !normalizedChannelId ||
+              (record.origin !== "bundled" && record.trustedOfficialInstall !== true)
+            ) {
+              return false;
+            }
+            return registry.channels.some(
+              (entry) =>
+                entry.pluginId === pluginId &&
+                normalizeOptionalLowercaseString(entry.plugin.id) === normalizedChannelId,
+            );
+          };
+          const inbound = createCoreChannelInboundEventFacade({
+            ownsChannel: isLiveTrustedOwnedChannel,
+          });
+          scopedChannelRuntime = {
+            ...channel,
+            inbound: {
+              ...channel.inbound,
+              ...inbound,
+            },
+          } satisfies PluginRuntime["channel"];
+          return scopedChannelRuntime;
         }
         if (prop === "agent") {
           if (scopedAgentRuntime) {
