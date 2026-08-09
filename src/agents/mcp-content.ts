@@ -1,3 +1,5 @@
+import { canonicalizeBase64, estimateBase64DecodedBytes } from "@openclaw/media-core/base64";
+import { MAX_IMAGE_BYTES } from "@openclaw/media-core/constants";
 import { isRecord } from "@openclaw/normalization-core/record-coerce";
 import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
 import {
@@ -16,6 +18,7 @@ const MCP_STRUCTURED_MAX_BYTES = 1024 * 1024;
 
 const MCP_STRUCTURED_MAX_VALUES = 1_000;
 const MCP_STRUCTURED_MAX_STRING_CHARS = 64_000;
+const MCP_IMAGE_MAX_ENCODED_CHARS = Math.ceil(MAX_IMAGE_BYTES / 3) * 4;
 const MCP_TEXT_TRUNCATION_MARKER = "\n[truncated: MCP text content exceeded 1 MB]";
 const MCP_RESULT_TRUNCATION_MARKER = "[truncated: MCP result exceeded 20 MB]";
 const MCP_STRUCTURED_TRUNCATION_MARKER = "[MCP structured output omitted: limit exceeded]";
@@ -206,8 +209,16 @@ function mcpContentBlockToAgentContent(block: unknown): McpAgentContentBlock {
       };
     case "image": {
       const mimeType = normalizeMcpMimeType(block.mimeType);
-      if (typeof block.data === "string" && mimeType?.startsWith("image/")) {
-        return { type: "image", data: block.data, mimeType };
+      if (
+        typeof block.data === "string" &&
+        block.data.length <= MCP_IMAGE_MAX_ENCODED_CHARS &&
+        mimeType?.startsWith("image/") &&
+        estimateBase64DecodedBytes(block.data) <= MAX_IMAGE_BYTES
+      ) {
+        const data = canonicalizeBase64(block.data);
+        if (data) {
+          return { type: "image", data, mimeType };
+        }
       }
       return { type: "text", text: "[image omitted: invalid MCP image]" };
     }

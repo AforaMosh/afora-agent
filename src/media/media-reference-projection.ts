@@ -361,7 +361,7 @@ function projectMediaPayload(
         String(index),
         depth + 1,
         mode,
-        false,
+        enclosingVideo,
         enclosingMedia,
       );
       projected[index] = item === INLINE_VIDEO_PAYLOAD ? REDACTED_INLINE_VIDEO : item;

@@ -1,5 +1,28 @@
+import { MAX_IMAGE_BYTES } from "@openclaw/media-core/constants";
 import { describe, expect, it } from "vitest";
-import { projectMcpJsonValue } from "./mcp-content.js";
+import { projectMcpContentBlocks, projectMcpJsonValue } from "./mcp-content.js";
+
+describe("projectMcpContentBlocks images", () => {
+  it("returns valid image data in canonical base64 form", () => {
+    expect(
+      projectMcpContentBlocks([{ type: "image", data: "aGVs bG8=\n", mimeType: "IMAGE/PNG" }]),
+    ).toEqual([{ type: "image", data: "aGVsbG8=", mimeType: "image/png" }]);
+  });
+
+  it("omits invalid base64 image data", () => {
+    expect(
+      projectMcpContentBlocks([{ type: "image", data: "not%base64", mimeType: "image/png" }]),
+    ).toEqual([{ type: "text", text: "[image omitted: invalid MCP image]" }]);
+  });
+
+  it("omits encoded image input above the raw allocation cap", () => {
+    const data = "AAAA".repeat(MAX_IMAGE_BYTES / 3 + 1);
+
+    expect(projectMcpContentBlocks([{ type: "image", data, mimeType: "image/png" }])).toEqual([
+      { type: "text", text: "[image omitted: invalid MCP image]" },
+    ]);
+  });
+});
 
 describe("projectMcpJsonValue media aliases", () => {
   it.each([

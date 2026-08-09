@@ -512,6 +512,7 @@ describe("AgentSession native media", () => {
       facts,
       undefined,
       undefined,
+      undefined,
       [...identities],
     );
 

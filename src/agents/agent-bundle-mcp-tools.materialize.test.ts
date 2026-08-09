@@ -381,7 +381,7 @@ describe("createBundleMcpToolRuntime", () => {
               resource: { uri: "blob://two", blob: "AAAA", mimeType: "application/pdf" },
             },
             { type: "audio", data: "AAAA", mimeType: "audio/mpeg" },
-            { type: "image", data: "iVBOR", mimeType: "image/png" },
+            { type: "image", data: "aW1hZ2U=", mimeType: "image/png" },
           ],
           isError: false,
         } as CallToolResult,
@@ -405,7 +405,7 @@ describe("createBundleMcpToolRuntime", () => {
         text: "[binary resource omitted] (application/pdf) blob://two",
       },
       { type: "text", text: "[audio omitted: audio/mpeg]" },
-      { type: "image", data: "iVBOR", mimeType: "image/png" },
+      { type: "image", data: "aW1hZ2U=", mimeType: "image/png" },
     ]);
   });
 

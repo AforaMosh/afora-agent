@@ -160,6 +160,22 @@ describe("sanitizeDurableMediaPayload", () => {
     });
   });
 
+  it("inherits video context through direct and nested source arrays", () => {
+    const payload = "private-array-video";
+    const nestedPayload = "private-nested-array-video";
+    const projected = sanitizeDurableMediaPayload({
+      type: "video",
+      source: [{ data: payload }, [[{ data: nestedPayload }]]],
+    });
+
+    expect(projected).toEqual({
+      type: "video",
+      source: ["[video data omitted]", [["[video data omitted]"]]],
+    });
+    expect(JSON.stringify(projected)).not.toContain(payload);
+    expect(JSON.stringify(projected)).not.toContain(nestedPayload);
+  });
+
   it.each([
     {
       name: "video source string",

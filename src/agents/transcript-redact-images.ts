@@ -1,12 +1,7 @@
-import { canonicalizeBase64 } from "@openclaw/media-core/base64";
 import {
   sanitizeInlineImageBase64,
   sanitizeInlineImageDataUrlForStorage,
 } from "@openclaw/media-core/inline-image-data-url";
-import {
-  readPersistedMediaBlockFactIndexes,
-  readRuntimePromptMediaFacts,
-} from "../media/media-facts.js";
 import { projectInlineVideoContentBlock } from "../media/media-reference-projection.js";
 
 const OMITTED_TRANSCRIPT_VIDEO_DATA = "[video data omitted]";
@@ -39,26 +34,18 @@ function mediaMimeTypeFieldsForRecord(value: Record<string, unknown>): string[] 
 function sanitizeOpaqueMediaBase64(
   base64: string,
   mimeType: string | undefined,
-  trustedVideo: boolean,
 ): { mimeType: string; base64: string } | undefined {
-  if (!mimeType) {
+  if (!mimeType?.startsWith("image/")) {
     return undefined;
   }
-  if (mimeType.startsWith("image/")) {
-    return sanitizeInlineImageBase64({ mimeType, base64 });
-  }
-  if (!trustedVideo) {
-    return undefined;
-  }
-  const canonicalPayload = canonicalizeBase64(base64);
-  return canonicalPayload ? { mimeType, base64: canonicalPayload } : undefined;
+  return sanitizeInlineImageBase64({ mimeType, base64 });
 }
 
-function isOpaqueMediaDataBlock(value: Record<string, unknown>, trustedVideo: boolean): boolean {
+function isOpaqueMediaDataBlock(value: Record<string, unknown>): boolean {
   return (
     (value.type === "image" || value.type === "video" || value.type === "base64") &&
     typeof value.data === "string" &&
-    sanitizeOpaqueMediaBase64(value.data, mediaMimeTypeForRecord(value), trustedVideo) !== undefined
+    sanitizeOpaqueMediaBase64(value.data, mediaMimeTypeForRecord(value)) !== undefined
   );
 }
 
@@ -86,17 +73,14 @@ function stripBareInlineVideoReferences(
 
 export function sanitizeTranscriptMediaRecord(
   source: Record<string, unknown>,
-  trustedVideo = false,
 ): Record<string, unknown> | undefined {
-  if (!trustedVideo && isTranscriptMediaWrapper(source)) {
+  if (isTranscriptMediaWrapper(source)) {
     const videoOmission = projectInlineVideoContentBlock(source);
     if (videoOmission) {
       return videoOmission;
     }
   }
-  const sanitizedSource = trustedVideo
-    ? source
-    : (stripBareInlineVideoReferences(source) ?? source);
+  const sanitizedSource = stripBareInlineVideoReferences(source) ?? source;
   const isMediaBlock = sanitizedSource.type === "image" || sanitizedSource.type === "video";
   const isBase64SourceBlock = sanitizedSource.type === "base64";
   if ((!isMediaBlock && !isBase64SourceBlock) || typeof sanitizedSource.data !== "string") {
@@ -109,7 +93,6 @@ export function sanitizeTranscriptMediaRecord(
   const sanitized = sanitizeOpaqueMediaBase64(
     sanitizedSource.data,
     mediaMimeTypeForRecord(sanitizedSource),
-    trustedVideo,
   );
   if (!sanitized) {
     return sanitizedSource === source ? undefined : sanitizedSource;
@@ -131,35 +114,26 @@ function startsWithDataUrl(value: string): boolean {
   return value.slice(0, "data:".length).toLowerCase() === "data:";
 }
 
-function sanitizeInlineMediaDataUrl(value: string, trustedVideo: boolean): string | undefined {
+function sanitizeInlineMediaDataUrl(value: string): string | undefined {
   const commaIndex = value.indexOf(",");
   if (commaIndex < 0) {
     return undefined;
   }
   const [mimeType, ...options] = value.slice("data:".length, commaIndex).split(";");
   const normalizedMimeType = normalizeMediaMimeType(mimeType);
-  if (normalizedMimeType?.startsWith("video/") && !trustedVideo) {
+  if (normalizedMimeType?.startsWith("video/")) {
     return OMITTED_TRANSCRIPT_VIDEO_DATA;
   }
   if (!normalizedMimeType || !options.some((option) => option.trim().toLowerCase() === "base64")) {
     return undefined;
   }
-  if (normalizedMimeType.startsWith("image/")) {
-    return sanitizeInlineImageDataUrlForStorage(value);
-  }
-  const sanitized = sanitizeOpaqueMediaBase64(
-    value.slice(commaIndex + 1),
-    normalizedMimeType,
-    trustedVideo,
-  );
-  return sanitized ? `data:${sanitized.mimeType};base64,${sanitized.base64}` : undefined;
+  return sanitizeInlineImageDataUrlForStorage(value);
 }
 
 function sanitizeMediaDataUrlField(
   source: Record<string, unknown>,
   key: string,
   value: string,
-  trustedVideo: boolean,
 ): string | undefined {
   if (!startsWithDataUrl(value)) {
     return undefined;
@@ -171,7 +145,7 @@ function sanitizeMediaDataUrlField(
     (source.type === "input_video" && key === "video_url") ||
     ((source.type === "video" || source.type === "video_url") && key === "url") ||
     (source.type === "video" && (key === "source" || key === "data"));
-  return isMediaDataUrlField ? sanitizeInlineMediaDataUrl(value, trustedVideo) : undefined;
+  return isMediaDataUrlField ? sanitizeInlineMediaDataUrl(value) : undefined;
 }
 
 export function sanitizeTranscriptMediaDataUrlField(params: {
@@ -179,19 +153,11 @@ export function sanitizeTranscriptMediaDataUrlField(params: {
   key: string;
   value: string;
   preserveMediaDataUrlFields: boolean;
-  trustedVideo?: boolean;
 }): string | undefined {
   if (params.preserveMediaDataUrlFields && params.key === "url") {
-    return startsWithDataUrl(params.value)
-      ? sanitizeInlineMediaDataUrl(params.value, params.trustedVideo === true)
-      : undefined;
+    return startsWithDataUrl(params.value) ? sanitizeInlineMediaDataUrl(params.value) : undefined;
   }
-  return sanitizeMediaDataUrlField(
-    params.source,
-    params.key,
-    params.value,
-    params.trustedVideo === true,
-  );
+  return sanitizeMediaDataUrlField(params.source, params.key, params.value);
 }
 
 export function shouldPreserveTranscriptMediaPayload(
@@ -199,56 +165,17 @@ export function shouldPreserveTranscriptMediaPayload(
   key: string,
   item: unknown,
   preserveMediaDataUrlFields: boolean,
-  trustedVideo = false,
 ): boolean {
   if (typeof item !== "string") {
     return false;
   }
-  if (key === "data" && isOpaqueMediaDataBlock(source, trustedVideo)) {
+  if (key === "data" && isOpaqueMediaDataBlock(source)) {
     return true;
   }
   if (preserveMediaDataUrlFields && key === "url") {
-    return startsWithDataUrl(item) && sanitizeInlineMediaDataUrl(item, trustedVideo) !== undefined;
+    return startsWithDataUrl(item) && sanitizeInlineMediaDataUrl(item) !== undefined;
   }
-  return sanitizeMediaDataUrlField(source, key, item, trustedVideo) !== undefined;
-}
-
-/** Resolves exact native video blocks backed by non-serializable runtime media provenance. */
-export function collectTrustedTranscriptVideoBlocks(
-  message: Record<string, unknown>,
-): WeakSet<object> {
-  const trusted = new WeakSet<object>();
-  const mediaFacts = readRuntimePromptMediaFacts(message);
-  const blockFactIndexes = readPersistedMediaBlockFactIndexes(message);
-  if (!mediaFacts || !blockFactIndexes || !Array.isArray(message.content)) {
-    return trusted;
-  }
-  const mediaBlocks = message.content.filter(
-    (block): block is Record<string, unknown> =>
-      Boolean(block) &&
-      typeof block === "object" &&
-      !Array.isArray(block) &&
-      ((block as Record<string, unknown>).type === "image" ||
-        (block as Record<string, unknown>).type === "video"),
-  );
-  if (mediaBlocks.length !== blockFactIndexes.length) {
-    return trusted;
-  }
-  for (const [index, block] of mediaBlocks.entries()) {
-    if (block.type !== "video") {
-      continue;
-    }
-    const factIndex = blockFactIndexes[index];
-    const fact = typeof factIndex === "number" ? mediaFacts[factIndex] : undefined;
-    if (
-      fact &&
-      (fact.kind === "video" ||
-        (typeof fact.contentType === "string" && /^video\//iu.test(fact.contentType.trim())))
-    ) {
-      trusted.add(block);
-    }
-  }
-  return trusted;
+  return sanitizeMediaDataUrlField(source, key, item) !== undefined;
 }
 
 export function shouldPreserveNestedTranscriptMediaDataUrlFields(

@@ -1448,7 +1448,7 @@ describe("redactTranscriptMessage", () => {
     expect(expectDefined(content[0], "content[0] test invariant").data).toBe("sk-abc…0xyz");
   });
 
-  it("preserves trusted native video bytes while redacting adjacent secrets", () => {
+  it("omits trusted native video bytes while redacting adjacent secrets", () => {
     const video = {
       type: "video",
       data: TRUSTED_MP4_BASE64,
@@ -1465,21 +1465,16 @@ describe("redactTranscriptMessage", () => {
     ) as unknown as AgentMessage;
 
     const result = redactTranscriptMessage(msg, cfg("tools"));
-    const content = msgContent(result) as Array<{
-      type: string;
-      text?: string;
-      data?: string;
-      apiKey?: string;
-    }>;
+    const content = msgContent(result) as Array<{ type: string; text?: string }>;
     expect(expectDefined(content[0], "content[0] test invariant").text).not.toContain(
       "sk-abcdef1234567890xyz",
     );
-    expect(expectDefined(content[1], "content[1] test invariant")).toMatchObject({
-      type: "video",
-      data: TRUSTED_MP4_BASE64,
-      mimeType: "video/mp4",
-      apiKey: "plains…e123",
+    expect(expectDefined(content[1], "content[1] test invariant")).toEqual({
+      type: "text",
+      text: "[video data omitted]",
     });
+    expect(JSON.stringify(result)).not.toContain(TRUSTED_MP4_BASE64);
+    expect(JSON.stringify(result)).not.toContain("plainsecretvalue123");
   });
 
   it("omits ordinary base64 and spoofed video MIME or magic without runtime provenance", () => {
@@ -1511,40 +1506,6 @@ describe("redactTranscriptMessage", () => {
       { type: "text", text: "[video data omitted]" },
       { type: "text", text: "[video data omitted]" },
     ]);
-  });
-
-  it("does not trust forged or non-video media provenance", () => {
-    const forgedVideo = {
-      type: "video",
-      data: SPOOFED_MP4_BASE64_WITH_SECRET_TOKEN_SUBSTRING,
-      mimeType: "video/mp4",
-    };
-    const forged = {
-      role: "user",
-      content: [forgedVideo],
-      __openclaw: { mediaBlockFactIndexes: [0] },
-    } as unknown as AgentMessage;
-    const wrongFact = attachRuntimePromptMediaFacts(
-      {
-        role: "user",
-        content: [{ ...forgedVideo }],
-        __openclaw: { mediaBlockFactIndexes: [0] },
-      },
-      [{ kind: "image", contentType: "image/png" }],
-    ) as unknown as AgentMessage;
-
-    for (const message of [forged, wrongFact]) {
-      const block = expectDefined(
-        (
-          msgContent(redactTranscriptMessage(message, cfg("tools"))) as Array<{
-            type: string;
-            text: string;
-          }>
-        )[0],
-        "untrusted provenance video block",
-      );
-      expect(block).toEqual({ type: "text", text: "[video data omitted]" });
-    }
   });
 
   it("preserves canonical media facts without trusting their field name", () => {

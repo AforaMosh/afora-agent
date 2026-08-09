@@ -48,10 +48,12 @@ afterEach(() => {
 });
 
 describe("guardSessionManager transcript updates", () => {
-  it("preserves trusted video provenance through input attribution before redaction", () => {
+  it("keeps runtime video separate while persisting an omission and its managed reference", () => {
     const sm = SessionManager.inMemory();
+    const onUserMessagePersisted = vi.fn();
     const guarded = guardSessionManager(sm, {
       inputProvenance: { kind: "external_user", sourceChannel: "telegram" },
+      onUserMessagePersisted,
     });
     const video = {
       type: "video" as const,
@@ -65,7 +67,18 @@ describe("guardSessionManager transcript updates", () => {
           role: "user" as const,
           content: [video],
           timestamp: Date.now(),
-          __openclaw: { mediaBlockFactIndexes: [0] },
+          __openclaw: {
+            media: [
+              {
+                sourceId: "described-video",
+                sourceIndex: 0,
+                kind: "video" as const,
+                contentType: "video/mp4",
+                url: "media://inbound/described-video",
+              },
+            ],
+            mediaBlockFactIndexes: [0],
+          },
         },
         [{ kind: "video", contentType: "video/mp4" }],
       ),
@@ -79,11 +92,24 @@ describe("guardSessionManager transcript updates", () => {
       | undefined;
     expect(persisted?.message).toMatchObject({
       provenance: { kind: "external_user", sourceChannel: "telegram" },
-      content: [video],
+      content: [{ type: "text", text: "[video data omitted]" }],
+      __openclaw: {
+        media: [
+          expect.objectContaining({
+            sourceId: "described-video",
+            url: "media://inbound/described-video",
+          }),
+        ],
+      },
     });
-    expect(persisted?.message && readRuntimeMediaFactIdentities(persisted.message)).toEqual(
-      identities,
+    expect(JSON.stringify(persisted?.message)).not.toContain(video.data);
+    expect(onUserMessagePersisted).toHaveBeenCalledWith(
+      persisted?.message,
+      expect.objectContaining({ content: [video] }),
     );
+    const runtimeMessage = onUserMessagePersisted.mock.calls[0]?.[1] as AgentMessage | undefined;
+    expect(runtimeMessage).toBe(message);
+    expect(runtimeMessage && readRuntimeMediaFactIdentities(runtimeMessage)).toEqual(identities);
   });
 
   it.each(["active", "side", "setup-metadata"] as const)(

@@ -1,4 +1,5 @@
 /** Tests the built-in node-host MCP invocation command. */
+import { MAX_IMAGE_BYTES } from "@openclaw/media-core/constants";
 import { describe, expect, it, vi } from "vitest";
 import type { GatewayClient } from "../gateway/client.js";
 import { handleInvoke } from "./invoke.js";
@@ -263,7 +264,7 @@ describe("mcp.tools.call.v1", () => {
   });
 
   it("drops oversized images and bounds structured content before node.invoke serialization", async () => {
-    const oversized = "A".repeat(20 * 1024 * 1024);
+    const oversized = "AAAA".repeat(MAX_IMAGE_BYTES / 3 + 1);
     const result = await invokeMcp(
       managerWith(async () => ({
         content: [{ type: "image", data: oversized, mimeType: "image/png" }],
@@ -276,9 +277,7 @@ describe("mcp.tools.call.v1", () => {
       structuredContent?: { oversized?: string };
     };
     expect(Buffer.byteLength(JSON.stringify(result))).toBeLessThanOrEqual(20 * 1024 * 1024);
-    expect(payload.content).toEqual([
-      { type: "text", text: "[truncated: MCP result exceeded 20 MB]" },
-    ]);
+    expect(payload.content).toEqual([{ type: "text", text: "[image omitted: invalid MCP image]" }]);
     const oversizedProjection = payload.structuredContent?.oversized;
     expect(oversizedProjection).toContain("truncated: MCP string exceeded");
     expect(oversizedProjection?.length).toBeLessThan(65_000);
