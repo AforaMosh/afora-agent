@@ -252,11 +252,11 @@ export async function dispatchPreparedSlackMessage(prepared: PreparedSlackMessag
           if (
             hasSlackCustomIdentity ||
             !previewStreamingEnabled ||
-             (reply.hasMedia && !ttsSupplement) ||
-             payload.isError ||
-             requiresSeparateFallbackDelivery ||
-             !previewFinalTextFitsEdit ||
-             (trimmedFinalText.length === 0 && !slackBlocks?.length)
+            (reply.hasMedia && !ttsSupplement) ||
+            payload.isError ||
+            requiresSeparateFallbackDelivery ||
+            !previewFinalTextFitsEdit ||
+            (trimmedFinalText.length === 0 && !slackBlocks?.length)
           ) {
             return undefined;
           }
