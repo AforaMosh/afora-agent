@@ -560,6 +560,12 @@ describe("buildGatewayReloadPlan", () => {
     ]);
 
     setActivePluginRegistry(emptyRegistry);
+    expect(buildGatewayReloadPlan(["channels.whatsapp.enabled"])).toMatchObject({
+      restartGateway: true,
+      restartReasons: ["channels.whatsapp.enabled"],
+      restartChannels: new Set(),
+      noopPaths: [],
+    });
     expect(buildGatewayReloadPlan(["channels.telegram.botToken"])).toMatchObject({
       restartGateway: true,
       restartChannels: new Set(),
