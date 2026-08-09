@@ -1,5 +1,6 @@
 // OpenClaw state database manages shared persisted state and migrations.
 import { existsSync } from "node:fs";
+import path from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 import {
   clearNodeSqliteKyselyCacheForDatabase,
@@ -77,7 +78,10 @@ import {
 } from "./openclaw-state-db-schema-repair.js";
 import * as sessionWatchMigration from "./openclaw-state-db-session-watch-migration.js";
 import type { DB as OpenClawStateKyselyDatabase } from "./openclaw-state-db.generated.js";
-import { resolveOpenClawStateSqliteIdentityPath } from "./openclaw-state-db.paths.js";
+import {
+  resolveOpenClawStateSqliteIdentityPath,
+  resolveOpenClawStateSqlitePath,
+} from "./openclaw-state-db.paths.js";
 import { OPENCLAW_STATE_SCHEMA_SQL } from "./openclaw-state-schema.js";
 
 export {
@@ -107,6 +111,61 @@ export { withOpenClawStateStartupMigrationCheckpointDatabase } from "./openclaw-
  * migrations/backups that operate on local state.
  */
 const cachedDatabases = new Map<string, OpenClawStateDatabase>();
+const cachedDatabaseAliases = new Map<string, string>();
+const MAX_CACHED_DATABASE_ALIASES = 256;
+
+function resolveRequestedDatabasePath(options: OpenClawStateDatabaseOptions): string {
+  return path.resolve(options.path ?? resolveOpenClawStateSqlitePath(options.env ?? process.env));
+}
+
+function rememberDatabaseAlias(requestedPath: string, identityPath: string): void {
+  if (requestedPath === identityPath) {
+    return;
+  }
+  cachedDatabaseAliases.delete(requestedPath);
+  cachedDatabaseAliases.set(requestedPath, identityPath);
+  while (cachedDatabaseAliases.size > MAX_CACHED_DATABASE_ALIASES) {
+    const oldest = cachedDatabaseAliases.keys().next().value;
+    if (oldest === undefined) {
+      break;
+    }
+    cachedDatabaseAliases.delete(oldest);
+  }
+}
+
+function forgetDatabaseAliases(identityPath: string): void {
+  for (const [requestedPath, cachedIdentityPath] of cachedDatabaseAliases) {
+    if (cachedIdentityPath === identityPath) {
+      cachedDatabaseAliases.delete(requestedPath);
+    }
+  }
+}
+
+function resolveCachedDatabaseIdentityPath(requestedPath: string): string | undefined {
+  if (cachedDatabases.has(requestedPath)) {
+    return requestedPath;
+  }
+  const identityPath = cachedDatabaseAliases.get(requestedPath);
+  if (!identityPath) {
+    return undefined;
+  }
+  if (!cachedDatabases.has(identityPath)) {
+    cachedDatabaseAliases.delete(requestedPath);
+    return undefined;
+  }
+  return identityPath;
+}
+
+function resolveStateDatabaseIdentityPath(options: OpenClawStateDatabaseOptions): string {
+  const requestedPath = resolveRequestedDatabasePath(options);
+  const cachedIdentityPath = resolveCachedDatabaseIdentityPath(requestedPath);
+  if (cachedIdentityPath) {
+    return cachedIdentityPath;
+  }
+  const identityPath = resolveOpenClawStateSqliteIdentityPath({ path: requestedPath });
+  rememberDatabaseAlias(requestedPath, identityPath);
+  return identityPath;
+}
 
 function evictCachedOpenClawStateDatabase(database: OpenClawStateDatabase): boolean {
   if (cachedDatabases.get(database.path) !== database) {
@@ -115,6 +174,7 @@ function evictCachedOpenClawStateDatabase(database: OpenClawStateDatabase): bool
   // Remove ownership before cleanup. A poisoned native handle can reject close,
   // but it must never remain discoverable as the process-wide shared handle.
   cachedDatabases.delete(database.path);
+  forgetDatabaseAliases(database.path);
   try {
     database.walMaintenance.close();
   } catch {
@@ -144,7 +204,7 @@ const terminalOpenLatch = createSqliteTerminalOpenLatch({
 export function confirmOpenClawStateDatabaseIntegrity(
   pathname: string,
 ): SqliteIntegrityConfirmation {
-  const resolvedPath = resolveOpenClawStateSqliteIdentityPath({ path: pathname });
+  const resolvedPath = resolveStateDatabaseIdentityPath({ path: pathname });
   closeOpenClawStateDatabaseByPath(resolvedPath);
   return confirmSqliteFileIntegrity(resolvedPath, resolvedPath);
 }
@@ -156,7 +216,7 @@ export function recordOpenClawStateDatabaseOpenFailure(
   generation?: SqliteFileGeneration,
 ): boolean {
   return terminalOpenLatch.record(
-    resolveOpenClawStateSqliteIdentityPath({ path: pathname }),
+    resolveStateDatabaseIdentityPath({ path: pathname }),
     error,
     generation,
   );
@@ -164,12 +224,14 @@ export function recordOpenClawStateDatabaseOpenFailure(
 
 /** Clear a terminal open failure after doctor rewrites the database file. */
 export function clearOpenClawStateDatabaseOpenFailure(pathname: string): void {
-  terminalOpenLatch.clear(resolveOpenClawStateSqliteIdentityPath({ path: pathname }));
+  terminalOpenLatch.clear(resolveStateDatabaseIdentityPath({ path: pathname }));
 }
 
 /** Reject shared-state access after a process-local terminal failure. */
-function assertOpenClawStateDatabaseOpenAllowed(options: OpenClawStateDatabaseOptions = {}): void {
-  const pathname = resolveDatabasePath(options);
+function assertOpenClawStateDatabaseOpenAllowed(
+  options: OpenClawStateDatabaseOptions = {},
+  pathname = resolveStateDatabaseIdentityPath(options),
+): void {
   const terminalFailure = terminalOpenLatch.get(pathname);
   if (terminalFailure) {
     throw terminalFailure;
@@ -179,10 +241,10 @@ function assertOpenClawStateDatabaseOpenAllowed(options: OpenClawStateDatabaseOp
 /** Reject a fresh shared-state open after known corruption until repair clears it. */
 export function assertOpenClawStateDatabaseFreshOpenAllowed(
   options: OpenClawStateDatabaseOptions = {},
+  pathname = resolveStateDatabaseIdentityPath(options),
 ): void {
-  assertOpenClawStateDatabaseOpenAllowed(options);
+  assertOpenClawStateDatabaseOpenAllowed(options, pathname);
   const env = options.env ?? process.env;
-  const pathname = resolveDatabasePath(options);
   let quarantineFailure: Error | undefined;
   try {
     const quarantine = readOpenClawDatabaseQuarantine(pathname, { env });
@@ -614,10 +676,10 @@ export function openOpenClawStateDatabase(
     return options.database;
   }
   const env = options.env ?? process.env;
-  const pathname = resolveDatabasePath(options);
+  const pathname = resolveStateDatabaseIdentityPath(options);
   // Latched paths are quarantined: the recorder closed any live handle, and
   // every open fails fast here until doctor repairs the file and clears it.
-  assertOpenClawStateDatabaseOpenAllowed(options);
+  assertOpenClawStateDatabaseOpenAllowed(options, pathname);
   const cached = cachedDatabases.get(pathname);
   if (cached?.db.isOpen) {
     return cached;
@@ -628,7 +690,7 @@ export function openOpenClawStateDatabase(
     clearNodeSqliteKyselyCacheForDatabase(cached.db);
     cachedDatabases.delete(pathname);
   }
-  assertOpenClawStateDatabaseFreshOpenAllowed(options);
+  assertOpenClawStateDatabaseFreshOpenAllowed(options, pathname);
   ensureOpenClawStatePermissions(pathname, env);
   const db = openNodeSqliteDatabase(pathname);
   enableNodeSqliteKyselyStatementCache(db);
@@ -717,7 +779,7 @@ export function runOpenClawStateWriteTransaction<T>(
 export function getOpenClawStateDatabaseIfOpen(
   options: OpenClawStateDatabaseOptions = {},
 ): OpenClawStateDatabase | undefined {
-  const cached = cachedDatabases.get(resolveDatabasePath(options));
+  const cached = cachedDatabases.get(resolveStateDatabaseIdentityPath(options));
   return cached?.db.isOpen ? cached : undefined;
 }
 
@@ -731,7 +793,7 @@ export function evictOpenClawStateDatabaseAfterCorruption(
 
 /** Close one cached shared state database handle by exact pathname. */
 export function closeOpenClawStateDatabaseByPath(pathname: string): boolean {
-  const resolvedPath = resolveOpenClawStateSqliteIdentityPath({ path: pathname });
+  const resolvedPath = resolveStateDatabaseIdentityPath({ path: pathname });
   const database = cachedDatabases.get(resolvedPath);
   if (!database) {
     return false;
@@ -741,6 +803,7 @@ export function closeOpenClawStateDatabaseByPath(pathname: string): boolean {
     database.db.close();
   }
   cachedDatabases.delete(resolvedPath);
+  forgetDatabaseAliases(resolvedPath);
   return true;
 }
 
@@ -753,6 +816,7 @@ export function closeOpenClawStateDatabase(): void {
     }
   }
   cachedDatabases.clear();
+  cachedDatabaseAliases.clear();
 }
 
 /** Test whether any cached shared state database handle is still open. */

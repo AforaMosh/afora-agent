@@ -4352,6 +4352,8 @@ INSERT INTO macos_port_guardian_records VALUES (4242, 18789, '/usr/bin/ssh', 're
 
     expect(alias).toBe(canonical);
     expect(alias.path).toBe(canonicalPath);
+    fs.unlinkSync(aliasDir);
+    expect(openOpenClawStateDatabase({ path: aliasPath })).toBe(canonical);
     expect(closeOpenClawStateDatabaseByPath(aliasPath)).toBe(true);
     expect(canonical.db.isOpen).toBe(false);
   });

@@ -1,4 +1,5 @@
 import { statSync } from "node:fs";
+import path from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 import { clearNodeSqliteKyselyCacheForDatabase } from "../infra/kysely-sync.js";
 import { openNodeSqliteDatabase } from "../infra/node-sqlite.js";
@@ -14,7 +15,7 @@ import {
   OPENCLAW_STATE_SCHEMA_VERSION,
   type OpenClawStateDatabaseOptions,
 } from "./openclaw-state-db.js";
-import { resolveOpenClawStateSqliteIdentityPath } from "./openclaw-state-db.paths.js";
+import { resolveOpenClawStateSqlitePath } from "./openclaw-state-db.paths.js";
 
 type OpenClawStateReadOnlyDatabase = {
   db: DatabaseSync;
@@ -24,7 +25,7 @@ type OpenClawStateReadOnlyDatabase = {
 type ReusedOpenClawStateReadOnlyDatabase<T> = { reused: false } | { reused: true; value: T };
 
 function resolveReadOnlyPath(options: OpenClawStateDatabaseOptions): string {
-  return resolveOpenClawStateSqliteIdentityPath(options);
+  return path.resolve(options.path ?? resolveOpenClawStateSqlitePath(options.env ?? process.env));
 }
 
 function existingPathOrUndefined(pathname: string): string | undefined {
