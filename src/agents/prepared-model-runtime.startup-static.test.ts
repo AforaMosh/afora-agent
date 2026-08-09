@@ -58,6 +58,9 @@ const mocks = vi.hoisted(() => {
       }),
     ),
     buildPreparedModelCatalogSnapshot: vi.fn(async () => ({ entries: [], routeVariants: [] })),
+    qualifyPreparedModelCatalogNativeVideo: vi.fn(
+      async ({ snapshot }: { snapshot: unknown }) => snapshot,
+    ),
     loadAgentRuntimePluginRegistryHandle: vi.fn(),
     loadStaticCatalog: vi.fn(async () => []),
     prepareStaticCatalog: vi.fn(async (..._args: unknown[]) => ({
@@ -146,7 +149,7 @@ vi.mock("./auth-profiles/runtime-snapshots.js", () => ({
 
 vi.mock("./model-catalog.js", () => ({
   buildPreparedModelCatalogSnapshot: mocks.buildPreparedModelCatalogSnapshot,
-  qualifyPreparedModelCatalogNativeVideo: async ({ snapshot }: { snapshot: unknown }) => snapshot,
+  qualifyPreparedModelCatalogNativeVideo: mocks.qualifyPreparedModelCatalogNativeVideo,
 }));
 
 vi.mock("./models-config.js", () => ({
