@@ -92,9 +92,13 @@ export async function createGatewayChatMetadataLifecycle(params: {
     ) => {
       context = next;
       const sidecar = await registerRefreshListeners();
-      if (sidecar) {
-        sidecars.push(sidecar);
+      if (!sidecar) {
+        // Minimal test gateways register no listeners and self-heal via refreshOnRead; an
+        // awaited startup refresh would force the full prepared-model-runtime build the
+        // minimal path exists to avoid, stalling startup past test hook budgets.
+        return;
       }
+      sidecars.push(sidecar);
       // Auth/model snapshots published before listener registration are otherwise never
       // observed; one awaited catch-up refresh reconciles facts (revision-aware, no-op when
       // fresh) so post-attach reads cannot serve a pre-publication generation. Failures are
