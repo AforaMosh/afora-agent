@@ -13,7 +13,6 @@ import {
 } from "../../media/media-reference.js";
 import { saveMediaBuffer } from "../../media/store.js";
 import { loadWebMedia } from "../../media/web-media.js";
-import { resolveMusicGenerationModeCapabilities } from "../../music-generation/capabilities.js";
 import { parseMusicGenerationModelRef } from "../../music-generation/model-ref.js";
 import {
   generateMusic,
@@ -215,40 +214,6 @@ function normalizeReferenceImageInputs(args: Record<string, unknown>): string[] 
     maxCount: MAX_INPUT_IMAGES,
     label: "reference images",
   });
-}
-
-function validateMusicGenerationCapabilities(params: {
-  provider: MusicGenerationProvider | undefined;
-  model?: string;
-  inputImageCount: number;
-  lyrics?: string;
-  instrumental?: boolean;
-  durationSeconds?: number;
-  format?: MusicGenerationOutputFormat;
-}) {
-  const provider = params.provider;
-  if (!provider) {
-    return;
-  }
-  const { capabilities: caps } = resolveMusicGenerationModeCapabilities({
-    provider,
-    inputImageCount: params.inputImageCount,
-  });
-  if (params.inputImageCount > 0) {
-    if (!caps) {
-      throw new ToolInputError(`${provider.id} does not support reference-image edit inputs.`);
-    }
-    if ("enabled" in caps && !caps.enabled) {
-      throw new ToolInputError(`${provider.id} does not support reference-image edit inputs.`);
-    }
-    const maxInputImages =
-      ("maxInputImages" in caps ? caps.maxInputImages : undefined) ?? MAX_INPUT_IMAGES;
-    if (params.inputImageCount > maxInputImages) {
-      throw new ToolInputError(
-        `${provider.id} supports at most ${maxInputImages} reference image${maxInputImages === 1 ? "" : "s"}.`,
-      );
-    }
-  }
 }
 
 type MusicGenerateSandboxConfig = {
@@ -761,15 +726,6 @@ export function createMusicGenerateTool(options?: {
         sandboxConfig,
         ssrfPolicy: remoteMediaSsrfPolicy,
         signal,
-      });
-      validateMusicGenerationCapabilities({
-        provider: selectedProvider,
-        model: selectedModelRef?.model ?? model ?? selectedProvider?.defaultModel,
-        inputImageCount: loadedReferenceImages.length,
-        lyrics,
-        instrumental,
-        durationSeconds,
-        format,
       });
       // Accepted tasks own their paid work independently; cancellation applies only before admission.
       signal?.throwIfAborted();

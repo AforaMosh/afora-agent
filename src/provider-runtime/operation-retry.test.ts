@@ -133,6 +133,42 @@ describe("executeProviderOperationWithRetry", () => {
     expect(operation).toHaveBeenCalledOnce();
   });
 
+  it("does not start an operation when retry policy is already cancelled", async () => {
+    const controller = new AbortController();
+    controller.abort(new Error("retry policy cancelled before provider read"));
+    const operation = vi.fn(async () => "ok");
+
+    await expect(
+      executeProviderOperationWithRetry({
+        provider: "test",
+        stage: "read",
+        operation,
+        retry: { attempts: 2, signal: controller.signal },
+      }),
+    ).rejects.toThrow("retry policy cancelled before provider read");
+
+    expect(operation).not.toHaveBeenCalled();
+  });
+
+  it("preserves retry-policy cancellation raised during an operation", async () => {
+    const controller = new AbortController();
+    const operation = vi.fn(async () => {
+      controller.abort(new Error("retry policy cancelled provider read"));
+      throw Object.assign(new Error("socket hang up"), { code: "ECONNRESET" });
+    });
+
+    await expect(
+      executeProviderOperationWithRetry({
+        provider: "test",
+        stage: "read",
+        operation,
+        retry: { attempts: 2, signal: controller.signal },
+      }),
+    ).rejects.toThrow("retry policy cancelled provider read");
+
+    expect(operation).toHaveBeenCalledOnce();
+  });
+
   it("does not retry create operations by default", async () => {
     const operation = vi.fn(async () => {
       throw Object.assign(new Error("write EPIPE"), { code: "EPIPE" });

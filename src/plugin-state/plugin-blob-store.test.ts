@@ -1,4 +1,5 @@
 // Plugin blob store tests cover persistence, quotas, expiry, and copied bytes.
+import { symlinkSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { openOpenClawStateDatabase } from "../state/openclaw-state-db.js";
 import { withOpenClawTestState } from "../test-utils/openclaw-test-state.js";
@@ -202,6 +203,50 @@ describe("plugin blob store", () => {
         createPluginBlobStore("diffs", options(state.env, { maxBytesPerEntry: 3 })),
       ).toThrow(/incompatible options/);
     });
+  });
+
+  it("keeps namespace limits independent across state databases", async () => {
+    await withOpenClawTestState(
+      { label: "plugin-blob-state-a", applyEnv: false },
+      async (stateA) => {
+        await withOpenClawTestState(
+          { label: "plugin-blob-state-b", applyEnv: false },
+          async (stateB) => {
+            const storeA = createPluginBlobStore<{ owner: string }>(
+              "diffs",
+              options(stateA.env, { maxEntries: 1 }),
+            );
+            const storeB = createPluginBlobStore<{ owner: string }>(
+              "diffs",
+              options(stateB.env, { maxEntries: 2 }),
+            );
+
+            await storeA.register("same", new Uint8Array([1]), { owner: "a" });
+            await storeB.register("same", new Uint8Array([2]), { owner: "b" });
+
+            await expect(storeA.lookup("same")).resolves.toMatchObject({
+              metadata: { owner: "a" },
+            });
+            await expect(storeB.lookup("same")).resolves.toMatchObject({
+              metadata: { owner: "b" },
+            });
+
+            const aliasStateDir = stateA.path("state-alias");
+            symlinkSync(
+              stateA.stateDir,
+              aliasStateDir,
+              process.platform === "win32" ? "junction" : "dir",
+            );
+            expect(() =>
+              createPluginBlobStore(
+                "diffs",
+                options({ ...stateA.env, OPENCLAW_STATE_DIR: aliasStateDir }, { maxEntries: 2 }),
+              ),
+            ).toThrow(/incompatible options/);
+          },
+        );
+      },
+    );
   });
 
   it("isolates plugin ids and namespaces and persists across reopen", async () => {

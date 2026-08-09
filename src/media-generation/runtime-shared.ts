@@ -43,6 +43,25 @@ export function recordCapabilityCandidateFailure(params: {
   });
 }
 
+/** Explain why a provider cannot accept every requested reference image. */
+export function resolveReferenceImageCapabilityError(params: {
+  candidateRef: string;
+  inputImageCount: number;
+  edit?: { enabled: boolean; maxInputImages?: number };
+}): string | undefined {
+  if (params.inputImageCount === 0) {
+    return undefined;
+  }
+  if (!params.edit?.enabled) {
+    return `${params.candidateRef} does not support reference-image edit inputs`;
+  }
+  const maxInputImages = params.edit.maxInputImages;
+  if (maxInputImages !== undefined && params.inputImageCount > maxInputImages) {
+    return `${params.candidateRef} supports at most ${maxInputImages} reference image${maxInputImages === 1 ? "" : "s"}, ${params.inputImageCount} requested`;
+  }
+  return undefined;
+}
+
 const IMAGE_RESOLUTION_ORDER = ["1K", "2K", "4K"] as const;
 
 function resolveMediaProviderDefaultTimeoutMs(timeoutMs: number | undefined): number | undefined {

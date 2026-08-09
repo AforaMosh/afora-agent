@@ -1,5 +1,6 @@
 // Plugin state store exposes persisted per-plugin state operations.
 import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { resolveOpenClawStateSqliteIdentityPath } from "../state/openclaw-state-db.paths.js";
 import {
   clearPluginStateDatabaseForTests,
   closePluginStateDatabase,
@@ -31,8 +32,6 @@ import {
   validatePluginStoreNamespace,
 } from "./plugin-store-validation.js";
 
-// Public plugin-state facade over the sqlite-backed store. It validates plugin
-// ids, namespaces, JSON values, TTLs, and per-plugin limits before persistence.
 // Public plugin-state facade over the sqlite-backed store. It validates plugin
 // ids, namespaces, JSON values, TTLs, and per-plugin limits before persistence.
 export type {
@@ -168,8 +167,9 @@ function assertConsistentOptions(
   pluginId: string,
   namespace: string,
   signature: StoreOptionSignature,
+  env?: NodeJS.ProcessEnv,
 ): void {
-  const key = `${pluginId}\0${namespace}`;
+  const key = `${resolveOpenClawStateSqliteIdentityPath({ env })}\0${pluginId}\0${namespace}`;
   const existing = namespaceOptionSignatures.get(key);
   if (!existing) {
     namespaceOptionSignatures.set(key, signature);
@@ -217,7 +217,7 @@ function createSyncKeyedStoreForPluginId<T>(
   const overflowPolicy = validateOverflowPolicy(options.overflowPolicy);
   const defaultTtlMs = validateOptionalTtlMs(options.defaultTtlMs);
   const env = options.env;
-  assertConsistentOptions(pluginId, namespace, { maxEntries, overflowPolicy, defaultTtlMs });
+  assertConsistentOptions(pluginId, namespace, { maxEntries, overflowPolicy, defaultTtlMs }, env);
 
   return {
     register(key, value, opts) {
@@ -421,16 +421,26 @@ export function registerPluginStateSyncSequencedJournalEntry(params: {
     throw invalidInput("sequenced plugin state journal stores must share one environment");
   }
   const cursorKey = validateKey(params.cursorKey);
-  assertConsistentOptions(params.pluginId, cursorNamespace, {
-    maxEntries: cursorMaxEntries,
-    overflowPolicy: cursorOverflowPolicy,
-    defaultTtlMs: cursorDefaultTtlMs,
-  });
-  assertConsistentOptions(params.pluginId, journalNamespace, {
-    maxEntries: journalMaxEntries,
-    overflowPolicy: journalOverflowPolicy,
-    defaultTtlMs: journalDefaultTtlMs,
-  });
+  assertConsistentOptions(
+    params.pluginId,
+    cursorNamespace,
+    {
+      maxEntries: cursorMaxEntries,
+      overflowPolicy: cursorOverflowPolicy,
+      defaultTtlMs: cursorDefaultTtlMs,
+    },
+    params.cursorOptions.env,
+  );
+  assertConsistentOptions(
+    params.pluginId,
+    journalNamespace,
+    {
+      maxEntries: journalMaxEntries,
+      overflowPolicy: journalOverflowPolicy,
+      defaultTtlMs: journalDefaultTtlMs,
+    },
+    params.journalOptions.env,
+  );
   return pluginStateRegisterSequencedJournalEntry({
     pluginId: params.pluginId,
     cursorNamespace,
@@ -479,7 +489,7 @@ export function importPluginStateEntriesForDoctor(
   const overflowPolicy = validateOverflowPolicy(options.overflowPolicy);
   const defaultTtlMs = validateOptionalTtlMs(options.defaultTtlMs);
   const env = options.env;
-  assertConsistentOptions(pluginId, namespace, { maxEntries, overflowPolicy, defaultTtlMs });
+  assertConsistentOptions(pluginId, namespace, { maxEntries, overflowPolicy, defaultTtlMs }, env);
 
   for (const entry of entries) {
     if (!Number.isSafeInteger(entry.createdAt)) {

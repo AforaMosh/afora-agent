@@ -7,6 +7,7 @@ import {
   buildMediaGenerationNormalizationMetadata,
   buildNoCapabilityModelConfiguredMessage,
   recordCapabilityCandidateFailure,
+  resolveReferenceImageCapabilityError,
   resolveCapabilityModelCandidates,
   throwCapabilityGenerationFailure,
 } from "../media-generation/runtime-shared.js";
@@ -76,6 +77,7 @@ export async function generateMusic(
 
   const attempts: FallbackAttempt[] = [];
   let lastError: unknown;
+  const inputImageCount = params.inputImages?.length ?? 0;
 
   for (const candidate of candidates) {
     const provider = getProvider(candidate.provider, params.cfg);
@@ -88,6 +90,23 @@ export async function generateMusic(
         error,
       });
       lastError = new Error(error);
+      continue;
+    }
+
+    const referenceImageError = resolveReferenceImageCapabilityError({
+      candidateRef: `${candidate.provider}/${candidate.model}`,
+      inputImageCount,
+      edit: provider.capabilities.edit,
+    });
+    if (referenceImageError) {
+      recordCapabilityCandidateFailure({
+        attempts,
+        provider: candidate.provider,
+        model: candidate.model,
+        error: referenceImageError,
+      });
+      lastError = new Error(referenceImageError);
+      logger.debug(`music-generation candidate skipped: ${referenceImageError}`);
       continue;
     }
 

@@ -1,7 +1,10 @@
 // Public facade for plugin-scoped SQLite blob storage.
 import { normalizeSqliteNumber } from "../infra/sqlite-number.js";
 import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
-import { resolveOpenClawStateSqlitePath } from "../state/openclaw-state-db.paths.js";
+import {
+  resolveOpenClawStateSqliteIdentityPath,
+  resolveOpenClawStateSqlitePath,
+} from "../state/openclaw-state-db.paths.js";
 import {
   MAX_PLUGIN_BLOB_BYTES_PER_ENTRY,
   MAX_PLUGIN_BLOB_BYTES_PER_PLUGIN,
@@ -133,8 +136,9 @@ function assertConsistentOptions(
   pluginId: string,
   namespace: string,
   signature: BlobStoreOptionSignature,
+  env?: NodeJS.ProcessEnv,
 ): void {
-  const key = `${pluginId}\0${namespace}`;
+  const key = `${resolveOpenClawStateSqliteIdentityPath({ env })}\0${pluginId}\0${namespace}`;
   const existing = namespaceOptionSignatures.get(key);
   if (!existing) {
     namespaceOptionSignatures.set(key, signature);
@@ -258,13 +262,18 @@ function createPluginBlobStoreInternal<TMetadata>(
   }
   const overflowPolicy = validateOverflowPolicy(options.overflowPolicy);
   const defaultTtlMs = validateTtl(options.defaultTtlMs, "open");
-  assertConsistentOptions(pluginId, namespace, {
-    maxEntries,
-    maxBytesPerEntry,
-    maxBytesPerNamespace,
-    overflowPolicy,
-    defaultTtlMs,
-  });
+  assertConsistentOptions(
+    pluginId,
+    namespace,
+    {
+      maxEntries,
+      maxBytesPerEntry,
+      maxBytesPerNamespace,
+      overflowPolicy,
+      defaultTtlMs,
+    },
+    env,
+  );
 
   const writeParams = (blob: PreparedBlob) => ({
     pluginId,

@@ -4,10 +4,7 @@ import { createDedupeCache } from "../infra/dedupe.js";
 import { applyPrivateModeSync } from "../infra/private-mode.js";
 import { resolveSqliteDatabaseFilePaths } from "../infra/sqlite-files.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
-import {
-  resolveOpenClawStateSqliteDir,
-  resolveOpenClawStateSqlitePath,
-} from "./openclaw-state-db.paths.js";
+import { resolveOpenClawStateSqliteIdentityPath } from "./openclaw-state-db.paths.js";
 
 const OPENCLAW_STATE_DIR_MODE = 0o700;
 const OPENCLAW_STATE_FILE_MODE = 0o600;
@@ -33,10 +30,11 @@ function bestEffortChmodSync(target: string, mode: number): void {
 }
 
 export function ensureOpenClawStatePermissions(pathname: string, env: NodeJS.ProcessEnv): void {
-  const dir = path.dirname(pathname);
-  const defaultDir = resolveOpenClawStateSqliteDir(env);
-  const isDefaultStateDatabase =
-    path.resolve(pathname) === path.resolve(resolveOpenClawStateSqlitePath(env));
+  const resolvedPath = resolveOpenClawStateSqliteIdentityPath({ path: pathname });
+  const dir = path.dirname(resolvedPath);
+  const defaultPath = resolveOpenClawStateSqliteIdentityPath({ env });
+  const defaultDir = path.dirname(defaultPath);
+  const isDefaultStateDatabase = resolvedPath === defaultPath;
   if (isDefaultStateDatabase && dir !== defaultDir) {
     throw new Error(`OpenClaw state database path resolved outside its state dir: ${pathname}`);
   }
@@ -46,7 +44,7 @@ export function ensureOpenClawStatePermissions(pathname: string, env: NodeJS.Pro
   if (isDefaultStateDatabase || !dirExisted) {
     bestEffortChmodSync(dir, OPENCLAW_STATE_DIR_MODE);
   }
-  for (const candidate of resolveSqliteDatabaseFilePaths(pathname)) {
+  for (const candidate of resolveSqliteDatabaseFilePaths(resolvedPath)) {
     if (existsSync(candidate)) {
       bestEffortChmodSync(candidate, OPENCLAW_STATE_FILE_MODE);
     }

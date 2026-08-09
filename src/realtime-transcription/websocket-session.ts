@@ -218,11 +218,16 @@ class WebSocketRealtimeTranscriptionSession<Event> implements RealtimeTranscript
           finishClosedConnect();
           return;
         }
-        settled = true;
-        clearConnectTimeout();
         this.ready = true;
         this.readySinceMs = Date.now();
-        this.flushQueuedAudio(transport);
+        try {
+          this.flushQueuedAudio(transport);
+        } catch (error) {
+          failConnect(normalizeError(error));
+          return;
+        }
+        settled = true;
+        clearConnectTimeout();
         resolve();
       };
 

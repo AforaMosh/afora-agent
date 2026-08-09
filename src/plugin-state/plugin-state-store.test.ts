@@ -191,7 +191,7 @@ describe("plugin state keyed store", () => {
             });
             const storeB = createPluginStateKeyedStore<{ owner: string }>("discord", {
               namespace: "explicit-env",
-              maxEntries: 10,
+              maxEntries: 11,
               env: stateB.env,
             });
 

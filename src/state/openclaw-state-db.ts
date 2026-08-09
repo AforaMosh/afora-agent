@@ -1,6 +1,5 @@
 // OpenClaw state database manages shared persisted state and migrations.
 import { existsSync } from "node:fs";
-import path from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 import {
   clearNodeSqliteKyselyCacheForDatabase,
@@ -78,6 +77,7 @@ import {
 } from "./openclaw-state-db-schema-repair.js";
 import * as sessionWatchMigration from "./openclaw-state-db-session-watch-migration.js";
 import type { DB as OpenClawStateKyselyDatabase } from "./openclaw-state-db.generated.js";
+import { resolveOpenClawStateSqliteIdentityPath } from "./openclaw-state-db.paths.js";
 import { OPENCLAW_STATE_SCHEMA_SQL } from "./openclaw-state-schema.js";
 
 export {
@@ -144,7 +144,7 @@ const terminalOpenLatch = createSqliteTerminalOpenLatch({
 export function confirmOpenClawStateDatabaseIntegrity(
   pathname: string,
 ): SqliteIntegrityConfirmation {
-  const resolvedPath = path.resolve(pathname);
+  const resolvedPath = resolveOpenClawStateSqliteIdentityPath({ path: pathname });
   closeOpenClawStateDatabaseByPath(resolvedPath);
   return confirmSqliteFileIntegrity(resolvedPath, resolvedPath);
 }
@@ -155,12 +155,16 @@ export function recordOpenClawStateDatabaseOpenFailure(
   error: Error,
   generation?: SqliteFileGeneration,
 ): boolean {
-  return terminalOpenLatch.record(pathname, error, generation);
+  return terminalOpenLatch.record(
+    resolveOpenClawStateSqliteIdentityPath({ path: pathname }),
+    error,
+    generation,
+  );
 }
 
 /** Clear a terminal open failure after doctor rewrites the database file. */
 export function clearOpenClawStateDatabaseOpenFailure(pathname: string): void {
-  terminalOpenLatch.clear(pathname);
+  terminalOpenLatch.clear(resolveOpenClawStateSqliteIdentityPath({ path: pathname }));
 }
 
 /** Reject shared-state access after a process-local terminal failure. */
@@ -727,7 +731,7 @@ export function evictOpenClawStateDatabaseAfterCorruption(
 
 /** Close one cached shared state database handle by exact pathname. */
 export function closeOpenClawStateDatabaseByPath(pathname: string): boolean {
-  const resolvedPath = path.resolve(pathname);
+  const resolvedPath = resolveOpenClawStateSqliteIdentityPath({ path: pathname });
   const database = cachedDatabases.get(resolvedPath);
   if (!database) {
     return false;

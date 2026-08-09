@@ -29,6 +29,7 @@ import {
   assertOpenClawStateDatabaseForMaintenance,
   clearOpenClawStateDatabaseOpenFailure,
   closeOpenClawStateDatabaseForTest,
+  closeOpenClawStateDatabaseByPath,
   detectOpenClawStateDatabaseSchemaMigrations,
   OPENCLAW_SQLITE_BUSY_TIMEOUT_MS,
   openExistingOpenClawStateDatabaseReadOnly,
@@ -4335,6 +4336,24 @@ INSERT INTO macos_port_guardian_records VALUES (4242, 18789, '/usr/bin/ssh', 're
     expect(second.db.isOpen).toBe(true);
     expect(openOpenClawStateDatabase({ path: firstPath })).toBe(first);
     expect(readSqliteNumberPragma(first.db, "user_version")).toBe(OPENCLAW_STATE_SCHEMA_VERSION);
+  });
+
+  it("reuses one handle across symlink aliases of the same database", () => {
+    const root = createTempStateDir();
+    const canonicalDir = path.join(root, "canonical");
+    const aliasDir = path.join(root, "alias");
+    fs.mkdirSync(canonicalDir);
+    fs.symlinkSync(canonicalDir, aliasDir, process.platform === "win32" ? "junction" : "dir");
+    const canonicalPath = path.join(canonicalDir, "state.sqlite");
+    const aliasPath = path.join(aliasDir, "state.sqlite");
+
+    const canonical = openOpenClawStateDatabase({ path: canonicalPath });
+    const alias = openOpenClawStateDatabase({ path: aliasPath });
+
+    expect(alias).toBe(canonical);
+    expect(alias.path).toBe(canonicalPath);
+    expect(closeOpenClawStateDatabaseByPath(aliasPath)).toBe(true);
+    expect(canonical.db.isOpen).toBe(false);
   });
 
   it("keys explicit relative paths by resolved database pathname", () => {

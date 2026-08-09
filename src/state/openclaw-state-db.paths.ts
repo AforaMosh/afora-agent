@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { isMainThread, threadId } from "node:worker_threads";
 import { resolveStateDir } from "../config/paths.js";
+import { resolvePathViaExistingAncestorSync } from "../infra/boundary-path.js";
 import { parseStrictNonNegativeInteger } from "../infra/parse-finite-number.js";
 
 /**
@@ -38,4 +39,13 @@ export function resolveOpenClawStateSqliteDir(env: NodeJS.ProcessEnv = process.e
 /** Resolve the shared state SQLite file path. */
 export function resolveOpenClawStateSqlitePath(env: NodeJS.ProcessEnv = process.env): string {
   return path.join(resolveOpenClawStateSqliteDir(env), "openclaw.sqlite");
+}
+
+/** Resolve one physical database identity through symlinked state-root aliases. */
+export function resolveOpenClawStateSqliteIdentityPath(
+  options: { env?: NodeJS.ProcessEnv; path?: string } = {},
+): string {
+  return resolvePathViaExistingAncestorSync(
+    options.path ?? resolveOpenClawStateSqlitePath(options.env ?? process.env),
+  );
 }

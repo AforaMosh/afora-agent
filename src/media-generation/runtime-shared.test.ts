@@ -9,6 +9,7 @@ import {
   resolveClosestResolution,
   resolveClosestSize,
   resolveMediaProviderRequestTimeoutMs,
+  resolveReferenceImageCapabilityError,
   throwCapabilityGenerationFailure,
 } from "./runtime-shared.js";
 
@@ -28,6 +29,27 @@ function parseModelRef(raw?: string) {
 }
 
 describe("media-generation runtime shared candidates", () => {
+  it.each([
+    [0, undefined, undefined],
+    [1, { enabled: false }, "provider/model does not support reference-image edit inputs"],
+    [
+      2,
+      { enabled: true, maxInputImages: 1 },
+      "provider/model supports at most 1 reference image, 2 requested",
+    ],
+  ] as const)(
+    "validates reference-image capability for %s inputs",
+    (inputImageCount, edit, error) => {
+      expect(
+        resolveReferenceImageCapabilityError({
+          candidateRef: "provider/model",
+          inputImageCount,
+          edit,
+        }),
+      ).toBe(error);
+    },
+  );
+
   it("appends auth-backed provider defaults after explicit refs by default", () => {
     const cfg = {
       agents: {
