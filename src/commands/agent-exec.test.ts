@@ -696,7 +696,7 @@ describe("agent exec command composition", () => {
     await writeCanonicalConfigSeed(seedPath, {
       env: { vars: { OPENCLAW_EXEC_FAILED_PROBE: "from-rejected-config" } },
       agents: { defaults: { sandbox: { mode: "not-a-real-mode" } } },
-    } as OpenClawConfig);
+    } as unknown as OpenClawConfig);
     const { runtime } = createRuntime();
 
     const result = await agentExecCommand("inspect", { config: seedPath }, runtime, {
