@@ -791,7 +791,7 @@ describe("connected identity health", () => {
     await vi.waitFor(() => expect(sendMock).toHaveBeenCalledTimes(1));
     expect(sendMock).toHaveBeenCalledWith(
       "channel:C12345678",
-      "PFX identity restored",
+      "identity restored",
       expect.objectContaining({
         eventScope: expect.objectContaining({ teamId: "TWORKSPACE", client }),
       }),
