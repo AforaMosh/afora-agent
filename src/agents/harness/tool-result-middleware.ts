@@ -9,7 +9,7 @@ import {
   DEFAULT_MAX_BYTES,
   DEFAULT_VIDEO_MAX_BASE64_BYTES,
 } from "../../media-understanding/defaults.constants.js";
-import { sanitizeDurableMediaPayload } from "../../media/media-reference-projection.js";
+import { sanitizeModelVisibleMediaPayload } from "../../media/media-reference-projection.js";
 import type {
   AgentToolResultMiddleware,
   AgentToolResultMiddlewareContext,
@@ -142,15 +142,36 @@ function isValidMiddlewareToolResult(value: unknown): value is OpenClawAgentTool
   return isValidMiddlewareDetails(value.details);
 }
 
-function projectToolResultVideos(result: OpenClawAgentToolResult): OpenClawAgentToolResult {
-  if (!result.content.some((block) => block.type === "video")) {
+function sanitizeMiddlewareText(value: string): string {
+  const sanitized = sanitizeModelVisibleMediaPayload(value);
+  return typeof sanitized === "string" ? sanitized : "[media data omitted]";
+}
+
+function projectToolResultMedia(result: OpenClawAgentToolResult): OpenClawAgentToolResult {
+  const details = sanitizeModelVisibleMediaPayload(result.details);
+  let changed = details !== result.details;
+  const content = result.content.map((block) => {
+    if (block.type === "video") {
+      changed = true;
+      return { type: "text" as const, text: NATIVE_TOOL_VIDEO_OMISSION };
+    }
+    if (block.type !== "text") {
+      return block;
+    }
+    const text = sanitizeMiddlewareText(block.text);
+    if (text !== block.text) {
+      changed = true;
+      return { ...block, text };
+    }
+    return block;
+  });
+  if (!changed) {
     return result;
   }
   return {
     ...result,
-    content: result.content.map((block) =>
-      block.type === "video" ? { type: "text", text: NATIVE_TOOL_VIDEO_OMISSION } : block,
-    ),
+    content,
+    details,
   };
 }
 
@@ -170,9 +191,10 @@ function descendMiddlewareContentCoerceState(
 }
 
 function serializeMiddlewareValue(value: unknown): string | undefined {
+  const sanitized = sanitizeModelVisibleMediaPayload(value);
   const seen = new WeakSet<object>();
   try {
-    return JSON.stringify(value, (_key, val) => {
+    return JSON.stringify(sanitized, (_key, val) => {
       if (typeof val === "bigint") {
         return val.toString();
       }
@@ -198,7 +220,7 @@ function coerceMiddlewareText(
   options: MiddlewareToolResultCoerceOptions = {},
 ): string | undefined {
   if (typeof value === "string") {
-    return value;
+    return sanitizeMiddlewareText(value);
   }
   if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
     return String(value);
@@ -328,7 +350,7 @@ function coerceMiddlewareToolResult(
   options: MiddlewareToolResultCoerceOptions = {},
 ): OpenClawAgentToolResult | undefined {
   if (isValidMiddlewareToolResult(value)) {
-    return value;
+    return projectToolResultMedia(value);
   }
   if (!isRecord(value) || !Array.isArray(value.content)) {
     return undefined;
@@ -374,7 +396,8 @@ function coerceMiddlewareToolResult(
     content,
     details,
   };
-  return isValidMiddlewareToolResult(result) ? result : undefined;
+  const projected = projectToolResultMedia(result);
+  return isValidMiddlewareToolResult(projected) ? projected : undefined;
 }
 
 /**
@@ -391,7 +414,7 @@ function sanitizeMiddlewareDetailsValue(value: unknown): unknown {
   if (normalized === undefined) {
     return null;
   }
-  const serialized = serializeMiddlewareValue(sanitizeDurableMediaPayload(JSON.parse(normalized)));
+  const serialized = serializeMiddlewareValue(JSON.parse(normalized));
   if (serialized === undefined) {
     return null;
   }
@@ -416,10 +439,7 @@ function sanitizeToolResultForMiddleware(
     sanitizeContent: true,
     sanitizeDetails: true,
   });
-  if (coerced) {
-    return projectToolResultVideos(coerced);
-  }
-  return undefined;
+  return coerced;
 }
 
 function projectToolResultWithoutMiddleware(
@@ -432,7 +452,7 @@ function projectToolResultWithoutMiddleware(
   if (!coerced) {
     return undefined;
   }
-  const projected = projectToolResultVideos({ ...result, content: coerced.content });
+  const projected = projectToolResultMedia({ ...result, content: coerced.content });
   return projected.content === result.content ? result : projected;
 }
 
@@ -551,7 +571,7 @@ export function createAgentToolResultMiddlewareRunner(
             coercedCandidate &&
             (!requiresRecoveredContent || coercedCandidate.content.length > 0)
           ) {
-            current = projectToolResultVideos(coercedCandidate);
+            current = coercedCandidate;
             requiresRecoveredContent = false;
           } else {
             log.warn(

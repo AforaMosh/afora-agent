@@ -147,4 +147,29 @@ describe("worker transcript durable media projection", () => {
       expect(serialized).not.toContain(fragment);
     }
   });
+
+  it.each(["contentType", "content_type"] as const)(
+    "redacts %s video envelopes before worker transcript delivery",
+    (mimeKey) => {
+      const payload = "cHJpdmF0ZS13b3JrZXItdmlkZW8=";
+      const message: AgentMessage = {
+        role: "toolResult",
+        toolCallId: "call-video",
+        toolName: "camera",
+        content: [{ type: "text", text: "captured" }],
+        details: {
+          nested: { [mimeKey]: "video/mp4", blob: payload },
+        },
+        isError: false,
+        timestamp: 1,
+      };
+
+      const result = toWorkerTranscriptMessage(message, "transcript");
+      expect(result).toMatchObject({
+        kind: "complete",
+        message: { details: { nested: "[video data omitted]" } },
+      });
+      expect(JSON.stringify(result)).not.toContain(payload);
+    },
+  );
 });

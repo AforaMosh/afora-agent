@@ -3,6 +3,7 @@ import {
   normalizeDurableMediaReference,
   sanitizeDurableMediaPayload,
   sanitizeMediaReferenceForProjection,
+  sanitizeModelVisibleMediaPayload,
 } from "./media-reference-projection.js";
 
 describe("normalizeDurableMediaReference", () => {
@@ -69,5 +70,58 @@ describe("sanitizeDurableMediaPayload", () => {
     for (const fragment of fragments) {
       expect(projected).not.toContain(fragment);
     }
+  });
+
+  it.each(["contentType", "content_type"] as const)(
+    "redacts raw video envelopes identified by %s",
+    (mimeKey) => {
+      const payload = "cHJpdmF0ZS12aWRlby1ieXRlcw==";
+      const projected = sanitizeDurableMediaPayload({
+        mimeType: "application/octet-stream",
+        [mimeKey]: "video/mp4",
+        data: payload,
+      });
+
+      expect(projected).toBe("[video data omitted]");
+      expect(JSON.stringify(projected)).not.toContain(payload);
+    },
+  );
+});
+
+describe("sanitizeModelVisibleMediaPayload", () => {
+  it.each([
+    "metadata:key,value",
+    "some_data:text/plain,keep",
+    "metadata:video/mp4;base64,keep",
+    "some_data:video/mp4;base64,keep",
+  ])("preserves non-URI data-like text %s", (value) => {
+    expect(sanitizeModelVisibleMediaPayload(value)).toBe(value);
+    expect(sanitizeDurableMediaPayload(value)).toBe(value);
+  });
+
+  it("redacts a real prefixed line-wrapped data URL", () => {
+    const fragments = ["cHJpdmF0ZS", "1nZW5lcmlj", "LXBheWxvYWQ="];
+    const projected = sanitizeModelVisibleMediaPayload(
+      `captured: data:text/plain;base64,${fragments.join(" \t\n")}`,
+    );
+
+    expect(projected).toBe("captured: [media data omitted]");
+    for (const fragment of fragments) {
+      expect(projected).not.toContain(fragment);
+    }
+  });
+
+  it("breaks cycles without retaining unsanitized media branches", () => {
+    const payload = "c3ludGhldGljLXByaXZhdGUtdmlkZW8=";
+    const value: { self?: unknown; nested?: unknown } = {};
+    value.self = value;
+    value.nested = { contentType: "video/mp4", data: payload };
+
+    const projected = sanitizeModelVisibleMediaPayload(value) as typeof value;
+
+    expect(projected).not.toBe(value);
+    expect(projected.self).toBe("[Circular]");
+    expect(projected.nested).toBe("[media data omitted]");
+    expect(JSON.stringify(projected)).not.toContain(payload);
   });
 });

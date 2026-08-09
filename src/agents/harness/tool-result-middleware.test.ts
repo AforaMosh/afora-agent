@@ -468,7 +468,129 @@ describe("createAgentToolResultMiddlewareRunner", () => {
     expect(JSON.stringify(result)).not.toContain(video.data);
   });
 
-  it("leaves live details intact for durable projection while preserving cyclic identity", async () => {
+  it("preserves ordinary data-like text without middleware", async () => {
+    const text = "metadata:key,value\nsome_data:text/plain,keep";
+    const runner = createAgentToolResultMiddlewareRunner({ runtime: "openclaw" }, []);
+
+    const result = await runner.applyToolResultMiddleware({
+      toolCallId: "call-text",
+      toolName: "inspect",
+      args: {},
+      result: { content: [{ type: "text", text }], details: {} },
+    });
+
+    expect(result.content).toEqual([{ type: "text", text }]);
+  });
+
+  it("redacts text data URLs and nested contentType media without middleware", async () => {
+    const textPayload = "cHJpdmF0ZS10ZXh0";
+    const nestedPayload = "cHJpdmF0ZS1uZXN0ZWQ=";
+    const classPayload = "cHJpdmF0ZS1jbGFzcw==";
+    const jsonPayload = "cHJpdmF0ZS10b0pTT04=";
+    const plainJsonPayload = "cHJpdmF0ZS1wbGFpbi10b0pTT04=";
+    class NestedMediaEnvelope {
+      nested = { content_type: "video/webm", blob: classPayload };
+    }
+    class JsonMediaEnvelope {
+      toJSON() {
+        return { contentType: "video/mp4", data: jsonPayload };
+      }
+    }
+    const runner = createAgentToolResultMiddlewareRunner({ runtime: "openclaw" }, []);
+
+    const result = await runner.applyToolResultMiddleware({
+      toolCallId: "call-media",
+      toolName: "inspect",
+      args: {},
+      result: {
+        content: [{ type: "text", text: `preview data:image/png;base64,${textPayload}` }],
+        details: {
+          nested: { contentType: "video/mp4", data: nestedPayload },
+          classEnvelope: new NestedMediaEnvelope(),
+          jsonEnvelope: new JsonMediaEnvelope(),
+          plainJsonEnvelope: {
+            toJSON: () => ({ contentType: "video/mp4", data: plainJsonPayload }),
+          },
+        },
+      },
+    });
+
+    const serialized = JSON.stringify(result);
+    expect(serialized).toContain("[media data omitted]");
+    expect(serialized).not.toContain(textPayload);
+    expect(serialized).not.toContain(nestedPayload);
+    expect(serialized).not.toContain(classPayload);
+    expect(serialized).not.toContain(jsonPayload);
+    expect(serialized).not.toContain(plainJsonPayload);
+  });
+
+  it("redacts prefixed wrapped data URLs before middleware and coerces nested media safely", async () => {
+    const fragments = ["cHJpdmF0ZS", "13cmFwcGVk", "LXZpZGVv"];
+    const nestedPayload = "cHJpdmF0ZS1ibG9i";
+    let observed = "";
+    const runner = createAgentToolResultMiddlewareRunner({ runtime: "openclaw" }, [
+      (event) => {
+        observed = JSON.stringify(event.result);
+        return undefined;
+      },
+    ]);
+
+    const result = await runner.applyToolResultMiddleware({
+      toolCallId: "call-media",
+      toolName: "inspect",
+      args: {},
+      result: {
+        content: [
+          {
+            type: "toolResult",
+            content: [
+              {
+                type: "text",
+                text: `captured: data:video/mp4;base64,${fragments.join(" \t\n")}`,
+              },
+              {
+                type: "json",
+                payload: { content_type: "video/webm", blob: nestedPayload },
+              },
+            ],
+          } as never,
+        ],
+        details: { contentType: "video/mp4", data: nestedPayload },
+      },
+    });
+
+    const serialized = JSON.stringify(result);
+    expect(observed).toContain("[media data omitted]");
+    expect(serialized).toContain("[media data omitted]");
+    for (const fragment of [...fragments, nestedPayload]) {
+      expect(observed).not.toContain(fragment);
+      expect(serialized).not.toContain(fragment);
+    }
+  });
+
+  it("redacts data URLs introduced by middleware output", async () => {
+    const payload = "cHJpdmF0ZS1taWRkbGV3YXJl";
+    const runner = createAgentToolResultMiddlewareRunner({ runtime: "openclaw" }, [
+      () => ({
+        result: {
+          content: [{ type: "text", text: `generated data:;base64,${payload}` }],
+          details: {},
+        },
+      }),
+    ]);
+
+    const result = await runner.applyToolResultMiddleware({
+      toolCallId: "call-media",
+      toolName: "inspect",
+      args: {},
+      result: { content: [{ type: "text", text: "safe" }], details: {} },
+    });
+
+    expect(JSON.stringify(result)).toContain("[media data omitted]");
+    expect(JSON.stringify(result)).not.toContain(payload);
+  });
+
+  it("preserves ordinary live detail identity while projecting nested media", async () => {
     class DetailEnvelope {
       status = "ok";
     }
@@ -500,11 +622,8 @@ describe("createAgentToolResultMiddlewareRunner", () => {
       },
     });
     expect(mediaResult.details).toBeDefined();
-    expect((mediaResult.details as { nested?: unknown }).nested).toEqual({
-      type: "video",
-      mimeType: "video/mp4",
-      data: privateData,
-    });
+    expect((mediaResult.details as { nested?: unknown }).nested).toBe("[media data omitted]");
+    expect(JSON.stringify(mediaResult.details)).not.toContain(privateData);
   });
 
   it("preserves images while projecting adjacent video", async () => {
