@@ -1810,6 +1810,10 @@ describe("package acceptance workflow", () => {
     expect(releaseChecksWorkflow).toContain(
       'codex_plugin_spec="npm:@openclaw/codex@${BASH_REMATCH[1]}"',
     );
+    expect(releaseChecksWorkflow.match(/run: pnpm build qaRuntime/gu)).toHaveLength(6);
+    expect(releaseChecksWorkflow).not.toContain(
+      "node --import tsx scripts/build-all.mts qaRuntime",
+    );
     expect(releaseChecksWorkflow).toContain(
       "codex_plugin_spec: ${{ needs.resolve_target.outputs.codex_plugin_spec }}",
     );
