@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import path from "node:path";
 import { asOptionalRecord as asRecord } from "@openclaw/normalization-core/record-coerce";
 import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
 import {
@@ -9,9 +8,6 @@ import {
 } from "../../../packages/gateway-protocol/src/chat-attachment-limits.js";
 import { executeSqliteQueryTakeFirstSync } from "../../infra/kysely-sync.js";
 import { pruneMapToMaxSize } from "../../infra/map-size.js";
-import { readPersistedMediaFacts } from "../../media/media-facts.js";
-import { normalizeCanonicalInboundMediaUri } from "../../media/media-reference-projection.js";
-import { parseInboundMediaUri } from "../../media/media-reference.js";
 import { extractAssistantVisibleText } from "../../shared/chat-message-content.js";
 import {
   openOpenClawAgentDatabase,
@@ -26,6 +22,7 @@ import {
   writeSessionEntry,
 } from "./session-accessor.sqlite-entry-store.js";
 import { emitCommittedSessionIdentityDiff } from "./session-accessor.sqlite-identity.js";
+import { extractEditorMediaRefs } from "./session-accessor.sqlite-message-cut-media.js";
 import { loadSqliteTranscriptEventsFromDatabase } from "./session-accessor.sqlite-read.js";
 import {
   getSessionKysely,
@@ -647,81 +644,6 @@ export function extractEditorAttachments(
     });
   }
   return attachments.length > 0 ? attachments : undefined;
-}
-
-function extractEditorMediaRefs(
-  message: Record<string, unknown>,
-): SessionEditorMediaRef[] | undefined {
-  const refs = (readPersistedMediaFacts(message) ?? []).flatMap((fact) => {
-    const normalizedContentType = fact.contentType?.trim().toLowerCase();
-    const contentKind = normalizedContentType?.startsWith("image/")
-      ? "image"
-      : normalizedContentType?.startsWith("video/")
-        ? "video"
-        : undefined;
-    const kind = fact.kind === "image" || fact.kind === "video" ? fact.kind : contentKind;
-    if (!kind) {
-      return [];
-    }
-    let editorPath = fact.path;
-    let editorUrl = fact.url;
-    if (kind === "image") {
-      // Editor refs are managed-store claims, not a second copy of persisted media metadata.
-      // Filtering here keeps unrelated historical facts from blocking a text rewind or fork.
-      if (!normalizedContentType?.startsWith("image/")) {
-        return [];
-      }
-      const canonicalUrl = normalizeCanonicalInboundMediaUri(fact.url);
-      if (canonicalUrl) {
-        const id = parseInboundMediaUri(canonicalUrl)?.id;
-        if (!id || (fact.sourceId && fact.sourceId !== id)) {
-          return [];
-        }
-        editorPath = undefined;
-        editorUrl = canonicalUrl;
-      } else {
-        const legacyPath = fact.path;
-        const id = legacyPath ? path.basename(legacyPath) : "";
-        if (
-          !legacyPath ||
-          legacyPath !== path.normalize(legacyPath) ||
-          path.basename(path.dirname(legacyPath)) !== "inbound" ||
-          !id ||
-          id === "." ||
-          id === ".." ||
-          id.includes("\\") ||
-          id.includes("\0") ||
-          (fact.sourceId && fact.sourceId !== id)
-        ) {
-          return [];
-        }
-        editorUrl = undefined;
-      }
-    }
-    const canonicalVideoUrl = kind === "video" ? normalizeCanonicalInboundMediaUri(fact.url) : null;
-    if (
-      kind === "video" &&
-      (!canonicalVideoUrl ||
-        !fact.sourceId ||
-        fact.sourceIndex === undefined ||
-        !normalizedContentType?.startsWith("video/") ||
-        parseInboundMediaUri(canonicalVideoUrl)?.id !== fact.sourceId)
-    ) {
-      return [];
-    }
-    return [
-      {
-        kind,
-        ...(fact.sourceId ? { sourceId: fact.sourceId } : {}),
-        ...(fact.sourceIndex !== undefined ? { sourceIndex: fact.sourceIndex } : {}),
-        ...(editorPath ? { path: editorPath } : {}),
-        ...(canonicalVideoUrl ? { url: canonicalVideoUrl } : editorUrl ? { url: editorUrl } : {}),
-        ...(fact.contentType ? { contentType: fact.contentType } : {}),
-        ...(fact.sizeBytes !== undefined ? { sizeBytes: fact.sizeBytes } : {}),
-      },
-    ];
-  });
-  return refs.length > 0 ? refs : undefined;
 }
 
 function isSessionHeader(event: unknown): boolean {

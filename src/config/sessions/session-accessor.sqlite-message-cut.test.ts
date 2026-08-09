@@ -84,7 +84,12 @@ async function createSiblingSession(params: {
   return scope;
 }
 
-async function createSession(options: { activeLeafTarget?: string } = {}) {
+async function createSession(
+  options: {
+    activeLeafTarget?: string;
+    mediaBlockFactIndexes?: readonly (number | null)[] | null;
+  } = {},
+) {
   const stateDir = tempDirs.make("openclaw-message-cut-");
   const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
   const sessionId = "message-cut-source";
@@ -142,9 +147,9 @@ async function createSession(options: { activeLeafTarget?: string } = {}) {
         __openclaw: {
           media: [
             {
-              sourceId: "canonical-image.png",
+              sourceId: "inline-image.png",
               sourceIndex: 0,
-              url: "media://inbound/canonical-image.png",
+              url: "media://inbound/inline-image.png",
               kind: "image",
               contentType: "image/png",
               sizeBytes: 512,
@@ -153,6 +158,11 @@ async function createSession(options: { activeLeafTarget?: string } = {}) {
               sourceId: "stored-image.png",
               path: "/state/media/inbound/stored-image.png",
               url: "https://cdn.example.test/stored-image.png",
+              contentType: "image/png",
+            },
+            {
+              sourceId: "stored-image.png",
+              url: "media://inbound/stored-image.png",
               contentType: "image/png",
             },
             {
@@ -225,6 +235,9 @@ async function createSession(options: { activeLeafTarget?: string } = {}) {
             },
             { path: "/state/media/inbound/notes.txt", contentType: "text/plain" },
           ],
+          ...(options.mediaBlockFactIndexes === null
+            ? {}
+            : { mediaBlockFactIndexes: options.mediaBlockFactIndexes ?? [0] }),
         },
       },
     },
@@ -274,16 +287,14 @@ describe("SQLite session message cuts", () => {
       status: "ready",
       editorMediaRefs: [
         {
-          sourceId: "canonical-image.png",
-          sourceIndex: 0,
-          url: "media://inbound/canonical-image.png",
+          sourceId: "stored-image.png",
+          path: "/state/media/inbound/stored-image.png",
           kind: "image",
           contentType: "image/png",
-          sizeBytes: 512,
         },
         {
           sourceId: "stored-image.png",
-          path: "/state/media/inbound/stored-image.png",
+          url: "media://inbound/stored-image.png",
           kind: "image",
           contentType: "image/png",
         },
@@ -296,11 +307,33 @@ describe("SQLite session message cuts", () => {
         },
       ],
     });
-    const userMessage = (await loadTranscriptEvents(scope)).find(
-      (event) => event && typeof event === "object" && "id" in event && event.id === "user-2",
-    ) as { message?: { __openclaw?: { media?: unknown[] } } } | undefined;
-    expect(userMessage?.message?.__openclaw?.media).toHaveLength(15);
+    expect(await loadTranscriptEvents(scope)).toHaveLength(7);
   });
+
+  it.each([
+    ["missing", null],
+    ["cardinality-mismatched", [0, 1]],
+  ] as const)(
+    "does not infer inline image provenance from a %s block mapping",
+    async (_, mapping) => {
+      const { env } = await createSession({ mediaBlockFactIndexes: mapping });
+
+      const result = await preflightSessionMessageCut({
+        agentId,
+        env,
+        entryId: "user-2",
+        sessionKey,
+      });
+
+      expect(result.status).toBe("ready");
+      if (result.status !== "ready") {
+        throw new Error("expected message-cut preflight");
+      }
+      expect(result.editorMediaRefs).toEqual(
+        expect.arrayContaining([expect.objectContaining({ sourceId: "inline-image.png" })]),
+      );
+    },
+  );
 
   it("reuses branch summaries while the transcript watermark is unchanged", async () => {
     const { env } = await createSession();
@@ -658,16 +691,14 @@ describe("SQLite session message cuts", () => {
       editorAttachments: [{ mimeType: "image/png", data: "aW1hZ2U=" }],
       editorMediaRefs: [
         {
-          sourceId: "canonical-image.png",
-          sourceIndex: 0,
-          url: "media://inbound/canonical-image.png",
+          sourceId: "stored-image.png",
+          path: "/state/media/inbound/stored-image.png",
           kind: "image",
           contentType: "image/png",
-          sizeBytes: 512,
         },
         {
           sourceId: "stored-image.png",
-          path: "/state/media/inbound/stored-image.png",
+          url: "media://inbound/stored-image.png",
           kind: "image",
           contentType: "image/png",
         },
@@ -765,16 +796,14 @@ describe("SQLite session message cuts", () => {
       editorAttachments: [{ mimeType: "image/png", data: "aW1hZ2U=" }],
       editorMediaRefs: [
         {
-          sourceId: "canonical-image.png",
-          sourceIndex: 0,
-          url: "media://inbound/canonical-image.png",
+          sourceId: "stored-image.png",
+          path: "/state/media/inbound/stored-image.png",
           kind: "image",
           contentType: "image/png",
-          sizeBytes: 512,
         },
         {
           sourceId: "stored-image.png",
-          path: "/state/media/inbound/stored-image.png",
+          url: "media://inbound/stored-image.png",
           kind: "image",
           contentType: "image/png",
         },

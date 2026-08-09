@@ -4,6 +4,7 @@
  * auth-backed availability.
  */
 import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { ProviderModelRouteCandidate } from "../plugin-sdk/provider-model-types.js";
 import type {
   ModelAuthAvailabilityEvaluation,
   ModelAuthAvailabilityRef,
@@ -12,10 +13,11 @@ import { compareModelCatalogEntries } from "./model-catalog-order.js";
 import {
   type ModelCatalogRoutePolicy,
   type ModelCatalogRouteProjection,
+  findModelCatalogRouteDonor,
   projectModelCatalogEntryForRoute,
   resolveConfiguredModelCatalogOverrides,
 } from "./model-catalog-route.js";
-import { findModelCatalogEntry, type ModelCatalogEntry } from "./model-catalog.js";
+import type { ModelCatalogEntry } from "./model-catalog.js";
 import { createProviderAuthChecker } from "./model-provider-auth.js";
 import {
   buildConfiguredModelCatalog,
@@ -133,6 +135,7 @@ type ResolveVisibleModelCatalogParams = {
   runtimeAuthDiscovery?: boolean;
   providerAuthChecker?: ModelCatalogAuthChecker;
   entryAuthChecker?: ModelCatalogEntryAuthChecker;
+  routePolicy: ModelCatalogRoutePolicy;
 };
 
 async function resolveVisibleModelCatalogWithPolicy(
@@ -146,13 +149,39 @@ async function resolveVisibleModelCatalogWithPolicy(
   const buildDefaultVisibleCatalog = async () => {
     const configuredCatalog = sortModelCatalogEntries(
       buildConfiguredModelCatalog({ cfg: params.cfg }).map((entry) => {
-        const prepared = findModelCatalogEntry(params.catalog, {
-          provider: entry.provider,
-          modelId: entry.id,
-        });
-        return prepared?.supportsNativeVideo === true
-          ? { ...entry, supportsNativeVideo: true }
-          : entry;
+        const route =
+          entry.api && entry.baseUrl
+            ? ({
+                api: entry.api,
+                baseUrl: entry.baseUrl,
+                authRequirement: "api-key",
+                requestTransportOverrides: "none",
+              } satisfies ProviderModelRouteCandidate)
+            : undefined;
+        const donorPolicy: ModelCatalogRoutePolicy = params.routePolicy.resolveIdentity(entry)
+          ? params.routePolicy
+          : {
+              resolveIdentity: (candidate) => ({
+                id: candidate.id,
+                key: modelCatalogLogicalKey(candidate),
+              }),
+              matchesRoute: (candidate, selectedRoute) =>
+                candidate.api === selectedRoute.api && candidate.baseUrl === selectedRoute.baseUrl,
+            };
+        const donor = route
+          ? findModelCatalogRouteDonor({
+              entry,
+              route,
+              // Managed providers own route equivalence; unmanaged providers only qualify
+              // the literal configured tuple so route-specific capabilities cannot leak.
+              policy: donorPolicy,
+              catalog: params.catalog,
+            })
+          : undefined;
+        if (donor?.supportsNativeVideo === true) {
+          entry.supportsNativeVideo = true;
+        }
+        return entry;
       }),
     );
     let checkEntryAuth = params.entryAuthChecker;
@@ -300,6 +329,7 @@ export async function resolveLogicalVisibleModelCatalog(params: {
         workspaceDir: params.workspaceDir,
         view: params.view,
         runtimeAuthDiscovery: false,
+        routePolicy: params.routePolicy,
         entryAuthChecker: async (entry) => (await evaluateEntry(entry)).authBacked,
       },
       policy,
