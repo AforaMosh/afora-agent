@@ -12,7 +12,7 @@ export function sanitizeMediaReferenceForProjection(value: string): string {
     url.hash = "";
     return url.toString();
   } catch {
-    return trimmed;
+    return "";
   }
 }
 
@@ -21,9 +21,10 @@ export function normalizeDurableMediaReference(value: unknown): string | undefin
     return undefined;
   }
   const trimmed = value.trim();
-  return trimmed && !/^data:/iu.test(trimmed)
-    ? sanitizeMediaReferenceForProjection(trimmed)
-    : undefined;
+  if (!trimmed || /^data:/iu.test(trimmed)) {
+    return undefined;
+  }
+  return sanitizeMediaReferenceForProjection(trimmed) || undefined;
 }
 
 /** Accepts only one-segment, query-free opaque inbound claim references. */
@@ -64,7 +65,7 @@ export function normalizeCanonicalInboundMediaUri(value: unknown): string | unde
 }
 
 const REDACTED_INLINE_VIDEO = "[video data omitted]";
-const VIDEO_DATA_URL_RE = /data:video\/[^;,\s]+(?:;[^,\s]+)*,[^\s"']+/giu;
+const VIDEO_DATA_URL_START_RE = /data:video\/[^;,\s]+(?:;[^,\s]+)*,/iu;
 const MEDIA_PAYLOAD_MAX_DEPTH = 24;
 const MEDIA_PAYLOAD_MAX_VALUES = 2_000;
 const MEDIA_PAYLOAD_MAX_STRING_CHARS = 1_000_000;
@@ -117,7 +118,11 @@ function projectMediaPayload(
     if (enforceLimits && state.stringChars > MEDIA_PAYLOAD_MAX_STRING_CHARS) {
       return { changed: true, value: MEDIA_PAYLOAD_LIMIT_OMISSION };
     }
-    const withoutVideoData = value.replace(VIDEO_DATA_URL_RE, REDACTED_INLINE_VIDEO);
+    const videoDataUrlIndex = value.search(VIDEO_DATA_URL_START_RE);
+    const withoutVideoData =
+      videoDataUrlIndex < 0
+        ? value
+        : `${value.slice(0, videoDataUrlIndex)}${REDACTED_INLINE_VIDEO}`;
     const projected =
       withoutVideoData === value &&
       (key === "url" || key === "video_url" || key === "path") &&

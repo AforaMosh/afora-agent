@@ -418,6 +418,14 @@ describe("buildPersistedUserTurnMessage media projection", () => {
           contentType: "video/mp4",
           kind: "video",
         },
+        {
+          sourceIndex: 5,
+          url:
+            "https://user" +
+            ":private-password@cdn.example.test:not-a-port/clip.mp4?token=private-query",
+          contentType: "video/mp4",
+          kind: "video",
+        },
       ],
     });
 
@@ -427,8 +435,11 @@ describe("buildPersistedUserTurnMessage media projection", () => {
     expect(media?.[2]?.url).toBe("media://inbound/managed.mp4");
     expect(media?.[3]?.url).toBe("https://cdn.example.test/clip.mp4");
     expect(media?.[4]?.path).toBe("/tmp/local.mp4");
+    expect(media?.[5]?.url).toBeUndefined();
     expect(JSON.stringify(message)).not.toContain("data:");
     expect(JSON.stringify(message)).not.toContain(inlinePayload);
+    expect(JSON.stringify(message)).not.toContain("private-password");
+    expect(JSON.stringify(message)).not.toContain("private-query");
   });
 
   it("reads canonical persisted facts without merging disagreeing legacy fields", () => {

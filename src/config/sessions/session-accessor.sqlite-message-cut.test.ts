@@ -17,6 +17,7 @@ import {
   listSessionBranches,
   loadSessionEntry,
   loadTranscriptEvents,
+  preflightSessionMessageCut,
   readSessionTranscriptMessageEventCount,
   readSessionTranscriptMessageEvents,
   rewindSessionToMessage,
@@ -142,6 +143,39 @@ async function createSession(options: { activeLeafTarget?: string } = {}) {
               contentType: "video/mp4",
               sizeBytes: 1024,
             },
+            {
+              sourceId: "legacy-path-only.mp4",
+              sourceIndex: 2,
+              path: "/state/media/inbound/legacy-path-only.mp4",
+              kind: "video",
+              contentType: "video/mp4",
+            },
+            {
+              sourceId: "remote-video.mp4",
+              sourceIndex: 3,
+              url: "https://cdn.example.test/remote-video.mp4",
+              kind: "video",
+              contentType: "video/mp4",
+            },
+            {
+              sourceId: "unsafe-video.mp4",
+              sourceIndex: 4,
+              url: "media://inbound/nested%2Funsafe-video.mp4",
+              kind: "video",
+              contentType: "video/mp4",
+            },
+            {
+              sourceIndex: 5,
+              url: "media://inbound/incomplete-video.mp4",
+              kind: "video",
+              contentType: "video/mp4",
+            },
+            {
+              sourceId: "missing-mime-video.mp4",
+              sourceIndex: 6,
+              url: "media://inbound/missing-mime-video.mp4",
+              kind: "video",
+            },
             { path: "/state/media/inbound/notes.txt", contentType: "text/plain" },
           ],
         },
@@ -184,6 +218,30 @@ async function createSession(options: { activeLeafTarget?: string } = {}) {
 }
 
 describe("SQLite session message cuts", () => {
+  it("offers only restorable managed video facts while retaining legacy facts in history", async () => {
+    const { env, scope } = await createSession();
+
+    await expect(
+      preflightSessionMessageCut({ agentId, env, entryId: "user-2", sessionKey }),
+    ).resolves.toMatchObject({
+      status: "ready",
+      editorMediaRefs: [
+        { path: "/state/media/inbound/stored-image.png", contentType: "image/png" },
+        {
+          sourceId: "stored-video.mp4",
+          sourceIndex: 1,
+          url: "media://inbound/stored-video.mp4",
+          kind: "video",
+          contentType: "video/mp4",
+        },
+      ],
+    });
+    const userMessage = (await loadTranscriptEvents(scope)).find(
+      (event) => event && typeof event === "object" && "id" in event && event.id === "user-2",
+    ) as { message?: { __openclaw?: { media?: unknown[] } } } | undefined;
+    expect(userMessage?.message?.__openclaw?.media).toHaveLength(8);
+  });
+
   it("reuses branch summaries while the transcript watermark is unchanged", async () => {
     const { env } = await createSession();
     const fullTranscriptLoads = trackFullTranscriptLoads(env);
@@ -482,7 +540,15 @@ describe("SQLite session message cuts", () => {
       editorAttachments: [{ mimeType: "image/png", data: "aW1hZ2U=" }],
       editorMediaRefs: [
         { path: "/state/media/inbound/stored-image.png", contentType: "image/png" },
-        { path: "/state/media/inbound/stored-video.mp4", contentType: "video/mp4" },
+        {
+          sourceId: "stored-video.mp4",
+          sourceIndex: 1,
+          path: "/state/media/inbound/stored-video.mp4",
+          url: "media://inbound/stored-video.mp4",
+          kind: "video",
+          contentType: "video/mp4",
+          sizeBytes: 1024,
+        },
       ],
     });
     if (result.status !== "created") {
@@ -568,7 +634,15 @@ describe("SQLite session message cuts", () => {
       editorAttachments: [{ mimeType: "image/png", data: "aW1hZ2U=" }],
       editorMediaRefs: [
         { path: "/state/media/inbound/stored-image.png", contentType: "image/png" },
-        { path: "/state/media/inbound/stored-video.mp4", contentType: "video/mp4" },
+        {
+          sourceId: "stored-video.mp4",
+          sourceIndex: 1,
+          path: "/state/media/inbound/stored-video.mp4",
+          url: "media://inbound/stored-video.mp4",
+          kind: "video",
+          contentType: "video/mp4",
+          sizeBytes: 1024,
+        },
       ],
     });
     if (result.status !== "created") {

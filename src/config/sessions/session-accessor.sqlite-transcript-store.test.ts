@@ -363,6 +363,7 @@ describe("SQLite transcript native video claim checks", () => {
 
   it("sanitizes durable media URLs and nested tool detail video", async () => {
     const privateData = "cHJpdmF0ZS12aWRlbw==";
+    const wrappedFragments = ["cHJpdmF0ZS", "12aWRlby1w", "YXlsb2Fk"];
     await persistMessage({
       role: "toolResult",
       toolCallId: "call-private",
@@ -370,7 +371,7 @@ describe("SQLite transcript native video claim checks", () => {
       content: [{ type: "text", text: "captured" }],
       details: {
         nested: { type: "video", mimeType: "video/mp4", data: privateData },
-        uri: `data:video/mp4;base64,${privateData}`,
+        uri: `captured clip: data:video/mp4;base64,${wrappedFragments.join(" \t\n")}`,
       },
       isError: false,
     });
@@ -379,6 +380,9 @@ describe("SQLite transcript native video claim checks", () => {
     expect(storedDetails).not.toContain(privateData);
     expect(storedDetails).not.toContain('"type":"video"');
     expect(storedDetails).not.toContain("data:video/");
+    for (const fragment of wrappedFragments) {
+      expect(storedDetails).not.toContain(fragment);
+    }
 
     await persistMessage(
       {
@@ -446,6 +450,15 @@ describe("SQLite transcript native video claim checks", () => {
               contentType: "video/mp4",
               kind: "video",
             },
+            {
+              sourceId: "malformed-remote-video",
+              sourceIndex: 5,
+              url:
+                "https://user" +
+                ":private-password@cdn.example.test:not-a-port/clip.mp4?signature=private-query",
+              contentType: "video/mp4",
+              kind: "video",
+            },
           ],
         },
       },
@@ -459,6 +472,8 @@ describe("SQLite transcript native video claim checks", () => {
       expect(serialized).not.toContain(inlinePayload);
       expect(serialized).not.toContain("password");
       expect(serialized).not.toContain("signature");
+      expect(serialized).not.toContain("private-password");
+      expect(serialized).not.toContain("private-query");
     }
     expect(stored.event.message.__openclaw?.media).toEqual([
       {
@@ -491,6 +506,12 @@ describe("SQLite transcript native video claim checks", () => {
         sourceId: "local-video",
         sourceIndex: 4,
         path: "/tmp/local.mp4",
+        contentType: "video/mp4",
+        kind: "video",
+      },
+      {
+        sourceId: "malformed-remote-video",
+        sourceIndex: 5,
         contentType: "video/mp4",
         kind: "video",
       },

@@ -518,6 +518,34 @@ describe("session message-cut methods", () => {
     expect(mocks.readMediaBuffer).toHaveBeenCalledWith(storedVideoId, "inbound", 8 * 1024 * 1024);
   });
 
+  it.each(["sessions.rewind", "sessions.fork"] as const)(
+    "omits a path-only legacy video and lets %s restore the text edit",
+    async (method) => {
+      await appendVideoMessage({
+        entryId: "legacy-video-entry",
+        media: {
+          sourceId: "legacy-video.mp4",
+          sourceIndex: 0,
+          path: "/state/media/inbound/legacy-video.mp4",
+          kind: "video",
+          contentType: "video/mp4",
+          sizeBytes: 1024,
+        },
+      });
+
+      const respond = await invoke(method, "legacy-video-entry");
+
+      expect(respond).toHaveBeenCalledWith(
+        true,
+        expect.objectContaining({ editorText: "edit this clip" }),
+        undefined,
+      );
+      const payload = respond.mock.calls[0]?.[1] as { editorAttachments?: unknown } | undefined;
+      expect(payload).not.toHaveProperty("editorAttachments");
+      expect(mocks.readMediaBuffer).not.toHaveBeenCalled();
+    },
+  );
+
   it("rejects a 20 MiB video before fork mutation or media read", async () => {
     const storedVideoId = "oversized-video.mp4";
     await appendVideoMessage({
@@ -613,23 +641,23 @@ describe("session message-cut methods", () => {
     expect(listSessionEntries({ agentId: "main" })).toHaveLength(entryCountBefore);
   });
 
-  it("rejects an unsafe video claim check before rewind mutation", async () => {
-    const storedVideoId = "unsafe-video.mp4";
+  it("rejects an emitted managed video ref with invalid size metadata", async () => {
+    const storedVideoId = "invalid-size-video.mp4";
     await appendVideoMessage({
-      entryId: "unsafe-video-entry",
+      entryId: "invalid-size-video-entry",
       media: {
         sourceId: storedVideoId,
         sourceIndex: 0,
         path: `/state/media/inbound/${storedVideoId}`,
-        url: "media://inbound/nested%2Funsafe-video.mp4",
+        url: `media://inbound/${storedVideoId}`,
         kind: "video",
         contentType: "video/mp4",
-        sizeBytes: 1024,
+        sizeBytes: 0,
       },
     });
     const sourceBefore = loadSessionEntry({ agentId: "main", sessionKey })?.sessionId;
 
-    const respond = await invoke("sessions.rewind", "unsafe-video-entry");
+    const respond = await invoke("sessions.rewind", "invalid-size-video-entry");
 
     expect(respond).toHaveBeenCalledWith(
       false,

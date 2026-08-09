@@ -10,6 +10,7 @@ import { createSolidPngBuffer } from "../../../test/helpers/image-fixtures.js";
 import { pruneProcessedHistoryImages } from "../../agents/embedded-agent-runner/run/history-image-prune.js";
 import { hydratePromptMediaMessages } from "../../agents/embedded-agent-runner/run/images.js";
 import type { AgentMessage } from "../../agents/runtime/index.js";
+import { buildInboundMediaNoteProjection } from "../../auto-reply/media-note.js";
 import type { MsgContext } from "../../auto-reply/templating.js";
 import { resolveStateDir } from "../../config/paths.js";
 import { DEFAULT_MAX_BYTES } from "../../media-understanding/defaults.constants.js";
@@ -509,10 +510,12 @@ describe("prepareChatSendUserTurn", () => {
     });
   });
 
-  it("keeps oversized native-capable video on the media-understanding fallback", async () => {
+  it.each([
+    ["unsupported", false, 12],
+    ["native-capable over the direct limit", true, DEFAULT_MAX_BYTES.video + 1],
+  ])("gives staged %s video one prompt owner", async (_name, supportsNativeVideo, sizeBytes) => {
     const { controller, readInput } = createUserTurnInputController();
     const mediaRef = "media://inbound/large.mp4";
-    const sizeBytes = DEFAULT_MAX_BYTES.video + 1;
     const prepared = prepareChatSendUserTurn({
       request: {
         clientInfo: createClientInfo(),
@@ -530,7 +533,7 @@ describe("prepareChatSendUserTurn", () => {
         originatingRoute: { originatingChannel: "webchat", explicitDeliverRoute: false },
       },
       attachments: createAttachments({
-        supportsNativeVideo: true,
+        supportsNativeVideo,
         mediaPathOffloadPaths: ["/media/inbound/large.mp4"],
         mediaPathOffloadTypes: ["video/mp4"],
         offloadedRefs: [
@@ -550,14 +553,7 @@ describe("prepareChatSendUserTurn", () => {
       userTurn: controller,
     });
 
-    expect(prepared.replyOptionMedia).toEqual([
-      expect.objectContaining({
-        sourceId: "large.mp4",
-        sourceIndex: 0,
-        contentType: "video/mp4",
-        sizeBytes,
-      }),
-    ]);
+    expect(prepared.replyOptionMedia).toBeUndefined();
     expect(prepared.ctx.media).toEqual([
       expect.objectContaining({
         path: "/media/inbound/large.mp4",
@@ -570,6 +566,59 @@ describe("prepareChatSendUserTurn", () => {
     ]);
     await expect(readInput()).resolves.toMatchObject({
       media: [{ contentType: "video/mp4", sizeBytes }],
+    });
+    const projection = buildInboundMediaNoteProjection(prepared.ctx);
+    expect(projection.media).toHaveLength(1);
+    expect(projection.text).not.toContain("2 files");
+  });
+
+  it("uses source identity without deduplicating unrelated equal-looking attachments", async () => {
+    const { controller, readInput } = createUserTurnInputController();
+    const shared = {
+      path: "/media/inbound/equal.mp4",
+      url: "media://inbound/equal.mp4",
+      contentType: "video/mp4",
+      kind: "video" as const,
+      fileName: "equal.mp4",
+      sizeBytes: 12,
+    };
+    const staged = { ...shared, sourceId: "staged", sourceIndex: 0 };
+    const direct = { ...shared, sourceId: "direct", sourceIndex: 1 };
+    const prepared = prepareChatSendUserTurn({
+      request: {
+        clientInfo: createClientInfo(),
+        normalizedAttachments: [{}, {}],
+        suppressCommandInterpretation: false,
+        systemInputProvenance: undefined,
+        systemProvenanceReceipt: undefined,
+      },
+      session: {
+        agentId: "main",
+        clientRunId: "run-video-identities",
+        sessionKey: "agent:main:main",
+      },
+      admission: {
+        originatingRoute: { originatingChannel: "webchat", explicitDeliverRoute: false },
+      },
+      attachments: createAttachments({
+        mediaPathOffloadPaths: [staged.path],
+        mediaPathOffloadTypes: [staged.contentType],
+        mediaPathOffloads: [staged],
+        parsedMedia: [staged, direct],
+      }),
+      client: null,
+      logGateway: { warn: vi.fn() } as never,
+      userTurn: controller,
+    });
+
+    expect(prepared.ctx.media).toEqual([expect.objectContaining({ sourceIndex: 0 })]);
+    expect(prepared.replyOptionMedia).toEqual([expect.objectContaining({ sourceIndex: 1 })]);
+    expect([...(prepared.ctx.media ?? []), ...(prepared.replyOptionMedia ?? [])]).toHaveLength(2);
+    await expect(readInput()).resolves.toMatchObject({
+      media: [
+        expect.objectContaining({ sourceIndex: 0 }),
+        expect.objectContaining({ sourceIndex: 1 }),
+      ],
     });
   });
 

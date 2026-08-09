@@ -3,6 +3,7 @@ import {
   validateWorkerTranscriptCommitParams,
   WORKER_PROVIDER_REPLAY_MAX_DATA_BYTES,
 } from "../../packages/gateway-protocol/src/index.js";
+import type { AgentMessage } from "../agents/runtime/index.js";
 import type { AssistantMessage } from "../llm/types.js";
 import { toAgentMessage } from "./embedded-agent-transcript.runtime.js";
 import {
@@ -118,5 +119,32 @@ describe("worker transcript provider replay", () => {
     }
     expect(result.details).toMatchObject({ reason });
     expect(JSON.stringify(result.details)).not.toContain(replay.data);
+  });
+});
+
+describe("worker transcript durable media projection", () => {
+  it("fully redacts prefixed line-wrapped video data URLs from tool details", () => {
+    const fragments = ["cHJpdmF0ZS", "12aWRlby1w", "YXlsb2Fk"];
+    const message: AgentMessage = {
+      role: "toolResult",
+      toolCallId: "call-video",
+      toolName: "camera",
+      content: [{ type: "text", text: "captured" }],
+      details: {
+        uri: `captured clip: data:video/mp4;base64,${fragments.join(" \t\n")}`,
+      },
+      isError: false,
+      timestamp: 1,
+    };
+
+    const result = toWorkerTranscriptMessage(message, "inference");
+    expect(result).toMatchObject({
+      kind: "complete",
+      message: { details: { uri: "captured clip: [video data omitted]" } },
+    });
+    const serialized = JSON.stringify(result);
+    for (const fragment of fragments) {
+      expect(serialized).not.toContain(fragment);
+    }
   });
 });

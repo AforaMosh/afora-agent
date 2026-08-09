@@ -85,9 +85,15 @@ function buildChatSendUserTurnMedia(
 function buildChatSendPromptMedia(
   attachments: PreparedChatSendAttachments,
 ): MediaFact[] | undefined {
+  const stagedSourceIndexes = new Set(
+    attachments.mediaPathOffloads.flatMap((fact) =>
+      fact.sourceIndex === undefined ? [] : [fact.sourceIndex],
+    ),
+  );
   const media = attachments.parsedMedia.filter(
     (fact) =>
       Boolean(fact.path ?? fact.url) &&
+      (fact.sourceIndex === undefined || !stagedSourceIndexes.has(fact.sourceIndex)) &&
       (fact.kind === "image" || fact.kind === "sticker" || fact.kind === "video"),
   );
   return media.length > 0 ? media : undefined;

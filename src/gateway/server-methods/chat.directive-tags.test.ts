@@ -1806,6 +1806,61 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
     expect(context.broadcast).toHaveBeenCalledOnce();
   });
 
+  it("injects one staged video fact into an active run", async () => {
+    await createGatewayUserTurnSqliteFixture("openclaw-chat-send-steer-staged-video-");
+    mockState.savedMediaResults = [{ path: "/tmp/steer.mp4", contentType: "video/mp4" }];
+    const { send } = createChatRequestFixture();
+    const operation = replyRunRegistry.begin({
+      sessionKey: "main",
+      sessionId: mockState.sessionId,
+      resetTriggered: false,
+      originatingLeafEntryId: null,
+    });
+    operation.setPhase("running");
+    const queueMessage = vi.fn(async () => {});
+    operation.attachBackend({
+      kind: "embedded",
+      runId: "active-run",
+      cancel: () => {},
+      messageInjection: { isAvailable: () => true, queueMessage },
+    });
+
+    try {
+      await send({
+        idempotencyKey: "idem-steer-staged-video",
+        requestParams: {
+          expectedRunId: "active-run",
+          queueMode: "steer",
+          attachments: [
+            {
+              mimeType: "video/mp4",
+              fileName: "steer.mp4",
+              content: Buffer.from("video").toString("base64"),
+            },
+          ],
+        },
+      });
+    } finally {
+      operation.complete();
+    }
+
+    expect(queueMessage).toHaveBeenCalledWith(
+      "hello\n[media attached: media://inbound/saved-media]",
+      expect.objectContaining({
+        media: [
+          expect.objectContaining({
+            sourceId: "saved-media",
+            sourceIndex: 0,
+            contentType: "video/mp4",
+          }),
+        ],
+      }),
+    );
+    const options = queueMessage.mock.calls[0]?.[1] as ReplyBackendQueueMessageOptions | undefined;
+    expect(options?.media).toHaveLength(1);
+    expect(mockState.lastDispatchCtx).toBeUndefined();
+  });
+
   it("hydrates and accepts reply injection before ACK without waiting for delivery", async () => {
     await createGatewayUserTurnSqliteFixture("openclaw-chat-send-reply-steer-");
     mockState.hasMessageReceivedHooks = true;
@@ -3418,8 +3473,12 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
           });
           expect(extractFirstTextBlock(broadcast)).toBe("Codex source reply with media");
           const broadcastContent = getMessageContent(broadcast);
-          expect(String(broadcastContent[1]?.url)).toContain("/api/chat/media/outgoing/");
-          expect(String(broadcastContent[1]?.openUrl)).toContain("/api/chat/media/outgoing/");
+          expect(broadcastContent[1]).toMatchObject({
+            type: "image",
+            artifactId: expect.any(String),
+            openUrl: expect.stringContaining("/api/chat/media/outgoing/"),
+          });
+          expect(broadcastContent[1]).not.toHaveProperty("url");
           const assistantUpdates = findAssistantTranscriptUpdates();
           expect(assistantUpdates).toStrictEqual([]);
           const assistantEntries = await readActiveAssistantTranscriptMessages();
@@ -3693,7 +3752,12 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
         const broadcastContent = getMessageContent(broadcast);
         expect(broadcastContent.filter((block) => block.type === "image")).toHaveLength(1);
         expect(extractFirstTextBlock(broadcast)).toBe("Backed source reply");
-        expect(String(broadcastContent[1]?.url)).toContain("/api/chat/media/outgoing/");
+        expect(broadcastContent[1]).toMatchObject({
+          type: "image",
+          artifactId: expect.any(String),
+          openUrl: expect.stringContaining("/api/chat/media/outgoing/"),
+        });
+        expect(broadcastContent[1]).not.toHaveProperty("url");
         const assistantEntries = await readActiveAssistantTranscriptMessages();
         expect(assistantEntries).toHaveLength(1);
         expect(assistantEntries[0]?.idempotencyKey).toBe(backedMirrorKey);
@@ -6064,8 +6128,14 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
     expect(mockState.lastDispatchCtx?.Body).not.toContain("media://");
     expect(mockState.lastDispatchCtx?.media).toEqual([
       {
+        sourceId: "saved-media",
+        sourceIndex: 0,
         path: "/tmp/1.png",
+        url: "media://inbound/saved-media",
         contentType: "image/png",
+        kind: "image",
+        fileName: "attachment-1",
+        sizeBytes: mockState.savedMediaCalls[0]?.size ?? 0,
         workspaceDir: "/tmp",
       },
     ]);
@@ -6219,8 +6289,14 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
     expect(mockState.lastDispatchCtx?.Body).not.toContain("media://");
     expect(mockState.lastDispatchCtx?.media).toEqual([
       {
+        sourceId: "saved-media",
+        sourceIndex: 0,
         path: "/tmp/1.png",
+        url: "media://inbound/saved-media",
         contentType: "image/png",
+        kind: "image",
+        fileName: "attachment-1",
+        sizeBytes: mockState.savedMediaCalls[0]?.size ?? 0,
         workspaceDir: "/tmp",
       },
     ]);
@@ -6260,8 +6336,14 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
 
     expect(mockState.lastDispatchCtx?.media).toEqual([
       {
+        sourceId: "saved-media",
+        sourceIndex: 0,
         path: "/home/user/.openclaw/media/inbound/report.pdf",
+        url: "media://inbound/saved-media",
         contentType: "application/pdf",
+        kind: "document",
+        fileName: "report.pdf",
+        sizeBytes: mockState.savedMediaCalls[0]?.size ?? 0,
         workspaceDir: "/home/user/.openclaw/media/inbound",
       },
     ]);
@@ -6311,8 +6393,14 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
     ]);
     expect(mockState.lastDispatchCtx?.media).toEqual([
       {
+        sourceId: "saved-media",
+        sourceIndex: 0,
         path: "/home/user/.openclaw/media/inbound/fake.zip",
+        url: "media://inbound/saved-media",
         contentType: "application/zip",
+        kind: "document",
+        fileName: "fake.png",
+        sizeBytes: mockState.savedMediaCalls[0]?.size ?? 0,
         workspaceDir: "/home/user/.openclaw/media/inbound",
       },
     ]);
@@ -6351,8 +6439,14 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
 
     expect(mockState.lastDispatchCtx?.media).toEqual([
       {
+        sourceId: "saved-media",
+        sourceIndex: 0,
         path: "media/inbound/report.pdf",
+        url: "media://inbound/saved-media",
         contentType: "application/pdf",
+        kind: "document",
+        fileName: "report.pdf",
+        sizeBytes: mockState.savedMediaCalls[0]?.size ?? 0,
         workspaceDir: "/sandbox/workspace",
       },
     ]);
@@ -6412,8 +6506,14 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
     expect(mockState.lastDispatchImageOrder).toEqual(["inline"]);
     expect(mockState.lastDispatchCtx?.media).toEqual([
       {
+        sourceId: "saved-media",
+        sourceIndex: 1,
         path: "media/inbound/report.pdf",
+        url: "media://inbound/saved-media",
         contentType: "application/pdf",
+        kind: "document",
+        fileName: "report.pdf",
+        sizeBytes: mockState.savedMediaCalls[0]?.size ?? 0,
         workspaceDir: "/sandbox/workspace",
       },
     ]);

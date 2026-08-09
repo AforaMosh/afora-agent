@@ -38,6 +38,7 @@ export function createChatSendMessageInjectionStarter(params: {
   const { p, rawMessage, supportsTaskSuggestions } = params.request;
   const { cfg, entry } = params.session;
   const { ctx, isInternalTextSlashCommandTurn, replyOptionImages, replyOptionMedia } = params.turn;
+  const media = [...(ctx.media ?? []), ...(replyOptionMedia ?? [])];
   return (): ReplyMessageInjectionAttempt | undefined => {
     if (!params.target || isInternalTextSlashCommandTurn) {
       return undefined;
@@ -59,7 +60,7 @@ export function createChatSendMessageInjectionStarter(params: {
         isInboundUserMessage: true,
         ...(replyOptionImages?.length ? { images: replyOptionImages } : {}),
         ...(params.imageOrder?.length ? { imageOrder: params.imageOrder } : {}),
-        ...(replyOptionMedia?.length ? { media: replyOptionMedia } : {}),
+        ...(media.length > 0 ? { media } : {}),
         waitForTranscriptCommit: true,
         ...(debounceMs !== undefined ? { debounceMs } : {}),
         taskSuggestionDeliveryMode: supportsTaskSuggestions ? "gateway" : undefined,

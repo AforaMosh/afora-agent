@@ -4,6 +4,8 @@ import { uniqueStrings } from "@openclaw/normalization-core/string-normalization
 import { executeSqliteQueryTakeFirstSync } from "../../infra/kysely-sync.js";
 import { pruneMapToMaxSize } from "../../infra/map-size.js";
 import { readPersistedMediaFacts } from "../../media/media-facts.js";
+import { normalizeCanonicalInboundMediaUri } from "../../media/media-reference-projection.js";
+import { parseInboundMediaUri } from "../../media/media-reference.js";
 import { extractAssistantVisibleText } from "../../shared/chat-message-content.js";
 import {
   openOpenClawAgentDatabase,
@@ -637,13 +639,24 @@ function extractEditorMediaRefs(
     if (!kind) {
       return [];
     }
+    const canonicalVideoUrl = kind === "video" ? normalizeCanonicalInboundMediaUri(fact.url) : null;
+    if (
+      kind === "video" &&
+      (!canonicalVideoUrl ||
+        !fact.sourceId ||
+        fact.sourceIndex === undefined ||
+        !fact.contentType?.trim().toLowerCase().startsWith("video/") ||
+        parseInboundMediaUri(canonicalVideoUrl)?.id !== fact.sourceId)
+    ) {
+      return [];
+    }
     return [
       {
         kind,
         ...(fact.sourceId ? { sourceId: fact.sourceId } : {}),
         ...(fact.sourceIndex !== undefined ? { sourceIndex: fact.sourceIndex } : {}),
         ...(fact.path ? { path: fact.path } : {}),
-        ...(fact.url ? { url: fact.url } : {}),
+        ...(canonicalVideoUrl ? { url: canonicalVideoUrl } : fact.url ? { url: fact.url } : {}),
         ...(fact.contentType ? { contentType: fact.contentType } : {}),
         ...(fact.sizeBytes !== undefined ? { sizeBytes: fact.sizeBytes } : {}),
       },
