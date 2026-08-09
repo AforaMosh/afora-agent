@@ -135,6 +135,172 @@ function operationScenario(params: {
   };
 }
 
+/** Deterministic 32-bit PRNG for property scenarios without a test-only dependency. */
+function makeScenarioRng(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let value = state;
+    value = Math.imul(value ^ (value >>> 15), value | 1);
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function scenarioRandomIndex(rng: () => number, length: number): number {
+  return Math.floor(rng() * length);
+}
+
+/**
+ * Seeded property coverage keeps adapter conformance bound to the authorization
+ * invariants rather than only one hand-picked policy row per operation.
+ */
+function createMemoryAuthorizationPropertyScenarios(): MemoryAuthorizationConformanceScenario[] {
+  const cases: MemoryAuthorizationConformanceScenario[] = [];
+  const rng = makeScenarioRng(0x6d656d6f);
+  const variants = [
+    "placement-only",
+    "placement-missing",
+    "expired-allow",
+    "explicit-deny",
+    "delivery-view",
+    "view-intersection",
+    "plan-context-binding",
+    "plan-revision",
+    "lineage",
+    "delegation",
+  ] as const;
+
+  for (const operation of MEMORY_OPERATIONS) {
+    for (let iteration = 0; iteration < 4; iteration += 1) {
+      const complete = operationScenario({
+        id: `property-${operation}-${iteration}-complete`,
+        operation,
+      });
+      const requiredOperations = MEMORY_AUTHORIZATION_OPERATION_REQUIREMENTS[operation];
+      const selectedOperation =
+        requiredOperations[scenarioRandomIndex(rng, requiredOperations.length)]!;
+      const differentOperation =
+        MEMORY_OPERATIONS[
+          (scenarioRandomIndex(rng, MEMORY_OPERATIONS.length - 1) +
+            MEMORY_OPERATIONS.indexOf(operation) +
+            1) %
+            MEMORY_OPERATIONS.length
+        ]!;
+      const generatedAudience = {
+        kind: "conversation" as const,
+        id: `conversation-property-${operation}-${iteration}-${scenarioRandomIndex(rng, 1_000_000)}`,
+      };
+      const generatedRevision = `policy-property-${operation}-${iteration}-${scenarioRandomIndex(rng, 1_000_000)}`;
+      const generatedLineage = `lineage-property-${operation}-${iteration}-${scenarioRandomIndex(rng, 1_000_000)}`;
+      const generatedContextFingerprint = `context-property-${operation}-${iteration}-${scenarioRandomIndex(rng, 1_000_000)}`;
+
+      cases.push({
+        ...complete,
+        id: `property-${operation}-${iteration}-${variants[0]}`,
+        stores: complete.stores.map((store) => ({
+          ...store,
+          placementCapabilities: requiredOperations,
+        })),
+        policyEntries: [],
+      });
+      cases.push({
+        ...complete,
+        id: `property-${operation}-${iteration}-${variants[1]}`,
+        stores: complete.stores.map((store) => ({
+          ...store,
+          placementCapabilities: requiredOperations.filter(
+            (requiredOperation) => requiredOperation !== selectedOperation,
+          ),
+        })),
+        policyEntries: [],
+      });
+      cases.push({
+        ...complete,
+        id: `property-${operation}-${iteration}-${variants[2]}`,
+        policyEntries: complete.policyEntries.map((entry) =>
+          entry.operation === selectedOperation ? { ...entry, expiresAt: complete.now } : entry,
+        ),
+      });
+      cases.push({
+        ...complete,
+        id: `property-${operation}-${iteration}-${variants[3]}`,
+        stores: complete.stores.map((store) => ({
+          ...store,
+          placementCapabilities: requiredOperations,
+        })),
+        policyEntries: [
+          ...complete.policyEntries,
+          {
+            effect: "deny",
+            principalId: "principal-owner",
+            resourceId: "resource-a",
+            operation: selectedOperation,
+          },
+        ],
+      });
+      cases.push({
+        ...complete,
+        id: `property-${operation}-${iteration}-${variants[4]}`,
+        context: {
+          ...complete.context,
+          deliveryAudiences: [generatedAudience],
+        },
+        plan: {
+          ...complete.plan,
+          allowedEgressAudiences: [generatedAudience],
+        },
+      });
+      cases.push({
+        ...complete,
+        id: `property-${operation}-${iteration}-${variants[5]}`,
+        viewMounts: [],
+        plan: {
+          ...complete.plan,
+          mounts: [],
+        },
+      });
+      cases.push({
+        ...complete,
+        id: `property-${operation}-${iteration}-${variants[6]}`,
+        plan: {
+          ...complete.plan,
+          contextFingerprint: generatedContextFingerprint,
+        },
+      });
+      cases.push({
+        ...complete,
+        id: `property-${operation}-${iteration}-${variants[7]}`,
+        plan: {
+          ...complete.plan,
+          policyRevision: generatedRevision,
+        },
+      });
+      cases.push({
+        ...complete,
+        id: `property-${operation}-${iteration}-${variants[8]}`,
+        resources: complete.resources.map((resource) => ({
+          ...resource,
+          requiredLineagePolicySetIds: [...complete.context.lineagePolicySetIds, generatedLineage],
+        })),
+      });
+      cases.push({
+        ...complete,
+        id: `property-${operation}-${iteration}-${variants[9]}`,
+        context: {
+          ...complete.context,
+          delegation: {
+            allowedOperations: [differentOperation],
+            maximumAudiences: complete.context.deliveryAudiences,
+          },
+        },
+      });
+    }
+  }
+
+  return cases;
+}
+
 /** Deterministic scenarios spanning every Phase 0 policy invariant. */
 export function createMemoryAuthorizationConformanceScenarios(): MemoryAuthorizationConformanceScenario[] {
   const cases: MemoryAuthorizationConformanceScenario[] = [];
@@ -214,6 +380,15 @@ export function createMemoryAuthorizationConformanceScenarios(): MemoryAuthoriza
       operation,
     });
     cases.push(complete);
+    cases.push({
+      ...complete,
+      id: `operation-${operation}-placement-only`,
+      stores: complete.stores.map((store) => ({
+        ...store,
+        placementCapabilities: MEMORY_AUTHORIZATION_OPERATION_REQUIREMENTS[operation],
+      })),
+      policyEntries: [],
+    });
     cases.push({
       ...complete,
       id: `operation-${operation}-permission-missing-${operation}`,
@@ -706,6 +881,8 @@ export function createMemoryAuthorizationConformanceScenarios(): MemoryAuthoriza
       },
     ],
   });
+
+  cases.push(...createMemoryAuthorizationPropertyScenarios());
 
   return cases;
 }

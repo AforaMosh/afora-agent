@@ -28,7 +28,6 @@ export type { MemoryCitationsMode } from "../config/types.memory.js";
 export type {
   MemoryCorpusSearchResult,
   MemoryFlushPlan,
-  MemoryPluginCapability,
   MemoryPluginRuntime,
   MemoryPromptSectionBuilder,
 } from "../plugins/memory-state.js";

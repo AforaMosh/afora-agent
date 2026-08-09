@@ -2,10 +2,7 @@
 import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
 import type { OpenClawPluginApi, OpenClawPluginCommandDefinition } from "openclaw/plugin-sdk/core";
 import { LEGACY_MEMORY_AUTHORIZATION_CAPABILITIES } from "openclaw/plugin-sdk/memory-authorization";
-import type {
-  MemoryPluginCapability,
-  MemoryPluginRuntime,
-} from "openclaw/plugin-sdk/memory-core-host-runtime-core";
+import type { MemoryPluginRuntime } from "openclaw/plugin-sdk/memory-core-host-runtime-core";
 import { createTestPluginApi } from "openclaw/plugin-sdk/plugin-test-api";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { buildMemoryFlushPlan } from "./src/flush-plan.js";
@@ -35,6 +32,8 @@ vi.mock("./src/runtime-provider.js", () => ({
 
 import plugin from "./index.js";
 
+type RegisteredMemoryCapability = Parameters<OpenClawPluginApi["registerMemoryCapability"]>[0];
+
 const hostRuntime = {
   llm: {
     acquireLocalService: async () => undefined,
@@ -49,8 +48,8 @@ const hostRuntime = {
   },
 } as unknown as OpenClawPluginApi["runtime"];
 
-function registerMemoryCoreCapability(): MemoryPluginCapability {
-  let registered: MemoryPluginCapability | undefined;
+function registerMemoryCoreCapability(): RegisteredMemoryCapability {
+  let registered: RegisteredMemoryCapability | undefined;
   plugin.register(
     createTestPluginApi({
       runtime: hostRuntime,

@@ -1,17 +1,22 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import {
+  createMemoryAuthorizationConformanceCases,
+  evaluateMemoryAuthorizationConformanceScenario,
+  referenceMemoryAuthorizationConformanceAdapter,
+  runMemoryAuthorizationConformanceSuite,
+  type MemoryAuthorizationConformanceAdapter,
+  type MemoryAuthorizationConformanceDecision,
+} from "../../plugin-sdk/memory-authorization-conformance.js";
+import * as memoryAuthorizationConformanceSdk from "../../plugin-sdk/memory-authorization-conformance.js";
+import {
   COMPLETE_MEMORY_AUTHORIZATION_CAPABILITIES,
   LEGACY_MEMORY_AUTHORIZATION_CAPABILITIES,
   MEMORY_AUTHORIZATION_CAPABILITY_NAMES,
   MEMORY_AUTHORIZATION_CONTRACT_VERSION,
   MEMORY_OPERATIONS,
-  createMemoryAuthorizationConformanceCases,
-  evaluateMemoryAuthorizationConformanceScenario,
   hasCompleteMemoryAuthorizationCapabilities,
   isMemoryAuthorizationCapabilities,
   listMissingMemoryAuthorizationCapabilities,
-  referenceMemoryAuthorizationConformanceAdapter,
-  runMemoryAuthorizationConformanceSuite,
   type MemoryAccessContext,
   type AuthorizedMemoryMutation,
   type AuthorizedMemoryContentPlan,
@@ -22,8 +27,6 @@ import {
   type AuthorizedResourceHandle,
   type MemoryContentAccessContext,
   type MemoryAuthorizationCapabilities,
-  type MemoryAuthorizationConformanceAdapter,
-  type MemoryAuthorizationConformanceDecision,
 } from "../../plugin-sdk/memory-authorization.js";
 import * as memoryAuthorizationSdk from "../../plugin-sdk/memory-authorization.js";
 import type {
@@ -94,7 +97,7 @@ function createAllowedHandleAdapter(
 }
 
 describe("memory authorization SDK contract", () => {
-  it("exports the complete narrow contract and conformance surface", () => {
+  it("keeps the runtime contract separate from the conformance harness", () => {
     expect(Object.keys(memoryAuthorizationSdk)).toEqual(
       expect.arrayContaining([
         "COMPLETE_MEMORY_AUTHORIZATION_CAPABILITIES",
@@ -102,11 +105,16 @@ describe("memory authorization SDK contract", () => {
         "MEMORY_AUTHORIZATION_CAPABILITY_NAMES",
         "MEMORY_AUTHORIZATION_CONTRACT_VERSION",
         "MEMORY_OPERATIONS",
-        "createMemoryAuthorizationConformanceCases",
-        "evaluateMemoryAuthorizationConformanceScenario",
         "hasCompleteMemoryAuthorizationCapabilities",
         "isMemoryAuthorizationCapabilities",
         "listMissingMemoryAuthorizationCapabilities",
+      ]),
+    );
+    expect(memoryAuthorizationSdk).not.toHaveProperty("createMemoryAuthorizationConformanceCases");
+    expect(Object.keys(memoryAuthorizationConformanceSdk)).toEqual(
+      expect.arrayContaining([
+        "createMemoryAuthorizationConformanceCases",
+        "evaluateMemoryAuthorizationConformanceScenario",
         "referenceMemoryAuthorizationConformanceAdapter",
         "runMemoryAuthorizationConformanceSuite",
       ]),
@@ -414,15 +422,17 @@ describe("memory authorization conformance suite", () => {
 
   it("generates every Phase 0 policy invariant", () => {
     const cases = createMemoryAuthorizationConformanceCases();
+    const namedCases = cases.filter((entry) => !entry.id.startsWith("property-"));
     const operationCaseIds = MEMORY_OPERATIONS.flatMap((operation) => [
       `operation-${operation}-permission-complete`,
+      `operation-${operation}-placement-only`,
       `operation-${operation}-permission-missing-${operation}`,
       `operation-${operation}-explicit-deny`,
       `operation-${operation}-context-policy-revision`,
       `operation-${operation}-delivery-audience-intersection`,
       `operation-${operation}-delegation-intersection`,
     ]);
-    expect(cases.map((entry) => entry.id)).toEqual([
+    expect(namedCases.map((entry) => entry.id)).toEqual([
       "deny-precedence",
       "permission-implication",
       "permission-complete",
@@ -480,7 +490,7 @@ describe("memory authorization conformance suite", () => {
       "prefilter-superset",
     ]);
     expect(
-      Object.fromEntries(cases.map((entry) => [entry.id, entry.expected["resource-a"]])),
+      Object.fromEntries(namedCases.map((entry) => [entry.id, entry.expected["resource-a"]])),
     ).toMatchObject({
       "deny-precedence": { allowed: false, reasonCode: "explicit-deny" },
       "permission-implication": { allowed: false, reasonCode: "default-deny" },
@@ -559,11 +569,19 @@ describe("memory authorization conformance suite", () => {
       "prefilter-superset": { allowed: true, reasonCode: "allowed" },
     });
     const operationDecisions = Object.fromEntries(
-      cases.map((entry) => [entry.id, entry.expected["resource-a"]]),
+      namedCases.map((entry) => [entry.id, entry.expected["resource-a"]]),
     );
     for (const operation of MEMORY_OPERATIONS) {
+      const placementOnlyScenario = cases.find(
+        (entry) => entry.id === `operation-${operation}-placement-only`,
+      )?.scenario;
+      expect(placementOnlyScenario?.policyEntries).toEqual([]);
+      expect(placementOnlyScenario?.stores[0]?.placementCapabilities).toEqual(
+        placementOnlyScenario?.plan.mounts[0]?.capabilities,
+      );
       expect(operationDecisions).toMatchObject({
         [`operation-${operation}-permission-complete`]: { allowed: true, reasonCode: "allowed" },
+        [`operation-${operation}-placement-only`]: { allowed: true, reasonCode: "allowed" },
         [`operation-${operation}-permission-missing-${operation}`]: {
           allowed: false,
           reasonCode: "default-deny",
@@ -586,7 +604,7 @@ describe("memory authorization conformance suite", () => {
         },
       });
     }
-    expect(cases.at(-1)?.expected["resource-denied"]).toEqual({
+    expect(namedCases.at(-1)?.expected["resource-denied"]).toEqual({
       allowed: false,
       reasonCode: "outside-view",
     });
@@ -598,6 +616,36 @@ describe("memory authorization conformance suite", () => {
       },
     ]);
     expect(revoked?.scenario.context).not.toHaveProperty("principalIds");
+  });
+
+  it("exercises Phase 0 invariants with seeded property scenarios", () => {
+    const propertyCases = createMemoryAuthorizationConformanceCases().filter((entry) =>
+      entry.id.startsWith("property-"),
+    );
+    const expectedByVariant = {
+      "placement-only": { allowed: true, reasonCode: "allowed" },
+      "placement-missing": { allowed: false, reasonCode: "default-deny" },
+      "expired-allow": { allowed: false, reasonCode: "default-deny" },
+      "explicit-deny": { allowed: false, reasonCode: "explicit-deny" },
+      "delivery-view": { allowed: false, reasonCode: "outside-view" },
+      "view-intersection": { allowed: false, reasonCode: "outside-view" },
+      "plan-context-binding": { allowed: false, reasonCode: "invalid-context" },
+      "plan-revision": { allowed: false, reasonCode: "revision-stale" },
+      lineage: { allowed: false, reasonCode: "lineage-deny" },
+      delegation: { allowed: false, reasonCode: "default-deny" },
+    } as const;
+
+    for (const [variant, expected] of Object.entries(expectedByVariant)) {
+      const variantCases = propertyCases.filter((entry) => entry.id.endsWith(`-${variant}`));
+      expect(variantCases).toHaveLength(MEMORY_OPERATIONS.length * 4);
+      for (const testCase of variantCases) {
+        expect(testCase.expected["resource-a"]).toMatchObject(expected);
+        if (variant === "view-intersection") {
+          expect(testCase.scenario.viewMounts).toEqual([]);
+          expect(testCase.scenario.plan.mounts).toEqual([]);
+        }
+      }
+    }
   });
 
   it("fails closed for omitted or malformed plan, resource, and policy expiry", () => {
