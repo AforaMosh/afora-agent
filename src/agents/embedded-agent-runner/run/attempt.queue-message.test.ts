@@ -152,6 +152,37 @@ describe("embedded OpenClaw queued steering cancellation", () => {
       media,
       imageOrder,
       undefined,
+      undefined,
+      undefined,
+    );
+  });
+
+  it("appends handled identities without shifting existing steer arguments", async () => {
+    const steer = vi.fn(async () => undefined);
+    const media = [{ sourceId: "described", sourceIndex: 4, kind: "video" as const }];
+    const imageOrder = ["offloaded"] as const;
+    const handledVideoIdentities = [{ sourceId: "described", sourceIndex: 4 }];
+    const activeSession: EmbeddedAgentActiveSessionSteerTarget = {
+      steer,
+      subscribe: () => () => {},
+    };
+
+    await steerActiveSessionWithOptionalDeliveryWait(activeSession, "inspect both", {
+      media,
+      imageOrder: [...imageOrder],
+      handledVideoIdentities,
+      queueIdentity: "queue-1",
+    });
+
+    expect(steer).toHaveBeenCalledWith(
+      "inspect both",
+      undefined,
+      undefined,
+      media,
+      imageOrder,
+      "queue-1",
+      undefined,
+      handledVideoIdentities,
     );
   });
 
@@ -269,6 +300,7 @@ describe("embedded OpenClaw queued steering cancellation", () => {
       undefined,
       undefined,
       queueIdentity,
+      undefined,
     );
     await Promise.resolve();
     expect(onQueueAccepted).toHaveBeenCalledWith(true);

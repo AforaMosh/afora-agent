@@ -187,6 +187,9 @@ export async function runActiveReplySteer(params: ActiveReplySteerParams): Promi
         ...(followupRun.images?.length ? { images: followupRun.images } : {}),
         ...(followupRun.imageOrder?.length ? { imageOrder: followupRun.imageOrder } : {}),
         ...(followupRun.media?.length ? { media: followupRun.media } : {}),
+        ...(followupRun.handledVideoIdentities?.length
+          ? { handledVideoIdentities: followupRun.handledVideoIdentities }
+          : {}),
         waitForTranscriptCommit: true,
         queueIdentity: resolveAcceptedSteerRunId(params),
         abortSignal: resolveFollowupAbortSignal(followupRun),

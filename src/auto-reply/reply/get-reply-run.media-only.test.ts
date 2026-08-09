@@ -797,34 +797,48 @@ describe("runPreparedReply media-only handling", () => {
     expect(call.followupRun.images).toBeUndefined();
   });
 
-  it("persists video-description hydration suppression for future transcript replay", async () => {
+  it("persists the exact described-video identity for future transcript replay", async () => {
+    const unrelatedFact = {
+      sourceId: "unrelated-video",
+      sourceIndex: 7,
+      path: "/tmp/unrelated-video.mp4",
+      contentType: "video/mp4",
+      kind: "video" as const,
+    };
     const videoFact = {
+      sourceId: "described-video",
+      sourceIndex: 7,
       path: "/tmp/described-video.mp4",
       contentType: "video/mp4",
       kind: "video" as const,
     };
     const params = baseParams();
-    params.ctx.media = [videoFact];
+    params.ctx.media = [unrelatedFact, videoFact];
     params.ctx.MediaUnderstanding = [
       {
         kind: "video.description",
-        attachmentIndex: 0,
+        attachmentIndex: 1,
         provider: "moonshot",
         model: "kimi-k3",
         text: "a person walking through a park",
       },
     ];
-    params.sessionCtx.media = [videoFact];
+    params.sessionCtx.media = [unrelatedFact, videoFact];
 
     await runPreparedReply(params);
 
     const call = requireRunReplyAgentCall();
-    expect(call.followupRun.media).toEqual([expect.objectContaining(videoFact)]);
-    expect(call.followupRun.handledVideoSourceIndexes).toEqual([0]);
+    expect(call.followupRun.media).toEqual([
+      expect.objectContaining(unrelatedFact),
+      expect.objectContaining(videoFact),
+    ]);
+    expect(call.followupRun.handledVideoIdentities).toEqual([
+      { sourceId: "described-video", sourceIndex: 7 },
+    ]);
     expect(call.followupRun.userTurnTranscriptRecorder?.message).toMatchObject({
       __openclaw: {
-        media: [expect.objectContaining(videoFact)],
-        mediaVideoDescriptions: [{ sourceIndex: 0 }],
+        media: [expect.objectContaining(unrelatedFact), expect.objectContaining(videoFact)],
+        mediaVideoDescriptions: [{ sourceId: "described-video", sourceIndex: 7 }],
       },
     });
   });

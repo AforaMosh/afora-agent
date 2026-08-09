@@ -8,6 +8,8 @@ import {
   readRuntimePromptMediaFacts,
 } from "../media/media-facts.js";
 
+const OMITTED_TRANSCRIPT_VIDEO_DATA = "[video data omitted]";
+
 const isMediaMimeType = (value: unknown): value is string =>
   typeof value === "string" && /^(?:image|video)\//iu.test(value.trim());
 
@@ -24,6 +26,25 @@ function mediaMimeTypeForRecord(value: Record<string, unknown>): string | undefi
 
 function mediaMimeTypeFieldsForRecord(value: Record<string, unknown>): string[] {
   return ["mimeType", "mediaType", "media_type"].filter((key) => isMediaMimeType(value[key]));
+}
+
+function isVideoPayloadRecord(value: Record<string, unknown>): boolean {
+  const hasVideoMime = [
+    value.mimeType,
+    value.mime_type,
+    value.mediaType,
+    value.media_type,
+    value.contentType,
+    value.content_type,
+  ].some((candidate) =>
+    typeof candidate === "string" ? /^video\//iu.test(candidate.trim()) : false,
+  );
+  return (
+    value.type === "video" ||
+    value.type === "input_video" ||
+    value.type === "video_url" ||
+    hasVideoMime
+  );
 }
 
 function sanitizeOpaqueMediaBase64(
@@ -56,6 +77,11 @@ export function sanitizeTranscriptMediaRecord(
   source: Record<string, unknown>,
   trustedVideo = false,
 ): Record<string, unknown> | undefined {
+  if (typeof source.data === "string" && isVideoPayloadRecord(source) && !trustedVideo) {
+    return source.data === OMITTED_TRANSCRIPT_VIDEO_DATA
+      ? source
+      : { ...source, data: OMITTED_TRANSCRIPT_VIDEO_DATA };
+  }
   const isMediaBlock = source.type === "image" || source.type === "video";
   const isBase64SourceBlock = source.type === "base64";
   if ((!isMediaBlock && !isBase64SourceBlock) || typeof source.data !== "string") {
@@ -95,6 +121,9 @@ function sanitizeInlineMediaDataUrl(value: string, trustedVideo: boolean): strin
   }
   const [mimeType, ...options] = value.slice("data:".length, commaIndex).split(";");
   const normalizedMimeType = normalizeMediaMimeType(mimeType);
+  if (normalizedMimeType?.startsWith("video/") && !trustedVideo) {
+    return OMITTED_TRANSCRIPT_VIDEO_DATA;
+  }
   if (!normalizedMimeType || !options.some((option) => option.trim().toLowerCase() === "base64")) {
     return undefined;
   }
@@ -158,6 +187,9 @@ export function shouldPreserveTranscriptMediaPayload(
   if (typeof item !== "string") {
     return false;
   }
+  if (item === OMITTED_TRANSCRIPT_VIDEO_DATA && isVideoPayloadRecord(source)) {
+    return true;
+  }
   if (key === "data" && isOpaqueMediaDataBlock(source, trustedVideo)) {
     return true;
   }
@@ -193,7 +225,7 @@ export function collectTrustedTranscriptVideoBlocks(
       continue;
     }
     const factIndex = blockFactIndexes[index];
-    const fact = factIndex === null ? undefined : mediaFacts[factIndex];
+    const fact = typeof factIndex === "number" ? mediaFacts[factIndex] : undefined;
     if (
       fact &&
       (fact.kind === "video" ||

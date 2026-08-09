@@ -7,6 +7,7 @@ import type { AgentMessage } from "openclaw/plugin-sdk/agent-core";
 import type { ImageContent, VideoContent } from "openclaw/plugin-sdk/llm";
 import { describe, expect, it } from "vitest";
 import {
+  attachRuntimeMediaFactIdentities,
   attachRuntimePromptMediaFacts,
   readRuntimePromptMediaFacts,
 } from "../../../media/media-facts.js";
@@ -806,6 +807,59 @@ describe("installHistoryImagePruneContextTransform", () => {
     } finally {
       restore();
       await fs.rm(workspaceDir, { recursive: true, force: true });
+    }
+  });
+
+  it("delivers each unhandled overlapping video once at the provider boundary", async () => {
+    const providerVideo = { ...video, data: "dmlkZW8=" };
+    const facts = [
+      { sourceId: "duplicate-id", sourceIndex: 5, kind: "video" as const },
+      { sourceId: "duplicate-id", sourceIndex: 6, kind: "video" as const },
+      { sourceId: "other-id", sourceIndex: 5, kind: "video" as const },
+    ];
+    const queued = attachRuntimeMediaFactIdentities(
+      attachRuntimePromptMediaFacts(
+        castAgentMessage({
+          role: "user",
+          content: [
+            { type: "text", text: "only the exact pair was described" },
+            providerVideo,
+            providerVideo,
+          ],
+          __openclaw: { mediaBlockFactIndexes: [1, 2] },
+        }),
+        facts,
+      ),
+      [{ sourceId: "duplicate-id", sourceIndex: 5 }],
+    );
+    const agent: {
+      transformContext?: (messages: AgentMessage[]) => Promise<AgentMessage[]> | AgentMessage[];
+    } = {};
+    const restore = installHistoryImagePruneContextTransform(agent, {
+      workspaceDir: "/tmp",
+      model: {
+        input: ["text", "video"],
+        nativeVideoInput: {
+          wireFamily: "google-inline-data",
+          mimeTypes: { "video/mp4": "video/mp4" },
+          maxDecodedBytesPerItem: 16,
+          maxItems: 3,
+          maxAggregateDecodedBytes: 32,
+          aggregateScope: "video",
+          maxSerializedRequestBytesExclusive: 1_000,
+        },
+      },
+    });
+
+    try {
+      const replay = await agent.transformContext?.([queued]);
+      expect(expectArrayMessageContent(replay?.[0], "expected provider media content")).toEqual([
+        { type: "text", text: "only the exact pair was described" },
+        providerVideo,
+        providerVideo,
+      ]);
+    } finally {
+      restore();
     }
   });
 

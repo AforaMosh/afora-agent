@@ -175,12 +175,9 @@ export function buildBeforeModelResolveAttachments(
     const inputSizeBytes =
       typeof media.data === "string" ? decodedBase64Bytes(media.data) : undefined;
     const provenanceFactIndex = factIndexes?.[mediaIndex];
-    const factIndex =
-      typeof provenanceFactIndex === "number" && attachments[provenanceFactIndex]
-        ? provenanceFactIndex
-        : undefined;
-    if (factIndex !== undefined) {
-      const factAttachment = attachments[factIndex];
+    const factIndex = typeof provenanceFactIndex === "number" ? provenanceFactIndex : undefined;
+    const factAttachment = factIndex === undefined ? undefined : attachments[factIndex];
+    if (factIndex !== undefined && factAttachment) {
       const mimeType = media.mimeType ?? factAttachment.mimeType;
       const sizeBytes = factAttachment.sizeBytes ?? inputSizeBytes;
       attachments[factIndex] = {

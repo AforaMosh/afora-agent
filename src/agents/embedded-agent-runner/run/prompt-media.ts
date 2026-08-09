@@ -16,7 +16,9 @@ import type {
 import {
   isVideoMediaFact,
   normalizeMediaFacts,
+  resolveMediaFactIdentityIndexes,
   type MediaFact,
+  type MediaFactIdentity,
 } from "../../../media/media-facts.js";
 import { classifyMediaReferenceSource } from "../../../media/media-reference.js";
 import type { PromptImageOrderEntry } from "../../../media/prompt-image-order.js";
@@ -70,9 +72,8 @@ type PromptVideoOmission = {
 export type PromptMediaLoadParams = Omit<PromptImageLoadParams, "existingImages"> & {
   existingMedia?: MediaContent[];
   existingMediaFactIndexes?: readonly ImageFactIndex[];
-  /** Current-attempt descriptions already delivered as text, keyed by producer source index. */
-  handledVideoSourceIndexes?: readonly number[];
-  handledVideoSourceIds?: readonly string[];
+  /** Current-attempt video facts already delivered as description text. */
+  handledVideoIdentities?: readonly MediaFactIdentity[];
 };
 
 export type PromptMediaLoadResult = PromptImageLoadResult & {
@@ -165,11 +166,9 @@ export async function hydrateNativePromptMedia(
   let loadedCount = imageResult.loadedCount;
   let skippedCount = imageResult.skippedCount;
   let sequence = 0;
-  const handledVideoSourceIndexes = new Set(params.handledVideoSourceIndexes ?? []);
-  const handledVideoSourceIds = new Set(params.handledVideoSourceIds ?? []);
-  const isHandledVideoFact = (fact: MediaFact, factIndex: number): boolean =>
-    (fact.sourceId !== undefined && handledVideoSourceIds.has(fact.sourceId)) ||
-    handledVideoSourceIndexes.has(fact.sourceIndex ?? factIndex);
+  const handledVideoFactIndexes = new Set(
+    resolveMediaFactIdentityIndexes(mediaFacts, params.handledVideoIdentities ?? []),
+  );
   const omitVideo = (
     reason: NativeVideoOmissionReason,
     factIndex: ImageFactIndex,
@@ -215,7 +214,7 @@ export async function hydrateNativePromptMedia(
   const videoContract = resolveNativeVideoInputContract(params.model);
   if (!videoContract) {
     for (const { fact, factIndex, order } of videoCandidates) {
-      if (!fact || !isHandledVideoFact(fact, factIndex ?? order)) {
+      if (!fact || factIndex === null || !handledVideoFactIndexes.has(factIndex)) {
         omitVideo("unsupported", factIndex, fact, order);
       }
     }
@@ -261,7 +260,7 @@ export async function hydrateNativePromptMedia(
     return true;
   };
   for (const { fact, factIndex, existing, order } of videoCandidates) {
-    if (fact && isHandledVideoFact(fact, factIndex ?? order)) {
+    if (fact && factIndex !== null && handledVideoFactIndexes.has(factIndex)) {
       continue;
     }
     const knownSizeReason = fact ? admission.assessDecodedBytes(fact.sizeBytes ?? 0) : undefined;

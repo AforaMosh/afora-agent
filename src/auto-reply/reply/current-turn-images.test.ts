@@ -532,9 +532,36 @@ describe("resolveCurrentTurnInputMedia", () => {
     });
 
     expect(result).toEqual({
-      handledVideoSourceIds: ["managed-clip"],
-      handledVideoSourceIndexes: [3],
+      handledVideoIdentities: [{ sourceId: "managed-clip", sourceIndex: 3 }],
     });
+  });
+
+  it("uses original attachment positions when earlier normalized slots are filtered", async () => {
+    const result = await resolveCurrentTurnInputMedia({
+      ctx: {
+        Body: "already described",
+        media: [
+          {},
+          {
+            sourceId: "sparse-clip",
+            sourceIndex: 9,
+            path: "/tmp/sparse.mp4",
+            contentType: "video/mp4",
+          },
+        ],
+        MediaUnderstanding: [
+          {
+            kind: "video.description",
+            attachmentIndex: 1,
+            text: "a short clip",
+            provider: "test",
+          },
+        ],
+      } satisfies MsgContext,
+      cfg: {} as OpenClawConfig,
+    });
+
+    expect(result.handledVideoIdentities).toEqual([{ sourceId: "sparse-clip", sourceIndex: 9 }]);
   });
 
   it("appends extracted PDF page images without dropping current image attachments", async () => {

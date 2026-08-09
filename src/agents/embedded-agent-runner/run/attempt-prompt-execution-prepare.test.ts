@@ -102,6 +102,7 @@ describe("prepareEmbeddedAttemptPromptExecution", () => {
       workspaceDir: "/tmp/workspace",
       model: input.attempt.model,
       existingMedia: input.attempt.images,
+      handledVideoIdentities: undefined,
       imageOrder: ["inline"],
       maxBytes: 1_234,
       maxDimensionPx: 2048,
@@ -113,6 +114,8 @@ describe("prepareEmbeddedAttemptPromptExecution", () => {
     });
     expect(result).toEqual({
       media: [{ type: "image", data: "loaded", mimeType: "image/png" }],
+      orderedBlocks: [{ type: "image", data: "loaded", mimeType: "image/png" }],
+      videoOmissions: [],
       images: [{ type: "image", data: "loaded", mimeType: "image/png" }],
       imageFactIndexes: [null],
       detectedRefs: [],
@@ -127,10 +130,12 @@ describe("prepareEmbeddedAttemptPromptExecution", () => {
     const video = { type: "video" as const, data: "dmlkZW8=", mimeType: "video/mp4" };
     const image = { type: "image" as const, data: "aW1hZ2U=", mimeType: "image/png" };
     const inputMedia = [video, image];
+    const handledVideoIdentities = [{ sourceId: "described", sourceIndex: 0 }];
     const input = createInput({
       attempt: {
         ...base.attempt,
         inputMedia,
+        handledVideoIdentities,
         images: [{ type: "image", data: "bGVnYWN5", mimeType: "image/png" }],
         model: { ...base.attempt.model, input: ["text", "image", "video"] },
       },
@@ -148,7 +153,7 @@ describe("prepareEmbeddedAttemptPromptExecution", () => {
     const result = await prepareEmbeddedAttemptPromptExecution(input);
 
     expect(hoisted.detectAndLoadPromptImages).toHaveBeenCalledWith(
-      expect.objectContaining({ existingMedia: inputMedia }),
+      expect.objectContaining({ existingMedia: inputMedia, handledVideoIdentities }),
     );
     expect(result.media).toEqual([video, image]);
     expect(result.images).toEqual([image]);

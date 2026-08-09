@@ -17,7 +17,7 @@ import type { SessionToolOverrides } from "../../../config/sessions/types.js";
 import type { OpenClawConfig } from "../../../config/types.openclaw.js";
 import type { GroupToolPolicyConfig } from "../../../config/types.tools.js";
 import type { ImageContent, MediaContent } from "../../../llm/types.js";
-import type { MediaFact } from "../../../media/media-facts.js";
+import type { MediaFact, MediaFactIdentity } from "../../../media/media-facts.js";
 import type { PromptImageOrderEntry } from "../../../media/prompt-image-order.js";
 import type { PluginHookChannelContext } from "../../../plugins/hook-types.js";
 import type { RuntimePluginToolGrant } from "../../../plugins/runtime/tool-grant.js";
@@ -216,8 +216,7 @@ export type RunEmbeddedAgentParams = {
   /** Hydrated model input blocks; authoritative over the shipped image-only alias. */
   inputMedia?: MediaContent[];
   /** Current-attempt video descriptions already delivered as text. */
-  handledVideoSourceIndexes?: number[];
-  handledVideoSourceIds?: string[];
+  handledVideoIdentities?: MediaFactIdentity[];
   /** @deprecated Use inputMedia for image and video model inputs. */
   images?: ImageContent[];
   imageOrder?: PromptImageOrderEntry[];

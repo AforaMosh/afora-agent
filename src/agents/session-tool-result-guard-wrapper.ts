@@ -5,7 +5,9 @@
  */
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import {
+  attachRuntimeMediaFactIdentities,
   attachRuntimePromptMediaFacts,
+  readRuntimeMediaFactIdentities,
   readRuntimePromptImageOrder,
   readRuntimePromptMediaFacts,
 } from "../media/media-facts.js";
@@ -196,6 +198,10 @@ export function guardSessionManager(
       const runtimeMedia = readRuntimePromptMediaFacts(message);
       if (runtimeMedia) {
         attachRuntimePromptMediaFacts(merged, runtimeMedia, readRuntimePromptImageOrder(message));
+      }
+      const runtimeHandledVideoIdentities = readRuntimeMediaFactIdentities(message);
+      if (runtimeHandledVideoIdentities) {
+        attachRuntimeMediaFactIdentities(merged, runtimeHandledVideoIdentities);
       }
       if (merged !== withProvenance) {
         queuedUserTurnTranscriptRecorder = recorder;

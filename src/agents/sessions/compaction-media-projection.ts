@@ -1,9 +1,10 @@
+import type { UserMessage } from "../../llm/types.js";
 import { isVideoMediaFact, readPersistedMediaFacts } from "../../media/media-facts.js";
 import type { SessionEntry } from "./session-manager.js";
 
-function isFactsOnlyUserMessage(
-  entry: SessionEntry,
-): entry is Extract<SessionEntry, { type: "message" }> {
+type UserMessageEntry = Extract<SessionEntry, { type: "message" }> & { message: UserMessage };
+
+function isFactsOnlyUserMessage(entry: SessionEntry): entry is UserMessageEntry {
   if (entry.type !== "message" || entry.message.role !== "user") {
     return false;
   }

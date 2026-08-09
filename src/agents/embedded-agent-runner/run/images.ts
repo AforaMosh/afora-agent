@@ -5,11 +5,14 @@ import { formatErrorMessage } from "../../../infra/errors.js";
 import { assertNoWindowsNetworkPath, safeFileURLToPath } from "../../../infra/local-file-access.js";
 import type { ImageContent, MediaContent, Model } from "../../../llm/types.js";
 import {
+  attachRuntimeMediaFactIdentities,
   attachRuntimePromptMediaFacts,
   isImageMediaFact,
+  normalizeMediaFactIdentities,
   normalizeMediaFacts,
   readPersistedMediaBlockFactIndexes,
   readRuntimePromptImageOrder,
+  readRuntimeMediaFactIdentities,
   readRuntimePromptMediaFacts,
   readPersistedMediaFacts,
 } from "../../../media/media-facts.js";
@@ -608,8 +611,6 @@ export async function hydratePromptMediaMessages(
   options: {
     workspaceDir: string;
     model: Pick<Model, "input" | "nativeVideoInput">;
-    handledVideoSourceIds?: readonly string[];
-    handledVideoSourceIndexes?: readonly number[];
     maxBytes?: number;
     maxDimensionPx?: number;
     workspaceOnly?: boolean;
@@ -623,6 +624,7 @@ export async function hydratePromptMediaMessages(
       continue;
     }
     const runtimeMedia = readRuntimePromptMediaFacts(message);
+    const runtimeHandledVideoIdentities = readRuntimeMediaFactIdentities(message);
     const meta = (message as unknown as Record<string, unknown>)["__openclaw"];
     const resolvedMedia = runtimeMedia ?? readPersistedMediaFacts(message) ?? [];
     const runtimeImageOrder = readRuntimePromptImageOrder(message);
@@ -666,34 +668,11 @@ export async function hydratePromptMediaMessages(
       model: options.model,
       existingMedia,
       existingMediaFactIndexes,
-      handledVideoSourceIds: [
-        ...(options.handledVideoSourceIds ?? []),
-        ...(Array.isArray((meta as Record<string, unknown> | undefined)?.mediaVideoDescriptions)
-          ? (
-              (meta as Record<string, unknown>).mediaVideoDescriptions as Array<{
-                sourceId?: unknown;
-              }>
-            ).flatMap((description) =>
-              typeof description.sourceId === "string" ? [description.sourceId] : [],
-            )
-          : []),
-      ],
-      handledVideoSourceIndexes: [
-        ...(options.handledVideoSourceIndexes ?? []),
-        ...(Array.isArray((meta as Record<string, unknown> | undefined)?.mediaVideoDescriptions)
-          ? (
-              (meta as Record<string, unknown>).mediaVideoDescriptions as Array<{
-                sourceIndex?: unknown;
-              }>
-            ).flatMap((description) =>
-              typeof description.sourceIndex === "number" &&
-              Number.isSafeInteger(description.sourceIndex) &&
-              description.sourceIndex >= 0
-                ? [description.sourceIndex]
-                : [],
-            )
-          : []),
-      ],
+      handledVideoIdentities:
+        runtimeHandledVideoIdentities ??
+        normalizeMediaFactIdentities(
+          (meta as Record<string, unknown> | undefined)?.mediaVideoDescriptions,
+        ),
       existingImageFactIndexes,
       imageOrder: runtimeImageOrder,
       mediaImageLayout,
@@ -765,6 +744,9 @@ export async function hydratePromptMediaMessages(
     }
     if (runtimeMedia) {
       attachRuntimePromptMediaFacts(hydratedMessage, runtimeMedia, runtimeImageOrder);
+    }
+    if (runtimeHandledVideoIdentities) {
+      attachRuntimeMediaFactIdentities(hydratedMessage, runtimeHandledVideoIdentities);
     }
     hydrated[index] = hydratedMessage;
   }

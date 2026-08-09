@@ -169,7 +169,7 @@ describe("sanitizeDiagnosticPayload", () => {
     expect(JSON.stringify(redacted)).not.toContain(mediaData);
   });
 
-  it("preserves remote media URLs and unrelated textual or document data URLs", () => {
+  it("redacts media data URLs by URI while preserving remote and document URLs", () => {
     const payload = {
       content: [
         { type: "video_url", video_url: { url: "https://example.test/video.mp4" } },
@@ -180,7 +180,46 @@ describe("sanitizeDiagnosticPayload", () => {
       ],
     };
 
-    expect(sanitizeDiagnosticPayload(payload)).toEqual(payload);
+    expect(sanitizeDiagnosticPayload(payload)).toEqual({
+      content: [
+        payload.content[0],
+        payload.content[1],
+        { type: "text", text: "<redacted>" },
+        payload.content[3],
+        {
+          type: "image_url",
+          image_url: {
+            url: "<redacted>",
+            mimeType: "video/mp4",
+            bytes: 11,
+            sha256: mediaDigest,
+          },
+        },
+      ],
+    });
+  });
+
+  it.each(["audio/mpeg", "image/png", "video/mp4"])(
+    "fully redacts folded %s data URLs in arbitrary diagnostic strings",
+    (mimeType) => {
+      const fragments = ["cHJpdmF0ZS", "1tZWRpYS1w", "YXlsb2Fk"];
+      const sanitized = sanitizeDiagnosticPayload({
+        detail: `captured: data:${mimeType};base64,${fragments.join(" \t\n")}`,
+      });
+
+      expect(sanitized).toEqual({ detail: "captured: <redacted>" });
+      for (const fragment of fragments) {
+        expect(JSON.stringify(sanitized)).not.toContain(fragment);
+      }
+    },
+  );
+
+  it("redacts non-base64 media data URLs in arbitrary diagnostic strings", () => {
+    expect(
+      sanitizeDiagnosticPayload(
+        "thumbnail: data:image/svg+xml,%3Csvg%20viewBox='0%200%201%201'%3E",
+      ),
+    ).toBe("thumbnail: <redacted>");
   });
 
   it("redacts PDF data while preserving unrelated data and blob fields", () => {

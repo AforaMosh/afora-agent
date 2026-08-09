@@ -35,6 +35,12 @@ export type MediaFact = {
   staged?: boolean;
 };
 
+/** Producer-owned media identity; a pair is authoritative and never split into independent keys. */
+export type MediaFactIdentity =
+  | { readonly sourceId: string; readonly sourceIndex: number }
+  | { readonly sourceId: string; readonly sourceIndex?: never }
+  | { readonly sourceId?: never; readonly sourceIndex: number };
+
 export type MediaFactInput = {
   [Key in keyof MediaFact]?: MediaFact[Key] | null;
 };
@@ -42,6 +48,7 @@ export type MediaFactInput = {
 type MediaBlockFactIndex = number | null;
 
 const RUNTIME_PROMPT_MEDIA_FACTS = Symbol.for("openclaw.runtimePromptMediaFacts");
+const RUNTIME_MEDIA_FACT_IDENTITIES = Symbol.for("openclaw.runtimeMediaFactIdentities");
 
 function normalizeNonNegativeNumber(value: number | null | undefined): number | undefined {
   return asFiniteNumberInRange(value, { min: 0 });
@@ -71,6 +78,23 @@ export function attachRuntimePromptMediaFacts<T extends object>(
 export function readRuntimePromptMediaFacts(message: object): MediaFact[] | undefined {
   const media = (message as Record<PropertyKey, unknown>)[RUNTIME_PROMPT_MEDIA_FACTS];
   return Array.isArray(media) ? (media as MediaFact[]) : undefined;
+}
+
+/** Attaches handled media identity to exactly one runtime message without serializing it. */
+export function attachRuntimeMediaFactIdentities<T extends object>(
+  message: T,
+  identities: readonly MediaFactIdentity[],
+): T {
+  Object.defineProperty(message, RUNTIME_MEDIA_FACT_IDENTITIES, {
+    configurable: true,
+    value: identities.map((identity) => ({ ...identity })),
+  });
+  return message;
+}
+
+export function readRuntimeMediaFactIdentities(message: object): MediaFactIdentity[] | undefined {
+  const identities = (message as Record<PropertyKey, unknown>)[RUNTIME_MEDIA_FACT_IDENTITIES];
+  return Array.isArray(identities) ? (identities as MediaFactIdentity[]) : undefined;
 }
 
 /** Reads the canonical persisted media envelope without consulting legacy top-level fields. */
@@ -454,6 +478,61 @@ export function normalizeMediaFacts<TInput extends MediaFactInput>(
   return Array.isArray(media)
     ? media.map((entry, index) => normalizeMediaFact(entry, index, defaults))
     : [];
+}
+
+/** Normalizes an identity list without separating authoritative pairs. */
+export function normalizeMediaFactIdentities(value: unknown): MediaFactIdentity[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.flatMap((entry): MediaFactIdentity[] => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      return [];
+    }
+    const record = entry as Record<string, unknown>;
+    const hasSourceId = Object.hasOwn(record, "sourceId");
+    const hasSourceIndex = Object.hasOwn(record, "sourceIndex");
+    const sourceId = hasSourceId ? normalizeOptionalString(record.sourceId) : undefined;
+    const sourceIndex =
+      hasSourceIndex && typeof record.sourceIndex === "number"
+        ? normalizeNonNegativeInteger(record.sourceIndex)
+        : undefined;
+    // A producer-authored pair is one authority. Invalidating either member
+    // must not broaden it into a singleton that can match a different fact.
+    if (hasSourceId && hasSourceIndex) {
+      return sourceId !== undefined && sourceIndex !== undefined ? [{ sourceId, sourceIndex }] : [];
+    }
+    if (sourceId !== undefined) {
+      return [{ sourceId }];
+    }
+    return sourceIndex === undefined ? [] : [{ sourceIndex }];
+  });
+}
+
+/** Resolves only independently unique identities into deduped canonical fact order. */
+export function resolveMediaFactIdentityIndexes(
+  facts: readonly MediaFact[],
+  identities: readonly MediaFactIdentity[],
+): number[] {
+  const resolved = new Set<number>();
+  for (const identity of identities) {
+    const hasSourceId = identity.sourceId !== undefined;
+    const hasSourceIndex = identity.sourceIndex !== undefined;
+    if (!hasSourceId && !hasSourceIndex) {
+      continue;
+    }
+    const matches = facts.flatMap((fact, factIndex) => {
+      const idMatches = !hasSourceId || fact.sourceId === identity.sourceId;
+      const indexMatches =
+        !hasSourceIndex || (fact.sourceIndex ?? factIndex) === identity.sourceIndex;
+      return idMatches && indexMatches ? [factIndex] : [];
+    });
+    const factIndex = matches.length === 1 ? matches[0] : undefined;
+    if (factIndex !== undefined) {
+      resolved.add(factIndex);
+    }
+  }
+  return [...resolved].sort((left, right) => left - right);
 }
 
 // Empty slots exist only to keep legacy parallel-array positions aligned;

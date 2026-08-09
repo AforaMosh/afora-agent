@@ -7,7 +7,7 @@ import type {
 import type { TranscriptEntryAnchor } from "../config/sessions/transcript-entry-anchor.js";
 import type { TranscriptTurnAdmission } from "../config/sessions/transcript-turn-admission.js";
 import type { SessionEntry } from "../config/sessions/types.js";
-import type { MediaFactInput } from "../media/media-facts.js";
+import type { MediaFactIdentity, MediaFactInput } from "../media/media-facts.js";
 import type { InputProvenance } from "./input-provenance.js";
 
 type UserTurnSessionEntry = SessionEntry;
@@ -45,7 +45,7 @@ export type UserTurnInput = {
     suppressedFactIndexes?: readonly number[];
   } | null;
   /** Safe durable record that description text already represents these video sources. */
-  mediaVideoDescriptions?: readonly { sourceId?: string; sourceIndex: number }[] | null;
+  mediaVideoDescriptions?: readonly MediaFactIdentity[] | null;
   timestamp?: number;
   idempotencyKey?: string;
   senderIsOwner?: boolean;

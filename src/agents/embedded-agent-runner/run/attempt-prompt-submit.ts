@@ -302,8 +302,7 @@ type PromptExecutionAttempt = Pick<
   | "imageOrder"
   | "images"
   | "inputMedia"
-  | "handledVideoSourceIndexes"
-  | "handledVideoSourceIds"
+  | "handledVideoIdentities"
   | "media"
   | "model"
   | "sessionFile"
@@ -350,8 +349,7 @@ export async function prepareEmbeddedAttemptPromptExecution(input: {
     workspaceDir: input.effectiveWorkspace,
     model: attempt.model,
     existingMedia: attempt.inputMedia ?? attempt.images,
-    handledVideoSourceIndexes: attempt.handledVideoSourceIndexes,
-    handledVideoSourceIds: attempt.handledVideoSourceIds,
+    handledVideoIdentities: attempt.handledVideoIdentities,
     imageOrder: attempt.imageOrder,
     media: persistedMedia.length > 0 ? persistedMedia : attempt.media,
     mediaImageLayout: persistedMessage

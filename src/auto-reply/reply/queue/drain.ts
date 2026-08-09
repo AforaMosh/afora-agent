@@ -7,6 +7,12 @@ import { normalizeChatType } from "../../../channels/chat-type.js";
 import { resolveStorePath } from "../../../config/sessions.js";
 import { loadSessionEntryReadOnly } from "../../../config/sessions/session-accessor.js";
 import {
+  normalizeMediaFactIdentities,
+  normalizeMediaFacts,
+  resolveMediaFactIdentityIndexes,
+  type MediaFactIdentity,
+} from "../../../media/media-facts.js";
+import {
   finalizeRuntimePromptImages,
   readRuntimePromptImageFactIndexes,
 } from "../../../media/runtime-prompt-image-provenance.js";
@@ -293,78 +299,34 @@ function renderCollectItemPrompt(item: FollowupRun, idx: number, prompt: string)
   return `---\nQueued #${idx + 1}${senderSuffix}\n${prompt}`.trim();
 }
 
-type CollectedMediaIdentity = { sourceId?: string; sourceIndex: number };
-
-function aggregateCollectedMediaFacts<T extends { sourceId?: string; sourceIndex?: number }>(
+function aggregateCollectedMediaFacts<
+  T extends { sourceId?: string | null; sourceIndex?: number | null },
+>(
   facts: readonly T[],
   offset: number,
 ): {
   facts: Array<T & { sourceIndex: number }>;
-  resolve: (identity: CollectedMediaIdentity) => number | undefined;
-  resolveHandled: (sourceIds: readonly string[], sourceIndexes: readonly number[]) => number[];
+  resolveIdentities: (identities: readonly MediaFactIdentity[]) => MediaFactIdentity[];
 } {
-  type Position = { aggregateIndex: number; localIndex: number; sourceId?: string };
-  const positions: Position[] = [];
   const aggregated = facts.map((fact, factIndex) => {
-    const localIndex = fact.sourceIndex ?? factIndex;
     const aggregateIndex = offset + factIndex;
-    positions.push({
-      aggregateIndex,
-      localIndex,
-      ...(fact.sourceId ? { sourceId: fact.sourceId } : {}),
-    });
     return { ...fact, sourceIndex: aggregateIndex };
   });
-  const uniqueAggregateIndex = (candidates: readonly Position[]): number | undefined =>
-    candidates.length === 1 ? candidates[0]?.aggregateIndex : undefined;
+  const normalizedFacts = normalizeMediaFacts(facts);
   return {
     facts: aggregated,
-    // Persisted descriptions pair sourceId + sourceIndex from one fact. Handled
-    // marker arrays are independent sets and must stay separate in resolveHandled.
-    resolve: ({ sourceId, sourceIndex }) =>
-      uniqueAggregateIndex(
-        positions.filter(
-          (position) =>
-            position.localIndex === sourceIndex &&
-            (sourceId === undefined || position.sourceId === sourceId),
-        ),
-      ),
-    resolveHandled: (sourceIds, sourceIndexes) => {
-      const handledIds = new Set(sourceIds);
-      const handledIndexes = new Set(sourceIndexes);
-      const resolved = new Set<number>();
-      for (const sourceIndex of handledIndexes) {
-        const aggregateIndex = uniqueAggregateIndex(
-          positions.filter((position) => position.localIndex === sourceIndex),
-        );
-        if (aggregateIndex !== undefined) {
-          resolved.add(aggregateIndex);
-        }
-      }
-      for (const sourceId of handledIds) {
-        const aggregateIndex = uniqueAggregateIndex(
-          positions.filter((position) => position.sourceId === sourceId),
-        );
-        if (aggregateIndex !== undefined) {
-          resolved.add(aggregateIndex);
-        }
-      }
-      return [...resolved].sort((left, right) => left - right);
-    },
+    resolveIdentities: (identities) =>
+      resolveMediaFactIdentityIndexes(normalizedFacts, identities).map((factIndex) => {
+        const fact = normalizedFacts[factIndex];
+        const sourceIndex = offset + factIndex;
+        return fact?.sourceId ? { sourceId: fact.sourceId, sourceIndex } : { sourceIndex };
+      }),
   };
 }
 
 function collectQueuedPromptMedia(
   items: FollowupRun[],
-): Pick<
-  FollowupRun,
-  | "handledVideoSourceIds"
-  | "handledVideoSourceIndexes"
-  | "images"
-  | "inputMedia"
-  | "imageOrder"
-  | "media"
-> {
+): Pick<FollowupRun, "handledVideoIdentities" | "images" | "inputMedia" | "imageOrder" | "media"> {
   const images: NonNullable<FollowupRun["images"]> = [];
   const inputMediaEntries: Array<{
     image: NonNullable<FollowupRun["inputMedia"]>[number];
@@ -372,7 +334,7 @@ function collectQueuedPromptMedia(
   }> = [];
   const imageOrder: NonNullable<FollowupRun["imageOrder"]> = [];
   const media: NonNullable<FollowupRun["media"]> = [];
-  const handledVideoSourceIndexes: number[] = [];
+  const handledVideoIdentities: MediaFactIdentity[] = [];
   for (const item of items) {
     const mediaOffset = media.length;
     if (item.images) {
@@ -396,11 +358,8 @@ function collectQueuedPromptMedia(
     if (aggregatedMedia.facts.length > 0) {
       media.push(...aggregatedMedia.facts);
     }
-    handledVideoSourceIndexes.push(
-      ...aggregatedMedia.resolveHandled(
-        item.handledVideoSourceIds ?? [],
-        item.handledVideoSourceIndexes ?? [],
-      ),
+    handledVideoIdentities.push(
+      ...aggregatedMedia.resolveIdentities(item.handledVideoIdentities ?? []),
     );
   }
   const inputMedia = finalizeRuntimePromptImages(inputMediaEntries).images;
@@ -409,7 +368,7 @@ function collectQueuedPromptMedia(
     ...(inputMedia.length > 0 ? { inputMedia } : {}),
     ...(imageOrder.length > 0 ? { imageOrder } : {}),
     ...(media.length > 0 ? { media } : {}),
-    ...(handledVideoSourceIndexes.length > 0 ? { handledVideoSourceIndexes } : {}),
+    ...(handledVideoIdentities.length > 0 ? { handledVideoIdentities } : {}),
   };
 }
 
@@ -467,15 +426,11 @@ function resolveFollowupTranscriptTarget(source: FollowupRun) {
   };
 }
 
-function readPersistedVideoDescriptions(
-  message: object | undefined,
-): Array<{ sourceId?: string; sourceIndex: number }> {
+function readPersistedVideoDescriptions(message: object | undefined): MediaFactIdentity[] {
   const descriptions = (
     message as { __openclaw?: { mediaVideoDescriptions?: unknown } } | undefined
   )?.__openclaw?.mediaVideoDescriptions;
-  return Array.isArray(descriptions)
-    ? (descriptions as Array<{ sourceId?: string; sourceIndex: number }>)
-    : [];
+  return normalizeMediaFactIdentities(descriptions);
 }
 
 function createCollectUserTurnTranscriptRecorder(items: FollowupRun[]) {
@@ -491,7 +446,7 @@ function createCollectUserTurnTranscriptRecorder(items: FollowupRun[]) {
       ),
     );
     const media: ReturnType<typeof buildPersistedUserTurnMediaInputsFromFields> = [];
-    const mediaVideoDescriptions: Array<{ sourceId?: string; sourceIndex: number }> = [];
+    const mediaVideoDescriptions: MediaFactIdentity[] = [];
     for (const message of messages) {
       const messageMedia = buildPersistedUserTurnMediaInputsFromFields(message);
       const mediaOffset = media.length;
@@ -500,10 +455,7 @@ function createCollectUserTurnTranscriptRecorder(items: FollowupRun[]) {
       const aggregatedMedia = aggregateCollectedMediaFacts(messageMedia, mediaOffset);
       media.push(...aggregatedMedia.facts);
       mediaVideoDescriptions.push(
-        ...readPersistedVideoDescriptions(message).flatMap((description) => {
-          const aggregateIndex = aggregatedMedia.resolve(description);
-          return aggregateIndex === undefined ? [] : [{ sourceIndex: aggregateIndex }];
-        }),
+        ...aggregatedMedia.resolveIdentities(readPersistedVideoDescriptions(message)),
       );
     }
     const timestamp = messages.reduce<number | undefined>((latest, message) => {
@@ -1041,8 +993,7 @@ export function createOverflowSummaryRetrySource(source: FollowupRun): FollowupR
     transcriptPrompt: source.transcriptPrompt,
     images: source.images,
     inputMedia: source.inputMedia,
-    handledVideoSourceIds: source.handledVideoSourceIds,
-    handledVideoSourceIndexes: source.handledVideoSourceIndexes,
+    handledVideoIdentities: source.handledVideoIdentities,
     imageOrder: source.imageOrder,
     media: source.media,
     messageId: source.messageId,

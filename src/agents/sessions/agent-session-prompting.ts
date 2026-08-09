@@ -6,7 +6,14 @@ import {
   resolveNativeVideoInputContract,
 } from "@openclaw/llm-core";
 import type { MediaContent, Model, ModelInputContent } from "../../llm/types.js";
-import { attachRuntimePromptMediaFacts, type MediaFact } from "../../media/media-facts.js";
+import {
+  attachRuntimeMediaFactIdentities,
+  attachRuntimePromptMediaFacts,
+  normalizeMediaFacts,
+  resolveMediaFactIdentityIndexes,
+  type MediaFact,
+  type MediaFactIdentity,
+} from "../../media/media-facts.js";
 import type { PromptImageOrderEntry } from "../../media/prompt-image-order.js";
 import {
   finalizeRuntimePromptImages,
@@ -31,11 +38,19 @@ type PostAgentRunAction = "continue" | "settled" | "handoff";
 
 function finalizePreparedPromptMedia(params: {
   media?: MediaContent[];
+  mediaFacts?: MediaFact[];
+  handledVideoIdentities?: MediaFactIdentity[];
   preparedContent?: ModelInputContent[];
   model: Model | undefined;
 }): { media: MediaContent[]; preparedContent: ModelInputContent[] } {
   const content = params.preparedContent ?? params.media ?? [];
   const mediaFactIndexes = readRuntimePromptImageFactIndexes(params.media);
+  const handledVideoFactIndexes = new Set(
+    resolveMediaFactIdentityIndexes(
+      normalizeMediaFacts(params.mediaFacts),
+      params.handledVideoIdentities ?? [],
+    ),
+  );
   const contract = params.model ? resolveNativeVideoInputContract(params.model) : undefined;
   const admission = createNativeVideoAdmissionAccumulator({
     contract,
@@ -50,25 +65,30 @@ function finalizePreparedPromptMedia(params: {
   });
   let mediaIndex = 0;
   const accepted: Array<{ image: MediaContent; factIndex: number | null }> = [];
-  const projected = content.map((block): ModelInputContent => {
+  const projected = content.flatMap((block): ModelInputContent[] => {
     if (block.type !== "image" && block.type !== "video") {
-      return block;
+      return [block];
     }
     const factIndex = mediaFactIndexes?.[mediaIndex++] ?? null;
     if (block.type === "image") {
       accepted.push({ image: block, factIndex });
-      return block;
+      return [block];
+    }
+    if (factIndex !== null && handledVideoFactIndexes.has(factIndex)) {
+      return [];
     }
     const result = admission.admit(block);
     if (!result.ok) {
-      return {
-        type: "text",
-        text: formatNativeVideoOmission(result.reason),
-      };
+      return [
+        {
+          type: "text",
+          text: formatNativeVideoOmission(result.reason),
+        },
+      ];
     }
     const video = { ...block, mimeType: result.wireMimeType };
     accepted.push({ image: video, factIndex });
-    return video;
+    return [video];
   });
   const finalized = finalizeRuntimePromptImages(accepted);
   return { media: finalized.images, preparedContent: projected };
@@ -434,6 +454,7 @@ export abstract class AgentSessionPrompting extends AgentSessionBase {
     imageOrder?: PromptImageOrderEntry[],
     queueIdentity?: string,
     canInject?: () => boolean,
+    handledVideoIdentities?: MediaFactIdentity[],
   ): Promise<void> {
     // Check for extension commands (cannot be queued)
     if (text.startsWith("/")) {
@@ -444,7 +465,12 @@ export abstract class AgentSessionPrompting extends AgentSessionBase {
     let expandedText = this.expandSkillCommand(text);
     expandedText = expandPromptTemplate(expandedText, [...this.promptTemplates]);
 
-    const finalMedia = finalizePreparedPromptMedia({ media: inputMedia, model: this.model });
+    const finalMedia = finalizePreparedPromptMedia({
+      media: inputMedia,
+      mediaFacts,
+      handledVideoIdentities,
+      model: this.model,
+    });
     const preparedMessage = await userTurnTranscriptRecorder?.resolveMessage();
     // Transcript preparation may outlive the captured attempt. Recheck its owner
     // fence immediately before enqueue so a successor cannot inherit this steer.
@@ -461,6 +487,7 @@ export abstract class AgentSessionPrompting extends AgentSessionBase {
       imageOrder,
       queueIdentity,
       finalMedia.preparedContent,
+      handledVideoIdentities,
     );
   }
 
@@ -499,13 +526,17 @@ export abstract class AgentSessionPrompting extends AgentSessionBase {
     imageOrder?: PromptImageOrderEntry[],
     queueIdentity?: string,
     preparedContent?: ModelInputContent[],
+    handledVideoIdentities?: MediaFactIdentity[],
   ): Promise<void> {
     this.steeringMessages.push(text);
     this.emitQueueUpdate();
     const runtimeMessage = this.createUserMessage(text, inputMedia, preparedContent);
-    const promptMessage = mediaFacts?.length
+    const factsMessage = mediaFacts?.length
       ? attachRuntimePromptMediaFacts(runtimeMessage, mediaFacts, imageOrder)
       : runtimeMessage;
+    const promptMessage = handledVideoIdentities?.length
+      ? attachRuntimeMediaFactIdentities(factsMessage, handledVideoIdentities)
+      : factsMessage;
     setSteeringMessageIdentity(promptMessage, queueIdentity);
     this.agent.steer(
       transcriptContext

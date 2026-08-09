@@ -3,6 +3,13 @@ import { serializeConversation } from "../runtime/index.js";
 import { projectSessionCompactionMedia } from "./compaction-media-projection.js";
 import type { SessionEntry } from "./session-manager.js";
 
+function readUserContent(entry: SessionEntry | undefined) {
+  if (entry?.type !== "message" || entry.message.role !== "user") {
+    throw new Error("expected user message entry");
+  }
+  return entry.message.content;
+}
+
 describe("projectSessionCompactionMedia", () => {
   it("makes a facts-only video turn visible without projecting its reference", () => {
     const entries: SessionEntry[] = [
@@ -32,18 +39,14 @@ describe("projectSessionCompactionMedia", () => {
     const projected = projectSessionCompactionMedia(entries);
 
     expect(projected).not.toBe(entries);
-    expect((projected[0] as Extract<SessionEntry, { type: "message" }>).message.content).toBe(
-      "[video attachment retained by reference: 1]",
-    );
+    expect(readUserContent(projected[0])).toBe("[video attachment retained by reference: 1]");
     expect(
       serializeConversation([
         (projected[0] as Extract<SessionEntry, { type: "message" }>).message,
       ] as Parameters<typeof serializeConversation>[0]),
     ).toBe("[User]: [video attachment retained by reference: 1]");
-    expect(
-      JSON.stringify((projected[0] as Extract<SessionEntry, { type: "message" }>).message.content),
-    ).not.toContain("/private/media/clip.mp4");
-    expect((entries[0] as Extract<SessionEntry, { type: "message" }>).message.content).toBe("");
+    expect(JSON.stringify(readUserContent(projected[0]))).not.toContain("/private/media/clip.mp4");
+    expect(readUserContent(entries[0])).toBe("");
   });
 
   it("does not duplicate a marker when the user turn already has visible text", () => {

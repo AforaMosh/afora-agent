@@ -1480,7 +1480,7 @@ describe("redactTranscriptMessage", () => {
     });
   });
 
-  it("redacts spoofed video signatures without trusted runtime provenance", () => {
+  it("omits ordinary base64 and spoofed video MIME or magic without runtime provenance", () => {
     const msg = {
       role: "user",
       content: [
@@ -1497,13 +1497,11 @@ describe("redactTranscriptMessage", () => {
     const content = msgContent(redactTranscriptMessage(msg, cfg("tools"))) as Array<{
       data: string;
     }>;
-    expect(expectDefined(content[0], "content[0] test invariant").data).toBe("AKIDAB…MNOP");
-    expect(expectDefined(content[1], "content[1] test invariant").data).not.toContain(
-      "AKIDABCDEFGHIJKLMNOP",
-    );
-    expect(expectDefined(content[2], "content[2] test invariant").data).not.toContain(
-      "AKIDABCDEFGHIJKLMNOP",
-    );
+    expect(content.map((block) => block.data)).toEqual([
+      "[video data omitted]",
+      "[video data omitted]",
+      "[video data omitted]",
+    ]);
   });
 
   it("does not trust forged or non-video media provenance", () => {
@@ -1531,7 +1529,7 @@ describe("redactTranscriptMessage", () => {
         (msgContent(redactTranscriptMessage(message, cfg("tools"))) as Array<{ data: string }>)[0],
         "untrusted provenance video block",
       );
-      expect(block.data).not.toContain("AKIDABCDEFGHIJKLMNOP");
+      expect(block.data).toBe("[video data omitted]");
     }
   });
 
@@ -1560,11 +1558,11 @@ describe("redactTranscriptMessage", () => {
       )[0],
       "provider-style video content test invariant",
     );
-    expect(block.source.data).not.toContain("AKIDABCDEFGHIJKLMNOP");
+    expect(block.source.data).toBe("[video data omitted]");
     expect(block.apiKey).toBe("plains…e123");
   });
 
-  it("redacts direct and nested provider video data URLs without trusted provenance", () => {
+  it("omits direct and nested provider video data URLs without trusted provenance", () => {
     const dataUrl = `data:video/mp4;base64,${SPOOFED_MP4_BASE64_WITH_SECRET_TOKEN_SUBSTRING}`;
     const msg = {
       role: "assistant",
@@ -1578,14 +1576,16 @@ describe("redactTranscriptMessage", () => {
       video_url: string | { url: string; apiKey: string };
       data?: string;
     }>;
-    expect(expectDefined(content[0], "content[0] test invariant").video_url).not.toBe(dataUrl);
-    expect(expectDefined(content[0], "content[0] test invariant").data).toBe("AKIDAB…MNOP");
+    expect(expectDefined(content[0], "content[0] test invariant")).toMatchObject({
+      video_url: "[video data omitted]",
+      data: "[video data omitted]",
+    });
     expect(
       (expectDefined(content[1], "content[1] test invariant").video_url as { url: string }).url,
-    ).not.toBe(dataUrl);
+    ).toBe("[video data omitted]");
   });
 
-  it("redacts fake video data URLs instead of trusting MIME metadata", () => {
+  it("omits fake video data URLs instead of trusting MIME metadata", () => {
     const msg = {
       role: "assistant",
       content: [{ type: "input_video", video_url: "data:video/mp4;base64,AKIDABCDEFGHIJKLMNOP" }],
@@ -1595,7 +1595,7 @@ describe("redactTranscriptMessage", () => {
       (msgContent(redactTranscriptMessage(msg, cfg("tools"))) as Array<{ video_url: string }>)[0],
       "fake video data URL content test invariant",
     );
-    expect(block.video_url).toBe("data:video/mp4;base64,AKIDAB…MNOP");
+    expect(block.video_url).toBe("[video data omitted]");
   });
 
   it("preserves valid BMP image base64 while redacting adjacent text", () => {

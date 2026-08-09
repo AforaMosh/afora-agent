@@ -11,7 +11,11 @@ import {
   readPersistedMediaBlockFactIndexes,
   readPersistedMediaFacts,
 } from "../../media/media-facts.js";
-import { sanitizeDurableMediaPayload } from "../../media/media-reference-projection.js";
+import {
+  normalizeCanonicalInboundMediaUri,
+  sanitizeDurableMediaPayload,
+} from "../../media/media-reference-projection.js";
+import { parseInboundMediaUri } from "../../media/media-reference.js";
 import type { OpenClawAgentDatabase } from "../../state/openclaw-agent-db.js";
 import type {
   TranscriptEvent,
@@ -683,12 +687,14 @@ function isManagedVideoFact(message: object, factIndex: number | null | undefine
     return false;
   }
   const fact = readPersistedMediaFacts(message)?.[factIndex];
+  const canonicalUrl = normalizeCanonicalInboundMediaUri(fact?.url);
   return Boolean(
     fact &&
     isVideoMediaFact(fact) &&
-    fact.url?.startsWith("media://inbound/") === true &&
+    canonicalUrl &&
     fact.sourceId &&
-    fact.sourceIndex !== undefined,
+    fact.sourceIndex !== undefined &&
+    parseInboundMediaUri(canonicalUrl)?.id === fact.sourceId,
   );
 }
 

@@ -193,6 +193,32 @@ describe("SQLite transcript native video claim checks", () => {
     });
   });
 
+  it.each([
+    {
+      name: "mismatched source ID",
+      fact: { ...videoFact, sourceId: "different-recording.mp4" },
+    },
+    {
+      name: "malformed inbound URI",
+      fact: { ...videoFact, url: "media://inbound/nested%2Frecording.mp4" },
+    },
+    {
+      name: "missing source index",
+      fact: { ...videoFact, sourceIndex: undefined },
+    },
+  ])("retains a bounded omission for a $name claim", async ({ fact }) => {
+    await persistMessage({
+      role: "user",
+      content: [videoBlock],
+      __openclaw: { media: [fact], mediaBlockFactIndexes: [0] },
+    });
+
+    const stored = readStoredRow();
+    expect(stored.event.message.content).toBe(videoOmission.text);
+    expect(stored.event_json).not.toContain(videoPayload);
+    expect(stored.event_json).not.toContain('"type":"video"');
+  });
+
   it("deduplicates native video retries against the persisted claim-check shape", async () => {
     const content = [{ type: "text", text: "retry this recording" }, videoBlock];
     const message = {

@@ -14,7 +14,7 @@ import type { ReplyToMode } from "../../../config/types.base.js";
 import type { OpenClawConfig } from "../../../config/types.openclaw.js";
 import type { GroupToolPolicyConfig } from "../../../config/types.tools.js";
 import type { MediaContent } from "../../../llm/types.js";
-import type { MediaFact } from "../../../media/media-facts.js";
+import type { MediaFact, MediaFactIdentity } from "../../../media/media-facts.js";
 import type { PromptImageOrderEntry } from "../../../media/prompt-image-order.js";
 import type { PluginHookChannelContext } from "../../../plugins/hook-types.js";
 import type { InputProvenance } from "../../../sessions/input-provenance.js";
@@ -116,9 +116,8 @@ export type FollowupRun = {
   images?: Array<{ type: "image"; data: string; mimeType: string }>;
   /** Ordered native image/video payloads retained across queue ownership changes. */
   inputMedia?: MediaContent[];
-  /** Video source positions already represented by current-turn description text. */
-  handledVideoSourceIndexes?: number[];
-  handledVideoSourceIds?: string[];
+  /** Video facts already represented by current-turn description text. */
+  handledVideoIdentities?: MediaFactIdentity[];
   imageOrder?: PromptImageOrderEntry[];
   /** Ordered facts represented by attachment text in this prompt. */
   media?: MediaFact[];

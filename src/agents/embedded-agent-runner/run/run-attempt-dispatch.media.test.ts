@@ -11,6 +11,31 @@ import { preparePluginHarnessPromptImages } from "./plugin-harness-prompt-images
 const TINY_PNG_BASE64 =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACXBIWXMAAAsTAAALEwEAmpwYAAAADUlEQVR4nGP4////KwAJ5gPoxLp9owAAAABJRU5ErkJggg==";
 describe("plugin harness prompt media", () => {
+  it("keeps handled video pairs exact at the plugin transport boundary", async () => {
+    const result = await preparePluginHarnessPromptImages({
+      runParams: {
+        config: { agents: { defaults: { sandbox: { mode: "off" } } } },
+        media: [
+          { sourceId: "duplicate-id", sourceIndex: 5, kind: "video" },
+          { sourceId: "duplicate-id", sourceIndex: 6, kind: "video" },
+          { sourceId: "other-id", sourceIndex: 5, kind: "video" },
+        ],
+        handledVideoIdentities: [{ sourceId: "duplicate-id", sourceIndex: 5 }],
+      },
+      runtime: {
+        model: { input: ["text", "video"] },
+        sessionId: "session-plugin-video-pairs",
+        workspaceDir: "/tmp",
+      },
+      pluginHarnessOwnsTransport: true,
+    } as unknown as Parameters<typeof preparePluginHarnessPromptImages>[0]);
+
+    expect(result.videoOmissions).toEqual([
+      "(video omitted: model does not support videos)",
+      "(video omitted: model does not support videos)",
+    ]);
+  });
+
   it("does not forward video even when a prepared model contract is present", async () => {
     const result = await preparePluginHarnessPromptImages({
       runParams: {

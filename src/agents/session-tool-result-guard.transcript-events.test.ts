@@ -6,7 +6,11 @@ import { upsertSessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
 import { closeOpenClawAgentDatabasesForTest } from "openclaw/plugin-sdk/sqlite-runtime-testing";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import { attachRuntimePromptMediaFacts } from "../media/media-facts.js";
+import {
+  attachRuntimeMediaFactIdentities,
+  attachRuntimePromptMediaFacts,
+  readRuntimeMediaFactIdentities,
+} from "../media/media-facts.js";
 import {
   onInternalSessionTranscriptUpdate,
   type InternalSessionTranscriptUpdate,
@@ -54,14 +58,18 @@ describe("guardSessionManager transcript updates", () => {
       data: `${Buffer.from("0000001c6674797069736f6d", "hex").toString("base64")}AKIDABCDEFGHIJKLMNOP`,
       mimeType: "video/mp4",
     };
-    const message = attachRuntimePromptMediaFacts(
-      {
-        role: "user" as const,
-        content: [video],
-        timestamp: Date.now(),
-        __openclaw: { mediaBlockFactIndexes: [0] },
-      },
-      [{ kind: "video", contentType: "video/mp4" }],
+    const identities = [{ sourceId: "described-video", sourceIndex: 0 }] as const;
+    const message = attachRuntimeMediaFactIdentities(
+      attachRuntimePromptMediaFacts(
+        {
+          role: "user" as const,
+          content: [video],
+          timestamp: Date.now(),
+          __openclaw: { mediaBlockFactIndexes: [0] },
+        },
+        [{ kind: "video", contentType: "video/mp4" }],
+      ),
+      identities,
     );
 
     guarded.appendMessage(message);
@@ -73,6 +81,9 @@ describe("guardSessionManager transcript updates", () => {
       provenance: { kind: "external_user", sourceChannel: "telegram" },
       content: [video],
     });
+    expect(persisted?.message && readRuntimeMediaFactIdentities(persisted.message)).toEqual(
+      identities,
+    );
   });
 
   it.each(["active", "side", "setup-metadata"] as const)(

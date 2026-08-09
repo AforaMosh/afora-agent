@@ -193,15 +193,7 @@ export async function executePreparedReplyRun(state: PreparedReplyRunAdmission) 
   const persistGroupSender = replyRoute.chatType === "group" || replyRoute.chatType === "channel";
   const ctxMediaForPersistence = resolveInboundMediaHydrationFacts(ctx);
   const userTurnMediaForPersistence = [...ctxMediaForPersistence, ...(opts?.media ?? [])];
-  const mediaVideoDescriptions = currentTurnMedia.handledVideoSourceIndexes?.map((sourceIndex) => {
-    const sourceFact = userTurnMediaForPersistence.find(
-      (fact, factIndex) => (fact.sourceIndex ?? factIndex) === sourceIndex,
-    );
-    return {
-      sourceIndex,
-      ...(sourceFact?.sourceId ? { sourceId: sourceFact.sourceId } : {}),
-    };
-  });
+  const mediaVideoDescriptions = currentTurnMedia.handledVideoIdentities;
   const mediaImageLayout = buildPersistedMediaImageLayout({
     ctx,
     media: userTurnMediaForPersistence,
@@ -328,8 +320,7 @@ export async function executePreparedReplyRun(state: PreparedReplyRunAdmission) 
     enqueuedAt: Date.now(),
     images: currentTurnMedia.images,
     inputMedia: currentTurnMedia.inputMedia,
-    handledVideoSourceIndexes: currentTurnMedia.handledVideoSourceIndexes,
-    handledVideoSourceIds: currentTurnMedia.handledVideoSourceIds,
+    handledVideoIdentities: currentTurnMedia.handledVideoIdentities,
     imageOrder: currentTurnMedia.imageOrder,
     media: promptMedia,
     // Originating channel for reply routing.

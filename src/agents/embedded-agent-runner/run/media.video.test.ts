@@ -9,6 +9,7 @@ import {
   finalizeRuntimePromptImages,
   readRuntimePromptImageFactIndexes,
 } from "../../../media/runtime-prompt-image-provenance.js";
+import { buildPersistedUserTurnMessage } from "../../../sessions/user-turn-transcript.js";
 import { captureEnv, setTestEnvValue } from "../../../test-utils/env.js";
 import type { AgentMessage } from "../../runtime/index.js";
 import { createHostSandboxFsBridge } from "../../test-helpers/host-sandbox-fs-bridge.js";
@@ -129,7 +130,7 @@ describe("native prompt video hydration", () => {
       const result = await detectAndLoadPromptMedia({
         prompt: "already described",
         media: [{ sourceIndex: 0, path: videoPath, contentType: "video/mp4" }],
-        handledVideoSourceIndexes: [0],
+        handledVideoIdentities: [{ sourceIndex: 0 }],
         workspaceDir,
         model: nativeVideoModel(["text", "video"]),
       });
@@ -137,6 +138,34 @@ describe("native prompt video hydration", () => {
       expect(result.media).toEqual([]);
       expect(result.failedMediaCount).toBe(0);
       expect(result.loadedCount).toBe(0);
+    });
+  });
+
+  it("skips only the exact handled pair when IDs and indexes overlap", async () => {
+    await withVideoFixture(async ({ workspaceDir, videoPath }) => {
+      const sameIdPath = path.join(workspaceDir, "same-id.mp4");
+      const sameIndexPath = path.join(workspaceDir, "same-index.mp4");
+      await Promise.all([
+        fs.writeFile(sameIdPath, TINY_MP4_BUFFER),
+        fs.writeFile(sameIndexPath, TINY_MP4_BUFFER),
+      ]);
+      const result = await detectAndLoadPromptMedia({
+        prompt: "only the exact pair was described",
+        media: [
+          { sourceId: "duplicate-id", sourceIndex: 5, path: videoPath, kind: "video" },
+          { sourceId: "duplicate-id", sourceIndex: 6, path: sameIdPath, kind: "video" },
+          { sourceId: "other-id", sourceIndex: 5, path: sameIndexPath, kind: "video" },
+        ],
+        handledVideoIdentities: [{ sourceId: "duplicate-id", sourceIndex: 5 }],
+        workspaceDir,
+        model: nativeVideoModel(["text", "video"]),
+        workspaceOnly: true,
+      });
+
+      expect(result.videoOmissions).toEqual([]);
+      expect(result.media.filter((entry) => entry.type === "video")).toHaveLength(2);
+      expect(result.loadedCount).toBe(2);
+      expect(result.failedMediaCount).toBe(0);
     });
   });
 
@@ -275,7 +304,7 @@ describe("native prompt video hydration", () => {
         { kind: "video", sourceIndex: 0 },
         { kind: "video", contentType: "video/mp4" },
       ],
-      handledVideoSourceIndexes: [0],
+      handledVideoIdentities: [{ sourceIndex: 0 }],
       existingMedia: finalizeRuntimePromptImages([{ image: video, factIndex: 1 }]).images,
       workspaceDir: os.tmpdir(),
       model: nativeVideoModel(["text", "video"]),
@@ -586,6 +615,75 @@ describe("native prompt video replay", () => {
 
     expect((replayed as unknown as { content: unknown[] }).content).toEqual([
       { type: "text", text: "the fallback caption describes only the first video" },
+      { type: "text", text: "(video omitted: model does not support videos)" },
+    ]);
+  });
+
+  it("keeps paired replay identities paired across duplicate IDs and indexes", async () => {
+    const message = JSON.parse(
+      JSON.stringify({
+        role: "user" as const,
+        content: "the fallback caption describes only the exact pair",
+        __openclaw: {
+          media: [
+            {
+              sourceId: "duplicate-id",
+              sourceIndex: 5,
+              path: "/missing/exact.mp4",
+              contentType: "video/mp4",
+            },
+            {
+              sourceId: "duplicate-id",
+              sourceIndex: 6,
+              path: "/missing/same-id.mp4",
+              contentType: "video/mp4",
+            },
+            {
+              sourceId: "other-id",
+              sourceIndex: 5,
+              path: "/missing/same-index.mp4",
+              contentType: "video/mp4",
+            },
+          ],
+          mediaVideoDescriptions: [{ sourceId: "duplicate-id", sourceIndex: 5 }],
+        },
+      }),
+    ) as AgentMessage;
+    const [replayed] = await hydratePromptMediaMessages([message], {
+      workspaceDir: os.tmpdir(),
+      model: { input: ["text", "image"] },
+    });
+
+    expect((replayed as unknown as { content: unknown[] }).content).toEqual([
+      { type: "text", text: "the fallback caption describes only the exact pair" },
+      { type: "text", text: "(video omitted: model does not support videos)" },
+      { type: "text", text: "(video omitted: model does not support videos)" },
+    ]);
+  });
+
+  it("replays ID-only descriptions only when the ID is independently unique", async () => {
+    const message = buildPersistedUserTurnMessage({
+      text: "only the unique ID was described",
+      media: [
+        { sourceId: "unique-id", path: "/missing/unique.mp4", kind: "video" },
+        { sourceId: "duplicate-id", path: "/missing/first.mp4", kind: "video" },
+        { sourceId: "duplicate-id", path: "/missing/second.mp4", kind: "video" },
+      ],
+      mediaVideoDescriptions: [{ sourceId: "unique-id" }, { sourceId: "duplicate-id" }],
+    }) as AgentMessage;
+    const [replayed] = await hydratePromptMediaMessages([message], {
+      workspaceDir: os.tmpdir(),
+      model: { input: ["text", "image"] },
+    });
+
+    expect(
+      (message as unknown as { __openclaw?: Record<string, unknown> }).__openclaw,
+    ).toMatchObject({
+      mediaVideoDescriptions: [{ sourceId: "unique-id" }, { sourceId: "duplicate-id" }],
+    });
+    expect((replayed as unknown as { content: unknown[] }).content).toEqual([
+      { type: "text", text: "only the unique ID was described" },
+      { type: "text", text: "(video omitted: model does not support videos)" },
       { type: "text", text: "(video omitted: model does not support videos)" },
     ]);
   });

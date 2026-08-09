@@ -17,7 +17,7 @@ import {
   resolveRunStaleThresholdMs,
 } from "../../logging/diagnostic-run-activity.js";
 import { diagnosticLogger as diag } from "../../logging/diagnostic-runtime.js";
-import type { MediaFact } from "../../media/media-facts.js";
+import type { MediaFact, MediaFactIdentity } from "../../media/media-facts.js";
 import type { PromptImageOrderEntry } from "../../media/prompt-image-order.js";
 import type { UserTurnTranscriptRecorder } from "../../sessions/user-turn-transcript.types.js";
 import { createDeferred } from "../../shared/deferred.js";
@@ -48,6 +48,8 @@ export type ReplyBackendQueueMessageOptions = {
   imageOrder?: PromptImageOrderEntry[];
   /** Ordered facts represented by attachment text in this steering prompt. */
   media?: MediaFact[];
+  /** Video facts already represented by current-turn description text. */
+  handledVideoIdentities?: MediaFactIdentity[];
   deliveryTimeoutMs?: number;
   waitForTranscriptCommit?: boolean;
   /** Stable source identity for exact queued-message commit/cancellation matching. */

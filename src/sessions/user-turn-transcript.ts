@@ -11,7 +11,11 @@ import {
   type SessionTranscriptTurnPersistOptions,
 } from "../config/sessions/session-accessor.js";
 import { waitForSessionTranscriptProjection } from "../config/sessions/session-transcript-reconcile.js";
-import { readPersistedMediaFacts, type MediaFact } from "../media/media-facts.js";
+import {
+  normalizeMediaFactIdentities,
+  readPersistedMediaFacts,
+  type MediaFact,
+} from "../media/media-facts.js";
 import { applyInputProvenanceToUserMessage, normalizeInputProvenance } from "./input-provenance.js";
 import { resolveUserTurnTranscriptAdmission } from "./user-turn-transcript-admission.js";
 import {
@@ -151,6 +155,7 @@ function readOpenClawMessageMeta(message: AgentMessage): Record<string, unknown>
 
 export function buildPersistedUserTurnMessage(params: UserTurnInput): PersistedUserTurnMessage {
   const normalizedMedia = (params.media ?? []).map(normalizeStructuredMediaEntryForTranscript);
+  const mediaVideoDescriptions = normalizeMediaFactIdentities(params.mediaVideoDescriptions);
   const text = params.text ?? "";
   // Storage is BARE (no timestamp prefix). The per-message timestamp is added
   // at the single LLM-boundary stamping site (normalizeMessagesForLlmBoundary),
@@ -183,14 +188,7 @@ export function buildPersistedUserTurnMessage(params: UserTurnInput): PersistedU
           },
         }
       : {}),
-    ...(params.mediaVideoDescriptions?.length
-      ? {
-          mediaVideoDescriptions: params.mediaVideoDescriptions.map((description) => ({
-            ...(description.sourceId ? { sourceId: description.sourceId } : {}),
-            sourceIndex: description.sourceIndex,
-          })),
-        }
-      : {}),
+    ...(mediaVideoDescriptions.length > 0 ? { mediaVideoDescriptions } : {}),
   };
   const message = {
     role: "user",
@@ -356,7 +354,7 @@ export function preparePersistedUserTurnMessageForTranscriptWrite(
   const nextUserMessage = provenance
     ? (applyInputProvenanceToUserMessage(nextMessage, provenance) as PersistedUserTurnMessage)
     : nextMessage;
-  const protectedMeta = {
+  const protectedMeta: Record<string, unknown> = {
     ...readOpenClawMessageMeta(nextUserMessage),
     ...(typeof senderIsOwner === "boolean" ? { senderIsOwner } : {}),
     ...(transport ? { transport } : {}),

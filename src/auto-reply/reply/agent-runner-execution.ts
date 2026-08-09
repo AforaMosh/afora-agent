@@ -177,7 +177,7 @@ async function executeAgentTurnInternalWithRetryState(
   let replyMediaContext: ReplyMediaContext;
   let currentTurnMedia: Pick<
     FollowupRun,
-    "handledVideoSourceIds" | "handledVideoSourceIndexes" | "imageOrder" | "images" | "inputMedia"
+    "handledVideoIdentities" | "imageOrder" | "images" | "inputMedia"
   >;
   try {
     replyMediaContext =
@@ -203,8 +203,7 @@ async function executeAgentTurnInternalWithRetryState(
       inputMedia: params.followupRun.inputMedia,
       images: params.followupRun.images,
       imageOrder: params.followupRun.imageOrder,
-      handledVideoSourceIndexes: params.followupRun.handledVideoSourceIndexes,
-      handledVideoSourceIds: params.followupRun.handledVideoSourceIds,
+      handledVideoIdentities: params.followupRun.handledVideoIdentities,
     };
   } catch (error) {
     clearAgentRunContext(runId, lifecycleGeneration);

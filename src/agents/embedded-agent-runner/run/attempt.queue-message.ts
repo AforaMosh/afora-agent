@@ -3,7 +3,7 @@
  */
 import { toErrorObject } from "../../../infra/errors.js";
 import type { MediaContent } from "../../../llm/types.js";
-import type { MediaFact } from "../../../media/media-facts.js";
+import type { MediaFact, MediaFactIdentity } from "../../../media/media-facts.js";
 import type { PromptImageOrderEntry } from "../../../media/prompt-image-order.js";
 import type { UserTurnTranscriptRecorder } from "../../../sessions/user-turn-transcript.types.js";
 import {
@@ -35,6 +35,7 @@ type EmbeddedAgentActiveSessionSteerTarget = {
     imageOrder?: PromptImageOrderEntry[],
     queueIdentity?: string,
     canInject?: () => boolean,
+    handledVideoIdentities?: MediaFactIdentity[],
   ): Promise<void>;
   subscribe(listener: (event: unknown) => void): () => void;
 };
@@ -57,20 +58,10 @@ function steerActiveSession(
   media?: MediaFact[],
   imageOrder?: PromptImageOrderEntry[],
   queueIdentity?: string,
+  handledVideoIdentities?: MediaFactIdentity[],
   canInject?: () => boolean,
 ): Promise<void> {
-  if (canInject) {
-    return activeSession.steer(
-      text,
-      images,
-      userTurnTranscriptRecorder,
-      media,
-      imageOrder,
-      queueIdentity,
-      canInject,
-    );
-  }
-  if (media?.length || queueIdentity) {
+  if (media?.length || handledVideoIdentities?.length || queueIdentity || canInject) {
     return activeSession.steer(
       text,
       inputMedia,
@@ -78,6 +69,8 @@ function steerActiveSession(
       media,
       imageOrder,
       queueIdentity,
+      canInject,
+      handledVideoIdentities,
     );
   }
   return userTurnTranscriptRecorder
@@ -210,6 +203,7 @@ async function steerAndWaitForTranscriptCommit(
   media?: MediaFact[],
   imageOrder?: PromptImageOrderEntry[],
   queueIdentity: string = crypto.randomUUID(),
+  handledVideoIdentities?: MediaFactIdentity[],
   abortSignal?: AbortSignal,
   onQueueAccepted?: (accepted: boolean) => void,
   canInject?: () => boolean,
@@ -345,6 +339,7 @@ async function steerAndWaitForTranscriptCommit(
       media,
       imageOrder,
       queueIdentity,
+      handledVideoIdentities,
       () => acceptanceOpen && (canInject?.() ?? true),
     );
     void steer.then(
@@ -420,6 +415,7 @@ export async function steerActiveSessionWithOptionalDeliveryWait(
         options?.media,
         options?.imageOrder,
         options?.queueIdentity,
+        options?.handledVideoIdentities,
         canInject,
       );
       options?.onQueueAccepted?.(true);
@@ -439,6 +435,7 @@ export async function steerActiveSessionWithOptionalDeliveryWait(
       options.media,
       options.imageOrder,
       options.queueIdentity,
+      options.handledVideoIdentities,
       options.abortSignal,
       options.onQueueAccepted,
       canInject,

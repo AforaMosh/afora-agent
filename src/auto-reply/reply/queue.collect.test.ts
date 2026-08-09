@@ -2045,8 +2045,10 @@ describe("followup queue collect routing", () => {
         contentType: "video/mp4",
       },
     ];
-    first.handledVideoSourceIds = ["first-video"];
-    first.handledVideoSourceIndexes = [40, 999];
+    first.handledVideoIdentities = [
+      { sourceId: "first-video", sourceIndex: 40 },
+      { sourceIndex: 999 },
+    ];
     enqueueFollowupRun(key, first, settings);
 
     const second = createRun({
@@ -2081,8 +2083,7 @@ describe("followup queue collect routing", () => {
         contentType: "video/mp4",
       },
     ];
-    second.handledVideoSourceIds = ["second-video"];
-    second.handledVideoSourceIndexes = [400];
+    second.handledVideoIdentities = [{ sourceId: "second-video", sourceIndex: 400 }];
     enqueueFollowupRun(key, second, settings);
 
     scheduleFollowupDrain(key, runFollowup);
@@ -2094,8 +2095,10 @@ describe("followup queue collect routing", () => {
     expect(collected?.images).toEqual([secondImage]);
     expect(collected?.imageOrder).toEqual(["inline"]);
     expect(collected?.media?.map((fact) => fact.sourceIndex)).toEqual([0, 1, 2, 3, 4]);
-    expect(collected?.handledVideoSourceIds).toBeUndefined();
-    expect(collected?.handledVideoSourceIndexes).toEqual([1, 4]);
+    expect(collected?.handledVideoIdentities).toEqual([
+      { sourceId: "first-video", sourceIndex: 1 },
+      { sourceId: "second-video", sourceIndex: 4 },
+    ]);
   });
 
   it("does not let ambiguous handled indexes suppress unrelated collected video", async () => {
@@ -2109,8 +2112,11 @@ describe("followup queue collect routing", () => {
       { sourceId: "unrelated", sourceIndex: 5, path: "/tmp/unrelated.mp4", kind: "video" },
       { sourceId: "unique-index", sourceIndex: 8, path: "/tmp/unique.mp4", kind: "video" },
     ];
-    first.handledVideoSourceIds = ["described", "absent-unrelated-id"];
-    first.handledVideoSourceIndexes = [5, 8];
+    first.handledVideoIdentities = [
+      { sourceId: "described", sourceIndex: 5 },
+      { sourceId: "absent-unrelated-id" },
+      { sourceIndex: 8 },
+    ];
     enqueueFollowupRun(key, first, settings);
 
     const second = createRun({ prompt: "second" });
@@ -2130,8 +2136,10 @@ describe("followup queue collect routing", () => {
       { sourceId: "unique-index", sourceIndex: 2 },
       { sourceId: "second-unrelated", sourceIndex: 3 },
     ]);
-    expect(calls[0]?.handledVideoSourceIds).toBeUndefined();
-    expect(calls[0]?.handledVideoSourceIndexes).toEqual([0, 2]);
+    expect(calls[0]?.handledVideoIdentities).toEqual([
+      { sourceId: "described", sourceIndex: 0 },
+      { sourceId: "unique-index", sourceIndex: 2 },
+    ]);
   });
 
   it("resolves handled source IDs independently from unique handled indexes", async () => {
@@ -2148,16 +2156,17 @@ describe("followup queue collect routing", () => {
         kind: "video",
       },
     ];
-    first.handledVideoSourceIds = ["handled-by-id"];
-    first.handledVideoSourceIndexes = [9];
+    first.handledVideoIdentities = [{ sourceId: "handled-by-id" }, { sourceIndex: 9 }];
     enqueueFollowupRun(key, first, settings);
     enqueueFollowupRun(key, createRun({ prompt: "second" }), settings);
 
     scheduleFollowupDrain(key, runFollowup);
     await done.promise;
 
-    expect(calls[0]?.handledVideoSourceIds).toBeUndefined();
-    expect(calls[0]?.handledVideoSourceIndexes).toEqual([0, 1]);
+    expect(calls[0]?.handledVideoIdentities).toEqual([
+      { sourceId: "handled-by-id", sourceIndex: 0 },
+      { sourceId: "different-source-id", sourceIndex: 1 },
+    ]);
   });
 
   it("does not infer pairings between ambiguous handled ID and index markers", async () => {
@@ -2170,8 +2179,7 @@ describe("followup queue collect routing", () => {
       { sourceId: "duplicate-id", sourceIndex: 6, path: "/tmp/b.mp4", kind: "video" },
       { sourceId: "other-id", sourceIndex: 5, path: "/tmp/c.mp4", kind: "video" },
     ];
-    first.handledVideoSourceIds = ["duplicate-id"];
-    first.handledVideoSourceIndexes = [5];
+    first.handledVideoIdentities = [{ sourceId: "duplicate-id" }, { sourceIndex: 5 }];
     enqueueFollowupRun(key, first, settings);
     enqueueFollowupRun(key, createRun({ prompt: "second" }), settings);
 
@@ -2185,8 +2193,7 @@ describe("followup queue collect routing", () => {
       { sourceId: "duplicate-id", sourceIndex: 1 },
       { sourceId: "other-id", sourceIndex: 2 },
     ]);
-    expect(calls[0]?.handledVideoSourceIds).toBeUndefined();
-    expect(calls[0]?.handledVideoSourceIndexes).toBeUndefined();
+    expect(calls[0]?.handledVideoIdentities).toBeUndefined();
   });
 
   it("scopes duplicate handled source ids to their queued item", async () => {
@@ -2208,8 +2215,7 @@ describe("followup queue collect routing", () => {
         },
       ];
       if (handled) {
-        item.handledVideoSourceIds = ["producer-local-video"];
-        item.handledVideoSourceIndexes = [9];
+        item.handledVideoIdentities = [{ sourceId: "producer-local-video", sourceIndex: 9 }];
       }
       enqueueFollowupRun(key, item, settings);
     }
@@ -2218,8 +2224,9 @@ describe("followup queue collect routing", () => {
     await done.promise;
 
     expect(calls[0]?.media?.map((fact) => fact.sourceIndex)).toEqual([0, 1]);
-    expect(calls[0]?.handledVideoSourceIds).toBeUndefined();
-    expect(calls[0]?.handledVideoSourceIndexes).toEqual([0]);
+    expect(calls[0]?.handledVideoIdentities).toEqual([
+      { sourceId: "producer-local-video", sourceIndex: 0 },
+    ]);
   });
 
   it("splits collect batches when sender authorization changes", async () => {
@@ -3628,7 +3635,13 @@ describe("followup queue collect routing", () => {
         storePath,
       });
       const message = (
-        events.find((event) => event.type === "message") as
+        events.find(
+          (event) =>
+            typeof event === "object" &&
+            event !== null &&
+            "type" in event &&
+            event.type === "message",
+        ) as
           | {
               message?: {
                 __openclaw?: {
@@ -3641,7 +3654,7 @@ describe("followup queue collect routing", () => {
       )?.message;
       expect(message?.__openclaw?.media?.map((fact) => fact.sourceIndex)).toEqual([0, 1, 2, 3]);
       expect(message?.__openclaw?.mediaVideoDescriptions).toEqual([
-        { sourceIndex: 1 },
+        { sourceId: "first-video", sourceIndex: 1 },
         { sourceIndex: 3 },
       ]);
     } finally {
@@ -3650,7 +3663,7 @@ describe("followup queue collect routing", () => {
     }
   });
 
-  it("keeps paired transcript descriptions distinct from independent handled markers", async () => {
+  it("keeps paired transcript descriptions aligned with canonical handled identities", async () => {
     const key = `test-collect-paired-video-description-${Date.now()}`;
     const { calls, done, runFollowup } = createDrainRecorder();
     const settings: QueueSettings = { mode: "collect", debounceMs: 0 };
@@ -3662,8 +3675,7 @@ describe("followup queue collect routing", () => {
     const first = createRun({ prompt: "first" });
     first.transcriptPrompt = "first transcript";
     first.media = media;
-    first.handledVideoSourceIds = ["duplicate-id"];
-    first.handledVideoSourceIndexes = [5];
+    first.handledVideoIdentities = [{ sourceId: "duplicate-id", sourceIndex: 5 }];
     first.userTurnTranscriptRecorder = createUserTurnTranscriptRecorder({
       input: {
         text: first.transcriptPrompt,
@@ -3686,8 +3698,9 @@ describe("followup queue collect routing", () => {
     scheduleFollowupDrain(key, runFollowup);
     await done.promise;
 
-    expect(calls[0]?.handledVideoSourceIds).toBeUndefined();
-    expect(calls[0]?.handledVideoSourceIndexes).toBeUndefined();
+    expect(calls[0]?.handledVideoIdentities).toEqual([
+      { sourceId: "duplicate-id", sourceIndex: 0 },
+    ]);
     const message = await calls[0]?.userTurnTranscriptRecorder?.resolveMessage();
     const metadata = (
       message as
@@ -3706,7 +3719,9 @@ describe("followup queue collect routing", () => {
       { sourceId: "duplicate-id", sourceIndex: 1 },
       { sourceId: "other-id", sourceIndex: 2 },
     ]);
-    expect(metadata?.mediaVideoDescriptions).toEqual([{ sourceIndex: 0 }]);
+    expect(metadata?.mediaVideoDescriptions).toEqual([
+      { sourceId: "duplicate-id", sourceIndex: 0 },
+    ]);
   });
 
   it("pairs differing inbound runtime contexts inside one collected turn", async () => {

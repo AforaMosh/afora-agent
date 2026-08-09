@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ImageContent, MediaContent, Model, VideoContent } from "../../llm/types.js";
+import { readRuntimeMediaFactIdentities } from "../../media/media-facts.js";
 import { finalizeRuntimePromptImages } from "../../media/runtime-prompt-image-provenance.js";
 import { AuthStorage } from "./auth-storage.js";
 import { createExtensionRuntime } from "./extensions/loader.js";
@@ -263,7 +264,7 @@ describe("AgentSession native media", () => {
 
     const submitted = prompt.mock.calls[0]?.[0]?.[0];
     expect(submitted).toMatchObject({ role: "user" });
-    const content = submitted && "content" in submitted ? submitted.content : undefined;
+    const content = (submitted as { content?: unknown } | undefined)?.content;
     expect(
       Array.isArray(content)
         ? content.filter((part) => part.type === "text" && part.text === omission)
@@ -336,6 +337,39 @@ describe("AgentSession native media", () => {
       content: [{ type: "text", text: "mixed attachments" }, video, image],
       __openclaw: { mediaBlockFactIndexes: [null, 7], mediaImageBlockFactIndexes: [7] },
     });
+    session.dispose();
+  });
+
+  it("removes only the exact described video from a full-argument steer", async () => {
+    const { session } = await createNativeMediaSession();
+    const steer = vi.spyOn(session.agent, "steer").mockImplementation(() => undefined);
+    const facts = [
+      { sourceId: "duplicate-id", sourceIndex: 5, kind: "video" as const },
+      { sourceId: "duplicate-id", sourceIndex: 6, kind: "video" as const },
+      { sourceId: "other-id", sourceIndex: 5, kind: "video" as const },
+    ];
+    const { images: media } = finalizeRuntimePromptImages<MediaContent>(
+      facts.map((_fact, factIndex) => ({ image: video, factIndex })),
+    );
+    const identities = [{ sourceId: "duplicate-id", sourceIndex: 5 }] as const;
+
+    await session.steer(
+      "only one clip was described",
+      media,
+      undefined,
+      facts,
+      undefined,
+      undefined,
+      [...identities],
+    );
+
+    const queued = steer.mock.calls[0]?.[0];
+    expect(queued).toMatchObject({
+      role: "user",
+      content: [{ type: "text", text: "only one clip was described" }, video, video],
+      __openclaw: { mediaBlockFactIndexes: [1, 2] },
+    });
+    expect(queued && readRuntimeMediaFactIdentities(queued)).toEqual(identities);
     session.dispose();
   });
 

@@ -543,14 +543,14 @@ describe("executeAgentTurn: run lifecycle and ownership", () => {
       name: "native video input",
       inputMedia: [{ type: "video" as const, data: "video", mimeType: "video/mp4" }],
       media: undefined,
-      handledVideoSourceIndexes: undefined,
+      handledVideoIdentities: undefined,
       omitted: true,
     },
     {
       name: "an unsuppressed video fact",
       inputMedia: undefined,
       media: [{ path: "/tmp/clip.mp4", contentType: "video/mp4" }],
-      handledVideoSourceIndexes: undefined,
+      handledVideoIdentities: undefined,
       omitted: true,
     },
     {
@@ -563,7 +563,7 @@ describe("executeAgentTurn: run lifecycle and ownership", () => {
           contentType: "video/mp4",
         },
       ],
-      handledVideoSourceIndexes: [0],
+      handledVideoIdentities: [{ sourceIndex: 0 }],
       omitted: false,
     },
   ])("makes CLI fallback handling explicit for $name", async (testCase) => {
@@ -580,7 +580,7 @@ describe("executeAgentTurn: run lifecycle and ownership", () => {
     followupRun.run.model = "gpt-5.4";
     followupRun.inputMedia = testCase.inputMedia;
     followupRun.media = testCase.media;
-    followupRun.handledVideoSourceIndexes = testCase.handledVideoSourceIndexes;
+    followupRun.handledVideoIdentities = testCase.handledVideoIdentities;
 
     const executeAgentTurn = await getExecuteAgentTurnForTest();
     await executeAgentTurn({

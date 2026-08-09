@@ -9,9 +9,12 @@ import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/st
 
 const REDACTED_MEDIA_DATA = "<redacted>";
 const REDACTED_MEDIA_REFERENCE = "<redacted-media-reference>";
-const INLINE_MEDIA_DATA_URL_RE = /^data:((audio|image|video)\/[^;,]+);base64,([\s\S]*)$/iu;
+const INLINE_MEDIA_DATA_URL_RE =
+  /^data:((?:audio|image|video)\/[^;,\s]+)(?:;[^,\s]+)*;base64,([\s\S]*)$/iu;
+// Consume the complete suffix because base64 data can be folded across lines;
+// stopping at the first fragment would persist the remaining media bytes.
 const EMBEDDED_MEDIA_DATA_URL_RE =
-  /\bdata:(?:audio|image|video)\/[^;,\s]+(?:;[^,\s]+)*;base64,[\s\S]*$/giu;
+  /\bdata:(?:audio|image|video)\/[^;,\s]+(?:;[^,\s]+)*,[\s\S]*$/giu;
 const MEDIA_ATTACHED_NOTE_RE = /\[media attached(?: [^:\]]+)?:[^\]]*\]/giu;
 const MEDIA_DIRECTIVE_RE = /\bMEDIA:(?:file:\/\/)?[^\s]+/giu;
 const MEDIA_REFERENCE_FIELDS = new Set([
@@ -23,6 +26,7 @@ const MEDIA_REFERENCE_FIELDS = new Set([
   "url",
   "video_url",
 ]);
+const INLINE_MEDIA_URL_FIELDS = ["audio_url", "image_url", "video_url"] as const;
 const INLINE_MEDIA_TYPES = new Set([
   "audio",
   "audio_url",
@@ -88,9 +92,12 @@ function redactSensitivePayloadString(value: string): string {
     .replace(COOKIE_PAIR_RE, "$1=<redacted>");
 }
 
+function redactInlineMediaDataUrls(value: string): string {
+  return value.replace(EMBEDDED_MEDIA_DATA_URL_RE, REDACTED_MEDIA_DATA);
+}
+
 function redactModelVisibleMediaString(value: string): string {
-  return value
-    .replace(EMBEDDED_MEDIA_DATA_URL_RE, REDACTED_MEDIA_DATA)
+  return redactInlineMediaDataUrls(value)
     .replace(MEDIA_ATTACHED_NOTE_RE, `[media attached: ${REDACTED_MEDIA_REFERENCE}]`)
     .replace(MEDIA_DIRECTIVE_RE, `MEDIA:${REDACTED_MEDIA_REFERENCE}`);
 }
@@ -159,42 +166,32 @@ function redactInlineMediaDataUrl(
   record: Record<string, unknown>,
   out: Record<string, unknown>,
 ): void {
-  const type = normalizeLowercaseStringOrEmpty(record.type);
-  const mediaKind =
-    type === "audio_url" || type === "input_audio" || type === "output_audio"
-      ? "audio"
-      : type === "image_url" || type === "input_image"
-        ? "image"
-        : type === "video_url" || type === "input_video"
-          ? "video"
-          : undefined;
-  if (!mediaKind) {
-    return;
-  }
+  for (const field of INLINE_MEDIA_URL_FIELDS) {
+    const value = record[field];
+    const nested = value && typeof value === "object" && !Array.isArray(value);
+    const url = nested ? (value as Record<string, unknown>).url : value;
+    if (typeof url !== "string") {
+      continue;
+    }
+    const match = INLINE_MEDIA_DATA_URL_RE.exec(url);
+    const mimeType = match?.[1];
+    const data = match?.[2];
+    if (!mimeType || data === undefined) {
+      continue;
+    }
 
-  const field = `${mediaKind}_url`;
-  const value = record[field];
-  const nested = value && typeof value === "object" && !Array.isArray(value);
-  const url = nested ? (value as Record<string, unknown>).url : value;
-  if (typeof url !== "string") {
+    const target = nested ? out[field] : out;
+    if (!target || typeof target !== "object" || Array.isArray(target)) {
+      return;
+    }
+    redactInlineMediaData(
+      target as Record<string, unknown>,
+      nested ? "url" : field,
+      data,
+      mimeType,
+    );
     return;
   }
-  const match = INLINE_MEDIA_DATA_URL_RE.exec(url);
-  const mimeType = match?.[1];
-  const data = match?.[3];
-  if (
-    !mimeType ||
-    data === undefined ||
-    normalizeLowercaseStringOrEmpty(match?.[2]) !== mediaKind
-  ) {
-    return;
-  }
-
-  const target = nested ? out[field] : out;
-  if (!target || typeof target !== "object" || Array.isArray(target)) {
-    return;
-  }
-  redactInlineMediaData(target as Record<string, unknown>, nested ? "url" : field, data, mimeType);
 }
 
 function visitDiagnosticPayload(
@@ -202,7 +199,6 @@ function visitDiagnosticPayload(
   opts?: {
     omitField?: (key: string) => boolean;
     redactMediaLocations?: boolean;
-    redactMediaDataUrlsInText?: boolean;
   },
 ): unknown {
   const seen = new WeakSet<object>();
@@ -213,7 +209,9 @@ function visitDiagnosticPayload(
     }
     if (typeof input === "string") {
       const redacted = redactSensitivePayloadString(input);
-      return opts?.redactMediaDataUrlsInText ? redactModelVisibleMediaString(redacted) : redacted;
+      return opts?.redactMediaLocations
+        ? redactModelVisibleMediaString(redacted)
+        : redactInlineMediaDataUrls(redacted);
     }
     if (!input || typeof input !== "object") {
       return input;
@@ -265,7 +263,6 @@ export function sanitizeDiagnosticPayload(value: unknown): unknown {
 export function sanitizeModelVisibleMediaPayload(value: unknown): unknown {
   return visitDiagnosticPayload(value, {
     omitField: isCredentialFieldName,
-    redactMediaDataUrlsInText: true,
     redactMediaLocations: true,
   });
 }

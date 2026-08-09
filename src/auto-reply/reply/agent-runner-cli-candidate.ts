@@ -16,7 +16,7 @@ import {
 import { withLocalSessionPlacementTurnAdmission } from "../../agents/session-placement-admission.js";
 import { normalizeChatType } from "../../channels/chat-type.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
-import { isVideoMediaFact } from "../../media/media-facts.js";
+import { isVideoMediaFact, resolveMediaFactIdentityIndexes } from "../../media/media-facts.js";
 import { readRuntimePromptImageFactIndexes } from "../../media/runtime-prompt-image-provenance.js";
 import {
   getGeneratedMediaTaskIdsForSessionKey,
@@ -92,9 +92,10 @@ export async function runCliFallbackCandidate(params: {
   const turn = params.turn;
   const inputMedia = params.currentTurnMedia.inputMedia ?? [];
   const mediaFactIndexes = readRuntimePromptImageFactIndexes(inputMedia);
-  const handledSourceIds = new Set(params.currentTurnMedia.handledVideoSourceIds ?? []);
-  const handledSourceIndexes = new Set(params.currentTurnMedia.handledVideoSourceIndexes ?? []);
   const facts = turn.followupRun.media ?? [];
+  const handledVideoFactIndexes = new Set(
+    resolveMediaFactIdentityIndexes(facts, params.currentTurnMedia.handledVideoIdentities ?? []),
+  );
   const representedFactIndexes = new Set(
     (mediaFactIndexes ?? []).filter((entry): entry is number => entry !== null),
   );
@@ -105,12 +106,7 @@ export async function runCliFallbackCandidate(params: {
       continue;
     }
     const factIndex = mediaFactIndexes?.[mediaIndex];
-    const fact = factIndex == null ? undefined : facts[factIndex];
-    const factSourceIndex = fact?.sourceIndex ?? factIndex;
-    const handled = fact
-      ? (fact.sourceId !== undefined && handledSourceIds.has(fact.sourceId)) ||
-        (factSourceIndex !== undefined && handledSourceIndexes.has(factSourceIndex))
-      : false;
+    const handled = typeof factIndex === "number" && handledVideoFactIndexes.has(factIndex);
     if (!handled) {
       orderedOmissions.push({
         order: mediaIndex,
@@ -120,9 +116,7 @@ export async function runCliFallbackCandidate(params: {
     }
   }
   for (const [factIndex, fact] of facts.entries()) {
-    const handled =
-      (fact.sourceId !== undefined && handledSourceIds.has(fact.sourceId)) ||
-      handledSourceIndexes.has(fact.sourceIndex ?? factIndex);
+    const handled = handledVideoFactIndexes.has(factIndex);
     if (isVideoMediaFact(fact) && !handled && !representedFactIndexes.has(factIndex)) {
       orderedOmissions.push({
         order: fact.sourceIndex ?? factIndex,

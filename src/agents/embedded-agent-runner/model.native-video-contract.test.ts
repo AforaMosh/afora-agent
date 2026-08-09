@@ -14,6 +14,7 @@ const model = {
   cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
   contextWindow: 128_000,
   maxTokens: 4_096,
+  nativeVideoInput: undefined,
 } satisfies Model;
 
 const contract = {

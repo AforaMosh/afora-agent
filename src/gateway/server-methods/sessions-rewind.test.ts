@@ -682,6 +682,61 @@ describe("session message-cut methods", () => {
     },
   );
 
+  it.each([
+    {
+      name: "mismatched source ID",
+      fact: {
+        sourceId: "different-video.mp4",
+        sourceIndex: 0,
+        url: "media://inbound/stored-video.mp4",
+      },
+    },
+    {
+      name: "malformed inbound URI",
+      fact: {
+        sourceId: "stored-video.mp4",
+        sourceIndex: 0,
+        url: "media://inbound/nested%2Fstored-video.mp4",
+      },
+    },
+  ])("keeps the bounded omission when rewinding a $name video claim", async ({ fact }) => {
+    const scope = { agentId: "main", sessionId: sourceSessionId, sessionKey };
+    await appendTranscriptMessage(scope, {
+      eventId: `invalid-managed-video-${fact.sourceId}`,
+      parentId: "assistant-entry",
+      message: {
+        role: "user",
+        content: [
+          { type: "text", text: "edit this clip: " },
+          { type: "video", data: "cHJpdmF0ZQ==", mimeType: "video/mp4" },
+        ],
+        __openclaw: {
+          media: [{ ...fact, kind: "video", contentType: "video/mp4" }],
+          mediaBlockFactIndexes: [0],
+        },
+      },
+    });
+    const entryId = `invalid-managed-video-${fact.sourceId}`;
+    await appendTranscriptEvent(scope, {
+      type: "leaf",
+      id: `${entryId}-leaf`,
+      parentId: "assistant-entry",
+      targetId: entryId,
+    });
+
+    const respond = await invoke("sessions.rewind", entryId);
+
+    expect(respond).toHaveBeenCalledWith(
+      true,
+      {
+        editorText:
+          "edit this clip: (video omitted: inline video is not retained in session history)",
+      },
+      undefined,
+    );
+    expect(mocks.readMediaBuffer).not.toHaveBeenCalled();
+  });
+
   it.each(["sessions.rewind", "sessions.fork"] as const)(
     "filters non-restorable image facts before a text-only %s",
     async (method) => {

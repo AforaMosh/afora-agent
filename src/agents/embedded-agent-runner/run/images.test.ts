@@ -683,7 +683,7 @@ describe("hydratePromptMediaMessages", () => {
       [{ url: `media://inbound/${mediaId}`, contentType: "image/gif" }],
       ["offloaded", "inline"],
     );
-    const options = {
+    const options: Parameters<typeof hydratePromptMediaMessages>[1] = {
       workspaceDir: stateDir,
       model: { input: ["text", "image"] },
       workspaceOnly: true,

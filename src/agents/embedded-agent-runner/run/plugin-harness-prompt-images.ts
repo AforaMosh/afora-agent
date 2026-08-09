@@ -75,8 +75,7 @@ export async function preparePluginHarnessPromptImages(params: {
     // model originated from a provider that supports the OpenClaw harness.
     model: pluginHarnessModel,
     existingMedia,
-    handledVideoSourceIndexes: runParams.handledVideoSourceIndexes,
-    handledVideoSourceIds: runParams.handledVideoSourceIds,
+    handledVideoIdentities: runParams.handledVideoIdentities,
     imageOrder: runParams.imageOrder,
     maxBytes: MAX_IMAGE_BYTES,
     maxDimensionPx: resolveImageSanitizationLimits(runParams.config).maxDimensionPx,
