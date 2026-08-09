@@ -256,7 +256,8 @@ export function readPluginSdkSurfaceBudgets(env: NodeJS.ProcessEnv = process.env
       // +6: MemoryAuthorizationConformanceMount, MemoryContentAccessOperation,
       //     MemoryContentAccessContext, AuthorizedMemoryContentPlan,
       //     AuthorizedMemorySearchParams, and AuthorizedMemoryReadParams.
-      4900,
+      // +1: AuthorizedMemoryPlanForContext preserves operation-specific results from authorize.
+      4901,
       env,
     ),
     publicFunctionExports: readPluginSdkSurfaceBudgetEnv(
