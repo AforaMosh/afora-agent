@@ -104,7 +104,7 @@ function projectNestedMediaReferences(
         continue;
       }
       if (item && typeof item === "object") {
-        projectNestedMediaReferences(item, insideReference);
+        projectNestedMediaReferences(item, insideReference, directReference && Array.isArray(item));
       }
     }
     return;

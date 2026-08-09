@@ -329,6 +329,7 @@ function projectMediaPayload(
   enclosingVideo = false,
   enclosingMedia = false,
   collapseInlineVideo = false,
+  enclosingReference = false,
 ): unknown {
   state.values += 1;
   if (depth > MEDIA_PAYLOAD_MAX_DEPTH || state.values > MEDIA_PAYLOAD_MAX_VALUES) {
@@ -352,6 +353,7 @@ function projectMediaPayload(
     }
     const normalizedKey = key?.trim().toLowerCase();
     const remoteReferenceKey =
+      enclosingReference ||
       (normalizedKey !== undefined && isMediaReferenceCarrierKey(normalizedKey)) ||
       (normalizedKey === "source" && enclosingMedia);
     const projected =
@@ -416,6 +418,7 @@ function projectMediaPayload(
         enclosingVideo,
         enclosingMedia,
         collapseInlineVideo,
+        enclosingReference,
       );
       if (item === INLINE_VIDEO_PAYLOAD && collapseInlineVideo) {
         state.seen.delete(value);
@@ -474,6 +477,8 @@ function projectMediaPayload(
           carrierField && depth < INLINE_VIDEO_PAYLOAD_MAX_NESTING ? videoContext : false,
           mediaContext || isMediaPayloadContainerKey(propertyKey),
           collapseInlineVideo,
+          isMediaReferenceCarrierKey(propertyKey) ||
+            (propertyKey.trim().toLowerCase() === "source" && mediaContext),
         )
       : MEDIA_PAYLOAD_UNREADABLE_OMISSION;
     if (projectedValue === INLINE_VIDEO_PAYLOAD) {

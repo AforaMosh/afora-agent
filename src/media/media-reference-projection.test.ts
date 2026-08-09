@@ -197,6 +197,18 @@ describe("sanitizeDurableMediaPayload", () => {
     });
   });
 
+  it("inherits media-reference context through nested arrays", () => {
+    expect(
+      sanitizeDurableMediaPayload({
+        type: "video",
+        source: [[credentialBearingUrl("cdn.example.test/nested.mp4?signature=private#preview")]],
+      }),
+    ).toEqual({
+      type: "video",
+      source: [["https://cdn.example.test/nested.mp4"]],
+    });
+  });
+
   it("inherits video context through direct and nested source arrays", () => {
     const payload = "private-array-video";
     const nestedPayload = "private-nested-array-video";

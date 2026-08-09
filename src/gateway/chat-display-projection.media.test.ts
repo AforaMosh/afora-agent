@@ -275,9 +275,11 @@ describe("oversized multimodal chat history", () => {
             file: "file:///Users/operator/private-source.mp4",
             openUrl: credentialBearingUrl("cdn.example.test/source.mp4?token=private"),
             video_url: [
-              credentialBearingUrl("cdn.example.test/nested.mp4?signature=private"),
-              "media://inbound/managed.mp4",
-              "/Users/operator/private-array.mp4",
+              [
+                credentialBearingUrl("cdn.example.test/nested.mp4?signature=private"),
+                "media://inbound/managed.mp4",
+                "/Users/operator/private-array.mp4",
+              ],
             ],
           },
           label: "keep video metadata",
@@ -305,7 +307,7 @@ describe("oversized multimodal chat history", () => {
         file: "https://cdn.example.test/download.mp4",
         source: {
           openUrl: "https://cdn.example.test/source.mp4",
-          video_url: ["https://cdn.example.test/nested.mp4", "media://inbound/managed.mp4"],
+          video_url: [["https://cdn.example.test/nested.mp4", "media://inbound/managed.mp4"]],
         },
         label: "keep video metadata",
       },
