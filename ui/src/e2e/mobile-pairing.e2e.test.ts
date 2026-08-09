@@ -114,13 +114,33 @@ const PAIRING_VIEWPORTS = [
   { name: "mobile", height: 844, width: 390 },
 ] as const;
 
+const blockedPublicPlan = {
+  status: "blocked",
+  mode: "public",
+  configState: "applied",
+  auth: "token",
+  blocker: "public-url-insecure",
+  changes: [],
+};
+
+const SETUP_CODE = Buffer.from(
+  JSON.stringify({ url: LAN_URL, bootstrapToken: "e2e-bootstrap-token" }),
+  "utf8",
+).toString("base64url");
+
+const setupCodeResult = async () => ({
+  access: "limited",
+  accessDowngraded: true,
+  auth: "token",
+  gatewayUrl: LAN_URL,
+  qrDataUrl: await qrcode.toDataURL(SETUP_CODE, { margin: 2, width: 360 }),
+  setupCode: SETUP_CODE,
+  urlSource: "gateway.bind=lan",
+});
+
 suite.define(() => {
   it("plans, applies, survives the restart, and only then issues a setup code", async () => {
-    const setupCode = Buffer.from(
-      JSON.stringify({ url: LAN_URL, bootstrapToken: "e2e-bootstrap-token" }),
-      "utf8",
-    ).toString("base64url");
-    const qrDataUrl = await qrcode.toDataURL(setupCode, { margin: 2, width: 360 });
+    const setupCodeResponse = await setupCodeResult();
     mkdirSync(artifactDir, { recursive: true });
     await suite.withPage(
       {
@@ -145,15 +165,7 @@ suite.define(() => {
             "device.pair.list": { paired: [], pending: [] },
             "device.pair.connectivity.inspect": loopbackInspection,
             "device.pair.connectivity.plan": lanPlan,
-            "device.pair.setupCode": {
-              access: "limited",
-              accessDowngraded: true,
-              auth: "token",
-              gatewayUrl: LAN_URL,
-              qrDataUrl,
-              setupCode,
-              urlSource: "gateway.bind=lan",
-            },
+            "device.pair.setupCode": setupCodeResponse,
             "node.list": { nodes: [] },
           },
         });
@@ -179,14 +191,13 @@ suite.define(() => {
           .poll(async () => (await gateway.getRequests("device.pair.connectivity.inspect")).length)
           .toBe(1);
         expect(await gateway.getRequests("device.pair.setupCode")).toEqual([]);
-        expect(
-          await page.getByText("This Gateway has no address a phone can reach yet.").isVisible(),
-        ).toBe(true);
-        await settleDialog(page);
-        await page.screenshot({ path: path.join(artifactDir, "01-chooser.png") });
+        // A loopback-only Gateway is answered by the chooser itself: the route a
+        // phone cannot dial is withheld, and the reachable ones are offered.
+        expect(await page.getByRole("button", { name: /^Use this connection/ }).count()).toBe(0);
+        expect(await page.getByRole("button", { name: /^Local network/ }).isVisible()).toBe(true);
 
         await page.getByRole("button", { name: /^Local network/ }).click();
-        await page.getByText("Devices on the same local network can reach this Gateway.").waitFor();
+        await page.getByText("Expose the Gateway on your local network").waitFor();
         expect(
           await page.getByText("Every device still has to sign in to the Gateway.").isVisible(),
         ).toBe(true);
@@ -200,14 +211,11 @@ suite.define(() => {
         ).toBe(true);
         // Nothing is written before the operator confirms the consequences.
         expect(await gateway.getRequests("config.patch")).toEqual([]);
-        await settleDialog(page);
-        await page.screenshot({ path: path.join(artifactDir, "02-lan-review.png") });
 
         await page.getByRole("button", { name: "Expose on local network" }).click();
         const patch = await gateway.waitForRequest("config.patch");
         expect(patch.params).toMatchObject({ baseHash: BASE_CONFIG_HASH, raw: LAN_PATCH });
         await page.getByText("Waiting for the Gateway to restart…").waitFor();
-        await page.screenshot({ path: path.join(artifactDir, "03-awaiting-restart.png") });
 
         await gateway.setMethodResponse("device.pair.connectivity.plan", appliedLanPlan);
         await restartGatewayConnection(gateway, page);
@@ -224,8 +232,6 @@ suite.define(() => {
         expect(
           (await gateway.getRequests("device.pair.connectivity.inspect")).length,
         ).toBeGreaterThan(1);
-        await settleDialog(page);
-        await page.screenshot({ path: path.join(artifactDir, "04-setup-code.png") });
 
         writeFileSync(
           path.join(artifactDir, "behavior-summary.json"),
@@ -262,14 +268,7 @@ suite.define(() => {
           methodResponses: {
             "device.pair.list": { paired: [], pending: [] },
             "device.pair.connectivity.inspect": loopbackInspection,
-            "device.pair.connectivity.plan": {
-              status: "blocked",
-              mode: "public",
-              configState: "applied",
-              auth: "token",
-              blocker: "public-url-insecure",
-              changes: [],
-            },
+            "device.pair.connectivity.plan": blockedPublicPlan,
             "node.list": { nodes: [] },
           },
         });
@@ -285,23 +284,19 @@ suite.define(() => {
         const input = page.locator('input[name="device-pair-public-url"]');
         await input.waitFor();
         await input.fill("ws://gateway.example.com");
-        await settleDialog(page);
-        await page.screenshot({ path: path.join(artifactDir, "05-public-url.png") });
 
         await page.getByRole("button", { name: "Check address" }).click();
         await page.getByText("Public pairing requires a secure wss:// address.").waitFor();
         expect(await input.inputValue()).toBe("ws://gateway.example.com");
         expect(await gateway.getRequests("device.pair.setupCode")).toEqual([]);
         expect(await gateway.getRequests("config.patch")).toEqual([]);
-        await settleDialog(page);
-        await page.screenshot({ path: path.join(artifactDir, "06-public-url-rejected.png") });
         expect(pageErrors).toEqual([]);
       },
     );
   });
 
   it.each(PAIRING_VIEWPORTS)(
-    "renders the chooser and LAN review at $name width in both themes",
+    "renders every wizard step at $name width in both themes",
     async (viewport) => {
       mkdirSync(artifactDir, { recursive: true });
       for (const colorScheme of ["light", "dark"] as const) {
@@ -315,12 +310,26 @@ suite.define(() => {
             viewport: { height: viewport.height, width: viewport.width },
           },
           async ({ page }) => {
-            await installMockGateway(page, {
+            const capture = async (step: string) => {
+              await settleDialog(page);
+              await page.screenshot({
+                path: path.join(artifactDir, `${step}-${viewport.name}-${colorScheme}.png`),
+              });
+            };
+            const gateway = await installMockGateway(page, {
               presenceUsers: [{ self: true, id: "operator", name: "Operator" }],
               methodResponses: {
+                "config.get": {
+                  raw: '{\n  "gateway": { "bind": "loopback" }\n}\n',
+                  hash: BASE_CONFIG_HASH,
+                  path: "/tmp/openclaw.json",
+                  config: { gateway: { bind: "loopback" } },
+                },
+                "config.patch": { ok: true },
                 "device.pair.list": { paired: [], pending: [] },
                 "device.pair.connectivity.inspect": loopbackInspection,
                 "device.pair.connectivity.plan": lanPlan,
+                "device.pair.setupCode": await setupCodeResult(),
                 "node.list": { nodes: [] },
               },
             });
@@ -332,19 +341,35 @@ suite.define(() => {
               .click();
             await page.getByRole("dialog", { name: "OpenClaw mobile" }).waitFor();
             await page.getByText("How should this phone reach the Gateway?").waitFor();
-            await settleDialog(page);
-            await page.screenshot({
-              path: path.join(artifactDir, `chooser-${viewport.name}-${colorScheme}.png`),
-            });
+            await capture("01-chooser");
 
             await page.getByRole("button", { name: /^Local network/ }).click();
-            await page
-              .getByText("Devices on the same local network can reach this Gateway.")
-              .waitFor();
-            await settleDialog(page);
-            await page.screenshot({
-              path: path.join(artifactDir, `lan-review-${viewport.name}-${colorScheme}.png`),
-            });
+            await page.getByText("Expose the Gateway on your local network").waitFor();
+            await capture("02-lan-review");
+
+            await page.getByRole("button", { name: "Expose on local network" }).click();
+            await gateway.waitForRequest("config.patch");
+            await page.getByText("Waiting for the Gateway to restart…").waitFor();
+            await capture("03-awaiting-restart");
+
+            await gateway.setMethodResponse("device.pair.connectivity.plan", appliedLanPlan);
+            await restartGatewayConnection(gateway, page);
+            await page.getByAltText("OpenClaw mobile pairing QR code").waitFor({ timeout: 20_000 });
+            await capture("04-setup-code");
+
+            // Back to the chooser, then down the public branch of the same flow.
+            await page.getByRole("button", { name: /New code/ }).click();
+            await page.getByText("How should this phone reach the Gateway?").waitFor();
+            await gateway.setMethodResponse("device.pair.connectivity.plan", blockedPublicPlan);
+            await page.getByRole("button", { name: /^Public address/ }).click();
+            const input = page.locator('input[name="device-pair-public-url"]');
+            await input.waitFor();
+            await input.fill("ws://gateway.example.com");
+            await capture("05-public-url");
+
+            await page.getByRole("button", { name: "Check address" }).click();
+            await page.getByText("Public pairing requires a secure wss:// address.").waitFor();
+            await capture("06-public-url-rejected");
           },
         );
       }

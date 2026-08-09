@@ -46,6 +46,14 @@ const BLOCKER_COPY: Record<PairingBlocker, string> = {
   "tailscale-service-approval-unknown": "devices.pairing.blockedGatewayHost",
 };
 
+// Gateway sign-in gates every route, so a chooser under one of these would only
+// offer dead ends; the chooser answers the remaining `current` blockers itself.
+const FATAL_CURRENT_BLOCKERS: ReadonlySet<PairingBlocker> = new Set([
+  "gateway-auth-required",
+  "gateway-auth-unavailable",
+  "gateway-auth-invalid",
+]);
+
 const RECOVERY_COPY: Record<PairingWizardRecovery, string> = {
   "restart-pending": "devices.pairing.recoveryRestartPending",
   "endpoint-unproven": "devices.pairing.recoveryUnproven",
@@ -96,10 +104,10 @@ function renderBack(actions: PairingWizardActions) {
   `;
 }
 
-function renderAccess(props: DevicePairSetupProps, disabled: boolean) {
+function renderAccess(props: DevicePairSetupProps) {
   const choose = (access: PairingWizardAccess) => () => props.actions.setAccess(access);
   return html`
-    <fieldset class="device-pair-setup__access" ?disabled=${disabled}>
+    <fieldset class="device-pair-setup__access">
       <legend>${t("devices.pairing.accessTitle")}</legend>
       <label>
         <input
@@ -131,7 +139,7 @@ function renderAccess(props: DevicePairSetupProps, disabled: boolean) {
 
 function renderRoute(params: {
   label: string;
-  hint: string;
+  hint?: string;
   detail?: string;
   disabled?: boolean;
   onSelect: () => void;
@@ -144,10 +152,13 @@ function renderRoute(params: {
       @click=${params.onSelect}
     >
       <span class="device-pair-setup__route-label">${params.label}</span>
-      <span class="device-pair-setup__route-hint">${params.hint}</span>
+      ${params.hint
+        ? html`<span class="device-pair-setup__route-hint">${params.hint}</span>`
+        : nothing}
       ${params.detail
         ? html`<span class="device-pair-setup__route-detail">${params.detail}</span>`
         : nothing}
+      <span class="device-pair-setup__route-go" aria-hidden="true">${icons.chevronRight}</span>
     </button>
   `;
 }
@@ -158,21 +169,22 @@ function renderChooser(
 ) {
   const { inspection } = step;
   const current = inspection.current;
+  if (current.status === "blocked" && FATAL_CURRENT_BLOCKERS.has(current.blocker)) {
+    return html`
+      <div class="callout warn device-pair-setup__error" role="status">
+        <span>${t(BLOCKER_COPY[current.blocker])}</span>
+      </div>
+    `;
+  }
   // Loopback already fails the phone; only offer a route a phone can dial.
   const reusableCurrent = current.status === "ready" && current.exposure !== "same-host";
   // A secure page cannot open the plaintext LAN candidate, so it cannot verify it.
   const lanProvable =
     inspection.lan.status === "available" && canProvePairingEndpoint(inspection.lan.url);
   return html`
-    ${renderAccess(props, false)}
     ${props.wizard.notice === "route-reverted"
       ? html`<div class="callout device-pair-setup__notice" role="status">
           ${t("devices.pairing.noticeReverted")}
-        </div>`
-      : nothing}
-    ${current.status === "blocked"
-      ? html`<div class="callout warn" role="status">
-          <span>${t(BLOCKER_COPY[current.blocker])}</span>
         </div>`
       : nothing}
     <p class="device-pair-setup__prompt">${t("devices.pairing.chooserTitle")}</p>
@@ -180,7 +192,6 @@ function renderChooser(
       ${reusableCurrent && current.status === "ready"
         ? renderRoute({
             label: t("devices.pairing.routeCurrent"),
-            hint: t("devices.pairing.routeCurrentHint"),
             detail: current.urls[0],
             onSelect: () => void props.actions.chooseRoute("current"),
           })
@@ -200,6 +211,7 @@ function renderChooser(
         onSelect: () => void props.actions.chooseRoute("public"),
       })}
     </div>
+    ${renderAccess(props)}
   `;
 }
 
@@ -249,18 +261,17 @@ function renderLanReview(
   const { plan } = step;
   return html`
     <p class="device-pair-setup__prompt">${t("devices.pairing.lanTitle")}</p>
+    <div class="device-pair-setup__gateways device-pair-setup__gateways--review">
+      ${plan.urls.map(
+        (url) => html`<span class="device-pair-setup__gateway" title=${url}>${url}</span>`,
+      )}
+    </div>
     <ul class="device-pair-setup__consequences">
-      <li>${t("devices.pairing.lanReach")}</li>
       <li>${t("devices.pairing.lanAuth")}</li>
       ${plan.accessDowngraded ? html`<li>${t("devices.pairing.lanLimited")}</li>` : nothing}
       <li>${t("devices.pairing.lanScope")}</li>
       ${plan.restartRequired ? html`<li>${t("devices.pairing.lanRestart")}</li>` : nothing}
     </ul>
-    <div class="device-pair-setup__gateways">
-      ${plan.urls.map(
-        (url) => html`<span class="device-pair-setup__gateway" title=${url}>${url}</span>`,
-      )}
-    </div>
     <div class="device-pair-setup__actions">
       <button class="btn primary" type="button" @click=${() => void props.actions.confirmLan()}>
         ${t("devices.pairing.lanConfirm")}
@@ -410,10 +421,9 @@ function renderStep(props: DevicePairSetupProps): TemplateResult {
         </div>
       `;
     case "recovery":
-      return renderMessage(props, {
-        title: t("devices.pairing.unreachableTitle"),
-        body: t(RECOVERY_COPY[step.reason]),
-      });
+      // Each recovery body names its own situation; a shared title could only
+      // repeat one of them and mislabel the rest.
+      return renderMessage(props, { body: t(RECOVERY_COPY[step.reason]) });
     case "issuing":
       return renderStatus(t("devices.pairing.generating"));
     case "code":
@@ -443,12 +453,17 @@ function renderDevicePairSetup(props: DevicePairSetupProps) {
           <div>
             <h2>${title}</h2>
             <p>${description}</p>
-            <p class="device-pair-setup__get-apps">
-              ${t("devices.pairing.noApp")}
-              <button type="button" @click=${props.onGetApps}>
-                ${t("devices.pairing.getApps")}
-              </button>
-            </p>
+            ${
+              // Only the QR step needs the app; earlier steps are about the route.
+              props.wizard.step.kind === "code"
+                ? html`<p class="device-pair-setup__get-apps">
+                    ${t("devices.pairing.noApp")}
+                    <button type="button" @click=${props.onGetApps}>
+                      ${t("devices.pairing.getApps")}
+                    </button>
+                  </p>`
+                : nothing
+            }
           </div>
           <button
             class="btn btn--icon btn--ghost device-pair-setup__close"

@@ -4900,10 +4900,10 @@ td.data-table-key-col {
   padding: 0 28px 24px;
 }
 
+/* One column at every width so it reads as a list, like the route choices. */
 .device-pair-setup__access {
   display: grid;
   width: min(440px, 100%);
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   margin: 0;
   padding: 0;
@@ -4911,7 +4911,7 @@ td.data-table-key-col {
 }
 
 .device-pair-setup__access legend {
-  margin: 0 auto 8px;
+  margin: 0 0 8px;
   color: var(--muted);
   font-size: 12px;
   font-weight: 600;
@@ -4933,11 +4933,6 @@ td.data-table-key-col {
 .device-pair-setup__access label:has(input:checked) {
   border-color: color-mix(in srgb, var(--accent) 65%, var(--border));
   background: var(--accent-subtle);
-}
-
-.device-pair-setup__access:disabled label {
-  cursor: default;
-  opacity: 0.7;
 }
 
 .device-pair-setup__access input {
@@ -4962,7 +4957,7 @@ td.data-table-key-col {
 
 .device-pair-setup__loading {
   display: flex;
-  min-height: 260px;
+  min-height: 180px;
   align-items: center;
   justify-content: center;
   gap: 10px;
@@ -4992,7 +4987,7 @@ td.data-table-key-col {
 }
 
 .device-pair-setup__error {
-  width: 100%;
+  width: min(440px, 100%);
 }
 
 .device-pair-setup__error span {
@@ -5063,6 +5058,12 @@ td.data-table-key-col {
   gap: 2px;
 }
 
+/* Standalone address block: aligns with the review copy instead of the QR meta row. */
+.device-pair-setup__gateways--review {
+  width: min(440px, 100%);
+  margin-top: -7px;
+}
+
 .device-pair-setup__actions {
   display: flex;
   flex-wrap: wrap;
@@ -5076,7 +5077,6 @@ td.data-table-key-col {
   color: var(--text-strong);
   font-size: 14px;
   font-weight: 600;
-  text-align: center;
 }
 
 .device-pair-setup__routes {
@@ -5087,7 +5087,8 @@ td.data-table-key-col {
 
 .device-pair-setup__route {
   display: grid;
-  gap: 3px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 12px;
   padding: 12px 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -5112,6 +5113,7 @@ td.data-table-key-col {
 }
 
 .device-pair-setup__route-label {
+  grid-column: 1;
   color: var(--text-strong);
   font-size: 13px;
   font-weight: 600;
@@ -5119,6 +5121,7 @@ td.data-table-key-col {
 
 .device-pair-setup__route-hint,
 .device-pair-setup__route-detail {
+  grid-column: 1;
   color: var(--muted);
   font-size: 11px;
   line-height: 1.35;
@@ -5126,7 +5129,21 @@ td.data-table-key-col {
 
 .device-pair-setup__route-detail {
   overflow-wrap: anywhere;
-  font-family: var(--font-mono);
+  font-family: var(--mono);
+}
+
+/* Marks the card as navigation: choosing a route opens its own step. */
+.device-pair-setup__route-go {
+  display: grid;
+  grid-row: 1 / -1;
+  grid-column: 2;
+  align-self: center;
+  color: var(--muted);
+}
+
+.device-pair-setup__route-go svg {
+  width: 16px;
+  height: 16px;
 }
 
 .device-pair-setup__notice {
@@ -5255,10 +5272,6 @@ td.data-table-key-col {
   .device-pair-setup__qr-frame {
     width: min(300px, 100%);
     padding: 14px;
-  }
-
-  .device-pair-setup__access {
-    grid-template-columns: 1fr;
   }
 }
 
