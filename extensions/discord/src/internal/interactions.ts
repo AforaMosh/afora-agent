@@ -1,4 +1,5 @@
 // Discord plugin module implements interactions behavior.
+import { RESTJSONErrorCodes } from "discord-api-types/rest";
 import {
   ComponentType,
   InteractionResponseType,
@@ -28,6 +29,7 @@ import {
 } from "./interaction-response.js";
 import { extractModalFields, ModalFields } from "./modal-fields.js";
 import { serializePayload, type MessagePayload } from "./payload.js";
+import { DiscordError } from "./rest.js";
 import { assertDiscordInteractionPayload } from "./schemas.js";
 import {
   channelFactory,
@@ -57,6 +59,9 @@ type Modal = {
 };
 
 type ComponentData = Record<string, unknown>;
+type InteractionCallbackProvenance =
+  | { kind: "unique"; type: InteractionResponseType }
+  | { kind: "conflicting" };
 
 export type RawInteraction = APIInteraction & {
   token: string;
@@ -121,6 +126,7 @@ class BaseInteraction {
   message: Message | null = null;
   private readonly response = new InteractionResponseController();
   private pendingResponse: Promise<void> = Promise.resolve();
+  private callbackProvenance: InteractionCallbackProvenance | undefined;
 
   constructor(
     public client: InteractionClient,
@@ -163,14 +169,49 @@ class BaseInteraction {
     if (this.response.acknowledged) {
       throw new Error("Discord interaction has already been acknowledged.");
     }
-    const result = await createInteractionCallback(
-      this.client.rest,
-      this.id,
-      this.token,
-      data === undefined ? { type } : { type, data },
+    try {
+      const result = await createInteractionCallback(
+        this.client.rest,
+        this.id,
+        this.token,
+        data === undefined ? { type } : { type, data },
+      );
+      this.response.recordCallback(type);
+      this.callbackProvenance = undefined;
+      return result;
+    } catch (error) {
+      if (this.isAcknowledgedInteractionError(error)) {
+        if (this.callbackProvenance?.kind === "unique") {
+          // A duplicate rejection proves the one possible earlier callback was accepted.
+          this.response.recordCallback(this.callbackProvenance.type);
+          this.callbackProvenance = undefined;
+        } else {
+          // External or conflicting ownership must never become a guessed local callback.
+          this.callbackProvenance = { kind: "conflicting" };
+        }
+      } else if (!(error instanceof DiscordError) || error.status >= 500) {
+        this.recordAmbiguousCallback(type);
+      }
+      throw error;
+    }
+  }
+
+  private isAcknowledgedInteractionError(error: unknown): error is DiscordError {
+    return (
+      error instanceof DiscordError &&
+      error.status === 400 &&
+      error.discordCode === RESTJSONErrorCodes.InteractionHasAlreadyBeenAcknowledged
     );
-    this.response.recordCallback(type);
-    return result;
+  }
+
+  private recordAmbiguousCallback(type: InteractionResponseType): void {
+    if (!this.callbackProvenance) {
+      this.callbackProvenance = { kind: "unique", type };
+      return;
+    }
+    if (this.callbackProvenance.kind === "unique" && this.callbackProvenance.type !== type) {
+      this.callbackProvenance = { kind: "conflicting" };
+    }
   }
 
   protected async callback(type: InteractionResponseType, data?: unknown) {
@@ -178,19 +219,28 @@ class BaseInteraction {
   }
 
   async reply(payload: MessagePayload): Promise<unknown> {
-    return await this.enqueueResponse(async () => {
-      const action = this.response.nextReplyAction();
-      if (action === "edit") {
-        return await this.performReplyEdit(payload);
-      }
-      if (action === "follow-up") {
-        return await this.performFollowUp(payload);
-      }
+    return await this.enqueueResponse(() => this.performReply(payload));
+  }
+
+  private async performReply(payload: MessagePayload): Promise<unknown> {
+    const action = this.response.nextReplyAction();
+    if (action === "edit") {
+      return await this.performReplyEdit(payload);
+    }
+    if (action === "follow-up") {
+      return await this.performFollowUp(payload);
+    }
+    try {
       return await this.performCallback(
         InteractionResponseType.ChannelMessageWithSource,
         serializePayload(payload),
       );
-    });
+    } catch (error) {
+      if (this.response.acknowledged && this.isAcknowledgedInteractionError(error)) {
+        return await this.performReply(payload);
+      }
+      throw error;
+    }
   }
 
   async defer(options?: { ephemeral?: boolean }): Promise<unknown> {

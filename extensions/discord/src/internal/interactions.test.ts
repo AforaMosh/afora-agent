@@ -1,3 +1,4 @@
+import { RESTJSONErrorCodes } from "discord-api-types/rest";
 // Discord tests cover interactions plugin behavior.
 import {
   ComponentType,
@@ -15,9 +16,11 @@ import {
   createInteraction,
   type RawInteraction,
 } from "./interactions.js";
+import { RequestClient } from "./rest.js";
 import { Message } from "./structures.js";
 import {
   attachRestMock,
+  createJsonResponse,
   createInternalComponentInteractionPayload,
   createInternalInteractionPayload,
   createInternalModalInteractionPayload,
@@ -181,6 +184,181 @@ describe("BaseInteraction", () => {
     expect(interaction.acknowledged).toBe(true);
   });
 
+  it("recovers a deferred callback whose accepted response was lost", async () => {
+    const responseLost = new Error("Deferred callback response connection lost");
+    const fetch = vi
+      .fn()
+      .mockRejectedValueOnce(responseLost)
+      .mockResolvedValueOnce(
+        createJsonResponse(
+          {
+            message: "Interaction has already been acknowledged",
+            code: RESTJSONErrorCodes.InteractionHasAlreadyBeenAcknowledged,
+          },
+          { status: 400 },
+        ),
+      )
+      .mockResolvedValueOnce(createJsonResponse({ id: "recovered-message" }));
+    const client = createInternalTestClient();
+    client.rest = new RequestClient("test-token", {
+      baseUrl: "http://localhost",
+      fetch,
+      queueRequests: false,
+    });
+    const interaction = createInteraction(
+      client,
+      createInternalInteractionPayload({ id: "interaction1", token: "token1" }),
+    );
+
+    await expect(interaction.defer()).rejects.toBe(responseLost);
+    await expect(interaction.reply("visible recovery")).resolves.toEqual({
+      id: "recovered-message",
+    });
+
+    expect(fetch.mock.calls.map(([, init]) => init?.method)).toEqual(["POST", "POST", "PATCH"]);
+    expect(interaction.responseState).toBe("replied");
+  });
+
+  it("recovers a lost initial reply through a webhook follow-up", async () => {
+    const responseLost = new Error("Initial reply response connection lost");
+    const fetch = vi
+      .fn()
+      .mockRejectedValueOnce(responseLost)
+      .mockResolvedValueOnce(
+        createJsonResponse(
+          {
+            message: "Interaction has already been acknowledged",
+            code: RESTJSONErrorCodes.InteractionHasAlreadyBeenAcknowledged,
+          },
+          { status: 400 },
+        ),
+      )
+      .mockResolvedValueOnce(createJsonResponse({ id: "follow-up-message" }));
+    const client = createInternalTestClient();
+    client.rest = new RequestClient("test-token", {
+      baseUrl: "http://localhost",
+      fetch,
+      queueRequests: false,
+    });
+    const interaction = createInteraction(
+      client,
+      createInternalInteractionPayload({ id: "interaction1", token: "token1" }),
+    );
+
+    await expect(interaction.reply("lost response")).rejects.toBe(responseLost);
+    await expect(interaction.reply("visible follow-up")).resolves.toEqual({
+      id: "follow-up-message",
+    });
+
+    expect(fetch).toHaveBeenCalledTimes(3);
+    expect(String(fetch.mock.calls[2]?.[0])).toContain("/webhooks/app1/token1");
+    expect(interaction.responseState).toBe("replied");
+  });
+
+  it("requires a real 400/40060 before reconciling an ambiguous server failure", async () => {
+    const acknowledgedBody = {
+      message: "Interaction has already been acknowledged",
+      code: RESTJSONErrorCodes.InteractionHasAlreadyBeenAcknowledged,
+    };
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(createJsonResponse(acknowledgedBody, { status: 500 }))
+      .mockResolvedValueOnce(createJsonResponse(acknowledgedBody, { status: 400 }))
+      .mockResolvedValueOnce(createJsonResponse({ id: "recovered-message" }));
+    const client = createInternalTestClient();
+    client.rest = new RequestClient("test-token", {
+      baseUrl: "http://localhost",
+      fetch,
+      queueRequests: false,
+    });
+    const interaction = createInteraction(
+      client,
+      createInternalInteractionPayload({ id: "interaction1", token: "token1" }),
+    );
+
+    await expect(interaction.defer()).rejects.toMatchObject({ status: 500 });
+    expect(interaction.responseState).toBe("unacknowledged");
+
+    await expect(interaction.reply("visible recovery")).resolves.toEqual({
+      id: "recovered-message",
+    });
+
+    expect(fetch.mock.calls.map(([, init]) => init?.method)).toEqual(["POST", "POST", "PATCH"]);
+    expect(interaction.responseState).toBe("replied");
+  });
+
+  it("never converts external acknowledgement into local callback ownership", async () => {
+    const localResponseLost = new Error("Local reply response connection lost");
+    const alreadyAcknowledged = () =>
+      createJsonResponse(
+        {
+          message: "Interaction has already been acknowledged",
+          code: RESTJSONErrorCodes.InteractionHasAlreadyBeenAcknowledged,
+        },
+        { status: 400 },
+      );
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(alreadyAcknowledged())
+      .mockRejectedValueOnce(localResponseLost)
+      .mockResolvedValueOnce(alreadyAcknowledged());
+    const client = createInternalTestClient();
+    client.rest = new RequestClient("test-token", {
+      baseUrl: "http://localhost",
+      fetch,
+      queueRequests: false,
+    });
+    const interaction = createInteraction(
+      client,
+      createInternalInteractionPayload({ id: "interaction1", token: "token1" }),
+    );
+
+    await expect(interaction.reply("external owner")).rejects.toMatchObject({ status: 400 });
+    await expect(interaction.reply("local ambiguity")).rejects.toBe(localResponseLost);
+    await expect(interaction.reply("still external")).rejects.toMatchObject({ status: 400 });
+
+    expect(fetch).toHaveBeenCalledTimes(3);
+    expect(interaction.responseState).toBe("unacknowledged");
+  });
+
+  it("does not guess between conflicting ambiguous callback types", async () => {
+    const deferResponseLost = new Error("Deferred callback response connection lost");
+    const replyResponseLost = new Error("Initial reply response connection lost");
+    const fetch = vi
+      .fn()
+      .mockRejectedValueOnce(deferResponseLost)
+      .mockRejectedValueOnce(replyResponseLost)
+      .mockResolvedValueOnce(
+        createJsonResponse(
+          {
+            message: "Interaction has already been acknowledged",
+            code: RESTJSONErrorCodes.InteractionHasAlreadyBeenAcknowledged,
+          },
+          { status: 400 },
+        ),
+      );
+    const client = createInternalTestClient();
+    client.rest = new RequestClient("test-token", {
+      baseUrl: "http://localhost",
+      fetch,
+      queueRequests: false,
+    });
+    const interaction = createInteraction(
+      client,
+      createInternalInteractionPayload({ id: "interaction1", token: "token1" }),
+    );
+
+    await expect(interaction.defer()).rejects.toBe(deferResponseLost);
+    await expect(interaction.reply("possibly accepted reply")).rejects.toBe(replyResponseLost);
+    await expect(interaction.reply("ambiguous owner")).rejects.toMatchObject({
+      status: 400,
+      discordCode: RESTJSONErrorCodes.InteractionHasAlreadyBeenAcknowledged,
+    });
+
+    expect(fetch).toHaveBeenCalledTimes(3);
+    expect(interaction.responseState).toBe("unacknowledged");
+  });
+
   it.each([
     { first: "accepted", nextRoute: "/webhooks/app1/token1" },
     { first: "rejected", nextRoute: "/interactions/interaction1/token1/callback" },
@@ -275,6 +453,35 @@ describe("BaseInteraction", () => {
       undefined,
     );
   });
+
+  it.each(["edit", "delete"] as const)(
+    "waits for the initial callback before a direct %s operation",
+    async (operation) => {
+      let acceptFirst!: () => void;
+      const firstResponse = new Promise<void>((resolve) => {
+        acceptFirst = resolve;
+      });
+      const post = vi.fn(() => firstResponse);
+      const patch = vi.fn(async () => undefined);
+      const del = vi.fn(async () => undefined);
+      const client = createInternalTestClient();
+      attachRestMock(client, { delete: del, patch, post });
+      const interaction = createInteraction(
+        client,
+        createInternalInteractionPayload({ id: "interaction1", token: "token1" }),
+      );
+
+      const initial = interaction.reply("first");
+      await vi.waitFor(() => expect(post).toHaveBeenCalledOnce());
+      const direct =
+        operation === "edit" ? interaction.editReply("edited") : interaction.deleteReply();
+      expect(operation === "edit" ? patch : del).not.toHaveBeenCalled();
+      acceptFirst();
+      await Promise.all([initial, direct]);
+
+      expect(operation === "edit" ? patch : del).toHaveBeenCalledOnce();
+    },
+  );
 
   it.each([
     { kind: "command", operation: "defer" },
