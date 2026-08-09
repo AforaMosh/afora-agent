@@ -273,11 +273,13 @@ export function sanitizeChatHistoryContentBlock(
       entry.omitted = true;
       changed = true;
     }
-    if (mediaData !== undefined) {
+    if (Object.hasOwn(entry, "data")) {
       delete entry.data;
       entry.omitted = true;
-      entry.bytes = estimateBase64DecodedBytes(mediaData);
       changed = true;
+    }
+    if (mediaData !== undefined) {
+      entry.bytes = estimateBase64DecodedBytes(mediaData);
     }
     const managedUri =
       normalizeCanonicalInboundMediaUri(entry.url) ?? normalizeCanonicalInboundMediaUri(entry.path);

@@ -64,11 +64,18 @@ describe("sanitizeDurableMediaPayload", () => {
   });
 
   it.each([
-    ["exact", "", "[video data omitted]"],
-    ["prefixed", "captured clip: ", "captured clip: [video data omitted]"],
-  ])("fully redacts %s line-wrapped video data URLs", (_name, prefix, expected) => {
-    const fragments = ["cHJpdmF0ZS", "12aWRlby1w", "YXlsb2Fk"];
-    const value = `${prefix}data:video/mp4;base64,${fragments.join(" \t\n")}`;
+    ["exact image", "", "image/png", false, "[media data omitted]"],
+    [
+      "prefixed audio",
+      "captured audio: ",
+      "audio/mpeg",
+      false,
+      "captured audio: [media data omitted]",
+    ],
+    ["folded video", "captured clip: ", "video/mp4", true, "captured clip: [media data omitted]"],
+  ])("fully redacts %s data URLs", (_name, prefix, mimeType, folded, expected) => {
+    const fragments = ["cHJpdmF0ZS", "1tZWRpYS1w", "YXlsb2Fk"];
+    const value = `${prefix}data:${mimeType};base64,${fragments.join(folded ? " \t\n" : "")}`;
     const projected = sanitizeDurableMediaPayload(value);
 
     expect(projected).toBe(expected);
@@ -76,6 +83,14 @@ describe("sanitizeDurableMediaPayload", () => {
       expect(projected).not.toContain(fragment);
     }
   });
+
+  it.each(["application/pdf", "text/plain"])(
+    "preserves folded %s data URLs outside the durable media classes",
+    (mimeType) => {
+      const value = `document: data:${mimeType};base64,cHJpdmF0ZQ== \t\nZGF0YQ==`;
+      expect(sanitizeDurableMediaPayload(value)).toBe(value);
+    },
+  );
 
   it.each(["contentType", "content_type"] as const)(
     "redacts raw video envelopes identified by %s",

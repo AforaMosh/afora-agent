@@ -557,6 +557,39 @@ describe("native prompt video replay", () => {
     ]);
   });
 
+  it("does not let duplicate producer-local source ids suppress an unrelated collected video", async () => {
+    const message = {
+      role: "user" as const,
+      content: "the fallback caption describes only the first video",
+      __openclaw: {
+        media: [
+          {
+            sourceId: "producer-local-video",
+            sourceIndex: 0,
+            path: "/missing/first-described.mp4",
+            contentType: "video/mp4",
+          },
+          {
+            sourceId: "producer-local-video",
+            sourceIndex: 1,
+            path: "/missing/second-unrelated.mp4",
+            contentType: "video/mp4",
+          },
+        ],
+        mediaVideoDescriptions: [{ sourceIndex: 0 }],
+      },
+    } as unknown as AgentMessage;
+    const [replayed] = await hydratePromptMediaMessages([message], {
+      workspaceDir: os.tmpdir(),
+      model: { input: ["text", "image"] },
+    });
+
+    expect((replayed as unknown as { content: unknown[] }).content).toEqual([
+      { type: "text", text: "the fallback caption describes only the first video" },
+      { type: "text", text: "(video omitted: model does not support videos)" },
+    ]);
+  });
+
   it("hydrates persisted image and video facts in their original attachment order", async () => {
     await withVideoFixture(async ({ workspaceDir, videoPath }) => {
       const imagePath = path.join(workspaceDir, "frame.png");

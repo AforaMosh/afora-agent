@@ -6,6 +6,7 @@ import { upsertSessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
 import { closeOpenClawAgentDatabasesForTest } from "openclaw/plugin-sdk/sqlite-runtime-testing";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
+import { attachRuntimePromptMediaFacts } from "../media/media-facts.js";
 import {
   onInternalSessionTranscriptUpdate,
   type InternalSessionTranscriptUpdate,
@@ -43,6 +44,37 @@ afterEach(() => {
 });
 
 describe("guardSessionManager transcript updates", () => {
+  it("preserves trusted video provenance through input attribution before redaction", () => {
+    const sm = SessionManager.inMemory();
+    const guarded = guardSessionManager(sm, {
+      inputProvenance: { kind: "external_user", sourceChannel: "telegram" },
+    });
+    const video = {
+      type: "video" as const,
+      data: `${Buffer.from("0000001c6674797069736f6d", "hex").toString("base64")}AKIDABCDEFGHIJKLMNOP`,
+      mimeType: "video/mp4",
+    };
+    const message = attachRuntimePromptMediaFacts(
+      {
+        role: "user" as const,
+        content: [video],
+        timestamp: Date.now(),
+        __openclaw: { mediaBlockFactIndexes: [0] },
+      },
+      [{ kind: "video", contentType: "video/mp4" }],
+    );
+
+    guarded.appendMessage(message);
+
+    const persisted = sm.getEntries().find((entry) => entry.type === "message") as
+      | { message?: AgentMessage }
+      | undefined;
+    expect(persisted?.message).toMatchObject({
+      provenance: { kind: "external_user", sourceChannel: "telegram" },
+      content: [video],
+    });
+  });
+
   it.each(["active", "side", "setup-metadata"] as const)(
     "adopts an ingress-persisted %s-branch user without broadcasting a duplicate",
     (branch) => {

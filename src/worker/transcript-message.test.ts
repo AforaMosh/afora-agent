@@ -140,7 +140,7 @@ describe("worker transcript durable media projection", () => {
     const result = toWorkerTranscriptMessage(message, "inference");
     expect(result).toMatchObject({
       kind: "complete",
-      message: { details: { uri: "captured clip: [video data omitted]" } },
+      message: { details: { uri: "captured clip: [media data omitted]" } },
     });
     const serialized = JSON.stringify(result);
     for (const fragment of fragments) {

@@ -66,7 +66,7 @@ export function normalizeCanonicalInboundMediaUri(value: unknown): string | unde
 
 const REDACTED_INLINE_VIDEO = "[video data omitted]";
 const REDACTED_INLINE_MEDIA = "[media data omitted]";
-const VIDEO_DATA_URL_START_RE = /\bdata:video\/[^;,\s]+(?:;[^,\s]+)*,/iu;
+const DURABLE_MEDIA_DATA_URL_START_RE = /\bdata:(?:audio|image|video)\/[^;,\s]+(?:;[^,\s]+)*,/iu;
 const MEDIA_DATA_URL_START_RE = /\bdata:[^,\s]*,/iu;
 const MEDIA_PAYLOAD_MAX_DEPTH = 24;
 const MEDIA_PAYLOAD_MAX_VALUES = 2_000;
@@ -183,14 +183,10 @@ function projectMediaPayload(
       return MEDIA_PAYLOAD_LIMIT_OMISSION;
     }
     const dataUrlIndex = value.search(
-      mode === "model-visible-media" ? MEDIA_DATA_URL_START_RE : VIDEO_DATA_URL_START_RE,
+      mode === "model-visible-media" ? MEDIA_DATA_URL_START_RE : DURABLE_MEDIA_DATA_URL_START_RE,
     );
     const withoutInlineData =
-      dataUrlIndex < 0
-        ? value
-        : `${value.slice(0, dataUrlIndex)}${
-            mode === "model-visible-media" ? REDACTED_INLINE_MEDIA : REDACTED_INLINE_VIDEO
-          }`;
+      dataUrlIndex < 0 ? value : `${value.slice(0, dataUrlIndex)}${REDACTED_INLINE_MEDIA}`;
     const projected =
       withoutInlineData === value &&
       (key === "url" || key === "video_url" || key === "path") &&

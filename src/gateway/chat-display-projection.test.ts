@@ -298,6 +298,56 @@ describe("oversized multimodal chat history", () => {
     expect(Buffer.byteLength(serialized)).toBeLessThan(512);
   });
 
+  it.each([
+    { name: "array", createData: () => Array.from({ length: 16_384 }, (_, index) => index % 256) },
+    { name: "object", createData: () => ({ payload: "private-top-level-payload".repeat(1024) }) },
+    { name: "typed-array-like", createData: () => ({ 0: 137, 1: 137, length: 16_384 }) },
+  ])("removes non-string top-level $name data without inventing bytes", ({ createData }) => {
+    const source = { type: "url", url: "https://cdn.example.test/media.bin" };
+    const projected = projectChatDisplayMessages([
+      { role: "user", content: [{ type: "video", data: createData(), source }] },
+    ]);
+
+    expect(projected).toEqual([
+      { role: "user", content: [{ type: "video", source, omitted: true }] },
+    ]);
+    const serialized = JSON.stringify(projected);
+    expect(serialized).not.toContain('"data"');
+    expect(serialized).not.toContain('"bytes"');
+    expect(serialized).not.toContain("private-top-level-payload");
+    expect(Buffer.byteLength(serialized)).toBeLessThan(512);
+  });
+
+  it("derives bytes from a string source when top-level data is non-string", () => {
+    const sourceData = Buffer.from("nested-source-payload").toString("base64");
+    const projected = projectChatDisplayMessages([
+      {
+        role: "user",
+        content: [
+          {
+            type: "image",
+            data: { payload: "private-top-level-payload" },
+            source: { type: "base64", data: sourceData },
+          },
+        ],
+      },
+    ]);
+
+    expect(projected).toEqual([
+      {
+        role: "user",
+        content: [
+          {
+            type: "image",
+            source: { type: "base64" },
+            omitted: true,
+            bytes: Buffer.from(sourceData, "base64").length,
+          },
+        ],
+      },
+    ]);
+  });
+
   it("uses top-level media data for bytes while removing every inline carrier", () => {
     const topLevelData = Buffer.from("authoritative-top-level-payload").toString("base64");
     const sourceData = Buffer.from("different-nested-source-payload-with-more-bytes").toString(

@@ -127,6 +127,21 @@ describe("AgentSession native media", () => {
     session.dispose();
   });
 
+  it("keeps admitted factless video byte-identical on the provider path", async () => {
+    const { session } = await createNativeMediaSession();
+    const prompt = vi.spyOn(session.agent, "prompt").mockResolvedValue(undefined);
+
+    await session.prompt("describe the recording", { media: [video] });
+
+    const submitted = prompt.mock.calls[0]?.[0]?.[0];
+    expect(submitted).toBeDefined();
+    expect(submitted).toMatchObject({
+      role: "user",
+      content: [{ type: "text", text: "describe the recording" }, video],
+    });
+    session.dispose();
+  });
+
   it("preserves the released images option while preferring canonical media", async () => {
     const { session } = await createNativeMediaSession();
     const prompt = vi.spyOn(session.agent, "prompt").mockResolvedValue(undefined);

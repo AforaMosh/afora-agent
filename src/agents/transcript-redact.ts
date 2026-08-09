@@ -15,6 +15,7 @@ import type { ProviderEndpointClass } from "./provider-attribution.js";
 import { resolveProviderEndpoint } from "./provider-attribution.js";
 import type { AgentMessage } from "./runtime/index.js";
 import {
+  collectTrustedTranscriptVideoBlocks,
   sanitizeTranscriptMediaDataUrlField,
   sanitizeTranscriptMediaRecord,
   shouldPreserveNestedTranscriptMediaDataUrlFields,
@@ -528,6 +529,7 @@ function redactTranscriptStructuredValue(
   preserveMediaDataUrlFields = false,
   location: TranscriptValueLocation = "nested",
   assistantRoute?: TranscriptAssistantRoute,
+  trustedVideoBlocks?: WeakSet<object>,
 ): unknown {
   if (typeof value === "string") {
     if (fieldKey) {
@@ -550,6 +552,7 @@ function redactTranscriptStructuredValue(
         preserveMediaDataUrlFields,
         location === "assistant-content-array" ? "assistant-content-block" : "nested",
         assistantRoute,
+        trustedVideoBlocks,
       );
       changed ||= next !== item;
       return next;
@@ -572,7 +575,8 @@ function redactTranscriptStructuredValue(
   }
 
   seen.add(value);
-  const sanitizedMediaRecord = sanitizeTranscriptMediaRecord(value);
+  const trustedVideo = trustedVideoBlocks?.has(value) === true;
+  const sanitizedMediaRecord = sanitizeTranscriptMediaRecord(value, trustedVideo);
   const source = sanitizedMediaRecord ?? value;
   const currentAssistantRoute =
     location === "root" && source.role === "assistant"
@@ -674,6 +678,7 @@ function redactTranscriptStructuredValue(
         key,
         value: item,
         preserveMediaDataUrlFields,
+        trustedVideo,
       });
       if (sanitizedDataUrl !== undefined) {
         if (sanitizedDataUrl !== item) {
@@ -683,7 +688,15 @@ function redactTranscriptStructuredValue(
         continue;
       }
     }
-    if (shouldPreserveTranscriptMediaPayload(source, key, item, preserveMediaDataUrlFields)) {
+    if (
+      shouldPreserveTranscriptMediaPayload(
+        source,
+        key,
+        item,
+        preserveMediaDataUrlFields,
+        trustedVideo,
+      )
+    ) {
       continue;
     }
     const redacted = redactTranscriptStructuredValue(
@@ -696,6 +709,7 @@ function redactTranscriptStructuredValue(
         ? "assistant-content-array"
         : "nested",
       currentAssistantRoute,
+      trustedVideoBlocks,
     );
     if (redacted === item) {
       continue;
@@ -712,12 +726,15 @@ export function redactTranscriptMessage(message: AgentMessage, cfg?: OpenClawCon
   if (isTranscriptRedactionDisabled(cfg)) {
     return message;
   }
+  const root = message as unknown as Record<string, unknown>;
   return redactTranscriptStructuredValue(
-    message,
+    root,
     cfg,
     undefined,
     new WeakSet<object>(),
     false,
     "root",
+    undefined,
+    collectTrustedTranscriptVideoBlocks(root),
   ) as AgentMessage;
 }

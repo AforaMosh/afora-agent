@@ -3,14 +3,16 @@ import {
   sanitizeInlineImageBase64,
   sanitizeInlineImageDataUrlForStorage,
 } from "@openclaw/media-core/inline-image-data-url";
+import {
+  readPersistedMediaBlockFactIndexes,
+  readRuntimePromptMediaFacts,
+} from "../media/media-facts.js";
 
 const isMediaMimeType = (value: unknown): value is string =>
   typeof value === "string" && /^(?:image|video)\//iu.test(value.trim());
 
 const normalizeMediaMimeType = (value: unknown): string | undefined =>
   isMediaMimeType(value) ? value.trim().toLowerCase() : undefined;
-
-const ASF_VIDEO_SIGNATURE = Buffer.from("3026b2758e66cf11a6d900aa0062ce6c", "hex");
 
 function mediaMimeTypeForRecord(value: Record<string, unknown>): string | undefined {
   return (
@@ -24,31 +26,10 @@ function mediaMimeTypeFieldsForRecord(value: Record<string, unknown>): string[] 
   return ["mimeType", "mediaType", "media_type"].filter((key) => isMediaMimeType(value[key]));
 }
 
-function hasVideoContainerSignature(base64: string): boolean {
-  // Redaction exemptions require actual media bytes: otherwise a credential in
-  // a fake video block could bypass transcript persistence redaction.
-  const prefix = Buffer.from(base64.slice(0, 32), "base64");
-  return (
-    (prefix.length >= 12 && prefix.subarray(4, 8).toString("ascii") === "ftyp") ||
-    (prefix.length >= 4 && prefix.readUInt32BE(0) === 0x1a45dfa3) ||
-    (prefix.length >= ASF_VIDEO_SIGNATURE.length &&
-      prefix.subarray(0, ASF_VIDEO_SIGNATURE.length).equals(ASF_VIDEO_SIGNATURE)) ||
-    (prefix.length >= 4 && prefix.subarray(0, 4).toString("ascii") === "OggS") ||
-    (prefix.length >= 12 &&
-      prefix.subarray(0, 4).toString("ascii") === "RIFF" &&
-      prefix.subarray(8, 12).toString("ascii") === "AVI ") ||
-    (prefix.length >= 3 && prefix.subarray(0, 3).toString("ascii") === "FLV") ||
-    (prefix.length >= 4 &&
-      prefix[0] === 0 &&
-      prefix[1] === 0 &&
-      prefix[2] === 1 &&
-      (prefix[3] === 0xba || prefix[3] === 0xb3))
-  );
-}
-
 function sanitizeOpaqueMediaBase64(
   base64: string,
   mimeType: string | undefined,
+  trustedVideo: boolean,
 ): { mimeType: string; base64: string } | undefined {
   if (!mimeType) {
     return undefined;
@@ -56,22 +37,24 @@ function sanitizeOpaqueMediaBase64(
   if (mimeType.startsWith("image/")) {
     return sanitizeInlineImageBase64({ mimeType, base64 });
   }
+  if (!trustedVideo) {
+    return undefined;
+  }
   const canonicalPayload = canonicalizeBase64(base64);
-  return canonicalPayload && hasVideoContainerSignature(canonicalPayload)
-    ? { mimeType, base64: canonicalPayload }
-    : undefined;
+  return canonicalPayload ? { mimeType, base64: canonicalPayload } : undefined;
 }
 
-function isOpaqueMediaDataBlock(value: Record<string, unknown>): boolean {
+function isOpaqueMediaDataBlock(value: Record<string, unknown>, trustedVideo: boolean): boolean {
   return (
     (value.type === "image" || value.type === "video" || value.type === "base64") &&
     typeof value.data === "string" &&
-    sanitizeOpaqueMediaBase64(value.data, mediaMimeTypeForRecord(value)) !== undefined
+    sanitizeOpaqueMediaBase64(value.data, mediaMimeTypeForRecord(value), trustedVideo) !== undefined
   );
 }
 
 export function sanitizeTranscriptMediaRecord(
   source: Record<string, unknown>,
+  trustedVideo = false,
 ): Record<string, unknown> | undefined {
   const isMediaBlock = source.type === "image" || source.type === "video";
   const isBase64SourceBlock = source.type === "base64";
@@ -82,7 +65,11 @@ export function sanitizeTranscriptMediaRecord(
   if (mimeTypeFields.length === 0) {
     return undefined;
   }
-  const sanitized = sanitizeOpaqueMediaBase64(source.data, mediaMimeTypeForRecord(source));
+  const sanitized = sanitizeOpaqueMediaBase64(
+    source.data,
+    mediaMimeTypeForRecord(source),
+    trustedVideo,
+  );
   if (!sanitized) {
     return undefined;
   }
@@ -101,7 +88,7 @@ function startsWithDataUrl(value: string): boolean {
   return value.slice(0, "data:".length).toLowerCase() === "data:";
 }
 
-function sanitizeInlineMediaDataUrl(value: string): string | undefined {
+function sanitizeInlineMediaDataUrl(value: string, trustedVideo: boolean): string | undefined {
   const commaIndex = value.indexOf(",");
   if (commaIndex < 0) {
     return undefined;
@@ -114,7 +101,11 @@ function sanitizeInlineMediaDataUrl(value: string): string | undefined {
   if (normalizedMimeType.startsWith("image/")) {
     return sanitizeInlineImageDataUrlForStorage(value);
   }
-  const sanitized = sanitizeOpaqueMediaBase64(value.slice(commaIndex + 1), normalizedMimeType);
+  const sanitized = sanitizeOpaqueMediaBase64(
+    value.slice(commaIndex + 1),
+    normalizedMimeType,
+    trustedVideo,
+  );
   return sanitized ? `data:${sanitized.mimeType};base64,${sanitized.base64}` : undefined;
 }
 
@@ -122,6 +113,7 @@ function sanitizeMediaDataUrlField(
   source: Record<string, unknown>,
   key: string,
   value: string,
+  trustedVideo: boolean,
 ): string | undefined {
   if (!startsWithDataUrl(value)) {
     return undefined;
@@ -133,7 +125,7 @@ function sanitizeMediaDataUrlField(
     (source.type === "input_video" && key === "video_url") ||
     ((source.type === "video" || source.type === "video_url") && key === "url") ||
     (source.type === "video" && (key === "source" || key === "data"));
-  return isMediaDataUrlField ? sanitizeInlineMediaDataUrl(value) : undefined;
+  return isMediaDataUrlField ? sanitizeInlineMediaDataUrl(value, trustedVideo) : undefined;
 }
 
 export function sanitizeTranscriptMediaDataUrlField(params: {
@@ -141,11 +133,19 @@ export function sanitizeTranscriptMediaDataUrlField(params: {
   key: string;
   value: string;
   preserveMediaDataUrlFields: boolean;
+  trustedVideo?: boolean;
 }): string | undefined {
   if (params.preserveMediaDataUrlFields && params.key === "url") {
-    return startsWithDataUrl(params.value) ? sanitizeInlineMediaDataUrl(params.value) : undefined;
+    return startsWithDataUrl(params.value)
+      ? sanitizeInlineMediaDataUrl(params.value, params.trustedVideo === true)
+      : undefined;
   }
-  return sanitizeMediaDataUrlField(params.source, params.key, params.value);
+  return sanitizeMediaDataUrlField(
+    params.source,
+    params.key,
+    params.value,
+    params.trustedVideo === true,
+  );
 }
 
 export function shouldPreserveTranscriptMediaPayload(
@@ -153,17 +153,56 @@ export function shouldPreserveTranscriptMediaPayload(
   key: string,
   item: unknown,
   preserveMediaDataUrlFields: boolean,
+  trustedVideo = false,
 ): boolean {
   if (typeof item !== "string") {
     return false;
   }
-  if (key === "data" && isOpaqueMediaDataBlock(source)) {
+  if (key === "data" && isOpaqueMediaDataBlock(source, trustedVideo)) {
     return true;
   }
   if (preserveMediaDataUrlFields && key === "url") {
-    return startsWithDataUrl(item) && sanitizeInlineMediaDataUrl(item) !== undefined;
+    return startsWithDataUrl(item) && sanitizeInlineMediaDataUrl(item, trustedVideo) !== undefined;
   }
-  return sanitizeMediaDataUrlField(source, key, item) !== undefined;
+  return sanitizeMediaDataUrlField(source, key, item, trustedVideo) !== undefined;
+}
+
+/** Resolves exact native video blocks backed by non-serializable runtime media provenance. */
+export function collectTrustedTranscriptVideoBlocks(
+  message: Record<string, unknown>,
+): WeakSet<object> {
+  const trusted = new WeakSet<object>();
+  const mediaFacts = readRuntimePromptMediaFacts(message);
+  const blockFactIndexes = readPersistedMediaBlockFactIndexes(message);
+  if (!mediaFacts || !blockFactIndexes || !Array.isArray(message.content)) {
+    return trusted;
+  }
+  const mediaBlocks = message.content.filter(
+    (block): block is Record<string, unknown> =>
+      Boolean(block) &&
+      typeof block === "object" &&
+      !Array.isArray(block) &&
+      ((block as Record<string, unknown>).type === "image" ||
+        (block as Record<string, unknown>).type === "video"),
+  );
+  if (mediaBlocks.length !== blockFactIndexes.length) {
+    return trusted;
+  }
+  for (const [index, block] of mediaBlocks.entries()) {
+    if (block.type !== "video") {
+      continue;
+    }
+    const factIndex = blockFactIndexes[index];
+    const fact = factIndex === null ? undefined : mediaFacts[factIndex];
+    if (
+      fact &&
+      (fact.kind === "video" ||
+        (typeof fact.contentType === "string" && /^video\//iu.test(fact.contentType.trim())))
+    ) {
+      trusted.add(block);
+    }
+  }
+  return trusted;
 }
 
 export function shouldPreserveNestedTranscriptMediaDataUrlFields(
