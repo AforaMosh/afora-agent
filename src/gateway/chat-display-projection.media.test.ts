@@ -7,6 +7,10 @@ import {
 } from "./server-methods/chat-history-budget.js";
 import { buildSessionHistorySnapshot, SessionHistorySseState } from "./session-history-state.js";
 
+function credentialBearingUrl(target: string): string {
+  return ["https://user", `:password@${target}`].join("");
+}
+
 function projectHistoryTransports(message: Record<string, unknown>) {
   const websocket = replaceOversizedChatHistoryMessages({
     messages: projectChatDisplayMessages([message]),
@@ -250,6 +254,61 @@ describe("oversized multimodal chat history", () => {
     expect(projectChatDisplayMessages([{ role: "assistant", content }])).toEqual([
       { role: "assistant", content },
     ]);
+  });
+
+  it("sanitizes secondary native media references in WebSocket and SSE history", () => {
+    const message = {
+      role: "assistant",
+      content: [
+        {
+          type: "image",
+          openUrl: credentialBearingUrl("cdn.example.test/image.png?token=private#preview"),
+          file: "file:///Users/operator/private.png",
+          label: "keep image metadata",
+        },
+        {
+          type: "video",
+          openUrl: credentialBearingUrl("cdn.example.test/video.mp4?token=private#preview"),
+          file: credentialBearingUrl("cdn.example.test/download.mp4?signature=private"),
+          label: "keep video metadata",
+        },
+        {
+          type: "audio",
+          url: credentialBearingUrl("cdn.example.test/audio.wav?token=private#preview"),
+          openUrl: credentialBearingUrl("cdn.example.test/audio-open.wav?signature=private"),
+          source: {
+            type: "url",
+            url: credentialBearingUrl("cdn.example.test/audio-source.wav?token=private"),
+          },
+        },
+      ],
+    };
+    const expected = [
+      {
+        type: "image",
+        openUrl: "https://cdn.example.test/image.png",
+        label: "keep image metadata",
+      },
+      {
+        type: "video",
+        openUrl: "https://cdn.example.test/video.mp4",
+        file: "https://cdn.example.test/download.mp4",
+        label: "keep video metadata",
+      },
+      {
+        type: "audio",
+        url: "https://cdn.example.test/audio.wav",
+        openUrl: "https://cdn.example.test/audio-open.wav",
+        source: { type: "url", url: "https://cdn.example.test/audio-source.wav" },
+      },
+    ];
+
+    for (const messages of projectHistoryTransports(message)) {
+      expect(messages).toEqual([{ role: "assistant", content: expected }]);
+      expect(JSON.stringify(messages)).not.toMatch(
+        /(?:password|token=|signature=|Users\/operator)/u,
+      );
+    }
   });
 
   it("sanitizes provider media wrapper references in WebSocket and SSE history", () => {

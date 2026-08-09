@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   isMediaPayloadContainerKey,
+  isMediaReferenceCarrierKey,
   normalizeDurableMediaReference,
   projectInlineVideoContentBlock,
   sanitizeDurableMediaContentBlock,
@@ -38,6 +39,26 @@ describe("isMediaPayloadContainerKey", () => {
       expect(isMediaPayloadContainerKey(key)).toBe(false);
     },
   );
+});
+
+describe("isMediaReferenceCarrierKey", () => {
+  it.each([
+    "url",
+    "openUrl",
+    "path",
+    "file",
+    "filePath",
+    "localPath",
+    "image_url",
+    "video_url",
+    "audio_url",
+  ])("recognizes the media reference field %s", (key) => {
+    expect(isMediaReferenceCarrierKey(key)).toBe(true);
+  });
+
+  it.each(["source", "metadata", "label"])("does not promote contextual field %s", (key) => {
+    expect(isMediaReferenceCarrierKey(key)).toBe(false);
+  });
 });
 
 describe("normalizeDurableMediaReference", () => {
@@ -158,6 +179,20 @@ describe("sanitizeDurableMediaPayload", () => {
     ).toEqual({
       type: "video",
       source: { type: "url", url: "https://example.test/video.mp4" },
+      label: "keep",
+    });
+  });
+
+  it.each(["openUrl", "file"] as const)("sanitizes the %s media reference field", (field) => {
+    expect(
+      sanitizeDurableMediaPayload({
+        type: "video",
+        [field]: credentialBearingUrl("cdn.example.test/video.mp4?signature=private#preview"),
+        label: "keep",
+      }),
+    ).toEqual({
+      type: "video",
+      [field]: "https://cdn.example.test/video.mp4",
       label: "keep",
     });
   });

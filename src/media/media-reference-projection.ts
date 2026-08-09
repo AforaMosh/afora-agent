@@ -99,10 +99,26 @@ const MEDIA_PAYLOAD_CONTAINER_KEYS = new Set([
   "audio_url",
   "document",
 ]);
+const MEDIA_REFERENCE_CARRIER_KEYS = new Set([
+  "url",
+  "openurl",
+  "path",
+  "file",
+  "filepath",
+  "localpath",
+  "image_url",
+  "video_url",
+  "audio_url",
+]);
 
 /** Recognizes the closed set of common named media payload carriers. */
 export function isMediaPayloadContainerKey(key: string): boolean {
   return MEDIA_PAYLOAD_CONTAINER_KEYS.has(key.trim().toLowerCase());
+}
+
+/** Recognizes media fields whose string values can carry local or remote references. */
+export function isMediaReferenceCarrierKey(key: string): boolean {
+  return MEDIA_REFERENCE_CARRIER_KEYS.has(key.trim().toLowerCase());
 }
 
 const MEDIA_MIME_FIELDS = [
@@ -336,10 +352,8 @@ function projectMediaPayload(
     }
     const normalizedKey = key?.trim().toLowerCase();
     const remoteReferenceKey =
-      normalizedKey === "url" ||
-      normalizedKey === "path" ||
-      (normalizedKey === "source" && enclosingMedia) ||
-      (normalizedKey?.endsWith("_url") === true && isMediaPayloadContainerKey(normalizedKey));
+      (normalizedKey !== undefined && isMediaReferenceCarrierKey(normalizedKey)) ||
+      (normalizedKey === "source" && enclosingMedia);
     const projected =
       withoutInlineData === value && remoteReferenceKey && /^https?:\/\//iu.test(value.trimStart())
         ? sanitizeMediaReferenceForProjection(value)

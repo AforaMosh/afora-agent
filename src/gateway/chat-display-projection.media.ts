@@ -3,6 +3,7 @@ import { estimateBase64DecodedBytes } from "@openclaw/media-core/base64";
 import { asOptionalRecord as readRecord } from "@openclaw/normalization-core/record-coerce";
 import {
   isMediaPayloadContainerKey,
+  isMediaReferenceCarrierKey,
   normalizeCanonicalInboundMediaUri,
   normalizeDurableMediaReference,
   projectInlineVideoContentBlock,
@@ -12,7 +13,6 @@ import {
 } from "../media/media-reference-projection.js";
 
 const AUDIO_LOCAL_PATH_FIELDS = ["path", "file", "filePath", "localPath"] as const;
-const MEDIA_REFERENCE_FIELDS = new Set(["url", "path", "filePath", "localPath", "source"]);
 
 function isAbsoluteStoragePath(value: unknown): value is string {
   return (
@@ -26,12 +26,29 @@ export function projectChatHistoryMediaReference(value: unknown): string | undef
   return normalized && !isAbsoluteStoragePath(normalized) ? normalized : undefined;
 }
 
+function projectStringMediaReference(entry: Record<string, unknown>, key: string): boolean {
+  const reference = entry[key];
+  if (typeof reference !== "string" || isManagedChatMediaRoute(reference)) {
+    return false;
+  }
+  const projected = projectChatHistoryMediaReference(reference);
+  if (projected === undefined) {
+    delete entry[key];
+    return true;
+  }
+  if (projected !== reference) {
+    entry[key] = projected;
+    return true;
+  }
+  return false;
+}
+
 function isMediaReferenceField(key: string): boolean {
-  const normalized = key.trim();
-  return (
-    MEDIA_REFERENCE_FIELDS.has(normalized) ||
-    (normalized.toLowerCase().endsWith("_url") && isMediaPayloadContainerKey(normalized))
-  );
+  return key.trim().toLowerCase() === "source" || isMediaReferenceCarrierKey(key);
+}
+
+function isManagedChatMediaRoute(value: string): boolean {
+  return /^\/(?:api\/chat\/media\/outgoing|media|__openclaw__)\//u.test(value.trim());
 }
 
 function isPrivateLocalMediaReference(value: unknown): value is string {
@@ -39,11 +56,10 @@ function isPrivateLocalMediaReference(value: unknown): value is string {
     return false;
   }
   const reference = value.trim();
-  const isManagedRoute = /^\/(?:api\/chat\/media\/outgoing|media|__openclaw__)\//u.test(reference);
   return (
     /^file:/iu.test(reference) ||
     /^~[\\/]/u.test(reference) ||
-    (!isManagedRoute &&
+    (!isManagedChatMediaRoute(reference) &&
       (path.isAbsolute(reference) ||
         path.win32.isAbsolute(reference) ||
         reference.startsWith("\\\\")))
@@ -97,31 +113,40 @@ function omitAudioHistoryContent(
   entry: Record<string, unknown>,
   referenceFields: readonly string[],
 ): boolean {
-  let removed = false;
+  let changed = false;
+  let omitted = false;
   if (Object.hasOwn(entry, "data")) {
     const data = entry.data;
     delete entry.data;
     if (typeof data === "string") {
       entry.bytes = estimateBase64DecodedBytes(data);
     }
-    removed = true;
+    changed = true;
+    omitted = true;
   }
   for (const field of AUDIO_LOCAL_PATH_FIELDS) {
     if (Object.hasOwn(entry, field)) {
       delete entry[field];
-      removed = true;
+      changed = true;
+      omitted = true;
     }
   }
   for (const field of referenceFields) {
-    if (isInlineOrLocalAudioReference(entry[field])) {
+    const reference = entry[field];
+    if (isInlineOrLocalAudioReference(reference)) {
       delete entry[field];
-      removed = true;
+      changed = true;
+      omitted = true;
+      continue;
+    }
+    if (projectStringMediaReference(entry, field)) {
+      changed = true;
     }
   }
-  if (removed) {
+  if (omitted) {
     entry.omitted = true;
   }
-  return removed;
+  return changed;
 }
 
 export function sanitizeChatHistoryMediaContentBlock(
@@ -202,13 +227,10 @@ export function sanitizeChatHistoryMediaContentBlock(
       changed = true;
     }
   }
-  if (typeof entry.url === "string") {
-    if (/^data:/iu.test(entry.url) || isAbsoluteStoragePath(entry.url)) {
-      delete entry.url;
-    } else {
-      entry.url = sanitizeMediaReferenceForProjection(entry.url);
+  for (const key of ["url", "openUrl", "file", "image_url", "video_url", "audio_url"] as const) {
+    if (projectStringMediaReference(entry, key)) {
+      changed = true;
     }
-    changed = true;
   }
   if (typeof entry.source === "string") {
     const sourceUri = normalizeCanonicalInboundMediaUri(entry.source);
