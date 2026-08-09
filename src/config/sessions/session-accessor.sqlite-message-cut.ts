@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import path from "node:path";
 import { asOptionalRecord as asRecord } from "@openclaw/normalization-core/record-coerce";
 import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
 import { executeSqliteQueryTakeFirstSync } from "../../infra/kysely-sync.js";
@@ -630,14 +631,50 @@ function extractEditorMediaRefs(
   message: Record<string, unknown>,
 ): SessionEditorMediaRef[] | undefined {
   const refs = (readPersistedMediaFacts(message) ?? []).flatMap((fact) => {
-    const contentKind = fact.contentType?.startsWith("image/")
+    const normalizedContentType = fact.contentType?.trim().toLowerCase();
+    const contentKind = normalizedContentType?.startsWith("image/")
       ? "image"
-      : fact.contentType?.startsWith("video/")
+      : normalizedContentType?.startsWith("video/")
         ? "video"
         : undefined;
     const kind = fact.kind === "image" || fact.kind === "video" ? fact.kind : contentKind;
     if (!kind) {
       return [];
+    }
+    let editorPath = fact.path;
+    let editorUrl = fact.url;
+    if (kind === "image") {
+      // Editor refs are managed-store claims, not a second copy of persisted media metadata.
+      // Filtering here keeps unrelated historical facts from blocking a text rewind or fork.
+      if (!normalizedContentType?.startsWith("image/")) {
+        return [];
+      }
+      const canonicalUrl = normalizeCanonicalInboundMediaUri(fact.url);
+      if (canonicalUrl) {
+        const id = parseInboundMediaUri(canonicalUrl)?.id;
+        if (!id || (fact.sourceId && fact.sourceId !== id)) {
+          return [];
+        }
+        editorPath = undefined;
+        editorUrl = canonicalUrl;
+      } else {
+        const legacyPath = fact.path;
+        const id = legacyPath ? path.basename(legacyPath) : "";
+        if (
+          !legacyPath ||
+          legacyPath !== path.normalize(legacyPath) ||
+          path.basename(path.dirname(legacyPath)) !== "inbound" ||
+          !id ||
+          id === "." ||
+          id === ".." ||
+          id.includes("\\") ||
+          id.includes("\0") ||
+          (fact.sourceId && fact.sourceId !== id)
+        ) {
+          return [];
+        }
+        editorUrl = undefined;
+      }
     }
     const canonicalVideoUrl = kind === "video" ? normalizeCanonicalInboundMediaUri(fact.url) : null;
     if (
@@ -645,7 +682,7 @@ function extractEditorMediaRefs(
       (!canonicalVideoUrl ||
         !fact.sourceId ||
         fact.sourceIndex === undefined ||
-        !fact.contentType?.trim().toLowerCase().startsWith("video/") ||
+        !normalizedContentType?.startsWith("video/") ||
         parseInboundMediaUri(canonicalVideoUrl)?.id !== fact.sourceId)
     ) {
       return [];
@@ -655,8 +692,8 @@ function extractEditorMediaRefs(
         kind,
         ...(fact.sourceId ? { sourceId: fact.sourceId } : {}),
         ...(fact.sourceIndex !== undefined ? { sourceIndex: fact.sourceIndex } : {}),
-        ...(fact.path ? { path: fact.path } : {}),
-        ...(canonicalVideoUrl ? { url: canonicalVideoUrl } : fact.url ? { url: fact.url } : {}),
+        ...(editorPath ? { path: editorPath } : {}),
+        ...(canonicalVideoUrl ? { url: canonicalVideoUrl } : editorUrl ? { url: editorUrl } : {}),
         ...(fact.contentType ? { contentType: fact.contentType } : {}),
         ...(fact.sizeBytes !== undefined ? { sizeBytes: fact.sizeBytes } : {}),
       },

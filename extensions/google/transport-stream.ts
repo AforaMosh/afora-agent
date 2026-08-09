@@ -10,6 +10,7 @@ import {
   resolveNativeVideoInputContract,
   type Context,
   type Model,
+  type NativeVideoInputContract,
   type SimpleStreamOptions,
   type ThinkingLevel,
 } from "openclaw/plugin-sdk/llm";
@@ -536,12 +537,46 @@ function normalizeGoogleThinkingConfig(
 
 type MutableGooglePart = Record<string, unknown>;
 
+type GoogleVideoAdmissionCandidate = { mimeType: string; data: string };
+type GoogleVideoAdmissionDecision = { accepted: true; wireMimeType: string } | { accepted: false };
+
 function inlineDataFromGooglePart(part: MutableGooglePart) {
   return isRecord(part.inlineData) ? part.inlineData : undefined;
 }
 
 function serializedGoogleRequestBytes(request: GoogleGenerateContentRequest): number {
   return new TextEncoder().encode(JSON.stringify(request)).byteLength;
+}
+
+function planGoogleNativeVideoAdmission(
+  messageCandidates: readonly (readonly (GoogleVideoAdmissionCandidate | undefined)[])[],
+  contract: NativeVideoInputContract | undefined,
+  initialAggregateDecodedBytes = 0,
+): (GoogleVideoAdmissionDecision | undefined)[][] {
+  const admission = createNativeVideoAdmissionAccumulator({
+    contract,
+    wireFamily: "google-inline-data",
+    initialAggregateDecodedBytes,
+  });
+  const decisions = messageCandidates.map((candidates) =>
+    Array<GoogleVideoAdmissionDecision | undefined>(candidates.length),
+  );
+  // Spend request-wide limits on the newest user turn first without changing wire order.
+  for (let messageIndex = messageCandidates.length - 1; messageIndex >= 0; messageIndex -= 1) {
+    const candidates = messageCandidates[messageIndex] ?? [];
+    const messageDecisions = decisions[messageIndex];
+    for (let partIndex = 0; partIndex < candidates.length; partIndex += 1) {
+      const candidate = candidates[partIndex];
+      if (!candidate || !messageDecisions) {
+        continue;
+      }
+      const result = admission.admit(candidate);
+      messageDecisions[partIndex] = result.ok
+        ? { accepted: true, wireMimeType: result.wireMimeType }
+        : { accepted: false };
+    }
+  }
+  return decisions;
 }
 
 /** Revalidates the completed AI Studio request, including total inline-media overhead. */
@@ -581,13 +616,24 @@ function enforceGoogleNativeVideoRequestLimits(
     }
   }
 
-  const admission = createNativeVideoAdmissionAccumulator({
-    contract,
-    wireFamily: "google-inline-data",
-    initialAggregateDecodedBytes: aggregateDecodedBytes,
-  });
+  const candidates = contentPartLists.map(({ role, parts }) =>
+    role === "user"
+      ? parts.map((part) => {
+          const inlineData = inlineDataFromGooglePart(part);
+          const mimeType = typeof inlineData?.mimeType === "string" ? inlineData.mimeType : "";
+          return mimeType.toLowerCase().startsWith("video/")
+            ? {
+                mimeType,
+                data: typeof inlineData?.data === "string" ? inlineData.data : "",
+              }
+            : undefined;
+        })
+      : [],
+  );
+  const decisions = planGoogleNativeVideoAdmission(candidates, contract, aggregateDecodedBytes);
   const accepted: Array<{ parts: MutableGooglePart[]; index: number }> = [];
-  for (const { role, parts } of contentPartLists) {
+  for (let messageIndex = 0; messageIndex < contentPartLists.length; messageIndex += 1) {
+    const parts = contentPartLists[messageIndex]?.parts ?? [];
     for (let index = 0; index < parts.length; index += 1) {
       const part = parts[index] ?? {};
       const inlineData = inlineDataFromGooglePart(part);
@@ -595,13 +641,12 @@ function enforceGoogleNativeVideoRequestLimits(
       if (!mimeType.toLowerCase().startsWith("video/")) {
         continue;
       }
-      const data = typeof inlineData?.data === "string" ? inlineData.data : "";
-      const result = role === "user" ? admission.admit({ mimeType, data }) : undefined;
-      if (!result?.ok) {
+      const decision = decisions[messageIndex]?.[index];
+      if (!decision?.accepted) {
         parts[index] = { text: NATIVE_VIDEO_OMISSION };
         continue;
       }
-      inlineData.mimeType = result.wireMimeType;
+      inlineData.mimeType = decision.wireMimeType;
       accepted.push({ parts, index });
     }
   }
@@ -610,7 +655,7 @@ function enforceGoogleNativeVideoRequestLimits(
       accepted.length > 0 &&
       serializedGoogleRequestBytes(request) >= contract.maxSerializedRequestBytesExclusive
     ) {
-      const rejected = accepted.pop();
+      const rejected = accepted.shift();
       if (rejected) {
         rejected.parts[rejected.index] = { text: NATIVE_VIDEO_OMISSION };
       }
@@ -633,27 +678,31 @@ function convertGoogleMessages(model: GoogleTransportModel, context: Context) {
     },
   );
   const videoContract = resolveNativeVideoInputContract(routeModel);
-  const videoAdmission = createNativeVideoAdmissionAccumulator({
-    contract: videoContract,
-    wireFamily: "google-inline-data",
-    initialAggregateDecodedBytes:
-      videoContract?.aggregateScope === "all-inline-media"
-        ? transformedMessages.reduce(
-            (total, message) =>
-              total +
-              (Array.isArray(message.content)
-                ? message.content.reduce(
-                    (messageTotal, block) =>
-                      block.type === "image"
-                        ? messageTotal + (decodedBase64Bytes(block.data) ?? 0)
-                        : messageTotal,
-                    0,
-                  )
-                : 0),
-            0,
-          )
-        : 0,
-  });
+  const videoCandidates = transformedMessages.map((message) =>
+    message.role === "user" && Array.isArray(message.content)
+      ? message.content.map((block) => (block.type === "video" ? block : undefined))
+      : [],
+  );
+  const videoAdmissionPlan = planGoogleNativeVideoAdmission(
+    videoCandidates,
+    videoContract,
+    videoContract?.aggregateScope === "all-inline-media"
+      ? transformedMessages.reduce(
+          (total, message) =>
+            total +
+            (Array.isArray(message.content)
+              ? message.content.reduce(
+                  (messageTotal, block) =>
+                    block.type === "image"
+                      ? messageTotal + (decodedBase64Bytes(block.data) ?? 0)
+                      : messageTotal,
+                  0,
+                )
+              : 0),
+          0,
+        )
+      : 0,
+  );
   // Parallel calls need one immediate function-response turn. Gemini < 3 images cannot
   // live inside functionResponse, so hold them until the consecutive result run ends.
   const pendingToolResultImageTurns: Array<Record<string, unknown>> = [];
@@ -664,7 +713,11 @@ function convertGoogleMessages(model: GoogleTransportModel, context: Context) {
     activeToolResultParts = undefined;
   };
 
-  for (const msg of transformedMessages) {
+  for (let messageIndex = 0; messageIndex < transformedMessages.length; messageIndex += 1) {
+    const msg = transformedMessages[messageIndex];
+    if (!msg) {
+      continue;
+    }
     if (msg.role !== "toolResult") {
       flushToolResultRun();
     }
@@ -676,19 +729,19 @@ function convertGoogleMessages(model: GoogleTransportModel, context: Context) {
         });
         continue;
       }
-      const parts = msg.content.flatMap<Record<string, unknown>>((item) => {
+      const parts = msg.content.flatMap<Record<string, unknown>>((item, partIndex) => {
         if (item.type === "text") {
           return [{ text: sanitizeTransportPayloadText(item.text) || " " }];
         }
         if (item.type === "video") {
-          const result = videoAdmission.admit(item);
-          if (!result.ok) {
+          const decision = videoAdmissionPlan[messageIndex]?.[partIndex];
+          if (!decision?.accepted) {
             return [{ text: NATIVE_VIDEO_OMISSION }];
           }
           return [
             {
               inlineData: {
-                mimeType: result.wireMimeType,
+                mimeType: decision.wireMimeType,
                 data: item.data,
               },
             },

@@ -150,6 +150,169 @@ describe("convertMessages provider-owned native video", () => {
     ]);
   });
 
+  it("favors the current user video when history fills the item limit", () => {
+    const converted = convertMessages(
+      videoModel,
+      {
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "history" },
+              { type: "video", mimeType: "video/mp4", data: "b2xk" },
+            ],
+            timestamp: 1,
+          },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "current" },
+              { type: "video", mimeType: "video/quicktime", data: "bmV3" },
+            ],
+            timestamp: 2,
+          },
+        ],
+      },
+      resolveOpenAICompletionsCompat(videoModel),
+    );
+
+    expect(converted).toEqual([
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "history" },
+          { type: "text", text: "(video omitted: unsupported or exceeds provider limits)" },
+        ],
+      },
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "current" },
+          { type: "video_url", video_url: { url: "data:video/mov;base64,bmV3" } },
+        ],
+      },
+    ]);
+  });
+
+  it("favors the current user video when history would exhaust aggregate bytes", () => {
+    const aggregateModel = {
+      ...videoModel,
+      nativeVideoInput: { ...nativeVideoInput, maxItems: 2 },
+    } satisfies Model<"openai-completions">;
+    const converted = convertMessages(
+      aggregateModel,
+      {
+        messages: [
+          {
+            role: "user",
+            content: [{ type: "video", mimeType: "video/mp4", data: "b2xk" }],
+            timestamp: 1,
+          },
+          {
+            role: "user",
+            content: [{ type: "video", mimeType: "video/mp4", data: "bmV3" }],
+            timestamp: 2,
+          },
+        ],
+      },
+      resolveOpenAICompletionsCompat(aggregateModel),
+    );
+
+    expect(converted).toEqual([
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "(video omitted: unsupported or exceeds provider limits)" },
+        ],
+      },
+      {
+        role: "user",
+        content: [{ type: "video_url", video_url: { url: "data:video/mp4;base64,bmV3" } }],
+      },
+    ]);
+  });
+
+  it("preserves video order within the current user message", () => {
+    const multiVideoModel = {
+      ...videoModel,
+      nativeVideoInput: {
+        ...nativeVideoInput,
+        maxItems: 2,
+        maxAggregateDecodedBytes: 10,
+      },
+    } satisfies Model<"openai-completions">;
+    const converted = convertMessages(
+      multiVideoModel,
+      {
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "video", mimeType: "video/quicktime", data: "b25lIQ==" },
+              { type: "text", text: "between" },
+              { type: "video", mimeType: "video/mp4", data: "dHdvIQ==" },
+            ],
+            timestamp: 1,
+          },
+        ],
+      },
+      resolveOpenAICompletionsCompat(multiVideoModel),
+    );
+
+    expect(converted).toEqual([
+      {
+        role: "user",
+        content: [
+          { type: "video_url", video_url: { url: "data:video/mov;base64,b25lIQ==" } },
+          { type: "text", text: "between" },
+          { type: "video_url", video_url: { url: "data:video/mp4;base64,dHdvIQ==" } },
+        ],
+      },
+    ]);
+  });
+
+  it("keeps chronological wire order after newest-first admission planning", () => {
+    const orderedModel = {
+      ...videoModel,
+      nativeVideoInput: {
+        ...nativeVideoInput,
+        maxItems: 2,
+        maxAggregateDecodedBytes: 10,
+      },
+    } satisfies Model<"openai-completions">;
+    const converted = convertMessages(
+      orderedModel,
+      {
+        messages: [
+          {
+            role: "user",
+            content: [{ type: "video", mimeType: "video/mp4", data: "b2xk" }],
+            timestamp: 1,
+          },
+          { role: "user", content: "middle", timestamp: 2 },
+          {
+            role: "user",
+            content: [{ type: "video", mimeType: "video/mp4", data: "bmV3" }],
+            timestamp: 3,
+          },
+        ],
+      },
+      resolveOpenAICompletionsCompat(orderedModel),
+    );
+
+    expect(converted).toEqual([
+      {
+        role: "user",
+        content: [{ type: "video_url", video_url: { url: "data:video/mp4;base64,b2xk" } }],
+      },
+      { role: "user", content: "middle" },
+      {
+        role: "user",
+        content: [{ type: "video_url", video_url: { url: "data:video/mp4;base64,bmV3" } }],
+      },
+    ]);
+  });
+
   it("never treats raw model.input or tool-result video as native support", () => {
     const unsupportedModel = {
       ...model,
@@ -201,5 +364,67 @@ describe("convertMessages provider-owned native video", () => {
     expect(params.messages[0]?.content).toEqual([
       { type: "text", text: "(video omitted: unsupported or exceeds provider limits)" },
     ]);
+  });
+
+  it("evicts historical video before the current video at the serialized request cap", () => {
+    const historicalData = Buffer.alloc(128, 1).toString("base64");
+    const currentData = Buffer.alloc(128, 2).toString("base64");
+    const expectedMessages = [
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "(video omitted: unsupported or exceeds provider limits)" },
+        ],
+      },
+      {
+        role: "user",
+        content: [
+          {
+            type: "video_url",
+            video_url: { url: `data:video/mov;base64,${currentData}` },
+          },
+        ],
+      },
+    ];
+    const maxSerializedRequestBytesExclusive =
+      Buffer.byteLength(JSON.stringify({ model: "kimi-k3", messages: expectedMessages })) + 1;
+    const params = {
+      model: "kimi-k3",
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "video_url",
+              video_url: { url: `data:video/mp4;base64,${historicalData}` },
+            },
+          ],
+        },
+        {
+          role: "user",
+          content: [
+            {
+              type: "video_url",
+              video_url: { url: `data:video/quicktime;base64,${currentData}` },
+            },
+          ],
+        },
+      ],
+    };
+
+    enforceOpenAICompatibleChatVideoRequestLimits(params, {
+      nativeVideoInput: {
+        ...nativeVideoInput,
+        maxDecodedBytesPerItem: 128,
+        maxItems: 2,
+        maxAggregateDecodedBytes: 256,
+        maxSerializedRequestBytesExclusive,
+      },
+    });
+
+    expect(params.messages).toEqual(expectedMessages);
+    expect(Buffer.byteLength(JSON.stringify(params))).toBeLessThan(
+      maxSerializedRequestBytesExclusive,
+    );
   });
 });

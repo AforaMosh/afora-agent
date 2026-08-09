@@ -3,6 +3,8 @@ import {
   createNativeVideoAdmissionAccumulator,
   NATIVE_VIDEO_OMISSION,
   resolveNativeVideoInputContract,
+  type NativeVideoAdmission,
+  type NativeVideoInputContract,
 } from "@openclaw/llm-core";
 import type {
   ChatCompletionContentPart,
@@ -48,21 +50,59 @@ function serializedUtf8Bytes(value: unknown): number {
   return new TextEncoder().encode(JSON.stringify(value)).byteLength;
 }
 
+/** Admit newest user-message videos first without changing their eventual wire order. */
+export function planOpenAICompatibleChatVideoAdmission(
+  messageCandidates: readonly (readonly (Pick<MediaContent, "data" | "mimeType"> | undefined)[])[],
+  contract: NativeVideoInputContract | undefined,
+): (NativeVideoAdmission | undefined)[][] {
+  const admission = createNativeVideoAdmissionAccumulator({
+    contract,
+    wireFamily: "openai-chat-video-url",
+  });
+  const plan = messageCandidates.map((candidates) =>
+    Array<NativeVideoAdmission | undefined>(candidates.length),
+  );
+  for (let messageIndex = messageCandidates.length - 1; messageIndex >= 0; messageIndex -= 1) {
+    const candidates = messageCandidates[messageIndex] ?? [];
+    const results = plan[messageIndex];
+    for (let contentIndex = 0; contentIndex < candidates.length; contentIndex += 1) {
+      const candidate = candidates[contentIndex];
+      if (candidate && results) {
+        results[contentIndex] = admission.admit(candidate);
+      }
+    }
+  }
+  return plan;
+}
+
 /** Final request guard, including payload-hook mutations and serialized body overhead. */
 export function enforceOpenAICompatibleChatVideoRequestLimits<T extends Record<string, unknown>>(
   params: T,
   model: Pick<Model, "nativeVideoInput">,
 ): T {
   const contract = resolveNativeVideoInputContract(model);
-  const admission = createNativeVideoAdmissionAccumulator({
-    contract,
-    wireFamily: "openai-chat-video-url",
-  });
   const omissionPart = { type: "text", text: NATIVE_VIDEO_OMISSION };
   const omissionBytes = serializedUtf8Bytes(omissionPart);
   const accepted: Array<{ content: unknown[]; index: number; serializedDelta: number }> = [];
   const messages = Array.isArray(params.messages) ? params.messages : [];
-  for (const message of messages) {
+  const candidates = messages.map((message) => {
+    if (!message || typeof message !== "object") {
+      return [];
+    }
+    const record = message as { role?: unknown; content?: unknown };
+    if (record.role !== "user" || !Array.isArray(record.content)) {
+      return [];
+    }
+    return record.content.map((part) => {
+      if (!part || typeof part !== "object" || (part as { type?: unknown }).type !== "video_url") {
+        return undefined;
+      }
+      return parseVideoDataUrl((part as { video_url?: { url?: unknown } }).video_url?.url);
+    });
+  });
+  const plan = planOpenAICompatibleChatVideoAdmission(candidates, contract);
+  for (let messageIndex = 0; messageIndex < messages.length; messageIndex += 1) {
+    const message = messages[messageIndex];
     if (!message || typeof message !== "object") {
       continue;
     }
@@ -75,9 +115,9 @@ export function enforceOpenAICompatibleChatVideoRequestLimits<T extends Record<s
       if (!part || typeof part !== "object" || (part as { type?: unknown }).type !== "video_url") {
         continue;
       }
-      const parsed = parseVideoDataUrl((part as { video_url?: { url?: unknown } }).video_url?.url);
-      const result = record.role === "user" && parsed ? admission.admit(parsed) : undefined;
-      if (!result?.ok) {
+      const parsed = candidates[messageIndex]?.[index];
+      const result = plan[messageIndex]?.[index];
+      if (!result?.ok || !parsed) {
         record.content[index] = omissionPart;
         continue;
       }
@@ -92,8 +132,9 @@ export function enforceOpenAICompatibleChatVideoRequestLimits<T extends Record<s
   }
   if (contract) {
     let requestBytes = serializedUtf8Bytes(params);
+    // Accepted entries follow wire order, so forward eviction preserves newer turns longest.
     while (accepted.length > 0 && requestBytes >= contract.maxSerializedRequestBytesExclusive) {
-      const rejected = accepted.pop();
+      const rejected = accepted.shift();
       if (rejected) {
         rejected.content[rejected.index] = omissionPart;
         requestBytes -= rejected.serializedDelta;

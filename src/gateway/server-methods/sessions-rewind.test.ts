@@ -21,9 +21,16 @@ import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db
 import type { GatewayRequestContext, RespondFn } from "./types.js";
 
 const mocks = vi.hoisted(() => ({
+  preflightSessionMessageCut: vi.fn(),
   upstreamFork: vi.fn(),
   readMediaBuffer: vi.fn(),
 }));
+
+vi.mock("../../config/sessions/session-accessor.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../config/sessions/session-accessor.js")>();
+  mocks.preflightSessionMessageCut.mockImplementation(actual.preflightSessionMessageCut);
+  return { ...actual, preflightSessionMessageCut: mocks.preflightSessionMessageCut };
+});
 
 vi.mock("../../media/store.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../media/store.js")>();
@@ -55,6 +62,7 @@ const queuedCommandSettlements = new Set<Promise<void>>();
 
 beforeEach(async () => {
   mocks.upstreamFork.mockReset();
+  mocks.preflightSessionMessageCut.mockClear();
   mocks.readMediaBuffer.mockReset().mockImplementation(async (id: string) => {
     if (id !== storedImageId) {
       throw new Error(`missing media: ${id}`);
@@ -90,8 +98,12 @@ beforeEach(async () => {
         __openclaw: {
           media: [
             { path: storedImagePath, contentType: "image/png" },
-            // Duplicate ref proves dedupe: the response must carry this image once.
-            { path: storedImagePath, contentType: "image/png" },
+            // Canonical and legacy claims for one image prove both shapes and dedupe.
+            {
+              sourceId: storedImageId,
+              url: `media://inbound/${storedImageId}`,
+              contentType: "image/png",
+            },
           ],
         },
       },
@@ -184,9 +196,10 @@ async function invoke(
   return respond;
 }
 
-async function appendVideoMessage(params: {
+async function appendMediaMessage(params: {
   entryId: string;
-  media: Record<string, unknown>;
+  media: Record<string, unknown> | readonly Record<string, unknown>[];
+  text?: string;
 }): Promise<void> {
   const scope = { agentId: "main", sessionId: sourceSessionId, sessionKey };
   await appendTranscriptMessage(scope, {
@@ -194,8 +207,8 @@ async function appendVideoMessage(params: {
     parentId: "assistant-entry",
     message: {
       role: "user",
-      content: "edit this clip",
-      __openclaw: { media: [params.media] },
+      content: params.text ?? "edit this clip",
+      __openclaw: { media: Array.isArray(params.media) ? params.media : [params.media] },
     },
   });
   await appendTranscriptEvent(scope, {
@@ -521,7 +534,7 @@ describe("session message-cut methods", () => {
   it.each(["sessions.rewind", "sessions.fork"] as const)(
     "omits a path-only legacy video and lets %s restore the text edit",
     async (method) => {
-      await appendVideoMessage({
+      await appendMediaMessage({
         entryId: "legacy-video-entry",
         media: {
           sourceId: "legacy-video.mp4",
@@ -546,9 +559,58 @@ describe("session message-cut methods", () => {
     },
   );
 
+  it.each(["sessions.rewind", "sessions.fork"] as const)(
+    "filters non-restorable image facts before a text-only %s",
+    async (method) => {
+      await appendMediaMessage({
+        entryId: "invalid-image-entry",
+        text: "edit this text",
+        media: [
+          {
+            sourceId: "remote-image.png",
+            url: "https://cdn.example.test/remote-image.png",
+            contentType: "image/png",
+          },
+          {
+            sourceId: "outside-image.png",
+            path: "/tmp/outside-image.png",
+            contentType: "image/png",
+          },
+          { sourceId: "metadata-only.png", contentType: "image/png" },
+          {
+            sourceId: "other-image.png",
+            url: "media://inbound/mismatched-image.png",
+            contentType: "image/png",
+          },
+          {
+            sourceId: "other-path-image.png",
+            path: "/state/media/inbound/mismatched-path-image.png",
+            contentType: "image/png",
+          },
+          {
+            sourceId: "malformed-image.png",
+            url: "media://inbound/nested%2Fmalformed-image.png",
+            contentType: "image/png",
+          },
+        ],
+      });
+
+      const respond = await invoke(method, "invalid-image-entry");
+
+      expect(respond).toHaveBeenCalledWith(
+        true,
+        expect.objectContaining({ editorText: "edit this text" }),
+        undefined,
+      );
+      const payload = respond.mock.calls[0]?.[1] as { editorAttachments?: unknown } | undefined;
+      expect(payload).not.toHaveProperty("editorAttachments");
+      expect(mocks.readMediaBuffer).not.toHaveBeenCalled();
+    },
+  );
+
   it("rejects a 20 MiB video before fork mutation or media read", async () => {
     const storedVideoId = "oversized-video.mp4";
-    await appendVideoMessage({
+    await appendMediaMessage({
       entryId: "oversized-video-entry",
       media: {
         sourceId: storedVideoId,
@@ -581,7 +643,7 @@ describe("session message-cut methods", () => {
   it("rejects an expired video before rewind and preserves queued work", async () => {
     const storedVideoId = "expired-video.mp4";
     mocks.readMediaBuffer.mockRejectedValue(new Error("missing media"));
-    await appendVideoMessage({
+    await appendMediaMessage({
       entryId: "expired-video-entry",
       media: {
         sourceId: storedVideoId,
@@ -615,7 +677,7 @@ describe("session message-cut methods", () => {
   it("rejects a missing video before creating a fork target", async () => {
     const storedVideoId = "missing-video.mp4";
     mocks.readMediaBuffer.mockRejectedValue(new Error("missing media"));
-    await appendVideoMessage({
+    await appendMediaMessage({
       entryId: "missing-video-entry",
       media: {
         sourceId: storedVideoId,
@@ -643,7 +705,7 @@ describe("session message-cut methods", () => {
 
   it("rejects an emitted managed video ref with invalid size metadata", async () => {
     const storedVideoId = "invalid-size-video.mp4";
-    await appendVideoMessage({
+    await appendMediaMessage({
       entryId: "invalid-size-video-entry",
       media: {
         sourceId: storedVideoId,
@@ -669,6 +731,36 @@ describe("session message-cut methods", () => {
     );
     expect(mocks.readMediaBuffer).not.toHaveBeenCalled();
     expect(loadSessionEntry({ agentId: "main", sessionKey })?.sessionId).toBe(sourceBefore);
+  });
+
+  it("rejects a manually emitted unsafe image ref before fork mutation", async () => {
+    mocks.preflightSessionMessageCut.mockResolvedValueOnce({
+      status: "ready",
+      editorText: "edit me",
+      editorMediaRefs: [
+        {
+          kind: "image",
+          contentType: "image/png",
+          url: "https://cdn.example.test/unsafe-image.png",
+        },
+      ],
+    });
+    const sourceBefore = loadSessionEntry({ agentId: "main", sessionKey })?.sessionId;
+    const entryCountBefore = listSessionEntries({ agentId: "main" }).length;
+
+    const respond = await invoke("sessions.fork", "user-entry");
+
+    expect(respond).toHaveBeenCalledWith(
+      false,
+      undefined,
+      expect.objectContaining({
+        code: ErrorCodes.INVALID_REQUEST,
+        message: expect.stringContaining("unsafe or invalid attachment reference"),
+      }),
+    );
+    expect(mocks.readMediaBuffer).not.toHaveBeenCalled();
+    expect(loadSessionEntry({ agentId: "main", sessionKey })?.sessionId).toBe(sourceBefore);
+    expect(listSessionEntries({ agentId: "main" })).toHaveLength(entryCountBefore);
   });
 
   it.each([

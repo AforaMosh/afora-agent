@@ -2909,11 +2909,108 @@ describe("google transport stream", () => {
 });
 
 describe("google provider-owned native video request limits", () => {
+  const oldVideoData = "b2xkISE=";
+  const currentVideoData = "bmV3ISE=";
   const nativeModel = () =>
     buildGeminiModel({
       input: ["text", "image", "video"],
       nativeVideoInput: GOOGLE_TEST_VIDEO_CONTRACT,
     });
+
+  it.each([
+    {
+      limit: "item count",
+      contract: { maxItems: 1, maxAggregateDecodedBytes: 10 },
+      historicalParts: [{ type: "video", mimeType: "video/mp4", data: oldVideoData }],
+    },
+    {
+      limit: "all-inline-media bytes",
+      contract: { maxItems: 2, maxAggregateDecodedBytes: 8 },
+      historicalParts: [
+        { type: "image", mimeType: "image/png", data: "aW1n" },
+        { type: "video", mimeType: "video/mp4", data: oldVideoData },
+      ],
+    },
+  ])(
+    "keeps the current user video when history exhausts $limit",
+    ({ contract, historicalParts }) => {
+      const params = buildGoogleGenerativeAiParams(
+        buildGeminiModel({
+          input: ["text", "image", "video"],
+          nativeVideoInput: { ...GOOGLE_TEST_VIDEO_CONTRACT, ...contract },
+        }),
+        {
+          messages: [
+            { role: "user", content: historicalParts, timestamp: 0 },
+            {
+              role: "assistant",
+              provider: "google",
+              api: "google-generative-ai",
+              model: "gemini-2.5-pro",
+              content: [{ type: "text", text: "history response" }],
+              stopReason: "stop",
+              timestamp: 1,
+            },
+            {
+              role: "user",
+              content: [{ type: "video", mimeType: "video/mp4", data: currentVideoData }],
+              timestamp: 2,
+            },
+          ],
+        } as never,
+      );
+
+      expect(params.contents.map((content) => content.role)).toEqual(["user", "model", "user"]);
+      expect(JSON.stringify(params.contents[0])).not.toContain(oldVideoData);
+      expect(params.contents[0]).toEqual(
+        expect.objectContaining({
+          parts: expect.arrayContaining([
+            { text: "(video omitted: unsupported or exceeds provider limits)" },
+          ]),
+        }),
+      );
+      expect(params.contents[1]).toEqual({ role: "model", parts: [{ text: "history response" }] });
+      expect(params.contents[2]).toEqual({
+        role: "user",
+        parts: [{ inlineData: { mimeType: "video/mp4", data: currentVideoData } }],
+      });
+    },
+  );
+
+  it("preserves video order within the current user message", () => {
+    const params = buildGoogleGenerativeAiParams(
+      buildGeminiModel({
+        input: ["text", "video"],
+        nativeVideoInput: {
+          ...GOOGLE_TEST_VIDEO_CONTRACT,
+          maxItems: 2,
+          maxAggregateDecodedBytes: 10,
+        },
+      }),
+      {
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "video", mimeType: "video/quicktime", data: currentVideoData },
+              { type: "video", mimeType: "video/mp4", data: oldVideoData },
+            ],
+            timestamp: 0,
+          },
+        ],
+      },
+    );
+
+    expect(params.contents).toEqual([
+      {
+        role: "user",
+        parts: [
+          { inlineData: { mimeType: "video/mov", data: currentVideoData } },
+          { inlineData: { mimeType: "video/mp4", data: oldVideoData } },
+        ],
+      },
+    ]);
+  });
 
   it("canonicalizes allowed MIME aliases and bounds count plus all-inline-media bytes", () => {
     const params = buildGoogleGenerativeAiParams(nativeModel(), {
@@ -3037,6 +3134,67 @@ describe("google provider-owned native video request limits", () => {
     expect(JSON.stringify(params)).not.toContain("dmlkZW8=");
     expect(params.contents[0]?.parts).toEqual([
       { text: "(video omitted: unsupported or exceeds provider limits)" },
+    ]);
+  });
+
+  it("evicts historical video before current video after payload-hook mutations", async () => {
+    guardedFetchMock
+      .mockReset()
+      .mockResolvedValueOnce(buildSseResponse([{ candidates: [{ finishReason: "STOP" }] }]));
+    const hookOldVideoData = Buffer.alloc(64, 1).toString("base64");
+    const hookCurrentVideoData = Buffer.alloc(64, 2).toString("base64");
+    const hookedRequest = {
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { text: "history" },
+            { inlineData: { mimeType: "video/mp4", data: hookOldVideoData } },
+          ],
+        },
+        {
+          role: "user",
+          parts: [{ inlineData: { mimeType: "video/mp4", data: hookCurrentVideoData } }],
+        },
+      ],
+    };
+    const serializedBytes = new TextEncoder().encode(JSON.stringify(hookedRequest)).byteLength;
+    const model = buildGeminiModel({
+      input: ["text", "video"],
+      nativeVideoInput: {
+        ...GOOGLE_TEST_VIDEO_CONTRACT,
+        maxDecodedBytesPerItem: 64,
+        maxItems: 2,
+        maxAggregateDecodedBytes: 128,
+        maxSerializedRequestBytesExclusive: serializedBytes,
+      },
+    });
+    const streamFn = createGoogleGenerativeAiTransportStreamFn();
+    const stream = await Promise.resolve(
+      streamFn(
+        model,
+        { messages: [{ role: "user", content: "ignored", timestamp: 0 }] } as Parameters<
+          typeof streamFn
+        >[1],
+        {
+          apiKey: "gemini-api-key",
+          onPayload: () => structuredClone(hookedRequest),
+        } as Parameters<typeof streamFn>[2],
+      ),
+    );
+    await stream.result();
+
+    const guardedCall = requireMockCall(guardedFetchMock, 0, "guarded fetch");
+    const params = parseRequestJsonBody(requireRequestInit(guardedCall, "guarded fetch")) as {
+      contents: Array<{ role: string; parts: unknown[] }>;
+    };
+    expect(params.contents.map((content) => content.role)).toEqual(["user", "user"]);
+    expect(params.contents[0]?.parts).toEqual([
+      { text: "history" },
+      { text: "(video omitted: unsupported or exceeds provider limits)" },
+    ]);
+    expect(params.contents[1]?.parts).toEqual([
+      { inlineData: { mimeType: "video/mp4", data: hookCurrentVideoData } },
     ]);
   });
 });

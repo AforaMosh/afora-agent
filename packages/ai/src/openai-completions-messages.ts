@@ -1,8 +1,4 @@
-import {
-  createNativeVideoAdmissionAccumulator,
-  NATIVE_VIDEO_OMISSION,
-  resolveNativeVideoInputContract,
-} from "@openclaw/llm-core";
+import { NATIVE_VIDEO_OMISSION, resolveNativeVideoInputContract } from "@openclaw/llm-core";
 import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
 import type {
   ChatCompletionAssistantMessageParam,
@@ -13,6 +9,7 @@ import type {
 } from "openai/resources/chat/completions.js";
 import {
   buildOpenAICompatibleChatMediaPart,
+  planOpenAICompatibleChatVideoAdmission,
   type OpenAICompatibleChatContentPart,
 } from "./providers/openai-compatible-video-content.js";
 import {
@@ -57,10 +54,6 @@ export function convertMessages(
 ): ChatCompletionMessageParam[] {
   const params: ChatCompletionMessageParam[] = [];
   const videoContract = resolveNativeVideoInputContract(model);
-  const videoAdmission = createNativeVideoAdmissionAccumulator({
-    contract: videoContract,
-    wireFamily: "openai-chat-video-url",
-  });
 
   const normalizeToolCallId = (id: string): string => {
     // Responses ids can contain a pipe plus a long provider item id. Chat
@@ -78,6 +71,14 @@ export function convertMessages(
 
   const transformedMessages = transformMessages(context.messages, model, (id) =>
     normalizeToolCallId(id),
+  );
+  const videoAdmissionPlan = planOpenAICompatibleChatVideoAdmission(
+    transformedMessages.map((message) =>
+      message.role === "user" && Array.isArray(message.content)
+        ? message.content.map((item) => (item.type === "video" ? item : undefined))
+        : [],
+    ),
+    videoContract,
   );
 
   if (context.systemPrompt) {
@@ -117,7 +118,7 @@ export function convertMessages(
         params.push(userParam);
       } else {
         const content: OpenAICompatibleChatContentPart[] = msg.content.map(
-          (item): OpenAICompatibleChatContentPart => {
+          (item, contentIndex): OpenAICompatibleChatContentPart => {
             if (item.type === "text") {
               return {
                 type: "text",
@@ -125,8 +126,8 @@ export function convertMessages(
               } satisfies ChatCompletionContentPartText;
             }
             if (item.type === "video") {
-              const result = videoAdmission.admit(item);
-              if (!result.ok) {
+              const result = videoAdmissionPlan[i]?.[contentIndex];
+              if (!result?.ok) {
                 return {
                   type: "text",
                   text: NATIVE_VIDEO_OMISSION,

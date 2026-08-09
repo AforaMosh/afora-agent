@@ -133,10 +133,49 @@ async function createSession(options: { activeLeafTarget?: string } = {}) {
         ],
         __openclaw: {
           media: [
-            { path: "/state/media/inbound/stored-image.png", contentType: "image/png" },
+            {
+              sourceId: "canonical-image.png",
+              sourceIndex: 0,
+              url: "media://inbound/canonical-image.png",
+              kind: "image",
+              contentType: "image/png",
+              sizeBytes: 512,
+            },
+            {
+              sourceId: "stored-image.png",
+              path: "/state/media/inbound/stored-image.png",
+              url: "https://cdn.example.test/stored-image.png",
+              contentType: "image/png",
+            },
+            {
+              sourceId: "remote-image.png",
+              url: "https://cdn.example.test/remote-image.png",
+              contentType: "image/png",
+            },
+            {
+              sourceId: "outside-image.png",
+              path: "/tmp/outside-image.png",
+              contentType: "image/png",
+            },
+            { sourceId: "metadata-only.png", contentType: "image/png" },
+            {
+              sourceId: "other-image.png",
+              url: "media://inbound/mismatched-image.png",
+              contentType: "image/png",
+            },
+            {
+              sourceId: "other-path-image.png",
+              path: "/state/media/inbound/mismatched-path-image.png",
+              contentType: "image/png",
+            },
+            {
+              sourceId: "malformed-image.png",
+              url: "media://inbound/nested%2Fmalformed-image.png",
+              contentType: "image/png",
+            },
             {
               sourceId: "stored-video.mp4",
-              sourceIndex: 1,
+              sourceIndex: 8,
               path: "/state/media/inbound/stored-video.mp4",
               url: "media://inbound/stored-video.mp4",
               kind: "video",
@@ -145,34 +184,34 @@ async function createSession(options: { activeLeafTarget?: string } = {}) {
             },
             {
               sourceId: "legacy-path-only.mp4",
-              sourceIndex: 2,
+              sourceIndex: 9,
               path: "/state/media/inbound/legacy-path-only.mp4",
               kind: "video",
               contentType: "video/mp4",
             },
             {
               sourceId: "remote-video.mp4",
-              sourceIndex: 3,
+              sourceIndex: 10,
               url: "https://cdn.example.test/remote-video.mp4",
               kind: "video",
               contentType: "video/mp4",
             },
             {
               sourceId: "unsafe-video.mp4",
-              sourceIndex: 4,
+              sourceIndex: 11,
               url: "media://inbound/nested%2Funsafe-video.mp4",
               kind: "video",
               contentType: "video/mp4",
             },
             {
-              sourceIndex: 5,
+              sourceIndex: 12,
               url: "media://inbound/incomplete-video.mp4",
               kind: "video",
               contentType: "video/mp4",
             },
             {
               sourceId: "missing-mime-video.mp4",
-              sourceIndex: 6,
+              sourceIndex: 13,
               url: "media://inbound/missing-mime-video.mp4",
               kind: "video",
             },
@@ -218,7 +257,7 @@ async function createSession(options: { activeLeafTarget?: string } = {}) {
 }
 
 describe("SQLite session message cuts", () => {
-  it("offers only restorable managed video facts while retaining legacy facts in history", async () => {
+  it("offers only restorable managed image and video facts while retaining history", async () => {
     const { env, scope } = await createSession();
 
     await expect(
@@ -226,10 +265,23 @@ describe("SQLite session message cuts", () => {
     ).resolves.toMatchObject({
       status: "ready",
       editorMediaRefs: [
-        { path: "/state/media/inbound/stored-image.png", contentType: "image/png" },
+        {
+          sourceId: "canonical-image.png",
+          sourceIndex: 0,
+          url: "media://inbound/canonical-image.png",
+          kind: "image",
+          contentType: "image/png",
+          sizeBytes: 512,
+        },
+        {
+          sourceId: "stored-image.png",
+          path: "/state/media/inbound/stored-image.png",
+          kind: "image",
+          contentType: "image/png",
+        },
         {
           sourceId: "stored-video.mp4",
-          sourceIndex: 1,
+          sourceIndex: 8,
           url: "media://inbound/stored-video.mp4",
           kind: "video",
           contentType: "video/mp4",
@@ -239,7 +291,7 @@ describe("SQLite session message cuts", () => {
     const userMessage = (await loadTranscriptEvents(scope)).find(
       (event) => event && typeof event === "object" && "id" in event && event.id === "user-2",
     ) as { message?: { __openclaw?: { media?: unknown[] } } } | undefined;
-    expect(userMessage?.message?.__openclaw?.media).toHaveLength(8);
+    expect(userMessage?.message?.__openclaw?.media).toHaveLength(15);
   });
 
   it("reuses branch summaries while the transcript watermark is unchanged", async () => {
@@ -539,10 +591,23 @@ describe("SQLite session message cuts", () => {
       editorText: "second prompt",
       editorAttachments: [{ mimeType: "image/png", data: "aW1hZ2U=" }],
       editorMediaRefs: [
-        { path: "/state/media/inbound/stored-image.png", contentType: "image/png" },
+        {
+          sourceId: "canonical-image.png",
+          sourceIndex: 0,
+          url: "media://inbound/canonical-image.png",
+          kind: "image",
+          contentType: "image/png",
+          sizeBytes: 512,
+        },
+        {
+          sourceId: "stored-image.png",
+          path: "/state/media/inbound/stored-image.png",
+          kind: "image",
+          contentType: "image/png",
+        },
         {
           sourceId: "stored-video.mp4",
-          sourceIndex: 1,
+          sourceIndex: 8,
           path: "/state/media/inbound/stored-video.mp4",
           url: "media://inbound/stored-video.mp4",
           kind: "video",
@@ -633,10 +698,23 @@ describe("SQLite session message cuts", () => {
       editorText: "second prompt",
       editorAttachments: [{ mimeType: "image/png", data: "aW1hZ2U=" }],
       editorMediaRefs: [
-        { path: "/state/media/inbound/stored-image.png", contentType: "image/png" },
+        {
+          sourceId: "canonical-image.png",
+          sourceIndex: 0,
+          url: "media://inbound/canonical-image.png",
+          kind: "image",
+          contentType: "image/png",
+          sizeBytes: 512,
+        },
+        {
+          sourceId: "stored-image.png",
+          path: "/state/media/inbound/stored-image.png",
+          kind: "image",
+          contentType: "image/png",
+        },
         {
           sourceId: "stored-video.mp4",
-          sourceIndex: 1,
+          sourceIndex: 8,
           path: "/state/media/inbound/stored-video.mp4",
           url: "media://inbound/stored-video.mp4",
           kind: "video",
