@@ -1475,7 +1475,9 @@ describe("redactTranscriptMessage", () => {
       "sk-abcdef1234567890xyz",
     );
     expect(expectDefined(content[1], "content[1] test invariant")).toMatchObject({
+      type: "video",
       data: TRUSTED_MP4_BASE64,
+      mimeType: "video/mp4",
       apiKey: "plains…e123",
     });
   });
@@ -1491,16 +1493,23 @@ describe("redactTranscriptMessage", () => {
           data: SPOOFED_MP4_BASE64_WITH_SECRET_TOKEN_SUBSTRING,
           mimeType: "video/mp4",
         },
+        {
+          type: "video",
+          blob: SPOOFED_MP4_BASE64_WITH_SECRET_TOKEN_SUBSTRING,
+          mimeType: "video/mp4",
+        },
       ],
     } as unknown as AgentMessage;
 
     const content = msgContent(redactTranscriptMessage(msg, cfg("tools"))) as Array<{
-      data: string;
+      type: string;
+      text: string;
     }>;
-    expect(content.map((block) => block.data)).toEqual([
-      "[video data omitted]",
-      "[video data omitted]",
-      "[video data omitted]",
+    expect(content).toEqual([
+      { type: "text", text: "[video data omitted]" },
+      { type: "text", text: "[video data omitted]" },
+      { type: "text", text: "[video data omitted]" },
+      { type: "text", text: "[video data omitted]" },
     ]);
   });
 
@@ -1526,40 +1535,41 @@ describe("redactTranscriptMessage", () => {
 
     for (const message of [forged, wrongFact]) {
       const block = expectDefined(
-        (msgContent(redactTranscriptMessage(message, cfg("tools"))) as Array<{ data: string }>)[0],
+        (
+          msgContent(redactTranscriptMessage(message, cfg("tools"))) as Array<{
+            type: string;
+            text: string;
+          }>
+        )[0],
         "untrusted provenance video block",
       );
-      expect(block.data).toBe("[video data omitted]");
+      expect(block).toEqual({ type: "text", text: "[video data omitted]" });
     }
   });
 
-  it("does not trust provider-style video payloads without runtime provenance", () => {
+  it("omits an enclosing provider media block with a nested video source", () => {
     const msg = {
       role: "assistant",
       content: [
         {
-          type: "gatewayCustom",
+          type: "image",
           source: {
             type: "base64",
             media_type: " VIDEO/MP4 ",
             data: ` ${SPOOFED_MP4_BASE64_WITH_SECRET_TOKEN_SUBSTRING}\n`,
           },
-          apiKey: "plainsecretvalue123",
         },
       ],
     } as unknown as AgentMessage;
 
-    const block = expectDefined(
-      (
-        msgContent(redactTranscriptMessage(msg, cfg("tools"))) as Array<{
-          source: { data: string; media_type: string };
-          apiKey: string;
-        }>
-      )[0],
-      "provider-style video content test invariant",
-    );
-    expect(block.source.data).toBe("[video data omitted]");
-    expect(block.apiKey).toBe("plains…e123");
+    const content = msgContent(redactTranscriptMessage(msg, cfg("tools")));
+    expect(content).toEqual([{ type: "text", text: "[video data omitted]" }]);
+    const serialized = JSON.stringify(content);
+    expect(serialized).not.toContain(SPOOFED_MP4_BASE64_WITH_SECRET_TOKEN_SUBSTRING);
+    expect(serialized).not.toContain('"type":"image"');
+    expect(serialized).not.toContain('"type":"base64"');
+    expect(serialized).not.toContain("source");
+    expect(serialized).not.toContain("VIDEO/MP4");
   });
 
   it("omits direct and nested provider video data URLs without trusted provenance", () => {
@@ -1569,20 +1579,23 @@ describe("redactTranscriptMessage", () => {
       content: [
         { type: "input_video", video_url: dataUrl, data: "AKIDABCDEFGHIJKLMNOP" },
         { type: "video_url", video_url: { url: dataUrl, apiKey: "plainsecretvalue123" } },
+        { type: "url", url: dataUrl },
+        { type: "image", source: { type: "url", url: dataUrl } },
+        { type: "input_video", video_url: { url: dataUrl } },
       ],
     } as unknown as AgentMessage;
 
-    const content = msgContent(redactTranscriptMessage(msg, cfg("tools"))) as Array<{
-      video_url: string | { url: string; apiKey: string };
-      data?: string;
-    }>;
-    expect(expectDefined(content[0], "content[0] test invariant")).toMatchObject({
-      video_url: "[video data omitted]",
-      data: "[video data omitted]",
-    });
-    expect(
-      (expectDefined(content[1], "content[1] test invariant").video_url as { url: string }).url,
-    ).toBe("[video data omitted]");
+    const content = msgContent(redactTranscriptMessage(msg, cfg("tools")));
+    expect(content).toEqual([
+      { type: "text", text: "[video data omitted]" },
+      { type: "text", text: "[video data omitted]" },
+      { type: "text", text: "[video data omitted]" },
+      { type: "text", text: "[video data omitted]" },
+      { type: "text", text: "[video data omitted]" },
+    ]);
+    const serialized = JSON.stringify(content);
+    expect(serialized).not.toContain(SPOOFED_MP4_BASE64_WITH_SECRET_TOKEN_SUBSTRING);
+    expect(serialized).not.toMatch(/"type":"(?:video|input_video|video_url)"/u);
   });
 
   it("omits fake video data URLs instead of trusting MIME metadata", () => {
@@ -1591,11 +1604,23 @@ describe("redactTranscriptMessage", () => {
       content: [{ type: "input_video", video_url: "data:video/mp4;base64,AKIDABCDEFGHIJKLMNOP" }],
     } as unknown as AgentMessage;
 
-    const block = expectDefined(
-      (msgContent(redactTranscriptMessage(msg, cfg("tools"))) as Array<{ video_url: string }>)[0],
-      "fake video data URL content test invariant",
-    );
-    expect(block.video_url).toBe("[video data omitted]");
+    expect(msgContent(redactTranscriptMessage(msg, cfg("tools")))).toEqual([
+      { type: "text", text: "[video data omitted]" },
+    ]);
+  });
+
+  it("preserves remote video URLs without treating them as inline payloads", () => {
+    const msg = {
+      role: "assistant",
+      content: [
+        {
+          type: "video_url",
+          video_url: { url: "https://example.test/video.mp4" },
+        },
+      ],
+    } as unknown as AgentMessage;
+
+    expect(redactTranscriptMessage(msg, cfg("tools"))).toEqual(msg);
   });
 
   it("preserves valid BMP image base64 while redacting adjacent text", () => {

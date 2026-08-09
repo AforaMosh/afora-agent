@@ -1,7 +1,16 @@
-import { describe, expect, it, vi } from "vitest";
+import path from "node:path";
+import {
+  createAssistantMessageEventStream,
+  type AssistantMessage,
+  type Context,
+} from "openclaw/plugin-sdk/llm";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
+import { loadTranscriptEvents } from "../../config/sessions/session-accessor.js";
 import type { ImageContent, MediaContent, Model, VideoContent } from "../../llm/types.js";
 import { readRuntimeMediaFactIdentities } from "../../media/media-facts.js";
 import { finalizeRuntimePromptImages } from "../../media/runtime-prompt-image-provenance.js";
+import { disposeOpenClawAgentDatabaseByPath } from "../../state/openclaw-agent-db.js";
 import { AuthStorage } from "./auth-storage.js";
 import { createExtensionRuntime } from "./extensions/loader.js";
 import type { LoadExtensionsResult } from "./extensions/types.js";
@@ -15,6 +24,8 @@ import { createSyntheticSourceInfo } from "./source-info.js";
 vi.mock("../../auto-reply/thinking.js", () => ({
   resolveThinkingDefaultForModel: () => "medium",
 }));
+
+const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 const testModel: Model = {
   id: "test-video-model",
@@ -90,8 +101,11 @@ function createNativeMediaResourceLoader(
 }
 
 async function createNativeMediaSession(options?: {
+  agentDir?: string;
+  contexts?: Context[];
   handlers?: Map<string, Array<(...args: unknown[]) => Promise<unknown>>>;
   settingsManager?: SettingsManager;
+  sessionManager?: SessionManager;
   model?: Model;
 }) {
   const model = options?.model ?? testModel;
@@ -100,13 +114,48 @@ async function createNativeMediaSession(options?: {
   const modelRegistry = ModelRegistry.inMemory(authStorage);
   modelRegistry.registerProvider(model.provider, {
     api: model.api,
-    streamSimple: vi.fn(),
+    streamSimple: vi.fn((activeModel: Model, context: Context) => {
+      options?.contexts?.push(context);
+      const stream = createAssistantMessageEventStream();
+      const message: AssistantMessage = {
+        role: "assistant",
+        content: [{ type: "text", text: "done" }],
+        api: activeModel.api,
+        provider: activeModel.provider,
+        model: activeModel.id,
+        usage: {
+          input: 1,
+          output: 1,
+          cacheRead: 0,
+          cacheWrite: 0,
+          totalTokens: 2,
+          contextUsage: {
+            state: "available",
+            promptTokens: 1,
+            totalTokens: 2,
+          },
+          cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+        },
+        stopReason: "stop",
+        timestamp: Date.now(),
+      };
+      queueMicrotask(() => {
+        stream.push({ type: "done", reason: "stop", message });
+        stream.end();
+      });
+      return stream;
+    }),
   });
   return await createAgentSession({
+    ...(options?.agentDir ? { agentDir: options.agentDir, cwd: options.agentDir } : {}),
     authStorage,
     model,
     resourceLoader: createNativeMediaResourceLoader(options?.handlers ?? new Map()),
-    sessionManager: SessionManager.inMemory(),
+    ...(options?.sessionManager
+      ? { sessionManager: options.sessionManager }
+      : options?.agentDir
+        ? {}
+        : { sessionManager: SessionManager.inMemory() }),
     settingsManager: options?.settingsManager ?? SettingsManager.inMemory(),
     modelRegistry,
   });
@@ -141,6 +190,109 @@ describe("AgentSession native media", () => {
       content: [{ type: "text", text: "describe the recording" }, video],
     });
     session.dispose();
+  });
+
+  it.each([
+    {
+      label: "prompt",
+      send: (session: Awaited<ReturnType<typeof createNativeMediaSession>>["session"]) =>
+        session.prompt("describe the recording", { media: [video] }),
+    },
+    {
+      label: "extension sendUserMessage",
+      send: (session: Awaited<ReturnType<typeof createNativeMediaSession>>["session"]) =>
+        session.sendUserMessage([{ type: "text", text: "describe the recording" }, video]),
+    },
+  ])("replays persisted factless video from $label as text", async ({ send }) => {
+    const agentDir = tempDirs.make("openclaw-sdk-video-transcript-");
+    const databasePath = path.join(agentDir, "openclaw-agent.sqlite");
+    const contexts: Context[] = [];
+    let firstSession: Awaited<ReturnType<typeof createNativeMediaSession>>["session"] | undefined;
+    let replaySession: Awaited<ReturnType<typeof createNativeMediaSession>>["session"] | undefined;
+    try {
+      ({ session: firstSession } = await createNativeMediaSession({ agentDir, contexts }));
+      await send(firstSession);
+
+      const currentRequest = JSON.stringify(contexts[0]?.messages);
+      expect(currentRequest).toContain(video.data);
+      expect(currentRequest).toContain('"type":"video"');
+
+      const target = firstSession.sessionManager.getSessionTarget();
+      if (!target) {
+        throw new Error("expected persisted SDK session target");
+      }
+      const transcriptJson = JSON.stringify(await loadTranscriptEvents(target));
+      expect(transcriptJson).not.toContain(video.data);
+      expect(transcriptJson).not.toContain('"type":"video"');
+      expect(transcriptJson).toContain("inline video is not retained in session history");
+
+      firstSession.dispose();
+      firstSession = undefined;
+      const sessionManager = SessionManager.open(target, agentDir);
+      ({ session: replaySession } = await createNativeMediaSession({
+        contexts,
+        sessionManager,
+      }));
+      await replaySession.prompt("continue");
+
+      const replayRequest = JSON.stringify(contexts[1]?.messages);
+      expect(replayRequest).toContain("inline video is not retained in session history");
+      expect(replayRequest).not.toContain(video.data);
+      expect(replayRequest).not.toContain('"type":"video"');
+    } finally {
+      firstSession?.dispose();
+      replaySession?.dispose();
+      disposeOpenClawAgentDatabaseByPath(databasePath);
+    }
+  });
+
+  it("replays an enclosing provider video source as text", async () => {
+    const agentDir = tempDirs.make("openclaw-sdk-provider-video-transcript-");
+    const databasePath = path.join(agentDir, "openclaw-agent.sqlite");
+    const contexts: Context[] = [];
+    const rawVideo = "cHJpdmF0ZS1wcm92aWRlci12aWRlbw==";
+    let firstSession: Awaited<ReturnType<typeof createNativeMediaSession>>["session"] | undefined;
+    let replaySession: Awaited<ReturnType<typeof createNativeMediaSession>>["session"] | undefined;
+    try {
+      ({ session: firstSession } = await createNativeMediaSession({ agentDir }));
+      firstSession.sessionManager.appendMessage({
+        role: "user",
+        content: [
+          {
+            type: "image",
+            source: { type: "base64", media_type: "video/mp4", data: rawVideo },
+          },
+        ],
+        timestamp: Date.now(),
+      } as unknown as Parameters<SessionManager["appendMessage"]>[0]);
+      const target = firstSession.sessionManager.getSessionTarget();
+      if (!target) {
+        throw new Error("expected persisted SDK session target");
+      }
+      const transcriptJson = JSON.stringify(await loadTranscriptEvents(target));
+      expect(transcriptJson).toContain("[video data omitted]");
+      expect(transcriptJson).not.toContain(rawVideo);
+      expect(transcriptJson).not.toMatch(/"type":"(?:image|base64|video)"/u);
+
+      firstSession.dispose();
+      firstSession = undefined;
+      const sessionManager = SessionManager.open(target, agentDir);
+      ({ session: replaySession } = await createNativeMediaSession({
+        contexts,
+        sessionManager,
+      }));
+      await replaySession.prompt("continue");
+
+      const replayRequest = JSON.stringify(contexts[0]?.messages);
+      expect(replayRequest).toContain("[video data omitted]");
+      expect(replayRequest).not.toContain(rawVideo);
+      expect(replayRequest).not.toMatch(/"type":"(?:image|base64|video)"/u);
+      expect(replayRequest).not.toContain('"source"');
+    } finally {
+      firstSession?.dispose();
+      replaySession?.dispose();
+      disposeOpenClawAgentDatabaseByPath(databasePath);
+    }
   });
 
   it("preserves the released images option while preferring canonical media", async () => {

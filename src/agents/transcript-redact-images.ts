@@ -3,12 +3,16 @@ import {
   sanitizeInlineImageBase64,
   sanitizeInlineImageDataUrlForStorage,
 } from "@openclaw/media-core/inline-image-data-url";
+import { isRecord } from "@openclaw/normalization-core/record-coerce";
 import {
   readPersistedMediaBlockFactIndexes,
   readRuntimePromptMediaFacts,
 } from "../media/media-facts.js";
 
 const OMITTED_TRANSCRIPT_VIDEO_DATA = "[video data omitted]";
+const INLINE_VIDEO_PAYLOAD_MAX_NESTING = 4;
+const INLINE_VIDEO_URL_FIELDS = ["url", "video_url", "data"] as const;
+const INLINE_VIDEO_CONTAINER_FIELDS = ["source", "video_url"] as const;
 
 const isMediaMimeType = (value: unknown): value is string =>
   typeof value === "string" && /^(?:image|video)\//iu.test(value.trim());
@@ -28,7 +32,7 @@ function mediaMimeTypeFieldsForRecord(value: Record<string, unknown>): string[] 
   return ["mimeType", "mediaType", "media_type"].filter((key) => isMediaMimeType(value[key]));
 }
 
-function isVideoPayloadRecord(value: Record<string, unknown>): boolean {
+function hasVideoPayloadTypeOrMime(value: Record<string, unknown>): boolean {
   const hasVideoMime = [
     value.mimeType,
     value.mime_type,
@@ -39,12 +43,42 @@ function isVideoPayloadRecord(value: Record<string, unknown>): boolean {
   ].some((candidate) =>
     typeof candidate === "string" ? /^video\//iu.test(candidate.trim()) : false,
   );
-  return (
-    value.type === "video" ||
-    value.type === "input_video" ||
-    value.type === "video_url" ||
-    hasVideoMime
-  );
+  const hasVideoType =
+    value.type === "video" || value.type === "input_video" || value.type === "video_url";
+  return hasVideoType || hasVideoMime;
+}
+
+function isInlineVideoDataUrl(value: unknown): boolean {
+  return typeof value === "string" && /^data:video\//iu.test(value.trimStart());
+}
+
+function containsInlineVideoPayload(
+  value: Record<string, unknown>,
+  depth = 0,
+  seen: WeakSet<object> = new WeakSet<object>(),
+): boolean {
+  // Provider media envelopes nest through only these carrier fields. Keep hostile
+  // transcript input cycle-safe and bounded instead of walking arbitrary metadata.
+  if (seen.has(value)) {
+    return false;
+  }
+  seen.add(value);
+  const hasInlineBytes = typeof value.data === "string" || typeof value.blob === "string";
+  const hasInlineUrl = INLINE_VIDEO_URL_FIELDS.some((key) => isInlineVideoDataUrl(value[key]));
+  if ((hasVideoPayloadTypeOrMime(value) && hasInlineBytes) || hasInlineUrl) {
+    seen.delete(value);
+    return true;
+  }
+  if (depth >= INLINE_VIDEO_PAYLOAD_MAX_NESTING) {
+    seen.delete(value);
+    return false;
+  }
+  const nested = INLINE_VIDEO_CONTAINER_FIELDS.some((key) => {
+    const child = value[key];
+    return isRecord(child) && containsInlineVideoPayload(child, depth + 1, seen);
+  });
+  seen.delete(value);
+  return nested;
 }
 
 function sanitizeOpaqueMediaBase64(
@@ -77,10 +111,8 @@ export function sanitizeTranscriptMediaRecord(
   source: Record<string, unknown>,
   trustedVideo = false,
 ): Record<string, unknown> | undefined {
-  if (typeof source.data === "string" && isVideoPayloadRecord(source) && !trustedVideo) {
-    return source.data === OMITTED_TRANSCRIPT_VIDEO_DATA
-      ? source
-      : { ...source, data: OMITTED_TRANSCRIPT_VIDEO_DATA };
+  if (!trustedVideo && containsInlineVideoPayload(source)) {
+    return { type: "text", text: OMITTED_TRANSCRIPT_VIDEO_DATA };
   }
   const isMediaBlock = source.type === "image" || source.type === "video";
   const isBase64SourceBlock = source.type === "base64";
@@ -186,9 +218,6 @@ export function shouldPreserveTranscriptMediaPayload(
 ): boolean {
   if (typeof item !== "string") {
     return false;
-  }
-  if (item === OMITTED_TRANSCRIPT_VIDEO_DATA && isVideoPayloadRecord(source)) {
-    return true;
   }
   if (key === "data" && isOpaqueMediaDataBlock(source, trustedVideo)) {
     return true;
