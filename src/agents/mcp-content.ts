@@ -286,10 +286,11 @@ function projectMcpContentBlocksWithinBudget(
   for (let index = 0; index < blockCount; index += 1) {
     const rawBlock = blocks[index];
     let rawImageData: unknown;
-    const blockType = isRecord(rawBlock) ? rawBlock.type : undefined;
+    const rawRecord = isRecord(rawBlock) ? rawBlock : undefined;
+    const blockType = rawRecord?.type;
     const imageBlock = blockType === "image";
     if (imageBlock) {
-      rawImageData = rawBlock.data;
+      rawImageData = rawRecord?.data;
       if (typeof rawImageData === "string" && rawImageData.length <= MCP_IMAGE_MAX_ENCODED_CHARS) {
         if (rawAdmissionBytes + rawImageData.length + aggregateMarkerBytes > MCP_RESULT_MAX_BYTES) {
           aggregateTruncated = true;
