@@ -62,10 +62,7 @@ import {
 } from "./openclaw-state-db-maintenance.js";
 import * as operatorApprovalMigration from "./openclaw-state-db-operator-approval-migration.js";
 import { ensureOpenClawStatePermissions } from "./openclaw-state-db-permissions.js";
-import {
-  canonicalStateSchemaForRuntime,
-  executeCanonicalStateSchema,
-} from "./openclaw-state-db-runtime-schema.js";
+import { canonicalStateSchemaForRuntime } from "./openclaw-state-db-runtime-schema.js";
 import { ensureAdditiveStateColumns } from "./openclaw-state-db-schema-additive.js";
 import { tableExists } from "./openclaw-state-db-schema-helpers.js";
 import {
@@ -237,9 +234,11 @@ export function repairOpenClawStateDatabaseSchema(options: OpenClawStateDatabase
         assertCanonicalStateSchemaShape(db, pathname);
         if (tableExists(db, "audit_events")) {
           ensureAdditiveStateColumns(db);
-          executeCanonicalStateSchema(db, {
-            includeVersionLazyAdditiveTables: previousVersion !== OPENCLAW_STATE_SCHEMA_VERSION,
-          });
+          db.exec(
+            canonicalStateSchemaForRuntime({
+              includeVersionLazyAdditiveTables: previousVersion !== OPENCLAW_STATE_SCHEMA_VERSION,
+            }),
+          );
           if (previousVersion < OPENCLAW_STATE_STRICT_SCHEMA_VERSION) {
             repairLegacyGatewayRestartHandoffsForStrictMigration(db);
           }
@@ -368,9 +367,11 @@ function ensureSchema(db: DatabaseSync, pathname: string): void {
         ensureAdditiveStateColumns(db);
         sessionWatchMigration.migrateSessionWatchCursorProvenance(db);
         assertCanonicalStateSchemaShape(db, pathname);
-        executeCanonicalStateSchema(db, {
-          includeVersionLazyAdditiveTables: previousVersion !== OPENCLAW_STATE_SCHEMA_VERSION,
-        });
+        db.exec(
+          canonicalStateSchemaForRuntime({
+            includeVersionLazyAdditiveTables: previousVersion !== OPENCLAW_STATE_SCHEMA_VERSION,
+          }),
+        );
         migrateLegacyCronRunLogsToTaskRuns(db);
         if (previousVersion < OPENCLAW_STATE_STRICT_SCHEMA_VERSION) {
           repairLegacyGatewayRestartHandoffsForStrictMigration(db);

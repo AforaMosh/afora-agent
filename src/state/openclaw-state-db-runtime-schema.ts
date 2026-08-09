@@ -1,4 +1,3 @@
-import type { DatabaseSync } from "node:sqlite";
 import {
   FIRST_USE_STATE_INDEXES,
   FIRST_USE_STATE_TABLES,
@@ -39,11 +38,4 @@ export function canonicalStateSchemaForRuntime(options: {
     eagerSchema = `${eagerSchema.slice(0, start)}${eagerSchema.slice(end + 1)}`;
   }
   return eagerSchema;
-}
-
-export function executeCanonicalStateSchema(
-  database: DatabaseSync,
-  options: { includeVersionLazyAdditiveTables: boolean },
-): void {
-  database.exec(canonicalStateSchemaForRuntime(options));
 }
