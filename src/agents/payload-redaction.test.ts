@@ -146,6 +146,22 @@ describe("sanitizeDiagnosticPayload", () => {
         sha256: mediaDigest,
       },
     },
+    {
+      block: {
+        type: "audio_url",
+        audio_url: { url: `data:audio/mpeg;base64,${mediaData}`, format: "mp3" },
+      },
+      expected: {
+        type: "audio_url",
+        audio_url: {
+          url: "<redacted>",
+          format: "mp3",
+          mimeType: "audio/mpeg",
+          bytes: 11,
+          sha256: mediaDigest,
+        },
+      },
+    },
   ])("redacts provider wire data URLs without losing MIME metadata: %j", ({ block, expected }) => {
     const redacted = sanitizeDiagnosticPayload({ content: [block] });
 
@@ -212,5 +228,17 @@ describe("sanitizeDiagnosticPayload", () => {
     expect(serialized).not.toContain(dataUrl);
     expect(serialized).not.toContain(localPath);
     expect(serialized).toContain("<redacted-media-reference>");
+  });
+
+  it("fully redacts prefixed line-wrapped audio data URLs", () => {
+    const fragments = ["cHJpdmF0ZS", "1hdWRpby1w", "YXlsb2Fk"];
+    const projected = sanitizeModelVisibleMediaPayload(
+      `captured audio: data:audio/mpeg;base64,${fragments.join(" \t\n")}`,
+    );
+
+    expect(projected).toBe("captured audio: <redacted>");
+    for (const fragment of fragments) {
+      expect(projected).not.toContain(fragment);
+    }
   });
 });

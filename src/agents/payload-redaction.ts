@@ -9,9 +9,9 @@ import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/st
 
 const REDACTED_MEDIA_DATA = "<redacted>";
 const REDACTED_MEDIA_REFERENCE = "<redacted-media-reference>";
-const INLINE_MEDIA_DATA_URL_RE = /^data:((image|video)\/[^;,]+);base64,([\s\S]*)$/iu;
+const INLINE_MEDIA_DATA_URL_RE = /^data:((audio|image|video)\/[^;,]+);base64,([\s\S]*)$/iu;
 const EMBEDDED_MEDIA_DATA_URL_RE =
-  /data:(?:image|video)\/[^;,\s]+(?:;[^,\s]+)*;base64,[A-Za-z0-9+/_=-]+/giu;
+  /\bdata:(?:audio|image|video)\/[^;,\s]+(?:;[^,\s]+)*;base64,[\s\S]*$/giu;
 const MEDIA_ATTACHED_NOTE_RE = /\[media attached(?: [^:\]]+)?:[^\]]*\]/giu;
 const MEDIA_DIRECTIVE_RE = /\bMEDIA:(?:file:\/\/)?[^\s]+/giu;
 const MEDIA_REFERENCE_FIELDS = new Set([
@@ -161,11 +161,13 @@ function redactInlineMediaDataUrl(
 ): void {
   const type = normalizeLowercaseStringOrEmpty(record.type);
   const mediaKind =
-    type === "image_url" || type === "input_image"
-      ? "image"
-      : type === "video_url" || type === "input_video"
-        ? "video"
-        : undefined;
+    type === "audio_url" || type === "input_audio" || type === "output_audio"
+      ? "audio"
+      : type === "image_url" || type === "input_image"
+        ? "image"
+        : type === "video_url" || type === "input_video"
+          ? "video"
+          : undefined;
   if (!mediaKind) {
     return;
   }
