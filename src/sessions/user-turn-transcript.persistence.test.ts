@@ -97,11 +97,18 @@ describe("persistUserTurnTranscript", () => {
       },
       provenance,
     };
+    const expectedStored = {
+      ...expected,
+      __openclaw: {
+        ...expected.__openclaw,
+        media: [{ path: "/tmp/image.png", sourceIndex: 0, contentType: "image/png" }],
+      },
+    };
     expect(appended?.message).toEqual(expected);
     expect(JSON.stringify(appended?.message)).toBe(JSON.stringify(expected));
     const messages = await readTranscriptMessages(target);
-    expect(messages).toEqual([expected]);
-    expect(JSON.stringify(messages[0])).toBe(JSON.stringify(expected));
+    expect(messages).toEqual([expectedStored]);
+    expect(JSON.stringify(messages[0])).toBe(JSON.stringify(expectedStored));
   });
 
   it("round-trips a multi-attachment SQLite row byte-identically", async () => {
@@ -114,7 +121,23 @@ describe("persistUserTurnTranscript", () => {
       __openclaw: {
         media: [
           { path: "/tmp/image.png", contentType: "image/png" },
-          { url: "https://example.test/report.pdf", contentType: "application/pdf" },
+          {
+            url: "https://example.test/report.pdf",
+            contentType: "application/pdf",
+          },
+        ],
+      },
+    };
+    const expectedStored = {
+      ...expected,
+      __openclaw: {
+        media: [
+          { path: "/tmp/image.png", sourceIndex: 0, contentType: "image/png" },
+          {
+            sourceIndex: 1,
+            url: "https://example.test/report.pdf",
+            contentType: "application/pdf",
+          },
         ],
       },
     };
@@ -135,8 +158,8 @@ describe("persistUserTurnTranscript", () => {
     expect(appended?.message).toEqual(expected);
     expect(JSON.stringify(appended?.message)).toBe(JSON.stringify(expected));
     const messages = await readTranscriptMessages(target);
-    expect(messages).toEqual([expected]);
-    expect(JSON.stringify(messages[0])).toBe(JSON.stringify(expected));
+    expect(messages).toEqual([expectedStored]);
+    expect(JSON.stringify(messages[0])).toBe(JSON.stringify(expectedStored));
   });
 
   it("persists sender metadata as __openclaw envelope", async () => {

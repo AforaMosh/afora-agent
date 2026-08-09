@@ -33,7 +33,10 @@ import {
   loadBundledProviderStaticCatalogContextModels,
 } from "./embedded-agent-runner/model.static-catalog.js";
 import { createStaticModelIdMatcher } from "./embedded-agent-runner/model.static-id.js";
-import { buildPreparedModelCatalogSnapshot } from "./model-catalog.js";
+import {
+  buildPreparedModelCatalogSnapshot,
+  qualifyPreparedModelCatalogNativeVideo,
+} from "./model-catalog.js";
 import type { ModelCatalogSnapshot } from "./model-catalog.types.js";
 import { buildConfiguredModelCatalog } from "./model-selection-shared.js";
 import { ensureOpenClawModelsJson, planOpenClawModelsJsonSource } from "./models-config.js";
@@ -555,13 +558,13 @@ function groupConfiguredRegistrySources(
   return [...groups.values()].flat();
 }
 
-export function prepareConfiguredRuntimeFactsBatch(params: {
+export async function prepareConfiguredRuntimeFactsBatch(params: {
   agentFacts: readonly PreparedModelRuntimeAgentFacts[];
   pluginGeneration: PreparedModelRuntimePluginGeneration;
-}): {
+}): Promise<{
   catalogs: Map<PreparedModelRuntimeInput, PreparedModelRuntimeCatalogFacts>;
   registryCount: number;
-} {
+}> {
   const catalogs = new Map<PreparedModelRuntimeInput, PreparedModelRuntimeCatalogFacts>();
   let registryCount = 0;
   for (const group of groupConfiguredRegistrySources(params.agentFacts)) {
@@ -587,7 +590,7 @@ export function prepareConfiguredRuntimeFactsBatch(params: {
     registryCount += 1;
     // The captured registry exists only after agent-owned catalog parsing. Complete static misses
     // here so turn facts stay within this lifecycle generation without starting live discovery.
-    withPluginRuntimeRegistryScope(params.pluginGeneration.pluginRegistry, () => {
+    await withPluginRuntimeRegistryScope(params.pluginGeneration.pluginRegistry, async () => {
       for (const facts of group.agentFacts) {
         const { input } = facts;
         const configuredRuntimeModels = params.pluginGeneration.pluginRegistry
@@ -618,15 +621,21 @@ export function prepareConfiguredRuntimeFactsBatch(params: {
               },
             })
           : facts.configuredRuntimeModels;
-        catalogs.set(
-          input,
-          prepareConfiguredRuntimeFacts({
-            agentFacts: facts,
-            workspaceFacts: params.pluginGeneration,
-            templateModelRegistry,
-            configuredRuntimeModels,
-          }),
-        );
+        const catalogFacts = prepareConfiguredRuntimeFacts({
+          agentFacts: facts,
+          workspaceFacts: params.pluginGeneration,
+          templateModelRegistry,
+          configuredRuntimeModels,
+        });
+        const qualifiedModelCatalog = await qualifyPreparedModelCatalogNativeVideo({
+          snapshot: catalogFacts.modelCatalog,
+          agentDir: input.agentDir,
+          config: input.config,
+          metadataSnapshot: params.pluginGeneration.pluginMetadataSnapshot,
+          ...(input.workspaceDir ? { workspaceDir: input.workspaceDir } : {}),
+          env: facts.env,
+        });
+        catalogs.set(input, { ...catalogFacts, modelCatalog: qualifiedModelCatalog });
       }
     });
   }

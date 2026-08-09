@@ -320,7 +320,6 @@ function resolveGatewayProviderStaticModel(params: {
   provider?: string;
   model: string;
   catalogEntry?: ModelCatalogEntry;
-  input: "image" | "video";
 }): ModelCatalogEntry | undefined {
   if (
     !params.agentId ||
@@ -353,7 +352,7 @@ function resolveGatewayProviderStaticModel(params: {
   const configuredModel = configuredProvider?.models?.find(
     (model) => normalizeLowercaseStringOrEmpty(model.id) === normalizedModelId,
   );
-  if (configuredModel?.input && !configuredModel.input.includes(params.input)) {
+  if (configuredModel?.input && !configuredModel.input.includes("image")) {
     return undefined;
   }
   const configuredApi = configuredModel?.api ?? configuredProvider?.api;
@@ -409,22 +408,19 @@ export async function resolveGatewayModelInputCapabilities(
       provider: params.provider,
       modelId: model,
     });
-    // Same-generation provider facts repair stale discovered capabilities without
+    // Same-generation provider facts repair stale discovered image capability without
     // crossing agent ownership, physical routes, or authored input policy.
-    const resolveInputModel = (input: "image" | "video") =>
-      snapshot && (!catalogEntry || !modelSupportsInput(catalogEntry, input))
+    const imageModelEntry =
+      snapshot && (!catalogEntry || !modelSupportsInput(catalogEntry, "image"))
         ? (resolveGatewayProviderStaticModel({
             snapshot,
             agentId: params.agentId,
             provider: params.provider,
             model,
             catalogEntry,
-            input,
           }) ?? catalogEntry)
         : catalogEntry;
-    const imageModelEntry = resolveInputModel("image");
-    const videoModelEntry = resolveInputModel("video");
-    const supportsVideo = modelSupportsInput(videoModelEntry, "video");
+    const supportsVideo = catalogEntry?.supportsNativeVideo === true;
     const normalizedProvider = normalizeOptionalLowercaseString(
       params.provider ?? imageModelEntry?.provider,
     );

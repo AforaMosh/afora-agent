@@ -16,6 +16,16 @@ export function sanitizeMediaReferenceForProjection(value: string): string {
   }
 }
 
+export function normalizeDurableMediaReference(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed && !/^data:/iu.test(trimmed)
+    ? sanitizeMediaReferenceForProjection(trimmed)
+    : undefined;
+}
+
 /** Accepts only one-segment, query-free opaque inbound claim references. */
 export function normalizeCanonicalInboundMediaUri(value: unknown): string | undefined {
   if (typeof value !== "string") {

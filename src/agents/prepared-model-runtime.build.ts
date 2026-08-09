@@ -383,7 +383,7 @@ async function buildSnapshotBatch(
       if (!pluginGeneration) {
         throw new Error("prepared model runtime plugin generation is missing");
       }
-      const batch = prepareConfiguredRuntimeFactsBatch({
+      const batch = await prepareConfiguredRuntimeFactsBatch({
         agentFacts: groupInputs.map((input) => {
           const agentFacts = preparedInputs.get(input);
           if (!agentFacts) {

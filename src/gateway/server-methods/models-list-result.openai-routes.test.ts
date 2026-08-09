@@ -72,6 +72,33 @@ async function listModels(params: {
 }
 
 describe("models.list OpenAI routes", () => {
+  it("projects the route-qualified native-video fact without private route details", async () => {
+    const result = await listModels({
+      catalog: [
+        {
+          id: "kimi-k3",
+          name: "Kimi K3",
+          provider: "moonshot",
+          api: "openai-completions",
+          baseUrl: "https://api.moonshot.ai/v1",
+          input: ["text", "video"],
+          supportsNativeVideo: true,
+        },
+      ],
+      view: "all",
+    });
+
+    expect(result.models).toEqual([
+      expect.objectContaining({
+        id: "kimi-k3",
+        provider: "moonshot",
+        supportsNativeVideo: true,
+      }),
+    ]);
+    expect(result.models[0]).not.toHaveProperty("baseUrl");
+    expect(result.models[0]).not.toHaveProperty("nativeVideoInput");
+  });
+
   it("does not reuse a preloaded catalog owned by another agent", async () => {
     const config = {
       agents: {

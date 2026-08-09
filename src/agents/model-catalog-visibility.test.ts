@@ -87,6 +87,52 @@ describe("resolveLogicalVisibleModelCatalog", () => {
     expect(result.map((entry) => entry.id)).toEqual(["off", "old"]);
   });
 
+  it("keeps prepared route capabilities when configured rows are rebuilt for browsing", async () => {
+    const catalog: ModelCatalogEntry[] = [
+      {
+        provider: "moonshot",
+        id: "kimi-k3",
+        name: "Kimi K3",
+        api: "openai-completions",
+        baseUrl: "https://api.moonshot.ai/v1",
+        input: ["text", "video"],
+        supportsNativeVideo: true,
+      },
+    ];
+    const cfg = {
+      models: {
+        providers: {
+          moonshot: {
+            api: "openai-completions",
+            baseUrl: "https://api.moonshot.ai/v1",
+            models: [
+              {
+                id: "kimi-k3",
+                name: "Configured Kimi K3",
+                reasoning: true,
+                input: ["text", "video"],
+                cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+                contextWindow: 1_000_000,
+                maxTokens: 8_192,
+              },
+            ],
+          },
+        },
+      },
+    } as OpenClawConfig;
+
+    const result = await resolveLogicalVisibleModelCatalog({
+      cfg,
+      catalog,
+      defaultProvider: "moonshot",
+      view: "configured",
+      routePolicy: openAIModelCatalogRoutePolicy,
+      evaluateEntry: evaluateAvailableEntry,
+    });
+
+    expect(result).toEqual([expect.objectContaining({ supportsNativeVideo: true })]);
+  });
+
   it("preserves provider-owned strongest-first order through route projection", async () => {
     const catalog: ModelCatalogEntry[] = [
       { provider: "openai", id: "gpt-5.4", name: "GPT-5.4", providerOrder: 3 },

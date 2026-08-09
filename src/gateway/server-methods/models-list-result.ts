@@ -60,7 +60,14 @@ import type { GatewayRequestContext } from "./types.js";
 type ModelsListView = ModelCatalogBrowseView;
 type ModelsListEntry = Pick<
   ModelCatalogEntry,
-  "alias" | "contextWindow" | "id" | "input" | "name" | "provider" | "reasoning"
+  | "alias"
+  | "contextWindow"
+  | "id"
+  | "input"
+  | "name"
+  | "provider"
+  | "reasoning"
+  | "supportsNativeVideo"
 > & { available?: boolean; supportsTools?: boolean };
 type ModelsListEntryWithCapabilities = ModelsListEntry & {
   agentRuntime?: GatewayAgentRuntime;
@@ -93,6 +100,7 @@ function buildPublicModelProjection(entry: ModelCatalogEntry): ModelsListEntry {
     ...(entry.alias ? { alias: entry.alias } : {}),
     ...(contextWindow ? { contextWindow } : {}),
     ...(typeof entry.reasoning === "boolean" ? { reasoning: entry.reasoning } : {}),
+    ...(entry.supportsNativeVideo === true ? { supportsNativeVideo: true } : {}),
     ...(typeof entry.compat?.supportsTools === "boolean"
       ? { supportsTools: entry.compat.supportsTools }
       : {}),

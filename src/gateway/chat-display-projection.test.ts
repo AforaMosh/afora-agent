@@ -281,6 +281,95 @@ describe("private transcript metadata projection", () => {
     expect(serialized).not.toContain("signature");
   });
 
+  it("removes inline data references from hostile persisted media facts", () => {
+    const inlinePayload = "cHJpdmF0ZS1oaXN0b3J5LW1lZGlh";
+    const projected = projectChatDisplayMessages([
+      {
+        role: "user",
+        content: "Inspect legacy media.",
+        media: [
+          {
+            sourceIndex: 3,
+            url: `data:video/mp4;base64,${inlinePayload}`,
+            contentType: "video/mp4",
+          },
+          {
+            sourceIndex: 4,
+            path: `data:image/png;base64,${inlinePayload}`,
+            url: "media://inbound/top-level-managed.png",
+            contentType: "image/png",
+          },
+        ],
+        MediaPath: `data:image/png;base64,${inlinePayload}`,
+        MediaUrl: `DATA:video/mp4;base64,${inlinePayload}`,
+        MediaPaths: [
+          "/tmp/local.png",
+          `data:image/png;base64,${inlinePayload}`,
+          "",
+          "relative.png",
+        ],
+        MediaUrls: [
+          `data:video/mp4;base64,${inlinePayload}`,
+          "https://user" + ":password@cdn.example.test/legacy.mp4?signature=private",
+        ],
+        MediaTypes: ["image/png"],
+        __openclaw: {
+          media: [
+            {
+              sourceIndex: 0,
+              url: `data:video/mp4;base64,${inlinePayload}`,
+              contentType: "video/mp4",
+            },
+            {
+              sourceIndex: 1,
+              path: `DATA:image/png;base64,${inlinePayload}`,
+              contentType: "image/png",
+            },
+            {
+              sourceIndex: 2,
+              path: `data:video/mp4;base64,${inlinePayload}`,
+              url: "media://inbound/managed.mp4",
+              contentType: "video/mp4",
+            },
+          ],
+        },
+      },
+    ]);
+
+    expect(projected).toEqual([
+      {
+        role: "user",
+        content: "Inspect legacy media.",
+        media: [
+          { sourceIndex: 3, contentType: "video/mp4" },
+          {
+            sourceIndex: 4,
+            url: "media://inbound/top-level-managed.png",
+            contentType: "image/png",
+          },
+        ],
+        MediaPaths: ["/tmp/local.png", "", "", "relative.png"],
+        MediaUrls: ["", "https://cdn.example.test/legacy.mp4"],
+        MediaTypes: ["image/png"],
+        __openclaw: {
+          media: [
+            { sourceIndex: 0, contentType: "video/mp4" },
+            { sourceIndex: 1, contentType: "image/png" },
+            {
+              sourceIndex: 2,
+              url: "media://inbound/managed.mp4",
+              contentType: "video/mp4",
+            },
+          ],
+        },
+      },
+    ]);
+    expect(JSON.stringify(projected)).not.toContain("data:");
+    expect(JSON.stringify(projected)).not.toContain(inlinePayload);
+    expect(JSON.stringify(projected)).not.toContain("password");
+    expect(JSON.stringify(projected)).not.toContain("signature");
+  });
+
   it("keeps visible text while omitting oversized upstream prompt metadata", () => {
     const message = {
       role: "user",

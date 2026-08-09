@@ -382,6 +382,55 @@ describe("buildPersistedUserTurnMessage media projection", () => {
     expect(JSON.stringify(message)).not.toContain("signature");
   });
 
+  it("rejects inline data references while preserving durable media locations", () => {
+    const inlinePayload = "cHJpdmF0ZS1tZWRpYQ==";
+    const message = buildPersistedUserTurnMessage({
+      text: "inspect",
+      timestamp: 123,
+      media: [
+        {
+          sourceIndex: 0,
+          url: `data:video/mp4;base64,${inlinePayload}`,
+          contentType: "video/mp4",
+          kind: "video",
+        },
+        {
+          sourceIndex: 1,
+          path: `data:image/png;base64,${inlinePayload}`,
+          contentType: "image/png",
+          kind: "image",
+        },
+        {
+          sourceIndex: 2,
+          url: "media://inbound/managed.mp4",
+          contentType: "video/mp4",
+          kind: "video",
+        },
+        {
+          sourceIndex: 3,
+          url: "https://user" + ":password@cdn.example.test/clip.mp4?signature=private",
+          contentType: "video/mp4",
+          kind: "video",
+        },
+        {
+          sourceIndex: 4,
+          path: "/tmp/local.mp4",
+          contentType: "video/mp4",
+          kind: "video",
+        },
+      ],
+    });
+
+    const media = readPersistedMediaFacts(message);
+    expect(media?.[0]?.url).toBeUndefined();
+    expect(media?.[1]?.path).toBeUndefined();
+    expect(media?.[2]?.url).toBe("media://inbound/managed.mp4");
+    expect(media?.[3]?.url).toBe("https://cdn.example.test/clip.mp4");
+    expect(media?.[4]?.path).toBe("/tmp/local.mp4");
+    expect(JSON.stringify(message)).not.toContain("data:");
+    expect(JSON.stringify(message)).not.toContain(inlinePayload);
+  });
+
   it("reads canonical persisted facts without merging disagreeing legacy fields", () => {
     const message = {
       MediaPath: "/legacy.png",

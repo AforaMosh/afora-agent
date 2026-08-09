@@ -3572,6 +3572,7 @@ describe("resolveGatewayModelSupportsImages", () => {
           name: "Kimi K3",
           provider: "moonshot",
           input: ["text", "image", "video"],
+          supportsNativeVideo: true,
         },
       ],
     );
@@ -3587,7 +3588,7 @@ describe("resolveGatewayModelSupportsImages", () => {
     expect(loadGatewayModelCatalog).toHaveBeenCalledOnce();
   });
 
-  test("repairs stale visible video capability from same-agent provider-static facts", async () => {
+  test("does not infer video support from provider-static input metadata", async () => {
     await expect(
       resolveGatewayModelInputCapabilities({
         agentId: "qa",
@@ -3615,7 +3616,7 @@ describe("resolveGatewayModelSupportsImages", () => {
             ],
           }),
       }),
-    ).resolves.toEqual({ supportsImages: true, supportsVideo: true });
+    ).resolves.toEqual({ supportsImages: true, supportsVideo: false });
   });
 
   test("does not override an explicitly configured model without video input", async () => {
@@ -3700,9 +3701,9 @@ describe("resolveGatewayModelSupportsImages", () => {
       route: "custom OpenAI-compatible route",
       baseUrl: "https://video.example.test/v1",
       input: ["text", "image", "video"] as const,
-      supportsVideo: true,
+      supportsVideo: false,
     },
-  ])("uses provider-owned capabilities for a $route", async ({ baseUrl, input, supportsVideo }) => {
+  ])("does not infer native video for a $route", async ({ baseUrl, input, supportsVideo }) => {
     await expect(
       resolveGatewayModelInputCapabilities({
         model: "custom-model",

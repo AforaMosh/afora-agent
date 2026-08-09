@@ -3361,6 +3361,90 @@ describe("followup queue collect routing", () => {
     expect(secondComplete).toHaveBeenCalledTimes(1);
   });
 
+  it("persists collected video descriptions against combined media positions", async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-collect-video-facts-"));
+    const storePath = path.join(tempDir, "sessions.json");
+    const sessionKey = "agent:agent:collect-video";
+    const sessionId = "collect-video-session";
+    const key = `test-collect-video-facts-${Date.now()}`;
+    const { calls, done, runFollowup } = createDrainRecorder();
+    const settings: QueueSettings = { mode: "collect", debounceMs: 0 };
+
+    try {
+      await replaceSessionEntry({ storePath, sessionKey }, { sessionId, updatedAt: Date.now() });
+      const inputs = [
+        {
+          text: "first described clip",
+          media: [
+            { path: "/tmp/first.png", contentType: "image/png", sourceIndex: 0 },
+            {
+              path: "/tmp/first.mp4",
+              contentType: "video/mp4",
+              sourceId: "first-video",
+              sourceIndex: 1,
+            },
+          ],
+          mediaVideoDescriptions: [{ sourceId: "first-video", sourceIndex: 1 }],
+        },
+        {
+          text: "second described clip",
+          media: [
+            { path: "/tmp/second.pdf", contentType: "application/pdf", sourceIndex: 0 },
+            { path: "/tmp/second.mp4", contentType: "video/mp4", sourceIndex: 1 },
+          ],
+          mediaVideoDescriptions: [{ sourceIndex: 1 }],
+        },
+      ] as const;
+
+      for (const input of inputs) {
+        const followup = createRun({ prompt: input.text });
+        followup.transcriptPrompt = input.text;
+        followup.run.sessionId = sessionId;
+        followup.run.sessionKey = sessionKey;
+        followup.run.workspaceDir = tempDir;
+        followup.run.config = { session: { store: storePath } };
+        followup.userTurnTranscriptRecorder = createUserTurnTranscriptRecorder({
+          input,
+          target: createTestUserTurnTranscriptTarget(),
+          updateMode: "none",
+        });
+        enqueueFollowupRun(key, followup, settings);
+      }
+
+      scheduleFollowupDrain(key, runFollowup);
+      await done.promise;
+
+      const persisted = await calls[0]?.userTurnTranscriptRecorder?.persistFallback();
+      expect(persisted).toBeDefined();
+      const events = await loadTranscriptEvents({
+        agentId: "agent",
+        sessionId,
+        sessionKey,
+        storePath,
+      });
+      const message = (
+        events.find((event) => event.type === "message") as
+          | {
+              message?: {
+                __openclaw?: {
+                  media?: Array<{ sourceIndex?: number }>;
+                  mediaVideoDescriptions?: Array<{ sourceId?: string; sourceIndex: number }>;
+                };
+              };
+            }
+          | undefined
+      )?.message;
+      expect(message?.__openclaw?.media?.map((fact) => fact.sourceIndex)).toEqual([0, 1, 2, 3]);
+      expect(message?.__openclaw?.mediaVideoDescriptions).toEqual([
+        { sourceId: "first-video", sourceIndex: 1 },
+        { sourceIndex: 3 },
+      ]);
+    } finally {
+      clearFollowupQueue(key);
+      await fs.rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
   it("pairs differing inbound runtime contexts inside one collected turn", async () => {
     const key = `test-collect-runtime-context-split-${Date.now()}`;
     const { calls, done, runFollowup } = createDrainRecorder();

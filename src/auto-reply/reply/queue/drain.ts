@@ -399,6 +399,17 @@ function resolveFollowupTranscriptTarget(source: FollowupRun) {
   };
 }
 
+function readPersistedVideoDescriptions(
+  message: object | undefined,
+): Array<{ sourceId?: string; sourceIndex: number }> {
+  const descriptions = (
+    message as { __openclaw?: { mediaVideoDescriptions?: unknown } } | undefined
+  )?.__openclaw?.mediaVideoDescriptions;
+  return Array.isArray(descriptions)
+    ? (descriptions as Array<{ sourceId?: string; sourceIndex: number }>)
+    : [];
+}
+
 function createCollectUserTurnTranscriptRecorder(items: FollowupRun[]) {
   const transcriptSources = items.filter((item) => item.userTurnTranscriptRecorder);
   const source = transcriptSources.at(-1);
@@ -411,9 +422,26 @@ function createCollectUserTurnTranscriptRecorder(items: FollowupRun[]) {
         async (item) => await item.userTurnTranscriptRecorder?.resolveMessage(),
       ),
     );
-    const media = messages.flatMap((message) =>
-      buildPersistedUserTurnMediaInputsFromFields(message),
-    );
+    const media: ReturnType<typeof buildPersistedUserTurnMediaInputsFromFields> = [];
+    const mediaVideoDescriptions: Array<{ sourceId?: string; sourceIndex: number }> = [];
+    for (const message of messages) {
+      const messageMedia = buildPersistedUserTurnMediaInputsFromFields(message);
+      const mediaOffset = media.length;
+      // Resolved transcript messages own durable media order; late media may
+      // change an item's cardinality after it entered the queue.
+      media.push(
+        ...messageMedia.map((fact, factIndex) => ({
+          ...fact,
+          sourceIndex: mediaOffset + (fact.sourceIndex ?? factIndex),
+        })),
+      );
+      mediaVideoDescriptions.push(
+        ...readPersistedVideoDescriptions(message).map((description) => ({
+          ...description,
+          sourceIndex: mediaOffset + description.sourceIndex,
+        })),
+      );
+    }
     const timestamp = messages.reduce<number | undefined>((latest, message) => {
       const candidate = message?.timestamp;
       return typeof candidate === "number" && (latest === undefined || candidate > latest)
@@ -439,6 +467,7 @@ function createCollectUserTurnTranscriptRecorder(items: FollowupRun[]) {
       idempotencyKey: `followup-collect:${source.run.sessionId}:${identityHash}`,
       ...(timestamp === undefined ? {} : { timestamp }),
       ...(media.length === 0 ? {} : { media }),
+      ...(mediaVideoDescriptions.length === 0 ? {} : { mediaVideoDescriptions }),
     };
   };
   const initialTranscriptPrompt = buildCollectTranscriptPrompt(transcriptSources);

@@ -29,6 +29,9 @@ const preparedModelRuntimeMocks = vi.hoisted(() => ({
     entries: [],
     routeVariants: [],
   })),
+  qualifyPreparedModelCatalogNativeVideo: vi.fn(
+    async ({ snapshot }: { snapshot: unknown }) => snapshot,
+  ),
   configuredAgentIds: [] as string[],
   configuredAgentIdsError: undefined as Error | undefined,
   configuredAgentDirs: new Map<string, string>(),
@@ -65,6 +68,8 @@ const preparedModelRuntimeMocks = vi.hoisted(() => ({
 vi.mock("./model-catalog.js", () => ({
   buildPreparedModelCatalogSnapshot: (...args: Parameters<BuildPreparedModelCatalogSnapshot>) =>
     preparedModelRuntimeMocks.buildPreparedModelCatalogSnapshot(...args),
+  qualifyPreparedModelCatalogNativeVideo: (params: { snapshot: unknown }) =>
+    preparedModelRuntimeMocks.qualifyPreparedModelCatalogNativeVideo(params),
 }));
 
 vi.mock("./agent-auth-discovery.js", () => ({
@@ -261,6 +266,9 @@ export function resetPreparedModelRuntimeHarness(): void {
   preparedModelRuntimeMocks.buildPreparedModelCatalogSnapshot
     .mockReset()
     .mockResolvedValue({ entries: [], routeVariants: [] });
+  preparedModelRuntimeMocks.qualifyPreparedModelCatalogNativeVideo
+    .mockReset()
+    .mockImplementation(async ({ snapshot }: { snapshot: unknown }) => snapshot);
   preparedModelRuntimeMocks.discoverAuthStorage
     .mockReset()
     .mockImplementation(() => preparedModelRuntimeMocks.authStorage);

@@ -6,7 +6,10 @@ import {
   runOpenClawAgentWriteTransaction,
 } from "../../state/openclaw-agent-db.js";
 import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
-import { persistSessionTranscriptTurn } from "./session-accessor.js";
+import {
+  persistSessionTranscriptTurn,
+  readSessionTranscriptMessageEvents,
+} from "./session-accessor.js";
 import {
   replaceSqliteTranscriptEventsInTransaction,
   rewriteSqliteTranscriptEventRowsInTransaction,
@@ -398,6 +401,100 @@ describe("SQLite transcript native video claim checks", () => {
     expect(storedUrl).toContain("https://cdn.example.test/clip.mp4");
     expect(storedUrl).not.toContain("password");
     expect(storedUrl).not.toContain("signature");
+  });
+
+  it("rejects inline data references before SQLite history persistence", async () => {
+    const inlinePayload = "cHJpdmF0ZS1pbmxpbmUtbWVkaWE=";
+    await persistMessage(
+      {
+        role: "user",
+        content: "inspect these references",
+        __openclaw: {
+          media: [
+            {
+              sourceId: "inline-video",
+              sourceIndex: 0,
+              url: `data:video/mp4;base64,${inlinePayload}`,
+              contentType: "video/mp4",
+              kind: "video",
+            },
+            {
+              sourceId: "inline-image",
+              sourceIndex: 1,
+              path: `data:image/png;base64,${inlinePayload}`,
+              contentType: "image/png",
+              kind: "image",
+            },
+            {
+              sourceId: "managed-video",
+              sourceIndex: 2,
+              url: "media://inbound/managed.mp4",
+              contentType: "video/mp4",
+              kind: "video",
+            },
+            {
+              sourceId: "remote-video",
+              sourceIndex: 3,
+              url: "https://user" + ":password@cdn.example.test/clip.mp4?signature=private",
+              contentType: "video/mp4",
+              kind: "video",
+            },
+            {
+              sourceId: "local-video",
+              sourceIndex: 4,
+              path: "/tmp/local.mp4",
+              contentType: "video/mp4",
+              kind: "video",
+            },
+          ],
+        },
+      },
+      "inline-media-reference",
+    );
+
+    const stored = readStoredRow();
+    const history = readSessionTranscriptMessageEvents(scope);
+    for (const serialized of [stored.event_json, JSON.stringify(history)]) {
+      expect(serialized).not.toContain("data:");
+      expect(serialized).not.toContain(inlinePayload);
+      expect(serialized).not.toContain("password");
+      expect(serialized).not.toContain("signature");
+    }
+    expect(stored.event.message.__openclaw?.media).toEqual([
+      {
+        sourceId: "inline-video",
+        sourceIndex: 0,
+        contentType: "video/mp4",
+        kind: "video",
+      },
+      {
+        sourceId: "inline-image",
+        sourceIndex: 1,
+        contentType: "image/png",
+        kind: "image",
+      },
+      {
+        sourceId: "managed-video",
+        sourceIndex: 2,
+        url: "media://inbound/managed.mp4",
+        contentType: "video/mp4",
+        kind: "video",
+      },
+      {
+        sourceId: "remote-video",
+        sourceIndex: 3,
+        url: "https://cdn.example.test/clip.mp4",
+        contentType: "video/mp4",
+        kind: "video",
+      },
+      {
+        sourceId: "local-video",
+        sourceIndex: 4,
+        path: "/tmp/local.mp4",
+        contentType: "video/mp4",
+        kind: "video",
+      },
+    ]);
   });
 
   it("projects video claim checks during an exact transcript row rewrite", async () => {

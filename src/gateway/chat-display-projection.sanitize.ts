@@ -4,6 +4,7 @@ import { asFiniteNumber } from "@openclaw/normalization-core/number-coercion";
 import { asOptionalRecord as readRecord } from "@openclaw/normalization-core/record-coerce";
 import {
   normalizeCanonicalInboundMediaUri,
+  normalizeDurableMediaReference,
   sanitizeMediaReferenceForProjection,
 } from "../media/media-reference-projection.js";
 import {
@@ -111,11 +112,13 @@ function projectChatHistoryMediaFacts(value: unknown): unknown[] | undefined {
     } else if (isAbsoluteStoragePath(projected.path)) {
       delete projected.path;
     }
-    if (typeof projected.path === "string") {
-      projected.path = sanitizeMediaReferenceForProjection(projected.path);
-    }
-    if (typeof projected.url === "string") {
-      projected.url = sanitizeMediaReferenceForProjection(projected.url);
+    for (const key of ["path", "url"] as const) {
+      const normalized = normalizeDurableMediaReference(projected[key]);
+      if (normalized) {
+        projected[key] = normalized;
+      } else {
+        delete projected[key];
+      }
     }
     if (isAbsoluteStoragePath(projected.url)) {
       delete projected.url;
@@ -123,6 +126,46 @@ function projectChatHistoryMediaFacts(value: unknown): unknown[] | undefined {
     delete projected.workspaceDir;
     return [projected];
   });
+}
+
+function projectLegacyChatHistoryMediaCarriers(entry: Record<string, unknown>): boolean {
+  let changed = false;
+  if ("media" in entry) {
+    const media = projectChatHistoryMediaFacts(entry.media);
+    if (media) {
+      entry.media = media;
+    } else {
+      delete entry.media;
+    }
+    changed = true;
+  }
+  for (const key of ["MediaPath", "MediaUrl"] as const) {
+    const value = entry[key];
+    if (typeof value !== "string") {
+      continue;
+    }
+    const normalized = normalizeDurableMediaReference(value);
+    if (normalized) {
+      entry[key] = normalized;
+    } else {
+      delete entry[key];
+    }
+    changed ||= normalized !== value;
+  }
+  for (const key of ["MediaPaths", "MediaUrls"] as const) {
+    const value = entry[key];
+    if (!Array.isArray(value)) {
+      continue;
+    }
+    const projected = value.map((reference) =>
+      typeof reference === "string" ? (normalizeDurableMediaReference(reference) ?? "") : reference,
+    );
+    if (projected.some((reference, index) => reference !== value[index])) {
+      entry[key] = projected;
+      changed = true;
+    }
+  }
+  return changed;
 }
 
 export function sanitizeChatHistoryContentBlock(
@@ -449,7 +492,7 @@ export function sanitizeChatHistoryMessage(
     return { message, changed: false };
   }
   const entry = { ...(message as Record<string, unknown>) };
-  let changed = false;
+  let changed = projectLegacyChatHistoryMediaCarriers(entry);
   if ("providerReplay" in entry) {
     delete entry.providerReplay;
     changed = true;

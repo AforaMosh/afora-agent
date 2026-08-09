@@ -10,7 +10,10 @@ import {
   asPositiveSafeInteger as normalizePositiveInteger,
 } from "@openclaw/normalization-core/number-coercion";
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { sanitizeMediaReferenceForProjection } from "./media-reference-projection.js";
+import {
+  normalizeDurableMediaReference,
+  sanitizeMediaReferenceForProjection,
+} from "./media-reference-projection.js";
 import type { PromptImageOrderEntry } from "./prompt-image-order.js";
 
 /** One ordered runtime attachment with producer-owned source identity. */
@@ -243,6 +246,8 @@ export function canonicalizePersistedUserMessageMedia<T extends object>(
   const canonicalInputs = Array.isArray(resolvedSource.media) ? resolvedSource.media : [];
   const media: MediaFact[] = [];
   for (const [index, fact] of resolvedMedia.entries()) {
+    const mediaPath = normalizeDurableMediaReference(fact.path);
+    const mediaUrl = normalizeDurableMediaReference(fact.url);
     const legacyType = normalizeOptionalString(
       legacyTypes[index] ?? (index === 0 ? resolvedSource.MediaType : undefined),
     );
@@ -254,10 +259,10 @@ export function canonicalizePersistedUserMessageMedia<T extends object>(
       existing?.kind === undefined;
     const explicitKind = existing?.kind ?? (bareLegacyKind ? (legacyType as MediaKind) : undefined);
     media.push({
-      ...(fact.path ? { path: fact.path } : {}),
+      ...(mediaPath ? { path: mediaPath } : {}),
       ...(fact.sourceId ? { sourceId: fact.sourceId } : {}),
       ...(fact.sourceIndex !== undefined ? { sourceIndex: fact.sourceIndex } : {}),
-      ...(fact.url ? { url: fact.url } : {}),
+      ...(mediaUrl ? { url: mediaUrl } : {}),
       ...(fact.contentType && !bareLegacyKind ? { contentType: fact.contentType } : {}),
       ...(explicitKind ? { kind: explicitKind } : {}),
       ...(fact.fileName ? { fileName: fact.fileName } : {}),

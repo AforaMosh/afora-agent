@@ -219,6 +219,7 @@ describe("ModelsListResultSchema", () => {
       provider: "openai",
       agentRuntime: { id: "codex", fallback: "openclaw", source: "model" },
       input: ["text", "image", "audio", "video", "document"],
+      supportsNativeVideo: true,
     };
 
     expectAccepted(ModelsListResultSchema, { models: [model] });
@@ -228,6 +229,7 @@ describe("ModelsListResultSchema", () => {
         models: [{ ...model, agentRuntime: { id: "codex", source: "unknown" } }],
       },
       { models: [{ ...model, input: ["text", "binary"] }] },
+      { models: [{ ...model, supportsNativeVideo: "yes" }] },
     );
   });
 });

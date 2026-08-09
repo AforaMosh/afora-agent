@@ -185,6 +185,7 @@ export function projectModelCatalogEntryForRoute(params: {
       ...(donor?.contextTokens !== undefined ? { contextTokens: donor.contextTokens } : {}),
       ...(donor?.reasoning !== undefined ? { reasoning: donor.reasoning } : {}),
       ...(donor?.input !== undefined ? { input: donor.input } : {}),
+      ...(donor?.supportsNativeVideo === true ? { supportsNativeVideo: true } : {}),
     },
     params.overrides,
   );

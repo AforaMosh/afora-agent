@@ -5554,12 +5554,13 @@ describe("chat model controls", () => {
           provider: "moonshot",
           contextWindow: 1_050_000,
           input: ["text", "image", "video"],
+          supportsNativeVideo: true,
         },
         {
           id: "gpt-5.5",
           name: "GPT-5.5",
           provider: "openai",
-          input: ["text", "image", "audio", "document"],
+          input: ["text", "image", "video", "audio", "document"],
         },
       ],
     });
@@ -5573,7 +5574,7 @@ describe("chat model controls", () => {
         .querySelector('[data-chat-model-option="moonshot/kimi-k3"]')
         ?.querySelector(".chat-controls__model-option-meta")
         ?.textContent?.trim(),
-    ).toBe("1M context · Native video");
+    ).toBe("1M · Native video");
     expect(
       container.querySelector('[data-chat-model-option="openai/gpt-5.5"]')?.textContent,
     ).not.toContain("Native video");

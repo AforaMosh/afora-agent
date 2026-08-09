@@ -526,19 +526,25 @@ describe("native prompt video replay", () => {
     });
   });
 
-  it("does not add omission notices for a video already described by fallback", async () => {
+  it("does not add omission notices for videos already described by fallback", async () => {
     const message = {
       role: "user" as const,
-      content: "the fallback caption already describes the video",
+      content: "the fallback caption already describes both videos",
       __openclaw: {
         media: [
           {
-            sourceIndex: 0,
-            path: "/missing/described.mp4",
+            sourceId: "first-video",
+            sourceIndex: 1,
+            path: "/missing/first-described.mp4",
+            contentType: "video/mp4",
+          },
+          {
+            sourceIndex: 3,
+            path: "/missing/second-described.mp4",
             contentType: "video/mp4",
           },
         ],
-        mediaVideoDescriptions: [{ sourceIndex: 0 }],
+        mediaVideoDescriptions: [{ sourceId: "first-video", sourceIndex: 1 }, { sourceIndex: 3 }],
       },
     } as unknown as AgentMessage;
     const [replayed] = await hydratePromptMediaMessages([message], {
@@ -547,7 +553,7 @@ describe("native prompt video replay", () => {
     });
 
     expect((replayed as unknown as { content: unknown[] }).content).toEqual([
-      { type: "text", text: "the fallback caption already describes the video" },
+      { type: "text", text: "the fallback caption already describes both videos" },
     ]);
   });
 

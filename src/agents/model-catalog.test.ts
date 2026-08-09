@@ -13,11 +13,16 @@ import type { ModelCatalogEntry } from "./model-catalog.types.js";
 import type { ModelRegistry } from "./sessions/index.js";
 
 type AugmentModelCatalogWithProviderPlugins =
-  typeof import("../plugins/provider-runtime.js").augmentModelCatalogWithProviderPlugins;
+  typeof import("../plugins/provider-runtime.runtime.js").augmentModelCatalogWithProviderPlugins;
+type NormalizeProviderResolvedModelWithPlugin =
+  typeof import("../plugins/provider-runtime.runtime.js").normalizeProviderResolvedModelWithPlugin;
 
 const mocks = vi.hoisted(() => ({
   augmentModelCatalogWithProviderPlugins: vi.fn<AugmentModelCatalogWithProviderPlugins>(
     async () => [],
+  ),
+  normalizeProviderResolvedModelWithPlugin: vi.fn<NormalizeProviderResolvedModelWithPlugin>(
+    async () => undefined,
   ),
 }));
 
@@ -25,6 +30,9 @@ vi.mock("../plugins/provider-runtime.runtime.js", () => ({
   augmentModelCatalogWithProviderPlugins: (
     ...args: Parameters<AugmentModelCatalogWithProviderPlugins>
   ) => mocks.augmentModelCatalogWithProviderPlugins(...args),
+  normalizeProviderResolvedModelWithPlugin: (
+    ...args: Parameters<NormalizeProviderResolvedModelWithPlugin>
+  ) => mocks.normalizeProviderResolvedModelWithPlugin(...args),
 }));
 
 const metadataSnapshot = {
@@ -89,6 +97,209 @@ describe("prepared model catalog builder", () => {
   beforeEach(() => {
     mocks.augmentModelCatalogWithProviderPlugins.mockReset();
     mocks.augmentModelCatalogWithProviderPlugins.mockResolvedValue([]);
+    mocks.normalizeProviderResolvedModelWithPlugin.mockReset();
+    mocks.normalizeProviderResolvedModelWithPlugin.mockResolvedValue(undefined);
+  });
+
+  it("records native video only for the exact normalized physical route", async () => {
+    const nativeVideoInput = {
+      wireFamily: "google-inline-data" as const,
+      mimeTypes: { "video/mp4": "video/mp4" },
+      maxDecodedBytesPerItem: 1,
+      maxItems: 1,
+      maxAggregateDecodedBytes: 1,
+      aggregateScope: "video" as const,
+      maxSerializedRequestBytesExclusive: 100,
+    };
+    mocks.normalizeProviderResolvedModelWithPlugin.mockImplementation(async ({ context }) => {
+      const officialGoogle =
+        context.provider === "google" &&
+        context.model.api === "google-generative-ai" &&
+        context.model.baseUrl === "https://generativelanguage.googleapis.com/v1beta";
+      const officialMoonshot =
+        context.provider === "moonshot" &&
+        context.modelId === "kimi-k3" &&
+        context.model.api === "openai-completions" &&
+        context.model.baseUrl === "https://api.moonshot.ai/v1";
+      return officialGoogle || officialMoonshot
+        ? { ...context.model, nativeVideoInput }
+        : context.model;
+    });
+
+    const snapshot = await build({
+      entries: [
+        {
+          id: "gemini-3.5-flash",
+          name: "Gemini",
+          provider: "google",
+          api: "google-generative-ai",
+          baseUrl: "https://generativelanguage.googleapis.com/v1beta",
+          input: ["text", "video"],
+        },
+        {
+          id: "kimi-k3",
+          name: "Kimi K3",
+          provider: "moonshot",
+          api: "openai-completions",
+          baseUrl: "https://api.moonshot.ai/v1",
+          input: ["text", "video"],
+        },
+        {
+          id: "gpt-platform",
+          name: "OpenAI Platform",
+          provider: "openai",
+          api: "openai-responses",
+          baseUrl: "https://api.openai.com/v1",
+          input: ["text", "video"],
+          supportsNativeVideo: true,
+        },
+        {
+          id: "gpt-codex",
+          name: "Codex",
+          provider: "openai",
+          api: "openai-chatgpt-responses",
+          baseUrl: "https://chatgpt.com/backend-api/codex",
+          input: ["text", "video"],
+          supportsNativeVideo: true,
+        },
+        {
+          id: "openai-compatible",
+          name: "Persisted compatible",
+          provider: "custom",
+          api: "openai-completions",
+          baseUrl: "https://compatible.example.test/v1",
+          input: ["text", "video"],
+          supportsNativeVideo: true,
+        },
+        {
+          id: "gemini-proxy",
+          name: "Custom Gemini",
+          provider: "google",
+          api: "google-generative-ai",
+          baseUrl: "https://google-proxy.example.test/v1beta",
+          input: ["text", "video"],
+        },
+        {
+          id: "kimi-k3-proxy",
+          name: "Custom Kimi",
+          provider: "moonshot",
+          api: "openai-completions",
+          baseUrl: "https://moonshot-proxy.example.test/v1",
+          input: ["text", "video"],
+        },
+      ],
+    });
+
+    expect(
+      snapshot.entries
+        .filter((entry) => entry.supportsNativeVideo)
+        .map((entry) => `${entry.provider}/${entry.id}`),
+    ).toEqual(["google/gemini-3.5-flash", "moonshot/kimi-k3"]);
+    expect(mocks.normalizeProviderResolvedModelWithPlugin).toHaveBeenCalledTimes(7);
+  });
+
+  it("does not promote configured OpenAI-compatible video metadata", async () => {
+    const snapshot = await build({
+      config: {
+        models: {
+          providers: {
+            custom: {
+              api: "openai-completions",
+              baseUrl: "https://compatible.example.test/v1",
+              models: [
+                {
+                  id: "configured-video",
+                  name: "Configured video",
+                  reasoning: false,
+                  input: ["text", "video"],
+                  cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+                  contextWindow: 128_000,
+                  maxTokens: 8_192,
+                },
+              ],
+            },
+          },
+        },
+      },
+    });
+
+    expect(snapshot.entries).toEqual([
+      expect.objectContaining({
+        provider: "custom",
+        id: "configured-video",
+        input: ["text", "video"],
+      }),
+    ]);
+    expect(snapshot.entries[0]).not.toHaveProperty("supportsNativeVideo");
+  });
+
+  it("requalifies configured route overlays without inheriting sibling support", async () => {
+    const nativeVideoInput = {
+      wireFamily: "google-inline-data" as const,
+      mimeTypes: { "video/mp4": "video/mp4" },
+      maxDecodedBytesPerItem: 1,
+      maxItems: 1,
+      maxAggregateDecodedBytes: 1,
+      aggregateScope: "video" as const,
+      maxSerializedRequestBytesExclusive: 100,
+    };
+    mocks.normalizeProviderResolvedModelWithPlugin.mockImplementation(async ({ context }) =>
+      context.model.baseUrl === "https://generativelanguage.googleapis.com/v1beta"
+        ? { ...context.model, nativeVideoInput }
+        : context.model,
+    );
+    const snapshot = await build({
+      config: {
+        models: {
+          providers: {
+            google: {
+              api: "google-generative-ai",
+              baseUrl: "https://proxy.example.test/v1beta",
+              models: [
+                {
+                  id: "gemini-3.5-flash",
+                  name: "Configured Gemini",
+                  reasoning: true,
+                  input: ["text", "video"],
+                  cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+                  contextWindow: 1_000_000,
+                  maxTokens: 8_192,
+                },
+              ],
+            },
+          },
+        },
+      },
+      entries: [
+        {
+          id: "gemini-3.5-flash",
+          name: "Gemini",
+          provider: "google",
+          api: "google-generative-ai",
+          baseUrl: "https://generativelanguage.googleapis.com/v1beta",
+          input: ["text", "video"],
+          supportsNativeVideo: true,
+        },
+      ],
+    });
+
+    expect(snapshot.entries[0]).toMatchObject({
+      baseUrl: "https://proxy.example.test/v1beta",
+    });
+    expect(snapshot.entries[0]).not.toHaveProperty("supportsNativeVideo");
+    expect(snapshot.routeVariants).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          baseUrl: "https://generativelanguage.googleapis.com/v1beta",
+          supportsNativeVideo: true,
+        }),
+        expect.objectContaining({ baseUrl: "https://proxy.example.test/v1beta" }),
+      ]),
+    );
+    expect(
+      snapshot.routeVariants.find((entry) => entry.baseUrl === "https://proxy.example.test/v1beta"),
+    ).not.toHaveProperty("supportsNativeVideo");
+    expect(mocks.normalizeProviderResolvedModelWithPlugin).toHaveBeenCalledTimes(2);
   });
 
   it("projects and sorts one lifecycle registry generation", async () => {

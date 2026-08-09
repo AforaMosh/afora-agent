@@ -334,6 +334,84 @@ describe("user turn transcript persistence", () => {
         }),
       ]);
     });
+
+    it.each(["erase", "mutate", "forge"] as const)(
+      "keeps video-description provenance authoritative when a write hook tries to %s it",
+      async (mode) => {
+        const dir = createTempDir(`openclaw-user-turn-video-${mode}-`);
+        const target = createSqliteTranscriptTarget({ dir });
+        const originalDescriptions =
+          mode === "forge" ? undefined : [{ sourceId: "original-video", sourceIndex: 1 }];
+        const persisted = await persistUserTurnTranscript({
+          ...target,
+          input: {
+            text: "described clip",
+            media: [
+              {
+                path: path.join(dir, "frame.png"),
+                contentType: "image/png",
+                sourceIndex: 0,
+              },
+              {
+                path: path.join(dir, "clip.mp4"),
+                contentType: "video/mp4",
+                sourceId: "original-video",
+                sourceIndex: 1,
+              },
+            ],
+            mediaImageLayout: { slots: [{ kind: "offloaded", factIndex: 0 }] },
+            ...(originalDescriptions ? { mediaVideoDescriptions: originalDescriptions } : {}),
+          },
+          beforeMessageWrite: ({ message }) => {
+            const metadata = (message as unknown as { __openclaw?: Record<string, unknown> })
+              .__openclaw;
+            if (!metadata) {
+              throw new Error("expected prepared OpenClaw metadata");
+            }
+            metadata.hookOwned = true;
+            if (mode === "erase") {
+              delete metadata.mediaVideoDescriptions;
+            } else if (mode === "mutate") {
+              const descriptions = metadata.mediaVideoDescriptions as Array<{
+                sourceId?: string;
+                sourceIndex: number;
+              }>;
+              descriptions[0] = { sourceId: "forged-video", sourceIndex: 99 };
+            } else {
+              metadata.mediaVideoDescriptions = [{ sourceId: "forged-video", sourceIndex: 99 }];
+            }
+            return message;
+          },
+          updateMode: "none",
+        });
+
+        const stored = await readTranscriptMessages(target);
+        for (const message of [persisted?.message, stored[0]]) {
+          const metadata = (message as { __openclaw?: Record<string, unknown> } | undefined)
+            ?.__openclaw;
+          expect(metadata?.hookOwned).toBe(true);
+          expect(metadata?.media).toEqual([
+            expect.objectContaining({
+              sourceIndex: 0,
+              contentType: "image/png",
+            }),
+            expect.objectContaining({
+              sourceId: "original-video",
+              sourceIndex: 1,
+              contentType: "video/mp4",
+            }),
+          ]);
+          expect(metadata?.mediaImageLayout).toEqual({
+            slots: [{ kind: "offloaded", factIndex: 0 }],
+          });
+          if (originalDescriptions) {
+            expect(metadata?.mediaVideoDescriptions).toEqual(originalDescriptions);
+          } else {
+            expect(metadata?.mediaVideoDescriptions).toBeUndefined();
+          }
+        }
+      },
+    );
   });
 
   describe("createUserTurnTranscriptRecorder", () => {
@@ -679,7 +757,9 @@ describe("user turn transcript persistence", () => {
           content: "resolved subtitle",
           __openclaw: {
             lateMedia: true,
-            media: [{ path: path.join(dir, "image.png"), contentType: "image/png" }],
+            media: [
+              { path: path.join(dir, "image.png"), contentType: "image/png", sourceIndex: 0 },
+            ],
           },
         }),
       ]);

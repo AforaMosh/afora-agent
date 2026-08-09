@@ -1,5 +1,27 @@
 import { describe, expect, it } from "vitest";
-import { sanitizeDurableMediaPayload } from "./media-reference-projection.js";
+import {
+  normalizeDurableMediaReference,
+  sanitizeDurableMediaPayload,
+} from "./media-reference-projection.js";
+
+describe("normalizeDurableMediaReference", () => {
+  it("rejects inline data while preserving managed, remote, and local references", () => {
+    expect(normalizeDurableMediaReference("data:video/mp4;base64,cHJpdmF0ZQ==")).toBeUndefined();
+    expect(normalizeDurableMediaReference(" DATA:image/png;base64,cHJpdmF0ZQ== ")).toBeUndefined();
+    expect(normalizeDurableMediaReference(" media://inbound/clip.mp4 ")).toBe(
+      "media://inbound/clip.mp4",
+    );
+    expect(
+      normalizeDurableMediaReference(
+        "https://user" + ":password@example.test/clip.mp4?signature=private#preview",
+      ),
+    ).toBe("https://example.test/clip.mp4");
+    expect(normalizeDurableMediaReference(" /tmp/clip.mp4 ")).toBe("/tmp/clip.mp4");
+    expect(normalizeDurableMediaReference(" media/inbound/clip.mp4 ")).toBe(
+      "media/inbound/clip.mp4",
+    );
+  });
+});
 
 describe("sanitizeDurableMediaPayload", () => {
   it("preserves original identity when no projection changes", () => {

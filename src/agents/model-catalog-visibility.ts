@@ -15,7 +15,7 @@ import {
   projectModelCatalogEntryForRoute,
   resolveConfiguredModelCatalogOverrides,
 } from "./model-catalog-route.js";
-import type { ModelCatalogEntry } from "./model-catalog.js";
+import { findModelCatalogEntry, type ModelCatalogEntry } from "./model-catalog.js";
 import { createProviderAuthChecker } from "./model-provider-auth.js";
 import {
   buildConfiguredModelCatalog,
@@ -145,7 +145,15 @@ async function resolveVisibleModelCatalogWithPolicy(
 
   const buildDefaultVisibleCatalog = async () => {
     const configuredCatalog = sortModelCatalogEntries(
-      buildConfiguredModelCatalog({ cfg: params.cfg }),
+      buildConfiguredModelCatalog({ cfg: params.cfg }).map((entry) => {
+        const prepared = findModelCatalogEntry(params.catalog, {
+          provider: entry.provider,
+          modelId: entry.id,
+        });
+        return prepared?.supportsNativeVideo === true
+          ? { ...entry, supportsNativeVideo: true }
+          : entry;
+      }),
     );
     let checkEntryAuth = params.entryAuthChecker;
     if (!checkEntryAuth) {

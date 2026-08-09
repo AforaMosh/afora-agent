@@ -24,6 +24,8 @@ export type ModelCatalogEntry = {
   contextTokens?: number;
   reasoning?: boolean;
   input?: ModelInputType[];
+  /** Effective native-video support for this exact provider/API/base URL route. */
+  supportsNativeVideo?: boolean;
   params?: Record<string, unknown>;
   compat?: ModelCompatConfig;
   mediaInput?: ModelMediaInputConfig;

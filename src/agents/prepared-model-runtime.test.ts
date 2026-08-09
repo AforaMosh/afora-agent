@@ -1,5 +1,6 @@
 import "./prepared-model-runtime.test-harness.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { createEmptyPluginRegistry } from "../plugins/registry-empty.js";
 import { requireActivePluginRegistry } from "../plugins/runtime.js";
 import { startSerializedSnapshotBuild } from "./prepared-model-runtime.build.js";
@@ -166,6 +167,68 @@ describe("prepared model runtime snapshots", () => {
     );
     expect(mocks.buildPreparedModelCatalogSnapshot).toHaveBeenCalledWith(
       expect.objectContaining({ env }),
+    );
+  });
+
+  it("qualifies the configured-only catalog at its lifecycle owner", async () => {
+    mocks.qualifyPreparedModelCatalogNativeVideo.mockImplementationOnce(
+      async ({ snapshot }: { snapshot: unknown }) => {
+        const catalog = snapshot as {
+          entries: Array<Record<string, unknown>>;
+          routeVariants: Array<Record<string, unknown>>;
+        };
+        return {
+          ...catalog,
+          entries: catalog.entries.map((entry) => ({ ...entry, supportsNativeVideo: true })),
+          routeVariants: catalog.routeVariants.map((entry) => ({
+            ...entry,
+            supportsNativeVideo: true,
+          })),
+        };
+      },
+    );
+    const config: OpenClawConfig = {
+      models: {
+        providers: {
+          moonshot: {
+            api: "openai-completions",
+            baseUrl: "https://api.moonshot.ai/v1",
+            models: [
+              {
+                id: "kimi-k3",
+                name: "Kimi K3",
+                reasoning: true,
+                input: ["text", "video"],
+                cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+                contextWindow: 1_000_000,
+                maxTokens: 8_192,
+              },
+            ],
+          },
+        },
+      },
+    };
+
+    const snapshot = await publishPreparedModelRuntimeSnapshot(
+      {
+        config,
+        agentDir: "/tmp/prepared-model-runtime-native-video",
+      },
+      { catalogMode: "static" },
+    );
+
+    expect(snapshot.modelCatalog.entries).toEqual([
+      expect.objectContaining({
+        provider: "moonshot",
+        id: "kimi-k3",
+        supportsNativeVideo: true,
+      }),
+    ]);
+    expect(mocks.qualifyPreparedModelCatalogNativeVideo).toHaveBeenCalledWith(
+      expect.objectContaining({
+        agentDir: "/tmp/prepared-model-runtime-native-video",
+        config,
+      }),
     );
   });
 

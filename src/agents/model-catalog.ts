@@ -18,6 +18,7 @@ import type { PluginMetadataSnapshot } from "../plugins/plugin-metadata-snapshot
 import { augmentModelCatalogWithProviderPlugins } from "../plugins/provider-runtime.runtime.js";
 import { createLazyImportLoader } from "../shared/lazy-promise.js";
 import { modelSupportsInput as modelCatalogEntrySupportsInput } from "./model-catalog-lookup.js";
+import { qualifyPreparedModelCatalogNativeVideoRoutes } from "./model-catalog-native-video.js";
 import { assignProviderModelOrder, compareModelCatalogEntries } from "./model-catalog-order.js";
 import type {
   ModelCatalogEntry,
@@ -185,6 +186,7 @@ function clearRouteBoundCatalogMetadata(entry: ModelCatalogEntry): ModelCatalogE
     params: _params,
     compat: _compat,
     mediaInput: _mediaInput,
+    supportsNativeVideo: _supportsNativeVideo,
     ...routeNeutral
   } = entry;
   return routeNeutral;
@@ -328,6 +330,20 @@ function createModelCatalogSnapshot(
     entries: sortModelCatalogEntries(entries),
     routeVariants: sortModelCatalogEntries(routeVariants.entries),
   };
+}
+
+export async function qualifyPreparedModelCatalogNativeVideo(params: {
+  snapshot: ModelCatalogSnapshot;
+  agentDir: string;
+  config: OpenClawConfig;
+  metadataSnapshot: PluginMetadataSnapshot;
+  workspaceDir?: string;
+  env?: NodeJS.ProcessEnv;
+}): Promise<ModelCatalogSnapshot> {
+  return await qualifyPreparedModelCatalogNativeVideoRoutes({
+    ...params,
+    routeKey: catalogRouteVariantKey,
+  });
 }
 
 function resolveEligibleManifestCatalogPlugins(
@@ -663,7 +679,14 @@ export async function buildPreparedModelCatalogSnapshot(
     }
     logStage("configured-models-finalized", `entries=${models.length}`);
 
-    const snapshot = createModelCatalogSnapshot(models, routeVariants);
+    const snapshot = await qualifyPreparedModelCatalogNativeVideo({
+      snapshot: createModelCatalogSnapshot(models, routeVariants),
+      agentDir: params.agentDir,
+      config: cfg,
+      metadataSnapshot: manifestMetadataSnapshot,
+      ...(workspaceDir ? { workspaceDir } : {}),
+      env,
+    });
     logStage("complete", `entries=${snapshot.entries.length}`);
     return snapshot;
   } catch (error) {

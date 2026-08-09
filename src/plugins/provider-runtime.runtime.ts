@@ -10,6 +10,8 @@ type BuildProviderAuthDoctorHintWithPlugin =
 type FormatProviderAuthProfileApiKeyWithPlugin =
   ProviderRuntimeModule["formatProviderAuthProfileApiKeyWithPlugin"];
 type LoginProviderOAuthWithPlugin = ProviderRuntimeModule["loginProviderOAuthWithPlugin"];
+type NormalizeProviderResolvedModelWithPlugin =
+  ProviderRuntimeModule["normalizeProviderResolvedModelWithPlugin"];
 type ResolveProviderOAuthCredentialWithPlugin =
   ProviderRuntimeModule["resolveProviderOAuthCredentialWithPlugin"];
 type PrepareProviderRuntimeAuth = ProviderRuntimeModule["prepareProviderRuntimeAuth"];
@@ -32,6 +34,14 @@ export async function augmentModelCatalogWithProviderPlugins(
 ): Promise<Awaited<ReturnType<AugmentModelCatalogWithProviderPlugins>>> {
   const runtime = await loadProviderRuntime();
   return runtime.augmentModelCatalogWithProviderPlugins(...args);
+}
+
+/** Lazily applies the owning provider's exact resolved-model normalization hook. */
+export async function normalizeProviderResolvedModelWithPlugin(
+  ...args: Parameters<NormalizeProviderResolvedModelWithPlugin>
+): Promise<Awaited<ReturnType<NormalizeProviderResolvedModelWithPlugin>>> {
+  const runtime = await loadProviderRuntime();
+  return runtime.normalizeProviderResolvedModelWithPlugin(...args);
 }
 
 /** Lazily builds doctor hint text for provider auth problems. */

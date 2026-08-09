@@ -40,6 +40,7 @@ const platformEntry: ModelCatalogEntry = {
   contextTokens: 272_000,
   reasoning: true,
   input: ["text", "image"],
+  supportsNativeVideo: true,
   params: { platformOnly: true },
   compat: { supportsTools: false },
 };
@@ -104,6 +105,7 @@ describe("projectModelCatalogEntryForRoute", () => {
       contextTokens: 272_000,
       reasoning: true,
       input: ["text", "image"],
+      supportsNativeVideo: true,
     });
 
     expect(

@@ -6,7 +6,7 @@ import {
 } from "@openclaw/normalization-core/number-coercion";
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
 import type { MediaFactInput } from "../media/media-facts.js";
-import { sanitizeMediaReferenceForProjection } from "../media/media-reference-projection.js";
+import { normalizeDurableMediaReference } from "../media/media-reference-projection.js";
 import type { PersistedUserTurnMediaInput } from "./user-turn-transcript.types.js";
 
 const URL_LIKE_MEDIA_PATH_PATTERN = /^[a-z][a-z0-9+.-]*:/i;
@@ -30,11 +30,11 @@ function normalizeStructuredMediaKind(value: string | null | undefined): MediaFa
 export function resolveTranscriptMediaPath(
   pathValue: string,
   workspaceDir: string | undefined,
-): string {
+): string | undefined {
   // Relative staged media paths are anchored to the media workspace; absolute
   // paths and URL-like refs are already stable transcript references.
   if (!workspaceDir || path.isAbsolute(pathValue) || URL_LIKE_MEDIA_PATH_PATTERN.test(pathValue)) {
-    return sanitizeMediaReferenceForProjection(pathValue);
+    return normalizeDurableMediaReference(pathValue);
   }
   return path.join(workspaceDir, pathValue);
 }
@@ -48,7 +48,7 @@ export function normalizeStructuredMediaEntryForTranscript(
     ? resolveTranscriptMediaPath(mediaPath, workspaceDir)
     : undefined;
   const mediaUrlRaw = normalizeOptionalString(media.url);
-  const mediaUrl = mediaUrlRaw ? sanitizeMediaReferenceForProjection(mediaUrlRaw) : undefined;
+  const mediaUrl = normalizeDurableMediaReference(mediaUrlRaw);
   const kind = normalizeStructuredMediaKind(media.kind);
   const legacyKind = normalizeOptionalString(media.kind);
   const messageId = normalizeOptionalString(media.messageId);

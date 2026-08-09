@@ -337,8 +337,12 @@ export function preparePersistedUserTurnMessageForTranscriptWrite(
   const originalMediaImageLayout = readOpenClawMessageMeta(message)?.mediaImageLayout;
   const mediaImageLayout =
     originalMediaImageLayout === undefined ? undefined : structuredClone(originalMediaImageLayout);
+  const originalMediaVideoDescriptions = readOpenClawMessageMeta(message)?.mediaVideoDescriptions;
+  const mediaVideoDescriptions = Array.isArray(originalMediaVideoDescriptions)
+    ? structuredClone(originalMediaVideoDescriptions)
+    : undefined;
   // Hooks receive the original message object and may mutate nested metadata in
-  // place. Snapshot transport correlation before handing them that reference.
+  // place. Snapshot protected metadata before handing them that reference.
   const originalTransportRecord = asOptionalRecord(originalTransport);
   const transport = originalTransportRecord ? { ...originalTransportRecord } : undefined;
   const nextMessage = params.beforeMessageWrite({
@@ -352,16 +356,6 @@ export function preparePersistedUserTurnMessageForTranscriptWrite(
   const nextUserMessage = provenance
     ? (applyInputProvenanceToUserMessage(nextMessage, provenance) as PersistedUserTurnMessage)
     : nextMessage;
-  if (
-    !idempotencyKey &&
-    typeof senderIsOwner !== "boolean" &&
-    !transport &&
-    !lateMedia &&
-    media === undefined &&
-    mediaImageLayout === undefined
-  ) {
-    return nextUserMessage;
-  }
   const protectedMeta = {
     ...readOpenClawMessageMeta(nextUserMessage),
     ...(typeof senderIsOwner === "boolean" ? { senderIsOwner } : {}),
@@ -370,6 +364,11 @@ export function preparePersistedUserTurnMessageForTranscriptWrite(
     ...(media === undefined ? {} : { media }),
     ...(mediaImageLayout === undefined ? {} : { mediaImageLayout }),
   };
+  if (mediaVideoDescriptions === undefined) {
+    delete protectedMeta.mediaVideoDescriptions;
+  } else {
+    protectedMeta.mediaVideoDescriptions = mediaVideoDescriptions;
+  }
   return {
     ...(nextUserMessage as unknown as Record<string, unknown>),
     ...(idempotencyKey ? { idempotencyKey } : {}),

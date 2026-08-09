@@ -146,6 +146,7 @@ vi.mock("./auth-profiles/runtime-snapshots.js", () => ({
 
 vi.mock("./model-catalog.js", () => ({
   buildPreparedModelCatalogSnapshot: mocks.buildPreparedModelCatalogSnapshot,
+  qualifyPreparedModelCatalogNativeVideo: async ({ snapshot }: { snapshot: unknown }) => snapshot,
 }));
 
 vi.mock("./models-config.js", () => ({
@@ -459,6 +460,9 @@ describe("prepared model runtime Gateway catalog mode", () => {
     expect(mocks.discoverModels.mock.invocationCallOrder[0]).toBeLessThan(
       resolveDynamicModel.mock.invocationCallOrder[0]!,
     );
+    expect(resolveDynamicModel.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.qualifyPreparedModelCatalogNativeVideo.mock.invocationCallOrder[0]!,
+    );
     expect(resolveDynamicModel).toHaveBeenCalledWith({
       config,
       agentDir: "/tmp/prepared-static-agent",
@@ -487,6 +491,13 @@ describe("prepared model runtime Gateway catalog mode", () => {
       api: "openai-responses",
       baseUrl: "https://fixture.invalid/v1",
     });
+    expect(mocks.qualifyPreparedModelCatalogNativeVideo).toHaveBeenCalledWith(
+      expect.objectContaining({
+        snapshot: expect.objectContaining({
+          entries: expect.arrayContaining([expect.objectContaining({ provider, id: modelId })]),
+        }),
+      }),
+    );
     for (const entries of [
       snapshot?.modelCatalog.entries,
       snapshot?.modelCatalog.routeVariants,
