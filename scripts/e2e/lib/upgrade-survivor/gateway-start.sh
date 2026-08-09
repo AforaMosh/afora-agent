@@ -14,9 +14,21 @@ read_ownership() {
 owned_process_running() {
   local pid="$1" ownership="$2"
   if [ "$ownership" = "process-group" ]; then
+    local stat_file stat_line stat_fields state parent process_group remaining
     # The PGID remains authoritative after its leader exits while descendants still own the port.
-    kill -0 -- "-$pid" >/dev/null 2>&1
-    return
+    kill -0 -- "-$pid" >/dev/null 2>&1 || return 1
+    # Treat unreadable or malformed proc state as live so replacement cannot race an unknown owner.
+    [ -r "/proc/$$/stat" ] || return 0
+    for stat_file in /proc/[0-9]*/stat; do
+      [ -e "$stat_file" ] || continue
+      IFS= read -r stat_line <"$stat_file" || { [ ! -e "$stat_file" ] && continue; return 0; }
+      stat_fields="${stat_line##*) }"
+      [ "$stat_fields" != "$stat_line" ] || return 0
+      read -r state parent process_group remaining <<<"$stat_fields"
+      [[ "$state" =~ ^[A-Za-z]$ && "$parent" =~ ^[0-9]+$ && "$process_group" =~ ^[0-9]+$ ]] && [ -n "$remaining" ] || return 0
+      [ "$process_group" != "$pid" ] || case "$state" in Z | X) ;; *) return 0 ;; esac
+    done
+    return 1
   fi
   kill -0 "$pid" >/dev/null 2>&1 || return 1
   [ "$(awk '{ print $3 }' "/proc/$pid/stat" 2>/dev/null || true)" != "Z" ]

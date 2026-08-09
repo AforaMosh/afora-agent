@@ -2843,6 +2843,9 @@ fi
     }
     expectTextToIncludeAll(processHelpers, [
       "pid | process-group",
+      "for stat_file in /proc/[0-9]*/stat",
+      'stat_fields="${stat_line##*) }"',
+      '[ "$process_group" != "$pid" ] || case "$state" in Z | X)',
       'kill -TERM -- "$target"',
       'kill -KILL -- "$target"',
       "stop_deadline=$((SECONDS + 35))",
@@ -2929,15 +2932,55 @@ fi
     }
   });
 
-  it.skipIf(process.platform === "win32")(
+  it.skipIf(process.platform !== "linux")(
     "executes generated systemctl ownership helpers across pid and process-group lifecycles",
     () => {
       const workDir = tempDirs.make("openclaw-systemctl-process-ownership-");
       const fixturePath = join(workDir, "process-group.mjs");
+      const zombieShimPath = join(workDir, "zombie-stop.sh");
+      writeFileSync(
+        zombieShimPath,
+        `#!/usr/bin/env bash
+set -euo pipefail
+source "$1"
+pid_file="$2"; ownership_file="\${pid_file}.ownership"
+supervisor_script="\${pid_file}.supervisor.mjs"; signal_log="$3"; : >"$signal_log"
+fail() { echo "$*" >&2; exit 1; }
+kill() { case "\${1:-}" in -TERM|-KILL) printf '%s\n' "$*" >>"$signal_log" ;; esac; builtin kill "$@"; }
+sleep() { SECONDS=$((SECONDS + 1)); command sleep 0.01; }
+pid="$(cat "$pid_file")"; state=""; parent_pid=""
+for _ in {1..200}; do
+  stat_line="$(cat "/proc/$pid/stat" 2>/dev/null || true)"
+  stat_fields="\${stat_line##*) }"
+  read -r state parent_pid _ <<<"$stat_fields"
+  [ "$state" = "Z" ] && break
+  command sleep 0.01
+done
+[ "$state" = "Z" ] || fail "process group did not become zombie-only"
+[ "$parent_pid" = "$ZOMBIE_PARENT_PID" ] || fail "zombie was reparented before nested stop"
+builtin kill -0 "$ZOMBIE_PARENT_PID" || fail "zombie parent was not blocked in nested stop"
+printf '%s\n' process-group >"$ownership_file"
+stop_gateway
+[ ! -e "$pid_file" ] || fail "zombie-only group retained its pid file"
+[ "$(cat "$signal_log")" = "-TERM -- -$pid" ] || fail "zombie-only group reached KILL"
+`,
+      );
       writeFileSync(
         fixturePath,
-        `import fs from "node:fs"; import net from "node:net"; import { spawn } from "node:child_process";
-if (process.argv[2] === "leader") {
+        `import fs from "node:fs"; import net from "node:net"; import { spawn, spawnSync } from "node:child_process";
+if (process.argv[2] === "zombie-parent") {
+  const child = spawn(process.execPath, ["-e", ""], { detached: true, stdio: "ignore" });
+  fs.writeFileSync(process.env.ZOMBIE_PID_FILE, String(child.pid));
+  const nested = spawnSync("bash", [
+    process.env.ZOMBIE_SHIM,
+    process.env.PROCESS_HELPERS,
+    process.env.ZOMBIE_PID_FILE,
+    process.env.ZOMBIE_SIGNAL_LOG,
+  ], { env: { ...process.env, ZOMBIE_PARENT_PID: String(process.pid) }, encoding: "utf8" });
+  process.stdout.write(nested.stdout ?? "");
+  process.stderr.write(nested.stderr ?? "");
+  process.exit(nested.status ?? 1);
+} else if (process.argv[2] === "leader") {
   spawn(process.execPath, [process.argv[1], "descendant"], { env: process.env, stdio: "ignore" });
   const ready = setInterval(() => {
     if (fs.existsSync(process.env.DESCENDANT_PID_FILE)) { clearInterval(ready); process.exit(0); }
@@ -2955,7 +2998,7 @@ if (process.argv[2] === "leader") {
           `
 set -euo pipefail
 source "$1"
-work_dir="$2"; fixture="$3"; descendant_pid_file="$work_dir/descendant.pid"
+work_dir="$2"; fixture="$3"; zombie_shim="$4"; descendant_pid_file="$work_dir/descendant.pid"
 helper_file="$work_dir/process-helpers.sh"
 upgrade_survivor_append_systemctl_process_helpers "$helper_file"
 source "$helper_file"
@@ -2991,6 +3034,9 @@ for marker in empty malformed; do
   process_alive "$pid" || fail "$marker ownership killed its pid"
   builtin kill -KILL "$pid"; wait "$pid" 2>/dev/null || true
 done
+ZOMBIE_SHIM="$zombie_shim" PROCESS_HELPERS="$helper_file" \
+  ZOMBIE_PID_FILE="$work_dir/zombie.pid" ZOMBIE_SIGNAL_LOG="$work_dir/zombie.signals" \
+  node "$fixture" zombie-parent
 probe_port || fail "port 18789 was occupied before the process-group fixture"
 group_pid="$(
   DESCENDANT_PID_FILE="$descendant_pid_file" FIXTURE="$fixture" node -e '
@@ -3017,6 +3063,7 @@ probe_port || fail "replacement could not bind port 18789 after stop"
           UPGRADE_SURVIVOR_GATEWAY_START_PATH,
           workDir,
           fixturePath,
+          zombieShimPath,
         ],
         { encoding: "utf8", timeout: 15_000 },
       );
