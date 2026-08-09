@@ -19,6 +19,18 @@ vi.mock("openclaw/plugin-sdk/agent-runtime", () => ({
 }));
 
 import { defaultQaRuntimeModelForMode } from "./model-selection.runtime.js";
+import { QA_FRONTIER_CATALOG_ALTERNATE_MODEL } from "./providers/live-frontier/catalog.js";
+
+function expectLiveFrontierModelPair(primaryModel: string) {
+  const primary = defaultQaRuntimeModelForMode("live-frontier");
+  const alternate = defaultQaRuntimeModelForMode("live-frontier", { alternate: true });
+
+  expect({ primary, alternate }).toEqual({
+    primary: primaryModel,
+    alternate: QA_FRONTIER_CATALOG_ALTERNATE_MODEL,
+  });
+  expect(alternate).not.toBe(primary);
+}
 
 describe("qa model selection runtime", () => {
   beforeEach(() => {
@@ -33,27 +45,30 @@ describe("qa model selection runtime", () => {
   it("keeps the OpenAI live default when an API key is configured", () => {
     resolveEnvApiKey.mockReturnValue({ apiKey: "sk-test" });
 
-    expect(defaultQaRuntimeModelForMode("live-frontier")).toBe("openai/gpt-5.6");
+    expectLiveFrontierModelPair("openai/gpt-5.6");
     expect(loadAuthProfileStoreForRuntime).not.toHaveBeenCalled();
   });
 
-  it("prefers the Codex OAuth live default when only Codex auth profiles are available", () => {
-    loadAuthProfileStoreForRuntime.mockReturnValue({
-      profiles: {
-        "openai:user@example.com": {
-          provider: "openai",
-          type: "oauth",
+  it.each(["oauth", "token"] as const)(
+    "prefers the Codex live default for a stored %s profile",
+    (type) => {
+      loadAuthProfileStoreForRuntime.mockReturnValue({
+        profiles: {
+          "openai:user@example.com": {
+            provider: "openai",
+            type,
+          },
         },
-      },
-    });
+      });
 
-    expect(defaultQaRuntimeModelForMode("live-frontier")).toBe("openai/gpt-5.6-luna");
-    expect(loadAuthProfileStoreForRuntime).toHaveBeenCalledWith(undefined, {
-      readOnly: true,
-      allowKeychainPrompt: false,
-      externalCliProviderIds: ["openai"],
-    });
-  });
+      expectLiveFrontierModelPair("openai/gpt-5.6-luna");
+      expect(loadAuthProfileStoreForRuntime).toHaveBeenCalledWith(undefined, {
+        readOnly: true,
+        allowKeychainPrompt: false,
+        externalCliProviderIds: ["openai"],
+      });
+    },
+  );
 
   it("keeps the OpenAI live default when stored OpenAI profiles are available", () => {
     loadAuthProfileStoreForRuntime.mockReturnValue({
@@ -65,7 +80,7 @@ describe("qa model selection runtime", () => {
       },
     });
 
-    expect(defaultQaRuntimeModelForMode("live-frontier")).toBe("openai/gpt-5.6");
+    expectLiveFrontierModelPair("openai/gpt-5.6");
   });
 
   it("leaves mock defaults unchanged", () => {

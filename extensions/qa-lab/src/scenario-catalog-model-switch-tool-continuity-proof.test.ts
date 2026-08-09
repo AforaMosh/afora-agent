@@ -23,6 +23,7 @@ function normalizeModelRef(raw: string) {
 async function runToolContinuity(
   alternateTools: string[],
   params?: {
+    alternateModel?: string;
     primaryOutboundText?: string;
     primaryDelivery?: { status: string; resultCount: number } | null;
     alternateReplyText?: string;
@@ -30,12 +31,14 @@ async function runToolContinuity(
     alternateDelivery?: { status: string; resultCount: number } | null;
     unrelatedPrimaryOutboundText?: string;
     unrelatedLaterOutboundText?: string;
+    onRun?: () => void;
   },
 ) {
   const state = createQaBusState();
   let call = 0;
   const runAgentPrompt = vi.fn(
     async (_env: unknown, prompt: { provider?: string; model?: string }) => {
+      params?.onRun?.();
       call += 1;
       const runId = `run-${call}`;
       const provider = prompt.provider ?? "openai";
@@ -98,7 +101,7 @@ async function runToolContinuity(
       env: {
         providerMode: "mock-openai",
         primaryModel: "openai/primary-model",
-        alternateModel: "OPENAI/alternate-alias",
+        alternateModel: params?.alternateModel ?? "OPENAI/alternate-alias",
         gateway: {},
       },
       splitModelRef,
@@ -145,6 +148,14 @@ describe("model-switch tool continuity terminal evidence", () => {
     await expect(runToolContinuity([])).rejects.toThrow(
       "alternate-model run did not return exact owned successful read evidence",
     );
+  });
+
+  it("rejects normalized-identical refs before starting an agent run", async () => {
+    const onRun = vi.fn();
+    await expect(
+      runToolContinuity(["read"], { alternateModel: "OPENAI/primary-model", onRun }),
+    ).rejects.toThrow("primary and alternate models must normalize to different refs");
+    expect(onRun).not.toHaveBeenCalled();
   });
 
   it("rejects unrelated later continuity text when the alternate reply lacks it", async () => {
