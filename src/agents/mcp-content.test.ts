@@ -22,6 +22,46 @@ describe("projectMcpContentBlocks images", () => {
       { type: "text", text: "[image omitted: invalid MCP image]" },
     ]);
   });
+
+  it("stops reading image blocks when their aggregate raw input budget is exhausted", () => {
+    const nearCapImage = "AAAA".repeat(MAX_IMAGE_BYTES / 3);
+    let lateImageReads = 0;
+    const lateImage = { type: "image", mimeType: "image/png" } as Record<string, unknown>;
+    Object.defineProperty(lateImage, "data", {
+      enumerable: true,
+      get() {
+        lateImageReads += 1;
+        throw new Error("late image data must not be read");
+      },
+    });
+    let unadmittedMimeReads = 0;
+    const unadmittedImage = {
+      type: "image",
+      data: nearCapImage,
+    } as Record<string, unknown>;
+    Object.defineProperty(unadmittedImage, "mimeType", {
+      enumerable: true,
+      get() {
+        unadmittedMimeReads += 1;
+        return "image/png";
+      },
+    });
+
+    const projected = projectMcpContentBlocks([
+      { type: "image", data: nearCapImage, mimeType: "image/png" },
+      { type: "image", data: nearCapImage, mimeType: "image/png" },
+      unadmittedImage,
+      lateImage,
+    ]);
+
+    expect(projected).toEqual([
+      { type: "image", data: nearCapImage, mimeType: "image/png" },
+      { type: "image", data: nearCapImage, mimeType: "image/png" },
+      { type: "text", text: "[truncated: MCP result exceeded 20 MB]" },
+    ]);
+    expect(unadmittedMimeReads).toBe(0);
+    expect(lateImageReads).toBe(0);
+  });
 });
 
 describe("projectMcpJsonValue media aliases", () => {

@@ -15,7 +15,10 @@ import {
   readPersistedMediaBlockFactIndexes,
   readPersistedMediaFacts,
 } from "../media/media-facts.js";
-import { sanitizeDurableMediaPayload } from "../media/media-reference-projection.js";
+import {
+  sanitizeDurableMediaPayload,
+  sanitizeModelVisibleMediaText,
+} from "../media/media-reference-projection.js";
 
 const SIZE_FRAME_ID = "00000000-0000-4000-8000-000000000000";
 type WorkerTranscriptAssistantMessage = Extract<WorkerTranscriptMessage, { role: "assistant" }>;
@@ -48,6 +51,21 @@ export function cloneTextContent(part: { type: "text"; text: string; textSignatu
 
 export function cloneImageContent(part: { type: "image"; data: string; mimeType: string }) {
   return { type: "image" as const, data: part.data, mimeType: part.mimeType };
+}
+
+function sanitizeWorkerString(value: string): string {
+  return sanitizeModelVisibleMediaText(value);
+}
+
+function projectWorkerTextContent(part: { type: "text"; text: string; textSignature?: string }) {
+  const text = sanitizeWorkerString(part.text);
+  return {
+    type: "text" as const,
+    text,
+    ...(text === part.text && part.textSignature !== undefined
+      ? { textSignature: part.textSignature }
+      : {}),
+  };
 }
 
 function providerReplayUnavailable(
@@ -129,7 +147,7 @@ export function projectWorkerProviderReplay<
 
 function projectWorkerInputContent(part: ModelInputContent) {
   if (part.type === "text") {
-    return cloneTextContent(part);
+    return projectWorkerTextContent(part);
   }
   if (part.type === "image") {
     return cloneImageContent(part);
@@ -147,13 +165,19 @@ function toWorkerAssistantMessage(message: AssistantMessage): WorkerTranscriptAs
     role: "assistant",
     content: message.content.map((part) => {
       if (part.type === "text") {
-        return cloneTextContent(part);
+        return projectWorkerTextContent(part);
       }
       if (part.type === "thinking") {
+        const thinking = sanitizeWorkerString(part.thinking);
+        if (thinking !== part.thinking) {
+          return { type: "text" as const, text: thinking };
+        }
         return {
           type: "thinking" as const,
-          thinking: part.thinking,
-          ...(part.thinkingSignature ? { thinkingSignature: part.thinkingSignature } : {}),
+          thinking,
+          ...(part.thinkingSignature === undefined
+            ? {}
+            : { thinkingSignature: part.thinkingSignature }),
           ...(part.redacted === undefined ? {} : { redacted: part.redacted }),
         };
       }
@@ -184,8 +208,10 @@ function toWorkerAssistantMessage(message: AssistantMessage): WorkerTranscriptAs
                 ? {
                     error: {
                       ...(diagnostic.error.name ? { name: diagnostic.error.name } : {}),
-                      message: diagnostic.error.message,
-                      ...(diagnostic.error.stack ? { stack: diagnostic.error.stack } : {}),
+                      message: sanitizeWorkerString(diagnostic.error.message),
+                      ...(diagnostic.error.stack
+                        ? { stack: sanitizeWorkerString(diagnostic.error.stack) }
+                        : {}),
                       ...(diagnostic.error.code === undefined
                         ? {}
                         : { code: diagnostic.error.code }),
@@ -216,10 +242,10 @@ function toWorkerAssistantMessage(message: AssistantMessage): WorkerTranscriptAs
       },
     },
     stopReason: message.stopReason,
-    ...(message.errorMessage ? { errorMessage: message.errorMessage } : {}),
+    ...(message.errorMessage ? { errorMessage: sanitizeWorkerString(message.errorMessage) } : {}),
     ...(message.errorCode ? { errorCode: message.errorCode } : {}),
     ...(message.errorType ? { errorType: message.errorType } : {}),
-    ...(message.errorBody ? { errorBody: message.errorBody } : {}),
+    ...(message.errorBody ? { errorBody: sanitizeWorkerString(message.errorBody) } : {}),
     timestamp: message.timestamp,
   };
 }
@@ -244,7 +270,7 @@ export function toWorkerTranscriptMessage(
     if (Array.isArray(message.content)) {
       for (const part of message.content) {
         if (part.type === "text") {
-          content.push(cloneTextContent(part));
+          content.push(projectWorkerTextContent(part));
           continue;
         }
         if (part.type !== "image" && part.type !== "video") {
@@ -261,7 +287,7 @@ export function toWorkerTranscriptMessage(
         );
       }
     } else {
-      content.push({ type: "text", text: message.content });
+      content.push({ type: "text", text: sanitizeWorkerString(message.content) });
     }
     for (const [factIndex, fact] of facts.entries()) {
       if (!representedVideoFacts.has(factIndex) && isVideoMediaFact(fact)) {

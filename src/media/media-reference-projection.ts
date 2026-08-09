@@ -158,8 +158,13 @@ function hasMediaPayloadTypeOrMime(record: Record<string, unknown>): boolean {
   );
 }
 
-function isInlineVideoDataUrl(value: unknown): boolean {
-  return typeof value === "string" && /^data:video\//iu.test(value.trimStart());
+export function sanitizeModelVisibleMediaText(value: string): string {
+  const dataUrlIndex = value.search(MEDIA_DATA_URL_START_RE);
+  return dataUrlIndex < 0 ? value : `${value.slice(0, dataUrlIndex)}${REDACTED_INLINE_MEDIA}`;
+}
+
+function isInlineVideoDataUrl(value: unknown, videoContext = false): boolean {
+  return typeof value === "string" && (videoContext ? /\bdata:/iu : /\bdata:video\//iu).test(value);
 }
 
 function isInlineVideoCarrierField(key: string): boolean {
@@ -171,9 +176,14 @@ function containsInlineVideoPayload(
   enclosingVideo = false,
   depth = 0,
   seen: WeakSet<object> = new WeakSet<object>(),
+  state: { values: number } = { values: 0 },
 ): boolean {
+  state.values += 1;
+  if (state.values > MEDIA_PAYLOAD_MAX_VALUES) {
+    return enclosingVideo;
+  }
   if (!value || (typeof value !== "object" && typeof value !== "function")) {
-    return isInlineVideoDataUrl(value);
+    return isInlineVideoDataUrl(value, enclosingVideo);
   }
   if (seen.has(value) || depth > INLINE_VIDEO_PAYLOAD_MAX_NESTING) {
     return false;
@@ -181,13 +191,34 @@ function containsInlineVideoPayload(
   seen.add(value);
   const record = value as Record<string, unknown>;
   const videoContext = enclosingVideo || hasVideoPayloadTypeOrMime(record);
+  if (Array.isArray(value)) {
+    const lengthProperty = readInlineVideoCarrier(value, "length");
+    if (!lengthProperty?.readable || typeof lengthProperty.value !== "number") {
+      seen.delete(value);
+      return videoContext;
+    }
+    if (lengthProperty.value > MEDIA_PAYLOAD_MAX_VALUES - state.values) {
+      seen.delete(value);
+      return videoContext;
+    }
+    for (let index = 0; index < lengthProperty.value; index += 1) {
+      const property = readInlineVideoCarrier(value, String(index));
+      if (
+        property?.readable &&
+        containsInlineVideoPayload(property.value, videoContext, depth + 1, seen, state)
+      ) {
+        seen.delete(value);
+        return true;
+      }
+    }
+  }
   for (const key of INLINE_VIDEO_CARRIER_FIELDS) {
     const property = readInlineVideoCarrier(value, key);
     if (!property?.readable) {
       continue;
     }
     const carrier = property.value;
-    if (isInlineVideoDataUrl(carrier)) {
+    if (isInlineVideoDataUrl(carrier, videoContext)) {
       seen.delete(value);
       return true;
     }
@@ -199,7 +230,7 @@ function containsInlineVideoPayload(
       depth < INLINE_VIDEO_PAYLOAD_MAX_NESTING &&
       carrier &&
       (typeof carrier === "object" || typeof carrier === "function") &&
-      containsInlineVideoPayload(carrier, videoContext, depth + 1, seen)
+      containsInlineVideoPayload(carrier, videoContext, depth + 1, seen, state)
     ) {
       seen.delete(value);
       return true;
@@ -281,6 +312,7 @@ function projectMediaPayload(
   mode: "durable-video" | "model-visible-media" = "durable-video",
   enclosingVideo = false,
   enclosingMedia = false,
+  collapseInlineVideo = false,
 ): unknown {
   state.values += 1;
   if (depth > MEDIA_PAYLOAD_MAX_DEPTH || state.values > MEDIA_PAYLOAD_MAX_VALUES) {
@@ -291,11 +323,17 @@ function projectMediaPayload(
     if (state.stringChars > MEDIA_PAYLOAD_MAX_STRING_CHARS) {
       return MEDIA_PAYLOAD_LIMIT_OMISSION;
     }
-    const dataUrlIndex = value.search(
-      mode === "model-visible-media" ? MEDIA_DATA_URL_START_RE : DURABLE_MEDIA_DATA_URL_START_RE,
-    );
-    const withoutInlineData =
-      dataUrlIndex < 0 ? value : `${value.slice(0, dataUrlIndex)}${REDACTED_INLINE_MEDIA}`;
+    if (mode === "durable-video" && enclosingVideo && isInlineVideoDataUrl(value, true)) {
+      return INLINE_VIDEO_PAYLOAD;
+    }
+    let withoutInlineData: string;
+    if (mode === "model-visible-media") {
+      withoutInlineData = sanitizeModelVisibleMediaText(value);
+    } else {
+      const dataUrlIndex = value.search(DURABLE_MEDIA_DATA_URL_START_RE);
+      withoutInlineData =
+        dataUrlIndex < 0 ? value : `${value.slice(0, dataUrlIndex)}${REDACTED_INLINE_MEDIA}`;
+    }
     const normalizedKey = key?.trim().toLowerCase();
     const remoteReferenceKey =
       normalizedKey === "url" ||
@@ -363,7 +401,12 @@ function projectMediaPayload(
         mode,
         enclosingVideo,
         enclosingMedia,
+        collapseInlineVideo,
       );
+      if (item === INLINE_VIDEO_PAYLOAD && collapseInlineVideo) {
+        state.seen.delete(value);
+        return INLINE_VIDEO_PAYLOAD;
+      }
       projected[index] = item === INLINE_VIDEO_PAYLOAD ? REDACTED_INLINE_VIDEO : item;
     }
     state.seen.delete(value);
@@ -402,7 +445,7 @@ function projectMediaPayload(
       ((videoContext &&
         (propertyKey === "data" || propertyKey === "blob") &&
         rawValue !== undefined) ||
-        (boundedVideoCarrier && isInlineVideoDataUrl(rawValue)))
+        (boundedVideoCarrier && isInlineVideoDataUrl(rawValue, videoContext)))
     ) {
       state.seen.delete(value);
       return INLINE_VIDEO_PAYLOAD;
@@ -416,6 +459,7 @@ function projectMediaPayload(
           mode,
           carrierField && depth < INLINE_VIDEO_PAYLOAD_MAX_NESTING ? videoContext : false,
           mediaContext || isMediaPayloadContainerKey(propertyKey),
+          collapseInlineVideo,
         )
       : MEDIA_PAYLOAD_UNREADABLE_OMISSION;
     if (projectedValue === INLINE_VIDEO_PAYLOAD) {
@@ -448,7 +492,16 @@ export function sanitizeDurableMediaPayload(value: unknown): unknown {
 
 /** Sanitizes a durable content-array entry while retaining a valid block shape. */
 export function sanitizeDurableMediaContentBlock(value: unknown): unknown {
-  const projected = projectMediaPayload(value);
+  const projected = projectMediaPayload(
+    value,
+    undefined,
+    undefined,
+    0,
+    "durable-video",
+    false,
+    false,
+    true,
+  );
   return projected === INLINE_VIDEO_PAYLOAD || projected === REDACTED_INLINE_VIDEO
     ? { type: "text", text: REDACTED_INLINE_VIDEO }
     : projected;

@@ -122,6 +122,202 @@ describe("worker transcript provider replay", () => {
   });
 });
 
+describe("worker transcript ordinary text projection", () => {
+  it("redacts folded inline media from tool-result text and drops its signature", () => {
+    const fragments = ["cHJpdmF0ZS", "10b29sLXJl", "c3VsdA=="];
+    const message: AgentMessage = {
+      role: "toolResult",
+      toolCallId: "call-text",
+      toolName: "camera",
+      content: [
+        {
+          type: "text",
+          text: `captured: data:video/mp4;base64,${fragments.join(" \t\n")}`,
+          textSignature: "signed-tool-text",
+        },
+      ],
+      isError: false,
+      timestamp: 1,
+    };
+
+    const result = toWorkerTranscriptMessage(message, "transcript");
+
+    expect(result).toMatchObject({
+      kind: "complete",
+      message: {
+        content: [
+          {
+            type: "text",
+            text: "captured: [media data omitted]",
+          },
+        ],
+      },
+    });
+    if (!result || result.kind !== "complete" || result.message.role !== "toolResult") {
+      throw new Error("expected projected tool result");
+    }
+    expect(result.message.content[0]).toEqual({
+      type: "text",
+      text: "captured: [media data omitted]",
+    });
+    for (const fragment of fragments) {
+      expect(JSON.stringify(result)).not.toContain(fragment);
+    }
+  });
+
+  it("preserves ordinary text beyond the structured media string limit", () => {
+    const text = `ordinary-${"x".repeat(1_000_001)}`;
+    const result = toWorkerTranscriptMessage(
+      { role: "user", content: text, timestamp: 1 },
+      "inference",
+    );
+
+    if (!result || result.kind !== "complete" || result.message.role !== "user") {
+      throw new Error("expected projected user message");
+    }
+    expect(result.message.content).toEqual([{ type: "text", text }]);
+  });
+
+  it("retains signatures and thinking metadata only when their text is unchanged", () => {
+    const message = assistantWithReplay();
+    message.content = [
+      { type: "text", text: "signed text", textSignature: "signed-text" },
+      { type: "text", text: "unsigned text" },
+      {
+        type: "thinking",
+        thinking: "signed thinking",
+        thinkingSignature: "signed-thinking",
+        redacted: true,
+      },
+    ];
+
+    const result = toWorkerTranscriptMessage(message, "transcript");
+
+    expect(result).toMatchObject({
+      kind: "complete",
+      message: {
+        content: [
+          { type: "text", text: "signed text", textSignature: "signed-text" },
+          { type: "text", text: "unsigned text" },
+          {
+            type: "thinking",
+            thinking: "signed thinking",
+            thinkingSignature: "signed-thinking",
+            redacted: true,
+          },
+        ],
+      },
+    });
+    if (!result || result.kind !== "complete" || result.message.role !== "assistant") {
+      throw new Error("expected projected assistant message");
+    }
+    expect(result.message.content).toEqual(message.content);
+  });
+
+  it.each([
+    {
+      name: "user string",
+      content: "prompt: data:application/octet-stream;base64,cHJpdmF0ZS11c2Vy",
+    },
+    {
+      name: "user text block",
+      content: [
+        {
+          type: "text" as const,
+          text: "prompt: data:application/octet-stream;base64,cHJpdmF0ZS11c2Vy",
+          textSignature: "signed-user-text",
+        },
+      ],
+    },
+  ])("redacts generic data URIs from $name", ({ content }) => {
+    const result = toWorkerTranscriptMessage(
+      { role: "user", content, timestamp: 1 } as AgentMessage,
+      "inference",
+    );
+
+    expect(result).toMatchObject({
+      kind: "complete",
+      message: { content: [{ type: "text", text: "prompt: [media data omitted]" }] },
+    });
+    if (!result || result.kind !== "complete" || result.message.role !== "user") {
+      throw new Error("expected projected user message");
+    }
+    expect(result.message.content).toEqual([
+      { type: "text", text: "prompt: [media data omitted]" },
+    ]);
+    expect(JSON.stringify(result)).not.toContain("cHJpdmF0ZS11c2Vy");
+  });
+
+  it("redacts assistant text, thinking, and errors without changing replay ciphertext", () => {
+    const ciphertext = "data:video/mp4;base64,ZXhhY3QtcmVwbGF5LWNpcGhlcnRleHQ=";
+    const message = assistantWithReplay({ ...providerReplay, data: ciphertext });
+    message.content = [
+      {
+        type: "text",
+        text: "answer: data:application/octet-stream;base64,cHJpdmF0ZS1hbnN3ZXI=",
+        textSignature: "signed-answer",
+      },
+      {
+        type: "thinking",
+        thinking: "thought: data:video/mp4;base64,cHJpdmF0ZS10aG91Z2h0",
+        thinkingSignature: "signed-thinking",
+        redacted: true,
+      },
+    ];
+    message.diagnostics = [
+      {
+        type: "provider-error",
+        timestamp: 2,
+        error: {
+          name: "SyntheticError",
+          message: "message: data:application/octet-stream;base64,cHJpdmF0ZS1kaWFnbm9zdGlj",
+          stack: "stack: data:video/mp4;base64,cHJpdmF0ZS1zdGFjaw==",
+          code: "E_SYNTHETIC",
+        },
+      },
+    ];
+    message.errorMessage = "assistant: data:application/octet-stream;base64,cHJpdmF0ZS1lcnJvcg==";
+    message.errorBody = "body: data:video/mp4;base64,cHJpdmF0ZS1ib2R5";
+
+    const result = toWorkerTranscriptMessage(message, "transcript");
+
+    expect(result).toMatchObject({
+      kind: "complete",
+      message: {
+        content: [
+          { type: "text", text: "answer: [media data omitted]" },
+          {
+            type: "text",
+            text: "thought: [media data omitted]",
+          },
+        ],
+        diagnostics: [
+          {
+            type: "provider-error",
+            error: {
+              name: "SyntheticError",
+              message: "message: [media data omitted]",
+              stack: "stack: [media data omitted]",
+              code: "E_SYNTHETIC",
+            },
+          },
+        ],
+        errorMessage: "assistant: [media data omitted]",
+        errorBody: "body: [media data omitted]",
+        providerReplay: { data: ciphertext },
+      },
+    });
+    if (!result || result.kind !== "complete" || result.message.role !== "assistant") {
+      throw new Error("expected projected assistant message");
+    }
+    expect(result.message.content).toEqual([
+      { type: "text", text: "answer: [media data omitted]" },
+      { type: "text", text: "thought: [media data omitted]" },
+    ]);
+    expect(result.message.providerReplay?.data).toBe(ciphertext);
+  });
+});
+
 describe("worker transcript durable media projection", () => {
   it("fully redacts prefixed line-wrapped video data URLs from tool details", () => {
     const fragments = ["cHJpdmF0ZS", "12aWRlby1w", "YXlsb2Fk"];

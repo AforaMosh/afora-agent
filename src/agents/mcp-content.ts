@@ -197,11 +197,15 @@ function describeResource(params: {
 }
 
 /** Converts one SDK-legal MCP content block into bounded agent text/image content. */
-function mcpContentBlockToAgentContent(block: unknown): McpAgentContentBlock {
+function mcpContentBlockToAgentContent(
+  block: unknown,
+  blockType: unknown,
+  rawImageData: unknown,
+): McpAgentContentBlock {
   if (!isRecord(block)) {
     return { type: "text", text: "[unsupported MCP content omitted]" };
   }
-  switch (block.type) {
+  switch (blockType) {
     case "text":
       return {
         type: "text",
@@ -210,12 +214,12 @@ function mcpContentBlockToAgentContent(block: unknown): McpAgentContentBlock {
     case "image": {
       const mimeType = normalizeMcpMimeType(block.mimeType);
       if (
-        typeof block.data === "string" &&
-        block.data.length <= MCP_IMAGE_MAX_ENCODED_CHARS &&
+        typeof rawImageData === "string" &&
+        rawImageData.length <= MCP_IMAGE_MAX_ENCODED_CHARS &&
         mimeType?.startsWith("image/") &&
-        estimateBase64DecodedBytes(block.data) <= MAX_IMAGE_BYTES
+        estimateBase64DecodedBytes(rawImageData) <= MAX_IMAGE_BYTES
       ) {
-        const data = canonicalizeBase64(block.data);
+        const data = canonicalizeBase64(rawImageData);
         if (data) {
           return { type: "image", data, mimeType };
         }
@@ -267,47 +271,66 @@ function projectMcpContentBlocksWithinBudget(
   blocks: readonly unknown[],
   aggregateBaseBytes: number,
 ): { content: McpAgentContentBlock[]; aggregateTruncated: boolean; usedBytes: number } {
-  const projected = blocks
-    .slice(0, MCP_CONTENT_MAX_BLOCKS)
-    .map((block) => mcpContentBlockToAgentContent(block));
   let remainingTextBytes = MCP_TEXT_CONTENT_MAX_BYTES;
   let textTruncated = false;
-  const textBounded: McpAgentContentBlock[] = [];
-  for (const block of projected) {
-    if (block.type !== "text") {
-      textBounded.push(block);
-      continue;
-    }
-    const available = Math.max(
-      0,
-      remainingTextBytes - Buffer.byteLength(MCP_TEXT_TRUNCATION_MARKER),
-    );
-    const text = truncateUtf8Prefix(block.text, available);
-    remainingTextBytes -= Buffer.byteLength(text);
-    if (text.length < block.text.length) {
-      textBounded.push({ type: "text", text: `${text}${MCP_TEXT_TRUNCATION_MARKER}` });
-      textTruncated = true;
-      break;
-    }
-    textBounded.push(block);
-  }
-
   const result: McpAgentContentBlock[] = [];
   let usedBytes = aggregateBaseBytes;
+  let rawAdmissionBytes = aggregateBaseBytes;
   let aggregateTruncated = false;
   const aggregateMarkerBytes =
     serializedJsonBytes({
       type: "text",
       text: MCP_RESULT_TRUNCATION_MARKER,
     }) + 1;
-  for (const block of textBounded) {
+  const blockCount = Math.min(blocks.length, MCP_CONTENT_MAX_BLOCKS);
+  for (let index = 0; index < blockCount; index += 1) {
+    const rawBlock = blocks[index];
+    let rawImageData: unknown;
+    const blockType = isRecord(rawBlock) ? rawBlock.type : undefined;
+    const imageBlock = blockType === "image";
+    if (imageBlock) {
+      rawImageData = rawBlock.data;
+      if (typeof rawImageData === "string" && rawImageData.length <= MCP_IMAGE_MAX_ENCODED_CHARS) {
+        if (rawAdmissionBytes + rawImageData.length + aggregateMarkerBytes > MCP_RESULT_MAX_BYTES) {
+          aggregateTruncated = true;
+          break;
+        }
+        // Charge raw bytes before the decoded-size scan and canonicalization so total
+        // image work remains bounded even when whitespace shrinks the final payload.
+        rawAdmissionBytes += rawImageData.length;
+      }
+    }
+
+    let block = mcpContentBlockToAgentContent(rawBlock, blockType, rawImageData);
+    if (block.type === "text") {
+      const available = Math.max(
+        0,
+        remainingTextBytes - Buffer.byteLength(MCP_TEXT_TRUNCATION_MARKER),
+      );
+      const text = truncateUtf8Prefix(block.text, available);
+      remainingTextBytes -= Buffer.byteLength(text);
+      if (text.length < block.text.length) {
+        block = { type: "text", text: `${text}${MCP_TEXT_TRUNCATION_MARKER}` };
+        textTruncated = true;
+      }
+    }
+
     const blockBytes = serializedJsonBytes(block) + (result.length > 0 ? 1 : 0);
+    if (!imageBlock) {
+      rawAdmissionBytes += blockBytes;
+    }
     if (usedBytes + blockBytes + aggregateMarkerBytes > MCP_RESULT_MAX_BYTES) {
       aggregateTruncated = true;
+      if (textTruncated) {
+        break;
+      }
       continue;
     }
     result.push(block);
     usedBytes += blockBytes;
+    if (textTruncated) {
+      break;
+    }
   }
   if (blocks.length > MCP_CONTENT_MAX_BLOCKS || textTruncated || aggregateTruncated) {
     if (aggregateTruncated) {

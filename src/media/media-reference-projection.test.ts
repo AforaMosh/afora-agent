@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   isMediaPayloadContainerKey,
   normalizeDurableMediaReference,
+  projectInlineVideoContentBlock,
   sanitizeDurableMediaContentBlock,
   sanitizeDurableMediaPayload,
   sanitizeMediaReferenceForProjection,
+  sanitizeModelVisibleMediaText,
   sanitizeModelVisibleMediaPayload,
 } from "./media-reference-projection.js";
 
@@ -174,6 +176,64 @@ describe("sanitizeDurableMediaPayload", () => {
     });
     expect(JSON.stringify(projected)).not.toContain(payload);
     expect(JSON.stringify(projected)).not.toContain(nestedPayload);
+  });
+
+  it.each([
+    {
+      name: "input_video carrier",
+      value: {
+        type: "input_video",
+        video_url: "recording: data:application/octet-stream;base64,cHJpdmF0ZS12aWRlbw==",
+      },
+    },
+    {
+      name: "nested video_url array carrier",
+      value: {
+        type: "video_url",
+        video_url: {
+          source: [["recording: data:application/octet-stream;base64,cHJpdmF0ZS12aWRlbw=="]],
+        },
+      },
+    },
+  ])("recognizes generic data URIs inside $name as inline video", ({ value }) => {
+    expect(projectInlineVideoContentBlock(value)).toEqual({
+      type: "text",
+      text: "[video data omitted]",
+    });
+    expect(sanitizeDurableMediaContentBlock(value)).toEqual({
+      type: "text",
+      text: "[video data omitted]",
+    });
+    const projected = sanitizeDurableMediaPayload(value);
+    expect(JSON.stringify(projected)).not.toContain("cHJpdmF0ZS12aWRlbw==");
+    expect(JSON.stringify(projected)).toContain("[video data omitted]");
+  });
+
+  it("preserves generic data URIs outside video context", () => {
+    const value = { metadata: { source: "data:application/octet-stream;base64,a2VlcA==" } };
+    expect(sanitizeDurableMediaPayload(value)).toEqual(value);
+    expect(projectInlineVideoContentBlock(value)).toBeUndefined();
+  });
+
+  it.each([
+    "metadata:key,value",
+    "some_data:text/plain,keep",
+    "metadata:video/mp4;base64,keep",
+    "some_data:video/mp4;base64,keep",
+  ])("does not mistake data-like video metadata for a URI: %s", (value) => {
+    const carrier = { type: "input_video", video_url: value };
+    expect(projectInlineVideoContentBlock(carrier)).toBeUndefined();
+    expect(sanitizeDurableMediaPayload(carrier)).toEqual(carrier);
+  });
+
+  it("recognizes an embedded video data URI outside inherited video context", () => {
+    const value = {
+      source: "recording: data:video/mp4;base64,cHJpdmF0ZS12aWRlbw==",
+    };
+    expect(projectInlineVideoContentBlock(value)).toEqual({
+      type: "text",
+      text: "[video data omitted]",
+    });
   });
 
   it.each([
@@ -672,6 +732,21 @@ describe("sanitizeModelVisibleMediaPayload", () => {
     expect(typeReads).toBe(1);
     expect(sourceReads).toBe(1);
     expect(JSON.stringify(projected)).not.toContain(payload);
+  });
+});
+
+describe("sanitizeModelVisibleMediaText", () => {
+  it("preserves ordinary text without a traversal-size limit", () => {
+    const value = `ordinary-${"x".repeat(1_000_001)}`;
+    expect(sanitizeModelVisibleMediaText(value)).toBe(value);
+  });
+
+  it("removes the first embedded generic data URI and its suffix", () => {
+    expect(
+      sanitizeModelVisibleMediaText(
+        "recording: data:application/octet-stream;base64,cHJpdmF0ZQ== trailing",
+      ),
+    ).toBe("recording: [media data omitted]");
   });
 });
 
