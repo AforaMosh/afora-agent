@@ -235,18 +235,6 @@ export function buildPayloadSummary(payload: ReplyPayload): NormalizedOutboundPa
   return summarizeOutboundPayloadForTransport(payload);
 }
 
-export function hasDeliveryResultIdentity(result: OutboundDeliveryResult): boolean {
-  return Boolean(
-    result.messageId ||
-    result.chatId ||
-    result.channelId ||
-    result.roomId ||
-    result.conversationId ||
-    result.toJid ||
-    result.pollId,
-  );
-}
-
 function normalizeDeliveryPin(payload: ReplyPayload): ReplyPayloadDeliveryPin | undefined {
   const pin = payload.delivery?.pin;
   if (pin === true) {

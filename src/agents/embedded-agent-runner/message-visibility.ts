@@ -4,6 +4,7 @@ import {
   isSilentReplyText,
   SILENT_REPLY_TOKEN,
 } from "../../auto-reply/tokens.js";
+import { hasReplyPayloadContent } from "../../interactive/payload.js";
 import { resolveAssistantMessagePhase } from "../../shared/chat-message-content.js";
 
 type AgentPayloadLike = {
@@ -107,6 +108,9 @@ export function hasVisibleAgentPayload(
         return false;
       }
       const record = payload as AgentPayloadLike;
+      if (record.visible === false) {
+        return false;
+      }
       if (options.includeErrorPayloads === false && record.isError === true) {
         return false;
       }
@@ -117,15 +121,17 @@ export function hasVisibleAgentPayload(
         hasNonEmptyString(record.text) &&
         (options.includeSilentReplyPayloads !== false ||
           !isSilentAgentReplyText(record.text, "payload"));
-      return Boolean(
+      return (
         visibleText ||
         hasNonEmptyString(record.mediaUrl) ||
         hasNonEmptyStringArray(record.mediaUrls) ||
         hasVisibleAttachmentReference(record.attachments) ||
         record.visible === true ||
-        record.presentation ||
-        record.interactive ||
-        record.channelData,
+        hasReplyPayloadContent({
+          presentation: record.presentation,
+          interactive: record.interactive,
+          channelData: record.channelData,
+        })
       );
     })
   );

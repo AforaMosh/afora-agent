@@ -224,7 +224,9 @@ describe("classifyEmbeddedAgentRunResultForModelFallback", () => {
         payloads: [
           {
             text: GENERIC_EXTERNAL_RUN_FAILURE_TEXT,
-            interactive: { type: "button", label: "Retry" },
+            interactive: {
+              blocks: [{ type: "buttons", buttons: [{ label: "Retry", value: "retry" }] }],
+            },
           },
         ],
         meta: {
@@ -471,6 +473,12 @@ describe("classifyEmbeddedAgentRunResultForModelFallback", () => {
     {
       name: "explicitly hidden",
       payloads: [{ visible: false, text: "internal" }],
+      code: "empty_result",
+      suffix: "without a visible assistant reply",
+    },
+    {
+      name: "empty structured payload",
+      payloads: [{ presentation: { blocks: [] }, interactive: { blocks: [] }, channelData: {} }],
       code: "empty_result",
       suffix: "without a visible assistant reply",
     },

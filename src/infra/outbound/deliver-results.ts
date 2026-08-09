@@ -1,7 +1,22 @@
 // Reconciles adapter progress results with hook-bearing final delivery results.
 import { expectDefined } from "@openclaw/normalization-core";
-import { hasDeliveryResultIdentity } from "./deliver-payload.js";
 import type { OutboundDeliveryResult } from "./deliver-types.js";
+
+function hasDeliveryResultIdentity(delivery: OutboundDeliveryResult): boolean {
+  const messageId = delivery.messageId?.trim().toLowerCase();
+  if (messageId === "skipped" || messageId === "suppressed") {
+    return false;
+  }
+  return Boolean(
+    messageId ||
+    delivery.chatId?.trim() ||
+    delivery.channelId?.trim() ||
+    delivery.roomId?.trim() ||
+    delivery.conversationId?.trim() ||
+    delivery.toJid?.trim() ||
+    delivery.pollId?.trim(),
+  );
+}
 
 export function createDeliveryResultRecorder(params: {
   results: OutboundDeliveryResult[];
