@@ -194,7 +194,8 @@ export function readPluginSdkSurfaceBudgets(env: NodeJS.ProcessEnv = process.env
       // +1: dependency-light channel streaming config readers for doctor closures
       //     (realtime-voice-activation is private-local and not counted here).
       // +1: registry-bound plugin command planning and exact selected execution.
-      152,
+      // +2: versioned multiplayer-memory authorization contract and conformance suite.
+      154,
       env,
     ),
     publicExports: readPluginSdkSurfaceBudgetEnv(
@@ -269,7 +270,9 @@ export function readPluginSdkSurfaceBudgets(env: NodeJS.ProcessEnv = process.env
       // including the side-question compatibility split.
       // +1: add the account-aware native approval request selector.
       // +3: add canonical coercion exports while retaining the shipped asString compatibility name.
-      4866,
+      // +56: versioned serializable memory-authorization contract and reusable backend-conformance
+      //      types, capability declarations, and helpers.
+      4922,
       env,
     ),
     publicFunctionExports: readPluginSdkSurfaceBudgetEnv(
@@ -331,7 +334,8 @@ export function readPluginSdkSurfaceBudgets(env: NodeJS.ProcessEnv = process.env
       // +1: channel-account-bound native approval request selection.
       // +1: add the account-aware native approval request selector.
       // +3: add canonical coercion exports while retaining the shipped asString compatibility name.
-      2922,
+      // +6: capability-declaration validators and pure backend-conformance helpers.
+      2928,
       env,
     ),
     publicDeprecatedExports: readPluginSdkSurfaceBudgetEnv(
@@ -355,7 +359,8 @@ export function readPluginSdkSurfaceBudgets(env: NodeJS.ProcessEnv = process.env
       // -1: text-runtime now names its global-singleton exports explicitly.
       // -1: infra-runtime now names its error exports explicitly.
       // -1: infra-runtime excludes the internal system-event receipt API.
-      79,
+      // +2: focused authorization-contract and conformance facades.
+      81,
       env,
     ),
   };
