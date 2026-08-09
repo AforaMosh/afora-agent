@@ -1,5 +1,10 @@
-import { MAX_IMAGE_BYTES } from "@openclaw/media-core/constants";
-import { isImageMediaFact, readPersistedMediaFacts } from "../../../media/media-facts.js";
+import { MAX_IMAGE_BYTES, mediaKindFromMime } from "@openclaw/media-core/constants";
+import { mimeTypeFromFilePath } from "@openclaw/media-core/mime";
+import {
+  isImageMediaFact,
+  isVideoMediaFact,
+  readPersistedMediaFacts,
+} from "../../../media/media-facts.js";
 import { resolveImageSanitizationLimits } from "../../image-sanitization.js";
 import { resolveAttemptWorkspaceSandbox } from "./attempt-setup.js";
 import { detectAndLoadPromptMedia } from "./images.js";
@@ -7,13 +12,25 @@ import type { RunEmbeddedAgentParams } from "./params.js";
 import { readPersistedMediaImageLayout } from "./prompt-image-metadata.js";
 import type { EmbeddedRunAttemptParams } from "./types.js";
 
-/** Removes host-private locators after their permitted bytes have been materialized. */
+/** Removes host-private locators from native media facts after materialization. */
 function toPluginHarnessMediaFact(
   fact: NonNullable<RunEmbeddedAgentParams["media"]>[number],
 ): NonNullable<RunEmbeddedAgentParams["media"]>[number] {
+  const imageFact = isImageMediaFact(fact);
+  const videoFact = isVideoMediaFact(fact);
+  const declaredKind = fact.kind === "unknown" ? undefined : fact.kind;
+  const reference = fact.path ?? fact.url ?? fact.fileName;
+  const inferredKind =
+    mediaKindFromMime(fact.contentType) ?? mediaKindFromMime(mimeTypeFromFilePath(reference));
+  const kind = declaredKind ?? inferredKind;
+  if (!imageFact && !videoFact && kind !== undefined) {
+    // In-process harnesses own known non-native attachment transport, so locators are the payload.
+    // Materialized images, omitted videos, and truly unknown facts use type-only projections.
+    return fact;
+  }
   return {
     contentType: fact.contentType,
-    kind: isImageMediaFact(fact) ? (fact.kind === "sticker" ? "sticker" : "image") : fact.kind,
+    kind: imageFact ? (fact.kind === "sticker" ? "sticker" : "image") : videoFact ? "video" : kind,
     messageId: fact.messageId,
     transcribed: fact.transcribed,
   };

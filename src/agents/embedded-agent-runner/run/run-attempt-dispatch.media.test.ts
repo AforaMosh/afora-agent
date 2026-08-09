@@ -29,11 +29,28 @@ describe("plugin harness prompt media", () => {
       runParams: {
         config: { agents: { defaults: { sandbox: { mode: "off" } } } },
         media: [
-          { sourceId: "duplicate-id", sourceIndex: 5, kind: "video" },
+          {
+            sourceId: "/private/video/source-id.mp4",
+            sourceIndex: 5,
+            path: "/private/video/handled.mp4",
+            url: "https://cdn.example.test/handled.mp4?signature=handled-secret",
+            contentType: "video/mp4",
+            kind: "video",
+            fileName: "handled.mp4",
+            sizeBytes: 123,
+            durationMs: 456,
+            width: 640,
+            height: 480,
+            messageId: "handled-video",
+            transcribed: true,
+            workspaceDir: "/private/video",
+            staged: true,
+            privateVideoMetadata: "must-not-cross-boundary",
+          },
           { sourceId: "duplicate-id", sourceIndex: 6, kind: "video" },
           { sourceId: "other-id", sourceIndex: 5, kind: "video" },
         ],
-        handledVideoIdentities: [{ sourceId: "duplicate-id", sourceIndex: 5 }],
+        handledVideoIdentities: [{ sourceId: "/private/video/source-id.mp4", sourceIndex: 5 }],
       },
       runtime: {
         model: { input: ["text", "video"] },
@@ -47,8 +64,18 @@ describe("plugin harness prompt media", () => {
       "(video omitted: model does not support videos)",
       "(video omitted: model does not support videos)",
     ]);
-    expect(result.media).toMatchObject([{ kind: "video" }, { kind: "video" }, { kind: "video" }]);
-    expect(JSON.stringify(result.media)).not.toContain("sourceId");
+    expect(result.media?.[0]).toEqual({
+      contentType: "video/mp4",
+      kind: "video",
+      messageId: "handled-video",
+      transcribed: true,
+    });
+    const serializedVideo = JSON.stringify(result.media?.[0]);
+    for (const privateKey of PRIVATE_MEDIA_KEYS) {
+      expect(serializedVideo).not.toContain(`"${privateKey}"`);
+    }
+    expect(serializedVideo).not.toContain("privateVideoMetadata");
+    expect(serializedVideo).not.toContain("signature=handled-secret");
   });
 
   it("does not forward video even when a prepared model contract is present", async () => {
@@ -178,8 +205,11 @@ describe("plugin harness prompt media", () => {
       expect(result.images ?? []).toHaveLength(testCase.expectedImages);
       if (testCase.expectedImages > 0) {
         expect(result.images?.[0]?.mimeType).toBe("image/png");
+        expect(JSON.stringify(result.media)).not.toContain(imagePath);
+      } else {
+        expect(result.media?.[0]).toMatchObject(media[0]);
+        expect(result.media?.[0]?.path).toBe(imagePath);
       }
-      expect(JSON.stringify(result)).not.toContain(imagePath);
     } finally {
       envSnapshot.restore();
       await fs.rm(stateDir, { recursive: true, force: true });
@@ -197,12 +227,13 @@ describe("plugin harness prompt media", () => {
     await fs.writeFile(imagePath, Buffer.from(TINY_PNG_BASE64, "base64"));
     const envSnapshot = captureEnv(["OPENCLAW_STATE_DIR"]);
     setTestEnvValue("OPENCLAW_STATE_DIR", stateDir);
-    const signedUrl = "https://cdn.example.test/private.pdf?signature=signed-secret";
-    const sourceIdPath = path.join(workspaceDir, "source-identities", "private-source.png");
+    const imageSignedUrl = "https://cdn.example.test/private.png?signature=image-secret";
+    const imageSourceIdPath = path.join(workspaceDir, "source-identities", "private-source.png");
     const imageFact = {
-      sourceId: sourceIdPath,
+      sourceId: imageSourceIdPath,
       sourceIndex: 4,
       path: imagePath,
+      url: imageSignedUrl,
       contentType: "image/png",
       fileName: "private-image-name.png",
       sizeBytes: 123,
@@ -215,15 +246,51 @@ describe("plugin harness prompt media", () => {
       staged: true,
     };
     const documentFact = {
-      url: signedUrl,
+      sourceId: "document-source",
+      sourceIndex: 1,
+      path: path.join(workspaceDir, "contracts", "source.pdf"),
+      url: "https://cdn.example.test/source.pdf?signature=document-contract",
       contentType: "application/pdf",
       kind: "document" as const,
+      fileName: "source.pdf",
+      sizeBytes: 789,
       messageId: "document-message",
+      transcribed: false,
+      workspaceDir,
+      staged: true,
+    };
+    const audioFact = {
+      sourceId: "audio-source",
+      sourceIndex: 2,
+      path: path.join(workspaceDir, "audio", "source.mp3"),
+      url: "https://cdn.example.test/source.mp3?signature=audio-contract",
+      contentType: "audio/mpeg",
+      kind: "audio" as const,
+      fileName: "source.mp3",
+      sizeBytes: 456,
+      durationMs: 1234,
+      messageId: "audio-message",
+      transcribed: true,
+      workspaceDir,
+      staged: true,
     };
     const videoFact = {
+      sourceId: path.join(workspaceDir, "source-identities", "private-source.mp4"),
+      sourceIndex: 3,
+      path: path.join(workspaceDir, "video", "private-video.mp4"),
+      url: "https://cdn.example.test/private.mp4?signature=video-secret",
       contentType: "video/mp4",
       kind: "video" as const,
+      fileName: "private-video-name.mp4",
+      sizeBytes: 321,
+      width: 1920,
+      height: 1080,
+      durationMs: 654,
       messageId: "video-message",
+      transcribed: false,
+      workspaceDir,
+      staged: true,
+      privateVideoMetadata: "must-not-cross-boundary",
     };
     const input = {
       runParams: {
@@ -237,7 +304,7 @@ describe("plugin harness prompt media", () => {
             role: "user",
             content: "inspect",
             __openclaw: {
-              media: [imageFact, documentFact, videoFact],
+              media: [imageFact, documentFact, audioFact, videoFact],
               mediaImageLayout: { slots: [{ kind: "offloaded", factIndex: 0 }] },
             },
           },
@@ -270,12 +337,8 @@ describe("plugin harness prompt media", () => {
           messageId: "image-message",
           transcribed: true,
         },
-        {
-          contentType: "application/pdf",
-          kind: "document",
-          messageId: "document-message",
-          transcribed: false,
-        },
+        documentFact,
+        audioFact,
         {
           contentType: "video/mp4",
           kind: "video",
@@ -283,12 +346,18 @@ describe("plugin harness prompt media", () => {
           transcribed: false,
         },
       ]);
-      for (const privateKey of PRIVATE_MEDIA_KEYS) {
-        expect(serialized).not.toContain(`"${privateKey}"`);
+      for (const factIndex of [0, 3]) {
+        const serializedFact = JSON.stringify(restored.media?.[factIndex]);
+        for (const privateKey of PRIVATE_MEDIA_KEYS) {
+          expect(serializedFact).not.toContain(`"${privateKey}"`);
+        }
       }
-      for (const privateValue of [workspaceDir, signedUrl, "private-image-name.png"]) {
-        expect(serialized).not.toContain(privateValue);
-      }
+      expect(restored.media?.[3]).not.toHaveProperty("privateVideoMetadata");
+      expect(JSON.stringify(restored.media?.[0])).not.toContain(imageSourceIdPath);
+      expect(JSON.stringify(restored.media?.[0])).not.toContain(imageSignedUrl);
+      expect(JSON.stringify(restored.media?.[3])).not.toContain("signature=video-secret");
+      expect(restored.media?.[1]).toEqual(documentFact);
+      expect(restored.media?.[2]).toEqual(audioFact);
       const replay = await detectAndLoadPromptImages({
         prompt: "",
         media: restored.media,
@@ -498,11 +567,11 @@ describe("plugin harness prompt media", () => {
     expect(JSON.stringify(result)).not.toContain("/tmp/inline.png");
   });
 
-  it("keeps unsupported native images as aligned type-only facts", async () => {
+  it("keeps unsupported native images and unknown facts type-only", async () => {
     const media = [
       { path: "/tmp/photo.png", contentType: "image/png" },
       { path: "/tmp/inferred.png", kind: "unknown" as const },
-      { privateLocator: "/tmp/empty-placeholder" },
+      { kind: "unknown" as const, privateLocator: "/tmp/empty-placeholder" },
     ];
     const result = await preparePluginHarnessPromptImages({
       runParams: {
