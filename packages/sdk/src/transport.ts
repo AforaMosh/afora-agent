@@ -113,15 +113,17 @@ export class GatewayClientTransport implements ConnectableOpenClawTransport {
           try {
             this.options.onConnectError?.(error);
           } finally {
-            if (this.client === client) {
+            if (this.rejectPendingConnect && this.client === client) {
+              // Only an initial connection owns this promise and client.
+              // Reconnect failures belong to the established client's supervisor.
               this.client = null;
+              if (this.connectPromise) {
+                this.connectPromise = null;
+              }
+              void client.stopAndWait().catch(() => {});
+              this.rejectPendingConnect = null;
+              reject(error);
             }
-            if (this.connectPromise) {
-              this.connectPromise = null;
-            }
-            void client.stopAndWait().catch(() => {});
-            this.rejectPendingConnect = null;
-            reject(error);
           }
         },
         onReconnectPaused: this.options.onReconnectPaused,
