@@ -17,17 +17,29 @@ import {
 
 const RECIPE_PATH = "scripts/e2e/lib/upgrade-survivor/config-recipe.mts";
 const RUN_PATH = "scripts/e2e/lib/upgrade-survivor/run.sh";
+const DOCKER_RUNNER_PATH = "scripts/e2e/upgrade-survivor-docker.sh";
 
 describe("upgrade survivor config recipe command resolution", () => {
-  it("uses the candidate source or compiled config recipe entrypoint", () => {
+  it("uses trusted tsx or the candidate compiled config recipe entrypoint", () => {
     const runner = readFileSync(RUN_PATH, "utf8");
+    const dockerRunner = readFileSync(DOCKER_RUNNER_PATH, "utf8");
+    expect(runner).toContain("OPENCLAW_UPGRADE_SURVIVOR_TSX_IMPORT:-tsx");
     expect(runner).toContain(
-      "recipe_runner=(node --import tsx scripts/e2e/lib/upgrade-survivor/config-recipe.mts)",
+      'node --import "$tsx_import" scripts/e2e/lib/upgrade-survivor/config-recipe.mts',
     );
     expect(runner).toContain(
       "recipe_runner=(node scripts/e2e/lib/upgrade-survivor/config-recipe.mjs)",
     );
     expect(runner).toContain('"${recipe_runner[@]}" apply');
+    expect(dockerRunner).toContain(
+      'TRUSTED_TSX_IMPORT="$TRUSTED_TSX_NODE_MODULES/tsx/dist/loader.mjs"',
+    );
+    expect(dockerRunner).toContain(
+      "-e OPENCLAW_UPGRADE_SURVIVOR_TSX_IMPORT=/tmp/openclaw-release-harness-node_modules/tsx/dist/loader.mjs",
+    );
+    expect(dockerRunner).toContain(
+      '-v "$TRUSTED_TSX_NODE_MODULES:/tmp/openclaw-release-harness-node_modules:ro"',
+    );
   });
 
   it("compares baseline versions with the shared release parser", () => {

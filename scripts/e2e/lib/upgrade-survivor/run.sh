@@ -812,7 +812,10 @@ seed_state() {
 }
 
 apply_baseline_config_recipe() {
-  local recipe_runner=(node --import tsx scripts/e2e/lib/upgrade-survivor/config-recipe.mts)
+  local tsx_import="${OPENCLAW_UPGRADE_SURVIVOR_TSX_IMPORT:-tsx}"
+  local recipe_runner=(
+    node --import "$tsx_import" scripts/e2e/lib/upgrade-survivor/config-recipe.mts
+  )
   if [ ! -f scripts/e2e/lib/upgrade-survivor/config-recipe.mts ]; then
     recipe_runner=(node scripts/e2e/lib/upgrade-survivor/config-recipe.mjs)
   fi
